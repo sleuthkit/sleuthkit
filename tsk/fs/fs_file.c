@@ -185,6 +185,9 @@ tsk_fs_file_open(TSK_FS_INFO * a_fs,
     if (fs_file) {
         // Add the name to the structure
         fs_file->name = fs_name;
+
+        // path2inum did not put this in there...
+        fs_name->meta_seq = fs_file->meta->seq;
     }
     else {
         tsk_fs_name_free(fs_name);
@@ -562,4 +565,96 @@ tsk_fs_file_get_owner_sid(TSK_FS_FILE * a_fs_file, char **sid_str)
     }
 
     return a_fs_file->fs_info->fread_owner_sid(a_fs_file, sid_str);
+}
+
+
+/**
+ * Internal struct used for hash calculations
+ */
+typedef struct {
+    TSK_BASE_HASH_ENUM flags;
+    TSK_MD5_CTX md5_context;
+    TSK_SHA_CTX sha1_context;
+} TSK_FS_HASH_DATA;
+
+/**
+ * Helper function for tsk_fs_file_get_md5
+ */
+TSK_WALK_RET_ENUM
+tsk_fs_file_hash_calc_callback(TSK_FS_FILE * file, TSK_OFF_T offset,
+    TSK_DADDR_T addr, char *buf, size_t size,
+    TSK_FS_BLOCK_FLAG_ENUM a_flags, void *ptr)
+{
+    TSK_FS_HASH_DATA *hash_data = (TSK_FS_HASH_DATA *) ptr;
+    if (hash_data == NULL)
+        return TSK_WALK_CONT;
+
+    if (hash_data->flags & TSK_BASE_HASH_MD5) {
+        TSK_MD5_Update(&(hash_data->md5_context), (unsigned char *) buf,
+            (unsigned int) size);
+    }
+
+    if (hash_data->flags & TSK_BASE_HASH_SHA1) {
+        TSK_SHA_Update(&(hash_data->sha1_context), (unsigned char *) buf,
+            (unsigned int) size);
+    }
+
+
+    return TSK_WALK_CONT;
+}
+
+/**
+ * Returns a string containing the md5 hash of the given file
+ *
+ * @param a_fs_file The file to calculate the hash of
+ * @param a_hash_results The results will be stored here (must be allocated beforehand)
+ * @param a_flags Indicates which hash algorithm(s) to use
+ * @returns 0 on success or 1 on error
+ */
+extern uint8_t
+tsk_fs_file_hash_calc(TSK_FS_FILE * a_fs_file,
+    TSK_FS_HASH_RESULTS * a_hash_results, TSK_BASE_HASH_ENUM a_flags)
+{
+    TSK_FS_HASH_DATA hash_data;
+
+    if ((a_fs_file == NULL) || (a_fs_file->fs_info == NULL)
+        || (a_fs_file->meta == NULL)) {
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("tsk_fs_file_hash_calc: fs_info is NULL");
+        return 1;
+    }
+
+    if (a_hash_results == NULL) {
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr
+            ("tsk_fs_file_hash_calc: hash_results is NULL");
+        return 1;
+    }
+
+    if (a_flags & TSK_BASE_HASH_MD5) {
+        TSK_MD5_Init(&(hash_data.md5_context));
+    }
+    if (a_flags & TSK_BASE_HASH_SHA1) {
+        TSK_SHA_Init(&(hash_data.sha1_context));
+    }
+
+    hash_data.flags = a_flags;
+    if (tsk_fs_file_walk(a_fs_file, TSK_FS_FILE_WALK_FLAG_NONE,
+            tsk_fs_file_hash_calc_callback, (void *) &hash_data)) {
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("tsk_fs_file_hash_calc: error in file walk");
+        return 1;
+    }
+
+    a_hash_results->flags = a_flags;
+    if (a_flags & TSK_BASE_HASH_MD5) {
+        TSK_MD5_Final(a_hash_results->md5_digest,
+            &(hash_data.md5_context));
+    }
+    if (a_flags & TSK_BASE_HASH_MD5) {
+        TSK_SHA_Final(a_hash_results->sha1_digest,
+            &(hash_data.sha1_context));
+    }
+
+    return 0;
 }

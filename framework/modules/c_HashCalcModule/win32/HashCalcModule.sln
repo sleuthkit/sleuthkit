@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual C++ Express 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HashCalcModule", "HashCalcModule.vcxproj", "{46CD18AC-3A1C-405D-B39F-F86BA0FD1820}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{46CD18AC-3A1C-405D-B39F-F86BA0FD1820}.Debug|Win32.ActiveCfg = Debug|Win32
+		{46CD18AC-3A1C-405D-B39F-F86BA0FD1820}.Debug|Win32.Build.0 = Debug|Win32
+		{46CD18AC-3A1C-405D-B39F-F86BA0FD1820}.Release|Win32.ActiveCfg = Release|Win32
+		{46CD18AC-3A1C-405D-B39F-F86BA0FD1820}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

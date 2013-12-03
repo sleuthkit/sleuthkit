@@ -20,6 +20,7 @@ package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.sleuthkit.datamodel.TskData.TSK_VS_TYPE_ENUM;
 
 /**
  * Represents a volume system. Populated based on data in database.
@@ -66,8 +67,8 @@ public class VolumeSystem extends AbstractContent {
 	 *
 	 * @return type
 	 */
-	public long getType() {
-		return type;
+	public TSK_VS_TYPE_ENUM getType() {
+		return TskData.TSK_VS_TYPE_ENUM.valueOf(type);
 	}
 
 	/**
@@ -104,14 +105,22 @@ public class VolumeSystem extends AbstractContent {
 	}
 
 	@Override
-	public void finalize() throws Throwable {
-		try {
-			if (volumeSystemHandle != 0) {
-				SleuthkitJNI.closeVs(volumeSystemHandle);
-				volumeSystemHandle = 0;
+	public void close() {
+		if (volumeSystemHandle != 0) {
+			synchronized (this) {
+				if (volumeSystemHandle != 0) {
+					SleuthkitJNI.closeVs(volumeSystemHandle);
+					volumeSystemHandle = 0;
+				}
 			}
 		}
-		finally {
+	}
+
+	@Override
+	public void finalize() throws Throwable {
+		try {
+			close();
+		} finally {
 			super.finalize();
 		}
 	}
@@ -130,7 +139,7 @@ public class VolumeSystem extends AbstractContent {
 	public List<Content> getChildren() throws TskCoreException {
 		return getSleuthkitCase().getVolumeSystemChildren(this);
 	}
-	
+
 	@Override
 	public List<Long> getChildrenIds() throws TskCoreException {
 		return getSleuthkitCase().getVolumeSystemChildrenIds(this);
@@ -140,22 +149,23 @@ public class VolumeSystem extends AbstractContent {
 	public Image getImage() throws TskCoreException {
 		return getParent().getImage();
 	}
-	
+
 	/**
 	 * @return a list of Volumes that are direct children of this VolumeSystem
-	 * @throws TskCoreException 
+	 * @throws TskCoreException
 	 */
 	public List<Volume> getVolumes() throws TskCoreException {
 		List<Volume> volumes = new ArrayList<Volume>();
 		for (Content child : getChildren()) {
 			if (child instanceof Volume) {
-				volumes.add((Volume)child);
+				volumes.add((Volume) child);
 			}
 		}
 		return volumes;
 	}
+
 	@Override
-	public String toString(boolean preserveState){
+	public String toString(boolean preserveState) {
 		return super.toString(preserveState) + "VolumeSystem [\t" + "blockSize " + blockSize + "\t" + "imgOffset " + imgOffset + "\t" + "type " + type + "]\t";
 	}
 }

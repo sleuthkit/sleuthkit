@@ -14,13 +14,16 @@
  */
 
 #include "tsk_case_db.h"
+#if HAVE_LIBEWF
+#include "tsk/img/ewf.h"
+#endif
 #include <string.h>
 
 #include <algorithm>
 #include <sstream>
+
 using std::stringstream;
 using std::for_each;
-
 
 /**
  * @param a_db Database to add an image to
@@ -42,6 +45,7 @@ TskAutoDb::TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO *
     m_vsFound = false;
     m_volFound = false;
     m_stopped = false;
+    m_foundStructure = false;
     m_imgTransactionOpen = false;
     m_NSRLDb = a_NSRLDb;
     m_knownBadDb = a_knownBadDb;
@@ -51,6 +55,8 @@ TskAutoDb::TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO *
         m_fileHashFlag = false;
     m_noFatFsOrphans = false;
     m_addUnallocSpace = false;
+	m_chunkSize = -1;
+    tsk_init_lock(&m_curDirPathLock);
 }
 
 TskAutoDb::~TskAutoDb()
@@ -60,6 +66,7 @@ TskAutoDb::~TskAutoDb()
         revertAddImage();
 
     closeImage();
+    tsk_deinit_lock(&m_curDirPathLock);
 }
 
 void
@@ -90,7 +97,13 @@ void TskAutoDb::setNoFatFsOrphans(bool noFatFsOrphans)
 
 void TskAutoDb::setAddUnallocSpace(bool addUnallocSpace)
 {
+    setAddUnallocSpace(addUnallocSpace, -1);
+}
+
+void TskAutoDb::setAddUnallocSpace(bool addUnallocSpace, int64_t chunkSize)
+{
     m_addUnallocSpace = addUnallocSpace;
+	m_chunkSize = chunkSize;
 }
 
 uint8_t
@@ -180,8 +193,19 @@ uint8_t
 uint8_t
 TskAutoDb::addImageDetails(const char *const img_ptrs[], int a_num)
 {
+   string md5 = "";
+#if HAVE_LIBEWF 
+   if (m_img_info->itype == TSK_IMG_TYPE_EWF_EWF) {
+     // @@@ This shoudl really probably be inside of a tsk_img_ method
+       IMG_EWF_INFO *ewf_info = (IMG_EWF_INFO *)m_img_info;
+       if (ewf_info->md5hash_isset) {
+           md5 = ewf_info->md5hash;
+       }
+   }
+#endif
+
     if (m_db->addImageInfo(m_img_info->itype, m_img_info->sector_size,
-            m_curImgId, m_curImgTZone)) {
+          m_curImgId, m_curImgTZone, m_img_info->size, md5)) {
         return 1;
     }
 
@@ -221,6 +245,7 @@ TSK_FILTER_ENUM
 TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
 {
     m_volFound = true;
+    m_foundStructure = true;
 
     if (m_db->addVolumeInfo(vs_part, m_curVsId, m_curVolId)) {
         return TSK_FILTER_STOP;
@@ -234,6 +259,7 @@ TSK_FILTER_ENUM
 TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 {
     TSK_FS_FILE *file_root;
+    m_foundStructure = true;
 
     if (m_volFound && m_vsFound) {
         // there's a volume system and volume
@@ -296,7 +322,7 @@ TSK_RETVAL_ENUM
  * Analyzes the open image and adds image info to a database.
  * Does not deal with transactions and such.  Refer to startAddImage()
  * for more control. 
- * @returns 1 if an error occured (error will have been registered)
+ * @returns 1 if a critical error occured (DB doesn't exist, no file system, etc.), 2 if errors occured at some point adding files to the DB (corrupt file, etc.), and 0 otherwise.  Errors will have been registered.
  */
 uint8_t TskAutoDb::addFilesInImgToDb()
 {
@@ -315,17 +341,32 @@ uint8_t TskAutoDb::addFilesInImgToDb()
     setVolFilterFlags((TSK_VS_PART_FLAG_ENUM) (TSK_VS_PART_FLAG_ALLOC |
             TSK_VS_PART_FLAG_UNALLOC));
 
-    uint8_t
-        findFilesRetval = findFilesInImg();
+    uint8_t retVal = 0;
+    if (findFilesInImg()) {
+        // map the boolean return value from findFiles to the three-state return value we use
+        // @@@ findFiles should probably return this three-state enum too
+        if (m_foundStructure == false) {
+            retVal = 1;
+        }
+        else {
+            retVal = 2;
+        }
+    }
 
     uint8_t addUnallocRetval = 0;
     if (m_addUnallocSpace)
         addUnallocRetval = addUnallocSpaceToDb();
 
-    if ((findFilesRetval) || (addUnallocRetval))
-        return 1;
-    else
+    // findFiles return value trumps unalloc since it can return either 2 or 1.
+    if (retVal) {
+        return retVal;
+    }
+    else if (addUnallocRetval) {
+        return 2;
+    }
+    else {
         return 0;
+    }
 }
 
 
@@ -334,7 +375,7 @@ uint8_t TskAutoDb::addFilesInImgToDb()
  * Same functionality as addFilesInImgToDb().  Reverts
  * all changes on error. User must call either commitAddImage() to commit the changes,
  * or revertAddImage() to revert them.
- * @returns 1 if any error occured (messages will be registered in list), 2 if error occured but add image process can continue, and 0 on success
+ * @returns 1 if critical system error occcured (data does not exist in DB), 2 if error occured while adding files to DB (but it finished), and 0 otherwise. All errors will have been registered. 
  */
 uint8_t
     TskAutoDb::startAddImage(int numImg, const TSK_TCHAR * const imagePaths[],
@@ -375,13 +416,7 @@ uint8_t
         return 1;
     }
     
-    uint8_t addFilesRet = addFilesInImgToDb();
-
-    //do not roll back if errors in this case, but do report registered errors
-    if (addFilesRet)
-        return 2;
-
-    return 0;
+    return addFilesInImgToDb();
 }
 
 #ifdef WIN32
@@ -426,13 +461,7 @@ uint8_t
         return 1;
     }
 
-    uint8_t addFilesRet = addFilesInImgToDb();
-
-    //do not roll back if errors in this case, but do report registered errors
-    if (addFilesRet)
-        return 2;
-
-    return 0;
+    return addFilesInImgToDb();
 }
 #endif
 
@@ -538,7 +567,9 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
     int64_t cur = fs_file->name->par_addr;
     if(m_curDirId != cur){
         m_curDirId = cur;
+        tsk_take_lock(&m_curDirPathLock);
         m_curDirPath = path;
+        tsk_release_lock(&m_curDirPathLock);
     }
 
     /* process the attributes.  The case of having 0 attributes can occur
@@ -696,32 +727,52 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
     if (unallocBlockWlkTrack->tskAutoDb.m_stopAllProcessing)
         return TSK_WALK_STOP;
 
+	// initialize if this is the first block
     if (unallocBlockWlkTrack->isStart) {
         unallocBlockWlkTrack->isStart = false;
         unallocBlockWlkTrack->curRangeStart = a_block->addr;
         unallocBlockWlkTrack->prevBlock = a_block->addr;
+		unallocBlockWlkTrack->size = 0;
+		return TSK_WALK_CONT;
     }
-    else {
-        //check if non-consecutive blocks, make range if needed
-        if (a_block->addr != unallocBlockWlkTrack->prevBlock + 1) {
-            //make a new range inclusive from curRangeStart to prevBlock
-            const uint64_t byteStart = unallocBlockWlkTrack->curRangeStart * unallocBlockWlkTrack->fsInfo.block_size 
-                + unallocBlockWlkTrack->fsInfo.offset;
-            const uint64_t byteLen = (1 + unallocBlockWlkTrack->prevBlock - unallocBlockWlkTrack->curRangeStart) 
-                * unallocBlockWlkTrack->fsInfo.block_size;
-            TSK_DB_FILE_LAYOUT_RANGE tempRange(byteStart, byteLen, 0);
-            //add unalloc block file per single range to db
-            vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
-            ranges.push_back(tempRange);
-            int64_t fileObjId = 0;
-            unallocBlockWlkTrack->tskAutoDb.m_db->addUnallocBlockFile(unallocBlockWlkTrack->tskAutoDb.m_curUnallocDirId, 
-                unallocBlockWlkTrack->fsObjId, tempRange.byteLen, ranges, fileObjId);
-            //advance range start to a new range
-            unallocBlockWlkTrack->curRangeStart = a_block->addr;
-        } 
-        //update prev block
-        unallocBlockWlkTrack->prevBlock = a_block->addr;
-    }
+
+	// if this block is consecutive with the previous one, update prevBlock and return
+	if (a_block->addr == unallocBlockWlkTrack->prevBlock + 1) {
+		unallocBlockWlkTrack->prevBlock = a_block->addr;
+		return TSK_WALK_CONT;
+	}
+
+	// this block is not contiguous with the previous one; create and add a range object
+	const uint64_t rangeStartOffset = unallocBlockWlkTrack->curRangeStart * unallocBlockWlkTrack->fsInfo.block_size 
+		+ unallocBlockWlkTrack->fsInfo.offset;
+	const uint64_t rangeSizeBytes = (1 + unallocBlockWlkTrack->prevBlock - unallocBlockWlkTrack->curRangeStart) 
+		* unallocBlockWlkTrack->fsInfo.block_size;
+	unallocBlockWlkTrack->ranges.push_back(TSK_DB_FILE_LAYOUT_RANGE(rangeStartOffset, rangeSizeBytes, 0));
+	
+	// bookkeeping for the next range object
+	unallocBlockWlkTrack->size += rangeSizeBytes;
+	unallocBlockWlkTrack->curRangeStart = a_block->addr;
+	unallocBlockWlkTrack->prevBlock = a_block->addr;
+
+	// Here we just return if we are a) collecting all unallocated data
+	// for the given volumen (chunkSize == 0) or b) collecting all unallocated
+	// data whose total size is at least chunkSize (chunkSize > 0)
+	if (unallocBlockWlkTrack->chunkSize == 0 ||
+		unallocBlockWlkTrack->chunkSize > 0 &&
+		unallocBlockWlkTrack->size < unallocBlockWlkTrack->chunkSize) {
+		return TSK_WALK_CONT;
+	}
+
+	// at this point we are either chunking and have reached the chunk limit
+	// or we're not chunking. Either way we now add what we've got to the DB
+	int64_t fileObjId = 0;
+	unallocBlockWlkTrack->tskAutoDb.m_db->addUnallocBlockFile(unallocBlockWlkTrack->tskAutoDb.m_curUnallocDirId, 
+		unallocBlockWlkTrack->fsObjId, unallocBlockWlkTrack->size, unallocBlockWlkTrack->ranges, fileObjId);
+
+	// reset
+	unallocBlockWlkTrack->curRangeStart = a_block->addr;
+	unallocBlockWlkTrack->size = 0;
+	unallocBlockWlkTrack->ranges.clear();
 
     //we don't know what the last unalloc block is in advance
     //and will handle the last range in addFsInfoUnalloc()
@@ -754,7 +805,7 @@ int8_t TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
 
     //walk unalloc blocks on the fs and process them
     //initialize the unalloc block walk tracking 
-    UNALLOC_BLOCK_WLK_TRACK unallocBlockWlkTrack(*this, *fsInfo, dbFsInfo.objId);
+	UNALLOC_BLOCK_WLK_TRACK unallocBlockWlkTrack(*this, *fsInfo, dbFsInfo.objId, m_chunkSize);
     uint8_t block_walk_ret = tsk_fs_block_walk(fsInfo, fsInfo->first_block, fsInfo->last_block, (TSK_FS_BLOCK_WALK_FLAG_ENUM)(TSK_FS_BLOCK_WALK_FLAG_UNALLOC | TSK_FS_BLOCK_WALK_FLAG_AONLY), 
         fsWalkUnallocBlocksCb, &unallocBlockWlkTrack);
 
@@ -773,16 +824,14 @@ int8_t TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
         return TSK_OK;
     }
 
-    //handle creation of the last range
-    //make range inclusive from curBlockStart to prevBlock
+    // handle creation of the last range
+    // make range inclusive from curBlockStart to prevBlock
     const uint64_t byteStart = unallocBlockWlkTrack.curRangeStart * fsInfo->block_size + fsInfo->offset;
     const uint64_t byteLen = (1 + unallocBlockWlkTrack.prevBlock - unallocBlockWlkTrack.curRangeStart) * fsInfo->block_size;
-    TSK_DB_FILE_LAYOUT_RANGE tempRange(byteStart, byteLen, 0);
-    //add unalloc block file per single range to db
-    vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
-    ranges.push_back(tempRange);
+	unallocBlockWlkTrack.ranges.push_back(TSK_DB_FILE_LAYOUT_RANGE(byteStart, byteLen, 0));
+	unallocBlockWlkTrack.size += byteLen;
     int64_t fileObjId = 0;
-    m_db->addUnallocBlockFile(m_curUnallocDirId, dbFsInfo.objId, tempRange.byteLen, ranges, fileObjId);
+    m_db->addUnallocBlockFile(m_curUnallocDirId, dbFsInfo.objId, unallocBlockWlkTrack.size, unallocBlockWlkTrack.ranges, fileObjId);
     
     //cleanup 
     tsk_fs_close(fsInfo);
@@ -972,10 +1021,15 @@ uint8_t TskAutoDb::addUnallocImageSpaceToDb() {
 }
 
 /**
-* Returns the directory currently being analyzed by processFile()
+* Returns the directory currently being analyzed by processFile().
+* Safe to use from another thread than processFile().
 *
-* @returns reference to currently analyzed directory
+* @returns curDirPath string representing currently analyzed directory
 */
-const std::string TskAutoDb::getCurDir(){
-    return TskAutoDb::m_curDirPath;
+const std::string TskAutoDb::getCurDir() {
+    string curDirPath;
+    tsk_take_lock(&m_curDirPathLock);
+    curDirPath = m_curDirPath;
+    tsk_release_lock(&m_curDirPathLock);
+    return curDirPath;
 }

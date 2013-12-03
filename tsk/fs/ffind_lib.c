@@ -25,7 +25,7 @@
  * line tool.
  */
 #include "tsk_fs_i.h"
-#include "tsk_ntfs.h"  // NTFS has an optimized version of this function 
+#include "tsk_ntfs.h"           // NTFS has an optimized version of this function
 
 
 

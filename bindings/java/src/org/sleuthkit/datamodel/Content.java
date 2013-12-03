@@ -23,23 +23,38 @@ import java.util.List;
 
 /**
  * Interface for all datatypes that can be found in the database.
+ * Content objects make up a tree and each object can have a parent
+ * and children.  For example, the child of an Image object is a 
+ * Volume or File System.  This interface defines the basic methods for
+ * reading the content associated with this object, the parent and children,
+ * and adding artifacts. 
  */
 public interface Content extends SleuthkitVisitableItem {
 
 	/**
-	 * Read data from the content object
+	 * Reads data that this content object is associated with (file contents, 
+	 * volume contents, etc.).
 	 *
 	 * @param buf a character array of data (in bytes) to copy read data to
-	 * @param offset offset in the content to start reading from
-	 * @param len amount of data to read (in bytes)
+	 * @param offset byte offset in the content to start reading from
+	 * @param len number of bytes to read into buf. 
 	 * @return num of bytes read, or -1 on error
 	 * @throws TskCoreException if critical error occurred during read in the
 	 * tsk core
 	 */
 	public int read(byte[] buf, long offset, long len) throws TskCoreException;
+	
+	/**
+	 * Free native resources after read is done on the Content object.  
+	 * After closing, read can be called again on the same Content object,
+	 * which should result in re-opening of new native resources.
+	 */
+	public void close();
 
 	/**
-	 * Get the size of the content
+	 * Get the (reported) size of the content object and, in theory, how
+	 * much you should be able to read from it.  In some cases, data corruption
+	 * may mean that you cannot read this much data.
 	 *
 	 * @return size of the content
 	 */
@@ -54,7 +69,7 @@ public interface Content extends SleuthkitVisitableItem {
 	public <T> T accept(ContentVisitor<T> v);
 
 	/**
-	 * Get the name of this content object
+	 * Get the name of this content object (does not include parent path)
 	 *
 	 * @return the name
 	 */
@@ -68,16 +83,18 @@ public interface Content extends SleuthkitVisitableItem {
 	public String getUniquePath() throws TskCoreException;
 
 	/**
-	 * Gets the content object id.
+	 * Returns the unique object ID that was assigned to it in the database.
+	 * This is a Sleuth Kit database-assigned number.
 	 *
 	 * @return object id
 	 */
 	public long getId();
 
 	/**
-	 * Get the root image
+	 * Get the root image of this content, of null if there is no image associated with this content
+	 * (such as for LocalFile)
 	 *
-	 * @return image
+	 * @return image associated with this Content or null if there isn't any
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public Image getImage() throws TskCoreException;
@@ -155,6 +172,16 @@ public interface Content extends SleuthkitVisitableItem {
 	 */
 	public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskCoreException;
 
+	
+	/**
+	 * Return the TSK_GEN_INFO artifact for the file so that individual attributes 
+	 * can be added to it.
+	 * 
+	 * @returna Instance of the TSK_GEN_INFO artifact
+	 * @throws TskCoreException 
+	 */
+	public BlackboardArtifact getGenInfoArtifact() throws TskCoreException;
+	
 	/**
 	 * Get all artifacts associated with this content that have the given type
 	 * id

@@ -52,17 +52,20 @@ else
   LIBEXT=so
 endif
 
+.PHONY: copy_libs copy_configs
 # Copy the modules libraries into the Modules directory
 bin_PROGRAMS = copy_libs copy_configs
 
 runtime/modules:
 	-mkdir -p $@
 
+copy_libs_SOURCES = 
 copy_libs: runtime/modules
 	(cd $<; ln -sf ../../modules/c_*/.libs/libtsk*Module.* .)
 	(cd $<; ln -sf ../../tsk/framework/.libs/libtskframework.* .)
 	(cd $<; ln -sf ../../../tsk/.libs/libtsk.* .)
 
+copy_configs_SOURCES = 
 copy_configs:
 	-mkdir -p runtime
 	cp SampleConfig/framework_config_unixdev.xml runtime/framework_config.xml

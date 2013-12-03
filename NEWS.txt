@@ -1,26 +1,66 @@
 Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
+---------------- VERSION 4.1.3 --------------
+Core: 
+- fixed bug that could crash UFS/ExtX in inode_lookup.
+- Updated sqlite database to have image size and md5 (schema v3)
+
+---------------- VERSION 4.1.2 --------------
+Core:
+- Fixed more visual studio projects to work on 64-bit
+- TskAutoDB considers not finding a VS/FS a critical error.
+
+Java: 
+- added method to Image to perform sanity check on image sizes.
+
+fiwalk:
+- Fixed compile error on Linux etc.
+
+
+
+---------------- VERSION 4.1.1 --------------
+Core: 
+- Added FILE_SHARE_WRITE to all windows open calls.
+- removed unused methods in CRC code that caused compile errors.
+- Added NTFS FNAME times to time2 struct in TSK_FS_META to make them 
+  easier to access -- should have done this a long time ago!
+- fls -m and tsk_gettimes output NTFS FNAME times to output for timelines.
+- hfind with EnCase hashsets works when DB is specified (and not only index)
+- TskAuto now goes into UNALLOC partitions by default too. 
+- Added support to automatically find all Cellebrite raw dump files given
+  the name of the first image. 
+- Added 64-bit windows targets to VisualStudio files.
+- Added NTFS sequence to parent address in directory and directory itself.
+- Updated SQLite code to use sequence when finding parent object ID.
+
+Java:
+- Java bindings JAR files now have native libraries in them. 
+- Logical files are added with a transaction 
+
+
 ---------------- VERSION 4.1.0 --------------
 Core:
 - Added YAFFS2 support (patch from viaForensics).
 - Added Ext4 support (patch from kfairbanks)
+- changed all include paths to be 'tsk' instead of 'tsk3'
+-- IMPORTANT FOR ALL DEVELOPERS!
  
 Framework:
 - Added Linux and MAC support.
 - Added L01 support.
 - Added APIs to find files by name, path and extension.
 - Removed deprecated TskFile::getAttributes methods.
+- moved code around for AutoBuild tool support.
 
----------------- VERSION Current --------------
-	
-	
 Java Bindings:
 - added DerivedFile datamodel support
+- added a public method to Content to add ability to close() its tsk handle before the object is gc'd
 - added faster skip() and random seek support to ReadContentInputStream
 - refactored datamodel by pushing common methods up to AbstractFile
 - fixed minor memory leaks 
 - improved regression testing framework for java bindings datamodel
+
 
 ---------------- VERSION 4.0.2 --------------
 Core: 

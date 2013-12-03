@@ -154,13 +154,14 @@ extern FILE  *t;				// text output or body file enabled
 void partition_info(const string &name,const string &value,const string &attribute);
 void partition_info(const string &name,const string &value);
 void partition_info(const string &name,long i);
+void partition_info(const string &name, const struct timeval &ts);
 
 
 
 /* fiwalk_tsk.cpp */
 int process_image_file(int argc,char *const *argv,const char *audit_file,u_int sector_size);
 
-#ifdef TSK_WIN32
+#ifdef _MSC_VER
 #define F_OK 00
 #define W_OK 02
 #define R_OK 04

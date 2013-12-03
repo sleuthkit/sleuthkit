@@ -38,11 +38,9 @@ public:
     /**
      * Make one or more unallocated sectors image files to carve. 
      *
-     * @param a_toSchedule True if the scheduler should be called to queue
-     * up the output files or false if the files should be processed now.
      * @returns 0 on success, 1 on error. 
      */
-    virtual int processSectors(bool a_toSchedule) = 0;
+    virtual int processSectors() = 0;
 };
 
 #endif

@@ -140,50 +140,6 @@ p_cm_t p_cm;
     return p_cm->cm_xorot ^ p_cm->cm_reg;
 }
 
-/******************************************************************************/
-
-ulong cm_tab (p_cm_t p_cm, int index)
-{
- int   i;
- ulong r;
- ulong topbit = BITMASK(p_cm->cm_width-1);
- ulong inbyte = (ulong) index;
-
- if (p_cm->cm_refin) inbyte = reflect(inbyte,8);
- r = inbyte << (p_cm->cm_width-8);
- for (i=0; i<8; i++)
-    if (r & topbit)
-       r = (r << 1) ^ p_cm->cm_poly;
-    else
-       r<<=1;
- if (p_cm->cm_refin) r = reflect(r,p_cm->cm_width);
- return r & widmask(p_cm);
-}
-
-
-void generate_crc_table(short *crctab[], p_cm_t p_cm){
-    int i, j;
-    unsigned long bit, crc;
-    unsigned long crchighbit = (unsigned long)1 << (p_cm->cm_width-1);
-    unsigned long crcmask = ((((unsigned long)1<<(p_cm->cm_width-1))-1)<<1)|1;
-
-    for (i=0; i<256; i++)
-    {
-        crc=(unsigned long)i;
-        if(p_cm->cm_refin) crc = reflect(crc,8);
-        crc <<= p_cm->cm_width-8;
-        for(j=0; j<8; j++)
-        {
-            bit = crc & crchighbit;
-            crc <<=1;
-            if(bit) crc ^=p_cm->cm_poly;
-        }
-        if(p_cm->cm_refin) crc = reflect(crc,p_cm->cm_width);
-        crc &= crcmask;
-        crctab[i]= crc;
-    }
-    return;
-}
 
 /******************************************************************************/
 /*                             End of crcmodel.c                              */

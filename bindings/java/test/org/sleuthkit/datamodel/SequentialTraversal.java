@@ -18,8 +18,11 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.io.FileWriter;
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -31,15 +34,17 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /**
- *
- * Traverses an image by running through item Ids ascending.
+ * Tests that we get all of the results by directly requesting a specific
+ * object.  Basic concept of test is to sequentially request objects, starting
+ * at 1.  Details of each object are printed and results are compared with
+ * gold standard. 
  */
 @RunWith(Parameterized.class)
 public class SequentialTraversal extends ImgTraverser {
-
 	private static final Logger logg = Logger.getLogger(SequentialTraversal.class.getName());
 
 	public SequentialTraversal(List<String> imagePaths) {
+		testName = DataModelTestSuite.SEQ;
 		this.imagePaths = imagePaths;
 	}
 
@@ -68,10 +73,10 @@ public class SequentialTraversal extends ImgTraverser {
 	public void testSequentialDiff() {
 		try {
 			List<Boolean> test = basicTest();
-			assertEquals("Generated results (" + exFile + ") differ with gold standard (" + oldExceptionsPath + ") .", test.get(0), true);
-			assertEquals("Generated results (" + testStandardPath + ") differ with gold standard (" + oldStandardPath + ") .", test.get(1), true);
+			assertEquals("Generated results (" + outputExceptionsPath + ") differ with gold standard (" + goldExceptionsPath + ") .", test.get(0), true);
+			assertEquals("Generated results (" + outputFilePath + ") differ with gold standard (" + goldFilePath + ") .", test.get(1), true);
 		} catch (Exception ex) {
-			fail("Couldn't open gold standard file.");
+			fail("Couldn't open gold standard file." + ex.getMessage());
 		}
 	}
 
@@ -81,29 +86,32 @@ public class SequentialTraversal extends ImgTraverser {
 	 *
 	 * @param sk the sleuthkit case used for the traversal
 	 * @param path the location of the output file
-	 * @param exFile the exFile to store exceptions, is only used for
-	 * compatability with basic test
 	 * @return the file writer to be closed by testStandard
 	 */
 	@Override
-	public FileWriter traverse(SleuthkitCase sk, String path) {
-		FileWriter reslt;
+	public OutputStreamWriter traverse(SleuthkitCase sk, String path) {
+		List<Exception> inp = new ArrayList<Exception>();
 		try {
-			reslt = new FileWriter(path);
-			int x = 1;
-			Content c;
+			Charset chr = Charset.forName("UTF-8");
+			OutputStreamWriter reslt = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(path), 8192*4), chr);
+			
 			try {
-				while ((c = sk.getContentById(x)) != null) {
+				for (int x = 1; ;x++) {
+					Content c = sk.getContentById(x);
+					if (c == null) {
+						break;
+					}
+				
 					reslt.append(((AbstractContent) c).toString(false).replaceAll("paths \\[([A-z]:)?.+?\\]", ""));
 					if (c instanceof File) {
-						DataModelTestSuite.readContent(c, reslt, exFile);
+						DataModelTestSuite.hashContent(c, reslt, outputExceptionsPath);
 					}
 					reslt.append("\n");
-					x++;
 				}
 			} catch (TskCoreException ex) {
-				DataModelTestSuite.writeExceptions(testStandardPath, ex);
+				inp.add(ex);
 			}
+			DataModelTestSuite.writeExceptions(path, inp);
 			return reslt;
 		} catch (IOException ex) {
 			logg.log(Level.SEVERE, "Failed to Traverse", ex);

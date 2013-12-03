@@ -33,9 +33,15 @@
 class TSK_FRAMEWORK_API TskCarveExtractScalpel : public CarveExtract
 {
 public:
+    TskCarveExtractScalpel(bool createUnusedSectorFiles = false)
+        : m_createUnusedSectorFiles(createUnusedSectorFiles) {}
+
     virtual int processFile(int unallocImgId);
 
 private:
+    // Whether to generate unused sector files after carving.
+    bool m_createUnusedSectorFiles;
+
     /**
      * Uses Scalpel to attempt carving an unallocated sectors image file.
      *

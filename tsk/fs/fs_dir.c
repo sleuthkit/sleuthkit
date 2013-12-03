@@ -104,6 +104,7 @@ tsk_fs_dir_reset(TSK_FS_DIR * a_fs_dir)
     }
     a_fs_dir->names_used = 0;
     a_fs_dir->addr = 0;
+    a_fs_dir->seq = 0;
 }
 
 
@@ -135,6 +136,7 @@ tsk_fs_dir_copy(const TSK_FS_DIR * a_src_dir, TSK_FS_DIR * a_dst_dir)
 
     a_dst_dir->names_used = a_src_dir->names_used;
     a_dst_dir->addr = a_src_dir->addr;
+    a_dst_dir->seq = a_src_dir->seq;
     return 0;
 }
 
@@ -159,45 +161,46 @@ tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir, const TSK_FS_NAME * a_fs_name)
     // @@@ We could do something more effecient here too with orphan files because we do not 
     // need to check the contents of that directory either and this takes a lot of time on those
     // large images.
-	if (TSK_FS_TYPE_ISFAT(a_fs_dir->fs_info->ftype) == 0) {
-		for (i = 0; i < a_fs_dir->names_used; i++) {
-			if ((a_fs_name->meta_addr == a_fs_dir->names[i].meta_addr) &&
-				(strcmp(a_fs_name->name, a_fs_dir->names[i].name) == 0)) {
+    if (TSK_FS_TYPE_ISFAT(a_fs_dir->fs_info->ftype) == 0) {
+        for (i = 0; i < a_fs_dir->names_used; i++) {
+            if ((a_fs_name->meta_addr == a_fs_dir->names[i].meta_addr) &&
+                (strcmp(a_fs_name->name, a_fs_dir->names[i].name) == 0)) {
 
-				if (tsk_verbose)
-					tsk_fprintf(stderr,
-						"tsk_fs_dir_add: removing duplicate entry: %s (%"
-						PRIuINUM ")\n", a_fs_name->name, a_fs_name->meta_addr);
+                if (tsk_verbose)
+                    tsk_fprintf(stderr,
+                        "tsk_fs_dir_add: removing duplicate entry: %s (%"
+                        PRIuINUM ")\n", a_fs_name->name,
+                        a_fs_name->meta_addr);
 
-				/* We do not check type because then we cannot detect NTFS orphan file
-				 * duplicates that are added as "-/r" while a similar entry exists as "r/r"
-				 (a_fs_name->type == a_fs_dir->names[i].type)) { */
+                /* We do not check type because then we cannot detect NTFS orphan file
+                 * duplicates that are added as "-/r" while a similar entry exists as "r/r"
+                 (a_fs_name->type == a_fs_dir->names[i].type)) { */
 
-				// if the one in the list is unalloc and we have an alloc, replace it
-				if ((a_fs_dir->names[i].flags & TSK_FS_NAME_FLAG_UNALLOC) &&
-					(a_fs_name->flags & TSK_FS_NAME_FLAG_ALLOC)) {
-					fs_name_dest = &a_fs_dir->names[i];
+                // if the one in the list is unalloc and we have an alloc, replace it
+                if ((a_fs_dir->names[i].flags & TSK_FS_NAME_FLAG_UNALLOC)
+                    && (a_fs_name->flags & TSK_FS_NAME_FLAG_ALLOC)) {
+                    fs_name_dest = &a_fs_dir->names[i];
 
-					// free the memory - not the most effecient, but prevents
-					// duplicate code.
-					if (fs_name_dest->name) {
-						free(fs_name_dest->name);
-						fs_name_dest->name = NULL;
-						fs_name_dest->name_size = 0;
-					}
-					if (fs_name_dest->shrt_name) {
-						free(fs_name_dest->shrt_name);
-						fs_name_dest->shrt_name = NULL;
-						fs_name_dest->shrt_name_size = 0;
-					}
-					break;
-				}
-				else {
-					return 0;
-				}
-			}
-		}
-	}
+                    // free the memory - not the most effecient, but prevents
+                    // duplicate code.
+                    if (fs_name_dest->name) {
+                        free(fs_name_dest->name);
+                        fs_name_dest->name = NULL;
+                        fs_name_dest->name_size = 0;
+                    }
+                    if (fs_name_dest->shrt_name) {
+                        free(fs_name_dest->shrt_name);
+                        fs_name_dest->shrt_name = NULL;
+                        fs_name_dest->shrt_name_size = 0;
+                    }
+                    break;
+                }
+                else {
+                    return 0;
+                }
+            }
+        }
+    }
 
     if (fs_name_dest == NULL) {
         // make sure we got the room
@@ -213,8 +216,10 @@ tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir, const TSK_FS_NAME * a_fs_name)
         return 1;
 
     // add the parent address
-    if (a_fs_dir->addr)
+    if (a_fs_dir->addr) {
         fs_name_dest->par_addr = a_fs_dir->addr;
+        fs_name_dest->par_seq = a_fs_dir->seq;
+    }
 
     return 0;
 }
@@ -401,6 +406,14 @@ tsk_fs_dir_get(const TSK_FS_DIR * a_fs_dir, size_t a_idx)
             if (tsk_verbose)
                 tsk_error_print(stderr);
             tsk_error_reset();
+        }
+
+        // if the sequence numbers don't match, then don't load the meta
+        // should ideally have sequence in previous lookup, but it isn't 
+        // in all APIs yet
+        if (fs_file->meta->seq != fs_name->meta_seq) {
+            tsk_fs_meta_close(fs_file->meta);
+            fs_file->meta = NULL;
         }
     }
     return fs_file;

@@ -7,7 +7,7 @@
 ** depending on the file system type.
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
-** Copyright (c) 2006-2011 Brian Carrier.  All Rights reserved
+** Copyright (c) 2006-2013 Brian Carrier.  All Rights reserved
 ** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved 
 **
 ** TASK
@@ -111,6 +111,7 @@ tsk_fs_name_reset(TSK_FS_NAME * a_fs_name)
     a_fs_name->meta_addr = 0;
     a_fs_name->meta_seq = 0;
     a_fs_name->par_addr = 0;
+    a_fs_name->par_seq = 0;
     a_fs_name->type = 0;
     a_fs_name->flags = 0;
 }
@@ -196,6 +197,7 @@ tsk_fs_name_copy(TSK_FS_NAME * a_fs_name_to,
     a_fs_name_to->meta_addr = a_fs_name_from->meta_addr;
     a_fs_name_to->meta_seq = a_fs_name_from->meta_seq;
     a_fs_name_to->par_addr = a_fs_name_from->par_addr;
+    a_fs_name_to->par_seq = a_fs_name_from->par_seq;
     a_fs_name_to->type = a_fs_name_from->type;
     a_fs_name_to->flags = a_fs_name_from->flags;
 
@@ -317,7 +319,8 @@ tsk_fs_time_to_str(time_t time, char buf[128])
  * @returns Pointer to buffer that was passed in.
  */
 char *
-tsk_fs_time_to_str_subsecs(time_t time, unsigned int subsecs, char buf[128])
+tsk_fs_time_to_str_subsecs(time_t time, unsigned int subsecs,
+    char buf[128])
 {
     buf[0] = '\0';
     if (time <= 0) {
@@ -325,14 +328,13 @@ tsk_fs_time_to_str_subsecs(time_t time, unsigned int subsecs, char buf[128])
     }
     else {
         struct tm *tmTime = localtime(&time);
-        
+
         snprintf(buf, 64, "%.4d-%.2d-%.2d %.2d:%.2d:%.2d.%.9d (%s)",
-                 (int) tmTime->tm_year + 1900,
-                 (int) tmTime->tm_mon + 1, (int) tmTime->tm_mday,
-                 tmTime->tm_hour,
-                 (int) tmTime->tm_min, (int) tmTime->tm_sec,
-                 subsecs,
-                 tzname[(tmTime->tm_isdst == 0) ? 0 : 1]);
+            (int) tmTime->tm_year + 1900,
+            (int) tmTime->tm_mon + 1, (int) tmTime->tm_mday,
+            tmTime->tm_hour,
+            (int) tmTime->tm_min, (int) tmTime->tm_sec,
+            subsecs, tzname[(tmTime->tm_isdst == 0) ? 0 : 1]);
     }
     return buf;
 }
@@ -445,9 +447,8 @@ tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
 
     tsk_fprintf(hFile, "%s:\t",
         ((fs_file->meta) && (fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC)
-            && (fs_file->
-                name->flags & TSK_FS_NAME_FLAG_UNALLOC)) ? "(realloc)" :
-        "");
+            && (fs_file->name->
+                flags & TSK_FS_NAME_FLAG_UNALLOC)) ? "(realloc)" : "");
 
     if ((print_path) && (a_path != NULL)) {
         for (i = 0; i < strlen(a_path); i++) {
@@ -559,6 +560,8 @@ tsk_fs_name_print_long(FILE * hFile, const TSK_FS_FILE * fs_file,
 }
 
 
+
+
 /**
  * \internal
  *
@@ -581,14 +584,63 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
     const char *a_path, const TSK_FS_ATTR * fs_attr,
     const char *prefix, int32_t time_skew)
 {
+    tsk_fs_name_print_mac_md5(hFile, fs_file, a_path, fs_attr, prefix,
+        time_skew, NULL);
+}
+
+/**
+ * \internal
+ *
+** Print output in the format that mactime reads.
+**
+** If the flags in the fs_file->meta structure are set to FS_FLAG_ALLOC
+** then it is assumed that the inode has been reallocated and the
+** contents are not displayed
+**
+** fs is not required (only used for block size).
+ * @param hFile handle to print results to
+ * @param fs_file File to print details about
+ * @param a_path Parent directory of file (needs to end with "/")
+ * @param fs_attr Attribute in file that is being called for (NULL for non-NTFS)
+ * @param prefix Path of mounting point for image
+ * @param time_skew number of seconds skew to adjust time
+ * @param hash_results Holds the calculated md5 hash
+*/
+void
+tsk_fs_name_print_mac_md5(FILE * hFile, const TSK_FS_FILE * fs_file,
+    const char *a_path, const TSK_FS_ATTR * fs_attr,
+    const char *prefix, int32_t time_skew,
+    const unsigned char *hash_results)
+{
     char ls[12];
     size_t i;
+    uint8_t isADS = 0;
 
     if ((!hFile) || (!fs_file))
         return;
 
-    /* md5 */
-    tsk_fprintf(hFile, "0|");
+    /* see if we are going to be printing the name of the attribute
+     * We don't do it for FNAME attributes, which we handle specially below.
+     */
+    if ((fs_attr) && (fs_attr->name)
+        && (fs_attr->type != TSK_FS_ATTR_TYPE_NTFS_FNAME)
+        && ((fs_attr->type != TSK_FS_ATTR_TYPE_NTFS_IDXROOT)
+            || (strcmp(fs_attr->name, "$I30") != 0))) {
+        isADS = 1;
+    }
+
+    /* hash
+     * Print out the hash buffer (if not null)
+     */
+    if (hash_results == NULL) {
+        tsk_fprintf(hFile, "0|");
+    }
+    else {
+        for (i = 0; i < 16; i++) {
+            tsk_fprintf(hFile, "%02x", hash_results[i]);
+        }
+        tsk_fprintf(hFile, "|");
+    }
 
     /* file name */
     tsk_fprintf(hFile, "%s", prefix);
@@ -611,9 +663,7 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
     }
 
     /* print the data stream name if it exists and is not the default NTFS */
-    if ((fs_attr) && (fs_attr->name) &&
-        ((fs_attr->type != TSK_FS_ATTR_TYPE_NTFS_IDXROOT) ||
-            (strcmp(fs_attr->name, "$I30") != 0))) {
+    if (isADS) {
         tsk_fprintf(hFile, ":");
         for (i = 0; i < strlen(fs_attr->name); i++) {
             if (TSK_IS_CNTRL(fs_attr->name[i]))
@@ -621,6 +671,11 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
             else
                 tsk_fprintf(hFile, "%c", fs_attr->name[i]);
         }
+    }
+
+    // special label if FNAME
+    if ((fs_attr) && (fs_attr->type == TSK_FS_ATTR_TYPE_NTFS_FNAME)) {
+        tsk_fprintf(hFile, " ($FILE_NAME)");
     }
 
     if ((fs_file->meta)
@@ -633,9 +688,8 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
      * allocated, then add realloc comment */
     if (fs_file->name->flags & TSK_FS_NAME_FLAG_UNALLOC)
         tsk_fprintf(hFile, " (deleted%s)", ((fs_file->meta)
-                && (fs_file->
-                    meta->flags & TSK_FS_META_FLAG_ALLOC)) ? "-realloc" :
-            "");
+                && (fs_file->meta->
+                    flags & TSK_FS_META_FLAG_ALLOC)) ? "-realloc" : "");
 
     /* inode */
     tsk_fprintf(hFile, "|%" PRIuINUM, fs_file->name->meta_addr);
@@ -645,7 +699,7 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
 
     tsk_fprintf(hFile, "|");
 
-    /* TYPE as specified in the directory entry 
+    /* TYPE as specified in the directory entry
      */
     if (fs_file->name->type < TSK_FS_NAME_TYPE_STR_MAX)
         tsk_fprintf(hFile, "%s/",
@@ -654,10 +708,9 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
         tsk_fprintf(hFile, "-/");
 
     if (!fs_file->meta) {
-        tsk_fprintf(hFile, "----------|0|0|0|0|0|0|0\n");
+        tsk_fprintf(hFile, "----------|0|0|0|");
     }
     else {
-
         /* mode as string */
         tsk_fs_meta_make_ls(fs_file->meta, ls, sizeof(ls));
         tsk_fprintf(hFile, "%s|", ls);
@@ -671,30 +724,68 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
             tsk_fprintf(hFile, "%" PRIuOFF "|", fs_attr->size);
         else
             tsk_fprintf(hFile, "%" PRIuOFF "|", fs_file->meta->size);
+    }
 
-        /* atime, mtime, ctime, crtime */
-        if (fs_file->meta->atime)
-            tsk_fprintf(hFile, "%" PRIu32 "|",
-                fs_file->meta->atime - time_skew);
-        else
-            tsk_fprintf(hFile, "%" PRIu32 "|", fs_file->meta->atime);
+    if (!fs_file->meta) {
+        tsk_fprintf(hFile, "0|0|0|0\n");
+    }
+    else {
+        // special case for NTFS FILE_NAME attribute
+        if ((fs_attr) && (fs_attr->type == TSK_FS_ATTR_TYPE_NTFS_FNAME)) {
+            /* atime, mtime, ctime, crtime */
+            if (fs_file->meta->time2.ntfs.fn_atime)
+                tsk_fprintf(hFile, "%" PRIu32 "|",
+                    fs_file->meta->time2.ntfs.fn_atime - time_skew);
+            else
+                tsk_fprintf(hFile, "%" PRIu32 "|",
+                    fs_file->meta->time2.ntfs.fn_atime);
 
-        if (fs_file->meta->mtime)
-            tsk_fprintf(hFile, "%" PRIu32 "|",
-                fs_file->meta->mtime - time_skew);
-        else
-            tsk_fprintf(hFile, "%" PRIu32 "|", fs_file->meta->mtime);
+            if (fs_file->meta->time2.ntfs.fn_mtime)
+                tsk_fprintf(hFile, "%" PRIu32 "|",
+                    fs_file->meta->time2.ntfs.fn_mtime - time_skew);
+            else
+                tsk_fprintf(hFile, "%" PRIu32 "|",
+                    fs_file->meta->time2.ntfs.fn_mtime);
 
-        if (fs_file->meta->ctime)
-            tsk_fprintf(hFile, "%" PRIu32 "|",
-                fs_file->meta->ctime - time_skew);
-        else
-            tsk_fprintf(hFile, "%" PRIu32 "|", fs_file->meta->ctime);
+            if (fs_file->meta->time2.ntfs.fn_ctime)
+                tsk_fprintf(hFile, "%" PRIu32 "|",
+                    fs_file->meta->time2.ntfs.fn_ctime - time_skew);
+            else
+                tsk_fprintf(hFile, "%" PRIu32 "|",
+                    fs_file->meta->time2.ntfs.fn_ctime);
 
-        if (fs_file->meta->crtime)
-            tsk_fprintf(hFile, "%" PRIu32 "\n",
-                fs_file->meta->crtime - time_skew);
-        else
-            tsk_fprintf(hFile, "%" PRIu32 "\n", fs_file->meta->crtime);
+            if (fs_file->meta->time2.ntfs.fn_crtime)
+                tsk_fprintf(hFile, "%" PRIu32 "\n",
+                    fs_file->meta->time2.ntfs.fn_crtime - time_skew);
+            else
+                tsk_fprintf(hFile, "%" PRIu32 "\n",
+                    fs_file->meta->time2.ntfs.fn_crtime);
+        }
+        else {
+            /* atime, mtime, ctime, crtime */
+            if (fs_file->meta->atime)
+                tsk_fprintf(hFile, "%" PRIu32 "|",
+                    fs_file->meta->atime - time_skew);
+            else
+                tsk_fprintf(hFile, "%" PRIu32 "|", fs_file->meta->atime);
+
+            if (fs_file->meta->mtime)
+                tsk_fprintf(hFile, "%" PRIu32 "|",
+                    fs_file->meta->mtime - time_skew);
+            else
+                tsk_fprintf(hFile, "%" PRIu32 "|", fs_file->meta->mtime);
+
+            if (fs_file->meta->ctime)
+                tsk_fprintf(hFile, "%" PRIu32 "|",
+                    fs_file->meta->ctime - time_skew);
+            else
+                tsk_fprintf(hFile, "%" PRIu32 "|", fs_file->meta->ctime);
+
+            if (fs_file->meta->crtime)
+                tsk_fprintf(hFile, "%" PRIu32 "\n",
+                    fs_file->meta->crtime - time_skew);
+            else
+                tsk_fprintf(hFile, "%" PRIu32 "\n", fs_file->meta->crtime);
+        }
     }
 }

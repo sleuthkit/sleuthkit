@@ -256,7 +256,7 @@ tsk_fs_attr_set_str(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
  * Set the needed fields along with an initial run list for a data attribute.  To add more 
  * runs, use ...._add_run().
  *
- * @param a_fs File system the run comes from.
+ * @param a_fs_file File to add attribute to
  * @param a_fs_attr The data attribute to initialize and add the run to
  * @param a_data_run_new The set of runs to add (can be NULL).
  * @param name Name of the attribute (can be NULL)
@@ -793,8 +793,8 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
 
             /* If the address is too large then give an error */
             if (addr + len_idx > fs->last_block) {
-                if (fs_attr->fs_file->meta->
-                    flags & TSK_FS_META_FLAG_UNALLOC)
+                if (fs_attr->fs_file->
+                    meta->flags & TSK_FS_META_FLAG_UNALLOC)
                     tsk_error_set_errno(TSK_ERR_FS_RECOVER);
                 else
                     tsk_error_set_errno(TSK_ERR_FS_BLK_NUM);
@@ -1129,8 +1129,8 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
                     fprintf(stderr,
                         "tsk_fs_attr_read_type: File %" PRIuINUM
                         " has FILLER entry, using 0s\n",
-                        (a_fs_attr->fs_file->meta) ? a_fs_attr->fs_file->
-                        meta->addr : 0);
+                        (a_fs_attr->fs_file->meta) ? a_fs_attr->
+                        fs_file->meta->addr : 0);
             }
             // we return 0s for reads past the initsize (unless they want slack space)
             else if (((TSK_OFF_T) ((data_run_cur->offset +
@@ -1142,8 +1142,9 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
                     fprintf(stderr,
                         "tsk_fs_attr_read: Returning 0s for read past end of initsize (%"
                         PRIuINUM ")\n", ((a_fs_attr->fs_file)
-                            && (a_fs_attr->fs_file->meta)) ? a_fs_attr->
-                        fs_file->meta->addr : 0);
+                            && (a_fs_attr->fs_file->
+                                meta)) ? a_fs_attr->fs_file->meta->
+                        addr : 0);
             }
             else {
                 TSK_OFF_T fs_offset_b;

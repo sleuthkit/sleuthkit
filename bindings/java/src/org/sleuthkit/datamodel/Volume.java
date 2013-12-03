@@ -26,14 +26,13 @@ import java.util.List;
  * Populated based on data in database.
  */
 public class Volume extends AbstractContent {
-	// @@@ We should comment somewhere what the units are (bytes, sectors, etc.)
-
+	
 	private long addr;
 	private long start; //in sectors, relative to volume system start
 	private long length; //in sectors
 	private long flags;
 	private String desc;
-	private long volumeHandle = 0;
+	private volatile long volumeHandle = 0;
 
 	/**
 	 * Constructor to create the data object mapped from tsk_vs_parts entry
@@ -41,8 +40,8 @@ public class Volume extends AbstractContent {
 	 * @param db database object
 	 * @param obj_id
 	 * @param addr
-	 * @param start
-	 * @param length
+	 * @param start	in sectors, relative to start of VS
+	 * @param length in sectors
 	 * @param flags
 	 * @param desc
 	 */
@@ -66,14 +65,38 @@ public class Volume extends AbstractContent {
 			if (!(myParent instanceof VolumeSystem)) {
 				throw new TskCoreException("This volume's parent should be a VolumeSystem, but it's not.");
 			}
-			VolumeSystem parentVs = (VolumeSystem)myParent;
+			VolumeSystem parentVs = (VolumeSystem) myParent;
 			// read from the volume
 			if (volumeHandle == 0) {
 				volumeHandle = SleuthkitJNI.openVsPart(parentVs.getVolumeSystemHandle(), addr);
 			}
+
 		}
 		return SleuthkitJNI.readVsPart(volumeHandle, buf, offset, len);
 	}
+
+	@Override
+	public void close() {
+		if (volumeHandle != 0) {
+			synchronized(this) {
+				if (volumeHandle != 0) {
+					SleuthkitJNI.closeVs(volumeHandle);
+					volumeHandle = 0;
+				}
+			}
+		}
+	}
+	
+	@Override
+	public void finalize() throws Throwable {
+		try {
+			close();
+		} finally {
+			super.finalize();
+		}
+	}
+	
+	
 
 	@Override
 	public long getSize() {
@@ -88,7 +111,7 @@ public class Volume extends AbstractContent {
 		if (!name.isEmpty()) {
 			uniquePath = "/vol_" + name;
 		}
-		
+
 		Content myParent = getParent();
 		if (myParent != null) {
 			uniquePath = myParent.getUniquePath() + uniquePath;
@@ -99,7 +122,7 @@ public class Volume extends AbstractContent {
 	//methods get exact data from database. could be manipulated to get more
 	//meaningful data.
 	/**
-	 * get the partition address
+	 * get the unique partition address within this volume system (assigned by The Sleuth Kit)
 	 *
 	 * @return partition address in volume system
 	 */
@@ -108,16 +131,16 @@ public class Volume extends AbstractContent {
 	}
 
 	/**
-	 * get the starting byte offset
+	 * get the starting sector address of this volume relative to start of the volume system
 	 *
-	 * @return starting byte offset
+	 * @return starting address
 	 */
 	public long getStart() {
 		return start;
 	}
 
 	/**
-	 * get the length
+	 * get the length of the volume in sectors
 	 *
 	 * @return length
 	 */
@@ -144,7 +167,7 @@ public class Volume extends AbstractContent {
 	}
 
 	/**
-	 * get the description
+	 * get the description. This is set by the volume system and doesn't exist for all volumes.
 	 *
 	 * @return description
 	 */
@@ -231,7 +254,7 @@ public class Volume extends AbstractContent {
 	public List<Content> getChildren() throws TskCoreException {
 		return getSleuthkitCase().getVolumeChildren(this);
 	}
-	
+
 	@Override
 	public List<Long> getChildrenIds() throws TskCoreException {
 		return getSleuthkitCase().getVolumeChildrenIds(this);
@@ -241,27 +264,26 @@ public class Volume extends AbstractContent {
 	public Image getImage() throws TskCoreException {
 		return getParent().getImage();
 	}
-	
+
 	/**
 	 * @return a list of FileSystem that are direct descendents of this Image.
-	 * @throws TskCoreException 
+	 * @throws TskCoreException
 	 */
 	public List<FileSystem> getFileSystems() throws TskCoreException {
-		
+
 		List<Content> children = getChildren();
 		List<FileSystem> fileSystems = new ArrayList<FileSystem>();
 		for (Content child : children) {
 			if (child instanceof FileSystem) {
-				fileSystems.add((FileSystem)child);
+				fileSystems.add((FileSystem) child);
 			}
 		}
-		
+
 		return fileSystems;
 	}
-	
+
 	@Override
-	public String toString(boolean preserveState){
+	public String toString(boolean preserveState) {
 		return super.toString(preserveState) + "Volume [\t" + "addr " + addr + "\t" + "desc " + desc + "\t" + "flags " + flags + "\t" + "length " + length + "\t" + "start " + start + "]\t";
 	}
-	
 }

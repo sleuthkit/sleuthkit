@@ -10,6 +10,7 @@
  */
 #include "tsk/tsk_tools_i.h"
 #include "tsk/auto/tsk_case_db.h"
+#include "tsk/hashdb/sqlite_index.h"
 #include "jni.h"
 #include "dataModel_SleuthkitJNI.h"
 #include <locale.h>
@@ -25,8 +26,8 @@ using std::map;
 using std::stringstream;
 using std::for_each;
 
-static TSK_HDB_INFO * m_NSRLDb = NULL;
-static std::vector<TSK_HDB_INFO *> m_knownbads;
+static int m_nsrlHandle = -1;
+static std::vector<TSK_HDB_INFO *> m_hashDbs;
 
 /*
 * JNI file handle structure encapsulates both
@@ -256,53 +257,24 @@ JNIEXPORT void JNICALL
     return;
 }
 
-/*
- * Set the NSRL database to use for hash lookups.
- * @param env pointer to java environment this was called from
- * @param obj the java object this was called from
- * @param pathJ the path to the database
- * @return a handle for the nsrl database
- */
-JNIEXPORT jint JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_setDbNSRLNat(JNIEnv * env,
-    jclass obj, jstring pathJ) {
- 
-    if (m_NSRLDb != NULL) {
-        tsk_hdb_close(m_NSRLDb);
-        m_NSRLDb = NULL;
-    }
-    TSK_TCHAR pathT[1024];
-    toTCHAR(env, pathT, 1024, pathJ);
-
-    TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
-    TSK_HDB_INFO * tempdb = tsk_hdb_open(pathT, flags);
-
-    if(tempdb == NULL)
-    {
-        setThrowTskCoreError(env);
-        return -1;
-    }
-    
-    m_NSRLDb = tempdb;
-    
-    return 0;
-}
 
 /*
- * Set the "known bad" database to use for hash lookups.
+ * Open a hash database to use for hash lookups. It's added to the list.
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
  * @param pathJ the path to the database
  * @return a handle for the known bad database
  */
 JNIEXPORT jint JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_addDbKnownBadNat(JNIEnv * env,
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbOpenNat(JNIEnv * env,
     jclass obj, jstring pathJ) {
 
     TSK_TCHAR pathT[1024];
     toTCHAR(env, pathT, 1024, pathJ);
 
-    TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
+    ///@todo Check if the db_file passed in is really an index filename
+
+    TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_TRY;
     TSK_HDB_INFO * temp = tsk_hdb_open(pathT, flags);
 
     if(temp == NULL)
@@ -311,98 +283,353 @@ JNIEXPORT jint JNICALL
         return -1;
     }
 
-    m_knownbads.push_back(temp);
+    m_hashDbs.push_back(temp);
     
-    return m_knownbads.size();
+    return m_hashDbs.size();
 }
+
+/*
+ * Create a new hash db.
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param pathJ the path to the database
+ * @return a handle for the database
+ */
+JNIEXPORT jint JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbNewNat(JNIEnv * env,
+    jclass obj, jstring pathJ)
+{
+    TSK_TCHAR pathT[1024];
+    toTCHAR(env, pathT, 1024, pathJ);
+
+    TSK_HDB_INFO * temp = tsk_hdb_new(pathT);
+
+    if(temp == NULL)
+    {
+        setThrowTskCoreError(env);
+        return -1;
+    }
+
+    m_hashDbs.push_back(temp);
+    
+    return m_hashDbs.size();
+}
+
+/*
+ * Add entry to hash db.
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param filenameJ Name of the file that was hashed (can be empty)
+ * @param hashMd5J Text of MD5 hash (can be empty)
+ * @param hashSha1J Text of SHA1 hash (can be empty)
+ * @param hashSha256J Text of SHA256 hash (can be empty)
+ * @param dbHandle Which DB.
+ * @return 1 on error and 0 on success
+ */
+JNIEXPORT jint JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbAddRecordNat(JNIEnv * env,
+    jclass obj, jstring filenameJ, jstring hashMd5J, jstring hashSha1J, jstring hashSha256J,
+    jstring commentJ, jint dbHandle)
+{
+    int8_t retval = 0;
+
+    if((size_t) dbHandle > m_hashDbs.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
+        retval = 1;
+    } else {
+        jboolean isCopy;
+        const char * name = filenameJ ? (const char *) env->GetStringUTFChars(filenameJ, &isCopy) : NULL;
+        const char * md5 = hashMd5J ? (const char *) env->GetStringUTFChars(hashMd5J, &isCopy) : NULL;
+        const char * sha1 = hashSha1J ? (const char *) env->GetStringUTFChars(hashSha1J, &isCopy) : NULL;
+        const char * sha256 = hashSha256J ? (const char *) env->GetStringUTFChars(hashSha256J, &isCopy) : NULL;
+        const char * comment = commentJ ? (const char *) env->GetStringUTFChars(commentJ, &isCopy) : NULL;
+   
+        //TSK_TCHAR filenameT[1024];
+        //toTCHAR(env, filenameT, 1024, filenameJ);
+
+        TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
+
+        if(db != NULL) {
+            retval = tsk_hdb_add_str(db, name, md5, sha1, sha256, comment);
+
+            if (retval == 1) {
+                setThrowTskCoreError(env);
+            }
+        }
+
+        if (filenameJ) {
+            env->ReleaseStringUTFChars(filenameJ, (const char *) name);
+        }
+        if (hashMd5J) { 
+            env->ReleaseStringUTFChars(hashMd5J, (const char *) md5);
+        }
+        if (hashSha1J) {
+            env->ReleaseStringUTFChars(hashSha1J, (const char *) sha1);
+        }
+        if (hashSha256J) {
+            env->ReleaseStringUTFChars(hashSha256J, (const char *) sha256);
+        }
+        if (commentJ) {
+            env->ReleaseStringUTFChars(commentJ, (const char *) comment);
+        }
+    }
+
+    return retval;
+}
+
+/*
+ * Get updateable state.
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param dbHandle Which DB.
+ * @return true if db can be updated
+ */
+JNIEXPORT jboolean JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbIsUpdateableNat(JNIEnv * env,
+    jclass obj, jint dbHandle)
+{
+    bool retval = false;
+
+    if((size_t) dbHandle > m_hashDbs.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
+    } else {
+        TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
+
+        if(db != NULL) {
+            retval = (db->idx_info->updateable == 1) ? true : false;
+        }
+    }
+    return retval;
+}
+
+/*
+ * Get reindexable state.
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param dbHandle Which DB.
+ * @return true if db is allowed to be reindexed
+ */
+JNIEXPORT jboolean JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbIsReindexableNat(JNIEnv * env,
+    jclass obj, jint dbHandle)
+{
+    bool retval = false;
+
+    if((size_t) dbHandle > m_hashDbs.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
+    } else {
+        TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
+
+        if(db != NULL) {
+            if (db->hDb != NULL) {
+                retval = true;
+            }
+        }
+    }
+    return retval;
+}
+    
+/*
+ * Get path.
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param dbHandle Which DB.
+ * @return path
+ */
+JNIEXPORT jstring JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbPathNat(JNIEnv * env,
+    jclass obj, jint dbHandle)
+{
+    char cpath[1024];
+    char * none = "None";   //on error or if no name is available
+
+    if((size_t) dbHandle > m_hashDbs.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
+        return env->NewStringUTF(none);
+    } else {
+        TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
+
+
+        // Index might not be set up yet
+        if(tsk_hdb_idxsetup(db, db->hash_type)) {
+            // If this is a Tsk SQLite db+index, then use index fname as db fname.
+            if ((db->db_type == TSK_HDB_DBTYPE_IDXONLY_ID) && 
+                (db->idx_info->index_type == TSK_HDB_ITYPE_SQLITE_V1)) {
+
+                snprintf(cpath, 1024, "%" PRIttocTSK, db->idx_info->idx_fname);
+                jstring jname = env->NewStringUTF(cpath);
+                return jname;
+            }      
+        }
+
+        // Otherwise, try using the db fname.
+        if((db != NULL) && (db->hDb != NULL)) {
+            snprintf(cpath, 1024, "%" PRIttocTSK, db->db_fname);
+            jstring jname = env->NewStringUTF(cpath);
+            return jname;
+        } else {
+            return env->NewStringUTF(none);
+        }
+
+    }
+}
+
+
+/*
+ * Get index path.
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param dbHandle Which DB.
+ * @return path
+ */
+JNIEXPORT jstring JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbIndexPathNat(JNIEnv * env,
+    jclass obj, jint dbHandle)
+{
+    char cpath[1024];
+    char * none = "None";   //on error or if no name is available
+
+    if((size_t) dbHandle > m_hashDbs.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
+        return env->NewStringUTF(none);
+    } else {
+        TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
+        if (db == NULL) {
+            setThrowTskCoreError(env, "Invalid database");
+            return env->NewStringUTF(none);
+        }
+
+        ///@todo there isn't a db type for this (would be needed to get legacy index filename)
+        /*if(db->db_type == TSK_HDB_DBTYPE_NSRL_SHA1_ID) {
+            db->hash_type = TSK_HDB_HTYPE_SHA1_ID;
+        }*/
+        //else {
+            db->hash_type = TSK_HDB_HTYPE_MD5_ID;
+        //}
+
+        // Call setup to populate the idx_info struct so we can get the filename
+        tsk_hdb_idxsetup(db, db->hash_type);
+
+        if(db->idx_info != NULL) {
+            snprintf(cpath, 1024, "%" PRIttocTSK, db->idx_info->idx_fname);
+            jstring jname = env->NewStringUTF(cpath);
+            return jname;
+        } else {
+            return env->NewStringUTF(none);
+        }
+    }  
+}
+
+
+/*
+ * Test for index only (no original Db file) legacy (IDX format).
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param dbHandle Which DB.
+ * @return true if index only AND is legacy
+ */
+JNIEXPORT jboolean JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbIsIdxOnlyNat(JNIEnv * env,
+    jclass obj, jint dbHandle)
+{
+    bool retval = false;
+
+    if((size_t) dbHandle > m_hashDbs.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
+    } else {
+        TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
+
+        if(db != NULL) {
+            retval = (tsk_hdb_is_idxonly(db) == 1) ? true : false;
+        }
+    }
+    return retval;
+}
+
 
 /*
  * Get the name of the database pointed to by path
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
- * @param pathJ the path to the database
+ * @param dbHandle Which DB.
  */
-JNIEXPORT jstring JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_getDbName(JNIEnv * env,
-    jclass obj, jstring pathJ) {
-
-    TSK_HDB_OPEN_ENUM flags;
-    TSK_TCHAR pathT[1024];
-    toTCHAR(env, pathT, 1024, pathJ);
-    struct STAT_STR buffer;
-
-    if( TSTAT(pathT, &buffer) != -1 )
-        flags = TSK_HDB_OPEN_NONE;
-    else
-        flags = TSK_HDB_OPEN_IDXONLY;
-
-    TSK_HDB_INFO * tempdb = tsk_hdb_open(pathT, flags);
-
-    if(tempdb == NULL)
-    {
-        setThrowTskCoreError(env);
+JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbGetName
+  (JNIEnv * env, jclass obj, jint dbHandle)
+{
+    if((size_t) dbHandle > m_hashDbs.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
         return env->NewStringUTF("-1");
+    } else {
+        TSK_HDB_INFO * temp = m_hashDbs.at(dbHandle-1);
+        if (temp == NULL) {
+            setThrowTskCoreError(env, "Error: database object is null");
+            return env->NewStringUTF("-1");
+        }
+
+
+        jstring jname = env->NewStringUTF(temp->db_name);
+        return jname;
     }
-
-    jstring jname = env->NewStringUTF(tempdb->db_name);
-
-    tsk_hdb_close(tempdb);
-    return jname;
 }
 
-
+/*
+ * Close all hash dbs and destroy associated memory structures.
+ * And it resets the handle counting.
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param dbHandle Which DB.
+ */
 JNIEXPORT void JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_closeDbLookupsNat(JNIEnv * env,
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbCloseAll(JNIEnv * env,
     jclass obj) {
 
-    if (m_NSRLDb != NULL) {
-        tsk_hdb_close(m_NSRLDb);
-        m_NSRLDb = NULL;
-    }
-
-    for_each(m_knownbads.begin(), m_knownbads.end(), tsk_hdb_close);
+    for_each(m_hashDbs.begin(), m_hashDbs.end(), tsk_hdb_close);
    
-    m_knownbads.clear();
+    m_hashDbs.clear();
+
+    m_nsrlHandle = -1;
 }
 
 /*
- * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    nsrlDbLookup
- * Signature: (Ljava/lang/String;)I
+ * Close a hash db and destroy associated memory structures.
+ * Existing handles are not affected.
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param dbHandle Which DB.
  */
-JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_nsrlDbLookup
-(JNIEnv * env, jclass obj, jstring hash){
+JNIEXPORT void JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbClose(JNIEnv * env,
+    jclass obj, jint dbHandle) {
 
-    jboolean isCopy;
+    if((size_t) dbHandle > m_hashDbs.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
+    } else {
+        TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
 
-    const char *md5 = (const char *) env->GetStringUTFChars(hash, &isCopy);
+        if(db != NULL) {
+            tsk_hdb_close(db);
 
-    TSK_DB_FILES_KNOWN_ENUM file_known = TSK_DB_FILES_KNOWN_UNKNOWN;
+            // We do NOT erase the element because that would shift the indices,
+            // messing up the existing handles.
+            m_hashDbs.at(dbHandle-1) = NULL;
 
-    if (m_NSRLDb != NULL) {
-        int8_t retval = tsk_hdb_lookup_str(m_NSRLDb, md5, TSK_HDB_FLAG_QUICK, NULL, NULL);
-
-        if (retval == -1) {
-            setThrowTskCoreError(env);
-        } else if (retval) {
-            file_known = TSK_DB_FILES_KNOWN_KNOWN;
+            if (m_nsrlHandle == dbHandle) {
+                m_nsrlHandle = -1;
+            }
         }
     }
-
-    env->ReleaseStringUTFChars(hash, (const char *) md5);
-
-    return (int) file_known;
 }
+
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    knownBadDbLookup
+ * Method:    hashDbLookup
  * Signature: (Ljava/lang/String;)I
  */
-JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_knownBadDbLookup
-(JNIEnv * env, jclass obj, jstring hash, jint dbHandle){
+JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
+(JNIEnv * env, jclass obj, jstring hash, jint dbHandle) {
 
-    if((size_t) dbHandle > m_knownbads.size()) {
+    if((size_t) dbHandle > m_hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
         return -1;
     }
@@ -411,11 +638,11 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_knownBadDbLooku
 
     const char *md5 = (const char *) env->GetStringUTFChars(hash, &isCopy);
 
-    TSK_DB_FILES_KNOWN_ENUM file_known = TSK_DB_FILES_KNOWN_UNKNOWN;
-
+    //TSK_DB_FILES_KNOWN_ENUM file_known = TSK_DB_FILES_KNOWN_UNKNOWN;
+    jboolean file_known = false;
     
 
-    TSK_HDB_INFO * db = m_knownbads.at(dbHandle-1);
+    TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
 
     if(db != NULL) {
         int8_t retval = tsk_hdb_lookup_str(db, md5, TSK_HDB_FLAG_QUICK, NULL, NULL);
@@ -423,13 +650,87 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_knownBadDbLooku
         if (retval == -1) {
             setThrowTskCoreError(env);
         } else if (retval) {
-            file_known = TSK_DB_FILES_KNOWN_KNOWN_BAD;
+            //file_known = TSK_DB_FILES_KNOWN_KNOWN_BAD;
+            file_known = true;
         }
     }
 
     env->ReleaseStringUTFChars(hash, (const char *) md5);
 
     return (int) file_known;
+}
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    hashDbLookupVerbose
+ * Signature: (Ljava/lang/String;)I
+ */
+JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookupVerbose
+(JNIEnv * env, jclass obj, jstring hash, jint dbHandle) {
+    jobject object = NULL;
+    SQliteHashStruct * hdata = NULL;
+
+    if((size_t) dbHandle > m_hashDbs.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
+        return NULL;
+    }
+
+    jboolean isCopy;
+    const char *inputHash = (const char *) env->GetStringUTFChars(hash, &isCopy);
+
+    TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
+    if (db != NULL) {
+        // tsk_hdb_lookup_str will also make sure the index struct is setup
+        int64_t hashId = tsk_hdb_lookup_str_id(db, inputHash);
+
+        if ((hashId > 0) && (db->idx_info->getAllData != NULL)) {
+            // Find the data associated with this hash
+            hdata = (SQliteHashStruct *)(db->idx_info->getAllData(db, hashId));
+
+            // Build the Java version of the HashInfo object
+            jclass clazz;
+            clazz = env->FindClass("org/sleuthkit/datamodel/HashInfo");
+            // get methods
+            jmethodID ctor = env->GetMethodID(clazz, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+            jmethodID addName = env->GetMethodID(clazz, "addName", "(Ljava/lang/String;)V");
+            jmethodID addComment = env->GetMethodID(clazz, "addComment", "(Ljava/lang/String;)V");
+
+            //convert hashes
+            const char *md5 = hdata->hashMd5.c_str();
+            jstring md5j = env->NewStringUTF(md5);
+            
+            const char *sha1 = hdata->hashSha1.c_str();
+            jstring sha1j = env->NewStringUTF(sha1);
+            
+            const char *sha256 = hdata->hashSha2_256.c_str();
+            jstring sha256j = env->NewStringUTF(sha256);
+
+            // make the object
+            object = env->NewObject(clazz, ctor, md5j, sha1j, sha256j);
+
+            // finish populating the object
+            std::vector<std::string>::iterator name_it = hdata->names.begin();
+            for (; name_it != hdata->names.end(); ++name_it) {
+                const char *name = name_it->c_str();
+                jstring namej = env->NewStringUTF(name);
+                env->CallVoidMethod(object, addName, namej);
+            }
+
+            std::vector<std::string>::iterator comment_it = hdata->comments.begin();
+            for (; comment_it != hdata->comments.end(); ++comment_it) {
+                const char *comment = comment_it->c_str();
+                jstring commentj = env->NewStringUTF(comment);
+                env->CallVoidMethod(object, addComment, commentj);
+            }
+
+        }
+    }
+
+    // Cleanup
+    env->ReleaseStringUTFChars(hash, (const char *) inputHash);
+    delete hdata;
+
+    return object;
 }
 
 /*
@@ -485,8 +786,20 @@ JNIEXPORT jlong JNICALL
         return 0;
     }
 
-    tskAuto->setAddUnallocSpace(addUnallocSpace?true:false);
+    // set the options flags
+    if (addUnallocSpace) {
+        tskAuto->setAddUnallocSpace(true, 500*1024*1024);
+    }
+    else {
+        tskAuto->setAddUnallocSpace(false);
+    }
     tskAuto->setNoFatFsOrphans(noFatFsOrphans?true:false);
+
+    // we don't use the block map and it slows it down
+    tskAuto->createBlockMap(false);
+
+    // ingest modules calc hashes
+    tskAuto->hashFiles(false);
 
     return (jlong) tskAuto;
 }
@@ -517,10 +830,6 @@ JNIEXPORT void JNICALL
         return;
     }
 
-    //change to true when autopsy needs the block table.
-    tskAuto->createBlockMap(false);
-    //change to false if hashes aren't needed
-    tskAuto->hashFiles(false);
 
     // move the strings into the C++ world
 
@@ -1308,7 +1617,7 @@ JNIEXPORT jstring JNICALL
     (JNIEnv * env,jclass obj, jlong dbHandle)
 {
     TskAutoDb *tskAuto = ((TskAutoDb *) dbHandle);
-    const std::string & curDir = tskAuto->getCurDir();
+    const std::string curDir = tskAuto->getCurDir();
     jstring jdir = (*env).NewStringUTF(curDir.c_str());
     return jdir;
 }
@@ -1334,99 +1643,110 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_startVerboseLoggingNat
     tsk_verbose++;
 }
 
+
 /*
- * Create an index for the given database path
+ * Create an index for the given database
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
- * @param dbPathJ path for the database
+ * @param overwrite flag indicating if the old db (if it exists) can be deleted
+ * @param dbHandle handle for the database
  */
 JNIEXPORT void JNICALL
-Java_org_sleuthkit_datamodel_SleuthkitJNI_createLookupIndexNat (JNIEnv * env,
-    jclass obj, jstring dbPathJ)
+Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbCreateIndexNat (JNIEnv * env,
+    jclass obj, jint dbHandle, jboolean overwrite)
 {
-    TSK_TCHAR dbPathT[1024];
-    toTCHAR(env, dbPathT, 1024, dbPathJ);
+    if((size_t) dbHandle > m_hashDbs.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
+        return;
+    } else {
+        TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
+        if (db == NULL) {
+            setThrowTskCoreError(env, "Error: database object is null");
+            return;
+        }
 
-    TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_NONE;
-    TSK_HDB_INFO * temp = tsk_hdb_open(dbPathT, flags);
-    if (temp == NULL) {
-        setThrowTskCoreError(env, "Error opening database to create index");
+        if (db->db_type == TSK_HDB_DBTYPE_IDXONLY_ID) {
+            setThrowTskCoreError(env, "Error: index only");
+            return;
+        }
+
+        TSK_TCHAR dbType[1024];
+
+        if(db->db_type == TSK_HDB_DBTYPE_MD5SUM_ID) {
+            TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_MD5SUM_STR);
+        }
+        else if(db->db_type == TSK_HDB_DBTYPE_HK_ID) {
+            TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_HK_STR);
+        }
+        else if(db->db_type == TSK_HDB_DBTYPE_ENCASE_ID) {
+            TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_ENCASE_STR);
+        }
+        else {
+            TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_NSRL_MD5_STR);
+        }
+  
+        // [Re]create the hash information and file
+        if (tsk_hdb_regenerate_index(db, dbType, (overwrite ? 1 : 0)) == 0) {
+            setThrowTskCoreError(env, "Error: index regeneration");
+            return;
+        }
+
         return;
     }
-
-    TSK_TCHAR dbType[1024];
-
-    if(temp->db_type == TSK_HDB_DBTYPE_MD5SUM_ID) {
-        TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_MD5SUM_STR);
-    }
-    else if(temp->db_type == TSK_HDB_DBTYPE_HK_ID) {
-        TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_HK_STR);
-    }
-    else if(temp->db_type == TSK_HDB_DBTYPE_ENCASE_ID) {
-        TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_ENCASE_STR);
-    }
-    else {
-        TSNPRINTF(dbType, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_NSRL_MD5_STR);
-    }
-
-    if (tsk_hdb_makeindex(temp, dbType)) {
-        setThrowTskCoreError(env, "Error creating index");
-    }
-
-    tsk_hdb_close(temp);
 }
 
+
 /*
- * Check if an index exists for the given database path.
+ * Check if a lookup index exists for the given hash database.
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
- * @param dbPathJ path for the database
+ * @param dbHandle handle for the database
  */
-JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_lookupIndexExistsNat
-  (JNIEnv * env, jclass obj, jstring dbPathJ) {
+JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbIndexExistsNat
+  (JNIEnv * env, jclass obj, jint dbHandle) {
 
-    TSK_TCHAR dbPathT[1024];
-    toTCHAR(env, dbPathT, 1024, dbPathJ);
-
-    TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
-    TSK_HDB_INFO * temp = tsk_hdb_open(dbPathT, flags);
-    if (temp == NULL) {
+    if((size_t) dbHandle > m_hashDbs.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
         return (jboolean) false;
+    } else {
+        TSK_HDB_INFO * temp = m_hashDbs.at(dbHandle-1);
+        if (temp == NULL) {
+            return (jboolean) false;
+        }
+
+        uint8_t retval = tsk_hdb_hasindex(temp, TSK_HDB_HTYPE_MD5_ID);
+
+        return (jboolean) retval == 1;
     }
-
-    uint8_t retval = tsk_hdb_hasindex(temp, TSK_HDB_HTYPE_MD5_ID);
-
-    tsk_hdb_close(temp);
-    return (jboolean) retval == 1;
 }
 
-/*
- * Get the size of the index for the database at the given path
- * @param env pointer to java environment this was called from
- * @param obj the java object this was called from
- * @param dbPathJ the path for the database
- * @return -1 on error, otherwise size of index
- */
-JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getIndexSizeNat
-  (JNIEnv * env, jclass obj, jstring dbPathJ) {
-
-    TSK_TCHAR dbPathT[1024];
-    toTCHAR(env, dbPathT, 1024, dbPathJ);
-
-    TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
-    TSK_HDB_INFO * temp = tsk_hdb_open(dbPathT, flags);
-    if (temp == NULL) {
-        return -1;
-    }
-
-    if(tsk_hdb_hasindex(temp, TSK_HDB_HTYPE_MD5_ID)) {
-        return (jint) ((temp->idx_size - temp->idx_off) / (temp->idx_llen));
-    }
-
-
-    tsk_hdb_close(temp);
-    return -1;
-}
+///*
+// * Get the size of the index for the database at the given path
+// * @param env pointer to java environment this was called from
+// * @param obj the java object this was called from
+// * @param dbPathJ the path for the database
+// * @return -1 on error, otherwise size of index
+// */
+//JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getIndexSizeNat
+//  (JNIEnv * env, jclass obj, jstring dbPathJ) {
+//
+//    TSK_TCHAR dbPathT[1024];
+//    toTCHAR(env, dbPathT, 1024, dbPathJ);
+//
+//    TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
+//    TSK_HDB_INFO * temp = tsk_hdb_open(dbPathT, flags);
+//    if (temp == NULL) {
+//        return -1;
+//    }
+//
+//    if(tsk_hdb_idxsetup(temp, TSK_HDB_HTYPE_MD5_ID)) {
+//        return (jint) ((temp->idx_info->idx_struct.idx_binsrch->idx_size - temp->idx_info->idx_struct.idx_binsrch->idx_off) / (temp->idx_info->idx_struct.idx_binsrch->idx_llen));
+//    }
+//
+//
+//    tsk_hdb_close(temp);
+//    return -1;
+//}
 
 
 /*

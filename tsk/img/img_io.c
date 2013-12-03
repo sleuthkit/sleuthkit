@@ -26,15 +26,42 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
     char *a_buf, size_t a_len)
 {
 #define CACHE_AGE   1000
-    ssize_t retval = 0;
-    int i;
+    ssize_t read_count = 0;
+    int cache_index = 0;
     int cache_next = 0;         // index to lowest age cache (to use next)
-    size_t len2;
+    size_t len2 = 0;
 
     if (a_img_info == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_ARG);
-        tsk_error_set_errstr("tsk_img_read: pointer is NULL");
+        tsk_error_set_errstr("tsk_img_read: a_img_info: NULL");
+        return -1;
+    }
+
+    // Do not allow a_buf to be NULL.
+    if (a_buf == NULL) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("tsk_img_read: a_buf: NULL");
+        return -1;
+    }
+
+    // The function cannot handle negative offsets.
+    if (a_off < 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("tsk_img_read: a_off: %" PRIuOFF, a_off);
+        return -1;
+    }
+
+    // Protect a_off against overflowing when a_len is added since TSK_OFF_T
+    // maps to an int64 we prefer it over size_t although likely checking
+    // for ( a_len > SSIZE_MAX ) is better but the code does not seem to
+    // use that approach.
+    if ((TSK_OFF_T) a_len < 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("tsk_img_read: a_len: %zd", a_len);
         return -1;
     }
 
@@ -45,26 +72,27 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
     tsk_take_lock(&(a_img_info->cache_lock));
 
     // if they ask for more than the cache length, skip the cache
-    if ((a_len + a_off % 512) > TSK_IMG_INFO_CACHE_LEN) {
+    if ((a_len + (a_off % 512)) > TSK_IMG_INFO_CACHE_LEN) {
         ssize_t nbytes;
 
         /* Some of the lower-level methods like block-sized reads.
          * So if the len is not that multiple, then make it. */
         if (a_len % a_img_info->sector_size) {
             char *buf2 = a_buf;
-            size_t len2;
-            len2 = roundup(a_len, a_img_info->sector_size);
-            if ((buf2 = (char *)tsk_malloc(len2)) == NULL) {
+
+            size_t len_tmp;
+            len_tmp = roundup(a_len, a_img_info->sector_size);
+            if ((buf2 = (char *) tsk_malloc(len_tmp)) == NULL) {
                 tsk_release_lock(&(a_img_info->cache_lock));
                 return -1;
             }
-            nbytes = a_img_info->read(a_img_info, a_off, buf2, len2);
-            if ((nbytes > 0) && (nbytes < (ssize_t)a_len)) {
+            nbytes = a_img_info->read(a_img_info, a_off, buf2, len_tmp);
+            if ((nbytes > 0) && (nbytes < (ssize_t) a_len)) {
                 memcpy(a_buf, buf2, nbytes);
             }
             else {
                 memcpy(a_buf, buf2, a_len);
-                nbytes = a_len;
+                nbytes = (ssize_t)a_len;
             }
             free(buf2);
         }
@@ -75,6 +103,8 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
         return nbytes;
     }
 
+    // TODO: why not just return 0 here (and be POSIX compliant)?
+    // and why not check earlier for this condition?
     if (a_off >= a_img_info->size) {
         tsk_release_lock(&(a_img_info->cache_lock));
         tsk_error_reset();
@@ -86,34 +116,40 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
     /* See if the requested length is going to be too long.
      * we'll use this length when checking the cache. */
     len2 = a_len;
-    if (a_off + len2 > a_img_info->size)
+
+    // Protect against INT64_MAX + INT64_MAX > value
+    if (((TSK_OFF_T) len2 > a_img_info->size)
+        || (a_off >= (a_img_info->size - (TSK_OFF_T)len2))) {
         len2 = (size_t) (a_img_info->size - a_off);
+    }
 
     // check if it is in the cache
-    for (i = 0; i < TSK_IMG_INFO_CACHE_NUM; i++) {
+    for (cache_index = 0;
+        cache_index < TSK_IMG_INFO_CACHE_NUM; cache_index++) {
 
         // Look into the in-use cache entries
-        if (a_img_info->cache_len[i] > 0) {
+        if (a_img_info->cache_len[cache_index] > 0) {
 
-            // the retval check makes sure we don't go back in after data was read
-            if ((retval == 0) && (a_img_info->cache_off[i] <= a_off) &&
-                (a_img_info->cache_off[i] + a_img_info->cache_len[i] >=
-                    a_off + len2)) {
+            // the read_count check makes sure we don't go back in after data was read
+            if ((read_count == 0)
+                && (a_img_info->cache_off[cache_index] <= a_off)
+                && (a_img_info->cache_off[cache_index] +
+                    a_img_info->cache_len[cache_index] >= a_off + len2)) {
 
                 /*
                    if (tsk_verbose)
                    fprintf(stderr,
-                   "tsk_img_read: Read found in cache %d\n", i);
+                   "tsk_img_read: Read found in cache %d\n",  cache_index );
                  */
 
                 // We found it...
                 memcpy(a_buf,
-                    &a_img_info->cache[i][a_off -
-                        a_img_info->cache_off[i]], len2);
-                retval = (ssize_t) len2;
+                    &a_img_info->cache[cache_index][a_off -
+                        a_img_info->cache_off[cache_index]], len2);
+                read_count = (ssize_t) len2;
 
                 // reset its "age" since it was useful
-                a_img_info->cache_age[i] = CACHE_AGE;
+                a_img_info->cache_age[cache_index] = CACHE_AGE;
 
                 // we don't break out of the loop so that we update all ages
             }
@@ -121,23 +157,23 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
                 /* decrease its "age" since it was not useful.
                  * We don't let used ones go below 1 so that they are not
                  * confused with entries that have never been used. */
-                a_img_info->cache_age[i]--;
+                a_img_info->cache_age[cache_index]--;
 
                 // see if this is the most eligible replacement
                 if ((a_img_info->cache_len[cache_next] > 0)
-                    && (a_img_info->cache_age[i] <
+                    && (a_img_info->cache_age[cache_index] <
                         a_img_info->cache_age[cache_next]))
-                    cache_next = i;
+                    cache_next = cache_index;
             }
         }
         else {
-            cache_next = i;
+            cache_next = cache_index;
         }
     }
 
     // if we didn't find it, then load it into the cache_next entry
-    if (retval == 0) {
-        size_t rlen;
+    if (read_count == 0) {
+        size_t read_size = 0;
 
         // round the offset down to a sector boundary
         a_img_info->cache_off[cache_next] = (a_off / 512) * 512;
@@ -149,33 +185,40 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
            ")\n", cache_next, a_img_info->cache_off[cache_next]);
          */
 
-        // figure out the length to read into the cache
-        rlen = TSK_IMG_INFO_CACHE_LEN;
-        if (a_img_info->cache_off[cache_next] + rlen > a_img_info->size) {
-            rlen =
+        // Read a full cache block or the remaining data.
+        read_size = TSK_IMG_INFO_CACHE_LEN;
+
+        if ((a_img_info->cache_off[cache_next] + (TSK_OFF_T)read_size) >
+            a_img_info->size) {
+            read_size =
                 (size_t) (a_img_info->size -
                 a_img_info->cache_off[cache_next]);
         }
 
-        retval =
-            a_img_info->read(a_img_info, a_img_info->cache_off[cache_next],
-            a_img_info->cache[cache_next], rlen);
+        read_count = a_img_info->read(a_img_info,
+            a_img_info->cache_off[cache_next],
+            a_img_info->cache[cache_next], read_size);
 
         // if no error, then set the variables and copy the data
-        if (retval != -1) {
+        // Although a read_count of -1 indicates an error,
+        // since read_count is used in the calculation it may not be negative.
+        // Also it does not make sense to copy data when the read_count is 0.
+        if (read_count > 0) {
+            TSK_OFF_T rel_off = 0;
             a_img_info->cache_age[cache_next] = CACHE_AGE;
-            a_img_info->cache_len[cache_next] = retval;
+            a_img_info->cache_len[cache_next] = read_count;
 
-            // update the length we can actually copy (in case we did not get to read all that we wanted)
-            if (a_off + len2 > a_img_info->cache_off[cache_next] + retval)
-                len2 =
-                    (size_t) (a_img_info->cache_off[cache_next] + retval -
-                    a_off);
+            // Determine the offset relative to the start of the cached data.
+            rel_off = a_off - a_img_info->cache_off[cache_next];
 
-            memcpy(a_buf,
-                &a_img_info->cache[cache_next][a_off -
-                    a_img_info->cache_off[cache_next]], len2);
-            retval = (ssize_t) len2;
+            // Make sure not to copy more than is available in the cache.
+            if ((rel_off + (TSK_OFF_T) len2) > (TSK_OFF_T) read_count) {
+                len2 = (size_t) (read_count - rel_off);
+            }
+
+            memcpy(a_buf, &(a_img_info->cache[cache_next][rel_off]), len2);
+
+            read_count = (ssize_t) len2;
         }
         else {
             a_img_info->cache_len[cache_next] = 0;
@@ -185,5 +228,5 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
     }
 
     tsk_release_lock(&(a_img_info->cache_lock));
-    return retval;
+    return read_count;
 }

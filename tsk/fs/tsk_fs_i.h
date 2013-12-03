@@ -162,11 +162,15 @@ extern "C" {
         int32_t);
     extern void tsk_fs_name_print_mac(FILE *, const TSK_FS_FILE *,
         const char *, const TSK_FS_ATTR * fs_attr, const char *, int32_t);
+    extern void tsk_fs_name_print_mac_md5(FILE *, const TSK_FS_FILE *,
+        const char *, const TSK_FS_ATTR * fs_attr, const char *, int32_t,
+		const unsigned char *);
     extern uint8_t tsk_fs_name_copy(TSK_FS_NAME * a_fs_name_to,
         const TSK_FS_NAME * a_fs_name_from);
     extern void tsk_fs_name_reset(TSK_FS_NAME * a_fs_name);
     extern char *tsk_fs_time_to_str(time_t, char buf[128]);
-    extern char *tsk_fs_time_to_str_subsecs(time_t, unsigned int subsecs, char buf[128]);
+    extern char *tsk_fs_time_to_str_subsecs(time_t, unsigned int subsecs,
+        char buf[128]);
 
     /* Utilities */
     extern uint8_t tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file);

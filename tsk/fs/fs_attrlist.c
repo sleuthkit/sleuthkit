@@ -57,7 +57,7 @@ tsk_fs_attrlist_free(TSK_FS_ATTRLIST * a_fs_attrlist)
  *
  * @param a_fs_attrlist List structure to add to
  * @param a_fs_attr Data attribute to add
- * @returns 1 on error and 0 on success
+ * @returns 1 on error and 0 on success. Caller must free memory on error.
  */
 uint8_t
 tsk_fs_attrlist_add(TSK_FS_ATTRLIST * a_fs_attrlist,
@@ -164,8 +164,10 @@ tsk_fs_attrlist_getnew(TSK_FS_ATTRLIST * a_fs_attrlist,
                 return NULL;
 
             // add it to the list
-            if (tsk_fs_attrlist_add(a_fs_attrlist, fs_attr_cur))
+            if (tsk_fs_attrlist_add(a_fs_attrlist, fs_attr_cur)) {
+                tsk_fs_attr_free(fs_attr_cur);
                 return NULL;
+            }
         }
     }
 

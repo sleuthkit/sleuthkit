@@ -359,7 +359,8 @@ extern "C" {
     extern uint8_t fatfs_dir_buf_add(FATFS_INFO * fatfs,
         TSK_INUM_T par_inum, TSK_INUM_T dir_inum);
 
-    extern void fatfs_dir_buf_free(FATFS_INFO *fatfs);
+    extern void fatfs_cleanup_ascii(char *);
+    extern void fatfs_dir_buf_free(FATFS_INFO * fatfs);
 
     extern uint8_t
     fatfs_jopen(TSK_FS_INFO * fs, TSK_INUM_T inum);

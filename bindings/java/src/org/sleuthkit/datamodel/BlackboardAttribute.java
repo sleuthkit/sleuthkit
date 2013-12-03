@@ -169,6 +169,33 @@ public class BlackboardAttribute {
 		TSK_PROCESSOR_ARCHITECTURE(70, "TSK_PROCESSOR_ARCHITECTURE", "Processor Architecture"),
 		TSK_VERSION(71, "TSK_VERSION", "Version"),
 		TSK_USER_ID(72, "TSK_USER_ID", "User ID"),
+		TSK_DESCRIPTION(73, "TSK_DESCRIPTION", "Description"),
+		TSK_MESSAGE_TYPE(74, "TSK_MESSAGE_TYPE", "Message Type"),	// SMS or MMS or IM ...
+		TSK_PHONE_NUMBER_HOME(75, "TSK_PHONE_NUMBER_HOME", "Phone Number (Home)"),
+		TSK_PHONE_NUMBER_OFFICE(76, "TSK_PHONE_NUMBER_OFFICE", "Phone Number (Office)"),
+		TSK_PHONE_NUMBER_MOBILE(77, "TSK_PHONE_NUMBER_MOBILE", "Phone Number (Mobile)"),
+		TSK_PHONE_NUMBER_FROM(78, "TSK_PHONE_NUMBER_FROM", "From Phone Number"),
+		TSK_PHONE_NUMBER_TO(79, "TSK_PHONE_NUMBER_TO", "To Phone Number"),
+		TSK_DIRECTION(80, "TSK_DIRECTION", "Direction"), // Msg/Call direction: incoming, outgoing
+		TSK_EMAIL_HOME(81, "TSK_EMAIL_HOME", "Email (Home)"),
+		TSK_EMAIL_OFFICE(82, "TSK_EMAIL_OFFICE", "Email (Office)"),
+		TSK_DATETIME_START(83, "TSK_DATETIME_START", "Start Date/Time"),	// start time of an event - call log, Calendar entry
+		TSK_DATETIME_END(84, "TSK_DATETIME_END", "End Date/Time"),	// end time of an event - call log, Calendar entry
+		TSK_CALENDAR_ENTRY_TYPE(85, "TSK_CALENDAR_ENTRY_TYPE", "Calendar Entry Type"),	// meeting, task, 
+		TSK_LOCATION(86, "TSK_LOCATION", "Location"),	// Location string associated with an event - Conf Room Name, Address ....
+		TSK_SHORTCUT(87, "TSK_SHORTCUT", "Short Cut"),	// Short Cut string - short code or dial string for Speed dial, a URL short cut - e.g. bitly string, Windows Desktop Short cut name etc.
+		TSK_DEVICE_NAME(88, "TSK_DEVICE_NAME", "Device Name"),	// device name - a user assigned (usually) device name - such as "Joe's computer", "bob_win8", "BT Headset"
+		TSK_CATEGORY(89, "TSK_CATEGORY", "Category"),	// category/type, possible value set varies by the artifact
+		TSK_EMAIL_REPLYTO(90, "TSK_EMAIL_REPLYTO", "ReplyTo Address"),	// ReplyTo address
+		TSK_SERVER_NAME(91, "TSK_SERVER_NAME", "Server Name"),	// server name, e.g. a mail server name - "smtp.google.com", a DNS server name...
+		TSK_COUNT(92, "TSK_COUNT", "Count"), // Count related to the artifact
+		TSK_MIN_COUNT(93, "TSK_MIN_COUNT", "Minimum Count"), // Minimum number/count
+		TSK_PATH_SOURCE(94, "TSK_PATH_SOURCE", "Path Source"), // Path to a source file related to the artifact
+		TSK_PERMISSIONS(95, "TSK_PERMISSIONS", "Permissions"), // Permissions
+		TSK_PROG_LAUNCHED(96, "TSK_PROG_LAUNCHED", "Program Launched"), // Flag for whether a program has been run
+		TSK_ASSOCIATED_ARTIFACT(97, "TSK_ASSOCIATED_ARTIFACT", "Assocated Artifact"), // Artifact ID of a related artifact
+		
+		
 		;
 		/* SEE ABOVE -- ALSO ADD TO C++ CODE */
 		private String label;

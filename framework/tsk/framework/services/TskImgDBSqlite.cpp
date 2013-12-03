@@ -783,7 +783,7 @@ int TskImgDBSqlite::addFsFileInfo(int fileSystemID, const TSK_FS_FILE *fileSyste
         "dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, full_path) VALUES (NULL, %d, %d,"
         "'%q',%llu,%d,%d,%d,%d,%" PRIuOFF",%d,%d,%d,%d,%d,%d,%d,'%q')", 
         IMGDB_FILES_TYPE_FS, IMGDB_FILES_STATUS_READY_FOR_ANALYSIS, fileName, 
-        findParObjId(fileSystemID, fileSystemFile->name->par_addr), 
+        findParObjId(fileSystemFile, fileSystemID), 
         fileSystemFile->name->type, meta_type,
         fileSystemFile->name->flags, meta_flags, size, crtime, ctime, atime,
         mtime, meta_mode, gid, uid, fullpath.c_str());
@@ -818,7 +818,7 @@ int TskImgDBSqlite::addFsFileInfo(int fileSystemID, const TSK_FS_FILE *fileSyste
 
     //if dir, update parent id cache
     if (meta_type == TSK_FS_META_TYPE_DIR) {
-        storeParObjId(fileSystemID, fileSystemFile->name->meta_addr, fileID);
+        storeParObjId(fileSystemID, fileSystemFile, fileID);
     }
 
     return 0;
@@ -3072,7 +3072,6 @@ int TskImgDBSqlite::addUnusedSector(uint64_t sectStart, uint64_t sectEnd, int vo
 {
     assert(sectEnd > sectStart);
     int rc = -1;
-    unusedSectorsList.clear();
     if (!m_db)
         return rc;
 

@@ -10,7 +10,7 @@
   #define __STDC_FORMAT_MACROS
 #endif
 
-#ifdef HAVE_PTHREAD_H
+#ifdef HAVE_PTHREAD
   #include <pthread.h>
 #endif
 #include <stdio.h>

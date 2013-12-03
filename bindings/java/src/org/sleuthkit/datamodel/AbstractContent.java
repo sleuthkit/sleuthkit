@@ -31,7 +31,7 @@ import org.sleuthkit.datamodel.SleuthkitCase.ObjectInfo;
 public abstract class AbstractContent implements Content {
 
 	public final static long UNKNOWN_ID = -1;
-	private SleuthkitCase db;
+	private final SleuthkitCase db;
 	private long objId;
 	private String name;
 	private Content parent;
@@ -207,6 +207,18 @@ public abstract class AbstractContent implements Content {
 	@Override
 	public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
 		return db.getBlackboardArtifacts(type, objId);
+	}
+	
+	@Override
+	public BlackboardArtifact getGenInfoArtifact() throws TskCoreException {
+		ArrayList<BlackboardArtifact> arts = getArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO);
+		if (arts.isEmpty()) {
+			BlackboardArtifact art = newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO);
+			return art;
+		}
+		else {
+			return arts.get(0);
+		}
 	}
 
 	@Override

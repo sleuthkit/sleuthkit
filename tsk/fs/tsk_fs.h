@@ -74,8 +74,8 @@ extern "C" {
         TSK_FS_BLOCK_FLAG_RAW = 0x0020, ///< The data has been read raw from the disk (and not COMP or SPARSE)
         TSK_FS_BLOCK_FLAG_SPARSE = 0x0040,      ///< The data passed in the file_walk calback was stored as sparse (all zeros) (and not RAW or COMP)
         TSK_FS_BLOCK_FLAG_COMP = 0x0080,        ///< The data passed in the file_walk callback was stored in a compressed form (and not RAW or SPARSE)
-        TSK_FS_BLOCK_FLAG_RES = 0x0100,  ///< The data passed in the file_walk callback is from an NTFS resident file
-        TSK_FS_BLOCK_FLAG_AONLY = 0x0200    /// < The buffer in TSK_FS_BLOCK has no content (it could be non-empty, but should be ignored), but the flags and such are accurate
+        TSK_FS_BLOCK_FLAG_RES = 0x0100, ///< The data passed in the file_walk callback is from an NTFS resident file
+        TSK_FS_BLOCK_FLAG_AONLY = 0x0200        /// < The buffer in TSK_FS_BLOCK has no content (it could be non-empty, but should be ignored), but the flags and such are accurate
     };
     typedef enum TSK_FS_BLOCK_FLAG_ENUM TSK_FS_BLOCK_FLAG_ENUM;
 
@@ -89,14 +89,14 @@ extern "C" {
         TSK_FS_BLOCK_WALK_FLAG_UNALLOC = 0x02,  ///< Unallocated blocks
         TSK_FS_BLOCK_WALK_FLAG_CONT = 0x04,     ///< Blocks that could store file content
         TSK_FS_BLOCK_WALK_FLAG_META = 0x08,     ///< Blocks that could store file system metadata
-        TSK_FS_BLOCK_WALK_FLAG_AONLY = 0x10      ///< Do not include content in callback only address and allocation status
+        TSK_FS_BLOCK_WALK_FLAG_AONLY = 0x10     ///< Do not include content in callback only address and allocation status
     };
     typedef enum TSK_FS_BLOCK_WALK_FLAG_ENUM TSK_FS_BLOCK_WALK_FLAG_ENUM;
 
 
 #define TSK_FS_BLOCK_TAG 0x1b7c3f4a
     /** 
-    * Generic data strcture to hold block data with metadata
+    * Generic data structure to hold block data with metadata
     */
     typedef struct {
         int tag;                ///< \internal Will be set to TSK_FS_BLOCK_TAG if structure is valid / allocated 
@@ -212,10 +212,12 @@ extern "C" {
 
     /**
     * These are based on the NTFS type values. 
-     * Added types for HFS+.
+    * Added types for HFS+.
+    * NOTE: Update bindings/java/src/org/sleuthkit/datamodel/TskData.java
+    * with any changes.
     */
     typedef enum {
-        TSK_FS_ATTR_TYPE_NOT_FOUND = 0x00,       // 0
+        TSK_FS_ATTR_TYPE_NOT_FOUND = 0x00,      // 0
         TSK_FS_ATTR_TYPE_DEFAULT = 0x01,        // 1
         TSK_FS_ATTR_TYPE_NTFS_SI = 0x10,        // 16
         TSK_FS_ATTR_TYPE_NTFS_ATTRLIST = 0x20,  // 32
@@ -236,7 +238,7 @@ extern "C" {
         TSK_FS_ATTR_TYPE_NTFS_PROP = 0xF0,      //  (NT)
         TSK_FS_ATTR_TYPE_NTFS_LOG = 0x100,      //  (2K)
         TSK_FS_ATTR_TYPE_UNIX_INDIR = 0x1001,   //  Indirect blocks for UFS and ExtX file systems
-        TSK_FS_ATTR_TYPE_UNIX_EXTENT = 0x1002,   //  Extents for Ext4 file system
+        TSK_FS_ATTR_TYPE_UNIX_EXTENT = 0x1002,  //  Extents for Ext4 file system
 
         // Types for HFS+ File Attributes
         TSK_FS_ATTR_TYPE_HFS_DEFAULT = 0x01,    // 1    Data fork of fs special files and misc
@@ -422,7 +424,7 @@ extern "C" {
 
     typedef enum TSK_FS_META_CONTENT_TYPE_ENUM {
         TSK_FS_META_CONTENT_TYPE_DEFAULT = 0x0,
-        TSK_FS_META_CONTENT_TYPE_EXT4_EXTENTS = 0x1 ///< Ext4 with extents instead of individual pointers
+        TSK_FS_META_CONTENT_TYPE_EXT4_EXTENTS = 0x1     ///< Ext4 with extents instead of individual pointers
     } TSK_FS_META_CONTENT_TYPE_ENUM;
 
 
@@ -470,11 +472,22 @@ extern "C" {
                 time_t bkup_time;       ///< HFS+ backup time
                 uint32_t bkup_time_nano;        ///< nano-second resolution in addition to bkup_time
             } hfs;
+            struct {
+                time_t fn_crtime;   ///< NTFS Created time stored in FILE_NAME
+                time_t fn_crtime_nano;   ///< NTFS Created time stored in FILE_NAME in nano-second resolution
+                time_t fn_mtime;   ///< NTFS mod (content) stored in FILE_NAME
+                time_t fn_mtime_nano;   ///< NTFS mod time stored in FILE_NAME in nano-second resolution
+                time_t fn_atime;   ///< NTFS access time stored in FILE_NAME
+                time_t fn_atime_nano;   ///< NTFS access time stored in FILE_NAME in nano-second resolution
+                time_t fn_ctime;   ///< NTFS change (MFT Entry) time stored in FILE_NAME
+                time_t fn_ctime_nano;   ///< NTFS change (MFT Entry) time stored in FILE_NAME in nano-second resolution
+                uint16_t fn_id; ///< Attribute ID used to populate FN times. 
+            } ntfs;
         } time2;
 
         void *content_ptr;      ///< Pointer to file system specific data that is used to store references to file content
         size_t content_len;     ///< size of content  buffer
-        TSK_FS_META_CONTENT_TYPE_ENUM content_type; ///< File system-specific and describes type of data in content_ptr in case file systems have multiple ways of storing things. 
+        TSK_FS_META_CONTENT_TYPE_ENUM content_type;     ///< File system-specific and describes type of data in content_ptr in case file systems have multiple ways of storing things. 
 
         uint32_t seq;           ///< Sequence number for file (NTFS only, is incremented when entry is reallocated) 
 
@@ -579,6 +592,7 @@ extern "C" {
         TSK_INUM_T meta_addr;   ///< Address of the metadata structure that the name points to. 
         uint32_t meta_seq;      ///< Sequence number for metadata structure (NTFS only) 
         TSK_INUM_T par_addr;    ///< Metadata address of parent directory (equal to meta_addr if this entry is for root directory). 
+        uint32_t par_seq;       ///< Sequence number for parent directory (NTFS only)
 
         TSK_FS_NAME_TYPE_ENUM type;     ///< File type information (directory, file, etc.)
         TSK_FS_NAME_FLAG_ENUM flags;    ///< Flags that describe allocation status etc. 
@@ -611,6 +625,7 @@ extern "C" {
         size_t names_alloc;     ///< Number of name structures that were allocated
 
         TSK_INUM_T addr;        ///< Metadata address of this directory 
+        uint32_t seq;           ///< Metadata address sequence (NTFS Only)
 
         TSK_FS_INFO *fs_info;   ///< Pointer to file system the directory is located in
     } TSK_FS_DIR;
@@ -709,6 +724,14 @@ extern "C" {
 
     extern uint8_t tsk_fs_file_get_owner_sid(TSK_FS_FILE *, char **);
 
+	typedef struct {
+		TSK_BASE_HASH_ENUM flags;
+		unsigned char md5_digest[16];
+		unsigned char sha1_digest[20];
+	} TSK_FS_HASH_RESULTS;
+
+	extern uint8_t tsk_fs_file_hash_calc(TSK_FS_FILE *, TSK_FS_HASH_RESULTS *, TSK_BASE_HASH_ENUM);
+
     //@}
 
 
@@ -764,10 +787,12 @@ extern "C" {
         TSK_FS_TYPE_HFS = 0x00001000,   ///< HFS file system
         TSK_FS_TYPE_HFS_DETECT = 0x00001000,    ///< HFS auto detection
         TSK_FS_TYPE_EXT4 = 0x00002000,  ///< Ext4 file system
-        TSK_FS_TYPE_YAFFS2 = 0x00003000,  ///< YAFFS2 file system
-        TSK_FS_TYPE_YAFFS2_DETECT = 0x00003000,   ///< YAFFS2 auto detection
+        TSK_FS_TYPE_YAFFS2 = 0x00004000,        ///< YAFFS2 file system
+        TSK_FS_TYPE_YAFFS2_DETECT = 0x00004000, ///< YAFFS2 auto detection
         TSK_FS_TYPE_UNSUPP = 0xffffffff,        ///< Unsupported file system
     };
+    /* NOTE: Update bindings/java/src/org/sleuthkit/datamodel/TskData.java
+     * with any changes. */
     typedef enum TSK_FS_TYPE_ENUM TSK_FS_TYPE_ENUM;
 
     /**
@@ -839,7 +864,7 @@ extern "C" {
     */
     enum TSK_FS_INFO_FLAG_ENUM {
         TSK_FS_INFO_FLAG_NONE = 0x00,   ///< No Flags
-        TSK_FS_INFO_FLAG_HAVE_SEQ = 0x01,        ///< File system has sequence numbers in the inode addresses.
+        TSK_FS_INFO_FLAG_HAVE_SEQ = 0x01,       ///< File system has sequence numbers in the inode addresses.
         TSK_FS_INFO_FLAG_HAVE_NANOSEC = 0x02    ///< Nano second field in times will be set.
     };
     typedef enum TSK_FS_INFO_FLAG_ENUM TSK_FS_INFO_FLAG_ENUM;
@@ -1029,6 +1054,7 @@ extern "C" {
         TSK_FS_FLS_DIR = 0x08,
         TSK_FS_FLS_FULL = 0x10,
         TSK_FS_FLS_MAC = 0x20,
+		TSK_FS_FLS_HASH = 0x40
     };
     typedef enum TSK_FS_FLS_FLAG_ENUM TSK_FS_FLS_FLAG_ENUM;
     extern uint8_t tsk_fs_fls(TSK_FS_INFO * fs,
@@ -1443,9 +1469,7 @@ class TskFsAttribute {
                     return new TskFsAttrRun(run);
                 i++;
                 run = run->next;
-            }
-        }
-        return NULL;
+        }} return NULL;
     };
 
     /**
@@ -1459,9 +1483,7 @@ class TskFsAttribute {
             while (run != NULL) {
                 size++;
                 run = run->next;
-            }
-        }
-        return size;
+        }} return size;
     }
 
     /**
@@ -2130,8 +2152,7 @@ class TskFsInfo {
             return m_fsInfo->img_info;
         else
             return NULL;
-    }
-};                              //TskFsInfo
+}};                             //TskFsInfo
 
 
 
@@ -2325,8 +2346,7 @@ class TskFsMeta {
             while (nameList != NULL) {
                 nameList = nameList->next;
                 numOfList += 1;
-            }
-            m_nameListLen = numOfList;
+            } m_nameListLen = numOfList;
         }
         else {
             m_nameList = NULL;
@@ -2570,7 +2590,7 @@ class TskFsMeta {
     uint32_t getSeq() const {
         if (m_fsMeta != NULL)
             return m_fsMeta->seq;
-	return 0xFFFF;
+        return 0xFFFF;
     };
 
     /**
@@ -2595,9 +2615,7 @@ class TskFsMeta {
             while (name != NULL) {
                 size++;
                 name = name->next;
-            }
-        }
-        return size;
+        }} return size;
     };
 
     /**
@@ -2614,9 +2632,7 @@ class TskFsMeta {
                     return new TskFsMetaName(name);
                 i++;
                 name = name->next;
-            }
-        }
-        return NULL;
+        }} return NULL;
     };
 
   private:

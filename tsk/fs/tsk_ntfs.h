@@ -523,9 +523,9 @@ extern "C" {
  * Structure used in Security Descriptor lookups
  */
     typedef struct {
-        char *buffer;   ///< Buffer to store data in
-        size_t size;    ///< Number of bytes in buffer
-        size_t used;    ///< Number of records used in the buffer (size depends on type of data stored)
+        char *buffer;           ///< Buffer to store data in
+        size_t size;            ///< Number of bytes in buffer
+        size_t used;            ///< Number of records used in the buffer (size depends on type of data stored)
     } NTFS_SXX_BUFFER;
 
 
@@ -657,10 +657,10 @@ extern "C" {
 
     extern int ntfs_name_cmp(TSK_FS_INFO *, const char *, const char *);
 
-    extern uint8_t ntfs_find_file(TSK_FS_INFO * fs, TSK_INUM_T inode_toid, uint32_t type_toid,
-        uint8_t type_used, uint16_t id_toid, uint8_t id_used,
-        TSK_FS_DIR_WALK_FLAG_ENUM dir_walk_flags, TSK_FS_DIR_WALK_CB action,
-        void *ptr);
+    extern uint8_t ntfs_find_file(TSK_FS_INFO * fs, TSK_INUM_T inode_toid,
+        uint32_t type_toid, uint8_t type_used, uint16_t id_toid,
+        uint8_t id_used, TSK_FS_DIR_WALK_FLAG_ENUM dir_walk_flags,
+        TSK_FS_DIR_WALK_CB action, void *ptr);
 
 #ifdef __cplusplus
 }

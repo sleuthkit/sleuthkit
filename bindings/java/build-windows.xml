@@ -6,8 +6,9 @@
 			<isset property="env.LIBEWF_HOME"/>
 	</condition>
     <property name="dlls" value="${env.LIBEWF_HOME}/msvscpp/zlib;${env.LIBEWF_HOME}/msvscpp/Release;../../win32/Release"/>
-	<target name="test-precond" 
-			description="Traverses the Images stored in the path represented by test-input variable, creates results files stored in the path represented by test-results, and compares them to the standards stored in the path represented by the test-standards variable, always run test-create-standards at least once before before running test."
+
+	<target name="test" 
+			description="Runs the regression tests."
 			depends="compile-test" >
 		<fail unless="ewfFound" message="LIBEWF_HOME must be set as an environment variable."/>
 		<junit fork="on" haltonfailure="yes" dir=".">
@@ -20,8 +21,9 @@
 			<test name="org.sleuthkit.datamodel.DataModelTestSuite" />
 		</junit>
 	</target>
-	<target name="test-create-standards-precond"
-			description="Traverses the Images stored in the path represented by test-input variable and creates then stores them to the path represented by the test-standards variable, run test-download-imgs at least once before this."
+
+	<target name="test-rebuild"
+			description="Rebuilds gold standards for tests."
 			depends="compile-test" >
 		<fail unless="ewfFound" message="LIBEWF_HOME must be set as an environment variable."/>
 		<java classname="org.sleuthkit.datamodel.DataModelTestSuite" classpathref="libraries"	fork="true" failonerror="true">
@@ -30,5 +32,85 @@
 			<sysproperty key="inpt" value="${test-input}"/>
 			<sysproperty key="types" value="${test-types}"/>
 		</java>
+	</target>
+	
+	<target name="copyLibs" depends="copyWinLibs" description="Copy native libs to the correct folder">
+		<property name="tsk.config" value="Release"/>
+		<antcall target="copyWinLibs" />
+	</target>
+	
+	<target name="copyLibsDebug" depends="copyWinLibs" description="Copy native libs to the correct folder">
+		<property name="tsk.config" value="Debug"/>
+		<antcall target="copyWinLibs" />
+	</target>
+	
+	<target name="copyWinLibs" depends="copyWinLibs64,copyWinLibs32" description="Copy windows dlls to the correct location." />
+	
+	<target name="checkLibDirs">
+		<available property="win64.exists" type="dir" file="${basedir}/../../win32/x64/${tsk.config}" />
+		<available property="win32.exists" type="dir" file="${basedir}/../../win32/${tsk.config}" />
+	</target>
+	
+	<target name="copyWinLibs64" depends="checkLibDirs" if="win64.exists">
+		<property name="win64dir" location="${basedir}/../../win32/x64/${tsk.config}" />
+		
+		<fileset dir="${win64dir}" id="win64dlls">
+			<include name="*.dll" />
+		</fileset>
+		<fileset dir="${crt}/win64" id="crt64dlls">
+			<include name="*.dll" />
+		</fileset>
+		
+		<copy todir="${amd64}/win" overwrite="true">
+			<fileset refid="win64dlls" />
+		</copy>
+		<copy todir="${amd64}/win" overwrite="true">
+			<fileset refid="crt64dlls" />
+		</copy>
+		
+		<copy todir="${x86_64}/win" overwrite="true">
+			<fileset refid="win64dlls" />
+		</copy>		
+		<copy todir="${x86_64}/win" overwrite="true">
+			<fileset refid="crt64dlls" />
+		</copy>
+	</target>
+	
+	<target name="copyWinLibs32" depends="checkLibDirs" if="win32.exists">
+		<property name="win32dir" location="${basedir}/../../win32/${tsk.config}" />
+		<fileset dir="${win32dir}" id="win32dlls">
+			<include name="*.dll" />
+		</fileset>
+		<fileset dir="${crt}/win32" id="crt32dlls">
+			<include name="*.dll" />
+		</fileset>
+		
+		<copy todir="${i386}/win" overwrite="true">
+			<fileset refid="win32dlls" />
+		</copy>
+		<copy todir="${i386}/win" overwrite="true">
+			<fileset refid="crt32dlls" />
+		</copy>
+		
+		<copy todir="${x86}/win" overwrite="true">
+			<fileset refid="win32dlls" />
+		</copy>
+		<copy todir="${x86}/win" overwrite="true">
+			<fileset refid="crt32dlls" />
+		</copy>
+		
+		<copy todir="${i586}/win" overwrite="true">
+			<fileset refid="win32dlls" />
+		</copy>
+		<copy todir="${i586}/win" overwrite="true">
+			<fileset refid="crt32dlls" />
+		</copy>		
+		
+		<copy todir="${i686}/win" overwrite="true">
+			<fileset refid="win32dlls" />
+		</copy>
+		<copy todir="${i686}/win" overwrite="true">
+			<fileset refid="crt32dlls" />
+		</copy>	
 	</target>
 </project>

@@ -52,7 +52,7 @@ enum TSK_ARTIFACT_TYPE {
     TSK_WEB_HISTORY = 4,///< A web history enrty. 
     TSK_WEB_DOWNLOAD = 5,///< A web download. 
     TSK_RECENT_OBJECT = 6,///< A recently used object (MRU, recent document, etc.).
-    TSK_TRACKPOINT = 7,///< A trackpoint from a GPS log.
+    TSK_GPS_TRACKPOINT = 7,///< A trackpoint from a GPS log.
     TSK_INSTALLED_PROG = 8,///< An installed program. 
     TSK_KEYWORD_HIT = 9,///< A keyword hit. 
     TSK_HASHSET_HIT = 10, ///< A hit within a known bad / notable hashset / hash database. 
@@ -65,8 +65,21 @@ enum TSK_ARTIFACT_TYPE {
     TSK_TAG_FILE = 17, ///< File tags.
     TSK_TAG_ARTIFACT = 18, ///< Result tags.
     TSK_OS_INFO = 19, ///< Information pertaining to an operating system.
-    TSK_OS_ACCOUNT, ///< An operating system user account.
-    TSK_SERVICE_ACCOUNT, ///< A network service user account.
+    TSK_OS_ACCOUNT = 20, ///< An operating system user account.
+    TSK_SERVICE_ACCOUNT = 21, ///< A network service user account.
+    TSK_TOOL_OUTPUT = 22,  ///< Output from an external tool or module (raw text)
+	TSK_CONTACT = 23, ///< A Contact extracted from a phone, or from an Addressbook/Email/Messaging Application
+	TSK_MESSAGE = 24, ///< An SMS/MMS message extracted from phone, or from another messaging application, like IM
+	TSK_CALLLOG = 25, ///< A Phone call log extracted from a phones or softphone application
+	TSK_CALENDAR_ENTRY = 26, ///< A Calendar entry from a phone, PIM or a Calendar application.
+	TSK_SPEED_DIAL_ENTRY = 27,  ///< A speed dial entry from a phone 
+	TSK_BLUETOOTH_PAIRING = 28,  ///< A bluetooth pairing entry
+	TSK_GPS_BOOKMARK = 29, ///< GPS Bookmarks
+	TSK_GPS_LAST_KNOWN_LOCATION = 30, ///< GPS Last known location
+	TSK_GPS_SEARCH = 31,	///< GPS Searches
+	TSK_PROG_RUN = 32, ///< Application run information
+
+		
     /* SEE ABOVE:
     * - KEEP JAVA CODE IN SYNC 
     * - UPDATE map in TskBlackboard.cpp
@@ -155,7 +168,32 @@ enum TSK_ATTRIBUTE_TYPE {
     TSK_DATETIME_MODIFIED = 69,///< Time in Unix epoch that something was modified
     TSK_PROCESSOR_ARCHITECTURE = 70,///< String of processor architecture.  Naming convention from http://en.wikipedia.org/wiki/Comparison_of_CPU_architectures.  So far, we've used x86, x86-64, and IA64.
     TSK_VERSION = 71,///< String for a software version 
-    TSK_USER_ID,///< User IDfor a user account, e.g., a Windows SID or Linux UID.
+    TSK_USER_ID = 72,///< User IDfor a user account, e.g., a Windows SID or Linux UID.
+    TSK_DESCRIPTION = 73, ///< String for a description associated with an artifact.
+	TSK_MESSAGE_TYPE =74, ///< SMS or MMS or IM ...
+	TSK_PHONE_NUMBER_HOME = 75, ///< Phone number (Home)
+	TSK_PHONE_NUMBER_OFFICE = 76, ///< Phone number (Office)
+	TSK_PHONE_NUMBER_MOBILE = 77, ///< Phone Number (Mobile)
+	TSK_PHONE_NUMBER_FROM = 78, ///<  Source Phone Number, originating a call or message
+	TSK_PHONE_NUMBER_TO = 79, /// < Destination Phone Number, receiving a call or message
+	TSK_DIRECTION = 80,  ///< Msg/Call direction: incoming, outgoing
+	TSK_EMAIL_HOME = 81, ///< Email (Home)"),
+	TSK_EMAIL_OFFICE = 82, ///< Email (Office)
+	TSK_DATETIME_START = 83, ///< start time of an event - call log, Calendar entry
+	TSK_DATETIME_END = 84, ///< end time of an event - call log, Calendar entry
+	TSK_CALENDAR_ENTRY_TYPE = 85, ///< calendar entry type: meeting, task, 
+	TSK_LOCATION = 86, 	// Location string associated with an event - Conf Room Name, Address ....
+	TSK_SHORTCUT = 87, ///< Short Cut string - short code or dial string for Speed dial, a URL short cut - e.g. bitly string, Windows Desktop Short cut name etc.
+	TSK_DEVICE_NAME = 88, ///< device name - a user assigned (usually) device name - such as "Joe's computer", "bob_win8", "BT Headset"
+	TSK_CATEGORY = 89, 	///< category/type, possible value set varies by the artifact
+	TSK_EMAIL_REPLYTO = 90, ///< ReplyTo address
+	TSK_SERVER_NAME = 91, 	///< server name
+	TSK_COUNT = 92, ///< Count related to the artifact
+	TSK_MIN_COUNT = 93, ///<  Minimum number/count
+	TSK_PATH_SOURCE = 94, ///< Path to a source file related to the artifact
+	TSK_PERMISSIONS = 95, ///< Permissions
+	TSK_PROG_LAUNCHED = 96, ///< Flag for whether a program has been run
+	TSK_ASSOCIATED_ARTIFACT = 97, ///< Artifact ID of a related artifact
 
     /* SEE ABOVE: 
     * - KEEP JAVA CODE IN SYNC 

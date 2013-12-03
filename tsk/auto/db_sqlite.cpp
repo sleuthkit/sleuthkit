@@ -25,8 +25,7 @@ using std::stringstream;
 using std::sort;
 using std::for_each;
 
-
-#define TSK_SCHEMA_VER 2
+#define TSK_SCHEMA_VER 3
 
 /**
  * Set the locations and logging object.  Must call
@@ -238,7 +237,7 @@ int
             "Error creating tsk_objects table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_image_info (obj_id INTEGER PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT);",
+        ("CREATE TABLE tsk_image_info (obj_id INTEGER PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT, size INTEGER, md5 TEXT, description TEXT);",
             "Error creating tsk_image_info table: %s\n")
         ||
         attempt_exec
@@ -254,7 +253,7 @@ int
             "Error creating tsk_vol_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_fs_info (obj_id INTEGER PRIMARY KEY, img_offset INTEGER NOT NULL, fs_type INTEGER NOT NULL, block_size INTEGER NOT NULL, block_count INTEGER NOT NULL, root_inum INTEGER NOT NULL, first_inum INTEGER NOT NULL, last_inum INTEGER NOT NULL);",
+        ("CREATE TABLE tsk_fs_info (obj_id INTEGER PRIMARY KEY, img_offset INTEGER NOT NULL, fs_type INTEGER NOT NULL, block_size INTEGER NOT NULL, block_count INTEGER NOT NULL, root_inum INTEGER NOT NULL, first_inum INTEGER NOT NULL, last_inum INTEGER NOT NULL, display_name TEXT);",
             "Error creating tsk_fs_info table: %s\n")
         ||
         attempt_exec
@@ -272,6 +271,18 @@ int
         attempt_exec
         ("CREATE TABLE tsk_files_derived_method (derived_id INTEGER PRIMARY KEY, tool_name TEXT NOT NULL, tool_version TEXT NOT NULL, other TEXT)",
             "Error creating tsk_files_derived_method table: %s\n")
+        ||
+        attempt_exec
+        ("CREATE TABLE tag_names (tag_name_id INTEGER PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL)",
+            "Error creating tag_names table: %s\n")
+        ||
+        attempt_exec
+        ("CREATE TABLE content_tags (tag_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL, begin_byte_offset INTEGER NOT NULL, end_byte_offset INTEGER NOT NULL)",
+            "Error creating content_tags table: %s\n")
+        ||
+        attempt_exec
+        ("CREATE TABLE blackboard_artifact_tags (tag_id INTEGER PRIMARY KEY, artifact_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL)",
+            "Error creating blackboard_artifact_tags table: %s\n")
         ||
         attempt_exec
         ("CREATE TABLE blackboard_artifacts (artifact_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, artifact_type_id INTEGER NOT NULL)",
@@ -396,10 +407,19 @@ void
 }
 
 /**
+  * deprecated
+  */
+int
+ TskDbSqlite::addImageInfo(int type, int size, int64_t & objId, const string & timezone)
+{
+    return addImageInfo(type, size, objId, timezone, 0, "");
+}
+
+/**
  * @returns 1 on error, 0 on success
  */
 int
- TskDbSqlite::addImageInfo(int type, int size, int64_t & objId, const string & timezone)
+ TskDbSqlite::addImageInfo(int type, int ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5)
 {
     char
      stmt[1024];
@@ -413,8 +433,9 @@ int
     objId = sqlite3_last_insert_rowid(m_db);
 
     snprintf(stmt, 1024,
-        "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone) VALUES (%lld, %d, %d, '%s');",
-        objId, type, size, timezone.c_str());
+        "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %d, '%s', %"PRIuOFF", '%s');",
+        objId, type, ssize, timezone.c_str(), size, md5.c_str());
+
     return attempt_exec(stmt,
         "Error adding data to tsk_image_info table: %s\n");
 }
@@ -546,7 +567,11 @@ int
     if (fs_file->name == NULL)
         return 0;
 
-    if (fs_file->fs_info->root_inum == fs_file->name->meta_addr) {
+    /* we want the root directory to have its parent be the file system
+     * object.  We need to have special care though because the ".." entries
+     * in sub-folders of the root directory have a meta_addr of the root dir. */
+    if ((fs_file->fs_info->root_inum == fs_file->name->meta_addr) && 
+            ((fs_file->name->name == NULL) || (0 == TSK_FS_ISDOT(fs_file->name->name)))) {
         // this entry is for root directory
         parObjId = fsObjId;
     }
@@ -565,13 +590,21 @@ int
  * Store meta_addr to object id mapping of the directory in a local cache map
  * @param fsObjId fs id of this directory
  * @param meta_addr meta_addr of this directory
+ * @param meta_seq meta_seq of this directory
  * @param objId object id of this directory from the objects table
  */
-void TskDbSqlite::storeObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_addr, const int64_t & objId) {
-	map<TSK_INUM_T,int64_t> &tmpMap = m_parentDirIdCache[fsObjId];
-	//store only if does not exist
-	if (tmpMap.count(meta_addr) == 0)
-		tmpMap[meta_addr] = objId;
+void TskDbSqlite::storeObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_addr, const uint32_t & meta_seq, const int64_t & objId) {
+	map<TSK_INUM_T, map<uint32_t, int64_t> > &fsMap = m_parentDirIdCache[fsObjId];
+	//store only if does not exist -- otherwise '..' and '.' entries will overwrite
+	if (fsMap.count(meta_addr) == 0) {
+        fsMap[meta_addr][meta_seq] = objId;
+    }
+    else {
+        map<uint32_t, int64_t> &fileMap = fsMap[meta_addr];
+        if (fileMap.count(meta_seq) == 0) {
+            fileMap[meta_seq] = objId;
+        }
+    }
 }
 
 /**
@@ -582,12 +615,16 @@ void TskDbSqlite::storeObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_ad
  */
 int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const int64_t & fsObjId) {
 	//get from cache by parent meta addr, if available
-	map<TSK_INUM_T,int64_t> &tmpMap = m_parentDirIdCache[fsObjId];
-	if (tmpMap.count(fs_file->name->par_addr) > 0) {
-		return tmpMap[fs_file->name->par_addr];
+	map<TSK_INUM_T, map<uint32_t, int64_t> > &fsMap = m_parentDirIdCache[fsObjId];
+	if (fsMap.count(fs_file->name->par_addr) > 0) {
+        map<uint32_t, int64_t>  &fileMap = fsMap[fs_file->name->par_addr];
+        if (fileMap.count(fs_file->name->par_seq) > 0) {
+		    return fileMap[fs_file->name->par_seq];
+        }
 	}
 
     // Find the parent file id in the database using the parent metadata address
+    // @@@ This should use sequence number when the new database supports it
     if (attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 1, fs_file->name->par_addr),
                 "TskDbSqlite::findParObjId: Error binding meta_addr to statment: %s (result code %d)\n")
         || attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 2, fsObjId),
@@ -714,6 +751,7 @@ int
             }
         }
     }
+    name[j++] = '\0';
 
 
     // clean up path
@@ -738,7 +776,7 @@ int
             escaped_path[k++] = path[i];
         }
     }
-
+    escaped_path[k++] = '\0';
 
     char md5Text[48] = "NULL";
 
@@ -763,20 +801,23 @@ int
     snprintf(foo, 4096,
         "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
         "VALUES ("
-        "%lld,%lld,"
+        "%" PRId64 ",%" PRId64 ","
         "%d,"
         "%d,%d,'%s',"
         "%" PRIuINUM ","
         "%d,%d,%d,%d,"
         "%" PRIuOFF ","
-        "%lld,%lld,%lld,%lld,%d,%d,%d,%s,%d,"
+        "%llu,%llu,%llu,%llu,"
+        "%d,%d,%d,%s,%d,"
         "'%s')",
         fsObjId, objId,
         TSK_DB_FILES_TYPE_FS,
         type, idx, name,
         fs_file->name->meta_addr,
         fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
-        size, crtime, ctime, atime, mtime, meta_mode, gid, uid, md5Text, known,
+        size, 
+        (unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime, 
+        meta_mode, gid, uid, md5Text, known,
         escaped_path);
 
     if (attempt_exec(foo, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
@@ -787,7 +828,7 @@ int
 
     //if dir, update parent id cache
     if (meta_type == TSK_FS_META_TYPE_DIR) {
-        storeObjId(fsObjId, fs_file->name->meta_addr, objId);
+        storeObjId(fsObjId, fs_file->name->meta_addr, fs_file->name->meta_seq, objId);
     }
 
     free(name);

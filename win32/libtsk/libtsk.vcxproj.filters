@@ -222,22 +222,34 @@
     <ClCompile Include="..\..\tsk\base\XGetopt.c">
       <Filter>base</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\encase_index.c">
+    <ClCompile Include="..\..\tsk\hashdb\tm_lookup.cpp">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\hk_index.c">
+    <ClCompile Include="..\..\tsk\hashdb\sqlite_index.cpp">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\idxonly_index.c">
+    <ClCompile Include="..\..\tsk\hashdb\binsrch_index.c">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\md5sum_index.c">
+    <ClCompile Include="..\..\tsk\hashdb\hashkeeper.c">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\nsrl_index.c">
+    <ClCompile Include="..\..\tsk\hashdb\encase.c">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\tm_lookup.c">
+    <ClCompile Include="..\..\tsk\hashdb\hdb_index.cpp">
+      <Filter>hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\hashdb\hdb_open.cpp">
+      <Filter>hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\hashdb\idxonly.c">
+      <Filter>hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\hashdb\md5sum.c">
+      <Filter>hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\hashdb\nsrl.c">
       <Filter>hash</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\img\aff.c">

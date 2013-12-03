@@ -136,6 +136,11 @@ if test "$HAVE_POCOZIP"; then
     )
 fi
 
+# Standard values for modules in the modules folder
+AC_SUBST(AM_CXXFLAGS_MOD, "-I../.. -I../../.. -Wall")
+AC_SUBST(AM_LIBADD_MOD, "../../tsk/framework/libtskframework.la ../../../tsk/libtsk.la")
+
+# REMOVE THESE
 AC_SUBST(TSK_INCLUDE, "-I../../..")
 AC_SUBST(FW_INCLUDE,  "-I../..")
 AC_SUBST(FW_LIBS, "../../tsk/framework/libtskframework.la ../../../tsk/libtsk.la")
@@ -155,22 +160,12 @@ for i in `ls modules/`
 do
   if test -d "modules/${i}"; then
     case ${i} in
-      c_EntropyModule)              AC_CONFIG_SUBDIRS([modules/c_EntropyModule]) ;;
       c_FileTypeSigModule)          AC_CONFIG_SUBDIRS([modules/c_FileTypeSigModule]) ;;
-      c_HashCalcModule)             AC_CONFIG_SUBDIRS([modules/c_HashCalcModule]) ;;
-      c_InterestingFilesModule)     AC_CONFIG_SUBDIRS([modules/c_InterestingFilesModule]) ;;
       c_LibExifModule)              AC_CONFIG_SUBDIRS([modules/c_LibExifModule]) ;;
-      c_RegRipperModule)            AC_CONFIG_SUBDIRS([modules/c_RegRipperModule]) ;;
-      c_SaveInterestingFilesModule) AC_CONFIG_SUBDIRS([modules/c_SaveInterestingFilesModule]) ;;
-      c_SummaryReportModule)        AC_CONFIG_SUBDIRS([modules/c_SummaryReportModule]) ;;
-      c_TskHashLookupModule)        AC_CONFIG_SUBDIRS([modules/c_TskHashLookupModule]) ;;
-      c_ZIPExtractionModule)        AC_CONFIG_SUBDIRS([modules/c_ZIPExtractionModule]) ;;
 # NOTE: There is a small amount of code in the ZIP configure.ac to list out
 # all modules that missed dependencies.  If one gets added after it, then 
 # besure to move that code to that module so that it is shown at the end
 # of a "./configure" run
-      *)
-        AC_MSG_WARN([Unknown project (${i}) won't be configured automatically.]) ;;
     esac
   fi
 done
@@ -182,10 +177,18 @@ AC_CONFIG_FILES([Makefile
         tsk/framework/pipeline/Makefile
         tsk/framework/services/Makefile
         tsk/framework/utilities/Makefile
+        modules/Makefile
+        modules/c_EntropyModule/Makefile
+        modules/c_HashCalcModule/Makefile
+        modules/c_InterestingFilesModule/Makefile
+        modules/c_RegRipperModule/Makefile
+        modules/c_SaveInterestingFilesModule/Makefile
+        modules/c_SummaryReportModule/Makefile
+        modules/c_TskHashLookupModule/Makefile
+        modules/c_ZIPExtractionModule/Makefile
         tools/Makefile
         tools/tsk_analyzeimg/Makefile
         tools/tsk_validatepipeline/Makefile
-        modules/Makefile
 ])
 
 AC_OUTPUT

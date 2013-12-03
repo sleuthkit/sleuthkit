@@ -212,26 +212,48 @@ std::string TskFile::getFullPath() const
 
 std::string TskFile::getUniquePath() const
 {
+    const uint64_t VOLUME_SHADOW_SNAPSHOT_FILE_PARENT_ID = 9223372036854775807;
+    
     std::stringstream path;
     
     if (m_fileRecord.typeId == TskImgDB::IMGDB_FILES_TYPE_CARVED)
     {
         path << "/carved/" << m_fileRecord.fullPath;
     }
-    else
+    else if (m_fileRecord.typeId == TskImgDB::IMGDB_FILES_TYPE_DERIVED)
     {
-        uint64_t fileSystemSectorOffset = 0;
-        uint64_t unusedUint = 0;
-        int unusedInt = 0;
-        if (m_fileRecord.typeId == TskImgDB::IMGDB_FILES_TYPE_DERIVED)
+        if (m_fileRecord.parentFileId == VOLUME_SHADOW_SNAPSHOT_FILE_PARENT_ID)
         {
-            TskServices::Instance().getImgDB().getFileUniqueIdentifiers(m_fileRecord.parentFileId, fileSystemSectorOffset, unusedUint, unusedInt, unusedInt);
+            // The full path will have an initial component of the form /Volume<N>_Snapshot<N> that
+            // both makes the path unique and clearly indicates the source of the file. 
+            path << m_fileRecord.fullPath;
         }
         else
         {
-            TskServices::Instance().getImgDB().getFileUniqueIdentifiers(m_fileRecord.fileId, fileSystemSectorOffset, unusedUint, unusedInt, unusedInt);
+            uint64_t fileSystemSectorOffset = 0;
+            uint64_t unusedUint = 0;
+            int unusedInt = 0;
+
+            // To determine the file system offset for a derived file we have to
+            // find the top level parent it was derived from.
+            // The top level parent may be a file system or carved file or we may
+            // make it to the top of the hierarchy (e.g. for L01 or RAR input).
+            TskFileRecord fileRecord = m_fileRecord;
+            while (fileRecord.parentFileId != 0 && fileRecord.typeId == TskImgDB::IMGDB_FILES_TYPE_DERIVED)
+            {
+                TskServices::Instance().getImgDB().getFileRecord(fileRecord.parentFileId, fileRecord);
+            }
+
+            if (fileRecord.typeId == TskImgDB::IMGDB_FILES_TYPE_CARVED)
+            {
+                path << "/carved/" << m_fileRecord.fullPath;
+            }
+            else
+            {
+                TskServices::Instance().getImgDB().getFileUniqueIdentifiers(fileRecord.fileId, fileSystemSectorOffset, unusedUint, unusedInt, unusedInt);
+                path << "/FsOffset-" << fileSystemSectorOffset << "/" << m_fileRecord.fullPath;
+            }
         }
-        path << "/FsOffset-" << fileSystemSectorOffset << "/" << m_fileRecord.fullPath;
     }
 
     return path.str();

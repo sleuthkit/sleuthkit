@@ -1229,8 +1229,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                 if (fs_attr_run->addr != 0) {
                     tsk_error_reset();
 
-                    if (fs_attr->fs_file->
-                        meta->flags & TSK_FS_META_FLAG_UNALLOC)
+                    if (fs_attr->fs_file->meta->
+                        flags & TSK_FS_META_FLAG_UNALLOC)
                         tsk_error_set_errno(TSK_ERR_FS_RECOVER);
                     else
                         tsk_error_set_errno(TSK_ERR_FS_GENFS);
@@ -1240,9 +1240,9 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                         "  id: %d Meta: %" PRIuINUM " Status: %s",
                         fs_attr_run->len, fs_attr_run->addr, fs_attr->type,
                         fs_attr->id, fs_attr->fs_file->meta->addr,
-                        (fs_attr->fs_file->
-                            meta->flags & TSK_FS_META_FLAG_ALLOC) ?
-                        "Allocated" : "Deleted");
+                        (fs_attr->fs_file->meta->
+                            flags & TSK_FS_META_FLAG_ALLOC) ? "Allocated" :
+                        "Deleted");
                     free(comp_unit);
                     ntfs_uncompress_done(&comp);
                     return 1;
@@ -1261,8 +1261,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                 if (addr > fs->last_block) {
                     tsk_error_reset();
 
-                    if (fs_attr->fs_file->
-                        meta->flags & TSK_FS_META_FLAG_UNALLOC)
+                    if (fs_attr->fs_file->meta->
+                        flags & TSK_FS_META_FLAG_UNALLOC)
                         tsk_error_set_errno(TSK_ERR_FS_RECOVER);
                     else
                         tsk_error_set_errno(TSK_ERR_FS_BLK_NUM);
@@ -1270,9 +1270,9 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                         ("ntfs_attr_walk_special: Invalid address in run (too large): %"
                         PRIuDADDR " Meta: %" PRIuINUM " Status: %s", addr,
                         fs_attr->fs_file->meta->addr,
-                        (fs_attr->fs_file->
-                            meta->flags & TSK_FS_META_FLAG_ALLOC) ?
-                        "Allocated" : "Deleted");
+                        (fs_attr->fs_file->meta->
+                            flags & TSK_FS_META_FLAG_ALLOC) ? "Allocated" :
+                        "Deleted");
 
                     free(comp_unit);
                     ntfs_uncompress_done(&comp);
@@ -1295,8 +1295,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                             PRIu32 "  id: %d Status: %s",
                             fs_attr->fs_file->meta->addr, fs_attr->type,
                             fs_attr->id,
-                            (fs_attr->fs_file->
-                                meta->flags & TSK_FS_META_FLAG_ALLOC) ?
+                            (fs_attr->fs_file->meta->
+                                flags & TSK_FS_META_FLAG_ALLOC) ?
                             "Allocated" : "Deleted");
                         free(comp_unit);
                         ntfs_uncompress_done(&comp);
@@ -1313,8 +1313,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                             TSK_FS_BLOCK_FLAG_COMP;
                         retval = is_clustalloc(ntfs, comp_unit[i]);
                         if (retval == -1) {
-                            if (fs_attr->fs_file->
-                                meta->flags & TSK_FS_META_FLAG_UNALLOC)
+                            if (fs_attr->fs_file->meta->
+                                flags & TSK_FS_META_FLAG_UNALLOC)
                                 tsk_error_set_errno(TSK_ERR_FS_RECOVER);
                             free(comp_unit);
                             ntfs_uncompress_done(&comp);
@@ -1342,8 +1342,8 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                                 i * fs->block_size + read_len,
                                 comp.uncomp_idx,
                                 fs_attr->fs_file->meta->addr,
-                                (fs_attr->fs_file->
-                                    meta->flags & TSK_FS_META_FLAG_ALLOC) ?
+                                (fs_attr->fs_file->meta->
+                                    flags & TSK_FS_META_FLAG_ALLOC) ?
                                 "Allocated" : "Deleted");
                             free(comp_unit);
                             ntfs_uncompress_done(&comp);
@@ -1535,8 +1535,8 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
                             PRIu32 "  id: %d  Status: %s",
                             a_fs_attr->fs_file->meta->addr,
                             a_fs_attr->type, a_fs_attr->id,
-                            (a_fs_attr->fs_file->
-                                meta->flags & TSK_FS_META_FLAG_ALLOC) ?
+                            (a_fs_attr->fs_file->meta->
+                                flags & TSK_FS_META_FLAG_ALLOC) ?
                             "Allocated" : "Deleted");
                         free(comp_unit);
                         ntfs_uncompress_done(&comp);
@@ -2050,6 +2050,29 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             if (fname->nspace == NTFS_FNAME_DOS) {
                 continue;
             }
+            
+            fs_file->meta->time2.ntfs.fn_mtime =
+                nt2unixtime(tsk_getu64(fs->endian, fname->mtime));
+            fs_file->meta->time2.ntfs.fn_mtime_nano =
+                nt2nano(tsk_getu64(fs->endian, fname->mtime));
+            
+            fs_file->meta->time2.ntfs.fn_atime =
+                nt2unixtime(tsk_getu64(fs->endian, fname->atime));
+            fs_file->meta->time2.ntfs.fn_atime_nano =
+                nt2nano(tsk_getu64(fs->endian, fname->atime));
+            
+            fs_file->meta->time2.ntfs.fn_ctime =
+                nt2unixtime(tsk_getu64(fs->endian, fname->ctime));
+            fs_file->meta->time2.ntfs.fn_ctime_nano =
+                nt2nano(tsk_getu64(fs->endian, fname->ctime));
+            
+            fs_file->meta->time2.ntfs.fn_crtime =
+                nt2unixtime(tsk_getu64(fs->endian, fname->crtime));
+            fs_file->meta->time2.ntfs.fn_crtime_nano =
+                nt2nano(tsk_getu64(fs->endian, fname->crtime));
+
+            fs_file->meta->time2.ntfs.fn_id = id;
+            
 
             /* Seek to the end of the fs_name structures in TSK_FS_META */
             if (fs_file->meta->name2) {
@@ -2530,7 +2553,16 @@ ntfs_dinode_copy(NTFS_INFO * ntfs, TSK_FS_FILE * a_fs_file, char *a_buf,
     a_fs_file->meta->ctime_nano = 0;
     a_fs_file->meta->crtime = 0;
     a_fs_file->meta->crtime_nano = 0;
-
+    a_fs_file->meta->time2.ntfs.fn_mtime = 0;
+    a_fs_file->meta->time2.ntfs.fn_mtime_nano = 0;
+    a_fs_file->meta->time2.ntfs.fn_atime = 0;
+    a_fs_file->meta->time2.ntfs.fn_atime_nano = 0;
+    a_fs_file->meta->time2.ntfs.fn_ctime = 0;
+    a_fs_file->meta->time2.ntfs.fn_ctime_nano = 0;
+    a_fs_file->meta->time2.ntfs.fn_crtime = 0;
+    a_fs_file->meta->time2.ntfs.fn_crtime_nano = 0;
+    a_fs_file->meta->time2.ntfs.fn_id = 0;
+    
     /* add the flags */
     a_fs_file->meta->flags =
         ((tsk_getu16(fs->endian, mft->flags) &
@@ -2996,7 +3028,7 @@ ntfs_sds_to_str(TSK_FS_INFO * a_fs, const ntfs_attr_sds * a_sds,
         //tsk_fprintf(stderr, "Sub-Authority Count: %i\n", sid->sub_auth_count);
         authority = 0;
         for (i = 0; i < 6; i++)
-            authority += (uint64_t) sid->ident_auth[i] << ((5-i)*8);
+            authority += (uint64_t) sid->ident_auth[i] << ((5 - i) * 8);
 
         //tsk_fprintf(stderr, "NT Authority: %" PRIu64 "\n", authority);
 
@@ -3012,8 +3044,7 @@ ntfs_sds_to_str(TSK_FS_INFO * a_fs, const ntfs_attr_sds * a_sds,
         sid_str_offset = sid_str + len;
 
         for (i = 0; i < sid->sub_auth_count; i++) {
-            len =
-                sprintf(sid_str_offset, "-%" PRIu32, sid->sub_auth[i]);
+            len = sprintf(sid_str_offset, "-%" PRIu32, sid->sub_auth[i]);
             sid_str_offset += len;
         }
         *a_sidstr = sid_str;
@@ -3076,8 +3107,8 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
     // versions of NTFS.
     for (i = 0; i < ntfs->sii_data.used; i++) {
         if (tsk_getu32(fs->endian,
-                ((ntfs_attr_sii *) (ntfs->sii_data.
-                        buffer))[i].key_sec_id) == secid) {
+                ((ntfs_attr_sii *) (ntfs->sii_data.buffer))[i].
+                key_sec_id) == secid) {
             sii = &((ntfs_attr_sii *) (ntfs->sii_data.buffer))[i];
             break;
         }
@@ -3130,17 +3161,18 @@ ntfs_get_sds(TSK_FS_INFO * fs, uint32_t secid)
     }
     else {
         if (tsk_verbose)
-            tsk_fprintf(stderr, "ntfs_get_sds: entry found was for wrong Security ID (%"PRIu32" vs %"PRIu32")\n",
-                        sds_secid, sii_secid);
+            tsk_fprintf(stderr,
+                "ntfs_get_sds: entry found was for wrong Security ID (%"
+                PRIu32 " vs %" PRIu32 ")\n", sds_secid, sii_secid);
 
 //        if (sii_secid != 0) {
-        
-            // There is obviously a mismatch between the information in the SII entry and that in the SDS entry.
-            // After looking at these mismatches, it appears there is not a pattern. Perhaps some entries have been reused.
 
-            //printf("\nsecid %d hash %x offset %I64x size %x\n", sii_secid, sii_sechash, sii_sds_file_off, sii_sds_ent_size);
-            //printf("secid %d hash %x offset %I64x size %x\n", sds_secid, sds_sechash, sds_file_off, sds_ent_size);
-  //      }
+        // There is obviously a mismatch between the information in the SII entry and that in the SDS entry.
+        // After looking at these mismatches, it appears there is not a pattern. Perhaps some entries have been reused.
+
+        //printf("\nsecid %d hash %x offset %I64x size %x\n", sii_secid, sii_sechash, sii_sds_file_off, sii_sds_ent_size);
+        //printf("secid %d hash %x offset %I64x size %x\n", sds_secid, sds_sechash, sds_file_off, sds_ent_size);
+        //      }
     }
 
     tsk_error_reset();
@@ -3413,7 +3445,8 @@ ntfs_load_secure(NTFS_INFO * ntfs)
 
     // allocate the structure for the processed version of the data   
     ntfs->sii_data.used = 0;    // use this to count the number of $SII entries
-    if ((ntfs->sii_data.buffer = (char *)tsk_malloc(sii_buffer.size)) == NULL) {
+    if ((ntfs->sii_data.buffer =
+            (char *) tsk_malloc(sii_buffer.size)) == NULL) {
         free(sii_buffer.buffer);
         tsk_fs_file_close(secure);
         return 1;
@@ -3425,12 +3458,12 @@ ntfs_load_secure(NTFS_INFO * ntfs)
     free(sii_buffer.buffer);
 
 
-    /* Now we copy $SDS into NTFS_INFO. We do not do any processing in this step.*/
+    /* Now we copy $SDS into NTFS_INFO. We do not do any processing in this step. */
 
     // Allocate space for the entire $SDS stream with all the security
     // descriptors. We should be able to use the $SII offset to index
     // into the $SDS stream.
-    ntfs->sds_data.size = (size_t)fs_attr_sds->size;
+    ntfs->sds_data.size = (size_t) fs_attr_sds->size;
     // arbitrary check because we had problems before with alloc too much memory
     if (ntfs->sds_data.size > 64000000) {
         if (tsk_verbose)
@@ -3446,7 +3479,8 @@ ntfs_load_secure(NTFS_INFO * ntfs)
         return 0;
     }
     ntfs->sds_data.used = 0;
-    if ((ntfs->sds_data.buffer = (char *)tsk_malloc(ntfs->sds_data.size)) == NULL) {
+    if ((ntfs->sds_data.buffer =
+            (char *) tsk_malloc(ntfs->sds_data.size)) == NULL) {
         free(ntfs->sii_data.buffer);
         ntfs->sii_data.buffer = NULL;
         ntfs->sii_data.used = 0;
@@ -3458,7 +3492,8 @@ ntfs_load_secure(NTFS_INFO * ntfs)
     // Read in the raw $SDS ($DATA) stream.
     cnt =
         tsk_fs_attr_read(fs_attr_sds, 0,
-        ntfs->sds_data.buffer, ntfs->sds_data.size, TSK_FS_FILE_READ_FLAG_NONE);
+        ntfs->sds_data.buffer, ntfs->sds_data.size,
+        TSK_FS_FILE_READ_FLAG_NONE);
     if (cnt != ntfs->sds_data.size) {
         if (tsk_verbose)
             tsk_fprintf(stderr,
@@ -3596,7 +3631,8 @@ ntfs_block_walk(TSK_FS_INFO * fs,
         if (a_flags & TSK_FS_BLOCK_WALK_FLAG_AONLY)
             myflags |= TSK_FS_BLOCK_FLAG_AONLY;
 
-        if (tsk_fs_block_get_flag(fs, fs_block, addr, (TSK_FS_BLOCK_FLAG_ENUM)myflags) == NULL) {
+        if (tsk_fs_block_get_flag(fs, fs_block, addr,
+                (TSK_FS_BLOCK_FLAG_ENUM) myflags) == NULL) {
             tsk_error_set_errstr2
                 ("ntfs_block_walk: Error reading block at %" PRIuDADDR,
                 addr);
@@ -4164,7 +4200,7 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
         tsk_fprintf(hFile, "\n");
         tsk_fprintf(hFile, "Owner ID: %" PRIu32 "\n",
             tsk_getu32(fs->endian, si->own_id));
-        
+
 #if TSK_USE_SID
         ntfs_file_get_sidstr(fs_file, &sid_str);
 
@@ -4243,7 +4279,6 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
     if (fs_attr) {
 
         ntfs_attr_fname *fname = (ntfs_attr_fname *) fs_attr->rd.buf;
-        time_t cr_time, m_time, c_time, a_time;
         uint64_t flags;
         int a = 0;
         tsk_fprintf(hFile, "\n$FILE_NAME Attribute Values:\n");
@@ -4309,42 +4344,49 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
         /*
          * Times
          */
-        cr_time = nt2unixtime(tsk_getu64(fs->endian, fname->crtime));
-        /* altered - modified */
-        m_time = nt2unixtime(tsk_getu64(fs->endian, fname->mtime));
-        /* MFT modified */
-        c_time = nt2unixtime(tsk_getu64(fs->endian, fname->ctime));
-        /* Access */
-        a_time = nt2unixtime(tsk_getu64(fs->endian, fname->atime));
+        
+        /* Times - take it from fs_file->meta instead of redoing the work */
+        
         if (sec_skew != 0) {
             tsk_fprintf(hFile, "\nAdjusted times:\n");
-            cr_time -= sec_skew;
-            m_time -= sec_skew;
-            a_time -= sec_skew;
-            c_time -= sec_skew;
+            if (fs_file->meta->time2.ntfs.fn_mtime)
+                fs_file->meta->time2.ntfs.fn_mtime -= sec_skew;
+            if (fs_file->meta->time2.ntfs.fn_atime)
+                fs_file->meta->time2.ntfs.fn_atime -= sec_skew;
+            if (fs_file->meta->time2.ntfs.fn_ctime)
+                fs_file->meta->time2.ntfs.fn_ctime -= sec_skew;
+            if (fs_file->meta->time2.ntfs.fn_crtime)
+                fs_file->meta->time2.ntfs.fn_crtime -= sec_skew;
+            
             tsk_fprintf(hFile, "Created:\t%s\n",
-                tsk_fs_time_to_str(cr_time, timeBuf));
+                        tsk_fs_time_to_str(fs_file->meta->time2.ntfs.fn_crtime, timeBuf));
             tsk_fprintf(hFile, "File Modified:\t%s\n",
-                tsk_fs_time_to_str(m_time, timeBuf));
+                        tsk_fs_time_to_str(fs_file->meta->time2.ntfs.fn_mtime, timeBuf));
             tsk_fprintf(hFile, "MFT Modified:\t%s\n",
-                tsk_fs_time_to_str(c_time, timeBuf));
+                        tsk_fs_time_to_str(fs_file->meta->time2.ntfs.fn_ctime, timeBuf));
             tsk_fprintf(hFile, "Accessed:\t%s\n",
-                tsk_fs_time_to_str(a_time, timeBuf));
-            cr_time += sec_skew;
-            m_time += sec_skew;
-            a_time += sec_skew;
-            c_time += sec_skew;
+                        tsk_fs_time_to_str(fs_file->meta->time2.ntfs.fn_atime, timeBuf));
+            
+            if (fs_file->meta->time2.ntfs.fn_mtime == 0)
+                fs_file->meta->time2.ntfs.fn_mtime += sec_skew;
+            if (fs_file->meta->time2.ntfs.fn_atime == 0)
+                fs_file->meta->time2.ntfs.fn_atime += sec_skew;
+            if (fs_file->meta->time2.ntfs.fn_ctime == 0)
+                fs_file->meta->time2.ntfs.fn_ctime += sec_skew;
+            if (fs_file->meta->time2.ntfs.fn_crtime == 0)
+                fs_file->meta->time2.ntfs.fn_crtime += sec_skew;
+            
             tsk_fprintf(hFile, "\nOriginal times:\n");
         }
-
+        
         tsk_fprintf(hFile, "Created:\t%s\n",
-            tsk_fs_time_to_str(cr_time, timeBuf));
+                    tsk_fs_time_to_str(fs_file->meta->time2.ntfs.fn_crtime, timeBuf));
         tsk_fprintf(hFile, "File Modified:\t%s\n",
-            tsk_fs_time_to_str(m_time, timeBuf));
+                    tsk_fs_time_to_str(fs_file->meta->time2.ntfs.fn_mtime, timeBuf));
         tsk_fprintf(hFile, "MFT Modified:\t%s\n",
-            tsk_fs_time_to_str(c_time, timeBuf));
+                    tsk_fs_time_to_str(fs_file->meta->time2.ntfs.fn_ctime, timeBuf));
         tsk_fprintf(hFile, "Accessed:\t%s\n",
-            tsk_fs_time_to_str(a_time, timeBuf));
+                    tsk_fs_time_to_str(fs_file->meta->time2.ntfs.fn_atime, timeBuf));
     }
 
 

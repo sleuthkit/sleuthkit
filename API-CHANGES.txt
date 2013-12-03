@@ -1,0 +1,8 @@
+Changes to make once we are ready to do a backwards incompatible change.
+- TSK_SERVICE_ACCOUNT to TSK_ACCOUNT
+- HashDB to use new TSK_BASE_HASHDB enum instead of its own ENUM
+- Java SleuthkitCase.addArtifactType should return different if artifact already exists or getArtifactId should....
+- Java SleuthkitCase.findFilesWhere should return AbstractFile like findFiles
+- getUniquePath() should not throw exception. 
+- findFilesInImage should return an enum like TskDB methods differentiating if any data was found or not.
+- remove addImageInfo in db_Sqlite that does not take MD5, and/or make it take IMG_INFO as argument

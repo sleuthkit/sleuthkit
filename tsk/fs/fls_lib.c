@@ -50,6 +50,7 @@ static void
 printit(TSK_FS_FILE * fs_file, const char *a_path,
     const TSK_FS_ATTR * fs_attr, const FLS_DATA * fls_data)
 {
+    TSK_FS_HASH_RESULTS hash_results;
     unsigned int i;
 
     if ((!(fls_data->flags & TSK_FS_FLS_FULL)) && (a_path)) {
@@ -67,8 +68,17 @@ printit(TSK_FS_FILE * fs_file, const char *a_path,
 
 
     if (fls_data->flags & TSK_FS_FLS_MAC) {
-        tsk_fs_name_print_mac(stdout, fs_file, a_path,
-            fs_attr, fls_data->macpre, fls_data->sec_skew);
+        if (fls_data->flags & TSK_FS_FLS_HASH) {
+            tsk_fs_file_hash_calc(fs_file, &hash_results,
+                TSK_BASE_HASH_MD5);
+            tsk_fs_name_print_mac_md5(stdout, fs_file, a_path, fs_attr,
+                fls_data->macpre, fls_data->sec_skew,
+                hash_results.md5_digest);
+        }
+        else {
+            tsk_fs_name_print_mac(stdout, fs_file, a_path,
+                fs_attr, fls_data->macpre, fls_data->sec_skew);
+        }
     }
     else if (fls_data->flags & TSK_FS_FLS_LONG) {
         tsk_fs_name_print_long(stdout, fs_file, a_path, fs_file->fs_info,
@@ -147,6 +157,19 @@ print_dent_act(TSK_FS_FILE * fs_file, const char *a_path, void *ptr)
                             ((fls_data->flags & TSK_FS_FLS_DOT) == 0)))
                         printit(fs_file, a_path, fs_attr, fls_data);
                 }
+                /* Print the FILE_NAME times if this is the same attribute
+                 * that we collected the times from. */
+                else if ((fs_attr->type == TSK_FS_ATTR_TYPE_NTFS_FNAME) &&
+                    (fs_attr->id == fs_file->meta->time2.ntfs.fn_id) &&
+                    (fls_data->flags & TSK_FS_FLS_MAC)) {
+                    /* If it is . or .. only print it if the flags say so,
+                     * we continue with other streams though in case the 
+                     * directory has a data stream 
+                     */
+                    if (!((TSK_FS_ISDOT(fs_file->name->name)) &&
+                            ((fls_data->flags & TSK_FS_FLS_DOT) == 0)))
+                        printit(fs_file, a_path, fs_attr, fls_data);
+                }
             }
 
             /* A user reported that an allocated file had the standard
@@ -180,7 +203,6 @@ tsk_fs_fls(TSK_FS_INFO * fs, TSK_FS_FLS_FLAG_ENUM lclflags,
 
 #ifdef TSK_WIN32
     {
-        char *cpre;
         size_t clen;
         UTF8 *ptr8;
         UTF16 *ptr16;
@@ -188,11 +210,11 @@ tsk_fs_fls(TSK_FS_INFO * fs, TSK_FS_FLS_FLAG_ENUM lclflags,
 
         if ((tpre != NULL) && (TSTRLEN(tpre) > 0)) {
             clen = TSTRLEN(tpre) * 4;
-            cpre = (char *) tsk_malloc(clen);
-            if (cpre == NULL) {
+            data.macpre = (char *) tsk_malloc(clen);
+            if (data.macpre == NULL) {
                 return 1;
             }
-            ptr8 = (UTF8 *) cpre;
+            ptr8 = (UTF8 *) data.macpre;
             ptr16 = (UTF16 *) tpre;
 
             retval =
@@ -207,18 +229,19 @@ tsk_fs_fls(TSK_FS_INFO * fs, TSK_FS_FLS_FLAG_ENUM lclflags,
                     retval);
                 return 1;
             }
-            data.macpre = cpre;
         }
         else {
-            data.macpre = NULL;
-            cpre = NULL;
+            data.macpre = (char *) tsk_malloc(1);
+            if (data.macpre == NULL) {
+                return 1;
+            }
+            data.macpre[0] = '\0';
         }
 
         retval = tsk_fs_dir_walk(fs, inode, flags, print_dent_act, &data);
 
-        if (cpre)
-            free(cpre);
-
+        free(data.macpre);
+        data.macpre = NULL;
         return retval;
     }
 #else
