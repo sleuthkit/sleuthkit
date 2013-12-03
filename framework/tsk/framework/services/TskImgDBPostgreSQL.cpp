@@ -388,7 +388,7 @@ int TskImgDBPostgreSQL::addImageName(char const * imgName)
 
     stringstream stmt;
 
-    stmt << "INSERT INTO image_names (seq, name) VALUES (DEFAULT, E" 
+    stmt << "INSERT INTO image_names (seq, name) VALUES (DEFAULT, " 
         << m_dbConnection->quote(imgName) << ")";
 
     try
@@ -657,7 +657,7 @@ int TskImgDBPostgreSQL::addFsFileInfo(int fileSystemID, const TSK_FS_FILE *fileS
             << "DEFAULT, " << IMGDB_FILES_TYPE_FS << ", " << IMGDB_FILES_STATUS_READY_FOR_ANALYSIS << ", " << m_dbConnection->quote(fileName) << ", "
             << parFileId << ", " << fileSystemFile->name->type << ", " << meta_type << ", "
             << fileSystemFile->name->flags << ", " << meta_flags << ", " << size << ", " << crtime << ", " << ctime << ", " << atime << ", "
-            << mtime << ", " << meta_mode << ", " << gid << ", " << uid << ", E" << m_dbConnection->quote(fullpath) << ")"
+            << mtime << ", " << meta_mode << ", " << gid << ", " << uid << ", " << m_dbConnection->quote(fullpath) << ")"
             << " RETURNING file_id";
 
         // Commenting out to see if the addition of prepared statements is
@@ -681,7 +681,7 @@ int TskImgDBPostgreSQL::addFsFileInfo(int fileSystemID, const TSK_FS_FILE *fileS
         //    << meta_mode << ", "
         //    << gid << ", "
         //    << uid
-        //    << ", E" << m_dbConnection->quote(fullpath) << ")";
+        //    << ", " << m_dbConnection->quote(fullpath) << ")";
 
         result R = executeStatement(stmt.str());
         
@@ -1510,7 +1510,7 @@ int TskImgDBPostgreSQL::addDerivedFileInfo(const std::string& name, const uint64
 
     stmt << "INSERT INTO files (file_id, type_id, name, par_file_id, dir_type, meta_type, size, ctime, crtime, atime, mtime, status, full_path) "
         "VALUES (DEFAULT, " << IMGDB_FILES_TYPE_DERIVED << ", " << m_dbConnection->quote(&cleanName[0]) << ", " << parentId << ", " << dirType << ", " << metaType << ", " << size
-        << ", " << ctime << ", " << crtime << ", " << atime << ", " << mtime << ", " << IMGDB_FILES_STATUS_CREATED << ", E" << m_dbConnection->quote(&cleanPath[0]) << ")"
+        << ", " << ctime << ", " << crtime << ", " << atime << ", " << mtime << ", " << IMGDB_FILES_STATUS_CREATED << ", " << m_dbConnection->quote(&cleanPath[0]) << ")"
         << " RETURNING file_id";
 
     try
@@ -1525,7 +1525,7 @@ int TskImgDBPostgreSQL::addDerivedFileInfo(const std::string& name, const uint64
 
         // insert into the derived_files table
         stmt << "INSERT INTO derived_files (file_id, derivation_details) VALUES ("
-            << fileId << ", E" << m_dbConnection->quote(&cleanDetails[0]) << ")";
+            << fileId << ", " << m_dbConnection->quote(&cleanDetails[0]) << ")";
 
         R = W.exec(stmt);
         W.commit();
@@ -3505,7 +3505,7 @@ void TskImgDBPostgreSQL::addBlackboardAttribute(TskBlackboardAttribute attr){
             for (int i = 0; i < a_size; i++) {
                 pBuf[i] = attr.getValueString()[i];
             }
-            str << " '', E" << m_dbConnection->quote(attr.getValueString()) << ", 0, 0, 0.0";
+            str << " '', " << m_dbConnection->quote(attr.getValueString()) << ", 0, 0, 0.0";
             break;
         case TSK_INTEGER:
             str << " '', '', " << attr.getValueInt() << ",     0, 0.0";
