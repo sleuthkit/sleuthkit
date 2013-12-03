@@ -233,8 +233,10 @@ class TskDbSqlite {
         const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
     int addLayoutFileInfo(const int64_t parObjId, const int64_t fsObjId, const TSK_DB_FILES_TYPE_ENUM dbFileType, const char *fileName, const uint64_t size,
         int64_t & objId);
-    void storeObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_addr, const uint32_t & meta_seq, const int64_t & objId);
-    int64_t findParObjId(const TSK_FS_FILE * fs_file, const int64_t & fsObjId);
+    
+    void storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_file, const char *path, const int64_t & objId);
+    int64_t findParObjId(const TSK_FS_FILE * fs_file, const char *path, const int64_t & fsObjId);
+    uint32_t hash(const unsigned char *str);
     sqlite3 *m_db;
     TSK_TCHAR m_dbFilePath[1024];
     char m_dbFilePathUtf8[1024];
