@@ -585,7 +585,8 @@ tsk_hdb_delete_old(TSK_HDB_INFO * hdb_info)
  * @param hdb_info Hash database to consider
  * @param htype Hash type that index should be of
  *
- * @return 1 if index was created; 0 if failed
+ * @return 0 if index was created; 1 if failed on delete; 
+ *         2 if failed on 2nd pass delete; 3 if failed on tsk_hdb_makeindex()
  */
 uint8_t
 tsk_hdb_regenerate_index(TSK_HDB_INFO * hdb_info, TSK_TCHAR * db_type, uint8_t overwrite)
@@ -609,12 +610,12 @@ tsk_hdb_regenerate_index(TSK_HDB_INFO * hdb_info, TSK_TCHAR * db_type, uint8_t o
         }
         
         if (tsk_hdb_delete_old(hdb_info) != 0) {
-            return 0; //error
+            return 1; //error
         }
 
         // Run a second pass in case there were two indices
         if (tsk_hdb_delete_old(hdb_info) != 0) {
-            return 0; //error
+            return 2; //error
         }
 
     } else {
@@ -624,10 +625,10 @@ tsk_hdb_regenerate_index(TSK_HDB_INFO * hdb_info, TSK_TCHAR * db_type, uint8_t o
 
     // Create, initialize, and fill in the new index from the src db
     if (tsk_hdb_makeindex(hdb_info, db_type)) {
-        return 0; //error
+        return 3; //error
     }
 
-    return 1; //success
+    return 0; //success
 }
 
 
