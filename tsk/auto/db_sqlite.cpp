@@ -25,7 +25,7 @@ using std::stringstream;
 using std::sort;
 using std::for_each;
 
-#define TSK_SCHEMA_VER 4
+#define TSK_SCHEMA_VER 3
 
 /**
  * Set the locations and logging object.  Must call
@@ -237,9 +237,7 @@ int
             "Error creating tsk_objects table: %s\n")
         ||
         attempt_exec
-//        ("CREATE TABLE tsk_image_info (obj_id INTEGER PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT, size INTEGER, md5 TEXT);",
-
-        ("CREATE TABLE tsk_image_info (obj_id INTEGER PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT);",
+        ("CREATE TABLE tsk_image_info (obj_id INTEGER PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT, size INTEGER, md5 TEXT, description TEXT);",
             "Error creating tsk_image_info table: %s\n")
         ||
         attempt_exec
@@ -255,7 +253,7 @@ int
             "Error creating tsk_vol_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_fs_info (obj_id INTEGER PRIMARY KEY, img_offset INTEGER NOT NULL, fs_type INTEGER NOT NULL, block_size INTEGER NOT NULL, block_count INTEGER NOT NULL, root_inum INTEGER NOT NULL, first_inum INTEGER NOT NULL, last_inum INTEGER NOT NULL);",
+        ("CREATE TABLE tsk_fs_info (obj_id INTEGER PRIMARY KEY, img_offset INTEGER NOT NULL, fs_type INTEGER NOT NULL, block_size INTEGER NOT NULL, block_count INTEGER NOT NULL, root_inum INTEGER NOT NULL, first_inum INTEGER NOT NULL, last_inum INTEGER NOT NULL, display_name TEXT);",
             "Error creating tsk_fs_info table: %s\n")
         ||
         attempt_exec
@@ -439,8 +437,8 @@ int
 //        objId, type, ssize, timezone.c_str(), size, md5.c_str());
     
     snprintf(stmt, 1024,
-        "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone) VALUES (%lld, %d, %d, '%s');",
-        objId, type, ssize, timezone.c_str());
+        "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %d, '%s', %"PRIuOFF", '%s');",
+        objId, type, ssize, timezone.c_str(), size, md5.c_str());
 
     return attempt_exec(stmt,
         "Error adding data to tsk_image_info table: %s\n");
@@ -602,7 +600,7 @@ uint32_t TskDbSqlite::hash(const unsigned char *str) {
     uint32_t hash = 5381;
     int c;
 
-    while (c = *str++) {
+    while ((c = *str++)) {
         // skip slashes -> normalizes leading/ending/double slashes
         if (c == '/')
             continue;

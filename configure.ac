@@ -75,6 +75,8 @@ AC_FUNC_UTIME_NULL
 AC_FUNC_VPRINTF
 dnl AC_CHECK_FUNCS([dup2 gethostname isascii iswprint memset munmap regcomp select setlocale strcasecmp strchr strdup strerror strndup strrchr strtol strtoul strtoull utime wcwidth])
 AC_CHECK_FUNCS([ishexnumber err errx warn warnx vasprintf getrusage])
+AC_CHECK_FUNCS([strlcpy strlcat])
+
 AX_PTHREAD([
     AC_DEFINE(HAVE_PTHREAD,1,[Define if you have POSIX threads libraries and header files.])
     CLIBS="$PTHREAD_LIBS $LIBS"
@@ -215,18 +217,13 @@ AS_IF([test "x$with_libewf" != "xno"],
 )
 AS_IF([test "x$ac_cv_lib_ewf_libewf_get_version" = "xyes"], [ax_libewf=yes], [ax_libewf=no])
 
-AM_CONDITIONAL([X_LIBEWF],[test "x$with_libewf" != "xno" && test "x$with_libewf" != "xyes"])
-AS_IF([test "x$with_libewf" != "xno"],
-   [EWF_PATH="${with_libewf}/lib"],
-)
-AC_SUBST(EWF_PATH, $EWF_PATH)
-   
 dnl sqlite requires pthread libraries - this was copied from its configure.ac
 dnl AC_SEARCH_LIBS(pthread_create, pthread)
 AC_SEARCH_LIBS(dlopen, dl)
 
-dnl Test for java/jni so that we can compile the java bindings
+dnl Test for the various java things that we need for bindings
 AS_IF([test "x$enable_java" != "xno"], [
+    dnl javac is needed to compile the JAR file
     AC_PROG_JAVAC
     if test "x$JAVAC" != x; then
         AX_JNI_INCLUDE_DIR
@@ -237,14 +234,20 @@ AS_IF([test "x$enable_java" != "xno"], [
         dnl Export the paths so that the makefile gets them
         AC_SUBST(JNI_CPPFLAGS, $JNI_CPPFLAGS)
     fi
+
+    dnl java is needed by ant
+    dnl we had one report of a system with javac and not java
     AC_PROG_JAVA
+
+    dnl Test is ant is available
+    AC_PATH_PROG([ANT_FOUND], [ant], [])
+
 ]) dnl test enable_java
 
-dnl Test is ant is available
-AC_PATH_PROG([ANT_FOUND], [ant], [])
-AM_CONDITIONAL([X_JNI],[test "x$JNI_CPPFLAGS" != x && test "x$ANT_FOUND" != x && test "x$JAVA" != x])
-
+dnl if we found everything we need, set ax_java_support for the
+dnl status message and set X_JNI for use in Makefile
 AS_IF([test "x$JNI_CPPFLAGS" != x && test "x$ANT_FOUND" != x && test "x$JAVA" != x], [ax_java_support=yes], [ax_java_support=no])
+AM_CONDITIONAL([X_JNI],[test "x$ax_java_support" == "xyes"])
 
 AC_CONFIG_COMMANDS([tsk/tsk_incs.h],
     [echo "#ifndef _TSK_INCS_H" > tsk/tsk_incs.h

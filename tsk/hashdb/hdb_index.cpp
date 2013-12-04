@@ -9,7 +9,7 @@
  */
 
 #include "tsk_hashdb_i.h"
-
+#include <share.h>
 
 /**
  * \file hdb_index.cpp
@@ -31,23 +31,8 @@ tsk_idx_open_file(TSK_TCHAR *idx_fname)
 
 #ifdef TSK_WIN32
     {
-        HANDLE hWin;
-        //DWORD szLow, szHi;
-
-        if (-1 == GetFileAttributes(idx_fname)) {
-            //tsk_release_lock(&idx_info->lock);
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_HDB_MISSING);
-            tsk_error_set_errstr(
-                    "tsk_idx_open_file: Error finding index file: %"PRIttocTSK,
-                    idx_fname);
-            return NULL;
-        }
-
-        if ((hWin = CreateFile(idx_fname, GENERIC_READ,
-                        FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0)) ==
-                INVALID_HANDLE_VALUE) {
-            //tsk_release_lock(&idx_info->lock);
+        int fd;
+        if (_wsopen_s(&fd, idx_fname, _O_RDONLY, _SH_DENYNO, 0)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_OPEN);
             tsk_error_set_errstr(
@@ -56,7 +41,7 @@ tsk_idx_open_file(TSK_TCHAR *idx_fname)
             return NULL;
         }
 
-        idx = _fdopen(_open_osfhandle((intptr_t) hWin, _O_RDONLY), "r");
+        idx = _wfdopen(fd, L"r");
     }
 #else
     {
@@ -170,7 +155,7 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
             _TSK_T("%s.kdb"), hdb_info->db_fname);
     }
     
-    if (((idx = tsk_idx_open_file(idx_info->idx_fname)) == NULL) && (create == 0)) {
+    if ((create == 0) && ((idx = tsk_idx_open_file(idx_info->idx_fname)) == NULL)) {  
 
         // Try opening an old format index file
 

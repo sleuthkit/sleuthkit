@@ -60,6 +60,7 @@ public class HashDbTest extends ImgTraverser {
 
 		for (Object imagePaths : DataModelTestSuite.getImagePaths()) {
 			data.add(new Object[]{imagePaths});
+            break;
 		}
 		return data;
 	}
@@ -83,8 +84,8 @@ public class HashDbTest extends ImgTraverser {
             // Make sure we start with a clean slate
 			//java.io.File currdir = new java.io.File(".");
             //java.io.File f = new File(currdir.getAbsolutePath() + java.io.File.separator + hashfn);
-			java.io.File f = new File(hashfn);
-			boolean deleted = f.delete();
+			java.io.File fdel = new File(hashfn);
+			boolean deleted = fdel.delete();
 			assertTrue("Delete old file", deleted);
 				
             //Creating hash db
@@ -155,18 +156,43 @@ public class HashDbTest extends ImgTraverser {
 			
 			// Close it out
 			SleuthkitJNI.closeHashDatabase(handle);
-			
-            // Test Reindexing            
-            // Re-index a legacy index (which has a source db)          
-            //String pathLegacy = "testmd5.dat";
-            //("Opening existing idx (legacy) file...");
-            //int handleLegacy = SleuthkitJNI.openHashDatabase(pathLegacy);
+			           
+            //re-opening test
+            int handle2 = SleuthkitJNI.openHashDatabase(hashfn);
+            assertTrue(handle2 > 0);
+            // SleuthkitJNI.addToHashDatabase(null, md5hash, null, null, null, handle2);
+            // boolean hasLookup2 = SleuthkitJNI.hashDatabaseHasLookupIndex(handle2);
+			// assertTrue(hasLookup2);
+			// boolean hlio2 = SleuthkitJNI.hashDatabaseHasLegacyLookupIndexOnly(handle);
+			// assertFalse(hlio2);
             
-            //("Re-indexing...");
-            //SleuthkitJNI.createLookupIndexForHashDatabase(handleLegacy, true);
-            //File f2 = new File("testmd5.dat.kdb");
-            //assertTrue(f2.exists());
+            // Test Reindexing            
+			String legacyDbName = "testmd5.dat";
+            String pathLegacy = "." + File.separator + "test" + File.separator + "data" + File.separator + legacyDbName;
+			String pathLegacyKdb = pathLegacy + ".kdb";
+
+			// Open a legacy index (which has a source db)
+            int handleLegacy = SleuthkitJNI.openHashDatabase(pathLegacy);
+            assertTrue(handleLegacy > 0);
+			
+   			// remove the KDB if we already ran the test
+			java.io.File fdel2 = new File(pathLegacyKdb);
+			boolean deleted2 = fdel2.delete();
+			assertTrue("Delete old reindexed file", deleted2);
+			
+			// Re-indexing
+			boolean overwrite = false;
+            SleuthkitJNI.createLookupIndexForHashDatabase(handleLegacy, overwrite);
+            java.io.File f2 = new File(pathLegacyKdb);
+            assertTrue(f2.exists());
 	
+			// If overwrite == false, then the .idx file should still exist
+            java.io.File f3 = new File(pathLegacy + "-md5.idx");
+            assertTrue(f3.exists());
+			
+			// Close it out
+			SleuthkitJNI.closeHashDatabase(handleLegacy);            
+            
             //Test existing kdb file
             //int handle = SleuthkitJNI.openHashDatabase(hashfn);
             //("handle = " + handle);			
