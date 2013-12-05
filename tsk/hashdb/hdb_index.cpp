@@ -9,7 +9,10 @@
  */
 
 #include "tsk_hashdb_i.h"
+
+#ifdef TSK_WIN32
 #include <share.h>
+#endif
 
 /**
  * \file hdb_index.cpp
