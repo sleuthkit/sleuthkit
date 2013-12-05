@@ -571,7 +571,7 @@ tsk_hdb_delete_old(TSK_HDB_INFO * hdb_info)
         // Now that we have a filename, close out all index stuff.
         tsk_idx_clear(hdb_info);
 
-        if (cfname != "") {
+        if (strlen(cfname) > 0) {
             //attempt to delete the old index file
             if (remove(cfname) != 0) {
                 return 1;  //error
