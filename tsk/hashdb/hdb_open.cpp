@@ -9,8 +9,10 @@
  */
 
 #include "tsk_hashdb_i.h"
-#include <share.h>
 
+#ifdef TSK_WIN32
+#include <share.h>
+#endif
 
 /**
  * \file hdb_open.c
