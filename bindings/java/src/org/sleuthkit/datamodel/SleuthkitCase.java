@@ -273,7 +273,8 @@ public class SleuthkitCase {
 				"INSERT INTO tsk_files_path (obj_id, path) VALUES (?, ?)");
 
 		hasChildrenSt = con.prepareStatement(
-				"SELECT COUNT(obj_id) FROM tsk_objects WHERE par_obj_id = ?");
+				"SELECT COUNT(tsk_objects.obj_id) FROM tsk_objects INNER JOIN tsk_files ON tsk_objects.obj_id = tsk_files.obj_id" 
+				+ " WHERE par_obj_id = ? AND name NOT IN(\".\", \"..\")");
 
 		getFsIdForFileIdSt = con.prepareStatement(
 				"SELECT fs_obj_id from tsk_files WHERE obj_id=?");
