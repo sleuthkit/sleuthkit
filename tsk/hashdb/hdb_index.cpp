@@ -94,7 +94,9 @@ hdb_update_htype(TSK_HDB_INFO * hdb_info, uint8_t htype)
 }
 
 /**
- * Open an index for the given hash db
+ * Open an index based on the DB name in HDB_INFO.  That path could be path
+ * to DB or index at this point.  This method tries tofigure that out ane sets them
+ * appropriately. 
  * We only create kdb (SQLite) files, but can open old indexes.
  * @return NULL on error, TSK_IDX_INFO instance on success
  */
@@ -158,11 +160,14 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
             _TSK_T("%s.kdb"), hdb_info->db_fname);
     }
     
+    /* If we can't make a new file and the expected index doesn't exist, then
+     * we'll swap names and try again. */
     if ((create == 0) && ((idx = tsk_idx_open_file(idx_info->idx_fname)) == NULL)) {  
 
         // Try opening an old format index file
 
         // Clear index filename
+        // @@@ Why not just do a memset here?
         free(idx_info->idx_fname);
         idx_info->idx_fname = (TSK_TCHAR *) tsk_malloc(flen * sizeof(TSK_TCHAR));
         if (idx_info->idx_fname == NULL) {
@@ -179,6 +184,9 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create)
 
             // Use given db filename as the index filename
             TSTRNCPY(idx_info->idx_fname, hdb_info->db_fname, TSTRLEN(hdb_info->db_fname));
+            
+            // @@@ We shoudl just bail at this point because all this is going to do
+            // is repeat what we just did above
         } else {
             // Change the filename to the old format
             switch (htype) {
@@ -684,24 +692,29 @@ tsk_hdb_makeindex(TSK_HDB_INFO * a_hdb_info, TSK_TCHAR * a_type)
 
 /**
  * \ingroup hashdblib
- * Create an empty index.
- * @param db_file Filename. For a new index from scratch, the db name == idx name.
+ * Create a new hash database that can be written to.
+ * @param db_file Filename.
  * @returns NULL on error
  */
 TSK_HDB_INFO *
-tsk_hdb_new(TSK_TCHAR * db_file)
+tsk_hdb_newdb(TSK_TCHAR * db_file)
 {
+    // @@@ THis seems like a hack. We should probably pass in a "NEW/CREATE" flag into open to signal this use of the method.
+    // though, I'm not sure what hdb_open is really doing of value in this case....
     TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
     TSK_HDB_INFO * hdb_info = tsk_hdb_open(db_file, flags);
+    
     if (hdb_info != NULL) {
         TSK_TCHAR * dbtype = NULL; //ignored for IDX only
+        // @@@ This currently goes to idxonly_initidx, which makes the file.
         if (hdb_info->makeindex(hdb_info, dbtype) != 0) {
             tsk_hdb_close(hdb_info);
             hdb_info = NULL;
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_CREATE);
             tsk_error_set_errstr("tsk_hdb_new: making new index failed");
-        } else {
+        }
+        else {
             if (tsk_hdb_idxfinalize(hdb_info) != 0) {
                 tsk_hdb_close(hdb_info);
                 hdb_info = NULL;
