@@ -1686,11 +1686,31 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbCreateIndexNat (JNIEnv * env,
         }
   
         // [Re]create the hash information and file
-        if (tsk_hdb_regenerate_index(db, dbType, (overwrite ? 1 : 0)) == 0) {
-            setThrowTskCoreError(env, "Error: index regeneration");
+        uint8_t err = tsk_hdb_regenerate_index(db, dbType, (overwrite ? 1 : 0));
+
+        // Make an error message
+        if (err > 0) {
+            char c_db_type[32];
+            snprintf(c_db_type, 32, "%" PRIttocTSK, dbType);
+            std::string dbTypeStr(c_db_type);
+
+            std::string msg("Error: index regeneration (db_type = " + dbTypeStr + "): ");
+            switch (err) {
+                case 1: 
+                    msg += "delete old failed.";
+                break;
+                case 2: 
+                    msg += "delete old (2nd pass) failed.";
+                break;
+                case 3: 
+                    msg += "tsk_hdb_makeindex failed.";
+                break;
+            }
+            setThrowTskCoreError(env, msg.c_str());
             return;
         }
 
+        // success
         return;
     }
 }
