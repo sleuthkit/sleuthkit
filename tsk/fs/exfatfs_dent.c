@@ -40,81 +40,15 @@
 typedef struct {
     FATFS_INFO *fatfs;
     int8_t sector_is_allocated;
-    EXFATFS_DIR_ENTRY_TYPE_ENUM last_dentry_type;
+    EXFATFS_DIR_ENTRY_TYPE last_dentry_type;
     uint8_t expected_secondary_entry_count;
     uint8_t actual_secondary_entry_count;
     uint16_t expected_check_sum;
-    uint16_t actual_check_sum;
     uint8_t expected_name_length;
     uint8_t actual_name_length;
     TSK_FS_NAME *fs_name;
     TSK_FS_DIR *fs_dir;
 } EXFATFS_FS_NAME_INFO;
-
-/**
- * \internal
- * Adds the bytes of a directory entry from a file directory entry set to the 
- * the entry set check sum stored in a EXFATFS_FS_NAME_INFO object.
- *
- * @param a_name_info The name info object.
- * @param a_dentry A buffer containing a file directory entry.
- */
-static void
-exfatfs_update_file_entry_set_checksum(EXFATFS_FS_NAME_INFO *a_name_info, 
-    FATFS_DENTRY *a_dentry)
-{
-    EXFATFS_DIR_ENTRY_TYPE_ENUM dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
-    uint8_t index = 0;
-    uint16_t byte_to_add = 0; /* uint16_t is data type of check sum. */
-
-    assert(a_name_info != NULL);
-    assert(a_dentry != NULL);
-    
-    dentry_type = (EXFATFS_DIR_ENTRY_TYPE_ENUM)a_dentry->data[0];
-    assert(dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE ||
-           dentry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE ||
-           dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM ||
-           dentry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM ||
-           dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME ||
-           dentry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME);
-
-    for (index = 0; index < sizeof(a_dentry->data); ++index) {
-        /* Skip the expected check sum, found in the file entry. */
-        if ((dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE ||
-             dentry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE) &&
-            (index == 2 || index == 3)) {
-            continue;
-        }
-
-        // RJCTODO: Confirm this. Or discard the check sum calculation code.
-        /* The file system does not update the check sum when an entry set is 
-         * marked as no longer in use. Compensate for this. */
-        if (index == 0) {
-            switch (dentry_type) {
-            case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE:
-                byte_to_add = (uint16_t)EXFATFS_DIR_ENTRY_TYPE_FILE;
-                break;
-            case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM:
-                byte_to_add = (uint16_t)EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM;
-                break;
-            case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME:
-                byte_to_add = (uint16_t)EXFATFS_DIR_ENTRY_TYPE_FILE_NAME;
-                break;
-            default:
-                byte_to_add = (uint16_t)dentry_type;
-                break;
-            }
-        }
-        else {
-            byte_to_add = (uint16_t)a_dentry->data[index];
-        }
-        
-        a_name_info->actual_check_sum = 
-            ((a_name_info->actual_check_sum << 15) | 
-             (a_name_info->actual_check_sum >> 1)) + 
-             byte_to_add;
-    }
-}
 
 /**
  * \internal
@@ -131,11 +65,10 @@ exfatfs_reset_name_info(EXFATFS_FS_NAME_INFO *a_name_info)
     assert(a_name_info->fs_name->name != NULL);
     assert(a_name_info->fs_name->name_size == FATFS_MAXNAMLEN_UTF8);
 
-    a_name_info->last_dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
+    a_name_info->last_dentry_type = EXFATFSFS_DIR_ENTRY_TYPE_NONE;
     a_name_info->expected_secondary_entry_count = 0;
     a_name_info->actual_secondary_entry_count = 0;
     a_name_info->expected_check_sum = 0;
-    a_name_info->actual_check_sum = 0;
     a_name_info->expected_name_length = 0;
     a_name_info->actual_name_length = 0;
     a_name_info->fs_name->name[0] = '\0';
@@ -201,7 +134,7 @@ exfats_parse_file_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a_dent
 
     /* Set the current entry type. This is used to check the sequence and 
      * in-use state of the entries in the set. */
-    a_name_info->last_dentry_type = (EXFATFS_DIR_ENTRY_TYPE_ENUM)dentry->entry_type;
+    a_name_info->last_dentry_type = (EXFATFS_DIR_ENTRY_TYPE)dentry->entry_type;
 
     /* The number of secondary entries and the check sum for the entry set are
      * stored in the file entry. */
@@ -221,7 +154,7 @@ exfats_parse_file_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a_dent
     /* If the in-use bit of the type byte is not set, the entry set is for a 
      * deleted or renamed file. However, trust and verify - to be marked as 
      * allocated, the inode must also be in an allocated sector. */
-    if (a_name_info->sector_is_allocated && dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE) {
+    if (a_name_info->sector_is_allocated && exfatfs_get_alloc_status_from_type(dentry->entry_type)) {
         a_name_info->fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;    
     }
     else {
@@ -231,8 +164,6 @@ exfats_parse_file_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a_dent
     /* Make the inum of the file entry the inode address for the entry set. */
     a_name_info->fs_name->meta_addr = a_inum;
 
-    /* Add the file entry bytes to the entry set check sum. */
-    exfatfs_update_file_entry_set_checksum(a_name_info, a_dentry);
 }
 
 /**
@@ -260,8 +191,7 @@ exfats_parse_file_stream_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY 
            dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM);
     assert(fatfs_inum_is_in_range(a_name_info->fatfs, a_inum));
 
-    if ((a_name_info->last_dentry_type != EXFATFS_DIR_ENTRY_TYPE_FILE) && 
-        (a_name_info->last_dentry_type != EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE)) {
+	if(exfatfs_get_enum_from_type(a_name_info->last_dentry_type) != EXFATFSFS_DIR_ENTRY_TYPE_FILE)){
         /* A file stream entry must follow a file entry, so this entry is a
          * false positive or there is corruption. Save the current name, 
          * if any, and ignore this buffer. */ 
@@ -287,9 +217,6 @@ exfats_parse_file_stream_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY 
 
     /* The file stream entry contains the length of the file name. */
     a_name_info->expected_name_length = dentry->file_name_length;
-
-    /* Add the stream entry bytes to the entry set check sum. */
-    exfatfs_update_file_entry_set_checksum(a_name_info, a_dentry);
 
     /* If all of the secondary entries for the set are present, save the name,
      * if any. Note that if this condition is satisfied here, the directory is

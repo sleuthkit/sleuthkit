@@ -773,7 +773,7 @@ exfatfs_make_contiguous_data_run(TSK_FS_FILE *a_fs_file)
     if (tsk_fs_attr_set_run(a_fs_file, fs_attr, data_run, NULL,
             TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
             fs_meta->size,
-            data_run->len * fs->block_size,
+			fs_meta->size,
             data_run->len * fs->block_size, 
             TSK_FS_ATTR_FLAG_NONE, 0)) {
         return 1;
@@ -928,7 +928,7 @@ exfatfs_copy_upcase_table_inode(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, TSK
 static uint8_t
 exfatfs_load_file_stream_dentry(FATFS_INFO *a_fatfs, 
     TSK_INUM_T a_stream_entry_inum, uint8_t a_sector_is_alloc, 
-    EXFATFS_DIR_ENTRY_TYPE_ENUM a_file_dentry_type, // RJCTODO: Consider sending the desired type of stream entry in, or passing in the file entry.
+    EXFATFS_DIR_ENTRY_TYPE_ENUM a_file_dentry_type,
     FATFS_DENTRY *a_dentry)
 {
     assert(a_fatfs != NULL);
@@ -975,8 +975,8 @@ exfatfs_new_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry
     TSK_INUM_T stream_entry_inum = 0;
     int8_t alloc_check_ret_val = 0;
     uint8_t cluster_is_alloc = 0;
-    TSK_DADDR_T sector = 0; // RJCTODO: Improve name
-    TSK_DADDR_T cluster = 0; // RJCTODO: Improve name
+    TSK_DADDR_T sector = 0; 
+    TSK_DADDR_T cluster = 0;
     TSK_DADDR_T cluster_base_sector = 0;
     TSK_DADDR_T last_entry_offset = 0;
     TSK_DADDR_T file_entry_offset = 0;
@@ -1012,7 +1012,7 @@ exfatfs_new_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry
     if (fatfs_inum_is_in_range(a_fatfs, stream_entry_inum)) {
         if (exfatfs_load_file_stream_dentry(a_fatfs, 
             stream_entry_inum, cluster_is_alloc, 
-            (EXFATFS_DIR_ENTRY_TYPE_ENUM)a_file_dentry->entry_type, // RJCTODO: Messy casts
+            (EXFATFS_DIR_ENTRY_TYPE_ENUM)a_file_dentry->entry_type,
             (FATFS_DENTRY*)a_stream_dentry) == 0) {
             /* Found it. */
             return FATFS_OK;
@@ -1050,7 +1050,7 @@ exfatfs_new_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry
                 if (fatfs_inum_is_in_range(a_fatfs, stream_entry_inum)) {
                     if (exfatfs_load_file_stream_dentry(a_fatfs, 
                         stream_entry_inum, cluster_is_alloc, 
-                        (EXFATFS_DIR_ENTRY_TYPE_ENUM)a_file_dentry->entry_type, // RJCTODO: Messy casts
+                        (EXFATFS_DIR_ENTRY_TYPE_ENUM)a_file_dentry->entry_type,
                         (FATFS_DENTRY*)a_stream_dentry) == 0) {
                         /* Found it. */
                         return FATFS_OK;
@@ -1170,7 +1170,7 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
 
     /* Attempt to load the file stream entry that goes with this file entry. 
      * If not successful, at least the file entry meta data will be returned. */
-    if (exfatfs_new_find_file_stream_dentry(a_fatfs, a_inum, file_dentry, &stream_dentry)) { // RJCTODO: COuld pass allocation status through.
+    if (exfatfs_new_find_file_stream_dentry(a_fatfs, a_inum, file_dentry, &stream_dentry)) {
         return TSK_OK;
     }
 
@@ -1820,4 +1820,33 @@ exfatfs_inode_walk_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     }
 
     return 0;
+}
+
+
+/**
+ * \internal
+ * Returns the allocation status of a dir entry given its
+ * dir entry type byte (stored in the high bit)
+ *
+ * @param [in] a_dir_entry_type Entry type byte
+ * @return 0 if unused, 1 if used
+ */
+static uint8_t 
+exfatfs_get_alloc_status_from_type(EXFATFS_DIR_ENTRY_TYPE a_dir_entry_type)
+{
+	return (a_dir_entry_type >> 7);
+}
+
+
+/**
+ * \internal
+ * Returns the directory type enum from the given entry type byte
+ * (Comes from the low 7 bits)
+ *
+ * @param [in] a_dir_entry_type
+ * @return Enum for this type
+ */
+static EXFATFSFS_DIR_ENTRY_TYPE_ENUM 
+exfatfs_get_enum_from_type(EXFATFS_DIR_ENTRY_TYPE a_dir_entry_type){
+	return ((EXFATFSFS_DIR_ENTRY_TYPE_ENUM)(a_dir_entry_type & 0x7f);
 }

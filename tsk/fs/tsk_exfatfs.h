@@ -158,6 +158,7 @@ extern "C" {
     /**
      * exFAT directory entry types, the first byte of a directory entry.
      */
+	/*
     enum EXFATFS_DIR_ENTRY_TYPE_ENUM {
         EXFATFS_DIR_ENTRY_TYPE_NONE = 0x00,
         EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL = 0x83,     
@@ -174,7 +175,23 @@ extern "C" {
         EXFATFS_DIR_ENTRY_TYPE_FILE_NAME = 0xC1,     
         EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME = 0x41     
     };
-    typedef enum EXFATFS_DIR_ENTRY_TYPE_ENUM EXFATFS_DIR_ENTRY_TYPE_ENUM;
+    typedef enum EXFATFS_DIR_ENTRY_TYPE_ENUM EXFATFS_DIR_ENTRY_TYPE_ENUM;*/
+	typedef uint8_t EXFATFS_DIR_ENTRY_TYPE;
+
+	// Only match the low 7 bits of the byte
+	enum EXFATFSFS_DIR_ENTRY_TYPE_ENUM { // Intentional mis-naming to make sure we look at all instances
+        EXFATFSFS_DIR_ENTRY_TYPE_NONE = 0x00,
+        EXFATFSFS_DIR_ENTRY_TYPE_VOLUME_LABEL = 0x03,        
+        EXFATFSFS_DIR_ENTRY_TYPE_VOLUME_GUID = 0x20,     
+        EXFATFSFS_DIR_ENTRY_TYPE_ALLOC_BITMAP = 0x01,     
+        EXFATFSFS_DIR_ENTRY_TYPE_UPCASE_TABLE = 0x02,     
+        EXFATFSFS_DIR_ENTRY_TYPE_TEXFAT = 0x21,     
+        EXFATFSFS_DIR_ENTRY_TYPE_ACT = 0x62,     
+        EXFATFSFS_DIR_ENTRY_TYPE_FILE = 0x05,     
+        EXFATFSFS_DIR_ENTRY_TYPE_FILE_STREAM = 0x40,       
+        EXFATFSFS_DIR_ENTRY_TYPE_FILE_NAME = 0x41
+	};
+	typedef enum EXFATFSFS_DIR_ENTRY_TYPE_ENUM EXFATFSFS_DIR_ENTRY_TYPE_ENUM;
 
     /**
      * Volume label directory entry structure for exFAT file systems. This 
@@ -354,7 +371,7 @@ extern "C" {
     extern uint8_t
     exfatfs_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry_inum, 
         TSK_DADDR_T a_sector, uint8_t a_sector_is_alloc,  
-        EXFATFS_DIR_ENTRY_TYPE_ENUM a_file_dentry_type,
+        EXFATFS_DIR_ENTRY_TYPE a_file_dentry_type,
         FATFS_DENTRY *a_stream_dentry);
 
     extern uint8_t
@@ -375,6 +392,12 @@ extern "C" {
     exfatfs_inode_walk_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
         FATFS_DENTRY *a_dentry, unsigned int a_selection_flags, 
         int a_cluster_is_alloc);
+
+	extern uint8_t 
+	exfatfs_get_alloc_status_from_type(EXFATFS_DIR_ENTRY_TYPE a_dir_entry_type);
+
+	extern EXFATFSFS_DIR_ENTRY_TYPE_ENUM 
+	exfatfs_get_enum_from_type(EXFATFS_DIR_ENTRY_TYPE a_dir_entry_type);
 
     extern TSK_RETVAL_ENUM
     exfatfs_dent_parse_buf(FATFS_INFO *a_fatfs, TSK_FS_DIR *a_fs_dir, char *a_buf,

@@ -452,8 +452,6 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
      * size up to a multiple of cluster size. */
     size_remain = roundup(fs_meta->size, fatfs->csize * fs->block_size);
 
-    // RJCTODO: Consider addressing the code duplication below.
-    // RJCTODO: Consider breaking out each of the conditional blocks into its own sub-function.
     if ((a_fs_file->meta->addr == fs->root_inum) && 
         (fs->ftype != TSK_FS_TYPE_FAT32) &&
         (fs->ftype != TSK_FS_TYPE_EXFAT) &&

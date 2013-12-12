@@ -49,8 +49,6 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
         return NULL;
     }
 
-	// RJCTODO: Add validation of other parameters?
-
 	// Allocate an FATFS_INFO and initialize its generic TSK_FS_INFO members. 
     if ((fatfs = (FATFS_INFO*)tsk_fs_malloc(sizeof(FATFS_INFO))) == NULL) {
         return NULL;
@@ -81,7 +79,7 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
             }
-            tsk_error_set_errstr2("%s: boot sector", func_name); // RJCTODO: Is this a helpful error message?
+            tsk_error_set_errstr2("%s: boot sector", func_name);
 			free(fatfs);
 			return NULL;
         }
