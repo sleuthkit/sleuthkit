@@ -276,7 +276,7 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
 
             /* The type of the directory entry is encoded in the first byte 
              * of the entry. See EXFATFS_DIR_ENTRY_TYPE_ENUM. */ 
-            if (dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP) {
+            if (exfatfs_get_enum_from_type(dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP) {
                 /* Do an in-depth test. */
                 if (!exfatfs_is_alloc_bitmap_dentry((FATFS_DENTRY*)dentry, FATFS_DATA_UNIT_ALLOC_STATUS_UNKNOWN, a_fatfs)) {
                     continue;
@@ -622,8 +622,7 @@ exfatfs_find_volume_label_dentry(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file)
 
             /* The type of the directory entry is encoded in the first byte 
              * of the entry. See EXFATFS_DIR_ENTRY_TYPE_ENUM. */ 
-            if (dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL ||
-                dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL) {
+            if (exfatfs_get_enum_from_type(dentry->data[0]) == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL) {
                 if (!exfatfs_is_vol_label_dentry(dentry, FATFS_DATA_UNIT_ALLOC_STATUS_UNKNOWN)) {
                     continue;
                 }

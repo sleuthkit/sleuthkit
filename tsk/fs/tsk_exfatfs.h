@@ -152,46 +152,29 @@ extern "C" {
 		uint8_t signature[2]; 
 	} EXFATFS_MASTER_BOOT_REC;
 
-    // RJCTODO: It appears that all of the directory entry types have the in-use bit.
-    // This enum and the code should be updated to reflect that, although I suspect that 
-    // only the file directory entry set entries ever have the bit unset.
-    /**
-     * exFAT directory entry types, the first byte of a directory entry.
+	 /**
+     * exFAT directory entry type byte, containing both the type and
+	 * the allocation status
      */
-	/*
-    enum EXFATFS_DIR_ENTRY_TYPE_ENUM {
-        EXFATFS_DIR_ENTRY_TYPE_NONE = 0x00,
-        EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL = 0x83,     
-        EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL = 0x03,     
-        EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID = 0xA0,     
-        EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP = 0x81,     
-        EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE = 0x82,     
-        EXFATFS_DIR_ENTRY_TYPE_TEXFAT = 0xA1,     
-        EXFATFS_DIR_ENTRY_TYPE_ACT = 0xE2,     
-        EXFATFS_DIR_ENTRY_TYPE_FILE = 0x85,     
-        EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE = 0x05,     
-        EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM = 0xC0,     
-        EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM = 0x40,  
-        EXFATFS_DIR_ENTRY_TYPE_FILE_NAME = 0xC1,     
-        EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME = 0x41     
-    };
-    typedef enum EXFATFS_DIR_ENTRY_TYPE_ENUM EXFATFS_DIR_ENTRY_TYPE_ENUM;*/
 	typedef uint8_t EXFATFS_DIR_ENTRY_TYPE;
 
-	// Only match the low 7 bits of the byte
-	enum EXFATFSFS_DIR_ENTRY_TYPE_ENUM { // Intentional mis-naming to make sure we look at all instances
-        EXFATFSFS_DIR_ENTRY_TYPE_NONE = 0x00,
-        EXFATFSFS_DIR_ENTRY_TYPE_VOLUME_LABEL = 0x03,        
-        EXFATFSFS_DIR_ENTRY_TYPE_VOLUME_GUID = 0x20,     
-        EXFATFSFS_DIR_ENTRY_TYPE_ALLOC_BITMAP = 0x01,     
-        EXFATFSFS_DIR_ENTRY_TYPE_UPCASE_TABLE = 0x02,     
-        EXFATFSFS_DIR_ENTRY_TYPE_TEXFAT = 0x21,     
-        EXFATFSFS_DIR_ENTRY_TYPE_ACT = 0x62,     
-        EXFATFSFS_DIR_ENTRY_TYPE_FILE = 0x05,     
-        EXFATFSFS_DIR_ENTRY_TYPE_FILE_STREAM = 0x40,       
-        EXFATFSFS_DIR_ENTRY_TYPE_FILE_NAME = 0x41
+    /**
+     * exFAT directory entry types, the first byte of a directory entry minus the
+	 * high order bit (which gives allocation status)
+     */
+	enum EXFATFS_DIR_ENTRY_TYPE_ENUM {
+        EXFATFS_DIR_ENTRY_TYPE_NONE = 0x00,
+        EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL = 0x03,        
+        EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID = 0x20,     
+        EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP = 0x01,     
+        EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE = 0x02,     
+        EXFATFS_DIR_ENTRY_TYPE_TEXFAT = 0x21,     
+        EXFATFS_DIR_ENTRY_TYPE_ACT = 0x62,     
+        EXFATFS_DIR_ENTRY_TYPE_FILE = 0x05,     
+        EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM = 0x40,       
+        EXFATFS_DIR_ENTRY_TYPE_FILE_NAME = 0x41
 	};
-	typedef enum EXFATFSFS_DIR_ENTRY_TYPE_ENUM EXFATFSFS_DIR_ENTRY_TYPE_ENUM;
+	typedef enum EXFATFS_DIR_ENTRY_TYPE_ENUM EXFATFS_DIR_ENTRY_TYPE_ENUM;
 
     /**
      * Volume label directory entry structure for exFAT file systems. This 
@@ -396,7 +379,7 @@ extern "C" {
 	extern uint8_t 
 	exfatfs_get_alloc_status_from_type(EXFATFS_DIR_ENTRY_TYPE a_dir_entry_type);
 
-	extern EXFATFSFS_DIR_ENTRY_TYPE_ENUM 
+	extern EXFATFS_DIR_ENTRY_TYPE_ENUM 
 	exfatfs_get_enum_from_type(EXFATFS_DIR_ENTRY_TYPE a_dir_entry_type);
 
     extern TSK_RETVAL_ENUM

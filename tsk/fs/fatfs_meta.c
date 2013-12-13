@@ -1391,7 +1391,7 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
             for (dentry_idx = 0; dentry_idx < fatfs->dentry_cnt_se;
                 dentry_idx++, inum++, dep++) {
                 int retval;
-                EXFATFS_DIR_ENTRY_TYPE_ENUM dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
+                EXFATFS_DIR_ENTRY_TYPE dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
                 TSK_RETVAL_ENUM retval2 = TSK_OK;
 
                 /* If the inode address of the potential entry is less than
