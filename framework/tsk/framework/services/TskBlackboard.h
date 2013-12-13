@@ -78,7 +78,7 @@ enum TSK_ARTIFACT_TYPE {
 	TSK_GPS_LAST_KNOWN_LOCATION = 30, ///< GPS Last known location
 	TSK_GPS_SEARCH = 31,	///< GPS Searches
 	TSK_PROG_RUN = 32, ///< Application run information
-
+    TSK_ENCRYPTION_DETECTED = 33, ///< Encrypted File
 		
     /* SEE ABOVE:
     * - KEEP JAVA CODE IN SYNC 
