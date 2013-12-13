@@ -30,9 +30,6 @@ aff_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
             "aff_read: byte offset: %" PRIuOFF " len: %" PRIuOFF
             "\n", offset, len);
 
-    // afflib will normally handle the following checks but bailing out here
-    // means we don't have to aquire the lock.
-
     // The function cannot handle negative offsets.
     if( offset < 0 ) {
         tsk_error_reset();
