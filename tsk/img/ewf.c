@@ -57,11 +57,20 @@ ewf_image_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
             "ewf_image_read: byte offset: %" PRIuOFF " len: %" PRIuSIZE
             "\n", offset, len);
 
-    if (offset > img_info->size) {
+    // libewf will normally handle the following checks but bailing out here
+    // means we don't have to aquire the lock.
+
+    // The function cannot handle negative offsets.
+    if( offset < 0 ) {
         tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_READ_OFF);
-        tsk_error_set_errstr("ewf_image_read - %" PRIuOFF, offset);
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("ewf_image_read: offset: %" PRIuOFF, offset);
         return -1;
+    }
+
+    // Cannot read beyond the image size, be POSIX compliant here and return 0.
+    if (offset >= img_info->size) {
+        return 0;
     }
 
     tsk_take_lock(&(ewf_info->read_lock));
