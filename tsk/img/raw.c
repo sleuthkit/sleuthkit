@@ -81,7 +81,7 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
             cimg->fd = 0; /* so we don't close it next time */
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_OPEN);
-            tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
+            tsk_error_set_errstr("raw_read_segment: file \"%" PRIttocTSK
                                 "\" - %d", raw_info->images[idx], lastError);
             return -1;
         }
@@ -92,7 +92,7 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
             cimg->fd = 0; /* so we don't close it next time */
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_OPEN);
-            tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
+            tsk_error_set_errstr("raw_read_segment: file \"%" PRIttocTSK
                 "\" - %s", raw_info->images[idx], strerror(errno));
             return -1;
         }
@@ -124,7 +124,7 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
                 int lastError = (int)GetLastError();
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_SEEK);
-                tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
+                tsk_error_set_errstr("raw_read_segment: file \"%" PRIttocTSK
                     "\" offset %" PRIuOFF " seek - %d",
                     raw_info->images[idx], rel_offset,
                     lastError);
@@ -143,7 +143,7 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
             int lastError = GetLastError();
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_READ);
-            tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
+            tsk_error_set_errstr("raw_read_segment: file \"%" PRIttocTSK
                 "\" offset: %" PRIuOFF " read len: %" PRIuSIZE " - %d",
                 raw_info->images[idx], rel_offset, len,
                 lastError);
@@ -156,7 +156,7 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
         if (lseek(cimg->fd, rel_offset, SEEK_SET) != rel_offset) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_SEEK);
-            tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
+            tsk_error_set_errstr("raw_read_segment: file \"%" PRIttocTSK
                 "\" offset %" PRIuOFF " seek - %s", raw_info->images[idx],
                 rel_offset, strerror(errno));
             return -1;
@@ -168,7 +168,7 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
     if (cnt < 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_READ);
-        tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK "\" offset: %"
+        tsk_error_set_errstr("raw_read_segment: file \"%" PRIttocTSK "\" offset: %"
             PRIuOFF " read len: %" PRIuSIZE " - %s", raw_info->images[idx],
             rel_offset, len, strerror(errno));
         return -1;
@@ -206,12 +206,25 @@ raw_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
             offset, len);
     }
 
-    if (offset > img_info->size) {
+    // The function cannot handle negative offsets.
+    if( offset < 0 ) {
         tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_READ_OFF);
-        tsk_error_set_errstr("raw_read: offset %" PRIuOFF " too large",
-            offset);
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("raw_read: offset: %" PRIuOFF, offset);
         return -1;
+    }
+
+    // Cannot read beyond the image size, be POSIX compliant here and return 0.
+    if (offset >= img_info->size) {
+        return 0;
+    }
+
+    /* See if the requested length is going to be too beyond the RAW image size. */
+
+    // Protect against INT64_MAX + INT64_MAX > value
+    if( ( (TSK_OFF_T) len > img_info->size )
+     || ( offset >= ( img_info->size - len ) ) ) {
+        len = (size_t) ( img_info->size - offset );
     }
 
     // Find the location of the offset

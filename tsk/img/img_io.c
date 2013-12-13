@@ -67,6 +67,19 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
         return -1;
     }
 
+    // Cannot read beyond the image size, be POSIX compliant here and return 0.
+    if (a_off >= a_img_info->size) {
+        return 0;
+    }
+
+    /* See if the requested length is going to be too beyond the image size. */
+
+    // Protect against INT64_MAX + INT64_MAX > value
+    if( ( (TSK_OFF_T) a_len > a_img_info->size )
+     || ( a_off >= ( a_img_info->size - a_len ) ) ) {
+        a_len = (size_t) ( a_img_info->size - a_off );
+    }
+
     /* cache_lock is used for both the cache in IMG_INFO and 
      * the shared variables in the img type specific INFO structs.
      * grab it now so that it is held before any reads.
@@ -105,25 +118,7 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
         return nbytes;
     }
 
-    // TODO: why not just return 0 here (and be POSIX compliant)?
-    // and why not check earlier for this condition?
-    if (a_off >= a_img_info->size) {
-        tsk_release_lock(&(a_img_info->cache_lock));
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_READ_OFF);
-        tsk_error_set_errstr("tsk_img_read - %" PRIuOFF, a_off);
-        return -1;
-    }
-
-    /* See if the requested length is going to be too long.
-     * we'll use this length when checking the cache. */
     len2 = a_len;
-
-    // Protect against INT64_MAX + INT64_MAX > value
-    if( ( (TSK_OFF_T) len2 > a_img_info->size )
-     || ( a_off >= ( a_img_info->size - len2 ) ) ) {
-        len2 = (size_t) ( a_img_info->size - a_off );
-    }
 
     // check if it is in the cache
     for( cache_index = 0;
