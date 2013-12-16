@@ -23,8 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Collection of methods to load libraries embedded in the TSK Datamodel Jar file.
@@ -155,8 +153,24 @@ public class LibraryUtils {
 		
 		// copy library to temp folder and load it
 		try {
-			java.io.File libTemp = new java.io.File(System.getProperty("java.io.tmpdir") + java.io.File.separator + libName + libExt);
+			java.io.File tempFolder = new java.io.File(System.getProperty("java.io.tmpdir") + java.io.File.separator);
+			java.io.File libTemp = new java.io.File(tempFolder + libName + libExt);
 
+			for (Lib l : Lib.values()) {
+				String ext = getExtByPlatform();
+				java.io.File f = new java.io.File(l.getLibName() + ext);
+				System.out.println(f.getName());
+				if (f.exists()) {
+					f.delete();
+				} else {
+					java.io.File fUnix = new java.io.File(l.getUnixName() + ext);
+					System.out.println(fUnix.getName());
+					if (fUnix.exists()) {
+						fUnix.delete();
+					}
+				}
+			}
+			
 			if(libTemp.exists()) {
 				// Delete old file
 				libTemp.delete();
@@ -180,4 +194,14 @@ public class LibraryUtils {
 		} 
 		return true;
 	} 
+	
+	private static String getExtByPlatform() {
+		if (isWindows()) {
+			return ".dll";
+		} else if (isMac()) {
+			return ".dylib";
+		} else {
+			return ".so";
+		}
+	}
 }
