@@ -450,7 +450,7 @@ exfats_parse_special_file_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY
 }
 
 /**
- * /internal
+ * \internal
  * Parse a buffer containing the contents of a directory and add TSK_FS_NAME 
  * objects for each named file found to the TSK_FS_DIR representation of the 
  * directory.

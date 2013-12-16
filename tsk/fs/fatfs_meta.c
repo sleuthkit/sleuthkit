@@ -407,7 +407,7 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
         (fatfs_ptr_arg_is_null(a_fs_file->fs_info, "a_fs_file->fs_info", func_name))) {
         return TSK_ERR;
     }
-    
+
     fs_meta = a_fs_file->meta;
     fs = a_fs_file->fs_info;
     fatfs = (FATFS_INFO*)fs;
@@ -564,6 +564,31 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
          * We are going to take the clusters from the starting cluster
          * onwards and skip the clusters that are current allocated
          */
+
+		/* Quick check for exFAT only
+		 * Empty deleted files have a starting cluster of zero, which
+		 * causes problems in the exFAT functions since the first data
+		 * cluster should be 2. Since a starting cluster of zero indicates
+		 * no data, make an empty data run and skip any further processing
+		 */
+		if((fs->ftype == TSK_FS_TYPE_EXFAT) && (startclust == 0)){
+            // initialize the data run
+			fs_attr = tsk_fs_attrlist_getnew(a_fs_file->meta->attr, TSK_FS_ATTR_NONRES);
+			if (fs_attr == NULL) {
+				a_fs_file->meta->attr_state = TSK_FS_META_ATTR_ERROR;
+				return 1;
+			}
+
+			// Add the empty data run
+            if (tsk_fs_attr_set_run(a_fs_file, fs_attr, NULL, NULL,
+                    TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
+                    0, 0, 0, (TSK_FS_ATTR_FLAG_ENUM)0, 0)) {
+                fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
+                return 1;
+            }
+			fs_meta->attr_state = TSK_FS_META_ATTR_STUDIED;
+			return 0;
+		}
 
         /* Sanity checks on the starting cluster */
         /* Convert the cluster addr to a sector addr */
