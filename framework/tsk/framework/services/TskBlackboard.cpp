@@ -43,6 +43,7 @@ map<int, TskArtifactNames> initializeArtifactTypeMap(){
 	retval.insert(pair<int, TskArtifactNames>(TSK_GPS_BOOKMARK, TskArtifactNames("TSK_GPS_BOOKMARK", "GPS Bookmarks")));
 	retval.insert(pair<int, TskArtifactNames>(TSK_GPS_LAST_KNOWN_LOCATION, TskArtifactNames("TSK_GPS_LAST_KNOWN_LOCATION", "GPS Last Known Location")));
 	retval.insert(pair<int, TskArtifactNames>(TSK_GPS_SEARCH, TskArtifactNames("TSK_GPS_SEARCH", "GPS Searches")));
+	retval.insert(pair<int, TskArtifactNames>(TSK_PROG_RUN, TskArtifactNames("TSK_PROG_RUN", "Run Programs")));
 	
     return retval;
 }
@@ -142,7 +143,7 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
 	retval.insert(pair<int, TskAttributeNames>(TSK_PATH_SOURCE, TskAttributeNames("TSK_PATH_SOURCE",  "Path Source")));
 	retval.insert(pair<int, TskAttributeNames>(TSK_PERMISSIONS, TskAttributeNames("TSK_PERMISSIONS",  "Permissions")));
 	retval.insert(pair<int, TskAttributeNames>(TSK_PROG_LAUNCHED, TskAttributeNames("TSK_PROG_LAUNCHED",  "Program Launched")));
-
+	retval.insert(pair<int, TskAttributeNames>(TSK_ASSOCIATED_ARTIFACT, TskAttributeNames("TSK_ASSOCIATED_ARTIFACT", "Associated Artifact")));
 
     return retval;
 }

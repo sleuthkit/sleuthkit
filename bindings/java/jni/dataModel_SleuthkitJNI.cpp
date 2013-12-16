@@ -302,7 +302,7 @@ JNIEXPORT jint JNICALL
     TSK_TCHAR pathT[1024];
     toTCHAR(env, pathT, 1024, pathJ);
 
-    TSK_HDB_INFO * temp = tsk_hdb_new(pathT);
+    TSK_HDB_INFO * temp = tsk_hdb_newdb(pathT);
 
     if(temp == NULL)
     {

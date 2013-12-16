@@ -138,6 +138,10 @@ ewf_image_close(TSK_IMG_INFO * img_info)
         }
         free(ewf_info->images);
     }
+    else {
+        libewf_error_t *error;
+        libewf_glob_free( ewf_info->images, ewf_info->num_imgs, &error);
+    }
 
     tsk_deinit_lock(&(ewf_info->read_lock));
     tsk_img_free(img_info);

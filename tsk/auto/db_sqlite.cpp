@@ -432,6 +432,10 @@ int
 
     objId = sqlite3_last_insert_rowid(m_db);
 
+//    snprintf(stmt, 1024,
+//        "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %d, '%s', %"PRIuOFF", '%s');",
+//        objId, type, ssize, timezone.c_str(), size, md5.c_str());
+    
     snprintf(stmt, 1024,
         "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %d, '%s', %"PRIuOFF", '%s');",
         objId, type, ssize, timezone.c_str(), size, md5.c_str());
@@ -576,7 +580,7 @@ int
         parObjId = fsObjId;
     }
     else {
-        parObjId = findParObjId(fs_file, fsObjId);
+        parObjId = findParObjId(fs_file, path, fsObjId);
         if (parObjId == -1) {
             //error
             return 1;
@@ -586,23 +590,57 @@ int
     return addFile(fs_file, fs_attr, path, md5, known, fsObjId, parObjId, objId);
 }
 
+
+/**
+ * return a hash of the passed in string. We use this
+ * for full paths. 
+ * From: http://www.cse.yorku.ca/~oz/hash.html
+ */
+uint32_t TskDbSqlite::hash(const unsigned char *str) {
+    uint32_t hash = 5381;
+    int c;
+
+    while ((c = *str++)) {
+        // skip slashes -> normalizes leading/ending/double slashes
+        if (c == '/')
+            continue;
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+    }
+
+    return hash;
+}
+
 /**
  * Store meta_addr to object id mapping of the directory in a local cache map
  * @param fsObjId fs id of this directory
- * @param meta_addr meta_addr of this directory
- * @param meta_seq meta_seq of this directory
+ * @param fs_file File for the directory to store
+ * @param path Full path (parent and this file) of this directory
  * @param objId object id of this directory from the objects table
  */
-void TskDbSqlite::storeObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_addr, const uint32_t & meta_seq, const int64_t & objId) {
-	map<TSK_INUM_T, map<uint32_t, int64_t> > &fsMap = m_parentDirIdCache[fsObjId];
-	//store only if does not exist -- otherwise '..' and '.' entries will overwrite
-	if (fsMap.count(meta_addr) == 0) {
-        fsMap[meta_addr][meta_seq] = objId;
+void TskDbSqlite::storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_file, const char *path, const int64_t & objId) {
+	// skip the . and .. entries
+    if ((fs_file->name) && (fs_file->name->name) && (TSK_FS_ISDOT(fs_file->name->name))) {
+        return;
+    }
+
+    uint32_t seq;
+    /* NTFS uses sequence, otherwise we hash the path. We do this to map to the
+     * correct parent folder if there are two from teh root dir that eventually point to
+     * the same folder (one deleted and one allocated) or two hard links. */
+    if (TSK_FS_TYPE_ISNTFS(fs_file->fs_info->ftype)) {
+        seq = fs_file->name->meta_seq;
     }
     else {
-        map<uint32_t, int64_t> &fileMap = fsMap[meta_addr];
-        if (fileMap.count(meta_seq) == 0) {
-            fileMap[meta_seq] = objId;
+        seq = hash((const unsigned char *)path);
+    }
+    map<TSK_INUM_T, map<uint32_t, int64_t> > &fsMap = m_parentDirIdCache[fsObjId];
+	if (fsMap.count(fs_file->name->meta_addr) == 0) {
+        fsMap[fs_file->name->meta_addr][seq] = objId;
+    }
+    else {
+        map<uint32_t, int64_t> &fileMap = fsMap[fs_file->name->meta_addr];
+        if (fileMap.count(seq) == 0) {
+            fileMap[seq] = objId;
         }
     }
 }
@@ -610,16 +648,27 @@ void TskDbSqlite::storeObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_ad
 /**
  * Find parent object id of TSK_FS_FILE. Use local cache map, if not found, fall back to SQL
  * @param fs_file file to find parent obj id for
+ * @param path Path of parent folder that we want to match
  * @param fsObjId fs id of this file
  * @returns parent obj id ( > 0), -1 on error
  */
-int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const int64_t & fsObjId) {
-	//get from cache by parent meta addr, if available
+int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *path, const int64_t & fsObjId) {
+	uint32_t seq;
+    /* NTFS uses sequence, otherwise we hash the path. We do this to map to the
+     * correct parent folder if there are two from teh root dir that eventually point to
+     * the same folder (one deleted and one allocated) or two hard links. */
+    if (TSK_FS_TYPE_ISNTFS(fs_file->fs_info->ftype)) {
+        seq = fs_file->name->meta_seq;
+    }
+    else {
+        seq = hash((const unsigned char *)path);
+    }
+    //get from cache by parent meta addr, if available
 	map<TSK_INUM_T, map<uint32_t, int64_t> > &fsMap = m_parentDirIdCache[fsObjId];
 	if (fsMap.count(fs_file->name->par_addr) > 0) {
         map<uint32_t, int64_t>  &fileMap = fsMap[fs_file->name->par_addr];
-        if (fileMap.count(fs_file->name->par_seq) > 0) {
-		    return fileMap[fs_file->name->par_seq];
+        if (fileMap.count(seq) > 0) {
+		    return fileMap[seq];
         }
 	}
 
@@ -828,7 +877,8 @@ int
 
     //if dir, update parent id cache
     if (meta_type == TSK_FS_META_TYPE_DIR) {
-        storeObjId(fsObjId, fs_file->name->meta_addr, fs_file->name->meta_seq, objId);
+        std::string fullPath = std::string(path) + fs_file->name->name;
+        storeObjId(fsObjId, fs_file, fullPath.c_str(), objId);
     }
 
     free(name);

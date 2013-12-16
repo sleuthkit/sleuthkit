@@ -6250,10 +6250,12 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     if (file != NULL) {
         hfs->root_crtime = file->meta->crtime;
         hfs->has_root_crtime = TRUE;
+        tsk_fs_file_close(file);
     }
     else {
         hfs->has_root_crtime = FALSE;
     }
+    file = NULL;
 
     // disable hard link traversal while finding the hard
     // link directories themselves (to prevent problems if
@@ -6275,11 +6277,12 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         "/" UTF8_NULL_REPLACE UTF8_NULL_REPLACE UTF8_NULL_REPLACE
         UTF8_NULL_REPLACE "HFS+ Private Data", &inum, NULL);
     if (result == 0) {
-        file = tsk_fs_file_open_meta(fs, NULL, inum);
-        if (file != NULL) {
-            hfs->meta_crtime = file->meta->crtime;
+        TSK_FS_FILE *file_tmp = tsk_fs_file_open_meta(fs, NULL, inum);
+        if (file_tmp != NULL) {
+            hfs->meta_crtime = file_tmp->meta->crtime;
             hfs->has_meta_crtime = TRUE;
             hfs->meta_inum = inum;
+            tsk_fs_file_close(file_tmp);
         }
     }
 
@@ -6293,11 +6296,12 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_fs_path2inum(fs, "/.HFS+ Private Directory Data\r", &inum,
         NULL);
     if (result == 0) {
-        file = tsk_fs_file_open_meta(fs, NULL, inum);
-        if (file != NULL) {
-            hfs->metadir_crtime = file->meta->crtime;
+        TSK_FS_FILE *file_tmp = tsk_fs_file_open_meta(fs, NULL, inum);
+        if (file_tmp != NULL) {
+            hfs->metadir_crtime = file_tmp->meta->crtime;
             hfs->has_meta_dir_crtime = TRUE;
             hfs->meta_dir_inum = inum;
+            tsk_fs_file_close(file_tmp);
         }
     }
 
