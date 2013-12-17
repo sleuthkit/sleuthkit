@@ -208,16 +208,18 @@ tsk_img_read(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_off,
             // Determine the offset relative to the start of the cached data.
             a_rel_off = a_off - a_img_info->cache_off[cache_next];
 
-            // Make sure not to copy more than is available in the cache.
-            if( ( a_rel_off + (TSK_OFF_T) len2 ) > (TSK_OFF_T) read_count ) {
-                len2 = (size_t) ( read_count - a_rel_off );
+            // Make sure we were able to read sufficient data into the cache.
+            if(rel_off > (TSK_OFF_T) read_count) {
+                len2 = 0;
             }
-
-            memcpy(
-             a_buf,
-             &( a_img_info->cache[ cache_next ][ a_rel_off ] ),
-             len2 );
-
+            // Make sure not to copy more than is available in the cache.
+            else if ((rel_off + (TSK_OFF_T) len2) > (TSK_OFF_T) read_count) {
+                len2 = (size_t) (read_count - rel_off);
+            }
+            // Only copy data when we have something to copy.
+            if(len2 > 0) {
+                memcpy(a_buf, &(a_img_info->cache[cache_next][rel_off]), len2);
+            }
             read_count = (ssize_t) len2;
         }
         else {
