@@ -156,6 +156,9 @@ public class LibraryUtils {
 			java.io.File tempFolder = new java.io.File(System.getProperty("java.io.tmpdir") + java.io.File.separator);
 			java.io.File libTemp = new java.io.File(tempFolder + libName + libExt);
 
+			// we used to copy dlls into here. 
+			// delete any than may still exist from previous installations. 
+			// Dec 2013
 			for (Lib l : Lib.values()) {
 				String ext = getExtByPlatform();
 				java.io.File f = new java.io.File(l.getLibName() + ext);
