@@ -138,7 +138,7 @@ extern "C" {
                                     TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
     extern int8_t binsrch_get_properties(TSK_HDB_INFO * hdb_info);
 
-	extern uint8_t sqlite_hdb_create_db(TSK_TCHAR *db_file_path, TSK_TCHAR *hash_set_name);
+	extern uint8_t sqlite_hdb_create_db(TSK_TCHAR *db_file_path);
     extern uint8_t sqlite_v1_open(TSK_HDB_INFO *, TSK_IDX_INFO *, uint8_t);
     extern void sqlite_v1_close(TSK_IDX_INFO *);
     extern uint8_t sqlite_v1_initialize(TSK_HDB_INFO *, TSK_TCHAR *);

@@ -121,7 +121,7 @@ static sqlite3 *open_db(TSK_TCHAR *db_file_path)
     return db;
 }
 
-uint8_t sqlite_hdb_create_db(TSK_TCHAR *db_file_path, TSK_TCHAR *hash_set_name)
+uint8_t sqlite_hdb_create_db(TSK_TCHAR *db_file_path)
 {
 	sqlite3 *db = open_db(db_file_path);
 	if (NULL == db) {

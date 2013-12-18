@@ -23,7 +23,7 @@ usage()
 {
     TFPRINTF(stderr,
              _TSK_T
-             ("usage: %s [-eqVa] [-c hash_set_name] [-f lookup_file] [-i db_type] db_file [hashes]\n"),
+             ("usage: %s [-eqVa] [-c] [-f lookup_file] [-i db_type] db_file [hashes]\n"),
              progname);
     tsk_fprintf(stderr,
                 "\t-e: Extended mode - where values other than just the name are printed\n");
@@ -72,7 +72,6 @@ main(int argc, char ** argv1)
     int ch;
     TSK_TCHAR *idx_type = NULL;
     TSK_TCHAR *db_file = NULL;
-	TSK_TCHAR *hash_set_name = NULL;
 	TSK_TCHAR *lookup_file = NULL;
     unsigned int flags = 0;
     TSK_HDB_INFO *hdb_info;
@@ -110,7 +109,6 @@ main(int argc, char ** argv1)
 
         case _TSK_T('c'):
             create = true;
-			hash_set_name = OPTARG;
             break;
 
         case _TSK_T('a'):
@@ -145,14 +143,14 @@ main(int argc, char ** argv1)
 
     db_file = argv[OPTIND++];
 
-    // Make a new database (creates an index from scratch)
+    // Running in create mode (-c option). Make a new SQLite hash database and exit.
     if (create) {
         if (idx_type != NULL) {
             tsk_fprintf(stderr, "-c and -i cannot be specified at same time\n");
             usage();
         }
         
-		if (sqlite_hdb_create_db(db_file, hash_set_name) == 1) {
+		if (sqlite_hdb_create_db(db_file) == 1) {
             tsk_error_print(stderr);
             return 1;
 		}
@@ -174,10 +172,7 @@ main(int argc, char ** argv1)
         return 1;
     }
     
-
-    /* What mode are we going to run in 
-     * 
-     * Are we going to make an index? */
+    // Running in indexing mode (-i option). Create an index file and exit.
     if (idx_type != NULL) {
         /* Get the flags right */
         if (lookup_file != NULL) {
