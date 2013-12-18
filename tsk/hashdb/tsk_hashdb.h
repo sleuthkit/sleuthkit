@@ -95,7 +95,8 @@ extern "C" {
         TSK_HDB_DBTYPE_MD5SUM_ID = 2,   ///< md5sum format
         TSK_HDB_DBTYPE_HK_ID = 3,       ///< hashkeeper format
         TSK_HDB_DBTYPE_IDXONLY_ID = 4,   ///< Only the database index was opened -- original dbtype is unknown
-        TSK_HDB_DBTYPE_ENCASE_ID = 5    ///< EnCase format
+        TSK_HDB_DBTYPE_ENCASE_ID = 5,    ///< EnCase format
+        TSK_HDB_DBTYPE_SQLITE_ID = 6    ///< SQLite format
     };
     typedef enum TSK_HDB_DBTYPE_ENUM TSK_HDB_DBTYPE_ENUM;
 
