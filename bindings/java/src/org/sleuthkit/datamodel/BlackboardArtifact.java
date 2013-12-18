@@ -75,7 +75,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		TSK_GPS_SEARCH(31, "TSK_GPS_SEARCH", "GPS Searches"),	// GPS Searches
 		TSK_PROG_RUN(32, "TSK_PROG_RUN", "Run Programs"),  ///< Application run information
 		TSK_INTERESTING_ARTIFACT(33, "TSK_INTERESTING_ARTIFACT", "Interesting Results"),	// Any artifact that should be called out
-		 
+        TSK_ENCRYPTION_DETECTED(34, "TSK_ENCRYPTION_DETECTED", "Encryption Detected"), ///< Encrypted File 
 		
 		; 
 		/* SEE ABOVE -- KEEP C++ CODE IN SYNC */

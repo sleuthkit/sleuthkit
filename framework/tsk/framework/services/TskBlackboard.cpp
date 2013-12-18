@@ -45,7 +45,8 @@ map<int, TskArtifactNames> initializeArtifactTypeMap(){
 	retval.insert(pair<int, TskArtifactNames>(TSK_GPS_SEARCH, TskArtifactNames("TSK_GPS_SEARCH", "GPS Searches")));
 	retval.insert(pair<int, TskArtifactNames>(TSK_PROG_RUN, TskArtifactNames("TSK_PROG_RUN", "Run Programs")));
     retval.insert(pair<int, TskArtifactNames>(TSK_INTERESTING_ARTIFACT, TskArtifactNames("TSK_INTERESTING_ARTIFACT", "Interesting Results")));
-	
+    retval.insert(pair<int, TskArtifactNames>(TSK_ENCRYPTION_DETECTED, TskArtifactNames("TSK_ENCRYPTION_DETECTED", "Encryption Detected")));
+
     return retval;
 }
 
