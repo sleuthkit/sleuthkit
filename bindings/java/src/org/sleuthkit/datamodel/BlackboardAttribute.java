@@ -193,8 +193,7 @@ public class BlackboardAttribute {
 		TSK_MIN_COUNT(93, "TSK_MIN_COUNT", "Minimum Count"), // Minimum number/count
 		TSK_PATH_SOURCE(94, "TSK_PATH_SOURCE", "Path Source"), // Path to a source file related to the artifact
 		TSK_PERMISSIONS(95, "TSK_PERMISSIONS", "Permissions"), // Permissions
-		TSK_PROG_LAUNCHED(96, "TSK_PROG_LAUNCHED", "Program Launched"), // Flag for whether a program has been run
-		TSK_ASSOCIATED_ARTIFACT(97, "TSK_ASSOCIATED_ARTIFACT", "Associated Artifact"), // Artifact ID of a related artifact
+		TSK_ASSOCIATED_ARTIFACT(96, "TSK_ASSOCIATED_ARTIFACT", "Associated Artifact"), // Artifact ID of a related artifact
 		
 		
 		;
