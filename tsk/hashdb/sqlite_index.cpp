@@ -147,12 +147,12 @@ uint8_t sqlite_hdb_create_db(TSK_TCHAR *db_file_path, TSK_TCHAR *hash_set_name)
 		return FAILED;
 	}
 
-	snprintf(stmt, 1024,"INSERT INTO db_properties (name, value) VALUES ('%s', '%s');", IDX_HASHSET_NAME, hash_set_name);
-	if (attempt_exec_nocallback(stmt, "Error adding name to db_properties: %s\n", db)) {
-		return FAILED;
-	}
-
 	// RJCTODO: Probably don't need these until SQLite indexes are supported, revisit
+	//snprintf(stmt, 1024,"INSERT INTO db_properties (name, value) VALUES ('%s', '%"PRIttocTSK"');", IDX_HASHSET_NAME, hash_set_name);
+	//if (attempt_exec_nocallback(stmt, "Error adding name to db_properties: %s\n", db)) {
+	//	return FAILED;
+	//}
+
     // Default prop: Hashset Type
  //   std::string db_type_str;
  //   switch(hdb_info->db_type) {

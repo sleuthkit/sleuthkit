@@ -13,6 +13,7 @@
  * Command line tool to index and lookup values in a hash database
  */
 #include "tsk/tsk_tools_i.h"
+#include "tsk/hashdb/tsk_hashdb_i.h"
 #include <locale.h>
 
 static TSK_TCHAR *progname;
@@ -22,7 +23,7 @@ usage()
 {
     TFPRINTF(stderr,
              _TSK_T
-             ("usage: %s [-eqVa] [-c db_name] [-f lookup_file] [-i db_type] db_file [hashes]\n"),
+             ("usage: %s [-eqVa] [-c hash_set_name] [-f lookup_file] [-i db_type] db_file [hashes]\n"),
              progname);
     tsk_fprintf(stderr,
                 "\t-e: Extended mode - where values other than just the name are printed\n");
@@ -70,7 +71,9 @@ main(int argc, char ** argv1)
 {
     int ch;
     TSK_TCHAR *idx_type = NULL;
-    TSK_TCHAR *db_file = NULL, *lookup_file = NULL;
+    TSK_TCHAR *db_file = NULL;
+	TSK_TCHAR *hash_set_name = NULL;
+	TSK_TCHAR *lookup_file = NULL;
     unsigned int flags = 0;
     TSK_HDB_INFO *hdb_info;
     TSK_TCHAR **argv;
@@ -91,7 +94,7 @@ main(int argc, char ** argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("cef:i:aqV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("c:ef:i:aqV"))) > 0) {
         switch (ch) {
         case _TSK_T('e'):
             flags |= TSK_HDB_FLAG_EXT;
@@ -107,6 +110,7 @@ main(int argc, char ** argv1)
 
         case _TSK_T('c'):
             create = true;
+			hash_set_name = OPTARG;
             break;
 
         case _TSK_T('a'):
@@ -148,16 +152,15 @@ main(int argc, char ** argv1)
             usage();
         }
         
-        if ((hdb_info = tsk_hdb_newdb(db_file)) == NULL) {
+		if (sqlite_hdb_create_db(db_file, hash_set_name) == 1) {
             tsk_error_print(stderr);
             return 1;
-        }
+		}
         
         printf("New database %"PRIttocTSK" created.\n", db_file);
         return 0;
     }
-    
-    
+        
     // Open an existing database
     TSK_HDB_OPEN_ENUM open_flags = TSK_HDB_OPEN_NONE;
     
