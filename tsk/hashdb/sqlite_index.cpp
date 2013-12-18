@@ -19,7 +19,9 @@
  * Contains functions for creating a SQLite format hash index
  */
 
-static int success_ret_code = 0;
+static int SUCCEEDED = 0;
+static int FAILED = 1;
+static const int chunkSize = 1024 * 1024;
 static sqlite3_stmt *m_stmt = NULL;
 static bool need_SQL_index = false;
 static const char hex[] = "0123456789abcdef";
@@ -27,7 +29,6 @@ static const char hex[] = "0123456789abcdef";
 /**
  * Prototypes 
  */
-//int8_t sqlite_v1_get_properties(TSK_HDB_INFO * hdb_info);
 uint8_t sqlite_v1_addentry_bin(TSK_HDB_INFO * hdb_info, uint8_t* hvalue, int hlen, TSK_OFF_T offset);
 uint8_t addentry_text(TSK_HDB_INFO * hdb_info, char* hvalue, TSK_OFF_T offset);
 int8_t  lookup_text(TSK_HDB_INFO * hdb_info, const char* hvalue, TSK_HDB_FLAG_ENUM flags, TSK_HDB_LOOKUP_FN action, void *ptr);
@@ -97,9 +98,119 @@ static uint8_t tsk_hdb_commit_transaction(TSK_IDX_INFO * idx_info) {
 	return attempt_exec_nocallback("COMMIT", "Error committing transaction %s\n", idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
 }
 
-void hdb_sqlite_create_db()
+static sqlite3 *open_db(TSK_TCHAR *db_file_path)
 {
+    sqlite3 *db = NULL;
+    int opened = FAILED;
+#ifdef TSK_WIN32
+    opened = attempt(sqlite3_open16(db_file_path, &db), SQLITE_OK, "Can't open index: %s\n", db);
+#else
+    opened = attempt(sqlite3_open(idx_info->idx_fname, &db), SQLITE_OK, "Can't open index: %s\n", db);
+#endif
+    if (FAILED != opened) {
+	    sqlite3_extended_result_codes(db, 1);
+		attempt_exec_nocallback("PRAGMA synchronous = OFF;", "Error setting PRAGMA synchronous: %s\n", db);
+		attempt_exec_nocallback("PRAGMA encoding = \"UTF-8\";", "Error setting PRAGMA encoding UTF-8: %s\n", db);
+		attempt_exec_nocallback("PRAGMA read_uncommitted = True;", "Error setting PRAGMA read_uncommitted: %s\n", db);
+		attempt_exec_nocallback("PRAGMA page_size = 4096;", "Error setting PRAGMA page_size: %s\n", db);
+    }
+    else {
+        sqlite3_close(db);
+        db = NULL;
+    }
+    return db;
+}
 
+uint8_t sqlite_hdb_create_db(TSK_TCHAR *db_file_path, TSK_TCHAR *hash_set_name)
+{
+	sqlite3 *db = open_db(db_file_path);
+	if (NULL == db) {
+		return FAILED;
+	}
+
+    // Incrementally increase the size if the database.    
+    if (sqlite3_file_control(db, NULL, SQLITE_FCNTL_CHUNK_SIZE, const_cast<int *>(&chunkSize)) != SQLITE_OK) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("sqlite_v1_initialize: error setting chunk size %s", sqlite3_errmsg(db));
+        return FAILED;
+    }
+
+
+	if (attempt_exec_nocallback("CREATE TABLE db_properties (name TEXT NOT NULL, value TEXT);", "Error creating db_properties table %s\n", db)) {
+		return FAILED;
+	}
+
+	char stmt[1024];
+	snprintf(stmt, 1024, "INSERT INTO db_properties (name, value) VALUES ('%s', '%s');", IDX_SCHEMA_VER, IDX_VERSION_NUM);
+	if (attempt_exec_nocallback(stmt, "Error adding schema info to db_properties: %s\n", db)) {
+		return FAILED;
+	}
+
+	snprintf(stmt, 1024,"INSERT INTO db_properties (name, value) VALUES ('%s', '%s');", IDX_HASHSET_NAME, hash_set_name);
+	if (attempt_exec_nocallback(stmt, "Error adding name to db_properties: %s\n", db)) {
+		return FAILED;
+	}
+
+	// RJCTODO: Probably don't need these until SQLite indexes are supported, revisit
+    // Default prop: Hashset Type
+ //   std::string db_type_str;
+ //   switch(hdb_info->db_type) {
+ //       case TSK_HDB_DBTYPE_MD5SUM_ID:
+ //           db_type_str = "md5sum";
+ //       break;
+ //       case TSK_HDB_DBTYPE_NSRL_ID:
+ //           db_type_str = "NSRL";
+ //       break;
+ //       case TSK_HDB_DBTYPE_HK_ID:
+ //           db_type_str = "HashKeeper";
+ //       break;
+ //       case TSK_HDB_DBTYPE_ENCASE_ID:
+ //           db_type_str = "EnCase";
+ //       break;
+ //       case TSK_HDB_DBTYPE_IDXONLY_ID:
+ //           db_type_str = "TskSqlite";
+ //       break;
+ //   }
+ //   if (!db_type_str.empty()) {
+	//    snprintf(stmt, 1024,
+	//	    "INSERT INTO db_properties (name, value) VALUES ('%s', '%s');",
+ //           IDX_HASHSET_TYPE, db_type_str.c_str());
+	//    if (attempt_exec_nocallback(stmt, "Error adding updateable to db_properties: %s\n", db)) {
+	//	    return 1;
+	//    }
+ //   }
+
+ //   // Default prop: Updateable
+	//snprintf(stmt, 1024,
+	//	"INSERT INTO db_properties (name, value) VALUES ('%s', '%s');",
+	//	IDX_HASHSET_UPDATEABLE, (hdb_info->idx_info->updateable == 1) ? "true" : "false");
+	//if (attempt_exec_nocallback(stmt, "Error adding updateable to db_properties: %s\n", db)) {
+	//	return 1;
+	//}
+
+// #ifdef IDX_SQLITE_STORE_TEXT // RJCTODO: Get rid of this
+	if (attempt_exec_nocallback ("CREATE TABLE hashes (id INTEGER PRIMARY KEY AUTOINCREMENT, md5 BINARY(16) UNIQUE, sha1 BINARY(20), sha2_256 BINARY(32), database_offset INTEGER);", "Error creating hashes table %s\n", db)) {
+		return FAILED;
+	}
+
+	if (attempt_exec_nocallback("CREATE TABLE file_names (name TEXT NOT NULL, hash_id INTEGER NOT NULL);", "Error creating file_names table %s\n", db)) {
+		return FAILED;
+	}
+
+	if (attempt_exec_nocallback("CREATE TABLE comments (comment TEXT NOT NULL, hash_id INTEGER NOT NULL);", "Error creating comments table %s\n", db)) {
+		return FAILED;
+	}
+
+	if (attempt_exec_nocallback("CREATE INDEX md5_index ON hashes(md5);", "Error creating md5_index on md5: %s\n", db)) {
+		return FAILED;
+	}
+	
+	if (attempt_exec_nocallback("CREATE INDEX sha1_index ON hashes(sha1);", "Error creating sha1_index on sha1: %s\n", db)) {
+		return FAILED;
+    }
+
+	return SUCCEEDED;
 }
 
 /** Init prepared statements. Call before adding to the database. Call finalize() when done.
@@ -547,27 +658,6 @@ sqlite_v1_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
 
     return 0;
 }
-
-static sqlite3 *open_db(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
-{
-    sqlite3 *sqlite = NULL;
-    int open_ret_code = success_ret_code;
-#ifdef TSK_WIN32
-    open_ret_code = attempt(sqlite3_open16(idx_info->idx_fname, &sqlite), SQLITE_OK, "Can't open index: %s\n", sqlite);
-#else
-    open_ret_code = attempt(sqlite3_open(idx_info->idx_fname, &sqlite), SQLITE_OK, "Can't open index: %s\n", sqlite);
-#endif
-    if (open_ret_code == success_ret_code) {
-        // Enable extended result codes.
-	    sqlite3_extended_result_codes(sqlite, 1);
-    }
-    else {
-        sqlite3_close(sqlite);
-        sqlite = NULL;
-    }
-    return sqlite;
-}
-
 
 /**
  * \ingroup hashdblib
