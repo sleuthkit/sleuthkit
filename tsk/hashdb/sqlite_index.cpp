@@ -19,9 +19,7 @@
  * Contains functions for creating a SQLite format hash index
  */
 
-/**
- * Static sqlite statements, prepared initially and bound before each use
- */
+static int success_ret_code = 0;
 static sqlite3_stmt *m_stmt = NULL;
 static bool need_SQL_index = false;
 static const char hex[] = "0123456789abcdef";
@@ -97,6 +95,11 @@ static uint8_t tsk_hdb_begin_transaction(TSK_IDX_INFO * idx_info) {
 
 static uint8_t tsk_hdb_commit_transaction(TSK_IDX_INFO * idx_info) {
 	return attempt_exec_nocallback("COMMIT", "Error committing transaction %s\n", idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
+}
+
+void hdb_sqlite_create_db()
+{
+
 }
 
 /** Init prepared statements. Call before adding to the database. Call finalize() when done.
@@ -545,8 +548,25 @@ sqlite_v1_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
     return 0;
 }
 
-
-
+static sqlite3 *open_db(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
+{
+    sqlite3 *sqlite = NULL;
+    int open_ret_code = success_ret_code;
+#ifdef TSK_WIN32
+    open_ret_code = attempt(sqlite3_open16(idx_info->idx_fname, &sqlite), SQLITE_OK, "Can't open index: %s\n", sqlite);
+#else
+    open_ret_code = attempt(sqlite3_open(idx_info->idx_fname, &sqlite), SQLITE_OK, "Can't open index: %s\n", sqlite);
+#endif
+    if (open_ret_code == success_ret_code) {
+        // Enable extended result codes.
+	    sqlite3_extended_result_codes(sqlite, 1);
+    }
+    else {
+        sqlite3_close(sqlite);
+        sqlite = NULL;
+    }
+    return sqlite;
+}
 
 
 /**
