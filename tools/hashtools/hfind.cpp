@@ -13,7 +13,6 @@
  * Command line tool to index and lookup values in a hash database
  */
 #include "tsk/tsk_tools_i.h"
-#include "tsk/hashdb/tsk_hashdb_i.h"
 #include <locale.h>
 
 static TSK_TCHAR *progname;
@@ -72,7 +71,7 @@ main(int argc, char ** argv1)
     int ch;
     TSK_TCHAR *idx_type = NULL;
     TSK_TCHAR *db_file = NULL;
-	TSK_TCHAR *lookup_file = NULL;
+    TSK_TCHAR *lookup_file = NULL;
     unsigned int flags = 0;
     TSK_HDB_INFO *hdb_info;
     TSK_TCHAR **argv;
@@ -150,12 +149,12 @@ main(int argc, char ** argv1)
             usage();
         }
         
-		if (sqlite_hdb_create_db(db_file) == 1) {
-            tsk_error_print(stderr);
+        if (tsk_hdb_create_db(db_file) == 1) {
+            tsk_fprintf(stderr, "Failed to create new database %"PRIttocTSK".\n", db_file);
             return 1;
-		}
+        }
         
-        printf("New database %"PRIttocTSK" created.\n", db_file);
+        tsk_fprintf(stderr, "New database %"PRIttocTSK" created.\n", db_file);
         return 0;
     }
         

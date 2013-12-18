@@ -20,6 +20,18 @@
  */
 
 
+/**
+ * \ingroup hashdblib
+ * Creates a new hash database. 
+ *
+ * @param db_file_path Path to database to create.
+ * @return 0 on success, 1 otherwise
+ */
+uint8_t 
+tsk_hdb_create_db(TSK_TCHAR *db_file_path)
+{
+    return sqlite_hdb_create_db(db_file_path);
+}
 
 /**
  * \ingroup hashdblib

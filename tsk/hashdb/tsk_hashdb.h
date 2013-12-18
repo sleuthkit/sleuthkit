@@ -211,6 +211,8 @@ extern "C" {
     typedef enum TSK_HDB_OPEN_ENUM TSK_HDB_OPEN_ENUM;
 
     /* Functions */
+    extern uint8_t tsk_hdb_create_db(TSK_TCHAR *db_file_path);
+
     extern TSK_HDB_INFO *tsk_hdb_open(TSK_TCHAR * db_file,
         TSK_HDB_OPEN_ENUM flags);
 
