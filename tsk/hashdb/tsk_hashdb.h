@@ -199,20 +199,20 @@ extern "C" {
 
         uint8_t(*getentry) (TSK_HDB_INFO *, const char *, TSK_OFF_T, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);    ///< \internal Database-specific function to find entry at a given offset
         uint8_t(*makeindex) (TSK_HDB_INFO *, TSK_TCHAR *);     ///< \internal Database-specific function to make index
+
     };
 
     /**
     * Options for opening a hash database
     */
     enum TSK_HDB_OPEN_ENUM {
-        TSK_HDB_OPEN_NONE = 0,  ///< No special flags
-        TSK_HDB_OPEN_IDXONLY = (0x1 << 0),       ///< Open only the index -- do not look for the original DB
-        TSK_HDB_OPEN_TRY = (0x1 << 1)           ///< Try to open original db. If that fails, try TSK_HDB_OPEN_IDXONLY.
+        TSK_HDB_OPEN_NONE = 0,             ///< No special flags
+        TSK_HDB_OPEN_IDXONLY = (0x1 << 0)  ///< Open only the index -- do not look for the original DB
     };
     typedef enum TSK_HDB_OPEN_ENUM TSK_HDB_OPEN_ENUM;
 
     /* Functions */
-    extern uint8_t tsk_hdb_create_db(TSK_TCHAR *db_file_path);
+    extern TSK_HDB_INFO *tsk_hdb_create_db(TSK_TCHAR *db_file_path);
 
     extern TSK_HDB_INFO *tsk_hdb_open(TSK_TCHAR * db_file,
         TSK_HDB_OPEN_ENUM flags);
@@ -228,8 +228,6 @@ extern "C" {
     extern uint8_t tsk_hdb_makeindex(TSK_HDB_INFO *, TSK_TCHAR *);
 
     extern uint8_t tsk_hdb_regenerate_index(TSK_HDB_INFO *, TSK_TCHAR *, uint8_t);
-
-    extern TSK_HDB_INFO * tsk_hdb_newdb(TSK_TCHAR * db_file);
 
     extern int8_t tsk_hdb_add_str(TSK_HDB_INFO * hdb_info, 
                         const char * filename, 

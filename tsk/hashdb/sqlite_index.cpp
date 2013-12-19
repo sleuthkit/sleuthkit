@@ -13,25 +13,18 @@
 #include "tsk_hashdb_i.h"
 #include "sqlite_index.h"
 
-
 /**
  * \file sqlite_index.cpp
- * Contains functions for creating a SQLite format hash index
+ * Contains functions for creating a SQLite format hash index // RJCTODO: CHange the name of this file and this comment
  */
 
-static int SUCCEEDED = 0;
-static int FAILED = 1;
 static const int chunkSize = 1024 * 1024;
-static sqlite3_stmt *m_stmt = NULL;
-static bool need_SQL_index = false;
+static sqlite3_stmt *m_stmt = NULL; // RJCTODO: Get rid of the m_
+static bool need_SQL_index = false; // RJCTODO: Get rid of this
 static const char hex[] = "0123456789abcdef";
-
-/**
- * Prototypes 
- */
 uint8_t sqlite_v1_addentry_bin(TSK_HDB_INFO * hdb_info, uint8_t* hvalue, int hlen, TSK_OFF_T offset);
 uint8_t addentry_text(TSK_HDB_INFO * hdb_info, char* hvalue, TSK_OFF_T offset);
-int8_t  lookup_text(TSK_HDB_INFO * hdb_info, const char* hvalue, TSK_HDB_FLAG_ENUM flags, TSK_HDB_LOOKUP_FN action, void *ptr);
+int8_t lookup_text(TSK_HDB_INFO * hdb_info, const char* hvalue, TSK_HDB_FLAG_ENUM flags, TSK_HDB_LOOKUP_FN action, void *ptr);
 
 static int attempt(int resultCode, int expectedResultCode,
 		const char *errfmt, sqlite3 * sqlite)
@@ -79,7 +72,7 @@ static int finalize_stmt(sqlite3_stmt * stmt)
 
 static int prepare_stmt(const char *sql, sqlite3_stmt ** ppStmt, sqlite3 * sqlite)
 {
-    ///@todo possible performance increase by using strlen(sql)+1 instead of -1
+    ///@todo possible performance increase by using strlen(sql)+1 instead of -1 // RJCTODO: Resolve this
 	if (sqlite3_prepare_v2(sqlite, sql, -1, ppStmt, NULL) != SQLITE_OK) {
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_AUTO_DB);
@@ -90,6 +83,7 @@ static int prepare_stmt(const char *sql, sqlite3_stmt ** ppStmt, sqlite3 * sqlit
 	return 0;
 }
 
+// RJCTODO: Probably don't need these, if keeping them, rename so they are not like the "generic" functions
 static uint8_t tsk_hdb_begin_transaction(TSK_IDX_INFO * idx_info) {
 	return attempt_exec_nocallback("BEGIN", "Error beginning transaction %s\n", idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
 }
@@ -101,13 +95,13 @@ static uint8_t tsk_hdb_commit_transaction(TSK_IDX_INFO * idx_info) {
 static sqlite3 *open_db(TSK_TCHAR *db_file_path)
 {
     sqlite3 *db = NULL;
-    int opened = FAILED;
+    int opened = 1;
 #ifdef TSK_WIN32
     opened = attempt(sqlite3_open16(db_file_path, &db), SQLITE_OK, "Can't open index: %s\n", db);
 #else
     opened = attempt(sqlite3_open(idx_info->idx_fname, &db), SQLITE_OK, "Can't open index: %s\n", db);
 #endif
-    if (FAILED != opened) {
+    if (1 != opened) {
 	    sqlite3_extended_result_codes(db, 1);
 		attempt_exec_nocallback("PRAGMA synchronous = OFF;", "Error setting PRAGMA synchronous: %s\n", db);
 		attempt_exec_nocallback("PRAGMA encoding = \"UTF-8\";", "Error setting PRAGMA encoding UTF-8: %s\n", db);
@@ -125,7 +119,7 @@ uint8_t sqlite_hdb_create_db(TSK_TCHAR *db_file_path)
 {
 	sqlite3 *db = open_db(db_file_path);
 	if (NULL == db) {
-		return FAILED;
+		return 1;
 	}
 
     // Incrementally increase the size if the database.    
@@ -133,24 +127,24 @@ uint8_t sqlite_hdb_create_db(TSK_TCHAR *db_file_path)
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         tsk_error_set_errstr("sqlite_v1_initialize: error setting chunk size %s", sqlite3_errmsg(db));
-        return FAILED;
+        return 1;
     }
 
 
 	if (attempt_exec_nocallback("CREATE TABLE db_properties (name TEXT NOT NULL, value TEXT);", "Error creating db_properties table %s\n", db)) {
-		return FAILED;
+		return 1;
 	}
 
 	char stmt[1024];
 	snprintf(stmt, 1024, "INSERT INTO db_properties (name, value) VALUES ('%s', '%s');", IDX_SCHEMA_VER, IDX_VERSION_NUM);
 	if (attempt_exec_nocallback(stmt, "Error adding schema info to db_properties: %s\n", db)) {
-		return FAILED;
+		return 1;
 	}
 
 	// RJCTODO: Probably don't need these until SQLite indexes are supported, revisit
 	//snprintf(stmt, 1024,"INSERT INTO db_properties (name, value) VALUES ('%s', '%"PRIttocTSK"');", IDX_HASHSET_NAME, hash_set_name);
 	//if (attempt_exec_nocallback(stmt, "Error adding name to db_properties: %s\n", db)) {
-	//	return FAILED;
+	//	return 1;
 	//}
 
     // Default prop: Hashset Type
@@ -191,26 +185,28 @@ uint8_t sqlite_hdb_create_db(TSK_TCHAR *db_file_path)
 
 // #ifdef IDX_SQLITE_STORE_TEXT // RJCTODO: Get rid of this
 	if (attempt_exec_nocallback ("CREATE TABLE hashes (id INTEGER PRIMARY KEY AUTOINCREMENT, md5 BINARY(16) UNIQUE, sha1 BINARY(20), sha2_256 BINARY(32), database_offset INTEGER);", "Error creating hashes table %s\n", db)) {
-		return FAILED;
+		return 1;
 	}
 
 	if (attempt_exec_nocallback("CREATE TABLE file_names (name TEXT NOT NULL, hash_id INTEGER NOT NULL);", "Error creating file_names table %s\n", db)) {
-		return FAILED;
+		return 1;
 	}
 
 	if (attempt_exec_nocallback("CREATE TABLE comments (comment TEXT NOT NULL, hash_id INTEGER NOT NULL);", "Error creating comments table %s\n", db)) {
-		return FAILED;
+		return 1;
 	}
 
 	if (attempt_exec_nocallback("CREATE INDEX md5_index ON hashes(md5);", "Error creating md5_index on md5: %s\n", db)) {
-		return FAILED;
+		return 1;
 	}
 	
 	if (attempt_exec_nocallback("CREATE INDEX sha1_index ON hashes(sha1);", "Error creating sha1_index on sha1: %s\n", db)) {
-		return FAILED;
+		return 1;
     }
 
-	return SUCCEEDED;
+    sqlite3_close(db);
+
+	return 0;
 }
 
 /** Init prepared statements. Call before adding to the database. Call finalize() when done.
@@ -220,6 +216,7 @@ uint8_t sqlite_hdb_create_db(TSK_TCHAR *db_file_path)
  * @return 1 on error and 0 on success
  *
  */
+// RJCTODO: Is this the source of the problem with closing the database on finalize() in Autopsy? Are there prepared statements that are not finalized?
 uint8_t
 sqlite_v1_begin(TSK_HDB_INFO * hdb_info)
 {
@@ -242,283 +239,292 @@ sqlite_v1_begin(TSK_HDB_INFO * hdb_info)
     }
 }
 
-/** Initialize the TSK hash DB index file by creating tables, etc..
- *
- * @param hdb_info Hash database state structure
- * @param htype String of index type to create
- *
+/**
+ * This function is a no-op for SQLite hash database. The index is "internal" to the RDBMS.
  * @return 1 on error and 0 on success
- *
+ */
+uint8_t sqlite_hdb_get_entry(TSK_HDB_INFO *, const char *, TSK_OFF_T, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *)
+{
+    return 0;
+}
+
+/**
+ * This function is a no-op for SQLite hash database. The index is "internal" to the RDBMS.
+ * @return 1 on error and 0 on success
+ */
+uint8_t sqlite_hdb_make_index(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
+{
+    // RJCTODO: Actually, this needs to set up some of the stuff for the lookup...
+    return 0;
+}
+
+/**
+ * This function is a no-op for SQLite hash database. The index is "internal" to the RDBMS.
+ * @return 1 on error and 0 on success
  */
 uint8_t
 sqlite_v1_initialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
 {
-    static const int chunkSize = 1024 * 1024;
-	char stmt[1024];
-
-    // Hand off data to OS and carry on (faster than waiting for disk write syncing)
-	if (attempt_exec_nocallback("PRAGMA synchronous = OFF;",
-		"Error setting PRAGMA synchronous: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
-		return 1;
-	}
-
-    if (attempt_exec_nocallback("PRAGMA encoding = \"UTF-8\";",
-		"Error setting PRAGMA encoding UTF-8: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
-		return 1;
-	}
-
-    // allow to read while in transaction
-    if (attempt_exec_nocallback("PRAGMA read_uncommitted = True;",
-        "Error setting PRAGMA read_uncommitted: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
-        return 1;
-    }
-
-    // set page size
-    if (attempt_exec_nocallback("PRAGMA page_size = 4096;",
-        "Error setting PRAGMA page_size: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
-        return 1;
-    }
-
-    //// increase the DB by 1MB at a time.    
-    if (sqlite3_file_control(hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite, 
-        NULL, SQLITE_FCNTL_CHUNK_SIZE, const_cast<int *>(&chunkSize)) != SQLITE_OK) {
-
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("sqlite_v1_initialize: error setting chunk size %s", sqlite3_errmsg(hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite));
-        return 1;
-    }
-
-    // Make the Tables
-
-	if (attempt_exec_nocallback
-		("CREATE TABLE db_properties (name TEXT NOT NULL, value TEXT);",
-		"Error creating db_properties table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
-		return 1;
-	}
-
-	snprintf(stmt, 1024,
-		"INSERT INTO db_properties (name, value) VALUES ('%s', '%s');",
-		IDX_SCHEMA_VER, IDX_VERSION_NUM);
-	if (attempt_exec_nocallback(stmt, "Error adding schema info to db_properties: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
-		return 1;
-	}
-
-    // Default prop: Hashset Name
-	snprintf(stmt, 1024,
-		"INSERT INTO db_properties (name, value) VALUES ('%s', '%s');",
-		IDX_HASHSET_NAME, hdb_info->db_name);
-	if (attempt_exec_nocallback(stmt, "Error adding name to db_properties: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
-		return 1;
-	}
-
-    // Default prop: Hashset Type
-    std::string db_type_str;
-    switch(hdb_info->db_type) {
-        case TSK_HDB_DBTYPE_MD5SUM_ID:
-            db_type_str = "md5sum";
-        break;
-        case TSK_HDB_DBTYPE_NSRL_ID:
-            db_type_str = "NSRL";
-        break;
-        case TSK_HDB_DBTYPE_HK_ID:
-            db_type_str = "HashKeeper";
-        break;
-        case TSK_HDB_DBTYPE_ENCASE_ID:
-            db_type_str = "EnCase";
-        break;
-        case TSK_HDB_DBTYPE_IDXONLY_ID:
-            db_type_str = "TskSqlite";
-        break;
-    }
-    if (!db_type_str.empty()) {
-	    snprintf(stmt, 1024,
-		    "INSERT INTO db_properties (name, value) VALUES ('%s', '%s');",
-            IDX_HASHSET_TYPE, db_type_str.c_str());
-	    if (attempt_exec_nocallback(stmt, "Error adding updateable to db_properties: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
-		    return 1;
-	    }
-    }
-
-    // Default prop: Updateable
-	snprintf(stmt, 1024,
-		"INSERT INTO db_properties (name, value) VALUES ('%s', '%s');",
-		IDX_HASHSET_UPDATEABLE, (hdb_info->idx_info->updateable == 1) ? "true" : "false");
-	if (attempt_exec_nocallback(stmt, "Error adding updateable to db_properties: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
-		return 1;
-	}
-
-#ifdef IDX_SQLITE_STORE_TEXT
-	if (attempt_exec_nocallback
-		("CREATE TABLE hashes (id INTEGER PRIMARY KEY AUTOINCREMENT, md5 TEXT UNIQUE, sha1 TEXT, sha2_256 TEXT, database_offset INTEGER);",
-		"Error creating hashes table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
-			return 1;
-	}
-#else
-	if (attempt_exec_nocallback
-		("CREATE TABLE hashes (id INTEGER PRIMARY KEY AUTOINCREMENT, md5 BINARY(16) UNIQUE, sha1 BINARY(20), sha2_256 BINARY(32), database_offset INTEGER);",
-		"Error creating hashes table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
-			return 1;
-	}
-#endif
-
-    // The file_names table enables the user to optionally map one or many names to each hash.
-    // "name" should be the filename without the path.
-	if (attempt_exec_nocallback
-		("CREATE TABLE file_names (name TEXT NOT NULL, hash_id INTEGER NOT NULL);",
-		"Error creating file_names table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
-			return 1;
-	}
-
-    // The comments table enables the user to optionally map one or many arbitrary strings to each hash.
-	if (attempt_exec_nocallback
-		("CREATE TABLE comments (comment TEXT NOT NULL, hash_id INTEGER NOT NULL);",
-		"Error creating comments table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
-			return 1;
-	}
-
-    need_SQL_index = true;
-
-	return sqlite_v1_begin(hdb_info);
+    // RJCTODO: Remove this after the add to hash database functino is written
+//    static const int chunkSize = 1024 * 1024;
+//	char stmt[1024];
+//
+//    // Hand off data to OS and carry on (faster than waiting for disk write syncing)
+//	if (attempt_exec_nocallback("PRAGMA synchronous = OFF;",
+//		"Error setting PRAGMA synchronous: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+//		return 1;
+//	}
+//
+//    if (attempt_exec_nocallback("PRAGMA encoding = \"UTF-8\";",
+//		"Error setting PRAGMA encoding UTF-8: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+//		return 1;
+//	}
+//
+//    // allow to read while in transaction
+//    if (attempt_exec_nocallback("PRAGMA read_uncommitted = True;",
+//        "Error setting PRAGMA read_uncommitted: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+//        return 1;
+//    }
+//
+//    // set page size
+//    if (attempt_exec_nocallback("PRAGMA page_size = 4096;",
+//        "Error setting PRAGMA page_size: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+//        return 1;
+//    }
+//
+//    //// increase the DB by 1MB at a time.    
+//    if (sqlite3_file_control(hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite, 
+//        NULL, SQLITE_FCNTL_CHUNK_SIZE, const_cast<int *>(&chunkSize)) != SQLITE_OK) {
+//
+//        tsk_error_reset();
+//        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+//        tsk_error_set_errstr("sqlite_v1_initialize: error setting chunk size %s", sqlite3_errmsg(hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite));
+//        return 1;
+//    }
+//
+//    // Make the Tables
+//
+//	if (attempt_exec_nocallback
+//		("CREATE TABLE db_properties (name TEXT NOT NULL, value TEXT);",
+//		"Error creating db_properties table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+//		return 1;
+//	}
+//
+//	snprintf(stmt, 1024,
+//		"INSERT INTO db_properties (name, value) VALUES ('%s', '%s');",
+//		IDX_SCHEMA_VER, IDX_VERSION_NUM);
+//	if (attempt_exec_nocallback(stmt, "Error adding schema info to db_properties: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+//		return 1;
+//	}
+//
+//    // Default prop: Hashset Name
+//	snprintf(stmt, 1024,
+//		"INSERT INTO db_properties (name, value) VALUES ('%s', '%s');",
+//		IDX_HASHSET_NAME, hdb_info->db_name);
+//	if (attempt_exec_nocallback(stmt, "Error adding name to db_properties: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+//		return 1;
+//	}
+//
+//    // Default prop: Hashset Type
+//    std::string db_type_str;
+//    switch(hdb_info->db_type) {
+//        case TSK_HDB_DBTYPE_MD5SUM_ID:
+//            db_type_str = "md5sum";
+//        break;
+//        case TSK_HDB_DBTYPE_NSRL_ID:
+//            db_type_str = "NSRL";
+//        break;
+//        case TSK_HDB_DBTYPE_HK_ID:
+//            db_type_str = "HashKeeper";
+//        break;
+//        case TSK_HDB_DBTYPE_ENCASE_ID:
+//            db_type_str = "EnCase";
+//        break;
+//        case TSK_HDB_DBTYPE_IDXONLY_ID:
+//            db_type_str = "TskSqlite";
+//        break;
+//    }
+//    if (!db_type_str.empty()) {
+//	    snprintf(stmt, 1024,
+//		    "INSERT INTO db_properties (name, value) VALUES ('%s', '%s');",
+//            IDX_HASHSET_TYPE, db_type_str.c_str());
+//	    if (attempt_exec_nocallback(stmt, "Error adding updateable to db_properties: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+//		    return 1;
+//	    }
+//    }
+//
+//    // Default prop: Updateable
+//	snprintf(stmt, 1024,
+//		"INSERT INTO db_properties (name, value) VALUES ('%s', '%s');",
+//		IDX_HASHSET_UPDATEABLE, (hdb_info->idx_info->updateable == 1) ? "true" : "false");
+//	if (attempt_exec_nocallback(stmt, "Error adding updateable to db_properties: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+//		return 1;
+//	}
+//
+//#ifdef IDX_SQLITE_STORE_TEXT
+//	if (attempt_exec_nocallback
+//		("CREATE TABLE hashes (id INTEGER PRIMARY KEY AUTOINCREMENT, md5 TEXT UNIQUE, sha1 TEXT, sha2_256 TEXT, database_offset INTEGER);",
+//		"Error creating hashes table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+//			return 1;
+//	}
+//#else
+//	if (attempt_exec_nocallback
+//		("CREATE TABLE hashes (id INTEGER PRIMARY KEY AUTOINCREMENT, md5 BINARY(16) UNIQUE, sha1 BINARY(20), sha2_256 BINARY(32), database_offset INTEGER);",
+//		"Error creating hashes table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+//			return 1;
+//	}
+//#endif
+//
+//    // The file_names table enables the user to optionally map one or many names to each hash.
+//    // "name" should be the filename without the path.
+//	if (attempt_exec_nocallback
+//		("CREATE TABLE file_names (name TEXT NOT NULL, hash_id INTEGER NOT NULL);",
+//		"Error creating file_names table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+//			return 1;
+//	}
+//
+//    // The comments table enables the user to optionally map one or many arbitrary strings to each hash.
+//	if (attempt_exec_nocallback
+//		("CREATE TABLE comments (comment TEXT NOT NULL, hash_id INTEGER NOT NULL);",
+//		"Error creating comments table %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+//			return 1;
+//	}
+//
+//    need_SQL_index = true;
+//
+//	return sqlite_v1_begin(hdb_info);
+//
+    return 0;
 }
 
 /**
- * Add a string representation of a hash value to the index.
- *
- * @param hdb_info Hash database state info
- * @param hvalue String of hash value to add
- * @param offset Byte offset of hash entry in original database.
+ * This function is a no-op for SQLite hash database. The index is "internal" to the RDBMS.
  * @return 1 on error and 0 on success
  */
 uint8_t
 sqlite_v1_addentry(TSK_HDB_INFO * hdb_info, char* hvalue,
                     TSK_OFF_T offset)
 {
-    hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId = 0;
-
-	if (strlen(hvalue) != hdb_info->hash_len) {
-		tsk_error_reset();
-		tsk_error_set_errno(TSK_ERR_AUTO_DB);
-		tsk_error_set_errstr("Hash length doesn't match index type: %s\n", hvalue);
-        tsk_error_print(stderr);
-		return 1;
-	}
-
-#ifdef IDX_SQLITE_STORE_TEXT
-    uint8_t ret = addentry_text(hdb_info, hvalue, offset);
-#else
-	const size_t len = (hdb_info->hash_len)/2;
-    uint8_t* hash = (uint8_t*) tsk_malloc(len+1);
-    
-	size_t count;
-
-    // We use an intermediate short to be compatible with Microsoft's implementation of the scanf family format
-    short unsigned int binval;
-    for (count = 0; count < len; count++) {
-		int r = sscanf(hvalue, "%2hx", &binval);
-        hash[count] = (uint8_t) binval;
-		hvalue += 2 * sizeof(char);
-	}
-    uint8_t ret = sqlite_v1_addentry_bin(hdb_info, hash, len, offset);
-
-    delete [] hash;
-#endif
-
-    if (ret == 0) {
-        // The current id can be used by subsequent add name or add comment operations
-	    hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId = sqlite3_last_insert_rowid(hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
-    }
-
-    return ret;
+// RJCTODO: This needs to go into a separate add to hash database function, as opposed to an add to index function
+//    hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId = 0;
+//
+//	if (strlen(hvalue) != hdb_info->hash_len) {
+//		tsk_error_reset();
+//		tsk_error_set_errno(TSK_ERR_AUTO_DB);
+//		tsk_error_set_errstr("Hash length doesn't match index type: %s\n", hvalue);
+//        tsk_error_print(stderr);
+//		return 1;
+//	}
+//
+//#ifdef IDX_SQLITE_STORE_TEXT
+//    uint8_t ret = addentry_text(hdb_info, hvalue, offset);
+//#else
+//	const size_t len = (hdb_info->hash_len)/2;
+//    uint8_t* hash = (uint8_t*) tsk_malloc(len+1);
+//    
+//	size_t count;
+//
+//    // We use an intermediate short to be compatible with Microsoft's implementation of the scanf family format
+//    short unsigned int binval;
+//    for (count = 0; count < len; count++) {
+//		int r = sscanf(hvalue, "%2hx", &binval);
+//        hash[count] = (uint8_t) binval;
+//		hvalue += 2 * sizeof(char);
+//	}
+//    uint8_t ret = sqlite_v1_addentry_bin(hdb_info, hash, len, offset);
+//
+//    delete [] hash;
+//#endif
+//
+//    if (ret == 0) {
+//        // The current id can be used by subsequent add name or add comment operations
+//	    hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId = sqlite3_last_insert_rowid(hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
+//    }
+//
+//    return ret;
+    return 0;
 }
 
 /**
- * Add a binary representation of a hash value into the index.
- *
- * @param hdb_info Hash database state info
- * @param hvalue Array of integers of hash value to add
- * @param hlen Number of bytes in hvalue
- * @param offset Byte offset of hash entry in original database.
+ * This function is a no-op for SQLite hash database. The index is "internal" to the RDBMS.
  * @return 1 on error and 0 on success
  */
 uint8_t
 sqlite_v1_addentry_bin(TSK_HDB_INFO * hdb_info, uint8_t* hvalue, int hlen,
                     TSK_OFF_T offset)
 {
-    if (attempt(sqlite3_bind_blob(m_stmt, 1, hvalue, hlen, SQLITE_TRANSIENT),
-		SQLITE_OK,
-		"Error binding binary blob: %s\n",
-		hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite) ||
-		attempt(sqlite3_bind_int64(m_stmt, 2, offset),
-		SQLITE_OK,
-		"Error binding entry offset: %s\n",
-		hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite) ) {
-        return 1;
-    }
+// RJCTODO: This needs to go into a separate add to hash database function, as opposed to an add to index function
+ //   if (attempt(sqlite3_bind_blob(m_stmt, 1, hvalue, hlen, SQLITE_TRANSIENT),
+	//	SQLITE_OK,
+	//	"Error binding binary blob: %s\n",
+	//	hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite) ||
+	//	attempt(sqlite3_bind_int64(m_stmt, 2, offset),
+	//	SQLITE_OK,
+	//	"Error binding entry offset: %s\n",
+	//	hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite) ) {
+ //       return 1;
+ //   }
 
-    // Don't report error on constraint -- we just will silently not add that duplicate hash
-	int r = sqlite3_step(m_stmt);
-    if ((r != SQLITE_DONE) && (r != SQLITE_CONSTRAINT) ) {
-		tsk_error_reset();
-		tsk_error_set_errno(TSK_ERR_AUTO_DB);
-		tsk_error_set_errstr("Error stepping: %s\n", sqlite3_errmsg( hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite), r);
-        return 1;
-    }
+ //   // Don't report error on constraint -- we just will silently not add that duplicate hash
+	//int r = sqlite3_step(m_stmt);
+ //   if ((r != SQLITE_DONE) && (r != SQLITE_CONSTRAINT) ) {
+	//	tsk_error_reset();
+	//	tsk_error_set_errno(TSK_ERR_AUTO_DB);
+	//	tsk_error_set_errstr("Error stepping: %s\n", sqlite3_errmsg( hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite), r);
+ //       return 1;
+ //   }
 
-	r = sqlite3_reset(m_stmt);
-    if ((r != SQLITE_OK) && (r != SQLITE_CONSTRAINT) ) {
-		tsk_error_reset();
-		tsk_error_set_errno(TSK_ERR_AUTO_DB);
-		tsk_error_set_errstr("Error resetting: %s\n", sqlite3_errmsg( hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite), r);
-        return 1;
-    }
+	//r = sqlite3_reset(m_stmt);
+ //   if ((r != SQLITE_OK) && (r != SQLITE_CONSTRAINT) ) {
+	//	tsk_error_reset();
+	//	tsk_error_set_errno(TSK_ERR_AUTO_DB);
+	//	tsk_error_set_errstr("Error resetting: %s\n", sqlite3_errmsg( hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite), r);
+ //       return 1;
+ //   }
 
+ //   return 0;
     return 0;
 }
 
 /**
- * Add a text representation of a hash value into the index.
- *
- * @param hdb_info Hash database state info
- * @param hvalue String of hash value to add
- * @param hlen Number of bytes in hvalue
- * @param offset Byte offset of hash entry in original database.
+ * This function is a no-op for SQLite hash database. The index is "internal" to the RDBMS.
  * @return 1 on error and 0 on success
  */
 uint8_t
 addentry_text(TSK_HDB_INFO * hdb_info, char* hvalue, TSK_OFF_T offset)
 {
-    if (attempt(sqlite3_bind_text(m_stmt, 1, hvalue, strlen(hvalue), SQLITE_TRANSIENT),
-		SQLITE_OK,
-		"Error binding text: %s\n",
-		hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite) ||
-		attempt(sqlite3_bind_int64(m_stmt, 2, offset),
-		    SQLITE_OK,
-		    "Error binding entry offset: %s\n",
-		    hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite) ) {
-        return 1;
-    }
+// RJCTODO: This needs to go into a separate add to hash database function, as opposed to an add to index function
+ //   if (attempt(sqlite3_bind_text(m_stmt, 1, hvalue, strlen(hvalue), SQLITE_TRANSIENT),
+	//	SQLITE_OK,
+	//	"Error binding text: %s\n",
+	//	hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite) ||
+	//	attempt(sqlite3_bind_int64(m_stmt, 2, offset),
+	//	    SQLITE_OK,
+	//	    "Error binding entry offset: %s\n",
+	//	    hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite) ) {
+ //       return 1;
+ //   }
 
-    // Don't report error on constraint -- we just will silently not add that duplicate hash
-	int r = sqlite3_step(m_stmt);
-    if ((r != SQLITE_DONE) && (r != SQLITE_CONSTRAINT) ) {
-		tsk_error_reset();
-		tsk_error_set_errno(TSK_ERR_AUTO_DB);
-		tsk_error_set_errstr("Error stepping: %s\n", sqlite3_errmsg( hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite), r);
-        return 1;
-    }
+ //   // Don't report error on constraint -- we just will silently not add that duplicate hash
+	//int r = sqlite3_step(m_stmt);
+ //   if ((r != SQLITE_DONE) && (r != SQLITE_CONSTRAINT) ) {
+	//	tsk_error_reset();
+	//	tsk_error_set_errno(TSK_ERR_AUTO_DB);
+	//	tsk_error_set_errstr("Error stepping: %s\n", sqlite3_errmsg( hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite), r);
+ //       return 1;
+ //   }
 
-	r = sqlite3_reset(m_stmt);
-    if ((r != SQLITE_OK) && (r != SQLITE_CONSTRAINT) ) {
-		tsk_error_reset();
-		tsk_error_set_errno(TSK_ERR_AUTO_DB);
-		tsk_error_set_errstr("Error resetting: %s\n", sqlite3_errmsg( hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite), r);
-        return 1;
-    }
+	//r = sqlite3_reset(m_stmt);
+ //   if ((r != SQLITE_OK) && (r != SQLITE_CONSTRAINT) ) {
+	//	tsk_error_reset();
+	//	tsk_error_set_errno(TSK_ERR_AUTO_DB);
+	//	tsk_error_set_errstr("Error resetting: %s\n", sqlite3_errmsg( hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite), r);
+ //       return 1;
+ //   }
 
+ //   return 0;
     return 0;
 }
-
 
 /**
  * Add new comment (e.g. the case name)
@@ -534,14 +540,13 @@ sqlite_v1_addcomment(TSK_HDB_INFO * hdb_info, char* value, int64_t id)
     }
 
     char stmt[1024];
-	snprintf(stmt, 1024,
-		"INSERT INTO comments (comment, hash_id) VALUES ('%s', '%d');",	value, id);
+	snprintf(stmt, 1024,"INSERT INTO comments (comment, hash_id) VALUES ('%s', '%d');",	value, id);
 	if (attempt_exec_nocallback(stmt, "Error adding comment: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
 		return 1;
 	}
+
     return 0;
 }
-
 
 /**
  * Add new name (e.g. a filename associated with a hash)
@@ -557,44 +562,44 @@ sqlite_v1_addfilename(TSK_HDB_INFO * hdb_info, char* value, int64_t id)
     }
 
     char stmt[1024];
-	snprintf(stmt, 1024,
-		"INSERT INTO file_names (name, hash_id) VALUES ('%s', '%d');", value, id);
+	snprintf(stmt, 1024, "INSERT INTO file_names (name, hash_id) VALUES ('%s', '%d');", value, id);
 	if (attempt_exec_nocallback(stmt, "Error adding comment: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
 		return 1;
 	}
+
     return 0;
 }
 
 /**
- * Finalize index creation process
- *
- * @param hdb_info Hash database state info structure.
+ * This function is a no-op for SQLite hash database. The index is "internal" to the RDBMS.
  * @return 1 on error and 0 on success
  */
 uint8_t
 sqlite_v1_finalize(TSK_HDB_INFO * hdb_info)
 {
-	if (tsk_hdb_commit_transaction(hdb_info->idx_info)) {
-		tsk_error_reset();
-		tsk_error_set_errno(TSK_ERR_AUTO_DB);
-		tsk_error_set_errstr("Failed to commit transaction\n");
-        tsk_error_print(stderr);
-		return 1;
-	}
-	
-    // We create the indexes at the end in order to make adding the initial batch of data (e.g. indexing an NSRL db)
-    // faster. Updates after indexing can be slower since the index has to update as well.
-    if (need_SQL_index) {
-        need_SQL_index = false;
-	    return attempt_exec_nocallback
-		    ("CREATE INDEX md5_index ON hashes(md5);",
-		    "Error creating md5_index on md5: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite) ||
-		    attempt_exec_nocallback
-		    ("CREATE INDEX sha1_index ON hashes(sha1);",
-		    "Error creating sha1_index on sha1: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
-    } else {
-        return 0;
-    }
+    // RJCTODO: Remove this after add to hash database function is made
+    //if (tsk_hdb_commit_transaction(hdb_info->idx_info)) {
+	//	tsk_error_reset();
+	//	tsk_error_set_errno(TSK_ERR_AUTO_DB);
+	//	tsk_error_set_errstr("Failed to commit transaction\n");
+ //       tsk_error_print(stderr);
+	//	return 1;
+	//}
+	//
+ //   // We create the indexes at the end in order to make adding the initial batch of data (e.g. indexing an NSRL db)
+ //   // faster. Updates after indexing can be slower since the index has to update as well.
+ //   if (need_SQL_index) {
+ //       need_SQL_index = false;
+	//    return attempt_exec_nocallback
+	//	    ("CREATE INDEX md5_index ON hashes(md5);",
+	//	    "Error creating md5_index on md5: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite) ||
+	//	    attempt_exec_nocallback
+	//	    ("CREATE INDEX sha1_index ON hashes(sha1);",
+	//	    "Error creating sha1_index on sha1: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
+ //   } else {
+ //       return 0;
+ //   }
+    return 0;
 }
 
 /** \internal

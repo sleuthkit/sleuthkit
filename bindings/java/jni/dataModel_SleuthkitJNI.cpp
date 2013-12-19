@@ -274,7 +274,7 @@ JNIEXPORT jint JNICALL
 
     ///@todo Check if the db_file passed in is really an index filename
 
-    TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_TRY;
+    TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_NONE;
     TSK_HDB_INFO * temp = tsk_hdb_open(pathT, flags);
 
     if(temp == NULL)
@@ -302,15 +302,13 @@ JNIEXPORT jint JNICALL
     TSK_TCHAR pathT[1024];
     toTCHAR(env, pathT, 1024, pathJ);
 
-    TSK_HDB_INFO * temp = tsk_hdb_newdb(pathT);
-
-    if(temp == NULL)
-    {
+    TSK_HDB_INFO *db = tsk_hdb_create_db(pathT);
+    if (!db) {
         setThrowTskCoreError(env);
         return -1;
     }
 
-    m_hashDbs.push_back(temp);
+    m_hashDbs.push_back(db);
     
     return m_hashDbs.size();
 }
@@ -507,7 +505,7 @@ JNIEXPORT jstring JNICALL
             db->hash_type = TSK_HDB_HTYPE_MD5_ID;
         //}
 
-        // Call setup to populate the idx_info struct so we can get the filename
+        // Call setup to populate the idx_info struct so we can get the filename // RJCTODO: WTF?
         tsk_hdb_idxsetup(db, db->hash_type);
 
         if(db->idx_info != NULL) {

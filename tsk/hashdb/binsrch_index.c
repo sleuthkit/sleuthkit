@@ -28,14 +28,172 @@
  * @return 1 on error and 0 on success
  *
  */
-    uint8_t
-binsrch_initialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
+uint8_t binsrch_initialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
 {
-    // Creating plain text indices is unsupported
-    tsk_error_reset();
-    tsk_error_set_errno(TSK_ERR_HDB_UNSUPTYPE);
-    tsk_error_set_errstr("binsrch_initialize: Creating plain text indices is unsupported.");
-    return 1;
+    FILE *hIdxTmp = hdb_info->idx_info->idx_struct.idx_binsrch->hIdxTmp;
+    size_t flen;
+    char dbtmp[32];
+    int i;
+
+    /* Use the string of the index/hash type to figure out some
+     * settings */
+
+    // convert to char -- cheating way to deal with WCHARs..
+    for (i = 0; i < 31 && htype[i] != '\0'; i++) {
+        dbtmp[i] = (char) htype[i];
+    }
+    dbtmp[i] = '\0';
+
+    if (strcmp(dbtmp, TSK_HDB_DBTYPE_NSRL_MD5_STR) == 0) {
+
+        if (hdb_info->db_type != TSK_HDB_DBTYPE_NSRL_ID) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_HDB_ARG);
+            tsk_error_set_errstr(
+                     "hdb_idxinitialize: database detected as: %d index creation as: %d",
+                     hdb_info->db_type, TSK_HDB_DBTYPE_NSRL_ID);
+            return 1;
+        }
+        //hdb_setuphash(hdb_info, TSK_HDB_HTYPE_MD5_ID); RJCTODO
+    }
+    else if (strcmp(dbtmp, TSK_HDB_DBTYPE_NSRL_SHA1_STR) == 0) {
+        if (hdb_info->db_type != TSK_HDB_DBTYPE_NSRL_ID) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_HDB_ARG);
+            tsk_error_set_errstr(
+                     "hdb_idxinitialize: database detected as: %d index creation as: %d",
+                     hdb_info->db_type, TSK_HDB_DBTYPE_NSRL_ID);
+            return 1;
+        }
+        //hdb_setuphash(hdb_info, TSK_HDB_HTYPE_SHA1_ID); RJCTODO
+    }
+    else if (strcmp(dbtmp, TSK_HDB_DBTYPE_MD5SUM_STR) == 0) {
+        if (hdb_info->db_type != TSK_HDB_DBTYPE_MD5SUM_ID) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_HDB_ARG);
+            tsk_error_set_errstr(
+                     "hdb_idxinitialize: database detected as: %d index creation as: %d",
+                     hdb_info->db_type, TSK_HDB_DBTYPE_MD5SUM_ID);
+            return 1;
+        }
+        //hdb_setuphash(hdb_info, TSK_HDB_HTYPE_MD5_ID); RJCTODO
+    }
+    else if (strcmp(dbtmp, TSK_HDB_DBTYPE_HK_STR) == 0) {
+        if (hdb_info->db_type != TSK_HDB_DBTYPE_HK_ID) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_HDB_ARG);
+            tsk_error_set_errstr(
+                     "hdb_idxinitialize: database detected as: %d index creation as: %d",
+                     hdb_info->db_type, TSK_HDB_DBTYPE_HK_ID);
+            return 1;
+        }
+        //hdb_setuphash(hdb_info, TSK_HDB_HTYPE_MD5_ID); RJCTODO
+    }
+    else if (strcmp(dbtmp, TSK_HDB_DBTYPE_ENCASE_STR) == 0) {
+        if (hdb_info->db_type != TSK_HDB_DBTYPE_ENCASE_ID) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_HDB_ARG);
+            tsk_error_set_errstr(
+                     "hdb_idxinitialize: database detected as: %d index creation as: %d",
+                     hdb_info->db_type, TSK_HDB_DBTYPE_ENCASE_ID);
+            return 1;
+        }
+        //hdb_setuphash(hdb_info, TSK_HDB_HTYPE_MD5_ID); RJCTODO
+    }
+    else {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr(
+                 "hdb_idxinitialize: Unknown database type request: %s",
+                 dbtmp);
+        return 1;
+    }
+
+    /* Setup the internal hash information */
+    //if (hdb_setuphash(hdb_info, hdb_info->hash_type)) { RJCTODO
+    //    return 1;
+    //}
+
+    /* Make the name for the unsorted intermediate index file */
+    flen = TSTRLEN(hdb_info->db_fname) + 32;
+    hdb_info->idx_info->idx_struct.idx_binsrch->uns_fname =
+        (TSK_TCHAR *) tsk_malloc(flen * sizeof(TSK_TCHAR));
+    if (hdb_info->idx_info->idx_struct.idx_binsrch->uns_fname == NULL) {
+        return 1;
+    }
+    TSNPRINTF(hdb_info->idx_info->idx_struct.idx_binsrch->uns_fname, flen,
+              _TSK_T("%s-%") PRIcTSK _TSK_T("-ns.idx"), hdb_info->db_fname,
+              TSK_HDB_HTYPE_STR(hdb_info->hash_type));
+
+
+    /* Create temp unsorted file of offsets */
+#ifdef TSK_WIN32
+    {
+        HANDLE hWin;
+
+        if ((hWin = CreateFile(hdb_info->idx_info->idx_struct.idx_binsrch->uns_fname, GENERIC_WRITE,
+                               0, 0, CREATE_ALWAYS, 0, 0)) ==
+            INVALID_HANDLE_VALUE) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_HDB_CREATE);
+            tsk_error_set_errstr(
+                     "hdb_idxinitialize: %"PRIttocTSK" GetFileSize: %d",
+                     hdb_info->idx_info->idx_struct.idx_binsrch->uns_fname, (int)GetLastError());
+            return 1;
+        }
+
+        hIdxTmp =
+            _fdopen(_open_osfhandle((intptr_t) hWin, _O_WRONLY), "wb");
+        if (hIdxTmp == NULL) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_HDB_OPEN);
+            tsk_error_set_errstr(
+                     "hdb_idxinitialize: Error converting Windows handle to C handle");
+            free(hdb_info);
+            return 1;
+        }
+    }
+#else
+    if (NULL == (hIdxTmp = fopen(hdb_info->idx_info->idx_struct.idx_binsrch->uns_fname, "w"))) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_CREATE);
+        tsk_error_set_errstr(
+                 "Error creating temp index file: %s",
+                 hdb_info->idx_info->idx_struct.idx_binsrch->uns_fname);
+        return 1;
+    }
+#endif
+
+    /* Print the header */
+    fprintf(hIdxTmp, "%s|%s\n", TSK_HDB_IDX_HEAD_NAME_STR,
+        hdb_info->db_name);
+    switch (hdb_info->db_type) {
+    case TSK_HDB_DBTYPE_NSRL_ID:
+       fprintf(hIdxTmp, "%s|%s\n", TSK_HDB_IDX_HEAD_TYPE_STR,
+            TSK_HDB_DBTYPE_NSRL_STR);
+        break;
+    case TSK_HDB_DBTYPE_MD5SUM_ID:
+        fprintf(hIdxTmp, "%s|%s\n", TSK_HDB_IDX_HEAD_TYPE_STR,
+            TSK_HDB_DBTYPE_MD5SUM_STR);
+        break;
+    case TSK_HDB_DBTYPE_HK_ID:
+        fprintf(hIdxTmp, "%s|%s\n", TSK_HDB_IDX_HEAD_TYPE_STR,
+            TSK_HDB_DBTYPE_HK_STR);
+        break;
+    case TSK_HDB_DBTYPE_ENCASE_ID:
+        fprintf(hIdxTmp, "%s|%s\n", TSK_HDB_IDX_HEAD_TYPE_STR,
+            TSK_HDB_DBTYPE_ENCASE_STR);
+        break;
+        /* Used to stop warning messages about missing enum value */
+    case TSK_HDB_DBTYPE_IDXONLY_ID:
+    default:
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_CREATE);
+        tsk_error_set_errstr("idxinit: Invalid db type\n");
+        return 1;
+    }
+
+    return 0;
 }
 
 /**
@@ -50,11 +208,21 @@ binsrch_initialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
 binsrch_addentry(TSK_HDB_INFO * hdb_info, char *hvalue,
         TSK_OFF_T offset)
 {
-    // Creating plain text indices is unsupported
-    tsk_error_reset();
-    tsk_error_set_errno(TSK_ERR_HDB_UNSUPTYPE);
-    tsk_error_set_errstr("binsrch_addentry: Creating plain text indices is unsupported.");
-    return 1;
+    FILE *hIdxTmp = hdb_info->idx_info->idx_struct.idx_binsrch->hIdxTmp;
+    int i = 0;
+
+    // make the hashes all upper case
+    for (i = 0; hvalue[i] != '\0'; i++) {
+        if (islower((int) hvalue[i]))
+            fprintf(hIdxTmp, "%c", toupper((int) hvalue[i]));
+        else
+            fprintf(hIdxTmp, "%c", hvalue[i]);
+    }
+
+    /* Print the entry to the unsorted index file */
+    fprintf(hIdxTmp, "|%.16llu\n", (unsigned long long) offset);
+
+    return 0;
 }
 
 /**
@@ -70,11 +238,17 @@ binsrch_addentry(TSK_HDB_INFO * hdb_info, char *hvalue,
 binsrch_addentry_bin(TSK_HDB_INFO * hdb_info, unsigned char *hvalue, int hlen,
         TSK_OFF_T offset)
 {
-    // Creating plain text indices is unsupported
-    tsk_error_reset();
-    tsk_error_set_errno(TSK_ERR_HDB_UNSUPTYPE);
-    tsk_error_set_errstr("binsrch_addentry_bin: Creating plain text indices is unsupported.");
-    return 1;
+    FILE *hIdxTmp = hdb_info->idx_info->idx_struct.idx_binsrch->hIdxTmp;
+    int i = 0;
+
+    for (i = 0; i < hlen; i++) {
+        fprintf(hIdxTmp, "%02X", hvalue[i]);
+    }
+
+    /* Print the entry to the unsorted index file */
+    fprintf(hIdxTmp, "|%.16llu\n", (unsigned long long) offset);
+
+    return 0;
 }
 
 /**
@@ -87,11 +261,119 @@ binsrch_addentry_bin(TSK_HDB_INFO * hdb_info, unsigned char *hvalue, int hlen,
     uint8_t
 binsrch_finalize(TSK_HDB_INFO * hdb_info)
 {
-    // Creating plain text indices is unsupported
-    tsk_error_reset();
-    tsk_error_set_errno(TSK_ERR_HDB_UNSUPTYPE);
-    tsk_error_set_errstr("binsrch_finalize: Creating plain text indices is unsupported.");
-    return 1;
+#ifdef TSK_WIN32
+    wchar_t buf[TSK_HDB_MAXLEN];
+    /// @@ Expand this to be SYSTEM_ROOT -- GetWindowsDirectory()
+    wchar_t *sys32 = _TSK_T("C:\\WINDOWS\\System32\\sort.exe");
+    DWORD stat;
+    STARTUPINFO myStartInfo;
+    PROCESS_INFORMATION pinfo;
+    FILE *hIdx = hdb_info->idx_info->idx_struct.idx_binsrch->hIdx;
+
+    /* Close the unsorted file */
+    fclose(hdb_info->idx_info->idx_struct.idx_binsrch->hIdxTmp);
+    hdb_info->idx_info->idx_struct.idx_binsrch->hIdxTmp = NULL;
+
+    /* Close the existing index if it is open */
+    if (hIdx) {
+        fclose(hIdx);
+        hIdx = NULL;
+    }
+
+    if (tsk_verbose)
+        tsk_fprintf(stderr, "hdb_idxfinalize: Sorting index\n");
+
+    stat = GetFileAttributes(sys32);
+    if ((stat != -1) && ((stat & FILE_ATTRIBUTE_DIRECTORY) == 0)) {
+        TSNPRINTF(buf, TSK_HDB_MAXLEN, _TSK_T("%s /o \"%s\" \"%s\""),
+                  sys32, hdb_info->idx_info->idx_fname, hdb_info->idx_info->idx_struct.idx_binsrch->uns_fname);
+    }
+    else {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_MISSING);
+        tsk_error_set_errstr("Cannot find sort executable");
+        return 1;
+    }
+
+    GetStartupInfo(&myStartInfo);
+
+    if (FALSE ==
+        CreateProcess(NULL, buf, NULL, NULL, FALSE, 0, NULL, NULL,
+                      &myStartInfo, &pinfo)) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_PROC);
+        tsk_error_set_errstr(
+                 "Error starting sorting index file using %S", buf);
+        return 1;
+    }
+
+    if (WAIT_FAILED == WaitForSingleObject(pinfo.hProcess, INFINITE)) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_PROC);
+        tsk_error_set_errstr(
+                 "Error (waiting) sorting index file using %S", buf);
+        return 1;
+    }
+
+    if (FALSE == DeleteFile(hdb_info->idx_info->idx_struct.idx_binsrch->uns_fname)) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_DELETE);
+        tsk_error_set_errstr(
+                 "Error deleting temp file: %d", (int)GetLastError());
+        return 1;
+    }
+#else
+    char buf[TSK_HDB_MAXLEN];
+    char *root = "/bin/sort";
+    char *usr = "/usr/bin/sort";
+    char *local = "/usr/local/bin/sort";
+    struct stat stats;
+    FILE *hIdx = hdb_info->idx_info->idx_struct.idx_binsrch->hIdx;
+
+    if (tsk_verbose)
+        tsk_fprintf(stderr, "hdb_idxfinalize: Sorting index\n");
+
+    /* Close the unsorted file */
+    fclose(hdb_info->idx_info->idx_struct.idx_binsrch->hIdxTmp);
+    hdb_info->idx_info->idx_struct.idx_binsrch->hIdxTmp = NULL;
+
+    /* Close the existing index if it is open */
+    if (hIdx) {
+        fclose(hIdx);
+        hIdx = NULL;
+    }
+
+    if (0 == stat(local, &stats)) {
+        snprintf(buf, TSK_HDB_MAXLEN, "%s -o %s %s", local,
+                 hdb_info->idx_info->idx_fname, hdb_info->idx_info->idx_struct.idx_binsrch->uns_fname);
+    }
+    else if (0 == stat(usr, &stats)) {
+        snprintf(buf, TSK_HDB_MAXLEN, "%s -o \"%s\" \"%s\"",
+                 usr, hdb_info->idx_info->idx_fname, hdb_info->idx_info->idx_struct.idx_binsrch->uns_fname);
+    }
+    else if (0 == stat(root, &stats)) {
+        snprintf(buf, TSK_HDB_MAXLEN, "%s -o \"%s\" \"%s\"",
+                 root, hdb_info->idx_info->idx_fname, hdb_info->idx_info->idx_struct.idx_binsrch->uns_fname);
+    }
+    else {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_MISSING);
+        tsk_error_set_errstr("Cannot find sort executable");
+        return 1;
+    }
+
+    if (0 != system(buf)) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_PROC);
+        tsk_error_set_errstr(
+                 "Error sorting index file using %s", buf);
+        return 1;
+    }
+
+    unlink(hdb_info->uns_fname);
+#endif
+
+    return 0;
 }
 
 

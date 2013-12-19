@@ -70,8 +70,7 @@ extern "C" {
 // Warning: changing the hash storage type changes the Db schema
 //#define IDX_SQLITE_STORE_TEXT
 
-    extern uint8_t
-        hdb_setupindex(TSK_HDB_INFO * hdb_info, uint8_t htype, uint8_t create);
+    extern uint8_t hdb_setupindex(TSK_HDB_INFO * hdb_info, uint8_t htype); // RJCTODO: Where is the tsk_ ?
 
     extern void tsk_idx_close(TSK_IDX_INFO * idx_info);
     extern void tsk_idx_close_file(FILE * idx);
@@ -122,6 +121,9 @@ extern "C" {
     extern uint8_t idxonly_getentry(TSK_HDB_INFO *, const char *,
                                     TSK_OFF_T, TSK_HDB_FLAG_ENUM,
                                     TSK_HDB_LOOKUP_FN, void *);
+
+    extern uint8_t sqlite_hdb_make_index(TSK_HDB_INFO *, TSK_TCHAR * htype);
+    extern uint8_t sqlite_hdb_get_entry(TSK_HDB_INFO *, const char *, TSK_OFF_T, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
 
     extern uint8_t binsrch_open(TSK_HDB_INFO *, TSK_IDX_INFO *, uint8_t);
     extern void binsrch_close(TSK_IDX_INFO *);
