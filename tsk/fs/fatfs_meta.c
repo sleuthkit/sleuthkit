@@ -726,7 +726,6 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
         return 0;
     }
     else {
-        // RJCTODO: Find and fix the bug that causes sectors to be printed incorrectly.
         TSK_LIST *list_seen = NULL;
         TSK_FS_ATTR_RUN *data_run = NULL;
         TSK_FS_ATTR_RUN *data_run_head = NULL;
@@ -1370,8 +1369,6 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
             }
         }
 
-        // RJCTODO: Isn't this unnecessary given the skipping of unallocated
-        // clusters above?
         /* Now that the sectors are read in, prepare to step through them in 
          * directory entry size chunks. Only do a basic test to confirm the 
          * contents of each chunk is a directory entry unless the sector that

@@ -550,7 +550,7 @@ exfatfs_dent_parse_buf(FATFS_INFO *a_fatfs, TSK_FS_DIR *a_fs_dir, char *a_buf,
             TSK_INUM_T current_inum = base_inum_of_sector + dentry_index;
             EXFATFS_DIR_ENTRY_TYPE dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
 
-            ++entries_count; // RJCTODO: Should this be reset for each iteration of this loop?
+            ++entries_count;
 
             if (!fatfs_inum_is_in_range(a_fatfs, current_inum)) {
                 tsk_fs_name_free(name_info.fs_name);

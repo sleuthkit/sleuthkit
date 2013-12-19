@@ -46,16 +46,6 @@
 // currently we don't add a data run to the file name entries of allocated files, yet we tack a "one cluster run" on to each file name entry for a deleted file 
 // (see lines 2015-2034 of fatfs_meta.c). This is a bug as far as I'm concerned.
 
-// RJCTODO: Enum variables display nicely in IntelliSense. Use them instead of the integral type flags I put in to deal with compiler warnings
-// and use casts instead.
-
-// RJCTODO: Consider standardizing on the use of tsk_error_reset() throughout the FAT code.
-
-// RJCTODO: Make sure all exFAT code is Doxygen commented. It would be better to also include shared FAT code in this. Even better would be
-// to make sure the FATXX code is documented as well.
-
-// RJCTODO: It would be good to obtain real world exFAT images and a Windows CE exFAT image for further testing.
-
 /**
  * \internal
  * Checks whether a specified cluster is allocated according to the allocation 
@@ -1168,9 +1158,6 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
         tsk_getu32(a_fatfs->fs_info.endian, stream_dentry.first_cluster_addr);
     fs_meta->size = tsk_getu64(fs->endian, stream_dentry.data_length); // RJCTODO: How does this relate to the valid data length field? Is one or the other to be preferred?
 
-    // RJCTODO: What if a cluster boundary is crossed? Probably need to check the allocation status of all the clusters
-    // involved in a file directory entry set. This is another argument for moving the duplicated code to find stream entries out of inode lookup
-    // and walk to here.
     /* Set the allocation status using both the allocation status of the 
      * sector that contains the directory entries and the entry type 
      * settings - essentially a "belt and suspenders" check. */
@@ -1238,7 +1225,6 @@ exfatfs_copy_file_name_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     }
 
     /* Copy the file name segment. */
-    // RJCTODO: Is there a problem here because we don't know how many of the chars are valid?
     if (fatfs_utf16_inode_str_2_utf8(a_fatfs, (UTF16*)dentry->utf16_name_chars, EXFATFS_MAX_FILE_NAME_SEGMENT_LENGTH, 
         (UTF8*)a_fs_file->meta->name2->name, sizeof(a_fs_file->meta->name2->name), a_inum, "file name segment") != TSKconversionOK) {
         return TSK_COR;
@@ -1769,8 +1755,6 @@ exfatfs_inode_walk_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
         return 1;
     }
 
-    // RJCTODO: This code probably needs to change. See explanatory TODO comment
-    // associated with the EXFATFS_DIR_ENTRY_TYPE_ENUM definition.
     /* Assign an allocation status to the entry. Allocation status is 
      * determined first by the allocation status of the cluster that contains
      * the entry, then by the allocated status of the entry. */

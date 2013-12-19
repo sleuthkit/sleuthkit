@@ -129,27 +129,27 @@ extern "C" {
      * MBR and a backup MBR.
      */
     typedef struct { 
-        uint8_t jump_to_boot_code[3];
-        uint8_t fs_name[8]; 
-        uint8_t must_be_zeros[53]; 
-		uint8_t partition_offset[8]; 
-		uint8_t vol_len_in_sectors[8];             
-		uint8_t fat_offset[4];          
-		uint8_t fat_len_in_sectors[4];                
-		uint8_t cluster_heap_offset[4]; 
-		uint8_t cluster_cnt[4]; 
-		uint8_t root_dir_cluster[4]; 
-		uint8_t vol_serial_no[4]; 
-		uint8_t fs_revision[2]; 
-		uint8_t vol_flags[2]; 
-		uint8_t bytes_per_sector; 
-		uint8_t sectors_per_cluster; 
-		uint8_t num_fats; 
-		uint8_t drive_select; 
-		uint8_t percent_of_cluster_heap_in_use; 
-		uint8_t reserved[7]; 
-		uint8_t boot_code[390]; 
-		uint8_t signature[2]; 
+        uint8_t jump_to_boot_code[3]; ///< 0xEB7690.
+        uint8_t fs_name[8];           ///< "EXFAT ".
+        uint8_t must_be_zeros[53];    ///< Must be 0x00.
+		uint8_t partition_offset[8];  ///< Sector address
+		uint8_t vol_len_in_sectors[8];  ///< Size of total volume in sectors
+		uint8_t fat_offset[4];          ///< Sector address of first FAT
+		uint8_t fat_len_in_sectors[4];  ///< Size of FAT in sectors
+		uint8_t cluster_heap_offset[4]; ///< Sector address of the data region
+		uint8_t cluster_cnt[4];         ///< Number of clusters in the cluster heap
+		uint8_t root_dir_cluster[4];    ///< Cluster address of the root directory
+		uint8_t vol_serial_no[4];     ///< Volume serial number
+		uint8_t fs_revision[2];       ///< VV.MM
+		uint8_t vol_flags[2];         ///< Flags: ActiveFAT, Volume Dirty, Media Failure, Clear to Zero, and Reserved
+		uint8_t bytes_per_sector;     ///< Power of 2. Minimum 2^9 = 512 bytes, maximum 2^12 = 4096 bytes
+		uint8_t sectors_per_cluster;  ///< Power of 2. Minimum 2^1 = 2. Maximum is dependant on the fact that the max cluster size is 32 MiB
+		uint8_t num_fats;             ///< 1 or 2 (only 2 if TexFAT is in use)
+		uint8_t drive_select;         ///< Used by INT 13
+		uint8_t percent_of_cluster_heap_in_use;  ///< Percentage of the heap in use
+		uint8_t reserved[7];      ///< Reserved
+		uint8_t boot_code[390];   ///< Boot program
+		uint8_t signature[2];     ///< 0xAA55
 	} EXFATFS_MASTER_BOOT_REC;
 
 	 /**
@@ -181,9 +181,9 @@ extern "C" {
      * type of entry should be found only in the root directory.
      */
     typedef struct {
-        uint8_t entry_type;
-        uint8_t utf16_char_count;
-        uint8_t volume_label[30];
+        uint8_t entry_type;        ///< 0x83 normally, 0x03 if the media was formatted without a volume label
+        uint8_t utf16_char_count;  ///< Number of characters in the volume label (max 11)
+        uint8_t volume_label[30];  ///< Volume label in UTF16
     } EXFATFS_VOL_LABEL_DIR_ENTRY;
 
     /**
@@ -191,12 +191,12 @@ extern "C" {
      * of entry should be found only in the root directory.
      */
     typedef struct {
-        uint8_t entry_type;
-        uint8_t secondary_entries_count;
-        uint8_t check_sum[2];
-        uint8_t flags[2];
-        uint8_t volume_guid[16];
-        uint8_t reserved[10];
+        uint8_t entry_type;    ///< 0xA0
+        uint8_t secondary_entries_count;  ///< Always zero
+        uint8_t check_sum[2];     ///< Set checksum
+        uint8_t flags[2];         ///< Flags: Allocation possible, no FAT chain, custom
+        uint8_t volume_guid[16];  ///< Volume GUID
+        uint8_t reserved[10];     ///< Reserved
     } EXFATFS_VOL_GUID_DIR_ENTRY;
 
     /**
@@ -207,11 +207,11 @@ extern "C" {
      * bitmap. This type of entry should be found only in the root directory.
      */
     typedef struct {
-        uint8_t entry_type;
-        uint8_t flags;
-        uint8_t reserved[18];
-        uint8_t first_cluster_of_bitmap[4];
-        uint8_t length_of_alloc_bitmap_in_bytes[8];
+        uint8_t entry_type;   ///< 0x81
+        uint8_t flags;        ///< 0x00 for first bitmap, 0x01 for the second
+        uint8_t reserved[18]; ///< Reserved
+        uint8_t first_cluster_of_bitmap[4];  ///< Cluster address of first data block
+        uint8_t length_of_alloc_bitmap_in_bytes[8];  ///< Length of the data
     } EXFATFS_ALLOC_BITMAP_DIR_ENTRY;
 
     /**
@@ -220,12 +220,12 @@ extern "C" {
      * required. This type of entry should be found only in the root directory.
      */
     typedef struct {
-        uint8_t entry_type;
-        uint8_t reserved1[3];
-        uint8_t table_check_sum[4];
-        uint8_t reserved2[12];
-        uint8_t first_cluster_of_table[4];
-        uint8_t table_length_in_bytes[8];
+        uint8_t entry_type;   ///< 0x82
+        uint8_t reserved1[3]; ///< Reserved
+        uint8_t table_check_sum[4];  ///< UP-Case table checksum
+        uint8_t reserved2[12];       ///< Reserved
+        uint8_t first_cluster_of_table[4]; ///< Cluster address of first data block
+        uint8_t table_length_in_bytes[8];  ///< Length of the data
     } EXFATFS_UPCASE_TABLE_DIR_ENTRY;
 
     /**
@@ -233,8 +233,8 @@ extern "C" {
      * systems. This type of entry should be found only in the root directory.
      */
     typedef struct {
-        uint8_t entry_type;
-        uint8_t reserved[31];
+        uint8_t entry_type;    ///< 0xA1
+        uint8_t reserved[31];  ///< Reserved
     } EXFATFS_TEXFAT_DIR_ENTRY;
 
     /**
@@ -242,8 +242,8 @@ extern "C" {
      * This type of entry should be found only in the root directory.
      */
     typedef struct {
-        uint8_t entry_type;
-        uint8_t reserved[31];
+        uint8_t entry_type;   ///< 0xE2
+        uint8_t reserved[31]; ///< Reserved
     } EXFATFS_ACCESS_CTRL_TABLE_DIR_ENTRY;
 
     /**
@@ -254,23 +254,23 @@ extern "C" {
      * entry set.
      */
     typedef struct {
-        uint8_t entry_type;
-        uint8_t secondary_entries_count;
-        uint8_t check_sum[2];
-        uint8_t attrs[2];
-        uint8_t reserved1[2];
-        uint8_t created_time[2];
-        uint8_t created_date[2];
-        uint8_t modified_time[2];
-        uint8_t modified_date[2];
-        uint8_t accessed_time[2];
-        uint8_t accessed_date[2];
-        uint8_t created_time_tenths_of_sec;
-        uint8_t modified_time_tenths_of_sec;
-        uint8_t created_time_time_zone_offset;
-        uint8_t modified_time_time_zone_offset;
-        uint8_t accessed_time_time_zone_offset;
-        uint8_t reserved2[7];
+        uint8_t entry_type;   ///< 0x85 if allocated, 0x05 if deleted
+        uint8_t secondary_entries_count; ///< Number of entries following the primary directory entry (Range: 2 to 18)
+        uint8_t check_sum[2];     ///< Set checksum
+        uint8_t attrs[2];         ///< File attributes
+        uint8_t reserved1[2];     ///< Reserved
+        uint8_t created_time[2];  ///< Time part of DOS time stamp
+        uint8_t created_date[2];  ///< Date part of DOS time stamp
+        uint8_t modified_time[2]; ///< Time part of DOS time stamp
+        uint8_t modified_date[2]; ///< Date part of DOS time stamp
+        uint8_t accessed_time[2]; ///< Time part of DOS time stamp
+        uint8_t accessed_date[2]; ///< Date part of DOS time stamp
+        uint8_t created_time_tenths_of_sec;   ///< Tenths of seconds part of a DOS time stamp, range is 0-199
+        uint8_t modified_time_tenths_of_sec;  ///< Tenths of seconds part of a DOS time stamp, range is 0-199
+        uint8_t created_time_time_zone_offset;  ///< Time zone difference to UTC in 15 minute increments
+        uint8_t modified_time_time_zone_offset; ///< Time zone difference to UTC in 15 minute increments
+        uint8_t accessed_time_time_zone_offset; ///< Time zone difference to UTC in 15 minute increments
+        uint8_t reserved2[7];  ///< Reserved
     } EXFATFS_FILE_DIR_ENTRY;
 
     /**
@@ -281,16 +281,16 @@ extern "C" {
      * constitute a file directory entry set.
      */
     typedef struct {
-        uint8_t entry_type;
-        uint8_t flags;
-        uint8_t reserved1;
-        uint8_t file_name_length;
-        uint8_t file_name_hash[2];
-        uint8_t reserved2[2];
-        uint8_t valid_data_length[8];
-        uint8_t reserved3[4];
-        uint8_t first_cluster_addr[4];
-        uint8_t data_length[8];
+        uint8_t entry_type; ///< 0xC0 if allocated, 0x40 if deleted
+        uint8_t flags;      ///< Flags: Allocation possible, no FAT chain, custom
+        uint8_t reserved1;  ///< Reserved
+        uint8_t file_name_length;   ///< Length of UTF16 name contained in following file name directory entries
+        uint8_t file_name_hash[2];  ///< Hash of up-cased file name
+        uint8_t reserved2[2];       ///< Reserved
+        uint8_t valid_data_length[8];  ///< How much actual data has been written to the file. Must be less than data_length
+        uint8_t reserved3[4];          ///< Reserved
+        uint8_t first_cluster_addr[4]; ///< Cluster address of first data block
+        uint8_t data_length[8];        ///< Length of the data. Max 256M for directories
     } EXFATFS_FILE_STREAM_DIR_ENTRY;
 
     /**
@@ -302,9 +302,9 @@ extern "C" {
      * entry of the file direcotry entry set.
      */
     typedef struct {
-        uint8_t entry_type;
-        uint8_t flags;
-        uint8_t utf16_name_chars[30];
+        uint8_t entry_type;  ///< 0xC1 if allocataed, 0x41 if deleted
+        uint8_t flags;       ///< Flags: Allocation possible, no FAT chain, custom
+        uint8_t utf16_name_chars[30];  ///< UTF16 part of file name, max 15 characters
     } EXFATFS_FILE_NAME_DIR_ENTRY;
 
 	extern uint8_t 
