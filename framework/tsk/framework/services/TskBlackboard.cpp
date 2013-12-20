@@ -44,6 +44,8 @@ map<int, TskArtifactNames> initializeArtifactTypeMap(){
 	retval.insert(pair<int, TskArtifactNames>(TSK_GPS_LAST_KNOWN_LOCATION, TskArtifactNames("TSK_GPS_LAST_KNOWN_LOCATION", "GPS Last Known Location")));
 	retval.insert(pair<int, TskArtifactNames>(TSK_GPS_SEARCH, TskArtifactNames("TSK_GPS_SEARCH", "GPS Searches")));
 	retval.insert(pair<int, TskArtifactNames>(TSK_PROG_RUN, TskArtifactNames("TSK_PROG_RUN", "Run Programs")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_ENCRYPTION_DETECTED, TskArtifactNames("TSK_ENCRYPTION_DETECTED", "Encryption Detected")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_EXT_MISMATCH_DETECTED, TskArtifactNames("TSK_EXT_MISMATCH_DETECTED", "Extension Mismatch Detected")));
     retval.insert(pair<int, TskArtifactNames>(TSK_INTERESTING_ARTIFACT, TskArtifactNames("TSK_INTERESTING_ARTIFACT", "Interesting Results")));
 	
     return retval;
@@ -143,7 +145,6 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
 	retval.insert(pair<int, TskAttributeNames>(TSK_MIN_COUNT, TskAttributeNames("TSK_MIN_COUNT",  "Minimum Count")));
 	retval.insert(pair<int, TskAttributeNames>(TSK_PATH_SOURCE, TskAttributeNames("TSK_PATH_SOURCE",  "Path Source")));
 	retval.insert(pair<int, TskAttributeNames>(TSK_PERMISSIONS, TskAttributeNames("TSK_PERMISSIONS",  "Permissions")));
-	retval.insert(pair<int, TskAttributeNames>(TSK_PROG_LAUNCHED, TskAttributeNames("TSK_PROG_LAUNCHED",  "Program Launched")));
 	retval.insert(pair<int, TskAttributeNames>(TSK_ASSOCIATED_ARTIFACT, TskAttributeNames("TSK_ASSOCIATED_ARTIFACT", "Associated Artifact")));
 
     return retval;
