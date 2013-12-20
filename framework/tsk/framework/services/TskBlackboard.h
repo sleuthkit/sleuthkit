@@ -129,7 +129,7 @@ enum TSK_ATTRIBUTE_TYPE {
     TSK_TEXT_LANGUAGE = 28,///< String of the detected language in ISO 639-3 language code of TskBlackboard::TSK_TEXT data in the same artifact (TSK_EXTRACTED_TEXT, for example).
     TSK_ENTROPY = 29,///< DOUBLE: Entropy value of file
     TSK_HASHSET_NAME = 30,///< String of the name or file name of the hashset -- Deprecated in favor of TSK_SET_NAME
-    TSK_INTERESTING_FILE = 31,///< An interesting file hit, potentially file id, name, or path
+    TSK_INTERESTING_FILE = 31,///< An interesting file hit, potentially file id, name, or path -- Deprecated, use TSK_INTERESTING_FILE_HIT artifact instead.
     TSK_REFERRER = 32,///< String of referrer URL
     TSK_DATETIME_ACCESSED = 33,///<datetime last time accessed
     TSK_IP_ADDRESS = 34,///<String of IP Address
