@@ -78,7 +78,7 @@ enum TSK_ARTIFACT_TYPE {
 	TSK_GPS_LAST_KNOWN_LOCATION = 30, ///< GPS Last known location
 	TSK_GPS_SEARCH = 31,	///< GPS Searches
 	TSK_PROG_RUN = 32, ///< Application run information
-    TSK_INTERESTING_ARTIFACT = 33,	///< Any artifact interesting enough that it should be called out in the UI.
+    TSK_INTERESTING_ARTIFACT_HIT = 33,	///< Any artifact interesting enough that it should be called out in the UI.
 		 
 
 		
