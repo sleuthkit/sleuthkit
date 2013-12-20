@@ -138,6 +138,7 @@ public class BlackboardAttribute {
 		TSK_PHONE_NUMBER(35, "TSK_PHONE_NUMBER", "Phone Number"),
 		TSK_PATH_ID(36, "TSK_PATH_ID", "Path ID"),
 		TSK_SET_NAME(37, "TSK_SET_NAME", "Set Name"),
+		@Deprecated
 		TSK_ENCRYPTION_DETECTED(38, "TSK_ENCRYPTION_DETECTED", "Encryption Detected"),
 		TSK_MALWARE_DETECTED(39, "TSK_MALWARE_DETECTED", "Malware Detected"),
 		TSK_STEG_DETECTED(40, "TSK_STEG_DETECTED", "Steganography Detected"),
