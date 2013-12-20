@@ -145,7 +145,6 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
 	retval.insert(pair<int, TskAttributeNames>(TSK_MIN_COUNT, TskAttributeNames("TSK_MIN_COUNT",  "Minimum Count")));
 	retval.insert(pair<int, TskAttributeNames>(TSK_PATH_SOURCE, TskAttributeNames("TSK_PATH_SOURCE",  "Path Source")));
 	retval.insert(pair<int, TskAttributeNames>(TSK_PERMISSIONS, TskAttributeNames("TSK_PERMISSIONS",  "Permissions")));
-	retval.insert(pair<int, TskAttributeNames>(TSK_PROG_LAUNCHED, TskAttributeNames("TSK_PROG_LAUNCHED",  "Program Launched")));
 	retval.insert(pair<int, TskAttributeNames>(TSK_ASSOCIATED_ARTIFACT, TskAttributeNames("TSK_ASSOCIATED_ARTIFACT", "Associated Artifact")));
 
     return retval;
