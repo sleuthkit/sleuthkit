@@ -141,7 +141,7 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
         }
     }
     else {
-        // The caller has not explicitly specified that the supplied file path is
+        // The caller has explicitly specified that the supplied file path is
         // a plain text index file able to be used for simple lookups in the absence 
         // of the original database file. 
         dbtype = TSK_HDB_DBTYPE_IDXONLY_ID;
@@ -159,7 +159,6 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
 
     // Save the database file path. In the case of an index only database, this will actually
     // be the index file standing in for the original text file database.
-    // RJCTODO: Is this the right thing to do? 
     flen = TSTRLEN(db_file) + 32;
     hdb_info->db_fname = (TSK_TCHAR*)tsk_malloc(flen * sizeof(TSK_TCHAR));
     if (hdb_info->db_fname == NULL) {
@@ -171,10 +170,12 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
     // Initialize lock.
     tsk_init_lock(&hdb_info->lock);
 
-    /* Get database specific information */
-    hdb_info->hash_type = static_cast<TSK_HDB_HTYPE_ENUM>(0);
-    hdb_info->hash_len = 0;
+    // Initialize members to be set later to "not set".
+    hdb_info->hash_type = static_cast<TSK_HDB_HTYPE_ENUM>(0); // RJCTODO: Why is this set later?
+    hdb_info->hash_len = 0; // RJCTODO: Why is this set later?
     hdb_info->idx_info = NULL;
+
+    // Set members that depend on the hash database type. 
     hdb_info->db_type = static_cast<TSK_HDB_DBTYPE_ENUM>(dbtype);
     switch (dbtype) {
         case TSK_HDB_DBTYPE_NSRL_ID:
@@ -208,7 +209,7 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
             break;
 
         case TSK_HDB_DBTYPE_SQLITE_ID: 
-            //idxonly_name(hdb_info); // RJCTODO: Come back to this
+            sqlite_hdb_set_db_name(hdb_info);
             hdb_info->getentry = sqlite_hdb_get_entry;
             hdb_info->makeindex = sqlite_hdb_make_index;
             break;

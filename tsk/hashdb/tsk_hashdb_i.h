@@ -67,26 +67,22 @@ extern "C" {
 #define IDX_HASHSET_UPDATEABLE "Updateable"
 #define IDX_BINSRCH_HEADER "0000000000000000"
 #define IDX_SQLITE_V1_HEADER "SQLite format 3"
+
+// RJCTODO: Get rid of this
 // Warning: changing the hash storage type changes the Db schema
-//#define IDX_SQLITE_STORE_TEXT
+//#define IDX_SQLITE_STORE_TEXT 
 
+    // "Generic" functions that apply to all types or delegate to hash database type-specific functions. 
     extern uint8_t hdb_setupindex(TSK_HDB_INFO * hdb_info, uint8_t htype); // RJCTODO: Where is the tsk_ ?
-
     extern void tsk_idx_close(TSK_IDX_INFO * idx_info);
     extern void tsk_idx_close_file(FILE * idx);
-
-    extern uint8_t tsk_hdb_idxinitialize(TSK_HDB_INFO *,
-                                         TSK_TCHAR * dbname);
-    extern uint8_t tsk_hdb_idxaddentry(TSK_HDB_INFO *, char *hvalue,
-                                       TSK_OFF_T offset);
-    extern uint8_t tsk_hdb_idxaddentry_bin(TSK_HDB_INFO * hdb_info, 
-                                           unsigned char *hvalue, int hlen,
-                                           TSK_OFF_T offset);
+    extern uint8_t tsk_hdb_idxinitialize(TSK_HDB_INFO *, TSK_TCHAR * dbname);
+    extern uint8_t tsk_hdb_idxaddentry(TSK_HDB_INFO *, char *hvalue, TSK_OFF_T offset);
+    extern uint8_t tsk_hdb_idxaddentry_bin(TSK_HDB_INFO * hdb_info, unsigned char *hvalue, int hlen,TSK_OFF_T offset);
     extern uint8_t tsk_hdb_idxfinalize(TSK_HDB_INFO *);
     extern void tsk_hdb_name_from_path(TSK_HDB_INFO *);
 
-/* Functions */
-
+    // Hash database functions for NSRL hash databases. 
     extern uint8_t nsrl_test(FILE *);
     extern void nsrl_name(TSK_HDB_INFO *);
     extern uint8_t nsrl_makeindex(TSK_HDB_INFO *, TSK_TCHAR * htype);
@@ -94,6 +90,7 @@ extern "C" {
                                  TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN,
                                  void *);
 
+    // Hash database functions for md5Sum hash databases. 
     extern uint8_t md5sum_test(FILE *);
     extern void md5sum_name(TSK_HDB_INFO *);
     extern uint8_t md5sum_makeindex(TSK_HDB_INFO *, TSK_TCHAR * htype);
@@ -101,6 +98,7 @@ extern "C" {
                                    TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN,
                                    void *);
 
+    // Hash database functions for EnCase hash databases. 
     extern uint8_t encase_test(FILE *);
     extern void encase_name(TSK_HDB_INFO *);
     extern uint8_t encase_makeindex(TSK_HDB_INFO *, TSK_TCHAR * htype);
@@ -108,6 +106,7 @@ extern "C" {
                                    TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN,
                                    void *);
 
+    // Hash database functions for HashKeeper hash databases. 
     extern uint8_t hk_test(FILE *);
     extern void hk_name(TSK_HDB_INFO *);
     extern uint8_t hk_makeindex(TSK_HDB_INFO *, TSK_TCHAR * htype);
@@ -115,16 +114,14 @@ extern "C" {
                                TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN,
                                void *);
 
-    
+    // Hash database functions for text index files standing in for the original hash databases. 
     extern void idxonly_name(TSK_HDB_INFO *);
     extern uint8_t idxonly_makeindex(TSK_HDB_INFO *, TSK_TCHAR * htype);
     extern uint8_t idxonly_getentry(TSK_HDB_INFO *, const char *,
                                     TSK_OFF_T, TSK_HDB_FLAG_ENUM,
                                     TSK_HDB_LOOKUP_FN, void *);
 
-    extern uint8_t sqlite_hdb_make_index(TSK_HDB_INFO *, TSK_TCHAR * htype);
-    extern uint8_t sqlite_hdb_get_entry(TSK_HDB_INFO *, const char *, TSK_OFF_T, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
-
+    // Index functions for text indexes for hash databases. 
     extern uint8_t binsrch_open(TSK_HDB_INFO *, TSK_IDX_INFO *, uint8_t);
     extern void binsrch_close(TSK_IDX_INFO *);
     extern uint8_t binsrch_initialize(TSK_HDB_INFO *, TSK_TCHAR *);
@@ -140,22 +137,25 @@ extern "C" {
                                     TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
     extern int8_t binsrch_get_properties(TSK_HDB_INFO * hdb_info);
 
+    // Hash database and index functions for SQLite hash databases.
+    // For SQLite, 
+    extern void sqlite_hdb_set_db_name(TSK_HDB_INFO *hdb_info);
+    extern uint8_t sqlite_hdb_make_index(TSK_HDB_INFO *, TSK_TCHAR * htype);
+    extern uint8_t sqlite_hdb_get_entry(TSK_HDB_INFO *, const char *, TSK_OFF_T, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
 	extern uint8_t sqlite_hdb_create_db(TSK_TCHAR *db_file_path);
     extern uint8_t sqlite_v1_open(TSK_HDB_INFO *, TSK_IDX_INFO *, uint8_t);
     extern void sqlite_v1_close(TSK_IDX_INFO *);
     extern uint8_t sqlite_v1_initialize(TSK_HDB_INFO *, TSK_TCHAR *);
     extern uint8_t sqlite_v1_begin(TSK_HDB_INFO *);
     extern uint8_t sqlite_v1_addentry(TSK_HDB_INFO *, char *, TSK_OFF_T);
-    extern uint8_t sqlite_v1_addentry_bin(TSK_HDB_INFO *,
-            unsigned char *, int, TSK_OFF_T);
+    extern uint8_t sqlite_v1_addentry_bin(TSK_HDB_INFO *, unsigned char *, int, TSK_OFF_T);
     extern uint8_t sqlite_v1_finalize(TSK_HDB_INFO *);
-    extern int8_t sqlite_v1_lookup_str(TSK_HDB_INFO *, const char *,
-                                    TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
-    extern int8_t sqlite_v1_lookup_raw(TSK_HDB_INFO *, uint8_t *, uint8_t,
-                                    TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
+    extern int8_t sqlite_v1_lookup_str(TSK_HDB_INFO *, const char *, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
+    extern int8_t sqlite_v1_lookup_raw(TSK_HDB_INFO *, uint8_t *, uint8_t, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
     extern void * sqlite_v1_getAllData(TSK_HDB_INFO *, unsigned long hashId);
     extern int8_t sqlite_v1_get_properties(TSK_HDB_INFO * hdb_info);
     extern uint8_t sqlite3_test(FILE *);
+
 #ifdef __cplusplus
 }
 #endif

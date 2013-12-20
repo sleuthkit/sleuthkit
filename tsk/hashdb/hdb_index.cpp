@@ -119,9 +119,9 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype)
     if ((idx_info = (TSK_IDX_INFO*)tsk_malloc(sizeof(TSK_IDX_INFO))) == NULL) {
         return NULL;
     }
-    hdb_info->idx_info = idx_info; // RJCTODO: Wait a sec - setting it and returning it? ***BUG***
+    hdb_info->idx_info = idx_info; // RJCTODO: Wait a sec - setting it and returning it? ***BUG***??
 
-    // Allocate the file name in the TSK_IDX_INFO struct. 
+    // Allocate the index file path in the TSK_IDX_INFO struct. 
     flen = TSTRLEN(hdb_info->db_fname) + 32;
     idx_info->idx_fname = (TSK_TCHAR*)tsk_malloc(flen * sizeof(TSK_TCHAR));
     if (idx_info->idx_fname == NULL) {
@@ -144,48 +144,18 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype)
         return NULL;
     }
     
-    // RJCTODO: Need a branch here, as long as supporting the old struct approach. Change this later if time permits, else record the plan.
-    // This stuff is set up...
-    if (hdb_info->db_type == TSK_HDB_DBTYPE_SQLITE_ID) {
-
-        // RJCTODO: This is potentially handy.
-        // Check if it already has a .kdb extension
-        //TSK_TCHAR * c;
-        //c = TSTRRCHR(hdb_info->db_fname, _TSK_T('.'));    
-        //if (newBlank || ((c != NULL) && (TSTRLEN(c) >= 4)
-        //    && (TSTRCMP(c, _TSK_T(".kdb")) == 0))) {
-
-        //    TSTRNCPY(idx_info->idx_fname, hdb_info->db_fname, TSTRLEN(hdb_info->db_fname));
-        //} else {
-        //    TSNPRINTF(idx_info->idx_fname, flen,
-        //        _TSK_T("%s.kdb"), hdb_info->db_fname);
-        //}
-
-        ///@todo should we require the header check here?
-        if (idx) {
-            if (1 != fread(header, header_size, 1, idx)) {
-                ///@todo should this actually be an error?                
-            }
-            
-            if (strncmp(header,
-                        IDX_SQLITE_V1_HEADER,
-                        strlen(IDX_SQLITE_V1_HEADER)) != 0) {
-
-                tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_HDB_MISSING);
-                tsk_error_set_errstr(
-                        "tsk_idx_open: Unrecognized header format: %"PRIttocTSK,
-                        idx_info->idx_fname);
-                tsk_idx_close_file(idx);
-                free(idx_info);                
-                return NULL;
-            }
-        }
-        
-        idx_info->updateable = 0;
+    if (hdb_info->db_type != TSK_HDB_DBTYPE_SQLITE_ID) {
+        // For SQLite databases, the database and index are not separate things, as is the case for text databases.
+        // The index struct initialization is therefore a bit different.
         idx_info->index_type = TSK_HDB_ITYPE_SQLITE_V1;
+
+        // The index file path is the same as the database path.
+        TSTRNCPY(idx_info->idx_fname, hdb_info->db_fname, TSTRLEN(hdb_info->db_fname));
+        
+        // RJCTODO: Where does the union get allocated and initialized?
+
+        idx_info->updateable = 1;
         idx_info->open = sqlite_v1_open;
-        idx_info->close = sqlite_v1_close;
         idx_info->initialize = sqlite_v1_initialize;
         idx_info->addentry = sqlite_v1_addentry;
         idx_info->addentry_bin = sqlite_v1_addentry_bin;
@@ -195,9 +165,45 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype)
         idx_info->lookup_str = sqlite_v1_lookup_str;
         idx_info->lookup_raw = sqlite_v1_lookup_raw;
         idx_info->getAllData = sqlite_v1_getAllData;
-        idx_info->get_properties = sqlite_v1_get_properties;
+        idx_info->get_properties = sqlite_v1_get_properties; // RJCTODO: This probably needs to go
+        idx_info->close = sqlite_v1_close;
     }
     else {
+        idx_info->index_type = TSK_HDB_ITYPE_BINSRCH;
+        
+        // RJCTODO: Where does the union get allocated and initialized?
+
+        if (hdb_info->db_type == TSK_HDB_DBTYPE_IDXONLY_ID) {
+            // For index only databases, the database is not available, so the index file is the same as the database path.
+            TSTRNCPY(idx_info->idx_fname, hdb_info->db_fname, TSTRLEN(hdb_info->db_fname));
+        }
+        else {
+            /* Get hash type specific information */
+            switch (htype) {
+            case TSK_HDB_HTYPE_MD5_ID:
+                hdb_info->hash_type = htype;
+                hdb_info->hash_len = TSK_HDB_HTYPE_MD5_LEN;
+                hdb_info->idx_llen = TSK_HDB_IDX_LEN(htype);
+                TSNPRINTF(hdb_info->idx_fname, flen,
+                          _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
+                          hdb_info->db_fname, TSK_HDB_HTYPE_MD5_STR);
+                return 0;
+            case TSK_HDB_HTYPE_SHA1_ID:
+                hdb_info->hash_type = htype;
+                hdb_info->hash_len = TSK_HDB_HTYPE_SHA1_LEN;
+                hdb_info->idx_llen = TSK_HDB_IDX_LEN(htype);
+                TSNPRINTF(hdb_info->idx_fname, flen,
+                          _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
+                          hdb_info->db_fname, TSK_HDB_HTYPE_SHA1_STR);
+                return 0;
+            }
+
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_HDB_ARG);
+            tsk_error_set_errstr(
+                     "hdb_setuphash: Invalid hash type as argument: %d", htype);
+            return 1;
+
         /* If we can't make a new file and the expected index doesn't exist, then
          * we'll swap names and try again. */
         // RJCTODO: This is not good.
@@ -205,90 +211,114 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype)
         // Here there should be no need for rigamarole. If the database type is index only, 
         // the database name can be copied. Elsewhere, the database type can be used to
         // handle the name query correctly.
-        if ((idx = open_index_file(idx_info->idx_fname)) == NULL) {  
+        //if ((idx = open_index_file(idx_info->idx_fname)) == NULL) {  
 
-            // Try opening an old format index file
 
-            // Clear index filename
-            // @@@ Why not just do a memset here?
-            free(idx_info->idx_fname);
-            idx_info->idx_fname = (TSK_TCHAR *) tsk_malloc(flen * sizeof(TSK_TCHAR));
-            if (idx_info->idx_fname == NULL) {
-                free(idx_info);
-                // @@@ ERROR INFO NEEDED
-                return NULL;
-            }
 
-            // Check if it already has an .idx extension
-            TSK_TCHAR * c;
-            c = TSTRRCHR(hdb_info->db_fname, _TSK_T('.'));    
-            if ((c != NULL) && (TSTRLEN(c) >= 4)
-                && (TSTRCMP(c, _TSK_T(".idx")) == 0)) {
 
-                // Use given db filename as the index filename
-                TSTRNCPY(idx_info->idx_fname, hdb_info->db_fname, TSTRLEN(hdb_info->db_fname));
-            
-                // @@@ We shoudl just bail at this point because all this is going to do
-                // is repeat what we just did above
-            } else {
-                // Change the filename to the old format
-                switch (htype) {
-                    case TSK_HDB_HTYPE_MD5_ID:
-                        TSNPRINTF(idx_info->idx_fname, flen,
-                                  _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
-                                  hdb_info->db_fname, TSK_HDB_HTYPE_MD5_STR);
-                        break;
-                    case TSK_HDB_HTYPE_SHA1_ID:
-                        TSNPRINTF(idx_info->idx_fname, flen,
-                                  _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
-                                  hdb_info->db_fname, TSK_HDB_HTYPE_SHA1_STR);
-                        break;
-                }
-            }
+        //            //    TSNPRINTF(idx_info->idx_fname, flen,
+        ////        _TSK_T("%s.kdb"), hdb_info->db_fname);
 
-            idx = open_index_file(idx_info->idx_fname);
 
-            if (!idx) {
-                free(idx_info);
-                tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_HDB_MISSING);
-                tsk_error_set_errstr( "tsk_idx_open: Error opening index file");
-                return NULL;
-            }
+        //    // Try opening an old format index file
+
+        //    // Clear index filename
+        //    // @@@ Why not just do a memset here?
+        //    free(idx_info->idx_fname);
+        //    idx_info->idx_fname = (TSK_TCHAR *) tsk_malloc(flen * sizeof(TSK_TCHAR));
+        //    if (idx_info->idx_fname == NULL) {
+        //        free(idx_info);
+        //        // @@@ ERROR INFO NEEDED
+        //        return NULL;
+        //    }
+
+        //    // Check if it already has an .idx extension
+        //    TSK_TCHAR * c;
+        //    c = TSTRRCHR(hdb_info->db_fname, _TSK_T('.'));    
+        //    if ((c != NULL) && (TSTRLEN(c) >= 4)
+        //        && (TSTRCMP(c, _TSK_T(".idx")) == 0)) {
+
+        //        // Use given db filename as the index filename
+        //        TSTRNCPY(idx_info->idx_fname, hdb_info->db_fname, TSTRLEN(hdb_info->db_fname));
+        //    
+        //        // @@@ We shoudl just bail at this point because all this is going to do
+        //        // is repeat what we just did above
+        //    } else {
+        //        // Change the filename to the old format
+        //        switch (htype) {
+        //            case TSK_HDB_HTYPE_MD5_ID:
+        //                TSNPRINTF(idx_info->idx_fname, flen,
+        //                          _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
+        //                          hdb_info->db_fname, TSK_HDB_HTYPE_MD5_STR);
+        //                break;
+        //            case TSK_HDB_HTYPE_SHA1_ID:
+        //                TSNPRINTF(idx_info->idx_fname, flen,
+        //                          _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
+        //                          hdb_info->db_fname, TSK_HDB_HTYPE_SHA1_STR);
+        //                break;
+        //        }
+        //    }
+
+
+            idx_info->updateable = 0;
+            idx_info->index_type = TSK_HDB_ITYPE_BINSRCH;
+            idx_info->open = binsrch_open;
+            idx_info->close = binsrch_close;
+            idx_info->initialize = binsrch_initialize;
+            idx_info->addentry = binsrch_addentry;
+            idx_info->addentry_bin = binsrch_addentry_bin;
+            idx_info->addcomment = NULL;
+            idx_info->addfilename = NULL;
+            idx_info->finalize = binsrch_finalize;
+            idx_info->lookup_str = binsrch_lookup_str;
+            idx_info->lookup_raw = binsrch_lookup_raw;
+            idx_info->getAllData = NULL;
+            idx_info->get_properties = binsrch_get_properties;
+
+
+            //idx = open_index_file(idx_info->idx_fname);
+
+            //if (!idx) {
+            //    free(idx_info);
+            //    tsk_error_reset();
+            //    tsk_error_set_errno(TSK_ERR_HDB_MISSING);
+            //    tsk_error_set_errstr( "tsk_idx_open: Error opening index file");
+            //    return NULL;
+            //}
         
-            if (1 != fread(header, header_size, 1, idx)) {
-                tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_HDB_MISSING);
-                tsk_error_set_errstr(
-                    "tsk_idx_open: Error reading header: %"PRIttocTSK,
-                    idx_info->idx_fname);
-                return NULL;
-            }
-            else if (strncmp(header, IDX_BINSRCH_HEADER, strlen(IDX_BINSRCH_HEADER)) == 0) {
-                idx_info->updateable = 0;
-                idx_info->index_type = TSK_HDB_ITYPE_BINSRCH;
-                idx_info->open = binsrch_open;
-                idx_info->close = binsrch_close;
-                idx_info->initialize = binsrch_initialize;
-                idx_info->addentry = binsrch_addentry;
-                idx_info->addentry_bin = binsrch_addentry_bin;
-                idx_info->addcomment = NULL;
-                idx_info->addfilename = NULL;
-                idx_info->finalize = binsrch_finalize;
-                idx_info->lookup_str = binsrch_lookup_str;
-                idx_info->lookup_raw = binsrch_lookup_raw;
-                idx_info->getAllData = NULL;
-                idx_info->get_properties = binsrch_get_properties;
-            }
-            else {
-                tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_HDB_MISSING);
-                tsk_error_set_errstr(
-                    "tsk_idx_open: Unrecognized header format: %"PRIttocTSK,
-                    idx_info->idx_fname);
-                free(idx_info);
-                return NULL;
-            }
+            //if (1 != fread(header, header_size, 1, idx)) {
+            //    tsk_error_reset();
+            //    tsk_error_set_errno(TSK_ERR_HDB_MISSING);
+            //    tsk_error_set_errstr(
+            //        "tsk_idx_open: Error reading header: %"PRIttocTSK,
+            //        idx_info->idx_fname);
+            //    return NULL;
+            //}
+            //else if (strncmp(header, IDX_BINSRCH_HEADER, strlen(IDX_BINSRCH_HEADER)) == 0) {
+            //    idx_info->updateable = 0;
+            //    idx_info->index_type = TSK_HDB_ITYPE_BINSRCH;
+            //    idx_info->open = binsrch_open;
+            //    idx_info->close = binsrch_close;
+            //    idx_info->initialize = binsrch_initialize;
+            //    idx_info->addentry = binsrch_addentry;
+            //    idx_info->addentry_bin = binsrch_addentry_bin;
+            //    idx_info->addcomment = NULL;
+            //    idx_info->addfilename = NULL;
+            //    idx_info->finalize = binsrch_finalize;
+            //    idx_info->lookup_str = binsrch_lookup_str;
+            //    idx_info->lookup_raw = binsrch_lookup_raw;
+            //    idx_info->getAllData = NULL;
+            //    idx_info->get_properties = binsrch_get_properties;
+            //}
+            //else {
+            //    tsk_error_reset();
+            //    tsk_error_set_errno(TSK_ERR_HDB_MISSING);
+            //    tsk_error_set_errstr(
+            //        "tsk_idx_open: Unrecognized header format: %"PRIttocTSK,
+            //        idx_info->idx_fname);
+            //    free(idx_info);
+            //    return NULL;
+            //}
         }
     }
 
@@ -298,6 +328,7 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype)
     // other cases.
     tsk_idx_close_file(idx);
 
+    // RJCTODO: Why would we open the file now, if this is just setup? ***BUG***?
     // Open the actual "index" file for keeps here.
     if (idx_info->open(hdb_info, idx_info, htype) == 0) {
         // Set the properties such as updateable

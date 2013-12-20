@@ -115,6 +115,7 @@ static sqlite3 *open_db(TSK_TCHAR *db_file_path)
     return db;
 }
 
+// RJCTODO: Consider adding create function with no-ops for other database types.
 uint8_t sqlite_hdb_create_db(TSK_TCHAR *db_file_path)
 {
 	sqlite3 *db = open_db(db_file_path);
@@ -208,7 +209,6 @@ uint8_t sqlite_hdb_create_db(TSK_TCHAR *db_file_path)
 
 	return 0;
 }
-
 /** Init prepared statements. Call before adding to the database. Call finalize() when done.
  *
  * @param hdb_info Hash database state structure
@@ -237,6 +237,32 @@ sqlite_v1_begin(TSK_HDB_INFO * hdb_info)
 	} else {
         return 0;
     }
+}
+
+// RJCTODO: Consider using this comment elsewhere
+/**
+ * Set TSK_HDB_INFO->db_name for this database type.
+ *
+ * @param hdb_info the hash database object
+ */
+void
+sqlite_hdb_set_db_name(TSK_HDB_INFO *hdb_info)
+{
+    // RJCTODO
+
+        // RJCTODO: This is potentially handy.
+        // Check if it already has a .kdb extension
+        //TSK_TCHAR * c;
+        //c = TSTRRCHR(hdb_info->db_fname, _TSK_T('.'));    
+        //if (newBlank || ((c != NULL) && (TSTRLEN(c) >= 4)
+        //    && (TSTRCMP(c, _TSK_T(".kdb")) == 0))) {
+
+        //    TSTRNCPY(idx_info->idx_fname, hdb_info->db_fname, TSTRLEN(hdb_info->db_fname));
+        //} else {
+        //    TSNPRINTF(idx_info->idx_fname, flen,
+        //        _TSK_T("%s.kdb"), hdb_info->db_fname);
+        //}
+
 }
 
 /**
