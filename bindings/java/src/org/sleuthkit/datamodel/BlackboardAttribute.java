@@ -127,7 +127,11 @@ public class BlackboardAttribute {
 		TSK_TEXT_LANGUAGE(28, "TSK_TEXT_LANGUAGE", "Text Language"),
 		TSK_ENTROPY(29, "TSK_ENTROPY", "Entropy"),
 		TSK_HASHSET_NAME(30, "TSK_HASHSET_NAME", "Hashset Name"), // @@@ Deprecated
-		TSK_INTERESTING_FILE(31, "TSK_INTERESTING_FILE", "Interesting File"),
+		/*
+		 * @deprecated Use TSK_INTERSTING_FILE_HIT artifact instead.
+		 */
+		@Deprecated
+		TSK_INTERESTING_FILE(31, "TSK_INTERESTING_FILE", "Interesting File"), // @@@ Deprecated
 		TSK_REFERRER(32, "TSK_REFERRER", "Referrer URL"),
 		TSK_DATETIME_ACCESSED(33, "TSK_DATETIME_ACCESSED", "Date Accessed"),
 		TSK_IP_ADDRESS(34, "TSK_IP_ADDRESS", "IP Address"),
