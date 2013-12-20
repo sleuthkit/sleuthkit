@@ -80,6 +80,7 @@ enum TSK_ARTIFACT_TYPE {
 	TSK_PROG_RUN = 32, ///< Application run information
     TSK_ENCRYPTION_DETECTED = 33, ///< Encrypted File
     TSK_EXT_MISMATCH_DETECTED = 34, ///< Extension Mismatch
+    TSK_INTERESTING_ARTIFACT = 35,	///< Any artifact interesting enough that it should be called out in the UI.
 		
     /* SEE ABOVE:
     * - KEEP JAVA CODE IN SYNC 
@@ -193,8 +194,7 @@ enum TSK_ATTRIBUTE_TYPE {
 	TSK_MIN_COUNT = 93, ///<  Minimum number/count
 	TSK_PATH_SOURCE = 94, ///< Path to a source file related to the artifact
 	TSK_PERMISSIONS = 95, ///< Permissions
-	TSK_PROG_LAUNCHED = 96, ///< Flag for whether a program has been run
-	TSK_ASSOCIATED_ARTIFACT = 97, ///< Artifact ID of a related artifact
+	TSK_ASSOCIATED_ARTIFACT = 96, ///< Artifact ID of a related artifact
 
     /* SEE ABOVE: 
     * - KEEP JAVA CODE IN SYNC 
