@@ -5971,7 +5971,7 @@ hfs_close(TSK_FS_INFO * fs)
     tsk_release_lock(&(hfs->metadata_dir_cache_lock));
     tsk_deinit_lock(&(hfs->metadata_dir_cache_lock));
 
-    free(hfs);
+    tsk_fs_free((TSK_FS_INFO *)hfs);
 }
 
 /* hfs_open - open an hfs file system
@@ -6018,7 +6018,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     len = sizeof(hfs_plus_vh);
     if ((hfs->fs = (hfs_plus_vh *) tsk_malloc(len)) == NULL) {
         fs->tag = 0;
-        free(hfs);
+        tsk_fs_free((TSK_FS_INFO *)hfs);
         return NULL;
     }
 
@@ -6027,7 +6027,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_set_errstr2("hfs_open: superblock");
         fs->tag = 0;
         free(hfs->fs);
-        free(hfs);
+        tsk_fs_free((TSK_FS_INFO *)hfs);
         return NULL;
     }
 
@@ -6040,7 +6040,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
         fs->tag = 0;
         free(hfs->fs);
-        free(hfs);
+        tsk_fs_free((TSK_FS_INFO *)hfs);
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr("not an HFS+ file system (magic)");
         return NULL;
@@ -6088,7 +6088,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
             fs->tag = 0;
             free(hfs->fs);
-            free(hfs);
+            tsk_fs_free((TSK_FS_INFO *)hfs);
 
             /* just re-open with the new offset, then record the offset */
             fs_info2 =
@@ -6103,7 +6103,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         else {
             fs->tag = 0;
             free(hfs->fs);
-            free(hfs);
+            tsk_fs_free((TSK_FS_INFO *)hfs);
             tsk_error_set_errno(TSK_ERR_FS_MAGIC);
             tsk_error_set_errstr
                 ("HFS file systems (other than wrappers HFS+/HFSX file systems) are not supported");
@@ -6169,7 +6169,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
                 HFS_CATALOG_FILE_ID)) == NULL) {
         fs->tag = 0;
         free(hfs->fs);
-        free(hfs);
+        tsk_fs_free((TSK_FS_INFO *)hfs);
         return NULL;
     }
 
@@ -6181,7 +6181,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         fs->tag = 0;
         tsk_fs_file_close(hfs->catalog_file);
         free(hfs->fs);
-        free(hfs);
+        tsk_fs_free((TSK_FS_INFO *)hfs);
         tsk_error_errstr2_concat
             (" - Data Attribute not found in Catalog File");
         return NULL;
@@ -6199,7 +6199,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_set_errstr2("hfs_open: Error reading catalog header");
         fs->tag = 0;
         free(hfs->fs);
-        free(hfs);
+        tsk_fs_free((TSK_FS_INFO *)hfs);
         return NULL;
     }
 
