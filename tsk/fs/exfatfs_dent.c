@@ -218,7 +218,6 @@ exfats_parse_file_stream_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY 
      * if any. Note that if this condition is satisfied here, the directory is
      * corrupted or this is a degenerate case - there should be at least one 
      * file name entry in a directory entry set. */
-    // RJCTODO: Verify the check sum?
     ++a_name_info->actual_secondary_entry_count;
     if (a_name_info->actual_secondary_entry_count == 
         a_name_info->expected_secondary_entry_count) {
@@ -305,7 +304,6 @@ exfats_parse_file_name_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
 
     /* If all of the secondary entries for the set are present, save the name,
      * if any. */
-    // RJCTODO: Verify the check sum?
     ++a_name_info->actual_secondary_entry_count;
     if (a_name_info->actual_secondary_entry_count == 
         a_name_info->expected_secondary_entry_count) {

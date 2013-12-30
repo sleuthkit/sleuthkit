@@ -31,21 +31,6 @@
 #include "tsk_fatfs.h"
 #include <assert.h>
 
-// RJCTODO: This code does not follow the lazy load paradigm for file attributes, i.e., data runs. The reason for this is that unlike FATXX,
-// exFAT only uses the FAT for fragmented files. The valid FAT chain flag in file stream entries is the indicator for regular files. For
-// other "special" files (e.g., allocation bitmap, upcase table) there will always be contiguous data runs. In all cases, the data for deciding
-// whether a run should be contiguous is in the directory entry. We could do away with the eager load of the data runs for exFAT if we allocated another 
-// byte of file-system-specific content in the TSK_FS_META structure to indicate whether or not there was a valid FAT chain for the file. 
-// This would also allow us to have a somewhat smarter recovery algorithm for deleted exFAT files without FAT chains - we would know the maximum 
-// number of clusters from which we could hope to recover any authentic file content more precisely than we do by using file size alone. This would also
-// support a uniform inode_copy function signature for FATXX and exFAY - it would no longer be necessary to pass the entire file object through, just the
-// meta object. On the other hand, the fatxxfs_copy_dinode function could be changed to take a TSK_FS_FILE instead of a TSK_FS_META object parameter.
-
-// RJCTODO: Adding yet another byte to the file system specific content (see above for the first proposed new byte) would allow us to save the directory 
-// entry type as well. An immediate benefit of this would be the way we would be able to skip over the recovery code for the file name entries of deleted files - 
-// currently we don't add a data run to the file name entries of allocated files, yet we tack a "one cluster run" on to each file name entry for a deleted file 
-// (see lines 2015-2034 of fatfs_meta.c). This is a bug as far as I'm concerned.
-
 /**
  * \internal
  * Checks whether a specified cluster is allocated according to the allocation 
@@ -151,7 +136,6 @@ exfatfs_is_vol_label_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS
         }
     }
     else {
-        // RJCTODO: I think I verified that these tests are valid, but check again to be sure.
         /* There is supposed to be no label, check for a zero in the length
          * field. */
         if (dentry->utf16_char_count != 0x00) {
@@ -550,7 +534,7 @@ exfatfs_is_file_stream_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs)
         fs = &(a_fatfs->fs_info);   
 
         /* Check the size. */
-        file_size = tsk_getu64(fs->endian, dentry->data_length); // RJCTODO: How does this relate to the valid data length field? Is one or the other to be preferred?
+        file_size = tsk_getu64(fs->endian, dentry->data_length);
         if (file_size > 0) {
             /* Is the file size less than the size of the cluster heap 
              * (data area)? The cluster heap size is computed by multiplying the
@@ -587,8 +571,6 @@ exfatfs_is_file_stream_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs)
             }
         }
     }
-
-    // RJCTODO: Are there any more checks that could be done?
 
     return 1;
 }
@@ -1145,7 +1127,7 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
         fs_meta->crtime_nano = 0;
     }
 
-    // RJCTODO: Do we want to do anything with the time zone offsets?
+	/* Currenty, don't do anything with the time zone offsets */
 
     /* Attempt to load the file stream entry that goes with this file entry. 
      * If not successful, at least the file entry meta data will be returned. */
@@ -1156,7 +1138,7 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     /* Set the size of the file and the address of its first cluster. */
     ((TSK_DADDR_T*)a_fs_file->meta->content_ptr)[0] = 
         tsk_getu32(a_fatfs->fs_info.endian, stream_dentry.first_cluster_addr);
-    fs_meta->size = tsk_getu64(fs->endian, stream_dentry.data_length); // RJCTODO: How does this relate to the valid data length field? Is one or the other to be preferred?
+    fs_meta->size = tsk_getu64(fs->endian, stream_dentry.data_length);
 
     /* Set the allocation status using both the allocation status of the 
      * sector that contains the directory entries and the entry type 
@@ -1211,8 +1193,6 @@ exfatfs_copy_file_name_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     dentry = (EXFATFS_FILE_NAME_DIR_ENTRY*)a_dentry;
 	assert(exfatfs_get_enum_from_type(dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME);
 
-    // RJCTODO: This leads to attempts to "recover" a file with a single cluster
-    // run for a deleted file name entry. See remarks at the beginning of this file.
     /* Set the allocation status using both the allocation status of the 
      * sector that contains the directory entries and the entry type 
      * settings - essentially a "belt and suspenders" check. */

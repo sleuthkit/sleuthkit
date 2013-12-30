@@ -129,11 +129,11 @@ extern "C" {
      * MBR and a backup MBR.
      */
     typedef struct { 
-        uint8_t jump_to_boot_code[3]; ///< 0xEB7690.
-        uint8_t fs_name[8];           ///< "EXFAT ".
-        uint8_t must_be_zeros[53];    ///< Must be 0x00.
-		uint8_t partition_offset[8];  ///< Sector address
-		uint8_t vol_len_in_sectors[8];  ///< Size of total volume in sectors
+        uint8_t jump_to_boot_code[3]; ///< 0xEB7690
+        uint8_t fs_name[8];           ///< "EXFAT "
+        uint8_t must_be_zeros[53];    ///< @brief Must be 0x00
+		uint8_t partition_offset[8];  ///< @brief Sector address
+		uint8_t vol_len_in_sectors[8];  ///< @brief Size of total volume in sectors
 		uint8_t fat_offset[4];          ///< Sector address of first FAT
 		uint8_t fat_len_in_sectors[4];  ///< Size of FAT in sectors
 		uint8_t cluster_heap_offset[4]; ///< Sector address of the data region
@@ -163,16 +163,16 @@ extern "C" {
 	 * high order bit (which gives allocation status)
      */
 	enum EXFATFS_DIR_ENTRY_TYPE_ENUM {
-        EXFATFS_DIR_ENTRY_TYPE_NONE = 0x00,
-        EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL = 0x03,        
-        EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID = 0x20,     
-        EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP = 0x01,     
-        EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE = 0x02,     
-        EXFATFS_DIR_ENTRY_TYPE_TEXFAT = 0x21,     
-        EXFATFS_DIR_ENTRY_TYPE_ACT = 0x62,     
-        EXFATFS_DIR_ENTRY_TYPE_FILE = 0x05,     
-        EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM = 0x40,       
-        EXFATFS_DIR_ENTRY_TYPE_FILE_NAME = 0x41
+        EXFATFS_DIR_ENTRY_TYPE_NONE = 0x00,         ///< 0x00
+        EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL = 0x03, ///< 0x03
+        EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID = 0x20,  ///< 0x20
+        EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP = 0x01, ///< 0x01
+        EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE = 0x02, ///< 0x02
+        EXFATFS_DIR_ENTRY_TYPE_TEXFAT = 0x21,       ///< 0x21
+        EXFATFS_DIR_ENTRY_TYPE_ACT = 0x62,          ///< 0x62
+        EXFATFS_DIR_ENTRY_TYPE_FILE = 0x05,         ///< 0x05
+        EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM = 0x40,  ///< 0x40
+        EXFATFS_DIR_ENTRY_TYPE_FILE_NAME = 0x41     ///< 0x41
 	};
 	typedef enum EXFATFS_DIR_ENTRY_TYPE_ENUM EXFATFS_DIR_ENTRY_TYPE_ENUM;
 
