@@ -559,8 +559,14 @@ exfatfs_is_file_stream_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs)
                 return 0;
             }
 
-            /* If the file is not marked as unallocated and has non-zero size, is its
+			/* It appears that Mac OS does not change the flags on files in deleted directories
+			 * to unallocated after the parent directory is deleted. This causes those files to
+			 * have the allocated flag set in their dir entry, but the cluster their data is in is marked as
+			 * unallocated. Therefore we need to skip this test.
+			 *
+             * If the file is not marked as unallocated and has non-zero size, is its
              * first cluster allocated? */
+			/* 
 			if((exfatfs_get_alloc_status_from_type(dentry->entry_type) != 0) && 
                 (exfatfs_is_cluster_alloc(a_fatfs, (TSK_DADDR_T)first_cluster) != 1)) {
                 if (tsk_verbose) {
@@ -568,7 +574,7 @@ exfatfs_is_file_stream_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs)
                         "%s: file not deleted, first cluster not allocated\n", func_name);
                 }
                 return 0;
-            }
+            }*/
         }
     }
 

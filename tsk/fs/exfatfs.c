@@ -1005,7 +1005,13 @@ exfatfs_fsstat(TSK_FS_INFO *a_fs, FILE *a_hFile)
 
     exfatfs_fsstat_fs_metadata_info(a_fs, a_hFile);
     exfatfs_fsstat_fs_content_info(a_fs, a_hFile);
-    exfatfs_fsstat_fs_fat_chains_info(a_fs, a_hFile);
+
+	/* Since exFAT does not store all file data in FAT chains (only fragmented files),
+	 * printing the chains could give the mistaken impression that those are the only
+	 * sectors containing file data. 
+	 *
+     * exfatfs_fsstat_fs_fat_chains_info(a_fs, a_hFile);
+	 */
 
     return FATFS_OK;
 }
