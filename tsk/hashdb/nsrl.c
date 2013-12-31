@@ -382,6 +382,7 @@ nsrl_parse_md5(char *str, char **md5, char **name, int ver)
 uint8_t
 nsrl_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
 {
+    TSK_TEXT_HDB_INFO *text_hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info; 
     size_t i, len;
     char buf[TSK_HDB_MAXLEN];
     char *hash = NULL, phash[TSK_HDB_HTYPE_SHA1_LEN + 1];
@@ -403,8 +404,8 @@ nsrl_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
     memset(phash, '0', TSK_HDB_HTYPE_SHA1_LEN + 1);
 
     /* read the file */
-    fseek(hdb_info->hDb, 0, SEEK_SET);
-    for (i = 0; NULL != fgets(buf, TSK_HDB_MAXLEN, hdb_info->hDb);
+    fseek(text_hdb_info->hDb, 0, SEEK_SET);
+    for (i = 0; NULL != fgets(buf, TSK_HDB_MAXLEN, text_hdb_info->hDb);
          offset += len, i++) {
 
         len = strlen(buf);
@@ -635,3 +636,31 @@ nsrl_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
 
     return 0;
 }
+
+TSK_HDB_INFO *nsrl_open(TSK_TCHAR *db_path)
+{
+    TSK_TEXT_HDB_INFO *hdb_info = NULL;
+    if ((hdb_info = (TSK_TEXT_HDB_INFO*)tsk_malloc(sizeof(TSK_TEXT_HDB_INFO))) == NULL) {
+        return NULL;
+    }
+
+    size_t path_len = TSTRLEN(db_path);
+    hdb_info->base.db_fname = (TSK_TCHAR*)tsk_malloc((path_len + 1) * sizeof(TSK_TCHAR));
+    if (NULL == hdb_info->base.db_fname) {
+        free(hdb_info);
+        return NULL;
+    }
+    TSTRNCPY(hdb_info->base.db_fname, db_path, path_len);
+
+    hdb_info->base.db_type = TSK_HDB_DBTYPE_NSRL_ID;
+    hdb_info->base.updateable = 0;
+    nsrl_name((TSK_HDB_INFO*)hdb_info);
+    hdb_info->base.getentry = nsrl_getentry;
+    hdb_info->base.makeindex = nsrl_makeindex;
+    hdb_info->base.add_comment = NULL; // RJCTODO: Consider making no-ops for these or moving them
+    hdb_info->base.add_filename = NULL; // RJCTODO: Consider making no-ops for these or moving them
+
+    return (TSK_HDB_INFO*)hdb_info;
+}
+
+

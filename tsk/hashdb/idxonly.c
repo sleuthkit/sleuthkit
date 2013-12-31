@@ -123,3 +123,30 @@ idxonly_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
              "idxonly_getentry: Not supported when INDEX ONLY option is used");
     return 1;
 }
+
+TSK_HDB_INFO *idxonly_open(TSK_TCHAR *db_path)
+{
+    TSK_TEXT_HDB_INFO *hdb_info = NULL;
+    if ((hdb_info = (TSK_TEXT_HDB_INFO*)tsk_malloc(sizeof(TSK_TEXT_HDB_INFO))) == NULL) {
+        return NULL;
+    }
+
+    size_t path_len = TSTRLEN(db_path);
+    hdb_info->hdb_info->db_fname = (TSK_TCHAR*)tsk_malloc((path_len + 1) * sizeof(TSK_TCHAR));
+    if (NULL == hdb_info->hdb_info->db_fname) {
+        free(hdb_info);
+        return NULL;
+    }
+    TSTRNCPY(hdb_info->hdb_info->db_fname, db_path, path_len);
+
+    hdb_info->hdb_info->db_type = TSK_HDB_DBTYPE_IDXONLY_ID;
+    hdb_info->base.updateable = 0;
+    nsrl_name((TSK_HDB_INFO*)hdb_info);
+    hdb_info->hdb_info->getentry = idxonly_getentry;
+    hdb_info->hdb_info->makeindex = idxonly_makeindex;
+    hdb_info->hdb_info->add_comment = NULL; // RJCTODO: Consider making no-ops for these or moving them
+    hdb_info->hdb_info->add_filename = NULL; // RJCTODO: Consider making no-ops for these or moving them
+
+    return (TSK_HDB_INFO*)hdb_info;
+}
+

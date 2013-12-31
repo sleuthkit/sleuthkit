@@ -302,7 +302,12 @@ JNIEXPORT jint JNICALL
     TSK_TCHAR pathT[1024];
     toTCHAR(env, pathT, 1024, pathJ);
 
-    TSK_HDB_INFO *db = tsk_hdb_create_db(pathT);
+    if (1 == tsk_hdb_create(pathT)) {
+        setThrowTskCoreError(env);
+        return -1;
+    }
+
+    TSK_HDB_INFO *db = tsk_hdb_open(pathT, TSK_HDB_OPEN_NONE);
     if (!db) {
         setThrowTskCoreError(env);
         return -1;
@@ -329,47 +334,52 @@ JNIEXPORT jint JNICALL
     jclass obj, jstring filenameJ, jstring hashMd5J, jstring hashSha1J, jstring hashSha256J,
     jstring commentJ, jint dbHandle)
 {
-    int8_t retval = 0;
-
     if((size_t) dbHandle > m_hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
-        retval = 1;
-    } else {
-        jboolean isCopy;
-        const char * name = filenameJ ? (const char *) env->GetStringUTFChars(filenameJ, &isCopy) : NULL;
-        const char * md5 = hashMd5J ? (const char *) env->GetStringUTFChars(hashMd5J, &isCopy) : NULL;
-        const char * sha1 = hashSha1J ? (const char *) env->GetStringUTFChars(hashSha1J, &isCopy) : NULL;
-        const char * sha256 = hashSha256J ? (const char *) env->GetStringUTFChars(hashSha256J, &isCopy) : NULL;
-        const char * comment = commentJ ? (const char *) env->GetStringUTFChars(commentJ, &isCopy) : NULL;
+        return 1;
+    }
+
+    TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
+    if(!db) {
+        setThrowTskCoreError(env, "Invalid database handle");
+        return 1;
+    }
+
+    if(!db->updateable) {
+        setThrowTskCoreError(env, "Database does not accept updates");
+        return 1;
+    }
+
+    jboolean isCopy;
+    const char * name = filenameJ ? (const char *) env->GetStringUTFChars(filenameJ, &isCopy) : NULL;
+    const char * md5 = hashMd5J ? (const char *) env->GetStringUTFChars(hashMd5J, &isCopy) : NULL;
+    const char * sha1 = hashSha1J ? (const char *) env->GetStringUTFChars(hashSha1J, &isCopy) : NULL;
+    const char * sha256 = hashSha256J ? (const char *) env->GetStringUTFChars(hashSha256J, &isCopy) : NULL;
+    const char * comment = commentJ ? (const char *) env->GetStringUTFChars(commentJ, &isCopy) : NULL;
    
-        //TSK_TCHAR filenameT[1024];
-        //toTCHAR(env, filenameT, 1024, filenameJ);
+    int8_t retval = tsk_hdb_add_str(db, name, md5, sha1, sha256, comment);
+    if (retval == 1) {
+        setThrowTskCoreError(env, "Failed to add records to hash database");
+    }
 
-        TSK_HDB_INFO * db = m_hashDbs.at(dbHandle-1);
+    if (filenameJ) {
+        env->ReleaseStringUTFChars(filenameJ, (const char *) name);
+    }
 
-        if(db != NULL) {
-            retval = tsk_hdb_add_str(db, name, md5, sha1, sha256, comment);
+    if (hashMd5J) { 
+        env->ReleaseStringUTFChars(hashMd5J, (const char *) md5);
+    }
 
-            if (retval == 1) {
-                setThrowTskCoreError(env);
-            }
-        }
+    if (hashSha1J) {
+        env->ReleaseStringUTFChars(hashSha1J, (const char *) sha1);
+    }
 
-        if (filenameJ) {
-            env->ReleaseStringUTFChars(filenameJ, (const char *) name);
-        }
-        if (hashMd5J) { 
-            env->ReleaseStringUTFChars(hashMd5J, (const char *) md5);
-        }
-        if (hashSha1J) {
-            env->ReleaseStringUTFChars(hashSha1J, (const char *) sha1);
-        }
-        if (hashSha256J) {
-            env->ReleaseStringUTFChars(hashSha256J, (const char *) sha256);
-        }
-        if (commentJ) {
-            env->ReleaseStringUTFChars(commentJ, (const char *) comment);
-        }
+    if (hashSha256J) {
+        env->ReleaseStringUTFChars(hashSha256J, (const char *) sha256);
+    }
+
+    if (commentJ) {
+        env->ReleaseStringUTFChars(commentJ, (const char *) comment);
     }
 
     return retval;

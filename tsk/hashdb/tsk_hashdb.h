@@ -1,42 +1,39 @@
 /*
-* The Sleuth Kit
-*
-* Brian Carrier [carrier <at> sleuthkit [dot] org]
-* Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
-*/
+ * The Sleuth Kit
+ *
+ * Brian Carrier [carrier <at> sleuthkit [dot] org]
+ * Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
+ */
 
 /**
-* \file tsk_hashdb.h
-* External header file for hash database support.
-* Note that this file is not meant to be directly included.  
-* It is included by both libtsk.h and tsk_hashdb_i.h.
-*/
+ * \file tsk_hashdb.h
+ * External header file for hash database support.
+ * Note that this file is not meant to be directly included.  
+ * It is included by both libtsk.h and tsk_hashdb_i.h.
+ */
 
 /**
-* \defgroup hashdblib C Hash Database Functions
+ * \defgroup hashdblib C Hash Database Functions
  * \defgroup hashdblib_cpp C++ Hash Database Classes
-*/
+ */
 
 #include "tsk/auto/sqlite3.h"
 
 #ifndef _TSK_HDB_H
 #define _TSK_HDB_H
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
     /**
     * Flags used for lookups
     */
     enum TSK_HDB_FLAG_ENUM {
-        TSK_HDB_FLAG_QUICK = 0x01,      ///< Quickly return if hash is found (do not return file name etc.)
-        TSK_HDB_FLAG_EXT = 0x02 ///< Return other details besides only file name (not used
+        TSK_HDB_FLAG_QUICK = 0x01,  ///< Quickly return if hash is found (do not return file name etc.)
+        TSK_HDB_FLAG_EXT = 0x02     ///< Return other details besides only file name (not used
     };
     typedef enum TSK_HDB_FLAG_ENUM TSK_HDB_FLAG_ENUM;
-
 
     /**
     * Hash algorithm types
@@ -49,92 +46,75 @@ extern "C" {
     };
     typedef enum TSK_HDB_HTYPE_ENUM TSK_HDB_HTYPE_ENUM;
 
-#define TSK_HDB_HTYPE_MD5_STR	"md5"   ///< String name for MD5 algorithm
-#define TSK_HDB_HTYPE_SHA1_STR	"sha1"  ///< String name for SHA1 algorithm
-#define TSK_HDB_HTYPE_SHA2_256_STR	"sha2_256"  ///< String name for SHA256 algorithm
+    #define TSK_HDB_HTYPE_MD5_STR "md5"            ///< String name for MD5 algorithm
+    #define TSK_HDB_HTYPE_SHA1_STR "sha1"          ///< String name for SHA1 algorithm
+    #define TSK_HDB_HTYPE_SHA2_256_STR "sha2_256"  ///< String name for SHA256 algorithm
 
-#define TSK_HDB_HTYPE_SHA2_256_LEN 64   ///< Length of SHA256 hash
-#define TSK_HDB_HTYPE_SHA1_LEN 40       ///< Length of SHA1 hash
-#define TSK_HDB_HTYPE_MD5_LEN 32        ///< Length of MD5 hash
-#define TSK_HDB_HTYPE_CRC32_LEN 8       ///< Length of CRC hash
-#define TSK_HDB_MAX_BINHASH_LEN 32      ///< Half the length of biggest hash
-
-    /**
-    * Return the name of the hash algorithm, given its ID
-    */
-#define TSK_HDB_HTYPE_STR(x) \
-    ( ((x) & TSK_HDB_HTYPE_MD5_ID) ? (TSK_HDB_HTYPE_MD5_STR) : ( \
-    ( ((x) & TSK_HDB_HTYPE_SHA1_ID) ? (TSK_HDB_HTYPE_SHA1_STR) : ( \
-    ( ((x) & TSK_HDB_HTYPE_SHA2_256_ID) ? TSK_HDB_HTYPE_SHA2_256_STR : "") ) ) ) )
+    #define TSK_HDB_HTYPE_SHA2_256_LEN 64   ///< Length of SHA256 hash
+    #define TSK_HDB_HTYPE_SHA1_LEN 40       ///< Length of SHA1 hash
+    #define TSK_HDB_HTYPE_MD5_LEN 32        ///< Length of MD5 hash
+    #define TSK_HDB_HTYPE_CRC32_LEN 8       ///< Length of CRC hash
+    #define TSK_HDB_MAX_BINHASH_LEN 32      ///< Half the length of biggest hash
 
     /**
-    * Return the length of a hash, given its ID
-    */
-#define TSK_HDB_HTYPE_LEN(x) \
-    ( ((x) & TSK_HDB_HTYPE_MD5_ID) ? (TSK_HDB_HTYPE_MD5_LEN) : ( \
-    ( ((x) & TSK_HDB_HTYPE_SHA1_ID) ? (TSK_HDB_HTYPE_SHA1_LEN) : ( \
-    ( ((x) & TSK_HDB_HTYPE_SHA2_256_ID) ? TSK_HDB_HTYPE_SHA2_256_LEN : 0) ) ) ) )
-
-
+     * Return the name of the hash algorithm, given its ID
+     */
+    #define TSK_HDB_HTYPE_STR(x) \
+        ( ((x) & TSK_HDB_HTYPE_MD5_ID) ? (TSK_HDB_HTYPE_MD5_STR) : ( \
+        ( ((x) & TSK_HDB_HTYPE_SHA1_ID) ? (TSK_HDB_HTYPE_SHA1_STR) : ( \
+        ( ((x) & TSK_HDB_HTYPE_SHA2_256_ID) ? TSK_HDB_HTYPE_SHA2_256_STR : "") ) ) ) )
 
     /**
-    * Hash Index types
-    */
-    enum TSK_HDB_ITYPE_ENUM {
-        TSK_HDB_ITYPE_BINSRCH = 1,     ///< Original binary search text format
-        TSK_HDB_ITYPE_SQLITE_V1 = 2    ///< Sqlite database format
-    };
-    typedef enum TSK_HDB_ITYPE_ENUM TSK_HDB_ITYPE_ENUM;
+     * Return the length of a hash, given its ID
+     */
+    #define TSK_HDB_HTYPE_LEN(x) \
+        ( ((x) & TSK_HDB_HTYPE_MD5_ID) ? (TSK_HDB_HTYPE_MD5_LEN) : ( \
+        ( ((x) & TSK_HDB_HTYPE_SHA1_ID) ? (TSK_HDB_HTYPE_SHA1_LEN) : ( \
+        ( ((x) & TSK_HDB_HTYPE_SHA2_256_ID) ? TSK_HDB_HTYPE_SHA2_256_LEN : 0) ) ) ) )
 
     /**
-    * Hash Database types
-    */
+     * Hash Database types
+     */
     enum TSK_HDB_DBTYPE_ENUM {
         TSK_HDB_DBTYPE_INVALID_ID = 0,  ///< Invalid type signals error.
         TSK_HDB_DBTYPE_NSRL_ID = 1,     ///< NIST NSRL format
         TSK_HDB_DBTYPE_MD5SUM_ID = 2,   ///< md5sum format
         TSK_HDB_DBTYPE_HK_ID = 3,       ///< hashkeeper format
-        TSK_HDB_DBTYPE_IDXONLY_ID = 4,   ///< Only the database index was opened -- original dbtype is unknown
-        TSK_HDB_DBTYPE_ENCASE_ID = 5,    ///< EnCase format
+        TSK_HDB_DBTYPE_IDXONLY_ID = 4,  ///< Only the database index was opened -- original dbtype is unknown
+        TSK_HDB_DBTYPE_ENCASE_ID = 5,   ///< EnCase format
         TSK_HDB_DBTYPE_SQLITE_ID = 6    ///< SQLite format
     };
     typedef enum TSK_HDB_DBTYPE_ENUM TSK_HDB_DBTYPE_ENUM;
 
-
-    /* String versions of DB types */
-#define TSK_HDB_DBTYPE_NSRL_STR		        "nsrl"  ///< NSRL database 
-#define TSK_HDB_DBTYPE_NSRL_MD5_STR		"nsrl-md5"      ///< NSRL database with MD5 index
-#define TSK_HDB_DBTYPE_NSRL_SHA1_STR		"nsrl-sha1"     ///< NSRL database with SHA1 index
-#define TSK_HDB_DBTYPE_MD5SUM_STR		"md5sum"        ///< md5sum database
-#define TSK_HDB_DBTYPE_HK_STR			"hk"    ///< hash keeper index
-#define TSK_HDB_DBTYPE_ENCASE_STR			"encase"    ///< encase index
+    /**
+     * String versions of DB types 
+     */
+    #define TSK_HDB_DBTYPE_NSRL_STR "nsrl"           ///< NSRL database 
+    #define TSK_HDB_DBTYPE_NSRL_MD5_STR	"nsrl-md5"   ///< NSRL database with MD5 index
+    #define TSK_HDB_DBTYPE_NSRL_SHA1_STR "nsrl-sha1" ///< NSRL database with SHA1 index
+    #define TSK_HDB_DBTYPE_MD5SUM_STR "md5sum"       ///< md5sum database
+    #define TSK_HDB_DBTYPE_HK_STR "hk"               ///< hash keeper index
+    #define TSK_HDB_DBTYPE_ENCASE_STR "encase"       ///< encase index
+        
     /// List of supported data base types
-#define TSK_HDB_DBTYPE_SUPPORT_STR		"nsrl-md5, nsrl-sha1, md5sum, encase, hk"
+    #define TSK_HDB_DBTYPE_SUPPORT_STR	"nsrl-md5, nsrl-sha1, md5sum, encase, hk" // RJCTODO: Needs update for SQLite
 
-#define TSK_HDB_NAME_MAXLEN 512 //< Max length for database name
-
+    #define TSK_HDB_NAME_MAXLEN 512 //< Max length for database name
 
     typedef struct TSK_HDB_INFO TSK_HDB_INFO;
-    typedef struct TSK_IDX_INFO TSK_IDX_INFO;
+    typedef struct TSK_TEXT_HDB_INFO TSK_TEXT_HDB_INFO;
+    typedef struct TSK_TEXT_HDB_INFO TSK_SQLITE_HDB_INFO;
 
     typedef TSK_WALK_RET_ENUM(*TSK_HDB_LOOKUP_FN) (TSK_HDB_INFO *,
         const char *hash,
         const char *name,
         void *);
 
-    /**
-     * Holds information about a sqlite index
-     */
-    struct TSK_IDX_SQLITE_V1 {
-		sqlite3 *hIdx_sqlite;	///< Sqlite DB if index is using sqlite schema
-        int64_t lastId;
-    };
-    typedef struct TSK_IDX_SQLITE_V1 TSK_IDX_SQLITE_V1;
+    struct TSK_IDX_INFO {
+        char db_name[TSK_HDB_NAME_MAXLEN];          ///< Name of the database // RJCTODO: This is probably only needed for an indexed db
+        uint8_t(*getentry) (TSK_HDB_INFO *, const char *, TSK_OFF_T, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);    ///< \internal Database-specific function to find entry at a given offset // RJCTODO: Text DB thing
 
-    /**
-     * Holds information about a plain text / binary search index
-     */
-    struct TSK_IDX_BINSRCH {
+        TSK_TCHAR *idx_fname;   ///< Name of index file
         FILE *hIdx;             ///< File handle to index (only open during lookups)
         FILE *hIdxTmp;          ///< File handle to temp (unsorted) index file (only open during index creation)
         TSK_TCHAR *uns_fname;   ///< Name of unsorted index file
@@ -143,65 +123,74 @@ extern "C" {
         uint16_t idx_off;       ///< Offset in index file to first index entry
         size_t idx_llen;        ///< Length of each line in index
         char *idx_lbuf;         ///< Buffer to hold a line from the index  (r/w shared - lock) 
-    };
-    typedef struct TSK_IDX_BINSRCH TSK_IDX_BINSRCH;
+
+        uint8_t(*open)(TSK_HDB_INFO *, uint8_t);
+        uint8_t(*initialize)(TSK_HDB_INFO *, TSK_TCHAR *);
+        uint8_t(*addentry)(TSK_HDB_INFO *, char *, TSK_OFF_T);
+        uint8_t(*addentry_bin)(TSK_HDB_INFO *, unsigned char *, int, TSK_OFF_T);
+        uint8_t(*finalize)(TSK_HDB_INFO *);
+        void(*close)(TSK_HDB_INFO *);
+
+        void* (*getAllData)(TSK_HDB_INFO *, unsigned long); // RJCTODO: This is problematic
+        int8_t(*get_properties) (TSK_HDB_INFO *);        // RJCTODO: This is probably moot now.
+    };    
 
     /**
-     * Holds information about a hash index. Created by idx_open.
+     * Holds information about an open hash database. Created by 
+     * hdb_open and used for making an index and looking up values.
      */
-    struct TSK_IDX_INFO {
-        TSK_HDB_ITYPE_ENUM index_type;   ///< Type of index
-        TSK_TCHAR *idx_fname;   ///< Name of index file
-        uint8_t   updateable;   ///< Allow new entries to be added?
+    struct TSK_HDB_INFO {
+        TSK_HDB_DBTYPE_ENUM db_type;    ///< Type of database
+        uint8_t updateable;   ///< Allow new entries to be added? // RJCTODO: Could be done by dbtype, as is also true for 
+        TSK_TCHAR *db_fname;    ///< Name of the database file
+        TSK_HDB_HTYPE_ENUM hash_type;   ///< Type of hash used in index // RJCTODO: Not needed for SQLITE?
+        uint16_t hash_len;      ///< Length of hash // RJCTODO: Not needed for SQLITE?
+        tsk_lock_t lock;        ///< Lock for lazy loading and idx_lbuf
 
-        union {
-            TSK_IDX_SQLITE_V1 * idx_sqlite_v1;
-            TSK_IDX_BINSRCH * idx_binsrch;
-        }idx_struct;
-
-        uint8_t(*open) (TSK_HDB_INFO *, TSK_IDX_INFO *, uint8_t);
-        uint8_t(*initialize) (TSK_HDB_INFO *, TSK_TCHAR *);
-        uint8_t(*addentry) (TSK_HDB_INFO *, char *, TSK_OFF_T);
-        uint8_t(*addentry_bin) (TSK_HDB_INFO *, unsigned char *, int, TSK_OFF_T);
-        uint8_t(*addcomment) (TSK_HDB_INFO *, char *, int64_t);
-        uint8_t(*addfilename) (TSK_HDB_INFO *, char *, int64_t);
-        uint8_t(*finalize) (TSK_HDB_INFO *);
+        // RJCTODO: These need to go to the TSK_HDB_INFO and get implemented through index functions or not.
         int8_t(*lookup_str) (TSK_HDB_INFO *, const char *, TSK_HDB_FLAG_ENUM,
                 TSK_HDB_LOOKUP_FN, void *);
         int8_t(*lookup_raw) (TSK_HDB_INFO *, uint8_t *, uint8_t,
                 TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
-        void* (*getAllData)(TSK_HDB_INFO *, unsigned long);
-        int8_t(*get_properties) (TSK_HDB_INFO *);        
-        void(*close) (TSK_IDX_INFO *);
 
+        uint8_t(*makeindex) (TSK_HDB_INFO *, TSK_TCHAR *);     ///< \internal Database-specific function to make index 
+        uint8_t(*add_comment) (TSK_HDB_INFO *, char *, int64_t); // RJCTODO: Can probably go away
+        uint8_t(*add_filename) (TSK_HDB_INFO *, char *, int64_t); // RJCTODO: Can probably go away
     };
 
-    /**
-    * Holds information about an open hash database. Created by 
-    * hdb_open and used for making an index and looking up values.
-    */
-    struct TSK_HDB_INFO {
-
-        char db_name[TSK_HDB_NAME_MAXLEN];          ///< Name of the database
-
-        TSK_TCHAR *db_fname;    ///< Name of the database file
-
+    struct TSK_TEXT_HDB_INFO {
+        TSK_HDB_INFO base;
         FILE *hDb;              ///< File handle to database (always open)
+        char db_name[TSK_HDB_NAME_MAXLEN];          ///< Name of the database // RJCTODO: This is probably only needed for an indexed db
+        uint8_t(*getentry) (TSK_HDB_INFO *, const char *, TSK_OFF_T, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);    ///< \internal Database-specific function to find entry at a given offset // RJCTODO: Text DB thing
 
-        TSK_HDB_HTYPE_ENUM hash_type;   ///< Type of hash used in index
-        uint16_t hash_len;      ///< Length of hash
+        TSK_TCHAR *idx_fname;   ///< Name of index file
+        FILE *hIdx;             ///< File handle to index (only open during lookups)
+        FILE *hIdxTmp;          ///< File handle to temp (unsorted) index file (only open during index creation)
+        TSK_TCHAR *uns_fname;   ///< Name of unsorted index file
 
-        TSK_HDB_DBTYPE_ENUM db_type;    ///< Type of database
-        TSK_IDX_INFO * idx_info;  ///< The index for the hdb info
+        TSK_OFF_T idx_size;     ///< Size of index file
+        uint16_t idx_off;       ///< Offset in index file to first index entry
+        size_t idx_llen;        ///< Length of each line in index
+        char *idx_lbuf;         ///< Buffer to hold a line from the index  (r/w shared - lock) 
 
-        /* lock protects idx_lbuf and lazy loading of idx_info */
-        tsk_lock_t lock;        ///< Lock for lazy loading and idx_lbuf
+        uint8_t(*open)(TSK_HDB_INFO *, uint8_t);
+        uint8_t(*initialize)(TSK_HDB_INFO *, TSK_TCHAR *);
+        uint8_t(*addentry)(TSK_HDB_INFO *, char *, TSK_OFF_T);
+        uint8_t(*addentry_bin)(TSK_HDB_INFO *, unsigned char *, int, TSK_OFF_T);
+        uint8_t(*finalize)(TSK_HDB_INFO *);
+        void(*close)(TSK_HDB_INFO *);
 
-        uint8_t(*getentry) (TSK_HDB_INFO *, const char *, TSK_OFF_T, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);    ///< \internal Database-specific function to find entry at a given offset
-        uint8_t(*makeindex) (TSK_HDB_INFO *, TSK_TCHAR *);     ///< \internal Database-specific function to make index
+        void* (*getAllData)(TSK_HDB_INFO *, unsigned long); // RJCTODO: This is problematic
+        int8_t(*get_properties) (TSK_HDB_INFO *);        // RJCTODO: This is probably moot now.
+    };    
 
-    };
-
+    struct TSK_SQLITE_HDB_INFO {
+        TSK_HDB_INFO base;
+    	sqlite3 *db;	///< Sqlite DB if index is using sqlite schema
+        int64_t last_id; // RJCTODO: Is this the best way to do this? 
+    };    
+     
     /**
     * Options for opening a hash database
     */
@@ -212,10 +201,9 @@ extern "C" {
     typedef enum TSK_HDB_OPEN_ENUM TSK_HDB_OPEN_ENUM;
 
     /* Functions */
-    extern TSK_HDB_INFO *tsk_hdb_create_db(TSK_TCHAR *db_file_path);
+    extern uint8_t tsk_hdb_create(TSK_TCHAR *db_file_path);
 
-    extern TSK_HDB_INFO *tsk_hdb_open(TSK_TCHAR * db_file,
-        TSK_HDB_OPEN_ENUM flags);
+    extern TSK_HDB_INFO *tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags);
 
     extern void tsk_hdb_close(TSK_HDB_INFO * hdb_info);
 
@@ -252,13 +240,12 @@ extern "C" {
 
 #ifdef __cplusplus
 
-
 /** 
  * \ingroup hashdblib_cpp
-* Stores information about an open hash database.
-* To use this object, open() should be called first. Otherwise, the other
-* functions will have undefined return values. 
-*/
+ * Stores information about an open hash database.
+ * To use this object, open() should be called first. Otherwise, the other
+ * functions will have undefined return values. 
+ */
 class TskHdbInfo{
 private:
     TSK_HDB_INFO * m_hdbInfo;

@@ -92,7 +92,7 @@ static uint8_t tsk_hdb_commit_transaction(TSK_IDX_INFO * idx_info) {
 	return attempt_exec_nocallback("COMMIT", "Error committing transaction %s\n", idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
 }
 
-static sqlite3 *open_db(TSK_TCHAR *db_file_path)
+sqlite3 *sqlite_hdb_open_db(TSK_TCHAR *db_file_path)
 {
     sqlite3 *db = NULL;
     int opened = 1;
@@ -115,10 +115,10 @@ static sqlite3 *open_db(TSK_TCHAR *db_file_path)
     return db;
 }
 
-// RJCTODO: Consider adding create function with no-ops for other database types.
+// RJCTODO: Comment
 uint8_t sqlite_hdb_create_db(TSK_TCHAR *db_file_path)
 {
-	sqlite3 *db = open_db(db_file_path);
+	sqlite3 *db = sqlite_hdb_open_db(db_file_path);
 	if (NULL == db) {
 		return 1;
 	}
@@ -142,49 +142,6 @@ uint8_t sqlite_hdb_create_db(TSK_TCHAR *db_file_path)
 		return 1;
 	}
 
-	// RJCTODO: Probably don't need these until SQLite indexes are supported, revisit
-	//snprintf(stmt, 1024,"INSERT INTO db_properties (name, value) VALUES ('%s', '%"PRIttocTSK"');", IDX_HASHSET_NAME, hash_set_name);
-	//if (attempt_exec_nocallback(stmt, "Error adding name to db_properties: %s\n", db)) {
-	//	return 1;
-	//}
-
-    // Default prop: Hashset Type
- //   std::string db_type_str;
- //   switch(hdb_info->db_type) {
- //       case TSK_HDB_DBTYPE_MD5SUM_ID:
- //           db_type_str = "md5sum";
- //       break;
- //       case TSK_HDB_DBTYPE_NSRL_ID:
- //           db_type_str = "NSRL";
- //       break;
- //       case TSK_HDB_DBTYPE_HK_ID:
- //           db_type_str = "HashKeeper";
- //       break;
- //       case TSK_HDB_DBTYPE_ENCASE_ID:
- //           db_type_str = "EnCase";
- //       break;
- //       case TSK_HDB_DBTYPE_IDXONLY_ID:
- //           db_type_str = "TskSqlite";
- //       break;
- //   }
- //   if (!db_type_str.empty()) {
-	//    snprintf(stmt, 1024,
-	//	    "INSERT INTO db_properties (name, value) VALUES ('%s', '%s');",
- //           IDX_HASHSET_TYPE, db_type_str.c_str());
-	//    if (attempt_exec_nocallback(stmt, "Error adding updateable to db_properties: %s\n", db)) {
-	//	    return 1;
-	//    }
- //   }
-
- //   // Default prop: Updateable
-	//snprintf(stmt, 1024,
-	//	"INSERT INTO db_properties (name, value) VALUES ('%s', '%s');",
-	//	IDX_HASHSET_UPDATEABLE, (hdb_info->idx_info->updateable == 1) ? "true" : "false");
-	//if (attempt_exec_nocallback(stmt, "Error adding updateable to db_properties: %s\n", db)) {
-	//	return 1;
-	//}
-
-// #ifdef IDX_SQLITE_STORE_TEXT // RJCTODO: Get rid of this
 	if (attempt_exec_nocallback ("CREATE TABLE hashes (id INTEGER PRIMARY KEY AUTOINCREMENT, md5 BINARY(16) UNIQUE, sha1 BINARY(20), sha2_256 BINARY(32), database_offset INTEGER);", "Error creating hashes table %s\n", db)) {
 		return 1;
 	}
@@ -209,6 +166,7 @@ uint8_t sqlite_hdb_create_db(TSK_TCHAR *db_file_path)
 
 	return 0;
 }
+
 /** Init prepared statements. Call before adding to the database. Call finalize() when done.
  *
  * @param hdb_info Hash database state structure
@@ -421,6 +379,126 @@ sqlite_v1_initialize(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
 //	return sqlite_v1_begin(hdb_info);
 //
     return 0;
+}
+
+uint8_t
+sqlite_hdb_add(TSK_HDB_INFO * hdb_info, const char * filename, const char * md5, const char * sha1, const char * sha256, const char * comment)
+{
+        // RJCTODO: Why is this calling SQLIte functions? Why is this not going through the proper function pointers?
+        if(hdb_info->idx_info->updateable == 1) {
+            ///@todo also allow use of other htypes
+            char * hvalue = (char *)md5;
+            if (hvalue == NULL) {
+                tsk_error_set_errstr2("tsk_hdb_add_str: no hash value(s) provided");
+                return 1; //error
+            }
+
+            //// @todo Could set up a polymorphic mechanism like with finalize() but
+            //// we know it's going to be sqlite in this function.
+            //if (sqlite_v1_begin(hdb_info) == 1) {
+            //    tsk_error_set_errstr2("tsk_hdb_add_str: sqlite_v1_begin failed");
+            //    return 1; //error
+            //}
+
+            // Attempt to add a new row to the hash index
+            TSK_OFF_T offset = 0; //not needed since there might not be an original DB
+            if (tsk_hdb_idxaddentry(hdb_info, hvalue, offset) != 0) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_HDB_WRITE);
+                tsk_error_set_errstr("tsk_hdb_add_str: adding entry failed");
+                return 1; //error
+            }
+
+            // Add name and comment
+            if (hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId != 0) {
+                if ((filename != NULL) && (hdb_info->add_filename != NULL)) {
+                    hdb_info->add_filename(hdb_info, (char *)filename, hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId);
+                }
+
+                if ((comment != NULL) && (hdb_info->add_comment != NULL)) {
+                    hdb_info->add_comment(hdb_info, (char *)comment, hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId);
+                }
+            } else {
+                ret = 1; //error
+            }
+
+            // Close the index
+            if (tsk_hdb_idxfinalize(hdb_info) != 0) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_HDB_WRITE);
+                tsk_error_set_errstr("tsk_hdb_add_str: finalizing index failed");
+                ret = 1; //error
+            }  
+            
+        } else {
+            ret = -1; //not updateable
+        }
+    }
+    return ret;
+
+//    hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId = 0;
+//
+//	if (strlen(hvalue) != hdb_info->hash_len) {
+//		tsk_error_reset();
+//		tsk_error_set_errno(TSK_ERR_AUTO_DB);
+//		tsk_error_set_errstr("Hash length doesn't match index type: %s\n", hvalue);
+//        tsk_error_print(stderr);
+//		return 1;
+//	}
+//
+
+	const size_t len = (hdb_info->hash_len)/2;
+    uint8_t* hash = (uint8_t*) tsk_malloc(len+1);
+    
+	size_t count;
+
+    // We use an intermediate short to be compatible with Microsoft's implementation of the scanf family format
+    short unsigned int binval;
+    for (count = 0; count < len; count++) {
+		int r = sscanf(hvalue, "%2hx", &binval);
+        hash[count] = (uint8_t) binval;
+		hvalue += 2 * sizeof(char);
+	}
+
+    if (attempt(sqlite3_bind_blob(m_stmt, 1, hvalue, hlen, SQLITE_TRANSIENT),
+		SQLITE_OK,
+		"Error binding binary blob: %s\n",
+		hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite) ||
+		attempt(sqlite3_bind_int64(m_stmt, 2, offset),
+		SQLITE_OK,
+		"Error binding entry offset: %s\n",
+		hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite) ) {
+        return 1;
+    }
+
+ //   // Don't report error on constraint -- we just will silently not add that duplicate hash
+	//int r = sqlite3_step(m_stmt);
+ //   if ((r != SQLITE_DONE) && (r != SQLITE_CONSTRAINT) ) {
+	//	tsk_error_reset();
+	//	tsk_error_set_errno(TSK_ERR_AUTO_DB);
+	//	tsk_error_set_errstr("Error stepping: %s\n", sqlite3_errmsg( hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite), r);
+ //       return 1;
+ //   }
+
+	//r = sqlite3_reset(m_stmt);
+ //   if ((r != SQLITE_OK) && (r != SQLITE_CONSTRAINT) ) {
+	//	tsk_error_reset();
+	//	tsk_error_set_errno(TSK_ERR_AUTO_DB);
+	//	tsk_error_set_errstr("Error resetting: %s\n", sqlite3_errmsg( hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite), r);
+ //       return 1;
+ //   }
+
+ //   return 0;
+//
+//    delete [] hash;
+//#endif
+//
+//    if (ret == 0) {
+//        // The current id can be used by subsequent add name or add comment operations
+//	    hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId = sqlite3_last_insert_rowid(hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
+//    }
+//
+//    return ret;
 }
 
 /**
@@ -659,7 +737,7 @@ sqlite_v1_open(TSK_HDB_INFO * hdb_info, TSK_IDX_INFO * idx_info, uint8_t htype)
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
         tsk_error_set_errstr(
-                 "hdb_setupindex: Invalid hash type : %d", htype);
+                 "sqlite_v1_open: Invalid hash type : %d", htype);
         return 1;
     }
 
@@ -1134,3 +1212,46 @@ sqlite3_test(FILE * hFile)
     return 0;
 }
 
+// RJCTODO: Comment
+TSK_HDB_INFO *sqlite_hdb_open(TSK_TCHAR *db_path)
+{
+    TSK_SQLITE_HDB_INFO *hdb_info = NULL;
+    if ((hdb_info = (TSK_SQLITE_HDB_INFO*)tsk_malloc(sizeof(TSK_SQLITE_HDB_INFO))) == NULL) {
+        return NULL;
+    }
+
+    size_t path_len = TSTRLEN(db_path);
+    hdb_info->base.db_fname = (TSK_TCHAR*)tsk_malloc((path_len + 1) * sizeof(TSK_TCHAR));
+    if (NULL == hdb_info->base.db_fname) {
+        free(hdb_info);
+        return NULL;
+    }
+    TSTRNCPY(hdb_info->base.db_fname, db_path, path_len);
+
+    // Initialize the lock used for thread safety.
+    tsk_init_lock(&hdb_info->base.lock);
+
+    // Initialize members to be set later to "not set".
+    hdb_info->base.hash_type = static_cast<TSK_HDB_HTYPE_ENUM>(0); // RJCTODO: Why is this set later? Seems this will be a problem for SQLite...
+    hdb_info->base.hash_len = 0; // RJCTODO: Why is this set later?  Seems this will be a problem for SQLite...
+    hdb_info->base.idx_info = NULL;
+
+    sqlite_hdb_set_db_name((TSK_HDB_INFO*)hdb_info);
+    hdb_info->base.db_type = TSK_HDB_DBTYPE_SQLITE_ID;
+    hdb_info->base.updateable = 0;
+    hdb_info->base.getentry = sqlite_hdb_get_entry;
+    hdb_info->base.makeindex = sqlite_hdb_make_index;
+    hdb_info->base.add_comment = sqlite_v1_addcomment;
+    hdb_info->base.add_filename = sqlite_v1_addfilename;
+
+    hdb_info->db = sqlite_hdb_open_db(db_path);
+    if (NULL == hdb_info->db) {
+        free(hdb_info->base.db_fname);
+        free(hdb_info);
+        return NULL;
+    }
+
+    hdb_info->last_id = 0;
+
+    return (TSK_HDB_INFO*)hdb_info;
+}

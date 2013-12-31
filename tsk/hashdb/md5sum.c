@@ -395,3 +395,37 @@ md5sum_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
 
     return 0;
 }
+
+TSK_HDB_INFO *md5sum_open(TSK_TCHAR *db_path)
+{
+    TSK_TEXT_HDB_INFO *hdb_info = NULL;
+    if ((hdb_info = (TSK_TEXT_HDB_INFO*)tsk_malloc(sizeof(TSK_TEXT_HDB_INFO))) == NULL) {
+        return NULL;
+    }
+
+    size_t path_len = TSTRLEN(db_path);
+    hdb_info->base.db_fname = (TSK_TCHAR*)tsk_malloc((path_len + 1) * sizeof(TSK_TCHAR));
+    if (NULL == hdb_info->base.db_fname) {
+        free(hdb_info);
+        return NULL;
+    }
+    TSTRNCPY(hdb_info->base.db_fname, db_path, path_len);
+
+    // Initialize the lock used for thread safety.
+    tsk_init_lock(&hdb_info->base.lock);
+
+    // Initialize members to be set later to "not set".
+    hdb_info->base.hash_type = static_cast<TSK_HDB_HTYPE_ENUM>(0); // RJCTODO: Why is this set later? Seems this will be a problem for SQLite...
+    hdb_info->base.hash_len = 0; // RJCTODO: Why is this set later?  Seems this will be a problem for SQLite...
+    hdb_info->base.idx_info = NULL;
+
+    hdb_info->base.db_type = TSK_HDB_DBTYPE_MD5SUM_ID;
+    hdb_info->base.updateable = 0;
+    nsrl_name((TSK_HDB_INFO*)hdb_info);
+    hdb_info->base.getentry = md5sum_getentry;
+    hdb_info->base.makeindex = md5sum_makeindex;
+    hdb_info->base.add_comment = NULL; // RJCTODO: Consider making no-ops for these or moving them
+    hdb_info->base.add_filename = NULL; // RJCTODO: Consider making no-ops for these or moving them
+
+    return (TSK_HDB_INFO*)hdb_info;
+}

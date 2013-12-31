@@ -74,7 +74,7 @@ extern "C" {
 
     // "Generic" functions that apply to all types or delegate to hash database type-specific functions. 
     extern uint8_t hdb_setupindex(TSK_HDB_INFO * hdb_info, uint8_t htype); // RJCTODO: Where is the tsk_ ?
-    extern void tsk_idx_close(TSK_IDX_INFO * idx_info);
+    extern void tsk_idx_close(TSK_HDB_INFO * hdb_info);
     extern void tsk_idx_close_file(FILE * idx);
     extern uint8_t tsk_hdb_idxinitialize(TSK_HDB_INFO *, TSK_TCHAR * dbname);
     extern uint8_t tsk_hdb_idxaddentry(TSK_HDB_INFO *, char *hvalue, TSK_OFF_T offset);
@@ -138,11 +138,12 @@ extern "C" {
     extern int8_t binsrch_get_properties(TSK_HDB_INFO * hdb_info);
 
     // Hash database and index functions for SQLite hash databases.
-    // For SQLite, 
+    extern TSK_HDB_INFO *sqlite_hdb_open(TSK_TCHAR *db_path);
     extern void sqlite_hdb_set_db_name(TSK_HDB_INFO *hdb_info);
     extern uint8_t sqlite_hdb_make_index(TSK_HDB_INFO *, TSK_TCHAR * htype);
     extern uint8_t sqlite_hdb_get_entry(TSK_HDB_INFO *, const char *, TSK_OFF_T, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
 	extern uint8_t sqlite_hdb_create_db(TSK_TCHAR *db_file_path);
+    extern sqlite3 *sqlite_hdb_open_db(TSK_TCHAR *db_file_path);
     extern uint8_t sqlite_v1_open(TSK_HDB_INFO *, TSK_IDX_INFO *, uint8_t);
     extern void sqlite_v1_close(TSK_IDX_INFO *);
     extern uint8_t sqlite_v1_initialize(TSK_HDB_INFO *, TSK_TCHAR *);

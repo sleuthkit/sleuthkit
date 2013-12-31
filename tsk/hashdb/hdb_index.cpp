@@ -100,9 +100,8 @@ hdb_update_htype(TSK_HDB_INFO * hdb_info, uint8_t htype)
  * We only create kdb (SQLite) files, but can open old indexes.
  * @return NULL on error, TSK_IDX_INFO instance on success
  */
-// @@@ htype should be enum // RJCTODO: Yep
 static TSK_IDX_INFO *
-tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype)
+tsk_idx_open(TSK_HDB_INFO * hdb_info, TSK_HDB_HTYPE_ENUM htype)
 {
     TSK_IDX_INFO * idx_info = NULL;
     size_t flen = 0;
@@ -159,8 +158,6 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype)
         idx_info->initialize = sqlite_v1_initialize;
         idx_info->addentry = sqlite_v1_addentry;
         idx_info->addentry_bin = sqlite_v1_addentry_bin;
-        idx_info->addcomment = sqlite_v1_addcomment;
-        idx_info->addfilename = sqlite_v1_addfilename;
         idx_info->finalize = sqlite_v1_finalize;
         idx_info->lookup_str = sqlite_v1_lookup_str;
         idx_info->lookup_raw = sqlite_v1_lookup_raw;
@@ -183,8 +180,8 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype)
             case TSK_HDB_HTYPE_MD5_ID:
                 hdb_info->hash_type = htype;
                 hdb_info->hash_len = TSK_HDB_HTYPE_MD5_LEN;
-                hdb_info->idx_llen = TSK_HDB_IDX_LEN(htype);
-                TSNPRINTF(hdb_info->idx_fname, flen,
+                hdb_info->idx_info->idx_struct.idx_llen = TSK_HDB_IDX_LEN(htype);
+                TSNPRINTF(hdb_info->idx_info->idx_fname, flen,
                           _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
                           hdb_info->db_fname, TSK_HDB_HTYPE_MD5_STR);
                 return 0;
@@ -267,8 +264,6 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype)
             idx_info->initialize = binsrch_initialize;
             idx_info->addentry = binsrch_addentry;
             idx_info->addentry_bin = binsrch_addentry_bin;
-            idx_info->addcomment = NULL;
-            idx_info->addfilename = NULL;
             idx_info->finalize = binsrch_finalize;
             idx_info->lookup_str = binsrch_lookup_str;
             idx_info->lookup_raw = binsrch_lookup_raw;
@@ -362,7 +357,7 @@ tsk_idx_open(TSK_HDB_INFO * hdb_info, uint8_t htype)
  * @return 0 if already set up or if setup successful, 1 otherwise
  */
 uint8_t
-hdb_setupindex(TSK_HDB_INFO * hdb_info, uint8_t htype) // RJCTODO: Make hType an enum param
+hdb_setupindex(TSK_HDB_INFO * hdb_info, TSK_HDB_HTYPE_ENUM htype)
 {
     // Lock for lazy load of idx_info and lazy alloc of idx_lbuf.
     tsk_take_lock(&hdb_info->lock);
@@ -548,7 +543,7 @@ tsk_hdb_idxfinalize(TSK_HDB_INFO * hdb_info)
  * @return 1 if index exists and 0 if not
  */
 uint8_t
-tsk_hdb_hasindex(TSK_HDB_INFO * hdb_info, uint8_t htype)
+tsk_hdb_hasindex(TSK_HDB_INFO * hdb_info, TSK_HDB_HTYPE_ENUM htype)
 {
     ///@todo change this function to not call hdb_setupindex RJCTODO: O rly?
 
@@ -714,13 +709,14 @@ tsk_hdb_is_idxonly(TSK_HDB_INFO * hdb_info)
  *
  * @param idx_info index to close
  */
-void tsk_idx_close(TSK_IDX_INFO * idx_info)
+void tsk_idx_close(TSK_HDB_INFO * hdb_info)
 {
-    if (idx_info->idx_fname) {
-        free(idx_info->idx_fname);
+    TSK_TEXT_HDB_INFO *text_db_info = (TSK_TEXT_HDB_INFO*)hdb_info;
+    if (text_db_info->idx_fname) {
+        free(text_db_info->idx_fname);
     }
 
-    idx_info->close(idx_info);
+    text_db_info->close(hdb_info);
 }
 
 
@@ -832,12 +828,12 @@ tsk_hdb_add_str(TSK_HDB_INFO * hdb_info,
 
             // Add name and comment
             if (hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId != 0) {
-                if ((filename != NULL) && (hdb_info->idx_info->addfilename != NULL)) {
-                    hdb_info->idx_info->addfilename(hdb_info, (char *)filename, hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId);
+                if ((filename != NULL) && (hdb_info->add_filename != NULL)) {
+                    hdb_info->add_filename(hdb_info, (char *)filename, hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId);
                 }
 
-                if ((comment != NULL) && (hdb_info->idx_info->addcomment != NULL)) {
-                    hdb_info->idx_info->addcomment(hdb_info, (char *)comment, hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId);
+                if ((comment != NULL) && (hdb_info->add_comment != NULL)) {
+                    hdb_info->add_comment(hdb_info, (char *)comment, hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId);
                 }
             } else {
                 ret = 1; //error

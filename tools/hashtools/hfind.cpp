@@ -149,9 +149,7 @@ main(int argc, char ** argv1)
             usage();
         }
         
-        hdb_info = tsk_hdb_create_db(db_file);
-        if (NULL != hdb_info) {
-            tsk_hdb_close(hdb_info);
+        if (0 == tsk_hdb_create(db_file)) {
             tsk_fprintf(stdout, "New database %"PRIttocTSK" created\n", db_file);
             return 0;
         }
