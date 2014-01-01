@@ -11,6 +11,7 @@
 
 #include "tsk_hashdb_i.h"
 #include "sqlite_index.h"
+#include <assert.h>
 
 // RJCTODO: Name this file consistently...
 /**
@@ -877,43 +878,40 @@ sqlite3_test(FILE * hFile)
 // RJCTODO: Comment
 TSK_HDB_INFO *sqlite_hdb_open(TSK_TCHAR *db_path)
 {
-    TSK_SQLITE_HDB_INFO *hdb_info = NULL;
-    if ((hdb_info = (TSK_SQLITE_HDB_INFO*)tsk_malloc(sizeof(TSK_SQLITE_HDB_INFO))) == NULL) {
+    TSK_SQLITE_HDB_INFO *sqlite_hdb_info = NULL;
+    size_t flen = 0;
+
+    assert(NULL != db_path);
+
+    if ((sqlite_hdb_info = (TSK_SQLITE_HDB_INFO*)tsk_malloc(sizeof(TSK_SQLITE_HDB_INFO))) == NULL) {
         return NULL;
     }
 
-    size_t path_len = TSTRLEN(db_path);
-    hdb_info->base.db_fname = (TSK_TCHAR*)tsk_malloc((path_len + 1) * sizeof(TSK_TCHAR));
-    if (NULL == hdb_info->base.db_fname) {
-        free(hdb_info);
-        return NULL;
-    }
-    TSTRNCPY(hdb_info->base.db_fname, db_path, path_len);
-
-    // Initialize the lock used for thread safety.
-    tsk_init_lock(&hdb_info->base.lock);
-
-    // Initialize members to be set later to "not set".
-    hdb_info->base.hash_type = static_cast<TSK_HDB_HTYPE_ENUM>(0); // RJCTODO: Why is this set later? Seems this will be a problem for SQLite...
-    hdb_info->base.hash_len = 0; // RJCTODO: Why is this set later?  Seems this will be a problem for SQLite...
-    hdb_info->base.idx_info = NULL;
-
-    sqlite_hdb_set_db_name((TSK_HDB_INFO*)hdb_info);
-    hdb_info->base.db_type = TSK_HDB_DBTYPE_SQLITE_ID;
-    hdb_info->base.updateable = 0;
-    hdb_info->base.getentry = sqlite_hdb_get_entry;
-    hdb_info->base.makeindex = sqlite_hdb_make_index;
-    hdb_info->base.add_comment = sqlite_v1_addcomment;
-    hdb_info->base.add_filename = sqlite_v1_addfilename;
-
-    hdb_info->db = sqlite_hdb_open_db(db_path);
-    if (NULL == hdb_info->db) {
-        free(hdb_info->base.db_fname);
-        free(hdb_info);
+    flen = TSTRLEN(db_path) + 8; // RJCTODO: Check this change from 32 (change was in DF code) with Brian; was change in older code? What is the point, anyway?
+    sqlite_hdb_info->base.db_fname = (TSK_TCHAR*)tsk_malloc(flen * sizeof(TSK_TCHAR));
+    if (NULL == sqlite_hdb_info->base.db_fname) {
         return NULL;
     }
 
-    hdb_info->last_id = 0;
+    TSTRNCPY(sqlite_hdb_info->base.db_fname, db_path, flen);
+    sqlite_hdb_info->base.db_type = TSK_HDB_DBTYPE_SQLITE_ID;
+    sqlite_hdb_info->base.updateable = 1;
+    sqlite_hdb_info->base.uses_external_index = 0;
+    sqlite_hdb_info->base.hash_type = TSK_HDB_HTYPE_INVALID_ID; // This will be set when the index is created/opened. 
+    sqlite_hdb_info->base.hash_len = 0; // This will be set when the index is created/opened.
+    tsk_init_lock(&sqlite_hdb_info->base.lock);
+    sqlite_hdb_info->base.makeindex = sqlite_hdb_make_index;
+    sqlite_hdb_info->base.add_comment = sqlite_v1_addcomment; // RJCTODO: Consider moving this
+    sqlite_hdb_info->base.add_filename = sqlite_v1_addfilename; // RJCTODO: Consider moving this
 
-    return (TSK_HDB_INFO*)hdb_info;
+    sqlite_hdb_info->db = sqlite_hdb_open_db(db_path);
+    if (NULL == sqlite_hdb_info->db) {
+        free(sqlite_hdb_info->base.db_fname);
+        free(sqlite_hdb_info);
+        return NULL;
+    }
+
+    sqlite_hdb_info->last_id = 0;
+
+    return (TSK_HDB_INFO*)sqlite_hdb_info;
 }

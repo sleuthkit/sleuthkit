@@ -92,10 +92,18 @@ extern "C" {
     #define TSK_HDB_DBTYPE_NSRL_STR "nsrl"           ///< NSRL database 
     #define TSK_HDB_DBTYPE_NSRL_MD5_STR	"nsrl-md5"   ///< NSRL database with MD5 index
     #define TSK_HDB_DBTYPE_NSRL_SHA1_STR "nsrl-sha1" ///< NSRL database with SHA1 index
-    #define TSK_HDB_DBTYPE_MD5SUM_STR "md5sum"       ///< md5sum database
-    #define TSK_HDB_DBTYPE_HK_STR "hk"               ///< hash keeper index
-    #define TSK_HDB_DBTYPE_ENCASE_STR "encase"       ///< encase index
-        
+    #define TSK_HDB_DBTYPE_MD5SUM_STR "md5sum"       ///< md5sum
+    #define TSK_HDB_DBTYPE_HK_STR "hk"               ///< Hash Keeper
+    #define TSK_HDB_DBTYPE_ENCASE_STR "encase"       ///< EnCase
+            
+    /**
+    * Hash Index types
+    */
+    typedef enum TSK_HDB_ITYPE_ENUM {
+        TSK_HDB_ITYPE_BINSRCH = 1,     ///< Original binary search text format
+        TSK_HDB_ITYPE_SQLITE_V1 = 2    ///< Sqlite database format
+    } TSK_HDB_ITYPE_ENUM;
+
     /// List of supported data base types
     #define TSK_HDB_DBTYPE_SUPPORT_STR	"nsrl-md5, nsrl-sha1, md5sum, encase, hk" // RJCTODO: Needs update for SQLite
 
@@ -134,16 +142,17 @@ extern "C" {
      * hdb_open and used for making an index and looking up values.
      */
     struct TSK_HDB_INFO {
-        TSK_TCHAR *db_fname;          ///< Database file path
+        TSK_TCHAR *db_fname;          ///< Database file path, may be NULL for index only database
+        TSK_TCHAR *idx_fname;         ///< Name of index file, may be NULL for database without external index
         TSK_HDB_DBTYPE_ENUM db_type;  ///< Type of database
         uint8_t updateable;           ///< Allow new entries to be added? // RJCTODO: Could be done by dbtype, as is also true for 
         uint8_t uses_external_index;           
         TSK_HDB_HTYPE_ENUM hash_type; ///< Type of hash used in index // RJCTODO: Not needed for SQLITE?
         uint16_t hash_len;            ///< Length of hash // RJCTODO: Not needed for SQLITE?
         tsk_lock_t lock;              ///< Lock for lazy loading and idx_lbuf
+        uint8_t(*makeindex) (TSK_HDB_INFO *, TSK_TCHAR *);     ///< \internal Database-specific function to make index 
         int8_t(*lookup_str) (TSK_HDB_INFO *, const char *, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
         int8_t(*lookup_raw) (TSK_HDB_INFO *, uint8_t *, uint8_t, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
-        uint8_t(*makeindex) (TSK_HDB_INFO *, TSK_TCHAR *);     ///< \internal Database-specific function to make index 
         uint8_t(*add_comment) (TSK_HDB_INFO *, char *, int64_t); // RJCTODO: Can probably go away
         uint8_t(*add_filename) (TSK_HDB_INFO *, char *, int64_t); // RJCTODO: Can probably go away
     };
@@ -152,7 +161,6 @@ extern "C" {
         TSK_HDB_INFO base;
         FILE *hDb;              ///< File handle to database (always open)
         uint8_t(*getentry) (TSK_HDB_INFO *, const char *, TSK_OFF_T, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);    ///< \internal Database-specific function to find entry at a given offset // RJCTODO: Text DB thing
-        TSK_TCHAR *idx_fname;   ///< Name of index file
         TSK_HDB_EXTERNAL_IDX_INFO *idx;
     } TSK_TEXT_HDB_INFO;    
 

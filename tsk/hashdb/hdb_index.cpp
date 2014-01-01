@@ -500,6 +500,7 @@ uint8_t
 tsk_hdb_idxaddentry(TSK_HDB_INFO * hdb_info, char *hvalue,
                     TSK_OFF_T offset)
 {
+    // RJCTODO: This is silly. The function can be called directly in the makeindex functions.
     return hdb_info->idx_info->addentry(hdb_info, hvalue, offset);
 }
 
@@ -516,6 +517,7 @@ uint8_t
 tsk_hdb_idxaddentry_bin(TSK_HDB_INFO * hdb_info, unsigned char *hvalue, int hlen,
                     TSK_OFF_T offset)
 {
+    // RJCTODO: This is silly. The function can be called directly in the makeindex functions.
     return hdb_info->idx_info->addentry_bin(hdb_info, hvalue, hlen, offset);
 }
 
@@ -528,6 +530,7 @@ tsk_hdb_idxaddentry_bin(TSK_HDB_INFO * hdb_info, unsigned char *hvalue, int hlen
 uint8_t
 tsk_hdb_idxfinalize(TSK_HDB_INFO * hdb_info)
 {
+    // RJCTODO: This is silly. The function can be called directly in the makeindex functions.
     return hdb_info->idx_info->finalize(hdb_info);
 }
 
@@ -545,7 +548,8 @@ tsk_hdb_idxfinalize(TSK_HDB_INFO * hdb_info)
 uint8_t
 tsk_hdb_hasindex(TSK_HDB_INFO * hdb_info, TSK_HDB_HTYPE_ENUM htype)
 {
-    ///@todo change this function to not call hdb_setupindex RJCTODO: O rly?
+    ///@todo change this function to not call hdb_setupindex 
+    // RJCTODO: This may well be another bug source!
 
     if (hdb_setupindex(hdb_info, htype) == 0) {
         return 1;

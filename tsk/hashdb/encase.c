@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2012 Brian Carrier.  All rights reserved
+ * Copyright (c) 2012-2014 Brian Carrier.  All rights reserved
  *
  *
  * This software is distributed under the Common Public License 1.0
@@ -14,8 +14,7 @@
  */
 
 #include "tsk_hashdb_i.h"
-
-
+#include <assert.h>
 
 /**
  * Test the file to see if it is an Encase database
@@ -85,7 +84,6 @@ encase_name(TSK_HDB_INFO * hdb_info)
         &utf16[ilen], &utf8, &utf8[78],
         TSKlenientConversion);
 }
-
 
 /**
  * Process the database to create a sorted index of it. Consecutive
@@ -166,7 +164,6 @@ encase_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
 
     return 0;
 }
-
 
 /**
  * Find the entry at a
@@ -258,39 +255,41 @@ encase_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
     return 0;
 }
 
-TSK_HDB_INFO *encase_open(TSK_TCHAR *db_path)
+TSK_HDB_INFO *encase_open(FILE *hDb, const TSK_TCHAR *db_path)
 {
-    size_t path_len = 0;
-    TSK_TEXT_HDB_INFO *hdb_info = NULL;
+    TSK_TEXT_HDB_INFO *text_hdb_info = NULL;
+    size_t flen = 0;
 
-    if ((hdb_info = (TSK_TEXT_HDB_INFO*)tsk_malloc(sizeof(TSK_TEXT_HDB_INFO))) == NULL) {
+    assert(NULL != hDb);
+    assert(NULL != db_path);
+    
+    if ((text_hdb_info = (TSK_TEXT_HDB_INFO*)tsk_malloc(sizeof(TSK_TEXT_HDB_INFO))) == NULL) {
         return NULL;
     }
 
-    path_len = TSTRLEN(db_path);
-    hdb_info->base.db_fname = (TSK_TCHAR*)tsk_malloc((path_len + 1) * sizeof(TSK_TCHAR));
-    if (NULL == hdb_info->base.db_fname) {
-        free(hdb_info);
+    flen = TSTRLEN(db_path) + 8; // RJCTODO: Check this change from 32 (change was in DF code) with Brian; was change in older code? What is the point, anyway?
+    text_hdb_info->base.db_fname = (TSK_TCHAR*)tsk_malloc(flen * sizeof(TSK_TCHAR));
+    if (NULL == text_hdb_info->base.db_fname) {
         return NULL;
     }
-    TSTRNCPY(hdb_info->base.db_fname, db_path, path_len);
 
-    // Initialize the lock used for thread safety.
-    tsk_init_lock(&hdb_info->base.lock);
+    TSTRNCPY(text_hdb_info->base.db_fname, db_path, flen);
+    text_hdb_info->base.db_type = TSK_HDB_DBTYPE_ENCASE_ID;
+    text_hdb_info->base.updateable = 0;
+    text_hdb_info->base.uses_external_index = 1;
+    text_hdb_info->base.hash_type = TSK_HDB_HTYPE_INVALID_ID; // This will be set when the index is created/opened. 
+    text_hdb_info->base.hash_len = 0; // This will be set when the index is created/opened.
+    tsk_init_lock(&text_hdb_info->base.lock);
+    text_hdb_info->base.makeindex = encase_makeindex;
+    text_hdb_info->base.add_comment = NULL; // RJCTODO: Consider making no-ops for these or moving them
+    text_hdb_info->base.add_filename = NULL; // RJCTODO: Consider making no-ops for these or moving them
 
-    // Initialize members to be set later to "not set".
-    hdb_info->base.hash_type = TSK_HDB_HTYPE_INVALID_ID; // RJCTODO: Why is this set later? Seems this will be a problem for SQLite...
-    hdb_info->base.hash_len = 0; // RJCTODO: Why is this set later?  Seems this will be a problem for SQLite...
-    hdb_info->idx = NULL;
+    text_hdb_info->hDb = hDb;
+    text_hdb_info->getentry = encase_getentry;
 
-    hdb_info->base.db_type = TSK_HDB_DBTYPE_ENCASE_ID;
-    hdb_info->base.updateable = 0;
-    md5sum_name((TSK_HDB_INFO*)hdb_info);
-    hdb_info->getentry = encase_getentry;
-    hdb_info->base.makeindex = encase_makeindex;
-    hdb_info->base.add_comment = NULL; // RJCTODO: Consider making no-ops for these or moving them
-    hdb_info->base.add_filename = NULL; // RJCTODO: Consider making no-ops for these or moving them
+    // RJCTODO: Figure out when to do this
+    //md5sum_name((TSK_HDB_INFO*)hdb_info);
 
-    return (TSK_HDB_INFO*)hdb_info;
+    return (TSK_HDB_INFO*)text_hdb_info;    
 }
 
