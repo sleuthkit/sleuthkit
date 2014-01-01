@@ -19,7 +19,22 @@
  * Contains the code to open and close all supported hash database types.
  */
 
-static FILE *open_db_file(TSK_TCHAR *file_path) 
+static uint8_t hdb_file_exists(TSK_TCHAR *file_path)
+{
+    // RJCTODO: Is there a TSK error for this? Use an assert?
+    if (NULL == file_path) {
+        return NULL;
+    }
+
+#ifdef TSK_WIN32
+    return (GetFileAttributes(file_path) == INVALID_FILE_ATTRIBUTES) ? 0 : 1;
+#else
+    struct stat sb;
+    return (stat(idx_info->idx_fname, &sb) < 0) ? 0 : 1;
+#endif
+}
+
+static FILE *open_db_file(TSK_TCHAR *file_path) // RJCTODO: Change name to include hdb for sake of error messages
 {
     // RJCTODO: Is there a TSK error for this? Use an assert?
     if (NULL == file_path) {
@@ -83,221 +98,169 @@ tsk_hdb_open(TSK_TCHAR *file_path, TSK_HDB_OPEN_ENUM flags)
         return NULL;
     }
 
-    // Allocate space for saving the hash database path.
-    size_t flen = TSTRLEN(file_path) + 8; // RJCTODO: Check this change from 32 (change was in DF code) with Brian; was change in older code? Put this in open funcs
-    TSK_TCHAR *db_path = (TSK_TCHAR*)tsk_malloc(flen * sizeof(TSK_TCHAR));
-    if (NULL == db_path) {
-        return NULL;
-    }
-
+    // If the caller has not explicitly specified that the supplied file path 
+    // is a plain text index file able to be used for simple lookups in the 
+    // absence of the original database file, inspect the file and figure out 
+    // what type of hash datbase is to be opened. Otherwise, trust the caller
+    // and proceed.
+    TSK_TCHAR *db_path = NULL;
+    TSK_TCHAR *idx_path = NULL;
     FILE *hDb = NULL;
     TSK_HDB_DBTYPE_ENUM dbtype = TSK_HDB_DBTYPE_INVALID_ID;
     if ((flags & TSK_HDB_OPEN_IDXONLY) == 0) {
-        // The caller has not explicitly specified that the supplied file path is
-        // a plain text index file able to be used for simple lookups in the absence 
-        // of the original database file. Is this actually the case?
         TSK_TCHAR *ext = TSTRRCHR(file_path, _TSK_T('.'));    
         if ((ext != NULL) && (TSTRLEN(ext) >= 4) && (TSTRCMP(ext, _TSK_T(".idx")) == 0)) {
-            // The path has a .idx extension. Strip it off and look for a
-            // database file in the same location as the index file.
+            // The path has a .idx extension. It is likely that it is an index
+            // file. Copy it as such.
+            size_t flen = TSTRLEN(file_path) + 8; // RJCTODO: Check this change from 32 (change was in DF code) with Brian; was change in older code? Put + 8 this in open funcs
+            TSK_TCHAR *idx_path = (TSK_TCHAR*)tsk_malloc(flen * sizeof(TSK_TCHAR));
+            if (NULL == idx_path) {
+                return NULL;
+            }
+
+            // Strip it off and look for a database file in the same location
+            // as the index file.
+            TSK_TCHAR *db_path = (TSK_TCHAR*)tsk_malloc(flen * sizeof(TSK_TCHAR));
+            if (NULL == db_path) {
+                free(idx_path);
+                return NULL;
+            }
             TSTRNCPY(db_path, file_path, (ext - file_path));
-#ifdef TSK_WIN32
-            if (GetFileAttributes(db_path) == INVALID_FILE_ATTRIBUTES) {
-                // No such database file exists. Use the index file path as the database path
-                // and mark the database as index only.
-                memset(db_path, 0, flen); 
-                TSTRNCPY(db_path, file_path, flen);
+
+            // If the database file does not exist, treat the index file as an 
+            // index only database.
+            if (!hdb_file_exists(db_path)) {
+                free(db_path);
+                db_path = NULL;
                 dbtype = TSK_HDB_DBTYPE_IDXONLY_ID;
             }
-#else
-            struct stat sb;
-            if (stat(idx_info->idx_fname, &sb) < 0) {
-                // No such database file exists. Use the index file path as the database path
-                // and mark the database as index only.
-                memset(db_path, 0, flen); 
-                TSTRNCPY(db_path, file_path, flen);
-                dbtype = TSK_HDB_DBTYPE_IDXONLY_ID;
-            }
-#endif
         }
         else {
             // The given path does not appear to be an index path.
+            size_t flen = TSTRLEN(file_path);
+            TSK_TCHAR *idx_path = (TSK_TCHAR*)tsk_malloc(flen * sizeof(TSK_TCHAR));
+            if (NULL == idx_path) {
+                return NULL;
+            }
             TSTRNCPY(db_path, file_path, flen);
         }
 
-        hDb = open_db_file(db_path);
-        if (NULL == hDb) {
-            free(db_path);
-            return NULL;
-        }
-
-        // Determine the type of the database file, if it is not an index only.
-        TSK_HDB_INFO *hdb_info = NULL;
-        if (TSK_HDB_DBTYPE_IDXONLY_ID != dbtype) {
-            if (sqlite3_test(hDb)) {
-                hdb_info = sqlite_hdb_open(db_path);
-                dbtype = TSK_HDB_DBTYPE_SQLITE_ID;
-            } 
-            else {
-                // Try each supported text database type.
-                // Only one of the tests should succeed; if this is not the case
-                // report an error.
-                if (nsrl_test(hDb)) {
-                    dbtype = TSK_HDB_DBTYPE_NSRL_ID;
+        if ((TSK_HDB_DBTYPE_IDXONLY_ID != dbtype) && (NULL != db_path)) {
+            // Open the database file.            
+            hDb = open_db_file(db_path);
+            if (NULL == hDb) {
+                free(db_path);
+                if (NULL != idx_path) {
+                    free(idx_path);
                 }
+                return NULL;
+            }
 
-                if (md5sum_test(hDb)) {
-                    if (dbtype != TSK_HDB_DBTYPE_INVALID_ID) {
+            // Determine the type of the database file
+            TSK_HDB_INFO *hdb_info = NULL;
+            if (TSK_HDB_DBTYPE_IDXONLY_ID != dbtype) {
+                if (sqlite3_test(hDb)) {
+                    dbtype = TSK_HDB_DBTYPE_SQLITE_ID;
+                } 
+                else {
+                    // Try each supported text database type.
+                    // Only one of the tests should succeed. 
+                    if (nsrl_test(hDb)) {
+                        dbtype = TSK_HDB_DBTYPE_NSRL_ID;
+                    }
+
+                    if (md5sum_test(hDb)) {
+                        if (dbtype != TSK_HDB_DBTYPE_INVALID_ID) {
+                            tsk_error_reset();
+                            tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
+                            tsk_error_set_errstr(
+                                        "hdb_open: Error determining DB type (MD5sum)");
+                            return NULL;
+                        }
+                        dbtype = TSK_HDB_DBTYPE_MD5SUM_ID;
+                    }
+
+                    if (encase_test(hDb)) {
+                        if (dbtype != TSK_HDB_DBTYPE_INVALID_ID) {
+                            tsk_error_reset();
+                            tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
+                            tsk_error_set_errstr(
+                                        "hdb_open: Error determining DB type (EnCase)");
+                            return NULL;
+                        }
+                        dbtype = TSK_HDB_DBTYPE_ENCASE_ID;
+                    }
+
+                    if (hk_test(hDb)) {
+                        if (dbtype != TSK_HDB_DBTYPE_INVALID_ID) {
+                            tsk_error_reset();
+                            tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
+                            tsk_error_set_errstr(
+                                        "hdb_open: Error determining DB type (HK)");
+                            return NULL;
+                        }
+                        dbtype = TSK_HDB_DBTYPE_HK_ID;
+                    }
+
+                    if (dbtype == TSK_HDB_DBTYPE_INVALID_ID) {
                         tsk_error_reset();
                         tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
                         tsk_error_set_errstr(
-                                 "hdb_open: Error determining DB type (MD5sum)");
+                                    "hdb_open: Error determining DB type");
                         return NULL;
                     }
-                    dbtype = TSK_HDB_DBTYPE_MD5SUM_ID;
-                }
 
-                if (encase_test(hDb)) {
-                    if (dbtype != TSK_HDB_DBTYPE_INVALID_ID) {
-                        tsk_error_reset();
-                        tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
-                        tsk_error_set_errstr(
-                                 "hdb_open: Error determining DB type (EnCase)");
-                        return NULL;
-                    }
-                    dbtype = TSK_HDB_DBTYPE_ENCASE_ID;
+                    fseeko(hDb, 0, SEEK_SET);
                 }
-
-                if (hk_test(hDb)) {
-                    if (dbtype != TSK_HDB_DBTYPE_INVALID_ID) {
-                        tsk_error_reset();
-                        tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
-                        tsk_error_set_errstr(
-                                 "hdb_open: Error determining DB type (HK)");
-                        return NULL;
-                    }
-                    dbtype = TSK_HDB_DBTYPE_HK_ID;
-                }
-
-                if (dbtype == TSK_HDB_DBTYPE_INVALID_ID) {
-                    tsk_error_reset();
-                    tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
-                    tsk_error_set_errstr(
-                             "hdb_open: Error determining DB type");
-                    return NULL;
-                }
-
-                fseeko(hDb, 0, SEEK_SET);
             }
         }
     }
     else {
-        // The caller has explicitly specified that the supplied file path is
-        // a plain text index file able to be used for simple lookups in the absence 
-        // of the original database file. 
-        TSTRNCPY(db_path, file_path, flen);
-        hDb = open_db_file(db_path);
-        if (NULL == hDb) {
-            free(db_path);
+        size_t flen = TSTRLEN(file_path) + 8; // RJCTODO: Check this change from 32 (change was in DF code) with Brian; was change in older code? Put + 8 this in open funcs
+        TSK_TCHAR *idx_path = (TSK_TCHAR*)tsk_malloc(flen * sizeof(TSK_TCHAR));
+        if (NULL == idx_path) {
             return NULL;
         }
         dbtype = TSK_HDB_DBTYPE_IDXONLY_ID;
     }
 
-    //// Allocate a struct to represent this hash database.
-    //TSK_HDB_INFO *hdb_info = NULL;
-    //if ((hdb_info = (TSK_HDB_INFO*)tsk_malloc(sizeof(TSK_HDB_INFO))) == NULL) {
-    //    return NULL;
-    //}
+    TSK_HDB_INFO *hdb_info = NULL;
+    switch (dbtype) {
+        case TSK_HDB_DBTYPE_NSRL_ID:
+            hdb_info = nsrl_open(hDb, db_path, idx_path);
+            break;
+        case TSK_HDB_DBTYPE_MD5SUM_ID:
+            break;
+        case TSK_HDB_DBTYPE_ENCASE_ID:
+            break;
+        case TSK_HDB_DBTYPE_HK_ID:
+            break;
+        case TSK_HDB_DBTYPE_IDXONLY_ID:
+            break;
+        case TSK_HDB_DBTYPE_SQLITE_ID: 
+            if (hDb) {
+                fclose(hDb);
+            }
+            hdb_info = sqlite_hdb_open(db_path);
+            break;
+        default:
+            if (db_path) {
+                free(db_path);
+            }
+            if (idx_path) {
+                free(idx_path);
+            }
+    }
 
-    //// RJCTODO: Call the specific create fuunctions here
+    if (!hdb_info) {
+        if (db_path) {
+            free(db_path);
+        }
 
-    //// Save the database file handle. 
-    //// RJCTODO: Make the struct member a void*
-    //if (TSK_HDB_DBTYPE_SQLITE_ID == dbtype) {
-    //    fclose(hDb);
-    //    sqlite3 *db = sqlite_hdb_open_db(db_path);
-    //    if (NULL != db) {
-    //        hdb_info->hDb = hDb;
-    //    }
-    //    else {
-    //        free(db_path);
-    //        free(hdb_info);
-    //        return NULL;
-    //    }
-    //}
-    //else {
-    //    hdb_info->hDb = hDb;
-    //}
-
-    // Save the database file path. In the case of an index only database, this will actually
-    // be the index file standing in for the original text file database.
-    //hdb_info->db_fname = db_path;
-    
-    // Initialize the lock used for thread safety.
-    tsk_init_lock(&hdb_info->lock);
-
-    // Initialize members to be set later to "not set".
-    hdb_info->hash_type = static_cast<TSK_HDB_HTYPE_ENUM>(0); // RJCTODO: Why is this set later? Seems this will be a problem for SQLite...
-    hdb_info->hash_len = 0; // RJCTODO: Why is this set later?  Seems this will be a problem for SQLite...
-    hdb_info->idx_info = NULL;
-
-    // Set members that depend on the hash database type. 
-    //hdb_info->db_type = static_cast<TSK_HDB_DBTYPE_ENUM>(dbtype);
-    //switch (dbtype) {
-    //    case TSK_HDB_DBTYPE_NSRL_ID:
-    //        nsrl_name(hdb_info);
-    //        hdb_info->getentry = nsrl_getentry;
-    //        hdb_info->makeindex = nsrl_makeindex;
-    //        hdb_info->add_comment = NULL; // RJCTODO: Consider making no-ops for these
-    //        hdb_info->add_filename = NULL;
-    //        break;
-
-    //    case TSK_HDB_DBTYPE_MD5SUM_ID:
-    //        md5sum_name(hdb_info);
-    //        hdb_info->getentry = md5sum_getentry;
-    //        hdb_info->makeindex = md5sum_makeindex;
-    //        hdb_info->add_comment = NULL;
-    //        hdb_info->add_filename = NULL;
-    //        break;
-
-    //    case TSK_HDB_DBTYPE_ENCASE_ID:
-    //        encase_name(hdb_info);
-    //        hdb_info->getentry = encase_getentry;
-    //        hdb_info->makeindex = encase_makeindex;
-    //        hdb_info->add_comment = NULL;
-    //        hdb_info->add_filename = NULL;
-    //        break;
-
-    //    case TSK_HDB_DBTYPE_HK_ID:
-    //        hk_name(hdb_info);
-    //        hdb_info->getentry = hk_getentry;
-    //        hdb_info->makeindex = hk_makeindex;
-    //        hdb_info->add_comment = NULL;
-    //        hdb_info->add_filename = NULL;
-    //        break;
-
-    //    case TSK_HDB_DBTYPE_IDXONLY_ID:
-    //        idxonly_name(hdb_info);
-    //        hdb_info->getentry = idxonly_getentry;
-    //        hdb_info->makeindex = idxonly_makeindex;
-    //        hdb_info->add_comment = NULL;
-    //        hdb_info->add_filename = NULL;
-    //        break;
-
-    //    case TSK_HDB_DBTYPE_SQLITE_ID: 
-    //        sqlite_hdb_set_db_name(hdb_info);
-    //        hdb_info->getentry = sqlite_hdb_get_entry;
-    //        hdb_info->makeindex = sqlite_hdb_make_index;
-    //        hdb_info->add_comment = sqlite_v1_addcomment;
-    //        hdb_info->add_filename = sqlite_v1_addfilename;
-    //        break;
-
-    //    default:
-    //        free(hdb_info->db_fname);
-    //        free(hdb_info);
-    //        hdb_info = NULL;
-    //}
+        if (idx_path) {
+            free(idx_path);
+        }
+    }
 
     return hdb_info;
 }
@@ -311,20 +274,21 @@ tsk_hdb_open(TSK_TCHAR *file_path, TSK_HDB_OPEN_ENUM flags)
 void
 tsk_hdb_close(TSK_HDB_INFO * hdb_info)
 {
-    if (hdb_info->db_fname) {
-        free(hdb_info->db_fname);
-    }
+    // RJCTODO: Need close function
+    //if (hdb_info->db_fname) {
+    //    free(hdb_info->db_fname);
+    //}
 
-    if (hdb_info->hDb) {
-        fclose(hdb_info->hDb);
-    }
+    //if (hdb_info->hDb) {
+    //    fclose(hdb_info->hDb);
+    //}
 
-    if (hdb_info->idx_info) {
-        tsk_idx_close(hdb_info->idx_info);
-        // RJCTODO: Looks like a leak here
-    }
+    //if (hdb_info->idx_info) {
+    //    tsk_idx_close(hdb_info->idx_info);
+    //    // RJCTODO: Looks like a leak here
+    //}
 
-    tsk_deinit_lock(&hdb_info->lock);
+    //tsk_deinit_lock(&hdb_info->lock);
 
-    free(hdb_info);
+    //free(hdb_info);
 }

@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
+ * Copyright (c) 2003-2014 Brian Carrier.  All rights reserved
  *
  *
  * This software is distributed under the Common Public License 1.0
@@ -15,9 +15,7 @@
 
 #include "tsk_hashdb_i.h"
 
-
 #define STR_EMPTY ""
-
 
 /**
  * Test the file to see if it is a md5sum database
@@ -62,7 +60,6 @@ md5sum_name(TSK_HDB_INFO * hdb_info)
 {
     tsk_hdb_name_from_path(hdb_info);
 }
-
 
 /**
  * Given a line of text from an MD5sum database, return pointers
@@ -198,8 +195,8 @@ md5sum_parse_md5(char *str, char **md5, char **name)
 uint8_t
 md5sum_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
 {
+    TSK_TEXT_HDB_INFO *text_hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info;
     int i;
-
     char buf[TSK_HDB_MAXLEN];
     char *hash = NULL, phash[TSK_HDB_HTYPE_MD5_LEN + 1];
     TSK_OFF_T offset = 0;
@@ -221,8 +218,8 @@ md5sum_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
     memset(phash, '0', TSK_HDB_HTYPE_MD5_LEN + 1);
 
     /* read the file and add to the index */
-    fseek(hdb_info->hDb, 0, SEEK_SET);
-    for (i = 0; NULL != fgets(buf, TSK_HDB_MAXLEN, hdb_info->hDb);
+    fseek(text_hdb_info->hDb, 0, SEEK_SET);
+    for (i = 0; NULL != fgets(buf, TSK_HDB_MAXLEN, text_hdb_info->hDb);
          offset += (TSK_OFF_T) len, i++) {
 
         len = strlen(buf);
@@ -279,7 +276,6 @@ md5sum_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
     return 0;
 }
 
-
 /**
  * Find the corresponding name at a
  * given offset.  The offset was likely determined from the index.
@@ -301,6 +297,7 @@ md5sum_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
                 TSK_OFF_T offset, TSK_HDB_FLAG_ENUM flags,
                 TSK_HDB_LOOKUP_FN action, void *cb_ptr)
 {
+    TSK_TEXT_HDB_INFO *text_hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info;
     char buf[TSK_HDB_MAXLEN], *name, *ptr = NULL, pname[TSK_HDB_MAXLEN];
     int found = 0;
 
@@ -323,7 +320,7 @@ md5sum_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
     while (1) {
         size_t len;
 
-        if (0 != fseeko(hdb_info->hDb, offset, SEEK_SET)) {
+        if (0 != fseeko(text_hdb_info->hDb, offset, SEEK_SET)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_READDB);
             tsk_error_set_errstr(
@@ -332,8 +329,8 @@ md5sum_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
             return 1;
         }
 
-        if (NULL == fgets(buf, TSK_HDB_MAXLEN, hdb_info->hDb)) {
-            if (feof(hdb_info->hDb)) {
+        if (NULL == fgets(buf, TSK_HDB_MAXLEN, text_hdb_info->hDb)) {
+            if (feof(text_hdb_info->hDb)) {
                 break;
             }
             tsk_error_reset();
@@ -398,12 +395,14 @@ md5sum_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
 
 TSK_HDB_INFO *md5sum_open(TSK_TCHAR *db_path)
 {
+    size_t path_len = 0;
     TSK_TEXT_HDB_INFO *hdb_info = NULL;
+
     if ((hdb_info = (TSK_TEXT_HDB_INFO*)tsk_malloc(sizeof(TSK_TEXT_HDB_INFO))) == NULL) {
         return NULL;
     }
 
-    size_t path_len = TSTRLEN(db_path);
+    path_len = TSTRLEN(db_path);
     hdb_info->base.db_fname = (TSK_TCHAR*)tsk_malloc((path_len + 1) * sizeof(TSK_TCHAR));
     if (NULL == hdb_info->base.db_fname) {
         free(hdb_info);
@@ -415,14 +414,14 @@ TSK_HDB_INFO *md5sum_open(TSK_TCHAR *db_path)
     tsk_init_lock(&hdb_info->base.lock);
 
     // Initialize members to be set later to "not set".
-    hdb_info->base.hash_type = static_cast<TSK_HDB_HTYPE_ENUM>(0); // RJCTODO: Why is this set later? Seems this will be a problem for SQLite...
+    hdb_info->base.hash_type = TSK_HDB_HTYPE_INVALID_ID; // RJCTODO: Why is this set later? Seems this will be a problem for SQLite...
     hdb_info->base.hash_len = 0; // RJCTODO: Why is this set later?  Seems this will be a problem for SQLite...
-    hdb_info->base.idx_info = NULL;
+    hdb_info->idx = NULL;
 
     hdb_info->base.db_type = TSK_HDB_DBTYPE_MD5SUM_ID;
     hdb_info->base.updateable = 0;
-    nsrl_name((TSK_HDB_INFO*)hdb_info);
-    hdb_info->base.getentry = md5sum_getentry;
+    md5sum_name((TSK_HDB_INFO*)hdb_info);
+    hdb_info->getentry = md5sum_getentry;
     hdb_info->base.makeindex = md5sum_makeindex;
     hdb_info->base.add_comment = NULL; // RJCTODO: Consider making no-ops for these or moving them
     hdb_info->base.add_filename = NULL; // RJCTODO: Consider making no-ops for these or moving them

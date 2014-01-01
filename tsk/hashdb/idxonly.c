@@ -15,7 +15,6 @@
 
 #include "tsk_hashdb_i.h"
 
-
 /**
  * Set db_name using information from this database type
  *
@@ -24,11 +23,13 @@
 void
 idxonly_name(TSK_HDB_INFO * hdb_info)
 {
+    TSK_TEXT_HDB_INFO *text_hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info;
+    TSK_HDB_BINSRCH_IDX_INFO *idx_info = (TSK_HDB_BINSRCH_IDX_INFO*)text_hdb_info->idx;
     FILE * hFile;
     char buf[TSK_HDB_NAME_MAXLEN];
     char *bufptr = buf;
     size_t i = 0;
-    memset(hdb_info->db_name, '\0', TSK_HDB_NAME_MAXLEN);
+    memset(idx_info->base.db_name, '\0', TSK_HDB_NAME_MAXLEN);
 
     if(tsk_hdb_idxsetup(hdb_info, TSK_HDB_HTYPE_MD5_ID) == 0) {
         if (tsk_verbose)
@@ -38,35 +39,27 @@ idxonly_name(TSK_HDB_INFO * hdb_info)
         return;
     }
 
-    // Get the DB name. Alternatively, we could query the index for Hashset Name.
-    if (hdb_info->idx_info->index_type == TSK_HDB_ITYPE_SQLITE_V1) {
+    hFile = idx_info->hIdx;
+    fseeko(hFile, 0, 0);
+    if(NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
+        NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
+        strncmp(buf,
+                TSK_HDB_IDX_HEAD_NAME_STR,
+                strlen(TSK_HDB_IDX_HEAD_NAME_STR)) != 0) {
+        if (tsk_verbose)
+            fprintf(stderr,
+                "Failed to read name from index; using file name instead");
         tsk_hdb_name_from_path(hdb_info);
         return;
-    } else {
-        // Get name from legacy (bin search text) index
-        hFile = hdb_info->idx_info->idx_struct.idx_binsrch->hIdx;
-        fseeko(hFile, 0, 0);
-        if(NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
-            NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
-            strncmp(buf,
-                    TSK_HDB_IDX_HEAD_NAME_STR,
-                    strlen(TSK_HDB_IDX_HEAD_NAME_STR)) != 0) {
-            if (tsk_verbose)
-                fprintf(stderr,
-                    "Failed to read name from index; using file name instead");
-            tsk_hdb_name_from_path(hdb_info);
-            return;
-        }
-        bufptr = strchr(buf, '|');
-        bufptr++;
-        while(bufptr[i] != '\r' && bufptr[i] != '\n' && i < strlen(bufptr))
-        {
-            hdb_info->db_name[i] = bufptr[i];
-            i++;
-        }
+    }
+    bufptr = strchr(buf, '|');
+    bufptr++;
+    while(bufptr[i] != '\r' && bufptr[i] != '\n' && i < strlen(bufptr))
+    {
+        idx_info->base.db_name[i] = bufptr[i];
+        i++;
     }
 }
-
 
 /**
  * This function creates an empty
@@ -97,7 +90,6 @@ idxonly_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
     return 0;
 }
 
-
 /**
  * This function should find the corresponding name at a
  * given offset.  In this case though, we do not have the original database,
@@ -126,26 +118,36 @@ idxonly_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
 
 TSK_HDB_INFO *idxonly_open(TSK_TCHAR *db_path)
 {
+    size_t path_len = 0;
     TSK_TEXT_HDB_INFO *hdb_info = NULL;
+
     if ((hdb_info = (TSK_TEXT_HDB_INFO*)tsk_malloc(sizeof(TSK_TEXT_HDB_INFO))) == NULL) {
         return NULL;
     }
 
-    size_t path_len = TSTRLEN(db_path);
-    hdb_info->hdb_info->db_fname = (TSK_TCHAR*)tsk_malloc((path_len + 1) * sizeof(TSK_TCHAR));
-    if (NULL == hdb_info->hdb_info->db_fname) {
+    path_len = TSTRLEN(db_path);
+    hdb_info->base.db_fname = (TSK_TCHAR*)tsk_malloc((path_len + 1) * sizeof(TSK_TCHAR));
+    if (NULL == hdb_info->base.db_fname) {
         free(hdb_info);
         return NULL;
     }
-    TSTRNCPY(hdb_info->hdb_info->db_fname, db_path, path_len);
+    TSTRNCPY(hdb_info->base.db_fname, db_path, path_len);
 
-    hdb_info->hdb_info->db_type = TSK_HDB_DBTYPE_IDXONLY_ID;
+    // Initialize the lock used for thread safety.
+    tsk_init_lock(&hdb_info->base.lock);
+
+    // Initialize members to be set later to "not set".
+    hdb_info->base.hash_type = TSK_HDB_HTYPE_INVALID_ID; // RJCTODO: Why is this set later? Seems this will be a problem for SQLite...
+    hdb_info->base.hash_len = 0; // RJCTODO: Why is this set later?  Seems this will be a problem for SQLite...
+    hdb_info->idx = NULL;
+
+    hdb_info->base.db_type = TSK_HDB_DBTYPE_IDXONLY_ID;
     hdb_info->base.updateable = 0;
-    nsrl_name((TSK_HDB_INFO*)hdb_info);
-    hdb_info->hdb_info->getentry = idxonly_getentry;
-    hdb_info->hdb_info->makeindex = idxonly_makeindex;
-    hdb_info->hdb_info->add_comment = NULL; // RJCTODO: Consider making no-ops for these or moving them
-    hdb_info->hdb_info->add_filename = NULL; // RJCTODO: Consider making no-ops for these or moving them
+    idxonly_name((TSK_HDB_INFO*)hdb_info);
+    hdb_info->getentry = idxonly_getentry;
+    hdb_info->base.makeindex = idxonly_makeindex;
+    hdb_info->base.add_comment = NULL; // RJCTODO: Consider making no-ops for these or moving them
+    hdb_info->base.add_filename = NULL; // RJCTODO: Consider making no-ops for these or moving them
 
     return (TSK_HDB_INFO*)hdb_info;
 }

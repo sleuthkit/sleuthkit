@@ -479,8 +479,6 @@ nsrl_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
     return 0;
 }
 
-
-
 /**
  * Find the corresponding name at a
  * given offset.  The offset was likely determined from the index.
@@ -505,6 +503,7 @@ nsrl_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
     char buf[TSK_HDB_MAXLEN], *name, *cur_hash, pname[TSK_HDB_MAXLEN];
     int found = 0;
     int ver;
+    TSK_TEXT_HDB_INFO *text_db_info = (TSK_TEXT_HDB_INFO*)hdb_info; 
 
     if (tsk_verbose)
         fprintf(stderr,
@@ -531,8 +530,8 @@ nsrl_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
     }
 
     /* read the header line ... -- this should be done only once... */
-    fseeko(hdb_info->hDb, 0, SEEK_SET);
-    if (NULL == fgets(buf, TSK_HDB_MAXLEN, hdb_info->hDb)) {
+    fseeko(text_db_info->hDb, 0, SEEK_SET);
+    if (NULL == fgets(buf, TSK_HDB_MAXLEN, text_db_info->hDb)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_READDB);
         tsk_error_set_errstr(
@@ -551,7 +550,7 @@ nsrl_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
     while (1) {
         size_t len;
 
-        if (0 != fseeko(hdb_info->hDb, offset, SEEK_SET)) {
+        if (0 != fseeko(text_db_info->hDb, offset, SEEK_SET)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_READDB);
             tsk_error_set_errstr(
@@ -560,8 +559,8 @@ nsrl_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
             return 1;
         }
 
-        if (NULL == fgets(buf, TSK_HDB_MAXLEN, hdb_info->hDb)) {
-            if (feof(hdb_info->hDb))
+        if (NULL == fgets(buf, TSK_HDB_MAXLEN, text_db_info->hDb)) {
+            if (feof(text_db_info->hDb))
                 break;
 
             tsk_error_reset();
@@ -637,30 +636,32 @@ nsrl_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
     return 0;
 }
 
-TSK_HDB_INFO *nsrl_open(TSK_TCHAR *db_path)
+TSK_HDB_INFO *nsrl_open(FILE *hDb, TSK_TCHAR *db_path, TSK_TCHAR *idx_path)
 {
-    TSK_TEXT_HDB_INFO *hdb_info = NULL;
-    if ((hdb_info = (TSK_TEXT_HDB_INFO*)tsk_malloc(sizeof(TSK_TEXT_HDB_INFO))) == NULL) {
+    TSK_TEXT_HDB_INFO *text_hdb_info = NULL;
+    if ((text_hdb_info = (TSK_TEXT_HDB_INFO*)tsk_malloc(sizeof(TSK_TEXT_HDB_INFO))) == NULL) {
         return NULL;
     }
 
-    size_t path_len = TSTRLEN(db_path);
-    hdb_info->base.db_fname = (TSK_TCHAR*)tsk_malloc((path_len + 1) * sizeof(TSK_TCHAR));
-    if (NULL == hdb_info->base.db_fname) {
-        free(hdb_info);
-        return NULL;
-    }
-    TSTRNCPY(hdb_info->base.db_fname, db_path, path_len);
+    text_hdb_info->base.db_fname = db_path;
+    text_hdb_info->base.db_type = TSK_HDB_DBTYPE_NSRL_ID;
+    text_hdb_info->base.updateable = 0;
+    text_hdb_info->base.uses_external_index = 1;
+    text_hdb_info->base.hash_type = TSK_HDB_HTYPE_INVALID_ID; 
+    text_hdb_info->base.hash_len = 0; 
+    tsk_init_lock(&text_hdb_info->base.lock);
+    text_hdb_info->base.makeindex = nsrl_makeindex;
+    text_hdb_info->base.add_comment = NULL; // RJCTODO: Consider making no-ops for these or moving them
+    text_hdb_info->base.add_filename = NULL; // RJCTODO: Consider making no-ops for these or moving them
 
-    hdb_info->base.db_type = TSK_HDB_DBTYPE_NSRL_ID;
-    hdb_info->base.updateable = 0;
-    nsrl_name((TSK_HDB_INFO*)hdb_info);
-    hdb_info->base.getentry = nsrl_getentry;
-    hdb_info->base.makeindex = nsrl_makeindex;
-    hdb_info->base.add_comment = NULL; // RJCTODO: Consider making no-ops for these or moving them
-    hdb_info->base.add_filename = NULL; // RJCTODO: Consider making no-ops for these or moving them
+    text_hdb_info->hDb = hDb;
+    text_hdb_info->getentry = nsrl_getentry;
+    text_hdb_info->idx_fname = idx_path;
 
-    return (TSK_HDB_INFO*)hdb_info;
+    // RJCTODO: Figure out when to do this
+    //nsrl_name((TSK_HDB_INFO*)text_hdb_info);
+
+    return (TSK_HDB_INFO*)text_hdb_info;
 }
 
 

@@ -259,6 +259,7 @@ hk_parse_md5(char *str, char **md5, char *name, int n_len,
 uint8_t
 hk_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
 {
+    TSK_TEXT_HDB_INFO *text_hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info;
     int i;
     size_t len = 0;
     char buf[TSK_HDB_MAXLEN];
@@ -280,8 +281,8 @@ hk_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
     memset(phash, '0', TSK_HDB_HTYPE_MD5_LEN + 1);
 
     /* read each line of the file */
-    fseek(hdb_info->hDb, 0, SEEK_SET);
-    for (i = 0; NULL != fgets(buf, TSK_HDB_MAXLEN, hdb_info->hDb);
+    fseek(text_hdb_info->hDb, 0, SEEK_SET);
+    for (i = 0; NULL != fgets(buf, TSK_HDB_MAXLEN, text_hdb_info->hDb);
          offset += (TSK_OFF_T) len, i++) {
 
         // skip the header line
@@ -344,7 +345,6 @@ hk_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
     return 0;
 }
 
-
 /**
  * Find the corresponding name at the
  * given offset.  The offset was likely determined from the index.
@@ -368,6 +368,7 @@ hk_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
             TSK_HDB_FLAG_ENUM flags,
             TSK_HDB_LOOKUP_FN action, void *cb_ptr)
 {
+    TSK_TEXT_HDB_INFO *text_hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info;
     char buf[TSK_HDB_MAXLEN], name[TSK_HDB_MAXLEN], *ptr =
         NULL, pname[TSK_HDB_MAXLEN], other[TSK_HDB_MAXLEN];
     int found = 0;
@@ -391,7 +392,7 @@ hk_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
     while (1) {
         size_t len;
 
-        if (0 != fseeko(hdb_info->hDb, offset, SEEK_SET)) {
+        if (0 != fseeko(text_hdb_info->hDb, offset, SEEK_SET)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_READDB);
             tsk_error_set_errstr(
@@ -401,8 +402,8 @@ hk_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
         }
 
         if (NULL ==
-            fgets(buf, TSK_HDB_MAXLEN, hdb_info->hDb)) {
-            if (feof(hdb_info->hDb)) {
+            fgets(buf, TSK_HDB_MAXLEN, text_hdb_info->hDb)) {
+            if (feof(text_hdb_info->hDb)) {
                 break;
             }
             tsk_error_reset();
@@ -474,26 +475,36 @@ hk_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
 
 TSK_HDB_INFO *hk_open(TSK_TCHAR *db_path)
 {
+    size_t path_len = 0;
     TSK_TEXT_HDB_INFO *hdb_info = NULL;
+
     if ((hdb_info = (TSK_TEXT_HDB_INFO*)tsk_malloc(sizeof(TSK_TEXT_HDB_INFO))) == NULL) {
         return NULL;
     }
 
-    size_t path_len = TSTRLEN(db_path);
-    hdb_info->hdb_info->db_fname = (TSK_TCHAR*)tsk_malloc((path_len + 1) * sizeof(TSK_TCHAR));
-    if (NULL == hdb_info->hdb_info->db_fname) {
+    path_len = TSTRLEN(db_path);
+    hdb_info->base.db_fname = (TSK_TCHAR*)tsk_malloc((path_len + 1) * sizeof(TSK_TCHAR));
+    if (NULL == hdb_info->base.db_fname) {
         free(hdb_info);
         return NULL;
     }
-    TSTRNCPY(hdb_info->hdb_info->db_fname, db_path, path_len);
+    TSTRNCPY(hdb_info->base.db_fname, db_path, path_len);
 
-    hdb_info->hdb_info->db_type = TSK_HDB_DBTYPE_HK_ID;
+    // Initialize the lock used for thread safety.
+    tsk_init_lock(&hdb_info->base.lock);
+
+    // Initialize members to be set later to "not set".
+    hdb_info->base.hash_type = TSK_HDB_HTYPE_INVALID_ID; // RJCTODO: Why is this set later? Seems this will be a problem for SQLite...
+    hdb_info->base.hash_len = 0; // RJCTODO: Why is this set later?  Seems this will be a problem for SQLite...
+    hdb_info->idx = NULL;
+
+    hdb_info->base.db_type = TSK_HDB_DBTYPE_HK_ID;
     hdb_info->base.updateable = 0;
-    nsrl_name((TSK_HDB_INFO*)hdb_info);
-    hdb_info->hdb_info->getentry = hk_getentry;
-    hdb_info->hdb_info->makeindex = hk_makeindex;
-    hdb_info->hdb_info->add_comment = NULL; // RJCTODO: Consider making no-ops for these or moving them
-    hdb_info->hdb_info->add_filename = NULL; // RJCTODO: Consider making no-ops for these or moving them
+    hk_name((TSK_HDB_INFO*)hdb_info);
+    hdb_info->getentry = hk_getentry;
+    hdb_info->base.makeindex = hk_makeindex;
+    hdb_info->base.add_comment = NULL; // RJCTODO: Consider making no-ops for these or moving them
+    hdb_info->base.add_filename = NULL; // RJCTODO: Consider making no-ops for these or moving them
 
     return (TSK_HDB_INFO*)hdb_info;
 }

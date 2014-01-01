@@ -47,12 +47,14 @@ encase_test(FILE * hFile)
 void
 encase_name(TSK_HDB_INFO * hdb_info)
 {
-    FILE * hFile = hdb_info->hDb;
+    TSK_TEXT_HDB_INFO *text_hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info;
+    TSK_HDB_EXTERNAL_IDX_INFO *idx_info = (TSK_HDB_EXTERNAL_IDX_INFO*)text_hdb_info->idx;
+    FILE * hFile = text_hdb_info->hDb;
     wchar_t buf[40];
     UTF16 *utf16;
     UTF8 *utf8;
     size_t ilen;
-    memset(hdb_info->db_name, '\0', TSK_HDB_NAME_MAXLEN);
+    memset(idx_info->db_name, '\0', TSK_HDB_NAME_MAXLEN);
     if(!hFile) {
         if (tsk_verbose)
             fprintf(stderr,
@@ -75,7 +77,7 @@ encase_name(TSK_HDB_INFO * hdb_info)
     // do some arithmetic on type sizes to be platform independent
     ilen = wcslen(buf) * (sizeof(wchar_t) / sizeof(UTF16));
 
-    utf8 = (UTF8 *) hdb_info->db_name;
+    utf8 = (UTF8 *) idx_info->db_name;
     utf16 = (UTF16 *) buf;
 
     tsk_UTF16toUTF8(TSK_LIT_ENDIAN,
@@ -98,6 +100,7 @@ encase_name(TSK_HDB_INFO * hdb_info)
 uint8_t
 encase_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
 {
+    TSK_TEXT_HDB_INFO *text_hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info;
     unsigned char buf[19];
     char phash[19];
     TSK_OFF_T offset = 0;
@@ -118,8 +121,8 @@ encase_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
     memset(buf, '0', sizeof(buf));
 
     /* read the file and add to the index */
-    fseek(hdb_info->hDb, 1152, SEEK_SET);
-    while (18 == fread(buf,sizeof(char),18,hdb_info->hDb)) {
+    fseek(text_hdb_info->hDb, 1152, SEEK_SET);
+    while (18 == fread(buf,sizeof(char),18,text_hdb_info->hDb)) {
         db_cnt++;
         
         /* We only want to add one of each hash to the index */
@@ -185,6 +188,7 @@ encase_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
                 TSK_OFF_T offset, TSK_HDB_FLAG_ENUM flags,
                 TSK_HDB_LOOKUP_FN action, void *cb_ptr)
 {
+    TSK_TEXT_HDB_INFO *text_hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info;
     int found = 0;
     char buf[19];
 
@@ -204,13 +208,13 @@ encase_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
     memset(buf, 0, sizeof(buf));
     
     /* Loop so that we can find multiple occurances of the same hash */
-    fseeko(hdb_info->hDb, offset, SEEK_SET);
+    fseeko(text_hdb_info->hDb, offset, SEEK_SET);
     while (1) {
         int retval;
         char hash_str[TSK_HDB_HTYPE_MD5_LEN+1];
         
-        if (18 != fread(buf,sizeof(char),18,hdb_info->hDb)) {
-            if (feof(hdb_info->hDb)) {
+        if (18 != fread(buf,sizeof(char),18,text_hdb_info->hDb)) {
+            if (feof(text_hdb_info->hDb)) {
                 break;
             }
             tsk_error_reset();
@@ -256,26 +260,36 @@ encase_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
 
 TSK_HDB_INFO *encase_open(TSK_TCHAR *db_path)
 {
+    size_t path_len = 0;
     TSK_TEXT_HDB_INFO *hdb_info = NULL;
+
     if ((hdb_info = (TSK_TEXT_HDB_INFO*)tsk_malloc(sizeof(TSK_TEXT_HDB_INFO))) == NULL) {
         return NULL;
     }
 
-    size_t path_len = TSTRLEN(db_path);
-    hdb_info->hdb_info->db_fname = (TSK_TCHAR*)tsk_malloc((path_len + 1) * sizeof(TSK_TCHAR));
-    if (NULL == hdb_info->hdb_info->db_fname) {
+    path_len = TSTRLEN(db_path);
+    hdb_info->base.db_fname = (TSK_TCHAR*)tsk_malloc((path_len + 1) * sizeof(TSK_TCHAR));
+    if (NULL == hdb_info->base.db_fname) {
         free(hdb_info);
         return NULL;
     }
-    TSTRNCPY(hdb_info->hdb_info->db_fname, db_path, path_len);
+    TSTRNCPY(hdb_info->base.db_fname, db_path, path_len);
 
-    hdb_info->hdb_info->db_type = TSK_HDB_DBTYPE_ENCASE_ID;
+    // Initialize the lock used for thread safety.
+    tsk_init_lock(&hdb_info->base.lock);
+
+    // Initialize members to be set later to "not set".
+    hdb_info->base.hash_type = TSK_HDB_HTYPE_INVALID_ID; // RJCTODO: Why is this set later? Seems this will be a problem for SQLite...
+    hdb_info->base.hash_len = 0; // RJCTODO: Why is this set later?  Seems this will be a problem for SQLite...
+    hdb_info->idx = NULL;
+
+    hdb_info->base.db_type = TSK_HDB_DBTYPE_ENCASE_ID;
     hdb_info->base.updateable = 0;
-    nsrl_name((TSK_HDB_INFO*)hdb_info);
-    hdb_info->hdb_info->getentry = encase_getentry;
-    hdb_info->hdb_info->makeindex = encase_makeindex;
-    hdb_info->hdb_info->add_comment = NULL; // RJCTODO: Consider making no-ops for these or moving them
-    hdb_info->hdb_info->add_filename = NULL; // RJCTODO: Consider making no-ops for these or moving them
+    md5sum_name((TSK_HDB_INFO*)hdb_info);
+    hdb_info->getentry = encase_getentry;
+    hdb_info->base.makeindex = encase_makeindex;
+    hdb_info->base.add_comment = NULL; // RJCTODO: Consider making no-ops for these or moving them
+    hdb_info->base.add_filename = NULL; // RJCTODO: Consider making no-ops for these or moving them
 
     return (TSK_HDB_INFO*)hdb_info;
 }

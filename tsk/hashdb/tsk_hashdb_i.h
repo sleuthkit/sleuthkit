@@ -84,6 +84,7 @@ extern "C" {
 
     // Hash database functions for NSRL hash databases. 
     extern uint8_t nsrl_test(FILE *);
+    extern TSK_HDB_INFO *nsrl_open(FILE *hDb, TSK_TCHAR *db_path, TSK_TCHAR *idx_path);
     extern void nsrl_name(TSK_HDB_INFO *);
     extern uint8_t nsrl_makeindex(TSK_HDB_INFO *, TSK_TCHAR * htype);
     extern uint8_t nsrl_getentry(TSK_HDB_INFO *, const char *, TSK_OFF_T,
@@ -122,8 +123,8 @@ extern "C" {
                                     TSK_HDB_LOOKUP_FN, void *);
 
     // Index functions for text indexes for hash databases. 
-    extern uint8_t binsrch_open(TSK_HDB_INFO *, TSK_IDX_INFO *, uint8_t);
-    extern void binsrch_close(TSK_IDX_INFO *);
+    extern uint8_t binsrch_open(TSK_HDB_INFO * hdb_info, uint8_t htype);
+    extern void binsrch_close(TSK_HDB_INFO * hdb_info);
     extern uint8_t binsrch_initialize(TSK_HDB_INFO *, TSK_TCHAR *);
     extern uint8_t binsrch_addentry(TSK_HDB_INFO *, char *, TSK_OFF_T);
     extern uint8_t binsrch_addentry_bin(TSK_HDB_INFO *,
@@ -142,10 +143,9 @@ extern "C" {
     extern void sqlite_hdb_set_db_name(TSK_HDB_INFO *hdb_info);
     extern uint8_t sqlite_hdb_make_index(TSK_HDB_INFO *, TSK_TCHAR * htype);
     extern uint8_t sqlite_hdb_get_entry(TSK_HDB_INFO *, const char *, TSK_OFF_T, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
-	extern uint8_t sqlite_hdb_create_db(TSK_TCHAR *db_file_path);
-    extern sqlite3 *sqlite_hdb_open_db(TSK_TCHAR *db_file_path);
-    extern uint8_t sqlite_v1_open(TSK_HDB_INFO *, TSK_IDX_INFO *, uint8_t);
-    extern void sqlite_v1_close(TSK_IDX_INFO *);
+	extern uint8_t sqlite_hdb_create_db(TSK_TCHAR*);
+    extern sqlite3 *sqlite_hdb_open_db(TSK_TCHAR*);
+    extern void sqlite_hdb_close(TSK_HDB_INFO*);
     extern uint8_t sqlite_v1_initialize(TSK_HDB_INFO *, TSK_TCHAR *);
     extern uint8_t sqlite_v1_begin(TSK_HDB_INFO *);
     extern uint8_t sqlite_v1_addentry(TSK_HDB_INFO *, char *, TSK_OFF_T);

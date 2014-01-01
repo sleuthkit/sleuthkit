@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2003-2013 Brian Carrier.  All rights reserved
+ * Copyright (c) 2003-2014 Brian Carrier.  All rights reserved
  *
  *
  * This software is distributed under the Common Public License 1.0
@@ -10,13 +10,12 @@
 
 #include "tsk_hashdb_i.h"
 
-
+// RJCTODO: This is not a very good file name any more...
+// Also mixing in some other funcs 
 /**
  * \file tm_lookup.cpp
  * Contains the generic hash database lookup code.
  */
-
-
 
 /**
  * \ingroup hashdblib
@@ -57,7 +56,7 @@ tsk_hdb_lookup_str(TSK_HDB_INFO * hdb_info, const char *hash,
         return -1;
     }
 
-    return hdb_info->idx_info->lookup_str(hdb_info, hash, flags, action, ptr);
+    return hdb_info->lookup_str(hdb_info, hash, flags, action, ptr);
 }
 
 /**
@@ -94,10 +93,14 @@ tsk_hdb_lookup_str_id(TSK_HDB_INFO * hdb_info, const char *hash)
         return -1;
     }
 
-    if (hdb_info->idx_info->lookup_str(hdb_info, hash, TSK_HDB_FLAG_QUICK, NULL, NULL) == -1) {
+    // RJCTODO: This code is SQLite-specific, but probably worked due to a hack in the caller.
+    // Perhaps a flag and API indicatingf whether verbose lookup is supported is warranted.
+    // The caller is Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookupVerbose().
+    if (hdb_info->lookup_str(hdb_info, hash, TSK_HDB_FLAG_QUICK, NULL, NULL) == -1) {
         return -1;
     } else {
-        return hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId; 
+        TSK_SQLITE_HDB_INFO *sqlite_hdb_info = (TSK_SQLITE_HDB_INFO*)hdb_info; 
+        return sqlite_hdb_info->last_id; 
     }
 }
 
@@ -142,5 +145,5 @@ tsk_hdb_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hash, uint8_t len,
         return -1;
     }
 
-	return hdb_info->idx_info->lookup_raw(hdb_info, hash, len, flags, action, ptr);
+	return hdb_info->lookup_raw(hdb_info, hash, len, flags, action, ptr);
 }
