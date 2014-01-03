@@ -82,6 +82,9 @@ extern "C" {
     extern uint8_t tsk_hdb_idxfinalize(TSK_HDB_INFO *);
     extern void tsk_hdb_name_from_path(TSK_HDB_INFO *);
 
+    // Hash database functions common to all text hash databases.
+    extern void text_db_close(TSK_HDB_INFO *hdb_info) ;
+
     // Hash database functions for NSRL hash databases. 
     extern uint8_t nsrl_test(FILE *);
     extern TSK_HDB_INFO *nsrl_open(FILE *hDb, const TSK_TCHAR *db_path);
@@ -119,7 +122,7 @@ extern "C" {
                                void *);
 
     // Hash database functions for ASCII index files standing in for the original hash databases. 
-    extern TSK_HDB_INFO *idxonly_open(const TSK_TCHAR *idx_path);
+    extern TSK_HDB_INFO *idxonly_open(const TSK_TCHAR *db_path);
     extern void idxonly_name(TSK_HDB_INFO *);
     extern uint8_t idxonly_makeindex(TSK_HDB_INFO *, TSK_TCHAR * htype);
     extern uint8_t idxonly_getentry(TSK_HDB_INFO *, const char *,
@@ -128,6 +131,8 @@ extern "C" {
 
     // Hash database functions for SQLite hash databases.
     extern TSK_HDB_INFO *sqlite_hdb_open(TSK_TCHAR *db_path);
+    extern uint8_t sqlite_hdb_set_index_params(TSK_HDB_INFO *hdb_info, TSK_HDB_DBTYPE_ENUM hash_type); 
+    extern uint8_t sqlite_hdb_make_index(TSK_HDB_INFO *hdb_info, TSK_HDB_DBTYPE_ENUM hash_type); // RJCTODO: Probably do not need type, set by above func
 
     // Index functions for ASCII indexes for hash databases. 
     extern uint8_t binsrch_open(TSK_HDB_INFO * hdb_info, uint8_t htype);

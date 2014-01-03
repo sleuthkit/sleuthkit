@@ -876,6 +876,21 @@ sqlite3_test(FILE * hFile)
 }
 
 // RJCTODO: Comment
+uint8_t
+sqlite_hdb_set_index_params(TSK_HDB_INFO *hdb_info, TSK_HDB_DBTYPE_ENUM hash_type)
+{
+    // The index is internal to the database, there is nothing to do.
+    return 0; 
+}
+
+// RJCTODO: Comment
+uint8_t sqlite_hdb_make_index(TSK_HDB_INFO *hdb_info, TSK_HDB_DBTYPE_ENUM hash_type)
+{
+    // The index is internal to the database, there is nothing to do.
+    return 0; 
+}
+
+// RJCTODO: Comment
 TSK_HDB_INFO *sqlite_hdb_open(TSK_TCHAR *db_path)
 {
     TSK_SQLITE_HDB_INFO *sqlite_hdb_info = NULL;

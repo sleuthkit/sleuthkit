@@ -283,6 +283,9 @@
     <ClCompile Include="..\..\tsk\hashdb\nsrl.c">
       <Filter>hash</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tsk\hashdb\text_db.c">
+      <Filter>hash</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\tsk\vs\tsk_bsd.h">

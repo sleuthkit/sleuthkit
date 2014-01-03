@@ -150,11 +150,13 @@ extern "C" {
         TSK_HDB_HTYPE_ENUM hash_type; ///< Type of hash used in index // RJCTODO: Not needed for SQLITE?
         uint16_t hash_len;            ///< Length of hash // RJCTODO: Not needed for SQLITE?
         tsk_lock_t lock;              ///< Lock for lazy loading and idx_lbuf
-        uint8_t(*makeindex) (TSK_HDB_INFO *, TSK_TCHAR *);     ///< \internal Database-specific function to make index 
-        int8_t(*lookup_str) (TSK_HDB_INFO *, const char *, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
-        int8_t(*lookup_raw) (TSK_HDB_INFO *, uint8_t *, uint8_t, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
-        uint8_t(*add_comment) (TSK_HDB_INFO *, char *, int64_t); // RJCTODO: Can probably go away
-        uint8_t(*add_filename) (TSK_HDB_INFO *, char *, int64_t); // RJCTODO: Can probably go away
+        uint8_t(*makeindex)(TSK_HDB_INFO *, TSK_TCHAR *);     ///< \internal Database-specific function to make index 
+        uint8_t(*set_index_params)(TSK_HDB_INFO *hdb_info, TSK_HDB_DBTYPE_ENUM htype);
+        int8_t(*lookup_str)(TSK_HDB_INFO *, const char *, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
+        int8_t(*lookup_raw)(TSK_HDB_INFO *, uint8_t *, uint8_t, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
+        uint8_t(*add_comment)(TSK_HDB_INFO *, char *, int64_t); // RJCTODO: Can probably go away
+        uint8_t(*add_filename)(TSK_HDB_INFO *, char *, int64_t); // RJCTODO: Can probably go away
+        void(*close_db)(TSK_HDB_INFO *);
     };
 
     typedef struct TSK_TEXT_HDB_INFO {
@@ -187,6 +189,8 @@ extern "C" {
     extern void tsk_hdb_close(TSK_HDB_INFO * hdb_info);
 
     extern uint8_t tsk_hdb_hasindex(TSK_HDB_INFO *, uint8_t htype);
+
+    extern uint8_t tsk_set_index_params(TSK_HDB_INFO *hdb_info, TSK_HDB_DBTYPE_ENUM htype);
     
     extern uint8_t tsk_hdb_idxsetup(TSK_HDB_INFO * hdb_info, uint8_t htype);
 

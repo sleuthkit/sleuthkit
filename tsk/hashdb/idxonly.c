@@ -117,24 +117,24 @@ idxonly_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
     return 1;
 }
 
-TSK_HDB_INFO *idxonly_open(const TSK_TCHAR *idx_path)
+TSK_HDB_INFO *idxonly_open(const TSK_TCHAR *db_path)
 {
     TSK_TEXT_HDB_INFO *text_hdb_info = NULL;
     size_t flen = 0;
 
-    assert(NULL != idx_path);
+    assert(NULL != db_path);
     
     if ((text_hdb_info = (TSK_TEXT_HDB_INFO*)tsk_malloc(sizeof(TSK_TEXT_HDB_INFO))) == NULL) {
         return NULL;
     }
 
-    flen = TSTRLEN(idx_path) + 8; // RJCTODO: Check this change from 32 (change was in DF code) with Brian; was change in older code? What is the point, anyway?
+    flen = TSTRLEN(db_path) + 8; // RJCTODO: Check this change from 32 (change was in DF code) with Brian; was change in older code? What is the point, anyway?
     text_hdb_info->base.idx_fname = (TSK_TCHAR*)tsk_malloc(flen * sizeof(TSK_TCHAR));
     if (NULL == text_hdb_info->base.idx_fname) {
         return NULL;
     }
 
-    TSTRNCPY(text_hdb_info->base.idx_fname, idx_path, flen);
+    TSTRNCPY(text_hdb_info->base.idx_fname, db_path, flen);
     text_hdb_info->base.db_type = TSK_HDB_DBTYPE_IDXONLY_ID;
     text_hdb_info->base.updateable = 0;
     text_hdb_info->base.uses_external_index = 1;
