@@ -20,7 +20,7 @@
  * Contains the code to open and close all supported hash database types.
  */
 
-static uint8_t 
+uint8_t 
 hdb_file_exists(TSK_TCHAR *file_path)
 {
 #ifdef TSK_WIN32
@@ -150,7 +150,7 @@ tsk_hdb_open(TSK_TCHAR *file_path, TSK_HDB_OPEN_ENUM flags)
     assert(NULL != file_path);
     if (NULL == file_path) {
         tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_HDB_INVALID_PARAM); // RJCTODO: COnsider changing this to INVALID_PATH
+        tsk_error_set_errno(TSK_ERR_HDB_INVALID_PARAM); // RJCTODO: COnsider changing this to INVALID_PATH...actually, don't need this there is an ARG
         tsk_error_set_errstr("%s: NULL file path", func_name);
         return NULL;
     }

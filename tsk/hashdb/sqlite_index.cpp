@@ -184,34 +184,34 @@ uint8_t sqlite_hdb_create_db(TSK_TCHAR *db_file_path)
 // Are there prepared statements that are not finalized?
 // Why are the statements prepared on every round? This should be done on open, and finalization should happen on close.
 // This code is not really needed for index building now, but it is still probably worthwhile for add operations.
-uint8_t
-sqlite_v1_begin(TSK_HDB_INFO * hdb_info)
-{
-    TSK_SQLITE_HDB_INFO *sqlite_hdb_info = (TSK_SQLITE_HDB_INFO*)hdb_info;
-	char * insertStmt;
-
-	if (hdb_info->hash_type == TSK_HDB_HTYPE_MD5_ID) {
-		insertStmt = "INSERT INTO hashes (md5, database_offset) VALUES (?, ?)";
-	} else if (hdb_info->hash_type == TSK_HDB_HTYPE_SHA1_ID) {
-		insertStmt = "INSERT INTO hashes (sha1, database_offset) VALUES (?, ?)";
-	} else {
-        return 1;
-    }
-
-	prepare_stmt(insertStmt, &m_stmt, sqlite_hdb_info->db);
-
-	if (begin_transaction(hdb_info)) {
-		return 1;
-	} else {
-        return 0;
-    }
-}
+//uint8_t
+//sqlite_v1_begin(TSK_HDB_INFO * hdb_info)
+//{
+//    TSK_SQLITE_HDB_INFO *sqlite_hdb_info = (TSK_SQLITE_HDB_INFO*)hdb_info;
+//	char * insertStmt;
+//
+//	if (hdb_info->hash_type == TSK_HDB_HTYPE_MD5_ID) {
+//		insertStmt = "INSERT INTO hashes (md5, database_offset) VALUES (?, ?)";
+//	} else if (hdb_info->hash_type == TSK_HDB_HTYPE_SHA1_ID) {
+//		insertStmt = "INSERT INTO hashes (sha1, database_offset) VALUES (?, ?)";
+//	} else {
+//        return 1;
+//    }
+//
+//	prepare_stmt(insertStmt, &m_stmt, sqlite_hdb_info->db);
+//
+//	if (begin_transaction(hdb_info)) {
+//		return 1;
+//	} else {
+//        return 0;
+//    }
+//}
 
 /**
  * This function is a no-op for SQLite hash database. The index is "internal" to the RDBMS.
  * @return 1 on error and 0 on success
  */
-uint8_t sqlite_hdb_make_index(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
+uint8_t sqlite_hdb_make_index(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
 {
     // RJCTODO: Add should not be called error stuff
     return 0;
@@ -277,10 +277,10 @@ sqlite_hdb_add(TSK_HDB_INFO * hdb_info, const char * filename, const char * md5,
  * This function is a no-op for SQLite hash database. The index is "internal" to the RDBMS.
  * @return 1 on error and 0 on success
  */
-uint8_t
-sqlite_v1_addentry_bin(TSK_HDB_INFO * hdb_info, uint8_t* hvalue, int hlen,
-                    TSK_OFF_T offset)
-{
+//uint8_t
+//sqlite_v1_addentry_bin(TSK_HDB_INFO * hdb_info, uint8_t* hvalue, int hlen,
+//                    TSK_OFF_T offset)
+//{
 // RJCTODO: This needs to go into a separate add to hash database function, as opposed to an add to index function
  //   if (attempt(sqlite3_bind_blob(m_stmt, 1, hvalue, hlen, SQLITE_TRANSIENT),
 	//	SQLITE_OK,
@@ -311,16 +311,16 @@ sqlite_v1_addentry_bin(TSK_HDB_INFO * hdb_info, uint8_t* hvalue, int hlen,
  //   }
 
  //   return 0;
-    return 0;
-}
+//    return 0;
+//}
 
 /**
  * This function is a no-op for SQLite hash database. The index is "internal" to the RDBMS.
  * @return 1 on error and 0 on success
  */
-uint8_t
-addentry_text(TSK_HDB_INFO * hdb_info, char* hvalue, TSK_OFF_T offset)
-{
+//uint8_t
+//addentry_text(TSK_HDB_INFO * hdb_info, char* hvalue, TSK_OFF_T offset)
+//{
 // RJCTODO: This needs to go into a separate add to hash database function, as opposed to an add to index function
  //   if (attempt(sqlite3_bind_text(m_stmt, 1, hvalue, strlen(hvalue), SQLITE_TRANSIENT),
 	//	SQLITE_OK,
@@ -351,8 +351,8 @@ addentry_text(TSK_HDB_INFO * hdb_info, char* hvalue, TSK_OFF_T offset)
  //   }
 
  //   return 0;
-    return 0;
-}
+//    return 0;
+//}
 
 /**
  * Add new comment (e.g. the case name)
@@ -402,9 +402,9 @@ sqlite_v1_addfilename(TSK_HDB_INFO * hdb_info, char* value, int64_t id)
  * This function is a no-op for SQLite hash database. The index is "internal" to the RDBMS.
  * @return 1 on error and 0 on success
  */
-uint8_t
-sqlite_v1_finalize(TSK_HDB_INFO * hdb_info)
-{
+//uint8_t
+//sqlite_v1_finalize(TSK_HDB_INFO * hdb_info)
+//{
     // RJCTODO: Remove this after add to hash database function is made
     //if (end_transaction(hdb_info->idx_info)) {
 	//	tsk_error_reset();
@@ -427,8 +427,8 @@ sqlite_v1_finalize(TSK_HDB_INFO * hdb_info)
  //   } else {
  //       return 0;
  //   }
-    return 0;
-}
+//    return 0;
+//}
 
 /**
  * \ingroup hashdblib
@@ -783,48 +783,48 @@ void * sqlite_v1_getAllData(TSK_HDB_INFO * hdb_info, unsigned long hashId)
  * @param hdb_info Open hash database (with index)
  * @return -1 on error, 0 on success.
  */
-int8_t
-sqlite_v1_get_properties(TSK_HDB_INFO * hdb_info)
-{
-    int8_t ret = 0;
-	sqlite3_stmt* stmt = NULL;
-    char selectStmt[1024];
-
-    tsk_take_lock(&hdb_info->lock);
-    
-    snprintf(selectStmt, 1024, "SELECT value from db_properties where name='%s'", IDX_HASHSET_UPDATEABLE);
-    prepare_stmt(selectStmt, &stmt, hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
-
-	if (sqlite3_step(stmt) == SQLITE_ROW) {
-		const char* value = (const char *)sqlite3_column_text(stmt, 0);
-
-        if (value == NULL) {
-            tsk_error_set_errstr2("sqlite_v1_get_properties: null value");
-            ret = -1;
-        } else {
-            // Set the updateable flag
-            if (strcmp(value, "true") == 0) {
-                hdb_info->idx_info->updateable = 1;
-            }
-        }
-	} else {
-        tsk_error_set_errstr2("sqlite_v1_get_properties");
-        ret = -1;
-    }
-
-	sqlite3_reset(stmt);
-    
-    if (stmt) {
-        finalize_stmt(stmt);
-    }
-
-
-    ///@todo load db name property as well?
-
-    tsk_release_lock(&hdb_info->lock);
-
-	return ret;
-}
+//int8_t
+//sqlite_v1_get_properties(TSK_HDB_INFO * hdb_info)
+//{
+//    int8_t ret = 0;
+//	sqlite3_stmt* stmt = NULL;
+//    char selectStmt[1024];
+//
+//    tsk_take_lock(&hdb_info->lock);
+//    
+//    snprintf(selectStmt, 1024, "SELECT value from db_properties where name='%s'", IDX_HASHSET_UPDATEABLE);
+//    prepare_stmt(selectStmt, &stmt, hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
+//
+//	if (sqlite3_step(stmt) == SQLITE_ROW) {
+//		const char* value = (const char *)sqlite3_column_text(stmt, 0);
+//
+//        if (value == NULL) {
+//            tsk_error_set_errstr2("sqlite_v1_get_properties: null value");
+//            ret = -1;
+//        } else {
+//            // Set the updateable flag
+//            if (strcmp(value, "true") == 0) {
+//                hdb_info->idx_info->updateable = 1;
+//            }
+//        }
+//	} else {
+//        tsk_error_set_errstr2("sqlite_v1_get_properties");
+//        ret = -1;
+//    }
+//
+//	sqlite3_reset(stmt);
+//    
+//    if (stmt) {
+//        finalize_stmt(stmt);
+//    }
+//
+//
+//    ///@todo load db name property as well?
+//
+//    tsk_release_lock(&hdb_info->lock);
+//
+//	return ret;
+//}
 
 /*
  * Close the sqlite index handle
@@ -845,6 +845,8 @@ sqlite_hdb_close(TSK_HDB_INFO* hdb_info)
     if (db_info->db) {
         sqlite3_close(db_info->db);
     }
+
+    // RJCTODO: Cleanup the base stuff...
 }
 
 /**
@@ -873,21 +875,6 @@ sqlite3_test(FILE * hFile)
     }
 
     return 0;
-}
-
-// RJCTODO: Comment
-uint8_t
-sqlite_hdb_set_index_params(TSK_HDB_INFO *hdb_info, TSK_HDB_DBTYPE_ENUM hash_type)
-{
-    // The index is internal to the database, there is nothing to do.
-    return 0; 
-}
-
-// RJCTODO: Comment
-uint8_t sqlite_hdb_make_index(TSK_HDB_INFO *hdb_info, TSK_HDB_DBTYPE_ENUM hash_type)
-{
-    // The index is internal to the database, there is nothing to do.
-    return 0; 
 }
 
 // RJCTODO: Comment

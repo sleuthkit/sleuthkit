@@ -476,34 +476,20 @@ hk_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
 TSK_HDB_INFO *hk_open(FILE *hDb, const TSK_TCHAR *db_path)
 {
     TSK_TEXT_HDB_INFO *text_hdb_info = NULL;
-    size_t flen = 0;
 
     assert(NULL != hDb);
     assert(NULL != db_path);
     
-    if ((text_hdb_info = (TSK_TEXT_HDB_INFO*)tsk_malloc(sizeof(TSK_TEXT_HDB_INFO))) == NULL) {
+    text_hdb_info = text_hdb_open(hDb, db_path);
+    if (NULL == text_hdb_info) {
         return NULL;
     }
 
-    flen = TSTRLEN(db_path) + 8; // RJCTODO: Check this change from 32 (change was in DF code) with Brian; was change in older code? What is the point, anyway?
-    text_hdb_info->base.db_fname = (TSK_TCHAR*)tsk_malloc(flen * sizeof(TSK_TCHAR));
-    if (NULL == text_hdb_info->base.db_fname) {
-        return NULL;
-    }
-
-    TSTRNCPY(text_hdb_info->base.db_fname, db_path, flen);
     text_hdb_info->base.db_type = TSK_HDB_DBTYPE_HK_ID;
-    text_hdb_info->base.updateable = 0;
-    text_hdb_info->base.uses_external_index = 1;
-    text_hdb_info->base.hash_type = TSK_HDB_HTYPE_INVALID_ID; // This will be set when the index is created/opened. 
-    text_hdb_info->base.hash_len = 0; // This will be set when the index is created/opened.
-    tsk_init_lock(&text_hdb_info->base.lock);
     text_hdb_info->base.makeindex = hk_makeindex;
+    text_hdb_info->getentry = hk_getentry;
     text_hdb_info->base.add_comment = NULL; // RJCTODO: Consider making no-ops for these or moving them
     text_hdb_info->base.add_filename = NULL; // RJCTODO: Consider making no-ops for these or moving them
-
-    text_hdb_info->hDb = hDb;
-    text_hdb_info->getentry = hk_getentry;
 
     // RJCTODO: Figure out when to do this
     //hk_name((TSK_HDB_INFO*)hdb_info);

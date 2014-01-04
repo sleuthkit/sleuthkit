@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
+ * Copyright (c) 2003-2014 Brian Carrier.  All rights reserved
  */
 
 /**
@@ -116,26 +116,26 @@ extern "C" {
         const char *name,
         void *);
 
-    typedef struct TSK_HDB_EXTERNAL_IDX_INFO {
-        char db_name[TSK_HDB_NAME_MAXLEN];          ///< Name of the database // RJCTODO: This is probably only needed for an indexed db
-        uint8_t(*open)(TSK_HDB_INFO *, uint8_t);
-        uint8_t(*initialize)(TSK_HDB_INFO *, TSK_TCHAR *);
-        uint8_t(*addentry)(TSK_HDB_INFO *, char *, TSK_OFF_T);
-        uint8_t(*addentry_bin)(TSK_HDB_INFO *, unsigned char *, int, TSK_OFF_T);
-        uint8_t(*finalize)(TSK_HDB_INFO *);
-        void(*close)(TSK_HDB_INFO *);
-    } TSK_HDB_EXTERNAL_IDX_INFO;
+    //typedef struct TSK_HDB_EXTERNAL_IDX_INFO {
+    //    char db_name[TSK_HDB_NAME_MAXLEN];          ///< Name of the database // RJCTODO: This is probably only needed for an indexed db
+    //    uint8_t(*open)(TSK_HDB_INFO *, uint8_t);
+    //    uint8_t(*initialize)(TSK_HDB_INFO *, TSK_TCHAR *);
+    //    uint8_t(*addentry)(TSK_HDB_INFO *, char *, TSK_OFF_T);
+    //    uint8_t(*addentry_bin)(TSK_HDB_INFO *, unsigned char *, int, TSK_OFF_T);
+    //    uint8_t(*finalize)(TSK_HDB_INFO *);
+    //    void(*close)(TSK_HDB_INFO *);
+    //} TSK_HDB_EXTERNAL_IDX_INFO;
 
-    typedef struct TSK_HDB_BINSRCH_IDX_INFO {
-        TSK_HDB_EXTERNAL_IDX_INFO base;
-        FILE *hIdx;             ///< File handle to index (only open during lookups)
-        FILE *hIdxTmp;          ///< File handle to temp (unsorted) index file (only open during index creation)
-        TSK_TCHAR *uns_fname;   ///< Name of unsorted index file
-        TSK_OFF_T idx_size;     ///< Size of index file
-        uint16_t idx_off;       ///< Offset in index file to first index entry
-        size_t idx_llen;        ///< Length of each line in index
-        char *idx_lbuf;         ///< Buffer to hold a line from the index  (r/w shared - lock) 
-    } TSK_HDB_BINSRCH_IDX_INFO;    
+    //typedef struct TSK_HDB_BINSRCH_IDX_INFO {
+    //    TSK_HDB_EXTERNAL_IDX_INFO base;
+    //    FILE *hIdx;             ///< File handle to index (only open during lookups)
+    //    FILE *hIdxTmp;          ///< File handle to temp (unsorted) index file (only open during index creation)
+    //    TSK_TCHAR *uns_fname;   ///< Name of unsorted index file
+    //    TSK_OFF_T idx_size;     ///< Size of index file
+    //    uint16_t idx_off;       ///< Offset in index file to first index entry
+    //    size_t idx_llen;        ///< Length of each line in index
+    //    char *idx_lbuf;         ///< Buffer to hold a line from the index  (r/w shared - lock) 
+    //} TSK_HDB_BINSRCH_IDX_INFO;    
 
     /**
      * Holds information about an open hash database. Created by 
@@ -143,13 +143,13 @@ extern "C" {
      */
     struct TSK_HDB_INFO {
         TSK_TCHAR *db_fname;          ///< Database file path, may be NULL for index only database
-        TSK_TCHAR *idx_fname;         ///< Name of index file, may be NULL for database without external index
         TSK_HDB_DBTYPE_ENUM db_type;  ///< Type of database
         uint8_t updateable;           ///< Allow new entries to be added? // RJCTODO: Could be done by dbtype, as is also true for 
-        uint8_t uses_external_index;           
-        TSK_HDB_HTYPE_ENUM hash_type; ///< Type of hash used in index // RJCTODO: Not needed for SQLITE?
-        uint16_t hash_len;            ///< Length of hash // RJCTODO: Not needed for SQLITE?
+        uint8_t uses_external_indexes;           
+        //TSK_HDB_HTYPE_ENUM hash_type; ///< Type of hash used in index // RJCTODO: Not needed for SQLITE?
+        //uint16_t hash_len;            ///< Length of hash // RJCTODO: Not needed for SQLITE?
         tsk_lock_t lock;              ///< Lock for lazy loading and idx_lbuf
+        uint8_t(*has_index)(TSK_HDB_INFO *, TSK_HDB_HTYPE_ENUM);
         uint8_t(*makeindex)(TSK_HDB_INFO *, TSK_TCHAR *);     ///< \internal Database-specific function to make index 
         uint8_t(*set_index_params)(TSK_HDB_INFO *hdb_info, TSK_HDB_DBTYPE_ENUM htype);
         int8_t(*lookup_str)(TSK_HDB_INFO *, const char *, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
@@ -161,9 +161,20 @@ extern "C" {
 
     typedef struct TSK_TEXT_HDB_INFO {
         TSK_HDB_INFO base;
+        char db_name[TSK_HDB_NAME_MAXLEN];          ///< Name of the database // RJCTODO: This is probably only needed for an indexed db
         FILE *hDb;              ///< File handle to database (always open)
         uint8_t(*getentry) (TSK_HDB_INFO *, const char *, TSK_OFF_T, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);    ///< \internal Database-specific function to find entry at a given offset // RJCTODO: Text DB thing
-        TSK_HDB_EXTERNAL_IDX_INFO *idx;
+        //TSK_HDB_EXTERNAL_IDX_INFO *idx;
+        TSK_HDB_HTYPE_ENUM hash_type; ///< Type of hash used in index // RJCTODO: Not needed for SQLITE?
+        uint16_t hash_len;            ///< Length of hash // RJCTODO: Not needed for SQLITE?
+        TSK_TCHAR *idx_fname;         ///< Name of index file, may be NULL for database without external index
+        FILE *hIdx;             ///< File handle to index (only open during lookups)
+        FILE *hIdxTmp;          ///< File handle to temp (unsorted) index file (only open during index creation)
+        TSK_TCHAR *uns_fname;   ///< Name of unsorted index file
+        TSK_OFF_T idx_size;     ///< Size of index file
+        uint16_t idx_off;       ///< Offset in index file to first index entry
+        size_t idx_llen;        ///< Length of each line in index
+        char *idx_lbuf;         ///< Buffer to hold a line from the index  (r/w shared - lock) 
     } TSK_TEXT_HDB_INFO;    
 
     typedef struct TSK_SQLITE_HDB_INFO {
@@ -188,7 +199,8 @@ extern "C" {
 
     extern void tsk_hdb_close(TSK_HDB_INFO * hdb_info);
 
-    extern uint8_t tsk_hdb_hasindex(TSK_HDB_INFO *, uint8_t htype);
+    extern uint8_t tsk_hdb_hasindex(TSK_HDB_INFO *, uint8_t htype); // RJCTODO: to go away
+    extern uint8_t tsk_text_hdb_has_index(TSK_HDB_INFO * hdb_info, TSK_HDB_HTYPE_ENUM htype);
 
     extern uint8_t tsk_set_index_params(TSK_HDB_INFO *hdb_info, TSK_HDB_DBTYPE_ENUM htype);
     
@@ -200,7 +212,7 @@ extern "C" {
 
     extern uint8_t tsk_hdb_regenerate_index(TSK_HDB_INFO *, TSK_TCHAR *, uint8_t);
 
-    extern int8_t tsk_hdb_add_str(TSK_HDB_INFO * hdb_info, 
+    extern int8_t tsk_hdb_add_hash(TSK_HDB_INFO * hdb_info, 
                         const char * filename, 
                         const char * md5, 
                         const char * sha1, 

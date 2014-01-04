@@ -379,5 +379,8 @@
       <Filter>img</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tsk\fs\tsk_yaffs.h" />
+    <ClInclude Include="..\..\tsk\hashdb\sqlite_index.h">
+      <Filter>hash</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

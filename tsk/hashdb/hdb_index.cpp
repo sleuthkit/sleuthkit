@@ -737,44 +737,6 @@ tsk_hdb_makeindex(TSK_HDB_INFO * a_hdb_info, TSK_TCHAR * a_type)
     return a_hdb_info->makeindex(a_hdb_info, a_type);
 }
 
-// RJCTODO: Remove this
-///**
-// * \ingroup hashdblib
-// * Create a new hash database that can be written to.
-// * @param db_file Filename.
-// * @returns NULL on error
-// */
-//TSK_HDB_INFO *
-//tsk_hdb_newdb(TSK_TCHAR * db_file)
-//{
-//    // @@@ THis seems like a hack. We should probably pass in a "NEW/CREATE" flag into open to signal this use of the method.
-//    // though, I'm not sure what hdb_open is really doing of value in this case....
-//    TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_IDXONLY;
-//    TSK_HDB_INFO * hdb_info = tsk_hdb_open(db_file, flags);
-//    
-//    if (hdb_info != NULL) {
-//        TSK_TCHAR * dbtype = NULL; //ignored for IDX only
-//        // @@@ This currently goes to idxonly_initidx, which makes the file.
-//        if (hdb_info->makeindex(hdb_info, dbtype) != 0) {
-//            tsk_hdb_close(hdb_info);
-//            hdb_info = NULL;
-//            tsk_error_reset();
-//            tsk_error_set_errno(TSK_ERR_HDB_CREATE);
-//            tsk_error_set_errstr("tsk_hdb_new: making new index failed");
-//        }
-//        else {
-//            if (tsk_hdb_idxfinalize(hdb_info) != 0) {
-//                tsk_hdb_close(hdb_info);
-//                hdb_info = NULL;
-//                tsk_error_reset();
-//                tsk_error_set_errno(TSK_ERR_HDB_WRITE);
-//                tsk_error_set_errstr("tsk_hdb_new: finalizing new index failed");
-//            }
-//        }    
-//    }
-//    return hdb_info;
-//}
-//
 /**
  * \ingroup hashdblib
  * Add a binary hash entry to the index
@@ -787,7 +749,7 @@ tsk_hdb_makeindex(TSK_HDB_INFO * a_hdb_info, TSK_TCHAR * a_type)
  * @return 1 on error, 0 on success, -1 if not updateable
  */
 int8_t
-tsk_hdb_add_str(TSK_HDB_INFO * hdb_info, 
+tsk_hdb_add_hash(TSK_HDB_INFO * hdb_info, 
                 const char * filename, 
                 const char * md5, 
                 const char * sha1, 

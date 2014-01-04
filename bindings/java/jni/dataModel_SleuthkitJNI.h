@@ -96,11 +96,11 @@ JNIEXPORT jboolean JNICALL
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    hashDbIsReindexableNat
+ * Method:    hashDbUsesExternalIndexesNat
  * Signature: 
  */
 JNIEXPORT jboolean JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbIsReindexableNat(JNIEnv * env,
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbUsesExternalIndexesNat(JNIEnv * env,
     jclass obj, jint dbHandle);
 
 /*
@@ -110,15 +110,6 @@ JNIEXPORT jboolean JNICALL
  */
 JNIEXPORT jstring JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbPathNat(JNIEnv * env,
-    jclass obj, jint dbHandle);
-
-/*
- * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    hashDbIndexPathNat
- * Signature: 
- */
-JNIEXPORT jstring JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbIndexPathNat(JNIEnv * env,
     jclass obj, jint dbHandle);
 
 /*
@@ -160,15 +151,6 @@ JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLooku
  */
 JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookupVerbose
   (JNIEnv *, jclass, jstring, jint);
-
-/*
- * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    getIndexSizeNat
- * Signature: (Ljava/lang/String;)I
- */
-//@deprecated
-//JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getIndexSizeNat
-//  (JNIEnv *, jclass, jstring);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI

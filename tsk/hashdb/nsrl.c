@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
+ * Copyright (c) 2003-2014 Brian Carrier.  All rights reserved
  *
  *
  * This software is distributed under the Common Public License 1.0
@@ -367,9 +367,6 @@ nsrl_parse_md5(char *str, char **md5, char **name, int ver)
     return 1;
 }
 
-
-
-
 /**
  * Process the database to create a sorted index of it. Consecutive
  * entries with the same hash value are not added to the index, but
@@ -381,9 +378,9 @@ nsrl_parse_md5(char *str, char **md5, char **name, int ver)
  * @return 1 on error and 0 on success.
  */
 uint8_t
-nsrl_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
+nsrl_makeindex(TSK_HDB_INFO * hdb_info_base, TSK_TCHAR * dbtype)
 {
-    TSK_TEXT_HDB_INFO *text_hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info; 
+    TSK_TEXT_HDB_INFO *hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info_base;
     size_t i, len;
     char buf[TSK_HDB_MAXLEN];
     char *hash = NULL, phash[TSK_HDB_HTYPE_SHA1_LEN + 1];
@@ -391,7 +388,7 @@ nsrl_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
     int ver = 0;
     int db_cnt = 0, idx_cnt = 0, ig_cnt = 0;
 
-    if (tsk_hdb_idxinitialize(hdb_info, dbtype)) {
+    if (text_hdb_idx_init(hdb_info_base, dbtype)) {
         tsk_error_set_errstr2( "nsrl_makeindex");
         return 1;
     }
@@ -399,14 +396,14 @@ nsrl_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
     /* Status */
     if (tsk_verbose)
         TFPRINTF(stderr, _TSK_T("Extracting Data from Database (%s)\n"),
-                 hdb_info->db_fname);
+                 hdb_info_base->db_fname);
 
     /* Allocate a buffer for the previous hash value */
     memset(phash, '0', TSK_HDB_HTYPE_SHA1_LEN + 1);
 
     /* read the file */
-    fseek(text_hdb_info->hDb, 0, SEEK_SET);
-    for (i = 0; NULL != fgets(buf, TSK_HDB_MAXLEN, text_hdb_info->hDb);
+    fseek(hdb_info->hDb, 0, SEEK_SET);
+    for (i = 0; NULL != fgets(buf, TSK_HDB_MAXLEN, hdb_info->hDb);
          offset += len, i++) {
 
         len = strlen(buf);
@@ -442,7 +439,7 @@ nsrl_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
         }
 
         /* Add the entry to the index */
-        if (tsk_hdb_idxaddentry(hdb_info, hash, offset)) {
+        if (text_hdb_idx_add_entry(hdb_info_base, hash, offset)) {
             tsk_error_set_errstr2( "nsrl_makeindex");
             return 1;
         }
@@ -464,7 +461,7 @@ nsrl_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
         }
 
         /* Close and sort the index */
-        if (tsk_hdb_idxfinalize(hdb_info)) {
+        if (text_hdb_idx_finalize(hdb_info_base)) {
             tsk_error_set_errstr2( "nsrl_makeindex");
             return 1;
         }
@@ -497,14 +494,14 @@ nsrl_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
  * @return 1 on error and 0 on success
  */
 uint8_t
-nsrl_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
+nsrl_getentry(TSK_HDB_INFO * hdb_info_base, const char *hash, TSK_OFF_T offset,
               TSK_HDB_FLAG_ENUM flags,
               TSK_HDB_LOOKUP_FN action, void *cb_ptr)
 {
+    TSK_TEXT_HDB_INFO *hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info_base; 
     char buf[TSK_HDB_MAXLEN], *name, *cur_hash, pname[TSK_HDB_MAXLEN];
     int found = 0;
     int ver;
-    TSK_TEXT_HDB_INFO *text_db_info = (TSK_TEXT_HDB_INFO*)hdb_info; 
 
     if (tsk_verbose)
         fprintf(stderr,
@@ -531,8 +528,8 @@ nsrl_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
     }
 
     /* read the header line ... -- this should be done only once... */
-    fseeko(text_db_info->hDb, 0, SEEK_SET);
-    if (NULL == fgets(buf, TSK_HDB_MAXLEN, text_db_info->hDb)) {
+    fseeko(hdb_info->hDb, 0, SEEK_SET);
+    if (NULL == fgets(buf, TSK_HDB_MAXLEN, hdb_info->hDb)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_READDB);
         tsk_error_set_errstr(
@@ -551,7 +548,7 @@ nsrl_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
     while (1) {
         size_t len;
 
-        if (0 != fseeko(text_db_info->hDb, offset, SEEK_SET)) {
+        if (0 != fseeko(hdb_info->hDb, offset, SEEK_SET)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_READDB);
             tsk_error_set_errstr(
@@ -560,8 +557,8 @@ nsrl_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
             return 1;
         }
 
-        if (NULL == fgets(buf, TSK_HDB_MAXLEN, text_db_info->hDb)) {
-            if (feof(text_db_info->hDb))
+        if (NULL == fgets(buf, TSK_HDB_MAXLEN, hdb_info->hDb)) {
+            if (feof(hdb_info->hDb))
                 break;
 
             tsk_error_reset();
@@ -611,7 +608,7 @@ nsrl_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
         /* Check if this is the same name as the previous entry */
         if (strcmp(name, pname) != 0) {
             int retval;
-            retval = action(hdb_info, hash, name, cb_ptr);
+            retval = action(hdb_info_base, hash, name, cb_ptr);
             if (retval == TSK_WALK_STOP)
                 return 0;
             else if (retval == TSK_WALK_ERROR)
@@ -640,36 +637,23 @@ nsrl_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
 TSK_HDB_INFO *nsrl_open(FILE *hDb, const TSK_TCHAR *db_path)
 {
     TSK_TEXT_HDB_INFO *text_hdb_info = NULL;
-    size_t flen = 0;
 
     assert(NULL != hDb);
     assert(NULL != db_path);
     
-    if ((text_hdb_info = (TSK_TEXT_HDB_INFO*)tsk_malloc(sizeof(TSK_TEXT_HDB_INFO))) == NULL) {
+    text_hdb_info = text_hdb_open(hDb, db_path);
+    if (NULL == text_hdb_info) {
         return NULL;
     }
 
-    flen = TSTRLEN(db_path) + 8; // RJCTODO: Check this change from 32 (change was in DF code) with Brian; was change in older code? What is the point, anyway?
-    text_hdb_info->base.db_fname = (TSK_TCHAR*)tsk_malloc(flen * sizeof(TSK_TCHAR));
-    if (NULL == text_hdb_info->base.db_fname) {
-        return NULL;
-    }
-
-    TSTRNCPY(text_hdb_info->base.db_fname, db_path, flen);
     text_hdb_info->base.db_type = TSK_HDB_DBTYPE_NSRL_ID;
-    text_hdb_info->base.updateable = 0;
-    text_hdb_info->base.uses_external_index = 1;
-    text_hdb_info->base.hash_type = TSK_HDB_HTYPE_INVALID_ID; // This will be set when the index is created/opened. 
-    text_hdb_info->base.hash_len = 0; // This will be set when the index is created/opened.
-    tsk_init_lock(&text_hdb_info->base.lock);
     text_hdb_info->base.makeindex = nsrl_makeindex;
+    text_hdb_info->getentry = nsrl_getentry;
     text_hdb_info->base.add_comment = NULL; // RJCTODO: Consider making no-ops for these or moving them
     text_hdb_info->base.add_filename = NULL; // RJCTODO: Consider making no-ops for these or moving them
 
-    text_hdb_info->hDb = hDb;
-    text_hdb_info->getentry = nsrl_getentry;
-
     // RJCTODO: Figure out when to do this
+    // Looks like there can be a base open, with call out to set name and db type param 
     //nsrl_name((TSK_HDB_INFO*)text_hdb_info);
 
     return (TSK_HDB_INFO*)text_hdb_info;

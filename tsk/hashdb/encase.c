@@ -44,21 +44,20 @@ encase_test(FILE * hFile)
  * @param hdb_info the hash database object
  */
 void
-encase_name(TSK_HDB_INFO * hdb_info)
+encase_name(TSK_HDB_INFO * hdb_info_base)
 {
-    TSK_TEXT_HDB_INFO *text_hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info;
-    TSK_HDB_EXTERNAL_IDX_INFO *idx_info = (TSK_HDB_EXTERNAL_IDX_INFO*)text_hdb_info->idx;
-    FILE * hFile = text_hdb_info->hDb;
+    TSK_TEXT_HDB_INFO *hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info_base;
+    FILE * hFile = hdb_info->hDb;
     wchar_t buf[40];
     UTF16 *utf16;
     UTF8 *utf8;
     size_t ilen;
-    memset(idx_info->db_name, '\0', TSK_HDB_NAME_MAXLEN);
+    memset(hdb_info->db_name, '\0', TSK_HDB_NAME_MAXLEN);
     if(!hFile) {
         if (tsk_verbose)
             fprintf(stderr,
                 "Error getting name from Encase hash db; using file name instead");
-        tsk_hdb_name_from_path(hdb_info);
+        tsk_hdb_name_from_path(hdb_info_base);
         return;
     }
 
@@ -69,14 +68,14 @@ encase_name(TSK_HDB_INFO * hdb_info)
         if (tsk_verbose)
             fprintf(stderr,
                 "Error getting name from Encase hash db; using file name instead");
-        tsk_hdb_name_from_path(hdb_info);
+        tsk_hdb_name_from_path(hdb_info_base);
         return;
     }
 
     // do some arithmetic on type sizes to be platform independent
     ilen = wcslen(buf) * (sizeof(wchar_t) / sizeof(UTF16));
 
-    utf8 = (UTF8 *) idx_info->db_name;
+    utf8 = (UTF8 *) hdb_info->db_name;
     utf16 = (UTF16 *) buf;
 
     tsk_UTF16toUTF8(TSK_LIT_ENDIAN,
@@ -258,37 +257,23 @@ encase_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
 TSK_HDB_INFO *encase_open(FILE *hDb, const TSK_TCHAR *db_path)
 {
     TSK_TEXT_HDB_INFO *text_hdb_info = NULL;
-    size_t flen = 0;
 
     assert(NULL != hDb);
     assert(NULL != db_path);
     
-    if ((text_hdb_info = (TSK_TEXT_HDB_INFO*)tsk_malloc(sizeof(TSK_TEXT_HDB_INFO))) == NULL) {
+    text_hdb_info = text_hdb_open(hDb, db_path);
+    if (NULL == text_hdb_info) {
         return NULL;
     }
 
-    flen = TSTRLEN(db_path) + 8; // RJCTODO: Check this change from 32 (change was in DF code) with Brian; was change in older code? What is the point, anyway?
-    text_hdb_info->base.db_fname = (TSK_TCHAR*)tsk_malloc(flen * sizeof(TSK_TCHAR));
-    if (NULL == text_hdb_info->base.db_fname) {
-        return NULL;
-    }
-
-    TSTRNCPY(text_hdb_info->base.db_fname, db_path, flen);
     text_hdb_info->base.db_type = TSK_HDB_DBTYPE_ENCASE_ID;
-    text_hdb_info->base.updateable = 0;
-    text_hdb_info->base.uses_external_index = 1;
-    text_hdb_info->base.hash_type = TSK_HDB_HTYPE_INVALID_ID; // This will be set when the index is created/opened. 
-    text_hdb_info->base.hash_len = 0; // This will be set when the index is created/opened.
-    tsk_init_lock(&text_hdb_info->base.lock);
     text_hdb_info->base.makeindex = encase_makeindex;
+    text_hdb_info->getentry = encase_getentry;
     text_hdb_info->base.add_comment = NULL; // RJCTODO: Consider making no-ops for these or moving them
     text_hdb_info->base.add_filename = NULL; // RJCTODO: Consider making no-ops for these or moving them
 
-    text_hdb_info->hDb = hDb;
-    text_hdb_info->getentry = encase_getentry;
-
     // RJCTODO: Figure out when to do this
-    //md5sum_name((TSK_HDB_INFO*)hdb_info);
+    //encase_name((TSK_HDB_INFO*)hdb_info);
 
     return (TSK_HDB_INFO*)text_hdb_info;    
 }
