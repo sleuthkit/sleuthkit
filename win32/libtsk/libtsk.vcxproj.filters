@@ -253,25 +253,10 @@
       <Filter>fs</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\fs\yaffs.cpp" />
-    <ClCompile Include="..\..\tsk\hashdb\tm_lookup.cpp">
-      <Filter>hash</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\sqlite_index.cpp">
-      <Filter>hash</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\binsrch_index.c">
-      <Filter>hash</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\tsk\hashdb\hashkeeper.c">
       <Filter>hash</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\hashdb\encase.c">
-      <Filter>hash</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\hdb_index.cpp">
-      <Filter>hash</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\hdb_open.cpp">
       <Filter>hash</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\hashdb\idxonly.c">
@@ -283,7 +268,13 @@
     <ClCompile Include="..\..\tsk\hashdb\nsrl.c">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\text_db.c">
+    <ClCompile Include="..\..\tsk\hashdb\sqlite.cpp">
+      <Filter>hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\hashdb\text_fmt_base.c">
+      <Filter>hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\hashdb\tsk_hashdb.c">
       <Filter>hash</Filter>
     </ClCompile>
   </ItemGroup>
@@ -379,7 +370,7 @@
       <Filter>img</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tsk\fs\tsk_yaffs.h" />
-    <ClInclude Include="..\..\tsk\hashdb\sqlite_index.h">
+    <ClInclude Include="..\..\tsk\hashdb\lookup_result.h">
       <Filter>hash</Filter>
     </ClInclude>
   </ItemGroup>

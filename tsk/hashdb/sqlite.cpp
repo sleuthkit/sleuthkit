@@ -10,7 +10,7 @@
  */
 
 #include "tsk_hashdb_i.h"
-#include "sqlite_index.h"
+#include "lookup_result.h"
 #include <assert.h>
 
 // RJCTODO: Name this file consistently...
@@ -25,7 +25,6 @@ static bool need_SQL_index = false; // RJCTODO: Get rid of this
 static const char hex[] = "0123456789abcdef";
 uint8_t sqlite_v1_addentry_bin(TSK_HDB_INFO * hdb_info, uint8_t* hvalue, int hlen, TSK_OFF_T offset);
 uint8_t addentry_text(TSK_HDB_INFO * hdb_info, char* hvalue, TSK_OFF_T offset);
-int8_t lookup_text(TSK_HDB_INFO * hdb_info, const char* hvalue, TSK_HDB_FLAG_ENUM flags, TSK_HDB_LOOKUP_FN action, void *ptr);
 
 static int attempt(int resultCode, int expectedResultCode,
 		const char *errfmt, sqlite3 * sqlite)
@@ -98,29 +97,6 @@ static uint8_t end_transaction(TSK_HDB_INFO *hdb_info) {
 	return attempt_exec_nocallback("COMMIT", "Error committing transaction %s\n", sqlite_hdb_info->db);
 }
 
-sqlite3 *sqlite_hdb_open_db(TSK_TCHAR *db_file_path)
-{
-    sqlite3 *db = NULL;
-    int opened = 1;
-#ifdef TSK_WIN32
-    opened = attempt(sqlite3_open16(db_file_path, &db), SQLITE_OK, "Can't open hash database: %s\n", db);
-#else
-    opened = attempt(sqlite3_open(db_file_path, &db), SQLITE_OK, "Can't open hash database: %s\n", db);
-#endif
-    if (1 != opened) {
-	    sqlite3_extended_result_codes(db, 1);
-		attempt_exec_nocallback("PRAGMA synchronous = OFF;", "Error setting PRAGMA synchronous: %s\n", db);
-		attempt_exec_nocallback("PRAGMA encoding = \"UTF-8\";", "Error setting PRAGMA encoding UTF-8: %s\n", db);
-		attempt_exec_nocallback("PRAGMA read_uncommitted = True;", "Error setting PRAGMA read_uncommitted: %s\n", db);
-		attempt_exec_nocallback("PRAGMA page_size = 4096;", "Error setting PRAGMA page_size: %s\n", db);
-    }
-    else {
-        sqlite3_close(db);
-        db = NULL;
-    }
-    return db;
-}
-
 // RJCTODO: Comment
 uint8_t sqlite_hdb_create_db(TSK_TCHAR *db_file_path)
 {
@@ -173,39 +149,95 @@ uint8_t sqlite_hdb_create_db(TSK_TCHAR *db_file_path)
 	return 0;
 }
 
-/** Init prepared statements. Call before adding to the database. Call finalize() when done.
+sqlite3 *sqlite_hdb_open_db(TSK_TCHAR *db_file_path)
+{
+    sqlite3 *db = NULL;
+    int opened = 1;
+#ifdef TSK_WIN32
+    opened = attempt(sqlite3_open16(db_file_path, &db), SQLITE_OK, "Can't open hash database: %s\n", db);
+#else
+    opened = attempt(sqlite3_open(db_file_path, &db), SQLITE_OK, "Can't open hash database: %s\n", db);
+#endif
+    if (1 != opened) {
+	    sqlite3_extended_result_codes(db, 1);
+		attempt_exec_nocallback("PRAGMA synchronous = OFF;", "Error setting PRAGMA synchronous: %s\n", db);
+		attempt_exec_nocallback("PRAGMA encoding = \"UTF-8\";", "Error setting PRAGMA encoding UTF-8: %s\n", db);
+		attempt_exec_nocallback("PRAGMA read_uncommitted = True;", "Error setting PRAGMA read_uncommitted: %s\n", db);
+		attempt_exec_nocallback("PRAGMA page_size = 4096;", "Error setting PRAGMA page_size: %s\n", db);
+    }
+    else {
+        sqlite3_close(db);
+        db = NULL;
+    }
+    return db;
+}
+
+/**
+ * Test the file to see if it is an sqlite database (== index only)
  *
- * @param hdb_info Hash database state structure
+ * @param hFile File handle to hash database
  *
- * @return 1 on error and 0 on success
- *
+ * @return 1 if sqlite and 0 if not
  */
-// RJCTODO: Is this the source of the problem with closing the database on finalize() in Autopsy? 
-// Are there prepared statements that are not finalized?
-// Why are the statements prepared on every round? This should be done on open, and finalization should happen on close.
-// This code is not really needed for index building now, but it is still probably worthwhile for add operations.
-//uint8_t
-//sqlite_v1_begin(TSK_HDB_INFO * hdb_info)
-//{
-//    TSK_SQLITE_HDB_INFO *sqlite_hdb_info = (TSK_SQLITE_HDB_INFO*)hdb_info;
-//	char * insertStmt;
-//
-//	if (hdb_info->hash_type == TSK_HDB_HTYPE_MD5_ID) {
-//		insertStmt = "INSERT INTO hashes (md5, database_offset) VALUES (?, ?)";
-//	} else if (hdb_info->hash_type == TSK_HDB_HTYPE_SHA1_ID) {
-//		insertStmt = "INSERT INTO hashes (sha1, database_offset) VALUES (?, ?)";
-//	} else {
-//        return 1;
-//    }
-//
-//	prepare_stmt(insertStmt, &m_stmt, sqlite_hdb_info->db);
-//
-//	if (begin_transaction(hdb_info)) {
-//		return 1;
-//	} else {
-//        return 0;
-//    }
-//}
+uint8_t
+sqlite3_test(FILE * hFile)
+{
+    const int header_size = 16;
+    char header[header_size];
+
+    if (hFile) {
+        if (1 != fread(header, header_size, 1, hFile)) {
+            ///@todo should this actually be an error?
+            return 0;
+        }
+        else if (strncmp(header,
+                IDX_SQLITE_V1_HEADER,
+                strlen(IDX_SQLITE_V1_HEADER)) == 0) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+// RJCTODO: Comment
+TSK_HDB_INFO *sqlite_hdb_open(TSK_TCHAR *db_path)
+{
+    TSK_SQLITE_HDB_INFO *sqlite_hdb_info = NULL;
+    size_t flen = 0;
+
+    assert(NULL != db_path);
+
+    if ((sqlite_hdb_info = (TSK_SQLITE_HDB_INFO*)tsk_malloc(sizeof(TSK_SQLITE_HDB_INFO))) == NULL) {
+        return NULL;
+    }
+
+    flen = TSTRLEN(db_path) + 8; // RJCTODO: Check this change from 32 (change was in DF code) with Brian; was change in older code? What is the point, anyway?
+    sqlite_hdb_info->base.db_fname = (TSK_TCHAR*)tsk_malloc(flen * sizeof(TSK_TCHAR));
+    if (NULL == sqlite_hdb_info->base.db_fname) {
+        return NULL;
+    }
+
+    TSTRNCPY(sqlite_hdb_info->base.db_fname, db_path, flen);
+    sqlite_hdb_info->base.db_type = TSK_HDB_DBTYPE_SQLITE_ID;
+    sqlite_hdb_info->base.updateable = 1;
+    sqlite_hdb_info->base.uses_external_indexes = 0;
+    sqlite_hdb_info->base.hash_type = TSK_HDB_HTYPE_INVALID_ID; // This will be set when the index is created/opened. 
+    sqlite_hdb_info->base.hash_len = 0; // This will be set when the index is created/opened.
+    tsk_init_lock(&sqlite_hdb_info->base.lock);
+    sqlite_hdb_info->base.make_index = sqlite_hdb_make_index;
+
+    sqlite_hdb_info->db = sqlite_hdb_open_db(db_path);
+    if (NULL == sqlite_hdb_info->db) {
+        free(sqlite_hdb_info->base.db_fname);
+        free(sqlite_hdb_info);
+        return NULL;
+    }
+
+    sqlite_hdb_info->last_id = 0;
+
+    return (TSK_HDB_INFO*)sqlite_hdb_info;
+}
 
 /**
  * This function is a no-op for SQLite hash database. The index is "internal" to the RDBMS.
@@ -360,21 +392,21 @@ sqlite_hdb_add(TSK_HDB_INFO * hdb_info, const char * filename, const char * md5,
  * @param hdb_info Hash database state info structure.
  * @return 1 on error and 0 on success
  */
-uint8_t
-sqlite_v1_addcomment(TSK_HDB_INFO * hdb_info, char* value, int64_t id)
-{
-    if (id == 0) {
-        return 1;
-    }
-
-    char stmt[1024];
-	snprintf(stmt, 1024,"INSERT INTO comments (comment, hash_id) VALUES ('%s', '%d');",	value, id);
-	if (attempt_exec_nocallback(stmt, "Error adding comment: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
-		return 1;
-	}
-
-    return 0;
-}
+//uint8_t
+//sqlite_v1_addcomment(TSK_HDB_INFO * hdb_info, char* value, int64_t id)
+//{
+//    if (id == 0) {
+//        return 1;
+//    }
+//
+//    char stmt[1024];
+//	snprintf(stmt, 1024,"INSERT INTO comments (comment, hash_id) VALUES ('%s', '%d');",	value, id);
+//	if (attempt_exec_nocallback(stmt, "Error adding comment: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+//		return 1;
+//	}
+//
+//    return 0;
+//}
 
 /**
  * Add new name (e.g. a filename associated with a hash)
@@ -382,21 +414,21 @@ sqlite_v1_addcomment(TSK_HDB_INFO * hdb_info, char* value, int64_t id)
  * @param hdb_info Hash database state info structure.
  * @return 1 on error and 0 on success
  */
-uint8_t
-sqlite_v1_addfilename(TSK_HDB_INFO * hdb_info, char* value, int64_t id)
-{
-    if (id == 0) {
-        return 1;
-    }
-
-    char stmt[1024];
-	snprintf(stmt, 1024, "INSERT INTO file_names (name, hash_id) VALUES ('%s', '%d');", value, id);
-	if (attempt_exec_nocallback(stmt, "Error adding comment: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
-		return 1;
-	}
-
-    return 0;
-}
+//uint8_t
+//sqlite_v1_addfilename(TSK_HDB_INFO * hdb_info, char* value, int64_t id)
+//{
+//    if (id == 0) {
+//        return 1;
+//    }
+//
+//    char stmt[1024];
+//	snprintf(stmt, 1024, "INSERT INTO file_names (name, hash_id) VALUES ('%s', '%d');", value, id);
+//	if (attempt_exec_nocallback(stmt, "Error adding comment: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+//		return 1;
+//	}
+//
+//    return 0;
+//}
 
 /**
  * This function is a no-op for SQLite hash database. The index is "internal" to the RDBMS.
@@ -444,16 +476,13 @@ sqlite_v1_addfilename(TSK_HDB_INFO * hdb_info, char* value, int64_t id)
  * @return -1 on error, 0 if hash value not found, and 1 if value was found.
  */
 int8_t
-sqlite_v1_lookup_str(TSK_HDB_INFO * hdb_info, const char* hvalue,
-                   TSK_HDB_FLAG_ENUM flags, TSK_HDB_LOOKUP_FN action,
-                   void *ptr)
+sqlite_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char* hvalue,
+    TSK_HDB_FLAG_ENUM flags, TSK_HDB_LOOKUP_FN action, void *ptr)
 {
     int8_t ret = 0;
-    hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId = 0;
+    TSK_SQLITE_HDB_INFO *hdb_info = (TSK_SQLITE_HDB_INFO*)hdb_info_base; 
+    hdb_info->last_id = 0;
 
-#ifdef IDX_SQLITE_STORE_TEXT
-    ret = lookup_text(hdb_info, hvalue, flags, action, ptr);
-#else
 	const size_t len = strlen(hvalue)/2;
 	uint8_t * hashBlob = (uint8_t *) tsk_malloc(len+1);
 	const char * pos = hvalue;
@@ -464,15 +493,14 @@ sqlite_v1_lookup_str(TSK_HDB_INFO * hdb_info, const char* hvalue,
 		pos += 2 * sizeof(char);
 	}
 
-    ret = sqlite_v1_lookup_raw(hdb_info, hashBlob, len, flags, action, ptr);
-#endif
+    ret = sqlite_hdb_lookup_bin(hdb_info_base, hashBlob, len, flags, action, ptr);
 
-    if ((ret == 1) && (hdb_info->db_type == TSK_HDB_DBTYPE_IDXONLY_ID)
-        && !(flags & TSK_HDB_FLAG_QUICK) && (action != NULL)) {
+    // RJCTODO: Hmmmm, name needs to be provided?
+    if ((ret == 1) && !(flags & TSK_HDB_FLAG_QUICK) && (action != NULL)) {
         //name is blank because we don't have a name in this case
         ///@todo query the file_names table for associations
         char * name = "";
-        action(hdb_info, hvalue, name, ptr);
+        action(hdb_info_base, hvalue, name, ptr);
     }
 
 	return ret;		
@@ -493,10 +521,11 @@ sqlite_v1_lookup_str(TSK_HDB_INFO * hdb_info, const char* hvalue,
  * @return -1 on error, 0 if hash value not found, and 1 if value was found.
  */
 int8_t
-sqlite_v1_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hvalue, uint8_t len,
+sqlite_hdb_lookup_bin(TSK_HDB_INFO * hdb_info_base, uint8_t * hvalue, uint8_t len,
                    TSK_HDB_FLAG_ENUM flags,
                    TSK_HDB_LOOKUP_FN action, void *ptr)
 {
+    TSK_SQLITE_HDB_INFO *hdb_info = (TSK_SQLITE_HDB_INFO*)hdb_info_base; 
 	char hashbuf[TSK_HDB_HTYPE_SHA2_256_LEN + 1];
 	int8_t ret = 0;
     int i;
@@ -504,25 +533,25 @@ sqlite_v1_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hvalue, uint8_t len,
     char * selectStmt;
     sqlite3_stmt* stmt = NULL;
 
-    tsk_take_lock(&hdb_info->lock);
+    tsk_take_lock(&hdb_info_base->lock);
 
 	/* Sanity check */
-	if ((hdb_info->hash_len)/2 != len) {
+	if ((hdb_info_base->hash_len)/2 != len) {
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_HDB_ARG);
 		tsk_error_set_errstr("hdb_lookup: Hash passed is different size than expected: %d vs %d",
-			hdb_info->hash_len, (len * 2));
+			hdb_info_base->hash_len, (len * 2));
 		ret = -1;
 	} else {
 
-    	if (hdb_info->hash_type == TSK_HDB_HTYPE_MD5_ID) {
+    	if (hdb_info_base->hash_type == TSK_HDB_HTYPE_MD5_ID) {
             selectStmt = "SELECT md5,database_offset,id from hashes where md5=? limit 1";
-        } else if (hdb_info->hash_type == TSK_HDB_HTYPE_SHA1_ID) {
+        } else if (hdb_info_base->hash_type == TSK_HDB_HTYPE_SHA1_ID) {
             selectStmt = "SELECT sha1,database_offset,id from hashes where sha1=? limit 1";
         } else {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_ARG);
-            tsk_error_set_errstr("Unknown hash type: %d\n", hdb_info->hash_type);
+            tsk_error_set_errstr("Unknown hash type: %d\n", hdb_info_base->hash_type);
             ret = -1;
         }
 
@@ -566,95 +595,6 @@ sqlite_v1_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hvalue, uint8_t len,
                 }
             }
         
-	        sqlite3_reset(stmt);
-    
-            if (stmt) {
-                finalize_stmt(stmt);
-            }
-        }
-    }
-
-    tsk_release_lock(&hdb_info->lock);
-
-	return ret;
-}
-
-/**
- * \ingroup hashdblib
- * Search the index for the given hash value given (in string form).
- *
- * @param hdb_info Open hash database (with index)
- * @param hash String hash value to search for
- * @param flags Flags to use in lookup
- * @param action Callback function to call for each hash db entry 
- * (not called if QUICK flag is given)
- * @param ptr Pointer to data to pass to each callback
- *
- * @return -1 on error, 0 if hash value not found, and 1 if value was found.
- */
-///@todo refactor so as not to duplicate code with sqlite_v1_lookup_raw()
-int8_t
-lookup_text(TSK_HDB_INFO * hdb_info, const char* hvalue, TSK_HDB_FLAG_ENUM flags,
-                   TSK_HDB_LOOKUP_FN action, void *ptr)
-{
-	int8_t ret = 0;
-	TSK_OFF_T offset;
-    char selectStmt[1024];
-    sqlite3_stmt* stmt = NULL;
-    int len = strlen(hvalue);
-
-    tsk_take_lock(&hdb_info->lock);
-
-	/* Sanity check */
-	if (hdb_info->hash_len != len) {
-		tsk_error_reset();
-		tsk_error_set_errno(TSK_ERR_HDB_ARG);
-		tsk_error_set_errstr("hdb_lookup: Hash passed is different size than expected: %d vs %d",
-			hdb_info->hash_len, len);
-		ret = -1;
-	} else {
-    	if (hdb_info->hash_type == TSK_HDB_HTYPE_MD5_ID) {
-            snprintf(selectStmt, 1024,
-		        "SELECT md5,database_offset,id from hashes where md5='%s' limit 1",
-                hvalue);
-        } else if (hdb_info->hash_type == TSK_HDB_HTYPE_SHA1_ID) {
-            snprintf(selectStmt, 1024,
-		        "SELECT sha1,database_offset,id from hashes where sha1='%s' limit 1",
-                hvalue);
-        } else {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_HDB_ARG);
-            tsk_error_set_errstr("Unknown hash type: %d\n", hdb_info->hash_type);
-            ret = -1;
-        }
-
-        if (ret != -1) {
-            prepare_stmt(selectStmt, &stmt, hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
-        
-            // Found a match
-	        if (sqlite3_step(stmt) == SQLITE_ROW) {
-                // save id
-                hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId = sqlite3_column_int64(stmt, 2);
-
-                if ((flags & TSK_HDB_FLAG_QUICK)
-			        || (hdb_info->db_type == TSK_HDB_DBTYPE_IDXONLY_ID)) {
-				        
-                    // There is just an index, so no other info to get
-                    ///@todo Look up a name in the sqlite db
-                    ret = 1;
-		        } else {
-                    // Use offset to get more info
-			        offset = sqlite3_column_int64(stmt, 1);
-
-			        if (hdb_info->getentry(hdb_info, hvalue, offset, flags, action, ptr)) {
-				        tsk_error_set_errstr2("hdb_lookup");
-				        ret = -1;
-			        } else {
-			            ret = 1;
-                    }
-		        }
-            }
-                   
 	        sqlite3_reset(stmt);
     
             if (stmt) {
@@ -775,57 +715,6 @@ void * sqlite_v1_getAllData(TSK_HDB_INFO * hdb_info, unsigned long hashId)
     return h;
 }
 
-
-/**
- * \ingroup hashdblib
- * Sets the updateable flag in the hdb_info argument based on querying the index props table.
- *
- * @param hdb_info Open hash database (with index)
- * @return -1 on error, 0 on success.
- */
-//int8_t
-//sqlite_v1_get_properties(TSK_HDB_INFO * hdb_info)
-//{
-//    int8_t ret = 0;
-//	sqlite3_stmt* stmt = NULL;
-//    char selectStmt[1024];
-//
-//    tsk_take_lock(&hdb_info->lock);
-//    
-//    snprintf(selectStmt, 1024, "SELECT value from db_properties where name='%s'", IDX_HASHSET_UPDATEABLE);
-//    prepare_stmt(selectStmt, &stmt, hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
-//
-//	if (sqlite3_step(stmt) == SQLITE_ROW) {
-//		const char* value = (const char *)sqlite3_column_text(stmt, 0);
-//
-//        if (value == NULL) {
-//            tsk_error_set_errstr2("sqlite_v1_get_properties: null value");
-//            ret = -1;
-//        } else {
-//            // Set the updateable flag
-//            if (strcmp(value, "true") == 0) {
-//                hdb_info->idx_info->updateable = 1;
-//            }
-//        }
-//	} else {
-//        tsk_error_set_errstr2("sqlite_v1_get_properties");
-//        ret = -1;
-//    }
-//
-//	sqlite3_reset(stmt);
-//    
-//    if (stmt) {
-//        finalize_stmt(stmt);
-//    }
-//
-//
-//    ///@todo load db name property as well?
-//
-//    tsk_release_lock(&hdb_info->lock);
-//
-//	return ret;
-//}
-
 /*
  * Close the sqlite index handle
  * @param idx_info the index to close
@@ -849,71 +738,3 @@ sqlite_hdb_close(TSK_HDB_INFO* hdb_info)
     // RJCTODO: Cleanup the base stuff...
 }
 
-/**
- * Test the file to see if it is an sqlite database (== index only)
- *
- * @param hFile File handle to hash database
- *
- * @return 1 if sqlite and 0 if not
- */
-uint8_t
-sqlite3_test(FILE * hFile)
-{
-    const int header_size = 16;
-    char header[header_size];
-
-    if (hFile) {
-        if (1 != fread(header, header_size, 1, hFile)) {
-            ///@todo should this actually be an error?
-            return 0;
-        }
-        else if (strncmp(header,
-                IDX_SQLITE_V1_HEADER,
-                strlen(IDX_SQLITE_V1_HEADER)) == 0) {
-            return 1;
-        }
-    }
-
-    return 0;
-}
-
-// RJCTODO: Comment
-TSK_HDB_INFO *sqlite_hdb_open(TSK_TCHAR *db_path)
-{
-    TSK_SQLITE_HDB_INFO *sqlite_hdb_info = NULL;
-    size_t flen = 0;
-
-    assert(NULL != db_path);
-
-    if ((sqlite_hdb_info = (TSK_SQLITE_HDB_INFO*)tsk_malloc(sizeof(TSK_SQLITE_HDB_INFO))) == NULL) {
-        return NULL;
-    }
-
-    flen = TSTRLEN(db_path) + 8; // RJCTODO: Check this change from 32 (change was in DF code) with Brian; was change in older code? What is the point, anyway?
-    sqlite_hdb_info->base.db_fname = (TSK_TCHAR*)tsk_malloc(flen * sizeof(TSK_TCHAR));
-    if (NULL == sqlite_hdb_info->base.db_fname) {
-        return NULL;
-    }
-
-    TSTRNCPY(sqlite_hdb_info->base.db_fname, db_path, flen);
-    sqlite_hdb_info->base.db_type = TSK_HDB_DBTYPE_SQLITE_ID;
-    sqlite_hdb_info->base.updateable = 1;
-    sqlite_hdb_info->base.uses_external_index = 0;
-    sqlite_hdb_info->base.hash_type = TSK_HDB_HTYPE_INVALID_ID; // This will be set when the index is created/opened. 
-    sqlite_hdb_info->base.hash_len = 0; // This will be set when the index is created/opened.
-    tsk_init_lock(&sqlite_hdb_info->base.lock);
-    sqlite_hdb_info->base.makeindex = sqlite_hdb_make_index;
-    sqlite_hdb_info->base.add_comment = sqlite_v1_addcomment; // RJCTODO: Consider moving this
-    sqlite_hdb_info->base.add_filename = sqlite_v1_addfilename; // RJCTODO: Consider moving this
-
-    sqlite_hdb_info->db = sqlite_hdb_open_db(db_path);
-    if (NULL == sqlite_hdb_info->db) {
-        free(sqlite_hdb_info->base.db_fname);
-        free(sqlite_hdb_info);
-        return NULL;
-    }
-
-    sqlite_hdb_info->last_id = 0;
-
-    return (TSK_HDB_INFO*)sqlite_hdb_info;
-}

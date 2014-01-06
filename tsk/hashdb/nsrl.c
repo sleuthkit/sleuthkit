@@ -90,15 +90,24 @@ nsrl_test(FILE * hFile)
     return 1;
 }
 
-/**
- * Set db_name using information from this database type
- *
- * @param hdb_info the hash database object
- */
-void
-nsrl_name(TSK_HDB_INFO * hdb_info)
+TSK_HDB_INFO *nsrl_open(FILE *hDb, const TSK_TCHAR *db_path)
 {
-    tsk_hdb_name_from_path(hdb_info);
+    TSK_TEXT_HDB_INFO *text_hdb_info = NULL;
+
+    assert(NULL != hDb);
+    assert(NULL != db_path);
+    
+    text_hdb_info = text_hdb_open(hDb, db_path);
+    if (NULL == text_hdb_info) {
+        return NULL;
+    }
+
+    text_hdb_info->base.db_type = TSK_HDB_DBTYPE_NSRL_ID;
+    text_hdb_db_name_from_path(text_hdb_info);
+    text_hdb_info->base.make_index = nsrl_makeindex;
+    text_hdb_info->get_entry = nsrl_getentry;
+
+    return (TSK_HDB_INFO*)text_hdb_info;
 }
 
 /**
@@ -388,7 +397,7 @@ nsrl_makeindex(TSK_HDB_INFO * hdb_info_base, TSK_TCHAR * dbtype)
     int ver = 0;
     int db_cnt = 0, idx_cnt = 0, ig_cnt = 0;
 
-    if (text_hdb_idx_init(hdb_info_base, dbtype)) {
+    if (text_hdb_idx_initialize(hdb_info, dbtype)) {
         tsk_error_set_errstr2( "nsrl_makeindex");
         return 1;
     }
@@ -418,13 +427,13 @@ nsrl_makeindex(TSK_HDB_INFO * hdb_info_base, TSK_TCHAR * dbtype)
         }
 
         /* Parse the line */
-        if (hdb_info->hash_type & TSK_HDB_HTYPE_SHA1_ID) {
+        if (hdb_info->base.hash_type & TSK_HDB_HTYPE_SHA1_ID) {
             if (nsrl_parse_sha1(buf, &hash, NULL, ver)) {
                 ig_cnt++;
                 continue;
             }
         }
-        else if (hdb_info->hash_type & TSK_HDB_HTYPE_MD5_ID) {
+        else if (hdb_info->base.hash_type & TSK_HDB_HTYPE_MD5_ID) {
             if (nsrl_parse_md5(buf, &hash, NULL, ver)) {
                 ig_cnt++;
                 continue;
@@ -434,12 +443,12 @@ nsrl_makeindex(TSK_HDB_INFO * hdb_info_base, TSK_TCHAR * dbtype)
         db_cnt++;
 
         /* We only want to add one of each hash to the index */
-        if (memcmp(hash, phash, hdb_info->hash_len) == 0) {
+        if (memcmp(hash, phash, hdb_info->base.hash_len) == 0) {
             continue;
         }
 
         /* Add the entry to the index */
-        if (text_hdb_idx_add_entry(hdb_info_base, hash, offset)) {
+        if (text_hdb_idx_add_entry_str(hdb_info, hash, offset)) {
             tsk_error_set_errstr2( "nsrl_makeindex");
             return 1;
         }
@@ -447,7 +456,7 @@ nsrl_makeindex(TSK_HDB_INFO * hdb_info_base, TSK_TCHAR * dbtype)
         idx_cnt++;
 
         /* Set the previous has value */
-        strncpy(phash, hash, hdb_info->hash_len + 1);
+        strncpy(phash, hash, hdb_info->base.hash_len + 1);
     }
 
     if (idx_cnt > 0) {
@@ -461,7 +470,7 @@ nsrl_makeindex(TSK_HDB_INFO * hdb_info_base, TSK_TCHAR * dbtype)
         }
 
         /* Close and sort the index */
-        if (text_hdb_idx_finalize(hdb_info_base)) {
+        if (text_hdb_idx_finalize(hdb_info)) {
             tsk_error_set_errstr2( "nsrl_makeindex");
             return 1;
         }
@@ -508,7 +517,7 @@ nsrl_getentry(TSK_HDB_INFO * hdb_info_base, const char *hash, TSK_OFF_T offset,
                 "nsrl_getentry: Lookup up hash %s at offset %" PRIuOFF
                 "\n", hash, offset);
 
-    if ((hdb_info->hash_type == TSK_HDB_HTYPE_MD5_ID)
+    if ((hdb_info->base.hash_type == TSK_HDB_HTYPE_MD5_ID)
         && (strlen(hash) != TSK_HDB_HTYPE_MD5_LEN)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
@@ -517,7 +526,7 @@ nsrl_getentry(TSK_HDB_INFO * hdb_info_base, const char *hash, TSK_OFF_T offset,
                  hash);
         return 1;
     }
-    else if ((hdb_info->hash_type == TSK_HDB_HTYPE_SHA1_ID)
+    else if ((hdb_info->base.hash_type == TSK_HDB_HTYPE_SHA1_ID)
              && (strlen(hash) != TSK_HDB_HTYPE_SHA1_LEN)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
@@ -579,7 +588,7 @@ nsrl_getentry(TSK_HDB_INFO * hdb_info_base, const char *hash, TSK_OFF_T offset,
         }
 
         /* Which field are we looking for */
-        if (hdb_info->hash_type == TSK_HDB_HTYPE_SHA1_ID) {
+        if (hdb_info->base.hash_type == TSK_HDB_HTYPE_SHA1_ID) {
             if (nsrl_parse_sha1(buf, &cur_hash, &name, ver)) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
@@ -589,7 +598,7 @@ nsrl_getentry(TSK_HDB_INFO * hdb_info_base, const char *hash, TSK_OFF_T offset,
                 return 1;
             }
         }
-        else if (hdb_info->hash_type == TSK_HDB_HTYPE_MD5_ID) {
+        else if (hdb_info->base.hash_type == TSK_HDB_HTYPE_MD5_ID) {
             if (nsrl_parse_md5(buf, &cur_hash, &name, ver)) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
@@ -633,30 +642,4 @@ nsrl_getentry(TSK_HDB_INFO * hdb_info_base, const char *hash, TSK_OFF_T offset,
 
     return 0;
 }
-
-TSK_HDB_INFO *nsrl_open(FILE *hDb, const TSK_TCHAR *db_path)
-{
-    TSK_TEXT_HDB_INFO *text_hdb_info = NULL;
-
-    assert(NULL != hDb);
-    assert(NULL != db_path);
-    
-    text_hdb_info = text_hdb_open(hDb, db_path);
-    if (NULL == text_hdb_info) {
-        return NULL;
-    }
-
-    text_hdb_info->base.db_type = TSK_HDB_DBTYPE_NSRL_ID;
-    text_hdb_info->base.makeindex = nsrl_makeindex;
-    text_hdb_info->getentry = nsrl_getentry;
-    text_hdb_info->base.add_comment = NULL; // RJCTODO: Consider making no-ops for these or moving them
-    text_hdb_info->base.add_filename = NULL; // RJCTODO: Consider making no-ops for these or moving them
-
-    // RJCTODO: Figure out when to do this
-    // Looks like there can be a base open, with call out to set name and db type param 
-    //nsrl_name((TSK_HDB_INFO*)text_hdb_info);
-
-    return (TSK_HDB_INFO*)text_hdb_info;
-}
-
 

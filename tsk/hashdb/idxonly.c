@@ -21,74 +21,80 @@
  *
  * @param hdb_info the hash database object
  */
-void
-idxonly_name(TSK_HDB_INFO * hdb_info)
+static void
+idxonly_name(TSK_TEXT_HDB_INFO *hdb_info)
 {
-    TSK_TEXT_HDB_INFO *text_hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info;
-    TSK_HDB_BINSRCH_IDX_INFO *idx_info = (TSK_HDB_BINSRCH_IDX_INFO*)text_hdb_info->idx;
-    FILE * hFile;
-    char buf[TSK_HDB_NAME_MAXLEN];
-    char *bufptr = buf;
-    size_t i = 0;
-    memset(idx_info->base.db_name, '\0', TSK_HDB_NAME_MAXLEN);
+    // RJCTODO: Get back to this
+    //FILE * hFile;
+    //char buf[TSK_HDB_NAME_MAXLEN];
+    //char *bufptr = buf;
+    //size_t i = 0;
+    //memset(hdb_info->db_name, '\0', TSK_HDB_NAME_MAXLEN);
+    //if(text_hdb_idx_initialize(hdb_info, TSK_HDB_HTYPE_MD5_ID) == 0) {
+    //    if (tsk_verbose)
+    //        fprintf(stderr,
+    //            "Failed to get name from index (index does not exist); using file name instead");
+    //    text_hdb_db_name_from_path(hdb_info);
+    //    return;
+    //}
+    //hFile = hdb_info->hIdx;
+    //fseeko(hFile, 0, 0);
+    //if(NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
+    //    NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
+    //    strncmp(buf,
+    //            TSK_HDB_IDX_HEAD_NAME_STR,
+    //            strlen(TSK_HDB_IDX_HEAD_NAME_STR)) != 0) {
+    //    if (tsk_verbose)
+    //        fprintf(stderr,
+    //            "Failed to read name from index; using file name instead");
+    //    text_hdb_db_name_from_path(hdb_info);
+    //    return;
+    //}
+    //bufptr = strchr(buf, '|');
+    //bufptr++;
+    //while(bufptr[i] != '\r' && bufptr[i] != '\n' && i < strlen(bufptr))
+    //{
+    //    hdb_info->db_name[i] = bufptr[i];
+    //    i++;
+    //}
+}
 
-    if(tsk_hdb_idxsetup(hdb_info, TSK_HDB_HTYPE_MD5_ID) == 0) {
-        if (tsk_verbose)
-            fprintf(stderr,
-                "Failed to get name from index (index does not exist); using file name instead");
-        tsk_hdb_name_from_path(hdb_info);
-        return;
+TSK_HDB_INFO *idxonly_open(const TSK_TCHAR *db_path)
+{
+    TSK_TEXT_HDB_INFO *hdb_info = NULL;
+
+    assert(NULL != db_path);
+    
+    hdb_info = text_hdb_open(NULL, db_path);
+    if (NULL == hdb_info) {
+        return NULL;
     }
 
-    hFile = idx_info->hIdx;
-    fseeko(hFile, 0, 0);
-    if(NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
-        NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
-        strncmp(buf,
-                TSK_HDB_IDX_HEAD_NAME_STR,
-                strlen(TSK_HDB_IDX_HEAD_NAME_STR)) != 0) {
-        if (tsk_verbose)
-            fprintf(stderr,
-                "Failed to read name from index; using file name instead");
-        tsk_hdb_name_from_path(hdb_info);
-        return;
-    }
-    bufptr = strchr(buf, '|');
-    bufptr++;
-    while(bufptr[i] != '\r' && bufptr[i] != '\n' && i < strlen(bufptr))
-    {
-        idx_info->base.db_name[i] = bufptr[i];
-        i++;
-    }
+    hdb_info->base.db_type = TSK_HDB_DBTYPE_IDXONLY_ID;
+    idxonly_name(hdb_info);
+    hdb_info->get_entry = idxonly_getentry;
+    hdb_info->base.make_index = idxonly_makeindex;
+
+    return (TSK_HDB_INFO*)hdb_info;    
 }
 
 /**
- * This function creates an empty
+ * This function should process the database to create a sorted index of it,
+ * but in this case we do not have a database, so just make an error...
  *
  * @param hdb_info Hash database to make index of.
- * @param dbtype Type of hash database. Ignored for IDX only.
+ * @param dbtype Type of hash database 
  *
  * @return 1 on error and 0 on success.
  */
 uint8_t
 idxonly_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
 {
-    //tsk_error_reset();
-    //tsk_error_set_errno(TSK_ERR_HDB_ARG);
-    //tsk_error_set_errstr(
-    //         "idxonly_makeindex: Make index not supported when INDEX ONLY option is used");
-
-    ///@temporary until we exorcise all the htype conditionals out
-    TSK_TCHAR dbtype_default[1024];
-    TSNPRINTF(dbtype_default, 1024, _TSK_T("%") PRIcTSK, TSK_HDB_DBTYPE_MD5SUM_STR);
-
-    /* Initialize the TSK index file */
-    if (tsk_hdb_idxinitialize(hdb_info, dbtype_default)) {
-        tsk_error_set_errstr2( "idxonly_makeindex");
-        return 1;
-    }
-
-    return 0;
+    tsk_error_reset();
+    tsk_error_set_errno(TSK_ERR_HDB_ARG);
+    tsk_error_set_errstr(
+             "idxonly_makeindex: Make index not supported when INDEX ONLY option is used");
+    return 1;
 }
 
 /**
@@ -116,27 +122,3 @@ idxonly_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
              "idxonly_getentry: Not supported when INDEX ONLY option is used");
     return 1;
 }
-
-TSK_HDB_INFO *idxonly_open(const TSK_TCHAR *db_path)
-{
-    TSK_TEXT_HDB_INFO *text_hdb_info = NULL;
-
-    assert(NULL != db_path);
-    
-    text_hdb_info = text_hdb_open(NULL, db_path);
-    if (NULL == text_hdb_info) {
-        return NULL;
-    }
-
-    text_hdb_info->base.db_type = TSK_HDB_DBTYPE_IDXONLY_ID;
-    text_hdb_info->getentry = idxonly_getentry;
-    text_hdb_info->base.makeindex = idxonly_makeindex;
-    text_hdb_info->base.add_comment = NULL; // RJCTODO: Consider making no-ops for these or moving them
-    text_hdb_info->base.add_filename = NULL; // RJCTODO: Consider making no-ops for these or moving them
-
-    // RJCTODO: Figure out when to do this
-    //idxonly_name((TSK_HDB_INFO*)hdb_info);
-
-    return (TSK_HDB_INFO*)text_hdb_info;    
-}
-

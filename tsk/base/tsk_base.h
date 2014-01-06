@@ -366,8 +366,7 @@ extern "C" {
 #define TSK_ERR_HDB_PROC        (TSK_ERR_HDB | 9)
 #define TSK_ERR_HDB_OPEN        (TSK_ERR_HDB | 10)
 #define TSK_ERR_HDB_CORRUPT     (TSK_ERR_HDB | 11)
-#define TSK_ERR_HDB_INVALID_PARAM   (TSK_ERR_HDB | 12)
-#define TSK_ERR_HDB_MAX		13
+#define TSK_ERR_HDB_MAX		12
 
 #define TSK_ERR_AUTO_DB (TSK_ERR_AUTO | 0)
 #define TSK_ERR_AUTO_CORRUPT (TSK_ERR_AUTO | 1)

@@ -22,7 +22,7 @@
 #include <string>
 #include <vector>
 
-struct SQliteHashStruct
+struct HashLookupResult
 {
     std::string hashMd5;
     std::string hashSha1;

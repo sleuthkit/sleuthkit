@@ -43,10 +43,9 @@ encase_test(FILE * hFile)
  *
  * @param hdb_info the hash database object
  */
-void
-encase_name(TSK_HDB_INFO * hdb_info_base)
+static void
+encase_name(TSK_TEXT_HDB_INFO *hdb_info)
 {
-    TSK_TEXT_HDB_INFO *hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info_base;
     FILE * hFile = hdb_info->hDb;
     wchar_t buf[40];
     UTF16 *utf16;
@@ -57,7 +56,7 @@ encase_name(TSK_HDB_INFO * hdb_info_base)
         if (tsk_verbose)
             fprintf(stderr,
                 "Error getting name from Encase hash db; using file name instead");
-        tsk_hdb_name_from_path(hdb_info_base);
+        text_hdb_db_name_from_path(hdb_info);
         return;
     }
 
@@ -68,7 +67,7 @@ encase_name(TSK_HDB_INFO * hdb_info_base)
         if (tsk_verbose)
             fprintf(stderr,
                 "Error getting name from Encase hash db; using file name instead");
-        tsk_hdb_name_from_path(hdb_info_base);
+        text_hdb_db_name_from_path(hdb_info);
         return;
     }
 
@@ -84,6 +83,27 @@ encase_name(TSK_HDB_INFO * hdb_info_base)
         TSKlenientConversion);
 }
 
+
+TSK_HDB_INFO *encase_open(FILE *hDb, const TSK_TCHAR *db_path)
+{
+    TSK_TEXT_HDB_INFO *text_hdb_info = NULL;
+
+    assert(NULL != hDb);
+    assert(NULL != db_path);
+    
+    text_hdb_info = text_hdb_open(hDb, db_path);
+    if (NULL == text_hdb_info) {
+        return NULL;
+    }
+
+    text_hdb_info->base.db_type = TSK_HDB_DBTYPE_ENCASE_ID;
+    encase_name(text_hdb_info);
+    text_hdb_info->base.make_index = encase_make_index;
+    text_hdb_info->get_entry = encase_get_entry;
+
+    return (TSK_HDB_INFO*)text_hdb_info;    
+}
+
 /**
  * Process the database to create a sorted index of it. Consecutive
  * entries with the same hash value are not added to the index, but
@@ -95,16 +115,16 @@ encase_name(TSK_HDB_INFO * hdb_info_base)
  * @return 1 on error and 0 on success.
  */
 uint8_t
-encase_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
+encase_make_index(TSK_HDB_INFO * hdb_info_base, TSK_TCHAR * dbtype)
 {
-    TSK_TEXT_HDB_INFO *text_hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info;
+    TSK_TEXT_HDB_INFO *hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info_base;
     unsigned char buf[19];
     char phash[19];
     TSK_OFF_T offset = 0;
     int db_cnt = 0, idx_cnt = 0;
 
     /* Initialize the TSK index file */
-    if (tsk_hdb_idxinitialize(hdb_info, dbtype)) {
+    if (text_hdb_idx_initialize(hdb_info, dbtype)) {
         tsk_error_set_errstr2( "encase_makeindex");
         return 1;
     }
@@ -112,14 +132,14 @@ encase_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
     /* Status */
     if (tsk_verbose)
         TFPRINTF(stderr, _TSK_T("Extracting Data from Database (%s)\n"),
-                 hdb_info->db_fname);
+                 hdb_info->base.db_fname);
 
     memset(phash, '0', sizeof(phash));
     memset(buf, '0', sizeof(buf));
 
     /* read the file and add to the index */
-    fseek(text_hdb_info->hDb, 1152, SEEK_SET);
-    while (18 == fread(buf,sizeof(char),18,text_hdb_info->hDb)) {
+    fseek(hdb_info->hDb, 1152, SEEK_SET);
+    while (18 == fread(buf,sizeof(char),18,hdb_info->hDb)) {
         db_cnt++;
         
         /* We only want to add one of each hash to the index */
@@ -128,8 +148,8 @@ encase_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
         }
         
         /* Add the entry to the index */
-        if (tsk_hdb_idxaddentry_bin(hdb_info, buf, 16, offset)) {
-            tsk_error_set_errstr2( "encase_makeindex");
+        if (text_hdb_idx_add_entry_bin(hdb_info, buf, 16, offset)) {
+            tsk_error_set_errstr2( "encase_make_index");
             return 1;
         }
 
@@ -148,7 +168,7 @@ encase_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
         }
 
         /* Close and sort the index */
-        if (tsk_hdb_idxfinalize(hdb_info)) {
+        if (text_hdb_idx_finalize(hdb_info)) {
             tsk_error_set_errstr2( "encase_makeindex");
             return 1;
         }
@@ -180,7 +200,7 @@ encase_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
  * @return 1 on error and 0 on succuss
  */
 uint8_t
-encase_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
+encase_get_entry(TSK_HDB_INFO * hdb_info, const char *hash,
                 TSK_OFF_T offset, TSK_HDB_FLAG_ENUM flags,
                 TSK_HDB_LOOKUP_FN action, void *cb_ptr)
 {
@@ -253,28 +273,3 @@ encase_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
 
     return 0;
 }
-
-TSK_HDB_INFO *encase_open(FILE *hDb, const TSK_TCHAR *db_path)
-{
-    TSK_TEXT_HDB_INFO *text_hdb_info = NULL;
-
-    assert(NULL != hDb);
-    assert(NULL != db_path);
-    
-    text_hdb_info = text_hdb_open(hDb, db_path);
-    if (NULL == text_hdb_info) {
-        return NULL;
-    }
-
-    text_hdb_info->base.db_type = TSK_HDB_DBTYPE_ENCASE_ID;
-    text_hdb_info->base.makeindex = encase_makeindex;
-    text_hdb_info->getentry = encase_getentry;
-    text_hdb_info->base.add_comment = NULL; // RJCTODO: Consider making no-ops for these or moving them
-    text_hdb_info->base.add_filename = NULL; // RJCTODO: Consider making no-ops for these or moving them
-
-    // RJCTODO: Figure out when to do this
-    //encase_name((TSK_HDB_INFO*)hdb_info);
-
-    return (TSK_HDB_INFO*)text_hdb_info;    
-}
-

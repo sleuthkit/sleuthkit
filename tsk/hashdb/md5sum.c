@@ -51,15 +51,26 @@ md5sum_test(FILE * hFile)
     return 0;
 }
 
-/**
- * Set db_name using information from this database type
- *
- * @param hdb_info the hash database object
- */
-void
-md5sum_name(TSK_HDB_INFO * hdb_info)
+TSK_HDB_INFO *md5sum_open(FILE *hDb, const TSK_TCHAR *db_path)
 {
-    tsk_hdb_name_from_path(hdb_info);
+    TSK_TEXT_HDB_INFO *text_hdb_info = NULL;
+
+    assert(NULL != hDb);
+    assert(NULL != db_path);
+    
+    text_hdb_info = text_hdb_open(hDb, db_path);
+    if (NULL == text_hdb_info) {
+        return NULL;
+    }
+
+    text_hdb_info->base.db_type = TSK_HDB_DBTYPE_MD5SUM_ID;
+    text_hdb_db_name_from_path(text_hdb_info);
+    text_hdb_info->get_entry = md5sum_getentry;
+    text_hdb_info->base.make_index = md5sum_makeindex;
+    text_hdb_info->base.add_comment = NULL; // RJCTODO: Consider making no-ops for these or moving them
+    text_hdb_info->base.add_filename = NULL; // RJCTODO: Consider making no-ops for these or moving them
+
+    return (TSK_HDB_INFO*)text_hdb_info;    
 }
 
 /**
@@ -194,9 +205,9 @@ md5sum_parse_md5(char *str, char **md5, char **name)
  * @return 1 on error and 0 on success.
  */
 uint8_t
-md5sum_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
+md5sum_makeindex(TSK_HDB_INFO *hdb_info_base, TSK_TCHAR * dbtype)
 {
-    TSK_TEXT_HDB_INFO *text_hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info;
+    TSK_TEXT_HDB_INFO *hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info_base;
     int i;
     char buf[TSK_HDB_MAXLEN];
     char *hash = NULL, phash[TSK_HDB_HTYPE_MD5_LEN + 1];
@@ -205,7 +216,7 @@ md5sum_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
     size_t len;
 
     /* Initialize the TSK index file */
-    if (tsk_hdb_idxinitialize(hdb_info, dbtype)) {
+    if (text_hdb_idx_initialize(hdb_info, dbtype)) {
         tsk_error_set_errstr2( "md5sum_makeindex");
         return 1;
     }
@@ -213,14 +224,14 @@ md5sum_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
     /* Status */
     if (tsk_verbose)
         TFPRINTF(stderr, _TSK_T("Extracting Data from Database (%s)\n"),
-                 hdb_info->db_fname);
+                 hdb_info->base.db_fname);
 
     /* Allocate a buffer for the previous hash value */
     memset(phash, '0', TSK_HDB_HTYPE_MD5_LEN + 1);
 
     /* read the file and add to the index */
-    fseek(text_hdb_info->hDb, 0, SEEK_SET);
-    for (i = 0; NULL != fgets(buf, TSK_HDB_MAXLEN, text_hdb_info->hDb);
+    fseek(hdb_info->hDb, 0, SEEK_SET);
+    for (i = 0; NULL != fgets(buf, TSK_HDB_MAXLEN, hdb_info->hDb);
          offset += (TSK_OFF_T) len, i++) {
 
         len = strlen(buf);
@@ -238,7 +249,7 @@ md5sum_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
         }
 
         /* Add the entry to the index */
-        if (tsk_hdb_idxaddentry(hdb_info, hash, offset)) {
+        if (text_hdb_idx_add_entry_str(hdb_info, hash, offset)) {
             tsk_error_set_errstr2( "md5sum_makeindex");
             return 1;
         }
@@ -261,7 +272,7 @@ md5sum_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
         }
 
         /* Close and sort the index */
-        if (tsk_hdb_idxfinalize(hdb_info)) {
+        if (text_hdb_idx_finalize(hdb_info)) {
             tsk_error_set_errstr2( "md5sum_makeindex");
             return 1;
         }
@@ -392,28 +403,4 @@ md5sum_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
     }
 
     return 0;
-}
-
-TSK_HDB_INFO *md5sum_open(FILE *hDb, const TSK_TCHAR *db_path)
-{
-    TSK_TEXT_HDB_INFO *text_hdb_info = NULL;
-
-    assert(NULL != hDb);
-    assert(NULL != db_path);
-    
-    text_hdb_info = text_hdb_open(hDb, db_path);
-    if (NULL == text_hdb_info) {
-        return NULL;
-    }
-
-    text_hdb_info->base.db_type = TSK_HDB_DBTYPE_MD5SUM_ID;
-    text_hdb_info->getentry = md5sum_getentry;
-    text_hdb_info->base.makeindex = md5sum_makeindex;
-    text_hdb_info->base.add_comment = NULL; // RJCTODO: Consider making no-ops for these or moving them
-    text_hdb_info->base.add_filename = NULL; // RJCTODO: Consider making no-ops for these or moving them
-
-    // RJCTODO: Figure out when to do this
-    //md5sum_name((TSK_HDB_INFO*)hdb_info);
-
-    return (TSK_HDB_INFO*)text_hdb_info;    
 }
