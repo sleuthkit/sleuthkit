@@ -72,6 +72,7 @@ TSK_HDB_INFO *idxonly_open(const TSK_TCHAR *db_path)
 
     hdb_info->base.db_type = TSK_HDB_DBTYPE_IDXONLY_ID;
     idxonly_name(hdb_info);
+    hdb_info->base.uses_external_indexes = 0; // Override the "base class" setting
     hdb_info->get_entry = idxonly_getentry;
     hdb_info->base.make_index = idxonly_makeindex;
 

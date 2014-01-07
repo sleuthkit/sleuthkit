@@ -22,7 +22,7 @@
 #include <string>
 #include <vector>
 
-struct HashLookupResult
+struct TskHashLookupResult
 {
     std::string hashMd5;
     std::string hashSha1;

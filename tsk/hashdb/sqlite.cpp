@@ -481,13 +481,13 @@ sqlite_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char* hvalue,
 {
     int8_t ret = 0;
     TSK_SQLITE_HDB_INFO *hdb_info = (TSK_SQLITE_HDB_INFO*)hdb_info_base; 
-    hdb_info->last_id = 0;
-
+    hdb_info->last_id = 0; // RJCTODO: I don't like this...
 	const size_t len = strlen(hvalue)/2;
 	uint8_t * hashBlob = (uint8_t *) tsk_malloc(len+1);
 	const char * pos = hvalue;
 	size_t count = 0;
 
+    // Convert the string into a binary blob.
 	for(count = 0; count < len; count++) {
 		sscanf(pos, "%2hx", (short unsigned int *) &(hashBlob[count]));
 		pos += 2 * sizeof(char);
@@ -521,103 +521,85 @@ sqlite_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char* hvalue,
  * @return -1 on error, 0 if hash value not found, and 1 if value was found.
  */
 int8_t
-sqlite_hdb_lookup_bin(TSK_HDB_INFO * hdb_info_base, uint8_t * hvalue, uint8_t len,
-                   TSK_HDB_FLAG_ENUM flags,
-                   TSK_HDB_LOOKUP_FN action, void *ptr)
+sqlite_hdb_lookup_bin(TSK_HDB_INFO * hdb_info_base, uint8_t * hvalue, 
+    uint8_t len, TSK_HDB_FLAG_ENUM flags, TSK_HDB_LOOKUP_FN action, void *ptr)
 {
     TSK_SQLITE_HDB_INFO *hdb_info = (TSK_SQLITE_HDB_INFO*)hdb_info_base; 
-	char hashbuf[TSK_HDB_HTYPE_SHA2_256_LEN + 1];
 	int8_t ret = 0;
-    int i;
-	TSK_OFF_T offset;
     char * selectStmt;
     sqlite3_stmt* stmt = NULL;
 
     tsk_take_lock(&hdb_info_base->lock);
 
+    // RJCTODO: So this code depends on the hash length and type stuff...
 	/* Sanity check */
 	if ((hdb_info_base->hash_len)/2 != len) {
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_HDB_ARG);
-		tsk_error_set_errstr("hdb_lookup: Hash passed is different size than expected: %d vs %d",
+		tsk_error_set_errstr("sqlite_hdb_lookup_bin: Hash passed is different size than expected: %d vs %d",
 			hdb_info_base->hash_len, (len * 2));
-		ret = -1;
-	} else {
+        tsk_release_lock(&hdb_info_base->lock);
+		return -1;
+	} 
 
-    	if (hdb_info_base->hash_type == TSK_HDB_HTYPE_MD5_ID) {
-            selectStmt = "SELECT md5,database_offset,id from hashes where md5=? limit 1";
-        } else if (hdb_info_base->hash_type == TSK_HDB_HTYPE_SHA1_ID) {
-            selectStmt = "SELECT sha1,database_offset,id from hashes where sha1=? limit 1";
-        } else {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_HDB_ARG);
-            tsk_error_set_errstr("Unknown hash type: %d\n", hdb_info_base->hash_type);
-            ret = -1;
-        }
-
-        if (ret != -1) {
-            prepare_stmt(selectStmt, &stmt, hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
-        
-	        if (attempt(sqlite3_bind_blob(stmt, 1, hvalue, len, free),
-		        SQLITE_OK,
-		        "Error binding binary blob: %s\n",
-		        hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
-			    ret = -1;
-	        } else {
-                // Found a match
-	            if (sqlite3_step(stmt) == SQLITE_ROW) {
-                    // save id
-                    hdb_info->idx_info->idx_struct.idx_sqlite_v1->lastId = sqlite3_column_int64(stmt, 2);
-                    
-                    if ((flags & TSK_HDB_FLAG_QUICK)
-			            || (hdb_info->db_type == TSK_HDB_DBTYPE_IDXONLY_ID)) {
-				        
-                        // There is just an index, so no other info to get
-                        ///@todo Look up a name in the sqlite db
-                        ret = 1;
-		            } else {
-                        // Use offset to get more info
-			            for (i = 0; i < len; i++) {
-				            hashbuf[2 * i] = hex[(hvalue[i] >> 4) & 0xf];
-				            hashbuf[2 * i + 1] = hex[hvalue[i] & 0xf];
-			            }
-			            hashbuf[2 * len] = '\0';
-
-			            offset = sqlite3_column_int64(stmt, 1);
-
-			            if (hdb_info->getentry(hdb_info, hashbuf, offset, flags, action, ptr)) {
-				            tsk_error_set_errstr2("hdb_lookup");
-				            ret = -1;
-			            } else {
-			                ret = 1;
-                        }
-		            }
-                }
-            }
-        
-	        sqlite3_reset(stmt);
-    
-            if (stmt) {
-                finalize_stmt(stmt);
-            }
-        }
+    if (hdb_info_base->hash_type == TSK_HDB_HTYPE_MD5_ID) {
+        selectStmt = "SELECT md5,database_offset,id from hashes where md5=? limit 1";
+    } 
+    else if (hdb_info_base->hash_type == TSK_HDB_HTYPE_SHA1_ID) {
+        selectStmt = "SELECT sha1,database_offset,id from hashes where sha1=? limit 1";
+    } 
+    else {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("Unknown hash type: %d\n", hdb_info_base->hash_type);
+        tsk_release_lock(&hdb_info_base->lock);
+		return -1;
     }
 
-    tsk_release_lock(&hdb_info->lock);
+    // RJCTODO: Why prepare a staement if it is not going to be reused?
+    prepare_stmt(selectStmt, &stmt, hdb_info->db);
+        
+	if (attempt(sqlite3_bind_blob(stmt, 1, hvalue, len, free), SQLITE_OK, "Error binding binary blob: %s\n", hdb_info->db)) {
+		ret = -1;
+	} 
+    else {
+        // Found a match
+	    if (sqlite3_step(stmt) == SQLITE_ROW) {
+            // RJCTODO: I do not like this at all
+            // save id
+            hdb_info->last_id = sqlite3_column_int64(stmt, 2);
+                    
+            if (flags & TSK_HDB_FLAG_QUICK) {
+                ret = 1;
+		    } 
+            else {
+                // RJCTODO: Should have code to do the callback, if set up correctly. This code must be here, due to the delegation
+                // Also, the callback seems to be the motivation for the name field.
+                // This suggests that the name field shoudl be at the top level and the name API should be supported
+		    }
+        }
+    }
+        
+    // RJCTODO: This probably only needs top be done if the stmt is reused; see above.
+	sqlite3_reset(stmt);
+    
+    if (stmt) {
+        finalize_stmt(stmt);
+    }
+
+    tsk_release_lock(&hdb_info_base->lock);
 
 	return ret;
 }
 
 int8_t
-getStrings(TSK_HDB_INFO * hdb_info, const char* selectStmt, std::vector<std::string>& out)
+getStrings(sqlite3 *db, const char *selectStmt, std::vector<std::string> &out)
 {
 	int8_t ret = 0;
     sqlite3_stmt* stmt = NULL;
     int len = strlen(selectStmt);
 
-    tsk_take_lock(&hdb_info->lock);
-
-    prepare_stmt(selectStmt, &stmt, hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
+    prepare_stmt(selectStmt, &stmt, db);
         
 	while (sqlite3_step(stmt) == SQLITE_ROW) {
 		const char* value = (const char *)sqlite3_column_text(stmt, 0);
@@ -632,8 +614,6 @@ getStrings(TSK_HDB_INFO * hdb_info, const char* selectStmt, std::vector<std::str
     if (stmt) {
         finalize_stmt(stmt);
     }
-
-    tsk_release_lock(&hdb_info->lock);
 
 	return ret;
 }
@@ -672,47 +652,62 @@ std::string blobToText(std::string binblob)
  *
  * @return -1 on error, 0 if hash value not found, and 1 if value was found.
  */
-void * sqlite_v1_getAllData(TSK_HDB_INFO * hdb_info, unsigned long hashId)
+void * sqlite_hdb_lookup_verbose_str(TSK_HDB_INFO *hdb_info_base, const char *hash)
 {
-    SQliteHashStruct * h = new SQliteHashStruct();
+    TSK_SQLITE_HDB_INFO *hdb_info = (TSK_SQLITE_HDB_INFO*)hdb_info_base;
+
+    // RJCTODO: Need to take and release the lock here
+    tsk_take_lock(&hdb_info_base->lock);
+
+    // RJCTODO: Need some sanity checking here.
+
+    // RJCTODO: Need to construct some SQL that gets all of the fields, 
+    // e.g., SELECT * FROM hashes WHERE <hash> = <value>
+    // And need to convert the string into a blob
+
+    // RJCTODO: Why are each of these done with separate selects?
+    TskHashLookupResult *result = new TskHashLookupResult(); // RJCTODO: This should be a malloc
     {
         std::vector<std::string> temp;
         char selectStmt[1024];
-        snprintf(selectStmt, 1024, "SELECT md5 from hashes where id=%d", hashId);
-        getStrings(hdb_info, selectStmt,  temp);
+        snprintf(selectStmt, 1024, "SELECT md5 from hashes where id=%d", hash);
+        getStrings(hdb_info->db, selectStmt,  temp);
         if (temp.size() > 0) {
-            h->hashMd5 = blobToText(temp.at(0));
+            result->hashMd5 = blobToText(temp.at(0));
         }
     }
     {
         std::vector<std::string> temp;
         char selectStmt[1024];
-        snprintf(selectStmt, 1024, "SELECT sha1 from hashes where id=%d", hashId);
-        getStrings(hdb_info, selectStmt,  temp);
+        snprintf(selectStmt, 1024, "SELECT sha1 from hashes where id=%d", hash);
+        getStrings(hdb_info->db, selectStmt,  temp);
         if (temp.size() > 0) {
-            h->hashSha1 = blobToText(temp.at(0));
+            result->hashSha1 = blobToText(temp.at(0));
         }
     }
     {
         std::vector<std::string> temp;
         char selectStmt[1024];
-        snprintf(selectStmt, 1024, "SELECT sha2_256 from hashes where id=%d", hashId);
-        getStrings(hdb_info, selectStmt,  temp);
+        snprintf(selectStmt, 1024, "SELECT sha2_256 from hashes where id=%d", hash);
+        getStrings(hdb_info->db, selectStmt,  temp);
         if (temp.size() > 0) {
-            h->hashSha2_256 = blobToText(temp.at(0));
+            result->hashSha2_256 = blobToText(temp.at(0));
         }
     }
     {
         char selectStmt[1024];
-        snprintf(selectStmt, 1024, "SELECT name from file_names where hash_id=%d", hashId);
-        getStrings(hdb_info, selectStmt,  h->names);
+        snprintf(selectStmt, 1024, "SELECT name from file_names where hash_id=%d", hash);
+        getStrings(hdb_info->db, selectStmt,  result->names);
     }
     {
         char selectStmt[1024];
-        snprintf(selectStmt, 1024, "SELECT comment from comments where hash_id=%d", hashId);
-        getStrings(hdb_info, selectStmt,  h->comments);
+        snprintf(selectStmt, 1024, "SELECT comment from comments where hash_id=%d", hash);
+        getStrings(hdb_info->db, selectStmt,  result->comments);
     }
-    return h;
+
+    tsk_release_lock(&hdb_info_base->lock);
+
+    return (void*)result; // RJCTODO: Need to be sure that the struct is freed
 }
 
 /*
