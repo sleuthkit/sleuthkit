@@ -21,6 +21,9 @@
 
 static const int chunkSize = 1024 * 1024;
 static sqlite3_stmt *m_stmt = NULL; // RJCTODO: Get rid of the m_
+
+
+
 static bool need_SQL_index = false; // RJCTODO: Get rid of this
 static const char hex[] = "0123456789abcdef";
 uint8_t sqlite_v1_addentry_bin(TSK_HDB_INFO * hdb_info, uint8_t* hvalue, int hlen, TSK_OFF_T offset);
@@ -306,45 +309,50 @@ sqlite_hdb_add(TSK_HDB_INFO * hdb_info, const char * filename, const char * md5,
 //}
 
 /**
- * This function is a no-op for SQLite hash database. The index is "internal" to the RDBMS.
  * @return 1 on error and 0 on success
  */
-//uint8_t
-//sqlite_v1_addentry_bin(TSK_HDB_INFO * hdb_info, uint8_t* hvalue, int hlen,
-//                    TSK_OFF_T offset)
-//{
-// RJCTODO: This needs to go into a separate add to hash database function, as opposed to an add to index function
- //   if (attempt(sqlite3_bind_blob(m_stmt, 1, hvalue, hlen, SQLITE_TRANSIENT),
-	//	SQLITE_OK,
-	//	"Error binding binary blob: %s\n",
-	//	hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite) ||
-	//	attempt(sqlite3_bind_int64(m_stmt, 2, offset),
-	//	SQLITE_OK,
-	//	"Error binding entry offset: %s\n",
-	//	hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite) ) {
- //       return 1;
- //   }
+uint8_t
+sqlite_hdb_add_hash(TSK_HDB_INFO * hdb_info_base, const char *filename, 
+    const char *md5, const char *sha1, const char *sha256, const char *comment)
+{
+    TSK_SQLITE_HDB_INFO *hdb_info = (TSK_SQLITE_HDB_INFO*)hdb_info_base;
 
- //   // Don't report error on constraint -- we just will silently not add that duplicate hash
-	//int r = sqlite3_step(m_stmt);
- //   if ((r != SQLITE_DONE) && (r != SQLITE_CONSTRAINT) ) {
-	//	tsk_error_reset();
-	//	tsk_error_set_errno(TSK_ERR_AUTO_DB);
-	//	tsk_error_set_errstr("Error stepping: %s\n", sqlite3_errmsg( hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite), r);
- //       return 1;
- //   }
+    // RJCTODO: hash_len funk
+    if (attempt(sqlite3_bind_blob(m_stmt, 1, md5, hdb_info_base->hash_len, SQLITE_TRANSIENT),
+		SQLITE_OK,
+		"Error binding binary blob: %s\n",
+        hdb_info->db)) {
+        return 1;
+    }
 
-	//r = sqlite3_reset(m_stmt);
- //   if ((r != SQLITE_OK) && (r != SQLITE_CONSTRAINT) ) {
-	//	tsk_error_reset();
-	//	tsk_error_set_errno(TSK_ERR_AUTO_DB);
-	//	tsk_error_set_errstr("Error resetting: %s\n", sqlite3_errmsg( hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite), r);
- //       return 1;
- //   }
+    uint64_t row_id = 0;
+    // RJCTODO: Need to do a query here, to get an id
 
- //   return 0;
-//    return 0;
-//}
+    // RJCTODO: If no id found, add and get id
+    // Don't report error on constraint -- we just will silently not add that duplicate hash
+	    int r = sqlite3_step(m_stmt);
+        if ((r != SQLITE_DONE) && (r != SQLITE_CONSTRAINT) ) {
+		    tsk_error_reset();
+		    tsk_error_set_errno(TSK_ERR_AUTO_DB);
+		    tsk_error_set_errstr("Error stepping: %s\n", sqlite3_errmsg(hdb_info->db), r);
+            return 1;
+        }
+
+        // RJCTODO: I guess this is needed, not done in other TSK/Autopsy code?
+	    r = sqlite3_reset(m_stmt);
+        if ((r != SQLITE_OK) && (r != SQLITE_CONSTRAINT) ) {
+		    tsk_error_reset();
+		    tsk_error_set_errno(TSK_ERR_AUTO_DB);
+		    tsk_error_set_errstr("Error resetting: %s\n", sqlite3_errmsg(hdb_info->db), r);
+            return 1;
+        }
+        row_id = sqlite3_last_insert_rowid(hdb_info->db);
+
+
+    // RJCTODO: Insert 
+
+    return 0;
+}
 
 /**
  * This function is a no-op for SQLite hash database. The index is "internal" to the RDBMS.

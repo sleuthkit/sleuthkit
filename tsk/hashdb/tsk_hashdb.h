@@ -125,15 +125,18 @@ extern "C" {
         TSK_HDB_DBTYPE_ENUM db_type;  ///< Type of database
         TSK_HDB_HTYPE_ENUM hash_type; ///< Type of hash used in index 
         uint16_t hash_len;            ///< Length of hash 
-        uint8_t updateable;           ///< Allow new entries to be added? // RJCTODO: Could be done by dbtype, as is also true for 
-        uint8_t uses_external_indexes; // RJCTODO: Is this a good idea?           
+        uint8_t updateable;           ///< Allow new entries to be added? // RJCTODO: Could become function
+        uint8_t uses_external_indexes; // RJCTODO: Could become function           
         tsk_lock_t lock;              ///< Lock for lazy loading and idx_lbuf
+        const TSK_TCHAR*(*get_db_path)(TSK_HDB_INFO *);
+        const TSK_TCHAR*(*get_db_name)(TSK_HDB_INFO *);
         uint8_t(*has_index)(TSK_HDB_INFO *, TSK_HDB_HTYPE_ENUM);
         uint8_t(*make_index)(TSK_HDB_INFO *, TSK_TCHAR *);     ///< \internal Database-specific function to make index 
         uint8_t(*open_index)(TSK_HDB_INFO *, TSK_HDB_HTYPE_ENUM);
+        const TSK_TCHAR*(*get_index_path)(TSK_HDB_INFO *);
         int8_t(*lookup_str)(TSK_HDB_INFO *, const char *, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
         int8_t(*lookup_raw)(TSK_HDB_INFO *, uint8_t *, uint8_t, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
-        uint8_t(*has_verbose_lookup)();
+        uint8_t(*has_verbose_lookup)(TSK_HDB_INFO *);
         void*(*lookup_verbose_str)(TSK_HDB_INFO *, const char *);
         uint8_t(*add_comment)(TSK_HDB_INFO *, char *, int64_t); // RJCTODO: Can probably go away
         uint8_t(*add_filename)(TSK_HDB_INFO *, char *, int64_t); // RJCTODO: Can probably go away
@@ -173,15 +176,18 @@ extern "C" {
     /* Functions */
     extern uint8_t tsk_hdb_create(TSK_TCHAR *);
     extern TSK_HDB_INFO *tsk_hdb_open(TSK_TCHAR *, TSK_HDB_OPEN_ENUM);
+    extern const TSK_TCHAR *tsk_hdb_get_path(TSK_HDB_INFO * hdb_info);
+    extern const TSK_TCHAR *tsk_hdb_get_name(TSK_HDB_INFO * hdb_info);
     extern uint8_t tsk_hdb_has_idx(TSK_HDB_INFO * hdb_info, TSK_HDB_HTYPE_ENUM htype);
     extern uint8_t tsk_hdb_is_idx_only(TSK_HDB_INFO *);
     extern uint8_t tsk_hdb_make_index(TSK_HDB_INFO *, TSK_TCHAR *);
+    extern const TSK_TCHAR *tsk_hdb_get_idx_path(TSK_HDB_INFO * hdb_info);
     extern int8_t tsk_hdb_lookup_str(TSK_HDB_INFO *, const char *,
         TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
     extern int8_t tsk_hdb_lookup_bin(TSK_HDB_INFO *, uint8_t *, uint8_t, 
         TSK_HDB_FLAG_ENUM,  TSK_HDB_LOOKUP_FN, void *);
-    extern uint8_t tsk_hdb_has_verbose_lookup();
-    extern void *tsk_hdb_lookup_verbose(TSK_HDB_INFO *, const char *);
+    extern uint8_t tsk_hdb_has_verbose_lookup(TSK_HDB_INFO *);
+    extern void *tsk_hdb_lookup_verbose_str(TSK_HDB_INFO *, const char *);
     extern int8_t tsk_hdb_add_hash(TSK_HDB_INFO *, const char*, const char*, 
         const char*, const char*, const char*);
     extern void tsk_hdb_close(TSK_HDB_INFO * hdb_info);

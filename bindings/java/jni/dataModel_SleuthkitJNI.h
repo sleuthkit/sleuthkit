@@ -96,11 +96,11 @@ JNIEXPORT jboolean JNICALL
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    hashDbUsesExternalIndexesNat
+ * Method:    hashDbIsReindexableNat
  * Signature: 
  */
 JNIEXPORT jboolean JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbUsesExternalIndexesNat(JNIEnv * env,
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbIsReindexableNat(JNIEnv * env,
     jclass obj, jint dbHandle);
 
 /*
@@ -110,6 +110,15 @@ JNIEXPORT jboolean JNICALL
  */
 JNIEXPORT jstring JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbPathNat(JNIEnv * env,
+    jclass obj, jint dbHandle);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    hashDbIndexPathNat
+ * Signature: 
+ */
+JNIEXPORT jstring JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbIndexPathNat(JNIEnv * env,
     jclass obj, jint dbHandle);
 
 /*

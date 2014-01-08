@@ -241,6 +241,45 @@ tsk_hdb_open(TSK_TCHAR *file_path, TSK_HDB_OPEN_ENUM flags)
     return hdb_info;
 }
 
+const TSK_TCHAR *tsk_hdb_get_path(TSK_HDB_INFO * hdb_info)
+{
+    assert(hdb_info);
+    if (!hdb_info) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("tsk_hdb_get_path: NULL hdb_info");
+        return 0;
+    }
+
+    return hdb_info->get_db_path(hdb_info);
+}
+
+const TSK_TCHAR *tsk_hdb_get_name(TSK_HDB_INFO * hdb_info)
+{
+    assert(hdb_info);
+    if (!hdb_info) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("tsk_hdb_get_path: NULL hdb_info");
+        return 0;
+    }
+
+    return hdb_info->get_db_name(hdb_info);
+}
+
+const TSK_TCHAR *tsk_hdb_get_idx_path(TSK_HDB_INFO * hdb_info)
+{
+    assert(hdb_info);
+    if (!hdb_info) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("tsk_hdb_get_path: NULL hdb_info");
+        return 0;
+    }
+
+    return hdb_info->get_index_path(hdb_info);
+}
+
 /**
  * \ingroup hashdblib
  * Determine if the open hash database has an index.
@@ -465,14 +504,23 @@ tsk_hdb_lookup_bin(TSK_HDB_INFO * hdb_info, uint8_t * hash, uint8_t len,
 }
 
 uint8_t 
-tsk_hdb_has_verbose_lookup()
+tsk_hdb_has_verbose_lookup(TSK_HDB_INFO *hdb_info)
 {
+    assert(hdb_info);
+    if (!hdb_info) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("tsk_hdb_has_verbose_lookup: NULL hdb_info");
+        return 0;
+    }
+
+    return hdb_info->has_verbose_lookup(hdb_info);
 }
  
 void *
 tsk_hdb_lookup_verbose_str(TSK_HDB_INFO *hdb_info, const char *hash)
 {
-    if (hdb_info->has_verbose_lookup()) {
+    if (hdb_info->has_verbose_lookup(hdb_info)) {
         return hdb_info->lookup_verbose_str(hdb_info, hash);
     }
     else {
