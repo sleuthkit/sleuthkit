@@ -44,7 +44,7 @@ static uint8_t
 exfatfs_get_fs_size_params(FATFS_INFO *a_fatfs)
 {
     const char *func_name = "exfatfs_get_fs_size_params";
-	TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
     EXFATFS_MASTER_BOOT_REC *exfatbs = NULL;
 
     assert(a_fatfs != NULL);
@@ -109,15 +109,15 @@ static uint8_t
 exfatfs_get_fs_layout(FATFS_INFO *a_fatfs)
 {
     const char *func_name = "exfatfs_get_fs_layout";
-	TSK_FS_INFO *fs = &(a_fatfs->fs_info);
-	EXFATFS_MASTER_BOOT_REC *exfatbs = NULL;
+    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+    EXFATFS_MASTER_BOOT_REC *exfatbs = NULL;
     uint64_t vol_len_in_sectors = 0;
     uint64_t last_sector_of_cluster_heap = 0;
 
     assert(a_fatfs != NULL);
     
     /* Get the size of the volume. It should be non-zero. */
-	exfatbs = (EXFATFS_MASTER_BOOT_REC*)(&a_fatfs->boot_sector_buffer);
+    exfatbs = (EXFATFS_MASTER_BOOT_REC*)(&a_fatfs->boot_sector_buffer);
     vol_len_in_sectors = tsk_getu64(fs->endian, exfatbs->vol_len_in_sectors);
     if (vol_len_in_sectors == 0) {
         tsk_error_reset();
@@ -234,7 +234,7 @@ static uint8_t
 exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
 {
     const char *func_name = "exfatfs_get_alloc_bitmap";
-	TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
     TSK_DADDR_T current_sector = 0;
     TSK_DADDR_T last_sector_of_data_area = 0;
     char *sector_buf = NULL;
@@ -324,12 +324,12 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
 static void 
 exfatfs_get_volume_id(FATFS_INFO *a_fatfs)
 {
-	TSK_FS_INFO *fs = &(a_fatfs->fs_info);
-	EXFATFS_MASTER_BOOT_REC *exfatbs = NULL;
+    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+    EXFATFS_MASTER_BOOT_REC *exfatbs = NULL;
 
     assert(a_fatfs != NULL);
     
-	exfatbs = (EXFATFS_MASTER_BOOT_REC*)(&a_fatfs->boot_sector_buffer);
+    exfatbs = (EXFATFS_MASTER_BOOT_REC*)(&a_fatfs->boot_sector_buffer);
     for (fs->fs_id_used = 0; fs->fs_id_used < 4; fs->fs_id_used++) {
         fs->fs_id[fs->fs_id_used] = exfatbs->vol_serial_no[fs->fs_id_used];
     }
@@ -351,8 +351,8 @@ exfatfs_get_volume_id(FATFS_INFO *a_fatfs)
 static void
 exfatfs_setup_fs_layout_model(FATFS_INFO *a_fatfs)
 {
-	TSK_FS_INFO *fs = &(a_fatfs->fs_info);
-	EXFATFS_MASTER_BOOT_REC *exfatbs = NULL;
+    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+    EXFATFS_MASTER_BOOT_REC *exfatbs = NULL;
 
     assert(a_fatfs != NULL);
 
@@ -455,7 +455,7 @@ exfatfs_init_inums_map(FATFS_INFO *a_fatfs)
 static void 
 exfatfs_set_func_ptrs(FATFS_INFO *a_fatfs)
 {
-	TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
 
     assert(a_fatfs != NULL);
 
@@ -537,7 +537,7 @@ exfatfs_open(FATFS_INFO *a_fatfs)
 
     fs->ftype = TSK_FS_TYPE_EXFAT;
 
-	return FATFS_OK;
+    return FATFS_OK;
 }
 
 /**
@@ -1006,12 +1006,12 @@ exfatfs_fsstat(TSK_FS_INFO *a_fs, FILE *a_hFile)
     exfatfs_fsstat_fs_metadata_info(a_fs, a_hFile);
     exfatfs_fsstat_fs_content_info(a_fs, a_hFile);
 
-	/* Since exFAT does not store all file data in FAT chains (only fragmented files),
-	 * printing the chains could give the mistaken impression that those are the only
-	 * sectors containing file data. 
-	 *
+    /* Since exFAT does not store all file data in FAT chains (only fragmented files),
+     * printing the chains could give the mistaken impression that those are the only
+     * sectors containing file data. 
+     *
      * exfatfs_fsstat_fs_fat_chains_info(a_fs, a_hFile);
-	 */
+     */
 
     return FATFS_OK;
 }

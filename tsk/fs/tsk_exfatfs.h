@@ -132,37 +132,37 @@ extern "C" {
         uint8_t jump_to_boot_code[3]; ///< 0xEB7690
         uint8_t fs_name[8];           ///< "EXFAT "
         uint8_t must_be_zeros[53];    ///< @brief Must be 0x00
-		uint8_t partition_offset[8];  ///< @brief Sector address
-		uint8_t vol_len_in_sectors[8];  ///< @brief Size of total volume in sectors
-		uint8_t fat_offset[4];          ///< Sector address of first FAT
-		uint8_t fat_len_in_sectors[4];  ///< Size of FAT in sectors
-		uint8_t cluster_heap_offset[4]; ///< Sector address of the data region
-		uint8_t cluster_cnt[4];         ///< Number of clusters in the cluster heap
-		uint8_t root_dir_cluster[4];    ///< Cluster address of the root directory
-		uint8_t vol_serial_no[4];     ///< Volume serial number
-		uint8_t fs_revision[2];       ///< VV.MM
-		uint8_t vol_flags[2];         ///< Flags: ActiveFAT, Volume Dirty, Media Failure, Clear to Zero, and Reserved
-		uint8_t bytes_per_sector;     ///< Power of 2. Minimum 2^9 = 512 bytes, maximum 2^12 = 4096 bytes
-		uint8_t sectors_per_cluster;  ///< Power of 2. Minimum 2^1 = 2. Maximum is dependant on the fact that the max cluster size is 32 MiB
-		uint8_t num_fats;             ///< 1 or 2 (only 2 if TexFAT is in use)
-		uint8_t drive_select;         ///< Used by INT 13
-		uint8_t percent_of_cluster_heap_in_use;  ///< Percentage of the heap in use
-		uint8_t reserved[7];      ///< Reserved
-		uint8_t boot_code[390];   ///< Boot program
-		uint8_t signature[2];     ///< 0xAA55
-	} EXFATFS_MASTER_BOOT_REC;
+        uint8_t partition_offset[8];  ///< @brief Sector address
+        uint8_t vol_len_in_sectors[8];  ///< @brief Size of total volume in sectors
+        uint8_t fat_offset[4];          ///< Sector address of first FAT
+        uint8_t fat_len_in_sectors[4];  ///< Size of FAT in sectors
+        uint8_t cluster_heap_offset[4]; ///< Sector address of the data region
+        uint8_t cluster_cnt[4];         ///< Number of clusters in the cluster heap
+        uint8_t root_dir_cluster[4];    ///< Cluster address of the root directory
+        uint8_t vol_serial_no[4];     ///< Volume serial number
+        uint8_t fs_revision[2];       ///< VV.MM
+        uint8_t vol_flags[2];         ///< Flags: ActiveFAT, Volume Dirty, Media Failure, Clear to Zero, and Reserved
+        uint8_t bytes_per_sector;     ///< Power of 2. Minimum 2^9 = 512 bytes, maximum 2^12 = 4096 bytes
+        uint8_t sectors_per_cluster;  ///< Power of 2. Minimum 2^1 = 2. Maximum is dependant on the fact that the max cluster size is 32 MiB
+        uint8_t num_fats;             ///< 1 or 2 (only 2 if TexFAT is in use)
+        uint8_t drive_select;         ///< Used by INT 13
+        uint8_t percent_of_cluster_heap_in_use;  ///< Percentage of the heap in use
+        uint8_t reserved[7];      ///< Reserved
+        uint8_t boot_code[390];   ///< Boot program
+        uint8_t signature[2];     ///< 0xAA55
+    } EXFATFS_MASTER_BOOT_REC;
 
-	 /**
+     /**
      * exFAT directory entry type byte, containing both the type and
-	 * the allocation status
+     * the allocation status
      */
-	typedef uint8_t EXFATFS_DIR_ENTRY_TYPE;
+    typedef uint8_t EXFATFS_DIR_ENTRY_TYPE;
 
     /**
      * exFAT directory entry types, the first byte of a directory entry minus the
-	 * high order bit (which gives allocation status)
+     * high order bit (which gives allocation status)
      */
-	enum EXFATFS_DIR_ENTRY_TYPE_ENUM {
+    enum EXFATFS_DIR_ENTRY_TYPE_ENUM {
         EXFATFS_DIR_ENTRY_TYPE_NONE = 0x00,         ///< 0x00
         EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL = 0x03, ///< 0x03
         EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID = 0x20,  ///< 0x20
@@ -173,8 +173,8 @@ extern "C" {
         EXFATFS_DIR_ENTRY_TYPE_FILE = 0x05,         ///< 0x05
         EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM = 0x40,  ///< 0x40
         EXFATFS_DIR_ENTRY_TYPE_FILE_NAME = 0x41     ///< 0x41
-	};
-	typedef enum EXFATFS_DIR_ENTRY_TYPE_ENUM EXFATFS_DIR_ENTRY_TYPE_ENUM;
+    };
+    typedef enum EXFATFS_DIR_ENTRY_TYPE_ENUM EXFATFS_DIR_ENTRY_TYPE_ENUM;
 
     /**
      * Volume label directory entry structure for exFAT file systems. This 
@@ -307,7 +307,7 @@ extern "C" {
         uint8_t utf16_name_chars[30];  ///< UTF16 part of file name, max 15 characters
     } EXFATFS_FILE_NAME_DIR_ENTRY;
 
-	extern uint8_t 
+    extern uint8_t 
     exfatfs_open(FATFS_INFO *a_fatfs);
 
     extern int8_t 
@@ -354,9 +354,9 @@ extern "C" {
     extern uint8_t
     exfatfs_is_file_stream_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs);
 
-	extern uint8_t
-	exfatfs_is_file_stream_dentry_standalone(FATFS_DENTRY *a_dentry, TSK_ENDIAN_ENUM a_endian,
-		uint64_t a_cluster_heap_size, TSK_DADDR_T a_last_cluster);
+    extern uint8_t
+    exfatfs_is_file_stream_dentry_standalone(FATFS_DENTRY *a_dentry, TSK_ENDIAN_ENUM a_endian,
+        uint64_t a_cluster_heap_size, TSK_DADDR_T a_last_cluster);
 
     extern uint8_t
     exfatfs_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry_inum, 
@@ -383,11 +383,11 @@ extern "C" {
         FATFS_DENTRY *a_dentry, unsigned int a_selection_flags, 
         int a_cluster_is_alloc);
 
-	extern uint8_t 
-	exfatfs_get_alloc_status_from_type(EXFATFS_DIR_ENTRY_TYPE a_dir_entry_type);
+    extern uint8_t 
+    exfatfs_get_alloc_status_from_type(EXFATFS_DIR_ENTRY_TYPE a_dir_entry_type);
 
-	extern EXFATFS_DIR_ENTRY_TYPE_ENUM 
-	exfatfs_get_enum_from_type(EXFATFS_DIR_ENTRY_TYPE a_dir_entry_type);
+    extern EXFATFS_DIR_ENTRY_TYPE_ENUM 
+    exfatfs_get_enum_from_type(EXFATFS_DIR_ENTRY_TYPE a_dir_entry_type);
 
     extern TSK_RETVAL_ENUM
     exfatfs_dent_parse_buf(FATFS_INFO *a_fatfs, TSK_FS_DIR *a_fs_dir, char *a_buf,

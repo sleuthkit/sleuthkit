@@ -125,7 +125,7 @@ exfats_parse_file_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a_dent
     assert(a_name_info->fs_name->name_size == FATFS_MAXNAMLEN_UTF8);
     assert(a_name_info->fs_dir != NULL);
     assert(dentry != NULL);
-	assert(exfatfs_get_enum_from_type(dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_FILE);
+    assert(exfatfs_get_enum_from_type(dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_FILE);
     assert(fatfs_inum_is_in_range(a_name_info->fatfs, a_inum));
     
     /* Starting parse of a new name, so save the current name, if any. */
@@ -186,10 +186,10 @@ exfats_parse_file_stream_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY 
     assert(a_name_info->fs_name->name_size == FATFS_MAXNAMLEN_UTF8);
     assert(a_name_info->fs_dir != NULL);
     assert(dentry != NULL);
-	assert(exfatfs_get_enum_from_type(dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM);
+    assert(exfatfs_get_enum_from_type(dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM);
     assert(fatfs_inum_is_in_range(a_name_info->fatfs, a_inum));
 
-	if(exfatfs_get_enum_from_type(a_name_info->last_dentry_type) != EXFATFS_DIR_ENTRY_TYPE_FILE){
+    if(exfatfs_get_enum_from_type(a_name_info->last_dentry_type) != EXFATFS_DIR_ENTRY_TYPE_FILE){
         /* A file stream entry must follow a file entry, so this entry is a
          * false positive or there is corruption. Save the current name, 
          * if any, and ignore this buffer. */ 
@@ -197,8 +197,8 @@ exfats_parse_file_stream_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY 
         return;
     }
 
-	if(exfatfs_get_alloc_status_from_type(a_name_info->last_dentry_type) !=
-		exfatfs_get_alloc_status_from_type(dentry->entry_type)){
+    if(exfatfs_get_alloc_status_from_type(a_name_info->last_dentry_type) !=
+        exfatfs_get_alloc_status_from_type(dentry->entry_type)){
         /* The in-use bits of all of the entries in an entry set should be 
          * same, so this entry is a false positive or there is corruption. 
          * Save the current name, if any, and ignore this buffer. */ 
@@ -247,11 +247,11 @@ exfats_parse_file_name_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
     assert(a_name_info->fs_name->name_size == FATFS_MAXNAMLEN_UTF8);
     assert(a_name_info->fs_dir != NULL);
     assert(dentry != NULL);
-	assert(exfatfs_get_enum_from_type(dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME);
+    assert(exfatfs_get_enum_from_type(dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME);
     assert(fatfs_inum_is_in_range(a_name_info->fatfs, a_inum));
 
-	if(exfatfs_get_enum_from_type(a_name_info->last_dentry_type) != EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM &&
-		exfatfs_get_enum_from_type(a_name_info->last_dentry_type) != EXFATFS_DIR_ENTRY_TYPE_FILE_NAME){
+    if(exfatfs_get_enum_from_type(a_name_info->last_dentry_type) != EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM &&
+        exfatfs_get_enum_from_type(a_name_info->last_dentry_type) != EXFATFS_DIR_ENTRY_TYPE_FILE_NAME){
         /* A file name entry must follow a stream or name entry, so this entry is
          * is a false positive or there is corruption. Save the current name, 
          * if any, and ignore this buffer. */ 
@@ -259,8 +259,8 @@ exfats_parse_file_name_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
         return;
     }
 
-	if(exfatfs_get_alloc_status_from_type(a_name_info->last_dentry_type) !=
-		exfatfs_get_alloc_status_from_type(dentry->entry_type)){
+    if(exfatfs_get_alloc_status_from_type(a_name_info->last_dentry_type) !=
+        exfatfs_get_alloc_status_from_type(dentry->entry_type)){
         /* The in-use bits of all of the entries in an entry set should be 
          * same, so this entry is a false positive or there is corruption. 
          * Save the current name, if any, and ignore this buffer. */ 
@@ -334,7 +334,7 @@ exfats_parse_vol_label_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
     assert(a_name_info->fs_name->name_size == FATFS_MAXNAMLEN_UTF8);
     assert(a_name_info->fs_dir != NULL);
     assert(dentry != NULL);
-	assert(exfatfs_get_enum_from_type(dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL);
+    assert(exfatfs_get_enum_from_type(dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL);
     assert(fatfs_inum_is_in_range(a_name_info->fatfs, a_inum));
 
     /* Starting parse of a new name, save the previous name, if any. */
@@ -345,7 +345,7 @@ exfats_parse_vol_label_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
     a_name_info->last_dentry_type = 
         (EXFATFS_DIR_ENTRY_TYPE)dentry->entry_type;
 
-	if(exfatfs_get_alloc_status_from_type(dentry->entry_type) == 1){
+    if(exfatfs_get_alloc_status_from_type(dentry->entry_type) == 1){
         if (fatfs_utf16_inode_str_2_utf8(a_name_info->fatfs, 
             (UTF16*)dentry->volume_label, (size_t)dentry->utf16_char_count + 1, 
             (UTF8*)a_name_info->fs_name->name, a_name_info->fs_name->name_size,
@@ -564,7 +564,7 @@ exfatfs_dent_parse_buf(FATFS_INFO *a_fatfs, TSK_FS_DIR *a_fs_dir, char *a_buf,
                 dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
             }
 
-			switch(exfatfs_get_enum_from_type(dentry_type)) {
+            switch(exfatfs_get_enum_from_type(dentry_type)) {
             case EXFATFS_DIR_ENTRY_TYPE_FILE:
                 exfats_parse_file_dentry(&name_info, current_dentry, current_inum);                 
                 break;

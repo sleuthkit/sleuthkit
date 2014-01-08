@@ -126,7 +126,7 @@ exfatfs_is_vol_label_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS
         return 0;
     }
 
-	if(exfatfs_get_alloc_status_from_type(dentry->entry_type) == 1){
+    if(exfatfs_get_alloc_status_from_type(dentry->entry_type) == 1){
         /* There is supposed to be a label, check its length. */
         if ((dentry->utf16_char_count < 1) || (dentry->utf16_char_count > EXFATFS_MAX_VOLUME_LABEL_LEN)) {
             if (tsk_verbose) {
@@ -451,13 +451,13 @@ exfatfs_is_file_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs)
     const char *func_name = "exfatfs_is_file_dentry";
     TSK_FS_INFO *fs = NULL;
 
-	if (a_fatfs != NULL) {
+    if (a_fatfs != NULL) {
         fs = &(a_fatfs->fs_info);
-		return exfatfs_is_file_dentry_standalone(a_dentry, fs->endian);
-	}
-	else{
-		return exfatfs_is_file_dentry_standalone(a_dentry, TSK_UNKNOWN_ENDIAN);
-	}
+        return exfatfs_is_file_dentry_standalone(a_dentry, fs->endian);
+    }
+    else{
+        return exfatfs_is_file_dentry_standalone(a_dentry, TSK_UNKNOWN_ENDIAN);
+    }
 
 }
 
@@ -502,7 +502,7 @@ exfatfs_is_file_dentry_standalone(FATFS_DENTRY *a_dentry, TSK_ENDIAN_ENUM a_endi
         return 0;
     }
 
-	if (a_endian != TSK_UNKNOWN_ENDIAN) {  
+    if (a_endian != TSK_UNKNOWN_ENDIAN) {  
 
         /* Make sure the time stamps aren't all zeros. */
         if ((tsk_getu16(a_endian, dentry->modified_date) == 0) &&
@@ -547,23 +547,23 @@ exfatfs_is_file_stream_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs)
     uint64_t file_size = 0;
     uint32_t first_cluster = 0;
 
-	uint64_t cluster_heap_size = 0;
+    uint64_t cluster_heap_size = 0;
 
-	if (a_fatfs != NULL) {
+    if (a_fatfs != NULL) {
         fs = &(a_fatfs->fs_info);
 
-		/* Calculate the size of the cluster heap. The cluster heap size 
-		 * is computed by multiplying the cluster size 
-		 * by the number of sectors in a cluster and then 
+        /* Calculate the size of the cluster heap. The cluster heap size 
+         * is computed by multiplying the cluster size 
+         * by the number of sectors in a cluster and then 
          * multiplying by the number of bytes in a sector (the last operation 
          * is optimized as a left shift by the base 2 log of sector size). */
         cluster_heap_size = (a_fatfs->clustcnt * a_fatfs->csize) << a_fatfs->ssize_sh;
 
-		return exfatfs_is_file_stream_dentry_standalone(a_dentry, fs->endian, cluster_heap_size, a_fatfs->lastclust);
-	}
-	else{
-		return exfatfs_is_file_stream_dentry_standalone(a_dentry, TSK_UNKNOWN_ENDIAN, 0, 0);
-	}
+        return exfatfs_is_file_stream_dentry_standalone(a_dentry, fs->endian, cluster_heap_size, a_fatfs->lastclust);
+    }
+    else{
+        return exfatfs_is_file_stream_dentry_standalone(a_dentry, TSK_UNKNOWN_ENDIAN, 0, 0);
+    }
 
 }
 
@@ -587,7 +587,7 @@ exfatfs_is_file_stream_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs)
  */
 uint8_t
 exfatfs_is_file_stream_dentry_standalone(FATFS_DENTRY *a_dentry, TSK_ENDIAN_ENUM a_endian,
-	uint64_t a_cluster_heap_size, TSK_DADDR_T a_last_cluster)
+    uint64_t a_cluster_heap_size, TSK_DADDR_T a_last_cluster)
 {
     const char *func_name = "exfatfs_is_file_stream_dentry";
     EXFATFS_FILE_STREAM_DIR_ENTRY *dentry = (EXFATFS_FILE_STREAM_DIR_ENTRY*)a_dentry;
@@ -614,14 +614,14 @@ exfatfs_is_file_stream_dentry_standalone(FATFS_DENTRY *a_dentry, TSK_ENDIAN_ENUM
              * cluster size by the number of sectors in a cluster and then 
              * multiplying by the number of bytes in a sector (the last operation 
              * is optimized as a left shift by the base 2 log of sector size). */
-			if(a_cluster_heap_size > 0){
-				if (file_size > a_cluster_heap_size) {
-					if (tsk_verbose) {
-						fprintf(stderr, "%s: file size too big\n", func_name);
-					}
-					return 0;
-				}
-			}
+            if(a_cluster_heap_size > 0){
+                if (file_size > a_cluster_heap_size) {
+                    if (tsk_verbose) {
+                        fprintf(stderr, "%s: file size too big\n", func_name);
+                    }
+                    return 0;
+                }
+            }
 
             /* Is the address of the first cluster in range? */
             first_cluster = tsk_getu32(a_endian, dentry->first_cluster_addr);
@@ -633,7 +633,7 @@ exfatfs_is_file_stream_dentry_standalone(FATFS_DENTRY *a_dentry, TSK_ENDIAN_ENUM
                 }
                 return 0;
             }
-		}
+        }
    }
    return 1;
 
@@ -661,7 +661,7 @@ exfatfs_is_file_name_dentry(FATFS_DENTRY *a_dentry)
 
     /* There is not enough data in a file name directory entry
      * to test anything but the entry type byte. */
-	return (exfatfs_get_enum_from_type(dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME);
+    return (exfatfs_get_enum_from_type(dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME);
 }
 
 
@@ -702,7 +702,7 @@ exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_A
     case EXFATFS_DIR_ENTRY_TYPE_ACT:
         return exfatfs_is_access_ctrl_table_dentry(a_dentry, a_cluster_is_alloc);
     case EXFATFS_DIR_ENTRY_TYPE_FILE:
-		return exfatfs_is_file_dentry(a_dentry, a_fatfs);
+        return exfatfs_is_file_dentry(a_dentry, a_fatfs);
     case EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM:
         return exfatfs_is_file_stream_dentry(a_dentry, a_fatfs);
     case EXFATFS_DIR_ENTRY_TYPE_FILE_NAME:
@@ -801,7 +801,7 @@ exfatfs_make_contiguous_data_run(TSK_FS_FILE *a_fs_file)
     if (tsk_fs_attr_set_run(a_fs_file, fs_attr, data_run, NULL,
             TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
             fs_meta->size,
-			fs_meta->size,
+            fs_meta->size,
             data_run->len * fs->block_size, 
             TSK_FS_ATTR_FLAG_NONE, 0)) {
         return 1;
@@ -838,11 +838,11 @@ exfatfs_copy_vol_label_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FATFS_DENTR
     assert(a_fs_file->meta != NULL);
 
     dentry = (EXFATFS_VOL_LABEL_DIR_ENTRY*)a_dentry;
-	assert(exfatfs_get_enum_from_type(dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL);
+    assert(exfatfs_get_enum_from_type(dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL);
 
     /* If there is a volume label, copy it to the name field of the 
      * TSK_FS_META structure. */
-	if (exfatfs_get_alloc_status_from_type(dentry->entry_type) == 1) {
+    if (exfatfs_get_alloc_status_from_type(dentry->entry_type) == 1) {
         if (fatfs_utf16_inode_str_2_utf8(a_fatfs, (UTF16*)dentry->volume_label, (size_t)dentry->utf16_char_count + 1, 
             (UTF8*)a_fs_file->meta->name2->name, sizeof(a_fs_file->meta->name2->name), a_inum, "volume label") != TSKconversionOK) {
             return TSK_COR;
@@ -966,9 +966,9 @@ exfatfs_load_file_stream_dentry(FATFS_INFO *a_fatfs,
         exfatfs_is_dentry(a_fatfs, a_dentry, (FATFS_DATA_UNIT_ALLOC_STATUS_ENUM)a_sector_is_alloc, a_sector_is_alloc)) {
         /* If the bytes at the specified inode address are a file stream entry
          * with the same allocation status as the file entry, report success. */
-		if((exfatfs_get_alloc_status_from_type(a_file_dentry_type) == exfatfs_get_alloc_status_from_type(a_dentry->data[0])) &&
-			(exfatfs_get_enum_from_type(a_file_dentry_type) == EXFATFS_DIR_ENTRY_TYPE_FILE) &&
-			(exfatfs_get_enum_from_type(a_dentry->data[0]) == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM)) {
+        if((exfatfs_get_alloc_status_from_type(a_file_dentry_type) == exfatfs_get_alloc_status_from_type(a_dentry->data[0])) &&
+            (exfatfs_get_enum_from_type(a_file_dentry_type) == EXFATFS_DIR_ENTRY_TYPE_FILE) &&
+            (exfatfs_get_enum_from_type(a_dentry->data[0]) == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM)) {
             return 0;
         }
     }
@@ -1119,7 +1119,7 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     assert(a_file_dentry != NULL);
     assert(a_fs_file != NULL);
     assert(a_fs_file->meta != NULL);
-	assert(exfatfs_get_enum_from_type(file_dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_FILE);
+    assert(exfatfs_get_enum_from_type(file_dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_FILE);
 
     fs = &(a_fatfs->fs_info);
     fs_meta = a_fs_file->meta;
@@ -1148,7 +1148,7 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
 
     /* There is no notion of links in exFAT, just deleted or not deleted. 
      * If the file is not deleted, treat this as having one link. */
-	fs_meta->nlink = (exfatfs_get_alloc_status_from_type(file_dentry->entry_type) == 0) ? 0 : 1;
+    fs_meta->nlink = (exfatfs_get_alloc_status_from_type(file_dentry->entry_type) == 0) ? 0 : 1;
 
     /* Copy the last modified time, converted to UNIX date format. */
     if (FATFS_ISDATE(tsk_getu16(fs->endian, file_dentry->modified_date))) {
@@ -1191,7 +1191,7 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
         fs_meta->crtime_nano = 0;
     }
 
-	/* Currenty, don't do anything with the time zone offsets */
+    /* Currenty, don't do anything with the time zone offsets */
 
     /* Attempt to load the file stream entry that goes with this file entry. 
      * If not successful, at least the file entry meta data will be returned. */
@@ -1208,8 +1208,8 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
      * sector that contains the directory entries and the entry type 
      * settings - essentially a "belt and suspenders" check. */
     if ((a_is_alloc) &&
-		(exfatfs_get_alloc_status_from_type(file_dentry->entry_type) == 1) &&
-		(exfatfs_get_alloc_status_from_type(stream_dentry.entry_type) == 1)) {
+        (exfatfs_get_alloc_status_from_type(file_dentry->entry_type) == 1) &&
+        (exfatfs_get_alloc_status_from_type(stream_dentry.entry_type) == 1)) {
         a_fs_file->meta->flags = TSK_FS_META_FLAG_ALLOC;
 
         /* If the FAT chain bit of the secondary flags of the stream entry is set,
@@ -1255,13 +1255,13 @@ exfatfs_copy_file_name_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     assert(a_fs_file->meta != NULL);
 
     dentry = (EXFATFS_FILE_NAME_DIR_ENTRY*)a_dentry;
-	assert(exfatfs_get_enum_from_type(dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME);
+    assert(exfatfs_get_enum_from_type(dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME);
 
     /* Set the allocation status using both the allocation status of the 
      * sector that contains the directory entries and the entry type 
      * settings - essentially a "belt and suspenders" check. */
     if ((a_is_alloc) &&
-		(exfatfs_get_alloc_status_from_type(dentry->entry_type) == 1)) {
+        (exfatfs_get_alloc_status_from_type(dentry->entry_type) == 1)) {
         a_fs_file->meta->flags = TSK_FS_META_FLAG_ALLOC;
     }
     else {
@@ -1629,7 +1629,7 @@ exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
     /* For the purposes of inode lookup, the file and file stream entries 
      * that begin a file entry set are mapped to a single inode. Thus,  
      * file stream entries are not treated as independent inodes. */
-	if (exfatfs_get_enum_from_type(dentry_type) == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM) {
+    if (exfatfs_get_enum_from_type(dentry_type) == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
         tsk_error_set_errstr("%s: %" PRIuINUM " is not an inode", func_name, 
@@ -1794,15 +1794,15 @@ exfatfs_inode_walk_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     /* Skip file stream and file name entries. For inode walks, these entries
      * are handled with the file entry with which they are associated in a file
      * entry set. */
-	if (exfatfs_get_enum_from_type(a_dentry->data[0]) == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM ||
-		exfatfs_get_enum_from_type(a_dentry->data[0]) == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME) {
+    if (exfatfs_get_enum_from_type(a_dentry->data[0]) == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM ||
+        exfatfs_get_enum_from_type(a_dentry->data[0]) == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME) {
         return 1;
     }
 
     /* Assign an allocation status to the entry. Allocation status is 
      * determined first by the allocation status of the cluster that contains
      * the entry, then by the allocated status of the entry. */
-	if ((a_cluster_is_alloc) && (exfatfs_get_alloc_status_from_type(a_dentry->data[0]) == 1)) {
+    if ((a_cluster_is_alloc) && (exfatfs_get_alloc_status_from_type(a_dentry->data[0]) == 1)) {
         dentry_flags = TSK_FS_META_FLAG_ALLOC;
     }
     else {
@@ -1839,7 +1839,7 @@ exfatfs_inode_walk_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
 uint8_t 
 exfatfs_get_alloc_status_from_type(EXFATFS_DIR_ENTRY_TYPE a_dir_entry_type)
 {
-	return (a_dir_entry_type >> 7);
+    return (a_dir_entry_type >> 7);
 }
 
 
@@ -1853,5 +1853,5 @@ exfatfs_get_alloc_status_from_type(EXFATFS_DIR_ENTRY_TYPE a_dir_entry_type)
  */
 EXFATFS_DIR_ENTRY_TYPE_ENUM 
 exfatfs_get_enum_from_type(EXFATFS_DIR_ENTRY_TYPE a_dir_entry_type){
-	return ((EXFATFS_DIR_ENTRY_TYPE_ENUM)(a_dir_entry_type & 0x7f));
+    return ((EXFATFS_DIR_ENTRY_TYPE_ENUM)(a_dir_entry_type & 0x7f));
 }
