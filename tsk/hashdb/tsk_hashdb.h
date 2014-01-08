@@ -105,7 +105,7 @@ extern "C" {
     } TSK_HDB_ITYPE_ENUM;
 
     /// List of supported hash database types
-    #define TSK_HDB_DBTYPE_SUPPORT_STR	"nsrl-md5, nsrl-sha1, md5sum, encase, hk" // RJCTODO: Needs update for SQLite
+    #define TSK_HDB_DBTYPE_SUPPORT_STR	"nsrl-md5, nsrl-sha1, md5sum, encase, hk, SQLite"
 
     #define TSK_HDB_NAME_MAXLEN 512 //< Max length for database name
 
@@ -117,35 +117,37 @@ extern "C" {
         void *);
 
     /**
-     * Holds information about an open hash database. Created by 
-     * hdb_open and used for making an index and looking up values.
+     * Represents an open hash database. Instances are created using the 
+     * tsk_hdb_open() API and are passed to hash database API functions.
      */
     struct TSK_HDB_INFO {
-        TSK_TCHAR *db_fname;          ///< Database file path, may be NULL for index only database
-        TSK_HDB_DBTYPE_ENUM db_type;  ///< Type of database
-        TSK_HDB_HTYPE_ENUM hash_type; ///< Type of hash used in index 
-        uint16_t hash_len;            ///< Length of hash 
-        uint8_t updateable;           ///< Allow new entries to be added? // RJCTODO: Could become function
-        uint8_t uses_external_indexes; // RJCTODO: Could become function           
-        tsk_lock_t lock;              ///< Lock for lazy loading and idx_lbuf
-        const TSK_TCHAR*(*get_db_path)(TSK_HDB_INFO *);
-        const TSK_TCHAR*(*get_db_name)(TSK_HDB_INFO *);
-        uint8_t(*has_index)(TSK_HDB_INFO *, TSK_HDB_HTYPE_ENUM);
-        uint8_t(*make_index)(TSK_HDB_INFO *, TSK_TCHAR *);     ///< \internal Database-specific function to make index 
-        uint8_t(*open_index)(TSK_HDB_INFO *, TSK_HDB_HTYPE_ENUM);
-        const TSK_TCHAR*(*get_index_path)(TSK_HDB_INFO *);
-        int8_t(*lookup_str)(TSK_HDB_INFO *, const char *, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
-        int8_t(*lookup_raw)(TSK_HDB_INFO *, uint8_t *, uint8_t, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
-        uint8_t(*has_verbose_lookup)(TSK_HDB_INFO *);
-        void*(*lookup_verbose_str)(TSK_HDB_INFO *, const char *);
-        uint8_t(*add_comment)(TSK_HDB_INFO *, char *, int64_t); // RJCTODO: Can probably go away
-        uint8_t(*add_filename)(TSK_HDB_INFO *, char *, int64_t); // RJCTODO: Can probably go away
+        TSK_TCHAR *db_fname;               ///< Database file path, may be NULL for an index only database
+        char db_name[TSK_HDB_NAME_MAXLEN]; ///< Name of the database, for callbacks
+        TSK_HDB_DBTYPE_ENUM db_type;       ///< Type of database
+        TSK_HDB_HTYPE_ENUM hash_type;      ///< Type of hash used in index // RJCTODO: Must this be at this level? 
+        uint16_t hash_len;                 ///< Length of hash // RJCTODO: Must this be at this level?
+        uint8_t updateable;                ///< Allows new entries to be added? // RJCTODO: Could become function
+        uint8_t uses_external_indexes;     ///< Uses one or more external indexes? // RJCTODO: Could become function           
+        tsk_lock_t lock;                   ///< Lock for lazy loading and idx_lbuf
+        const TSK_TCHAR*(*get_db_path)(TSK_HDB_INFO*);
+        const char*(*get_db_name)(TSK_HDB_INFO*);
+        uint8_t(*has_index)(TSK_HDB_INFO*, TSK_HDB_HTYPE_ENUM);
+        uint8_t(*make_index)(TSK_HDB_INFO*, TSK_TCHAR*);
+        uint8_t(*open_index)(TSK_HDB_INFO*, TSK_HDB_HTYPE_ENUM);
+        const TSK_TCHAR*(*get_index_path)(TSK_HDB_INFO*);
+        int8_t(*lookup_str)(TSK_HDB_INFO*, const char*, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void*);
+        int8_t(*lookup_raw)(TSK_HDB_INFO*, uint8_t *, uint8_t, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void*);
+        uint8_t(*has_verbose_lookup)(TSK_HDB_INFO*);
+        void*(*lookup_verbose_str)(TSK_HDB_INFO*, const char*);
+        uint8_t(*add_hash)(TSK_HDB_INFO*, const char*, const char*, const char*, const char*, const char *);
         void(*close_db)(TSK_HDB_INFO *);
     };
 
+    /** 
+     * Represents a text-format hash database with an external index.
+     */
     typedef struct TSK_TEXT_HDB_INFO {
         TSK_HDB_INFO base;
-        char db_name[TSK_HDB_NAME_MAXLEN];          ///< Name of the database
         FILE *hDb;              ///< File handle to database (always open)
         uint8_t(*get_entry) (TSK_HDB_INFO *, const char *, TSK_OFF_T, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);    ///< \internal Database-specific function to find entry at a given offset // RJCTODO: Text DB thing
         TSK_TCHAR *idx_fname;         ///< Name of index file, may be NULL for database without external index
@@ -158,6 +160,9 @@ extern "C" {
         char *idx_lbuf;         ///< Buffer to hold a line from the index  (r/w shared - lock) 
     } TSK_TEXT_HDB_INFO;    
 
+    /** 
+     * Represents an SQLite hash database.
+     */
     typedef struct TSK_SQLITE_HDB_INFO {
         TSK_HDB_INFO base;
     	sqlite3 *db;
@@ -173,7 +178,7 @@ extern "C" {
     };
     typedef enum TSK_HDB_OPEN_ENUM TSK_HDB_OPEN_ENUM;
 
-    /* Functions */
+    /* Hash database API functions */
     extern uint8_t tsk_hdb_create(TSK_TCHAR *);
     extern TSK_HDB_INFO *tsk_hdb_open(TSK_TCHAR *, TSK_HDB_OPEN_ENUM);
     extern const TSK_TCHAR *tsk_hdb_get_path(TSK_HDB_INFO * hdb_info);

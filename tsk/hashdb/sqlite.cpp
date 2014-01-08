@@ -13,24 +13,21 @@
 #include "lookup_result.h"
 #include <assert.h>
 
-// RJCTODO: Name this file consistently...
 /**
- * \file sqlite_index.cpp
- * Contains functions for creating a SQLite format hash index // RJCTODO: CHange the name of this file and this comment
+ * \file sqlite.cpp
+ * Contains hash database functions for SQLite hash databases.
  */
 
+// RJCTODO: Name improvements are possible.
+static const char *IDX_SCHEMA_VER = "Schema Version";
+static const char *IDX_VERSION_NUM = "1";
+static const char *IDX_SQLITE_V1_HEADER = "SQLite format 3";
 static const int chunkSize = 1024 * 1024;
 static sqlite3_stmt *m_stmt = NULL; // RJCTODO: Get rid of the m_
-
-
-
-static bool need_SQL_index = false; // RJCTODO: Get rid of this
 static const char hex[] = "0123456789abcdef";
-uint8_t sqlite_v1_addentry_bin(TSK_HDB_INFO * hdb_info, uint8_t* hvalue, int hlen, TSK_OFF_T offset);
-uint8_t addentry_text(TSK_HDB_INFO * hdb_info, char* hvalue, TSK_OFF_T offset);
 
-static int attempt(int resultCode, int expectedResultCode,
-		const char *errfmt, sqlite3 * sqlite)
+static int attempt(int resultCode, int expectedResultCode, const char *errfmt, 
+    sqlite3 *sqlite)
 {
 	if (resultCode != expectedResultCode) {
 		tsk_error_reset();
@@ -41,11 +38,11 @@ static int attempt(int resultCode, int expectedResultCode,
 	return 0;
 }
 
-static int attempt_exec(const char *sql, int (*callback) (void *, int, char **, char **),
-						void *callback_arg, const char *errfmt, sqlite3 * sqlite)
+static int attempt_exec(const char *sql, 
+    int (*callback) (void *, int, char **, char **), void *callback_arg, 
+    const char *errfmt, sqlite3 * sqlite)
 {
-	char * errmsg;
-
+	char *errmsg = NULL;
 	if(sqlite3_exec(sqlite, sql, callback, callback_arg, &errmsg) != SQLITE_OK) {
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_AUTO_DB);
@@ -56,7 +53,8 @@ static int attempt_exec(const char *sql, int (*callback) (void *, int, char **, 
 	return 0;
 }
 
-static int attempt_exec_nocallback(const char *sql, const char *errfmt, sqlite3 * sqlite)
+static int attempt_exec_nocallback(const char *sql, const char *errfmt, 
+    sqlite3 *sqlite)
 {
 	return attempt_exec(sql, NULL, NULL, errfmt, sqlite);
 }
@@ -73,6 +71,7 @@ static int finalize_stmt(sqlite3_stmt * stmt)
 	return 0;
 }
 
+// RJCTODO: May want to change name and add to error 
 static int prepare_stmt(const char *sql, sqlite3_stmt ** ppStmt, sqlite3 * sqlite)
 {
     ///@todo possible performance increase by using strlen(sql)+1 instead of -1 // RJCTODO: Resolve this
@@ -86,36 +85,30 @@ static int prepare_stmt(const char *sql, sqlite3_stmt ** ppStmt, sqlite3 * sqlit
 	return 0;
 }
 
-// RJCTODO: Probably don't need this, since not preserving SQLite index. On the other hand, the additions to the database are transacted,
-// and since multiple tables are potentially involved in the operation, the TX may be a good idea.
-static uint8_t begin_transaction(TSK_HDB_INFO *hdb_info) {
-    TSK_SQLITE_HDB_INFO *sqlite_hdb_info = (TSK_SQLITE_HDB_INFO*)hdb_info;
-	return attempt_exec_nocallback("BEGIN", "Error beginning transaction %s\n", sqlite_hdb_info->db);
-}
-
-// RJCTODO: Probably don't need this, since not preserving SQLite index. On the other hand, the additions to the database are transacted,
-// and since multiple tables are potentially involved in the operation, the TX may be a good idea.
-static uint8_t end_transaction(TSK_HDB_INFO *hdb_info) {
-    TSK_SQLITE_HDB_INFO *sqlite_hdb_info = (TSK_SQLITE_HDB_INFO*)hdb_info;
-	return attempt_exec_nocallback("COMMIT", "Error committing transaction %s\n", sqlite_hdb_info->db);
-}
-
 // RJCTODO: Comment
+// RJCTODO: May want to change name and add to error 
 uint8_t sqlite_hdb_create_db(TSK_TCHAR *db_file_path)
 {
+    assert(db_file_path);
+    if (!db_file_path) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("sqlite_hdb_create_db: NULL db_file_path");
+        return 1;
+    }
+
 	sqlite3 *db = sqlite_hdb_open_db(db_file_path);
 	if (NULL == db) {
 		return 1;
 	}
 
-    // Incrementally increase the size if the database.    
+    // Configure the database to increase its size incrementally.    
     if (sqlite3_file_control(db, NULL, SQLITE_FCNTL_CHUNK_SIZE, const_cast<int *>(&chunkSize)) != SQLITE_OK) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         tsk_error_set_errstr("sqlite_v1_initialize: error setting chunk size %s", sqlite3_errmsg(db));
         return 1;
     }
-
 
 	if (attempt_exec_nocallback("CREATE TABLE db_properties (name TEXT NOT NULL, value TEXT);", "Error creating db_properties table %s\n", db)) {
 		return 1;
@@ -127,7 +120,7 @@ uint8_t sqlite_hdb_create_db(TSK_TCHAR *db_file_path)
 		return 1;
 	}
 
-	if (attempt_exec_nocallback ("CREATE TABLE hashes (id INTEGER PRIMARY KEY AUTOINCREMENT, md5 BINARY(16) UNIQUE, sha1 BINARY(20), sha2_256 BINARY(32), database_offset INTEGER);", "Error creating hashes table %s\n", db)) {
+	if (attempt_exec_nocallback ("CREATE TABLE hashes (id INTEGER PRIMARY KEY AUTOINCREMENT, md5 BINARY(16) UNIQUE, sha1 BINARY(20), sha2_256 BINARY(32));", "Error creating hashes table %s\n", db)) {
 		return 1;
 	}
 
@@ -152,8 +145,17 @@ uint8_t sqlite_hdb_create_db(TSK_TCHAR *db_file_path)
 	return 0;
 }
 
+// RJCTODO: Comment
 sqlite3 *sqlite_hdb_open_db(TSK_TCHAR *db_file_path)
 {
+    assert(db_file_path);
+    if (!db_file_path) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("sqlite_hdb_open_db: NULL db_file_path");
+        return NULL;
+    }
+
     sqlite3 *db = NULL;
     int opened = 1;
 #ifdef TSK_WIN32
@@ -175,27 +177,24 @@ sqlite3 *sqlite_hdb_open_db(TSK_TCHAR *db_file_path)
     return db;
 }
 
+// RJCTODO: Comment
 /**
  * Test the file to see if it is an sqlite database (== index only)
- *
  * @param hFile File handle to hash database
- *
  * @return 1 if sqlite and 0 if not
  */
 uint8_t
-sqlite3_test(FILE * hFile)
+sqlite3_test(FILE *hFile)
 {
     const int header_size = 16;
     char header[header_size];
-
     if (hFile) {
         if (1 != fread(header, header_size, 1, hFile)) {
-            ///@todo should this actually be an error?
+            ///@todo should this actually be an error? // RJCTODO: Probably
             return 0;
         }
-        else if (strncmp(header,
-                IDX_SQLITE_V1_HEADER,
-                strlen(IDX_SQLITE_V1_HEADER)) == 0) {
+        else if (strncmp(header, IDX_SQLITE_V1_HEADER, 
+            strlen(IDX_SQLITE_V1_HEADER)) == 0) {
             return 1;
         }
     }
@@ -206,40 +205,65 @@ sqlite3_test(FILE * hFile)
 // RJCTODO: Comment
 TSK_HDB_INFO *sqlite_hdb_open(TSK_TCHAR *db_path)
 {
-    TSK_SQLITE_HDB_INFO *sqlite_hdb_info = NULL;
-    size_t flen = 0;
-
-    assert(NULL != db_path);
-
-    if ((sqlite_hdb_info = (TSK_SQLITE_HDB_INFO*)tsk_malloc(sizeof(TSK_SQLITE_HDB_INFO))) == NULL) {
+    assert(db_path);
+    if (!db_path) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("sqlite_hdb_open: NULL db_path");
         return NULL;
     }
 
-    flen = TSTRLEN(db_path) + 8; // RJCTODO: Check this change from 32 (change was in DF code) with Brian; was change in older code? What is the point, anyway?
-    sqlite_hdb_info->base.db_fname = (TSK_TCHAR*)tsk_malloc(flen * sizeof(TSK_TCHAR));
-    if (NULL == sqlite_hdb_info->base.db_fname) {
+    TSK_SQLITE_HDB_INFO *hdb_info = (TSK_SQLITE_HDB_INFO*)tsk_malloc(sizeof(TSK_SQLITE_HDB_INFO));
+    if (!hdb_info) {
         return NULL;
     }
 
-    TSTRNCPY(sqlite_hdb_info->base.db_fname, db_path, flen);
-    sqlite_hdb_info->base.db_type = TSK_HDB_DBTYPE_SQLITE_ID;
-    sqlite_hdb_info->base.updateable = 1;
-    sqlite_hdb_info->base.uses_external_indexes = 0;
-    sqlite_hdb_info->base.hash_type = TSK_HDB_HTYPE_INVALID_ID; // This will be set when the index is created/opened. 
-    sqlite_hdb_info->base.hash_len = 0; // This will be set when the index is created/opened.
-    tsk_init_lock(&sqlite_hdb_info->base.lock);
-    sqlite_hdb_info->base.make_index = sqlite_hdb_make_index;
-
-    sqlite_hdb_info->db = sqlite_hdb_open_db(db_path);
-    if (NULL == sqlite_hdb_info->db) {
-        free(sqlite_hdb_info->base.db_fname);
-        free(sqlite_hdb_info);
+    hdb_info->db = sqlite_hdb_open_db(db_path);
+    if (!hdb_info->db) {
+        free(hdb_info);
         return NULL;
     }
 
-    sqlite_hdb_info->last_id = 0;
+    size_t flen = TSTRLEN(db_path) + 8; // RJCTODO: Check this change from 32 with Brian; was change in older code? What is the point, anyway?
+    hdb_info->base.db_fname = (TSK_TCHAR*)tsk_malloc(flen * sizeof(TSK_TCHAR));
+    if (!hdb_info->base.db_fname) {
+        sqlite3_close(hdb_info->db);
+        free(hdb_info);
+        return NULL;
+    }
+    TSTRNCPY(hdb_info->base.db_fname, db_path, flen);
 
-    return (TSK_HDB_INFO*)sqlite_hdb_info;
+    hdb_info->base.db_type = TSK_HDB_DBTYPE_SQLITE_ID;
+    hdb_info->base.hash_type = TSK_HDB_HTYPE_INVALID_ID; // This will be set when the index is created/opened. // RJCTODO: Troubling, when is this used, hard code it, movr it?
+    hdb_info->base.hash_len = 0; // This will be set when the index is created/opened. // RJCTODO: Troubling
+    hdb_info->base.updateable = 1;
+    hdb_info->base.uses_external_indexes = 0;
+    tsk_init_lock(&hdb_info->base.lock);
+
+    hdb_info->base.get_db_path = NULL; // RJCTODO
+    hdb_info->base.get_db_name = NULL; // RJCTODO
+    hdb_info->base.has_index = NULL; // RJCTODO
+    hdb_info->base.make_index = sqlite_hdb_make_index;
+    hdb_info->base.open_index = NULL; // RJCTODO
+    hdb_info->base.get_index_path = NULL; // RJCTODO
+    hdb_info->base.lookup_str = NULL; // RJCTODO
+    hdb_info->base.lookup_raw = NULL; // RJCTODO
+    hdb_info->base.has_verbose_lookup = NULL; // RJCTODO
+    hdb_info->base.lookup_verbose_str = NULL; // RJCTODO
+    hdb_info->base.add_hash = NULL; // RJCTODO
+    hdb_info->base.close_db = NULL; // RJCTODO
+
+    return (TSK_HDB_INFO*)hdb_info;
+}
+
+const TSK_TCHAR *sqlite_hdb_get_db_path(TSK_HDB_INFO *hdb_info)
+{
+    return hdb_info->db_fname;
+}
+
+const char *sqlite_hdb_get_db_name(TSK_HDB_INFO *hdb_info)
+{
+    return hdb_info->db_name;
 }
 
 /**
@@ -252,14 +276,6 @@ uint8_t sqlite_hdb_make_index(TSK_HDB_INFO * hdb_info, TSK_TCHAR * htype)
     return 0;
 }
 
-// RJCTODO: Comment
-// RJCTODO: Get this implementation right. This is the new add function. Build it from:
-// tsk_hdb_lookup_str_id(), sqlite_v1_addentry(), sqlite_v1_addentry_bin(), addentry_text(),  
-uint8_t
-sqlite_hdb_add(TSK_HDB_INFO * hdb_info, const char * filename, const char * md5, const char * sha1, const char * sha256, const char * comment)
-{
-    return 0;
-}
 
 /**
  * This function is a no-op for SQLite hash database. The index is "internal" to the RDBMS.
@@ -351,6 +367,17 @@ sqlite_hdb_add_hash(TSK_HDB_INFO * hdb_info_base, const char *filename,
 
     // RJCTODO: Insert 
 
+//	snprintf(stmt, 1024,"INSERT INTO comments (comment, hash_id) VALUES ('%s', '%d');",	value, id);
+//	if (attempt_exec_nocallback(stmt, "Error adding comment: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+//		return 1;
+//	}
+//    char stmt[1024];
+//	snprintf(stmt, 1024, "INSERT INTO file_names (name, hash_id) VALUES ('%s', '%d');", value, id);
+//	if (attempt_exec_nocallback(stmt, "Error adding comment: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
+//		return 1;
+//	}
+
+
     return 0;
 }
 
@@ -391,82 +418,6 @@ sqlite_hdb_add_hash(TSK_HDB_INFO * hdb_info_base, const char *filename,
  //   }
 
  //   return 0;
-//    return 0;
-//}
-
-/**
- * Add new comment (e.g. the case name)
- *
- * @param hdb_info Hash database state info structure.
- * @return 1 on error and 0 on success
- */
-//uint8_t
-//sqlite_v1_addcomment(TSK_HDB_INFO * hdb_info, char* value, int64_t id)
-//{
-//    if (id == 0) {
-//        return 1;
-//    }
-//
-//    char stmt[1024];
-//	snprintf(stmt, 1024,"INSERT INTO comments (comment, hash_id) VALUES ('%s', '%d');",	value, id);
-//	if (attempt_exec_nocallback(stmt, "Error adding comment: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
-//		return 1;
-//	}
-//
-//    return 0;
-//}
-
-/**
- * Add new name (e.g. a filename associated with a hash)
- *
- * @param hdb_info Hash database state info structure.
- * @return 1 on error and 0 on success
- */
-//uint8_t
-//sqlite_v1_addfilename(TSK_HDB_INFO * hdb_info, char* value, int64_t id)
-//{
-//    if (id == 0) {
-//        return 1;
-//    }
-//
-//    char stmt[1024];
-//	snprintf(stmt, 1024, "INSERT INTO file_names (name, hash_id) VALUES ('%s', '%d');", value, id);
-//	if (attempt_exec_nocallback(stmt, "Error adding comment: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite)) {
-//		return 1;
-//	}
-//
-//    return 0;
-//}
-
-/**
- * This function is a no-op for SQLite hash database. The index is "internal" to the RDBMS.
- * @return 1 on error and 0 on success
- */
-//uint8_t
-//sqlite_v1_finalize(TSK_HDB_INFO * hdb_info)
-//{
-    // RJCTODO: Remove this after add to hash database function is made
-    //if (end_transaction(hdb_info->idx_info)) {
-	//	tsk_error_reset();
-	//	tsk_error_set_errno(TSK_ERR_AUTO_DB);
-	//	tsk_error_set_errstr("Failed to commit transaction\n");
- //       tsk_error_print(stderr);
-	//	return 1;
-	//}
-	//
- //   // We create the indexes at the end in order to make adding the initial batch of data (e.g. indexing an NSRL db)
- //   // faster. Updates after indexing can be slower since the index has to update as well.
- //   if (need_SQL_index) {
- //       need_SQL_index = false;
-	//    return attempt_exec_nocallback
-	//	    ("CREATE INDEX md5_index ON hashes(md5);",
-	//	    "Error creating md5_index on md5: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite) ||
-	//	    attempt_exec_nocallback
-	//	    ("CREATE INDEX sha1_index ON hashes(sha1);",
-	//	    "Error creating sha1_index on sha1: %s\n", hdb_info->idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
- //   } else {
- //       return 0;
- //   }
 //    return 0;
 //}
 
@@ -600,7 +551,7 @@ sqlite_hdb_lookup_bin(TSK_HDB_INFO * hdb_info_base, uint8_t * hvalue,
 	return ret;
 }
 
-int8_t
+static int8_t
 getStrings(sqlite3 *db, const char *selectStmt, std::vector<std::string> &out)
 {
 	int8_t ret = 0;
@@ -630,7 +581,8 @@ getStrings(sqlite3 *db, const char *selectStmt, std::vector<std::string> &out)
  * Convert binary blob hash string to text hash string
  * Returns the input if compiled in text hash mode.
  */
-std::string blobToText(std::string binblob)
+static std::string 
+blobToText(std::string binblob)
 {
 #ifdef IDX_SQLITE_STORE_TEXT
     return binblob; //already text
@@ -719,14 +671,13 @@ void * sqlite_hdb_lookup_verbose_str(TSK_HDB_INFO *hdb_info_base, const char *ha
 }
 
 /*
- * Close the sqlite index handle
+ * Closes an SQLite hash database.
  * @param idx_info the index to close
  */
-// RJCTODO: Need a close function at the TSK_HDB_INFO level
 void
-sqlite_hdb_close(TSK_HDB_INFO* hdb_info)
+sqlite_hdb_close(TSK_HDB_INFO *hdb_info_base)
 {
-    TSK_SQLITE_HDB_INFO *db_info = (TSK_SQLITE_HDB_INFO*)hdb_info; 
+    TSK_SQLITE_HDB_INFO *hdb_info = (TSK_SQLITE_HDB_INFO*)hdb_info_base; 
 
     if (m_stmt) {
         finalize_stmt(m_stmt);
@@ -734,9 +685,10 @@ sqlite_hdb_close(TSK_HDB_INFO* hdb_info)
 
     m_stmt = NULL;
 
-    if (db_info->db) {
-        sqlite3_close(db_info->db);
+    if (hdb_info->db) {
+        sqlite3_close(hdb_info->db);
     }
+    hdb_info->db = NULL;
 
     // RJCTODO: Cleanup the base stuff...
 }

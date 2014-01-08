@@ -57,19 +57,20 @@ extern "C" {
 /**
  * Properties for the sqlite hash database index
  */
-#define IDX_SCHEMA_VER "Schema Version"
-#define IDX_VERSION_NUM "1"
-#define IDX_HASHSET_NAME "Hashset Filename"
-#define IDX_HASHSET_TYPE "Hashset Type"
-#define IDX_HASHSET_UPDATEABLE "Updateable"
-#define IDX_BINSRCH_HEADER "0000000000000000"
-#define IDX_SQLITE_V1_HEADER "SQLite format 3"
+// RJCTODO: Don't need these
+//#define IDX_SCHEMA_VER "Schema Version"
+//#define IDX_VERSION_NUM "1"
+//#define IDX_HASHSET_NAME "Hashset Filename"
+//#define IDX_HASHSET_TYPE "Hashset Type"
+//#define IDX_HASHSET_UPDATEABLE "Updateable"
+//#define IDX_BINSRCH_HEADER "0000000000000000"
+//#define IDX_SQLITE_V1_HEADER "SQLite format 3"
 
     // Hash database functions common to all text format hash databases
     // (NSRL, md5sum, EnCase, HashKeeper, index only). These databases have
     // external indexes. 
     extern TSK_TEXT_HDB_INFO *text_hdb_open(FILE *hDb, const TSK_TCHAR *db_path);
-    extern void text_hdb_db_name_from_path(TSK_TEXT_HDB_INFO *hdb_info_base);
+    extern void text_hdb_db_name_from_path(TSK_TEXT_HDB_INFO *hdb_info_base); // RJCTODO: May want to move this and a base close into another file
     extern uint8_t text_hdb_idx_initialize(TSK_TEXT_HDB_INFO *, TSK_TCHAR *);
     extern uint8_t text_hdb_idx_add_entry_str(TSK_TEXT_HDB_INFO *, char *, TSK_OFF_T);
     extern uint8_t text_hdb_idx_add_entry_bin(TSK_TEXT_HDB_INFO *hdb_info, 
@@ -126,6 +127,10 @@ extern "C" {
     // Hash database functions for SQLite hash databases.
     extern uint8_t sqlite3_test(FILE * hFile);
     extern TSK_HDB_INFO *sqlite_hdb_open(TSK_TCHAR *db_path);
+    extern const TSK_TCHAR *sqlite_hdb_get_db_path(TSK_HDB_INFO *hdb_info);
+
+
+
     extern uint8_t sqlite_hdb_set_index_params(TSK_HDB_INFO *hdb_info, TSK_HDB_DBTYPE_ENUM hash_type); 
     extern uint8_t sqlite_hdb_make_index(TSK_HDB_INFO *, TSK_TCHAR * htype);
     extern uint8_t sqlite_hdb_get_entry(TSK_HDB_INFO *, const char *, TSK_OFF_T, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);

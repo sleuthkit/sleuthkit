@@ -64,7 +64,7 @@ TSK_TEXT_HDB_INFO *text_hdb_open(FILE *hDb, const TSK_TCHAR *db_path)
  * @param hdb_info the hash database object
  */
 void
-text_hdb_db_name_from_path(TSK_TEXT_HDB_INFO *hdb_info)
+text_hdb_db_name_from_path(HDB_INFO *hdb_info)
 {
 #ifdef TSK_WIN32
     const char PATH_CHAR = '\\';
