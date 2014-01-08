@@ -435,8 +435,9 @@ exfatfs_is_access_ctrl_table_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLO
 /**
  * \internal
  * Determine whether the contents of a buffer may be an exFAT file directory 
- * entry. The test will be more reliable if an optional FATFS_INFO struct 
- * representing the file system is provided.
+ * entry. The test will be more reliable if an optional TSK_ENDIAN_ENUM value 
+ * is known. This function was split into two parts so that the main 
+ * test can be run without a FATFS_INFO object.
  *
  * @param [in] a_dentry A directory entry buffer.
  * @param [in] a_fatfs A FATFS_INFO struct representing an exFAT file system,
@@ -449,6 +450,33 @@ exfatfs_is_file_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs)
 {
     const char *func_name = "exfatfs_is_file_dentry";
     TSK_FS_INFO *fs = NULL;
+
+	if (a_fatfs != NULL) {
+        fs = &(a_fatfs->fs_info);
+		return exfatfs_is_file_dentry_standalone(a_dentry, fs->endian);
+	}
+	else{
+		return exfatfs_is_file_dentry_standalone(a_dentry, TSK_UNKNOWN_ENDIAN);
+	}
+
+}
+
+/**
+ * \internal
+ * Determine whether the contents of a buffer may be an exFAT file directory 
+ * entry. The test will be more reliable if an optional TSK_ENDIAN_ENUM value 
+ * is known. This version of the function can be called without a TSK_FS_INFO
+ * object.
+ *
+ * @param [in] a_dentry A directory entry buffer.
+ * @param [in] a_endian Endianness of the file system
+ * @returns 1 if the directory entry buffer likely contains a file directory 
+ * entry, 0 otherwise. 
+ */
+uint8_t
+exfatfs_is_file_dentry_standalone(FATFS_DENTRY *a_dentry, TSK_ENDIAN_ENUM a_endian)
+{
+    const char *func_name = "exfatfs_is_file_dentry";
     EXFATFS_FILE_DIR_ENTRY *dentry = (EXFATFS_FILE_DIR_ENTRY*)a_dentry;
 
     assert(a_dentry != NULL);
@@ -474,18 +502,17 @@ exfatfs_is_file_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs)
         return 0;
     }
 
-    if (a_fatfs != NULL) {
-        fs = &(a_fatfs->fs_info);   
+	if (a_endian != TSK_UNKNOWN_ENDIAN) {  
 
         /* Make sure the time stamps aren't all zeros. */
-        if ((tsk_getu16(fs->endian, dentry->modified_date) == 0) &&
-            (tsk_getu16(fs->endian, dentry->modified_time) == 0) &&
+        if ((tsk_getu16(a_endian, dentry->modified_date) == 0) &&
+            (tsk_getu16(a_endian, dentry->modified_time) == 0) &&
             (dentry->modified_time_tenths_of_sec == 0) && 
-            (tsk_getu16(fs->endian, dentry->created_date) == 0) &&
-            (tsk_getu16(fs->endian, dentry->created_time) == 0) &&
+            (tsk_getu16(a_endian, dentry->created_date) == 0) &&
+            (tsk_getu16(a_endian, dentry->created_time) == 0) &&
             (dentry->created_time_tenths_of_sec == 0) && 
-            (tsk_getu16(fs->endian, dentry->accessed_date) == 0) &&
-            (tsk_getu16(fs->endian, dentry->accessed_time) == 0)) {
+            (tsk_getu16(a_endian, dentry->accessed_date) == 0) &&
+            (tsk_getu16(a_endian, dentry->accessed_time) == 0)) {
             if (tsk_verbose) {
                 fprintf(stderr, "%s: time stamps all zero\n", 
                     func_name);
@@ -501,11 +528,11 @@ exfatfs_is_file_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs)
  * \internal
  * Determine whether the contents of a buffer may be an exFAT file stream 
  * directory entry. The test will be more reliable if an optional FATFS_INFO 
- * struct representing the file system is provided.
+ * struct representing the file system is provided. This function was 
+ * split into two parts so that the main test can be run 
+ * without a FATFS_INFO object.
  *
  * @param [in] a_dentry A directory entry buffer.
- * @param [in] a_alloc_status The allocation status, possibly unknown, of the 
- * cluster from which the buffer was filled. 
  * @param [in] a_fatfs A FATFS_INFO struct representing an exFAT file system,
  * may be NULL.
  * @returns 1 if the directory entry buffer likely contains a file stream 
@@ -520,6 +547,53 @@ exfatfs_is_file_stream_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs)
     uint64_t file_size = 0;
     uint32_t first_cluster = 0;
 
+	uint64_t cluster_heap_size = 0;
+
+	if (a_fatfs != NULL) {
+        fs = &(a_fatfs->fs_info);
+
+		/* Calculate the size of the cluster heap. The cluster heap size 
+		 * is computed by multiplying the cluster size 
+		 * by the number of sectors in a cluster and then 
+         * multiplying by the number of bytes in a sector (the last operation 
+         * is optimized as a left shift by the base 2 log of sector size). */
+        cluster_heap_size = (a_fatfs->clustcnt * a_fatfs->csize) << a_fatfs->ssize_sh;
+
+		return exfatfs_is_file_stream_dentry_standalone(a_dentry, fs->endian, cluster_heap_size, a_fatfs->lastclust);
+	}
+	else{
+		return exfatfs_is_file_stream_dentry_standalone(a_dentry, TSK_UNKNOWN_ENDIAN, 0, 0);
+	}
+
+}
+
+/**
+ * \internal
+ * Determine whether the contents of a buffer may be an exFAT file stream 
+ * directory entry. The test will be more reliable if the optional endianness
+ * and cluster information are used. This version of the function can be 
+ * called without a TSK_FS_INFO object.
+ * 
+ * The endianness must be known to run all of the extended tests. The other 
+ * parameters can be set to zero if unknown and the function will run whichever
+ * tests are possible with the given information.
+ *
+ * @param [in] a_dentry A directory entry buffer.
+ * @param [in] a_endian Endianness of the file system
+ * @param [in] a_cluster_heap_size Size of the cluster heap (in bytes)
+ * @param [in] a_last_cluster Last cluster in the file system
+ * @returns 1 if the directory entry buffer likely contains a file stream 
+ * directory entry, 0 otherwise. 
+ */
+uint8_t
+exfatfs_is_file_stream_dentry_standalone(FATFS_DENTRY *a_dentry, TSK_ENDIAN_ENUM a_endian,
+	uint64_t a_cluster_heap_size, TSK_DADDR_T a_last_cluster)
+{
+    const char *func_name = "exfatfs_is_file_stream_dentry";
+    EXFATFS_FILE_STREAM_DIR_ENTRY *dentry = (EXFATFS_FILE_STREAM_DIR_ENTRY*)a_dentry;
+    uint64_t file_size = 0;
+    uint32_t first_cluster = 0;
+
     assert(a_dentry != NULL);
     if (fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
         return 0;
@@ -530,55 +604,39 @@ exfatfs_is_file_stream_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs)
         return 0;
     }
 
-    if (a_fatfs != NULL) {
-        fs = &(a_fatfs->fs_info);   
+   if (a_endian != TSK_UNKNOWN_ENDIAN) { 
 
         /* Check the size. */
-        file_size = tsk_getu64(fs->endian, dentry->data_length);
+        file_size = tsk_getu64(a_endian, dentry->data_length);
         if (file_size > 0) {
             /* Is the file size less than the size of the cluster heap 
              * (data area)? The cluster heap size is computed by multiplying the
              * cluster size by the number of sectors in a cluster and then 
              * multiplying by the number of bytes in a sector (the last operation 
              * is optimized as a left shift by the base 2 log of sector size). */
-            if (file_size > (a_fatfs->clustcnt * a_fatfs->csize) << a_fatfs->ssize_sh) {
-                if (tsk_verbose) {
-                    fprintf(stderr, "%s: file size too big\n", func_name);
-                }
-                return 0;
-            }
+			if(a_cluster_heap_size > 0){
+				if (file_size > a_cluster_heap_size) {
+					if (tsk_verbose) {
+						fprintf(stderr, "%s: file size too big\n", func_name);
+					}
+					return 0;
+				}
+			}
 
             /* Is the address of the first cluster in range? */
-            first_cluster = tsk_getu32(fs->endian, dentry->first_cluster_addr);
+            first_cluster = tsk_getu32(a_endian, dentry->first_cluster_addr);
             if ((first_cluster < EXFATFS_FIRST_CLUSTER) ||
-                (first_cluster > a_fatfs->lastclust)) {
+                ((a_last_cluster > 0) && (first_cluster > a_last_cluster))) {
                 if (tsk_verbose) {
                     fprintf(stderr, 
                         "%s: first cluster not in cluster heap\n", func_name);
                 }
                 return 0;
             }
+		}
+   }
+   return 1;
 
-			/* It appears that Mac OS does not change the flags on files in deleted directories
-			 * to unallocated after the parent directory is deleted. This causes those files to
-			 * have the allocated flag set in their dir entry, but the cluster their data is in is marked as
-			 * unallocated. Therefore we need to skip this test.
-			 *
-             * If the file is not marked as unallocated and has non-zero size, is its
-             * first cluster allocated? */
-			/* 
-			if((exfatfs_get_alloc_status_from_type(dentry->entry_type) != 0) && 
-                (exfatfs_is_cluster_alloc(a_fatfs, (TSK_DADDR_T)first_cluster) != 1)) {
-                if (tsk_verbose) {
-                    fprintf(stderr, 
-                        "%s: file not deleted, first cluster not allocated\n", func_name);
-                }
-                return 0;
-            }*/
-        }
-    }
-
-    return 1;
 }
 
 /**
@@ -644,7 +702,7 @@ exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_A
     case EXFATFS_DIR_ENTRY_TYPE_ACT:
         return exfatfs_is_access_ctrl_table_dentry(a_dentry, a_cluster_is_alloc);
     case EXFATFS_DIR_ENTRY_TYPE_FILE:
-        return exfatfs_is_file_dentry(a_dentry, a_fatfs);
+		return exfatfs_is_file_dentry(a_dentry, a_fatfs);
     case EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM:
         return exfatfs_is_file_stream_dentry(a_dentry, a_fatfs);
     case EXFATFS_DIR_ENTRY_TYPE_FILE_NAME:

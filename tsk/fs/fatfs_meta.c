@@ -1089,7 +1089,6 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
         return 1;
     }
 
-    // RJCTODO: Check this decision with Brian after he polls the user community.
     /* FAT file systems do not really have the concept of unused inodes. */
     if ((flags & TSK_FS_META_FLAG_UNUSED) && !(flags & TSK_FS_META_FLAG_USED)) {
         return 0;

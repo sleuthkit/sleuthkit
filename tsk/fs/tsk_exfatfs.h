@@ -203,7 +203,7 @@ extern "C" {
      * Allocation bitmap directory entry structure for exFAT file systems.
      * There will be one allocation bitmap for exFAT and two for TexFAT 
      * (transactional exFAT). Bit zero of the flags byte is 0 in the directory
-     * entry for the first bitmap, 1 for in the directory entry for the second 
+     * entry for the first bitmap and 1 in the directory entry for the second 
      * bitmap. This type of entry should be found only in the root directory.
      */
     typedef struct {
@@ -294,15 +294,15 @@ extern "C" {
     } EXFATFS_FILE_STREAM_DIR_ENTRY;
 
     /**
-     * File name extension directory entry structure for exFAT file systems.
+     * File name directory entry structure for exFAT file systems.
      * It will be preceded by 0-16 file name entries, a stream entry, and
      * a file entry. A file entry and its stream and file name entries 
      * constitute a file directory entry set. Note that file names are not 
      * null-terminated. The length of a file name is stored in the file stream
-     * entry of the file direcotry entry set.
+     * entry of the file directory entry set.
      */
     typedef struct {
-        uint8_t entry_type;  ///< 0xC1 if allocataed, 0x41 if deleted
+        uint8_t entry_type;  ///< 0xC1 if allocated, 0x41 if deleted
         uint8_t flags;       ///< Flags: Allocation possible, no FAT chain, custom
         uint8_t utf16_name_chars[30];  ///< UTF16 part of file name, max 15 characters
     } EXFATFS_FILE_NAME_DIR_ENTRY;
@@ -349,7 +349,14 @@ extern "C" {
     exfatfs_is_file_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs);
 
     extern uint8_t
+    exfatfs_is_file_dentry_standalone(FATFS_DENTRY *a_dentry, TSK_ENDIAN_ENUM a_endian);
+
+    extern uint8_t
     exfatfs_is_file_stream_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs);
+
+	extern uint8_t
+	exfatfs_is_file_stream_dentry_standalone(FATFS_DENTRY *a_dentry, TSK_ENDIAN_ENUM a_endian,
+		uint64_t a_cluster_heap_size, TSK_DADDR_T a_last_cluster);
 
     extern uint8_t
     exfatfs_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry_inum, 
