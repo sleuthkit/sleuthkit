@@ -271,10 +271,13 @@
     <ClCompile Include="..\..\tsk\hashdb\sqlite.cpp">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\text_fmt_base.c">
+    <ClCompile Include="..\..\tsk\hashdb\tsk_hashdb.cpp">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\tsk_hashdb.cpp">
+    <ClCompile Include="..\..\tsk\hashdb\hdb_base.c">
+      <Filter>hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\hashdb\text_fmt_hdb_base.c">
       <Filter>hash</Filter>
     </ClCompile>
   </ItemGroup>

@@ -139,7 +139,7 @@ extern "C" {
         int8_t(*lookup_raw)(TSK_HDB_INFO*, uint8_t *, uint8_t, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void*);
         uint8_t(*has_verbose_lookup)(TSK_HDB_INFO*);
         void*(*lookup_verbose_str)(TSK_HDB_INFO*, const char*);
-        uint8_t(*add_hash)(TSK_HDB_INFO*, const char*, const char*, const char*, const char*, const char *);
+        uint8_t(*add_entry)(TSK_HDB_INFO*, const char*, const char*, const char*, const char*, const char *);
         void(*close_db)(TSK_HDB_INFO *);
     };
 
