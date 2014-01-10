@@ -14,7 +14,7 @@
 #include <assert.h>
 
 /**
- * \file sqlite.cpp
+ * \file sqlite_hdb.cpp
  * Contains hash database functions for SQLite hash databases.
  */
 
@@ -49,33 +49,6 @@ sqlite_hdb_attempt_exec(const char *sql, const char *errfmt,
 		tsk_error_set_errno(TSK_ERR_AUTO_DB);
 		tsk_error_set_errstr(errfmt, errmsg);
 		sqlite3_free(errmsg);
-		return 1;
-	}
-	return 0;
-}
-
-static uint8_t 
-sqlite_hdb_prepare_stmt(const char *sql, sqlite3_stmt **ppStmt, sqlite3 *sqlite)
-{
-    ///@todo possible performance increase by using strlen(sql)+1 instead of -1 // RJCTODO: Resolve this
-	if (sqlite3_prepare_v2(sqlite, sql, -1, ppStmt, NULL) != SQLITE_OK) {
-		tsk_error_reset();
-		tsk_error_set_errno(TSK_ERR_AUTO_DB);
-		tsk_error_set_errstr("sqlite_hdb_prepare_stmt: error preparing SQL statement: %s\n", sql);
-        tsk_error_print(stderr);
-		return 1;
-	}
-	return 0;
-}
-
-static uint8_t 
-sqlite_hdb_finalize_stmt(sqlite3_stmt *stmt)
-{
-	if (sqlite3_finalize(stmt) != SQLITE_OK) {
-		tsk_error_reset();
-		tsk_error_set_errno(TSK_ERR_AUTO_DB);
-		tsk_error_set_errstr("Error finalizing SQL statement\n");
-        tsk_error_print(stderr);
 		return 1;
 	}
 	return 0;
@@ -118,6 +91,36 @@ sqlite_hdb_create_tables(sqlite3 *db)
 }
 
 static uint8_t 
+sqlite_hdb_prepare_stmt(const char *sql, sqlite3_stmt **stmt, sqlite3 *sqlite)
+{
+    ///@todo possible performance increase by using strlen(sql)+1 instead of -1 // RJCTODO: Resolve this
+	if (sqlite3_prepare_v2(sqlite, sql, -1, stmt, NULL) != SQLITE_OK) {
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_AUTO_DB);
+		tsk_error_set_errstr("sqlite_hdb_prepare_stmt: error preparing SQL statement: %s", sql);
+        tsk_error_print(stderr);
+		return 1;
+	}
+	return 0;
+}
+
+static uint8_t 
+sqlite_hdb_finalize_stmt(sqlite3_stmt **stmt)
+{
+    uint8_t ret_val = 0;
+    if ((NULL != *stmt) && (sqlite3_finalize(*stmt) != SQLITE_OK)) {
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_AUTO_DB);
+		tsk_error_set_errstr("sqlite_hdb_finalize_stmt: error finalizing SQL statement");
+        tsk_error_print(stderr);
+        *stmt = NULL;
+		return 1;
+	}
+    *stmt = NULL;
+	return ret_val;
+}
+
+static uint8_t 
 prepare_statements(sqlite3 *db)
 {
     if (sqlite_hdb_prepare_stmt("SELECT id from hashes where md5=? limit 1", &select_id_from_hashes_by_md5, db)) {
@@ -139,16 +142,17 @@ prepare_statements(sqlite3 *db)
     return 0;
 }
 
+static void
+finalize_statements()
+{
+    sqlite_hdb_finalize_stmt(&select_id_from_hashes_by_md5);
+    sqlite_hdb_finalize_stmt(&insert_md5_into_hashes);
+    sqlite_hdb_finalize_stmt(&insert_into_file_names);
+    sqlite_hdb_finalize_stmt(&insert_into_comments);
+}
+
 static sqlite3 *sqlite_hdb_open_db(TSK_TCHAR *db_file_path, bool create_tables)
 {
-    assert(NULL != db_file_path);
-    if (NULL == db_file_path) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_HDB_ARG);
-        tsk_error_set_errstr("sqlite_hdb_open_db: NULL db_file_path");
-        return NULL;
-    }
-
     sqlite3 *db = NULL;
 #ifdef TSK_WIN32
     int opened = sqlite_hdb_attempt(sqlite3_open16(db_file_path, &db), SQLITE_OK, "Can't open hash database: %s\n", db);
@@ -183,15 +187,16 @@ static sqlite3 *sqlite_hdb_open_db(TSK_TCHAR *db_file_path, bool create_tables)
         return NULL;
     }
 
-    if (prepare_statements(db)) {
-        sqlite3_close(db);
-        return NULL;
-    }
-
     return db;
 }
 
-// RJCTODO: Comment
+/**
+ * \ingroup hashdblib
+ * \internal 
+ * Creates a new SQLite hash database.
+ * @param db_file_path A path for the new hash database.
+ * @return 0 on success, 1 on failure.
+ */
 uint8_t 
 sqlite_hdb_create_db(TSK_TCHAR *db_file_path)
 {
@@ -213,27 +218,43 @@ sqlite_hdb_create_db(TSK_TCHAR *db_file_path)
     return 0;
 }
 
-// RJCTODO: Comment
+/**
+ * \ingroup hashdblib
+ * \internal 
+ * Determines whether a file is a SQLite file.
+ * @param hFile_path A handle to the file to inspect.
+ * @return 1 if the file is a SQLite file, 0 if it is not.
+ */
 uint8_t
-sqlite3_test(FILE *hFile)
+sqlite_hdb_is_sqlite_file(FILE *hFile)
 {
-    const int header_size = 16;
-    char header[header_size];
-    if (hFile) {
-        if (1 != fread(header, header_size, 1, hFile)) {
-            ///@todo should this actually be an error? // RJCTODO: Probably
-            return 0;
-        }
-        else if (strncmp(header, SQLITE_FILE_HEADER, 
-            strlen(SQLITE_FILE_HEADER)) == 0) {
-            return 1;
-        }
+    assert(hFile);
+    if (!hFile) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("sqlite_hdb_is_sqlite_file: NULL hFile");
+        return 0;
     }
 
-    return 0;
+    const int header_size = 16;
+    char header[header_size];
+    if (1 != fread(header, header_size, 1, hFile)) {
+        return 0;
+    }
+    else {
+        return (strncmp(header, SQLITE_FILE_HEADER, 
+            strlen(SQLITE_FILE_HEADER)) == 0);
+    }
+            
 }
 
-// RJCTODO: Comment
+/**
+ * \ingroup hashdblib
+ * \internal 
+ * Opens an existing SQLite hash database.
+ * @param db_file_path A path for the new hash database.
+ * @return 0 on success, 1 on failure.
+ */
 TSK_HDB_INFO *sqlite_hdb_open(TSK_TCHAR *db_path)
 {
     assert(db_path);
@@ -249,12 +270,22 @@ TSK_HDB_INFO *sqlite_hdb_open(TSK_TCHAR *db_path)
         return NULL;
     }
 
+    if (prepare_statements(db)) {
+        finalize_statements();
+        sqlite3_close(db);
+        return NULL;
+    }
+
     TSK_SQLITE_HDB_INFO *hdb_info = (TSK_SQLITE_HDB_INFO*)tsk_malloc(sizeof(TSK_SQLITE_HDB_INFO));
     if (!hdb_info) {
+        finalize_statements();
+        sqlite3_close(db);
         return NULL;
     }
 
     if (hdb_info_base_open((TSK_HDB_INFO*)hdb_info, db_path)) {
+        finalize_statements();
+        sqlite3_close(db);
         free(hdb_info);
         return NULL;
     }
@@ -263,8 +294,7 @@ TSK_HDB_INFO *sqlite_hdb_open(TSK_TCHAR *db_path)
     hdb_info->base.db_type = TSK_HDB_DBTYPE_SQLITE_ID;
     hdb_info->base.updateable = 1;
     hdb_info->base.uses_external_indexes = 0;
-
-    hdb_info->base.open_index = NULL; // RJCTODO
+    hdb_info->base.open_index = NULL; // RJCTODO: Does this need a tweak? Probably not if the hash type/len fields are moved...
     hdb_info->base.get_index_path = NULL; // RJCTODO
     hdb_info->base.lookup_str = sqlite_hdb_lookup_str;
     hdb_info->base.lookup_raw = sqlite_hdb_lookup_bin; // RJCTODO
@@ -675,25 +705,7 @@ sqlite_hdb_close(TSK_HDB_INFO *hdb_info_base)
 {
     TSK_SQLITE_HDB_INFO *hdb_info = (TSK_SQLITE_HDB_INFO*)hdb_info_base; 
 
-    if (select_id_from_hashes_by_md5) {
-        sqlite_hdb_finalize_stmt(select_id_from_hashes_by_md5);
-    }
-    select_id_from_hashes_by_md5 = NULL;
-
-    if (insert_md5_into_hashes) {
-        sqlite_hdb_finalize_stmt(insert_md5_into_hashes);
-    }
-    insert_md5_into_hashes = NULL;
-
-    if (insert_into_file_names) {
-        sqlite_hdb_finalize_stmt(insert_into_file_names);
-    }
-    insert_into_file_names = NULL;
-
-    if (insert_into_comments) {
-        sqlite_hdb_finalize_stmt(insert_into_comments);
-    }
-    insert_into_comments = NULL;
+    finalize_statements();
 
     if (hdb_info->db) {
         sqlite3_close(hdb_info->db);

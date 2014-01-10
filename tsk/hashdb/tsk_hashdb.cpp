@@ -50,7 +50,7 @@ hdb_determine_db_type(FILE *hDb, const TSK_TCHAR *db_path)
     assert(NULL != hDb);
     assert(NULL != db_path);
 
-    if (sqlite3_test(hDb)) {
+    if (sqlite_hdb_is_sqlite_file(hDb)) {
         fseeko(hDb, 0, SEEK_SET);
         return TSK_HDB_DBTYPE_SQLITE_ID;
     }

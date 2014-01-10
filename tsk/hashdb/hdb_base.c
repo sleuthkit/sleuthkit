@@ -12,8 +12,8 @@
 #include <assert.h>
 
 /**
- * \file hdb_utils.c
- * Utility functions for hash databases.
+ * \file hdb_base.c
+ * "Base" functions for hash databases. Many are no-ops.
  */
 
 /**
@@ -69,50 +69,9 @@ hdb_base_db_name_from_path(TSK_HDB_INFO *hdb_info)
     hdb_info->db_name[i] = '\0';
 }
 
-const TSK_TCHAR *hdb_base_get_db_path(TSK_HDB_INFO *hdb_info)
-{
-    return hdb_info->db_fname;
-}
-
-const char *hdb_base_get_db_name(TSK_HDB_INFO *hdb_info)
-{
-    return hdb_info->db_name;
-}
-
-uint8_t
-hdb_base_has_index(TSK_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
-{
-    return 0;
-}
-
-uint8_t hdb_base_make_index(TSK_HDB_INFO *hdb_info, TSK_TCHAR *htype)
-{
-    tsk_error_reset();
-    tsk_error_set_errno(TSK_ERR_HDB_ARG);
-    tsk_error_set_errstr("hdb_base_make_index: make index not supported for hdb_info->db_type=%u", hdb_info->db_type);
-    return 1;
-}
-
-uint8_t
-hdb_base_open_index(TSK_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
-{
-    tsk_error_reset();
-    tsk_error_set_errno(TSK_ERR_HDB_ARG);
-    tsk_error_set_errstr("hdb_base_open_index: open index path not supported for hdb_info->db_type=%u", hdb_info->db_type);
-    return 1;
-}
-
-const TSK_TCHAR*
-hdb_base_get_index_path(TSK_HDB_INFO *hdb_info)
-{
-    tsk_error_reset();
-    tsk_error_set_errno(TSK_ERR_HDB_ARG);
-    tsk_error_set_errstr("hdb_base_get_index_path: get index path not supported for hdb_info->db_type=%u", hdb_info->db_type);
-    return NULL;
-}
-
 /**
  * \ingroup hashdblib
+ * \internal
  * Initializes struct representation of a hash database.
  * @param hdb_info Struct representation of a hash database.
  * @return 0 on sucess, 1 on failure.
@@ -154,19 +113,105 @@ uint8_t hdb_info_base_open(TSK_HDB_INFO *hdb_info, TSK_TCHAR *db_path)
 
     tsk_init_lock(&hdb_info->lock);
 
-    // RJCTODO: Consider adding a no-op utility functions
     hdb_info->get_db_path = hdb_base_get_db_path;
     hdb_info->get_db_name = hdb_base_get_db_name;
+    hdb_info->get_index_path = hdb_base_get_index_path;
     hdb_info->has_index = hdb_base_has_index; 
     hdb_info->make_index = hdb_base_make_index;
     hdb_info->open_index = hdb_base_open_index;
-    hdb_info->get_index_path = hdb_base_get_index_path;
-    hdb_info->lookup_str = NULL;
-    hdb_info->lookup_raw = NULL;
-    hdb_info->has_verbose_lookup = NULL;
-    hdb_info->lookup_verbose_str = NULL;
-    hdb_info->add_entry = NULL;
+    hdb_info->lookup_str = hdb_base_lookup_str;
+    hdb_info->lookup_raw = hdb_base_lookup_bin;
+    hdb_info->has_verbose_lookup = hdb_base_has_verbose_lookup;
+    hdb_info->lookup_verbose_str = hdb_base_lookup_verbose_str;
+    hdb_info->add_entry = hdb_base_add_entry;
     hdb_info->close_db = hdb_info_base_close;
+}
+
+const TSK_TCHAR *hdb_base_get_db_path(TSK_HDB_INFO *hdb_info)
+{
+    return hdb_info->db_fname;
+}
+
+const char *hdb_base_get_db_name(TSK_HDB_INFO *hdb_info)
+{
+    return hdb_info->db_name;
+}
+
+const TSK_TCHAR*
+hdb_base_get_index_path(TSK_HDB_INFO *hdb_info)
+{
+    tsk_error_reset();
+    tsk_error_set_errno(TSK_ERR_HDB_ARG);
+    tsk_error_set_errstr("hdb_base_get_index_path: get index path not supported for hdb_info->db_type=%u", hdb_info->db_type);
+    return NULL;
+}
+
+uint8_t
+hdb_base_has_index(TSK_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
+{
+    return 0;
+}
+
+uint8_t hdb_base_make_index(TSK_HDB_INFO *hdb_info, TSK_TCHAR *htype)
+{
+    tsk_error_reset();
+    tsk_error_set_errno(TSK_ERR_HDB_ARG);
+    tsk_error_set_errstr("hdb_base_make_index: make index not supported for hdb_info->db_type=%u", hdb_info->db_type);
+    return 1;
+}
+
+uint8_t
+hdb_base_open_index(TSK_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
+{
+    tsk_error_reset();
+    tsk_error_set_errno(TSK_ERR_HDB_ARG);
+    tsk_error_set_errstr("hdb_base_open_index: open index path not supported for hdb_info->db_type=%u", hdb_info->db_type);
+    return 1;
+}
+
+int8_t
+hdb_base_lookup_str(TSK_HDB_INFO *hdb_info, const char *hash, TSK_HDB_FLAG_ENUM flag, TSK_HDB_LOOKUP_FN callback, void *data)
+{
+    tsk_error_reset();
+    tsk_error_set_errno(TSK_ERR_HDB_ARG);
+    tsk_error_set_errstr("hdb_base_get_index_path: get index path not supported for hdb_info->db_type=%u", hdb_info->db_type);
+    return -1;
+}
+
+int8_t
+hdb_base_lookup_bin(TSK_HDB_INFO *hdb_info, uint8_t *hash, uint8_t hash_len, TSK_HDB_FLAG_ENUM flag, TSK_HDB_LOOKUP_FN callback, void *data)
+{
+    tsk_error_reset();
+    tsk_error_set_errno(TSK_ERR_HDB_ARG);
+    tsk_error_set_errstr("hdb_base_get_index_path: get index path not supported for hdb_info->db_type=%u", hdb_info->db_type);
+    return -1;
+}
+
+uint8_t
+hdb_base_has_verbose_lookup(TSK_HDB_INFO *hdb_info)
+{
+    tsk_error_reset();
+    tsk_error_set_errno(TSK_ERR_HDB_ARG);
+    tsk_error_set_errstr("hdb_base_get_index_path: get index path not supported for hdb_info->db_type=%u", hdb_info->db_type);
+    return 0;
+}
+
+void*
+hdb_base_lookup_verbose_str(TSK_HDB_INFO *hdb_info, const char *hash)
+{
+    tsk_error_reset();
+    tsk_error_set_errno(TSK_ERR_HDB_ARG);
+    tsk_error_set_errstr("hdb_base_get_index_path: get index path not supported for hdb_info->db_type=%u", hdb_info->db_type);
+    return NULL;
+}
+
+uint8_t
+hdb_base_add_entry(TSK_HDB_INFO *hdb_info, const char *file_name, const char *md5, const char *sha1, const char *sha2_256, const char *comment)
+{
+    tsk_error_reset();
+    tsk_error_set_errno(TSK_ERR_HDB_ARG);
+    tsk_error_set_errstr("hdb_base_get_index_path: get index path not supported for hdb_info->db_type=%u", hdb_info->db_type);
+    return 1;
 }
 
 /**

@@ -54,14 +54,20 @@ extern "C" {
 #define TSK_HDB_IDX_HEAD_TYPE_STR	"00000000000000000000000000000000000000000"
 #define TSK_HDB_IDX_HEAD_NAME_STR	"00000000000000000000000000000000000000001"
 
-    // "Base" hash database functions. Some are no-ops.
-    extern uint8_t hdb_info_base_open(TSK_HDB_INFO *hdb_info, TSK_TCHAR *db_path);
-    extern const TSK_TCHAR *hdb_base_get_db_path(TSK_HDB_INFO *hdb_info);
-    extern const char *hdb_base_get_db_name(TSK_HDB_INFO *hdb_info);
+    // "Base" hash database functions. Most are no-ops.
+    extern uint8_t hdb_info_base_open(TSK_HDB_INFO *, TSK_TCHAR *);
+    extern const TSK_TCHAR *hdb_base_get_db_path(TSK_HDB_INFO *);
+    extern const char *hdb_base_get_db_name(TSK_HDB_INFO *);
+    extern const TSK_TCHAR *hdb_base_get_index_path(TSK_HDB_INFO *);
     extern uint8_t hdb_base_has_index(TSK_HDB_INFO*, TSK_HDB_HTYPE_ENUM);
-    extern uint8_t hdb_base_make_index(TSK_HDB_INFO *hdb_info, TSK_TCHAR *htype);
-    extern uint8_t hdb_base_open_index(TSK_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype);
-    extern void hdb_info_base_close(TSK_HDB_INFO *hdb_info);
+    extern uint8_t hdb_base_make_index(TSK_HDB_INFO *, TSK_TCHAR *);
+    extern uint8_t hdb_base_open_index(TSK_HDB_INFO *, TSK_HDB_HTYPE_ENUM);
+    extern int8_t hdb_base_lookup_str(TSK_HDB_INFO*, const char*, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void*);
+    extern int8_t hdb_base_lookup_bin(TSK_HDB_INFO*, uint8_t *, uint8_t, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void*);
+    extern uint8_t hdb_base_has_verbose_lookup(TSK_HDB_INFO*);
+    extern void *hdb_base_lookup_verbose_str(TSK_HDB_INFO*, const char*);
+    extern uint8_t hdb_base_add_entry(TSK_HDB_INFO*, const char*, const char*, const char*, const char*, const char *);
+    extern void hdb_info_base_close(TSK_HDB_INFO *);
 
     // Hash database functions common to all text format hash databases
     // (NSRL, md5sum, EnCase, HashKeeper, index only). These databases have
@@ -121,7 +127,7 @@ extern "C" {
                                     TSK_HDB_LOOKUP_FN, void *);
 
     // Hash database functions for SQLite hash databases.
-    extern uint8_t sqlite3_test(FILE * hFile);
+    extern uint8_t sqlite_hdb_is_sqlite_file(FILE * hFile);
 	extern uint8_t sqlite_hdb_create_db(TSK_TCHAR*);
     extern TSK_HDB_INFO *sqlite_hdb_open(TSK_TCHAR *db_path);
     extern int8_t sqlite_hdb_lookup_str(TSK_HDB_INFO *, const char *, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
