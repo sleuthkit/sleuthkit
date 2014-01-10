@@ -407,7 +407,7 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
         (fatfs_ptr_arg_is_null(a_fs_file->fs_info, "a_fs_file->fs_info", func_name))) {
         return TSK_ERR;
     }
-    
+
     fs_meta = a_fs_file->meta;
     fs = a_fs_file->fs_info;
     fatfs = (FATFS_INFO*)fs;
@@ -452,8 +452,6 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
      * size up to a multiple of cluster size. */
     size_remain = roundup(fs_meta->size, fatfs->csize * fs->block_size);
 
-    // RJCTODO: Consider addressing the code duplication below.
-    // RJCTODO: Consider breaking out each of the conditional blocks into its own sub-function.
     if ((a_fs_file->meta->addr == fs->root_inum) && 
         (fs->ftype != TSK_FS_TYPE_FAT32) &&
         (fs->ftype != TSK_FS_TYPE_EXFAT) &&
@@ -566,6 +564,31 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
          * We are going to take the clusters from the starting cluster
          * onwards and skip the clusters that are current allocated
          */
+
+		/* Quick check for exFAT only
+		 * Empty deleted files have a starting cluster of zero, which
+		 * causes problems in the exFAT functions since the first data
+		 * cluster should be 2. Since a starting cluster of zero indicates
+		 * no data, make an empty data run and skip any further processing
+		 */
+		if((fs->ftype == TSK_FS_TYPE_EXFAT) && (startclust == 0)){
+            // initialize the data run
+			fs_attr = tsk_fs_attrlist_getnew(a_fs_file->meta->attr, TSK_FS_ATTR_NONRES);
+			if (fs_attr == NULL) {
+				a_fs_file->meta->attr_state = TSK_FS_META_ATTR_ERROR;
+				return 1;
+			}
+
+			// Add the empty data run
+            if (tsk_fs_attr_set_run(a_fs_file, fs_attr, NULL, NULL,
+                    TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
+                    0, 0, 0, (TSK_FS_ATTR_FLAG_ENUM)0, 0)) {
+                fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
+                return 1;
+            }
+			fs_meta->attr_state = TSK_FS_META_ATTR_STUDIED;
+			return 0;
+		}
 
         /* Sanity checks on the starting cluster */
         /* Convert the cluster addr to a sector addr */
@@ -703,7 +726,6 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
         return 0;
     }
     else {
-        // RJCTODO: Find and fix the bug that causes sectors to be printed incorrectly.
         TSK_LIST *list_seen = NULL;
         TSK_FS_ATTR_RUN *data_run = NULL;
         TSK_FS_ATTR_RUN *data_run_head = NULL;
@@ -1067,7 +1089,6 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
         return 1;
     }
 
-    // RJCTODO: Check this decision with Brian after he polls the user community.
     /* FAT file systems do not really have the concept of unused inodes. */
     if ((flags & TSK_FS_META_FLAG_UNUSED) && !(flags & TSK_FS_META_FLAG_USED)) {
         return 0;
@@ -1347,8 +1368,6 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
             }
         }
 
-        // RJCTODO: Isn't this unnecessary given the skipping of unallocated
-        // clusters above?
         /* Now that the sectors are read in, prepare to step through them in 
          * directory entry size chunks. Only do a basic test to confirm the 
          * contents of each chunk is a directory entry unless the sector that
@@ -1393,7 +1412,7 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
             for (dentry_idx = 0; dentry_idx < fatfs->dentry_cnt_se;
                 dentry_idx++, inum++, dep++) {
                 int retval;
-                EXFATFS_DIR_ENTRY_TYPE_ENUM dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
+                EXFATFS_DIR_ENTRY_TYPE dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
                 TSK_RETVAL_ENUM retval2 = TSK_OK;
 
                 /* If the inode address of the potential entry is less than

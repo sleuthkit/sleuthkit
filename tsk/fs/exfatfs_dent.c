@@ -40,81 +40,15 @@
 typedef struct {
     FATFS_INFO *fatfs;
     int8_t sector_is_allocated;
-    EXFATFS_DIR_ENTRY_TYPE_ENUM last_dentry_type;
+    EXFATFS_DIR_ENTRY_TYPE last_dentry_type;
     uint8_t expected_secondary_entry_count;
     uint8_t actual_secondary_entry_count;
     uint16_t expected_check_sum;
-    uint16_t actual_check_sum;
     uint8_t expected_name_length;
     uint8_t actual_name_length;
     TSK_FS_NAME *fs_name;
     TSK_FS_DIR *fs_dir;
 } EXFATFS_FS_NAME_INFO;
-
-/**
- * \internal
- * Adds the bytes of a directory entry from a file directory entry set to the 
- * the entry set check sum stored in a EXFATFS_FS_NAME_INFO object.
- *
- * @param a_name_info The name info object.
- * @param a_dentry A buffer containing a file directory entry.
- */
-static void
-exfatfs_update_file_entry_set_checksum(EXFATFS_FS_NAME_INFO *a_name_info, 
-    FATFS_DENTRY *a_dentry)
-{
-    EXFATFS_DIR_ENTRY_TYPE_ENUM dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
-    uint8_t index = 0;
-    uint16_t byte_to_add = 0; /* uint16_t is data type of check sum. */
-
-    assert(a_name_info != NULL);
-    assert(a_dentry != NULL);
-    
-    dentry_type = (EXFATFS_DIR_ENTRY_TYPE_ENUM)a_dentry->data[0];
-    assert(dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE ||
-           dentry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE ||
-           dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM ||
-           dentry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM ||
-           dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME ||
-           dentry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME);
-
-    for (index = 0; index < sizeof(a_dentry->data); ++index) {
-        /* Skip the expected check sum, found in the file entry. */
-        if ((dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE ||
-             dentry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE) &&
-            (index == 2 || index == 3)) {
-            continue;
-        }
-
-        // RJCTODO: Confirm this. Or discard the check sum calculation code.
-        /* The file system does not update the check sum when an entry set is 
-         * marked as no longer in use. Compensate for this. */
-        if (index == 0) {
-            switch (dentry_type) {
-            case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE:
-                byte_to_add = (uint16_t)EXFATFS_DIR_ENTRY_TYPE_FILE;
-                break;
-            case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM:
-                byte_to_add = (uint16_t)EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM;
-                break;
-            case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME:
-                byte_to_add = (uint16_t)EXFATFS_DIR_ENTRY_TYPE_FILE_NAME;
-                break;
-            default:
-                byte_to_add = (uint16_t)dentry_type;
-                break;
-            }
-        }
-        else {
-            byte_to_add = (uint16_t)a_dentry->data[index];
-        }
-        
-        a_name_info->actual_check_sum = 
-            ((a_name_info->actual_check_sum << 15) | 
-             (a_name_info->actual_check_sum >> 1)) + 
-             byte_to_add;
-    }
-}
 
 /**
  * \internal
@@ -135,7 +69,6 @@ exfatfs_reset_name_info(EXFATFS_FS_NAME_INFO *a_name_info)
     a_name_info->expected_secondary_entry_count = 0;
     a_name_info->actual_secondary_entry_count = 0;
     a_name_info->expected_check_sum = 0;
-    a_name_info->actual_check_sum = 0;
     a_name_info->expected_name_length = 0;
     a_name_info->actual_name_length = 0;
     a_name_info->fs_name->name[0] = '\0';
@@ -192,8 +125,7 @@ exfats_parse_file_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a_dent
     assert(a_name_info->fs_name->name_size == FATFS_MAXNAMLEN_UTF8);
     assert(a_name_info->fs_dir != NULL);
     assert(dentry != NULL);
-    assert(dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE ||
-           dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE);
+    assert(exfatfs_get_enum_from_type(dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_FILE);
     assert(fatfs_inum_is_in_range(a_name_info->fatfs, a_inum));
     
     /* Starting parse of a new name, so save the current name, if any. */
@@ -201,7 +133,7 @@ exfats_parse_file_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a_dent
 
     /* Set the current entry type. This is used to check the sequence and 
      * in-use state of the entries in the set. */
-    a_name_info->last_dentry_type = (EXFATFS_DIR_ENTRY_TYPE_ENUM)dentry->entry_type;
+    a_name_info->last_dentry_type = (EXFATFS_DIR_ENTRY_TYPE)dentry->entry_type;
 
     /* The number of secondary entries and the check sum for the entry set are
      * stored in the file entry. */
@@ -221,7 +153,7 @@ exfats_parse_file_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a_dent
     /* If the in-use bit of the type byte is not set, the entry set is for a 
      * deleted or renamed file. However, trust and verify - to be marked as 
      * allocated, the inode must also be in an allocated sector. */
-    if (a_name_info->sector_is_allocated && dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE) {
+    if (a_name_info->sector_is_allocated && exfatfs_get_alloc_status_from_type(dentry->entry_type)) {
         a_name_info->fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;    
     }
     else {
@@ -231,8 +163,6 @@ exfats_parse_file_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a_dent
     /* Make the inum of the file entry the inode address for the entry set. */
     a_name_info->fs_name->meta_addr = a_inum;
 
-    /* Add the file entry bytes to the entry set check sum. */
-    exfatfs_update_file_entry_set_checksum(a_name_info, a_dentry);
 }
 
 /**
@@ -256,12 +186,10 @@ exfats_parse_file_stream_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY 
     assert(a_name_info->fs_name->name_size == FATFS_MAXNAMLEN_UTF8);
     assert(a_name_info->fs_dir != NULL);
     assert(dentry != NULL);
-    assert(dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM ||
-           dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM);
+    assert(exfatfs_get_enum_from_type(dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM);
     assert(fatfs_inum_is_in_range(a_name_info->fatfs, a_inum));
 
-    if ((a_name_info->last_dentry_type != EXFATFS_DIR_ENTRY_TYPE_FILE) && 
-        (a_name_info->last_dentry_type != EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE)) {
+    if(exfatfs_get_enum_from_type(a_name_info->last_dentry_type) != EXFATFS_DIR_ENTRY_TYPE_FILE){
         /* A file stream entry must follow a file entry, so this entry is a
          * false positive or there is corruption. Save the current name, 
          * if any, and ignore this buffer. */ 
@@ -269,10 +197,8 @@ exfats_parse_file_stream_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY 
         return;
     }
 
-    if ((a_name_info->last_dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE &&
-         dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM) || 
-        (a_name_info->last_dentry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE &&
-         dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM)) {
+    if(exfatfs_get_alloc_status_from_type(a_name_info->last_dentry_type) !=
+        exfatfs_get_alloc_status_from_type(dentry->entry_type)){
         /* The in-use bits of all of the entries in an entry set should be 
          * same, so this entry is a false positive or there is corruption. 
          * Save the current name, if any, and ignore this buffer. */ 
@@ -283,19 +209,15 @@ exfats_parse_file_stream_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY 
     /* Set the current entry type. This is used to check the sequence and 
      * in-use state of the entries in the set. */
     a_name_info->last_dentry_type = 
-        (EXFATFS_DIR_ENTRY_TYPE_ENUM)dentry->entry_type;
+        (EXFATFS_DIR_ENTRY_TYPE)dentry->entry_type;
 
     /* The file stream entry contains the length of the file name. */
     a_name_info->expected_name_length = dentry->file_name_length;
-
-    /* Add the stream entry bytes to the entry set check sum. */
-    exfatfs_update_file_entry_set_checksum(a_name_info, a_dentry);
 
     /* If all of the secondary entries for the set are present, save the name,
      * if any. Note that if this condition is satisfied here, the directory is
      * corrupted or this is a degenerate case - there should be at least one 
      * file name entry in a directory entry set. */
-    // RJCTODO: Verify the check sum?
     ++a_name_info->actual_secondary_entry_count;
     if (a_name_info->actual_secondary_entry_count == 
         a_name_info->expected_secondary_entry_count) {
@@ -325,14 +247,11 @@ exfats_parse_file_name_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
     assert(a_name_info->fs_name->name_size == FATFS_MAXNAMLEN_UTF8);
     assert(a_name_info->fs_dir != NULL);
     assert(dentry != NULL);
-    assert(dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME ||
-           dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME);
+    assert(exfatfs_get_enum_from_type(dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME);
     assert(fatfs_inum_is_in_range(a_name_info->fatfs, a_inum));
 
-    if (a_name_info->last_dentry_type != EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM && 
-        a_name_info->last_dentry_type != EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM &&
-        a_name_info->last_dentry_type != EXFATFS_DIR_ENTRY_TYPE_FILE_NAME &&
-        a_name_info->last_dentry_type != EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME) {
+    if(exfatfs_get_enum_from_type(a_name_info->last_dentry_type) != EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM &&
+        exfatfs_get_enum_from_type(a_name_info->last_dentry_type) != EXFATFS_DIR_ENTRY_TYPE_FILE_NAME){
         /* A file name entry must follow a stream or name entry, so this entry is
          * is a false positive or there is corruption. Save the current name, 
          * if any, and ignore this buffer. */ 
@@ -340,12 +259,8 @@ exfats_parse_file_name_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
         return;
     }
 
-    if (((a_name_info->last_dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM || 
-          a_name_info->last_dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME) && 
-         dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME) ||
-        ((a_name_info->last_dentry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM || 
-         a_name_info->last_dentry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME) &&
-         dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME)) {
+    if(exfatfs_get_alloc_status_from_type(a_name_info->last_dentry_type) !=
+        exfatfs_get_alloc_status_from_type(dentry->entry_type)){
         /* The in-use bits of all of the entries in an entry set should be 
          * same, so this entry is a false positive or there is corruption. 
          * Save the current name, if any, and ignore this buffer. */ 
@@ -356,7 +271,7 @@ exfats_parse_file_name_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
     /* Set the current entry type. This is used to check the sequence and 
      * in-use state of the entries in the set. */
     a_name_info->last_dentry_type = 
-        (EXFATFS_DIR_ENTRY_TYPE_ENUM)dentry->entry_type;
+        (EXFATFS_DIR_ENTRY_TYPE)dentry->entry_type;
 
     /* Determine how many name chars remain according to the name length from
      * the file stream entry and how many chars can be obtained from this
@@ -389,7 +304,6 @@ exfats_parse_file_name_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
 
     /* If all of the secondary entries for the set are present, save the name,
      * if any. */
-    // RJCTODO: Verify the check sum?
     ++a_name_info->actual_secondary_entry_count;
     if (a_name_info->actual_secondary_entry_count == 
         a_name_info->expected_secondary_entry_count) {
@@ -420,8 +334,7 @@ exfats_parse_vol_label_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
     assert(a_name_info->fs_name->name_size == FATFS_MAXNAMLEN_UTF8);
     assert(a_name_info->fs_dir != NULL);
     assert(dentry != NULL);
-    assert(dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL ||
-           dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL);
+    assert(exfatfs_get_enum_from_type(dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL);
     assert(fatfs_inum_is_in_range(a_name_info->fatfs, a_inum));
 
     /* Starting parse of a new name, save the previous name, if any. */
@@ -430,9 +343,9 @@ exfats_parse_vol_label_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
     /* Set the current entry type. This is used to check the sequence and 
      * in-use state of the entries in the set. */
     a_name_info->last_dentry_type = 
-        (EXFATFS_DIR_ENTRY_TYPE_ENUM)dentry->entry_type;
+        (EXFATFS_DIR_ENTRY_TYPE)dentry->entry_type;
 
-    if (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL) {
+    if(exfatfs_get_alloc_status_from_type(dentry->entry_type) == 1){
         if (fatfs_utf16_inode_str_2_utf8(a_name_info->fatfs, 
             (UTF16*)dentry->volume_label, (size_t)dentry->utf16_char_count + 1, 
             (UTF8*)a_name_info->fs_name->name, a_name_info->fs_name->name_size,
@@ -488,10 +401,10 @@ exfats_parse_special_file_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY
     assert(a_name_info->fs_name->name_size == FATFS_MAXNAMLEN_UTF8);
     assert(a_name_info->fs_dir != NULL);
     assert(a_dentry != NULL);
-    assert(a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID ||
-           a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP ||
-           a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE ||
-           a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_ACT);
+    assert(exfatfs_get_enum_from_type(a_dentry->data[0]) == EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID ||
+           exfatfs_get_enum_from_type(a_dentry->data[0]) == EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP ||
+           exfatfs_get_enum_from_type(a_dentry->data[0]) == EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE ||
+           exfatfs_get_enum_from_type(a_dentry->data[0]) == EXFATFS_DIR_ENTRY_TYPE_ACT);
     assert(fatfs_inum_is_in_range(a_name_info->fatfs, a_inum));
 
     /* Starting parse of a new name, save the previous name, if any. */
@@ -503,9 +416,9 @@ exfats_parse_special_file_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY
     /* Set the current entry type. This is used to check the sequence and 
      * in-use state of the entries in the set. */
     a_name_info->last_dentry_type = 
-        (EXFATFS_DIR_ENTRY_TYPE_ENUM)a_dentry->data[0];
+        (EXFATFS_DIR_ENTRY_TYPE)a_dentry->data[0];
 
-    switch (a_dentry->data[0]) {
+    switch (exfatfs_get_enum_from_type(a_dentry->data[0])) {
         case EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID:
             strcpy(a_name_info->fs_name->name, EXFATFS_VOLUME_GUID_DENTRY_NAME);
             break;
@@ -535,7 +448,7 @@ exfats_parse_special_file_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY
 }
 
 /**
- * /internal
+ * \internal
  * Parse a buffer containing the contents of a directory and add TSK_FS_NAME 
  * objects for each named file found to the TSK_FS_DIR representation of the 
  * directory.
@@ -633,9 +546,9 @@ exfatfs_dent_parse_buf(FATFS_INFO *a_fatfs, TSK_FS_DIR *a_fs_dir, char *a_buf,
         for (dentry_index = 0; dentry_index < a_fatfs->dentry_cnt_se; ++dentry_index, ++dentry) {
             FATFS_DENTRY *current_dentry = dentry;
             TSK_INUM_T current_inum = base_inum_of_sector + dentry_index;
-            EXFATFS_DIR_ENTRY_TYPE_ENUM dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
+            EXFATFS_DIR_ENTRY_TYPE dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
 
-            ++entries_count; // RJCTODO: Should this be reset for each iteration of this loop?
+            ++entries_count;
 
             if (!fatfs_inum_is_in_range(a_fatfs, current_inum)) {
                 tsk_fs_name_free(name_info.fs_name);
@@ -645,26 +558,22 @@ exfatfs_dent_parse_buf(FATFS_INFO *a_fatfs, TSK_FS_DIR *a_fs_dir, char *a_buf,
             if (exfatfs_is_dentry(a_fatfs, current_dentry, 
                 (FATFS_DATA_UNIT_ALLOC_STATUS_ENUM)name_info.sector_is_allocated, 
                 (uint8_t)(!is_corrupt_dir && name_info.sector_is_allocated))) {
-                dentry_type = (EXFATFS_DIR_ENTRY_TYPE_ENUM)current_dentry->data[0];
+                dentry_type = (EXFATFS_DIR_ENTRY_TYPE)current_dentry->data[0];
             }
             else {
                 dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
             }
 
-            switch (dentry_type) {
+            switch(exfatfs_get_enum_from_type(dentry_type)) {
             case EXFATFS_DIR_ENTRY_TYPE_FILE:
-            case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE:
                 exfats_parse_file_dentry(&name_info, current_dentry, current_inum);                 
                 break;
             case EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM:
-            case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM:
                 exfats_parse_file_stream_dentry(&name_info, current_dentry, current_inum);                 
                 break;
             case EXFATFS_DIR_ENTRY_TYPE_FILE_NAME:
-            case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME:
                 exfats_parse_file_name_dentry(&name_info, current_dentry, current_inum);                 
                 break;
-            case EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL:
             case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL:
                 exfats_parse_vol_label_dentry(&name_info, current_dentry, current_inum);
                 break;

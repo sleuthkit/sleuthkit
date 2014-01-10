@@ -31,31 +31,6 @@
 #include "tsk_fatfs.h"
 #include <assert.h>
 
-// RJCTODO: This code does not follow the lazy load paradigm for file attributes, i.e., data runs. The reason for this is that unlike FATXX,
-// exFAT only uses the FAT for fragmented files. The valid FAT chain flag in file stream entries is the indicator for regular files. For
-// other "special" files (e.g., allocation bitmap, upcase table) there will always be contiguous data runs. In all cases, the data for deciding
-// whether a run should be contiguous is in the directory entry. We could do away with the eager load of the data runs for exFAT if we allocated another 
-// byte of file-system-specific content in the TSK_FS_META structure to indicate whether or not there was a valid FAT chain for the file. 
-// This would also allow us to have a somewhat smarter recovery algorithm for deleted exFAT files without FAT chains - we would know the maximum 
-// number of clusters from which we could hope to recover any authentic file content more precisely than we do by using file size alone. This would also
-// support a uniform inode_copy function signature for FATXX and exFAY - it would no longer be necessary to pass the entire file object through, just the
-// meta object. On the other hand, the fatxxfs_copy_dinode function could be changed to take a TSK_FS_FILE instead of a TSK_FS_META object parameter.
-
-// RJCTODO: Adding yet another byte to the file system specific content (see above for the first proposed new byte) would allow us to save the directory 
-// entry type as well. An immediate benefit of this would be the way we would be able to skip over the recovery code for the file name entries of deleted files - 
-// currently we don't add a data run to the file name entries of allocated files, yet we tack a "one cluster run" on to each file name entry for a deleted file 
-// (see lines 2015-2034 of fatfs_meta.c). This is a bug as far as I'm concerned.
-
-// RJCTODO: Enum variables display nicely in IntelliSense. Use them instead of the integral type flags I put in to deal with compiler warnings
-// and use casts instead.
-
-// RJCTODO: Consider standardizing on the use of tsk_error_reset() throughout the FAT code.
-
-// RJCTODO: Make sure all exFAT code is Doxygen commented. It would be better to also include shared FAT code in this. Even better would be
-// to make sure the FATXX code is documented as well.
-
-// RJCTODO: It would be good to obtain real world exFAT images and a Windows CE exFAT image for further testing.
-
 /**
  * \internal
  * Checks whether a specified cluster is allocated according to the allocation 
@@ -140,8 +115,7 @@ exfatfs_is_vol_label_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS
     }
 
     /* Check the entry type byte. */
-    if ((dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL) && 
-        (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL)) {
+    if (exfatfs_get_enum_from_type(dentry->entry_type) != EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL) {
         return 0;
     }
 
@@ -152,7 +126,7 @@ exfatfs_is_vol_label_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS
         return 0;
     }
 
-    if (dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL) {
+    if(exfatfs_get_alloc_status_from_type(dentry->entry_type) == 1){
         /* There is supposed to be a label, check its length. */
         if ((dentry->utf16_char_count < 1) || (dentry->utf16_char_count > EXFATFS_MAX_VOLUME_LABEL_LEN)) {
             if (tsk_verbose) {
@@ -162,7 +136,6 @@ exfatfs_is_vol_label_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS
         }
     }
     else {
-        // RJCTODO: I think I verified that these tests are valid, but check again to be sure.
         /* There is supposed to be no label, check for a zero in the length
          * field. */
         if (dentry->utf16_char_count != 0x00) {
@@ -209,7 +182,7 @@ exfatfs_is_vol_guid_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS_
     }
 
     /* Check the entry type byte. */
-    if (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID) {
+    if (exfatfs_get_enum_from_type(dentry->entry_type) != EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID) {
         return 0;
     }
 
@@ -250,7 +223,7 @@ exfatfs_is_alloc_bitmap_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STA
     }
 
     /* Check the entry type byte. */
-    if (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP) {
+    if (exfatfs_get_enum_from_type(dentry->entry_type) != EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP) {
         return 0;
     }
 
@@ -330,7 +303,7 @@ exfatfs_is_upcase_table_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STA
     }
 
     /* Check the entry type byte. */
-    if (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE) {
+    if (exfatfs_get_enum_from_type(dentry->entry_type) != EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE) {
         return 0;
     }
 
@@ -410,7 +383,7 @@ exfatfs_is_texfat_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS_EN
     }
 
     /* Check the entry type byte. */
-    if (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_TEXFAT) {
+    if (exfatfs_get_enum_from_type(dentry->entry_type) != EXFATFS_DIR_ENTRY_TYPE_TEXFAT) {
         return 0;
     }
 
@@ -445,7 +418,7 @@ exfatfs_is_access_ctrl_table_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLO
     }
 
     /* Check the entry type byte. */
-    if (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_TEXFAT) {
+    if (exfatfs_get_enum_from_type(dentry->entry_type) != EXFATFS_DIR_ENTRY_TYPE_TEXFAT) {
         return 0;
     }
 
@@ -462,8 +435,9 @@ exfatfs_is_access_ctrl_table_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLO
 /**
  * \internal
  * Determine whether the contents of a buffer may be an exFAT file directory 
- * entry. The test will be more reliable if an optional FATFS_INFO struct 
- * representing the file system is provided.
+ * entry. The test will be more reliable if an optional TSK_ENDIAN_ENUM value 
+ * is known. This function was split into two parts so that the main 
+ * test can be run without a FATFS_INFO object.
  *
  * @param [in] a_dentry A directory entry buffer.
  * @param [in] a_fatfs A FATFS_INFO struct representing an exFAT file system,
@@ -476,6 +450,33 @@ exfatfs_is_file_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs)
 {
     const char *func_name = "exfatfs_is_file_dentry";
     TSK_FS_INFO *fs = NULL;
+
+    if (a_fatfs != NULL) {
+        fs = &(a_fatfs->fs_info);
+        return exfatfs_is_file_dentry_standalone(a_dentry, fs->endian);
+    }
+    else{
+        return exfatfs_is_file_dentry_standalone(a_dentry, TSK_UNKNOWN_ENDIAN);
+    }
+
+}
+
+/**
+ * \internal
+ * Determine whether the contents of a buffer may be an exFAT file directory 
+ * entry. The test will be more reliable if an optional TSK_ENDIAN_ENUM value 
+ * is known. This version of the function can be called without a TSK_FS_INFO
+ * object.
+ *
+ * @param [in] a_dentry A directory entry buffer.
+ * @param [in] a_endian Endianness of the file system
+ * @returns 1 if the directory entry buffer likely contains a file directory 
+ * entry, 0 otherwise. 
+ */
+uint8_t
+exfatfs_is_file_dentry_standalone(FATFS_DENTRY *a_dentry, TSK_ENDIAN_ENUM a_endian)
+{
+    const char *func_name = "exfatfs_is_file_dentry";
     EXFATFS_FILE_DIR_ENTRY *dentry = (EXFATFS_FILE_DIR_ENTRY*)a_dentry;
 
     assert(a_dentry != NULL);
@@ -484,8 +485,7 @@ exfatfs_is_file_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs)
     }
 
     /* Check the entry type byte. */
-    if ((dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_FILE) && 
-        (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE)) {
+    if (exfatfs_get_enum_from_type(dentry->entry_type) != EXFATFS_DIR_ENTRY_TYPE_FILE){ 
         return 0;
     }
 
@@ -502,18 +502,17 @@ exfatfs_is_file_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs)
         return 0;
     }
 
-    if (a_fatfs != NULL) {
-        fs = &(a_fatfs->fs_info);   
+    if (a_endian != TSK_UNKNOWN_ENDIAN) {  
 
         /* Make sure the time stamps aren't all zeros. */
-        if ((tsk_getu16(fs->endian, dentry->modified_date) == 0) &&
-            (tsk_getu16(fs->endian, dentry->modified_time) == 0) &&
+        if ((tsk_getu16(a_endian, dentry->modified_date) == 0) &&
+            (tsk_getu16(a_endian, dentry->modified_time) == 0) &&
             (dentry->modified_time_tenths_of_sec == 0) && 
-            (tsk_getu16(fs->endian, dentry->created_date) == 0) &&
-            (tsk_getu16(fs->endian, dentry->created_time) == 0) &&
+            (tsk_getu16(a_endian, dentry->created_date) == 0) &&
+            (tsk_getu16(a_endian, dentry->created_time) == 0) &&
             (dentry->created_time_tenths_of_sec == 0) && 
-            (tsk_getu16(fs->endian, dentry->accessed_date) == 0) &&
-            (tsk_getu16(fs->endian, dentry->accessed_time) == 0)) {
+            (tsk_getu16(a_endian, dentry->accessed_date) == 0) &&
+            (tsk_getu16(a_endian, dentry->accessed_time) == 0)) {
             if (tsk_verbose) {
                 fprintf(stderr, "%s: time stamps all zero\n", 
                     func_name);
@@ -529,11 +528,11 @@ exfatfs_is_file_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs)
  * \internal
  * Determine whether the contents of a buffer may be an exFAT file stream 
  * directory entry. The test will be more reliable if an optional FATFS_INFO 
- * struct representing the file system is provided.
+ * struct representing the file system is provided. This function was 
+ * split into two parts so that the main test can be run 
+ * without a FATFS_INFO object.
  *
  * @param [in] a_dentry A directory entry buffer.
- * @param [in] a_alloc_status The allocation status, possibly unknown, of the 
- * cluster from which the buffer was filled. 
  * @param [in] a_fatfs A FATFS_INFO struct representing an exFAT file system,
  * may be NULL.
  * @returns 1 if the directory entry buffer likely contains a file stream 
@@ -548,62 +547,96 @@ exfatfs_is_file_stream_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs)
     uint64_t file_size = 0;
     uint32_t first_cluster = 0;
 
+    uint64_t cluster_heap_size = 0;
+
+    if (a_fatfs != NULL) {
+        fs = &(a_fatfs->fs_info);
+
+        /* Calculate the size of the cluster heap. The cluster heap size 
+         * is computed by multiplying the cluster size 
+         * by the number of sectors in a cluster and then 
+         * multiplying by the number of bytes in a sector (the last operation 
+         * is optimized as a left shift by the base 2 log of sector size). */
+        cluster_heap_size = (a_fatfs->clustcnt * a_fatfs->csize) << a_fatfs->ssize_sh;
+
+        return exfatfs_is_file_stream_dentry_standalone(a_dentry, fs->endian, cluster_heap_size, a_fatfs->lastclust);
+    }
+    else{
+        return exfatfs_is_file_stream_dentry_standalone(a_dentry, TSK_UNKNOWN_ENDIAN, 0, 0);
+    }
+
+}
+
+/**
+ * \internal
+ * Determine whether the contents of a buffer may be an exFAT file stream 
+ * directory entry. The test will be more reliable if the optional endianness
+ * and cluster information are used. This version of the function can be 
+ * called without a TSK_FS_INFO object.
+ * 
+ * The endianness must be known to run all of the extended tests. The other 
+ * parameters can be set to zero if unknown and the function will run whichever
+ * tests are possible with the given information.
+ *
+ * @param [in] a_dentry A directory entry buffer.
+ * @param [in] a_endian Endianness of the file system
+ * @param [in] a_cluster_heap_size Size of the cluster heap (in bytes)
+ * @param [in] a_last_cluster Last cluster in the file system
+ * @returns 1 if the directory entry buffer likely contains a file stream 
+ * directory entry, 0 otherwise. 
+ */
+uint8_t
+exfatfs_is_file_stream_dentry_standalone(FATFS_DENTRY *a_dentry, TSK_ENDIAN_ENUM a_endian,
+    uint64_t a_cluster_heap_size, TSK_DADDR_T a_last_cluster)
+{
+    const char *func_name = "exfatfs_is_file_stream_dentry";
+    EXFATFS_FILE_STREAM_DIR_ENTRY *dentry = (EXFATFS_FILE_STREAM_DIR_ENTRY*)a_dentry;
+    uint64_t file_size = 0;
+    uint32_t first_cluster = 0;
+
     assert(a_dentry != NULL);
     if (fatfs_ptr_arg_is_null(a_dentry, "a_dentry", func_name)) {
         return 0;
     }
 
     /* Check the entry type byte. */
-    if ((dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM) && 
-        (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM)) {
+    if (exfatfs_get_enum_from_type(dentry->entry_type) != EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM) { 
         return 0;
     }
 
-    if (a_fatfs != NULL) {
-        fs = &(a_fatfs->fs_info);   
+   if (a_endian != TSK_UNKNOWN_ENDIAN) { 
 
         /* Check the size. */
-        file_size = tsk_getu64(fs->endian, dentry->data_length); // RJCTODO: How does this relate to the valid data length field? Is one or the other to be preferred?
+        file_size = tsk_getu64(a_endian, dentry->data_length);
         if (file_size > 0) {
             /* Is the file size less than the size of the cluster heap 
              * (data area)? The cluster heap size is computed by multiplying the
              * cluster size by the number of sectors in a cluster and then 
              * multiplying by the number of bytes in a sector (the last operation 
              * is optimized as a left shift by the base 2 log of sector size). */
-            if (file_size > (a_fatfs->clustcnt * a_fatfs->csize) << a_fatfs->ssize_sh) {
-                if (tsk_verbose) {
-                    fprintf(stderr, "%s: file size too big\n", func_name);
+            if(a_cluster_heap_size > 0){
+                if (file_size > a_cluster_heap_size) {
+                    if (tsk_verbose) {
+                        fprintf(stderr, "%s: file size too big\n", func_name);
+                    }
+                    return 0;
                 }
-                return 0;
             }
 
             /* Is the address of the first cluster in range? */
-            first_cluster = tsk_getu32(fs->endian, dentry->first_cluster_addr);
+            first_cluster = tsk_getu32(a_endian, dentry->first_cluster_addr);
             if ((first_cluster < EXFATFS_FIRST_CLUSTER) ||
-                (first_cluster > a_fatfs->lastclust)) {
+                ((a_last_cluster > 0) && (first_cluster > a_last_cluster))) {
                 if (tsk_verbose) {
                     fprintf(stderr, 
                         "%s: first cluster not in cluster heap\n", func_name);
                 }
                 return 0;
             }
-
-            /* If the file is not marked as unallocated and has non-zero size, is its
-             * first cluster allocated? */
-            if ((dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM) && 
-                (exfatfs_is_cluster_alloc(a_fatfs, (TSK_DADDR_T)first_cluster) != 1)) {
-                if (tsk_verbose) {
-                    fprintf(stderr, 
-                        "%s: file not deleted, first cluster not allocated\n", func_name);
-                }
-                return 0;
-            }
         }
-    }
+   }
+   return 1;
 
-    // RJCTODO: Are there any more checks that could be done?
-
-    return 1;
 }
 
 /**
@@ -628,8 +661,7 @@ exfatfs_is_file_name_dentry(FATFS_DENTRY *a_dentry)
 
     /* There is not enough data in a file name directory entry
      * to test anything but the entry type byte. */
-    return ((dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME) || 
-            (dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME));
+    return (exfatfs_get_enum_from_type(dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME);
 }
 
 
@@ -655,10 +687,9 @@ exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_A
         return 0;
     }
 
-    switch (a_dentry->data[0])
+    switch (exfatfs_get_enum_from_type(a_dentry->data[0]))
     {
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL:
-    case EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL:
         return exfatfs_is_vol_label_dentry(a_dentry, a_cluster_is_alloc);
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID:
         return exfatfs_is_vol_guid_dentry(a_dentry, a_cluster_is_alloc);
@@ -671,13 +702,10 @@ exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_A
     case EXFATFS_DIR_ENTRY_TYPE_ACT:
         return exfatfs_is_access_ctrl_table_dentry(a_dentry, a_cluster_is_alloc);
     case EXFATFS_DIR_ENTRY_TYPE_FILE:
-    case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE:
         return exfatfs_is_file_dentry(a_dentry, a_fatfs);
     case EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM:
-    case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM:
         return exfatfs_is_file_stream_dentry(a_dentry, a_fatfs);
     case EXFATFS_DIR_ENTRY_TYPE_FILE_NAME:
-    case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME:
         return exfatfs_is_file_name_dentry(a_dentry);
     default:
         return 0;
@@ -773,7 +801,7 @@ exfatfs_make_contiguous_data_run(TSK_FS_FILE *a_fs_file)
     if (tsk_fs_attr_set_run(a_fs_file, fs_attr, data_run, NULL,
             TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
             fs_meta->size,
-            data_run->len * fs->block_size,
+            fs_meta->size,
             data_run->len * fs->block_size, 
             TSK_FS_ATTR_FLAG_NONE, 0)) {
         return 1;
@@ -810,12 +838,11 @@ exfatfs_copy_vol_label_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FATFS_DENTR
     assert(a_fs_file->meta != NULL);
 
     dentry = (EXFATFS_VOL_LABEL_DIR_ENTRY*)a_dentry;
-    assert(dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL ||
-           dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL);
+    assert(exfatfs_get_enum_from_type(dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL);
 
     /* If there is a volume label, copy it to the name field of the 
      * TSK_FS_META structure. */
-    if (dentry->entry_type != EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL) {
+    if (exfatfs_get_alloc_status_from_type(dentry->entry_type) == 1) {
         if (fatfs_utf16_inode_str_2_utf8(a_fatfs, (UTF16*)dentry->volume_label, (size_t)dentry->utf16_char_count + 1, 
             (UTF8*)a_fs_file->meta->name2->name, sizeof(a_fs_file->meta->name2->name), a_inum, "volume label") != TSKconversionOK) {
             return TSK_COR;
@@ -851,7 +878,7 @@ exfatfs_copy_alloc_bitmap_inode(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, TSK
     assert(a_fs_file->meta != NULL);
 
     dentry = (EXFATFS_ALLOC_BITMAP_DIR_ENTRY*)a_dentry;
-    assert(dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP);
+    assert(exfatfs_get_enum_from_type(dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP);
 
     /* Set the file name to a descriptive pseudo file name. */
     strcpy(a_fs_file->meta->name2->name, EXFATFS_ALLOC_BITMAP_DENTRY_NAME);
@@ -892,7 +919,7 @@ exfatfs_copy_upcase_table_inode(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, TSK
     assert(a_fs_file->meta != NULL);
 
     dentry = (EXFATFS_UPCASE_TABLE_DIR_ENTRY*)a_dentry;
-    assert(dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE);
+    assert(exfatfs_get_enum_from_type(dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE);
 
     strcpy(a_fs_file->meta->name2->name, EXFATFS_UPCASE_TABLE_DENTRY_NAME);
 
@@ -928,7 +955,7 @@ exfatfs_copy_upcase_table_inode(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, TSK
 static uint8_t
 exfatfs_load_file_stream_dentry(FATFS_INFO *a_fatfs, 
     TSK_INUM_T a_stream_entry_inum, uint8_t a_sector_is_alloc, 
-    EXFATFS_DIR_ENTRY_TYPE_ENUM a_file_dentry_type, // RJCTODO: Consider sending the desired type of stream entry in, or passing in the file entry.
+    EXFATFS_DIR_ENTRY_TYPE a_file_dentry_type,
     FATFS_DENTRY *a_dentry)
 {
     assert(a_fatfs != NULL);
@@ -939,10 +966,9 @@ exfatfs_load_file_stream_dentry(FATFS_INFO *a_fatfs,
         exfatfs_is_dentry(a_fatfs, a_dentry, (FATFS_DATA_UNIT_ALLOC_STATUS_ENUM)a_sector_is_alloc, a_sector_is_alloc)) {
         /* If the bytes at the specified inode address are a file stream entry
          * with the same allocation status as the file entry, report success. */
-        if ((a_file_dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE && 
-             a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM) ||
-            (a_file_dentry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE &&
-             a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM)) {
+        if((exfatfs_get_alloc_status_from_type(a_file_dentry_type) == exfatfs_get_alloc_status_from_type(a_dentry->data[0])) &&
+            (exfatfs_get_enum_from_type(a_file_dentry_type) == EXFATFS_DIR_ENTRY_TYPE_FILE) &&
+            (exfatfs_get_enum_from_type(a_dentry->data[0]) == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM)) {
             return 0;
         }
     }
@@ -975,12 +1001,12 @@ exfatfs_new_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry
     TSK_INUM_T stream_entry_inum = 0;
     int8_t alloc_check_ret_val = 0;
     uint8_t cluster_is_alloc = 0;
-    TSK_DADDR_T sector = 0; // RJCTODO: Improve name
-    TSK_DADDR_T cluster = 0; // RJCTODO: Improve name
+    TSK_DADDR_T sector = 0; 
+    TSK_DADDR_T cluster = 0;
     TSK_DADDR_T cluster_base_sector = 0;
     TSK_DADDR_T last_entry_offset = 0;
     TSK_DADDR_T file_entry_offset = 0;
-    EXFATFS_DIR_ENTRY_TYPE_ENUM dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
+    EXFATFS_DIR_ENTRY_TYPE dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
     TSK_DADDR_T next_cluster = 0;
 
     assert(a_fatfs != NULL);
@@ -1012,7 +1038,7 @@ exfatfs_new_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry
     if (fatfs_inum_is_in_range(a_fatfs, stream_entry_inum)) {
         if (exfatfs_load_file_stream_dentry(a_fatfs, 
             stream_entry_inum, cluster_is_alloc, 
-            (EXFATFS_DIR_ENTRY_TYPE_ENUM)a_file_dentry->entry_type, // RJCTODO: Messy casts
+            (EXFATFS_DIR_ENTRY_TYPE)a_file_dentry->entry_type,
             (FATFS_DENTRY*)a_stream_dentry) == 0) {
             /* Found it. */
             return FATFS_OK;
@@ -1050,7 +1076,7 @@ exfatfs_new_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry
                 if (fatfs_inum_is_in_range(a_fatfs, stream_entry_inum)) {
                     if (exfatfs_load_file_stream_dentry(a_fatfs, 
                         stream_entry_inum, cluster_is_alloc, 
-                        (EXFATFS_DIR_ENTRY_TYPE_ENUM)a_file_dentry->entry_type, // RJCTODO: Messy casts
+                        (EXFATFS_DIR_ENTRY_TYPE)a_file_dentry->entry_type,
                         (FATFS_DENTRY*)a_stream_dentry) == 0) {
                         /* Found it. */
                         return FATFS_OK;
@@ -1093,8 +1119,7 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     assert(a_file_dentry != NULL);
     assert(a_fs_file != NULL);
     assert(a_fs_file->meta != NULL);
-    assert(file_dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE ||
-           file_dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE);
+    assert(exfatfs_get_enum_from_type(file_dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_FILE);
 
     fs = &(a_fatfs->fs_info);
     fs_meta = a_fs_file->meta;
@@ -1123,7 +1148,7 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
 
     /* There is no notion of links in exFAT, just deleted or not deleted. 
      * If the file is not deleted, treat this as having one link. */
-    fs_meta->nlink = (file_dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE) ? 0 : 1;
+    fs_meta->nlink = (exfatfs_get_alloc_status_from_type(file_dentry->entry_type) == 0) ? 0 : 1;
 
     /* Copy the last modified time, converted to UNIX date format. */
     if (FATFS_ISDATE(tsk_getu16(fs->endian, file_dentry->modified_date))) {
@@ -1166,28 +1191,25 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
         fs_meta->crtime_nano = 0;
     }
 
-    // RJCTODO: Do we want to do anything with the time zone offsets?
+    /* Currenty, don't do anything with the time zone offsets */
 
     /* Attempt to load the file stream entry that goes with this file entry. 
      * If not successful, at least the file entry meta data will be returned. */
-    if (exfatfs_new_find_file_stream_dentry(a_fatfs, a_inum, file_dentry, &stream_dentry)) { // RJCTODO: COuld pass allocation status through.
+    if (exfatfs_new_find_file_stream_dentry(a_fatfs, a_inum, file_dentry, &stream_dentry)) {
         return TSK_OK;
     }
 
     /* Set the size of the file and the address of its first cluster. */
     ((TSK_DADDR_T*)a_fs_file->meta->content_ptr)[0] = 
         tsk_getu32(a_fatfs->fs_info.endian, stream_dentry.first_cluster_addr);
-    fs_meta->size = tsk_getu64(fs->endian, stream_dentry.data_length); // RJCTODO: How does this relate to the valid data length field? Is one or the other to be preferred?
+    fs_meta->size = tsk_getu64(fs->endian, stream_dentry.data_length);
 
-    // RJCTODO: What if a cluster boundary is crossed? Probably need to check the allocation status of all the clusters
-    // involved in a file directory entry set. This is another argument for moving the duplicated code to find stream entries out of inode lookup
-    // and walk to here.
     /* Set the allocation status using both the allocation status of the 
      * sector that contains the directory entries and the entry type 
      * settings - essentially a "belt and suspenders" check. */
     if ((a_is_alloc) &&
-        (file_dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE) &&
-        (stream_dentry.entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM)) {
+        (exfatfs_get_alloc_status_from_type(file_dentry->entry_type) == 1) &&
+        (exfatfs_get_alloc_status_from_type(stream_dentry.entry_type) == 1)) {
         a_fs_file->meta->flags = TSK_FS_META_FLAG_ALLOC;
 
         /* If the FAT chain bit of the secondary flags of the stream entry is set,
@@ -1233,16 +1255,13 @@ exfatfs_copy_file_name_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     assert(a_fs_file->meta != NULL);
 
     dentry = (EXFATFS_FILE_NAME_DIR_ENTRY*)a_dentry;
-    assert(dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME ||
-           dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME);
+    assert(exfatfs_get_enum_from_type(dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME);
 
-    // RJCTODO: This leads to attempts to "recover" a file with a single cluster
-    // run for a deleted file name entry. See remarks at the beginning of this file.
     /* Set the allocation status using both the allocation status of the 
      * sector that contains the directory entries and the entry type 
      * settings - essentially a "belt and suspenders" check. */
     if ((a_is_alloc) &&
-        (dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME)) {
+        (exfatfs_get_alloc_status_from_type(dentry->entry_type) == 1)) {
         a_fs_file->meta->flags = TSK_FS_META_FLAG_ALLOC;
     }
     else {
@@ -1250,7 +1269,6 @@ exfatfs_copy_file_name_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     }
 
     /* Copy the file name segment. */
-    // RJCTODO: Is there a problem here because we don't know how many of the chars are valid?
     if (fatfs_utf16_inode_str_2_utf8(a_fatfs, (UTF16*)dentry->utf16_name_chars, EXFATFS_MAX_FILE_NAME_SEGMENT_LENGTH, 
         (UTF8*)a_fs_file->meta->name2->name, sizeof(a_fs_file->meta->name2->name), a_inum, "file name segment") != TSKconversionOK) {
         return TSK_COR;
@@ -1395,10 +1413,9 @@ exfatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
         return TSK_ERR;
     }
 
-    switch (a_dentry->data[0])
+    switch (exfatfs_get_enum_from_type(a_dentry->data[0]))
     {
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL:
-    case EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL:
         return exfatfs_copy_vol_label_inode(a_fatfs, a_inum, a_dentry, a_fs_file);
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID:
         strcpy(a_fs_file->meta->name2->name, EXFATFS_VOLUME_GUID_DENTRY_NAME);
@@ -1414,13 +1431,10 @@ exfatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
         strcpy(a_fs_file->meta->name2->name, EXFATFS_ACT_DENTRY_NAME);
         return TSK_OK;
     case EXFATFS_DIR_ENTRY_TYPE_FILE:
-    case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE:
         return exfatfs_copy_file_inode(a_fatfs, a_inum, a_dentry, a_is_alloc, a_fs_file);
     case EXFATFS_DIR_ENTRY_TYPE_FILE_NAME:
-    case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME:
         return exfatfs_copy_file_name_inode(a_fatfs, a_inum, a_dentry, a_is_alloc, a_fs_file);
     case EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM:
-    case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM:
     default:
         /* Stream entries are copied in tandem with the corresponding file entry. */
         return TSK_ERR;
@@ -1448,7 +1462,7 @@ exfatfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
 uint8_t
 exfatfs_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry_inum, 
     TSK_DADDR_T a_sector, uint8_t a_sector_is_alloc,  
-    EXFATFS_DIR_ENTRY_TYPE_ENUM a_file_dentry_type,
+    EXFATFS_DIR_ENTRY_TYPE a_file_dentry_type,
     FATFS_DENTRY *a_stream_dentry)
 {
     const char *func_name = "exfatfs_find_file_stream_dentry";
@@ -1457,7 +1471,7 @@ exfatfs_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry_inu
     TSK_DADDR_T cluster_base_sector = 0;
     TSK_DADDR_T last_entry_offset = 0;
     TSK_DADDR_T file_entry_offset = 0;
-    EXFATFS_DIR_ENTRY_TYPE_ENUM dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
+    EXFATFS_DIR_ENTRY_TYPE dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
     TSK_DADDR_T next_cluster = 0;
 
     assert(a_fatfs != NULL);
@@ -1562,7 +1576,7 @@ exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
     uint64_t inode_offset = 0;
     TSK_DADDR_T cluster_base_sector = 0;
     TSK_INUM_T next_inum = 0;
-    EXFATFS_DIR_ENTRY_TYPE_ENUM dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
+    EXFATFS_DIR_ENTRY_TYPE dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
     TSK_RETVAL_ENUM copy_result = TSK_OK;
 
     tsk_error_reset();
@@ -1606,7 +1620,7 @@ exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
 
     /* Try typing the bytes as a directory entry.*/
     if (exfatfs_is_dentry(a_fatfs, &dentry, (FATFS_DATA_UNIT_ALLOC_STATUS_ENUM)sect_is_alloc, sect_is_alloc)) {
-        dentry_type = (EXFATFS_DIR_ENTRY_TYPE_ENUM)dentry.data[0];
+        dentry_type = (EXFATFS_DIR_ENTRY_TYPE)dentry.data[0];
     }
     else {
         return 1;
@@ -1615,8 +1629,7 @@ exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
     /* For the purposes of inode lookup, the file and file stream entries 
      * that begin a file entry set are mapped to a single inode. Thus,  
      * file stream entries are not treated as independent inodes. */
-    if (dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM ||
-        dentry_type == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM) {
+    if (exfatfs_get_enum_from_type(dentry_type) == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
         tsk_error_set_errstr("%s: %" PRIuINUM " is not an inode", func_name, 
@@ -1679,10 +1692,9 @@ exfatfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,  FILE *a_hFile)
     }
 
     /* Print the attributes. */
-    switch (dentry.data[0])
+    switch (exfatfs_get_enum_from_type(dentry.data[0]))
     {
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL:
-    case EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL:
         tsk_fprintf(a_hFile, "Volume Label\n");
         break;
     case EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID:
@@ -1701,7 +1713,6 @@ exfatfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,  FILE *a_hFile)
         tsk_fprintf(a_hFile, "Access Control Table\n");
         break;
     case EXFATFS_DIR_ENTRY_TYPE_FILE:
-    case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE:
         file_dentry = (EXFATFS_FILE_DIR_ENTRY*)&dentry;
         attr_flags = tsk_getu16(a_fatfs->fs_info.endian, file_dentry->attrs);
 
@@ -1732,11 +1743,9 @@ exfatfs_istat_attr_flags(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,  FILE *a_hFile)
 
         break;
     case EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM:
-    case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM:
         tsk_fprintf(a_hFile, "File Stream\n"); 
         break;
     case EXFATFS_DIR_ENTRY_TYPE_FILE_NAME:
-    case EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME:
         tsk_fprintf(a_hFile, "File Name\n");
         break;
     default:
@@ -1785,19 +1794,15 @@ exfatfs_inode_walk_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     /* Skip file stream and file name entries. For inode walks, these entries
      * are handled with the file entry with which they are associated in a file
      * entry set. */
-    if (a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM ||
-        a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_STREAM ||
-        a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME ||
-        a_dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE_NAME) {
+    if (exfatfs_get_enum_from_type(a_dentry->data[0]) == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM ||
+        exfatfs_get_enum_from_type(a_dentry->data[0]) == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME) {
         return 1;
     }
 
-    // RJCTODO: This code probably needs to change. See explanatory TODO comment
-    // associated with the EXFATFS_DIR_ENTRY_TYPE_ENUM definition.
     /* Assign an allocation status to the entry. Allocation status is 
      * determined first by the allocation status of the cluster that contains
      * the entry, then by the allocated status of the entry. */
-    if ((a_cluster_is_alloc) && (a_dentry->data[0] != EXFATFS_DIR_ENTRY_TYPE_UNALLOC_FILE)) {
+    if ((a_cluster_is_alloc) && (exfatfs_get_alloc_status_from_type(a_dentry->data[0]) == 1)) {
         dentry_flags = TSK_FS_META_FLAG_ALLOC;
     }
     else {
@@ -1820,4 +1825,33 @@ exfatfs_inode_walk_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     }
 
     return 0;
+}
+
+
+/**
+ * \internal
+ * Returns the allocation status of a dir entry given its
+ * dir entry type byte (stored in the high bit)
+ *
+ * @param [in] a_dir_entry_type Entry type byte
+ * @return 0 if unused, 1 if used
+ */
+uint8_t 
+exfatfs_get_alloc_status_from_type(EXFATFS_DIR_ENTRY_TYPE a_dir_entry_type)
+{
+    return (a_dir_entry_type >> 7);
+}
+
+
+/**
+ * \internal
+ * Returns the directory type enum from the given entry type byte
+ * (Comes from the low 7 bits)
+ *
+ * @param [in] a_dir_entry_type
+ * @return Enum for this type
+ */
+EXFATFS_DIR_ENTRY_TYPE_ENUM 
+exfatfs_get_enum_from_type(EXFATFS_DIR_ENTRY_TYPE a_dir_entry_type){
+    return ((EXFATFS_DIR_ENTRY_TYPE_ENUM)(a_dir_entry_type & 0x7f));
 }

@@ -31,15 +31,6 @@
 #include "tsk_fatfs.h"
 #include <assert.h>
 
-// RJCTODO: It may be worthwhile to determine and save the bounds of the root directory when opening the file
-// system. If this is done, then the code in exfatfs_get_alloc_bitmap() and exfatfs_find_volume_label_dentry() could
-// restrict searching to the root directory. This would have the benefit of acting as another file system type validation
-// mechnaism.
-
-// RJCTODO: It would be nice to combine the searches in exfatfs_get_alloc_bitmap() and exfatfs_find_volume_label_dentry(),
-// storing the volume label in the exFAT part of the FATFS_INFO struct. This would make fsstat a little more zippy, but the
-// main benefits would be reduced code duplication and another bit of file system type validation.
-
 /**
  * \internal
  * Parses the MBR of an exFAT file system to obtain file system size 
@@ -53,7 +44,7 @@ static uint8_t
 exfatfs_get_fs_size_params(FATFS_INFO *a_fatfs)
 {
     const char *func_name = "exfatfs_get_fs_size_params";
-	TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
     EXFATFS_MASTER_BOOT_REC *exfatbs = NULL;
 
     assert(a_fatfs != NULL);
@@ -118,15 +109,15 @@ static uint8_t
 exfatfs_get_fs_layout(FATFS_INFO *a_fatfs)
 {
     const char *func_name = "exfatfs_get_fs_layout";
-	TSK_FS_INFO *fs = &(a_fatfs->fs_info);
-	EXFATFS_MASTER_BOOT_REC *exfatbs = NULL;
+    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+    EXFATFS_MASTER_BOOT_REC *exfatbs = NULL;
     uint64_t vol_len_in_sectors = 0;
     uint64_t last_sector_of_cluster_heap = 0;
 
     assert(a_fatfs != NULL);
     
     /* Get the size of the volume. It should be non-zero. */
-	exfatbs = (EXFATFS_MASTER_BOOT_REC*)(&a_fatfs->boot_sector_buffer);
+    exfatbs = (EXFATFS_MASTER_BOOT_REC*)(&a_fatfs->boot_sector_buffer);
     vol_len_in_sectors = tsk_getu64(fs->endian, exfatbs->vol_len_in_sectors);
     if (vol_len_in_sectors == 0) {
         tsk_error_reset();
@@ -243,7 +234,7 @@ static uint8_t
 exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
 {
     const char *func_name = "exfatfs_get_alloc_bitmap";
-	TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
     TSK_DADDR_T current_sector = 0;
     TSK_DADDR_T last_sector_of_data_area = 0;
     char *sector_buf = NULL;
@@ -285,9 +276,9 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
 
             /* The type of the directory entry is encoded in the first byte 
              * of the entry. See EXFATFS_DIR_ENTRY_TYPE_ENUM. */ 
-            if (dentry->entry_type == EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP) {
+            if (exfatfs_get_enum_from_type(dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP) {
                 /* Do an in-depth test. */
-                if (!exfatfs_is_alloc_bitmap_dentry((FATFS_DENTRY*)dentry, FATFS_DATA_UNIT_ALLOC_STATUS_UNKNOWN, a_fatfs)) { // RJCTODO: The second argument would change if searching only the root directory. See remarks at beginning of file.
+                if (!exfatfs_is_alloc_bitmap_dentry((FATFS_DENTRY*)dentry, FATFS_DATA_UNIT_ALLOC_STATUS_UNKNOWN, a_fatfs)) {
                     continue;
                 }
 
@@ -333,12 +324,12 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
 static void 
 exfatfs_get_volume_id(FATFS_INFO *a_fatfs)
 {
-	TSK_FS_INFO *fs = &(a_fatfs->fs_info);
-	EXFATFS_MASTER_BOOT_REC *exfatbs = NULL;
+    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+    EXFATFS_MASTER_BOOT_REC *exfatbs = NULL;
 
     assert(a_fatfs != NULL);
     
-	exfatbs = (EXFATFS_MASTER_BOOT_REC*)(&a_fatfs->boot_sector_buffer);
+    exfatbs = (EXFATFS_MASTER_BOOT_REC*)(&a_fatfs->boot_sector_buffer);
     for (fs->fs_id_used = 0; fs->fs_id_used < 4; fs->fs_id_used++) {
         fs->fs_id[fs->fs_id_used] = exfatbs->vol_serial_no[fs->fs_id_used];
     }
@@ -360,8 +351,8 @@ exfatfs_get_volume_id(FATFS_INFO *a_fatfs)
 static void
 exfatfs_setup_fs_layout_model(FATFS_INFO *a_fatfs)
 {
-	TSK_FS_INFO *fs = &(a_fatfs->fs_info);
-	EXFATFS_MASTER_BOOT_REC *exfatbs = NULL;
+    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+    EXFATFS_MASTER_BOOT_REC *exfatbs = NULL;
 
     assert(a_fatfs != NULL);
 
@@ -464,7 +455,7 @@ exfatfs_init_inums_map(FATFS_INFO *a_fatfs)
 static void 
 exfatfs_set_func_ptrs(FATFS_INFO *a_fatfs)
 {
-	TSK_FS_INFO *fs = &(a_fatfs->fs_info);
+    TSK_FS_INFO *fs = &(a_fatfs->fs_info);
 
     assert(a_fatfs != NULL);
 
@@ -546,7 +537,7 @@ exfatfs_open(FATFS_INFO *a_fatfs)
 
     fs->ftype = TSK_FS_TYPE_EXFAT;
 
-	return FATFS_OK;
+    return FATFS_OK;
 }
 
 /**
@@ -631,9 +622,8 @@ exfatfs_find_volume_label_dentry(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file)
 
             /* The type of the directory entry is encoded in the first byte 
              * of the entry. See EXFATFS_DIR_ENTRY_TYPE_ENUM. */ 
-            if (dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL ||
-                dentry->data[0] == EXFATFS_DIR_ENTRY_TYPE_EMPTY_VOLUME_LABEL) {
-                if (!exfatfs_is_vol_label_dentry(dentry, FATFS_DATA_UNIT_ALLOC_STATUS_UNKNOWN)) { // RJCTODO: The second argument would change if searching only the root directory. See remarks at beginning of file.
+            if (exfatfs_get_enum_from_type(dentry->data[0]) == EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL) {
+                if (!exfatfs_is_vol_label_dentry(dentry, FATFS_DATA_UNIT_ALLOC_STATUS_UNKNOWN)) {
                     continue;
                 }
 
@@ -883,8 +873,6 @@ exfatfs_fsstat_fs_content_info(TSK_FS_INFO *a_fs, FILE *a_hFile)
     tsk_fprintf(a_hFile, "Cluster Range: 2 - %" PRIuDADDR "\n",
         fatfs->lastclust);
 
-    // RJCTODO: Consider eliminating the code duplication between this function and
-    // and the corresponding FATXX code. 
     /* Check each cluster of the data area to see if it is marked as bad in the
      * FAT. If the cluster is bad, list the bad sectors. */
     bad_sector_cnt = 0;
@@ -944,8 +932,6 @@ exfatfs_fsstat_fs_fat_chains_info(TSK_FS_INFO *a_fs, FILE *a_hFile)
     tsk_fprintf(a_hFile, "\nFAT CHAINS (in sectors)\n");
     tsk_fprintf(a_hFile, "--------------------------------------------\n");
 
-    // RJCTODO: Consider eliminating the code duplication between this function and
-    // and the corresponding FATXX code.
     /* Check each cluster of the data area to see if it has a FAT chain. 
      * If so, print out the sectors tha make up the chain. Note that exFAT file 
      * systems only use FAT chains for the root directory, the allocation
@@ -1019,7 +1005,13 @@ exfatfs_fsstat(TSK_FS_INFO *a_fs, FILE *a_hFile)
 
     exfatfs_fsstat_fs_metadata_info(a_fs, a_hFile);
     exfatfs_fsstat_fs_content_info(a_fs, a_hFile);
-    exfatfs_fsstat_fs_fat_chains_info(a_fs, a_hFile);
+
+    /* Since exFAT does not store all file data in FAT chains (only fragmented files),
+     * printing the chains could give the mistaken impression that those are the only
+     * sectors containing file data. 
+     *
+     * exfatfs_fsstat_fs_fat_chains_info(a_fs, a_hFile);
+     */
 
     return FATFS_OK;
 }

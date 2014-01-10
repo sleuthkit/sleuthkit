@@ -382,6 +382,7 @@ extern "C" {
      * Flag that identifies the endian ordering of the data being read.
      */
     typedef enum {
+        TSK_UNKNOWN_ENDIAN = 0x00, ///< Endianness is unknown
         TSK_LIT_ENDIAN = 0x01,  ///< Data is in little endian
         TSK_BIG_ENDIAN = 0x02   ///< Data is in big endian
     } TSK_ENDIAN_ENUM;
