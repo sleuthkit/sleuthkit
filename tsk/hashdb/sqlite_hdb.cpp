@@ -21,11 +21,14 @@
 static const char *SQLITE_HDB_SCHEMA_VERSION_PROP = "Schema Version";
 static const char *SQLITE_HDB_SCHEMA_VERSION_NO = "1";
 static const char *SQLITE_FILE_HEADER = "SQLite format 3";
-static sqlite3_stmt *select_id_from_hashes_by_md5 = NULL; 
+static sqlite3_stmt *select_id_from_hashes_by_md5 = NULL;
+static sqlite3_stmt *select_from_hashes_by_md5 = NULL;
 static sqlite3_stmt *insert_md5_into_hashes = NULL; 
 static sqlite3_stmt *insert_into_file_names = NULL; 
 static sqlite3_stmt *insert_into_comments = NULL; 
+static const char hex[] = "0123456789abcdef";
 
+// RJCTODO: Make sure format strings passed in are correct for all callers!!!
 static uint8_t 
 sqlite_hdb_attempt(int resultCode, int expectedResultCode, const char *errfmt, 
     sqlite3 *sqlite)
@@ -127,6 +130,10 @@ prepare_statements(sqlite3 *db)
         return 1;
     }
 
+    if (sqlite_hdb_prepare_stmt("SELECT id, md5 from hashes where md5=? limit 1", &select_from_hashes_by_md5, db)) {
+        return 1;
+    }
+
     if (sqlite_hdb_prepare_stmt("INSERT INTO hashes (md5) VALUES (?)", &insert_md5_into_hashes, db)) {
         return 1;
     }
@@ -146,6 +153,7 @@ static void
 finalize_statements()
 {
     sqlite_hdb_finalize_stmt(&select_id_from_hashes_by_md5);
+    sqlite_hdb_finalize_stmt(&select_from_hashes_by_md5);
     sqlite_hdb_finalize_stmt(&insert_md5_into_hashes);
     sqlite_hdb_finalize_stmt(&insert_into_file_names);
     sqlite_hdb_finalize_stmt(&insert_into_comments);
@@ -294,10 +302,8 @@ TSK_HDB_INFO *sqlite_hdb_open(TSK_TCHAR *db_path)
     hdb_info->base.db_type = TSK_HDB_DBTYPE_SQLITE_ID;
     hdb_info->base.updateable = 1;
     hdb_info->base.uses_external_indexes = 0;
-    hdb_info->base.open_index = NULL; // RJCTODO: Does this need a tweak? Probably not if the hash type/len fields are moved...
-    hdb_info->base.get_index_path = NULL; // RJCTODO
     hdb_info->base.lookup_str = sqlite_hdb_lookup_str;
-    hdb_info->base.lookup_raw = sqlite_hdb_lookup_bin; // RJCTODO
+    hdb_info->base.lookup_raw = sqlite_hdb_lookup_bin;
     hdb_info->base.has_verbose_lookup = NULL; // RJCTODO
     hdb_info->base.lookup_verbose_str = sqlite_hdb_lookup_verbose_str;
     hdb_info->base.add_entry = sqlite_hdb_add_entry;
@@ -329,6 +335,83 @@ sqlite_hdb_select_id_by_md5_hash(uint8_t *md5Blob, size_t len, sqlite3 *db)
     sqlite3_clear_bindings(select_id_from_hashes_by_md5);
     sqlite3_reset(select_id_from_hashes_by_md5);
     return row_id;
+}
+
+static int8_t
+getStrings(sqlite3 *db, const char *selectStmt, std::vector<std::string> &out)
+{
+	int8_t ret = 0;
+    sqlite3_stmt* stmt = NULL;
+    int len = strlen(selectStmt);
+
+    sqlite_hdb_prepare_stmt(selectStmt, &stmt, db);
+        
+	while (sqlite3_step(stmt) == SQLITE_ROW) {
+		const char* value = (const char *)sqlite3_column_text(stmt, 0);
+        if (value != NULL) {
+            std::string s(value);
+            out.push_back(s);
+        }
+	}
+
+	sqlite3_reset(stmt);
+    
+    if (stmt) {
+        sqlite_hdb_finalize_stmt(&stmt);
+    }
+
+	return ret;
+}
+
+// RJCTODO: Polish up
+/**
+ * Convert binary blob hash string to text hash string
+ * Returns the input if compiled in text hash mode.
+ */
+static std::string 
+blobToText(std::string binblob)
+{
+    unsigned int blobsize = binblob.size();
+    if (blobsize <= TSK_HDB_MAX_BINHASH_LEN) {
+        char hashbuf[TSK_HDB_HTYPE_SHA2_256_LEN + 1];
+
+	    for (unsigned int i = 0; i < blobsize; i++) {
+		    hashbuf[2 * i] = hex[(binblob[i] >> 4) & 0xf];
+		    hashbuf[2 * i + 1] = hex[binblob[i] & 0xf];
+	    }
+	    hashbuf[2 * blobsize] = '\0';
+        return std::string(&hashbuf[0]);
+    } else {
+        return "";
+    }
+}
+
+static int64_t  
+sqlite_hdb_hash_lookup_by_md5(uint8_t *md5Blob, size_t len, sqlite3 *db, TskHashLookupResult **result)
+{
+    int64_t ret_val = -1;
+    *result = NULL;
+    if (sqlite_hdb_attempt(sqlite3_bind_blob(select_from_hashes_by_md5, 1, md5Blob, len, free), SQLITE_OK, "sqlite_hdb_hash_lookup_by_md5: error binding md5 hash blob: %s\n", db) == 0) {
+        int result_code = sqlite3_step(select_id_from_hashes_by_md5);
+        if (SQLITE_ROW == result_code) {
+            // Found it.
+            *result = new TskHashLookupResult(); // RJCTODO: Need to be sure that clients delete rather than free!!!
+            (*result)->id = sqlite3_column_int64(select_from_hashes_by_md5, 0); 
+            (*result)->hashMd5 = blobToText((const char*)sqlite3_column_text(select_from_hashes_by_md5, 1));
+        }
+        else if (SQLITE_DONE == result_code) {
+            // Didn't find it, but no error.
+            ret_val = 0;
+        }
+        else {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_AUTO_DB);
+            tsk_error_set_errstr("sqlite_hdb_select_id_by_md5_hash: error executing SELECT: %s\n", sqlite3_errmsg(db), result);
+        }
+    }
+    sqlite3_clear_bindings(select_from_hashes_by_md5);
+    sqlite3_reset(select_from_hashes_by_md5);
+    return ret_val;
 }
 
 static int64_t
@@ -396,8 +479,6 @@ sqlite_hdb_add_entry(TSK_HDB_INFO *hdb_info_base, const char *filename,
         tsk_error_set_errstr("sqlite_hdb_add_entry: NULL md5");
         return 1;
     }
-
-    // Sanity check the length of the md5 string.
     const size_t md5_str_len = strlen(md5);
     assert(TSK_HDB_HTYPE_MD5_LEN == md5_str_len);
     if (TSK_HDB_HTYPE_MD5_LEN != md5_str_len) {
@@ -459,36 +540,52 @@ sqlite_hdb_add_entry(TSK_HDB_INFO *hdb_info_base, const char *filename,
  * @return -1 on error, 0 if hash value not found, and 1 if value was found.
  */
 int8_t
-sqlite_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char* hvalue,
+sqlite_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char* hash,
     TSK_HDB_FLAG_ENUM flags, TSK_HDB_LOOKUP_FN action, void *ptr)
 {
+    assert(NULL != hdb_info_base);
+    if (!hdb_info_base) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("sqlite_hdb_lookup_str: NULL hdb_info_base");
+        return -1;
+    }
+
+    assert(NULL != hash);
+    if (!hash) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("sqlite_hdb_lookup_str: NULL hash");
+        return -1;
+    }
+
+    // Currently only supporting lookups of md5 hashes.
+    const size_t len = strlen(hash);
+    assert(TSK_HDB_HTYPE_MD5_LEN == md5_str_len);
+    if (TSK_HDB_HTYPE_MD5_LEN != len) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("sqlite_hdb_add_entry: hash length incorrect (=%d), expecting %d", len, TSK_HDB_HTYPE_MD5_LEN);
+        return 1;
+    }
+ 
+    // RJCTODO: Need utility for this
+    // Convert the string into a binary blob.
     int8_t ret = 0;
     TSK_SQLITE_HDB_INFO *hdb_info = (TSK_SQLITE_HDB_INFO*)hdb_info_base; 
-    hdb_info->last_id = 0; // RJCTODO: I don't like this...
-	const size_t len = strlen(hvalue)/2;
 	uint8_t * hashBlob = (uint8_t *) tsk_malloc(len+1);
-	const char * pos = hvalue;
-	size_t count = 0;
-
-    // Convert the string into a binary blob.
-	for(count = 0; count < len; count++) {
-		sscanf(pos, "%2hx", (short unsigned int *) &(hashBlob[count]));
+	const char *pos = hash;
+	for (int i = 0; i < len; ++i) {
+		sscanf(pos, "%2hx", (short unsigned int *) &(hashBlob[i]));
 		pos += 2 * sizeof(char);
 	}
 
-    ret = sqlite_hdb_lookup_bin(hdb_info_base, hashBlob, len, flags, action, ptr);
-
-    // RJCTODO: Hmmmm, name needs to be provided?
-    if ((ret == 1) && !(flags & TSK_HDB_FLAG_QUICK) && (action != NULL)) {
-        //name is blank because we don't have a name in this case
-        ///@todo query the file_names table for associations
-        char * name = "";
-        action(hdb_info_base, hvalue, name, ptr);
-    }
-
-	return ret;		
+    int8_t ret_val = sqlite_hdb_lookup_bin(hdb_info_base, hashBlob, len, flags, action, ptr);
+    free(hashBlob);
+    return ret_val; 
 }
 
+// RJCTODO: Fix comment
 /**
  * \ingroup hashdblib
  * Search the index for the given hash value given (in binary form).
@@ -500,135 +597,69 @@ sqlite_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char* hvalue,
  * @param action Callback function to call for each hash db entry 
  * (not called if QUICK flag is given)
  * @param ptr Pointer to data to pass to each callback
- *
  * @return -1 on error, 0 if hash value not found, and 1 if value was found.
  */
 int8_t
-sqlite_hdb_lookup_bin(TSK_HDB_INFO * hdb_info_base, uint8_t * hvalue, 
+sqlite_hdb_lookup_bin(TSK_HDB_INFO *hdb_info_base, uint8_t *hash, 
     uint8_t len, TSK_HDB_FLAG_ENUM flags, TSK_HDB_LOOKUP_FN action, void *ptr)
 {
-    TSK_SQLITE_HDB_INFO *hdb_info = (TSK_SQLITE_HDB_INFO*)hdb_info_base; 
-	int8_t ret = 0;
-    char * selectStmt;
-    sqlite3_stmt* stmt = NULL;
-
-    tsk_take_lock(&hdb_info_base->lock);
-
-    // RJCTODO: So this code depends on the hash length and type stuff...
-	/* Sanity check */
-	if ((hdb_info_base->hash_len)/2 != len) {
-		tsk_error_reset();
-		tsk_error_set_errno(TSK_ERR_HDB_ARG);
-		tsk_error_set_errstr("sqlite_hdb_lookup_bin: Hash passed is different size than expected: %d vs %d",
-			hdb_info_base->hash_len, (len * 2));
-        tsk_release_lock(&hdb_info_base->lock);
-		return -1;
-	} 
-
-    if (hdb_info_base->hash_type == TSK_HDB_HTYPE_MD5_ID) {
-        selectStmt = "SELECT md5,database_offset,id from hashes where md5=? limit 1";
-    } 
-    else if (hdb_info_base->hash_type == TSK_HDB_HTYPE_SHA1_ID) {
-        selectStmt = "SELECT sha1,database_offset,id from hashes where sha1=? limit 1";
-    } 
-    else {
+    assert(NULL != hdb_info_base);
+    if (!hdb_info_base) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
-        tsk_error_set_errstr("Unknown hash type: %d\n", hdb_info_base->hash_type);
-        tsk_release_lock(&hdb_info_base->lock);
-		return -1;
+        tsk_error_set_errstr("sqlite_hdb_lookup_bin: NULL hdb_info_base");
+        return -1;
     }
 
-    // RJCTODO: Why prepare a staement if it is not going to be reused?
-    sqlite_hdb_prepare_stmt(selectStmt, &stmt, hdb_info->db);
-        
-	if (sqlite_hdb_attempt(sqlite3_bind_blob(stmt, 1, hvalue, len, free), SQLITE_OK, "Error binding binary blob: %s\n", hdb_info->db)) {
-		ret = -1;
-	} 
-    else {
-        // Found a match
-	    if (sqlite3_step(stmt) == SQLITE_ROW) {
-            // RJCTODO: I do not like this at all
-            // save id
-            hdb_info->last_id = sqlite3_column_int64(stmt, 2);
-                    
-            if (flags & TSK_HDB_FLAG_QUICK) {
-                ret = 1;
-		    } 
-            else {
-                // RJCTODO: Should have code to do the callback, if set up correctly. This code must be here, due to the delegation
-                // Also, the callback seems to be the motivation for the name field.
-                // This suggests that the name field shoudl be at the top level and the name API should be supported
-		    }
+    assert(NULL != hash);
+    if (!hash) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("sqlite_hdb_add_entry: NULL md5");
+        return -1;
+    }
+
+    // Currently only supporting lookups of md5 hashes.
+    assert(TSK_HDB_HTYPE_MD5_LEN / 2 == len);
+    if (TSK_HDB_HTYPE_MD5_LEN / 2 != len) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("sqlite_hdb_lookup_bin: len=%d, expected %d", len, TSK_HDB_HTYPE_MD5_LEN * 2);
+        return -1;
+    }
+ 
+    int8_t ret_val = 0;
+    tsk_take_lock(&hdb_info_base->lock);
+    TSK_SQLITE_HDB_INFO *hdb_info = (TSK_SQLITE_HDB_INFO*)hdb_info_base; 
+    int64_t row_id = sqlite_hdb_select_id_by_md5_hash(hash, len, hdb_info->db);
+    if (row_id > 0) {
+        if (!(flags & TSK_HDB_FLAG_QUICK) && (NULL != action)) {
+            // Make a string version of the hash for the callback.
+            char hashbuf[TSK_HDB_HTYPE_MD5_LEN + 1];
+            for (int i = 0; i < len; ++i) {
+                hashbuf[2 * i] = hex[(hash[i] >> 4) & 0xf];
+                hashbuf[2 * i + 1] = hex[hash[i] & 0xf];
+            }
+            hashbuf[2 * len] = '\0';
+
+            // Do the callback.
+            action(hdb_info_base, hashbuf, hdb_info_base->db_name, ptr);
         }
+        ret_val = 1;
+    }
+    else if (row_id == 0) {
+        ret_val = 0;
+    }
+    else {
+        ret_val = -1;
     }
         
-    // RJCTODO: This probably only needs top be done if the stmt is reused; see above.
-	sqlite3_reset(stmt);
-    
-    if (stmt) {
-        sqlite_hdb_finalize_stmt(stmt);
-    }
-
     tsk_release_lock(&hdb_info_base->lock);
 
-	return ret;
+	return ret_val;
 }
 
-static int8_t
-getStrings(sqlite3 *db, const char *selectStmt, std::vector<std::string> &out)
-{
-	int8_t ret = 0;
-    sqlite3_stmt* stmt = NULL;
-    int len = strlen(selectStmt);
-
-    sqlite_hdb_prepare_stmt(selectStmt, &stmt, db);
-        
-	while (sqlite3_step(stmt) == SQLITE_ROW) {
-		const char* value = (const char *)sqlite3_column_text(stmt, 0);
-        if (value != NULL) {
-            std::string s(value);
-            out.push_back(s);
-        }
-	}
-
-	sqlite3_reset(stmt);
-    
-    if (stmt) {
-        sqlite_hdb_finalize_stmt(stmt);
-    }
-
-	return ret;
-}
-
-/**
- * Convert binary blob hash string to text hash string
- * Returns the input if compiled in text hash mode.
- */
-static std::string 
-blobToText(std::string binblob)
-{
-    const char hex[] = "0123456789abcdef";
-
-#ifdef IDX_SQLITE_STORE_TEXT
-    return binblob; //already text
-#else
-    unsigned int blobsize = binblob.size();
-    if (blobsize <= TSK_HDB_MAX_BINHASH_LEN) {
-        char hashbuf[TSK_HDB_HTYPE_SHA2_256_LEN + 1];
-
-		for (unsigned int i = 0; i < blobsize; i++) {
-			hashbuf[2 * i] = hex[(binblob[i] >> 4) & 0xf];
-			hashbuf[2 * i + 1] = hex[binblob[i] & 0xf];
-		}
-		hashbuf[2 * blobsize] = '\0';
-        return std::string(&hashbuf[0]);
-    } else {
-        return "";
-    }
-#endif
-}
-
+// RJCTODO: Fix comment. 
 /**
  * \ingroup hashdblib
  * Search the index for the given hash value given (in string form).
@@ -638,11 +669,64 @@ blobToText(std::string binblob)
  *
  * @return -1 on error, 0 if hash value not found, and 1 if value was found.
  */
-void *sqlite_hdb_lookup_verbose_str(TSK_HDB_INFO *hdb_info_base, const char *hash)
+int8_t sqlite_hdb_lookup_verbose_str(TSK_HDB_INFO *hdb_info_base, const char *hash, void **result)
 {
+    assert(NULL != hdb_info_base);
+    if (!hdb_info_base) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("sqlite_hdb_lookup_verbose_str: NULL hdb_info_base");
+        return -1;
+    }
+
+    assert(NULL != hash);
+    if (!hash) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("sqlite_hdb_lookup_verbose_str: NULL hash");
+        return -1;
+    }
+
+    // Currently only supporting lookups of md5 hashes.
+    const size_t len = strlen(hash);
+    assert(TSK_HDB_HTYPE_MD5_LEN == md5_str_len);
+    if (TSK_HDB_HTYPE_MD5_LEN != len) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("sqlite_hdb_lookup_verbose_str: hash length incorrect (=%d), expecting %d", len, TSK_HDB_HTYPE_MD5_LEN);
+        return -1;
+    }
+ 
+    *result = NULL;
+
+
+    if (sqlite_hdb_attempt(sqlite3_bind_blob(select_id_from_hashes_by_md5, 1, md5Blob, len, free), SQLITE_OK, "sqlite_hdb_select_id_by_md5_hash: error binding md5 hash blob: %s\n", db) == 0) {
+        int result = sqlite3_step(select_id_from_hashes_by_md5);
+        if (SQLITE_ROW == result) {
+            // Found it.
+            row_id = sqlite3_column_int64(select_id_from_hashes_by_md5, 0);                    
+        }
+        else if (SQLITE_DONE == result) {
+            // Didn't find it, but no error.
+            row_id = 0;
+        }
+        else {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_AUTO_DB);
+            tsk_error_set_errstr("sqlite_hdb_select_id_by_md5_hash: error executing SELECT: %s\n", sqlite3_errmsg(db), result);
+        }
+    }
+    sqlite3_clear_bindings(select_id_from_hashes_by_md5);
+    sqlite3_reset(select_id_from_hashes_by_md5);
+    return row_id;
+
+
+
+
+
+
     TSK_SQLITE_HDB_INFO *hdb_info = (TSK_SQLITE_HDB_INFO*)hdb_info_base;
 
-    // RJCTODO: Need to take and release the lock here
     tsk_take_lock(&hdb_info_base->lock);
 
     // RJCTODO: Need some sanity checking here.

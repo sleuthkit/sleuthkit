@@ -132,6 +132,7 @@ extern "C" {
     extern TSK_HDB_INFO *sqlite_hdb_open(TSK_TCHAR *db_path);
     extern int8_t sqlite_hdb_lookup_str(TSK_HDB_INFO *, const char *, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
     extern int8_t sqlite_hdb_lookup_bin(TSK_HDB_INFO *, uint8_t *, uint8_t, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
+    extern void *sqlite_hdb_lookup_verbose_str(TSK_HDB_INFO *, const char *);
     extern uint8_t sqlite_hdb_add_entry(TSK_HDB_INFO *hdb_info_base, 
         const char *filename, const char *md5, const char *sha1, 
         const char *sha256, const char *comment);

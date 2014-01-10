@@ -24,6 +24,7 @@
 
 struct TskHashLookupResult
 {
+    int64_t id;
     std::string hashMd5;
     std::string hashSha1;
     std::string hashSha2_256;
