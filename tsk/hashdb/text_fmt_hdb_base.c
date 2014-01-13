@@ -9,22 +9,16 @@
  */
 
 #include "tsk_hashdb_i.h"
-#include <assert.h>
 
 /**
  * \file text_hdb.c
  * Functions common to all text hash databases.
  */
 
-// RJCTODO: Fix up function names in error messages
-// RJCTODO: Comment, etc.
 TSK_TEXT_HDB_INFO *text_hdb_open(FILE *hDb, const TSK_TCHAR *db_path)
 {
     TSK_TEXT_HDB_INFO *text_hdb_info = NULL;
     size_t flen = 0;
-
-    assert(NULL != db_path);
-    // RJCTODO: Add release build check
 
     if ((text_hdb_info = (TSK_TEXT_HDB_INFO*)tsk_malloc(sizeof(TSK_TEXT_HDB_INFO))) == NULL) {
         return NULL;
@@ -34,30 +28,21 @@ TSK_TEXT_HDB_INFO *text_hdb_open(FILE *hDb, const TSK_TCHAR *db_path)
         return NULL;
     }
 
-    text_hdb_info->hDb = hDb;
-
-    flen = TSTRLEN(db_path) + 8; // RJCTODO: Check this change from 32 (change was in DF code) with Brian; was change in older code? What is the point, anyway?
-    text_hdb_info->base.db_fname = (TSK_TCHAR*)tsk_malloc(flen * sizeof(TSK_TCHAR));
-    if (NULL == text_hdb_info->base.db_fname) {
-        return NULL;
-    }
-    TSTRNCPY(text_hdb_info->base.db_fname, db_path, flen);
-    
+    text_hdb_info->hDb = hDb;    
     text_hdb_info->base.updateable = 0;
     text_hdb_info->base.uses_external_indexes = 1;
-    tsk_init_lock(&text_hdb_info->base.lock);
-
-    // Some text hash database types support indexes for more than one hash 
-    // type, so setting the hash type and length are deferred until the desired 
-    // index is created/opened.
-    text_hdb_info->hash_type = TSK_HDB_HTYPE_INVALID_ID; 
-    text_hdb_info->hash_len = 0; 
 
     // The name, database type, and function pointers will need to be set 
     // by the "derived class" caller these things vary by database type.
     text_hdb_info->base.db_type = TSK_HDB_DBTYPE_INVALID_ID;
     text_hdb_info->base.make_index = NULL;
     text_hdb_info->get_entry = NULL;
+
+    // Some text hash database types support indexes for more than one hash 
+    // type, so setting the hash type and length are deferred until the desired 
+    // index is created/opened.
+    text_hdb_info->hash_type = TSK_HDB_HTYPE_INVALID_ID; 
+    text_hdb_info->hash_len = 0; 
 
     return text_hdb_info;    
 }
@@ -286,7 +271,7 @@ text_hdb_open_idx(TSK_TEXT_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
             tsk_error_set_errstr(
-                     "hdb_indexsetup: DB detected as %s, index type has NSRL",
+                     "text_hdb_open_idx: DB detected as %s, index type has NSRL",
                      ptr);
             return 1;
         }
@@ -298,7 +283,7 @@ text_hdb_open_idx(TSK_TEXT_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
             tsk_error_set_errstr(
-                     "hdb_indexsetup: DB detected as %s, index type has MD5SUM",
+                     "text_hdb_open_idx: DB detected as %s, index type has MD5SUM",
                      ptr);
             return 1;
         }
@@ -310,7 +295,7 @@ text_hdb_open_idx(TSK_TEXT_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
             tsk_error_set_errstr(
-                     "hdb_indexsetup: DB detected as %s, index type has hashkeeper",
+                     "text_hdb_open_idx: DB detected as %s, index type has hashkeeper",
                      ptr);
             return 1;
         }
@@ -322,7 +307,7 @@ text_hdb_open_idx(TSK_TEXT_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
             tsk_error_set_errstr(
-                     "hdb_indexsetup: DB detected as %s, index type has EnCase",
+                     "text_hdb_open_idx: DB detected as %s, index type has EnCase",
                      ptr);
             return 1;
         }
@@ -359,7 +344,6 @@ text_hdb_open_idx(TSK_TEXT_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
     return 0;
 }
 
-// RJCTODO: Improve comment
 /** Initialize the TSK hash DB index file. This creates the intermediate file,
  * which will have entries added to it.  This file must be sorted before the 
  * process is finished.
@@ -1126,12 +1110,7 @@ text_db_close(TSK_HDB_INFO *hdb_info_base)
         hdb_info->idx_lbuf = NULL;
     }
 
-    if (hdb_info->base.db_fname) {
-        free(hdb_info->base.db_fname);
-        hdb_info->base.db_fname = NULL;
-    }
-
-    tsk_deinit_lock(&hdb_info->base.lock);
+    hdb_info_base_close(hdb_info_base);
 
     free(hdb_info);
 }

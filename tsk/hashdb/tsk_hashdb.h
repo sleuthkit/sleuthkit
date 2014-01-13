@@ -122,10 +122,10 @@ extern "C" {
         tsk_lock_t lock;                   ///< Lock for lazy loading and idx_lbuf
         const TSK_TCHAR*(*get_db_path)(TSK_HDB_INFO*);
         const char*(*get_db_name)(TSK_HDB_INFO*);
+        const TSK_TCHAR*(*get_index_path)(TSK_HDB_INFO*);
         uint8_t(*has_index)(TSK_HDB_INFO*, TSK_HDB_HTYPE_ENUM);
         uint8_t(*make_index)(TSK_HDB_INFO*, TSK_TCHAR*);
         uint8_t(*open_index)(TSK_HDB_INFO*, TSK_HDB_HTYPE_ENUM);
-        const TSK_TCHAR*(*get_index_path)(TSK_HDB_INFO*);
         int8_t(*lookup_str)(TSK_HDB_INFO*, const char*, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void*);
         int8_t(*lookup_raw)(TSK_HDB_INFO*, uint8_t *, uint8_t, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void*);
         uint8_t(*has_verbose_lookup)(TSK_HDB_INFO*);

@@ -20,9 +20,8 @@
  * \ingroup hashdblib
  * Sets hash database file name from file path.
  * @param hdb_info Struct representation of a hash database.
- * @return 0 on sucess, 1 on failure.
  */
-uint8_t 
+void 
 hdb_base_db_name_from_path(TSK_HDB_INFO *hdb_info)
 {
 #ifdef TSK_WIN32
@@ -49,7 +48,7 @@ hdb_base_db_name_from_path(TSK_HDB_INFO *hdb_info)
     else {
         // unlikely since this means that the dbname is "/"
         if (TSTRLEN(begin) == 1)
-            return 1;
+            return;
         else
             begin++;
     }
@@ -60,15 +59,13 @@ hdb_base_db_name_from_path(TSK_HDB_INFO *hdb_info)
     else
         end = begin + TSTRLEN(begin);   
 
-    // @@@ TODO: Use TskUTF16_to_UTF8 to properly convert for Windows // RJCTODO: Fix this
+    // @@@ TODO: Use TskUTF16_to_UTF8 to properly convert for Windows
     for(i = 0; i < (end-begin); i++)
     {
         hdb_info->db_name[i] = (char) begin[i];
     }
 
     hdb_info->db_name[i] = '\0';
-
-    return 0;
 }
 
 /**
@@ -80,31 +77,12 @@ hdb_base_db_name_from_path(TSK_HDB_INFO *hdb_info)
  */
 uint8_t hdb_info_base_open(TSK_HDB_INFO *hdb_info, const TSK_TCHAR *db_path)
 {
-    size_t flen = 0; 
-
-    assert(NULL != hdb_info);
-    if (NULL == hdb_info) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_HDB_ARG);
-        tsk_error_set_errstr("hdb_info_base_open: NULL info struct");
-        return 1;
-    }
-
-    assert(NULL != db_path);
-    if (NULL == db_path) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_HDB_ARG);
-        tsk_error_set_errstr("hdb_info_base_open: NULL db_path");
-        return 1;
-    }
-
-    flen = TSTRLEN(db_path) + 8; // RJCTODO: Check this change from 32 with Brian; was change in older code? What is the point, anyway?
-    hdb_info->db_fname = (TSK_TCHAR*)tsk_malloc(flen * sizeof(TSK_TCHAR));
+    size_t path_len = TSTRLEN(db_path) + 8; // RJCTODO: Check this change from 32 with Brian; was change in older code? What is the point, anyway?
+    hdb_info->db_fname = (TSK_TCHAR*)tsk_malloc(path_len * sizeof(TSK_TCHAR));
     if (!hdb_info->db_fname) {
         return 1;
     }
-    TSTRNCPY(hdb_info->db_fname, db_path, flen);
-
+    TSTRNCPY(hdb_info->db_fname, db_path, path_len);
     hdb_base_db_name_from_path(hdb_info);
 
     hdb_info->db_type = TSK_HDB_DBTYPE_INVALID_ID;
@@ -143,7 +121,7 @@ const TSK_TCHAR*
 hdb_base_get_index_path(TSK_HDB_INFO *hdb_info)
 {
     tsk_error_reset();
-    tsk_error_set_errno(TSK_ERR_HDB_ARG);
+    tsk_error_set_errno(TSK_ERR_HDB_ARG); // RJCTODO: Could use dedicated NOT_IMPL or NO_SUPPORT enum member for this sort of thing in the "base" functions
     tsk_error_set_errstr("hdb_base_get_index_path: get index path not supported for hdb_info->db_type=%u", hdb_info->db_type);
     return NULL;
 }
@@ -158,7 +136,7 @@ uint8_t hdb_base_make_index(TSK_HDB_INFO *hdb_info, TSK_TCHAR *htype)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_HDB_ARG);
-    tsk_error_set_errstr("hdb_base_make_index: make index not supported for hdb_info->db_type=%u", hdb_info->db_type);
+    tsk_error_set_errstr("hdb_base_make_index: operationnot supported for hdb_info->db_type=%u", hdb_info->db_type);
     return 1;
 }
 
@@ -167,7 +145,7 @@ hdb_base_open_index(TSK_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_HDB_ARG);
-    tsk_error_set_errstr("hdb_base_open_index: open index path not supported for hdb_info->db_type=%u", hdb_info->db_type);
+    tsk_error_set_errstr("hdb_base_open_index: operation not supported for hdb_info->db_type=%u", hdb_info->db_type);
     return 1;
 }
 
@@ -176,7 +154,7 @@ hdb_base_lookup_str(TSK_HDB_INFO *hdb_info, const char *hash, TSK_HDB_FLAG_ENUM 
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_HDB_ARG);
-    tsk_error_set_errstr("hdb_base_get_index_path: get index path not supported for hdb_info->db_type=%u", hdb_info->db_type);
+    tsk_error_set_errstr("hdb_base_lookup_str: operation not supported for hdb_info->db_type=%u", hdb_info->db_type);
     return -1;
 }
 
@@ -185,7 +163,7 @@ hdb_base_lookup_bin(TSK_HDB_INFO *hdb_info, uint8_t *hash, uint8_t hash_len, TSK
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_HDB_ARG);
-    tsk_error_set_errstr("hdb_base_get_index_path: get index path not supported for hdb_info->db_type=%u", hdb_info->db_type);
+    tsk_error_set_errstr("hdb_base_lookup_bin: operation not supported for hdb_info->db_type=%u", hdb_info->db_type);
     return -1;
 }
 
@@ -200,7 +178,7 @@ hdb_base_lookup_verbose_str(TSK_HDB_INFO *hdb_info, const char *hash, void **res
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_HDB_ARG);
-    tsk_error_set_errstr("hdb_base_lookup_verbose_str: get index path not supported for hdb_info->db_type=%u", hdb_info->db_type);
+    tsk_error_set_errstr("hdb_base_lookup_verbose_str: operation not supported for hdb_info->db_type=%u", hdb_info->db_type);
     return -1;
 }
 
@@ -209,7 +187,7 @@ hdb_base_add_entry(TSK_HDB_INFO *hdb_info, const char *file_name, const char *md
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_HDB_ARG);
-    tsk_error_set_errstr("hdb_base_get_index_path: get index path not supported for hdb_info->db_type=%u", hdb_info->db_type);
+    tsk_error_set_errstr("hdb_base_add_entry: operation not supported for hdb_info->db_type=%u", hdb_info->db_type);
     return 1;
 }
 

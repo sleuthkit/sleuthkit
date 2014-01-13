@@ -55,7 +55,7 @@ extern "C" {
 #define TSK_HDB_IDX_HEAD_NAME_STR	"00000000000000000000000000000000000000001"
 
     // "Base" hash database functions.
-    extern uint8_t hdb_base_db_name_from_path(TSK_HDB_INFO *hdb_info);
+    extern void hdb_base_db_name_from_path(TSK_HDB_INFO *hdb_info);
     extern uint8_t hdb_info_base_open(TSK_HDB_INFO *, const TSK_TCHAR *);
     extern const TSK_TCHAR *hdb_base_get_db_path(TSK_HDB_INFO *);
     extern const char *hdb_base_get_db_name(TSK_HDB_INFO *);
