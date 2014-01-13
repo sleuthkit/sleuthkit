@@ -64,11 +64,8 @@ TSK_HDB_INFO *md5sum_open(FILE *hDb, const TSK_TCHAR *db_path)
     }
 
     text_hdb_info->base.db_type = TSK_HDB_DBTYPE_MD5SUM_ID;
-    text_hdb_db_name_from_path(text_hdb_info);
     text_hdb_info->get_entry = md5sum_getentry;
     text_hdb_info->base.make_index = md5sum_makeindex;
-    text_hdb_info->base.add_comment = NULL; // RJCTODO: Consider making no-ops for these or moving them
-    text_hdb_info->base.add_filename = NULL; // RJCTODO: Consider making no-ops for these or moving them
 
     return (TSK_HDB_INFO*)text_hdb_info;    
 }

@@ -350,7 +350,7 @@ JNIEXPORT jint JNICALL
     const char * sha256 = hashSha256J ? (const char *) env->GetStringUTFChars(hashSha256J, &isCopy) : NULL;
     const char * comment = commentJ ? (const char *) env->GetStringUTFChars(commentJ, &isCopy) : NULL;
    
-    if (tsk_hdb_add_hash(db, name, md5, sha1, sha256, comment)) {
+    if (tsk_hdb_add_entry(db, name, md5, sha1, sha256, comment)) {
         setThrowTskCoreError(env, "Failed to add records to hash database");
     }
 
@@ -545,7 +545,7 @@ JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbGetNam
     }
 
     jstring j_name = NULL;
-    const TSK_TCHAR *db_name = tsk_hdb_get_name(db);
+    const char *db_name = tsk_hdb_get_name(db);
     if (NULL != db_name) {
         snprintf(c_name, 1024, "%" PRIttocTSK, db_name);
         j_name = env->NewStringUTF(c_name);
@@ -650,31 +650,39 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
 (JNIEnv * env, jclass obj, jstring hash, jint dbHandle) {
     if((size_t)dbHandle > hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
-        return (jboolean)false;
+        return NULL;
     }
 
     TSK_HDB_INFO *db = hashDbs.at(dbHandle-1);
     if (db == NULL) {
         setThrowTskCoreError(env, "Invalid database handle");
-        return (jboolean)false;
+        return NULL;
     }
 
 
     if (tsk_hdb_has_verbose_lookup(db) == 0) {
         setThrowTskCoreError(env, "Invalid database operation, verbose lookup not supported");
-        return (jboolean)false;
+        return NULL;
     }
 
     // RJCTODO: need to check to see how Sam's new code is handling this for the sake of integration
     // (or is there code in this code base in AbstractAbstractFileNode?)
     
-    jobject object = NULL;
-    //SQliteHashStruct * hdata = NULL;
 
     jboolean isCopy;
     const char *inputHash = (const char *) env->GetStringUTFChars(hash, &isCopy);
 
-    TskHashLookupResult *result = (TskHashLookupResult*)tsk_hdb_lookup_verbose_str(db, inputHash);
+    TskHashLookupResult *result = NULL; 
+    int8_t return_code = tsk_hdb_lookup_verbose_str(db, inputHash, (void**)&result);
+    if (-1 == return_code) {
+        setThrowTskCoreError(env, "Error doing lookup"); // RJCTODO: Can get error message from TSK here?
+        env->ReleaseStringUTFChars(hash, (const char *) inputHash);
+        return NULL;
+    }
+    else if (0 == return_code) {
+        env->ReleaseStringUTFChars(hash, (const char *) inputHash);
+        return NULL;
+    }
 
     // RJCTODO: Looks like a better name...
     // Build the Java version of the HashInfo object
@@ -695,7 +703,7 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
     jstring sha256j = env->NewStringUTF(sha256);
 
     // make the object
-    object = env->NewObject(clazz, ctor, md5j, sha1j, sha256j);
+    jobject object = object = env->NewObject(clazz, ctor, md5j, sha1j, sha256j);
 
     // finish populating the object
     std::vector<std::string>::iterator name_it = result->names.begin();
@@ -714,7 +722,7 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
 
     // Cleanup
     env->ReleaseStringUTFChars(hash, (const char *) inputHash);
-    delete result; // RJCTODO: Should this be a free?
+    delete result;
 
     return object;
 }

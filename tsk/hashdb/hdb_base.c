@@ -22,7 +22,7 @@
  * @param hdb_info Struct representation of a hash database.
  * @return 0 on sucess, 1 on failure.
  */
-static uint8_t 
+uint8_t 
 hdb_base_db_name_from_path(TSK_HDB_INFO *hdb_info)
 {
 #ifdef TSK_WIN32
@@ -67,6 +67,8 @@ hdb_base_db_name_from_path(TSK_HDB_INFO *hdb_info)
     }
 
     hdb_info->db_name[i] = '\0';
+
+    return 0;
 }
 
 /**
@@ -76,7 +78,7 @@ hdb_base_db_name_from_path(TSK_HDB_INFO *hdb_info)
  * @param hdb_info Struct representation of a hash database.
  * @return 0 on sucess, 1 on failure.
  */
-uint8_t hdb_info_base_open(TSK_HDB_INFO *hdb_info, TSK_TCHAR *db_path)
+uint8_t hdb_info_base_open(TSK_HDB_INFO *hdb_info, const TSK_TCHAR *db_path)
 {
     size_t flen = 0; 
 
@@ -106,8 +108,6 @@ uint8_t hdb_info_base_open(TSK_HDB_INFO *hdb_info, TSK_TCHAR *db_path)
     hdb_base_db_name_from_path(hdb_info);
 
     hdb_info->db_type = TSK_HDB_DBTYPE_INVALID_ID;
-    hdb_info->hash_type = TSK_HDB_HTYPE_INVALID_ID; 
-    hdb_info->hash_len = 0; 
     hdb_info->updateable = 1;
     hdb_info->uses_external_indexes = 0;
 
@@ -125,6 +125,8 @@ uint8_t hdb_info_base_open(TSK_HDB_INFO *hdb_info, TSK_TCHAR *db_path)
     hdb_info->lookup_verbose_str = hdb_base_lookup_verbose_str;
     hdb_info->add_entry = hdb_base_add_entry;
     hdb_info->close_db = hdb_info_base_close;
+
+    return 0;
 }
 
 const TSK_TCHAR *hdb_base_get_db_path(TSK_HDB_INFO *hdb_info)
@@ -190,19 +192,16 @@ hdb_base_lookup_bin(TSK_HDB_INFO *hdb_info, uint8_t *hash, uint8_t hash_len, TSK
 uint8_t
 hdb_base_has_verbose_lookup(TSK_HDB_INFO *hdb_info)
 {
-    tsk_error_reset();
-    tsk_error_set_errno(TSK_ERR_HDB_ARG);
-    tsk_error_set_errstr("hdb_base_get_index_path: get index path not supported for hdb_info->db_type=%u", hdb_info->db_type);
     return 0;
 }
 
-void*
-hdb_base_lookup_verbose_str(TSK_HDB_INFO *hdb_info, const char *hash)
+int8_t
+hdb_base_lookup_verbose_str(TSK_HDB_INFO *hdb_info, const char *hash, void **result)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_HDB_ARG);
-    tsk_error_set_errstr("hdb_base_get_index_path: get index path not supported for hdb_info->db_type=%u", hdb_info->db_type);
-    return NULL;
+    tsk_error_set_errstr("hdb_base_lookup_verbose_str: get index path not supported for hdb_info->db_type=%u", hdb_info->db_type);
+    return -1;
 }
 
 uint8_t

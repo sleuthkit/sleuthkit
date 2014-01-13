@@ -39,7 +39,7 @@ usage()
     tsk_fprintf(stderr,
                 "\t-i db_type: Create index file for a given hash database type\n");
     tsk_fprintf(stderr,
-                "\tdb_file: The location of the original hash database\n");
+                "\tdb_file: The path of the hash database, must have .kdb extension for -c option\n");
     tsk_fprintf(stderr,
                 "\t[hashes]: hashes to lookup (STDIN is used otherwise)\n");
     tsk_fprintf(stderr, "\n\tSupported types: %s\n",
@@ -149,14 +149,21 @@ main(int argc, char ** argv1)
             usage();
         }
         
-        if (0 == tsk_hdb_create(db_file)) {
-            tsk_fprintf(stdout, "New database %"PRIttocTSK" created\n", db_file);
-            return 0;
+        TSK_TCHAR *ext = TSTRRCHR(db_file, _TSK_T('.'));    
+        if ((NULL != ext) && (TSTRLEN(ext) >= 4) && (TSTRCMP(ext, _TSK_T(".kdb")) == 0)) {
+            if (0 == tsk_hdb_create(db_file)) {
+                tsk_fprintf(stdout, "New database %"PRIttocTSK" created\n", db_file);
+                return 0;
+            }
+            else {
+                tsk_fprintf(stderr, "Failed to create new database %"PRIttocTSK"\n", db_file);
+                return 1;
+            }        
         }
         else {
-            tsk_fprintf(stderr, "Failed to create new database %"PRIttocTSK"\n", db_file);
+            tsk_fprintf(stderr, "New database path must end in .kdb extension");
             return 1;
-        }        
+        }
     }
         
     // Opening an existing database.    
@@ -189,7 +196,7 @@ main(int argc, char ** argv1)
             usage();
         }
 
-        if (tsk_hdb_makeindex(hdb_info, idx_type)) {
+        if (tsk_hdb_make_index(hdb_info, idx_type)) {
             tsk_error_print(stderr);
             tsk_hdb_close(hdb_info);
             return 1;
@@ -238,7 +245,7 @@ main(int argc, char ** argv1)
             if (addHash) {
                 // Write a new hash to the database/index, if it's updateable
                 //@todo support sha1 and sha2-256
-                retval = tsk_hdb_add_str(hdb_info, NULL, (const char *)htmp, NULL, NULL, NULL);
+                retval = tsk_hdb_add_entry(hdb_info, NULL, (const char *)htmp, NULL, NULL, NULL);
                 if (retval == 1) {
                     printf("There was an error adding the hash.\n");
                     tsk_error_print(stderr);

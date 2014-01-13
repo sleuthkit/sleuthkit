@@ -24,39 +24,38 @@
 static void
 idxonly_name(TSK_TEXT_HDB_INFO *hdb_info)
 {
-    // RJCTODO: Get back to this
-    //FILE * hFile;
-    //char buf[TSK_HDB_NAME_MAXLEN];
-    //char *bufptr = buf;
-    //size_t i = 0;
-    //memset(hdb_info->db_name, '\0', TSK_HDB_NAME_MAXLEN);
-    //if(text_hdb_idx_initialize(hdb_info, TSK_HDB_HTYPE_MD5_ID) == 0) {
-    //    if (tsk_verbose)
-    //        fprintf(stderr,
-    //            "Failed to get name from index (index does not exist); using file name instead");
-    //    text_hdb_db_name_from_path(hdb_info);
-    //    return;
-    //}
-    //hFile = hdb_info->hIdx;
-    //fseeko(hFile, 0, 0);
-    //if(NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
-    //    NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
-    //    strncmp(buf,
-    //            TSK_HDB_IDX_HEAD_NAME_STR,
-    //            strlen(TSK_HDB_IDX_HEAD_NAME_STR)) != 0) {
-    //    if (tsk_verbose)
-    //        fprintf(stderr,
-    //            "Failed to read name from index; using file name instead");
-    //    text_hdb_db_name_from_path(hdb_info);
-    //    return;
-    //}
-    //bufptr = strchr(buf, '|');
-    //bufptr++;
-    //while(bufptr[i] != '\r' && bufptr[i] != '\n' && i < strlen(bufptr))
-    //{
-    //    hdb_info->db_name[i] = bufptr[i];
-    //    i++;
-    //}
+    FILE * hFile;
+    char buf[TSK_HDB_NAME_MAXLEN];
+    char *bufptr = buf;
+    size_t i = 0;
+    memset(hdb_info->base.db_name, '\0', TSK_HDB_NAME_MAXLEN);
+    if(text_hdb_open_idx(hdb_info, TSK_HDB_HTYPE_MD5_ID) == 0) {
+        if (tsk_verbose)
+            fprintf(stderr,
+                "Failed to get name from index (index does not exist); using file name instead");
+        hdb_base_db_name_from_path((TSK_HDB_INFO*)hdb_info);
+        return;
+    }
+    hFile = hdb_info->hIdx;
+    fseeko(hFile, 0, 0);
+    if(NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
+        NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
+        strncmp(buf,
+                TSK_HDB_IDX_HEAD_NAME_STR,
+                strlen(TSK_HDB_IDX_HEAD_NAME_STR)) != 0) {
+        if (tsk_verbose)
+            fprintf(stderr,
+                "Failed to read name from index; using file name instead");
+        hdb_base_db_name_from_path((TSK_HDB_INFO*)hdb_info);
+        return;
+    }
+    bufptr = strchr(buf, '|');
+    bufptr++;
+    while(bufptr[i] != '\r' && bufptr[i] != '\n' && i < strlen(bufptr))
+    {
+        hdb_info->base.db_name[i] = bufptr[i];
+        i++;
+    }
 }
 
 TSK_HDB_INFO *idxonly_open(const TSK_TCHAR *db_path)

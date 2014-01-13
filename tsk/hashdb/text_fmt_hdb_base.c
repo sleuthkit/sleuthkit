@@ -30,6 +30,10 @@ TSK_TEXT_HDB_INFO *text_hdb_open(FILE *hDb, const TSK_TCHAR *db_path)
         return NULL;
     }
 
+    if(hdb_info_base_open((TSK_HDB_INFO*)text_hdb_info, db_path)) {
+        return NULL;
+    }
+
     text_hdb_info->hDb = hDb;
 
     flen = TSTRLEN(db_path) + 8; // RJCTODO: Check this change from 32 (change was in DF code) with Brian; was change in older code? What is the point, anyway?
@@ -46,8 +50,8 @@ TSK_TEXT_HDB_INFO *text_hdb_open(FILE *hDb, const TSK_TCHAR *db_path)
     // Some text hash database types support indexes for more than one hash 
     // type, so setting the hash type and length are deferred until the desired 
     // index is created/opened.
-    text_hdb_info->base.hash_type = TSK_HDB_HTYPE_INVALID_ID; 
-    text_hdb_info->base.hash_len = 0; 
+    text_hdb_info->hash_type = TSK_HDB_HTYPE_INVALID_ID; 
+    text_hdb_info->hash_len = 0; 
 
     // The name, database type, and function pointers will need to be set 
     // by the "derived class" caller these things vary by database type.
@@ -71,7 +75,7 @@ text_hdb_idx_init_hash_type_info(TSK_TEXT_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM
 {
     size_t flen = 0;
 
-    if (hdb_info->base.hash_type != 0) {
+    if (hdb_info->hash_type != 0) {
         return 0;
     }
 
@@ -86,16 +90,16 @@ text_hdb_idx_init_hash_type_info(TSK_TEXT_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM
     /* Get hash type specific information */
     switch (htype) {
     case TSK_HDB_HTYPE_MD5_ID:
-        hdb_info->base.hash_type = htype;
-        hdb_info->base.hash_len = TSK_HDB_HTYPE_MD5_LEN;
+        hdb_info->hash_type = htype;
+        hdb_info->hash_len = TSK_HDB_HTYPE_MD5_LEN;
         hdb_info->idx_llen = TSK_HDB_IDX_LEN(htype);
         TSNPRINTF(hdb_info->idx_fname, flen,
                   _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
                   hdb_info->base.db_fname, TSK_HDB_HTYPE_MD5_STR);
         return 0;
     case TSK_HDB_HTYPE_SHA1_ID:
-        hdb_info->base.hash_type = htype;
-        hdb_info->base.hash_len = TSK_HDB_HTYPE_SHA1_LEN;
+        hdb_info->hash_type = htype;
+        hdb_info->hash_len = TSK_HDB_HTYPE_SHA1_LEN;
         hdb_info->idx_llen = TSK_HDB_IDX_LEN(htype);
         TSNPRINTF(hdb_info->idx_fname, flen,
                   _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
@@ -119,7 +123,7 @@ text_hdb_idx_init_hash_type_info(TSK_TEXT_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM
  *
  * @return 1 on error and 0 on success
  */
-static uint8_t
+uint8_t
 text_hdb_open_idx(TSK_TEXT_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
 {
     char head[TSK_HDB_MAXLEN];
@@ -463,7 +467,7 @@ text_hdb_idx_initialize(TSK_TEXT_HDB_INFO *hdb_info, TSK_TCHAR *htype)
     }
     TSNPRINTF(hdb_info->uns_fname, flen,
               _TSK_T("%s-%") PRIcTSK _TSK_T("-ns.idx"), hdb_info->base.db_fname,
-              TSK_HDB_HTYPE_STR(hdb_info->base.hash_type));
+              TSK_HDB_HTYPE_STR(hdb_info->hash_type));
 
 
     /* Create temp unsorted file of offsets */
@@ -506,7 +510,7 @@ text_hdb_idx_initialize(TSK_TEXT_HDB_INFO *hdb_info, TSK_TCHAR *htype)
 
     /* Print the header */
     fprintf(hdb_info->hIdxTmp, "%s|%s\n", TSK_HDB_IDX_HEAD_NAME_STR,
-        hdb_info->db_name);
+        hdb_info->base.db_name);
     switch (hdb_info->base.db_type) {
     case TSK_HDB_DBTYPE_NSRL_ID:
        fprintf(hdb_info->hIdxTmp, "%s|%s\n", TSK_HDB_IDX_HEAD_TYPE_STR,
@@ -545,7 +549,7 @@ text_hdb_idx_initialize(TSK_TEXT_HDB_INFO *hdb_info, TSK_TCHAR *htype)
  * @return 1 on error and 0 on success
  */
 uint8_t
-text_hdb_idx_add_entry(TSK_TEXT_HDB_INFO *hdb_info, char *hvalue, TSK_OFF_T offset)
+text_hdb_idx_add_entry_str(TSK_TEXT_HDB_INFO *hdb_info, char *hvalue, TSK_OFF_T offset)
 {
     int i;
 
@@ -769,12 +773,12 @@ text_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char *hash,
 
 
     /* Sanity check */
-    if (hdb_info->base.hash_len != strlen(hash)) {
+    if (hdb_info->hash_len != strlen(hash)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
         tsk_error_set_errstr(
                  "hdb_lookup: Hash passed is different size than expected (%d vs %Zd)",
-                 hdb_info->base.hash_len, strlen(hash));
+                 hdb_info->hash_len, strlen(hash));
         return -1;
     }
 
@@ -848,7 +852,7 @@ text_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char *hash,
 
         /* Sanity Check */
         if ((strlen(hdb_info->idx_lbuf) < hdb_info->idx_llen) ||
-            (hdb_info->idx_lbuf[hdb_info->base.hash_len] != '|')) {
+            (hdb_info->idx_lbuf[hdb_info->hash_len] != '|')) {
             tsk_release_lock(&hdb_info->base.lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
@@ -860,7 +864,7 @@ text_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char *hash,
         }
 
         /* Set the delimter to NULL so we can treat the hash as a string */
-        hdb_info->idx_lbuf[hdb_info->base.hash_len] = '\0';
+        hdb_info->idx_lbuf[hdb_info->hash_len] = '\0';
         cmp = strcasecmp(hdb_info->idx_lbuf, hash);
 
         /* The one we just read is too small, so set the new lower bound
@@ -889,7 +893,7 @@ text_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char *hash,
 
 #ifdef TSK_WIN32
                 db_off =
-                    _atoi64(&hdb_info->idx_lbuf[hdb_info->base.hash_len + 1]);
+                    _atoi64(&hdb_info->idx_lbuf[hdb_info->hash_len + 1]);
 #else
                 db_off =
                     strtoull(&hdb_info->idx_lbuf[hdb_info->hash_len + 1],
@@ -950,7 +954,7 @@ text_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char *hash,
                         return -1;
                     }
 
-                    hdb_info->idx_lbuf[hdb_info->base.hash_len] = '\0';
+                    hdb_info->idx_lbuf[hdb_info->hash_len] = '\0';
                     if (strcasecmp(hdb_info->idx_lbuf, hash) != 0) {
                         break;
                     }
@@ -958,7 +962,7 @@ text_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char *hash,
 #ifdef TSK_WIN32
                     db_off =
                         _atoi64(&hdb_info->
-                                idx_lbuf[hdb_info->base.hash_len + 1]);
+                                idx_lbuf[hdb_info->hash_len + 1]);
 #else
 
                     db_off =
@@ -1014,14 +1018,14 @@ text_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char *hash,
                         return -1;
                     }
 
-                    hdb_info->idx_lbuf[hdb_info->base.hash_len] = '\0';
+                    hdb_info->idx_lbuf[hdb_info->hash_len] = '\0';
                     if (strcasecmp(hdb_info->idx_lbuf, hash) != 0) {
                         break;
                     }
 #ifdef TSK_WIN32
                     db_off =
                         _atoi64(&hdb_info->
-                                idx_lbuf[hdb_info->base.hash_len + 1]);
+                                idx_lbuf[hdb_info->hash_len + 1]);
 #else
                     db_off =
                         strtoull(&hdb_info->

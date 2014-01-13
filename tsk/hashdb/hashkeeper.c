@@ -88,7 +88,7 @@ TSK_HDB_INFO *hk_open(FILE *hDb, const TSK_TCHAR *db_path)
     }
 
     text_hdb_info->base.db_type = TSK_HDB_DBTYPE_HK_ID;
-    text_hdb_db_name_from_path(text_hdb_info);
+    hdb_base_db_name_from_path((TSK_HDB_INFO*)text_hdb_info);
     text_hdb_info->base.make_index = hk_makeindex;
     text_hdb_info->get_entry = hk_getentry;
 
