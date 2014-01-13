@@ -87,7 +87,7 @@ extern "C" {
     typedef enum TSK_HDB_DBTYPE_ENUM TSK_HDB_DBTYPE_ENUM;
 
     /**
-     * String versions of DB types 
+     * String versions of DB types // RJCTODO: These are doing a sort of awkward double-duty?
      */
     #define TSK_HDB_DBTYPE_NSRL_STR "nsrl"           ///< NSRL database 
     #define TSK_HDB_DBTYPE_NSRL_MD5_STR	"nsrl-md5"   ///< NSRL database with MD5 index
@@ -95,10 +95,9 @@ extern "C" {
     #define TSK_HDB_DBTYPE_MD5SUM_STR "md5sum"       ///< md5sum
     #define TSK_HDB_DBTYPE_HK_STR "hk"               ///< Hash Keeper
     #define TSK_HDB_DBTYPE_ENCASE_STR "encase"       ///< EnCase
-    #define TSK_HDB_DBTYPE_SQLITE_STR "SQLite"       ///< SQLite
             
-    /// List of supported hash database types
-    #define TSK_HDB_DBTYPE_SUPPORT_STR	"nsrl-md5, nsrl-sha1, md5sum, encase, hk, SQLite"
+    /// List of supported hash database types // RJCTODO: These appear to be index types for hfind, in which case SQLite needs to be removed...
+    #define TSK_HDB_DBTYPE_SUPPORT_STR	"nsrl-md5, nsrl-sha1, md5sum, encase, hk"
 
     #define TSK_HDB_NAME_MAXLEN 512 //< Max length for database name
 
@@ -115,21 +114,22 @@ extern "C" {
      */
     struct TSK_HDB_INFO {
         TSK_TCHAR *db_fname;               ///< Database file path, may be NULL for an index only database
-        char db_name[TSK_HDB_NAME_MAXLEN]; ///< Name of the database, for callbacks // RJCTODO: Why is this char?
+        char db_name[TSK_HDB_NAME_MAXLEN]; ///< Name of the database, for callbacks
         TSK_HDB_DBTYPE_ENUM db_type;       ///< Type of database
-        uint8_t updateable;                ///< Allows new entries to be added? // RJCTODO: Could become function
-        uint8_t uses_external_indexes;     ///< Uses one or more external indexes? // RJCTODO: Could become function           
         tsk_lock_t lock;                   ///< Lock for lazy loading and idx_lbuf
         const TSK_TCHAR*(*get_db_path)(TSK_HDB_INFO*);
         const char*(*get_db_name)(TSK_HDB_INFO*);
-        const TSK_TCHAR*(*get_index_path)(TSK_HDB_INFO*);
+        uint8_t(*uses_external_indexes)();
+        const TSK_TCHAR*(*get_index_path)(TSK_HDB_INFO*); // RJCTODO: Perhaps add the type parameter now... 
         uint8_t(*has_index)(TSK_HDB_INFO*, TSK_HDB_HTYPE_ENUM);
         uint8_t(*make_index)(TSK_HDB_INFO*, TSK_TCHAR*);
         uint8_t(*open_index)(TSK_HDB_INFO*, TSK_HDB_HTYPE_ENUM);
         int8_t(*lookup_str)(TSK_HDB_INFO*, const char*, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void*);
         int8_t(*lookup_raw)(TSK_HDB_INFO*, uint8_t *, uint8_t, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void*);
         uint8_t(*has_verbose_lookup)(TSK_HDB_INFO*);
+        uint8_t(*supports_verbose_lookup)();
         int8_t(*lookup_verbose_str)(TSK_HDB_INFO *, const char *, void **);
+        uint8_t(*accepts_updates)();
         uint8_t(*add_entry)(TSK_HDB_INFO*, const char*, const char*, const char*, const char*, const char *);
         void(*close_db)(TSK_HDB_INFO *);
     };

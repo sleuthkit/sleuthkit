@@ -28,7 +28,6 @@ static sqlite3_stmt *select_from_file_names = NULL;
 static sqlite3_stmt *select_from_comments = NULL;
 static const char hex_digits[] = "0123456789abcdef";
 
-// RJCTODO: Make sure locking is correct
 static uint8_t 
 sqlite_hdb_attempt(int resultCode, int expectedResultCode, const char *errfmt, 
     sqlite3 *sqlite)
@@ -202,7 +201,7 @@ static sqlite3 *sqlite_hdb_open_db(TSK_TCHAR *db_file_path, bool create_tables)
         return NULL;
     }
 
-    if (create_tables && !sqlite_hdb_create_tables(db)) {
+    if (create_tables && sqlite_hdb_create_tables(db)) {
         sqlite3_close(db);
         return NULL;
     }
@@ -286,12 +285,11 @@ TSK_HDB_INFO *sqlite_hdb_open(TSK_TCHAR *db_path)
 
     hdb_info->db = db;
     hdb_info->base.db_type = TSK_HDB_DBTYPE_SQLITE_ID;
-    hdb_info->base.updateable = 1;
-    hdb_info->base.uses_external_indexes = 0;
     hdb_info->base.lookup_str = sqlite_hdb_lookup_str;
     hdb_info->base.lookup_raw = sqlite_hdb_lookup_bin;
-    hdb_info->base.has_verbose_lookup = sqlite_hdb_has_verbose_lookup;
+    hdb_info->base.has_verbose_lookup = sqlite_hdb_supports_verbose_lookup;
     hdb_info->base.lookup_verbose_str = sqlite_hdb_lookup_verbose_str;
+    hdb_info->base.accepts_updates = sqlite_hdb_accepts_updates;
     hdb_info->base.add_entry = sqlite_hdb_add_entry;
     hdb_info->base.close_db = sqlite_hdb_close;
 
@@ -402,6 +400,12 @@ sqlite_hdb_insert_value_and_id(sqlite3_stmt *stmt, const char *value, int64_t id
     return ret_val;
 }
 
+uint8_t
+sqlite_hdb_accepts_updates()
+{
+    return 1;
+}
+
 /**
  * \ingroup hashdblib
  * \internal 
@@ -428,22 +432,19 @@ sqlite_hdb_add_entry(TSK_HDB_INFO *hdb_info_base, const char *filename,
     }
 
     // Convert the md5 string to a binary blob, since that's how md5 hashes
-    // are stored in the database.
-	const size_t len = strlen(md5)/2;
-	uint8_t *hashBlob = (uint8_t *)tsk_malloc(len+1);
-	const char *pos = md5;
-	for (size_t count = 0; count < len; ++count) {
-		sscanf(pos, "%2hx", (short unsigned int *) &(hashBlob[count]));
-		pos += 2 * sizeof(char);
-	}
+    // are stored in the database.	
+    uint8_t *hashBlob = sqlite_hdb_str_to_blob(md5);
+    if (NULL == hashBlob) {
+        return 1;
+    }
 
     // Is this hash already in the database? 
     tsk_take_lock(&hdb_info_base->lock);
     TSK_SQLITE_HDB_INFO *hdb_info = (TSK_SQLITE_HDB_INFO*)hdb_info_base; 
     TskHashLookupResult lookup_result;
     int64_t row_id = -1;
+    const size_t len = strlen(md5)/2; 
     int64_t result_code = sqlite_hdb_hash_lookup_by_md5(hashBlob, len, hdb_info->db, lookup_result);
-    free(hashBlob);
     if (1 == result_code) {
         // Found it. 
         row_id = lookup_result.id;
@@ -453,15 +454,19 @@ sqlite_hdb_add_entry(TSK_HDB_INFO *hdb_info_base, const char *filename,
         row_id = sqlite_hdb_insert_md5_hash(hashBlob, len, hdb_info->db);
         if (row_id < 1) {
             // Did not get a valid row_id from the INSERT.
+            free(hashBlob);
             tsk_release_lock(&hdb_info_base->lock);
             return 1;
         }
     }
     else {
         // Error querying database.
+        free(hashBlob);
         tsk_release_lock(&hdb_info_base->lock);
         return 1;
     }
+
+    free(hashBlob);
 
     // Insert the file name, if any.
     if (NULL != filename && sqlite_hdb_insert_value_and_id(insert_into_file_names, filename, row_id, hdb_info->db) == 1) {
@@ -505,11 +510,11 @@ sqlite_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char* hash,
  
     // Convert the string into a binary blob and call the binary version of
     // this lookup function.
-	uint8_t * hashBlob = sqlite_hdb_str_to_blob(hash);
+	uint8_t *hashBlob = sqlite_hdb_str_to_blob(hash);
     if (!hashBlob) {
         return 1;
     }
-    int8_t ret_val = sqlite_hdb_lookup_bin(hdb_info_base, hashBlob, len, flags, action, ptr);
+    int8_t ret_val = sqlite_hdb_lookup_bin(hdb_info_base, hashBlob, len/2, flags, action, ptr); // RJCTODO: Need constatn
     free(hashBlob);
     return ret_val; 
 }
@@ -581,7 +586,7 @@ sqlite_hdb_get_assoc_strings(sqlite3 *db, sqlite3_stmt *stmt, int64_t hash_id, s
 }
 
 uint8_t
-sqlite_hdb_has_verbose_lookup(TSK_HDB_INFO *hdb_info)
+sqlite_hdb_supports_verbose_lookup(TSK_HDB_INFO *hdb_info)
 {
     return 1;
 }

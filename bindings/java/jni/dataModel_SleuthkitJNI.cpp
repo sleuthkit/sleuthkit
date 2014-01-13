@@ -338,7 +338,7 @@ JNIEXPORT jint JNICALL
         return 1;
     }
 
-    if(!db->updateable) {
+    if(!db->accepts_updates()) {
         setThrowTskCoreError(env, "Database does not accept updates");
         return 1;
     }
@@ -399,7 +399,7 @@ JNIEXPORT jboolean JNICALL
         return (jboolean)false;
     }
 
-    return (jboolean)(db->updateable == 1);
+    return (jboolean)(db->accepts_updates() == static_cast<uint8_t>(1));
 }
 
 /**
@@ -424,7 +424,7 @@ JNIEXPORT jboolean JNICALL
         return (jboolean)false;
     }
 
-    return (jboolean)(db->uses_external_indexes == 1);
+    return (jboolean)(db->uses_external_indexes() == static_cast<uint8_t>(1));
 }
  
 // RJCTODO: Need to restore declaration in header file. Need to update Autopsy for receiving NULL.
@@ -684,8 +684,7 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
         return NULL;
     }
 
-    // RJCTODO: Looks like a better name...
-    // Build the Java version of the HashInfo object
+    // Build the Java version of the TskHashLookupResult object
     jclass clazz;
     clazz = env->FindClass("org/sleuthkit/datamodel/HashInfo");
     jmethodID ctor = env->GetMethodID(clazz, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");

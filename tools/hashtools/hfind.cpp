@@ -22,7 +22,7 @@ static TSK_TCHAR *progname;
 static void
 usage()
 {
-    // RJCTODO: This needs to list what the db type strings are...
+    // RJCTODO: I think the db types list ios really an index type list...
     TFPRINTF(stderr,
              _TSK_T
              ("usage: %s [-eqVa] [-c] [-f lookup_file] [-i db_type] db_file [hashes]\n"),
@@ -142,7 +142,7 @@ main(int argc, char ** argv1)
 
     db_file = argv[OPTIND++];
 
-    // Running in create mode (-c option). Make a new SQLite hash database and exit.
+    // Running in create mode (-c option). Make a new hash database and exit.
     if (create) {
         if (idx_type != NULL) {
             tsk_fprintf(stderr, "-c and -i cannot be specified at same time\n");
@@ -173,8 +173,8 @@ main(int argc, char ** argv1)
     }
     
     // Now that the database is open and its type is known, if running in add hashes mode (-a option)
-    // make  see if it takes updates.
-    if (addHash && hdb_info->db_type != TSK_HDB_DBTYPE_SQLITE_ID) {
+    // see if it takes updates.
+    if (addHash && !hdb_info->accepts_updates()) {
         tsk_fprintf(stderr, "-a option specified, but the specified database does not allow hashes to be added\n");
         usage();
     }

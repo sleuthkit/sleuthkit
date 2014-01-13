@@ -14,7 +14,6 @@
  */
 
 #include "tsk_hashdb_i.h"
-#include <assert.h>
 
 /**
  * Test the file to see if it is an Encase database
@@ -87,10 +86,6 @@ encase_name(TSK_TEXT_HDB_INFO * hdb_info)
 TSK_HDB_INFO *encase_open(FILE *hDb, const TSK_TCHAR *db_path)
 {
     TSK_TEXT_HDB_INFO *text_hdb_info = NULL;
-
-    assert(NULL != hDb);
-    assert(NULL != db_path);
-    
     text_hdb_info = text_hdb_open(hDb, db_path);
     if (NULL == text_hdb_info) {
         return NULL;

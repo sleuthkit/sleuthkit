@@ -28,11 +28,16 @@ TSK_TEXT_HDB_INFO *text_hdb_open(FILE *hDb, const TSK_TCHAR *db_path)
         return NULL;
     }
 
-    text_hdb_info->hDb = hDb;    
-    text_hdb_info->base.updateable = 0;
-    text_hdb_info->base.uses_external_indexes = 1;
+    text_hdb_info->hDb = hDb; 
+    text_hdb_info->base.uses_external_indexes = text_hdb_uses_external_indexes;
+    text_hdb_info->base.get_index_path = text_hdb_get_index_path;
+    text_hdb_info->base.has_index = hdb_base_has_index; // RJCTODO: Need text version of this function
+    text_hdb_info->base.open_index = text_hdb_open_idx;
+    text_hdb_info->base.lookup_str = text_hdb_lookup_str;
+    text_hdb_info->base.lookup_raw = text_hdb_lookup_bin;
+    text_hdb_info->base.close_db = text_db_close;
 
-    // The name, database type, and function pointers will need to be set 
+    // The database type and function pointers will need to be set 
     // by the "derived class" caller these things vary by database type.
     text_hdb_info->base.db_type = TSK_HDB_DBTYPE_INVALID_ID;
     text_hdb_info->base.make_index = NULL;
@@ -99,6 +104,26 @@ text_hdb_idx_init_hash_type_info(TSK_TEXT_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM
     return 1;
 }
 
+uint8_t
+text_hdb_uses_external_indexes()
+{
+    return 1;
+}
+
+const TSK_TCHAR*
+text_hdb_get_index_path(TSK_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
+{
+    // RJCTODO: Need to open the index here...guess the index fname should be returned or NULL
+    return NULL;
+}
+
+uint8_t
+text_hdb_has_index(TSK_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
+{
+    // RJCTODO: Need to open the index here
+    return 0;
+}
+
 /** \internal
  * Setup the internal variables to read an index. This
  * opens the index and sets the needed size information.
@@ -109,8 +134,9 @@ text_hdb_idx_init_hash_type_info(TSK_TEXT_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM
  * @return 1 on error and 0 on success
  */
 uint8_t
-text_hdb_open_idx(TSK_TEXT_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
+text_hdb_open_idx(TSK_HDB_INFO *hdb_info_base, TSK_HDB_HTYPE_ENUM htype)
 {
+    TSK_TEXT_HDB_INFO *hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info_base; 
     char head[TSK_HDB_MAXLEN];
     char head2[TSK_HDB_MAXLEN];
     char *ptr;
@@ -254,7 +280,7 @@ text_hdb_open_idx(TSK_TEXT_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
     }
 
 
-    /* Skip the space */
+    /* Skip the pipe symbol */
     ptr = &head[strlen(TSK_HDB_IDX_HEAD_TYPE_STR) + 1];
 
     ptr[strlen(ptr) - 1] = '\0';
@@ -334,7 +360,7 @@ text_hdb_open_idx(TSK_TEXT_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
     }
 
     /* allocate a buffer for a row */
-    if ((hdb_info->idx_lbuf = (char*)tsk_malloc(hdb_info->idx_llen + 1)) == NULL) { // RJCTODO: Fix the warning/err
+    if ((hdb_info->idx_lbuf = (char*)tsk_malloc(hdb_info->idx_llen + 1)) == NULL) {
         tsk_release_lock(&hdb_info->base.lock);
         return 1;
     }
@@ -723,7 +749,7 @@ text_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char *hash,
     int cmp;
     uint8_t wasFound = 0;
     size_t i;
-    uint8_t htype;
+    TSK_HDB_HTYPE_ENUM htype;
 
 
     /* Sanity checks on the hash input */
@@ -752,7 +778,7 @@ text_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char *hash,
         }
     }
 
-    if (text_hdb_open_idx(hdb_info, htype))
+    if (text_hdb_open_idx(hdb_info_base, htype))
         return -1;
 
 
@@ -868,7 +894,7 @@ text_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char *hash,
             wasFound = 1;
 
             if ((flags & TSK_HDB_FLAG_QUICK)
-                || (hdb_info->base.db_type == TSK_HDB_DBTYPE_IDXONLY_ID)) { // RJCTODO: Is the way the callback is not done for index only a bug?
+                || (hdb_info->base.db_type == TSK_HDB_DBTYPE_IDXONLY_ID)) {
                 tsk_release_lock(&hdb_info->base.lock);
                 return 1;
             }
