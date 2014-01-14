@@ -240,12 +240,12 @@ tsk_hdb_open(TSK_TCHAR *file_path, TSK_HDB_OPEN_ENUM flags)
     return hdb_info;
 }
 
-const TSK_TCHAR *tsk_hdb_get_path(TSK_HDB_INFO * hdb_info) // RJCTODO: Add db to name
+const TSK_TCHAR *tsk_hdb_get_db_path(TSK_HDB_INFO * hdb_info) // RJCTODO: Add db to name
 {
     if (!hdb_info) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
-        tsk_error_set_errstr("tsk_hdb_get_path: NULL hdb_info");
+        tsk_error_set_errstr("tsk_hdb_get_db_path: NULL hdb_info");
         return 0;
     }
 
@@ -257,7 +257,7 @@ const char *tsk_hdb_get_name(TSK_HDB_INFO * hdb_info) // RJCTODO: Add db to name
     if (!hdb_info) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
-        tsk_error_set_errstr("tsk_hdb_get_path: NULL hdb_info");
+        tsk_error_set_errstr("tsk_hdb_get_db_name: NULL hdb_info");
         return 0;
     }
 
@@ -269,7 +269,7 @@ const TSK_TCHAR *tsk_hdb_get_idx_path(TSK_HDB_INFO * hdb_info, TSK_HDB_HTYPE_ENU
     if (!hdb_info) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
-        tsk_error_set_errstr("tsk_hdb_get_path: NULL hdb_info");
+        tsk_error_set_errstr("tsk_hdb_get_idx_path: NULL hdb_info");
         return 0;
     }
 
@@ -344,23 +344,22 @@ tsk_hdb_make_index(TSK_HDB_INFO *hdb_info, TSK_TCHAR *type)
 
 /**
  * \ingroup hashdblib
- * Search the index for a text/ASCII hash value
- *
- * @param hdb_info Open hash database (with index)
- * @param hash Hash value to search for (NULL terminated string)
- * @param flags Flags to use in lookup
- * @param action Callback function to call for each hash db entry 
- * (not called if QUICK flag is given)
- * @param ptr Pointer to data to pass to each callback
- *
+ * Searches a hash database for a text/ASCII hash value.
+ * @param hdb_info Struct representing an open hash database.
+ * @param hash Hash value to search for (NULL terminated string).
+ * @param flags Flags to control behavior of the lookup.
+ * @param action Callback function to call for each entry in the hash 
+ * database that matches the hash value argument (not called if QUICK 
+ * flag is given).
+ * @param data Pointer to data to pass to each invocation of the callback.
  * @return -1 on error, 0 if hash value not found, and 1 if value was found.
  */
 int8_t
-tsk_hdb_lookup_str(TSK_HDB_INFO * hdb_info, const char *hash,
+tsk_hdb_lookup_str(TSK_HDB_INFO *hdb_info, const char *hash,
                    TSK_HDB_FLAG_ENUM flags, TSK_HDB_LOOKUP_FN action,
                    void *ptr)
 {
-    TSK_HDB_HTYPE_ENUM htype;
+    TSK_HDB_HTYPE_ENUM htype = TSK_HDB_HTYPE_INVALID_ID;
 
     if (!hdb_info) {
         tsk_error_reset();
@@ -369,6 +368,8 @@ tsk_hdb_lookup_str(TSK_HDB_INFO * hdb_info, const char *hash,
         return -1;
     }
 
+    // Validate the length of the hash string and use the lenght to determine 
+    // the hash type.
     if (strlen(hash) == TSK_HDB_HTYPE_MD5_LEN) {
         htype = TSK_HDB_HTYPE_MD5_ID;
     }
@@ -378,11 +379,12 @@ tsk_hdb_lookup_str(TSK_HDB_INFO * hdb_info, const char *hash,
     else {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
-        tsk_error_set_errstr(
-                "tsk_hdb_lookup_str: invalid hash length: %s", hash);
+        tsk_error_set_errstr("tsk_hdb_lookup_str: invalid hash length");
         return -1;
     }
 
+    // If the hash database uses external indexes, try to open the index for
+    // the hash type identified above.
     if (hdb_info->uses_external_indexes()) {
         if (hdb_info->open_index(hdb_info, htype)) {
             return -1;
@@ -456,7 +458,7 @@ tsk_hdb_has_verbose_lookup(TSK_HDB_INFO *hdb_info)
 }
  
 int8_t
-tsk_hdb_lookup_verbose_str(TSK_HDB_INFO *hdb_info, const char *hash, void **result)
+tsk_hdb_lookup_verbose_str(TSK_HDB_INFO *hdb_info, const char *hash, void *result)
 {
     if (!hdb_info) {
         tsk_error_reset();
@@ -472,7 +474,7 @@ tsk_hdb_lookup_verbose_str(TSK_HDB_INFO *hdb_info, const char *hash, void **resu
         return -1;
     }
 
-    if (!hdb_info) {
+    if (!result) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
         tsk_error_set_errstr("tsk_hdb_lookup_verbose_str: NULL result");

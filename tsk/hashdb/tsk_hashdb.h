@@ -127,8 +127,7 @@ extern "C" {
         int8_t(*lookup_str)(TSK_HDB_INFO*, const char*, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void*);
         int8_t(*lookup_raw)(TSK_HDB_INFO*, uint8_t *, uint8_t, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void*);
         uint8_t(*has_verbose_lookup)(TSK_HDB_INFO*);
-        uint8_t(*supports_verbose_lookup)();
-        int8_t(*lookup_verbose_str)(TSK_HDB_INFO *, const char *, void **);
+        int8_t(*lookup_verbose_str)(TSK_HDB_INFO *, const char *, void *);
         uint8_t(*accepts_updates)();
         uint8_t(*add_entry)(TSK_HDB_INFO*, const char*, const char*, const char*, const char*, const char *);
         void(*close_db)(TSK_HDB_INFO *);
@@ -173,7 +172,7 @@ extern "C" {
     /* Hash database API functions */
     extern uint8_t tsk_hdb_create(TSK_TCHAR *);
     extern TSK_HDB_INFO *tsk_hdb_open(TSK_TCHAR *, TSK_HDB_OPEN_ENUM);
-    extern const TSK_TCHAR *tsk_hdb_get_path(TSK_HDB_INFO * hdb_info);
+    extern const TSK_TCHAR *tsk_hdb_get_db_path(TSK_HDB_INFO * hdb_info);
     extern const char *tsk_hdb_get_name(TSK_HDB_INFO * hdb_info);
     extern uint8_t tsk_hdb_has_idx(TSK_HDB_INFO * hdb_info, TSK_HDB_HTYPE_ENUM);
     extern uint8_t tsk_hdb_is_idx_only(TSK_HDB_INFO *);
@@ -184,7 +183,7 @@ extern "C" {
     extern int8_t tsk_hdb_lookup_raw(TSK_HDB_INFO *, uint8_t *, uint8_t, 
         TSK_HDB_FLAG_ENUM,  TSK_HDB_LOOKUP_FN, void *);
     extern uint8_t tsk_hdb_has_verbose_lookup(TSK_HDB_INFO *);
-    extern int8_t tsk_hdb_lookup_verbose_str(TSK_HDB_INFO *, const char *, void **);
+    extern int8_t tsk_hdb_lookup_verbose_str(TSK_HDB_INFO *, const char *, void *);
     extern int8_t tsk_hdb_add_entry(TSK_HDB_INFO *, const char*, const char*, 
         const char*, const char*, const char*);
     extern void tsk_hdb_close(TSK_HDB_INFO *);

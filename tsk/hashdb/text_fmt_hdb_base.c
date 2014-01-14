@@ -31,7 +31,7 @@ TSK_TEXT_HDB_INFO *text_hdb_open(FILE *hDb, const TSK_TCHAR *db_path)
     text_hdb_info->hDb = hDb; 
     text_hdb_info->base.uses_external_indexes = text_hdb_uses_external_indexes;
     text_hdb_info->base.get_index_path = text_hdb_get_index_path;
-    text_hdb_info->base.has_index = hdb_base_has_index; // RJCTODO: Need text version of this function
+    text_hdb_info->base.has_index = text_hdb_has_index;
     text_hdb_info->base.open_index = text_hdb_open_idx;
     text_hdb_info->base.lookup_str = text_hdb_lookup_str;
     text_hdb_info->base.lookup_raw = text_hdb_lookup_bin;
@@ -902,8 +902,7 @@ text_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char *hash,
         else {
             wasFound = 1;
 
-            if ((flags & TSK_HDB_FLAG_QUICK)
-                || (hdb_info->base.db_type == TSK_HDB_DBTYPE_IDXONLY_ID)) {
+            if (flags & TSK_HDB_FLAG_QUICK) {
                 tsk_release_lock(&hdb_info->base.lock);
                 return 1;
             }

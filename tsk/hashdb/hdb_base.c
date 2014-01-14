@@ -96,7 +96,6 @@ uint8_t hdb_info_base_open(TSK_HDB_INFO *hdb_info, const TSK_TCHAR *db_path)
     hdb_info->open_index = hdb_base_open_index;
     hdb_info->lookup_str = hdb_base_lookup_str;
     hdb_info->lookup_raw = hdb_base_lookup_bin;
-    hdb_info->has_verbose_lookup = hdb_base_supports_verbose_lookup;
     hdb_info->lookup_verbose_str = hdb_base_lookup_verbose_str;
     hdb_info->accepts_updates = hdb_base_accepts_updates;
     hdb_info->add_entry = hdb_base_add_entry;
@@ -171,14 +170,8 @@ hdb_base_lookup_bin(TSK_HDB_INFO *hdb_info, uint8_t *hash, uint8_t hash_len, TSK
     return -1;
 }
 
-uint8_t
-hdb_base_supports_verbose_lookup(TSK_HDB_INFO *hdb_info)
-{
-    return 0;
-}
-
 int8_t
-hdb_base_lookup_verbose_str(TSK_HDB_INFO *hdb_info, const char *hash, void **result)
+hdb_base_lookup_verbose_str(TSK_HDB_INFO *hdb_info, const char *hash, void *result)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_HDB_ARG);

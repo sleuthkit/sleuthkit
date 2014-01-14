@@ -10,7 +10,7 @@
  */
 #include "tsk/tsk_tools_i.h"
 #include "tsk/auto/tsk_case_db.h"
-#include "tsk/hashdb/lookup_result.h"
+#include "tsk/hashdb/tsk_hash_info.h"
 #include "jni.h"
 #include "dataModel_SleuthkitJNI.h"
 #include <locale.h>
@@ -453,7 +453,7 @@ JNIEXPORT jstring JNICALL
     }
 
     jstring jpath = NULL;
-    const TSK_TCHAR *db_path = tsk_hdb_get_path(db);
+    const TSK_TCHAR *db_path = tsk_hdb_get_db_path(db);
     if (NULL != db_path) {
         snprintf(cpath, 1024, "%" PRIttocTSK, db_path);
         jpath = env->NewStringUTF(cpath);
@@ -673,8 +673,8 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
     jboolean isCopy;
     const char *inputHash = (const char *) env->GetStringUTFChars(hash, &isCopy);
 
-    TskHashLookupResult *result = NULL; 
-    int8_t return_code = tsk_hdb_lookup_verbose_str(db, inputHash, (void**)&result);
+    TskHashInfo result; 
+    int8_t return_code = tsk_hdb_lookup_verbose_str(db, inputHash, (void*)&result);
     if (-1 == return_code) {
         setThrowTskCoreError(env, "Error doing lookup"); // RJCTODO: Can get error message from TSK here?
         env->ReleaseStringUTFChars(hash, (const char *) inputHash);
@@ -685,7 +685,7 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
         return NULL;
     }
 
-    // Build the Java version of the TskHashLookupResult object
+    // Build the Java version of the TskHashInfo object
     jclass clazz;
     clazz = env->FindClass("org/sleuthkit/datamodel/HashInfo");
     jmethodID ctor = env->GetMethodID(clazz, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
@@ -693,36 +693,31 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
     jmethodID addComment = env->GetMethodID(clazz, "addComment", "(Ljava/lang/String;)V");
 
     //convert hashes
-    const char *md5 = result->hashMd5.c_str();
+    const char *md5 = result.hashMd5.c_str();
     jstring md5j = env->NewStringUTF(md5);
             
-    const char *sha1 = result->hashSha1.c_str();
+    const char *sha1 = result.hashSha1.c_str();
     jstring sha1j = env->NewStringUTF(sha1);
             
-    const char *sha256 = result->hashSha2_256.c_str();
+    const char *sha256 = result.hashSha2_256.c_str();
     jstring sha256j = env->NewStringUTF(sha256);
 
     // make the object
     jobject object = object = env->NewObject(clazz, ctor, md5j, sha1j, sha256j);
 
     // finish populating the object
-    std::vector<std::string>::iterator name_it = result->names.begin();
-    for (; name_it != result->names.end(); ++name_it) {
-        const char *name = name_it->c_str();
-        jstring namej = env->NewStringUTF(name);
+    for (std::vector<std::string>::iterator it = result.fileNames.begin(); it != result.fileNames.end(); ++it) {
+        jstring namej = env->NewStringUTF((*it).c_str());
         env->CallVoidMethod(object, addName, namej);
     }
 
-    std::vector<std::string>::iterator comment_it = result->comments.begin();
-    for (; comment_it != result->comments.end(); ++comment_it) {
-        const char *comment = comment_it->c_str();
-        jstring commentj = env->NewStringUTF(comment);
+    for (std::vector<std::string>::iterator it = result.comments.begin(); it != result.comments.end(); ++it) {
+        jstring commentj = env->NewStringUTF((*it).c_str());
         env->CallVoidMethod(object, addComment, commentj);
     }
 
     // Cleanup
     env->ReleaseStringUTFChars(hash, (const char *) inputHash);
-    delete result;
 
     return object;
 }

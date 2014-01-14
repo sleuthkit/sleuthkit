@@ -373,7 +373,7 @@
       <Filter>img</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tsk\fs\tsk_yaffs.h" />
-    <ClInclude Include="..\..\tsk\hashdb\lookup_result.h">
+    <ClInclude Include="..\..\tsk\hashdb\tsk_hash_info.h">
       <Filter>hash</Filter>
     </ClInclude>
   </ItemGroup>

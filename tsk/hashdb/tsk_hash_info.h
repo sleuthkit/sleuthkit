@@ -22,14 +22,14 @@
 #include <string>
 #include <vector>
 
-struct TskHashLookupResult
+struct TskHashInfo
 {
     int64_t id;
     std::string hashMd5;
     std::string hashSha1;
     std::string hashSha2_256;
-    std::vector< std::string> names;
-    std::vector< std::string>  comments; 
+    std::vector<std::string> fileNames;
+    std::vector<std::string> comments; 
 };
 
 #endif

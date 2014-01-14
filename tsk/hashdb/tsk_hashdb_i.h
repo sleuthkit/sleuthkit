@@ -66,8 +66,7 @@ extern "C" {
     extern uint8_t hdb_base_open_index(TSK_HDB_INFO *, TSK_HDB_HTYPE_ENUM);
     extern int8_t hdb_base_lookup_str(TSK_HDB_INFO*, const char*, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void*);
     extern int8_t hdb_base_lookup_bin(TSK_HDB_INFO*, uint8_t *, uint8_t, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void*);
-    extern uint8_t hdb_base_supports_verbose_lookup(TSK_HDB_INFO*);
-    extern int8_t hdb_base_lookup_verbose_str(TSK_HDB_INFO*, const char*, void**);
+    extern int8_t hdb_base_lookup_verbose_str(TSK_HDB_INFO *, const char *, void *);
     extern uint8_t hdb_base_accepts_updates();
     extern uint8_t hdb_base_add_entry(TSK_HDB_INFO*, const char*, const char*, const char*, const char*, const char *);
     extern void hdb_info_base_close(TSK_HDB_INFO *);
@@ -138,8 +137,8 @@ extern "C" {
     extern TSK_HDB_INFO *sqlite_hdb_open(TSK_TCHAR *);
     extern int8_t sqlite_hdb_lookup_str(TSK_HDB_INFO *, const char *, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
     extern int8_t sqlite_hdb_lookup_bin(TSK_HDB_INFO *, uint8_t *, uint8_t, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
-    extern uint8_t sqlite_hdb_supports_verbose_lookup(TSK_HDB_INFO *hdb_info);
-    extern int8_t sqlite_hdb_lookup_verbose_str(TSK_HDB_INFO *, const char *, void **);
+    extern int8_t sqlite_hdb_lookup_verbose_str(TSK_HDB_INFO *, const char *, void *);
+    extern int8_t sqlite_hdb_lookup_verbose_bin(TSK_HDB_INFO *, uint8_t *, uint8_t, void *);
     extern uint8_t sqlite_hdb_accepts_updates();
     extern uint8_t sqlite_hdb_add_entry(TSK_HDB_INFO *, const char *, 
         const char *, const char *, const char *, const char *);

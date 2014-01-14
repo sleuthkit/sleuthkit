@@ -27,14 +27,21 @@ idxonly_name(TSK_TEXT_HDB_INFO *hdb_info)
     char buf[TSK_HDB_NAME_MAXLEN];
     char *bufptr = buf;
     size_t i = 0;
+
     memset(hdb_info->base.db_name, '\0', TSK_HDB_NAME_MAXLEN);
+
+    // Currently only supporting md5 and sha1 index files. Try to get the
+    // database name from the index file.
     if(text_hdb_open_idx((TSK_HDB_INFO*)hdb_info, TSK_HDB_HTYPE_MD5_ID)) {
-        if (tsk_verbose)
-            fprintf(stderr,
-                "Failed to get name from index (index does not exist); using file name instead");
-        hdb_base_db_name_from_path((TSK_HDB_INFO*)hdb_info);
-        return;
+        if(text_hdb_open_idx((TSK_HDB_INFO*)hdb_info, TSK_HDB_HTYPE_SHA1_ID)) {
+            if (tsk_verbose)
+                fprintf(stderr,
+                    "Failed to get name from index (index does not exist); using file name instead");
+            hdb_base_db_name_from_path((TSK_HDB_INFO*)hdb_info);
+            return;
+        }
     }
+
     hFile = hdb_info->hIdx;
     fseeko(hFile, 0, 0);
     if(NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
@@ -72,28 +79,13 @@ TSK_HDB_INFO *idxonly_open(const TSK_TCHAR *db_path)
     return (TSK_HDB_INFO*)hdb_info;    
 }
 
-/**
- * This function should find the corresponding name at a
- * given offset.  In this case though, we do not have the original database,
- * so just make an error...
- *
- * @param hdb_info Hash database to get data from
- * @param hash MD5 hash value that was searched for
- * @param offset Byte offset where hash value should be located in db_file
- * @param flags (not used)
- * @param action Callback used for each entry found in lookup
- * @param cb_ptr Pointer to data passed to callback
- *
- * @return 1 on error and 0 on succuss
- */
 uint8_t
 idxonly_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
                  TSK_OFF_T offset, TSK_HDB_FLAG_ENUM flags,
                  TSK_HDB_LOOKUP_FN action, void *cb_ptr)
 {
-    tsk_error_reset();
-    tsk_error_set_errno(TSK_ERR_HDB_ARG);
-    tsk_error_set_errstr(
-             "idxonly_getentry: Not supported when INDEX ONLY option is used");
-    return 1;
+    if (!(flags & TSK_HDB_FLAG_QUICK) && (NULL != action)) {
+        action(hdb_info, hash, NULL, cb_ptr);
+    }
+    return 0;
 }
