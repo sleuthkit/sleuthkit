@@ -122,7 +122,7 @@ hdb_base_uses_external_indexes()
 }
 
 const TSK_TCHAR*
-hdb_base_get_index_path(TSK_HDB_INFO *hdb_info)
+hdb_base_get_index_path(TSK_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_HDB_ARG); // RJCTODO: Could use dedicated NOT_IMPL or NO_SUPPORT enum member for this sort of thing in the "base" functions

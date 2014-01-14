@@ -60,7 +60,7 @@ extern "C" {
     extern const TSK_TCHAR *hdb_base_get_db_path(TSK_HDB_INFO *);
     extern const char *hdb_base_get_db_name(TSK_HDB_INFO *);
     extern uint8_t hdb_base_uses_external_indexes();
-    extern const TSK_TCHAR *hdb_base_get_index_path(TSK_HDB_INFO *);
+    extern const TSK_TCHAR *hdb_base_get_index_path(TSK_HDB_INFO *, TSK_HDB_HTYPE_ENUM);
     extern uint8_t hdb_base_has_index(TSK_HDB_INFO*, TSK_HDB_HTYPE_ENUM);
     extern uint8_t hdb_base_make_index(TSK_HDB_INFO *, TSK_TCHAR *);
     extern uint8_t hdb_base_open_index(TSK_HDB_INFO *, TSK_HDB_HTYPE_ENUM);
@@ -77,7 +77,7 @@ extern "C" {
     // external indexes. 
     extern TSK_TEXT_HDB_INFO *text_hdb_open(FILE *hDb, const TSK_TCHAR *db_path);
     extern uint8_t text_hdb_uses_external_indexes();
-    extern const TSK_TCHAR *text_hdb_get_index_path(TSK_HDB_INFO *);
+    extern const TSK_TCHAR *text_hdb_get_index_path(TSK_HDB_INFO *, TSK_HDB_HTYPE_ENUM);
     extern uint8_t text_hdb_has_index(TSK_HDB_INFO*, TSK_HDB_HTYPE_ENUM);
     extern uint8_t text_hdb_open_idx(TSK_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype);
     extern uint8_t text_hdb_idx_initialize(TSK_TEXT_HDB_INFO *, TSK_TCHAR *);

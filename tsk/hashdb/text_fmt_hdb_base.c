@@ -111,17 +111,26 @@ text_hdb_uses_external_indexes()
 }
 
 const TSK_TCHAR*
-text_hdb_get_index_path(TSK_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
+text_hdb_get_index_path(TSK_HDB_INFO *hdb_info_base, TSK_HDB_HTYPE_ENUM htype)
 {
-    // RJCTODO: Need to open the index here...guess the index fname should be returned or NULL
-    return NULL;
+    if (text_hdb_open_idx(hdb_info_base, htype)) {
+        return NULL;
+    }
+    else {
+        TSK_TEXT_HDB_INFO *hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info_base;
+        return hdb_info->idx_fname;
+    }
 }
 
 uint8_t
 text_hdb_has_index(TSK_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
 {
-    // RJCTODO: Need to open the index here
-    return 0;
+    if (text_hdb_open_idx(hdb_info, htype)) {
+        return 0;
+    }
+    else {
+        return 1;
+    }
 }
 
 /** \internal

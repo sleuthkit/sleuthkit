@@ -120,7 +120,7 @@ extern "C" {
         const TSK_TCHAR*(*get_db_path)(TSK_HDB_INFO*);
         const char*(*get_db_name)(TSK_HDB_INFO*);
         uint8_t(*uses_external_indexes)();
-        const TSK_TCHAR*(*get_index_path)(TSK_HDB_INFO*); // RJCTODO: Perhaps add the type parameter now... 
+        const TSK_TCHAR*(*get_index_path)(TSK_HDB_INFO*, TSK_HDB_HTYPE_ENUM);
         uint8_t(*has_index)(TSK_HDB_INFO*, TSK_HDB_HTYPE_ENUM);
         uint8_t(*make_index)(TSK_HDB_INFO*, TSK_TCHAR*);
         uint8_t(*open_index)(TSK_HDB_INFO*, TSK_HDB_HTYPE_ENUM);
@@ -175,10 +175,10 @@ extern "C" {
     extern TSK_HDB_INFO *tsk_hdb_open(TSK_TCHAR *, TSK_HDB_OPEN_ENUM);
     extern const TSK_TCHAR *tsk_hdb_get_path(TSK_HDB_INFO * hdb_info);
     extern const char *tsk_hdb_get_name(TSK_HDB_INFO * hdb_info);
-    extern uint8_t tsk_hdb_has_idx(TSK_HDB_INFO * hdb_info, TSK_HDB_HTYPE_ENUM htype);
+    extern uint8_t tsk_hdb_has_idx(TSK_HDB_INFO * hdb_info, TSK_HDB_HTYPE_ENUM);
     extern uint8_t tsk_hdb_is_idx_only(TSK_HDB_INFO *);
     extern uint8_t tsk_hdb_make_index(TSK_HDB_INFO *, TSK_TCHAR *);
-    extern const TSK_TCHAR *tsk_hdb_get_idx_path(TSK_HDB_INFO * hdb_info);
+    extern const TSK_TCHAR *tsk_hdb_get_idx_path(TSK_HDB_INFO *, TSK_HDB_HTYPE_ENUM);
     extern int8_t tsk_hdb_lookup_str(TSK_HDB_INFO *, const char *,
         TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
     extern int8_t tsk_hdb_lookup_raw(TSK_HDB_INFO *, uint8_t *, uint8_t, 
@@ -187,7 +187,7 @@ extern "C" {
     extern int8_t tsk_hdb_lookup_verbose_str(TSK_HDB_INFO *, const char *, void **);
     extern int8_t tsk_hdb_add_entry(TSK_HDB_INFO *, const char*, const char*, 
         const char*, const char*, const char*);
-    extern void tsk_hdb_close(TSK_HDB_INFO * hdb_info);
+    extern void tsk_hdb_close(TSK_HDB_INFO *);
 
 #ifdef __cplusplus
 }

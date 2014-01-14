@@ -264,7 +264,7 @@ const char *tsk_hdb_get_name(TSK_HDB_INFO * hdb_info) // RJCTODO: Add db to name
     return hdb_info->get_db_name(hdb_info);
 }
 
-const TSK_TCHAR *tsk_hdb_get_idx_path(TSK_HDB_INFO * hdb_info)
+const TSK_TCHAR *tsk_hdb_get_idx_path(TSK_HDB_INFO * hdb_info, TSK_HDB_HTYPE_ENUM htype)
 {
     if (!hdb_info) {
         tsk_error_reset();
@@ -273,7 +273,7 @@ const TSK_TCHAR *tsk_hdb_get_idx_path(TSK_HDB_INFO * hdb_info)
         return 0;
     }
 
-    return hdb_info->get_index_path(hdb_info);
+    return hdb_info->get_index_path(hdb_info, htype);
 }
 
 /**

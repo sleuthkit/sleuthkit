@@ -486,8 +486,9 @@ JNIEXPORT jstring JNICALL
         return NULL;
     }
 
+    // Currently only supporting md5 indexes through Java binding.
     jstring jpath = NULL;
-    const TSK_TCHAR *db_path = tsk_hdb_get_idx_path(db);
+    const TSK_TCHAR *db_path = tsk_hdb_get_idx_path(db, TSK_HDB_HTYPE_MD5_ID);
     if (NULL != db_path) {
         snprintf(cpath, 1024, "%" PRIttocTSK, db_path);
         jpath = env->NewStringUTF(cpath);
