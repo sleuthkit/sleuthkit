@@ -78,7 +78,9 @@ enum TSK_ARTIFACT_TYPE {
 	TSK_GPS_LAST_KNOWN_LOCATION = 30, ///< GPS Last known location
 	TSK_GPS_SEARCH = 31,	///< GPS Searches
 	TSK_PROG_RUN = 32, ///< Application run information
-
+    TSK_ENCRYPTION_DETECTED = 33, ///< Encrypted File
+    TSK_EXT_MISMATCH_DETECTED = 34, ///< Extension Mismatch
+    TSK_INTERESTING_ARTIFACT_HIT = 35,	///< Any artifact interesting enough that it should be called out in the UI.
 		
     /* SEE ABOVE:
     * - KEEP JAVA CODE IN SYNC 
@@ -127,14 +129,14 @@ enum TSK_ATTRIBUTE_TYPE {
     TSK_TEXT_LANGUAGE = 28,///< String of the detected language in ISO 639-3 language code of TskBlackboard::TSK_TEXT data in the same artifact (TSK_EXTRACTED_TEXT, for example).
     TSK_ENTROPY = 29,///< DOUBLE: Entropy value of file
     TSK_HASHSET_NAME = 30,///< String of the name or file name of the hashset -- Deprecated in favor of TSK_SET_NAME
-    TSK_INTERESTING_FILE = 31,///< An interesting file hit, potentially file id, name, or path
+    TSK_INTERESTING_FILE = 31,///< An interesting file hit, potentially file id, name, or path -- Deprecated, use TSK_INTERESTING_FILE_HIT artifact instead.
     TSK_REFERRER = 32,///< String of referrer URL
     TSK_DATETIME_ACCESSED = 33,///<datetime last time accessed
     TSK_IP_ADDRESS = 34,///<String of IP Address
     TSK_PHONE_NUMBER = 35,///<String of phone number
     TSK_PATH_ID = 36,///< Object ID from database that a TSK_PATH attribute corresponds to.  Set to -1 if path is for a file that is not in database (i.e. deleted). 
     TSK_SET_NAME = 37,///< STRING: The name of a set that was used to find this artifact (to be used for hash hits, keyword hits, interesting files, etc.)
-    TSK_ENCRYPTION_DETECTED = 38,///< STRING: The type of encryption that is believed to have been used on the file.
+    //TSK_ENCRYPTION_DETECTED = 38,///< \deprecated STRING: The type of encryption that is believed to have been used on the file.
     TSK_MALWARE_DETECTED = 39,///< STRING: The name of the malware that was detected in this file.
     TSK_STEG_DETECTED = 40,///< STRING: The name of the steganography technique that was detected in this file.
     TSK_EMAIL_TO = 41, ///< String of an e-mail address that a message is being sent to directly (not cc:).
@@ -192,8 +194,7 @@ enum TSK_ATTRIBUTE_TYPE {
 	TSK_MIN_COUNT = 93, ///<  Minimum number/count
 	TSK_PATH_SOURCE = 94, ///< Path to a source file related to the artifact
 	TSK_PERMISSIONS = 95, ///< Permissions
-	TSK_PROG_LAUNCHED = 96, ///< Flag for whether a program has been run
-	TSK_ASSOCIATED_ARTIFACT = 97, ///< Artifact ID of a related artifact
+	TSK_ASSOCIATED_ARTIFACT = 96, ///< Artifact ID of a related artifact
 
     /* SEE ABOVE: 
     * - KEEP JAVA CODE IN SYNC 
