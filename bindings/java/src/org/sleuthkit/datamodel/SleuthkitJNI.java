@@ -135,7 +135,8 @@ public class SleuthkitJNI {
 		LibraryUtils.loadSleuthkitJNI();
     }
 
-	public SleuthkitJNI() {
+	private SleuthkitJNI() {
+	
 	}
 
 	/**
