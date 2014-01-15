@@ -60,8 +60,8 @@
 	<target name="copyWinLibs" depends="copyWinLibs64,copyWinLibs32" description="Copy windows dlls to the correct location." />
 	
 	<target name="checkLibDirs">
-		<available property="win64.exists" type="dir" file="${basedir}/../../win32/x64/${tsk.config}" />
-		<available property="win32.exists" type="dir" file="${basedir}/../../win32/${tsk.config}" />
+		<available property="win64.exists" type="file" file="${basedir}/../../win32/x64/${tsk.config}/libtsk_jni.dll" />
+		<available property="win32.exists" type="file" file="${basedir}/../../win32/${tsk.config}/libtsk_jni.dll" />
 	</target>
 	
 	<target name="copyWinLibs64" depends="checkLibDirs" if="win64.exists">
