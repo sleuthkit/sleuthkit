@@ -110,19 +110,24 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile)
         return NULL;
     }
 
-    while (buf < end) {
+    while ((uintptr_t)buf + sizeof(iso9660_susp_head) <= (uintptr_t)end) {
         iso9660_susp_head *head = (iso9660_susp_head *) buf;
 
-        if (((uintptr_t) & (head->len) >= (uintptr_t) end) ||
-            (buf + head->len - 1 > end))
+        if (buf + head->len - 1 > end)
             break;
 
         /* Identify the entry type -- listed in the order
          * that they are listed in the specs */
 
-        // SUSP Continuation Entry -- NOT SUPPORTED
+        // SUSP Continuation Entry 
         if ((head->sig[0] == 'C') && (head->sig[1] == 'E')) {
             iso9660_susp_ce *ce = (iso9660_susp_ce *) buf;
+
+            if ((uintptr_t)buf + sizeof(iso9660_susp_ce) > (uintptr_t)end) {
+                if (tsk_verbose) 
+                    tsk_fprintf(stderr, "parse_susp: not enough room for CE structure\n");
+                break;
+            }
 
             if (hFile) {
                 fprintf(hFile, "CE Entry\n");
@@ -134,6 +139,7 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile)
                     tsk_getu32(fs->endian, ce->celen_m));
             }
 
+            // read the continued buffer and parse it
             if ((tsk_getu32(fs->endian, ce->blk_m) < fs->last_block) &&
                 (tsk_getu32(fs->endian, ce->offset_m) < fs->block_size)) {
                 ssize_t cnt;
@@ -238,6 +244,13 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile)
         /* POSIX file attributes */
         else if ((head->sig[0] == 'P') && (head->sig[1] == 'X')) {
             iso9660_rr_px_entry *rr_px;
+
+            if ((uintptr_t)buf + sizeof(iso9660_rr_px_entry) > (uintptr_t)end) {
+                if (tsk_verbose) 
+                    tsk_fprintf(stderr, "parse_susp: not enough room for POSIX structure\n");
+                break;
+            }
+
             rr_px = (iso9660_rr_px_entry *) buf;
             rr->uid = tsk_getu32(fs->endian, rr_px->uid_m);
             rr->gid = tsk_getu32(fs->endian, rr_px->gid_m);
@@ -277,7 +290,21 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile)
         // RR -- alternative name
         else if ((head->sig[0] == 'N') && (head->sig[1] == 'M')) {
             iso9660_rr_nm_entry *rr_nm;
+
+            if ((uintptr_t)buf + sizeof(iso9660_rr_nm_entry) > (uintptr_t)end) {
+                if (tsk_verbose) 
+                    tsk_fprintf(stderr, "parse_susp: not enough room for RR alternative name structure\n");
+                break;
+            }
+
             rr_nm = (iso9660_rr_nm_entry *) buf;
+
+            if ((uintptr_t)&rr_nm->name[0] + (int) rr_nm->len - 5 > (uintptr_t)end) {
+                if (tsk_verbose) 
+                    tsk_fprintf(stderr, "parse_susp: not enough room for RR alternative name\n");
+                break;
+            }
+
             strncpy(rr->fn, &rr_nm->name[0], (int) rr_nm->len - 5);
             rr->fn[(int) rr_nm->len - 5] = '\0';
             if (hFile) {
@@ -406,10 +433,9 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
             return -1;
         }
 
-        // @@@@ We  need to add more checks when reading from buf to make sure b_off is still in the buffer
         /* process the directory entries */
         for (b_offs = 0; b_offs < ISO9660_SSIZE_B;) {
-            iso9660_inode_node *in_node;
+            iso9660_inode_node *in_node = NULL;
             iso9660_dentry *dentry;
 
             dentry = (iso9660_dentry *) & buf[b_offs];
@@ -417,6 +443,19 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
             if (dentry->entry_len == 0) {
                 b_offs += 2;
                 continue;
+            }
+            // sanity checks on entry_len
+            else if (dentry->entry_len < sizeof(iso9660_dentry)) {
+                if (tsk_verbose)
+                    tsk_fprintf(stderr,
+                                "iso9660_load_inodes_dir: entry length is shorter than dentry, bailing\n");
+                break;
+            }
+            else if (b_offs + dentry->entry_len > ISO9660_SSIZE_B) {
+                if (tsk_verbose)
+                    tsk_fprintf(stderr,
+                                "iso9660_load_inodes_dir: entry is longer than sector, bailing\n");
+                break;
             }
 
             /* when processing the other volume descriptor directories, we ignore the
@@ -435,16 +474,27 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                 return -1;
             }
 
-            // the first entry should have no name and is for the current directory
+            // the first entry is for the current directory
             if ((i == 0) && (b_offs == 0)) {
-                if (dentry->fi_len != 0) {
-                    // XXX
+                // should have no name or '.'
+                if (dentry->fi_len > 1) {
+                    if (tsk_verbose)
+                        tsk_fprintf(stderr,
+                                    "iso9660_load_inodes_dir: first entry has name length > 1\n");
+                    free(in_node);
+                    in_node = NULL;
+                    b_offs += dentry->entry_len;
+                    continue;
                 }
 
                 /* find how many more sectors are in the directory */
                 s_cnt =
                     tsk_getu32(fs->endian,
                     dentry->data_len_m) / ISO9660_SSIZE_B;
+                if (tsk_verbose)
+                    tsk_fprintf(stderr, "iso9660_load_inodes_dir: %d number of additional sectors\n", s_cnt);
+                
+                // @@@ Should have a sanity check here on s_cnt, but I'm not sure what it would be...
 
                 /* use the specified name instead of "." */
                 if (strlen(a_fn) > ISO9660_MAXNAMLEN_STD) {
@@ -454,8 +504,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                         ("iso9660_load_inodes_dir: Name argument specified is too long");
                     return -1;
                 }
-                strncpy(in_node->inode.fn, a_fn,
-                    ISO9660_MAXNAMLEN_STD + 1);
+                strncpy(in_node->inode.fn, a_fn, ISO9660_MAXNAMLEN_STD + 1);
 
                 /* for all directories except the root, we skip processing the "." and ".." entries because
                  * they duplicate the other entires and the dent_walk code will rely on the offset
@@ -471,12 +520,19 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
             }
             else {
                 char *file_ver;
-
+                
                 // the entry has a UTF-16 name
                 if (ctype == ISO9660_CTYPE_UTF16) {
                     UTF16 *name16;
                     UTF8 *name8;
                     int retVal;
+
+                    if (dentry->entry_len < sizeof(iso9660_dentry) + dentry->fi_len) {
+                        if (tsk_verbose)
+                            tsk_fprintf(stderr,
+                                        "iso9660_load_inodes_dir: UTF-16 name length is too large, bailing\n");
+                        break;
+                    }
 
                     name16 =
                         (UTF16 *) & buf[b_offs + sizeof(iso9660_dentry)];
@@ -485,8 +541,8 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                         int a;
 
                         for (a = 0; a < dentry->fi_len / 2; a++) {
-                            name16[i] = ((name16[i] & 0xff) << 8) +
-                                ((name16[i] & 0xff00) >> 8);
+                            name16[a] = ((name16[a] & 0xff) << 8) +
+                                ((name16[a] & 0xff00) >> 8);
                         }
                     }
                     name8 = (UTF8 *) in_node->inode.fn;
@@ -515,6 +571,14 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                     readlen = dentry->fi_len;
                     if (readlen > ISO9660_MAXNAMLEN_STD)
                         readlen = ISO9660_MAXNAMLEN_STD;
+                    
+                    if (dentry->entry_len < sizeof(iso9660_dentry) + dentry->fi_len) {
+                        if (tsk_verbose)
+                            tsk_fprintf(stderr,
+                                        "iso9660_load_inodes_dir: ASCII name length is too large, bailing\n");
+                        break;
+                    }
+
 
                     memcpy(in_node->inode.fn,
                         &buf[b_offs + sizeof(iso9660_dentry)], readlen);
@@ -541,15 +605,47 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                     '.')
                     in_node->inode.fn[strlen(in_node->inode.fn) - 1] =
                         '\0';
+                
+                
+                if (strlen(in_node->inode.fn) == 0) {
+                    if (tsk_verbose)
+                        tsk_fprintf(stderr,
+                                    "iso9660_load_inodes_dir: length of name after processing is 0. bailing\n");
+                    break;
+                    
+                }
             }
 
+            
 
             // copy the raw dentry data into the node
             memcpy(&(in_node->inode.dr), dentry, sizeof(iso9660_dentry));
 
             in_node->inode.ea = NULL;
+
+            // sanity checks
+            if (tsk_getu32(fs->endian, dentry->ext_loc_m) > fs->last_block) {
+                if (tsk_verbose)
+                    tsk_fprintf(stderr,
+                                "iso9660_load_inodes_dir: file starts past end of image (%"PRIu32"). bailing\n",
+                                tsk_getu32(fs->endian, dentry->ext_loc_m));
+                break;
+            }
             in_node->offset =
                 tsk_getu32(fs->endian, dentry->ext_loc_m) * fs->block_size;
+            
+            if (tsk_getu32(fs->endian, in_node->inode.dr.data_len_m) + in_node->offset > fs->last_block * fs->block_size) {
+                if (tsk_verbose)
+                    tsk_fprintf(stderr,
+                                "iso9660_load_inodes_dir: file ends past end of image (%"PRIu32" bytes). bailing\n",
+                                tsk_getu32(fs->endian, in_node->inode.dr.data_len_m) + in_node->offset);
+                break;
+            }
+            /* record size to make sure fifos show up as unique files */
+            in_node->size =
+                tsk_getu32(fs->endian, in_node->inode.dr.data_len_m);
+
+            
             in_node->ea_size = dentry->ext_len;
             in_node->dentry_offset = s_offs + b_offs;
 
@@ -558,9 +654,6 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
             else
                 in_node->inode.is_orphan = 1;
 
-            /* record size to make sure fifos show up as unique files */
-            in_node->size =
-                tsk_getu32(fs->endian, in_node->inode.dr.data_len_m);
             in_node->inum = count++;
 
             /* RockRidge data is located after the name.  See if it is there.  */
@@ -574,17 +667,20 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                     parse_susp(fs,
                     &buf[b_offs + sizeof(iso9660_dentry) + dentry->fi_len],
                     extra_bytes, NULL);
+                if (in_node->inode.rr == NULL) {
+                    if (tsk_verbose)
+                        tsk_fprintf(stderr,
+                                    "iso9660_load_inodes_dir: parse_susp returned error (%s). bailing\n", tsk_error_get());
+                    break;
+                }
+                
                 in_node->inode.susp_off =
                     b_offs + sizeof(iso9660_dentry) + dentry->fi_len +
                     s_offs;
                 in_node->inode.susp_len = extra_bytes;
-
-                if (in_node->inode.rr == NULL) {
-                    // return -1;
-                    // @@@ Verbose error
-                }
             }
             else {
+                in_node->inode.rr = NULL;
                 in_node->inode.susp_off = 0;
                 in_node->inode.susp_len = 0;
             }
@@ -595,11 +691,13 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
 
                 for (tmp = iso->in_list; tmp; tmp = tmp->next) {
                     /* When processing the "first" volume descriptor, all entries get added to the list.
-                     * for the later ones, we skip duplicate ones that overlap with entries from a
-                     * previous volume descriptor. */
+                     * for the later ones, we skip duplicate ones that have content (blocks) that overlaps
+                     * with entries from a previous volume descriptor. */
                     if ((in_node->offset == tmp->offset)
                         && (in_node->size == tmp->size)
                         && (in_node->size) && (is_first == 0)) {
+                        
+                        // if we found rockridge, then update original if needed.
                         if (in_node->inode.rr) {
                             if (tmp->inode.rr == NULL) {
                                 tmp->inode.rr = in_node->inode.rr;
@@ -611,13 +709,14 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                             }
                             else {
                                 free(in_node->inode.rr);
+                                in_node->inode.rr = NULL;
                             }
                         }
 
                         if (tsk_verbose)
                             tsk_fprintf(stderr,
-                                "iso9660_load_inodes_dir: Removing duplicate entry for: %s\n",
-                                in_node->inode.fn);
+                                "iso9660_load_inodes_dir: Removing duplicate entry for: %s (orig name: %s start: %d size: %d)\n",
+                                in_node->inode.fn, tmp->inode.fn, in_node->offset, in_node->size);
                         free(in_node);
                         in_node = NULL;
                         count--;
