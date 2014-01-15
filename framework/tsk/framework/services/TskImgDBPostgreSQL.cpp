@@ -2861,6 +2861,37 @@ int TskImgDBPostgreSQL::getFileTypeRecords(std::string& stmt, std::list<TskFileT
 }
 
 /**
+ *
+ */
+int TskImgDBPostgreSQL::getModuleId(const std::string& name, int & moduleId) const
+{
+    stringstream stmt;
+
+    stmt << "SELECT module_id FROM modules WHERE name = " << m_dbConnection->quote(name);
+
+    try 
+    {
+        pqxx::read_transaction trans(*m_dbConnection);
+        result R = trans.exec(stmt);
+
+        if (R.size() == 1)
+        {
+            R[0][0].to(moduleId);
+        }
+    }
+    catch(exception& e)
+    {
+        std::stringstream errorMsg;
+        errorMsg << "TskDBPostgreSQL::getModuleId - Error querying modules table: "
+            << e.what();
+        LOGERROR(errorMsg.str());
+        return -1;
+    }
+
+    return 0;
+}
+
+/**
  * Insert the Module record, if module name does not already exist in modules table.
  * Returns Module Id associated with the Module record.
  * @param name Module name
@@ -2873,37 +2904,35 @@ int TskImgDBPostgreSQL::addModule(const std::string& name, const std::string& de
     if (!initialized())
         return 0;
 
-    stringstream stmt;
+    moduleId = 0;
 
-    stmt << "SELECT module_id FROM modules WHERE name = " << m_dbConnection->quote(name);
+    if (getModuleId(name, moduleId) == 0 && moduleId > 0)
+        return 0;
 
     try 
     {
+        stringstream stmt;
+
         work W(*m_dbConnection);
-        result R = W.exec(stmt);
-
-        if (R.size() == 1)
-        {
-            // Already exists, return module_id
-            R[0][0].to(moduleId);
-            return 0;
-        }
-
-        // Insert a new one
-        stmt.str("");
         stmt << "INSERT INTO modules (module_id, name, description) VALUES (DEFAULT, " << m_dbConnection->quote(name) << ", " << m_dbConnection->quote(description) << ")"
              << " RETURNING module_id";
 
-        R = W.exec(stmt);
+        pqxx::result R = W.exec(stmt);
 
         // Get the newly assigned module id
         R[0][0].to(moduleId);
         W.commit();
-    } 
+    }
+    catch (pqxx::unique_violation&)
+    {
+        // The module may have been added between our initial call
+        // to getModuleId() and the subsequent INSERT attempt.
+        getModuleId(name, moduleId);
+    }
     catch (const exception &e)
     {
-        std::wstringstream errorMsg;
-        errorMsg << L"TskDBPostgreSQL::addModule - Error inserting into modules table: "
+        std::stringstream errorMsg;
+        errorMsg << "TskDBPostgreSQL::addModule - Error inserting into modules table: "
             << e.what();
         LOGERROR(errorMsg.str());
         return -1;
