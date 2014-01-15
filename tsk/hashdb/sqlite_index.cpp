@@ -961,6 +961,7 @@ sqlite_v1_close(TSK_IDX_INFO * idx_info)
 
     if (idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite) {
         sqlite3_close(idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite);
+        idx_info->idx_struct.idx_sqlite_v1->hIdx_sqlite = NULL;
     }
 }
 

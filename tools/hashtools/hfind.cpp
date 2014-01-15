@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
+ * Copyright (c) 2003-2013 Brian Carrier.  All rights reserved
  *
  * This software is distributed under the Common Public License 1.0
  */
@@ -29,7 +29,7 @@ usage()
     tsk_fprintf(stderr,
                 "\t-q: Quick mode - where a 1 is printed if it is found, else 0\n");
     tsk_fprintf(stderr, "\t-V: Print version to STDOUT\n");
-    tsk_fprintf(stderr, "\t-c db_name: Create blank index with the given name.\n");
+    tsk_fprintf(stderr, "\t-c db_name: Create new database with the given name.\n");
     tsk_fprintf(stderr, "\t-a: Add given hashes to the database.\n");
     tsk_fprintf(stderr,
                 "\t-f lookup_file: File with one hash per line to lookup\n");
@@ -41,7 +41,6 @@ usage()
                 "\t[hashes]: hashes to lookup (STDIN is used otherwise)\n");
     tsk_fprintf(stderr, "\n\tSupported types: %s\n",
                 TSK_HDB_DBTYPE_SUPPORT_STR);
-
     exit(1);
 }
 
@@ -126,7 +125,14 @@ main(int argc, char ** argv1)
             usage();
         }
     }
+    
+    // sanity check
+    if ((addHash) && ((idx_type != NULL) || (create))) {
+        tsk_fprintf(stderr, "-a cannot be specified with -c or -i\n");
+        usage();
+    }
 
+    
     if (OPTIND + 1 > argc) {
         tsk_fprintf(stderr,
                     "Error: You must provide the source hash database location\n");
@@ -137,25 +143,34 @@ main(int argc, char ** argv1)
 
     // Make a new database (creates an index from scratch)
     if (create) {
-        if ((hdb_info = tsk_hdb_new(db_file)) == NULL) {
-            tsk_error_print(stderr);
-            return 1;
-        } else {
-            printf("New index %"PRIttocTSK" created.\n", db_file);
-            return 0;
+        if (idx_type != NULL) {
+            tsk_fprintf(stderr, "-c and -i cannot be specified at same time\n");
+            usage();
         }
-    } else {
-        // Open an existing database
-        TSK_HDB_OPEN_ENUM flags = TSK_HDB_OPEN_NONE;
-        if(addHash) {
-            flags = TSK_HDB_OPEN_IDXONLY;
-        }
-
-        if ((hdb_info = tsk_hdb_open(db_file, flags)) == NULL) {
+        
+        if ((hdb_info = tsk_hdb_newdb(db_file)) == NULL) {
             tsk_error_print(stderr);
             return 1;
         }
+        
+        printf("New database %"PRIttocTSK" created.\n", db_file);
+        return 0;
     }
+    
+    
+    // Open an existing database
+    TSK_HDB_OPEN_ENUM open_flags = TSK_HDB_OPEN_NONE;
+    
+    // @@@ I don't get this.  If we are adding a hash, why set it to idx only...
+    if (addHash) {
+        open_flags = TSK_HDB_OPEN_IDXONLY;
+    }
+
+    if ((hdb_info = tsk_hdb_open(db_file, open_flags)) == NULL) {
+        tsk_error_print(stderr);
+        return 1;
+    }
+    
 
     /* What mode are we going to run in 
      * 
@@ -180,14 +195,15 @@ main(int argc, char ** argv1)
             tsk_hdb_close(hdb_info);
             return 1;
         }
+        
         printf("Index Created\n");
         tsk_hdb_close(hdb_info);
         return 0;
     }
 
-    /* Do some hash lookups 
-     *
-     * Check if the values were passed on the command line or via a file */
+    /* Either lookup hash values or add them to DB.
+     * Check if the values were passed on the command line or via a file 
+     */
     if (OPTIND < argc) {
 
         if ((OPTIND + 1 < argc) && (flags & TSK_HDB_FLAG_QUICK)) {
@@ -228,12 +244,15 @@ main(int argc, char ** argv1)
                     printf("There was an error adding the hash.\n");
                     tsk_error_print(stderr);
                     return 1;
-                } else if (retval == -1) {
+                }
+                else if (retval == -1) {
                     printf("Database is not updateable.\n");
-                } else if (retval == 0) {
+                }
+                else if (retval == 0) {
                     printf("Hash %s added.\n", htmp);
                 }
-            } else {
+            }
+            else {
                 /* Perform lookup */
                 retval = tsk_hdb_lookup_str(hdb_info, (const char *)htmp, 
                          (TSK_HDB_FLAG_ENUM)flags, lookup_act, NULL);

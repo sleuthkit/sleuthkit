@@ -2487,7 +2487,8 @@ static TSK_RETVAL_ENUM
         uint32_t vnum = version->ycv_version;
         YaffsHeader *header = NULL;
         TSK_FS_NAME * fs_name;
-        char version_string[64];
+        char *file_ext;
+        char version_string[64]; // Allow a max of 64 bytes in the version string
 
         yaffscache_obj_id_and_version_to_inode(obj_id, vnum, &curr_inode);
 
@@ -2529,8 +2530,17 @@ static TSK_RETVAL_ENUM
 
         // Only put object/version string onto unallocated versions
         if(! yaffs_is_version_allocated(cb_args->yfs, curr_inode)){ 
-            snprintf(version_string, 64, "#%d,%d", obj_id, vnum); 
-            strncat(fs_name->name, version_string, 31);
+            // Also copy the extension so that it also shows up after the version string, which allows
+            // easier searching by file extension. Max extension length is 5 characters after the dot,
+            // and require at least one character before the dot
+            file_ext = strrchr(fs_name->name, '.');
+            if((file_ext != NULL) && (file_ext != fs_name->name) && (strnlen(file_ext, 10) < 7)){
+               snprintf(version_string, 64, "#%d,%d%s", obj_id, vnum, file_ext);
+            }
+            else{
+               snprintf(version_string, 64, "#%d,%d", obj_id, vnum);
+            }
+            strncat(fs_name->name, version_string, 64);
             fs_name->flags = TSK_FS_NAME_FLAG_UNALLOC;
         }
         else{

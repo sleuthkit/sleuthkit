@@ -127,13 +127,18 @@ public class BlackboardAttribute {
 		TSK_TEXT_LANGUAGE(28, "TSK_TEXT_LANGUAGE", "Text Language"),
 		TSK_ENTROPY(29, "TSK_ENTROPY", "Entropy"),
 		TSK_HASHSET_NAME(30, "TSK_HASHSET_NAME", "Hashset Name"), // @@@ Deprecated
-		TSK_INTERESTING_FILE(31, "TSK_INTERESTING_FILE", "Interesting File"),
+		/*
+		 * @deprecated Use TSK_INTERSTING_FILE_HIT artifact instead.
+		 */
+		@Deprecated
+		TSK_INTERESTING_FILE(31, "TSK_INTERESTING_FILE", "Interesting File"), // @@@ Deprecated
 		TSK_REFERRER(32, "TSK_REFERRER", "Referrer URL"),
 		TSK_DATETIME_ACCESSED(33, "TSK_DATETIME_ACCESSED", "Date Accessed"),
 		TSK_IP_ADDRESS(34, "TSK_IP_ADDRESS", "IP Address"),
 		TSK_PHONE_NUMBER(35, "TSK_PHONE_NUMBER", "Phone Number"),
 		TSK_PATH_ID(36, "TSK_PATH_ID", "Path ID"),
 		TSK_SET_NAME(37, "TSK_SET_NAME", "Set Name"),
+		@Deprecated
 		TSK_ENCRYPTION_DETECTED(38, "TSK_ENCRYPTION_DETECTED", "Encryption Detected"),
 		TSK_MALWARE_DETECTED(39, "TSK_MALWARE_DETECTED", "Malware Detected"),
 		TSK_STEG_DETECTED(40, "TSK_STEG_DETECTED", "Steganography Detected"),
@@ -192,8 +197,7 @@ public class BlackboardAttribute {
 		TSK_MIN_COUNT(93, "TSK_MIN_COUNT", "Minimum Count"), // Minimum number/count
 		TSK_PATH_SOURCE(94, "TSK_PATH_SOURCE", "Path Source"), // Path to a source file related to the artifact
 		TSK_PERMISSIONS(95, "TSK_PERMISSIONS", "Permissions"), // Permissions
-		TSK_PROG_LAUNCHED(96, "TSK_PROG_LAUNCHED", "Program Launched"), // Flag for whether a program has been run
-		TSK_ASSOCIATED_ARTIFACT(97, "TSK_ASSOCIATED_ARTIFACT", "Assocated Artifact"), // Artifact ID of a related artifact
+		TSK_ASSOCIATED_ARTIFACT(96, "TSK_ASSOCIATED_ARTIFACT", "Associated Artifact"), // Artifact ID of a related artifact
 		
 		
 		;

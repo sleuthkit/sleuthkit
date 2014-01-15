@@ -10,6 +10,9 @@
 
 #include "tsk_hashdb_i.h"
 
+#ifdef TSK_WIN32
+#include <share.h>
+#endif
 
 /**
  * \file hdb_open.c
@@ -51,29 +54,18 @@ tsk_hdb_open(TSK_TCHAR * db_file, TSK_HDB_OPEN_ENUM flags)
     if ((flags & TSK_HDB_OPEN_IDXONLY) == 0) {
         /* Open the database file */
 #ifdef TSK_WIN32
-        {
-            HANDLE hWin;
-
-            if ((hWin = CreateFile(db_file, GENERIC_READ,
-                                   FILE_SHARE_READ, 0, OPEN_EXISTING, 0,
-                                   0)) == INVALID_HANDLE_VALUE) {
-                tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_HDB_OPEN);
-                tsk_error_set_errstr(
-                         "hdb_open: Error opening database file: %S",
-                         db_file);
-                return NULL;
-            }
-            hDb =
-                _fdopen(_open_osfhandle((intptr_t) hWin, _O_RDONLY), "r");
-            if (hDb == NULL) {
-                tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_HDB_OPEN);
-                tsk_error_set_errstr(
-                         "hdb_open: Error converting Windows handle to C handle");
-                return NULL;
-            }
+        int fd;
+        if (_wsopen_s(&fd, db_file, _O_RDONLY | _O_BINARY, _SH_DENYNO, 0)) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_HDB_OPEN);
+            tsk_error_set_errstr(
+                    "tsk_idx_open_file: Error opening index file: %"PRIttocTSK,
+                    db_file);
+            return NULL;
         }
+
+        hDb = _wfdopen(fd, L"rb");
+
 #else
         if (NULL == (hDb = fopen(db_file, "r"))) {
             tsk_error_reset();

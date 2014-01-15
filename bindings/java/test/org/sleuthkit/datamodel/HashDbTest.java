@@ -60,6 +60,7 @@ public class HashDbTest extends ImgTraverser {
 
 		for (Object imagePaths : DataModelTestSuite.getImagePaths()) {
 			data.add(new Object[]{imagePaths});
+            break;
 		}
 		return data;
 	}
@@ -155,7 +156,16 @@ public class HashDbTest extends ImgTraverser {
 			
 			// Close it out
 			SleuthkitJNI.closeHashDatabase(handle);
-			
+			           
+            //re-opening test
+            int handle2 = SleuthkitJNI.openHashDatabase(hashfn);
+            assertTrue(handle2 > 0);
+            // SleuthkitJNI.addToHashDatabase(null, md5hash, null, null, null, handle2);
+            // boolean hasLookup2 = SleuthkitJNI.hashDatabaseHasLookupIndex(handle2);
+			// assertTrue(hasLookup2);
+			// boolean hlio2 = SleuthkitJNI.hashDatabaseHasLegacyLookupIndexOnly(handle);
+			// assertFalse(hlio2);
+            
             // Test Reindexing            
 			String legacyDbName = "testmd5.dat";
             String pathLegacy = "." + File.separator + "test" + File.separator + "data" + File.separator + legacyDbName;
@@ -180,6 +190,9 @@ public class HashDbTest extends ImgTraverser {
             java.io.File f3 = new File(pathLegacy + "-md5.idx");
             assertTrue(f3.exists());
 			
+			// Close it out
+			SleuthkitJNI.closeHashDatabase(handleLegacy);            
+            
             //Test existing kdb file
             //int handle = SleuthkitJNI.openHashDatabase(hashfn);
             //("handle = " + handle);			

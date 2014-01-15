@@ -74,8 +74,9 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		TSK_GPS_LAST_KNOWN_LOCATION(30, "TSK_GPS_LAST_KNOWN_LOCATION", "GPS Last Known Location"),	// GPS Last known location
 		TSK_GPS_SEARCH(31, "TSK_GPS_SEARCH", "GPS Searches"),	// GPS Searches
 		TSK_PROG_RUN(32, "TSK_PROG_RUN", "Run Programs"),  ///< Application run information
-		 
-		
+		TSK_ENCRYPTION_DETECTED(33, "TSK_ENCRYPTION_DETECTED", "Encryption Detected"), ///< Encrypted File 
+		TSK_EXT_MISMATCH_DETECTED(34, "TSK_EXT_MISMATCH_DETECTED", "Extension Mismatch Detected"), ///< Extension Mismatch
+		TSK_INTERESTING_ARTIFACT_HIT(35, "TSK_INTERESTING_ARTIFACT_HIT", "Interesting Results"),	// Any artifact that should be called out
 		; 
 		/* SEE ABOVE -- KEEP C++ CODE IN SYNC */
 		private String label;

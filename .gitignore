@@ -135,6 +135,5 @@ tools/vstools/mmls
 tools/vstools/mmstat
 tools/*/*.exe
 tools/*/*/*.exe
-
 # EMACS backup files
 *~

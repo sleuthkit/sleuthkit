@@ -161,6 +161,7 @@ private:
     int getFileTypeRecords(std::string& stmt, std::list<TskFileTypeRecord>& fileTypeInfoList) const;
     vector<TskBlackboardArtifact> getArtifactsHelper(uint64_t file_id, int artifactTypeID, string artifactTypeName);
     void getCarvedFileInfo(const std::string& stmt, std::map<uint64_t, std::string>& results) const;
+    int getModuleId(const std::string& name, int& moduleId) const;
 
     /**
      * A helper function for getUniqueCarvedFilesInfo() that executes a very specific SQL SELECT statement 
