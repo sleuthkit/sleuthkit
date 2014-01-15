@@ -979,26 +979,24 @@ exfatfs_load_file_stream_dentry(FATFS_INFO *a_fatfs,
 
 /**
  * \internal
- * Given an exFAT file directory entry, try to find the corresponding file
- * stream directory entry.
+ * Given an exFAT directory entry, try to find the corresponding file
+ * stream directory or file name directory entry that follows it and
+ * return the inum.
  *
  * @param [in] a_fatfs Source file system for the directory entries.
- * @param [in] a_file_entry_inum The inode address associated with the file 
+ * @param [in] a_current_entry_inum The inode address associated with the current 
  * entry.
- * @param [in] a_sector The address of the sector where the file entry was 
- * found.
- * @param [in] a_sector_is_alloc The allocation status of the sector.
- * @param [in] a_file_dentry_type The file entry type, deleted or not.
- * @param [in, out] The stream entry, if found, will be loaded into the
- * this generic directory entry structure.
+ * @param [in] a_file_dentry The file entry type (only use deleted or not)
+ * @param [in] a_next_dentry_type The type of the dentry we're searching for
+ * @param [out] a_next_inum The inode of the next stream/file name directory entry will be stored here (if found)
  * @return 0 on success, 1 on failure, per TSK convention
  */
 static uint8_t
-exfatfs_new_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry_inum, 
-    EXFATFS_FILE_DIR_ENTRY *a_file_dentry, EXFATFS_FILE_STREAM_DIR_ENTRY *a_stream_dentry)
+exfatfs_next_dentry_inum(FATFS_INFO *a_fatfs, TSK_INUM_T a_current_entry_inum, 
+    EXFATFS_FILE_DIR_ENTRY *a_file_dentry, EXFATFS_DIR_ENTRY_TYPE_ENUM a_next_dentry_type,
+	TSK_INUM_T * a_next_inum)
 {
-    const char *func_name = "exfatfs_new_find_file_stream_dentry";
-    TSK_INUM_T stream_entry_inum = 0;
+    const char *func_name = "exfatfs_next_dentry_inum";
     int8_t alloc_check_ret_val = 0;
     uint8_t cluster_is_alloc = 0;
     TSK_DADDR_T sector = 0; 
@@ -1008,13 +1006,19 @@ exfatfs_new_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry
     TSK_DADDR_T file_entry_offset = 0;
     EXFATFS_DIR_ENTRY_TYPE dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
     TSK_DADDR_T next_cluster = 0;
+	FATFS_DENTRY temp_dentry;
 
     assert(a_fatfs != NULL);
     assert(fatfs_inum_is_in_range(a_fatfs, a_file_entry_inum));
     assert(a_file_dentry != NULL);
-    assert(a_stream_dentry != NULL);
         
-    sector = FATFS_INODE_2_SECT(a_fatfs, a_file_entry_inum);
+	/* Only look for file stream and file name directory entries */
+	if((a_next_dentry_type != EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM) &&
+		(a_next_dentry_type != EXFATFS_DIR_ENTRY_TYPE_FILE_NAME)){
+			return FATFS_FAIL;
+	}
+
+    sector = FATFS_INODE_2_SECT(a_fatfs, a_current_entry_inum);
     cluster = FATFS_SECT_2_CLUST(a_fatfs, sector);
     alloc_check_ret_val = exfatfs_is_cluster_alloc(a_fatfs, cluster);
     if (alloc_check_ret_val != -1) {
@@ -1024,32 +1028,37 @@ exfatfs_new_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry
         return FATFS_FAIL;
     }
 
-    /* Check for the most common case first - the file stream entry is located
-     * immediately after the file entry. This should always be true for any 
+    /* Check for the most common case first - the file stream/name entry is located
+     * immediately after the specified one. This should always be true for any 
      * in-use file entry in an allocated cluster that is not the last entry in
-     * the cluster. It will also be true if the file entry is the last entry in 
+     * the cluster. It will also be true if the previous entry is the last entry in 
      * the cluster and the directory that contains the file is not fragmented - 
-     * the stream entry will simply be the first entry of the next cluster. 
-     * Finally, if the file entry is not in-use and was found in an unallocated 
-     * sector, the only viable place to look for the stream entry is in the 
+     * the stream/name entry will simply be the first entry of the next cluster. 
+     * Finally, if the previous entry is not in-use and was found in an unallocated 
+     * sector, the only viable place to look for the next entry is in the 
      * bytes following the file entry, since there is no FAT chain to 
      * consult. */
-    stream_entry_inum = a_file_entry_inum + 1;
-    if (fatfs_inum_is_in_range(a_fatfs, stream_entry_inum)) {
-        if (exfatfs_load_file_stream_dentry(a_fatfs, 
-            stream_entry_inum, cluster_is_alloc, 
-            (EXFATFS_DIR_ENTRY_TYPE)a_file_dentry->entry_type,
-            (FATFS_DENTRY*)a_stream_dentry) == 0) {
-            /* Found it. */
-            return FATFS_OK;
-        }
+    *a_next_inum = a_current_entry_inum + 1;
+    if (fatfs_inum_is_in_range(a_fatfs, *a_next_inum)) {
+		if(fatfs_dentry_load(a_fatfs, &temp_dentry, *a_next_inum) == 0){
+			if(a_next_dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM){
+				if(exfatfs_is_file_stream_dentry(&temp_dentry, a_fatfs)){
+					return FATFS_OK;
+				}
+			}
+			else if(a_next_dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME){
+				if (exfatfs_is_file_name_dentry(&temp_dentry)){
+					return FATFS_OK;
+				}
+			}
+		}
     }
 
-    /* If the stream entry was not found immediately following the file entry
-     * and the cluster is allocated, it is possible that the file entry was the
+    /* If the stream/name entry was not found immediately following the file entry
+     * and the cluster is allocated, it is possible that the previous entry was the
      * last entry of a cluster in a fragmented directory. In this
      * case, the FAT can be consulted to see if there is a next cluster. If 
-     * so, the stream entry may be the first entry of that cluster. */
+     * so, the stream/name entry may be the first entry of that cluster. */
     if (cluster_is_alloc) {
         /* Calculate the byte offset of the last possible directory entry in 
          * the current cluster. */
@@ -1058,9 +1067,9 @@ exfatfs_new_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry
             (a_fatfs->csize * a_fatfs->ssize) - sizeof(FATFS_DENTRY);   
 
         /* Get the byte offset of the file entry. Note that FATFS_INODE_2_OFF
-         * gices the offset relative to start of a sector. */
+         * gives the offset relative to start of a sector. */
         file_entry_offset = (sector * a_fatfs->ssize) + 
-            FATFS_INODE_2_OFF(a_fatfs, a_file_entry_inum);
+            FATFS_INODE_2_OFF(a_fatfs, a_current_entry_inum);
 
         if (file_entry_offset == last_entry_offset) {
             /* The file entry is the last in its cluster. Look up the next
@@ -1070,25 +1079,31 @@ exfatfs_new_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry
                 /* Found the next cluster in the FAT, so get its first sector
                  * and the inode address of the first entry of the sector. */
                 cluster_base_sector = FATFS_CLUST_2_SECT(a_fatfs, next_cluster); 
-                stream_entry_inum = FATFS_SECT_2_INODE(a_fatfs, 
+                *a_next_inum = FATFS_SECT_2_INODE(a_fatfs, 
                     cluster_base_sector);
 
-                if (fatfs_inum_is_in_range(a_fatfs, stream_entry_inum)) {
-                    if (exfatfs_load_file_stream_dentry(a_fatfs, 
-                        stream_entry_inum, cluster_is_alloc, 
-                        (EXFATFS_DIR_ENTRY_TYPE)a_file_dentry->entry_type,
-                        (FATFS_DENTRY*)a_stream_dentry) == 0) {
-                        /* Found it. */
-                        return FATFS_OK;
-                    }
+                if (fatfs_inum_is_in_range(a_fatfs, *a_next_inum)) {
+					if(fatfs_dentry_load(a_fatfs, &temp_dentry, *a_next_inum) == 0){
+						if(a_next_dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM){
+							if(exfatfs_is_file_stream_dentry(&temp_dentry, a_fatfs)){
+								return FATFS_OK;
+							}
+						}
+						else if(a_next_dentry_type == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME){
+							if (exfatfs_is_file_name_dentry(&temp_dentry)){
+								return FATFS_OK;
+							}
+						}
+					}
                 }
             }
         }
     }
 
-    /* Did not find the file stream entry. */
+    /* Did not find the file stream/name entry. */
     return FATFS_FAIL;
 }
+
 
 /**
  * \internal
@@ -1113,7 +1128,16 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     TSK_FS_META *fs_meta =  NULL;
     EXFATFS_FILE_DIR_ENTRY *file_dentry = (EXFATFS_FILE_DIR_ENTRY*)a_file_dentry;
     EXFATFS_FILE_STREAM_DIR_ENTRY stream_dentry;
+	int tz_offset_minutes = 0;
     uint32_t mode = 0;
+	TSK_INUM_T stream_inum;
+	TSK_INUM_T name_inum;
+	TSK_INUM_T prev_inum;
+	uint8_t name_chars_written;
+	int name_index;
+	uint8_t chars_to_copy;
+	FATFS_DENTRY temp_dentry;
+	char utf16_name[512];
 
     assert(a_fatfs != NULL);
     assert(a_file_dentry != NULL);
@@ -1191,13 +1215,16 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
         fs_meta->crtime_nano = 0;
     }
 
-    /* Currenty, don't do anything with the time zone offsets */
-
     /* Attempt to load the file stream entry that goes with this file entry. 
      * If not successful, at least the file entry meta data will be returned. */
-    if (exfatfs_new_find_file_stream_dentry(a_fatfs, a_inum, file_dentry, &stream_dentry)) {
-        return TSK_OK;
-    }
+	if(exfatfs_next_dentry_inum(a_fatfs, a_inum, file_dentry, EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM, &stream_inum)){
+		return TSK_OK;
+	}
+
+	if (exfatfs_load_file_stream_dentry(a_fatfs, stream_inum, a_is_alloc, 
+        file_dentry->entry_type, (FATFS_DENTRY *)(&stream_dentry)) ) {
+			return TSK_OK;
+	}
 
     /* Set the size of the file and the address of its first cluster. */
     ((TSK_DADDR_T*)a_fs_file->meta->content_ptr)[0] = 
@@ -1224,6 +1251,42 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     else {
         a_fs_file->meta->flags = TSK_FS_META_FLAG_UNALLOC;
     }
+
+	/* Attempt to load the file name entry(entries) that go with this file entry
+	 * First copy all UTF16 data into a single buffer
+	 * If not successful, return what we have to this point with no error */
+	memset(utf16_name, 0, sizeof(utf16_name));
+	name_chars_written = 0;
+	prev_inum = stream_inum;
+	for(name_index = 1; name_index < file_dentry->secondary_entries_count;name_index++){
+		if(exfatfs_next_dentry_inum(a_fatfs, prev_inum, file_dentry, EXFATFS_DIR_ENTRY_TYPE_FILE_NAME, &name_inum)){
+			/* Try to save what we've got (if we found at least one file name dentry) */
+			if(name_index > 1){
+				if(fatfs_utf16_inode_str_2_utf8(a_fatfs, (UTF16 *)utf16_name, sizeof(utf16_name), 
+					(UTF8*)a_fs_file->meta->name2->name, sizeof(a_fs_file->meta->name2->name), a_inum, "file name (partial)") != TSKconversionOK){
+						return TSK_OK; /* Don't want to disregard valid data read earlier */
+				}
+			}
+			return TSK_OK;
+		}
+		fatfs_dentry_load(a_fatfs, &temp_dentry, name_inum);
+		if(stream_dentry.file_name_length * 2 - name_chars_written > 30){
+			chars_to_copy = 30;
+		}
+		else{
+			chars_to_copy = stream_dentry.file_name_length * 2 - name_chars_written;
+		}
+		memcpy(utf16_name + name_chars_written, &(temp_dentry.data[2]), chars_to_copy);
+
+		prev_inum = name_inum;
+		name_chars_written += chars_to_copy;
+	}
+
+	/* Copy the file name segment. */
+	if(fatfs_utf16_inode_str_2_utf8(a_fatfs, (UTF16 *)utf16_name, sizeof(utf16_name), 
+		(UTF8*)a_fs_file->meta->name2->name, sizeof(a_fs_file->meta->name2->name), a_inum, "file name") != TSKconversionOK){
+			return TSK_OK; /* Don't want to disregard valid data read earlier */
+	}
 
     return TSK_OK;
 }
