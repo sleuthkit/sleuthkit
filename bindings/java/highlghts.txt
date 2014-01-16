@@ -1,8 +1,0 @@
-Highlights:
-
-- Interpretation of the file path supplied when opening a hash database now occurs
-in in tsk_hdb_open(). Path strings are not swapped - the database path is written once and then not changed.
-- TODO: Explain inheritance and options.
-- It is no longer possible to create duplicate rows in the comment and file_names tables in SQLite hash databases.
-- The "last id" business has been removed from the SQLite hash database implementation. 
-- Fixed size arrays for paths are not used in the JNI code.
