@@ -289,7 +289,6 @@ TSK_HDB_INFO *sqlite_hdb_open(TSK_TCHAR *db_path)
     hdb_info->base.lookup_str = sqlite_hdb_lookup_str;
     hdb_info->base.lookup_raw = sqlite_hdb_lookup_bin;
     hdb_info->base.lookup_verbose_str = sqlite_hdb_lookup_verbose_str;
-    hdb_info->base.accepts_updates = sqlite_hdb_accepts_updates;
     hdb_info->base.add_entry = sqlite_hdb_add_entry;
     hdb_info->base.close_db = sqlite_hdb_close;
 
@@ -398,12 +397,6 @@ sqlite_hdb_insert_value_and_id(sqlite3_stmt *stmt, const char *value, int64_t id
         sqlite3_reset(stmt);        
     }
     return ret_val;
-}
-
-uint8_t
-sqlite_hdb_accepts_updates()
-{
-    return 1;
 }
 
 /**

@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
-import org.sleuthkit.datamodel.HashInfo;
 
 /**
  * Interfaces with the Sleuthkit TSK c/c++ libraries Supports case management,
@@ -55,7 +54,7 @@ public class SleuthkitJNI {
 
     private static native int hashDbNewNat(String hashDbPath) throws TskCoreException;
     
-    private static native int hashDbAddRecordNat(String filename, String hashMd5, String hashSha1, String hashSha256, String comment, int dbHandle) throws TskCoreException;
+    private static native int hashDbAddEntryNat(String filename, String hashMd5, String hashSha1, String hashSha256, String comment, int dbHandle) throws TskCoreException;
 
     private static native boolean hashDbIsUpdateableNat(int dbHandle);
     
@@ -65,14 +64,14 @@ public class SleuthkitJNI {
     
     private static native String hashDbIndexPathNat(int dbHandle);
         
-    private static native String hashDbGetName(int dbHandle) throws TskCoreException;
+    private static native String hashDbGetDisplayName(int dbHandle) throws TskCoreException;
 
 	private static native void hashDbCloseAll() throws TskCoreException;
     
     private static native void hashDbClose(int dbHandle) throws TskCoreException;
 
 	//hash-lookup database functions   
-    private static native void hashDbCreateIndexNat(int dbHandle, boolean overwrite) throws TskCoreException;
+    private static native void hashDbCreateIndexNat(int dbHandle) throws TskCoreException;
     
     private static native boolean hashDbIndexExistsNat(int dbHandle) throws TskCoreException;
 
@@ -567,11 +566,10 @@ public class SleuthkitJNI {
 	 * Create an index for the given database path.
 	 *
 	 * @param dbPath The path to the database
-     * @param overwrite flag indicating if the old db (if it exists) can be deleted     
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
-	public static void createLookupIndexForHashDatabase(int dbHandle, boolean overwrite) throws TskCoreException {
-		hashDbCreateIndexNat(dbHandle, overwrite);
+	public static void createLookupIndexForHashDatabase(int dbHandle) throws TskCoreException {
+		hashDbCreateIndexNat(dbHandle);
 	}    
     
    
@@ -656,17 +654,15 @@ public class SleuthkitJNI {
 		hashDbClose(dbHandle);
 	}
 
-	
 	/**
 	 * Get the name of the database
 	 *
 	 * @param dbHandle previously opened hash db handle
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
-	public static String getHashDatabaseName(int dbHandle) throws TskCoreException {
-		return hashDbGetName(dbHandle);
+	public static String getHashDatabaseDisplayName(int dbHandle) throws TskCoreException {
+		return hashDbGetDisplayName(dbHandle);
 	}
-    
     
 	public static boolean lookupInHashDatabase(String hash, int dbHandle) throws TskCoreException {
 		return hashDbLookup(hash, dbHandle);
@@ -686,7 +682,7 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException 
 	 */
 	public static void addToHashDatabase(String filename, String md5, String sha1, String sha256, String comment, int dbHandle) throws TskCoreException {
-		hashDbAddRecordNat(filename, md5, sha1, sha256, comment, dbHandle);
+		hashDbAddEntryNat(filename, md5, sha1, sha256, comment, dbHandle);
 	}
 
     
@@ -694,11 +690,10 @@ public class SleuthkitJNI {
 		return hashDbIsUpdateableNat(dbHandle);
 	}    
     
-    public static boolean hashDatabaseHasLegacyLookupIndexOnly(int dbHandle) throws TskCoreException {
+    public static boolean hashDatabaseIsIndexOnly(int dbHandle) throws TskCoreException {
         return hashDbIsIdxOnlyNat(dbHandle);
     }
     
-
 	/**
 	 * Convert this timezone from long to short form
 	 * Convert timezoneLongForm passed in from long to short form

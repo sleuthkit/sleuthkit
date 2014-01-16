@@ -22,7 +22,6 @@ static TSK_TCHAR *progname;
 static void
 usage()
 {
-    // RJCTODO: I think the db types list ios really an index type list...
     TFPRINTF(stderr,
              _TSK_T
              ("usage: %s [-eqVa] [-c] [-f lookup_file] [-i db_type] db_file [hashes]\n"),
@@ -42,7 +41,7 @@ usage()
                 "\tdb_file: The path of the hash database, must have .kdb extension for -c option\n");
     tsk_fprintf(stderr,
                 "\t[hashes]: hashes to lookup (STDIN is used otherwise)\n");
-    tsk_fprintf(stderr, "\n\tSupported types: %s\n",
+    tsk_fprintf(stderr, "\n\tSupported index types: %s\n",
                 TSK_HDB_DBTYPE_SUPPORT_STR);
     exit(1);
 }
@@ -174,7 +173,7 @@ main(int argc, char ** argv1)
     
     // Now that the database is open and its type is known, if running in add hashes mode (-a option)
     // see if it takes updates.
-    if (addHash && !hdb_info->accepts_updates()) {
+    if (addHash && !tsk_hdb_accepts_updates(hdb_info)) {
         tsk_fprintf(stderr, "-a option specified, but the specified database does not allow hashes to be added\n");
         usage();
     }
@@ -194,6 +193,14 @@ main(int argc, char ** argv1)
         if (flags & TSK_HDB_FLAG_EXT) {
             tsk_fprintf(stderr, "'-e' flag can't be used with '-i'\n");
             usage();
+        }
+
+        if (!tsk_hdb_uses_external_indexes(hdb_info)) {
+            tsk_fprintf(stderr, "Database does not use external indexes, can't be used with '-i'\n");
+        }
+
+        if (tsk_hdb_is_idx_only(hdb_info)) {
+            tsk_fprintf(stderr, "Database is index only, can be used for look ups, but can't be used with '-i'\n");
         }
 
         if (tsk_hdb_make_index(hdb_info, idx_type)) {

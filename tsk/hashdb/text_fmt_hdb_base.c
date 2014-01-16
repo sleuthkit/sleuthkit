@@ -35,7 +35,8 @@ TSK_TEXT_HDB_INFO *text_hdb_open(FILE *hDb, const TSK_TCHAR *db_path)
     text_hdb_info->base.open_index = text_hdb_open_idx;
     text_hdb_info->base.lookup_str = text_hdb_lookup_str;
     text_hdb_info->base.lookup_raw = text_hdb_lookup_bin;
-    text_hdb_info->base.close_db = text_db_close;
+    text_hdb_info->base.accepts_updates = text_hdb_accepts_updates;
+    text_hdb_info->base.close_db = text_hdb_close;
 
     // The database type and function pointers will need to be set 
     // by the "derived class" caller these things vary by database type.
@@ -1109,8 +1110,14 @@ text_hdb_lookup_bin(TSK_HDB_INFO * hdb_info, uint8_t * hash, uint8_t len,
     return tsk_hdb_lookup_str(hdb_info, hashbuf, flags, action, ptr);
 }
 
+uint8_t
+text_hdb_accepts_updates()
+{
+    return 0;
+}
+
 void
-text_db_close(TSK_HDB_INFO *hdb_info_base) 
+text_hdb_close(TSK_HDB_INFO *hdb_info_base) 
 {
     TSK_TEXT_HDB_INFO *hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info_base;
 

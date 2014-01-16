@@ -256,9 +256,6 @@
     <ClCompile Include="..\..\tsk\hashdb\hashkeeper.c">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\encase.c">
-      <Filter>hash</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\tsk\hashdb\idxonly.c">
       <Filter>hash</Filter>
     </ClCompile>
@@ -278,6 +275,9 @@
       <Filter>hash</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\hashdb\tsk_hashdb.c">
+      <Filter>hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\hashdb\encase.c">
       <Filter>hash</Filter>
     </ClCompile>
   </ItemGroup>

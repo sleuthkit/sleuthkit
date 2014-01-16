@@ -17,8 +17,8 @@
 
 /**
  * \ingroup hashdblib
- * Sets hash database file name from file path.
- * @param hdb_info Struct representation of a hash database.
+ * Sets hash database name to be a file name obtained from the file path.
+ * @param hdb_info Struct representation of an open hash database.
  */
 void 
 hdb_base_db_name_from_path(TSK_HDB_INFO *hdb_info)
@@ -58,7 +58,8 @@ hdb_base_db_name_from_path(TSK_HDB_INFO *hdb_info)
     else
         end = begin + TSTRLEN(begin);   
 
-    // @@@ TODO: Use TskUTF16_to_UTF8 to properly convert for Windows
+    // @@@ This only works for file names with Latin characters. It may need
+    // to be fixed some day. Leave it be for now. 
     for(i = 0; i < (end-begin); i++)
     {
         hdb_info->db_name[i] = (char) begin[i];
@@ -74,7 +75,8 @@ hdb_base_db_name_from_path(TSK_HDB_INFO *hdb_info)
  * @param hdb_info Struct representation of a hash database.
  * @return 0 on sucess, 1 on failure.
  */
-uint8_t hdb_info_base_open(TSK_HDB_INFO *hdb_info, const TSK_TCHAR *db_path)
+uint8_t 
+hdb_info_base_open(TSK_HDB_INFO *hdb_info, const TSK_TCHAR *db_path)
 {
     size_t path_len = TSTRLEN(db_path); 
     hdb_info->db_fname = (TSK_TCHAR*)tsk_malloc((path_len + 1) * sizeof(TSK_TCHAR));
@@ -88,7 +90,7 @@ uint8_t hdb_info_base_open(TSK_HDB_INFO *hdb_info, const TSK_TCHAR *db_path)
     tsk_init_lock(&hdb_info->lock);
 
     hdb_info->get_db_path = hdb_base_get_db_path;
-    hdb_info->get_db_name = hdb_base_get_db_name;
+    hdb_info->get_display_name = hdb_base_get_display_name;
     hdb_info->uses_external_indexes = hdb_base_uses_external_indexes;
     hdb_info->get_index_path = hdb_base_get_index_path;
     hdb_info->has_index = hdb_base_has_index; 
@@ -104,12 +106,17 @@ uint8_t hdb_info_base_open(TSK_HDB_INFO *hdb_info, const TSK_TCHAR *db_path)
     return 0;
 }
 
-const TSK_TCHAR *hdb_base_get_db_path(TSK_HDB_INFO *hdb_info)
+const TSK_TCHAR *
+hdb_base_get_db_path(TSK_HDB_INFO *hdb_info)
 {
+    // The "base class" assumption is that the hash database is implemented
+    // as a user-accessible file (e.g., it is a SQLite database or a text-
+    // format database). 
     return hdb_info->db_fname;
 }
 
-const char *hdb_base_get_db_name(TSK_HDB_INFO *hdb_info)
+const char *
+hdb_base_get_display_name(TSK_HDB_INFO *hdb_info)
 {
     return hdb_info->db_name;
 }
@@ -117,46 +124,60 @@ const char *hdb_base_get_db_name(TSK_HDB_INFO *hdb_info)
 uint8_t
 hdb_base_uses_external_indexes()
 {
+    // The "base class" assumption is that the hash database does not use
+    // user-accessible external index files (e.g., it is a relational
+    // database).
     return 0;
 }
 
 const TSK_TCHAR*
 hdb_base_get_index_path(TSK_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
 {
-    tsk_error_reset();
-    tsk_error_set_errno(TSK_ERR_HDB_ARG); // RJCTODO: Could use dedicated NOT_IMPL or NO_SUPPORT enum member for this sort of thing in the "base" functions
-    tsk_error_set_errstr("hdb_base_get_index_path: get index path not supported for hdb_info->db_type=%u", hdb_info->db_type);
-    return NULL;
+    // The "base class" assumption is that the hash database does not use
+    // user-accessible external index files (e.g., it is a relational
+    // database). It follows that the hash database path and index path are 
+    // the same, assuming that the hash database is implemented
+    // as a user-accessible file (e.g., it is a SQLite database). 
+    return hdb_info->db_fname;
 }
 
 uint8_t
 hdb_base_has_index(TSK_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
 {
-    return 0;
+    // The "base class" assumption is that the hash database does not use
+    // external index files (e.g., it is a relational database). It follows
+    // that the hash database has an index upon creation. This function
+    // also says that the default is that look ups for all hash algorithm
+    // types are supported.
+    return 1;
 }
 
-uint8_t hdb_base_make_index(TSK_HDB_INFO *hdb_info, TSK_TCHAR *htype)
+uint8_t 
+hdb_base_make_index(TSK_HDB_INFO *hdb_info, TSK_TCHAR *htype)
 {
-    tsk_error_reset();
-    tsk_error_set_errno(TSK_ERR_HDB_ARG);
-    tsk_error_set_errstr("hdb_base_make_index: operationnot supported for hdb_info->db_type=%u", hdb_info->db_type);
+    // The "base class" assumption is that the hash database does not use
+    // user-accessible external index files (e.g., it is a relational
+    // database). It follows that the hash database has an index upon creation.
+    // Make this a no-op.
     return 1;
 }
 
 uint8_t
 hdb_base_open_index(TSK_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
 {
-    tsk_error_reset();
-    tsk_error_set_errno(TSK_ERR_HDB_ARG);
-    tsk_error_set_errstr("hdb_base_open_index: operation not supported for hdb_info->db_type=%u", hdb_info->db_type);
+    // The "base class" assumption is that the hash database does not use
+    // user-accessible external index files (e.g., it is a relational
+    // database). It follows that the hash database has an index upon creation
+    // and it is already "open". Make this a no-op.
     return 1;
 }
 
 int8_t
 hdb_base_lookup_str(TSK_HDB_INFO *hdb_info, const char *hash, TSK_HDB_FLAG_ENUM flag, TSK_HDB_LOOKUP_FN callback, void *data)
 {
+    // This needs an "override" by "derived classes."
     tsk_error_reset();
-    tsk_error_set_errno(TSK_ERR_HDB_ARG);
+    tsk_error_set_errno(TSK_ERR_HDB_UNSUPFUNC);
     tsk_error_set_errstr("hdb_base_lookup_str: operation not supported for hdb_info->db_type=%u", hdb_info->db_type);
     return -1;
 }
@@ -164,8 +185,9 @@ hdb_base_lookup_str(TSK_HDB_INFO *hdb_info, const char *hash, TSK_HDB_FLAG_ENUM 
 int8_t
 hdb_base_lookup_bin(TSK_HDB_INFO *hdb_info, uint8_t *hash, uint8_t hash_len, TSK_HDB_FLAG_ENUM flag, TSK_HDB_LOOKUP_FN callback, void *data)
 {
+    // This needs an "override" by "derived classes."
     tsk_error_reset();
-    tsk_error_set_errno(TSK_ERR_HDB_ARG);
+    tsk_error_set_errno(TSK_ERR_HDB_UNSUPFUNC);
     tsk_error_set_errstr("hdb_base_lookup_bin: operation not supported for hdb_info->db_type=%u", hdb_info->db_type);
     return -1;
 }
@@ -173,8 +195,9 @@ hdb_base_lookup_bin(TSK_HDB_INFO *hdb_info, uint8_t *hash, uint8_t hash_len, TSK
 int8_t
 hdb_base_lookup_verbose_str(TSK_HDB_INFO *hdb_info, const char *hash, void *result)
 {
+    // This needs an "override" by "derived classes."
     tsk_error_reset();
-    tsk_error_set_errno(TSK_ERR_HDB_ARG);
+    tsk_error_set_errno(TSK_ERR_HDB_UNSUPFUNC);
     tsk_error_set_errstr("hdb_base_lookup_verbose_str: operation not supported for hdb_info->db_type=%u", hdb_info->db_type);
     return -1;
 }
@@ -182,16 +205,20 @@ hdb_base_lookup_verbose_str(TSK_HDB_INFO *hdb_info, const char *hash, void *resu
 uint8_t
 hdb_base_accepts_updates()
 {
-    return 0;
+    // The "base class" assumption is that the database accepts updates (e.g.,
+    // it is a relational database and there is an "derived class override" of 
+    // hdb_base_add_entry() that does INSERTs).
+    return 1;
 }
 
 uint8_t
 hdb_base_add_entry(TSK_HDB_INFO *hdb_info, const char *file_name, const char *md5, const char *sha1, const char *sha2_256, const char *comment)
 {
+    // This needs an "override" by "derived classes."
     tsk_error_reset();
-    tsk_error_set_errno(TSK_ERR_HDB_ARG);
+    tsk_error_set_errno(TSK_ERR_HDB_UNSUPFUNC);
     tsk_error_set_errstr("hdb_base_add_entry: operation not supported for hdb_info->db_type=%u", hdb_info->db_type);
-    return 1;
+    return -1;
 }
 
 /**

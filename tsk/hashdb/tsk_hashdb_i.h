@@ -55,41 +55,42 @@ extern "C" {
 #define TSK_HDB_IDX_HEAD_NAME_STR	"00000000000000000000000000000000000000001"
 
     // "Base" hash database functions.
-    extern void hdb_base_db_name_from_path(TSK_HDB_INFO *hdb_info);
+    extern void hdb_base_db_name_from_path(TSK_HDB_INFO *);
     extern uint8_t hdb_info_base_open(TSK_HDB_INFO *, const TSK_TCHAR *);
     extern const TSK_TCHAR *hdb_base_get_db_path(TSK_HDB_INFO *);
-    extern const char *hdb_base_get_db_name(TSK_HDB_INFO *);
+    extern const char *hdb_base_get_display_name(TSK_HDB_INFO *);
     extern uint8_t hdb_base_uses_external_indexes();
     extern const TSK_TCHAR *hdb_base_get_index_path(TSK_HDB_INFO *, TSK_HDB_HTYPE_ENUM);
-    extern uint8_t hdb_base_has_index(TSK_HDB_INFO*, TSK_HDB_HTYPE_ENUM);
+    extern uint8_t hdb_base_has_index(TSK_HDB_INFO *, TSK_HDB_HTYPE_ENUM);
     extern uint8_t hdb_base_make_index(TSK_HDB_INFO *, TSK_TCHAR *);
     extern uint8_t hdb_base_open_index(TSK_HDB_INFO *, TSK_HDB_HTYPE_ENUM);
-    extern int8_t hdb_base_lookup_str(TSK_HDB_INFO*, const char*, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void*);
-    extern int8_t hdb_base_lookup_bin(TSK_HDB_INFO*, uint8_t *, uint8_t, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void*);
+    extern int8_t hdb_base_lookup_str(TSK_HDB_INFO *, const char *, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
+    extern int8_t hdb_base_lookup_bin(TSK_HDB_INFO *, uint8_t *, uint8_t, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
     extern int8_t hdb_base_lookup_verbose_str(TSK_HDB_INFO *, const char *, void *);
     extern uint8_t hdb_base_accepts_updates();
-    extern uint8_t hdb_base_add_entry(TSK_HDB_INFO*, const char*, const char*, const char*, const char*, const char *);
+    extern uint8_t hdb_base_add_entry(TSK_HDB_INFO *, const char *, const char *, const char *, const char *, const char *);
     extern void hdb_info_base_close(TSK_HDB_INFO *);
 
     // Hash database functions common to all text format hash databases
     // (NSRL, md5sum, EnCase, HashKeeper, index only). These databases have
     // external indexes. 
-    extern TSK_TEXT_HDB_INFO *text_hdb_open(FILE *hDb, const TSK_TCHAR *db_path);
+    extern TSK_TEXT_HDB_INFO *text_hdb_open(FILE *, const TSK_TCHAR *);
     extern uint8_t text_hdb_uses_external_indexes();
     extern const TSK_TCHAR *text_hdb_get_index_path(TSK_HDB_INFO *, TSK_HDB_HTYPE_ENUM);
     extern uint8_t text_hdb_has_index(TSK_HDB_INFO*, TSK_HDB_HTYPE_ENUM);
-    extern uint8_t text_hdb_open_idx(TSK_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype);
+    extern uint8_t text_hdb_open_idx(TSK_HDB_INFO *, TSK_HDB_HTYPE_ENUM);
     extern uint8_t text_hdb_idx_initialize(TSK_TEXT_HDB_INFO *, TSK_TCHAR *);
     extern uint8_t text_hdb_idx_add_entry_str(TSK_TEXT_HDB_INFO *, char *, TSK_OFF_T);
-    extern uint8_t text_hdb_idx_add_entry_bin(TSK_TEXT_HDB_INFO *hdb_info, 
-        unsigned char *hvalue, int hlen, TSK_OFF_T offset);
+    extern uint8_t text_hdb_idx_add_entry_bin(TSK_TEXT_HDB_INFO *, 
+        unsigned char *, int, TSK_OFF_T);
     extern uint8_t text_hdb_idx_finalize(TSK_TEXT_HDB_INFO *);
     extern int8_t text_hdb_lookup_str(TSK_HDB_INFO *, const char *, 
         TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
     extern int8_t text_hdb_lookup_bin(TSK_HDB_INFO *, uint8_t *, 
         uint8_t, TSK_HDB_FLAG_ENUM, 
         TSK_HDB_LOOKUP_FN, void *);
-    extern void text_db_close(TSK_HDB_INFO *) ;
+    extern uint8_t text_hdb_accepts_updates();
+    extern void text_hdb_close(TSK_HDB_INFO *) ;
 
     // Hash database functions for NSRL hash databases. 
     extern uint8_t nsrl_test(FILE *);
@@ -126,6 +127,7 @@ extern "C" {
     // Hash database functions for external index files standing in for the 
     // original hash databases. 
     extern TSK_HDB_INFO *idxonly_open(const TSK_TCHAR *);
+    extern const TSK_TCHAR *idxonly_get_db_path(TSK_HDB_INFO *);
     extern uint8_t idxonly_makeindex(TSK_HDB_INFO *, TSK_TCHAR *);
     extern uint8_t idxonly_getentry(TSK_HDB_INFO *, const char *,
                                     TSK_OFF_T, TSK_HDB_FLAG_ENUM,
@@ -139,7 +141,6 @@ extern "C" {
     extern int8_t sqlite_hdb_lookup_bin(TSK_HDB_INFO *, uint8_t *, uint8_t, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
     extern int8_t sqlite_hdb_lookup_verbose_str(TSK_HDB_INFO *, const char *, void *);
     extern int8_t sqlite_hdb_lookup_verbose_bin(TSK_HDB_INFO *, uint8_t *, uint8_t, void *);
-    extern uint8_t sqlite_hdb_accepts_updates();
     extern uint8_t sqlite_hdb_add_entry(TSK_HDB_INFO *, const char *, 
         const char *, const char *, const char *, const char *);
     extern void sqlite_hdb_close(TSK_HDB_INFO *);

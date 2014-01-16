@@ -74,9 +74,18 @@ TSK_HDB_INFO *idxonly_open(const TSK_TCHAR *db_path)
 
     hdb_info->base.db_type = TSK_HDB_DBTYPE_IDXONLY_ID;
     idxonly_name(hdb_info);
+    hdb_info->base.get_db_path = idxonly_get_db_path;
     hdb_info->get_entry = idxonly_getentry;
 
     return (TSK_HDB_INFO*)hdb_info;    
+}
+
+const TSK_TCHAR *
+idxonly_get_db_path(TSK_HDB_INFO *hdb_info)
+{
+    // The database path member of the TSK_HDB_INFO is filled in, but that is
+    // just for the sake of the common index file name construction algorithm.
+    return NULL;
 }
 
 uint8_t

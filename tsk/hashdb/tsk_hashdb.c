@@ -240,7 +240,8 @@ tsk_hdb_open(TSK_TCHAR *file_path, TSK_HDB_OPEN_ENUM flags)
     return hdb_info;
 }
 
-const TSK_TCHAR *tsk_hdb_get_db_path(TSK_HDB_INFO * hdb_info) // RJCTODO: Add db to name
+const TSK_TCHAR *
+tsk_hdb_get_db_path(TSK_HDB_INFO * hdb_info)
 {
     if (!hdb_info) {
         tsk_error_reset();
@@ -252,19 +253,34 @@ const TSK_TCHAR *tsk_hdb_get_db_path(TSK_HDB_INFO * hdb_info) // RJCTODO: Add db
     return hdb_info->get_db_path(hdb_info);
 }
 
-const char *tsk_hdb_get_name(TSK_HDB_INFO * hdb_info) // RJCTODO: Add db to name
+const char *
+tsk_hdb_get_display_name(TSK_HDB_INFO * hdb_info)
 {
     if (!hdb_info) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
-        tsk_error_set_errstr("tsk_hdb_get_db_name: NULL hdb_info");
+        tsk_error_set_errstr("tsk_hdb_get_display_name: NULL hdb_info");
         return 0;
     }
 
-    return hdb_info->get_db_name(hdb_info);
+    return hdb_info->get_display_name(hdb_info);
 }
 
-const TSK_TCHAR *tsk_hdb_get_idx_path(TSK_HDB_INFO * hdb_info, TSK_HDB_HTYPE_ENUM htype)
+uint8_t 
+tsk_hdb_uses_external_indexes(TSK_HDB_INFO *hdb_info)
+{
+    if (!hdb_info) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("tsk_hdb_get_display_name: NULL hdb_info");
+        return 0;
+    }
+
+    return hdb_info->uses_external_indexes();
+}
+
+const TSK_TCHAR *
+tsk_hdb_get_idx_path(TSK_HDB_INFO * hdb_info, TSK_HDB_HTYPE_ENUM htype)
 {
     if (!hdb_info) {
         tsk_error_reset();
@@ -274,6 +290,18 @@ const TSK_TCHAR *tsk_hdb_get_idx_path(TSK_HDB_INFO * hdb_info, TSK_HDB_HTYPE_ENU
     }
 
     return hdb_info->get_index_path(hdb_info, htype);
+}
+
+uint8_t tsk_hdb_open_idx(TSK_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
+{
+    if (!hdb_info) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("tsk_hdb_open_idx: NULL hdb_info");
+        return 0;
+    }
+
+    return hdb_info->open_index(hdb_info, htype);
 }
 
 /**
@@ -337,8 +365,6 @@ tsk_hdb_make_index(TSK_HDB_INFO *hdb_info, TSK_TCHAR *type)
         return 1;
     }
 
-    // RJCTODO: Can the translation of type from string to enum happen right here?
-
     return hdb_info->make_index(hdb_info, type);
 }
 
@@ -368,7 +394,7 @@ tsk_hdb_lookup_str(TSK_HDB_INFO *hdb_info, const char *hash,
         return -1;
     }
 
-    // Validate the length of the hash string and use the lenght to determine 
+    // Validate the length of the hash string and use the length to determine 
     // the hash type.
     if (strlen(hash) == TSK_HDB_HTYPE_MD5_LEN) {
         htype = TSK_HDB_HTYPE_MD5_ID;
@@ -383,12 +409,8 @@ tsk_hdb_lookup_str(TSK_HDB_INFO *hdb_info, const char *hash,
         return -1;
     }
 
-    // If the hash database uses external indexes, try to open the index for
-    // the hash type identified above.
-    if (hdb_info->uses_external_indexes()) {
-        if (hdb_info->open_index(hdb_info, htype)) {
-            return -1;
-        }
+    if (hdb_info->open_index(hdb_info, htype)) {
+        return -1;
     }
 
     return hdb_info->lookup_str(hdb_info, hash, flags, action, ptr);
@@ -443,19 +465,6 @@ tsk_hdb_lookup_raw(TSK_HDB_INFO * hdb_info, uint8_t * hash, uint8_t len,
 
 	return hdb_info->lookup_raw(hdb_info, hash, len, flags, action, ptr);
 }
-
-uint8_t 
-tsk_hdb_has_verbose_lookup(TSK_HDB_INFO *hdb_info)
-{
-    if (!hdb_info) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_HDB_ARG);
-        tsk_error_set_errstr("tsk_hdb_has_verbose_lookup: NULL hdb_info");
-        return 0;
-    }
-
-    return hdb_info->has_verbose_lookup(hdb_info);
-}
  
 int8_t
 tsk_hdb_lookup_verbose_str(TSK_HDB_INFO *hdb_info, const char *hash, void *result)
@@ -481,15 +490,19 @@ tsk_hdb_lookup_verbose_str(TSK_HDB_INFO *hdb_info, const char *hash, void *resul
         return -1;
     }
 
-    if (hdb_info->has_verbose_lookup(hdb_info)) {
-        return hdb_info->lookup_verbose_str(hdb_info, hash, result);
-    }
-    else {
+    return hdb_info->lookup_verbose_str(hdb_info, hash, result);
+}
+
+uint8_t tsk_hdb_accepts_updates(TSK_HDB_INFO *hdb_info)
+{
+    if (!hdb_info) {
         tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_HDB_PROC);
-        tsk_error_set_errstr("tsk_hdb_lookup_verbose_str: operation not supported for this database type (=%u)", hdb_info->db_type);
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("tsk_hdb_accepts_updates: NULL hdb_info");
         return -1;
     }
+
+    return hdb_info->accepts_updates();
 }
 
 /**
