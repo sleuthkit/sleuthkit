@@ -643,6 +643,7 @@ int8_t sqlite_hdb_lookup_verbose_bin(TSK_HDB_INFO *hdb_info_base, uint8_t *hash,
     TskHashInfo *result = static_cast<TskHashInfo*>(lookup_result);
     int8_t ret_val = sqlite_hdb_hash_lookup_by_md5(hash, hash_len, hdb_info->db, *result);
     if (ret_val < 1) {
+        tsk_release_lock(&hdb_info_base->lock);
         return ret_val;
     }
 
