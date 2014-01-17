@@ -433,7 +433,7 @@ public abstract class AbstractFile extends AbstractContent {
 			ext = getName().substring(i + 1);
 		}
 		
-		String[] findNonAlphanumeric = ext.split("[^a-zA-Z0-9]");
+		String[] findNonAlphanumeric = ext.split("[^a-zA-Z0-9_]");
 		if (findNonAlphanumeric.length > 1) {
 			ext = findNonAlphanumeric[0];
 		}		
