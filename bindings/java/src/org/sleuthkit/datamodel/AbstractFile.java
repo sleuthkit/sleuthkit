@@ -419,7 +419,21 @@ public abstract class AbstractFile extends AbstractContent {
 	public TskData.FileKnown getKnown() {
 		return knownState;
 	}
-
+	
+	/**
+	 * Figures out the extension from the filename, if there is one.
+	 *
+	 * @return filename extension (not including the period)
+	 */
+	public String getNameExtension() {
+		String ext = "";
+		int i = getName().lastIndexOf(".");
+		if ((i > -1) && ((i + 1) < getName().length())) {
+			ext = getName().substring(i + 1).toLowerCase();
+		}
+		return ext;
+	}
+	
 	/**
 	 * Get size of the file
 	 *
