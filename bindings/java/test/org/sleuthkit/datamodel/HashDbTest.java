@@ -151,7 +151,7 @@ public class HashDbTest extends ImgTraverser {
 			boolean isUpdateable = SleuthkitJNI.isUpdateableHashDatabase(handle);
 			assertTrue(isUpdateable);
 			
-			boolean hlio = SleuthkitJNI.hashDatabaseHasLegacyLookupIndexOnly(handle);
+			boolean hlio = SleuthkitJNI.hashDatabaseHasIndexOnly(handle);
 			assertFalse(hlio);
 			
 			// Close it out
