@@ -268,9 +268,6 @@
     <ClCompile Include="..\..\tsk\hashdb\hdb_base.c">
       <Filter>hash</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\text_fmt_hdb_base.c">
-      <Filter>hash</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\tsk\hashdb\sqlite_hdb.cpp">
       <Filter>hash</Filter>
     </ClCompile>
@@ -278,6 +275,9 @@
       <Filter>hash</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\hashdb\encase.c">
+      <Filter>hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\hashdb\text_fmt_hdb_base.cpp">
       <Filter>hash</Filter>
     </ClCompile>
   </ItemGroup>
