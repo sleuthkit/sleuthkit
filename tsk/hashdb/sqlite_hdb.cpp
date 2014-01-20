@@ -393,9 +393,9 @@ sqlite_hdb_insert_value_and_id(sqlite3_stmt *stmt, const char *value, int64_t id
             // Either the INSERT succeeded or the value was a duplicate, which is o.k.
             ret_val = 0;
         }
-        sqlite3_clear_bindings(stmt);
-        sqlite3_reset(stmt);        
     }
+    sqlite3_clear_bindings(stmt);
+    sqlite3_reset(stmt);        
     return ret_val;
 }
 
@@ -578,8 +578,8 @@ sqlite_hdb_get_assoc_strings(sqlite3 *db, sqlite3_stmt *stmt, int64_t hash_id, s
             }            
         };
 	}
-    sqlite3_clear_bindings(select_from_hashes_by_md5);
-    sqlite3_reset(select_from_hashes_by_md5);
+    sqlite3_clear_bindings(stmt);
+    sqlite3_reset(stmt);
     return ret_val;
 }
 
