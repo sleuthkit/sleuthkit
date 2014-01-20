@@ -1125,14 +1125,13 @@ text_hdb_lookup_bin(TSK_HDB_INFO * hdb_info, uint8_t * hash, uint8_t len,
 int8_t 
 text_hdb_lookup_verbose_str(TSK_HDB_INFO *hdb_info_base, const char *hash, void *lookup_result)
 {
-
     // Verify the length of the hash value argument.
     TSK_HDB_HTYPE_ENUM hash_type = TSK_HDB_HTYPE_INVALID_ID;
     size_t hash_len = strlen(hash);
-    if (hash_len == TSK_HDB_HTYPE_MD5_LEN) {
+    if (TSK_HDB_HTYPE_MD5_LEN == hash_len) {
         hash_type = TSK_HDB_HTYPE_MD5_ID;
     }
-    else if (hash_len == TSK_HDB_HTYPE_SHA1_LEN) {
+    else if (TSK_HDB_HTYPE_SHA1_LEN == hash_len) {
         hash_type = TSK_HDB_HTYPE_SHA1_ID;
     }
     else {
@@ -1140,11 +1139,6 @@ text_hdb_lookup_verbose_str(TSK_HDB_INFO *hdb_info_base, const char *hash, void 
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
         tsk_error_set_errstr("text_hdb_lookup_verbose_str: invalid hash, length incorrect: %s", hash);
         return -1;
-    }
-
-
-    if (TSK_HDB_HTYPE_MD5_LEN != hash_len && 
-        TSK_HDB_HTYPE_SHA1_LEN != hash_len) {
     }
 
     // Due to a bug in the extended lookup code for text-format hash databases,
