@@ -777,21 +777,17 @@ int
 
 
     // clean up path
-    size_t path_len = strlen(path);
-    size_t epath_len = path_len*2;
+    // +2 = space for leading slash and terminating null
+    size_t path_len = strlen(path) + 2;
     char *
         escaped_path;
-    if ((escaped_path = (char *) tsk_malloc(epath_len + 2)) == NULL) { // +2 = space for leading slash and terminating null
+    if ((escaped_path = (char *) tsk_malloc(path_len)) == NULL) { 
         free(name);
         return 1;
     }
 
-    size_t k = 0;
-    escaped_path[k++] = '/'; // add a leading slash
-    for (size_t i = 0; i < path_len && k < epath_len; i++) {
-        escaped_path[k++] = path[i];
-    }
-    escaped_path[k++] = '\0';
+    strncpy(escaped_path, "/", path_len);
+    strncat(escaped_path, path, path_len);
 
     char md5Text[48] = "NULL";
 
