@@ -769,43 +769,31 @@ int
     size_t len = strlen(fs_file->name->name);
     char *
         name;
-    size_t nlen = len + attr_nlen;
-    if ((name = (char *) tsk_malloc(nlen + 5)) == NULL) {
+    size_t nlen = len + attr_nlen + 5;
+    if ((name = (char *) tsk_malloc(nlen)) == NULL) {
         return 1;
     }
 
-    size_t j = 0;
-    for (size_t i = 0; i < len && j < nlen; i++) {
-        name[j++] = fs_file->name->name[i];
-    }
+    strncpy(name, fs_file->name->name, nlen);
 
     // Add the attribute name
     if (attr_nlen > 0) {
-        name[j++] = ':';
-
-        for (unsigned i = 0; i < attr_nlen && j < nlen; i++) {
-            name[j++] = fs_attr->name[i];
-        }
+        strncat(name, ":", nlen-strlen(name));
+        strncat(name, fs_attr->name, nlen-strlen(name));
     }
-    name[j++] = '\0';
-
 
     // clean up path
     size_t path_len = strlen(path);
-    size_t epath_len = path_len*2;
+    size_t epath_len = path_len + 2; // +2 = space for leading slash and terminating null
     char *
         escaped_path;
-    if ((escaped_path = (char *) tsk_malloc(epath_len + 2)) == NULL) { // +2 = space for leading slash and terminating null
+    if ((escaped_path = (char *) tsk_malloc(epath_len)) == NULL) { 
         free(name);
         return 1;
     }
 
-    size_t k = 0;
-    escaped_path[k++] = '/'; // add a leading slash
-    for (size_t i = 0; i < path_len && k < epath_len; i++) {
-        escaped_path[k++] = path[i];
-    }
-    escaped_path[k++] = '\0';
+    strncpy(escaped_path, "/", epath_len);
+    strncat(escaped_path, path, epath_len - strlen(escaped_path));
 
     char md5Text[48] = "NULL";
 
