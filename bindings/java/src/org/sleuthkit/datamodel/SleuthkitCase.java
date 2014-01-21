@@ -60,6 +60,7 @@ import org.sqlite.SQLiteJDBCLoader;
 public class SleuthkitCase {
 	private String dbPath;
 	private String dbDirPath;
+	private String dbBackupPath = null;
 	private volatile SleuthkitJNI.CaseDbHandle caseHandle;
 	private volatile Connection con;
 	private ResultSetHelper rsHelper = new ResultSetHelper(this);
@@ -137,7 +138,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException thrown if critical error occurred within TSK
 	 * case
 	 */
-	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle) throws SQLException, ClassNotFoundException, TskCoreException {
+	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle) throws SQLException, ClassNotFoundException, TskCoreException  {
 		Class.forName("org.sqlite.JDBC");
 		this.dbPath = dbPath;
 		this.dbDirPath = new java.io.File(dbPath).getParentFile().getAbsolutePath();
@@ -150,10 +151,12 @@ public class SleuthkitCase {
 	}
 	
 	private void updateDatabaseSchema() throws TskCoreException {
+		// This must be the same as TSK_SCHEMA_VER in tsk/auto/db_sqlite.cpp.
+		final int SCHEMA_VERSION_NUMBER = 3;		
 		try {
 			con.setAutoCommit(false);
-
-			// Get the schema version number.
+						
+			// Get the schema version number of the database from the tsk_db_info table.
 			int schemaVersionNumber = 0;
 			Statement statement = con.createStatement();
 			ResultSet resultSet = statement.executeQuery("SELECT schema_ver FROM tsk_db_info");
@@ -161,15 +164,27 @@ public class SleuthkitCase {
 				schemaVersionNumber = resultSet.getInt("schema_ver");	
 			}
 			resultSet.close();
-						
-			// ***CALL SCHEMA UPDATE METHODS HERE***
-			schemaVersionNumber = updateFromSchema2toSchema3(schemaVersionNumber);		
 			
-			// Update the schema version number.
-			statement.executeUpdate("UPDATE tsk_db_info SET schema_ver = " + schemaVersionNumber);
-			statement.close();		
+			if (SCHEMA_VERSION_NUMBER != schemaVersionNumber) {
+				// Make a backup copy of the database. Client code can get the path of the backup
+				// using the getBackupDatabasePath() method.
+				String backupFilePath = dbPath + ".schemaVer" + schemaVersionNumber + ".backup";
+				copyCaseDB(backupFilePath);
+				dbBackupPath = backupFilePath;
+				
+				// ***CALL SCHEMA UPDATE METHODS HERE***
+				// Each method should examine the schema number passed to it and either:
+				//    a. Do nothing and return the current schema version number, or
+				//    b. Upgrade the database and then increment and return the current schema version number.
+				schemaVersionNumber = updateFromSchema2toSchema3(schemaVersionNumber);		
+
+				// Write the updated schema version number to the the tsk_db_info table.
+				statement.executeUpdate("UPDATE tsk_db_info SET schema_ver = " + schemaVersionNumber);
+				statement.close();		
+
+				con.commit();				
+			}
 			
-			con.commit();
 			con.setAutoCommit(true);
 		}
 		catch (Exception ex) {
@@ -179,7 +194,7 @@ public class SleuthkitCase {
 				throw new TskCoreException("Failed to update database schema", ex);
 			}
 			catch (SQLException e) {
-				throw new TskCoreException("Failed to rollback erroneous database schema update", e);
+				throw new TskCoreException("Failed to rollback failed database schema update", e);
 			}				
 		}
 	}
@@ -268,7 +283,16 @@ public class SleuthkitCase {
 		
 		return 3;	
 	}			
-				
+		
+	/**
+	 * Returns the path of a backup copy of the database made when a schema 
+	 * version upgrade has occurred.
+	 * @return The path of the backup file or null if no backup was made.
+	 */
+	public String getBackupDatabasePath() {
+		return dbBackupPath;
+	}
+	
 	/**
 	 * create a new transaction: lock the database and set auto-commit false.
 	 * this transaction should be passed to methods who take a transaction and
