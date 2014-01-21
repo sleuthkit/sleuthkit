@@ -80,7 +80,7 @@ enum TSK_ARTIFACT_TYPE {
 	TSK_PROG_RUN = 32, ///< Application run information
     TSK_ENCRYPTION_DETECTED = 33, ///< Encrypted File
     TSK_EXT_MISMATCH_DETECTED = 34, ///< Extension Mismatch
-    TSK_INTERESTING_ARTIFACT = 35,	///< Any artifact interesting enough that it should be called out in the UI.
+    TSK_INTERESTING_ARTIFACT_HIT = 35,	///< Any artifact interesting enough that it should be called out in the UI.
 		
     /* SEE ABOVE:
     * - KEEP JAVA CODE IN SYNC 

@@ -118,6 +118,7 @@ procFile(TskFsFile * fs_file, const char *path)
         }
 #endif
 #if DO_HASHLOOKUP
+        // This code is not currently viable; TskHdbInfo implementation is incomplete.
         {
             int retval;
             retval = tsk_hdb_lookup_raw(hdb_info, (uint8_t *) hash, 16,
@@ -291,6 +292,7 @@ main(int argc, char **argv1)
     }
 
 #if DO_HASHLOOKUP
+    // This code is not currently viable; TskHdbInfo implementation is incomplete.
     /* Setup hash infrastructure */
     if ((hdb_info =
             tsk_hdb_open(_TSK_T("/XXX/NSRLFile.txt"),

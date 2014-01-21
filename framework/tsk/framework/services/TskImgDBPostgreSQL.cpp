@@ -388,7 +388,7 @@ int TskImgDBPostgreSQL::addImageName(char const * imgName)
 
     stringstream stmt;
 
-    stmt << "INSERT INTO image_names (seq, name) VALUES (DEFAULT, E" 
+    stmt << "INSERT INTO image_names (seq, name) VALUES (DEFAULT, " 
         << m_dbConnection->quote(imgName) << ")";
 
     try
@@ -657,7 +657,7 @@ int TskImgDBPostgreSQL::addFsFileInfo(int fileSystemID, const TSK_FS_FILE *fileS
             << "DEFAULT, " << IMGDB_FILES_TYPE_FS << ", " << IMGDB_FILES_STATUS_READY_FOR_ANALYSIS << ", " << m_dbConnection->quote(fileName) << ", "
             << parFileId << ", " << fileSystemFile->name->type << ", " << meta_type << ", "
             << fileSystemFile->name->flags << ", " << meta_flags << ", " << size << ", " << crtime << ", " << ctime << ", " << atime << ", "
-            << mtime << ", " << meta_mode << ", " << gid << ", " << uid << ", E" << m_dbConnection->quote(fullpath) << ")"
+            << mtime << ", " << meta_mode << ", " << gid << ", " << uid << ", " << m_dbConnection->quote(fullpath) << ")"
             << " RETURNING file_id";
 
         // Commenting out to see if the addition of prepared statements is
@@ -681,7 +681,7 @@ int TskImgDBPostgreSQL::addFsFileInfo(int fileSystemID, const TSK_FS_FILE *fileS
         //    << meta_mode << ", "
         //    << gid << ", "
         //    << uid
-        //    << ", E" << m_dbConnection->quote(fullpath) << ")";
+        //    << ", " << m_dbConnection->quote(fullpath) << ")";
 
         result R = executeStatement(stmt.str());
         
@@ -1510,7 +1510,7 @@ int TskImgDBPostgreSQL::addDerivedFileInfo(const std::string& name, const uint64
 
     stmt << "INSERT INTO files (file_id, type_id, name, par_file_id, dir_type, meta_type, size, ctime, crtime, atime, mtime, status, full_path) "
         "VALUES (DEFAULT, " << IMGDB_FILES_TYPE_DERIVED << ", " << m_dbConnection->quote(&cleanName[0]) << ", " << parentId << ", " << dirType << ", " << metaType << ", " << size
-        << ", " << ctime << ", " << crtime << ", " << atime << ", " << mtime << ", " << IMGDB_FILES_STATUS_CREATED << ", E" << m_dbConnection->quote(&cleanPath[0]) << ")"
+        << ", " << ctime << ", " << crtime << ", " << atime << ", " << mtime << ", " << IMGDB_FILES_STATUS_CREATED << ", " << m_dbConnection->quote(&cleanPath[0]) << ")"
         << " RETURNING file_id";
 
     try
@@ -1525,7 +1525,7 @@ int TskImgDBPostgreSQL::addDerivedFileInfo(const std::string& name, const uint64
 
         // insert into the derived_files table
         stmt << "INSERT INTO derived_files (file_id, derivation_details) VALUES ("
-            << fileId << ", E" << m_dbConnection->quote(&cleanDetails[0]) << ")";
+            << fileId << ", " << m_dbConnection->quote(&cleanDetails[0]) << ")";
 
         R = W.exec(stmt);
         W.commit();
@@ -2861,6 +2861,37 @@ int TskImgDBPostgreSQL::getFileTypeRecords(std::string& stmt, std::list<TskFileT
 }
 
 /**
+ *
+ */
+int TskImgDBPostgreSQL::getModuleId(const std::string& name, int & moduleId) const
+{
+    stringstream stmt;
+
+    stmt << "SELECT module_id FROM modules WHERE name = " << m_dbConnection->quote(name);
+
+    try 
+    {
+        pqxx::read_transaction trans(*m_dbConnection);
+        result R = trans.exec(stmt);
+
+        if (R.size() == 1)
+        {
+            R[0][0].to(moduleId);
+        }
+    }
+    catch(exception& e)
+    {
+        std::stringstream errorMsg;
+        errorMsg << "TskDBPostgreSQL::getModuleId - Error querying modules table: "
+            << e.what();
+        LOGERROR(errorMsg.str());
+        return -1;
+    }
+
+    return 0;
+}
+
+/**
  * Insert the Module record, if module name does not already exist in modules table.
  * Returns Module Id associated with the Module record.
  * @param name Module name
@@ -2873,37 +2904,35 @@ int TskImgDBPostgreSQL::addModule(const std::string& name, const std::string& de
     if (!initialized())
         return 0;
 
-    stringstream stmt;
+    moduleId = 0;
 
-    stmt << "SELECT module_id FROM modules WHERE name = " << m_dbConnection->quote(name);
+    if (getModuleId(name, moduleId) == 0 && moduleId > 0)
+        return 0;
 
     try 
     {
+        stringstream stmt;
+
         work W(*m_dbConnection);
-        result R = W.exec(stmt);
-
-        if (R.size() == 1)
-        {
-            // Already exists, return module_id
-            R[0][0].to(moduleId);
-            return 0;
-        }
-
-        // Insert a new one
-        stmt.str("");
         stmt << "INSERT INTO modules (module_id, name, description) VALUES (DEFAULT, " << m_dbConnection->quote(name) << ", " << m_dbConnection->quote(description) << ")"
              << " RETURNING module_id";
 
-        R = W.exec(stmt);
+        pqxx::result R = W.exec(stmt);
 
         // Get the newly assigned module id
         R[0][0].to(moduleId);
         W.commit();
-    } 
+    }
+    catch (pqxx::unique_violation&)
+    {
+        // The module may have been added between our initial call
+        // to getModuleId() and the subsequent INSERT attempt.
+        getModuleId(name, moduleId);
+    }
     catch (const exception &e)
     {
-        std::wstringstream errorMsg;
-        errorMsg << L"TskDBPostgreSQL::addModule - Error inserting into modules table: "
+        std::stringstream errorMsg;
+        errorMsg << "TskDBPostgreSQL::addModule - Error inserting into modules table: "
             << e.what();
         LOGERROR(errorMsg.str());
         return -1;
@@ -3505,7 +3534,7 @@ void TskImgDBPostgreSQL::addBlackboardAttribute(TskBlackboardAttribute attr){
             for (int i = 0; i < a_size; i++) {
                 pBuf[i] = attr.getValueString()[i];
             }
-            str << " '', E" << m_dbConnection->quote(attr.getValueString()) << ", 0, 0, 0.0";
+            str << " '', " << m_dbConnection->quote(attr.getValueString()) << ", 0, 0, 0.0";
             break;
         case TSK_INTEGER:
             str << " '', '', " << attr.getValueInt() << ",     0, 0.0";

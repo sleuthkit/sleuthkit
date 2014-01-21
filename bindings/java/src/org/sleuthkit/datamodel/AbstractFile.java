@@ -419,7 +419,28 @@ public abstract class AbstractFile extends AbstractContent {
 	public TskData.FileKnown getKnown() {
 		return knownState;
 	}
-
+	
+	/**
+	 * Figures out the extension from the filename, if there is one.
+	 * We assume that extensions only have ASCII alphanumeric chars
+	 * @return filename extension in lowercase (not including the period)
+	 */
+	public String getNameExtension() {
+		String ext = "";
+		int i = getName().lastIndexOf(".");
+		// > 0 because we assume it's not an extension if period is the first character
+		if ((i > 0) && ((i + 1) < getName().length())) {
+			ext = getName().substring(i + 1);
+		}
+		
+		String[] findNonAlphanumeric = ext.split("[^a-zA-Z0-9_]");
+		if (findNonAlphanumeric.length > 1) {
+			ext = findNonAlphanumeric[0];
+		}		
+		
+		return ext.toLowerCase();
+	}
+	
 	/**
 	 * Get size of the file
 	 *

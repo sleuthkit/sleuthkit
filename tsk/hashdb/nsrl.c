@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
+ * Copyright (c) 2003-2014 Brian Carrier.  All rights reserved
  *
  *
  * This software is distributed under the Common Public License 1.0
@@ -89,15 +89,19 @@ nsrl_test(FILE * hFile)
     return 1;
 }
 
-/**
- * Set db_name using information from this database type
- *
- * @param hdb_info the hash database object
- */
-void
-nsrl_name(TSK_HDB_INFO * hdb_info)
+TSK_HDB_INFO *nsrl_open(FILE *hDb, const TSK_TCHAR *db_path)
 {
-    tsk_hdb_name_from_path(hdb_info);
+    TSK_TEXT_HDB_INFO *text_hdb_info = NULL;
+    text_hdb_info = text_hdb_open(hDb, db_path);
+    if (NULL == text_hdb_info) {
+        return NULL;
+    }
+
+    text_hdb_info->base.db_type = TSK_HDB_DBTYPE_NSRL_ID;
+    text_hdb_info->base.make_index = nsrl_makeindex;
+    text_hdb_info->get_entry = nsrl_getentry;
+
+    return (TSK_HDB_INFO*)text_hdb_info;
 }
 
 /**
@@ -366,9 +370,6 @@ nsrl_parse_md5(char *str, char **md5, char **name, int ver)
     return 1;
 }
 
-
-
-
 /**
  * Process the database to create a sorted index of it. Consecutive
  * entries with the same hash value are not added to the index, but
@@ -380,8 +381,9 @@ nsrl_parse_md5(char *str, char **md5, char **name, int ver)
  * @return 1 on error and 0 on success.
  */
 uint8_t
-nsrl_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
+nsrl_makeindex(TSK_HDB_INFO * hdb_info_base, TSK_TCHAR * dbtype)
 {
+    TSK_TEXT_HDB_INFO *hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info_base;
     size_t i, len;
     char buf[TSK_HDB_MAXLEN];
     char *hash = NULL, phash[TSK_HDB_HTYPE_SHA1_LEN + 1];
@@ -389,7 +391,7 @@ nsrl_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
     int ver = 0;
     int db_cnt = 0, idx_cnt = 0, ig_cnt = 0;
 
-    if (tsk_hdb_idxinitialize(hdb_info, dbtype)) {
+    if (text_hdb_idx_initialize(hdb_info, dbtype)) {
         tsk_error_set_errstr2( "nsrl_makeindex");
         return 1;
     }
@@ -397,7 +399,7 @@ nsrl_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
     /* Status */
     if (tsk_verbose)
         TFPRINTF(stderr, _TSK_T("Extracting Data from Database (%s)\n"),
-                 hdb_info->db_fname);
+                 hdb_info_base->db_fname);
 
     /* Allocate a buffer for the previous hash value */
     memset(phash, '0', TSK_HDB_HTYPE_SHA1_LEN + 1);
@@ -440,7 +442,7 @@ nsrl_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
         }
 
         /* Add the entry to the index */
-        if (tsk_hdb_idxaddentry(hdb_info, hash, offset)) {
+        if (text_hdb_idx_add_entry_str(hdb_info, hash, offset)) {
             tsk_error_set_errstr2( "nsrl_makeindex");
             return 1;
         }
@@ -462,7 +464,7 @@ nsrl_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
         }
 
         /* Close and sort the index */
-        if (tsk_hdb_idxfinalize(hdb_info)) {
+        if (text_hdb_idx_finalize(hdb_info)) {
             tsk_error_set_errstr2( "nsrl_makeindex");
             return 1;
         }
@@ -477,8 +479,6 @@ nsrl_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
 
     return 0;
 }
-
-
 
 /**
  * Find the corresponding name at a
@@ -497,10 +497,11 @@ nsrl_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
  * @return 1 on error and 0 on success
  */
 uint8_t
-nsrl_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
+nsrl_getentry(TSK_HDB_INFO * hdb_info_base, const char *hash, TSK_OFF_T offset,
               TSK_HDB_FLAG_ENUM flags,
               TSK_HDB_LOOKUP_FN action, void *cb_ptr)
 {
+    TSK_TEXT_HDB_INFO *hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info_base; 
     char buf[TSK_HDB_MAXLEN], *name, *cur_hash, pname[TSK_HDB_MAXLEN];
     int found = 0;
     int ver;
@@ -610,7 +611,7 @@ nsrl_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
         /* Check if this is the same name as the previous entry */
         if (strcmp(name, pname) != 0) {
             int retval;
-            retval = action(hdb_info, hash, name, cb_ptr);
+            retval = action(hdb_info_base, hash, name, cb_ptr);
             if (retval == TSK_WALK_STOP)
                 return 0;
             else if (retval == TSK_WALK_ERROR)
@@ -635,3 +636,4 @@ nsrl_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
 
     return 0;
 }
+
