@@ -123,7 +123,7 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile)
         if ((head->sig[0] == 'C') && (head->sig[1] == 'E')) {
             iso9660_susp_ce *ce = (iso9660_susp_ce *) buf;
 
-            if ((uintptr_t)buf + sizeof(iso9660_susp_ce) > (uintptr_t)end) {
+            if ((uintptr_t)buf + sizeof(iso9660_susp_ce) - 1 > (uintptr_t)end) {
                 if (tsk_verbose) 
                     tsk_fprintf(stderr, "parse_susp: not enough room for CE structure\n");
                 break;
@@ -245,7 +245,7 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile)
         else if ((head->sig[0] == 'P') && (head->sig[1] == 'X')) {
             iso9660_rr_px_entry *rr_px;
 
-            if ((uintptr_t)buf + sizeof(iso9660_rr_px_entry) > (uintptr_t)end) {
+            if ((uintptr_t)buf + sizeof(iso9660_rr_px_entry) - 1> (uintptr_t)end) {
                 if (tsk_verbose) 
                     tsk_fprintf(stderr, "parse_susp: not enough room for POSIX structure\n");
                 break;
@@ -291,7 +291,7 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile)
         else if ((head->sig[0] == 'N') && (head->sig[1] == 'M')) {
             iso9660_rr_nm_entry *rr_nm;
 
-            if ((uintptr_t)buf + sizeof(iso9660_rr_nm_entry) > (uintptr_t)end) {
+            if ((uintptr_t)buf + sizeof(iso9660_rr_nm_entry) - 1> (uintptr_t)end) {
                 if (tsk_verbose) 
                     tsk_fprintf(stderr, "parse_susp: not enough room for RR alternative name structure\n");
                 break;
@@ -299,7 +299,7 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile)
 
             rr_nm = (iso9660_rr_nm_entry *) buf;
 
-            if ((uintptr_t)&rr_nm->name[0] + (int) rr_nm->len - 5 > (uintptr_t)end) {
+            if ((uintptr_t)&rr_nm->name[0] + (int) rr_nm->len - 5 - 1> (uintptr_t)end) {
                 if (tsk_verbose) 
                     tsk_fprintf(stderr, "parse_susp: not enough room for RR alternative name\n");
                 break;
