@@ -762,25 +762,18 @@ int
     size_t len = strlen(fs_file->name->name);
     char *
         name;
-    size_t nlen = len + attr_nlen;
-    if ((name = (char *) tsk_malloc(nlen + 5)) == NULL) {
+    size_t nlen = len + attr_nlen + 5;
+    if ((name = (char *) tsk_malloc(nlen)) == NULL) {
         return 1;
     }
 
-    size_t j = 0;
-    for (size_t i = 0; i < len && j < nlen; i++) {
-        name[j++] = fs_file->name->name[i];
-    }
+    strncpy(name, fs_file->name->name, nlen);
 
     // Add the attribute name
     if (attr_nlen > 0) {
-        name[j++] = ':';
-
-        for (unsigned i = 0; i < attr_nlen && j < nlen; i++) {
-            name[j++] = fs_attr->name[i];
-        }
+        strncat(name, ":", nlen-strlen(name));
+        strncat(name, fs_attr->name, nlen-strlen(name));
     }
-    name[j++] = '\0';
 
 
     // clean up path
