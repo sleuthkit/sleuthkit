@@ -207,6 +207,7 @@ TskAutoDb::addImageDetails(const char *const img_ptrs[], int a_num)
     if (m_db->addImageInfo(m_img_info->itype, m_img_info->sector_size,
  //           m_curImgId, m_curImgTZone, m_img_info->size, md5)) {
             m_curImgId, m_curImgTZone)) { 
+        registerError();
         return 1;
     }
 
@@ -224,6 +225,7 @@ TskAutoDb::addImageDetails(const char *const img_ptrs[], int a_num)
         //}
 
         if (m_db->addImageName(m_curImgId, img_ptr, i)) {
+            registerError();
             return 1;
         }
     }
@@ -236,6 +238,7 @@ TSK_FILTER_ENUM TskAutoDb::filterVs(const TSK_VS_INFO * vs_info)
 {
     m_vsFound = true;
     if (m_db->addVsInfo(vs_info, m_curImgId, m_curVsId)) {
+        registerError();
         return TSK_FILTER_STOP;
     }
 
@@ -249,6 +252,7 @@ TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
     m_foundStructure = true;
 
     if (m_db->addVolumeInfo(vs_part, m_curVsId, m_curVolId)) {
+        registerError();
         return TSK_FILTER_STOP;
     }
 
@@ -265,12 +269,14 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
     if (m_volFound && m_vsFound) {
         // there's a volume system and volume
         if (m_db->addFsInfo(fs_info, m_curVolId, m_curFsId)) {
+            registerError();
             return TSK_FILTER_STOP;
         }
     }
     else {
         // file system doesn't live in a volume, use image as parent
         if (m_db->addFsInfo(fs_info, m_curImgId, m_curFsId)) {
+            registerError();
             return TSK_FILTER_STOP;
         }
     }
@@ -313,6 +319,7 @@ TSK_RETVAL_ENUM
 {
     if (m_db->addFsFile(fs_file, fs_attr, path, md5, known, m_curFsId,
             m_curFileId)) {
+        registerError();
         return TSK_ERR;
     }
 

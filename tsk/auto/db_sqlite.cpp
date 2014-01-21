@@ -415,6 +415,8 @@ int
 {
     char
      stmt[1024];
+    char *zSQL;
+    int ret;
 
     snprintf(stmt, 1024,
         "INSERT INTO tsk_objects (obj_id, par_obj_id, type) VALUES (NULL, NULL, %d);",
@@ -424,16 +426,13 @@ int
 
     objId = sqlite3_last_insert_rowid(m_db);
 
-//    snprintf(stmt, 1024,
-//        "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %d, '%s', %"PRIuOFF", '%s');",
-//        objId, type, ssize, timezone.c_str(), size, md5.c_str());
-    
-    snprintf(stmt, 1024,
-        "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone) VALUES (%lld, %d, %d, '%s');",
+    zSQL = sqlite3_mprintf("INSERT INTO tsk_image_info (obj_id, type, ssize, tzone) VALUES (%lld, %d, %d, '%q');",
         objId, type, ssize, timezone.c_str());
 
-    return attempt_exec(stmt,
+    ret = attempt_exec(zSQL,
         "Error adding data to tsk_image_info table: %s\n");
+    sqlite3_free(zSQL);
+    return ret;
 }
 
 /**
@@ -443,15 +442,16 @@ int
  TskDbSqlite::addImageName(int64_t objId, char const *imgName,
     int sequence)
 {
-    char
-     stmt[1024];
+    char *zSQL;
+	int ret;
 
-    snprintf(stmt, 1024,
-        "INSERT INTO tsk_image_names (obj_id, name, sequence) VALUES (%lld, '%s', %d)",
+    zSQL = sqlite3_mprintf("INSERT INTO tsk_image_names (obj_id, name, sequence) VALUES (%lld, '%q', %d)",
         objId, imgName, sequence);
 
-    return attempt_exec(stmt,
+    ret = attempt_exec(zSQL,
         "Error adding data to tsk_image_names table: %s\n");
+    sqlite3_free(zSQL);
+    return ret;
 }
 
 
@@ -489,20 +489,22 @@ int
  TskDbSqlite::addVolumeInfo(const TSK_VS_PART_INFO * vs_part,
     int64_t parObjId, int64_t & objId)
 {
-    char
-     stmt[1024];
+    char *zSQL;
+    int ret;
 
     if (addObject(TSK_DB_OBJECT_TYPE_VOL, parObjId, objId))
         return 1;
 
-    snprintf(stmt, 1024,
+    zSQL = sqlite3_mprintf(
         "INSERT INTO tsk_vs_parts (obj_id, addr, start, length, desc, flags)"
-        "VALUES (%lld, %" PRIuPNUM ",%" PRIuOFF ",%" PRIuOFF ",'%s',%d)",
+        "VALUES (%lld, %" PRIuPNUM ",%" PRIuOFF ",%" PRIuOFF ",'%q',%d)",
         objId, (int) vs_part->addr, vs_part->start, vs_part->len,
         vs_part->desc, vs_part->flags);
 
-    return attempt_exec(stmt,
+    ret = attempt_exec(zSQL,
         "Error adding data to tsk_vs_parts table: %s\n");
+    sqlite3_free(zSQL);
+    return ret;
 }
 
 /**
@@ -655,6 +657,7 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *path,
     else {
         seq = hash((const unsigned char *)path);
     }
+
     //get from cache by parent meta addr, if available
 	map<TSK_INUM_T, map<uint32_t, int64_t> > &fsMap = m_parentDirIdCache[fsObjId];
 	if (fsMap.count(fs_file->name->par_addr) > 0) {
@@ -702,8 +705,6 @@ int
 {
 
 
-    char
-     foo[4096];
     time_t
      mtime = 0;
     time_t
@@ -727,6 +728,7 @@ int
      type = TSK_FS_ATTR_TYPE_NOT_FOUND;
     int
      idx = 0;
+    char *zSQL;
 
     if (fs_file->name == NULL)
         return 0;
@@ -756,25 +758,18 @@ int
         }
     }
 
-    // clean up special characters in name before we insert
+    // combine name and attribute name
     size_t len = strlen(fs_file->name->name);
     char *
         name;
-    size_t nlen = 2 * (len + attr_nlen);
-    if ((name = (char *) tsk_malloc(nlen + 1)) == NULL) {
+    size_t nlen = len + attr_nlen;
+    if ((name = (char *) tsk_malloc(nlen + 5)) == NULL) {
         return 1;
     }
 
     size_t j = 0;
     for (size_t i = 0; i < len && j < nlen; i++) {
-        // ' is special in SQLite
-        if (fs_file->name->name[i] == '\'') {
-            name[j++] = '\'';
-            name[j++] = '\'';
-        }
-        else {
-            name[j++] = fs_file->name->name[i];
-        }
+        name[j++] = fs_file->name->name[i];
     }
 
     // Add the attribute name
@@ -782,14 +777,7 @@ int
         name[j++] = ':';
 
         for (unsigned i = 0; i < attr_nlen && j < nlen; i++) {
-            // ' is special in SQLite
-            if (fs_attr->name[i] == '\'') {
-                name[j++] = '\'';
-                name[j++] = '\'';
-            }
-            else {
-                name[j++] = fs_attr->name[i];
-            }
+            name[j++] = fs_attr->name[i];
         }
     }
     name[j++] = '\0';
@@ -808,14 +796,7 @@ int
     size_t k = 0;
     escaped_path[k++] = '/'; // add a leading slash
     for (size_t i = 0; i < path_len && k < epath_len; i++) {
-        // ' is special in SQLite
-        if (path[i] == '\'') {
-            escaped_path[k++] = '\'';
-            escaped_path[k++] = '\'';
-        }
-        else {
-            escaped_path[k++] = path[i];
-        }
+        escaped_path[k++] = path[i];
     }
     escaped_path[k++] = '\0';
 
@@ -839,18 +820,18 @@ int
         return 1;
     }
 
-    snprintf(foo, 4096,
+    zSQL = sqlite3_mprintf(
         "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
         "VALUES ("
         "%" PRId64 ",%" PRId64 ","
         "%d,"
-        "%d,%d,'%s',"
+        "%d,%d,'%q',"
         "%" PRIuINUM ","
         "%d,%d,%d,%d,"
         "%" PRIuOFF ","
         "%llu,%llu,%llu,%llu,"
-        "%d,%d,%d,%s,%d,"
-        "'%s')",
+        "%d,%d,%d,%q,%d,"
+        "'%q')",
         fsObjId, objId,
         TSK_DB_FILES_TYPE_FS,
         type, idx, name,
@@ -861,11 +842,13 @@ int
         meta_mode, gid, uid, md5Text, known,
         escaped_path);
 
-    if (attempt_exec(foo, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
+    if (attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
         free(name);
         free(escaped_path);
+		sqlite3_free(zSQL);
         return 1;
     }
+	sqlite3_free(zSQL);
 
     //if dir, update parent id cache
     if (meta_type == TSK_FS_META_TYPE_DIR) {
@@ -985,29 +968,7 @@ int
  TskDbSqlite::addLayoutFileInfo(const int64_t parObjId, const int64_t fsObjId, const TSK_DB_FILES_TYPE_ENUM dbFileType, const char *fileName,
     const uint64_t size, int64_t & objId)
 {
-    char
-     sql_stat[4096];
-
-    // clean up special characters in name before we insert
-    size_t len = strlen(fileName);
-    char *
-        name;
-    size_t nlen = 2 * (len);
-    if ((name = (char *) tsk_malloc(nlen + 1)) == NULL) {
-        return 1;
-    }
-
-    size_t j = 0;
-    for (size_t i = 0; i < len && j < nlen; i++) {
-        // ' is special in SQLite
-        if (fileName[i] == '\'') {
-            name[j++] = '\'';
-            name[j++] = '\'';
-        }
-        else {
-            name[j++] = fileName[i];
-        }
-    }
+    char *zSQL;
 
     if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId))
         return 1;
@@ -1018,28 +979,28 @@ int
         fsObjIdS << "NULL";
     else fsObjIdS << fsObjId;
 
-    snprintf(sql_stat, 4096,
+    zSQL = sqlite3_mprintf(
         "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
         "VALUES ("
-        "1,%s,%lld,"
+        "1,%q,%lld,"
         "%d,"
-        "NULL,NULL,'%s',"
+        "NULL,NULL,'%q',"
         "NULL,"
         "%d,%d,%d,%d,"
         "%" PRIuOFF ","
         "NULL,NULL,NULL,NULL,NULL,NULL,NULL)",
         fsObjIdS.str().c_str(), objId,
         dbFileType,
-        name,
+        fileName,
         TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG,
         TSK_FS_NAME_FLAG_UNALLOC, TSK_FS_META_FLAG_UNALLOC, size);
 
-    if (attempt_exec(sql_stat, "TskDbSqlite::addLayoutFileInfo: Error adding data to tsk_files table: %s\n")) {
-        free(name);
+    if (attempt_exec(zSQL, "TskDbSqlite::addLayoutFileInfo: Error adding data to tsk_files table: %s\n")) {
+        sqlite3_free(zSQL);
         return 1;
     }
 
-    free(name);
+    sqlite3_free(zSQL);
     return 0;
 }
 
@@ -1148,12 +1109,12 @@ typedef struct _checkFileLayoutRangeOverlap{
 * @returns TSK_ERR on error or TSK_OK on success
 */
 int TskDbSqlite::addVirtualDir(const int64_t fsObjId, const int64_t parentDirId, const char * const name, int64_t & objId) {
-    char sql_stat[1024];
+    char *zSQL;
 
     if (addObject(TSK_DB_OBJECT_TYPE_FILE, parentDirId, objId))
         return TSK_ERR;
 
-     snprintf(sql_stat, 1024,
+    zSQL = sqlite3_mprintf(
         "INSERT INTO tsk_files (attr_type, attr_id, has_layout, fs_obj_id, obj_id, type, attr_type, "
         "attr_id, name, meta_addr, dir_type, meta_type, dir_flags, meta_flags, size, "
         "crtime, ctime, atime, mtime, mode, gid, uid, known, parent_path) "
@@ -1163,7 +1124,7 @@ int TskDbSqlite::addVirtualDir(const int64_t fsObjId, const int64_t parentDirId,
         "%lld,"
         "%lld,"
         "%d,"
-        "NULL,NULL,'%s',"
+        "NULL,NULL,'%q',"
         "NULL,"
         "%d,%d,%d,%d,"
         "0,"
@@ -1175,9 +1136,11 @@ int TskDbSqlite::addVirtualDir(const int64_t fsObjId, const int64_t parentDirId,
         TSK_FS_NAME_TYPE_DIR, TSK_FS_META_TYPE_DIR,
         TSK_FS_NAME_FLAG_ALLOC, (TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED));
 
-        if (attempt_exec(sql_stat, "Error adding data to tsk_files table: %s\n")) {
+        if (attempt_exec(zSQL, "Error adding data to tsk_files table: %s\n")) {
+            sqlite3_free(zSQL);
             return TSK_ERR;
         }
+        sqlite3_free(zSQL);
     
         return TSK_OK;
 }
