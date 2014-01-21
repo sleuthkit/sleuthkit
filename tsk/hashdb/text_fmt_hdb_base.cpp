@@ -9,6 +9,7 @@
  */
 
 #include "tsk_hashdb_i.h"
+#include "tsk_hash_info.h"
 
 /**
  * \file text_hdb.c
@@ -35,6 +36,7 @@ TSK_TEXT_HDB_INFO *text_hdb_open(FILE *hDb, const TSK_TCHAR *db_path)
     text_hdb_info->base.open_index = text_hdb_open_idx;
     text_hdb_info->base.lookup_str = text_hdb_lookup_str;
     text_hdb_info->base.lookup_raw = text_hdb_lookup_bin;
+    text_hdb_info->base.lookup_verbose_str = text_hdb_lookup_verbose_str;
     text_hdb_info->base.accepts_updates = text_hdb_accepts_updates;
     text_hdb_info->base.close_db = text_hdb_close;
 
@@ -761,7 +763,6 @@ text_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char *hash,
     size_t i;
     TSK_HDB_HTYPE_ENUM htype;
 
-
     /* Sanity checks on the hash input */
     if (strlen(hash) == TSK_HDB_HTYPE_MD5_LEN) {
         htype = TSK_HDB_HTYPE_MD5_ID;
@@ -1108,6 +1109,51 @@ text_hdb_lookup_bin(TSK_HDB_INFO * hdb_info, uint8_t * hash, uint8_t len,
     hashbuf[2 * len] = '\0';
 
     return tsk_hdb_lookup_str(hdb_info, hashbuf, flags, action, ptr);
+}
+
+/**
+ * \ingroup hashdblib
+ * \internal 
+ * Looks up a hash and any additional data associated with the hash in a 
+ * hash database.
+ * @param hdb_info_base A struct representing an open hash database.
+ * @param hash A hash value in string form.
+ * @param result A TskHashInfo struct to populate on success.
+ * @return -1 on error, 0 if hash value was not found, 1 if hash value
+ * was found.
+ */
+int8_t 
+text_hdb_lookup_verbose_str(TSK_HDB_INFO *hdb_info_base, const char *hash, void *lookup_result)
+{
+    // Verify the length of the hash value argument.
+    TSK_HDB_HTYPE_ENUM hash_type = TSK_HDB_HTYPE_INVALID_ID;
+    size_t hash_len = strlen(hash);
+    if (TSK_HDB_HTYPE_MD5_LEN == hash_len) {
+        hash_type = TSK_HDB_HTYPE_MD5_ID;
+    }
+    else if (TSK_HDB_HTYPE_SHA1_LEN == hash_len) {
+        hash_type = TSK_HDB_HTYPE_SHA1_ID;
+    }
+    else {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("text_hdb_lookup_verbose_str: invalid hash, length incorrect: %s", hash);
+        return -1;
+    }
+
+    // Due to a bug in the extended lookup code for text-format hash databases,
+    // do a simple yes/no look up until the bug is fixed.
+    int8_t ret_val = text_hdb_lookup_str(hdb_info_base, hash, TSK_HDB_FLAG_QUICK, NULL, NULL);
+    if (1 == ret_val) {
+        TskHashInfo *result = static_cast<TskHashInfo*>(lookup_result);
+        if (TSK_HDB_HTYPE_MD5_ID == hash_type) {
+            result->hashMd5 = hash;
+        }
+        else {
+            result->hashSha1 = hash;
+        }
+    }
+    return ret_val; 
 }
 
 uint8_t

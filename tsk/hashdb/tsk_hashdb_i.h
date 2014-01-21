@@ -89,6 +89,7 @@ extern "C" {
     extern int8_t text_hdb_lookup_bin(TSK_HDB_INFO *, uint8_t *, 
         uint8_t, TSK_HDB_FLAG_ENUM, 
         TSK_HDB_LOOKUP_FN, void *);
+    extern int8_t text_hdb_lookup_verbose_str(TSK_HDB_INFO *, const char *, void *);
     extern uint8_t text_hdb_accepts_updates();
     extern void text_hdb_close(TSK_HDB_INFO *) ;
 
