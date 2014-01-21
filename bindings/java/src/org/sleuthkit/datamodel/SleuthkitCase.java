@@ -138,7 +138,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException thrown if critical error occurred within TSK
 	 * case
 	 */
-	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle) throws SQLException, ClassNotFoundException, TskCoreException  {
+	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle) throws SQLException, ClassNotFoundException, TskCoreException {
 		Class.forName("org.sqlite.JDBC");
 		this.dbPath = dbPath;
 		this.dbDirPath = new java.io.File(dbPath).getParentFile().getAbsolutePath();
@@ -157,7 +157,7 @@ public class SleuthkitCase {
 			con.setAutoCommit(false);
 						
 			// Get the schema version number of the database from the tsk_db_info table.
-			int schemaVersionNumber = 0;
+			int schemaVersionNumber = SCHEMA_VERSION_NUMBER;
 			Statement statement = con.createStatement();
 			ResultSet resultSet = statement.executeQuery("SELECT schema_ver FROM tsk_db_info");
 			if (resultSet.next()) {
