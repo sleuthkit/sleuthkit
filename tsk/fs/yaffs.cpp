@@ -32,6 +32,7 @@ v** Copyright (c) 2002-2003 Brian Carrier, @stake Inc.  All rights reserved
 #include <algorithm>
 #include <string>
 #include <set>
+#include <string.h>
 
 #include "tsk_fs_i.h"
 #include "tsk_yaffs.h"
@@ -2534,7 +2535,7 @@ static TSK_RETVAL_ENUM
             // easier searching by file extension. Max extension length is 5 characters after the dot,
             // and require at least one character before the dot
             file_ext = strrchr(fs_name->name, '.');
-            if((file_ext != NULL) && (file_ext != fs_name->name) && (strnlen(file_ext, 10) < 7)){
+            if((file_ext != NULL) && (file_ext != fs_name->name) && (strlen(file_ext) < 7)){
                snprintf(version_string, 64, "#%d,%d%s", obj_id, vnum, file_ext);
             }
             else{

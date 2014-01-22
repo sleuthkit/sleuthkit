@@ -1009,7 +1009,7 @@ exfatfs_next_dentry_inum(FATFS_INFO *a_fatfs, TSK_INUM_T a_current_entry_inum,
 	FATFS_DENTRY temp_dentry;
 
     assert(a_fatfs != NULL);
-    assert(fatfs_inum_is_in_range(a_fatfs, a_file_entry_inum));
+    assert(fatfs_inum_is_in_range(a_fatfs, a_current_entry_inum));
     assert(a_file_dentry != NULL);
         
 	/* Only look for file stream and file name directory entries */
