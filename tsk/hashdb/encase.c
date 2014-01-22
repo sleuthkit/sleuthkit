@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2012 Brian Carrier.  All rights reserved
+ * Copyright (c) 2012-2014 Brian Carrier.  All rights reserved
  *
  *
  * This software is distributed under the Common Public License 1.0
@@ -14,8 +14,6 @@
  */
 
 #include "tsk_hashdb_i.h"
-
-
 
 /**
  * Test the file to see if it is an Encase database
@@ -44,20 +42,20 @@ encase_test(FILE * hFile)
  *
  * @param hdb_info the hash database object
  */
-void
-encase_name(TSK_HDB_INFO * hdb_info)
+static void
+encase_name(TSK_TEXT_HDB_INFO * hdb_info)
 {
     FILE * hFile = hdb_info->hDb;
     wchar_t buf[40];
     UTF16 *utf16;
     UTF8 *utf8;
     size_t ilen;
-    memset(hdb_info->db_name, '\0', TSK_HDB_NAME_MAXLEN);
+    memset(hdb_info->base.db_name, '\0', TSK_HDB_NAME_MAXLEN);
     if(!hFile) {
         if (tsk_verbose)
             fprintf(stderr,
                 "Error getting name from Encase hash db; using file name instead");
-        tsk_hdb_name_from_path(hdb_info);
+        hdb_base_db_name_from_path(&hdb_info->base);
         return;
     }
 
@@ -68,14 +66,14 @@ encase_name(TSK_HDB_INFO * hdb_info)
         if (tsk_verbose)
             fprintf(stderr,
                 "Error getting name from Encase hash db; using file name instead");
-        tsk_hdb_name_from_path(hdb_info);
+        hdb_base_db_name_from_path(&hdb_info->base);
         return;
     }
 
     // do some arithmetic on type sizes to be platform independent
     ilen = wcslen(buf) * (sizeof(wchar_t) / sizeof(UTF16));
 
-    utf8 = (UTF8 *) hdb_info->db_name;
+    utf8 = (UTF8 *) hdb_info->base.db_name;
     utf16 = (UTF16 *) buf;
 
     tsk_UTF16toUTF8(TSK_LIT_ENDIAN,
@@ -84,6 +82,22 @@ encase_name(TSK_HDB_INFO * hdb_info)
         TSKlenientConversion);
 }
 
+
+TSK_HDB_INFO *encase_open(FILE *hDb, const TSK_TCHAR *db_path)
+{
+    TSK_TEXT_HDB_INFO *text_hdb_info = NULL;
+    text_hdb_info = text_hdb_open(hDb, db_path);
+    if (NULL == text_hdb_info) {
+        return NULL;
+    }
+
+    text_hdb_info->base.db_type = TSK_HDB_DBTYPE_ENCASE_ID;
+    encase_name(text_hdb_info);
+    text_hdb_info->base.make_index = encase_make_index;
+    text_hdb_info->get_entry = encase_get_entry;
+
+    return (TSK_HDB_INFO*)text_hdb_info;    
+}
 
 /**
  * Process the database to create a sorted index of it. Consecutive
@@ -96,15 +110,16 @@ encase_name(TSK_HDB_INFO * hdb_info)
  * @return 1 on error and 0 on success.
  */
 uint8_t
-encase_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
+encase_make_index(TSK_HDB_INFO * hdb_info_base, TSK_TCHAR * dbtype)
 {
+    TSK_TEXT_HDB_INFO *hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info_base;
     unsigned char buf[19];
     char phash[19];
     TSK_OFF_T offset = 0;
     int db_cnt = 0, idx_cnt = 0;
 
     /* Initialize the TSK index file */
-    if (tsk_hdb_idxinitialize(hdb_info, dbtype)) {
+    if (text_hdb_idx_initialize(hdb_info, dbtype)) {
         tsk_error_set_errstr2( "encase_makeindex");
         return 1;
     }
@@ -112,7 +127,7 @@ encase_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
     /* Status */
     if (tsk_verbose)
         TFPRINTF(stderr, _TSK_T("Extracting Data from Database (%s)\n"),
-                 hdb_info->db_fname);
+                 hdb_info->base.db_fname);
 
     memset(phash, '0', sizeof(phash));
     memset(buf, '0', sizeof(buf));
@@ -128,8 +143,8 @@ encase_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
         }
         
         /* Add the entry to the index */
-        if (tsk_hdb_idxaddentry_bin(hdb_info, buf, 16, offset)) {
-            tsk_error_set_errstr2( "encase_makeindex");
+        if (text_hdb_idx_add_entry_bin(hdb_info, buf, 16, offset)) {
+            tsk_error_set_errstr2( "encase_make_index");
             return 1;
         }
 
@@ -148,7 +163,7 @@ encase_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
         }
 
         /* Close and sort the index */
-        if (tsk_hdb_idxfinalize(hdb_info)) {
+        if (text_hdb_idx_finalize(hdb_info)) {
             tsk_error_set_errstr2( "encase_makeindex");
             return 1;
         }
@@ -163,7 +178,6 @@ encase_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
 
     return 0;
 }
-
 
 /**
  * Find the entry at a
@@ -181,10 +195,11 @@ encase_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
  * @return 1 on error and 0 on succuss
  */
 uint8_t
-encase_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
+encase_get_entry(TSK_HDB_INFO * hdb_info, const char *hash,
                 TSK_OFF_T offset, TSK_HDB_FLAG_ENUM flags,
                 TSK_HDB_LOOKUP_FN action, void *cb_ptr)
 {
+    TSK_TEXT_HDB_INFO *text_hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info;
     int found = 0;
     char buf[19];
 
@@ -204,13 +219,13 @@ encase_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
     memset(buf, 0, sizeof(buf));
     
     /* Loop so that we can find multiple occurances of the same hash */
-    fseeko(hdb_info->hDb, offset, SEEK_SET);
+    fseeko(text_hdb_info->hDb, offset, SEEK_SET);
     while (1) {
         int retval;
         char hash_str[TSK_HDB_HTYPE_MD5_LEN+1];
         
-        if (18 != fread(buf,sizeof(char),18,hdb_info->hDb)) {
-            if (feof(hdb_info->hDb)) {
+        if (18 != fread(buf,sizeof(char),18,text_hdb_info->hDb)) {
+            if (feof(text_hdb_info->hDb)) {
                 break;
             }
             tsk_error_reset();

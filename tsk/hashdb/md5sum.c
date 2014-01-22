@@ -2,7 +2,7 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
+ * Copyright (c) 2003-2014 Brian Carrier.  All rights reserved
  *
  *
  * This software is distributed under the Common Public License 1.0
@@ -15,9 +15,7 @@
 
 #include "tsk_hashdb_i.h"
 
-
 #define STR_EMPTY ""
-
 
 /**
  * Test the file to see if it is a md5sum database
@@ -52,17 +50,20 @@ md5sum_test(FILE * hFile)
     return 0;
 }
 
-/**
- * Set db_name using information from this database type
- *
- * @param hdb_info the hash database object
- */
-void
-md5sum_name(TSK_HDB_INFO * hdb_info)
+TSK_HDB_INFO *md5sum_open(FILE *hDb, const TSK_TCHAR *db_path)
 {
-    tsk_hdb_name_from_path(hdb_info);
-}
+    TSK_TEXT_HDB_INFO *text_hdb_info = NULL;
+    text_hdb_info = text_hdb_open(hDb, db_path);
+    if (NULL == text_hdb_info) {
+        return NULL;
+    }
 
+    text_hdb_info->base.db_type = TSK_HDB_DBTYPE_MD5SUM_ID;
+    text_hdb_info->get_entry = md5sum_getentry;
+    text_hdb_info->base.make_index = md5sum_makeindex;
+
+    return (TSK_HDB_INFO*)text_hdb_info;    
+}
 
 /**
  * Given a line of text from an MD5sum database, return pointers
@@ -196,10 +197,10 @@ md5sum_parse_md5(char *str, char **md5, char **name)
  * @return 1 on error and 0 on success.
  */
 uint8_t
-md5sum_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
+md5sum_makeindex(TSK_HDB_INFO *hdb_info_base, TSK_TCHAR * dbtype)
 {
+    TSK_TEXT_HDB_INFO *hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info_base;
     int i;
-
     char buf[TSK_HDB_MAXLEN];
     char *hash = NULL, phash[TSK_HDB_HTYPE_MD5_LEN + 1];
     TSK_OFF_T offset = 0;
@@ -207,7 +208,7 @@ md5sum_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
     size_t len;
 
     /* Initialize the TSK index file */
-    if (tsk_hdb_idxinitialize(hdb_info, dbtype)) {
+    if (text_hdb_idx_initialize(hdb_info, dbtype)) {
         tsk_error_set_errstr2( "md5sum_makeindex");
         return 1;
     }
@@ -215,7 +216,7 @@ md5sum_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
     /* Status */
     if (tsk_verbose)
         TFPRINTF(stderr, _TSK_T("Extracting Data from Database (%s)\n"),
-                 hdb_info->db_fname);
+                 hdb_info->base.db_fname);
 
     /* Allocate a buffer for the previous hash value */
     memset(phash, '0', TSK_HDB_HTYPE_MD5_LEN + 1);
@@ -240,7 +241,7 @@ md5sum_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
         }
 
         /* Add the entry to the index */
-        if (tsk_hdb_idxaddentry(hdb_info, hash, offset)) {
+        if (text_hdb_idx_add_entry_str(hdb_info, hash, offset)) {
             tsk_error_set_errstr2( "md5sum_makeindex");
             return 1;
         }
@@ -263,7 +264,7 @@ md5sum_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
         }
 
         /* Close and sort the index */
-        if (tsk_hdb_idxfinalize(hdb_info)) {
+        if (text_hdb_idx_finalize(hdb_info)) {
             tsk_error_set_errstr2( "md5sum_makeindex");
             return 1;
         }
@@ -278,7 +279,6 @@ md5sum_makeindex(TSK_HDB_INFO * hdb_info, TSK_TCHAR * dbtype)
 
     return 0;
 }
-
 
 /**
  * Find the corresponding name at a
@@ -301,6 +301,7 @@ md5sum_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
                 TSK_OFF_T offset, TSK_HDB_FLAG_ENUM flags,
                 TSK_HDB_LOOKUP_FN action, void *cb_ptr)
 {
+    TSK_TEXT_HDB_INFO *text_hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info;
     char buf[TSK_HDB_MAXLEN], *name, *ptr = NULL, pname[TSK_HDB_MAXLEN];
     int found = 0;
 
@@ -323,7 +324,7 @@ md5sum_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
     while (1) {
         size_t len;
 
-        if (0 != fseeko(hdb_info->hDb, offset, SEEK_SET)) {
+        if (0 != fseeko(text_hdb_info->hDb, offset, SEEK_SET)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_READDB);
             tsk_error_set_errstr(
@@ -332,8 +333,8 @@ md5sum_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
             return 1;
         }
 
-        if (NULL == fgets(buf, TSK_HDB_MAXLEN, hdb_info->hDb)) {
-            if (feof(hdb_info->hDb)) {
+        if (NULL == fgets(buf, TSK_HDB_MAXLEN, text_hdb_info->hDb)) {
+            if (feof(text_hdb_info->hDb)) {
                 break;
             }
             tsk_error_reset();
