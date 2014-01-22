@@ -634,7 +634,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
             in_node->offset =
                 tsk_getu32(fs->endian, dentry->ext_loc_m) * fs->block_size;
             
-            if (tsk_getu32(fs->endian, in_node->inode.dr.data_len_m) + in_node->offset > fs->last_block * fs->block_size) {
+            if (tsk_getu32(fs->endian, in_node->inode.dr.data_len_m) + in_node->offset > fs->block_count * fs->block_size) {
                 if (tsk_verbose)
                     tsk_fprintf(stderr,
                                 "iso9660_load_inodes_dir: file ends past end of image (%"PRIu32" bytes). bailing\n",
