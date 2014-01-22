@@ -396,6 +396,7 @@ public class TskData {
         TSK_FS_TYPE_FAT12 (0x00000002), ///< FAT12 file system
         TSK_FS_TYPE_FAT16 (0x00000004), ///< FAT16 file system
         TSK_FS_TYPE_FAT32 (0x00000008), ///< FAT32 file system
+        TSK_FS_TYPE_EXFAT (0x0000000A), ///< ExFAT file system
         TSK_FS_TYPE_FAT_DETECT (0x0000000e),    ///< FAT auto detection
         TSK_FS_TYPE_FFS1 (0x00000010),  ///< UFS1 (FreeBSD, OpenBSD, BSDI ...)
         TSK_FS_TYPE_FFS1B (0x00000020), ///< UFS1b (Solaris - has no type)
