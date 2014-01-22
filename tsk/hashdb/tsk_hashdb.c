@@ -30,7 +30,7 @@ hdb_open_file(TSK_TCHAR *file_path)
         file = _wfdopen(fd, L"rb");
     }
 #else
-    file = _wfdopen(fd, L"rb");
+    file = fopen(file_path, "rb");
 #endif
 
     return file;

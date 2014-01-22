@@ -2,10 +2,10 @@ AM_CPPFLAGS = -I../.. -I$(srcdir)/../.. -Wall
 EXTRA_DIST = .indent.pro
 
 noinst_LTLIBRARIES = libtskhashdb.la
-libtskhashdb_la_SOURCES = binsrch_index.c sqlite_index.cpp \
-    tm_lookup.cpp md5sum.c nsrl.c \
-    hdb_open.cpp hdb_index.cpp \
-    hashkeeper.c idxonly.c encase.c tsk_hashdb_i.h
+libtskhashdb_la_SOURCES =  \
+    encase.c hashkeeper.c idxonly.c md5sum.c nsrl.c \
+    sqlite_hdb.cpp text_fmt_hdb_base.cpp tsk_hashdb.c hdb_base.c \
+    tsk_hash_info.h tsk_hashdb.h tsk_hashdb_i.h
 
 indent:
 	indent *.cpp *.c *.h
