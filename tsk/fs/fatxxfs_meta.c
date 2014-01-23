@@ -287,7 +287,7 @@ fatxxfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_A
             && (tsk_getu32(fs->endian, dentry->size) == 0)) {
             if (tsk_verbose)
                 fprintf(stderr,
-                    "s: nearly all values zero\n", func_name);
+                    "%s: nearly all values zero\n", func_name);
             return 0;
         }
 

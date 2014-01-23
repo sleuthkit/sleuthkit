@@ -157,7 +157,6 @@ static uint8_t
 fatfs_make_mbr(FATFS_INFO *fatfs, TSK_FS_META *fs_meta)
 {
     TSK_DADDR_T *addr_ptr;
-    TSK_FS_INFO *fs = (TSK_FS_INFO *) fatfs;
 
     fs_meta->type = TSK_FS_META_TYPE_VIRT;
     fs_meta->mode = TSK_FS_META_MODE_UNSPECIFIED;
@@ -1299,7 +1298,7 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
                     tsk_error_set_errno(TSK_ERR_FS_READ);
                 }
                 tsk_error_set_errstr2
-                    ("&s (root dir): sector: %" PRIuDADDR,
+                    ("%s (root dir): sector: %" PRIuDADDR,
                     func_name, sect);
                 tsk_fs_file_close(fs_file);
                 free(dir_sectors_bitmap);
@@ -1412,7 +1411,6 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
             for (dentry_idx = 0; dentry_idx < fatfs->dentry_cnt_se;
                 dentry_idx++, inum++, dep++) {
                 int retval;
-                EXFATFS_DIR_ENTRY_TYPE dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
                 TSK_RETVAL_ENUM retval2 = TSK_OK;
 
                 /* If the inode address of the potential entry is less than

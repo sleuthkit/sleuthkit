@@ -99,7 +99,6 @@ uint8_t
 fatfs_inum_arg_is_in_range(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, const char *a_func_name)
 {
     const char *func_name = "fatfs_inum_arg_is_in_range";
-    TSK_FS_INFO *fs = (TSK_FS_INFO*)a_fatfs; 
 
     assert(a_fatfs != NULL);
     assert(a_func_name != NULL);
@@ -307,7 +306,7 @@ fatfs_utf16_inode_str_2_utf8(FATFS_INFO *a_fatfs, UTF16 *a_src, size_t a_src_len
     else {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_UNICODE);
-        tsk_error_set_errstr("%s: Error converting %s for inum %d from UTF16 to UTF8: %d", func_name, a_desc, a_inum, conv_result);
+        tsk_error_set_errstr("%s: Error converting %s for inum %"PRIuINUM" from UTF16 to UTF8: %d", func_name, a_desc, a_inum, conv_result);
         *a_dest = '\0';
     }
 

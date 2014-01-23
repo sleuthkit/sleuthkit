@@ -434,6 +434,14 @@ exfats_parse_special_file_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY
         case EXFATFS_DIR_ENTRY_TYPE_ACT:
             strcpy(a_name_info->fs_name->name, EXFATFS_ACT_DENTRY_NAME);
             break;
+
+        // listed so that we don't get compile warnings
+        case EXFATFS_DIR_ENTRY_TYPE_NONE:
+        case EXFATFS_DIR_ENTRY_TYPE_VOLUME_LABEL:
+        case EXFATFS_DIR_ENTRY_TYPE_FILE:
+        case EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM:
+        case EXFATFS_DIR_ENTRY_TYPE_FILE_NAME:
+            break;
     }
 
     /* Not a directory. */

@@ -83,14 +83,14 @@ extern "C" {
 #endif
 
     extern char *tsk_error_get_errstr();
-    extern void tsk_error_set_errstr(char const *format,
+    extern void tsk_error_set_errstr(const char *format,
         ...) TSK_ERROR_FORMAT_ATTRIBUTE(1, 2);
-    extern void tsk_error_vset_errstr(char const *format, va_list args);
+    extern void tsk_error_vset_errstr(const char *format, va_list args);
     extern char *tsk_error_get_errstr2();
-    extern void tsk_error_set_errstr2(char const *format,
+    extern void tsk_error_set_errstr2(const char *format,
         ...) TSK_ERROR_FORMAT_ATTRIBUTE(1, 2);
-    extern void tsk_error_vset_errstr2(char const *format, va_list args);
-    extern void tsk_error_errstr2_concat(char const *format,
+    extern void tsk_error_vset_errstr2(const char *format, va_list args);
+    extern void tsk_error_errstr2_concat(const char *format,
         ...) TSK_ERROR_FORMAT_ATTRIBUTE(1, 2);
 
     /** Return a human-readable form of tsk_error_get_errno **/

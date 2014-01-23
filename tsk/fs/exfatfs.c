@@ -124,7 +124,7 @@ exfatfs_get_fs_layout(FATFS_INFO *a_fatfs)
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr("Not an exFAT file system (invalid volume length)");
         if (tsk_verbose) {
-            fprintf(stderr, "%s: Invalid volume length in sectors (%d)\n", func_name, vol_len_in_sectors);
+            fprintf(stderr, "%s: Invalid volume length in sectors (%"PRIu64")\n", func_name, vol_len_in_sectors);
         }
         return FATFS_FAIL;
     }
@@ -209,7 +209,7 @@ exfatfs_get_fs_layout(FATFS_INFO *a_fatfs)
         tsk_error_set_errno(TSK_ERR_FS_WALK_RNG);
         tsk_error_set_errstr("Not an exFAT file system (invalid root directory sector address)");
         if (tsk_verbose) {
-            fprintf(stderr, "%s: Invalid root directory sector address (%d)\n", func_name, a_fatfs->rootsect);
+            fprintf(stderr, "%s: Invalid root directory sector address (%"PRIuDADDR")\n", func_name, a_fatfs->rootsect);
         }
         return FATFS_FAIL;
     }

@@ -448,14 +448,11 @@ exfatfs_is_access_ctrl_table_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLO
 uint8_t
 exfatfs_is_file_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs)
 {
-    const char *func_name = "exfatfs_is_file_dentry";
-    TSK_FS_INFO *fs = NULL;
-
     if (a_fatfs != NULL) {
-        fs = &(a_fatfs->fs_info);
+        TSK_FS_INFO *fs = &(a_fatfs->fs_info);
         return exfatfs_is_file_dentry_standalone(a_dentry, fs->endian);
     }
-    else{
+    else {
         return exfatfs_is_file_dentry_standalone(a_dentry, TSK_UNKNOWN_ENDIAN);
     }
 
@@ -541,11 +538,7 @@ exfatfs_is_file_dentry_standalone(FATFS_DENTRY *a_dentry, TSK_ENDIAN_ENUM a_endi
 uint8_t
 exfatfs_is_file_stream_dentry(FATFS_DENTRY *a_dentry, FATFS_INFO *a_fatfs)
 {
-    const char *func_name = "exfatfs_is_file_stream_dentry";
     TSK_FS_INFO *fs = NULL;
-    EXFATFS_FILE_STREAM_DIR_ENTRY *dentry = (EXFATFS_FILE_STREAM_DIR_ENTRY*)a_dentry;
-    uint64_t file_size = 0;
-    uint32_t first_cluster = 0;
 
     uint64_t cluster_heap_size = 0;
 
@@ -828,7 +821,6 @@ exfatfs_make_contiguous_data_run(TSK_FS_FILE *a_fs_file)
 static TSK_RETVAL_ENUM 
 exfatfs_copy_vol_label_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FATFS_DENTRY *a_dentry, TSK_FS_FILE *a_fs_file)
 {
-    const char *func_name = "exfatfs_copy_vol_label_inode";
     EXFATFS_VOL_LABEL_DIR_ENTRY *dentry = NULL;
 
     assert(a_fatfs != NULL);
@@ -869,7 +861,6 @@ exfatfs_copy_vol_label_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FATFS_DENTR
 static TSK_RETVAL_ENUM 
 exfatfs_copy_alloc_bitmap_inode(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, TSK_FS_FILE *a_fs_file)
 {
-    const char *func_name = "exfatfs_copy_alloc_bitmap_inode";
     EXFATFS_ALLOC_BITMAP_DIR_ENTRY *dentry = NULL;
 
     assert(a_fatfs != NULL);
@@ -910,7 +901,6 @@ exfatfs_copy_alloc_bitmap_inode(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, TSK
 static TSK_RETVAL_ENUM 
 exfatfs_copy_upcase_table_inode(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, TSK_FS_FILE *a_fs_file)
 {
-    const char *func_name = "exfatfs_copy_upcase_table_inode";
     EXFATFS_UPCASE_TABLE_DIR_ENTRY *dentry = NULL;
 
     assert(a_fatfs != NULL);
@@ -996,7 +986,6 @@ exfatfs_next_dentry_inum(FATFS_INFO *a_fatfs, TSK_INUM_T a_current_entry_inum,
     EXFATFS_FILE_DIR_ENTRY *a_file_dentry, EXFATFS_DIR_ENTRY_TYPE_ENUM a_next_dentry_type,
 	TSK_INUM_T * a_next_inum)
 {
-    const char *func_name = "exfatfs_next_dentry_inum";
     int8_t alloc_check_ret_val = 0;
     uint8_t cluster_is_alloc = 0;
     TSK_DADDR_T sector = 0; 
@@ -1004,7 +993,6 @@ exfatfs_next_dentry_inum(FATFS_INFO *a_fatfs, TSK_INUM_T a_current_entry_inum,
     TSK_DADDR_T cluster_base_sector = 0;
     TSK_DADDR_T last_entry_offset = 0;
     TSK_DADDR_T file_entry_offset = 0;
-    EXFATFS_DIR_ENTRY_TYPE dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
     TSK_DADDR_T next_cluster = 0;
 	FATFS_DENTRY temp_dentry;
 
@@ -1123,12 +1111,10 @@ static TSK_RETVAL_ENUM
 exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
     FATFS_DENTRY *a_file_dentry, uint8_t a_is_alloc, TSK_FS_FILE *a_fs_file)
 {
-    const char *func_name = "exfatfs_copy_file_inode";
     TSK_FS_INFO *fs = NULL;
     TSK_FS_META *fs_meta =  NULL;
     EXFATFS_FILE_DIR_ENTRY *file_dentry = (EXFATFS_FILE_DIR_ENTRY*)a_file_dentry;
     EXFATFS_FILE_STREAM_DIR_ENTRY stream_dentry;
-	int tz_offset_minutes = 0;
     uint32_t mode = 0;
 	TSK_INUM_T stream_inum;
 	TSK_INUM_T name_inum;
@@ -1308,7 +1294,6 @@ static TSK_RETVAL_ENUM
 exfatfs_copy_file_name_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
     FATFS_DENTRY *a_dentry, uint8_t a_is_alloc, TSK_FS_FILE *a_fs_file)
 {
-    const char *func_name = "exfatfs_copy_file_name_inode";
     EXFATFS_FILE_NAME_DIR_ENTRY *dentry = NULL;
 
     assert(a_fatfs != NULL);
@@ -1357,9 +1342,7 @@ static uint8_t
 exfatfs_inode_copy_init(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, 
     uint8_t a_is_alloc, TSK_FS_FILE *a_fs_file)
 {
-    const char *func_name = "exfatfs_inode_copy_init";
     TSK_FS_META *fs_meta = NULL;
-    int8_t ret_val = 0;
 
     assert(a_fatfs != NULL);
     assert(fatfs_inum_is_in_range(a_fatfs, a_inum));
@@ -1534,7 +1517,6 @@ exfatfs_find_file_stream_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_file_entry_inu
     TSK_DADDR_T cluster_base_sector = 0;
     TSK_DADDR_T last_entry_offset = 0;
     TSK_DADDR_T file_entry_offset = 0;
-    EXFATFS_DIR_ENTRY_TYPE dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
     TSK_DADDR_T next_cluster = 0;
 
     assert(a_fatfs != NULL);
@@ -1636,9 +1618,6 @@ exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
     FATFS_DENTRY dentry;
     //FATFS_DENTRY stream_dentry;
     //FATFS_DENTRY *secondary_dentry = NULL;
-    uint64_t inode_offset = 0;
-    TSK_DADDR_T cluster_base_sector = 0;
-    TSK_INUM_T next_inum = 0;
     EXFATFS_DIR_ENTRY_TYPE dentry_type = EXFATFS_DIR_ENTRY_TYPE_NONE;
     TSK_RETVAL_ENUM copy_result = TSK_OK;
 
@@ -1841,7 +1820,6 @@ exfatfs_inode_walk_should_skip_dentry(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
 {
     const char *func_name = "exfatfs_inode_walk_should_skip_dentry";
     unsigned int dentry_flags = 0;
-    uint8_t i = 0;
 
     assert(a_fatfs != NULL);
     assert(fatfs_inum_is_in_range(a_fatfs, a_inum));
