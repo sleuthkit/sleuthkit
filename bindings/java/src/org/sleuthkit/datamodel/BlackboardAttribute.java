@@ -198,6 +198,7 @@ public class BlackboardAttribute {
 		TSK_PATH_SOURCE(94, "TSK_PATH_SOURCE", "Path Source"), // Path to a source file related to the artifact
 		TSK_PERMISSIONS(95, "TSK_PERMISSIONS", "Permissions"), // Permissions
 		TSK_ASSOCIATED_ARTIFACT(96, "TSK_ASSOCIATED_ARTIFACT", "Associated Artifact"), // Artifact ID of a related artifact
+		TSK_ISDELETED(97, "TSK_ISDELETED", "Is Deleted"), // boolean to indicate that the artifact is recovered fom deleted content
 		
 		
 		;
