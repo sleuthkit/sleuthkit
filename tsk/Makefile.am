@@ -8,6 +8,6 @@ libtsk_la_LIBADD = base/libtskbase.la img/libtskimg.la \
     vs/libtskvs.la fs/libtskfs.la hashdb/libtskhashdb.la \
     auto/libtskauto.la
 # current:revision:age
-libtsk_la_LDFLAGS = -version-info 11:1:1
+libtsk_la_LDFLAGS = -version-info 12:0:2
 
 EXTRA_DIST = tsk_tools_i.h docs/Doxyfile docs/*.dox docs/*.html
