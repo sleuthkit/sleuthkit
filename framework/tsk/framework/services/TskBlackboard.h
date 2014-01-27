@@ -195,6 +195,7 @@ enum TSK_ATTRIBUTE_TYPE {
 	TSK_PATH_SOURCE = 94, ///< Path to a source file related to the artifact
 	TSK_PERMISSIONS = 95, ///< Permissions
 	TSK_ASSOCIATED_ARTIFACT = 96, ///< Artifact ID of a related artifact
+    TSK_ISDELETED = 97, ///< the artifact is recovered from deleted content
 
     /* SEE ABOVE: 
     * - KEEP JAVA CODE IN SYNC 

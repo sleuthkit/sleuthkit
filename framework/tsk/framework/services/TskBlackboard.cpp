@@ -146,6 +146,7 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
 	retval.insert(pair<int, TskAttributeNames>(TSK_PATH_SOURCE, TskAttributeNames("TSK_PATH_SOURCE",  "Path Source")));
 	retval.insert(pair<int, TskAttributeNames>(TSK_PERMISSIONS, TskAttributeNames("TSK_PERMISSIONS",  "Permissions")));
 	retval.insert(pair<int, TskAttributeNames>(TSK_ASSOCIATED_ARTIFACT, TskAttributeNames("TSK_ASSOCIATED_ARTIFACT", "Associated Artifact")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_ISDELETED, TskAttributeNames("TSK_ISDELETED", "Is Deleted")));
 
     return retval;
 }
