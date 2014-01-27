@@ -134,8 +134,9 @@ sub verify_precheckin {
 # Create a tag 
 sub tag_dir {
     unless ($TESTING) {
-        system ("git tag ${TSK_RELNAME}");
-        system ("git push --tags");
+        print "Generating signed tag.\n"; 
+        system ("git tag -s ${TSK_RELNAME} -m \"Tag for release ${TSK_RELNAME}\"");
+        system ("git push origin ${TSK_RELNAME}");
     }
 }
 
