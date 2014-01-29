@@ -3843,50 +3843,6 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Find and return list of file IDs matching the specific Where clause. Use
-	 * this like findFilesWhere() and where file objects are not required
-	 * upfront and so heap usage can be reduced.
-	 *
-	 * @param sqlWhereClause a SQL where clause appropriate for the desired
-	 * files (do not begin the WHERE clause with the word WHERE!)
-	 * @return a list of file ids each of which satisfy the given WHERE clause
-	 * @throws TskCoreException
-	 */
-	public List<Long> findFileIdsWhere(String sqlWhereClause) throws TskCoreException {
-		Statement statement = null;
-		ResultSet rs = null;
-		List<Long> ret = new ArrayList<Long>();
-		dbReadLock();
-		try {
-			statement = con.createStatement();
-			rs = statement.executeQuery("SELECT obj_id FROM tsk_files WHERE " + sqlWhereClause);
-			while (rs.next()) {
-				ret.add(rs.getLong(1));
-			}
-
-		} catch (SQLException e) {
-			throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.findFileIdsWhere() " + sqlWhereClause, e);
-		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Error closing result set after executing  findFileIdsWhere", ex);
-				}
-			}
-			if (statement != null) {
-				try {
-					statement.close();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Error closing statement after executing  findFilesWhere", ex);
-				}
-			}
-			dbReadUnlock();
-		}
-		return ret;
-	}
-
-	/**
 	 * @param dataSource the data source (Image, VirtualDirectory for file-sets,
 	 * etc) to search for the given file name
 	 * @param filePath The full path to the file(s) of interest. This can
