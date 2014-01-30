@@ -125,3 +125,4 @@ tools/vstools/mmstat
 
 # EMACS backup files
 *~
+.DS_Store
