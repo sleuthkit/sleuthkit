@@ -49,6 +49,7 @@ public class Image extends AbstractContent {
 	 * @param name
 	 * @param paths
 	 * @param timezone
+	 * @param md5
 	 */
 	protected Image(SleuthkitCase db, long obj_id, long type, long ssize, String name, String[] paths, String timezone, String md5) throws TskCoreException {
 		super(db, obj_id, name);
@@ -295,7 +296,11 @@ public class Image extends AbstractContent {
         return errorString;
     }
 	
-	
+		/**
+     * gets the md5 hash value  
+     * 
+     * @returns md5 hash if attained(from database). returns null if not set. 
+     */
 	public String getMd5() {
 			return md5;	
 	}

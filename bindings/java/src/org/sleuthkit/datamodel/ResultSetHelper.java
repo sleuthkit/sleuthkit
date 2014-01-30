@@ -45,7 +45,7 @@ class ResultSetHelper {
 		md5="";
 		if(db.getVersionNumber() > 2)
 		{
-		md5= rs.getString("md5");
+			md5= rs.getString("md5");
 		}
 		Image img = new Image(db, obj_id, type, ssize, name, imagePaths, tzone,md5);
 		return img;
