@@ -16,6 +16,13 @@
  * Functions common to all text hash databases.
  */
 
+// A mapping of initial hash digits to offsets in the index file is used to
+// set the initial bounds of the binary search of the index file that is done
+// for lookups. The mapping is from the first three digits (three nibbles) of 
+// the hash, so there are 2 ^ 12 or 4096 possible entries.
+static const size_t IDX_IDX_SIZE = 4096 * sizeof(uint64_t);
+static const uint64_t IDX_IDX_ENTRY_NOT_SET = 0xFFFFFFFFFFFFFFFF;
+
 TSK_TEXT_HDB_INFO *text_hdb_open(FILE *hDb, const TSK_TCHAR *db_path)
 {
     TSK_TEXT_HDB_INFO *text_hdb_info = NULL;
@@ -65,14 +72,12 @@ TSK_TEXT_HDB_INFO *text_hdb_open(FILE *hDb, const TSK_TCHAR *db_path)
 static uint8_t
 text_hdb_idx_init_hash_type_info(TSK_TEXT_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
 {
-    size_t flen = 0;
-
-    if (hdb_info->hash_type != 0) {
+    if (hdb_info->hash_type != TSK_HDB_HTYPE_INVALID_ID) {
         return 0;
     }
 
     /* Make the name for the index file */
-    flen = TSTRLEN(hdb_info->base.db_fname) + 32;
+    size_t flen = TSTRLEN(hdb_info->base.db_fname) + 32;
     hdb_info->idx_fname =
         (TSK_TCHAR *) tsk_malloc(flen * sizeof(TSK_TCHAR));
     if (hdb_info->idx_fname == NULL) {
@@ -86,7 +91,7 @@ text_hdb_idx_init_hash_type_info(TSK_TEXT_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM
         return 1;
     }
 
-    /* Get hash type specific information */
+    /* Set hash type specific information */
     switch (htype) {
     case TSK_HDB_HTYPE_MD5_ID:
         hdb_info->hash_type = htype;
@@ -152,6 +157,116 @@ text_hdb_has_index(TSK_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
     else {
         return 1;
     }
+}
+
+static uint8_t
+text_hdb_load_index_offsets(TSK_TEXT_HDB_INFO *hdb_info) 
+{
+	const char *func_name = "text_hdb_load_index_offsets";
+
+	if (!hdb_info) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("%s: TSK_TEXT_HDB_INFO* is NULL", func_name);
+		return 1;
+	}
+
+	if (!hdb_info->idx_idx_fname) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("%s: hdb_info->idx_idx_fname is NULL", func_name);
+		return 1;
+	}
+
+	// Attempt to open the file that contains the index of the index.
+	// For older text-format hash databases, this additional index may 
+	// not exist, and that's o.k., lookups will just be slower.
+	FILE *idx_idx_file = NULL;
+	TSK_OFF_T idx_idx_size = 0;
+#ifdef TSK_WIN32
+    {
+        HANDLE hWin;
+        if (-1 == GetFileAttributes(hdb_info->idx_idx_fname)) {
+			// The file does not exist. Not a problem.
+			return 0;
+        }
+
+        if ((hWin = CreateFile(hdb_info->idx_idx_fname, GENERIC_READ,
+			FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0)) ==
+            INVALID_HANDLE_VALUE) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_HDB_OPEN);
+            tsk_error_set_errstr(
+				"%s: error opening index of index: %"PRIttocTSK" - %d",
+				func_name, hdb_info->idx_idx_fname, (int)GetLastError());
+            return 1;
+        }
+
+        idx_idx_file =_fdopen(_open_osfhandle((intptr_t) hWin, _O_RDONLY), "rb");
+        if (!idx_idx_file) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_HDB_OPEN);
+            tsk_error_set_errstr(
+				"%s: error converting file handle from Windows to C for: %"PRIttocTSK, 
+				func_name, hdb_info->idx_idx_fname);
+            return 1;
+        }
+
+        DWORD szHi = 0;
+        DWORD szLow = GetFileSize(hWin, &szHi);
+        if (szLow == 0xffffffff) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_HDB_OPEN);
+            tsk_error_set_errstr(
+				"%s: error getting size of index of index file: %"PRIttocTSK" - %d",
+				func_name, hdb_info->idx_idx_fname, (int)GetLastError());
+            return 1;
+        }
+        idx_idx_size = szLow | ((uint64_t) szHi << 32);
+    }
+#else
+    {
+        struct stat sb;
+        if (stat(hdb_info->idx_idx_fname, &sb) < 0) {
+			// The file does not exist. Not a problem.
+            return 0;
+        }
+		idx_idx_size = sb.st_size;
+
+        if (NULL == (idx_idx_file = fopen(hdb_info->idx_idx_fname, "rb"))) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_HDB_OPEN);
+            tsk_error_set_errstr(
+                     "%s: error opening index of index: %"PRIttocTSK,
+                     func_name, hdb_info->idx_idx_fname);
+            return 1;
+        }
+    }
+#endif
+
+	// Read the stored mapping of initial hash digits to offsets in the index file
+	// into memory. The mapping is for the first three digits of the hashes 
+	// (three nibbles), so there are 2 ^ 12 or 4096 possible entries.
+	if (IDX_IDX_SIZE != idx_idx_size) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_OPEN);
+        tsk_error_set_errstr("%s: index of index is wrong size", func_name);
+		return 1;
+	}
+
+	hdb_info->idx_offsets = (uint64_t*)tsk_malloc(IDX_IDX_SIZE);
+    if (NULL == hdb_info->idx_offsets) {
+        return 1;
+    }
+
+	if (IDX_IDX_SIZE != fread(&(hdb_info->idx_offsets), IDX_IDX_SIZE, 1, idx_idx_file)) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_OPEN);
+        tsk_error_set_errstr("%s: error reading index of index", func_name);
+		return 1;
+	}
+
+	return 0;
 }
 
 /** \internal
@@ -395,14 +510,12 @@ text_hdb_open_idx(TSK_HDB_INFO *hdb_info_base, TSK_HDB_HTYPE_ENUM htype)
         return 1;
     }
 
-	// RJCTODO: If the index file exists, open it up and populate the array.
-	// To speed up lookups, a mapping of the first three bytes of a hash value to
-	// an offset in the index file will be loaded into memory, if available.
-	hdb_info->idx_offsets = (uint64_t*)tsk_malloc(4096 * sizeof(uint64_t));
-    if (NULL == hdb_info->idx_offsets) {
+	/* To speed up lookups, a mapping of the first three bytes of a hash to
+	 * an offset in the index file will be loaded into memory, if available. */
+	if (text_hdb_load_index_offsets(hdb_info)) {
 	    tsk_release_lock(&hdb_info->base.lock);
         return 1;
-    }
+	}
 
     tsk_release_lock(&hdb_info->base.lock);
 
@@ -643,82 +756,98 @@ static uint8_t
 text_hdb_make_idx_idx(TSK_TEXT_HDB_INFO *hdb_info)
 {
 	const char *func_name = "text_hdb_make_idx_idx";
-    FILE *idx_idx_file = NULL;
 
-	// Open the index file.
+	if (!hdb_info) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("%s: TSK_TEXT_HDB_INFO* is NULL", func_name);
+		return 1;
+	}
+
+	// Open the index file. This will read past the header, so the file
+	// pointer will be positioned at the offset of the first hash line
+	// in the index file. 
 	if (text_hdb_open_idx(&(hdb_info->base), hdb_info->hash_type)) {
         return 1;
     }
 
-	// Create the file for an index of the index file.
+	if (!hdb_info->idx_idx_fname) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("%s: hdb_info->idx_idx_fname is NULL", func_name);
+		return 1;
+	}
+
+	// Create the file for the index of the index file.
+    FILE *idx_idx_file = NULL;
 #ifdef TSK_WIN32
     {
         HANDLE hWin;
-
         if ((hWin = CreateFile(hdb_info->idx_idx_fname, GENERIC_WRITE,
 				0, 0, CREATE_ALWAYS, 0, 0)) == INVALID_HANDLE_VALUE) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_CREATE);
             tsk_error_set_errstr(
-				"%s: error creating index of index file %"PRIttocTSK" (error no = %d)",
+				"%s: error creating index of index file %"PRIttocTSK" - %d)",
 				func_name, hdb_info->idx_idx_fname, (int)GetLastError());
             return 1;
         }
 
         idx_idx_file =
-            _fdopen(_open_osfhandle((intptr_t) hWin, _O_WRONLY), "wb");
+			_fdopen(_open_osfhandle((intptr_t) hWin, _O_WRONLY), "wb");
         if (idx_idx_file == NULL) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_OPEN);
             tsk_error_set_errstr(
-				"%s: error converting Windows file handle of index of index file %"PRIttocTSK" to C file handle",
+				"%s: error converting file handle from Windows to C for: %"PRIttocTSK, 
 				func_name, hdb_info->idx_idx_fname);
             return 1;
         }
     }
 #else
-    if (NULL == (idx_idx_file = fopen(hdb_info->idx_idx_fname, "w"))) {
+    if (NULL == (idx_idx_file = fopen(hdb_info->idx_idx_fname, "wb"))) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_CREATE);
         tsk_error_set_errstr(
-			"%s: error creating index of index file %"PRIttocTSK"",
-                 func_name, idx_idx_file);
+			"%s: error creating index of index file %"PRIttocTSK",
+			func_name, idx_idx_file);
         return 1;
     }
 #endif
 
 	// Allocate an array to hold the starting offsets in the index file for each 
-	// set of hashes with identical intitial (3) bytes. Use 0xFF as a marker.
-	hdb_info->idx_offsets = (uint64_t*)tsk_malloc(4096 * sizeof(uint64_t));
+	// set of hashes with identical intitial (3) nibbles.
+	hdb_info->idx_offsets = (uint64_t*)tsk_malloc(IDX_IDX_SIZE);
     if (NULL == hdb_info->idx_offsets) {
 	    tsk_release_lock(&hdb_info->base.lock);
         return 1;
     }
-	memset(hdb_info->idx_offsets, 0xFF, 4096);
+	memset(hdb_info->idx_offsets, 0xFF, IDX_IDX_SIZE);
 
-	// Populate the array.
-	uint8_t ret_val = 0;
+	// Populate the array. Note that the index is sorted, so the first
+	// occurence of any nibble indicates the starting offset for the
+	// corresponding set.
+    TSK_OFF_T idx_off = hdb_info->idx_off;
 	char digits[4];
-	long int offsets_idx;
-    TSK_OFF_T idx_idx_off = 0;
-	while (fgets(hdb_info->idx_lbuf, (int)hdb_info->idx_llen + 1, 
-		idx_idx_file)) {
+	long int offsets_idx = 0;
+	while (fgets(hdb_info->idx_lbuf, (int)hdb_info->idx_llen + 1, hdb_info->hIdx)) {
 		strncpy(digits, hdb_info->idx_lbuf, 3);		
 		offsets_idx = strtol(digits, NULL, 16);
-		if ((hdb_info->idx_offsets[offsets_idx] == 0xFF) || 
-			(idx_idx_off < hdb_info->idx_offsets[offsets_idx])) {
-				hdb_info->idx_offsets[offsets_idx] = idx_idx_off;
+		if (hdb_info->idx_offsets[offsets_idx] == IDX_IDX_ENTRY_NOT_SET) {
+			hdb_info->idx_offsets[offsets_idx] = idx_off;
 		}
-		offsets_idx += 8;
+		idx_off += hdb_info->idx_llen;
 	}
+    fclose(hdb_info->hIdx);
+    hdb_info->hIdx = NULL;
 
-	// RJCTODO: Write the array to the file.
-
+	// Write the array to the index of the index file.
+	uint8_t ret_val = (1 == fwrite((const void*)&(hdb_info->idx_offsets), IDX_IDX_SIZE, 1, idx_idx_file)) ? 0 : 1; 
 	fclose(idx_idx_file);
 	free(hdb_info->idx_offsets);
 	hdb_info->idx_offsets = NULL;
 
-	return 0;
+	return ret_val;
 }
 
 /**
@@ -841,10 +970,15 @@ text_hdb_idx_finalize(TSK_TEXT_HDB_INFO *hdb_info)
     unlink(hdb_info->uns_fname);
 #endif
 
-	// RJCTODO: Fix comment
-	// To speed up lookups, create a mapping of the first three bytes of a hash value to
-	// an offset in the index file will be created.	
-	text_hdb_make_idx_idx(hdb_info);
+	// To speed up lookups, create a mapping of the first three bytes of a hash 
+	// to an offset in the index file.	
+	if (text_hdb_make_idx_idx(hdb_info)) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_PROC);
+        tsk_error_set_errstr(
+			"text_hdb_idx_finalize: error creating index of index file");
+		return 1;
+	}
 
     return 0;
 }
