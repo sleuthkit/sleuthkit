@@ -20,7 +20,8 @@
 // set the initial bounds of the binary search of the index file that is done
 // for lookups. The mapping is from the first three digits (three nibbles) of 
 // the hash, so there are 2 ^ 12 or 4096 possible entries.
-static const size_t IDX_IDX_SIZE = 4096 * sizeof(uint64_t);
+static const size_t IDX_IDX_ENTRY_COUNT = 4096;
+static const size_t IDX_IDX_SIZE = IDX_IDX_ENTRY_COUNT * sizeof(uint64_t);
 static const uint64_t IDX_IDX_ENTRY_NOT_SET = 0xFFFFFFFFFFFFFFFF;
 
 TSK_TEXT_HDB_INFO *text_hdb_open(FILE *hDb, const TSK_TCHAR *db_path)
@@ -259,7 +260,7 @@ text_hdb_load_index_offsets(TSK_TEXT_HDB_INFO *hdb_info)
         return 1;
     }
 
-	if (IDX_IDX_SIZE != fread(&(hdb_info->idx_offsets), IDX_IDX_SIZE, 1, idx_idx_file)) {
+	if (1 != fread((void*)hdb_info->idx_offsets, IDX_IDX_SIZE, 1, idx_idx_file)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_OPEN);
         tsk_error_set_errstr("%s: error reading index of index", func_name);
@@ -842,7 +843,7 @@ text_hdb_make_idx_idx(TSK_TEXT_HDB_INFO *hdb_info)
     hdb_info->hIdx = NULL;
 
 	// Write the array to the index of the index file.
-	uint8_t ret_val = (1 == fwrite((const void*)&(hdb_info->idx_offsets), IDX_IDX_SIZE, 1, idx_idx_file)) ? 0 : 1; 
+	uint8_t ret_val = (1 == fwrite((const void*)hdb_info->idx_offsets, IDX_IDX_SIZE, 1, idx_idx_file)) ? 0 : 1; 
 	fclose(idx_idx_file);
 	free(hdb_info->idx_offsets);
 	hdb_info->idx_offsets = NULL;
@@ -1001,6 +1002,7 @@ text_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char *hash,
                     TSK_HDB_FLAG_ENUM flags, TSK_HDB_LOOKUP_FN action,
                     void *ptr)
 {
+	const char *func_name = "text_hdb_lookup_str";
     TSK_TEXT_HDB_INFO *hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info_base; 
     TSK_OFF_T poffset;
     TSK_OFF_T up;               // Offset of the first byte past the upper limit that we are looking in
@@ -1021,7 +1023,7 @@ text_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char *hash,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
         tsk_error_set_errstr(
-                 "hdb_lookup: Invalid hash length: %s", hash);
+                 "%s: Invalid hash length: %s", func_name, hash);
         return -1;
     }
 
@@ -1030,8 +1032,8 @@ text_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char *hash,
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_ARG);
             tsk_error_set_errstr(
-                     "hdb_lookup: Invalid hash value (hex only): %s",
-                     hash);
+                     "%s: Invalid hash value (hex only): %s",
+                     func_name, hash);
             return -1;
         }
     }
@@ -1045,14 +1047,62 @@ text_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char *hash,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
         tsk_error_set_errstr(
-                 "hdb_lookup: Hash passed is different size than expected (%d vs %Zd)",
-                 hdb_info->hash_len, strlen(hash));
+                 "%s: Hash passed is different size than expected (%d vs %Zd)",
+                 func_name, hdb_info->hash_len, strlen(hash));
         return -1;
     }
 
+	// Do a lookup in the index of the index file. The index of the index file is
+	// a mapping of the first three digits of a hash to the offset in the index
+	// file of the first index entry of the possibly empty set of index entries 
+	// for hashes with those initial digits.
+	if (hdb_info->idx_offsets) {
+		// Convert the initial hash digits into an index into the index offsets.
+		// This will give the offset into the index file for the set of hashes
+		// that contains the sought hash.
+		char digits[4];
+		strncpy(digits, hash, 3);
+		long int idx_idx_off = strtol(digits, NULL, 16);
+		idx_idx_off = strtol(digits, NULL, 16);
+		if ((idx_idx_off < 0) || (idx_idx_off > IDX_IDX_ENTRY_COUNT)) {
+            tsk_release_lock(&hdb_info->base.lock);
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_HDB_ARG);
+            tsk_error_set_errstr(
+				"%s: %s is not a valid hash value", func_name, hash);
+			return -1;
+		}
 
-    low = hdb_info->idx_off;
-    up = hdb_info->idx_size;
+		// Determine the bounds for the binary search of the sorted index file.
+		// The lower bound is the start of the set of entries that may contain
+		// the sought hash. The upper bound is the offset one past the end
+		// of that entry set, or EOF.
+		low = hdb_info->idx_offsets[idx_idx_off];
+		if (IDX_IDX_ENTRY_NOT_SET != low) {
+			do {
+				++idx_idx_off;
+				if (idx_idx_off == IDX_IDX_ENTRY_COUNT) {
+					// The set of hashes to search is the last set. Use the end of the index
+					// file as the upper bound for the binary search.
+					up = hdb_info->idx_size;
+					break;
+				}
+				else {
+					up = hdb_info->idx_offsets[idx_idx_off];
+				}
+			} while (IDX_IDX_ENTRY_NOT_SET == up);
+		}
+		else {
+			// Quick out - the hash does not map to an index offset.
+			// It is not in the hash database.
+			return 0;
+		}
+	}
+	else {
+		// There is no index for the index file. Search the entire file.
+		low = hdb_info->idx_off;
+		up = hdb_info->idx_size;
+	}
 
     poffset = 0;
 
