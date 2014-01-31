@@ -810,7 +810,7 @@ text_hdb_make_idx_idx(TSK_TEXT_HDB_INFO *hdb_info)
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_CREATE);
         tsk_error_set_errstr(
-			"%s: error creating index of index file %"PRIttocTSK",
+			"%s: error creating index of index file %"PRIttocTSK,
 			func_name, idx_idx_file);
         return 1;
     }
@@ -1064,7 +1064,7 @@ text_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char *hash,
 		strncpy(digits, hash, 3);
 		long int idx_idx_off = strtol(digits, NULL, 16);
 		idx_idx_off = strtol(digits, NULL, 16);
-		if ((idx_idx_off < 0) || (idx_idx_off > IDX_IDX_ENTRY_COUNT)) {
+		if ((idx_idx_off < 0) || (idx_idx_off > (long int)IDX_IDX_ENTRY_COUNT)) {
             tsk_release_lock(&hdb_info->base.lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_ARG);
@@ -1078,10 +1078,10 @@ text_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char *hash,
 		// the sought hash. The upper bound is the offset one past the end
 		// of that entry set, or EOF.
 		low = hdb_info->idx_offsets[idx_idx_off];
-		if (IDX_IDX_ENTRY_NOT_SET != low) {
+		if (IDX_IDX_ENTRY_NOT_SET != (uint64_t)low) {
 			do {
 				++idx_idx_off;
-				if (idx_idx_off == IDX_IDX_ENTRY_COUNT) {
+				if (idx_idx_off == (long int)IDX_IDX_ENTRY_COUNT) {
 					// The set of hashes to search is the last set. Use the end of the index
 					// file as the upper bound for the binary search.
 					up = hdb_info->idx_size;
@@ -1090,7 +1090,7 @@ text_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char *hash,
 				else {
 					up = hdb_info->idx_offsets[idx_idx_off];
 				}
-			} while (IDX_IDX_ENTRY_NOT_SET == up);
+			} while (IDX_IDX_ENTRY_NOT_SET == (uint64_t)up);
 		}
 		else {
 			// Quick out - the hash does not map to an index offset.
