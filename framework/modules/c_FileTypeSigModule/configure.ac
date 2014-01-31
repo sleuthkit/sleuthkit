@@ -128,7 +128,6 @@ AC_CHECK_HEADERS([magic.h],
   [AC_MSG_WARN([Cound not find magic headers.])]
 )
 AM_CONDITIONAL([HAS_LIBMAGIC], [test "x$with_magic" = "xyes"])
-AM_COND_IF([HAS_LIBMAGIC], [rm -f missing_libs.txt], [echo "libmagic for FileTypeModule" > missing_libs.txt])
 
 # If libmagic was not found, we continue on and do not error. 
 # The makefile will simply not compile anything. 
@@ -165,6 +164,7 @@ fi
 else
 # action if libmagic is not found
 AC_MSG_WARN([libmagic library not found. FileTypeSigModule will not be built.])
+echo "libmagic for FileTypeModule" > missing_libs.txt
 fi
 
 AC_CONFIG_FILES([Makefile])

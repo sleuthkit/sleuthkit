@@ -14,6 +14,9 @@
  */
 
 #include "tsk_case_db.h"
+#if HAVE_LIBEWF
+#include "tsk/img/ewf.h"
+#endif
 #include <string.h>
 
 #include <algorithm>
@@ -42,6 +45,7 @@ TskAutoDb::TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO *
     m_vsFound = false;
     m_volFound = false;
     m_stopped = false;
+    m_foundStructure = false;
     m_imgTransactionOpen = false;
     m_NSRLDb = a_NSRLDb;
     m_knownBadDb = a_knownBadDb;
@@ -189,8 +193,21 @@ uint8_t
 uint8_t
 TskAutoDb::addImageDetails(const char *const img_ptrs[], int a_num)
 {
+//    string md5 = "";
+//#if HAVE_LIBEWF
+//    if (m_img_info->itype == TSK_IMG_TYPE_EWF_EWF) {
+        // @@@ This shoudl really probably be inside of a tsk_img_ method
+//        IMG_EWF_INFO *ewf_info = (IMG_EWF_INFO *)m_img_info;
+//        if (ewf_info->md5hash_isset) {
+//            md5 = ewf_info->md5hash;
+//        }
+//    }
+//#endif
+
     if (m_db->addImageInfo(m_img_info->itype, m_img_info->sector_size,
-            m_curImgId, m_curImgTZone)) {
+ //           m_curImgId, m_curImgTZone, m_img_info->size, md5)) {
+            m_curImgId, m_curImgTZone)) { 
+        registerError();
         return 1;
     }
 
@@ -208,6 +225,7 @@ TskAutoDb::addImageDetails(const char *const img_ptrs[], int a_num)
         //}
 
         if (m_db->addImageName(m_curImgId, img_ptr, i)) {
+            registerError();
             return 1;
         }
     }
@@ -220,6 +238,7 @@ TSK_FILTER_ENUM TskAutoDb::filterVs(const TSK_VS_INFO * vs_info)
 {
     m_vsFound = true;
     if (m_db->addVsInfo(vs_info, m_curImgId, m_curVsId)) {
+        registerError();
         return TSK_FILTER_STOP;
     }
 
@@ -230,8 +249,10 @@ TSK_FILTER_ENUM
 TskAutoDb::filterVol(const TSK_VS_PART_INFO * vs_part)
 {
     m_volFound = true;
+    m_foundStructure = true;
 
     if (m_db->addVolumeInfo(vs_part, m_curVsId, m_curVolId)) {
+        registerError();
         return TSK_FILTER_STOP;
     }
 
@@ -243,16 +264,19 @@ TSK_FILTER_ENUM
 TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 {
     TSK_FS_FILE *file_root;
+    m_foundStructure = true;
 
     if (m_volFound && m_vsFound) {
         // there's a volume system and volume
         if (m_db->addFsInfo(fs_info, m_curVolId, m_curFsId)) {
+            registerError();
             return TSK_FILTER_STOP;
         }
     }
     else {
         // file system doesn't live in a volume, use image as parent
         if (m_db->addFsInfo(fs_info, m_curImgId, m_curFsId)) {
+            registerError();
             return TSK_FILTER_STOP;
         }
     }
@@ -295,6 +319,7 @@ TSK_RETVAL_ENUM
 {
     if (m_db->addFsFile(fs_file, fs_attr, path, md5, known, m_curFsId,
             m_curFileId)) {
+        registerError();
         return TSK_ERR;
     }
 
@@ -305,7 +330,7 @@ TSK_RETVAL_ENUM
  * Analyzes the open image and adds image info to a database.
  * Does not deal with transactions and such.  Refer to startAddImage()
  * for more control. 
- * @returns 1 if an error occured (error will have been registered)
+ * @returns 1 if a critical error occured (DB doesn't exist, no file system, etc.), 2 if errors occured at some point adding files to the DB (corrupt file, etc.), and 0 otherwise.  Errors will have been registered.
  */
 uint8_t TskAutoDb::addFilesInImgToDb()
 {
@@ -324,17 +349,32 @@ uint8_t TskAutoDb::addFilesInImgToDb()
     setVolFilterFlags((TSK_VS_PART_FLAG_ENUM) (TSK_VS_PART_FLAG_ALLOC |
             TSK_VS_PART_FLAG_UNALLOC));
 
-    uint8_t
-        findFilesRetval = findFilesInImg();
+    uint8_t retVal = 0;
+    if (findFilesInImg()) {
+        // map the boolean return value from findFiles to the three-state return value we use
+        // @@@ findFiles should probably return this three-state enum too
+        if (m_foundStructure == false) {
+            retVal = 1;
+        }
+        else {
+            retVal = 2;
+        }
+    }
 
     uint8_t addUnallocRetval = 0;
     if (m_addUnallocSpace)
         addUnallocRetval = addUnallocSpaceToDb();
 
-    if ((findFilesRetval) || (addUnallocRetval))
-        return 1;
-    else
+    // findFiles return value trumps unalloc since it can return either 2 or 1.
+    if (retVal) {
+        return retVal;
+    }
+    else if (addUnallocRetval) {
+        return 2;
+    }
+    else {
         return 0;
+    }
 }
 
 
@@ -343,7 +383,7 @@ uint8_t TskAutoDb::addFilesInImgToDb()
  * Same functionality as addFilesInImgToDb().  Reverts
  * all changes on error. User must call either commitAddImage() to commit the changes,
  * or revertAddImage() to revert them.
- * @returns 1 if any error occured (messages will be registered in list), 2 if error occured but add image process can continue, and 0 on success
+ * @returns 1 if critical system error occcured (data does not exist in DB), 2 if error occured while adding files to DB (but it finished), and 0 otherwise. All errors will have been registered. 
  */
 uint8_t
     TskAutoDb::startAddImage(int numImg, const TSK_TCHAR * const imagePaths[],
@@ -384,13 +424,7 @@ uint8_t
         return 1;
     }
     
-    uint8_t addFilesRet = addFilesInImgToDb();
-
-    //do not roll back if errors in this case, but do report registered errors
-    if (addFilesRet)
-        return 2;
-
-    return 0;
+    return addFilesInImgToDb();
 }
 
 #ifdef WIN32
@@ -435,13 +469,7 @@ uint8_t
         return 1;
     }
 
-    uint8_t addFilesRet = addFilesInImgToDb();
-
-    //do not roll back if errors in this case, but do report registered errors
-    if (addFilesRet)
-        return 2;
-
-    return 0;
+    return addFilesInImgToDb();
 }
 #endif
 

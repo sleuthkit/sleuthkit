@@ -138,9 +138,13 @@ ewf_image_close(TSK_IMG_INFO * img_info)
         }
         free(ewf_info->images);
     }
+    else {
+        libewf_error_t *error;
+        libewf_glob_free( ewf_info->images, ewf_info->num_imgs, &error);
+    }
 
     tsk_deinit_lock(&(ewf_info->read_lock));
-    free(img_info);
+    tsk_img_free(img_info);
 }
 
 /* Tests if the image file header against the
@@ -236,7 +240,7 @@ ewf_open(int a_num_img,
             tsk_error_set_errstr("ewf_open: Not an E01 glob name (%s)",
                 error_string);
             libewf_error_free(&ewf_error);
-            free(ewf_info);
+            tsk_img_free(ewf_info);
             return NULL;
         }
 
@@ -256,7 +260,7 @@ ewf_open(int a_num_img,
             tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
             tsk_error_set_errstr("ewf_open: Not an E01 glob name");
 
-            free(ewf_info);
+            tsk_img_free(ewf_info);
             return NULL;
         }
 #endif                          // end v1
@@ -273,14 +277,14 @@ ewf_open(int a_num_img,
         if ((ewf_info->images =
                 (TSK_TCHAR **) tsk_malloc(a_num_img *
                     sizeof(TSK_TCHAR *))) == NULL) {
-            free(ewf_info);
+            tsk_img_free(ewf_info);
             return NULL;
         }
         for (i = 0; i < a_num_img; i++) {
             if ((ewf_info->images[i] =
                     (TSK_TCHAR *) tsk_malloc((TSTRLEN(a_images[i]) +
                             1) * sizeof(TSK_TCHAR))) == NULL) {
-                free(ewf_info);
+                tsk_img_free(ewf_info);
                 return NULL;
             }
             TSTRNCPY(ewf_info->images[i], a_images[i],
@@ -306,7 +310,7 @@ ewf_open(int a_num_img,
             error_string);
         libewf_error_free(&ewf_error);
 
-        free(ewf_info);
+        tsk_img_free(ewf_info);
 
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Not an EWF file\n");
@@ -323,7 +327,7 @@ ewf_open(int a_num_img,
             ": Error initializing handle (%s)", a_images[0], error_string);
         libewf_error_free(&ewf_error);
 
-        free(ewf_info);
+        tsk_img_free(ewf_info);
 
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Unable to create EWF handle\n");
@@ -348,7 +352,7 @@ ewf_open(int a_num_img,
             ": Error opening (%s)", a_images[0], error_string);
         libewf_error_free(&ewf_error);
 
-        free(ewf_info);
+        tsk_img_free(ewf_info);
 
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Error opening EWF file\n");
@@ -366,7 +370,7 @@ ewf_open(int a_num_img,
             error_string);
         libewf_error_free(&ewf_error);
 
-        free(ewf_info);
+        tsk_img_free(ewf_info);
 
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Error getting size of EWF file\n");
@@ -386,7 +390,7 @@ ewf_open(int a_num_img,
             error_string);
         libewf_error_free(&ewf_error);
 
-        free(ewf_info);
+        tsk_img_free(ewf_info);
 
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Error getting size of EWF file\n");
@@ -407,7 +411,7 @@ ewf_open(int a_num_img,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
         tsk_error_set_errstr("ewf_open: Not an EWF file");
-        free(ewf_info);
+        tsk_img_free(ewf_info);
         if (tsk_verbose)
             tsk_fprintf(stderr, "Not an EWF file\n");
 
@@ -428,7 +432,7 @@ ewf_open(int a_num_img,
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
         tsk_error_set_errstr("ewf_open file: %" PRIttocTSK
             ": Error opening", ewf_info->images[0]);
-        free(ewf_info);
+        tsk_img_free(ewf_info);
 
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Error opening EWF file\n");
@@ -449,7 +453,7 @@ ewf_open(int a_num_img,
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
         tsk_error_set_errstr("ewf_open file: %" PRIttocTSK
             ": Error getting size of image", ewf_info->images[0]);
-        free(ewf_info);
+        tsk_img_free(ewf_info);
         if (tsk_verbose) {
             tsk_fprintf(stderr, "Error getting size of EWF file\n");
         }

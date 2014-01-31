@@ -39,11 +39,11 @@
  * 3.1.2b1 would be 0x03010201.  Snapshot from Jan 2, 2003 would be
  * 0xFF030102.
  * See TSK_VERSION_STR for string form. */
-#define TSK_VERSION_NUM 0x040100ff
+#define TSK_VERSION_NUM 0x040103ff
 
 /** Version of code in string form. See TSK_VERSION_NUM for
  * integer form. */
-#define TSK_VERSION_STR "4.1.0"
+#define TSK_VERSION_STR "4.1.3"
 
 
 /* include the TSK-specific header file that we created in autoconf
@@ -476,11 +476,11 @@ documentation and/or software.
 
 /* Flags for which type of hash(es) to run */
 	typedef enum{
-		TSK_HASH_INVALID_ID = 0,
-		TSK_HASH_MD5 = 0x01,
-		TSK_HASH_SHA1 = 0x02
-		//TSK_HASH_SHA256 = 0x04,
-	} TSK_HASH_ENUM;
+		TSK_BASE_HASH_INVALID_ID = 0,
+		TSK_BASE_HASH_MD5 = 0x01,
+		TSK_BASE_HASH_SHA1 = 0x02
+		//TSK_BASE_HASH_SHA256 = 0x04,
+	} TSK_BASE_HASH_ENUM;
 
 
 //@}

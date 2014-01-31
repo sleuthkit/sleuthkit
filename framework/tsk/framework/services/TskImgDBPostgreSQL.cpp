@@ -157,11 +157,11 @@ int TskImgDBPostgreSQL::initialize()
         return 1;
     }
 
-    if (initializePreparedStatements())
-    {
-        // Error message will have been logged by initializePreparedStatements()
-        return 1;
-    }
+    //if (initializePreparedStatements())
+    //{
+    //    // Error message will have been logged by initializePreparedStatements()
+    //    return 1;
+    //}
 
     addToolInfo("DbSchema", IMGDB_SCHEMA_VERSION);
     LOGINFO(L"ImgDB Created.");
@@ -273,7 +273,7 @@ int TskImgDBPostgreSQL::open()
 
         std::stringstream dbConnectionString;
         dbConnectionString << "host='" << db_host_ip << "' port='" << db_port
-            << "' dbname='" << m_dbName << "' user='" << name << "'";
+            << "' dbname='" << Poco::replace(m_dbName, "'", "\\'") << "' user='" << name << "'";
 
         m_dbConnection = new pqxx::connection(dbConnectionString.str());
     }
@@ -388,7 +388,7 @@ int TskImgDBPostgreSQL::addImageName(char const * imgName)
 
     stringstream stmt;
 
-    stmt << "INSERT INTO image_names (seq, name) VALUES (DEFAULT, E" 
+    stmt << "INSERT INTO image_names (seq, name) VALUES (DEFAULT, " 
         << m_dbConnection->quote(imgName) << ")";
 
     try
@@ -614,7 +614,7 @@ int TskImgDBPostgreSQL::addFsFileInfo(int fileSystemID, const TSK_FS_FILE *fileS
 
     fileName = fileNameAsString.c_str();
 
-    uint64_t parFileId = findParObjId(fileSystemID, fileSystemFile->name->par_addr);
+    uint64_t parFileId = findParObjId(fileSystemFile, fileSystemID);
 
     // Get the file size.
     TSK_OFF_T size = 0; 
@@ -653,24 +653,35 @@ int TskImgDBPostgreSQL::addFsFileInfo(int fileSystemID, const TSK_FS_FILE *fileS
     try
     {
         // We don't provide file_id to the prepared function because it uses DEFAULT for that.
-        stmt << "EXECUTE addFsFileInfoPlan ("
-            << IMGDB_FILES_TYPE_FS << ", "
-            << IMGDB_FILES_STATUS_READY_FOR_ANALYSIS << ", "
-            << m_dbConnection->quote(fileName) << ", "
-            << parFileId << ", "
-            << fileSystemFile->name->type << ", "
-            << meta_type << ", "
-            << fileSystemFile->name->flags << ", "
-            << meta_flags << ", "
-            << size << ", "
-            << crtime << ", "
-            << ctime << ", "
-            << atime << ", "
-            << mtime << ", "
-            << meta_mode << ", "
-            << gid << ", "
-            << uid
-            << ", E" << m_dbConnection->quote(fullpath) << ")";
+        stmt << "INSERT INTO files (file_id, type_id, status, name, par_file_id, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, full_path) VALUES ("
+            << "DEFAULT, " << IMGDB_FILES_TYPE_FS << ", " << IMGDB_FILES_STATUS_READY_FOR_ANALYSIS << ", " << m_dbConnection->quote(fileName) << ", "
+            << parFileId << ", " << fileSystemFile->name->type << ", " << meta_type << ", "
+            << fileSystemFile->name->flags << ", " << meta_flags << ", " << size << ", " << crtime << ", " << ctime << ", " << atime << ", "
+            << mtime << ", " << meta_mode << ", " << gid << ", " << uid << ", " << m_dbConnection->quote(fullpath) << ")"
+            << " RETURNING file_id";
+
+        // Commenting out to see if the addition of prepared statements is
+        // the cause of the frequent PostgreSQL server crashes we've seen
+        // recently.
+
+        //stmt << "EXECUTE addFsFileInfoPlan ("
+        //    << IMGDB_FILES_TYPE_FS << ", "
+        //    << IMGDB_FILES_STATUS_READY_FOR_ANALYSIS << ", "
+        //    << m_dbConnection->quote(fileName) << ", "
+        //    << parFileId << ", "
+        //    << fileSystemFile->name->type << ", "
+        //    << meta_type << ", "
+        //    << fileSystemFile->name->flags << ", "
+        //    << meta_flags << ", "
+        //    << size << ", "
+        //    << crtime << ", "
+        //    << ctime << ", "
+        //    << atime << ", "
+        //    << mtime << ", "
+        //    << meta_mode << ", "
+        //    << gid << ", "
+        //    << uid
+        //    << ", " << m_dbConnection->quote(fullpath) << ")";
 
         result R = executeStatement(stmt.str());
         
@@ -715,7 +726,7 @@ int TskImgDBPostgreSQL::addFsFileInfo(int fileSystemID, const TSK_FS_FILE *fileS
 
     //if dir, update parent id cache
     if (meta_type == TSK_FS_META_TYPE_DIR) {
-        storeParObjId(fileSystemID, fileSystemFile->name->meta_addr, fileID);
+        storeParObjId(fileSystemID, fileSystemFile, fileID);
     }
 
     return 0;
@@ -1367,16 +1378,28 @@ int TskImgDBPostgreSQL::addCarvedFileInfo(int vol_id, const char *name, uint64_t
 
     stringstream stmt;
 
-    stmt << "EXECUTE addCarvedFileInfoPlan ("
-        << IMGDB_FILES_TYPE_CARVED << ", "
-        << IMGDB_FILES_STATUS_CREATED << ", "
-        << m_dbConnection->quote(utf8Name) << ", "
-        << TSK_FS_NAME_TYPE_REG << ", "
-        << TSK_FS_META_TYPE_REG << ", "
-        << TSK_FS_NAME_FLAG_UNALLOC << ", "
-        << TSK_FS_META_FLAG_UNALLOC << ", "
-        << size << ","
-        << m_dbConnection->quote(utf8Name) << ")";
+    // Commenting out to see if the addition of prepared statements is
+    // the cause of the frequent PostgreSQL server crashes we've seen
+    // recently.
+
+    //stmt << "EXECUTE addCarvedFileInfoPlan ("
+    //    << IMGDB_FILES_TYPE_CARVED << ", "
+    //    << IMGDB_FILES_STATUS_CREATED << ", "
+    //    << m_dbConnection->quote(utf8Name) << ", "
+    //    << TSK_FS_NAME_TYPE_REG << ", "
+    //    << TSK_FS_META_TYPE_REG << ", "
+    //    << TSK_FS_NAME_FLAG_UNALLOC << ", "
+    //    << TSK_FS_META_FLAG_UNALLOC << ", "
+    //    << size << ","
+    //    << m_dbConnection->quote(utf8Name) << ")";
+
+    stmt << "INSERT INTO files (file_id, type_id, name, par_file_id, dir_type, meta_type,"
+        "dir_flags, meta_flags, size, ctime, crtime, atime, mtime, mode, uid, gid, status, full_path) "
+        "VALUES (DEFAULT, " << IMGDB_FILES_TYPE_CARVED << ", " << m_dbConnection->quote(utf8Name)
+        << ", NULL, " <<  TSK_FS_NAME_TYPE_REG << ", " <<  TSK_FS_META_TYPE_REG << ", "
+        << TSK_FS_NAME_FLAG_UNALLOC << ", " << TSK_FS_META_FLAG_UNALLOC << ", "
+        << size << ", 0, 0, 0, 0, NULL, NULL, NULL, " << IMGDB_FILES_STATUS_CREATED << "," << m_dbConnection->quote(utf8Name) << ")"
+        << " RETURNING file_id";
 
     try
     {
@@ -1467,19 +1490,28 @@ int TskImgDBPostgreSQL::addDerivedFileInfo(const std::string& name, const uint64
 
     std::stringstream stmt;
 
-    stmt << "EXECUTE addDerivedFileInfoPlan ("
-        << IMGDB_FILES_TYPE_DERIVED << ", "
-        << IMGDB_FILES_STATUS_CREATED << ", "
-        << m_dbConnection->quote(&cleanName[0]) << ", " 
-        << parentId << ", "
-        << dirType << ", "
-        << metaType << ", "
-        << size << ", "
-        << crtime << ", "
-        << ctime << ", "
-        << atime << ", "
-        << mtime << ", "
-        << m_dbConnection->quote(&cleanPath[0]) << ")";
+    // Commenting out to see if the addition of prepared statements is
+    // the cause of the frequent PostgreSQL server crashes we've seen
+    // recently.
+
+    //stmt << "EXECUTE addDerivedFileInfoPlan ("
+    //    << IMGDB_FILES_TYPE_DERIVED << ", "
+    //    << IMGDB_FILES_STATUS_CREATED << ", "
+    //    << m_dbConnection->quote(&cleanName[0]) << ", " 
+    //    << parentId << ", "
+    //    << dirType << ", "
+    //    << metaType << ", "
+    //    << size << ", "
+    //    << crtime << ", "
+    //    << ctime << ", "
+    //    << atime << ", "
+    //    << mtime << ", "
+    //    << m_dbConnection->quote(&cleanPath[0]) << ")";
+
+    stmt << "INSERT INTO files (file_id, type_id, name, par_file_id, dir_type, meta_type, size, ctime, crtime, atime, mtime, status, full_path) "
+        "VALUES (DEFAULT, " << IMGDB_FILES_TYPE_DERIVED << ", " << m_dbConnection->quote(&cleanName[0]) << ", " << parentId << ", " << dirType << ", " << metaType << ", " << size
+        << ", " << ctime << ", " << crtime << ", " << atime << ", " << mtime << ", " << IMGDB_FILES_STATUS_CREATED << ", " << m_dbConnection->quote(&cleanPath[0]) << ")"
+        << " RETURNING file_id";
 
     try
     {
@@ -1493,7 +1525,7 @@ int TskImgDBPostgreSQL::addDerivedFileInfo(const std::string& name, const uint64
 
         // insert into the derived_files table
         stmt << "INSERT INTO derived_files (file_id, derivation_details) VALUES ("
-            << fileId << ", E" << m_dbConnection->quote(&cleanDetails[0]) << ")";
+            << fileId << ", " << m_dbConnection->quote(&cleanDetails[0]) << ")";
 
         R = W.exec(stmt);
         W.commit();
@@ -2829,6 +2861,37 @@ int TskImgDBPostgreSQL::getFileTypeRecords(std::string& stmt, std::list<TskFileT
 }
 
 /**
+ *
+ */
+int TskImgDBPostgreSQL::getModuleId(const std::string& name, int & moduleId) const
+{
+    stringstream stmt;
+
+    stmt << "SELECT module_id FROM modules WHERE name = " << m_dbConnection->quote(name);
+
+    try 
+    {
+        pqxx::read_transaction trans(*m_dbConnection);
+        result R = trans.exec(stmt);
+
+        if (R.size() == 1)
+        {
+            R[0][0].to(moduleId);
+        }
+    }
+    catch(exception& e)
+    {
+        std::stringstream errorMsg;
+        errorMsg << "TskDBPostgreSQL::getModuleId - Error querying modules table: "
+            << e.what();
+        LOGERROR(errorMsg.str());
+        return -1;
+    }
+
+    return 0;
+}
+
+/**
  * Insert the Module record, if module name does not already exist in modules table.
  * Returns Module Id associated with the Module record.
  * @param name Module name
@@ -2841,37 +2904,35 @@ int TskImgDBPostgreSQL::addModule(const std::string& name, const std::string& de
     if (!initialized())
         return 0;
 
-    stringstream stmt;
+    moduleId = 0;
 
-    stmt << "SELECT module_id FROM modules WHERE name = " << m_dbConnection->quote(name);
+    if (getModuleId(name, moduleId) == 0 && moduleId > 0)
+        return 0;
 
     try 
     {
+        stringstream stmt;
+
         work W(*m_dbConnection);
-        result R = W.exec(stmt);
-
-        if (R.size() == 1)
-        {
-            // Already exists, return module_id
-            R[0][0].to(moduleId);
-            return 0;
-        }
-
-        // Insert a new one
-        stmt.str("");
         stmt << "INSERT INTO modules (module_id, name, description) VALUES (DEFAULT, " << m_dbConnection->quote(name) << ", " << m_dbConnection->quote(description) << ")"
              << " RETURNING module_id";
 
-        R = W.exec(stmt);
+        pqxx::result R = W.exec(stmt);
 
         // Get the newly assigned module id
         R[0][0].to(moduleId);
         W.commit();
-    } 
+    }
+    catch (pqxx::unique_violation&)
+    {
+        // The module may have been added between our initial call
+        // to getModuleId() and the subsequent INSERT attempt.
+        getModuleId(name, moduleId);
+    }
     catch (const exception &e)
     {
-        std::wstringstream errorMsg;
-        errorMsg << L"TskDBPostgreSQL::addModule - Error inserting into modules table: "
+        std::stringstream errorMsg;
+        errorMsg << "TskDBPostgreSQL::addModule - Error inserting into modules table: "
             << e.what();
         LOGERROR(errorMsg.str());
         return -1;
@@ -3473,7 +3534,7 @@ void TskImgDBPostgreSQL::addBlackboardAttribute(TskBlackboardAttribute attr){
             for (int i = 0; i < a_size; i++) {
                 pBuf[i] = attr.getValueString()[i];
             }
-            str << " '', E" << m_dbConnection->quote(attr.getValueString()) << ", 0, 0, 0.0";
+            str << " '', " << m_dbConnection->quote(attr.getValueString()) << ", 0, 0, 0.0";
             break;
         case TSK_INTEGER:
             str << " '', '', " << attr.getValueInt() << ",     0, 0.0";

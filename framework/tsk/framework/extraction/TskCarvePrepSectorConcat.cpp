@@ -40,7 +40,8 @@
 namespace
 {
     const size_t SECTOR_SIZE = 512;
-    const size_t DEFAULT_SECTORS_PER_READ = 32; 
+    const size_t DEFAULT_SECTORS_PER_READ = 32;
+    static const char zeroBuffer[DEFAULT_SECTORS_PER_READ * SECTOR_SIZE] = { 0 };
 }
 
 TskCarvePrepSectorConcat::TskCarvePrepSectorConcat()
@@ -161,6 +162,8 @@ void TskCarvePrepSectorConcat::createUnallocSectorsImgFiles(const std::string &o
         int unallocSectorsImgId = 0;
         std::ofstream outfile;
         uint64_t currentFileOffset = 0; // In bytes
+        Poco::File currentFile;
+
         do 
         {
             // Keep track of the starting offsets in the output file (in bytes) and in the image (in sectors) of the sector run or part of a sector run 
@@ -194,17 +197,7 @@ void TskCarvePrepSectorConcat::createUnallocSectorsImgFiles(const std::string &o
                         startingImageOffset += (currentFileOffset - startingFileOffset) / 512;
                     }
 
-                    // Close the current output file.
-                    if (unallocSectorsImgId) 
-                    {
-                        outfile.close();
-                    }
-
-                    // Schedule the current output file for carving. Note that derived classes can change this behavior by overriding onUnallocSectorsImgFileCreated.
-                    if (currentFileOffset > 0) 
-                    {
-                        onUnallocSectorsImgFileCreated(unallocSectorsImgId); 
-                    }
+                    closeAndSchedule(unallocSectorsImgId, currentFile, outfile);
 
                     // Get the next output file number. 
                     if (imgDB.addUnallocImg(unallocSectorsImgId) == -1) 
@@ -219,6 +212,7 @@ void TskCarvePrepSectorConcat::createUnallocSectorsImgFiles(const std::string &o
                     
                     // Create an output file in the subdirectory.
                     path << Poco::Path::separator() << outputFileName.c_str();
+                    currentFile = path.str();
                     outfile.open(path.str().c_str(), std::ios_base::out|std::ios_base::binary);
                     if (outfile.fail())
                     {
@@ -241,6 +235,16 @@ void TskCarvePrepSectorConcat::createUnallocSectorsImgFiles(const std::string &o
                     imgDB.setUnallocImgStatus(unallocSectorsImgId, TskImgDB::IMGDB_UNALLOC_IMG_STATUS_CARVED_ERR);
                     LOGERROR("TskCarvePrepSectorConcat::createUnallocSectorsImgFiles : error reading sector contents from sector run");
                     break;
+                }
+
+                // If we are at the start of a new output file and the chunk we've just read
+                // contains nothing but zeros there is no need to write it to the file.
+                // This allows us skip carving for potentially large areas that contain nothing.
+                if (currentFileOffset == 0 && sectorBuffer[0] == 0 && !memcmp(sectorBuffer, zeroBuffer, sectorsRead * SECTOR_SIZE))
+                {
+                    sectorRunOffset += sectorsRead;
+                    startingImageOffset += sectorsRead;
+                    continue;
                 }
 
                 // Write the chunk of sectors to the output file.
@@ -271,17 +275,7 @@ void TskCarvePrepSectorConcat::createUnallocSectorsImgFiles(const std::string &o
         }
         while(sectorRuns.next() != -1);
 
-        // Close the final output file.
-        if (unallocSectorsImgId) 
-        {
-            outfile.close();
-        }
-
-        // Schedule the final output file.
-        if (currentFileOffset > 0)
-        {
-            onUnallocSectorsImgFileCreated(unallocSectorsImgId);
-        }
+        closeAndSchedule(unallocSectorsImgId, currentFile, outfile);
 
         if (sectorBuffer != NULL)
         {
@@ -332,5 +326,24 @@ void TskCarvePrepSectorConcat::mapFileToImage(int unallocSectorsImgId, std::ofst
         std::stringstream msg;
         msg << "TskCarvePrepSectorConcat::mapFileToImage : failed to add mapping to image for output file " << unallocSectorsImgId;
         throw TskException(msg.str());
+    }
+}
+
+void TskCarvePrepSectorConcat::closeAndSchedule(const int unallocSectorsImgId, Poco::File& outFile, std::ofstream& outFileStream) const
+{
+    if (unallocSectorsImgId == 0)
+        return;
+
+    outFileStream.close();
+
+    // If this is a zero length file we remove it and skip carving.
+    if (outFile.getSize() == 0)
+    {
+        outFile.remove();
+        TskServices::Instance().getImgDB().setUnallocImgStatus(unallocSectorsImgId, TskImgDB::IMGDB_UNALLOC_IMG_STATUS_CARVED_NOT_NEEDED);
+    }
+    else
+    {
+        onUnallocSectorsImgFileCreated(unallocSectorsImgId);
     }
 }

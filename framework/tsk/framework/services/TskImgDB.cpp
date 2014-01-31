@@ -25,33 +25,32 @@ TskImgDB::~TskImgDB()
 {
 }
 
-/**
- * Store meta_addr to object id mapping of the directory in a local cache map
- * @param fsObjId fs id of this directory
- * @param meta_addr meta_addr of this directory
- * @param objId object id of this directory from the objects table
- */
-void TskImgDB::storeParObjId(const int64_t & fsObjId, const TSK_INUM_T & meta_addr, const int64_t & objId) {
-	map<TSK_INUM_T,int64_t> &tmpMap = m_parentDirIdCache[fsObjId];
-	//store only if does not exist
-	if (tmpMap.count(meta_addr) == 0)
-		tmpMap[meta_addr] = objId;
+void TskImgDB::storeParObjId(const int64_t & fsObjId, const TSK_FS_FILE * fs_file, const int64_t & objId) {
+    map<TSK_INUM_T, map<uint32_t, int64_t> > &fsMap = m_parentDirIdCache[fsObjId];
+    //store only if does not exist -- otherwise '..' and '.' entries will overwrite
+    if (fsMap.count(fs_file->name->meta_addr) == 0) {
+        fsMap[fs_file->name->meta_addr][fs_file->name->meta_seq] = objId;
+    }
+    else {
+        map<uint32_t, int64_t> &fileMap = fsMap[fs_file->name->meta_addr];
+        if (fileMap.count(fs_file->name->meta_seq) == 0) {
+            fileMap[fs_file->name->meta_seq] = objId;
+        }
+    }
 }
 
-/**
- * Find parent object id of TSK_FS_FILE. Use local cache map, if not found, fall back to SQL
- * @param fsObjId fs id of this file
- * @param meta_addr Meta address to find parent obj id for
- * @returns parent obj id ( > 0), -1 on error
- */
-int64_t TskImgDB::findParObjId(const int64_t & fsObjId, TSK_INUM_T meta_addr) {
+int64_t TskImgDB::findParObjId(const TSK_FS_FILE * fs_file, const int64_t & fsObjId) {
     //get from cache by parent meta addr, if available
-    map<TSK_INUM_T,int64_t> &tmpMap = m_parentDirIdCache[fsObjId];
-    if (tmpMap.count(meta_addr) > 0) {
-        return tmpMap[meta_addr];
+    map<TSK_INUM_T, map<uint32_t, int64_t> > &fsMap = m_parentDirIdCache[fsObjId];
+    if (fsMap.count(fs_file->name->par_addr) > 0) {
+        map<uint32_t, int64_t> &fileMap = fsMap[fs_file->name->par_addr];
+        if (fileMap.count(fs_file->name->par_seq) > 0) {
+            return fileMap[fs_file->name->par_seq];
+        }
     }
 
-    return getFileId(fsObjId, meta_addr);
+
+    return getFileId(fsObjId, fs_file->name->par_addr);
 }
 
 TskBlackboardAttribute TskImgDB::createAttribute(uint64_t artifactID, int attributeTypeID, uint64_t objectID, string moduleName, string context,

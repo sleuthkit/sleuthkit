@@ -1,0 +1,27 @@
+*.h                     text diff=cpp
+*.c                     text diff=cpp
+*.cpp                   text diff=cpp
+*.java                   text diff=java
+
+*.txt                   text
+*.xml                   text
+*.html                   text diff=html
+*.dox                   text
+*.am                   text
+*.ac                   text
+*.m4                   text
+*.pro                   text
+*.in                   text
+*.1                   text
+Makefile                text
+Doxyfile                text
+
+*.py                    text diff=python
+*.pl                    text diff=perl
+*.pm                    text diff=perl
+*.base                    text diff=perl
+
+*.vcproj            text eol=crlf
+*.vcxproj*            text eol=crlf
+*.sln               text eol=crlf
+

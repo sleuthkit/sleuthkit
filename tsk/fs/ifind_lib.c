@@ -196,6 +196,8 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
         // create the dummy entry if needed
         if (a_fs_name) {
             a_fs_name->meta_addr = a_fs->root_inum;
+            // Note that we are not filling in meta_seq -- we could, we just aren't
+
             a_fs_name->type = TSK_FS_NAME_TYPE_DIR;
             a_fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
             if (a_fs_name->name)

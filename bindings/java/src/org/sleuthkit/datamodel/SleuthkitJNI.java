@@ -118,31 +118,8 @@ public class SleuthkitJNI {
 
 	//Linked library loading
 	static {
-		try {
-			System.loadLibrary("zlib");
-		} catch (UnsatisfiedLinkError e) {
-			System.out.println("SleuthkitJNI: error loading zlib library, " + e.toString());
-		}
-		
-		try {
-			System.loadLibrary("libewf");
-		} catch (UnsatisfiedLinkError e) {
-			System.out.println("SleuthkitJNI: error loading libewf library, " + e.toString());
-		}
-
-		/* We should rename the Windows dll, to remove the lib prefix.
-		 * First try windows version of the name and then try Unix-style.
-		 */
-		try {
-			System.loadLibrary("libtsk_jni");
-		} catch (UnsatisfiedLinkError e1) {
-			try {
-				System.loadLibrary("tsk_jni");
-			} catch (UnsatisfiedLinkError e2) {
-				System.out.println("SleuthkitJNI: Error loading tsk_jni library " + e2.toString());
-			}
-		}
-	}
+		LibraryUtils.loadSleuthkitJNI();
+    }
 
 	public SleuthkitJNI() {
 	}

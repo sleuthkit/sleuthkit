@@ -81,8 +81,6 @@ sub clone_repo() {
 
     system ("git clone git\@github.com:sleuthkit/sleuthkit.git ${CLONEDIR}");
     chdir "${CLONEDIR}" or die "Error changing into $CLONEDIR";
-    system ("git submodule init");
-    system ("git submodule update");
 }
 
 # Deletes the clone directory -- if it exists
@@ -104,7 +102,6 @@ sub clean_src() {
 sub verify_precheckin {
 
     #system ("git pull");
-    system ("git submodule update");
 
     print "Verifying everything is checked in\n";
     exec_pipe(*OUT, "git status -s | grep \"^ M\"");
@@ -134,8 +131,9 @@ sub verify_precheckin {
 # Create a tag 
 sub tag_dir {
     unless ($TESTING) {
-        system ("git tag ${TSK_RELNAME}");
-        system ("git push --tags");
+        print "Generating signed tag.\n"; 
+        system ("git tag -s ${TSK_RELNAME} -m \"Tag for release ${TSK_RELNAME}\"");
+        system ("git push origin ${TSK_RELNAME}");
     }
 }
 
@@ -144,7 +142,7 @@ sub checkin_vers {
     print "Checking in version updates\n";
     unless ($TESTING) {
         system ("git commit -a -m \"New version files for ${VER}\"");
-        system ("git push");
+        system ("git push origin master");
     }
 }
 

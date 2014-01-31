@@ -35,6 +35,10 @@ using namespace std;
 #include <fcntl.h>
 #include <stack>
 
+#ifdef HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
+
 static const char *xml_header = "<?xml version='1.0' encoding='UTF-8'?>\n";
 
 // Implementation of mkstemp for windows found on pan-devel mailing
@@ -371,6 +375,7 @@ void xml::add_DFXML_execution_environment(const std::string &command_line)
 
 void xml::add_rusage()
 {
+#ifdef HAVE_SYS_RESOURCE_H
 #ifdef HAVE_GETRUSAGE
     struct rusage ru;
     memset(&ru,0,sizeof(ru));
@@ -399,6 +404,7 @@ void xml::add_rusage()
 	xmlout("clocktime",t);
 	pop();
     }
+#endif
 #endif
 }
 

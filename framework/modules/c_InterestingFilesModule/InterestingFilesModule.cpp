@@ -22,6 +22,7 @@
 #include "Poco/AutoPtr.h"
 #include "Poco/Path.h"
 #include "Poco/File.h"
+#include "Poco/NumberParser.h"
 #include "Poco/DOM/DOMParser.h"
 #include "Poco/DOM/Document.h"
 #include "Poco/DOM/NodeList.h"
@@ -45,6 +46,7 @@ namespace
     const std::string INTERESTING_FILE_SET_ELEMENT_TAG = "INTERESTING_FILE_SET"; 
     const std::string NAME_ATTRIBUTE = "name";
     const std::string DESCRIPTION_ATTRIBUTE_TAG = "description";
+    const std::string IGNORE_KNOWN_TAG = "ignoreKnown";
     const std::string NAME_ELEMENT_TAG = "NAME";
     const std::string EXTENSION_ELEMENT_TAG = "EXTENSION";
     const std::string PATH_FILTER_ATTRIBUTE = "pathFilter";
@@ -54,6 +56,17 @@ namespace
 
     std::string configFilePath;
 
+    // The following variables track whether we should ignore known
+    // files (and what type of known files to ignore) at a global 
+    // level. These settings can be overridden on an individual
+    // file set.
+
+    // Whether we should ignore known files.
+    bool ignoreKnown = false;
+
+    // What type of known files to ignore.
+    TskImgDB::KNOWN_STATUS knownType = TskImgDB::IMGDB_FILES_KNOWN;
+
     /** 
      * An interesting files set is defined by a set name, a set description, 
      * and one or more SQL WHERE clauses that specify what files belong to the
@@ -61,9 +74,12 @@ namespace
      */
     struct InterestingFilesSet
     {
-        InterestingFilesSet() : name(""), description("") {}
+        InterestingFilesSet() 
+            : name(""), description(""), ignoreKnown(false), knownType(TskImgDB::IMGDB_FILES_KNOWN) {}
         std::string name;
         std::string description;
+        bool ignoreKnown;
+        TskImgDB::KNOWN_STATUS knownType;
         vector<std::string> conditions;
     };
 
@@ -111,6 +127,25 @@ namespace
 
         // Convert the glob wildcard chars to SQL wildcard chars.
         Poco::replaceInPlace(stringToChange, "*", "%");
+    }
+
+    /**
+     * Verifies that the given attribute value is a valid integer value
+     * for a known type and converts the value to its corresponding enum.
+     */
+    TskImgDB::KNOWN_STATUS parseKnownType(const std::string& attributeValue)
+    {
+        const std::string MSG_PREFIX(MODULE_NAME + std::string("::parseKnownType : "));
+
+        int knownType = Poco::NumberParser::parse(attributeValue);
+        if (knownType > TskImgDB::IMGDB_FILES_UNKNOWN || knownType < TskImgDB::IMGDB_FILES_KNOWN)
+        {
+            std::ostringstream msg;
+            msg << MSG_PREFIX << "Invalid value for ignoreKnown.";
+            throw TskException(msg.str());
+        }
+
+        return static_cast<TskImgDB::KNOWN_STATUS>(knownType);
     }
 
     /** 
@@ -188,13 +223,12 @@ namespace
     }
 
     /**
-      * Creates an SQL WHERE clause for a file query from a file name
-      * condition.
+      * Creates an SQL condition to find files based on file name.
       *
       * @param conditionDefinition A file name condition XML element.
-      * @param conditions The WHERE clause is added to this collection.
+      * @return The constructed SQL condition.
       */
-    void compileFileNameSearchCondition(const Poco::XML::Node *conditionDefinition, std::vector<std::string> &conditions)
+    std::string compileFileNameSearchCondition(const Poco::XML::Node *conditionDefinition)
     {
         const std::string MSG_PREFIX = "InterestingFilesModule::compileFileNameSearchCondition : ";
 
@@ -207,29 +241,29 @@ namespace
         }
 
         std::stringstream conditionBuilder;
+
         if (hasGlobWildcards(name))
         {
             convertGlobWildcardsToSQLWildcards(name);
-            conditionBuilder << "WHERE UPPER(name) LIKE UPPER(" << TskServices::Instance().getImgDB().quote(name) << ") ESCAPE '#' ";
+            conditionBuilder << "UPPER(name) LIKE UPPER(" << TskServices::Instance().getImgDB().quote(name) << ") ESCAPE '#' ";
         }
         else
         {
-            conditionBuilder << "WHERE UPPER(name) = UPPER(" +  TskServices::Instance().getImgDB().quote(name) + ")";
+            conditionBuilder << "UPPER(name) = UPPER(" +  TskServices::Instance().getImgDB().quote(name) + ")";
         }
 
         addPathAndTypeFilterOptions(conditionDefinition, conditionBuilder);
-        conditionBuilder << " ORDER BY file_id";
-        conditions.push_back(conditionBuilder.str());
+
+        return conditionBuilder.str();
     }
 
     /**
-      * Creates an SQL WHERE clause for a file query from a file extension
-      * condition.
+      * Creates an SQL condition to find files based on extension.
       *
       * @param conditionDefinition A file extension condition XML element.
-      * @param conditions The WHERE clause is added to this collection.
+      * @returns The SQL condition.
       */
-    void compileExtensionSearchCondition(const Poco::XML::Node *conditionDefinition, std::vector<std::string> &conditions)
+    std::string compileExtensionSearchCondition(const Poco::XML::Node *conditionDefinition)
     {
         const std::string MSG_PREFIX = "InterestingFilesModule::compileExtensionSearchCondition : ";
 
@@ -253,11 +287,11 @@ namespace
         // @@@ TODO: In combination with glob wildcards this may create some unxepected matches.
         // For example, ".htm*" will become "%.htm%" which will match "file.htm.txt" and the like.
         std::stringstream conditionBuilder;
-        conditionBuilder << "WHERE UPPER(name) LIKE UPPER('%" << extension << "') ESCAPE '#' ";
+        conditionBuilder << "UPPER(name) LIKE UPPER('%" << extension << "') ESCAPE '#' ";
 
-        addPathAndTypeFilterOptions(conditionDefinition, conditionBuilder);            
-        conditionBuilder << " ORDER BY file_id";
-        conditions.push_back(conditionBuilder.str());
+        addPathAndTypeFilterOptions(conditionDefinition, conditionBuilder);
+
+        return conditionBuilder.str();
     }
 
     /** 
@@ -314,6 +348,20 @@ namespace
                             LOGWARN(msg.str());
                         }
                     }
+                    else if (attributeName == IGNORE_KNOWN_TAG)
+                    {
+                        if (!attributeValue.empty())
+                        {
+                            fileSet.knownType = parseKnownType(attributeValue);
+                            fileSet.ignoreKnown = true;
+                        }
+                        else
+                        {
+                            std::ostringstream msg;
+                            msg << MSG_PREFIX << "ignored " << INTERESTING_FILE_SET_ELEMENT_TAG << "'" << IGNORE_KNOWN_TAG << "' attribute without a value"; 
+                            LOGWARN(msg.str());
+                        }
+                    }
                     else
                     {
                         std::ostringstream msg;
@@ -358,6 +406,15 @@ namespace
             throw TskException(msg.str());
         }
 
+        std::string conditionBase;
+
+        // If we want to ignore known files either on an individual file set
+        // or globally we need to join with the file_hashes table.
+        if (fileSet.ignoreKnown || ignoreKnown)
+            conditionBase = " JOIN file_hashes ON (files.file_id = file_hashes.file_id) WHERE ";
+        else
+            conditionBase = " WHERE ";
+
         // Get the search conditions.
         Poco::AutoPtr<Poco::XML::NodeList>conditionDefinitions = fileSetDefinition->childNodes();
         for (unsigned long i = 0; i < conditionDefinitions->length(); ++i)
@@ -366,13 +423,17 @@ namespace
             if (conditionDefinition->nodeType() == Poco::XML::Node::ELEMENT_NODE) 
             {
                 const std::string &conditionType = Poco::XML::fromXMLString(conditionDefinition->nodeName());
+                std::stringstream conditionBuilder;
+
+                conditionBuilder << conditionBase;
+
                 if (conditionType == NAME_ELEMENT_TAG)
                 {
-                    compileFileNameSearchCondition(conditionDefinition, fileSet.conditions);
+                    conditionBuilder << compileFileNameSearchCondition(conditionDefinition);
                 }
                 else if (conditionType == EXTENSION_ELEMENT_TAG)
                 {
-                    compileExtensionSearchCondition(conditionDefinition, fileSet.conditions);
+                    conditionBuilder << compileExtensionSearchCondition(conditionDefinition);
                 }
                 else
                 {
@@ -380,6 +441,14 @@ namespace
                     msg << MSG_PREFIX << "unrecognized " << INTERESTING_FILE_SET_ELEMENT_TAG << " child element '" << conditionType << "'"; 
                     throw TskException(msg.str());
                 }
+
+                if (fileSet.ignoreKnown)
+                    conditionBuilder << " AND file_hashes.known != " << fileSet.knownType;
+                else if (ignoreKnown)
+                    conditionBuilder << " AND file_hashes.known != " << knownType;
+
+                conditionBuilder << " ORDER BY files.file_id";
+                fileSet.conditions.push_back(conditionBuilder.str());
             }
 
         }
@@ -468,6 +537,23 @@ extern "C"
                 {
                     Poco::XML::InputSource inputSource(configStream);
                     Poco::AutoPtr<Poco::XML::Document> configDoc = Poco::XML::DOMParser().parse(&inputSource);
+
+                    Poco::XML::Element * rootElement = configDoc->documentElement();
+                    if (rootElement == NULL)
+                    {
+                        std::ostringstream msg;
+                        msg << MSG_PREFIX << "Root element of config file is NULL.";
+                        throw TskException(msg.str());
+                    }
+
+                    const std::string& ignoreKnownValue = Poco::XML::fromXMLString(rootElement->getAttribute(IGNORE_KNOWN_TAG));
+
+                    if (!ignoreKnownValue.empty())
+                    {
+                        knownType = parseKnownType(ignoreKnownValue);
+                        ignoreKnown = true;
+                    }
+
                     Poco::AutoPtr<Poco::XML::NodeList> fileSetDefinitions = configDoc->getElementsByTagName(INTERESTING_FILE_SET_ELEMENT_TAG);
                     for (unsigned long i = 0; i < fileSetDefinitions->length(); ++i) 
                     {

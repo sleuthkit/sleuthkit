@@ -33,6 +33,7 @@
 /win32/*/Release/
 /win32/*/*.user
 win32/ipch
+win32/BuildErrors.txt
 framework/msvcpp/framework/Debug/
 framework/msvcpp/framework/Release/
 framework/msvcpp/*/*.user
@@ -42,6 +43,13 @@ framework/msvcpp/BuildLog.txt
 framework/msvcpp/*/ipch
 framework/runtime/
 framework/SampleConfig/to_install/
+framework/modules/*/win32/Debug/
+framework/modules/*/win32/Release/
+framework/modules/*/win32/*.user
+framework/modules/c_InterestingFilesModule/tsk
+
+# Release files
+release/sleuthkit-*
 
 # IntelliSense data
 /win32/*.ncb
@@ -88,10 +96,12 @@ samples/callback_cpp_style
 samples/callback_style
 samples/posix_cpp_style
 samples/posix_style
+samples/*.exe
 tests/fs_attrlist_apis
 tests/fs_fname_apis
 tests/fs_thread_test
 tests/read_apis
+tests/*.exe
 tools/autotools/tsk_comparedir
 tools/autotools/tsk_gettimes
 tools/autotools/tsk_loaddb
@@ -122,7 +132,9 @@ tools/timeline/mactime
 tools/vstools/mmcat
 tools/vstools/mmls
 tools/vstools/mmstat
+tools/*/*.exe
+tools/*/*/*.exe
 
 # EMACS backup files
 *~
-.DS_Store
+

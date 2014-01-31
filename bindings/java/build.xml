@@ -20,6 +20,13 @@
 	<property name="test-results" location="test/output/results"/>
 	<property name="test-input" location="test/input"/>
 	<property name="test-types" location="test/org/sleuthkit/datamodel"/>
+	<property name="native-libs" location="build/NATIVELIBS" />
+	<property name="amd64" location="build/NATIVELIBS/amd64" />
+	<property name="x86" location="build/NATIVELIBS/x86" />
+	<property name="x86_64" location="build/NATIVELIBS/x86_64" />
+	<property name="i386" location="build/NATIVELIBS/i386" />
+	<property name="i586" location="build/NATIVELIBS/i586" />
+	<property name="i686" location="build/NATIVELIBS/i686"/>
   
 	<path id="libraries">
 		<fileset dir="${lib}">
@@ -28,7 +35,7 @@
 		<pathelement path="${build}"/>
 	</path>
 
-
+	<!-- Only added win folders for now -->
 	<target name="init">
 		<mkdir dir="${build}"/>
 		<mkdir dir="${dist}"/>
@@ -36,6 +43,27 @@
 		<mkdir dir="${test-input}"/>
 		<mkdir dir="${test-standards}"/>
 		<mkdir dir="${test-results}"/>
+		<mkdir dir="${native-libs}" />
+		<mkdir dir="${amd64}" />
+		<mkdir dir="${amd64}/win" />
+		<mkdir dir="${amd64}/mac" />
+		<mkdir dir="${amd64}/linux" />
+	    <mkdir dir="${x86}" />
+		<mkdir dir="${x86}/win" />
+		<mkdir dir="${x86}/linux" />
+		<mkdir dir="${x86_64}" />
+		<mkdir dir="${x86_64}/win" />
+		<mkdir dir="${x86_64}/mac" />
+		<mkdir dir="${x86_64}/linux"/>
+		<mkdir dir="${i386}" />
+		<mkdir dir="${i386}/win" />
+		<mkdir dir="${i386}/linux"/>
+		<mkdir dir="${i586}" />
+		<mkdir dir="${i586}/win" />
+		<mkdir dir="${i586}/linux" />
+		<mkdir dir="${i686}"/>
+		<mkdir dir="${i686}/win"/>
+		<mkdir dir="${i686}/linux"/>
 	</target>
   
 	<property name="ivy.install.version" value="2.3.0-rc2" />
@@ -45,7 +73,6 @@
 	<property name="ivy.home" value="${user.home}/.ant" />
 	<property name="ivy.jar.dir" value="${ivy.home}/lib" />
 	<property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar" />
-
 
 	<target name="download-ivy" unless="offline">
         <available file="${ivy.jar.file}" property="ivy.available"/>
@@ -88,12 +115,36 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 		</javac>
 	</target>
 
-	<target name="dist" depends="init-ivy, compile"
+	<target name="dist" depends="check-build" unless="up-to-date">
+		<antcall target="dist-do"/>
+	</target>
+
+	<target name="check-build" depends="check-native-build">
+		<uptodate property="java-up-to-date" targetfile="${dist}/Tsk_DataModel.jar" >
+		    <srcfiles dir="${src}" includes="**/*.java"/>
+		</uptodate>
+		<condition property="up-to-date">
+			<and>
+				<isset property="java-up-to-date"/>
+				<isset property="native-up-to-date"/>
+			</and>
+		</condition>
+	</target>
+	
+	<target name="dist-do" depends="init-ivy, compile, copyLibs"
+        description="generate the distribution" >
+    <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
+		<jar jarfile="${dist}/Tsk_DataModel.jar" basedir="${build}"/>
+	</target>
+	
+	<target name="dist-debug" depends="init-ivy, compile, copyLibsDebug"
         description="generate the distribution" >
     <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
 		<jar jarfile="${dist}/Tsk_DataModel.jar" basedir="${build}"/>
 	</target>
   
+	
+	
 	<target name="jni" depends="compile" description="make the jni.h file">
 		<javah classpath = "${build}" outputFile="jni/dataModel_SleuthkitJNI.h" force="yes">
 			<class name="org.sleuthkit.datamodel.SleuthkitJNI"/>

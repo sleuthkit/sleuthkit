@@ -1,6 +1,32 @@
 Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
+---------------- VERSION 4.1.3 --------------
+- fixed bug that could crash UFS/ExtX in inode_lookup.
+- More bounds checking in ISO9660 code 
+- Image layer bounds checking
+- Update version of SQLITE-JDBC
+- changed how java loads navite libraries
+- Config file for YAFFS2 spare area
+- New method in image layer to return names
+- Yaffs2 cleanup.
+- Escape all strings in SQLite database
+- SQlite code uses NTTFS sequence number to match parent IDs
+
+
+---------------- VERSION 4.1.2 --------------
+Core:
+- Fixed more visual studio projects to work on 64-bit
+- TskAutoDB considers not finding a VS/FS a critical error.
+
+Java: 
+- added method to Image to perform sanity check on image sizes.
+
+fiwalk:
+- Fixed compile error on Linux etc.
+
+
+
 ---------------- VERSION 4.1.1 --------------
 Core: 
 - Added FILE_SHARE_WRITE to all windows open calls.
@@ -8,6 +34,17 @@ Core:
 - Added NTFS FNAME times to time2 struct in TSK_FS_META to make them 
   easier to access -- should have done this a long time ago!
 - fls -m and tsk_gettimes output NTFS FNAME times to output for timelines.
+- hfind with EnCase hashsets works when DB is specified (and not only index)
+- TskAuto now goes into UNALLOC partitions by default too. 
+- Added support to automatically find all Cellebrite raw dump files given
+  the name of the first image. 
+- Added 64-bit windows targets to VisualStudio files.
+- Added NTFS sequence to parent address in directory and directory itself.
+- Updated SQLite code to use sequence when finding parent object ID.
+
+Java:
+- Java bindings JAR files now have native libraries in them. 
+- Logical files are added with a transaction 
 
 
 ---------------- VERSION 4.1.0 --------------

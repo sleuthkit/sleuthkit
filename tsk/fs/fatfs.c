@@ -1383,7 +1383,7 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     fatsb = fatfs->sb = (fatfs_sb *) tsk_malloc(len);
     if (fatsb == NULL) {
         fs->tag = 0;
-        free(fatfs);
+        tsk_fs_free((TSK_FS_INFO *)fatfs);
         return NULL;
     }
 
@@ -1407,7 +1407,7 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             tsk_error_set_errstr2("%s: boot sector", myname);
             fs->tag = 0;
             free(fatfs->sb);
-            free(fatfs);
+            tsk_fs_free((TSK_FS_INFO *)fatfs);
             return NULL;
         }
 
@@ -1422,7 +1422,7 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             else {
                 fs->tag = 0;
                 free(fatsb);
-                free(fatfs);
+                tsk_fs_free((TSK_FS_INFO *)fatfs);
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_MAGIC);
                 tsk_error_set_errstr("Not a FATFS file system (magic)");
@@ -1471,7 +1471,7 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
                 fatfs->ssize);
         fs->tag = 0;
         free(fatsb);
-        free(fatfs);
+        tsk_fs_free((TSK_FS_INFO *)fatfs);
         return NULL;
     }
 
@@ -1489,7 +1489,7 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
                 fatfs->csize);
         fs->tag = 0;
         free(fatsb);
-        free(fatfs);
+        tsk_fs_free((TSK_FS_INFO *)fatfs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr("Not a FATFS file system (cluster size)");
@@ -1504,7 +1504,7 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
                 fatfs->numfat);
         fs->tag = 0;
         free(fatsb);
-        free(fatfs);
+        tsk_fs_free((TSK_FS_INFO *)fatfs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr("Not a FATFS file system (number of FATs)");
@@ -1533,7 +1533,7 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
                 fatfs->sectperfat);
         fs->tag = 0;
         free(fatsb);
-        free(fatfs);
+        tsk_fs_free((TSK_FS_INFO *)fatfs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
@@ -1555,7 +1555,7 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
         fs->tag = 0;
         free(fatsb);
-        free(fatfs);
+        tsk_fs_free((TSK_FS_INFO *)fatfs);
         return NULL;
     }
 
@@ -1615,7 +1615,7 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             && (fatfs->clustcnt >= 4085)) {
             fs->tag = 0;
             free(fatsb);
-            free(fatfs);
+            tsk_fs_free((TSK_FS_INFO *)fatfs);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_MAGIC);
             tsk_error_set_errstr
@@ -1630,7 +1630,7 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     if ((ftype == TSK_FS_TYPE_FAT32) && (fatfs->numroot != 0)) {
         fs->tag = 0;
         free(fatsb);
-        free(fatfs);
+        tsk_fs_free((TSK_FS_INFO *)fatfs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
@@ -1643,7 +1643,7 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     if ((ftype != TSK_FS_TYPE_FAT32) && (fatfs->numroot == 0)) {
         fs->tag = 0;
         free(fatsb);
-        free(fatfs);
+        tsk_fs_free((TSK_FS_INFO *)fatfs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
@@ -1662,7 +1662,7 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         if (ftype != TSK_FS_TYPE_FAT32) {
             fs->tag = 0;
             free(fatsb);
-            free(fatfs);
+            tsk_fs_free((TSK_FS_INFO *)fatfs);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_MAGIC);
             tsk_error_set_errstr
@@ -1689,7 +1689,7 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
                 tsk_error_set_errstr2("%s: FAT1", myname);
                 fs->tag = 0;
                 free(fatfs->sb);
-                free(fatfs);
+                tsk_fs_free((TSK_FS_INFO *)fatfs);
                 return NULL;
             }
 
@@ -1705,7 +1705,7 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
                 tsk_error_set_errstr2("%s: FAT2", myname);
                 fs->tag = 0;
                 free(fatfs->sb);
-                free(fatfs);
+                tsk_fs_free((TSK_FS_INFO *)fatfs);
                 return NULL;
             }
 
@@ -1718,7 +1718,7 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             if (numDiffs > 25) {
                 fs->tag = 0;
                 free(fatsb);
-                free(fatfs);
+                tsk_fs_free((TSK_FS_INFO *)fatfs);
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_MAGIC);
                 tsk_error_set_errstr
@@ -1747,7 +1747,7 @@ fatfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     else {
         fs->tag = 0;
         free(fatsb);
-        free(fatfs);
+        tsk_fs_free((TSK_FS_INFO *)fatfs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr("Unknown FAT type in fatfs_open: %d\n",
