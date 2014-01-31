@@ -5616,8 +5616,8 @@ public class SleuthkitCase {
 	}	
 		/**
      * Returns schema version number used. version 3 supports md5hash while 
-     * 1 and 2 dont
-	 * 
+     * 1 and 2 dont	
+     *  
      * @returns and integer of the schema version number. 
      */
 	public int getSchemaVersion(){
