@@ -43,7 +43,7 @@ class ResultSetHelper {
 		ssize = rs.getLong("ssize");
 		tzone = rs.getString("tzone");
 		md5="";
-		if(db.getVersionNumber() > 2)
+		if(db.getSchemaVersion() > 2)
 		{
 			md5= rs.getString("md5");
 		}

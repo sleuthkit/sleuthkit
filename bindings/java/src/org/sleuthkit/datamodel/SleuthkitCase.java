@@ -5620,7 +5620,7 @@ public class SleuthkitCase {
 	 * 
      * @returns and integer of the schema version number. 
      */
-	public int getVersionNumber(){
+	public int getSchemaVersion(){
 		return this.versionNumber;
 	}
 }
