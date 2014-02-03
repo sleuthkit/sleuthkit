@@ -150,7 +150,7 @@ extern "C" {
         size_t idx_llen;              ///< Length of each line in index
         char *idx_lbuf;               ///< Buffer to hold a line from the index  (r/w shared - lock) 
         TSK_TCHAR *idx_idx_fname;     ///< Name of index of index file, may be NULL
-		uint64_t *idx_offsets;        ///< Maps the first three bytes of a hash value to an offset in the index file
+        uint64_t *idx_offsets;        ///< Maps the first three bytes of a hash value to an offset in the index file
     } TSK_TEXT_HDB_INFO;    
 
     /** 
