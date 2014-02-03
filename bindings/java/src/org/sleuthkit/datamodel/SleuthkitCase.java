@@ -5614,9 +5614,8 @@ public class SleuthkitCase {
 			dbReadUnlock();
 		}					
 	}	
-		/**
-     * Returns schema version number used. version 3 supports md5hash while 
-     * 1 and 2 dont	
+     /**
+     * Returns schema version number 	
      *  
      * @returns and integer of the schema version number. 
      */
