@@ -153,7 +153,7 @@ int
 /**
  * @returns 1 on error, 0 on success
  */
-int
+uint8_t
  TskDbSqlite::addObject(TSK_DB_OBJECT_TYPE_ENUM type, int64_t parObjId,
     int64_t & objId)
 {
@@ -957,16 +957,16 @@ int TskDbSqlite::addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLayoutR
  * @param fileName file name for the layout file
  * @param size Number of bytes in file
  * @param objId layout file Id (output)
- * @returns 0 on success or 1 on error.
+ * @returns TSK_OK on success or TSK_ERR on error.
  */
-int
+TSK_RETVAL_ENUM
  TskDbSqlite::addLayoutFileInfo(const int64_t parObjId, const int64_t fsObjId, const TSK_DB_FILES_TYPE_ENUM dbFileType, const char *fileName,
     const uint64_t size, int64_t & objId)
 {
     char *zSQL;
 
     if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId))
-        return 1;
+        return TSK_ERR;
 
     //fsObjId can be NULL
     stringstream fsObjIdS;
@@ -992,11 +992,11 @@ int
 
     if (attempt_exec(zSQL, "TskDbSqlite::addLayoutFileInfo: Error adding data to tsk_files table: %s\n")) {
         sqlite3_free(zSQL);
-        return 1;
+        return TSK_ERR;
     }
 
     sqlite3_free(zSQL);
-    return 0;
+    return TSK_OK;
 }
 
 
@@ -1030,7 +1030,7 @@ TskDbSqlite::inTransaction()
  * @param objId object id of the file object created (output)
  * @returns TSK_OK on success or TSK_ERR on error.
  */
-int TskDbSqlite::addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
+TSK_RETVAL_ENUM TskDbSqlite::addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
     return addFileWithLayoutRange(TSK_DB_FILES_TYPE_UNALLOC_BLOCKS, parentObjId, fsObjId, size, ranges, objId);
 }
 
@@ -1044,7 +1044,7 @@ int TskDbSqlite::addUnallocBlockFile(const int64_t parentObjId, const int64_t fs
  * @param objId object id of the file object created (output)
  * @returns TSK_OK on success or TSK_ERR on error.
  */
-int TskDbSqlite::addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
+TSK_RETVAL_ENUM TskDbSqlite::addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
     return addFileWithLayoutRange(TSK_DB_FILES_TYPE_UNUSED_BLOCKS, parentObjId, fsObjId, size, ranges, objId);
 }
     
@@ -1058,7 +1058,7 @@ int TskDbSqlite::addUnusedBlockFile(const int64_t parentObjId, const int64_t fsO
  * @param objId object id of the file object created (output)
  * @returns TSK_OK on success or TSK_ERR on error.
  */
-int TskDbSqlite::addCarvedFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
+TSK_RETVAL_ENUM TskDbSqlite::addCarvedFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
     return addFileWithLayoutRange(TSK_DB_FILES_TYPE_CARVED, parentObjId, fsObjId, size, ranges, objId);
 }
 
@@ -1103,7 +1103,7 @@ typedef struct _checkFileLayoutRangeOverlap{
 * @param objId (out) object id of the created virtual directory object
 * @returns TSK_ERR on error or TSK_OK on success
 */
-int TskDbSqlite::addVirtualDir(const int64_t fsObjId, const int64_t parentDirId, const char * const name, int64_t & objId) {
+TSK_RETVAL_ENUM TskDbSqlite::addVirtualDir(const int64_t fsObjId, const int64_t parentDirId, const char * const name, int64_t & objId) {
     char *zSQL;
 
     if (addObject(TSK_DB_OBJECT_TYPE_FILE, parentDirId, objId))
@@ -1147,13 +1147,13 @@ int TskDbSqlite::addVirtualDir(const int64_t fsObjId, const int64_t parentDirId,
 * @param objId (out) object id of the $Unalloc dir created
 * @returns TSK_ERR on error or TSK_OK on success
 */
-int TskDbSqlite::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & objId) {
+TSK_RETVAL_ENUM TskDbSqlite::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & objId) {
     
     const char * const unallocDirName = "$Unalloc";
 
     //get root dir
     TSK_DB_OBJECT rootDirObjInfo;
-    if (getFsRootDirObjectInfo(fsObjId, rootDirObjInfo) ) {
+    if (getFsRootDirObjectInfo(fsObjId, rootDirObjInfo) == TSK_ERR) {
         return TSK_ERR;
     }
 
@@ -1165,7 +1165,7 @@ int TskDbSqlite::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & o
 * Generates file_name and populates tsk_files, tsk_objects and tsk_file_layout tables
 * @returns TSK_ERR on error or TSK_OK on success
 */
-int TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
+TSK_RETVAL_ENUM TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
     const size_t numRanges = ranges.size();
 
     if (numRanges < 1) {
@@ -1239,7 +1239,7 @@ int TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType,
 * @param fileLayouts (out) TSK_DB_FILE_LAYOUT_RANGE row representations to return
 * @returns TSK_ERR on error, TSK_OK on success
 */
-uint8_t TskDbSqlite::getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts) {
+TSK_RETVAL_ENUM TskDbSqlite::getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts) {
     sqlite3_stmt * fileLayoutsStatement = NULL;
     if (prepare_stmt("SELECT obj_id, byte_start, byte_len, sequence FROM tsk_file_layout", 
         &fileLayoutsStatement) ) {
@@ -1309,7 +1309,7 @@ ostream& operator <<(ostream &os,const TSK_DB_OBJECT &dbObject) {
 * @param fsInfos (out) TSK_DB_FS_INFO row representations to return
 * @returns TSK_ERR on error, TSK_OK on success
 */
-uint8_t TskDbSqlite::getFsInfos(int64_t imgId, vector<TSK_DB_FS_INFO> & fsInfos) {
+TSK_RETVAL_ENUM TskDbSqlite::getFsInfos(int64_t imgId, vector<TSK_DB_FS_INFO> & fsInfos) {
     sqlite3_stmt * fsInfosStatement = NULL;
     if (prepare_stmt("SELECT obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum FROM tsk_fs_info", 
         &fsInfosStatement) ) {
@@ -1323,7 +1323,13 @@ uint8_t TskDbSqlite::getFsInfos(int64_t imgId, vector<TSK_DB_FS_INFO> & fsInfos)
 
         //ensure fs is (sub)child of the image requested, if not, skip it
         int64_t curImgId = 0;
-        getParentImageId(fsObjId, curImgId);
+        if (getParentImageId(fsObjId, curImgId) == TSK_ERR) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_AUTO_DB);
+            tsk_error_set_errstr("Error finding parent for: %"PRIu64, fsObjId);
+            return TSK_ERR;
+        }
+
         if (imgId != curImgId) {
             continue;
         }
@@ -1357,7 +1363,7 @@ uint8_t TskDbSqlite::getFsInfos(int64_t imgId, vector<TSK_DB_FS_INFO> & fsInfos)
 * @param vsInfos (out) TSK_DB_VS_INFO row representations to return
 * @returns TSK_ERR on error, TSK_OK on success
 */
-uint8_t TskDbSqlite::getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO> & vsInfos) {
+TSK_RETVAL_ENUM TskDbSqlite::getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO> & vsInfos) {
     sqlite3_stmt * vsInfosStatement = NULL;
     if (prepare_stmt("SELECT obj_id, vs_type, img_offset, block_size FROM tsk_vs_info", 
         &vsInfosStatement) ) {
@@ -1370,7 +1376,12 @@ uint8_t TskDbSqlite::getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO> & vsInfos)
         int64_t vsObjId = sqlite3_column_int64(vsInfosStatement, 0);
 
         int64_t curImgId = 0;
-        getParentImageId(vsObjId, curImgId);
+        if (getParentImageId(vsObjId, curImgId) == TSK_ERR) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_AUTO_DB);
+            tsk_error_set_errstr("Error finding parent for: %"PRIu64, vsObjId);
+            return TSK_ERR;
+        }
 
         if (imgId != curImgId ) {
             //ensure vs is (sub)child of the image requested, if not, skip it
@@ -1402,7 +1413,7 @@ uint8_t TskDbSqlite::getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO> & vsInfos)
 * @param vsPartInfos (out) TSK_DB_VS_PART_INFO row representations to return
 * @returns TSK_ERR on error, TSK_OK on success
 */
-uint8_t TskDbSqlite::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_PART_INFO> & vsPartInfos) {
+TSK_RETVAL_ENUM TskDbSqlite::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_PART_INFO> & vsPartInfos) {
     sqlite3_stmt * vsPartInfosStatement = NULL;
     if (prepare_stmt("SELECT obj_id, addr, start, length, desc, flags FROM tsk_vs_parts", 
         &vsPartInfosStatement) ) {
@@ -1415,7 +1426,12 @@ uint8_t TskDbSqlite::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_PART_INFO> &
         int64_t vsPartObjId = sqlite3_column_int64(vsPartInfosStatement, 0);
         
         int64_t curImgId = 0;
-        getParentImageId(vsPartObjId, curImgId);
+        if (getParentImageId(vsPartObjId, curImgId) == TSK_ERR) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_AUTO_DB);
+            tsk_error_set_errstr("Error finding parent for: %"PRIu64, vsPartObjId);
+            return TSK_ERR;
+        }
 
         if (imgId != curImgId) {
             //ensure vs is (sub)child of the image requested, if not, skip it
@@ -1451,7 +1467,7 @@ uint8_t TskDbSqlite::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_PART_INFO> &
 * @param objectInfo (out) TSK_DB_OBJECT entry representation to return
 * @returns TSK_ERR on error (or if not found), TSK_OK on success
 */
-uint8_t TskDbSqlite::getObjectInfo(int64_t objId, TSK_DB_OBJECT & objectInfo) {
+TSK_RETVAL_ENUM TskDbSqlite::getObjectInfo(int64_t objId, TSK_DB_OBJECT & objectInfo) {
 
     sqlite3_stmt * objectsStatement = NULL;
     if (prepare_stmt("SELECT obj_id, par_obj_id, type FROM tsk_objects WHERE obj_id IS ?", 
@@ -1486,7 +1502,7 @@ uint8_t TskDbSqlite::getObjectInfo(int64_t objId, TSK_DB_OBJECT & objectInfo) {
 * @param vsInfo (out) TSK_DB_VS_INFO entry representation to return
 * @returns TSK_ERR on error (or if not found), TSK_OK on success
 */
-uint8_t TskDbSqlite::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInfo) {
+TSK_RETVAL_ENUM TskDbSqlite::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInfo) {
     sqlite3_stmt * vsInfoStatement = NULL;
     if (prepare_stmt("SELECT obj_id, vs_type, img_offset, block_size FROM tsk_vs_info WHERE obj_id IS ?", 
         &vsInfoStatement) ) {
@@ -1522,9 +1538,9 @@ uint8_t TskDbSqlite::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInfo) {
 * @param imageId (out) root parent image id returned
 * @returns TSK_ERR on error (or if not found), TSK_OK on success
 */
-uint8_t TskDbSqlite::getParentImageId (const int64_t objId, int64_t & imageId) {
+TSK_RETVAL_ENUM TskDbSqlite::getParentImageId (const int64_t objId, int64_t & imageId) {
     TSK_DB_OBJECT objectInfo;
-    uint8_t ret = TSK_ERR;
+    TSK_RETVAL_ENUM ret = TSK_ERR;
 
     int64_t queryObjectId = objId;
     while (getObjectInfo(queryObjectId, objectInfo) == TSK_OK) {
@@ -1551,7 +1567,7 @@ uint8_t TskDbSqlite::getParentImageId (const int64_t objId, int64_t & imageId) {
 * @param rootDirObjInfo (out) TSK_DB_OBJECT root dir entry representation to return
 * @returns TSK_ERR on error (or if not found), TSK_OK on success
 */
-uint8_t TskDbSqlite::getFsRootDirObjectInfo(const int64_t fsObjId, TSK_DB_OBJECT & rootDirObjInfo) {
+TSK_RETVAL_ENUM TskDbSqlite::getFsRootDirObjectInfo(const int64_t fsObjId, TSK_DB_OBJECT & rootDirObjInfo) {
     sqlite3_stmt * rootDirInfoStatement = NULL;
     if (prepare_stmt("SELECT tsk_objects.obj_id,tsk_objects.par_obj_id,tsk_objects.type "
         "FROM tsk_objects,tsk_files WHERE tsk_objects.par_obj_id IS ? "
