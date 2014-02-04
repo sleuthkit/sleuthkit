@@ -1224,7 +1224,7 @@ public class SleuthkitCase {
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
 
 			getArtifactsHelper1St.setLong(1, obj_id);
-			getArtifactsHelper1St.setInt(1, artifactTypeID);
+			getArtifactsHelper1St.setInt(2, artifactTypeID);
 			ResultSet rs = getArtifactsHelper1St.executeQuery();
 
 			while (rs.next()) {
@@ -1257,7 +1257,7 @@ public class SleuthkitCase {
 			long count = 0;
 
 			getArtifactsCountHelperSt.setLong(1, obj_id);
-			getArtifactsCountHelperSt.setInt(1, artifactTypeID);
+			getArtifactsCountHelperSt.setInt(2, artifactTypeID);
 			rs = getArtifactsCountHelperSt.executeQuery();
 
 			if (rs.next()) {
