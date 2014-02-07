@@ -21,6 +21,7 @@ package org.sleuthkit.datamodel;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.GregorianCalendar;
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
@@ -686,7 +687,14 @@ public class SleuthkitJNI {
 		hashDbAddEntryNat(filename, md5, sha1, sha256, comment, dbHandle);
 	}
 
-    
+    public static void addToHashDatabase(List<HashEntry> hashes, int dbHandle) throws TskCoreException {
+		// RJCTODO: Begin transaction
+		for (HashEntry entry : hashes) {
+			hashDbAddEntryNat(entry.getFileName(), entry.getMd5Hash(), entry.getSha1Hash(), entry.getSha256Hash(), entry.getComment(), dbHandle);			
+		}
+		// RJCTODO: end transaction
+	}
+	
 	public static boolean isUpdateableHashDatabase(int dbHandle) throws TskCoreException {
 		return hashDbIsUpdateableNat(dbHandle);
 	}    
