@@ -65,6 +65,14 @@ JNIEXPORT jint JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbNewNat(JNIEnv * env,
     jclass obj, jstring pathJ);
 
+JNIEXPORT jint JNICALL
+Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbBeginTransactionNat(
+    JNIEnv * env, jclass obj, jint dbHandle);
+
+JNIEXPORT jint JNICALL
+Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbEndTransactionNat(
+    JNIEnv * env, jclass obj, jint dbHandle);
+
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    hashDbAddRecordNat

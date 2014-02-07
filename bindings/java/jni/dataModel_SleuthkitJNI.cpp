@@ -312,6 +312,66 @@ JNIEXPORT jint JNICALL
 }
 
 /**
+ * Begins a hash database transaction.
+ * @param env Pointer to Java environment from which this method was called.
+ * @param obj The Java object from which this method was called.
+ * @param dbHandle A handle for the hash database.
+ * @return 1 on error and 0 on success.
+ */
+JNIEXPORT jint JNICALL
+Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbBeginTransactionNat(
+    JNIEnv * env, jclass obj, jint dbHandle)
+{
+    if((size_t) dbHandle > hashDbs.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
+        return 1;
+    }
+
+    TSK_HDB_INFO * db = hashDbs.at(dbHandle-1);
+    if(!db) {
+        setThrowTskCoreError(env, "Invalid database handle");
+        return 1;
+    }
+
+    if(!db->accepts_updates()) {
+        setThrowTskCoreError(env, "Database does not accept updates");
+        return 1;
+    }
+
+    return 0;
+}
+
+/**
+ * Ends a hash database transaction.
+ * @param env Pointer to Java environment from which this method was called.
+ * @param obj The Java object from which this method was called.
+ * @param dbHandle A handle for the hash database.
+ * @return 1 on error and 0 on success.
+ */
+JNIEXPORT jint JNICALL
+Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbEndTransactionNat(
+    JNIEnv * env, jclass obj, jint dbHandle)
+{
+    if((size_t) dbHandle > hashDbs.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
+        return 1;
+    }
+
+    TSK_HDB_INFO * db = hashDbs.at(dbHandle-1);
+    if(!db) {
+        setThrowTskCoreError(env, "Invalid database handle");
+        return 1;
+    }
+
+    if(!db->accepts_updates()) {
+        setThrowTskCoreError(env, "Database does not accept updates");
+        return 1;
+    }
+
+    return 0;
+}
+
+/**
  * Adds data to a hash database.
  * @param env Pointer to Java environment from which this method was called.
  * @param obj The Java object from which this method was called.

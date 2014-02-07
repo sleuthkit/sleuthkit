@@ -54,7 +54,11 @@ public class SleuthkitJNI {
 	private static native int hashDbOpenNat(String hashDbPath) throws TskCoreException;
 
     private static native int hashDbNewNat(String hashDbPath) throws TskCoreException;
-    
+	
+	private static native int hashDbBeginTransactionNat(int dbHandle) throws TskCoreException;	
+
+	private static native int hashDbEndTransactionNat(int dbHandle) throws TskCoreException;	
+
     private static native int hashDbAddEntryNat(String filename, String hashMd5, String hashSha1, String hashSha256, String comment, int dbHandle) throws TskCoreException;
 
     private static native boolean hashDbIsUpdateableNat(int dbHandle);
@@ -688,11 +692,15 @@ public class SleuthkitJNI {
 	}
 
     public static void addToHashDatabase(List<HashEntry> hashes, int dbHandle) throws TskCoreException {
-		// RJCTODO: Begin transaction
-		for (HashEntry entry : hashes) {
-			hashDbAddEntryNat(entry.getFileName(), entry.getMd5Hash(), entry.getSha1Hash(), entry.getSha256Hash(), entry.getComment(), dbHandle);			
+		hashDbBeginTransactionNat(dbHandle);
+		try {
+			for (HashEntry entry : hashes) {
+				hashDbAddEntryNat(entry.getFileName(), entry.getMd5Hash(), entry.getSha1Hash(), entry.getSha256Hash(), entry.getComment(), dbHandle);			
+			}
 		}
-		// RJCTODO: end transaction
+		finally {
+			hashDbEndTransactionNat(dbHandle);
+		}
 	}
 	
 	public static boolean isUpdateableHashDatabase(int dbHandle) throws TskCoreException {
