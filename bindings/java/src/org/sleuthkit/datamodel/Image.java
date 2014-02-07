@@ -37,7 +37,7 @@ public class Image extends AbstractContent {
 	private long type, ssize, size;
 	private String[] paths;
 	private volatile long imageHandle = 0;
-	private String timezone;
+	private String timezone,md5;
 
 	/**
 	 * constructor most inputs are from the database
@@ -49,14 +49,16 @@ public class Image extends AbstractContent {
 	 * @param name
 	 * @param paths
 	 * @param timezone
+	 * @param md5
 	 */
-	protected Image(SleuthkitCase db, long obj_id, long type, long ssize, String name, String[] paths, String timezone) throws TskCoreException {
+	protected Image(SleuthkitCase db, long obj_id, long type, long ssize, String name, String[] paths, String timezone, String md5) throws TskCoreException {
 		super(db, obj_id, name);
 		this.type = type;
 		this.ssize = ssize;
 		this.paths = paths;
 		this.timezone = timezone;
 		this.size = 0;
+		this.md5= md5;
 	}
 
 	/**
@@ -294,17 +296,12 @@ public class Image extends AbstractContent {
         return errorString;
     }
 	
-	/**
-	 * Get the Hash stored in this Image.
-	 * 
-	 * Returns null if the image is not an ewf image.
-	 * @return the image hash.
-	 */
-	public String getHash() {
-		try {
-			return getSleuthkitCase().getImageHash(this);
-		} catch (TskCoreException ex) {
-			return null;
-		}
+		/**
+     * gets the md5 hash value  
+     * 
+     * @returns md5 hash if attained(from database). returns null if not set. 
+     */
+	public String getMd5() {
+			return md5;	
 	}
 }
