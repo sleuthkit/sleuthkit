@@ -84,7 +84,6 @@ public class SleuthkitCase {
 	private PreparedStatement getAbstractFileChildrenIds;
 	private PreparedStatement getAbstractFileById;
 	private PreparedStatement addArtifactSt1;
-	private PreparedStatement addArtifactSt2;
 	private PreparedStatement getLastArtifactId;
 	private PreparedStatement addBlackboardAttributeStringSt;
 	private PreparedStatement addBlackboardAttributeByteSt;
@@ -487,7 +486,6 @@ public class SleuthkitCase {
 		closeStatement(getAbstractFileChildrenIds);
 		closeStatement(getAbstractFileById);
 		closeStatement(addArtifactSt1);
-		closeStatement(addArtifactSt2);
 		closeStatement(getLastArtifactId);
 		closeStatement(addBlackboardAttributeStringSt);
 		closeStatement(addBlackboardAttributeByteSt);
@@ -2205,7 +2203,7 @@ public class SleuthkitCase {
 	List<Content> getAbstractFileChildren(Content parent, TSK_DB_FILES_TYPE_ENUM type) throws TskCoreException {
 
 		List<Content> children = new ArrayList<Content>();
-
+		
 		dbReadLock();
 		try {
 
@@ -5250,7 +5248,7 @@ public class SleuthkitCase {
 			while(resultSet.next()) {
 				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))));
 			}
-			
+			resultSet.close();
 			return tagNames;
 		}
 		catch(SQLException ex) {
@@ -5278,7 +5276,7 @@ public class SleuthkitCase {
 			while(resultSet.next()) {
 				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))));
 			}
-			
+			resultSet.close();
 			return tagNames;
 		}
 		catch(SQLException ex) {
@@ -5308,7 +5306,11 @@ public class SleuthkitCase {
 			insertIntoTagNames.executeUpdate();
 
 			// SELECT MAX(id) FROM tag_names
-			return new TagName(selectMaxIdFromTagNames.executeQuery().getLong(1), displayName, description, color);			
+			ResultSet resultSet = selectMaxIdFromTagNames.executeQuery();
+			Long tagID = resultSet.getLong(1);
+			resultSet.close();
+			
+			return new TagName(tagID, displayName, description, color);			
 		}
 		catch (SQLException ex) {
 			throw new TskCoreException("Error adding row for " + displayName + " tag name to tag_names table", ex);
@@ -5341,7 +5343,11 @@ public class SleuthkitCase {
 			insertIntoContentTags.executeUpdate();
 
 			// SELECT MAX(tag_id) FROM content_tags
-			return new ContentTag(selectMaxIdFromContentTags.executeQuery().getLong(1), content, tagName, comment, beginByteOffset, endByteOffset);
+			ResultSet resultSet = selectMaxIdFromContentTags.executeQuery();
+			Long tagID = resultSet.getLong(1);
+			resultSet.close();
+			
+			return new ContentTag(tagID, content, tagName, comment, beginByteOffset, endByteOffset);
 		}
 		catch (SQLException ex) {
 			throw new TskCoreException("Error adding row to content_tags table (obj_id = " +content.getId() + ", tag_name_id = " + tagName.getId() + ")", ex);
@@ -5389,7 +5395,7 @@ public class SleuthkitCase {
 				Content content = getContentById(resultSet.getLong("obj_id"));
 				tags.add(new ContentTag(resultSet.getLong("tag_id"), content, tagName, resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset"))); 
 			} 
-			
+			resultSet.close();
 			return tags;
 		}
 		catch (SQLException ex) {
@@ -5419,7 +5425,9 @@ public class SleuthkitCase {
 			selectContentTagsCountByTagName.setLong(1, tagName.getId());
 			ResultSet resultSet = selectContentTagsCountByTagName.executeQuery();
 			if (resultSet.next()) {
-				return resultSet.getLong(1);
+				long count = resultSet.getLong(1);
+				resultSet.close();
+				return count;
 			} 
 			else {
 				throw new TskCoreException("Error getting content_tags row count for tag name (tag_name_id = " + tagName.getId() + ")");
@@ -5457,7 +5465,7 @@ public class SleuthkitCase {
 				ContentTag tag = new ContentTag(resultSet.getLong("tag_id"), getContentById(resultSet.getLong("obj_id")), tagName, resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset")); 
 				tags.add(tag);				
 			}						
-			
+			resultSet.close();
 			return tags;
 		}
 		catch (SQLException ex) {
@@ -5489,7 +5497,7 @@ public class SleuthkitCase {
 				ContentTag tag = new ContentTag(resultSet.getLong("tag_id"), content, tagName, resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset")); 
 				tags.add(tag);
 			} 
-			
+			resultSet.close();
 			return tags;
 		}
 		catch (SQLException ex) {
@@ -5519,7 +5527,11 @@ public class SleuthkitCase {
 			insertIntoBlackboardArtifactTags.executeUpdate();
 
 			// SELECT MAX(tag_id) FROM blackboard_artifact_tags
-			return new BlackboardArtifactTag(selectMaxIdFromBlackboardArtifactTags.executeQuery().getLong(1), artifact, getContentById(artifact.getObjectID()), tagName, comment);
+			ResultSet resultSet = selectMaxIdFromBlackboardArtifactTags.executeQuery();
+			Long tagID = resultSet.getLong(1);
+			resultSet.close();
+			
+			return new BlackboardArtifactTag(tagID, artifact, getContentById(artifact.getObjectID()), tagName, comment);
 		}
 		catch (SQLException ex) {
 			throw new TskCoreException("Error adding row to blackboard_artifact_tags table (obj_id = " + artifact.getArtifactID() + ", tag_name_id = " + tagName.getId() + ")", ex);
@@ -5569,7 +5581,7 @@ public class SleuthkitCase {
 				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"), artifact, content, tagName, resultSet.getString("comment")); 
 				tags.add(tag);
 			} 
-
+			resultSet.close();
 			return tags;
 		}
 		catch (SQLException ex) {
@@ -5599,7 +5611,9 @@ public class SleuthkitCase {
 			selectBlackboardArtifactTagsCountByTagName.setLong(1, tagName.getId());
 			ResultSet resultSet = selectBlackboardArtifactTagsCountByTagName.executeQuery();
 			if (resultSet.next()) {
-				return resultSet.getLong(1);
+				long count = resultSet.getLong(1);
+				resultSet.close();
+				return count;
 			} 
 			else {
 				throw new TskCoreException("Error getting blackboard_artifact_tags row count for tag name (tag_name_id = " + tagName.getId() + ")");
@@ -5639,7 +5653,7 @@ public class SleuthkitCase {
 				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"), artifact, content, tagName, resultSet.getString("comment")); 
 				tags.add(tag);
 			}			
-			
+			resultSet.close();
 			return tags;
 		}
 		catch (SQLException ex) {
@@ -5672,7 +5686,7 @@ public class SleuthkitCase {
 				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"), artifact, content, tagName, resultSet.getString("comment")); 
 				tags.add(tag);
 			}
-			
+			resultSet.close();
 			return tags;
 		}
 		catch (SQLException ex) {
