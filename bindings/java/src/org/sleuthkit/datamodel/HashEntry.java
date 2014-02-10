@@ -22,10 +22,10 @@ package org.sleuthkit.datamodel;
  * Used to pass hashDb information about a particular file from TSK to Autopsy 
  */
 public class HashEntry {
+	private String fileName;
 	private String md5Hash;
 	private String sha1Hash;
 	private String sha256Hash;
-    private String fileName;
 	private String comment;
 
 	public HashEntry(String fileName, String md5Hash, String sha1Hash, String sha256Hash, String comment) {
@@ -36,6 +36,10 @@ public class HashEntry {
 		this.comment = comment;
 	}
 		
+	public String getFileName() {
+		return fileName;
+	}
+	
 	public String getMd5Hash() {
 		return md5Hash;
 	}
@@ -47,10 +51,6 @@ public class HashEntry {
 	public String getSha256Hash() {
 		return sha256Hash;
 	}	
-	
-	public String getFileName() {
-		return fileName;
-	}
 	
 	public String getComment() {
 		return comment;

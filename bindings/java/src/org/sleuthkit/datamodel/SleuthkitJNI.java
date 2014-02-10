@@ -56,9 +56,9 @@ public class SleuthkitJNI {
     private static native int hashDbNewNat(String hashDbPath) throws TskCoreException;
 	
 	private static native int hashDbBeginTransactionNat(int dbHandle) throws TskCoreException;	
-
+	
 	private static native int hashDbCommitTransactionNat(int dbHandle) throws TskCoreException;	
-
+	
 	private static native int hashDbRollbackTransactionNat(int dbHandle) throws TskCoreException;	
 
     private static native int hashDbAddEntryNat(String filename, String hashMd5, String hashSha1, String hashSha256, String comment, int dbHandle) throws TskCoreException;

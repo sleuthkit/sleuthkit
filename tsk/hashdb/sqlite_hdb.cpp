@@ -669,7 +669,7 @@ uint8_t sqlite_hdb_begin_transaction(TSK_HDB_INFO *hdb_info_base)
     TSK_SQLITE_HDB_INFO *hdb_info = reinterpret_cast<TSK_SQLITE_HDB_INFO*>(hdb_info_base); 
 	if (sqlite_hdb_attempt_exec("BEGIN", "sqlite_hdb_base_begin_transaction: %s\n", hdb_info->db)) {
         return 1;
-	}
+    }
     else {
         return 0;
     }
@@ -685,9 +685,9 @@ uint8_t sqlite_hdb_begin_transaction(TSK_HDB_INFO *hdb_info_base)
 uint8_t sqlite_hdb_commit_transaction(TSK_HDB_INFO *hdb_info_base)
 {
     TSK_SQLITE_HDB_INFO *hdb_info = reinterpret_cast<TSK_SQLITE_HDB_INFO*>(hdb_info_base);
-	if (sqlite_hdb_attempt_exec("COMMIT", "sqlite_hdb_base_end_transaction: %s\n", hdb_info->db)) {
+	if (sqlite_hdb_attempt_exec("COMMIT", "sqlite_hdb_commit_transaction: %s\n", hdb_info->db)) {
         return 1;
-	}
+    }
     else {
         return 0;
     }
@@ -703,7 +703,7 @@ uint8_t sqlite_hdb_commit_transaction(TSK_HDB_INFO *hdb_info_base)
 uint8_t sqlite_hdb_rollback_transaction(TSK_HDB_INFO *hdb_info_base)
 {
     TSK_SQLITE_HDB_INFO *hdb_info = reinterpret_cast<TSK_SQLITE_HDB_INFO*>(hdb_info_base); 
-	if (sqlite_hdb_attempt_exec("ROLLBACK", "sqlite_hdb_base_end_transaction: %s\n", hdb_info->db)) {
+	if (sqlite_hdb_attempt_exec("ROLLBACK", "sqlite_hdb_rollback_transaction: %s\n", hdb_info->db)) {
         return 1;
 	}
     else {

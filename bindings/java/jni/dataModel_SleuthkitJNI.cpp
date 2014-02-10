@@ -320,15 +320,15 @@ JNIEXPORT jint JNICALL
  */
 JNIEXPORT jint JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbBeginTransactionNat(
-    JNIEnv * env, jclass obj, jint dbHandle)
+    JNIEnv *env, jclass obj, jint dbHandle)
 {
-    if((size_t) dbHandle > hashDbs.size()) {
+    if((size_t)dbHandle > hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
         return 1;
     }
 
-    TSK_HDB_INFO * db = hashDbs.at(dbHandle-1);
-    if(!db) {
+    TSK_HDB_INFO *db = hashDbs.at(dbHandle - 1);
+    if (!db) {
         setThrowTskCoreError(env, "Invalid database handle");
         return 1;
     }
@@ -345,15 +345,15 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbBeginTransactionNat(
  */
 JNIEXPORT jint JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbCommitTransactionNat(
-    JNIEnv * env, jclass obj, jint dbHandle)
+    JNIEnv *env, jclass obj, jint dbHandle)
 {
-    if((size_t) dbHandle > hashDbs.size()) {
+    if((size_t)dbHandle > hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
         return 1;
     }
 
-    TSK_HDB_INFO * db = hashDbs.at(dbHandle-1);
-    if(!db) {
+    TSK_HDB_INFO *db = hashDbs.at(dbHandle - 1);
+    if (!db) {
         setThrowTskCoreError(env, "Invalid database handle");
         return 1;
     }
@@ -370,15 +370,15 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbCommitTransactionNat(
  */
 JNIEXPORT jint JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbRollbackTransactionNat(
-    JNIEnv * env, jclass obj, jint dbHandle)
+    JNIEnv *env, jclass obj, jint dbHandle)
 {
-    if((size_t) dbHandle > hashDbs.size()) {
+    if((size_t)dbHandle > hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
         return 1;
     }
 
-    TSK_HDB_INFO * db = hashDbs.at(dbHandle-1);
-    if(!db) {
+    TSK_HDB_INFO *db = hashDbs.at(dbHandle-1);
+    if (!db) {
         setThrowTskCoreError(env, "Invalid database handle");
         return 1;
     }
