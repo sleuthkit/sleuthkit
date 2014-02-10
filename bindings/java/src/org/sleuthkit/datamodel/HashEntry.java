@@ -39,19 +39,19 @@ public class HashEntry {
 	public String getFileName() {
 		return fileName;
 	}
-	
+
 	public String getMd5Hash() {
 		return md5Hash;
 	}
-	
+
 	public String getSha1Hash() {
 		return sha1Hash;
 	}
-	
+
 	public String getSha256Hash() {
 		return sha256Hash;
 	}	
-	
+
 	public String getComment() {
 		return comment;
 	}
