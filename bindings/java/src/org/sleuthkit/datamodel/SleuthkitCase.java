@@ -185,17 +185,22 @@ public class SleuthkitCase {
 				con.commit();				
 			}
 			versionNumber= schemaVersionNumber;
-			con.setAutoCommit(true);
 		}
 		catch (Exception ex) {
 			try {
 				con.rollback();
-				con.setAutoCommit(true);
 				throw new TskCoreException("Failed to update database schema", ex);
 			}
 			catch (SQLException e) {
 				throw new TskCoreException("Failed to rollback failed database schema update", e);
 			}				
+		}
+		finally {
+			try {
+				con.setAutoCommit(true);
+			} catch (SQLException ex) {
+				throw new TskCoreException("Error setting AutoCommit after DB schema update.", ex);
+			}
 		}
 	}
 		
@@ -539,6 +544,31 @@ public class SleuthkitCase {
 			logger.log(Level.WARNING, "Error closing prepared statement", ex);
 		}
 	}
+	
+	private void closeStatement(Statement statement) {
+		try {
+			if (statement != null) {
+				statement.close();
+				statement = null;
+			}			
+		} 
+		catch (SQLException ex) {
+			logger.log(Level.WARNING, "Error closing statement", ex);
+		}
+	}
+	
+	
+	private void closeResultSet(ResultSet resultSet) {
+		try {
+			if (resultSet != null) {
+				resultSet.close();
+				resultSet = null;
+			}			
+		} 
+		catch (SQLException ex) {
+			logger.log(Level.WARNING, "Error closing  result set", ex);
+		}
+	}
 		
 	private void configureDB() throws TskCoreException {
 		try {
@@ -644,18 +674,19 @@ public class SleuthkitCase {
 	}
 
 	private void initBlackboardTypes() throws SQLException, TskCoreException {
+		ResultSet rs = null;
 		dbReadLock();
 		try {
 			Statement s = con.createStatement();
 			for (ARTIFACT_TYPE type : ARTIFACT_TYPE.values()) {
-				ResultSet rs = s.executeQuery("SELECT * from blackboard_artifact_types WHERE artifact_type_id = '" + type.getTypeID() + "'");
+				rs = s.executeQuery("SELECT * from blackboard_artifact_types WHERE artifact_type_id = '" + type.getTypeID() + "'");
 				if (!rs.next()) {
 					this.addBuiltInArtifactType(type);
 				}
 				rs.close();
 			}
 			for (ATTRIBUTE_TYPE type : ATTRIBUTE_TYPE.values()) {
-				ResultSet rs = s.executeQuery("SELECT * from blackboard_attribute_types WHERE attribute_type_id = '" + type.getTypeID() + "'");
+				rs = s.executeQuery("SELECT * from blackboard_attribute_types WHERE attribute_type_id = '" + type.getTypeID() + "'");
 				if (!rs.next()) {
 					this.addBuiltInAttrType(type);
 				}
@@ -663,6 +694,7 @@ public class SleuthkitCase {
 			}
 			s.close();
 		} finally {
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 	}
@@ -742,6 +774,7 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(int artifactTypeID) throws TskCoreException {
+		ResultSet rs = null;
 		String artifactTypeName = this.getArtifactTypeString(artifactTypeID);
 		dbReadLock();
 		try {
@@ -749,17 +782,18 @@ public class SleuthkitCase {
 
 			getBlackboardArtifactsSt.setInt(1, artifactTypeID);
 
-			final ResultSet rs = getBlackboardArtifactsSt.executeQuery();
+			rs = getBlackboardArtifactsSt.executeQuery();
 
 			while (rs.next()) {
 				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2),
 						artifactTypeID, artifactTypeName, ARTIFACT_TYPE.fromID(artifactTypeID).getDisplayName()));
 			}
-			rs.close();
+
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting or creating a blackboard artifact. " + ex.getMessage(), ex);
 		} finally {
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 
@@ -791,14 +825,7 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting number of blackboard artifacts by content. " + ex.getMessage(), ex);
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException ex) {
-					logger.log(Level.WARNING, "Could not close the result set, ", ex);
-				}
-			}
-
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 
@@ -830,14 +857,7 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting number of blackboard artifacts by type. " + ex.getMessage(), ex);
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException ex) {
-					logger.log(Level.WARNING, "Coud not close the result set, ", ex);
-				}
-			}
-
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 
@@ -877,10 +897,12 @@ public class SleuthkitCase {
 	 * within tsk core and artifacts could not be queried
 	 */
 	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, String value) throws TskCoreException {
+		ResultSet rs = null;
+		
 		dbReadLock();
 		try {
 			Statement s = con.createStatement();
-			ResultSet rs = s.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
+			rs = s.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
 					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id "
 					+ "FROM blackboard_artifacts, blackboard_attributes "
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id "
@@ -888,13 +910,12 @@ public class SleuthkitCase {
 					+ " AND blackboard_attributes.value_text IS '" + value + "'");
 
 			List<BlackboardArtifact> artifacts = getArtifactsHelper(rs);
-
-			rs.close();
 			s.close();
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by attribute. " + ex.getMessage(), ex);
 		} finally {
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 	}
@@ -914,7 +935,7 @@ public class SleuthkitCase {
 	 * within tsk core and artifacts could not be queried
 	 */
 	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, String subString, boolean startsWith) throws TskCoreException {
-
+		ResultSet rs = null;
 		subString = "%" + subString;
 		if (startsWith == false) {
 			subString = subString + "%";
@@ -923,7 +944,7 @@ public class SleuthkitCase {
 		dbReadLock();
 		try {
 			Statement s = con.createStatement();
-			ResultSet rs = s.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
+			rs = s.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
 					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id "
 					+ "FROM blackboard_artifacts, blackboard_attributes "
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id "
@@ -932,12 +953,12 @@ public class SleuthkitCase {
 
 			List<BlackboardArtifact> artifacts = getArtifactsHelper(rs);
 
-			rs.close();
 			s.close();
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by attribute. " + ex.getMessage(), ex);
 		} finally {
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 	}
@@ -954,10 +975,11 @@ public class SleuthkitCase {
 	 * within tsk core and artifacts could not be queried
 	 */
 	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, int value) throws TskCoreException {
+		ResultSet rs = null;
 		dbReadLock();
 		try {
 			Statement s = con.createStatement();
-			ResultSet rs = s.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
+			rs = s.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
 					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id "
 					+ "FROM blackboard_artifacts, blackboard_attributes "
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id "
@@ -966,12 +988,12 @@ public class SleuthkitCase {
 
 			List<BlackboardArtifact> artifacts = getArtifactsHelper(rs);
 
-			rs.close();
 			s.close();
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by attribute. " + ex.getMessage(), ex);
 		} finally {
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 	}
@@ -988,10 +1010,11 @@ public class SleuthkitCase {
 	 * within tsk core and artifacts could not be queried
 	 */
 	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, long value) throws TskCoreException {
+		ResultSet rs = null;
 		dbReadLock();
 		try {
 			Statement s = con.createStatement();
-			ResultSet rs = s.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
+			rs = s.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
 					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id "
 					+ "FROM blackboard_artifacts, blackboard_attributes "
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id "
@@ -1000,12 +1023,12 @@ public class SleuthkitCase {
 
 			List<BlackboardArtifact> artifacts = getArtifactsHelper(rs);
 
-			rs.close();
 			s.close();
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by attribute. " + ex.getMessage(), ex);
 		} finally {
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 	}
@@ -1022,10 +1045,11 @@ public class SleuthkitCase {
 	 * within tsk core and artifacts could not be queried
 	 */
 	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, double value) throws TskCoreException {
+		ResultSet rs = null;
 		dbReadLock();
 		try {
 			Statement s = con.createStatement();
-			ResultSet rs = s.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
+			rs = s.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
 					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id "
 					+ "FROM blackboard_artifacts, blackboard_attributes "
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id "
@@ -1034,12 +1058,12 @@ public class SleuthkitCase {
 
 			List<BlackboardArtifact> artifacts = getArtifactsHelper(rs);
 
-			rs.close();
 			s.close();
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by attribute. " + ex.getMessage(), ex);
 		} finally {
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 	}
@@ -1056,10 +1080,11 @@ public class SleuthkitCase {
 	 * within tsk core and artifacts could not be queried
 	 */
 	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, byte value) throws TskCoreException {
+		ResultSet rs = null;
 		dbReadLock();
 		try {
 			Statement s = con.createStatement();
-			ResultSet rs = s.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
+			rs = s.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
 					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id "
 					+ "FROM blackboard_artifacts, blackboard_attributes "
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id "
@@ -1068,12 +1093,12 @@ public class SleuthkitCase {
 
 			List<BlackboardArtifact> artifacts = getArtifactsHelper(rs);
 
-			rs.close();
 			s.close();
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by attribute. " + ex.getMessage(), ex);
 		} finally {
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 	}
@@ -1086,21 +1111,23 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	public ArrayList<BlackboardArtifact.ARTIFACT_TYPE> getBlackboardArtifactTypes() throws TskCoreException {
+		ResultSet rs = null;
 		dbReadLock();
 		try {
 			ArrayList<BlackboardArtifact.ARTIFACT_TYPE> artifact_types = new ArrayList<BlackboardArtifact.ARTIFACT_TYPE>();
 			Statement s = con.createStatement();
-			ResultSet rs = s.executeQuery("SELECT artifact_type_id FROM blackboard_artifact_types");
+			rs = s.executeQuery("SELECT artifact_type_id FROM blackboard_artifact_types");
 
 			while (rs.next()) {
 				artifact_types.add(BlackboardArtifact.ARTIFACT_TYPE.fromID(rs.getInt(1)));
 			}
-			rs.close();
+			
 			s.close();
 			return artifact_types;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting artifact types. " + ex.getMessage(), ex);
 		} finally {
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 
@@ -1138,21 +1165,23 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	public ArrayList<BlackboardAttribute.ATTRIBUTE_TYPE> getBlackboardAttributeTypes() throws TskCoreException {
+		ResultSet rs = null;
 		dbReadLock();
 		try {
 			ArrayList<BlackboardAttribute.ATTRIBUTE_TYPE> attribute_types = new ArrayList<BlackboardAttribute.ATTRIBUTE_TYPE>();
 			Statement s = con.createStatement();
-			ResultSet rs = s.executeQuery("SELECT type_name FROM blackboard_attribute_types");
+			rs = s.executeQuery("SELECT type_name FROM blackboard_attribute_types");
 
 			while (rs.next()) {
 				attribute_types.add(BlackboardAttribute.ATTRIBUTE_TYPE.fromLabel(rs.getString(1)));
 			}
-			rs.close();
+			
 			s.close();
 			return attribute_types;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting attribute types. " + ex.getMessage(), ex);
 		} finally {
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 	}
@@ -1186,21 +1215,8 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting number of blackboard artifacts by type. " + ex.getMessage(), ex);
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException ex) {
-					logger.log(Level.WARNING, "Coud not close the result set, ", ex);
-				}
-			}
-			if (s != null) {
-				try {
-					s.close();
-				} catch (SQLException ex) {
-					logger.log(Level.WARNING, "Coud not close the statement, ", ex);
-				}
-			}
-
+			closeResultSet(rs);
+			closeStatement(s);
 			dbReadUnlock();
 		}
 
@@ -1218,23 +1234,24 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	private ArrayList<BlackboardArtifact> getArtifactsHelper(int artifactTypeID, String artifactTypeName, long obj_id) throws TskCoreException {
+		ResultSet rs = null;
 		dbReadLock();
 		try {
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
 
 			getArtifactsHelper1St.setLong(1, obj_id);
 			getArtifactsHelper1St.setInt(2, artifactTypeID);
-			ResultSet rs = getArtifactsHelper1St.executeQuery();
+			rs = getArtifactsHelper1St.executeQuery();
 
 			while (rs.next()) {
 				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), obj_id, artifactTypeID, artifactTypeName, this.getArtifactTypeDisplayName(artifactTypeID)));
 			}
-			rs.close();
 
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting or creating a blackboard artifact. " + ex.getMessage(), ex);
 		} finally {
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 	}
@@ -1269,13 +1286,7 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifact count, " + ex.getMessage(), ex);
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Could not close the result set. ", ex);
-				}
-			}
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 	}
@@ -1290,22 +1301,23 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	private ArrayList<BlackboardArtifact> getArtifactsHelper(int artifactTypeID, String artifactTypeName) throws TskCoreException {
+		ResultSet rs = null;
 		dbReadLock();
 		try {
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
 
 			getArtifactsHelper2St.setInt(1, artifactTypeID);
-			ResultSet rs = getArtifactsHelper2St.executeQuery();
+			rs = getArtifactsHelper2St.executeQuery();
 
 			while (rs.next()) {
 				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2), artifactTypeID, artifactTypeName, this.getArtifactTypeDisplayName(artifactTypeID)));
 			}
-			rs.close();
 
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting or creating a blackboard artifact. " + ex.getMessage(), ex);
 		} finally {
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 	}
@@ -1432,10 +1444,12 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	public List<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType, BlackboardAttribute.ATTRIBUTE_TYPE attrType, String value) throws TskCoreException {
+		ResultSet rs = null;
+		Statement s = null;
 		dbReadLock();
 		try {
-			Statement s = con.createStatement();
-			ResultSet rs = s.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
+			s = con.createStatement();
+			rs = s.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
 					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id "
 					+ "FROM blackboard_artifacts, blackboard_attributes "
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id "
@@ -1445,12 +1459,12 @@ public class SleuthkitCase {
 
 			List<BlackboardArtifact> artifacts = getArtifactsHelper(rs);
 
-			rs.close();
-			s.close();
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by artifact type and attribute. " + ex.getMessage(), ex);
 		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
 			dbReadUnlock();
 		}
 	}
@@ -1464,18 +1478,19 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	public BlackboardArtifact getBlackboardArtifact(long artifactID) throws TskCoreException {
+		ResultSet rs = null;
 		dbReadLock();
 		try {
 			getBlackboardArtifactSt.setLong(1, artifactID);
-			ResultSet rs = getBlackboardArtifactSt.executeQuery();
+			rs = getBlackboardArtifactSt.executeQuery();
 			long obj_id = rs.getLong(1);
 			int artifact_type_id = rs.getInt(2);
-			rs.close();
 			return new BlackboardArtifact(this, artifactID, obj_id, artifact_type_id, this.getArtifactTypeString(artifact_type_id), this.getArtifactTypeDisplayName(artifact_type_id));
 
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting a blackboard artifact. " + ex.getMessage(), ex);
 		} finally {
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 	}
@@ -1634,22 +1649,22 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	private void addAttrType(String attrTypeString, String displayName, int typeID) throws TskCoreException {
+		Statement s = null;
+		ResultSet rs = null;
 		dbWriteLock();
 		try {
-			Statement s = con.createStatement();
-			ResultSet rs = s.executeQuery("SELECT * from blackboard_attribute_types WHERE type_name = '" + attrTypeString + "'");
+			s = con.createStatement();
+			rs = s.executeQuery("SELECT * from blackboard_attribute_types WHERE type_name = '" + attrTypeString + "'");
 			if (!rs.next()) {
 				s.executeUpdate("INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name) VALUES (" + typeID + ", '" + attrTypeString + "', '" + displayName + "')");
-				rs.close();
-				s.close();
 			} else {
-				rs.close();
-				s.close();
 				throw new TskCoreException("Attribute with that name already exists");
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting attribute type id.", ex);
 		} finally {
+			closeStatement(s);
+			closeResultSet(rs);
 			dbWriteUnlock();
 		}
 	}
@@ -1664,25 +1679,24 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	public int getAttrTypeID(String attrTypeString) throws TskCoreException {
+		Statement s = null;
+		ResultSet rs = null;
+		
 		dbReadLock();
 		try {
-			Statement s = con.createStatement();
-			ResultSet rs;
-
+			s = con.createStatement();
 			rs = s.executeQuery("SELECT attribute_type_id FROM blackboard_attribute_types WHERE type_name = '" + attrTypeString + "'");
 			if (rs.next()) {
 				int type = rs.getInt(1);
-				rs.close();
-				s.close();
 				return type;
 			} else {
-				rs.close();
-				s.close();
 				throw new TskCoreException("No id with that name");
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting attribute type id.", ex);
 		} finally {
+			closeStatement(s);
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 	}
@@ -1697,26 +1711,25 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	public String getAttrTypeString(int attrTypeID) throws TskCoreException {
+		Statement s = null;
+		ResultSet rs = null;
+		
 		dbReadLock();
 		try {
-			Statement s = con.createStatement();
-			ResultSet rs;
-
+			s = con.createStatement();
 			rs = s.executeQuery("SELECT type_name FROM blackboard_attribute_types WHERE attribute_type_id = " + attrTypeID);
 			if (rs.next()) {
 				String type = rs.getString(1);
-				rs.close();
-				s.close();
 				return type;
 			} else {
-				rs.close();
-				s.close();
 				throw new TskCoreException("No type with that id.");
 			}
 
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting or creating a attribute type name.", ex);
 		} finally {
+			closeStatement(s);
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 	}
@@ -1731,26 +1744,25 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	public String getAttrTypeDisplayName(int attrTypeID) throws TskCoreException {
+		Statement s = null;
+		ResultSet rs = null;
+		
 		dbReadLock();
 		try {
-			Statement s = con.createStatement();
-			ResultSet rs;
-
+			s = con.createStatement();
 			rs = s.executeQuery("SELECT display_name FROM blackboard_attribute_types WHERE attribute_type_id = " + attrTypeID);
 			if (rs.next()) {
 				String type = rs.getString(1);
-				rs.close();
-				s.close();
 				return type;
 			} else {
-				rs.close();
-				s.close();
 				throw new TskCoreException("No type with that id.");
 			}
 
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting or creating a attribute type name.", ex);
 		} finally {
+			closeStatement(s);
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 	}
@@ -1765,26 +1777,25 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	int getArtifactTypeID(String artifactTypeString) throws TskCoreException {
+		Statement s = null;
+		ResultSet rs = null;
+		
 		dbReadLock();
 		try {
-			Statement s = con.createStatement();
-			ResultSet rs;
-
+			s = con.createStatement();
 			rs = s.executeQuery("SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeString + "'");
 			if (rs.next()) {
 				int type = rs.getInt(1);
-				rs.close();
-				s.close();
 				return type;
 			} else {
-				rs.close();
-				s.close();
 				throw new TskCoreException("No artifact with that name exists");
 			}
 
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting artifact type id." + ex.getMessage(), ex);
 		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
 			dbReadUnlock();
 		}
 	}
@@ -1799,26 +1810,25 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	String getArtifactTypeString(int artifactTypeID) throws TskCoreException {
+		Statement s = null;
+		ResultSet rs = null;
+
 		dbReadLock();
 		try {
-			Statement s = con.createStatement();
-			ResultSet rs;
-
+			s = con.createStatement();
 			rs = s.executeQuery("SELECT type_name FROM blackboard_artifact_types WHERE artifact_type_id = " + artifactTypeID);
 			if (rs.next()) {
 				String type = rs.getString(1);
-				rs.close();
-				s.close();
 				return type;
 			} else {
-				rs.close();
-				s.close();
 				throw new TskCoreException("Error: no artifact with that name in database");
 			}
 
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting artifact type id.", ex);
 		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
 			dbReadUnlock();
 		}
 	}
@@ -1834,26 +1844,25 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	String getArtifactTypeDisplayName(int artifactTypeID) throws TskCoreException {
+		Statement s = null;
+		ResultSet rs = null;
+		
 		dbReadLock();
 		try {
-			Statement s = con.createStatement();
-			ResultSet rs;
-
+			s = con.createStatement();
 			rs = s.executeQuery("SELECT display_name FROM blackboard_artifact_types WHERE artifact_type_id = " + artifactTypeID);
 			if (rs.next()) {
 				String type = rs.getString(1);
-				rs.close();
-				s.close();
 				return type;
 			} else {
-				rs.close();
-				s.close();
 				throw new TskCoreException("Error: no artifact with that name in database");
 			}
 
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting artifact type id.", ex);
 		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
 			dbReadUnlock();
 		}
 	}
@@ -1885,22 +1894,22 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	private void addArtifactType(String artifactTypeName, String displayName, int typeID) throws TskCoreException {
+		Statement s = null;
+		ResultSet rs = null;
 		dbWriteLock();
 		try {
-			Statement s = con.createStatement();
-			ResultSet rs = s.executeQuery("SELECT * FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeName + "'");
+			s = con.createStatement();
+			rs = s.executeQuery("SELECT * FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeName + "'");
 			if (!rs.next()) {
 				s.executeUpdate("INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name) VALUES (" + typeID + " , '" + artifactTypeName + "', '" + displayName + "')");
-				rs.close();
-				s.close();
 			} else {
-				rs.close();
-				s.close();
 				throw new TskCoreException("Artifact with that name already exists");
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding artifact type.", ex);
 		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
 			dbWriteUnlock();
 		}
 
@@ -1929,12 +1938,12 @@ public class SleuthkitCase {
 
 				attributes.add(attr);
 			}
-			rs.close();
-
+			
 			return attributes;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting attributes for artifact: " + artifact.getArtifactID(), ex);
 		} finally {
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 	}
@@ -1950,14 +1959,14 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	public ArrayList<BlackboardAttribute> getMatchingAttributes(String whereClause) throws TskCoreException {
+		Statement s = null;
+		ResultSet rs = null;
 		ArrayList<BlackboardAttribute> matches = new ArrayList<BlackboardAttribute>();
 		dbReadLock();
 		try {
-			Statement s;
-
 			s = con.createStatement();
 
-			ResultSet rs = s.executeQuery("Select artifact_id, source, context, attribute_type_id, value_type, "
+			rs = s.executeQuery("Select artifact_id, source, context, attribute_type_id, value_type, "
 					+ "value_byte, value_text, value_int32, value_int64, value_double FROM blackboard_attributes " + whereClause);
 
 			while (rs.next()) {
@@ -1966,13 +1975,13 @@ public class SleuthkitCase {
 						rs.getString("value_text"), rs.getBytes("value_byte"), this);
 				matches.add(attr);
 			}
-			rs.close();
-			s.close();
 
 			return matches;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting attributes. using this where clause: " + whereClause, ex);
 		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
 			dbReadUnlock();
 		}
 	}
@@ -1987,24 +1996,25 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	public ArrayList<BlackboardArtifact> getMatchingArtifacts(String whereClause) throws TskCoreException {
+		Statement s = null;
+		ResultSet rs = null;
 		ArrayList<BlackboardArtifact> matches = new ArrayList<BlackboardArtifact>();
+		
 		dbReadLock();
 		try {
-			Statement s;
 			s = con.createStatement();
-
-			ResultSet rs = s.executeQuery("Select artifact_id, obj_id, artifact_type_id FROM blackboard_artifacts " + whereClause);
+			rs = s.executeQuery("Select artifact_id, obj_id, artifact_type_id FROM blackboard_artifacts " + whereClause);
 
 			while (rs.next()) {
 				BlackboardArtifact artifact = new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2), rs.getInt(3), this.getArtifactTypeString(rs.getInt(3)), this.getArtifactTypeDisplayName(rs.getInt(3)));
 				matches.add(artifact);
 			}
-			rs.close();
-			s.close();
 			return matches;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting attributes. using this where clause: " + whereClause, ex);
 		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
 			dbReadUnlock();
 		}
 	}
@@ -2021,6 +2031,7 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	public BlackboardArtifact newBlackboardArtifact(int artifactTypeID, long obj_id) throws TskCoreException {
+		ResultSet rs = null;
 		dbWriteLock();
 		try {
 			String artifactTypeName = this.getArtifactTypeString(artifactTypeID);
@@ -2034,9 +2045,8 @@ public class SleuthkitCase {
 			getLastArtifactId.setLong(1, obj_id);
 			getLastArtifactId.setInt(2, artifactTypeID);
 
-			final ResultSet rs = getLastArtifactId.executeQuery();
+			rs = getLastArtifactId.executeQuery();
 			artifactID = rs.getLong(1);
-			rs.close();
 
 			addArtifactSt1.clearParameters();
 			getLastArtifactId.clearParameters();
@@ -2047,6 +2057,7 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting or creating a blackboard artifact. " + ex.getMessage(), ex);
 		} finally {
+			closeResultSet(rs);
 			dbWriteUnlock();
 		}
 	}
@@ -2061,6 +2072,7 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	public BlackboardArtifact newBlackboardArtifact(ARTIFACT_TYPE artifactType, long obj_id) throws TskCoreException {
+		ResultSet rs = null;
 		dbWriteLock();
 		try {
 			final int type = artifactType.getTypeID();
@@ -2072,12 +2084,10 @@ public class SleuthkitCase {
 
 			getLastArtifactId.setLong(1, obj_id);
 			getLastArtifactId.setInt(2, type);
-			final ResultSet rs = getLastArtifactId.executeQuery();
+			rs = getLastArtifactId.executeQuery();
 			if (rs.next()) {
 				artifactID = rs.getLong(1);
 			}
-
-			rs.close();
 
 			addArtifactSt1.clearParameters();
 			getLastArtifactId.clearParameters();
@@ -2088,6 +2098,7 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting or creating a blackboard artifact. " + ex.getMessage(), ex);
 		} finally {
+			closeResultSet(rs);
 			dbWriteUnlock();
 		}
 	}
@@ -2140,13 +2151,7 @@ public class SleuthkitCase {
 		} catch (SQLException e) {
 			logger.log(Level.SEVERE, "Error checking for children of parent: " + content, e);
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Error closing a result set after checking for children.", ex);
-				}
-			}
+			closeResultSet(rs);
 			dbReadUnlock();
 
 		}
@@ -2179,15 +2184,8 @@ public class SleuthkitCase {
 		} catch (SQLException e) {
 			logger.log(Level.SEVERE, "Error checking for children of parent: " + content, e);
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Error closing a result set after checking for children.", ex);
-				}
-			}
+			closeResultSet(rs);
 			dbReadUnlock();
-
 		}
 		return countChildren;
 
@@ -2202,7 +2200,7 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	List<Content> getAbstractFileChildren(Content parent, TSK_DB_FILES_TYPE_ENUM type) throws TskCoreException {
-
+		ResultSet rs = null;
 		List<Content> children = new ArrayList<Content>();
 		
 		dbReadLock();
@@ -2213,7 +2211,7 @@ public class SleuthkitCase {
 			getAbstractFileChildren.setLong(1, parentId);
 			getAbstractFileChildren.setShort(2, type.getFileType());
 
-			final ResultSet rs = getAbstractFileChildren.executeQuery();
+			rs = getAbstractFileChildren.executeQuery();
 
 			while (rs.next()) {
 				if (type == TSK_DB_FILES_TYPE_ENUM.FS) {
@@ -2251,33 +2249,32 @@ public class SleuthkitCase {
 					children.add(lf);
 				}
 			}
-			rs.close();
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting AbstractFile children for Content.", ex);
 		} finally {
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 		return children;
 	}
 
 	List<Long> getAbstractFileChildrenIds(Content parent, TSK_DB_FILES_TYPE_ENUM type) throws TskCoreException {
+		ResultSet rs = null;
 		final List<Long> children = new ArrayList<Long>();
 
 		dbReadLock();
 		try {
-
 			getAbstractFileChildrenIds.setLong(1, parent.getId());
 			getAbstractFileChildrenIds.setShort(2, type.getFileType());
 
-			ResultSet rs = getAbstractFileChildrenIds.executeQuery();
-
+			rs = getAbstractFileChildrenIds.executeQuery();
 			while (rs.next()) {
 				children.add(rs.getLong(1));
 			}
-			rs.close();
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting AbstractFile children for Content.", ex);
 		} finally {
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 		return children;
@@ -2290,18 +2287,20 @@ public class SleuthkitCase {
 	 * @throws TskCoreException 
 	 */
 	private int getDbVersion() throws TskCoreException {
+		ResultSet rs = null;
 		int ver = 0;
+		
 		dbReadLock();
 		try {
-			ResultSet rs = con.createStatement().executeQuery("select * from tsk_db_info");
+			rs = con.createStatement().executeQuery("select * from tsk_db_info");
 			if (rs.next()) {
 				ver = rs.getInt("schema_ver");
 			}
-			rs.close();
 			return ver;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting AbstractFile children for Content.", ex);
 		} finally {
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 	}
@@ -2329,26 +2328,30 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	Collection<ObjectInfo> getChildrenInfo(Content c) throws TskCoreException {
+		Statement s = null;
+		ResultSet rs = null;
+		
 		dbReadLock();
 		try {
-			Statement s = con.createStatement();
+			s = con.createStatement();
 			String query = "SELECT tsk_objects.obj_id, tsk_objects.type ";
 			query += "FROM tsk_objects left join tsk_files ";
 			query += "ON tsk_objects.obj_id=tsk_files.obj_id ";
 			query += "WHERE tsk_objects.par_obj_id = " + c.getId() + " ";
-			ResultSet rs = s.executeQuery(query);
+			rs = s.executeQuery(query);
 
 			Collection<ObjectInfo> infos = new ArrayList<ObjectInfo>();
 
 			while (rs.next()) {
 				infos.add(new ObjectInfo(rs.getLong("obj_id"), ObjectType.valueOf(rs.getShort("type"))));
 			}
-			rs.close();
-			s.close();
+
 			return infos;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting Children Info for Content.", ex);
 		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
 			dbReadUnlock();
 		}
 	}
@@ -2362,10 +2365,13 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	ObjectInfo getParentInfo(Content c) throws TskCoreException {
+		Statement s = null;
+		ResultSet rs = null;
+		
 		dbReadLock();
 		try {
-			Statement s = con.createStatement();
-			ResultSet rs = s.executeQuery("SELECT parent.obj_id, parent.type "
+			s = con.createStatement();
+			rs = s.executeQuery("SELECT parent.obj_id, parent.type "
 					+ "FROM tsk_objects AS parent JOIN tsk_objects AS child "
 					+ "ON child.par_obj_id = parent.obj_id "
 					+ "WHERE child.obj_id = " + c.getId());
@@ -2374,17 +2380,15 @@ public class SleuthkitCase {
 
 			if (rs.next()) {
 				info = new ObjectInfo(rs.getLong(1), ObjectType.valueOf(rs.getShort(2)));
-				rs.close();
-				s.close();
 				return info;
 			} else {
-				rs.close();
-				s.close();
 				throw new TskCoreException("Given content (id: " + c.getId() + ") has no parent.");
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting Parent Info for Content.", ex);
 		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
 			dbReadUnlock();
 		}
 	}
@@ -2398,10 +2402,13 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	ObjectInfo getParentInfo(long contentId) throws TskCoreException {
+		Statement s = null;
+		ResultSet rs = null;
+		
 		dbReadLock();
 		try {
-			Statement s = con.createStatement();
-			ResultSet rs = s.executeQuery("SELECT parent.obj_id, parent.type "
+			s = con.createStatement();
+			rs = s.executeQuery("SELECT parent.obj_id, parent.type "
 					+ "FROM tsk_objects AS parent JOIN tsk_objects AS child "
 					+ "ON child.par_obj_id = parent.obj_id "
 					+ "WHERE child.obj_id = " + contentId);
@@ -2410,17 +2417,15 @@ public class SleuthkitCase {
 
 			if (rs.next()) {
 				info = new ObjectInfo(rs.getLong(1), ObjectType.valueOf(rs.getShort(2)));
-				rs.close();
-				s.close();
 				return info;
 			} else {
-				rs.close();
-				s.close();
 				throw new TskCoreException("Given content (id: " + contentId + ") has no parent.");
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting Parent Info for Content: " + contentId, ex);
 		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
 			dbReadUnlock();
 		}
 	}
@@ -2468,8 +2473,6 @@ public class SleuthkitCase {
 			s = con.createStatement();
 			contentRs = s.executeQuery("SELECT * FROM tsk_objects WHERE obj_id = " + id + " LIMIT  1");
 			if (!contentRs.next()) {
-				contentRs.close();
-				s.close();
 				return null;
 			}
 
@@ -2499,16 +2502,8 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting Content by ID.", ex);
 		} finally {
-			try {
-				if (contentRs != null) {
-					contentRs.close();
-				}
-				if (s != null) {
-					s.close();
-				}
-			} catch (SQLException ex) {
-				throw new TskCoreException("Error closing statement when getting Content by ID.", ex);
-			}
+			closeResultSet(contentRs);
+			closeStatement(s);
 			dbReadUnlock();
 		}
 	}
@@ -2533,13 +2528,7 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			logger.log(Level.SEVERE, "Error getting file path for file: " + id, ex);
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Error closing result set after getting file path by id.", ex);
-				}
-			}
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 
@@ -2566,13 +2555,7 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			logger.log(Level.SEVERE, "Error getting file parent_path for file: " + id, ex);
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Error closing result set after getting parent_file path by id.", ex);
-				}
-			}
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 
@@ -2598,13 +2581,7 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			logger.log(Level.SEVERE, "Error getting file parent_path for file: " + id, ex);
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Error closing result set after getting parent_file path by id.", ex);
-				}
-			}
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 		return fileName;
@@ -2644,21 +2621,8 @@ public class SleuthkitCase {
 		} catch (SQLException e) {
 			logger.log(Level.SEVERE, "Error getting derived method for file: " + id, e);
 		} finally {
-			if (rs1 != null) {
-				try {
-					rs1.close();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Error closing result set after getting derived file method", ex);
-				}
-			}
-			if (rs2 != null) {
-				try {
-					rs2.close();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Error closing result set after getting derived file method", ex);
-				}
-			}
-
+			closeResultSet(rs1);
+			closeResultSet(rs2);
 			dbReadUnlock();
 		}
 
@@ -2689,13 +2653,7 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting file by ID.", ex);
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Error closing result set after getting file by id.", ex);
-				}
-			}
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 
@@ -2728,13 +2686,7 @@ public class SleuthkitCase {
 		} catch (SQLException e) {
 			logger.log(Level.SEVERE, "Error checking file system id of a file", e);
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Error closing result set after checking file system id of a file", ex);
-				}
-			}
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 		return ret;
@@ -2865,13 +2817,7 @@ public class SleuthkitCase {
 		} catch (SQLException e) {
 			throw new TskCoreException("Error finding files in the data source by name, ", e);
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException ex) {
-					logger.log(Level.WARNING, "Error closing result set after finding files", ex);
-				}
-			}
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 
@@ -2940,13 +2886,7 @@ public class SleuthkitCase {
 		} catch (SQLException e) {
 			throw new TskCoreException("Error finding files in the data source by name, ", e);
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException ex) {
-					logger.log(Level.WARNING, "Error closing result set after finding files", ex);
-				}
-			}
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 
@@ -3134,18 +3074,9 @@ public class SleuthkitCase {
 			logger.log(Level.SEVERE, "Error getting local files virtual folder id, ", ex);
 			throw new TskCoreException("Error getting local files virtual folder id, ", ex);
 		} finally {
-			try {
-				if (rs != null) {
-					rs.close();
-				}
-				if (statement != null) {
-					statement.close();
-				}
-			} catch (SQLException e) {
-				logger.log(Level.WARNING, "Error closing statements after getting local files virt folder id", e);
-			} finally {
-				dbReadUnlock();
-			}
+			closeResultSet(rs);
+			closeStatement(statement);
+			dbReadUnlock();
 		}
 
 		return virtDirRootIds;
@@ -3705,20 +3636,8 @@ public class SleuthkitCase {
 		} catch (SQLException e) {
 			throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.findFilesWhere().", e);
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Error closing result set after executing  countFilesWhere", ex);
-				}
-			}
-			if (statement != null) {
-				try {
-					statement.close();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Error closing statement after executing  countFilesWhere", ex);
-				}
-			}
+			closeResultSet(rs);
+			closeStatement(statement);
 			dbReadUnlock();
 		}
 	}
@@ -3744,20 +3663,8 @@ public class SleuthkitCase {
 		} catch (SQLException e) {
 			throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.findAllFilesWhere(): " + sqlWhereClause, e);
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Error closing result set after executing  findAllFilesWhere", ex);
-				}
-			}
-			if (statement != null) {
-				try {
-					statement.close();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Error closing statement after executing  findAllFilesWhere", ex);
-				}
-			}
+			closeResultSet(rs);
+			closeStatement(statement);
 			dbReadUnlock();
 		}
 	}
@@ -3785,20 +3692,8 @@ public class SleuthkitCase {
 		} catch (SQLException e) {
 			throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.findAllFileIdsWhere(): " + sqlWhereClause, e);
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Error closing result set after executing  findAllFileIdsWhere", ex);
-				}
-			}
-			if (statement != null) {
-				try {
-					statement.close();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Error closing statement after executing  findAllFileIdsWhere", ex);
-				}
-			}
+			closeResultSet(rs);
+			closeStatement(statement);
 			dbReadUnlock();
 		}
 		return ret;
@@ -3823,20 +3718,8 @@ public class SleuthkitCase {
 		} catch (SQLException e) {
 			throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.findFilesWhere().", e);
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Error closing result set after executing  findFilesWhere", ex);
-				}
-			}
-			if (statement != null) {
-				try {
-					statement.close();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Error closing statement after executing  findFilesWhere", ex);
-				}
-			}
+			closeResultSet(rs);
+			closeStatement(statement);
 			dbReadUnlock();
 		}
 	}
@@ -3879,22 +3762,25 @@ public class SleuthkitCase {
 	 * core
 	 */
 	public List<TskFileRange> getFileRanges(long id) throws TskCoreException {
+		Statement s1 = null;
+		ResultSet rs1 = null;
+		
 		List<TskFileRange> ranges = new ArrayList<TskFileRange>();
 		dbReadLock();
 		try {
-			Statement s1 = con.createStatement();
-
-			ResultSet rs1 = s1.executeQuery("select * from tsk_file_layout where obj_id = " + id + " order by sequence");
+			s1 = con.createStatement();
+			rs1 = s1.executeQuery("select * from tsk_file_layout where obj_id = " + id + " order by sequence");
 
 			while (rs1.next()) {
 				ranges.add(rsHelper.tskFileRange(rs1));
 			}
-			rs1.close();
-			s1.close();
+
 			return ranges;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting TskFileLayoutRanges by ID.", ex);
 		} finally {
+			closeResultSet(rs1);
+			closeStatement(s1);
 			dbReadUnlock();
 		}
 	}
@@ -3908,17 +3794,21 @@ public class SleuthkitCase {
 	 * core
 	 */
 	public Image getImageById(long id) throws TskCoreException {
+		Statement s1 = null;
+		Statement s2 = null;
+		ResultSet rs1 = null;
+		ResultSet rs2 = null;
+		
 		dbReadLock();
 		try {
-			Statement s1 = con.createStatement();
-
-			ResultSet rs1 = s1.executeQuery("select * from tsk_image_info where obj_id = " + id);
+			s1 = con.createStatement();
+			rs1 = s1.executeQuery("select * from tsk_image_info where obj_id = " + id);
 
 			Image temp;
 			if (rs1.next()) {
 				long obj_id = rs1.getLong("obj_id");
-				Statement s2 = con.createStatement();
-				ResultSet rs2 = s2.executeQuery("select * from tsk_image_names where obj_id = " + obj_id);
+				s2 = con.createStatement();
+				rs2 = s2.executeQuery("select * from tsk_image_names where obj_id = " + obj_id);
 				List<String> imagePaths = new ArrayList<String>();
 				while (rs2.next()) {
 					imagePaths.add(rsHelper.imagePath(rs2));
@@ -3928,19 +3818,20 @@ public class SleuthkitCase {
 				String name = (new java.io.File(path1)).getName();
 
 				temp = rsHelper.image(rs1, name, imagePaths.toArray(new String[imagePaths.size()]));
-				rs2.close();
-				s2.close();
+
 			} else {
-				rs1.close();
-				s1.close();
+				
 				throw new TskCoreException("No image found for id: " + id);
 			}
-			rs1.close();
-			s1.close();
 			return temp;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting Image by ID.", ex);
 		} finally {
+			closeResultSet(rs1);
+			closeResultSet(rs2);
+			closeStatement(s1);
+			closeStatement(s2);
+			
 			dbReadUnlock();
 		}
 	}
@@ -3955,27 +3846,28 @@ public class SleuthkitCase {
 	 * core
 	 */
 	VolumeSystem getVolumeSystemById(long id, Image parent) throws TskCoreException {
+		Statement s = null;
+		ResultSet rs = null;
+		
 		dbReadLock();
 		try {
-			Statement s = con.createStatement();
-
-			ResultSet rs = s.executeQuery("select * from tsk_vs_info "
+			s = con.createStatement();
+			rs = s.executeQuery("select * from tsk_vs_info "
 					+ "where obj_id = " + id);
 			VolumeSystem temp;
 
 			if (rs.next()) {
 				temp = rsHelper.volumeSystem(rs, parent);
 			} else {
-				rs.close();
-				s.close();
 				throw new TskCoreException("No volume system found for id:" + id);
 			}
-			rs.close();
-			s.close();
+
 			return temp;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting Volume System by ID.", ex);
 		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
 			dbReadUnlock();
 		}
 	}
@@ -4041,28 +3933,29 @@ public class SleuthkitCase {
 	 * core
 	 */
 	private FileSystem getFileSystemByIdHelper(long id, Content parent) throws TskCoreException {
+		Statement s = null;
+		ResultSet rs = null;
+	
 		dbReadLock();
 		try {
-			Statement s = con.createStatement();
+			s = con.createStatement();
 			FileSystem temp;
 
-			ResultSet rs = s.executeQuery("select * from tsk_fs_info "
+			rs = s.executeQuery("select * from tsk_fs_info "
 					+ "where obj_id = " + id);
 
 			if (rs.next()) {
 				temp = rsHelper.fileSystem(rs, parent);
 			} else {
-				rs.close();
-				s.close();
 				throw new TskCoreException("No file system found for id:" + id);
 			}
-			rs.close();
-			s.close();
 
 			return temp;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting File System by ID.", ex);
 		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
 			dbReadUnlock();
 		}
 	}
@@ -4077,27 +3970,28 @@ public class SleuthkitCase {
 	 * core
 	 */
 	Volume getVolumeById(long id, VolumeSystem parent) throws TskCoreException {
+		Statement s = null;
+		ResultSet rs = null;
+		
 		dbReadLock();
 		try {
-			Statement s = con.createStatement();
+			s = con.createStatement();
 			Volume temp;
 
-			ResultSet rs = s.executeQuery("select * from tsk_vs_parts "
+			rs = s.executeQuery("select * from tsk_vs_parts "
 					+ "where obj_id = " + id);
 
 			if (rs.next()) {
 				temp = rsHelper.volume(rs, parent);
 			} else {
-				rs.close();
-				s.close();
 				throw new TskCoreException("No volume found for id:" + id);
 			}
-			rs.close();
-			s.close();
 			return temp;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting Volume by ID.", ex);
 		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
 			dbReadUnlock();
 		}
 	}
@@ -4124,12 +4018,14 @@ public class SleuthkitCase {
 	 * core
 	 */
 	Directory getDirectoryById(long id, FileSystem parentFs) throws TskCoreException {
+		Statement s = null;
+		ResultSet rs = null;
+		
 		dbReadLock();
 		try {
-			Statement s = con.createStatement();
+			s = con.createStatement();
 			Directory temp = null;
-
-			ResultSet rs = s.executeQuery("SELECT * FROM tsk_files "
+			rs = s.executeQuery("SELECT * FROM tsk_files "
 					+ "WHERE obj_id = " + id);
 
 			if (rs.next()) {
@@ -4139,21 +4035,17 @@ public class SleuthkitCase {
 						temp = rsHelper.directory(rs, parentFs);
 					}
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType()) {
-					rs.close();
-					s.close();
 					throw new TskCoreException("Expecting an FS-type directory, got virtual, id: " + id);
 				}
 			} else {
-				rs.close();
-				s.close();
 				throw new TskCoreException("No Directory found for id:" + id);
 			}
-			rs.close();
-			s.close();
 			return temp;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting Directory by ID.", ex);
 		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
 			dbReadUnlock();
 		}
 	}
@@ -4184,20 +4076,8 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			logger.log(Level.SEVERE, "There was a problem while trying to obtain this image's file systems.", ex);
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Cannot close result set after query of all fs objects", ex);
-				}
-			}
-			if (statement != null) {
-				try {
-					statement.close();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Cannot close statement after query of all fs objects", ex);
-				}
-			}
+			closeResultSet(rs);
+			closeStatement(statement);
 			dbReadUnlock();
 		}
 
@@ -4220,20 +4100,9 @@ public class SleuthkitCase {
 				} catch (SQLException ex) {
 					logger.log(Level.SEVERE, "There was a problem while trying to obtain this image's file systems.", ex);
 				} finally {
-					if (rs != null) {
-						try {
-							rs.close();
-						} catch (SQLException ex) {
-							logger.log(Level.SEVERE, "Cannot close result set after query of all fs objects for fs", ex);
-						}
-					}
-					if (statement != null) {
-						try {
-							statement.close();
-						} catch (SQLException ex) {
-							logger.log(Level.SEVERE, "Cannot close statement after query of all fs objects for fs", ex);
-						}
-					}
+					closeResultSet(rs);
+					closeStatement(statement);
+				
 					dbReadUnlock();
 				}
 			}
@@ -4510,12 +4379,13 @@ public class SleuthkitCase {
 	 */
 	public Map<Long, List<String>> getImagePaths() throws TskCoreException {
 		Map<Long, List<String>> imgPaths = new LinkedHashMap<Long, List<String>>();
-
+		Statement s1 = null;
+		ResultSet rs1 = null;
+			
 		dbReadLock();
 		try {
-			Statement s1 = con.createStatement();
-
-			ResultSet rs1 = s1.executeQuery("select * from tsk_image_info");
+			s1 = con.createStatement();
+			rs1 = s1.executeQuery("select * from tsk_image_info");
 
 			while (rs1.next()) {
 				long obj_id = rs1.getLong("obj_id");
@@ -4530,11 +4400,11 @@ public class SleuthkitCase {
 				imgPaths.put(obj_id, paths);
 			}
 
-			rs1.close();
-			s1.close();
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting image paths.", ex);
 		} finally {
+			closeResultSet(rs1);
+			closeStatement(s1);
 			dbReadUnlock();
 		}
 
@@ -4548,17 +4418,19 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	public List<Image> getImages() throws TskCoreException {
-		dbReadLock();
+		ResultSet rs = null;
 		Collection<Long> imageIDs = new ArrayList<Long>();
+		
+		dbReadLock();
 		try {
-			ResultSet rs = con.createStatement().executeQuery("select * from tsk_image_info");
+			rs = con.createStatement().executeQuery("select * from tsk_image_info");
 			while (rs.next()) {
 				imageIDs.add(rs.getLong("obj_id"));
 			}
-			rs.close();
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error retrieving images.", ex);
 		} finally {
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 
@@ -4596,13 +4468,7 @@ public class SleuthkitCase {
 			logger.log(Level.SEVERE, msg, e);
 			throw new TskCoreException(msg, e);
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Error closing result set after getting last object id.", ex);
-				}
-			}
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 
@@ -4925,19 +4791,22 @@ public class SleuthkitCase {
 	 */
 	public int countFsContentType(TskData.TSK_FS_META_TYPE_ENUM contentType) throws TskCoreException {
 		int count = 0;
+		Statement s = null;
+		ResultSet rs = null;
 		Short contentShort = contentType.getValue();
+		
 		dbReadLock();
 		try {
-			Statement s = con.createStatement();
-			ResultSet rs = s.executeQuery("SELECT COUNT(*) FROM tsk_files WHERE meta_type = '" + contentShort.toString() + "'");
+			s = con.createStatement();
+			rs = s.executeQuery("SELECT COUNT(*) FROM tsk_files WHERE meta_type = '" + contentShort.toString() + "'");
 			while (rs.next()) {
 				count = rs.getInt(1);
 			}
-			rs.close();
-			s.close();
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting number of objects.", ex);
 		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
 			dbReadUnlock();
 		}
 		return count;
@@ -4978,16 +4847,7 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			logger.log(Level.WARNING, "Error querying database.", ex);
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-					s.close();
-
-
-				} catch (SQLException ex) {
-					logger.log(Level.WARNING, "Unable to close ResultSet and Statement.", ex);
-				}
-			}
+			closeResultSet(rs);
 			dbReadUnlock();
 		}
 		return Collections.<AbstractFile>emptyList();
@@ -5019,16 +4879,8 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			logger.log(Level.WARNING, "Failed to query for all the files.", ex);
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-					s.close();
-
-
-				} catch (SQLException ex) {
-					logger.log(Level.WARNING, "Failed to close the result set.", ex);
-				}
-			}
+			closeResultSet(rs);
+			closeStatement(s);
 			dbReadUnlock();
 		}
 		return false;
@@ -5056,20 +4908,8 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			logger.log(Level.WARNING, "Failed to query for all the files.", ex);
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException ex) {
-					logger.log(Level.WARNING, "Failed to close the result set.", ex);
-				}
-			}
-			if (s != null) {
-				try {
-					s.close();
-				} catch (SQLException ex) {
-					logger.log(Level.WARNING, "Failed to close the statement.", ex);
-				}
-			}
+			closeResultSet(rs);
+			closeStatement(s);
 			dbReadUnlock();
 		}
 		return count;
@@ -5127,22 +4967,24 @@ public class SleuthkitCase {
 	 * @throws TskCoreException 
 	 */
 	public List<TagName> getAllTagNames() throws TskCoreException {
+		ResultSet resultSet = null;
 		dbReadLock();
 		try {
 			ArrayList<TagName> tagNames = new ArrayList<TagName>();
 			
 			// SELECT * FROM tag_names
-			ResultSet resultSet = selectAllFromTagNames.executeQuery();
+			resultSet = selectAllFromTagNames.executeQuery();
 			while(resultSet.next()) {
 				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))));
 			}
-			resultSet.close();
+
 			return tagNames;
 		}
 		catch(SQLException ex) {
 			throw new TskCoreException("Error selecting rows from tag_names table", ex);
 		}
 		finally {
+			closeResultSet(resultSet);
 			dbReadUnlock();
 		}
 	}
@@ -5155,22 +4997,23 @@ public class SleuthkitCase {
 	 * @throws TskCoreException 
 	 */
 	public List<TagName> getTagNamesInUse() throws TskCoreException {
+		ResultSet resultSet = null;
 		dbReadLock();
 		try {
 			ArrayList<TagName> tagNames = new ArrayList<TagName>();
 			
 			// SELECT * FROM tag_names WHERE tag_name_id IN (SELECT tag_name_id from content_tags UNION SELECT tag_name_id FROM blackboard_artifact_tags)
-			ResultSet resultSet = selectFromTagNamesWhereInUse.executeQuery();
+			resultSet = selectFromTagNamesWhereInUse.executeQuery();
 			while(resultSet.next()) {
 				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))));
 			}
-			resultSet.close();
 			return tagNames;
 		}
 		catch(SQLException ex) {
 			throw new TskCoreException("Error selecting rows from tag_names table", ex);
 		}
 		finally {
+			closeResultSet(resultSet);
 			dbReadUnlock();
 		}
 	}
@@ -5184,6 +5027,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException 
 	 */
 	public TagName addTagName(String displayName, String description, TagName.HTML_COLOR color) throws TskCoreException {
+		ResultSet resultSet = null;
 		dbWriteLock();		
 		try {
 			// INSERT INTO tag_names (display_name, description, color) VALUES (?, ?, ?)			
@@ -5194,9 +5038,8 @@ public class SleuthkitCase {
 			insertIntoTagNames.executeUpdate();
 
 			// SELECT MAX(id) FROM tag_names
-			ResultSet resultSet = selectMaxIdFromTagNames.executeQuery();
+			resultSet = selectMaxIdFromTagNames.executeQuery();
 			Long tagID = resultSet.getLong(1);
-			resultSet.close();
 			
 			return new TagName(tagID, displayName, description, color);			
 		}
@@ -5204,6 +5047,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error adding row for " + displayName + " tag name to tag_names table", ex);
 		}
 		finally {
+			closeResultSet(resultSet);
 			dbWriteUnlock();
 		}
 	}
@@ -5219,6 +5063,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException 
 	 */
 	public ContentTag addContentTag(Content content, TagName tagName, String comment, long beginByteOffset, long endByteOffset) throws TskCoreException {
+		ResultSet resultSet = null;
 		dbWriteLock();		
 		try {			
 			// INSERT INTO content_tags (obj_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)
@@ -5231,9 +5076,8 @@ public class SleuthkitCase {
 			insertIntoContentTags.executeUpdate();
 
 			// SELECT MAX(tag_id) FROM content_tags
-			ResultSet resultSet = selectMaxIdFromContentTags.executeQuery();
+			resultSet = selectMaxIdFromContentTags.executeQuery();
 			Long tagID = resultSet.getLong(1);
-			resultSet.close();
 			
 			return new ContentTag(tagID, content, tagName, comment, beginByteOffset, endByteOffset);
 		}
@@ -5241,6 +5085,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error adding row to content_tags table (obj_id = " +content.getId() + ", tag_name_id = " + tagName.getId() + ")", ex);
 		}
 		finally {
+			closeResultSet(resultSet);
 			dbWriteUnlock();
 		}	
 	}
@@ -5272,24 +5117,25 @@ public class SleuthkitCase {
 	 * @throws TskCoreException 
 	 */
 	public List<ContentTag> getAllContentTags() throws TskCoreException {
+		ResultSet resultSet = null;
 		dbReadLock();		
 		try {
 			ArrayList<ContentTag> tags = new ArrayList<ContentTag>();
 			
 			// SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id
-			ResultSet resultSet = selectAllContentTags.executeQuery();
+			resultSet = selectAllContentTags.executeQuery();
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong(2), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))); 
 				Content content = getContentById(resultSet.getLong("obj_id"));
 				tags.add(new ContentTag(resultSet.getLong("tag_id"), content, tagName, resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset"))); 
 			} 
-			resultSet.close();
 			return tags;
 		}
 		catch (SQLException ex) {
 			throw new TskCoreException("Error selecting rows from content_tags table", ex);
 		}
 		finally {
+			closeResultSet(resultSet);
 			dbReadUnlock();
 		}					
 	}
@@ -5305,16 +5151,15 @@ public class SleuthkitCase {
 		if (tagName.getId() == Tag.ID_NOT_SET) {
 			throw new TskCoreException("TagName object is invalid, id not set");
 		}
-		
+		ResultSet resultSet = null;
 		dbReadLock();		
 		try {
 			// SELECT COUNT(*) FROM content_tags WHERE tag_name_id = ?
 			selectContentTagsCountByTagName.clearParameters();
 			selectContentTagsCountByTagName.setLong(1, tagName.getId());
-			ResultSet resultSet = selectContentTagsCountByTagName.executeQuery();
+			resultSet = selectContentTagsCountByTagName.executeQuery();
 			if (resultSet.next()) {
 				long count = resultSet.getLong(1);
-				resultSet.close();
 				return count;
 			} 
 			else {
@@ -5325,6 +5170,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error getting content_tags row count for tag name (tag_name_id = " + tagName.getId() + ")", ex);
 		}
 		finally {
+			closeResultSet(resultSet);
 			dbReadUnlock();
 		}			
 	}
@@ -5340,7 +5186,7 @@ public class SleuthkitCase {
 		if (tagName.getId() == Tag.ID_NOT_SET) {
 			throw new TskCoreException("TagName object is invalid, id not set");
 		}
-		
+		ResultSet resultSet = null;
 		dbReadLock();		
 		try {
 			ArrayList<ContentTag> tags = new ArrayList<ContentTag>();			
@@ -5348,18 +5194,18 @@ public class SleuthkitCase {
 			// SELECT * FROM content_tags WHERE tag_name_id = ?
 			selectContentTagsByTagName.clearParameters();
 			selectContentTagsByTagName.setLong(1, tagName.getId());
-			ResultSet resultSet = selectContentTagsByTagName.executeQuery();
+			resultSet = selectContentTagsByTagName.executeQuery();
 			while(resultSet.next()) {
 				ContentTag tag = new ContentTag(resultSet.getLong("tag_id"), getContentById(resultSet.getLong("obj_id")), tagName, resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset")); 
 				tags.add(tag);				
 			}						
-			resultSet.close();
 			return tags;
 		}
 		catch (SQLException ex) {
 			throw new TskCoreException("Error getting content_tags rows (tag_name_id = " + tagName.getId() + ")", ex);
 		}
 		finally {
+			closeResultSet(resultSet);
 			dbReadUnlock();
 		}			
 	}
@@ -5372,6 +5218,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException 
 	 */
 	public List<ContentTag> getContentTagsByContent(Content content) throws TskCoreException {
+		ResultSet resultSet = null;
 		dbReadLock();		
 		try {
 			ArrayList<ContentTag> tags = new ArrayList<ContentTag>();
@@ -5379,19 +5226,19 @@ public class SleuthkitCase {
 			// SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id WHERE content_tags.obj_id = ?
 			selectContentTagsByContent.clearParameters(); 			
 			selectContentTagsByContent.setLong(1, content.getId());			
-			ResultSet resultSet = selectContentTagsByContent.executeQuery();
+			resultSet = selectContentTagsByContent.executeQuery();
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong(2), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))); 
 				ContentTag tag = new ContentTag(resultSet.getLong("tag_id"), content, tagName, resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset")); 
 				tags.add(tag);
 			} 
-			resultSet.close();
 			return tags;
 		}
 		catch (SQLException ex) {
 			throw new TskCoreException("Error getting content tags data for content (obj_id = " + content.getId() + ")", ex);
 		}
 		finally {
+			closeResultSet(resultSet);
 			dbReadUnlock();
 		}					
 	}	
@@ -5405,6 +5252,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException 
 	 */
 	public BlackboardArtifactTag addBlackboardArtifactTag(BlackboardArtifact artifact, TagName tagName, String comment) throws TskCoreException {
+		ResultSet resultSet = null;
 		dbWriteLock();		
 		try {			
 			// INSERT INTO blackboard_artifact_tags (artifact_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)			
@@ -5415,9 +5263,8 @@ public class SleuthkitCase {
 			insertIntoBlackboardArtifactTags.executeUpdate();
 
 			// SELECT MAX(tag_id) FROM blackboard_artifact_tags
-			ResultSet resultSet = selectMaxIdFromBlackboardArtifactTags.executeQuery();
+			resultSet = selectMaxIdFromBlackboardArtifactTags.executeQuery();
 			Long tagID = resultSet.getLong(1);
-			resultSet.close();
 			
 			return new BlackboardArtifactTag(tagID, artifact, getContentById(artifact.getObjectID()), tagName, comment);
 		}
@@ -5425,6 +5272,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error adding row to blackboard_artifact_tags table (obj_id = " + artifact.getArtifactID() + ", tag_name_id = " + tagName.getId() + ")", ex);
 		}
 		finally {
+			closeResultSet(resultSet);
 			dbWriteUnlock();
 		}	
 	}	
@@ -5456,12 +5304,13 @@ public class SleuthkitCase {
 	 * @throws TskCoreException 
 	 */
 	public List<BlackboardArtifactTag> getAllBlackboardArtifactTags() throws TskCoreException {
+		ResultSet resultSet = null;
 		dbReadLock();		
 		try {
 			ArrayList<BlackboardArtifactTag> tags = new ArrayList<BlackboardArtifactTag>();
 			
 			// SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id
-			ResultSet resultSet = selectAllBlackboardArtifactTags.executeQuery();
+			resultSet = selectAllBlackboardArtifactTags.executeQuery();
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong(2), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))); 
 				BlackboardArtifact artifact = getBlackboardArtifact(resultSet.getLong("artifact_id"));
@@ -5469,13 +5318,13 @@ public class SleuthkitCase {
 				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"), artifact, content, tagName, resultSet.getString("comment")); 
 				tags.add(tag);
 			} 
-			resultSet.close();
 			return tags;
 		}
 		catch (SQLException ex) {
 			throw new TskCoreException("Error selecting rows from blackboard_artifact_tags table", ex);
 		}
 		finally {
+			closeResultSet(resultSet);
 			dbReadUnlock();
 		}					
 	}
@@ -5491,16 +5340,15 @@ public class SleuthkitCase {
 		if (tagName.getId() == Tag.ID_NOT_SET) {
 			throw new TskCoreException("TagName object is invalid, id not set");
 		}
-		
+		ResultSet resultSet = null;
 		dbReadLock();		
 		try {
 			// SELECT COUNT(*) FROM blackboard_artifact_tags WHERE tag_name_id = ?
 			selectBlackboardArtifactTagsCountByTagName.clearParameters();
 			selectBlackboardArtifactTagsCountByTagName.setLong(1, tagName.getId());
-			ResultSet resultSet = selectBlackboardArtifactTagsCountByTagName.executeQuery();
+			resultSet = selectBlackboardArtifactTagsCountByTagName.executeQuery();
 			if (resultSet.next()) {
 				long count = resultSet.getLong(1);
-				resultSet.close();
 				return count;
 			} 
 			else {
@@ -5511,6 +5359,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error getting blackboard artifact_content_tags row count for tag name (tag_name_id = " + tagName.getId() + ")", ex);
 		}
 		finally {
+			closeResultSet(resultSet);
 			dbReadUnlock();
 		}			
 	}
@@ -5527,6 +5376,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("TagName object is invalid, id not set");
 		}
 		
+		ResultSet resultSet = null;
 		dbReadLock();		
 		try {
 			ArrayList<BlackboardArtifactTag> tags = new ArrayList<BlackboardArtifactTag>();
@@ -5534,20 +5384,20 @@ public class SleuthkitCase {
 			// SELECT * FROM blackboard_artifact_tags WHERE tag_name_id = ?
 			selectBlackboardArtifactTagsByTagName.clearParameters();
 			selectBlackboardArtifactTagsByTagName.setLong(1, tagName.getId());
-			ResultSet resultSet = selectBlackboardArtifactTagsByTagName.executeQuery();
+			resultSet = selectBlackboardArtifactTagsByTagName.executeQuery();
 			while(resultSet.next()) {
 				BlackboardArtifact artifact = getBlackboardArtifact(resultSet.getLong("artifact_id"));
 				Content content = getContentById(artifact.getObjectID());
 				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"), artifact, content, tagName, resultSet.getString("comment")); 
 				tags.add(tag);
 			}			
-			resultSet.close();
 			return tags;
 		}
 		catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifact tags data (tag_name_id = " + tagName.getId() + ")", ex);
 		}
 		finally {
+			closeResultSet(resultSet);
 			dbReadUnlock();
 		}			
 	}	
@@ -5560,6 +5410,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException 
 	 */
 	public List<BlackboardArtifactTag> getBlackboardArtifactTagsByArtifact(BlackboardArtifact artifact) throws TskCoreException {
+		ResultSet resultSet = null;
 		dbReadLock();		
 		try {
 			ArrayList<BlackboardArtifactTag> tags = new ArrayList<BlackboardArtifactTag>();
@@ -5567,20 +5418,20 @@ public class SleuthkitCase {
 			// SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id WHERE blackboard_artifact_tags.artifact_id = ?			
 			selectBlackboardArtifactTagsByArtifact.clearParameters();
 			selectBlackboardArtifactTagsByArtifact.setLong(1, artifact.getArtifactID());
-			ResultSet resultSet = selectBlackboardArtifactTagsByArtifact.executeQuery();
+			resultSet = selectBlackboardArtifactTagsByArtifact.executeQuery();
 			while(resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong(2), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))); 
 				Content content = getContentById(artifact.getObjectID());
 				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"), artifact, content, tagName, resultSet.getString("comment")); 
 				tags.add(tag);
 			}
-			resultSet.close();
 			return tags;
 		}
 		catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifact tags data (artifact_id = " + artifact.getArtifactID() + ")", ex);
 		}
 		finally {
+			closeResultSet(resultSet);
 			dbReadUnlock();
 		}					
 	}	
