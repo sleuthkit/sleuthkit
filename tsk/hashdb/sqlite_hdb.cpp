@@ -281,6 +281,9 @@ TSK_HDB_INFO *sqlite_hdb_open(TSK_TCHAR *db_path)
     hdb_info->base.lookup_raw = sqlite_hdb_lookup_bin;
     hdb_info->base.lookup_verbose_str = sqlite_hdb_lookup_verbose_str;
     hdb_info->base.add_entry = sqlite_hdb_add_entry;
+    hdb_info->base.begin_transaction = sqlite_hdb_begin_transaction;
+    hdb_info->base.commit_transaction = sqlite_hdb_commit_transaction;
+    hdb_info->base.rollback_transaction = sqlite_hdb_rollback_transaction;
     hdb_info->base.close_db = sqlite_hdb_close;
 
     return (TSK_HDB_INFO*)hdb_info;
@@ -652,6 +655,60 @@ int8_t sqlite_hdb_lookup_verbose_bin(TSK_HDB_INFO *hdb_info_base, uint8_t *hash,
 
     tsk_release_lock(&hdb_info_base->lock);
     return 1; 
+}
+
+/**
+ * \ingroup hashdblib
+ * \internal 
+ * Begins a transaction on a hash database.
+ * @param hdb_info A hash database info object
+ * @return 1 on error, 0 on success
+ */
+uint8_t sqlite_hdb_begin_transaction(TSK_HDB_INFO *hdb_info_base) 
+{
+    TSK_SQLITE_HDB_INFO *hdb_info = reinterpret_cast<TSK_SQLITE_HDB_INFO*>(hdb_info_base); 
+	if (sqlite_hdb_attempt_exec("BEGIN", "sqlite_hdb_base_begin_transaction: %s\n", hdb_info->db)) {
+        return 1;
+	}
+    else {
+        return 0;
+    }
+}
+
+/**
+ * \ingroup hashdblib
+ * \internal 
+ * Commits a transaction on a hash database.
+ * @param hdb_info A hash database info object
+ * @return 1 on error, 0 on success 
+ */
+uint8_t sqlite_hdb_commit_transaction(TSK_HDB_INFO *hdb_info_base)
+{
+    TSK_SQLITE_HDB_INFO *hdb_info = reinterpret_cast<TSK_SQLITE_HDB_INFO*>(hdb_info_base);
+	if (sqlite_hdb_attempt_exec("COMMIT", "sqlite_hdb_base_end_transaction: %s\n", hdb_info->db)) {
+        return 1;
+	}
+    else {
+        return 0;
+    }
+}
+
+/**
+ * \ingroup hashdblib
+ * \internal 
+ * Rolls back a transaction on a hash database.
+ * @param hdb_info A hash database info object
+ * @return 1 on error, 0 on success 
+ */
+uint8_t sqlite_hdb_rollback_transaction(TSK_HDB_INFO *hdb_info_base)
+{
+    TSK_SQLITE_HDB_INFO *hdb_info = reinterpret_cast<TSK_SQLITE_HDB_INFO*>(hdb_info_base); 
+	if (sqlite_hdb_attempt_exec("ROLLBACK", "sqlite_hdb_base_end_transaction: %s\n", hdb_info->db)) {
+        return 1;
+	}
+    else {
+        return 0;
+    }
 }
 
 /*

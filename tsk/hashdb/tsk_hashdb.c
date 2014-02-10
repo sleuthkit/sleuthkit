@@ -495,13 +495,29 @@ tsk_hdb_lookup_verbose_str(TSK_HDB_INFO *hdb_info, const char *hash, void *resul
     return hdb_info->lookup_verbose_str(hdb_info, hash, result);
 }
 
-uint8_t tsk_hdb_accepts_updates(TSK_HDB_INFO *hdb_info)
+/**
+ * \ingroup hashdblib
+ * Indicates whether a hash database accepts updates.
+ * @param hdb_info The hash database object
+ * @return 1 if hash database accepts updates, 0 if it does not
+ */
+uint8_t 
+tsk_hdb_accepts_updates(TSK_HDB_INFO *hdb_info)
 {
+    const char *func_name = "tsk_hdb_accepts_updates";
+
     if (!hdb_info) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
-        tsk_error_set_errstr("tsk_hdb_accepts_updates: NULL hdb_info");
-        return -1;
+        tsk_error_set_errstr("%s: NULL hdb_info", func_name);
+        return 0;
+    }
+
+    if (!hdb_info->accepts_updates) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("%s: NULL add_entry function ptr", func_name);
+        return 0;
     }
 
     return hdb_info->accepts_updates();
@@ -509,45 +525,200 @@ uint8_t tsk_hdb_accepts_updates(TSK_HDB_INFO *hdb_info)
 
 /**
  * \ingroup hashdblib
- * Add a binary hash entry to the index
- *
- * @param hdb_info the hash database object
- * @param filename Name of the file that was hashed (can be null)
- * @param md5 Text of MD5 hash (can be null)
- * @param sha1 Text of SHA1 hash (can be null)
- * @param sha256 Text of SHA256 hash (can be null)
- * @return 1 on error, 0 on success, -1 if not updateable
+ * Adds a new entry to a hash database.
+ * @param hdb_info The hash database object
+ * @param filename Name of the file that was hashed (can be NULL)
+ * @param md5 Text representation of MD5 hash (can be NULL)
+ * @param sha1 Text representation of SHA1 hash (can be NULL)
+ * @param sha256 Text representation of SHA256 hash (can be NULL)
+ * @param sha256 A comment to asociate with the hash (can be NULL)
+ * @return 1 on error, 0 on success
  */
-int8_t
-tsk_hdb_add_entry(TSK_HDB_INFO * hdb_info, const char *filename, const char *md5, 
+uint8_t
+tsk_hdb_add_entry(TSK_HDB_INFO *hdb_info, const char *filename, const char *md5, 
     const char *sha1, const char *sha256, const char *comment)
 {
-    int8_t ret = 0;
+    const char *func_name = "tsk_hdb_add_entry";
 
     if (!hdb_info) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
-        tsk_error_set_errstr("tsk_hdb_add_entry: NULL hdb_info");
+        tsk_error_set_errstr("%s: NULL hdb_info", func_name);
+        return 1;
+    }
+
+    if (!hdb_info->add_entry) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("%s: NULL add_entry function ptr", func_name);
         return 1;
     }
 
     if (hdb_info->accepts_updates()) {
-        hdb_info->add_entry(hdb_info, filename, md5, sha1, sha256, comment);
+        return hdb_info->add_entry(hdb_info, filename, md5, sha1, sha256, comment);
     }
     else {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_PROC);
-        tsk_error_set_errstr("tsk_hdb_add_entry: operation not supported for this database type (=%u)", hdb_info->db_type);
-        return -1;
+        tsk_error_set_errstr("%s: operation not supported for this database type (=%u)", hdb_info->db_type, func_name);
+        return 1;
+    }
+}
+
+/**
+ * \ingroup hashdblib
+ * Begins a transaction on a hash database.
+ * @param hdb_info A hash database info object
+ * @return 1 on error, 0 on success
+ */
+uint8_t 
+tsk_hdb_begin_transaction(TSK_HDB_INFO *hdb_info)
+{
+    const char *func_name = "tsk_hdb_begin_transaction";
+
+    if (!hdb_info) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("%s: NULL hdb_info", func_name);
+        return 1;
     }
 
-    return ret;
+    if (!hdb_info->begin_transaction) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("%s: NULL begin_transaction function ptr", func_name);
+        return 1;
+    }
+
+    if (hdb_info->accepts_updates()) {
+        if (!hdb_info->transaction_in_progress) {
+            if (hdb_info->begin_transaction(hdb_info)) {
+                return 1;
+            }
+            else {
+                hdb_info->transaction_in_progress = 1;
+                return 0;
+            }
+        }
+        else {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_HDB_PROC);
+            tsk_error_set_errstr("%s: transaction already begun", func_name);
+            return 1;
+        }
+    }
+    else {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_PROC);
+        tsk_error_set_errstr("%s: operation not supported for this database type (=%u)", func_name, hdb_info->db_type);
+        return 1;
+    }
+}
+
+/**
+ * \ingroup hashdblib
+ * Commits a transaction on a hash database.
+ * @param hdb_info A hash database info object
+ * @return 1 on error, 0 on success 
+ */
+uint8_t 
+tsk_hdb_commit_transaction(TSK_HDB_INFO *hdb_info)
+{
+    const char *func_name = "tsk_hdb_commit_transaction";
+
+    if (!hdb_info) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("%s: NULL hdb_info", func_name);
+        return 1;
+    }
+
+    if (!hdb_info->commit_transaction) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("%s: NULL commit_transaction function ptr", func_name);
+        return 1;
+    }
+
+    if (hdb_info->accepts_updates()) {
+        if (hdb_info->transaction_in_progress) {
+            if (hdb_info->commit_transaction(hdb_info)) {
+                return 1;
+            }
+            else {
+                hdb_info->transaction_in_progress = 0;
+                return 0;
+            }
+        }
+        else {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_HDB_PROC);
+            tsk_error_set_errstr("%s: transaction not begun", func_name);
+            return 1;
+        }
+    }
+    else {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_PROC);
+        tsk_error_set_errstr("%s: operation not supported for this database type (=%u)", func_name, hdb_info->db_type);
+        return 1;
+    }
+}
+
+/**
+ * \ingroup hashdblib
+ * Rolls back a transaction on a hash database.
+ * @param hdb_info A hash database info object
+ * @return 1 on error, 0 on success 
+ */
+uint8_t 
+tsk_hdb_rollback_transaction(TSK_HDB_INFO *hdb_info)
+{
+    const char *func_name = "tsk_hdb_rollback_transaction";
+
+    if (!hdb_info) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("%s: NULL hdb_info", func_name);
+        return 1;
+    }
+
+    if (!hdb_info->rollback_transaction) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("%s: NULL rollback_transaction function ptr", func_name);
+        return 1;
+    }
+
+    if (hdb_info->accepts_updates()) {
+        if (hdb_info->transaction_in_progress) {
+            if (hdb_info->commit_transaction(hdb_info)) {
+                return 1;
+            }
+            else {
+                hdb_info->transaction_in_progress = 0;
+                return 0;
+            }
+        }
+        else {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_HDB_PROC);
+            tsk_error_set_errstr("%s: transaction not begun", func_name);
+            return 1;
+        }
+    }
+    else {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_PROC);
+        tsk_error_set_errstr("%s: operation not supported for this database type (=%u)", func_name, hdb_info->db_type);
+        return 1;
+    }
 }
 
 /**
  * \ingroup hashdblib
  * Closes an open hash database.
- * @param hdb_info database to close
+ * @param hdb_info The hash database object
  */
 void
 tsk_hdb_close(TSK_HDB_INFO *hdb_info)

@@ -57,7 +57,9 @@ public class SleuthkitJNI {
 	
 	private static native int hashDbBeginTransactionNat(int dbHandle) throws TskCoreException;	
 
-	private static native int hashDbEndTransactionNat(int dbHandle) throws TskCoreException;	
+	private static native int hashDbCommitTransactionNat(int dbHandle) throws TskCoreException;	
+
+	private static native int hashDbRollbackTransactionNat(int dbHandle) throws TskCoreException;	
 
     private static native int hashDbAddEntryNat(String filename, String hashMd5, String hashSha1, String hashSha256, String comment, int dbHandle) throws TskCoreException;
 
@@ -697,9 +699,17 @@ public class SleuthkitJNI {
 			for (HashEntry entry : hashes) {
 				hashDbAddEntryNat(entry.getFileName(), entry.getMd5Hash(), entry.getSha1Hash(), entry.getSha256Hash(), entry.getComment(), dbHandle);			
 			}
+			hashDbCommitTransactionNat(dbHandle);
 		}
-		finally {
-			hashDbEndTransactionNat(dbHandle);
+		catch (TskCoreException ex) {
+			try {
+				hashDbRollbackTransactionNat(dbHandle);
+			}
+			catch (TskCoreException ex2) {
+				ex2.initCause(ex);
+				throw ex2;
+			}
+			throw ex;
 		}
 	}
 	

@@ -117,6 +117,7 @@ extern "C" {
         char db_name[TSK_HDB_NAME_MAXLEN]; ///< Name of the database, for callbacks
         TSK_HDB_DBTYPE_ENUM db_type;       ///< Type of database
         tsk_lock_t lock;                   ///< Lock for lazy loading and idx_lbuf
+        uint8_t transaction_in_progress;   ///< Flag set and unset when transaction are begun and ended
         const TSK_TCHAR*(*get_db_path)(TSK_HDB_INFO*);
         const char*(*get_display_name)(TSK_HDB_INFO*);
         uint8_t(*uses_external_indexes)();
@@ -129,6 +130,9 @@ extern "C" {
         int8_t(*lookup_verbose_str)(TSK_HDB_INFO *, const char *, void *);
         uint8_t(*accepts_updates)();
         uint8_t(*add_entry)(TSK_HDB_INFO*, const char*, const char*, const char*, const char*, const char *);
+        uint8_t(*begin_transaction)(TSK_HDB_INFO *);
+        uint8_t(*commit_transaction)(TSK_HDB_INFO *);
+        uint8_t(*rollback_transaction)(TSK_HDB_INFO *);
         void(*close_db)(TSK_HDB_INFO *);
     };
 
@@ -193,8 +197,11 @@ extern "C" {
         TSK_HDB_FLAG_ENUM,  TSK_HDB_LOOKUP_FN, void *);
     extern int8_t tsk_hdb_lookup_verbose_str(TSK_HDB_INFO *, const char *, void *);
     extern uint8_t tsk_hdb_accepts_updates(TSK_HDB_INFO *);
-    extern int8_t tsk_hdb_add_entry(TSK_HDB_INFO *, const char*, const char*, 
+    extern uint8_t tsk_hdb_add_entry(TSK_HDB_INFO *, const char*, const char*, 
         const char*, const char*, const char*);
+    extern uint8_t tsk_hdb_begin_transaction(TSK_HDB_INFO *);
+    extern uint8_t tsk_hdb_commit_transaction(TSK_HDB_INFO *);
+    extern uint8_t tsk_hdb_rollback_transaction(TSK_HDB_INFO *);
     extern void tsk_hdb_close(TSK_HDB_INFO *);
 
 #ifdef __cplusplus

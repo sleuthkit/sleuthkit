@@ -70,7 +70,11 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbBeginTransactionNat(
     JNIEnv * env, jclass obj, jint dbHandle);
 
 JNIEXPORT jint JNICALL
-Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbEndTransactionNat(
+Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbCommitTransactionNat(
+    JNIEnv * env, jclass obj, jint dbHandle);
+
+JNIEXPORT jint JNICALL
+Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbRollbackTransactionNat(
     JNIEnv * env, jclass obj, jint dbHandle);
 
 /*
