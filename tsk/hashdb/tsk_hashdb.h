@@ -157,6 +157,14 @@ extern "C" {
     typedef struct TSK_SQLITE_HDB_INFO {
         TSK_HDB_INFO base;
     	sqlite3 *db;
+
+	    sqlite3_stmt *insert_md5_into_hashes; ///< Once initialized, prepared statements are tied to a specific database 
+        sqlite3_stmt *insert_into_file_names; 
+        sqlite3_stmt *insert_into_comments; 
+        sqlite3_stmt *select_from_hashes_by_md5;
+        sqlite3_stmt *select_from_file_names;
+        sqlite3_stmt *select_from_comments;
+
     } TSK_SQLITE_HDB_INFO;    
      
     /**
