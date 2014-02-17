@@ -69,6 +69,10 @@ public class SleuthkitCase {
 	private int attributeIDcounter = 1001;
 	// for use by getCarvedDirectoryId method only
 	private final Map<Long, Long> systemIdMap = new HashMap<Long, Long>();
+	
+	// cache for file system results
+	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>();
+	
 	//database lock
 	private static final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true); //use fairness policy
 	private static final Lock caseDbLock = rwLock.writeLock(); //using exclusing lock for all db ops for now
@@ -4041,6 +4045,15 @@ public class SleuthkitCase {
 	 * core
 	 */
 	private FileSystem getFileSystemByIdHelper(long id, Content parent) throws TskCoreException {
+		// see if we already have it
+		// @@@ NOTE: this is currently kind of bad in that we are ignoring the parent value,
+		// but it should be the same...
+		synchronized (fileSystemIdMap) {
+			if (fileSystemIdMap.containsKey(id)) {
+				return fileSystemIdMap.get(id);
+			}
+		}
+		
 		dbReadLock();
 		try {
 			Statement s = con.createStatement();
@@ -4059,6 +4072,10 @@ public class SleuthkitCase {
 			rs.close();
 			s.close();
 
+			// save it for the next call
+			synchronized(fileSystemIdMap) {
+				fileSystemIdMap.put(id, temp);
+			}
 			return temp;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting File System by ID.", ex);
@@ -4800,6 +4817,9 @@ public class SleuthkitCase {
 	public void close() {
 		System.err.println(this.hashCode() + " closed");
 		System.err.flush();
+		
+		fileSystemIdMap.clear();
+		
 		SleuthkitCase.dbWriteLock();
 		this.closeConnection();
 		try {
