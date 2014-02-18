@@ -49,6 +49,7 @@ static FS_TYPES fs_type_table[] = {
     {"fat12", TSK_FS_TYPE_FAT12, "FAT12"},
     {"fat16", TSK_FS_TYPE_FAT16, "FAT16"},
     {"fat32", TSK_FS_TYPE_FAT32, "FAT32"},
+    {"exfat", TSK_FS_TYPE_EXFAT, "exFAT"},
     {"ext2", TSK_FS_TYPE_EXT2, "Ext2"},
     {"ext3", TSK_FS_TYPE_EXT3, "Ext3"},
     {"ext4", TSK_FS_TYPE_EXT4, "Ext4"},

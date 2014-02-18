@@ -61,6 +61,7 @@ framework/msvcpp/framework/*sdf
 /win32/tsk-win.suo
 framework/msvcpp/framework/*.suo
 *.sln.cache
+win32/tsk-win.opensdf
 
 # Make crud
 *.o
@@ -134,6 +135,5 @@ tools/vstools/mmls
 tools/vstools/mmstat
 tools/*/*.exe
 tools/*/*/*.exe
-
 # EMACS backup files
 *~

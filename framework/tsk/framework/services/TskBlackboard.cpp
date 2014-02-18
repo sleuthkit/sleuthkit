@@ -28,8 +28,8 @@ map<int, TskArtifactNames> initializeArtifactTypeMap(){
     retval.insert(pair<int, TskArtifactNames>(TSK_EXTRACTED_TEXT, TskArtifactNames("TSK_EXTRACTED_TEXT", "Extracted Text")));
     retval.insert(pair<int, TskArtifactNames>(TSK_WEB_SEARCH_QUERY, TskArtifactNames("TSK_WEB_SEARCH_QUERY", "Web Search")));
     retval.insert(pair<int, TskArtifactNames>(TSK_METADATA_EXIF, TskArtifactNames("TSK_METADATA_EXIF", "EXIF Metadata")));
-    retval.insert(pair<int, TskArtifactNames>(TSK_TAG_FILE, TskArtifactNames("TSK_TAG_FILE", "File Tags")));
-    retval.insert(pair<int, TskArtifactNames>(TSK_TAG_ARTIFACT, TskArtifactNames("TSK_TAG_ARTIFACT", "Result Tags")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_TAG_FILE, TskArtifactNames("TSK_TAG_FILE", "Tagged Files")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_TAG_ARTIFACT, TskArtifactNames("TSK_TAG_ARTIFACT", "Tagged Results")));
     retval.insert(pair<int, TskArtifactNames>(TSK_OS_INFO, TskArtifactNames("TSK_OS_INFO", "Operating System Information")));
     retval.insert(pair<int, TskArtifactNames>(TSK_OS_ACCOUNT, TskArtifactNames("TSK_OS_ACCOUNT", "Operating System User Account")));
     retval.insert(pair<int, TskArtifactNames>(TSK_SERVICE_ACCOUNT, TskArtifactNames("TSK_SERVICE_ACCOUNT", "Accounts")));
@@ -146,6 +146,7 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
 	retval.insert(pair<int, TskAttributeNames>(TSK_PATH_SOURCE, TskAttributeNames("TSK_PATH_SOURCE",  "Path Source")));
 	retval.insert(pair<int, TskAttributeNames>(TSK_PERMISSIONS, TskAttributeNames("TSK_PERMISSIONS",  "Permissions")));
 	retval.insert(pair<int, TskAttributeNames>(TSK_ASSOCIATED_ARTIFACT, TskAttributeNames("TSK_ASSOCIATED_ARTIFACT", "Associated Artifact")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_ISDELETED, TskAttributeNames("TSK_ISDELETED", "Is Deleted")));
 
     return retval;
 }

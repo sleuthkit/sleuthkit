@@ -60,6 +60,7 @@ import org.sqlite.SQLiteJDBCLoader;
 public class SleuthkitCase {
 	private String dbPath;
 	private String dbDirPath;
+	private int versionNumber;
 	private String dbBackupPath = null;
 	private volatile SleuthkitJNI.CaseDbHandle caseHandle;
 	private volatile Connection con;
@@ -84,7 +85,6 @@ public class SleuthkitCase {
 	private PreparedStatement getAbstractFileChildrenIds;
 	private PreparedStatement getAbstractFileById;
 	private PreparedStatement addArtifactSt1;
-	private PreparedStatement addArtifactSt2;
 	private PreparedStatement getLastArtifactId;
 	private PreparedStatement addBlackboardAttributeStringSt;
 	private PreparedStatement addBlackboardAttributeByteSt;
@@ -184,7 +184,7 @@ public class SleuthkitCase {
 
 				con.commit();				
 			}
-			
+			versionNumber= schemaVersionNumber;
 			con.setAutoCommit(true);
 		}
 		catch (Exception ex) {
@@ -487,7 +487,6 @@ public class SleuthkitCase {
 		closeStatement(getAbstractFileChildrenIds);
 		closeStatement(getAbstractFileById);
 		closeStatement(addArtifactSt1);
-		closeStatement(addArtifactSt2);
 		closeStatement(getLastArtifactId);
 		closeStatement(addBlackboardAttributeStringSt);
 		closeStatement(addBlackboardAttributeByteSt);
@@ -1224,7 +1223,7 @@ public class SleuthkitCase {
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
 
 			getArtifactsHelper1St.setLong(1, obj_id);
-			getArtifactsHelper1St.setInt(1, artifactTypeID);
+			getArtifactsHelper1St.setInt(2, artifactTypeID);
 			ResultSet rs = getArtifactsHelper1St.executeQuery();
 
 			while (rs.next()) {
@@ -1257,7 +1256,7 @@ public class SleuthkitCase {
 			long count = 0;
 
 			getArtifactsCountHelperSt.setLong(1, obj_id);
-			getArtifactsCountHelperSt.setInt(1, artifactTypeID);
+			getArtifactsCountHelperSt.setInt(2, artifactTypeID);
 			rs = getArtifactsCountHelperSt.executeQuery();
 
 			if (rs.next()) {
@@ -2205,7 +2204,7 @@ public class SleuthkitCase {
 	List<Content> getAbstractFileChildren(Content parent, TSK_DB_FILES_TYPE_ENUM type) throws TskCoreException {
 
 		List<Content> children = new ArrayList<Content>();
-
+		
 		dbReadLock();
 		try {
 
@@ -3843,50 +3842,6 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Find and return list of file IDs matching the specific Where clause. Use
-	 * this like findFilesWhere() and where file objects are not required
-	 * upfront and so heap usage can be reduced.
-	 *
-	 * @param sqlWhereClause a SQL where clause appropriate for the desired
-	 * files (do not begin the WHERE clause with the word WHERE!)
-	 * @return a list of file ids each of which satisfy the given WHERE clause
-	 * @throws TskCoreException
-	 */
-	public List<Long> findFileIdsWhere(String sqlWhereClause) throws TskCoreException {
-		Statement statement = null;
-		ResultSet rs = null;
-		List<Long> ret = new ArrayList<Long>();
-		dbReadLock();
-		try {
-			statement = con.createStatement();
-			rs = statement.executeQuery("SELECT obj_id FROM tsk_files WHERE " + sqlWhereClause);
-			while (rs.next()) {
-				ret.add(rs.getLong(1));
-			}
-
-		} catch (SQLException e) {
-			throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.findFileIdsWhere() " + sqlWhereClause, e);
-		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Error closing result set after executing  findFileIdsWhere", ex);
-				}
-			}
-			if (statement != null) {
-				try {
-					statement.close();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Error closing statement after executing  findFilesWhere", ex);
-				}
-			}
-			dbReadUnlock();
-		}
-		return ret;
-	}
-
-	/**
 	 * @param dataSource the data source (Image, VirtualDirectory for file-sets,
 	 * etc) to search for the given file name
 	 * @param filePath The full path to the file(s) of interest. This can
@@ -4615,75 +4570,6 @@ public class SleuthkitCase {
 		return images;
 	}
 	
-	/**
-	 * Get the size of the image as it is stored in the database.
-	 * 
-	 * @param img the image whose size should be queried.
-	 * @return the image size, or -1 if it doesn't have one stored in the database.
-	 */
-	public long getImageSize(Image img) throws TskCoreException {
-		if (getDbVersion() < 3) {
-			return -1;
-		}
-		dbReadLock();
-		long objId = img.getId();
-		long size = -1;
-		try {
-			ResultSet rs = con.createStatement().executeQuery("select * from tsk_image_info where obj_id = " + objId);
-			if (rs.next()) {
-				size = rs.getLong("size");
-			}
-			rs.close();
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error retrieving image size.", ex);
-		} finally {
-			dbReadUnlock();
-		}
-		return size;
-	}
-	
-	/**
-	 * Get the hash stored in the database for the given image.
-	 * 
-	 * @param img the image whose hash to get
-	 * @return the hash, or null if the image doesn't have one.
-	 * @throws TskCoreException 
-	 */
-	public String getImageHash(Image img) throws TskCoreException {
-		if ( imageHasHash(img) == false ) {
-			return null;
-		}
-		dbReadLock();
-		long objId = img.getId();
-		String hash = "";
-		try {
-			ResultSet rs = con.createStatement().executeQuery("select * from tsk_image_info where obj_id = " + objId);
-			if (rs.next()) {
-				hash = rs.getString("md5");
-			}
-			rs.close();
-			return hash;
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error retrieving image hash.", ex);
-		} finally {
-			dbReadUnlock();
-		}
-	}
-	
-	/**
-	 * Does the given image have a hash stored in the database?
-	 * @param img the image to check
-	 * @return true, if a hash is present.
-	 */
-	public boolean imageHasHash(Image img) {
-		try {
-			return (getDbVersion() >= 3) && 
-					(img.getType() == TskData.TSK_IMG_TYPE_ENUM.TSK_IMG_TYPE_EWF_EWF);
-		} catch (TskCoreException ex) {
-			logger.log(Level.SEVERE, "Core exception while attempting to check if image has a hash", ex);
-			return false;
-		}
-	}
 
 	/**
 	 * Get last (max) object id of content object in tsk_objects.
@@ -5250,7 +5136,7 @@ public class SleuthkitCase {
 			while(resultSet.next()) {
 				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))));
 			}
-			
+			resultSet.close();
 			return tagNames;
 		}
 		catch(SQLException ex) {
@@ -5278,7 +5164,7 @@ public class SleuthkitCase {
 			while(resultSet.next()) {
 				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))));
 			}
-			
+			resultSet.close();
 			return tagNames;
 		}
 		catch(SQLException ex) {
@@ -5308,7 +5194,11 @@ public class SleuthkitCase {
 			insertIntoTagNames.executeUpdate();
 
 			// SELECT MAX(id) FROM tag_names
-			return new TagName(selectMaxIdFromTagNames.executeQuery().getLong(1), displayName, description, color);			
+			ResultSet resultSet = selectMaxIdFromTagNames.executeQuery();
+			Long tagID = resultSet.getLong(1);
+			resultSet.close();
+			
+			return new TagName(tagID, displayName, description, color);			
 		}
 		catch (SQLException ex) {
 			throw new TskCoreException("Error adding row for " + displayName + " tag name to tag_names table", ex);
@@ -5341,7 +5231,11 @@ public class SleuthkitCase {
 			insertIntoContentTags.executeUpdate();
 
 			// SELECT MAX(tag_id) FROM content_tags
-			return new ContentTag(selectMaxIdFromContentTags.executeQuery().getLong(1), content, tagName, comment, beginByteOffset, endByteOffset);
+			ResultSet resultSet = selectMaxIdFromContentTags.executeQuery();
+			Long tagID = resultSet.getLong(1);
+			resultSet.close();
+			
+			return new ContentTag(tagID, content, tagName, comment, beginByteOffset, endByteOffset);
 		}
 		catch (SQLException ex) {
 			throw new TskCoreException("Error adding row to content_tags table (obj_id = " +content.getId() + ", tag_name_id = " + tagName.getId() + ")", ex);
@@ -5389,7 +5283,7 @@ public class SleuthkitCase {
 				Content content = getContentById(resultSet.getLong("obj_id"));
 				tags.add(new ContentTag(resultSet.getLong("tag_id"), content, tagName, resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset"))); 
 			} 
-			
+			resultSet.close();
 			return tags;
 		}
 		catch (SQLException ex) {
@@ -5419,7 +5313,9 @@ public class SleuthkitCase {
 			selectContentTagsCountByTagName.setLong(1, tagName.getId());
 			ResultSet resultSet = selectContentTagsCountByTagName.executeQuery();
 			if (resultSet.next()) {
-				return resultSet.getLong(1);
+				long count = resultSet.getLong(1);
+				resultSet.close();
+				return count;
 			} 
 			else {
 				throw new TskCoreException("Error getting content_tags row count for tag name (tag_name_id = " + tagName.getId() + ")");
@@ -5457,7 +5353,7 @@ public class SleuthkitCase {
 				ContentTag tag = new ContentTag(resultSet.getLong("tag_id"), getContentById(resultSet.getLong("obj_id")), tagName, resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset")); 
 				tags.add(tag);				
 			}						
-			
+			resultSet.close();
 			return tags;
 		}
 		catch (SQLException ex) {
@@ -5489,7 +5385,7 @@ public class SleuthkitCase {
 				ContentTag tag = new ContentTag(resultSet.getLong("tag_id"), content, tagName, resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset")); 
 				tags.add(tag);
 			} 
-			
+			resultSet.close();
 			return tags;
 		}
 		catch (SQLException ex) {
@@ -5519,7 +5415,11 @@ public class SleuthkitCase {
 			insertIntoBlackboardArtifactTags.executeUpdate();
 
 			// SELECT MAX(tag_id) FROM blackboard_artifact_tags
-			return new BlackboardArtifactTag(selectMaxIdFromBlackboardArtifactTags.executeQuery().getLong(1), artifact, getContentById(artifact.getObjectID()), tagName, comment);
+			ResultSet resultSet = selectMaxIdFromBlackboardArtifactTags.executeQuery();
+			Long tagID = resultSet.getLong(1);
+			resultSet.close();
+			
+			return new BlackboardArtifactTag(tagID, artifact, getContentById(artifact.getObjectID()), tagName, comment);
 		}
 		catch (SQLException ex) {
 			throw new TskCoreException("Error adding row to blackboard_artifact_tags table (obj_id = " + artifact.getArtifactID() + ", tag_name_id = " + tagName.getId() + ")", ex);
@@ -5569,7 +5469,7 @@ public class SleuthkitCase {
 				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"), artifact, content, tagName, resultSet.getString("comment")); 
 				tags.add(tag);
 			} 
-
+			resultSet.close();
 			return tags;
 		}
 		catch (SQLException ex) {
@@ -5599,7 +5499,9 @@ public class SleuthkitCase {
 			selectBlackboardArtifactTagsCountByTagName.setLong(1, tagName.getId());
 			ResultSet resultSet = selectBlackboardArtifactTagsCountByTagName.executeQuery();
 			if (resultSet.next()) {
-				return resultSet.getLong(1);
+				long count = resultSet.getLong(1);
+				resultSet.close();
+				return count;
 			} 
 			else {
 				throw new TskCoreException("Error getting blackboard_artifact_tags row count for tag name (tag_name_id = " + tagName.getId() + ")");
@@ -5639,7 +5541,7 @@ public class SleuthkitCase {
 				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"), artifact, content, tagName, resultSet.getString("comment")); 
 				tags.add(tag);
 			}			
-			
+			resultSet.close();
 			return tags;
 		}
 		catch (SQLException ex) {
@@ -5672,7 +5574,7 @@ public class SleuthkitCase {
 				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"), artifact, content, tagName, resultSet.getString("comment")); 
 				tags.add(tag);
 			}
-			
+			resultSet.close();
 			return tags;
 		}
 		catch (SQLException ex) {
@@ -5682,4 +5584,12 @@ public class SleuthkitCase {
 			dbReadUnlock();
 		}					
 	}	
+     /**
+     * Returns schema version number 	
+     *  
+     * @returns and integer of the schema version number. 
+     */
+	public int getSchemaVersion(){
+		return this.versionNumber;
+	}
 }

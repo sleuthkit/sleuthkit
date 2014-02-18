@@ -14,7 +14,7 @@
  */
 
 #include "tsk_auto_i.h"
-#include "tsk/fs/tsk_fatfs.h"
+#include "tsk/fs/tsk_fatxxfs.h"
 
 
 // @@@ Follow through some error paths for sanity check and update docs somewhere to relfect the new scheme
@@ -611,7 +611,7 @@ uint8_t TskAuto::registerError() {
     
     // call super class implementation
     uint8_t retval = handleError();
-
+    
     tsk_error_reset();
     return retval;
 }
@@ -667,18 +667,19 @@ uint8_t
  * @returns 1 if the file is an FAT System file, 0 if not.
  */
 uint8_t
-TskAuto::isFATSystemFiles(TSK_FS_FILE * a_fs_file)
+TskAuto::isFATSystemFiles(TSK_FS_FILE *a_fs_file)
 {
-    if ((a_fs_file) && (a_fs_file->fs_info)
-        && (TSK_FS_TYPE_ISFAT(a_fs_file->fs_info->ftype))
-        && (a_fs_file->name->meta_addr == FATFS_MBRINO(a_fs_file->fs_info)
-            || a_fs_file->name->meta_addr ==
-            FATFS_FAT1INO(a_fs_file->fs_info)
-            || a_fs_file->name->meta_addr ==
-            FATFS_FAT2INO(a_fs_file->fs_info)))
-        return 1;
-    else
-        return 0;
+    if (a_fs_file && a_fs_file->fs_info && a_fs_file->name) {
+        FATFS_INFO *fatfs = (FATFS_INFO*)a_fs_file->fs_info;
+        TSK_INUM_T addr = a_fs_file->name->meta_addr;
+        if ((addr == fatfs->mbr_virt_inum) || 
+            (addr == fatfs->fat1_virt_inum) ||
+            (addr == fatfs->fat2_virt_inum && fatfs->numfat == 2)) {
+            return 1;
+        }
+    }
+
+    return 0;
 }
 
 

@@ -110,7 +110,8 @@
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <CompileAs>Default</CompileAs>
     </ClCompile>
     <PostBuildEvent>
       <Command>copy "$(LIBEWF_HOME)\msvscpp\release\libewf.dll" "$(OutDir)"
@@ -202,6 +203,13 @@ copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\tsk\fs\exfatfs_dent.c" />
+    <ClCompile Include="..\..\tsk\fs\exfatfs.c" />
+    <ClCompile Include="..\..\tsk\fs\exfatfs_meta.c" />
+    <ClCompile Include="..\..\tsk\fs\fatfs_utils.c" />
+    <ClCompile Include="..\..\tsk\fs\fatxxfs.c" />
+    <ClCompile Include="..\..\tsk\fs\fatxxfs_dent.c" />
+    <ClCompile Include="..\..\tsk\fs\fatxxfs_meta.c" />
     <ClCompile Include="..\..\tsk\hashdb\hdb_base.c" />
     <ClCompile Include="..\..\tsk\hashdb\text_fmt_hdb_base.cpp" />
     <ClCompile Include="..\..\tsk\vs\bsd.c" />
@@ -291,6 +299,8 @@ copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"
     <ClCompile Include="..\..\tsk\img\raw.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\tsk\fs\tsk_exfatfs.h" />
+    <ClInclude Include="..\..\tsk\fs\tsk_fatxxfs.h" />
     <ClInclude Include="..\..\tsk\hashdb\tsk_hash_info.h" />
     <ClInclude Include="..\..\tsk\vs\tsk_bsd.h" />
     <ClInclude Include="..\..\tsk\vs\tsk_dos.h" />

@@ -21,12 +21,6 @@ static const char *SCHEMA_VERSION_PROP = "Schema Version";
 static const char *SCHEMA_VERSION_NO = "1";
 static const char *SQLITE_FILE_HEADER = "SQLite format 3";
 static const size_t MD5_BLOB_LEN = ((TSK_HDB_HTYPE_MD5_LEN) / 2);
-static sqlite3_stmt *insert_md5_into_hashes = NULL; 
-static sqlite3_stmt *insert_into_file_names = NULL; 
-static sqlite3_stmt *insert_into_comments = NULL; 
-static sqlite3_stmt *select_from_hashes_by_md5 = NULL;
-static sqlite3_stmt *select_from_file_names = NULL;
-static sqlite3_stmt *select_from_comments = NULL;
 static const char hex_digits[] = "0123456789abcdef";
 
 static uint8_t 
@@ -91,7 +85,6 @@ sqlite_hdb_create_tables(sqlite3 *db)
 static uint8_t 
 sqlite_hdb_prepare_stmt(const char *sql, sqlite3_stmt **stmt, sqlite3 *db)
 {
-    char *errmsg = NULL;
 	if (sqlite3_prepare_v2(db, sql, -1, stmt, NULL) != SQLITE_OK) {
 		tsk_error_reset();
 		tsk_error_set_errno(TSK_ERR_AUTO_DB);
@@ -102,29 +95,29 @@ sqlite_hdb_prepare_stmt(const char *sql, sqlite3_stmt **stmt, sqlite3 *db)
 }
 
 static uint8_t 
-prepare_statements(sqlite3 *db)
+prepare_statements(TSK_SQLITE_HDB_INFO *hdb_info)
 {
-    if (sqlite_hdb_prepare_stmt("INSERT INTO hashes (md5) VALUES (?)", &insert_md5_into_hashes, db)) {
+    if (sqlite_hdb_prepare_stmt("INSERT INTO hashes (md5) VALUES (?)", &(hdb_info->insert_md5_into_hashes), hdb_info->db)) {
         return 1;
     }
 
-    if (sqlite_hdb_prepare_stmt("INSERT INTO file_names (name, hash_id) VALUES (?, ?)", &insert_into_file_names, db)) {
+    if (sqlite_hdb_prepare_stmt("INSERT INTO file_names (name, hash_id) VALUES (?, ?)", &(hdb_info->insert_into_file_names), hdb_info->db)) {
         return 1;
     }
 
-    if (sqlite_hdb_prepare_stmt("INSERT INTO comments (comment, hash_id) VALUES (?, ?)", &insert_into_comments, db)) {
+    if (sqlite_hdb_prepare_stmt("INSERT INTO comments (comment, hash_id) VALUES (?, ?)", &(hdb_info->insert_into_comments), hdb_info->db)) {
         return 1;
     }
 
-    if (sqlite_hdb_prepare_stmt("SELECT id, md5 from hashes where md5 = ? limit 1", &select_from_hashes_by_md5, db)) {
+    if (sqlite_hdb_prepare_stmt("SELECT id, md5 from hashes where md5 = ? limit 1", &(hdb_info->select_from_hashes_by_md5), hdb_info->db)) {
         return 1;
     }
 
-    if (sqlite_hdb_prepare_stmt("SELECT name from file_names where hash_id = ?", &select_from_file_names, db)) {
+    if (sqlite_hdb_prepare_stmt("SELECT name from file_names where hash_id = ?", &(hdb_info->select_from_file_names), hdb_info->db)) {
         return 1;
     }
 
-    if (sqlite_hdb_prepare_stmt("SELECT comment from comments where hash_id = ?", &select_from_comments, db)) {
+    if (sqlite_hdb_prepare_stmt("SELECT comment from comments where hash_id = ?", &(hdb_info->select_from_comments), hdb_info->db)) {
         return 1;
     }
 
@@ -146,14 +139,14 @@ sqlite_hdb_finalize_stmt(sqlite3_stmt **stmt, sqlite3 *db)
 }
 
 static void
-finalize_statements(sqlite3 *db)
+finalize_statements(TSK_SQLITE_HDB_INFO *hdb_info)
 {
-    sqlite_hdb_finalize_stmt(&insert_md5_into_hashes, db);
-    sqlite_hdb_finalize_stmt(&insert_into_file_names, db);
-    sqlite_hdb_finalize_stmt(&insert_into_comments, db);
-    sqlite_hdb_finalize_stmt(&select_from_hashes_by_md5, db);
-    sqlite_hdb_finalize_stmt(&select_from_file_names, db);
-    sqlite_hdb_finalize_stmt(&select_from_comments, db);
+    sqlite_hdb_finalize_stmt(&(hdb_info->insert_md5_into_hashes), hdb_info->db);
+    sqlite_hdb_finalize_stmt(&(hdb_info->insert_into_file_names), hdb_info->db);
+    sqlite_hdb_finalize_stmt(&(hdb_info->insert_into_comments), hdb_info->db);
+    sqlite_hdb_finalize_stmt(&(hdb_info->select_from_hashes_by_md5), hdb_info->db);
+    sqlite_hdb_finalize_stmt(&(hdb_info->select_from_file_names), hdb_info->db);
+    sqlite_hdb_finalize_stmt(&(hdb_info->select_from_comments), hdb_info->db);
 }
 
 static sqlite3 *sqlite_hdb_open_db(TSK_TCHAR *db_file_path, bool create_tables)
@@ -264,27 +257,25 @@ TSK_HDB_INFO *sqlite_hdb_open(TSK_TCHAR *db_path)
         return NULL;
     }
 
-    if (prepare_statements(db)) {
-        finalize_statements(db);
-        sqlite3_close(db);
-        return NULL;
-    }
-
     TSK_SQLITE_HDB_INFO *hdb_info = (TSK_SQLITE_HDB_INFO*)tsk_malloc(sizeof(TSK_SQLITE_HDB_INFO));
     if (!hdb_info) {
-        finalize_statements(db);
         sqlite3_close(db);
         return NULL;
     }
 
     if (hdb_info_base_open((TSK_HDB_INFO*)hdb_info, db_path)) {
-        finalize_statements(db);
         sqlite3_close(db);
         free(hdb_info);
         return NULL;
     }
+	
+	hdb_info->db = db;
+    if (prepare_statements(hdb_info)) {
+        finalize_statements(hdb_info);
+        sqlite3_close(db);
+        return NULL;
+    }
 
-    hdb_info->db = db;
     hdb_info->base.db_type = TSK_HDB_DBTYPE_SQLITE_ID;
     hdb_info->base.lookup_str = sqlite_hdb_lookup_str;
     hdb_info->base.lookup_raw = sqlite_hdb_lookup_bin;
@@ -331,15 +322,15 @@ sqlite_hdb_blob_to_string(std::string binblob)
 }
 
 static int8_t  
-sqlite_hdb_hash_lookup_by_md5(uint8_t *md5Blob, size_t len, sqlite3 *db, TskHashInfo &result)
+sqlite_hdb_hash_lookup_by_md5(uint8_t *md5Blob, size_t len, TSK_SQLITE_HDB_INFO *hdb_info, TskHashInfo &result)
 {
     int8_t ret_val = -1;
-    if (sqlite_hdb_attempt(sqlite3_bind_blob(select_from_hashes_by_md5, 1, md5Blob, len, SQLITE_TRANSIENT), SQLITE_OK, "sqlite_hdb_hash_lookup_by_md5: error binding md5 hash blob: %s (result code %d)\n", db) == 0) {
-        int result_code = sqlite3_step(select_from_hashes_by_md5);
+    if (sqlite_hdb_attempt(sqlite3_bind_blob(hdb_info->select_from_hashes_by_md5, 1, md5Blob, len, SQLITE_TRANSIENT), SQLITE_OK, "sqlite_hdb_hash_lookup_by_md5: error binding md5 hash blob: %s (result code %d)\n", hdb_info->db) == 0) {
+        int result_code = sqlite3_step(hdb_info->select_from_hashes_by_md5);
         if (SQLITE_ROW == result_code) {
             // Found it.
-            result.id = sqlite3_column_int64(select_from_hashes_by_md5, 0); 
-            result.hashMd5 = sqlite_hdb_blob_to_string((const char*)sqlite3_column_text(select_from_hashes_by_md5, 1));
+            result.id = sqlite3_column_int64(hdb_info->select_from_hashes_by_md5, 0); 
+            result.hashMd5 = sqlite_hdb_blob_to_string((const char*)sqlite3_column_text(hdb_info->select_from_hashes_by_md5, 1));
             ret_val = 1;
         }
         else if (SQLITE_DONE == result_code) {
@@ -349,31 +340,31 @@ sqlite_hdb_hash_lookup_by_md5(uint8_t *md5Blob, size_t len, sqlite3 *db, TskHash
         else {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            tsk_error_set_errstr("sqlite_hdb_hash_lookup_by_md5: error executing SELECT: %s\n", sqlite3_errmsg(db), result);
+            tsk_error_set_errstr("sqlite_hdb_hash_lookup_by_md5: error executing SELECT: %s\n", sqlite3_errmsg(hdb_info->db));
         }
     }
-    sqlite3_clear_bindings(select_from_hashes_by_md5);
-    sqlite3_reset(select_from_hashes_by_md5);
+    sqlite3_clear_bindings(hdb_info->select_from_hashes_by_md5);
+    sqlite3_reset(hdb_info->select_from_hashes_by_md5);
     return ret_val;
 }
 
 static int64_t
-sqlite_hdb_insert_md5_hash(uint8_t *md5Blob, size_t len, sqlite3 *db)
+sqlite_hdb_insert_md5_hash(uint8_t *md5Blob, size_t len, TSK_SQLITE_HDB_INFO *hdb_info)
 {
     int64_t row_id = 0;
-    if (sqlite_hdb_attempt(sqlite3_bind_blob(insert_md5_into_hashes, 1, md5Blob, len, SQLITE_TRANSIENT), SQLITE_OK, "sqlite_hdb_insert_md5_hash: error binding md5 hash blob: %s (result code %d)\n", db) == 0) {        
-        int result = sqlite3_step(insert_md5_into_hashes);
+    if (sqlite_hdb_attempt(sqlite3_bind_blob(hdb_info->insert_md5_into_hashes, 1, md5Blob, len, SQLITE_TRANSIENT), SQLITE_OK, "sqlite_hdb_insert_md5_hash: error binding md5 hash blob: %s (result code %d)\n", hdb_info->db) == 0) {        
+        int result = sqlite3_step(hdb_info->insert_md5_into_hashes);
         if (result == SQLITE_DONE) {
-            row_id = sqlite3_last_insert_rowid(db);
+            row_id = sqlite3_last_insert_rowid(hdb_info->db);
         }
         else {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            tsk_error_set_errstr("sqlite_hdb_insert_md5_hash: error executing INSERT: %s\n", sqlite3_errmsg(db), result);
+            tsk_error_set_errstr("sqlite_hdb_insert_md5_hash: error executing INSERT: %s\n", sqlite3_errmsg(hdb_info->db));
         }
     }
-    sqlite3_clear_bindings(insert_md5_into_hashes);
-    sqlite3_reset(insert_md5_into_hashes);
+    sqlite3_clear_bindings(hdb_info->insert_md5_into_hashes);
+    sqlite3_reset(hdb_info->insert_md5_into_hashes);
     return row_id;
 }
 
@@ -387,7 +378,7 @@ sqlite_hdb_insert_value_and_id(sqlite3_stmt *stmt, const char *value, int64_t id
         if ((result != SQLITE_DONE) && (result != SQLITE_CONSTRAINT)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            tsk_error_set_errstr("sqlite_hdb_insert_value_and_id: error executing INSERT: %s\n", sqlite3_errmsg(db), result);
+            tsk_error_set_errstr("sqlite_hdb_insert_value_and_id: error executing INSERT: %s\n", sqlite3_errmsg(db));
         }
         else {
             // Either the INSERT succeeded or the value was a duplicate, which is o.k.
@@ -420,7 +411,7 @@ sqlite_hdb_add_entry(TSK_HDB_INFO *hdb_info_base, const char *filename,
     if (TSK_HDB_HTYPE_MD5_LEN != md5_str_len) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
-        tsk_error_set_errstr("sqlite_hdb_add_entry: md5 length incorrect (=%u)", md5_str_len);
+        tsk_error_set_errstr("sqlite_hdb_add_entry: md5 length incorrect (=%zu)", md5_str_len);
         return 1;
     }
 
@@ -437,14 +428,14 @@ sqlite_hdb_add_entry(TSK_HDB_INFO *hdb_info_base, const char *filename,
     TskHashInfo lookup_result;
     int64_t row_id = -1;
     const size_t len = strlen(md5)/2; 
-    int64_t result_code = sqlite_hdb_hash_lookup_by_md5(hashBlob, len, hdb_info->db, lookup_result);
+    int64_t result_code = sqlite_hdb_hash_lookup_by_md5(hashBlob, len, hdb_info, lookup_result);
     if (1 == result_code) {
         // Found it. 
         row_id = lookup_result.id;
     }
     else if (0 == result_code) {
         //If not, insert it. 
-        row_id = sqlite_hdb_insert_md5_hash(hashBlob, len, hdb_info->db);
+        row_id = sqlite_hdb_insert_md5_hash(hashBlob, len, hdb_info);
         if (row_id < 1) {
             // Did not get a valid row_id from the INSERT.
             free(hashBlob);
@@ -462,13 +453,13 @@ sqlite_hdb_add_entry(TSK_HDB_INFO *hdb_info_base, const char *filename,
     free(hashBlob);
 
     // Insert the file name, if any.
-    if (NULL != filename && sqlite_hdb_insert_value_and_id(insert_into_file_names, filename, row_id, hdb_info->db) == 1) {
+    if (NULL != filename && sqlite_hdb_insert_value_and_id(hdb_info->insert_into_file_names, filename, row_id, hdb_info->db) == 1) {
         tsk_release_lock(&hdb_info_base->lock);
         return 1;
     }
 
     // Insert the comment, if any.
-    if (NULL != comment && sqlite_hdb_insert_value_and_id(insert_into_comments, comment, row_id, hdb_info->db) == 1) {
+    if (NULL != comment && sqlite_hdb_insert_value_and_id(hdb_info->insert_into_comments, comment, row_id, hdb_info->db) == 1) {
         tsk_release_lock(&hdb_info_base->lock);
         return 1;
     }
@@ -497,7 +488,7 @@ sqlite_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char* hash,
     if (TSK_HDB_HTYPE_MD5_LEN != len) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
-        tsk_error_set_errstr("sqlite_hdb_lookup_str: hash length incorrect (=%d), expecting %d", len, TSK_HDB_HTYPE_MD5_LEN);
+        tsk_error_set_errstr("sqlite_hdb_lookup_str: hash length incorrect (=%zu), expecting %d", len, TSK_HDB_HTYPE_MD5_LEN);
         return 1;
     }
  
@@ -531,7 +522,7 @@ sqlite_hdb_lookup_bin(TSK_HDB_INFO *hdb_info_base, uint8_t *hash,
     if (MD5_BLOB_LEN != len) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
-        tsk_error_set_errstr("sqlite_hdb_lookup_bin: len=%d, expected %d", len, MD5_BLOB_LEN);
+        tsk_error_set_errstr("sqlite_hdb_lookup_bin: len=%"PRIu8", expected %zu", len, MD5_BLOB_LEN);
         return -1;
     }
 
@@ -601,7 +592,7 @@ int8_t sqlite_hdb_lookup_verbose_str(TSK_HDB_INFO *hdb_info_base, const char *ha
     if (TSK_HDB_HTYPE_MD5_LEN != len) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
-        tsk_error_set_errstr("sqlite_hdb_lookup_verbose_str: hash length incorrect (=%d), expecting %d", len, TSK_HDB_HTYPE_MD5_LEN);
+        tsk_error_set_errstr("sqlite_hdb_lookup_verbose_str: hash length incorrect (=%zu), expecting %d", len, TSK_HDB_HTYPE_MD5_LEN);
         return -1;
     }
  
@@ -641,20 +632,20 @@ int8_t sqlite_hdb_lookup_verbose_bin(TSK_HDB_INFO *hdb_info_base, uint8_t *hash,
     tsk_take_lock(&hdb_info_base->lock);
     TSK_SQLITE_HDB_INFO *hdb_info = (TSK_SQLITE_HDB_INFO*)hdb_info_base;     
     TskHashInfo *result = static_cast<TskHashInfo*>(lookup_result);
-    int8_t ret_val = sqlite_hdb_hash_lookup_by_md5(hash, hash_len, hdb_info->db, *result);
+    int8_t ret_val = sqlite_hdb_hash_lookup_by_md5(hash, hash_len, hdb_info, *result);
     if (ret_val < 1) {
         tsk_release_lock(&hdb_info_base->lock);
         return ret_val;
     }
 
     // Get any file names associated with the hash. 
-    if (sqlite_hdb_get_assoc_strings(hdb_info->db, select_from_file_names, result->id, result->fileNames)) {
+    if (sqlite_hdb_get_assoc_strings(hdb_info->db, hdb_info->select_from_file_names, result->id, result->fileNames)) {
         tsk_release_lock(&hdb_info_base->lock);
         return -1;
     }
 
     // Get any comments associated with the hash. 
-    if (sqlite_hdb_get_assoc_strings(hdb_info->db, select_from_comments, result->id, result->comments)) {
+    if (sqlite_hdb_get_assoc_strings(hdb_info->db, hdb_info->select_from_comments, result->id, result->comments)) {
         tsk_release_lock(&hdb_info_base->lock);
         return -1;
     }
@@ -672,7 +663,7 @@ sqlite_hdb_close(TSK_HDB_INFO *hdb_info_base)
 {
     TSK_SQLITE_HDB_INFO *hdb_info = (TSK_SQLITE_HDB_INFO*)hdb_info_base; 
     if (hdb_info->db) {
-        finalize_statements(hdb_info->db);
+        finalize_statements(hdb_info);
         sqlite3_close(hdb_info->db);
     }
     hdb_info->db = NULL;

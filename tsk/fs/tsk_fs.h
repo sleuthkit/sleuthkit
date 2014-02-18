@@ -122,8 +122,8 @@ extern "C" {
     extern void tsk_fs_block_free(TSK_FS_BLOCK * a_fs_block);
     extern TSK_FS_BLOCK *tsk_fs_block_get(TSK_FS_INFO * fs,
         TSK_FS_BLOCK * fs_block, TSK_DADDR_T addr);
-    extern TSK_FS_BLOCK *tsk_fs_block_get_flag(TSK_FS_INFO * a_fs,
-        TSK_FS_BLOCK * a_fs_block, TSK_DADDR_T a_addr,
+    extern TSK_FS_BLOCK *tsk_fs_block_get_flag(TSK_FS_INFO * a_fs, 
+        TSK_FS_BLOCK * a_fs_block, TSK_DADDR_T a_addr, 
         TSK_FS_BLOCK_FLAG_ENUM a_flags);
     extern uint8_t tsk_fs_block_walk(TSK_FS_INFO * a_fs,
         TSK_DADDR_T a_start_blk, TSK_DADDR_T a_end_blk,
@@ -166,8 +166,6 @@ extern "C" {
         TSK_DADDR_T len;        ///< Number of blocks in run (0 when entry is not in use)
         TSK_FS_ATTR_RUN_FLAG_ENUM flags;        ///< Flags for run
     };
-
-
 
     /**
     * Flags used for the TSK_FS_ATTR structure, which is used to 
@@ -362,19 +360,19 @@ extern "C" {
     * Metadata flags used in TSK_FS_META.flags and in request to inode_walk
     */
     enum TSK_FS_META_FLAG_ENUM {
-        TSK_FS_META_FLAG_ALLOC = 0x01,  ///< Metadata structure is currently in an allocated state
-        TSK_FS_META_FLAG_UNALLOC = 0x02,        ///< Metadata structure is currently in an unallocated state
-        TSK_FS_META_FLAG_USED = 0x04,   ///< Metadata structure has been allocated at least once
-        TSK_FS_META_FLAG_UNUSED = 0x08, ///< Metadata structure has never been allocated. 
-        TSK_FS_META_FLAG_COMP = 0x10,   ///< The file contents are compressed. 
-        TSK_FS_META_FLAG_ORPHAN = 0x20, ///< Return only metadata structures that have no file name pointing to the (inode_walk flag only)
+        TSK_FS_META_FLAG_ALLOC = 0x01,   ///< Metadata structure is currently in an allocated state
+        TSK_FS_META_FLAG_UNALLOC = 0x02, ///< Metadata structure is currently in an unallocated state
+        TSK_FS_META_FLAG_USED = 0x04,    ///< Metadata structure has been allocated at least once
+        TSK_FS_META_FLAG_UNUSED = 0x08,  ///< Metadata structure has never been allocated. 
+        TSK_FS_META_FLAG_COMP = 0x10,    ///< The file contents are compressed. 
+        TSK_FS_META_FLAG_ORPHAN = 0x20,  ///< Return only metadata structures that have no file name pointing to the (inode_walk flag only)
     };
     typedef enum TSK_FS_META_FLAG_ENUM TSK_FS_META_FLAG_ENUM;
 
     enum TSK_FS_META_ATTR_FLAG_ENUM {
-        TSK_FS_META_ATTR_EMPTY, ///< The data in the attributes (if any) is not for this file
-        TSK_FS_META_ATTR_STUDIED,       ///< The data in the attributes are for this file
-        TSK_FS_META_ATTR_ERROR, ///< The attributes for this file could not be loaded
+        TSK_FS_META_ATTR_EMPTY,   ///< The data in the attributes (if any) is not for this file
+        TSK_FS_META_ATTR_STUDIED, ///< The data in the attributes are for this file
+        TSK_FS_META_ATTR_ERROR,   ///< The attributes for this file could not be loaded
     };
     typedef enum TSK_FS_META_ATTR_FLAG_ENUM TSK_FS_META_ATTR_FLAG_ENUM;
 
@@ -404,6 +402,8 @@ extern "C" {
 
     enum TSK_FS_META_MODE_ENUM {
         /* The following describe the file permissions */
+        TSK_FS_META_MODE_UNSPECIFIED = 0000000,       ///< unspecified  
+
         TSK_FS_META_MODE_ISUID = 0004000,       ///< set user id on execution 
         TSK_FS_META_MODE_ISGID = 0002000,       ///< set group id on execution 
         TSK_FS_META_MODE_ISVTX = 0001000,       ///< sticky bit 
@@ -498,7 +498,7 @@ extern "C" {
         TSK_FS_ATTRLIST *attr;
         TSK_FS_META_ATTR_FLAG_ENUM attr_state;  ///< State of the data in the TSK_FS_META::attr structure
 
-        TSK_FS_META_NAME_LIST *name2;   ///< Name of file stored in metadata (FAT and NTFS Only)
+        TSK_FS_META_NAME_LIST *name2;   ///< Name of file stored in metadata (FATXX and NTFS Only)
         char *link;             ///< Name of target file if this is a symbolic link
     } TSK_FS_META;
 
@@ -591,7 +591,7 @@ extern "C" {
 
         TSK_INUM_T meta_addr;   ///< Address of the metadata structure that the name points to. 
         uint32_t meta_seq;      ///< Sequence number for metadata structure (NTFS only) 
-        TSK_INUM_T par_addr;    ///< Metadata address of parent directory (equal to meta_addr if this entry is for root directory).
+        TSK_INUM_T par_addr;    ///< Metadata address of parent directory (equal to meta_addr if this entry is for root directory). 
         uint32_t par_seq;       ///< Sequence number for parent directory (NTFS only)
 
         TSK_FS_NAME_TYPE_ENUM type;     ///< File type information (directory, file, etc.)
@@ -624,7 +624,7 @@ extern "C" {
         size_t names_used;      ///< Number of name structures in queue being used
         size_t names_alloc;     ///< Number of name structures that were allocated
 
-        TSK_INUM_T addr;        ///< Metadata address of this directory
+        TSK_INUM_T addr;        ///< Metadata address of this directory 
         uint32_t seq;           ///< Metadata address sequence (NTFS Only)
 
         TSK_FS_INFO *fs_info;   ///< Pointer to file system the directory is located in
@@ -769,6 +769,7 @@ extern "C" {
         TSK_FS_TYPE_FAT12 = 0x00000002, ///< FAT12 file system
         TSK_FS_TYPE_FAT16 = 0x00000004, ///< FAT16 file system
         TSK_FS_TYPE_FAT32 = 0x00000008, ///< FAT32 file system
+        TSK_FS_TYPE_EXFAT = 0x0000000a, ///< exFAT file system
         TSK_FS_TYPE_FAT_DETECT = 0x0000000e,    ///< FAT auto detection
         TSK_FS_TYPE_FFS1 = 0x00000010,  ///< UFS1 (FreeBSD, OpenBSD, BSDI ...)
         TSK_FS_TYPE_FFS1B = 0x00000020, ///< UFS1b (Solaris - has no type)

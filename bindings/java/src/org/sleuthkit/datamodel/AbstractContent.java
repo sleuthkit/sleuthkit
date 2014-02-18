@@ -19,9 +19,11 @@
 package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.SleuthkitCase.ObjectInfo;
 
 /**
@@ -220,6 +222,26 @@ public abstract class AbstractContent implements Content {
 			return arts.get(0);
 		}
 	}
+	
+	@Override
+	public ArrayList<BlackboardAttribute> getGenInfoAttributes(ATTRIBUTE_TYPE attr_type) throws TskCoreException {
+		ArrayList<BlackboardAttribute> returnList = new ArrayList();
+		
+		ArrayList<BlackboardArtifact> arts = getArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO);
+		if (arts.isEmpty()) {
+			return returnList;
+		}
+
+		List<BlackboardAttribute> attributes = arts.get(0).getAttributes();
+		for (BlackboardAttribute attribute : attributes) {
+			if (attribute.getAttributeTypeID() == attr_type.getTypeID()) {
+				returnList.add(attribute);
+			}
+		}
+        
+		return returnList;
+	}
+
 
 	@Override
 	public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskCoreException {

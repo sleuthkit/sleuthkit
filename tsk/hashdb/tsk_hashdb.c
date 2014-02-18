@@ -23,14 +23,14 @@ static FILE *
 hdb_open_file(TSK_TCHAR *file_path)
 {
     FILE *file = NULL;
-    int fd = 0;
 
 #ifdef TSK_WIN32
+    int fd = 0;
     if (_wsopen_s(&fd, file_path, _O_RDONLY | _O_BINARY, _SH_DENYNO, 0) == 0) {
         file = _wfdopen(fd, L"rb");
     }
 #else
-    file = _wfdopen(fd, L"rb");
+    file = fopen(file_path, "rb");
 #endif
 
     return file;
@@ -39,7 +39,6 @@ hdb_open_file(TSK_TCHAR *file_path)
 static TSK_HDB_DBTYPE_ENUM
 hdb_determine_db_type(FILE *hDb, const TSK_TCHAR *db_path)
 {
-    const char *func_name = "hdb_determine_db_type";
     TSK_HDB_DBTYPE_ENUM db_type = TSK_HDB_DBTYPE_INVALID_ID;
 
     if (sqlite_hdb_is_sqlite_file(hDb)) {
@@ -129,7 +128,6 @@ tsk_hdb_open(TSK_TCHAR *file_path, TSK_HDB_OPEN_ENUM flags)
     uint8_t file_path_is_idx_path = 0;
     TSK_TCHAR *db_path = NULL;
     TSK_TCHAR *ext = NULL; 
-    int fd = 0;
     FILE *hDb = NULL;
     FILE *hIdx = NULL;
     TSK_HDB_DBTYPE_ENUM db_type = TSK_HDB_DBTYPE_INVALID_ID;
@@ -230,6 +228,10 @@ tsk_hdb_open(TSK_TCHAR *file_path, TSK_HDB_OPEN_ENUM flags)
                 fclose(hDb);
             }
             hdb_info = sqlite_hdb_open(db_path);
+            break;
+
+        // included to prevent compiler warnings that it is not used
+        case TSK_HDB_DBTYPE_INVALID_ID:
             break;
     }
 

@@ -172,9 +172,9 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
     size_t clen;
     char *cur_dir;              // The "current" directory or file we are looking for
     char *cur_attr;             // The "current" attribute of the dir we are looking for
-    char *strtok_last;
     TSK_INUM_T next_meta;
     uint8_t is_done;
+    char *strtok_last; 
     *a_result = 0;
 
     // copy path to a buffer that we can modify

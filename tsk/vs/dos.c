@@ -56,7 +56,7 @@ dos_get_desc(uint8_t ptype)
         snprintf(str, DESC_LEN, "DOS Extended (0x05)");
         break;
     case 0x07:
-        snprintf(str, DESC_LEN, "NTFS (0x07)");
+        snprintf(str, DESC_LEN, "NTFS / exFAT (0x07)");
         break;
     case 0x08:
         snprintf(str, DESC_LEN, "AIX Boot (0x08)");

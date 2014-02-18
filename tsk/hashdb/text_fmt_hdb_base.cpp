@@ -19,7 +19,6 @@
 TSK_TEXT_HDB_INFO *text_hdb_open(FILE *hDb, const TSK_TCHAR *db_path)
 {
     TSK_TEXT_HDB_INFO *text_hdb_info = NULL;
-    size_t flen = 0;
 
     if ((text_hdb_info = (TSK_TEXT_HDB_INFO*)tsk_malloc(sizeof(TSK_TEXT_HDB_INFO))) == NULL) {
         return NULL;
@@ -98,6 +97,12 @@ text_hdb_idx_init_hash_type_info(TSK_TEXT_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM
                   _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
                   hdb_info->base.db_fname, TSK_HDB_HTYPE_SHA1_STR);
         return 0;
+
+        // listed to prevent compiler warnings
+    case TSK_HDB_HTYPE_INVALID_ID:
+    case TSK_HDB_HTYPE_SHA2_256_ID:
+    default:
+        break;
     }
 
     tsk_error_reset();
@@ -685,9 +690,9 @@ text_hdb_idx_finalize(TSK_TEXT_HDB_INFO *hdb_info)
     }
 #else
     char buf[TSK_HDB_MAXLEN];
-    char *root = "/bin/sort";
-    char *usr = "/usr/bin/sort";
-    char *local = "/usr/local/bin/sort";
+    const char *root = "/bin/sort";
+    const char *usr = "/usr/bin/sort";
+    const char *local = "/usr/local/bin/sort";
     struct stat stats;
 
     if (tsk_verbose)
