@@ -21,6 +21,7 @@ package org.sleuthkit.datamodel;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.GregorianCalendar;
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
@@ -53,7 +54,13 @@ public class SleuthkitJNI {
 	private static native int hashDbOpenNat(String hashDbPath) throws TskCoreException;
 
     private static native int hashDbNewNat(String hashDbPath) throws TskCoreException;
-    
+	
+	private static native int hashDbBeginTransactionNat(int dbHandle) throws TskCoreException;	
+
+	private static native int hashDbCommitTransactionNat(int dbHandle) throws TskCoreException;	
+
+	private static native int hashDbRollbackTransactionNat(int dbHandle) throws TskCoreException;	
+
     private static native int hashDbAddEntryNat(String filename, String hashMd5, String hashSha1, String hashSha256, String comment, int dbHandle) throws TskCoreException;
 
     private static native boolean hashDbIsUpdateableNat(int dbHandle);
@@ -686,7 +693,26 @@ public class SleuthkitJNI {
 		hashDbAddEntryNat(filename, md5, sha1, sha256, comment, dbHandle);
 	}
 
-    
+    public static void addToHashDatabase(List<HashEntry> hashes, int dbHandle) throws TskCoreException {
+		hashDbBeginTransactionNat(dbHandle);
+		try {
+			for (HashEntry entry : hashes) {
+				hashDbAddEntryNat(entry.getFileName(), entry.getMd5Hash(), entry.getSha1Hash(), entry.getSha256Hash(), entry.getComment(), dbHandle);			
+			}
+			hashDbCommitTransactionNat(dbHandle);
+		}
+		catch (TskCoreException ex) {
+			try {
+				hashDbRollbackTransactionNat(dbHandle);
+			}
+			catch (TskCoreException ex2) {
+				ex2.initCause(ex);
+				throw ex2;
+			}
+			throw ex;
+		}
+	}
+	
 	public static boolean isUpdateableHashDatabase(int dbHandle) throws TskCoreException {
 		return hashDbIsUpdateableNat(dbHandle);
 	}    

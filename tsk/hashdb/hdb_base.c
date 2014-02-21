@@ -89,6 +89,8 @@ hdb_info_base_open(TSK_HDB_INFO *hdb_info, const TSK_TCHAR *db_path)
     hdb_info->db_type = TSK_HDB_DBTYPE_INVALID_ID;
     tsk_init_lock(&hdb_info->lock);
 
+    hdb_info->transaction_in_progress = 0;
+
     hdb_info->get_db_path = hdb_base_get_db_path;
     hdb_info->get_display_name = hdb_base_get_display_name;
     hdb_info->uses_external_indexes = hdb_base_uses_external_indexes;
@@ -101,6 +103,9 @@ hdb_info_base_open(TSK_HDB_INFO *hdb_info, const TSK_TCHAR *db_path)
     hdb_info->lookup_verbose_str = hdb_base_lookup_verbose_str;
     hdb_info->accepts_updates = hdb_base_accepts_updates;
     hdb_info->add_entry = hdb_base_add_entry;
+    hdb_info->begin_transaction = hdb_base_begin_transaction;
+    hdb_info->commit_transaction = hdb_base_commit_transaction;
+    hdb_info->rollback_transaction = hdb_base_rollback_transaction;
     hdb_info->close_db = hdb_info_base_close;
 
     return 0;
@@ -134,7 +139,7 @@ hdb_base_uses_external_indexes()
 const TSK_TCHAR*
 hdb_base_get_index_path(TSK_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
 {
-    // The "base class" assumption is that the hash database does not use
+    // The "base class" assumption is that the hash database does not have
     // user-accessible external index files (e.g., it is a relational
     // database). It follows that the hash database path and index path are 
     // the same, assuming that the hash database is implemented
@@ -145,10 +150,10 @@ hdb_base_get_index_path(TSK_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
 uint8_t
 hdb_base_has_index(TSK_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
 {
-    // The "base class" assumption is that the hash database does not use
-    // external index files (e.g., it is a relational database). It follows
-    // that the hash database has an index as soon as it is created. This 
-    // implementation of this function also says that look ups for all hash 
+    // The "base class" assumption is that the hash database does not have
+    // user-accessible external index files (e.g., it is a relational database). 
+    // It follows that the hash database has an index as soon as it is created. 
+    // This implementation of this function also says that look ups for all hash 
     // algorithm types are supported.
     return 1;
 }
@@ -156,7 +161,7 @@ hdb_base_has_index(TSK_HDB_INFO *hdb_info, TSK_HDB_HTYPE_ENUM htype)
 uint8_t 
 hdb_base_make_index(TSK_HDB_INFO *hdb_info, TSK_TCHAR *htype)
 {
-    // The "base class" assumption is that the hash database does not use
+    // The "base class" assumption is that the hash database does not have
     // user-accessible external index files (e.g., it is a relational
     // database). It follows that the hash database has an index upon creation.
     // Make this a no-op by simply returning the success code.
@@ -221,7 +226,37 @@ hdb_base_add_entry(TSK_HDB_INFO *hdb_info, const char *file_name, const char *md
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_HDB_UNSUPFUNC);
     tsk_error_set_errstr("hdb_base_add_entry: operation not supported for hdb_info->db_type=%u", hdb_info->db_type);
-    return -1;
+    return 1;
+}
+
+uint8_t hdb_base_begin_transaction(TSK_HDB_INFO *hdb_info)
+{
+    // This function needs an "override" by "derived classes" unless there is an 
+    // "override" of the accepts_updates function that returns 0 (false).
+    tsk_error_reset();
+    tsk_error_set_errno(TSK_ERR_HDB_UNSUPFUNC);
+    tsk_error_set_errstr("hdb_base_begin_transaction: operation not supported for hdb_info->db_type=%u", hdb_info->db_type);
+    return 1;
+}
+
+uint8_t hdb_base_commit_transaction(TSK_HDB_INFO *hdb_info)
+{
+    // This function needs an "override" by "derived classes" unless there is an 
+    // "override" of the accepts_updates function that returns 0 (false).
+    tsk_error_reset();
+    tsk_error_set_errno(TSK_ERR_HDB_UNSUPFUNC);
+    tsk_error_set_errstr("hdb_base_commit_transaction: operation not supported for hdb_info->db_type=%u", hdb_info->db_type);
+    return 1;
+}
+
+uint8_t hdb_base_rollback_transaction(TSK_HDB_INFO *hdb_info)
+{
+    // This function needs an "override" by "derived classes" unless there is an 
+    // "override" of the accepts_updates function that returns 0 (false).
+    tsk_error_reset();
+    tsk_error_set_errno(TSK_ERR_HDB_UNSUPFUNC);
+    tsk_error_set_errstr("hdb_base_rollback_transaction: operation not supported for hdb_info->db_type=%u", hdb_info->db_type);
+    return 1;
 }
 
 /**
