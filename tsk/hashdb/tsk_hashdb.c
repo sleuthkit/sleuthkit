@@ -124,7 +124,7 @@ tsk_hdb_create(TSK_TCHAR *file_path)
 TSK_HDB_INFO *
 tsk_hdb_open(TSK_TCHAR *file_path, TSK_HDB_OPEN_ENUM flags)
 {
-    const char *func_name = "tsk_hdb_create";
+    const char *func_name = "tsk_hdb_open";
     uint8_t file_path_is_idx_path = 0;
     TSK_TCHAR *db_path = NULL;
     TSK_TCHAR *ext = NULL; 
