@@ -436,10 +436,13 @@ public abstract class AbstractFile extends AbstractContent {
 			return "";
 		}
 		
-		String[] findNonAlphanumeric = ext.split("[^a-zA-Z0-9_]");
-		if (findNonAlphanumeric.length > 1) {
-			ext = findNonAlphanumeric[0];
-		}		
+		// we added this at one point to deal with files that had crazy names based on URLs
+		// it's too hard though to clean those up and not mess up basic extensions though.
+		// We need to add '-' to the below if we use it again
+//		String[] findNonAlphanumeric = ext.split("[^a-zA-Z0-9_]");
+//		if (findNonAlphanumeric.length > 1) {
+//			ext = findNonAlphanumeric[0];
+//		}		
 		
 		return ext.toLowerCase();
 	}
