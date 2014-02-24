@@ -309,7 +309,7 @@ sqlite_hdb_str_to_blob(const char *str)
 static std::string 
 sqlite_hdb_blob_to_string(std::string binblob)
 {
-    unsigned int blobsize = binblob.size();
+    size_t blobsize = binblob.size();
     if (blobsize <= TSK_HDB_MAX_BINHASH_LEN) {
         char hashbuf[TSK_HDB_HTYPE_SHA2_256_LEN + 1];
 	    for (size_t i = 0; i < blobsize; ++i) {
@@ -328,7 +328,7 @@ static int8_t
 sqlite_hdb_hash_lookup_by_md5(uint8_t *md5Blob, size_t len, TSK_SQLITE_HDB_INFO *hdb_info, TskHashInfo &result)
 {
     int8_t ret_val = -1;
-    if (sqlite_hdb_attempt(sqlite3_bind_blob(hdb_info->select_from_hashes_by_md5, 1, md5Blob, len, SQLITE_TRANSIENT), SQLITE_OK, "sqlite_hdb_hash_lookup_by_md5: error binding md5 hash blob: %s (result code %d)\n", hdb_info->db) == 0) {
+    if (sqlite_hdb_attempt(sqlite3_bind_blob(hdb_info->select_from_hashes_by_md5, 1, md5Blob, (int)len, SQLITE_TRANSIENT), SQLITE_OK, "sqlite_hdb_hash_lookup_by_md5: error binding md5 hash blob: %s (result code %d)\n", hdb_info->db) == 0) {
         int result_code = sqlite3_step(hdb_info->select_from_hashes_by_md5);
         if (SQLITE_ROW == result_code) {
             // Found it.
@@ -355,7 +355,7 @@ static int64_t
 sqlite_hdb_insert_md5_hash(uint8_t *md5Blob, size_t len, TSK_SQLITE_HDB_INFO *hdb_info)
 {
     int64_t row_id = 0;
-    if (sqlite_hdb_attempt(sqlite3_bind_blob(hdb_info->insert_md5_into_hashes, 1, md5Blob, len, SQLITE_TRANSIENT), SQLITE_OK, "sqlite_hdb_insert_md5_hash: error binding md5 hash blob: %s (result code %d)\n", hdb_info->db) == 0) {        
+    if (sqlite_hdb_attempt(sqlite3_bind_blob(hdb_info->insert_md5_into_hashes, 1, md5Blob, (int)len, SQLITE_TRANSIENT), SQLITE_OK, "sqlite_hdb_insert_md5_hash: error binding md5 hash blob: %s (result code %d)\n", hdb_info->db) == 0) {        
         int result = sqlite3_step(hdb_info->insert_md5_into_hashes);
         if (result == SQLITE_DONE) {
             row_id = sqlite3_last_insert_rowid(hdb_info->db);
@@ -375,7 +375,7 @@ static uint8_t
 sqlite_hdb_insert_value_and_id(sqlite3_stmt *stmt, const char *value, int64_t id, sqlite3 *db)
 {
     uint8_t ret_val = 1;
-    if ((sqlite_hdb_attempt(sqlite3_bind_text(stmt, 1, value, strlen(value), SQLITE_TRANSIENT), SQLITE_OK, "sqlite_hdb_insert_value_and_id: error binding value: %s (result code %d)\n", db) == 0) &&
+    if ((sqlite_hdb_attempt(sqlite3_bind_text(stmt, 1, value, (int)strlen(value), SQLITE_TRANSIENT), SQLITE_OK, "sqlite_hdb_insert_value_and_id: error binding value: %s (result code %d)\n", db) == 0) &&
         (sqlite_hdb_attempt(sqlite3_bind_int64(stmt, 2, id), SQLITE_OK, "sqlite_hdb_insert_value_and_id: error binding id: %s (result code %d)\n", db) == 0)) {        
         int result = sqlite3_step(stmt);
         if ((result != SQLITE_DONE) && (result != SQLITE_CONSTRAINT)) {

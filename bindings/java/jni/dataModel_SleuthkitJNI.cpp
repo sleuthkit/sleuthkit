@@ -278,7 +278,7 @@ JNIEXPORT jint JNICALL
     // The index of the pointer in the vector is used as a handle for the
     // database.
     hashDbs.push_back(db);
-    return hashDbs.size();
+    return (jint)hashDbs.size();
 }
 
 /**
@@ -308,7 +308,7 @@ JNIEXPORT jint JNICALL
     // The index of the pointer in the vector is used as a handle for the
     // database.
     hashDbs.push_back(db);    
-    return hashDbs.size();
+    return (jint)hashDbs.size();
 }
 
 /**
@@ -1238,7 +1238,7 @@ copyBufToByteArray(JNIEnv * env, const char *buf, ssize_t len)
 inline static ssize_t
 copyBufToByteArray(JNIEnv * env, jbyteArray jbuf, const char *buf, ssize_t len)
 {
-    env->SetByteArrayRegion(jbuf, 0, len, (jbyte*)buf);
+    env->SetByteArrayRegion(jbuf, 0, (jsize)len, (jbyte*)buf);
     return len;
 }
 
@@ -1302,7 +1302,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readImgNat(JNIEnv * env,
 	if (copiedbytes == -1) {
         setThrowTskCoreError(env, tsk_error_get());
     }
-    return copiedbytes;
+    return (jint)copiedbytes;
 }
 
 
@@ -1366,7 +1366,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readVsNat(JNIEnv * env,
     if (copiedbytes == -1) {
         setThrowTskCoreError(env, tsk_error_get());
     }
-    return copiedbytes;
+    return (jint)copiedbytes;
 }
 
 
@@ -1431,7 +1431,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readVolNat(JNIEnv * env,
     if (copiedbytes == -1) {
         setThrowTskCoreError(env, tsk_error_get());
     }
-    return copiedbytes;
+    return (jint)copiedbytes;
 }
 
 
@@ -1495,7 +1495,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFsNat(JNIEnv * env,
     if (copiedbytes == -1) {
         setThrowTskCoreError(env, tsk_error_get());
     }
-    return copiedbytes;
+    return (jint)copiedbytes;
 }
 
 
@@ -1564,7 +1564,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat(JNIEnv * env,
     if (copiedbytes == -1) {
         setThrowTskCoreError(env, tsk_error_get());
     }
-    return copiedbytes;
+    return (jint)copiedbytes;
 }
 
 
