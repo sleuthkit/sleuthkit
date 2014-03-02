@@ -232,7 +232,7 @@ void comment(const char *format,...)
 void partition_info(const string &name,const string &value,const string &attribute)
 {
 
-    if(name.find(" ")<0) err(1,"partition_info(%s) has a space in it",cstr(name));
+    if(name.find(" ")!=string::npos) err(1,"partition_info(%s) has a space in it",cstr(name));
     if(a) a->add_comment(name + ": " + value);
     if(t && !opt_body_file) fputs(cstr(name + ": " + value + "\n"),t);
     if(x) x->xmlout(name,value,attribute,true);
@@ -499,7 +499,7 @@ int main(int argc, char * const *argv1)
 	
     while ((ch = GETOPT(argc, argv, _TSK_T("A:a:C:dfG:gmv1IMX:T:VZn:c:b:xOzh?"))) > 0 ) { // s: removed
 	switch (ch) {
-	case _TSK_T('1'): opt_sha1++;break;
+	case _TSK_T('1'): opt_sha1 = true;break;
 	case _TSK_T('m'):
 	    opt_body_file = 1;
 	    opt_sha1 = 0;
@@ -526,7 +526,7 @@ int main(int argc, char * const *argv1)
 	case _TSK_T('G'): opt_maxgig = TATOI(OPTARG);break;
 	case _TSK_T('h'): usage(); break;
 	case _TSK_T('I'): opt_ignore_ntfs_system_files=true;break;
-	case _TSK_T('M'): opt_md5++; break;
+	case _TSK_T('M'): opt_md5 = true;
 	case _TSK_T('O'): opt_allocated_only=true; break;
 //	case _TSK_T('S'): sectorhash_size = TATOI(OPTARG); break;
 	case _TSK_T('T'):
