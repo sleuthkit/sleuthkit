@@ -16,7 +16,7 @@
 /bindings/java/nbproject/jdk.xml
 /bindings/java/nbproject/nbjdk.xml
 /bindings/java/libts*
-*~
+
 *.class
 /bindings/java/build/
 /bindings/java/dist/
@@ -138,3 +138,5 @@ tools/*/*/*.exe
 # EMACS backup files
 *~
 
+# Mac Junk
+.DS_Store
