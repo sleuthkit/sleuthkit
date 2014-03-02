@@ -315,7 +315,7 @@ void content::add_seg(int64_t img_offset,int64_t fs_offset,
 		      int64_t file_offset,int64_t len,
 		      TSK_FS_BLOCK_FLAG_ENUM flags)
 {
-    struct seg newseg;
+    seg newseg;
     newseg.img_offset = img_offset;
     newseg.fs_offset = fs_offset;
     newseg.file_offset = file_offset;
