@@ -258,9 +258,6 @@ main(int argc, char ** argv1)
                     tsk_error_print(stderr);
                     return 1;
                 }
-                else if (retval == -1) {
-                    printf("Database is not updateable.\n");
-                }
                 else if (retval == 0) {
                     printf("Hash %s added.\n", htmp);
                 }

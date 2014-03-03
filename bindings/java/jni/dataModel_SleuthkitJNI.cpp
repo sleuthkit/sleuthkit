@@ -278,7 +278,7 @@ JNIEXPORT jint JNICALL
     // The index of the pointer in the vector is used as a handle for the
     // database.
     hashDbs.push_back(db);
-    return hashDbs.size();
+    return (jint)hashDbs.size();
 }
 
 /**
@@ -308,7 +308,82 @@ JNIEXPORT jint JNICALL
     // The index of the pointer in the vector is used as a handle for the
     // database.
     hashDbs.push_back(db);    
-    return hashDbs.size();
+    return (jint)hashDbs.size();
+}
+
+/**
+ * Begins a hash database transaction.
+ * @param env Pointer to Java environment from which this method was called.
+ * @param obj The Java object from which this method was called.
+ * @param dbHandle A handle for the hash database.
+ * @return 1 on error and 0 on success.
+ */
+JNIEXPORT jint JNICALL
+Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbBeginTransactionNat(
+    JNIEnv *env, jclass obj, jint dbHandle)
+{
+    if((size_t)dbHandle > hashDbs.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
+        return 1;
+    }
+
+    TSK_HDB_INFO *db = hashDbs.at(dbHandle - 1);
+    if (!db) {
+        setThrowTskCoreError(env, "Invalid database handle");
+        return 1;
+    }
+
+    return tsk_hdb_begin_transaction(db);
+}
+
+/**
+ * Commits a hash database transaction.
+ * @param env Pointer to Java environment from which this method was called.
+ * @param obj The Java object from which this method was called.
+ * @param dbHandle A handle for the hash database.
+ * @return 1 on error and 0 on success.
+ */
+JNIEXPORT jint JNICALL
+Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbCommitTransactionNat(
+    JNIEnv *env, jclass obj, jint dbHandle)
+{
+    if((size_t)dbHandle > hashDbs.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
+        return 1;
+    }
+
+    TSK_HDB_INFO *db = hashDbs.at(dbHandle - 1);
+    if (!db) {
+        setThrowTskCoreError(env, "Invalid database handle");
+        return 1;
+    }
+
+    return tsk_hdb_commit_transaction(db);
+}
+
+/**
+ * Rolls back a hash database transaction.
+ * @param env Pointer to Java environment from which this method was called.
+ * @param obj The Java object from which this method was called.
+ * @param dbHandle A handle for the hash database.
+ * @return 1 on error and 0 on success.
+ */
+JNIEXPORT jint JNICALL
+Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbRollbackTransactionNat(
+    JNIEnv *env, jclass obj, jint dbHandle)
+{
+    if((size_t)dbHandle > hashDbs.size()) {
+        setThrowTskCoreError(env, "Invalid database handle");
+        return 1;
+    }
+
+    TSK_HDB_INFO *db = hashDbs.at(dbHandle-1);
+    if (!db) {
+        setThrowTskCoreError(env, "Invalid database handle");
+        return 1;
+    }
+
+    return tsk_hdb_rollback_transaction(db);
 }
 
 /**
@@ -1163,7 +1238,7 @@ copyBufToByteArray(JNIEnv * env, const char *buf, ssize_t len)
 inline static ssize_t
 copyBufToByteArray(JNIEnv * env, jbyteArray jbuf, const char *buf, ssize_t len)
 {
-    env->SetByteArrayRegion(jbuf, 0, len, (jbyte*)buf);
+    env->SetByteArrayRegion(jbuf, 0, (jsize)len, (jbyte*)buf);
     return len;
 }
 
@@ -1227,7 +1302,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readImgNat(JNIEnv * env,
 	if (copiedbytes == -1) {
         setThrowTskCoreError(env, tsk_error_get());
     }
-    return copiedbytes;
+    return (jint)copiedbytes;
 }
 
 
@@ -1291,7 +1366,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readVsNat(JNIEnv * env,
     if (copiedbytes == -1) {
         setThrowTskCoreError(env, tsk_error_get());
     }
-    return copiedbytes;
+    return (jint)copiedbytes;
 }
 
 
@@ -1356,7 +1431,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readVolNat(JNIEnv * env,
     if (copiedbytes == -1) {
         setThrowTskCoreError(env, tsk_error_get());
     }
-    return copiedbytes;
+    return (jint)copiedbytes;
 }
 
 
@@ -1420,7 +1495,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFsNat(JNIEnv * env,
     if (copiedbytes == -1) {
         setThrowTskCoreError(env, tsk_error_get());
     }
-    return copiedbytes;
+    return (jint)copiedbytes;
 }
 
 
@@ -1489,7 +1564,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat(JNIEnv * env,
     if (copiedbytes == -1) {
         setThrowTskCoreError(env, tsk_error_get());
     }
-    return copiedbytes;
+    return (jint)copiedbytes;
 }
 
 

@@ -69,6 +69,9 @@ extern "C" {
     extern int8_t hdb_base_lookup_verbose_str(TSK_HDB_INFO *, const char *, void *);
     extern uint8_t hdb_base_accepts_updates();
     extern uint8_t hdb_base_add_entry(TSK_HDB_INFO *, const char *, const char *, const char *, const char *, const char *);
+    extern uint8_t hdb_base_begin_transaction(TSK_HDB_INFO *);
+    extern uint8_t hdb_base_commit_transaction(TSK_HDB_INFO *);
+    extern uint8_t hdb_base_rollback_transaction(TSK_HDB_INFO *);
     extern void hdb_info_base_close(TSK_HDB_INFO *);
 
     // Hash database functions common to all text format hash databases
@@ -144,6 +147,9 @@ extern "C" {
     extern int8_t sqlite_hdb_lookup_verbose_bin(TSK_HDB_INFO *, uint8_t *, uint8_t, void *);
     extern uint8_t sqlite_hdb_add_entry(TSK_HDB_INFO *, const char *, 
         const char *, const char *, const char *, const char *);
+    extern uint8_t sqlite_hdb_begin_transaction(TSK_HDB_INFO *);
+    extern uint8_t sqlite_hdb_commit_transaction(TSK_HDB_INFO *);
+    extern uint8_t sqlite_hdb_rollback_transaction(TSK_HDB_INFO *);
     extern void sqlite_hdb_close(TSK_HDB_INFO *);
 
 #ifdef __cplusplus

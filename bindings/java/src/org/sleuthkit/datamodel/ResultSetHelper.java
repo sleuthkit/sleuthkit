@@ -36,14 +36,18 @@ class ResultSetHelper {
 	Image image(ResultSet rs, String name, String[] imagePaths) throws TskCoreException, SQLException {
 
 		long obj_id, type, ssize;
-		String tzone;
+		String tzone,md5;
 
 		obj_id = rs.getLong("obj_id");
 		type = rs.getLong("type");
 		ssize = rs.getLong("ssize");
 		tzone = rs.getString("tzone");
-
-		Image img = new Image(db, obj_id, type, ssize, name, imagePaths, tzone);
+		md5="";
+		if(db.getSchemaVersion() > 2)
+		{
+			md5= rs.getString("md5");
+		}
+		Image img = new Image(db, obj_id, type, ssize, name, imagePaths, tzone,md5);
 		return img;
 	}
 
