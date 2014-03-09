@@ -165,19 +165,12 @@ void plugin_process(const std::string &fname)
 	string cmd = current_plugin->path + " " + fname;
 	FILE *f = popen(cmd.c_str(),"r");
 	if(!f) err(1,"fopen: %s",cmd.c_str());
-	char linebuf[65536];
-	while (fgets(linebuf,sizeof(linebuf),f)){
+        char *linebuf=0;
+        size_t linecapp=0;
+        if(getline(&linebuf,&linecapp,f)>0){
 	    char *cc = strchr(linebuf,'\n');
 	    if(cc){		// we found an end-of-line
 		*cc = '\000';
-	    }
-	    else {
-		// line was longer than our buffer; why aren't we using c++?
-		// scan to the newline
-		while(!feof(f)){
-		    int ch = fgetc(f);
-		    if(ch<0 || ch=='\n') break;
-		}
 	    }
 	    
 	    /* process name: value pairs */
@@ -197,10 +190,10 @@ void plugin_process(const std::string &fname)
 
 	    /* clean any characters in the name */
 	    for(char *cc=name;*cc;cc++){
-          if (!isalpha(*cc)) *cc='_';
+                if (!isalpha(*cc)) *cc='_';
 	    }
-
 	    file_info(name,value);	// report each identified name & value
+            free(linebuf);
 	}
 	pclose(f);
 	return;

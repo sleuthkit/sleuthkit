@@ -25,6 +25,8 @@
 #include "unicode_escape.h"
 #include "tsk/fs/tsk_fatfs.h"
 
+#define MAX_SPARSE_SIZE 1024*1024*64
+
 #ifdef _MSC_VER
 #define _CRT_SECURE_NO_WARNINGS
 #endif
@@ -79,8 +81,18 @@ file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr, char *buf,
 
     if(opt_no_data==false){
 	if (flags & TSK_FS_BLOCK_FLAG_SPARSE){
-	    /* hash zeros */
-	    ci->set_invalid(true);		// make this data set invalid
+            if (size < MAX_SPARSE_SIZE && !ci->invalid) {
+                /* Manufacture NULLs that correspond with a sparse file */
+                char nulls[65536];
+                memset(nulls,0,sizeof(nulls));
+                for(size_t i=0; i<size; i += sizeof(nulls)){
+                    size_t bytes_to_hash = sizeof(nulls);
+                    if ( i + bytes_to_hash > size) bytes_to_hash = size - i;
+                    ci->add_bytes(nulls, a_off + i,bytes_to_hash);
+                }
+            } else {
+                ci->set_invalid(true);		// make this data set invalid
+            }
 	}
 	else {
 	    ci->add_bytes(buf,a_off,size);	// add these bytes to the file
