@@ -825,7 +825,7 @@ int
         "%d,%d,%d,%d,"
         "%" PRIuOFF ","
         "%llu,%llu,%llu,%llu,"
-        "%d,%d,%d,%q,%d,"
+        "%d,%d,%d,'%q',%d,"
         "'%q')",
         fsObjId, objId,
         TSK_DB_FILES_TYPE_FS,
@@ -977,7 +977,7 @@ TSK_RETVAL_ENUM
     zSQL = sqlite3_mprintf(
         "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
         "VALUES ("
-        "1,%q,%lld,"
+        "1,'%q',%lld,"
         "%d,"
         "NULL,NULL,'%q',"
         "NULL,"
