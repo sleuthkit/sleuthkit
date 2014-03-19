@@ -81,11 +81,11 @@
 
 #if SIZEOF_TIME_T < 8
 #define MIN_NT2UNIXTIME         ((int32_t) INT32_MIN + SEC_BTWN_1601_1970)
-#define MAX_NT2UNIXTIME         ((int32_t) INT32_MAX - SEC_BTWN_1601_1970)
+#define MAX_NT2UNIXTIME         ((int32_t) INT32_MAX + SEC_BTWN_1601_1970)
 
 #else
 #define MIN_NT2UNIXTIME         ((int64_t) INT64_MIN + SEC_BTWN_1601_1970)
-#define MAX_NT2UNIXTIME         ((int64_t) INT64_MAX - SEC_BTWN_1601_1970)
+#define MAX_NT2UNIXTIME         ((int64_t) INT64_MAX)
 #endif
 
 /* convert the NT Time (UTC hundred nanoseconds from 1/1/1601)
