@@ -645,7 +645,7 @@ extern "C" {
     } NTFS_INFO;
 
 
-    extern uint32_t nt2unixtime(uint64_t ntdate);
+    extern int64_t nt2unixtime(uint64_t ntdate);
     extern uint8_t ntfs_attrname_lookup(TSK_FS_INFO *, uint16_t, char *,
         int);
     extern TSK_RETVAL_ENUM ntfs_dinode_lookup(NTFS_INFO *, char *,

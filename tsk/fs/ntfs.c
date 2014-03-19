@@ -76,6 +76,18 @@
  *
  **********************************************************************/
 
+// ( ( 369 * 365 ) + 89 ) * 24 * 3600 = 11644473600
+#define SEC_BTWN_1601_1970      (int64_t)(11644473600LL)
+
+#if SIZEOF_TIME_T < 8
+#define MIN_NT2UNIXTIME         ((int32_t) INT32_MIN + SEC_BTWN_1601_1970)
+#define MAX_NT2UNIXTIME         ((int32_t) INT32_MAX - SEC_BTWN_1601_1970)
+
+#else
+#define MIN_NT2UNIXTIME         ((int64_t) INT64_MIN + SEC_BTWN_1601_1970)
+#define MAX_NT2UNIXTIME         ((int64_t) INT64_MAX - SEC_BTWN_1601_1970)
+#endif
+
 /* convert the NT Time (UTC hundred nanoseconds from 1/1/1601)
  * to UNIX (UTC seconds from 1/1/1970)
  *
@@ -84,16 +96,18 @@
  * i.e. TIME - DELTA
  *
  */
-uint32_t
+int64_t
 nt2unixtime(uint64_t ntdate)
 {
-// (369*365 + 89) * 24 * 3600 * 10000000
-#define	NSEC_BTWN_1601_1970	(uint64_t)(116444736000000000ULL)
+    ntdate /= (uint64_t) 10000000ULL;
 
-    ntdate -= (uint64_t) NSEC_BTWN_1601_1970;
-    ntdate /= (uint64_t) 10000000;
-
-    return (uint32_t) ntdate;
+    if( ntdate > MAX_NT2UNIXTIME ) {
+        return MAX_NT2UNIXTIME;
+    }
+    if( ntdate < MIN_NT2UNIXTIME ) {
+        return MIN_NT2UNIXTIME;
+    }
+    return (int64_t) ntdate - SEC_BTWN_1601_1970;
 }
 
 /* convert the NT Time (UTC hundred nanoseconds from 1/1/1601)
@@ -1998,22 +2012,22 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             si = (ntfs_attr_si *) ((uintptr_t) attr +
                 tsk_getu16(fs->endian, attr->c.r.soff));
             fs_file->meta->mtime =
-                nt2unixtime(tsk_getu64(fs->endian, si->mtime));
+                (time_t) nt2unixtime(tsk_getu64(fs->endian, si->mtime));
             fs_file->meta->mtime_nano =
                 nt2nano(tsk_getu64(fs->endian, si->mtime));
 
             fs_file->meta->atime =
-                nt2unixtime(tsk_getu64(fs->endian, si->atime));
+                (time_t) nt2unixtime(tsk_getu64(fs->endian, si->atime));
             fs_file->meta->atime_nano =
                 nt2nano(tsk_getu64(fs->endian, si->atime));
 
             fs_file->meta->ctime =
-                nt2unixtime(tsk_getu64(fs->endian, si->ctime));
+                (time_t) nt2unixtime(tsk_getu64(fs->endian, si->ctime));
             fs_file->meta->ctime_nano =
                 nt2nano(tsk_getu64(fs->endian, si->ctime));
 
             fs_file->meta->crtime =
-                nt2unixtime(tsk_getu64(fs->endian, si->crtime));
+                (time_t) nt2unixtime(tsk_getu64(fs->endian, si->crtime));
             fs_file->meta->crtime_nano =
                 nt2nano(tsk_getu64(fs->endian, si->crtime));
 
@@ -2052,22 +2066,22 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             }
             
             fs_file->meta->time2.ntfs.fn_mtime =
-                nt2unixtime(tsk_getu64(fs->endian, fname->mtime));
+                (time_t) nt2unixtime(tsk_getu64(fs->endian, fname->mtime));
             fs_file->meta->time2.ntfs.fn_mtime_nano =
                 nt2nano(tsk_getu64(fs->endian, fname->mtime));
             
             fs_file->meta->time2.ntfs.fn_atime =
-                nt2unixtime(tsk_getu64(fs->endian, fname->atime));
+                (time_t) nt2unixtime(tsk_getu64(fs->endian, fname->atime));
             fs_file->meta->time2.ntfs.fn_atime_nano =
                 nt2nano(tsk_getu64(fs->endian, fname->atime));
             
             fs_file->meta->time2.ntfs.fn_ctime =
-                nt2unixtime(tsk_getu64(fs->endian, fname->ctime));
+                (time_t) nt2unixtime(tsk_getu64(fs->endian, fname->ctime));
             fs_file->meta->time2.ntfs.fn_ctime_nano =
                 nt2nano(tsk_getu64(fs->endian, fname->ctime));
             
             fs_file->meta->time2.ntfs.fn_crtime =
-                nt2unixtime(tsk_getu64(fs->endian, fname->crtime));
+                (time_t) nt2unixtime(tsk_getu64(fs->endian, fname->crtime));
             fs_file->meta->time2.ntfs.fn_crtime_nano =
                 nt2nano(tsk_getu64(fs->endian, fname->crtime));
 

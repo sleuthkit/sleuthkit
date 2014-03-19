@@ -51,6 +51,7 @@ AC_TYPE_SIZE_T
 dnl AC_CHECK_MEMBERS([struct stat.st_rdev])
 dnl AC_HEADER_TIME
 dnl AC_STRUCT_TM
+AC_CHECK_SIZEOF([time_t])
 
 dnl check for large file support
 AC_SYS_LARGEFILE
