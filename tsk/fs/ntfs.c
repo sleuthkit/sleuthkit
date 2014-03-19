@@ -80,11 +80,11 @@
 #define SEC_BTWN_1601_1970      (int64_t)(11644473600LL)
 
 #if SIZEOF_TIME_T < 8
-#define MIN_NT2UNIXTIME         ((int32_t) INT32_MIN + SEC_BTWN_1601_1970)
-#define MAX_NT2UNIXTIME         ((int32_t) INT32_MAX + SEC_BTWN_1601_1970)
+#define MIN_NT2UNIXTIME         ((int64_t) INT32_MIN)
+#define MAX_NT2UNIXTIME         ((int64_t) INT32_MAX + SEC_BTWN_1601_1970)
 
 #else
-#define MIN_NT2UNIXTIME         ((int64_t) INT64_MIN + SEC_BTWN_1601_1970)
+#define MIN_NT2UNIXTIME         ((int64_t) INT64_MIN)
 #define MAX_NT2UNIXTIME         ((int64_t) INT64_MAX)
 #endif
 
@@ -99,15 +99,17 @@
 int64_t
 nt2unixtime(uint64_t ntdate)
 {
-    ntdate /= (uint64_t) 10000000ULL;
+    int64_t unixtime = 0;
 
-    if( ntdate > MAX_NT2UNIXTIME ) {
+    if(ntdate > (uint64_t) MAX_NT2UNIXTIME) {
         return MAX_NT2UNIXTIME;
     }
-    if( ntdate < MIN_NT2UNIXTIME ) {
+    unixtime = ((int64_t) ntdate / 10000000ULL) - SEC_BTWN_1601_1970;
+
+    if(unixtime < MIN_NT2UNIXTIME) {
         return MIN_NT2UNIXTIME;
     }
-    return (int64_t) ntdate - SEC_BTWN_1601_1970;
+    return unixtime;
 }
 
 /* convert the NT Time (UTC hundred nanoseconds from 1/1/1601)

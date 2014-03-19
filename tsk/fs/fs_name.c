@@ -293,20 +293,16 @@ tsk_fs_meta_make_ls(const TSK_FS_META * a_fs_meta, char *a_buf,
 char *
 tsk_fs_time_to_str(time_t time, char buf[128])
 {
-    buf[0] = '\0';
-    if (time <= 0) {
-        strncpy(buf, "0000-00-00 00:00:00 (UTC)", 128);
-    }
-    else {
-        struct tm *tmTime = localtime(&time);
+    struct tm *tmTime = localtime(&time);
 
-        snprintf(buf, 128, "%.4d-%.2d-%.2d %.2d:%.2d:%.2d (%s)",
-            (int) tmTime->tm_year + 1900,
-            (int) tmTime->tm_mon + 1, (int) tmTime->tm_mday,
-            tmTime->tm_hour,
-            (int) tmTime->tm_min, (int) tmTime->tm_sec,
-            tzname[(tmTime->tm_isdst == 0) ? 0 : 1]);
-    }
+    buf[0] = '\0';
+    snprintf(buf, 128, "%.4d-%.2d-%.2d %.2d:%.2d:%.2d (%s)",
+        (int) tmTime->tm_year + 1900,
+        (int) tmTime->tm_mon + 1, (int) tmTime->tm_mday,
+        tmTime->tm_hour,
+        (int) tmTime->tm_min, (int) tmTime->tm_sec,
+        tzname[(tmTime->tm_isdst == 0) ? 0 : 1]);
+
     return buf;
 }
 
