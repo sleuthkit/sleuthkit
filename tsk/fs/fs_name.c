@@ -294,10 +294,16 @@ char *
 tsk_fs_time_to_str(time_t time, char buf[128])
 {
     buf[0] = '\0';
-    if (time <= 0) {
-        strncpy(buf, "0000-00-00 00:00:00 (UTC)", 128);
-    }
-    else {
+
+    if(time <= 0) {
+        struct tm *tmTime = gmtime(&time);
+
+        snprintf(buf, 128, "%.4d-%.2d-%.2d %.2d:%.2d:%.2d (UTC)",
+            (int) tmTime->tm_year + 1900,
+            (int) tmTime->tm_mon + 1, (int) tmTime->tm_mday,
+            tmTime->tm_hour,
+            (int) tmTime->tm_min, (int) tmTime->tm_sec);
+    } else {
         struct tm *tmTime = localtime(&time);
 
         snprintf(buf, 128, "%.4d-%.2d-%.2d %.2d:%.2d:%.2d (%s)",
