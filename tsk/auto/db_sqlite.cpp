@@ -795,7 +795,8 @@ int
     strncpy(escaped_path, "/", epath_len);
     strncat(escaped_path, path, epath_len - strlen(escaped_path));
 
-    char md5Text[48] = "NULL";
+    char *md5TextPtr = NULL;
+    char md5Text[48];
 
     // if md5 hashes are being used
     if (md5 != NULL) {
@@ -804,6 +805,7 @@ int
             sprintf(&(md5Text[i*2]), "%x%x", (md5[i] >> 4) & 0xf,
                 md5[i] & 0xf);
         }
+        md5TextPtr = md5Text;
     }
 
 
@@ -823,7 +825,7 @@ int
         "%d,%d,%d,%d,"
         "%" PRIuOFF ","
         "%llu,%llu,%llu,%llu,"
-        "%d,%d,%d,'%q',%d,"
+        "%d,%d,%d,%Q,%d,"
         "'%q')",
         fsObjId, objId,
         TSK_DB_FILES_TYPE_FS,
@@ -832,7 +834,7 @@ int
         fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
         size, 
         (unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime, 
-        meta_mode, gid, uid, md5Text, known,
+        meta_mode, gid, uid, md5TextPtr, known,
         escaped_path);
 
     if (attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
@@ -967,22 +969,24 @@ TSK_RETVAL_ENUM
         return TSK_ERR;
 
     //fsObjId can be NULL
-    stringstream fsObjIdS;
-    if (fsObjId == 0) 
-        fsObjIdS << "NULL";
-    else fsObjIdS << fsObjId;
+    char *fsObjIdStrPtr = NULL;
+    char fsObjIdStr[32];
+    if (fsObjId != 0) {
+        snprintf(fsObjIdStr, 32, "%"PRIu64, fsObjId);
+        fsObjIdStrPtr = fsObjIdStr;
+    }
 
     zSQL = sqlite3_mprintf(
         "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
         "VALUES ("
-        "1,'%q',%lld,"
+        "1, %Q, %lld,"
         "%d,"
         "NULL,NULL,'%q',"
         "NULL,"
         "%d,%d,%d,%d,"
         "%" PRIuOFF ","
         "NULL,NULL,NULL,NULL,NULL,NULL,NULL)",
-        fsObjIdS.str().c_str(), objId,
+        fsObjIdStrPtr, objId,
         dbFileType,
         fileName,
         TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG,
