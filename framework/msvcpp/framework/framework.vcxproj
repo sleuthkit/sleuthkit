@@ -93,6 +93,7 @@ ren "$(ProjectDir)..\..\runtime\framework_config_win32dev.xml" framework_config.
       <AdditionalDependencies>libewf.lib;libtsk.lib;ws2_32.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(POCO_HOME)\lib;$(ProjectDir)\..\..\..\win32\Release;$(LIBEWF_HOME)\msvscpp\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ImportLibrary>$(OutDir)$(ProjectName).lib</ImportLibrary>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
       <Command>mkdir "$(ProjectDir)..\..\runtime"
