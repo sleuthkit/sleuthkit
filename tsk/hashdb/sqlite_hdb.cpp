@@ -1,21 +1,21 @@
 /*
- * The Sleuth Kit
- *
- * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2003-2014 Brian Carrier.  All rights reserved
- *
- *
- * This software is distributed under the Common Public License 1.0
- *
- */
+* The Sleuth Kit
+*
+* Brian Carrier [carrier <at> sleuthkit [dot] org]
+* Copyright (c) 2003-2014 Brian Carrier.  All rights reserved
+*
+*
+* This software is distributed under the Common Public License 1.0
+*
+*/
 
 #include "tsk_hashdb_i.h"
 #include "tsk_hash_info.h"
 
 /**
- * \file sqlite_hdb.cpp
- * Contains hash database functions for SQLite hash databases.
- */
+* \file sqlite_hdb.cpp
+* Contains hash database functions for SQLite hash databases.
+*/
 
 static const char *SCHEMA_VERSION_PROP = "Schema Version";
 static const char *SCHEMA_VERSION_NO = "1";
@@ -24,78 +24,78 @@ static const size_t MD5_BLOB_LEN = ((TSK_HDB_HTYPE_MD5_LEN) / 2);
 static const char hex_digits[] = "0123456789abcdef";
 
 static uint8_t 
-sqlite_hdb_attempt(int resultCode, int expectedResultCode, const char *errfmt, 
+    sqlite_hdb_attempt(int resultCode, int expectedResultCode, const char *errfmt, 
     sqlite3 *sqlite)
 {
-	if (resultCode != expectedResultCode) {
-		tsk_error_reset();
-		tsk_error_set_errno(TSK_ERR_AUTO_DB);
-		tsk_error_set_errstr(errfmt, sqlite3_errmsg(sqlite), resultCode);
-		return 1;
-	}
-	return 0;
-}
-
-static uint8_t 
-sqlite_hdb_attempt_exec(const char *sql, const char *errfmt, sqlite3 *sqlite)
-{
-	char *errmsg = NULL;
-	if(sqlite3_exec(sqlite, sql, NULL, NULL, &errmsg) != SQLITE_OK) {
-		tsk_error_reset();
-		tsk_error_set_errno(TSK_ERR_AUTO_DB); 
-		tsk_error_set_errstr(errfmt, errmsg);
-		sqlite3_free(errmsg);
-		return 1;
-	}
-	return 0;
-}
-
-static uint8_t 
-sqlite_hdb_create_tables(sqlite3 *db)
-{
-	if (sqlite_hdb_attempt_exec("CREATE TABLE db_properties (name TEXT NOT NULL, value TEXT);", "sqlite_hdb_create_tables: error creating db_properties table: %s\n", db)) {
+    if (resultCode != expectedResultCode) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr(errfmt, sqlite3_errmsg(sqlite), resultCode);
         return 1;
-	}
-
-	char sql_stmt[1024];
-	snprintf(sql_stmt, 1024, "INSERT INTO db_properties (name, value) VALUES ('%s', '%s');", SCHEMA_VERSION_PROP, SCHEMA_VERSION_NO);
-	if (sqlite_hdb_attempt_exec(sql_stmt, "sqlite_hdb_create_tables: error adding schema info to db_properties: %s\n", db)) {
-        return 1;
-	}
-
-	if (sqlite_hdb_attempt_exec ("CREATE TABLE hashes (id INTEGER PRIMARY KEY AUTOINCREMENT, md5 BINARY(16) UNIQUE, sha1 BINARY(20), sha2_256 BINARY(32));", "sqlite_hdb_create_tables: error creating hashes table: %s\n", db)) {
-        return 1;
-	}
-
-	if (sqlite_hdb_attempt_exec("CREATE TABLE file_names (name TEXT NOT NULL, hash_id INTEGER NOT NULL, PRIMARY KEY(name, hash_id));", "sqlite_hdb_create_tables: error creating file_names table: %s\n", db)) {
-        return 1;
-	}
-
-	if (sqlite_hdb_attempt_exec("CREATE TABLE comments (comment TEXT NOT NULL, hash_id INTEGER NOT NULL, PRIMARY KEY(comment, hash_id));", "sqlite_hdb_create_tables: error creating comments table: %s\n", db)) {
-        return 1;
-	}
-
-	if (sqlite_hdb_attempt_exec("CREATE INDEX md5_index ON hashes(md5);", "sqlite_hdb_create_tables: error creating md5_index on md5: %s\n", db)) {
-        return 1;
-	}
-	
+    }
     return 0;
 }
 
 static uint8_t 
-sqlite_hdb_prepare_stmt(const char *sql, sqlite3_stmt **stmt, sqlite3 *db)
+    sqlite_hdb_attempt_exec(const char *sql, const char *errfmt, sqlite3 *sqlite)
 {
-	if (sqlite3_prepare_v2(db, sql, -1, stmt, NULL) != SQLITE_OK) {
-		tsk_error_reset();
-		tsk_error_set_errno(TSK_ERR_AUTO_DB);
-		tsk_error_set_errstr("sqlite_hdb_prepare_stmt: error preparing SQL statement: %s: %s\n", sql, sqlite3_errmsg(db));
-		return 1;
-	}
-	return 0;
+    char *errmsg = NULL;
+    if(sqlite3_exec(sqlite, sql, NULL, NULL, &errmsg) != SQLITE_OK) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB); 
+        tsk_error_set_errstr(errfmt, errmsg);
+        sqlite3_free(errmsg);
+        return 1;
+    }
+    return 0;
 }
 
 static uint8_t 
-prepare_statements(TSK_SQLITE_HDB_INFO *hdb_info)
+    sqlite_hdb_create_tables(sqlite3 *db)
+{
+    if (sqlite_hdb_attempt_exec("CREATE TABLE db_properties (name TEXT NOT NULL, value TEXT);", "sqlite_hdb_create_tables: error creating db_properties table: %s\n", db)) {
+        return 1;
+    }
+
+    char sql_stmt[1024];
+    snprintf(sql_stmt, 1024, "INSERT INTO db_properties (name, value) VALUES ('%s', '%s');", SCHEMA_VERSION_PROP, SCHEMA_VERSION_NO);
+    if (sqlite_hdb_attempt_exec(sql_stmt, "sqlite_hdb_create_tables: error adding schema info to db_properties: %s\n", db)) {
+        return 1;
+    }
+
+    if (sqlite_hdb_attempt_exec ("CREATE TABLE hashes (id INTEGER PRIMARY KEY AUTOINCREMENT, md5 BINARY(16) UNIQUE, sha1 BINARY(20), sha2_256 BINARY(32));", "sqlite_hdb_create_tables: error creating hashes table: %s\n", db)) {
+        return 1;
+    }
+
+    if (sqlite_hdb_attempt_exec("CREATE TABLE file_names (name TEXT NOT NULL, hash_id INTEGER NOT NULL, PRIMARY KEY(name, hash_id));", "sqlite_hdb_create_tables: error creating file_names table: %s\n", db)) {
+        return 1;
+    }
+
+    if (sqlite_hdb_attempt_exec("CREATE TABLE comments (comment TEXT NOT NULL, hash_id INTEGER NOT NULL, PRIMARY KEY(comment, hash_id));", "sqlite_hdb_create_tables: error creating comments table: %s\n", db)) {
+        return 1;
+    }
+
+    if (sqlite_hdb_attempt_exec("CREATE INDEX md5_index ON hashes(md5);", "sqlite_hdb_create_tables: error creating md5_index on md5: %s\n", db)) {
+        return 1;
+    }
+
+    return 0;
+}
+
+static uint8_t 
+    sqlite_hdb_prepare_stmt(const char *sql, sqlite3_stmt **stmt, sqlite3 *db)
+{
+    if (sqlite3_prepare_v2(db, sql, -1, stmt, NULL) != SQLITE_OK) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("sqlite_hdb_prepare_stmt: error preparing SQL statement: %s: %s\n", sql, sqlite3_errmsg(db));
+        return 1;
+    }
+    return 0;
+}
+
+static uint8_t 
+    prepare_statements(TSK_SQLITE_HDB_INFO *hdb_info)
 {
     if (sqlite_hdb_prepare_stmt("INSERT INTO hashes (md5) VALUES (?)", &(hdb_info->insert_md5_into_hashes), hdb_info->db)) {
         return 1;
@@ -125,21 +125,21 @@ prepare_statements(TSK_SQLITE_HDB_INFO *hdb_info)
 }
 
 static uint8_t 
-sqlite_hdb_finalize_stmt(sqlite3_stmt **stmt, sqlite3 *db)
+    sqlite_hdb_finalize_stmt(sqlite3_stmt **stmt, sqlite3 *db)
 {
     if ((NULL != *stmt) && (sqlite3_finalize(*stmt) != SQLITE_OK)) {
-		tsk_error_reset();
-		tsk_error_set_errno(TSK_ERR_AUTO_DB);
-		tsk_error_set_errstr("sqlite_hdb_finalize_stmt: error finalizing SQL statement: %s\n", sqlite3_errmsg(db));
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("sqlite_hdb_finalize_stmt: error finalizing SQL statement: %s\n", sqlite3_errmsg(db));
         *stmt = NULL;
-		return 1;
-	}
+        return 1;
+    }
     *stmt = NULL;
-	return 0;
+    return 0;
 }
 
 static void
-finalize_statements(TSK_SQLITE_HDB_INFO *hdb_info)
+    finalize_statements(TSK_SQLITE_HDB_INFO *hdb_info)
 {
     sqlite_hdb_finalize_stmt(&(hdb_info->insert_md5_into_hashes), hdb_info->db);
     sqlite_hdb_finalize_stmt(&(hdb_info->insert_into_file_names), hdb_info->db);
@@ -163,24 +163,24 @@ static sqlite3 *sqlite_hdb_open_db(TSK_TCHAR *db_file_path, bool create_tables)
         return NULL;
     }
 #endif
-	sqlite3_extended_result_codes(db, 1);
+    sqlite3_extended_result_codes(db, 1);
 
-	if (sqlite_hdb_attempt_exec("PRAGMA synchronous = OFF;", "Error setting PRAGMA synchronous: %s\n", db)) {
+    if (sqlite_hdb_attempt_exec("PRAGMA synchronous = OFF;", "Error setting PRAGMA synchronous: %s\n", db)) {
         sqlite3_close(db);
         return NULL;
     }
 
-	if (sqlite_hdb_attempt_exec("PRAGMA encoding = \"UTF-8\";", "Error setting PRAGMA encoding UTF-8: %s\n", db)) {
+    if (sqlite_hdb_attempt_exec("PRAGMA encoding = \"UTF-8\";", "Error setting PRAGMA encoding UTF-8: %s\n", db)) {
         sqlite3_close(db);
         return NULL;
     }
 
-	if (sqlite_hdb_attempt_exec("PRAGMA read_uncommitted = True;", "Error setting PRAGMA read_uncommitted: %s\n", db)) {
+    if (sqlite_hdb_attempt_exec("PRAGMA read_uncommitted = True;", "Error setting PRAGMA read_uncommitted: %s\n", db)) {
         sqlite3_close(db);
         return NULL;
     }
 
-	if (sqlite_hdb_attempt_exec("PRAGMA page_size = 4096;", "Error setting PRAGMA page_size: %s\n", db)) {
+    if (sqlite_hdb_attempt_exec("PRAGMA page_size = 4096;", "Error setting PRAGMA page_size: %s\n", db)) {
         sqlite3_close(db);
         return NULL;
     }
@@ -204,34 +204,34 @@ static sqlite3 *sqlite_hdb_open_db(TSK_TCHAR *db_file_path, bool create_tables)
 }
 
 /**
- * \ingroup hashdblib
- * \internal 
- * Creates a new SQLite hash database.
- * @param db_file_path A path for the new hash database.
- * @return 0 on success, 1 on failure.
- */
+* \ingroup hashdblib
+* \internal 
+* Creates a new SQLite hash database.
+* @param db_file_path A path for the new hash database.
+* @return 0 on success, 1 on failure.
+*/
 uint8_t 
-sqlite_hdb_create_db(TSK_TCHAR *db_file_path)
+    sqlite_hdb_create_db(TSK_TCHAR *db_file_path)
 {
-	sqlite3 *db = sqlite_hdb_open_db(db_file_path, true);
-	if (NULL == db) {
-		return 1;
-	}
+    sqlite3 *db = sqlite_hdb_open_db(db_file_path, true);
+    if (NULL == db) {
+        return 1;
+    }
 
     sqlite3_close(db);
-	
+
     return 0;
 }
 
 /**
- * \ingroup hashdblib
- * \internal 
- * Determines whether a file is a SQLite file.
- * @param hFile_path A handle to the file to inspect.
- * @return 1 if the file is a SQLite file, 0 if it is not.
- */
+* \ingroup hashdblib
+* \internal 
+* Determines whether a file is a SQLite file.
+* @param hFile_path A handle to the file to inspect.
+* @return 1 if the file is a SQLite file, 0 if it is not.
+*/
 uint8_t
-sqlite_hdb_is_sqlite_file(FILE *hFile)
+    sqlite_hdb_is_sqlite_file(FILE *hFile)
 {
     const int header_size = 16;
     char header[header_size];
@@ -244,12 +244,12 @@ sqlite_hdb_is_sqlite_file(FILE *hFile)
 }
 
 /**
- * \ingroup hashdblib
- * \internal 
- * Opens an existing SQLite hash database.
- * @param db_file_path A path for the new hash database.
- * @return 0 on success, 1 on failure.
- */
+* \ingroup hashdblib
+* \internal 
+* Opens an existing SQLite hash database.
+* @param db_file_path A path for the new hash database.
+* @return 0 on success, 1 on failure.
+*/
 TSK_HDB_INFO *sqlite_hdb_open(TSK_TCHAR *db_path)
 {
     sqlite3 *db = sqlite_hdb_open_db(db_path, false);
@@ -268,8 +268,8 @@ TSK_HDB_INFO *sqlite_hdb_open(TSK_TCHAR *db_path)
         free(hdb_info);
         return NULL;
     }
-	
-	hdb_info->db = db;
+
+    hdb_info->db = db;
     if (prepare_statements(hdb_info)) {
         finalize_statements(hdb_info);
         sqlite3_close(db);
@@ -290,33 +290,33 @@ TSK_HDB_INFO *sqlite_hdb_open(TSK_TCHAR *db_path)
 }
 
 static uint8_t* 
-sqlite_hdb_str_to_blob(const char *str)
+    sqlite_hdb_str_to_blob(const char *str)
 {
-	const size_t len = strlen(str)/2;
-	uint8_t *blob = (uint8_t *)tsk_malloc(len+1);
+    const size_t len = strlen(str)/2;
+    uint8_t *blob = (uint8_t *)tsk_malloc(len+1);
     if (NULL == blob) {
         return NULL;
     }
 
-	const char *pos = str;
-	for (size_t count = 0; count < len; ++count) {
-		sscanf(pos, "%2hx", (short unsigned int *) &(blob[count]));
-		pos += 2 * sizeof(char);
-	}
+    const char *pos = str;
+    for (size_t count = 0; count < len; ++count) {
+        sscanf(pos, "%2hx", (short unsigned int *) &(blob[count]));
+        pos += 2 * sizeof(char);
+    }
     return blob;
 }
 
 static std::string 
-sqlite_hdb_blob_to_string(std::string binblob)
+    sqlite_hdb_blob_to_string(std::string binblob)
 {
     size_t blobsize = binblob.size();
     if (blobsize <= TSK_HDB_MAX_BINHASH_LEN) {
         char hashbuf[TSK_HDB_HTYPE_SHA2_256_LEN + 1];
-	    for (size_t i = 0; i < blobsize; ++i) {
-		    hashbuf[2 * i] = hex_digits[(binblob[i] >> 4) & 0xf];
-		    hashbuf[2 * i + 1] = hex_digits[binblob[i] & 0xf];
-	    }
-	    hashbuf[2 * blobsize] = '\0';
+        for (size_t i = 0; i < blobsize; ++i) {
+            hashbuf[2 * i] = hex_digits[(binblob[i] >> 4) & 0xf];
+            hashbuf[2 * i + 1] = hex_digits[binblob[i] & 0xf];
+        }
+        hashbuf[2 * blobsize] = '\0';
         return std::string(&hashbuf[0]);
     } 
     else {
@@ -325,7 +325,7 @@ sqlite_hdb_blob_to_string(std::string binblob)
 }
 
 static int8_t  
-sqlite_hdb_hash_lookup_by_md5(uint8_t *md5Blob, size_t len, TSK_SQLITE_HDB_INFO *hdb_info, TskHashInfo &result)
+    sqlite_hdb_hash_lookup_by_md5(uint8_t *md5Blob, size_t len, TSK_SQLITE_HDB_INFO *hdb_info, TskHashInfo &result)
 {
     int8_t ret_val = -1;
     if (sqlite_hdb_attempt(sqlite3_bind_blob(hdb_info->select_from_hashes_by_md5, 1, md5Blob, (int)len, SQLITE_TRANSIENT), SQLITE_OK, "sqlite_hdb_hash_lookup_by_md5: error binding md5 hash blob: %s (result code %d)\n", hdb_info->db) == 0) {
@@ -352,7 +352,7 @@ sqlite_hdb_hash_lookup_by_md5(uint8_t *md5Blob, size_t len, TSK_SQLITE_HDB_INFO 
 }
 
 static int64_t
-sqlite_hdb_insert_md5_hash(uint8_t *md5Blob, size_t len, TSK_SQLITE_HDB_INFO *hdb_info)
+    sqlite_hdb_insert_md5_hash(uint8_t *md5Blob, size_t len, TSK_SQLITE_HDB_INFO *hdb_info)
 {
     int64_t row_id = 0;
     if (sqlite_hdb_attempt(sqlite3_bind_blob(hdb_info->insert_md5_into_hashes, 1, md5Blob, (int)len, SQLITE_TRANSIENT), SQLITE_OK, "sqlite_hdb_insert_md5_hash: error binding md5 hash blob: %s (result code %d)\n", hdb_info->db) == 0) {        
@@ -372,21 +372,21 @@ sqlite_hdb_insert_md5_hash(uint8_t *md5Blob, size_t len, TSK_SQLITE_HDB_INFO *hd
 }
 
 static uint8_t 
-sqlite_hdb_insert_value_and_id(sqlite3_stmt *stmt, const char *value, int64_t id, sqlite3 *db)
+    sqlite_hdb_insert_value_and_id(sqlite3_stmt *stmt, const char *value, int64_t id, sqlite3 *db)
 {
     uint8_t ret_val = 1;
     if ((sqlite_hdb_attempt(sqlite3_bind_text(stmt, 1, value, (int)strlen(value), SQLITE_TRANSIENT), SQLITE_OK, "sqlite_hdb_insert_value_and_id: error binding value: %s (result code %d)\n", db) == 0) &&
         (sqlite_hdb_attempt(sqlite3_bind_int64(stmt, 2, id), SQLITE_OK, "sqlite_hdb_insert_value_and_id: error binding id: %s (result code %d)\n", db) == 0)) {        
-        int result = sqlite3_step(stmt);
-        if ((result != SQLITE_DONE) && (result != SQLITE_CONSTRAINT)) {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            tsk_error_set_errstr("sqlite_hdb_insert_value_and_id: error executing INSERT: %s\n", sqlite3_errmsg(db));
-        }
-        else {
-            // Either the INSERT succeeded or the value was a duplicate, which is o.k.
-            ret_val = 0;
-        }
+            int result = sqlite3_step(stmt);
+            if ((result != SQLITE_DONE) && (result != SQLITE_CONSTRAINT)) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_AUTO_DB);
+                tsk_error_set_errstr("sqlite_hdb_insert_value_and_id: error executing INSERT: %s\n", sqlite3_errmsg(db));
+            }
+            else {
+                // Either the INSERT succeeded or the value was a duplicate, which is o.k.
+                ret_val = 0;
+            }
     }
     sqlite3_clear_bindings(stmt);
     sqlite3_reset(stmt);        
@@ -394,19 +394,19 @@ sqlite_hdb_insert_value_and_id(sqlite3_stmt *stmt, const char *value, int64_t id
 }
 
 /**
- * \ingroup hashdblib
- * \internal 
- * Adds an entry to a SQLite hash database.
- * @param hdb_info_base The struct that represents the database.
- * @param filename A file name to associate with the hashes, may be NULL.
- * @param md5 An md5 hash.
- * @param sha1 A SHA-1 hash, may be NULL.
- * @param sha256 A SHA-256 hash, may be NULL.
- * @param comment A comment to associate with the hashes, may be NULL.
- * @return 1 on error and 0 on success
- */
+* \ingroup hashdblib
+* \internal 
+* Adds an entry to a SQLite hash database.
+* @param hdb_info_base The struct that represents the database.
+* @param filename A file name to associate with the hashes, may be NULL.
+* @param md5 An md5 hash.
+* @param sha1 A SHA-1 hash, may be NULL.
+* @param sha256 A SHA-256 hash, may be NULL.
+* @param comment A comment to associate with the hashes, may be NULL.
+* @return 1 on error and 0 on success
+*/
 uint8_t
-sqlite_hdb_add_entry(TSK_HDB_INFO *hdb_info_base, const char *filename, 
+    sqlite_hdb_add_entry(TSK_HDB_INFO *hdb_info_base, const char *filename, 
     const char *md5, const char *sha1, const char *sha256, const char *comment)
 {
     // Currently only supporting md5.
@@ -472,18 +472,18 @@ sqlite_hdb_add_entry(TSK_HDB_INFO *hdb_info_base, const char *filename,
 }
 
 /**
- * \ingroup hashdblib
- * \internal 
- * Looks up a hash in a SQLite hash database.
- * @param hdb_info_base The struct that represents the database.
- * @param hash Hash value to search for (NULL terminated string).
- * @param flags Flags to use in lookup.
- * @param action Callback function (not called if QUICK flag is given)
- * @param ptr Pointer to data to pass to callback
- * @return -1 on error, 0 if hash value not found, 1 if hash value found.
- */
+* \ingroup hashdblib
+* \internal 
+* Looks up a hash in a SQLite hash database.
+* @param hdb_info_base The struct that represents the database.
+* @param hash Hash value to search for (NULL terminated string).
+* @param flags Flags to use in lookup.
+* @param action Callback function (not called if QUICK flag is given)
+* @param ptr Pointer to data to pass to callback
+* @return -1 on error, 0 if hash value not found, 1 if hash value found.
+*/
 int8_t
-sqlite_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char* hash,
+    sqlite_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char* hash,
     TSK_HDB_FLAG_ENUM flags, TSK_HDB_LOOKUP_FN action, void *ptr)
 {
     // Currently only supporting lookups of md5 hashes.
@@ -494,8 +494,8 @@ sqlite_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char* hash,
         tsk_error_set_errstr("sqlite_hdb_lookup_str: hash length incorrect (=%zu), expecting %d", len, TSK_HDB_HTYPE_MD5_LEN);
         return 1;
     }
- 
-	uint8_t *hashBlob = sqlite_hdb_str_to_blob(hash);
+
+    uint8_t *hashBlob = sqlite_hdb_str_to_blob(hash);
     if (!hashBlob) {
         return 1;
     }
@@ -506,19 +506,19 @@ sqlite_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char* hash,
 }
 
 /**
- * \ingroup hashdblib
- * \internal 
- * Looks up a hash in a SQLite hash database.
- * @param hdb_info_base The struct that represents the database.
- * @param hash Hash value to search for (binary form, array of bytes).
- * @param len Number of bytes in binary hash value
- * @param flags Flags to use in lookup.
- * @param action Callback function (not called if QUICK flag is given)
- * @param ptr Pointer to data to pass to callback
- * @return -1 on error, 0 if hash value not found, 1 if hash value found.
- */
+* \ingroup hashdblib
+* \internal 
+* Looks up a hash in a SQLite hash database.
+* @param hdb_info_base The struct that represents the database.
+* @param hash Hash value to search for (binary form, array of bytes).
+* @param len Number of bytes in binary hash value
+* @param flags Flags to use in lookup.
+* @param action Callback function (not called if QUICK flag is given)
+* @param ptr Pointer to data to pass to callback
+* @return -1 on error, 0 if hash value not found, 1 if hash value found.
+*/
 int8_t
-sqlite_hdb_lookup_bin(TSK_HDB_INFO *hdb_info_base, uint8_t *hash, 
+    sqlite_hdb_lookup_bin(TSK_HDB_INFO *hdb_info_base, uint8_t *hash, 
     uint8_t len, TSK_HDB_FLAG_ENUM flags, TSK_HDB_LOOKUP_FN action, void *ptr)
 {
     // Currently only supporting lookups of md5 hashes.
@@ -545,11 +545,11 @@ sqlite_hdb_lookup_bin(TSK_HDB_INFO *hdb_info_base, uint8_t *hash,
         }
     }        
 
-	return ret_val;
+    return ret_val;
 }
 
 static uint8_t
-sqlite_hdb_get_assoc_strings(sqlite3 *db, sqlite3_stmt *stmt, int64_t hash_id, std::vector<std::string> &out)
+    sqlite_hdb_get_assoc_strings(sqlite3 *db, sqlite3_stmt *stmt, int64_t hash_id, std::vector<std::string> &out)
 {
     uint8_t ret_val = 1;
     if (sqlite_hdb_attempt(sqlite3_bind_int64(stmt, 1, hash_id), SQLITE_OK, "sqlite_hdb_get_assoc_strings: error binding hash_id: %s (result code %d)\n", db) == 0) {
@@ -571,23 +571,23 @@ sqlite_hdb_get_assoc_strings(sqlite3 *db, sqlite3_stmt *stmt, int64_t hash_id, s
                 break;
             }            
         };
-	}
+    }
     sqlite3_clear_bindings(stmt);
     sqlite3_reset(stmt);
     return ret_val;
 }
 
 /**
- * \ingroup hashdblib
- * \internal 
- * Looks up a hash and any additional data associated with the hash in a 
- * hash database.
- * @param hdb_info_base A struct representing an open hash database.
- * @param hash A hash value in string form.
- * @param result A TskHashInfo struct to populate on success.
- * @return -1 on error, 0 if hash value was not found, 1 if hash value
- * was found.
- */
+* \ingroup hashdblib
+* \internal 
+* Looks up a hash and any additional data associated with the hash in a 
+* hash database.
+* @param hdb_info_base A struct representing an open hash database.
+* @param hash A hash value in string form.
+* @param result A TskHashInfo struct to populate on success.
+* @return -1 on error, 0 if hash value was not found, 1 if hash value
+* was found.
+*/
 int8_t sqlite_hdb_lookup_verbose_str(TSK_HDB_INFO *hdb_info_base, const char *hash, void *result)
 {
     // Currently only supporting lookups of md5 hashes.
@@ -598,8 +598,8 @@ int8_t sqlite_hdb_lookup_verbose_str(TSK_HDB_INFO *hdb_info_base, const char *ha
         tsk_error_set_errstr("sqlite_hdb_lookup_verbose_str: hash length incorrect (=%zu), expecting %d", len, TSK_HDB_HTYPE_MD5_LEN);
         return -1;
     }
- 
-	uint8_t *hashBlob = sqlite_hdb_str_to_blob(hash);
+
+    uint8_t *hashBlob = sqlite_hdb_str_to_blob(hash);
     if (!hashBlob) {
         return -1;
     }
@@ -610,17 +610,17 @@ int8_t sqlite_hdb_lookup_verbose_str(TSK_HDB_INFO *hdb_info_base, const char *ha
 }
 
 /**
- * \ingroup hashdblib
- * \internal 
- * Looks up a hash and any additional data associated with the hash in a 
- * hash database.
- * @param hdb_info_base A struct representing an open hash database.
- * @param hash A hash value in binary form.
- * @param hash_len The length of the hash value in bytes.
- * @param lookup_result A TskHashInfo struct to populate on success.
- * @return -1 on error, 0 if hash value was not found, 1 if hash value
- * was found.
- */
+* \ingroup hashdblib
+* \internal 
+* Looks up a hash and any additional data associated with the hash in a 
+* hash database.
+* @param hdb_info_base A struct representing an open hash database.
+* @param hash A hash value in binary form.
+* @param hash_len The length of the hash value in bytes.
+* @param lookup_result A TskHashInfo struct to populate on success.
+* @return -1 on error, 0 if hash value was not found, 1 if hash value
+* was found.
+*/
 int8_t sqlite_hdb_lookup_verbose_bin(TSK_HDB_INFO *hdb_info_base, uint8_t *hash, uint8_t hash_len, void *lookup_result)
 {
     // Currently only supporting lookups of md5 hashes.
@@ -630,7 +630,7 @@ int8_t sqlite_hdb_lookup_verbose_bin(TSK_HDB_INFO *hdb_info_base, uint8_t *hash,
         tsk_error_set_errstr("sqlite_hdb_lookup_verbose_bin: hash_len=%d, expected %d", hash_len, TSK_HDB_HTYPE_MD5_LEN / 2);
         return -1;
     }
-  
+
     // Do the lookup.
     tsk_take_lock(&hdb_info_base->lock);
     TSK_SQLITE_HDB_INFO *hdb_info = (TSK_SQLITE_HDB_INFO*)hdb_info_base;     
@@ -658,16 +658,16 @@ int8_t sqlite_hdb_lookup_verbose_bin(TSK_HDB_INFO *hdb_info_base, uint8_t *hash,
 }
 
 /**
- * \ingroup hashdblib
- * \internal 
- * Begins a transaction on a hash database.
- * @param hdb_info A hash database info object
- * @return 1 on error, 0 on success
- */
+* \ingroup hashdblib
+* \internal 
+* Begins a transaction on a hash database.
+* @param hdb_info A hash database info object
+* @return 1 on error, 0 on success
+*/
 uint8_t sqlite_hdb_begin_transaction(TSK_HDB_INFO *hdb_info_base) 
 {
     TSK_SQLITE_HDB_INFO *hdb_info = reinterpret_cast<TSK_SQLITE_HDB_INFO*>(hdb_info_base); 
-	if (sqlite_hdb_attempt_exec("BEGIN", "sqlite_hdb_base_begin_transaction: %s\n", hdb_info->db)) {
+    if (sqlite_hdb_attempt_exec("BEGIN", "sqlite_hdb_base_begin_transaction: %s\n", hdb_info->db)) {
         return 1;
     }
     else {
@@ -676,12 +676,12 @@ uint8_t sqlite_hdb_begin_transaction(TSK_HDB_INFO *hdb_info_base)
 }
 
 /**
- * \ingroup hashdblib
- * \internal 
- * Commits a transaction on a hash database.
- * @param hdb_info A hash database info object
- * @return 1 on error, 0 on success 
- */
+* \ingroup hashdblib
+* \internal 
+* Commits a transaction on a hash database.
+* @param hdb_info A hash database info object
+* @return 1 on error, 0 on success 
+*/
 uint8_t sqlite_hdb_commit_transaction(TSK_HDB_INFO *hdb_info_base)
 {
     TSK_SQLITE_HDB_INFO *hdb_info = reinterpret_cast<TSK_SQLITE_HDB_INFO*>(hdb_info_base);
@@ -694,29 +694,29 @@ uint8_t sqlite_hdb_commit_transaction(TSK_HDB_INFO *hdb_info_base)
 }
 
 /**
- * \ingroup hashdblib
- * \internal 
- * Rolls back a transaction on a hash database.
- * @param hdb_info A hash database info object
- * @return 1 on error, 0 on success 
- */
+* \ingroup hashdblib
+* \internal 
+* Rolls back a transaction on a hash database.
+* @param hdb_info A hash database info object
+* @return 1 on error, 0 on success 
+*/
 uint8_t sqlite_hdb_rollback_transaction(TSK_HDB_INFO *hdb_info_base)
 {
     TSK_SQLITE_HDB_INFO *hdb_info = reinterpret_cast<TSK_SQLITE_HDB_INFO*>(hdb_info_base); 
     if (sqlite_hdb_attempt_exec("ROLLBACK", "sqlite_hdb_rollback_transaction: %s\n", hdb_info->db)) {
         return 1;
-	}
+    }
     else {
         return 0;
     }
 }
 
 /*
- * Closes an SQLite hash database.
- * @param idx_info the index to close
- */
+* Closes an SQLite hash database.
+* @param idx_info the index to close
+*/
 void
-sqlite_hdb_close(TSK_HDB_INFO *hdb_info_base)
+    sqlite_hdb_close(TSK_HDB_INFO *hdb_info_base)
 {
     TSK_SQLITE_HDB_INFO *hdb_info = (TSK_SQLITE_HDB_INFO*)hdb_info_base; 
     if (hdb_info->db) {

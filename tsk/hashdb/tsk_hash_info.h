@@ -12,7 +12,7 @@
 
 /**
 * \defgroup hashdblib C Hash Database Functions
- * \defgroup hashdblib_cpp C++ Hash Database Classes
+* \defgroup hashdblib_cpp C++ Hash Database Classes
 */
 
 
