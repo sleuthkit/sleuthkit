@@ -63,10 +63,10 @@ public class LibraryUtils {
 	/**
 	 * Load the Sleuthkit JNI.
 	 * 
-	 * @return 
+	 * @return true if library was found and loaded
 	 */
 	public static boolean loadSleuthkitJNI() {
-		boolean loaded = LibraryUtils.loadLibFromJar(Lib.TSK_JNI);
+		boolean loaded = LibraryUtils.loadNativeLibFromTskJar(Lib.TSK_JNI);
 		if (!loaded) {
 			System.out.println("SleuthkitJNI: failed to load " + Lib.TSK_JNI.getLibName());
 		} else {
@@ -122,65 +122,74 @@ public class LibraryUtils {
 	}
 	
     /**
-	 * Attempt to extract and load the specified library.
+	 * Attempt to extract and load the specified native library.
 	 * 
 	 * @param library
 	 * @return 
 	 */
-	private static boolean loadLibFromJar(Lib library) {
-		StringBuilder path = new StringBuilder();
-		path.append("/NATIVELIBS/");
-		path.append(getPlatform());
-		
+	private static boolean loadNativeLibFromTskJar(Lib library) {
 		String libName = library.getLibName();
 		
-		path.append("/");
-		path.append(libName);
+		// find the library in the jar file
+		StringBuilder pathInJarBase = new StringBuilder();
+		pathInJarBase.append("/NATIVELIBS/");
+		pathInJarBase.append(getPlatform());
+		pathInJarBase.append("/");
+		pathInJarBase.append(libName);
 		
-		URL libraryURL = null;
+		URL urlInJar = null;
 		String libExt = null;
-		for(String ext : EXTS) {
-			libraryURL = SleuthkitJNI.class.getResource(path.toString() +  ext);
-			if (libraryURL != null) {
+		for (String ext : EXTS) {
+			urlInJar = SleuthkitJNI.class.getResource(pathInJarBase.toString() +  ext);
+			if (urlInJar != null) {
 				libExt = ext;
 				break;
 			}
 		}
 		
-		if(libraryURL == null) {
+		if (urlInJar == null) {
+			System.out.println("Library not found in jar (" + libName + ")");
 			return false;
 		}
 		
 		// copy library to temp folder and load it
 		try {
 			java.io.File tempFolder = new java.io.File(System.getProperty("java.io.tmpdir") + java.io.File.separator);
-			java.io.File libTemp = new java.io.File(tempFolder + libName + libExt);
+			java.io.File tempLibFile = new java.io.File(tempFolder + libName + libExt);
+			System.out.println("Temp Folder for Libraries: " + tempFolder.toString());
 
+			// cycle through the libraries and delete them. 
 			// we used to copy dlls into here. 
 			// delete any than may still exist from previous installations. 
 			// Dec 2013
 			for (Lib l : Lib.values()) {
 				String ext = getExtByPlatform();
+				// try the windows version
 				java.io.File f = new java.io.File(l.getLibName() + ext);
-				System.out.println(f.getName());
+				//System.out.println(f.getName());
 				if (f.exists()) {
 					f.delete();
 				} else {
+					// try the unix version
 					java.io.File fUnix = new java.io.File(l.getUnixName() + ext);
-					System.out.println(fUnix.getName());
+					//System.out.println(fUnix.getName());
 					if (fUnix.exists()) {
 						fUnix.delete();
 					}
 				}
 			}
 			
-			if(libTemp.exists()) {
-				// Delete old file
-				libTemp.delete();
+			// Delete old file
+			if (tempLibFile.exists()) {
+				if (tempLibFile.delete() == false) {
+					System.out.println("Error deleting old native library.  Is the app already running? (" + tempLibFile.toString() + ")");
+					return false;
+				}
 			}
 
-			InputStream in = libraryURL.openStream();
-			OutputStream out = new FileOutputStream(libTemp);
+			// copy it
+			InputStream in = urlInJar.openStream();
+			OutputStream out = new FileOutputStream(tempLibFile);
 
 			byte[] buffer = new byte[1024];
 			int length;
@@ -190,9 +199,11 @@ public class LibraryUtils {
 			in.close();
 			out.close();
 
-			System.load(libTemp.getAbsolutePath());
+			// load it
+			System.load(tempLibFile.getAbsolutePath());
 		} catch (IOException e) {
 			// Loading failed.
+			System.out.println("Error loading library: " + e.getMessage());
 			return false;
 		} 
 		return true;
