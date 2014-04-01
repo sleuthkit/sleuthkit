@@ -1061,14 +1061,14 @@ text_hdb_lookup_str(TSK_HDB_INFO * hdb_info_base, const char *hash,
 		// that contains the sought hash.
 		char digits[4];
 		strncpy(digits, hash, 3);
+        digits[3] = '\0';
 		long int idx_idx_off = strtol(digits, NULL, 16);
-		idx_idx_off = strtol(digits, NULL, 16);
 		if ((idx_idx_off < 0) || (idx_idx_off > (long int)IDX_IDX_ENTRY_COUNT)) {
             tsk_release_lock(&hdb_info->base.lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_ARG);
             tsk_error_set_errstr(
-				"%s: %s is not a valid hash value", func_name, hash);
+				"%s: error finding index in secondary index for %s", func_name, hash);
 			return -1;
 		}
 
