@@ -117,6 +117,7 @@ class TskAutoDb:public TskAuto {
     bool m_addUnallocSpace;
 	int64_t m_chunkSize;
     bool m_foundStructure;  ///< Set to true when we find either a volume or file system
+    bool m_attributeAdded; ///< Set to true when an attribute was added by processAttributes
 
     // prevent copying until we add proper logic to handle it
     TskAutoDb(const TskAutoDb&);
