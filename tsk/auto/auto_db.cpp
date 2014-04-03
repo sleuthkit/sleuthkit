@@ -562,9 +562,10 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
         return TSK_STOP;
     }
 
-     // If not processing the same directroy as last time function was called, update the directory
+     /* If no longe processing the same directroy as the last file, 
+      * then update the class-level setting. */
     int64_t cur = fs_file->name->par_addr;
-    if(m_curDirId != cur){
+    if (m_curDirId != cur) {
         m_curDirId = cur;
         tsk_take_lock(&m_curDirPathLock);
         m_curDirPath = path;
@@ -572,13 +573,22 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
     }
 
     /* process the attributes.  The case of having 0 attributes can occur
-     * with virtual / sparse files.  At some point, this can probably be cleaned
-     * up if TSK is more consistent about if there should always be an attribute or not */
-    TSK_RETVAL_ENUM retval;
-    if (tsk_fs_file_attr_getsize(fs_file) == 0)
-        retval = insertFileData(fs_file, NULL, path, NULL, TSK_DB_FILES_KNOWN_UNKNOWN);
-    else
+     * with virtual / sparse files and HFS directories.  
+     * At some point, this can probably be cleaned
+     * up if TSK is more consistent about if there should always be an 
+     * attribute or not.  Sometimes, none of the attributes are added
+     * because of their type and we always want to add a reference to 
+     * every file. */
+    TSK_RETVAL_ENUM retval = TSK_OK;
+    m_attributeAdded = false;
+    if (tsk_fs_file_attr_getsize(fs_file) > 0) {
         retval = processAttributes(fs_file, path);
+    }
+
+    // insert a general row if we didn't add a specific attribute one
+    if ((retval == TSK_OK) && (m_attributeAdded == false)) {
+        retval = insertFileData(fs_file, NULL, path, NULL, TSK_DB_FILES_KNOWN_UNKNOWN);
+    }
     
     // reset the file id
     m_curFileId = 0;
@@ -617,7 +627,8 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
                 if (retval == -1) {
                     registerError();
                     return TSK_OK;
-                } else if (retval) {
+                } 
+                else if (retval) {
                     file_known = TSK_DB_FILES_KNOWN_KNOWN;
                 }
             }
@@ -627,7 +638,8 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
                 if (retval == -1) {
                     registerError();
                     return TSK_OK;
-                } else if (retval) {
+                } 
+                else if (retval) {
                     file_known = TSK_DB_FILES_KNOWN_KNOWN_BAD;
                 }
             }
@@ -636,6 +648,9 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
         if (insertFileData(fs_attr->fs_file, fs_attr, path, md5, file_known) == TSK_ERR) {
             registerError();
             return TSK_OK;
+        }
+        else {
+            m_attributeAdded = true;
         }
     }
 
