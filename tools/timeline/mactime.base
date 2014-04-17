@@ -179,6 +179,11 @@ while ((scalar(@ARGV) > 0) && (($_ = $ARGV[0]) =~ /^-(.)(.*)/)) {
 
         if (defined $ARGV[0]) {
 
+            if ($INDEX ne "") {
+                print "Only one -i argument can be supplied\n";
+                usage();
+            }
+
             # Find out what type
             if ($ARGV[0] eq "day") {
                 $INDEX_TYPE = $INDEX_DAY;
