@@ -552,6 +552,7 @@ public class SleuthkitCase {
 			statement.execute("PRAGMA synchronous = OFF;");
 			//allow to query while in transaction - no need read locks
 			statement.execute("PRAGMA read_uncommitted = True;");
+			statement.execute("PRAGMA foreign_keys = ON;");
 			statement.close();
 
 			logger.log(Level.INFO, String.format("sqlite-jdbc version %s loaded in %s mode",
