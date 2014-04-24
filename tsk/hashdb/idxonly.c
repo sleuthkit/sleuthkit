@@ -1,27 +1,27 @@
 /*
- * The Sleuth Kit
- *
- * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2007-2014 Brian Carrier.  All rights reserved
- *
- * This software is distributed under the Common Public License 1.0
- */
+* The Sleuth Kit
+*
+* Brian Carrier [carrier <at> sleuthkit [dot] org]
+* Copyright (c) 2007-2014 Brian Carrier.  All rights reserved
+*
+* This software is distributed under the Common Public License 1.0
+*/
 
 /**
- * \file idxonly_index.c
- * Contains the dummy functions that are used when only an index is used for lookups and the 
- * original database is gone. 
- */
+* \file idxonly_index.c
+* Contains the dummy functions that are used when only an index is used for lookups and the 
+* original database is gone. 
+*/
 
 #include "tsk_hashdb_i.h"
 
 /**
- * Set db_name using information from this database type
- *
- * @param hdb_info the hash database object
- */
+* Set db_name using information from this database type
+*
+* @param hdb_info the hash database object
+*/
 static void
-idxonly_name(TSK_TEXT_HDB_INFO *hdb_info)
+    idxonly_name(TSK_TEXT_HDB_INFO *hdb_info)
 {
     FILE * hFile;
     char buf[TSK_HDB_NAME_MAXLEN];
@@ -36,7 +36,7 @@ idxonly_name(TSK_TEXT_HDB_INFO *hdb_info)
         if(text_hdb_open_idx((TSK_HDB_INFO*)hdb_info, TSK_HDB_HTYPE_SHA1_ID)) {
             if (tsk_verbose)
                 fprintf(stderr,
-                    "Failed to get name from index (index does not exist); using file name instead");
+                "Failed to get name from index (index does not exist); using file name instead");
             hdb_base_db_name_from_path((TSK_HDB_INFO*)hdb_info);
             return;
         }
@@ -47,13 +47,13 @@ idxonly_name(TSK_TEXT_HDB_INFO *hdb_info)
     if(NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
         NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
         strncmp(buf,
-                TSK_HDB_IDX_HEAD_NAME_STR,
-                strlen(TSK_HDB_IDX_HEAD_NAME_STR)) != 0) {
-        if (tsk_verbose)
-            fprintf(stderr,
+        TSK_HDB_IDX_HEAD_NAME_STR,
+        strlen(TSK_HDB_IDX_HEAD_NAME_STR)) != 0) {
+            if (tsk_verbose)
+                fprintf(stderr,
                 "Failed to read name from index; using file name instead");
-        hdb_base_db_name_from_path((TSK_HDB_INFO*)hdb_info);
-        return;
+            hdb_base_db_name_from_path((TSK_HDB_INFO*)hdb_info);
+            return;
     }
     bufptr = strchr(buf, '|');
     bufptr++;
@@ -81,7 +81,7 @@ TSK_HDB_INFO *idxonly_open(const TSK_TCHAR *db_path)
 }
 
 const TSK_TCHAR *
-idxonly_get_db_path(TSK_HDB_INFO *hdb_info)
+    idxonly_get_db_path(TSK_HDB_INFO *hdb_info)
 {
     // The database path member of the TSK_HDB_INFO is filled in, but that is
     // just for the sake of the common index file name construction algorithm.
@@ -89,9 +89,9 @@ idxonly_get_db_path(TSK_HDB_INFO *hdb_info)
 }
 
 uint8_t
-idxonly_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
-                 TSK_OFF_T offset, TSK_HDB_FLAG_ENUM flags,
-                 TSK_HDB_LOOKUP_FN action, void *cb_ptr)
+    idxonly_getentry(TSK_HDB_INFO * hdb_info, const char *hash,
+    TSK_OFF_T offset, TSK_HDB_FLAG_ENUM flags,
+    TSK_HDB_LOOKUP_FN action, void *cb_ptr)
 {
     if (!(flags & TSK_HDB_FLAG_QUICK) && (NULL != action)) {
         action(hdb_info, hash, NULL, cb_ptr);

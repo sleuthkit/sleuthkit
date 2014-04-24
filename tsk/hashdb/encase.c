@@ -1,36 +1,36 @@
 /*
- * The Sleuth Kit
- *
- * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2012-2014 Brian Carrier.  All rights reserved
- *
- *
- * This software is distributed under the Common Public License 1.0
- */
+* The Sleuth Kit
+*
+* Brian Carrier [carrier <at> sleuthkit [dot] org]
+* Copyright (c) 2012-2014 Brian Carrier.  All rights reserved
+*
+*
+* This software is distributed under the Common Public License 1.0
+*/
 
 /**
- * \file encase_index.c
- * Contains the Encase hash database specific extraction and printing routines.
- */
+* \file encase_index.c
+* Contains the Encase hash database specific extraction and printing routines.
+*/
 
 #include "tsk_hashdb_i.h"
 
 /**
- * Test the file to see if it is an Encase database
- *
- * @param hFile File handle to hash database
- *
- * @return 1 if encase and 0 if not
- */
+* Test the file to see if it is an Encase database
+*
+* @param hFile File handle to hash database
+*
+* @return 1 if encase and 0 if not
+*/
 uint8_t
-encase_test(FILE * hFile)
+    encase_test(FILE * hFile)
 {
     char buf[8];
 
     fseeko(hFile, 0, SEEK_SET);
     if (8 != fread(buf, sizeof(char), 8, hFile))
         return 0;
-    
+
     if (memcmp(buf, "HASH\x0d\x0a\xff\x00", 8)) 
         return 0;
 
@@ -38,12 +38,12 @@ encase_test(FILE * hFile)
 }
 
 /**
- * Set db_name using information from this database type
- *
- * @param hdb_info the hash database object
- */
+* Set db_name using information from this database type
+*
+* @param hdb_info the hash database object
+*/
 static void
-encase_name(TSK_TEXT_HDB_INFO * hdb_info)
+    encase_name(TSK_TEXT_HDB_INFO * hdb_info)
 {
     FILE * hFile = hdb_info->hDb;
     wchar_t buf[40];
@@ -54,7 +54,7 @@ encase_name(TSK_TEXT_HDB_INFO * hdb_info)
     if(!hFile) {
         if (tsk_verbose)
             fprintf(stderr,
-                "Error getting name from Encase hash db; using file name instead");
+            "Error getting name from Encase hash db; using file name instead");
         hdb_base_db_name_from_path(&hdb_info->base);
         return;
     }
@@ -65,7 +65,7 @@ encase_name(TSK_TEXT_HDB_INFO * hdb_info)
     if (39 != fread(buf, sizeof(wchar_t), 39, hFile)) {
         if (tsk_verbose)
             fprintf(stderr,
-                "Error getting name from Encase hash db; using file name instead");
+            "Error getting name from Encase hash db; using file name instead");
         hdb_base_db_name_from_path(&hdb_info->base);
         return;
     }
@@ -100,17 +100,17 @@ TSK_HDB_INFO *encase_open(FILE *hDb, const TSK_TCHAR *db_path)
 }
 
 /**
- * Process the database to create a sorted index of it. Consecutive
- * entries with the same hash value are not added to the index, but
- * will be found during lookup.
- *
- * @param hdb_info Hash database to make index of.
- * @param dbtype Type of hash database (should always be TSK_HDB_DBTYPE_ENCASE_STR)
- *
- * @return 1 on error and 0 on success.
- */
+* Process the database to create a sorted index of it. Consecutive
+* entries with the same hash value are not added to the index, but
+* will be found during lookup.
+*
+* @param hdb_info Hash database to make index of.
+* @param dbtype Type of hash database (should always be TSK_HDB_DBTYPE_ENCASE_STR)
+*
+* @return 1 on error and 0 on success.
+*/
 uint8_t
-encase_make_index(TSK_HDB_INFO * hdb_info_base, TSK_TCHAR * dbtype)
+    encase_make_index(TSK_HDB_INFO * hdb_info_base, TSK_TCHAR * dbtype)
 {
     TSK_TEXT_HDB_INFO *hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info_base;
     unsigned char buf[19];
@@ -127,7 +127,7 @@ encase_make_index(TSK_HDB_INFO * hdb_info_base, TSK_TCHAR * dbtype)
     /* Status */
     if (tsk_verbose)
         TFPRINTF(stderr, _TSK_T("Extracting Data from Database (%s)\n"),
-                 hdb_info->base.db_fname);
+        hdb_info->base.db_fname);
 
     memset(phash, '0', sizeof(phash));
     memset(buf, '0', sizeof(buf));
@@ -136,12 +136,12 @@ encase_make_index(TSK_HDB_INFO * hdb_info_base, TSK_TCHAR * dbtype)
     fseek(hdb_info->hDb, 1152, SEEK_SET);
     while (18 == fread(buf,sizeof(char),18,hdb_info->hDb)) {
         db_cnt++;
-        
+
         /* We only want to add one of each hash to the index */
         if (memcmp(buf, phash, 18) == 0) {
             continue;
         }
-        
+
         /* Add the entry to the index */
         if (text_hdb_idx_add_entry_bin(hdb_info, buf, 16, offset)) {
             tsk_error_set_errstr2( "encase_make_index");
@@ -159,7 +159,7 @@ encase_make_index(TSK_HDB_INFO * hdb_info_base, TSK_TCHAR * dbtype)
         if (tsk_verbose) {
             fprintf(stderr, "  Valid Database Entries: %d\n", db_cnt);
             fprintf(stderr, "  Index File Entries %s: %d\n",
-                    (idx_cnt == db_cnt) ? "" : "(optimized)", idx_cnt);
+                (idx_cnt == db_cnt) ? "" : "(optimized)", idx_cnt);
         }
 
         /* Close and sort the index */
@@ -172,7 +172,7 @@ encase_make_index(TSK_HDB_INFO * hdb_info_base, TSK_TCHAR * dbtype)
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
         tsk_error_set_errstr(
-                 "encase_makeindex: No valid entries found in database");
+            "encase_makeindex: No valid entries found in database");
         return 1;
     }
 
@@ -180,24 +180,24 @@ encase_make_index(TSK_HDB_INFO * hdb_info_base, TSK_TCHAR * dbtype)
 }
 
 /**
- * Find the entry at a
- * given offset.  The offset was likely determined from the index.
- * The callback is called for each entry. EnCase does not store names,
- * so the callback is called with just the hash value.
- *
- * @param hdb_info Hash database to get data from
- * @param hash MD5 hash value that was searched for
- * @param offset Byte offset where hash value should be located in db_file
- * @param flags (not used)
- * @param action Callback used for each entry found in lookup
- * @param cb_ptr Pointer to data passed to callback
- *
- * @return 1 on error and 0 on succuss
- */
+* Find the entry at a
+* given offset.  The offset was likely determined from the index.
+* The callback is called for each entry. EnCase does not store names,
+* so the callback is called with just the hash value.
+*
+* @param hdb_info Hash database to get data from
+* @param hash MD5 hash value that was searched for
+* @param offset Byte offset where hash value should be located in db_file
+* @param flags (not used)
+* @param action Callback used for each entry found in lookup
+* @param cb_ptr Pointer to data passed to callback
+*
+* @return 1 on error and 0 on succuss
+*/
 uint8_t
-encase_get_entry(TSK_HDB_INFO * hdb_info, const char *hash,
-                TSK_OFF_T offset, TSK_HDB_FLAG_ENUM flags,
-                TSK_HDB_LOOKUP_FN action, void *cb_ptr)
+    encase_get_entry(TSK_HDB_INFO * hdb_info, const char *hash,
+    TSK_OFF_T offset, TSK_HDB_FLAG_ENUM flags,
+    TSK_HDB_LOOKUP_FN action, void *cb_ptr)
 {
     TSK_TEXT_HDB_INFO *text_hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info;
     int found = 0;
@@ -205,25 +205,25 @@ encase_get_entry(TSK_HDB_INFO * hdb_info, const char *hash,
 
     if (tsk_verbose)
         fprintf(stderr,
-                "encase_getentry: Lookup up hash %s at offset %" PRIuOFF
-                "\n", hash, offset);
+        "encase_getentry: Lookup up hash %s at offset %" PRIuOFF
+        "\n", hash, offset);
 
     if (strlen(hash) != TSK_HDB_HTYPE_MD5_LEN) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
         tsk_error_set_errstr(
-                 "encase_getentry: Invalid hash value: %s", hash);
+            "encase_getentry: Invalid hash value: %s", hash);
         return 1;
     }
 
     memset(buf, 0, sizeof(buf));
-    
+
     /* Loop so that we can find multiple occurances of the same hash */
     fseeko(text_hdb_info->hDb, offset, SEEK_SET);
     while (1) {
         int retval;
         char hash_str[TSK_HDB_HTYPE_MD5_LEN+1];
-        
+
         if (18 != fread(buf,sizeof(char),18,text_hdb_info->hDb)) {
             if (feof(text_hdb_info->hDb)) {
                 break;
@@ -231,19 +231,19 @@ encase_get_entry(TSK_HDB_INFO * hdb_info, const char *hash,
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_READDB);
             tsk_error_set_errstr(
-                     "encase_getentry: Error reading database");
+                "encase_getentry: Error reading database");
             return 1;
         }
-        
+
         snprintf(hash_str, TSK_HDB_HTYPE_MD5_LEN+1, "%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
-                 buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], 
-                 buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
+            buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], 
+            buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
 
         /* Is this the one that we want? */
         if (0 != strcasecmp(hash_str, hash)) {
             break;
         }
-        
+
         retval = action(hdb_info, hash, "", cb_ptr);
         if (retval == TSK_WALK_ERROR) {
             return 1;
@@ -261,8 +261,8 @@ encase_get_entry(TSK_HDB_INFO * hdb_info, const char *hash,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
         tsk_error_set_errstr(
-                 "encase_getentry: Hash not found in file at offset: %lu",
-                 (unsigned long) offset);
+            "encase_getentry: Hash not found in file at offset: %lu",
+            (unsigned long) offset);
         return 1;
     }
 

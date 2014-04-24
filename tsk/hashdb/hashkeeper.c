@@ -1,30 +1,30 @@
 /*
- * The Sleuth Kit
- *
- * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2003-2014 Brian Carrier.  All rights reserved
- *
- *
- * This software is distributed under the Common Public License 1.0
- *
- */
+* The Sleuth Kit
+*
+* Brian Carrier [carrier <at> sleuthkit [dot] org]
+* Copyright (c) 2003-2014 Brian Carrier.  All rights reserved
+*
+*
+* This software is distributed under the Common Public License 1.0
+*
+*/
 
 #include "tsk_hashdb_i.h"
 
 /**
- * \file hk_index.c
- * Contains functions to read and process hash keeper database files
- */
+* \file hk_index.c
+* Contains functions to read and process hash keeper database files
+*/
 
 /**
- * Test the file to see if it is a hashkeeper database
- *
- * @param hFile File handle to hash database
- *
- * @return 1 if hk and 0 if not
- */
+* Test the file to see if it is a hashkeeper database
+*
+* @param hFile File handle to hash database
+*
+* @return 1 if hk and 0 if not
+*/
 uint8_t
-hk_test(FILE * hFile)
+    hk_test(FILE * hFile)
 {
     char buf[TSK_HDB_MAXLEN];
     int cnt = 0;
@@ -40,9 +40,9 @@ hk_test(FILE * hFile)
         return 0;
 
     ptr = buf;
-    
+
     // "file_id","hashset_id","file_name","directory","hash","file_size","date_modified","time_modified","time_zone","comments","date_accessed","time_accessed"
-    
+
     if (strncmp(ptr, "\"file_id\"", strlen("\"file_id\"")) != 0)
         return 0;
 
@@ -90,20 +90,20 @@ TSK_HDB_INFO *hk_open(FILE *hDb, const TSK_TCHAR *db_path)
 }
 
 /**
- * Give a line from a hash keeper database, parse out the
- * MD5 (and other) text.  NOTE that this will add NULL values
- * to the input text. 
- *
- * @param str [in] String to parse
- * @param md5 [out] Pointer to a pointer, which will be assigned to the MD5 text in original string
- * @param name [in] Poiner to buffer where name can be copied into (can be NULL)
- * @param n_len [in] Length of name buffer
- * @param other [in] Pointer to buffer where extended data should be copied to (can be NULL)
- * @param o_len [in] Length of other buffer
- */
+* Give a line from a hash keeper database, parse out the
+* MD5 (and other) text.  NOTE that this will add NULL values
+* to the input text. 
+*
+* @param str [in] String to parse
+* @param md5 [out] Pointer to a pointer, which will be assigned to the MD5 text in original string
+* @param name [in] Poiner to buffer where name can be copied into (can be NULL)
+* @param n_len [in] Length of name buffer
+* @param other [in] Pointer to buffer where extended data should be copied to (can be NULL)
+* @param o_len [in] Length of other buffer
+*/
 static int
-hk_parse_md5(char *str, char **md5, char *name, int n_len,
-             char *other, int o_len)
+    hk_parse_md5(char *str, char **md5, char *name, int n_len,
+    char *other, int o_len)
 {
     char *ptr = str;
     char *file = NULL, *dir = NULL, *file_id = NULL, *hash_id = NULL;
@@ -116,19 +116,19 @@ hk_parse_md5(char *str, char **md5, char *name, int n_len,
         return 0;
 
     /*
-     * 0 file_id
-     * 1 hashset_id
-     * 2 file_name
-     * 3 directory
-     * 4 hash
-     * 5 file_size
-     * 6 date_modified
-     * 7 time modified
-     * 8 time_zone
-     * 9 comments
-     * 10 date_accessed
-     * 11 time_accessed
-     */
+    * 0 file_id
+    * 1 hashset_id
+    * 2 file_name
+    * 3 directory
+    * 4 hash
+    * 5 file_size
+    * 6 date_modified
+    * 7 time modified
+    * 8 time_zone
+    * 9 comments
+    * 10 date_accessed
+    * 11 time_accessed
+    */
 
     /* Assign the file_id if we are looking for it */
     if (other != NULL) {
@@ -152,7 +152,7 @@ hk_parse_md5(char *str, char **md5, char *name, int n_len,
             if (other != NULL) {
                 *ptr = '\0';
                 snprintf(other, o_len, "Hash ID: %s  File ID: %s",
-                         hash_id, file_id);
+                    hash_id, file_id);
             }
 
             /* Are we done? */
@@ -166,7 +166,7 @@ hk_parse_md5(char *str, char **md5, char *name, int n_len,
 
                 file = &ptr[2];
                 /* We utilize the other loop code to find the end of
-                 * the name */
+                * the name */
             }
         }
         /* end of the name, begin directory - which may not exist */
@@ -217,7 +217,7 @@ hk_parse_md5(char *str, char **md5, char *name, int n_len,
             if ((strlen(ptr) < 2 + TSK_HDB_HTYPE_MD5_LEN)
                 || (ptr[1] != '"')
                 || (ptr[2 + TSK_HDB_HTYPE_MD5_LEN] != '"')) {
-                return 1;
+                    return 1;
             }
 
             ptr = &ptr[2];
@@ -234,8 +234,8 @@ hk_parse_md5(char *str, char **md5, char *name, int n_len,
         }
 
         /* If the next field is in quotes then we need to skip to the
-         * next quote and ignore any ',' in there
-         */
+        * next quote and ignore any ',' in there
+        */
         if (ptr[1] == '"') {
             if (NULL == (ptr = strchr(&ptr[2], '"'))) {
                 return 1;
@@ -250,17 +250,17 @@ hk_parse_md5(char *str, char **md5, char *name, int n_len,
 }
 
 /**
- * Process the database to create a sorted index of it. Consecutive
- * entries with the same hash value are not added to the index, but
- * will be found during lookup.
- *
- * @param hdb_info Hash database to make index of
- * @param dbtype Text of database type (should always be TSK_HDB_DBTYPE_HK_STR)
- *
- * @return 1 on error and 0 on success.
- */
+* Process the database to create a sorted index of it. Consecutive
+* entries with the same hash value are not added to the index, but
+* will be found during lookup.
+*
+* @param hdb_info Hash database to make index of
+* @param dbtype Text of database type (should always be TSK_HDB_DBTYPE_HK_STR)
+*
+* @return 1 on error and 0 on success.
+*/
 uint8_t
-hk_makeindex(TSK_HDB_INFO * hdb_info_base, TSK_TCHAR * dbtype)
+    hk_makeindex(TSK_HDB_INFO * hdb_info_base, TSK_TCHAR * dbtype)
 {
     TSK_TEXT_HDB_INFO *hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info_base;
     int i;
@@ -278,7 +278,7 @@ hk_makeindex(TSK_HDB_INFO * hdb_info_base, TSK_TCHAR * dbtype)
     /* Status */
     if (tsk_verbose)
         TFPRINTF(stderr, _TSK_T("Extracting Data from Database (%s)\n"),
-                 hdb_info->base.db_fname);
+        hdb_info->base.db_fname);
 
     /* Allocate a buffer to hold the previous hash values */
     memset(phash, '0', TSK_HDB_HTYPE_MD5_LEN + 1);
@@ -286,49 +286,49 @@ hk_makeindex(TSK_HDB_INFO * hdb_info_base, TSK_TCHAR * dbtype)
     /* read each line of the file */
     fseek(hdb_info->hDb, 0, SEEK_SET);
     for (i = 0; NULL != fgets(buf, TSK_HDB_MAXLEN, hdb_info->hDb);
-         offset += (TSK_OFF_T) len, i++) {
+        offset += (TSK_OFF_T) len, i++) {
 
-        // skip the header line
-        if (i == 0) {
-            ig_cnt++;
-            continue;
-        }
-        
-        len = strlen(buf);
+            // skip the header line
+            if (i == 0) {
+                ig_cnt++;
+                continue;
+            }
 
-        /* Parse each line to get the MD5 value */
-        if (hk_parse_md5(buf, &hash, NULL, 0, NULL, 0)) {
-            ig_cnt++;
-            continue;
-        }
-        db_cnt++;
+            len = strlen(buf);
 
-        /* If this entry is for the same hash value as the last entry,
-         * the skip it -- we'll look for it during lookup */
-        if (memcmp(hash, phash, TSK_HDB_HTYPE_MD5_LEN) == 0) {
-            continue;
-        }
+            /* Parse each line to get the MD5 value */
+            if (hk_parse_md5(buf, &hash, NULL, 0, NULL, 0)) {
+                ig_cnt++;
+                continue;
+            }
+            db_cnt++;
 
-        /* Add the entry to the index */
-        if (text_hdb_idx_add_entry_str(hdb_info, hash, offset)) {
-            tsk_error_set_errstr2( "hk_makeindex");
-            return 1;
-        }
+            /* If this entry is for the same hash value as the last entry,
+            * the skip it -- we'll look for it during lookup */
+            if (memcmp(hash, phash, TSK_HDB_HTYPE_MD5_LEN) == 0) {
+                continue;
+            }
 
-        idx_cnt++;
+            /* Add the entry to the index */
+            if (text_hdb_idx_add_entry_str(hdb_info, hash, offset)) {
+                tsk_error_set_errstr2( "hk_makeindex");
+                return 1;
+            }
 
-        /* Set the previous hash value */
-        strncpy(phash, hash, TSK_HDB_HTYPE_MD5_LEN + 1);
+            idx_cnt++;
+
+            /* Set the previous hash value */
+            strncpy(phash, hash, TSK_HDB_HTYPE_MD5_LEN + 1);
     }
 
     if (idx_cnt > 0) {
         if (tsk_verbose) {
             fprintf(stderr, "  Valid Database Entries: %d\n", db_cnt);
             fprintf(stderr,
-                    "  Invalid Database Entries (headers or errors): %d\n",
-                    ig_cnt);
+                "  Invalid Database Entries (headers or errors): %d\n",
+                ig_cnt);
             fprintf(stderr, "  Index File Entries %s: %d\n",
-                    (idx_cnt == db_cnt) ? "" : "(optimized)", idx_cnt);
+                (idx_cnt == db_cnt) ? "" : "(optimized)", idx_cnt);
         }
 
         /* Finish the index making process */
@@ -341,7 +341,7 @@ hk_makeindex(TSK_HDB_INFO * hdb_info_base, TSK_TCHAR * dbtype)
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
         tsk_error_set_errstr(
-                 "hk_makeindex: No valid entries found in database");
+            "hk_makeindex: No valid entries found in database");
         return 1;
     }
 
@@ -349,27 +349,27 @@ hk_makeindex(TSK_HDB_INFO * hdb_info_base, TSK_TCHAR * dbtype)
 }
 
 /**
- * Find the corresponding name at the
- * given offset.  The offset was likely determined from the index.
- * The entries in the DB following the one specified are also processed
- * if they have the same hash value and their name is different. 
- * The callback is called for each entry. 
- *
- * Note: This routine assumes that &hdb_info->lock is locked by the caller.
- *
- * @param hdb_info Data base to get data from.
- * @param hash MD5 hash value that was searched for
- * @param offset Byte offset where hash value should be located in db_file
- * @param flags 
- * @param action Callback used for each entry found in lookup
- * @param cb_ptr Pointer to data passed to callback
- *
- * @return 1 on error and 0 on success
- */
+* Find the corresponding name at the
+* given offset.  The offset was likely determined from the index.
+* The entries in the DB following the one specified are also processed
+* if they have the same hash value and their name is different. 
+* The callback is called for each entry. 
+*
+* Note: This routine assumes that &hdb_info->lock is locked by the caller.
+*
+* @param hdb_info Data base to get data from.
+* @param hash MD5 hash value that was searched for
+* @param offset Byte offset where hash value should be located in db_file
+* @param flags 
+* @param action Callback used for each entry found in lookup
+* @param cb_ptr Pointer to data passed to callback
+*
+* @return 1 on error and 0 on success
+*/
 uint8_t
-hk_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
-            TSK_HDB_FLAG_ENUM flags,
-            TSK_HDB_LOOKUP_FN action, void *cb_ptr)
+    hk_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
+    TSK_HDB_FLAG_ENUM flags,
+    TSK_HDB_LOOKUP_FN action, void *cb_ptr)
 {
     TSK_TEXT_HDB_INFO *text_hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info;
     char buf[TSK_HDB_MAXLEN], name[TSK_HDB_MAXLEN], *ptr =
@@ -378,14 +378,14 @@ hk_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
 
     if (tsk_verbose)
         fprintf(stderr,
-                "hk_getentry: Lookup up hash %s at offset %" PRIuOFF "\n",
-                hash, offset);
+        "hk_getentry: Lookup up hash %s at offset %" PRIuOFF "\n",
+        hash, offset);
 
     if (strlen(hash) != TSK_HDB_HTYPE_MD5_LEN) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
         tsk_error_set_errstr(
-                 "hk_getentry: Invalid hash value: %s", hash);
+            "hk_getentry: Invalid hash value: %s", hash);
         return 1;
     }
 
@@ -399,21 +399,21 @@ hk_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_READDB);
             tsk_error_set_errstr(
-                     "hk_getentry: Error seeking to get file name: %lu",
-                     (unsigned long) offset);
+                "hk_getentry: Error seeking to get file name: %lu",
+                (unsigned long) offset);
             return 1;
         }
 
         if (NULL ==
             fgets(buf, TSK_HDB_MAXLEN, text_hdb_info->hDb)) {
-            if (feof(text_hdb_info->hDb)) {
-                break;
-            }
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_HDB_READDB);
-            tsk_error_set_errstr(
-                     "hk_getentry: Error reading database");
-            return 1;
+                if (feof(text_hdb_info->hDb)) {
+                    break;
+                }
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_HDB_READDB);
+                tsk_error_set_errstr(
+                    "hk_getentry: Error reading database");
+                return 1;
         }
 
         len = strlen(buf);
@@ -421,20 +421,20 @@ hk_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
             tsk_error_set_errstr(
-                     "hk_getentry: Invalid entry in database (too short): %s",
-                     buf);
+                "hk_getentry: Invalid entry in database (too short): %s",
+                buf);
             return 1;
         }
 
         if (hk_parse_md5(buf, &ptr, name, TSK_HDB_MAXLEN,
-                         ((flags & TSK_HDB_FLAG_EXT) ? other : NULL),
-                         ((flags & TSK_HDB_FLAG_EXT) ? TSK_HDB_MAXLEN :
-                          0))) {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
-            tsk_error_set_errstr(
-                     "hk_getentry: Invalid entry in database: %s", buf);
-            return 1;
+            ((flags & TSK_HDB_FLAG_EXT) ? other : NULL),
+            ((flags & TSK_HDB_FLAG_EXT) ? TSK_HDB_MAXLEN :
+            0))) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+                tsk_error_set_errstr(
+                    "hk_getentry: Invalid entry in database: %s", buf);
+                return 1;
         }
 
         /* Is this the one that we want? */
@@ -464,8 +464,8 @@ hk_getentry(TSK_HDB_INFO * hdb_info, const char *hash, TSK_OFF_T offset,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
         tsk_error_set_errstr(
-                 "hk_getentry: Hash not found in file at offset: %lu",
-                 (unsigned long) offset);
+            "hk_getentry: Hash not found in file at offset: %lu",
+            (unsigned long) offset);
         return 1;
     }
 
