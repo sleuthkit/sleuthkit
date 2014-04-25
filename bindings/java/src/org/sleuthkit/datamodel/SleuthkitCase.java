@@ -5630,13 +5630,22 @@ public class SleuthkitCase {
 	public Report addReport(String path, String displayName) throws TskCoreException {
 		dbWriteLock();
 		try {
+			// Figure out the date-time of this report
 			long dateTime = 0;
+			
+			try {
+				java.io.File tempFile = new java.io.File(path);
+				dateTime = tempFile.lastModified();
+			} catch(Exception ex) {
+				throw new TskCoreException("Could not get datetime for path " + path, ex);
+			}
+			
 			// INSERT INTO reports (path, datetime, display_name) VALUES (?, ?, ?)			
-			insertIntoTagNames.clearParameters(); 			
-			insertIntoTagNames.setString(1, path);			
-			insertIntoTagNames.setLong(2, dateTime);
-			insertIntoTagNames.setString(3, displayName);			
-			insertIntoTagNames.executeUpdate();
+			insertIntoReports.clearParameters(); 			
+			insertIntoReports.setString(1, path);			
+			insertIntoReports.setLong(2, dateTime);
+			insertIntoReports.setString(3, displayName);			
+			insertIntoReports.executeUpdate();
 
 			// SELECT MAX(report_id) FROM reports
 			ResultSet resultSet = selectMaxIdFromReports.executeQuery();
