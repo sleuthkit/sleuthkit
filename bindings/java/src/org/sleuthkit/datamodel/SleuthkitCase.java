@@ -543,6 +543,9 @@ public class SleuthkitCase {
 		closeStatement(selectBlackboardArtifactTagsCountByTagName);
 		closeStatement(selectBlackboardArtifactTagsByTagName);
 		closeStatement(selectBlackboardArtifactTagsByArtifact);
+		closeStatement(selectAllFromReports);
+		closeStatement(selectMaxIdFromReports);
+		closeStatement(insertIntoReports);
 	}
 				
 	private void closeStatement(PreparedStatement statement) {
