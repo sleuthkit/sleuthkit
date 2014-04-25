@@ -5621,28 +5621,28 @@ public class SleuthkitCase {
 
 	/**
 	 * Inserts row into the reports table in the case database.
-     * @param [in] displayName The display name for the new tag name.
-     * @param [in] description The description for the new tag name.
-     * @param [in] color The HTML color to associate with the new tag name.
-	 * @return A TagName data transfer object (DTO) for the new row.
+     * @param [in] relPath The path of the report file, relative to the case directory.
+	 * @param [in] displayName The display name for the new tag name.
+	 * @return A Report data transfer object (DTO) for the new row.
 	 * @throws TskCoreException 
 	 */
-	public Report addReport(String path, String displayName) throws TskCoreException {
+	public Report addReport(String relPath, String displayName) throws TskCoreException {
 		dbWriteLock();
 		try {
 			// Figure out the date-time of this report
 			long dateTime = 0;
 			
 			try {
-				java.io.File tempFile = new java.io.File(path);
+				String fullpath = getDbDirPath() + java.io.File.separator + relPath;
+				java.io.File tempFile = new java.io.File(fullpath);
 				dateTime = tempFile.lastModified();
 			} catch(Exception ex) {
-				throw new TskCoreException("Could not get datetime for path " + path, ex);
+				throw new TskCoreException("Could not get datetime for path " + relPath, ex);
 			}
 			
 			// INSERT INTO reports (path, datetime, display_name) VALUES (?, ?, ?)			
 			insertIntoReports.clearParameters(); 			
-			insertIntoReports.setString(1, path);			
+			insertIntoReports.setString(1, relPath);			
 			insertIntoReports.setLong(2, dateTime);
 			insertIntoReports.setString(3, displayName);			
 			insertIntoReports.executeUpdate();
@@ -5652,7 +5652,7 @@ public class SleuthkitCase {
 			Long reportID = resultSet.getLong(1);
 			resultSet.close();
 			
-			return new Report(reportID, path, dateTime, displayName);			
+			return new Report(reportID, relPath, dateTime, displayName);			
 		}
 		catch (SQLException ex) {
 			throw new TskCoreException("Error adding row for " + displayName + " report to reports table", ex);
