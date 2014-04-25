@@ -5661,6 +5661,34 @@ public class SleuthkitCase {
 			dbWriteUnlock();
 		}
 	}	
+
+	
+	/**
+	 * Selects all of the rows from the reports table in the case database.
+	 * @return A list, possibly empty, of Report data transfer objects (DTOs) for the rows.
+	 * @throws TskCoreException 
+	 */
+	public List<Report> getAllReports() throws TskCoreException {
+		dbReadLock();		
+		try {
+			ArrayList<Report> reports = new ArrayList<Report>();
+			
+			// SELECT * FROM reports
+			ResultSet resultSet = selectAllFromReports.executeQuery();
+			while (resultSet.next()) {
+				reports.add(new Report(resultSet.getLong("report_id"), resultSet.getString("path"), 
+					resultSet.getLong("datetime"), resultSet.getString("display_name"))); 
+			} 
+			resultSet.close();
+			return reports;
+		}
+		catch (SQLException ex) {
+			throw new TskCoreException("Error selecting rows from reports table", ex);
+		}
+		finally {
+			dbReadUnlock();
+		}					
+	}	
 	
      /**
      * Returns schema version number 	
