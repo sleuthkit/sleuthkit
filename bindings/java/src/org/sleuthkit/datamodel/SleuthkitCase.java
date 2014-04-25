@@ -128,6 +128,10 @@ public class SleuthkitCase {
 	private PreparedStatement selectBlackboardArtifactTagsCountByTagName;
 	private PreparedStatement selectBlackboardArtifactTagsByTagName;
 	private PreparedStatement selectBlackboardArtifactTagsByArtifact;
+	private PreparedStatement selectAllFromReports;	
+	private PreparedStatement selectMaxIdFromReports;
+	private PreparedStatement insertIntoReports;
+	
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private ArrayList<ErrorObserver> errorObservers = new ArrayList<ErrorObserver>();
 
@@ -214,6 +218,9 @@ public class SleuthkitCase {
 		statement.execute("CREATE TABLE content_tags (tag_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL, begin_byte_offset INTEGER NOT NULL, end_byte_offset INTEGER NOT NULL)");
 		statement.execute("CREATE TABLE blackboard_artifact_tags (tag_id INTEGER PRIMARY KEY, artifact_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL)");
 
+		// Add new table for reports
+		statement.execute("CREATE TABLE reports (report_id INTEGER PRIMARY KEY, path TEXT NOT NULL, datetime INTEGER NOT NULL, display_name TEXT)");
+		
         // add columns for existing tables
         statement.execute("ALTER TABLE tsk_image_info ADD COLUMN size INTEGER;");
         statement.execute("ALTER TABLE tsk_image_info ADD COLUMN md5 TEXT;");
@@ -476,6 +483,12 @@ public class SleuthkitCase {
 		selectBlackboardArtifactTagsByArtifact = con.prepareStatement("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id WHERE blackboard_artifact_tags.artifact_id = ?");
 				
 		selectBlackboardArtifactTagsCountByTagName = con.prepareStatement("SELECT COUNT(*) FROM blackboard_artifact_tags WHERE tag_name_id = ?");;		
+		
+		selectAllFromReports = con.prepareStatement("SELECT * FROM reports");		
+		
+		selectMaxIdFromReports = con.prepareStatement("SELECT MAX(report_id) FROM reports");		
+		
+		insertIntoReports =  con.prepareStatement("INSERT INTO reports (path, datetime, display_name) VALUES (?, ?, ?)");
 	}
 
 	private void closeStatements() {
@@ -5605,6 +5618,41 @@ public class SleuthkitCase {
 			dbReadUnlock();
 		}					
 	}	
+
+	/**
+	 * Inserts row into the reports table in the case database.
+     * @param [in] displayName The display name for the new tag name.
+     * @param [in] description The description for the new tag name.
+     * @param [in] color The HTML color to associate with the new tag name.
+	 * @return A TagName data transfer object (DTO) for the new row.
+	 * @throws TskCoreException 
+	 */
+	public Report addReport(String path, String displayName) throws TskCoreException {
+		dbWriteLock();
+		try {
+			long dateTime = 0;
+			// INSERT INTO reports (path, datetime, display_name) VALUES (?, ?, ?)			
+			insertIntoTagNames.clearParameters(); 			
+			insertIntoTagNames.setString(1, path);			
+			insertIntoTagNames.setLong(2, dateTime);
+			insertIntoTagNames.setString(3, displayName);			
+			insertIntoTagNames.executeUpdate();
+
+			// SELECT MAX(report_id) FROM reports
+			ResultSet resultSet = selectMaxIdFromReports.executeQuery();
+			Long reportID = resultSet.getLong(1);
+			resultSet.close();
+			
+			return new Report(reportID, path, dateTime, displayName);			
+		}
+		catch (SQLException ex) {
+			throw new TskCoreException("Error adding row for " + displayName + " report to reports table", ex);
+		}
+		finally {
+			dbWriteUnlock();
+		}
+	}	
+	
      /**
      * Returns schema version number 	
      *  
