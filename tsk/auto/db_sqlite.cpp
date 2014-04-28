@@ -38,6 +38,7 @@ TskDbSqlite::TskDbSqlite(const char *a_dbFilePathUtf8, bool a_blkMapFlag)
     m_blkMapFlag = a_blkMapFlag;
     m_db = NULL;
     m_selectFilePreparedStmt = NULL;
+    m_insertObjectPreparedStmt = NULL;
 }
 
 #ifdef TSK_WIN32
@@ -49,6 +50,7 @@ TskDbSqlite::TskDbSqlite(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFlag)
     m_blkMapFlag = a_blkMapFlag;
     m_db = NULL;
     m_selectFilePreparedStmt = NULL;
+    m_insertObjectPreparedStmt = NULL;
 }
 #endif
 
@@ -157,17 +159,25 @@ uint8_t
  TskDbSqlite::addObject(TSK_DB_OBJECT_TYPE_ENUM type, int64_t parObjId,
     int64_t & objId)
 {
-    char
-     stmt[1024];
 
-    snprintf(stmt, 1024,
-        "INSERT INTO tsk_objects (obj_id, par_obj_id, type) VALUES (NULL, %lld, %d);",
-        parObjId, type);
-    if (attempt_exec(stmt, "Error adding data to tsk_objects table: %s\n")) {
+    if (attempt(sqlite3_bind_int64(m_insertObjectPreparedStmt, 1, parObjId),
+                "TskDbSqlite::addObj: Error binding parent to statment: %s (result code %d)\n")
+        || attempt(sqlite3_bind_int(m_insertObjectPreparedStmt, 2, type),
+            "TskDbSqlite::addObj: Error binding type to statment: %s (result code %d)\n")
+        || attempt(sqlite3_step(m_insertObjectPreparedStmt), SQLITE_DONE,
+            "TskDbSqlite::addObj: Error adding object to row: %s (result code %d)\n"))
+    {
+        // Statement may be used again, even after error
+        sqlite3_reset(m_insertObjectPreparedStmt);
         return 1;
     }
 
     objId = sqlite3_last_insert_rowid(m_db);
+
+    if (attempt(sqlite3_reset(m_insertObjectPreparedStmt),
+        "TskDbSqlite::findParObjId: Error resetting 'insert object' statement: %s\n")) {
+            return 1;
+    }
 
     return 0;
 }
@@ -210,6 +220,12 @@ int
         return 1;
     }
 
+    // set page size
+    if (attempt_exec("PRAGMA foreign_keys = ON;",
+            "Error setting PRAGMA foreign_keys: %s\n")) {
+        return 1;
+    }
+
     // increase the DB by 1MB at a time. 
     int chunkSize = 1024 * 1024;
     if (sqlite3_file_control(m_db, NULL, SQLITE_FCNTL_CHUNK_SIZE, &chunkSize) != SQLITE_OK) {
@@ -237,35 +253,36 @@ int
             "Error creating tsk_objects table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_image_info (obj_id INTEGER PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT, size INTEGER, md5 TEXT, description TEXT);",
+        ("CREATE TABLE tsk_image_info (obj_id INTEGER PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT, size INTEGER, md5 TEXT, description TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
             "Error creating tsk_image_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_image_names (obj_id INTEGER NOT NULL, name TEXT NOT NULL, sequence INTEGER NOT NULL);",
+        ("CREATE TABLE tsk_image_names (obj_id INTEGER NOT NULL, name TEXT NOT NULL, sequence INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
             "Error creating tsk_image_names table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_vs_info (obj_id INTEGER PRIMARY KEY, vs_type INTEGER NOT NULL, img_offset INTEGER NOT NULL, block_size INTEGER NOT NULL);",
+        ("CREATE TABLE tsk_vs_info (obj_id INTEGER PRIMARY KEY, vs_type INTEGER NOT NULL, img_offset INTEGER NOT NULL, block_size INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
             "Error creating tsk_vs_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_vs_parts (obj_id INTEGER PRIMARY KEY, addr INTEGER NOT NULL, start INTEGER NOT NULL, length INTEGER NOT NULL, desc TEXT, flags INTEGER NOT NULL);",
+        ("CREATE TABLE tsk_vs_parts (obj_id INTEGER PRIMARY KEY, addr INTEGER NOT NULL, start INTEGER NOT NULL, length INTEGER NOT NULL, desc TEXT, flags INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
             "Error creating tsk_vol_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_fs_info (obj_id INTEGER PRIMARY KEY, img_offset INTEGER NOT NULL, fs_type INTEGER NOT NULL, block_size INTEGER NOT NULL, block_count INTEGER NOT NULL, root_inum INTEGER NOT NULL, first_inum INTEGER NOT NULL, last_inum INTEGER NOT NULL, display_name TEXT);",
+        ("CREATE TABLE tsk_fs_info (obj_id INTEGER PRIMARY KEY, img_offset INTEGER NOT NULL, fs_type INTEGER NOT NULL, block_size INTEGER NOT NULL, block_count INTEGER NOT NULL, root_inum INTEGER NOT NULL, first_inum INTEGER NOT NULL, last_inum INTEGER NOT NULL, display_name TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
             "Error creating tsk_fs_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_files (obj_id INTEGER PRIMARY KEY, fs_obj_id INTEGER, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr INTEGER, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size INTEGER, ctime INTEGER, crtime INTEGER, atime INTEGER, mtime INTEGER, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, parent_path TEXT);",
+        ("CREATE TABLE tsk_files (obj_id INTEGER PRIMARY KEY, fs_obj_id INTEGER, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr INTEGER, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size INTEGER, ctime INTEGER, crtime INTEGER, atime INTEGER, mtime INTEGER, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, parent_path TEXT, "
+        "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id));",
             "Error creating tsk_files table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_files_path (obj_id INTEGER PRIMARY KEY, path TEXT NOT NULL)",
+        ("CREATE TABLE tsk_files_path (obj_id INTEGER PRIMARY KEY, path TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id))",
             "Error creating tsk_files_path table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_files_derived (obj_id INTEGER PRIMARY KEY, derived_id INTEGER NOT NULL, rederive TEXT)",
+        ("CREATE TABLE tsk_files_derived (obj_id INTEGER PRIMARY KEY, derived_id INTEGER NOT NULL, rederive TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id))",
             "Error creating tsk_files_derived table: %s\n")
         ||
         attempt_exec
@@ -277,20 +294,24 @@ int
             "Error creating tag_names table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE content_tags (tag_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL, begin_byte_offset INTEGER NOT NULL, end_byte_offset INTEGER NOT NULL)",
+        ("CREATE TABLE content_tags (tag_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL, begin_byte_offset INTEGER NOT NULL, end_byte_offset INTEGER NOT NULL, "
+        "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id))",
             "Error creating content_tags table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE blackboard_artifact_tags (tag_id INTEGER PRIMARY KEY, artifact_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL)",
+        ("CREATE TABLE blackboard_artifact_tags (tag_id INTEGER PRIMARY KEY, artifact_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL, "
+        "FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id))",
             "Error creating blackboard_artifact_tags table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE blackboard_artifacts (artifact_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, artifact_type_id INTEGER NOT NULL)",
+        ("CREATE TABLE blackboard_artifacts (artifact_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, artifact_type_id INTEGER NOT NULL, "
+        "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id))",
             "Error creating blackboard_artifact table: %s\n")
         ||
         attempt_exec
         ("CREATE TABLE blackboard_attributes (artifact_id INTEGER NOT NULL, source TEXT, context TEXT, attribute_type_id INTEGER NOT NULL, value_type INTEGER NOT NULL, "
-        "value_byte BLOB, value_text TEXT, value_int32 INTEGER, value_int64 INTEGER, value_double NUMERIC(20, 10))",
+        "value_byte BLOB, value_text TEXT, value_int32 INTEGER, value_int64 INTEGER, value_double NUMERIC(20, 10), "
+        "FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))",
             "Error creating blackboard_attribute table: %s\n")
         ||
         attempt_exec
@@ -389,6 +410,11 @@ int
             &m_selectFilePreparedStmt)) {
         return 1;
     }
+    if (prepare_stmt
+        ("INSERT INTO tsk_objects (obj_id, par_obj_id, type) VALUES (NULL, ?, ?)",
+            &m_insertObjectPreparedStmt)) {
+        return 1;
+    }
 
     return 0;
 }
@@ -403,6 +429,10 @@ void
     if (m_selectFilePreparedStmt != NULL) {
         sqlite3_finalize(m_selectFilePreparedStmt);
         m_selectFilePreparedStmt = NULL;
+    }
+    if (m_insertObjectPreparedStmt != NULL) {
+        sqlite3_finalize(m_insertObjectPreparedStmt);
+        m_insertObjectPreparedStmt = NULL;
     }
 }
 
@@ -426,6 +456,7 @@ int
     char *zSQL;
     int ret;
 
+    // We dont' use addObject because we're passing in NULL as the parent
     snprintf(stmt, 1024,
         "INSERT INTO tsk_objects (obj_id, par_obj_id, type) VALUES (NULL, NULL, %d);",
         TSK_DB_OBJECT_TYPE_IMG);
