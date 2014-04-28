@@ -1098,7 +1098,11 @@ public class SleuthkitCase {
 			ResultSet rs = s.executeQuery("SELECT artifact_type_id FROM blackboard_artifact_types");
 
 			while (rs.next()) {
-				artifact_types.add(BlackboardArtifact.ARTIFACT_TYPE.fromID(rs.getInt(1)));
+				for (BlackboardArtifact.ARTIFACT_TYPE artType : BlackboardArtifact.ARTIFACT_TYPE.values()) {
+					if (artType.getTypeID() == rs.getInt(1)) {
+						artifact_types.add(artType);
+					}
+				}				
 			}
 			rs.close();
 			s.close();
