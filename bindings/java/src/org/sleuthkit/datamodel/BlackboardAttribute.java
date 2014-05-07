@@ -18,6 +18,8 @@
  */
 package org.sleuthkit.datamodel;
 
+import org.openide.util.NbBundle;
+
 /**
  * Represents an attribute as stored in the Blackboard. Attributes are a name
  * value pair. The name represents the type of data being stored. Attributes are
@@ -99,106 +101,192 @@ public class BlackboardAttribute {
 		 * anything here unless you also add it there.
 		 * See framework/Services/TskBlackboard.* */
 
-		TSK_URL(1, "TSK_URL", "URL"),
-		TSK_DATETIME(2, "TSK_DATETIME", "Date/Time"),
-		TSK_NAME(3, "TSK_NAME", "Name"),
-		TSK_PROG_NAME(4, "TSK_PROG_NAME", "Program Name"),
-		TSK_VALUE(6, "TSK_VALUE", "Value"),
-		TSK_FLAG(7, "TSK_FLAG", "Flag"),
-		TSK_PATH(8, "TSK_PATH", "Path"),
-		TSK_KEYWORD(10, "TSK_KEYWORD", "Keyword"),
-		TSK_KEYWORD_REGEXP(11, "TSK_KEYWORD_REGEXP", "Keyword Regular Expression"),
-		TSK_KEYWORD_PREVIEW(12, "TSK_KEYWORD_PREVIEW", "Keyword Preview"),
-		TSK_KEYWORD_SET(13, "TSK_KEYWORD_SET", "Keyword Set"), // @@@ Deprecated
-		TSK_USER_NAME(14, "TSK_USER_NAME", "Username"),
-		TSK_DOMAIN(15, "TSK_DOMAIN", "Domain"),
-		TSK_PASSWORD(16, "TSK_PASSWORD", "Password"),
-		TSK_NAME_PERSON(17, "TSK_NAME_PERSON", "Person Name"),
-		TSK_DEVICE_MODEL(18, "TSK_DEVICE_MODEL", "Device Model"),
-		TSK_DEVICE_MAKE(19, "TSK_DEVICE_MAKE", "Device Make"),
-		TSK_DEVICE_ID(20, "TSK_DEVICE_ID", "Device ID"),
-		TSK_EMAIL(21, "TSK_EMAIL", "Email"),
-		TSK_HASH_MD5(22, "TSK_HASH_MD5", "MD5 Hash"),
-		TSK_HASH_SHA1(23, "TSK_HASH_SHA1", "SHA1 Hash"),
-		TSK_HASH_SHA2_256(24, "TSK_HASH_SHA2_256", "SHA2-256 Hash"),
-		TSK_HASH_SHA2_512(25, "TSK_HASH_SHA2_512", "SHA2-512 Hash"),
-		TSK_TEXT(26, "TSK_TEXT", "Text"),
-		TSK_TEXT_FILE(27, "TSK_TEXT_FILE", "Text File"),
-		TSK_TEXT_LANGUAGE(28, "TSK_TEXT_LANGUAGE", "Text Language"),
-		TSK_ENTROPY(29, "TSK_ENTROPY", "Entropy"),
-		TSK_HASHSET_NAME(30, "TSK_HASHSET_NAME", "Hashset Name"), // @@@ Deprecated
+		TSK_URL(1, "TSK_URL", NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskUrl.text")),
+		TSK_DATETIME(2, "TSK_DATETIME",
+                     NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskDatetime.text")),
+		TSK_NAME(3, "TSK_NAME", NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskName.text")),
+		TSK_PROG_NAME(4, "TSK_PROG_NAME",
+                      NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskProgName.text")),
+		TSK_VALUE(6, "TSK_VALUE", NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskValue.text")),
+		TSK_FLAG(7, "TSK_FLAG", NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskFlag.text")),
+		TSK_PATH(8, "TSK_PATH", NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskPath.text")),
+		TSK_KEYWORD(10, "TSK_KEYWORD", NbBundle.getMessage(BlackboardArtifact.class,
+                                                           "BlackboardAttribute.tskKeyword.text")),
+		TSK_KEYWORD_REGEXP(11, "TSK_KEYWORD_REGEXP", NbBundle.getMessage(BlackboardArtifact.class,
+                                                                         "BlackboardAttribute.tskKeywordRegexp.text")),
+		TSK_KEYWORD_PREVIEW(12, "TSK_KEYWORD_PREVIEW",
+                            NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskKeywordPreview.text")),
+		TSK_KEYWORD_SET(13, "TSK_KEYWORD_SET",
+                        NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskKeywordSet.text")), // @@@ Deprecated
+		TSK_USER_NAME(14, "TSK_USER_NAME",
+                      NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskUserName.text")),
+		TSK_DOMAIN(15, "TSK_DOMAIN", NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskDomain.text")),
+		TSK_PASSWORD(16, "TSK_PASSWORD",
+                     NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskPassword.text")),
+		TSK_NAME_PERSON(17, "TSK_NAME_PERSON",
+                        NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskNamePerson.text")),
+		TSK_DEVICE_MODEL(18, "TSK_DEVICE_MODEL",
+                         NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskDeviceModel.text")),
+		TSK_DEVICE_MAKE(19, "TSK_DEVICE_MAKE",
+                        NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskDeviceMake.text")),
+		TSK_DEVICE_ID(20, "TSK_DEVICE_ID",
+                      NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskDeviceId.text")),
+		TSK_EMAIL(21, "TSK_EMAIL", NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskEmail.text")),
+		TSK_HASH_MD5(22, "TSK_HASH_MD5",
+                     NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskHashMd5.text")),
+		TSK_HASH_SHA1(23, "TSK_HASH_SHA1",
+                      NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskHashSha1.text")),
+		TSK_HASH_SHA2_256(24, "TSK_HASH_SHA2_256",
+                          NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskHashSha225.text")),
+		TSK_HASH_SHA2_512(25, "TSK_HASH_SHA2_512",
+                          NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskHashSha2512.text")),
+		TSK_TEXT(26, "TSK_TEXT", NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskText.text")),
+		TSK_TEXT_FILE(27, "TSK_TEXT_FILE",
+                      NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskTextFile.text")),
+		TSK_TEXT_LANGUAGE(28, "TSK_TEXT_LANGUAGE",
+                          NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskTextLanguage.text")),
+		TSK_ENTROPY(29, "TSK_ENTROPY",
+                    NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskEntropy.text")),
+		TSK_HASHSET_NAME(30, "TSK_HASHSET_NAME",
+                         NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskHashsetName.text")), // @@@ Deprecated
 		/*
 		 * @deprecated Use TSK_INTERSTING_FILE_HIT artifact instead.
 		 */
 		@Deprecated
-		TSK_INTERESTING_FILE(31, "TSK_INTERESTING_FILE", "Interesting File"), // @@@ Deprecated
-		TSK_REFERRER(32, "TSK_REFERRER", "Referrer URL"),
-		TSK_DATETIME_ACCESSED(33, "TSK_DATETIME_ACCESSED", "Date Accessed"),
-		TSK_IP_ADDRESS(34, "TSK_IP_ADDRESS", "IP Address"),
-		TSK_PHONE_NUMBER(35, "TSK_PHONE_NUMBER", "Phone Number"),
-		TSK_PATH_ID(36, "TSK_PATH_ID", "Path ID"),
-		TSK_SET_NAME(37, "TSK_SET_NAME", "Set Name"),
+		TSK_INTERESTING_FILE(31, "TSK_INTERESTING_FILE",
+                             NbBundle.getMessage(BlackboardArtifact.class,
+                                                 "BlackboardAttribute.tskInterestingFile.text")), // @@@ Deprecated
+		TSK_REFERRER(32, "TSK_REFERRER",
+                     NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskReferrer.text")),
+		TSK_DATETIME_ACCESSED(33, "TSK_DATETIME_ACCESSED",
+                              NbBundle.getMessage(BlackboardArtifact.class,
+                                                  "BlackboardAttribute.tskDateTimeAccessed.text")),
+		TSK_IP_ADDRESS(34, "TSK_IP_ADDRESS",
+                       NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskIpAddress.text")),
+		TSK_PHONE_NUMBER(35, "TSK_PHONE_NUMBER",
+                         NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskPhoneNumber.text")),
+		TSK_PATH_ID(36, "TSK_PATH_ID", NbBundle.getMessage(BlackboardArtifact.class,
+                                                           "BlackboardAttribute.tskPathId.text")),
+		TSK_SET_NAME(37, "TSK_SET_NAME",
+                     NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskSetName.text")),
 		@Deprecated
-		TSK_ENCRYPTION_DETECTED(38, "TSK_ENCRYPTION_DETECTED", "Encryption Detected"),
-		TSK_MALWARE_DETECTED(39, "TSK_MALWARE_DETECTED", "Malware Detected"),
-		TSK_STEG_DETECTED(40, "TSK_STEG_DETECTED", "Steganography Detected"),
-		TSK_EMAIL_TO(41, "TSK_EMAIL_TO", "E-Mail To"),
-		TSK_EMAIL_CC(42, "TSK_EMAIL_CC", "E-Mail CC"),
-		TSK_EMAIL_BCC(43, "TSK_EMAIL_BCC", "E-Mail BCC"),
-		TSK_EMAIL_FROM(44, "TSK_EMAIL_FROM", "E-Mail From"),
-		TSK_EMAIL_CONTENT_PLAIN(45, "TSK_EMAIL_CONTENT_PLAIN", "Message (Plaintext)"),
-		TSK_EMAIL_CONTENT_HTML(46, "TSK_EMAIL_CONTENT_HTML", "Message (HTML)"),
-		TSK_EMAIL_CONTENT_RTF(47, "TSK_EMAIL_CONTENT_RTF", "Message (RTF)"),
-		TSK_MSG_ID(48, "TSK_MSG_ID", "Message ID"),
-		TSK_MSG_REPLY_ID(49, "TSK_MSG_REPLY_ID", "Message Reply ID"),
-		TSK_DATETIME_RCVD(50, "TSK_DATETIME_RCVD", "Date Received"),
-		TSK_DATETIME_SENT(51, "TSK_DATETIME_SENT", "Date Sent"),
-		TSK_SUBJECT(52, "TSK_SUBJECT", "Subject"),
-		TSK_TITLE(53, "TSK_TITLE", "Title"),
-		TSK_GEO_LATITUDE(54, "TSK_GEO_LATITUDE", "Latitude"),
-		TSK_GEO_LONGITUDE(55, "TSK_GEO_LONGITUDE", "Longitude"),
-		TSK_GEO_VELOCITY(56, "TSK_GEO_VELOCITY", "Velocity"),
-		TSK_GEO_ALTITUDE(57, "TSK_GEO_ALTITUDE", "Altitude"),
-		TSK_GEO_BEARING(58, "TSK_GEO_BEARING", "Bearing"),
-		TSK_GEO_HPRECISION(59, "TSK_GEO_HPRECISION", "Horizontal Precision"),
-		TSK_GEO_VPRECISION(60, "TSK_GEO_VPRECISION", "Vertical Precision"),
-		TSK_GEO_MAPDATUM(61, "TSK_GEO_MAPDATUM", "Map Datum"),
-		TSK_FILE_TYPE_SIG(62, "TSK_FILE_TYPE_SIG", "File Type (signature)"),
-		TSK_FILE_TYPE_EXT(63, "TSK_FILE_TYPE_EXT", "File Type (extension)"),
-		TSK_TAGGED_ARTIFACT(64, "TSK_TAGGED_ARTIFACT", "Tagged Result"),
-		TSK_TAG_NAME(65, "TSK_TAG_NAME", "Tag Name"),
-		TSK_COMMENT(66, "TSK_COMMENT", "Comment"),
-		TSK_URL_DECODED(67, "TSK_URL_DECODED", "Decoded URL"),
-		TSK_DATETIME_CREATED(68, "TSK_DATETIME_CREATED", "Date Created"),
-		TSK_DATETIME_MODIFIED(69, "TSK_DATETIME_MODIFIED", "Date Modified"),
-		TSK_PROCESSOR_ARCHITECTURE(70, "TSK_PROCESSOR_ARCHITECTURE", "Processor Architecture"),
-		TSK_VERSION(71, "TSK_VERSION", "Version"),
-		TSK_USER_ID(72, "TSK_USER_ID", "User ID"),
-		TSK_DESCRIPTION(73, "TSK_DESCRIPTION", "Description"),
-		TSK_MESSAGE_TYPE(74, "TSK_MESSAGE_TYPE", "Message Type"),	// SMS or MMS or IM ...
-		TSK_PHONE_NUMBER_HOME(75, "TSK_PHONE_NUMBER_HOME", "Phone Number (Home)"),
-		TSK_PHONE_NUMBER_OFFICE(76, "TSK_PHONE_NUMBER_OFFICE", "Phone Number (Office)"),
-		TSK_PHONE_NUMBER_MOBILE(77, "TSK_PHONE_NUMBER_MOBILE", "Phone Number (Mobile)"),
-		TSK_PHONE_NUMBER_FROM(78, "TSK_PHONE_NUMBER_FROM", "From Phone Number"),
-		TSK_PHONE_NUMBER_TO(79, "TSK_PHONE_NUMBER_TO", "To Phone Number"),
-		TSK_DIRECTION(80, "TSK_DIRECTION", "Direction"), // Msg/Call direction: incoming, outgoing
-		TSK_EMAIL_HOME(81, "TSK_EMAIL_HOME", "Email (Home)"),
-		TSK_EMAIL_OFFICE(82, "TSK_EMAIL_OFFICE", "Email (Office)"),
-		TSK_DATETIME_START(83, "TSK_DATETIME_START", "Start Date/Time"),	// start time of an event - call log, Calendar entry
-		TSK_DATETIME_END(84, "TSK_DATETIME_END", "End Date/Time"),	// end time of an event - call log, Calendar entry
-		TSK_CALENDAR_ENTRY_TYPE(85, "TSK_CALENDAR_ENTRY_TYPE", "Calendar Entry Type"),	// meeting, task, 
-		TSK_LOCATION(86, "TSK_LOCATION", "Location"),	// Location string associated with an event - Conf Room Name, Address ....
-		TSK_SHORTCUT(87, "TSK_SHORTCUT", "Short Cut"),	// Short Cut string - short code or dial string for Speed dial, a URL short cut - e.g. bitly string, Windows Desktop Short cut name etc.
-		TSK_DEVICE_NAME(88, "TSK_DEVICE_NAME", "Device Name"),	// device name - a user assigned (usually) device name - such as "Joe's computer", "bob_win8", "BT Headset"
-		TSK_CATEGORY(89, "TSK_CATEGORY", "Category"),	// category/type, possible value set varies by the artifact
-		TSK_EMAIL_REPLYTO(90, "TSK_EMAIL_REPLYTO", "ReplyTo Address"),	// ReplyTo address
-		TSK_SERVER_NAME(91, "TSK_SERVER_NAME", "Server Name"),	// server name, e.g. a mail server name - "smtp.google.com", a DNS server name...
-		TSK_COUNT(92, "TSK_COUNT", "Count"), // Count related to the artifact
-		TSK_MIN_COUNT(93, "TSK_MIN_COUNT", "Minimum Count"), // Minimum number/count
-		TSK_PATH_SOURCE(94, "TSK_PATH_SOURCE", "Path Source"), // Path to a source file related to the artifact
-		TSK_PERMISSIONS(95, "TSK_PERMISSIONS", "Permissions"), // Permissions
-		TSK_ASSOCIATED_ARTIFACT(96, "TSK_ASSOCIATED_ARTIFACT", "Associated Artifact"), // Artifact ID of a related artifact
-		TSK_ISDELETED(97, "TSK_ISDELETED", "Is Deleted"), // boolean to indicate that the artifact is recovered fom deleted content
+		TSK_ENCRYPTION_DETECTED(38, "TSK_ENCRYPTION_DETECTED", NbBundle.getMessage(BlackboardArtifact.class,
+                                                                                   "BlackboardAttribute.tskEncryptionDetected.text")),
+		TSK_MALWARE_DETECTED(39, "TSK_MALWARE_DETECTED", NbBundle.getMessage(BlackboardArtifact.class,
+                                                                             "BlackboardAttribute.tskMalwareDetected.text")),
+		TSK_STEG_DETECTED(40, "TSK_STEG_DETECTED",
+                          NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskStegDetected.text")),
+		TSK_EMAIL_TO(41, "TSK_EMAIL_TO",
+                     NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskEmailTo.text")),
+		TSK_EMAIL_CC(42, "TSK_EMAIL_CC",
+                     NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskEmailCc.text")),
+		TSK_EMAIL_BCC(43, "TSK_EMAIL_BCC",
+                      NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskEmailBcc.text")),
+		TSK_EMAIL_FROM(44, "TSK_EMAIL_FROM",
+                       NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskEmailFrom.text")),
+		TSK_EMAIL_CONTENT_PLAIN(45, "TSK_EMAIL_CONTENT_PLAIN", NbBundle.getMessage(BlackboardArtifact.class,
+                                                                                   "BlackboardAttribute.tskEmailContentPlain.text")),
+		TSK_EMAIL_CONTENT_HTML(46, "TSK_EMAIL_CONTENT_HTML", NbBundle.getMessage(BlackboardArtifact.class,
+                                                                                 "BlackboardAttribute.tskEmailContentHtml.text")),
+		TSK_EMAIL_CONTENT_RTF(47, "TSK_EMAIL_CONTENT_RTF", NbBundle.getMessage(BlackboardArtifact.class,
+                                                                               "BlackboardAttribute.tskEmailContentRtf.text")),
+		TSK_MSG_ID(48, "TSK_MSG_ID", NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskMsgId.text")),
+		TSK_MSG_REPLY_ID(49, "TSK_MSG_REPLY_ID",
+                         NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskMsgReplyId.text")),
+		TSK_DATETIME_RCVD(50, "TSK_DATETIME_RCVD",
+                          NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskDateTimeRcvd.text")),
+		TSK_DATETIME_SENT(51, "TSK_DATETIME_SENT",
+                          NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskDateTimeSent.text")),
+		TSK_SUBJECT(52, "TSK_SUBJECT",
+                    NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskSubject.text")),
+		TSK_TITLE(53, "TSK_TITLE", NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskTitle.text")),
+		TSK_GEO_LATITUDE(54, "TSK_GEO_LATITUDE",
+                         NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskGeoLatitude.text")),
+		TSK_GEO_LONGITUDE(55, "TSK_GEO_LONGITUDE",
+                          NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskGeoLongitude.text")),
+		TSK_GEO_VELOCITY(56, "TSK_GEO_VELOCITY",
+                         NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskGeoVelocity.text")),
+		TSK_GEO_ALTITUDE(57, "TSK_GEO_ALTITUDE",
+                         NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskGeoAltitude.text")),
+		TSK_GEO_BEARING(58, "TSK_GEO_BEARING",
+                        NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskGeoBearing.text")),
+		TSK_GEO_HPRECISION(59, "TSK_GEO_HPRECISION",
+                           NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskGeoHPrecision.text")),
+		TSK_GEO_VPRECISION(60, "TSK_GEO_VPRECISION",
+                           NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskGeoVPrecision.text")),
+		TSK_GEO_MAPDATUM(61, "TSK_GEO_MAPDATUM",
+                         NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskGeoMapDatum.text")),
+		TSK_FILE_TYPE_SIG(62, "TSK_FILE_TYPE_SIG",
+                          NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskFileTypeSig.text")),
+		TSK_FILE_TYPE_EXT(63, "TSK_FILE_TYPE_EXT",
+                          NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskFileTypeExt.text")),
+		TSK_TAGGED_ARTIFACT(64, "TSK_TAGGED_ARTIFACT",
+                            NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskTaggedArtifact.text")),
+		TSK_TAG_NAME(65, "TSK_TAG_NAME",
+                     NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskTagName.text")),
+		TSK_COMMENT(66, "TSK_COMMENT",
+                    NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskComment.text")),
+		TSK_URL_DECODED(67, "TSK_URL_DECODED",
+                        NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskUrlDecoded.text")),
+		TSK_DATETIME_CREATED(68, "TSK_DATETIME_CREATED", NbBundle.getMessage(BlackboardArtifact.class,
+                                                                             "BlackboardAttribute.tskDateTimeCreated.text")),
+		TSK_DATETIME_MODIFIED(69, "TSK_DATETIME_MODIFIED", NbBundle.getMessage(BlackboardArtifact.class,
+                                                                               "BlackboardAttribute.tskDateTimeModified.text")),
+		TSK_PROCESSOR_ARCHITECTURE(70, "TSK_PROCESSOR_ARCHITECTURE", NbBundle.getMessage(BlackboardArtifact.class,
+                                                                                         "BlackboardAttribute.tskProcessorArchitecture.text")),
+		TSK_VERSION(71, "TSK_VERSION",
+                    NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskVersion.text")),
+		TSK_USER_ID(72, "TSK_USER_ID",
+                    NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskUserId.text")),
+		TSK_DESCRIPTION(73, "TSK_DESCRIPTION",
+                        NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskDescription.text")),
+		TSK_MESSAGE_TYPE(74, "TSK_MESSAGE_TYPE",
+                         NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskMessageType.text")),	// SMS or MMS or IM ...
+		TSK_PHONE_NUMBER_HOME(75, "TSK_PHONE_NUMBER_HOME", NbBundle.getMessage(BlackboardArtifact.class,
+                                                                               "BlackboardAttribute.tskPhoneNumberHome.text")),
+		TSK_PHONE_NUMBER_OFFICE(76, "TSK_PHONE_NUMBER_OFFICE", NbBundle.getMessage(BlackboardArtifact.class,
+                                                                                   "BlackboardAttribute.tskPhoneNumberOffice.text")),
+		TSK_PHONE_NUMBER_MOBILE(77, "TSK_PHONE_NUMBER_MOBILE", NbBundle.getMessage(BlackboardArtifact.class,
+                                                                                   "BlackboardAttribute.tskPhoneNumberMobile.text")),
+		TSK_PHONE_NUMBER_FROM(78, "TSK_PHONE_NUMBER_FROM", NbBundle.getMessage(BlackboardArtifact.class,
+                                                                               "BlackboardAttribute.tskPhoneNumberFrom.text")),
+		TSK_PHONE_NUMBER_TO(79, "TSK_PHONE_NUMBER_TO",
+                            NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskPhoneNumberTo.text")),
+		TSK_DIRECTION(80, "TSK_DIRECTION",
+                      NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskDirection.text")), // Msg/Call direction: incoming, outgoing
+		TSK_EMAIL_HOME(81, "TSK_EMAIL_HOME",
+                       NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskEmailHome.text")),
+		TSK_EMAIL_OFFICE(82, "TSK_EMAIL_OFFICE",
+                         NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskEmailOffice.text")),
+		TSK_DATETIME_START(83, "TSK_DATETIME_START",
+                           NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskDateTimeStart.text")),	// start time of an event - call log, Calendar entry
+		TSK_DATETIME_END(84, "TSK_DATETIME_END",
+                         NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskDateTimeEnd.text")),	// end time of an event - call log, Calendar entry
+		TSK_CALENDAR_ENTRY_TYPE(85, "TSK_CALENDAR_ENTRY_TYPE", NbBundle.getMessage(BlackboardArtifact.class,
+                                                                                   "BlackboardAttribute.tskCalendarEntryType.text")),	// meeting, task,
+		TSK_LOCATION(86, "TSK_LOCATION",
+                     NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskLocation.text")),	// Location string associated with an event - Conf Room Name, Address ....
+		TSK_SHORTCUT(87, "TSK_SHORTCUT",
+                     NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskShortcut.text")),	// Short Cut string - short code or dial string for Speed dial, a URL short cut - e.g. bitly string, Windows Desktop Short cut name etc.
+		TSK_DEVICE_NAME(88, "TSK_DEVICE_NAME",
+                        NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskDeviceName.text")),	// device name - a user assigned (usually) device name - such as "Joe's computer", "bob_win8", "BT Headset"
+		TSK_CATEGORY(89, "TSK_CATEGORY",
+                     NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskCategory.text")),	// category/type, possible value set varies by the artifact
+		TSK_EMAIL_REPLYTO(90, "TSK_EMAIL_REPLYTO",
+                          NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskEmailReplyTo.text")),	// ReplyTo address
+		TSK_SERVER_NAME(91, "TSK_SERVER_NAME",
+                        NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskServerName.text")),	// server name, e.g. a mail server name - "smtp.google.com", a DNS server name...
+		TSK_COUNT(92, "TSK_COUNT", NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskCount.text")), // Count related to the artifact
+		TSK_MIN_COUNT(93, "TSK_MIN_COUNT",
+                      NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskMinCount.text")), // Minimum number/count
+		TSK_PATH_SOURCE(94, "TSK_PATH_SOURCE",
+                        NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskPathSource.text")), // Path to a source file related to the artifact
+		TSK_PERMISSIONS(95, "TSK_PERMISSIONS",
+                        NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskPermissions.text")), // Permissions
+		TSK_ASSOCIATED_ARTIFACT(96, "TSK_ASSOCIATED_ARTIFACT", NbBundle.getMessage(BlackboardArtifact.class,
+                                                                                   "BlackboardAttribute.tskAssociatedArtifact.text")), // Artifact ID of a related artifact
+		TSK_ISDELETED(97, "TSK_ISDELETED",
+                      NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskIsDeleted.text")), // boolean to indicate that the artifact is recovered fom deleted content
 		
 		
 		;

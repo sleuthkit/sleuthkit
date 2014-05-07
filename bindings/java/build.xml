@@ -13,6 +13,7 @@
   <!-- set global properties for this build -->
 	<property name="src" location="src/org/sleuthkit/datamodel"/>
 	<property name="build" location="build/"/>
+    <property name="build-datamodel" location="build/org/sleuthkit/datamodel"/>
 	<property name="dist"  location="dist"/>
 	<property name="lib" location="lib"/>
 	<property name="test" location="test"/>
@@ -113,6 +114,10 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 		<javac debug="on" srcdir="${src}" destdir="${build}" classpathref="libraries" includeantruntime="false">
 			<compilerarg value="-Xlint"/>
 		</javac>
+        <!-- Copy Bundle*.properties files into DataModel build directory, so they are included in the .jar -->
+        <copy todir="${build-datamodel}">
+            <fileset dir="${src}" includes="**/*.properties"/>
+        </copy>
 	</target>
 
 	<target name="dist" depends="check-build" unless="up-to-date">
