@@ -63,7 +63,7 @@ fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     FATFS_INFO *fatfs = (FATFS_INFO *) fs;
     FATXXFS_SB *sb = (FATXXFS_SB*)fatfs->boot_sector_buffer;
     char *data_buf;
-    FATXXFS_DENTRY *de;
+    FATXXFS_DENTRY *vol_label_dentry = NULL;
     ssize_t cnt;
 
     // clean up any error messages that are lying around
@@ -90,15 +90,17 @@ fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 
 
     /* Find the dentry that is set as the volume label */
-    de = (FATXXFS_DENTRY *) data_buf;
-    for (i = 0; i < fatfs->ssize; i += sizeof(*de)) {
-        if (de->attrib == FATFS_ATTR_VOLUME)
-            break;
-        de++;
+    vol_label_dentry = NULL;
+    if (fatfs->ssize <= fs->block_size) {
+        FATXXFS_DENTRY *current_entry = (FATXXFS_DENTRY *) data_buf;
+        for (i = 0; i < fatfs->ssize; i += sizeof(*current_entry)) {
+            if (current_entry->attrib == FATFS_ATTR_VOLUME) {
+                vol_label_dentry = current_entry;
+                break;
+            }
+            current_entry++;
+        }
     }
-    /* If we didn't find it, then reset de */
-    if (de->attrib != FATFS_ATTR_VOLUME)
-        de = NULL;
 
 
     /* Print the general file system information */
@@ -134,12 +136,12 @@ fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
             sb->a.f16.vol_lab[8], sb->a.f16.vol_lab[9],
             sb->a.f16.vol_lab[10]);
 
-        if ((de) && (de->name)) {
+        if ((vol_label_dentry) && (vol_label_dentry->name)) {
             tsk_fprintf(hFile,
                 "Volume Label (Root Directory): %c%c%c%c%c%c%c%c%c%c%c\n",
-                de->name[0], de->name[1], de->name[2], de->name[3],
-                de->name[4], de->name[5], de->name[6], de->name[7],
-                de->ext[0], de->ext[1], de->ext[2]);
+                vol_label_dentry->name[0], vol_label_dentry->name[1], vol_label_dentry->name[2], vol_label_dentry->name[3],
+                vol_label_dentry->name[4], vol_label_dentry->name[5], vol_label_dentry->name[6], vol_label_dentry->name[7],
+                vol_label_dentry->ext[0], vol_label_dentry->ext[1], vol_label_dentry->ext[2]);
         }
         else {
             tsk_fprintf(hFile, "Volume Label (Root Directory):\n");
@@ -174,12 +176,12 @@ fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
             sb->a.f32.vol_lab[8], sb->a.f32.vol_lab[9],
             sb->a.f32.vol_lab[10]);
 
-        if ((de) && (de->name)) {
+        if ((vol_label_dentry) && (vol_label_dentry->name)) {
             tsk_fprintf(hFile,
                 "Volume Label (Root Directory): %c%c%c%c%c%c%c%c%c%c%c\n",
-                de->name[0], de->name[1], de->name[2], de->name[3],
-                de->name[4], de->name[5], de->name[6], de->name[7],
-                de->ext[0], de->ext[1], de->ext[2]);
+                vol_label_dentry->name[0], vol_label_dentry->name[1], vol_label_dentry->name[2], vol_label_dentry->name[3],
+                vol_label_dentry->name[4], vol_label_dentry->name[5], vol_label_dentry->name[6], vol_label_dentry->name[7],
+                vol_label_dentry->ext[0], vol_label_dentry->ext[1], vol_label_dentry->ext[2]);
         }
         else {
             tsk_fprintf(hFile, "Volume Label (Root Directory):\n");
