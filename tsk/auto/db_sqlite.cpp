@@ -691,7 +691,7 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *path,
      * correct parent folder if there are two from teh root dir that eventually point to
      * the same folder (one deleted and one allocated) or two hard links. */
     if (TSK_FS_TYPE_ISNTFS(fs_file->fs_info->ftype)) {
-        seq = fs_file->name->meta_seq;
+        seq = fs_file->name->par_seq;
     }
     else {
         seq = hash((const unsigned char *)path);

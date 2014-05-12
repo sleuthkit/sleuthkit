@@ -355,6 +355,26 @@ ntfs_proc_idxentry(NTFS_INFO * a_ntfs, TSK_FS_DIR * a_fs_dir,
             continue;
         }
 
+        // verify name length would fit in stream
+        if (fname->nlen > tsk_getu16(fs->endian, a_idxe->strlen)) {
+            a_idxe = (ntfs_idxentry *) ((uintptr_t) a_idxe + 4);
+            if (tsk_verbose)
+                tsk_fprintf(stderr,
+                    "ntfs_proc_idxentry: Skipping because name is longer than stream\n");
+            continue;
+        }
+
+        // verify it has the correct parent address
+        if (tsk_getu48(fs->endian, fname->par_ref) != a_fs_dir->addr) {
+            a_idxe = (ntfs_idxentry *) ((uintptr_t) a_idxe + 4);
+            if (tsk_verbose)
+                tsk_fprintf(stderr,
+                    "ntfs_proc_idxentry: Skipping because of wrong parent address\n");
+            continue;
+        }
+
+
+
         /* do some sanity checks on the deleted entries
          */
         if ((tsk_getu16(fs->endian, a_idxe->strlen) == 0) ||
@@ -396,6 +416,8 @@ ntfs_proc_idxentry(NTFS_INFO * a_ntfs, TSK_FS_DIR * a_fs_dir,
                 continue;
             }
         }
+
+        
 
         /* For all fname entries, there will exist a DOS style 8.3
          * entry.  We don't process those because we already processed
