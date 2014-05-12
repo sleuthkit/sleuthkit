@@ -10,7 +10,7 @@ EXTRA_DIST = README_PLUGINS.txt ficonfig.txt \
 
 fiwalk_SOURCES = fiwalk.cpp  fiwalk_tsk.cpp fiwalk.h \
 	content.cpp content.h \
-	arff.cpp arff.h outfile.h \
+	arff.cpp arff.h \
 	plugin.cpp plugin.h \
 	utils.c utils.h \
 	dfxml.cpp dfxml.h \
