@@ -2636,6 +2636,7 @@ ntfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
 {
     NTFS_INFO *ntfs = (NTFS_INFO *) fs;
     char *mft;
+    uint8_t allocedMeta = 0;
 
     // clean up any error messages that are lying around
     tsk_error_reset();
@@ -2650,6 +2651,7 @@ ntfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
         a_fs_file->meta = tsk_fs_meta_alloc(NTFS_FILE_CONTENT_LEN);
         if (a_fs_file->meta == NULL)
             return 1;
+        allocedMeta = 1;
     }
     else {
         tsk_fs_meta_reset(a_fs_file->meta);
@@ -2677,6 +2679,23 @@ ntfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
     if (ntfs_dinode_copy(ntfs, a_fs_file, mft, mftnum) != TSK_OK) {
         free(mft);
         return 1;
+    }
+
+    /* Check if the metadata is the same sequence as the name - if it was already set.
+     * Note that this is not as effecient and elegant as desired, but works for now. 
+     * Better design would be to pass sequence into dinode_lookup and have a more 
+     * obvious way to pass the desired sequence in.  fs_dir_walk_lcl sets the name
+     * before calling this, which motivated this quick fix. */
+    if ((a_fs_file->name != NULL) && (a_fs_file->name->meta_addr == mftnum)) {
+        if (a_fs_file->name->meta_seq != a_fs_file->meta->seq) {
+            if (allocedMeta) {
+                free(a_fs_file->meta);
+                a_fs_file->meta = NULL;
+            }
+            else {
+                tsk_fs_meta_reset(a_fs_file->meta);
+            }
+        }
     }
 
     free((char *) mft);

@@ -488,6 +488,9 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
          * Must have non-zero inode addr or have allocated name (if inode is 0) */
         if (((fs_file->name->meta_addr)
                 || (fs_file->name->flags & TSK_FS_NAME_FLAG_ALLOC))) {
+
+            /* Note that the NTFS code behind here has a slight hack to use the
+             * correct sequence number based on the data in fs_file->name */
             if (a_fs->file_add_meta(a_fs, fs_file,
                     fs_file->name->meta_addr)) {
                 if (tsk_verbose)
