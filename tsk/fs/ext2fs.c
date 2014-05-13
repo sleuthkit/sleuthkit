@@ -3177,7 +3177,7 @@ ext2fs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     len = sizeof(ext2fs_sb);
     if ((ext2fs->fs = (ext2fs_sb *) tsk_malloc(len)) == NULL) {
         fs->tag = 0;
-        free(ext2fs);
+        tsk_fs_free((TSK_FS_INFO *)ext2fs);
         return NULL;
     }
 
@@ -3190,7 +3190,7 @@ ext2fs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_set_errstr2("ext2fs_open: superblock");
         fs->tag = 0;
         free(ext2fs->fs);
-        free(ext2fs);
+        tsk_fs_free((TSK_FS_INFO *)ext2fs);
         return NULL;
     }
 
@@ -3200,7 +3200,7 @@ ext2fs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     if (tsk_fs_guessu16(fs, ext2fs->fs->s_magic, EXT2FS_FS_MAGIC)) {
         fs->tag = 0;
         free(ext2fs->fs);
-        free(ext2fs);
+        tsk_fs_free((TSK_FS_INFO *)ext2fs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr("not an EXTxFS file system (magic)");
@@ -3253,7 +3253,7 @@ ext2fs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     if (fs->inum_count < 10) {
         fs->tag = 0;
         free(ext2fs->fs);
-        free(ext2fs);
+        tsk_fs_free((TSK_FS_INFO *)ext2fs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr("Not an EXTxFS file system (inum count)");
@@ -3297,7 +3297,7 @@ ext2fs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_getu32(fs->endian, ext2fs->fs->s_log_frag_size)) {
         fs->tag = 0;
         free(ext2fs->fs);
-        free(ext2fs);
+        tsk_fs_free((TSK_FS_INFO *)ext2fs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
         tsk_error_set_errstr

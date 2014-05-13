@@ -205,7 +205,8 @@ std::string TskSystemProperties::get(PredefinedProperty prop) const
             const std::vector<std::string> imgNames = TskServices::Instance().getImgDB().getImageNames();
             if (!imgNames.empty())
             {
-                const_cast<TskSystemProperties*>(this)->set(prop, imgNames[0]);
+                value = imgNames[0];
+                const_cast<TskSystemProperties*>(this)->set(prop, value);
             }
         }
         else
