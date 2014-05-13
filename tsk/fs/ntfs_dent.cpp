@@ -1038,8 +1038,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
             /* This is the length of the idx entries */
             list_len =
-                (uint32_t) ((uintptr_t) idxalloc + idxalloc_len) -
-                (uintptr_t) idxe;
+                (uint32_t) (((uintptr_t) idxalloc + idxalloc_len) -
+                (uintptr_t) idxe);
 
             /* Verify the offset pointers */
             if ((list_len > rec_len) ||

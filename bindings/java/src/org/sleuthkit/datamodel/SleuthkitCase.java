@@ -1084,7 +1084,8 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get all blackboard artifact types
+	 * Get _standard_ blackboard artifact types in use.  This does
+     * not currently return user-defined ones. 
 	 *
 	 * @return list of blackboard artifact types
 	 * @throws TskCoreException exception thrown if a critical error occurred
@@ -1098,7 +1099,15 @@ public class SleuthkitCase {
 			ResultSet rs = s.executeQuery("SELECT artifact_type_id FROM blackboard_artifact_types");
 
 			while (rs.next()) {
-				artifact_types.add(BlackboardArtifact.ARTIFACT_TYPE.fromID(rs.getInt(1)));
+                /*
+                 * Only return ones in the enum because otherwise exceptions
+                 * get thrown down the call stack. Need to remove use of enum
+                 * for the attribute types */
+				for (BlackboardArtifact.ARTIFACT_TYPE artType : BlackboardArtifact.ARTIFACT_TYPE.values()) {
+					if (artType.getTypeID() == rs.getInt(1)) {
+						artifact_types.add(artType);
+					}
+				}				
 			}
 			rs.close();
 			s.close();
