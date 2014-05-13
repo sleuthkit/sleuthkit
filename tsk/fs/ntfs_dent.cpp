@@ -355,6 +355,13 @@ ntfs_proc_idxentry(NTFS_INFO * a_ntfs, TSK_FS_DIR * a_fs_dir,
             continue;
         }
 
+#if 0
+        // @@@ BC: This hid a lot of entries in test images.  They were
+        // only partial images, but they were not junk and the idea was
+        // that this check would strip out chunk.  Commented it out and
+        // keeping it here as a reminder in case I think about doing it 
+        // again. 
+
         // verify name length would fit in stream
         if (fname->nlen > tsk_getu16(fs->endian, a_idxe->strlen)) {
             a_idxe = (ntfs_idxentry *) ((uintptr_t) a_idxe + 4);
@@ -363,6 +370,7 @@ ntfs_proc_idxentry(NTFS_INFO * a_ntfs, TSK_FS_DIR * a_fs_dir,
                     "ntfs_proc_idxentry: Skipping because name is longer than stream\n");
             continue;
         }
+#endif
 
         // verify it has the correct parent address
         if (tsk_getu48(fs->endian, fname->par_ref) != a_fs_dir->addr) {
@@ -372,7 +380,6 @@ ntfs_proc_idxentry(NTFS_INFO * a_ntfs, TSK_FS_DIR * a_fs_dir,
                     "ntfs_proc_idxentry: Skipping because of wrong parent address\n");
             continue;
         }
-
 
 
         /* do some sanity checks on the deleted entries
