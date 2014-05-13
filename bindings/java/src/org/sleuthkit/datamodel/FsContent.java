@@ -20,6 +20,8 @@ package org.sleuthkit.datamodel;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.openide.util.NbBundle;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -140,7 +142,8 @@ public abstract class FsContent extends AbstractFile {
 		}
 		catch (TskCoreException ex) {
 			if (!getImage().imageFileExists()) {
-				tskCase.submitError("Image File Read Error", "Image file is does not exist or is inaccessible.");
+				tskCase.submitError(NbBundle.getMessage(this.getClass(), "FsContent.readInt.err.context.text"),
+                                    NbBundle.getMessage(this.getClass(), "FsContent.readInt.err.msg.text"));
 			}
 			throw ex;
 		}
@@ -152,7 +155,7 @@ public abstract class FsContent extends AbstractFile {
 		try {
 			fs = getFileSystem();
 		} catch (TskCoreException ex) {
-			logger.log(Level.SEVERE, "Exception while calling 'getFileSystem' on " + this, ex);
+			logger.log(Level.SEVERE, "Exception while calling 'getFileSystem' on " + this, ex); //NON-NLS
 			return false;
 		}
 		return fs.getRoot_inum() == this.getMetaAddr();
@@ -215,10 +218,10 @@ public abstract class FsContent extends AbstractFile {
 	@Override
 	public String toString(boolean preserveState) {
 		return super.toString(preserveState)
-				+ "FsContent [\t"
-				+ "fsObjId " + fsObjId
-				+ "\t" + "uniquePath " + uniquePath
-				+ "\t" + "fileHandle " + fileHandle
+				+ "FsContent [\t" //NON-NLS
+				+ "fsObjId " + fsObjId //NON-NLS
+				+ "\t" + "uniquePath " + uniquePath //NON-NLS
+				+ "\t" + "fileHandle " + fileHandle //NON-NLS
 				+ "]\t";
 	}
 }

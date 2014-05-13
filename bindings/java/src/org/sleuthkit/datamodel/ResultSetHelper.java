@@ -38,14 +38,14 @@ class ResultSetHelper {
 		long obj_id, type, ssize;
 		String tzone,md5;
 
-		obj_id = rs.getLong("obj_id");
-		type = rs.getLong("type");
-		ssize = rs.getLong("ssize");
-		tzone = rs.getString("tzone");
+		obj_id = rs.getLong("obj_id"); //NON-NLS
+		type = rs.getLong("type"); //NON-NLS
+		ssize = rs.getLong("ssize"); //NON-NLS
+		tzone = rs.getString("tzone"); //NON-NLS
 		md5="";
 		if(db.getSchemaVersion() > 2)
 		{
-			md5= rs.getString("md5");
+			md5= rs.getString("md5"); //NON-NLS
 		}
 		Image img = new Image(db, obj_id, type, ssize, name, imagePaths, tzone,md5);
 		return img;
@@ -59,7 +59,7 @@ class ResultSetHelper {
 	 * @throws SQLException thrown if SQL error occurred
 	 */
 	String imagePath(ResultSet rs) throws SQLException {
-		return rs.getString("name");
+		return rs.getString("name"); //NON-NLS
 	}
 
 	/**
@@ -73,10 +73,10 @@ class ResultSetHelper {
 	 */
 	VolumeSystem volumeSystem(ResultSet rs, Image parent) throws SQLException {
 
-		long id = rs.getLong("obj_id");
-		long type = rs.getLong("vs_type");
-		long imgOffset = rs.getLong("img_offset");
-		long blockSize = rs.getLong("block_size");
+		long id = rs.getLong("obj_id"); //NON-NLS
+		long type = rs.getLong("vs_type"); //NON-NLS
+		long imgOffset = rs.getLong("img_offset"); //NON-NLS
+		long blockSize = rs.getLong("block_size"); //NON-NLS
 
 		VolumeSystem vs = new VolumeSystem(db, id, "", type, imgOffset, blockSize);
 
@@ -94,9 +94,9 @@ class ResultSetHelper {
 	 * @throws SQLException thrown if SQL error occurred
 	 */
 	Volume volume(ResultSet rs, VolumeSystem parent) throws SQLException {
-		Volume vol = new Volume(db, rs.getLong("obj_id"), rs.getLong("addr"),
-				rs.getLong("start"), rs.getLong("length"), rs.getLong("flags"),
-				rs.getString("desc"));
+		Volume vol = new Volume(db, rs.getLong("obj_id"), rs.getLong("addr"), //NON-NLS
+				rs.getLong("start"), rs.getLong("length"), rs.getLong("flags"), //NON-NLS
+				rs.getString("desc")); //NON-NLS
 		vol.setParent(parent);
 		return vol;
 	}
@@ -112,10 +112,10 @@ class ResultSetHelper {
 	 */
 	FileSystem fileSystem(ResultSet rs, Content parent) throws SQLException {
 
-		TskData.TSK_FS_TYPE_ENUM fsType = TskData.TSK_FS_TYPE_ENUM.valueOf(rs.getInt("fs_type"));
-		FileSystem fs = new FileSystem(db, rs.getLong("obj_id"), "", rs.getLong("img_offset"),
-				fsType, rs.getLong("block_size"), rs.getLong("block_count"),
-				rs.getLong("root_inum"), rs.getLong("first_inum"), rs.getLong("last_inum"));
+		TskData.TSK_FS_TYPE_ENUM fsType = TskData.TSK_FS_TYPE_ENUM.valueOf(rs.getInt("fs_type")); //NON-NLS
+		FileSystem fs = new FileSystem(db, rs.getLong("obj_id"), "", rs.getLong("img_offset"), //NON-NLS
+				fsType, rs.getLong("block_size"), rs.getLong("block_count"), //NON-NLS
+				rs.getLong("root_inum"), rs.getLong("first_inum"), rs.getLong("last_inum")); //NON-NLS
 		fs.setParent(parent);
 		return fs;
 	}
@@ -130,17 +130,17 @@ class ResultSetHelper {
 	 * @throws SQLException
 	 */
 	File file(ResultSet rs, FileSystem fs) throws SQLException {
-		File f = new File(db, rs.getLong("obj_id"), rs.getLong("fs_obj_id"),
-				TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")),
-				rs.getShort("attr_id"), rs.getString("name"), rs.getLong("meta_addr"),
-				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
-				TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")),
-				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")),
-				rs.getShort("meta_flags"), rs.getLong("size"),
-				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"),
-				rs.getShort("mode"), rs.getInt("uid"), rs.getInt("gid"),
-				rs.getString("md5"),
-				FileKnown.valueOf(rs.getByte("known")), rs.getString("parent_path"));
+		File f = new File(db, rs.getLong("obj_id"), rs.getLong("fs_obj_id"), //NON-NLS
+				TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")), //NON-NLS
+				rs.getShort("attr_id"), rs.getString("name"), rs.getLong("meta_addr"), //NON-NLS
+				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
+				TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
+				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), //NON-NLS
+				rs.getShort("meta_flags"), rs.getLong("size"), //NON-NLS
+				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
+				rs.getShort("mode"), rs.getInt("uid"), rs.getInt("gid"), //NON-NLS
+				rs.getString("md5"), //NON-NLS
+				FileKnown.valueOf(rs.getByte("known")), rs.getString("parent_path")); //NON-NLS
 		f.setFileSystem(fs);
 		return f;
 	}
@@ -156,17 +156,17 @@ class ResultSetHelper {
 	 * @throws SQLException thrown if SQL error occurred
 	 */
 	Directory directory(ResultSet rs, FileSystem fs, String name) throws SQLException {
-		Directory dir = new Directory(db, rs.getLong("obj_id"), rs.getLong("fs_obj_id"),
-				TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")),
-				rs.getShort("attr_id"), name, rs.getLong("meta_addr"),
-				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
-				TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")),
-				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")),
-				rs.getShort("meta_flags"), rs.getLong("size"),
-				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"),
-				rs.getShort("mode"), rs.getInt("uid"), rs.getInt("gid"),
-				rs.getString("md5"),
-				FileKnown.valueOf(rs.getByte("known")), rs.getString("parent_path"));
+		Directory dir = new Directory(db, rs.getLong("obj_id"), rs.getLong("fs_obj_id"), //NON-NLS
+				TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")), //NON-NLS
+				rs.getShort("attr_id"), name, rs.getLong("meta_addr"), //NON-NLS
+				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
+				TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
+				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), //NON-NLS
+				rs.getShort("meta_flags"), rs.getLong("size"), //NON-NLS
+				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
+				rs.getShort("mode"), rs.getInt("uid"), rs.getInt("gid"), //NON-NLS
+				rs.getString("md5"), //NON-NLS
+				FileKnown.valueOf(rs.getByte("known")), rs.getString("parent_path")); //NON-NLS
 		dir.setFileSystem(fs);
 		return dir;
 	}
@@ -179,18 +179,18 @@ class ResultSetHelper {
 	 * @throws SQLException
 	 */
 	VirtualDirectory virtualDirectory(ResultSet rs) throws SQLException {
-		String parentPath = rs.getString("parent_path");
+		String parentPath = rs.getString("parent_path"); //NON-NLS
 		if (parentPath == null) {
 			parentPath = "";
 		}
 		
-		final VirtualDirectory vd = new VirtualDirectory(db, rs.getLong("obj_id"),
-				rs.getString("name"),
-				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
-				TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")),
-				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
-				rs.getLong("size"), rs.getString("md5"),
-				FileKnown.valueOf(rs.getByte("known")), parentPath);
+		final VirtualDirectory vd = new VirtualDirectory(db, rs.getLong("obj_id"), //NON-NLS
+				rs.getString("name"), //NON-NLS
+				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
+				TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
+				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"), //NON-NLS
+				rs.getLong("size"), rs.getString("md5"), //NON-NLS
+				FileKnown.valueOf(rs.getByte("known")), parentPath); //NON-NLS
 		return vd;
 	}
 
@@ -204,7 +204,7 @@ class ResultSetHelper {
 	 * @throws SQLException thrown if SQL error occurred
 	 */
 	Directory directory(ResultSet rs, FileSystem fs) throws SQLException {
-		return directory(rs, fs, rs.getString("name"));
+		return directory(rs, fs, rs.getString("name")); //NON-NLS
 	}
 
 	/**
@@ -216,8 +216,8 @@ class ResultSetHelper {
 	 * @throws SQLException thrown if SQL error occurred
 	 */
 	TskFileRange tskFileRange(ResultSet rs) throws SQLException {
-		return new TskFileRange(rs.getLong("byte_start"),
-				rs.getLong("byte_len"), rs.getLong("sequence"));
+		return new TskFileRange(rs.getLong("byte_start"), //NON-NLS
+				rs.getLong("byte_len"), rs.getLong("sequence")); //NON-NLS
 	}
 
 	/**
@@ -229,26 +229,26 @@ class ResultSetHelper {
 	 * @throws SQLException
 	 */
 	DerivedFile derivedFile(ResultSet rs, long parentId) throws SQLException {
-		boolean hasLocalPath = rs.getBoolean("has_path");
-		long objId = rs.getLong("obj_id");
+		boolean hasLocalPath = rs.getBoolean("has_path"); //NON-NLS
+		long objId = rs.getLong("obj_id"); //NON-NLS
 		String localPath = null;
 		if (hasLocalPath) {
 			localPath = db.getFilePath(objId);
 		}
 
-		String parentPath = rs.getString("parent_path");
+		String parentPath = rs.getString("parent_path"); //NON-NLS
 		if (parentPath == null) {
 			parentPath = "";
 		}
 
 		final DerivedFile df =
-				new DerivedFile(db, objId, rs.getString("name"),
-				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
-				TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")),
-				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
-				rs.getLong("size"),
-				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"),
-				rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")),
+				new DerivedFile(db, objId, rs.getString("name"), //NON-NLS
+				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
+				TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
+				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"), //NON-NLS
+				rs.getLong("size"), //NON-NLS
+				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
+				rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
 				parentPath, localPath,
 				parentId);
 
@@ -264,26 +264,26 @@ class ResultSetHelper {
 	 * @throws SQLException
 	 */
 	LocalFile localFile(ResultSet rs, long parentId) throws SQLException {
-		boolean hasLocalPath = rs.getBoolean("has_path");
-		long objId = rs.getLong("obj_id");
+		boolean hasLocalPath = rs.getBoolean("has_path"); //NON-NLS
+		long objId = rs.getLong("obj_id"); //NON-NLS
 		String localPath = null;
 		if (hasLocalPath) {
 			localPath = db.getFilePath(objId);
 		}
 
-		String parentPath = rs.getString("parent_path");
+		String parentPath = rs.getString("parent_path"); //NON-NLS
 		if (parentPath == null) {
 			parentPath = "";
 		}
 
 		final LocalFile lf =
-				new LocalFile(db, objId, rs.getString("name"),
-				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
-				TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")),
-				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"),
-				rs.getLong("size"),
-				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"),
-				rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")),
+				new LocalFile(db, objId, rs.getString("name"), //NON-NLS
+				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
+				TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
+				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"), //NON-NLS
+				rs.getLong("size"), //NON-NLS
+				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
+				rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
 				parentPath, localPath,
 				parentId);
 

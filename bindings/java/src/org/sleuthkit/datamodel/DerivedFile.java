@@ -21,6 +21,8 @@ package org.sleuthkit.datamodel;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.openide.util.NbBundle;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -137,7 +139,8 @@ public class DerivedFile extends AbstractFile {
 					hasDerivedMethod = false;  //do not attempt to lazy load
 				}
 			} catch (TskCoreException e) {
-				String msg = "Error getting derived method for file id: " + getId();
+				String msg = NbBundle
+                        .getMessage(this.getClass(), "DerviedFile.derivedMethod.exception.msg1.text", getId());
 				logger.log(Level.WARNING, msg, e);
 				throw new TskCoreException(msg, e);
 			}
@@ -157,9 +160,9 @@ public class DerivedFile extends AbstractFile {
 
 	@Override
 	public String toString(boolean preserveState) {
-		return super.toString(preserveState) + "DerivedFile{" 
-				+  "derivedMethod=" + derivedMethod 
-				+ ", hasDerivedMethod=" + hasDerivedMethod 
+		return super.toString(preserveState) + "DerivedFile{"  //NON-NLS
+				+  "derivedMethod=" + derivedMethod  //NON-NLS
+				+ ", hasDerivedMethod=" + hasDerivedMethod  //NON-NLS
 				+ '}';
 	}
 
@@ -220,7 +223,7 @@ public class DerivedFile extends AbstractFile {
 
 		@Override
 		public String toString() {
-			return "DerivedMethod{" + "derived_id=" + derivedId + ", toolName=" + toolName + ", toolVersion=" + toolVersion + ", other=" + other + ", rederiveDetails=" + rederiveDetails + '}';
+			return "DerivedMethod{" + "derived_id=" + derivedId + ", toolName=" + toolName + ", toolVersion=" + toolVersion + ", other=" + other + ", rederiveDetails=" + rederiveDetails + '}'; //NON-NLS
 		}
 	}
 }

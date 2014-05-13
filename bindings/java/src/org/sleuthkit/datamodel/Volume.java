@@ -18,6 +18,8 @@
  */
 package org.sleuthkit.datamodel;
 
+import org.openide.util.NbBundle;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,7 +48,7 @@ public class Volume extends AbstractContent {
 	 * @param desc
 	 */
 	protected Volume(SleuthkitCase db, long obj_id, long addr, long start, long length, long flags, String desc) {
-		super(db, obj_id, "vol" + Long.toString(addr));
+		super(db, obj_id, "vol" + Long.toString(addr)); //NON-NLS
 		this.addr = addr;
 		this.start = start;
 		this.length = length;
@@ -54,7 +56,7 @@ public class Volume extends AbstractContent {
 		if (!desc.equals("")) {
 			this.desc = desc;
 		} else {
-			this.desc = "Unknown";
+			this.desc = NbBundle.getMessage(Volume.class, "Volume.desc.text");
 		}
 	}
 
@@ -63,7 +65,7 @@ public class Volume extends AbstractContent {
 		synchronized (this) {
 			Content myParent = getParent();
 			if (!(myParent instanceof VolumeSystem)) {
-				throw new TskCoreException("This volume's parent should be a VolumeSystem, but it's not.");
+				throw new TskCoreException(NbBundle.getMessage(Volume.class, "Volume.read.exception.msg1.text"));
 			}
 			VolumeSystem parentVs = (VolumeSystem) myParent;
 			// read from the volume
@@ -109,7 +111,7 @@ public class Volume extends AbstractContent {
 		String uniquePath = "";
 		String name = getName();
 		if (!name.isEmpty()) {
-			uniquePath = "/vol_" + name;
+			uniquePath = "/vol_" + name; //NON-NLS
 		}
 
 		Content myParent = getParent();
@@ -230,10 +232,10 @@ public class Volume extends AbstractContent {
 		long allFlag = TskData.TSK_VS_PART_FLAG_ENUM.TSK_VS_PART_FLAG_ALL.getVsFlag();
 
 		if ((vsFlag & allocFlag) == allocFlag) {
-			result = "Allocated";
+			result = NbBundle.getMessage(Volume.class, "Volume.vsFlagToString.allocated");
 		}
 		if ((vsFlag & unallocFlag) == unallocFlag) {
-			result = "Unallocated";
+			result = NbBundle.getMessage(Volume.class, "Volume.vsFlagToString.unallocated");
 		}
 		// ... add more code here if needed
 
@@ -284,6 +286,6 @@ public class Volume extends AbstractContent {
 
 	@Override
 	public String toString(boolean preserveState) {
-		return super.toString(preserveState) + "Volume [\t" + "addr " + addr + "\t" + "desc " + desc + "\t" + "flags " + flags + "\t" + "length " + length + "\t" + "start " + start + "]\t";
+		return super.toString(preserveState) + "Volume [\t" + "addr " + addr + "\t" + "desc " + desc + "\t" + "flags " + flags + "\t" + "length " + length + "\t" + "start " + start + "]\t"; //NON-NLS
 	}
 }

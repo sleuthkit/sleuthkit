@@ -68,7 +68,7 @@ class LogicalFileTransaction implements Transaction {
 			con.setAutoCommit(false);
 
 		} catch (SQLException ex) {
-			Logger.getLogger(LogicalFileTransaction.class.getName()).log(Level.SEVERE, "failed to set auto-commit to to false", ex);
+			Logger.getLogger(LogicalFileTransaction.class.getName()).log(Level.SEVERE, "failed to set auto-commit to to false", ex); //NON-NLS
 			throw ex;
 		}
 
@@ -112,7 +112,7 @@ class LogicalFileTransaction implements Transaction {
 			try {
 				con.rollback();
 			} catch (SQLException ex1) {
-				Logger.getLogger(LogicalFileTransaction.class.getName()).log(Level.SEVERE, "Exception while attempting to rollback!!", ex1);
+				Logger.getLogger(LogicalFileTransaction.class.getName()).log(Level.SEVERE, "Exception while attempting to rollback!!", ex1); //NON-NLS
 			}
 		}
 	}
@@ -127,7 +127,7 @@ class LogicalFileTransaction implements Transaction {
 			try {
 				con.setAutoCommit(true);
 			} catch (SQLException ex) {
-				logger.log(Level.SEVERE, "Error setting auto-commit to true.", ex);
+				logger.log(Level.SEVERE, "Error setting auto-commit to true.", ex); //NON-NLS
 			} finally {
 				con = null;
 				committed = true;

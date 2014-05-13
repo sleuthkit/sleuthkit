@@ -46,11 +46,11 @@ public class BlackboardAttribute {
 	 */
 	public enum TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE {
 
-		STRING(0, "String"), ///< string
-		INTEGER(1, "Integer"), ///< int
-		LONG(2, "Long"), ///< long
-		DOUBLE(3, "Double"), ///< double
-		BYTE(4, "Byte");	  ///< byte
+		STRING(0, "String"), ///< string NON-NLS
+		INTEGER(1, "Integer"), ///< int NON-NLS
+		LONG(2, "Long"), ///< long NON-NLS
+		DOUBLE(3, "Double"), ///< double NON-NLS
+		BYTE(4, "Byte");      ///< byte NON-NLS
 		private long type;
 		private String label;
 
@@ -597,7 +597,7 @@ public class BlackboardAttribute {
 
 	@Override
 	public String toString() {
-		return "BlackboardAttribute{" + "artifactID=" + artifactID + ", attributeTypeID=" + attributeTypeID + ", moduleName=" + moduleName + ", context=" + context + ", valueType=" + valueType + ", valueInt=" + valueInt + ", valueLong=" + valueLong + ", valueDouble=" + valueDouble + ", valueString=" + valueString + ", valueBytes=" + valueBytes + ", Case=" + Case + '}';
+		return "BlackboardAttribute{" + "artifactID=" + artifactID + ", attributeTypeID=" + attributeTypeID + ", moduleName=" + moduleName + ", context=" + context + ", valueType=" + valueType + ", valueInt=" + valueInt + ", valueLong=" + valueLong + ", valueDouble=" + valueDouble + ", valueString=" + valueString + ", valueBytes=" + valueBytes + ", Case=" + Case + '}'; //NON-NLS
 	}
 
 	/**

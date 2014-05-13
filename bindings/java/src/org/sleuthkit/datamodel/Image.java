@@ -18,6 +18,8 @@
  */
 package org.sleuthkit.datamodel;
 
+import org.openide.util.NbBundle;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -113,7 +115,7 @@ public class Image extends AbstractContent {
 					size = SleuthkitJNI.findDeviceSize(paths[0]);
 				}
 			} catch (TskCoreException ex) {
-				Logger.getLogger(Image.class.getName()).log(Level.SEVERE, "Could not find image size, image: " + this.getId(), ex);
+				Logger.getLogger(Image.class.getName()).log(Level.SEVERE, "Could not find image size, image: " + this.getId(), ex); //NON-NLS
 			}
 		}
 		return size;
@@ -140,7 +142,7 @@ public class Image extends AbstractContent {
 
 	@Override
 	public String getUniquePath() throws TskCoreException {
-		return "/img_" + getName();
+		return "/img_" + getName(); //NON-NLS
 	}
 
 	/**
@@ -229,7 +231,7 @@ public class Image extends AbstractContent {
 	}
 	@Override
 	public String toString(boolean preserveState){
-		return super.toString(preserveState) + "Image [\t" + "\t" + "paths " + Arrays.toString(paths) + "\t" + "size " + size + "\t" + "ssize " + ssize + "\t" + "timezone " + timezone + "\t" + "type " + type + "]\t";
+		return super.toString(preserveState) + "Image [\t" + "\t" + "paths " + Arrays.toString(paths) + "\t" + "size " + size + "\t" + "ssize " + ssize + "\t" + "timezone " + timezone + "\t" + "type " + type + "]\t"; //NON-NLS
 	}
 	
 	/**
@@ -252,7 +254,7 @@ public class Image extends AbstractContent {
      * @returns String of error messages to display to user or empty string if there are no errors 
      */
     public String verifyImageSize() {
-        Logger logger1 = Logger.getLogger("verifyImageSizes");
+        Logger logger1 = Logger.getLogger("verifyImageSizes"); //NON-NLS
         String errorString = "";
         try {
             List<VolumeSystem> volumeSystems = getVolumeSystems();
@@ -264,12 +266,14 @@ public class Image extends AbstractContent {
                     try {
                         int readBytes = read(buf, endOffset, 512);
                         if (readBytes < 0) {
-                            logger1.warning("Possible Incomplete Image: Error reading volume at offset " + endOffset);
-                            errorString = "\nPossible Incomplete Image: Error reading volume at offset " + endOffset;
+                            logger1.warning("Possible Incomplete Image: Error reading volume at offset " + endOffset); //NON-NLS
+                            errorString = NbBundle
+                                    .getMessage(this.getClass(), "Image.verifyImageSize.errStr1.text", endOffset);
                         }
                     } catch (TskCoreException ex) {
-                        logger1.warning("Possible Incomplete Image: Error reading volume at offset " + endOffset + ": " + ex.getLocalizedMessage());
-                        errorString = "\nPossible Incomplete Image: Error reading volume at offset " + endOffset;
+                        logger1.warning("Possible Incomplete Image: Error reading volume at offset " + endOffset + ": " + ex.getLocalizedMessage()); //NON-NLS
+                        errorString = NbBundle
+                                .getMessage(this.getClass(), "Image.verifyImageSize.errStr2.text", endOffset);
                     }
                 }
             }
@@ -282,12 +286,13 @@ public class Image extends AbstractContent {
                     byte[] buf = new byte[(int) block_size];
                     int readBytes = read(buf, endOffset, block_size);
                     if (readBytes < 0) {
-                        logger1.warning("Possible Incomplete Image: Error reading file system at offset " + endOffset);
-                        errorString = "\nPossible Incomplete Image: Error reading file system at offset " + endOffset;
+                        logger1.warning("Possible Incomplete Image: Error reading file system at offset " + endOffset); //NON-NLS
+                        errorString = NbBundle
+                                .getMessage(this.getClass(), "Image.verifyImageSize.errStr3.text", endOffset);
                     }
                 } catch (TskCoreException ex) {
-                    logger1.warning("Possible Incomplete Image: Error reading file system at offset " + endOffset + ": " + ex.getLocalizedMessage());
-                    errorString = "\nPossible Incomplete Image: Error reading file system at offset " + endOffset;
+                    logger1.warning("Possible Incomplete Image: Error reading file system at offset " + endOffset + ": " + ex.getLocalizedMessage()); //NON-NLS
+                    errorString = NbBundle.getMessage(this.getClass(), "Image.verifyImageSize.errStr4.text", endOffset);
                 }
             }
         } catch (TskException ex) {

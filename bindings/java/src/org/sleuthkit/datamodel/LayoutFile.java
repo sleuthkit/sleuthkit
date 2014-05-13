@@ -61,7 +61,7 @@ public class LayoutFile extends AbstractFile{
 		try {
 			numParts = getRanges().size();
 		} catch (TskCoreException ex) {
-			Logger.getLogger(LayoutFile.class.getName()).log(Level.INFO, "Error getting layout content ranges for size", ex);
+			Logger.getLogger(LayoutFile.class.getName()).log(Level.INFO, "Error getting layout content ranges for size", ex); //NON-NLS
 		}
 		return numParts;
 	}
@@ -88,7 +88,7 @@ public class LayoutFile extends AbstractFile{
                 calcSize += range.getByteLen();
             }
         }catch (TskCoreException ex) {
-			Logger.getLogger(LayoutFile.class.getName()).log(Level.SEVERE, "Error calculating layout file size from ranges", ex);
+			Logger.getLogger(LayoutFile.class.getName()).log(Level.SEVERE, "Error calculating layout file size from ranges", ex); //NON-NLS
         }
         return calcSize;
     }
@@ -167,6 +167,6 @@ public class LayoutFile extends AbstractFile{
 	}
 	@Override
 	public String toString(boolean preserveState){
-		return super.toString(preserveState) + "LayoutFile [\t" + "]\t";
+		return super.toString(preserveState) + "LayoutFile [\t" + "]\t"; //NON-NLS
 	}
 }

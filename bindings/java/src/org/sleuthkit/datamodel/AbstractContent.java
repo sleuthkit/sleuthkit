@@ -245,7 +245,7 @@ public abstract class AbstractContent implements Content {
 
 	@Override
 	public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskCoreException {
-		return db.getMatchingArtifacts("WHERE obj_id = " + objId);
+		return db.getMatchingArtifacts("WHERE obj_id = " + objId); //NON-NLS
 	}
 
 	@Override
@@ -275,39 +275,39 @@ public abstract class AbstractContent implements Content {
 
 	public String toString(boolean preserveState){
 		if (preserveState) {
-			return "AbstractContent [\t" + "objId " + String.format("%010d", objId) + "\t" 
-					+ "name " + name + "\t" + "parentId " + parentId + "\t" 
-					+ "\t" + "checkedHasChildren " + checkedHasChildren 
-					+ "\t" + "hasChildren " + hasChildren 
-					+ "\t" + "childrenCount " + childrenCount 
-					+ "uniquePath " + uniquePath + "]\t";
+			return "AbstractContent [\t" + "objId " + String.format("%010d", objId) + "\t"  //NON-NLS
+					+ "name " + name + "\t" + "parentId " + parentId + "\t"  //NON-NLS
+					+ "\t" + "checkedHasChildren " + checkedHasChildren  //NON-NLS
+					+ "\t" + "hasChildren " + hasChildren  //NON-NLS
+					+ "\t" + "childrenCount " + childrenCount  //NON-NLS
+					+ "uniquePath " + uniquePath + "]\t"; //NON-NLS
 		} else {
 			try {
 				if (getParent() != null) {
-					return "AbstractContent [\t" + "objId " + String.format("%010d", objId) 
-							+ "\t" + "name " + name 
-								+ "\t" + "checkedHasChildren " + checkedHasChildren 
-								+ "\t" + "hasChildren " + hasChildren 
-								+ "\t" + "childrenCount " + childrenCount 
-							+ "\t" + "getUniquePath " + getUniquePath() 
-							+ "\t" + "getParent " + getParent().getId() + "]\t";
+					return "AbstractContent [\t" + "objId " + String.format("%010d", objId)  //NON-NLS
+							+ "\t" + "name " + name  //NON-NLS
+								+ "\t" + "checkedHasChildren " + checkedHasChildren  //NON-NLS
+								+ "\t" + "hasChildren " + hasChildren  //NON-NLS
+								+ "\t" + "childrenCount " + childrenCount  //NON-NLS
+							+ "\t" + "getUniquePath " + getUniquePath()  //NON-NLS
+							+ "\t" + "getParent " + getParent().getId() + "]\t"; //NON-NLS
 				} else {
-					return "AbstractContent [\t" + "objId " 
-							+ String.format("%010d", objId) + "\t" + "name " + name 
-								+ "\t" + "checkedHasChildren " + checkedHasChildren 
-								+ "\t" + "hasChildren " + hasChildren 
-								+ "\t" + "childrenCount " + childrenCount 
-							+ "\t" + "uniquePath " + getUniquePath() 
-							+ "\t" + "parentId " + parentId + "]\t";
+					return "AbstractContent [\t" + "objId "  //NON-NLS
+							+ String.format("%010d", objId) + "\t" + "name " + name  //NON-NLS
+								+ "\t" + "checkedHasChildren " + checkedHasChildren  //NON-NLS
+								+ "\t" + "hasChildren " + hasChildren  //NON-NLS
+								+ "\t" + "childrenCount " + childrenCount  //NON-NLS
+							+ "\t" + "uniquePath " + getUniquePath()  //NON-NLS
+							+ "\t" + "parentId " + parentId + "]\t"; //NON-NLS
 				}
 			} catch (TskCoreException ex) {
-				Logger.getLogger(AbstractContent.class.getName()).log(Level.SEVERE, "Could not find Parent", ex);
-				return "AbstractContent [\t" + "objId " + String.format("%010d", objId) + "\t" 
-					+ "name " + name + "\t" + "parentId " + parentId + "\t" 
-					+ "\t" + "checkedHasChildren " + checkedHasChildren 
-					+ "\t" + "hasChildren " + hasChildren 
-					+ "\t" + "childrenCount " + childrenCount 
-					+ "uniquePath " + uniquePath + "]\t";
+				Logger.getLogger(AbstractContent.class.getName()).log(Level.SEVERE, "Could not find Parent", ex); //NON-NLS
+				return "AbstractContent [\t" + "objId " + String.format("%010d", objId) + "\t"  //NON-NLS
+					+ "name " + name + "\t" + "parentId " + parentId + "\t"  //NON-NLS
+					+ "\t" + "checkedHasChildren " + checkedHasChildren   //NON-NLS
+					+ "\t" + "hasChildren " + hasChildren   //NON-NLS
+					+ "\t" + "childrenCount " + childrenCount   //NON-NLS
+					+ "uniquePath " + uniquePath + "]\t";  //NON-NLS
 			}
 		}
 	}

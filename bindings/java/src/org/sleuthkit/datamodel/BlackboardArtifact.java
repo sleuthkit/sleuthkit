@@ -329,7 +329,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 	@Override
 	public String toString() {
-		return "BlackboardArtifact{" + "artifactID=" + artifactID + ", objID=" + objID + ", artifactTypeID=" + artifactTypeID + ", artifactTypeName=" + artifactTypeName + ", displayName=" + displayName + ", Case=" + Case + '}';
+		return "BlackboardArtifact{" + "artifactID=" + artifactID + ", objID=" + objID + ", artifactTypeID=" + artifactTypeID + ", artifactTypeName=" + artifactTypeName + ", displayName=" + displayName + ", Case=" + Case + '}'; //NON-NLS
 	}
 	
 	

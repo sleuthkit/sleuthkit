@@ -46,7 +46,7 @@ public class Hash {
 		InputStream in = new ReadContentInputStream(file);
 		Logger logger = Logger.getLogger(Hash.class.getName());
 		try {
-			MessageDigest md = MessageDigest.getInstance("md5");
+			MessageDigest md = MessageDigest.getInstance("md5"); //NON-NLS
 			int len = in.read(buffer);
 			while (len != -1) {
 				md.update(buffer, 0, len);
@@ -61,9 +61,9 @@ public class Hash {
 			}
 			file.getSleuthkitCase().setMd5Hash(file, hashText);
 		} catch (NoSuchAlgorithmException ex) {
-			logger.log(Level.WARNING, "No algorithm known as 'md5'", ex);
+			logger.log(Level.WARNING, "No algorithm known as 'md5'", ex); //NON-NLS
 		} catch (TskCoreException ex) {
-			logger.log(Level.WARNING, "Error updating content's md5 in database", ex);
+			logger.log(Level.WARNING, "Error updating content's md5 in database", ex); //NON-NLS
 		} finally {
 			in.close();
 		}
