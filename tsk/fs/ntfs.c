@@ -2687,7 +2687,18 @@ ntfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
      * obvious way to pass the desired sequence in.  fs_dir_walk_lcl sets the name
      * before calling this, which motivated this quick fix. */
     if ((a_fs_file->name != NULL) && (a_fs_file->name->meta_addr == mftnum)) {
-        if (a_fs_file->name->meta_seq != a_fs_file->meta->seq) {
+
+        /* NTFS Updates the sequence when an entry is deleted and not when 
+         * it is allocated.  So, if we have a deleted MFT entry, then use
+         * its previous sequence number to compare with the name so that we 
+         * still match them up (until the entry is allocated again). */
+        uint16_t seqToCmp = a_fs_file->meta->seq;
+        if (a_fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC) {
+            if (a_fs_file->meta->seq > 0)
+                seqToCmp--;
+        }
+
+        if (a_fs_file->name->meta_seq != seqToCmp) {
             if (allocedMeta) {
                 free(a_fs_file->meta);
                 a_fs_file->meta = NULL;
