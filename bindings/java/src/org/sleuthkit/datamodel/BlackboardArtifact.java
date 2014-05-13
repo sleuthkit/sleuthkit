@@ -42,75 +42,75 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * See framework/Services/TskBlackboard.* */
 	public enum ARTIFACT_TYPE implements SleuthkitVisitableItem {
 
-		TSK_GEN_INFO(1, "TSK_GEN_INFO",
+		TSK_GEN_INFO(1, "TSK_GEN_INFO", //NON-NLS
                      NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskGenInfo.text")), ///< Default type
-		TSK_WEB_BOOKMARK(2, "TSK_WEB_BOOKMARK",
+		TSK_WEB_BOOKMARK(2, "TSK_WEB_BOOKMARK", //NON-NLS
                          NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskWebBookmark.text")), ///< web bookmarks
-		TSK_WEB_COOKIE(3, "TSK_WEB_COOKIE",
+		TSK_WEB_COOKIE(3, "TSK_WEB_COOKIE", //NON-NLS
                        NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskWebCookie.text")), ///< web cookies
-		TSK_WEB_HISTORY(4, "TSK_WEB_HISTORY",
+		TSK_WEB_HISTORY(4, "TSK_WEB_HISTORY", //NON-NLS
                         NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskWebHistory.text")), ///< web history
-		TSK_WEB_DOWNLOAD(5, "TSK_WEB_DOWNLOAD",
+		TSK_WEB_DOWNLOAD(5, "TSK_WEB_DOWNLOAD", //NON-NLS
                          NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskWebDownload.text")), ///< web downloads
-		TSK_RECENT_OBJECT(6, "TSK_RECENT_OBJ",
+		TSK_RECENT_OBJECT(6, "TSK_RECENT_OBJ", //NON-NLS
                           NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tsk.recentObject.text")), ///< recent objects
-		TSK_GPS_TRACKPOINT(7, "TSK_GPS_TRACKPOINT",
+		TSK_GPS_TRACKPOINT(7, "TSK_GPS_TRACKPOINT", //NON-NLS
                            NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskGpsTrackpoint.text")), ///< trackpoint (geo location data)
-		TSK_INSTALLED_PROG(8, "TSK_INSTALLED_PROG",
+		TSK_INSTALLED_PROG(8, "TSK_INSTALLED_PROG", //NON-NLS
                            NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskInstalledProg.text")), ///< installed programs
-		TSK_KEYWORD_HIT(9, "TSK_KEYWORD_HIT",
+		TSK_KEYWORD_HIT(9, "TSK_KEYWORD_HIT", //NON-NLS
                         NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskKeywordHits.text")), ///< keyword search hits
-		TSK_HASHSET_HIT(10, "TSK_HASHSET_HIT",
+		TSK_HASHSET_HIT(10, "TSK_HASHSET_HIT", //NON-NLS
                         NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskHashsetHit.text")), ///< hashset hits
-		TSK_DEVICE_ATTACHED(11, "TSK_DEVICE_ATTACHED",
+		TSK_DEVICE_ATTACHED(11, "TSK_DEVICE_ATTACHED", //NON-NLS
                             NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskDeviceAttached.text")), ///< attached devices
-		TSK_INTERESTING_FILE_HIT(12, "TSK_INTERESTING_FILE_HIT",
+		TSK_INTERESTING_FILE_HIT(12, "TSK_INTERESTING_FILE_HIT", //NON-NLS
                                  NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskInterestingFileHit.text")), ///< an interesting/notable file hit
-		TSK_EMAIL_MSG(13, "TSK_EMAIL_MSG",
+		TSK_EMAIL_MSG(13, "TSK_EMAIL_MSG", //NON-NLS
                       NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskEmailMsg.text")), ///< email message
-		TSK_EXTRACTED_TEXT(14, "TSK_EXTRACTED_TEXT",
+		TSK_EXTRACTED_TEXT(14, "TSK_EXTRACTED_TEXT", //NON-NLS
                            NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskExtractedText.text")), ///< text extracted from file
-		TSK_WEB_SEARCH_QUERY(15,"TSK_WEB_SEARCH_QUERY",
+		TSK_WEB_SEARCH_QUERY(15,"TSK_WEB_SEARCH_QUERY", //NON-NLS
                              NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskWebSearchQuery.text")), ///< web search engine query extracted from web history
-		TSK_METADATA_EXIF(16, "TSK_METADATA_EXIF",
+		TSK_METADATA_EXIF(16, "TSK_METADATA_EXIF", //NON-NLS
                           NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskMetadataExif.text")), ///< EXIF Metadata
-		TSK_TAG_FILE(17, "TSK_TAG_FILE",
+		TSK_TAG_FILE(17, "TSK_TAG_FILE", //NON-NLS
                      NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tagFile.text")), ///< tagged files
-		TSK_TAG_ARTIFACT(18, "TSK_TAG_ARTIFACT",
+		TSK_TAG_ARTIFACT(18, "TSK_TAG_ARTIFACT", //NON-NLS
                          NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskTagArtifact.text")), ///< tagged results/artifacts
-		TSK_OS_INFO(19, "TSK_OS_INFO",
+		TSK_OS_INFO(19, "TSK_OS_INFO", //NON-NLS
                     NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskOsInfo.text")), ///< Information pertaining to an operating system.
-		TSK_OS_ACCOUNT(20, "TSK_OS_ACCOUNT",
+		TSK_OS_ACCOUNT(20, "TSK_OS_ACCOUNT", //NON-NLS
                        NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskOsAccount.text")), ///< An operating system user account.
-		TSK_SERVICE_ACCOUNT(21, "TSK_SERVICE_ACCOUNT",
+		TSK_SERVICE_ACCOUNT(21, "TSK_SERVICE_ACCOUNT", //NON-NLS
                             NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskServiceAccount.text")), ///< An application/service/web user account.
-        TSK_TOOL_OUTPUT(22, "TSK_TOOL_OUTPUT",
+        TSK_TOOL_OUTPUT(22, "TSK_TOOL_OUTPUT", //NON-NLS
                         NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskToolOutput.text")), ///< Output from an external tool or module that (raw text)
-		TSK_CONTACT(23, "TSK_CONTACT",
+		TSK_CONTACT(23, "TSK_CONTACT", //NON-NLS
                     NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskContact.text")), ///< A Contact extracted from a phone, or from an Addressbook/Email/Messaging Application
-		TSK_MESSAGE(24, "TSK_MESSAGE",
+		TSK_MESSAGE(24, "TSK_MESSAGE", //NON-NLS
                     NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskMessage.text")), ///< An SMS/MMS message extracted from phone, or from another messaging application, like IM
-		TSK_CALLLOG(25, "TSK_CALLLOG",
+		TSK_CALLLOG(25, "TSK_CALLLOG", //NON-NLS
                     NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskCalllog.text")), ///< A Phone call log extracted from a phones or softphone application
-		TSK_CALENDAR_ENTRY(26, "TSK_CALENDAR_ENTRY",
+		TSK_CALENDAR_ENTRY(26, "TSK_CALENDAR_ENTRY", //NON-NLS
                            NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskCalendarEntry.text")), ///< A Calendar entry from a phone, PIM or a Calendar application.
-		TSK_SPEED_DIAL_ENTRY(27, "TSK_SPEED_DIAL_ENTRY",
+		TSK_SPEED_DIAL_ENTRY(27, "TSK_SPEED_DIAL_ENTRY", //NON-NLS
                              NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskSpeedDialEntry.text")), ///< A speed dial entry from a phone
-		TSK_BLUETOOTH_PAIRING(28, "TSK_BLUETOOTH_PAIRING",
+		TSK_BLUETOOTH_PAIRING(28, "TSK_BLUETOOTH_PAIRING", //NON-NLS
                               NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskBluetoothPairing.text")), ///< A bluetooth pairing entry
-		TSK_GPS_BOOKMARK(29, "TSK_GPS_BOOKMARK",
+		TSK_GPS_BOOKMARK(29, "TSK_GPS_BOOKMARK", //NON-NLS
                          NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskGpsBookmark.text")),	// GPS Bookmarks
-		TSK_GPS_LAST_KNOWN_LOCATION(30, "TSK_GPS_LAST_KNOWN_LOCATION",
+		TSK_GPS_LAST_KNOWN_LOCATION(30, "TSK_GPS_LAST_KNOWN_LOCATION", //NON-NLS
                                     NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskGpsLastKnownLocation.text")),	// GPS Last known location
-		TSK_GPS_SEARCH(31, "TSK_GPS_SEARCH",
+		TSK_GPS_SEARCH(31, "TSK_GPS_SEARCH", //NON-NLS
                        NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskGpsSearch.text")),	// GPS Searches
-		TSK_PROG_RUN(32, "TSK_PROG_RUN",
+		TSK_PROG_RUN(32, "TSK_PROG_RUN", //NON-NLS
                      NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskProgRun.text")),  ///< Application run information
-		TSK_ENCRYPTION_DETECTED(33, "TSK_ENCRYPTION_DETECTED",
+		TSK_ENCRYPTION_DETECTED(33, "TSK_ENCRYPTION_DETECTED", //NON-NLS
                                 NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskEncryptionDetected.text")), ///< Encrypted File
-		TSK_EXT_MISMATCH_DETECTED(34, "TSK_EXT_MISMATCH_DETECTED",
+		TSK_EXT_MISMATCH_DETECTED(34, "TSK_EXT_MISMATCH_DETECTED", //NON-NLS
                                   NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskExtMismatchDetected.text")), ///< Extension Mismatch
-		TSK_INTERESTING_ARTIFACT_HIT(35, "TSK_INTERESTING_ARTIFACT_HIT",
+		TSK_INTERESTING_ARTIFACT_HIT(35, "TSK_INTERESTING_ARTIFACT_HIT", //NON-NLS
                                      NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskInterestingArtifactHit.text")),	// Any artifact that should be called out
 		; 
 		/* SEE ABOVE -- KEEP C++ CODE IN SYNC */
