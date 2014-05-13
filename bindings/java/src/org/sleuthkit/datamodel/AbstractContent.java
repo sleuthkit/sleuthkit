@@ -225,7 +225,7 @@ public abstract class AbstractContent implements Content {
 	
 	@Override
 	public ArrayList<BlackboardAttribute> getGenInfoAttributes(ATTRIBUTE_TYPE attr_type) throws TskCoreException {
-		ArrayList<BlackboardAttribute> returnList = new ArrayList();
+		ArrayList<BlackboardAttribute> returnList = new ArrayList<BlackboardAttribute>();
 		
 		ArrayList<BlackboardArtifact> arts = getArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO);
 		if (arts.isEmpty()) {
