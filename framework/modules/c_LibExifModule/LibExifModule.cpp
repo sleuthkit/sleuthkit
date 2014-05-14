@@ -297,7 +297,7 @@ extern "C"
     {
         if (pFile == NULL) 
         {
-            LOGERROR(L"ExifExtractModule: passed NULL file pointer.");
+            LOGERROR("ExifExtractModule: passed NULL file pointer.");
             return TskModule::FAIL;
         }
 
@@ -325,7 +325,7 @@ extern "C"
 
             if (exifLoader == NULL)
             {
-                LOGERROR(L"ExifExtractModule - Received NULL ExifLoader pointer");
+                LOGERROR("ExifExtractModule - Received NULL ExifLoader pointer");
                 return TskModule::FAIL;
             }
 
@@ -355,15 +355,15 @@ extern "C"
         }
         catch (TskException& tskEx)
         {
-            std::wstringstream msg;
-            msg << L"ExifExtractModule - Error processing file id " << pFile->getId() << L": " << tskEx.what();
+            std::stringstream msg;
+            msg << "ExifExtractModule - Error processing file id " << pFile->getId() << ": " << tskEx.message();
             LOGERROR(msg.str());
             return TskModule::FAIL;
         }
         catch (std::exception& ex)
         {
-            std::wstringstream msg;
-            msg << L"ExifExtractModule - Error processing file id " << pFile->getId() << L": " << ex.what();
+            std::stringstream msg;
+            msg << "ExifExtractModule - Error processing file id " << pFile->getId() << ": " << ex.what();
             LOGERROR(msg.str());
             return TskModule::FAIL;
         }

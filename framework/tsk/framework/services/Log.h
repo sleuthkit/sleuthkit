@@ -126,7 +126,14 @@ public:
     const char * getLogPath() { return m_filePath.c_str(); }
 
 protected:
+    void logMessage(const std::string& level, const std::string& msg);
+
     std::string m_filePath;
     std::ofstream m_outStream;
+
+    std::string m_previousMessage;
+    unsigned int m_messageRepeatCount;
+
+    static const int REPEAT_THRESHOLD;
 };
 #endif

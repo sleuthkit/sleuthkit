@@ -8,9 +8,10 @@
  * This software is distributed under the Common Public License 1.0
  */
 
-#include <string.h>
+#include <string>
+#include <cstring>
 #include <errno.h>
-#include "string.h"
+#include <sstream>
 #include "Log.h"
 #include "tsk/framework/utilities/TskUtilities.h"
 #include "sys/stat.h"
@@ -18,13 +19,18 @@
 #include "Poco/FileStream.h"
 #include "Poco/Exception.h"
 #include "Poco/LineEndingConverter.h"
+#include "Poco/LocalDateTime.h"
+#include "Poco/DateTimeFormatter.h"
 
 // @@@ imports for directory creation and deletion
 //#include "windows.h"
 
+// The threshold at which we will write a message to the log
+// file for messages that repeat.
+const int Log::REPEAT_THRESHOLD = 500;
 
 Log::Log()
-: m_filePath(""), m_outStream()
+: m_filePath(""), m_outStream(), m_previousMessage(""), m_messageRepeatCount(0)
 {
 }
 
@@ -127,23 +133,32 @@ void Log::log(Channel a_channel, const std::string &a_msg)
         break;
     }
 
-    struct tm *newtime;
-    time_t aclock;
-
-    time(&aclock);   // Get time in seconds
-    newtime = localtime(&aclock);   // Convert time to struct tm form 
-    char timeStr[64];
-    snprintf(timeStr, 64, "%.2d/%.2d/%.2d %.2d:%.2d:%.2d",
-        newtime->tm_mon+1,newtime->tm_mday,newtime->tm_year % 100, 
-        newtime->tm_hour, newtime->tm_min, newtime->tm_sec);
-
-    if (m_outStream.good()) {
-        m_outStream << timeStr << " " << level << " " << a_msg << Poco::LineEnding::NEWLINE_DEFAULT;
-        m_outStream.flush();
+    if (a_msg == m_previousMessage && m_messageRepeatCount < Log::REPEAT_THRESHOLD)
+        m_messageRepeatCount++;
+    else
+    {
+        if (m_messageRepeatCount > 0)
+        {
+            std::stringstream repeatMessage;
+            repeatMessage << "The previous message was repeated "
+                << m_messageRepeatCount << " times.";
+            logMessage("[INFO]", repeatMessage.str());
+        }
+        m_previousMessage = a_msg;
+        m_messageRepeatCount = 0;
+        logMessage(level, a_msg);
     }
-    else {
-        fprintf(stderr, "%s %s %s\n", timeStr, level.data(), a_msg.data());
-    }
+}
+
+void Log::logMessage(const std::string& level, const std::string& msg)
+{
+    Poco::LocalDateTime now;
+
+    std::ostream& outStream = m_outStream.good() ? m_outStream : std::cerr;
+
+    outStream << Poco::DateTimeFormatter::format(now, "%m/%d/%y %H:%M:%S")
+        << " " << level << " " << msg << Poco::LineEnding::NEWLINE_DEFAULT;
+    outStream.flush();
 }
 
 void Log::log(Channel a_channel, const std::wstring &a_msg)

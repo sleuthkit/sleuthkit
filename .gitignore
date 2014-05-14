@@ -31,9 +31,11 @@
 /win32/*/Debug/
 /win32/Release/
 /win32/*/Release/
+/win32/*/x64/
 /win32/*/*.user
 win32/ipch
 win32/BuildErrors.txt
+win32/BuildErrors-64bit.txt
 framework/msvcpp/framework/Debug/
 framework/msvcpp/framework/Release/
 framework/msvcpp/*/*.user

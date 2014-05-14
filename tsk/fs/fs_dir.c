@@ -488,6 +488,9 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
          * Must have non-zero inode addr or have allocated name (if inode is 0) */
         if (((fs_file->name->meta_addr)
                 || (fs_file->name->flags & TSK_FS_NAME_FLAG_ALLOC))) {
+
+            /* Note that the NTFS code behind here has a slight hack to use the
+             * correct sequence number based on the data in fs_file->name */
             if (a_fs->file_add_meta(a_fs, fs_file,
                     fs_file->name->meta_addr)) {
                 if (tsk_verbose)
@@ -968,6 +971,11 @@ find_orphan_meta_walk_cb(TSK_FS_FILE * a_fs_file, void *a_ptr)
             "OrphanFile-%" PRIuINUM, a_fs_file->meta->addr);
     }
     data->fs_name->meta_addr = a_fs_file->meta->addr;
+    /* unalloc MFT entries have their sequence number incremented
+     * when they are unallocated.  Decrement it in the file name so
+     * that it matches the typical situation where the name is one
+     * less. */
+    data->fs_name->meta_seq = a_fs_file->meta->seq - 1;
     data->fs_name->flags = TSK_FS_NAME_FLAG_UNALLOC;
     data->fs_name->type = TSK_FS_NAME_TYPE_UNDEF;
 

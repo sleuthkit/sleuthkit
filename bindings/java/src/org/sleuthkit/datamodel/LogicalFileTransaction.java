@@ -31,7 +31,7 @@ import static org.sleuthkit.datamodel.SleuthkitCase.*;
  *
  *
  */
-class LogicalFileTransaction implements Transaction {
+public class LogicalFileTransaction implements Transaction {
 
 	/**
 	 * private commit state
