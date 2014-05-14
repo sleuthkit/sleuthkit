@@ -47,7 +47,8 @@ map<int, TskArtifactNames> initializeArtifactTypeMap(){
     retval.insert(pair<int, TskArtifactNames>(TSK_ENCRYPTION_DETECTED, TskArtifactNames("TSK_ENCRYPTION_DETECTED", "Encryption Detected")));
     retval.insert(pair<int, TskArtifactNames>(TSK_EXT_MISMATCH_DETECTED, TskArtifactNames("TSK_EXT_MISMATCH_DETECTED", "Extension Mismatch Detected")));
     retval.insert(pair<int, TskArtifactNames>(TSK_INTERESTING_ARTIFACT_HIT, TskArtifactNames("TSK_INTERESTING_ARTIFACT_HIT", "Interesting Results")));
-	
+	retval.insert(pair<int, TskArtifactNames>(TSK_GPS_ROUTE, TskArtifactNames("TSK_GPS_ROUTE", "GPS Route")));
+    
     return retval;
 }
 
@@ -147,6 +148,10 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
 	retval.insert(pair<int, TskAttributeNames>(TSK_PERMISSIONS, TskAttributeNames("TSK_PERMISSIONS",  "Permissions")));
 	retval.insert(pair<int, TskAttributeNames>(TSK_ASSOCIATED_ARTIFACT, TskAttributeNames("TSK_ASSOCIATED_ARTIFACT", "Associated Artifact")));
     retval.insert(pair<int, TskAttributeNames>(TSK_ISDELETED, TskAttributeNames("TSK_ISDELETED", "Is Deleted")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_GEO_LATITUDE_START, TskAttributeNames("TSK_GEO_LATITUDE_START", "Starting Latitude")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_GEO_LATITUDE_END, TskAttributeNames("TSK_GEO_LATITUDE_END", "Ending Latitude")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_GEO_LONGITUDE_START, TskAttributeNames("TSK_GEO_LONGITUDE_START", "Starting Longitude")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_GEO_LONGITUDE_END, TskAttributeNames("TSK_GEO_LONGITUDE_END", "Ending Longitude")));
 
     return retval;
 }
