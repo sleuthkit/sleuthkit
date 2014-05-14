@@ -971,6 +971,11 @@ find_orphan_meta_walk_cb(TSK_FS_FILE * a_fs_file, void *a_ptr)
             "OrphanFile-%" PRIuINUM, a_fs_file->meta->addr);
     }
     data->fs_name->meta_addr = a_fs_file->meta->addr;
+    /* unalloc MFT entries have their sequence number incremented
+     * when they are unallocated.  Decrement it in the file name so
+     * that it matches the typical situation where the name is one
+     * less. */
+    data->fs_name->meta_seq = a_fs_file->meta->seq - 1;
     data->fs_name->flags = TSK_FS_NAME_FLAG_UNALLOC;
     data->fs_name->type = TSK_FS_NAME_TYPE_UNDEF;
 

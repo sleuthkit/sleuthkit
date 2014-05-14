@@ -3,7 +3,7 @@
 
                 http://www.sleuthkit.org/sleuthkit
 
-                     Last Modified: Feb 2012
+                     Last Modified: Jan 2014
 
 ====================================================================
 The Sleuth Kit (TSK) runs on Windows.  If you simply want the
@@ -11,15 +11,21 @@ executables, you can download them from the www.sleuthkit.org
 website.
 
 If you want to build your own executables, you have two options.
-One is to use Microsoft Visual Studio.  The VS solution file is in
-the win32 directory.  Refer to the BUILDING.txt file in that directory
-for details.
 
-You can also compile Windows executables using mingw32.  If you're
-using mingw32 on Linux, simply give the "--host=i586-mingw32msvc"
-argument when running the './configure' script and use 'make' to
-compile.  If you're using mingw32 on Windows, './configure' and
-'make' will work directly.
+1) Microsoft Visual Studio.  The VS solution file is in the win32
+directory.  Refer to the win32\BUILDING.txt file for details for
+building the 32-bit and 64-bit versions. 
+
+2) mingw32.  See below for more details.
+
+
+---------------------------------------------------------------
+MINGW32
+
+If you're using mingw32 on Linux, simply give the
+"--host=i586-mingw32msvc" argument when running the './configure'
+script and use 'make' to compile.  If you're using mingw32 on Windows,
+'./configure' and 'make' will work directly.
 
 Note that to compile the Java bindings  you will need to have a JDK
 to be installed, and by default the Oracle JDK on Windows is installed

@@ -2656,6 +2656,7 @@ class TskFsMeta {
 * undefined. See TSK_FS_FILE for more details. 
 */
 class TskFsFile {
+  friend class TskFsDir;
   private:
     TSK_FS_FILE * m_fsFile;
     bool m_opened;
@@ -2973,9 +2974,11 @@ class TskFsDir {
      */
     TskFsFile *getFile(size_t a_idx) const {
         TSK_FS_FILE *fs_file = tsk_fs_dir_get(m_fsDir, a_idx);
-        if (fs_file != NULL)
-             return new TskFsFile(fs_file);
-        else
+        if (fs_file != NULL) {
+             TskFsFile *f = new TskFsFile(fs_file);
+             f->m_opened = true;
+             return f;
+        } else
              return NULL;
     };
 

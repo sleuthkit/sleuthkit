@@ -1,10 +1,29 @@
 Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
+---------------- VERSION 4.2.0 --------------
+- ExFAT support added
+- New database schema
+- New Sqlite hash database
+- Various bug fixes
+- NTFS pays more attention to sequence and loads metadata only 
+  if it matches. 
+- Added secondary hash database index 
+
+
+
 ---------------- VERSION 4.1.3 --------------
-Core: 
 - fixed bug that could crash UFS/ExtX in inode_lookup.
-- Updated sqlite database to have image size and md5 (schema v3)
+- More bounds checking in ISO9660 code 
+- Image layer bounds checking
+- Update version of SQLITE-JDBC
+- changed how java loads navite libraries
+- Config file for YAFFS2 spare area
+- New method in image layer to return names
+- Yaffs2 cleanup.
+- Escape all strings in SQLite database
+- SQlite code uses NTTFS sequence number to match parent IDs
+
 
 ---------------- VERSION 4.1.2 --------------
 Core:

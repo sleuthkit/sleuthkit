@@ -2687,7 +2687,18 @@ ntfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
      * obvious way to pass the desired sequence in.  fs_dir_walk_lcl sets the name
      * before calling this, which motivated this quick fix. */
     if ((a_fs_file->name != NULL) && (a_fs_file->name->meta_addr == mftnum)) {
-        if (a_fs_file->name->meta_seq != a_fs_file->meta->seq) {
+
+        /* NTFS Updates the sequence when an entry is deleted and not when 
+         * it is allocated.  So, if we have a deleted MFT entry, then use
+         * its previous sequence number to compare with the name so that we 
+         * still match them up (until the entry is allocated again). */
+        uint16_t seqToCmp = a_fs_file->meta->seq;
+        if (a_fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC) {
+            if (a_fs_file->meta->seq > 0)
+                seqToCmp--;
+        }
+
+        if (a_fs_file->name->meta_seq != seqToCmp) {
             if (allocedMeta) {
                 free(a_fs_file->meta);
                 a_fs_file->meta = NULL;
@@ -4740,7 +4751,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     ntfs->fs = (ntfs_sb *) tsk_malloc(len);
     if (ntfs->fs == NULL) {
         fs->tag = 0;
-        free(ntfs);
+        tsk_fs_free((TSK_FS_INFO *)ntfs);
         return NULL;
     }
 
@@ -4753,7 +4764,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_set_errstr2("%s: Error reading boot sector.", myname);
         fs->tag = 0;
         free(ntfs->fs);
-        free(ntfs);
+        tsk_fs_free((TSK_FS_INFO *)ntfs);
         return NULL;
     }
 
@@ -4761,7 +4772,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     if (tsk_fs_guessu16(fs, ntfs->fs->magic, NTFS_FS_MAGIC)) {
         fs->tag = 0;
         free(ntfs->fs);
-        free(ntfs);
+        tsk_fs_free((TSK_FS_INFO *)ntfs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr("Not a NTFS file system (magic)");
@@ -4788,7 +4799,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
                 ntfs->ssize_b);
         fs->tag = 0;
         free(ntfs->fs);
-        free(ntfs);
+        tsk_fs_free((TSK_FS_INFO *)ntfs);
         return NULL;
     }
 
@@ -4809,7 +4820,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
                 ntfs->fs->csize);
         fs->tag = 0;
         free(ntfs->fs);
-        free(ntfs);
+        tsk_fs_free((TSK_FS_INFO *)ntfs);
         return NULL;
     }
 
@@ -4829,7 +4840,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             fprintf(stderr, "ntfs_open: invalid volume size: 0\n");
         fs->tag = 0;
         free(ntfs->fs);
-        free(ntfs);
+        tsk_fs_free((TSK_FS_INFO *)ntfs);
         return NULL;
     }
 
@@ -4852,7 +4863,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     if ((ntfs->mft_rsize_b == 0) || (ntfs->mft_rsize_b % 512)) {
         fs->tag = 0;
         free(ntfs->fs);
-        free(ntfs);
+        tsk_fs_free((TSK_FS_INFO *)ntfs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
@@ -4871,7 +4882,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     if ((ntfs->idx_rsize_b == 0) || (ntfs->idx_rsize_b % 512)) {
         fs->tag = 0;
         free(ntfs->fs);
-        free(ntfs);
+        tsk_fs_free((TSK_FS_INFO *)ntfs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
@@ -4888,7 +4899,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     if (tsk_getu64(fs->endian, ntfs->fs->mft_clust) > fs->last_block) {
         fs->tag = 0;
         free(ntfs->fs);
-        free(ntfs);
+        tsk_fs_free((TSK_FS_INFO *)ntfs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
@@ -4946,7 +4957,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             tsk_fs_file_open_meta(fs, NULL, NTFS_MFT_MFT)) == NULL) {
         fs->tag = 0;
         free(ntfs->fs);
-        free(ntfs);
+        tsk_fs_free((TSK_FS_INFO *)ntfs);
         if (tsk_verbose)
             fprintf(stderr,
                 "ntfs_open: Error opening $MFT (%s)\n", tsk_error_get());
@@ -4964,7 +4975,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         fs->tag = 0;
         tsk_fs_file_close(ntfs->mft_file);
         free(ntfs->fs);
-        free(ntfs);
+        tsk_fs_free((TSK_FS_INFO *)ntfs);
         tsk_error_errstr2_concat(" - Data Attribute not found in $MFT");
         if (tsk_verbose)
             fprintf(stderr,
@@ -4990,7 +5001,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         fs->tag = 0;
         tsk_fs_file_close(ntfs->mft_file);
         free(ntfs->fs);
-        free(ntfs);
+        tsk_fs_free((TSK_FS_INFO *)ntfs);
         if (tsk_verbose)
             fprintf(stderr,
                 "ntfs_open: Error loading file system version ((%s)\n",
@@ -5003,7 +5014,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         fs->tag = 0;
         tsk_fs_file_close(ntfs->mft_file);
         free(ntfs->fs);
-        free(ntfs);
+        tsk_fs_free((TSK_FS_INFO *)ntfs);
         if (tsk_verbose)
             fprintf(stderr, "ntfs_open: Error loading block bitmap (%s)\n",
                 tsk_error_get());
@@ -5018,7 +5029,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         fs->tag = 0;
         tsk_fs_file_close(ntfs->mft_file);
         free(ntfs->fs);
-        free(ntfs);
+        tsk_fs_free((TSK_FS_INFO *)ntfs);
         if (tsk_verbose)
             fprintf(stderr, "ntfs_open: Error loading Secure Info (%s)\n",
                 tsk_error_get());

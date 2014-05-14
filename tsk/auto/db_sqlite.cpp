@@ -696,6 +696,7 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *path,
     else {
         seq = hash((const unsigned char *)path);
     }
+
     //get from cache by parent meta addr, if available
 	map<TSK_INUM_T, map<uint32_t, int64_t> > &fsMap = m_parentDirIdCache[fsObjId];
 	if (fsMap.count(fs_file->name->par_addr) > 0) {
@@ -814,17 +815,16 @@ int
     }
 
     // clean up path
-    size_t path_len = strlen(path);
-    size_t epath_len = path_len + 2; // +2 = space for leading slash and terminating null
-    char *
-        escaped_path;
-    if ((escaped_path = (char *) tsk_malloc(epath_len)) == NULL) { 
+    // +2 = space for leading slash and terminating null
+    size_t path_len = strlen(path) + 2;
+    char *escaped_path;
+    if ((escaped_path = (char *) tsk_malloc(path_len)) == NULL) { 
         free(name);
         return 1;
     }
 
-    strncpy(escaped_path, "/", epath_len);
-    strncat(escaped_path, path, epath_len - strlen(escaped_path));
+    strncpy(escaped_path, "/", path_len);
+    strncat(escaped_path, path, path_len - strlen(escaped_path));
 
     char *md5TextPtr = NULL;
     char md5Text[48];

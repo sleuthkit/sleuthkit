@@ -80,7 +80,7 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
                 tsk_error_set_errno(TSK_ERR_FS_READ);
             }
             tsk_error_set_errstr2("%s: boot sector", func_name);
-			free(fatfs);
+			tsk_fs_free((TSK_FS_INFO *)fatfs);
 			return NULL;
         }
 
@@ -98,7 +98,7 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
                 if (tsk_verbose) {
                     fprintf(stderr, "%s: Incorrect FATFS magic\n", func_name);
 				}
-				free(fatfs);
+				tsk_fs_free((TSK_FS_INFO *)fatfs);
 				return NULL;
             }
         }
@@ -117,8 +117,9 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
 		(a_ftype == TSK_FS_TYPE_EXFAT && exfatfs_open(fatfs) == 0) ||
 		(fatxxfs_open(fatfs) == 0)) {
     	return (TSK_FS_INFO*)fatfs;
-	} else {
-        free(fatfs);
+	} 
+    else {
+        tsk_fs_free((TSK_FS_INFO *)fatfs);
 		return NULL;
     }
 }
