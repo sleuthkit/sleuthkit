@@ -175,7 +175,7 @@ uint8_t
     objId = sqlite3_last_insert_rowid(m_db);
 
     if (attempt(sqlite3_reset(m_insertObjectPreparedStmt),
-        "TskDbSqlite::findParObjId: Error resetting 'insert object' statement: %s\n")) {
+        "TskDbSqlite::addObj: Error resetting 'insert object' statement: %s\n")) {
             return 1;
     }
 
@@ -658,14 +658,19 @@ void TskDbSqlite::storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_file
 
     uint32_t seq;
     /* NTFS uses sequence, otherwise we hash the path. We do this to map to the
-     * correct parent folder if there are two from teh root dir that eventually point to
+     * correct parent folder if there are two from the root dir that eventually point to
      * the same folder (one deleted and one allocated) or two hard links. */
     if (TSK_FS_TYPE_ISNTFS(fs_file->fs_info->ftype)) {
-        seq = fs_file->name->meta_seq;
+        /* Use the sequence stored in meta (which could be one larger than the name value
+         * if the directory is deleted. We do this because the par_seq gets added to the
+         * name structure when it is added to the directory based on teh value stored in 
+         * meta. */
+        seq = fs_file->meta->seq;
     }
     else {
         seq = hash((const unsigned char *)path);
     }
+
     map<TSK_INUM_T, map<uint32_t, int64_t> > &fsMap = m_parentDirIdCache[fsObjId];
 	if (fsMap.count(fs_file->name->meta_addr) == 0) {
         fsMap[fs_file->name->meta_addr][seq] = objId;
@@ -688,7 +693,7 @@ void TskDbSqlite::storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_file
 int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *path, const int64_t & fsObjId) {
 	uint32_t seq;
     /* NTFS uses sequence, otherwise we hash the path. We do this to map to the
-     * correct parent folder if there are two from teh root dir that eventually point to
+     * correct parent folder if there are two from the root dir that eventually point to
      * the same folder (one deleted and one allocated) or two hard links. */
     if (TSK_FS_TYPE_ISNTFS(fs_file->fs_info->ftype)) {
         seq = fs_file->name->par_seq;
@@ -704,7 +709,12 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *path,
         if (fileMap.count(seq) > 0) {
 		    return fileMap[seq];
         }
+        else {
+            //printf("Miss: %d\n", fileMap.count(seq));
+        }
 	}
+
+    //fprintf(stderr, "Miss: %s (%"PRIu64")\n", fs_file->name->name, fs_file->name->meta_addr);
 
     // Find the parent file id in the database using the parent metadata address
     // @@@ This should use sequence number when the new database supports it
