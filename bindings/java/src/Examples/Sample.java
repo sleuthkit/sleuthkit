@@ -18,6 +18,7 @@ public class Sample {
 	public static void run(String imagePath) {
 		try {
 		SleuthkitCase sk = SleuthkitCase.newCase(imagePath + ".db");
+		
 		String timezone = "";
 		sk.makeAddImageProcess(timezone, true, false);
 		
@@ -37,11 +38,10 @@ public class Sample {
 		
 		} catch (TskCoreException e) {
 			System.out.println("Exception caught: " + e.getMessage());
-		}
-		
-		
-		
-		
-				
+		}		
+	}
+	
+	public static void main(String[] args) {
+		Sample.run("C:\\Users\\ajacks\\TSK\\xp-sp3-v4\\xp-sp3-v4.001");
 	}
 }
