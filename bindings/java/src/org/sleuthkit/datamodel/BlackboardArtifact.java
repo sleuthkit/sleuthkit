@@ -112,7 +112,9 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
                                   NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskExtMismatchDetected.text")), ///< Extension Mismatch
 		TSK_INTERESTING_ARTIFACT_HIT(35, "TSK_INTERESTING_ARTIFACT_HIT", //NON-NLS
                                      NbBundle.getMessage(BlackboardArtifact.class, "BlackboardArtifact.tskInterestingArtifactHit.text")),	// Any artifact that should be called out
-		; 
+        TSK_GPS_ROUTE(36, "TSK_GPS_ROUTE", "GPS Route"),	// Route based on GPS coordinates
+
+        ; 
 		/* SEE ABOVE -- KEEP C++ CODE IN SYNC */
 		private String label;
 		private int typeID;

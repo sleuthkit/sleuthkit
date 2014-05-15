@@ -296,6 +296,10 @@ public class BlackboardAttribute {
                                 NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskAssociatedArtifact.text")), // Artifact ID of a related artifact
 		TSK_ISDELETED(97, "TSK_ISDELETED", //NON-NLS
                       NbBundle.getMessage(BlackboardArtifact.class, "BlackboardAttribute.tskIsDeleted.text")), // boolean to indicate that the artifact is recovered fom deleted content
+        TSK_GEO_LATITUDE_START(98, "TSK_GEO_LATITUDE_START", "Starting Latitude"), // Starting location lattitude
+        TSK_GEO_LATITUDE_END(99, "TSK_GEO_LATITUDE_END", "Ending Latitude"), // Ending location lattitude
+        TSK_GEO_LONGITUDE_START(100, "TSK_GEO_LONGITUDE_START", "Starting Longitude"), // Starting location longitude
+        TSK_GEO_LONGITUDE_END(101, "TSK_GEO_LONGITUDE_END", "Ending Longitude"), //Ending Location longitude
 		
 		
 		;
