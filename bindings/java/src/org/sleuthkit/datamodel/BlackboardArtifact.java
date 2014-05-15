@@ -77,6 +77,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		TSK_ENCRYPTION_DETECTED(33, "TSK_ENCRYPTION_DETECTED", "Encryption Detected"), ///< Encrypted File 
 		TSK_EXT_MISMATCH_DETECTED(34, "TSK_EXT_MISMATCH_DETECTED", "Extension Mismatch Detected"), ///< Extension Mismatch
 		TSK_INTERESTING_ARTIFACT_HIT(35, "TSK_INTERESTING_ARTIFACT_HIT", "Interesting Results"),	// Any artifact that should be called out
+		TSK_GPS_ROUTE(36, "TSK_GPS_ROUTE", "GPS Route"),	// Route bases on GPS coordinates
 		; 
 		/* SEE ABOVE -- KEEP C++ CODE IN SYNC */
 		private String label;

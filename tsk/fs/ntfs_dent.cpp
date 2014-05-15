@@ -792,12 +792,22 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         /*
          * "."
          */
-        fs_name->meta_addr = a_addr;
-        fs_name->meta_seq = fs_dir->fs_file->meta->seq;
+        
         fs_name->type = TSK_FS_NAME_TYPE_DIR;
         strcpy(fs_name->name, ".");
 
-        fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
+        fs_name->meta_addr = a_addr;
+        if (fs_dir->fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC) {
+            fs_name->flags = TSK_FS_NAME_FLAG_UNALLOC;
+            /* If the folder was deleted, the MFT entry sequence will have been incremented.
+             * File name entries are not incremented on delete, so make it one less to
+             * be consistent. */
+            fs_name->meta_seq = fs_dir->fs_file->meta->seq - 1;
+        }
+        else {
+            fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
+            fs_name->meta_seq = fs_dir->fs_file->meta->seq;
+        }
         if (tsk_fs_dir_add(fs_dir, fs_name)) {
             tsk_fs_name_free(fs_name);
             return TSK_ERR;

@@ -81,7 +81,8 @@ enum TSK_ARTIFACT_TYPE {
     TSK_ENCRYPTION_DETECTED = 33, ///< Encrypted File
     TSK_EXT_MISMATCH_DETECTED = 34, ///< Extension Mismatch
     TSK_INTERESTING_ARTIFACT_HIT = 35,	///< Any artifact interesting enough that it should be called out in the UI.
-		
+	TSK_GPS_ROUTE = 36,	///< Route based on GPS coordinates
+    
     /* SEE ABOVE:
     * - KEEP JAVA CODE IN SYNC 
     * - UPDATE map in TskBlackboard.cpp
@@ -196,7 +197,10 @@ enum TSK_ATTRIBUTE_TYPE {
 	TSK_PERMISSIONS = 95, ///< Permissions
 	TSK_ASSOCIATED_ARTIFACT = 96, ///< Artifact ID of a related artifact
     TSK_ISDELETED = 97, ///< the artifact is recovered from deleted content
-
+    TSK_GEO_LATITUDE_START= 98, ///< Starting location lattitude
+    TSK_GEO_LATITUDE_END= 99, ///< Ending location lattitude
+    TSK_GEO_LONGITUDE_START= 100, ///< Starting location longitude
+    TSK_GEO_LONGITUDE_END = 101, ///< Ending Location longitude
     /* SEE ABOVE: 
     * - KEEP JAVA CODE IN SYNC 
     * - UPDATE map in TskBlackBoard.cpp too */
