@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 
-package Examples;
+package org.sleuthkit.datamodel.Examples;
 import java.util.List;
 import org.sleuthkit.datamodel.AbstractFile;
 import org.sleuthkit.datamodel.Content;

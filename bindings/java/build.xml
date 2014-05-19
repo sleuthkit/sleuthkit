@@ -12,6 +12,7 @@
 
   <!-- set global properties for this build -->
 	<property name="src" location="src/org/sleuthkit/datamodel"/>
+	<property name="sample" location="src/org/sleuthkit/datamodel/Examples"/>
 	<property name="build" location="build/"/>
 	<property name="dist"  location="dist"/>
 	<property name="lib" location="lib"/>
@@ -173,4 +174,18 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 	</target>
 
 	<!-- NOTE: test and test-rebuild targets are in the OS-specific files -->
+	
+	
+	<target name="compile-sample" depends="compile"
+        description="compile the sample" >
+		<javac debug="on" srcdir="${sample}" destdir="${build}" includeantruntime="false">
+			<classpath refid="libraries"/>
+		</javac>
+	</target>
+	
+	<target name="run-sample" depends="setupEnvPath"
+		description="run the sample" >
+		
+	</target>
+	
 </project>
