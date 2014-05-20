@@ -58,7 +58,13 @@ public class Sample {
 			
 		} catch (TskCoreException e) {
 			System.out.println("Exception caught: " + e.getMessage());
+			Sample.usage();
 		}
+	}
+	
+	public static void usage() {
+		System.out.println("Usage: ant -Dimage:{image string} run-sample");
+		System.out.println("Image must be encapsulated by double quotes. Ex: ant -Dimage=\"C:\\Users\\You\\image.E01\" run-sample");
 	}
 
 	public static void main(String[] args) {
