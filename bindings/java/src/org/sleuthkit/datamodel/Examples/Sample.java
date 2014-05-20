@@ -58,13 +58,18 @@ public class Sample {
 			
 		} catch (TskCoreException e) {
 			System.out.println("Exception caught: " + e.getMessage());
-			Sample.usage();
+			Sample.usage(e.getMessage());
+			
 		}
 	}
 	
-	public static void usage() {
+	public static void usage(String error) {
 		System.out.println("Usage: ant -Dimage:{image string} run-sample");
-		System.out.println("Image must be encapsulated by double quotes. Ex: ant -Dimage=\"C:\\Users\\You\\image.E01\" run-sample");
+		if (error.contains("deleted first")) {
+				System.out.println("A database for the image already exists. Delete it to run this sample again.");
+			} else if (error.contains("unable to open database")) {
+				System.out.println("Image must be encapsulated by double quotes. Ex: ant -Dimage=\"C:\\Users\\You\\image.E01\" run-sample");
+			}
 	}
 
 	public static void main(String[] args) {
