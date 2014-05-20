@@ -28,6 +28,7 @@ public class Sample {
 		try {
 			SleuthkitCase sk = SleuthkitCase.newCase(imagePath + ".db");
 
+			// initialize the case with an image
 			String timezone = "";
 			AddImageProcess process = sk.makeAddImageProcess(timezone, true, false);
 			ArrayList<String> paths = new ArrayList<String>();
@@ -37,25 +38,22 @@ public class Sample {
 			} catch (TskDataException ex) {
 				Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, ex);
 			}
-			
 			process.commit();
 			
+			// print out all the images found, and their children
 			List<Image> images = sk.getImages();
-			System.out.println("images size is " + images.size());
 			for (Image image : images) {
 				System.out.println("Found image: " + image.getName());
+				System.out.println("There are " + image.getChildren().size() + " children.");
 				for (Content content : image.getChildren()) {
-					System.out.println(content.getName());
+					System.out.println('"' + content.getName() + '"' + " is a child of " + image.getName());
 					}
-			
 				}
 						
-			List<AbstractFile> files;			
-			files = sk.findAllFilesWhere("name like '%.txt'");
-
-			
+			// print out all .txt files found
+			List<AbstractFile> files = sk.findAllFilesWhere("name like '%.txt'");
 			for (AbstractFile file : files) {
-							System.out.println(file.getName());
+							System.out.println("Found text file: " + file.getName());
 						}
 			
 		} catch (TskCoreException e) {
@@ -64,6 +62,6 @@ public class Sample {
 	}
 
 	public static void main(String[] args) {
-		Sample.run("C:\\Users\\ajacks\\TSK\\nps-2008-jean\\nps-2008-jean.E01");
+		Sample.run("\\STOREVI\\forensics\\rdfc\\IN10-0096\\IN10-0096.E01");
 	}
 }

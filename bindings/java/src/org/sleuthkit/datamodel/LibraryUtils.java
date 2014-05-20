@@ -156,7 +156,7 @@ public class LibraryUtils {
 		// copy library to temp folder and load it
 		try {
 			java.io.File tempFolder = new java.io.File(System.getProperty("java.io.tmpdir") + java.io.File.separator);
-			java.io.File tempLibFile = new java.io.File(tempFolder + "/" + libName + libExt);
+			java.io.File tempLibFile = new java.io.File(tempFolder + java.io.File.separator + libName + libExt);
 			System.out.println("Temp Folder for Libraries: " + tempFolder.toString());
 
 			// cycle through the libraries and delete them. 
@@ -199,15 +199,6 @@ public class LibraryUtils {
 			}
 			in.close();
 			out.close();
-
-			Map<String, String> env = System.getenv();
-			for (String envName : env.keySet()) {
-				if(envName.equals("Path")) {
-					System.out.format("%s=%s%n",
-                              envName,
-                              env.get(envName));
-				}
-			}
 			
 			// load it
 			System.load(tempLibFile.getAbsolutePath());
