@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
+import java.util.Map;
 
 /**
  * Collection of methods to load libraries embedded in the TSK Datamodel Jar file.
@@ -155,7 +156,7 @@ public class LibraryUtils {
 		// copy library to temp folder and load it
 		try {
 			java.io.File tempFolder = new java.io.File(System.getProperty("java.io.tmpdir") + java.io.File.separator);
-			java.io.File tempLibFile = new java.io.File(tempFolder + libName + libExt);
+			java.io.File tempLibFile = new java.io.File(tempFolder + "/" + libName + libExt);
 			System.out.println("Temp Folder for Libraries: " + tempFolder.toString());
 
 			// cycle through the libraries and delete them. 
@@ -199,6 +200,15 @@ public class LibraryUtils {
 			in.close();
 			out.close();
 
+			Map<String, String> env = System.getenv();
+			for (String envName : env.keySet()) {
+				if(envName.equals("Path")) {
+					System.out.format("%s=%s%n",
+                              envName,
+                              env.get(envName));
+				}
+			}
+			
 			// load it
 			System.load(tempLibFile.getAbsolutePath());
 		} catch (IOException e) {

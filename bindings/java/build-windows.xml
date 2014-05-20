@@ -79,10 +79,4 @@
 		<copy file="${tsk.jni.32}" todir="${i586}/win" overwrite="true"/>	
 		<copy file="${tsk.jni.32}" todir="${i686}/win" overwrite="true"/>
 	</target>
-	
-	<target name="setupEnvPath">
-		<!-- Add both of these to env path: 
-				"${basedir}/../../win32/x64/${tsk.config}/libtsk_jni.dll" />
-		"${basedir}/../../win32/${tsk.config}/libtsk_jni.dll" /> -->
-	</target>
 </project>

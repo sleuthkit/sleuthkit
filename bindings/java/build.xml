@@ -15,6 +15,7 @@
 	<property name="sample" location="src/org/sleuthkit/datamodel/Examples"/>
 	<property name="build" location="build/"/>
 	<property name="dist"  location="dist"/>
+	<property environment="env" upcase="yes"/>
 	<property name="lib" location="lib"/>
 	<property name="test" location="test"/>
 	<property name="test-standards" location="test/output/gold"/>
@@ -183,8 +184,14 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 		</javac>
 	</target>
 	
-	<target name="run-sample" depends="setupEnvPath"
-		description="run the sample" >
+	<target name="run-sample" depends="compile-sample, copyLibs"
+		description="run the sample">
+		<java classname="org.sleuthkit.datamodel.Examples.Sample"
+			fork="true"
+			failonerror="true">
+			<env key="PATH" path="${basedir}/../../win32/x64/${tsk.config}/libtsk_jni.dll:${basedir}/../../win32/${tsk.config}/libtsk_jni.dll:${env.LIBEWF_HOME}"/>
+			<classpath refid="libraries"/>
+		</java>
 		
 	</target>
 	
