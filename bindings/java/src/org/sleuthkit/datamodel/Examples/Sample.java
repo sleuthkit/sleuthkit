@@ -62,6 +62,6 @@ public class Sample {
 	}
 
 	public static void main(String[] args) {
-		Sample.run("\\STOREVI\\forensics\\rdfc\\IN10-0096\\IN10-0096.E01");
+		Sample.run(args[0]);
 	}
 }

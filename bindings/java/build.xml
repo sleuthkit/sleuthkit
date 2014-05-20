@@ -203,6 +203,7 @@
 			  fork="true"
 			  failonerror="true">
 			<env key="PATH" path="${env.TEMP}:${env.Path}"/>
+			<arg value="${image}"/>
 			<classpath refid="libraries"/>
 		</java>
 		
