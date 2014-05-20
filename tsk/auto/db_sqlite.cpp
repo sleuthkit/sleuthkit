@@ -208,25 +208,22 @@ int
             return 1;
     }
 
-    // set UTF8 encoding
     if (attempt_exec("PRAGMA encoding = \"UTF-8\";",
         "Error setting PRAGMA encoding UTF-8: %s\n")) {
             return 1;
     }
 
-    // set page size
     if (attempt_exec("PRAGMA page_size = 4096;",
         "Error setting PRAGMA page_size: %s\n")) {
             return 1;
     }
 
-    // set page size
     if (attempt_exec("PRAGMA foreign_keys = ON;",
         "Error setting PRAGMA foreign_keys: %s\n")) {
             return 1;
     }
 
-    // increase the DB by 1MB at a time. 
+    // increase the DB by 1MB at a time -- supposed to help performance when populating
     int chunkSize = 1024 * 1024;
     if (sqlite3_file_control(m_db, NULL, SQLITE_FCNTL_CHUNK_SIZE, &chunkSize) != SQLITE_OK) {
         tsk_error_reset();
@@ -253,7 +250,7 @@ int
         "Error creating tsk_objects table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_image_info (obj_id INTEGER PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT, size INTEGER, md5 TEXT, description TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        ("CREATE TABLE tsk_image_info (obj_id INTEGER PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT, size INTEGER, md5 TEXT, display_name TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating tsk_image_info table: %s\n")
         ||
         attempt_exec
@@ -273,7 +270,7 @@ int
         "Error creating tsk_fs_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_files (obj_id INTEGER PRIMARY KEY, fs_obj_id INTEGER, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr INTEGER, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size INTEGER, ctime INTEGER, crtime INTEGER, atime INTEGER, mtime INTEGER, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, parent_path TEXT, "
+        ("CREATE TABLE tsk_files (obj_id INTEGER PRIMARY KEY, fs_obj_id INTEGER, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr INTEGER, meta_seq INTEGER, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size INTEGER, ctime INTEGER, crtime INTEGER, atime INTEGER, mtime INTEGER, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, parent_path TEXT, "
         "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id));",
         "Error creating tsk_files table: %s\n")
         ||
@@ -326,7 +323,7 @@ int
 
     if (m_blkMapFlag) {
         if (attempt_exec
-            ("CREATE TABLE tsk_file_layout (obj_id INTEGER NOT NULL, byte_start INTEGER NOT NULL, byte_len INTEGER NOT NULL, sequence INTEGER NOT NULL);",
+            ("CREATE TABLE tsk_file_layout (obj_id INTEGER NOT NULL, byte_start INTEGER NOT NULL, byte_len INTEGER NOT NULL, sequence INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
             "Error creating tsk_fs_blocks table: %s\n")) {
                 return 1;
         }
@@ -335,25 +332,26 @@ int
     if (createIndexes())
         return 1;
 
-
     return 0;
 }
 
 /**
+* Create indexes for the columns that are not primary keys and that we query on. 
 * @returns 1 on error, 0 on success
 */
 int
     TskDbSqlite::createIndexes()
 {
     return
+        // tsk_objects index
         attempt_exec("CREATE INDEX parObjId ON tsk_objects(par_obj_id);",
         "Error creating tsk_objects index on par_obj_id: %s\n")||
-        attempt_exec("CREATE INDEX artifact_objID ON blackboard_artifacts(obj_id);",
-        "Error creating artifact_objID index on blackboard_artifacts: %s\n")||
+        // file layout index
         attempt_exec("CREATE INDEX layout_objID ON tsk_file_layout(obj_id);",
         "Error creating layout_objID index on tsk_file_layout: %s\n")||
-        attempt_exec("CREATE INDEX artifactID ON blackboard_artifacts(artifact_id);",
-        "Error creating artifact_id index on blackboard_artifacts: %s\n")||
+        // blackboard indexes
+        attempt_exec("CREATE INDEX artifact_objID ON blackboard_artifacts(obj_id);",
+        "Error creating artifact_objID index on blackboard_artifacts: %s\n")||
         attempt_exec("CREATE INDEX attrsArtifactID ON blackboard_attributes(artifact_id);",
         "Error creating artifact_id index on blackboard_attributes: %s\n");
 }
@@ -710,11 +708,11 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *path,
             return fileMap[seq];
         }
         else {
-            //printf("Miss: %d\n", fileMap.count(seq));
+            printf("Miss: %d\n", fileMap.count(seq));
         }
     }
 
-    //fprintf(stderr, "Miss: %s (%"PRIu64")\n", fs_file->name->name, fs_file->name->meta_addr);
+    fprintf(stderr, "Miss: %s (%"PRIu64")\n", fs_file->name->name, fs_file->name->meta_addr);
 
     // Find the parent file id in the database using the parent metadata address
     // @@@ This should use sequence number when the new database supports it
@@ -857,12 +855,12 @@ int
     }
 
     zSQL = sqlite3_mprintf(
-        "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
+        "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
         "VALUES ("
         "%" PRId64 ",%" PRId64 ","
         "%d,"
         "%d,%d,'%q',"
-        "%" PRIuINUM ","
+        "%" PRIuINUM ",%d,"
         "%d,%d,%d,%d,"
         "%" PRIuOFF ","
         "%llu,%llu,%llu,%llu,"
@@ -871,7 +869,7 @@ int
         fsObjId, objId,
         TSK_DB_FILES_TYPE_FS,
         type, idx, name,
-        fs_file->name->meta_addr,
+        fs_file->name->meta_addr, fs_file->name->meta_seq, 
         fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
         size, 
         (unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime, 
@@ -1018,12 +1016,12 @@ TSK_RETVAL_ENUM
     }
 
     zSQL = sqlite3_mprintf(
-        "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
+        "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
         "VALUES ("
         "1, %Q, %lld,"
         "%d,"
         "NULL,NULL,'%q',"
-        "NULL,"
+        "NULL,NULL,"
         "%d,%d,%d,%d,"
         "%" PRIuOFF ","
         "NULL,NULL,NULL,NULL,NULL,NULL,NULL)",
@@ -1154,7 +1152,7 @@ TSK_RETVAL_ENUM TskDbSqlite::addVirtualDir(const int64_t fsObjId, const int64_t 
 
     zSQL = sqlite3_mprintf(
         "INSERT INTO tsk_files (attr_type, attr_id, has_layout, fs_obj_id, obj_id, type, attr_type, "
-        "attr_id, name, meta_addr, dir_type, meta_type, dir_flags, meta_flags, size, "
+        "attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, "
         "crtime, ctime, atime, mtime, mode, gid, uid, known, parent_path) "
         "VALUES ("
         "NULL, NULL,"
@@ -1163,7 +1161,7 @@ TSK_RETVAL_ENUM TskDbSqlite::addVirtualDir(const int64_t fsObjId, const int64_t 
         "%lld,"
         "%d,"
         "NULL,NULL,'%q',"
-        "NULL,"
+        "NULL,NULL,"
         "%d,%d,%d,%d,"
         "0,"
         "NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'/')",

@@ -217,8 +217,9 @@ public class SleuthkitCase {
         // add columns for existing tables
         statement.execute("ALTER TABLE tsk_image_info ADD COLUMN size INTEGER;");
         statement.execute("ALTER TABLE tsk_image_info ADD COLUMN md5 TEXT;");
-        statement.execute("ALTER TABLE tsk_image_info ADD COLUMN description TEXT;");
+        statement.execute("ALTER TABLE tsk_image_info ADD COLUMN display_name TEXT;");
         statement.execute("ALTER TABLE tsk_fs_info ADD COLUMN display_name TEXT;");
+		statement.execute("ALTER TABLE tsk_files ADD COLUMN meta_seq INTEGER;");
 		
 		// Make the prepared statements available for use in migrating legacy data.
 		initStatements();
@@ -3938,10 +3939,7 @@ public class SleuthkitCase {
 					imagePaths.add(rsHelper.imagePath(rs2));
 				}
 
-				String path1 = imagePaths.get(0);
-				String name = (new java.io.File(path1)).getName();
-
-				temp = rsHelper.image(rs1, name, imagePaths.toArray(new String[imagePaths.size()]));
+				temp = rsHelper.image(rs1, imagePaths.toArray(new String[imagePaths.size()]));
 				rs2.close();
 				s2.close();
 			} else {
@@ -4542,7 +4540,7 @@ public class SleuthkitCase {
 		try {
 			Statement s1 = con.createStatement();
 
-			ResultSet rs1 = s1.executeQuery("select * from tsk_image_info");
+			ResultSet rs1 = s1.executeQuery("select obj_id from tsk_image_info");
 
 			while (rs1.next()) {
 				long obj_id = rs1.getLong("obj_id");
@@ -4578,7 +4576,7 @@ public class SleuthkitCase {
 		dbReadLock();
 		Collection<Long> imageIDs = new ArrayList<Long>();
 		try {
-			ResultSet rs = con.createStatement().executeQuery("select * from tsk_image_info");
+			ResultSet rs = con.createStatement().executeQuery("select obj_id from tsk_image_info");
 			while (rs.next()) {
 				imageIDs.add(rs.getLong("obj_id"));
 			}

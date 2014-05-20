@@ -69,7 +69,7 @@ public class DerivedFile extends AbstractFile {
 			String md5Hash, FileKnown knownState, String parentPath, String localPath, long parentId) {
 
 			super(db, objId, TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short) 0,
-				name, TSK_DB_FILES_TYPE_ENUM.LOCAL, 0L, dirType, metaType, dirFlag,
+				name, TSK_DB_FILES_TYPE_ENUM.LOCAL, 0L, 0, dirType, metaType, dirFlag,
 				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath);
 		
 			//use the local path read infrastructure
