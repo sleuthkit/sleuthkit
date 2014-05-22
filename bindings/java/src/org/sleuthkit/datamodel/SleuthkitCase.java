@@ -219,7 +219,7 @@ public class SleuthkitCase {
 		statement.execute("CREATE TABLE blackboard_artifact_tags (tag_id INTEGER PRIMARY KEY, artifact_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL)");
 
 		// Add new table for reports
-		statement.execute("CREATE TABLE reports (report_id INTEGER PRIMARY KEY, path TEXT NOT NULL, datetime INTEGER NOT NULL, display_name TEXT)");
+		statement.execute("CREATE TABLE reports (report_id INTEGER PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, display_name TEXT NOT NULL)");
 		
         // add columns for existing tables
         statement.execute("ALTER TABLE tsk_image_info ADD COLUMN size INTEGER;");
@@ -488,7 +488,7 @@ public class SleuthkitCase {
 		
 		selectMaxIdFromReports = con.prepareStatement("SELECT MAX(report_id) FROM reports");		
 		
-		insertIntoReports =  con.prepareStatement("INSERT INTO reports (path, datetime, display_name) VALUES (?, ?, ?)");
+		insertIntoReports =  con.prepareStatement("INSERT INTO reports (path, crtime, display_name) VALUES (?, ?, ?)");
 	}
 
 	private void closeStatements() {
@@ -5633,8 +5633,9 @@ public class SleuthkitCase {
 
 	/**
 	 * Inserts row into the reports table in the case database.
-     * @param [in] relPath The path of the report file, relative to the case directory.
-	 * @param [in] displayName The display name for the new tag name.
+	 * 
+     * @param [in] relPath The path of the report file, relative to the database directory.
+	 * @param [in] displayName The display name for the report.
 	 * @return A Report data transfer object (DTO) for the new row.
 	 * @throws TskCoreException 
 	 */
@@ -5642,20 +5643,20 @@ public class SleuthkitCase {
 		dbWriteLock();
 		try {
 			// Figure out the date-time of this report
-			long dateTime = 0;
+			long createTime = 0;
 			
 			try {
 				String fullpath = getDbDirPath() + java.io.File.separator + relPath;
 				java.io.File tempFile = new java.io.File(fullpath);
-				dateTime = tempFile.lastModified();
+				createTime = tempFile.lastModified();
 			} catch(Exception ex) {
 				throw new TskCoreException("Could not get datetime for path " + relPath, ex);
 			}
 			
-			// INSERT INTO reports (path, datetime, display_name) VALUES (?, ?, ?)			
+			// INSERT INTO reports (path, crtime, display_name) VALUES (?, ?, ?)			
 			insertIntoReports.clearParameters(); 			
 			insertIntoReports.setString(1, relPath);			
-			insertIntoReports.setLong(2, dateTime);
+			insertIntoReports.setLong(2, createTime);
 			insertIntoReports.setString(3, displayName);			
 			insertIntoReports.executeUpdate();
 
@@ -5664,7 +5665,7 @@ public class SleuthkitCase {
 			Long reportID = resultSet.getLong(1);
 			resultSet.close();
 			
-			return new Report(reportID, relPath, dateTime, displayName);			
+			return new Report(reportID, relPath, createTime, displayName);			
 		}
 		catch (SQLException ex) {
 			throw new TskCoreException("Error adding row for " + displayName + " report to reports table", ex);

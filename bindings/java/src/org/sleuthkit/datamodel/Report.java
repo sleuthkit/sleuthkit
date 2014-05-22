@@ -25,13 +25,13 @@ public class Report {
     static long ID_NOT_SET = -1;
     private long id = ID_NOT_SET;
     private final String path;
-    private final long dateTime;
+    private final long createTime;
     private final String displayName;    
     
     Report(long id, String path, long dateTime, String displayName) {
         this.id = id;
         this.path = path;
-        this.dateTime = dateTime;
+        this.createTime = dateTime;
         this.displayName = displayName;
     }
     
@@ -43,13 +43,11 @@ public class Report {
         return path;
     }        
         
-    public long getDateTime() {
-        return dateTime;
+    public long getCreateTime() {
+        return createTime;
     }    
     
     public String getDisplayName() {
         return displayName;
     }
-
-
 }
