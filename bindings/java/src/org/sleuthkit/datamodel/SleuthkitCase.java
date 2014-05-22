@@ -5688,8 +5688,9 @@ public class SleuthkitCase {
 			
 			// SELECT * FROM reports
 			ResultSet resultSet = selectAllFromReports.executeQuery();
-			while (resultSet.next()) {
-				reports.add(new Report(resultSet.getLong("report_id"), resultSet.getString("path"), 
+			while (resultSet.next()) {				
+				String fullPath = getDbDirPath() + java.io.File.separator + resultSet.getString("path");				
+				reports.add(new Report(resultSet.getLong("report_id"), fullPath, 
 					resultSet.getLong("datetime"), resultSet.getString("display_name"))); 
 			} 
 			resultSet.close();
