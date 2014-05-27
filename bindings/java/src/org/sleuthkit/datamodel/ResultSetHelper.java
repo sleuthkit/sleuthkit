@@ -26,14 +26,13 @@ class ResultSetHelper {
 	 * tsk_image_info table
 	 *
 	 * @param rs result set containing query results
-	 * @param name name of the image
 	 * @param imagePaths image file paths
 	 * @return image object created
 	 * @throws TskCoreException thrown if critical error occurred within tsk
 	 * core
 	 * @throws SQLException thrown if SQL error occurres
 	 */
-	Image image(ResultSet rs, String name, String[] imagePaths) throws TskCoreException, SQLException {
+	Image image(ResultSet rs, String[] imagePaths) throws TskCoreException, SQLException {
 
 		long obj_id, type, ssize;
 		String tzone,md5;
@@ -43,10 +42,21 @@ class ResultSetHelper {
 		ssize = rs.getLong("ssize");
 		tzone = rs.getString("tzone");
 		md5="";
-		if(db.getSchemaVersion() > 2)
-		{
+		if(db.getSchemaVersion() > 2) {
 			md5= rs.getString("md5");
 		}
+		
+		String name = rs.getString("display_name");
+		if (name == null) {
+			if (imagePaths.length > 0) {
+				String path1 = imagePaths[0];
+				name = (new java.io.File(path1)).getName();
+			}
+			else {
+				name = "";
+			}
+		}
+		
 		Image img = new Image(db, obj_id, type, ssize, name, imagePaths, tzone,md5);
 		return img;
 	}
@@ -132,7 +142,7 @@ class ResultSetHelper {
 	File file(ResultSet rs, FileSystem fs) throws SQLException {
 		File f = new File(db, rs.getLong("obj_id"), rs.getLong("fs_obj_id"),
 				TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")),
-				rs.getShort("attr_id"), rs.getString("name"), rs.getLong("meta_addr"),
+				rs.getShort("attr_id"), rs.getString("name"), rs.getLong("meta_addr"), rs.getInt("meta_seq"),
 				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
 				TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")),
 				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")),
@@ -158,7 +168,7 @@ class ResultSetHelper {
 	Directory directory(ResultSet rs, FileSystem fs, String name) throws SQLException {
 		Directory dir = new Directory(db, rs.getLong("obj_id"), rs.getLong("fs_obj_id"),
 				TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")),
-				rs.getShort("attr_id"), name, rs.getLong("meta_addr"),
+				rs.getShort("attr_id"), name, rs.getLong("meta_addr"), rs.getInt("meta_seq"),
 				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
 				TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")),
 				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")),
