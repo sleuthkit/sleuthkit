@@ -460,7 +460,7 @@ public class BlackboardAttribute {
 		this.context = context;
 	}
 
-/**
+	/**
 	 * Create a blackboard attribute that stores a byte array (creates an
 	 * attribute that can be added to an artifact)
 	 *
