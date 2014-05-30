@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
-import java.util.Map;
 
 /**
  * Collection of methods to load libraries embedded in the TSK Datamodel Jar file.
@@ -199,7 +198,7 @@ public class LibraryUtils {
 			}
 			in.close();
 			out.close();
-			
+
 			// load it
 			System.load(tempLibFile.getAbsolutePath());
 		} catch (IOException e) {
