@@ -25,13 +25,20 @@ public class Report {
     static long ID_NOT_SET = -1;
     private long id = ID_NOT_SET;
     private final String path;
-    private final long dateTime;
+    private final long createdTime;
     private final String displayName;    
-    
-    Report(long id, String path, long dateTime, String displayName) {
+   
+    /**
+     *
+     * @param id
+     * @param path Absolute path to report
+     * @param createdTime Created time of report (in UNIX epoch)
+     * @param displayName 
+     */
+    Report(long id, String path, long createdTime, String displayName) {
         this.id = id;
         this.path = path;
-        this.dateTime = dateTime;
+        this.createdTime = createdTime;
         this.displayName = displayName;
     }
     
@@ -39,17 +46,22 @@ public class Report {
         return id;
     }            
 
+    /**
+     * Get the absolute local path to the report.
+     */
     public String getPath() {
         return path;
     }        
-        
-    public long getDateTime() {
-        return dateTime;
+       
+    /**
+     * Get the creation date of the report.
+     * @eturns Number of seconds since Jan 1, 1970
+     */
+    public long getCreatedTime() {
+        return createdTime;
     }    
     
     public String getDisplayName() {
         return displayName;
     }
-
-
 }
