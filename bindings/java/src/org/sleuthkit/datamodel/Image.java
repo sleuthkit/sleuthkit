@@ -45,8 +45,8 @@ public class Image extends AbstractContent {
 	 * @param db database object
 	 * @param obj_id
 	 * @param type
-	 * @param ssize
-	 * @param name
+	 * @param ssize Sector Size
+	 * @param name Display Name
 	 * @param paths
 	 * @param timezone
 	 * @param md5

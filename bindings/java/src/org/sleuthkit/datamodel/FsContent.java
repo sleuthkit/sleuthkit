@@ -79,11 +79,11 @@ public abstract class FsContent extends AbstractFile {
 	 * @param parentPath
 	 */
 	FsContent(SleuthkitCase db, long objId, long fsObjId, TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
-			String name, long metaAddr,
+			String name, long metaAddr, int metaSeq, 
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
 			String parentPath) {
-		super(db, objId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath);
+		super(db, objId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath);
 		this.tskCase = db;
 		this.fsObjId = fsObjId;
 	}
