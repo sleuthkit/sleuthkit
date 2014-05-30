@@ -272,7 +272,7 @@ public class BlackboardAttribute {
 	 * @param Case the case that can be used to make calls into the blackboard
 	 * db
 	 */
-	protected BlackboardAttribute(long artifactID, int attributeTypeID, String moduleName, String context,
+	BlackboardAttribute(long artifactID, int attributeTypeID, String moduleName, String context,
 			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, int valueInt, long valueLong, double valueDouble,
 			String valueString, byte[] valueBytes, SleuthkitCase Case) {
 
@@ -472,6 +472,7 @@ public class BlackboardAttribute {
 		this.artifactID = 0;
 		this.attributeTypeID = attributeTypeID;
 		this.moduleName = moduleName;
+		this.context = "";
 		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE;
 		this.valueInt = 0;
 		this.valueLong = 0;
@@ -496,20 +497,8 @@ public class BlackboardAttribute {
 	@Deprecated
 	public BlackboardAttribute(int attributeTypeID, String moduleName, String context,
 			byte[] valueBytes) {
-		this.artifactID = 0;
-		this.attributeTypeID = attributeTypeID;
-		this.moduleName = moduleName;
+		this(attributeTypeID, moduleName, valueBytes);
 		this.context = context;
-		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE;
-		this.valueInt = 0;
-		this.valueLong = 0;
-		this.valueDouble = 0;
-		this.valueString = "";
-		if (valueBytes == null) {
-			this.valueBytes = new byte[0];
-		} else {
-			this.valueBytes = valueBytes;
-		}
 	}
 
 	@Override
