@@ -1,17 +1,18 @@
 <project xmlns:ivy="antlib:org.apache.ivy.ant" name="DataModel" default="dist" basedir=".">
 	<description>
-        Sleuthkit Java DataModel 
+		Sleuthkit Java DataModel 
 	</description>
-    <condition property="os.family" value="unix">  
-        <os family="unix"/>  
-    </condition>  
-    <condition property="os.family" value="windows">  
-        <os family="windows"/>  
-    </condition>  
-    <import file="build-${os.family}.xml"/> 
+	<condition property="os.family" value="unix">  
+		<os family="unix"/>  
+	</condition>  
+	<condition property="os.family" value="windows">  
+		<os family="windows"/>  
+	</condition>  
+	<import file="build-${os.family}.xml"/> 
 
-  <!-- set global properties for this build -->
+	<!-- set global properties for this build -->
 	<property name="src" location="src/org/sleuthkit/datamodel"/>
+	<property name="sample" location="src/org/sleuthkit/datamodel/Examples"/>
 	<property name="build" location="build/"/>
 	<property name="dist"  location="dist"/>
 	<property name="lib" location="lib"/>
@@ -48,7 +49,7 @@
 		<mkdir dir="${amd64}/win" />
 		<mkdir dir="${amd64}/mac" />
 		<mkdir dir="${amd64}/linux" />
-	    <mkdir dir="${x86}" />
+		<mkdir dir="${x86}" />
 		<mkdir dir="${x86}/win" />
 		<mkdir dir="${x86}/linux" />
 		<mkdir dir="${x86_64}" />
@@ -75,41 +76,41 @@
 	<property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar" />
 
 	<target name="download-ivy" unless="offline">
-        <available file="${ivy.jar.file}" property="ivy.available"/>
-        <antcall target="-download-ivy" />
-    </target>
+		<available file="${ivy.jar.file}" property="ivy.available"/>
+		<antcall target="-download-ivy" />
+	</target>
 
-    <target name="-download-ivy" unless="ivy.available">
-        <mkdir dir="${ivy.jar.dir}"/>
-        <get src="http://repo2.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar"
-         dest="${ivy.jar.file}" usetimestamp="true"/>
-    </target>
+	<target name="-download-ivy" unless="ivy.available">
+		<mkdir dir="${ivy.jar.dir}"/>
+		<get src="http://repo2.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar"
+			 dest="${ivy.jar.file}" usetimestamp="true"/>
+	</target>
 
 	<target name="init-ivy" depends="download-ivy" unless="ivy.lib.path">
-        <path id="ivy.lib.path">
-            <fileset dir="${ivy.jar.dir}" includes="*.jar"/>
-        </path>
-        <taskdef resource="org/apache/ivy/ant/antlib.xml"
-             uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
-    </target>
+		<path id="ivy.lib.path">
+			<fileset dir="${ivy.jar.dir}" includes="*.jar"/>
+		</path>
+		<taskdef resource="org/apache/ivy/ant/antlib.xml"
+				 uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
+	</target>
 
 	<target name="retrieve-deps" description="retrieve dependencies using ivy" depends="init-ivy">
-        <ivy:settings file="ivysettings.xml" />
-        <ivy:resolve/>
-        <ivy:retrieve sync="true"
-pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
+		<ivy:settings file="ivysettings.xml" />
+		<ivy:resolve/>
+		<ivy:retrieve sync="true"
+					  pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 	</target>
   
 	<target name="compile-test" depends="compile"
-        description="compile the tests" >
+			description="compile the tests" >
 		<javac debug="on" srcdir="${test}" destdir="${build}" includeantruntime="false">
 			<classpath refid="libraries"/>
 		</javac>
 	</target>
   
 	<target name="compile" depends="init, retrieve-deps"
-        description="compile the source" >
-    <!-- Compile the java code from ${src} into ${build} -->
+			description="compile the source" >
+		<!-- Compile the java code from ${src} into ${build} -->
 		<javac debug="on" srcdir="${src}" destdir="${build}" classpathref="libraries" includeantruntime="false">
 			<compilerarg value="-Xlint"/>
 		</javac>
@@ -121,7 +122,7 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 
 	<target name="check-build" depends="check-native-build">
 		<uptodate property="java-up-to-date" targetfile="${dist}/Tsk_DataModel.jar" >
-		    <srcfiles dir="${src}" includes="**/*.java"/>
+			<srcfiles dir="${src}" includes="**/*.java"/>
 		</uptodate>
 		<condition property="up-to-date">
 			<and>
@@ -132,14 +133,14 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 	</target>
 	
 	<target name="dist-do" depends="init-ivy, compile, copyLibs"
-        description="generate the distribution" >
-    <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
+			description="generate the distribution" >
+		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
 		<jar jarfile="${dist}/Tsk_DataModel.jar" basedir="${build}"/>
 	</target>
 	
 	<target name="dist-debug" depends="init-ivy, compile, copyLibsDebug"
-        description="generate the distribution" >
-    <!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
+			description="generate the distribution" >
+		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
 		<jar jarfile="${dist}/Tsk_DataModel.jar" basedir="${build}"/>
 	</target>
   
@@ -153,8 +154,8 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
   
 
 	<target name="clean"
-        description="clean up" >
-    <!-- Delete the ${build} and ${dist} directory trees -->
+			description="clean up" >
+		<!-- Delete the ${build} and ${dist} directory trees -->
 		<delete dir="${build}"/>
 		<delete dir="${dist}"/>
 	</target>
@@ -173,4 +174,39 @@ pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 	</target>
 
 	<!-- NOTE: test and test-rebuild targets are in the OS-specific files -->
+		
+		
+	<!-- copy 64-bit dlls into the temp folder -->
+	<target name="copyWinTskLibs64ToTempDir">
+		<fileset dir="${env.TSK_HOME}/win32/x64/Release" id="win64dlls">
+			<include name="libewf.dll" />
+			<include name="zlib.dll"/>
+		</fileset>
+		<copy todir="${env.TEMP}" overwrite="true">
+			<fileset refid="win64dlls" />
+		</copy>
+		<copy todir="${env.TEMP}" overwrite="true">
+			<fileset refid="win64dlls" />
+		</copy>
+	</target>	
+		
+	<target name="compile-sample" depends="compile"
+			description="compile the sample" >
+		<javac debug="on" srcdir="${sample}" destdir="${build}" includeantruntime="false">
+			<classpath refid="libraries"/>
+		</javac>
+	</target>
+	
+	<target name="run-sample" depends="compile-sample, copyWinTskLibs64ToTempDir"
+			description="run the sample">
+		<java classname="org.sleuthkit.datamodel.Examples.Sample"
+			  fork="true"
+			  failonerror="true">
+			<env key="PATH" path="${env.TEMP}:${env.Path}"/>
+			<arg value="${image}"/>
+			<classpath refid="libraries"/>
+		</java>
+		
+	</target>
+	
 </project>
