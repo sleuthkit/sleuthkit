@@ -174,22 +174,7 @@
 	</target>
 
 	<!-- NOTE: test and test-rebuild targets are in the OS-specific files -->
-		
-		
-	<!-- copy 64-bit dlls into the temp folder -->
-	<target name="copyWinTskLibs64ToTempDir">
-		<fileset dir="${env.TSK_HOME}/win32/x64/Release" id="win64dlls">
-			<include name="libewf.dll" />
-			<include name="zlib.dll"/>
-		</fileset>
-		<copy todir="${env.TEMP}" overwrite="true">
-			<fileset refid="win64dlls" />
-		</copy>
-		<copy todir="${env.TEMP}" overwrite="true">
-			<fileset refid="win64dlls" />
-		</copy>
-	</target>	
-		
+
 	<target name="compile-sample" depends="compile"
 			description="compile the sample" >
 		<javac debug="on" srcdir="${sample}" destdir="${build}" includeantruntime="false">
@@ -197,12 +182,12 @@
 		</javac>
 	</target>
 	
-	<target name="run-sample" depends="compile-sample, copyWinTskLibs64ToTempDir"
+	<target name="run-sample" depends="compile-sample"
 			description="run the sample">
 		<java classname="org.sleuthkit.datamodel.Examples.Sample"
 			  fork="true"
 			  failonerror="true">
-			<env key="PATH" path="${env.TEMP}:${env.Path}"/>
+			<env key="PATH" path="${env.TEMP}:${env.Path}:${env.TSK_HOME}/win32/x64/Release"/>
 			<arg value="${image}"/>
 			<classpath refid="libraries"/>
 		</java>

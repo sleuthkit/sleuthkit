@@ -156,7 +156,7 @@ public class LibraryUtils {
 		// copy library to temp folder and load it
 		try {
 			java.io.File tempFolder = new java.io.File(System.getProperty("java.io.tmpdir") + java.io.File.separator);
-			java.io.File tempLibFile = new java.io.File(tempFolder + java.io.File.separator + libName + libExt);
+			java.io.File tempLibFile = new java.io.File(tempFolder + libName + libExt);
 			System.out.println("Temp Folder for Libraries: " + tempFolder.toString());
 
 			// cycle through the libraries and delete them. 
