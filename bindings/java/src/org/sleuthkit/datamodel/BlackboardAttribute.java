@@ -460,6 +460,30 @@ public class BlackboardAttribute {
 		this.context = context;
 	}
 
+/**
+	 * Create a blackboard attribute that stores a byte array (creates an
+	 * attribute that can be added to an artifact)
+	 *
+	 * @param attributeTypeID type of the attribute
+	 * @param moduleName name of the module that is creating the attribute
+	 * @param valueBytes the value
+	 */
+	public BlackboardAttribute(int attributeTypeID, String moduleName, byte[] valueBytes) {
+		this.artifactID = 0;
+		this.attributeTypeID = attributeTypeID;
+		this.moduleName = moduleName;
+		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE;
+		this.valueInt = 0;
+		this.valueLong = 0;
+		this.valueDouble = 0;
+		this.valueString = "";
+		if (valueBytes == null) {
+			this.valueBytes = new byte[0];
+		} else {
+			this.valueBytes = valueBytes;
+		}
+	}
+
 	/**
 	 * Create a blackboard attribute that stores a byte array (creates an
 	 * attribute that can be added to an artifact)
@@ -469,6 +493,7 @@ public class BlackboardAttribute {
 	 * @param context extra information about the attribute
 	 * @param valueBytes the value
 	 */
+	@Deprecated
 	public BlackboardAttribute(int attributeTypeID, String moduleName, String context,
 			byte[] valueBytes) {
 		this.artifactID = 0;
@@ -485,7 +510,6 @@ public class BlackboardAttribute {
 		} else {
 			this.valueBytes = valueBytes;
 		}
-
 	}
 
 	@Override
