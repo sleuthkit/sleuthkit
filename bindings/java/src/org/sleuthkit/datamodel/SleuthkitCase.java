@@ -1686,13 +1686,40 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get the attribute id that corresponds to the given string. If that string
-	 * does not exist it will be added to the table.
+	 * Get attribute type id corresponding to an artifact attribute type name,
+	 * if the artifact attribute type exists. 
+	 *
+	 * @param typeName An attribute type name.
+	 * @return The attribute type id or -1 if the type does not exist.
+	 * @throws TskCoreException if there is an error accessing the case database.
+	 */
+	public int getAttrTypeIdIfExists(String attrTypeString) throws TskCoreException {
+		dbReadLock();
+		try {
+			int typeId = -1;
+			Statement statement = con.createStatement();
+			ResultSet resultSet = statement.executeQuery("SELECT attribute_type_id FROM blackboard_attribute_types WHERE type_name = '" + attrTypeString + "'");
+			if (resultSet.next()) {
+				typeId = resultSet.getInt(1);
+			}
+			resultSet.close();
+			statement.close();
+			return typeId;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting attribute type id: ", ex);
+		} finally {
+			dbReadUnlock();
+		}
+	}
+	
+	/**
+	 * Get the attribute id that corresponds to the given string.
 	 *
 	 * @param attrTypeString attribute type string
 	 * @return attribute id
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within tsk core
+	 * @throws TskCoreException if an error occurs accessing the database or if
+	 * the requested type does not exist.
+	 * 
 	 */
 	public int getAttrTypeID(String attrTypeString) throws TskCoreException {
 		dbReadLock();
@@ -1786,6 +1813,33 @@ public class SleuthkitCase {
 		}
 	}
 
+	/**
+	 * Get artifact type id corresponding to an artifact type name, if the 
+	 * artifact type exists. 
+	 *
+	 * @param typeName An artifact type name.
+	 * @return The artifact type id or -1 if the type does not exist.
+	 * @throws TskCoreException if there is an error accessing the case database.
+	 */
+	public int getArtifactTypeIdIfExists(String typeName) throws TskCoreException {
+		dbReadLock();
+		try {
+			int typeId = -1;
+			Statement statement = con.createStatement();
+			ResultSet resultSet = statement.executeQuery("SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = '" + typeName + "'");
+			if (resultSet.next()) {
+				typeId = resultSet.getInt(1);
+			}
+			resultSet.close();
+			statement.close();
+			return typeId;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting artifact type id: " + ex.getMessage(), ex);
+		} finally {
+			dbReadUnlock();
+		}
+	}
+	
 	/**
 	 * Get artifact type id for the given string. Will throw an error if one
 	 * with that name does not exist.
