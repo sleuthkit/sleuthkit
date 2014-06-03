@@ -5696,8 +5696,8 @@ public class SleuthkitCase {
 			// Figure out the date-time of this report
 			long dateTime = 0;
 			
+			String fullpath = getDbDirPath() + java.io.File.separator + relPath;
 			try {
-				String fullpath = getDbDirPath() + java.io.File.separator + relPath;
 				java.io.File tempFile = new java.io.File(fullpath);
                 // convert to UNIX epoch (seconds, not milliseconds)
 				dateTime = tempFile.lastModified() / 1000;
@@ -5717,7 +5717,7 @@ public class SleuthkitCase {
 			Long reportID = resultSet.getLong(1);
 			resultSet.close();
 			
-			return new Report(reportID, relPath, dateTime, displayName);			
+			return new Report(reportID, fullpath, dateTime, displayName);			
 		}
 		catch (SQLException ex) {
 			throw new TskCoreException("Error adding row for " + displayName + " report to reports table", ex);
