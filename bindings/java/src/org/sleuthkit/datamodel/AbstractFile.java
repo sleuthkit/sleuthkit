@@ -569,7 +569,7 @@ public abstract class AbstractFile extends AbstractContent {
 	public static String createNonUniquePath(String uniquePath) {
 
 		// split the path into parts
-		String[] pathSegments = uniquePath.split("/\\");
+		String[] pathSegments = uniquePath.split("/");
 
 		// see if uniquePath had an image and/or volume name
 		int index = 0;
