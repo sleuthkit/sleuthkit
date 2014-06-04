@@ -5651,7 +5651,7 @@ public class SleuthkitCase {
 				throw new TskCoreException("Could not get datetime for path " + relPath, ex);
 			}
 			
-			// INSERT INTO reports (path, datetime, display_name) VALUES (?, ?, ?)			
+			// INSERT INTO reports (path, crtime, display_name) VALUES (?, ?, ?)			
 			insertIntoReports.clearParameters(); 			
 			insertIntoReports.setString(1, relPath);			
 			insertIntoReports.setLong(2, dateTime);
