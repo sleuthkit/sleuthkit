@@ -82,7 +82,6 @@ Makefile
 stamp-h1
 tsk/tsk_config.h
 tsk/tsk_incs.h
-tools/fstools/blkcalc
 aclocal.m4
 autom4te.cache
 config.log
@@ -113,6 +112,7 @@ tools/fiwalk/plugins/jpeg_extract
 tools/fiwalk/src/fiwalk
 tools/fiwalk/src/test_arff
 tools/fstools/blkcat
+tools/fstools/blkcalc
 tools/fstools/blkls
 tools/fstools/blkstat
 tools/fstools/fcat
