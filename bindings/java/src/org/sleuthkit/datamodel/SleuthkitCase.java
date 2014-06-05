@@ -870,7 +870,7 @@ public class SleuthkitCase {
 	 * columns and return a list of artifacts in the set. Must be enclosed in
 	 * dbReadLock. Result set and statement must be freed by the caller.
 	 *
-	 * @param rs existing, active result set (not closed by this method)
+	 * @param resultSet existing, active result set (not closed by this method)
 	 * @return a list of blackboard artifacts in the result set
 	 * @throws SQLException if result set could not be iterated upon
 	 */
@@ -1686,19 +1686,20 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get attribute type id corresponding to an artifact attribute type name,
-	 * if the artifact attribute type exists. 
+	 * Get the attribute type id associated with an attribute type name.
 	 *
-	 * @param typeName An attribute type name.
-	 * @return The attribute type id or -1 if the type does not exist.
-	 * @throws TskCoreException if there is an error accessing the case database.
+	 * @param attrTypeName An attribute type name.
+	 * @return An attribute id or -1 if the attribute type does not exist.
+	 * @throws TskCoreException If an error occurs accessing the case database.
+	 * 
 	 */
-	public int getAttrTypeIdIfExists(String attrTypeString) throws TskCoreException {
+	public int getAttrTypeID(String attrTypeName) throws TskCoreException {
 		dbReadLock();
 		try {
 			int typeId = -1;
 			Statement statement = con.createStatement();
-			ResultSet resultSet = statement.executeQuery("SELECT attribute_type_id FROM blackboard_attribute_types WHERE type_name = '" + attrTypeString + "'");
+			ResultSet resultSet;
+			resultSet = statement.executeQuery("SELECT attribute_type_id FROM blackboard_attribute_types WHERE type_name = '" + attrTypeName + "'");
 			if (resultSet.next()) {
 				typeId = resultSet.getInt(1);
 			}
@@ -1706,40 +1707,7 @@ public class SleuthkitCase {
 			statement.close();
 			return typeId;
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting attribute type id: ", ex);
-		} finally {
-			dbReadUnlock();
-		}
-	}
-	
-	/**
-	 * Get the attribute id that corresponds to the given string.
-	 *
-	 * @param attrTypeString attribute type string
-	 * @return attribute id
-	 * @throws TskCoreException if an error occurs accessing the database or if
-	 * the requested type does not exist.
-	 * 
-	 */
-	public int getAttrTypeID(String attrTypeString) throws TskCoreException {
-		dbReadLock();
-		try {
-			Statement s = con.createStatement();
-			ResultSet rs;
-
-			rs = s.executeQuery("SELECT attribute_type_id FROM blackboard_attribute_types WHERE type_name = '" + attrTypeString + "'");
-			if (rs.next()) {
-				int type = rs.getInt(1);
-				rs.close();
-				s.close();
-				return type;
-			} else {
-				rs.close();
-				s.close();
-				throw new TskCoreException("No id with that name");
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting attribute type id.", ex);
+			throw new TskCoreException("Error getting attribute type id", ex);
 		} finally {
 			dbReadUnlock();
 		}
@@ -1814,19 +1782,19 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get artifact type id corresponding to an artifact type name, if the 
-	 * artifact type exists. 
+	 * Get the artifact type id associated with an artifact type name.
 	 *
-	 * @param typeName An artifact type name.
-	 * @return The artifact type id or -1 if the type does not exist.
-	 * @throws TskCoreException if there is an error accessing the case database.
+	 * @param attrTypeName An artifact type name.
+	 * @return An artifact id or -1 if the attribute type does not exist.
+	 * @throws TskCoreException If an error occurs accessing the case database.
+	 * 
 	 */
-	public int getArtifactTypeIdIfExists(String typeName) throws TskCoreException {
+	public int getArtifactTypeID(String artifactTypeName) throws TskCoreException {
 		dbReadLock();
 		try {
 			int typeId = -1;
 			Statement statement = con.createStatement();
-			ResultSet resultSet = statement.executeQuery("SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = '" + typeName + "'");
+			ResultSet resultSet = statement.executeQuery("SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeName + "'");
 			if (resultSet.next()) {
 				typeId = resultSet.getInt(1);
 			}
@@ -1840,40 +1808,6 @@ public class SleuthkitCase {
 		}
 	}
 	
-	/**
-	 * Get artifact type id for the given string. Will throw an error if one
-	 * with that name does not exist.
-	 *
-	 * @param artifactTypeString name for an artifact type
-	 * @return artifact type
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within tsk core
-	 */
-	int getArtifactTypeID(String artifactTypeString) throws TskCoreException {
-		dbReadLock();
-		try {
-			Statement s = con.createStatement();
-			ResultSet rs;
-
-			rs = s.executeQuery("SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeString + "'");
-			if (rs.next()) {
-				int type = rs.getInt(1);
-				rs.close();
-				s.close();
-				return type;
-			} else {
-				rs.close();
-				s.close();
-				throw new TskCoreException("No artifact with that name exists");
-			}
-
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting artifact type id." + ex.getMessage(), ex);
-		} finally {
-			dbReadUnlock();
-		}
-	}
-
 	/**
 	 * Get artifact type name for the given string. Will throw an error if that
 	 * artifact doesn't exist. Use addArtifactType(...) to create a new one.
@@ -3254,7 +3188,7 @@ public class SleuthkitCase {
 				return carvedDirId;
 			}
 
-			// it's not in the cache. Go to the DB
+			// it'statement not in the cache. Go to the DB
 			// determine if we've got a volume system or file system ID
 			Content parent = getContentById(id);
 			if (parent == null) {
@@ -3929,7 +3863,7 @@ public class SleuthkitCase {
 	/**
 	 * @param dataSource the data source (Image, VirtualDirectory for file-sets,
 	 * etc) to search for the given file name
-	 * @param filePath The full path to the file(s) of interest. This can
+	 * @param filePath The full path to the file(statement) of interest. This can
 	 * optionally include the image and volume names. Treated in a case-
 	 * insensitive manner.
 	 * @return a list of AbstractFile that have the given file path.
@@ -4064,7 +3998,7 @@ public class SleuthkitCase {
 
 	/**
 	 * @param id ID of the desired VolumeSystem
-	 * @param parentId ID of the VolumeSystem's parent
+	 * @param parentId ID of the VolumeSystem'statement parent
 	 * @return the VolumeSystem with the given ID
 	 * @throws TskCoreException
 	 */
@@ -4089,7 +4023,7 @@ public class SleuthkitCase {
 
 	/**
 	 * @param id ID of the desired FileSystem
-	 * @param parentId ID of the FileSystem's parent
+	 * @param parentId ID of the FileSystem'statement parent
 	 * @return the desired FileSystem
 	 * @throws TskCoreException
 	 */
@@ -4199,7 +4133,7 @@ public class SleuthkitCase {
 
 	/**
 	 * @param id ID of the desired Volume
-	 * @param parentId ID of the Volume's parent
+	 * @param parentId ID of the Volume'statement parent
 	 * @return the desired Volume
 	 * @throws TskCoreException
 	 */
@@ -4333,7 +4267,7 @@ public class SleuthkitCase {
 				}
 			}
 
-			// see if imageID is this image's ID
+			// see if imageID is this image'statement ID
 			if (imageID == image.getId()) {
 				fileSystems.add(fs);
 			}
@@ -4737,7 +4671,7 @@ public class SleuthkitCase {
 	 * tsk_files table. Assumes that the query was of the form "SELECT * FROM
 	 * tsk_files WHERE XYZ".
 	 *
-	 * @param rs ResultSet to get content from. Caller is responsible for
+	 * @param resultSet ResultSet to get content from. Caller is responsible for
 	 * closing it.
 	 * @return list of file objects from tsk_files table containing the results
 	 * @throws SQLException if the query fails
@@ -4785,7 +4719,7 @@ public class SleuthkitCase {
 					results.add(lf);
 				}
 
-			} //end for each rs
+			} //end for each resultSet
 		} catch (SQLException e) {
 			logger.log(Level.SEVERE, "Error getting abstract file from result set.", e);
 		} finally {
@@ -4798,7 +4732,7 @@ public class SleuthkitCase {
 	/**
 	 * Creates FsContent objects from SQL query result set on tsk_files table
 	 *
-	 * @param rs the result set with the query results
+	 * @param resultSet the result set with the query results
 	 * @return list of fscontent objects matching the query
 	 * @throws SQLException if SQL query result getting failed
 	 */
@@ -4960,7 +4894,7 @@ public class SleuthkitCase {
 	 * update status if content is already 'Known Bad'
 	 *
 	 * @param	file	The AbstractFile object
-	 * @param	fileKnown	The object's known status
+	 * @param	fileKnown	The object'statement known status
 	 * @return	true if the known status was updated, false otherwise
 	 * @throws TskCoreException thrown if a critical error occurred within tsk
 	 * core
@@ -4992,7 +4926,7 @@ public class SleuthkitCase {
 	 * Store the md5Hash for the file in the database
 	 *
 	 * @param	file	The file object
-	 * @param	md5Hash	The object's md5Hash
+	 * @param	md5Hash	The object'statement md5Hash
 	 * @throws TskCoreException thrown if a critical error occurred within tsk
 	 * core
 	 */
