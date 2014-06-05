@@ -5635,7 +5635,7 @@ public class SleuthkitCase {
 	 * @return A Report data transfer object (DTO) for the new row.
 	 * @throws TskCoreException 
 	 */
-	public Report addReport(String localPath, String displayName, String sourceModuleName, String reportName) throws TskCoreException {
+	public Report addReport(String localPath, String sourceModuleName, String reportName) throws TskCoreException {
 		dbWriteLock();
 		try {
 			// Make sure the local path of the report is in the database directory
@@ -5677,7 +5677,7 @@ public class SleuthkitCase {
 			return new Report(reportID, localPath, createTime, sourceModuleName, reportName);			
 		}
 		catch (SQLException ex) {
-			throw new TskCoreException("Error adding row for " + displayName + " report to reports table", ex);
+			throw new TskCoreException("Error adding row for report " + localPath + " to reports table", ex);
 		}
 		finally {
 			dbWriteUnlock();
