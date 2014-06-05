@@ -489,7 +489,7 @@ public class SleuthkitCase {
 		
 		selectMaxIdFromReports = con.prepareStatement("SELECT MAX(report_id) FROM reports");		
 		
-		insertIntoReports =  con.prepareStatement("INSERT INTO reports (path, crtime, display_name) VALUES (?, ?, ?)");
+		insertIntoReports =  con.prepareStatement("INSERT INTO reports (path, crtime, display_name, src_module_name) VALUES (?, ?, ?, ?)");
 	}
 
 	private void closeStatements() {
@@ -5629,10 +5629,11 @@ public class SleuthkitCase {
 	 * Inserts row into the reports table in the case database.
      * @param [in] relPath The path of the report file, relative to the database (case directory in Autopsy).
 	 * @param [in] displayName The display name for the new tag name.
+	 * @param [in] sourceModuleName The name of the module that created the report.
 	 * @return A Report data transfer object (DTO) for the new row.
 	 * @throws TskCoreException 
 	 */
-	public Report addReport(String relPath, String displayName) throws TskCoreException {
+	public Report addReport(String relPath, String displayName, String sourceModuleName) throws TskCoreException {
 		dbWriteLock();
 		try {
 			// Figure out the date-time of this report
@@ -5652,6 +5653,7 @@ public class SleuthkitCase {
 			insertIntoReports.setString(1, relPath);			
 			insertIntoReports.setLong(2, dateTime);
 			insertIntoReports.setString(3, displayName);			
+			insertIntoReports.setString(4, sourceModuleName);			
 			insertIntoReports.executeUpdate();
 
 			// SELECT MAX(report_id) FROM reports
@@ -5659,7 +5661,7 @@ public class SleuthkitCase {
 			Long reportID = resultSet.getLong(1);
 			resultSet.close();
 			
-			return new Report(reportID, fullpath, dateTime, displayName);			
+			return new Report(reportID, fullpath, dateTime, displayName, sourceModuleName);			
 		}
 		catch (SQLException ex) {
 			throw new TskCoreException("Error adding row for " + displayName + " report to reports table", ex);
@@ -5685,7 +5687,9 @@ public class SleuthkitCase {
 			while (resultSet.next()) {
 				reports.add(new Report(resultSet.getLong("report_id"), 
                     getDbDirPath() + java.io.File.separator + resultSet.getString("path"), 
-					resultSet.getLong("crtime"), resultSet.getString("display_name"))); 
+					resultSet.getLong("crtime"), 
+					resultSet.getString("display_name"),
+					resultSet.getString("src_module_name"))); 
 			} 
 			resultSet.close();
 			return reports;

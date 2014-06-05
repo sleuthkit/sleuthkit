@@ -27,6 +27,7 @@ public class Report {
     private final String path;
     private final long createdTime;
     private final String displayName;    
+	private final String sourceModuleName;
    
     /**
      *
@@ -35,11 +36,12 @@ public class Report {
      * @param createdTime Created time of report (in UNIX epoch)
      * @param displayName 
      */
-    Report(long id, String path, long createdTime, String displayName) {
+    Report(long id, String path, long createdTime, String displayName, String sourceModuleName) {
         this.id = id;
         this.path = path;
         this.createdTime = createdTime;
         this.displayName = displayName;
+		this.sourceModuleName = sourceModuleName;
     }
     
     public long getId() {
@@ -64,4 +66,8 @@ public class Report {
     public String getDisplayName() {
         return displayName;
     }
+	
+	public String getSourceModuleName() {
+		return this.sourceModuleName;
+	}
 }
