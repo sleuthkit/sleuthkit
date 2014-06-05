@@ -1352,6 +1352,9 @@ public class SleuthkitCase {
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(String artifactTypeName, long obj_id) throws TskCoreException {
 		int artifactTypeID = this.getArtifactTypeID(artifactTypeName);
+		if (artifactTypeID == -1) {
+			return new ArrayList<BlackboardArtifact>();
+		}
 		return getArtifactsHelper(artifactTypeID, artifactTypeName, obj_id);
 	}
 
@@ -1366,7 +1369,6 @@ public class SleuthkitCase {
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(int artifactTypeID, long obj_id) throws TskCoreException {
 		String artifactTypeName = this.getArtifactTypeString(artifactTypeID);
-
 		return getArtifactsHelper(artifactTypeID, artifactTypeName, obj_id);
 	}
 
@@ -1395,6 +1397,9 @@ public class SleuthkitCase {
 	 */
 	public long getBlackboardArtifactsCount(String artifactTypeName, long obj_id) throws TskCoreException {
 		int artifactTypeID = this.getArtifactTypeID(artifactTypeName);
+		if (artifactTypeID == -1) {
+			return 0;
+		}
 		return getArtifactsCountHelper(artifactTypeID, obj_id);
 	}
 
@@ -1436,6 +1441,9 @@ public class SleuthkitCase {
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(String artifactTypeName) throws TskCoreException {
 		int artifactTypeID = this.getArtifactTypeID(artifactTypeName);
+		if (artifactTypeID == -1) {
+			return new ArrayList<BlackboardArtifact>();
+		}
 		return getArtifactsHelper(artifactTypeID, artifactTypeName);
 	}
 
