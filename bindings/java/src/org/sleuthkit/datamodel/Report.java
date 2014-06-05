@@ -26,22 +26,22 @@ public class Report {
     private long id = ID_NOT_SET;
     private final String path;
     private final long createdTime;
-    private final String displayName;    
 	private final String sourceModuleName;
+    private final String reportName;    
    
     /**
      *
      * @param id
      * @param path Absolute path to report
      * @param createdTime Created time of report (in UNIX epoch)
-     * @param displayName 
+     * @param reportName May be empty
      */
-    Report(long id, String path, long createdTime, String displayName, String sourceModuleName) {
+    Report(long id, String path, long createdTime, String sourceModuleName, String reportName) {
         this.id = id;
         this.path = path;
         this.createdTime = createdTime;
-        this.displayName = displayName;
 		this.sourceModuleName = sourceModuleName;
+        this.reportName = reportName;
     }
     
     public long getId() {
@@ -57,17 +57,21 @@ public class Report {
        
     /**
      * Get the creation date of the report.
-     * @eturns Number of seconds since Jan 1, 1970
+     * @return Number of seconds since Jan 1, 1970
      */
     public long getCreatedTime() {
         return createdTime;
     }    
     
-    public String getDisplayName() {
-        return displayName;
-    }
-	
 	public String getSourceModuleName() {
 		return this.sourceModuleName;
 	}
+	
+	/**
+	 * Get the report name, if any.
+	 * @return The name of the report, possibly empty. 
+	 */
+    public String getReportName() {
+        return reportName;
+    }	
 }

@@ -25,6 +25,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -219,7 +221,7 @@ public class SleuthkitCase {
 		statement.execute("CREATE TABLE blackboard_artifact_tags (tag_id INTEGER PRIMARY KEY, artifact_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL)");
 
 		// Add new table for reports
-		statement.execute("CREATE TABLE reports (report_id INTEGER PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, display_name TEXT NOT NULL, src_module_name TEXT NOT NULL)");
+		statement.execute("CREATE TABLE reports (report_id INTEGER PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT)");
 		
         // add columns for existing tables
         statement.execute("ALTER TABLE tsk_image_info ADD COLUMN size INTEGER;");
@@ -489,7 +491,7 @@ public class SleuthkitCase {
 		
 		selectMaxIdFromReports = con.prepareStatement("SELECT MAX(report_id) FROM reports");		
 		
-		insertIntoReports =  con.prepareStatement("INSERT INTO reports (path, crtime, display_name, src_module_name) VALUES (?, ?, ?, ?)");
+		insertIntoReports =  con.prepareStatement("INSERT INTO reports (path, crtime, src_module_name, report_name) VALUES (?, ?, ?, ?)");
 	}
 
 	private void closeStatements() {
@@ -5627,33 +5629,44 @@ public class SleuthkitCase {
 
 	/**
 	 * Inserts row into the reports table in the case database.
-     * @param [in] relPath The path of the report file, relative to the database (case directory in Autopsy).
-	 * @param [in] displayName The display name for the new tag name.
+     * @param [in] localPath The path of the report file, must be in the database directory (case directory in Autopsy) or one of its subdirectories.
 	 * @param [in] sourceModuleName The name of the module that created the report.
+	 * @param [in] reportName The report name, may be empty.
 	 * @return A Report data transfer object (DTO) for the new row.
 	 * @throws TskCoreException 
 	 */
-	public Report addReport(String relPath, String displayName, String sourceModuleName) throws TskCoreException {
+	public Report addReport(String localPath, String displayName, String sourceModuleName, String reportName) throws TskCoreException {
 		dbWriteLock();
 		try {
-			// Figure out the date-time of this report
-			long dateTime = 0;
-			
-			String fullpath = getDbDirPath() + java.io.File.separator + relPath;
+			// Make sure the local path of the report is in the database directory
+			// or one of its subdirectories.
+			String relativePath = "";
 			try {
-				java.io.File tempFile = new java.io.File(fullpath);
-                // convert to UNIX epoch (seconds, not milliseconds)
-				dateTime = tempFile.lastModified() / 1000;
-			} catch(Exception ex) {
-				throw new TskCoreException("Could not get datetime for path " + relPath, ex);
+				Path path = Paths.get(localPath);
+				Path pathBase = Paths.get(getDbDirPath());
+				relativePath = pathBase.relativize(path).toString();
+			} catch (IllegalArgumentException ex) {
+				String errorMessage = String.format("Local path %s not in the database directory or one of its subdirectories",
+						localPath);
+				throw new TskCoreException(errorMessage, ex);
 			}
-			
-			// INSERT INTO reports (path, crtime, display_name) VALUES (?, ?, ?)			
+						
+			// Figure out the create time of the report.
+			long createTime = 0;			
+			try {
+				java.io.File tempFile = new java.io.File(localPath);
+                // convert to UNIX epoch (seconds, not milliseconds)
+				createTime = tempFile.lastModified() / 1000;
+			} catch(Exception ex) {
+				throw new TskCoreException("Could not get datetime for path " + localPath, ex);
+			}
+									
+			// INSERT INTO reports (path, crtime, display_name, src_module_name) VALUES (?, ?, ?, ?)			
 			insertIntoReports.clearParameters(); 			
-			insertIntoReports.setString(1, relPath);			
-			insertIntoReports.setLong(2, dateTime);
-			insertIntoReports.setString(3, displayName);			
-			insertIntoReports.setString(4, sourceModuleName);			
+			insertIntoReports.setString(1, relativePath);			
+			insertIntoReports.setLong(2, createTime);
+			insertIntoReports.setString(3, sourceModuleName);			
+			insertIntoReports.setString(4, reportName);			
 			insertIntoReports.executeUpdate();
 
 			// SELECT MAX(report_id) FROM reports
@@ -5661,7 +5674,7 @@ public class SleuthkitCase {
 			Long reportID = resultSet.getLong(1);
 			resultSet.close();
 			
-			return new Report(reportID, fullpath, dateTime, displayName, sourceModuleName);			
+			return new Report(reportID, localPath, createTime, sourceModuleName, reportName);			
 		}
 		catch (SQLException ex) {
 			throw new TskCoreException("Error adding row for " + displayName + " report to reports table", ex);
@@ -5670,7 +5683,6 @@ public class SleuthkitCase {
 			dbWriteUnlock();
 		}
     }
-
 	
 	/**
 	 * Selects all of the rows from the reports table in the case database.
@@ -5680,16 +5692,15 @@ public class SleuthkitCase {
 	public List<Report> getAllReports() throws TskCoreException {
 		dbReadLock();		
 		try {
-			ArrayList<Report> reports = new ArrayList<Report>();
-			
+			ArrayList<Report> reports = new ArrayList<Report>();			
 			// SELECT * FROM reports
 			ResultSet resultSet = selectAllFromReports.executeQuery();
 			while (resultSet.next()) {
 				reports.add(new Report(resultSet.getLong("report_id"), 
                     getDbDirPath() + java.io.File.separator + resultSet.getString("path"), 
 					resultSet.getLong("crtime"), 
-					resultSet.getString("display_name"),
-					resultSet.getString("src_module_name"))); 
+					resultSet.getString("src_module_name"),
+			        resultSet.getString("report_name"))); 
 			} 
 			resultSet.close();
 			return reports;

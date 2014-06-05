@@ -320,7 +320,7 @@ int
         "Error creating blackboard_attribute_types table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE reports (report_id INTEGER PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, display_name TEXT NOT NULL, src_module_name TEXT NOT NULL)",
+        ("CREATE TABLE reports (report_id INTEGER PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL)",
             "Error creating reports table: %s\n")) {
         return 1;
     }
