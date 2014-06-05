@@ -63,7 +63,7 @@ public:
 class NTFS_PAR_MAP  {
 private:
         // maps sequence number to list of inums for the folder at that seq.
-        std::map <uint32_t, std::vector <NTFS_META_ADDR *> > seq2addrs;
+        std::map <uint32_t, std::vector <NTFS_META_ADDR> > seq2addrs;
 public:
         /**
          * Add a child to this parent.
@@ -72,7 +72,8 @@ public:
          * @param seq Sequence of child in the folder
          */
         void add (uint32_t parSeq, TSK_INUM_T inum, uint32_t seq) {
-            seq2addrs[parSeq].push_back(new NTFS_META_ADDR(inum, seq));
+            NTFS_META_ADDR addr(inum, seq);
+            seq2addrs[parSeq].push_back(addr);
         }
 
         /**
@@ -92,7 +93,7 @@ public:
          * @param seq Sequence number to retrieve children for.
          * @returns list of INUMS for children.
          */
-        std::vector <NTFS_META_ADDR *> &get (uint32_t seq) {
+        std::vector <NTFS_META_ADDR> &get (uint32_t seq) {
             return seq2addrs[seq];
         }
  };
@@ -167,7 +168,7 @@ ntfs_parent_map_exists(NTFS_INFO *ntfs, TSK_INUM_T par, uint32_t seq)
  * @param seq Sequence of parent inode 
  * @returns address of children files in the parent directory
  */
-static std::vector <NTFS_META_ADDR *> &
+static std::vector <NTFS_META_ADDR> &
 ntfs_parent_map_get(NTFS_INFO * ntfs, TSK_INUM_T par, uint32_t seq)
 {
     std::map<TSK_INUM_T, NTFS_PAR_MAP> *tmpParentMap = getParentMap(ntfs);
@@ -1153,7 +1154,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     if (ntfs_parent_map_exists(ntfs, a_addr, seqToSrch)) {
         TSK_FS_NAME *fs_name;
         
-        std::vector <NTFS_META_ADDR *> &childFiles = ntfs_parent_map_get(ntfs, a_addr, seqToSrch);
+        std::vector <NTFS_META_ADDR> &childFiles = ntfs_parent_map_get(ntfs, a_addr, seqToSrch);
 
         if ((fs_name = tsk_fs_name_alloc(256, 0)) == NULL)
             return TSK_ERR;
@@ -1167,8 +1168,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
             /* Fill in the basics of the fs_name entry
              * so we can print in the fls formats */
-            fs_name->meta_addr = childFiles[a]->getAddr();
-            fs_name->meta_seq = childFiles[a]->getSeq();
+            fs_name->meta_addr = childFiles[a].getAddr();
+            fs_name->meta_seq = childFiles[a].getSeq();
 
             // lookup the file to get more info (we did not cache that)
             fs_file_orp =

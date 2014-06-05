@@ -272,7 +272,7 @@ public class BlackboardAttribute {
 	 * @param Case the case that can be used to make calls into the blackboard
 	 * db
 	 */
-	protected BlackboardAttribute(long artifactID, int attributeTypeID, String moduleName, String context,
+	BlackboardAttribute(long artifactID, int attributeTypeID, String moduleName, String context,
 			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, int valueInt, long valueLong, double valueDouble,
 			String valueString, byte[] valueBytes, SleuthkitCase Case) {
 
@@ -466,15 +466,13 @@ public class BlackboardAttribute {
 	 *
 	 * @param attributeTypeID type of the attribute
 	 * @param moduleName name of the module that is creating the attribute
-	 * @param context extra information about the attribute
 	 * @param valueBytes the value
 	 */
-	public BlackboardAttribute(int attributeTypeID, String moduleName, String context,
-			byte[] valueBytes) {
+	public BlackboardAttribute(int attributeTypeID, String moduleName, byte[] valueBytes) {
 		this.artifactID = 0;
 		this.attributeTypeID = attributeTypeID;
 		this.moduleName = moduleName;
-		this.context = context;
+		this.context = "";
 		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE;
 		this.valueInt = 0;
 		this.valueLong = 0;
@@ -485,7 +483,22 @@ public class BlackboardAttribute {
 		} else {
 			this.valueBytes = valueBytes;
 		}
+	}
 
+	/**
+	 * Create a blackboard attribute that stores a byte array (creates an
+	 * attribute that can be added to an artifact)
+	 *
+	 * @param attributeTypeID type of the attribute
+	 * @param moduleName name of the module that is creating the attribute
+	 * @param context extra information about the attribute
+	 * @param valueBytes the value
+	 */
+	@Deprecated
+	public BlackboardAttribute(int attributeTypeID, String moduleName, String context,
+			byte[] valueBytes) {
+		this(attributeTypeID, moduleName, valueBytes);
+		this.context = context;
 	}
 
 	@Override
