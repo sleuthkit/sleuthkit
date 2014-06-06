@@ -78,7 +78,7 @@ public class ReadContentInputStream extends InputStream {
 		int lenToRead = (int) Math.min(contentSize - currentOffset, len);
 
 		// is the buffer big enough?
-		lenToRead = (int) Math.min(lenToRead, buffLen - off);
+		lenToRead = Math.min(lenToRead, buffLen - off);
 
 		byte[] retBuf = null;
 		if (off == 0) {
