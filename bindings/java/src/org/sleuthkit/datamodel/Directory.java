@@ -42,6 +42,7 @@ public class Directory extends FsContent {
 	 * @param attrId
 	 * @param name
 	 * @param metaAddr
+	 * @param metaSeq
 	 * @param dirType
 	 * @param metaType
 	 * @param dirFlag
@@ -81,12 +82,12 @@ public class Directory extends FsContent {
 
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
-		return getSleuthkitCase().getDirectoryChildren(this);
+		return getSleuthkitCase().getAbstractFileChildren(this);
 	}
 
 	@Override
 	public List<Long> getChildrenIds() throws TskCoreException {
-		return getSleuthkitCase().getDirectoryChildrenIds(this);
+		return getSleuthkitCase().getAbstractFileChildrenIds(this);
 	}
 
 

@@ -58,13 +58,13 @@ import org.sqlite.SQLiteJDBCLoader;
  * database implementations (such as SQLite) that might need it.
  */
 public class SleuthkitCase {
-	private String dbPath;
-	private String dbDirPath;
+	private final String dbPath;
+	private final String dbDirPath;
 	private int versionNumber;
 	private String dbBackupPath = null;
 	private volatile SleuthkitJNI.CaseDbHandle caseHandle;
 	private volatile Connection con;
-	private ResultSetHelper rsHelper = new ResultSetHelper(this);
+	private final ResultSetHelper rsHelper = new ResultSetHelper(this);
 	private int artifactIDcounter = 1001;
 	private int attributeIDcounter = 1001;
 	// for use by getCarvedDirectoryId method only
@@ -86,7 +86,9 @@ public class SleuthkitCase {
 	private PreparedStatement getArtifactsHelper2St;
 	private PreparedStatement getArtifactsCountHelperSt;
 	private PreparedStatement getAbstractFileChildren;
+	private PreparedStatement getAbstractFileChildrenByType;
 	private PreparedStatement getAbstractFileChildrenIds;
+	private PreparedStatement getAbstractFileChildrenIdsByType;
 	private PreparedStatement getAbstractFileById;
 	private PreparedStatement addArtifactSt1;
 	private PreparedStatement getLastArtifactId;
@@ -107,7 +109,7 @@ public class SleuthkitCase {
 	private PreparedStatement addFileSt;
 	private PreparedStatement addLayoutFileSt;
 	private PreparedStatement addPathSt;
-	private PreparedStatement hasChildrenSt;
+	private PreparedStatement countChildrenSt;
 	private PreparedStatement getLastContentIdSt;
 	private PreparedStatement getFsIdForFileIdSt;
 	private PreparedStatement selectAllFromTagNames;
@@ -365,6 +367,10 @@ public class SleuthkitCase {
 				"SELECT COUNT(*) FROM blackboard_artifacts WHERE obj_id = ? AND artifact_type_id = ?");
 
 		getAbstractFileChildren = con.prepareStatement(
+				"SELECT tsk_files.* FROM tsk_objects JOIN tsk_files "
+				+ "ON tsk_objects.obj_id=tsk_files.obj_id WHERE (tsk_objects.par_obj_id = ? )");
+		
+		getAbstractFileChildrenByType = con.prepareStatement(
 				"SELECT tsk_files.* "
 				+ "FROM tsk_objects JOIN tsk_files "
 				+ "ON tsk_objects.obj_id=tsk_files.obj_id "
@@ -372,6 +378,10 @@ public class SleuthkitCase {
 				+ "AND tsk_files.type = ? )");
 
 		getAbstractFileChildrenIds = con.prepareStatement(
+				"SELECT tsk_files.obj_id FROM tsk_objects JOIN tsk_files "
+				+ "ON tsk_objects.obj_id=tsk_files.obj_id WHERE (tsk_objects.par_obj_id = ?)");
+		
+		getAbstractFileChildrenIdsByType = con.prepareStatement(
 				"SELECT tsk_files.obj_id "
 				+ "FROM tsk_objects JOIN tsk_files "
 				+ "ON tsk_objects.obj_id=tsk_files.obj_id "
@@ -443,7 +453,7 @@ public class SleuthkitCase {
 		addPathSt = con.prepareStatement(
 				"INSERT INTO tsk_files_path (obj_id, path) VALUES (?, ?)");
 
-		hasChildrenSt = con.prepareStatement(
+		countChildrenSt = con.prepareStatement(
 				"SELECT COUNT(obj_id) FROM tsk_objects WHERE par_obj_id = ?");
 
 		getFsIdForFileIdSt = con.prepareStatement(
@@ -502,7 +512,9 @@ public class SleuthkitCase {
 		closeStatement(getArtifactsHelper2St);
 		closeStatement(getArtifactsCountHelperSt);
 		closeStatement(getAbstractFileChildren);
+		closeStatement(getAbstractFileChildrenByType);
 		closeStatement(getAbstractFileChildrenIds);
+		closeStatement(getAbstractFileChildrenIdsByType);
 		closeStatement(getAbstractFileById);
 		closeStatement(addArtifactSt1);
 		closeStatement(getLastArtifactId);
@@ -524,7 +536,7 @@ public class SleuthkitCase {
 		closeStatement(addFileSt);
 		closeStatement(addLayoutFileSt);
 		closeStatement(addPathSt);
-		closeStatement(hasChildrenSt);
+		closeStatement(countChildrenSt);
 		closeStatement(getFsIdForFileIdSt);
 		closeStatement(selectAllFromTagNames);
 		closeStatement(selectFromTagNamesWhereInUse);
@@ -2162,8 +2174,8 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		dbReadLock();
 		try {
-			hasChildrenSt.setLong(1, content.getId());
-			rs = hasChildrenSt.executeQuery();
+			countChildrenSt.setLong(1, content.getId());
+			rs = countChildrenSt.executeQuery();
 			if (rs.next()) {
 				hasChildren = rs.getInt(1) > 0;
 			}
@@ -2201,8 +2213,8 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		dbReadLock();
 		try {
-			hasChildrenSt.setLong(1, content.getId());
-			rs = hasChildrenSt.executeQuery();
+			countChildrenSt.setLong(1, content.getId());
+			rs = countChildrenSt.executeQuery();
 			if (rs.next()) {
 				countChildren = rs.getInt(1);
 			}
@@ -2225,7 +2237,7 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Returns the list of AbstractFile Children for a given AbstractFileParent
+	 * Returns the list of AbstractFile Children of a given type for a given AbstractFileParent
 	 *
 	 * @param parent the content parent to get abstract file children for
 	 * @param type children type to look for, defined in TSK_DB_FILES_TYPE_ENUM
@@ -2234,53 +2246,120 @@ public class SleuthkitCase {
 	 */
 	List<Content> getAbstractFileChildren(Content parent, TSK_DB_FILES_TYPE_ENUM type) throws TskCoreException {
 
-		List<Content> children = new ArrayList<Content>();
+		List<Content> children;
 		
 		dbReadLock();
 		try {
-
+			
 			long parentId = parent.getId();
-
+			getAbstractFileChildrenByType.setLong(1, parentId);
+			getAbstractFileChildrenByType.setShort(2, type.getFileType());
+			
+			final ResultSet rs = getAbstractFileChildrenByType.executeQuery();
+			children = fileChildrenResultSetHelper (rs, parentId);
+			rs.close();
+			
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting AbstractFile children for Content.", ex);
+		} finally {
+			dbReadUnlock();
+		}
+		return children;
+	}
+	
+	/**
+	 * Returns the list of all AbstractFile Children for a given AbstractFileParent
+	 *
+	 * @param parent the content parent to get abstract file children for
+	 * @param type children type to look for, defined in TSK_DB_FILES_TYPE_ENUM
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 * within tsk core
+	 */
+	List<Content> getAbstractFileChildren(Content parent) throws TskCoreException {
+		List<Content> children;
+		
+		dbReadLock();
+		try {
+			
+			long parentId = parent.getId();
 			getAbstractFileChildren.setLong(1, parentId);
-			getAbstractFileChildren.setShort(2, type.getFileType());
-
+			
 			final ResultSet rs = getAbstractFileChildren.executeQuery();
+			children = fileChildrenResultSetHelper (rs, parentId);
+			rs.close();
+			
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting AbstractFile children for Content.", ex);
+		} finally {
+			dbReadUnlock();
+		}
+		return children;
+	}
+	
+	private List<Content> fileChildrenResultSetHelper (ResultSet rs, long parentId) throws SQLException {
+		List<Content> children = new ArrayList<Content>();
+		
+		while (rs.next()) {
+			TSK_DB_FILES_TYPE_ENUM type = TSK_DB_FILES_TYPE_ENUM.valueOf(rs.getShort("type"));
+
+			if (type == TSK_DB_FILES_TYPE_ENUM.FS) {
+				FsContent result;
+				if (rs.getShort("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue()) {
+					result = rsHelper.directory(rs, null);
+				} else {
+					result = rsHelper.file(rs, null);
+				}
+				children.add(result);
+			} else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR) {
+				VirtualDirectory virtDir = rsHelper.virtualDirectory(rs);
+				children.add(virtDir);
+			} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS
+					|| type == TSK_DB_FILES_TYPE_ENUM.CARVED) {
+				String parentPath = rs.getString("parent_path");
+				if (parentPath == null) {
+					parentPath = "";
+				}
+				final LayoutFile lf =
+						new LayoutFile(this, rs.getLong("obj_id"), rs.getString("name"),
+						type,
+						TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
+						TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")),
+						TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")),
+						rs.getShort("meta_flags"),
+						rs.getLong("size"),
+						rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), parentPath);
+				children.add(lf);
+			} else if (type == TSK_DB_FILES_TYPE_ENUM.DERIVED) {
+				final DerivedFile df = rsHelper.derivedFile(rs, parentId);
+				children.add(df);
+			} else if (type == TSK_DB_FILES_TYPE_ENUM.LOCAL) {
+				final LocalFile lf = rsHelper.localFile(rs, parentId);
+				children.add(lf);
+			}
+		}
+		return children;
+	}
+
+	/**
+	 * Get list of IDs for abstract files of a given type that are children of a given content.
+	 * @param parent Object to find children for
+	 * @param type Type of children to find  IDs for
+	 * @return
+	 * @throws TskCoreException 
+	 */
+	List<Long> getAbstractFileChildrenIds(Content parent, TSK_DB_FILES_TYPE_ENUM type) throws TskCoreException {
+		final List<Long> children = new ArrayList<Long>();
+
+		dbReadLock();
+		try {
+
+			getAbstractFileChildrenIdsByType.setLong(1, parent.getId());
+			getAbstractFileChildrenIdsByType.setShort(2, type.getFileType());
+
+			ResultSet rs = getAbstractFileChildrenIdsByType.executeQuery();
 
 			while (rs.next()) {
-				if (type == TSK_DB_FILES_TYPE_ENUM.FS) {
-					FsContent result;
-					if (rs.getShort("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue()) {
-						result = rsHelper.directory(rs, null);
-					} else {
-						result = rsHelper.file(rs, null);
-					}
-					children.add(result);
-				} else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR) {
-					VirtualDirectory virtDir = rsHelper.virtualDirectory(rs);
-					children.add(virtDir);
-				} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS
-						|| type == TSK_DB_FILES_TYPE_ENUM.CARVED) {
-					String parentPath = rs.getString("parent_path");
-					if (parentPath == null) {
-						parentPath = "";
-					}
-					final LayoutFile lf =
-							new LayoutFile(this, rs.getLong("obj_id"), rs.getString("name"),
-							type,
-							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
-							TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")),
-							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")),
-							rs.getShort("meta_flags"),
-							rs.getLong("size"),
-							rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), parentPath);
-					children.add(lf);
-				} else if (type == TSK_DB_FILES_TYPE_ENUM.DERIVED) {
-					final DerivedFile df = rsHelper.derivedFile(rs, parentId);
-					children.add(df);
-				} else if (type == TSK_DB_FILES_TYPE_ENUM.LOCAL) {
-					final LocalFile lf = rsHelper.localFile(rs, parentId);
-					children.add(lf);
-				}
+				children.add(rs.getLong(1));
 			}
 			rs.close();
 		} catch (SQLException ex) {
@@ -2290,15 +2369,19 @@ public class SleuthkitCase {
 		}
 		return children;
 	}
-
-	List<Long> getAbstractFileChildrenIds(Content parent, TSK_DB_FILES_TYPE_ENUM type) throws TskCoreException {
+	
+	/**
+	 * Get list of IDs for abstract files that are children of a given content.
+	 * @param parent Object to find children for
+	 * @return
+	 * @throws TskCoreException 
+	 */
+	List<Long> getAbstractFileChildrenIds(Content parent) throws TskCoreException {
 		final List<Long> children = new ArrayList<Long>();
 
 		dbReadLock();
 		try {
-
 			getAbstractFileChildrenIds.setLong(1, parent.getId());
-			getAbstractFileChildrenIds.setShort(2, type.getFileType());
 
 			ResultSet rs = getAbstractFileChildrenIds.executeQuery();
 
@@ -4443,103 +4526,6 @@ public class SleuthkitCase {
 		return children;
 	}
 
-	/**
-	 * Returns a list of direct children for a given file system
-	 *
-	 * @param fs file system to get the list of children for
-	 * @return the list of direct files children of the filesystem
-	 * @throws TskCoreException thrown if a critical error occurred within tsk
-	 * core
-	 */
-	List<Content> getFileSystemChildren(FileSystem fs) throws TskCoreException {
-		List<Content> ret = new ArrayList<Content>();
-		for (TskData.TSK_DB_FILES_TYPE_ENUM type : TskData.TSK_DB_FILES_TYPE_ENUM.values()) {
-			ret.addAll(getAbstractFileChildren(fs, type));
-		}
-		return ret;
-	}
-
-	/**
-	 * Returns a list of direct children IDs for a given file system
-	 *
-	 * @param fs file system to get the list of children for
-	 * @return the list of direct files children IDs of the filesystem
-	 * @throws TskCoreException thrown if a critical error occurred within tsk
-	 * core
-	 */
-	List<Long> getFileSystemChildrenIds(FileSystem fs) throws TskCoreException {
-		List<Long> ret = new ArrayList<Long>();
-		for (TskData.TSK_DB_FILES_TYPE_ENUM type : TskData.TSK_DB_FILES_TYPE_ENUM.values()) {
-			ret.addAll(getAbstractFileChildrenIds(fs, type));
-		}
-		return ret;
-	}
-
-	/**
-	 * Returns a list of direct children for a given directory
-	 *
-	 * @param dir directory to get the list of direct children for
-	 * @return list of direct children (files) for a given directory
-	 * @throws TskCoreException thrown if a critical error occurred within tsk
-	 * core
-	 */
-	List<Content> getDirectoryChildren(Directory dir) throws TskCoreException {
-		List<Content> ret = new ArrayList<Content>();
-		for (TskData.TSK_DB_FILES_TYPE_ENUM type : TskData.TSK_DB_FILES_TYPE_ENUM.values()) {
-			ret.addAll(getAbstractFileChildren(dir, type));
-		}
-		return ret;
-	}
-
-	/**
-	 * Returns a list of direct children IDs for a given directory
-	 *
-	 * @param dir directory to get the list of direct children for
-	 * @return list of direct children (files) IDs for a given directory
-	 * @throws TskCoreException thrown if a critical error occurred within tsk
-	 * core
-	 */
-	List<Long> getDirectoryChildrenIds(Directory dir) throws TskCoreException {
-		List<Long> ret = new ArrayList<Long>();
-		for (TskData.TSK_DB_FILES_TYPE_ENUM type : TskData.TSK_DB_FILES_TYPE_ENUM.values()) {
-			ret.addAll(getAbstractFileChildrenIds(dir, type));
-		}
-		return ret;
-	}
-
-	/**
-	 * Returns a list of all direct children for a given virtual directory
-	 *
-	 * @param vDir virtual directory to get the list of direct children for
-	 * @return list of direct children (layout/local files or directories) for a
-	 * given virtual directory
-	 * @throws TskCoreException thrown if a critical error occurred within tsk
-	 * core
-	 */
-	List<Content> getVirtualDirectoryChildren(VirtualDirectory vDir) throws TskCoreException {
-		List<Content> ret = new ArrayList<Content>();
-		for (TskData.TSK_DB_FILES_TYPE_ENUM type : TskData.TSK_DB_FILES_TYPE_ENUM.values()) {
-			ret.addAll(getAbstractFileChildren(vDir, type));
-		}
-		return ret;
-	}
-
-	/**
-	 * Returns a list of direct children IDs for a given layout directory
-	 *
-	 * @param ldir layout directory to get the list of direct children for
-	 * @return list of direct children IDs (layout files or layout directories)
-	 * for a given layout directory
-	 * @throws TskCoreException thrown if a critical error occurred within tsk
-	 * core
-	 */
-	List<Long> getLayoutDirectoryChildrenIds(VirtualDirectory ldir) throws TskCoreException {
-		List<Long> ret = new ArrayList<Long>();
-		for (TskData.TSK_DB_FILES_TYPE_ENUM type : TskData.TSK_DB_FILES_TYPE_ENUM.values()) {
-			ret.addAll(getAbstractFileChildrenIds(ldir, type));
-		}
-		return ret;
-	}
 
 	/**
 	 * Returns a map of image object IDs to a list of fully qualified file paths
