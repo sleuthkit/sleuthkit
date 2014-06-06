@@ -1720,7 +1720,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error getting attribute type id: ", ex);
 		} finally {
 			// Note: this can be done much more cleanly and simply with 
-			// try-with-resources in Java 7.
+			// try-with-resources in Java 7 or higher.
 			try {
 				if (resultSet != null) {
 					resultSet.close();
@@ -1831,7 +1831,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error getting artifact type id: " + ex.getMessage(), ex);
 		} finally {
 			// Note: this can be done much more cleanly and simply with 
-			// try-with-resources in Java 7.
+			// try-with-resources in Java 7 or higher.
 			try {
 				if (resultSet != null) {
 					resultSet.close();
@@ -4713,7 +4713,7 @@ public class SleuthkitCase {
 	 * tsk_files table. Assumes that the query was of the form "SELECT * FROM
 	 * tsk_files WHERE XYZ".
 	 *
-	 * @param resultSet ResultSet to get content from. Caller is responsible for
+	 * @param rs ResultSet to get content from. Caller is responsible for
 	 * closing it.
 	 * @return list of file objects from tsk_files table containing the results
 	 * @throws SQLException if the query fails
@@ -4761,7 +4761,7 @@ public class SleuthkitCase {
 					results.add(lf);
 				}
 
-			} //end for each resultSet
+			} //end for each rs
 		} catch (SQLException e) {
 			logger.log(Level.SEVERE, "Error getting abstract file from result set.", e);
 		} finally {
@@ -4774,7 +4774,7 @@ public class SleuthkitCase {
 	/**
 	 * Creates FsContent objects from SQL query result set on tsk_files table
 	 *
-	 * @param resultSet the result set with the query results
+	 * @param rs the result set with the query results
 	 * @return list of fscontent objects matching the query
 	 * @throws SQLException if SQL query result getting failed
 	 */
@@ -5660,8 +5660,8 @@ public class SleuthkitCase {
 	}	
 
 	/**
-	 * Inserts row into the reports table in the case database.
-     * @param [in] localPath The path of the report file, must be in the database directory (case directory in Autopsy) or one of its subdirectories.
+	 * Inserts a row into the reports table in the case database.
+	 * @param [in] localPath The path of the report file, must be in the database directory (case directory in Autopsy) or one of its subdirectories.
 	 * @param [in] sourceModuleName The name of the module that created the report.
 	 * @param [in] reportName The report name, may be empty.
 	 * @return A Report data transfer object (DTO) for the new row.
@@ -5669,6 +5669,7 @@ public class SleuthkitCase {
 	 */
 	public Report addReport(String localPath, String sourceModuleName, String reportName) throws TskCoreException {
 		dbWriteLock();
+		ResultSet resultSet = null;
 		try {
 			// Make sure the local path of the report is in the database directory
 			// or one of its subdirectories.
@@ -5687,13 +5688,13 @@ public class SleuthkitCase {
 			long createTime = 0;			
 			try {
 				java.io.File tempFile = new java.io.File(localPath);
-                // convert to UNIX epoch (seconds, not milliseconds)
+                // Convert to UNIX epoch (seconds, not milliseconds).
 				createTime = tempFile.lastModified() / 1000;
 			} catch(Exception ex) {
 				throw new TskCoreException("Could not get create time for report at " + localPath, ex);
 			}
 									
-			// INSERT INTO reports (path, crtime, display_name, src_module_name) VALUES (?, ?, ?, ?)			
+			// INSERT INTO reports (path, crtime, src_module_name, display_name) VALUES (?, ?, ?, ?)			
 			insertIntoReports.clearParameters(); 			
 			insertIntoReports.setString(1, relativePath);			
 			insertIntoReports.setLong(2, createTime);
@@ -5702,9 +5703,8 @@ public class SleuthkitCase {
 			insertIntoReports.executeUpdate();
 
 			// SELECT MAX(report_id) FROM reports
-			ResultSet resultSet = selectMaxIdFromReports.executeQuery();
+			resultSet = selectMaxIdFromReports.executeQuery();
 			Long reportID = resultSet.getLong(1);
-			resultSet.close();
 			
 			return new Report(reportID, localPath, createTime, sourceModuleName, reportName);			
 		}
@@ -5712,6 +5712,15 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error adding row for report " + localPath + " to reports table", ex);
 		}
 		finally {
+			// Note: this can be done much more cleanly and simply with 
+			// try-with-resources in Java 7 or higher.
+			try {
+				if (resultSet != null) {
+					resultSet.close();
+				}			
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Failed to close ResultSet", ex);
+			}
 			dbWriteUnlock();
 		}
     }
@@ -5723,10 +5732,11 @@ public class SleuthkitCase {
 	 */
 	public List<Report> getAllReports() throws TskCoreException {
 		dbReadLock();		
+		ResultSet resultSet = null;
 		try {
 			ArrayList<Report> reports = new ArrayList<Report>();			
 			// SELECT * FROM reports
-			ResultSet resultSet = selectAllFromReports.executeQuery();
+			resultSet = selectAllFromReports.executeQuery();
 			while (resultSet.next()) {
 				reports.add(new Report(resultSet.getLong("report_id"), 
                     getDbDirPath() + java.io.File.separator + resultSet.getString("path"), 
@@ -5734,13 +5744,21 @@ public class SleuthkitCase {
 					resultSet.getString("src_module_name"),
 			        resultSet.getString("report_name"))); 
 			} 
-			resultSet.close();
 			return reports;
 		}
 		catch (SQLException ex) {
 			throw new TskCoreException("Error selecting rows from reports table", ex);
 		}
 		finally {
+			// Note: this can be done much more cleanly and simply with 
+			// try-with-resources in Java 7 or higher.
+			try {
+				if (resultSet != null) {
+					resultSet.close();
+				}			
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Failed to close ResultSet", ex);
+			}
 			dbReadUnlock();
 		}					
 	}	
