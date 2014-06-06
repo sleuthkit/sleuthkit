@@ -519,6 +519,7 @@ sub print_tl {
 
     my $prev_day        = "";   # has the format of 'day day_week mon year'
     my $prev_hour       = "";   # has just the hour and is used for hourly index
+    my $prev_time       = 0;
     my $prev_cnt        = 0;
     my $old_date_string = "";
 
@@ -623,6 +624,7 @@ sub print_tl {
                 if ($prev_day eq "") {
                     $prev_day  = "$mday $wday $mon $yeart";
                     $prev_hour = $hour;
+                    $prev_time = $time;
                     $prev_cnt  = 0;
                 }
 
@@ -647,12 +649,13 @@ sub print_tl {
                     $date_str .= " $prev_hour:00:00"
                       if ($INDEX_TYPE == $INDEX_HOUR);
 
-                    print INDEX "${date_str}${delim} $prev_cnt\n";
+                    print INDEX "${date_str}${delim} $prev_cnt\n" if ($prev_time > 0);
 
                     # Reset
                     $prev_cnt  = 0;
                     $prev_day  = "$mday $wday $mon $yeart";
                     $prev_hour = $hour;
+                    $prev_time = $time;
 
                 }
 
@@ -664,18 +667,21 @@ sub print_tl {
                         print INDEX "$digit_to_day{$prev_vals[1]} "
                           . "$prev_vals[2] "
                           . "$prev_vals[0] ${prev_vals[3]} "
-                          . "$prev_hour:00:00${delim} $prev_cnt\n";
+                          . "$prev_hour:00:00${delim} $prev_cnt\n"
+                          if ($prev_time > 0);
                     }
                     else {
                         print INDEX "$digit_to_day{$prev_vals[1]} "
                           . "$digit_to_month{$prev_vals[2]} "
                           . "$prev_vals[0] ${prev_vals[3]} "
-                          . "$prev_hour:00:00${delim} $prev_cnt\n";
+                          . "$prev_hour:00:00${delim} $prev_cnt\n"
+                          if ($prev_time > 0);
                     }
 
                     # Reset
                     $prev_cnt  = 0;
                     $prev_hour = $hour;
+                    $prev_time = $time;
                 }
                 $prev_cnt++;
             }
@@ -755,7 +761,7 @@ sub print_tl {
         $date_str .= " $prev_hour:00:00"
           if ($INDEX_TYPE == $INDEX_HOUR);
 
-        print INDEX "${date_str}${delim} $prev_cnt\n";
+        print INDEX "${date_str}${delim} $prev_cnt\n" if ($prev_time > 0);
         close INDEX;
     }
 }

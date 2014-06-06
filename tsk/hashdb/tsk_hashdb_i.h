@@ -77,24 +77,24 @@ extern "C" {
     // Hash database functions common to all text format hash databases
     // (NSRL, md5sum, EnCase, HashKeeper, index only). These databases have
     // external indexes. 
-    extern TSK_TEXT_HDB_INFO *text_hdb_open(FILE *, const TSK_TCHAR *);
-    extern uint8_t text_hdb_uses_external_indexes();
-    extern const TSK_TCHAR *text_hdb_get_index_path(TSK_HDB_INFO *, TSK_HDB_HTYPE_ENUM);
-    extern uint8_t text_hdb_has_index(TSK_HDB_INFO*, TSK_HDB_HTYPE_ENUM);
-    extern uint8_t text_hdb_open_idx(TSK_HDB_INFO *, TSK_HDB_HTYPE_ENUM);
-    extern uint8_t text_hdb_idx_initialize(TSK_TEXT_HDB_INFO *, TSK_TCHAR *);
-    extern uint8_t text_hdb_idx_add_entry_str(TSK_TEXT_HDB_INFO *, char *, TSK_OFF_T);
-    extern uint8_t text_hdb_idx_add_entry_bin(TSK_TEXT_HDB_INFO *, 
+    extern TSK_HDB_BINSRCH_INFO *hdb_binsrch_open(FILE *, const TSK_TCHAR *);
+    extern uint8_t hdb_binsrch_uses_external_indexes();
+    extern const TSK_TCHAR *hdb_binsrch_get_index_path(TSK_HDB_INFO *, TSK_HDB_HTYPE_ENUM);
+    extern uint8_t hdb_binsrch_has_index(TSK_HDB_INFO*, TSK_HDB_HTYPE_ENUM);
+    extern uint8_t hdb_binsrch_open_idx(TSK_HDB_INFO *, TSK_HDB_HTYPE_ENUM);
+    extern uint8_t hdb_binsrch_idx_initialize(TSK_HDB_BINSRCH_INFO *, TSK_TCHAR *);
+    extern uint8_t hdb_binsrch_idx_add_entry_str(TSK_HDB_BINSRCH_INFO *, char *, TSK_OFF_T);
+    extern uint8_t hdb_binsrch_idx_add_entry_bin(TSK_HDB_BINSRCH_INFO *, 
         unsigned char *, int, TSK_OFF_T);
-    extern uint8_t text_hdb_idx_finalize(TSK_TEXT_HDB_INFO *);
-    extern int8_t text_hdb_lookup_str(TSK_HDB_INFO *, const char *, 
+    extern uint8_t hdb_binsrch_idx_finalize(TSK_HDB_BINSRCH_INFO *);
+    extern int8_t hdb_binsrch_lookup_str(TSK_HDB_INFO *, const char *, 
         TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);
-    extern int8_t text_hdb_lookup_bin(TSK_HDB_INFO *, uint8_t *, 
+    extern int8_t hdb_binsrch_lookup_bin(TSK_HDB_INFO *, uint8_t *, 
         uint8_t, TSK_HDB_FLAG_ENUM, 
         TSK_HDB_LOOKUP_FN, void *);
-    extern int8_t text_hdb_lookup_verbose_str(TSK_HDB_INFO *, const char *, void *);
-    extern uint8_t text_hdb_accepts_updates();
-    extern void text_hdb_close(TSK_HDB_INFO *) ;
+    extern int8_t hdb_binsrch_lookup_verbose_str(TSK_HDB_INFO *, const char *, void *);
+    extern uint8_t hdb_binsrch_accepts_updates();
+    extern void hdb_binsrch_close(TSK_HDB_INFO *) ;
 
     // Hash database functions for NSRL hash databases. 
     extern uint8_t nsrl_test(FILE *);

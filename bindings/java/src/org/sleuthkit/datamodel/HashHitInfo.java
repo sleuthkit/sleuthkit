@@ -21,48 +21,61 @@ package org.sleuthkit.datamodel;
 import java.util.ArrayList;
 
 /**
- * Used to transmit hashDb information about a particular file from TSK to Autopsy 
+ * Used to transmit hashDb information about a particular hash hit from the TSK
+ * lookup code to Autopsy. HashEntry is for the reverse direction (adding hashes
+ * to DB).
  */
-public class HashInfo {
+public class HashHitInfo {
+
 	private String hashMd5;
 	private String hashSha1;
 	private String hashSha2_256;
-    private ArrayList<String> names = new ArrayList<String>();
+	private ArrayList<String> names = new ArrayList<String>();
 	private ArrayList<String> comments = new ArrayList<String>();
 
 	/**
 	 * Default constructor when error message is not available
 	 */
-	public HashInfo(String hashMd5, String hashSha1, String hashSha2_256) {
+	public HashHitInfo(String hashMd5, String hashSha1, String hashSha2_256) {
 		this.hashMd5 = hashMd5;
 		this.hashSha1 = hashSha1;
 		this.hashSha2_256 = hashSha2_256;
 	}
-	
-    public void addName(String name) {
-        names.add(name);
-    }
-    
-    public void addComment(String comment) {
-        comments.add(comment);
-    }	
-	
+
+	/**
+	 * Add file name associated with this hash
+	 *
+	 * @param name
+	 */
+	public void addName(String name) {
+		names.add(name);
+	}
+
+	/**
+	 * Add comment associated with this hash
+	 *
+	 * @param comment
+	 */
+	public void addComment(String comment) {
+		comments.add(comment);
+	}
+
 	public String getHashMd5() {
 		return hashMd5;
 	}
-	
+
 	public String getHashSha1() {
 		return hashSha1;
 	}
-	
+
 	public String getHashSha256() {
 		return hashSha2_256;
-	}	
-	
+	}
+
 	public ArrayList<String> getNames() {
 		return names;
 	}
-	
+
 	public ArrayList<String> getComments() {
 		return comments;
 	}

@@ -27,25 +27,24 @@ import java.util.logging.Logger;
 import java.io.InputStream;
 
 /**
- * Utility to calculate a hash for FsContent and store in tsk database
+ * Utility to calculate a hash for FsContent and store in TSK database
  */
-public class Hash {
-
+public class HashUtility {
 	private final static int BUFFER_SIZE = 16 * 1024;
-	private final byte[] buffer = new byte[BUFFER_SIZE];
-
+	
 	/**
-	 * Generate the md5 hash for the given FsContent and store it in the
+	 * Calculate the MD5 hash for the given FsContent and store it in the
 	 * database
 	 *
 	 * @param file file object whose md5 hash we want to calculate
 	 * @return md5 of the given FsContent object
 	 */
-	public String calculateMd5(AbstractFile file) throws IOException {
+	static public String calculateMd5(AbstractFile file) throws IOException {
 		String hashText = "";
 		InputStream in = new ReadContentInputStream(file);
-		Logger logger = Logger.getLogger(Hash.class.getName());
+		Logger logger = Logger.getLogger(HashUtility.class.getName());
 		try {
+			byte[] buffer = new byte[BUFFER_SIZE];
 			MessageDigest md = MessageDigest.getInstance("md5");
 			int len = in.read(buffer);
 			while (len != -1) {

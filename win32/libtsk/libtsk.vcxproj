@@ -211,7 +211,7 @@ copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"
     <ClCompile Include="..\..\tsk\fs\fatxxfs_dent.c" />
     <ClCompile Include="..\..\tsk\fs\fatxxfs_meta.c" />
     <ClCompile Include="..\..\tsk\hashdb\hdb_base.c" />
-    <ClCompile Include="..\..\tsk\hashdb\text_fmt_hdb_base.cpp" />
+    <ClCompile Include="..\..\tsk\hashdb\binsrch_index.cpp" />
     <ClCompile Include="..\..\tsk\vs\bsd.c" />
     <ClCompile Include="..\..\tsk\vs\dos.c" />
     <ClCompile Include="..\..\tsk\vs\gpt.c" />

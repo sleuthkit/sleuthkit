@@ -91,17 +91,20 @@ uint8_t
 
 TSK_HDB_INFO *nsrl_open(FILE *hDb, const TSK_TCHAR *db_path)
 {
-    TSK_TEXT_HDB_INFO *text_hdb_info = NULL;
-    text_hdb_info = text_hdb_open(hDb, db_path);
-    if (NULL == text_hdb_info) {
+    TSK_HDB_BINSRCH_INFO *hdb_binsrch_info = NULL;
+
+    // get the basic binary-search info struct
+    hdb_binsrch_info = hdb_binsrch_open(hDb, db_path);
+    if (NULL == hdb_binsrch_info) {
         return NULL;
     }
 
-    text_hdb_info->base.db_type = TSK_HDB_DBTYPE_NSRL_ID;
-    text_hdb_info->base.make_index = nsrl_makeindex;
-    text_hdb_info->get_entry = nsrl_getentry;
+    // overwrite the database-specific methods
+    hdb_binsrch_info->base.db_type = TSK_HDB_DBTYPE_NSRL_ID;
+    hdb_binsrch_info->base.make_index = nsrl_makeindex;
+    hdb_binsrch_info->get_entry = nsrl_getentry;
 
-    return (TSK_HDB_INFO*)text_hdb_info;
+    return (TSK_HDB_INFO*)hdb_binsrch_info;
 }
 
 /**
@@ -383,7 +386,7 @@ static uint8_t
 uint8_t
     nsrl_makeindex(TSK_HDB_INFO * hdb_info_base, TSK_TCHAR * dbtype)
 {
-    TSK_TEXT_HDB_INFO *hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info_base;
+    TSK_HDB_BINSRCH_INFO *hdb_binsrch_info = (TSK_HDB_BINSRCH_INFO*)hdb_info_base;
     size_t i, len;
     char buf[TSK_HDB_MAXLEN];
     char *hash = NULL, phash[TSK_HDB_HTYPE_SHA1_LEN + 1];
@@ -391,7 +394,7 @@ uint8_t
     int ver = 0;
     int db_cnt = 0, idx_cnt = 0, ig_cnt = 0;
 
-    if (text_hdb_idx_initialize(hdb_info, dbtype)) {
+    if (hdb_binsrch_idx_initialize(hdb_binsrch_info, dbtype)) {
         tsk_error_set_errstr2( "nsrl_makeindex");
         return 1;
     }
@@ -405,8 +408,8 @@ uint8_t
     memset(phash, '0', TSK_HDB_HTYPE_SHA1_LEN + 1);
 
     /* read the file */
-    fseek(hdb_info->hDb, 0, SEEK_SET);
-    for (i = 0; NULL != fgets(buf, TSK_HDB_MAXLEN, hdb_info->hDb);
+    fseek(hdb_binsrch_info->hDb, 0, SEEK_SET);
+    for (i = 0; NULL != fgets(buf, TSK_HDB_MAXLEN, hdb_binsrch_info->hDb);
         offset += len, i++) {
 
             len = strlen(buf);
@@ -421,13 +424,13 @@ uint8_t
             }
 
             /* Parse the line */
-            if (hdb_info->hash_type & TSK_HDB_HTYPE_SHA1_ID) {
+            if (hdb_binsrch_info->hash_type & TSK_HDB_HTYPE_SHA1_ID) {
                 if (nsrl_parse_sha1(buf, &hash, NULL, ver)) {
                     ig_cnt++;
                     continue;
                 }
             }
-            else if (hdb_info->hash_type & TSK_HDB_HTYPE_MD5_ID) {
+            else if (hdb_binsrch_info->hash_type & TSK_HDB_HTYPE_MD5_ID) {
                 if (nsrl_parse_md5(buf, &hash, NULL, ver)) {
                     ig_cnt++;
                     continue;
@@ -437,12 +440,12 @@ uint8_t
             db_cnt++;
 
             /* We only want to add one of each hash to the index */
-            if (memcmp(hash, phash, hdb_info->hash_len) == 0) {
+            if (memcmp(hash, phash, hdb_binsrch_info->hash_len) == 0) {
                 continue;
             }
 
             /* Add the entry to the index */
-            if (text_hdb_idx_add_entry_str(hdb_info, hash, offset)) {
+            if (hdb_binsrch_idx_add_entry_str(hdb_binsrch_info, hash, offset)) {
                 tsk_error_set_errstr2( "nsrl_makeindex");
                 return 1;
             }
@@ -450,7 +453,7 @@ uint8_t
             idx_cnt++;
 
             /* Set the previous has value */
-            strncpy(phash, hash, hdb_info->hash_len + 1);
+            strncpy(phash, hash, hdb_binsrch_info->hash_len + 1);
     }
 
     if (idx_cnt > 0) {
@@ -464,7 +467,7 @@ uint8_t
         }
 
         /* Close and sort the index */
-        if (text_hdb_idx_finalize(hdb_info)) {
+        if (hdb_binsrch_idx_finalize(hdb_binsrch_info)) {
             tsk_error_set_errstr2( "nsrl_makeindex");
             return 1;
         }
@@ -501,7 +504,7 @@ uint8_t
     TSK_HDB_FLAG_ENUM flags,
     TSK_HDB_LOOKUP_FN action, void *cb_ptr)
 {
-    TSK_TEXT_HDB_INFO *hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info_base; 
+    TSK_HDB_BINSRCH_INFO *hdb_binsrch_info = (TSK_HDB_BINSRCH_INFO*)hdb_info_base; 
     char buf[TSK_HDB_MAXLEN], *name, *cur_hash, pname[TSK_HDB_MAXLEN];
     int found = 0;
     int ver;
@@ -511,7 +514,7 @@ uint8_t
         "nsrl_getentry: Lookup up hash %s at offset %" PRIuOFF
         "\n", hash, offset);
 
-    if ((hdb_info->hash_type == TSK_HDB_HTYPE_MD5_ID)
+    if ((hdb_binsrch_info->hash_type == TSK_HDB_HTYPE_MD5_ID)
         && (strlen(hash) != TSK_HDB_HTYPE_MD5_LEN)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_ARG);
@@ -520,7 +523,7 @@ uint8_t
                 hash);
             return 1;
     }
-    else if ((hdb_info->hash_type == TSK_HDB_HTYPE_SHA1_ID)
+    else if ((hdb_binsrch_info->hash_type == TSK_HDB_HTYPE_SHA1_ID)
         && (strlen(hash) != TSK_HDB_HTYPE_SHA1_LEN)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_ARG);
@@ -531,8 +534,8 @@ uint8_t
     }
 
     /* read the header line ... -- this should be done only once... */
-    fseeko(hdb_info->hDb, 0, SEEK_SET);
-    if (NULL == fgets(buf, TSK_HDB_MAXLEN, hdb_info->hDb)) {
+    fseeko(hdb_binsrch_info->hDb, 0, SEEK_SET);
+    if (NULL == fgets(buf, TSK_HDB_MAXLEN, hdb_binsrch_info->hDb)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_READDB);
         tsk_error_set_errstr(
@@ -551,7 +554,7 @@ uint8_t
     while (1) {
         size_t len;
 
-        if (0 != fseeko(hdb_info->hDb, offset, SEEK_SET)) {
+        if (0 != fseeko(hdb_binsrch_info->hDb, offset, SEEK_SET)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_READDB);
             tsk_error_set_errstr(
@@ -560,8 +563,8 @@ uint8_t
             return 1;
         }
 
-        if (NULL == fgets(buf, TSK_HDB_MAXLEN, hdb_info->hDb)) {
-            if (feof(hdb_info->hDb))
+        if (NULL == fgets(buf, TSK_HDB_MAXLEN, hdb_binsrch_info->hDb)) {
+            if (feof(hdb_binsrch_info->hDb))
                 break;
 
             tsk_error_reset();
@@ -582,7 +585,7 @@ uint8_t
         }
 
         /* Which field are we looking for */
-        if (hdb_info->hash_type == TSK_HDB_HTYPE_SHA1_ID) {
+        if (hdb_binsrch_info->hash_type == TSK_HDB_HTYPE_SHA1_ID) {
             if (nsrl_parse_sha1(buf, &cur_hash, &name, ver)) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
@@ -592,7 +595,7 @@ uint8_t
                 return 1;
             }
         }
-        else if (hdb_info->hash_type == TSK_HDB_HTYPE_MD5_ID) {
+        else if (hdb_binsrch_info->hash_type == TSK_HDB_HTYPE_MD5_ID) {
             if (nsrl_parse_md5(buf, &cur_hash, &name, ver)) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);

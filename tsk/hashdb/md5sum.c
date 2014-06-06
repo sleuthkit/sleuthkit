@@ -52,17 +52,20 @@ uint8_t
 
 TSK_HDB_INFO *md5sum_open(FILE *hDb, const TSK_TCHAR *db_path)
 {
-    TSK_TEXT_HDB_INFO *text_hdb_info = NULL;
-    text_hdb_info = text_hdb_open(hDb, db_path);
-    if (NULL == text_hdb_info) {
+    TSK_HDB_BINSRCH_INFO *hdb_binsrch_info = NULL;
+
+    // get the basic binary-search info struct
+    hdb_binsrch_info = hdb_binsrch_open(hDb, db_path);
+    if (NULL == hdb_binsrch_info) {
         return NULL;
     }
 
-    text_hdb_info->base.db_type = TSK_HDB_DBTYPE_MD5SUM_ID;
-    text_hdb_info->get_entry = md5sum_getentry;
-    text_hdb_info->base.make_index = md5sum_makeindex;
+    // overwrite with more specific methods
+    hdb_binsrch_info->base.db_type = TSK_HDB_DBTYPE_MD5SUM_ID;
+    hdb_binsrch_info->get_entry = md5sum_getentry;
+    hdb_binsrch_info->base.make_index = md5sum_makeindex;
 
-    return (TSK_HDB_INFO*)text_hdb_info;    
+    return (TSK_HDB_INFO*)hdb_binsrch_info;    
 }
 
 /**
@@ -199,7 +202,7 @@ static uint8_t
 uint8_t
     md5sum_makeindex(TSK_HDB_INFO *hdb_info_base, TSK_TCHAR * dbtype)
 {
-    TSK_TEXT_HDB_INFO *hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info_base;
+    TSK_HDB_BINSRCH_INFO *hdb_info = (TSK_HDB_BINSRCH_INFO*)hdb_info_base;
     int i;
     char buf[TSK_HDB_MAXLEN];
     char *hash = NULL, phash[TSK_HDB_HTYPE_MD5_LEN + 1];
@@ -208,7 +211,7 @@ uint8_t
     size_t len;
 
     /* Initialize the TSK index file */
-    if (text_hdb_idx_initialize(hdb_info, dbtype)) {
+    if (hdb_binsrch_idx_initialize(hdb_info, dbtype)) {
         tsk_error_set_errstr2( "md5sum_makeindex");
         return 1;
     }
@@ -241,7 +244,7 @@ uint8_t
             }
 
             /* Add the entry to the index */
-            if (text_hdb_idx_add_entry_str(hdb_info, hash, offset)) {
+            if (hdb_binsrch_idx_add_entry_str(hdb_info, hash, offset)) {
                 tsk_error_set_errstr2( "md5sum_makeindex");
                 return 1;
             }
@@ -264,7 +267,7 @@ uint8_t
         }
 
         /* Close and sort the index */
-        if (text_hdb_idx_finalize(hdb_info)) {
+        if (hdb_binsrch_idx_finalize(hdb_info)) {
             tsk_error_set_errstr2( "md5sum_makeindex");
             return 1;
         }
@@ -301,7 +304,7 @@ uint8_t
     TSK_OFF_T offset, TSK_HDB_FLAG_ENUM flags,
     TSK_HDB_LOOKUP_FN action, void *cb_ptr)
 {
-    TSK_TEXT_HDB_INFO *text_hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info;
+    TSK_HDB_BINSRCH_INFO *hdb_binsrch_info = (TSK_HDB_BINSRCH_INFO*)hdb_info;
     char buf[TSK_HDB_MAXLEN], *name, *ptr = NULL, pname[TSK_HDB_MAXLEN];
     int found = 0;
 
@@ -324,7 +327,7 @@ uint8_t
     while (1) {
         size_t len;
 
-        if (0 != fseeko(text_hdb_info->hDb, offset, SEEK_SET)) {
+        if (0 != fseeko(hdb_binsrch_info->hDb, offset, SEEK_SET)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_READDB);
             tsk_error_set_errstr(
@@ -333,8 +336,8 @@ uint8_t
             return 1;
         }
 
-        if (NULL == fgets(buf, TSK_HDB_MAXLEN, text_hdb_info->hDb)) {
-            if (feof(text_hdb_info->hDb)) {
+        if (NULL == fgets(buf, TSK_HDB_MAXLEN, hdb_binsrch_info->hDb)) {
+            if (feof(hdb_binsrch_info->hDb)) {
                 break;
             }
             tsk_error_reset();
