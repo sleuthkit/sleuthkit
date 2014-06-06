@@ -66,7 +66,7 @@ public class Report {
 	/**
 	 * Get the creation date of the report.
 	 *
-	 * @return Number of seconds since Jan 1, 1970
+	 * @return Number of seconds since Jan 1, 1970.
 	 */
 	public long getCreatedTime() {
 		return createdTime;
@@ -76,7 +76,7 @@ public class Report {
 	 * Get the name of the module (e.g., ingest module, reporting module) that
 	 * generated the report.
 	 *
-	 * @return
+	 * @return The module name.
 	 */
 	public String getSourceModuleName() {
 		return this.sourceModuleName;

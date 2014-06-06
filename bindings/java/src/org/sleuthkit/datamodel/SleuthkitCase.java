@@ -872,7 +872,7 @@ public class SleuthkitCase {
 	 * columns and return a list of artifacts in the set. Must be enclosed in
 	 * dbReadLock. Result set and statement must be freed by the caller.
 	 *
-	 * @param resultSet existing, active result set (not closed by this method)
+	 * @param rs existing, active result set (not closed by this method)
 	 * @return a list of blackboard artifacts in the result set
 	 * @throws SQLException if result set could not be iterated upon
 	 */
@@ -1371,6 +1371,7 @@ public class SleuthkitCase {
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(int artifactTypeID, long obj_id) throws TskCoreException {
 		String artifactTypeName = this.getArtifactTypeString(artifactTypeID);
+
 		return getArtifactsHelper(artifactTypeID, artifactTypeName, obj_id);
 	}
 
@@ -1705,20 +1706,35 @@ public class SleuthkitCase {
 	 */
 	public int getAttrTypeID(String attrTypeName) throws TskCoreException {
 		dbReadLock();
+		Statement statement = null;
+		ResultSet resultSet = null;
 		try {
 			int typeId = -1;
-			Statement statement = con.createStatement();
-			ResultSet resultSet;
+			statement = con.createStatement();
 			resultSet = statement.executeQuery("SELECT attribute_type_id FROM blackboard_attribute_types WHERE type_name = '" + attrTypeName + "'");
 			if (resultSet.next()) {
 				typeId = resultSet.getInt(1);
 			}
-			resultSet.close();
-			statement.close();
 			return typeId;
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting attribute type id", ex);
+			throw new TskCoreException("Error getting attribute type id: ", ex);
 		} finally {
+			// Note: this can be done much more cleanly and simply with 
+			// try-with-resources in Java 7.
+			try {
+				if (resultSet != null) {
+					resultSet.close();
+				}			
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Failed to close ResultSet", ex);
+			}
+			try {
+				if (statement != null) {
+					statement.close();
+				}			
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Failed to close Statement", ex);
+			}
 			dbReadUnlock();
 		}
 	}
@@ -1801,19 +1817,35 @@ public class SleuthkitCase {
 	 */
 	public int getArtifactTypeID(String artifactTypeName) throws TskCoreException {
 		dbReadLock();
+		Statement statement = null;
+		ResultSet resultSet = null;
 		try {
 			int typeId = -1;
-			Statement statement = con.createStatement();
-			ResultSet resultSet = statement.executeQuery("SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeName + "'");
+			statement = con.createStatement();
+			resultSet = statement.executeQuery("SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeName + "'");
 			if (resultSet.next()) {
 				typeId = resultSet.getInt(1);
 			}
-			resultSet.close();
-			statement.close();
 			return typeId;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting artifact type id: " + ex.getMessage(), ex);
 		} finally {
+			// Note: this can be done much more cleanly and simply with 
+			// try-with-resources in Java 7.
+			try {
+				if (resultSet != null) {
+					resultSet.close();
+				}			
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Failed to close ResultSet", ex);
+			}
+			try {
+				if (statement != null) {
+					statement.close();
+				}			
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Failed to close Statement", ex);
+			}			
 			dbReadUnlock();
 		}
 	}
@@ -3198,7 +3230,7 @@ public class SleuthkitCase {
 				return carvedDirId;
 			}
 
-			// it'statement not in the cache. Go to the DB
+			// it's not in the cache. Go to the DB
 			// determine if we've got a volume system or file system ID
 			Content parent = getContentById(id);
 			if (parent == null) {
@@ -3873,7 +3905,7 @@ public class SleuthkitCase {
 	/**
 	 * @param dataSource the data source (Image, VirtualDirectory for file-sets,
 	 * etc) to search for the given file name
-	 * @param filePath The full path to the file(statement) of interest. This can
+	 * @param filePath The full path to the file(s) of interest. This can
 	 * optionally include the image and volume names. Treated in a case-
 	 * insensitive manner.
 	 * @return a list of AbstractFile that have the given file path.
@@ -4008,7 +4040,7 @@ public class SleuthkitCase {
 
 	/**
 	 * @param id ID of the desired VolumeSystem
-	 * @param parentId ID of the VolumeSystem'statement parent
+	 * @param parentId ID of the VolumeSystem's parent
 	 * @return the VolumeSystem with the given ID
 	 * @throws TskCoreException
 	 */
@@ -4033,7 +4065,7 @@ public class SleuthkitCase {
 
 	/**
 	 * @param id ID of the desired FileSystem
-	 * @param parentId ID of the FileSystem'statement parent
+	 * @param parentId ID of the FileSystem's parent
 	 * @return the desired FileSystem
 	 * @throws TskCoreException
 	 */
@@ -4143,7 +4175,7 @@ public class SleuthkitCase {
 
 	/**
 	 * @param id ID of the desired Volume
-	 * @param parentId ID of the Volume'statement parent
+	 * @param parentId ID of the Volume's parent
 	 * @return the desired Volume
 	 * @throws TskCoreException
 	 */
@@ -4277,7 +4309,7 @@ public class SleuthkitCase {
 				}
 			}
 
-			// see if imageID is this image'statement ID
+			// see if imageID is this image's ID
 			if (imageID == image.getId()) {
 				fileSystems.add(fs);
 			}
@@ -4904,7 +4936,7 @@ public class SleuthkitCase {
 	 * update status if content is already 'Known Bad'
 	 *
 	 * @param	file	The AbstractFile object
-	 * @param	fileKnown	The object'statement known status
+	 * @param	fileKnown	The object's known status
 	 * @return	true if the known status was updated, false otherwise
 	 * @throws TskCoreException thrown if a critical error occurred within tsk
 	 * core
@@ -4936,7 +4968,7 @@ public class SleuthkitCase {
 	 * Store the md5Hash for the file in the database
 	 *
 	 * @param	file	The file object
-	 * @param	md5Hash	The object'statement md5Hash
+	 * @param	md5Hash	The object's md5Hash
 	 * @throws TskCoreException thrown if a critical error occurred within tsk
 	 * core
 	 */
@@ -5658,7 +5690,7 @@ public class SleuthkitCase {
                 // convert to UNIX epoch (seconds, not milliseconds)
 				createTime = tempFile.lastModified() / 1000;
 			} catch(Exception ex) {
-				throw new TskCoreException("Could not get datetime for path " + localPath, ex);
+				throw new TskCoreException("Could not get create time for report at " + localPath, ex);
 			}
 									
 			// INSERT INTO reports (path, crtime, display_name, src_module_name) VALUES (?, ?, ?, ?)			
