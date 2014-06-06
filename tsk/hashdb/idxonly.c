@@ -21,28 +21,28 @@
 * @param hdb_info the hash database object
 */
 static void
-    idxonly_name(TSK_TEXT_HDB_INFO *hdb_info)
+    idxonly_name(TSK_HDB_BINSRCH_INFO *hdb_binsrch_info)
 {
     FILE * hFile;
     char buf[TSK_HDB_NAME_MAXLEN];
     char *bufptr = buf;
     size_t i = 0;
 
-    memset(hdb_info->base.db_name, '\0', TSK_HDB_NAME_MAXLEN);
+    memset(hdb_binsrch_info->base.db_name, '\0', TSK_HDB_NAME_MAXLEN);
 
     // Currently only supporting md5 and sha1 index files. Try to get the
     // database name from the index file.
-    if(text_hdb_open_idx((TSK_HDB_INFO*)hdb_info, TSK_HDB_HTYPE_MD5_ID)) {
-        if(text_hdb_open_idx((TSK_HDB_INFO*)hdb_info, TSK_HDB_HTYPE_SHA1_ID)) {
+    if(hdb_binsrch_open_idx((TSK_HDB_INFO*)hdb_binsrch_info, TSK_HDB_HTYPE_MD5_ID)) {
+        if(hdb_binsrch_open_idx((TSK_HDB_INFO*)hdb_binsrch_info, TSK_HDB_HTYPE_SHA1_ID)) {
             if (tsk_verbose)
                 fprintf(stderr,
                 "Failed to get name from index (index does not exist); using file name instead");
-            hdb_base_db_name_from_path((TSK_HDB_INFO*)hdb_info);
+            hdb_base_db_name_from_path((TSK_HDB_INFO*)hdb_binsrch_info);
             return;
         }
     }
 
-    hFile = hdb_info->hIdx;
+    hFile = hdb_binsrch_info->hIdx;
     fseeko(hFile, 0, 0);
     if(NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
         NULL == fgets(buf, TSK_HDB_NAME_MAXLEN, hFile) ||
@@ -52,32 +52,32 @@ static void
             if (tsk_verbose)
                 fprintf(stderr,
                 "Failed to read name from index; using file name instead");
-            hdb_base_db_name_from_path((TSK_HDB_INFO*)hdb_info);
+            hdb_base_db_name_from_path((TSK_HDB_INFO*)hdb_binsrch_info);
             return;
     }
     bufptr = strchr(buf, '|');
     bufptr++;
     while(bufptr[i] != '\r' && bufptr[i] != '\n' && i < strlen(bufptr))
     {
-        hdb_info->base.db_name[i] = bufptr[i];
+        hdb_binsrch_info->base.db_name[i] = bufptr[i];
         i++;
     }
 }
 
 TSK_HDB_INFO *idxonly_open(const TSK_TCHAR *db_path)
 {
-    TSK_TEXT_HDB_INFO *hdb_info = NULL;
-    hdb_info = text_hdb_open(NULL, db_path);
-    if (NULL == hdb_info) {
+    TSK_HDB_BINSRCH_INFO *hdb_binsrch_info = NULL;
+    hdb_binsrch_info = hdb_binsrch_open(NULL, db_path);
+    if (NULL == hdb_binsrch_info) {
         return NULL;
     }
 
-    hdb_info->base.db_type = TSK_HDB_DBTYPE_IDXONLY_ID;
-    idxonly_name(hdb_info);
-    hdb_info->base.get_db_path = idxonly_get_db_path;
-    hdb_info->get_entry = idxonly_getentry;
+    hdb_binsrch_info->base.db_type = TSK_HDB_DBTYPE_IDXONLY_ID;
+    idxonly_name(hdb_binsrch_info);
+    hdb_binsrch_info->base.get_db_path = idxonly_get_db_path;
+    hdb_binsrch_info->get_entry = idxonly_getentry;
 
-    return (TSK_HDB_INFO*)hdb_info;    
+    return (TSK_HDB_INFO*)hdb_binsrch_info;    
 }
 
 const TSK_TCHAR *

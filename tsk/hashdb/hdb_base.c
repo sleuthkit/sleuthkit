@@ -12,12 +12,12 @@
 
 /**
 * \file hdb_base.c
-* "Base" functions for hash databases. Many are no-ops.
+* "Base" functions for hash databases. Many are no-ops / stubs
 */
 
 /**
 * \ingroup hashdblib
-* Sets hash database name to be a file name obtained from the file path.
+* Sets hash database name in hdb_info based on database file path. 
 * @param hdb_info Struct representation of an open hash database.
 */
 void 
@@ -71,19 +71,24 @@ void
 /**
 * \ingroup hashdblib
 * \internal
-* Initializes struct representation of a hash database.
-* @param hdb_info Struct representation of a hash database.
+* Initializes TSK_HDB_INFO struct with "base class" method pointers and basic
+* setup of values.  
+* @param hdb_info Allocated struct to initialize.
+* @param db_path 
 * @return 0 on sucess, 1 on failure.
 */
 uint8_t 
     hdb_info_base_open(TSK_HDB_INFO *hdb_info, const TSK_TCHAR *db_path)
 {
+    // copy the database path into the struct
     size_t path_len = TSTRLEN(db_path); 
     hdb_info->db_fname = (TSK_TCHAR*)tsk_malloc((path_len + 1) * sizeof(TSK_TCHAR));
     if (!hdb_info->db_fname) {
         return 1;
     }
     TSTRNCPY(hdb_info->db_fname, db_path, path_len);
+
+    // set the name based on path
     hdb_base_db_name_from_path(hdb_info);
 
     hdb_info->db_type = TSK_HDB_DBTYPE_INVALID_ID;
