@@ -25,6 +25,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -221,7 +223,7 @@ public class SleuthkitCase {
 		statement.execute("CREATE TABLE blackboard_artifact_tags (tag_id INTEGER PRIMARY KEY, artifact_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL)");
 
 		// Add new table for reports
-		statement.execute("CREATE TABLE reports (report_id INTEGER PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, display_name TEXT NOT NULL)");
+		statement.execute("CREATE TABLE reports (report_id INTEGER PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL)");
 		
         // add columns for existing tables
         statement.execute("ALTER TABLE tsk_image_info ADD COLUMN size INTEGER;");
@@ -499,7 +501,7 @@ public class SleuthkitCase {
 		
 		selectMaxIdFromReports = con.prepareStatement("SELECT MAX(report_id) FROM reports");		
 		
-		insertIntoReports =  con.prepareStatement("INSERT INTO reports (path, crtime, display_name) VALUES (?, ?, ?)");
+		insertIntoReports =  con.prepareStatement("INSERT INTO reports (path, crtime, src_module_name, report_name) VALUES (?, ?, ?, ?)");
 	}
 
 	private void closeStatements() {
@@ -1364,6 +1366,9 @@ public class SleuthkitCase {
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(String artifactTypeName, long obj_id) throws TskCoreException {
 		int artifactTypeID = this.getArtifactTypeID(artifactTypeName);
+		if (artifactTypeID == -1) {
+			return new ArrayList<BlackboardArtifact>();
+		}
 		return getArtifactsHelper(artifactTypeID, artifactTypeName, obj_id);
 	}
 
@@ -1407,6 +1412,9 @@ public class SleuthkitCase {
 	 */
 	public long getBlackboardArtifactsCount(String artifactTypeName, long obj_id) throws TskCoreException {
 		int artifactTypeID = this.getArtifactTypeID(artifactTypeName);
+		if (artifactTypeID == -1) {
+			return 0;
+		}
 		return getArtifactsCountHelper(artifactTypeID, obj_id);
 	}
 
@@ -1448,6 +1456,9 @@ public class SleuthkitCase {
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(String artifactTypeName) throws TskCoreException {
 		int artifactTypeID = this.getArtifactTypeID(artifactTypeName);
+		if (artifactTypeID == -1) {
+			return new ArrayList<BlackboardArtifact>();
+		}
 		return getArtifactsHelper(artifactTypeID, artifactTypeName);
 	}
 
@@ -1698,34 +1709,44 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get the attribute id that corresponds to the given string. If that string
-	 * does not exist it will be added to the table.
+	 * Get the attribute type id associated with an attribute type name.
 	 *
-	 * @param attrTypeString attribute type string
-	 * @return attribute id
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within tsk core
+	 * @param attrTypeName An attribute type name.
+	 * @return An attribute id or -1 if the attribute type does not exist.
+	 * @throws TskCoreException If an error occurs accessing the case database.
+	 * 
 	 */
-	public int getAttrTypeID(String attrTypeString) throws TskCoreException {
+	public int getAttrTypeID(String attrTypeName) throws TskCoreException {
 		dbReadLock();
+		Statement statement = null;
+		ResultSet resultSet = null;
 		try {
-			Statement s = con.createStatement();
-			ResultSet rs;
-
-			rs = s.executeQuery("SELECT attribute_type_id FROM blackboard_attribute_types WHERE type_name = '" + attrTypeString + "'");
-			if (rs.next()) {
-				int type = rs.getInt(1);
-				rs.close();
-				s.close();
-				return type;
-			} else {
-				rs.close();
-				s.close();
-				throw new TskCoreException("No id with that name");
+			int typeId = -1;
+			statement = con.createStatement();
+			resultSet = statement.executeQuery("SELECT attribute_type_id FROM blackboard_attribute_types WHERE type_name = '" + attrTypeName + "'");
+			if (resultSet.next()) {
+				typeId = resultSet.getInt(1);
 			}
+			return typeId;
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting attribute type id.", ex);
+			throw new TskCoreException("Error getting attribute type id: ", ex);
 		} finally {
+			// Note: this can be done much more cleanly and simply with 
+			// try-with-resources in Java 7 or higher.
+			try {
+				if (resultSet != null) {
+					resultSet.close();
+				}			
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Failed to close ResultSet", ex);
+			}
+			try {
+				if (statement != null) {
+					statement.close();
+				}			
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Failed to close Statement", ex);
+			}
 			dbReadUnlock();
 		}
 	}
@@ -1799,39 +1820,48 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get artifact type id for the given string. Will throw an error if one
-	 * with that name does not exist.
+	 * Get the artifact type id associated with an artifact type name.
 	 *
-	 * @param artifactTypeString name for an artifact type
-	 * @return artifact type
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within tsk core
+	 * @param attrTypeName An artifact type name.
+	 * @return An artifact id or -1 if the attribute type does not exist.
+	 * @throws TskCoreException If an error occurs accessing the case database.
+	 * 
 	 */
-	int getArtifactTypeID(String artifactTypeString) throws TskCoreException {
+	public int getArtifactTypeID(String artifactTypeName) throws TskCoreException {
 		dbReadLock();
+		Statement statement = null;
+		ResultSet resultSet = null;
 		try {
-			Statement s = con.createStatement();
-			ResultSet rs;
-
-			rs = s.executeQuery("SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeString + "'");
-			if (rs.next()) {
-				int type = rs.getInt(1);
-				rs.close();
-				s.close();
-				return type;
-			} else {
-				rs.close();
-				s.close();
-				throw new TskCoreException("No artifact with that name exists");
+			int typeId = -1;
+			statement = con.createStatement();
+			resultSet = statement.executeQuery("SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeName + "'");
+			if (resultSet.next()) {
+				typeId = resultSet.getInt(1);
 			}
-
+			return typeId;
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting artifact type id." + ex.getMessage(), ex);
+			throw new TskCoreException("Error getting artifact type id: " + ex.getMessage(), ex);
 		} finally {
+			// Note: this can be done much more cleanly and simply with 
+			// try-with-resources in Java 7 or higher.
+			try {
+				if (resultSet != null) {
+					resultSet.close();
+				}			
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Failed to close ResultSet", ex);
+			}
+			try {
+				if (statement != null) {
+					statement.close();
+				}			
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Failed to close Statement", ex);
+			}			
 			dbReadUnlock();
 		}
 	}
-
+	
 	/**
 	 * Get artifact type name for the given string. Will throw an error if that
 	 * artifact doesn't exist. Use addArtifactType(...) to create a new one.
@@ -5616,49 +5646,70 @@ public class SleuthkitCase {
 	}	
 
 	/**
-	 * Inserts row into the reports table in the case database.
-     * @param [in] relPath The path of the report file, relative to the database (case directory in Autopsy).
-	 * @param [in] displayName The display name for the new tag name.
+	 * Inserts a row into the reports table in the case database.
+	 * @param [in] localPath The path of the report file, must be in the database directory (case directory in Autopsy) or one of its subdirectories.
+	 * @param [in] sourceModuleName The name of the module that created the report.
+	 * @param [in] reportName The report name, may be empty.
 	 * @return A Report data transfer object (DTO) for the new row.
 	 * @throws TskCoreException 
 	 */
-	public Report addReport(String relPath, String displayName) throws TskCoreException {
+	public Report addReport(String localPath, String sourceModuleName, String reportName) throws TskCoreException {
 		dbWriteLock();
+		ResultSet resultSet = null;
 		try {
-			// Figure out the date-time of this report
-			long dateTime = 0;
-			
+			// Make sure the local path of the report is in the database directory
+			// or one of its subdirectories.
+			String relativePath = "";
 			try {
-				String fullpath = getDbDirPath() + java.io.File.separator + relPath;
-				java.io.File tempFile = new java.io.File(fullpath);
-                // convert to UNIX epoch (seconds, not milliseconds)
-				dateTime = tempFile.lastModified() / 1000;
-			} catch(Exception ex) {
-				throw new TskCoreException("Could not get datetime for path " + relPath, ex);
+				Path path = Paths.get(localPath);
+				Path pathBase = Paths.get(getDbDirPath());
+				relativePath = pathBase.relativize(path).toString();
+			} catch (IllegalArgumentException ex) {
+				String errorMessage = String.format("Local path %s not in the database directory or one of its subdirectories",
+						localPath);
+				throw new TskCoreException(errorMessage, ex);
 			}
-			
-			// INSERT INTO reports (path, crtime, display_name) VALUES (?, ?, ?)			
+						
+			// Figure out the create time of the report.
+			long createTime = 0;			
+			try {
+				java.io.File tempFile = new java.io.File(localPath);
+                // Convert to UNIX epoch (seconds, not milliseconds).
+				createTime = tempFile.lastModified() / 1000;
+			} catch(Exception ex) {
+				throw new TskCoreException("Could not get create time for report at " + localPath, ex);
+			}
+									
+			// INSERT INTO reports (path, crtime, src_module_name, display_name) VALUES (?, ?, ?, ?)			
 			insertIntoReports.clearParameters(); 			
-			insertIntoReports.setString(1, relPath);			
-			insertIntoReports.setLong(2, dateTime);
-			insertIntoReports.setString(3, displayName);			
+			insertIntoReports.setString(1, relativePath);			
+			insertIntoReports.setLong(2, createTime);
+			insertIntoReports.setString(3, sourceModuleName);			
+			insertIntoReports.setString(4, reportName);			
 			insertIntoReports.executeUpdate();
 
 			// SELECT MAX(report_id) FROM reports
-			ResultSet resultSet = selectMaxIdFromReports.executeQuery();
+			resultSet = selectMaxIdFromReports.executeQuery();
 			Long reportID = resultSet.getLong(1);
-			resultSet.close();
 			
-			return new Report(reportID, relPath, dateTime, displayName);			
+			return new Report(reportID, localPath, createTime, sourceModuleName, reportName);			
 		}
 		catch (SQLException ex) {
-			throw new TskCoreException("Error adding row for " + displayName + " report to reports table", ex);
+			throw new TskCoreException("Error adding row for report " + localPath + " to reports table", ex);
 		}
 		finally {
+			// Note: this can be done much more cleanly and simply with 
+			// try-with-resources in Java 7 or higher.
+			try {
+				if (resultSet != null) {
+					resultSet.close();
+				}			
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Failed to close ResultSet", ex);
+			}
 			dbWriteUnlock();
 		}
     }
-
 	
 	/**
 	 * Selects all of the rows from the reports table in the case database.
@@ -5667,23 +5718,33 @@ public class SleuthkitCase {
 	 */
 	public List<Report> getAllReports() throws TskCoreException {
 		dbReadLock();		
+		ResultSet resultSet = null;
 		try {
-			ArrayList<Report> reports = new ArrayList<Report>();
-			
+			ArrayList<Report> reports = new ArrayList<Report>();			
 			// SELECT * FROM reports
-			ResultSet resultSet = selectAllFromReports.executeQuery();
+			resultSet = selectAllFromReports.executeQuery();
 			while (resultSet.next()) {
 				reports.add(new Report(resultSet.getLong("report_id"), 
                     getDbDirPath() + java.io.File.separator + resultSet.getString("path"), 
-					resultSet.getLong("crtime"), resultSet.getString("display_name"))); 
+					resultSet.getLong("crtime"), 
+					resultSet.getString("src_module_name"),
+			        resultSet.getString("report_name"))); 
 			} 
-			resultSet.close();
 			return reports;
 		}
 		catch (SQLException ex) {
 			throw new TskCoreException("Error selecting rows from reports table", ex);
 		}
 		finally {
+			// Note: this can be done much more cleanly and simply with 
+			// try-with-resources in Java 7 or higher.
+			try {
+				if (resultSet != null) {
+					resultSet.close();
+				}			
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Failed to close ResultSet", ex);
+			}
 			dbReadUnlock();
 		}					
 	}	

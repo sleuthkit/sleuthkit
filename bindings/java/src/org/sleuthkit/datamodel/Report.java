@@ -21,47 +21,73 @@ package org.sleuthkit.datamodel;
 /**
  * This is a data transfer object (DTO) class that models reports.
  */
-public class Report {    
-    static long ID_NOT_SET = -1;
-    private long id = ID_NOT_SET;
-    private final String path;
-    private final long createdTime;
-    private final String displayName;    
-   
-    /**
-     *
-     * @param id
-     * @param path Absolute path to report
-     * @param createdTime Created time of report (in UNIX epoch)
-     * @param displayName 
-     */
-    Report(long id, String path, long createdTime, String displayName) {
-        this.id = id;
-        this.path = path;
-        this.createdTime = createdTime;
-        this.displayName = displayName;
-    }
-    
-    public long getId() {
-        return id;
-    }            
+public class Report {
 
-    /**
-     * Get the absolute local path to the report.
-     */
-    public String getPath() {
-        return path;
-    }        
-       
-    /**
-     * Get the creation date of the report.
-     * @eturns Number of seconds since Jan 1, 1970
-     */
-    public long getCreatedTime() {
-        return createdTime;
-    }    
-    
-    public String getDisplayName() {
-        return displayName;
-    }
+	static long ID_NOT_SET = -1;
+	private long id = ID_NOT_SET;
+	private final String path;
+	private final long createdTime;
+	private final String sourceModuleName;
+	private final String reportName;
+
+	/**
+	 * Construct a data transfer object for a row in the reports table.
+	 *
+	 * @param id Primary key from associated row in the case database.
+	 * @param path Absolute path to report.
+	 * @param createdTime Created time of report (in UNIX epoch time).
+	 * @param reportName May be empty
+	 */
+	Report(long id, String path, long createdTime, String sourceModuleName, String reportName) {
+		this.id = id;
+		this.path = path;
+		this.createdTime = createdTime;
+		this.sourceModuleName = sourceModuleName;
+		this.reportName = reportName;
+	}
+
+	/**
+	 * Get the primary key of the associated row in the case database. Only
+	 * needed by code updating the reports table.
+	 *
+	 * @return The primary key value.
+	 */
+	long getId() {
+		return id;
+	}
+
+	/**
+	 * Get the absolute local path to the report.
+	 */
+	public String getPath() {
+		return path;
+	}
+
+	/**
+	 * Get the creation date of the report.
+	 *
+	 * @return Number of seconds since Jan 1, 1970.
+	 */
+	public long getCreatedTime() {
+		return createdTime;
+	}
+
+	/**
+	 * Get the name of the module (e.g., ingest module, reporting module) that
+	 * generated the report.
+	 *
+	 * @return The module name.
+	 */
+	public String getSourceModuleName() {
+		return this.sourceModuleName;
+	}
+
+	/**
+	 * Get the report name, if any.
+	 *
+	 * @return The name of the report, possibly empty.
+	 */
+	public String getReportName() {
+		return reportName;
+	}
 }
