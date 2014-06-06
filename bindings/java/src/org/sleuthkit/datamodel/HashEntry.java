@@ -19,7 +19,8 @@
 package org.sleuthkit.datamodel;
 
 /**
- * Used to pass hashDb information about a particular file from TSK to Autopsy 
+ * Used to pass info about a hash so that it can be added into the TSK-db from Autopsy. 
+ * HashHitInfo is for the reverse direction.
  */
 public class HashEntry {
 	private String fileName;

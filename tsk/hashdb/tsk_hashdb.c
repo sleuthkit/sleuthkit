@@ -116,6 +116,7 @@ uint8_t
 
 /**
 * \ingroup hashdblib
+*
 * Opens an existing hash database. 
 * @param file_path Path to database or database index file.
 * @param flags Flags for opening the database.  
@@ -150,6 +151,7 @@ TSK_HDB_INFO *
     if (NULL == db_path) {
         return NULL;
     }
+
     ext = TSTRRCHR(file_path, _TSK_T('-'));    
     if ((NULL != ext) && 
         (TSTRLEN(ext) == 8 || TSTRLEN(ext) == 9) && 
@@ -387,31 +389,10 @@ int8_t
     TSK_HDB_FLAG_ENUM flags, TSK_HDB_LOOKUP_FN action,
     void *ptr)
 {
-    TSK_HDB_HTYPE_ENUM htype = TSK_HDB_HTYPE_INVALID_ID;
-
     if (!hdb_info) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
         tsk_error_set_errstr("tsk_hdb_lookup_str: NULL hdb_info");
-        return -1;
-    }
-
-    // Validate the length of the hash string and use the length to determine 
-    // the hash type.
-    if (strlen(hash) == TSK_HDB_HTYPE_MD5_LEN) {
-        htype = TSK_HDB_HTYPE_MD5_ID;
-    }
-    else if (strlen(hash) == TSK_HDB_HTYPE_SHA1_LEN) {
-        htype = TSK_HDB_HTYPE_SHA1_ID;
-    }
-    else {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_HDB_ARG);
-        tsk_error_set_errstr("tsk_hdb_lookup_str: invalid hash length");
-        return -1;
-    }
-
-    if (hdb_info->open_index(hdb_info, htype)) {
         return -1;
     }
 
@@ -437,31 +418,10 @@ int8_t
     TSK_HDB_FLAG_ENUM flags,
     TSK_HDB_LOOKUP_FN action, void *ptr)
 {
-    TSK_HDB_HTYPE_ENUM htype;
-
     if (!hdb_info) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
         tsk_error_set_errstr("tsk_hdb_lookup_raw: NULL hdb_info");
-        return -1;
-    }
-
-    /* Sanity checks on the hash input */
-    if (len/2 == TSK_HDB_HTYPE_MD5_LEN) {
-        htype = TSK_HDB_HTYPE_MD5_ID;
-    }
-    else if (len/2 == TSK_HDB_HTYPE_SHA1_LEN) {
-        htype = TSK_HDB_HTYPE_SHA1_ID;
-    }
-    else {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_HDB_ARG);
-        tsk_error_set_errstr(
-            "hdb_lookup_raw: Invalid hash length: %s", hash);
-        return -1;
-    }
-
-    if (hdb_info->open_index(hdb_info, htype)) {
         return -1;
     }
 

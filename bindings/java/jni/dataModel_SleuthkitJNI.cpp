@@ -693,7 +693,7 @@ JNIEXPORT void JNICALL
 JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
 (JNIEnv * env, jclass obj, jstring hash, jint dbHandle) 
 {
-    if((size_t)dbHandle > hashDbs.size()) {
+    if ((size_t)dbHandle > hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
         return (jboolean)false;
     }
@@ -706,7 +706,6 @@ JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLooku
 
     jboolean isCopy;
     const char *cHashStr = (const char *) env->GetStringUTFChars(hash, &isCopy);
-
     jboolean file_known = false;
     int8_t retval = tsk_hdb_lookup_str(db, cHashStr, TSK_HDB_FLAG_QUICK, NULL, NULL);
     if (retval == -1) {
@@ -730,7 +729,7 @@ JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLooku
  */
 JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookupVerbose
 (JNIEnv * env, jclass obj, jstring hash, jint dbHandle) {
-    if((size_t)dbHandle > hashDbs.size()) {
+    if ((size_t)dbHandle > hashDbs.size()) {
         setThrowTskCoreError(env, "Invalid database handle");
         return NULL;
     }
@@ -743,15 +742,15 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
     
     jboolean isCopy;
     const char *inputHash = (const char *) env->GetStringUTFChars(hash, &isCopy);
-
     TskHashInfo result; 
     int8_t returnCode = tsk_hdb_lookup_verbose_str(db, inputHash, (void*)&result);
     env->ReleaseStringUTFChars(hash, (const char *) inputHash);
+    
     if (returnCode == -1) {
         setThrowTskCoreError(env, tsk_error_get_errstr());
         return NULL;
     }
-    else if (0 == returnCode) {
+    else if (returnCode == 0) {
         return NULL;
     }
 
@@ -768,7 +767,7 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
 
     // Create and return a Java HashInfo object.
     jclass clazz;
-    clazz = env->FindClass("org/sleuthkit/datamodel/HashInfo");
+    clazz = env->FindClass("org/sleuthkit/datamodel/HashHitInfo");
     jmethodID ctor = env->GetMethodID(clazz, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
     jmethodID addName = env->GetMethodID(clazz, "addName", "(Ljava/lang/String;)V");
     jmethodID addComment = env->GetMethodID(clazz, "addComment", "(Ljava/lang/String;)V");

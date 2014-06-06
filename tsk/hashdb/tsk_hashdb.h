@@ -137,9 +137,9 @@ extern "C" {
     };
 
     /** 
-    * Represents a text-format hash database with an external index.
+    * Represents a text-format hash database (NSRL, EnCase, etc.) with the TSK binary search index. 
     */
-    typedef struct TSK_TEXT_HDB_INFO {
+    typedef struct TSK_HDB_BINSRCH_INFO {
         TSK_HDB_INFO base;
         FILE *hDb;  ///< File handle to database (always open)
         uint8_t(*get_entry) (TSK_HDB_INFO *, const char *, TSK_OFF_T, TSK_HDB_FLAG_ENUM, TSK_HDB_LOOKUP_FN, void *);    ///< \internal Database-specific function to find entry at a given offset
@@ -155,10 +155,10 @@ extern "C" {
         char *idx_lbuf;               ///< Buffer to hold a line from the index  (r/w shared - lock) 
         TSK_TCHAR *idx_idx_fname;     ///< Name of index of index file, may be NULL
         uint64_t *idx_offsets;        ///< Maps the first three bytes of a hash value to an offset in the index file
-    } TSK_TEXT_HDB_INFO;    
+    } TSK_HDB_BINSRCH_INFO;    
 
     /** 
-    * Represents an SQLite hash database without an external index.
+    * Represents a TSK SQLite hash database (it doesn't need an external index).
     */
     typedef struct TSK_SQLITE_HDB_INFO {
         TSK_HDB_INFO base;

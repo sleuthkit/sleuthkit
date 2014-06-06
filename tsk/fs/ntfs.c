@@ -789,6 +789,8 @@ ntfs_uncompress_setup(TSK_FS_INFO * fs, NTFS_COMP_INFO * comp,
         return 1;
     }
     if ((comp->comp_buf = tsk_malloc(comp->buf_size_b)) == NULL) {
+        free(comp->uncomp_buf);
+        comp->uncomp_buf = NULL;
         comp->buf_size_b = 0;
         return 1;
     }
@@ -2700,7 +2702,7 @@ ntfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
 
         if (a_fs_file->name->meta_seq != seqToCmp) {
             if (allocedMeta) {
-                free(a_fs_file->meta);
+                tsk_fs_meta_close(a_fs_file->meta);
                 a_fs_file->meta = NULL;
             }
             else {

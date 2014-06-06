@@ -86,7 +86,7 @@ public class SleuthkitJNI {
     
 	private static native boolean hashDbLookup(String hash, int dbHandle) throws TskCoreException;
     
-    private static native HashInfo hashDbLookupVerbose(String hash, int dbHandle) throws TskCoreException;
+    private static native HashHitInfo hashDbLookupVerbose(String hash, int dbHandle) throws TskCoreException;
 
 	//load image
 	private static native long initAddImgNat(long db, String timezone, boolean processUnallocSpace, boolean noFatFsOrphans) throws TskCoreException;
@@ -672,11 +672,25 @@ public class SleuthkitJNI {
 		return hashDbGetDisplayName(dbHandle);
 	}
     
+	/**
+	 * Lookup the given hash value and get basic answer
+	 * @param hash Hash value to search for
+	 * @param dbHandle Handle of database to lookup in.
+	 * @return True if hash was found in database.
+	 * @throws TskCoreException 
+	 */
 	public static boolean lookupInHashDatabase(String hash, int dbHandle) throws TskCoreException {
 		return hashDbLookup(hash, dbHandle);
 	}
 	
-    public static HashInfo lookupInHashDatabaseVerbose(String hash, int dbHandle) throws TskCoreException {
+	/**
+	 * Lookup hash value in DB and return details on results (more time consuming than basic lookup)
+	 * @param hash Hash value to search for
+	 * @param dbHandle Handle of database to lookup in.
+	 * @return Details on hash if it was in DB or null if it was not found.
+	 * @throws TskCoreException 
+	 */
+    public static HashHitInfo lookupInHashDatabaseVerbose(String hash, int dbHandle) throws TskCoreException {
 		return hashDbLookupVerbose(hash, dbHandle);
 	}
     
