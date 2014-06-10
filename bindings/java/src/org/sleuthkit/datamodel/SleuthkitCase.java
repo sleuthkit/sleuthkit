@@ -369,23 +369,23 @@ public class SleuthkitCase {
 				"SELECT COUNT(*) FROM blackboard_artifacts WHERE obj_id = ? AND artifact_type_id = ?");
 
 		getAbstractFileChildren = con.prepareStatement(
-				"SELECT tsk_files.* FROM tsk_objects JOIN tsk_files "
-				+ "ON tsk_objects.obj_id=tsk_files.obj_id WHERE (tsk_objects.par_obj_id = ? )");
+				"SELECT tsk_files.* FROM tsk_objects INNER JOIN tsk_files "
+				+ "ON tsk_objects.obj_id=tsk_files.obj_id WHERE (tsk_objects.par_obj_id = ? ) ORDER BY tsk_files.dir_type, tsk_files.name COLLATE NOCASE");
 		
 		getAbstractFileChildrenByType = con.prepareStatement(
 				"SELECT tsk_files.* "
-				+ "FROM tsk_objects JOIN tsk_files "
+				+ "FROM tsk_objects INNER JOIN tsk_files "
 				+ "ON tsk_objects.obj_id=tsk_files.obj_id "
 				+ "WHERE (tsk_objects.par_obj_id = ? "
-				+ "AND tsk_files.type = ? )");
+				+ "AND tsk_files.type = ? )  ORDER BY tsk_files.dir_type, tsk_files.name COLLATE NOCASE");
 
 		getAbstractFileChildrenIds = con.prepareStatement(
-				"SELECT tsk_files.obj_id FROM tsk_objects JOIN tsk_files "
+				"SELECT tsk_files.obj_id FROM tsk_objects INNER JOIN tsk_files "
 				+ "ON tsk_objects.obj_id=tsk_files.obj_id WHERE (tsk_objects.par_obj_id = ?)");
 		
 		getAbstractFileChildrenIdsByType = con.prepareStatement(
 				"SELECT tsk_files.obj_id "
-				+ "FROM tsk_objects JOIN tsk_files "
+				+ "FROM tsk_objects INNER JOIN tsk_files "
 				+ "ON tsk_objects.obj_id=tsk_files.obj_id "
 				+ "WHERE (tsk_objects.par_obj_id = ? "
 				+ "AND tsk_files.type = ? )");
@@ -2510,7 +2510,7 @@ public class SleuthkitCase {
 		try {
 			Statement s = con.createStatement();
 			ResultSet rs = s.executeQuery("SELECT parent.obj_id, parent.type "
-					+ "FROM tsk_objects AS parent JOIN tsk_objects AS child "
+					+ "FROM tsk_objects AS parent INNER JOIN tsk_objects AS child "
 					+ "ON child.par_obj_id = parent.obj_id "
 					+ "WHERE child.obj_id = " + c.getId());
 
@@ -2546,7 +2546,7 @@ public class SleuthkitCase {
 		try {
 			Statement s = con.createStatement();
 			ResultSet rs = s.executeQuery("SELECT parent.obj_id, parent.type "
-					+ "FROM tsk_objects AS parent JOIN tsk_objects AS child "
+					+ "FROM tsk_objects AS parent INNER JOIN tsk_objects AS child "
 					+ "ON child.par_obj_id = parent.obj_id "
 					+ "WHERE child.obj_id = " + contentId);
 
@@ -3269,7 +3269,8 @@ public class SleuthkitCase {
 					+ "tsk_objects.par_obj_id IS NULL AND "
 					+ "tsk_objects.type = " + TskData.ObjectType.ABSTRACTFILE.getObjectType() + " AND "
 					+ "tsk_objects.obj_id = tsk_files.obj_id AND "
-					+ "tsk_files.type = " + TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType());
+					+ "tsk_files.type = " + TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType() 
+					+ " ORDER BY tsk_files.dir_type, tsk_files.name COLLATE NOCASE");
 
 			while (rs.next()) {
 				virtDirRootIds.add(rsHelper.virtualDirectory(rs));
@@ -3643,7 +3644,6 @@ public class SleuthkitCase {
 				}
 			}
 		}
-
 
 		return ret;
 	}
