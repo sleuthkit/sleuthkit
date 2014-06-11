@@ -2286,7 +2286,7 @@ public class SleuthkitCase {
 			getAbstractFileChildrenByType.setShort(2, type.getFileType());
 			
 			final ResultSet rs = getAbstractFileChildrenByType.executeQuery();
-			children = fileChildrenResultSetHelper (rs, parentId);
+			children = rsHelper.fileChildren(rs, parentId);
 			rs.close();
 			
 		} catch (SQLException ex) {
@@ -2310,12 +2310,11 @@ public class SleuthkitCase {
 		
 		dbReadLock();
 		try {
-			
 			long parentId = parent.getId();
 			getAbstractFileChildren.setLong(1, parentId);
 			
 			final ResultSet rs = getAbstractFileChildren.executeQuery();
-			children = fileChildrenResultSetHelper (rs, parentId);
+			children = rsHelper.fileChildren(rs, parentId);
 			rs.close();
 			
 		} catch (SQLException ex) {
@@ -2326,49 +2325,7 @@ public class SleuthkitCase {
 		return children;
 	}
 	
-	private List<Content> fileChildrenResultSetHelper (ResultSet rs, long parentId) throws SQLException {
-		List<Content> children = new ArrayList<Content>();
-		
-		while (rs.next()) {
-			TSK_DB_FILES_TYPE_ENUM type = TSK_DB_FILES_TYPE_ENUM.valueOf(rs.getShort("type"));
-
-			if (type == TSK_DB_FILES_TYPE_ENUM.FS) {
-				FsContent result;
-				if (rs.getShort("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue()) {
-					result = rsHelper.directory(rs, null);
-				} else {
-					result = rsHelper.file(rs, null);
-				}
-				children.add(result);
-			} else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR) {
-				VirtualDirectory virtDir = rsHelper.virtualDirectory(rs);
-				children.add(virtDir);
-			} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS
-					|| type == TSK_DB_FILES_TYPE_ENUM.CARVED) {
-				String parentPath = rs.getString("parent_path");
-				if (parentPath == null) {
-					parentPath = "";
-				}
-				final LayoutFile lf =
-						new LayoutFile(this, rs.getLong("obj_id"), rs.getString("name"),
-						type,
-						TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
-						TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")),
-						TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")),
-						rs.getShort("meta_flags"),
-						rs.getLong("size"),
-						rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), parentPath);
-				children.add(lf);
-			} else if (type == TSK_DB_FILES_TYPE_ENUM.DERIVED) {
-				final DerivedFile df = rsHelper.derivedFile(rs, parentId);
-				children.add(df);
-			} else if (type == TSK_DB_FILES_TYPE_ENUM.LOCAL) {
-				final LocalFile lf = rsHelper.localFile(rs, parentId);
-				children.add(lf);
-			}
-		}
-		return children;
-	}
+	
 
 	/**
 	 * Get list of IDs for abstract files of a given type that are children of a given content.
@@ -2846,14 +2803,16 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get file system id value for file or -1 if there isn't one Note: for
+	 * Get the object ID of the file system that a file is located in.
+	 * 
+	 * Note: for
 	 * FsContent files, this is the real fs for other non-fs AbstractFile files,
 	 * this field is used internally for data source id (the root content obj)
 	 *
-	 * @param fileId file id to get fs column id for
+	 * @param fileId object id of the file to get fs column id for
 	 * @return fs_id or -1 if not present
 	 */
-	private long getFileSystemByFileId(long fileId) {
+	private long getFileSystemId(long fileId) {
 
 		long ret = -1;
 		ResultSet rs = null;
@@ -2904,7 +2863,7 @@ public class SleuthkitCase {
 			//otherwise, get the root non-image data source id
 			//note, we are currently using fs_id internally to store data source id for such files
 
-			return getFileSystemByFileId(file.getId());
+			return getFileSystemId(file.getId());
 		}
 
 	}
@@ -2926,7 +2885,7 @@ public class SleuthkitCase {
 		}
 
 		//get fs_id for file id
-		long fsId = getFileSystemByFileId(fileId);
+		long fsId = getFileSystemId(fileId);
 		if (fsId == -1) {
 			return false;
 		}
@@ -3159,14 +3118,6 @@ public class SleuthkitCase {
 			parentPath = parentPath + "/" + parentName;
 		}
 
-		//propagate fs id if parent is a file and fs id is set
-		long parentFs = this.getFileSystemByFileId(parentId);
-		if (parentFs == -1) {
-			//use the parentId fs obj id as data source id  internally
-			parentFs = parentId;
-		}
-
-
 		VirtualDirectory vd = null;
 
 		//don't need to lock database or setAutoCommit(false), since we are
@@ -3198,9 +3149,9 @@ public class SleuthkitCase {
 			addFileSt.clearParameters(); //clear from previous, so we can skip nulls
 			addFileSt.setLong(1, newObjId);
 
-			if (parentFs < 1) {
-				addFileSt.setNull(2, java.sql.Types.BIGINT);
-			} else {
+			// If the parent is part of a file system, grab its file system ID
+			long parentFs = this.getFileSystemId(parentId);
+			if (parentFs != -1) {
 				addFileSt.setLong(2, parentFs);
 			}
 			addFileSt.setString(3, directoryName);
@@ -3235,6 +3186,9 @@ public class SleuthkitCase {
 					metaType, dirFlag, metaFlags, size, null, FileKnown.UNKNOWN,
 					parentPath);
 		} catch (SQLException e) {
+			// we log this and rethrow it because the later finally clauses were also 
+			// throwing an exception and this one got lost
+			logger.log(Level.SEVERE, "Error creating virtual directory: " + directoryName, e);
 			throw new TskCoreException("Error creating virtual directory '" + directoryName + "'", e);
 		} finally {
 			try {
@@ -3243,7 +3197,6 @@ public class SleuthkitCase {
 			} catch (SQLException ex) {
 				logger.log(Level.SEVERE, "Error clearing parameters after adding virtual directory.", ex);
 			}
-
 		}
 
 		return vd;
@@ -3369,27 +3322,44 @@ public class SleuthkitCase {
 	 *
 	 * @param carvedFileName the name of the carved file to add
 	 * @param carvedFileSize the size of the carved file to add
-	 * @param systemId the ID of the parent volume or file system
+	 * @param containerId the ID of the parent volume, file system, or image 
 	 * @param data the layout information - a list of offsets that make up this
 	 * carved file.
 	 */
 	public LayoutFile addCarvedFile(String carvedFileName, long carvedFileSize,
-			long systemId, List<TskFileRange> data) throws TskCoreException {
+		long containerId, List<TskFileRange> data) throws TskCoreException {
 
 		// get the ID of the appropriate '$CarvedFiles' directory
-		long carvedFilesId = getCarvedDirectoryId(systemId);
+		long carvedDirId = getCarvedDirectoryId(containerId);
 
 		// get the parent path for the $CarvedFiles directory		
-		String parentPath = getFileParentPath(carvedFilesId);
+		String parentPath = getFileParentPath(carvedDirId);
 		if (parentPath == null) {
 			parentPath = "";
 		}
-		String parentName = getFileName(carvedFilesId);
+		
+		String parentName = getFileName(carvedDirId);
 		if (parentName != null) {
 			parentPath = parentPath + "/" + parentName;
 		}
 
 		dbWriteLock();
+		
+		boolean isContainerAFs = false;
+		// we should cache this when we start adding lots of carved files...
+		try {
+			Statement s = con.createStatement();
+			ResultSet rs = s.executeQuery("select * from tsk_fs_info "
+					+ "where obj_id = " + containerId);
+
+			if (rs.next()) {
+				isContainerAFs = true;
+			}
+			rs.close();
+			s.close();
+		} catch (SQLException ex) {
+			logger.log(Level.WARNING, "Error getting File System by ID", ex);
+		} 
 
 		LayoutFile lf = null;
 
@@ -3408,7 +3378,7 @@ public class SleuthkitCase {
 
 			//tsk_objects
 			addObjectSt.setLong(1, newObjId);
-			addObjectSt.setLong(2, carvedFilesId);
+			addObjectSt.setLong(2, carvedDirId);
 			addObjectSt.setLong(3, TskData.ObjectType.ABSTRACTFILE.getObjectType());
 			addObjectSt.executeUpdate();
 
@@ -3418,7 +3388,11 @@ public class SleuthkitCase {
 			//obj_id, fs_obj_id, name
 			addFileSt.clearParameters(); //clear, so can skip nulls
 			addFileSt.setLong(1, newObjId);
-			addFileSt.setLong(2, systemId); //for carved files, set data-source for consistency.  Set to fs/vs/image, depending what is being carved
+			
+			// only insert into the fs_obj_id column if container is a FS
+			if (isContainerAFs) {
+				addFileSt.setLong(2, containerId);
+			}
 			addFileSt.setString(3, carvedFileName);
 
 			// type
@@ -3537,12 +3511,7 @@ public class SleuthkitCase {
 
 		final long parentId = parentFile.getId();
 		final String parentPath = parentFile.getParentPath() + parentFile.getName() + '/';
-
-		//get fs_obj_id of the parentFile and propagate it to the new derived file
-		//note, fs_obj_id is fs id for FsContent, but for others it is used internally as data source id, and it is not 
-		//part of AbstractFile API, until the next schema change
-		long fsObjId = this.getFileSystemByFileId(parentId);
-
+		
 		DerivedFile ret = null;
 
 		long newObjId = -1;
@@ -3576,7 +3545,10 @@ public class SleuthkitCase {
 			//obj_id, fs_obj_id, name
 			addFileSt.clearParameters(); //clear, so can skip nulls
 			addFileSt.setLong(1, newObjId);
-			if (fsObjId > 0) {
+			
+			// If the parentFile is part of a file system, use its file system object ID.
+			long fsObjId = this.getFileSystemId(parentId);
+			if (fsObjId != -1) {
 				addFileSt.setLong(2, fsObjId);
 			}
 			addFileSt.setString(3, fileName);
@@ -3713,32 +3685,17 @@ public class SleuthkitCase {
 			parentPath = parent.getParentPath() + "/" + parent.getName();
 		}
 
-		//check parent is a data source (the root obj) and set fs_obj_id that we currently use to track or data sources accordingly
-		long dataSourceId = -1;
-		boolean isParentDataSource = parent.getParent() == null;
-		if (isParentDataSource) {
-			dataSourceId = parentId;
-		} else {
-			//else propagate from parent fs_obj_id
-			dataSourceId = getFileSystemByFileId(parentId);
-		}
-
 		LocalFile ret = null;
 
 		long newObjId = -1;
 
-
-
 		//don't need to lock database or setAutoCommit(false), since we are
 		//passed Transaction which handles that.
-
 
 		//get last object id
 		//create tsk_objects object with new id
 		//create tsk_files object with the new id
 		try {
-
-
 			newObjId = getLastObjectId() + 1;
 			if (newObjId < 1) {
 				String msg = "Error creating a local file, cannot get new id of the object, file name: " + fileName;
@@ -3758,9 +3715,7 @@ public class SleuthkitCase {
 			//obj_id, fs_obj_id, name
 			addFileSt.clearParameters();
 			addFileSt.setLong(1, newObjId);
-			if (dataSourceId > 0) {
-				addFileSt.setLong(2, dataSourceId);
-			}
+			// nothing to set for parameter 2, fs_obj_id since local files aren't part of file systems
 			addFileSt.setString(3, fileName);
 
 			//type, has_path
@@ -3809,8 +3764,6 @@ public class SleuthkitCase {
 			} catch (SQLException ex) {
 				logger.log(Level.SEVERE, "Error clearing parameters after adding derived file", ex);
 			}
-
-
 		}
 		return ret;
 	}
