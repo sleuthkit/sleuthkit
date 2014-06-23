@@ -91,8 +91,6 @@ public class SleuthkitCase {
 	private static final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true); //use fairness policy
 	
 	//prepared preparedStatements
-	private PreparedStatement addObjectSt;
-	private PreparedStatement addFileSt;
 	private PreparedStatement addLayoutFileSt;
 	private PreparedStatement getLastContentIdSt;
 	private PreparedStatement selectMaxIdFromContentTags;
