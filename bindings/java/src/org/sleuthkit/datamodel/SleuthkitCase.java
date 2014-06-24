@@ -63,24 +63,15 @@ public class SleuthkitCase {
 	// This must be the same as TSK_SCHEMA_VER in tsk/auto/db_sqlite.cpp.
 	private static final int SCHEMA_VERSION_NUMBER = 3;		
 		
-	// Thread confinement for connections to the underlying case database.
-	private static final ThreadLocal<CaseDbConnection> connectionHolder = new ThreadLocal<CaseDbConnection>() {	
-		@Override
-		public CaseDbConnection initialValue() {
-			return new CaseDbConnection(SleuthkitCase.dbPath);
-		}
-	};
-	
-	private static String dbPath;
+	private final CaseDbConnectionPerThreadManager connectionManager; 		
+	private final String dbPath;
 	private final String dbDirPath;
 	private int versionNumber;
 	private String dbBackupPath = null;
 	private volatile SleuthkitJNI.CaseDbHandle caseHandle;
-	private volatile Connection con;
 	private final ResultSetHelper rsHelper = new ResultSetHelper(this);
 	private int artifactIDcounter = 1001;
 	private int attributeIDcounter = 1001;
-	
 	// for use by getCarvedDirectoryId method only
 	private final Map<Long, Long> systemIdMap = new HashMap<Long, Long>();
 	
@@ -89,23 +80,9 @@ public class SleuthkitCase {
 	
 	//database lock
 	private static final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true); //use fairness policy
-	
-	//prepared preparedStatements
-	private PreparedStatement addLayoutFileSt;
-	private PreparedStatement getLastContentIdSt;
-	private PreparedStatement selectMaxIdFromContentTags;
-	private PreparedStatement selectMaxIdFromBlackboardArtifactTags;
-	
+		
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private final ArrayList<ErrorObserver> errorObservers = new ArrayList<ErrorObserver>();
-
-	private static CaseDbConnection getCaseDbConnectionForThread() throws SQLException {
-		CaseDbConnection connection = connectionHolder.get();
-		if (null == connection) {
-			throw new SQLException("Case database connection for current thread is null");
-		}
-		return connection;
-	}
 	
 	/**
 	 * constructor (private) - client uses openCase() and newCase() instead
@@ -120,27 +97,26 @@ public class SleuthkitCase {
 	 */
 	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle) throws SQLException, ClassNotFoundException, TskCoreException {
 		Class.forName("org.sqlite.JDBC");
-		SleuthkitCase.dbPath = dbPath;
+		this.dbPath = dbPath;
 		this.dbDirPath = new java.io.File(dbPath).getParentFile().getAbsolutePath();
 		this.caseHandle = caseHandle;
-		con = DriverManager.getConnection("jdbc:sqlite:" + dbPath); // RJCTODO: Remove
-		configureDB();
-		initBlackboardTypes();
-		updateDatabaseSchema();
-		initStatements();
+		connectionManager = new CaseDbConnectionPerThreadManager(dbPath);
+		CaseDbConnection connection = connectionManager.getConnectionWithNoStatementsPrepared();			
+		configureDB(connection);
+		initBlackboardTypes(connection);
+		updateDatabaseSchema(connection);
+		connection.createPreparedStatements();
 	}
 	
-	private void updateDatabaseSchema() throws TskCoreException {
+	private void updateDatabaseSchema(CaseDbConnection connection) throws TskCoreException {
 		dbWriteLock();
-		CaseDbConnection connection = null;
 		try {			
-			connection = getCaseDbConnectionForThread();			
 			connection.beginTransaction();
 						
 			// Get the schema version number of the database from the tsk_db_info table.
 			int schemaVersionNumber = SCHEMA_VERSION_NUMBER;
-			Statement statement = con.createStatement();
-			ResultSet resultSet = statement.executeQuery("SELECT schema_ver FROM tsk_db_info");
+			Statement statement = connection.createStatement();
+			ResultSet resultSet = executeQuery(statement, "SELECT schema_ver FROM tsk_db_info");
 			if (resultSet.next()) {
 				schemaVersionNumber = resultSet.getInt("schema_ver");	
 			}
@@ -160,7 +136,7 @@ public class SleuthkitCase {
 				schemaVersionNumber = updateFromSchema2toSchema3(schemaVersionNumber);		
 
 				// Write the updated schema version number to the the tsk_db_info table.
-				statement.executeUpdate("UPDATE tsk_db_info SET schema_ver = " + schemaVersionNumber);
+				executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + schemaVersionNumber);
 				statement.close();		
 			}
 			versionNumber= schemaVersionNumber;
@@ -168,14 +144,12 @@ public class SleuthkitCase {
 		}
 		catch (Exception ex) { // Cannot do exception multi-catch in Java 6, so use catch-all
 			try {
-				if (null != connection) {
-					connection.rollbackTransaction();
-				}
-				throw new TskCoreException("Failed to update database schema", ex);
+				connection.rollbackTransaction();
 			}
 			catch (SQLException e) {
-				throw new TskCoreException("Failed to rollback failed database schema update", e);
-			}				
+				logger.log(Level.SEVERE, "Failed to rollback failed database schema update", e);
+			}
+			throw new TskCoreException("Failed to update database schema", ex);
 		}
 		finally {
 			dbWriteUnlock();
@@ -189,10 +163,10 @@ public class SleuthkitCase {
 
 		Statement statement = null;
 		try {
-			CaseDbConnection connection = getCaseDbConnectionForThread();		
+			CaseDbConnection connection = connectionManager.getConnection();		
 
 			// Add new tables for tags.
-			statement = con.createStatement();
+			statement = connection.createStatement();
 			statement.execute("CREATE TABLE tag_names (tag_name_id INTEGER PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL)");
 			statement.execute("CREATE TABLE content_tags (tag_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL, begin_byte_offset INTEGER NOT NULL, end_byte_offset INTEGER NOT NULL)");
 			statement.execute("CREATE TABLE blackboard_artifact_tags (tag_id INTEGER PRIMARY KEY, artifact_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL)");
@@ -200,14 +174,16 @@ public class SleuthkitCase {
 			// Add new table for reports
 			statement.execute("CREATE TABLE reports (report_id INTEGER PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL)");
 
-			// add columns for existing tables
+			// Add columns to existing tables
 			statement.execute("ALTER TABLE tsk_image_info ADD COLUMN size INTEGER;");
 			statement.execute("ALTER TABLE tsk_image_info ADD COLUMN md5 TEXT;");
 			statement.execute("ALTER TABLE tsk_image_info ADD COLUMN display_name TEXT;");
 			statement.execute("ALTER TABLE tsk_fs_info ADD COLUMN display_name TEXT;");
 			statement.execute("ALTER TABLE tsk_files ADD COLUMN meta_seq INTEGER;");
 
-			// Make the prepared available for use in migrating legacy data.
+			// Make the prepared statements available for use in migrating legacy data.
+			// THIS IS ONLY GUARANTEED TO WORK FOR GOING FROM VERSION 2 to VERSION 3.
+			// FIX THIS BEFORE ADDING VERSION 4 CODE.
 			connection.createPreparedStatements();
 
 			// This data structure is used to keep track of the unique tag names 
@@ -270,12 +246,13 @@ public class SleuthkitCase {
 				}
 			}		
 
-			// Close the statements, they will be re-opened.
 			connection.closePreparedStatements();
 			
 			return 3;	
 		} finally {
-			closeStatement(statement);
+			if (null != statement) {
+				statement.close(); 
+			}
 		}
 	}			
 		
@@ -299,7 +276,7 @@ public class SleuthkitCase {
 	 */
 	public LogicalFileTransaction createTransaction() throws TskCoreException {
 		try {
-			CaseDbConnection connection = getCaseDbConnectionForThread();		
+			CaseDbConnection connection = connectionManager.getConnection();		
 			return LogicalFileTransaction.startTransaction(connection.getConnection());
 		} catch (SQLException ex) {
 			Logger.getLogger(SleuthkitCase.class.getName()).log(Level.SEVERE, "failed to create transaction", ex);
@@ -315,24 +292,18 @@ public class SleuthkitCase {
 	public String getDbDirPath() {
 		return dbDirPath;
 	}
-
-	private void initStatements() throws SQLException {
-	}
-
-	private void closeStatements() {
-	}
-				
-	private void configureDB() throws TskCoreException {
-		Statement statement = null;
+		
+	private void configureDB(CaseDbConnection connection) throws TskCoreException {
 		try {
-			CaseDbConnection connection = getCaseDbConnectionForThread();			
-			// this should match SleuthkitJNI db setup
-			statement = connection.createStatement();
+			// this should match SleuthkitJNI connection setup
+			final Statement statement = connection.createStatement();
 			//reduce i/o operations, we have no OS crash recovery anyway
 			statement.execute("PRAGMA synchronous = OFF;");
 			//allow to query while in transaction - no need read locks
 			statement.execute("PRAGMA read_uncommitted = True;");
 			statement.execute("PRAGMA foreign_keys = ON;");
+			statement.close();
+			
 			logger.log(Level.INFO, String.format("sqlite-jdbc version %s loaded in %s mode",
 					SQLiteJDBCLoader.getVersion(), SQLiteJDBCLoader.isNativeMode()
 					? "native" : "pure-java"));
@@ -341,20 +312,19 @@ public class SleuthkitCase {
 			throw new TskCoreException("Couldn't configure the database connection", e);
 		} catch (Exception e) {
 			throw new TskCoreException("Couldn't configure the database connection", e);
-		} finally {
-			closeStatement(statement);
 		}
 	}
 
 	/**
 	 * Lock to protect against concurrent write accesses to case database and to
 	 * block readers while database is in write transaction. Should be utilized
-	 * by all db code where underlying storage supports max. 1 concurrent writer
-	 * MUST always call dbWriteUnLock() as early as possible, in the same thread
-	 * where dbWriteLock() was called.
+     * by all connection code where underlying storage supports max. 1 concurrent writer
+     * MUST always call dbWriteUnLock() as early as possible, in the same thread
+     * where dbWriteLock() was called.
 	 */
 	public static void dbWriteLock() {
-		rwLock.writeLock().lock();
+		// RJCTODO
+//		rwLock.writeLock().lock();
 	}
 
 	/**
@@ -363,7 +333,8 @@ public class SleuthkitCase {
 	 * released.
 	 */
 	public static void dbWriteUnlock() {
-		rwLock.writeLock().unlock();
+		// RJCTODO
+//		rwLock.writeLock().unlock();
 	}
 
 	/**
@@ -373,7 +344,8 @@ public class SleuthkitCase {
 	 * dbReadLock() was called.
 	 */
 	static void dbReadLock() {
-		rwLock.readLock().lock();
+		// RJCTODO
+//		rwLock.readLock().lock();
 	}
 
 	/**
@@ -382,7 +354,8 @@ public class SleuthkitCase {
 	 * released.
 	 */
 	static void dbReadUnlock() {
-		rwLock.readLock().unlock();
+		// RJCTODO
+//		rwLock.readLock().unlock();
 	}
 
 	/**
@@ -424,36 +397,29 @@ public class SleuthkitCase {
 			throw new TskCoreException("Couldn't open case at " + dbPath, ex);
 		} finally {
 			SleuthkitCase.dbWriteUnlock();
-		}
-
+		}			
 	}
 
-	private void initBlackboardTypes() throws SQLException, TskCoreException {
+	private void initBlackboardTypes(CaseDbConnection connection) throws SQLException, TskCoreException {
 		dbReadLock();
-		Statement statement = null;
-		ResultSet resultSet = null;
 		try {
-			CaseDbConnection connection = getCaseDbConnectionForThread();			
-			statement = connection.createStatement();
+			Statement s = connection.createStatement();
 			for (ARTIFACT_TYPE type : ARTIFACT_TYPE.values()) {
-				resultSet = statement.executeQuery("SELECT * from blackboard_artifact_types WHERE artifact_type_id = '" + type.getTypeID() + "'");
-				if (!resultSet.next()) {
+				ResultSet rs = executeQuery(s, "SELECT * from blackboard_artifact_types WHERE artifact_type_id = '" + type.getTypeID() + "'");
+				if (!rs.next()) {
 					this.addBuiltInArtifactType(type);
 				}
-				resultSet.close();
-				resultSet = null;
+				rs.close();
 			}
 			for (ATTRIBUTE_TYPE type : ATTRIBUTE_TYPE.values()) {
-				resultSet = statement.executeQuery("SELECT * from blackboard_attribute_types WHERE attribute_type_id = '" + type.getTypeID() + "'");
-				if (!resultSet.next()) {
+				ResultSet rs = executeQuery(s, "SELECT * from blackboard_attribute_types WHERE attribute_type_id = '" + type.getTypeID() + "'");
+				if (!rs.next()) {
 					this.addBuiltInAttrType(type);
 				}
-				resultSet.close();
-				resultSet = null;
+				rs.close();
 			}
+			s.close();
 		} finally {
-			closeResultSet(resultSet);
-			closeStatement(statement);
 			dbReadUnlock();
 		}
 	}
@@ -470,10 +436,9 @@ public class SleuthkitCase {
 	 * @return object to start ingest
 	 */
 	public AddImageProcess makeAddImageProcess(String timezone, boolean processUnallocSpace, boolean noFatFsOrphans) {
-		// RJCTODO: Where is the locking?
 		return this.caseHandle.initAddImageProcess(timezone, processUnallocSpace, noFatFsOrphans);
 	}
-
+	
 	/**
 	 * Get the list of root objects, meaning image files or local files virtual
 	 * dir container.
@@ -486,17 +451,17 @@ public class SleuthkitCase {
 		Collection<ObjectInfo> infos = new ArrayList<ObjectInfo>();
 		dbReadLock();
 		try {
-			CaseDbConnection connection = getCaseDbConnectionForThread();			
-			Statement statement = connection.createStatement();
-			ResultSet resultSet = statement.executeQuery("SELECT obj_id, type from tsk_objects "
-					+ "WHERE par_obj_id IS NULL");
-			while (resultSet.next()) {
-				infos.add(new ObjectInfo(resultSet.getLong("obj_id"), ObjectType.valueOf(resultSet.getShort("type"))));
+			CaseDbConnection connection = connectionManager.getConnection();			
+			Statement s = connection.createStatement();
+			ResultSet rs = executeQuery(s, "SELECT obj_id, type from tsk_objects "
+					+ "WHERE par_obj_id IS NULL");			
+			while (rs.next()) {
+				infos.add(new ObjectInfo(rs.getLong("obj_id"), ObjectType.valueOf(rs.getShort("type"))));
 			}
-			resultSet.close();
-			statement.close();					
+			rs.close();
+			s.close();					
 			
-			List<Content> rootObjs = new ArrayList<Content>();
+			List<Content> rootObjs = new ArrayList<Content>();			
 			for (ObjectInfo i : infos) {
 				if (i.type == ObjectType.IMG) {
 					rootObjs.add(getImageById(i.id));
@@ -511,7 +476,7 @@ public class SleuthkitCase {
 				} else {
 					throw new TskCoreException("Parentless object has wrong type to be a root: " + i.type);
 				}
-			}
+			}			
 			return rootObjs;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting root objects.", ex);
@@ -533,16 +498,16 @@ public class SleuthkitCase {
 		dbReadLock();
 		try {
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
-			CaseDbConnection connection = getCaseDbConnectionForThread();
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_ARTIFACTS_BY_TYPE);			
+			CaseDbConnection connection = connectionManager.getConnection();
+			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_ARTIFACTS_BY_TYPE);
+			statement.clearParameters();
 			statement.setInt(1, artifactTypeID);
-			ResultSet resultSet = statement.executeQuery();
-			while (resultSet.next()) {
-				artifacts.add(new BlackboardArtifact(this, resultSet.getLong(1), resultSet.getLong(2),
+			final ResultSet rs = executeQuery(statement);
+			while (rs.next()) {
+				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2),
 						artifactTypeID, artifactTypeName, ARTIFACT_TYPE.fromID(artifactTypeID).getDisplayName()));
 			}
-			resultSet.close();
-			statement.clearParameters();
+			rs.close();
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting or creating a blackboard artifact. " + ex.getMessage(), ex);
@@ -560,25 +525,33 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	public long getBlackboardArtifactsCount(long objId) throws TskCoreException {
+		ResultSet rs = null;
 		dbReadLock();
-		String errorMessage = "Error getting count of artifacts by content";
 		try {
 			long count = 0;
-			CaseDbConnection connection = getCaseDbConnectionForThread();
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.COUNT_ARTIFACTS_FROM_SOURCE);			
+			CaseDbConnection connection = connectionManager.getConnection();
+			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.COUNT_ARTIFACTS_FROM_SOURCE);		
+			statement.clearParameters();			
 			statement.setLong(1, objId);
-			ResultSet resultSet = statement.executeQuery();
-			if (resultSet.next()) {
-				count = resultSet.getLong(1);
+			rs = executeQuery(statement);
+			if (rs.next()) {
+				count = rs.getLong(1);
 			} else {
-				throw new TskCoreException(errorMessage);
+				throw new TskCoreException("Error getting count of artifacts by content. ");
 			}
-			resultSet.close();			
-			statement.clearParameters();
+			rs.close();			
 			return count;
 		} catch (SQLException ex) {
-			throw new TskCoreException(errorMessage, ex);
+			throw new TskCoreException("Error getting number of blackboard artifacts by content. " + ex.getMessage(), ex);
 		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.WARNING, "Could not close the result set, ", ex);
+				}
+			}
+
 			dbReadUnlock();
 		}
 	}
@@ -592,25 +565,32 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	public long getBlackboardArtifactsTypeCount(int artifactTypeID) throws TskCoreException {
+		ResultSet rs = null;
 		dbReadLock();
-		String errorMessage = "Error getting number of blackboard artifacts by type";
 		try {
 			long count = 0;
-			CaseDbConnection connection = getCaseDbConnectionForThread();
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.COUNT_ARTIFACTS_OF_TYPE);			
-			statement.setInt(1, artifactTypeID);
-			ResultSet resultSet = statement.executeQuery();
-			if (resultSet.next()) {
-				count = resultSet.getLong(1);
-			} else {
-				throw new TskCoreException(errorMessage);
-			}
-			resultSet.close();
+			CaseDbConnection connection = connectionManager.getConnection();
+			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.COUNT_ARTIFACTS_OF_TYPE);	
 			statement.clearParameters();
+			statement.setInt(1, artifactTypeID);
+			rs = executeQuery(statement);
+			if (rs.next()) {
+				count = rs.getLong(1);
+			} else {
+				throw new TskCoreException("Error getting count of artifacts by type. ");
+			}
 			return count;
 		} catch (SQLException ex) {
-			throw new TskCoreException(errorMessage, ex);
+			throw new TskCoreException("Error getting number of blackboard artifacts by type. " + ex.getMessage(), ex);
 		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.WARNING, "Coud not close the result set, ", ex);
+				}
+			}
+			
 			dbReadUnlock();
 		}
 	}
@@ -618,7 +598,7 @@ public class SleuthkitCase {
 	/**
 	 * Helper to iterate over blackboard artifacts result set containing all
 	 * columns and return a list of artifacts in the set. Must be enclosed in
-	 * dbReadLock. Result set and statement must be freed by the caller.
+     * dbReadLock. Result set and s must be freed by the caller.
 	 *
 	 * @param rs existing, active result set (not closed by this method)
 	 * @return a list of blackboard artifacts in the result set
@@ -626,12 +606,14 @@ public class SleuthkitCase {
 	 */
 	private List<BlackboardArtifact> getArtifactsHelper(ResultSet rs) throws SQLException {
 		ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
+		
 		while (rs.next()) {
 			final int artifactTypeID = rs.getInt(3);
 			final ARTIFACT_TYPE artType = ARTIFACT_TYPE.fromID(artifactTypeID);
 			artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2),
 					artifactTypeID, artType.getLabel(), artType.getDisplayName()));
 		}
+		
 		return artifacts;
 	}
 
@@ -649,16 +631,18 @@ public class SleuthkitCase {
 	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, String value) throws TskCoreException {
 		dbReadLock();
 		try {
-			Statement statement = getCaseDbConnectionForThread().createStatement();
-			ResultSet resultSet = statement.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
+			Statement s = connectionManager.getConnection().createStatement();
+			ResultSet rs = executeQuery(s, "SELECT DISTINCT blackboard_artifacts.artifact_id, "
 					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id "
 					+ "FROM blackboard_artifacts, blackboard_attributes "
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id "
 					+ "AND blackboard_attributes.attribute_type_id IS " + attrType.getTypeID()
 					+ " AND blackboard_attributes.value_text IS '" + value + "'");
-			List<BlackboardArtifact> artifacts = getArtifactsHelper(resultSet);
-			resultSet.close();
-			statement.close();					
+			
+			List<BlackboardArtifact> artifacts = getArtifactsHelper(rs);
+			
+			rs.close();
+			s.close();					
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by attribute. " + ex.getMessage(), ex);
@@ -682,22 +666,26 @@ public class SleuthkitCase {
 	 * within tsk core and artifacts could not be queried
 	 */
 	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, String subString, boolean startsWith) throws TskCoreException {
+		
 		subString = "%" + subString;
 		if (startsWith == false) {
 			subString = subString + "%";
 		}
+		
 		dbReadLock();
 		try {
-			Statement statement = getCaseDbConnectionForThread().createStatement();
-			ResultSet resultSet = statement.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
+			Statement s = connectionManager.getConnection().createStatement();
+			ResultSet rs = executeQuery(s, "SELECT DISTINCT blackboard_artifacts.artifact_id, "
 					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id "
 					+ "FROM blackboard_artifacts, blackboard_attributes "
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id "
 					+ "AND blackboard_attributes.attribute_type_id IS " + attrType.getTypeID()
 					+ " AND blackboard_attributes.value_text LIKE '" + subString + "'");
-			List<BlackboardArtifact> artifacts = getArtifactsHelper(resultSet);
-			resultSet.close();
-			statement.close();					
+			
+			List<BlackboardArtifact> artifacts = getArtifactsHelper(rs);
+			
+			rs.close();
+			s.close();					
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by attribute. " + ex.getMessage(), ex);
@@ -720,15 +708,17 @@ public class SleuthkitCase {
 	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, int value) throws TskCoreException {
 		dbReadLock();
 		try {
-			Statement statement = getCaseDbConnectionForThread().createStatement();
-			ResultSet resultSet = statement.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
+			Statement statement = connectionManager.getConnection().createStatement();
+			ResultSet rs = executeQuery(statement, "SELECT DISTINCT blackboard_artifacts.artifact_id, "
 					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id "
 					+ "FROM blackboard_artifacts, blackboard_attributes "
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id "
 					+ "AND blackboard_attributes.attribute_type_id IS " + attrType.getTypeID()
 					+ " AND blackboard_attributes.value_int32 IS " + value);
-			List<BlackboardArtifact> artifacts = getArtifactsHelper(resultSet);
-			resultSet.close();
+			
+			List<BlackboardArtifact> artifacts = getArtifactsHelper(rs);
+			
+			rs.close();
 			statement.close();					
 			return artifacts;
 		} catch (SQLException ex) {
@@ -752,16 +742,18 @@ public class SleuthkitCase {
 	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, long value) throws TskCoreException {
 		dbReadLock();
 		try {
-			Statement statement = getCaseDbConnectionForThread().createStatement();
-			ResultSet resultSet = statement.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
+			Statement s = connectionManager.getConnection().createStatement();
+			ResultSet rs = executeQuery(s, "SELECT DISTINCT blackboard_artifacts.artifact_id, "
 					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id "
 					+ "FROM blackboard_artifacts, blackboard_attributes "
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id "
 					+ "AND blackboard_attributes.attribute_type_id IS " + attrType.getTypeID()
 					+ " AND blackboard_attributes.value_int64 IS " + value);
-			List<BlackboardArtifact> artifacts = getArtifactsHelper(resultSet);
-			resultSet.close();
-			statement.close();					
+			
+			List<BlackboardArtifact> artifacts = getArtifactsHelper(rs);
+			
+			rs.close();
+			s.close();					
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by attribute. " + ex.getMessage(), ex);
@@ -784,14 +776,16 @@ public class SleuthkitCase {
 	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, double value) throws TskCoreException {
 		dbReadLock();
 		try {
-			Statement s = getCaseDbConnectionForThread().createStatement();
-			ResultSet rs = s.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
+			Statement s = connectionManager.getConnection().createStatement();
+			ResultSet rs = executeQuery(s, "SELECT DISTINCT blackboard_artifacts.artifact_id, "
 					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id "
 					+ "FROM blackboard_artifacts, blackboard_attributes "
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id "
 					+ "AND blackboard_attributes.attribute_type_id IS " + attrType.getTypeID()
 					+ " AND blackboard_attributes.value_double IS " + value);
+			
 			List<BlackboardArtifact> artifacts = getArtifactsHelper(rs);
+			
 			rs.close();
 			s.close();
 			return artifacts;
@@ -816,14 +810,16 @@ public class SleuthkitCase {
 	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, byte value) throws TskCoreException {
 		dbReadLock();
 		try {
-			Statement s = getCaseDbConnectionForThread().createStatement();
-			ResultSet rs = s.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
+			Statement s = connectionManager.getConnection().createStatement();
+			ResultSet rs = executeQuery(s, "SELECT DISTINCT blackboard_artifacts.artifact_id, "
 					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id "
 					+ "FROM blackboard_artifacts, blackboard_attributes "
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id "
 					+ "AND blackboard_attributes.attribute_type_id IS " + attrType.getTypeID()
 					+ " AND blackboard_attributes.value_byte IS " + value);
+			
 			List<BlackboardArtifact> artifacts = getArtifactsHelper(rs);
+			
 			rs.close();
 			s.close();
 			return artifacts;
@@ -846,8 +842,9 @@ public class SleuthkitCase {
 		dbReadLock();
 		try {
 			ArrayList<BlackboardArtifact.ARTIFACT_TYPE> artifact_types = new ArrayList<BlackboardArtifact.ARTIFACT_TYPE>();
-			Statement s = getCaseDbConnectionForThread().createStatement();
-			ResultSet rs = s.executeQuery("SELECT artifact_type_id FROM blackboard_artifact_types");
+			Statement s = connectionManager.getConnection().createStatement();
+			ResultSet rs = executeQuery(s, "SELECT artifact_type_id FROM blackboard_artifact_types");
+			
 			while (rs.next()) {
                 /*
                  * Only return ones in the enum because otherwise exceptions
@@ -867,6 +864,7 @@ public class SleuthkitCase {
 		} finally {
 			dbReadUnlock();
 		}
+		
 	}
 
 	/**
@@ -878,8 +876,10 @@ public class SleuthkitCase {
 	 */
 	public ArrayList<BlackboardArtifact.ARTIFACT_TYPE> getBlackboardArtifactTypesInUse() throws TskCoreException {
 		// @@@ TODO: This should be rewritten as a single query. 
+		
 		ArrayList<BlackboardArtifact.ARTIFACT_TYPE> allArts = getBlackboardArtifactTypes();
 		ArrayList<BlackboardArtifact.ARTIFACT_TYPE> usedArts = new ArrayList<BlackboardArtifact.ARTIFACT_TYPE>();
+		
 		for (BlackboardArtifact.ARTIFACT_TYPE art : allArts) {
 			if (getBlackboardArtifactsTypeCount(art.getTypeID()) > 0) {
 				usedArts.add(art);
@@ -902,8 +902,9 @@ public class SleuthkitCase {
 		dbReadLock();
 		try {
 			ArrayList<BlackboardAttribute.ATTRIBUTE_TYPE> attribute_types = new ArrayList<BlackboardAttribute.ATTRIBUTE_TYPE>();
-			Statement s = getCaseDbConnectionForThread().createStatement();
-			ResultSet rs = s.executeQuery("SELECT type_name FROM blackboard_attribute_types");
+			Statement s = connectionManager.getConnection().createStatement();
+			ResultSet rs = executeQuery(s, "SELECT type_name FROM blackboard_attribute_types");
+			
 			while (rs.next()) {
 				attribute_types.add(BlackboardAttribute.ATTRIBUTE_TYPE.fromLabel(rs.getString(1)));
 			}
@@ -928,11 +929,13 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	public int getBlackboardAttributeTypesCount() throws TskCoreException {
+		ResultSet rs = null;
+		Statement s = null;
 		dbReadLock();
 		try {
 			int count = 0;
-			Statement s = getCaseDbConnectionForThread().createStatement();
-			ResultSet rs = s.executeQuery("SELECT COUNT(*) FROM blackboard_attribute_types");
+			s = connectionManager.getConnection().createStatement();
+			rs = executeQuery(s, "SELECT COUNT(*) FROM blackboard_attribute_types");
 			if (rs.next()) {
 				count = rs.getInt(1);
 			} else {
@@ -944,6 +947,21 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting number of blackboard artifacts by type. " + ex.getMessage(), ex);
 		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.WARNING, "Coud not close the result set, ", ex);
+				}
+			}
+			if (s != null) {
+				try {
+					s.close();
+				} catch (SQLException ex) {
+					logger.log(Level.WARNING, "Coud not close the statement, ", ex);
+				}
+			}
+
 			dbReadUnlock();
 		}
 
@@ -964,16 +982,16 @@ public class SleuthkitCase {
 		dbReadLock();
 		try {
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
-			CaseDbConnection connection = getCaseDbConnectionForThread();
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_ARTIFACTS_BY_SOURCE_AND_TYPE);			
+			CaseDbConnection connection = connectionManager.getConnection();
+			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_ARTIFACTS_BY_SOURCE_AND_TYPE);	
+			statement.clearParameters();			
 			statement.setLong(1, obj_id);
 			statement.setInt(2, artifactTypeID);
-			ResultSet rs = statement.executeQuery();
+			ResultSet rs = executeQuery(statement );
 			while (rs.next()) {
 				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), obj_id, artifactTypeID, artifactTypeName, this.getArtifactTypeDisplayName(artifactTypeID)));
 			}
 			rs.close();
-			statement.clearParameters();
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting or creating a blackboard artifact. " + ex.getMessage(), ex);
@@ -993,14 +1011,16 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	private long getArtifactsCountHelper(int artifactTypeID, long obj_id) throws TskCoreException {
+		ResultSet rs = null;
 		dbReadLock();
 		try {
 			long count = 0;
-			CaseDbConnection connection = getCaseDbConnectionForThread();
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.COUNT_ARTIFACTS_BY_SOURCE_AND_TYPE);			
+			CaseDbConnection connection = connectionManager.getConnection();
+			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.COUNT_ARTIFACTS_BY_SOURCE_AND_TYPE);
+			statement.clearParameters();			
 			statement.setLong(1, obj_id);
 			statement.setInt(2, artifactTypeID);
-			ResultSet rs = statement.executeQuery();
+			rs = executeQuery(statement );
 			if (rs.next()) {
 				count = rs.getLong(1);
 			} else {
@@ -1011,6 +1031,13 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifact count, " + ex.getMessage(), ex);
 		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Could not close the result set. ", ex);
+				}
+			}
 			dbReadUnlock();
 		}
 	}
@@ -1028,15 +1055,15 @@ public class SleuthkitCase {
 		dbReadLock();
 		try {
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_ARTIFACTS_BY_TYPE);			
+			statement.clearParameters();
 			statement.setInt(1, artifactTypeID);
-			ResultSet rs = statement.executeQuery();
+			ResultSet rs = executeQuery(statement );
 			while (rs.next()) {
 				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2), artifactTypeID, artifactTypeName, this.getArtifactTypeDisplayName(artifactTypeID)));
 			}
 			rs.close();
-			statement.clearParameters();
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting or creating a blackboard artifact. " + ex.getMessage(), ex);
@@ -1177,8 +1204,8 @@ public class SleuthkitCase {
 	public List<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType, BlackboardAttribute.ATTRIBUTE_TYPE attrType, String value) throws TskCoreException {
 		dbReadLock();
 		try {
-			Statement s = getCaseDbConnectionForThread().createStatement();
-			ResultSet rs = s.executeQuery("SELECT DISTINCT blackboard_artifacts.artifact_id, "
+			Statement s = connectionManager.getConnection().createStatement();
+			ResultSet rs = executeQuery(s, "SELECT DISTINCT blackboard_artifacts.artifact_id, "
 					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id "
 					+ "FROM blackboard_artifacts, blackboard_attributes "
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id "
@@ -1207,14 +1234,14 @@ public class SleuthkitCase {
 	public BlackboardArtifact getBlackboardArtifact(long artifactID) throws TskCoreException {
 		dbReadLock();
 		try {
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_ARTIFACT_BY_ID);						
+			statement.clearParameters();
 			statement.setLong(1, artifactID);
-			ResultSet rs = statement.executeQuery();
+			ResultSet rs = executeQuery(statement );
 			long obj_id = rs.getLong(1);
 			int artifact_type_id = rs.getInt(2);
 			rs.close();
-			statement.clearParameters();			
 			return new BlackboardArtifact(this, artifactID, obj_id, artifact_type_id, 
 					this.getArtifactTypeString(artifact_type_id), this.getArtifactTypeDisplayName(artifact_type_id));
 		} catch (SQLException ex) {
@@ -1236,7 +1263,7 @@ public class SleuthkitCase {
 	public void addBlackboardAttribute(BlackboardAttribute attr) throws TskCoreException {
 		dbWriteLock();
 		try {
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			addBlackBoardAttribute(attr, connection);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding blackboard attribute: " + attr.toString(), ex);
@@ -1257,7 +1284,7 @@ public class SleuthkitCase {
 	public void addBlackboardAttributes(Collection<BlackboardAttribute> attributes) throws TskCoreException {
 		dbWriteLock();
 		try {
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			connection.beginTransaction();
 			for (final BlackboardAttribute attr : attributes) {
 				try {
@@ -1279,22 +1306,27 @@ public class SleuthkitCase {
 		switch (attr.getValueType()) {
 			case STRING:
 				statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_STRING_ATTRIBUTE);
+				statement.clearParameters();		
 				statement.setString(6, escapeForBlackboard(attr.getValueString()));
 				break;
 			case BYTE:
 				statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_BYTE_ATTRIBUTE);
+				statement.clearParameters();		
 				statement.setBytes(6, attr.getValueBytes());
 				break;
 			case INTEGER:
 				statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_INT_ATTRIBUTE);
+				statement.clearParameters();		
 				statement.setInt(6, attr.getValueInt());
 				break;
 			case LONG:
 				statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_LONG_ATTRIBUTE);
+				statement.clearParameters();		
 				statement.setLong(6, attr.getValueLong());
 				break;
 			case DOUBLE:
 				statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_DOUBLE_ATTRIBUTE);
+				statement.clearParameters();		
 				statement.setDouble(6, attr.getValueDouble());
 				break;
 			default:
@@ -1305,8 +1337,7 @@ public class SleuthkitCase {
 		statement.setString(3, attr.getContext());
 		statement.setInt(4, attr.getAttributeTypeID());
 		statement.setLong(5, attr.getValueType().getType());
-		statement.executeUpdate();
-		statement.clearParameters();		
+		executeUpdate(statement);
 	}
 	
 	/**
@@ -1337,10 +1368,10 @@ public class SleuthkitCase {
 	private void addAttrType(String attrTypeString, String displayName, int typeID) throws TskCoreException {
 		dbWriteLock();
 		try {
-			Statement s = getCaseDbConnectionForThread().createStatement();
-			ResultSet rs = s.executeQuery("SELECT * from blackboard_attribute_types WHERE type_name = '" + attrTypeString + "'");
+			Statement s = connectionManager.getConnection().createStatement();
+			ResultSet rs = executeQuery(s, "SELECT * from blackboard_attribute_types WHERE type_name = '" + attrTypeString + "'");
 			if (!rs.next()) {
-				s.executeUpdate("INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name) VALUES (" + typeID + ", '" + attrTypeString + "', '" + displayName + "')");
+				executeUpdate(s, "INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name) VALUES (" + typeID + ", '" + attrTypeString + "', '" + displayName + "')");
 				rs.close();
 				s.close();
 			} else {
@@ -1365,10 +1396,12 @@ public class SleuthkitCase {
 	 */
 	public int getAttrTypeID(String attrTypeName) throws TskCoreException {
 		dbReadLock();
+		Statement statement = null;
+		ResultSet resultSet = null;
 		try {
 			int typeId = -1;
-			Statement statement = getCaseDbConnectionForThread().createStatement();
-			ResultSet resultSet = statement.executeQuery("SELECT attribute_type_id FROM blackboard_attribute_types WHERE type_name = '" + attrTypeName + "'");
+			statement = connectionManager.getConnection().createStatement();
+			resultSet = executeQuery(statement, "SELECT attribute_type_id FROM blackboard_attribute_types WHERE type_name = '" + attrTypeName + "'");
 			if (resultSet.next()) {
 				typeId = resultSet.getInt(1);
 			}
@@ -1378,6 +1411,20 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting attribute type id: ", ex);
 		} finally {
+			try {
+				if (resultSet != null) {
+					resultSet.close();
+				}			
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Failed to close ResultSet", ex);
+			}
+			try {
+				if (statement != null) {
+					statement.close();
+				}			
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Failed to close Statement", ex);
+			}		
 			dbReadUnlock();
 		}
 	}
@@ -1394,9 +1441,9 @@ public class SleuthkitCase {
 	public String getAttrTypeString(int attrTypeID) throws TskCoreException {
 		dbReadLock();
 		try {
-			Statement s = getCaseDbConnectionForThread().createStatement();
+			Statement s = connectionManager.getConnection().createStatement();
 			ResultSet rs;
-			rs = s.executeQuery("SELECT type_name FROM blackboard_attribute_types WHERE attribute_type_id = " + attrTypeID);
+			rs = executeQuery(s, "SELECT type_name FROM blackboard_attribute_types WHERE attribute_type_id = " + attrTypeID);
 			if (rs.next()) {
 				String type = rs.getString(1);
 				rs.close();
@@ -1426,9 +1473,9 @@ public class SleuthkitCase {
 	public String getAttrTypeDisplayName(int attrTypeID) throws TskCoreException {
 		dbReadLock();
 		try {
-			Statement s = getCaseDbConnectionForThread().createStatement();
+			Statement s = connectionManager.getConnection().createStatement();
 			ResultSet rs;
-			rs = s.executeQuery("SELECT display_name FROM blackboard_attribute_types WHERE attribute_type_id = " + attrTypeID);
+			rs = executeQuery(s, "SELECT display_name FROM blackboard_attribute_types WHERE attribute_type_id = " + attrTypeID);
 			if (rs.next()) {
 				String type = rs.getString(1);
 				rs.close();
@@ -1456,10 +1503,12 @@ public class SleuthkitCase {
 	 */
 	public int getArtifactTypeID(String artifactTypeName) throws TskCoreException {
 		dbReadLock();
+		Statement statement = null;
+		ResultSet resultSet = null;
 		try {
 			int typeId = -1;
-			Statement statement = getCaseDbConnectionForThread().createStatement();
-			ResultSet resultSet = statement.executeQuery("SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeName + "'");
+			statement = connectionManager.getConnection().createStatement();
+			resultSet = executeQuery(statement, "SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeName + "'");
 			if (resultSet.next()) {
 				typeId = resultSet.getInt(1);
 			}
@@ -1469,6 +1518,20 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting artifact type id: " + ex.getMessage(), ex);
 		} finally {
+			try {
+				if (resultSet != null) {
+					resultSet.close();
+				}			
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Failed to close ResultSet", ex);
+			}
+			try {
+				if (statement != null) {
+					statement.close();
+				}			
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Failed to close Statement", ex);
+			}			
 			dbReadUnlock();
 		}
 	}
@@ -1485,9 +1548,9 @@ public class SleuthkitCase {
 	String getArtifactTypeString(int artifactTypeID) throws TskCoreException {
 		dbReadLock();
 		try {
-			Statement s = getCaseDbConnectionForThread().createStatement();
+			Statement s = connectionManager.getConnection().createStatement();
 			ResultSet rs;
-			rs = s.executeQuery("SELECT type_name FROM blackboard_artifact_types WHERE artifact_type_id = " + artifactTypeID);
+			rs = executeQuery(s, "SELECT type_name FROM blackboard_artifact_types WHERE artifact_type_id = " + artifactTypeID);
 			if (rs.next()) {
 				String type = rs.getString(1);
 				rs.close();
@@ -1518,9 +1581,9 @@ public class SleuthkitCase {
 	String getArtifactTypeDisplayName(int artifactTypeID) throws TskCoreException {
 		dbReadLock();
 		try {
-			Statement s = getCaseDbConnectionForThread().createStatement();
+			Statement s = connectionManager.getConnection().createStatement();
 			ResultSet rs;
-			rs = s.executeQuery("SELECT display_name FROM blackboard_artifact_types WHERE artifact_type_id = " + artifactTypeID);
+			rs = executeQuery(s, "SELECT display_name FROM blackboard_artifact_types WHERE artifact_type_id = " + artifactTypeID);
 			if (rs.next()) {
 				String type = rs.getString(1);
 				rs.close();
@@ -1567,10 +1630,10 @@ public class SleuthkitCase {
 	private void addArtifactType(String artifactTypeName, String displayName, int typeID) throws TskCoreException {
 		dbWriteLock();
 		try {
-			Statement s = getCaseDbConnectionForThread().createStatement();
-			ResultSet rs = s.executeQuery("SELECT * FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeName + "'");
+			Statement s = connectionManager.getConnection().createStatement();
+			ResultSet rs = executeQuery(s, "SELECT * FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeName + "'");
 			if (!rs.next()) {
-				s.executeUpdate("INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name) VALUES (" + typeID + " , '" + artifactTypeName + "', '" + displayName + "')");
+				executeUpdate(s, "INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name) VALUES (" + typeID + " , '" + artifactTypeName + "', '" + displayName + "')");
 				rs.close();
 				s.close();
 			} else {
@@ -1587,12 +1650,14 @@ public class SleuthkitCase {
 
 	public ArrayList<BlackboardAttribute> getBlackboardAttributes(final BlackboardArtifact artifact) throws TskCoreException {
 		final ArrayList<BlackboardAttribute> attributes = new ArrayList<BlackboardAttribute>();
+		ResultSet rs = null;
 		dbReadLock();
 		try {
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_ATTRIBUTES_OF_ARTIFACT);
+			statement.clearParameters();
 			statement.setLong(1, artifact.getArtifactID());
-			ResultSet rs = statement.executeQuery();
+			rs = executeQuery(statement );
 			while (rs.next()) {
 				final BlackboardAttribute attr = new BlackboardAttribute(
 						rs.getLong(1),
@@ -1631,8 +1696,8 @@ public class SleuthkitCase {
 		ArrayList<BlackboardAttribute> matches = new ArrayList<BlackboardAttribute>();
 		dbReadLock();
 		try {
-			Statement s = getCaseDbConnectionForThread().createStatement();
-			ResultSet rs = s.executeQuery("Select artifact_id, source, context, attribute_type_id, value_type, "
+			Statement s = connectionManager.getConnection().createStatement();
+			ResultSet rs = executeQuery(s, "Select artifact_id, source, context, attribute_type_id, value_type, "
 					+ "value_byte, value_text, value_int32, value_int64, value_double FROM blackboard_attributes " + whereClause);
 			while (rs.next()) {
 				BlackboardAttribute attr = new BlackboardAttribute(rs.getLong("artifact_id"), rs.getInt("attribute_type_id"), rs.getString("source"), rs.getString("context"),
@@ -1663,8 +1728,8 @@ public class SleuthkitCase {
 		ArrayList<BlackboardArtifact> matches = new ArrayList<BlackboardArtifact>();
 		dbReadLock();
 		try {
-			Statement s = getCaseDbConnectionForThread().createStatement();
-			ResultSet rs = s.executeQuery("Select artifact_id, obj_id, artifact_type_id FROM blackboard_artifacts " + whereClause);
+			Statement s = connectionManager.getConnection().createStatement();
+			ResultSet rs = executeQuery(s, "Select artifact_id, obj_id, artifact_type_id FROM blackboard_artifacts " + whereClause);
 			while (rs.next()) {
 				BlackboardArtifact artifact = new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2), rs.getInt(3), this.getArtifactTypeString(rs.getInt(3)), this.getArtifactTypeDisplayName(rs.getInt(3)));
 				matches.add(artifact);
@@ -1698,17 +1763,19 @@ public class SleuthkitCase {
 			String artifactTypeName = this.getArtifactTypeString(artifactTypeID);
 			String artifactDisplayName = this.getArtifactTypeDisplayName(artifactTypeID);
 
-			CaseDbConnection db = SleuthkitCase.getCaseDbConnectionForThread();
-			PreparedStatement statement = db.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_ARTIFACT);			
+			CaseDbConnection connection = connectionManager.getConnection();
+			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_ARTIFACT);	
+			statement.clearParameters();
 			statement.setLong(1, obj_id);
 			statement.setInt(2, artifactTypeID);
-			statement.executeUpdate();
+			executeUpdate(statement);
 			statement.clearParameters();
 
-			statement = db.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_MAX_ARTIFACT_ID_BY_SOURCE_AND_TYPE);			
+			statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_MAX_ARTIFACT_ID_BY_SOURCE_AND_TYPE);			
+			statement.clearParameters();
 			statement.setLong(1, obj_id);
 			statement.setInt(2, artifactTypeID);
-			final ResultSet rs = statement.executeQuery();
+			final ResultSet rs = executeQuery(statement );
 			long artifactID = rs.getLong(1);
 			rs.close();
 			statement.clearParameters();
@@ -1739,23 +1806,23 @@ public class SleuthkitCase {
 			// rest of this operation moot.
 			final int type = artifactType.getTypeID();
 
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_ARTIFACT);			
+			statement.clearParameters();
 			long artifactID = -1;
 			statement.setLong(1, obj_id);
 			statement.setInt(2, type);
-			statement.executeUpdate();
-			statement.clearParameters();
+			executeUpdate(statement);
 
 			statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_MAX_ARTIFACT_ID_BY_SOURCE_AND_TYPE);			
+			statement.clearParameters();
 			statement.setLong(1, obj_id);
 			statement.setInt(2, type);
-			final ResultSet rs = statement.executeQuery();
+			final ResultSet rs = executeQuery(statement );
 			if (rs.next()) {
 				artifactID = rs.getLong(1);
 			}
 			rs.close();
-			statement.clearParameters();
 
 			return new BlackboardArtifact(this, artifactID, obj_id, type,
 					artifactType.getLabel(), artifactType.getDisplayName());
@@ -1802,20 +1869,28 @@ public class SleuthkitCase {
 	 */
 	boolean getContentHasChildren(Content content) throws TskCoreException {
 		boolean hasChildren = false;
+		ResultSet rs = null;
 		dbReadLock();
 		try {
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.COUNT_CHILD_OBJECTS_BY_PARENT);						
+			statement.clearParameters();
 			statement.setLong(1, content.getId());
-			ResultSet rs = statement.executeQuery();
+			rs = executeQuery(statement );
 			if (rs.next()) {
 				hasChildren = rs.getInt(1) > 0;
 			}
 			rs.close();
-			statement.clearParameters();
 		} catch (SQLException e) {
 			throw new TskCoreException("Error checking for children of parent: " + content, e);
 		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing a result set after checking for children.", ex);
+				}
+			}
 			dbReadUnlock();
 		}
 		return hasChildren;
@@ -1832,22 +1907,30 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	int getContentChildrenCount(Content content) throws TskCoreException {
+		ResultSet rs = null;
 		dbReadLock();
 		try {
 			int countChildren = -1;
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.COUNT_CHILD_OBJECTS_BY_PARENT);						
+			statement.clearParameters();
 			statement.setLong(1, content.getId());
-			ResultSet rs = statement.executeQuery();
+			rs = executeQuery(statement );
 			if (rs.next()) {
 				countChildren = rs.getInt(1);
 			}
 			rs.close();
-			statement.clearParameters();
 			return countChildren;
 		} catch (SQLException e) {
 			throw new TskCoreException("Error checking for children of parent: " + content, e);
 		} finally {
+		if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing a result set after checking for children.", ex);
+				}
+			}
 			dbReadUnlock();
 		}
 	}
@@ -1865,14 +1948,14 @@ public class SleuthkitCase {
 		dbReadLock();
 		try {
 			long parentId = parent.getId();
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILES_BY_PARENT_AND_TYPE);						
+			statement.clearParameters();
 			statement.setLong(1, parentId);
 			statement.setShort(2, type.getFileType());			
-			final ResultSet rs = statement.executeQuery();
+			final ResultSet rs = executeQuery(statement );
 			children = rsHelper.fileChildren(rs, parentId);
 			rs.close();			
-			statement.clearParameters();
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting AbstractFile children for Content.", ex);
 		} finally {
@@ -1894,13 +1977,13 @@ public class SleuthkitCase {
 		dbReadLock();
 		try {
 			long parentId = parent.getId();
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILES_BY_PARENT);						
+			statement.clearParameters();
 			statement.setLong(1, parentId);			
-			final ResultSet rs = statement.executeQuery();
+			final ResultSet rs = executeQuery(statement );
 			children = rsHelper.fileChildren(rs, parentId);
 			rs.close();			
-			statement.clearParameters();
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting AbstractFile children for Content.", ex);
 		} finally {
@@ -1920,11 +2003,12 @@ public class SleuthkitCase {
 		final List<Long> children = new ArrayList<Long>();
 		dbReadLock();
 		try {
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILE_IDS_BY_PARENT_AND_TYPE);						
+			statement.clearParameters();
 			statement.setLong(1, parent.getId());
 			statement.setShort(2, type.getFileType());
-			ResultSet rs = statement.executeQuery();
+			ResultSet rs = executeQuery(statement );
 			while (rs.next()) {
 				children.add(rs.getLong(1));
 			}
@@ -1948,15 +2032,15 @@ public class SleuthkitCase {
 		final List<Long> children = new ArrayList<Long>();
 		dbReadLock();
 		try {
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILE_IDS_BY_PARENT);						
+			statement.clearParameters();
 			statement.setLong(1, parent.getId());
-			ResultSet rs = statement.executeQuery();
+			ResultSet rs = executeQuery(statement );
 			while (rs.next()) {
 				children.add(rs.getLong(1));
 			}
 			rs.close();
-			statement.clearParameters();
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting AbstractFile children for Content.", ex);
 		} finally {
@@ -1990,12 +2074,12 @@ public class SleuthkitCase {
 	Collection<ObjectInfo> getChildrenInfo(Content c) throws TskCoreException {
 		dbReadLock();
 		try {
-			Statement s = getCaseDbConnectionForThread().createStatement();
+			Statement s = connectionManager.getConnection().createStatement();
 			String query = "SELECT tsk_objects.obj_id, tsk_objects.type ";
 			query += "FROM tsk_objects left join tsk_files ";
 			query += "ON tsk_objects.obj_id=tsk_files.obj_id ";
 			query += "WHERE tsk_objects.par_obj_id = " + c.getId() + " ";
-			ResultSet rs = s.executeQuery(query);
+			ResultSet rs = executeQuery(s, query);
 			Collection<ObjectInfo> infos = new ArrayList<ObjectInfo>();
 			while (rs.next()) {
 				infos.add(new ObjectInfo(rs.getLong("obj_id"), ObjectType.valueOf(rs.getShort("type"))));
@@ -2021,8 +2105,8 @@ public class SleuthkitCase {
 	ObjectInfo getParentInfo(Content c) throws TskCoreException {
 		dbReadLock();
 		try {
-			Statement s = getCaseDbConnectionForThread().createStatement();
-			ResultSet rs = s.executeQuery("SELECT parent.obj_id, parent.type "
+			Statement s = connectionManager.getConnection().createStatement();
+			ResultSet rs = executeQuery(s, "SELECT parent.obj_id, parent.type "
 					+ "FROM tsk_objects AS parent INNER JOIN tsk_objects AS child "
 					+ "ON child.par_obj_id = parent.obj_id "
 					+ "WHERE child.obj_id = " + c.getId());
@@ -2055,8 +2139,8 @@ public class SleuthkitCase {
 	ObjectInfo getParentInfo(long contentId) throws TskCoreException {
 		dbReadLock();
 		try {
-			Statement s = getCaseDbConnectionForThread().createStatement();
-			ResultSet rs = s.executeQuery("SELECT parent.obj_id, parent.type "
+			Statement s = connectionManager.getConnection().createStatement();
+			ResultSet rs = executeQuery(s, "SELECT parent.obj_id, parent.type "
 					+ "FROM tsk_objects AS parent INNER JOIN tsk_objects AS child "
 					+ "ON child.par_obj_id = parent.obj_id "
 					+ "WHERE child.obj_id = " + contentId);
@@ -2113,8 +2197,8 @@ public class SleuthkitCase {
 	public Content getContentById(long id) throws TskCoreException {
 		dbReadLock();
 		try {
-			Statement s = getCaseDbConnectionForThread().createStatement();
-			ResultSet contentRs = s.executeQuery("SELECT * FROM tsk_objects WHERE obj_id = " + id + " LIMIT  1");
+			Statement s = connectionManager.getConnection().createStatement();
+			ResultSet contentRs = executeQuery(s, "SELECT * FROM tsk_objects WHERE obj_id = " + id + " LIMIT  1");
 			if (!contentRs.next()) {
 				contentRs.close();
 				s.close();
@@ -2163,15 +2247,15 @@ public class SleuthkitCase {
 		String filePath = null;
 		dbReadLock();
 		try {
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_LOCAL_PATH_FOR_FILE);			
+			statement.clearParameters();
 			statement.setLong(1, id);
-			ResultSet rs = statement.executeQuery();
+			ResultSet rs = executeQuery(statement );
 			if (rs.next()) {
 				filePath = rs.getString(1);
 			}
 			rs.close();
-			statement.clearParameters();
 		} catch (SQLException ex) {
 			logger.log(Level.SEVERE, "Error getting file path for file: " + id, ex);
 		} finally {
@@ -2190,15 +2274,15 @@ public class SleuthkitCase {
 		String parentPath = null;
 		dbReadLock();
 		try {
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_PATH_FOR_FILE);			
+			statement.clearParameters();
 			statement.setLong(1, id);
-			ResultSet rs = statement.executeQuery();
+			ResultSet rs = executeQuery(statement );
 			if (rs.next()) {
 				parentPath = rs.getString(1);
 			}
 			rs.close();
-			statement.clearParameters();
 		} catch (SQLException ex) {
 			logger.log(Level.SEVERE, "Error getting file parent_path for file: " + id, ex);
 		} finally {
@@ -2217,15 +2301,15 @@ public class SleuthkitCase {
 		String fileName = null;
 		dbReadLock();
 		try {
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILE_NAME);			
+			statement.clearParameters();
 			statement.setLong(1, id);
-			ResultSet rs = statement.executeQuery();
+			ResultSet rs = executeQuery(statement );
 			if (rs.next()) {
 				fileName = rs.getString(1);
 			}
 			rs.close();
-			statement.clearParameters();			
 		} catch (SQLException ex) {
 			logger.log(Level.SEVERE, "Error getting file parent_path for file: " + id, ex);
 		} finally {
@@ -2248,17 +2332,19 @@ public class SleuthkitCase {
 		ResultSet rs2 = null;
 		dbReadLock();
 		try {
-			CaseDbConnection connection = getCaseDbConnectionForThread();
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_DERIVED_FILE);			
+			CaseDbConnection connection = connectionManager.getConnection();
+			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_DERIVED_FILE);	
+			statement.clearParameters();
 			statement.setLong(1, id);
-			rs1 = statement.executeQuery();
+			rs1 = executeQuery(statement );
 			if (rs1.next()) {
 				int method_id = rs1.getInt(1);
 				String rederive = rs1.getString(1);
 				method = new DerivedFile.DerivedMethod(method_id, rederive);
 				statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILE_DERIVATION_METHOD);			
+				statement.clearParameters();
 				statement.setInt(1, method_id);
-				rs2 = statement.executeQuery();
+				rs2 = executeQuery(statement );
 				if (rs2.next()) {
 					method.setToolName(rs2.getString(1));
 					method.setToolVersion(rs2.getString(2));
@@ -2268,8 +2354,20 @@ public class SleuthkitCase {
 		} catch (SQLException e) {
 			logger.log(Level.SEVERE, "Error getting derived method for file: " + id, e);
 		} finally {
-			closeResultSet(rs2);
-			closeResultSet(rs1);
+			if (rs1 != null) {
+				try {
+					rs1.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing result set after getting derived file method", ex);
+				}
+			}
+			if (rs2 != null) {
+				try {
+					rs2.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing result set after getting derived file method", ex);
+				}
+			}
 			dbReadUnlock();
 		}
 		return method;
@@ -2287,10 +2385,11 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		dbReadLock();
 		try {
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILE_BY_ID);			
+			statement.clearParameters();
 			statement.setLong(1, id);
-			rs = statement.executeQuery();
+			rs = executeQuery(statement );
 			List<AbstractFile> results;
 			if ((results = resultSetToAbstractFiles(rs)).size() > 0) {
 				return results.get(0);
@@ -2300,7 +2399,13 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting file by ID.", ex);
 		} finally {
-			closeResultSet(rs);
+		if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing result set after getting file by id.", ex);
+				}
+			}
 			dbReadUnlock();
 		}
 	}
@@ -2320,10 +2425,11 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		dbReadLock();
 		try {
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILE_SYSTEM_BY_OBJECT);			
+			statement.clearParameters();
 			statement.setLong(1, fileId);
-			rs = statement.executeQuery();
+			rs = executeQuery(statement );
 			if (rs.next()) {
 				ret = rs.getLong(1);
 				if (ret == 0) {
@@ -2333,7 +2439,13 @@ public class SleuthkitCase {
 		} catch (SQLException e) {
 			logger.log(Level.SEVERE, "Error checking file system id of a file", e);
 		} finally {
-			closeResultSet(rs);
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing result set after checking file system id of a file", ex);
+				}
+			}
 			dbReadUnlock();
 		}
 		return ret;
@@ -2413,7 +2525,7 @@ public class SleuthkitCase {
 	 * @param dataSource the dataSource (Image, parent-less VirtualDirectory) to
 	 * search for the given file name
 	 * @param fileName Pattern of the name of the file or directory to match
-	 * (case insensitive, used in LIKE SQL statement).
+ (case insensitive, used in LIKE SQL s).
 	 * @return a list of AbstractFile for files/directories whose name matches
 	 * the given fileName
 	 * @throws TskCoreException thrown if check failed
@@ -2425,25 +2537,26 @@ public class SleuthkitCase {
 			throw new IllegalArgumentException(msg);
 		}
 
-		// set the file name in the prepared statement
+		// set the file name in the prepared s
 		List<AbstractFile> files = new ArrayList<AbstractFile>();
 		ResultSet rs = null;
 		dbReadLock();
 		try {
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILES_BY_FILE_SYSTEM_AND_NAME);						
+			statement.clearParameters();
 			if (dataSource instanceof Image) {
 				for (FileSystem fileSystem : getFileSystems((Image) dataSource)) {
 					statement.setString(1, fileName.toLowerCase());
 					statement.setLong(2, fileSystem.getId());
-					rs = statement.executeQuery();
+					rs = executeQuery(statement );
 					files.addAll(resultSetToAbstractFiles(rs));
 				}
 			} else if (dataSource instanceof VirtualDirectory) {
 				//fs_obj_id is special for non-fs files (denotes data source)
 				statement.setString(1, fileName.toLowerCase());
 				statement.setLong(2, dataSource.getId());
-				rs = statement.executeQuery();
+				rs = executeQuery(statement );
 				files = resultSetToAbstractFiles(rs);
 			} else {
 				final String msg = "Error, data source should be Image or VirtualDirectory, got: " + dataSource;
@@ -2469,9 +2582,9 @@ public class SleuthkitCase {
 	 * @param dataSource the dataSource (Image, parent-less VirtualDirectory) to
 	 * search for the given file name
 	 * @param fileName Pattern of the name of the file or directory to match
-	 * (case insensitive, used in LIKE SQL statement).
+     * (case insensitive, used in LIKE SQL s).
 	 * @param dirName Pattern of the name of a parent directory of fileName
-	 * (case insensitive, used in LIKE SQL statement)
+     * (case insensitive, used in LIKE SQL s)
 	 * @return a list of AbstractFile for files/directories whose name matches
 	 * fileName and whose parent directory contains dirName.
 	 */
@@ -2486,21 +2599,22 @@ public class SleuthkitCase {
 		List<AbstractFile> files = new ArrayList<AbstractFile>();
 		dbReadLock();
 		try {
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILES_BY_FILE_SYSTEM_AND_PATH);			
+			statement.clearParameters();
 			if (dataSource instanceof Image) {
 				for (FileSystem fileSystem : getFileSystems((Image) dataSource)) {
 					statement.setString(1, fileName.toLowerCase());
 					statement.setString(2, "%" + dirName.toLowerCase() + "%");
 					statement.setLong(3, fileSystem.getId());
-					rs = statement.executeQuery();
+					rs = executeQuery(statement );
 					files.addAll(resultSetToAbstractFiles(rs));
 				}
 			} else if (dataSource instanceof VirtualDirectory) {
 				statement.setString(1, fileName.toLowerCase());
 				statement.setString(2, "%" + dirName.toLowerCase() + "%");
 				statement.setLong(3, dataSource.getId());
-				rs = statement.executeQuery();
+				rs = executeQuery(statement );
 				files = resultSetToAbstractFiles(rs);
 			} else {
 				final String msg = "Error, data source should be Image or VirtualDirectory, got: " + dataSource;
@@ -2531,18 +2645,12 @@ public class SleuthkitCase {
 	 * path was not added
 	 */
 	private void addFilePath(long objId, String path) throws SQLException {
-		PreparedStatement statement = null;
-		try {
-			CaseDbConnection connection = getCaseDbConnectionForThread();
-			statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_LOCAL_PATH);			
-			statement.setLong(1, objId);
-			statement.setString(2, path);
-			statement.executeUpdate();
-		} finally {
-			if (null != statement) {
-				statement.clearParameters();
-			}
-		}
+		CaseDbConnection connection = connectionManager.getConnection();
+		PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_LOCAL_PATH);			
+		statement.clearParameters();
+		statement.setLong(1, objId);
+		statement.setString(2, path);
+		executeUpdate(statement);
 	}
 
 	/**
@@ -2595,10 +2703,8 @@ public class SleuthkitCase {
 		//get last object id
 		//create tsk_objects object with new id
 		//create tsk_files object with the new id
-		PreparedStatement insertObjectStatement = null;			
-		PreparedStatement insertFileStatement = null;			
 		try {
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 
 			long newObjId = getLastObjectId() + 1;
 			if (newObjId < 1) {
@@ -2606,55 +2712,55 @@ public class SleuthkitCase {
 			}
 
 			//tsk_objects
-			insertObjectStatement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_OBJECT);			
-			insertObjectStatement.clearParameters(); //clear from previous, so can skip nulls
-			insertObjectStatement.setLong(1, newObjId);
+			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_OBJECT);			
+			statement.clearParameters();
+			statement.setLong(1, newObjId);
 			if (parentId != 0) {
-				insertObjectStatement.setLong(2, parentId);
+				statement.setLong(2, parentId);
 			}
-			insertObjectStatement.setLong(3, TskData.ObjectType.ABSTRACTFILE.getObjectType());
-			insertObjectStatement.executeUpdate();
+			statement.setLong(3, TskData.ObjectType.ABSTRACTFILE.getObjectType());
+			executeUpdate(statement);
 
 			//tsk_files
 			//obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, parent_path
 
 			//obj_id, fs_obj_id, name
-			insertFileStatement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_FILE);			
-			insertFileStatement.clearParameters(); //clear from previous, so we can skip nulls // TODO: This isn't right
-			insertFileStatement.setLong(1, newObjId);
+			statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_FILE);			
+			statement.clearParameters();
+			statement.setLong(1, newObjId);
 
 			// If the parent is part of a file system, grab its file system ID
 			long parentFs = this.getFileSystemId(parentId);
 			if (parentFs != -1) {
-				insertFileStatement.setLong(2, parentFs);
+				statement.setLong(2, parentFs);
 			}
-			insertFileStatement.setString(3, directoryName);
+			statement.setString(3, directoryName);
 
 			//type, has_path
-			insertFileStatement.setShort(4, TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType());
-			insertFileStatement.setBoolean(5, true);
+			statement.setShort(4, TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType());
+			statement.setBoolean(5, true);
 
 			//flags
 			final TSK_FS_NAME_TYPE_ENUM dirType = TSK_FS_NAME_TYPE_ENUM.DIR;
-			insertFileStatement.setShort(6, dirType.getValue());
+			statement.setShort(6, dirType.getValue());
 			final TSK_FS_META_TYPE_ENUM metaType = TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
-			insertFileStatement.setShort(7, metaType.getValue());
+			statement.setShort(7, metaType.getValue());
 
 			//note: using alloc under assumption that derived files derive from alloc files
 			final TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.ALLOC;
-			insertFileStatement.setShort(8, dirFlag.getValue());
+			statement.setShort(8, dirFlag.getValue());
 			final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue()
 					| TSK_FS_META_FLAG_ENUM.USED.getValue());
-			insertFileStatement.setShort(9, metaFlags);
+			statement.setShort(9, metaFlags);
 
 			//size
 			long size = 0;
-			insertFileStatement.setLong(10, size);
+			statement.setLong(10, size);
 
 			//parent path
-			insertFileStatement.setString(15, parentPath);
+			statement.setString(15, parentPath);
 
-			insertFileStatement.executeUpdate();
+			executeUpdate(statement);
 
 			vd = new VirtualDirectory(this, newObjId, directoryName, dirType,
 					metaType, dirFlag, metaFlags, size, null, FileKnown.UNKNOWN,
@@ -2664,22 +2770,7 @@ public class SleuthkitCase {
 			// throwing an exception and this one got lost
 			logger.log(Level.SEVERE, "Error creating virtual directory: " + directoryName, e);
 			throw new TskCoreException("Error creating virtual directory '" + directoryName + "'", e);
-		} finally {
-			if (null != insertObjectStatement) {
-				try {
-					insertObjectStatement.clearParameters();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Error clearing parameters after adding virtual directory.", ex);
-				}
-			}
-			if (null != insertFileStatement) {
-				try {
-					insertFileStatement.clearParameters();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Error clearing parameters after adding virtual directory.", ex);
-				}
-			}
-		}
+		} 
 		return vd;
 	} 
 	
@@ -2696,8 +2787,8 @@ public class SleuthkitCase {
 		Statement statement = null;
 		ResultSet rs = null;
 		try {
-			statement = getCaseDbConnectionForThread().createStatement();
-			rs = statement.executeQuery("SELECT tsk_files.* FROM tsk_objects, tsk_files WHERE "
+			statement = connectionManager.getConnection().createStatement();
+			rs = executeQuery(statement, "SELECT tsk_files.* FROM tsk_objects, tsk_files WHERE "
 					+ "tsk_objects.par_obj_id IS NULL AND "
 					+ "tsk_objects.type = " + TskData.ObjectType.ABSTRACTFILE.getObjectType() + " AND "
 					+ "tsk_objects.obj_id = tsk_files.obj_id AND "
@@ -2734,7 +2825,7 @@ public class SleuthkitCase {
 	private long getCarvedDirectoryId(long id) throws TskCoreException {
 		long ret = 0;
 
-		//use lock to ensure atomic cache check and db/cache update
+		//use lock to ensure atomic cache check and connection/cache update
 		dbWriteLock();
 
 		try {
@@ -2808,7 +2899,7 @@ public class SleuthkitCase {
 	public LayoutFile addCarvedFile(String carvedFileName, long carvedFileSize, long containerId, List<TskFileRange> data) throws TskCoreException {
 		CaseDbConnection connection;
 		try {
-			connection = getCaseDbConnectionForThread();
+			connection = connectionManager.getConnection();
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting case database connection", ex);
 		} 
@@ -2833,7 +2924,7 @@ public class SleuthkitCase {
 		// we should cache this when we start adding lots of carved files...
 		try {
 			Statement s = connection.createStatement();
-			ResultSet rs = s.executeQuery("select * from tsk_fs_info "
+			ResultSet rs = executeQuery(s, "select * from tsk_fs_info "
 					+ "where obj_id = " + containerId);
 
 			if (rs.next()) {
@@ -2851,8 +2942,6 @@ public class SleuthkitCase {
 		//get last object id
 		//create tsk_objects object with new id
 		//create tsk_files object with the new id
-		PreparedStatement insertObjectStatement = null;			
-		PreparedStatement insertFileStatement = null;			
 		try {
 			connection.beginTransaction();
 			
@@ -2862,111 +2951,97 @@ public class SleuthkitCase {
 			}
 
 			//tsk_objects
-			insertObjectStatement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_OBJECT);			
-			insertObjectStatement.setLong(1, newObjId);
-			insertObjectStatement.setLong(2, carvedDirId);
-			insertObjectStatement.setLong(3, TskData.ObjectType.ABSTRACTFILE.getObjectType());
-			insertObjectStatement.executeUpdate();
+			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_OBJECT);	
+			statement.clearParameters();
+			statement.setLong(1, newObjId);
+			statement.setLong(2, carvedDirId);
+			statement.setLong(3, TskData.ObjectType.ABSTRACTFILE.getObjectType());
+			executeUpdate(statement);
 
 			// tsk_files
 			// obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, parent_path
 
 			//obj_id, fs_obj_id, name
-			insertObjectStatement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_FILE);			
-			insertObjectStatement.clearParameters(); //clear, so can skip nulls TODO: What?
-			insertObjectStatement.setLong(1, newObjId);
+			statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_FILE);			
+			statement.clearParameters();
+			statement.setLong(1, newObjId);
 			
 			// only insert into the fs_obj_id column if container is a FS
 			if (isContainerAFs) {
-				insertObjectStatement.setLong(2, containerId);
+				statement.setLong(2, containerId);
 			}
-			insertObjectStatement.setString(3, carvedFileName);
+			statement.setString(3, carvedFileName);
 
 			// type
 			final TSK_DB_FILES_TYPE_ENUM type = TSK_DB_FILES_TYPE_ENUM.CARVED;
-			insertObjectStatement.setShort(4, type.getFileType());
+			statement.setShort(4, type.getFileType());
 
 			// has_path
-			insertObjectStatement.setBoolean(5, true);
+			statement.setBoolean(5, true);
 
 			// dirType
 			final TSK_FS_NAME_TYPE_ENUM dirType = TSK_FS_NAME_TYPE_ENUM.REG;
-			insertObjectStatement.setShort(6, dirType.getValue());
+			statement.setShort(6, dirType.getValue());
 
 			// metaType
 			final TSK_FS_META_TYPE_ENUM metaType = TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG;
-			insertObjectStatement.setShort(7, metaType.getValue());
+			statement.setShort(7, metaType.getValue());
 
 			// dirFlag
 			final TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.UNALLOC;
-			insertObjectStatement.setShort(8, dirFlag.getValue());
+			statement.setShort(8, dirFlag.getValue());
 
 			// metaFlags
 			final short metaFlags = TSK_FS_META_FLAG_ENUM.UNALLOC.getValue();
-			insertObjectStatement.setShort(9, metaFlags);
+			statement.setShort(9, metaFlags);
 
 			// size
-			insertObjectStatement.setLong(10, carvedFileSize);
+			statement.setLong(10, carvedFileSize);
 
 			// parent path
-			insertObjectStatement.setString(15, parentPath);
+			statement.setString(15, parentPath);
 
-			insertObjectStatement.executeUpdate();
+			executeUpdate(statement);
 
 			// tsk_file_layout
 
 			// add an entry in the tsk_layout_file table for each TskFileRange
+			statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_LAYOUT_FILE);			
 			for (TskFileRange tskFileRange : data) {
-
+				statement.clearParameters();
+				
 				// set the object ID
-				addLayoutFileSt.setLong(1, newObjId);
+				statement.setLong(1, newObjId);
 
 				// set byte_start
-				addLayoutFileSt.setLong(2, tskFileRange.getByteStart());
+				statement.setLong(2, tskFileRange.getByteStart());
 
 				// set byte_len
-				addLayoutFileSt.setLong(3, tskFileRange.getByteLen());
+				statement.setLong(3, tskFileRange.getByteLen());
 
 				// set the sequence number
-				addLayoutFileSt.setLong(4, tskFileRange.getSequence());
+				statement.setLong(4, tskFileRange.getSequence());
 
 				// execute it
-				addLayoutFileSt.executeUpdate();
+				executeUpdate(statement);
 			}
 
+			connection.commitTransaction();
+						
 			// create the LayoutFile object
 			lf = new LayoutFile(this, newObjId, carvedFileName, type, dirType,
 					metaType, dirFlag, metaFlags, carvedFileSize, null,
 					FileKnown.UNKNOWN, parentPath);
 
 		} catch (SQLException e) {
+			try {
+				connection.rollbackTransaction();
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Failed to rollback transaction", ex);				
+			}
 			throw new TskCoreException("Error creating a carved file '" + carvedFileName + "'", e);
 		} finally {
-			try {
-				insertObjectStatement.clearParameters();
-			} catch (SQLException ex) {
-				logger.log(Level.SEVERE, "Error clearing parameters after adding derived file", ex);
-			}
-
-			try {
-				insertFileStatement.clearParameters();
-			} catch (SQLException ex) {
-				logger.log(Level.SEVERE, "Error clearing parameters after adding derived file", ex);
-			}
-
-			try {
-				con.commit();
-			} catch (SQLException ex) {
-				logger.log(Level.SEVERE, "Error committing after adding derived file", ex);
-			} finally {
-				try {
-					con.setAutoCommit(true);
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, "Error setting auto-commit after adding derived file", ex);
-				} finally {
-					dbWriteUnlock();
-				}
-			}
+			dbWriteUnlock();
 		}
 
 		return lf;
@@ -3000,7 +3075,13 @@ public class SleuthkitCase {
 			long size, long ctime, long crtime, long atime, long mtime,
 			boolean isFile, AbstractFile parentFile,
 			String rederiveDetails, String toolName, String toolVersion, String otherDetails) throws TskCoreException {
-
+		CaseDbConnection connection;
+		try {
+			connection = connectionManager.getConnection();
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting case database connection", ex);
+		} 
+						
 		final long parentId = parentFile.getId();
 		final String parentPath = parentFile.getParentPath() + parentFile.getName() + '/';
 		
@@ -3014,11 +3095,7 @@ public class SleuthkitCase {
 		//get last object id
 		//create tsk_objects object with new id
 		//create tsk_files object with the new id
-		CaseDbConnection connection = null;
-		PreparedStatement addObjectStatement = null;
-		PreparedStatement addFileStatement = null;		
 		try {
-			connection = getCaseDbConnectionForThread();
 			connection.beginTransaction();
 
 			newObjId = getLastObjectId() + 1;
@@ -3028,73 +3105,77 @@ public class SleuthkitCase {
 			}
 
 			//tsk_objects
-			addObjectStatement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_OBJECT);			
-			addObjectStatement.clearParameters();
-			addObjectStatement.setLong(1, newObjId);
-			addObjectStatement.setLong(2, parentId);
-			addObjectStatement.setLong(3, TskData.ObjectType.ABSTRACTFILE.getObjectType());
-			addObjectStatement.executeUpdate();
+			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_OBJECT);			
+			statement.clearParameters();
+			statement.setLong(1, newObjId);
+			statement.setLong(2, parentId);
+			statement.setLong(3, TskData.ObjectType.ABSTRACTFILE.getObjectType());
+			executeUpdate(statement);
 
 			//tsk_files
 			//obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, parent_path
 
 			//obj_id, fs_obj_id, name
-			addFileStatement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_FILE);			
-			addFileStatement.clearParameters(); //clear, so can skip nulls
-			addFileStatement.setLong(1, newObjId);
+			statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_FILE);			
+			statement.clearParameters();
+			statement.setLong(1, newObjId);
 			
 			// If the parentFile is part of a file system, use its file system object ID.
 			long fsObjId = this.getFileSystemId(parentId);
 			if (fsObjId != -1) {
-				addFileStatement.setLong(2, fsObjId);
+				statement.setLong(2, fsObjId);
 			}
-			addFileStatement.setString(3, fileName);
+			statement.setString(3, fileName);
 
 			//type, has_path
-			addFileStatement.setShort(4, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED.getFileType());
-			addFileStatement.setBoolean(5, true);
+			statement.setShort(4, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED.getFileType());
+			statement.setBoolean(5, true);
 
 			//flags
 			final TSK_FS_NAME_TYPE_ENUM dirType = isFile ? TSK_FS_NAME_TYPE_ENUM.REG : TSK_FS_NAME_TYPE_ENUM.DIR;
-			addFileStatement.setShort(6, dirType.getValue());
+			statement.setShort(6, dirType.getValue());
 			final TSK_FS_META_TYPE_ENUM metaType = isFile ? TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG : TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
-			addFileStatement.setShort(7, metaType.getValue());
+			statement.setShort(7, metaType.getValue());
 
 			//note: using alloc under assumption that derived files derive from alloc files
 			final TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.ALLOC;
-			addFileStatement.setShort(8, dirFlag.getValue());
+			statement.setShort(8, dirFlag.getValue());
 			final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue()
 					| TSK_FS_META_FLAG_ENUM.USED.getValue());
-			addFileStatement.setShort(9, metaFlags);
+			statement.setShort(9, metaFlags);
 
 			//size
-			addFileStatement.setLong(10, size);
+			statement.setLong(10, size);
 			//mactimes
 			//long ctime, long crtime, long atime, long mtime,
-			addFileStatement.setLong(11, ctime);
-			addFileStatement.setLong(12, crtime);
-			addFileStatement.setLong(13, atime);
-			addFileStatement.setLong(14, mtime);
+			statement.setLong(11, ctime);
+			statement.setLong(12, crtime);
+			statement.setLong(13, atime);
+			statement.setLong(14, mtime);
 			//parent path
-			addFileStatement.setString(15, parentPath);
+			statement.setString(15, parentPath);
 
-			addFileStatement.executeUpdate();
+			executeUpdate(statement);
 
 			//add localPath 
 			addFilePath(newObjId, localPath);
 
+			connection.commitTransaction();
+						
 			ret = new DerivedFile(this, newObjId, fileName, dirType, metaType, dirFlag, metaFlags,
 					size, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId);
 
 			//TODO add derived method to tsk_files_derived and tsk_files_derived_method 
-			connection.commitTransaction(); // RJCTODO: This is not right, should commit or rollback
 			return ret;
 		} catch (SQLException e) {
+			try {
+				connection.rollbackTransaction();
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Failed to rollback transaction", ex);				
+			}
 			String msg = "Error creating a derived file, file name: " + fileName;
 			throw new TskCoreException(msg, e);
 		} finally {
-			clearParameters(addFileStatement);
-			clearParameters(addObjectStatement);
 			dbWriteUnlock();
 		}
 	}
@@ -3153,7 +3234,13 @@ public class SleuthkitCase {
 	public LocalFile addLocalFile(String fileName, String localPath,
 			long size, long ctime, long crtime, long atime, long mtime,
 			boolean isFile, AbstractFile parent, Transaction trans) throws TskCoreException {
-
+		CaseDbConnection connection;
+		try {
+			connection = connectionManager.getConnection();
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting case database connection", ex);
+		} 
+								
 		long parentId = -1;
 		String parentPath;
 		if (parent == null) {
@@ -3168,14 +3255,11 @@ public class SleuthkitCase {
 		long newObjId = -1;
 
 		//don't need to lock database or setAutoCommit(false), since we are
-		//passed Transaction which handles that. RJCTODO: Yeah, maybe, maybe not, check into this, should not need to pass around TX, perhaps just ask
+		//passed Transaction which handles that.
 
 		//get last object id
 		//create tsk_objects object with new id
 		//create tsk_files object with the new id
-		CaseDbConnection connection = null;
-		PreparedStatement addObjectStatement = null;
-		PreparedStatement addFileStatement = null;		
 		try {
 			newObjId = getLastObjectId() + 1;
 			if (newObjId < 1) {
@@ -3184,52 +3268,52 @@ public class SleuthkitCase {
 			}
 
 			//tsk_objects
-			addObjectStatement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_OBJECT);			
-			addObjectStatement.clearParameters();
-			addObjectStatement.setLong(1, newObjId);
-			addObjectStatement.setLong(2, parentId);
-			addObjectStatement.setLong(3, TskData.ObjectType.ABSTRACTFILE.getObjectType());
-			addObjectStatement.executeUpdate();
+			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_OBJECT);			
+			statement.clearParameters();
+			statement.setLong(1, newObjId);
+			statement.setLong(2, parentId);
+			statement.setLong(3, TskData.ObjectType.ABSTRACTFILE.getObjectType());
+			executeUpdate(statement);
 
 			//tsk_files
 			//obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, parent_path
 
 			//obj_id, fs_obj_id, name
-			addFileStatement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_FILE);			
-			addFileStatement.clearParameters();
-			addFileStatement.setLong(1, newObjId);
+			statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_FILE);			
+			statement.clearParameters();
+			statement.setLong(1, newObjId);
 			// nothing to set for parameter 2, fs_obj_id since local files aren't part of file systems
-			addFileStatement.setString(3, fileName);
+			statement.setString(3, fileName);
 
 			//type, has_path
-			addFileStatement.setShort(4, TskData.TSK_DB_FILES_TYPE_ENUM.LOCAL.getFileType());
-			addFileStatement.setBoolean(5, true);
+			statement.setShort(4, TskData.TSK_DB_FILES_TYPE_ENUM.LOCAL.getFileType());
+			statement.setBoolean(5, true);
 
 			//flags
 			final TSK_FS_NAME_TYPE_ENUM dirType = isFile ? TSK_FS_NAME_TYPE_ENUM.REG : TSK_FS_NAME_TYPE_ENUM.DIR;
-			addFileStatement.setShort(6, dirType.getValue());
+			statement.setShort(6, dirType.getValue());
 			final TSK_FS_META_TYPE_ENUM metaType = isFile ? TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG : TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
-			addFileStatement.setShort(7, metaType.getValue());
+			statement.setShort(7, metaType.getValue());
 
 			//note: using alloc under assumption that derived files derive from alloc files
 			final TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.ALLOC;
-			addFileStatement.setShort(8, dirFlag.getValue());
+			statement.setShort(8, dirFlag.getValue());
 			final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue()
 					| TSK_FS_META_FLAG_ENUM.USED.getValue());
-			addFileStatement.setShort(9, metaFlags);
+			statement.setShort(9, metaFlags);
 
 			//size
-			addFileStatement.setLong(10, size);
+			statement.setLong(10, size);
 			//mactimes
 			//long ctime, long crtime, long atime, long mtime,
-			addFileStatement.setLong(11, ctime);
-			addFileStatement.setLong(12, crtime);
-			addFileStatement.setLong(13, atime);
-			addFileStatement.setLong(14, mtime);
+			statement.setLong(11, ctime);
+			statement.setLong(12, crtime);
+			statement.setLong(13, atime);
+			statement.setLong(14, mtime);
 			//parent path
-			addFileStatement.setString(15, parentPath);
+			statement.setString(15, parentPath);
 
-			addFileStatement.executeUpdate();
+			executeUpdate(statement);
 
 			//add localPath 
 			addFilePath(newObjId, localPath);
@@ -3239,10 +3323,7 @@ public class SleuthkitCase {
 		} catch (SQLException e) {
 			String msg = "Error creating a derived file, file name: " + fileName;
 			throw new TskCoreException(msg, e);
-		} finally {
-			clearParameters(addFileStatement);
-			clearParameters(addObjectStatement);
-		}
+		} 
 	}
 
 	/**
@@ -3251,7 +3332,7 @@ public class SleuthkitCase {
 	 * @param dataSource the dataSource (Image, parent-less VirtualDirectory) to
 	 * search for the given file name
 	 * @param fileName Pattern of the name of the file or directory to match
-	 * (case insensitive, used in LIKE SQL statement).
+ (case insensitive, used in LIKE SQL s).
 	 * @param parentFile Object for parent file/directory to find children in
 	 * @return a list of AbstractFile for files/directories whose name matches
 	 * fileName and that were inside a directory described by parentFile.
@@ -3269,18 +3350,30 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	public long countFilesWhere(String sqlWhereClause) throws TskCoreException {
-		Statement statement = null;
-		ResultSet resultSet = null;
+		Statement s = null;
+		ResultSet rs = null;
 		dbReadLock();
 		try {
-			statement = getCaseDbConnectionForThread().createStatement();
-			resultSet = statement.executeQuery("SELECT COUNT (*) FROM tsk_files WHERE " + sqlWhereClause);
-			return resultSet.getLong(1);
+			s = connectionManager.getConnection().createStatement();
+			rs = executeQuery(s, "SELECT COUNT (*) FROM tsk_files WHERE " + sqlWhereClause);
+			return rs.getLong(1);
 		} catch (SQLException e) {
 			throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.findFilesWhere().", e);
 		} finally {
-			closeResultSet(resultSet);
-			closeStatement(statement);
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing result set after executing  countFilesWhere", ex);
+				}
+			}
+			if (s != null) {
+				try {
+					s.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing statement after executing  countFilesWhere", ex);
+				}
+			}			
 			dbReadUnlock();
 		}
 	}
@@ -3296,18 +3389,30 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	public List<AbstractFile> findAllFilesWhere(String sqlWhereClause) throws TskCoreException {
-		Statement statement = null;
-		ResultSet resultSet = null;
+		Statement s = null;
+		ResultSet rs = null;
 		dbReadLock();
 		try {
-			statement = getCaseDbConnectionForThread().createStatement();
-			resultSet = statement.executeQuery("SELECT * FROM tsk_files WHERE " + sqlWhereClause);
-			return resultSetToAbstractFiles(resultSet);
+			s = connectionManager.getConnection().createStatement();
+			rs = executeQuery(s, "SELECT * FROM tsk_files WHERE " + sqlWhereClause);
+			return resultSetToAbstractFiles(rs);
 		} catch (SQLException e) {
 			throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.findAllFilesWhere(): " + sqlWhereClause, e);
 		} finally {
-			closeResultSet(resultSet);
-			closeStatement(statement);
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing result set after executing  findAllFilesWhere", ex);
+				}
+			}
+			if (s != null) {
+				try {
+					s.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing statement after executing  findAllFilesWhere", ex);
+				}
+			}			
 			dbReadUnlock();
 		}
 	}
@@ -3322,22 +3427,34 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	public List<Long> findAllFileIdsWhere(String sqlWhereClause) throws TskCoreException {
-		Statement statement = null;
-		ResultSet resultSet = null;
+		Statement s = null;
+		ResultSet rs = null;
 		List<Long> ret = new ArrayList<Long>();
 		dbReadLock();
 		try {
-			statement = getCaseDbConnectionForThread().createStatement();
-			resultSet = statement.executeQuery("SELECT obj_id FROM tsk_files WHERE " + sqlWhereClause);
-			while (resultSet.next()) {
-				ret.add(resultSet.getLong(1));
+			s = connectionManager.getConnection().createStatement();
+			rs = executeQuery(s, "SELECT obj_id FROM tsk_files WHERE " + sqlWhereClause);
+			while (rs.next()) {
+				ret.add(rs.getLong(1));
 			}
 			return ret;
 		} catch (SQLException e) {
 			throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.findAllFileIdsWhere(): " + sqlWhereClause, e);
 		} finally {
-			closeResultSet(resultSet);
-			closeStatement(statement);
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing result set after executing  findAllFileIdsWhere", ex);
+				}
+			}
+			if (s != null) {
+				try {
+					s.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing statement after executing  findAllFileIdsWhere", ex);
+				}
+			}
 			dbReadUnlock();
 		}
 	}
@@ -3351,18 +3468,30 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	public List<FsContent> findFilesWhere(String sqlWhereClause) throws TskCoreException {
-		Statement statement = null;
-		ResultSet resultSet = null;
+		Statement s = null;
+		ResultSet rs = null;
 		dbReadLock();
 		try {
-			statement = getCaseDbConnectionForThread().createStatement();
-			resultSet = statement.executeQuery("SELECT * FROM tsk_files WHERE " + sqlWhereClause);
-			return resultSetToFsContents(resultSet);
+			s = connectionManager.getConnection().createStatement();
+			rs = executeQuery(s, "SELECT * FROM tsk_files WHERE " + sqlWhereClause);
+			return resultSetToFsContents(rs);
 		} catch (SQLException e) {
 			throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.findFilesWhere().", e);
 		} finally {
-			closeResultSet(resultSet);
-			closeStatement(statement);
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing result set after executing  findFilesWhere", ex);
+				}
+			}
+			if (s != null) {
+				try {
+					s.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error closing statement after executing  findFilesWhere", ex);
+				}
+			}
 			dbReadUnlock();
 		}
 	}
@@ -3408,8 +3537,8 @@ public class SleuthkitCase {
 		List<TskFileRange> ranges = new ArrayList<TskFileRange>();
 		dbReadLock();
 		try {
-			Statement s = getCaseDbConnectionForThread().createStatement();
-			ResultSet rs = s.executeQuery("select * from tsk_file_layout where obj_id = " + id + " order by sequence");
+			Statement s = connectionManager.getConnection().createStatement();
+			ResultSet rs = executeQuery(s, "select * from tsk_file_layout where obj_id = " + id + " order by sequence");
 
 			while (rs.next()) {
 				ranges.add(rsHelper.tskFileRange(rs));
@@ -3435,23 +3564,24 @@ public class SleuthkitCase {
 	public Image getImageById(long id) throws TskCoreException {
 		dbReadLock();
 		try {
-			Statement s = getCaseDbConnectionForThread().createStatement();
-			ResultSet rs1 = s.executeQuery("select * from tsk_image_info where obj_id = " + id);
+			CaseDbConnection connection = connectionManager.getConnection();
+			Statement s1 = connection.createStatement();
+			ResultSet rs1 = executeQuery(s1, "select * from tsk_image_info where obj_id = " + id);
 			Image temp;
 			if (rs1.next()) {
 				long obj_id = rs1.getLong("obj_id");
-				ResultSet rs2 = s.executeQuery("select * from tsk_image_names where obj_id = " + obj_id);
+				Statement s2 = connection.createStatement();
+				ResultSet rs2 = executeQuery(s2, "select * from tsk_image_names where obj_id = " + obj_id);
 				List<String> imagePaths = new ArrayList<String>();
 				while (rs2.next()) {
 					imagePaths.add(rsHelper.imagePath(rs2));
 				}
 				temp = rsHelper.image(rs1, imagePaths.toArray(new String[imagePaths.size()]));
 				rs2.close();
-				rs1.close();
-				s.close();
+				s2.close();
 			} else {
 				rs1.close();
-				s.close();
+				s1.close();
 				throw new TskCoreException("No image found for id: " + id);
 			}
 			return temp;
@@ -3474,8 +3604,8 @@ public class SleuthkitCase {
 	VolumeSystem getVolumeSystemById(long id, Image parent) throws TskCoreException {
 		dbReadLock();
 		try {
-			Statement s = getCaseDbConnectionForThread().createStatement();
-			ResultSet rs = s.executeQuery("select * from tsk_vs_info "
+			Statement s = connectionManager.getConnection().createStatement();
+			ResultSet rs = executeQuery(s, "select * from tsk_vs_info "
 					+ "where obj_id = " + id);
 			VolumeSystem temp;
 			if (rs.next()) {
@@ -3566,9 +3696,9 @@ public class SleuthkitCase {
 		}		
 		dbReadLock();
 		try {
-			Statement s = getCaseDbConnectionForThread().createStatement();
+			Statement s = connectionManager.getConnection().createStatement();
 			FileSystem temp;
-			ResultSet rs = s.executeQuery("select * from tsk_fs_info "
+			ResultSet rs = executeQuery(s, "select * from tsk_fs_info "
 					+ "where obj_id = " + id);
 			if (rs.next()) {
 				temp = rsHelper.fileSystem(rs, parent);
@@ -3603,9 +3733,9 @@ public class SleuthkitCase {
 	Volume getVolumeById(long id, VolumeSystem parent) throws TskCoreException {
 		dbReadLock();
 		try {
-			Statement s = getCaseDbConnectionForThread().createStatement();
+			Statement s = connectionManager.getConnection().createStatement();
 			Volume temp;
-			ResultSet rs = s.executeQuery("select * from tsk_vs_parts "
+			ResultSet rs = executeQuery(s, "select * from tsk_vs_parts "
 					+ "where obj_id = " + id);
 			if (rs.next()) {
 				temp = rsHelper.volume(rs, parent);
@@ -3648,9 +3778,9 @@ public class SleuthkitCase {
 	Directory getDirectoryById(long id, FileSystem parentFs) throws TskCoreException {
 		dbReadLock();
 		try {
-			Statement s = getCaseDbConnectionForThread().createStatement();
+			Statement s = connectionManager.getConnection().createStatement();
 			Directory temp = null;
-			ResultSet rs = s.executeQuery("SELECT * FROM tsk_files "
+			ResultSet rs = executeQuery(s, "SELECT * FROM tsk_files "
 					+ "WHERE obj_id = " + id);
 			if (rs.next()) {
 				final short type = rs.getShort("type");
@@ -3685,27 +3815,46 @@ public class SleuthkitCase {
 	 * @return Collection of FileSystems in the image
 	 */
 	public Collection<FileSystem> getFileSystems(Image image) {
-
 		// create a query to get all file system objects
 		String allFsObjects = "SELECT * FROM tsk_fs_info";
 
 		// perform the query and create a list of FileSystem objects
 		List<FileSystem> allFileSystems = new ArrayList<FileSystem>();
 
+		CaseDbConnection connection;
+		try {
+			connection = connectionManager.getConnection();
+		} catch (SQLException ex) {
+			logger.log(Level.SEVERE, "Error getting case database connection", ex);
+			return allFileSystems;
+		} 
+										
 		dbReadLock();
-		Statement statement = null;
+		Statement statement  = null;
 		ResultSet rs = null;
 		try {
-			statement = getCaseDbConnectionForThread().createStatement();
-			rs = statement.executeQuery(allFsObjects);
+			statement  = connection.createStatement();			
+			rs = executeQuery(statement, allFsObjects);
 			while (rs.next()) {
 				allFileSystems.add(rsHelper.fileSystem(rs, null));
 			}
 		} catch (SQLException ex) {
 			logger.log(Level.SEVERE, "There was a problem while trying to obtain this image's file systems.", ex);
 		} finally {
-			closeResultSet(rs);
-			closeStatement(statement);
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Cannot close result set after query of all fs objects", ex);
+				}
+			}
+			if (statement  != null) {
+				try {
+					statement .close();
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Cannot close statement after query of all fs objects", ex);
+				}
+			}
 			dbReadUnlock();
 		}
 
@@ -3719,8 +3868,8 @@ public class SleuthkitCase {
 			while (imageID == null) {
 				dbReadLock();
 				try {
-					statement = con.createStatement();
-					rs = statement.executeQuery("SELECT * FROM tsk_objects WHERE tsk_objects.obj_id = " + currentObjID);
+					statement  = connection.createStatement();			
+					rs = executeQuery(statement, "SELECT * FROM tsk_objects WHERE tsk_objects.obj_id = " + currentObjID);
 					currentObjID = rs.getLong("par_obj_id");
 					if (rs.getInt("type") == TskData.ObjectType.IMG.getObjectType()) {
 						imageID = rs.getLong("obj_id");
@@ -3728,8 +3877,20 @@ public class SleuthkitCase {
 				} catch (SQLException ex) {
 					logger.log(Level.SEVERE, "There was a problem while trying to obtain this image's file systems.", ex);
 				} finally {
-					closeResultSet(rs);
-					closeStatement(statement);
+					if (rs != null) {
+						try {
+							rs.close();
+						} catch (SQLException ex) {
+							logger.log(Level.SEVERE, "Cannot close result set after query of all fs objects for fs", ex);
+						}
+					}
+					if (statement != null) {
+						try {
+							statement.close();
+						} catch (SQLException ex) {
+							logger.log(Level.SEVERE, "Cannot close statement after query of all fs objects for fs", ex);
+						}
+					}
 					dbReadUnlock();
 				}
 			}
@@ -3892,20 +4053,23 @@ public class SleuthkitCase {
 		dbReadLock();
 		try {
 			Map<Long, List<String>> imgPaths = new LinkedHashMap<Long, List<String>>();
-			Statement s = getCaseDbConnectionForThread().createStatement();
-			ResultSet rs1 = s.executeQuery("select obj_id from tsk_image_info");
+			CaseDbConnection connection = connectionManager.getConnection();
+			Statement s1 = connection.createStatement();
+			ResultSet rs1 = executeQuery(s1, "select obj_id from tsk_image_info");
 			while (rs1.next()) {
 				long obj_id = rs1.getLong("obj_id");
-				ResultSet rs2 = s.executeQuery("select * from tsk_image_names where obj_id = " + obj_id);
+				Statement s2 = connection.createStatement();
+				ResultSet rs2 = executeQuery(s2, "select * from tsk_image_names where obj_id = " + obj_id);
 				List<String> paths = new ArrayList<String>();
 				while (rs2.next()) {
 					paths.add(rsHelper.imagePath(rs2));
 				}
 				rs2.close();
+				s2.close();
 				imgPaths.put(obj_id, paths);
 			}
 			rs1.close();
-			s.close();
+			s1.close();
 			return imgPaths;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting image paths.", ex);
@@ -3923,8 +4087,8 @@ public class SleuthkitCase {
 		dbReadLock();
 		Collection<Long> imageIDs = new ArrayList<Long>();
 		try {
-			Statement s = getCaseDbConnectionForThread().createStatement();			
-			ResultSet rs = s.executeQuery("select obj_id from tsk_image_info");
+			Statement s = connectionManager.getConnection().createStatement();			
+			ResultSet rs = executeQuery(s, "select obj_id from tsk_image_info");
 			while (rs.next()) {
 				imageIDs.add(rs.getLong("obj_id"));
 			}
@@ -3958,7 +4122,10 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		dbReadLock();
 		try {
-			rs = getLastContentIdSt.executeQuery();
+			CaseDbConnection connection = connectionManager.getConnection();
+			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_MAX_OBJECT_ID);
+			statement.clearParameters();
+			rs = executeQuery(statement );
 			if (rs.next()) {
 				id = rs.getLong(1);
 			}
@@ -3992,11 +4159,11 @@ public class SleuthkitCase {
 
 		dbWriteLock();
 		try {
-			Statement s1 = con.createStatement();
+			Statement s1 = connectionManager.getConnection().createStatement();
 
-			s1.executeUpdate("DELETE FROM tsk_image_names WHERE obj_id = " + obj_id);
+			executeUpdate(s1, "DELETE FROM tsk_image_names WHERE obj_id = " + obj_id);
 			for (int i = 0; i < paths.size(); i++) {
-				s1.executeUpdate("INSERT INTO tsk_image_names VALUES (" + obj_id + ", \"" + paths.get(i) + "\", " + i + ")");
+				executeUpdate(s1, "INSERT INTO tsk_image_names VALUES (" + obj_id + ", \"" + paths.get(i) + "\", " + i + ")");
 			}
 
 			s1.close();
@@ -4061,7 +4228,7 @@ public class SleuthkitCase {
 					results.add(lf);
 				}
 
-			} //end for each resultSet
+			} //end for each rs
 		} catch (SQLException e) {
 			logger.log(Level.SEVERE, "Error getting abstract file from result set.", e);
 		} finally {
@@ -4099,9 +4266,9 @@ public class SleuthkitCase {
 	 * done
 	 *
 	 * @param query the given string query to run
-	 * @return	the resultSet from running the query. Caller MUST CALL
-	 * closeRunQuery(resultSet) as soon as possible, when done with retrieving
-	 * data from the resultSet
+	 * @return	the rs from running the query. Caller MUST CALL
+ closeRunQuery(rs) as soon as possible, when done with retrieving
+ data from the rs
 	 * @throws SQLException if error occurred during the query
 	 * @deprecated use specific datamodel methods that encapsulate SQL layer
 	 */
@@ -4110,8 +4277,8 @@ public class SleuthkitCase {
 		Statement statement;
 		dbReadLock();
 		try {
-			statement = con.createStatement();
-			ResultSet rs = statement.executeQuery(query);
+			statement = connectionManager.getConnection().createStatement();
+			ResultSet rs = executeQuery(statement, query);
 			return rs;
 		} finally {
 			//TODO unlock should be done in closeRunQuery()
@@ -4148,21 +4315,10 @@ public class SleuthkitCase {
 	/**
 	 * Closes the database connection of this instance.
 	 */
-	private void closeConnection() {
+	private void closeConnections() {
 		SleuthkitCase.dbWriteLock();
-		try {
-			closeStatements();
-			if (con != null) {
-				con.close();
-				con = null;
-			}
-		} catch (SQLException e) {
-			// connection close failed.
-			logger.log(Level.WARNING,
-					"Error closing connection.", e);
-		} finally {
-			SleuthkitCase.dbWriteUnlock();
-		}
+		connectionManager.closeConnections();
+		SleuthkitCase.dbWriteUnlock();
 	}
 
 	/**
@@ -4175,7 +4331,7 @@ public class SleuthkitCase {
 		fileSystemIdMap.clear();
 		
 		SleuthkitCase.dbWriteLock();
-		this.closeConnection();
+		this.closeConnections();
 		try {
 			if (this.caseHandle != null) {
 				this.caseHandle.free();
@@ -4194,7 +4350,7 @@ public class SleuthkitCase {
 
 	/**
 	 * Make a duplicate / backup copy of the current case database Makes a new
-	 * copy only, and continues to use the current db
+ copy only, and continues to use the current connection
 	 *
 	 * @param newDBPath path to the copy to be created. File will be overwritten
 	 * if it exists
@@ -4205,7 +4361,7 @@ public class SleuthkitCase {
 		OutputStream out = null;
 		SleuthkitCase.dbReadLock();
 		try {
-			InputStream inFile = new FileInputStream(SleuthkitCase.dbPath);
+			InputStream inFile = new FileInputStream(dbPath);
 			in = new BufferedInputStream(inFile);
 			OutputStream outFile = new FileOutputStream(newDBPath);
 			out = new BufferedOutputStream(outFile);
@@ -4249,8 +4405,8 @@ public class SleuthkitCase {
 		}
 		SleuthkitCase.dbWriteLock();
 		try {
-			Statement s = con.createStatement();
-			s.executeUpdate("UPDATE tsk_files "
+			Statement s = connectionManager.getConnection().createStatement();
+			executeUpdate(s, "UPDATE tsk_files "
 					+ "SET known='" + fileKnown.getFileKnownValue() + "' "
 					+ "WHERE obj_id=" + id);
 			s.close();
@@ -4276,11 +4432,12 @@ public class SleuthkitCase {
 		long id = file.getId();
 		SleuthkitCase.dbWriteLock();
 		try {
-			CaseDbConnection connection = getCaseDbConnectionForThread();
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.UPDATE_FILE_MD5);						
+			CaseDbConnection connection = connectionManager.getConnection();
+			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.UPDATE_FILE_MD5);	
+			statement.clearParameters();
 			statement.setString(1, md5Hash);
 			statement.setLong(2, id);
-			statement.executeUpdate();
+			executeUpdate(statement);
 			//update the object itself
 			file.setMd5Hash(md5Hash);
 		} catch (SQLException ex) {
@@ -4303,8 +4460,8 @@ public class SleuthkitCase {
 		dbReadLock();
 		try {
 			int count = 0;
-			Statement s = getCaseDbConnectionForThread().createStatement();
-			ResultSet rs = s.executeQuery("SELECT COUNT(*) FROM tsk_files WHERE meta_type = '" + contentShort.toString() + "'");
+			Statement s = connectionManager.getConnection().createStatement();
+			ResultSet rs = executeQuery(s, "SELECT COUNT(*) FROM tsk_files WHERE meta_type = '" + contentShort.toString() + "'");
 			while (rs.next()) {
 				count = rs.getInt(1);
 			}
@@ -4320,7 +4477,7 @@ public class SleuthkitCase {
 
 	/**
 	 * Escape the single quotes in the given string so they can be added to the
-	 * SQL db
+ SQL connection
 	 *
 	 * @param text
 	 * @return text the escaped version
@@ -4343,8 +4500,8 @@ public class SleuthkitCase {
 		Statement s = null;
 		dbReadLock();
 		try {
-			s = getCaseDbConnectionForThread().createStatement();
-			rs = s.executeQuery("SELECT * FROM tsk_files WHERE "
+			s = connectionManager.getConnection().createStatement();
+			rs = executeQuery(s, "SELECT * FROM tsk_files WHERE "
 					+ " md5 = '" + md5Hash + "' "
 					+ "AND size > 0");
 			return resultSetToAbstractFiles(rs);
@@ -4377,8 +4534,8 @@ public class SleuthkitCase {
 		Statement s = null;
 		dbReadLock();
 		try {
-			s = getCaseDbConnectionForThread().createStatement();
-			rs = s.executeQuery("SELECT COUNT(*) FROM tsk_files "
+			s = connectionManager.getConnection().createStatement();
+			rs = executeQuery(s, "SELECT COUNT(*) FROM tsk_files "
 					+ "WHERE dir_type = '" + TskData.TSK_FS_NAME_TYPE_ENUM.REG.getValue() + "' "
 					+ "AND md5 IS NULL "
 					+ "AND size > '0'");
@@ -4390,8 +4547,23 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			logger.log(Level.WARNING, "Failed to query for all the files.", ex);
 		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
+			if (rs != null) {
+				try {
+					rs.close();
+					s.close();
+
+
+				} catch (SQLException ex) {
+					logger.log(Level.WARNING, "Failed to close the result set.", ex);
+				}
+			}
+			if (s != null) {
+				try {
+					s.close();
+				} catch (SQLException ex) {
+					logger.log(Level.WARNING, "Failed to close the statement.", ex);
+				}
+			}
 			dbReadUnlock();
 		}
 		return false;
@@ -4408,8 +4580,8 @@ public class SleuthkitCase {
 		int count = 0;
 		dbReadLock();
 		try {
-			s = getCaseDbConnectionForThread().createStatement();
-			rs = s.executeQuery("SELECT COUNT(*) FROM tsk_files "
+			s = connectionManager.getConnection().createStatement();
+			rs = executeQuery(s, "SELECT COUNT(*) FROM tsk_files "
 					+ "WHERE md5 IS NOT NULL "
 					+ "AND size > '0'");
 			rs.next();
@@ -4417,8 +4589,20 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			logger.log(Level.WARNING, "Failed to query for all the files.", ex);
 		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException ex) {
+					logger.log(Level.WARNING, "Failed to close the result set.", ex);
+				}
+			}
+			if (s != null) {
+				try {
+					s.close();
+				} catch (SQLException ex) {
+					logger.log(Level.WARNING, "Failed to close the statement.", ex);
+				}
+			}
 			dbReadUnlock();
 		}
 		return count;
@@ -4482,15 +4666,16 @@ public class SleuthkitCase {
 	public List<TagName> getAllTagNames() throws TskCoreException {
 		dbReadLock();
 		try {
+			// SELECT * FROM tag_names
 			ArrayList<TagName> tagNames = new ArrayList<TagName>();
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_TAG_NAMES);			
-			ResultSet resultSet = statement.executeQuery();
+			statement.clearParameters();
+			ResultSet resultSet = executeQuery(statement );
 			while(resultSet.next()) {
 				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))));
 			}
 			resultSet.close();
-			statement.clearParameters();
 			return tagNames;
 		}
 		catch(SQLException ex) {
@@ -4512,15 +4697,16 @@ public class SleuthkitCase {
 	public List<TagName> getTagNamesInUse() throws TskCoreException {
 		dbReadLock();
 		try {
+			// SELECT * FROM tag_names WHERE tag_name_id IN (SELECT tag_name_id from content_tags UNION SELECT tag_name_id FROM blackboard_artifact_tags)
 			ArrayList<TagName> tagNames = new ArrayList<TagName>();
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_TAG_NAMES_IN_USE);			
-			ResultSet resultSet = statement.executeQuery();
+			statement.clearParameters();
+			ResultSet resultSet = executeQuery(statement );
 			while(resultSet.next()) {
 				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))));
 			}
 			resultSet.close();
-			statement.clearParameters();
 			return tagNames;
 		}
 		catch(SQLException ex) {
@@ -4543,22 +4729,21 @@ public class SleuthkitCase {
 	public TagName addTagName(String displayName, String description, TagName.HTML_COLOR color) throws TskCoreException {
 		dbWriteLock();		
 		try {
-			CaseDbConnection connection = getCaseDbConnectionForThread();
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_TAG_NAME);			
 			// INSERT INTO tag_names (display_name, description, color) VALUES (?, ?, ?)			
+			CaseDbConnection connection = connectionManager.getConnection();
+			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_TAG_NAME);			
 			statement.clearParameters(); 			
 			statement.setString(1, displayName);
 			statement.setString(2, description);
 			statement.setString(3, color.getName());
-			statement.executeUpdate();
-			statement.clearParameters();
+			executeUpdate(statement);
 
-			statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_MAX_ID_FROM_TAG_NAMES);			
 			// SELECT MAX(id) FROM tag_names
-			ResultSet resultSet = statement.executeQuery();
+			statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_MAX_ID_FROM_TAG_NAMES);			
+			statement.clearParameters();
+			ResultSet resultSet = executeQuery(statement );
 			Long tagID = resultSet.getLong(1);
 			resultSet.close();
-			statement.clearParameters();
 			
 			return new TagName(tagID, displayName, description, color);			
 		}
@@ -4585,7 +4770,7 @@ public class SleuthkitCase {
 		dbWriteLock();		
 		try {			
 			// INSERT INTO content_tags (obj_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_CONTENT_TAG);			
 			statement.clearParameters(); 			
 			statement.setLong(1, content.getId());
@@ -4593,12 +4778,12 @@ public class SleuthkitCase {
 			statement.setString(3, comment);
 			statement.setLong(4, beginByteOffset);
 			statement.setLong(5, endByteOffset);
-			statement.executeUpdate();
-			statement.clearParameters();
+			executeUpdate(statement);
 
 			// SELECT MAX(tag_id) FROM content_tags
 			statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_MAX_ID_FROM_CONTENT_TAGS);			
-			ResultSet resultSet = selectMaxIdFromContentTags.executeQuery();
+			statement.clearParameters();
+			ResultSet resultSet = executeQuery(statement );
 			Long tagID = resultSet.getLong(1);
 			resultSet.close();
 			statement.clearParameters();
@@ -4622,12 +4807,11 @@ public class SleuthkitCase {
 		dbWriteLock();		
 		try {			
 			// DELETE FROM content_tags WHERE tag_id = ?		
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.DELETE_CONTENT_TAG);			
 			statement.clearParameters(); 			
 			statement.setLong(1, tag.getId());
-			statement.executeUpdate();
-			statement.clearParameters();
+			executeUpdate(statement);
 		}
 		catch (SQLException ex) {
 			throw new TskCoreException("Error deleting row from content_tags table (id = " + tag.getId() + ")", ex);
@@ -4647,16 +4831,16 @@ public class SleuthkitCase {
 		try {
 			// SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id
 			ArrayList<ContentTag> tags = new ArrayList<ContentTag>();			
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_CONTENT_TAGS);			
-			ResultSet resultSet = statement.executeQuery();
+			statement.clearParameters();
+			ResultSet resultSet = executeQuery(statement );
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong(2), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))); 
 				Content content = getContentById(resultSet.getLong("obj_id"));
 				tags.add(new ContentTag(resultSet.getLong("tag_id"), content, tagName, resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset"))); 
 			} 
 			resultSet.close();
-			statement.clearParameters();
 			return tags;
 		}
 		catch (SQLException ex) {
@@ -4680,13 +4864,13 @@ public class SleuthkitCase {
 			throw new TskCoreException("TagName object is invalid, id not set");
 		}		
 		dbReadLock();
-		PreparedStatement statement = null;
 		try {
 			// SELECT COUNT(*) FROM content_tags WHERE tag_name_id = ?
-			CaseDbConnection connection = getCaseDbConnectionForThread();
-			statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.COUNT_CONTENT_TAGS_BY_TAG_NAME);			
+			CaseDbConnection connection = connectionManager.getConnection();
+			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.COUNT_CONTENT_TAGS_BY_TAG_NAME);			
+			statement.clearParameters();
 			statement.setLong(1, tagName.getId());
-			ResultSet resultSet = statement.executeQuery();
+			ResultSet resultSet = executeQuery(statement );
 			if (resultSet.next()) {
 				long count = resultSet.getLong(1);
 				resultSet.close();
@@ -4700,7 +4884,6 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error getting content_tags row count for tag name (tag_name_id = " + tagName.getId() + ")", ex);
 		}
 		finally {
-			clearParameters(statement);
 			dbReadUnlock();
 		}			
 	}
@@ -4721,17 +4904,16 @@ public class SleuthkitCase {
 		try {
 			// SELECT * FROM content_tags WHERE tag_name_id = ?
 			ArrayList<ContentTag> tags = new ArrayList<ContentTag>();			
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_CONTENT_TAGS_BY_TAG_NAME);						
 			statement.clearParameters();
 			statement.setLong(1, tagName.getId());
-			ResultSet resultSet = statement.executeQuery();
+			ResultSet resultSet = executeQuery(statement );
 			while(resultSet.next()) {
 				ContentTag tag = new ContentTag(resultSet.getLong("tag_id"), getContentById(resultSet.getLong("obj_id")), tagName, resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset")); 
 				tags.add(tag);				
 			}						
 			resultSet.close();
-			statement.clearParameters();
 			return tags;
 		}
 		catch (SQLException ex) {
@@ -4755,17 +4937,17 @@ public class SleuthkitCase {
 		try {
 			// SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id WHERE content_tags.obj_id = ?
 			ArrayList<ContentTag> tags = new ArrayList<ContentTag>();			
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_CONTENT_TAGS_BY_CONTENT);						
+			statement.clearParameters();
 			statement.setLong(1, content.getId());			
-			ResultSet resultSet = statement.executeQuery();
+			ResultSet resultSet = executeQuery(statement );
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong(2), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))); 
 				ContentTag tag = new ContentTag(resultSet.getLong("tag_id"), content, tagName, resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset")); 
 				tags.add(tag);
 			} 
 			resultSet.close();
-			statement.clearParameters();
 			return tags;
 		}
 		catch (SQLException ex) {
@@ -4789,21 +4971,20 @@ public class SleuthkitCase {
 		dbWriteLock();		
 		try {			
 			// INSERT INTO blackboard_artifact_tags (artifact_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)			
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_ARTIFACT_TAG);						
 			statement.clearParameters(); 			
 			statement.setLong(1, artifact.getArtifactID());
 			statement.setLong(2, tagName.getId());
 			statement.setString(3, comment);
-			statement.executeUpdate();
-			statement.clearParameters();
+			executeUpdate(statement);
 
 			// SELECT MAX(tag_id) FROM blackboard_artifact_tags
 			statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_MAX_ID_FROM_ARTIFACT_TAGS);						
-			ResultSet resultSet = selectMaxIdFromBlackboardArtifactTags.executeQuery();
+			statement.clearParameters();
+			ResultSet resultSet = executeQuery(statement );
 			Long tagID = resultSet.getLong(1);
 			resultSet.close();
-			statement.clearParameters();
 			
 			return new BlackboardArtifactTag(tagID, artifact, getContentById(artifact.getObjectID()), tagName, comment);
 		}
@@ -4824,11 +5005,11 @@ public class SleuthkitCase {
 		dbWriteLock();		
 		try {			
 			// DELETE FROM blackboard_artifact_tags WHERE tag_id = ?
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.DELETE_ARTIFACT_TAG);						
-			statement.setLong(1, tag.getId());
-			statement.executeUpdate();
 			statement.clearParameters(); 			
+			statement.setLong(1, tag.getId());
+			executeUpdate(statement);
 		}
 		catch (SQLException ex) {
 			throw new TskCoreException("Error deleting row from blackboard_artifact_tags table (id = " + tag.getId() + ")", ex);
@@ -4848,9 +5029,10 @@ public class SleuthkitCase {
 		try {
 			// SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id
 			ArrayList<BlackboardArtifactTag> tags = new ArrayList<BlackboardArtifactTag>();
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_ARTIFACT_TAGS);						
-			ResultSet resultSet = statement.executeQuery();
+			statement.clearParameters();
+			ResultSet resultSet = executeQuery(statement );
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong(2), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))); 
 				BlackboardArtifact artifact = getBlackboardArtifact(resultSet.getLong("artifact_id"));
@@ -4859,7 +5041,6 @@ public class SleuthkitCase {
 				tags.add(tag);
 			} 
 			resultSet.close();
-			statement.clearParameters();
 			return tags;
 		}
 		catch (SQLException ex) {
@@ -4883,21 +5064,20 @@ public class SleuthkitCase {
 			throw new TskCoreException("TagName object is invalid, id not set");
 		}		
 		dbReadLock();
-		PreparedStatement statement = null;
-		ResultSet resultSet = null;
 		try {
 			// SELECT COUNT(*) FROM blackboard_artifact_tags WHERE tag_name_id = ?
-			CaseDbConnection connection = getCaseDbConnectionForThread();
-			statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.COUNT_ARTIFACTS_BY_TAG_NAME);						
+			CaseDbConnection connection = connectionManager.getConnection();
+			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.COUNT_ARTIFACTS_BY_TAG_NAME);						
 			statement.clearParameters();
 			statement.setLong(1, tagName.getId());
-			resultSet = statement.executeQuery();
+			ResultSet resultSet = executeQuery(statement );
 			if (resultSet.next()) {
 				long count = resultSet.getLong(1);
 				resultSet.close();
 				return count;
 			} 
 			else {
+				resultSet.close();
 				throw new TskCoreException("Error getting blackboard_artifact_tags row count for tag name (tag_name_id = " + tagName.getId() + ")");
 			}
 		}
@@ -4905,8 +5085,6 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error getting blackboard artifact_content_tags row count for tag name (tag_name_id = " + tagName.getId() + ")", ex);
 		}
 		finally {
-			closeResultSet(resultSet);
-			clearParameters(statement);
 			dbReadUnlock();
 		}			
 	}
@@ -4924,29 +5102,27 @@ public class SleuthkitCase {
 			throw new TskCoreException("TagName object is invalid, id not set");
 		}		
 		dbReadLock();
-		PreparedStatement statement = null;
-		ResultSet resultSet = null;
 		try {
 			// SELECT * FROM blackboard_artifact_tags WHERE tag_name_id = ?
 			ArrayList<BlackboardArtifactTag> tags = new ArrayList<BlackboardArtifactTag>();			
-			CaseDbConnection connection = getCaseDbConnectionForThread();
-			statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_ARTIFACT_TAGS_BY_TAG_NAME);						
+			CaseDbConnection connection = connectionManager.getConnection();
+			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_ARTIFACT_TAGS_BY_TAG_NAME);						
+			statement.clearParameters();
 			statement.setLong(1, tagName.getId());
-			resultSet = statement.executeQuery();
+			ResultSet resultSet = executeQuery(statement );
 			while(resultSet.next()) {
 				BlackboardArtifact artifact = getBlackboardArtifact(resultSet.getLong("artifact_id"));
 				Content content = getContentById(artifact.getObjectID());
 				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"), artifact, content, tagName, resultSet.getString("comment")); 
 				tags.add(tag);
-			}			
+			}
+			resultSet.close();
 			return tags;
 		}
 		catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifact tags data (tag_name_id = " + tagName.getId() + ")", ex);
 		}
 		finally {
-			closeResultSet(resultSet);
-			clearParameters(statement);
 			dbReadUnlock();
 		}			
 	}	
@@ -4961,30 +5137,27 @@ public class SleuthkitCase {
 	 */
 	public List<BlackboardArtifactTag> getBlackboardArtifactTagsByArtifact(BlackboardArtifact artifact) throws TskCoreException {
 		dbReadLock();		
-		PreparedStatement statement = null;
-		ResultSet resultSet = null;
 		try {
 			// SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id WHERE blackboard_artifact_tags.artifact_id = ?			
 			ArrayList<BlackboardArtifactTag> tags = new ArrayList<BlackboardArtifactTag>();			
-			CaseDbConnection connection = getCaseDbConnectionForThread();
-			statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_ARTIFACT_TAGS_BY_ARTIFACT);						
+			CaseDbConnection connection = connectionManager.getConnection();
+			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_ARTIFACT_TAGS_BY_ARTIFACT);						
 			statement.clearParameters();
 			statement.setLong(1, artifact.getArtifactID());
-			resultSet = statement.executeQuery();
+			ResultSet resultSet = executeQuery(statement );
 			while(resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong(2), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color"))); 
 				Content content = getContentById(artifact.getObjectID());
 				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"), artifact, content, tagName, resultSet.getString("comment")); 
 				tags.add(tag);
 			}
+			resultSet.close();
 			return tags;
 		}
 		catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifact tags data (artifact_id = " + artifact.getArtifactID() + ")", ex);
 		}
 		finally {
-			closeResultSet(resultSet);
-			clearParameters(statement);
 			dbReadUnlock();
 		}					
 	}	
@@ -5000,7 +5173,6 @@ public class SleuthkitCase {
 	 */
 	public Report addReport(String localPath, String sourceModuleName, String reportName) throws TskCoreException {
 		dbWriteLock();
-		ResultSet resultSet = null;
 		try {
 			// Make sure the local path of the report is in the database directory
 			// or one of its subdirectories.
@@ -5025,21 +5197,20 @@ public class SleuthkitCase {
 			}
 									
 			// INSERT INTO reports (path, crtime, src_module_name, display_name) VALUES (?, ?, ?, ?)			
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_REPORT);			
 			statement.clearParameters(); 			
 			statement.setString(1, relativePath);			
 			statement.setLong(2, createTime);
 			statement.setString(3, sourceModuleName);			
 			statement.setString(4, reportName);			
-			statement.executeUpdate();
-			statement.clearParameters();
+			executeUpdate(statement);
 
 			// SELECT MAX(report_id) FROM reports
 			statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_MAX_ID_FROM_REPORTS);
-			resultSet = statement.executeQuery();
-			Long reportID = resultSet.getLong(1);
 			statement.clearParameters();
+			ResultSet resultSet = executeQuery(statement );
+			Long reportID = resultSet.getLong(1);
 			
 			return new Report(reportID, localPath, createTime, sourceModuleName, reportName);			
 		}
@@ -5047,15 +5218,6 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error adding report " + localPath + " to reports table", ex);
 		}
 		finally {
-			// Note: this can be done much more cleanly and simply with 
-			// try-with-resources in Java 7 or higher.
-			try {
-				if (resultSet != null) {
-					resultSet.close();
-				}			
-			} catch (SQLException ex) {
-				logger.log(Level.SEVERE, "Failed to close ResultSet", ex);
-			}
 			dbWriteUnlock();
 		}
     }
@@ -5068,12 +5230,11 @@ public class SleuthkitCase {
 	 */
 	public List<Report> getAllReports() throws TskCoreException {
 		dbReadLock();		
-		ResultSet resultSet = null;		
 		try {
 			ArrayList<Report> reports = new ArrayList<Report>();			
-			CaseDbConnection connection = getCaseDbConnectionForThread();
+			CaseDbConnection connection = connectionManager.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_REPORTS);						
-			resultSet = statement.executeQuery();
+			ResultSet resultSet = executeQuery(statement );
 			while (resultSet.next()) {
 				reports.add(new Report(resultSet.getLong("report_id"), 
                     getDbDirPath() + java.io.File.separator + resultSet.getString("path"), 
@@ -5088,59 +5249,10 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error querying reports table", ex);
 		}
 		finally {
-			// Note: this can be done much more cleanly and simply with 
-			// try-with-resources in Java 7 or higher.
-			try {
-				if (resultSet != null) {
-					resultSet.close();
-				}			
-			} catch (SQLException ex) {
-				logger.log(Level.SEVERE, "Failed to close ResultSet", ex);
-			}
 			dbReadUnlock();
 		}					
 	}	
 
-	private static void clearParameters(PreparedStatement statement) {
-		if (null != statement) {
-			try {
-				statement.clearParameters();
-			} catch (SQLException ex) {
-				logger.log(Level.SEVERE, "Failed to clear parameters of prpepared statement", ex);				
-			}		
-		}
-	}	
-	
-	/**
-	 * Closes a result set. 
-	 * 
-	 * @param statement The result set to close.
-	 */
-	private static void closeResultSet(ResultSet resultSet) {
-		if (null != resultSet) {
-			try {
-				resultSet.close();
-			} catch (SQLException ex) {
-				logger.log(Level.SEVERE, "Failed to close result set", ex);				
-			}		
-		}
-	}
-		
-	/**
-	 * Closes a statement. 
-	 * 
-	 * @param statement The statement to close.
-	 */
-	private static void closeStatement(Statement statement) {
-		if (null != statement) {
-			try {
-				statement.close();
-			} catch (SQLException ex) {
-				logger.log(Level.SEVERE, "Failed to close statement", ex);				
-			}		
-		}
-	}
-	
      /**
      * Returns case database schema version number. 	
      *  
@@ -5149,87 +5261,237 @@ public class SleuthkitCase {
 	public int getSchemaVersion(){
 		return this.versionNumber;
 	}
+
+	private ResultSet executeQuery(Statement statement, String query) throws SQLException {
+		ResultSet resultSet = null;
+		boolean busy = true;
+		while (busy) {
+			try {
+				resultSet = statement.executeQuery(query);
+				busy = false;
+			}
+			catch (SQLException sqlex) {
+				if (sqlex.getErrorCode() == 5) {// RJCTODO: Make named constant
+					try {
+						Thread.sleep(100L);
+					} catch (InterruptedException ex) {
+						// RJCTODO: Log, comment, resolve, do something else...
+						// throw ex;
+					}
+				} else {
+					throw sqlex;
+				}
+			}
+		}	
+		return resultSet;
+	}
+
+	private ResultSet executeQuery(PreparedStatement statement) throws SQLException {
+		ResultSet resultSet = null;
+		boolean busy = true;
+		while (busy) {
+			try {
+				resultSet = statement.executeQuery();
+				busy = false;
+			}
+			catch (SQLException sqlex) {
+				if (sqlex.getErrorCode() == 5) {// RJCTODO: Make named constant
+					try {
+						Thread.sleep(100L);
+					} catch (InterruptedException ex) {
+						// RJCTODO: Log, comment, resolve, do something else...
+						// throw ex;
+					}
+				} else {
+					throw sqlex;
+				}
+			}
+		}	
+		return resultSet;
+	}
+
+	private void executeUpdate(Statement statement, String update) throws SQLException {
+		boolean busy = true;
+		while (busy) {
+			try {
+				statement.executeUpdate(update);
+				busy = false;
+			}
+			catch (SQLException sqlex) {
+				if (sqlex.getErrorCode() == 5) {// RJCTODO: Make named constant
+					try {
+						Thread.sleep(100L);
+					} catch (InterruptedException ex) {
+						// RJCTODO: Log, comment, resolve, do something else...
+						// throw ex;
+					}
+				} else {;
+					throw sqlex;
+				}
+			}
+		}					
+	}
+		
+	private void executeUpdate(PreparedStatement statement) throws SQLException {
+		boolean busy = true;
+		while (busy) {
+			try {
+				statement.executeUpdate();
+				busy = false;
+			}
+			catch (SQLException sqlex) {
+				if (sqlex.getErrorCode() == 5) {// RJCTODO: Make named constant
+					try {
+						Thread.sleep(100L);
+					} catch (InterruptedException ex) {
+						// RJCTODO: Log, comment, resolve, do something else...
+						// throw ex;
+					}
+				} else {
+					throw sqlex;
+				}
+			}
+		}					
+	}
 	
+	/**
+	 * 	Provides thread confinement for connections to the underlying case database.
+	 */
+	private final class CaseDbConnectionPerThreadManager extends ThreadLocal<CaseDbConnection> {	
+		private final String dbPath;
+		private final ArrayList<CaseDbConnection> connections = new ArrayList<CaseDbConnection>();
+
+		CaseDbConnectionPerThreadManager(String dbPath) {
+			this.dbPath = dbPath;
+		}
+
+		CaseDbConnection getConnectionWithNoStatementsPrepared() throws SQLException {
+			CaseDbConnection connection = get();
+			if (null == connection) {
+				throw new SQLException("Case database connection for current thread is null");
+			}
+			synchronized (this) {
+				if (!connections.contains(connection)) {
+					connections.add(connection);
+				}
+			}
+			return connection;
+		}
+									
+		CaseDbConnection getConnection() throws SQLException {
+			CaseDbConnection connection = getConnectionWithNoStatementsPrepared();
+			if (!connection.statementsArePrepared()) {
+				connection.createPreparedStatements();
+			}
+			return connection;
+		}
+
+		@Override
+		public CaseDbConnection initialValue() {
+			CaseDbConnection connection = new CaseDbConnection(dbPath);
+			return connection;
+		}
+
+		synchronized private void closeConnections() {
+			for (CaseDbConnection connection : connections) {
+				try {
+					connection.close();
+				}
+				catch (SQLException ex) {
+					logger.log(Level.WARNING, "Error closing per thread connection", ex);					
+				}
+			}
+			connections.clear();
+		}
+	};
+		
+	/**
+	 * Encapsulates a per thread connection to the underlying case database.
+	 */
 	private static final class CaseDbConnection {
 		
 		enum PREPARED_STATEMENT {
-			SELECT_ATTRIBUTES_OF_ARTIFACT, //getBlackboardAttributesSt 
-			SELECT_ARTIFACT_BY_ID, // getBlackboardArtifactSt 
-			SELECT_ARTIFACTS_BY_TYPE, // getBlackboardArtifactsSt, getArtifactsHelper2St  
-			COUNT_ARTIFACTS_OF_TYPE, // getBlackboardArtifactsTypeCountSt 
-			COUNT_ARTIFACTS_FROM_SOURCE, // getBlackboardArtifactsContentCountSt 
-			SELECT_ARTIFACTS_BY_SOURCE_AND_TYPE, // getArtifactsHelper1St 
-			COUNT_ARTIFACTS_BY_SOURCE_AND_TYPE, // getArtifactsCountHelperSt 
-			SELECT_FILES_BY_PARENT, // getAbstractFileChildren 
-			SELECT_FILES_BY_PARENT_AND_TYPE, //getAbstractFileChildrenByType,
-			SELECT_FILE_IDS_BY_PARENT, //getAbstractFileChildrenIds
-			SELECT_FILE_IDS_BY_PARENT_AND_TYPE, //getAbstractFileChildrenIdsByType
-			SELECT_FILE_BY_ID, // getAbstractFileById
-			INSERT_ARTIFACT, //addArtifactSt1,
-			SELECT_MAX_ARTIFACT_ID_BY_SOURCE_AND_TYPE, //getLastArtifactId,
-			INSERT_STRING_ATTRIBUTE, //addBlackboardAttributeStringSt,
-			INSERT_BYTE_ATTRIBUTE, //addBlackboardAttributeByteSt,
-			INSERT_INT_ATTRIBUTE, //addBlackboardAttributeIntegerSt,
-			INSERT_LONG_ATTRIBUTE, //addBlackboardAttributeLongSt,
-			INSERT_DOUBLE_ATTRIBUTE, //addBlackboardAttributeDoubleSt,
-			SELECT_FILES_BY_FILE_SYSTEM_AND_NAME, //getFileSt,
-			SELECT_FILES_BY_FILE_SYSTEM_AND_PATH, //getFileWithParentSt,
-			UPDATE_FILE_MD5, //updateMd5St,
-			SELECT_LOCAL_PATH_FOR_FILE, //getPathSt,
-			SELECT_PATH_FOR_FILE, // getFileParentPathSt 
-			SELECT_FILE_NAME, //getFileNameSt,
-			SELECT_DERIVED_FILE, //getDerivedInfoSt,
-			SELECT_FILE_DERIVATION_METHOD, //getDerivedMethodSt,
-			SELECT_MAX_OBJECT_ID, //getLastContentIdSt,
-			INSERT_OBJECT, //addObjectSt,
-			INSERT_FILE, //addFileSt,
-			INSERT_LAYOUT_FILE, // addLayoutFileSt,
-			INSERT_LOCAL_PATH, // addPathSt,
-			COUNT_CHILD_OBJECTS_BY_PARENT, //countChildrenSt,
-			SELECT_FILE_SYSTEM_BY_OBJECT, //getFsIdForFileIdSt,
-			SELECT_TAG_NAMES, //selectAllFromTagNames,
-			SELECT_TAG_NAMES_IN_USE, //selectFromTagNamesWhereInUse,
-			INSERT_TAG_NAME, //insertIntoTagNames,
-			SELECT_MAX_ID_FROM_TAG_NAMES, //selectMaxIdFromTagNames,		
-			INSERT_CONTENT_TAG, //insertIntoContentTags,
-			SELECT_MAX_ID_FROM_CONTENT_TAGS, //selectMaxIdFromContentTags,
-			DELETE_CONTENT_TAG, //deleteFromContentTags,
-			COUNT_CONTENT_TAGS_BY_TAG_NAME, //selectContentTagsCountByTagName,
-			SELECT_CONTENT_TAGS, //selectAllContentTags,
-			SELECT_CONTENT_TAGS_BY_TAG_NAME, //selectContentTagsByTagName,
-			SELECT_CONTENT_TAGS_BY_CONTENT, //selectContentTagsByContent,
-			INSERT_ARTIFACT_TAG, //insertIntoBlackboardArtifactTags,
-			SELECT_MAX_ID_FROM_ARTIFACT_TAGS, //selectMaxIdFromBlackboardArtifactTags,	
-			DELETE_ARTIFACT_TAG, //deleteFromBlackboardArtifactTags,
-			SELECT_ARTIFACT_TAGS, // selectAllBlackboardArtifactTags,
-			COUNT_ARTIFACTS_BY_TAG_NAME, //selectBlackboardArtifactTagsCountByTagName,
-			SELECT_ARTIFACT_TAGS_BY_TAG_NAME, //selectBlackboardArtifactTagsByTagName,
-			SELECT_ARTIFACT_TAGS_BY_ARTIFACT, //selectBlackboardArtifactTagsByArtifact,
-			SELECT_REPORTS, //selectAllFromReports,
-			SELECT_MAX_ID_FROM_REPORTS, // selectMaxIdFromReports
-			INSERT_REPORT, //insertIntoReports,			
+			SELECT_ATTRIBUTES_OF_ARTIFACT,
+			SELECT_ARTIFACT_BY_ID,
+			SELECT_ARTIFACTS_BY_TYPE,
+			COUNT_ARTIFACTS_OF_TYPE,
+			COUNT_ARTIFACTS_FROM_SOURCE,
+			SELECT_ARTIFACTS_BY_SOURCE_AND_TYPE,
+			COUNT_ARTIFACTS_BY_SOURCE_AND_TYPE,
+			SELECT_FILES_BY_PARENT,
+			SELECT_FILES_BY_PARENT_AND_TYPE,
+			SELECT_FILE_IDS_BY_PARENT,
+			SELECT_FILE_IDS_BY_PARENT_AND_TYPE,
+			SELECT_FILE_BY_ID,
+			INSERT_ARTIFACT,
+			SELECT_MAX_ARTIFACT_ID_BY_SOURCE_AND_TYPE,
+			INSERT_STRING_ATTRIBUTE,
+			INSERT_BYTE_ATTRIBUTE,
+			INSERT_INT_ATTRIBUTE,
+			INSERT_LONG_ATTRIBUTE,
+			INSERT_DOUBLE_ATTRIBUTE,
+			SELECT_FILES_BY_FILE_SYSTEM_AND_NAME,
+			SELECT_FILES_BY_FILE_SYSTEM_AND_PATH,
+			UPDATE_FILE_MD5,
+			SELECT_LOCAL_PATH_FOR_FILE,
+			SELECT_PATH_FOR_FILE,
+			SELECT_FILE_NAME,
+			SELECT_DERIVED_FILE,
+			SELECT_FILE_DERIVATION_METHOD,
+			SELECT_MAX_OBJECT_ID,
+			INSERT_OBJECT,
+			INSERT_FILE,
+			INSERT_LAYOUT_FILE,
+			INSERT_LOCAL_PATH,
+			COUNT_CHILD_OBJECTS_BY_PARENT,
+			SELECT_FILE_SYSTEM_BY_OBJECT,
+			SELECT_TAG_NAMES,
+			SELECT_TAG_NAMES_IN_USE,
+			INSERT_TAG_NAME,
+			SELECT_MAX_ID_FROM_TAG_NAMES,
+			INSERT_CONTENT_TAG,
+			SELECT_MAX_ID_FROM_CONTENT_TAGS,
+			DELETE_CONTENT_TAG,
+			COUNT_CONTENT_TAGS_BY_TAG_NAME,
+			SELECT_CONTENT_TAGS,
+			SELECT_CONTENT_TAGS_BY_TAG_NAME,
+			SELECT_CONTENT_TAGS_BY_CONTENT,
+			INSERT_ARTIFACT_TAG,
+			SELECT_MAX_ID_FROM_ARTIFACT_TAGS,	
+			DELETE_ARTIFACT_TAG,
+			SELECT_ARTIFACT_TAGS,
+			COUNT_ARTIFACTS_BY_TAG_NAME,
+			SELECT_ARTIFACT_TAGS_BY_TAG_NAME,
+			SELECT_ARTIFACT_TAGS_BY_ARTIFACT,
+			SELECT_REPORTS,
+			SELECT_MAX_ID_FROM_REPORTS,
+			INSERT_REPORT,			
 		}
 		private final Map<PREPARED_STATEMENT, PreparedStatement> preparedStatements;
-		private Connection connection;
+		private Connection connection = null;
+		boolean statementsPrepared = false;
 				
 		CaseDbConnection(String dbPath) {
 			preparedStatements = new EnumMap<PREPARED_STATEMENT, PreparedStatement>(PREPARED_STATEMENT.class);
 			try {
 				connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
 			} catch (SQLException ex) {
+				// The exception is caught and logged here because this constructor
+				// will be called by an override of ThreadLocal<T>.initialValue()
+				// which cannot throw. Calls to connectionManager.getConnection()
+				// will detect the null value of connection and throw an
+				// SQLException.
 				logger.log(Level.SEVERE, "Error setting up case database connection for thread", ex);
-				connection = null;
 			}
 		}
 
-		void close() {
-			closePreparedStatements();
-		}		
-				
+		// TODO: Supports LogicalFileTransaction class, replace LogicalFileTransaction
+		// with calls to the transaction methods of this class and delete this
+		// method.
 		Connection getConnection() {
 			return connection;
 		}
-				
+						
 		void createPreparedStatements() throws SQLException {
 			preparedStatements.put(PREPARED_STATEMENT.SELECT_ATTRIBUTES_OF_ARTIFACT,
 					connection.prepareStatement(
@@ -5451,8 +5713,14 @@ public class SleuthkitCase {
 			preparedStatements.put(PREPARED_STATEMENT.INSERT_REPORT,
 					connection.prepareStatement(
 					"INSERT INTO reports (path, crtime, src_module_name, report_name) VALUES (?, ?, ?, ?)"));
+			
+			statementsPrepared = true;
 		}
 
+		boolean statementsArePrepared() {
+			return statementsPrepared;
+		}
+		
 		PreparedStatement getPreparedStatement(PREPARED_STATEMENT statementKey) {
 			return preparedStatements.get(statementKey);
 		}
@@ -5469,6 +5737,7 @@ public class SleuthkitCase {
 					logger.log(Level.WARNING, "Error closing prepared statement", ex);
 				}
 			}
+			statementsPrepared = false;
 		}		
 
 		Statement createStatement() throws SQLException {
@@ -5493,6 +5762,11 @@ public class SleuthkitCase {
 			} finally {
 				connection.setAutoCommit(true);
 			}
-		}		
+		}
+		
+		void close() throws SQLException {
+			closePreparedStatements();
+			connection.close();
+		}								
 	}	
 }
