@@ -5223,9 +5223,6 @@ public class SleuthkitCase {
 			}
 		}
 
-		// TODO: Supports LogicalFileTransaction class, replace LogicalFileTransaction
-		// with calls to the transaction methods of this class and delete this
-		// method.
 		Connection getConnection() {
 			return connection;
 		}
