@@ -325,7 +325,6 @@ public class SleuthkitCase {
 		}
 	}
 
-	// RJCTODO: Update comment, why is this public?
 	/**
 	 * Lock to protect against concurrent write accesses to case database and to
 	 * block readers while database is in write transaction. Should be utilized
@@ -337,7 +336,6 @@ public class SleuthkitCase {
 		rwLock.writeLock().lock();
 	}
 
-	// RJCTODO: Update comment, why is this public?
 	/**
 	 * Release previously acquired write lock acquired in this thread using
      * acquireExclusiveLock(). Call in "finally" block to ensure the lock is always
@@ -347,7 +345,6 @@ public class SleuthkitCase {
 		rwLock.writeLock().unlock();
 	}
 
-	// RJCTODO: Update comment, why is this public?
 	/**
 	 * Lock to protect against read while it is in a write transaction state.
 	 * Supports multiple concurrent readers if there is no writer. MUST always
@@ -358,7 +355,6 @@ public class SleuthkitCase {
 		rwLock.readLock().lock();
 	}
 
-	// RJCTODO: Update comment, why is this public?
 	/**
 	 * Release previously acquired read lock acquired in this thread using
      * acquireSharedLock(). Call in "finally" block to ensure the lock is always
