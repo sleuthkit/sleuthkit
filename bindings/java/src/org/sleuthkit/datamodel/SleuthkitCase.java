@@ -1844,7 +1844,7 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(statement);		
 			boolean hasChildren = false;
 			if (rs.next()) {
-				hasChildren = rs.getInt(1) > 0; // RJCTODO: This is wrong
+				hasChildren = rs.getInt(1) > 0;
 			}
 			return hasChildren;
 		} catch (SQLException e) {
