@@ -306,9 +306,9 @@ int
         "Error creating blackboard_artifact table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE blackboard_attributes (artifact_id INTEGER NOT NULL, source TEXT, context TEXT, attribute_type_id INTEGER NOT NULL, value_type INTEGER NOT NULL, "
+        ("CREATE TABLE blackboard_attributes (artifact_id INTEGER NOT NULL, artifact_type_id INTEGER NOT NULL, source TEXT, context TEXT, attribute_type_id INTEGER NOT NULL, value_type INTEGER NOT NULL, "
         "value_byte BLOB, value_text TEXT, value_int32 INTEGER, value_int64 INTEGER, value_double NUMERIC(20, 10), "
-        "FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))",
+        "FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id), FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))",
         "Error creating blackboard_attribute table: %s\n")
         ||
         attempt_exec
@@ -359,7 +359,17 @@ int
         attempt_exec("CREATE INDEX artifact_typeID ON blackboard_artifacts(artifact_type_id);",
         "Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
         attempt_exec("CREATE INDEX attrsArtifactID ON blackboard_attributes(artifact_id);",
-        "Error creating artifact_id index on blackboard_attributes: %s\n");
+        "Error creating artifact_id index on blackboard_attributes: %s\n") ||
+        attempt_exec("CREATE INDEX attrsArtifactTypeId ON blackboard_attributes(artifact_type_id);",
+        "Error creating artifact_type_id index on blackboard_attributes: %s\n") ||
+        attempt_exec("CREATE INDEX valueText ON blackboard_attributes(value_text);",
+        "Error creating value_text index on blackboard_attributes: %s\n") ||
+        attempt_exec("CREATE INDEX valueInt32 ON blackboard_attributes(value_int32);",
+        "Error creating value_int32 index on blackboard_attributes: %s\n") ||
+        attempt_exec("CREATE INDEX valueInt64 ON blackboard_attributes(value_int64);",
+        "Error creating value_int64 index on blackboard_attributes: %s\n") ||
+        attempt_exec("CREATE INDEX valueDouble ON blackboard_attributes(value_double);",
+        "Error creating value_double index on blackboard_attributes: %s\n");
 }
 
 
