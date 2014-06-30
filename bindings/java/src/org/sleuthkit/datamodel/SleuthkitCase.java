@@ -222,20 +222,36 @@ public class SleuthkitCase {
 		statement.execute("CREATE TABLE content_tags (tag_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL, begin_byte_offset INTEGER NOT NULL, end_byte_offset INTEGER NOT NULL)");
 		statement.execute("CREATE TABLE blackboard_artifact_tags (tag_id INTEGER PRIMARY KEY, artifact_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL)");
 
-		// Add new table for reports
+		// Add new table for reports.
 		statement.execute("CREATE TABLE reports (report_id INTEGER PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL)");
 		
-        // add columns for existing tables
+        // Add columns for existing tables.
         statement.execute("ALTER TABLE tsk_image_info ADD COLUMN size INTEGER;");
         statement.execute("ALTER TABLE tsk_image_info ADD COLUMN md5 TEXT;");
         statement.execute("ALTER TABLE tsk_image_info ADD COLUMN display_name TEXT;");
         statement.execute("ALTER TABLE tsk_fs_info ADD COLUMN display_name TEXT;");
 		statement.execute("ALTER TABLE tsk_files ADD COLUMN meta_seq INTEGER;");
+		statement.execute("ALTER TABLE tsk_files ADD COLUMN meta_seq INTEGER;");
+		statement.execute("ALTER TABLE blackboard_attributes ADD COLUMN artifact_type_id INTEGER NOT NULL;"); // RJCTODO: Need initial value?
+		
+		// Add new indexes.
+        statement.execute("CREATE INDEX attrsArtifactTypeId ON blackboard_attributes(artifact_type_id);");
+        statement.execute("CREATE INDEX valueText ON blackboard_attributes(value_text);");
+        statement.execute("CREATE INDEX valueInt32 ON blackboard_attributes(value_int32);");
+        statement.execute("CREATE INDEX valueInt64 ON blackboard_attributes(value_int64);");
+        statement.execute("CREATE INDEX valueDouble ON blackboard_attributes(value_double);");
+				
+		// RJCTODO: Add the values for the new columns in the attributes table.
+		// SELECT attrs.artifact_id, arts.artifact_type_id FROM blackboard_attributes attrs, blackboard_artifacts arts
+		// WHERE attrs.artifact_id = arts.artifact_id;
+		// while (result_set.next()) {
+		//    UPDATE blackboard_attributes SET artifact_type_id = rs.get("artifact_type_id")
+		//    WHERE blackboard_attributes.artifact_id = rs.get{artifact_id");
 		
 		// Make the prepared statements available for use in migrating legacy data.
 		initStatements();
 		
-		// This data structure is used to eep track of the unique tag names 
+		// This data structure is used to keep track of the unique tag names 
 		// created from the TSK_TAG_NAME attributes of the now obsolete 
 		// TSK_TAG_FILE and TSK_TAG_ARTIFACT artifacts.
 		HashMap<String, TagName> tagNames = new HashMap<String, TagName>();
