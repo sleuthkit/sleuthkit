@@ -326,39 +326,39 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Lock to protect against concurrent write accesses to case database and to
-	 * block readers while database is in write transaction. Should be utilized
-     * by all connection code where underlying storage supports max. 1 concurrent writer
-     * MUST always call dbWriteUnLock() as early as possible, in the same thread
-     * where acquireExclusiveLock() was called.
+	 * Acquire the lock that provides exclusive access to the case database. 
+	 * The exclusive lock should be used very sparingly. It is not generally
+	 * for routine writes, for example, and should be held as briefly as 
+	 * possible. Call this method in a try block with a call to the lock release 
+	 * method in an associated finally block.
 	 */
 	public static void acquireExclusiveLock() {
 		rwLock.writeLock().lock();
 	}
 
 	/**
-	 * Release previously acquired write lock acquired in this thread using
-     * acquireExclusiveLock(). Call in "finally" block to ensure the lock is always
-	 * released.
+	 * Release the lock that provides exclusive access to the database. This 
+	 * method should always be called in the finally block of a try block in 
+	 * which the lock was acquired.
 	 */
 	public static void releaseExclusiveLock() {
 		rwLock.writeLock().unlock();
 	}
 
 	/**
-	 * Lock to protect against read while it is in a write transaction state.
-	 * Supports multiple concurrent readers if there is no writer. MUST always
-     * call dbReadUnLock() as early as possible, in the same thread where
-     * acquireSharedLock() was called.
+	 * Acquire the lock that provides shared access to the case database. It is
+	 * suitable for both reading and writing to the database because of the
+	 * locking SQLite provides. Call this method in a try block with a call to 
+	 * the lock release method in an associated finally block.
 	 */
 	static void acquireSharedLock() {
 		rwLock.readLock().lock();
 	}
 
 	/**
-	 * Release previously acquired read lock acquired in this thread using
-     * acquireSharedLock(). Call in "finally" block to ensure the lock is always
-	 * released.
+	 * Release the lock that provides shared access to the database. This 
+	 * method should always be called in the finally block of a try block in 
+	 * which the lock was acquired.
 	 */
 	static void releaseSharedLock() {
 		rwLock.readLock().unlock();
@@ -2452,7 +2452,7 @@ public class SleuthkitCase {
 	 * @param dataSource the dataSource (Image, parent-less VirtualDirectory) to
 	 * search for the given file name
 	 * @param fileName Pattern of the name of the file or directory to match
- (case insensitive, used in LIKE SQL s).
+     * (case insensitive, used in LIKE SQL s).
 	 * @return a list of AbstractFile for files/directories whose name matches
 	 * the given fileName
 	 * @throws TskCoreException thrown if check failed
@@ -4169,7 +4169,7 @@ public class SleuthkitCase {
 
 	/**
 	 * Make a duplicate / backup copy of the current case database Makes a new
- copy only, and continues to use the current connection
+     * copy only, and continues to use the current connection
 	 *
 	 * @param newDBPath path to the copy to be created. File will be overwritten
 	 * if it exists
