@@ -48,6 +48,7 @@ public abstract class AbstractFile extends AbstractContent {
 	protected final Set<TSK_FS_META_FLAG_ENUM> metaFlags;
 	protected long size;
 	protected final long metaAddr, ctime, crtime, atime, mtime;
+	protected final int metaSeq;
 	protected final int uid, gid;
 	protected final short attrId;
 	protected final TskData.TSK_FS_ATTR_TYPE_ENUM attrType;
@@ -103,7 +104,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param parentPath
 	 */
 	protected AbstractFile(SleuthkitCase db, long objId, TskData.TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
-			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr,
+			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq, 
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
 			String parentPath) {
@@ -112,6 +113,7 @@ public abstract class AbstractFile extends AbstractContent {
 		this.attrId = attrId;
 		this.fileType = fileType;
 		this.metaAddr = metaAddr;
+		this.metaSeq = metaSeq;
 		this.dirType = dirType;
 		this.metaType = metaType;
 		this.dirFlag = dirFlag;
@@ -258,6 +260,16 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	public long getMetaAddr() {
 		return metaAddr;
+	}
+	
+	/**
+	 * Get the file meta address sequence.  Only useful with NTFS.
+	 * Incremented each time a structure is re-allocated.
+	 *
+	 * @return Address of the meta data structure sequence.
+	 */
+	public long getMetaSeq() {
+		return metaSeq;
 	}
 
 	/**
@@ -559,7 +571,7 @@ public abstract class AbstractFile extends AbstractContent {
 	public static String createNonUniquePath(String uniquePath) {
 
 		// split the path into parts
-		String[] pathSegments = uniquePath.split("/\\");
+		String[] pathSegments = uniquePath.split("/");
 
 		// see if uniquePath had an image and/or volume name
 		int index = 0;
@@ -887,18 +899,18 @@ public abstract class AbstractFile extends AbstractContent {
 				+ "\t" + "fileType " + fileType //NON-NLS
 				+ "\tctime " + ctime //NON-NLS
 				+ "\tcrtime " + crtime //NON-NLS
-				+ "\t" + "mtime " + mtime + "\t" + "atime " + atime //NON-NLS NON-NLS
+				+ "\t" + "mtime " + mtime + "\t" + "atime " + atime //NON-NLS
 				+ "\t" + "attrId " + attrId //NON-NLS
 				+ "\t" + "attrType " + attrType //NON-NLS
-				+ "\t" + "dirFlag " + dirFlag + "\t" + "dirType " + dirType //NON-NLS NON-NLS
+				+ "\t" + "dirFlag " + dirFlag + "\t" + "dirType " + dirType //NON-NLS
 				+ "\t" + "uid " + uid //NON-NLS
 				+ "\t" + "gid " + gid //NON-NLS
-				+ "\t" + "metaAddr " + metaAddr + "\t" + "metaFlags " + metaFlags //NON-NLS NON-NLS
-				+ "\t" + "metaType " + metaType + "\t" + "modes " + modes //NON-NLS NON-NLS
-				+ "\t" + "parentPath " + parentPath + "\t" + "size " + size //NON-NLS NON-NLS
-				+ "\t" + "knownState " + knownState + "\t" + "md5Hash " + md5Hash //NON-NLS NON-NLS
-				+ "\t" + "localPathSet " + localPathSet + "\t" + "localPath " + localPath //NON-NLS NON-NLS
-				+ "\t" + "localAbsPath " + localAbsPath + "\t" + "localFile " + localFile //NON-NLS NON-NLS
+				+ "\t" + "metaAddr " + metaAddr + "\t" +  "metaSeq " + metaSeq + "\t" + "metaFlags " + metaFlags //NON-NLS
+				+ "\t" + "metaType " + metaType + "\t" + "modes " + modes //NON-NLS
+				+ "\t" + "parentPath " + parentPath + "\t" + "size " + size //NON-NLS
+				+ "\t" + "knownState " + knownState + "\t" + "md5Hash " + md5Hash //NON-NLS
+				+ "\t" + "localPathSet " + localPathSet + "\t" + "localPath " + localPath //NON-NLS
+				+ "\t" + "localAbsPath " + localAbsPath + "\t" + "localFile " + localFile //NON-NLS
 				+ "]\t";
 	}
 

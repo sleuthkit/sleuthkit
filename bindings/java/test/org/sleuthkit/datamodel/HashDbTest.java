@@ -116,7 +116,7 @@ public class HashDbTest extends ImgTraverser {
 			assertFalse(b2);
 
 			// Getting full hash info (we only do md5 for now)
-            HashInfo h = SleuthkitJNI.lookupInHashDatabaseVerbose(md5hash2, handle);  
+            HashHitInfo h = SleuthkitJNI.lookupInHashDatabaseVerbose(md5hash2, handle);  
 			ArrayList<String> nlist = h.getNames();
 			ArrayList<String> clist = h.getComments();
 			
@@ -129,7 +129,7 @@ public class HashDbTest extends ImgTraverser {
 			assertEquals(com, clist.get(0));
 				
 			// Getting full hash info (for another hash)
-            HashInfo h2 = SleuthkitJNI.lookupInHashDatabaseVerbose(md5hash3, handle);
+            HashHitInfo h2 = SleuthkitJNI.lookupInHashDatabaseVerbose(md5hash3, handle);
 			ArrayList<String> nlist2 = h2.getNames();
 			ArrayList<String> clist2 = h2.getComments();
 			

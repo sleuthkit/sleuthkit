@@ -89,7 +89,7 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
     retval.insert(pair<int, TskAttributeNames>(TSK_PHONE_NUMBER, TskAttributeNames("TSK_PHONE_NUMBER", "Phone Number")));
     retval.insert(pair<int, TskAttributeNames>(TSK_PATH_ID, TskAttributeNames("TSK_PATH_ID", "Id of Path")));
     retval.insert(pair<int, TskAttributeNames>(TSK_SET_NAME, TskAttributeNames("TSK_SET_NAME", "Set Name")));
-    retval.insert(pair<int, TskAttributeNames>(TSK_ENCRYPTION_DETECTED, TskAttributeNames("TSK_ENCRYPTION_DETECTED", "File Encryption Detected")));
+//    retval.insert(pair<int, TskAttributeNames>(TSK_ENCRYPTION_DETECTED, TskAttributeNames("TSK_ENCRYPTION_DETECTED", "File Encryption Detected")));
     retval.insert(pair<int, TskAttributeNames>(TSK_MALWARE_DETECTED, TskAttributeNames("TSK_MALWARE_DETECTED", "Malware Detected")));
     retval.insert(pair<int, TskAttributeNames>(TSK_STEG_DETECTED, TskAttributeNames("TSK_STEG_DETECTED", "Steganography Detected")));
     retval.insert(pair<int, TskAttributeNames>(TSK_EMAIL_TO, TskAttributeNames("TSK_EMAIL_TO", "E-Mail To")));

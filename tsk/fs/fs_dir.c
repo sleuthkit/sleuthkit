@@ -411,7 +411,7 @@ tsk_fs_dir_get(const TSK_FS_DIR * a_fs_dir, size_t a_idx)
         // if the sequence numbers don't match, then don't load the meta
         // should ideally have sequence in previous lookup, but it isn't 
         // in all APIs yet
-        if (fs_file->meta->seq != fs_name->meta_seq) {
+        if ((fs_file->meta) && (fs_file->meta->seq != fs_name->meta_seq)) {
             tsk_fs_meta_close(fs_file->meta);
             fs_file->meta = NULL;
         }

@@ -43,7 +43,7 @@ uint8_t
 * @param hdb_info the hash database object
 */
 static void
-    encase_name(TSK_TEXT_HDB_INFO * hdb_info)
+    encase_name(TSK_HDB_BINSRCH_INFO * hdb_info)
 {
     FILE * hFile = hdb_info->hDb;
     wchar_t buf[40];
@@ -85,18 +85,21 @@ static void
 
 TSK_HDB_INFO *encase_open(FILE *hDb, const TSK_TCHAR *db_path)
 {
-    TSK_TEXT_HDB_INFO *text_hdb_info = NULL;
-    text_hdb_info = text_hdb_open(hDb, db_path);
-    if (NULL == text_hdb_info) {
+    TSK_HDB_BINSRCH_INFO *hdb_binsrch_info = NULL;
+
+    // get the basic binary-search info struct
+    hdb_binsrch_info = hdb_binsrch_open(hDb, db_path);
+    if (NULL == hdb_binsrch_info) {
         return NULL;
     }
 
-    text_hdb_info->base.db_type = TSK_HDB_DBTYPE_ENCASE_ID;
-    encase_name(text_hdb_info);
-    text_hdb_info->base.make_index = encase_make_index;
-    text_hdb_info->get_entry = encase_get_entry;
+    // overwrite the database-specific ones
+    hdb_binsrch_info->base.db_type = TSK_HDB_DBTYPE_ENCASE_ID;
+    encase_name(hdb_binsrch_info);
+    hdb_binsrch_info->base.make_index = encase_make_index;
+    hdb_binsrch_info->get_entry = encase_get_entry;
 
-    return (TSK_HDB_INFO*)text_hdb_info;    
+    return (TSK_HDB_INFO*)hdb_binsrch_info;    
 }
 
 /**
@@ -112,14 +115,14 @@ TSK_HDB_INFO *encase_open(FILE *hDb, const TSK_TCHAR *db_path)
 uint8_t
     encase_make_index(TSK_HDB_INFO * hdb_info_base, TSK_TCHAR * dbtype)
 {
-    TSK_TEXT_HDB_INFO *hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info_base;
+    TSK_HDB_BINSRCH_INFO *hdb_binsrch_info = (TSK_HDB_BINSRCH_INFO*)hdb_info_base;
     unsigned char buf[19];
     char phash[19];
     TSK_OFF_T offset = 0;
     int db_cnt = 0, idx_cnt = 0;
 
     /* Initialize the TSK index file */
-    if (text_hdb_idx_initialize(hdb_info, dbtype)) {
+    if (hdb_binsrch_idx_initialize(hdb_binsrch_info, dbtype)) {
         tsk_error_set_errstr2( "encase_makeindex");
         return 1;
     }
@@ -127,14 +130,14 @@ uint8_t
     /* Status */
     if (tsk_verbose)
         TFPRINTF(stderr, _TSK_T("Extracting Data from Database (%s)\n"),
-        hdb_info->base.db_fname);
+        hdb_binsrch_info->base.db_fname);
 
     memset(phash, '0', sizeof(phash));
     memset(buf, '0', sizeof(buf));
 
     /* read the file and add to the index */
-    fseek(hdb_info->hDb, 1152, SEEK_SET);
-    while (18 == fread(buf,sizeof(char),18,hdb_info->hDb)) {
+    fseek(hdb_binsrch_info->hDb, 1152, SEEK_SET);
+    while (18 == fread(buf,sizeof(char),18,hdb_binsrch_info->hDb)) {
         db_cnt++;
 
         /* We only want to add one of each hash to the index */
@@ -143,7 +146,7 @@ uint8_t
         }
 
         /* Add the entry to the index */
-        if (text_hdb_idx_add_entry_bin(hdb_info, buf, 16, offset)) {
+        if (hdb_binsrch_idx_add_entry_bin(hdb_binsrch_info, buf, 16, offset)) {
             tsk_error_set_errstr2( "encase_make_index");
             return 1;
         }
@@ -163,7 +166,7 @@ uint8_t
         }
 
         /* Close and sort the index */
-        if (text_hdb_idx_finalize(hdb_info)) {
+        if (hdb_binsrch_idx_finalize(hdb_binsrch_info)) {
             tsk_error_set_errstr2( "encase_makeindex");
             return 1;
         }
@@ -199,7 +202,7 @@ uint8_t
     TSK_OFF_T offset, TSK_HDB_FLAG_ENUM flags,
     TSK_HDB_LOOKUP_FN action, void *cb_ptr)
 {
-    TSK_TEXT_HDB_INFO *text_hdb_info = (TSK_TEXT_HDB_INFO*)hdb_info;
+    TSK_HDB_BINSRCH_INFO *hdb_binsrch_info = (TSK_HDB_BINSRCH_INFO*)hdb_info;
     int found = 0;
     char buf[19];
 
@@ -219,13 +222,13 @@ uint8_t
     memset(buf, 0, sizeof(buf));
 
     /* Loop so that we can find multiple occurances of the same hash */
-    fseeko(text_hdb_info->hDb, offset, SEEK_SET);
+    fseeko(hdb_binsrch_info->hDb, offset, SEEK_SET);
     while (1) {
         int retval;
         char hash_str[TSK_HDB_HTYPE_MD5_LEN+1];
 
-        if (18 != fread(buf,sizeof(char),18,text_hdb_info->hDb)) {
-            if (feof(text_hdb_info->hDb)) {
+        if (18 != fread(buf,sizeof(char),18,hdb_binsrch_info->hDb)) {
+            if (feof(hdb_binsrch_info->hDb)) {
                 break;
             }
             tsk_error_reset();

@@ -18,8 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -48,7 +46,7 @@ public class LayoutFile extends AbstractFile{
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, 
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, 
 			long size, String md5Hash, FileKnown knownState, String parentPath) {
-		super(db, objId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short)0, name, fileType, 0L, dirType, metaType, dirFlag, metaFlags, size, 0L, 0L, 0L, 0L, (short)0, 0, 0, md5Hash, knownState, parentPath);
+		super(db, objId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short)0, name, fileType, 0L, 0, dirType, metaType, dirFlag, metaFlags, size, 0L, 0L, 0L, 0L, (short)0, 0, 0, md5Hash, knownState, parentPath);
 		//this.size = calcSize(); //update calculated size
 	}
 

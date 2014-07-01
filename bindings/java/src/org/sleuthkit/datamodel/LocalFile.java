@@ -65,7 +65,7 @@ public class LocalFile extends AbstractFile {
 			String md5Hash,
 			FileKnown knownState, String parentPath, String localPath) {
 		super(db, objId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short) 0,
-				name, fileType, 0L, dirType, metaType, dirFlag,
+				name, fileType, 0L, 0, dirType, metaType, dirFlag,
 				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath);
 
 		//use the local path functionality of AbstractFile, this sets up the infrastructure for it
