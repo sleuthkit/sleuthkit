@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011 Basis Technology Corp.
+ * Copyright 2011-2014 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +20,6 @@ package org.sleuthkit.datamodel;
 
 import java.util.Collection;
 import java.util.List;
-import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 
 /**
  * Represents an artifact as stored in the Blackboard. Artifacts are a collection
@@ -80,9 +79,9 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		TSK_GPS_ROUTE(36, "TSK_GPS_ROUTE", "GPS Route"),	// Route bases on GPS coordinates
 		; 
 		/* SEE ABOVE -- KEEP C++ CODE IN SYNC */
-		private String label;
-		private int typeID;
-		private String displayName;
+		private final String label;
+		private final int typeID;
+		private final String displayName;
 
 		private ARTIFACT_TYPE(int typeID, String label, String displayName) {
 			this.typeID = typeID;
@@ -148,12 +147,12 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 			return v.visit(this);
 		}
 	}
-	private long artifactID;
-	private long objID;
-	private int artifactTypeID;
-	private String artifactTypeName;
-	private String displayName;
-	private SleuthkitCase Case;
+	private final long artifactID;
+	private final long objID;
+	private final int artifactTypeID;
+	private final String artifactTypeName;
+	private final String displayName;
+	private final SleuthkitCase Case;
 
 	/**
 	 * Constructor for an artifact. Should only be used by SleuthkitCase
@@ -216,18 +215,18 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	/**
 	 * Add an attribute to this artifact
 	 * @param attr the attribute to add
-	 * @throws TskException exception thrown if a critical error occurs within tsk core and attribute was not added
+	 * @throws TskCoreException if a critical error occurs and the attribute was not added
 	 */
 	public void addAttribute(BlackboardAttribute attr) throws TskCoreException {
 		attr.setArtifactID(artifactID);
 		attr.setCase(Case);
-		Case.addBlackboardAttribute(attr);
+		Case.addBlackboardAttribute(attr, this.artifactTypeID);
 	}
 
 	/**
 	 * Add a collection of attributes to this artifact in a single transaction (faster than individually)
 	 * @param attributes List of attributes to add
-	 * @throws TskException exception thrown if a critical error occurs within tsk core and attributes were not added
+	 * @throws TskCoreException if a critical error occurs and the attribute was not added
 	 */
 	public void addAttributes(Collection<BlackboardAttribute> attributes) throws TskCoreException {
 		if (attributes.isEmpty()) {
@@ -238,13 +237,13 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 			attr.setArtifactID(artifactID);
 			attr.setCase(Case);
 		}
-		Case.addBlackboardAttributes(attributes);
+		Case.addBlackboardAttributes(attributes, this.artifactTypeID);
 	}
 
 	/**
 	 * Gets all attributes associated with this artifact
 	 * @return a list of attributes
-	 * @throws TskException exception thrown if a critical error occurs within tsk core and attributes were not queried
+	 * @throws TskCoreException if a critical error occurs and the attributes are not fetched
 	 */
 	public List<BlackboardAttribute> getAttributes() throws TskCoreException {
 		//return Case.getMatchingAttributes("WHERE artifact_id = " + artifactID);
@@ -254,6 +253,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 	/**
 	 * A method to accept a visitor SleuthkitItemVisitor, and execute an algorithm on this object
+	 * @param <T> the object type to be returned from visit()
 	 * @param v the visitor to accept
 	 * @return object of generic type T to return
 	 */
@@ -297,6 +297,4 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	public String toString() {
 		return "BlackboardArtifact{" + "artifactID=" + artifactID + ", objID=" + objID + ", artifactTypeID=" + artifactTypeID + ", artifactTypeName=" + artifactTypeName + ", displayName=" + displayName + ", Case=" + Case + '}';
 	}
-	
-	
 }

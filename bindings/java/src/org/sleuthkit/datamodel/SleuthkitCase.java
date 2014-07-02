@@ -221,42 +221,54 @@ public class SleuthkitCase {
 		statement.execute("CREATE TABLE tag_names (tag_name_id INTEGER PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL)");
 		statement.execute("CREATE TABLE content_tags (tag_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL, begin_byte_offset INTEGER NOT NULL, end_byte_offset INTEGER NOT NULL)");
 		statement.execute("CREATE TABLE blackboard_artifact_tags (tag_id INTEGER PRIMARY KEY, artifact_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL)");
-
-		// Add new table for reports.
+		
+		// Add a new table for reports.
 		statement.execute("CREATE TABLE reports (report_id INTEGER PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL)");
 		
-        // Add columns for existing tables.
+        // Add new columns to the image info table.
         statement.execute("ALTER TABLE tsk_image_info ADD COLUMN size INTEGER;");
         statement.execute("ALTER TABLE tsk_image_info ADD COLUMN md5 TEXT;");
         statement.execute("ALTER TABLE tsk_image_info ADD COLUMN display_name TEXT;");
+		
+		// Add a new column to the file system info table.
         statement.execute("ALTER TABLE tsk_fs_info ADD COLUMN display_name TEXT;");
+		
+		// Add a new column to the file table.
 		statement.execute("ALTER TABLE tsk_files ADD COLUMN meta_seq INTEGER;");
-		statement.execute("ALTER TABLE tsk_files ADD COLUMN meta_seq INTEGER;");
-		statement.execute("ALTER TABLE blackboard_attributes ADD COLUMN artifact_type_id INTEGER NOT NULL;"); // RJCTODO: Need initial value?
 		
-		// Add new indexes.
-        statement.execute("CREATE INDEX attrsArtifactTypeId ON blackboard_attributes(artifact_type_id);");
-        statement.execute("CREATE INDEX valueText ON blackboard_attributes(value_text);");
-        statement.execute("CREATE INDEX valueInt32 ON blackboard_attributes(value_int32);");
-        statement.execute("CREATE INDEX valueInt64 ON blackboard_attributes(value_int64);");
-        statement.execute("CREATE INDEX valueDouble ON blackboard_attributes(value_double);");
-				
-		// RJCTODO: Add the values for the new columns in the attributes table.
-		// SELECT attrs.artifact_id, arts.artifact_type_id FROM blackboard_attributes attrs, blackboard_artifacts arts
-		// WHERE attrs.artifact_id = arts.artifact_id;
-		// while (result_set.next()) {
-		//    UPDATE blackboard_attributes SET artifact_type_id = rs.get("artifact_type_id")
-		//    WHERE blackboard_attributes.artifact_id = rs.get{artifact_id");
-		
-		// Make the prepared statements available for use in migrating legacy data.
-		initStatements();
-		
-		// This data structure is used to keep track of the unique tag names 
-		// created from the TSK_TAG_NAME attributes of the now obsolete 
-		// TSK_TAG_FILE and TSK_TAG_ARTIFACT artifacts.
-		HashMap<String, TagName> tagNames = new HashMap<String, TagName>();
+		// Add new columns and indexes to the attributes table and populate the
+		// new column. Note that addition of the new column is a denormalization 
+		// to optimize attribute queries.
+		statement.execute("ALTER TABLE blackboard_attributes ADD COLUMN artifact_type_id INTEGER NULL NOT NULL DEFAULT -1;");
+        statement.execute("CREATE INDEX attribute_artifactTypeId ON blackboard_attributes(artifact_type_id);");
+        statement.execute("CREATE INDEX attribute_valueText ON blackboard_attributes(value_text);");
+        statement.execute("CREATE INDEX attribute_valueInt32 ON blackboard_attributes(value_int32);");
+        statement.execute("CREATE INDEX attribute_valueInt64 ON blackboard_attributes(value_int64);");
+        statement.execute("CREATE INDEX attribute_valueDouble ON blackboard_attributes(value_double);");
+		ResultSet resultSet = statement.executeQuery(
+				"SELECT attrs.artifact_id, arts.artifact_type_id " +
+				"FROM blackboard_attributes AS attrs " + 
+				"INNER JOIN blackboard_artifacts AS arts " +
+				"WHERE attrs.artifact_id = arts.artifact_id;");
+		while (resultSet.next()) {
+			long artifactId = resultSet.getLong(1);
+			int artifactTypeId = resultSet.getInt(2);
+			statement.executeUpdate(
+					"UPDATE blackboard_attributes " +
+					"SET artifact_type_id = " + artifactTypeId + " " +
+					"WHERE blackboard_attributes.artifact_id = " + artifactId + ";");					
+		}
+		resultSet.close();
+		statement.close();
 
-		// Convert TSK_TAG_FILE artifacts into content tags. Leave the artifacts behind as a backup.
+		//and convert existing tag artifact and 
+		// attribute rows to rows in the new tables.
+		// TODO: This code depends on prepared statements that could evolve with
+		// time, breaking this upgrade. The code that follows should be rewritten 
+		// to do everything with SQL specific to the state of the database at 
+		// the time of this schema update.
+		initStatements();
+		HashMap<String, TagName> tagNames = new HashMap<String, TagName>();
 		for (BlackboardArtifact artifact : getBlackboardArtifacts(ARTIFACT_TYPE.TSK_TAG_FILE)) {
 			Content content = getContentById(artifact.getObjectID());
 			String name = "";
@@ -270,7 +282,6 @@ public class SleuthkitCase {
 					comment = attribute.getValueString();
 				}
 			}
-
 			if (!name.isEmpty()) {
 				TagName tagName;
 				if (tagNames.containsKey(name)) {
@@ -283,8 +294,6 @@ public class SleuthkitCase {
 				addContentTag(content, tagName, comment, 0, content.getSize() - 1);
 			}
 		}
-
-		// Convert TSK_TAG_ARTIFACT artifacts into blackboard artifact tags. Leave the artifacts behind as a backup.
 		for (BlackboardArtifact artifact : getBlackboardArtifacts(ARTIFACT_TYPE.TSK_TAG_ARTIFACT)) {
 			String name = "";
 			String comment = "";
@@ -297,7 +306,6 @@ public class SleuthkitCase {
 					comment = attribute.getValueString();
 				}
 			}
-
 			if (!name.isEmpty()) {
 				TagName tagName;
 				if (tagNames.containsKey(name)) {
@@ -309,10 +317,17 @@ public class SleuthkitCase {
 				}
 				addBlackboardArtifactTag(artifact, tagName, comment);
 			}
-		}		
-				
+		}						
 		closeStatements();
-		
+		statement.execute(
+			"DELETE FROM blackboard_attributes WHERE artifact_id IN " +
+			"(SELECT artifact_id FROM blackboard_artifacts WHERE artifact_id_type = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() + 
+			" OR artifact_id_type = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ");");
+		statement.execute(
+			"DELETE FROM blackboard_artifacts WHERE " +
+			"artifact_id_type = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() +		
+			" OR artifact_id_type = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ");");
+				
 		return 3;	
 	}			
 		
@@ -419,24 +434,24 @@ public class SleuthkitCase {
 
 
 		addBlackboardAttributeStringSt = con.prepareStatement(
-				"INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_text) "
-				+ "VALUES (?,?,?,?,?,?)");
+				"INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_text) "
+				+ "VALUES (?,?,?,?,?,?,?)");
 
 		addBlackboardAttributeByteSt = con.prepareStatement(
-				"INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_byte) "
-				+ "VALUES (?,?,?,?,?,?)");
+				"INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_byte) "
+				+ "VALUES (?,?,?,?,?,?,?)");
 
 		addBlackboardAttributeIntegerSt = con.prepareStatement(
-				"INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_int32) "
-				+ "VALUES (?,?,?,?,?,?)");
+				"INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_int32) "
+				+ "VALUES (?,?,?,?,?,?,?)");
 
 		addBlackboardAttributeLongSt = con.prepareStatement(
-				"INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_int64) "
-				+ "VALUES (?,?,?,?,?,?)");
+				"INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_int64) "
+				+ "VALUES (?,?,?,?,?,?,?)");
 
 		addBlackboardAttributeDoubleSt = con.prepareStatement(
-				"INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_double) "
-				+ "VALUES (?,?,?,?,?,?)");
+				"INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_double) "
+				+ "VALUES (?,?,?,?,?,?,?)");
 
 		getFileSt = con.prepareStatement("SELECT * FROM tsk_files WHERE LOWER(name) LIKE ? and LOWER(name) NOT LIKE '%journal%' AND fs_obj_id = ?");
 
@@ -1551,130 +1566,86 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Add a blackboard attribute. All information for the attribute should be
-	 * in the given attribute
+	 * Add a blackboard attribute.
 	 *
-	 * @param attr a blackboard attribute. All necessary information should be
-	 * filled in.
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within tsk core
+	 * @param attr A blackboard attribute. 
+	 * @param artifactTypeId The type of artifact associated with the attribute.
+	 * @throws TskCoreException thrown if a critical error occurs.
 	 */
-	public void addBlackboardAttribute(BlackboardAttribute attr) throws TskCoreException {
+	void addBlackboardAttribute(BlackboardAttribute attr, int artifactTypeId) throws TskCoreException {
 		dbWriteLock();
 		try {
 			PreparedStatement ps = null;
 			switch (attr.getValueType()) {
 				case STRING:
-					addBlackboardAttributeStringSt.setString(6, escapeForBlackboard(attr.getValueString()));
+					addBlackboardAttributeStringSt.setString(7, escapeForBlackboard(attr.getValueString()));
 					ps = addBlackboardAttributeStringSt;
 					break;
 				case BYTE:
-					addBlackboardAttributeByteSt.setBytes(6, attr.getValueBytes());
+					addBlackboardAttributeByteSt.setBytes(7, attr.getValueBytes());
 					ps = addBlackboardAttributeByteSt;
 					break;
 				case INTEGER:
-					addBlackboardAttributeIntegerSt.setInt(6, attr.getValueInt());
+					addBlackboardAttributeIntegerSt.setInt(7, attr.getValueInt());
 					ps = addBlackboardAttributeIntegerSt;
 					break;
 				case LONG:
-					addBlackboardAttributeLongSt.setLong(6, attr.getValueLong());
+					addBlackboardAttributeLongSt.setLong(7, attr.getValueLong());
 					ps = addBlackboardAttributeLongSt;
 					break;
 				case DOUBLE:
-					addBlackboardAttributeDoubleSt.setDouble(6, attr.getValueDouble());
+					addBlackboardAttributeDoubleSt.setDouble(7, attr.getValueDouble());
 					ps = addBlackboardAttributeDoubleSt;
 					break;
 			} // end switch
 
 			//set common fields
 			ps.setLong(1, attr.getArtifactID());
-			ps.setString(2, attr.getModuleName());
-			ps.setString(3, attr.getContext());
-			ps.setInt(4, attr.getAttributeTypeID());
-			ps.setLong(5, attr.getValueType().getType());
+			ps.setInt(2,artifactTypeId);
+			ps.setString(3, attr.getModuleName());
+			ps.setString(4, attr.getContext());
+			ps.setInt(5, attr.getAttributeTypeID());
+			ps.setLong(6, attr.getValueType().getType());
 			ps.executeUpdate();
 			ps.clearParameters();
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting or creating a blackboard artifact.", ex);
+			throw new TskCoreException("Error getting or creating a blackboard attribute", ex);
 		} finally {
 			dbWriteUnlock();
 		}
 	}
 
 	/**
-	 * Add a blackboard attributes in bulk. All information for the attribute
-	 * should be in the given attribute
+	 * Add a set blackboard attributes.
 	 *
-	 * @param attributes collection of blackboard attributes. All necessary
-	 * information should be filled in.
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within tsk core
+	 * @param attributes A set of blackboard attribute. 
+	 * @param artifactTypeId The type of artifact associated with the attributes.
+	 * @throws TskCoreException thrown if a critical error occurs.
 	 */
-	public void addBlackboardAttributes(Collection<BlackboardAttribute> attributes) throws TskCoreException {
+	void addBlackboardAttributes(Collection<BlackboardAttribute> attributes, int artifactTypeId) throws TskCoreException {
 		dbWriteLock();
 		try {
 			con.setAutoCommit(false);
-		} catch (SQLException ex) {
-			dbWriteUnlock();
-			throw new TskCoreException("Error creating transaction, no attributes created.", ex);
-		}
-
-		for (final BlackboardAttribute attr : attributes) {
-			PreparedStatement ps = null;
-			try {
-				switch (attr.getValueType()) {
-					case STRING:
-						addBlackboardAttributeStringSt.setString(6, escapeForBlackboard(attr.getValueString()));
-						ps = addBlackboardAttributeStringSt;
-						break;
-					case BYTE:
-						addBlackboardAttributeByteSt.setBytes(6, attr.getValueBytes());
-						ps = addBlackboardAttributeByteSt;
-						break;
-					case INTEGER:
-						addBlackboardAttributeIntegerSt.setInt(6, attr.getValueInt());
-						ps = addBlackboardAttributeIntegerSt;
-						break;
-					case LONG:
-						addBlackboardAttributeLongSt.setLong(6, attr.getValueLong());
-						ps = addBlackboardAttributeLongSt;
-						break;
-					case DOUBLE:
-						addBlackboardAttributeDoubleSt.setDouble(6, attr.getValueDouble());
-						ps = addBlackboardAttributeDoubleSt;
-						break;
+			for (final BlackboardAttribute attr : attributes) {
+				try {
+					addBlackboardAttribute(attr, artifactTypeId);
+				} catch (TskCoreException ex) {
+					throw ex;
 				}
-
-				//set commmon fields and exec. update
-				ps.setLong(1, attr.getArtifactID());
-				ps.setString(2, attr.getModuleName());
-				ps.setString(3, attr.getContext());
-				ps.setInt(4, attr.getAttributeTypeID());
-				ps.setLong(5, attr.getValueType().getType());
-				ps.executeUpdate();
-				ps.clearParameters();
-
-			} catch (SQLException ex) {
-				logger.log(Level.WARNING, "Error adding attribute: " + attr.toString(), ex);
-				//try to add more attributes 
 			}
-		} //end for every attribute
-
-		//commit transaction
-		try {
 			con.commit();
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error committing transaction, no attributes created.", ex);
+			throw new TskCoreException("Error starting or committing transaction, no attributes created", ex);
 		} finally {
 			try {
 				con.setAutoCommit(true);
 			} catch (SQLException ex) {
-				throw new TskCoreException("Error setting autocommit and closing the transaction!", ex);
-			} finally {
+				throw new TskCoreException("Error setting autocommit and closing the transaction", ex);
+			} 
+			finally {
 				dbWriteUnlock();
 			}
 		}
-
 	}
 
 	/**
