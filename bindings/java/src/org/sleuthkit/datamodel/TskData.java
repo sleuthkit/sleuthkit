@@ -19,8 +19,8 @@
 
 package org.sleuthkit.datamodel;
 
-import org.openide.util.NbBundle;
-
+import java.text.MessageFormat;
+import java.util.ResourceBundle;
 import java.util.EnumSet;
 import java.util.Set;
 
@@ -29,6 +29,8 @@ import java.util.Set;
  * into string or enum form. 
  */
 public class TskData {
+
+    private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	// Enum for Directory Type
 	public enum TSK_FS_NAME_TYPE_ENUM {
@@ -80,7 +82,7 @@ public class TskData {
 				}
 			}
 			throw new IllegalArgumentException(
-                    NbBundle.getMessage(TskData.class, "TskData.tskFsNameTypeEnum.exception.msg1.text", dir_type));
+                    MessageFormat.format(bundle.getString("TskData.tskFsNameTypeEnum.exception.msg1.text"), dir_type));
 		}
 	}
 	
@@ -128,7 +130,7 @@ public class TskData {
 				}
 			}
 			throw new IllegalArgumentException(
-                    NbBundle.getMessage(TskData.class, "TskData.tskFsMetaTypeEnum.exception.msg1.text", metaType));
+                    MessageFormat.format(bundle.getString("TskData.tskFsMetaTypeEnum.exception.msg1.text"), metaType));
 		}
 	}
 
@@ -136,8 +138,8 @@ public class TskData {
 	 * FS Flags
 	 */
 	public enum TSK_FS_NAME_FLAG_ENUM {
-		ALLOC(1, NbBundle.getMessage(TskData.class, "TskData.tskFsNameFlagEnum.allocated")),      ///< Name is in an allocated state
-		UNALLOC(2, NbBundle.getMessage(TskData.class, "TskData.tskFsNameFlagEnum.unallocated"));    ///< Name is in an unallocated state
+		ALLOC(1, bundle.getString("TskData.tskFsNameFlagEnum.allocated")),      ///< Name is in an allocated state
+		UNALLOC(2, bundle.getString("TskData.tskFsNameFlagEnum.unallocated"));    ///< Name is in an unallocated state
 
 		private short dirFlag;
 		private String dirFlagStr;
@@ -172,7 +174,7 @@ public class TskData {
 				}
 			}
 			throw new IllegalArgumentException(
-                    NbBundle.getMessage(TskData.class, "TskData.tskFsNameFlagEnum.exception.msg1.text", dirFlag));
+                    MessageFormat.format(bundle.getString("TskData.tskFsNameFlagEnum.exception.msg1.text"), dirFlag));
 		}
 	}
 
@@ -182,12 +184,12 @@ public class TskData {
 	 * META flags
 	 */
 	public enum TSK_FS_META_FLAG_ENUM {
-		ALLOC(1, NbBundle.getMessage(TskData.class, "TskData.tskFsMetaFlagEnum.allocated")),      ///< Metadata structure is currently in an allocated state
-		UNALLOC(2, NbBundle.getMessage(TskData.class, "TskData.tskFsMetaFlagEnum.unallocated")),  ///< Metadata structure is currently in an unallocated state
-		USED(4, NbBundle.getMessage(TskData.class, "TskData.tskFsMetaFlagEnum.used")),            ///< Metadata structure has been allocated at least once
-		UNUSED(8, NbBundle.getMessage(TskData.class, "TskData.tskFsMetaFlagEnum.unused")),        ///< Metadata structure has never been allocated.
-		COMP(16, NbBundle.getMessage(TskData.class, "TskData.tskFsMetaFlagEnum.compressed")),     ///< The file contents are compressed.
-		ORPHAN(32, NbBundle.getMessage(TskData.class, "TskData.tskFsMetaFlagEnum.orphan"));       ///< Return only metadata structures that have no file name pointing to the (inode_walk flag only)
+		ALLOC(1, bundle.getString("TskData.tskFsMetaFlagEnum.allocated")),      ///< Metadata structure is currently in an allocated state
+		UNALLOC(2, bundle.getString("TskData.tskFsMetaFlagEnum.unallocated")),  ///< Metadata structure is currently in an unallocated state
+		USED(4, bundle.getString("TskData.tskFsMetaFlagEnum.used")),            ///< Metadata structure has been allocated at least once
+		UNUSED(8, bundle.getString("TskData.tskFsMetaFlagEnum.unused")),        ///< Metadata structure has never been allocated.
+		COMP(16, bundle.getString("TskData.tskFsMetaFlagEnum.compressed")),     ///< The file contents are compressed.
+		ORPHAN(32, bundle.getString("TskData.tskFsMetaFlagEnum.orphan"));       ///< Return only metadata structures that have no file name pointing to the (inode_walk flag only)
 
 		private short meta_flag;
 		private String label;
@@ -296,7 +298,7 @@ public class TskData {
 				}
 			}
 			throw new IllegalArgumentException(
-                    NbBundle.getMessage(TskData.class, "TskData.tskFsAttrTypeEnum.exception.msg1.text", val));
+                    MessageFormat.format(bundle.getString("TskData.tskFsAttrTypeEnum.exception.msg1.text"), val));
 		}
     };
 
@@ -449,7 +451,7 @@ public class TskData {
 				}
 			}
 			throw new IllegalArgumentException(
-                    NbBundle.getMessage(TskData.class, "TskData.tskFsTypeEnum.exception.msg1.text", fsTypeValue));
+                    MessageFormat.format(bundle.getString("TskData.tskFsTypeEnum.exception.msg1.text"), fsTypeValue));
 		}
 		
     };
@@ -459,15 +461,15 @@ public class TskData {
 	 */
 	public enum TSK_IMG_TYPE_ENUM {
 		/* The following describe the image type */
-		TSK_IMG_TYPE_DETECT(0, NbBundle.getMessage(TskData.class, "TskData.tskImgTypeEnum.autoDetect")),       // Auto Detection
-		TSK_IMG_TYPE_RAW_SING(1, NbBundle.getMessage(TskData.class, "TskData.tskImgTypeEnum.rawSingle")),     // Single raw file (dd)
-		TSK_IMG_TYPE_RAW_SPLIT(2, NbBundle.getMessage(TskData.class, "TskData.tskImgTypeEnum.rawSplit")),    // Split raw files
+		TSK_IMG_TYPE_DETECT(0, bundle.getString("TskData.tskImgTypeEnum.autoDetect")),       // Auto Detection
+		TSK_IMG_TYPE_RAW_SING(1, bundle.getString("TskData.tskImgTypeEnum.rawSingle")),     // Single raw file (dd)
+		TSK_IMG_TYPE_RAW_SPLIT(2, bundle.getString("TskData.tskImgTypeEnum.rawSplit")),    // Split raw files
 		TSK_IMG_TYPE_AFF_AFF(4, "AFF"),      // Advanced Forensic Format NON-NLS
 		TSK_IMG_TYPE_AFF_AFD(8, "AFD"),      // AFF Multiple File NON-NLS
 		TSK_IMG_TYPE_AFF_AFM(16, "AFM"),     // AFF with external metadata NON-NLS
 		TSK_IMG_TYPE_AFF_ANY(32, "AFF"),     // All AFFLIB image formats (including beta ones) NON-NLS
 		TSK_IMG_TYPE_EWF_EWF(64, "E01"),     // Expert Witness format (encase) NON-NLS
-		TSK_IMG_TYPE_UNSUPP(65535, NbBundle.getMessage(TskData.class, "TskData.tskImgTypeEnum.unknown"));   // Unsupported Image Type
+		TSK_IMG_TYPE_UNSUPP(65535, bundle.getString("TskData.tskImgTypeEnum.unknown"));   // Unsupported Image Type
 
 		private long imgType;
 		private String name;
@@ -484,7 +486,7 @@ public class TskData {
 				}
 			}
 			throw new IllegalArgumentException(
-                    NbBundle.getMessage(TskData.class, "TskData.tskImgTypeEnum.exception.msg1.text", imgType));
+                    MessageFormat.format(bundle.getString("TskData.tskImgTypeEnum.exception.msg1.text"), imgType));
 		}
 		
 		/**
@@ -508,14 +510,14 @@ public class TskData {
 	 * Volume System type
 	 */
     public enum TSK_VS_TYPE_ENUM {
-        TSK_VS_TYPE_DETECT(0x0000, NbBundle.getMessage(TskData.class, "TskData.tskVSTypeEnum.autoDetect")),    ///< Use autodetection methods
+        TSK_VS_TYPE_DETECT(0x0000, bundle.getString("TskData.tskVSTypeEnum.autoDetect")),    ///< Use autodetection methods
         TSK_VS_TYPE_DOS(0x0001, "DOS"),       ///< DOS Partition table NON-NLS
         TSK_VS_TYPE_BSD(0x0002, "BSD"),       ///< BSD Partition table NON-NLS
         TSK_VS_TYPE_SUN(0x0004, "SUN VTOC"),       ///< Sun VTOC NON-NLS
         TSK_VS_TYPE_MAC(0x0008, "Mac"),       ///< Mac partition table NON-NLS
         TSK_VS_TYPE_GPT(0x0010, "GPT"),       ///< GPT partition table NON-NLS
-        TSK_VS_TYPE_DBFILLER(0x00F0, NbBundle.getMessage(TskData.class, "TskData.tskVSTypeEnum.fake")),  ///< fake partition table type for loaddb (for images that do not have a volume system)
-        TSK_VS_TYPE_UNSUPP(0xFFFF, NbBundle.getMessage(TskData.class, "TskData.tskVSTypeEnum.unsupported"));    ///< Unsupported
+        TSK_VS_TYPE_DBFILLER(0x00F0, bundle.getString("TskData.tskVSTypeEnum.fake")),  ///< fake partition table type for loaddb (for images that do not have a volume system)
+        TSK_VS_TYPE_UNSUPP(0xFFFF, bundle.getString("TskData.tskVSTypeEnum.unsupported"));    ///< Unsupported
         
         private long vsType;
 		private String name;
@@ -531,7 +533,7 @@ public class TskData {
 				}
 			}
 			throw new IllegalArgumentException(
-                    NbBundle.getMessage(TskData.class, "TskData.tskVSTypeEnum.exception.msg1.text", vsType));
+                    MessageFormat.format(bundle.getString("TskData.tskVSTypeEnum.exception.msg1.text"), vsType));
 		}
         
 		
@@ -591,7 +593,7 @@ public class TskData {
 				}
 			}
 			throw new IllegalArgumentException(
-                    NbBundle.getMessage(TskData.class, "TskData.objectTypeEnum.exception.msg1.text", objectType));
+                    MessageFormat.format(bundle.getString("TskData.objectTypeEnum.exception.msg1.text"), objectType));
 		}
 	}
 	
@@ -630,7 +632,7 @@ public class TskData {
 				}
 			}
 			throw new IllegalArgumentException(
-                    NbBundle.getMessage(TskData.class, "TskData.tskDbFilesTypeEnum.exception.msg1.text", fileType));
+                    MessageFormat.format(bundle.getString("TskData.tskDbFilesTypeEnum.exception.msg1.text"), fileType));
 		}
 		
 		
@@ -652,9 +654,9 @@ public class TskData {
 	 * FileKnown status
 	 */
 	public enum FileKnown {
-		UNKNOWN(0, NbBundle.getMessage(TskData.class, "TskData.fileKnown.unknown")), ///< File marked as unknown by hash db
-		KNOWN(1, NbBundle.getMessage(TskData.class, "TskData.fileKnown.known")),  ///< File marked as a known by hash db
-		BAD(2, NbBundle.getMessage(TskData.class, "TskData.fileKnown.knownBad")); ///< File marked as known and bad/notable/interesting by hash db
+		UNKNOWN(0, bundle.getString("TskData.fileKnown.unknown")), ///< File marked as unknown by hash db
+		KNOWN(1, bundle.getString("TskData.fileKnown.known")),  ///< File marked as a known by hash db
+		BAD(2, bundle.getString("TskData.fileKnown.knownBad")); ///< File marked as known and bad/notable/interesting by hash db
 		
 		private byte known;
 		private String name;
@@ -677,7 +679,7 @@ public class TskData {
 				}
 			}
 			throw new IllegalArgumentException(
-                    NbBundle.getMessage(TskData.class, "TskData.fileKnown.exception.msg1.text", known));
+                    MessageFormat.format(bundle.getString("TskData.fileKnown.exception.msg1.text"), known));
 		}
 		
 		

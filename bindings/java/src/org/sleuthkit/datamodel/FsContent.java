@@ -20,8 +20,8 @@ package org.sleuthkit.datamodel;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.ResourceBundle;
 
-import org.openide.util.NbBundle;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -38,6 +38,7 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 public abstract class FsContent extends AbstractFile {
 
 	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
+    private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	///read only database tsk_files fields
 	protected final long fsObjId;
 	private String uniquePath;
@@ -142,8 +143,8 @@ public abstract class FsContent extends AbstractFile {
 		}
 		catch (TskCoreException ex) {
 			if (!getImage().imageFileExists()) {
-				tskCase.submitError(NbBundle.getMessage(this.getClass(), "FsContent.readInt.err.context.text"),
-                                    NbBundle.getMessage(this.getClass(), "FsContent.readInt.err.msg.text"));
+				tskCase.submitError(bundle.getString("FsContent.readInt.err.context.text"),
+                                    bundle.getString("FsContent.readInt.err.msg.text"));
 			}
 			throw ex;
 		}

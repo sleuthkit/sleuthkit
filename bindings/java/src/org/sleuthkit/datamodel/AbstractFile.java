@@ -21,13 +21,14 @@ package org.sleuthkit.datamodel;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.text.MessageFormat;
+import java.util.ResourceBundle;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.openide.util.NbBundle;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -74,6 +75,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	protected String md5Hash;
 	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
+    private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
@@ -713,7 +715,7 @@ public abstract class AbstractFile extends AbstractContent {
 	protected final int readLocal(byte[] buf, long offset, long len) throws TskCoreException {
 		if (!localPathSet) {
 			throw new TskCoreException(
-                    NbBundle.getMessage(this.getClass(), "AbstractFile.readLocal.exception.msg1.text"));
+                    bundle.getString("AbstractFile.readLocal.exception.msg1.text"));
 		}
 		
 		if (isDir()) {
@@ -723,11 +725,11 @@ public abstract class AbstractFile extends AbstractContent {
 		getLocalFile();
 		if (!localFile.exists()) {
 			throw new TskCoreException(
-                    NbBundle.getMessage(this.getClass(), "AbstractFile.readLocal.exception.msg2.text", localAbsPath));
+                    MessageFormat.format(bundle.getString("AbstractFile.readLocal.exception.msg2.text"), localAbsPath));
 		}
 		if (!localFile.canRead()) {
 			throw new TskCoreException(
-                    NbBundle.getMessage(this.getClass(), "AbstractFile.readLocal.exception.msg3.text", localAbsPath));
+                    MessageFormat.format(bundle.getString("AbstractFile.readLocal.exception.msg3.text"), localAbsPath));
 		}
 
 		int bytesRead = 0;
@@ -738,8 +740,8 @@ public abstract class AbstractFile extends AbstractContent {
 					try {
 						localFileHandle = new RandomAccessFile(localFile, "r");
 					} catch (FileNotFoundException ex) {
-						final String msg = NbBundle.getMessage(this.getClass(),
-                                                               "AbstractFile.readLocal.exception.msg4.text",
+						final String msg = MessageFormat.format(bundle.getString(
+                                                               "AbstractFile.readLocal.exception.msg4.text"),
                                                                localAbsPath);
 						logger.log(Level.SEVERE, msg, ex);
 						//file could have been deleted or moved
@@ -758,8 +760,7 @@ public abstract class AbstractFile extends AbstractContent {
 			//note, we are always writing at 0 offset of user buffer
 			bytesRead = localFileHandle.read(buf, 0, (int) len);
 		} catch (IOException ex) {
-			final String msg = NbBundle
-                    .getMessage(this.getClass(), "AbstractFile.readLocal.exception.msg5.text", localAbsPath);
+			final String msg = MessageFormat.format(bundle.getString("AbstractFile.readLocal.exception.msg5.text"), localAbsPath);
 			logger.log(Level.SEVERE, msg, ex);
 			//local file could have been deleted / moved
 			throw new TskCoreException(msg, ex);

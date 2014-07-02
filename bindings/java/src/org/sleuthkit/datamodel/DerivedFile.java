@@ -18,11 +18,12 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.text.MessageFormat;
+import java.util.ResourceBundle;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.openide.util.NbBundle;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -42,6 +43,7 @@ public class DerivedFile extends AbstractFile {
 
 	private volatile DerivedMethod derivedMethod;
 	private static final Logger logger = Logger.getLogger(DerivedFile.class.getName());
+    private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private boolean hasDerivedMethod = true; ///< whether it has the derived method to lazy load or not
 
 	/**
@@ -139,8 +141,7 @@ public class DerivedFile extends AbstractFile {
 					hasDerivedMethod = false;  //do not attempt to lazy load
 				}
 			} catch (TskCoreException e) {
-				String msg = NbBundle
-                        .getMessage(this.getClass(), "DerviedFile.derivedMethod.exception.msg1.text", getId());
+				String msg = MessageFormat.format(bundle.getString("DerviedFile.derivedMethod.exception.msg1.text"), getId());
 				logger.log(Level.WARNING, msg, e);
 				throw new TskCoreException(msg, e);
 			}

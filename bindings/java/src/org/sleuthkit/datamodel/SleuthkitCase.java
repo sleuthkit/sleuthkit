@@ -33,13 +33,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.MessageFormat;
+import java.util.ResourceBundle;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.openide.util.NbBundle;
 import org.sleuthkit.datamodel.TskData.ObjectType;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
@@ -139,6 +140,7 @@ public class SleuthkitCase {
 	private PreparedStatement insertIntoReports;
 	
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
+    private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private ArrayList<ErrorObserver> errorObservers = new ArrayList<ErrorObserver>();
 
 	/**
@@ -2881,8 +2883,7 @@ public class SleuthkitCase {
 	 */
 	public boolean isFileFromSource(Content dataSource, long fileId) throws TskCoreException {
 		if (dataSource.getParent() != null) {
-			final String msg = NbBundle
-                    .getMessage(this.getClass(), "SleuthkitCase.isFileFromSource.exception.msg.text", dataSource);
+			final String msg = MessageFormat.format(bundle.getString("SleuthkitCase.isFileFromSource.exception.msg.text"), dataSource);
 			logger.log(Level.SEVERE, msg);
 			throw new IllegalArgumentException(msg);
 		}
@@ -2912,8 +2913,7 @@ public class SleuthkitCase {
 			return dataSource.getId() == fsId;
 
 		} else {
-			final String msg = NbBundle
-                    .getMessage(this.getClass(), "SleuthkitCase.isFileFromSource.exception.msg2.text", dataSource);
+			final String msg = MessageFormat.format(bundle.getString("SleuthkitCase.isFileFromSource.exception.msg2.text"), dataSource);
 			logger.log(Level.SEVERE, msg);
 			throw new IllegalArgumentException(msg);
 		}
@@ -2932,8 +2932,7 @@ public class SleuthkitCase {
 	public List<AbstractFile> findFiles(Content dataSource, String fileName) throws TskCoreException {
 
 		if (dataSource.getParent() != null) {
-			final String msg = NbBundle
-                    .getMessage(this.getClass(), "SleuthkitCase.findFiles.exception.msg1.text", dataSource);
+			final String msg = MessageFormat.format(bundle.getString("SleuthkitCase.findFiles.exception.msg1.text"), dataSource);
 			logger.log(Level.SEVERE, msg);
 			throw new IllegalArgumentException(msg);
 		}
@@ -2966,14 +2965,12 @@ public class SleuthkitCase {
 				// convert to AbstractFiles
 				files = resultSetToAbstractFiles(rs);
 			} else {
-				final String msg = NbBundle
-                        .getMessage(this.getClass(), "SleuthkitCase.findFiles.exception.msg2.text", dataSource);
+				final String msg = MessageFormat.format(bundle.getString("SleuthkitCase.findFiles.exception.msg2.text"), dataSource);
 				logger.log(Level.SEVERE, msg);
 				throw new IllegalArgumentException(msg);
 			}
 		} catch (SQLException e) {
-			throw new TskCoreException(
-                    NbBundle.getMessage(this.getClass(), "SleuthkitCase.findFiles.exception.msg3.text"), e);
+			throw new TskCoreException(bundle.getString("SleuthkitCase.findFiles.exception.msg3.text"), e);
 		} finally {
 			if (rs != null) {
 				try {
@@ -3000,8 +2997,7 @@ public class SleuthkitCase {
 	 */
 	public List<AbstractFile> findFiles(Content dataSource, String fileName, String dirName) throws TskCoreException {
 		if (dataSource.getParent() != null) {
-			final String msg = NbBundle
-                    .getMessage(this.getClass(), "SleuthkitCase.findFiles3.exception.msg1.text", dataSource);
+			final String msg = MessageFormat.format(bundle.getString("SleuthkitCase.findFiles3.exception.msg1.text"), dataSource);
 			logger.log(Level.SEVERE, msg);
 			throw new IllegalArgumentException(msg);
 		}
@@ -3043,15 +3039,13 @@ public class SleuthkitCase {
 				// convert to AbstractFiles
 				files = resultSetToAbstractFiles(rs);
 			} else {
-				final String msg = NbBundle
-                        .getMessage(this.getClass(), "SleuthkitCase.findFiles3.exception.msg2.text", dataSource);
+				final String msg = MessageFormat.format(bundle.getString("SleuthkitCase.findFiles3.exception.msg2.text"), dataSource);
 				logger.log(Level.SEVERE, msg);
 				throw new IllegalArgumentException(msg);
 			}
 
 		} catch (SQLException e) {
-			throw new TskCoreException(
-                    NbBundle.getMessage(this.getClass(), "SleuthkitCase.findFiles3.exception.msg3.text"), e);
+			throw new TskCoreException(bundle.getString("SleuthkitCase.findFiles3.exception.msg3.text"), e);
 		} finally {
 			if (rs != null) {
 				try {
@@ -3538,8 +3532,7 @@ public class SleuthkitCase {
 
 			newObjId = getLastObjectId() + 1;
 			if (newObjId < 1) {
-				String msg = NbBundle
-                        .getMessage(this.getClass(), "SleuthkitCase.addDerivedFile.exception.msg1.text", fileName);
+				String msg = MessageFormat.format(bundle.getString("SleuthkitCase.addDerivedFile.exception.msg1.text"), fileName);
 				throw new TskCoreException(msg);
 			}
 
@@ -3603,8 +3596,7 @@ public class SleuthkitCase {
 			//TODO add derived method to tsk_files_derived and tsk_files_derived_method 
 
 		} catch (SQLException e) {
-			String msg = NbBundle
-                    .getMessage(this.getClass(), "SleuthkitCase.addDerivedFile.exception.msg2.text", fileName);
+			String msg = MessageFormat.format(bundle.getString("SleuthkitCase.addDerivedFile.exception.msg2.text"), fileName);
 			throw new TskCoreException(msg, e);
 		} finally {
 			try {
@@ -3692,7 +3684,7 @@ public class SleuthkitCase {
 		String parentPath;
 		if (parent == null) {
 			throw new TskCoreException(
-                    NbBundle.getMessage(this.getClass(), "SleuthkitCase.addLocalFile.exception.msg1.text", fileName));
+                    MessageFormat.format(bundle.getString("SleuthkitCase.addLocalFile.exception.msg1.text"), fileName));
 		} else {
 			parentId = parent.getId();
 			parentPath = parent.getParentPath() + "/" + parent.getName();
@@ -3711,8 +3703,7 @@ public class SleuthkitCase {
 		try {
 			newObjId = getLastObjectId() + 1;
 			if (newObjId < 1) {
-				String msg = NbBundle
-                        .getMessage(this.getClass(), "SleuthkitCase.addLocalFile.exception.msg2.text", fileName);
+				String msg = MessageFormat.format(bundle.getString("SleuthkitCase.addLocalFile.exception.msg2.text"), fileName);
 				throw new TskCoreException(msg);
 			}
 
@@ -3769,8 +3760,7 @@ public class SleuthkitCase {
 					size, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId);
 
 		} catch (SQLException e) {
-			String msg = NbBundle
-                    .getMessage(this.getClass(), "SleuthkitCase.addLocalFile.exception.msg3.text", fileName);
+			String msg = MessageFormat.format(bundle.getString("SleuthkitCase.addLocalFile.exception.msg3.text"), fileName);
 			throw new TskCoreException(msg, e);
 		} finally {
 			try {
@@ -4617,7 +4607,7 @@ public class SleuthkitCase {
 				id = rs.getLong(1);
 			}
 		} catch (SQLException e) {
-			final String msg = NbBundle.getMessage(this.getClass(), "SleuthkitCase.getLastObjectId.exception.msg.text");
+			final String msg = bundle.getString("SleuthkitCase.getLastObjectId.exception.msg.text");
 			logger.log(Level.SEVERE, msg, e);
 			throw new TskCoreException(msg, e);
 		} finally {

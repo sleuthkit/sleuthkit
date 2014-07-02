@@ -18,8 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
-import org.openide.util.NbBundle;
-
+import java.util.ResourceBundle;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,6 +34,7 @@ public class Volume extends AbstractContent {
 	private long flags;
 	private String desc;
 	private volatile long volumeHandle = 0;
+    private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	/**
 	 * Constructor to create the data object mapped from tsk_vs_parts entry
@@ -56,7 +56,7 @@ public class Volume extends AbstractContent {
 		if (!desc.equals("")) {
 			this.desc = desc;
 		} else {
-			this.desc = NbBundle.getMessage(Volume.class, "Volume.desc.text");
+			this.desc = bundle.getString("Volume.desc.text");
 		}
 	}
 
@@ -65,7 +65,7 @@ public class Volume extends AbstractContent {
 		synchronized (this) {
 			Content myParent = getParent();
 			if (!(myParent instanceof VolumeSystem)) {
-				throw new TskCoreException(NbBundle.getMessage(Volume.class, "Volume.read.exception.msg1.text"));
+				throw new TskCoreException(bundle.getString("Volume.read.exception.msg1.text"));
 			}
 			VolumeSystem parentVs = (VolumeSystem) myParent;
 			// read from the volume
@@ -232,10 +232,10 @@ public class Volume extends AbstractContent {
 		long allFlag = TskData.TSK_VS_PART_FLAG_ENUM.TSK_VS_PART_FLAG_ALL.getVsFlag();
 
 		if ((vsFlag & allocFlag) == allocFlag) {
-			result = NbBundle.getMessage(Volume.class, "Volume.vsFlagToString.allocated");
+			result = bundle.getString("Volume.vsFlagToString.allocated");
 		}
 		if ((vsFlag & unallocFlag) == unallocFlag) {
-			result = NbBundle.getMessage(Volume.class, "Volume.vsFlagToString.unallocated");
+			result = bundle.getString("Volume.vsFlagToString.unallocated");
 		}
 		// ... add more code here if needed
 
