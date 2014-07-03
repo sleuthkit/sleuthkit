@@ -358,7 +358,7 @@ int
         "Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
         attempt_exec("CREATE INDEX artifact_typeID ON blackboard_artifacts(artifact_type_id);",
         "Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
-        attempt_exec("CREATE INDEX attribute_artifactID ON blackboard_attributes(artifact_id);",
+        attempt_exec("CREATE INDEX attrsArtifactID ON blackboard_attributes(artifact_id);",
         "Error creating artifact_id index on blackboard_attributes: %s\n") ||
         attempt_exec("CREATE INDEX attribute_artifactTypeId ON blackboard_attributes(artifact_type_id);",
         "Error creating artifact_type_id index on blackboard_attributes: %s\n") ||
