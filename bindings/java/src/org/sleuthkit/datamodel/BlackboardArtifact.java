@@ -57,7 +57,9 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		TSK_EXTRACTED_TEXT(14, "TSK_EXTRACTED_TEXT", "Extracted Text"), ///< text extracted from file
 		TSK_WEB_SEARCH_QUERY(15, "TSK_WEB_SEARCH_QUERY", "Web Search"), ///< web search engine query extracted from web history
 		TSK_METADATA_EXIF(16, "TSK_METADATA_EXIF", "EXIF Metadata"), ///< EXIF Metadata
+		@Deprecated
 		TSK_TAG_FILE(17, "TSK_TAG_FILE", "Tagged Files"), ///< tagged files
+		@Deprecated
 		TSK_TAG_ARTIFACT(18, "TSK_TAG_ARTIFACT", "Tagged Results"), ///< tagged results/artifacts
 		TSK_OS_INFO(19, "TSK_OS_INFO", "Operating System Information"), ///< Information pertaining to an operating system.
 		TSK_OS_ACCOUNT(20, "TSK_OS_ACCOUNT", "Operating System User Account"), ///< An operating system user account.

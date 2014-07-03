@@ -165,7 +165,9 @@ public class BlackboardAttribute {
 		TSK_GEO_MAPDATUM(61, "TSK_GEO_MAPDATUM", "Map Datum"),
 		TSK_FILE_TYPE_SIG(62, "TSK_FILE_TYPE_SIG", "File Type (signature)"),
 		TSK_FILE_TYPE_EXT(63, "TSK_FILE_TYPE_EXT", "File Type (extension)"),
+		@Deprecated
 		TSK_TAGGED_ARTIFACT(64, "TSK_TAGGED_ARTIFACT", "Tagged Result"),
+		@Deprecated
 		TSK_TAG_NAME(65, "TSK_TAG_NAME", "Tag Name"),
 		TSK_COMMENT(66, "TSK_COMMENT", "Comment"),
 		TSK_URL_DECODED(67, "TSK_URL_DECODED", "Decoded URL"),
