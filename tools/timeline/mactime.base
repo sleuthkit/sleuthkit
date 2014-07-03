@@ -244,7 +244,7 @@ while ((scalar(@ARGV) > 0) && (($_ = $ARGV[0]) =~ /^-(.)(.*)/)) {
                     $ENV{TZ} = $realtz;
                 }
                 else {
-                    print "invalid timezone provided. Use -z to list valid timezones.\n";
+                    print "invalid timezone provided. Use '-z list' to list valid timezones.\n";
                     usage();
                 }
             }
