@@ -224,14 +224,14 @@ public class SleuthkitCase {
 		
 		// Add a new table for reports.
 		statement.execute("CREATE TABLE reports (report_id INTEGER PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL)");
-		
-        // Add new columns to the image info table.
-        statement.execute("ALTER TABLE tsk_image_info ADD COLUMN size INTEGER;");
-        statement.execute("ALTER TABLE tsk_image_info ADD COLUMN md5 TEXT;");
-        statement.execute("ALTER TABLE tsk_image_info ADD COLUMN display_name TEXT;");
-		
+
+		// Add new columns to the image info table.
+		statement.execute("ALTER TABLE tsk_image_info ADD COLUMN size INTEGER;");
+		statement.execute("ALTER TABLE tsk_image_info ADD COLUMN md5 TEXT;");
+		statement.execute("ALTER TABLE tsk_image_info ADD COLUMN display_name TEXT;");
+
 		// Add a new column to the file system info table.
-        statement.execute("ALTER TABLE tsk_fs_info ADD COLUMN display_name TEXT;");
+		statement.execute("ALTER TABLE tsk_fs_info ADD COLUMN display_name TEXT;");
 		
 		// Add a new column to the file table.
 		statement.execute("ALTER TABLE tsk_files ADD COLUMN meta_seq INTEGER;");
@@ -240,11 +240,11 @@ public class SleuthkitCase {
 		// new column. Note that addition of the new column is a denormalization 
 		// to optimize attribute queries.
 		statement.execute("ALTER TABLE blackboard_attributes ADD COLUMN artifact_type_id INTEGER NULL NOT NULL DEFAULT -1;");
-        statement.execute("CREATE INDEX attribute_artifactTypeId ON blackboard_attributes(artifact_type_id);");
-        statement.execute("CREATE INDEX attribute_valueText ON blackboard_attributes(value_text);");
-        statement.execute("CREATE INDEX attribute_valueInt32 ON blackboard_attributes(value_int32);");
-        statement.execute("CREATE INDEX attribute_valueInt64 ON blackboard_attributes(value_int64);");
-        statement.execute("CREATE INDEX attribute_valueDouble ON blackboard_attributes(value_double);");
+		statement.execute("CREATE INDEX attribute_artifactTypeId ON blackboard_attributes(artifact_type_id);");
+		statement.execute("CREATE INDEX attribute_valueText ON blackboard_attributes(value_text);");
+		statement.execute("CREATE INDEX attribute_valueInt32 ON blackboard_attributes(value_int32);");
+		statement.execute("CREATE INDEX attribute_valueInt64 ON blackboard_attributes(value_int64);");
+		statement.execute("CREATE INDEX attribute_valueDouble ON blackboard_attributes(value_double);");
 		Statement updateStatement = con.createStatement();
 		ResultSet resultSet = statement.executeQuery(
 				"SELECT attrs.artifact_id, arts.artifact_type_id " +
