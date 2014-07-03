@@ -70,7 +70,8 @@ mactime [-b body_file] [-p password_file] [-g group_file] [-i day|hour idx_file]
 		-g: Specifies the group file location, else GIDs are used
 		-p: Specifies the password file location, else UIDs are used
 		-V: Prints the version to STDOUT
-		[DATE]: starting date (yyyy-mm-dd) or range (yyyy-mm-dd..yyyy-mm-dd)
+		[DATE]: starting date (yyyy-mm-dd) or range (yyyy-mm-dd..yyyy-mm-dd) 
+		[DATE]: date with time (yyyy-mm-ddThh:mm:ss), using with range one or both can have time
 EOF
     exit(1);
 }
@@ -330,6 +331,9 @@ sub parse_isodate {
     my $yday = 0;
     if ($iso_date =~ /^(\d\d\d\d)\-(\d\d)\-(\d\d)$/) {
         return mktime($sec, $min, $hour, $3, $2 - 1, $1 - 1900, $wday, $yday);
+    }
+    elsif ($iso_date =~ /^(\d\d\d\d)\-(\d\d)\-(\d\d)T(\d\d):(\d\d):(\d\d)$/) {
+        return mktime($6, $5, $4, $3, $2 - 1, $1 - 1900, $wday, $yday);
     }
     else {
         return -1;
