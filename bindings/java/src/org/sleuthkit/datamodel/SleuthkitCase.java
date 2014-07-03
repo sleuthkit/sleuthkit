@@ -980,7 +980,7 @@ public class SleuthkitCase {
 	 * @param subString value substring of the string attribute of the attrType
 	 * type to look for
 	 * @param startsWith if true, the artifact attribute string should start
-     * with the substring, if false, it should just contain it
+	 * with the substring, if false, it should just contain it
 	 * @return a list of blackboard artifacts with such an attribute
 	 * @throws TskCoreException exception thrown if a critical error occurred
 	 * within tsk core and artifacts could not be queried
@@ -1189,7 +1189,7 @@ public class SleuthkitCase {
 
 	/**
 	 * Get all of the blackboard artifact types that are in use in the
-     * blackboard.
+	 * blackboard.
 	 *
 	 * @return List of blackboard artifact types
 	 * @throws TskCoreException
@@ -1856,7 +1856,7 @@ public class SleuthkitCase {
 	
 	/**
 	 * Get artifact type name for the given string. Will throw an error if that
-     * artifact doesn't exist. Use addArtifactType(...) to create a new one.
+	 * artifact doesn't exist. Use addArtifactType(...) to create a new one.
 	 *
 	 * @param artifactTypeID id for an artifact type
 	 * @return name of that artifact type
@@ -1890,8 +1890,8 @@ public class SleuthkitCase {
 
 	/**
 	 * Get artifact type display name for the given string. Will throw an error
-     * if that artifact doesn't exist. Use addArtifactType(...) to create a new
-     * one.
+	 * if that artifact doesn't exist. Use addArtifactType(...) to create a new
+	 * one.
 	 *
 	 * @param artifactTypeID id for an artifact type
 	 * @return display name of that artifact type
@@ -1925,7 +1925,7 @@ public class SleuthkitCase {
 
 	/**
 	 * Add an artifact type with the given name. Will return an id that can be
-     * used to look that artifact type up.
+	 * used to look that artifact type up.
 	 *
 	 * @param artifactTypeName System (unique) name of artifact
 	 * @param displayName Display (non-unique) name of artifact
@@ -2076,8 +2076,8 @@ public class SleuthkitCase {
 
 	/**
 	 * Add a new blackboard artifact with the given type. If that artifact type
-     * does not exist an error will be thrown. The artifact typename can be
-     * looked up in the returned blackboard artifact
+	 * does not exist an error will be thrown. The artifact typename can be
+	 * looked up in the returned blackboard artifact
 	 *
 	 * @param artifactTypeID the type the given artifact should have
 	 * @param obj_id the content object id associated with this artifact
