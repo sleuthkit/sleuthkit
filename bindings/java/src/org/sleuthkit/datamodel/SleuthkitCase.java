@@ -262,8 +262,7 @@ public class SleuthkitCase {
 		resultSet.close();
 		updateStatement.close();
 
-		//Convert existing tag taggedArtifact and  attribute rows to rows in the 
-		// new tables.
+		// Convert existing tag artifact and attribute rows to rows in the new tags tables.
 		// TODO: This code depends on prepared statements that could evolve with
 		// time, breaking this upgrade. The code that follows should be rewritten 
 		// to do everything with SQL specific to the state of the database at 
@@ -809,7 +808,7 @@ public class SleuthkitCase {
 	/**
 	 * Get all blackboard artifacts of a given type
 	 *
-	 * @param artifactTypeID taggedArtifact type id (must exist in database)
+	 * @param artifactTypeID artifact type id (must exist in database)
 	 * @return list of blackboard artifacts
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
@@ -880,7 +879,7 @@ public class SleuthkitCase {
 	/**
 	 * Get count of blackboard artifacts of a given type
 	 *
-	 * @param artifactTypeID taggedArtifact type id (must exist in database)
+	 * @param artifactTypeID artifact type id (must exist in database)
 	 * @return count of artifacts
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
@@ -980,8 +979,8 @@ public class SleuthkitCase {
 	 * artifacts
 	 * @param subString value substring of the string attribute of the attrType
 	 * type to look for
-	 * @param startsWith if true, the taggedArtifact attribute string should start
- with the substring, if false, it should just contain it
+	 * @param startsWith if true, the artifact attribute string should start
+     * with the substring, if false, it should just contain it
 	 * @return a list of blackboard artifacts with such an attribute
 	 * @throws TskCoreException exception thrown if a critical error occurred
 	 * within tsk core and artifacts could not be queried
@@ -1152,10 +1151,10 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get _standard_ blackboard taggedArtifact types in use.  This does
+	 * Get _standard_ blackboard artifact types in use.  This does
      * not currently return user-defined ones. 
 	 *
-	 * @return list of blackboard taggedArtifact types
+	 * @return list of blackboard artifact types
 	 * @throws TskCoreException exception thrown if a critical error occurred
 	 * within tsk core
 	 */
@@ -1189,10 +1188,10 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get all of the blackboard taggedArtifact types that are in use in the
- blackboard.
+	 * Get all of the blackboard artifact types that are in use in the
+     * blackboard.
 	 *
-	 * @return List of blackboard taggedArtifact types
+	 * @return List of blackboard artifact types
 	 * @throws TskCoreException
 	 */
 	public ArrayList<BlackboardArtifact.ARTIFACT_TYPE> getBlackboardArtifactTypesInUse() throws TskCoreException {
@@ -1292,8 +1291,8 @@ public class SleuthkitCase {
 	 * Helper method to get all artifacts matching the type id name and object
 	 * id
 	 *
-	 * @param artifactTypeID taggedArtifact type id
-	 * @param artifactTypeName taggedArtifact type name
+	 * @param artifactTypeID artifact type id
+	 * @param artifactTypeName artifact type name
 	 * @param obj_id associated object id
 	 * @return list of blackboard artifacts
 	 * @throws TskCoreException exception thrown if a critical error occurs
@@ -1325,7 +1324,7 @@ public class SleuthkitCase {
 	 * Helper method to get count of all artifacts matching the type id name and
 	 * object id
 	 *
-	 * @param artifactTypeID taggedArtifact type id
+	 * @param artifactTypeID artifact type id
 	 * @param obj_id associated object id
 	 * @return count of matching blackboard artifacts
 	 * @throws TskCoreException exception thrown if a critical error occurs
@@ -1365,8 +1364,8 @@ public class SleuthkitCase {
 	/**
 	 * helper method to get all artifacts matching the type id name
 	 *
-	 * @param artifactTypeID taggedArtifact type id
-	 * @param artifactTypeName taggedArtifact type name
+	 * @param artifactTypeID artifact type id
+	 * @param artifactTypeName artifact type name
 	 * @return list of blackboard artifacts
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
@@ -1395,7 +1394,7 @@ public class SleuthkitCase {
 	/**
 	 * Get all blackboard artifacts of a given type for the given object id
 	 *
-	 * @param artifactTypeName taggedArtifact type name
+	 * @param artifactTypeName artifact type name
 	 * @param obj_id object id
 	 * @return list of blackboard artifacts
 	 * @throws TskCoreException exception thrown if a critical error occurs
@@ -1412,7 +1411,7 @@ public class SleuthkitCase {
 	/**
 	 * Get all blackboard artifacts of a given type for the given object id
 	 *
-	 * @param artifactTypeID taggedArtifact type id (must exist in database)
+	 * @param artifactTypeID artifact type id (must exist in database)
 	 * @param obj_id object id
 	 * @return list of blackboard artifacts
 	 * @throws TskCoreException exception thrown if a critical error occurs
@@ -1427,7 +1426,7 @@ public class SleuthkitCase {
 	/**
 	 * Get all blackboard artifacts of a given type for the given object id
 	 *
-	 * @param artifactType taggedArtifact type enum
+	 * @param artifactType artifact type enum
 	 * @param obj_id object id
 	 * @return list of blackboard artifacts
 	 * @throws TskCoreException exception thrown if a critical error occurs
@@ -1441,7 +1440,7 @@ public class SleuthkitCase {
 	 * Get count of all blackboard artifacts of a given type for the given
 	 * object id
 	 *
-	 * @param artifactTypeName taggedArtifact type name
+	 * @param artifactTypeName artifact type name
 	 * @param obj_id object id
 	 * @return count of blackboard artifacts
 	 * @throws TskCoreException exception thrown if a critical error occurs
@@ -1459,7 +1458,7 @@ public class SleuthkitCase {
 	 * Get count of all blackboard artifacts of a given type for the given
 	 * object id
 	 *
-	 * @param artifactTypeID taggedArtifact type id (must exist in database)
+	 * @param artifactTypeID artifact type id (must exist in database)
 	 * @param obj_id object id
 	 * @return count of blackboard artifacts
 	 * @throws TskCoreException exception thrown if a critical error occurs
@@ -1473,7 +1472,7 @@ public class SleuthkitCase {
 	 * Get count of all blackboard artifacts of a given type for the given
 	 * object id
 	 *
-	 * @param artifactType taggedArtifact type enum
+	 * @param artifactType artifact type enum
 	 * @param obj_id object id
 	 * @return count of blackboard artifacts
 	 * @throws TskCoreException exception thrown if a critical error occurs
@@ -1486,7 +1485,7 @@ public class SleuthkitCase {
 	/**
 	 * Get all blackboard artifacts of a given type
 	 *
-	 * @param artifactTypeName taggedArtifact type name
+	 * @param artifactTypeName artifact type name
 	 * @return list of blackboard artifacts
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
@@ -1502,7 +1501,7 @@ public class SleuthkitCase {
 	/**
 	 * Get all blackboard artifacts of a given type
 	 *
-	 * @param artifactType taggedArtifact type enum
+	 * @param artifactType artifact type enum
 	 * @return list of blackboard artifacts
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
@@ -1515,7 +1514,7 @@ public class SleuthkitCase {
 	 * Get all blackboard artifacts of a given type with an attribute of a given
 	 * type and String value.
 	 *
-	 * @param artifactType taggedArtifact type enum
+	 * @param artifactType artifact type enum
 	 * @param attrType attribute type enum
 	 * @param value String value of attribute
 	 * @return list of blackboard artifacts
@@ -1547,10 +1546,10 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get the blackboard taggedArtifact with the given taggedArtifact id
+	 * Get the blackboard artifact with the given artifact id
 	 *
-	 * @param artifactID taggedArtifact ID
-	 * @return blackboard taggedArtifact
+	 * @param artifactID artifact ID
+	 * @return blackboard artifact
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
 	 */
@@ -1575,7 +1574,7 @@ public class SleuthkitCase {
 	 * Add a blackboard attribute.
 	 *
 	 * @param attr A blackboard attribute. 
-	 * @param artifactTypeId The type of taggedArtifact associated with the attribute.
+	 * @param artifactTypeId The type of artifact associated with the attribute.
 	 * @throws TskCoreException thrown if a critical error occurs.
 	 */
 	void addBlackboardAttribute(BlackboardAttribute attr, int artifactTypeId) throws TskCoreException {
@@ -1625,7 +1624,7 @@ public class SleuthkitCase {
 	 * Add a set blackboard attributes.
 	 *
 	 * @param attributes A set of blackboard attribute. 
-	 * @param artifactTypeId The type of taggedArtifact associated with the attributes.
+	 * @param artifactTypeId The type of artifact associated with the attributes.
 	 * @throws TskCoreException thrown if a critical error occurs.
 	 */
 	void addBlackboardAttributes(Collection<BlackboardAttribute> attributes, int artifactTypeId) throws TskCoreException {
@@ -1813,10 +1812,10 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get the taggedArtifact type id associated with an taggedArtifact type name.
+	 * Get the artifact type id associated with an artifact type name.
 	 *
-	 * @param attrTypeName An taggedArtifact type name.
-	 * @return An taggedArtifact id or -1 if the attribute type does not exist.
+	 * @param attrTypeName An artifact type name.
+	 * @return An artifact id or -1 if the attribute type does not exist.
 	 * @throws TskCoreException If an error occurs accessing the case database.
 	 * 
 	 */
@@ -1856,11 +1855,11 @@ public class SleuthkitCase {
 	}
 	
 	/**
-	 * Get taggedArtifact type name for the given string. Will throw an error if that
- taggedArtifact doesn't exist. Use addArtifactType(...) to create a new one.
+	 * Get artifact type name for the given string. Will throw an error if that
+     * artifact doesn't exist. Use addArtifactType(...) to create a new one.
 	 *
-	 * @param artifactTypeID id for an taggedArtifact type
-	 * @return name of that taggedArtifact type
+	 * @param artifactTypeID id for an artifact type
+	 * @return name of that artifact type
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
 	 */
@@ -1890,12 +1889,12 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get taggedArtifact type display name for the given string. Will throw an error
- if that taggedArtifact doesn't exist. Use addArtifactType(...) to create a new
- one.
+	 * Get artifact type display name for the given string. Will throw an error
+     * if that artifact doesn't exist. Use addArtifactType(...) to create a new
+     * one.
 	 *
-	 * @param artifactTypeID id for an taggedArtifact type
-	 * @return display name of that taggedArtifact type
+	 * @param artifactTypeID id for an artifact type
+	 * @return display name of that artifact type
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
 	 */
@@ -1925,12 +1924,12 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Add an taggedArtifact type with the given name. Will return an id that can be
- used to look that taggedArtifact type up.
+	 * Add an artifact type with the given name. Will return an id that can be
+     * used to look that artifact type up.
 	 *
-	 * @param artifactTypeName System (unique) name of taggedArtifact
-	 * @param displayName Display (non-unique) name of taggedArtifact
-	 * @return ID of taggedArtifact added
+	 * @param artifactTypeName System (unique) name of artifact
+	 * @param displayName Display (non-unique) name of artifact
+	 * @return ID of artifact added
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
 	 */
@@ -1942,10 +1941,10 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * helper method. add an taggedArtifact with the given type and id
+	 * helper method. add an artifact with the given type and id
 	 *
 	 * @param artifactTypeName type name
-	 * @param displayName Display (non-unique) name of taggedArtifact
+	 * @param displayName Display (non-unique) name of artifact
 	 * @param typeID type id
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
@@ -2076,13 +2075,13 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Add a new blackboard taggedArtifact with the given type. If that taggedArtifact type
- does not exist an error will be thrown. The taggedArtifact typename can be
- looked up in the returned blackboard taggedArtifact
+	 * Add a new blackboard artifact with the given type. If that artifact type
+     * does not exist an error will be thrown. The artifact typename can be
+     * looked up in the returned blackboard artifact
 	 *
-	 * @param artifactTypeID the type the given taggedArtifact should have
-	 * @param obj_id the content object id associated with this taggedArtifact
-	 * @return a new blackboard taggedArtifact
+	 * @param artifactTypeID the type the given artifact should have
+	 * @param obj_id the content object id associated with this artifact
+	 * @return a new blackboard artifact
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
 	 */
@@ -2118,11 +2117,11 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Add a new blackboard taggedArtifact with the given type.
+	 * Add a new blackboard artifact with the given type.
 	 *
-	 * @param artifactType the type the given taggedArtifact should have
-	 * @param obj_id the content object id associated with this taggedArtifact
-	 * @return a new blackboard taggedArtifact
+	 * @param artifactType the type the given artifact should have
+	 * @param obj_id the content object id associated with this artifact
+	 * @return a new blackboard artifact
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
 	 */
@@ -2159,7 +2158,7 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Add one of the built in taggedArtifact types
+	 * Add one of the built in artifact types
 	 *
 	 * @param type type enum
 	 * @throws TskException
@@ -5404,7 +5403,7 @@ public class SleuthkitCase {
 		
 	/**
 	 * Inserts a row into the blackboard_artifact_tags table in the case database.
-     * @param [in] taggedArtifact The blackboard taggedArtifact to tag.
+     * @param [in] artifact The blackboard artifact to tag.
      * @param [in] tagName The name to use for the tag.
      * @param [in] comment A comment to store with the tag.
 	 * @return A BlackboardArtifactTag data transfer object (DTO) for the new row.
@@ -5561,7 +5560,7 @@ public class SleuthkitCase {
 	/**
 	 * Selects the rows in the blackboard_artifacts_tags table in the case database with a 
 	 * specified foreign key into the blackboard_artifacts table.
-	 * @param [in] taggedArtifact A data transfer object (DTO) for the taggedArtifact to match.
+	 * @param [in] artifact A data transfer object (DTO) for the artifact to match.
 	 * @return A list, possibly empty, of BlackboardArtifactTag data transfer objects (DTOs) for the rows.
 	 * @throws TskCoreException 
 	 */
