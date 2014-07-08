@@ -182,6 +182,6 @@ public class LocalFile extends AbstractFile {
 
 	@Override
 	public String toString(boolean preserveState) {
-		return super.toString(preserveState) + "LocalFile [\t" + "]\t";
+		return super.toString(preserveState) + "LocalFile [\t" + "]\t"; //NON-NLS
 	}
 }

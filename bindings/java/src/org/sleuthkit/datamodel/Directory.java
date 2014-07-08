@@ -94,6 +94,6 @@ public class Directory extends FsContent {
 	
 	@Override
 	public String toString(boolean preserveState){
-		return super.toString(preserveState) + "Directory [\t" + "]\t";
+		return super.toString(preserveState) + "Directory [\t" + "]\t"; //NON-NLS
 	}
 }

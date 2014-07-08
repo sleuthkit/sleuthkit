@@ -295,7 +295,7 @@ public class SleuthkitJNI {
 			 * @return the currently processing directory
 			 */
 			public synchronized String currentDirectory() {
-				return autoDbPointer == 0 ? "NO_INFO" : getCurDirNat(autoDbPointer);
+				return autoDbPointer == 0 ? "NO_INFO" : getCurDirNat(autoDbPointer); //NON-NLS
 			}
 		}
 	}

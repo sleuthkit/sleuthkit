@@ -20,6 +20,8 @@ package org.sleuthkit.datamodel;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.ResourceBundle;
+
 
 /**
  * Represents an artifact as stored in the Blackboard. Artifacts are a collection
@@ -28,6 +30,8 @@ import java.util.List;
  * to represent artifacts queried from the blackboard.
  */
 public class BlackboardArtifact implements SleuthkitVisitableItem {
+
+    private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	/**
 	 * Enum for artifact types.  The C++ code has the full description of 
@@ -41,45 +45,85 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * See framework/Services/TskBlackboard.* */
 	public enum ARTIFACT_TYPE implements SleuthkitVisitableItem {
 
-		TSK_GEN_INFO(1, "TSK_GEN_INFO", "General Info"), ///< Default type
-		TSK_WEB_BOOKMARK(2, "TSK_WEB_BOOKMARK", "Web Bookmarks"), ///< web bookmarks
-		TSK_WEB_COOKIE(3, "TSK_WEB_COOKIE", "Web Cookies"), ///< web cookies
-		TSK_WEB_HISTORY(4, "TSK_WEB_HISTORY", "Web History"), ///< web history
-		TSK_WEB_DOWNLOAD(5, "TSK_WEB_DOWNLOAD", "Web Downloads"), ///< web downloads
-		TSK_RECENT_OBJECT(6, "TSK_RECENT_OBJ", "Recent Documents"), ///< recent objects 
-		TSK_GPS_TRACKPOINT(7, "TSK_GPS_TRACKPOINT", "GPS Trackpoints"), ///< trackpoint (geo location data)
-		TSK_INSTALLED_PROG(8, "TSK_INSTALLED_PROG", "Installed Programs"), ///< installed programs
-		TSK_KEYWORD_HIT(9, "TSK_KEYWORD_HIT", "Keyword Hits"), ///< keyword search hits
-		TSK_HASHSET_HIT(10, "TSK_HASHSET_HIT", "Hashset Hits"), ///< hashset hits
-		TSK_DEVICE_ATTACHED(11, "TSK_DEVICE_ATTACHED", "Devices Attached"), ///< attached devices
-		TSK_INTERESTING_FILE_HIT(12, "TSK_INTERESTING_FILE_HIT", "Interesting Files"), ///< an interesting/notable file hit
-		TSK_EMAIL_MSG(13, "TSK_EMAIL_MSG", "E-Mail Messages"), ///< email message
-		TSK_EXTRACTED_TEXT(14, "TSK_EXTRACTED_TEXT", "Extracted Text"), ///< text extracted from file
-		TSK_WEB_SEARCH_QUERY(15, "TSK_WEB_SEARCH_QUERY", "Web Search"), ///< web search engine query extracted from web history
-		TSK_METADATA_EXIF(16, "TSK_METADATA_EXIF", "EXIF Metadata"), ///< EXIF Metadata
+
+		TSK_GEN_INFO(1, "TSK_GEN_INFO", //NON-NLS
+                     bundle.getString("BlackboardArtifact.tskGenInfo.text")), ///< Default type
+		TSK_WEB_BOOKMARK(2, "TSK_WEB_BOOKMARK", //NON-NLS
+                         bundle.getString("BlackboardArtifact.tskWebBookmark.text")), ///< web bookmarks
+		TSK_WEB_COOKIE(3, "TSK_WEB_COOKIE", //NON-NLS
+                       bundle.getString("BlackboardArtifact.tskWebCookie.text")), ///< web cookies
+		TSK_WEB_HISTORY(4, "TSK_WEB_HISTORY", //NON-NLS
+                        bundle.getString("BlackboardArtifact.tskWebHistory.text")), ///< web history
+		TSK_WEB_DOWNLOAD(5, "TSK_WEB_DOWNLOAD", //NON-NLS
+                         bundle.getString("BlackboardArtifact.tskWebDownload.text")), ///< web downloads
+		TSK_RECENT_OBJECT(6, "TSK_RECENT_OBJ", //NON-NLS
+                          bundle.getString("BlackboardArtifact.tsk.recentObject.text")), ///< recent objects
+		TSK_GPS_TRACKPOINT(7, "TSK_GPS_TRACKPOINT", //NON-NLS
+                           bundle.getString("BlackboardArtifact.tskGpsTrackpoint.text")), ///< trackpoint (geo location data)
+		TSK_INSTALLED_PROG(8, "TSK_INSTALLED_PROG", //NON-NLS
+                           bundle.getString("BlackboardArtifact.tskInstalledProg.text")), ///< installed programs
+		TSK_KEYWORD_HIT(9, "TSK_KEYWORD_HIT", //NON-NLS
+                        bundle.getString("BlackboardArtifact.tskKeywordHits.text")), ///< keyword search hits
+		TSK_HASHSET_HIT(10, "TSK_HASHSET_HIT", //NON-NLS
+                        bundle.getString("BlackboardArtifact.tskHashsetHit.text")), ///< hashset hits
+		TSK_DEVICE_ATTACHED(11, "TSK_DEVICE_ATTACHED", //NON-NLS
+                            bundle.getString("BlackboardArtifact.tskDeviceAttached.text")), ///< attached devices
+		TSK_INTERESTING_FILE_HIT(12, "TSK_INTERESTING_FILE_HIT", //NON-NLS
+                                 bundle.getString("BlackboardArtifact.tskInterestingFileHit.text")), ///< an interesting/notable file hit
+		TSK_EMAIL_MSG(13, "TSK_EMAIL_MSG", //NON-NLS
+                      bundle.getString("BlackboardArtifact.tskEmailMsg.text")), ///< email message
+		TSK_EXTRACTED_TEXT(14, "TSK_EXTRACTED_TEXT", //NON-NLS
+                           bundle.getString("BlackboardArtifact.tskExtractedText.text")), ///< text extracted from file
+		TSK_WEB_SEARCH_QUERY(15,"TSK_WEB_SEARCH_QUERY", //NON-NLS
+                             bundle.getString("BlackboardArtifact.tskWebSearchQuery.text")), ///< web search engine query extracted from web history
+		TSK_METADATA_EXIF(16, "TSK_METADATA_EXIF", //NON-NLS
+                          bundle.getString("BlackboardArtifact.tskMetadataExif.text")), ///< EXIF Metadata
 		@Deprecated
-		TSK_TAG_FILE(17, "TSK_TAG_FILE", "Tagged Files"), ///< tagged files
-		@Deprecated
-		TSK_TAG_ARTIFACT(18, "TSK_TAG_ARTIFACT", "Tagged Results"), ///< tagged results/artifacts
-		TSK_OS_INFO(19, "TSK_OS_INFO", "Operating System Information"), ///< Information pertaining to an operating system.
-		TSK_OS_ACCOUNT(20, "TSK_OS_ACCOUNT", "Operating System User Account"), ///< An operating system user account.
-		TSK_SERVICE_ACCOUNT(21, "TSK_SERVICE_ACCOUNT", "Accounts"), ///< An application/service/web user account.
-        TSK_TOOL_OUTPUT(22, "TSK_TOOL_OUTPUT", "Raw Tool Output"), ///< Output from an external tool or module that (raw text)
-		TSK_CONTACT(23, "TSK_CONTACT", "Contacts"), ///< A Contact extracted from a phone, or from an Addressbook/Email/Messaging Application
-		TSK_MESSAGE(24, "TSK_MESSAGE", "Messages"), ///< An SMS/MMS message extracted from phone, or from another messaging application, like IM
-		TSK_CALLLOG(25, "TSK_CALLLOG", "Call Logs"), ///< A Phone call log extracted from a phones or softphone application
-		TSK_CALENDAR_ENTRY(26, "TSK_CALENDAR_ENTRY", "Calendar Entries"), ///< A Calendar entry from a phone, PIM or a Calendar application.
-		TSK_SPEED_DIAL_ENTRY(27, "TSK_SPEED_DIAL_ENTRY", "Speed Dial Entries"), ///< A speed dial entry from a phone 
-		TSK_BLUETOOTH_PAIRING(28, "TSK_BLUETOOTH_PAIRING", "BlueTooth Pairings"), ///< A bluetooth pairing entry
-		TSK_GPS_BOOKMARK(29, "TSK_GPS_BOOKMARK", "GPS Bookmarks"),	// GPS Bookmarks
-		TSK_GPS_LAST_KNOWN_LOCATION(30, "TSK_GPS_LAST_KNOWN_LOCATION", "GPS Last Known Location"),	// GPS Last known location
-		TSK_GPS_SEARCH(31, "TSK_GPS_SEARCH", "GPS Searches"),	// GPS Searches
-		TSK_PROG_RUN(32, "TSK_PROG_RUN", "Run Programs"),  ///< Application run information
-		TSK_ENCRYPTION_DETECTED(33, "TSK_ENCRYPTION_DETECTED", "Encryption Detected"), ///< Encrypted File 
-		TSK_EXT_MISMATCH_DETECTED(34, "TSK_EXT_MISMATCH_DETECTED", "Extension Mismatch Detected"), ///< Extension Mismatch
-		TSK_INTERESTING_ARTIFACT_HIT(35, "TSK_INTERESTING_ARTIFACT_HIT", "Interesting Results"),	// Any artifact that should be called out
-		TSK_GPS_ROUTE(36, "TSK_GPS_ROUTE", "GPS Route"),	// Route bases on GPS coordinates
-		; 
+        // tags are now added via a special table, not blackboard
+        TSK_TAG_FILE(17, "TSK_TAG_FILE", //NON-NLS
+                     bundle.getString("BlackboardArtifact.tagFile.text")), ///< tagged files
+        @Deprecated
+        // tags are now added via a special table, not blackboard
+		TSK_TAG_ARTIFACT(18, "TSK_TAG_ARTIFACT", //NON-NLS
+                         bundle.getString("BlackboardArtifact.tskTagArtifact.text")), ///< tagged results/artifacts
+		TSK_OS_INFO(19, "TSK_OS_INFO", //NON-NLS
+                    bundle.getString("BlackboardArtifact.tskOsInfo.text")), ///< Information pertaining to an operating system.
+		TSK_OS_ACCOUNT(20, "TSK_OS_ACCOUNT", //NON-NLS
+                       bundle.getString("BlackboardArtifact.tskOsAccount.text")), ///< An operating system user account.
+		TSK_SERVICE_ACCOUNT(21, "TSK_SERVICE_ACCOUNT", //NON-NLS
+                            bundle.getString("BlackboardArtifact.tskServiceAccount.text")), ///< An application/service/web user account.
+        TSK_TOOL_OUTPUT(22, "TSK_TOOL_OUTPUT", //NON-NLS
+                        bundle.getString("BlackboardArtifact.tskToolOutput.text")), ///< Output from an external tool or module that (raw text)
+		TSK_CONTACT(23, "TSK_CONTACT", //NON-NLS
+                    bundle.getString("BlackboardArtifact.tskContact.text")), ///< A Contact extracted from a phone, or from an Addressbook/Email/Messaging Application
+		TSK_MESSAGE(24, "TSK_MESSAGE", //NON-NLS
+                    bundle.getString("BlackboardArtifact.tskMessage.text")), ///< An SMS/MMS message extracted from phone, or from another messaging application, like IM
+		TSK_CALLLOG(25, "TSK_CALLLOG", //NON-NLS
+                    bundle.getString("BlackboardArtifact.tskCalllog.text")), ///< A Phone call log extracted from a phones or softphone application
+		TSK_CALENDAR_ENTRY(26, "TSK_CALENDAR_ENTRY", //NON-NLS
+                           bundle.getString("BlackboardArtifact.tskCalendarEntry.text")), ///< A Calendar entry from a phone, PIM or a Calendar application.
+		TSK_SPEED_DIAL_ENTRY(27, "TSK_SPEED_DIAL_ENTRY", //NON-NLS
+                             bundle.getString("BlackboardArtifact.tskSpeedDialEntry.text")), ///< A speed dial entry from a phone
+		TSK_BLUETOOTH_PAIRING(28, "TSK_BLUETOOTH_PAIRING", //NON-NLS
+                              bundle.getString("BlackboardArtifact.tskBluetoothPairing.text")), ///< A bluetooth pairing entry
+		TSK_GPS_BOOKMARK(29, "TSK_GPS_BOOKMARK", //NON-NLS
+                         bundle.getString("BlackboardArtifact.tskGpsBookmark.text")),	// GPS Bookmarks
+		TSK_GPS_LAST_KNOWN_LOCATION(30, "TSK_GPS_LAST_KNOWN_LOCATION", //NON-NLS
+                                    bundle.getString("BlackboardArtifact.tskGpsLastKnownLocation.text")),	// GPS Last known location
+		TSK_GPS_SEARCH(31, "TSK_GPS_SEARCH", //NON-NLS
+                       bundle.getString("BlackboardArtifact.tskGpsSearch.text")),	// GPS Searches
+		TSK_PROG_RUN(32, "TSK_PROG_RUN", //NON-NLS
+                     bundle.getString("BlackboardArtifact.tskProgRun.text")),  ///< Application run information
+		TSK_ENCRYPTION_DETECTED(33, "TSK_ENCRYPTION_DETECTED", //NON-NLS
+                                bundle.getString("BlackboardArtifact.tskEncryptionDetected.text")), ///< Encrypted File
+		TSK_EXT_MISMATCH_DETECTED(34, "TSK_EXT_MISMATCH_DETECTED", //NON-NLS
+                                  bundle.getString("BlackboardArtifact.tskExtMismatchDetected.text")), ///< Extension Mismatch
+		TSK_INTERESTING_ARTIFACT_HIT(35, "TSK_INTERESTING_ARTIFACT_HIT", //NON-NLS
+                                     bundle.getString("BlackboardArtifact.tskInterestingArtifactHit.text")),	// Any artifact that should be called out
+        TSK_GPS_ROUTE(36, "TSK_GPS_ROUTE", //NON-NLS
+                      bundle.getString("BlackboardArtifact.tskGpsRoute.text")),	// Route based on GPS coordinates
+        ; 
+
 		/* SEE ABOVE -- KEEP C++ CODE IN SYNC */
 		private final String label;
 		private final int typeID;
@@ -297,6 +341,6 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 	@Override
 	public String toString() {
-		return "BlackboardArtifact{" + "artifactID=" + artifactID + ", objID=" + objID + ", artifactTypeID=" + artifactTypeID + ", artifactTypeName=" + artifactTypeName + ", displayName=" + displayName + ", Case=" + Case + '}';
+		return "BlackboardArtifact{" + "artifactID=" + artifactID + ", objID=" + objID + ", artifactTypeID=" + artifactTypeID + ", artifactTypeName=" + artifactTypeName + ", displayName=" + displayName + ", Case=" + Case + '}'; //NON-NLS
 	}
 }
