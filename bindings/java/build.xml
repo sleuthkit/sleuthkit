@@ -14,6 +14,7 @@
 	<property name="src" location="src/org/sleuthkit/datamodel"/>
 	<property name="sample" location="src/org/sleuthkit/datamodel/Examples"/>
 	<property name="build" location="build/"/>
+    <property name="build-datamodel" location="build/org/sleuthkit/datamodel"/>
 	<property name="dist"  location="dist"/>
 	<property name="lib" location="lib"/>
 	<property name="test" location="test"/>
@@ -114,6 +115,15 @@
 		<javac debug="on" srcdir="${src}" destdir="${build}" classpathref="libraries" includeantruntime="false">
 			<compilerarg value="-Xlint"/>
 		</javac>
+        <!-- Copy Bundle*.properties files into DataModel build directory, so they are included in the .jar -->
+        <copy todir="${build-datamodel}">
+            <fileset dir="${src}" includes="**/*.properties"/>
+        </copy>
+
+        <!-- Verify sample compiles -->
+		<javac debug="on" srcdir="${sample}" destdir="${build}" includeantruntime="false">
+			<classpath refid="libraries"/>
+		</javac>
 	</target>
 
 	<target name="dist" depends="check-build" unless="up-to-date">
@@ -174,35 +184,13 @@
 	</target>
 
 	<!-- NOTE: test and test-rebuild targets are in the OS-specific files -->
-		
-		
-	<!-- copy 64-bit dlls into the temp folder -->
-	<target name="copyWinTskLibs64ToTempDir">
-		<fileset dir="${env.TSK_HOME}/win32/x64/Release" id="win64dlls">
-			<include name="libewf.dll" />
-			<include name="zlib.dll"/>
-		</fileset>
-		<copy todir="${env.TEMP}" overwrite="true">
-			<fileset refid="win64dlls" />
-		</copy>
-		<copy todir="${env.TEMP}" overwrite="true">
-			<fileset refid="win64dlls" />
-		</copy>
-	</target>	
-		
-	<target name="compile-sample" depends="compile"
-			description="compile the sample" >
-		<javac debug="on" srcdir="${sample}" destdir="${build}" includeantruntime="false">
-			<classpath refid="libraries"/>
-		</javac>
-	</target>
-	
-	<target name="run-sample" depends="compile-sample, copyWinTskLibs64ToTempDir"
+
+	<target name="run-sample" depends="compile"
 			description="run the sample">
 		<java classname="org.sleuthkit.datamodel.Examples.Sample"
 			  fork="true"
 			  failonerror="true">
-			<env key="PATH" path="${env.TEMP}:${env.Path}"/>
+			<env key="PATH" path="${env.TEMP}:${env.Path}:${env.TSK_HOME}/win32/x64/Release"/>
 			<arg value="${image}"/>
 			<classpath refid="libraries"/>
 		</java>

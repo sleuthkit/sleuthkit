@@ -821,7 +821,7 @@ static uint8_t
         tsk_error_set_errno(TSK_ERR_HDB_CREATE);
         tsk_error_set_errstr(
             "%s: error creating index of index file %"PRIttocTSK,
-            func_name, idx_idx_file);
+            func_name, hdb_binsrch_info->idx_idx_fname);
         return 1;
     }
 #endif

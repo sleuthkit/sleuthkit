@@ -95,6 +95,6 @@ public class File extends FsContent {
 
 	@Override
 	public String toString(boolean preserveState){
-		return super.toString(preserveState) + "File [\t" + "]\t";
+		return super.toString(preserveState) + "File [\t" + "]\t"; //NON-NLS
 	}
 }

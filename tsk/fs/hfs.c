@@ -3403,6 +3403,8 @@ hfs_attrTypeName(uint32_t typeNum)
 }
 
 
+// TODO: Function description missing here no idea what it is supposed to return
+// in which circumstances.
 static uint8_t
 hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
     unsigned char *isCompressed, unsigned char *compDataInRSRC,
@@ -3420,6 +3422,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
     unsigned char done;         // Flag to indicate that we are done looping over leaf nodes
     uint16_t attribute_counter = 2;     // The ID of the next attribute to be loaded.
     HFS_INFO *hfs;
+    char *buffer = NULL;   // buffer to hold the attribute
 
 
     tsk_error_reset();
@@ -3441,11 +3444,11 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
         return 0;
     }
 
-    if (tsk_verbose)
+    if (tsk_verbose) {
         tsk_fprintf(stderr,
             "hfs_load_extended_attrs:  Processing file %" PRIuINUM "\n",
             fileID);
-
+    }
 
     // Open the Attributes File
     if (open_attr_file(fs, &attrFile)) {
@@ -3470,8 +3473,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
     if (nodeData == NULL) {
         error_detected(TSK_ERR_AUX_MALLOC,
             "hfs_load_extended_attrs: Could not malloc space for an Attributes file node");
-        close_attr_file(&attrFile);
-        return 1;
+        goto on_error;
     }
 
     // Initialize these
@@ -3502,11 +3504,9 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
             (char *) nodeData,
             attrFile.nodeSize, (TSK_FS_FILE_READ_FLAG_ENUM) 0);
         if (cnt != attrFile.nodeSize) {
-            free(nodeData);
             error_returned
                 ("hfs_load_extended_attrs: Could not read in a node from the Attributes File");
-            close_attr_file(&attrFile);
-            return 1;
+            goto on_error;
         }
 
         // Parse the Node header
@@ -3521,9 +3521,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
         if (nodeDescriptor->type != HFS_ATTR_NODE_INDEX) {
             error_detected(TSK_ERR_FS_READ,
                 "hfs_load_extended_attrs: Reached a non-INDEX and non-LEAF node in searching the Attributes File");
-            free(nodeData);
-            close_attr_file(&attrFile);
-            return 1;
+            goto on_error;
         }
 
         // OK, we are in an INDEX node.  loop over the records to find the last one whose key is
@@ -3533,12 +3531,10 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
         if (numRec == 0) {
             // This is wrong, there must always be at least 1 record in an INDEX node.
-            free(nodeData);
             error_detected(TSK_ERR_FS_READ,
                 "hfs_load_extended_attrs:Attributes File index node %"
                 PRIu32 " has zero records", nodeID);
-            close_attr_file(&attrFile);
-            return 1;
+            goto on_error;
         }
 
         for (recIndx = 0; recIndx < numRec; recIndx++) {
@@ -3588,9 +3584,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 if (recIndx == 0) {
                     // This is the first record, so no records are appropriate
                     // Nothing in this btree will match.  We can stop right here.
-                    free(nodeData);
-                    close_attr_file(&attrFile);
-                    return 0;
+                    goto on_exit;
                 }
 
                 // This is not the first record, so, the previous record's child is the one we want.
@@ -3694,7 +3688,6 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 hfs_attr_data *attrData;
                 uint32_t attributeLength;
                 int diff;       // Difference in bytes between the start of the record and the start of data.
-                char *buffer;   // buffer to hold the attribute
 
                 int conversionResult;
                 char nameBuff[MAX_ATTR_NAME_LENGTH];
@@ -3720,9 +3713,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                     HFS_ATTR_RECORD_INLINE_DATA) {
                     error_detected(TSK_ERR_FS_UNSUPFUNC,
                         "hfs_load_extended_attrs: The Attributes File record found was not of type INLINE_DATA");
-                    free(nodeData);
-                    close_attr_file(&attrFile);
-                    return 1;
+                    goto on_error;
                 }
 
                 // This is the length of the useful data, not including the record header
@@ -3732,9 +3723,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 if (buffer == NULL) {
                     error_detected(TSK_ERR_AUX_MALLOC,
                         "hfs_load_extended_attrs: Could not malloc space for the attribute.");
-                    free(nodeData);
-                    close_attr_file(&attrFile);
-                    return 1;
+                    goto on_error;
                 }
 
                 memcpy(buffer, attrData->attr_data, attributeLength);
@@ -3752,9 +3741,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 if (conversionResult != 0) {
                     error_returned
                         ("-- hfs_load_extended_attrs could not convert the attr_name in the btree key into a UTF8 attribute name");
-                    free(nodeData);
-                    close_attr_file(&attrFile);
-                    return 1;
+                    goto on_error;
                 }
 
 
@@ -3799,9 +3786,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                                         attr, TSK_FS_ATTR_RES)) == NULL) {
                                 error_returned
                                     (" - hfs_load_extended_attrs, FS_ATTR for uncompressed data");
-                                free(nodeData);
-                                close_attr_file(&attrFile);
-                                return 1;
+                                goto on_error;
                             }
 
                             if ((cmph->attr_bytes[0] & 0x0F) == 0x0F) {
@@ -3822,9 +3807,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                                         (size_t) uncSize)) {
                                     error_returned
                                         (" - hfs_load_extended_attrs");
-                                    free(nodeData);
-                                    close_attr_file(&attrFile);
-                                    return 1;
+                                    goto on_error;
                                 }
 
                             }
@@ -3845,9 +3828,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                                 if (uncBuf == NULL) {
                                     error_returned
                                         (" - hfs_load_extended_attrs, space for the uncompressed attr");
-                                    free(nodeData);
-                                    close_attr_file(&attrFile);
-                                    return 1;
+                                    goto on_error;
                                 }
 
                                 infResult = zlib_inflate(buffer + 16, (uint64_t) (attributeLength - 16),        // source, srcLen
@@ -3856,23 +3837,17 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                                 if (infResult != 0) {
                                     error_returned
                                         (" hfs_load_extended_attrs, zlib could not uncompress attr");
-                                    free(nodeData);
-                                    close_attr_file(&attrFile);
-                                    return 1;
+                                    goto on_error;
                                 }
                                 if (bytesConsumed != attributeLength - 16) {
                                     error_detected(TSK_ERR_FS_READ,
                                         " hfs_load_extended_attrs, zlib did not consumed the whole compressed data");
-                                    free(nodeData);
-                                    close_attr_file(&attrFile);
-                                    return 1;
+                                    goto on_error;
                                 }
                                 if (uLen != uncSize) {
                                     error_detected(TSK_ERR_FS_READ,
                                         " hfs_load_extended_attrs, actual uncompressed size not equal to the size in the compression record");
-                                    free(nodeData);
-                                    close_attr_file(&attrFile);
-                                    return 1;
+                                    goto on_error;
                                 }
                                 if (tsk_verbose)
                                     tsk_fprintf(stderr,
@@ -3886,9 +3861,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                                         (size_t) uncSize)) {
                                     error_returned
                                         (" - hfs_load_extended_attrs");
-                                    free(nodeData);
-                                    close_attr_file(&attrFile);
-                                    return 1;
+                                    goto on_error;
                                 }
 #else
                                 // ZLIB compression library is not available, so we will load a zero-length
@@ -3908,9 +3881,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                                         (size_t) 0)) {
                                     error_returned
                                         (" - hfs_load_extended_attrs");
-                                    free(nodeData);
-                                    close_attr_file(&attrFile);
-                                    return 1;
+                                    goto on_error;
                                 }
 
 #endif
@@ -3934,9 +3905,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                         tsk_fs_attrlist_getnew(fs_file->meta->attr,
                             TSK_FS_ATTR_RES)) == NULL) {
                     error_returned(" - hfs_load_extended_attrs");
-                    free(nodeData);
-                    close_attr_file(&attrFile);
-                    return 1;
+                    goto on_error;
                 }
 
                 if (tsk_verbose) {
@@ -3951,12 +3920,13 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                         attrType, attribute_counter, (void *) buffer,
                         attributeLength)) {
                     error_returned(" - hfs_load_extended_attrs");
-                    free(nodeData);
-                    close_attr_file(&attrFile);
-                    return 1;
+                    goto on_error;
                 }
-                attribute_counter++;
+                // TODO: does the previous function take ownership of buffer?
+                // or does it need to be freed here?
+                buffer = NULL;
 
+                attribute_counter++;
             }                   // END if comp == 0
             if (comp == 1) {
                 // since this record key is greater than our search key, all
@@ -4015,9 +3985,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
             if (cnt != attrFile.nodeSize) {
                 error_returned
                     ("hfs_load_extended_attrs: Could not read in the next LEAF node from the Attributes File btree");
-                free(nodeData);
-                close_attr_file(&attrFile);
-                return 1;
+                goto on_error;
             }
 
             // Parse the Node header
@@ -4027,9 +3995,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
             if (nodeDescriptor->type != HFS_ATTR_NODE_LEAF) {
                 error_detected(TSK_ERR_FS_CORRUPT,
                     "hfs_load_extended_attrs: found a non-LEAF node as a successor to a LEAF node");
-                close_attr_file(&attrFile);
-                free(nodeData);
-                return 1;
+                goto on_error;
             }
         }                       // END if(! done)
 
@@ -4037,9 +4003,20 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
     }                           // END while(! done)  loop over successive LEAF nodes
 
+on_exit:
     free(nodeData);
     close_attr_file(&attrFile);
     return 0;
+
+on_error:
+    if( buffer != NULL ) {
+        free( buffer );
+    }
+    if( nodeData != NULL ) {
+        free( nodeData );
+    }
+    close_attr_file(&attrFile);
+    return 1;
 }
 
 typedef struct RES_DESCRIPTOR {

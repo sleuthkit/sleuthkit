@@ -18,9 +18,12 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.text.MessageFormat;
+import java.util.ResourceBundle;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -40,6 +43,7 @@ public class DerivedFile extends AbstractFile {
 
 	private volatile DerivedMethod derivedMethod;
 	private static final Logger logger = Logger.getLogger(DerivedFile.class.getName());
+    private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private boolean hasDerivedMethod = true; ///< whether it has the derived method to lazy load or not
 
 	/**
@@ -137,7 +141,7 @@ public class DerivedFile extends AbstractFile {
 					hasDerivedMethod = false;  //do not attempt to lazy load
 				}
 			} catch (TskCoreException e) {
-				String msg = "Error getting derived method for file id: " + getId();
+				String msg = MessageFormat.format(bundle.getString("DerviedFile.derivedMethod.exception.msg1.text"), getId());
 				logger.log(Level.WARNING, msg, e);
 				throw new TskCoreException(msg, e);
 			}
@@ -157,9 +161,9 @@ public class DerivedFile extends AbstractFile {
 
 	@Override
 	public String toString(boolean preserveState) {
-		return super.toString(preserveState) + "DerivedFile{" 
-				+  "derivedMethod=" + derivedMethod 
-				+ ", hasDerivedMethod=" + hasDerivedMethod 
+		return super.toString(preserveState) + "DerivedFile{"  //NON-NLS
+				+  "derivedMethod=" + derivedMethod  //NON-NLS
+				+ ", hasDerivedMethod=" + hasDerivedMethod  //NON-NLS
 				+ '}';
 	}
 
@@ -220,7 +224,7 @@ public class DerivedFile extends AbstractFile {
 
 		@Override
 		public String toString() {
-			return "DerivedMethod{" + "derived_id=" + derivedId + ", toolName=" + toolName + ", toolVersion=" + toolVersion + ", other=" + other + ", rederiveDetails=" + rederiveDetails + '}';
+			return "DerivedMethod{" + "derived_id=" + derivedId + ", toolName=" + toolName + ", toolVersion=" + toolVersion + ", other=" + other + ", rederiveDetails=" + rederiveDetails + '}'; //NON-NLS
 		}
 	}
 }

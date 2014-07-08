@@ -2852,19 +2852,23 @@ ntfs_attrname_lookup(TSK_FS_INFO * fs, uint16_t type, char *name, int len)
 static uint8_t
 ntfs_load_bmap(NTFS_INFO * ntfs)
 {
-    ssize_t cnt;
-    ntfs_attr *attr;
-    TSK_FS_INFO *fs = &ntfs->fs_info;
-    ntfs_mft *mft;
+    ssize_t cnt = 0;
+    ntfs_attr *attr = NULL;
+    TSK_FS_INFO *fs = NULL;
+    ntfs_mft *mft = NULL;
+
+    if( ntfs == NULL ) {
+        goto on_error;
+    }
+    fs = &ntfs->fs_info;
 
     if ((mft = (ntfs_mft *) tsk_malloc(ntfs->mft_rsize_b)) == NULL) {
-        return 1;
+        goto on_error;
     }
 
     /* Get data on the bitmap */
     if (ntfs_dinode_lookup(ntfs, (char *) mft, NTFS_MFT_BMAP) != TSK_OK) {
-        free(mft);
-        return 1;
+        goto on_error;
     }
 
     attr = (ntfs_attr *) ((uintptr_t) mft +
@@ -2887,8 +2891,7 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
         tsk_error_set_errstr("Error Finding Bitmap Data Attribute");
-        free(mft);
-        return 1;
+        goto on_error;
     }
 
     /* convert to generic form */
@@ -2898,26 +2901,27 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
                     *) ((uintptr_t) attr + tsk_getu16(fs->endian,
                         attr->c.nr.run_off)), &(ntfs->bmap),
                 NULL, NTFS_MFT_BMAP)) != TSK_OK) {
-        free(mft);
-        return 1;
+        goto on_error;
     }
-
     ntfs->bmap_buf = (char *) tsk_malloc(fs->block_size);
     if (ntfs->bmap_buf == NULL) {
-        free(mft);
-        return 1;
+        goto on_error;
     }
 
     /* Load the first cluster so that we have something there */
     ntfs->bmap_buf_off = 0;
+
+    // Check ntfs->bmap before it is accessed.
+    if( ntfs->bmap == NULL ) {
+        goto on_error;
+    }
     if (ntfs->bmap->addr > fs->last_block) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_GENFS);
         tsk_error_set_errstr
             ("ntfs_load_bmap: Bitmap too large for image size: %" PRIuDADDR
             "", ntfs->bmap->addr);
-        free(mft);
-        return 1;
+        goto on_error;
     }
     cnt =
         tsk_fs_read_block(fs,
@@ -2929,12 +2933,17 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
         }
         tsk_error_set_errstr2("ntfs_load_bmap: Error reading block at %"
             PRIuDADDR, ntfs->bmap->addr);
-        free(mft);
-        return 1;
+        goto on_error;
     }
 
-    free((char *) mft);
+    free( mft );
     return 0;
+
+on_error:
+    if( mft != NULL ) {
+        free( mft );
+    }
+    return 1;
 }
 
 
@@ -4716,10 +4725,10 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     TSK_FS_TYPE_ENUM ftype, uint8_t test)
 {
     char *myname = "ntfs_open";
-    NTFS_INFO *ntfs;
-    TSK_FS_INFO *fs;
-    unsigned int len;
-    ssize_t cnt;
+    NTFS_INFO *ntfs = NULL;
+    TSK_FS_INFO *fs = NULL;
+    unsigned int len = 0;
+    ssize_t cnt = 0;
 
     // clean up any error messages that are lying around
     tsk_error_reset();
@@ -4732,7 +4741,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     }
 
     if ((ntfs = (NTFS_INFO *) tsk_fs_malloc(sizeof(*ntfs))) == NULL) {
-        return NULL;
+        goto on_error;
     }
     fs = &(ntfs->fs_info);
 
@@ -4752,9 +4761,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     len = roundup(sizeof(ntfs_sb), img_info->sector_size);
     ntfs->fs = (ntfs_sb *) tsk_malloc(len);
     if (ntfs->fs == NULL) {
-        fs->tag = 0;
-        tsk_fs_free((TSK_FS_INFO *)ntfs);
-        return NULL;
+        goto on_error;
     }
 
     cnt = tsk_fs_read(fs, (TSK_OFF_T) 0, (char *) ntfs->fs, len);
@@ -4764,23 +4771,17 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             tsk_error_set_errno(TSK_ERR_FS_READ);
         }
         tsk_error_set_errstr2("%s: Error reading boot sector.", myname);
-        fs->tag = 0;
-        free(ntfs->fs);
-        tsk_fs_free((TSK_FS_INFO *)ntfs);
-        return NULL;
+        goto on_error;
     }
 
     /* Check the magic value */
     if (tsk_fs_guessu16(fs, ntfs->fs->magic, NTFS_FS_MAGIC)) {
-        fs->tag = 0;
-        free(ntfs->fs);
-        tsk_fs_free((TSK_FS_INFO *)ntfs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr("Not a NTFS file system (magic)");
         if (tsk_verbose)
             fprintf(stderr, "ntfs_open: Incorrect NTFS magic\n");
-        return NULL;
+        goto on_error;
     }
 
 
@@ -4799,10 +4800,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         if (tsk_verbose)
             fprintf(stderr, "ntfs_open: invalid sector size: %d\n",
                 ntfs->ssize_b);
-        fs->tag = 0;
-        free(ntfs->fs);
-        tsk_fs_free((TSK_FS_INFO *)ntfs);
-        return NULL;
+        goto on_error;
     }
 
     if ((ntfs->fs->csize != 0x01) &&
@@ -4820,10 +4818,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         if (tsk_verbose)
             fprintf(stderr, "ntfs_open: invalid cluster size: %d\n",
                 ntfs->fs->csize);
-        fs->tag = 0;
-        free(ntfs->fs);
-        tsk_fs_free((TSK_FS_INFO *)ntfs);
-        return NULL;
+        goto on_error;
     }
 
     ntfs->csize_b = ntfs->fs->csize * ntfs->ssize_b;
@@ -4840,10 +4835,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_set_errstr("Not a NTFS file system (volume size is 0)");
         if (tsk_verbose)
             fprintf(stderr, "ntfs_open: invalid volume size: 0\n");
-        fs->tag = 0;
-        free(ntfs->fs);
-        tsk_fs_free((TSK_FS_INFO *)ntfs);
-        return NULL;
+        goto on_error;
     }
 
     fs->last_block = fs->last_block_act = fs->block_count - 1;
@@ -4863,16 +4855,13 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         ntfs->mft_rsize_b = 1 << -ntfs->fs->mft_rsize_c;
 
     if ((ntfs->mft_rsize_b == 0) || (ntfs->mft_rsize_b % 512)) {
-        fs->tag = 0;
-        free(ntfs->fs);
-        tsk_fs_free((TSK_FS_INFO *)ntfs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
             ("Not a NTFS file system (invalid MFT entry size)");
         if (tsk_verbose)
             fprintf(stderr, "ntfs_open: invalid MFT entry size\n");
-        return NULL;
+        goto on_error;
     }
 
     if (ntfs->fs->idx_rsize_c > 0)
@@ -4882,9 +4871,6 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         ntfs->idx_rsize_b = 1 << -ntfs->fs->idx_rsize_c;
 
     if ((ntfs->idx_rsize_b == 0) || (ntfs->idx_rsize_b % 512)) {
-        fs->tag = 0;
-        free(ntfs->fs);
-        tsk_fs_free((TSK_FS_INFO *)ntfs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
@@ -4893,22 +4879,19 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         if (tsk_verbose)
             fprintf(stderr, "ntfs_open: invalid idx record size %d\n",
                 ntfs->idx_rsize_b);
-        return NULL;
+        goto on_error;
     }
 
     ntfs->root_mft_addr =
         tsk_getu64(fs->endian, ntfs->fs->mft_clust) * ntfs->csize_b;
     if (tsk_getu64(fs->endian, ntfs->fs->mft_clust) > fs->last_block) {
-        fs->tag = 0;
-        free(ntfs->fs);
-        tsk_fs_free((TSK_FS_INFO *)ntfs);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
             ("Not a NTFS file system (invalid starting MFT clust)");
         if (tsk_verbose)
             fprintf(stderr, "ntfs_open: invalid starting MFT cluster\n");
-        return NULL;
+        goto on_error;
     }
 
     /*
@@ -4957,13 +4940,10 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     ntfs->loading_the_MFT = 1;
     if ((ntfs->mft_file =
             tsk_fs_file_open_meta(fs, NULL, NTFS_MFT_MFT)) == NULL) {
-        fs->tag = 0;
-        free(ntfs->fs);
-        tsk_fs_free((TSK_FS_INFO *)ntfs);
         if (tsk_verbose)
             fprintf(stderr,
                 "ntfs_open: Error opening $MFT (%s)\n", tsk_error_get());
-        return NULL;
+        goto on_error;
     }
 
     /* cache the data attribute
@@ -4974,16 +4954,13 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     ntfs->mft_data =
         tsk_fs_attrlist_get(ntfs->mft_file->meta->attr, NTFS_ATYPE_DATA);
     if (!ntfs->mft_data) {
-        fs->tag = 0;
         tsk_fs_file_close(ntfs->mft_file);
-        free(ntfs->fs);
-        tsk_fs_free((TSK_FS_INFO *)ntfs);
         tsk_error_errstr2_concat(" - Data Attribute not found in $MFT");
         if (tsk_verbose)
             fprintf(stderr,
                 "ntfs_open: Data attribute not found in $MFT (%s)\n",
                 tsk_error_get());
-        return NULL;
+        goto on_error;
     }
 
     /* Get the inode count based on the table size */
@@ -5000,27 +4977,21 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     /* load the version of the file system */
     if (ntfs_load_ver(ntfs)) {
-        fs->tag = 0;
         tsk_fs_file_close(ntfs->mft_file);
-        free(ntfs->fs);
-        tsk_fs_free((TSK_FS_INFO *)ntfs);
         if (tsk_verbose)
             fprintf(stderr,
                 "ntfs_open: Error loading file system version ((%s)\n",
                 tsk_error_get());
-        return NULL;
+        goto on_error;
     }
 
     /* load the data block bitmap data run into ntfs_info */
     if (ntfs_load_bmap(ntfs)) {
-        fs->tag = 0;
         tsk_fs_file_close(ntfs->mft_file);
-        free(ntfs->fs);
-        tsk_fs_free((TSK_FS_INFO *)ntfs);
         if (tsk_verbose)
             fprintf(stderr, "ntfs_open: Error loading block bitmap (%s)\n",
                 tsk_error_get());
-        return NULL;
+        goto on_error;
     }
 
     /* load the SID data into ntfs_info ($Secure - $SDS, $SDH, $SII */
@@ -5028,14 +4999,11 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
 #if TSK_USE_SID
     if (ntfs_load_secure(ntfs)) {
-        fs->tag = 0;
         tsk_fs_file_close(ntfs->mft_file);
-        free(ntfs->fs);
-        tsk_fs_free((TSK_FS_INFO *)ntfs);
         if (tsk_verbose)
             fprintf(stderr, "ntfs_open: Error loading Secure Info (%s)\n",
                 tsk_error_get());
-        return NULL;
+        goto on_error;
     }
 #endif
 
@@ -5058,8 +5026,19 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
                 ntfs->fs->mft_clust), tsk_getu64(fs->endian,
                 ntfs->fs->mftm_clust));
     }
-
-
-
     return fs;
+
+on_error:
+    if( fs != NULL ) {
+        // Since fs->tag is ntfs->fs_info.tag why is this value set to 0
+        // and the memory is freed directly afterwards?
+        fs->tag = 0;
+    }
+    if( ntfs != NULL ) {
+        if( ntfs->fs != NULL ) {
+            free( ntfs->fs );
+        }
+        free( ntfs );
+    }
+    return NULL;
 }

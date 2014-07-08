@@ -1584,6 +1584,148 @@ ext2fs_extent_tree_index_count(TSK_FS_INFO * fs_info,
 }
 
 
+/**
+ * \internal
+ * Loads attribute for Ext4 Extents-based storage method.
+ * @param fs_file File system to analyze
+ * @returns 0 on success, 1 otherwise
+ */
+static uint8_t
+ext4_load_attrs_extents(TSK_FS_FILE *fs_file)
+{
+    TSK_FS_META *fs_meta = fs_file->meta;
+    TSK_FS_INFO *fs_info = fs_file->fs_info;
+    TSK_OFF_T length = 0;
+    TSK_FS_ATTR *fs_attr;
+    int i;
+    ext2fs_extent *extents = NULL;
+    ext2fs_extent_idx *indices = NULL;
+    
+    ext2fs_extent_header *header = (ext2fs_extent_header *) fs_meta->content_ptr;
+    uint16_t num_entries = tsk_getu16(fs_info->endian, header->eh_entries);
+    uint16_t depth = tsk_getu16(fs_info->endian, header->eh_depth);
+    
+    if (tsk_getu16(fs_info->endian, header->eh_magic) != 0xF30A) {
+        tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+        tsk_error_set_errstr
+        ("ext2fs_load_attrs: extent header magic valid incorrect!");
+        return 1;
+    }
+    
+    if ((fs_meta->attr != NULL)
+        && (fs_meta->attr_state == TSK_FS_META_ATTR_STUDIED)) {
+        return 0;
+    }
+    else if (fs_meta->attr_state == TSK_FS_META_ATTR_ERROR) {
+        return 1;
+    }
+    else if (fs_meta->attr != NULL) {
+        tsk_fs_attrlist_markunused(fs_meta->attr);
+    }
+    else if (fs_meta->attr == NULL) {
+        fs_meta->attr = tsk_fs_attrlist_alloc();
+    }
+    
+    if (TSK_FS_TYPE_ISEXT(fs_info->ftype) == 0) {
+        tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+        tsk_error_set_errstr
+        ("ext2fs_load_attr: Called with non-ExtX file system: %x",
+         fs_info->ftype);
+        return 1;
+    }
+    
+    length = roundup(fs_meta->size, fs_info->block_size);
+    
+    if ((fs_attr =
+         tsk_fs_attrlist_getnew(fs_meta->attr,
+                                TSK_FS_ATTR_NONRES)) == NULL) {
+        return 1;
+    }
+    
+    if (tsk_fs_attr_set_run(fs_file, fs_attr, NULL, NULL,
+                            TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
+                            fs_meta->size, fs_meta->size, length, 0, 0)) {
+        return 1;
+    }
+    
+    if (num_entries == 0) {
+        fs_meta->attr_state = TSK_FS_META_ATTR_STUDIED;
+        return 0;
+    }
+    
+    if (depth == 0) {       /* leaf node */
+        if (num_entries >
+            (fs_info->block_size -
+             sizeof(ext2fs_extent_header)) /
+            sizeof(ext2fs_extent)) {
+            tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+            tsk_error_set_errstr
+            ("ext2fs_load_attr: Inode reports too many extents");
+            return 1;
+        }
+        
+        extents = (ext2fs_extent *) (header + 1);
+        for (i = 0; i < num_entries; i++) {
+            ext2fs_extent extent = extents[i];
+            if (ext2fs_make_data_run_extent(fs_info, fs_attr, &extent)) {
+                return 1;
+            }
+        }
+    }
+    else {                  /* interior node */
+        TSK_FS_ATTR *fs_attr_extent;
+        int32_t extent_index_size;
+        
+        if (num_entries >
+            (fs_info->block_size -
+             sizeof(ext2fs_extent_header)) /
+            sizeof(ext2fs_extent_idx)) {
+            tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+            tsk_error_set_errstr
+            ("ext2fs_load_attr: Inode reports too many extent indices");
+            return 1;
+        }
+        
+        if ((fs_attr_extent =
+             tsk_fs_attrlist_getnew(fs_meta->attr,
+                                    TSK_FS_ATTR_NONRES)) == NULL) {
+             return 1;
+         }
+        
+        extent_index_size =
+        ext2fs_extent_tree_index_count(fs_info, fs_meta, header);
+        if (extent_index_size < 0) {
+            return 1;
+        }
+        
+        if (tsk_fs_attr_set_run(fs_file, fs_attr_extent, NULL, NULL,
+                                TSK_FS_ATTR_TYPE_UNIX_EXTENT, TSK_FS_ATTR_ID_DEFAULT,
+                                fs_info->block_size * extent_index_size,
+                                fs_info->block_size * extent_index_size,
+                                fs_info->block_size * extent_index_size, 0, 0)) {
+            return 1;
+        }
+        
+        indices = (ext2fs_extent_idx *) (header + 1);
+        for (i = 0; i < num_entries; i++) {
+            ext2fs_extent_idx *index = &indices[i];
+            TSK_DADDR_T child_block =
+            (((uint32_t) tsk_getu16(fs_info->endian,
+                                    index->
+                                    ei_leaf_hi)) << 16) | tsk_getu32(fs_info->
+                                                                     endian, index->ei_leaf_lo);
+            if (ext2fs_make_data_run_extent_index(fs_info, fs_attr,
+                                                  fs_attr_extent, child_block)) {
+                return 1;
+            }
+        }
+    }
+    
+    fs_meta->attr_state = TSK_FS_META_ATTR_STUDIED;
+    
+    return 0;
+}
+
 /** \internal
  * Add the data runs and extents to the file attributes.
  *
@@ -1593,138 +1735,10 @@ ext2fs_extent_tree_index_count(TSK_FS_INFO * fs_info,
 static uint8_t
 ext2fs_load_attrs(TSK_FS_FILE * fs_file)
 {
-    TSK_FS_META *fs_meta = fs_file->meta;
-    TSK_FS_INFO *fs_info = fs_file->fs_info;
-    TSK_OFF_T length = 0;
-    TSK_FS_ATTR *fs_attr;
-    int i;
-    ext2fs_extent *extents = NULL;
-    ext2fs_extent_idx *indices = NULL;
-
-    if (fs_meta->content_type == TSK_FS_META_CONTENT_TYPE_EXT4_EXTENTS) {
-        ext2fs_extent_header *header =
-            (ext2fs_extent_header *) fs_meta->content_ptr;
-        uint16_t num_entries =
-            tsk_getu16(fs_info->endian, header->eh_entries);
-        uint16_t depth = tsk_getu16(fs_info->endian, header->eh_depth);
-
-        if (tsk_getu16(fs_info->endian, header->eh_magic) != 0xF30A) {
-            tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-            tsk_error_set_errstr
-                ("ext2fs_load_attrs: extent header magic valid incorrect!");
-            return TSK_COR;
-        }
-
-        if (num_entries == 0) {
-            return 0;
-        }
-
-        if ((fs_meta->attr != NULL)
-            && (fs_meta->attr_state == TSK_FS_META_ATTR_STUDIED)) {
-            return 0;
-        }
-        else if (fs_meta->attr_state == TSK_FS_META_ATTR_ERROR) {
-            return 1;
-        }
-        else if (fs_meta->attr != NULL) {
-            tsk_fs_attrlist_markunused(fs_meta->attr);
-        }
-        else if (fs_meta->attr == NULL) {
-            fs_meta->attr = tsk_fs_attrlist_alloc();
-        }
-
-        if (TSK_FS_TYPE_ISEXT(fs_info->ftype) == 0) {
-            tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-            tsk_error_set_errstr
-                ("ext2fs_load_attr: Called with non-ExtX file system: %x",
-                fs_info->ftype);
-            return 1;
-        }
-
-        length = roundup(fs_meta->size, fs_info->block_size);
-
-        if ((fs_attr =
-                tsk_fs_attrlist_getnew(fs_meta->attr,
-                    TSK_FS_ATTR_NONRES)) == NULL) {
-            return 1;
-        }
-
-        if (tsk_fs_attr_set_run(fs_file, fs_attr, NULL, NULL,
-                TSK_FS_ATTR_TYPE_DEFAULT, TSK_FS_ATTR_ID_DEFAULT,
-                fs_meta->size, fs_meta->size, length, 0, 0)) {
-            return 1;
-        }
-
-        if (depth == 0) {       /* leaf node */
-            if (num_entries >
-                (fs_info->block_size -
-                    sizeof(ext2fs_extent_header)) /
-                sizeof(ext2fs_extent)) {
-                tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-                tsk_error_set_errstr
-                    ("ext2fs_load_attr: Inode reports too many extents");
-                return 1;
-            }
-
-            extents = (ext2fs_extent *) (header + 1);
-            for (i = 0; i < num_entries; i++) {
-                ext2fs_extent extent = extents[i];
-                if (ext2fs_make_data_run_extent(fs_info, fs_attr, &extent)) {
-                    return 1;
-                }
-            }
-        }
-        else {                  /* interior node */
-            TSK_FS_ATTR *fs_attr_extent;
-            int32_t extent_index_size;
-
-            if (num_entries >
-                (fs_info->block_size -
-                    sizeof(ext2fs_extent_header)) /
-                sizeof(ext2fs_extent_idx)) {
-                tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-                tsk_error_set_errstr
-                    ("ext2fs_load_attr: Inode reports too many extent indices");
-                return 1;
-            }
-
-            if ((fs_attr_extent =
-                    tsk_fs_attrlist_getnew(fs_meta->attr,
-                        TSK_FS_ATTR_NONRES)) == NULL) {
-                return 1;
-            }
-
-            extent_index_size =
-                ext2fs_extent_tree_index_count(fs_info, fs_meta, header);
-            if (extent_index_size < 0) {
-                return 1;
-            }
-
-            if (tsk_fs_attr_set_run(fs_file, fs_attr_extent, NULL, NULL,
-                    TSK_FS_ATTR_TYPE_UNIX_EXTENT, TSK_FS_ATTR_ID_DEFAULT,
-                    fs_info->block_size * extent_index_size,
-                    fs_info->block_size * extent_index_size,
-                    fs_info->block_size * extent_index_size, 0, 0)) {
-                return 1;
-            }
-
-            indices = (ext2fs_extent_idx *) (header + 1);
-            for (i = 0; i < num_entries; i++) {
-                ext2fs_extent_idx *index = &indices[i];
-                TSK_DADDR_T child_block =
-                    (((uint32_t) tsk_getu16(fs_info->endian,
-                            index->
-                            ei_leaf_hi)) << 16) | tsk_getu32(fs_info->
-                    endian, index->ei_leaf_lo);
-                if (ext2fs_make_data_run_extent_index(fs_info, fs_attr,
-                        fs_attr_extent, child_block)) {
-                    return 1;
-                }
-            }
-        }
-        fs_meta->attr_state = TSK_FS_META_ATTR_STUDIED;
-
-        return 0;
+    /* EXT4 extents-based storage is dealt with differently than
+     * the traditional pointer lists. */
+    if (fs_file->meta->content_type == TSK_FS_META_CONTENT_TYPE_EXT4_EXTENTS) {
+        return ext4_load_attrs_extents(fs_file);
     }
     else {
         return tsk_fs_unix_make_data_run(fs_file);
