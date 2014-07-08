@@ -49,6 +49,9 @@ framework/modules/*/win32/Debug/
 framework/modules/*/win32/Release/
 framework/modules/*/win32/*.user
 framework/modules/c_InterestingFilesModule/tsk
+framework/config.h
+framework/tools/tsk_analyzeimg/tsk_analyzeimg
+framework/tools/tsk_validatepipeline/tsk_validatepipeline
 
 # Release files
 release/sleuthkit-*
@@ -73,6 +76,7 @@ win32/tsk-win.opensdf
 Makefile
 .deps
 .libs
+*.swp
 
 #javadoc generated
 /bindings/java/javadoc
