@@ -1,7 +1,27 @@
+/*
+ * Sleuth Kit Data Model
+ * 
+ * Copyright 2014 Basis Technology Corp.
+ * Contact: carrier <at> sleuthkit <dot> org
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.sleuthkit.datamodel;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -11,10 +31,8 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 /**
  * Database helper class the wraps most of the mappings from ResultSet to
  * Content subclass constructors.
- *
  */
 class ResultSetHelper {
-
 	SleuthkitCase db;
 
 	ResultSetHelper(SleuthkitCase db) {
@@ -298,5 +316,57 @@ class ResultSetHelper {
 				parentId);
 
 		return lf;
+	}
+	
+	/**
+	 * Returns the list of abstractFile objects from a result of selecting many
+	 * files that meet a certain criteria. 
+	 * @param rs
+	 * @param parentId
+	 * @return
+	 * @throws SQLException 
+	 */
+	List<Content> fileChildren(ResultSet rs, long parentId) throws SQLException {
+		List<Content> children = new ArrayList<Content>();
+
+		while (rs.next()) {
+			TskData.TSK_DB_FILES_TYPE_ENUM type = TskData.TSK_DB_FILES_TYPE_ENUM.valueOf(rs.getShort("type"));
+
+			if (type == TskData.TSK_DB_FILES_TYPE_ENUM.FS) {
+				FsContent result;
+				if (rs.getShort("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue()) {
+					result = directory(rs, null);
+				} else {
+					result = file(rs, null);
+				}
+				children.add(result);
+			} else if (type == TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR) {
+				VirtualDirectory virtDir = virtualDirectory(rs);
+				children.add(virtDir);
+			} else if (type == TskData.TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS
+					|| type == TskData.TSK_DB_FILES_TYPE_ENUM.CARVED) {
+				String parentPath = rs.getString("parent_path");
+				if (parentPath == null) {
+					parentPath = "";
+				}
+				final LayoutFile lf =
+						new LayoutFile(db, rs.getLong("obj_id"), rs.getString("name"),
+						type,
+						TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
+						TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")),
+						TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")),
+						rs.getShort("meta_flags"),
+						rs.getLong("size"),
+						rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), parentPath);
+				children.add(lf);
+			} else if (type == TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED) {
+				final DerivedFile df = derivedFile(rs, parentId);
+				children.add(df);
+			} else if (type == TskData.TSK_DB_FILES_TYPE_ENUM.LOCAL) {
+				final LocalFile lf = localFile(rs, parentId);
+				children.add(lf);
+			}
+		}
+		return children;
 	}
 }

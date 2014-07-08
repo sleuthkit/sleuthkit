@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2012-2013 Basis Technology Corp.
+ * Copyright 2012-2014 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -221,26 +221,54 @@ public class SleuthkitCase {
 		statement.execute("CREATE TABLE tag_names (tag_name_id INTEGER PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL)");
 		statement.execute("CREATE TABLE content_tags (tag_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL, begin_byte_offset INTEGER NOT NULL, end_byte_offset INTEGER NOT NULL)");
 		statement.execute("CREATE TABLE blackboard_artifact_tags (tag_id INTEGER PRIMARY KEY, artifact_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL)");
-
-		// Add new table for reports
-		statement.execute("CREATE TABLE reports (report_id INTEGER PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL)");
 		
-        // add columns for existing tables
-        statement.execute("ALTER TABLE tsk_image_info ADD COLUMN size INTEGER;");
-        statement.execute("ALTER TABLE tsk_image_info ADD COLUMN md5 TEXT;");
-        statement.execute("ALTER TABLE tsk_image_info ADD COLUMN display_name TEXT;");
-        statement.execute("ALTER TABLE tsk_fs_info ADD COLUMN display_name TEXT;");
+		// Add a new table for reports.
+		statement.execute("CREATE TABLE reports (report_id INTEGER PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL)");
+
+		// Add new columns to the image info table.
+		statement.execute("ALTER TABLE tsk_image_info ADD COLUMN size INTEGER;");
+		statement.execute("ALTER TABLE tsk_image_info ADD COLUMN md5 TEXT;");
+		statement.execute("ALTER TABLE tsk_image_info ADD COLUMN display_name TEXT;");
+
+		// Add a new column to the file system info table.
+		statement.execute("ALTER TABLE tsk_fs_info ADD COLUMN display_name TEXT;");
+		
+		// Add a new column to the file table.
 		statement.execute("ALTER TABLE tsk_files ADD COLUMN meta_seq INTEGER;");
 		
-		// Make the prepared statements available for use in migrating legacy data.
-		initStatements();
-		
-		// This data structure is used to eep track of the unique tag names 
-		// created from the TSK_TAG_NAME attributes of the now obsolete 
-		// TSK_TAG_FILE and TSK_TAG_ARTIFACT artifacts.
-		HashMap<String, TagName> tagNames = new HashMap<String, TagName>();
+		// Add new columns and indexes to the attributes table and populate the
+		// new column. Note that addition of the new column is a denormalization 
+		// to optimize attribute queries.
+		statement.execute("ALTER TABLE blackboard_attributes ADD COLUMN artifact_type_id INTEGER NULL NOT NULL DEFAULT -1;");
+		statement.execute("CREATE INDEX attribute_artifactTypeId ON blackboard_attributes(artifact_type_id);");
+		statement.execute("CREATE INDEX attribute_valueText ON blackboard_attributes(value_text);");
+		statement.execute("CREATE INDEX attribute_valueInt32 ON blackboard_attributes(value_int32);");
+		statement.execute("CREATE INDEX attribute_valueInt64 ON blackboard_attributes(value_int64);");
+		statement.execute("CREATE INDEX attribute_valueDouble ON blackboard_attributes(value_double);");
+		Statement updateStatement = con.createStatement();
+		ResultSet resultSet = statement.executeQuery(
+				"SELECT attrs.artifact_id, arts.artifact_type_id " +
+				"FROM blackboard_attributes AS attrs " + 
+				"INNER JOIN blackboard_artifacts AS arts " +
+				"WHERE attrs.artifact_id = arts.artifact_id;");
+		while (resultSet.next()) {
+			long artifactId = resultSet.getLong(1);
+			int artifactTypeId = resultSet.getInt(2);
+			updateStatement.executeUpdate(
+					"UPDATE blackboard_attributes " +
+					"SET artifact_type_id = " + artifactTypeId + " " +
+					"WHERE blackboard_attributes.artifact_id = " + artifactId + ";");					
+		}
+		resultSet.close();
+		updateStatement.close();
 
-		// Convert TSK_TAG_FILE artifacts into content tags. Leave the artifacts behind as a backup.
+		// Convert existing tag artifact and attribute rows to rows in the new tags tables.
+		// TODO: This code depends on prepared statements that could evolve with
+		// time, breaking this upgrade. The code that follows should be rewritten 
+		// to do everything with SQL specific to the state of the database at 
+		// the time of this schema update.
+		initStatements();
+		HashMap<String, TagName> tagNames = new HashMap<String, TagName>();
 		for (BlackboardArtifact artifact : getBlackboardArtifacts(ARTIFACT_TYPE.TSK_TAG_FILE)) {
 			Content content = getContentById(artifact.getObjectID());
 			String name = "";
@@ -254,7 +282,6 @@ public class SleuthkitCase {
 					comment = attribute.getValueString();
 				}
 			}
-
 			if (!name.isEmpty()) {
 				TagName tagName;
 				if (tagNames.containsKey(name)) {
@@ -267,9 +294,8 @@ public class SleuthkitCase {
 				addContentTag(content, tagName, comment, 0, content.getSize() - 1);
 			}
 		}
-
-		// Convert TSK_TAG_ARTIFACT artifacts into blackboard artifact tags. Leave the artifacts behind as a backup.
 		for (BlackboardArtifact artifact : getBlackboardArtifacts(ARTIFACT_TYPE.TSK_TAG_ARTIFACT)) {
+			long taggedArtifactId = -1;
 			String name = "";
 			String comment = "";
 			ArrayList<BlackboardAttribute> attributes = getBlackboardAttributes(artifact);
@@ -279,10 +305,12 @@ public class SleuthkitCase {
 				}
 				else if (attribute.getAttributeTypeID() == ATTRIBUTE_TYPE.TSK_COMMENT.getTypeID()) {
 					comment = attribute.getValueString();
+				} 
+				else if (attribute.getAttributeTypeID() == ATTRIBUTE_TYPE.TSK_TAGGED_ARTIFACT.getTypeID()) {
+					taggedArtifactId = attribute.getValueLong();
 				}
 			}
-
-			if (!name.isEmpty()) {
+			if (taggedArtifactId != -1 && !name.isEmpty()) {
 				TagName tagName;
 				if (tagNames.containsKey(name)) {
 					tagName = tagNames.get(name);
@@ -291,12 +319,20 @@ public class SleuthkitCase {
 					tagName = addTagName(name, "", TagName.HTML_COLOR.NONE);
 					tagNames.put(name, tagName);
 				}
-				addBlackboardArtifactTag(artifact, tagName, comment);
+				addBlackboardArtifactTag(getBlackboardArtifact(taggedArtifactId), tagName, comment);
 			}
-		}		
-				
+		}						
 		closeStatements();
-		
+		statement.execute(
+			"DELETE FROM blackboard_attributes WHERE artifact_id IN " +
+			"(SELECT artifact_id FROM blackboard_artifacts WHERE artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() + 
+			" OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ");");
+		statement.execute(
+			"DELETE FROM blackboard_artifacts WHERE " +
+			"artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() +		
+			" OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ";");
+		statement.close();
+				
 		return 3;	
 	}			
 		
@@ -369,23 +405,23 @@ public class SleuthkitCase {
 				"SELECT COUNT(*) FROM blackboard_artifacts WHERE obj_id = ? AND artifact_type_id = ?");
 
 		getAbstractFileChildren = con.prepareStatement(
-				"SELECT tsk_files.* FROM tsk_objects JOIN tsk_files "
-				+ "ON tsk_objects.obj_id=tsk_files.obj_id WHERE (tsk_objects.par_obj_id = ? )");
+				"SELECT tsk_files.* FROM tsk_objects INNER JOIN tsk_files "
+				+ "ON tsk_objects.obj_id=tsk_files.obj_id WHERE (tsk_objects.par_obj_id = ? ) ORDER BY tsk_files.dir_type, tsk_files.name COLLATE NOCASE");
 		
 		getAbstractFileChildrenByType = con.prepareStatement(
 				"SELECT tsk_files.* "
-				+ "FROM tsk_objects JOIN tsk_files "
+				+ "FROM tsk_objects INNER JOIN tsk_files "
 				+ "ON tsk_objects.obj_id=tsk_files.obj_id "
 				+ "WHERE (tsk_objects.par_obj_id = ? "
-				+ "AND tsk_files.type = ? )");
+				+ "AND tsk_files.type = ? )  ORDER BY tsk_files.dir_type, tsk_files.name COLLATE NOCASE");
 
 		getAbstractFileChildrenIds = con.prepareStatement(
-				"SELECT tsk_files.obj_id FROM tsk_objects JOIN tsk_files "
+				"SELECT tsk_files.obj_id FROM tsk_objects INNER JOIN tsk_files "
 				+ "ON tsk_objects.obj_id=tsk_files.obj_id WHERE (tsk_objects.par_obj_id = ?)");
 		
 		getAbstractFileChildrenIdsByType = con.prepareStatement(
 				"SELECT tsk_files.obj_id "
-				+ "FROM tsk_objects JOIN tsk_files "
+				+ "FROM tsk_objects INNER JOIN tsk_files "
 				+ "ON tsk_objects.obj_id=tsk_files.obj_id "
 				+ "WHERE (tsk_objects.par_obj_id = ? "
 				+ "AND tsk_files.type = ? )");
@@ -403,24 +439,24 @@ public class SleuthkitCase {
 
 
 		addBlackboardAttributeStringSt = con.prepareStatement(
-				"INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_text) "
-				+ "VALUES (?,?,?,?,?,?)");
+				"INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_text) "
+				+ "VALUES (?,?,?,?,?,?,?)");
 
 		addBlackboardAttributeByteSt = con.prepareStatement(
-				"INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_byte) "
-				+ "VALUES (?,?,?,?,?,?)");
+				"INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_byte) "
+				+ "VALUES (?,?,?,?,?,?,?)");
 
 		addBlackboardAttributeIntegerSt = con.prepareStatement(
-				"INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_int32) "
-				+ "VALUES (?,?,?,?,?,?)");
+				"INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_int32) "
+				+ "VALUES (?,?,?,?,?,?,?)");
 
 		addBlackboardAttributeLongSt = con.prepareStatement(
-				"INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_int64) "
-				+ "VALUES (?,?,?,?,?,?)");
+				"INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_int64) "
+				+ "VALUES (?,?,?,?,?,?,?)");
 
 		addBlackboardAttributeDoubleSt = con.prepareStatement(
-				"INSERT INTO blackboard_attributes (artifact_id, source, context, attribute_type_id, value_type, value_double) "
-				+ "VALUES (?,?,?,?,?,?)");
+				"INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_double) "
+				+ "VALUES (?,?,?,?,?,?,?)");
 
 		getFileSt = con.prepareStatement("SELECT * FROM tsk_files WHERE LOWER(name) LIKE ? and LOWER(name) NOT LIKE '%journal%' AND fs_obj_id = ?");
 
@@ -1535,130 +1571,86 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Add a blackboard attribute. All information for the attribute should be
-	 * in the given attribute
+	 * Add a blackboard attribute.
 	 *
-	 * @param attr a blackboard attribute. All necessary information should be
-	 * filled in.
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within tsk core
+	 * @param attr A blackboard attribute. 
+	 * @param artifactTypeId The type of artifact associated with the attribute.
+	 * @throws TskCoreException thrown if a critical error occurs.
 	 */
-	public void addBlackboardAttribute(BlackboardAttribute attr) throws TskCoreException {
+	void addBlackboardAttribute(BlackboardAttribute attr, int artifactTypeId) throws TskCoreException {
 		dbWriteLock();
 		try {
 			PreparedStatement ps = null;
 			switch (attr.getValueType()) {
 				case STRING:
-					addBlackboardAttributeStringSt.setString(6, escapeForBlackboard(attr.getValueString()));
+					addBlackboardAttributeStringSt.setString(7, escapeForBlackboard(attr.getValueString()));
 					ps = addBlackboardAttributeStringSt;
 					break;
 				case BYTE:
-					addBlackboardAttributeByteSt.setBytes(6, attr.getValueBytes());
+					addBlackboardAttributeByteSt.setBytes(7, attr.getValueBytes());
 					ps = addBlackboardAttributeByteSt;
 					break;
 				case INTEGER:
-					addBlackboardAttributeIntegerSt.setInt(6, attr.getValueInt());
+					addBlackboardAttributeIntegerSt.setInt(7, attr.getValueInt());
 					ps = addBlackboardAttributeIntegerSt;
 					break;
 				case LONG:
-					addBlackboardAttributeLongSt.setLong(6, attr.getValueLong());
+					addBlackboardAttributeLongSt.setLong(7, attr.getValueLong());
 					ps = addBlackboardAttributeLongSt;
 					break;
 				case DOUBLE:
-					addBlackboardAttributeDoubleSt.setDouble(6, attr.getValueDouble());
+					addBlackboardAttributeDoubleSt.setDouble(7, attr.getValueDouble());
 					ps = addBlackboardAttributeDoubleSt;
 					break;
 			} // end switch
 
 			//set common fields
 			ps.setLong(1, attr.getArtifactID());
-			ps.setString(2, attr.getModuleName());
-			ps.setString(3, attr.getContext());
-			ps.setInt(4, attr.getAttributeTypeID());
-			ps.setLong(5, attr.getValueType().getType());
+			ps.setInt(2,artifactTypeId);
+			ps.setString(3, attr.getModuleName());
+			ps.setString(4, attr.getContext());
+			ps.setInt(5, attr.getAttributeTypeID());
+			ps.setLong(6, attr.getValueType().getType());
 			ps.executeUpdate();
 			ps.clearParameters();
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting or creating a blackboard artifact.", ex);
+			throw new TskCoreException("Error getting or creating a blackboard attribute", ex);
 		} finally {
 			dbWriteUnlock();
 		}
 	}
 
 	/**
-	 * Add a blackboard attributes in bulk. All information for the attribute
-	 * should be in the given attribute
+	 * Add a set blackboard attributes.
 	 *
-	 * @param attributes collection of blackboard attributes. All necessary
-	 * information should be filled in.
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within tsk core
+	 * @param attributes A set of blackboard attribute. 
+	 * @param artifactTypeId The type of artifact associated with the attributes.
+	 * @throws TskCoreException thrown if a critical error occurs.
 	 */
-	public void addBlackboardAttributes(Collection<BlackboardAttribute> attributes) throws TskCoreException {
+	void addBlackboardAttributes(Collection<BlackboardAttribute> attributes, int artifactTypeId) throws TskCoreException {
 		dbWriteLock();
 		try {
 			con.setAutoCommit(false);
-		} catch (SQLException ex) {
-			dbWriteUnlock();
-			throw new TskCoreException("Error creating transaction, no attributes created.", ex);
-		}
-
-		for (final BlackboardAttribute attr : attributes) {
-			PreparedStatement ps = null;
-			try {
-				switch (attr.getValueType()) {
-					case STRING:
-						addBlackboardAttributeStringSt.setString(6, escapeForBlackboard(attr.getValueString()));
-						ps = addBlackboardAttributeStringSt;
-						break;
-					case BYTE:
-						addBlackboardAttributeByteSt.setBytes(6, attr.getValueBytes());
-						ps = addBlackboardAttributeByteSt;
-						break;
-					case INTEGER:
-						addBlackboardAttributeIntegerSt.setInt(6, attr.getValueInt());
-						ps = addBlackboardAttributeIntegerSt;
-						break;
-					case LONG:
-						addBlackboardAttributeLongSt.setLong(6, attr.getValueLong());
-						ps = addBlackboardAttributeLongSt;
-						break;
-					case DOUBLE:
-						addBlackboardAttributeDoubleSt.setDouble(6, attr.getValueDouble());
-						ps = addBlackboardAttributeDoubleSt;
-						break;
+			for (final BlackboardAttribute attr : attributes) {
+				try {
+					addBlackboardAttribute(attr, artifactTypeId);
+				} catch (TskCoreException ex) {
+					throw ex;
 				}
-
-				//set commmon fields and exec. update
-				ps.setLong(1, attr.getArtifactID());
-				ps.setString(2, attr.getModuleName());
-				ps.setString(3, attr.getContext());
-				ps.setInt(4, attr.getAttributeTypeID());
-				ps.setLong(5, attr.getValueType().getType());
-				ps.executeUpdate();
-				ps.clearParameters();
-
-			} catch (SQLException ex) {
-				logger.log(Level.WARNING, "Error adding attribute: " + attr.toString(), ex);
-				//try to add more attributes 
 			}
-		} //end for every attribute
-
-		//commit transaction
-		try {
 			con.commit();
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error committing transaction, no attributes created.", ex);
+			throw new TskCoreException("Error starting or committing transaction, no attributes created", ex);
 		} finally {
 			try {
 				con.setAutoCommit(true);
 			} catch (SQLException ex) {
-				throw new TskCoreException("Error setting autocommit and closing the transaction!", ex);
-			} finally {
+				throw new TskCoreException("Error setting autocommit and closing the transaction", ex);
+			} 
+			finally {
 				dbWriteUnlock();
 			}
 		}
-
 	}
 
 	/**
@@ -2286,7 +2278,7 @@ public class SleuthkitCase {
 			getAbstractFileChildrenByType.setShort(2, type.getFileType());
 			
 			final ResultSet rs = getAbstractFileChildrenByType.executeQuery();
-			children = fileChildrenResultSetHelper (rs, parentId);
+			children = rsHelper.fileChildren(rs, parentId);
 			rs.close();
 			
 		} catch (SQLException ex) {
@@ -2310,12 +2302,11 @@ public class SleuthkitCase {
 		
 		dbReadLock();
 		try {
-			
 			long parentId = parent.getId();
 			getAbstractFileChildren.setLong(1, parentId);
 			
 			final ResultSet rs = getAbstractFileChildren.executeQuery();
-			children = fileChildrenResultSetHelper (rs, parentId);
+			children = rsHelper.fileChildren(rs, parentId);
 			rs.close();
 			
 		} catch (SQLException ex) {
@@ -2326,49 +2317,7 @@ public class SleuthkitCase {
 		return children;
 	}
 	
-	private List<Content> fileChildrenResultSetHelper (ResultSet rs, long parentId) throws SQLException {
-		List<Content> children = new ArrayList<Content>();
-		
-		while (rs.next()) {
-			TSK_DB_FILES_TYPE_ENUM type = TSK_DB_FILES_TYPE_ENUM.valueOf(rs.getShort("type"));
-
-			if (type == TSK_DB_FILES_TYPE_ENUM.FS) {
-				FsContent result;
-				if (rs.getShort("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue()) {
-					result = rsHelper.directory(rs, null);
-				} else {
-					result = rsHelper.file(rs, null);
-				}
-				children.add(result);
-			} else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR) {
-				VirtualDirectory virtDir = rsHelper.virtualDirectory(rs);
-				children.add(virtDir);
-			} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS
-					|| type == TSK_DB_FILES_TYPE_ENUM.CARVED) {
-				String parentPath = rs.getString("parent_path");
-				if (parentPath == null) {
-					parentPath = "";
-				}
-				final LayoutFile lf =
-						new LayoutFile(this, rs.getLong("obj_id"), rs.getString("name"),
-						type,
-						TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
-						TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")),
-						TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")),
-						rs.getShort("meta_flags"),
-						rs.getLong("size"),
-						rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), parentPath);
-				children.add(lf);
-			} else if (type == TSK_DB_FILES_TYPE_ENUM.DERIVED) {
-				final DerivedFile df = rsHelper.derivedFile(rs, parentId);
-				children.add(df);
-			} else if (type == TSK_DB_FILES_TYPE_ENUM.LOCAL) {
-				final LocalFile lf = rsHelper.localFile(rs, parentId);
-				children.add(lf);
-			}
-		}
-		return children;
-	}
+	
 
 	/**
 	 * Get list of IDs for abstract files of a given type that are children of a given content.
@@ -2510,7 +2459,7 @@ public class SleuthkitCase {
 		try {
 			Statement s = con.createStatement();
 			ResultSet rs = s.executeQuery("SELECT parent.obj_id, parent.type "
-					+ "FROM tsk_objects AS parent JOIN tsk_objects AS child "
+					+ "FROM tsk_objects AS parent INNER JOIN tsk_objects AS child "
 					+ "ON child.par_obj_id = parent.obj_id "
 					+ "WHERE child.obj_id = " + c.getId());
 
@@ -2546,7 +2495,7 @@ public class SleuthkitCase {
 		try {
 			Statement s = con.createStatement();
 			ResultSet rs = s.executeQuery("SELECT parent.obj_id, parent.type "
-					+ "FROM tsk_objects AS parent JOIN tsk_objects AS child "
+					+ "FROM tsk_objects AS parent INNER JOIN tsk_objects AS child "
 					+ "ON child.par_obj_id = parent.obj_id "
 					+ "WHERE child.obj_id = " + contentId);
 
@@ -2846,14 +2795,16 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get file system id value for file or -1 if there isn't one Note: for
+	 * Get the object ID of the file system that a file is located in.
+	 * 
+	 * Note: for
 	 * FsContent files, this is the real fs for other non-fs AbstractFile files,
 	 * this field is used internally for data source id (the root content obj)
 	 *
-	 * @param fileId file id to get fs column id for
+	 * @param fileId object id of the file to get fs column id for
 	 * @return fs_id or -1 if not present
 	 */
-	private long getFileSystemByFileId(long fileId) {
+	private long getFileSystemId(long fileId) {
 
 		long ret = -1;
 		ResultSet rs = null;
@@ -2904,7 +2855,7 @@ public class SleuthkitCase {
 			//otherwise, get the root non-image data source id
 			//note, we are currently using fs_id internally to store data source id for such files
 
-			return getFileSystemByFileId(file.getId());
+			return getFileSystemId(file.getId());
 		}
 
 	}
@@ -2926,7 +2877,7 @@ public class SleuthkitCase {
 		}
 
 		//get fs_id for file id
-		long fsId = getFileSystemByFileId(fileId);
+		long fsId = getFileSystemId(fileId);
 		if (fsId == -1) {
 			return false;
 		}
@@ -3159,14 +3110,6 @@ public class SleuthkitCase {
 			parentPath = parentPath + "/" + parentName;
 		}
 
-		//propagate fs id if parent is a file and fs id is set
-		long parentFs = this.getFileSystemByFileId(parentId);
-		if (parentFs == -1) {
-			//use the parentId fs obj id as data source id  internally
-			parentFs = parentId;
-		}
-
-
 		VirtualDirectory vd = null;
 
 		//don't need to lock database or setAutoCommit(false), since we are
@@ -3198,9 +3141,9 @@ public class SleuthkitCase {
 			addFileSt.clearParameters(); //clear from previous, so we can skip nulls
 			addFileSt.setLong(1, newObjId);
 
-			if (parentFs < 1) {
-				addFileSt.setNull(2, java.sql.Types.BIGINT);
-			} else {
+			// If the parent is part of a file system, grab its file system ID
+			long parentFs = this.getFileSystemId(parentId);
+			if (parentFs != -1) {
 				addFileSt.setLong(2, parentFs);
 			}
 			addFileSt.setString(3, directoryName);
@@ -3235,6 +3178,9 @@ public class SleuthkitCase {
 					metaType, dirFlag, metaFlags, size, null, FileKnown.UNKNOWN,
 					parentPath);
 		} catch (SQLException e) {
+			// we log this and rethrow it because the later finally clauses were also 
+			// throwing an exception and this one got lost
+			logger.log(Level.SEVERE, "Error creating virtual directory: " + directoryName, e);
 			throw new TskCoreException("Error creating virtual directory '" + directoryName + "'", e);
 		} finally {
 			try {
@@ -3243,7 +3189,6 @@ public class SleuthkitCase {
 			} catch (SQLException ex) {
 				logger.log(Level.SEVERE, "Error clearing parameters after adding virtual directory.", ex);
 			}
-
 		}
 
 		return vd;
@@ -3269,7 +3214,8 @@ public class SleuthkitCase {
 					+ "tsk_objects.par_obj_id IS NULL AND "
 					+ "tsk_objects.type = " + TskData.ObjectType.ABSTRACTFILE.getObjectType() + " AND "
 					+ "tsk_objects.obj_id = tsk_files.obj_id AND "
-					+ "tsk_files.type = " + TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType());
+					+ "tsk_files.type = " + TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType() 
+					+ " ORDER BY tsk_files.dir_type, tsk_files.name COLLATE NOCASE");
 
 			while (rs.next()) {
 				virtDirRootIds.add(rsHelper.virtualDirectory(rs));
@@ -3368,27 +3314,44 @@ public class SleuthkitCase {
 	 *
 	 * @param carvedFileName the name of the carved file to add
 	 * @param carvedFileSize the size of the carved file to add
-	 * @param systemId the ID of the parent volume or file system
+	 * @param containerId the ID of the parent volume, file system, or image 
 	 * @param data the layout information - a list of offsets that make up this
 	 * carved file.
 	 */
 	public LayoutFile addCarvedFile(String carvedFileName, long carvedFileSize,
-			long systemId, List<TskFileRange> data) throws TskCoreException {
+		long containerId, List<TskFileRange> data) throws TskCoreException {
 
 		// get the ID of the appropriate '$CarvedFiles' directory
-		long carvedFilesId = getCarvedDirectoryId(systemId);
+		long carvedDirId = getCarvedDirectoryId(containerId);
 
 		// get the parent path for the $CarvedFiles directory		
-		String parentPath = getFileParentPath(carvedFilesId);
+		String parentPath = getFileParentPath(carvedDirId);
 		if (parentPath == null) {
 			parentPath = "";
 		}
-		String parentName = getFileName(carvedFilesId);
+		
+		String parentName = getFileName(carvedDirId);
 		if (parentName != null) {
 			parentPath = parentPath + "/" + parentName;
 		}
 
 		dbWriteLock();
+		
+		boolean isContainerAFs = false;
+		// we should cache this when we start adding lots of carved files...
+		try {
+			Statement s = con.createStatement();
+			ResultSet rs = s.executeQuery("select * from tsk_fs_info "
+					+ "where obj_id = " + containerId);
+
+			if (rs.next()) {
+				isContainerAFs = true;
+			}
+			rs.close();
+			s.close();
+		} catch (SQLException ex) {
+			logger.log(Level.WARNING, "Error getting File System by ID", ex);
+		} 
 
 		LayoutFile lf = null;
 
@@ -3407,7 +3370,7 @@ public class SleuthkitCase {
 
 			//tsk_objects
 			addObjectSt.setLong(1, newObjId);
-			addObjectSt.setLong(2, carvedFilesId);
+			addObjectSt.setLong(2, carvedDirId);
 			addObjectSt.setLong(3, TskData.ObjectType.ABSTRACTFILE.getObjectType());
 			addObjectSt.executeUpdate();
 
@@ -3417,7 +3380,11 @@ public class SleuthkitCase {
 			//obj_id, fs_obj_id, name
 			addFileSt.clearParameters(); //clear, so can skip nulls
 			addFileSt.setLong(1, newObjId);
-			addFileSt.setLong(2, systemId); //for carved files, set data-source for consistency.  Set to fs/vs/image, depending what is being carved
+			
+			// only insert into the fs_obj_id column if container is a FS
+			if (isContainerAFs) {
+				addFileSt.setLong(2, containerId);
+			}
 			addFileSt.setString(3, carvedFileName);
 
 			// type
@@ -3536,12 +3503,7 @@ public class SleuthkitCase {
 
 		final long parentId = parentFile.getId();
 		final String parentPath = parentFile.getParentPath() + parentFile.getName() + '/';
-
-		//get fs_obj_id of the parentFile and propagate it to the new derived file
-		//note, fs_obj_id is fs id for FsContent, but for others it is used internally as data source id, and it is not 
-		//part of AbstractFile API, until the next schema change
-		long fsObjId = this.getFileSystemByFileId(parentId);
-
+		
 		DerivedFile ret = null;
 
 		long newObjId = -1;
@@ -3575,7 +3537,10 @@ public class SleuthkitCase {
 			//obj_id, fs_obj_id, name
 			addFileSt.clearParameters(); //clear, so can skip nulls
 			addFileSt.setLong(1, newObjId);
-			if (fsObjId > 0) {
+			
+			// If the parentFile is part of a file system, use its file system object ID.
+			long fsObjId = this.getFileSystemId(parentId);
+			if (fsObjId != -1) {
 				addFileSt.setLong(2, fsObjId);
 			}
 			addFileSt.setString(3, fileName);
@@ -3643,7 +3608,6 @@ public class SleuthkitCase {
 				}
 			}
 		}
-
 
 		return ret;
 	}
@@ -3713,32 +3677,17 @@ public class SleuthkitCase {
 			parentPath = parent.getParentPath() + "/" + parent.getName();
 		}
 
-		//check parent is a data source (the root obj) and set fs_obj_id that we currently use to track or data sources accordingly
-		long dataSourceId = -1;
-		boolean isParentDataSource = parent.getParent() == null;
-		if (isParentDataSource) {
-			dataSourceId = parentId;
-		} else {
-			//else propagate from parent fs_obj_id
-			dataSourceId = getFileSystemByFileId(parentId);
-		}
-
 		LocalFile ret = null;
 
 		long newObjId = -1;
 
-
-
 		//don't need to lock database or setAutoCommit(false), since we are
 		//passed Transaction which handles that.
-
 
 		//get last object id
 		//create tsk_objects object with new id
 		//create tsk_files object with the new id
 		try {
-
-
 			newObjId = getLastObjectId() + 1;
 			if (newObjId < 1) {
 				String msg = "Error creating a local file, cannot get new id of the object, file name: " + fileName;
@@ -3758,9 +3707,7 @@ public class SleuthkitCase {
 			//obj_id, fs_obj_id, name
 			addFileSt.clearParameters();
 			addFileSt.setLong(1, newObjId);
-			if (dataSourceId > 0) {
-				addFileSt.setLong(2, dataSourceId);
-			}
+			// nothing to set for parameter 2, fs_obj_id since local files aren't part of file systems
 			addFileSt.setString(3, fileName);
 
 			//type, has_path
@@ -3809,8 +3756,6 @@ public class SleuthkitCase {
 			} catch (SQLException ex) {
 				logger.log(Level.SEVERE, "Error clearing parameters after adding derived file", ex);
 			}
-
-
 		}
 		return ret;
 	}
