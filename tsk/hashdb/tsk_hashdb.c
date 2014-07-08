@@ -520,7 +520,7 @@ uint8_t
     else {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_PROC);
-        tsk_error_set_errstr("%s: operation not supported for this database type (=%u)", hdb_info->db_type, func_name);
+        tsk_error_set_errstr("%s: operation not supported for this database type (=%u)", func_name, hdb_info->db_type);
         return 1;
     }
 }
