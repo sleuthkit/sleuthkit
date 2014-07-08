@@ -103,13 +103,73 @@ public class SleuthkitCase {
 		this.connections = new ConnectionPerThreadDispenser();
 		acquireExclusiveLock();
 		try {
-			CaseDbConnection connection = connections.getConnectionWithoutPreparedStatements();
+			CaseDbConnection connection = connections.getConnection();			
 			configureDB(connection);
 			initBlackboardArtifactTypes(connection);
 			initBlackboardAttributeTypes(connection);
 			updateDatabaseSchema(connection);
-			connection.prepareStatements();
 		} finally {
+			releaseExclusiveLock();
+		}
+	}
+	
+	private void configureDB(CaseDbConnection connection) throws TskCoreException {
+		acquireExclusiveLock();
+		Statement statement = null;
+		try {
+			// this should match SleuthkitJNI connection setup			
+			statement = connection.createStatement();			
+			statement.execute("PRAGMA synchronous = OFF;"); //reduce i/o operations, we have no OS crash recovery anyway //NON-NLS			
+			statement.execute("PRAGMA read_uncommitted = True;"); //allow to query while in transaction - no need read locks //NON-NLS
+			statement.execute("PRAGMA foreign_keys = ON;"); //NON-NLS
+			logger.log(Level.INFO, String.format("sqlite-jdbc version %s loaded in %s mode", //NON-NLS
+					SQLiteJDBCLoader.getVersion(), SQLiteJDBCLoader.isNativeMode()
+					? "native" : "pure-java")); //NON-NLS
+		} catch (SQLException e) {
+			throw new TskCoreException("Couldn't configure the database connection", e);
+		} catch (Exception e) {
+			throw new TskCoreException("Couldn't configure the database connection", e);
+		} finally {
+			closeStatement(statement);
+			releaseExclusiveLock();
+		}
+	}
+	
+	private void initBlackboardArtifactTypes(CaseDbConnection connection) throws SQLException, TskCoreException {
+		acquireExclusiveLock();
+		Statement s = null;				
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			for (ARTIFACT_TYPE type : ARTIFACT_TYPE.values()) {
+				rs = connection.executeQuery(s, "SELECT * from blackboard_artifact_types WHERE artifact_type_id = '" + type.getTypeID() + "'"); //NON-NLS
+				if (!rs.next()) {
+					addArtifactType(type.getLabel(), type.getDisplayName(), type.getTypeID());
+				}
+				closeResultSet(rs);
+			}
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			releaseExclusiveLock();
+		}
+	}
+	
+	private void initBlackboardAttributeTypes(CaseDbConnection connection) throws SQLException, TskCoreException {
+		acquireExclusiveLock();
+		Statement s = null;				
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			for (ATTRIBUTE_TYPE type : ATTRIBUTE_TYPE.values()) {
+				rs = connection.executeQuery(s, "SELECT * from blackboard_attribute_types WHERE attribute_type_id = '" + type.getTypeID() + "'"); //NON-NLS
+				if (!rs.next()) {
+					addAttrType(type.getLabel(), type.getDisplayName(), type.getTypeID());
+				}
+			}
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
 			releaseExclusiveLock();
 		}
 	}
@@ -225,7 +285,6 @@ public class SleuthkitCase {
 			// time, breaking this upgrade. The code that follows should be rewritten 
 			// to do everything with SQL specific to the state of the database at 
 			// the time of this schema update.
-			connection.prepareStatements();
 			HashMap<String, TagName> tagNames = new HashMap<String, TagName>();
 			for (BlackboardArtifact artifact : getBlackboardArtifacts(ARTIFACT_TYPE.TSK_TAG_FILE)) {
 				Content content = getContentById(artifact.getObjectID());
@@ -280,7 +339,6 @@ public class SleuthkitCase {
 					addBlackboardArtifactTag(getBlackboardArtifact(taggedArtifactId), tagName, comment);
 				}
 			}						
-			connection.closePreparedStatements();
 			statement.execute(
 				"DELETE FROM blackboard_attributes WHERE artifact_id IN " + //NON-NLS
 				"(SELECT artifact_id FROM blackboard_artifacts WHERE artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() +  //NON-NLS
@@ -336,28 +394,6 @@ public class SleuthkitCase {
 		return dbDirPath;
 	}
 		
-	private void configureDB(CaseDbConnection connection) throws TskCoreException {
-		acquireExclusiveLock();
-		Statement statement = null;
-		try {
-			// this should match SleuthkitJNI connection setup
-			statement = connection.createStatement();			
-			statement.execute("PRAGMA synchronous = OFF;"); //reduce i/o operations, we have no OS crash recovery anyway //NON-NLS			
-			statement.execute("PRAGMA read_uncommitted = True;"); //allow to query while in transaction - no need read locks //NON-NLS
-			statement.execute("PRAGMA foreign_keys = ON;"); //NON-NLS
-			logger.log(Level.INFO, String.format("sqlite-jdbc version %s loaded in %s mode", //NON-NLS
-					SQLiteJDBCLoader.getVersion(), SQLiteJDBCLoader.isNativeMode()
-					? "native" : "pure-java")); //NON-NLS
-		} catch (SQLException e) {
-			throw new TskCoreException("Couldn't configure the database connection", e);
-		} catch (Exception e) {
-			throw new TskCoreException("Couldn't configure the database connection", e);
-		} finally {
-			closeStatement(statement);
-			releaseExclusiveLock();
-		}
-	}
-
 	/**
 	 * Acquire the lock that provides exclusive access to the case database. 
 	 * The exclusive lock should be used very sparingly. It is not generally
@@ -437,45 +473,6 @@ public class SleuthkitCase {
 		} finally {
 			SleuthkitCase.releaseExclusiveLock();
 		}			
-	}
-
-	private void initBlackboardArtifactTypes(CaseDbConnection connection) throws SQLException, TskCoreException {
-		acquireExclusiveLock();
-		Statement s = null;				
-		ResultSet rs = null;
-		try {
-			s = connection.createStatement();
-			for (ARTIFACT_TYPE type : ARTIFACT_TYPE.values()) {
-				rs = connection.executeQuery(s, "SELECT * from blackboard_artifact_types WHERE artifact_type_id = '" + type.getTypeID() + "'"); //NON-NLS
-				if (!rs.next()) {
-					addBuiltInArtifactType(type);
-				}
-				closeResultSet(rs);
-			}
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			releaseExclusiveLock();
-		}
-	}
-	
-	private void initBlackboardAttributeTypes(CaseDbConnection connection) throws SQLException, TskCoreException {
-		acquireExclusiveLock();
-		Statement s = null;				
-		ResultSet rs = null;
-		try {
-			s = connection.createStatement();
-			for (ATTRIBUTE_TYPE type : ATTRIBUTE_TYPE.values()) {
-				rs = connection.executeQuery(s, "SELECT * from blackboard_attribute_types WHERE attribute_type_id = '" + type.getTypeID() + "'"); //NON-NLS
-				if (!rs.next()) {
-					addBuiltInAttrType(type);
-				}
-			}
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			releaseExclusiveLock();
-		}
 	}
 
 	/**
@@ -1824,29 +1821,6 @@ public class SleuthkitCase {
 			closeResultSet(rs);
 			releaseExclusiveLock();
 		}
-	}
-
-	/**
-	 * Add one of the built in artifact types
-	 *
-	 * @param type type enum
-	 * @throws TskException
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within tsk core
-	 */
-	private void addBuiltInArtifactType(ARTIFACT_TYPE type) throws TskCoreException {
-		addArtifactType(type.getLabel(), type.getDisplayName(), type.getTypeID());
-	}
-
-	/**
-	 * Add one of the built in attribute types
-	 *
-	 * @param type type enum
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within tsk core
-	 */
-	private void addBuiltInAttrType(ATTRIBUTE_TYPE type) throws TskCoreException {
-		addAttrType(type.getLabel(), type.getDisplayName(), type.getTypeID());
 	}
 
 	/**
@@ -5106,19 +5080,11 @@ public class SleuthkitCase {
 	 * long-lived threads such as the EDT and ingest threads.
 	 */
 	private final class ConnectionPerThreadDispenser extends ThreadLocal<CaseDbConnection> {	
-
-		CaseDbConnection getConnectionWithoutPreparedStatements() throws SQLException {
+									
+		CaseDbConnection getConnection() throws SQLException {
 			CaseDbConnection connection = get();
 			if (null == connection) {
 				throw new SQLException("Case database connection for current thread is null");
-			}
-			return connection;
-		}
-									
-		CaseDbConnection getConnection() throws SQLException {
-			CaseDbConnection connection = getConnectionWithoutPreparedStatements();
-			if (!connection.statementsArePrepared()) {
-				connection.prepareStatements();
 			}
 			return connection;
 		}
@@ -5220,7 +5186,7 @@ public class SleuthkitCase {
 			SELECT_REPORTS("SELECT * FROM reports"), //NON-NLS
 			SELECT_MAX_ID_FROM_REPORTS("SELECT MAX(report_id) FROM reports"), //NON-NLS
 			INSERT_REPORT("INSERT INTO reports (path, crtime, src_module_name, report_name) VALUES (?, ?, ?, ?)");	 //NON-NLS
-			
+	
 			private final String sql;
 
             private PREPARED_STATEMENT(String sql) {
@@ -5252,11 +5218,15 @@ public class SleuthkitCase {
 			return connection;
 		}
 						
-		void prepareStatements() throws SQLException {
-			for (PREPARED_STATEMENT statement : PREPARED_STATEMENT.values()) {
-				preparedStatements.put(statement, prepareStatement(statement.getSQL()));				
-			}																														
-			statementsPrepared = true;
+		PreparedStatement getPreparedStatement(PREPARED_STATEMENT statementKey) throws SQLException {
+			PreparedStatement statement;
+			if (preparedStatements.containsKey(statementKey)) {
+				statement = preparedStatements.get(statementKey);
+			} else {
+				statement = prepareStatement(statementKey.getSQL());
+				preparedStatements.put(statementKey, statement);
+			} 
+			return statement;
 		}
 
 		private PreparedStatement prepareStatement(String sqlStatement) throws SQLException {
@@ -5274,31 +5244,7 @@ public class SleuthkitCase {
 			}
 			return statement;
 		}
-		
-		
-		boolean statementsArePrepared() {
-			return statementsPrepared;
-		}
-		
-		PreparedStatement getPreparedStatement(PREPARED_STATEMENT statementKey) {
-			return preparedStatements.get(statementKey);
-		}
-								
-		void closePreparedStatements() {
-			for (PreparedStatement statement : this.preparedStatements.values()) {
-				try {
-					if (statement != null) {
-						statement.close();
-						statement = null;
-					}			
-				} 
-				catch (SQLException ex) {
-					logger.log(Level.WARNING, "Error closing prepared statement", ex); //NON-NLS
-				}
-			}
-			statementsPrepared = false;
-		}		
-
+						
 		Statement createStatement() throws SQLException {
 			Statement statement = null;
 			boolean locked = true;
@@ -5407,7 +5353,14 @@ public class SleuthkitCase {
 		}
 								
 		void close() throws SQLException {
-			closePreparedStatements();
+			for (PreparedStatement statement : this.preparedStatements.values()) {
+				try {
+					statement.close();
+				} 
+				catch (SQLException ex) {
+					logger.log(Level.WARNING, "Error closing prepared statement", ex); //NON-NLS
+				}
+			}
 			connection.close();
 		}								
 	}	
