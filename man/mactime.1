@@ -51,10 +51,14 @@ The date is displayed in ISO8601 format.
 .IP "-z TIME_ZONE"
 The timezone from where the data was collected.  The name of this argument
 is system dependent (examples include EST5EDT, GMT+1).  Does not work with -y.
+.IP "-z list"
+List valid timezones.
 .IP DATE_RANGE
 The range of dates to make the time line for.  The standard format is
 yyyy-mm-dd for a starting date and no ending date. For an ending date,
 use yyyy-mm-dd..yyyy-mm-dd.
+Date can contain time, use format yyyy-mm-ddThh:mm:ss for starting and/or
+ending date.
 
 .SH LICENSE
 The changes from mactime in TCT and mac-daddy are distributed under the Common Public License, found in the 
