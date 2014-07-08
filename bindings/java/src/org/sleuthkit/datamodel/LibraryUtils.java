@@ -32,17 +32,17 @@ import java.util.Map;
  */
 public class LibraryUtils {
 	
-	public static final String[] EXTS = new String[] { ".so", ".dylib", ".dll", ".jnilib" };
+	public static final String[] EXTS = new String[] { ".so", ".dylib", ".dll", ".jnilib" }; //NON-NLS
 	
 	/**
 	 * The libraries the TSK Datamodel needs.
 	 */
 	public enum Lib {
-		MSVCP ("msvcp100", ""),
-		MSVCR ("msvcr100", ""),
-		ZLIB ("zlib", "z"),
-		LIBEWF ("libewf", "ewf"),
-		TSK_JNI ("libtsk_jni", "tsk_jni");
+		MSVCP ("msvcp100", ""), //NON-NLS
+		MSVCR ("msvcr100", ""), //NON-NLS
+		ZLIB ("zlib", "z"), //NON-NLS
+		LIBEWF ("libewf", "ewf"), //NON-NLS
+		TSK_JNI ("libtsk_jni", "tsk_jni"); //NON-NLS
 		
 		private final String name;
 		private final String unixName;
@@ -69,9 +69,9 @@ public class LibraryUtils {
 	public static boolean loadSleuthkitJNI() {
 		boolean loaded = LibraryUtils.loadNativeLibFromTskJar(Lib.TSK_JNI);
 		if (!loaded) {
-			System.out.println("SleuthkitJNI: failed to load " + Lib.TSK_JNI.getLibName());
+			System.out.println("SleuthkitJNI: failed to load " + Lib.TSK_JNI.getLibName()); //NON-NLS
 		} else {
-			System.out.println("SleuthkitJNI: loaded " + Lib.TSK_JNI.getLibName());
+			System.out.println("SleuthkitJNI: loaded " + Lib.TSK_JNI.getLibName()); //NON-NLS
 		}
 		return loaded;
 	}
@@ -84,11 +84,11 @@ public class LibraryUtils {
 	private static String getPlatform() {
 		String os = System.getProperty("os.name").toLowerCase();
 		if(LibraryUtils.isWindows()) {
-			os = "win";
+			os = "win"; //NON-NLS
 		} else if(LibraryUtils.isMac()) {
-			os = "mac";
+			os = "mac"; //NON-NLS
 		} else if(LibraryUtils.isLinux()) {
-			os = "linux";
+			os = "linux"; //NON-NLS
 		}
 		// os.arch represents the architecture of the JVM, not the os
 		String arch = System.getProperty("os.arch");
@@ -101,7 +101,7 @@ public class LibraryUtils {
 	 * @return 
 	 */
 	private static boolean isWindows() {
-		return System.getProperty("os.name").toLowerCase().contains("windows");
+		return System.getProperty("os.name").toLowerCase().contains("windows"); //NON-NLS
 	}
 
 	/**
@@ -110,7 +110,7 @@ public class LibraryUtils {
 	 * @return 
 	 */
 	private static boolean isMac() {
-		return System.getProperty("os.name").toLowerCase().contains("mac");
+		return System.getProperty("os.name").toLowerCase().contains("mac"); //NON-NLS
 	}
 	
 	/**
@@ -119,7 +119,7 @@ public class LibraryUtils {
 	 * @return
 	 */
 	private static boolean isLinux() {
-		return System.getProperty("os.name").equals("Linux");
+		return System.getProperty("os.name").equals("Linux"); //NON-NLS
 	}
 	
     /**
@@ -133,7 +133,7 @@ public class LibraryUtils {
 		
 		// find the library in the jar file
 		StringBuilder pathInJarBase = new StringBuilder();
-		pathInJarBase.append("/NATIVELIBS/");
+		pathInJarBase.append("/NATIVELIBS/"); //NON-NLS
 		pathInJarBase.append(getPlatform());
 		pathInJarBase.append("/");
 		pathInJarBase.append(libName);
@@ -149,15 +149,15 @@ public class LibraryUtils {
 		}
 		
 		if (urlInJar == null) {
-			System.out.println("Library not found in jar (" + libName + ")");
+			System.out.println("Library not found in jar (" + libName + ")"); //NON-NLS
 			return false;
 		}
 		
 		// copy library to temp folder and load it
 		try {
-			java.io.File tempFolder = new java.io.File(System.getProperty("java.io.tmpdir") + java.io.File.separator);
+			java.io.File tempFolder = new java.io.File(System.getProperty("java.io.tmpdir") + java.io.File.separator); //NON-NLS
 			java.io.File tempLibFile = new java.io.File(tempFolder + java.io.File.separator + libName + libExt);
-			System.out.println("Temp Folder for Libraries: " + tempFolder.toString());
+			System.out.println("Temp Folder for Libraries: " + tempFolder.toString()); //NON-NLS
 
 			// cycle through the libraries and delete them. 
 			// we used to copy dlls into here. 
@@ -183,7 +183,7 @@ public class LibraryUtils {
 			// Delete old file
 			if (tempLibFile.exists()) {
 				if (tempLibFile.delete() == false) {
-					System.out.println("Error deleting old native library.  Is the app already running? (" + tempLibFile.toString() + ")");
+					System.out.println("Error deleting old native library.  Is the app already running? (" + tempLibFile.toString() + ")"); //NON-NLS
 					return false;
 				}
 			}
@@ -204,7 +204,7 @@ public class LibraryUtils {
 			System.load(tempLibFile.getAbsolutePath());
 		} catch (IOException e) {
 			// Loading failed.
-			System.out.println("Error loading library: " + e.getMessage());
+			System.out.println("Error loading library: " + e.getMessage()); //NON-NLS
 			return false;
 		} 
 		return true;
@@ -212,11 +212,11 @@ public class LibraryUtils {
 	
 	private static String getExtByPlatform() {
 		if (isWindows()) {
-			return ".dll";
+			return ".dll"; //NON-NLS
 		} else if (isMac()) {
-			return ".dylib";
+			return ".dylib"; //NON-NLS
 		} else {
-			return ".so";
+			return ".so"; //NON-NLS
 		}
 	}
 }

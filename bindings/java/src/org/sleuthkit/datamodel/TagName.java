@@ -29,23 +29,23 @@ public class TagName implements Comparable<TagName> {
 
 	public enum HTML_COLOR {
 
-		NONE("None"),
-		WHITE("White"),
-		SILVER("Silver"),
-		GRAY("Gray"),
-		BLACK("Black"),
-		RED("Red"),
-		MAROON("Maron"),
-		YELLOW("Yellow"),
-		OLIVE("Olive"),
-		LIME("Lime"),
-		GREEN("Green"),
-		AQUA("Aqua"),
-		TEAL("Teal"),
-		BLUE("Blue"),
-		NAVY("Navy"),
-		FUCHSIA("Fuchsia"),
-		PURPLE("Purple");
+		NONE("None"), //NON-NLS
+		WHITE("White"), //NON-NLS
+		SILVER("Silver"), //NON-NLS
+		GRAY("Gray"), //NON-NLS
+		BLACK("Black"), //NON-NLS
+		RED("Red"), //NON-NLS
+		MAROON("Maron"), //NON-NLS
+		YELLOW("Yellow"), //NON-NLS
+		OLIVE("Olive"), //NON-NLS
+		LIME("Lime"), //NON-NLS
+		GREEN("Green"), //NON-NLS
+		AQUA("Aqua"), //NON-NLS
+		TEAL("Teal"), //NON-NLS
+		BLUE("Blue"), //NON-NLS
+		NAVY("Navy"), //NON-NLS
+		FUCHSIA("Fuchsia"), //NON-NLS
+		PURPLE("Purple"); //NON-NLS
 		private final static HashMap<String, HTML_COLOR> colorMap = new HashMap<String, HTML_COLOR>();
 		private String name;
 
