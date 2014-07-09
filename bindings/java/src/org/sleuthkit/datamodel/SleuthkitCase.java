@@ -3918,6 +3918,39 @@ public class SleuthkitCase {
 	}
 	
 	/**
+	 * Get last (max) object id of content object in tsk_objects.
+	 *
+	 * Note, if you are using this id to create a new object, make sure you are
+	 * getting and using it in the same write lock/transaction to avoid
+	 * potential concurrency issues with other writes
+	 *
+	 * @return currently max id
+	 * @throws TskCoreException exception thrown when database error occurs and
+	 * last object id could not be queried
+	 */
+	public long getLastObjectId() throws TskCoreException { // TODO: This is not thread-safe
+		acquireSharedLock();
+		ResultSet rs = null;
+		try {
+			CaseDbConnection connection = connections.getConnection();
+			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_MAX_OBJECT_ID);
+			rs = connection.executeQuery(statement);		
+			long id = -1;
+			if (rs.next()) {
+				id = rs.getLong(1);
+			}
+			return id;
+		} catch (SQLException e) {
+			final String msg = "Error closing result set after getting last object id.";
+			logger.log(Level.SEVERE, msg, e);
+			throw new TskCoreException(msg, e);
+		} finally {
+			closeResultSet(rs);
+			releaseSharedLock();
+		}
+	}
+		
+	/**
 	 * Set the file paths for the image given by obj_id
 	 *
 	 * @param obj_id the ID of the image to update
