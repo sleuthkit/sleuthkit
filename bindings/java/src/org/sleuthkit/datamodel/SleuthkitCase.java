@@ -124,18 +124,17 @@ public class SleuthkitCase {
 		}
 	}
 	
-	private void initBlackboardArtifactTypes(CaseDbConnection connection) throws SQLException, TskCoreException {
+	private void initBlackboardArtifactTypes(CaseDbConnection connection) throws SQLException {
 		acquireExclusiveLock();
 		Statement s = null;				
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
 			for (ARTIFACT_TYPE type : ARTIFACT_TYPE.values()) {
-				rs = connection.executeQuery(s, "SELECT * from blackboard_artifact_types WHERE artifact_type_id = '" + type.getTypeID() + "'"); //NON-NLS
-				if (!rs.next()) {
-					addArtifactType(type.getLabel(), type.getDisplayName(), type.getTypeID());
+				rs = connection.executeQuery(s, "SELECT COUNT(*) from blackboard_artifact_types WHERE artifact_type_id = '" + type.getTypeID() + "'"); //NON-NLS
+				if (rs.getLong(1) == 0) {
+					connection.executeUpdate(s, "INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name) VALUES (" + type.getTypeID() + " , '" + type.getLabel() + "', '" + type.getDisplayName() + "')"); //NON-NLS
 				}
-				closeResultSet(rs);
 			}
 		} finally {
 			closeResultSet(rs);
@@ -144,17 +143,17 @@ public class SleuthkitCase {
 		}
 	}
 	
-	private void initBlackboardAttributeTypes(CaseDbConnection connection) throws SQLException, TskCoreException {
+	private void initBlackboardAttributeTypes(CaseDbConnection connection) throws SQLException {
 		acquireExclusiveLock();
 		Statement s = null;				
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
 			for (ATTRIBUTE_TYPE type : ATTRIBUTE_TYPE.values()) {
-				rs = connection.executeQuery(s, "SELECT * from blackboard_attribute_types WHERE attribute_type_id = '" + type.getTypeID() + "'"); //NON-NLS
-				if (!rs.next()) {
-					addAttrType(type.getLabel(), type.getDisplayName(), type.getTypeID());
-				}
+				rs = connection.executeQuery(s, "SELECT COUNT(*) from blackboard_attribute_types WHERE attribute_type_id = '" + type.getTypeID() + "'"); //NON-NLS
+				if (rs.getLong(1) == 0) {
+					connection.executeUpdate(s, "INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name) VALUES (" + type.getTypeID() + ", '" + type.getLabel() + "', '" + type.getDisplayName() + "')"); //NON-NLS
+				} 
 			}
 		} finally {
 			closeResultSet(rs);
@@ -1267,14 +1266,14 @@ public class SleuthkitCase {
 	 * @throws TskCoreException thrown if a critical error occurs.
 	 */
 	public void addBlackboardAttribute(BlackboardAttribute attr, int artifactTypeId) throws TskCoreException {
-		acquireExclusiveLock();
+		acquireSharedLock();
 		try {
 			CaseDbConnection connection = connections.getConnection();
 			addBlackBoardAttribute(attr, artifactTypeId, connection);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding blackboard attribute: " + attr.toString(), ex);
 		} finally {
-			releaseExclusiveLock();
+			releaseSharedLock();
 		}
 	}
 
@@ -1286,7 +1285,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException thrown if a critical error occurs.
 	 */
 	public void addBlackboardAttributes(Collection<BlackboardAttribute> attributes, int artifactTypeId) throws TskCoreException {
-		acquireExclusiveLock();
+		acquireSharedLock();
 		try {
 			CaseDbConnection connection = connections.getConnection();
 			connection.beginTransaction();
@@ -1301,7 +1300,7 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error starting or committing transaction, no attributes created", ex);
 		} finally {
-				releaseExclusiveLock();
+				releaseSharedLock();
 		}
 	}
 
@@ -1370,37 +1369,6 @@ public class SleuthkitCase {
 			return rs.getInt(1);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding attribute type", ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			releaseExclusiveLock();
-		}
-	}
-
-	/**
-	 * helper method. add an attribute type with the given name and id
-	 *
-	 * @param attrTypeString type name
-	 * @param displayName the (non-unique) display name of the attribute type
-	 * @param typeID type id
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within tsk core
-	 */
-	private void addAttrType(String attrTypeString, String displayName, int typeID) throws TskCoreException {
-		acquireExclusiveLock();
-		Statement s = null;				
-		ResultSet rs = null;
-		try {
-			CaseDbConnection connection = connections.getConnection();			
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT COUNT(*) from blackboard_attribute_types WHERE type_name = '" + attrTypeString + "'"); //NON-NLS
-			if (!rs.next()) {
-				connection.executeUpdate(s, "INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name) VALUES (" + typeID + ", '" + attrTypeString + "', '" + displayName + "')"); //NON-NLS
-			} else {
-				throw new TskCoreException("Attribute with that name already exists");
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting attribute type id", ex);
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
@@ -1617,37 +1585,6 @@ public class SleuthkitCase {
 				rs = s.getGeneratedKeys();
 			}
 			return rs.getInt(1);
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error adding artifact type", ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			releaseExclusiveLock();
-		}
-	}
-
-	/**
-	 * helper method. add an artifact with the given type and id
-	 *
-	 * @param artifactTypeName type name
-	 * @param displayName Display (non-unique) name of artifact
-	 * @param typeID type id
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within tsk core
-	 */
-	private void addArtifactType(String artifactTypeName, String displayName, int typeID) throws TskCoreException {
-		acquireExclusiveLock();
-		Statement s = null;				
-		ResultSet rs = null;
-		try {
-			CaseDbConnection connection = connections.getConnection();			
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT COUNT(*) FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeName + "'"); //NON-NLS
-			if (!rs.next()) {
-				connection.executeUpdate(s, "INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name) VALUES (" + typeID + " , '" + artifactTypeName + "', '" + displayName + "')"); //NON-NLS
-			} else {
-				throw new TskCoreException("Artifact with that name already exists"); 
-			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding artifact type", ex);
 		} finally {
@@ -2570,12 +2507,17 @@ public class SleuthkitCase {
 	 * path was not added
 	 */
 	private void addFilePath(long objId, String path) throws SQLException {
-		CaseDbConnection connection = connections.getConnection();
-		PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_LOCAL_PATH);			
-		statement.clearParameters();
-		statement.setLong(1, objId);
-		statement.setString(2, path);
-		connection.executeUpdate(statement);
+		acquireSharedLock();
+		try {
+			CaseDbConnection connection = connections.getConnection();
+			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_LOCAL_PATH);			
+			statement.clearParameters();
+			statement.setLong(1, objId);
+			statement.setString(2, path);
+			connection.executeUpdate(statement); 
+		} finally {
+			releaseSharedLock();
+		}
 	}
 
 	/**
@@ -3987,7 +3929,6 @@ public class SleuthkitCase {
 	 * @throws SQLException if the query fails
 	 */
 	private List<AbstractFile> resultSetToAbstractFiles(ResultSet rs) throws SQLException {
-
 		ArrayList<AbstractFile> results = new ArrayList<AbstractFile>();
 		acquireSharedLock();
 		try {
@@ -4054,8 +3995,6 @@ public class SleuthkitCase {
 			if (type.equals(TskData.TSK_DB_FILES_TYPE_ENUM.FS)) {
 				results.add((FsContent) f);
 			}
-
-
 		}
 		return results;
 	}
@@ -4219,7 +4158,7 @@ public class SleuthkitCase {
 	 */
 	void setMd5Hash(AbstractFile file, String md5Hash) throws TskCoreException {
 		long id = file.getId();
-		SleuthkitCase.acquireExclusiveLock();
+		SleuthkitCase.acquireSharedLock();
 		try {
 			CaseDbConnection connection = connections.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.UPDATE_FILE_MD5);	
@@ -4232,7 +4171,7 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error setting MD5 hash.", ex);
 		} finally {
-			SleuthkitCase.releaseExclusiveLock();
+			SleuthkitCase.releaseSharedLock();
 		}
 	}
 
@@ -4487,7 +4426,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException 
 	 */
 	public TagName addTagName(String displayName, String description, TagName.HTML_COLOR color) throws TskCoreException {
-		acquireExclusiveLock();		
+		acquireSharedLock();		
 		ResultSet resultSet = null;
 		try {
 			// INSERT INTO tag_names (display_name, description, color) VALUES (?, ?, ?)			
@@ -4506,7 +4445,7 @@ public class SleuthkitCase {
 		}
 		finally {
 			closeResultSet(resultSet);
-			releaseExclusiveLock();
+			releaseSharedLock();
 		}
 	}
 	
@@ -4522,7 +4461,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException 
 	 */
 	public ContentTag addContentTag(Content content, TagName tagName, String comment, long beginByteOffset, long endByteOffset) throws TskCoreException {
-		acquireExclusiveLock();		
+		acquireSharedLock();		
 		ResultSet resultSet = null;
 		try {			
 			// INSERT INTO content_tags (obj_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)
@@ -4543,7 +4482,7 @@ public class SleuthkitCase {
 		}
 		finally {
 			closeResultSet(resultSet);
-			releaseExclusiveLock();
+			releaseSharedLock();
 		}	
 	}
 	
@@ -4553,7 +4492,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException 
 	 */
 	public void deleteContentTag(ContentTag tag) throws TskCoreException {
-		acquireExclusiveLock();		
+		acquireSharedLock();		
 		try {			
 			// DELETE FROM content_tags WHERE tag_id = ?		
 			CaseDbConnection connection = connections.getConnection();
@@ -4566,7 +4505,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error deleting row from content_tags table (id = " + tag.getId() + ")", ex);
 		}
 		finally {
-			releaseExclusiveLock();
+			releaseSharedLock();
 		}	
 	}
 
@@ -4749,7 +4688,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException 
 	 */
 	public void deleteBlackboardArtifactTag(BlackboardArtifactTag tag) throws TskCoreException {
-		acquireExclusiveLock();		
+		acquireSharedLock();		
 		try {			
 			// DELETE FROM blackboard_artifact_tags WHERE tag_id = ?
 			CaseDbConnection connection = connections.getConnection();
@@ -4762,7 +4701,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error deleting row from blackboard_artifact_tags table (id = " + tag.getId() + ")", ex);
 		}
 		finally {
-			releaseExclusiveLock();
+			releaseSharedLock();
 		}	
 	}
 	
@@ -4921,7 +4860,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException 
 	 */
 	public Report addReport(String localPath, String sourceModuleName, String reportName) throws TskCoreException {
-		acquireExclusiveLock();
+		acquireSharedLock();
 		ResultSet resultSet = null;
 		try {
 			// Make sure the local path of the report is in the database directory
@@ -4961,7 +4900,7 @@ public class SleuthkitCase {
 		}
 		finally {
 			closeResultSet(resultSet);
-			releaseExclusiveLock();
+			releaseSharedLock();
 		}
     }
 	
