@@ -349,27 +349,19 @@ int
     return
         // tsk_objects index
         attempt_exec("CREATE INDEX parObjId ON tsk_objects(par_obj_id);",
-        "Error creating tsk_objects index on par_obj_id: %s\n") ||
+        "Error creating par_obj_id index on tsk_objects: %s\n") ||
         // file layout index
         attempt_exec("CREATE INDEX layout_objID ON tsk_file_layout(obj_id);",
-        "Error creating layout_objID index on tsk_file_layout: %s\n") ||
+        "Error creating obj_id index on tsk_file_layout: %s\n") ||
         // blackboard indexes
         attempt_exec("CREATE INDEX artifact_objID ON blackboard_artifacts(obj_id);",
-        "Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
+        "Error creating obj_id index on blackboard_artifacts: %s\n") ||
         attempt_exec("CREATE INDEX artifact_typeID ON blackboard_artifacts(artifact_type_id);",
-        "Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
+        "Error creating artifact_type_id index on blackboard_artifacts: %s\n") ||
         attempt_exec("CREATE INDEX attrsArtifactID ON blackboard_attributes(artifact_id);",
-        "Error creating artifact_id index on blackboard_attributes: %s\n") ||
+        "Error creating artifact_id index on blackboard_attributes: %s\n");
         attempt_exec("CREATE INDEX attribute_artifactTypeId ON blackboard_attributes(artifact_type_id);",
-        "Error creating artifact_type_id index on blackboard_attributes: %s\n") ||
-        attempt_exec("CREATE INDEX attribute_valueText ON blackboard_attributes(value_text);",
-        "Error creating value_text index on blackboard_attributes: %s\n") ||
-        attempt_exec("CREATE INDEX attribute_valueInt32 ON blackboard_attributes(value_int32);",
-        "Error creating value_int32 index on blackboard_attributes: %s\n") ||
-        attempt_exec("CREATE INDEX attribute_valueInt64 ON blackboard_attributes(value_int64);",
-        "Error creating value_int64 index on blackboard_attributes: %s\n") ||
-        attempt_exec("CREATE INDEX attribute_valueDouble ON blackboard_attributes(value_double);",
-        "Error creating value_double index on blackboard_attributes: %s\n");
+        "Error creating artifact_type_id index on blackboard_attributes: %s\n");
 }
 
 
