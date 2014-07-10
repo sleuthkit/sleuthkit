@@ -63,7 +63,7 @@ public class LogicalFileTransaction implements Transaction {
 		lft.con = con;
 
 		//get the write lock, released in close()
-		acquireExclusiveLock();
+		dbWriteLock();
 		try {
 			con.setAutoCommit(false);
 
@@ -132,7 +132,7 @@ public class LogicalFileTransaction implements Transaction {
 				con = null;
 				committed = true;
 				closed = true;
-				releaseExclusiveLock();
+				dbWriteUnlock();
 			}
 		}
 	}
