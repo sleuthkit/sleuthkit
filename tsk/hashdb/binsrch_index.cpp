@@ -106,7 +106,6 @@ static uint8_t
     case TSK_HDB_HTYPE_MD5_ID:
         hdb_binsrch_info->hash_type = htype;
         hdb_binsrch_info->hash_len = TSK_HDB_HTYPE_MD5_LEN;
-        hdb_binsrch_info->idx_llen = TSK_HDB_IDX_LEN(htype);
         TSNPRINTF(hdb_binsrch_info->idx_fname, flen,
             _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
             hdb_binsrch_info->base.db_fname, TSK_HDB_HTYPE_MD5_STR);
@@ -117,7 +116,6 @@ static uint8_t
     case TSK_HDB_HTYPE_SHA1_ID:
         hdb_binsrch_info->hash_type = htype;
         hdb_binsrch_info->hash_len = TSK_HDB_HTYPE_SHA1_LEN;
-        hdb_binsrch_info->idx_llen = TSK_HDB_IDX_LEN(htype);
         TSNPRINTF(hdb_binsrch_info->idx_fname, flen,
             _TSK_T("%s-%") PRIcTSK _TSK_T(".idx"),
             hdb_binsrch_info->base.db_fname, TSK_HDB_HTYPE_SHA1_STR);
@@ -275,6 +273,7 @@ static uint8_t
         tsk_error_set_errstr("%s: error reading index of index", func_name);
         return 1;
     }
+    fclose(idx_idx_file);
 
     return 0;
 }
@@ -288,22 +287,13 @@ static uint8_t
 *
 * @return 1 on error and 0 on success
 */
-uint8_t
-    hdb_binsrch_open_idx(TSK_HDB_INFO *hdb_info_base, TSK_HDB_HTYPE_ENUM htype)
+static uint8_t 
+    hdb_binsrch_open_idx_file(TSK_HDB_INFO *hdb_info_base, TSK_HDB_HTYPE_ENUM htype)
 {
     TSK_HDB_BINSRCH_INFO *hdb_binsrch_info = (TSK_HDB_BINSRCH_INFO*)hdb_info_base; 
     char head[TSK_HDB_MAXLEN];
     char head2[TSK_HDB_MAXLEN];
     char *ptr;
-
-    // Lock for lazy load of hIdx and lazy alloc of idx_lbuf.
-    tsk_take_lock(&hdb_binsrch_info->base.lock);
-
-    // if it is already open, bail out
-    if (hdb_binsrch_info->hIdx != NULL) {
-        tsk_release_lock(&hdb_binsrch_info->base.lock);
-        return 0;
-    }
 
     if ((htype != TSK_HDB_HTYPE_MD5_ID)
         && (htype != TSK_HDB_HTYPE_SHA1_ID)) {
@@ -311,7 +301,7 @@ uint8_t
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_ARG);
             tsk_error_set_errstr(
-                "hdb_binsrch_open_idx: Invalid hash type : %d", htype);
+                "hdb_binsrch_open_idx_file: Invalid hash type : %d", htype);
             return 1;
     }
 
@@ -331,7 +321,7 @@ uint8_t
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_MISSING);
             tsk_error_set_errstr(
-                "hdb_binsrch_open_idx: Error finding index file: %"PRIttocTSK,
+                "hdb_binsrch_open_idx_file: Error finding index file: %"PRIttocTSK,
                 hdb_binsrch_info->idx_fname);
             return 1;
         }
@@ -354,7 +344,7 @@ uint8_t
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_OPEN);
             tsk_error_set_errstr(
-                "hdb_binsrch_open_idx: Error converting Windows handle to C handle");
+                "hdb_binsrch_open_idx_file: Error converting Windows handle to C handle");
             return 1;
         }
 
@@ -364,7 +354,7 @@ uint8_t
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_OPEN);
             tsk_error_set_errstr(
-                "hdb_binsrch_open_idx: Error getting size of index file: %"PRIttocTSK" - %d",
+                "hdb_binsrch_open_idx_file: Error getting size of index file: %"PRIttocTSK" - %d",
                 hdb_binsrch_info->idx_fname, (int)GetLastError());
             return 1;
         }
@@ -379,7 +369,7 @@ uint8_t
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_MISSING);
             tsk_error_set_errstr(
-                "hdb_binsrch_open_idx: Error finding index file: %s",
+                "hdb_binsrch_open_idx_file: Error finding index file: %s",
                 hdb_binsrch_info->idx_fname);
             return 1;
         }
@@ -390,7 +380,7 @@ uint8_t
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_OPEN);
             tsk_error_set_errstr(
-                "hdb_binsrch_open_idx: Error opening index file: %s",
+                "hdb_binsrch_open_idx_file: Error opening index file: %s",
                 hdb_binsrch_info->idx_fname);
             return 1;
         }
@@ -403,7 +393,7 @@ uint8_t
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_READIDX);
         tsk_error_set_errstr(
-            "hdb_binsrch_open_idx: Header line of index file");
+            "hdb_binsrch_open_idx_file: Header line of index file");
         return 1;
     }
 
@@ -413,7 +403,7 @@ uint8_t
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
             tsk_error_set_errstr(
-                "hdb_binsrch_open_idx: Invalid index file: Missing header line");
+                "hdb_binsrch_open_idx_file: Invalid index file: Missing header line");
             return 1;
     }
 
@@ -423,7 +413,7 @@ uint8_t
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_READIDX);
         tsk_error_set_errstr(
-            "hdb_binsrch_open_idx: Error reading line 2 of index file");
+            "hdb_binsrch_open_idx_file: Error reading line 2 of index file");
         return 1;
     }
 
@@ -439,10 +429,12 @@ uint8_t
     /* Skip the pipe symbol */
     ptr = &head[strlen(TSK_HDB_IDX_HEAD_TYPE_STR) + 1];
 
+    /* Set the line length consistent with the hash type and the newline representation in the file.*/
+    hdb_binsrch_info->idx_llen = TSK_HDB_IDX_LEN(htype);
     ptr[strlen(ptr) - 1] = '\0';
     if ((ptr[strlen(ptr) - 1] == 10) || (ptr[strlen(ptr) - 1] == 13)) {
         ptr[strlen(ptr) - 1] = '\0';
-        hdb_binsrch_info->idx_llen++;   // make the expected index length longer to account for different cr/nl/etc.
+        hdb_binsrch_info->idx_llen++;
     }
 
     /* Verify the header value in the index */
@@ -453,7 +445,7 @@ uint8_t
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
                 tsk_error_set_errstr(
-                    "hdb_binsrch_open_idx: DB detected as %s, index type has NSRL",
+                    "hdb_binsrch_open_idx_file: DB detected as %s, index type has NSRL",
                     ptr);
                 return 1;
         }
@@ -465,7 +457,7 @@ uint8_t
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
                 tsk_error_set_errstr(
-                    "hdb_binsrch_open_idx: DB detected as %s, index type has MD5SUM",
+                    "hdb_binsrch_open_idx_file: DB detected as %s, index type has MD5SUM",
                     ptr);
                 return 1;
         }
@@ -477,7 +469,7 @@ uint8_t
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
                 tsk_error_set_errstr(
-                    "hdb_binsrch_open_idx: DB detected as %s, index type has hashkeeper",
+                    "hdb_binsrch_open_idx_file: DB detected as %s, index type has hashkeeper",
                     ptr);
                 return 1;
         }
@@ -489,7 +481,7 @@ uint8_t
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
                 tsk_error_set_errstr(
-                    "hdb_binsrch_open_idx: DB detected as %s, index type has EnCase",
+                    "hdb_binsrch_open_idx_file: DB detected as %s, index type has EnCase",
                     ptr);
                 return 1;
         }
@@ -499,7 +491,7 @@ uint8_t
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
         tsk_error_set_errstr(
-            "hdb_binsrch_open_idx: Unknown Database Type in index header: %s",
+            "hdb_binsrch_open_idx_file: Unknown Database Type in index header: %s",
             ptr);
         return 1;
     }
@@ -511,7 +503,7 @@ uint8_t
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
             tsk_error_set_errstr(
-                "hdb_binsrch_open_idx: Error, size of index file is not a multiple of row size");
+                "hdb_binsrch_open_idx_file: Error, size of index file is not a multiple of row size");
             return 1;
     }
 
@@ -521,8 +513,42 @@ uint8_t
         return 1;
     }
 
+    return 0;
+}
+
+/** \internal
+* Opens and index file and loads the index of the index file into memory.
+*
+* @param hdb_info Hash database to analyze
+* @param hash The hash type that was used to make the index.
+*
+* @return 1 on error and 0 on success
+*/
+uint8_t
+    hdb_binsrch_open_idx(TSK_HDB_INFO *hdb_info_base, TSK_HDB_HTYPE_ENUM htype)
+{
+    TSK_HDB_BINSRCH_INFO *hdb_binsrch_info = (TSK_HDB_BINSRCH_INFO*)hdb_info_base; 
+
+    // Lock for lazy load of hIdx and lazy alloc of idx_lbuf.
+    tsk_take_lock(&hdb_binsrch_info->base.lock);
+
+    // if it is already open, bail out
+    if (hdb_binsrch_info->hIdx != NULL) {
+        tsk_release_lock(&hdb_binsrch_info->base.lock);
+        return 0;
+    }
+
+    if (hdb_binsrch_open_idx_file(hdb_info_base, htype))
+    {
+        tsk_release_lock(&hdb_binsrch_info->base.lock);
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("hdb_binsrch_open_idx: unable to open index file");
+        return 1;
+    }
+
     /* To speed up lookups, a mapping of the first three bytes of a hash to
-    * an offset in the index file will be loaded into memory, if available. */
+     * an offset in the index file will be loaded into memory, if available. */
     if (hdb_binsrch_load_index_offsets(hdb_binsrch_info)) {
         tsk_release_lock(&hdb_binsrch_info->base.lock);
         return 1;
@@ -775,17 +801,17 @@ static uint8_t
         return 1;
     }
 
-    // Open the index file. This will read past the header, so the file
-    // pointer will be positioned at the offset of the first hash line
-    // in the index file. 
-    if (hdb_binsrch_open_idx(&(hdb_binsrch_info->base), hdb_binsrch_info->hash_type)) {
-        return 1;
-    }
-
     if (!hdb_binsrch_info->idx_idx_fname) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
         tsk_error_set_errstr("%s: hdb_binsrch_info->idx_idx_fname is NULL", func_name);
+        return 1;
+    }
+
+    // Open the index file. This will read past the header, so the file
+    // pointer will be positioned at the offset of the first hash line
+    // in the index file. 
+    if (hdb_binsrch_open_idx_file(&(hdb_binsrch_info->base), hdb_binsrch_info->hash_type)) {
         return 1;
     }
 
@@ -796,11 +822,12 @@ static uint8_t
         HANDLE hWin;
         if ((hWin = CreateFile(hdb_binsrch_info->idx_idx_fname, GENERIC_WRITE,
             0, 0, CREATE_ALWAYS, 0, 0)) == INVALID_HANDLE_VALUE) {
+                int winErrNo = (int)GetLastError();
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_HDB_CREATE);
                 tsk_error_set_errstr(
                     "%s: error creating index of index file %"PRIttocTSK" - %d)",
-                    func_name, hdb_binsrch_info->idx_idx_fname, (int)GetLastError());
+                    func_name, hdb_binsrch_info->idx_idx_fname, winErrNo);
                 return 1;
         }
 
@@ -848,14 +875,11 @@ static uint8_t
         }
         idx_off += hdb_binsrch_info->idx_llen;
     }
-    fclose(hdb_binsrch_info->hIdx);
-    hdb_binsrch_info->hIdx = NULL;
 
-    // Write the array to the index of the index file.
+    // Write the array to the index of the index file so that it 
+    // can be reloaded into memory the next time the index is opened.
     uint8_t ret_val = (1 == fwrite((const void*)hdb_binsrch_info->idx_offsets, IDX_IDX_SIZE, 1, idx_idx_file)) ? 0 : 1; 
     fclose(idx_idx_file);
-    free(hdb_binsrch_info->idx_offsets);
-    hdb_binsrch_info->idx_offsets = NULL;
 
     return ret_val;
 }
@@ -870,6 +894,27 @@ static uint8_t
 uint8_t
     hdb_binsrch_idx_finalize(TSK_HDB_BINSRCH_INFO *hdb_binsrch_info)
 {
+    /* Close the unsorted file */
+    fclose(hdb_binsrch_info->hIdxTmp);
+    hdb_binsrch_info->hIdxTmp = NULL;
+
+    /* Close the existing index if it is open, and unset the old index file data. */
+    if (hdb_binsrch_info->hIdx) {
+        fclose(hdb_binsrch_info->hIdx);
+        hdb_binsrch_info->hIdx = NULL;
+    }
+    hdb_binsrch_info->idx_size = 0;
+    hdb_binsrch_info->idx_off = 0;
+    hdb_binsrch_info->idx_llen = 0;
+    if (hdb_binsrch_info->idx_lbuf != NULL)
+    {
+        free(hdb_binsrch_info->idx_lbuf);
+        hdb_binsrch_info->idx_lbuf = NULL;
+    }
+
+    if (tsk_verbose)
+        tsk_fprintf(stderr, "hdb_idxfinalize: Sorting index\n");
+
 #ifdef TSK_WIN32
     wchar_t buf[TSK_HDB_MAXLEN];
     /// @@ Expand this to be SYSTEM_ROOT -- GetWindowsDirectory()
@@ -877,19 +922,6 @@ uint8_t
     DWORD stat;
     STARTUPINFO myStartInfo;
     PROCESS_INFORMATION pinfo;
-
-    /* Close the unsorted file */
-    fclose(hdb_binsrch_info->hIdxTmp);
-    hdb_binsrch_info->hIdxTmp = NULL;
-
-    /* Close the existing index if it is open */
-    if (hdb_binsrch_info->hIdx) {
-        fclose(hdb_binsrch_info->hIdx);
-        hdb_binsrch_info->hIdx = NULL;
-    }
-
-    if (tsk_verbose)
-        tsk_fprintf(stderr, "hdb_idxfinalize: Sorting index\n");
 
     stat = GetFileAttributes(sys32);
     if ((stat != -1) && ((stat & FILE_ATTRIBUTE_DIRECTORY) == 0)) {
@@ -936,19 +968,6 @@ uint8_t
     const char *usr = "/usr/bin/sort";
     const char *local = "/usr/local/bin/sort";
     struct stat stats;
-
-    if (tsk_verbose)
-        tsk_fprintf(stderr, "hdb_idxfinalize: Sorting index\n");
-
-    /* Close the unsorted file */
-    fclose(hdb_binsrch_info->hIdxTmp);
-    hdb_binsrch_info->hIdxTmp = NULL;
-
-    /* Close the existing index if it is open */
-    if (hdb_binsrch_info->hIdx) {
-        fclose(hdb_binsrch_info->hIdx);
-        hdb_binsrch_info->hIdx = NULL;
-    }
 
     if (0 == stat(local, &stats)) {
         snprintf(buf, TSK_HDB_MAXLEN, "%s -o %s %s", local,
