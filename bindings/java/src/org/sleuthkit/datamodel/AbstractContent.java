@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -42,7 +43,7 @@ public abstract class AbstractContent implements Content {
 	private volatile boolean hasChildren;
 	private volatile boolean checkedHasChildren;
 	private volatile int childrenCount;
-	
+	private BlackboardArtifact genInfoArtifact = null;
 
 	protected AbstractContent(SleuthkitCase db, long obj_id, String name) {
 		this.db = db;
@@ -188,52 +189,91 @@ public abstract class AbstractContent implements Content {
 
 	@Override
 	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException {
+		// don't let them make new ones
+		if (artifactTypeID == ARTIFACT_TYPE.TSK_GEN_INFO.getTypeID()) {
+			return getGenInfoArtifact();
+		}
 		return db.newBlackboardArtifact(artifactTypeID, objId);
 	}
 
 	@Override
 	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
+		if (type == ARTIFACT_TYPE.TSK_GEN_INFO) {
+			return getGenInfoArtifact();
+		}
 		return db.newBlackboardArtifact(type, objId);
 	}
 
 	@Override
 	public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskCoreException {
+		if (artifactTypeName.equals(ARTIFACT_TYPE.TSK_GEN_INFO.getLabel())) {
+			return returnGenInfoAsList();
+		}
 		return db.getBlackboardArtifacts(artifactTypeName, objId);
 	}
 
 	@Override
 	public ArrayList<BlackboardArtifact> getArtifacts(int artifactTypeID) throws TskCoreException {
+		if (artifactTypeID == ARTIFACT_TYPE.TSK_GEN_INFO.getTypeID()) {
+			return returnGenInfoAsList();
+		}
 		return db.getBlackboardArtifacts(artifactTypeID, objId);
 	}
 
 	@Override
 	public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
+		if (type == ARTIFACT_TYPE.TSK_GEN_INFO) {
+			return returnGenInfoAsList();
+		}
 		return db.getBlackboardArtifacts(type, objId);
+	}
+	
+	/**
+	 * Return the GEN_INFO artifact as a single item list. 
+	 * Makes one if needed.
+	 * 
+	 * @return
+	 * @throws TskCoreException 
+	 */
+	private ArrayList<BlackboardArtifact> returnGenInfoAsList() throws TskCoreException {
+		if (genInfoArtifact == null) 
+			getGenInfoArtifact();
+		
+		ArrayList<BlackboardArtifact> list = new ArrayList<BlackboardArtifact>();
+		list.add(genInfoArtifact);
+		return list;
 	}
 	
 	@Override
 	public BlackboardArtifact getGenInfoArtifact() throws TskCoreException {
+		if (genInfoArtifact != null) {
+			return genInfoArtifact;
+		}
+		
 		ArrayList<BlackboardArtifact> arts = getArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO);
+		BlackboardArtifact retArt;
 		if (arts.isEmpty()) {
-			BlackboardArtifact art = newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO);
-			return art;
+			retArt = newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO);
 		}
 		else {
-			return arts.get(0);
+			retArt = arts.get(0);
 		}
+		genInfoArtifact = retArt;
+		return retArt;
 	}
 	
 	@Override
 	public ArrayList<BlackboardAttribute> getGenInfoAttributes(ATTRIBUTE_TYPE attr_type) throws TskCoreException {
 		ArrayList<BlackboardAttribute> returnList = new ArrayList<BlackboardAttribute>();
 		
-		ArrayList<BlackboardArtifact> arts = getArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO);
-		if (arts.isEmpty()) {
-			return returnList;
+		if (genInfoArtifact == null) {
+			getGenInfoArtifact();
+			if (genInfoArtifact == null) {
+				return returnList;
+			}
 		}
-
-		List<BlackboardAttribute> attributes = arts.get(0).getAttributes();
-		for (BlackboardAttribute attribute : attributes) {
+			
+		for (BlackboardAttribute attribute : genInfoArtifact.getAttributes()) {
 			if (attribute.getAttributeTypeID() == attr_type.getTypeID()) {
 				returnList.add(attribute);
 			}
