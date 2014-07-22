@@ -1669,11 +1669,12 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	public int addAttrType(String attrTypeString, String displayName) throws TskCoreException {
+		acquireExclusiveLock();				
 		addAttrType(attrTypeString, displayName, attributeIDcounter);
 		int retval = attributeIDcounter;
 		attributeIDcounter++;
+		releaseExclusiveLock();
 		return retval;
-
 	}
 
 	/**
@@ -1940,9 +1941,11 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	public int addArtifactType(String artifactTypeName, String displayName) throws TskCoreException {
+		acquireExclusiveLock();
 		addArtifactType(artifactTypeName, displayName, artifactIDcounter);
 		int retval = artifactIDcounter;
 		artifactIDcounter++;
+		releaseExclusiveLock();
 		return retval;
 	}
 
@@ -1974,7 +1977,6 @@ public class SleuthkitCase {
 		} finally {
 			releaseExclusiveLock();
 		}
-
 	}
 
 	public ArrayList<BlackboardAttribute> getBlackboardAttributes(final BlackboardArtifact artifact) throws TskCoreException {
