@@ -198,51 +198,32 @@ public abstract class AbstractContent implements Content {
 
 	@Override
 	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
-		if (type == ARTIFACT_TYPE.TSK_GEN_INFO) {
-			return getGenInfoArtifact();
-		}
-		return db.newBlackboardArtifact(type, objId);
+		return newArtifact(type.getTypeID());
 	}
 
 	@Override
 	public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskCoreException {
-		if (artifactTypeName.equals(ARTIFACT_TYPE.TSK_GEN_INFO.getLabel())) {
-			return returnGenInfoAsList();
-		}
-		return db.getBlackboardArtifacts(artifactTypeName, objId);
+		return getArtifacts(ARTIFACT_TYPE.fromLabel(artifactTypeName).getTypeID());
 	}
 
 	@Override
 	public ArrayList<BlackboardArtifact> getArtifacts(int artifactTypeID) throws TskCoreException {
 		if (artifactTypeID == ARTIFACT_TYPE.TSK_GEN_INFO.getTypeID()) {
-			return returnGenInfoAsList();
+			if (genInfoArtifact == null) 
+				getGenInfoArtifact();
+
+			ArrayList<BlackboardArtifact> list = new ArrayList<BlackboardArtifact>();
+			list.add(genInfoArtifact);
+			return list;
 		}
 		return db.getBlackboardArtifacts(artifactTypeID, objId);
 	}
 
 	@Override
 	public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
-		if (type == ARTIFACT_TYPE.TSK_GEN_INFO) {
-			return returnGenInfoAsList();
-		}
-		return db.getBlackboardArtifacts(type, objId);
+		return getArtifacts(type.getTypeID());
 	}
 	
-	/**
-	 * Return the GEN_INFO artifact as a single item list. 
-	 * Makes one if needed.
-	 * 
-	 * @return
-	 * @throws TskCoreException 
-	 */
-	private ArrayList<BlackboardArtifact> returnGenInfoAsList() throws TskCoreException {
-		if (genInfoArtifact == null) 
-			getGenInfoArtifact();
-		
-		ArrayList<BlackboardArtifact> list = new ArrayList<BlackboardArtifact>();
-		list.add(genInfoArtifact);
-		return list;
-	}
 	
 	@Override
 	public BlackboardArtifact getGenInfoArtifact() throws TskCoreException {
@@ -251,10 +232,10 @@ public abstract class AbstractContent implements Content {
 		}
 	
         // go to db directly to avoid infinite loop
-		ArrayList<BlackboardArtifact> arts = db.getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO);
+		ArrayList<BlackboardArtifact> arts = db.getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO, objId);
 		BlackboardArtifact retArt;
 		if (arts.isEmpty()) {
-			retArt = newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO);
+			retArt = db.newBlackboardArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO, objId);
 		}
 		else {
 			retArt = arts.get(0);
