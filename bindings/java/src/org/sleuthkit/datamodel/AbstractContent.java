@@ -249,8 +249,9 @@ public abstract class AbstractContent implements Content {
 		if (genInfoArtifact != null) {
 			return genInfoArtifact;
 		}
-		
-		ArrayList<BlackboardArtifact> arts = getArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO);
+	
+        // go to db directly to avoid infinite loop
+		ArrayList<BlackboardArtifact> arts = db.getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO);
 		BlackboardArtifact retArt;
 		if (arts.isEmpty()) {
 			retArt = newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO);
