@@ -11,7 +11,7 @@
 #include "tsk_hashdb_i.h"
 
 /**
-* \file nsrl_index.c
+* \file nsrl.c
 * NSRL specific functions to read the database.
 */
 
@@ -378,7 +378,7 @@ static uint8_t
 * entries with the same hash value are not added to the index, but
 * will be found during lookup.
 *
-* @param hdb_info Hash database to make index of.
+* @param hdb_info_base Hash database to make index of.
 * @param dbtype Type of database 
 *
 * @return 1 on error and 0 on success.
@@ -490,7 +490,7 @@ uint8_t
 * if they have the same hash value and their name is different. 
 * The callback is called for each entry. 
 *
-* @param hdb_info Database to get data from.
+* @param hdb_info_base Database to get data from.
 * @param hash MD5/SHA-1 hash value that was searched for
 * @param offset Byte offset where hash value should be located in db_file
 * @param flags (not used)

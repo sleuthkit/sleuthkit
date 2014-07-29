@@ -12,7 +12,7 @@
 */
 
 /**
- * \file fatxxfs.h
+ * \file tsk_fatxxfs.h
  * Contains the structures and function APIs for TSK FATXX (FAT12, FAT16,
  * FAT32) file system support.
  */

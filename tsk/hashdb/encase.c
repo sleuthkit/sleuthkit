@@ -9,7 +9,7 @@
 */
 
 /**
-* \file encase_index.c
+* \file encase.c
 * Contains the Encase hash database specific extraction and printing routines.
 */
 
@@ -107,7 +107,7 @@ TSK_HDB_INFO *encase_open(FILE *hDb, const TSK_TCHAR *db_path)
 * entries with the same hash value are not added to the index, but
 * will be found during lookup.
 *
-* @param hdb_info Hash database to make index of.
+* @param hdb_info_base Hash database to make index of.
 * @param dbtype Type of hash database (should always be TSK_HDB_DBTYPE_ENCASE_STR)
 *
 * @return 1 on error and 0 on success.

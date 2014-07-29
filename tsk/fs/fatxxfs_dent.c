@@ -42,14 +42,14 @@ typedef struct {
  * objects for each named file found to the TSK_FS_DIR representation of the 
  * directory.
  *
- * @param a_fatfs File system information structure for file system that
+ * @param fatfs File system information structure for file system that
  * contains the directory.
  * @param a_fs_dir Directory structure into to which parsed file metadata will
  * be added.
- * @param a_buf Buffer that contains the directory contents.
- * @param a_buf_len Length of buffer in bytes (must be a multiple of sector
+ * @param buf Buffer that contains the directory contents.
+ * @param len Length of buffer in bytes (must be a multiple of sector
 *  size).
- * @param a_sector_addrs Array where each element is the original address of
+ * @param addrs Array where each element is the original address of
  * the corresponding sector in a_buf (size of array is number of sectors in
  * the directory).
  * @return TSK_RETVAL_ENUM

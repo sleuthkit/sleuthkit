@@ -12,7 +12,7 @@
 #include "tsk_hash_info.h"
 
 /**
-* \file text_hdb.c
+* \file binsrch_index.cpp
 * Functions common to all text hash databases (i.e. NSRL, HashKeeper, EnCase, etc.).
 * Examples include index management and index-based lookup.
 */
@@ -563,7 +563,7 @@ uint8_t
 * which will have entries added to it.  This file must be sorted before the 
 * process is finished.
 *
-* @param hdb_info Hash database state structure
+* @param hdb_binsrch_info Hash database state structure
 * @param htype String of index type to create
 *
 * @return 1 on error and 0 on success
@@ -1016,7 +1016,7 @@ uint8_t
 * \ingroup hashdblib
 * Search the index for a text/ASCII hash value
 *
-* @param hdb_info Open hash database (with index)
+* @param hdb_info_base Open hash database (with index)
 * @param hash Hash value to search for (NULL terminated string)
 * @param flags Flags to use in lookup
 * @param action Callback function to call for each hash db entry 
