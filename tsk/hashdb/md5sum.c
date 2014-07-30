@@ -9,7 +9,7 @@
 */
 
 /**
-* \file md5sum_index.c
+* \file md5sum.c
 * Contains the MD5sum hash database specific extraction and printing routines.
 */
 
@@ -194,7 +194,7 @@ static uint8_t
 * entries with the same hash value are not added to the index, but
 * will be found during lookup.
 *
-* @param hdb_info Hash database to make index of.
+* @param hdb_info_base Hash database to make index of.
 * @param dbtype Type of hash database (should always be TSK_HDB_DBTYPE_MD5SUM_STR)
 *
 * @return 1 on error and 0 on success.

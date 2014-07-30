@@ -359,17 +359,10 @@ int
         attempt_exec("CREATE INDEX artifact_typeID ON blackboard_artifacts(artifact_type_id);",
         "Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
         attempt_exec("CREATE INDEX attrsArtifactID ON blackboard_attributes(artifact_id);",
-        "Error creating artifact_id index on blackboard_attributes: %s\n") ||
-        attempt_exec("CREATE INDEX attribute_artifactTypeId ON blackboard_attributes(artifact_type_id);",
-        "Error creating artifact_type_id index on blackboard_attributes: %s\n") ||
-        attempt_exec("CREATE INDEX attribute_valueText ON blackboard_attributes(value_text);",
-        "Error creating value_text index on blackboard_attributes: %s\n") ||
-        attempt_exec("CREATE INDEX attribute_valueInt32 ON blackboard_attributes(value_int32);",
-        "Error creating value_int32 index on blackboard_attributes: %s\n") ||
-        attempt_exec("CREATE INDEX attribute_valueInt64 ON blackboard_attributes(value_int64);",
-        "Error creating value_int64 index on blackboard_attributes: %s\n") ||
-        attempt_exec("CREATE INDEX attribute_valueDouble ON blackboard_attributes(value_double);",
-        "Error creating value_double index on blackboard_attributes: %s\n");
+        "Error creating artifact_id index on blackboard_attributes: %s\n") ;
+        /*attempt_exec("CREATE INDEX attribute_artifactTypeId ON blackboard_attributes(artifact_type_id);",
+        "Error creating artifact_type_id index on blackboard_attributes: %s\n");
+        */
 }
 
 

@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -31,7 +32,7 @@ import java.util.ResourceBundle;
  */
 public class BlackboardArtifact implements SleuthkitVisitableItem {
 
-    private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
+    private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	/**
 	 * Enum for artifact types.  The C++ code has the full description of 
@@ -128,7 +129,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		private final String label;
 		private final int typeID;
 		private final String displayName;
-
+		
 		private ARTIFACT_TYPE(int typeID, String label, String displayName) {
 			this.typeID = typeID;
 			this.label = label;
@@ -199,7 +200,9 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	private final String artifactTypeName;
 	private final String displayName;
 	private final SleuthkitCase Case;
-
+	private final List<BlackboardAttribute> attrsCache = new ArrayList<BlackboardAttribute>();
+	private boolean loadedCacheFromDb = false; // true once we've gone to the DB to fill in the attrsCache
+	
 	/**
 	 * Constructor for an artifact. Should only be used by SleuthkitCase
 	 * @param Case the case that can be used to access the database this artifact is part of
@@ -267,6 +270,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		attr.setArtifactID(artifactID);
 		attr.setCase(Case);
 		Case.addBlackboardAttribute(attr, this.artifactTypeID);
+		attrsCache.add(attr);
 	}
 
 	/**
@@ -284,6 +288,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 			attr.setCase(Case);
 		}
 		Case.addBlackboardAttributes(attributes, this.artifactTypeID);
+		attrsCache.addAll(attributes);
 	}
 
 	/**
@@ -292,8 +297,13 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * @throws TskCoreException if a critical error occurs and the attributes are not fetched
 	 */
 	public List<BlackboardAttribute> getAttributes() throws TskCoreException {
-		//return Case.getMatchingAttributes("WHERE artifact_id = " + artifactID);
-		return Case.getBlackboardAttributes(this);
+		if (loadedCacheFromDb == false) {
+			List <BlackboardAttribute> attrs =  Case.getBlackboardAttributes(this);
+			attrsCache.clear();
+			attrsCache.addAll(attrs);
+			loadedCacheFromDb = true;
+		}
+		return attrsCache;
 	}
 	
 

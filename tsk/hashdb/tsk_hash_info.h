@@ -6,8 +6,7 @@
 */
 
 /**
-* \file sqlite_index.h
-
+* \file tsk_hash_info.h
 */
 
 /**

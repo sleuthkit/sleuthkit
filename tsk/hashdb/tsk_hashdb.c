@@ -15,7 +15,7 @@
 #endif
 
 /**
-* \file hdb_open.c
+* \file tsk_hashdb.c
 * Contains the code to open and close all supported hash database types.
 */
 
@@ -355,8 +355,8 @@ uint8_t
 /**
 * \ingroup hashdblib
 * Create an index for an open hash database.
-* @param a_hdb_info Open hash database to index
-* @param a_type Text of hash database type
+* @param hdb_info Open hash database to index
+* @param type Text of hash database type
 * @returns 1 on error
 */
 uint8_t
@@ -381,7 +381,7 @@ uint8_t
 * @param action Callback function to call for each entry in the hash 
 * database that matches the hash value argument (not called if QUICK 
 * flag is given).
-* @param data Pointer to data to pass to each invocation of the callback.
+* @param ptr Pointer to data to pass to each invocation of the callback.
 * @return -1 on error, 0 if hash value not found, and 1 if value was found.
 */
 int8_t
@@ -491,7 +491,7 @@ uint8_t
 * @param md5 Text representation of MD5 hash (can be NULL)
 * @param sha1 Text representation of SHA1 hash (can be NULL)
 * @param sha256 Text representation of SHA256 hash (can be NULL)
-* @param sha256 A comment to asociate with the hash (can be NULL)
+* @param comment A comment to asociate with the hash (can be NULL)
 * @return 1 on error, 0 on success
 */
 uint8_t

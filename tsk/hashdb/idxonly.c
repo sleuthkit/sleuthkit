@@ -8,7 +8,7 @@
 */
 
 /**
-* \file idxonly_index.c
+* \file idxonly.c
 * Contains the dummy functions that are used when only an index is used for lookups and the 
 * original database is gone. 
 */

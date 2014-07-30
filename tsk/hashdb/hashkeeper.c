@@ -12,7 +12,7 @@
 #include "tsk_hashdb_i.h"
 
 /**
-* \file hk_index.c
+* \file hashkeeper.c
 * Contains functions to read and process hash keeper database files
 */
 
@@ -257,7 +257,7 @@ static int
 * entries with the same hash value are not added to the index, but
 * will be found during lookup.
 *
-* @param hdb_info Hash database to make index of
+* @param hdb_info_base Hash database to make index of
 * @param dbtype Text of database type (should always be TSK_HDB_DBTYPE_HK_STR)
 *
 * @return 1 on error and 0 on success.
