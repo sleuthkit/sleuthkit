@@ -252,32 +252,36 @@ void content::write_record()
 	for(seglist::const_iterator i = this->segs.begin();i!=this->segs.end();i++){
 	    char buf[1024];
 	    if(i->flags & TSK_FS_BLOCK_FLAG_SPARSE){
-		sprintf(buf,"       <byte_run file_offset='%"PRIu64"' fill='0' len='%"PRIu64"'/>\n",
-			i->file_offset,i->len);
+		sprintf(buf,"       <byte_run file_offset='%"PRIu64"' fill='0' len='%"PRIu64"'", i->file_offset,i->len);
 	    } else if (i->flags & TSK_FS_BLOCK_FLAG_RAW){
 		sprintf(buf,
-			"       <byte_run file_offset='%"PRIu64"' fs_offset='%"PRIu64"' " "img_offset='%"PRIu64"' len='%"PRIu64"'/>\n",
+			"       <byte_run file_offset='%"PRIu64"' fs_offset='%"PRIu64"' " "img_offset='%"PRIu64"' len='%"PRIu64"'",
 			i->file_offset,i->fs_offset,i->img_offset,i->len);
 	    } else if (i->flags & TSK_FS_BLOCK_FLAG_COMP){
 		if(i->fs_offset){
 		    sprintf(buf,
 			    "       <byte_run file_offset='%"PRIu64"' fs_offset='%"PRIu64"' "
-			    "img_offset='%"PRIu64"' uncompressed_len='%"PRIu64"'/>\n",
+			    "img_offset='%"PRIu64"' uncompressed_len='%"PRIu64"'",
 			    i->file_offset,i->fs_offset,i->img_offset,i->len);
 		} else {
 		    sprintf(buf,
-			    "       <byte_run file_offset='%"PRIu64"' uncompressed_len='%"PRIu64"'/>\n",
-			    i->file_offset,i->len);
+			    "       <byte_run file_offset='%"PRIu64"' uncompressed_len='%"PRIu64"'", i->file_offset,i->len);
 		}
 	    } else if (i->flags & TSK_FS_BLOCK_FLAG_RES){
 		sprintf(buf,
 			"       <byte_run file_offset='%"PRIu64"' fs_offset='%"PRIu64"' "
-                "img_offset='%"PRIu64"' len='%"PRIu64"' type='resident'/>\n",
+                        "img_offset='%"PRIu64"' len='%"PRIu64"' type='resident'",
 			i->file_offset,i->fs_offset,i->img_offset,i->len);
 	    } else{
-		sprintf(buf,"       <byte_run file_offset='%"PRIu64"' unknown_flags='%d'/>\n",i->file_offset,i->flags);
+		sprintf(buf,"       <byte_run file_offset='%"PRIu64"' unknown_flags='%d'",i->file_offset,i->flags);
 	    }
 	    runs += buf;
+
+            if(i->md5.size()){
+                runs += "><hashdigest type='MD5'>" + i->md5 + "</hashdigest></byte_run>\n";
+            } else {
+                runs += "/>\n";
+            }
 	}
 	file_info_xml("byte_runs",runs);
 	if(!invalid){
@@ -313,7 +317,8 @@ bool content::need_file_walk()
 /** Called to create a new segment. */
 void content::add_seg(int64_t img_offset,int64_t fs_offset,
 		      int64_t file_offset,int64_t len,
-		      TSK_FS_BLOCK_FLAG_ENUM flags)
+		      TSK_FS_BLOCK_FLAG_ENUM flags,
+                      const std::string &md5)
 {
     struct seg newseg;
     newseg.img_offset = img_offset;
@@ -321,6 +326,7 @@ void content::add_seg(int64_t img_offset,int64_t fs_offset,
     newseg.file_offset = file_offset;
     newseg.len   = len;
     newseg.flags = flags;
+    newseg.md5   = md5;
     this->segs.push_back(newseg);
 }
 

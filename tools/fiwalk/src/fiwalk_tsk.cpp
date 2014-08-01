@@ -102,6 +102,12 @@ file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr, char *buf,
     uint64_t  fs_offset = (addr)*fs_file->fs_info->block_size;
     uint64_t img_offset = current_partition_start + fs_offset;
 
+    if(opt_sector_hash){
+        std::string md5 = md5_generator::hash_buf((const uint8_t *)buf,size).hexdigest();
+        ci->add_seg(img_offset,fs_offset,(int64_t)a_off,size,flags,md5);
+        return TSK_WALK_CONT;
+    }
+
     if(ci->segs.size()>0){
 	/* Does this next segment fit after the prevous segment logically? */
 	if(ci->segs.back().next_file_offset()==(uint64_t)a_off){
@@ -135,7 +141,7 @@ file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr, char *buf,
 	}
     }
     /* Need to add a new element to the list */
-    ci->add_seg(img_offset,fs_offset,(int64_t)a_off,size,flags);
+    ci->add_seg(img_offset,fs_offset,(int64_t)a_off,size,flags,"");
     return TSK_WALK_CONT;
 }
 
@@ -365,7 +371,7 @@ dir_act(TSK_FS_FILE * fs_file, const char *path, void *ptr)
 {
     /* Ignore NTFS System files */
     if (opt_ignore_ntfs_system_files
-	&& (TSK_FS_TYPE_ISNTFS(fs_file->fs_info->ftype))
+	&& (TSK_FS_TYPE_ISNTFS(fs_file->fs_info->ftype) || TSK_FS_TYPE_ISFAT(fs_file->fs_info->ftype))
         && (fs_file->name->name[0] == '$'))
         return TSK_WALK_CONT;
 
@@ -556,7 +562,7 @@ void process_scalpel_audit_file(TSK_IMG_INFO *img_info,const char *audit_file)
 		    file_info("carvelength",length);
 		}
 
-		ci.add_seg(start,start,0,r2,TSK_FS_BLOCK_FLAG_RAW);	// may not be able to read it all
+		ci.add_seg(start,start,0,r2,TSK_FS_BLOCK_FLAG_RAW,"");	// may not be able to read it all
 		ci.add_bytes(buf2,0,r2);
 		ci.write_record();
 		free(buf2);

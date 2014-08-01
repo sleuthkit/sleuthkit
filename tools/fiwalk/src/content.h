@@ -8,12 +8,6 @@
 #include <vector>
 #include <string>
 
-
-//#ifndef HAVE_ERR_H
-//extern void err(int eval, const char *fmt, ...);
-//extern void errx(int eval, const char *fmt, ...);
-//#endif
-
 /* Structure for keeping track of file segments */
 class seg {
 public:;
@@ -21,6 +15,7 @@ public:;
     uint64_t img_offset;	    // offset from beginning of image
     uint64_t file_offset;           // logical number of bytes from beginning of file
     uint64_t len;		    // number of bytes
+    std::string md5;                // md5 if we are sector hashing, otherwise null
     TSK_FS_BLOCK_FLAG_ENUM flags;   // 
     uint64_t next_file_offset() {return file_offset + len;}
     uint64_t next_img_offset()  {return img_offset + len;}
@@ -74,7 +69,7 @@ public:
     std::string filename()     { return evidence_dirname + evidence_filename; }
     std::string filemagic();			// returns output of the 'file' command or libmagic
     void   add_seg(int64_t img_offset,int64_t fs_offset,int64_t file_offset,
-		   int64_t len, TSK_FS_BLOCK_FLAG_ENUM flags);
+		   int64_t len, TSK_FS_BLOCK_FLAG_ENUM flags,const std::string &hash);
 
     void   add_bytes(const u_char *buf,uint64_t file_offset,ssize_t size);
     void   add_bytes(const char *buf,uint64_t file_offset,ssize_t size){ // handle annoying sign problems

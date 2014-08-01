@@ -112,12 +112,12 @@ extern bool	opt_md5;			// do we need md5s?
 extern bool	opt_sha1;			// do we need sha1s?
 extern string	save_outdir;
 extern bool	opt_get_fragments;
-//extern bool	opt_compute_sector_hashes;
 extern int	opt_debug;
 extern bool	opt_no_data;
 extern bool	opt_allocated_only;
 extern bool	opt_body_file;
 extern bool	opt_ignore_ntfs_system_files;
+extern bool     opt_sector_hash;
 extern int	current_partition_num;
 extern int64_t	current_partition_start;
 extern const char *config_file;
