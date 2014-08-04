@@ -61,12 +61,12 @@ public class SleuthkitCase {
 	private static final int SQLITE_BUSY_ERROR = 5;
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
-	private static final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true); //Use fairness policy.
 	private final ConnectionPerThreadDispenser connections = new ConnectionPerThreadDispenser();
 	private final ResultSetHelper rsHelper = new ResultSetHelper(this);
 	private final Map<Long, Long> systemIdMap = new HashMap<Long, Long>(); // For use by getCarvedDirectoryId().
 	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system results.
 	private final ArrayList<ErrorObserver> errorObservers = new ArrayList<ErrorObserver>();
+	private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true); //Use fairness policy.
 	private final String dbPath;
 	private final String dbDirPath;
 	private SleuthkitJNI.CaseDbHandle caseHandle;
@@ -206,7 +206,7 @@ public class SleuthkitCase {
 	public void copyCaseDB(String newDBPath) throws IOException {
 		InputStream in = null;
 		OutputStream out = null;
-		SleuthkitCase.acquireExclusiveLock();
+		acquireExclusiveLock();
 		try {
 			InputStream inFile = new FileInputStream(dbPath);
 			in = new BufferedInputStream(inFile);
@@ -229,10 +229,10 @@ public class SleuthkitCase {
 			} catch (IOException e) {
 				logger.log(Level.WARNING, "Could not close streams after db copy", e); //NON-NLS
 			}
-			SleuthkitCase.releaseExclusiveLock();
+			releaseExclusiveLock();
 		}
 	}
-	
+
 	/**
 	 * Write some SQLite JDBC driver details to the log file.
 	 */
@@ -429,7 +429,7 @@ public class SleuthkitCase {
 	 * Call this method in a try block with a call to the lock release method in
 	 * an associated finally block.
 	 */
-	public static void acquireExclusiveLock() {
+	public void acquireExclusiveLock() {
 		rwLock.writeLock().lock();
 	}
 
@@ -438,7 +438,7 @@ public class SleuthkitCase {
 	 * method should always be called in the finally block of a try block in
 	 * which the lock was acquired.
 	 */
-	public static void releaseExclusiveLock() {
+	public void releaseExclusiveLock() {
 		rwLock.writeLock().unlock();
 	}
 
@@ -447,7 +447,7 @@ public class SleuthkitCase {
 	 * this method in a try block with a call to the lock release method in an
 	 * associated finally block.
 	 */
-	static void acquireSharedLock() {
+	public void acquireSharedLock() {
 		rwLock.readLock().lock();
 	}
 
@@ -456,7 +456,7 @@ public class SleuthkitCase {
 	 * should always be called in the finally block of a try block in which the
 	 * lock was acquired.
 	 */
-	static void releaseSharedLock() {
+	public void releaseSharedLock() {
 		rwLock.readLock().unlock();
 	}
 
@@ -4115,7 +4115,7 @@ public class SleuthkitCase {
 
 		fileSystemIdMap.clear();
 
-		SleuthkitCase.acquireExclusiveLock();
+		acquireExclusiveLock();
 		try {
 			if (this.caseHandle != null) {
 				this.caseHandle.free();
@@ -4126,7 +4126,7 @@ public class SleuthkitCase {
 			logger.log(Level.WARNING,
 					"Error freeing case handle.", ex); //NON-NLS
 		} finally {
-			SleuthkitCase.releaseExclusiveLock();
+			releaseExclusiveLock();
 		}
 	}
 
@@ -4147,7 +4147,7 @@ public class SleuthkitCase {
 			return false;
 		}
 		CaseDbConnection connection = connections.getConnection();
-		SleuthkitCase.acquireExclusiveLock();
+		acquireExclusiveLock();
 		Statement statement = null;
 		try {
 			connection.beginTransaction();
@@ -4162,7 +4162,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error setting Known status.", ex);
 		} finally {
 			closeStatement(statement);
-			SleuthkitCase.releaseExclusiveLock();
+			releaseExclusiveLock();
 		}
 		return true;
 	}
@@ -4178,7 +4178,7 @@ public class SleuthkitCase {
 	void setMd5Hash(AbstractFile file, String md5Hash) throws TskCoreException {
 		long id = file.getId();
 		CaseDbConnection connection = connections.getConnection();
-		SleuthkitCase.acquireExclusiveLock();
+		acquireExclusiveLock();
 		try {
 			connection.beginTransaction();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.UPDATE_FILE_MD5);
@@ -4192,7 +4192,7 @@ public class SleuthkitCase {
 			connection.rollbackTransaction();
 			throw new TskCoreException("Error setting MD5 hash", ex);
 		} finally {
-			SleuthkitCase.releaseExclusiveLock();
+			releaseExclusiveLock();
 		}
 	}
 
@@ -5188,7 +5188,17 @@ public class SleuthkitCase {
 		}
 
 		void beginTransaction() throws SQLException {
-			connection.setAutoCommit(false);
+			boolean locked = true;
+			while (locked) {
+				try {
+					connection.setAutoCommit(false);
+					locked = false;
+				} catch (SQLException ex) {
+					if (ex.getErrorCode() != SQLITE_BUSY_ERROR && ex.getErrorCode() != DATABASE_LOCKED_ERROR) {
+						throw ex;
+					}
+				}
+			}
 		}
 
 		void commitTransaction() throws SQLException {
