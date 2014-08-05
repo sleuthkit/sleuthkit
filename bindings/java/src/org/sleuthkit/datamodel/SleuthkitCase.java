@@ -76,8 +76,8 @@ public class SleuthkitCase {
 	// the locking protocol provided by the underlying SQLite database. The Java
 	// locking protocol improves performance for reasons that are not currently
 	// understood. Note that the lock is contructed to use a fairness policy.
-	private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true);  
-		
+	private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true);
+
 	/**
 	 * Private constructor, clients must use newCase() or openCase() method to
 	 * create an instance of this class.
@@ -104,10 +104,10 @@ public class SleuthkitCase {
 	 * @throws SQLException
 	 */
 	private void initBlackboardArtifactTypes() throws SQLException, TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
 		Statement statement = null;
 		ResultSet resultSet = null;
 		try {
-			CaseDbConnection connection = connections.getConnection();
 			statement = connection.createStatement();
 			for (ARTIFACT_TYPE type : ARTIFACT_TYPE.values()) {
 				resultSet = connection.executeQuery(statement, "SELECT COUNT(*) from blackboard_artifact_types WHERE artifact_type_id = '" + type.getTypeID() + "'"); //NON-NLS
@@ -125,15 +125,15 @@ public class SleuthkitCase {
 
 	/**
 	 * Make sure the predefined artifact attribute types are in the artifact
-	 * types table.
+	 * attribute types table.
 	 *
 	 * @throws SQLException
 	 */
 	private void initBlackboardAttributeTypes() throws SQLException, TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
 		Statement statement = null;
 		ResultSet resultSet = null;
 		try {
-			CaseDbConnection connection = connections.getConnection();
 			statement = connection.createStatement();
 			for (ATTRIBUTE_TYPE type : ATTRIBUTE_TYPE.values()) {
 				resultSet = connection.executeQuery(statement, "SELECT COUNT(*) from blackboard_attribute_types WHERE attribute_type_id = '" + type.getTypeID() + "'"); //NON-NLS
@@ -172,6 +172,7 @@ public class SleuthkitCase {
 			resultSet.close();
 			resultSet = null;
 
+			// Do the schema update(s), if needed.
 			if (SCHEMA_VERSION_NUMBER != schemaVersionNumber) {
 				// Make a backup copy of the database. Client code can get the path of the backup
 				// using the getBackupDatabasePath() method.
@@ -201,12 +202,12 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Make a duplicate / backup copy of the current case database Makes a new
-	 * copy only, and continues to use the current connection
+	 * Make a duplicate / backup copy of the current case database. Makes a new
+	 * copy only, and continues to use the current connection.
 	 *
-	 * @param newDBPath path to the copy to be created. File will be overwritten
-	 * if it exists
-	 * @throws IOException if copying fails
+	 * @param newDBPath Path to the copy to be created. File will be overwritten
+	 * if it exists.
+	 * @throws IOException if copying fails.
 	 */
 	public void copyCaseDB(String newDBPath) throws IOException {
 		InputStream in = null;
@@ -217,9 +218,9 @@ public class SleuthkitCase {
 			in = new BufferedInputStream(inFile);
 			OutputStream outFile = new FileOutputStream(newDBPath);
 			out = new BufferedOutputStream(outFile);
-			int readBytes = 0;
-			while ((readBytes = in.read()) != -1) {
-				out.write(readBytes);
+			int bytesRead = 0;
+			while ((bytesRead = in.read()) != -1) {
+				out.write(bytesRead);
 			}
 		} finally {
 			try {
@@ -229,7 +230,6 @@ public class SleuthkitCase {
 				if (out != null) {
 					out.flush();
 					out.close();
-
 				}
 			} catch (IOException e) {
 				logger.log(Level.WARNING, "Could not close streams after db copy", e); //NON-NLS
@@ -265,11 +265,11 @@ public class SleuthkitCase {
 			return schemaVersionNumber;
 		}
 
+		CaseDbConnection connection = connections.getConnection();
 		Statement statement = null;
 		Statement updateStatement = null;
 		ResultSet resultSet = null;
 		try {
-			CaseDbConnection connection = connections.getConnection();
 			statement = connection.createStatement();
 
 			// Add new tables for tags.
@@ -378,7 +378,6 @@ public class SleuthkitCase {
 					"DELETE FROM blackboard_artifacts WHERE " + //NON-NLS
 					"artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() + //NON-NLS	
 					" OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ";"); //NON-NLS
-			statement.close();
 
 			return 3;
 		} finally {
@@ -391,7 +390,7 @@ public class SleuthkitCase {
 	/**
 	 * Returns case database schema version number.
 	 *
-	 * @return and integer of the schema version number.
+	 * @return The schema version number as an integer.
 	 */
 	public int getSchemaVersion() {
 		return this.versionNumber;
@@ -498,7 +497,7 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Start process of adding an image to the case. Adding an image is a
+	 * Start process of adding a image to the case. Adding an image is a
 	 * multi-step process and this returns an object that allows it to happen.
 	 *
 	 * @param timezone TZ time zone string to use for ingest of image.
@@ -1292,11 +1291,8 @@ public class SleuthkitCase {
 		CaseDbConnection connection = connections.getConnection();
 		acquireExclusiveLock();
 		try {
-			connection.beginTransaction();
 			addBlackBoardAttribute(attr, artifactTypeId, connection);
-			connection.commitTransaction();
 		} catch (SQLException ex) {
-			connection.rollbackTransaction();
 			throw new TskCoreException("Error adding blackboard attribute " + attr.toString(), ex);
 		} finally {
 			releaseExclusiveLock();
@@ -1745,7 +1741,6 @@ public class SleuthkitCase {
 		acquireExclusiveLock();
 		ResultSet rs = null;
 		try {
-			connection.beginTransaction();
 			String artifactTypeName = getArtifactTypeString(artifactTypeID);
 			String artifactDisplayName = getArtifactTypeDisplayName(artifactTypeID);
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_ARTIFACT);
@@ -1754,11 +1749,8 @@ public class SleuthkitCase {
 			statement.setInt(2, artifactTypeID);
 			connection.executeUpdate(statement);
 			rs = statement.getGeneratedKeys();
-			BlackboardArtifact artifact = new BlackboardArtifact(this, rs.getLong(1), obj_id, artifactTypeID, artifactTypeName, artifactDisplayName);
-			connection.commitTransaction();
-			return artifact;
+			return new BlackboardArtifact(this, rs.getLong(1), obj_id, artifactTypeID, artifactTypeName, artifactDisplayName);
 		} catch (SQLException ex) {
-			connection.rollbackTransaction();
 			throw new TskCoreException("Error creating a blackboard artifact", ex);
 		} finally {
 			closeResultSet(rs);
@@ -1780,7 +1772,6 @@ public class SleuthkitCase {
 		acquireExclusiveLock();
 		ResultSet rs = null;
 		try {
-			connection.beginTransaction();
 			final int type = artifactType.getTypeID();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_ARTIFACT);
 			statement.clearParameters();
@@ -1788,11 +1779,8 @@ public class SleuthkitCase {
 			statement.setInt(2, type);
 			connection.executeUpdate(statement);
 			rs = statement.getGeneratedKeys();
-			BlackboardArtifact artifact = new BlackboardArtifact(this, rs.getLong(1), obj_id, type, artifactType.getLabel(), artifactType.getDisplayName());
-			connection.commitTransaction();
-			return artifact;
+			return new BlackboardArtifact(this, rs.getLong(1), obj_id, type, artifactType.getLabel(), artifactType.getDisplayName());
 		} catch (SQLException ex) {
-			connection.rollbackTransaction();
 			throw new TskCoreException("Error creating a blackboard artifact", ex);
 		} finally {
 			closeResultSet(rs);
@@ -2729,7 +2717,7 @@ public class SleuthkitCase {
 	private long getCarvedDirectoryId(long id) throws TskCoreException {
 		long ret = 0;
 
-		//use lock to ensure atomic cache check and connection/cache update
+		//use lock to ensure atomic cache check and caseDbConnection/cache update
 		acquireExclusiveLock();
 
 		try {
@@ -4155,15 +4143,12 @@ public class SleuthkitCase {
 		acquireExclusiveLock();
 		Statement statement = null;
 		try {
-			connection.beginTransaction();
 			statement = connection.createStatement();
 			connection.executeUpdate(statement, "UPDATE tsk_files " //NON-NLS
 					+ "SET known='" + fileKnown.getFileKnownValue() + "' " //NON-NLS
 					+ "WHERE obj_id=" + id); //NON-NLS
 			file.setKnown(fileKnown);
-			connection.commitTransaction();
 		} catch (SQLException ex) {
-			connection.rollbackTransaction();
 			throw new TskCoreException("Error setting Known status.", ex);
 		} finally {
 			closeStatement(statement);
@@ -4185,16 +4170,13 @@ public class SleuthkitCase {
 		CaseDbConnection connection = connections.getConnection();
 		acquireExclusiveLock();
 		try {
-			connection.beginTransaction();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.UPDATE_FILE_MD5);
 			statement.clearParameters();
 			statement.setString(1, md5Hash);
 			statement.setLong(2, id);
 			connection.executeUpdate(statement);
 			file.setMd5Hash(md5Hash);
-			connection.commitTransaction();
 		} catch (SQLException ex) {
-			connection.rollbackTransaction();
 			throw new TskCoreException("Error setting MD5 hash", ex);
 		} finally {
 			releaseExclusiveLock();
@@ -4234,7 +4216,7 @@ public class SleuthkitCase {
 
 	/**
 	 * Escape the single quotes in the given string so they can be added to the
-	 * SQL connection
+	 * SQL caseDbConnection
 	 *
 	 * @param text
 	 * @return text the escaped version
@@ -4474,7 +4456,6 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			// INSERT INTO tag_names (display_name, description, color) VALUES (?, ?, ?)			
-			connection.beginTransaction();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_TAG_NAME);
 			statement.clearParameters();
 			statement.setString(1, displayName);
@@ -4482,11 +4463,8 @@ public class SleuthkitCase {
 			statement.setString(3, color.getName());
 			connection.executeUpdate(statement);
 			resultSet = statement.getGeneratedKeys();
-			TagName tagName = new TagName(resultSet.getLong(1), displayName, description, color);
-			connection.commitTransaction();
-			return tagName;
+			return new TagName(resultSet.getLong(1), displayName, description, color);
 		} catch (SQLException ex) {
-			connection.rollbackTransaction();
 			throw new TskCoreException("Error adding row for " + displayName + " tag name to tag_names table", ex);
 		} finally {
 			closeResultSet(resultSet);
@@ -4511,7 +4489,6 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			// INSERT INTO content_tags (obj_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)
-			connection.beginTransaction();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_CONTENT_TAG);
 			statement.clearParameters();
 			statement.setLong(1, content.getId());
@@ -4521,11 +4498,8 @@ public class SleuthkitCase {
 			statement.setLong(5, endByteOffset);
 			connection.executeUpdate(statement);
 			resultSet = statement.getGeneratedKeys();
-			ContentTag tag = new ContentTag(resultSet.getLong(1), content, tagName, comment, beginByteOffset, endByteOffset);
-			connection.commitTransaction();
-			return tag;
+			return new ContentTag(resultSet.getLong(1), content, tagName, comment, beginByteOffset, endByteOffset);
 		} catch (SQLException ex) {
-			connection.rollbackTransaction();
 			throw new TskCoreException("Error adding row to content_tags table (obj_id = " + content.getId() + ", tag_name_id = " + tagName.getId() + ")", ex);
 		} finally {
 			closeResultSet(resultSet);
@@ -4543,14 +4517,11 @@ public class SleuthkitCase {
 		acquireExclusiveLock();
 		try {
 			// DELETE FROM content_tags WHERE tag_id = ?		
-			connection.beginTransaction();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.DELETE_CONTENT_TAG);
 			statement.clearParameters();
 			statement.setLong(1, tag.getId());
 			connection.executeUpdate(statement);
-			connection.commitTransaction();
 		} catch (SQLException ex) {
-			connection.rollbackTransaction();
 			throw new TskCoreException("Error deleting row from content_tags table (id = " + tag.getId() + ")", ex);
 		} finally {
 			releaseExclusiveLock();
@@ -4709,7 +4680,6 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			// INSERT INTO blackboard_artifact_tags (artifact_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)			
-			connection.beginTransaction();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_ARTIFACT_TAG);
 			statement.clearParameters();
 			statement.setLong(1, artifact.getArtifactID());
@@ -4717,11 +4687,8 @@ public class SleuthkitCase {
 			statement.setString(3, comment);
 			connection.executeUpdate(statement);
 			resultSet = statement.getGeneratedKeys();
-			BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong(1), artifact, getContentById(artifact.getObjectID()), tagName, comment);
-			connection.commitTransaction();
-			return tag;
+			return new BlackboardArtifactTag(resultSet.getLong(1), artifact, getContentById(artifact.getObjectID()), tagName, comment);
 		} catch (SQLException ex) {
-			connection.rollbackTransaction();
 			throw new TskCoreException("Error adding row to blackboard_artifact_tags table (obj_id = " + artifact.getArtifactID() + ", tag_name_id = " + tagName.getId() + ")", ex);
 		} finally {
 			closeResultSet(resultSet);
@@ -4739,14 +4706,11 @@ public class SleuthkitCase {
 		acquireExclusiveLock();
 		try {
 			// DELETE FROM blackboard_artifact_tags WHERE tag_id = ?
-			connection.beginTransaction();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.DELETE_ARTIFACT_TAG);
 			statement.clearParameters();
 			statement.setLong(1, tag.getId());
 			connection.executeUpdate(statement);
-			connection.commitTransaction();
 		} catch (SQLException ex) {
-			connection.rollbackTransaction();
 			throw new TskCoreException("Error deleting row from blackboard_artifact_tags table (id = " + tag.getId() + ")", ex);
 		} finally {
 			releaseExclusiveLock();
@@ -4874,7 +4838,6 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			// SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id WHERE blackboard_artifact_tags.artifact_id = ?			
-			connection.beginTransaction();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_ARTIFACT_TAGS_BY_ARTIFACT);
 			statement.clearParameters();
 			statement.setLong(1, artifact.getArtifactID());
@@ -4886,10 +4849,8 @@ public class SleuthkitCase {
 				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"), artifact, content, tagName, resultSet.getString("comment"));  //NON-NLS
 				tags.add(tag);
 			}
-			connection.commitTransaction();
 			return tags;
 		} catch (SQLException ex) {
-			connection.rollbackTransaction();
 			throw new TskCoreException("Error getting blackboard artifact tags data (artifact_id = " + artifact.getArtifactID() + ")", ex);
 		} finally {
 			closeResultSet(resultSet);
@@ -4934,7 +4895,6 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			// INSERT INTO reports (path, crtime, src_module_name, display_name) VALUES (?, ?, ?, ?)			
-			connection.beginTransaction();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_REPORT);
 			statement.clearParameters();
 			statement.setString(1, relativePath);
@@ -4943,11 +4903,8 @@ public class SleuthkitCase {
 			statement.setString(4, reportName);
 			connection.executeUpdate(statement);
 			resultSet = statement.getGeneratedKeys();
-			Report report = new Report(resultSet.getLong(1), localPath, createTime, sourceModuleName, reportName);
-			connection.commitTransaction();
-			return report;
+			return new Report(resultSet.getLong(1), localPath, createTime, sourceModuleName, reportName);
 		} catch (SQLException ex) {
-			connection.rollbackTransaction();
 			throw new TskCoreException("Error adding report " + localPath + " to reports table", ex);
 		} finally {
 			closeResultSet(resultSet);
@@ -5008,18 +4965,19 @@ public class SleuthkitCase {
 
 	/**
 	 * Provides thread confinement for connections to the underlying case
-	 * database. ThreadLocal<T> releases the object reference for a thread for
-	 * garbage collection when thread goes away. The Connection objects will be
-	 * closed when they are garbage collected. This covers both short-lived
-	 * threads like those that do asynchronous child node creation and
-	 * long-lived threads such as the EDT and ingest threads.
+	 * database. Note that the ThreadLocal base class releases its reference to
+	 * a per thread connection wrapper object to garbage collection when the
+	 * owning thread goes away, and we are relying on that garbage collection to
+	 * free JDBC resources - an override of finalize() by the wrapper failed to
+	 * close prepared statements because the connection is already closed. In
+	 * the future, we may wish to use a Connection pool instead.
 	 */
 	private final class ConnectionPerThreadDispenser extends ThreadLocal<CaseDbConnection> {
 
 		CaseDbConnection getConnection() throws TskCoreException {
 			CaseDbConnection connection = get();
-			if (null == connection) {
-				throw new TskCoreException("Case database connection for current thread is null");
+			if (!connection.isOpen()) {
+				throw new TskCoreException("Case database connection for current thread is not open");
 			}
 			return connection;
 		}
@@ -5031,8 +4989,8 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Encapsulates a connection to the underlying case database and a set of
-	 * prepared statements.
+	 * Encapsulates a connection to the underlying SQLite case database and a
+	 * set of prepared statements.
 	 */
 	private static final class CaseDbConnection {
 
@@ -5134,18 +5092,32 @@ public class SleuthkitCase {
 			try {
 				this.connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath); //NON-NLS
 				statement = createStatement();
-				statement.execute("PRAGMA synchronous = OFF;"); // Reduce I/O operations, we have no OS crash recovery anyway //NON-NLS			
-				statement.execute("PRAGMA read_uncommitted = True;"); // Allow query while in transaction //NON-NLS
-				statement.execute("PRAGMA foreign_keys = ON;"); //NON-NLS
+				statement.execute("PRAGMA synchronous = OFF;"); // Reduce I/O operations, we have no OS crash recovery anyway. //NON-NLS			
+				statement.execute("PRAGMA read_uncommitted = True;"); // Allow query while in transaction. //NON-NLS
+				statement.execute("PRAGMA foreign_keys = ON;"); // Enforce foreign key constraints. //NON-NLS
 			} catch (SQLException ex) {
 				// The exception is caught and logged here because this 
 				// constructor will be called by an override of 
 				// ThreadLocal<T>.initialValue() which cannot throw. Calls to 
-				// ConnectionPerThreadDispenser.getConnection() will detect the
-				// the null value of connection and throw an SQLException.
+				// ConnectionPerThreadDispenser.getConnection() will detect
+				// the error state via isOpen() and throw an appropriate 
+				// exception.
 				SleuthkitCase.logger.log(Level.SEVERE, "Error setting up case database connection for thread", ex); //NON-NLS
+				if (this.connection != null) {
+					try {
+						this.connection.close();
+					} catch (SQLException e) {
+						SleuthkitCase.logger.log(Level.SEVERE, "Failed to close connection", e);
+					}
+					this.connection = null;
+				}
+			} finally {
 				closeStatement(statement);
 			}
+		}
+
+		boolean isOpen() {
+			return this.connection != null;
 		}
 
 		PreparedStatement getPreparedStatement(PREPARED_STATEMENT statementKey) throws SQLException {
@@ -5214,6 +5186,11 @@ public class SleuthkitCase {
 			}
 		}
 
+		/**
+		 * A rollback that logs exceptions and does not throw, intended for
+		 * "internal" use in SleuthkitCase methods where the exception that
+		 * motivated the rollback is the exception to report to the client.
+		 */
 		void rollbackTransaction() {
 			try {
 				connection.rollback();
@@ -5224,6 +5201,21 @@ public class SleuthkitCase {
 				connection.setAutoCommit(true);
 			} catch (SQLException e) {
 				logger.log(Level.SEVERE, "Error restoring auto-commit", e);
+			}
+		}
+
+		/**
+		 * A rollback that throws, intended for use by the CaseDbTransaction
+		 * class where client code is managing the transaction and the client
+		 * may wish to know that the rollback failed.
+		 *
+		 * @throws SQLException
+		 */
+		void rollbackTransactionWithThrow() throws SQLException {
+			try {
+				connection.rollback();
+			} finally {
+				connection.setAutoCommit(true);
 			}
 		}
 
@@ -5286,24 +5278,15 @@ public class SleuthkitCase {
 				}
 			}
 		}
-
-		void close() throws SQLException {
-			for (PreparedStatement statement : this.preparedStatements.values()) {
-				try {
-					statement.close();
-				} catch (SQLException ex) {
-					logger.log(Level.WARNING, "Error closing prepared statement", ex); //NON-NLS
-				}
-			}
-			connection.close();
-		}
 	}
 
 	/**
 	 * Wraps the transactional capabilities of a CaseDbConnection object to
 	 * support use cases where control of a transaction is given to a
-	 * SleuthkitCase client. Does not implement the Transaction interface
-	 * because that sort of complexity and flexibility is not needed.
+	 * SleuthkitCase client. Note that this class does not implement the
+	 * Transaction interface because that sort of flexibility and its associated
+	 * complexity is not needed. Also, TskCoreExceptions are thrown to be
+	 * consistent with the outer SleuthkitCase class.
 	 */
 	public static final class CaseDbTransaction {
 
@@ -5318,10 +5301,23 @@ public class SleuthkitCase {
 			}
 		}
 
+		/**
+		 * The implementations of the public APIs that take a CaseDbTransaction
+		 * object need access to the underlying CaseDbConnection.
+		 *
+		 * @return The CaseDbConnection instance for this instance of
+		 * CaseDbTransaction.
+		 */
 		private CaseDbConnection getConnection() {
 			return this.connection;
 		}
 
+		/**
+		 * Commits the transaction on the case database that was begun when this
+		 * object was constructed.
+		 *
+		 * @throws TskCoreException
+		 */
 		public void commit() throws TskCoreException {
 			try {
 				this.connection.commitTransaction();
@@ -5330,8 +5326,18 @@ public class SleuthkitCase {
 			}
 		}
 
+		/**
+		 * Rolls back the transaction on the case database that was begun when
+		 * this object was constructed.
+		 *
+		 * @throws TskCoreException
+		 */
 		public void rollback() throws TskCoreException {
-			this.connection.rollbackTransaction();
+			try {
+				this.connection.rollbackTransactionWithThrow();
+			} catch (SQLException ex) {
+				throw new TskCoreException("Case database transaction rollback failed", ex);
+			}
 		}
 	}
 }
