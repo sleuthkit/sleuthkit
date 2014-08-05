@@ -57,7 +57,7 @@ import org.sqlite.SQLiteJDBCLoader;
 public class SleuthkitCase {
 
 	private static final int SCHEMA_VERSION_NUMBER = 3; // This must be the same as TSK_SCHEMA_VER in tsk/auto/db_sqlite.cpp.				
-	private static final int DATABASE_LOCKED_ERROR = 0; // This should be 6 according to documentation, but it comes up 0.
+	private static final int DATABASE_LOCKED_ERROR = 0; // This should be 6 according to documentation, but it has been observed to be 0.
 	private static final int SQLITE_BUSY_ERROR = 5;
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
@@ -66,13 +66,18 @@ public class SleuthkitCase {
 	private final Map<Long, Long> systemIdMap = new HashMap<Long, Long>(); // For use by getCarvedDirectoryId().
 	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system results.
 	private final ArrayList<ErrorObserver> errorObservers = new ArrayList<ErrorObserver>();
-	private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true); //Use fairness policy.
 	private final String dbPath;
 	private final String dbDirPath;
-	private SleuthkitJNI.CaseDbHandle caseHandle;
+	private SleuthkitJNI.CaseDbHandle caseHandle; // Not currently used.
 	private int versionNumber;
 	private String dbBackupPath;
 
+	// This read/write lock is used to implement a layer of locking on top of 
+	// the locking protocol provided by the underlying SQLite database. The Java
+	// locking protocol improves performance for reasons that are not currently
+	// understood. Note that the lock is contructed to use a fairness policy.
+	private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true);  
+		
 	/**
 	 * Private constructor, clients must use newCase() or openCase() method to
 	 * create an instance of this class.
