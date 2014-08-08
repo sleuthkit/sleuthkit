@@ -812,6 +812,7 @@ static uint8_t
     // pointer will be positioned at the offset of the first hash line
     // in the index file. 
     if (hdb_binsrch_open_idx_file(&(hdb_binsrch_info->base), hdb_binsrch_info->hash_type)) {
+        // error message was already set.
         return 1;
     }
 
@@ -962,6 +963,16 @@ uint8_t
             "Error deleting temp file: %d", (int)GetLastError());
         return 1;
     }
+
+    // verify it was created
+    stat = GetFileAttributes(hdb_binsrch_info->idx_fname);
+    if (stat == -1) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_PROC);
+        tsk_error_set_errstr("hdb_binsrch_finalize: sorted file not created");
+        return 1;
+    }
+
 #else
     char buf[TSK_HDB_MAXLEN];
     const char *root = "/bin/sort";
@@ -997,14 +1008,18 @@ uint8_t
     }
 
     unlink(hdb_binsrch_info->uns_fname);
+    if (stat(hdb_binsrch_info->idx_fname, &stats)) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_PROC);
+        tsk_error_set_errstr("hdb_binsrch_finalize: sorted file not created");
+        return 1;
+    }
 #endif
 
     // To speed up lookups, create a mapping of the first three bytes of a hash 
     // to an offset in the index file.	
     if (hdb_binsrch_make_idx_idx(hdb_binsrch_info)) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_HDB_PROC);
-        tsk_error_set_errstr(
+        tsk_error_set_errstr2(
             "hdb_binsrch_idx_finalize: error creating index of index file");
         return 1;
     }
