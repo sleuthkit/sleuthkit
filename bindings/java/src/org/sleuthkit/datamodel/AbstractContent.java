@@ -189,9 +189,9 @@ public abstract class AbstractContent implements Content {
 
 	@Override
 	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException {
-		// don't let them make new ones
+		// don't let them make more than 1 GEN_INFO
 		if (artifactTypeID == ARTIFACT_TYPE.TSK_GEN_INFO.getTypeID()) {
-			return getGenInfoArtifact();
+			return getGenInfoArtifact(true);
 		}
 		return db.newBlackboardArtifact(artifactTypeID, objId);
 	}
@@ -210,10 +210,13 @@ public abstract class AbstractContent implements Content {
 	public ArrayList<BlackboardArtifact> getArtifacts(int artifactTypeID) throws TskCoreException {
 		if (artifactTypeID == ARTIFACT_TYPE.TSK_GEN_INFO.getTypeID()) {
 			if (genInfoArtifact == null) 
-				getGenInfoArtifact();
+				// don't make one if it doesn't already exist
+				getGenInfoArtifact(false);
 
 			ArrayList<BlackboardArtifact> list = new ArrayList<BlackboardArtifact>();
-			list.add(genInfoArtifact);
+			// genInfoArtifact coudl still be null if there isn't an artifact
+			if (genInfoArtifact != null)
+				list.add(genInfoArtifact);
 			return list;
 		}
 		return db.getBlackboardArtifacts(artifactTypeID, objId);
@@ -224,9 +227,13 @@ public abstract class AbstractContent implements Content {
 		return getArtifacts(type.getTypeID());
 	}
 	
-	
 	@Override
 	public BlackboardArtifact getGenInfoArtifact() throws TskCoreException {
+		return getGenInfoArtifact(true);
+	}
+	
+	@Override
+	public BlackboardArtifact getGenInfoArtifact(boolean create) throws TskCoreException {
 		if (genInfoArtifact != null) {
 			return genInfoArtifact;
 		}
@@ -235,7 +242,12 @@ public abstract class AbstractContent implements Content {
 		ArrayList<BlackboardArtifact> arts = db.getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO, objId);
 		BlackboardArtifact retArt;
 		if (arts.isEmpty()) {
-			retArt = db.newBlackboardArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO, objId);
+			if (create) {
+				retArt = db.newBlackboardArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO, objId);
+			}
+			else {
+				return null;
+			}
 		}
 		else {
 			retArt = arts.get(0);
@@ -249,7 +261,7 @@ public abstract class AbstractContent implements Content {
 		ArrayList<BlackboardAttribute> returnList = new ArrayList<BlackboardAttribute>();
 		
 		if (genInfoArtifact == null) {
-			getGenInfoArtifact();
+			getGenInfoArtifact(false);
 			if (genInfoArtifact == null) {
 				return returnList;
 			}
