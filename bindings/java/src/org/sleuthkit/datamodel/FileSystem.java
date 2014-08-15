@@ -92,7 +92,14 @@ public class FileSystem extends AbstractContent {
 		if (filesystemHandle == 0) {
 			synchronized (this) {
 				if (filesystemHandle == 0) {
-					filesystemHandle = SleuthkitJNI.openFs(getImage().getImageHandle(), imgOffset);
+					Content dataSource = getDataSource();
+					if ((dataSource != null) && (dataSource instanceof Image)) {
+						Image image = (Image)dataSource;
+						filesystemHandle = SleuthkitJNI.openFs(image.getImageHandle(), imgOffset);
+					}
+					else {
+						throw new TskCoreException ("Data Source of File System is not an image");
+					}
 				}
 			}
 		}
@@ -206,11 +213,6 @@ public class FileSystem extends AbstractContent {
 	@Override
 	public List<Long> getChildrenIds() throws TskCoreException {
 		return getSleuthkitCase().getAbstractFileChildrenIds(this);
-	}
-
-	@Override
-	public Image getImage() throws TskCoreException {
-		return getParent().getImage();
 	}
 
 	@Override

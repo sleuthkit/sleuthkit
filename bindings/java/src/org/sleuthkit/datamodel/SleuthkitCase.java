@@ -2382,27 +2382,7 @@ public class SleuthkitCase {
 		return ret;
 	}
 
-	/**
-	 * Gets the root-level data source object id (such as Image or
-	 * VirtualDirectory representing filesets) for the file
-	 *
-	 * @param file file to get the root-level object id for
-	 * @return the root content object id in the hierarchy, or -1 if not found
-	 * (such as when invalid file object passed in)
-	 * @throws TskCoreException thrown if check failed due to a critical tsk
-	 * error
-	 */
-	public long getFileDataSource(AbstractFile file) throws TskCoreException {
-		final Image image = file.getImage();
-		if (image != null) {
-			//case for image data source
-			return image.getId();
-		} else {
-			//otherwise, get the root non-image data source id
-			//note, we are currently using fs_id internally to store data source id for such files
-			return getFileSystemId(file.getId());
-		}
-	}
+
 
 	/**
 	 * Checks if the file is a (sub)child of the data source (parentless Content

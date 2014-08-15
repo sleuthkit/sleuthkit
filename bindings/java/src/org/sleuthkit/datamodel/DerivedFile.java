@@ -87,20 +87,19 @@ public class DerivedFile extends AbstractFile {
 	}
 
 	@Override
-	public Image getImage() throws TskCoreException {
+	public Content getDataSource() throws TskCoreException {
 		//TODO need schema support to implement this more efficiently
-		Image image = null;
-		Content ancestor = getParent();
-		image = ancestor.getImage();
-		while (image == null) {
-			ancestor = ancestor.getParent();
-			if (ancestor == null) {
+		Content parent = getParent();
+		Content dataSource = parent.getDataSource();
+		while (dataSource == null) {
+			parent = parent.getParent();
+			if (parent == null) {
 				//should never happen
 				break;
 			}
-			image = ancestor.getImage();
+			dataSource = parent.getDataSource();
 		}
-		return image;
+		return dataSource;
 	}
 
 	@Override

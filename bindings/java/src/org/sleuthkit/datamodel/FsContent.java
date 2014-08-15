@@ -143,9 +143,13 @@ public abstract class FsContent extends AbstractFile {
 			return SleuthkitJNI.readFile(fileHandle, buf, offset, len);
 		}
 		catch (TskCoreException ex) {
-			if (!getImage().imageFileExists()) {
-				tskCase.submitError(bundle.getString("FsContent.readInt.err.context.text"),
+			Content dataSource = getDataSource();
+			if ((dataSource != null) && (dataSource instanceof Image)) {
+				Image image = (Image)dataSource;
+				if (!image.imageFileExists()) {
+					tskCase.submitError(bundle.getString("FsContent.readInt.err.context.text"),
                                     bundle.getString("FsContent.readInt.err.msg.text"));
+				}
 			}
 			throw ex;
 		}
@@ -179,8 +183,8 @@ public abstract class FsContent extends AbstractFile {
 	}
 
 	@Override
-	public Image getImage() throws TskCoreException {
-		return getFileSystem().getImage();
+	public Content getDataSource() throws TskCoreException {
+		return getFileSystem().getDataSource();
 	}
 
 	@Override

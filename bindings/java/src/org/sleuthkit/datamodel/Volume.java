@@ -262,10 +262,6 @@ public class Volume extends AbstractContent {
 		return getSleuthkitCase().getVolumeChildrenIds(this);
 	}
 
-	@Override
-	public Image getImage() throws TskCoreException {
-		return getParent().getImage();
-	}
 
 	/**
 	 * @return a list of FileSystem that are direct descendents of this Image.

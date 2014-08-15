@@ -132,13 +132,6 @@ public class LocalFile extends AbstractFile {
 		this(db, objId, name, TSK_DB_FILES_TYPE_ENUM.LOCAL, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, md5Hash, knownState, parentPath, localPath);
 	}
 
-
-	@Override
-	public Image getImage() throws TskCoreException {
-		//true local file have no tsk image associated
-		return null;
-	}
-
 	@Override
 	public List<TskFileRange> getRanges() throws TskCoreException {
 		return Collections.<TskFileRange>emptyList();

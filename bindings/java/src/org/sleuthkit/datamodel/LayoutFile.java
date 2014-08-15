@@ -39,7 +39,9 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
  * 
  * The class also supports reads of layout files, reading blocks across ranges in a sequence
  */
-public class LayoutFile extends AbstractFile{
+public class LayoutFile extends AbstractFile {
+	
+	private long imageHandle = -1;
 	
 	protected LayoutFile(SleuthkitCase db, long objId, String name, 
 			TSK_DB_FILES_TYPE_ENUM fileType, 
@@ -101,6 +103,17 @@ public class LayoutFile extends AbstractFile{
         long offsetInThisLayoutContent = 0; // current offset in this LayoutContent
         int bytesRead = 0; // Bytes read so far
 		
+		if (imageHandle == -1) {
+			Content dataSource = getDataSource();
+			if ((dataSource != null) && (dataSource instanceof Image)) {
+				Image image = (Image)dataSource;
+				imageHandle = image.getImageHandle();
+			}
+			else {
+				throw new TskCoreException ("Data Source of LayoutFile is not Image");
+			}
+		}
+		
         for (TskFileRange range : getRanges()) {
             if (bytesRead < len) { // we haven't read enough yet
                 if (offset < offsetInThisLayoutContent + range.getByteLen()) { // if we are in a range object we want to read from
@@ -110,7 +123,7 @@ public class LayoutFile extends AbstractFile{
                     }
                     long offsetInImage = range.getByteStart() + offsetInRange; // how far into the image to start reading
                     long lenToRead = Math.min(range.getByteLen() - offsetInRange, len-bytesRead); // how much we can read this time
-                    int lenRead = readImgToOffset(getImage().getImageHandle(), buf, bytesRead, offsetInImage, (int) lenToRead);
+                    int lenRead = readImgToOffset(imageHandle, buf, bytesRead, offsetInImage, (int) lenToRead);
                     bytesRead += lenRead;
                     if(lenToRead != lenRead) { // If image read failed or was cut short
                         break;
@@ -151,11 +164,6 @@ public class LayoutFile extends AbstractFile{
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
-	}
-
-	@Override
-	public Image getImage() throws TskCoreException{
-		return getParent().getImage();
 	}
 
 	

@@ -51,7 +51,7 @@ public class VolumeSystem extends AbstractContent {
 	public int read(byte[] readBuffer, long offset, long len) throws TskCoreException {
 		synchronized (this) {
 			if (volumeSystemHandle == 0) {
-				volumeSystemHandle = SleuthkitJNI.openVs(getImage().getImageHandle(), imgOffset);
+				getVolumeSystemHandle();
 			}
 		}
 		return SleuthkitJNI.readVs(volumeSystemHandle, readBuffer, offset, len);
@@ -98,7 +98,14 @@ public class VolumeSystem extends AbstractContent {
 	 */
 	protected synchronized long getVolumeSystemHandle() throws TskCoreException {
 		if (volumeSystemHandle == 0) {
-			volumeSystemHandle = SleuthkitJNI.openVs(getImage().getImageHandle(), imgOffset);
+			Content dataSource = getDataSource();
+			if ((dataSource != null) && (dataSource instanceof Image)) {
+				Image image = (Image)dataSource;
+				volumeSystemHandle = SleuthkitJNI.openVs(image.getImageHandle(), imgOffset);
+			}
+			else {
+				throw new TskCoreException ("Volume System data source is not an image");
+			}
 		}
 
 		return volumeSystemHandle;
@@ -143,11 +150,6 @@ public class VolumeSystem extends AbstractContent {
 	@Override
 	public List<Long> getChildrenIds() throws TskCoreException {
 		return getSleuthkitCase().getVolumeSystemChildrenIds(this);
-	}
-
-	@Override
-	public Image getImage() throws TskCoreException {
-		return getParent().getImage();
 	}
 
 	/**

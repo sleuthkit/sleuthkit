@@ -119,7 +119,7 @@ public abstract class AbstractContent implements Content {
 			try {
 				parentInfo = db.getParentInfo(this);
 			} catch (TskCoreException ex) {
-				// there is not parent; not an error if we've got an Image
+				// there is not parent; not an error if we've got a data source
 				return null;
 			}
 			parent = db.getContentById(parentInfo.id);
@@ -146,14 +146,14 @@ public abstract class AbstractContent implements Content {
 		return this.objId;
 	}
 
+	// classes should override this if they can be a data source 
 	@Override
-	public Image getImage() throws TskCoreException {
-		Image image = null;
+	public Content getDataSource() throws TskCoreException {
 		Content myParent = getParent();
-		if (myParent != null) {
-			image = myParent.getImage();
-		}
-		return image;
+		if (myParent == null) 
+			return null;
+			
+		return myParent.getDataSource();
 	}
 
 	/**

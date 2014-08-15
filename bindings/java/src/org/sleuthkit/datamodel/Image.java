@@ -78,7 +78,7 @@ public class Image extends AbstractContent {
 	}
 
 	@Override
-	public Image getImage() {
+	public Content getDataSource() {
 		return this;
 	}
 
