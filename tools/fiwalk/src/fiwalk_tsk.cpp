@@ -25,8 +25,6 @@
 #include "unicode_escape.h"
 #include "tsk/fs/tsk_fatfs.h"
 
-#define MAX_SPARSE_SIZE 1024*1024*64
-
 #ifdef _MSC_VER
 #define _CRT_SECURE_NO_WARNINGS
 #endif
@@ -67,94 +65,7 @@ file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr, char *buf,
 	 size_t size, TSK_FS_BLOCK_FLAG_ENUM flags, void *ptr)
 {
     content *ci = (content *)ptr;
-
-    if(opt_debug>1){
-	printf("file_act(fs_file=%p,addr=%"PRIuDADDR" buf=%p size=%d)\n",
-	       fs_file,addr,buf,(int)size);
-	if(opt_debug>1 && ci->segs.size()==0){
-	    if(fwrite(buf,size,1,stdout)!=1) err(1,"fwrite");
-	    printf("\n");
-	}
-    }
-
-    if(size==0)  return TSK_WALK_CONT;	// can't do much with this...
-
-    if(opt_no_data==false){
-	if (flags & TSK_FS_BLOCK_FLAG_SPARSE){
-            if (size < MAX_SPARSE_SIZE && !ci->invalid) {
-                /* Manufacture NULLs that correspond with a sparse file */
-                char nulls[65536];
-                memset(nulls,0,sizeof(nulls));
-                for(size_t i=0; i<size; i += sizeof(nulls)){
-                    size_t bytes_to_hash = sizeof(nulls);
-                    if ( i + bytes_to_hash > size) bytes_to_hash = size - i;
-                    ci->add_bytes(nulls, a_off + i,bytes_to_hash);
-                }
-            } else {
-                ci->set_invalid(true);		// make this data set invalid
-            }
-	}
-	else {
-	    ci->add_bytes(buf,a_off,size);	// add these bytes to the file
-	}
-    }
-
-    /* "Address 0 is reserved in ExtX and FFS to denote a "sparse"
-       block (one which is all zeros).  TSK knows this and returns
-       zeros when a file refers to block 0.  You can check the 'flags'
-       argument to the callback to determine if the data is from
-       sparse or compressed data. RAW means that the data in the
-       buffer was read from the disk.
-
-       TSK_FS_BLOCK_FLAG_RAW - data on the disk
-       TSK_FS_BLOCK_FLAG_SPARSE - a whole
-       TSK_FS_BLOCK_FLAG_COMP - the file is compressed
-    */
-
-    uint64_t  fs_offset = (addr)*fs_file->fs_info->block_size;
-    uint64_t img_offset = current_partition_start + fs_offset;
-
-    if(opt_sector_hash){
-        std::string md5 = md5_generator::hash_buf((const uint8_t *)buf,size).hexdigest();
-        ci->add_seg(img_offset,fs_offset,(int64_t)a_off,size,flags,md5);
-        return TSK_WALK_CONT;
-    }
-
-    if(ci->segs.size()>0){
-	/* Does this next segment fit after the prevous segment logically? */
-	if(ci->segs.back().next_file_offset()==(uint64_t)a_off){
-
-	    /* if both the last and the current are sparse, this can be extended. */
-	    if((ci->segs.back().flags & TSK_FS_BLOCK_FLAG_SPARSE) &&
-	       (flags & TSK_FS_BLOCK_FLAG_SPARSE)){
-
-		ci->segs.back().len += size;
-		return TSK_WALK_CONT;
-	    }
-
-
-	    /* If both are compressed, then this can be extended? */
-	    if((ci->segs.back().flags & TSK_FS_BLOCK_FLAG_COMP) &&
-	       (flags & TSK_FS_BLOCK_FLAG_COMP) &&
-	       (ci->segs.back().img_offset + ci->segs.back().len == img_offset)){
-		ci->segs.back().len += size;
-		return TSK_WALK_CONT;
-	    }
-
-	    /* See if we can extend the last segment in the segment list,
-	     * or if this is the start of a new fragment.
-	     */
-	    if((ci->segs.back().flags & TSK_FS_BLOCK_FLAG_RAW) &&
-	       (flags & TSK_FS_BLOCK_FLAG_RAW) &&
-	       (ci->segs.back().img_offset + ci->segs.back().len == img_offset)){
-		ci->segs.back().len += size;
-		return TSK_WALK_CONT;
-	    }
-	}
-    }
-    /* Need to add a new element to the list */
-    ci->add_seg(img_offset,fs_offset,(int64_t)a_off,size,flags,"");
-    return TSK_WALK_CONT;
+    return ci->file_act(fs_file,a_off,addr,buf,size,flags);
 }
 
 /* This is modeled on print_dent_act printit in ./tsk/fs/fls_lib.c
@@ -349,21 +260,7 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
 
     /* Processing for regular files: */
     if(fs_file->name->type == TSK_FS_NAME_TYPE_REG){
-
 	if(ci.do_plugin && ci.total_bytes>0) plugin_process(ci.tempfile_path);
-
-	/* Output the sector hashes to text or XML file if requested */
-//	if(opt_compute_sector_hashes){
-//	    int count = 1;
-//	    for(vector<string>::const_iterator it = ci.sectorhashes.begin();
-//		it!=ci.sectorhashes.end(); it++){
-//		if(opt_print_sector_hashes){
-//		    if(t) fprintf(t,"sectorhash: %s %d\n",(*it).c_str(),count);
-//		    if(x) x->xmlout("sectorhash",*it,"",false);
-//		}
-//		count++;
-//	    }
-//	}
     }
 
     /* END of file processing */

@@ -90,8 +90,6 @@ int  opt_k = 4;
 
 
 u_int	sectorhash_size=512;
-//bool	opt_compute_sector_hashes = false;
-//bool	opt_print_sector_hashes = false;
 
 namelist_t namelist;		// names of files that we want to find
 
@@ -154,6 +152,7 @@ void usage()
     printf("Ways to make this program run slower:\n");
     printf("    -M = Report MD5 for each file (default on)\n");
     printf("    -1 = Report SHA1 for each file (default on)\n");
+    printf("    -S nnnn = Perform sector hashes every nnnn bytes\n");
 #ifdef HAVE_LIBMAGIC
     printf("    -f = Enable LIBMAGIC (disabled by default)");
 #else
@@ -517,10 +516,6 @@ int main(int argc, char * const *argv1)
 		break;
 	case _TSK_T('C'): file_count_max = TATOI(OPTARG);break;
 	case _TSK_T('d'): opt_debug++; break;
-//	case _TSK_T('E'):
-//	    opt_print_sector_hashes = true;
-//	    opt_compute_sector_hashes=true;
-//	    break;
 	case _TSK_T('f'): opt_magic = true;break;
 	case _TSK_T('g'): opt_no_data = true; break;
   case _TSK_T('b'): opt_get_fragments = false; break;

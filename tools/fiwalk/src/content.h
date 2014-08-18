@@ -48,8 +48,9 @@ public:
 
     md5_generator	h_md5;
     sha1_generator	h_sha1;
-    md5_generator	h_sectorhash;
-    uint64_t sectorhash_counter;
+    md5_generator	*h_sectorhash;
+    uint64_t            sectorhash_byte_counter; // number of bytes that have been hashed
+    uint64_t            sectorhash_initial_offset;
     seglist segs;			// the segments that make up the file
     uint64_t total_bytes;
     std::vector<std::string> sectorhashes;	// a vector of sector hashes, if any have been computed
@@ -60,7 +61,13 @@ public:
 	fd_save(0),
 	fd_temp(0),
 	tempdir("/tmp"),
-	sectorhash_counter(0),
+        tempfile_path(""),
+        h_md5(),
+        h_sha1(),
+        h_sectorhash(0),
+	sectorhash_byte_counter(0),
+	sectorhash_initial_offset(0),
+        segs(),
 	total_bytes(0) {
     }
     ~content();
@@ -76,6 +83,9 @@ public:
 	add_bytes((const u_char *)buf,file_offset,size); 
     }
     void write_record();		// writes the ARFF record for this content
+    TSK_WALK_RET_ENUM file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr, char *buf,
+                               size_t size, TSK_FS_BLOCK_FLAG_ENUM flags);
+    
 };
 
 #endif

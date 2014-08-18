@@ -140,8 +140,6 @@ void file_infot(const string name,time_t t0);
 void file_infot(const string name,time_t t0, TSK_FS_TYPE_ENUM ftype);
 
 extern u_int sectorhash_size;		// for the computation of sector hashes
-//extern bool  opt_compute_sector_hashes;
-//extern bool  opt_print_sector_hashes;
 extern namelist_t namelist;		// names of files that we want to find
 
 
