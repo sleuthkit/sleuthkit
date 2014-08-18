@@ -4227,18 +4227,23 @@ func_mode_link ()
 	arg="$func_quote_for_eval_result"
 	;;
 
-      # -64, -mips[0-9] enable 64-bit mode on the SGI compiler
-      # -r[0-9][0-9]* specifies the processor on the SGI compiler
-      # -xarch=*, -xtarget=* enable 64-bit mode on the Sun compiler
-      # +DA*, +DD* enable 64-bit mode on the HP compiler
-      # -q* pass through compiler args for the IBM compiler
-      # -m*, -t[45]*, -txscale* pass through architecture-specific
-      # compiler args for GCC
-      # -F/path gives path to uninstalled frameworks, gcc on darwin
-      # -p, -pg, --coverage, -fprofile-* pass through profiling flag for GCC
-      # @file GCC response files
+      # Flags to be passed through unchanged, with rationale:
+      # -64, -mips[0-9]      enable 64-bit mode for the SGI compiler
+      # -r[0-9][0-9]*        specify processor for the SGI compiler
+      # -xarch=*, -xtarget=* enable 64-bit mode for the Sun compiler
+      # +DA*, +DD*           enable 64-bit mode for the HP compiler
+      # -q*                  compiler args for the IBM compiler
+      # -m*, -t[45]*, -txscale* architecture-specific flags for GCC
+      # -F/path              path to uninstalled frameworks, gcc on darwin
+      # -p, -pg, --coverage, -fprofile-*  profiling flags for GCC
+      # @file                GCC response files
+      # -tp=*                Portland pgcc target processor selection
+      # --sysroot=*          for sysroot support
+      # -O*, -flto*, -fwhopr*, -fuse-linker-plugin GCC link-time optimization
+      # -stdlib=*            select c++ std lib with clang
       -64|-mips[0-9]|-r[0-9][0-9]*|-xarch=*|-xtarget=*|+DA*|+DD*|-q*|-m*| \
-      -t[45]*|-txscale*|-p|-pg|--coverage|-fprofile-*|-F*|@*)
+      -t[45]*|-txscale*|-p|-pg|--coverage|-fprofile-*|-F*|@*|-tp=*|--sysroot=*| \
+      -O*|-flto*|-fwhopr*|-fuse-linker-plugin|-stdlib=*)
         func_quote_for_eval "$arg"
 	arg="$func_quote_for_eval_result"
         func_append compile_command " $arg"
