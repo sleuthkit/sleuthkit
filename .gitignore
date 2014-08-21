@@ -16,7 +16,7 @@
 /bindings/java/nbproject/jdk.xml
 /bindings/java/nbproject/nbjdk.xml
 /bindings/java/libts*
-
+*~
 *.class
 /bindings/java/build/
 /bindings/java/dist/
@@ -31,9 +31,11 @@
 /win32/*/Debug/
 /win32/Release/
 /win32/*/Release/
+/win32/*/x64/
 /win32/*/*.user
 win32/ipch
 win32/BuildErrors.txt
+win32/BuildErrors-64bit.txt
 framework/msvcpp/framework/Debug/
 framework/msvcpp/framework/Release/
 framework/msvcpp/*/*.user
@@ -47,6 +49,9 @@ framework/modules/*/win32/Debug/
 framework/modules/*/win32/Release/
 framework/modules/*/win32/*.user
 framework/modules/c_InterestingFilesModule/tsk
+framework/config.h
+framework/tools/tsk_analyzeimg/tsk_analyzeimg
+framework/tools/tsk_validatepipeline/tsk_validatepipeline
 
 # Release files
 release/sleuthkit-*
@@ -61,6 +66,7 @@ framework/msvcpp/framework/*sdf
 /win32/tsk-win.suo
 framework/msvcpp/framework/*.suo
 *.sln.cache
+win32/tsk-win.opensdf
 
 # Make crud
 *.o
@@ -70,6 +76,7 @@ framework/msvcpp/framework/*.suo
 Makefile
 .deps
 .libs
+*.swp
 
 #javadoc generated
 /bindings/java/javadoc
@@ -79,7 +86,6 @@ Makefile
 stamp-h1
 tsk/tsk_config.h
 tsk/tsk_incs.h
-tools/fstools/blkcalc
 aclocal.m4
 autom4te.cache
 config.log
@@ -110,6 +116,7 @@ tools/fiwalk/plugins/jpeg_extract
 tools/fiwalk/src/fiwalk
 tools/fiwalk/src/test_arff
 tools/fstools/blkcat
+tools/fstools/blkcalc
 tools/fstools/blkls
 tools/fstools/blkstat
 tools/fstools/fcat
@@ -134,10 +141,8 @@ tools/vstools/mmls
 tools/vstools/mmstat
 tools/*/*.exe
 tools/*/*/*.exe
-
 # EMACS backup files
 *~
 
 # Mac Junk
 .DS_Store
-
