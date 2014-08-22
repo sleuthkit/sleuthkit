@@ -78,6 +78,7 @@ bool opt_allocated_only = false;
 bool opt_body_file = false;
 bool opt_ignore_ntfs_system_files = false;
 bool opt_parent_tracking = false;
+bool opt_sector_hash = false;
 
 const char *config_file = 0;
 int  file_count_max = 0;
@@ -89,8 +90,6 @@ int  opt_k = 4;
 
 
 u_int	sectorhash_size=512;
-//bool	opt_compute_sector_hashes = false;
-//bool	opt_print_sector_hashes = false;
 
 namelist_t namelist;		// names of files that we want to find
 
@@ -153,6 +152,7 @@ void usage()
     printf("Ways to make this program run slower:\n");
     printf("    -M = Report MD5 for each file (default on)\n");
     printf("    -1 = Report SHA1 for each file (default on)\n");
+    printf("    -S nnnn = Perform sector hashes every nnnn bytes\n");
 #ifdef HAVE_LIBMAGIC
     printf("    -f = Enable LIBMAGIC (disabled by default)");
 #else
@@ -497,7 +497,7 @@ int main(int argc, char * const *argv1)
 	argv = (TSK_TCHAR * const*) argv1;
 #endif
 	
-    while ((ch = GETOPT(argc, argv, _TSK_T("A:a:C:dfG:gmv1IMX:T:VZn:c:b:xOzh?"))) > 0 ) { // s: removed
+    while ((ch = GETOPT(argc, argv, _TSK_T("A:a:C:dfG:gmv1IMX:S:T:VZn:c:b:xOzh?"))) > 0 ) { // s: removed
 	switch (ch) {
 	case _TSK_T('1'): opt_sha1 = true;break;
 	case _TSK_T('m'):
@@ -516,10 +516,6 @@ int main(int argc, char * const *argv1)
 		break;
 	case _TSK_T('C'): file_count_max = TATOI(OPTARG);break;
 	case _TSK_T('d'): opt_debug++; break;
-//	case _TSK_T('E'):
-//	    opt_print_sector_hashes = true;
-//	    opt_compute_sector_hashes=true;
-//	    break;
 	case _TSK_T('f'): opt_magic = true;break;
 	case _TSK_T('g'): opt_no_data = true; break;
   case _TSK_T('b'): opt_get_fragments = false; break;
@@ -528,7 +524,9 @@ int main(int argc, char * const *argv1)
 	case _TSK_T('I'): opt_ignore_ntfs_system_files=true;break;
 	case _TSK_T('M'): opt_md5 = true;
 	case _TSK_T('O'): opt_allocated_only=true; break;
-//	case _TSK_T('S'): sectorhash_size = TATOI(OPTARG); break;
+	case _TSK_T('S'):
+            opt_sector_hash = true;
+            sectorhash_size = TATOI(OPTARG); break;
 	case _TSK_T('T'):
 #ifdef TSK_WIN32
 		convert(OPTARG, &opt_arg);

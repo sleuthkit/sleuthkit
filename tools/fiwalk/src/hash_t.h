@@ -270,24 +270,6 @@ public:
     /** Compute a sha1 from a buffer and return the hash */
     static hash__<T>  hash_buf(const uint8_t *buf,size_t bufsize){
 	/* First time through find the SHA1 of 512 NULLs */
-#if 0
-	if(sha1_ctr==0){
-	    uint8_t b2[512];
-	    EVP_MD_CTX ctx2;
-	    unsigned int len = sizeof(sha1_512nulls);
-	    memset(b2,0,sizeof(b2));
-	    EVP_MD_CTX_init(&ctx2);
-	    EVP_DigestInit_ex(&ctx2, EVP_sha1(), NULL);
-	    EVP_DigestUpdate(&ctx2,b2,sizeof(b2));
-	    EVP_DigestFinal(&ctx2,sha1_512nulls,&len);
-	    sha1_ctr++;
-	}
-
-	/* If the input is 512 bytes long and all NULLs, use our SHA1 of 512 NULLs */
-	if(bufsize==512 && iszero(buf,bufsize)){
-	    return sha1_t(sha1_512nulls);
-	}
-#endif
 	hash_generator__ g;
 	g.update(buf,bufsize);
 	return g.final();
