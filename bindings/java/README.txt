@@ -29,6 +29,12 @@ On non-windows environments, it should just build as part of running
 ./configure and make.   If the needed Java components are not found,
 it will not be built. 
 
+This library will depend on libewf, zlib, and other libraries that
+TSK was built to depend on. In Windows, the core of TSK (libtsk)
+is a static library that is fully embedded in the libtsk_jni.dll
+file. On non-Windows environments, libtsk_jni will depend on the 
+libtsk dynamic library.
+
 
 
 Building The Jar File
@@ -44,7 +50,7 @@ Using the Jar file and Library
 There are two categories of things that need to be in the right place:
 - The Jar file needs to be on the CLASSPATH.  
 - The libewf and zlib dynamic libraries need to be loadable. The TSK 
-  native library is inside of the Jar file and it will depend on the 
+  JNI native library is inside of the Jar file and it will depend on the 
   libewf and zlib libraries.  On a Unix-like platform, that means that
   if you did a 'make install' with libewf and zlib, you should be OK.
   On Windows, you should copy these dlls to a place that is found based
