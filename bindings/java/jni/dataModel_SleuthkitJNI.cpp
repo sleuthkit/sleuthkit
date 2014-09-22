@@ -180,9 +180,45 @@ toTCHAR(JNIEnv * env, TSK_TCHAR * buffer, size_t size, jstring strJ)
     jboolean isCopy;
     char *str8 = (char *) env->GetStringUTFChars(strJ, &isCopy);
 
-    int ret = TSNPRINTF(buffer, size, _TSK_T("%") PRIcTSK, str8);
+	// Java uses UTF8 and passes input strings as such. Hence str8 is in UTF8
+
+	// find out length of UTF8 
+	size_t lengthOfUtf8 = strlen(str8);
+
+#ifdef TSK_WIN32
+	// Windows uses UTF16 so we need to convert UTF8 to UTF16
+
+    UTF16 *utf16 = 0;
+    UTF8 *utf8 = 0;
+    TSKConversionResult retval2;
+
+	// initialize pointers to start of string
+    utf8 = (UTF8 *) str8;
+    utf16 = (UTF16 *) buffer;
+
+
+	// convert UTF8 to UTF16
+    retval2 =
+        tsk_UTF8toUTF16((const UTF8 **) &utf8, &utf8[lengthOfUtf8],
+        &utf16, &utf16[size], TSKlenientConversion);
+    if (retval2 != TSKconversionOK) {
+        tsk_error_set_errno(TSK_ERR_IMG_CONVERT);
+        tsk_error_set_errstr
+            ("toTCHAR: Error converting UTF8 %s to UTF16, error %d",
+            utf8, retval2);
+    }
+
+	// "utf16" is being modified inside tsk_UTF8toUTF16 so it now points to last char. Need to NULL terminate the string.
+    *utf16 = '\0';
+
+#else
+	// simply copy from str8 to buffer. EL: THIS NEEDS TO BE TESTED
+    //int ret = TSNPRINTF(buffer, size, _TSK_T("%") PRIcTSK, str8);	
+	memcpy(&buffer[0], str8, lengthOfUtf8);
+#endif
+
     env->ReleaseStringUTFChars(strJ, str8);
-    return ret;
+    return 0;
 }
 
 
