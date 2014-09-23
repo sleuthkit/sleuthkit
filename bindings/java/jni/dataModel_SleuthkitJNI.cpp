@@ -190,7 +190,7 @@ toTCHAR(JNIEnv * env, TSK_TCHAR * buffer, size_t size, jstring strJ)
 
     UTF16 *utf16 = 0;
     UTF8 *utf8 = 0;
-    TSKConversionResult retval2;
+    TSKConversionResult retval;
 
 	// initialize pointers to start of string
     utf8 = (UTF8 *) str8;
@@ -198,14 +198,15 @@ toTCHAR(JNIEnv * env, TSK_TCHAR * buffer, size_t size, jstring strJ)
 
 
 	// convert UTF8 to UTF16
-    retval2 =
+    retval =
         tsk_UTF8toUTF16((const UTF8 **) &utf8, &utf8[lengthOfUtf8],
         &utf16, &utf16[size], TSKlenientConversion);
-    if (retval2 != TSKconversionOK) {
+    if (retval != TSKconversionOK) {
         tsk_error_set_errno(TSK_ERR_IMG_CONVERT);
         tsk_error_set_errstr
             ("toTCHAR: Error converting UTF8 %s to UTF16, error %d",
-            utf8, retval2);
+            utf8, retval);
+        return retval;
     }
 
 	// "utf16" is being modified inside tsk_UTF8toUTF16 so it now points to last char. Need to NULL terminate the string.
@@ -214,7 +215,7 @@ toTCHAR(JNIEnv * env, TSK_TCHAR * buffer, size_t size, jstring strJ)
 #else
 	// simply copy from str8 to buffer. EL: THIS NEEDS TO BE TESTED
     //int ret = TSNPRINTF(buffer, size, _TSK_T("%") PRIcTSK, str8);	
-	memcpy(&buffer[0], str8, lengthOfUtf8);
+	strncpy((char *)&buffer[0], str8, lengthOfUtf8);
 #endif
 
     env->ReleaseStringUTFChars(strJ, str8);
@@ -234,7 +235,9 @@ JNIEXPORT jlong JNICALL
     jclass obj, jstring dbPathJ) {
 
     TSK_TCHAR dbPathT[1024];
-    toTCHAR(env, dbPathT, 1024, dbPathJ);
+    int retval = toTCHAR(env, dbPathT, 1024, dbPathJ);
+    if (retval)
+        return retval;
 
     TskCaseDb *tskCase = TskCaseDb::newDb(dbPathT);
 
