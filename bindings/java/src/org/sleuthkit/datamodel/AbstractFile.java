@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.Set;
-import java.util.TreeSet;
+import java.util.SortedSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
@@ -970,7 +970,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param mimeTypes Set of file types to compare against
 	 * @return
 	 */
-	public MimeMatchEnum isMimeType(TreeSet<String> mimeTypes) {
+	public MimeMatchEnum isMimeType(SortedSet<String> mimeTypes) {
 		try {
 			List<BlackboardAttribute> attrs = getGenInfoAttributes(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_FILE_TYPE_SIG);
 			if (attrs.isEmpty()) {
