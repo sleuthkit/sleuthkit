@@ -22,13 +22,13 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.text.MessageFormat;
-import java.util.ResourceBundle;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -75,7 +75,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	protected String md5Hash;
 	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
-    private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
+    private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
@@ -88,6 +88,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param name name field of the file
 	 * @param fileType type of the file
 	 * @param metaAddr
+	 * @param metaSeq
 	 * @param dirType
 	 * @param metaType
 	 * @param dirFlag
@@ -442,7 +443,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return filename extension in lowercase (not including the period) or empty string if there is no extension
 	 */
 	public String getNameExtension() {
-		String ext = "";
+		String ext;
 		int i = getName().lastIndexOf(".");
 		// > 0 because we assume it's not an extension if period is the first character
 		if ((i > 0) && ((i + 1) < getName().length())) {
@@ -597,6 +598,7 @@ public abstract class AbstractFile extends AbstractContent {
 	/**
 	 * @return a list of AbstractFiles that are the children of this Directory.
 	 * Only returns children of type TskData.TSK_DB_FILES_TYPE_ENUM.FS.
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public List<AbstractFile> listFiles() throws TskCoreException {
 		// first, get all children
@@ -948,5 +950,41 @@ public abstract class AbstractFile extends AbstractContent {
 		}
 
 		return epoch;
+	}
+	
+	
+	/**
+	 * Possible return values for comparing a file to a list of mime types
+	 */
+	public enum MimeMatchEnum {
+
+		UNDEFINED, /// file does not have a defined mime time in blackboard
+		TRUE, /// file has a defined mime type and it is one of the given ones
+		FALSE /// file has a defined mime type and it is not one of the given ones.
+	}
+
+	/**
+	 * Determines if this file's type is one of the ones passed in. Uses the
+	 * blackboard attribute for file type.
+	 *
+	 * @param mimeTypes Set of file types to compare against
+	 * @return
+	 */
+	public MimeMatchEnum isMimeType(TreeSet<String> mimeTypes) {
+		try {
+			List<BlackboardAttribute> attrs = getGenInfoAttributes(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_FILE_TYPE_SIG);
+			if (attrs.isEmpty()) {
+				return MimeMatchEnum.UNDEFINED;
+			}
+
+			for (BlackboardAttribute batt : attrs) {
+				if (mimeTypes.contains(batt.getValueString())) {
+					return MimeMatchEnum.TRUE;
+				}
+			}
+			return MimeMatchEnum.FALSE;
+		} catch (TskCoreException ex) {
+			return MimeMatchEnum.UNDEFINED;
+		}
 	}
 }

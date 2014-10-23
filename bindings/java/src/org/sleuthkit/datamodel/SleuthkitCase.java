@@ -3271,13 +3271,15 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Find and return list of files matching the specific Where clause
+	 * Find and return list of files matching the specific Where clause.
+	 * Use findAllFilesWhere instead.  It returns a more generic data type
 	 *
 	 * @param sqlWhereClause a SQL where clause appropriate for the desired
 	 * files (do not begin the WHERE clause with the word WHERE!)
 	 * @return a list of FsContent each of which satisfy the given WHERE clause
 	 * @throws TskCoreException
 	 */
+	@Deprecated	// use findAllFilesWhere instead
 	public List<FsContent> findFilesWhere(String sqlWhereClause) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
