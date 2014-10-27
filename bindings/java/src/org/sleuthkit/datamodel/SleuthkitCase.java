@@ -2728,7 +2728,7 @@ public class SleuthkitCase {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public List<LayoutFile> addCarvedFiles(List<CarvedFileContainer> filesToAdd) throws TskCoreException {
-		if (filesToAdd != null && filesToAdd.size()>0) {
+		if (filesToAdd != null && filesToAdd.isEmpty() == false) {
 			CaseDbTransaction localTrans = beginTransaction();
 			CaseDbConnection connection = localTrans.getConnection();
 			acquireExclusiveLock();
