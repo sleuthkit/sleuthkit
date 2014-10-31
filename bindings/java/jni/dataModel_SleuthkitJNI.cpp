@@ -86,6 +86,7 @@ setThrowTskDataError(JNIEnv * env, const char *msg)
     env->ThrowNew(exception, msg);
 }
 
+#if 0
 /**
 * Sets flag to throw an TskDataException back up to the Java code with the currently set error message.
 * Note: exception is thrown to Java code after the native function returns
@@ -98,6 +99,7 @@ setThrowTskDataError(JNIEnv * env)
     const char *msg = tsk_error_get();
     setThrowTskDataError(env, msg);
 }
+#endif
 
 
 /***** Methods to cast from jlong to data type and check tags
@@ -187,13 +189,12 @@ toTCHAR(JNIEnv * env, TSK_TCHAR * buffer, size_t size, jstring strJ)
     jboolean isCopy;
     char *str8 = (char *) env->GetStringUTFChars(strJ, &isCopy);
 
-	size_t lengthOfUtf8 = strlen(str8);
-
 #ifdef TSK_WIN32
 	// Windows TCHAR is UTF16 in Windows, so convert
     UTF16 *utf16 = (UTF16 *) buffer;
     UTF8 *utf8 = (UTF8 *) str8;;
     TSKConversionResult retval;
+    size_t lengthOfUtf8 = strlen(str8);
 
     retval =
         tsk_UTF8toUTF16((const UTF8 **) &utf8, &utf8[lengthOfUtf8],
