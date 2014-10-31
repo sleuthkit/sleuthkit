@@ -782,4 +782,48 @@ public class BlackboardAttribute {
 	protected void setCase(SleuthkitCase Case) {
 		this.Case = Case;
 	}
+	
+	// from http://stackoverflow.com/questions/9655181/convert-from-byte-array-to-hex-string-in-java
+	final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
+	private static String bytesToHexString(byte[] bytes) {
+		char[] hexChars = new char[bytes.length * 2];
+		for ( int j = 0; j < bytes.length; j++ ) {
+			int v = bytes[j] & 0xFF;
+			hexChars[j * 2] = hexArray[v >>> 4];
+			hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+		}
+		return new String(hexChars);
+	}
+
+	
+	/**
+	 * 
+	 * NOTE: Dates are not yet formatted. 
+	 * 
+	 * @return return a string form of the stored value.  Formatted if needed.
+	 */
+	public String getDisplayString() {
+		switch (valueType) {
+			case STRING:
+				return getValueString();
+			case INTEGER:
+				if (attributeTypeID == ATTRIBUTE_TYPE.TSK_READ_STATUS.getTypeID()) {
+					if (getValueInt() == 0) {
+						return "Unread";
+					} else {
+						return "Read";
+					}
+				} 
+				return Integer.toString(getValueInt());
+			case LONG:
+				// SHOULD at some point figure out how to convert times in here based on preferred formats
+				// and such.  Perhaps pass in a time formatter. 
+				return Long.toString(getValueLong());
+			case DOUBLE:
+				return Double.toString(getValueDouble());
+			case BYTE:
+				return bytesToHexString(getValueBytes());
+		}
+		return "";
+	}
 }
