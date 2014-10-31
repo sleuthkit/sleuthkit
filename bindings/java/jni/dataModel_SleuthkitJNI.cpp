@@ -174,30 +174,27 @@ castCaseDb(JNIEnv * env, jlong ptr)
     return lcl;
 }
 
+/**
+ * Convert a jstring (UTF-8) to a TCHAR to pass into TSK methods.
+ * @param buffer Buffer to store resulting string into
+ * @param size Length of buffer
+ * @param strJ string to convert
+ * @returns 1 on error 
+ */
 static int
 toTCHAR(JNIEnv * env, TSK_TCHAR * buffer, size_t size, jstring strJ)
 {
     jboolean isCopy;
     char *str8 = (char *) env->GetStringUTFChars(strJ, &isCopy);
 
-	// Java uses UTF8 and passes input strings as such. Hence str8 is in UTF8
-
-	// find out length of UTF8 
 	size_t lengthOfUtf8 = strlen(str8);
 
 #ifdef TSK_WIN32
-	// Windows uses UTF16 so we need to convert UTF8 to UTF16
-
-    UTF16 *utf16 = 0;
-    UTF8 *utf8 = 0;
+	// Windows TCHAR is UTF16 in Windows, so convert
+    UTF16 *utf16 = (UTF16 *) buffer;
+    UTF8 *utf8 = (UTF8 *) str8;;
     TSKConversionResult retval;
 
-	// initialize pointers to start of string
-    utf8 = (UTF8 *) str8;
-    utf16 = (UTF16 *) buffer;
-
-
-	// convert UTF8 to UTF16
     retval =
         tsk_UTF8toUTF16((const UTF8 **) &utf8, &utf8[lengthOfUtf8],
         &utf16, &utf16[size], TSKlenientConversion);
@@ -206,16 +203,16 @@ toTCHAR(JNIEnv * env, TSK_TCHAR * buffer, size_t size, jstring strJ)
         tsk_error_set_errstr
             ("toTCHAR: Error converting UTF8 %s to UTF16, error %d",
             utf8, retval);
-        return retval;
+        env->ReleaseStringUTFChars(strJ, str8);
+        return 1;
     }
 
-	// "utf16" is being modified inside tsk_UTF8toUTF16 so it now points to last char. Need to NULL terminate the string.
+	// "utf16" now points to last char. Need to NULL terminate the string.
     *utf16 = '\0';
 
 #else
-	// simply copy from str8 to buffer. EL: THIS NEEDS TO BE TESTED
-    //int ret = TSNPRINTF(buffer, size, _TSK_T("%") PRIcTSK, str8);	
-	strncpy((char *)&buffer[0], str8, lengthOfUtf8);
+	// nothing to convert.  Keep it as UTF8
+	strncpy((char *)&buffer[0], str8, size);
 #endif
 
     env->ReleaseStringUTFChars(strJ, str8);
