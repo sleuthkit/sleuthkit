@@ -154,10 +154,8 @@ public class LibraryUtils {
 		
 		// copy library to temp folder and load it
 		try {
-			java.nio.file.Path tmpPath = java.nio.file.Paths.get(System.getProperty("java.io.tmpdir"), libName + libExt); //NON-NLS
-			java.io.File tempLibFile = tmpPath.toFile();
-			System.out.println("Temp Folder for Libraries: " + tmpPath.getParent().toString()); //NON-NLS
-
+			java.io.File tempLibFile = new java.io.File(System.getProperty("java.io.tmpdir") + java.io.File.separator + libName + libExt); //NON-NLS
+			System.out.println("Temp Folder for Libraries: " + tempLibFile.getParent()); //NON-NLS
 
 			// cycle through the libraries and delete them. 
 			// we used to copy dlls into here. 
