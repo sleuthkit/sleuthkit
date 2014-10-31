@@ -42,7 +42,7 @@
 	</target>
 
 
-	<target name="check-build-64" if="win32.TskLib.exists">
+	<target name="check-build-64" if="win64.TskLib.exists">
 		<uptodate property="native-up-to-date" srcfile="${basedir}/../../win32/x64/Release/libtsk_jni.dll"
 		targetfile="${amd64}/win/libtsk_jni.dll"/>
 	</target>
