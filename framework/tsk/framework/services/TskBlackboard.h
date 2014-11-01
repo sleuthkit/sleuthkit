@@ -201,6 +201,7 @@ enum TSK_ATTRIBUTE_TYPE {
     TSK_GEO_LATITUDE_END= 99, ///< Ending location lattitude
     TSK_GEO_LONGITUDE_START= 100, ///< Starting location longitude
     TSK_GEO_LONGITUDE_END = 101, ///< Ending Location longitude
+    TSK_READ_STATUS = 102, ///< Message read status: 1 if read, 0 if unread
     /* SEE ABOVE: 
     * - KEEP JAVA CODE IN SYNC 
     * - UPDATE map in TskBlackBoard.cpp too */

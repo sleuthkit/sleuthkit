@@ -313,7 +313,7 @@ public class BlackboardAttribute {
 		TSK_GEO_LONGITUDE_END(101, "TSK_GEO_LONGITUDE_END", //NON-NLS
                     bundle.getString("BlackboardAttribute.tskGeoLongitudeEnd.text")), //Ending Location longitude
 		TSK_READ_STATUS(102, "TSK_READ_STATUS", //NON-NLS
-                    bundle.getString("BlackboardAttribute.tskReadStatus.text")), // Message read status: unread, read
+                    bundle.getString("BlackboardAttribute.tskReadStatus.text")), // Message read status: 1 if read, 0 if unread
 		;
 		/* SEE ABOVE -- ALSO ADD TO C++ CODE */
 		private String label;
