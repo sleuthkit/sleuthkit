@@ -2729,14 +2729,15 @@ public class SleuthkitCase {
 	 */
 	public List<LayoutFile> addCarvedFiles(List<CarvedFileContainer> filesToAdd) throws TskCoreException {
 		if (filesToAdd != null && filesToAdd.isEmpty() == false) {
-			CaseDbTransaction localTrans = beginTransaction();
-			CaseDbConnection connection = localTrans.getConnection();
-			acquireExclusiveLock();
+			List<LayoutFile> addedFiles = new ArrayList<LayoutFile>();
+			CaseDbTransaction localTrans = null;
 			Statement s = null;
 			ResultSet rs = null;
-			List<LayoutFile> addedFiles = new ArrayList<LayoutFile>();
-
-			try {
+			acquireExclusiveLock();
+			try {				
+				localTrans = beginTransaction();
+				CaseDbConnection connection = localTrans.getConnection();
+				
 				// get the ID of the appropriate '$CarvedFiles' directory
 				long firstItemId = filesToAdd.get(0).getId();
 				long id = 0;
@@ -2894,15 +2895,18 @@ public class SleuthkitCase {
 				localTrans.commit();
 				return addedFiles;
 			} catch (SQLException ex) {
-				localTrans.rollback();
+				if (null != localTrans) {
+					localTrans.rollback();
+				}
 				throw new TskCoreException("Failed to add carved file to case database", ex);
 			} finally {
 				closeResultSet(rs);
 				closeStatement(s);
 				releaseExclusiveLock();
 			}
-		} // if fileToAdd != null
-		return null;
+		} else {
+			return Collections.EMPTY_LIST;
+		}
 	}
 
 	/**
