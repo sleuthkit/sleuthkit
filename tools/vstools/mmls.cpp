@@ -134,7 +134,7 @@ print_header(const TSK_VS_INFO * vs)
     tsk_printf("Units are in %d-byte sectors\n\n", vs->block_size);
     if (print_bytes)
         tsk_printf
-            ("      Slot      Start        End          Length       Size     Description\n");
+            ("      Slot      Start        End          Length       Size    Description\n");
     else
         tsk_printf
             ("      Slot      Start        End          Length       Description\n");
