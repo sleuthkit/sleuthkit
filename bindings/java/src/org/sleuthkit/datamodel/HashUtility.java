@@ -76,7 +76,7 @@ public class HashUtility {
 	 * @param md5
 	 * @return True if it is the empty hash value
 	 */
-	public static boolean isEmptyMd5(String md5) {
+	public static boolean isNoDataMd5(String md5) {
 		return md5.toLowerCase().equals("d41d8cd98f00b204e9800998ecf8427e"); //NON-NLS
 	}
 }
