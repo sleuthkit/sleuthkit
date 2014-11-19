@@ -68,4 +68,15 @@ public class HashUtility {
 		}
 		return hashText;
 	}
+	
+	/**
+	 * Determine if the passed in Hash value is that for no data (i.e. an empty file).  
+	 * Looking these values up or correlating on them causes lots of false positives. 
+	 * 
+	 * @param md5
+	 * @return True if it is the empty hash value
+	 */
+	public static boolean isEmptyMd5(String md5) {
+		return md5.toLowerCase().equals("d41d8cd98f00b204e9800998ecf8427e"); //NON-NLS
+	}
 }
