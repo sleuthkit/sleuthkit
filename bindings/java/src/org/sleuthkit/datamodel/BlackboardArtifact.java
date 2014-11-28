@@ -93,7 +93,9 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
                        bundle.getString("BlackboardArtifact.tskOsAccount.text")), ///< An operating system user account.
 		TSK_SERVICE_ACCOUNT(21, "TSK_SERVICE_ACCOUNT", //NON-NLS
                             bundle.getString("BlackboardArtifact.tskServiceAccount.text")), ///< An application/service/web user account.
-        TSK_TOOL_OUTPUT(22, "TSK_TOOL_OUTPUT", //NON-NLS
+        @Deprecated
+		// use Case.addReport in Autopsy
+		TSK_TOOL_OUTPUT(22, "TSK_TOOL_OUTPUT", //NON-NLS
                         bundle.getString("BlackboardArtifact.tskToolOutput.text")), ///< Output from an external tool or module that (raw text)
 		TSK_CONTACT(23, "TSK_CONTACT", //NON-NLS
                     bundle.getString("BlackboardArtifact.tskContact.text")), ///< A Contact extracted from a phone, or from an Addressbook/Email/Messaging Application
