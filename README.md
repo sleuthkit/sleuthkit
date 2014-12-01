@@ -1,13 +1,7 @@
-                          The Sleuth Kit
-                            README File
+# [The Sleuth Kit](http://www.sleuthkit.org/sleuthkit)
+README File
 
-                http://www.sleuthkit.org/sleuthkit
-
-                     Last Modified: Sept 2008
-
-
-INTRODUCTION
-=============================================================================
+## INTRODUCTION
 The Sleuth Kit is an open source forensic toolkit for analyzing
 Microsoft and UNIX file systems and disks.  The Sleuth Kit enables
 investigators to identify and recover evidence from images acquired
@@ -32,10 +26,7 @@ and MD5 image integrity checks.
 As with any investigation tool, any results found with The Sleuth
 Kit should be be recreated with a second tool to verify the data.
 
-
-
-OVERVIEW
-=============================================================================
+## OVERVIEW
 The Sleuth Kit allows one to analyze a disk or file system image
 created by 'dd', or a similar application that creates a raw image.
 These tools are low-level and each performs a single task.  When
@@ -44,8 +35,7 @@ description of these tools, refer to docs/filesystem.README.  The
 tools are briefly described in a file system layered approach.  Each
 tool name begins with a letter that is assigned to the layer.  
 
-
-File System Layer:
+### File System Layer:
 A disk contains one or more partitions (or slices).  Each of these
 partitions contain a file system.  Examples of file systems include
 the Berkeley Fast File System (FFS), Extended 2 File System (EXT2FS),
@@ -55,8 +45,7 @@ The fsstat tool displays file system details in an ASCII format.
 Examples of data in this display include volume name, last mounting
 time, and the details about each "group" in UNIX file systems.
 
-
-Content Layer (block):
+### Content Layer (block):
 The content layer of a file system contains the actual file content,
 or data.  Data is stored in large chunks, with names such as blocks,
 fragments, and clusters.  All tools in this layer begin with the letters
@@ -77,8 +66,7 @@ units, similar to the 'ils' command.  The 'blkstat' tool displays
 the statistics of a specific data unit (including allocation status
 and group number).
 
-
-Metadata Layer (inode):
+### Metadata Layer (inode):
 The metadata layer describes a file or directory.  This layer contains
 descriptive data such as dates and size as well as the addresses of the
 data units.  This layer describes the file in terms that the computer
@@ -99,8 +87,7 @@ file name.
 Refer to the ntfs.README doc for information on addressing metadata
 attributes in NTFS.
 
-
-Human Interface Layer (file):
+### Human Interface Layer (file):
 The human interface layer allows one to interact with files in a
 manner that is more convenient than directly with the metadata
 layer.  In some operating systems there are separate structures for
@@ -112,9 +99,7 @@ display the names of deleted files as well.  The 'ffind' program will
 identify the name of the file that has allocated a given metadata
 structure.  With some file systems, deleted files will be identified.
 
-
-Time Line Generation
------------------------------------------------------------------------------
+#### Time Line Generation
 Time lines are useful to quickly get a picture of file activity.
 Using The Sleuth Kit a time line of file MAC times can be easily
 made.  The mactime (TCT) program takes as input the 'body' file
@@ -124,8 +109,7 @@ use 'ils -m'.  Note that the behavior of these tools are different
 than in TCT.  For more information, refer to docs/mac.README.
 
 
-Hash Databases
------------------------------------------------------------------------------
+#### Hash Databases
 Hash databases are used to quickly identify if a file is known.  The
 MD5 or SHA-1 hash of a file is taken and a database is used to identify
 if it has been seen before.  This allows identification to occur even
@@ -141,9 +125,7 @@ National Software Reference Library (NSRL) (www.nsrl.nist.gov) and
 files created from the 'md5' or 'md5sum' command.   Refer to the 
 docs/hfind.README file for more details.  
 
-
-File Type Categories
------------------------------------------------------------------------------
+#### File Type Categories
 Different types of files typically have different internal structure.
 The 'file' command comes with most versions of UNIX and a copy is
 also distributed with The Sleuth Kit.  This is used to identify
@@ -161,8 +143,7 @@ and ignore known good files.  Refer to the 'docs/sorter.README'
 file for more details.
 
 
-LICENSE
-=============================================================================
+## LICENSE
 The file system tools (in the src/fstools directory) are released
 under the IBM open source license and Common Public License, both
 are located in the license directory.  The modifications to 'mactime'
@@ -170,30 +151,22 @@ from the original 'mactime' in TCT and 'mac-daddy' are released
 under the Common Public License.  Other tools in the src directory
 are either Common Public License or the GNU Public License.
 
-
-INSTALL
-=============================================================================
+## INSTALL
 For installation instructions, refer to the INSTALL document.
 
-
-OTHER DOCS
-=============================================================================
+## OTHER DOCS
 The 'docs' directory contains documents that describe the provided tools
 in more detail.  The Sleuth Kit Informer is a newsletter that contains
 new documentation and articles.
 
-    www.sleuthkit.org/informer/
+> www.sleuthkit.org/informer/
 
-
-MAILING LIST
-=============================================================================
+## MAILING LIST
 Mailing lists exist on SourceForge, for both users and a low-volume
 announcements list.
-	
-    http://sourceforge.net/mail/?group_id=55685
 
+> http://sourceforge.net/mail/?group_id=55685
 
------------------------------------------------------------------------------
 Brian Carrier
 carrier <at> sleuthkit <dot> org
  
