@@ -14,7 +14,7 @@ The Coroner's Toolkit (TCT) by Wietse Venema and Dan Farmer.  The
 TCT code was modified for platform independence.  In addition,
 support was added for the NTFS (see docs/ntfs.README) and FAT (see
 docs/fat.README) file systems.  Previously, The Sleuth Kit was
-called The @stake Sleuth Kit (TASK).  The Sleuth Kit is now independant
+called The @stake Sleuth Kit (TASK).  The Sleuth Kit is now independent
 of any commercial or academic organizations.
 
 It is recommended that these command line tools can be used with
