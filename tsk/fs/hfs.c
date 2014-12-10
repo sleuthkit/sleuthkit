@@ -191,7 +191,7 @@ zlib_inflate(char *source, uint64_t sourceLen, char *dest, uint64_t destLen, uin
             ret = inflate(&strm, Z_NO_FLUSH);
             if (ret == Z_NEED_DICT)
                 ret = Z_DATA_ERROR;     // we don't have a custom dict
-            if (ret < 0) {
+            if (ret < 0 && ret != Z_BUF_ERROR) { // Z_BUF_ERROR is not fatal
                 error_detected(TSK_ERR_FS_READ,
                     " zlib_inflate: zlib returned error %d (%s)", ret,
                     strm.msg);
