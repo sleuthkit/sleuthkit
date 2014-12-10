@@ -3150,6 +3150,14 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
                 "hfs_file_read_special: Reading compression unit %" PRIu32
                 "\n", indx);
 
+        /* Github #383 referenced that if len is 0, then the below code causes
+         * problems. Added this check, but I don't have data to verify this on.
+         * it looks like it should at least not crash, but it isn't clear if it
+         * will also do the right thing and if should actually break here instead. */
+        if (len == 0) {
+            continue;
+        }
+
         // Read in the chunk of compressed data
         attrReadResult = tsk_fs_attr_read(rAttr, offset,
             rawBuf, len, TSK_FS_FILE_READ_FLAG_NONE);
