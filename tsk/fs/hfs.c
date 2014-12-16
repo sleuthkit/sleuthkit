@@ -191,7 +191,7 @@ zlib_inflate(char *source, uint64_t sourceLen, char *dest, uint64_t destLen, uin
             ret = inflate(&strm, Z_NO_FLUSH);
             if (ret == Z_NEED_DICT)
                 ret = Z_DATA_ERROR;     // we don't have a custom dict
-            if (ret < 0) {
+            if (ret < 0 && ret != Z_BUF_ERROR) { // Z_BUF_ERROR is not fatal
                 error_detected(TSK_ERR_FS_READ,
                     " zlib_inflate: zlib returned error %d (%s)", ret,
                     strm.msg);
@@ -3149,6 +3149,14 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
             tsk_fprintf(stderr,
                 "hfs_file_read_special: Reading compression unit %" PRIu32
                 "\n", indx);
+
+        /* Github #383 referenced that if len is 0, then the below code causes
+         * problems. Added this check, but I don't have data to verify this on.
+         * it looks like it should at least not crash, but it isn't clear if it
+         * will also do the right thing and if should actually break here instead. */
+        if (len == 0) {
+            continue;
+        }
 
         // Read in the chunk of compressed data
         attrReadResult = tsk_fs_attr_read(rAttr, offset,
