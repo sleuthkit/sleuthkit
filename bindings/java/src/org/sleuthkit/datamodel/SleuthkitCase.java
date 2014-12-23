@@ -2905,7 +2905,7 @@ public class SleuthkitCase {
 				releaseExclusiveLock();
 			}
 		} else {
-			return Collections.EMPTY_LIST;
+			return Collections.emptyList();
 		}
 	}
 
