@@ -71,7 +71,6 @@ public class SleuthkitCase {
 	private SleuthkitJNI.CaseDbHandle caseHandle; // Not currently used.
 	private int versionNumber;
 	private String dbBackupPath;
-	private final HashSet<CaseDbConnection> databaseConnections = new HashSet<CaseDbConnection>();
 
 	// This read/write lock is used to implement a layer of locking on top of 
 	// the locking protocol provided by the underlying SQLite database. The Java
@@ -4960,6 +4959,8 @@ public class SleuthkitCase {
 	}
 
 	private final class ConnectionPerThreadDispenser extends ThreadLocal<CaseDbConnection> {
+		
+		private final HashSet<CaseDbConnection> databaseConnections = new HashSet<CaseDbConnection>();
 
 		synchronized CaseDbConnection getConnection() throws TskCoreException {
 			CaseDbConnection connection = get();
@@ -4979,6 +4980,7 @@ public class SleuthkitCase {
 			for (CaseDbConnection entry : databaseConnections) {
 				entry.close();
 			}
+			databaseConnections.clear();
 		}
 
 		@Override
