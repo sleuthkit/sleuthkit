@@ -2108,6 +2108,9 @@ static TSK_FS_BLOCK_FLAG_ENUM
                 // If the current version isn't allocated, then no chunks in it are
                 flags = (TSK_FS_BLOCK_FLAG_ENUM)(flags | TSK_FS_BLOCK_FLAG_UNALLOC);
             }
+            else if (obj->yco_latest == NULL || obj->yco_latest->ycv_header_chunk == NULL) { 
+                flags = (TSK_FS_BLOCK_FLAG_ENUM)(flags | TSK_FS_BLOCK_FLAG_UNALLOC); 
+            }
             else if(spare->chunk_id == 0){
                 if(obj->yco_latest->ycv_header_chunk->ycc_offset == offset - yfs->page_size){
                     // Have header chunk and it's the most recent header chunk
