@@ -4454,7 +4454,7 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
 
                     // add the runs to the attribute and the attribute to the file.
                     if (tsk_fs_attr_set_run(fs_file, fs_attr, attr_run,
-                            "DATA", TSK_FS_ATTR_TYPE_HFS_DATA,
+                            "", TSK_FS_ATTR_TYPE_HFS_DATA,
                             HFS_FS_ATTR_ID_DATA, logicalSize, logicalSize,
                             (TSK_OFF_T) tsk_getu32(fs->endian,
                                 forkx->total_blk) * fs->block_size, 0,
@@ -4477,7 +4477,7 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
                 else {
                     // logicalSize == 0, but this is either a REG or LNK file
                     // so, it should have a DATA fork attribute of zero length.
-                    if (tsk_fs_attr_set_run(fs_file, fs_attr, NULL, "DATA",
+                    if (tsk_fs_attr_set_run(fs_file, fs_attr, NULL, "",
                             TSK_FS_ATTR_TYPE_HFS_DATA, HFS_FS_ATTR_ID_DATA,
                             0, 0, 0, 0, 0)) {
                         error_returned(" - hfs_load_attrs (non-file)");
@@ -4591,7 +4591,7 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
                         "hfs_load_attrs:  Loading RSRC fork block runs as the default DATA attribute.\n");
 
                 // add the runs to the attribute and the attribute to the file.
-                if (tsk_fs_attr_set_run(fs_file, fs_attr, attr_run, "DATA",
+                if (tsk_fs_attr_set_run(fs_file, fs_attr, attr_run, "DECOMP",
                         TSK_FS_ATTR_TYPE_HFS_DATA, HFS_FS_ATTR_ID_DATA,
                         logicalSize,
                         logicalSize,
