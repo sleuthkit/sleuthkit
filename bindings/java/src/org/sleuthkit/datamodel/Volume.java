@@ -29,8 +29,8 @@ import java.util.List;
 public class Volume extends AbstractContent {
 	
 	private long addr;
-	private long start; //in sectors, relative to volume system start
-	private long length; //in sectors
+	private long startSector; //in sectors, relative to volume system start
+	private long lengthInSectors; //in sectors
 	private long flags;
 	private String desc;
 	private volatile long volumeHandle = 0;
@@ -42,16 +42,16 @@ public class Volume extends AbstractContent {
 	 * @param db database object
 	 * @param obj_id
 	 * @param addr
-	 * @param start	in sectors, relative to start of VS
-	 * @param length in sectors
+	 * @param startSector starting sector, relative to start of VS
+	 * @param lengthInSectors 
 	 * @param flags
 	 * @param desc
 	 */
-	protected Volume(SleuthkitCase db, long obj_id, long addr, long start, long length, long flags, String desc) {
+	protected Volume(SleuthkitCase db, long obj_id, long addr, long startSector, long lengthInSectors, long flags, String desc) {
 		super(db, obj_id, "vol" + Long.toString(addr)); //NON-NLS
 		this.addr = addr;
-		this.start = start;
-		this.length = length;
+		this.startSector = startSector;
+		this.lengthInSectors = lengthInSectors;
 		this.flags = flags;
 		if (!desc.equals("")) {
 			this.desc = desc;
@@ -102,8 +102,7 @@ public class Volume extends AbstractContent {
 
 	@Override
 	public long getSize() {
-		// size of the volume
-		return length;
+		return lengthInSectors * 512;
 	}
 
 	@Override
@@ -138,7 +137,7 @@ public class Volume extends AbstractContent {
 	 * @return starting address
 	 */
 	public long getStart() {
-		return start;
+		return startSector;
 	}
 
 	/**
@@ -147,7 +146,7 @@ public class Volume extends AbstractContent {
 	 * @return length
 	 */
 	public long getLength() {
-		return length;
+		return lengthInSectors;
 	}
 
 	/**
@@ -282,6 +281,6 @@ public class Volume extends AbstractContent {
 
 	@Override
 	public String toString(boolean preserveState) {
-		return super.toString(preserveState) + "Volume [\t" + "addr " + addr + "\t" + "desc " + desc + "\t" + "flags " + flags + "\t" + "length " + length + "\t" + "start " + start + "]\t"; //NON-NLS
+		return super.toString(preserveState) + "Volume [\t" + "addr " + addr + "\t" + "desc " + desc + "\t" + "flags " + flags + "\t" + "length " + lengthInSectors + "\t" + "start " + startSector + "]\t"; //NON-NLS
 	}
 }

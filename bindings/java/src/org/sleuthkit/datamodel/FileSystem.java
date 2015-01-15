@@ -76,7 +76,6 @@ public class FileSystem extends AbstractContent {
 
 	@Override
 	public long getSize() {
-		// size of the file system
 		return blockSize * blockCount;
 	}
 

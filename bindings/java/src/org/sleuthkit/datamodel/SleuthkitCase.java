@@ -273,7 +273,7 @@ public class SleuthkitCase {
 		try {
 			SleuthkitCase.logger.info(String.format("sqlite-jdbc version %s loaded in %s mode", //NON-NLS
 					SQLiteJDBCLoader.getVersion(), SQLiteJDBCLoader.isNativeMode()
-					? "native" : "pure-java")); //NON-NLS		
+							? "native" : "pure-java")); //NON-NLS		
 		} catch (Exception ex) {
 			SleuthkitCase.logger.log(Level.SEVERE, "Error querying case database mode", ex);
 		}
@@ -2397,8 +2397,6 @@ public class SleuthkitCase {
 		return ret;
 	}
 
-
-
 	/**
 	 * Checks if the file is a (sub)child of the data source (parentless Content
 	 * object such as Image or VirtualDirectory representing filesets)
@@ -2749,10 +2747,10 @@ public class SleuthkitCase {
 			Statement s = null;
 			ResultSet rs = null;
 			acquireExclusiveLock();
-			try {				
+			try {
 				localTrans = beginTransaction();
 				CaseDbConnection connection = localTrans.getConnection();
-				
+
 				// get the ID of the appropriate '$CarvedFiles' directory
 				long firstItemId = filesToAdd.get(0).getId();
 				long id = 0;
@@ -2920,7 +2918,7 @@ public class SleuthkitCase {
 				releaseExclusiveLock();
 			}
 		} else {
-			return Collections.EMPTY_LIST;
+			return Collections.emptyList();
 		}
 	}
 
@@ -3301,8 +3299,8 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Find and return list of files matching the specific Where clause.
-	 * Use findAllFilesWhere instead.  It returns a more generic data type
+	 * Find and return list of files matching the specific Where clause. Use
+	 * findAllFilesWhere instead. It returns a more generic data type
 	 *
 	 * @param sqlWhereClause a SQL where clause appropriate for the desired
 	 * files (do not begin the WHERE clause with the word WHERE!)
@@ -4117,7 +4115,7 @@ public class SleuthkitCase {
 	public void close() {
 		System.err.println(this.hashCode() + " closed"); //NON-NLS
 		System.err.flush();
-
+		connections.close();
 		fileSystemIdMap.clear();
 
 		acquireExclusiveLock();
@@ -4975,23 +4973,29 @@ public class SleuthkitCase {
 		}
 	}
 
-	/**
-	 * Provides thread confinement for connections to the underlying case
-	 * database. Note that the ThreadLocal base class releases its reference to
-	 * a per thread connection wrapper object to garbage collection when the
-	 * owning thread goes away, and we are relying on that garbage collection to
-	 * free JDBC resources - an override of finalize() by the wrapper failed to
-	 * close prepared statements because the connection is already closed. In
-	 * the future, we may wish to use a Connection pool instead.
-	 */
 	private final class ConnectionPerThreadDispenser extends ThreadLocal<CaseDbConnection> {
+		
+		private final HashSet<CaseDbConnection> databaseConnections = new HashSet<CaseDbConnection>();
 
-		CaseDbConnection getConnection() throws TskCoreException {
+		synchronized CaseDbConnection getConnection() throws TskCoreException {
 			CaseDbConnection connection = get();
 			if (!connection.isOpen()) {
 				throw new TskCoreException("Case database connection for current thread is not open");
 			}
+			databaseConnections.add(connection);
 			return connection;
+		}
+
+		/**
+		 * ****************
+		 * Close the CaseDbConnection, which in turn releases the file handle to
+		 * the database
+		 */
+		public synchronized void close() {
+			for (CaseDbConnection entry : databaseConnections) {
+				entry.close();
+			}
+			databaseConnections.clear();
 		}
 
 		@Override
@@ -5288,6 +5292,19 @@ public class SleuthkitCase {
 						throw ex;
 					}
 				}
+			}
+		}
+
+		/**
+		 * ****************
+		 * Close the connection to the database, thereby releasing the file
+		 * handle
+		 */
+		private void close() {
+			try { // close all file handles to the autopsy.db database.
+				connection.close();
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Unable to close handle to autopsy.db", ex);
 			}
 		}
 	}
