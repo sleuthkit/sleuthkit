@@ -72,7 +72,7 @@ public class SleuthkitCase {
 	private SleuthkitJNI.CaseDbHandle caseHandle; // Not currently used.
 	private int versionNumber;
 	private String dbBackupPath;
-	private Long nextArtifactId; // Used to ensure artifact ids come from the desired range.
+	private long nextArtifactId; // Used to ensure artifact ids come from the desired range.
 
 	// This read/write lock is used to implement a layer of locking on top of 
 	// the locking protocol provided by the underlying SQLite database. The Java
