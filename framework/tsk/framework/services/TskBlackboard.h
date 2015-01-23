@@ -205,7 +205,7 @@ enum TSK_ATTRIBUTE_TYPE {
     TSK_READ_STATUS = 102, ///< Message read status: 1 if read, 0 if unread
     TSK_LOCAL_PATH = 103, ///< Local path to a network share
     TSK_REMOTE_PATH = 104, ///< Remote path of the network share
-    TSK_PROCESSOR_NAME = 105, ///< Processor name
+	TSK_PROCESSOR_NAME = 105, ///< Processor name (ex: Intel64 Family 6 Model 58 Stepping 9, GenuineIntel)
     TSK_TEMP_DIR = 106, ///< Path to the default temp directory
     TSK_PRODUCT_ID = 107, ///< ID string
     TSK_OWNER = 108, ///< Registered owner for software
