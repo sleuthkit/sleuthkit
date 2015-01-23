@@ -82,6 +82,7 @@ enum TSK_ARTIFACT_TYPE {
     TSK_EXT_MISMATCH_DETECTED = 34, ///< Extension Mismatch
     TSK_INTERESTING_ARTIFACT_HIT = 35,	///< Any artifact interesting enough that it should be called out in the UI.
 	TSK_GPS_ROUTE = 36,	///< Route based on GPS coordinates
+	TSK_REMOTE_DRIVE = 37, ///< Network drive
     
     /* SEE ABOVE:
     * - KEEP JAVA CODE IN SYNC 
@@ -202,6 +203,14 @@ enum TSK_ATTRIBUTE_TYPE {
     TSK_GEO_LONGITUDE_START= 100, ///< Starting location longitude
     TSK_GEO_LONGITUDE_END = 101, ///< Ending Location longitude
     TSK_READ_STATUS = 102, ///< Message read status: 1 if read, 0 if unread
+    TSK_LOCAL_PATH = 103, ///< Local path to a network share
+    TSK_REMOTE_PATH = 104, ///< Remote path of the network share
+    TSK_PROCESSOR_NAME = 105, ///< Processor name
+    TSK_TEMP_DIR = 106, ///< Path to the default temp directory
+    TSK_PRODUCT_ID = 107, ///< ID string
+    TSK_OWNER = 108, ///< Registered owner for software
+    TSK_ORGANIZATION = 109, ///< Registered organization for software
+
     /* SEE ABOVE: 
     * - KEEP JAVA CODE IN SYNC 
     * - UPDATE map in TskBlackBoard.cpp too */
