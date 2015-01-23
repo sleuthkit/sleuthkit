@@ -59,6 +59,7 @@ public class SleuthkitCase {
 	private static final int SCHEMA_VERSION_NUMBER = 3; // This must be the same as TSK_SCHEMA_VER in tsk/auto/db_sqlite.cpp.				
 	private static final int DATABASE_LOCKED_ERROR = 0; // This should be 6 according to documentation, but it has been observed to be 0.
 	private static final int SQLITE_BUSY_ERROR = 5;
+	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private final ConnectionPerThreadDispenser connections = new ConnectionPerThreadDispenser();
@@ -71,6 +72,7 @@ public class SleuthkitCase {
 	private SleuthkitJNI.CaseDbHandle caseHandle; // Not currently used.
 	private int versionNumber;
 	private String dbBackupPath;
+	private long nextArtifactId; // Used to ensure artifact ids come from the desired range.
 
 	// This read/write lock is used to implement a layer of locking on top of 
 	// the locking protocol provided by the underlying SQLite database. The Java
@@ -94,6 +96,7 @@ public class SleuthkitCase {
 		this.caseHandle = caseHandle;
 		initBlackboardArtifactTypes();
 		initBlackboardAttributeTypes();
+		initNextArtifactId();
 		updateDatabaseSchema();
 		logSQLiteJDBCDriverInfo();
 	}
@@ -149,6 +152,31 @@ public class SleuthkitCase {
 		}
 	}
 
+	/**
+	 * Initialize the next artifact id. If there are entries in the 
+	 * blackboard_artifacts table we will use max(artifact_id) + 1
+	 * otherwise we will initialize the value to 0x8000000000000000
+	 * (the maximum negative signed long).
+	 * @throws TskCoreException
+	 * @throws SQLException 
+	 */
+	private void initNextArtifactId() throws TskCoreException, SQLException {
+		CaseDbConnection connection = connections.getConnection();
+		Statement statement = null;
+		ResultSet resultSet = null;
+		try {
+			statement = connection.createStatement();
+			resultSet = connection.executeQuery(statement, "SELECT MAX(artifact_id) FROM blackboard_artifacts");
+			this.nextArtifactId = resultSet.getLong(1) + 1;
+			if (this.nextArtifactId == 1) {
+				this.nextArtifactId = BASE_ARTIFACT_ID;
+			}
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+		}		
+	}
+	
 	/**
 	 * Modify the case database to bring it up-to-date with the current version
 	 * of the database schema.
@@ -245,7 +273,7 @@ public class SleuthkitCase {
 		try {
 			SleuthkitCase.logger.info(String.format("sqlite-jdbc version %s loaded in %s mode", //NON-NLS
 					SQLiteJDBCLoader.getVersion(), SQLiteJDBCLoader.isNativeMode()
-					? "native" : "pure-java")); //NON-NLS		
+							? "native" : "pure-java")); //NON-NLS		
 		} catch (Exception ex) {
 			SleuthkitCase.logger.log(Level.SEVERE, "Error querying case database mode", ex);
 		}
@@ -1737,25 +1765,7 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	public BlackboardArtifact newBlackboardArtifact(int artifactTypeID, long obj_id) throws TskCoreException {
-		CaseDbConnection connection = connections.getConnection();
-		acquireExclusiveLock();
-		ResultSet rs = null;
-		try {
-			String artifactTypeName = getArtifactTypeString(artifactTypeID);
-			String artifactDisplayName = getArtifactTypeDisplayName(artifactTypeID);
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_ARTIFACT);
-			statement.clearParameters();
-			statement.setLong(1, obj_id);
-			statement.setInt(2, artifactTypeID);
-			connection.executeUpdate(statement);
-			rs = statement.getGeneratedKeys();
-			return new BlackboardArtifact(this, rs.getLong(1), obj_id, artifactTypeID, artifactTypeName, artifactDisplayName);
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error creating a blackboard artifact", ex);
-		} finally {
-			closeResultSet(rs);
-			releaseExclusiveLock();
-		}
+		return newBlackboardArtifact(artifactTypeID, obj_id, getArtifactTypeString(artifactTypeID), getArtifactTypeDisplayName(artifactTypeID));
 	}
 
 	/**
@@ -1768,26 +1778,31 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	public BlackboardArtifact newBlackboardArtifact(ARTIFACT_TYPE artifactType, long obj_id) throws TskCoreException {
+		return newBlackboardArtifact(artifactType.getTypeID(), obj_id, artifactType.getLabel(), artifactType.getDisplayName());
+	}
+
+	private BlackboardArtifact newBlackboardArtifact(int artifact_type_id, long obj_id, String artifactTypeName, String artifactDisplayName) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireExclusiveLock();
 		ResultSet rs = null;
 		try {
-			final int type = artifactType.getTypeID();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_ARTIFACT);
 			statement.clearParameters();
-			statement.setLong(1, obj_id);
-			statement.setInt(2, type);
+			statement.setLong(1, this.nextArtifactId++);
+			if (this.nextArtifactId >= 0)
+				throw new TskCoreException("Error creating blackboard artifact: Artifact Id exceeds range.");
+			statement.setLong(2, obj_id);
+			statement.setInt(3, artifact_type_id);
 			connection.executeUpdate(statement);
 			rs = statement.getGeneratedKeys();
-			return new BlackboardArtifact(this, rs.getLong(1), obj_id, type, artifactType.getLabel(), artifactType.getDisplayName());
+			return new BlackboardArtifact(this, rs.getLong(1), obj_id, artifact_type_id, artifactTypeName, artifactDisplayName);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error creating a blackboard artifact", ex);
 		} finally {
 			closeResultSet(rs);
 			releaseExclusiveLock();
-		}
+		}		
 	}
-
 	/**
 	 * Checks if the content object has children. Note: this is generally more
 	 * efficient then preloading all children and checking if the set is empty,
@@ -2382,8 +2397,6 @@ public class SleuthkitCase {
 		return ret;
 	}
 
-
-
 	/**
 	 * Checks if the file is a (sub)child of the data source (parentless Content
 	 * object such as Image or VirtualDirectory representing filesets)
@@ -2734,10 +2747,10 @@ public class SleuthkitCase {
 			Statement s = null;
 			ResultSet rs = null;
 			acquireExclusiveLock();
-			try {				
+			try {
 				localTrans = beginTransaction();
 				CaseDbConnection connection = localTrans.getConnection();
-				
+
 				// get the ID of the appropriate '$CarvedFiles' directory
 				long firstItemId = filesToAdd.get(0).getId();
 				long id = 0;
@@ -2905,7 +2918,7 @@ public class SleuthkitCase {
 				releaseExclusiveLock();
 			}
 		} else {
-			return Collections.EMPTY_LIST;
+			return Collections.emptyList();
 		}
 	}
 
@@ -3286,8 +3299,8 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Find and return list of files matching the specific Where clause.
-	 * Use findAllFilesWhere instead.  It returns a more generic data type
+	 * Find and return list of files matching the specific Where clause. Use
+	 * findAllFilesWhere instead. It returns a more generic data type
 	 *
 	 * @param sqlWhereClause a SQL where clause appropriate for the desired
 	 * files (do not begin the WHERE clause with the word WHERE!)
@@ -4102,7 +4115,7 @@ public class SleuthkitCase {
 	public void close() {
 		System.err.println(this.hashCode() + " closed"); //NON-NLS
 		System.err.flush();
-
+		connections.close();
 		fileSystemIdMap.clear();
 
 		acquireExclusiveLock();
@@ -4960,23 +4973,29 @@ public class SleuthkitCase {
 		}
 	}
 
-	/**
-	 * Provides thread confinement for connections to the underlying case
-	 * database. Note that the ThreadLocal base class releases its reference to
-	 * a per thread connection wrapper object to garbage collection when the
-	 * owning thread goes away, and we are relying on that garbage collection to
-	 * free JDBC resources - an override of finalize() by the wrapper failed to
-	 * close prepared statements because the connection is already closed. In
-	 * the future, we may wish to use a Connection pool instead.
-	 */
 	private final class ConnectionPerThreadDispenser extends ThreadLocal<CaseDbConnection> {
+		
+		private final HashSet<CaseDbConnection> databaseConnections = new HashSet<CaseDbConnection>();
 
-		CaseDbConnection getConnection() throws TskCoreException {
+		synchronized CaseDbConnection getConnection() throws TskCoreException {
 			CaseDbConnection connection = get();
 			if (!connection.isOpen()) {
 				throw new TskCoreException("Case database connection for current thread is not open");
 			}
+			databaseConnections.add(connection);
 			return connection;
+		}
+
+		/**
+		 * ****************
+		 * Close the CaseDbConnection, which in turn releases the file handle to
+		 * the database
+		 */
+		public synchronized void close() {
+			for (CaseDbConnection entry : databaseConnections) {
+				entry.close();
+			}
+			databaseConnections.clear();
 		}
 
 		@Override
@@ -5022,7 +5041,7 @@ public class SleuthkitCase {
 					+ "AND tsk_files.type = ? )"), //NON-NLS
 			SELECT_FILE_BY_ID("SELECT * FROM tsk_files WHERE obj_id = ? LIMIT 1"), //NON-NLS
 			INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id) " //NON-NLS
-					+ "VALUES (NULL, ?, ?)"), //NON-NLS
+					+ "VALUES (?, ?, ?)"), //NON-NLS
 			INSERT_STRING_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_text) " //NON-NLS
 					+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
 			INSERT_BYTE_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_byte) " //NON-NLS
@@ -5273,6 +5292,19 @@ public class SleuthkitCase {
 						throw ex;
 					}
 				}
+			}
+		}
+
+		/**
+		 * ****************
+		 * Close the connection to the database, thereby releasing the file
+		 * handle
+		 */
+		private void close() {
+			try { // close all file handles to the autopsy.db database.
+				connection.close();
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Unable to close handle to autopsy.db", ex);
 			}
 		}
 	}

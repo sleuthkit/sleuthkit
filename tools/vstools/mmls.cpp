@@ -57,24 +57,24 @@ static TSK_WALK_RET_ENUM
 part_act(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void *ptr)
 {
     if (part->flags & TSK_VS_PART_FLAG_META)
-        tsk_printf("%.2" PRIuPNUM ":  Meta    ", part->addr);
+        tsk_printf("%.3" PRIuPNUM ":  Meta      ", part->addr);
 
     /* Neither table or slot were given */
     else if ((part->table_num == -1) && (part->slot_num == -1))
-        tsk_printf("%.2" PRIuPNUM ":  -----   ", part->addr);
+        tsk_printf("%.3" PRIuPNUM ":  -------   ", part->addr);
 
     /* Table was not given, but slot was */
     else if ((part->table_num == -1) && (part->slot_num != -1))
-        tsk_printf("%.2" PRIuPNUM ":  %.2" PRIu8 "      ",
+        tsk_printf("%.3" PRIuPNUM ":  %.3" PRIu8 "       ",
             part->addr, part->slot_num);
 
     /* The Table was given, but slot wasn't */
     else if ((part->table_num != -1) && (part->slot_num == -1))
-        tsk_printf("%.2" PRIuPNUM ":  -----   ", part->addr);
+        tsk_printf("%.3" PRIuPNUM ":  -------   ", part->addr);
 
     /* Both table and slot were given */
     else if ((part->table_num != -1) && (part->slot_num != -1))
-        tsk_printf("%.2" PRIuPNUM ":  %.2d:%.2d   ",
+        tsk_printf("%.3" PRIuPNUM ":  %.3d:%.3d   ",
             part->addr, part->table_num, part->slot_num);
 
     if (print_bytes) {
@@ -86,12 +86,12 @@ part_act(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void *ptr)
             size /= 1024;
             unit = 'K';
         }
-        
+
         if (size > 1024) {
             size /= 1024;
             unit = 'M';
         }
-        
+
         if (size > 1024) {
             size /= 1024;
             unit = 'G';
@@ -101,8 +101,7 @@ part_act(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void *ptr)
             size /= 1024;
             unit = 'T';
         }
-        
-        
+
         /* Print the layout */
         tsk_printf("%.10" PRIuDADDR "   %.10" PRIuDADDR "   %.10" PRIuDADDR
             "   %.4" PRIuOFF "%c   %s\n", part->start,
@@ -135,10 +134,10 @@ print_header(const TSK_VS_INFO * vs)
     tsk_printf("Units are in %d-byte sectors\n\n", vs->block_size);
     if (print_bytes)
         tsk_printf
-            ("     Slot    Start        End          Length       Size    Description\n");
+            ("      Slot      Start        End          Length       Size    Description\n");
     else
         tsk_printf
-            ("     Slot    Start        End          Length       Description\n");
+            ("      Slot      Start        End          Length       Description\n");
 }
 
 
