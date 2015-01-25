@@ -125,6 +125,8 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
                                      bundle.getString("BlackboardArtifact.tskInterestingArtifactHit.text")),	// Any artifact that should be called out
         TSK_GPS_ROUTE(36, "TSK_GPS_ROUTE", //NON-NLS
                       bundle.getString("BlackboardArtifact.tskGpsRoute.text")),	// Route based on GPS coordinates
+        TSK_REMOTE_DRIVE(37, "TSK_REMOTE_DRIVE", //NON-NLS
+                    bundle.getString("BlackboardArtifact.tskRemoteDrive.text")),
         ; 
 
 		/* SEE ABOVE -- KEEP C++ CODE IN SYNC */

@@ -48,6 +48,7 @@ map<int, TskArtifactNames> initializeArtifactTypeMap(){
     retval.insert(pair<int, TskArtifactNames>(TSK_EXT_MISMATCH_DETECTED, TskArtifactNames("TSK_EXT_MISMATCH_DETECTED", "Extension Mismatch Detected")));
     retval.insert(pair<int, TskArtifactNames>(TSK_INTERESTING_ARTIFACT_HIT, TskArtifactNames("TSK_INTERESTING_ARTIFACT_HIT", "Interesting Results")));
     retval.insert(pair<int, TskArtifactNames>(TSK_GPS_ROUTE, TskArtifactNames("TSK_GPS_ROUTE", "GPS Route")));
+    retval.insert(pair<int, TskArtifactNames>(TSK_REMOTE_DRIVE, TskArtifactNames("TSK_REMOTE_DRIVE", "Remote Drive")));
 
     return retval;
 }
@@ -153,6 +154,13 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
     retval.insert(pair<int, TskAttributeNames>(TSK_GEO_LONGITUDE_START, TskAttributeNames("TSK_GEO_LONGITUDE_START", "Starting Longitude")));
     retval.insert(pair<int, TskAttributeNames>(TSK_GEO_LONGITUDE_END, TskAttributeNames("TSK_GEO_LONGITUDE_END", "Ending Longitude")));
     retval.insert(pair<int, TskAttributeNames>(TSK_READ_STATUS, TskAttributeNames("TSK_READ_STATUS",  "Read")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_LOCAL_PATH, TskAttributeNames("TSK_LOCAL_PATH",  "Local Path")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_REMOTE_PATH, TskAttributeNames("TSK_REMOTE_PATH",  "Remote Path")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_PROCESSOR_NAME, TskAttributeNames("TSK_PROCESSOR_NAME",  "Processor Name")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_TEMP_DIR, TskAttributeNames("TSK_TEMP_DIR",  "Temporary Files Directory")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_PRODUCT_ID, TskAttributeNames("TSK_PRODUCT_ID",  "Product ID")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_OWNER, TskAttributeNames("TSK_OWNER",  "Owner")));
+    retval.insert(pair<int, TskAttributeNames>(TSK_ORGANIZATION, TskAttributeNames("TSK_ORGANIZATION",  "Organization")));
 
     return retval;
 }
