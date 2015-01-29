@@ -957,11 +957,11 @@ fatfs_istat(TSK_FS_INFO *a_fs, FILE *a_hFile, TSK_INUM_T a_inum,
         tsk_fprintf(a_hFile, "Created:\t%s\n",
             tsk_fs_time_to_str(fs_meta->crtime, timeBuf));
 
-        if (fs_meta->mtime == 0)
+        if (fs_meta->mtime)
             fs_meta->mtime += a_sec_skew;
-        if (fs_meta->atime == 0)
+        if (fs_meta->atime)
             fs_meta->atime += a_sec_skew;
-        if (fs_meta->crtime == 0)
+        if (fs_meta->crtime)
             fs_meta->crtime += a_sec_skew;
 
         tsk_fprintf(a_hFile, "\nOriginal Directory Entry Times:\n");

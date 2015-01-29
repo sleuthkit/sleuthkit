@@ -2153,11 +2153,11 @@ iso9660_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         tsk_fprintf(hFile, "Created:\t%s\n",
             tsk_fs_time_to_str(fs_file->meta->crtime, timeBuf));
 
-        if (fs_file->meta->mtime == 0)
+        if (fs_file->meta->mtime)
             fs_file->meta->mtime += sec_skew;
-        if (fs_file->meta->atime == 0)
+        if (fs_file->meta->atime)
             fs_file->meta->atime += sec_skew;
-        if (fs_file->meta->crtime == 0)
+        if (fs_file->meta->crtime)
             fs_file->meta->crtime += sec_skew;
 
 

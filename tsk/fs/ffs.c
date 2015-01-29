@@ -1740,11 +1740,11 @@ ffs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         tsk_fprintf(hFile, "Inode Modified:\t%s\n",
             tsk_fs_time_to_str(fs_meta->ctime, timeBuf));
 
-        if (fs_meta->mtime == 0)
+        if (fs_meta->mtime)
             fs_meta->mtime += sec_skew;
-        if (fs_meta->atime == 0)
+        if (fs_meta->atime)
             fs_meta->atime += sec_skew;
-        if (fs_meta->ctime == 0)
+        if (fs_meta->ctime)
             fs_meta->ctime += sec_skew;
 
         tsk_fprintf(hFile, "\nOriginal Inode Times:\n");
