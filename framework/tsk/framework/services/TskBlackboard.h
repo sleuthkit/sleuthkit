@@ -32,6 +32,9 @@ using namespace std;
  * Built in artifact types.
  * Refer to http://wiki.sleuthkit.org/index.php?title=Artifact_Examples
  * for details on which attributes should be used for each artifact.
+ *
+ * Refer to http://wiki.sleuthkit.org/index.php?title=Adding_Artifacts_and_Attributes
+ * for checklist of steps to add new artifacts and attributes.
  */
 
 /* Note that the below comments are the only documentation 
@@ -87,6 +90,8 @@ enum TSK_ARTIFACT_TYPE {
     /* SEE ABOVE:
     * - KEEP JAVA CODE IN SYNC 
     * - UPDATE map in TskBlackboard.cpp
+	* - UPDATE Autopsy report module to display the new data
+	*     Core/src/org/sleuthkit/autopsy/report/ReportGenerator.java
     * - Update Wiki to reflect the attributes that should be part of the artifact. 
     */
 };
@@ -205,11 +210,10 @@ enum TSK_ATTRIBUTE_TYPE {
     TSK_READ_STATUS = 102, ///< Message read status: 1 if read, 0 if unread
     TSK_LOCAL_PATH = 103, ///< Local path to a network share
     TSK_REMOTE_PATH = 104, ///< Remote path of the network share
-	TSK_PROCESSOR_NAME = 105, ///< Processor name (ex: Intel64 Family 6 Model 58 Stepping 9, GenuineIntel)
-    TSK_TEMP_DIR = 106, ///< Path to the default temp directory
-    TSK_PRODUCT_ID = 107, ///< ID string
-    TSK_OWNER = 108, ///< Registered owner for software
-    TSK_ORGANIZATION = 109, ///< Registered organization for software
+    TSK_TEMP_DIR = 105, ///< Path to the default temp directory
+    TSK_PRODUCT_ID = 106, ///< ID string
+    TSK_OWNER = 107, ///< Registered owner for software
+    TSK_ORGANIZATION = 108, ///< Registered organization for software
 
     /* SEE ABOVE: 
     * - KEEP JAVA CODE IN SYNC 
