@@ -59,6 +59,7 @@ public class SleuthkitCase {
 	private static final int SCHEMA_VERSION_NUMBER = 3; // This must be the same as TSK_SCHEMA_VER in tsk/auto/db_sqlite.cpp.				
 	private static final int DATABASE_LOCKED_ERROR = 0; // This should be 6 according to documentation, but it has been observed to be 0.
 	private static final int SQLITE_BUSY_ERROR = 5;
+	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private final ConnectionPerThreadDispenser connections = new ConnectionPerThreadDispenser();
@@ -71,6 +72,7 @@ public class SleuthkitCase {
 	private SleuthkitJNI.CaseDbHandle caseHandle; // Not currently used.
 	private int versionNumber;
 	private String dbBackupPath;
+	private long nextArtifactId; // Used to ensure artifact ids come from the desired range.
 
 	// This read/write lock is used to implement a layer of locking on top of 
 	// the locking protocol provided by the underlying SQLite database. The Java
@@ -94,6 +96,7 @@ public class SleuthkitCase {
 		this.caseHandle = caseHandle;
 		initBlackboardArtifactTypes();
 		initBlackboardAttributeTypes();
+		initNextArtifactId();
 		updateDatabaseSchema();
 		logSQLiteJDBCDriverInfo();
 	}
@@ -149,6 +152,31 @@ public class SleuthkitCase {
 		}
 	}
 
+	/**
+	 * Initialize the next artifact id. If there are entries in the 
+	 * blackboard_artifacts table we will use max(artifact_id) + 1
+	 * otherwise we will initialize the value to 0x8000000000000000
+	 * (the maximum negative signed long).
+	 * @throws TskCoreException
+	 * @throws SQLException 
+	 */
+	private void initNextArtifactId() throws TskCoreException, SQLException {
+		CaseDbConnection connection = connections.getConnection();
+		Statement statement = null;
+		ResultSet resultSet = null;
+		try {
+			statement = connection.createStatement();
+			resultSet = connection.executeQuery(statement, "SELECT MAX(artifact_id) FROM blackboard_artifacts");
+			this.nextArtifactId = resultSet.getLong(1) + 1;
+			if (this.nextArtifactId == 1) {
+				this.nextArtifactId = BASE_ARTIFACT_ID;
+			}
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+		}		
+	}
+	
 	/**
 	 * Modify the case database to bring it up-to-date with the current version
 	 * of the database schema.
@@ -1737,25 +1765,7 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	public BlackboardArtifact newBlackboardArtifact(int artifactTypeID, long obj_id) throws TskCoreException {
-		CaseDbConnection connection = connections.getConnection();
-		acquireExclusiveLock();
-		ResultSet rs = null;
-		try {
-			String artifactTypeName = getArtifactTypeString(artifactTypeID);
-			String artifactDisplayName = getArtifactTypeDisplayName(artifactTypeID);
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_ARTIFACT);
-			statement.clearParameters();
-			statement.setLong(1, obj_id);
-			statement.setInt(2, artifactTypeID);
-			connection.executeUpdate(statement);
-			rs = statement.getGeneratedKeys();
-			return new BlackboardArtifact(this, rs.getLong(1), obj_id, artifactTypeID, artifactTypeName, artifactDisplayName);
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error creating a blackboard artifact", ex);
-		} finally {
-			closeResultSet(rs);
-			releaseExclusiveLock();
-		}
+		return newBlackboardArtifact(artifactTypeID, obj_id, getArtifactTypeString(artifactTypeID), getArtifactTypeDisplayName(artifactTypeID));
 	}
 
 	/**
@@ -1768,26 +1778,31 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	public BlackboardArtifact newBlackboardArtifact(ARTIFACT_TYPE artifactType, long obj_id) throws TskCoreException {
+		return newBlackboardArtifact(artifactType.getTypeID(), obj_id, artifactType.getLabel(), artifactType.getDisplayName());
+	}
+
+	private BlackboardArtifact newBlackboardArtifact(int artifact_type_id, long obj_id, String artifactTypeName, String artifactDisplayName) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireExclusiveLock();
 		ResultSet rs = null;
 		try {
-			final int type = artifactType.getTypeID();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_ARTIFACT);
 			statement.clearParameters();
-			statement.setLong(1, obj_id);
-			statement.setInt(2, type);
+			statement.setLong(1, this.nextArtifactId++);
+			if (this.nextArtifactId >= 0)
+				throw new TskCoreException("Error creating blackboard artifact: Artifact Id exceeds range.");
+			statement.setLong(2, obj_id);
+			statement.setInt(3, artifact_type_id);
 			connection.executeUpdate(statement);
 			rs = statement.getGeneratedKeys();
-			return new BlackboardArtifact(this, rs.getLong(1), obj_id, type, artifactType.getLabel(), artifactType.getDisplayName());
+			return new BlackboardArtifact(this, rs.getLong(1), obj_id, artifact_type_id, artifactTypeName, artifactDisplayName);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error creating a blackboard artifact", ex);
 		} finally {
 			closeResultSet(rs);
 			releaseExclusiveLock();
-		}
+		}		
 	}
-
 	/**
 	 * Checks if the content object has children. Note: this is generally more
 	 * efficient then preloading all children and checking if the set is empty,
@@ -5026,7 +5041,7 @@ public class SleuthkitCase {
 					+ "AND tsk_files.type = ? )"), //NON-NLS
 			SELECT_FILE_BY_ID("SELECT * FROM tsk_files WHERE obj_id = ? LIMIT 1"), //NON-NLS
 			INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id) " //NON-NLS
-					+ "VALUES (NULL, ?, ?)"), //NON-NLS
+					+ "VALUES (?, ?, ?)"), //NON-NLS
 			INSERT_STRING_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_text) " //NON-NLS
 					+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
 			INSERT_BYTE_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_byte) " //NON-NLS
