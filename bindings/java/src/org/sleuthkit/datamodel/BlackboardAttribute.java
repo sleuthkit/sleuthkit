@@ -318,15 +318,13 @@ public class BlackboardAttribute {
                     bundle.getString("BlackboardAttribute.tskLocalPath.text")), // Local path to a network drive
         TSK_REMOTE_PATH(104, "TSK_REMOTE_PATH", //NON-NLS
                     bundle.getString("BlackboardAttribute.tskRemotePath.text")), // Remote path of a network drive
-        TSK_PROCESSOR_NAME(105, "TSK_PROCESSOR_NAME", //NON-NLS
-                    bundle.getString("BlackboardAttribute.tskProcessorName.text")), // Processor name
-        TSK_TEMP_DIR(106, "TSK_TEMP_DIR", //NON-NLS
+        TSK_TEMP_DIR(105, "TSK_TEMP_DIR", //NON-NLS
                     bundle.getString("BlackboardAttribute.tskTempDir.text")), // Default temporary files directory
-        TSK_PRODUCT_ID(107, "TSK_PRODUCT_ID", //NON-NLS
+        TSK_PRODUCT_ID(106, "TSK_PRODUCT_ID", //NON-NLS
                     bundle.getString("BlackboardAttribute.tskProductId.text")), // Product ID
-        TSK_OWNER(108, "TSK_OWNER", //NON-NLS
+        TSK_OWNER(107, "TSK_OWNER", //NON-NLS
                     bundle.getString("BlackboardAttribute.tskOwner.text")), // Registered owner of a piece of software
-        TSK_ORGANIZATION(109, "TSK_ORGANIZATION", //NON-NLS
+        TSK_ORGANIZATION(108, "TSK_ORGANIZATION", //NON-NLS
                     bundle.getString("BlackboardAttribute.tskOrganization.text")), // Registered Organization for a piece of software
 		
 		;

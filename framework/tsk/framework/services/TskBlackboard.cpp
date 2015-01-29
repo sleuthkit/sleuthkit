@@ -156,7 +156,6 @@ map<int, TskAttributeNames> initializeAttributeTypeMap(){
     retval.insert(pair<int, TskAttributeNames>(TSK_READ_STATUS, TskAttributeNames("TSK_READ_STATUS",  "Read")));
     retval.insert(pair<int, TskAttributeNames>(TSK_LOCAL_PATH, TskAttributeNames("TSK_LOCAL_PATH",  "Local Path")));
     retval.insert(pair<int, TskAttributeNames>(TSK_REMOTE_PATH, TskAttributeNames("TSK_REMOTE_PATH",  "Remote Path")));
-    retval.insert(pair<int, TskAttributeNames>(TSK_PROCESSOR_NAME, TskAttributeNames("TSK_PROCESSOR_NAME",  "Processor Name")));
     retval.insert(pair<int, TskAttributeNames>(TSK_TEMP_DIR, TskAttributeNames("TSK_TEMP_DIR",  "Temporary Files Directory")));
     retval.insert(pair<int, TskAttributeNames>(TSK_PRODUCT_ID, TskAttributeNames("TSK_PRODUCT_ID",  "Product ID")));
     retval.insert(pair<int, TskAttributeNames>(TSK_OWNER, TskAttributeNames("TSK_OWNER",  "Owner")));
