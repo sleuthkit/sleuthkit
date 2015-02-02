@@ -4293,13 +4293,13 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
             tsk_fprintf(hFile, "Accessed:\t%s\n",
                 tsk_fs_time_to_str(fs_file->meta->atime, timeBuf));
 
-            if (fs_file->meta->mtime == 0)
+            if (fs_file->meta->mtime)
                 fs_file->meta->mtime += sec_skew;
-            if (fs_file->meta->atime == 0)
+            if (fs_file->meta->atime)
                 fs_file->meta->atime += sec_skew;
-            if (fs_file->meta->ctime == 0)
+            if (fs_file->meta->ctime)
                 fs_file->meta->ctime += sec_skew;
-            if (fs_file->meta->crtime == 0)
+            if (fs_file->meta->crtime)
                 fs_file->meta->crtime += sec_skew;
 
             tsk_fprintf(hFile, "\nOriginal times:\n");
@@ -4408,13 +4408,13 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
             tsk_fprintf(hFile, "Accessed:\t%s\n",
                         tsk_fs_time_to_str(fs_file->meta->time2.ntfs.fn_atime, timeBuf));
             
-            if (fs_file->meta->time2.ntfs.fn_mtime == 0)
+            if (fs_file->meta->time2.ntfs.fn_mtime)
                 fs_file->meta->time2.ntfs.fn_mtime += sec_skew;
-            if (fs_file->meta->time2.ntfs.fn_atime == 0)
+            if (fs_file->meta->time2.ntfs.fn_atime)
                 fs_file->meta->time2.ntfs.fn_atime += sec_skew;
-            if (fs_file->meta->time2.ntfs.fn_ctime == 0)
+            if (fs_file->meta->time2.ntfs.fn_ctime)
                 fs_file->meta->time2.ntfs.fn_ctime += sec_skew;
-            if (fs_file->meta->time2.ntfs.fn_crtime == 0)
+            if (fs_file->meta->time2.ntfs.fn_crtime)
                 fs_file->meta->time2.ntfs.fn_crtime += sec_skew;
             
             tsk_fprintf(hFile, "\nOriginal times:\n");
