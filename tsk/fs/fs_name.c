@@ -397,6 +397,7 @@ tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
     uint8_t print_path)
 {
     size_t i;
+    char *buf;
 
     /* type of file - based on dentry type */
     if (fs_file->name->type < TSK_FS_NAME_TYPE_STR_MAX)
@@ -451,37 +452,40 @@ tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
                 flags & TSK_FS_NAME_FLAG_UNALLOC)) ? "(realloc)" : "");
 
     if ((print_path) && (a_path != NULL)) {
-        for (i = 0; i < strlen(a_path); i++) {
-            if (TSK_IS_CNTRL(a_path[i]))
-                tsk_fprintf(hFile, "^");
-            else
-                tsk_fprintf(hFile, "%c", a_path[i]);
+        buf = malloc(strlen(a_path) + 1);
+        strcpy(buf, a_path);
+        for (i = 0; i < strlen(buf); i++) {
+            if (TSK_IS_CNTRL(buf[i])) buf[i] = '^';
         }
+        tsk_fprintf(hFile, "%s", buf);
+        free(buf);
     }
 
-    for (i = 0; i < strlen(fs_file->name->name); i++) {
-        if (TSK_IS_CNTRL(fs_file->name->name[i]))
-            tsk_fprintf(hFile, "^");
-        else
-            tsk_fprintf(hFile, "%c", fs_file->name->name[i]);
+    buf = malloc(strlen(fs_file->name->name) + 1);
+    strcpy(buf, fs_file->name->name);
+    for (i = 0; i < strlen(buf); i++) {
+        if (TSK_IS_CNTRL(buf[i])) buf[i] = '^';
     }
+    tsk_fprintf(hFile, "%s", buf);
+    free(buf);
 
-/*  This will add the short name in parentheses
-    if (fs_file->name->shrt_name != NULL && fs_file->name->shrt_name[0] != '\0')
-	tsk_fprintf(hFile, " (%s)", fs_file->name->shrt_name);
-*/
+    /*  This will add the short name in parentheses
+        if (fs_file->name->shrt_name != NULL && fs_file->name->shrt_name[0] != '\0')
+        tsk_fprintf(hFile, " (%s)", fs_file->name->shrt_name);
+        */
 
     /* print the data stream name if we the non-data NTFS stream */
     if ((fs_attr) && (fs_attr->name)) {
         if ((fs_attr->type != TSK_FS_ATTR_TYPE_NTFS_IDXROOT) ||
             (strcmp(fs_attr->name, "$I30") != 0)) {
             tsk_fprintf(hFile, ":");
-            for (i = 0; i < strlen(fs_attr->name); i++) {
-                if (TSK_IS_CNTRL(fs_attr->name[i]))
-                    tsk_fprintf(hFile, "^");
-                else
-                    tsk_fprintf(hFile, "%c", fs_attr->name[i]);
+            buf = malloc(strlen(fs_attr->name) + 1);
+            strcpy(buf, fs_attr->name);
+            for (i = 0; i < strlen(buf); i++) {
+                if (TSK_IS_CNTRL(buf[i])) buf[i] = '^';
             }
+            tsk_fprintf(hFile, "%s", buf);
+            free(buf);
         }
     }
 
@@ -615,6 +619,7 @@ tsk_fs_name_print_mac_md5(FILE * hFile, const TSK_FS_FILE * fs_file,
     char ls[12];
     size_t i;
     uint8_t isADS = 0;
+    char *buf;
 
     if ((!hFile) || (!fs_file))
         return;
@@ -647,30 +652,32 @@ tsk_fs_name_print_mac_md5(FILE * hFile, const TSK_FS_FILE * fs_file,
 
     // remove any control chars as we print the names
     if (a_path != NULL) {
-        for (i = 0; i < strlen(a_path); i++) {
-            if (TSK_IS_CNTRL(a_path[i]))
-                tsk_fprintf(hFile, "^");
-            else
-                tsk_fprintf(hFile, "%c", a_path[i]);
+        buf = malloc(strlen(a_path) + 1);
+        strcpy(buf, a_path);
+        for (i = 0; i < strlen(buf); i++) {
+            if (TSK_IS_CNTRL(buf[i])) buf[i] = '^';
         }
+        tsk_fprintf(hFile, "%s", buf);
+        free(buf);
     }
-
-    for (i = 0; i < strlen(fs_file->name->name); i++) {
-        if (TSK_IS_CNTRL(fs_file->name->name[i]))
-            tsk_fprintf(hFile, "^");
-        else
-            tsk_fprintf(hFile, "%c", fs_file->name->name[i]);
+    buf = malloc(strlen(fs_file->name->name) + 1);
+    strcpy(buf, fs_file->name->name);
+    for (i = 0; i < strlen(buf); i++) {
+        if (TSK_IS_CNTRL(buf[i])) buf[i] = '^';
     }
+    tsk_fprintf(hFile, "%s", buf);
+    free(buf);
 
     /* print the data stream name if it exists and is not the default NTFS */
     if (isADS) {
         tsk_fprintf(hFile, ":");
-        for (i = 0; i < strlen(fs_attr->name); i++) {
-            if (TSK_IS_CNTRL(fs_attr->name[i]))
-                tsk_fprintf(hFile, "^");
-            else
-                tsk_fprintf(hFile, "%c", fs_attr->name[i]);
+        buf = malloc(strlen(fs_attr->name) + 1);
+        strcpy(buf, fs_attr->name);
+        for (i = 0; i < strlen(buf); i++) {
+            if (TSK_IS_CNTRL(buf[i])) buf[i] = '^';
         }
+        tsk_fprintf(hFile, "%s", buf);
+        free(buf);
     }
 
     // special label if FNAME
