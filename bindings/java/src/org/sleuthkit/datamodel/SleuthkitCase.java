@@ -1789,8 +1789,6 @@ public class SleuthkitCase {
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_ARTIFACT);
 			statement.clearParameters();
 			statement.setLong(1, this.nextArtifactId++);
-			if (this.nextArtifactId >= 0)
-				throw new TskCoreException("Error creating blackboard artifact: Artifact Id exceeds range.");
 			statement.setLong(2, obj_id);
 			statement.setInt(3, artifact_type_id);
 			connection.executeUpdate(statement);
