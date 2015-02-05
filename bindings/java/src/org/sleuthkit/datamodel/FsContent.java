@@ -39,7 +39,7 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 public abstract class FsContent extends AbstractFile {
 
 	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
-    private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
+    private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	///read only database tsk_files fields
 	protected final long fsObjId;
 	private String uniquePath;
@@ -116,6 +116,7 @@ public abstract class FsContent extends AbstractFile {
 	 * Get the parent file system
 	 *
 	 * @return the file system object of the parent
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public FileSystem getFileSystem() throws TskCoreException {
 		if (parentFileSystem == null) {
@@ -169,14 +170,13 @@ public abstract class FsContent extends AbstractFile {
 
 	@Override
 	public boolean isRoot() {
-		FileSystem fs = null;
 		try {
-			fs = getFileSystem();
+			FileSystem fs = getFileSystem();
+			return fs.getRoot_inum() == this.getMetaAddr();
 		} catch (TskCoreException ex) {
 			logger.log(Level.SEVERE, "Exception while calling 'getFileSystem' on " + this, ex); //NON-NLS
 			return false;
 		}
-		return fs.getRoot_inum() == this.getMetaAddr();
 	}
 
 	/*
@@ -219,7 +219,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @return List of text, one string per line.
 	 * @throws TskCoreException 
 	 */
-	public List<String> getMetaDataText() throws TskCoreException {
+	public synchronized List<String> getMetaDataText() throws TskCoreException {
 		if (metaDataText != null) {
 			return metaDataText;
 		}
