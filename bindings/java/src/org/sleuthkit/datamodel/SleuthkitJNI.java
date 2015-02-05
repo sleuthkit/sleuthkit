@@ -554,7 +554,8 @@ public class SleuthkitJNI {
 				}
 				lines.add(line);
 			}
-		
+			textReader.close();
+			fr.close();
 			tmp.delete();
 			return lines;
 		} catch (IOException ex) {

@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.logging.Level;
@@ -220,6 +221,13 @@ public abstract class FsContent extends AbstractFile {
 	 */
 	public List<String> getMetaDataText() throws TskCoreException {
 		if (metaDataText != null) {
+			return metaDataText;
+		}
+		
+		// if there is no metadata for this file, return empty string
+		if (metaAddr == 0) {
+			metaDataText = new ArrayList<String>();
+			metaDataText.add("");
 			return metaDataText;
 		}
 		
