@@ -18,10 +18,10 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.List;
+import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.ResourceBundle;
-
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -44,6 +44,8 @@ public abstract class FsContent extends AbstractFile {
 	private String uniquePath;
 	///read-write database tsk_files fields
 	private final SleuthkitCase tskCase;
+	
+	private List<String> metaDataText = null;
 	
 	/**
 	 * parent file system
@@ -124,6 +126,21 @@ public abstract class FsContent extends AbstractFile {
 		}
 		return parentFileSystem;
 	}
+	
+	/**
+	 * Open JNI file handle if it is not open already
+	 * 
+	 * @throws TskCoreException 
+	 */
+	private void loadFileHandle() throws TskCoreException {
+		if (fileHandle == 0) {
+			synchronized (this) {
+				if (fileHandle == 0) {
+					fileHandle = SleuthkitJNI.openFile(getFileSystem().getFileSystemHandle(), metaAddr, attrType, attrId);
+				}
+			}
+		}
+	}
 
 	@Override
     @SuppressWarnings("deprecation")
@@ -133,13 +150,7 @@ public abstract class FsContent extends AbstractFile {
 				//special case for 0-size file
 				return 0;
 			}
-			if (fileHandle == 0) {
-				synchronized (this) {
-					if (fileHandle == 0) {
-						fileHandle = SleuthkitJNI.openFile(getFileSystem().getFileSystemHandle(), metaAddr, attrType, attrId);
-					}
-				}
-			}
+			loadFileHandle();
 			return SleuthkitJNI.readFile(fileHandle, buf, offset, len);
 		}
 		catch (TskCoreException ex) {
@@ -197,6 +208,24 @@ public abstract class FsContent extends AbstractFile {
 			uniquePath = sb.toString();
 		}
 		return uniquePath;
+	}
+	
+	/**
+	 * Return a text-based description of the file's metadata.
+	 * This is the same content as the TSK istat tool produces.
+	 * Is different information for each type of file system.
+	 * 
+	 * @return List of text, one string per line.
+	 * @throws TskCoreException 
+	 */
+	public List<String> getMetaDataText() throws TskCoreException {
+		if (metaDataText != null) {
+			return metaDataText;
+		}
+		
+		loadFileHandle();
+		metaDataText = SleuthkitJNI.getFileMetaDataText(fileHandle);
+		return metaDataText;
 	}
 
 	@Override

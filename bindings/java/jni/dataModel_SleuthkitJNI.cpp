@@ -1604,6 +1604,48 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat(JNIEnv * env,
 }
 
 
+/**
+ * Runs istat on a given file and saves the output to a temp file.
+ *
+ * @returns -1 on error (and throws exception)
+ */
+JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_saveFileMetaDataTextNat
+  (JNIEnv *env, jclass obj, jlong a_file_handle, jstring a_tmp_path)
+{
+    const TSK_JNI_FILEHANDLE *file_handle = castFsFile(env, a_file_handle);
+    if (file_handle == 0) {
+        //exception already set
+        return -1;
+    }
+    
+    // check the pointers
+    if (file_handle->fs_file == NULL || file_handle->fs_file->fs_info == NULL || file_handle->fs_file->meta == NULL) {
+        setThrowTskCoreError(env, "NULL pointers for istat file.");
+        return -1;
+    }
+    TSK_FS_INFO *fs_info = file_handle->fs_file->fs_info;   
+
+    // open a file to write the details to
+    jboolean isCopy;
+    char *str8 = (char *) env->GetStringUTFChars(a_tmp_path, &isCopy);
+    FILE *hFile = fopen(str8, "w");
+    if (hFile == NULL) {
+        env->ReleaseStringUTFChars(a_tmp_path, str8);
+        setThrowTskCoreError(env, "Couldn't open istat temp file for writing.");
+        return -1;
+    }
+    env->ReleaseStringUTFChars(a_tmp_path, str8);
+    
+    if (fs_info->istat(fs_info, hFile, file_handle->fs_file->meta->addr, 0, 0) != 0) {
+        fclose(hFile);
+        setThrowTskCoreError(env);
+        return -1;
+    }
+
+    fclose(hFile);
+    return 0;
+}
+
 /*
  * Close the given image
  * @param env pointer to java environment this was called from

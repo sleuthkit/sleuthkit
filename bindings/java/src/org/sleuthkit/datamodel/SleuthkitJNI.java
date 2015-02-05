@@ -18,11 +18,15 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.GregorianCalendar;
-import java.util.List;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
@@ -121,6 +125,8 @@ public class SleuthkitJNI {
 
 	private static native int readFileNat(long fileHandle, byte[] readBuffer, long offset, long len) throws TskCoreException;
 
+	private static native int saveFileMetaDataTextNat(long fileHandle, String fileName) throws TskCoreException;
+	
 	//close functions
 	private static native void closeImgNat(long imgHandle);
 
@@ -523,6 +529,39 @@ public class SleuthkitJNI {
 	public static int readFile(long fileHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
 		return readFileNat(fileHandle, readBuffer, offset, len);
 	}
+	
+	
+	/**
+	 * Get human readable (some what) details about a file. This is the same as the 'istat' TSK tool
+	 * @param fileHandle pointer to file structure in the sleuthkit
+	 * @return text
+	 * @throws TskCoreException if errors occurred
+	 */
+	public static List<String> getFileMetaDataText(long fileHandle) throws TskCoreException {
+		try {
+			java.io.File tmp = java.io.File.createTempFile("tsk", ".txt");
+			
+			saveFileMetaDataTextNat(fileHandle, tmp.getAbsolutePath());
+			
+			FileReader fr = new FileReader(tmp.getAbsolutePath());
+			BufferedReader textReader = new BufferedReader(fr);
+			
+			List<String> lines = new ArrayList<String>();
+			while (true) {
+				String line = textReader.readLine();
+				if (line == null) {
+					break;
+				}
+				lines.add(line);
+			}
+		
+			tmp.delete();
+			return lines;
+		} catch (IOException ex) {
+			throw new TskCoreException("Error reading istat output: " + ex.getLocalizedMessage());
+		}
+	}
+	
 
 	//free pointers
 	/**
