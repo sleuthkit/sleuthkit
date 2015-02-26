@@ -18,10 +18,11 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.ResourceBundle;
-
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -38,12 +39,14 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 public abstract class FsContent extends AbstractFile {
 
 	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
-    private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
+    private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	///read only database tsk_files fields
 	protected final long fsObjId;
 	private String uniquePath;
 	///read-write database tsk_files fields
 	private final SleuthkitCase tskCase;
+	
+	private List<String> metaDataText = null;
 	
 	/**
 	 * parent file system
@@ -113,6 +116,7 @@ public abstract class FsContent extends AbstractFile {
 	 * Get the parent file system
 	 *
 	 * @return the file system object of the parent
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public FileSystem getFileSystem() throws TskCoreException {
 		if (parentFileSystem == null) {
@@ -124,6 +128,21 @@ public abstract class FsContent extends AbstractFile {
 		}
 		return parentFileSystem;
 	}
+	
+	/**
+	 * Open JNI file handle if it is not open already
+	 * 
+	 * @throws TskCoreException 
+	 */
+	private void loadFileHandle() throws TskCoreException {
+		if (fileHandle == 0) {
+			synchronized (this) {
+				if (fileHandle == 0) {
+					fileHandle = SleuthkitJNI.openFile(getFileSystem().getFileSystemHandle(), metaAddr, attrType, attrId);
+				}
+			}
+		}
+	}
 
 	@Override
     @SuppressWarnings("deprecation")
@@ -133,13 +152,7 @@ public abstract class FsContent extends AbstractFile {
 				//special case for 0-size file
 				return 0;
 			}
-			if (fileHandle == 0) {
-				synchronized (this) {
-					if (fileHandle == 0) {
-						fileHandle = SleuthkitJNI.openFile(getFileSystem().getFileSystemHandle(), metaAddr, attrType, attrId);
-					}
-				}
-			}
+			loadFileHandle();
 			return SleuthkitJNI.readFile(fileHandle, buf, offset, len);
 		}
 		catch (TskCoreException ex) {
@@ -157,14 +170,13 @@ public abstract class FsContent extends AbstractFile {
 
 	@Override
 	public boolean isRoot() {
-		FileSystem fs = null;
 		try {
-			fs = getFileSystem();
+			FileSystem fs = getFileSystem();
+			return fs.getRoot_inum() == this.getMetaAddr();
 		} catch (TskCoreException ex) {
 			logger.log(Level.SEVERE, "Exception while calling 'getFileSystem' on " + this, ex); //NON-NLS
 			return false;
 		}
-		return fs.getRoot_inum() == this.getMetaAddr();
 	}
 
 	/*
@@ -197,6 +209,31 @@ public abstract class FsContent extends AbstractFile {
 			uniquePath = sb.toString();
 		}
 		return uniquePath;
+	}
+	
+	/**
+	 * Return a text-based description of the file's metadata.
+	 * This is the same content as the TSK istat tool produces.
+	 * Is different information for each type of file system.
+	 * 
+	 * @return List of text, one string per line.
+	 * @throws TskCoreException 
+	 */
+	public synchronized List<String> getMetaDataText() throws TskCoreException {
+		if (metaDataText != null) {
+			return metaDataText;
+		}
+		
+		// if there is no metadata for this file, return empty string
+		if (metaAddr == 0) {
+			metaDataText = new ArrayList<String>();
+			metaDataText.add("");
+			return metaDataText;
+		}
+		
+		loadFileHandle();
+		metaDataText = SleuthkitJNI.getFileMetaDataText(fileHandle);
+		return metaDataText;
 	}
 
 	@Override
