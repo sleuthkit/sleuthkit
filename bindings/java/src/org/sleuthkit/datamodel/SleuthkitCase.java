@@ -61,22 +61,22 @@ public class SleuthkitCase {
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private final ConnectionPerThreadDispenser connections;
-	private final ResultSetHelper rsHelper;
-	private final Map<Long, Long> carvedFileContainersCache; // Caches the IDs of the root $CarvedFiles for each volume.
-	private final Map<Long, FileSystem> fileSystemIdMap; // Cache for file system results.
-	private final ArrayList<ErrorObserver> errorObservers;
-	private final String dbPath;
-	private final String dbDirPath;
 	private SleuthkitJNI.CaseDbHandle caseHandle;
+	private ResultSetHelper rsHelper;
+	private Map<Long, Long> carvedFileContainersCache; // Caches the IDs of the root $CarvedFiles for each volume.
+	private Map<Long, FileSystem> fileSystemIdMap; // Cache for file system results.
+	private ArrayList<ErrorObserver> errorObservers;
 	private int versionNumber;
 	private String dbBackupPath;
 	private long nextArtifactId; // Used to ensure artifact ids come from the desired range.
+	private final String dbPath;
+	private final String dbDirPath;
 
 	// This read/write lock is used to implement a layer of locking on top of 
 	// the locking protocol provided by the underlying SQLite database. The Java
 	// locking protocol improves performance for reasons that are not currently
 	// understood. Note that the lock is contructed to use a fairness policy.
-	private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true);
+	private ReentrantReadWriteLock rwLock;
 
 	/**
 	 * Private constructor, clients must use newCase() or openCase() method to
@@ -88,22 +88,46 @@ public class SleuthkitCase {
 	 * @throws Exception
 	 */
 	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle) throws Exception {
-		Class.forName("org.sqlite.JDBC"); // RJCTODO: Can this be moved to the SQLiteDbConnection
-		connections = new ConnectionPerThreadDispenser();
-		rsHelper = new ResultSetHelper(this);
-		carvedFileContainersCache = new HashMap<Long, Long>(); // Caches the IDs of the root $CarvedFiles for each volume.
-		fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system results.
-		errorObservers = new ArrayList<ErrorObserver>();
+		Class.forName("org.sqlite.JDBC");
 		this.dbPath = dbPath;
 		dbDirPath = new java.io.File(dbPath).getParentFile().getAbsolutePath();
-		this.caseHandle = caseHandle;
-		initBlackboardArtifactTypes();
-		initBlackboardAttributeTypes();
-		initNextArtifactId();
-		updateDatabaseSchema();
+		connections = new SQLiteConnections(dbPath);
+		init(caseHandle);
+		updateDatabaseSchema(dbPath);
 		logSQLiteJDBCDriverInfo();
 	}
 
+	/**
+	 * Private constructor, clients must use newCase() or openCase() method to
+	 * create an instance of this class.
+	 *
+	 * @param host
+	 * @param port
+	 * @param dbName
+	 * @param userName
+	 * @param password
+	 * @param caseHandle
+	 * @throws Exception
+	 */
+	private SleuthkitCase(String host, int port, String dbName, String userName, String password, SleuthkitJNI.CaseDbHandle caseHandle) throws Exception {
+		dbPath = ""; // RJCTODO
+		dbDirPath = ""; // RJCTODO
+		connections = new PostgreSQLConnections(host, port, dbName, userName, password);
+		init(caseHandle);
+	}
+
+	private void init(SleuthkitJNI.CaseDbHandle caseHandle) throws Exception { // RJCTODO: TskCoreException would be more consistent, API change 
+		this.caseHandle = caseHandle;
+		rsHelper = new ResultSetHelper(this);
+		carvedFileContainersCache = new HashMap<Long, Long>(); // Caches the IDs of the root $CarvedFiles for each volume.
+		fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system results.
+		errorObservers = new ArrayList<ErrorObserver>();	
+		rwLock = new ReentrantReadWriteLock(true);
+		initBlackboardArtifactTypes();
+		initBlackboardAttributeTypes();
+		initNextArtifactId();
+	}
+	
 	/**
 	 * Make sure the predefined artifact types are in the artifact types table.
 	 *
@@ -187,7 +211,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws Exception
 	 */
-	private void updateDatabaseSchema() throws Exception {
+	private void updateDatabaseSchema(String dbPath) throws Exception {
 		CaseDbConnection connection = connections.getConnection();
 		ResultSet resultSet = null;
 		Statement statement = null;
@@ -4976,7 +5000,11 @@ public class SleuthkitCase {
 		}
 	}
 
-	private final class ConnectionPerThreadDispenser extends ThreadLocal<CaseDbConnection> {
+	/**
+	 * An abstract base class for objects that store a case database connection
+	 * for each thread that requests one.
+	 */
+	private abstract static class ConnectionPerThreadDispenser extends ThreadLocal<CaseDbConnection> {
 
 		private final HashSet<CaseDbConnection> databaseConnections = new HashSet<CaseDbConnection>();
 
@@ -4990,8 +5018,8 @@ public class SleuthkitCase {
 		}
 
 		/**
-		 * Close the CaseDbConnection, which in turn releases the file handle to
-		 * the database
+		 * Closes the CaseDbConnection, which in turn releases the file handle
+		 * to the database.
 		 */
 		public synchronized void close() {
 			for (CaseDbConnection entry : databaseConnections) {
@@ -5001,11 +5029,58 @@ public class SleuthkitCase {
 		}
 
 		@Override
+		abstract public CaseDbConnection initialValue();
+	}
+
+	/**
+	 * Stores a SQLite case database connection for each thread that requests
+	 * one.
+	 */
+	private final static class SQLiteConnections extends ConnectionPerThreadDispenser {
+
+		private final String dbPath;
+
+		SQLiteConnections(String dbPath) {
+			this.dbPath = dbPath;
+		}
+
+		@Override
 		public CaseDbConnection initialValue() {
 			return new SQLiteConnection(dbPath);
 		}
+
 	}
 
+	/**
+	 * Stores a PostgreSQL case database connection for each thread that
+	 * requests one.
+	 */
+	private final static class PostgreSQLConnections extends ConnectionPerThreadDispenser {
+
+		private final String host;
+		private final int port;
+		private final String dbName;
+		private final String userName;
+		private final String password;
+
+		PostgreSQLConnections(String host, int port, String dbName, String userName, String password) {
+			this.host = host;
+			this.port = port;
+			this.dbName = dbName;
+			this.userName = userName;
+			this.password = password;
+		}
+
+		@Override
+		public CaseDbConnection initialValue() {
+			return new PostgreSQLConnection(host, port, dbName, userName, password);
+		}
+
+	}
+
+	/**
+	 * An abstract base class for case database connection objects.
+	 */
 	private abstract static class CaseDbConnection {
 
 		enum PREPARED_STATEMENT {
@@ -5270,68 +5345,7 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Wraps the transactional capabilities of a CaseDbConnection object to
-	 * support use cases where control of a transaction is given to a
-	 * SleuthkitCase client. Note that this class does not implement the
-	 * Transaction interface because that sort of flexibility and its associated
-	 * complexity is not needed. Also, TskCoreExceptions are thrown to be
-	 * consistent with the outer SleuthkitCase class.
-	 */
-	public static final class CaseDbTransaction {
-
-		private final CaseDbConnection connection;
-
-		private CaseDbTransaction(CaseDbConnection connection) throws TskCoreException {
-			this.connection = connection;
-			try {
-				this.connection.beginTransaction();
-			} catch (SQLException ex) {
-				throw new TskCoreException("Failed to create transaction on case database", ex);
-			}
-		}
-
-		/**
-		 * The implementations of the public APIs that take a CaseDbTransaction
-		 * object need access to the underlying CaseDbConnection.
-		 *
-		 * @return The CaseDbConnection instance for this instance of
-		 * CaseDbTransaction.
-		 */
-		private CaseDbConnection getConnection() {
-			return this.connection;
-		}
-
-		/**
-		 * Commits the transaction on the case database that was begun when this
-		 * object was constructed.
-		 *
-		 * @throws TskCoreException
-		 */
-		public void commit() throws TskCoreException {
-			try {
-				this.connection.commitTransaction();
-			} catch (SQLException ex) {
-				throw new TskCoreException("Failed to commit transaction on case database", ex);
-			}
-		}
-
-		/**
-		 * Rolls back the transaction on the case database that was begun when
-		 * this object was constructed.
-		 *
-		 * @throws TskCoreException
-		 */
-		public void rollback() throws TskCoreException {
-			try {
-				this.connection.rollbackTransactionWithThrow();
-			} catch (SQLException ex) {
-				throw new TskCoreException("Case database transaction rollback failed", ex);
-			}
-		}
-	}
-
-	/**
-	 * Encapsulates a connection to a SQLite case database.
+	 * A connection to an SQLite case database.
 	 */
 	private static final class SQLiteConnection extends CaseDbConnection {
 
@@ -5389,6 +5403,88 @@ public class SleuthkitCase {
 		void handleException(SQLException ex) throws SQLException {
 			if (ex.getErrorCode() != SQLITE_BUSY_ERROR && ex.getErrorCode() != DATABASE_LOCKED_ERROR) {
 				throw ex;
+			}
+		}
+
+	}
+
+	/**
+	 * A connection to a PostgreSQL case database.
+	 */
+	private static final class PostgreSQLConnection extends CaseDbConnection {
+
+		PostgreSQLConnection(String host, int port, String dbName, String userName, String password) {
+			super(createConnection(host, port, dbName, userName, password));
+		}
+
+		static Connection createConnection(String host, int port, String dbName, String userName, String password) {
+			return null;
+		}
+
+		@Override
+		void handleException(SQLException ex) throws SQLException {
+			throw ex;
+		}
+
+	}
+
+	/**
+	 * Wraps the transactional capabilities of a CaseDbConnection object to
+	 * support use cases where control of a transaction is given to a
+	 * SleuthkitCase client. Note that this class does not implement the
+	 * Transaction interface because that sort of flexibility and its associated
+	 * complexity is not needed. Also, TskCoreExceptions are thrown to be
+	 * consistent with the outer SleuthkitCase class.
+	 */
+	public static final class CaseDbTransaction {
+
+		private final CaseDbConnection connection;
+
+		private CaseDbTransaction(CaseDbConnection connection) throws TskCoreException {
+			this.connection = connection;
+			try {
+				this.connection.beginTransaction();
+			} catch (SQLException ex) {
+				throw new TskCoreException("Failed to create transaction on case database", ex);
+			}
+		}
+
+		/**
+		 * The implementations of the public APIs that take a CaseDbTransaction
+		 * object need access to the underlying CaseDbConnection.
+		 *
+		 * @return The CaseDbConnection instance for this instance of
+		 * CaseDbTransaction.
+		 */
+		private CaseDbConnection getConnection() {
+			return this.connection;
+		}
+
+		/**
+		 * Commits the transaction on the case database that was begun when this
+		 * object was constructed.
+		 *
+		 * @throws TskCoreException
+		 */
+		public void commit() throws TskCoreException {
+			try {
+				this.connection.commitTransaction();
+			} catch (SQLException ex) {
+				throw new TskCoreException("Failed to commit transaction on case database", ex);
+			}
+		}
+
+		/**
+		 * Rolls back the transaction on the case database that was begun when
+		 * this object was constructed.
+		 *
+		 * @throws TskCoreException
+		 */
+		public void rollback() throws TskCoreException {
+			try {
+				this.connection.rollbackTransactionWithThrow();
+			} catch (SQLException ex) {
+				throw new TskCoreException("Case database transaction rollback failed", ex);
 			}
 		}
 
