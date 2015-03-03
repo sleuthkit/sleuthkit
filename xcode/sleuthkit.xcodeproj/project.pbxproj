@@ -108,7 +108,7 @@
 		026FB4D60D19C869000434C7 /* split.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = split.h; sourceTree = "<group>"; };
 		026FB4D90D19C869000434C7 /* tsk_img.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = tsk_img.h; sourceTree = "<group>"; };
 		026FB4DA0D19C869000434C7 /* tsk_img_i.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = tsk_img_i.h; sourceTree = "<group>"; };
-		026FB4DB0D19C869000434C7 /* libtsk.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = libtsk.h; path = ../tsk3/libtsk.h; sourceTree = SOURCE_ROOT; };
+		026FB4DB0D19C869000434C7 /* libtsk.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = libtsk.h; path = ../tsk/libtsk.h; sourceTree = SOURCE_ROOT; };
 		026FB4F40D19C869000434C7 /* bsd.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = bsd.c; sourceTree = "<group>"; };
 		026FB4F70D19C869000434C7 /* dos.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = dos.c; sourceTree = "<group>"; };
 		026FB4FA0D19C869000434C7 /* gpt.c */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.c; path = gpt.c; sourceTree = "<group>"; };
@@ -239,7 +239,7 @@
 				024D5A7A1166D46E00299079 /* auto.cpp */,
 			);
 			name = auto;
-			path = ../tsk3/auto;
+			path = ../tsk/auto;
 			sourceTree = SOURCE_ROOT;
 		};
 		024D5A7E11678B0D00299079 /* autotools */ = {
@@ -299,7 +299,7 @@
 				026FB3D30D19C868000434C7 /* XGetopt.c */,
 			);
 			name = base;
-			path = ../tsk3/base;
+			path = ../tsk/base;
 			sourceTree = SOURCE_ROOT;
 		};
 		026FB3D50D19C868000434C7 /* fs */ = {
@@ -356,7 +356,7 @@
 				02659EF70DB56FA5004A9AD1 /* unix_misc.c */,
 			);
 			name = fs;
-			path = ../tsk3/fs;
+			path = ../tsk/fs;
 			sourceTree = SOURCE_ROOT;
 		};
 		026FB4870D19C868000434C7 /* hashdb */ = {
@@ -371,7 +371,7 @@
 				026FB4AB0D19C869000434C7 /* tsk_hashdb_i.h */,
 			);
 			name = hashdb;
-			path = ../tsk3/hashdb;
+			path = ../tsk/hashdb;
 			sourceTree = SOURCE_ROOT;
 		};
 		026FB4AC0D19C869000434C7 /* img */ = {
@@ -393,7 +393,7 @@
 				026FB4DA0D19C869000434C7 /* tsk_img_i.h */,
 			);
 			name = img;
-			path = ../tsk3/img;
+			path = ../tsk/img;
 			sourceTree = SOURCE_ROOT;
 		};
 		026FB4DC0D19C869000434C7 /* vs */ = {
@@ -417,7 +417,7 @@
 				026FB5190D19C869000434C7 /* tsk_vs_i.h */,
 			);
 			name = vs;
-			path = ../tsk3/vs;
+			path = ../tsk/vs;
 			sourceTree = SOURCE_ROOT;
 		};
 		029B49E50E154FE200AF156D /* tests */ = {
@@ -482,7 +482,7 @@
 			buildPhases = (
 			);
 			buildToolPath = /usr/bin/make;
-			buildWorkingDirectory = ../tsk3;
+			buildWorkingDirectory = ../tsk;
 			dependencies = (
 			);
 			name = libtsk;

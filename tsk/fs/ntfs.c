@@ -36,7 +36,8 @@
  */
 
 
-
+/* Macro to pass in both the epoch time value and the nano time value */
+#define WITHNANO(x) x, x##_nano
 
 
 /* mini-design note:
@@ -103,7 +104,7 @@ nt2unixtime(uint64_t ntdate)
 static uint32_t
 nt2nano(uint64_t ntdate)
 {
-    return (uint32_t) (ntdate % 10000000);
+    return (uint32_t) (ntdate % 10000000)*100;
 }
 
 
@@ -4285,13 +4286,13 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
                 fs_file->meta->crtime -= sec_skew;
 
             tsk_fprintf(hFile, "Created:\t%s\n",
-                tsk_fs_time_to_str(fs_file->meta->crtime, timeBuf));
+                tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->crtime), timeBuf));
             tsk_fprintf(hFile, "File Modified:\t%s\n",
-                tsk_fs_time_to_str(fs_file->meta->mtime, timeBuf));
+                tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->mtime), timeBuf));
             tsk_fprintf(hFile, "MFT Modified:\t%s\n",
-                tsk_fs_time_to_str(fs_file->meta->ctime, timeBuf));
+                tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->ctime), timeBuf));
             tsk_fprintf(hFile, "Accessed:\t%s\n",
-                tsk_fs_time_to_str(fs_file->meta->atime, timeBuf));
+                tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->atime), timeBuf));
 
             if (fs_file->meta->mtime)
                 fs_file->meta->mtime += sec_skew;
@@ -4306,13 +4307,13 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
         }
 
         tsk_fprintf(hFile, "Created:\t%s\n",
-            tsk_fs_time_to_str(fs_file->meta->crtime, timeBuf));
+            tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->crtime), timeBuf));
         tsk_fprintf(hFile, "File Modified:\t%s\n",
-            tsk_fs_time_to_str(fs_file->meta->mtime, timeBuf));
+            tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->mtime), timeBuf));
         tsk_fprintf(hFile, "MFT Modified:\t%s\n",
-            tsk_fs_time_to_str(fs_file->meta->ctime, timeBuf));
+            tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->ctime), timeBuf));
         tsk_fprintf(hFile, "Accessed:\t%s\n",
-            tsk_fs_time_to_str(fs_file->meta->atime, timeBuf));
+            tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->atime), timeBuf));
     }
 
     /* $FILE_NAME Information */
@@ -4400,13 +4401,13 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
                 fs_file->meta->time2.ntfs.fn_crtime -= sec_skew;
             
             tsk_fprintf(hFile, "Created:\t%s\n",
-                        tsk_fs_time_to_str(fs_file->meta->time2.ntfs.fn_crtime, timeBuf));
+                        tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->time2.ntfs.fn_crtime), timeBuf));
             tsk_fprintf(hFile, "File Modified:\t%s\n",
-                        tsk_fs_time_to_str(fs_file->meta->time2.ntfs.fn_mtime, timeBuf));
+                        tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->time2.ntfs.fn_mtime), timeBuf));
             tsk_fprintf(hFile, "MFT Modified:\t%s\n",
-                        tsk_fs_time_to_str(fs_file->meta->time2.ntfs.fn_ctime, timeBuf));
+                        tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->time2.ntfs.fn_ctime), timeBuf));
             tsk_fprintf(hFile, "Accessed:\t%s\n",
-                        tsk_fs_time_to_str(fs_file->meta->time2.ntfs.fn_atime, timeBuf));
+                        tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->time2.ntfs.fn_atime), timeBuf));
             
             if (fs_file->meta->time2.ntfs.fn_mtime)
                 fs_file->meta->time2.ntfs.fn_mtime += sec_skew;
@@ -4421,13 +4422,13 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
         }
         
         tsk_fprintf(hFile, "Created:\t%s\n",
-                    tsk_fs_time_to_str(fs_file->meta->time2.ntfs.fn_crtime, timeBuf));
+                    tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->time2.ntfs.fn_crtime), timeBuf));
         tsk_fprintf(hFile, "File Modified:\t%s\n",
-                    tsk_fs_time_to_str(fs_file->meta->time2.ntfs.fn_mtime, timeBuf));
+                    tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->time2.ntfs.fn_mtime), timeBuf));
         tsk_fprintf(hFile, "MFT Modified:\t%s\n",
-                    tsk_fs_time_to_str(fs_file->meta->time2.ntfs.fn_ctime, timeBuf));
+                    tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->time2.ntfs.fn_ctime), timeBuf));
         tsk_fprintf(hFile, "Accessed:\t%s\n",
-                    tsk_fs_time_to_str(fs_file->meta->time2.ntfs.fn_atime, timeBuf));
+                    tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->time2.ntfs.fn_atime), timeBuf));
     }
 
 

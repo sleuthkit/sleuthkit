@@ -652,31 +652,26 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
         else {
             m_attributeAdded = true;
         }
-    }
 
-    // add the block map, if requested and the file is non-resident
-    if ((m_blkMapFlag) && (isNonResident(fs_attr))
-        && (isDotDir(fs_file) == 0)) {
-        TSK_FS_ATTR_RUN *run;
-        int sequence = 0;
+        // add the block map, if requested and the file is non-resident
+        if ((m_blkMapFlag) && (isNonResident(fs_attr))
+            && (isDotDir(fs_file) == 0)) {
+            TSK_FS_ATTR_RUN *run;
+            int sequence = 0;
 
-        for (run = fs_attr->nrd.run; run != NULL; run = run->next) {
-            unsigned int block_size = fs_file->fs_info->block_size;
+            for (run = fs_attr->nrd.run; run != NULL; run = run->next) {
+                unsigned int block_size = fs_file->fs_info->block_size;
 
-            // ignore sparse blocks
-            if (run->flags & TSK_FS_ATTR_RUN_FLAG_SPARSE)
-                continue;
+                // ignore sparse blocks
+                if (run->flags & TSK_FS_ATTR_RUN_FLAG_SPARSE)
+                    continue;
 
-            
-            // NOTE that we could be adding runs here that were not assigned
-            // to a file from the previous section.  In which case, m_curFileId
-            // will probably be set to 0.
-
-            // @@@ We probaly want to keep on going here
-            if (m_db->addFileLayoutRange(m_curFileId,
-                    run->addr * block_size, run->len * block_size, sequence++)) {
-                registerError();
-                return TSK_OK;
+                // @@@ We probaly want to keep on going here
+                if (m_db->addFileLayoutRange(m_curFileId,
+                        run->addr * block_size, run->len * block_size, sequence++)) {
+                    registerError();
+                    return TSK_OK;
+                }
             }
         }
     }
