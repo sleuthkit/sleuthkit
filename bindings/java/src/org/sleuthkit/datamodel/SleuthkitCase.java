@@ -5013,10 +5013,6 @@ public class SleuthkitCase {
 			return connection;
 		}
 
-		/**
-		 * Closes the CaseDbConnection, which in turn releases the file handle
-		 * to the database.
-		 */
 		public synchronized void close() {
 			for (CaseDbConnection entry : databaseConnections) {
 				entry.close();
@@ -5407,6 +5403,7 @@ public class SleuthkitCase {
 	/**
 	 * A connection to a PostgreSQL case database.
 	 */
+	// RJCTODO
 	private static final class PostgreSQLConnection extends CaseDbConnection {
 
 		PostgreSQLConnection(String host, int port, String dbName, String userName, String password) {
