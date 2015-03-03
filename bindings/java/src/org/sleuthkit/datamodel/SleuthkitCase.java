@@ -66,7 +66,7 @@ public class SleuthkitCase {
 	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system results.
 	private final ArrayList<ErrorObserver> errorObservers = new ArrayList<ErrorObserver>();
 	private final String dbPath;
-	private final String dbDirPath;
+	private final String caseDirPath;
 	private SleuthkitJNI.CaseDbHandle caseHandle;
 	private int versionNumber;
 	private String dbBackupPath;
@@ -89,8 +89,8 @@ public class SleuthkitCase {
 	 */
 	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle) throws Exception {
 		Class.forName("org.sqlite.JDBC");
-		this.dbPath = dbPath; //RJCTODO
-		dbDirPath = new java.io.File(dbPath).getParentFile().getAbsolutePath(); //RJCTODO
+		this.dbPath = dbPath;
+		caseDirPath = new java.io.File(dbPath).getParentFile().getAbsolutePath();
 		connections = new SQLiteConnections(dbPath);
 		init(caseHandle);
 		updateDatabaseSchema(dbPath);
@@ -108,16 +108,17 @@ public class SleuthkitCase {
 	 * @param password The password to use to connect to the case database.
 	 * @param caseHandle A handle to a case database object in the native code
 	 * SleuthKit layer.
+	 * @param caseDirPath The path to the root case directory.
 	 * @throws Exception
 	 */
-	private SleuthkitCase(String host, int port, String dbName, String userName, String password, SleuthkitJNI.CaseDbHandle caseHandle) throws Exception {
-		dbPath = ""; //RJCTODO
-		dbDirPath = ""; //RJCTODO
+	private SleuthkitCase(String host, int port, String dbName, String userName, String password, SleuthkitJNI.CaseDbHandle caseHandle, String caseDirPath) throws Exception {
+		dbPath = "";
+		this.caseDirPath = caseDirPath;
 		connections = new PostgreSQLConnections(host, port, dbName, userName, password);
 		init(caseHandle);
 	}
 
-	private void init(SleuthkitJNI.CaseDbHandle caseHandle) throws Exception { // RJCTODO: TskCoreException would be more consistent, API change 
+	private void init(SleuthkitJNI.CaseDbHandle caseHandle) throws Exception { 
 		this.caseHandle = caseHandle;
 		initBlackboardArtifactTypes();
 		initBlackboardAttributeTypes();
@@ -262,6 +263,9 @@ public class SleuthkitCase {
 	 * @throws IOException if copying fails.
 	 */
 	public void copyCaseDB(String newDBPath) throws IOException {
+		if (dbPath.isEmpty()) {
+			throw new IOException("Copying case database files is not supported for this type of case database"); //NON-NLS
+		}
 		InputStream in = null;
 		OutputStream out = null;
 		acquireExclusiveLock();
@@ -472,12 +476,13 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get the full path to the case database directory.
+	 * Get the full path to the case directory. For a SQLite case database, this
+	 * is the same as the database directory path.
 	 *
-	 * @return Absolute database directory path.
+	 * @return Case directory path.
 	 */
 	public String getDbDirPath() {
-		return dbDirPath; //RJCTODO
+		return caseDirPath;
 	}
 
 	/**
@@ -5403,7 +5408,6 @@ public class SleuthkitCase {
 	/**
 	 * A connection to a PostgreSQL case database.
 	 */
-	// RJCTODO
 	private static final class PostgreSQLConnection extends CaseDbConnection {
 
 		PostgreSQLConnection(String host, int port, String dbName, String userName, String password) {
