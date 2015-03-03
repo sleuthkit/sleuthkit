@@ -55,7 +55,6 @@
 /* This must be at least 1024 bytes or else fat12 will get messed up */
 #define FATFS_FAT_CACHE_N		4       // number of caches
 #define FATFS_FAT_CACHE_B		4096
-#define FATFS_FAT_CACHE_S		8       // number of sectors in cache
 
 #define FATFS_MASTER_BOOT_RECORD_SIZE 512
 
@@ -231,7 +230,7 @@ extern "C" {
         uint32_t dentry_cnt_cl; /* max number of dentries per cluster */
 
         uint16_t ssize;         /* size of sectors in bytes */
-        uint16_t ssize_sh;      /* power of 2 for size of sectors */
+        uint16_t ssize_sh;      /* power of 2 for size of sectors.  >> to divide by sector size.  << to multiply by sector size */
         uint8_t csize;          /* size of clusters in sectors */
         uint8_t numfat;         /* number of fat tables */
         uint32_t sectperfat;    /* sectors per fat table */

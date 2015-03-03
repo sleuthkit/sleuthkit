@@ -197,9 +197,9 @@ fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* Process the FS info */
         if (tsk_getu16(fs->endian, sb->a.f32.fsinfo)) {
             cnt =
-                tsk_fs_read_block(fs, (TSK_DADDR_T) tsk_getu16(fs->endian,
-                    sb->a.f32.fsinfo), fat_fsinfo_buf,
-                sizeof(FATXXFS_FSINFO));
+                tsk_fs_read(fs, 
+                    (TSK_DADDR_T) tsk_getu16(fs->endian, sb->a.f32.fsinfo) * fs->block_size, 
+                    fat_fsinfo_buf, sizeof(FATXXFS_FSINFO));
 
             if (cnt != sizeof(FATXXFS_FSINFO)) {
                 if (cnt >= 0) {
