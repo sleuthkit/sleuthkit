@@ -61,22 +61,22 @@ public class SleuthkitCase {
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private final ConnectionPerThreadDispenser connections;
+	private final ResultSetHelper rsHelper = new ResultSetHelper(this);
+	private final Map<Long, Long> carvedFileContainersCache = new HashMap<Long, Long>(); // Caches the IDs of the root $CarvedFiles for each volume.
+	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system results.
+	private final ArrayList<ErrorObserver> errorObservers = new ArrayList<ErrorObserver>();
+	private final String dbPath;
+	private final String dbDirPath;
 	private SleuthkitJNI.CaseDbHandle caseHandle;
-	private ResultSetHelper rsHelper;
-	private Map<Long, Long> carvedFileContainersCache; // Caches the IDs of the root $CarvedFiles for each volume.
-	private Map<Long, FileSystem> fileSystemIdMap; // Cache for file system results.
-	private ArrayList<ErrorObserver> errorObservers;
 	private int versionNumber;
 	private String dbBackupPath;
 	private long nextArtifactId; // Used to ensure artifact ids come from the desired range.
-	private final String dbPath;
-	private final String dbDirPath;
 
 	// This read/write lock is used to implement a layer of locking on top of 
 	// the locking protocol provided by the underlying SQLite database. The Java
 	// locking protocol improves performance for reasons that are not currently
 	// understood. Note that the lock is contructed to use a fairness policy.
-	private ReentrantReadWriteLock rwLock;
+	private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true);
 
 	/**
 	 * Private constructor, clients must use newCase() or openCase() method to
@@ -89,8 +89,8 @@ public class SleuthkitCase {
 	 */
 	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle) throws Exception {
 		Class.forName("org.sqlite.JDBC");
-		this.dbPath = dbPath;
-		dbDirPath = new java.io.File(dbPath).getParentFile().getAbsolutePath();
+		this.dbPath = dbPath; //RJCTODO
+		dbDirPath = new java.io.File(dbPath).getParentFile().getAbsolutePath(); //RJCTODO
 		connections = new SQLiteConnections(dbPath);
 		init(caseHandle);
 		updateDatabaseSchema(dbPath);
@@ -101,28 +101,24 @@ public class SleuthkitCase {
 	 * Private constructor, clients must use newCase() or openCase() method to
 	 * create an instance of this class.
 	 *
-	 * @param host
-	 * @param port
-	 * @param dbName
-	 * @param userName
-	 * @param password
-	 * @param caseHandle
+	 * @param host The PostgreSQL database server.
+	 * @param port The port to use connect to the PostgreSQL database server.
+	 * @param dbName The name of the case database.
+	 * @param userName The user name to use to connect to the case database.
+	 * @param password The password to use to connect to the case database.
+	 * @param caseHandle A handle to a case database object in the native code
+	 * SleuthKit layer.
 	 * @throws Exception
 	 */
 	private SleuthkitCase(String host, int port, String dbName, String userName, String password, SleuthkitJNI.CaseDbHandle caseHandle) throws Exception {
-		dbPath = ""; // RJCTODO
-		dbDirPath = ""; // RJCTODO
+		dbPath = ""; //RJCTODO
+		dbDirPath = ""; //RJCTODO
 		connections = new PostgreSQLConnections(host, port, dbName, userName, password);
 		init(caseHandle);
 	}
 
 	private void init(SleuthkitJNI.CaseDbHandle caseHandle) throws Exception { // RJCTODO: TskCoreException would be more consistent, API change 
 		this.caseHandle = caseHandle;
-		rsHelper = new ResultSetHelper(this);
-		carvedFileContainersCache = new HashMap<Long, Long>(); // Caches the IDs of the root $CarvedFiles for each volume.
-		fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system results.
-		errorObservers = new ArrayList<ErrorObserver>();	
-		rwLock = new ReentrantReadWriteLock(true);
 		initBlackboardArtifactTypes();
 		initBlackboardAttributeTypes();
 		initNextArtifactId();
@@ -481,7 +477,7 @@ public class SleuthkitCase {
 	 * @return Absolute database directory path.
 	 */
 	public String getDbDirPath() {
-		return dbDirPath;
+		return dbDirPath; //RJCTODO
 	}
 
 	/**
