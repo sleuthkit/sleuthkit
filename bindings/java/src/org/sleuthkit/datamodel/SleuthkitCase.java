@@ -57,19 +57,17 @@ import org.sqlite.SQLiteJDBCLoader;
 public class SleuthkitCase {
 
 	private static final int SCHEMA_VERSION_NUMBER = 3; // This must be the same as TSK_SCHEMA_VER in tsk/auto/db_sqlite.cpp.				
-	private static final int DATABASE_LOCKED_ERROR = 0; // This should be 6 according to documentation, but it has been observed to be 0.
-	private static final int SQLITE_BUSY_ERROR = 5;
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
-	private final ConnectionPerThreadDispenser connections = new ConnectionPerThreadDispenser();
+	private final ConnectionPerThreadDispenser connections;
 	private final ResultSetHelper rsHelper = new ResultSetHelper(this);
 	private final Map<Long, Long> carvedFileContainersCache = new HashMap<Long, Long>(); // Caches the IDs of the root $CarvedFiles for each volume.
 	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system results.
 	private final ArrayList<ErrorObserver> errorObservers = new ArrayList<ErrorObserver>();
 	private final String dbPath;
-	private final String dbDirPath;
-	private SleuthkitJNI.CaseDbHandle caseHandle; // Not currently used.
+	private final String caseDirPath;
+	private SleuthkitJNI.CaseDbHandle caseHandle;
 	private int versionNumber;
 	private String dbBackupPath;
 	private long nextArtifactId; // Used to ensure artifact ids come from the desired range.
@@ -92,15 +90,41 @@ public class SleuthkitCase {
 	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle) throws Exception {
 		Class.forName("org.sqlite.JDBC");
 		this.dbPath = dbPath;
-		this.dbDirPath = new java.io.File(dbPath).getParentFile().getAbsolutePath();
+		caseDirPath = new java.io.File(dbPath).getParentFile().getAbsolutePath();
+		connections = new SQLiteConnections(dbPath);
+		init(caseHandle);
+		updateDatabaseSchema(dbPath);
+		logSQLiteJDBCDriverInfo();
+	}
+
+	/**
+	 * Private constructor, clients must use newCase() or openCase() method to
+	 * create an instance of this class.
+	 *
+	 * @param host The PostgreSQL database server.
+	 * @param port The port to use connect to the PostgreSQL database server.
+	 * @param dbName The name of the case database.
+	 * @param userName The user name to use to connect to the case database.
+	 * @param password The password to use to connect to the case database.
+	 * @param caseHandle A handle to a case database object in the native code
+	 * SleuthKit layer.
+	 * @param caseDirPath The path to the root case directory.
+	 * @throws Exception
+	 */
+	private SleuthkitCase(String host, int port, String dbName, String userName, String password, SleuthkitJNI.CaseDbHandle caseHandle, String caseDirPath) throws Exception {
+		dbPath = "";
+		this.caseDirPath = caseDirPath;
+		connections = new PostgreSQLConnections(host, port, dbName, userName, password);
+		init(caseHandle);
+	}
+
+	private void init(SleuthkitJNI.CaseDbHandle caseHandle) throws Exception { 
 		this.caseHandle = caseHandle;
 		initBlackboardArtifactTypes();
 		initBlackboardAttributeTypes();
 		initNextArtifactId();
-		updateDatabaseSchema();
-		logSQLiteJDBCDriverInfo();
 	}
-
+	
 	/**
 	 * Make sure the predefined artifact types are in the artifact types table.
 	 *
@@ -153,12 +177,13 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Initialize the next artifact id. If there are entries in the 
-	 * blackboard_artifacts table we will use max(artifact_id) + 1
-	 * otherwise we will initialize the value to 0x8000000000000000
-	 * (the maximum negative signed long).
+	 * Initialize the next artifact id. If there are entries in the
+	 * blackboard_artifacts table we will use max(artifact_id) + 1 otherwise we
+	 * will initialize the value to 0x8000000000000000 (the maximum negative
+	 * signed long).
+	 *
 	 * @throws TskCoreException
-	 * @throws SQLException 
+	 * @throws SQLException
 	 */
 	private void initNextArtifactId() throws TskCoreException, SQLException {
 		CaseDbConnection connection = connections.getConnection();
@@ -174,16 +199,16 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
-		}		
+		}
 	}
-	
+
 	/**
 	 * Modify the case database to bring it up-to-date with the current version
 	 * of the database schema.
 	 *
 	 * @throws Exception
 	 */
-	private void updateDatabaseSchema() throws Exception {
+	private void updateDatabaseSchema(String dbPath) throws Exception {
 		CaseDbConnection connection = connections.getConnection();
 		ResultSet resultSet = null;
 		Statement statement = null;
@@ -238,6 +263,9 @@ public class SleuthkitCase {
 	 * @throws IOException if copying fails.
 	 */
 	public void copyCaseDB(String newDBPath) throws IOException {
+		if (dbPath.isEmpty()) {
+			throw new IOException("Copying case database files is not supported for this type of case database"); //NON-NLS
+		}
 		InputStream in = null;
 		OutputStream out = null;
 		acquireExclusiveLock();
@@ -448,12 +476,13 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get the full path to the case database directory.
+	 * Get the full path to the case directory. For a SQLite case database, this
+	 * is the same as the database directory path.
 	 *
-	 * @return Absolute database directory path.
+	 * @return Case directory path.
 	 */
 	public String getDbDirPath() {
-		return dbDirPath;
+		return caseDirPath;
 	}
 
 	/**
@@ -1799,8 +1828,9 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			releaseExclusiveLock();
-		}		
+		}
 	}
+
 	/**
 	 * Checks if the content object has children. Note: this is generally more
 	 * efficient then preloading all children and checking if the set is empty,
@@ -4971,8 +5001,12 @@ public class SleuthkitCase {
 		}
 	}
 
-	private final class ConnectionPerThreadDispenser extends ThreadLocal<CaseDbConnection> {
-		
+	/**
+	 * An abstract base class for objects that store a case database connection
+	 * for each thread that requests one.
+	 */
+	private abstract static class ConnectionPerThreadDispenser extends ThreadLocal<CaseDbConnection> {
+
 		private final HashSet<CaseDbConnection> databaseConnections = new HashSet<CaseDbConnection>();
 
 		synchronized CaseDbConnection getConnection() throws TskCoreException {
@@ -4984,11 +5018,6 @@ public class SleuthkitCase {
 			return connection;
 		}
 
-		/**
-		 * ****************
-		 * Close the CaseDbConnection, which in turn releases the file handle to
-		 * the database
-		 */
 		public synchronized void close() {
 			for (CaseDbConnection entry : databaseConnections) {
 				entry.close();
@@ -4997,16 +5026,59 @@ public class SleuthkitCase {
 		}
 
 		@Override
-		public CaseDbConnection initialValue() {
-			return new CaseDbConnection(dbPath);
-		}
+		abstract public CaseDbConnection initialValue();
 	}
 
 	/**
-	 * Encapsulates a connection to the underlying SQLite case database and a
-	 * set of prepared statements.
+	 * Stores a SQLite case database connection for each thread that requests
+	 * one.
 	 */
-	private static final class CaseDbConnection {
+	private final static class SQLiteConnections extends ConnectionPerThreadDispenser {
+
+		private final String dbPath;
+
+		SQLiteConnections(String dbPath) {
+			this.dbPath = dbPath;
+		}
+
+		@Override
+		public CaseDbConnection initialValue() {
+			return new SQLiteConnection(dbPath);
+		}
+
+	}
+
+	/**
+	 * Stores a PostgreSQL case database connection for each thread that
+	 * requests one.
+	 */
+	private final static class PostgreSQLConnections extends ConnectionPerThreadDispenser {
+
+		private final String host;
+		private final int port;
+		private final String dbName;
+		private final String userName;
+		private final String password;
+
+		PostgreSQLConnections(String host, int port, String dbName, String userName, String password) {
+			this.host = host;
+			this.port = port;
+			this.dbName = dbName;
+			this.userName = userName;
+			this.password = password;
+		}
+
+		@Override
+		public CaseDbConnection initialValue() {
+			return new PostgreSQLConnection(host, port, dbName, userName, password);
+		}
+
+	}
+
+	/**
+	 * An abstract base class for case database connection objects.
+	 */
+	private abstract static class CaseDbConnection {
 
 		enum PREPARED_STATEMENT {
 
@@ -5086,7 +5158,6 @@ public class SleuthkitCase {
 			SELECT_ARTIFACT_TAGS_BY_ARTIFACT("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id WHERE blackboard_artifact_tags.artifact_id = ?"), //NON-NLS
 			SELECT_REPORTS("SELECT * FROM reports"), //NON-NLS
 			INSERT_REPORT("INSERT INTO reports (path, crtime, src_module_name, report_name) VALUES (?, ?, ?, ?)");	 //NON-NLS
-
 			private final String sql;
 
 			private PREPARED_STATEMENT(String sql) {
@@ -5097,37 +5168,13 @@ public class SleuthkitCase {
 				return sql;
 			}
 		}
-		private final Map<PREPARED_STATEMENT, PreparedStatement> preparedStatements;
-		private Connection connection;
 
-		CaseDbConnection(String dbPath) {
-			this.preparedStatements = new EnumMap<PREPARED_STATEMENT, PreparedStatement>(PREPARED_STATEMENT.class);
-			Statement statement = null;
-			try {
-				this.connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath); //NON-NLS
-				statement = createStatement();
-				statement.execute("PRAGMA synchronous = OFF;"); // Reduce I/O operations, we have no OS crash recovery anyway. //NON-NLS			
-				statement.execute("PRAGMA read_uncommitted = True;"); // Allow query while in transaction. //NON-NLS
-				statement.execute("PRAGMA foreign_keys = ON;"); // Enforce foreign key constraints. //NON-NLS
-			} catch (SQLException ex) {
-				// The exception is caught and logged here because this 
-				// constructor will be called by an override of 
-				// ThreadLocal<T>.initialValue() which cannot throw. Calls to 
-				// ConnectionPerThreadDispenser.getConnection() will detect
-				// the error state via isOpen() and throw an appropriate 
-				// exception.
-				SleuthkitCase.logger.log(Level.SEVERE, "Error setting up case database connection for thread", ex); //NON-NLS
-				if (this.connection != null) {
-					try {
-						this.connection.close();
-					} catch (SQLException e) {
-						SleuthkitCase.logger.log(Level.SEVERE, "Failed to close connection", e);
-					}
-					this.connection = null;
-				}
-			} finally {
-				closeStatement(statement);
-			}
+		private final Connection connection;
+		private final Map<PREPARED_STATEMENT, PreparedStatement> preparedStatements;
+
+		CaseDbConnection(Connection connection) {
+			this.connection = connection;
+			preparedStatements = new EnumMap<PREPARED_STATEMENT, PreparedStatement>(PREPARED_STATEMENT.class);
 		}
 
 		boolean isOpen() {
@@ -5146,7 +5193,7 @@ public class SleuthkitCase {
 			return statement;
 		}
 
-		private PreparedStatement prepareStatement(String sqlStatement) throws SQLException {
+		PreparedStatement prepareStatement(String sqlStatement) throws SQLException {
 			PreparedStatement statement = null;
 			boolean locked = true;
 			while (locked) {
@@ -5154,9 +5201,7 @@ public class SleuthkitCase {
 					statement = this.connection.prepareStatement(sqlStatement);
 					locked = false;
 				} catch (SQLException ex) {
-					if (ex.getErrorCode() != SQLITE_BUSY_ERROR && ex.getErrorCode() != DATABASE_LOCKED_ERROR) {
-						throw ex;
-					}
+					handleException(ex);
 				}
 			}
 			return statement;
@@ -5170,9 +5215,7 @@ public class SleuthkitCase {
 					statement = this.connection.createStatement();
 					locked = false;
 				} catch (SQLException ex) {
-					if (ex.getErrorCode() != SQLITE_BUSY_ERROR && ex.getErrorCode() != DATABASE_LOCKED_ERROR) {
-						throw ex;
-					}
+					handleException(ex);
 				}
 			}
 			return statement;
@@ -5185,9 +5228,7 @@ public class SleuthkitCase {
 					connection.setAutoCommit(false);
 					locked = false;
 				} catch (SQLException ex) {
-					if (ex.getErrorCode() != SQLITE_BUSY_ERROR && ex.getErrorCode() != DATABASE_LOCKED_ERROR) {
-						throw ex;
-					}
+					handleException(ex);
 				}
 			}
 		}
@@ -5233,7 +5274,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		private ResultSet executeQuery(Statement statement, String query) throws SQLException {
+		ResultSet executeQuery(Statement statement, String query) throws SQLException {
 			ResultSet resultSet = null;
 			boolean locked = true;
 			while (locked) {
@@ -5241,15 +5282,13 @@ public class SleuthkitCase {
 					resultSet = statement.executeQuery(query);
 					locked = false;
 				} catch (SQLException ex) {
-					if (ex.getErrorCode() != SQLITE_BUSY_ERROR && ex.getErrorCode() != DATABASE_LOCKED_ERROR) {
-						throw ex;
-					}
+					handleException(ex);
 				}
 			}
 			return resultSet;
 		}
 
-		private ResultSet executeQuery(PreparedStatement statement) throws SQLException {
+		ResultSet executeQuery(PreparedStatement statement) throws SQLException {
 			ResultSet resultSet = null;
 			boolean locked = true;
 			while (locked) {
@@ -5257,9 +5296,7 @@ public class SleuthkitCase {
 					resultSet = statement.executeQuery();
 					locked = false;
 				} catch (SQLException ex) {
-					if (ex.getErrorCode() != SQLITE_BUSY_ERROR && ex.getErrorCode() != DATABASE_LOCKED_ERROR) {
-						throw ex;
-					}
+					handleException(ex);
 				}
 			}
 			return resultSet;
@@ -5272,9 +5309,7 @@ public class SleuthkitCase {
 					statement.executeUpdate(update);
 					locked = false;
 				} catch (SQLException ex) {
-					if (ex.getErrorCode() != SQLITE_BUSY_ERROR && ex.getErrorCode() != DATABASE_LOCKED_ERROR) {
-						throw ex;
-					}
+					handleException(ex);
 				}
 			}
 		}
@@ -5286,25 +5321,108 @@ public class SleuthkitCase {
 					statement.executeUpdate();
 					locked = false;
 				} catch (SQLException ex) {
-					if (ex.getErrorCode() != SQLITE_BUSY_ERROR && ex.getErrorCode() != DATABASE_LOCKED_ERROR) {
-						throw ex;
-					}
+					handleException(ex);
 				}
 			}
 		}
 
 		/**
-		 * ****************
-		 * Close the connection to the database, thereby releasing the file
-		 * handle
+		 * Close the connection to the database.
 		 */
-		private void close() {
-			try { // close all file handles to the autopsy.db database.
+		void close() {
+			try {
 				connection.close();
 			} catch (SQLException ex) {
-				logger.log(Level.SEVERE, "Unable to close handle to autopsy.db", ex);
+				logger.log(Level.SEVERE, "Unable to close connection to case database", ex);
 			}
 		}
+
+		abstract void handleException(SQLException ex) throws SQLException;
+
+	}
+
+	/**
+	 * A connection to an SQLite case database.
+	 */
+	private static final class SQLiteConnection extends CaseDbConnection {
+
+		private static final int DATABASE_LOCKED_ERROR = 0; // This should be 6 according to documentation, but it has been observed to be 0.
+		private static final int SQLITE_BUSY_ERROR = 5;
+
+		SQLiteConnection(String dbPath) {
+			super(createConnection(dbPath));
+		}
+
+		static Connection createConnection(String dbPath) {
+			Connection connection = null;
+			Statement statement = null;
+			try {
+				connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath); //NON-NLS				
+				boolean locked = true;
+				while (locked) {
+					try {
+						statement = connection.createStatement();
+						locked = false;
+					} catch (SQLException ex) {
+						if (ex.getErrorCode() != SQLITE_BUSY_ERROR && ex.getErrorCode() != DATABASE_LOCKED_ERROR) {
+							throw ex;
+						}
+					}
+				}
+				if (null != statement) {
+					statement.execute("PRAGMA synchronous = OFF;"); // Reduce I/O operations, we have no OS crash recovery anyway. //NON-NLS			
+					statement.execute("PRAGMA read_uncommitted = True;"); // Allow query while in transaction. //NON-NLS
+					statement.execute("PRAGMA foreign_keys = ON;"); // Enforce foreign key constraints. //NON-NLS
+				}
+			} catch (SQLException ex) {
+				// The exception is caught and logged here because this 
+				// constructor will be called by an override of 
+				// ThreadLocal<T>.initialValue() which cannot throw. Calls to 
+				// ConnectionPerThreadDispenser.getConnection() will detect
+				// the error state via isOpen() and throw an appropriate 
+				// exception.
+				SleuthkitCase.logger.log(Level.SEVERE, "Error setting up case database connection for thread", ex); //NON-NLS
+				if (null != connection) {
+					try {
+						connection.close();
+					} catch (SQLException e) {
+						SleuthkitCase.logger.log(Level.SEVERE, "Failed to close connection", e);
+					}
+					connection = null;
+				}
+			} finally {
+				closeStatement(statement);
+			}
+			return connection;
+		}
+
+		@Override
+		void handleException(SQLException ex) throws SQLException {
+			if (ex.getErrorCode() != SQLITE_BUSY_ERROR && ex.getErrorCode() != DATABASE_LOCKED_ERROR) {
+				throw ex;
+			}
+		}
+
+	}
+
+	/**
+	 * A connection to a PostgreSQL case database.
+	 */
+	private static final class PostgreSQLConnection extends CaseDbConnection {
+
+		PostgreSQLConnection(String host, int port, String dbName, String userName, String password) {
+			super(createConnection(host, port, dbName, userName, password));
+		}
+
+		static Connection createConnection(String host, int port, String dbName, String userName, String password) {
+			return null;
+		}
+
+		@Override
+		void handleException(SQLException ex) throws SQLException {
+			throw ex;
+		}
+
 	}
 
 	/**
@@ -5366,5 +5484,7 @@ public class SleuthkitCase {
 				throw new TskCoreException("Case database transaction rollback failed", ex);
 			}
 		}
+
 	}
+
 }
