@@ -118,13 +118,13 @@ public class SleuthkitCase {
 		init(caseHandle);
 	}
 
-	private void init(SleuthkitJNI.CaseDbHandle caseHandle) throws Exception { 
+	private void init(SleuthkitJNI.CaseDbHandle caseHandle) throws Exception {
 		this.caseHandle = caseHandle;
 		initBlackboardArtifactTypes();
 		initBlackboardAttributeTypes();
 		initNextArtifactId();
 	}
-	
+
 	/**
 	 * Make sure the predefined artifact types are in the artifact types table.
 	 *
@@ -554,6 +554,41 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Create a new PostgreSQL case database.
+	 * 
+	 * @param host The PostgreSQL database server.
+	 * @param port The port to use connect to the PostgreSQL database server.
+	 * @param dbName The name of the case database.
+	 * @param userName The user name to use to connect to the case database.
+	 * @param password The password to use to connect to the case database.
+	 * @param caseDirPath The path to the root case directory.
+	 * @return The case database object.
+	 * @throws TskCoreException 
+	 */
+	public static SleuthkitCase newPostgreSQLCase(String host, int port, String dbName, String userName, String password, String caseDirPath) throws TskCoreException {
+		// RJCTODO: Complete stub
+		return null;
+	}
+
+	/**
+	 * Open an existing PostgreSQL case database.
+	 * 
+	 * @param host The PostgreSQL database server.
+	 * @param port The port to use connect to the PostgreSQL database server.
+	 * @param dbName The name of the case database.
+	 * @param userName The user name to use to connect to the case database.
+	 * @param password The password to use to connect to the case database.
+	 * @param caseDirPath The path to the root case directory.
+	 * @return The case database object.
+	 * @throws TskCoreException 
+	 * @throws TskCoreException 
+	 */
+	public static SleuthkitCase openPostgreSQLCase(String host, int port, String dbName, String userName, String password, String caseDirPath) throws TskCoreException {
+		// RJCTODO: Complete stub
+		return null;
+	}
+
+	/**
 	 * Start process of adding a image to the case. Adding an image is a
 	 * multi-step process and this returns an object that allows it to happen.
 	 *
@@ -565,6 +600,7 @@ public class SleuthkitCase {
 	 * @return Object that encapsulates control of adding an image via the
 	 * SleuthKit native code layer.
 	 */
+
 	public AddImageProcess makeAddImageProcess(String timezone, boolean processUnallocSpace, boolean noFatFsOrphans) {
 		return this.caseHandle.initAddImageProcess(timezone, processUnallocSpace, noFatFsOrphans);
 	}
