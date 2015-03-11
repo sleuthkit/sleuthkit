@@ -4112,11 +4112,11 @@ public class SleuthkitCase {
 	 */
 	public void close() {
 		System.err.println(this.hashCode() + " closed"); //NON-NLS
+		acquireExclusiveLock();
 		System.err.flush();
 		connections.close();
 		fileSystemIdMap.clear();
 
-		acquireExclusiveLock();
 		try {
 			if (this.caseHandle != null) {
 				this.caseHandle.free();
