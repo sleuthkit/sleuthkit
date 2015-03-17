@@ -17,7 +17,6 @@
 #include "sqlite3.h"
 
 #include <string.h>
-
 #include <sstream>
 #include <algorithm>
 
@@ -32,6 +31,7 @@ using std::for_each;
 * open() before the object can be used.
 */
 TskDbSqlite::TskDbSqlite(const char *a_dbFilePathUtf8, bool a_blkMapFlag)
+    : TskDb(a_dbFilePathUtf8, a_blkMapFlag)
 {
     strncpy(m_dbFilePathUtf8, a_dbFilePathUtf8, 1024);
     m_utf8 = true;
@@ -44,6 +44,7 @@ TskDbSqlite::TskDbSqlite(const char *a_dbFilePathUtf8, bool a_blkMapFlag)
 #ifdef TSK_WIN32
 //@@@@
 TskDbSqlite::TskDbSqlite(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFlag)
+    : TskDb(a_dbFilePath, a_blkMapFlag)
 {
     wcsncpy(m_dbFilePath, a_dbFilePath, 1024);
     m_utf8 = false;
