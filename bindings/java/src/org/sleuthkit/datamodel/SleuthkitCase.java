@@ -4175,10 +4175,10 @@ public class SleuthkitCase {
 	 */
 	void setMd5Hash(AbstractFile file, String md5Hash) throws TskCoreException {
 		long id = file.getId();
-        String md5HashLc = null;
+		String md5HashLc = null;
 		if(md5Hash != null){
-           md5HashLc = md5Hash.toLowerCase();
-        }
+			md5HashLc = md5Hash.toLowerCase();
+		}
 		CaseDbConnection connection = connections.getConnection();
 		acquireExclusiveLock();
 		try {
@@ -4254,10 +4254,10 @@ public class SleuthkitCase {
 			logger.log(Level.SEVERE, "Error finding files by md5 hash " + md5Hash, ex); //NON-NLS			
 			return Collections.<AbstractFile>emptyList();
 		}
-        String md5HashLc = null;
+		String md5HashLc = null;
 		if(md5Hash != null){
-           md5HashLc = md5Hash.toLowerCase();
-        }
+			md5HashLc = md5Hash.toLowerCase();
+		}
 		acquireSharedLock();
 		Statement s = null;
 		ResultSet rs = null;
