@@ -4175,15 +4175,19 @@ public class SleuthkitCase {
 	 */
 	void setMd5Hash(AbstractFile file, String md5Hash) throws TskCoreException {
 		long id = file.getId();
+        String md5HashLc = null;
+		if(md5Hash != null){
+           md5HashLc = md5Hash.toLowerCase();
+        }
 		CaseDbConnection connection = connections.getConnection();
 		acquireExclusiveLock();
 		try {
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.UPDATE_FILE_MD5);
 			statement.clearParameters();
-			statement.setString(1, md5Hash);
+			statement.setString(1, md5HashLc);
 			statement.setLong(2, id);
 			connection.executeUpdate(statement);
-			file.setMd5Hash(md5Hash);
+			file.setMd5Hash(md5HashLc);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error setting MD5 hash", ex);
 		} finally {
@@ -4250,13 +4254,17 @@ public class SleuthkitCase {
 			logger.log(Level.SEVERE, "Error finding files by md5 hash " + md5Hash, ex); //NON-NLS			
 			return Collections.<AbstractFile>emptyList();
 		}
+        String md5HashLc = null;
+		if(md5Hash != null){
+           md5HashLc = md5Hash.toLowerCase();
+        }
 		acquireSharedLock();
 		Statement s = null;
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT * FROM tsk_files WHERE " //NON-NLS
-					+ " md5 = '" + md5Hash + "' " //NON-NLS
+					+ " md5 = '" + md5HashLc + "' " //NON-NLS
 					+ "AND size > 0"); //NON-NLS
 			return resultSetToAbstractFiles(rs);
 		} catch (SQLException ex) {
