@@ -48,6 +48,7 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
+import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteJDBCLoader;
 
 /**
@@ -4114,6 +4115,7 @@ public class SleuthkitCase {
 		System.err.println(this.hashCode() + " closed"); //NON-NLS
 		acquireExclusiveLock();
 		System.err.flush();
+		acquireExclusiveLock();
 		connections.close();
 		fileSystemIdMap.clear();
 
@@ -5104,11 +5106,22 @@ public class SleuthkitCase {
 			this.preparedStatements = new EnumMap<PREPARED_STATEMENT, PreparedStatement>(PREPARED_STATEMENT.class);
 			Statement statement = null;
 			try {
-				this.connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath); //NON-NLS
-				statement = createStatement();
-				statement.execute("PRAGMA synchronous = OFF;"); // Reduce I/O operations, we have no OS crash recovery anyway. //NON-NLS			
-				statement.execute("PRAGMA read_uncommitted = True;"); // Allow query while in transaction. //NON-NLS
-				statement.execute("PRAGMA foreign_keys = ON;"); // Enforce foreign key constraints. //NON-NLS
+				SQLiteConfig config = new SQLiteConfig();
+				
+				// Reduce I/O operations, we have no OS crash recovery anyway.
+				config.setSynchronous(SQLiteConfig.SynchronousMode.OFF);
+				
+				// The original comment for "read_uncommited" indicating that it
+				// was being set to "allow query while in transaction". I don't fully
+				// understand why this is needed since all it does it expose dirty writes
+				// within one transaction to other queries. There was also the suggestion
+				// that it may have helped to increase performance.
+				config.setReadUncommited(true);
+				
+				// Enforce foreign key constraints.
+				config.enforceForeignKeys(true);
+				
+				this.connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath, config.toProperties()); //NON-NLS
 			} catch (SQLException ex) {
 				// The exception is caught and logged here because this 
 				// constructor will be called by an override of 
@@ -5125,8 +5138,6 @@ public class SleuthkitCase {
 					}
 					this.connection = null;
 				}
-			} finally {
-				closeStatement(statement);
 			}
 		}
 
@@ -5193,10 +5204,25 @@ public class SleuthkitCase {
 		}
 
 		void commitTransaction() throws SQLException {
+			boolean locked = true;
+
+			// Exceptions can be thrown on a call to commit so we will retry
+			// until it succeeds.
+			while (locked) {
+				try {
+					connection.commit();
+					locked = false;
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, String.format("Exception commiting transaction: Error code: %d SQLState: %s", ex.getErrorCode(), ex.getSQLState()), ex);
+				}
+			}
+
+			// You must turn auto commit back on when done with the transaction.
 			try {
-				connection.commit();
-			} finally {
 				connection.setAutoCommit(true);
+			}
+			catch (SQLException ex) {
+				logger.log(Level.SEVERE, String.format("Exception resetting auto commit: Error code: %d SQLState: %s", ex.getErrorCode(), ex.getSQLState()), ex);
 			}
 		}
 
