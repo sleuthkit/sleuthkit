@@ -17,7 +17,7 @@
 #include "tsk_case_db.h"
 #include "tsk_auto_i.h"
 
-TskCaseDb::TskCaseDb(TskDbSqlite * a_db)
+TskCaseDb::TskCaseDb(TskDb * a_db)
 {
     m_tag = TSK_CASE_DB_TAG;
     m_db = a_db;
@@ -65,7 +65,7 @@ TskCaseDb::newDb(const TSK_TCHAR * const path)
         return NULL;
     }
 
-    TskDbSqlite *db = new TskDbSqlite(path, true);
+    TskDb *db = new TskDbSqlite(path, true);
 
     // Open the database.
     if (db->open(true)) {
@@ -95,7 +95,7 @@ TskCaseDb::openDb(const TSK_TCHAR * path)
         return NULL;
     }
 
-    TskDbSqlite *db = new TskDbSqlite(path, true);
+    TskDb *db = new TskDbSqlite(path, true);
 
     // Open the database.
     if (db->open(false)) {

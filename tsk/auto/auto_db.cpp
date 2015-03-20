@@ -30,7 +30,7 @@ using std::for_each;
  * @param a_NSRLDb Database of "known" files (can be NULL)
  * @param a_knownBadDb Database of "known bad" files (can be NULL)
  */
-TskAutoDb::TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_knownBadDb)
+TskAutoDb::TskAutoDb(TskDb * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_knownBadDb)
 {
     m_db = a_db;
     m_curImgId = 0;

@@ -33,7 +33,7 @@ using std::string;
  */
 class TskAutoDb:public TskAuto {
   public:
-    TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_knownBadDb);
+    TskAutoDb(TskDb * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_knownBadDb);
     virtual ~ TskAutoDb();
     virtual uint8_t openImage(int, const TSK_TCHAR * const images[],
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
@@ -94,7 +94,7 @@ class TskAutoDb:public TskAuto {
     int64_t commitAddImage();
 
   private:
-    TskDbSqlite * m_db;
+    TskDb * m_db;
     int64_t m_curImgId;     ///< Object ID of image currently being processed
     int64_t m_curVsId;      ///< Object ID of volume system currently being processed
     int64_t m_curVolId;     ///< Object ID of volume currently being processed
@@ -187,8 +187,8 @@ class TskCaseDb {
     TskCaseDb(const TskCaseDb&);
     TskCaseDb & operator=(const TskCaseDb&);
 
-    TskCaseDb(TskDbSqlite * a_db);
-    TskDbSqlite *m_db;
+    TskCaseDb(TskDb * a_db);
+    TskDb *m_db;
     TSK_HDB_INFO * m_NSRLDb;
     TSK_HDB_INFO * m_knownBadDb;
 };

@@ -203,6 +203,7 @@ copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\tsk\auto\tsk_db.cpp" />
     <ClCompile Include="..\..\tsk\fs\exfatfs_dent.c" />
     <ClCompile Include="..\..\tsk\fs\exfatfs.c" />
     <ClCompile Include="..\..\tsk\fs\exfatfs_meta.c" />
@@ -299,6 +300,7 @@ copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"
     <ClCompile Include="..\..\tsk\img\raw.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\tsk\auto\tsk_db.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_exfatfs.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_fatxxfs.h" />
     <ClInclude Include="..\..\tsk\hashdb\tsk_hash_info.h" />
