@@ -753,7 +753,7 @@ uint8_t
 
     // make the hashes all upper case
     for (i = 0; hvalue[i] != '\0'; i++) {
-        if (islowerer((int) hvalue[i]))
+        if (islower((int) hvalue[i]))
             fprintf(hdb_binsrch_info->hIdxTmp, "%c", toupper((int) hvalue[i]));
         else
             fprintf(hdb_binsrch_info->hIdxTmp, "%c", hvalue[i]);
