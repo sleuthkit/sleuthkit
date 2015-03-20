@@ -4174,16 +4174,19 @@ public class SleuthkitCase {
 	 * core
 	 */
 	void setMd5Hash(AbstractFile file, String md5Hash) throws TskCoreException {
+		if(md5Hash == null){
+			return;
+		}
 		long id = file.getId();
 		CaseDbConnection connection = connections.getConnection();
 		acquireExclusiveLock();
 		try {
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.UPDATE_FILE_MD5);
 			statement.clearParameters();
-			statement.setString(1, md5Hash);
+			statement.setString(1, md5Hash.toLowerCase());
 			statement.setLong(2, id);
 			connection.executeUpdate(statement);
-			file.setMd5Hash(md5Hash);
+			file.setMd5Hash(md5Hash.toLowerCase());
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error setting MD5 hash", ex);
 		} finally {
@@ -4243,6 +4246,9 @@ public class SleuthkitCase {
 	 * @return List of AbstractFile with the given hash
 	 */
 	public List<AbstractFile> findFilesByMd5(String md5Hash) {
+		if(md5Hash == null){
+			return Collections.<AbstractFile>emptyList();
+		}
 		CaseDbConnection connection;
 		try {
 			connection = connections.getConnection();
@@ -4256,7 +4262,7 @@ public class SleuthkitCase {
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT * FROM tsk_files WHERE " //NON-NLS
-					+ " md5 = '" + md5Hash + "' " //NON-NLS
+					+ " md5 = '" + md5Hash.toLowerCase() + "' " //NON-NLS
 					+ "AND size > 0"); //NON-NLS
 			return resultSetToAbstractFiles(rs);
 		} catch (SQLException ex) {
