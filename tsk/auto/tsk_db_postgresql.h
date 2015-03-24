@@ -14,12 +14,17 @@
  * The class is an extension of TSK abstract database handling class. 
  */
 
+
 #ifndef _TSK_DB_POSTGRESQL_H
 #define _TSK_DB_POSTGRESQL_H
 
+#include "tsk_db.h"
+
+#ifdef TSK_WIN32
+
 #include "libpq-fe.h"
 #include <string.h>
-#include "tsk_db.h"
+
 
 #include <map>
 using std::map;
@@ -45,4 +50,6 @@ private:
     char m_dbFilePathUtf8[1024];
 };
 
-#endif
+#endif // _TSK_DB_POSTGRESQL_H
+
+#endif // TSK_WIN32

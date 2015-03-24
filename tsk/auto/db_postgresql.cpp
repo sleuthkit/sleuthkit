@@ -13,8 +13,10 @@
 * Contains code to perform operations against PostgreSQL database. 
 */
 
+
 #include "tsk_db_postgresql.h"
 
+#ifdef TSK_WIN32
 /**
 * Set the locations and logging object.  Must call
 * open() before the object can be used.
@@ -57,8 +59,9 @@ int TskDbPostgreSQL::open(bool flag)
 
     return 0;
 }
+
 /*
-* Close the Sqlite database.
+* Close PostgreSQL database.
 * Return 0 on success, 1 on failure
 */
 int TskDbPostgreSQL::close()
@@ -69,3 +72,4 @@ int TskDbPostgreSQL::close()
     return 0;
 }
 
+#endif // TSK_WIN32

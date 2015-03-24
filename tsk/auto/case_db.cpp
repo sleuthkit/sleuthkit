@@ -67,9 +67,11 @@ TskCaseDb::newDb(const TSK_TCHAR * const path)
 
     TskDb *db = new TskDbSqlite(path, true);
 
+#ifdef WIN32
     TskDbPostgreSQL *postDb = new TskDbPostgreSQL(path, true);
     postDb->open(true);
     postDb->close();
+#endif
 
     // Open the database.
     if (db->open(true)) {
