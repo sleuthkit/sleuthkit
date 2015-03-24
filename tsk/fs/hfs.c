@@ -3503,7 +3503,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
         if (tsk_verbose) {
             tsk_fprintf(stderr,
-                "hfs_load_extended_attrs: Reading Attributes File n ode with ID %"
+                "hfs_load_extended_attrs: Reading Attributes File node with ID %"
                 PRIu32 "\n", nodeID);
         }
 
@@ -3713,16 +3713,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                     recData += 1;
                 }
 
-                // Now this should be a "inline data" kind of record.  The other two kinds are not
-                // used for anything, and are not handled in this code.
                 attrData = (hfs_attr_data *) recData;
-                if (tsk_getu32(endian,
-                        attrData->record_type) !=
-                    HFS_ATTR_RECORD_INLINE_DATA) {
-                    error_detected(TSK_ERR_FS_UNSUPFUNC,
-                        "hfs_load_extended_attrs: The Attributes File record found was not of type INLINE_DATA");
-                    goto on_error;
-                }
 
                 // This is the length of the useful data, not including the record header
                 attributeLength = tsk_getu32(endian, attrData->attr_size);
@@ -3752,10 +3743,11 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                     goto on_error;
                 }
 
-
                 // What is the type of this attribute?  If it is a compression record, then
                 // use TSK_FS_ATTR_TYPE_HFS_COMP_REC.  Else, use TSK_FS_ATTR_TYPE_HFS_EXT_ATTR
-                if (strcmp(nameBuff, "com.apple.decmpfs") == 0) {
+                // Only "inline data" kind of record is handled.
+                if (strcmp(nameBuff, "com.apple.decmpfs") == 0 &&
+                    tsk_getu32(endian, attrData->record_type) == HFS_ATTR_RECORD_INLINE_DATA) {
                     // Now, look at the compression record
                     DECMPFS_DISK_HEADER *cmph =
                         (DECMPFS_DISK_HEADER *) buffer;
@@ -6148,6 +6140,44 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     hfs->extents_file = NULL;
     hfs->extents_attr = NULL;
 
+    if (tsk_getu32(fs->endian,
+                hfs->fs->start_file.extents[0].blk_cnt) == 0) {
+            if (tsk_verbose)
+                tsk_fprintf(stderr,
+                    "hfs_open: Optional Startup File is not present.\n");
+            hfs->has_startup_file = FALSE;
+        }
+    else {
+        if (tsk_verbose)
+            tsk_fprintf(stderr, "hfs_open: Startup File is present.\n");
+        hfs->has_startup_file = TRUE;
+    }
+
+    if (tsk_getu32(fs->endian, hfs->fs->ext_file.extents[0].blk_cnt) == 0) {
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "hfs_open: Optional Extents File (and Badblocks File) is not present.\n");
+        hfs->has_extents_file = FALSE;
+    }
+    else {
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "hfs_open: Extents File (and BadBlocks File) is present.\n");
+        hfs->has_extents_file = TRUE;
+    }
+
+    if (tsk_getu32(fs->endian, hfs->fs->attr_file.extents[0].blk_cnt) == 0) {
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "hfs_open: Optional Attributes File is not present.\n");
+        hfs->has_attributes_file = FALSE;
+    }
+    else {
+        if (tsk_verbose)
+            tsk_fprintf(stderr, "hfs_open: Attributes File is present.\n");
+        hfs->has_attributes_file = TRUE;
+    }
+
     /* Load the catalog file though */
     if ((hfs->catalog_file =
             tsk_fs_file_open_meta(fs, NULL,
@@ -6325,44 +6355,6 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     // These caches will be set, if they are needed.
     hfs->meta_dir = NULL;
     hfs->dir_meta_dir = NULL;
-
-    if (tsk_getu32(fs->endian,
-            hfs->fs->start_file.extents[0].blk_cnt) == 0) {
-        if (tsk_verbose)
-            tsk_fprintf(stderr,
-                "hfs_open: Optional Startup File is not present.\n");
-        hfs->has_startup_file = FALSE;
-    }
-    else {
-        if (tsk_verbose)
-            tsk_fprintf(stderr, "hfs_open: Startup File is present.\n");
-        hfs->has_startup_file = TRUE;
-    }
-
-    if (tsk_getu32(fs->endian, hfs->fs->ext_file.extents[0].blk_cnt) == 0) {
-        if (tsk_verbose)
-            tsk_fprintf(stderr,
-                "hfs_open: Optional Extents File (and Badblocks File) is not present.\n");
-        hfs->has_extents_file = FALSE;
-    }
-    else {
-        if (tsk_verbose)
-            tsk_fprintf(stderr,
-                "hfs_open: Extents File (and BadBlocks File) is present.\n");
-        hfs->has_extents_file = TRUE;
-    }
-
-    if (tsk_getu32(fs->endian, hfs->fs->attr_file.extents[0].blk_cnt) == 0) {
-        if (tsk_verbose)
-            tsk_fprintf(stderr,
-                "hfs_open: Optional Attributes File is not present.\n");
-        hfs->has_attributes_file = FALSE;
-    }
-    else {
-        if (tsk_verbose)
-            tsk_fprintf(stderr, "hfs_open: Attributes File is present.\n");
-        hfs->has_attributes_file = TRUE;
-    }
 
     return fs;
 }
