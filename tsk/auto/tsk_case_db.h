@@ -23,7 +23,11 @@ using std::string;
 
 #include "tsk_auto_i.h"
 #include "tsk_db_sqlite.h"
+
+#ifdef HAVE_POSTGRESQL
 #include "tsk_db_postgresql.h"
+#endif
+
 #include "tsk/hashdb/tsk_hashdb.h"
 
 #define TSK_ADD_IMAGE_SAVEPOINT "ADDIMAGE"

@@ -224,7 +224,7 @@ copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBEWF_HOME)\common;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;$(POSTGRESQL_HOME_64)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBZ;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBZ;WIN32;_DEBUG;HAVE_POSTGRESQL;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader>
@@ -235,6 +235,8 @@ copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"
     <PostBuildEvent>
       <Command>copy "$(LIBEWF_HOME)\msvscpp\x64\release\libewf.dll" "$(OutDir)"
 copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"
+copy "$(POSTGRESQL_HOME_64)\bin\libpq.dll" "$(OutDir)"
+copy "$(POSTGRESQL_HOME_64)\bin\libintl-8.dll" "$(OutDir)"
 </Command>
     </PostBuildEvent>
     <Lib>
@@ -312,7 +314,7 @@ copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBEWF_HOME)\common;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;$(POSTGRESQL_HOME_64)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBZ;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBZ;WIN32;NDEBUG;HAVE_POSTGRESQL;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
@@ -323,7 +325,8 @@ copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"
     <PostBuildEvent>
       <Command>copy "$(LIBEWF_HOME)\msvscpp\x64\release\libewf.dll" "$(OutDir)"
 copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"
-</Command>
+copy "$(POSTGRESQL_HOME_64)\bin\libpq.dll" "$(OutDir)"
+copy "$(POSTGRESQL_HOME_64)\bin\libintl-8.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Lib>
       <AdditionalDependencies>libpq.lib</AdditionalDependencies>
