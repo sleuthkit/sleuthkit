@@ -2675,7 +2675,7 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
     }
 
     // Allocate two buffers of the compression unit size.
-    rawBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE);
+    rawBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE + 1);
     uncBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE);
     if (rawBuf == NULL || uncBuf == NULL) {
         error_returned
@@ -2781,6 +2781,23 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                 "hfs_attr_walk_special: reading one compression unit, number %d, length %d\n",
                 indx, len);
 
+        /* Github #383 referenced that if len is 0, then the below code causes
+         * problems. Added this check, but I don't have data to verify this on.
+         * it looks like it should at least not crash, but it isn't clear if it
+         * will also do the right thing and if should actually break here instead. */
+        if (len == 0) {
+            continue;
+        }
+
+        if (len > COMPRESSION_UNIT_SIZE + 1) {
+          error_detected(TSK_ERR_FS_READ,
+              "hfs_attr_walk_special: block size is too large: %u", len);
+          free(offsetTableData);
+          free(offsetTable);
+          free(rawBuf);
+          free(uncBuf);
+          return 1;
+        }
         // Read in the chunk of (potentially) compressed data
         attrReadResult = tsk_fs_attr_read(rAttr, offset,
             rawBuf, len, TSK_FS_FILE_READ_FLAG_NONE);
@@ -3005,7 +3022,7 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
     }
 
     // Allocate two buffers of the compression unit size.
-    rawBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE);
+    rawBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE + 1);
     if (rawBuf == NULL) {
         error_returned
             (" hfs_file_read_special: buffers for reading and uncompressing");
@@ -3158,6 +3175,15 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
             continue;
         }
 
+        if (len > COMPRESSION_UNIT_SIZE + 1) {
+          error_detected(TSK_ERR_FS_READ,
+              "hfs_file_read_special: block size is too large: %u", len);
+          free(offsetTableData);
+          free(offsetTable);
+          free(rawBuf);
+          free(uncBuf);
+          return -1;
+        }
         // Read in the chunk of compressed data
         attrReadResult = tsk_fs_attr_read(rAttr, offset,
             rawBuf, len, TSK_FS_FILE_READ_FLAG_NONE);
