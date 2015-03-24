@@ -2608,8 +2608,8 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
     TSK_ENDIAN_ENUM endian;
     TSK_FS_FILE *fs_file;
     const TSK_FS_ATTR *rAttr;   // resource fork attribute
-    char *rawBuf;               // compressed data
-    char *uncBuf;               // uncompressed data
+    char *rawBuf = NULL;               // compressed data
+    char *uncBuf = NULL;               // uncompressed data
     hfs_resource_fork_header rfHeader;
     int attrReadResult;
     uint32_t offsetTableOffset;
@@ -2674,14 +2674,6 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
         return 1;
     }
 
-    // Allocate two buffers of the compression unit size.
-    rawBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE + 1);
-    uncBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE);
-    if (rawBuf == NULL || uncBuf == NULL) {
-        error_returned
-            (" hfs_attr_walk_special: buffers for reading and uncompressing");
-        return 1;
-    }
 
     // Read the resource fork header
     attrReadResult = tsk_fs_attr_read(rAttr, 0, (char *) &rfHeader,
@@ -2689,8 +2681,6 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
     if (attrReadResult != sizeof(hfs_resource_fork_header)) {
         error_returned
             (" hfs_attr_walk_special: trying to read the resource fork header");
-        free(rawBuf);
-        free(uncBuf);
         return 1;
     }
 
@@ -2718,8 +2708,6 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
         error_returned
             (" hfs_attr_walk_special: trying to read the offset table size, "
             "return value of %u should have been 4", attrReadResult);
-        free(rawBuf);
-        free(uncBuf);
         return 1;
     }
     tableSize = tsk_getu32(TSK_LIT_ENDIAN, fourBytes);
@@ -2729,8 +2717,6 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
     if (offsetTableData == NULL) {
         error_returned
             (" hfs_attr_walk_special: space for the offset table raw data");
-        free(rawBuf);
-        free(uncBuf);
         return 1;
     }
     offsetTable =
@@ -2740,8 +2726,6 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
         error_returned
             (" hfs_attr_walk_special: space for the offset table");
         free(offsetTableData);
-        free(rawBuf);
-        free(uncBuf);
         return 1;
     }
 
@@ -2754,8 +2738,6 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
             tableSize * 8);
         free(offsetTableData);
         free(offsetTable);
-        free(rawBuf);
-        free(uncBuf);
         return 1;
     }
 
@@ -2764,6 +2746,21 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
             tsk_getu32(TSK_LIT_ENDIAN, offsetTableData + indx * 8);
         offsetTable[indx].length =
             tsk_getu32(TSK_LIT_ENDIAN, offsetTableData + indx * 8 + 4);
+    }
+
+    // Allocate two buffers of the compression unit size.
+    rawBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE + 1);
+    if (rawBuf == NULL) {
+        error_returned
+            (" hfs_attr_walk_special: buffers for reading and uncompressing");
+        return 1;
+    }
+    uncBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE);
+    if (uncBuf == NULL) {
+        error_returned
+            (" hfs_attr_walk_special: buffers for reading and uncompressing");
+        free(rawBuf);
+        return 1;
     }
 
     // FOR entry in the table DO
@@ -2937,8 +2934,8 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
     TSK_ENDIAN_ENUM endian;
     TSK_FS_FILE *fs_file;
     const TSK_FS_ATTR *rAttr;
-    char *rawBuf;
-    char *uncBuf;
+    char *rawBuf = NULL;
+    char *uncBuf = NULL;
     hfs_resource_fork_header rfHeader;
     int attrReadResult;
     hfs_resource_fork_header *resHead;
@@ -3021,29 +3018,12 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
         return -1;
     }
 
-    // Allocate two buffers of the compression unit size.
-    rawBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE + 1);
-    if (rawBuf == NULL) {
-        error_returned
-            (" hfs_file_read_special: buffers for reading and uncompressing");
-        return -1;
-    }
-    uncBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE);
-    if (uncBuf == NULL) {
-        error_returned
-            (" hfs_file_read_special: buffers for reading and uncompressing");
-        free(rawBuf);
-        return -1;
-    }
-
     // Read the resource fork header
     attrReadResult = tsk_fs_attr_read(rAttr, 0, (char *) &rfHeader,
         sizeof(hfs_resource_fork_header), TSK_FS_FILE_READ_FLAG_NONE);
     if (attrReadResult != sizeof(hfs_resource_fork_header)) {
         error_returned
             (" hfs_file_read_special: trying to read the resource fork header");
-        free(rawBuf);
-        free(uncBuf);
         return -1;
     }
 
@@ -3068,8 +3048,6 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
         error_returned
             (" hfs_file_read_special: trying to read the offset table size, "
             "return value of %u should have been 4", attrReadResult);
-        free(rawBuf);
-        free(uncBuf);
         return -1;
     }
     tableSize = tsk_getu32(TSK_LIT_ENDIAN, fourBytes);
@@ -3079,8 +3057,6 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
     if (offsetTableData == NULL) {
         error_returned
             (" hfs_file_read_special: space for the offset table raw data");
-        free(rawBuf);
-        free(uncBuf);
         return -1;
     }
     offsetTable =
@@ -3090,8 +3066,6 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
         error_returned
             (" hfs_file_read_special: space for the offset table");
         free(offsetTableData);
-        free(rawBuf);
-        free(uncBuf);
         return -1;
     }
 
@@ -3104,8 +3078,6 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
             tableSize * 8);
         free(offsetTableData);
         free(offsetTable);
-        free(rawBuf);
-        free(uncBuf);
         return -1;
     }
 
@@ -3125,8 +3097,6 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
             a_offset, a_offset + a_len, sizeUpperBound);
         free(offsetTableData);
         free(offsetTable);
-        free(rawBuf);
-        free(uncBuf);
         return -1;
     }
 
@@ -3153,6 +3123,21 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
             "hfs_file_read_special: reading compression units: %" PRIu32
             " to %" PRIu32 "\n", startUnit, endUnit);
     bytesCopied = 0;
+
+    // Allocate two buffers of the compression unit size.
+    rawBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE + 1);
+    if (rawBuf == NULL) {
+        error_returned
+            (" hfs_file_read_special: buffers for reading and uncompressing");
+        return -1;
+    }
+    uncBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE);
+    if (uncBuf == NULL) {
+        error_returned
+            (" hfs_file_read_special: buffers for reading and uncompressing");
+        free(rawBuf);
+        return -1;
+    }
 
     // Read from the indicated comp units
     for (indx = startUnit; indx <= endUnit; indx++) {
