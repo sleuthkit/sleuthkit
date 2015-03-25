@@ -992,6 +992,15 @@ hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
                 is_done = 1;
                 break;
             }
+            // TODO: Handle multinode loops
+            if (next_node == cur_node) {
+                tsk_error_set_errno(TSK_ERR_FS_GENFS);
+                tsk_error_set_errstr
+                    ("hfs_cat_traverse: node %d references itself as next node",
+                    cur_node);
+                is_done = 1;
+                break;
+            }
             cur_node = next_node;
         }
 
@@ -6085,6 +6094,11 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             tsk_fs_free((TSK_FS_INFO *)hfs);
 
             /* just re-open with the new offset, then record the offset */
+            if (hfsplus_offset == 0) {
+                tsk_error_set_errno(TSK_ERR_FS_CORRUPT);
+                tsk_error_set_errstr("HFS+ offset is zero");
+                return NULL;
+            }
             fs_info2 =
                 hfs_open(img_info, offset + hfsplus_offset, ftype, test);
 
@@ -6118,6 +6132,11 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_getu32(fs->endian, hfs->fs->blk_sz);
 
     // determine the last block we have in this image
+    if (fs->block_size <= 1) {
+        tsk_error_set_errno(TSK_ERR_FS_CORRUPT);
+        tsk_error_set_errstr("HFS+ allocation block size too small");
+        return NULL;
+    }
     if ((TSK_DADDR_T) ((img_info->size - offset) / fs->block_size) <
         fs->block_count)
         fs->last_block_act =
