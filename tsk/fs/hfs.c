@@ -2748,7 +2748,10 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
             tsk_getu32(TSK_LIT_ENDIAN, offsetTableData + indx * 8 + 4);
     }
 
-    // Allocate two buffers of the compression unit size.
+    // Allocate two buffers for the raw and uncompressed data
+    /* Raw data can be COMPRESSSION_UNIT_SIZE+1 if the data is not
+     * compressed and there is a 1-byte flag that indicates that 
+     * the data is not compressed. */
     rawBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE + 1);
     if (rawBuf == NULL) {
         error_returned
@@ -3124,7 +3127,10 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
             " to %" PRIu32 "\n", startUnit, endUnit);
     bytesCopied = 0;
 
-    // Allocate two buffers of the compression unit size.
+    // Allocate buffers for the raw and uncompressed data
+    /* Raw data can be COMPRESSSION_UNIT_SIZE+1 if the data is not
+     * compressed and there is a 1-byte flag that indicates that 
+     * the data is not compressed. */
     rawBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE + 1);
     if (rawBuf == NULL) {
         error_returned
