@@ -32,7 +32,7 @@ TskDbPostgreSQL::~TskDbPostgreSQL()
 
 int TskDbPostgreSQL::setLogInInfo(){
 
-    strncpy(userName, "postgres___s", sizeof(userName));
+    strncpy(userName, "postgress", sizeof(userName));
     strncpy(password, "simple41", sizeof(password));
     strncpy(dbName, "testdb", sizeof(dbName));
     strncpy(hostIpAddr, "127.0.0.1", sizeof(hostIpAddr));
@@ -53,6 +53,7 @@ int TskDbPostgreSQL::open(bool flag)
     // Check to see that the backend connection was successfully made 
     if (PQstatus(conn) != CONNECTION_OK)
     {
+        ConnStatusType connStatus = PQstatus(conn);
         printf("Connection to database failed");
         close();
         return -1;

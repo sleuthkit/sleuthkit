@@ -55,6 +55,16 @@ TskCaseDb *
 TskCaseDb::newDb(const TSK_TCHAR * const path)
 {
 
+#ifdef HAVE_POSTGRESQL
+#ifdef TSK_WIN32
+    TskDbPostgreSQL *postDb = new TskDbPostgreSQL(path, true);
+    postDb->setLogInInfo();
+    if (!postDb->open(true)) {
+        postDb->close();
+    }
+#endif // TSK_WIN32
+#endif // HAVE_POSTGRESQL
+
     // Check if the database already exsists
     struct STAT_STR stat_buf;
     if (TSTAT(path, &stat_buf) == 0) {
@@ -66,16 +76,6 @@ TskCaseDb::newDb(const TSK_TCHAR * const path)
     }
 
     TskDb *db = new TskDbSqlite(path, true);
-
-#ifdef HAVE_POSTGRESQL
-#ifdef TSK_WIN32
-    TskDbPostgreSQL *postDb = new TskDbPostgreSQL(path, true);
-    postDb->setLogInInfo();
-    if (!postDb->open(true)) {
-        postDb->close();
-    }
-#endif // TSK_WIN32
-#endif // HAVE_POSTGRESQL
 
     // Open the database.
     if (db->open(true)) {

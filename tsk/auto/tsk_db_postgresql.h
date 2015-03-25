@@ -47,7 +47,6 @@ private:
 
     PGconn *conn;
     TSK_TCHAR m_dbFilePath[1024];
-    char m_dbFilePathUtf8[1024];
     char userName[128];
     char password[128];
     char dbName[1024];
