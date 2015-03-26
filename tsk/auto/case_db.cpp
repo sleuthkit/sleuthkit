@@ -57,25 +57,23 @@ TskCaseDb::newDb(const TSK_TCHAR * const path)
 
 #ifdef HAVE_POSTGRESQL
 #ifdef TSK_WIN32
-    TskDbPostgreSQL *postDb = new TskDbPostgreSQL(path, true);
-    postDb->setLogInInfo();
-    if (!postDb->open(true)) {
-        postDb->close();
-    }
+
+    // ELTODO: chech here which database to initialize
+    //TskDb *db = new TskDbSqlite(path, true);
+
+    TskDb *db = new TskDbPostgreSQL(path, true);
 #endif // TSK_WIN32
 #endif // HAVE_POSTGRESQL
 
     // Check if the database already exsists
-    struct STAT_STR stat_buf;
-    if (TSTAT(path, &stat_buf) == 0) {
+    if (db->dbExists()) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         tsk_error_set_errstr("Database %" PRIttocTSK
             " already exists.  Must be deleted first.", path);
+        delete(db);
         return NULL;
     }
-
-    TskDb *db = new TskDbSqlite(path, true);
 
     // Open the database.
     if (db->open(true)) {
@@ -95,17 +93,24 @@ TskCaseDb *
 TskCaseDb::openDb(const TSK_TCHAR * path)
 {
 
+#ifdef HAVE_POSTGRESQL
+#ifdef TSK_WIN32
+
+    // ELTODO: chech here which database to initialize
+    //TskDb *db = new TskDbSqlite(path, true);
+
+    TskDb *db = new TskDbPostgreSQL(path, true);
+#endif // TSK_WIN32
+#endif // HAVE_POSTGRESQL
+
     // Confirm that database already exsists
-    struct STAT_STR stat_buf;
-    if (TSTAT(path, &stat_buf) != 0) {
+    if (!db->dbExists()) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         tsk_error_set_errstr("Database %" PRIttocTSK
             " does not exist.  Must be created first.", path);
         return NULL;
     }
-
-    TskDb *db = new TskDbSqlite(path, true);
 
     // Open the database.
     if (db->open(false)) {

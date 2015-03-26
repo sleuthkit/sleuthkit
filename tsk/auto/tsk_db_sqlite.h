@@ -64,11 +64,12 @@ class TskDbSqlite : public TskDb {
     int addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLayoutRange);
     int addFileLayoutRange(int64_t a_fileObjId, uint64_t a_byteStart, uint64_t a_byteLen, int a_sequence);
     
-    bool dbExist() const;
+    bool isDbOpen() const;
     int createSavepoint(const char *name);
     int revertSavepoint(const char *name);
     int releaseSavepoint(const char *name);
     bool inTransaction();
+    bool dbExists();
 
     //query methods / getters
     TSK_RETVAL_ENUM getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts);
