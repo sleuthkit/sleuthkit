@@ -273,6 +273,7 @@ public class TskData {
         TSK_FS_ATTR_TYPE_NTFS_PROP(0xF0),      //  (NT)
         TSK_FS_ATTR_TYPE_NTFS_LOG(0x100),      //  (2K)
         TSK_FS_ATTR_TYPE_UNIX_INDIR(0x1001),   //  Indirect blocks for UFS and ExtX file systems
+        TSK_FS_ATTR_TYPE_UNIX_EXTENT(0x1002),  //  Extents for Ext4 file system
 
         // Types for HFS+ File Attributes
         TSK_FS_ATTR_TYPE_HFS_DEFAULT(0x01),    // 1    Data fork of fs special files and misc
