@@ -163,7 +163,7 @@ bool TskDbPostgreSQL::dbExists() {
 
     // Poll PostreSQL server for existing databases. 
     char selectString[512];
-    sprintf(selectString, "select count(*) from pg_catalog.pg_database where datname = '%S';", m_dBName);
+    sprintf(selectString, "select datname from pg_catalog.pg_database where datname = '%S';", m_dBName);
 
 	PGresult *res = PQexec(serverConn, selectString);
     if (PQresultStatus(res) != PGRES_TUPLES_OK)
@@ -172,7 +172,7 @@ bool TskDbPostgreSQL::dbExists() {
         numDb = 0;
     } else {
         // number of existing databases that matched name (if search is case sensitive then max is 1)
-        numDb = atoi(PQgetvalue(res, 0, 0));
+        numDb = PQntuples(res);
     }
 
     PQclear(res);
