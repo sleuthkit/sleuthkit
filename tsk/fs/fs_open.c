@@ -192,6 +192,26 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
             tsk_error_reset();
         }
 
+        if ((fs_info =
+                btrfs_open(a_img_info, a_offset,
+                    TSK_FS_TYPE_BTRFS_DETECT, 1)) != NULL) {
+            if (set == NULL) {
+                set = "Btrfs";
+                fs_set = fs_info;
+            }
+            else {
+                fs_set->close(fs_set);
+                fs_info->close(fs_info);
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
+                tsk_error_set_errstr("Btrfs or %s", set);
+                return NULL;
+            }
+        }
+        else {
+            tsk_error_reset();
+        }
+
 
 #if TSK_USE_HFS
         if ((fs_info =
@@ -259,6 +279,8 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
             return swapfs_open(a_img_info, a_offset);
         else if (TSK_FS_TYPE_ISYAFFS2(a_ftype))
             return yaffs2_open(a_img_info, a_offset, a_ftype, 0);
+        else if (TSK_FS_TYPE_ISBTRFS(a_ftype))
+            return btrfs_open(a_img_info, a_offset, a_ftype, 0);
         else {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_UNSUPTYPE);
