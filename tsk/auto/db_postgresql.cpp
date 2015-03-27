@@ -51,14 +51,11 @@ PGconn* TskDbPostgreSQL::connectToDatabase(TSK_TCHAR *dbName) {
     sprintf(connectionString, "user=%s password=%s dbname=%S hostaddr=%s port=%s", userName, password, dbName, hostIpAddr, hostPort);
     PGconn *dbConn = PQconnectdb(connectionString);
 
-//    const char *conninfo;
-//    conninfo = "dbname = el_testdb";
-//    PGconn *dbConn = PQconnectdb(conninfo);
-
     // Check to see that the backend connection was successfully made 
     if (PQstatus(dbConn) != CONNECTION_OK)
     {
         ConnStatusType connStatus = PQstatus(dbConn);
+        // ELTODO: replace printf with tsk_error_set_errstr. This will be done as part of implementing an equivalent to TskDbSqlite::attempt().
         printf("Connection to PostgreSQL database failed");
         PQfinish(dbConn);
         return NULL;
@@ -92,8 +89,11 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::createDatabase(){
     // if need different encoding we can use this:
     // CREATE DATABASE dBname WITH ENCODING='UTF8';
 
+    // IMPORTANT: PostgreSQL database names are case sensitive but ONLY if you surround the db name in double quotes.
+    // If you use single quotes, PostgreSQL will convert db name to lower case. If database was created using double quotes 
+    // you now need to always use double quotes when referring to it.
     char createDbString[512];
-    sprintf(createDbString, "CREATE DATABASE %S;", m_dBName);
+    sprintf(createDbString, "CREATE DATABASE \"%S\";", m_dBName);
 	PGresult *res = PQexec(serverConn, createDbString);    
     if (PQresultStatus(res) != PGRES_COMMAND_OK)
     {
@@ -161,7 +161,7 @@ bool TskDbPostgreSQL::dbExists() {
     if (!serverConn)
         return NULL;
 
-    // Poll PostreSQL server for existing databases. PostgreSQL database names are case sensitive   
+    // Poll PostreSQL server for existing databases. 
     char selectString[512];
     sprintf(selectString, "select count(*) from pg_catalog.pg_database where datname = '%S';", m_dBName);
 
