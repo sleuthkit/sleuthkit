@@ -538,6 +538,28 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Open an existing case network database.
+	 *
+	 * @param info information to connect to network database.
+	 * @param databaseName the name of the database
+	 * @return Case database object.
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	public static SleuthkitCase openCase(String databaseName, CaseDbConnectionInfo info) throws TskCoreException {
+	/// KDM new case here... handle both
+		/*
+		final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
+		try {
+			return new SleuthkitCase(dbPath, caseHandle);
+		} catch (Exception ex) {
+			throw new TskCoreException("Failed to open case database at " + dbPath, ex);
+		}
+		*/
+	return null;
+	}
+
+	
+	/**
 	 * Create a new case database.
 	 *
 	 * @param dbPath Path to where SQlite case database should be created.
@@ -554,37 +576,23 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Create a new PostgreSQL case database.
-	 * 
-	 * @param host The PostgreSQL database server.
-	 * @param port The port to use connect to the PostgreSQL database server.
-	 * @param dbName The name of the case database.
-	 * @param userName The user name to use to connect to the case database.
-	 * @param password The password to use to connect to the case database.
-	 * @param caseDirPath The path to the root case directory.
-	 * @return The case database object.
-	 * @throws TskCoreException 
+	 * Create a new case network database.
+	 *
+	 * @param info the information to connect to the database
+	 * @param databaseName the name of the database
+	 * @return Case database object.
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public static SleuthkitCase newPostgreSQLCase(String host, int port, String dbName, String userName, String password, String caseDirPath) throws TskCoreException {
-		// RJCTODO: Complete stub
-		return null;
-	}
-
-	/**
-	 * Open an existing PostgreSQL case database.
-	 * 
-	 * @param host The PostgreSQL database server.
-	 * @param port The port to use connect to the PostgreSQL database server.
-	 * @param dbName The name of the case database.
-	 * @param userName The user name to use to connect to the case database.
-	 * @param password The password to use to connect to the case database.
-	 * @param caseDirPath The path to the root case directory.
-	 * @return The case database object.
-	 * @throws TskCoreException 
-	 * @throws TskCoreException 
-	 */
-	public static SleuthkitCase openPostgreSQLCase(String host, int port, String dbName, String userName, String password, String caseDirPath) throws TskCoreException {
-		// RJCTODO: Complete stub
+	public static SleuthkitCase newCase(String databaseName, CaseDbConnectionInfo info) throws TskCoreException {
+	/// KDM new case here... handle both
+		/*
+		SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.newCaseDb(dbPath);
+		try {
+			return new SleuthkitCase(dbPath, caseHandle);
+		} catch (Exception ex) {
+			throw new TskCoreException("Failed to create case database at " + dbPath, ex);
+		}
+		*/
 		return null;
 	}
 
