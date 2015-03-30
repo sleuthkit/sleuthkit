@@ -27,6 +27,8 @@ using std::ostream;
 using std::vector;
 using std::string;
 
+#define TSK_SCHEMA_VER 3
+
 /**
  * Values for the type column in the tsk_objects table. 
  */
