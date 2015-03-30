@@ -61,7 +61,7 @@ TskCaseDb::newDb(const TSK_TCHAR * const path)
     // ELTODO: check here which database to initialize
     //TskDb *db = new TskDbSqlite(path, true);
 
-    return TskDbPostgreSQL(path, true);
+    TskDb *db = new TskDbPostgreSQL(path, true);
 #else
     TskDb *db = new TskDbSqlite(path, true);
 #endif // TSK_WIN32
@@ -103,7 +103,7 @@ TskCaseDb::openDb(const TSK_TCHAR * path)
     // ELTODO: check here which database to initialize
     //TskDb *db = new TskDbSqlite(path, true);
 
-    return TskDbPostgreSQL(path, true);
+    TskDb *db = new TskDbPostgreSQL(path, true);
 #else
     TskDb *db = new TskDbSqlite(path, true);
 #endif // TSK_WIN32
