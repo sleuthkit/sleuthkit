@@ -325,7 +325,7 @@ TSK_RETVAL_ENUM
  */
 uint8_t TskAutoDb::addFilesInImgToDb()
 {
-    if (m_db == NULL || !m_db->dbExist()) {
+    if (m_db == NULL || !m_db->isDbOpen()) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         tsk_error_set_errstr("addFilesInImgToDb: m_db not open");

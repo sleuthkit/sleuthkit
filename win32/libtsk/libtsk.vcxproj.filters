@@ -306,6 +306,9 @@
     <ClCompile Include="..\..\tsk\auto\tsk_db.cpp">
       <Filter>auto</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tsk\auto\db_postgresql.cpp">
+      <Filter>auto</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\tsk\vs\tsk_bsd.h">
@@ -411,6 +414,9 @@
       <Filter>hash</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tsk\auto\tsk_db.h">
+      <Filter>auto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\auto\tsk_db_postgresql.h">
       <Filter>auto</Filter>
     </ClInclude>
   </ItemGroup>
