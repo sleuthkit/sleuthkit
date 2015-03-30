@@ -1056,12 +1056,24 @@ TSK_RETVAL_ENUM
 * Returns true if database is opened.
 */
 bool
-    TskDbSqlite::dbExist() const 
+    TskDbSqlite::isDbOpen() const 
 {
     if (m_db)
         return true;
     else
         return false;
+}
+
+bool TskDbSqlite::dbExists() {
+
+    // Check if database file already exsists
+    struct STAT_STR stat_buf;
+    if (TSTAT(m_dbFilePath, &stat_buf) == 0) {
+        // database file exists
+        return true;
+    }
+
+    return false;
 }
 
 bool

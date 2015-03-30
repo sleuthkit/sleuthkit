@@ -9,35 +9,41 @@
  */
 
 /**
- * \file tsk_db_sqlite.h
- * Contains the SQLite code for maintaining the case-level database.
+ * \file tsk_db_postgresql.h
+ * Contains the PostgreSQL code for maintaining the case-level database.
  * The class is an extension of TSK abstract database handling class. 
  */
 
-#ifndef _TSK_DB_SQLITE_H
-#define _TSK_DB_SQLITE_H
+#ifdef HAVE_POSTGRESQL
 
-#include <map>
+#ifndef _TSK_DB_POSTGRESQL_H
+#define _TSK_DB_POSTGRESQL_H
 
-#include "sqlite3.h"
 #include "tsk_db.h"
 
+#ifdef TSK_WIN32
+
+#include "libpq-fe.h"
+#include <string.h>
+
+
+#include <map>
 using std::map;
 
 
 /** \internal
- * C++ class that wraps the database internals. 
+ * C++ class that wraps PostgreSQL database internals. 
  */
-class TskDbSqlite : public TskDb {
+class TskDbPostgreSQL : public TskDb {
   public:
-#ifdef TSK_WIN32
-//@@@@
-    TskDbSqlite(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFlag);
-#endif
-     TskDbSqlite(const char *a_dbFilePathUtf8, bool a_blkMapFlag);
-    ~TskDbSqlite();
+    TskDbPostgreSQL(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFlag);
+    ~TskDbPostgreSQL();
     int open(bool);
     int close();
+
+    TSK_RETVAL_ENUM setLogInInfo();
+
+// not implemeneted:
     int addImageInfo(int type, int size, int64_t & objId, const string & timezone);
     int addImageInfo(int type, int size, int64_t & objId, const string & timezone, TSK_OFF_T, const string &md5);
     int addImageName(int64_t objId, char const *imgName, int sequence);
@@ -81,44 +87,20 @@ class TskDbSqlite : public TskDb {
     TSK_RETVAL_ENUM getParentImageId (const int64_t objId, int64_t & imageId);
     TSK_RETVAL_ENUM getFsRootDirObjectInfo(const int64_t fsObjId, TSK_DB_OBJECT & rootDirObjInfo);
 
+private:
 
-  private:
-    // prevent copying until we add proper logic to handle it
-    TskDbSqlite(const TskDbSqlite&);
-    TskDbSqlite & operator=(const TskDbSqlite&);
+    PGconn *conn;
+    TSK_TCHAR m_dBName[256];
+    char userName[128];
+    char password[128];
+    char hostIpAddr[64];
+    char hostPort[16];
 
+    PGconn* connectToDatabase(TSK_TCHAR *dbName);
+    TSK_RETVAL_ENUM createDatabase();
     int initialize();
-    int setupFilePreparedStmt();
-    void cleanupFilePreparedStmt();
-    int createIndexes();
-    int attempt(int resultCode, const char *errfmt);
-    int attempt(int resultCode, int expectedResultCode,
-        const char *errfmt);
-    int attempt_exec(const char *sql, int (*callback) (void *, int,
-            char **, char **), void *callback_arg, const char *errfmt);
-    int attempt_exec(const char *sql, const char *errfmt);
-    int prepare_stmt(const char *sql, sqlite3_stmt ** ppStmt);
-    uint8_t addObject(TSK_DB_OBJECT_TYPE_ENUM type, int64_t parObjId, int64_t & objId);
-    int addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
-        const char *path, const unsigned char *const md5,
-        const TSK_DB_FILES_KNOWN_ENUM known, int64_t fsObjId,
-        int64_t parObjId, int64_t & objId);
-    TSK_RETVAL_ENUM addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId, const int64_t fsObjId,
-        const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
-    TSK_RETVAL_ENUM addLayoutFileInfo(const int64_t parObjId, const int64_t fsObjId, const TSK_DB_FILES_TYPE_ENUM dbFileType, const char *fileName, const uint64_t size,
-        int64_t & objId);
-    
-    void storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_file, const char *path, const int64_t & objId);
-    int64_t findParObjId(const TSK_FS_FILE * fs_file, const char *path, const int64_t & fsObjId);
-    uint32_t hash(const unsigned char *str);
-    sqlite3 *m_db;
-    TSK_TCHAR m_dbFilePath[1024];
-    char m_dbFilePathUtf8[1024];
-    bool m_blkMapFlag;
-    bool m_utf8; //encoding used for the database file name, not the actual database
-    sqlite3_stmt *m_selectFilePreparedStmt;
-    sqlite3_stmt *m_insertObjectPreparedStmt;
-    map<int64_t, map<TSK_INUM_T, map<uint32_t, int64_t> > > m_parentDirIdCache; //maps a file system ID to a map, which maps a directory file system meta address to a map, which maps a sequence ID to its object ID in the database
 };
 
-#endif
+#endif // TSK_WIN32
+#endif // _TSK_DB_POSTGRESQL_H
+#endif // HAVE_POSTGRESQL
