@@ -186,7 +186,6 @@ class TskCaseDb {
     // prevent copying until we add proper logic to handle it
     TskCaseDb(const TskCaseDb&);
     TskCaseDb & operator=(const TskCaseDb&);
-
     TskCaseDb(TskDb * a_db);
     TskDb *m_db;
     TSK_HDB_INFO * m_NSRLDb;

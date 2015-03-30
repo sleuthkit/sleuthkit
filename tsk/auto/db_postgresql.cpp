@@ -133,7 +133,7 @@ int TskDbPostgreSQL::open(bool createDbFlag)
     }
 
     // ELTODO: delete this:
-    test();
+    //test();
 
     return 0;
 }
@@ -290,7 +290,7 @@ int TskDbPostgreSQL::initialize() {
     // http://www.postgresql.org/docs/current/interactive/datatype-numeric.html
 
     if (attempt_exec
-        ("CREATE TABLE tsk_objects (obj_id INTEGER PRIMARY KEY, par_obj_id INTEGER, type INTEGER NOT NULL);",
+        ("CREATE TABLE tsk_objects (obj_id SERIAL PRIMARY KEY, par_obj_id INTEGER, type INTEGER NOT NULL);",
         "Error creating tsk_objects table: %s\n")
         ||
         attempt_exec
@@ -359,7 +359,8 @@ int TskDbPostgreSQL::initialize() {
         "FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id), FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))",
         "Error creating blackboard_attribute table: %s\n")
         ||
-        /* In PostgreSQL "desc" indicates "descending order" so I had to rename "desc TEXT" to "descr TEXT" */
+        /* In PostgreSQL "desc" indicates "descending order" so I had to rename "desc TEXT" to "descr TEXT" 
+        ELTODO: make sure all insert queries have "descr". Should I also make this change for SQLite?*/
         attempt_exec
         ("CREATE TABLE tsk_vs_parts (obj_id INTEGER PRIMARY KEY, addr INTEGER NOT NULL, start INTEGER NOT NULL, length INTEGER NOT NULL, descr TEXT, flags INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating tsk_vol_info table: %s\n")
@@ -419,7 +420,9 @@ uint8_t
 {
     char stmt[1024];
 
-    snprintf(stmt, 1024, "INSERT INTO tsk_objects (obj_id, par_obj_id, type) VALUES (NULL, %d, %d)", 
+//    snprintf(stmt, 1024, "INSERT INTO tsk_objects (obj_id, par_obj_id, type) VALUES (NULL, %d, %d)", 
+//        parObjId, type);
+    snprintf(stmt, 1024, "INSERT INTO tsk_objects (par_obj_id, type) VALUES (%d, %d)", 
         parObjId, type);
 
     if (attempt_exec(stmt, "TskDbSqlite::addObj: Error adding object to row: %s (result code %d)\n")) {

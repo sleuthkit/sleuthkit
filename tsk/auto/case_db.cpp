@@ -54,15 +54,19 @@ TskCaseDb::~TskCaseDb()
 TskCaseDb *
 TskCaseDb::newDb(const TSK_TCHAR * const path)
 {
-
+    // ELTODO: optimize this
 #ifdef HAVE_POSTGRESQL
 #ifdef TSK_WIN32
 
     // ELTODO: check here which database to initialize
     //TskDb *db = new TskDbSqlite(path, true);
 
-    TskDb *db = new TskDbPostgreSQL(path, true);
+    return TskDbPostgreSQL(path, true);
+#else
+    TskDb *db = new TskDbSqlite(path, true);
 #endif // TSK_WIN32
+#else
+    TskDb *db = new TskDbSqlite(path, true);
 #endif // HAVE_POSTGRESQL
 
     // Check if the database already exsists
@@ -92,15 +96,19 @@ TskCaseDb::newDb(const TSK_TCHAR * const path)
 TskCaseDb *
 TskCaseDb::openDb(const TSK_TCHAR * path)
 {
-
+    // ELTODO: optimize this
 #ifdef HAVE_POSTGRESQL
 #ifdef TSK_WIN32
 
     // ELTODO: check here which database to initialize
     //TskDb *db = new TskDbSqlite(path, true);
 
-    TskDb *db = new TskDbPostgreSQL(path, true);
+    return TskDbPostgreSQL(path, true);
+#else
+    TskDb *db = new TskDbSqlite(path, true);
 #endif // TSK_WIN32
+#else
+    TskDb *db = new TskDbSqlite(path, true);
 #endif // HAVE_POSTGRESQL
 
     // Confirm that database already exsists
@@ -120,7 +128,6 @@ TskCaseDb::openDb(const TSK_TCHAR * path)
 
     return new TskCaseDb(db);
 }
-
 
 /**
  * Prepares the process to add an image to the database. This method
