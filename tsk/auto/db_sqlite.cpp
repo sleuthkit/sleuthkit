@@ -24,8 +24,6 @@ using std::stringstream;
 using std::sort;
 using std::for_each;
 
-#define TSK_SCHEMA_VER 3
-
 /**
 * Set the locations and logging object.  Must call
 * open() before the object can be used.

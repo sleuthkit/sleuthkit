@@ -90,6 +90,7 @@ class TskDbPostgreSQL : public TskDb {
 private:
 
     PGconn *conn;
+    bool m_blkMapFlag;
     TSK_TCHAR m_dBName[256];
     char userName[128];
     char password[128];
@@ -99,6 +100,15 @@ private:
     PGconn* connectToDatabase(TSK_TCHAR *dbName);
     TSK_RETVAL_ENUM createDatabase();
     int initialize();
+    int attempt_exec(const char *sql, const char *errfmt);
+    int attempt(int resultCode, const char *errfmt);
+    int attempt(int resultCode, int expectedResultCode, const char *errfmt);
+    int createIndexes();
+
+    uint8_t addObject(TSK_DB_OBJECT_TYPE_ENUM type, int64_t parObjId, int64_t & objId);
+
+    // ELTODO: delete this:
+    void test();
 };
 
 #endif // TSK_WIN32
