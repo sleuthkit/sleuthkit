@@ -133,7 +133,7 @@ int TskDbPostgreSQL::open(bool createDbFlag)
     }
 
     // ELTODO: delete this:
-    //test();
+    test();
 
     return 0;
 }
@@ -457,10 +457,43 @@ int
     return attempt_exec(stmt, "Error adding data to tsk_vs_info table: %s\n");
 }
 
+/**
+* Query tsk_vs_info with given id and returns TSK_DB_VS_INFO info entry
+* @param objId vs id to query
+* @param vsInfo (out) TSK_DB_VS_INFO entry representation to return
+* @returns TSK_ERR on error (or if not found), TSK_OK on success
+*/
+TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInfo) {
+
+    char stmt[1024];
+    // ELTODO: note that for PostgreSQL we have to do "obj_id =" whereas for SQLite query is "obj_id IS"...
+    snprintf(stmt, 1024, "SELECT obj_id, vs_type, img_offset, block_size FROM tsk_vs_info WHERE obj_id = %d", objId);
+
+    PGresult *res = PQexec(conn, stmt);
+    if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        char * str = PQerrorMessage(conn);
+        tsk_error_set_errstr("TskDbPostgreSQL::getVsInfo: Error selecting object by objid: %s (result code %d)\n", PQerrorMessage(conn));
+        PQclear(res);
+        return TSK_ERR;
+    }
+
+    int numResults = PQntuples(res);
+    vsInfo.objId = atoi(PQgetvalue(res, 0, 0));
+    vsInfo.vstype = (TSK_VS_TYPE_ENUM)atoi(PQgetvalue(res, 0, 1));
+    vsInfo.offset = atoi(PQgetvalue(res, 0, 2));
+    vsInfo.block_size = atoi(PQgetvalue(res, 0, 3));
+
+    //cleanup
+    PQclear(res);
+
+    return TSK_OK;
+}
+
 // ELTODO: delete this test code
 void TskDbPostgreSQL::test()
 {
-
     TSK_VS_INFO vsInfo;
     vsInfo.tag = 20;
     vsInfo.img_info = (TSK_IMG_INFO *)21;
@@ -474,7 +507,8 @@ void TskDbPostgreSQL::test()
     int64_t parObjId = 41;
     int64_t objId;
     int error = addVsInfo(&vsInfo, parObjId, objId);
-    int a = 9;
+    TSK_DB_VS_INFO vsInfoRes;
+    getVsInfo(1, vsInfoRes);
 };
 
 
@@ -516,7 +550,6 @@ void TskDbPostgreSQL::test()
     TSK_RETVAL_ENUM TskDbPostgreSQL::getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts) { return TSK_OK;}
     TSK_RETVAL_ENUM TskDbPostgreSQL::getFsInfos(int64_t imgId, vector<TSK_DB_FS_INFO> & fsInfos) { return TSK_OK;}
     TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO> & vsInfos) { return TSK_OK;}
-    TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInfo) { return TSK_OK;}
     TSK_RETVAL_ENUM TskDbPostgreSQL::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_PART_INFO> & vsPartInfos) { return TSK_OK;}
     TSK_RETVAL_ENUM TskDbPostgreSQL::getObjectInfo(int64_t objId, TSK_DB_OBJECT & objectInfo) { return TSK_OK;}
     TSK_RETVAL_ENUM TskDbPostgreSQL::getParentImageId (const int64_t objId, int64_t & imageId) { return TSK_OK;}
