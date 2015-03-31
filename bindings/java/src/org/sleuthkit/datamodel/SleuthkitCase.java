@@ -547,13 +547,13 @@ public class SleuthkitCase {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public static SleuthkitCase openCase(String databaseName, CaseDbConnectionInfo info) throws TskCoreException {
-	/// KDM new case here... handle both
+		/// KDM TODO
 		/*
-		final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
+		final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseRemoteDb(databaseName, info);
 		try {
 			return new SleuthkitCase(dbPath, caseHandle);
 		} catch (Exception ex) {
-			throw new TskCoreException("Failed to open case database at " + dbPath, ex);
+			throw new TskCoreException("Failed to open case database " + databaseName, ex);
 		}
 		*/
 	return null;
@@ -585,13 +585,13 @@ public class SleuthkitCase {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public static SleuthkitCase newCase(String databaseName, CaseDbConnectionInfo info) throws TskCoreException {
-	/// KDM new case here... handle both
-		/*
-		SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.newCaseDb(dbPath);
+		/* KDM TODO
+ 		SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.newCaseRemoteDb(databaseName, info);
 		try {
-			return new SleuthkitCase(dbPath, caseHandle);
+			return new SleuthkitCase(info.getHost(), Integer.parseInt(info.getPort()),
+					databaseName, info.getUserName(), info.getPassword(), caseHandle, null); /// KDM last argument (caseDirPath) doesn't make much sense in this context. fix it.
 		} catch (Exception ex) {
-			throw new TskCoreException("Failed to create case database at " + dbPath, ex);
+			throw new TskCoreException("Failed to create case database " + databaseName, ex);
 		}
 		*/
 		return null;
@@ -5626,4 +5626,17 @@ public class SleuthkitCase {
 			}
 		}	
 	}
+
+	public static boolean settingsValid(CaseDbConnectionInfo info) {
+		// Check if we can talk to the database
+		try {
+			Connection conn = DriverManager.getConnection("jdbc:postgresql://"+
+					info.getHost()+":"+info.getPort()+"/postgres", 
+					info.getUserName(), 
+					info.getPassword()); // NON-NLS
+		} catch (Exception ex) {
+			return false;
+		}
+		return true;
+	}		
 }
