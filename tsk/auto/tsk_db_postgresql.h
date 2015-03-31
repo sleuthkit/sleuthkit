@@ -103,9 +103,12 @@ private:
     int attempt_exec(const char *sql, const char *errfmt);
     int attempt(int resultCode, const char *errfmt);
     int attempt(int resultCode, int expectedResultCode, const char *errfmt);
+    PGresult* get_query_result_set(const char *sql, const char *errfmt);
     int createIndexes();
 
     uint8_t addObject(TSK_DB_OBJECT_TYPE_ENUM type, int64_t parObjId, int64_t & objId);
+    int addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr, const char *path, const unsigned char *const md5, 
+        const TSK_DB_FILES_KNOWN_ENUM known, int64_t fsObjId, int64_t parObjId, int64_t & objId);
 
     // ELTODO: delete this:
     void test();
