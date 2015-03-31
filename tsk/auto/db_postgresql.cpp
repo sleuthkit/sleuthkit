@@ -451,17 +451,18 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInf
     // ELTODO: note that for PostgreSQL we have to do "obj_id =" whereas for SQLite query is "obj_id IS"...
     snprintf(stmt, 1024, "SELECT obj_id, vs_type, img_offset, block_size FROM tsk_vs_info WHERE obj_id = %d", objId);
 
-    PGresult *res = PQexec(conn, stmt);
-    if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+    PGresult *res = get_query_result_set(stmt, "TskDbPostgreSQL::getVsInfo: Error selecting object by objid: %s (result code %d)\n");
+
+    // check if a result set was returned
+    if (!res || !PQntuples(res)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         char * str = PQerrorMessage(conn);
-        tsk_error_set_errstr("TskDbPostgreSQL::getVsInfo: Error selecting object by objid: %s (result code %d)\n", PQerrorMessage(conn));
+        tsk_error_set_errstr("TskDbSqlite::addObj: No result returned for INSERT INTO tsk_objects. Can't obtain objId\n", PQerrorMessage(conn));
         PQclear(res);
         return TSK_ERR;
     }
 
-    int numResults = PQntuples(res);
     vsInfo.objId = atoi(PQgetvalue(res, 0, 0));
     vsInfo.vstype = (TSK_VS_TYPE_ENUM)atoi(PQgetvalue(res, 0, 1));
     vsInfo.offset = atoi(PQgetvalue(res, 0, 2));
@@ -489,6 +490,7 @@ int TskDbPostgreSQL::addImageInfo(int type, int ssize, int64_t & objId, const st
     char stmt[2048];
     int ret;
 
+    // ELTODO: Verify this. SQLite code doesn't use addObject because we're passing in NULL as the parent
     if (addObject(TSK_DB_OBJECT_TYPE_IMG, NULL, objId)) {
         return 1;
     }
@@ -535,6 +537,317 @@ int TskDbPostgreSQL::addFsInfo(const TSK_FS_INFO * fs_info, int64_t parObjId, in
         fs_info->last_inum);
 
     return attempt_exec(stmt, "Error adding data to tsk_fs_info table: %s\n");
+}
+
+/**
+* Add a file system file to the database
+* @param fs_file File structure to add
+* @param fs_attr Specific attribute to add
+* @param path Path of the file
+* @param md5 Binary value of MD5 (i.e. 16 bytes) or NULL 
+* @param known Status regarding if it was found in hash databse or not
+* @param fsObjId File system object of its file system
+* @param objId ID that was assigned to it from the objects table
+* @returns 1 on error and 0 on success
+*/
+int TskDbPostgreSQL::addFsFile(TSK_FS_FILE * fs_file,
+    const TSK_FS_ATTR * fs_attr, const char *path,
+    const unsigned char *const md5, const TSK_DB_FILES_KNOWN_ENUM known,
+    int64_t fsObjId, int64_t & objId)
+{
+    int64_t parObjId = 0;
+
+    if (fs_file->name == NULL)
+        return 0;
+
+    /* we want the root directory to have its parent be the file system
+    * object.  We need to have special care though because the ".." entries
+    * in sub-folders of the root directory have a meta_addr of the root dir. */
+    if ((fs_file->fs_info->root_inum == fs_file->name->meta_addr) && 
+        ((fs_file->name->name == NULL) || (0 == TSK_FS_ISDOT(fs_file->name->name)))) {
+            // this entry is for root directory
+            parObjId = fsObjId;
+    }
+    else {
+        parObjId = findParObjId(fs_file, path, fsObjId);
+        if (parObjId == -1) {
+            //error
+            return 1;
+        }    
+    }
+
+    return addFile(fs_file, fs_attr, path, md5, known, fsObjId, parObjId, objId);
+}
+
+/**
+* Add file data to the file table
+* @param md5 binary value of MD5 (i.e. 16 bytes) or NULL
+* Return 0 on success, 1 on error.
+*/
+int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file,
+    const TSK_FS_ATTR * fs_attr, const char *path,
+    const unsigned char *const md5, const TSK_DB_FILES_KNOWN_ENUM known,
+    int64_t fsObjId, int64_t parObjId,
+    int64_t & objId)
+{
+
+
+    time_t
+        mtime = 0;
+    time_t
+        crtime = 0;
+    time_t
+        ctime = 0;
+    time_t
+        atime = 0;
+    TSK_OFF_T size = 0;
+    int
+        meta_type = 0;
+    int
+        meta_flags = 0;
+    int
+        meta_mode = 0;
+    int
+        gid = 0;
+    int
+        uid = 0;
+    int
+        type = TSK_FS_ATTR_TYPE_NOT_FOUND;
+    int
+        idx = 0;
+
+    if (fs_file->name == NULL)
+        return 0;
+
+    if (fs_file->meta) {
+        mtime = fs_file->meta->mtime;
+        atime = fs_file->meta->atime;
+        ctime = fs_file->meta->ctime;
+        crtime = fs_file->meta->crtime;
+        meta_type = fs_file->meta->type;
+        meta_flags = fs_file->meta->flags;
+        meta_mode = fs_file->meta->mode;
+        gid = fs_file->meta->gid;
+        uid = fs_file->meta->uid;
+    }
+
+    size_t attr_nlen = 0;
+    if (fs_attr) {
+        type = fs_attr->type;
+        idx = fs_attr->id;
+        size = fs_attr->size;
+        if (fs_attr->name) {
+            if ((fs_attr->type != TSK_FS_ATTR_TYPE_NTFS_IDXROOT) ||
+                (strcmp(fs_attr->name, "$I30") != 0)) {
+                    attr_nlen = strlen(fs_attr->name);
+            }
+        }
+    }
+
+    // combine name and attribute name
+    size_t len = strlen(fs_file->name->name);
+    char *
+        name;
+    size_t nlen = len + attr_nlen + 5;
+    if ((name = (char *) tsk_malloc(nlen)) == NULL) {
+        return 1;
+    }
+
+    strncpy(name, fs_file->name->name, nlen);
+
+    // Add the attribute name
+    if (attr_nlen > 0) {
+        strncat(name, ":", nlen-strlen(name));
+        strncat(name, fs_attr->name, nlen-strlen(name));
+    }
+
+    // clean up path
+    // +2 = space for leading slash and terminating null
+    size_t path_len = strlen(path) + 2;
+    char *escaped_path;
+    if ((escaped_path = (char *) tsk_malloc(path_len)) == NULL) { 
+        free(name);
+        return 1;
+    }
+
+    strncpy(escaped_path, "/", path_len);
+    strncat(escaped_path, path, path_len - strlen(escaped_path));
+
+    char *md5TextPtr = NULL;
+    char md5Text[48];
+
+    // if md5 hashes are being used
+    if (md5 != NULL) {
+        // copy the hash as hexidecimal into the buffer
+        for (int i = 0; i < 16; i++) {
+            sprintf(&(md5Text[i*2]), "%x%x", (md5[i] >> 4) & 0xf,
+                md5[i] & 0xf);
+        }
+        md5TextPtr = md5Text;
+    }
+
+
+    if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId)) {
+        free(name);
+        free(escaped_path);
+        return 1;
+    }
+
+    char zSQL[2048];
+    snprintf(zSQL, 2048, "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
+        "VALUES ("
+        "%" PRId64 ",%" PRId64 ","
+        "%d,"
+        "%d,%d,'%q',"
+        "%" PRIuINUM ",%d,"
+        "%d,%d,%d,%d,"
+        "%" PRIuOFF ","
+        "%llu,%llu,%llu,%llu,"
+        "%d,%d,%d,%Q,%d,"
+        "'%q')",
+        fsObjId, objId,
+        TSK_DB_FILES_TYPE_FS,
+        type, idx, name,
+        fs_file->name->meta_addr, fs_file->name->meta_seq, 
+        fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
+        size, 
+        (unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime, 
+        meta_mode, gid, uid, md5TextPtr, known,
+        escaped_path);
+
+    if (attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
+        free(name);
+        free(escaped_path);
+        return 1;
+    }
+
+    //if dir, update parent id cache
+    if (meta_type == TSK_FS_META_TYPE_DIR) {
+        std::string fullPath = std::string(path) + fs_file->name->name;
+        storeObjId(fsObjId, fs_file, fullPath.c_str(), objId);
+    }
+
+    free(name);
+    free(escaped_path);
+
+    return 0;
+}
+
+
+/**
+* Find parent object id of TSK_FS_FILE. Use local cache map, if not found, fall back to SQL
+* @param fs_file file to find parent obj id for
+* @param path Path of parent folder that we want to match
+* @param fsObjId fs id of this file
+* @returns parent obj id ( > 0), -1 on error
+*/
+int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *path, const int64_t & fsObjId) {
+    uint32_t seq;
+    /* NTFS uses sequence, otherwise we hash the path. We do this to map to the
+    * correct parent folder if there are two from the root dir that eventually point to
+    * the same folder (one deleted and one allocated) or two hard links. */
+    if (TSK_FS_TYPE_ISNTFS(fs_file->fs_info->ftype)) {
+        seq = fs_file->name->par_seq;
+    }
+    else {
+        seq = hash((const unsigned char *)path);
+    }
+
+    //get from cache by parent meta addr, if available
+    map<TSK_INUM_T, map<uint32_t, int64_t> > &fsMap = m_parentDirIdCache[fsObjId];
+    if (fsMap.count(fs_file->name->par_addr) > 0) {
+        map<uint32_t, int64_t>  &fileMap = fsMap[fs_file->name->par_addr];
+        if (fileMap.count(seq) > 0) {
+            return fileMap[seq];
+        }
+        else {
+            printf("Miss: %d\n", fileMap.count(seq));
+        }
+    }
+
+    fprintf(stderr, "Miss: %s (%"PRIu64")\n", fs_file->name->name, fs_file->name->meta_addr);
+
+    // Find the parent file id in the database using the parent metadata address
+    // @@@ This should use sequence number when the new database supports it
+
+    // ELTODO: use m_selectFilePreparedStmt prepared stataement instead
+
+    char zSQL[1024];
+    // ELTODO: verify that using "=" instead of "IS ?" is equivalent
+    snprintf(zSQL, 1024, "SELECT obj_id FROM tsk_files WHERE meta_addr = %d AND fs_obj_id = %d", fs_file->name->par_addr, fsObjId);
+    PGresult* res = get_query_result_set(zSQL, "TskDbSqlite::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n");
+
+    // check if a result set was returned
+    if (!res || !PQntuples(res)) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        char * str = PQerrorMessage(conn);
+        tsk_error_set_errstr("TskDbSqlite::findParObjId: No result returned for SELECT obj_id. Can't obtain parObjId\n", PQerrorMessage(conn));
+        PQclear(res);
+        return TSK_ERR;
+    }
+
+    int64_t parObjId = atoi(PQgetvalue(res, 0, 0));
+    return parObjId;
+}
+
+/**
+* return a hash of the passed in string. We use this
+* for full paths. 
+* From: http://www.cse.yorku.ca/~oz/hash.html
+*/
+uint32_t TskDbPostgreSQL::hash(const unsigned char *str) {
+    uint32_t hash = 5381;
+    int c;
+
+    while ((c = *str++)) {
+        // skip slashes -> normalizes leading/ending/double slashes
+        if (c == '/')
+            continue;
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+    }
+
+    return hash;
+}
+
+/**
+* Store meta_addr to object id mapping of the directory in a local cache map
+* @param fsObjId fs id of this directory
+* @param fs_file File for the directory to store
+* @param path Full path (parent and this file) of this directory
+* @param objId object id of this directory from the objects table
+*/
+void TskDbPostgreSQL::storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_file, const char *path, const int64_t & objId) {
+    // skip the . and .. entries
+    if ((fs_file->name) && (fs_file->name->name) && (TSK_FS_ISDOT(fs_file->name->name))) {
+        return;
+    }
+
+    uint32_t seq;
+    /* NTFS uses sequence, otherwise we hash the path. We do this to map to the
+    * correct parent folder if there are two from the root dir that eventually point to
+    * the same folder (one deleted and one allocated) or two hard links. */
+    if (TSK_FS_TYPE_ISNTFS(fs_file->fs_info->ftype)) {
+        /* Use the sequence stored in meta (which could be one larger than the name value
+        * if the directory is deleted. We do this because the par_seq gets added to the
+        * name structure when it is added to the directory based on teh value stored in 
+        * meta. */
+        seq = fs_file->meta->seq;
+    }
+    else {
+        seq = hash((const unsigned char *)path);
+    }
+
+    map<TSK_INUM_T, map<uint32_t, int64_t> > &fsMap = m_parentDirIdCache[fsObjId];
+    if (fsMap.count(fs_file->name->meta_addr) == 0) {
+        fsMap[fs_file->name->meta_addr][seq] = objId;
+    }
+    else {
+        map<uint32_t, int64_t> &fileMap = fsMap[fs_file->name->meta_addr];
+        if (fileMap.count(seq) == 0) {
+            fileMap[seq] = objId;
+        }
+    }
 }
 
 
@@ -639,10 +952,7 @@ void TskDbPostgreSQL::test()
 
     int TskDbPostgreSQL::addVolumeInfo(const TSK_VS_PART_INFO * vs_part, int64_t parObjId,
         int64_t & objId){        return 0; }
-    int TskDbPostgreSQL::addFsFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
-        const char *path, const unsigned char *const md5,
-        const TSK_DB_FILES_KNOWN_ENUM known, int64_t fsObjId,
-        int64_t & objId) {return 0;}
+
 
     TSK_RETVAL_ENUM TskDbPostgreSQL::addVirtualDir(const int64_t fsObjId, const int64_t parentDirId, const char * const name, int64_t & objId) { return TSK_OK;}
     TSK_RETVAL_ENUM TskDbPostgreSQL::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & objId) { return TSK_OK;}
