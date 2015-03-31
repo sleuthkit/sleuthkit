@@ -133,7 +133,7 @@ int TskDbPostgreSQL::open(bool createDbFlag)
     }
 
     // ELTODO: delete this:
-    test();
+    //test();
 
     return 0;
 }
@@ -230,6 +230,23 @@ PGresult* TskDbPostgreSQL::get_query_result_set(const char *sql, const char *err
             return NULL;
     }
     return res;
+}
+
+/**
+* Verifies if PGresult is valid and not empty. Frees result memory and sets TSK error values if result is invalid. 
+* @returns true if result is valid and not empty, false if result is invalid or empty
+*/
+bool TskDbPostgreSQL::isQueryResultValid(PGresult *res, const char *errfmt)
+{
+    if (!res || !PQntuples(res)) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        char * str = PQerrorMessage(conn);
+        tsk_error_set_errstr(errfmt, PQerrorMessage(conn));
+        PQclear(res);
+        return false;
+    }
+    return true;
 }
 
 int TskDbPostgreSQL::attempt(int resultCode, int expectedResultCode, const char *errfmt)
@@ -337,6 +354,10 @@ int TskDbPostgreSQL::initialize() {
         "FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id))",
         "Error creating blackboard_artifact_tags table: %s\n")
         ||
+        /* ELTODO: The binary representation of BYTEA is a bunch of bytes, which could
+         * include embedded nulls so we have to pay attention to field length.
+         * http://www.postgresql.org/docs/9.4/static/libpq-example.html
+         */
         attempt_exec
         ("CREATE TABLE blackboard_attributes (artifact_id INTEGER NOT NULL, artifact_type_id INTEGER NOT NULL, source TEXT, context TEXT, attribute_type_id INTEGER NOT NULL, value_type INTEGER NOT NULL, "
         "value_byte BYTEA, value_text TEXT, value_int32 INTEGER, value_int64 INTEGER, value_double NUMERIC(20, 10), "
@@ -406,12 +427,7 @@ uint8_t TskDbPostgreSQL::addObject(TSK_DB_OBJECT_TYPE_ENUM type, int64_t parObjI
     PGresult *res = get_query_result_set(stmt, "TskDbSqlite::addObj: Error adding object to row: %s (result code %d)\n");
 
     // check if a result set was returned
-    if (!res || !PQntuples(res)) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        char * str = PQerrorMessage(conn);
-        tsk_error_set_errstr("TskDbSqlite::addObj: No result returned for INSERT INTO tsk_objects. Can't obtain objId\n", PQerrorMessage(conn));
-        PQclear(res);
+    if (!isQueryResultValid(res, "TskDbSqlite::addObj: No result returned for INSERT INTO tsk_objects. Can't obtain objId\n")){
         return TSK_ERR;
     }
 
@@ -454,15 +470,11 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInf
     PGresult *res = get_query_result_set(stmt, "TskDbPostgreSQL::getVsInfo: Error selecting object by objid: %s (result code %d)\n");
 
     // check if a result set was returned
-    if (!res || !PQntuples(res)) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        char * str = PQerrorMessage(conn);
-        tsk_error_set_errstr("TskDbSqlite::addObj: No result returned for INSERT INTO tsk_objects. Can't obtain objId\n", PQerrorMessage(conn));
-        PQclear(res);
+    if (!isQueryResultValid(res, "TskDbSqlite::addObj: No result returned for INSERT INTO tsk_objects. Can't obtain objId\n")){
         return TSK_ERR;
     }
 
+    // ELTODO: use nFields = PQnfields(res); to verify number of fields in result
     vsInfo.objId = atoi(PQgetvalue(res, 0, 0));
     vsInfo.vstype = (TSK_VS_TYPE_ENUM)atoi(PQgetvalue(res, 0, 1));
     vsInfo.offset = atoi(PQgetvalue(res, 0, 2));
@@ -770,7 +782,7 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
     // Find the parent file id in the database using the parent metadata address
     // @@@ This should use sequence number when the new database supports it
 
-    // ELTODO: use m_selectFilePreparedStmt prepared stataement instead
+    // ELTODO: use m_selectFilePreparedStmt prepared statement instead
 
     char zSQL[1024];
     // ELTODO: verify that using "=" instead of "IS ?" is equivalent
@@ -778,16 +790,12 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
     PGresult* res = get_query_result_set(zSQL, "TskDbSqlite::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n");
 
     // check if a result set was returned
-    if (!res || !PQntuples(res)) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        char * str = PQerrorMessage(conn);
-        tsk_error_set_errstr("TskDbSqlite::findParObjId: No result returned for SELECT obj_id. Can't obtain parObjId\n", PQerrorMessage(conn));
-        PQclear(res);
+    if (!isQueryResultValid(res, "TskDbSqlite::findParObjId: No result returned for SELECT obj_id. Can't obtain parObjId\n")){
         return TSK_ERR;
     }
 
     int64_t parObjId = atoi(PQgetvalue(res, 0, 0));
+    PQclear(res);
     return parObjId;
 }
 
@@ -850,6 +858,123 @@ void TskDbPostgreSQL::storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_
     }
 }
 
+
+/**
+* Query tsk_fs_info and return rows for every entry in tsk_fs_info table
+* @param imgId the object id of the image to get filesystems for
+* @param fsInfos (out) TSK_DB_FS_INFO row representations to return
+* @returns TSK_ERR on error, TSK_OK on success
+*/
+TSK_RETVAL_ENUM TskDbPostgreSQL::getFsInfos(int64_t imgId, vector<TSK_DB_FS_INFO> & fsInfos) {
+
+    // ELTODO: use prepared statement here
+    char zSQL[1024];
+    snprintf(zSQL, 1024,"SELECT obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum FROM tsk_fs_info");
+    PGresult* res = get_query_result_set(zSQL, "TskDbSqlite::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n");
+
+    // check if a result set was returned
+    if (!isQueryResultValid(res, "TskDbSqlite::getFsInfos: No result returned for SELECT obj_id FROM tsk_fs_info\n")){
+        return TSK_ERR;
+    }
+
+    //get rows
+    TSK_DB_FS_INFO rowData;
+    for (int i = 0; i < PQntuples(res); i++) {
+        int64_t fsObjId = atoi(PQgetvalue(res, i, 0));
+
+        //ensure fs is (sub)child of the image requested, if not, skip it
+        int64_t curImgId = 0;
+        if (getParentImageId(fsObjId, curImgId) == TSK_ERR) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_AUTO_DB);
+            tsk_error_set_errstr("Error finding parent for: %"PRIu64, fsObjId);
+            return TSK_ERR;
+        }
+
+        if (imgId != curImgId) {
+            continue;
+        }
+
+        rowData.objId = fsObjId;
+        rowData.imgOffset = atoi(PQgetvalue(res, i, 1));
+        rowData.fType = (TSK_FS_TYPE_ENUM)atoi(PQgetvalue(res, i, 2));
+        rowData.block_size = atoi(PQgetvalue(res, i, 3));
+        rowData.block_count = atoi(PQgetvalue(res, i, 4));
+        rowData.root_inum = atoi(PQgetvalue(res, i, 5));
+        rowData.first_inum = atoi(PQgetvalue(res, i, 6));
+        rowData.last_inum = atoi(PQgetvalue(res, i, 7));
+
+        //insert a copy of the rowData
+        fsInfos.push_back(rowData);
+    }
+
+    //cleanup
+    PQclear(res);
+
+    return TSK_OK;
+}
+
+
+/**
+* Query tsk_objects to find the root image id for the object
+* @param objId (in) object id to query
+* @param imageId (out) root parent image id returned
+* @returns TSK_ERR on error (or if not found), TSK_OK on success
+*/
+TSK_RETVAL_ENUM TskDbPostgreSQL::getParentImageId (const int64_t objId, int64_t & imageId) {
+    TSK_DB_OBJECT objectInfo;
+    TSK_RETVAL_ENUM ret = TSK_ERR;
+
+    int64_t queryObjectId = objId;
+    while (getObjectInfo(queryObjectId, objectInfo) == TSK_OK) {
+        if (objectInfo.parObjId == 0) {
+            //found root image
+            imageId = objectInfo.objId;
+            ret = TSK_OK;
+            break;
+        }
+        else {
+            //advance
+            queryObjectId = objectInfo.parObjId;
+        }
+    }
+
+    return ret;
+
+}
+
+/**
+* Query tsk_objects with given id and returns object info entry
+* @param objId object id to query
+* @param objectInfo (out) TSK_DB_OBJECT entry representation to return
+* @returns TSK_ERR on error (or if not found), TSK_OK on success
+*/
+TSK_RETVAL_ENUM TskDbPostgreSQL::getObjectInfo(int64_t objId, TSK_DB_OBJECT & objectInfo) {
+
+    // ELTODO: use objectsStatement prepared statement instead
+
+    char zSQL[1024];
+    // ELTODO: verify that using "=" instead of "IS ?" is equivalent
+    snprintf(zSQL, 1024, "SELECT obj_id, par_obj_id, type FROM tsk_objects WHERE obj_id = %d", objId);
+
+    PGresult* res = get_query_result_set(zSQL, "TskDbSqlite::getObjectInfo: Error selecting object by objid: %s (result code %d)\n");
+
+    // check if a result set was returned
+    if (!isQueryResultValid(res, "TskDbSqlite::getObjectInfo: No result returned for SELECT FROM tsk_objects\n")){
+        return TSK_ERR;
+    }
+
+    // ELTODO: use nFields = PQnfields(res); to verify number of fields in result
+    int nFields = PQnfields(res);
+    objectInfo.objId = atoi(PQgetvalue(res, 0, 0));
+    objectInfo.parObjId = atoi(PQgetvalue(res, 0, 1));
+    objectInfo.type = (TSK_DB_OBJECT_TYPE_ENUM) atoi(PQgetvalue(res, 0, 2));
+
+    //cleanup
+    PQclear(res);
+
+    return TSK_OK;
+}
 
 // ELTODO: delete this test code
 void TskDbPostgreSQL::test()
@@ -974,11 +1099,8 @@ void TskDbPostgreSQL::test()
 
     //query methods / getters
     TSK_RETVAL_ENUM TskDbPostgreSQL::getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts) { return TSK_OK;}
-    TSK_RETVAL_ENUM TskDbPostgreSQL::getFsInfos(int64_t imgId, vector<TSK_DB_FS_INFO> & fsInfos) { return TSK_OK;}
     TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO> & vsInfos) { return TSK_OK;}
     TSK_RETVAL_ENUM TskDbPostgreSQL::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_PART_INFO> & vsPartInfos) { return TSK_OK;}
-    TSK_RETVAL_ENUM TskDbPostgreSQL::getObjectInfo(int64_t objId, TSK_DB_OBJECT & objectInfo) { return TSK_OK;}
-    TSK_RETVAL_ENUM TskDbPostgreSQL::getParentImageId (const int64_t objId, int64_t & imageId) { return TSK_OK;}
     TSK_RETVAL_ENUM TskDbPostgreSQL::getFsRootDirObjectInfo(const int64_t fsObjId, TSK_DB_OBJECT & rootDirObjInfo) { return TSK_OK;}
 
 #endif // TSK_WIN32
