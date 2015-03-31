@@ -475,6 +475,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInf
     }
 
     // ELTODO: use nFields = PQnfields(res); to verify number of fields in result
+    // ELTODO: verify that atoi() handles int64
     vsInfo.objId = atoi(PQgetvalue(res, 0, 0));
     vsInfo.vstype = (TSK_VS_TYPE_ENUM)atoi(PQgetvalue(res, 0, 1));
     vsInfo.offset = atoi(PQgetvalue(res, 0, 2));
@@ -921,7 +922,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getFsInfos(int64_t imgId, vector<TSK_DB_FS_INFO
 * @param imageId (out) root parent image id returned
 * @returns TSK_ERR on error (or if not found), TSK_OK on success
 */
-TSK_RETVAL_ENUM TskDbPostgreSQL::getParentImageId (const int64_t objId, int64_t & imageId) {
+TSK_RETVAL_ENUM TskDbPostgreSQL::getParentImageId(const int64_t objId, int64_t & imageId) {
     TSK_DB_OBJECT objectInfo;
     TSK_RETVAL_ENUM ret = TSK_ERR;
 
