@@ -4101,9 +4101,12 @@ public class SleuthkitCase {
 
 	/**
 	 * This method allows developers to run arbitrary SQL "SELECT"
-	 * queries. The CaseDbQuery object will take care to acquiring
+	 * queries. The CaseDbQuery object will take care of acquiring
 	 * the necessary database lock and when used in a try-with-resources
 	 * block will automatically take care of releasing the lock.
+	 * If you do not use a try-with-resources block you must call 
+	 * CaseDbQuery.close() once you are done processing the results of
+	 * the query.
 	 * @param query The query string to execute.
 	 * @return A CaseDbQuery instance.
 	 * @throws TskCoreException 
