@@ -256,46 +256,6 @@ int TskDbPostgreSQL::attempt(int resultCode, const char *errfmt)
 int TskDbPostgreSQL::initialize() { 
     
     char foo[1024];
-
-    /* disable synchronous for loading the DB since we have no crash recovery anyway...
-    if (attempt_exec("PRAGMA synchronous =  OFF;",
-        "Error setting PRAGMA synchronous: %s\n")) {
-            return 1;
-    }*/
-
-    /* allow to read while in transaction
-    if (attempt_exec("PRAGMA read_uncommitted = True;",
-        "Error setting PRAGMA read_uncommitted: %s\n")) {
-            return 1;
-    }*/
-
-    // In PostgreSQL READ UNCOMMITTED is treated as READ COMMITTED.
-    /*if (attempt_exec("SET TRANSACTION READ COMMITTED;",
-        "Error setting transaction mode: %s\n")) {
-            return 1;
-    }*/
-
-    /* Every PostgreSQL table and index is stored as an array of pages of a fixed size (usually 8 kB, although a different page size can be selected when compiling the server)
-    if (attempt_exec("PRAGMA page_size = 4096;",
-        "Error setting PRAGMA page_size: %s\n")) {
-            return 1;
-    }*/
-
-    /* PostgreSQL has foreign keys enabled
-    if (attempt_exec("PRAGMA foreign_keys = ON;",
-        "Error setting PRAGMA foreign_keys: %s\n")) {
-            return 1;
-    }*/
-
-    // increase the DB by 1MB at a time -- supposed to help performance when populating
-    /*int chunkSize = 1024 * 1024;
-    if (sqlite3_file_control(m_db, NULL, SQLITE_FCNTL_CHUNK_SIZE, &chunkSize) != SQLITE_OK) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskDbSqlite::initialze: error setting chunk size %s", sqlite3_errmsg(m_db));
-        return 1;
-    }*/
-
     if (attempt_exec
         ("CREATE TABLE tsk_db_info (schema_ver INTEGER, tsk_ver INTEGER);",
         "Error creating tsk_db_info table: %s\n")) {
@@ -436,7 +396,7 @@ int TskDbPostgreSQL::createIndexes()
 
 
 /**
-* @returns 1 on error, 0 on success
+* @returns TSK_ERR on error, 0 on success
 */
 uint8_t TskDbPostgreSQL::addObject(TSK_DB_OBJECT_TYPE_ENUM type, int64_t parObjId, int64_t & objId)
 {
@@ -466,19 +426,15 @@ uint8_t TskDbPostgreSQL::addObject(TSK_DB_OBJECT_TYPE_ENUM type, int64_t parObjI
 /**
 * @returns 1 on error, 0 on success
 */
-int
-    TskDbPostgreSQL::addVsInfo(const TSK_VS_INFO * vs_info, int64_t parObjId,
-    int64_t & objId)
+int TskDbPostgreSQL::addVsInfo(const TSK_VS_INFO * vs_info, int64_t parObjId, int64_t & objId)
 {
     char stmt[1024];
 
     if (addObject(TSK_DB_OBJECT_TYPE_VS, parObjId, objId))
         return 1;
 
-    snprintf(stmt, 1024,
-        "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%lld, %d,%"
-        PRIuOFF ",%d)", objId, vs_info->vstype, vs_info->offset,
-        vs_info->block_size);
+    snprintf(stmt, 1024, "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%lld, %d,%"
+        PRIuOFF ",%d)", objId, vs_info->vstype, vs_info->offset, vs_info->block_size);
 
     return attempt_exec(stmt, "Error adding data to tsk_vs_info table: %s\n");
 }
@@ -517,6 +473,71 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInf
     return TSK_OK;
 }
 
+/**
+* deprecated
+*/
+int TskDbPostgreSQL::addImageInfo(int type, int size, int64_t & objId, const string & timezone)
+{
+    return addImageInfo(type, size, objId, timezone, 0, "");
+}
+
+/**
+* @returns 1 on error, 0 on success
+*/
+int TskDbPostgreSQL::addImageInfo(int type, int ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5)
+{
+    char stmt[2048];
+    int ret;
+
+    if (addObject(TSK_DB_OBJECT_TYPE_IMG, NULL, objId)) {
+        return 1;
+    }
+
+    snprintf(stmt, 2048, "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %d, '%q', %"PRIuOFF", '%q');",
+        objId, type, ssize, timezone.c_str(), size, md5.c_str());
+
+    ret = attempt_exec(stmt, "Error adding data to tsk_image_info table: %s\n");
+    return ret;
+}
+
+/**
+* @returns 1 on error, 0 on success
+*/
+int TskDbPostgreSQL::addImageName(int64_t objId, char const *imgName, int sequence)
+{
+    char stmt[2048];
+    int ret;
+
+    snprintf(stmt, 2048, "INSERT INTO tsk_image_names (obj_id, name, sequence) VALUES (%lld, '%q', %d)", objId, imgName, sequence);
+    ret = attempt_exec(stmt, "Error adding data to tsk_image_names table: %s\n");
+    return ret;
+}
+
+
+/**
+* @returns 1 on error, 0 on success
+*/
+int TskDbPostgreSQL::addFsInfo(const TSK_FS_INFO * fs_info, int64_t parObjId, int64_t & objId)
+{
+    char stmt[1024];
+
+    if (addObject(TSK_DB_OBJECT_TYPE_FS, parObjId, objId))
+        return 1;
+
+    snprintf(stmt, 1024,
+        "INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, "
+        "root_inum, first_inum, last_inum) "
+        "VALUES ("
+        "%lld,%" PRIuOFF ",%d,%u,%" PRIuDADDR ","
+        "%" PRIuINUM ",%" PRIuINUM ",%" PRIuINUM ")",
+        objId, fs_info->offset, (int) fs_info->ftype, fs_info->block_size,
+        fs_info->block_count, fs_info->root_inum, fs_info->first_inum,
+        fs_info->last_inum);
+
+    return attempt_exec(stmt, "Error adding data to tsk_fs_info table: %s\n");
+}
+
+
 // ELTODO: delete this test code
 void TskDbPostgreSQL::test()
 {
@@ -530,9 +551,14 @@ void TskDbPostgreSQL::test()
     vsInfo.part_list = (TSK_VS_PART_INFO *)24;    ///< Linked list of partitions
     vsInfo.part_count = 25;  ///< number of partitions 
 
-    int64_t parObjId = 2;
     int64_t objId;
-    int error = addVsInfo(&vsInfo, parObjId, objId);
+    const std::string timezone = "America/New York";
+    const std::string md5 = "";
+    int error = addImageInfo(1, 512, objId, timezone, 2097152, md5);
+
+    int64_t parObjId = 2;
+
+    error = addVsInfo(&vsInfo, parObjId, objId);
     TSK_DB_VS_INFO vsInfoRes;
     getVsInfo(1, vsInfoRes);
 
@@ -611,13 +637,7 @@ void TskDbPostgreSQL::test()
 
 // NOT IMPLEMENTED:
 
-
-    int TskDbPostgreSQL::addImageInfo(int type, int size, int64_t & objId, const string & timezone) {        return 0; }
-    int TskDbPostgreSQL::addImageInfo(int type, int size, int64_t & objId, const string & timezone, TSK_OFF_T, const string &md5){        return 0; }
-    int TskDbPostgreSQL::addImageName(int64_t objId, char const *imgName, int sequence){        return 0; }
     int TskDbPostgreSQL::addVolumeInfo(const TSK_VS_PART_INFO * vs_part, int64_t parObjId,
-        int64_t & objId){        return 0; }
-    int TskDbPostgreSQL::addFsInfo(const TSK_FS_INFO * fs_info, int64_t parObjId,
         int64_t & objId){        return 0; }
     int TskDbPostgreSQL::addFsFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         const char *path, const unsigned char *const md5,
