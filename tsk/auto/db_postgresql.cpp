@@ -52,6 +52,7 @@ PGconn* TskDbPostgreSQL::connectToDatabase(TSK_TCHAR *dbName) {
 
     // Make a connection to postgres database server
     char connectionString[1024];
+    // ELTODO: use char PQescapeLiteral for userName and password
     sprintf(connectionString, "user=%s password=%s dbname=%S hostaddr=%s port=%s", userName, password, dbName, hostIpAddr, hostPort);
     PGconn *dbConn = PQconnectdb(connectionString);
 
@@ -511,11 +512,17 @@ int TskDbPostgreSQL::addImageInfo(int type, int ssize, int64_t & objId, const st
         return 1;
     }
 
-    // ELTODO: convert sqlite3_mprintf() arguments "%q", "%Q" using PQescapeLiteral
-    snprintf(stmt, 2048, "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %d, '%s', %"PRIuOFF", '%s');",
-        objId, type, ssize, timezone.c_str(), size, md5.c_str());
+    // escape strings for use within an SQL command
+    char *timezone_sql = PQescapeLiteral(conn, timezone.c_str(), strlen(timezone.c_str()));
+    char *md5_sql = PQescapeLiteral(conn, md5.c_str(), strlen(md5.c_str()));
+    snprintf(stmt, 2048, "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %d, %s, %"PRIuOFF", %s);",
+        objId, type, ssize, timezone_sql, size, md5_sql);
 
     ret = attempt_exec(stmt, "Error adding data to tsk_image_info table: %s\n");
+
+    // cleanup
+    PQfreemem(timezone_sql);
+    PQfreemem(md5_sql);
     return ret;
 }
 
@@ -527,8 +534,13 @@ int TskDbPostgreSQL::addImageName(int64_t objId, char const *imgName, int sequen
     char stmt[2048];
     int ret;
 
-    snprintf(stmt, 2048, "INSERT INTO tsk_image_names (obj_id, name, sequence) VALUES (%lld, '%s', %d)", objId, imgName, sequence);
+    char *imgName_sql = PQescapeLiteral(conn, imgName, strlen(imgName));
+    snprintf(stmt, 2048, "INSERT INTO tsk_image_names (obj_id, name, sequence) VALUES (%lld, %s, %d)", objId, imgName_sql, sequence);
     ret = attempt_exec(stmt, "Error adding data to tsk_image_names table: %s\n");
+
+    // cleanup
+    PQfreemem(imgName_sql);
+
     return ret;
 }
 
@@ -693,39 +705,43 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         return 1;
     }
 
-    // ELTODO: replace all '%q" and %Q in sqlite3_mprintf with output of PQescapeLiteral()
-    //size_t len = strlen(md5TextPtr);
+    // escape strings for use within an SQL command
+    char *name_sql = PQescapeLiteral(conn, name, strlen(name));
+    char *escaped_path_sql = PQescapeLiteral(conn, escaped_path, strlen(escaped_path));
     char nullStr[8] = "NULL";
     if (!md5TextPtr) {
         md5TextPtr = &nullStr[0];
     }
-    //---------------------------
+    char *md5TextPtr_sql = PQescapeLiteral(conn, md5TextPtr, strlen(md5TextPtr));
 
     char zSQL[2048];
     snprintf(zSQL, 2048, "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
         "VALUES ("
         "%" PRId64 ",%" PRId64 ","
         "%d,"
-        "%d,%d,'%s',"
+        "%d,%d,%s,"
         "%" PRIuINUM ",%d,"
         "%d,%d,%d,%d,"
         "%" PRIuOFF ","
         "%llu,%llu,%llu,%llu,"
-        "%d,%d,%d,'%s',%d,"
-        "'%s')",
+        "%d,%d,%d,%s,%d,"
+        "%s)",
         fsObjId, objId,
         TSK_DB_FILES_TYPE_FS,
-        type, idx, name,
+        type, idx, name_sql,
         fs_file->name->meta_addr, fs_file->name->meta_seq, 
         fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
         size, 
         (unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime, 
-        meta_mode, gid, uid, md5TextPtr, known,
-        escaped_path);
+        meta_mode, gid, uid, md5TextPtr_sql, known,
+        escaped_path_sql);
 
     if (attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
         free(name);
         free(escaped_path);
+        PQfreemem(name_sql);
+        PQfreemem(escaped_path_sql);
+        PQfreemem(md5TextPtr_sql);
         return 1;
     }
 
@@ -735,8 +751,12 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         storeObjId(fsObjId, fs_file, fullPath.c_str(), objId);
     }
 
+    // cleanup
     free(name);
     free(escaped_path);
+    PQfreemem(name_sql);
+    PQfreemem(escaped_path_sql);
+    PQfreemem(md5TextPtr_sql);
 
     return 0;
 }
@@ -994,9 +1014,9 @@ void TskDbPostgreSQL::test()
     char largeNum[32] = "44294967296";
     int64_t largeNumInt = atoll(largeNum);
     __int64 largeNumInt2 = _atoi64(largeNum);
-    const std::string timezone2 = "That''s America/New York";
+    const std::string timezone2 = "That's America/New York";
     const std::string md52 = "C:\\Temp";
-    error = addImageInfo(1, 4294967296, objId, timezone2, 4294967296, md52);
+    error = addImageInfo(1, 512, objId, timezone2, 2097152, md52);
 
 
     //    int64_t parObjId = 2;
