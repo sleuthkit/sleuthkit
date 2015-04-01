@@ -19,6 +19,8 @@
 
 #ifdef TSK_WIN32
 
+#define atoll(S) _atoi64(S)
+
 
 TskDbPostgreSQL::TskDbPostgreSQL(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFlag)
     : TskDb(a_dbFilePath, a_blkMapFlag)
@@ -93,7 +95,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::createDatabase(){
     // you now need to always use double quotes when referring to it.
     char createDbString[512];
     sprintf(createDbString, "CREATE DATABASE \"%S\" WITH ENCODING='UTF8';", m_dBName);
-	PGresult *res = PQexec(serverConn, createDbString);    
+    PGresult *res = PQexec(serverConn, createDbString);    
     if (PQresultStatus(res) != PGRES_COMMAND_OK)
     {
         printf("Database creation failed, %s", PQerrorMessage(conn));
@@ -126,7 +128,7 @@ int TskDbPostgreSQL::open(bool createDbFlag)
         printf("Database creation failed");
         return -1;
     }
-    
+
     if (createDbFlag) {
         // initialize TSK tables
         initialize();
@@ -167,7 +169,7 @@ bool TskDbPostgreSQL::dbExists() {
     char selectString[512];
     sprintf(selectString, "select datname from pg_catalog.pg_database where datname = '%S';", m_dBName);
 
-	PGresult *res = PQexec(serverConn, selectString);
+    PGresult *res = PQexec(serverConn, selectString);
     if (PQresultStatus(res) != PGRES_TUPLES_OK)
     {
         printf("Existing database lookup failed, %s", PQerrorMessage(conn));
@@ -198,12 +200,12 @@ int TskDbPostgreSQL::attempt_exec(const char *sql, const char *errfmt)
     PGresult *res = PQexec(conn, sql); 
     // ELTODO: verify that there are no other acceptable return codes. What about PGRES_EMPTY_QUERY?
     if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            char * str = PQerrorMessage(conn);
-            tsk_error_set_errstr(errfmt, PQerrorMessage(conn));
-            PQclear(res);
-            return 1;
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        char * str = PQerrorMessage(conn);
+        tsk_error_set_errstr(errfmt, PQerrorMessage(conn));
+        PQclear(res);
+        return 1;
     }
     PQclear(res);
     return 0;
@@ -222,12 +224,12 @@ PGresult* TskDbPostgreSQL::get_query_result_set(const char *sql, const char *err
     PGresult *res = PQexec(conn, sql); 
     // ELTODO: verify that there are no other acceptable return codes. What about PGRES_EMPTY_QUERY?
     if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            char * str = PQerrorMessage(conn);
-            tsk_error_set_errstr(errfmt, PQerrorMessage(conn));
-            PQclear(res);
-            return NULL;
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        char * str = PQerrorMessage(conn);
+        tsk_error_set_errstr(errfmt, PQerrorMessage(conn));
+        PQclear(res);
+        return NULL;
     }
     return res;
 }
@@ -271,7 +273,7 @@ int TskDbPostgreSQL::attempt(int resultCode, const char *errfmt)
 * @returns 1 on error
 */
 int TskDbPostgreSQL::initialize() { 
-    
+
     char foo[1024];
     if (attempt_exec
         ("CREATE TABLE tsk_db_info (schema_ver INTEGER, tsk_ver INTEGER);",
@@ -291,94 +293,94 @@ int TskDbPostgreSQL::initialize() {
     // http://www.postgresql.org/docs/current/interactive/datatype-numeric.html
 
     if (attempt_exec
-        ("CREATE TABLE tsk_objects (obj_id SERIAL PRIMARY KEY, par_obj_id INTEGER, type INTEGER NOT NULL);",
+        ("CREATE TABLE tsk_objects (obj_id BIGSERIAL PRIMARY KEY, par_obj_id BIGINT, type INTEGER NOT NULL);",
         "Error creating tsk_objects table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_image_info (obj_id INTEGER PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT, size INTEGER, md5 TEXT, display_name TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        ("CREATE TABLE tsk_image_info (obj_id BIGINT PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT, size BIGINT, md5 TEXT, display_name TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating tsk_image_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_image_names (obj_id INTEGER NOT NULL, name TEXT NOT NULL, sequence INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        ("CREATE TABLE tsk_image_names (obj_id BIGINT NOT NULL, name TEXT NOT NULL, sequence INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating tsk_image_names table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_vs_info (obj_id INTEGER PRIMARY KEY, vs_type INTEGER NOT NULL, img_offset INTEGER NOT NULL, block_size INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        ("CREATE TABLE tsk_vs_info (obj_id BIGINT PRIMARY KEY, vs_type INTEGER NOT NULL, img_offset BIGINT NOT NULL, block_size BIGINT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating tsk_vs_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_fs_info (obj_id INTEGER PRIMARY KEY, img_offset INTEGER NOT NULL, fs_type INTEGER NOT NULL, block_size INTEGER NOT NULL, block_count INTEGER NOT NULL, root_inum INTEGER NOT NULL, first_inum INTEGER NOT NULL, last_inum INTEGER NOT NULL, display_name TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        ("CREATE TABLE tsk_fs_info (obj_id BIGINT PRIMARY KEY, img_offset BIGINT NOT NULL, fs_type INTEGER NOT NULL, block_size BIGINT NOT NULL, block_count BIGINT NOT NULL, root_inum BIGINT NOT NULL, first_inum BIGINT NOT NULL, last_inum BIGINT NOT NULL, display_name TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating tsk_fs_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_files (obj_id INTEGER PRIMARY KEY, fs_obj_id INTEGER, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr INTEGER, meta_seq INTEGER, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size INTEGER, ctime INTEGER, crtime INTEGER, atime INTEGER, mtime INTEGER, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, parent_path TEXT, "
+        ("CREATE TABLE tsk_files (obj_id BIGINT PRIMARY KEY, fs_obj_id BIGINT, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr BIGINT, meta_seq BIGINT, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size BIGINT, ctime BIGINT, crtime BIGINT, atime BIGINT, mtime BIGINT, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, parent_path TEXT, "
         "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id));",
         "Error creating tsk_files table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_files_path (obj_id INTEGER PRIMARY KEY, path TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id))",
+        ("CREATE TABLE tsk_files_path (obj_id BIGINT PRIMARY KEY, path TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id))",
         "Error creating tsk_files_path table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_files_derived (obj_id INTEGER PRIMARY KEY, derived_id INTEGER NOT NULL, rederive TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id))",
+        ("CREATE TABLE tsk_files_derived (obj_id BIGINT PRIMARY KEY, derived_id BIGINT NOT NULL, rederive TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id))",
         "Error creating tsk_files_derived table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_files_derived_method (derived_id INTEGER PRIMARY KEY, tool_name TEXT NOT NULL, tool_version TEXT NOT NULL, other TEXT)",
+        ("CREATE TABLE tsk_files_derived_method (derived_id BIGINT PRIMARY KEY, tool_name TEXT NOT NULL, tool_version TEXT NOT NULL, other TEXT)",
         "Error creating tsk_files_derived_method table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tag_names (tag_name_id INTEGER PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL)",
+        ("CREATE TABLE tag_names (tag_name_id BIGINT PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL)",
         "Error creating tag_names table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE content_tags (tag_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL, begin_byte_offset INTEGER NOT NULL, end_byte_offset INTEGER NOT NULL, "
+        ("CREATE TABLE content_tags (tag_id BIGINT PRIMARY KEY, obj_id BIGINT NOT NULL, tag_name_id BIGINT NOT NULL, comment TEXT NOT NULL, begin_byte_offset BIGINT NOT NULL, end_byte_offset BIGINT NOT NULL, "
         "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id))",
         "Error creating content_tags table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE blackboard_artifact_types (artifact_type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT)",
+        ("CREATE TABLE blackboard_artifact_types (artifact_type_id BIGINT PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT)",
         "Error creating blackboard_artifact_types table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE blackboard_attribute_types (attribute_type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT)",
+        ("CREATE TABLE blackboard_attribute_types (attribute_type_id BIGINT PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT)",
         "Error creating blackboard_attribute_types table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE blackboard_artifacts (artifact_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, artifact_type_id INTEGER NOT NULL, "
+        ("CREATE TABLE blackboard_artifacts (artifact_id BIGINT PRIMARY KEY, obj_id BIGINT NOT NULL, artifact_type_id BIGINT NOT NULL, "
         "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id))",
         "Error creating blackboard_artifact table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE blackboard_artifact_tags (tag_id INTEGER PRIMARY KEY, artifact_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL, "
+        ("CREATE TABLE blackboard_artifact_tags (tag_id BIGINT PRIMARY KEY, artifact_id BIGINT NOT NULL, tag_name_id BIGINT NOT NULL, comment TEXT NOT NULL, "
         "FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id))",
         "Error creating blackboard_artifact_tags table: %s\n")
         ||
         /* ELTODO: The binary representation of BYTEA is a bunch of bytes, which could
-         * include embedded nulls so we have to pay attention to field length.
-         * http://www.postgresql.org/docs/9.4/static/libpq-example.html
-         */
+        * include embedded nulls so we have to pay attention to field length.
+        * http://www.postgresql.org/docs/9.4/static/libpq-example.html
+        */
         attempt_exec
-        ("CREATE TABLE blackboard_attributes (artifact_id INTEGER NOT NULL, artifact_type_id INTEGER NOT NULL, source TEXT, context TEXT, attribute_type_id INTEGER NOT NULL, value_type INTEGER NOT NULL, "
-        "value_byte BYTEA, value_text TEXT, value_int32 INTEGER, value_int64 INTEGER, value_double NUMERIC(20, 10), "
+        ("CREATE TABLE blackboard_attributes (artifact_id BIGINT NOT NULL, artifact_type_id BIGINT NOT NULL, source TEXT, context TEXT, attribute_type_id BIGINT NOT NULL, value_type INTEGER NOT NULL, "
+        "value_byte BYTEA, value_text TEXT, value_int32 INTEGER, value_int64 BIGINT, value_double NUMERIC(20, 10), "
         "FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id), FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))",
         "Error creating blackboard_attribute table: %s\n")
         ||
         /* In PostgreSQL "desc" indicates "descending order" so I had to rename "desc TEXT" to "descr TEXT" 
         ELTODO: make sure all insert queries have "descr". Should I also make this change for SQLite?*/
         attempt_exec
-        ("CREATE TABLE tsk_vs_parts (obj_id INTEGER PRIMARY KEY, addr INTEGER NOT NULL, start INTEGER NOT NULL, length INTEGER NOT NULL, descr TEXT, flags INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        ("CREATE TABLE tsk_vs_parts (obj_id BIGINT PRIMARY KEY, addr BIGINT NOT NULL, start BIGINT NOT NULL, length BIGINT NOT NULL, descr TEXT, flags INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating tsk_vol_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE reports (report_id INTEGER PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL)",
-            "Error creating reports table: %s\n")) {
-        return 1;
+        ("CREATE TABLE reports (report_id BIGINT PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL)",
+        "Error creating reports table: %s\n")) {
+            return 1;
     }
 
     if (m_blkMapFlag) {
         if (attempt_exec
-            ("CREATE TABLE tsk_file_layout (obj_id INTEGER NOT NULL, byte_start INTEGER NOT NULL, byte_len INTEGER NOT NULL, sequence INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+            ("CREATE TABLE tsk_file_layout (obj_id BIGINT NOT NULL, byte_start BIGINT NOT NULL, byte_len BIGINT NOT NULL, sequence INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
             "Error creating tsk_fs_blocks table: %s\n")) {
                 return 1;
         }
@@ -410,9 +412,9 @@ int TskDbPostgreSQL::createIndexes()
         "Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
         attempt_exec("CREATE INDEX attrsArtifactID ON blackboard_attributes(artifact_id);",
         "Error creating artifact_id index on blackboard_attributes: %s\n") ;
-        /*attempt_exec("CREATE INDEX attribute_artifactTypeId ON blackboard_attributes(artifact_type_id);",
-        "Error creating artifact_type_id index on blackboard_attributes: %s\n");
-        */
+    /*attempt_exec("CREATE INDEX attribute_artifactTypeId ON blackboard_attributes(artifact_type_id);",
+    "Error creating artifact_type_id index on blackboard_attributes: %s\n");
+    */
 }
 
 
@@ -422,7 +424,7 @@ int TskDbPostgreSQL::createIndexes()
 uint8_t TskDbPostgreSQL::addObject(TSK_DB_OBJECT_TYPE_ENUM type, int64_t parObjId, int64_t & objId)
 {
     char stmt[1024];
-    snprintf(stmt, 1024, "INSERT INTO tsk_objects (par_obj_id, type) VALUES (%d, %d) RETURNING obj_id", parObjId, type);
+    snprintf(stmt, 1024, "INSERT INTO tsk_objects (par_obj_id, type) VALUES (%" PRId64 ", %d) RETURNING obj_id", parObjId, type);
 
     PGresult *res = get_query_result_set(stmt, "TskDbSqlite::addObj: Error adding object to row: %s (result code %d)\n");
 
@@ -432,7 +434,7 @@ uint8_t TskDbPostgreSQL::addObject(TSK_DB_OBJECT_TYPE_ENUM type, int64_t parObjI
     }
 
     // Returned value is objId
-    objId = atoi(PQgetvalue(res, 0, 0));
+    objId = atoll(PQgetvalue(res, 0, 0));
 
     PQclear(res);
     return 0;
@@ -450,7 +452,7 @@ int TskDbPostgreSQL::addVsInfo(const TSK_VS_INFO * vs_info, int64_t parObjId, in
         return 1;
 
     snprintf(stmt, 1024, "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%lld, %d,%"
-        PRIuOFF ",%d)", objId, vs_info->vstype, vs_info->offset, vs_info->block_size);
+        PRIuOFF ",%u)", objId, vs_info->vstype, vs_info->offset, vs_info->block_size);
 
     return attempt_exec(stmt, "Error adding data to tsk_vs_info table: %s\n");
 }
@@ -465,7 +467,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInf
 
     char stmt[1024];
     // ELTODO: note that for PostgreSQL we have to do "obj_id =" whereas for SQLite query is "obj_id IS"...
-    snprintf(stmt, 1024, "SELECT obj_id, vs_type, img_offset, block_size FROM tsk_vs_info WHERE obj_id = %d", objId);
+    snprintf(stmt, 1024, "SELECT obj_id, vs_type, img_offset, block_size FROM tsk_vs_info WHERE obj_id = %" PRId64 "", objId);
 
     PGresult *res = get_query_result_set(stmt, "TskDbPostgreSQL::getVsInfo: Error selecting object by objid: %s (result code %d)\n");
 
@@ -475,11 +477,12 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInf
     }
 
     // ELTODO: use nFields = PQnfields(res); to verify number of fields in result
-    // ELTODO: verify that atoi() handles int64
-    vsInfo.objId = atoi(PQgetvalue(res, 0, 0));
+    // ELTODO: verify that atoi() handles unsigned int. IT DOESN'T! MUST USE ATOLL().
+    // ELTODO: verify that atoll() handles uint64_t. Looks like it does. http://forums.codeguru.com/showthread.php?195538-Converting-string-to-UINT64
+    vsInfo.objId = atoll(PQgetvalue(res, 0, 0));
     vsInfo.vstype = (TSK_VS_TYPE_ENUM)atoi(PQgetvalue(res, 0, 1));
-    vsInfo.offset = atoi(PQgetvalue(res, 0, 2));
-    vsInfo.block_size = atoi(PQgetvalue(res, 0, 3));
+    vsInfo.offset = atoll(PQgetvalue(res, 0, 2));
+    vsInfo.block_size = (unsigned int)atoll(PQgetvalue(res, 0, 3));
 
     //cleanup
     PQclear(res);
@@ -508,7 +511,8 @@ int TskDbPostgreSQL::addImageInfo(int type, int ssize, int64_t & objId, const st
         return 1;
     }
 
-    snprintf(stmt, 2048, "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %d, '%q', %"PRIuOFF", '%q');",
+    // ELTODO: convert sqlite3_mprintf() arguments "%q", "%Q" using PQescapeLiteral
+    snprintf(stmt, 2048, "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %d, '%s', %"PRIuOFF", '%s');",
         objId, type, ssize, timezone.c_str(), size, md5.c_str());
 
     ret = attempt_exec(stmt, "Error adding data to tsk_image_info table: %s\n");
@@ -523,7 +527,7 @@ int TskDbPostgreSQL::addImageName(int64_t objId, char const *imgName, int sequen
     char stmt[2048];
     int ret;
 
-    snprintf(stmt, 2048, "INSERT INTO tsk_image_names (obj_id, name, sequence) VALUES (%lld, '%q', %d)", objId, imgName, sequence);
+    snprintf(stmt, 2048, "INSERT INTO tsk_image_names (obj_id, name, sequence) VALUES (%lld, '%s', %d)", objId, imgName, sequence);
     ret = attempt_exec(stmt, "Error adding data to tsk_image_names table: %s\n");
     return ret;
 }
@@ -597,37 +601,21 @@ int TskDbPostgreSQL::addFsFile(TSK_FS_FILE * fs_file,
 * @param md5 binary value of MD5 (i.e. 16 bytes) or NULL
 * Return 0 on success, 1 on error.
 */
-int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file,
-    const TSK_FS_ATTR * fs_attr, const char *path,
-    const unsigned char *const md5, const TSK_DB_FILES_KNOWN_ENUM known,
-    int64_t fsObjId, int64_t parObjId,
-    int64_t & objId)
+int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr, const char *path,
+    const unsigned char *const md5, const TSK_DB_FILES_KNOWN_ENUM known, int64_t fsObjId, int64_t parObjId, int64_t & objId)
 {
-
-
-    time_t
-        mtime = 0;
-    time_t
-        crtime = 0;
-    time_t
-        ctime = 0;
-    time_t
-        atime = 0;
+    time_t mtime = 0;
+    time_t crtime = 0;
+    time_t ctime = 0;
+    time_t atime = 0;
     TSK_OFF_T size = 0;
-    int
-        meta_type = 0;
-    int
-        meta_flags = 0;
-    int
-        meta_mode = 0;
-    int
-        gid = 0;
-    int
-        uid = 0;
-    int
-        type = TSK_FS_ATTR_TYPE_NOT_FOUND;
-    int
-        idx = 0;
+    int meta_type = 0;
+    int meta_flags = 0;
+    int meta_mode = 0;
+    int gid = 0;
+    int uid = 0;
+    int type = TSK_FS_ATTR_TYPE_NOT_FOUND;
+    int idx = 0;
 
     if (fs_file->name == NULL)
         return 0;
@@ -659,8 +647,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file,
 
     // combine name and attribute name
     size_t len = strlen(fs_file->name->name);
-    char *
-        name;
+    char *name;
     size_t nlen = len + attr_nlen + 5;
     if ((name = (char *) tsk_malloc(nlen)) == NULL) {
         return 1;
@@ -706,18 +693,26 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file,
         return 1;
     }
 
+    // ELTODO: replace all '%q" and %Q in sqlite3_mprintf with output of PQescapeLiteral()
+    //size_t len = strlen(md5TextPtr);
+    char nullStr[8] = "NULL";
+    if (!md5TextPtr) {
+        md5TextPtr = &nullStr[0];
+    }
+    //---------------------------
+
     char zSQL[2048];
     snprintf(zSQL, 2048, "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
         "VALUES ("
         "%" PRId64 ",%" PRId64 ","
         "%d,"
-        "%d,%d,'%q',"
+        "%d,%d,'%s',"
         "%" PRIuINUM ",%d,"
         "%d,%d,%d,%d,"
         "%" PRIuOFF ","
         "%llu,%llu,%llu,%llu,"
-        "%d,%d,%d,%Q,%d,"
-        "'%q')",
+        "%d,%d,%d,'%s',%d,"
+        "'%s')",
         fsObjId, objId,
         TSK_DB_FILES_TYPE_FS,
         type, idx, name,
@@ -787,7 +782,7 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
 
     char zSQL[1024];
     // ELTODO: verify that using "=" instead of "IS ?" is equivalent
-    snprintf(zSQL, 1024, "SELECT obj_id FROM tsk_files WHERE meta_addr = %d AND fs_obj_id = %d", fs_file->name->par_addr, fsObjId);
+    snprintf(zSQL, 1024, "SELECT obj_id FROM tsk_files WHERE meta_addr = %" PRIu64 " AND fs_obj_id = %" PRId64 "", fs_file->name->par_addr, fsObjId);
     PGresult* res = get_query_result_set(zSQL, "TskDbSqlite::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n");
 
     // check if a result set was returned
@@ -795,7 +790,7 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
         return TSK_ERR;
     }
 
-    int64_t parObjId = atoi(PQgetvalue(res, 0, 0));
+    int64_t parObjId = atoll(PQgetvalue(res, 0, 0));
     PQclear(res);
     return parObjId;
 }
@@ -881,7 +876,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getFsInfos(int64_t imgId, vector<TSK_DB_FS_INFO
     //get rows
     TSK_DB_FS_INFO rowData;
     for (int i = 0; i < PQntuples(res); i++) {
-        int64_t fsObjId = atoi(PQgetvalue(res, i, 0));
+        int64_t fsObjId = atoll(PQgetvalue(res, i, 0));
 
         //ensure fs is (sub)child of the image requested, if not, skip it
         int64_t curImgId = 0;
@@ -897,13 +892,13 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getFsInfos(int64_t imgId, vector<TSK_DB_FS_INFO
         }
 
         rowData.objId = fsObjId;
-        rowData.imgOffset = atoi(PQgetvalue(res, i, 1));
+        rowData.imgOffset = atoll(PQgetvalue(res, i, 1));
         rowData.fType = (TSK_FS_TYPE_ENUM)atoi(PQgetvalue(res, i, 2));
-        rowData.block_size = atoi(PQgetvalue(res, i, 3));
-        rowData.block_count = atoi(PQgetvalue(res, i, 4));
-        rowData.root_inum = atoi(PQgetvalue(res, i, 5));
-        rowData.first_inum = atoi(PQgetvalue(res, i, 6));
-        rowData.last_inum = atoi(PQgetvalue(res, i, 7));
+        rowData.block_size = (unsigned int)atoll(PQgetvalue(res, i, 3));
+        rowData.block_count = atoll(PQgetvalue(res, i, 4));
+        rowData.root_inum = atoll(PQgetvalue(res, i, 5));
+        rowData.first_inum = atoll(PQgetvalue(res, i, 6));
+        rowData.last_inum = atoll(PQgetvalue(res, i, 7));
 
         //insert a copy of the rowData
         fsInfos.push_back(rowData);
@@ -956,7 +951,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getObjectInfo(int64_t objId, TSK_DB_OBJECT & ob
 
     char zSQL[1024];
     // ELTODO: verify that using "=" instead of "IS ?" is equivalent
-    snprintf(zSQL, 1024, "SELECT obj_id, par_obj_id, type FROM tsk_objects WHERE obj_id = %d", objId);
+    snprintf(zSQL, 1024, "SELECT obj_id, par_obj_id, type FROM tsk_objects WHERE obj_id = %" PRId64 "", objId);
 
     PGresult* res = get_query_result_set(zSQL, "TskDbSqlite::getObjectInfo: Error selecting object by objid: %s (result code %d)\n");
 
@@ -967,8 +962,8 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getObjectInfo(int64_t objId, TSK_DB_OBJECT & ob
 
     // ELTODO: use nFields = PQnfields(res); to verify number of fields in result
     int nFields = PQnfields(res);
-    objectInfo.objId = atoi(PQgetvalue(res, 0, 0));
-    objectInfo.parObjId = atoi(PQgetvalue(res, 0, 1));
+    objectInfo.objId = atoll(PQgetvalue(res, 0, 0));
+    objectInfo.parObjId = atoll(PQgetvalue(res, 0, 1));
     objectInfo.type = (TSK_DB_OBJECT_TYPE_ENUM) atoi(PQgetvalue(res, 0, 2));
 
     //cleanup
@@ -995,11 +990,24 @@ void TskDbPostgreSQL::test()
     const std::string md5 = "";
     int error = addImageInfo(1, 512, objId, timezone, 2097152, md5);
 
-    int64_t parObjId = 2;
+    int max = (unsigned int)-1;
+    char largeNum[32] = "44294967296";
+    int64_t largeNumInt = atoll(largeNum);
+    __int64 largeNumInt2 = _atoi64(largeNum);
+    const std::string timezone2 = "That''s America/New York";
+    const std::string md52 = "C:\\Temp";
+    error = addImageInfo(1, 4294967296, objId, timezone2, 4294967296, md52);
+
+
+    //    int64_t parObjId = 2;
+    int64_t parObjId = 444294967296;
 
     error = addVsInfo(&vsInfo, parObjId, objId);
     TSK_DB_VS_INFO vsInfoRes;
     getVsInfo(1, vsInfoRes);
+
+    TSK_DB_OBJECT objectInfo;
+    TSK_RETVAL_ENUM ret = getObjectInfo(objId, objectInfo);
 
     // insert files
     addObject(TSK_DB_OBJECT_TYPE_VS, 2, objId);    
@@ -1076,33 +1084,38 @@ void TskDbPostgreSQL::test()
 
 // NOT IMPLEMENTED:
 
-    int TskDbPostgreSQL::addVolumeInfo(const TSK_VS_PART_INFO * vs_part, int64_t parObjId,
-        int64_t & objId){        return 0; }
+int TskDbPostgreSQL::addVolumeInfo(const TSK_VS_PART_INFO * vs_part, int64_t parObjId,
+    int64_t & objId){        return 0; }
 
 
-    TSK_RETVAL_ENUM TskDbPostgreSQL::addVirtualDir(const int64_t fsObjId, const int64_t parentDirId, const char * const name, int64_t & objId) { return TSK_OK;}
-    TSK_RETVAL_ENUM TskDbPostgreSQL::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & objId) { return TSK_OK;}
-    TSK_RETVAL_ENUM TskDbPostgreSQL::addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
-        vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) { return TSK_OK;}
-    TSK_RETVAL_ENUM TskDbPostgreSQL::addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
-        vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) { return TSK_OK;}
-    TSK_RETVAL_ENUM TskDbPostgreSQL::addCarvedFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
-        vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) { return TSK_OK;}
-    
-    int TskDbPostgreSQL::addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLayoutRange){return 0; }
-    int TskDbPostgreSQL::addFileLayoutRange(int64_t a_fileObjId, uint64_t a_byteStart, uint64_t a_byteLen, int a_sequence){return 0; }
-    
-    bool TskDbPostgreSQL::isDbOpen() const {return true;}
-    int TskDbPostgreSQL::createSavepoint(const char *name){ return 0; }
-    int TskDbPostgreSQL::revertSavepoint(const char *name){ return 0; }
-    int TskDbPostgreSQL::releaseSavepoint(const char *name){ return 0; }
-    bool TskDbPostgreSQL::inTransaction() { return true;}
+TSK_RETVAL_ENUM TskDbPostgreSQL::addVirtualDir(const int64_t fsObjId, const int64_t parentDirId, const char * const name, int64_t & objId) { return TSK_OK;}
+TSK_RETVAL_ENUM TskDbPostgreSQL::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & objId) { return TSK_OK;}
+TSK_RETVAL_ENUM TskDbPostgreSQL::addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
+    vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) { return TSK_OK;}
+TSK_RETVAL_ENUM TskDbPostgreSQL::addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
+    vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) { return TSK_OK;}
+TSK_RETVAL_ENUM TskDbPostgreSQL::addCarvedFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
+    vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) { return TSK_OK;}
 
-    //query methods / getters
-    TSK_RETVAL_ENUM TskDbPostgreSQL::getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts) { return TSK_OK;}
-    TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO> & vsInfos) { return TSK_OK;}
-    TSK_RETVAL_ENUM TskDbPostgreSQL::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_PART_INFO> & vsPartInfos) { return TSK_OK;}
-    TSK_RETVAL_ENUM TskDbPostgreSQL::getFsRootDirObjectInfo(const int64_t fsObjId, TSK_DB_OBJECT & rootDirObjInfo) { return TSK_OK;}
+int TskDbPostgreSQL::addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLayoutRange){return 0; }
+int TskDbPostgreSQL::addFileLayoutRange(int64_t a_fileObjId, uint64_t a_byteStart, uint64_t a_byteLen, int a_sequence){return 0; }
+
+bool TskDbPostgreSQL::isDbOpen() const {
+    return true;}
+int TskDbPostgreSQL::createSavepoint(const char *name){ 
+    return 0; }
+int TskDbPostgreSQL::revertSavepoint(const char *name){ 
+    return 0; }
+int TskDbPostgreSQL::releaseSavepoint(const char *name){ 
+    return 1; }
+bool TskDbPostgreSQL::inTransaction() { 
+    return false;}
+
+//query methods / getters
+TSK_RETVAL_ENUM TskDbPostgreSQL::getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts) { return TSK_OK;}
+TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO> & vsInfos) { return TSK_OK;}
+TSK_RETVAL_ENUM TskDbPostgreSQL::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_PART_INFO> & vsPartInfos) { return TSK_OK;}
+TSK_RETVAL_ENUM TskDbPostgreSQL::getFsRootDirObjectInfo(const int64_t fsObjId, TSK_DB_OBJECT & rootDirObjInfo) { return TSK_OK;}
 
 #endif // TSK_WIN32
 #endif // HAVE_POSTGRESQL
