@@ -54,20 +54,15 @@ TskCaseDb::~TskCaseDb()
 TskCaseDb *
 TskCaseDb::newDb(const TSK_TCHAR * const path)
 {
-    // ELTODO: optimize this
-#ifdef HAVE_POSTGRESQL
-#ifdef TSK_WIN32
 
+#if defined(HAVE_POSTGRESQL) && defined(TSK_WIN32)
     // ELTODO: check here which database to initialize
     //TskDb *db = new TskDbSqlite(path, true);
 
     TskDb *db = new TskDbPostgreSQL(path, true);
 #else
     TskDb *db = new TskDbSqlite(path, true);
-#endif // TSK_WIN32
-#else
-    TskDb *db = new TskDbSqlite(path, true);
-#endif // HAVE_POSTGRESQL
+#endif // HAVE_POSTGRESQL && TSK_WIN32
 
     // Check if the database already exsists
     if (db->dbExists()) {
@@ -96,20 +91,15 @@ TskCaseDb::newDb(const TSK_TCHAR * const path)
 TskCaseDb *
 TskCaseDb::openDb(const TSK_TCHAR * path)
 {
-    // ELTODO: optimize this
-#ifdef HAVE_POSTGRESQL
-#ifdef TSK_WIN32
 
+#if defined(HAVE_POSTGRESQL) && defined(TSK_WIN32)
     // ELTODO: check here which database to initialize
     //TskDb *db = new TskDbSqlite(path, true);
 
     TskDb *db = new TskDbPostgreSQL(path, true);
 #else
     TskDb *db = new TskDbSqlite(path, true);
-#endif // TSK_WIN32
-#else
-    TskDb *db = new TskDbSqlite(path, true);
-#endif // HAVE_POSTGRESQL
+#endif // HAVE_POSTGRESQL && TSK_WIN32
 
     // Confirm that database already exsists
     if (!db->dbExists()) {
