@@ -243,8 +243,8 @@ PGresult* TskDbPostgreSQL::get_query_result_set(const char *sql, const char *err
 }
 
 /**
-* Verifies if PGresult is valid and not empty. Frees result memory and sets TSK error values if result is invalid. 
-* @returns true if result is valid and not empty, false if result is invalid or empty
+* Verifies if PGresult is valid. Sets TSK error values if result is invalid. 
+* @returns true if result is valid, false if result is invalid
 */
 bool TskDbPostgreSQL::isQueryResultValid(PGresult *res, const char *errfmt)
 {
@@ -252,14 +252,6 @@ bool TskDbPostgreSQL::isQueryResultValid(PGresult *res, const char *errfmt)
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         tsk_error_set_errstr(errfmt, "Result set pointer is NULL\n");
-        return false;
-    }
-
-    if (!PQntuples(res)) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr(errfmt, "No results returned for query\n");
-        PQclear(res);
         return false;
     }
     return true;
@@ -490,13 +482,13 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInf
         return TSK_ERR;
     }
 
-    // ELTODO: use nFields = PQnfields(res); to verify number of fields in result
-    // ELTODO: verify that atoi() handles unsigned int. IT DOESN'T! MUST USE ATOLL().
-    // ELTODO: verify that atoll() handles uint64_t. Looks like it does. http://forums.codeguru.com/showthread.php?195538-Converting-string-to-UINT64
-    vsInfo.objId = atoll(PQgetvalue(res, 0, 0));
-    vsInfo.vstype = (TSK_VS_TYPE_ENUM)atoi(PQgetvalue(res, 0, 1));
-    vsInfo.offset = atoll(PQgetvalue(res, 0, 2));
-    vsInfo.block_size = (unsigned int)atoll(PQgetvalue(res, 0, 3));
+    if (PQntuples(res) >= 1 && PQnfields(res) >= 3) {
+        vsInfo.objId = atoll(PQgetvalue(res, 0, 0));
+        vsInfo.vstype = (TSK_VS_TYPE_ENUM)atoi(PQgetvalue(res, 0, 1));
+        vsInfo.offset = atoll(PQgetvalue(res, 0, 2));
+        vsInfo.block_size = (unsigned int)atoll(PQgetvalue(res, 0, 3));
+    }
+    // ELTODO: add "else" here
 
     //cleanup
     PQclear(res);
@@ -909,6 +901,10 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getFsInfos(int64_t imgId, vector<TSK_DB_FS_INFO
     //get rows
     TSK_DB_FS_INFO rowData;
     for (int i = 0; i < PQntuples(res); i++) {
+
+        // ELTODO probably remove this check
+        int isBinaryData = PQbinaryTuples(res); // Returns 1 if the PGresult contains binary data and 0 if it contains text data.
+
         int64_t fsObjId = atoll(PQgetvalue(res, i, 0));
 
         //ensure fs is (sub)child of the image requested, if not, skip it
@@ -993,11 +989,12 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getObjectInfo(int64_t objId, TSK_DB_OBJECT & ob
         return TSK_ERR;
     }
 
-    // ELTODO: use nFields = PQnfields(res); to verify number of fields in result
-    int nFields = PQnfields(res);
-    objectInfo.objId = atoll(PQgetvalue(res, 0, 0));
-    objectInfo.parObjId = atoll(PQgetvalue(res, 0, 1));
-    objectInfo.type = (TSK_DB_OBJECT_TYPE_ENUM) atoi(PQgetvalue(res, 0, 2));
+    if (PQntuples(res) >= 1 && PQnfields(res) >= 3) {
+        objectInfo.objId = atoll(PQgetvalue(res, 0, 0));
+        objectInfo.parObjId = atoll(PQgetvalue(res, 0, 1));
+        objectInfo.type = (TSK_DB_OBJECT_TYPE_ENUM) atoi(PQgetvalue(res, 0, 2));
+    }
+    // ELTODO: add "else" here
 
     //cleanup
     PQclear(res);
@@ -1024,8 +1021,8 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addVirtualDir(const int64_t fsObjId, const int6
     // escape strings for use within an SQL command
     char *name_sql = PQescapeLiteral(conn, name, strlen(name));
 
-    snprintf(zSQL, 2048, "INSERT INTO tsk_files (attr_type, attr_id, has_layout, fs_obj_id, obj_id, type, attr_type, "
-        "attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, "
+    snprintf(zSQL, 2048, "INSERT INTO tsk_files (attr_type, attr_id, has_layout, fs_obj_id, obj_id, type, "
+        "name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, "
         "crtime, ctime, atime, mtime, mode, gid, uid, known, parent_path) "
         "VALUES ("
         "NULL, NULL,"
@@ -1033,7 +1030,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addVirtualDir(const int64_t fsObjId, const int6
         "%lld,"
         "%lld,"
         "%d,"
-        "NULL,NULL,%s,"
+        "%s,"
         "NULL,NULL,"
         "%d,%d,%d,%d,"
         "0,"
@@ -1343,6 +1340,105 @@ int TskDbPostgreSQL::addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLay
 }
 
 
+/**
+* Query tsk_vs_part and return rows for every entry in tsk_vs_part table
+* @param imgId the object id of the image to get vs parts for
+* @param vsPartInfos (out) TSK_DB_VS_PART_INFO row representations to return
+* @returns TSK_ERR on error, TSK_OK on success
+*/
+TSK_RETVAL_ENUM TskDbPostgreSQL::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_PART_INFO> & vsPartInfos) {
+
+    // ELTODO use vsPartInfosStatement prepared statement
+    char zSQL[512];
+    snprintf(zSQL, 512, "SELECT obj_id, addr, start, length, descr, flags FROM tsk_vs_parts");
+
+    PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getVsPartInfos: Error selecting from tsk_vs_parts: %s (result code %d)\n");
+
+    // check if a result set was returned
+    if (!isQueryResultValid(res, "TskDbPostgreSQL::getVsPartInfos: No result returned for SELECT FROM tsk_vs_parts\n")){
+        return TSK_ERR;
+    }
+
+    //get rows
+    TSK_DB_VS_PART_INFO rowData;
+    for (int i = 0; i < PQntuples(res); i++) {
+
+        // ELTODO probably remove this check
+        int isBinaryField = PQfformat(res, 0);  // 1 - binary, 0 - text
+        size_t PartObjIdLen = PQgetlength(res, i, 0);
+
+        int64_t vsPartObjId = atoll(PQgetvalue(res, i, 0));
+
+        int64_t curImgId = 0;
+        if (getParentImageId(vsPartObjId, curImgId) == TSK_ERR) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_AUTO_DB);
+            tsk_error_set_errstr("Error finding parent for: %"PRIu64, vsPartObjId);
+            return TSK_ERR;
+        }
+
+        if (imgId != curImgId) {
+            //ensure vs is (sub)child of the image requested, if not, skip it
+            continue;
+        }
+
+
+        rowData.objId = vsPartObjId;
+        rowData.addr = atoi(PQgetvalue(res, i, 1));
+        rowData.start = atoll(PQgetvalue(res, i, 2));
+        rowData.len = atoll(PQgetvalue(res, i, 3));
+//        const unsigned char * text = sqlite3_column_text(vsPartInfosStatement, 4);
+//        size_t textLen = sqlite3_column_bytes(vsPartInfosStatement, 4);
+        char * text = PQgetvalue(res, i, 4);
+        size_t textLen = PQgetlength(res, i, 4);
+        const size_t copyChars = textLen < TSK_MAX_DB_VS_PART_INFO_DESC_LEN-1?textLen:TSK_MAX_DB_VS_PART_INFO_DESC_LEN-1;
+        strncpy (rowData.desc,(char*)text,copyChars);
+        rowData.desc[copyChars] = '\0'; // ELTODO: is this neccessary. Probably so because even sqlite3_column_text returns zero terminated string.
+        rowData.flags = (TSK_VS_PART_FLAG_ENUM)atoi(PQgetvalue(res, i, 5));
+        //insert a copy of the rowData
+        vsPartInfos.push_back(rowData);
+    }
+
+    //cleanup
+    PQclear(res);
+
+    return TSK_OK;
+}
+
+/**
+* Query tsk_objects and tsk_files given file system id and return the root directory object
+* @param fsObjId (int) file system id to query root dir object for
+* @param rootDirObjInfo (out) TSK_DB_OBJECT root dir entry representation to return
+* @returns TSK_ERR on error (or if not found), TSK_OK on success
+*/
+TSK_RETVAL_ENUM TskDbPostgreSQL::getFsRootDirObjectInfo(const int64_t fsObjId, TSK_DB_OBJECT & rootDirObjInfo) {
+    // ELTODO use rootDirInfoStatement prepared statement
+    char zSQL[1024];
+    snprintf(zSQL, 1024, "SELECT tsk_objects.obj_id,tsk_objects.par_obj_id,tsk_objects.type "
+        "FROM tsk_objects,tsk_files WHERE tsk_objects.par_obj_id = %" PRId64 " AND tsk_files.obj_id = tsk_objects.obj_id AND tsk_files.name = ''", 
+        fsObjId);
+
+    PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getFsRootDirObjectInfo: Error selecting from tsk_objects,tsk_files: %s (result code %d)\n");
+
+    // check if a result set was returned
+    if (!isQueryResultValid(res, "TskDbPostgreSQL::getFsRootDirObjectInfo: Result pointer is NULL\n")){
+        return TSK_ERR;
+    }
+
+    if (PQntuples(res) >= 1 && PQnfields(res) >= 3) {
+        rootDirObjInfo.objId = atoll(PQgetvalue(res, 0, 0));
+        rootDirObjInfo.parObjId = atoll(PQgetvalue(res, 0, 1));
+        rootDirObjInfo.type = (TSK_DB_OBJECT_TYPE_ENUM)atoi(PQgetvalue(res, 0, 2));
+    }
+    // ELTODO add "else" here
+
+    //cleanup
+    PQclear(res);
+
+    return TSK_OK;
+}
+
+
 // NOT IMPLEMENTED:
 
 bool TskDbPostgreSQL::isDbOpen() const {
@@ -1359,8 +1455,6 @@ bool TskDbPostgreSQL::inTransaction() {
 //query methods / getters
 TSK_RETVAL_ENUM TskDbPostgreSQL::getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts) { return TSK_OK;}
 TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO> & vsInfos) { return TSK_OK;}
-TSK_RETVAL_ENUM TskDbPostgreSQL::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_PART_INFO> & vsPartInfos) { return TSK_OK;}
-TSK_RETVAL_ENUM TskDbPostgreSQL::getFsRootDirObjectInfo(const int64_t fsObjId, TSK_DB_OBJECT & rootDirObjInfo) { return TSK_OK;}
 
 
 // ELTODO: delete this test code
