@@ -1243,11 +1243,14 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addLayoutFileInfo(const int64_t parObjId, const
         return TSK_ERR;
 
     //fsObjId can be NULL
+    char nullStr[8] = "NULL";    
     char *fsObjIdStrPtr = NULL;
     char fsObjIdStr[32];
     if (fsObjId != 0) {
         snprintf(fsObjIdStr, 32, "%"PRIu64, fsObjId);
         fsObjIdStrPtr = fsObjIdStr;
+    } else {
+        fsObjIdStrPtr = &nullStr[0];
     }
 
     // escape strings for use within an SQL command
