@@ -21,6 +21,13 @@
 
 #define atoll(S) _atoi64(S)
 
+#include <string.h>
+#include <sstream>
+#include <algorithm>
+
+using std::stringstream;
+using std::sort;
+using std::for_each;
 
 TskDbPostgreSQL::TskDbPostgreSQL(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFlag)
     : TskDb(a_dbFilePath, a_blkMapFlag)
@@ -199,7 +206,7 @@ int TskDbPostgreSQL::attempt_exec(const char *sql, const char *errfmt)
         return 1;
 
     PGresult *res = PQexec(conn, sql); 
-    // ELTODO: verify that there are no other acceptable return codes. What about PGRES_EMPTY_QUERY?
+    // ELTODO: verify that there are no other acceptable return codes.
     if (PQresultStatus(res) != PGRES_COMMAND_OK) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
@@ -241,11 +248,17 @@ PGresult* TskDbPostgreSQL::get_query_result_set(const char *sql, const char *err
 */
 bool TskDbPostgreSQL::isQueryResultValid(PGresult *res, const char *errfmt)
 {
-    if (!res || !PQntuples(res)) {
+    if (!res) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        char * str = PQerrorMessage(conn);
-        tsk_error_set_errstr(errfmt, PQerrorMessage(conn));
+        tsk_error_set_errstr(errfmt, "Result set pointer is NULL\n");
+        return false;
+    }
+
+    if (!PQntuples(res)) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr(errfmt, "No results returned for query\n");
         PQclear(res);
         return false;
     }
@@ -1063,6 +1076,212 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addUnallocFsBlockFilesParent(const int64_t fsOb
     return addVirtualDir(fsObjId, rootDirObjInfo.objId, unallocDirName, objId);
 }
 
+//internal function object to check for range overlap
+typedef struct _checkFileLayoutRangeOverlap{
+    const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges;
+    bool hasOverlap;
+
+    _checkFileLayoutRangeOverlap(const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges)
+        : ranges(ranges),hasOverlap(false) {}
+
+    bool getHasOverlap() const { return hasOverlap; }
+    void operator() (const TSK_DB_FILE_LAYOUT_RANGE & range)  {
+        if (hasOverlap)
+            return; //no need to check other
+
+        uint64_t start = range.byteStart;
+        uint64_t end = start + range.byteLen;
+
+        vector<TSK_DB_FILE_LAYOUT_RANGE>::const_iterator it;
+        for (it = ranges.begin(); it != ranges.end(); ++it) {
+            const TSK_DB_FILE_LAYOUT_RANGE * otherRange = &(*it);
+            if (&range == otherRange)
+                continue; //skip, it's the same range
+            uint64_t otherStart = otherRange->byteStart;
+            uint64_t otherEnd = otherStart + otherRange->byteLen;
+            if (start <= otherEnd && end >= otherStart) {
+                hasOverlap = true;
+                break;
+            }       
+        }
+    }
+
+} checkFileLayoutRangeOverlap;
+
+/**
+* Adds information about a unallocated file with layout ranges into the database.
+* Adds a single entry to tsk_files table with an auto-generated file name, tsk_objects table, and one or more entries to tsk_file_layout table
+* @param parentObjId Id of the parent object in the database (fs, volume, or image)
+* @param fsObjId parent fs, or NULL if the file is not associated with fs
+* @param size Number of bytes in file
+* @param ranges vector containing one or more TSK_DB_FILE_LAYOUT_RANGE layout ranges (in)
+* @param objId object id of the file object created (output)
+* @returns TSK_OK on success or TSK_ERR on error.
+*/
+TSK_RETVAL_ENUM TskDbPostgreSQL::addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
+    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_UNALLOC_BLOCKS, parentObjId, fsObjId, size, ranges, objId);
+}
+
+/**
+* Adds information about a unused file with layout ranges into the database.
+* Adds a single entry to tsk_files table with an auto-generated file name, tsk_objects table, and one or more entries to tsk_file_layout table
+* @param parentObjId Id of the parent object in the database (fs, volume, or image)
+* @param fsObjId parent fs, or NULL if the file is not associated with fs
+* @param size Number of bytes in file
+* @param ranges vector containing one or more TSK_DB_FILE_LAYOUT_RANGE layout ranges (in)
+* @param objId object id of the file object created (output)
+* @returns TSK_OK on success or TSK_ERR on error.
+*/
+TSK_RETVAL_ENUM TskDbPostgreSQL::addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
+    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_UNUSED_BLOCKS, parentObjId, fsObjId, size, ranges, objId);
+}
+
+/**
+* Adds information about a carved file with layout ranges into the database.
+* Adds a single entry to tsk_files table with an auto-generated file name, tsk_objects table, and one or more entries to tsk_file_layout table
+* @param parentObjId Id of the parent object in the database (fs, volume, or image)
+* @param fsObjId fs id associated with the file, or NULL
+* @param size Number of bytes in file
+* @param ranges vector containing one or more TSK_DB_FILE_LAYOUT_RANGE layout ranges (in)
+* @param objId object id of the file object created (output)
+* @returns TSK_OK on success or TSK_ERR on error.
+*/
+TSK_RETVAL_ENUM TskDbPostgreSQL::addCarvedFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
+    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_CARVED, parentObjId, fsObjId, size, ranges, objId);
+}
+
+/**
+* Internal helper method to add unalloc, unused and carved files with layout ranges to db
+* Generates file_name and populates tsk_files, tsk_objects and tsk_file_layout tables
+* @returns TSK_ERR on error or TSK_OK on success
+*/
+TSK_RETVAL_ENUM TskDbPostgreSQL::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
+    const size_t numRanges = ranges.size();
+
+    if (numRanges < 1) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("Error addFileWithLayoutRange() - no ranges present");
+        return TSK_ERR;
+    }
+
+    stringstream fileNameSs;
+    switch (dbFileType) {
+    case TSK_DB_FILES_TYPE_UNALLOC_BLOCKS:
+        fileNameSs << "Unalloc";
+        break;
+
+    case TSK_DB_FILES_TYPE_UNUSED_BLOCKS:
+        fileNameSs << "Unused";     
+        break;
+
+    case TSK_DB_FILES_TYPE_CARVED:
+        fileNameSs << "Carved";
+        break;
+    default:
+        stringstream sserr;
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        sserr << "Error addFileWithLayoutRange() - unsupported file type for file layout range: ";
+        sserr << (int) dbFileType;
+        tsk_error_set_errstr("%s", sserr.str().c_str());
+        return TSK_ERR;
+    }
+
+    //ensure layout ranges are sorted (to generate file name and to be inserted in sequence order)
+    sort(ranges.begin(), ranges.end());
+
+    //dome some checking
+    //ensure there is no overlap and each range has unique byte range
+    const checkFileLayoutRangeOverlap & overlapRes = 
+        for_each(ranges.begin(), ranges.end(), checkFileLayoutRangeOverlap(ranges));
+    if (overlapRes.getHasOverlap() ) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("Error addFileWithLayoutRange() - overlap detected between ranges");
+        return TSK_ERR;
+    }
+
+    //construct filename with parent obj id, start byte of first range, end byte of last range
+    fileNameSs << "_" << parentObjId << "_" << ranges[0].byteStart;
+    fileNameSs << "_" << (ranges[numRanges-1].byteStart + ranges[numRanges-1].byteLen);
+
+    //insert into tsk files and tsk objects
+    if (addLayoutFileInfo(parentObjId, fsObjId, dbFileType, fileNameSs.str().c_str(), size, objId) ) {
+        return TSK_ERR;
+    }
+
+    //fill in fileObjId and insert ranges
+    for (vector<TSK_DB_FILE_LAYOUT_RANGE>::iterator it = ranges.begin();
+        it != ranges.end(); ++it) {
+            TSK_DB_FILE_LAYOUT_RANGE & range = *it;
+            range.fileObjId = objId;
+            if (this->addFileLayoutRange(range) ) {
+                return TSK_ERR;
+            }
+    }
+
+    return TSK_OK;
+}
+
+/**
+* Adds entry for to tsk_files for a layout file into the database.
+* @param parObjId parent obj id in the database
+* @param fsObjId fs obj id in the database, or 0 if parent it not fs (NULL)
+* @param dbFileType type (unallocated, carved, unused)
+* @param fileName file name for the layout file
+* @param size Number of bytes in file
+* @param objId layout file Id (output)
+* @returns TSK_OK on success or TSK_ERR on error.
+*/
+TSK_RETVAL_ENUM TskDbPostgreSQL::addLayoutFileInfo(const int64_t parObjId, const int64_t fsObjId, const TSK_DB_FILES_TYPE_ENUM dbFileType, const char *fileName,
+    const uint64_t size, int64_t & objId)
+{
+    char zSQL[2048];
+
+    if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId))
+        return TSK_ERR;
+
+    //fsObjId can be NULL
+    char *fsObjIdStrPtr = NULL;
+    char fsObjIdStr[32];
+    if (fsObjId != 0) {
+        snprintf(fsObjIdStr, 32, "%"PRIu64, fsObjId);
+        fsObjIdStrPtr = fsObjIdStr;
+    }
+
+    // escape strings for use within an SQL command
+    char *name_sql = PQescapeLiteral(conn, fileName, strlen(fileName));
+    char *fsObjIdStrPtr_sql = PQescapeLiteral(conn, fsObjIdStrPtr, strlen(fsObjIdStrPtr));
+
+    snprintf(zSQL, 2048, "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
+        "VALUES ("
+        "1, %s, %lld,"
+        "%d,"
+        "NULL,NULL,%s,"
+        "NULL,NULL,"
+        "%d,%d,%d,%d,"
+        "%" PRIuOFF ","
+        "NULL,NULL,NULL,NULL,NULL,NULL,NULL)",
+        fsObjIdStrPtr_sql, objId,
+        dbFileType,
+        name_sql,
+        TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG,
+        TSK_FS_NAME_FLAG_UNALLOC, TSK_FS_META_FLAG_UNALLOC, size);
+
+    if (attempt_exec(zSQL, "TskDbSqlite::addLayoutFileInfo: Error adding data to tsk_files table: %s\n")) {
+        PQfreemem(name_sql);
+        PQfreemem(fsObjIdStrPtr_sql);
+        return TSK_ERR;
+    }
+
+    //cleanup
+    PQfreemem(name_sql);
+    PQfreemem(fsObjIdStrPtr_sql);
+
+    return TSK_OK;
+}
+
 
 // ELTODO: delete this test code
 void TskDbPostgreSQL::test()
@@ -1178,14 +1397,6 @@ void TskDbPostgreSQL::test()
 
 int TskDbPostgreSQL::addVolumeInfo(const TSK_VS_PART_INFO * vs_part, int64_t parObjId,
     int64_t & objId){        return 0; }
-
-
-TSK_RETVAL_ENUM TskDbPostgreSQL::addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
-    vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) { return TSK_OK;}
-TSK_RETVAL_ENUM TskDbPostgreSQL::addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
-    vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) { return TSK_OK;}
-TSK_RETVAL_ENUM TskDbPostgreSQL::addCarvedFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
-    vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) { return TSK_OK;}
 
 int TskDbPostgreSQL::addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLayoutRange){return 0; }
 int TskDbPostgreSQL::addFileLayoutRange(int64_t a_fileObjId, uint64_t a_byteStart, uint64_t a_byteLen, int a_sequence){return 0; }
