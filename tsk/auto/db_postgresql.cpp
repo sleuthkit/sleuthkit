@@ -427,10 +427,10 @@ uint8_t TskDbPostgreSQL::addObject(TSK_DB_OBJECT_TYPE_ENUM type, int64_t parObjI
     char stmt[1024];
     snprintf(stmt, 1024, "INSERT INTO tsk_objects (par_obj_id, type) VALUES (%" PRId64 ", %d) RETURNING obj_id", parObjId, type);
 
-    PGresult *res = get_query_result_set(stmt, "TskDbSqlite::addObj: Error adding object to row: %s (result code %d)\n");
+    PGresult *res = get_query_result_set(stmt, "TskDbPostgreSQL::addObj: Error adding object to row: %s (result code %d)\n");
 
     // check if a result set was returned
-    if (!isQueryResultValid(res, "TskDbSqlite::addObj: No result returned for INSERT INTO tsk_objects. Can't obtain objId\n")){
+    if (!isQueryResultValid(res, "TskDbPostgreSQL::addObj: No result returned for INSERT INTO tsk_objects. Can't obtain objId\n")){
         return TSK_ERR;
     }
 
@@ -473,7 +473,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInf
     PGresult *res = get_query_result_set(stmt, "TskDbPostgreSQL::getVsInfo: Error selecting object by objid: %s (result code %d)\n");
 
     // check if a result set was returned
-    if (!isQueryResultValid(res, "TskDbSqlite::addObj: No result returned for INSERT INTO tsk_objects. Can't obtain objId\n")){
+    if (!isQueryResultValid(res, "TskDbPostgreSQL::getVsInfo: No result returned for SELECT FROM tsk_vs_info\n")){
         return TSK_ERR;
     }
 
@@ -736,7 +736,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         meta_mode, gid, uid, md5TextPtr_sql, known,
         escaped_path_sql);
 
-    if (attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
+    if (attempt_exec(zSQL, "TskDbPostgreSQL::addFile: Error adding data to tsk_files table: %s\n")) {
         free(name);
         free(escaped_path);
         PQfreemem(name_sql);
@@ -803,10 +803,10 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
     char zSQL[1024];
     // ELTODO: verify that using "=" instead of "IS ?" is equivalent
     snprintf(zSQL, 1024, "SELECT obj_id FROM tsk_files WHERE meta_addr = %" PRIu64 " AND fs_obj_id = %" PRId64 "", fs_file->name->par_addr, fsObjId);
-    PGresult* res = get_query_result_set(zSQL, "TskDbSqlite::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n");
+    PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n");
 
     // check if a result set was returned
-    if (!isQueryResultValid(res, "TskDbSqlite::findParObjId: No result returned for SELECT obj_id. Can't obtain parObjId\n")){
+    if (!isQueryResultValid(res, "TskDbPostgreSQL::findParObjId: No result returned for SELECT obj_id. Can't obtain parObjId\n")){
         return TSK_ERR;
     }
 
@@ -886,10 +886,10 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getFsInfos(int64_t imgId, vector<TSK_DB_FS_INFO
     // ELTODO: use prepared statement here
     char zSQL[1024];
     snprintf(zSQL, 1024,"SELECT obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum FROM tsk_fs_info");
-    PGresult* res = get_query_result_set(zSQL, "TskDbSqlite::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n");
+    PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getFsInfos: Error selecting from tsk_fs_info: %s (result code %d)\n");
 
     // check if a result set was returned
-    if (!isQueryResultValid(res, "TskDbSqlite::getFsInfos: No result returned for SELECT obj_id FROM tsk_fs_info\n")){
+    if (!isQueryResultValid(res, "TskDbPostgreSQL::getFsInfos: No result returned for SELECT obj_id FROM tsk_fs_info\n")){
         return TSK_ERR;
     }
 
@@ -973,10 +973,10 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getObjectInfo(int64_t objId, TSK_DB_OBJECT & ob
     // ELTODO: verify that using "=" instead of "IS ?" is equivalent
     snprintf(zSQL, 1024, "SELECT obj_id, par_obj_id, type FROM tsk_objects WHERE obj_id = %" PRId64 "", objId);
 
-    PGresult* res = get_query_result_set(zSQL, "TskDbSqlite::getObjectInfo: Error selecting object by objid: %s (result code %d)\n");
+    PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getObjectInfo: Error selecting object by objid: %s (result code %d)\n");
 
     // check if a result set was returned
-    if (!isQueryResultValid(res, "TskDbSqlite::getObjectInfo: No result returned for SELECT FROM tsk_objects\n")){
+    if (!isQueryResultValid(res, "TskDbPostgreSQL::getObjectInfo: No result returned for SELECT FROM tsk_objects\n")){
         return TSK_ERR;
     }
 
@@ -991,6 +991,78 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getObjectInfo(int64_t objId, TSK_DB_OBJECT & ob
 
     return TSK_OK;
 }
+
+
+/**
+* Add virtual dir of type TSK_DB_FILES_TYPE_VIRTUAL_DIR
+* that can be a parent of other non-fs virtual files or directories, to organize them
+* @param fsObjId (in) file system object id to associate with the virtual directory.
+* @param parentDirId (in) parent dir object id of the new directory: either another virtual directory or root fs directory
+* @param name name (int) of the new virtual directory
+* @param objId (out) object id of the created virtual directory object
+* @returns TSK_ERR on error or TSK_OK on success
+*/
+TSK_RETVAL_ENUM TskDbPostgreSQL::addVirtualDir(const int64_t fsObjId, const int64_t parentDirId, const char * const name, int64_t & objId) {
+    char zSQL[2048];
+
+    if (addObject(TSK_DB_OBJECT_TYPE_FILE, parentDirId, objId))
+        return TSK_ERR;
+
+    // escape strings for use within an SQL command
+    char *name_sql = PQescapeLiteral(conn, name, strlen(name));
+
+    snprintf(zSQL, 2048, "INSERT INTO tsk_files (attr_type, attr_id, has_layout, fs_obj_id, obj_id, type, attr_type, "
+        "attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, "
+        "crtime, ctime, atime, mtime, mode, gid, uid, known, parent_path) "
+        "VALUES ("
+        "NULL, NULL,"
+        "NULL,"
+        "%lld,"
+        "%lld,"
+        "%d,"
+        "NULL,NULL,%s,"
+        "NULL,NULL,"
+        "%d,%d,%d,%d,"
+        "0,"
+        "NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'/')",
+        fsObjId,
+        objId,
+        TSK_DB_FILES_TYPE_VIRTUAL_DIR,
+        name_sql,
+        TSK_FS_NAME_TYPE_DIR, TSK_FS_META_TYPE_DIR,
+        TSK_FS_NAME_FLAG_ALLOC, (TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED));
+
+    if (attempt_exec(zSQL, "Error adding data to tsk_files table: %s\n")) {
+        PQfreemem(name_sql);
+        return TSK_ERR;
+    }
+
+    //cleanup
+    PQfreemem(name_sql);
+
+    return TSK_OK;
+}
+
+/**
+* Internal helper method to add a virtual root dir, a parent dir of files representing unalloc space within fs.
+* The dir has is associated with its root dir parent for the fs.
+* @param fsObjId (in) fs id to find root dir for and create $Unalloc dir for
+* @param objId (out) object id of the $Unalloc dir created
+* @returns TSK_ERR on error or TSK_OK on success
+*/
+TSK_RETVAL_ENUM TskDbPostgreSQL::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & objId) {
+
+    const char * const unallocDirName = "$Unalloc";
+
+    //get root dir
+    TSK_DB_OBJECT rootDirObjInfo;
+    if (getFsRootDirObjectInfo(fsObjId, rootDirObjInfo) == TSK_ERR) {
+        return TSK_ERR;
+    }
+
+    return addVirtualDir(fsObjId, rootDirObjInfo.objId, unallocDirName, objId);
+}
+
 
 // ELTODO: delete this test code
 void TskDbPostgreSQL::test()
@@ -1033,27 +1105,27 @@ void TskDbPostgreSQL::test()
     addObject(TSK_DB_OBJECT_TYPE_VS, 2, objId);    
     char zSQL[2048];
     snprintf(zSQL, 2048, "INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum) VALUES (2,0,2,512,4096,2,2,65430)");
-    if (attempt_exec(zSQL, "TskDbSqlite::INSERT INTO tsk_fs_info\n")) {
+    if (attempt_exec(zSQL, "TskDbPostgreSQL::INSERT INTO tsk_fs_info\n")) {
         return;
     }
 
     //Ln 859: addObject() - parObjId=2, type=TSK_DB_OBJECT_TYPE_FILE. objId = 3;
     addObject(TSK_DB_OBJECT_TYPE_VS, 2, objId);
     snprintf(zSQL, 2048, "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) VALUES (2,3,0,1,0,'',2,0,3,2,1,5,16384,0,0,0,0,0,0,0,NULL,0,'/')");
-    if (attempt_exec(zSQL, "TskDbSqlite::INSERT INTO tsk_files\n")) {
+    if (attempt_exec(zSQL, "TskDbPostgreSQL::INSERT INTO tsk_files\n")) {
         return;
     }
 
     //Ln 859: addObject() - parObjId=3, type=TSK_DB_OBJECT_TYPE_FILE. objId = 4;
     addObject(TSK_DB_OBJECT_TYPE_VS, 3, objId);
     snprintf(zSQL, 2048, "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) VALUES (2,4,0,1,0,'test.txt',4,0,5,1,1,1,6,1181684630,0,1181620800,1181684630,511,0,0,NULL,0,'/')");
-    if (attempt_exec(zSQL, "TskDbSqlite::INSERT INTO tsk_files\n")) {
+    if (attempt_exec(zSQL, "TskDbPostgreSQL::INSERT INTO tsk_files\n")) {
         return;
     }
     //Ln 859: addObject() - parObjId=3, type=TSK_DB_OBJECT_TYPE_FILE. objId = 5;
     addObject(TSK_DB_OBJECT_TYPE_VS, 3, objId);
     snprintf(zSQL, 2048, "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) VALUES (2,5,0,1,0,'$MBR',65427,0,10,10,1,5,512,0,0,0,0,0,0,0,NULL,0,'/')");
-    if (attempt_exec(zSQL, "TskDbSqlite::INSERT INTO tsk_files\n")) {
+    if (attempt_exec(zSQL, "TskDbPostgreSQL::INSERT INTO tsk_files\n")) {
         return;
     }
 
@@ -1108,8 +1180,6 @@ int TskDbPostgreSQL::addVolumeInfo(const TSK_VS_PART_INFO * vs_part, int64_t par
     int64_t & objId){        return 0; }
 
 
-TSK_RETVAL_ENUM TskDbPostgreSQL::addVirtualDir(const int64_t fsObjId, const int64_t parentDirId, const char * const name, int64_t & objId) { return TSK_OK;}
-TSK_RETVAL_ENUM TskDbPostgreSQL::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & objId) { return TSK_OK;}
 TSK_RETVAL_ENUM TskDbPostgreSQL::addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
     vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) { return TSK_OK;}
 TSK_RETVAL_ENUM TskDbPostgreSQL::addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
