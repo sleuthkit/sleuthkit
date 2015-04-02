@@ -1285,6 +1285,83 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addLayoutFileInfo(const int64_t parObjId, const
     return TSK_OK;
 }
 
+/**
+* Adds the sector addresses of the volumes into the db.
+* @returns 1 on error, 0 on success
+*/
+int TskDbPostgreSQL::addVolumeInfo(const TSK_VS_PART_INFO * vs_part,
+    int64_t parObjId, int64_t & objId)
+{
+    char zSQL[1024];
+    int ret;
+
+    if (addObject(TSK_DB_OBJECT_TYPE_VOL, parObjId, objId))
+        return 1;
+
+    // escape strings for use within an SQL command
+    char *descr_sql = PQescapeLiteral(conn, vs_part->desc, strlen(vs_part->desc));
+
+    snprintf(zSQL, 1024, "INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags)"
+        "VALUES (%lld, %" PRIuPNUM ",%" PRIuOFF ",%" PRIuOFF ",%s,%d)",
+        objId, (int) vs_part->addr, vs_part->start, vs_part->len,
+        descr_sql, vs_part->flags);
+
+    ret = attempt_exec(zSQL, "Error adding data to tsk_vs_parts table: %s\n");
+    //cleanup
+    PQfreemem(descr_sql);
+    return ret;
+}
+
+
+/**
+* Add file layout info to the database.  This table stores the run information for each file so that we
+* can map which parts of an image are used by what files.
+* @param a_fileObjId ID of the file
+* @param a_byteStart Byte address relative to the start of the image file
+* @param a_byteLen Length of the run in bytes
+* @param a_sequence Sequence of this run in the file
+* @returns 1 on error
+*/
+int TskDbPostgreSQL::addFileLayoutRange(int64_t a_fileObjId, uint64_t a_byteStart, uint64_t a_byteLen, int a_sequence)
+{
+    char foo[1024];
+
+    snprintf(foo, 1024, "INSERT INTO tsk_file_layout(obj_id, byte_start, byte_len, sequence) VALUES (%lld, %llu, %llu, %d)",
+        a_fileObjId, a_byteStart, a_byteLen, a_sequence);
+
+    return attempt_exec(foo, "Error adding data to tsk_file_layout table: %s\n");
+}
+
+/**
+* Add file layout info to the database.  This table stores the run information for each file so that we
+* can map which parts of an image are used by what files.
+* @param fileLayoutRange TSK_DB_FILE_LAYOUT_RANGE object storing a single file layout range entry
+* @returns 1 on error
+*/
+int TskDbPostgreSQL::addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLayoutRange) {
+    return addFileLayoutRange(fileLayoutRange.fileObjId, fileLayoutRange.byteStart, fileLayoutRange.byteLen, fileLayoutRange.sequence);
+}
+
+
+// NOT IMPLEMENTED:
+
+bool TskDbPostgreSQL::isDbOpen() const {
+    return true;}
+int TskDbPostgreSQL::createSavepoint(const char *name){ 
+    return 0; }
+int TskDbPostgreSQL::revertSavepoint(const char *name){ 
+    return 0; }
+int TskDbPostgreSQL::releaseSavepoint(const char *name){ 
+    return 1; }
+bool TskDbPostgreSQL::inTransaction() { 
+    return false;}
+
+//query methods / getters
+TSK_RETVAL_ENUM TskDbPostgreSQL::getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts) { return TSK_OK;}
+TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO> & vsInfos) { return TSK_OK;}
+TSK_RETVAL_ENUM TskDbPostgreSQL::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_PART_INFO> & vsPartInfos) { return TSK_OK;}
+TSK_RETVAL_ENUM TskDbPostgreSQL::getFsRootDirObjectInfo(const int64_t fsObjId, TSK_DB_OBJECT & rootDirObjInfo) { return TSK_OK;}
+
 
 // ELTODO: delete this test code
 void TskDbPostgreSQL::test()
@@ -1395,31 +1472,6 @@ void TskDbPostgreSQL::test()
 
 };
 
-
-// NOT IMPLEMENTED:
-
-int TskDbPostgreSQL::addVolumeInfo(const TSK_VS_PART_INFO * vs_part, int64_t parObjId,
-    int64_t & objId){        return 0; }
-
-int TskDbPostgreSQL::addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLayoutRange){return 0; }
-int TskDbPostgreSQL::addFileLayoutRange(int64_t a_fileObjId, uint64_t a_byteStart, uint64_t a_byteLen, int a_sequence){return 0; }
-
-bool TskDbPostgreSQL::isDbOpen() const {
-    return true;}
-int TskDbPostgreSQL::createSavepoint(const char *name){ 
-    return 0; }
-int TskDbPostgreSQL::revertSavepoint(const char *name){ 
-    return 0; }
-int TskDbPostgreSQL::releaseSavepoint(const char *name){ 
-    return 1; }
-bool TskDbPostgreSQL::inTransaction() { 
-    return false;}
-
-//query methods / getters
-TSK_RETVAL_ENUM TskDbPostgreSQL::getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts) { return TSK_OK;}
-TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO> & vsInfos) { return TSK_OK;}
-TSK_RETVAL_ENUM TskDbPostgreSQL::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_PART_INFO> & vsPartInfos) { return TSK_OK;}
-TSK_RETVAL_ENUM TskDbPostgreSQL::getFsRootDirObjectInfo(const int64_t fsObjId, TSK_DB_OBJECT & rootDirObjInfo) { return TSK_OK;}
 
 #endif // TSK_WIN32
 #endif // HAVE_POSTGRESQL
