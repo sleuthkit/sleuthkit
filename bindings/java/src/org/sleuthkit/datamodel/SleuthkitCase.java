@@ -547,16 +547,8 @@ public class SleuthkitCase {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public static SleuthkitCase openCase(String databaseName, CaseDbConnectionInfo info) throws TskCoreException {
-		/// KDM TODO
-		/*
-		final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseRemoteDb(databaseName, info);
-		try {
-			return new SleuthkitCase(dbPath, caseHandle);
-		} catch (Exception ex) {
-			throw new TskCoreException("Failed to open case database " + databaseName, ex);
-		}
-		*/
-	return null;
+		// TODO 		
+		return null;
 	}
 
 	
@@ -585,15 +577,7 @@ public class SleuthkitCase {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public static SleuthkitCase newCase(String databaseName, CaseDbConnectionInfo info) throws TskCoreException {
-		/* KDM TODO
- 		SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.newCaseRemoteDb(databaseName, info);
-		try {
-			return new SleuthkitCase(info.getHost(), Integer.parseInt(info.getPort()),
-					databaseName, info.getUserName(), info.getPassword(), caseHandle, null); /// KDM last argument (caseDirPath) doesn't make much sense in this context. fix it.
-		} catch (Exception ex) {
-			throw new TskCoreException("Failed to create case database " + databaseName, ex);
-		}
-		*/
+		// TODO
 		return null;
 	}
 
@@ -5626,17 +5610,4 @@ public class SleuthkitCase {
 			}
 		}	
 	}
-
-	public static boolean settingsValid(CaseDbConnectionInfo info) {
-		// Check if we can talk to the database
-		try {
-			Connection conn = DriverManager.getConnection("jdbc:postgresql://"+
-					info.getHost()+":"+info.getPort()+"/postgres", 
-					info.getUserName(), 
-					info.getPassword()); // NON-NLS
-		} catch (Exception ex) {
-			return false;
-		}
-		return true;
-	}		
 }
