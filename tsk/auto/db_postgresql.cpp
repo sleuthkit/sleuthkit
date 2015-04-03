@@ -21,6 +21,13 @@
 
 #define atoll(S) _atoi64(S)
 
+#include <string.h>
+#include <sstream>
+#include <algorithm>
+
+using std::stringstream;
+using std::sort;
+using std::for_each;
 
 TskDbPostgreSQL::TskDbPostgreSQL(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFlag)
     : TskDb(a_dbFilePath, a_blkMapFlag)
@@ -199,7 +206,7 @@ int TskDbPostgreSQL::attempt_exec(const char *sql, const char *errfmt)
         return 1;
 
     PGresult *res = PQexec(conn, sql); 
-    // ELTODO: verify that there are no other acceptable return codes. What about PGRES_EMPTY_QUERY?
+    // ELTODO: verify that there are no other acceptable return codes.
     if (PQresultStatus(res) != PGRES_COMMAND_OK) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
@@ -236,17 +243,15 @@ PGresult* TskDbPostgreSQL::get_query_result_set(const char *sql, const char *err
 }
 
 /**
-* Verifies if PGresult is valid and not empty. Frees result memory and sets TSK error values if result is invalid. 
-* @returns true if result is valid and not empty, false if result is invalid or empty
+* Verifies if PGresult is valid. Sets TSK error values if result is invalid. 
+* @returns true if result is valid, false if result is invalid
 */
 bool TskDbPostgreSQL::isQueryResultValid(PGresult *res, const char *errfmt)
 {
-    if (!res || !PQntuples(res)) {
+    if (!res) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        char * str = PQerrorMessage(conn);
-        tsk_error_set_errstr(errfmt, PQerrorMessage(conn));
-        PQclear(res);
+        tsk_error_set_errstr(errfmt, "Result set pointer is NULL\n");
         return false;
     }
     return true;
@@ -427,10 +432,10 @@ uint8_t TskDbPostgreSQL::addObject(TSK_DB_OBJECT_TYPE_ENUM type, int64_t parObjI
     char stmt[1024];
     snprintf(stmt, 1024, "INSERT INTO tsk_objects (par_obj_id, type) VALUES (%" PRId64 ", %d) RETURNING obj_id", parObjId, type);
 
-    PGresult *res = get_query_result_set(stmt, "TskDbSqlite::addObj: Error adding object to row: %s (result code %d)\n");
+    PGresult *res = get_query_result_set(stmt, "TskDbPostgreSQL::addObj: Error adding object to row: %s (result code %d)\n");
 
     // check if a result set was returned
-    if (!isQueryResultValid(res, "TskDbSqlite::addObj: No result returned for INSERT INTO tsk_objects. Can't obtain objId\n")){
+    if (!isQueryResultValid(res, "TskDbPostgreSQL::addObj: No result returned for INSERT INTO tsk_objects. Can't obtain objId\n")){
         return TSK_ERR;
     }
 
@@ -473,17 +478,17 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInf
     PGresult *res = get_query_result_set(stmt, "TskDbPostgreSQL::getVsInfo: Error selecting object by objid: %s (result code %d)\n");
 
     // check if a result set was returned
-    if (!isQueryResultValid(res, "TskDbSqlite::addObj: No result returned for INSERT INTO tsk_objects. Can't obtain objId\n")){
+    if (!isQueryResultValid(res, "TskDbPostgreSQL::getVsInfo: No result returned for SELECT FROM tsk_vs_info\n")){
         return TSK_ERR;
     }
 
-    // ELTODO: use nFields = PQnfields(res); to verify number of fields in result
-    // ELTODO: verify that atoi() handles unsigned int. IT DOESN'T! MUST USE ATOLL().
-    // ELTODO: verify that atoll() handles uint64_t. Looks like it does. http://forums.codeguru.com/showthread.php?195538-Converting-string-to-UINT64
-    vsInfo.objId = atoll(PQgetvalue(res, 0, 0));
-    vsInfo.vstype = (TSK_VS_TYPE_ENUM)atoi(PQgetvalue(res, 0, 1));
-    vsInfo.offset = atoll(PQgetvalue(res, 0, 2));
-    vsInfo.block_size = (unsigned int)atoll(PQgetvalue(res, 0, 3));
+    if (PQntuples(res) >= 1 && PQnfields(res) >= 3) {
+        vsInfo.objId = atoll(PQgetvalue(res, 0, 0));
+        vsInfo.vstype = (TSK_VS_TYPE_ENUM)atoi(PQgetvalue(res, 0, 1));
+        vsInfo.offset = atoll(PQgetvalue(res, 0, 2));
+        vsInfo.block_size = (unsigned int)atoll(PQgetvalue(res, 0, 3));
+    }
+    // ELTODO: add "else" here
 
     //cleanup
     PQclear(res);
@@ -736,7 +741,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         meta_mode, gid, uid, md5TextPtr_sql, known,
         escaped_path_sql);
 
-    if (attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
+    if (attempt_exec(zSQL, "TskDbPostgreSQL::addFile: Error adding data to tsk_files table: %s\n")) {
         free(name);
         free(escaped_path);
         PQfreemem(name_sql);
@@ -803,10 +808,10 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
     char zSQL[1024];
     // ELTODO: verify that using "=" instead of "IS ?" is equivalent
     snprintf(zSQL, 1024, "SELECT obj_id FROM tsk_files WHERE meta_addr = %" PRIu64 " AND fs_obj_id = %" PRId64 "", fs_file->name->par_addr, fsObjId);
-    PGresult* res = get_query_result_set(zSQL, "TskDbSqlite::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n");
+    PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n");
 
     // check if a result set was returned
-    if (!isQueryResultValid(res, "TskDbSqlite::findParObjId: No result returned for SELECT obj_id. Can't obtain parObjId\n")){
+    if (!isQueryResultValid(res, "TskDbPostgreSQL::findParObjId: No result returned for SELECT obj_id. Can't obtain parObjId\n")){
         return TSK_ERR;
     }
 
@@ -886,16 +891,20 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getFsInfos(int64_t imgId, vector<TSK_DB_FS_INFO
     // ELTODO: use prepared statement here
     char zSQL[1024];
     snprintf(zSQL, 1024,"SELECT obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum FROM tsk_fs_info");
-    PGresult* res = get_query_result_set(zSQL, "TskDbSqlite::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n");
+    PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getFsInfos: Error selecting from tsk_fs_info: %s (result code %d)\n");
 
     // check if a result set was returned
-    if (!isQueryResultValid(res, "TskDbSqlite::getFsInfos: No result returned for SELECT obj_id FROM tsk_fs_info\n")){
+    if (!isQueryResultValid(res, "TskDbPostgreSQL::getFsInfos: No result returned for SELECT obj_id FROM tsk_fs_info\n")){
         return TSK_ERR;
     }
 
     //get rows
     TSK_DB_FS_INFO rowData;
     for (int i = 0; i < PQntuples(res); i++) {
+
+        // ELTODO probably remove this check
+        int isBinaryData = PQbinaryTuples(res); // Returns 1 if the PGresult contains binary data and 0 if it contains text data.
+
         int64_t fsObjId = atoll(PQgetvalue(res, i, 0));
 
         //ensure fs is (sub)child of the image requested, if not, skip it
@@ -973,18 +982,19 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getObjectInfo(int64_t objId, TSK_DB_OBJECT & ob
     // ELTODO: verify that using "=" instead of "IS ?" is equivalent
     snprintf(zSQL, 1024, "SELECT obj_id, par_obj_id, type FROM tsk_objects WHERE obj_id = %" PRId64 "", objId);
 
-    PGresult* res = get_query_result_set(zSQL, "TskDbSqlite::getObjectInfo: Error selecting object by objid: %s (result code %d)\n");
+    PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getObjectInfo: Error selecting object by objid: %s (result code %d)\n");
 
     // check if a result set was returned
-    if (!isQueryResultValid(res, "TskDbSqlite::getObjectInfo: No result returned for SELECT FROM tsk_objects\n")){
+    if (!isQueryResultValid(res, "TskDbPostgreSQL::getObjectInfo: No result returned for SELECT FROM tsk_objects\n")){
         return TSK_ERR;
     }
 
-    // ELTODO: use nFields = PQnfields(res); to verify number of fields in result
-    int nFields = PQnfields(res);
-    objectInfo.objId = atoll(PQgetvalue(res, 0, 0));
-    objectInfo.parObjId = atoll(PQgetvalue(res, 0, 1));
-    objectInfo.type = (TSK_DB_OBJECT_TYPE_ENUM) atoi(PQgetvalue(res, 0, 2));
+    if (PQntuples(res) >= 1 && PQnfields(res) >= 3) {
+        objectInfo.objId = atoll(PQgetvalue(res, 0, 0));
+        objectInfo.parObjId = atoll(PQgetvalue(res, 0, 1));
+        objectInfo.type = (TSK_DB_OBJECT_TYPE_ENUM) atoi(PQgetvalue(res, 0, 2));
+    }
+    // ELTODO: add "else" here
 
     //cleanup
     PQclear(res);
@@ -992,7 +1002,553 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getObjectInfo(int64_t objId, TSK_DB_OBJECT & ob
     return TSK_OK;
 }
 
+
+/**
+* Add virtual dir of type TSK_DB_FILES_TYPE_VIRTUAL_DIR
+* that can be a parent of other non-fs virtual files or directories, to organize them
+* @param fsObjId (in) file system object id to associate with the virtual directory.
+* @param parentDirId (in) parent dir object id of the new directory: either another virtual directory or root fs directory
+* @param name name (int) of the new virtual directory
+* @param objId (out) object id of the created virtual directory object
+* @returns TSK_ERR on error or TSK_OK on success
+*/
+TSK_RETVAL_ENUM TskDbPostgreSQL::addVirtualDir(const int64_t fsObjId, const int64_t parentDirId, const char * const name, int64_t & objId) {
+    char zSQL[2048];
+
+    if (addObject(TSK_DB_OBJECT_TYPE_FILE, parentDirId, objId))
+        return TSK_ERR;
+
+    // escape strings for use within an SQL command
+    char *name_sql = PQescapeLiteral(conn, name, strlen(name));
+
+    snprintf(zSQL, 2048, "INSERT INTO tsk_files (attr_type, attr_id, has_layout, fs_obj_id, obj_id, type, "
+        "name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, "
+        "crtime, ctime, atime, mtime, mode, gid, uid, known, parent_path) "
+        "VALUES ("
+        "NULL, NULL,"
+        "NULL,"
+        "%lld,"
+        "%lld,"
+        "%d,"
+        "%s,"
+        "NULL,NULL,"
+        "%d,%d,%d,%d,"
+        "0,"
+        "NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'/')",
+        fsObjId,
+        objId,
+        TSK_DB_FILES_TYPE_VIRTUAL_DIR,
+        name_sql,
+        TSK_FS_NAME_TYPE_DIR, TSK_FS_META_TYPE_DIR,
+        TSK_FS_NAME_FLAG_ALLOC, (TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED));
+
+    if (attempt_exec(zSQL, "Error adding data to tsk_files table: %s\n")) {
+        PQfreemem(name_sql);
+        return TSK_ERR;
+    }
+
+    //cleanup
+    PQfreemem(name_sql);
+
+    return TSK_OK;
+}
+
+/**
+* Internal helper method to add a virtual root dir, a parent dir of files representing unalloc space within fs.
+* The dir has is associated with its root dir parent for the fs.
+* @param fsObjId (in) fs id to find root dir for and create $Unalloc dir for
+* @param objId (out) object id of the $Unalloc dir created
+* @returns TSK_ERR on error or TSK_OK on success
+*/
+TSK_RETVAL_ENUM TskDbPostgreSQL::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & objId) {
+
+    const char * const unallocDirName = "$Unalloc";
+
+    //get root dir
+    TSK_DB_OBJECT rootDirObjInfo;
+    if (getFsRootDirObjectInfo(fsObjId, rootDirObjInfo) == TSK_ERR) {
+        return TSK_ERR;
+    }
+
+    return addVirtualDir(fsObjId, rootDirObjInfo.objId, unallocDirName, objId);
+}
+
+//internal function object to check for range overlap
+typedef struct _checkFileLayoutRangeOverlap{
+    const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges;
+    bool hasOverlap;
+
+    _checkFileLayoutRangeOverlap(const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges)
+        : ranges(ranges),hasOverlap(false) {}
+
+    bool getHasOverlap() const { return hasOverlap; }
+    void operator() (const TSK_DB_FILE_LAYOUT_RANGE & range)  {
+        if (hasOverlap)
+            return; //no need to check other
+
+        uint64_t start = range.byteStart;
+        uint64_t end = start + range.byteLen;
+
+        vector<TSK_DB_FILE_LAYOUT_RANGE>::const_iterator it;
+        for (it = ranges.begin(); it != ranges.end(); ++it) {
+            const TSK_DB_FILE_LAYOUT_RANGE * otherRange = &(*it);
+            if (&range == otherRange)
+                continue; //skip, it's the same range
+            uint64_t otherStart = otherRange->byteStart;
+            uint64_t otherEnd = otherStart + otherRange->byteLen;
+            if (start <= otherEnd && end >= otherStart) {
+                hasOverlap = true;
+                break;
+            }       
+        }
+    }
+
+} checkFileLayoutRangeOverlap;
+
+/**
+* Adds information about a unallocated file with layout ranges into the database.
+* Adds a single entry to tsk_files table with an auto-generated file name, tsk_objects table, and one or more entries to tsk_file_layout table
+* @param parentObjId Id of the parent object in the database (fs, volume, or image)
+* @param fsObjId parent fs, or NULL if the file is not associated with fs
+* @param size Number of bytes in file
+* @param ranges vector containing one or more TSK_DB_FILE_LAYOUT_RANGE layout ranges (in)
+* @param objId object id of the file object created (output)
+* @returns TSK_OK on success or TSK_ERR on error.
+*/
+TSK_RETVAL_ENUM TskDbPostgreSQL::addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
+    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_UNALLOC_BLOCKS, parentObjId, fsObjId, size, ranges, objId);
+}
+
+/**
+* Adds information about a unused file with layout ranges into the database.
+* Adds a single entry to tsk_files table with an auto-generated file name, tsk_objects table, and one or more entries to tsk_file_layout table
+* @param parentObjId Id of the parent object in the database (fs, volume, or image)
+* @param fsObjId parent fs, or NULL if the file is not associated with fs
+* @param size Number of bytes in file
+* @param ranges vector containing one or more TSK_DB_FILE_LAYOUT_RANGE layout ranges (in)
+* @param objId object id of the file object created (output)
+* @returns TSK_OK on success or TSK_ERR on error.
+*/
+TSK_RETVAL_ENUM TskDbPostgreSQL::addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
+    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_UNUSED_BLOCKS, parentObjId, fsObjId, size, ranges, objId);
+}
+
+/**
+* Adds information about a carved file with layout ranges into the database.
+* Adds a single entry to tsk_files table with an auto-generated file name, tsk_objects table, and one or more entries to tsk_file_layout table
+* @param parentObjId Id of the parent object in the database (fs, volume, or image)
+* @param fsObjId fs id associated with the file, or NULL
+* @param size Number of bytes in file
+* @param ranges vector containing one or more TSK_DB_FILE_LAYOUT_RANGE layout ranges (in)
+* @param objId object id of the file object created (output)
+* @returns TSK_OK on success or TSK_ERR on error.
+*/
+TSK_RETVAL_ENUM TskDbPostgreSQL::addCarvedFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
+    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_CARVED, parentObjId, fsObjId, size, ranges, objId);
+}
+
+/**
+* Internal helper method to add unalloc, unused and carved files with layout ranges to db
+* Generates file_name and populates tsk_files, tsk_objects and tsk_file_layout tables
+* @returns TSK_ERR on error or TSK_OK on success
+*/
+TSK_RETVAL_ENUM TskDbPostgreSQL::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
+    const size_t numRanges = ranges.size();
+
+    if (numRanges < 1) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("Error addFileWithLayoutRange() - no ranges present");
+        return TSK_ERR;
+    }
+
+    stringstream fileNameSs;
+    switch (dbFileType) {
+    case TSK_DB_FILES_TYPE_UNALLOC_BLOCKS:
+        fileNameSs << "Unalloc";
+        break;
+
+    case TSK_DB_FILES_TYPE_UNUSED_BLOCKS:
+        fileNameSs << "Unused";     
+        break;
+
+    case TSK_DB_FILES_TYPE_CARVED:
+        fileNameSs << "Carved";
+        break;
+    default:
+        stringstream sserr;
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        sserr << "Error addFileWithLayoutRange() - unsupported file type for file layout range: ";
+        sserr << (int) dbFileType;
+        tsk_error_set_errstr("%s", sserr.str().c_str());
+        return TSK_ERR;
+    }
+
+    //ensure layout ranges are sorted (to generate file name and to be inserted in sequence order)
+    sort(ranges.begin(), ranges.end());
+
+    //dome some checking
+    //ensure there is no overlap and each range has unique byte range
+    const checkFileLayoutRangeOverlap & overlapRes = 
+        for_each(ranges.begin(), ranges.end(), checkFileLayoutRangeOverlap(ranges));
+    if (overlapRes.getHasOverlap() ) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("Error addFileWithLayoutRange() - overlap detected between ranges");
+        return TSK_ERR;
+    }
+
+    //construct filename with parent obj id, start byte of first range, end byte of last range
+    fileNameSs << "_" << parentObjId << "_" << ranges[0].byteStart;
+    fileNameSs << "_" << (ranges[numRanges-1].byteStart + ranges[numRanges-1].byteLen);
+
+    //insert into tsk files and tsk objects
+    if (addLayoutFileInfo(parentObjId, fsObjId, dbFileType, fileNameSs.str().c_str(), size, objId) ) {
+        return TSK_ERR;
+    }
+
+    //fill in fileObjId and insert ranges
+    for (vector<TSK_DB_FILE_LAYOUT_RANGE>::iterator it = ranges.begin();
+        it != ranges.end(); ++it) {
+            TSK_DB_FILE_LAYOUT_RANGE & range = *it;
+            range.fileObjId = objId;
+            if (this->addFileLayoutRange(range) ) {
+                return TSK_ERR;
+            }
+    }
+
+    return TSK_OK;
+}
+
+/**
+* Adds entry for to tsk_files for a layout file into the database.
+* @param parObjId parent obj id in the database
+* @param fsObjId fs obj id in the database, or 0 if parent it not fs (NULL)
+* @param dbFileType type (unallocated, carved, unused)
+* @param fileName file name for the layout file
+* @param size Number of bytes in file
+* @param objId layout file Id (output)
+* @returns TSK_OK on success or TSK_ERR on error.
+*/
+TSK_RETVAL_ENUM TskDbPostgreSQL::addLayoutFileInfo(const int64_t parObjId, const int64_t fsObjId, const TSK_DB_FILES_TYPE_ENUM dbFileType, const char *fileName,
+    const uint64_t size, int64_t & objId)
+{
+    char zSQL[2048];
+
+    if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId))
+        return TSK_ERR;
+
+    //fsObjId can be NULL
+    char nullStr[8] = "NULL";    
+    char *fsObjIdStrPtr = NULL;
+    char fsObjIdStr[32];
+    if (fsObjId != 0) {
+        snprintf(fsObjIdStr, 32, "%"PRIu64, fsObjId);
+        fsObjIdStrPtr = fsObjIdStr;
+    } else {
+        fsObjIdStrPtr = &nullStr[0];
+    }
+
+    // escape strings for use within an SQL command
+    char *name_sql = PQescapeLiteral(conn, fileName, strlen(fileName));
+
+    snprintf(zSQL, 2048, "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
+        "VALUES ("
+        "1, %s, %lld,"
+        "%d,"
+        "NULL,NULL,%s,"
+        "NULL,NULL,"
+        "%d,%d,%d,%d,"
+        "%" PRIuOFF ","
+        "NULL,NULL,NULL,NULL,NULL,NULL,NULL)",
+        fsObjIdStrPtr, objId,
+        dbFileType,
+        name_sql,
+        TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG,
+        TSK_FS_NAME_FLAG_UNALLOC, TSK_FS_META_FLAG_UNALLOC, size);
+
+    if (attempt_exec(zSQL, "TskDbSqlite::addLayoutFileInfo: Error adding data to tsk_files table: %s\n")) {
+        PQfreemem(name_sql);
+        return TSK_ERR;
+    }
+
+    //cleanup
+    PQfreemem(name_sql);
+
+    return TSK_OK;
+}
+
+/**
+* Adds the sector addresses of the volumes into the db.
+* @returns 1 on error, 0 on success
+*/
+int TskDbPostgreSQL::addVolumeInfo(const TSK_VS_PART_INFO * vs_part,
+    int64_t parObjId, int64_t & objId)
+{
+    char zSQL[1024];
+    int ret;
+
+    if (addObject(TSK_DB_OBJECT_TYPE_VOL, parObjId, objId))
+        return 1;
+
+    // escape strings for use within an SQL command
+    char *descr_sql = PQescapeLiteral(conn, vs_part->desc, strlen(vs_part->desc));
+
+    snprintf(zSQL, 1024, "INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags)"
+        "VALUES (%lld, %" PRIuPNUM ",%" PRIuOFF ",%" PRIuOFF ",%s,%d)",
+        objId, (int) vs_part->addr, vs_part->start, vs_part->len,
+        descr_sql, vs_part->flags);
+
+    ret = attempt_exec(zSQL, "Error adding data to tsk_vs_parts table: %s\n");
+    //cleanup
+    PQfreemem(descr_sql);
+    return ret;
+}
+
+
+/**
+* Add file layout info to the database.  This table stores the run information for each file so that we
+* can map which parts of an image are used by what files.
+* @param a_fileObjId ID of the file
+* @param a_byteStart Byte address relative to the start of the image file
+* @param a_byteLen Length of the run in bytes
+* @param a_sequence Sequence of this run in the file
+* @returns 1 on error
+*/
+int TskDbPostgreSQL::addFileLayoutRange(int64_t a_fileObjId, uint64_t a_byteStart, uint64_t a_byteLen, int a_sequence)
+{
+    char foo[1024];
+
+    snprintf(foo, 1024, "INSERT INTO tsk_file_layout(obj_id, byte_start, byte_len, sequence) VALUES (%lld, %llu, %llu, %d)",
+        a_fileObjId, a_byteStart, a_byteLen, a_sequence);
+
+    return attempt_exec(foo, "Error adding data to tsk_file_layout table: %s\n");
+}
+
+/**
+* Add file layout info to the database.  This table stores the run information for each file so that we
+* can map which parts of an image are used by what files.
+* @param fileLayoutRange TSK_DB_FILE_LAYOUT_RANGE object storing a single file layout range entry
+* @returns 1 on error
+*/
+int TskDbPostgreSQL::addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLayoutRange) {
+    return addFileLayoutRange(fileLayoutRange.fileObjId, fileLayoutRange.byteStart, fileLayoutRange.byteLen, fileLayoutRange.sequence);
+}
+
+
+/**
+* Query tsk_vs_part and return rows for every entry in tsk_vs_part table
+* @param imgId the object id of the image to get vs parts for
+* @param vsPartInfos (out) TSK_DB_VS_PART_INFO row representations to return
+* @returns TSK_ERR on error, TSK_OK on success
+*/
+TSK_RETVAL_ENUM TskDbPostgreSQL::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_PART_INFO> & vsPartInfos) {
+
+    // ELTODO use vsPartInfosStatement prepared statement
+    char zSQL[512];
+    snprintf(zSQL, 512, "SELECT obj_id, addr, start, length, descr, flags FROM tsk_vs_parts");
+
+    PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getVsPartInfos: Error selecting from tsk_vs_parts: %s (result code %d)\n");
+
+    // check if a result set was returned
+    if (!isQueryResultValid(res, "TskDbPostgreSQL::getVsPartInfos: No result returned for SELECT FROM tsk_vs_parts\n")){
+        return TSK_ERR;
+    }
+
+    //get rows
+    TSK_DB_VS_PART_INFO rowData;
+    for (int i = 0; i < PQntuples(res); i++) {
+
+        // ELTODO probably remove this check
+        int isBinaryField = PQfformat(res, 0);  // 1 - binary, 0 - text
+        size_t PartObjIdLen = PQgetlength(res, i, 0);
+
+        int64_t vsPartObjId = atoll(PQgetvalue(res, i, 0));
+
+        int64_t curImgId = 0;
+        if (getParentImageId(vsPartObjId, curImgId) == TSK_ERR) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_AUTO_DB);
+            tsk_error_set_errstr("Error finding parent for: %"PRIu64, vsPartObjId);
+            return TSK_ERR;
+        }
+
+        if (imgId != curImgId) {
+            //ensure vs is (sub)child of the image requested, if not, skip it
+            continue;
+        }
+
+
+        rowData.objId = vsPartObjId;
+        rowData.addr = atoi(PQgetvalue(res, i, 1));
+        rowData.start = atoll(PQgetvalue(res, i, 2));
+        rowData.len = atoll(PQgetvalue(res, i, 3));
+//        const unsigned char * text = sqlite3_column_text(vsPartInfosStatement, 4);
+//        size_t textLen = sqlite3_column_bytes(vsPartInfosStatement, 4);
+        char * text = PQgetvalue(res, i, 4);
+        size_t textLen = PQgetlength(res, i, 4);
+        const size_t copyChars = textLen < TSK_MAX_DB_VS_PART_INFO_DESC_LEN-1?textLen:TSK_MAX_DB_VS_PART_INFO_DESC_LEN-1;
+        strncpy (rowData.desc,(char*)text,copyChars);
+        rowData.desc[copyChars] = '\0'; // ELTODO: is this neccessary. Probably so because even sqlite3_column_text returns zero terminated string.
+        rowData.flags = (TSK_VS_PART_FLAG_ENUM)atoi(PQgetvalue(res, i, 5));
+        //insert a copy of the rowData
+        vsPartInfos.push_back(rowData);
+    }
+
+    //cleanup
+    PQclear(res);
+
+    return TSK_OK;
+}
+
+/**
+* Query tsk_objects and tsk_files given file system id and return the root directory object
+* @param fsObjId (int) file system id to query root dir object for
+* @param rootDirObjInfo (out) TSK_DB_OBJECT root dir entry representation to return
+* @returns TSK_ERR on error (or if not found), TSK_OK on success
+*/
+TSK_RETVAL_ENUM TskDbPostgreSQL::getFsRootDirObjectInfo(const int64_t fsObjId, TSK_DB_OBJECT & rootDirObjInfo) {
+    // ELTODO use rootDirInfoStatement prepared statement
+    char zSQL[1024];
+    snprintf(zSQL, 1024, "SELECT tsk_objects.obj_id,tsk_objects.par_obj_id,tsk_objects.type "
+        "FROM tsk_objects,tsk_files WHERE tsk_objects.par_obj_id = %" PRId64 " AND tsk_files.obj_id = tsk_objects.obj_id AND tsk_files.name = ''", 
+        fsObjId);
+
+    PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getFsRootDirObjectInfo: Error selecting from tsk_objects,tsk_files: %s (result code %d)\n");
+
+    // check if a result set was returned
+    if (!isQueryResultValid(res, "TskDbPostgreSQL::getFsRootDirObjectInfo: Result pointer is NULL\n")){
+        return TSK_ERR;
+    }
+
+    if (PQntuples(res) >= 1 && PQnfields(res) >= 3) {
+        rootDirObjInfo.objId = atoll(PQgetvalue(res, 0, 0));
+        rootDirObjInfo.parObjId = atoll(PQgetvalue(res, 0, 1));
+        rootDirObjInfo.type = (TSK_DB_OBJECT_TYPE_ENUM)atoi(PQgetvalue(res, 0, 2));
+    }
+    // ELTODO add "else" here
+
+    //cleanup
+    PQclear(res);
+
+    return TSK_OK;
+}
+
+/**
+* Query tsk_file_layout and return rows for every entry in tsk_file_layout table
+* @param fileLayouts (out) TSK_DB_FILE_LAYOUT_RANGE row representations to return
+* @returns TSK_ERR on error, TSK_OK on success
+*/
+TSK_RETVAL_ENUM TskDbPostgreSQL::getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts) {
+    
+    // ELTODO use fileLayoutsStatement prepared statement
+    char zSQL[512];
+    snprintf(zSQL, 512, "SELECT obj_id, byte_start, byte_len, sequence FROM tsk_file_layout");
+
+    PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getFileLayouts: Error selecting from tsk_file_layout: %s (result code %d)\n");
+
+    // check if a result set was returned
+    if (!isQueryResultValid(res, "TskDbPostgreSQL::getFileLayouts: No result returned for SELECT FROM tsk_file_layout\n")){
+        return TSK_ERR;
+    }
+
+    //get rows
+    TSK_DB_FILE_LAYOUT_RANGE rowData;
+    for (int i = 0; i < PQntuples(res); i++) {
+
+        // ELTODO probably remove this check
+        int isBinaryField = PQfformat(res, 0);  // 1 - binary, 0 - text
+
+        rowData.fileObjId = atoll(PQgetvalue(res, i, 0));
+        rowData.byteStart = atoll(PQgetvalue(res, i, 1));
+        rowData.byteLen = atoll(PQgetvalue(res, i, 2));
+        rowData.sequence = atoi(PQgetvalue(res, i, 3));
+
+        //insert a copy of the rowData
+        fileLayouts.push_back(rowData);
+    }
+
+    //cleanup
+    PQclear(res);
+
+    return TSK_OK;
+}
+
+
+/**
+* Query tsk_vs_info and return rows for every entry in tsk_vs_info table
+* @param imgId the object id of the image to get volumesystems for
+* @param vsInfos (out) TSK_DB_VS_INFO row representations to return
+* @returns TSK_ERR on error, TSK_OK on success
+*/
+TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO> & vsInfos) {
+    // ELTODO use vsInfosStatement prepared statement
+    char zSQL[512];
+    snprintf(zSQL, 512, "SELECT obj_id, vs_type, img_offset, block_size FROM tsk_vs_info");
+
+    PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getVsInfos: Error selecting from tsk_vs_info: %s (result code %d)\n");
+
+    // check if a result set was returned
+    if (!isQueryResultValid(res, "TskDbPostgreSQL::getVsInfos: No result returned for SELECT FROM tsk_vs_info\n")){
+        return TSK_ERR;
+    }
+
+    //get rows
+    TSK_DB_VS_INFO rowData;
+    for (int i = 0; i < PQntuples(res); i++) {
+
+        // ELTODO probably remove this check
+        int isBinaryField = PQfformat(res, 0);  // 1 - binary, 0 - text
+
+        int64_t vsObjId = atoll(PQgetvalue(res, i, 0));
+
+        int64_t curImgId = 0;
+        if (getParentImageId(vsObjId, curImgId) == TSK_ERR) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_AUTO_DB);
+            tsk_error_set_errstr("Error finding parent for: %"PRIu64, vsObjId);
+            PQclear(res);
+            return TSK_ERR;
+        }
+
+        if (imgId != curImgId ) {
+            //ensure vs is (sub)child of the image requested, if not, skip it
+            continue;
+        }
+
+        rowData.objId = vsObjId;
+        rowData.vstype = (TSK_VS_TYPE_ENUM)atoi(PQgetvalue(res, i, 1));
+        rowData.offset = atoll(PQgetvalue(res, i, 2));
+        rowData.block_size = (unsigned int)atoi(PQgetvalue(res, i, 3));
+
+        //insert a copy of the rowData
+        vsInfos.push_back(rowData);
+    }
+
+    //cleanup
+    PQclear(res);
+
+    return TSK_OK;
+}
+
+
+// NOT IMPLEMENTED:
+
+bool TskDbPostgreSQL::isDbOpen() const {
+    return true;}
+int TskDbPostgreSQL::createSavepoint(const char *name){ 
+    return 0; }
+int TskDbPostgreSQL::revertSavepoint(const char *name){ 
+    return 0; }
+int TskDbPostgreSQL::releaseSavepoint(const char *name){ 
+    return 1; }
+bool TskDbPostgreSQL::inTransaction() { 
+    return false;}
+
+
 // ELTODO: delete this test code
+/*
 void TskDbPostgreSQL::test()
 {
     TSK_VS_INFO vsInfo;
@@ -1033,27 +1589,27 @@ void TskDbPostgreSQL::test()
     addObject(TSK_DB_OBJECT_TYPE_VS, 2, objId);    
     char zSQL[2048];
     snprintf(zSQL, 2048, "INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum) VALUES (2,0,2,512,4096,2,2,65430)");
-    if (attempt_exec(zSQL, "TskDbSqlite::INSERT INTO tsk_fs_info\n")) {
+    if (attempt_exec(zSQL, "TskDbPostgreSQL::INSERT INTO tsk_fs_info\n")) {
         return;
     }
 
     //Ln 859: addObject() - parObjId=2, type=TSK_DB_OBJECT_TYPE_FILE. objId = 3;
     addObject(TSK_DB_OBJECT_TYPE_VS, 2, objId);
     snprintf(zSQL, 2048, "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) VALUES (2,3,0,1,0,'',2,0,3,2,1,5,16384,0,0,0,0,0,0,0,NULL,0,'/')");
-    if (attempt_exec(zSQL, "TskDbSqlite::INSERT INTO tsk_files\n")) {
+    if (attempt_exec(zSQL, "TskDbPostgreSQL::INSERT INTO tsk_files\n")) {
         return;
     }
 
     //Ln 859: addObject() - parObjId=3, type=TSK_DB_OBJECT_TYPE_FILE. objId = 4;
     addObject(TSK_DB_OBJECT_TYPE_VS, 3, objId);
     snprintf(zSQL, 2048, "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) VALUES (2,4,0,1,0,'test.txt',4,0,5,1,1,1,6,1181684630,0,1181620800,1181684630,511,0,0,NULL,0,'/')");
-    if (attempt_exec(zSQL, "TskDbSqlite::INSERT INTO tsk_files\n")) {
+    if (attempt_exec(zSQL, "TskDbPostgreSQL::INSERT INTO tsk_files\n")) {
         return;
     }
     //Ln 859: addObject() - parObjId=3, type=TSK_DB_OBJECT_TYPE_FILE. objId = 5;
     addObject(TSK_DB_OBJECT_TYPE_VS, 3, objId);
     snprintf(zSQL, 2048, "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) VALUES (2,5,0,1,0,'$MBR',65427,0,10,10,1,5,512,0,0,0,0,0,0,0,NULL,0,'/')");
-    if (attempt_exec(zSQL, "TskDbSqlite::INSERT INTO tsk_files\n")) {
+    if (attempt_exec(zSQL, "TskDbPostgreSQL::INSERT INTO tsk_files\n")) {
         return;
     }
 
@@ -1099,43 +1655,8 @@ void TskDbPostgreSQL::test()
         PQclear(res);    
     }
 
-};
+};*/
 
-
-// NOT IMPLEMENTED:
-
-int TskDbPostgreSQL::addVolumeInfo(const TSK_VS_PART_INFO * vs_part, int64_t parObjId,
-    int64_t & objId){        return 0; }
-
-
-TSK_RETVAL_ENUM TskDbPostgreSQL::addVirtualDir(const int64_t fsObjId, const int64_t parentDirId, const char * const name, int64_t & objId) { return TSK_OK;}
-TSK_RETVAL_ENUM TskDbPostgreSQL::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & objId) { return TSK_OK;}
-TSK_RETVAL_ENUM TskDbPostgreSQL::addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
-    vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) { return TSK_OK;}
-TSK_RETVAL_ENUM TskDbPostgreSQL::addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
-    vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) { return TSK_OK;}
-TSK_RETVAL_ENUM TskDbPostgreSQL::addCarvedFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
-    vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) { return TSK_OK;}
-
-int TskDbPostgreSQL::addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLayoutRange){return 0; }
-int TskDbPostgreSQL::addFileLayoutRange(int64_t a_fileObjId, uint64_t a_byteStart, uint64_t a_byteLen, int a_sequence){return 0; }
-
-bool TskDbPostgreSQL::isDbOpen() const {
-    return true;}
-int TskDbPostgreSQL::createSavepoint(const char *name){ 
-    return 0; }
-int TskDbPostgreSQL::revertSavepoint(const char *name){ 
-    return 0; }
-int TskDbPostgreSQL::releaseSavepoint(const char *name){ 
-    return 1; }
-bool TskDbPostgreSQL::inTransaction() { 
-    return false;}
-
-//query methods / getters
-TSK_RETVAL_ENUM TskDbPostgreSQL::getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts) { return TSK_OK;}
-TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO> & vsInfos) { return TSK_OK;}
-TSK_RETVAL_ENUM TskDbPostgreSQL::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_PART_INFO> & vsPartInfos) { return TSK_OK;}
-TSK_RETVAL_ENUM TskDbPostgreSQL::getFsRootDirObjectInfo(const int64_t fsObjId, TSK_DB_OBJECT & rootDirObjInfo) { return TSK_OK;}
 
 #endif // TSK_WIN32
 #endif // HAVE_POSTGRESQL
