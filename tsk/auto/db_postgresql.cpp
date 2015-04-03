@@ -1438,6 +1438,103 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getFsRootDirObjectInfo(const int64_t fsObjId, T
     return TSK_OK;
 }
 
+/**
+* Query tsk_file_layout and return rows for every entry in tsk_file_layout table
+* @param fileLayouts (out) TSK_DB_FILE_LAYOUT_RANGE row representations to return
+* @returns TSK_ERR on error, TSK_OK on success
+*/
+TSK_RETVAL_ENUM TskDbPostgreSQL::getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts) {
+    
+    // ELTODO use fileLayoutsStatement prepared statement
+    char zSQL[512];
+    snprintf(zSQL, 512, "SELECT obj_id, byte_start, byte_len, sequence FROM tsk_file_layout");
+
+    PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getFileLayouts: Error selecting from tsk_file_layout: %s (result code %d)\n");
+
+    // check if a result set was returned
+    if (!isQueryResultValid(res, "TskDbPostgreSQL::getFileLayouts: No result returned for SELECT FROM tsk_file_layout\n")){
+        return TSK_ERR;
+    }
+
+    //get rows
+    TSK_DB_FILE_LAYOUT_RANGE rowData;
+    for (int i = 0; i < PQntuples(res); i++) {
+
+        // ELTODO probably remove this check
+        int isBinaryField = PQfformat(res, 0);  // 1 - binary, 0 - text
+
+        rowData.fileObjId = atoll(PQgetvalue(res, i, 0));
+        rowData.byteStart = atoll(PQgetvalue(res, i, 1));
+        rowData.byteLen = atoll(PQgetvalue(res, i, 2));
+        rowData.sequence = atoi(PQgetvalue(res, i, 3));
+
+        //insert a copy of the rowData
+        fileLayouts.push_back(rowData);
+    }
+
+    //cleanup
+    PQclear(res);
+
+    return TSK_OK;
+}
+
+
+/**
+* Query tsk_vs_info and return rows for every entry in tsk_vs_info table
+* @param imgId the object id of the image to get volumesystems for
+* @param vsInfos (out) TSK_DB_VS_INFO row representations to return
+* @returns TSK_ERR on error, TSK_OK on success
+*/
+TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO> & vsInfos) {
+    // ELTODO use vsInfosStatement prepared statement
+    char zSQL[512];
+    snprintf(zSQL, 512, "SELECT obj_id, vs_type, img_offset, block_size FROM tsk_vs_info");
+
+    PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getVsInfos: Error selecting from tsk_vs_info: %s (result code %d)\n");
+
+    // check if a result set was returned
+    if (!isQueryResultValid(res, "TskDbPostgreSQL::getVsInfos: No result returned for SELECT FROM tsk_vs_info\n")){
+        return TSK_ERR;
+    }
+
+    //get rows
+    TSK_DB_VS_INFO rowData;
+    for (int i = 0; i < PQntuples(res); i++) {
+
+        // ELTODO probably remove this check
+        int isBinaryField = PQfformat(res, 0);  // 1 - binary, 0 - text
+
+        int64_t vsObjId = atoll(PQgetvalue(res, i, 0));
+
+        int64_t curImgId = 0;
+        if (getParentImageId(vsObjId, curImgId) == TSK_ERR) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_AUTO_DB);
+            tsk_error_set_errstr("Error finding parent for: %"PRIu64, vsObjId);
+            PQclear(res);
+            return TSK_ERR;
+        }
+
+        if (imgId != curImgId ) {
+            //ensure vs is (sub)child of the image requested, if not, skip it
+            continue;
+        }
+
+        rowData.objId = vsObjId;
+        rowData.vstype = (TSK_VS_TYPE_ENUM)atoi(PQgetvalue(res, i, 1));
+        rowData.offset = atoll(PQgetvalue(res, i, 2));
+        rowData.block_size = (unsigned int)atoi(PQgetvalue(res, i, 3));
+
+        //insert a copy of the rowData
+        vsInfos.push_back(rowData);
+    }
+
+    //cleanup
+    PQclear(res);
+
+    return TSK_OK;
+}
+
 
 // NOT IMPLEMENTED:
 
@@ -1451,10 +1548,6 @@ int TskDbPostgreSQL::releaseSavepoint(const char *name){
     return 1; }
 bool TskDbPostgreSQL::inTransaction() { 
     return false;}
-
-//query methods / getters
-TSK_RETVAL_ENUM TskDbPostgreSQL::getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts) { return TSK_OK;}
-TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO> & vsInfos) { return TSK_OK;}
 
 
 // ELTODO: delete this test code
