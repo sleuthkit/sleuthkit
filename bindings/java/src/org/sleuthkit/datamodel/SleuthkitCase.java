@@ -547,16 +547,8 @@ public class SleuthkitCase {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public static SleuthkitCase openCase(String databaseName, CaseDbConnectionInfo info) throws TskCoreException {
-	/// KDM new case here... handle both
-		/*
-		final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
-		try {
-			return new SleuthkitCase(dbPath, caseHandle);
-		} catch (Exception ex) {
-			throw new TskCoreException("Failed to open case database at " + dbPath, ex);
-		}
-		*/
-	return null;
+		// TODO 		
+		return null;
 	}
 
 	
@@ -585,15 +577,7 @@ public class SleuthkitCase {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public static SleuthkitCase newCase(String databaseName, CaseDbConnectionInfo info) throws TskCoreException {
-	/// KDM new case here... handle both
-		/*
-		SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.newCaseDb(dbPath);
-		try {
-			return new SleuthkitCase(dbPath, caseHandle);
-		} catch (Exception ex) {
-			throw new TskCoreException("Failed to create case database at " + dbPath, ex);
-		}
-		*/
+		// TODO
 		return null;
 	}
 
