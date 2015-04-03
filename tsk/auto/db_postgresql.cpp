@@ -1252,7 +1252,6 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addLayoutFileInfo(const int64_t parObjId, const
 
     // escape strings for use within an SQL command
     char *name_sql = PQescapeLiteral(conn, fileName, strlen(fileName));
-    char *fsObjIdStrPtr_sql = PQescapeLiteral(conn, fsObjIdStrPtr, strlen(fsObjIdStrPtr));
 
     snprintf(zSQL, 2048, "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
         "VALUES ("
@@ -1263,7 +1262,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addLayoutFileInfo(const int64_t parObjId, const
         "%d,%d,%d,%d,"
         "%" PRIuOFF ","
         "NULL,NULL,NULL,NULL,NULL,NULL,NULL)",
-        fsObjIdStrPtr_sql, objId,
+        fsObjIdStrPtr, objId,
         dbFileType,
         name_sql,
         TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG,
@@ -1271,13 +1270,11 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addLayoutFileInfo(const int64_t parObjId, const
 
     if (attempt_exec(zSQL, "TskDbSqlite::addLayoutFileInfo: Error adding data to tsk_files table: %s\n")) {
         PQfreemem(name_sql);
-        PQfreemem(fsObjIdStrPtr_sql);
         return TSK_ERR;
     }
 
     //cleanup
     PQfreemem(name_sql);
-    PQfreemem(fsObjIdStrPtr_sql);
 
     return TSK_OK;
 }
@@ -1551,6 +1548,7 @@ bool TskDbPostgreSQL::inTransaction() {
 
 
 // ELTODO: delete this test code
+/*
 void TskDbPostgreSQL::test()
 {
     TSK_VS_INFO vsInfo;
@@ -1657,7 +1655,7 @@ void TskDbPostgreSQL::test()
         PQclear(res);    
     }
 
-};
+};*/
 
 
 #endif // TSK_WIN32
