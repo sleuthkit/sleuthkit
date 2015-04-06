@@ -235,7 +235,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * @param displayName the display name of this artifact
 	 * @param isNew true if we are currently creating the artifact
 	 */
-	protected BlackboardArtifact(SleuthkitCase Case, long artifactID, long objID, int artifactTypeID, String artifactTypeName, String displayName, boolean isNew) {
+	BlackboardArtifact(SleuthkitCase Case, long artifactID, long objID, int artifactTypeID, String artifactTypeName, String displayName, boolean isNew) {
 		this.Case = Case;
 		this.artifactID = artifactID;
 		this.objID = objID;
