@@ -39,7 +39,7 @@ public class BlackboardAttribute {
 	private double valueDouble;
 	private String valueString;
 	private byte[] valueBytes;
-	private SleuthkitCase Case;
+	private SleuthkitCase sleuthkitCase;
     private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	/**
@@ -392,12 +392,12 @@ public class BlackboardAttribute {
 	 * @param valueDouble value if it is a double
 	 * @param valueString value if it is a string
 	 * @param valueBytes value if it is a byte array
-	 * @param Case the case that can be used to make calls into the blackboard
+	 * @param sleuthkitCase the case that can be used to make calls into the blackboard
 	 * db
 	 */
 	BlackboardAttribute(long artifactID, int attributeTypeID, String moduleName, String context,
 			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, int valueInt, long valueLong, double valueDouble,
-			String valueString, byte[] valueBytes, SleuthkitCase Case) {
+			String valueString, byte[] valueBytes, SleuthkitCase sleuthkitCase) {
 
 		this.artifactID = artifactID;
 		this.attributeTypeID = attributeTypeID;
@@ -417,7 +417,7 @@ public class BlackboardAttribute {
 		} else {
 			this.valueBytes = valueBytes;
 		}
-		this.Case = Case;
+		this.sleuthkitCase = sleuthkitCase;
 	}
 
 	/**
@@ -648,7 +648,7 @@ public class BlackboardAttribute {
 
 	@Override
 	public String toString() {
-		return "BlackboardAttribute{" + "artifactID=" + artifactID + ", attributeTypeID=" + attributeTypeID + ", moduleName=" + moduleName + ", context=" + context + ", valueType=" + valueType + ", valueInt=" + valueInt + ", valueLong=" + valueLong + ", valueDouble=" + valueDouble + ", valueString=" + valueString + ", valueBytes=" + valueBytes + ", Case=" + Case + '}'; //NON-NLS
+		return "BlackboardAttribute{" + "artifactID=" + artifactID + ", attributeTypeID=" + attributeTypeID + ", moduleName=" + moduleName + ", context=" + context + ", valueType=" + valueType + ", valueInt=" + valueInt + ", valueLong=" + valueLong + ", valueDouble=" + valueDouble + ", valueString=" + valueString + ", valueBytes=" + valueBytes + ", Case=" + sleuthkitCase + '}'; //NON-NLS
 	}
 
 	/**
@@ -675,7 +675,7 @@ public class BlackboardAttribute {
 	 * @return type name string
 	 */
 	public String getAttributeTypeName() throws TskCoreException {
-		return Case.getAttrTypeString(attributeTypeID);
+		return sleuthkitCase.getAttrTypeString(attributeTypeID);
 	}
 
 	/**
@@ -684,7 +684,7 @@ public class BlackboardAttribute {
 	 * @return type display name
 	 */
 	public String getAttributeTypeDisplayName() throws TskCoreException {
-		return Case.getAttrTypeDisplayName(attributeTypeID);
+		return sleuthkitCase.getAttrTypeDisplayName(attributeTypeID);
 	}
 
 	/**
@@ -774,7 +774,7 @@ public class BlackboardAttribute {
 	 * tsk core
 	 */
 	public BlackboardArtifact getParentArtifact() throws TskCoreException {
-		return Case.getBlackboardArtifact(artifactID);
+		return sleuthkitCase.getBlackboardArtifact(artifactID);
 	}
 
 	/**
@@ -790,10 +790,10 @@ public class BlackboardAttribute {
 	 * Set the SleuthkitCase handle, this should only be used by SleuthkitCase
 	 * on a newly created attribute
 	 *
-	 * @param Case case handle to associated with this attribute
+	 * @param sleuthkitCase case handle to associated with this attribute
 	 */
-	protected void setCase(SleuthkitCase Case) {
-		this.Case = Case;
+	protected void setCase(SleuthkitCase sleuthkitCase) {
+		this.sleuthkitCase = sleuthkitCase;
 	}
 	
 	// from http://stackoverflow.com/questions/9655181/convert-from-byte-array-to-hex-string-in-java
