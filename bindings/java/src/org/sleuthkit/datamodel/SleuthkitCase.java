@@ -1794,7 +1794,7 @@ public class SleuthkitCase {
 			statement.setInt(3, artifact_type_id);
 			connection.executeUpdate(statement);
 			rs = statement.getGeneratedKeys();
-			return new BlackboardArtifact(this, rs.getLong(1), obj_id, artifact_type_id, artifactTypeName, artifactDisplayName);
+			return new BlackboardArtifact(this, rs.getLong(1), obj_id, artifact_type_id, artifactTypeName, artifactDisplayName, true);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error creating a blackboard artifact", ex);
 		} finally {
