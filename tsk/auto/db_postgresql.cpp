@@ -1362,7 +1362,6 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_
 
         // ELTODO probably remove this check
         int isBinaryField = PQfformat(res, 0);  // 1 - binary, 0 - text
-        size_t PartObjIdLen = PQgetlength(res, i, 0);
 
         int64_t vsPartObjId = atoll(PQgetvalue(res, i, 0));
 
@@ -1384,13 +1383,11 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_
         rowData.addr = atoi(PQgetvalue(res, i, 1));
         rowData.start = atoll(PQgetvalue(res, i, 2));
         rowData.len = atoll(PQgetvalue(res, i, 3));
-//        const unsigned char * text = sqlite3_column_text(vsPartInfosStatement, 4);
-//        size_t textLen = sqlite3_column_bytes(vsPartInfosStatement, 4);
         char * text = PQgetvalue(res, i, 4);
         size_t textLen = PQgetlength(res, i, 4);
         const size_t copyChars = textLen < TSK_MAX_DB_VS_PART_INFO_DESC_LEN-1?textLen:TSK_MAX_DB_VS_PART_INFO_DESC_LEN-1;
         strncpy (rowData.desc,(char*)text,copyChars);
-        rowData.desc[copyChars] = '\0'; // ELTODO: is this neccessary. Probably so because even sqlite3_column_text returns zero terminated string.
+        rowData.desc[copyChars] = '\0';
         rowData.flags = (TSK_VS_PART_FLAG_ENUM)atoi(PQgetvalue(res, i, 5));
         //insert a copy of the rowData
         vsPartInfos.push_back(rowData);
@@ -1532,17 +1529,88 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO
     return TSK_OK;
 }
 
+/**
+* Create a savepoint.  Call revertSavepoint() or releaseSavepoint()
+* to revert or commit.
+* @param name Name to call savepoint
+* @returns 1 on error, 0 on success
+*/
+int TskDbPostgreSQL::createSavepoint(const char *name)
+{
+    char buff[1024];
+
+    // In PostgreSQL savepoints can only be established when inside a transaction block.
+    // ELTODO: verify that calling BEGIN here is the right thing to do in all scenarios
+    snprintf(buff, 1024, "BEGIN;");
+    if (attempt_exec(buff, "Error starting transaction: %s\n")) {
+        return 1;
+    }
+
+    snprintf(buff, 1024, "SAVEPOINT %s", name);
+
+    return attempt_exec(buff, "Error setting savepoint: %s\n");
+}
+
+/**
+* Rollback to specified savepoint and release
+* @param name Name of savepoint
+* @returns 1 on error, 0 on success
+*/
+int TskDbPostgreSQL::revertSavepoint(const char *name)
+{
+    char buff[1024];
+
+    snprintf(buff, 1024, "ROLLBACK TO SAVEPOINT %s", name);
+
+    if (attempt_exec(buff, "Error rolling back savepoint: %s\n"))
+        return 1;
+
+    return releaseSavepoint(name);
+}
+
+/**
+* Release a savepoint.  Commits if savepoint was not rollbacked.
+* @param name Name of savepoint
+* @returns 1 on error, 0 on success
+*/
+int TskDbPostgreSQL::releaseSavepoint(const char *name)
+{
+    char buff[1024];
+
+    snprintf(buff, 1024, "RELEASE SAVEPOINT %s", name);
+
+    if (attempt_exec(buff, "Error releasing savepoint: %s\n")) {
+        return 1;
+    }    
+
+    // In PostgreSQL savepoints can only be used inside a transaction block.
+    // ELTODO: verify that calling COMMIT here is the right thing to do in all scenarios
+    snprintf(buff, 1024, "COMMIT;");
+
+    return attempt_exec(buff, "Error commiting transaction: %s\n");
+}
+
+/** 
+* Returns true if database is opened.
+*/
+bool TskDbPostgreSQL::isDbOpen() const 
+{
+    if (conn)
+        return true;
+    else
+        return false;
+}
 
 // NOT IMPLEMENTED:
 
-bool TskDbPostgreSQL::isDbOpen() const {
+/*bool TskDbPostgreSQL::isDbOpen() const {
     return true;}
 int TskDbPostgreSQL::createSavepoint(const char *name){ 
     return 0; }
 int TskDbPostgreSQL::revertSavepoint(const char *name){ 
     return 0; }
 int TskDbPostgreSQL::releaseSavepoint(const char *name){ 
-    return 1; }
+    return 1; }*/
 bool TskDbPostgreSQL::inTransaction() { 
     return false;}
 
