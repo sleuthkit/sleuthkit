@@ -1362,7 +1362,6 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_
 
         // ELTODO probably remove this check
         int isBinaryField = PQfformat(res, 0);  // 1 - binary, 0 - text
-        size_t PartObjIdLen = PQgetlength(res, i, 0);
 
         int64_t vsPartObjId = atoll(PQgetvalue(res, i, 0));
 
@@ -1384,13 +1383,11 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_
         rowData.addr = atoi(PQgetvalue(res, i, 1));
         rowData.start = atoll(PQgetvalue(res, i, 2));
         rowData.len = atoll(PQgetvalue(res, i, 3));
-//        const unsigned char * text = sqlite3_column_text(vsPartInfosStatement, 4);
-//        size_t textLen = sqlite3_column_bytes(vsPartInfosStatement, 4);
         char * text = PQgetvalue(res, i, 4);
         size_t textLen = PQgetlength(res, i, 4);
         const size_t copyChars = textLen < TSK_MAX_DB_VS_PART_INFO_DESC_LEN-1?textLen:TSK_MAX_DB_VS_PART_INFO_DESC_LEN-1;
         strncpy (rowData.desc,(char*)text,copyChars);
-        rowData.desc[copyChars] = '\0'; // ELTODO: is this neccessary. Probably so because even sqlite3_column_text returns zero terminated string.
+        rowData.desc[copyChars] = '\0';
         rowData.flags = (TSK_VS_PART_FLAG_ENUM)atoi(PQgetvalue(res, i, 5));
         //insert a copy of the rowData
         vsPartInfos.push_back(rowData);
@@ -1532,19 +1529,116 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO
     return TSK_OK;
 }
 
+/**
+* Create a savepoint.  Call revertSavepoint() or releaseSavepoint()
+* to revert or commit.
+* @param name Name to call savepoint
+* @returns 1 on error, 0 on success
+*/
+int TskDbPostgreSQL::createSavepoint(const char *name)
+{
+    char buff[1024];
 
-// NOT IMPLEMENTED:
+    // In PostgreSQL savepoints can only be established when inside a transaction block.
+    // NOTE: this will only work if we have 1 savepoint. If we use multiple savepoints, PostgreSQL will 
+    // not allow us to call "BEGIN" inside a transaction. We will need to keep track of whether we are
+    // in transaction and only call "BEGIN" if we are not in trasaction. Alternatively we can keep
+    // calling "BEGIN" every time we create a savepoint and simply ignore the error if there is one.
+    // Also see note inside TskDbPostgreSQL::releaseSavepoint().
+    snprintf(buff, 1024, "BEGIN;");
+    if (attempt_exec(buff, "Error starting transaction: %s\n")) {
+        return 1;
+    }
 
-bool TskDbPostgreSQL::isDbOpen() const {
-    return true;}
-int TskDbPostgreSQL::createSavepoint(const char *name){ 
-    return 0; }
-int TskDbPostgreSQL::revertSavepoint(const char *name){ 
-    return 0; }
-int TskDbPostgreSQL::releaseSavepoint(const char *name){ 
-    return 1; }
+    snprintf(buff, 1024, "SAVEPOINT %s", name);
+
+    return attempt_exec(buff, "Error setting savepoint: %s\n");
+}
+
+/**
+* Rollback to specified savepoint and release
+* @param name Name of savepoint
+* @returns 1 on error, 0 on success
+*/
+int TskDbPostgreSQL::revertSavepoint(const char *name)
+{
+    char buff[1024];
+
+    snprintf(buff, 1024, "ROLLBACK TO SAVEPOINT %s", name);
+
+    if (attempt_exec(buff, "Error rolling back savepoint: %s\n"))
+        return 1;
+
+    return releaseSavepoint(name);
+}
+
+/**
+* Release a savepoint.  Commits if savepoint was not rollbacked.
+* @param name Name of savepoint
+* @returns 1 on error, 0 on success
+*/
+int TskDbPostgreSQL::releaseSavepoint(const char *name)
+{
+    char buff[1024];
+
+    snprintf(buff, 1024, "RELEASE SAVEPOINT %s", name);
+
+    if (attempt_exec(buff, "Error releasing savepoint: %s\n")) {
+        return 1;
+    }    
+
+    // In PostgreSQL savepoints can only be used inside a transaction block.
+    // NOTE: see note inside TskDbPostgreSQL::createSavepoint(). This will only work if we have 1 savepoint. 
+    // If we add more savepoints we will need to keep track of where we are in transaction and only call
+    // "COMMIT" when releasing the outer most savepoint.
+    snprintf(buff, 1024, "COMMIT;");
+
+    return attempt_exec(buff, "Error commiting transaction: %s\n");
+}
+
+/** 
+* Returns true if database is opened.
+*/
+bool TskDbPostgreSQL::isDbOpen() const 
+{
+    if (conn)
+        return true;
+    else
+        return false;
+}
+
+/** 
+* Returns true if database is in transaction.
+*/
 bool TskDbPostgreSQL::inTransaction() { 
-    return false;}
+
+    // In PostgreSQL nested BEGIN calls are not allowed. Therefore if we get an error when executing "BEGIN" query then we are inside a transaction.
+    if (!conn)
+        return false;
+
+    char sql[32];
+    snprintf(sql, 32, "BEGIN;");
+
+    PGresult *res = PQexec(conn, sql); 
+    if (PQresultStatus(res) != PGRES_COMMAND_OK)
+    {
+        // PostgreSQL returned error, therefore we are inside a transaction block
+        PQclear(res);
+        return true;
+    }
+
+    // If we are here then we were not inside a transaction. Undo the "BEGIN".
+    snprintf(sql, 32, "COMMIT;");
+    res = PQexec(conn, sql); 
+    if (PQresultStatus(res) != PGRES_COMMAND_OK)
+    {
+        // how can this happen? and what to return in this scenario? I guess we are not in transaction since we couldn't "commit".
+        PQclear(res);
+        return false;
+    }
+    PQclear(res);
+    return false;
+}
 
 
 // ELTODO: delete this test code
