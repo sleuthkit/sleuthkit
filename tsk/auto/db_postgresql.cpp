@@ -1540,7 +1540,11 @@ int TskDbPostgreSQL::createSavepoint(const char *name)
     char buff[1024];
 
     // In PostgreSQL savepoints can only be established when inside a transaction block.
-    // ELTODO: verify that calling BEGIN here is the right thing to do in all scenarios
+    // NOTE: this will only work if we have 1 savepoint. If we use multiple savepoints, PostgreSQL will 
+    // not allow us to call "BEGIN" inside a transaction. We will need to keep track of whether we are
+    // in transaction and only call "BEGIN" if we are not in trasaction. Alternatively we can keep
+    // calling "BEGIN" every time we create a savepoint and simply ignore the error if there is one.
+    // Also see note inside TskDbPostgreSQL::releaseSavepoint().
     snprintf(buff, 1024, "BEGIN;");
     if (attempt_exec(buff, "Error starting transaction: %s\n")) {
         return 1;
@@ -1584,7 +1588,9 @@ int TskDbPostgreSQL::releaseSavepoint(const char *name)
     }    
 
     // In PostgreSQL savepoints can only be used inside a transaction block.
-    // ELTODO: verify that calling COMMIT here is the right thing to do in all scenarios
+    // NOTE: see note inside TskDbPostgreSQL::createSavepoint(). This will only work if we have 1 savepoint. 
+    // If we add more savepoints we will need to keep track of where we are in transaction and only call
+    // "COMMIT" when releasing the outer most savepoint.
     snprintf(buff, 1024, "COMMIT;");
 
     return attempt_exec(buff, "Error commiting transaction: %s\n");
@@ -1601,18 +1607,38 @@ bool TskDbPostgreSQL::isDbOpen() const
         return false;
 }
 
-// NOT IMPLEMENTED:
-
-/*bool TskDbPostgreSQL::isDbOpen() const {
-    return true;}
-int TskDbPostgreSQL::createSavepoint(const char *name){ 
-    return 0; }
-int TskDbPostgreSQL::revertSavepoint(const char *name){ 
-    return 0; }
-int TskDbPostgreSQL::releaseSavepoint(const char *name){ 
-    return 1; }*/
+/** 
+* Returns true if database is in transaction.
+*/
 bool TskDbPostgreSQL::inTransaction() { 
-    return false;}
+
+    // In PostgreSQL nested BEGIN calls are not allowed. Therefore if we get an error when executing "BEGIN" query then we are inside a transaction.
+    if (!conn)
+        return false;
+
+    char sql[32];
+    snprintf(sql, 32, "BEGIN;");
+
+    PGresult *res = PQexec(conn, sql); 
+    if (PQresultStatus(res) != PGRES_COMMAND_OK)
+    {
+        // PostgreSQL returned error, therefore we are inside a transaction block
+        PQclear(res);
+        return true;
+    }
+
+    // If we are here then we were not inside a transaction. Undo the "BEGIN".
+    snprintf(sql, 32, "COMMIT;");
+    res = PQexec(conn, sql); 
+    if (PQresultStatus(res) != PGRES_COMMAND_OK)
+    {
+        // how can this happen? and what to return in this scenario? I guess we are not in transaction since we couldn't "commit".
+        PQclear(res);
+        return false;
+    }
+    PQclear(res);
+    return false;
+}
 
 
 // ELTODO: delete this test code
