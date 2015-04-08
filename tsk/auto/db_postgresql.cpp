@@ -63,22 +63,15 @@ PGconn* TskDbPostgreSQL::connectToDatabase(TSK_TCHAR *dbName) {
     // escape strings for use within an SQL command. Usually use PQescapeLiteral but it requires connection to be already established.
     char userName_sql[256];
     char password_sql[256];
-    char dbName_sql[256];    
-    char dBName[256]; 
     PQescapeString(&userName_sql[0], userName, strlen(userName));
     PQescapeString(&password_sql[0], password, strlen(password));
-    sprintf(dBName, "%S", dbName);  // convert from multi-byte to char
-    PQescapeString(&dbName_sql[0], dBName, strlen(dBName));
 
-    sprintf(connectionString, "user=%s password=%s dbname=%s hostaddr=%s port=%s", userName_sql, password_sql, dbName_sql, hostIpAddr, hostPort);
+    sprintf(connectionString, "user=%s password=%s dbname=%S hostaddr=%s port=%s", userName_sql, password_sql, dbName, hostIpAddr, hostPort);
     PGconn *dbConn = PQconnectdb(connectionString);
 
     // Check to see that the backend connection was successfully made 
-    if (PQstatus(dbConn) != CONNECTION_OK)
+    if (verifyResultCode(PQstatus(dbConn), CONNECTION_OK, "Connection to PostgreSQL database failed, result code %d"))
     {
-        ConnStatusType connStatus = PQstatus(dbConn);
-        // ELTODO: replace printf with tsk_error_set_errstr. This will be done as part of implementing an equivalent to TskDbSqlite::attempt().
-        printf("Connection to PostgreSQL database failed, %s", PQerrorMessage(conn));
         PQfinish(dbConn);
         return NULL;
     }
@@ -112,14 +105,10 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::createDatabase(){
     // you now need to always use double quotes when referring to it.
     char createDbString[512];
     sprintf(createDbString, "CREATE DATABASE \"%S\" WITH ENCODING='UTF8';", m_dBName);
-    PGresult *res = PQexec(serverConn, createDbString);    
-    if (PQresultStatus(res) != PGRES_COMMAND_OK)
-    {
-        printf("Database creation failed, %s", PQerrorMessage(conn));
+    if (attempt_exec(createDbString, "Database creation failed, %s")) {
         result = TSK_ERR;
     }
 
-    PQclear(res);
     PQfinish(serverConn);
     return result;
 }
@@ -133,8 +122,7 @@ int TskDbPostgreSQL::open(bool createDbFlag)
 {
     if (createDbFlag) {
         // create new database first
-        if (createDatabase() != TSK_OK) {
-            printf("Unable to create database");
+        if (verifyResultCode(createDatabase(), TSK_OK, "Unable to create database, result code %d")){
             return -1;
         }
     }
@@ -142,7 +130,9 @@ int TskDbPostgreSQL::open(bool createDbFlag)
     // connect to existing database
     conn = connectToDatabase(&m_dBName[0]);
     if (!conn){
-        printf("Database creation failed");
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("Database creation failed");
         return -1;
     }
 
@@ -163,7 +153,6 @@ int TskDbPostgreSQL::open(bool createDbFlag)
 */
 int TskDbPostgreSQL::close()
 {
-    // ELTODO need to surround this with try/catch. Otherwise if we close database second time an exception is thrown.
     if (conn) {
         PQfinish(conn);
         conn = NULL;
@@ -184,12 +173,15 @@ bool TskDbPostgreSQL::dbExists() {
 
     // Poll PostreSQL server for existing databases. 
     char selectString[512];
-    sprintf(selectString, "select datname from pg_catalog.pg_database where datname = '%S';", m_dBName);
+    sprintf(selectString, "SELECT datname FROM pg_catalog.pg_database WHERE datname = '%S';", m_dBName);
 
     PGresult *res = PQexec(serverConn, selectString);
     if (PQresultStatus(res) != PGRES_TUPLES_OK)
     {
-        printf("Existing database lookup failed, %s", PQerrorMessage(conn));
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        char * str = PQerrorMessage(conn);
+        tsk_error_set_errstr("Existing database lookup failed, %s", str);
         numDb = 0;
     } else {
         // number of existing databases that matched name (if search is case sensitive then max is 1)
@@ -206,7 +198,7 @@ bool TskDbPostgreSQL::dbExists() {
 }
 
 /**
-* Execute a statement and sets TSK error values on error 
+* Execute SQL command returning no data. Sets TSK error values on error.
 * @returns 1 on error, 0 on success
 */
 int TskDbPostgreSQL::attempt_exec(const char *sql, const char *errfmt)
@@ -215,12 +207,11 @@ int TskDbPostgreSQL::attempt_exec(const char *sql, const char *errfmt)
         return 1;
 
     PGresult *res = PQexec(conn, sql); 
-    // ELTODO: verify that there are no other acceptable return codes.
     if (PQresultStatus(res) != PGRES_COMMAND_OK) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         char * str = PQerrorMessage(conn);
-        tsk_error_set_errstr(errfmt, PQerrorMessage(conn));
+        tsk_error_set_errstr(errfmt, str);
         PQclear(res);
         return 1;
     }
@@ -229,7 +220,7 @@ int TskDbPostgreSQL::attempt_exec(const char *sql, const char *errfmt)
 }
 
 /**
-* Execute a statement and returns PostgreSQL result sets in ASCII format. Sets TSK error values on error.
+* Execute SQL statement and returns PostgreSQL result sets in ASCII format. Sets TSK error values on error.
 * IMPORTANT: result set needs to be freed by caling PQclear(res) when no longer needed.
 * @returns Result set on success, NULL on error
 */
@@ -239,12 +230,11 @@ PGresult* TskDbPostgreSQL::get_query_result_set(const char *sql, const char *err
         return NULL;
 
     PGresult *res = PQexec(conn, sql); 
-    // ELTODO: verify that there are no other acceptable return codes. What about PGRES_EMPTY_QUERY?
     if (PQresultStatus(res) != PGRES_TUPLES_OK) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         char * str = PQerrorMessage(conn);
-        tsk_error_set_errstr(errfmt, PQerrorMessage(conn));
+        tsk_error_set_errstr(errfmt, str);
         PQclear(res);
         return NULL;
     }
@@ -271,12 +261,11 @@ PGresult* TskDbPostgreSQL::get_query_result_set_binary(const char *sql, const ch
                        NULL,    /* default to all text params */
                        1);      /* ask for binary results */
 
-    // ELTODO: verify that there are no other acceptable return codes. What about PGRES_EMPTY_QUERY?
     if (PQresultStatus(res) != PGRES_TUPLES_OK) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         char * str = PQerrorMessage(conn);
-        tsk_error_set_errstr(errfmt, PQerrorMessage(conn));
+        tsk_error_set_errstr(errfmt, str);
         PQclear(res);
         return NULL;
     }
@@ -284,7 +273,7 @@ PGresult* TskDbPostgreSQL::get_query_result_set_binary(const char *sql, const ch
 }
 
 /**
-* Verifies if PGresult is valid. Sets TSK error values if result is invalid. 
+* Verifies whether PGresult is valid. Sets TSK error values if result is invalid. 
 * @returns true if result is valid, false if result is invalid
 */
 bool TskDbPostgreSQL::isQueryResultValid(PGresult *res, const char *errfmt)
@@ -292,13 +281,13 @@ bool TskDbPostgreSQL::isQueryResultValid(PGresult *res, const char *errfmt)
     if (!res) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr(errfmt, "Result set pointer is NULL\n");
+        tsk_error_set_errstr(errfmt, "PGresult result set pointer is NULL\n");
         return false;
     }
     return true;
 }
 
-int TskDbPostgreSQL::attempt(int resultCode, int expectedResultCode, const char *errfmt)
+int TskDbPostgreSQL::verifyResultCode(int resultCode, int expectedResultCode, const char *errfmt)
 {
     if (resultCode != expectedResultCode) {
         tsk_error_reset();
@@ -307,12 +296,6 @@ int TskDbPostgreSQL::attempt(int resultCode, int expectedResultCode, const char 
         return 1;
     }
     return 0;
-}
-
-
-int TskDbPostgreSQL::attempt(int resultCode, const char *errfmt)
-{
-    return attempt(resultCode, PGRES_COMMAND_OK, errfmt);
 }
 
 /** 
@@ -335,9 +318,7 @@ int TskDbPostgreSQL::initialize() {
         return 1;
     }
 
-    // ELTODO: SQLite determines appropriate num bytes to store int based on magnitude. PostgreSQL needs to be told byte size in advance! 
-    // Need to adjust SQL statements below from INTEGER to appropriate format for each field.
-    // http://www.postgresql.org/docs/current/interactive/datatype-numeric.html
+    // ELTODO: change INTEGER (4 bytes) fields to SMALLINT (2 bytes) to use less memory for enum fields
 
     if (attempt_exec
         ("CREATE TABLE tsk_objects (obj_id BIGSERIAL PRIMARY KEY, par_obj_id BIGINT, type INTEGER NOT NULL);",
@@ -403,7 +384,7 @@ int TskDbPostgreSQL::initialize() {
         "FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id))",
         "Error creating blackboard_artifact_tags table: %s\n")
         ||
-        /* ELTODO: The binary representation of BYTEA is a bunch of bytes, which could
+        /* Binary representation of BYTEA is a bunch of bytes, which could
         * include embedded nulls so we have to pay attention to field length.
         * http://www.postgresql.org/docs/9.4/static/libpq-example.html
         */
@@ -413,8 +394,7 @@ int TskDbPostgreSQL::initialize() {
         "FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id), FOREIGN KEY(attribute_type_id) REFERENCES blackboard_attribute_types(attribute_type_id))",
         "Error creating blackboard_attribute table: %s\n")
         ||
-        /* In PostgreSQL "desc" indicates "descending order" so I had to rename "desc TEXT" to "descr TEXT" 
-        ELTODO: make sure all insert queries have "descr". Should I also make this change for SQLite?*/
+        /* In PostgreSQL "desc" indicates "descending order" so I had to rename "desc TEXT" to "descr TEXT". Should I also make this change for SQLite?*/
         attempt_exec
         ("CREATE TABLE tsk_vs_parts (obj_id BIGINT PRIMARY KEY, addr BIGINT NOT NULL, start BIGINT NOT NULL, length BIGINT NOT NULL, descr TEXT, flags INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating tsk_vol_info table: %s\n")
@@ -481,7 +461,10 @@ uint8_t TskDbPostgreSQL::addObject(TSK_DB_OBJECT_TYPE_ENUM type, int64_t parObjI
     }
 
     // Returned value is objId
-    objId = atoll(PQgetvalue(res, 0, 0));
+    if (PQntuples(res) > 0) {
+        objId = atoll(PQgetvalue(res, 0, 0));
+    }
+    // ELTODO: add "else" here
 
     /* PostgreSQL returns binary results in network byte order, which need to be converted to the local byte order.
     int64_t *pInt64 = (int64_t*)PQgetvalue(res, 0, 0);

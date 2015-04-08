@@ -43,7 +43,6 @@ class TskDbPostgreSQL : public TskDb {
 
     TSK_RETVAL_ENUM setLogInInfo();
 
-// not implemeneted:
     int addImageInfo(int type, int size, int64_t & objId, const string & timezone);
     int addImageInfo(int type, int size, int64_t & objId, const string & timezone, TSK_OFF_T, const string &md5);
     int addImageName(int64_t objId, char const *imgName, int sequence);
@@ -101,8 +100,7 @@ private:
     TSK_RETVAL_ENUM createDatabase();
     int initialize();
     int attempt_exec(const char *sql, const char *errfmt);
-    int attempt(int resultCode, const char *errfmt);
-    int attempt(int resultCode, int expectedResultCode, const char *errfmt);
+    int verifyResultCode(int resultCode, int expectedResultCode, const char *errfmt);
     PGresult* get_query_result_set(const char *sql, const char *errfmt);
     PGresult* get_query_result_set_binary(const char *sql, const char *errfmt);
     bool isQueryResultValid(PGresult *res, const char *errfmt);
