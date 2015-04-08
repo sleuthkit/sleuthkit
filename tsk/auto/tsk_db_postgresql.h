@@ -104,6 +104,7 @@ private:
     int attempt(int resultCode, const char *errfmt);
     int attempt(int resultCode, int expectedResultCode, const char *errfmt);
     PGresult* get_query_result_set(const char *sql, const char *errfmt);
+    PGresult* get_query_result_set_binary(const char *sql, const char *errfmt);
     bool isQueryResultValid(PGresult *res, const char *errfmt);
     int createIndexes();
 
