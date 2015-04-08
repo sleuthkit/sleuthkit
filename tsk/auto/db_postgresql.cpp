@@ -220,7 +220,7 @@ int TskDbPostgreSQL::attempt_exec(const char *sql, const char *errfmt)
 }
 
 /**
-* Execute a statement and returns PostgreSQL result sets. Sets TSK error values on error.
+* Execute a statement and returns PostgreSQL result sets in ASCII format. Sets TSK error values on error.
 * IMPORTANT: result set needs to be freed by caling PQclear(res) when no longer needed.
 * @returns Result set on success, NULL on error
 */
@@ -230,6 +230,38 @@ PGresult* TskDbPostgreSQL::get_query_result_set(const char *sql, const char *err
         return NULL;
 
     PGresult *res = PQexec(conn, sql); 
+    // ELTODO: verify that there are no other acceptable return codes. What about PGRES_EMPTY_QUERY?
+    if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        char * str = PQerrorMessage(conn);
+        tsk_error_set_errstr(errfmt, PQerrorMessage(conn));
+        PQclear(res);
+        return NULL;
+    }
+    return res;
+}
+
+/**
+* Execute a statement and returns PostgreSQL result sets in binary format. Sets TSK error values on error.
+* IMPORTANT: PostgreSQL returns binary representations in network byte order, which need to be converted to the local byte order.
+* IMPORTANT: result set needs to be freed by caling PQclear(res) when no longer needed.
+* @returns Result set on success, NULL on error
+*/
+PGresult* TskDbPostgreSQL::get_query_result_set_binary(const char *sql, const char *errfmt)
+{
+    if (!conn)
+        return NULL;
+
+    PGresult *res = PQexecParams(conn,
+                       sql,
+                       0,       /* no additional params, they are part sql string */
+                       NULL,    /* let the backend deduce param type */
+                       NULL,    /* no params */
+                       NULL,    /* don't need param lengths since text */
+                       NULL,    /* default to all text params */
+                       1);      /* ask for binary results */
+
     // ELTODO: verify that there are no other acceptable return codes. What about PGRES_EMPTY_QUERY?
     if (PQresultStatus(res) != PGRES_TUPLES_OK) {
         tsk_error_reset();
@@ -441,6 +473,10 @@ uint8_t TskDbPostgreSQL::addObject(TSK_DB_OBJECT_TYPE_ENUM type, int64_t parObjI
 
     // Returned value is objId
     objId = atoll(PQgetvalue(res, 0, 0));
+
+    /* PostgreSQL returns binary results in network byte order, which need to be converted to the local byte order.
+    int64_t *pInt64 = (int64_t*)PQgetvalue(res, 0, 0);
+    objId = ntoh64(pInt64);*/
 
     PQclear(res);
     return 0;
@@ -1640,6 +1676,41 @@ bool TskDbPostgreSQL::inTransaction() {
     return false;
 }
 
+
+/* ELTODO: These functions will be needed when functionality to get PostgreSQL quesries in binary format is add.
+// PostgreSQL returns binary results in network byte order so then need to be converted to local byte order.
+int64_t ntoh64(int64_t *input)
+{
+    int64_t rval;
+    uint8_t *data = (uint8_t *)&rval;
+
+    data[0] = *input >> 56;
+    data[1] = *input >> 48;
+    data[2] = *input >> 40;
+    data[3] = *input >> 32;
+    data[4] = *input >> 24;
+    data[5] = *input >> 16;
+    data[6] = *input >> 8;
+    data[7] = *input >> 0;
+
+    return rval;
+}
+
+
+template <typename T>
+static inline T
+hton_any(T &input)
+{
+    T output(0);
+    std::size_t size = sizeof(input) - 1;
+    uint8_t *data = reinterpret_cast<uint8_t *>(&output);
+
+    for (std::size_t i = 0; i < size; i++) {
+        data[i] = input >> ((size - i) * 8);
+    }
+
+    return output;
+}*/
 
 // ELTODO: delete this test code
 /*
