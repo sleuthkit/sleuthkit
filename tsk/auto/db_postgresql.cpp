@@ -59,8 +59,18 @@ PGconn* TskDbPostgreSQL::connectToDatabase(TSK_TCHAR *dbName) {
 
     // Make a connection to postgres database server
     char connectionString[1024];
-    // ELTODO: use char PQescapeLiteral for userName and password
-    sprintf(connectionString, "user=%s password=%s dbname=%S hostaddr=%s port=%s", userName, password, dbName, hostIpAddr, hostPort);
+
+    // escape strings for use within an SQL command. Usually use PQescapeLiteral but it requires connection to be already established.
+    char userName_sql[256];
+    char password_sql[256];
+    char dbName_sql[256];    
+    char dBName[256]; 
+    PQescapeString(&userName_sql[0], userName, strlen(userName));
+    PQescapeString(&password_sql[0], password, strlen(password));
+    sprintf(dBName, "%S", dbName);  // convert from multi-byte to char
+    PQescapeString(&dbName_sql[0], dBName, strlen(dBName));
+
+    sprintf(connectionString, "user=%s password=%s dbname=%s hostaddr=%s port=%s", userName_sql, password_sql, dbName_sql, hostIpAddr, hostPort);
     PGconn *dbConn = PQconnectdb(connectionString);
 
     // Check to see that the backend connection was successfully made 
@@ -74,7 +84,6 @@ PGconn* TskDbPostgreSQL::connectToDatabase(TSK_TCHAR *dbName) {
     }
     return dbConn;
 }
-
 
 TSK_RETVAL_ENUM TskDbPostgreSQL::createDatabase(){
 
