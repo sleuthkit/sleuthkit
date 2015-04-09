@@ -66,7 +66,7 @@ PGconn* TskDbPostgreSQL::connectToDatabase(TSK_TCHAR *dbName) {
     PQescapeString(&userName_sql[0], userName, strlen(userName));
     PQescapeString(&password_sql[0], password, strlen(password));
 
-    sprintf(connectionString, "user=%s password=%s dbname=%S hostaddr=%s port=%s", userName_sql, password_sql, dbName, hostIpAddr, hostPort);
+    snprintf(connectionString, 1024, "user=%s password=%s dbname=%S hostaddr=%s port=%s", userName_sql, password_sql, dbName, hostIpAddr, hostPort);
     PGconn *dbConn = PQconnectdb(connectionString);
 
     // Check to see that the backend connection was successfully made 
@@ -102,12 +102,12 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::createDatabase(){
 
     // IMPORTANT: PostgreSQL database names are case sensitive but ONLY if you surround the db name in double quotes.
     // If you use single quotes, PostgreSQL will convert db name to lower case. If database was created using double quotes 
-    // you now need to always use double quotes when referring to it.
+    // you now need to always use double quotes when referring to it (e.dg when deleting database).
     char createDbString[512];
-    sprintf(createDbString, "CREATE DATABASE \"%S\" WITH ENCODING='UTF8';", m_dBName);
+    snprintf(createDbString, 1024, "CREATE DATABASE \"%S\" WITH ENCODING='UTF8';", m_dBName);
 
     PGresult *res = PQexec(serverConn, createDbString); 
-    if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+    if (!res || PQresultStatus(res) != PGRES_COMMAND_OK) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         char * str = PQerrorMessage(serverConn);
@@ -133,7 +133,7 @@ int TskDbPostgreSQL::open(bool createDbFlag)
 
     if (createDbFlag) {
         // create new database first
-        if (verifyResultCode(createDatabase(), TSK_OK, "Unable to create database, result code %d")){
+        if (verifyResultCode(createDatabase(), TSK_OK, "TskDbPostgreSQL::open - Unable to create database, result code %d")){
             return -1;
         }
     }
@@ -143,17 +143,20 @@ int TskDbPostgreSQL::open(bool createDbFlag)
     if (!conn){
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("Database creation failed");
+        tsk_error_set_errstr("TskDbPostgreSQL::open - Couldn't connect to databse %S", m_dBName);
         return -1;
     }
 
     if (createDbFlag) {
         // initialize TSK tables
-        initialize();
+        if (initialize()) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_AUTO_DB);
+            tsk_error_set_errstr("TskDbPostgreSQL::open - Couldn't initialize databse %S", m_dBName);
+            close();    // close connection to database
+            return -1;
+        }
     }
-
-    // ELTODO: delete this:
-    //test();
 
     return 0;
 }
@@ -180,14 +183,14 @@ bool TskDbPostgreSQL::dbExists() {
     TSK_TCHAR defaultPostgresDb[32] = TEXT("postgres");
     PGconn *serverConn = connectToDatabase(&defaultPostgresDb[0]);
     if (!serverConn)
-        return NULL;
+        return false;
 
     // Poll PostreSQL server for existing databases. 
-    char selectString[512];
-    sprintf(selectString, "SELECT datname FROM pg_catalog.pg_database WHERE datname = '%S';", m_dBName);
+    char selectString[1024];
+    snprintf(selectString, 1024, "SELECT datname FROM pg_catalog.pg_database WHERE datname = '%S';", m_dBName);
 
     PGresult *res = PQexec(serverConn, selectString);
-    if (PQresultStatus(res) != PGRES_TUPLES_OK)
+    if (!res || PQresultStatus(res) != PGRES_TUPLES_OK)
     {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
@@ -214,10 +217,18 @@ bool TskDbPostgreSQL::dbExists() {
 */
 int TskDbPostgreSQL::attempt_exec(const char *sql, const char *errfmt)
 {
-    if (!conn)
+    if (!conn){
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("Can't execute PostgreSQL query, not connected to database. Query: %s", sql);
         return 1;
+    }
 
     PGresult *res = PQexec(conn, sql); 
+    if (!isQueryResultValid(res, errfmt)) {
+        return 1;
+    }
+
     if (PQresultStatus(res) != PGRES_COMMAND_OK) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
@@ -237,10 +248,18 @@ int TskDbPostgreSQL::attempt_exec(const char *sql, const char *errfmt)
 */
 PGresult* TskDbPostgreSQL::get_query_result_set(const char *sql, const char *errfmt)
 {
-    if (!conn)
+    if (!conn){
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("Can't execute PostgreSQL query, not connected to database. Query: %s", sql);
         return NULL;
+    }
 
     PGresult *res = PQexec(conn, sql); 
+    if (!isQueryResultValid(res, errfmt)) {
+        return NULL;
+    }
+
     if (PQresultStatus(res) != PGRES_TUPLES_OK) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
@@ -260,8 +279,12 @@ PGresult* TskDbPostgreSQL::get_query_result_set(const char *sql, const char *err
 */
 PGresult* TskDbPostgreSQL::get_query_result_set_binary(const char *sql, const char *errfmt)
 {
-    if (!conn)
+    if (!conn){
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("Can't execute PostgreSQL query, not connected to database. Query: %s", sql);
         return NULL;
+    }
 
     PGresult *res = PQexecParams(conn,
                        sql,
@@ -271,6 +294,10 @@ PGresult* TskDbPostgreSQL::get_query_result_set_binary(const char *sql, const ch
                        NULL,    /* don't need param lengths since text */
                        NULL,    /* default to all text params */
                        1);      /* ask for binary results */
+
+    if (!isQueryResultValid(res, errfmt)) {
+        return NULL;
+    }
 
     if (PQresultStatus(res) != PGRES_TUPLES_OK) {
         tsk_error_reset();
@@ -283,6 +310,9 @@ PGresult* TskDbPostgreSQL::get_query_result_set_binary(const char *sql, const ch
     return res;
 }
 
+/* Verifies that result code matches expected result code. Sets TSK error values if result codes do not match. 		
+* @returns 1 if result codes match, 0 if they don't		
+*/	
 int TskDbPostgreSQL::verifyResultCode(int resultCode, int expectedResultCode, const char *errfmt)
 {
     if (resultCode != expectedResultCode) {
@@ -294,12 +324,13 @@ int TskDbPostgreSQL::verifyResultCode(int resultCode, int expectedResultCode, co
     return 0;
 }
 
-int TskDbPostgreSQL::verifyResultSetSize(PGresult *res, int expectedNumFileds, const char *errfmt)
+/* Verifies if PGresult is valid. Result set must contain at least one row. Number of returned fileds must match expected number of fields. 
+* Sets TSK error values if result is invalid. 		
+* @returns 1 if result is valid or empty, 0 if result is invalid		
+*/	
+int TskDbPostgreSQL::verifyNonEmptyResultSetSize(PGresult *res, int expectedNumFileds, const char *errfmt)
 {
-    if (!res) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr(errfmt, "PGresult result set pointer is NULL\n");
+    if (!isQueryResultValid(res, errfmt)) {
         return 1;
     }
 
@@ -312,6 +343,50 @@ int TskDbPostgreSQL::verifyResultSetSize(PGresult *res, int expectedNumFileds, c
     return 0;
 }
 
+/* Verifies if PGresult is valid. It's acceptable for result set to be empty. If result set is not empty, number of returned fileds must match expected number of fields. 
+* Sets TSK error values if result is invalid. 		
+* @returns 1 if result is valid or empty, 0 if result is invalid		
+*/	
+int TskDbPostgreSQL::verifyResultSetSize(PGresult *res, int expectedNumFileds, const char *errfmt)
+{
+    // check if a valid result set was returned
+    if (!isQueryResultValid(res, errfmt)) {
+        return 1;
+    }
+
+    // it's ok for this query to produce no results
+    if (PQntuples(res) == 0){
+        PQclear(res);
+        return 0;
+    }
+
+    // If there are results, verify number of fields returned.
+    if (PQnfields(res) != expectedNumFileds){
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr(errfmt, PQnfields(res), expectedNumFileds);
+        PQclear(res);
+        return 1;
+    }
+
+    return 0;
+}
+
+
+/* Verifies if PGresult is valid. Sets TSK error values if result is invalid. 		
+* @returns true if result is valid, false if result is invalid		
+*/		
+bool TskDbPostgreSQL::isQueryResultValid(PGresult *res, const char *errfmt)		
+{		 
+    if (!res) {
+        tsk_error_reset();	
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);	
+        tsk_error_set_errstr(errfmt, "Result set pointer is NULL\n");
+        return false;
+    }		     
+    return true;
+}
+
 /** 
 * Initialize the open DB: set PRAGMAs, create tables and indexes
 * @returns 1 on error
@@ -319,31 +394,24 @@ int TskDbPostgreSQL::verifyResultSetSize(PGresult *res, int expectedNumFileds, c
 int TskDbPostgreSQL::initialize() { 
 
     char foo[1024];
-    if (attempt_exec
-        ("CREATE TABLE tsk_db_info (schema_ver INTEGER, tsk_ver INTEGER);",
-        "Error creating tsk_db_info table: %s\n")) {
-            return 1;
+    if (attempt_exec("CREATE TABLE tsk_db_info (schema_ver INTEGER, tsk_ver INTEGER);","Error creating tsk_db_info table: %s\n")) {
+        return 1;
     }
 
-    snprintf(foo, 1024,
-        "INSERT INTO tsk_db_info (schema_ver, tsk_ver) VALUES (%d, %d);",
-        TSK_SCHEMA_VER, TSK_VERSION_NUM);
+    snprintf(foo, 1024, "INSERT INTO tsk_db_info (schema_ver, tsk_ver) VALUES (%d, %d);", TSK_SCHEMA_VER, TSK_VERSION_NUM);
     if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
         return 1;
     }
 
     // ELTODO: change INTEGER (4 bytes) fields to SMALLINT (2 bytes) to use less memory for enum fields
 
-    if (attempt_exec
-        ("CREATE TABLE tsk_objects (obj_id BIGSERIAL PRIMARY KEY, par_obj_id BIGINT, type INTEGER NOT NULL);",
-        "Error creating tsk_objects table: %s\n")
+    if (attempt_exec("CREATE TABLE tsk_objects (obj_id BIGSERIAL PRIMARY KEY, par_obj_id BIGINT, type INTEGER NOT NULL);","Error creating tsk_objects table: %s\n")
         ||
         attempt_exec
         ("CREATE TABLE tsk_image_info (obj_id BIGINT PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT, size BIGINT, md5 TEXT, display_name TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating tsk_image_info table: %s\n")
         ||
-        attempt_exec
-        ("CREATE TABLE tsk_image_names (obj_id BIGINT NOT NULL, name TEXT NOT NULL, sequence INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        attempt_exec("CREATE TABLE tsk_image_names (obj_id BIGINT NOT NULL, name TEXT NOT NULL, sequence INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating tsk_image_names table: %s\n")
         ||
         attempt_exec
@@ -359,42 +427,28 @@ int TskDbPostgreSQL::initialize() {
         "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id));",
         "Error creating tsk_files table: %s\n")
         ||
-        attempt_exec
-        ("CREATE TABLE tsk_files_path (obj_id BIGINT PRIMARY KEY, path TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id))",
+        attempt_exec("CREATE TABLE tsk_files_path (obj_id BIGINT PRIMARY KEY, path TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id))",
         "Error creating tsk_files_path table: %s\n")
         ||
-        attempt_exec
-        ("CREATE TABLE tsk_files_derived (obj_id BIGINT PRIMARY KEY, derived_id BIGINT NOT NULL, rederive TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id))",
-        "Error creating tsk_files_derived table: %s\n")
+        attempt_exec("CREATE TABLE tsk_files_derived (obj_id BIGINT PRIMARY KEY, derived_id BIGINT NOT NULL, rederive TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id))","Error creating tsk_files_derived table: %s\n")
         ||
-        attempt_exec
-        ("CREATE TABLE tsk_files_derived_method (derived_id BIGINT PRIMARY KEY, tool_name TEXT NOT NULL, tool_version TEXT NOT NULL, other TEXT)",
-        "Error creating tsk_files_derived_method table: %s\n")
+        attempt_exec("CREATE TABLE tsk_files_derived_method (derived_id BIGINT PRIMARY KEY, tool_name TEXT NOT NULL, tool_version TEXT NOT NULL, other TEXT)","Error creating tsk_files_derived_method table: %s\n")
         ||
-        attempt_exec
-        ("CREATE TABLE tag_names (tag_name_id BIGINT PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL)",
-        "Error creating tag_names table: %s\n")
+        attempt_exec("CREATE TABLE tag_names (tag_name_id BIGINT PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL)","Error creating tag_names table: %s\n")
         ||
-        attempt_exec
-        ("CREATE TABLE content_tags (tag_id BIGINT PRIMARY KEY, obj_id BIGINT NOT NULL, tag_name_id BIGINT NOT NULL, comment TEXT NOT NULL, begin_byte_offset BIGINT NOT NULL, end_byte_offset BIGINT NOT NULL, "
+        attempt_exec("CREATE TABLE content_tags (tag_id BIGINT PRIMARY KEY, obj_id BIGINT NOT NULL, tag_name_id BIGINT NOT NULL, comment TEXT NOT NULL, begin_byte_offset BIGINT NOT NULL, end_byte_offset BIGINT NOT NULL, "
         "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id))",
         "Error creating content_tags table: %s\n")
         ||
-        attempt_exec
-        ("CREATE TABLE blackboard_artifact_types (artifact_type_id BIGINT PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT)",
-        "Error creating blackboard_artifact_types table: %s\n")
+        attempt_exec("CREATE TABLE blackboard_artifact_types (artifact_type_id BIGINT PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT)","Error creating blackboard_artifact_types table: %s\n")
         ||
-        attempt_exec
-        ("CREATE TABLE blackboard_attribute_types (attribute_type_id BIGINT PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT)",
-        "Error creating blackboard_attribute_types table: %s\n")
+        attempt_exec("CREATE TABLE blackboard_attribute_types (attribute_type_id BIGINT PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT)","Error creating blackboard_attribute_types table: %s\n")
         ||
-        attempt_exec
-        ("CREATE TABLE blackboard_artifacts (artifact_id BIGINT PRIMARY KEY, obj_id BIGINT NOT NULL, artifact_type_id BIGINT NOT NULL, "
+        attempt_exec("CREATE TABLE blackboard_artifacts (artifact_id BIGINT PRIMARY KEY, obj_id BIGINT NOT NULL, artifact_type_id BIGINT NOT NULL, "
         "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id))",
         "Error creating blackboard_artifact table: %s\n")
         ||
-        attempt_exec
-        ("CREATE TABLE blackboard_artifact_tags (tag_id BIGINT PRIMARY KEY, artifact_id BIGINT NOT NULL, tag_name_id BIGINT NOT NULL, comment TEXT NOT NULL, "
+        attempt_exec("CREATE TABLE blackboard_artifact_tags (tag_id BIGINT PRIMARY KEY, artifact_id BIGINT NOT NULL, tag_name_id BIGINT NOT NULL, comment TEXT NOT NULL, "
         "FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id))",
         "Error creating blackboard_artifact_tags table: %s\n")
         ||
@@ -414,8 +468,7 @@ int TskDbPostgreSQL::initialize() {
         "Error creating tsk_vol_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE reports (report_id BIGINT PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL)",
-        "Error creating reports table: %s\n")) {
+        ("CREATE TABLE reports (report_id BIGINT PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL)","Error creating reports table: %s\n")) {
             return 1;
     }
 
@@ -465,12 +518,13 @@ int TskDbPostgreSQL::createIndexes()
 uint8_t TskDbPostgreSQL::addObject(TSK_DB_OBJECT_TYPE_ENUM type, int64_t parObjId, int64_t & objId)
 {
     char stmt[1024];
+    int expectedNumFileds = 1;
     snprintf(stmt, 1024, "INSERT INTO tsk_objects (par_obj_id, type) VALUES (%" PRId64 ", %d) RETURNING obj_id", parObjId, type);
 
     PGresult *res = get_query_result_set(stmt, "TskDbPostgreSQL::addObj: Error adding object to row: %s (result code %d)\n");
 
     // check if a valid result set was returned
-    if (verifyResultSetSize(res, 1, "TskDbPostgreSQL::addObj: Unexpected number of results: Expected %d, Received %d\n")) {
+    if (verifyNonEmptyResultSetSize(res, expectedNumFileds, "TskDbPostgreSQL::addObj: Unexpected number of results: Expected %d, Received %d\n")) {
         return TSK_ERR;
     }
 
@@ -511,12 +565,13 @@ int TskDbPostgreSQL::addVsInfo(const TSK_VS_INFO * vs_info, int64_t parObjId, in
 TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInfo) {
 
     char stmt[1024];
+    int expectedNumFileds = 4;
     snprintf(stmt, 1024, "SELECT obj_id, vs_type, img_offset, block_size FROM tsk_vs_info WHERE obj_id = %" PRId64 "", objId);
 
     PGresult *res = get_query_result_set(stmt, "TskDbPostgreSQL::getVsInfo: Error selecting object by objid: %s (result code %d)\n");
 
     // check if a valid result set was returned
-    if (verifyResultSetSize(res, 4, "TskDbPostgreSQL::getVsInfo: Unexpected number of results: Expected %d, Received %d\n")) {
+    if (verifyNonEmptyResultSetSize(res, expectedNumFileds, "TskDbPostgreSQL::getVsInfo: Unexpected number of results: Expected %d, Received %d\n")) {
         return TSK_ERR;
     }
 
@@ -545,15 +600,15 @@ int TskDbPostgreSQL::addImageInfo(int type, int size, int64_t & objId, const str
 int TskDbPostgreSQL::addImageInfo(int type, int ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5)
 {
     char stmt[2048];
-    int ret;
+    int expectedNumFileds = 1;
 
     // We don't use addObject because we're passing in NULL as the parent
     snprintf(stmt, 2048, "INSERT INTO tsk_objects (par_obj_id, type) VALUES (NULL, %d) RETURNING obj_id;", TSK_DB_OBJECT_TYPE_IMG);
     PGresult *res = get_query_result_set(stmt, "TskDbPostgreSQL::addObj: Error adding object to row: %s (result code %d)\n");
 
     // check if a valid result set was returned
-    if (verifyResultSetSize(res, 1, "TskDbPostgreSQL::addObj: Unexpected number of results: Expected %d, Received %d\n")) {
-        return TSK_ERR;
+    if (verifyNonEmptyResultSetSize(res, expectedNumFileds, "TskDbPostgreSQL::addObj: Unexpected number of results: Expected %d, Received %d\n")) {
+        return 1;
     }
 
     // Returned value is objId
@@ -565,7 +620,7 @@ int TskDbPostgreSQL::addImageInfo(int type, int ssize, int64_t & objId, const st
     snprintf(stmt, 2048, "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %d, %s, %"PRIuOFF", %s);",
         objId, type, ssize, timezone_sql, size, md5_sql);
 
-    ret = attempt_exec(stmt, "Error adding data to tsk_image_info table: %s\n");
+    int ret = attempt_exec(stmt, "Error adding data to tsk_image_info table: %s\n");
 
     // cleanup
     PQfreemem(timezone_sql);
@@ -579,11 +634,10 @@ int TskDbPostgreSQL::addImageInfo(int type, int ssize, int64_t & objId, const st
 int TskDbPostgreSQL::addImageName(int64_t objId, char const *imgName, int sequence)
 {
     char stmt[2048];
-    int ret;
 
     char *imgName_sql = PQescapeLiteral(conn, imgName, strlen(imgName));
     snprintf(stmt, 2048, "INSERT INTO tsk_image_names (obj_id, name, sequence) VALUES (%lld, %s, %d)", objId, imgName_sql, sequence);
-    ret = attempt_exec(stmt, "Error adding data to tsk_image_names table: %s\n");
+    int ret = attempt_exec(stmt, "Error adding data to tsk_image_names table: %s\n");
 
     // cleanup
     PQfreemem(imgName_sql);
@@ -846,12 +900,13 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
     // @@@ This should use sequence number when the new database supports it
 
     char zSQL[1024];
+    int expectedNumFileds = 1;
     snprintf(zSQL, 1024, "SELECT obj_id FROM tsk_files WHERE meta_addr = %" PRIu64 " AND fs_obj_id = %" PRId64 "", fs_file->name->par_addr, fsObjId);
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n");
 
     // check if a valid result set was returned
-    if (verifyResultSetSize(res, 1, "TskDbPostgreSQL::findParObjId: Unexpected number of results: Expected %d, Received %d\n")) {
-        return TSK_ERR;
+    if (verifyNonEmptyResultSetSize(res, expectedNumFileds, "TskDbPostgreSQL::findParObjId: Unexpected number of results: Expected %d, Received %d\n")) {
+        return -1;
     }
 
     int64_t parObjId = atoll(PQgetvalue(res, 0, 0));
@@ -928,11 +983,11 @@ void TskDbPostgreSQL::storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_
 TSK_RETVAL_ENUM TskDbPostgreSQL::getFsInfos(int64_t imgId, vector<TSK_DB_FS_INFO> & fsInfos) {
 
     char zSQL[1024];
+    int expectedNumFileds = 8;
     snprintf(zSQL, 1024,"SELECT obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum FROM tsk_fs_info");
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getFsInfos: Error selecting from tsk_fs_info: %s (result code %d)\n");
 
-    // check if a valid result set was returned
-    if (verifyResultSetSize(res, 8, "TskDbPostgreSQL::getFsInfos: Unexpected number of results: Expected %d, Received %d\n")) {
+    if (verifyResultSetSize(res, expectedNumFileds, "TskDbPostgreSQL::getFsInfos: Error selecting from tsk_fs_info: %s")) {
         return TSK_ERR;
     }
 
@@ -1012,12 +1067,13 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getParentImageId(const int64_t objId, int64_t &
 TSK_RETVAL_ENUM TskDbPostgreSQL::getObjectInfo(int64_t objId, TSK_DB_OBJECT & objectInfo) {
 
     char zSQL[1024];
+    int expectedNumFileds = 3;
     snprintf(zSQL, 1024, "SELECT obj_id, par_obj_id, type FROM tsk_objects WHERE obj_id = %" PRId64 "", objId);
 
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getObjectInfo: Error selecting object by objid: %s (result code %d)\n");
 
     // check if a valid result set was returned
-    if (verifyResultSetSize(res, 3, "TskDbPostgreSQL::getObjectInfo: Unexpected number of results: Expected %d, Received %d\n")) {
+    if (verifyNonEmptyResultSetSize(res, expectedNumFileds, "TskDbPostgreSQL::getObjectInfo: Unexpected number of results: Expected %d, Received %d\n")) {
         return TSK_ERR;
     }
 
@@ -1375,12 +1431,13 @@ int TskDbPostgreSQL::addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLay
 TSK_RETVAL_ENUM TskDbPostgreSQL::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_PART_INFO> & vsPartInfos) {
 
     char zSQL[512];
+    int expectedNumFileds = 6;
     snprintf(zSQL, 512, "SELECT obj_id, addr, start, length, descr, flags FROM tsk_vs_parts");
 
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getVsPartInfos: Error selecting from tsk_vs_parts: %s (result code %d)\n");
 
     // check if a valid result set was returned
-    if (verifyResultSetSize(res, 6, "TskDbPostgreSQL::getVsPartInfos: Unexpected number of results: Expected %d, Received %d\n")) {
+    if (verifyResultSetSize(res, expectedNumFileds, "TskDbPostgreSQL::getVsPartInfos: Error selecting from tsk_vs_parts: %s")) {
         return TSK_ERR;
     }
 
@@ -1433,6 +1490,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_
 TSK_RETVAL_ENUM TskDbPostgreSQL::getFsRootDirObjectInfo(const int64_t fsObjId, TSK_DB_OBJECT & rootDirObjInfo) {
 
     char zSQL[1024];
+    int expectedNumFileds = 3;
     snprintf(zSQL, 1024, "SELECT tsk_objects.obj_id,tsk_objects.par_obj_id,tsk_objects.type "
         "FROM tsk_objects,tsk_files WHERE tsk_objects.par_obj_id = %" PRId64 " AND tsk_files.obj_id = tsk_objects.obj_id AND tsk_files.name = ''", 
         fsObjId);
@@ -1440,7 +1498,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getFsRootDirObjectInfo(const int64_t fsObjId, T
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getFsRootDirObjectInfo: Error selecting from tsk_objects,tsk_files: %s (result code %d)\n");
 
     // check if a valid result set was returned
-    if (verifyResultSetSize(res, 3, "TskDbPostgreSQL::getFsRootDirObjectInfo: Unexpected number of results: Expected %d, Received %d\n")) {
+    if (verifyNonEmptyResultSetSize(res, expectedNumFileds, "TskDbPostgreSQL::getFsRootDirObjectInfo: Unexpected number of results: Expected %d, Received %d\n")) {
         return TSK_ERR;
     }
 
@@ -1462,12 +1520,13 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getFsRootDirObjectInfo(const int64_t fsObjId, T
 TSK_RETVAL_ENUM TskDbPostgreSQL::getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts) {
     
     char zSQL[512];
+    int expectedNumFileds = 4;
     snprintf(zSQL, 512, "SELECT obj_id, byte_start, byte_len, sequence FROM tsk_file_layout");
 
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getFileLayouts: Error selecting from tsk_file_layout: %s (result code %d)\n");
 
     // check if a valid result set was returned
-    if (verifyResultSetSize(res, 4, "TskDbPostgreSQL::getFileLayouts: Unexpected number of results: Expected %d, Received %d\n")) {
+    if (verifyResultSetSize(res, expectedNumFileds, "TskDbPostgreSQL::getFileLayouts: Error selecting from tsk_file_layout: %s")) {
         return TSK_ERR;
     }
 
@@ -1500,12 +1559,13 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE>
 TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO> & vsInfos) {
 
     char zSQL[512];
+    int expectedNumFileds = 4;
     snprintf(zSQL, 512, "SELECT obj_id, vs_type, img_offset, block_size FROM tsk_vs_info");
 
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getVsInfos: Error selecting from tsk_vs_info: %s (result code %d)\n");
 
     // check if a valid result set was returned
-    if (verifyResultSetSize(res, 4, "TskDbPostgreSQL::getVsInfos: Unexpected number of results: Expected %d, Received %d\n")) {
+    if (verifyResultSetSize(res, expectedNumFileds, "TskDbPostgreSQL::getVsInfos: Error selecting from tsk_vs_info: %s")) {
         return TSK_ERR;
     }
 
