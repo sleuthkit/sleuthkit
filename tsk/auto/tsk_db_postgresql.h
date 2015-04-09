@@ -101,9 +101,9 @@ private:
     int initialize();
     int attempt_exec(const char *sql, const char *errfmt);
     int verifyResultCode(int resultCode, int expectedResultCode, const char *errfmt);
+    int verifyResultSetSize(PGresult *res, int expectedNumFileds, const char *errfmt);
     PGresult* get_query_result_set(const char *sql, const char *errfmt);
     PGresult* get_query_result_set_binary(const char *sql, const char *errfmt);
-    bool isQueryResultValid(PGresult *res, const char *errfmt);
     int createIndexes();
 
     uint8_t addObject(TSK_DB_OBJECT_TYPE_ENUM type, int64_t parObjId, int64_t & objId);

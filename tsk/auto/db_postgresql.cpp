@@ -272,27 +272,30 @@ PGresult* TskDbPostgreSQL::get_query_result_set_binary(const char *sql, const ch
     return res;
 }
 
-/**
-* Verifies whether PGresult is valid. Sets TSK error values if result is invalid. 
-* @returns true if result is valid, false if result is invalid
-*/
-bool TskDbPostgreSQL::isQueryResultValid(PGresult *res, const char *errfmt)
-{
-    if (!res) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr(errfmt, "PGresult result set pointer is NULL\n");
-        return false;
-    }
-    return true;
-}
-
 int TskDbPostgreSQL::verifyResultCode(int resultCode, int expectedResultCode, const char *errfmt)
 {
     if (resultCode != expectedResultCode) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         tsk_error_set_errstr(errfmt, resultCode);
+        return 1;
+    }
+    return 0;
+}
+
+int TskDbPostgreSQL::verifyResultSetSize(PGresult *res, int expectedNumFileds, const char *errfmt)
+{
+    if (!res) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr(errfmt, "PGresult result set pointer is NULL\n");
+        return 1;
+    }
+
+    if (PQntuples(res) < 1 || PQnfields(res) != expectedNumFileds){
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr(errfmt, PQnfields(res), expectedNumFileds);
         return 1;
     }
     return 0;
@@ -455,16 +458,13 @@ uint8_t TskDbPostgreSQL::addObject(TSK_DB_OBJECT_TYPE_ENUM type, int64_t parObjI
 
     PGresult *res = get_query_result_set(stmt, "TskDbPostgreSQL::addObj: Error adding object to row: %s (result code %d)\n");
 
-    // check if a result set was returned
-    if (!isQueryResultValid(res, "TskDbPostgreSQL::addObj: No result returned for INSERT INTO tsk_objects. Can't obtain objId\n")){
+    // check if a valid result set was returned
+    if (verifyResultSetSize(res, 1, "TskDbPostgreSQL::addObj: Unexpected number of results: Expected %d, Received %d\n")) {
         return TSK_ERR;
     }
 
     // Returned value is objId
-    if (PQntuples(res) > 0) {
-        objId = atoll(PQgetvalue(res, 0, 0));
-    }
-    // ELTODO: add "else" here
+    objId = atoll(PQgetvalue(res, 0, 0));
 
     /* PostgreSQL returns binary results in network byte order, which need to be converted to the local byte order.
     int64_t *pInt64 = (int64_t*)PQgetvalue(res, 0, 0);
@@ -500,23 +500,19 @@ int TskDbPostgreSQL::addVsInfo(const TSK_VS_INFO * vs_info, int64_t parObjId, in
 TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInfo) {
 
     char stmt[1024];
-    // ELTODO: note that for PostgreSQL we have to do "obj_id =" whereas for SQLite query is "obj_id IS"...
     snprintf(stmt, 1024, "SELECT obj_id, vs_type, img_offset, block_size FROM tsk_vs_info WHERE obj_id = %" PRId64 "", objId);
 
     PGresult *res = get_query_result_set(stmt, "TskDbPostgreSQL::getVsInfo: Error selecting object by objid: %s (result code %d)\n");
 
-    // check if a result set was returned
-    if (!isQueryResultValid(res, "TskDbPostgreSQL::getVsInfo: No result returned for SELECT FROM tsk_vs_info\n")){
+    // check if a valid result set was returned
+    if (verifyResultSetSize(res, 4, "TskDbPostgreSQL::getVsInfo: Unexpected number of results: Expected %d, Received %d\n")) {
         return TSK_ERR;
     }
 
-    if (PQntuples(res) >= 1 && PQnfields(res) >= 3) {
-        vsInfo.objId = atoll(PQgetvalue(res, 0, 0));
-        vsInfo.vstype = (TSK_VS_TYPE_ENUM)atoi(PQgetvalue(res, 0, 1));
-        vsInfo.offset = atoll(PQgetvalue(res, 0, 2));
-        vsInfo.block_size = (unsigned int)atoll(PQgetvalue(res, 0, 3));
-    }
-    // ELTODO: add "else" here
+    vsInfo.objId = atoll(PQgetvalue(res, 0, 0));
+    vsInfo.vstype = (TSK_VS_TYPE_ENUM)atoi(PQgetvalue(res, 0, 1));
+    vsInfo.offset = atoll(PQgetvalue(res, 0, 2));
+    vsInfo.block_size = (unsigned int)atoll(PQgetvalue(res, 0, 3));
 
     //cleanup
     PQclear(res);
@@ -540,10 +536,17 @@ int TskDbPostgreSQL::addImageInfo(int type, int ssize, int64_t & objId, const st
     char stmt[2048];
     int ret;
 
-    // ELTODO: Verify this. SQLite code doesn't use addObject because we're passing in NULL as the parent
-    if (addObject(TSK_DB_OBJECT_TYPE_IMG, NULL, objId)) {
-        return 1;
+    // We don't use addObject because we're passing in NULL as the parent
+    snprintf(stmt, 2048, "INSERT INTO tsk_objects (par_obj_id, type) VALUES (NULL, %d);", TSK_DB_OBJECT_TYPE_IMG);
+    PGresult *res = get_query_result_set(stmt, "TskDbPostgreSQL::addObj: Error adding object to row: %s (result code %d)\n");
+
+    // check if a valid result set was returned
+    if (verifyResultSetSize(res, 1, "TskDbPostgreSQL::addObj: Unexpected number of results: Expected %d, Received %d\n")) {
+        return TSK_ERR;
     }
+
+    // Returned value is objId
+    objId = atoll(PQgetvalue(res, 0, 0));
 
     // escape strings for use within an SQL command
     char *timezone_sql = PQescapeLiteral(conn, timezone.c_str(), strlen(timezone.c_str()));
@@ -831,15 +834,12 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
     // Find the parent file id in the database using the parent metadata address
     // @@@ This should use sequence number when the new database supports it
 
-    // ELTODO: use m_selectFilePreparedStmt prepared statement instead
-
     char zSQL[1024];
-    // ELTODO: verify that using "=" instead of "IS ?" is equivalent
     snprintf(zSQL, 1024, "SELECT obj_id FROM tsk_files WHERE meta_addr = %" PRIu64 " AND fs_obj_id = %" PRId64 "", fs_file->name->par_addr, fsObjId);
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n");
 
-    // check if a result set was returned
-    if (!isQueryResultValid(res, "TskDbPostgreSQL::findParObjId: No result returned for SELECT obj_id. Can't obtain parObjId\n")){
+    // check if a valid result set was returned
+    if (verifyResultSetSize(res, 1, "TskDbPostgreSQL::findParObjId: Unexpected number of results: Expected %d, Received %d\n")) {
         return TSK_ERR;
     }
 
@@ -916,22 +916,18 @@ void TskDbPostgreSQL::storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_
 */
 TSK_RETVAL_ENUM TskDbPostgreSQL::getFsInfos(int64_t imgId, vector<TSK_DB_FS_INFO> & fsInfos) {
 
-    // ELTODO: use prepared statement here
     char zSQL[1024];
     snprintf(zSQL, 1024,"SELECT obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum FROM tsk_fs_info");
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getFsInfos: Error selecting from tsk_fs_info: %s (result code %d)\n");
 
-    // check if a result set was returned
-    if (!isQueryResultValid(res, "TskDbPostgreSQL::getFsInfos: No result returned for SELECT obj_id FROM tsk_fs_info\n")){
+    // check if a valid result set was returned
+    if (verifyResultSetSize(res, 8, "TskDbPostgreSQL::getFsInfos: Unexpected number of results: Expected %d, Received %d\n")) {
         return TSK_ERR;
     }
 
     //get rows
     TSK_DB_FS_INFO rowData;
     for (int i = 0; i < PQntuples(res); i++) {
-
-        // ELTODO probably remove this check
-        int isBinaryData = PQbinaryTuples(res); // Returns 1 if the PGresult contains binary data and 0 if it contains text data.
 
         int64_t fsObjId = atoll(PQgetvalue(res, i, 0));
 
@@ -1004,25 +1000,19 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getParentImageId(const int64_t objId, int64_t &
 */
 TSK_RETVAL_ENUM TskDbPostgreSQL::getObjectInfo(int64_t objId, TSK_DB_OBJECT & objectInfo) {
 
-    // ELTODO: use objectsStatement prepared statement instead
-
     char zSQL[1024];
-    // ELTODO: verify that using "=" instead of "IS ?" is equivalent
     snprintf(zSQL, 1024, "SELECT obj_id, par_obj_id, type FROM tsk_objects WHERE obj_id = %" PRId64 "", objId);
 
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getObjectInfo: Error selecting object by objid: %s (result code %d)\n");
 
-    // check if a result set was returned
-    if (!isQueryResultValid(res, "TskDbPostgreSQL::getObjectInfo: No result returned for SELECT FROM tsk_objects\n")){
+    // check if a valid result set was returned
+    if (verifyResultSetSize(res, 3, "TskDbPostgreSQL::getObjectInfo: Unexpected number of results: Expected %d, Received %d\n")) {
         return TSK_ERR;
     }
 
-    if (PQntuples(res) >= 1 && PQnfields(res) >= 3) {
-        objectInfo.objId = atoll(PQgetvalue(res, 0, 0));
-        objectInfo.parObjId = atoll(PQgetvalue(res, 0, 1));
-        objectInfo.type = (TSK_DB_OBJECT_TYPE_ENUM) atoi(PQgetvalue(res, 0, 2));
-    }
-    // ELTODO: add "else" here
+    objectInfo.objId = atoll(PQgetvalue(res, 0, 0));
+    objectInfo.parObjId = atoll(PQgetvalue(res, 0, 1));
+    objectInfo.type = (TSK_DB_OBJECT_TYPE_ENUM) atoi(PQgetvalue(res, 0, 2));
 
     //cleanup
     PQclear(res);
@@ -1373,23 +1363,19 @@ int TskDbPostgreSQL::addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLay
 */
 TSK_RETVAL_ENUM TskDbPostgreSQL::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_PART_INFO> & vsPartInfos) {
 
-    // ELTODO use vsPartInfosStatement prepared statement
     char zSQL[512];
     snprintf(zSQL, 512, "SELECT obj_id, addr, start, length, descr, flags FROM tsk_vs_parts");
 
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getVsPartInfos: Error selecting from tsk_vs_parts: %s (result code %d)\n");
 
-    // check if a result set was returned
-    if (!isQueryResultValid(res, "TskDbPostgreSQL::getVsPartInfos: No result returned for SELECT FROM tsk_vs_parts\n")){
+    // check if a valid result set was returned
+    if (verifyResultSetSize(res, 6, "TskDbPostgreSQL::getVsPartInfos: Unexpected number of results: Expected %d, Received %d\n")) {
         return TSK_ERR;
     }
 
     //get rows
     TSK_DB_VS_PART_INFO rowData;
     for (int i = 0; i < PQntuples(res); i++) {
-
-        // ELTODO probably remove this check
-        int isBinaryField = PQfformat(res, 0);  // 1 - binary, 0 - text
 
         int64_t vsPartObjId = atoll(PQgetvalue(res, i, 0));
 
@@ -1434,7 +1420,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_
 * @returns TSK_ERR on error (or if not found), TSK_OK on success
 */
 TSK_RETVAL_ENUM TskDbPostgreSQL::getFsRootDirObjectInfo(const int64_t fsObjId, TSK_DB_OBJECT & rootDirObjInfo) {
-    // ELTODO use rootDirInfoStatement prepared statement
+
     char zSQL[1024];
     snprintf(zSQL, 1024, "SELECT tsk_objects.obj_id,tsk_objects.par_obj_id,tsk_objects.type "
         "FROM tsk_objects,tsk_files WHERE tsk_objects.par_obj_id = %" PRId64 " AND tsk_files.obj_id = tsk_objects.obj_id AND tsk_files.name = ''", 
@@ -1442,17 +1428,14 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getFsRootDirObjectInfo(const int64_t fsObjId, T
 
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getFsRootDirObjectInfo: Error selecting from tsk_objects,tsk_files: %s (result code %d)\n");
 
-    // check if a result set was returned
-    if (!isQueryResultValid(res, "TskDbPostgreSQL::getFsRootDirObjectInfo: Result pointer is NULL\n")){
+    // check if a valid result set was returned
+    if (verifyResultSetSize(res, 3, "TskDbPostgreSQL::getFsRootDirObjectInfo: Unexpected number of results: Expected %d, Received %d\n")) {
         return TSK_ERR;
     }
 
-    if (PQntuples(res) >= 1 && PQnfields(res) >= 3) {
-        rootDirObjInfo.objId = atoll(PQgetvalue(res, 0, 0));
-        rootDirObjInfo.parObjId = atoll(PQgetvalue(res, 0, 1));
-        rootDirObjInfo.type = (TSK_DB_OBJECT_TYPE_ENUM)atoi(PQgetvalue(res, 0, 2));
-    }
-    // ELTODO add "else" here
+    rootDirObjInfo.objId = atoll(PQgetvalue(res, 0, 0));
+    rootDirObjInfo.parObjId = atoll(PQgetvalue(res, 0, 1));
+    rootDirObjInfo.type = (TSK_DB_OBJECT_TYPE_ENUM)atoi(PQgetvalue(res, 0, 2));
 
     //cleanup
     PQclear(res);
@@ -1467,23 +1450,19 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getFsRootDirObjectInfo(const int64_t fsObjId, T
 */
 TSK_RETVAL_ENUM TskDbPostgreSQL::getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts) {
     
-    // ELTODO use fileLayoutsStatement prepared statement
     char zSQL[512];
     snprintf(zSQL, 512, "SELECT obj_id, byte_start, byte_len, sequence FROM tsk_file_layout");
 
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getFileLayouts: Error selecting from tsk_file_layout: %s (result code %d)\n");
 
-    // check if a result set was returned
-    if (!isQueryResultValid(res, "TskDbPostgreSQL::getFileLayouts: No result returned for SELECT FROM tsk_file_layout\n")){
+    // check if a valid result set was returned
+    if (verifyResultSetSize(res, 4, "TskDbPostgreSQL::getFileLayouts: Unexpected number of results: Expected %d, Received %d\n")) {
         return TSK_ERR;
     }
 
     //get rows
     TSK_DB_FILE_LAYOUT_RANGE rowData;
     for (int i = 0; i < PQntuples(res); i++) {
-
-        // ELTODO probably remove this check
-        int isBinaryField = PQfformat(res, 0);  // 1 - binary, 0 - text
 
         rowData.fileObjId = atoll(PQgetvalue(res, i, 0));
         rowData.byteStart = atoll(PQgetvalue(res, i, 1));
@@ -1508,23 +1487,20 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE>
 * @returns TSK_ERR on error, TSK_OK on success
 */
 TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO> & vsInfos) {
-    // ELTODO use vsInfosStatement prepared statement
+
     char zSQL[512];
     snprintf(zSQL, 512, "SELECT obj_id, vs_type, img_offset, block_size FROM tsk_vs_info");
 
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getVsInfos: Error selecting from tsk_vs_info: %s (result code %d)\n");
 
-    // check if a result set was returned
-    if (!isQueryResultValid(res, "TskDbPostgreSQL::getVsInfos: No result returned for SELECT FROM tsk_vs_info\n")){
+    // check if a valid result set was returned
+    if (verifyResultSetSize(res, 4, "TskDbPostgreSQL::getVsInfos: Unexpected number of results: Expected %d, Received %d\n")) {
         return TSK_ERR;
     }
 
     //get rows
     TSK_DB_VS_INFO rowData;
     for (int i = 0; i < PQntuples(res); i++) {
-
-        // ELTODO probably remove this check
-        int isBinaryField = PQfformat(res, 0);  // 1 - binary, 0 - text
 
         int64_t vsObjId = atoll(PQgetvalue(res, i, 0));
 
@@ -1669,7 +1645,7 @@ bool TskDbPostgreSQL::inTransaction() {
 }
 
 
-/* ELTODO: These functions will be needed when functionality to get PostgreSQL quesries in binary format is add.
+/* ELTODO: These functions will be needed when functionality to get PostgreSQL quesries in binary format is added.
 // PostgreSQL returns binary results in network byte order so then need to be converted to local byte order.
 int64_t ntoh64(int64_t *input)
 {
@@ -1771,7 +1747,6 @@ void TskDbPostgreSQL::test()
     }
 
     for (int indx = 3; indx <=5; indx++) {
-        // ELTODO: note that for PostgreSQL we have to do "obj_id =" whereas for SQLite query is "obj_id IS"...
         snprintf(zSQL, 1024, "SELECT fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path FROM tsk_files WHERE obj_id = %d", indx);
         PGresult *res = PQexec(conn, zSQL);
         if (PQresultStatus(res) != PGRES_TUPLES_OK) {
