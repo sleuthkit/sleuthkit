@@ -105,10 +105,17 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::createDatabase(){
     // you now need to always use double quotes when referring to it.
     char createDbString[512];
     sprintf(createDbString, "CREATE DATABASE \"%S\" WITH ENCODING='UTF8';", m_dBName);
-    if (attempt_exec(createDbString, "Database creation failed, %s")) {
+
+    PGresult *res = PQexec(serverConn, createDbString); 
+    if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        char * str = PQerrorMessage(serverConn);
+        tsk_error_set_errstr("Database creation failed, %s", str);
         result = TSK_ERR;
     }
 
+    PQclear(res);
     PQfinish(serverConn);
     return result;
 }
@@ -120,6 +127,10 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::createDatabase(){
 */
 int TskDbPostgreSQL::open(bool createDbFlag)
 {
+    // close database connection if there is one open
+    if (conn)
+        close();
+
     if (createDbFlag) {
         // create new database first
         if (verifyResultCode(createDatabase(), TSK_OK, "Unable to create database, result code %d")){
@@ -537,7 +548,7 @@ int TskDbPostgreSQL::addImageInfo(int type, int ssize, int64_t & objId, const st
     int ret;
 
     // We don't use addObject because we're passing in NULL as the parent
-    snprintf(stmt, 2048, "INSERT INTO tsk_objects (par_obj_id, type) VALUES (NULL, %d);", TSK_DB_OBJECT_TYPE_IMG);
+    snprintf(stmt, 2048, "INSERT INTO tsk_objects (par_obj_id, type) VALUES (NULL, %d) RETURNING obj_id;", TSK_DB_OBJECT_TYPE_IMG);
     PGresult *res = get_query_result_set(stmt, "TskDbPostgreSQL::addObj: Error adding object to row: %s (result code %d)\n");
 
     // check if a valid result set was returned
