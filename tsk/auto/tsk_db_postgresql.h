@@ -30,6 +30,8 @@
 #include <map>
 using std::map;
 
+#define MAX_USER_NAME_PASSWORD_LENGTH  255
+
 
 /** \internal
  * C++ class that wraps PostgreSQL database internals. 

@@ -33,7 +33,7 @@ TskDbPostgreSQL::TskDbPostgreSQL(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFl
     : TskDb(a_dbFilePath, a_blkMapFlag)
 {
     conn = NULL;
-    wcsncpy(m_dBName, a_dbFilePath, 256);
+    wcsncpy(m_dBName, a_dbFilePath, 255);
     m_blkMapFlag = a_blkMapFlag;
     setLogInInfo();
 }
@@ -59,6 +59,21 @@ PGconn* TskDbPostgreSQL::connectToDatabase(TSK_TCHAR *dbName) {
 
     // Make a connection to postgres database server
     char connectionString[1024];
+
+    // verify user name and password string sizes
+    if (strlen(userName) >= MAX_USER_NAME_PASSWORD_LENGTH) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("User name is too long. Length = %d, Max length = %d", strlen(userName), MAX_USER_NAME_PASSWORD_LENGTH);
+        return NULL;
+    }
+
+    if (strlen(password) >= MAX_USER_NAME_PASSWORD_LENGTH) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("Password is too long. Length = %d, Max length = %d", strlen(password), MAX_USER_NAME_PASSWORD_LENGTH);
+        return NULL;
+    }
 
     // escape strings for use within an SQL command. Usually use PQescapeLiteral but it requires connection to be already established.
     char userName_sql[256];
@@ -103,7 +118,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::createDatabase(){
     // IMPORTANT: PostgreSQL database names are case sensitive but ONLY if you surround the db name in double quotes.
     // If you use single quotes, PostgreSQL will convert db name to lower case. If database was created using double quotes 
     // you now need to always use double quotes when referring to it (e.dg when deleting database).
-    char createDbString[512];
+    char createDbString[1024];
     snprintf(createDbString, 1024, "CREATE DATABASE \"%S\" WITH ENCODING='UTF8';", m_dBName);
 
     PGresult *res = PQexec(serverConn, createDbString); 
