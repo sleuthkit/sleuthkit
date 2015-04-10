@@ -224,6 +224,30 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		this.artifactTypeName = artifactTypeName;
 		this.displayName = displayName;
 	}
+	
+	/**
+	 * Constructor for an artifact. Should only be used by SleuthkitCase
+	 * @param Case the case that can be used to access the database this artifact is part of
+	 * @param artifactID the id for this artifact
+	 * @param objID the object this artifact is associated with
+	 * @param artifactTypeID the type id of this artifact
+	 * @param artifactTypeName the type name of this artifact
+	 * @param displayName the display name of this artifact
+	 * @param isNew true if we are currently creating the artifact
+	 */
+	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long objID, int artifactTypeID, String artifactTypeName, String displayName, boolean isNew) {
+		this.sleuthkitCase = sleuthkitCase;
+		this.artifactID = artifactID;
+		this.objID = objID;
+		this.artifactTypeID = artifactTypeID;
+		this.artifactTypeName = artifactTypeName;
+		this.displayName = displayName;
+		
+		// If the artifact is new, we don't need to waste a database call later to load the attributes
+		if(isNew){
+			this.loadedCacheFromDb = true;
+		}
+	}	
 
 	/**
 	 * Get the id for this artifact
