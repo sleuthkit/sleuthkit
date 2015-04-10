@@ -22,6 +22,7 @@
 #include <ostream>
 
 #include "tsk_auto_i.h"
+#include "db_connection_info.h"
 
 using std::ostream;
 using std::vector;
@@ -158,6 +159,7 @@ class TskDb {
     virtual ~TskDb() {};
     virtual int open(bool) = 0;
     virtual int close() = 0;
+    virtual TSK_RETVAL_ENUM setConnectionInfo(CaseDbConnectionInfo * info);
     virtual int addImageInfo(int type, int size, int64_t & objId, const string & timezone) = 0;
     virtual int addImageInfo(int type, int size, int64_t & objId, const string & timezone, TSK_OFF_T, const string &md5) = 0;
     virtual int addImageName(int64_t objId, char const *imgName, int sequence) = 0;

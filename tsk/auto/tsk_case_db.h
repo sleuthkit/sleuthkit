@@ -172,7 +172,9 @@ class TskCaseDb {
     ~TskCaseDb();
 
     static TskCaseDb *newDb(const TSK_TCHAR * path);
+    static TskCaseDb *newDb(const TSK_TCHAR * const path, CaseDbConnectionInfo * info);
     static TskCaseDb *openDb(const TSK_TCHAR * path);
+    static TskCaseDb *openDb(const TSK_TCHAR * path, CaseDbConnectionInfo * info);
 
     void clearLookupDatabases();
     uint8_t setNSRLHashDb(TSK_TCHAR * const indexFile);

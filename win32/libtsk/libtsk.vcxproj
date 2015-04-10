@@ -461,6 +461,7 @@ copy "$(POSTGRESQL_HOME_64)\bin\libintl-8.dll" "$(OutDir)"</Command>
     <ClCompile Include="..\..\tsk\img\raw.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\tsk\auto\db_connection_info.h" />
     <ClInclude Include="..\..\tsk\auto\tsk_db.h" />
     <ClInclude Include="..\..\tsk\auto\tsk_db_postgresql.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_exfatfs.h" />

@@ -30,8 +30,8 @@
 #include <map>
 using std::map;
 
-#define MAX_USER_NAME_PASSWORD_LENGTH  255
-
+#define MAX_CONN_INFO_FIELD_LENGTH  256
+#define MAX_CONN_PORT_FIELD_LENGTH  5   // port is a 5 digit number
 
 /** \internal
  * C++ class that wraps PostgreSQL database internals. 
@@ -43,7 +43,7 @@ class TskDbPostgreSQL : public TskDb {
     int open(bool);
     int close();
 
-    TSK_RETVAL_ENUM setLogInInfo();
+    TSK_RETVAL_ENUM setConnectionInfo(CaseDbConnectionInfo * info);
 
     int addImageInfo(int type, int size, int64_t & objId, const string & timezone);
     int addImageInfo(int type, int size, int64_t & objId, const string & timezone, TSK_OFF_T, const string &md5);
@@ -92,11 +92,12 @@ private:
 
     PGconn *conn;
     bool m_blkMapFlag;
-    TSK_TCHAR m_dBName[256];
-    char userName[128];
-    char password[128];
-    char hostIpAddr[64];
+    TSK_TCHAR m_dBName[MAX_CONN_INFO_FIELD_LENGTH];
+    char userName[MAX_CONN_INFO_FIELD_LENGTH];
+    char password[MAX_CONN_INFO_FIELD_LENGTH];
+    char hostIpAddr[MAX_CONN_INFO_FIELD_LENGTH];
     char hostPort[16];
+    TSK_RETVAL_ENUM verifyConnectionInfoStringLengths(size_t userNameStrLen, size_t pwdStrLen, size_t hostNameStrLen, size_t portStrLen);
 
     PGconn* connectToDatabase(TSK_TCHAR *dbName);
     TSK_RETVAL_ENUM createDatabase();

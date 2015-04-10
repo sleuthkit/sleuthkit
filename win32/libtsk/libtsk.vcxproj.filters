@@ -419,5 +419,8 @@
     <ClInclude Include="..\..\tsk\auto\tsk_db_postgresql.h">
       <Filter>auto</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\tsk\auto\db_connection_info.h">
+      <Filter>auto</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
