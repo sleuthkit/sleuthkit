@@ -31,7 +31,7 @@
 using std::map;
 
 #define MAX_CONN_INFO_FIELD_LENGTH  256
-#define MAX_CONN_PORT_FIELD_LENGTH  5   // port is a 5 digit number
+#define MAX_CONN_PORT_FIELD_LENGTH  5   // max number of ports on windows is 65535 
 
 /** \internal
  * C++ class that wraps PostgreSQL database internals. 
@@ -95,7 +95,7 @@ private:
     TSK_TCHAR m_dBName[MAX_CONN_INFO_FIELD_LENGTH];
     char userName[MAX_CONN_INFO_FIELD_LENGTH];
     char password[MAX_CONN_INFO_FIELD_LENGTH];
-    char hostIpAddr[MAX_CONN_INFO_FIELD_LENGTH];
+    char hostNameOrIpAddr[MAX_CONN_INFO_FIELD_LENGTH];
     char hostPort[16];
     TSK_RETVAL_ENUM verifyConnectionInfoStringLengths(size_t userNameStrLen, size_t pwdStrLen, size_t hostNameStrLen, size_t portStrLen);
 
@@ -126,7 +126,7 @@ private:
         int64_t & objId);
 
     // ELTODO: delete this:
-    void test();
+    //void test();
 };
 
 #endif // TSK_WIN32
