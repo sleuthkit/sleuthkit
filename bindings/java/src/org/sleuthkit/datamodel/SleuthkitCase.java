@@ -4185,7 +4185,7 @@ public class SleuthkitCase {
 
 	/**
 	 * This method allows developers to run arbitrary SQL "SELECT"
-	 * queries. The CaseDbQuery object will take care to acquiring
+	 * queries. The CaseDbQuery object will take care of acquiring
 	 * the necessary database lock and when used in a try-with-resources
 	 * block will automatically take care of releasing the lock.
 	 * @param query The query string to execute.
@@ -4576,7 +4576,7 @@ public class SleuthkitCase {
 			connection.executeUpdate(statement);
 			resultSet = statement.getGeneratedKeys();
 			resultSet.next();
-			long asdf=resultSet.getLong(1);
+			long asdf=resultSet.getLong(1); // KDM
 			return new TagName(asdf, displayName, description, color);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding row for " + displayName + " tag name to tag_names table", ex);
