@@ -25,10 +25,12 @@ public:
     
 	enum DbType
 	{
-		// Add any additional remote database types here. 
+		// Add any additional remote database types here, and keep it in sync 
+		// with the JNI version of this enum located at:
+		// sleuthkit/bindings/java/src/org/sleuthkit/datamodel/TskData.java
 		// Be sure to add to settingsValid() if you add a type here.
-		UNKNOWN,
-		POSTGRESQL
+		UNKNOWN = 0,
+		POSTGRESQL = 1
 	};
 
 private:

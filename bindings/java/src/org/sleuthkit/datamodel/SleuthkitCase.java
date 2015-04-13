@@ -50,6 +50,7 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteJDBCLoader;
+import org.sleuthkit.datamodel.TskData.DbType;
 
 /**
  * Represents the case database with methods that provide abstractions for
@@ -57,7 +58,7 @@ import org.sqlite.SQLiteJDBCLoader;
  */
 public class SleuthkitCase {
 
-	private static final int SCHEMA_VERSION_NUMBER = 3; // This must be the same as TSK_SCHEMA_VER in tsk/auto/db_sqlite.cpp.				
+	private static final int SCHEMA_VERSION_NUMBER = 3; // This must be the same as TSK_SCHEMA_VER in tsk/auto/tsk_db.h.				
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
@@ -267,7 +268,7 @@ public class SleuthkitCase {
 	 * @throws IOException if copying fails.
 	 */
 	public void copyCaseDB(String newDBPath) throws IOException {
-		if (dbPath.isEmpty()) {  /// KDM is this a problem for multi-user? Check it out.
+		if (dbPath.isEmpty()) {
 			throw new IOException("Copying case database files is not supported for this type of case database"); //NON-NLS
 		}
 		InputStream in = null;
@@ -552,7 +553,7 @@ public class SleuthkitCase {
 	 */
 	public static SleuthkitCase openCase(String databaseName, CaseDbConnectionInfo info, String caseDir) throws TskCoreException {
 		try {
-			if (info.getDbType() != CaseDbConnectionInfo.DbType.UNKNOWN) {
+			if (info.getDbType() != DbType.UNKNOWN) {
 				if (info.settingsValid()) {
 					final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(databaseName, info);
 					return new SleuthkitCase(info.getHost(), Integer.parseInt(info.getPort()), databaseName, info.getUserName(), info.getPassword(), caseHandle, caseDir);
@@ -2768,7 +2769,7 @@ public class SleuthkitCase {
 					+ "tsk_objects.type = " + firstone  + " AND " //NON-NLS
 					+ "tsk_objects.obj_id = tsk_files.obj_id AND " //NON-NLS
 					+ "tsk_files.type = " + secondone
-					+ " ORDER BY tsk_files.dir_type, LOWER(tsk_files.name)"); //NON-NLS /// KDM is this good enough for SQLite? was "tsk_files.name COLLATE NOCASE"
+					+ " ORDER BY tsk_files.dir_type, LOWER(tsk_files.name)"); //NON-NLS
 					
 			List<VirtualDirectory> virtDirRootIds = new ArrayList<VirtualDirectory>();
 			while (rs.next()) {
@@ -4576,8 +4577,7 @@ public class SleuthkitCase {
 			connection.executeUpdate(statement);
 			resultSet = statement.getGeneratedKeys();
 			resultSet.next();
-			long asdf=resultSet.getLong(1); // KDM
-			return new TagName(asdf, displayName, description, color);
+			return new TagName(resultSet.getLong(1), displayName, description, color);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding row for " + displayName + " tag name to tag_names table", ex);
 		} finally {

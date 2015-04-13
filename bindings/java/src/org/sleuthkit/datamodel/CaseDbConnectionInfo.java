@@ -22,6 +22,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.sleuthkit.datamodel.TskData.DbType;
 
 /**
  * The intent of this class is to hold any information needed to connect to a
@@ -33,21 +34,13 @@ import java.util.logging.Logger;
  */
 public class CaseDbConnectionInfo {
 
-	public enum DbType {
-
-		// Add any additional remote database types here. 
-		// Be sure to add to settingsValid() if you add a type here.
-		UNKNOWN,
-		POSTGRESQL
-	}
-
 	private String hostNameOrIP;
 	private String portNumber;
 	private String userName;
 	private String password;
 	private DbType dbType;
 	private static final Logger logger = Logger.getLogger(CaseDbConnectionInfo.class.getName());
-	
+
 	// Assorted constructors
 	public CaseDbConnectionInfo() {
 		dbType = DbType.UNKNOWN;
