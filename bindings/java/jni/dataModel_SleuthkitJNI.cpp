@@ -324,6 +324,65 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openCaseDbMult
  * @return the pointer to the case
  * @param env pointer to java environment this was called from
  * @param dbPath location for the database
+ * @return 0 on error (sets java exception), pointer to newly opened TskCaseDb object on success
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_newCaseDbMultiNat(JNIEnv *env, jclass cls, jstring host, jstring port, jstring user, jstring pass, jint asdf, jstring dbName) //jobject dbType, jstring dbName)
+{
+    TSK_TCHAR dbPathT[1024];
+    toTCHAR(env, dbPathT, 1024, dbName);
+
+    CaseDbConnectionInfo info(env->GetStringUTFChars(host, false),
+        env->GetStringUTFChars(port, false),
+        env->GetStringUTFChars(user, false),
+        env->GetStringUTFChars(pass, false),
+        CaseDbConnectionInfo::POSTGRESQL);
+
+    TskCaseDb *tskCase = TskCaseDb::newDb(dbPathT, &info);
+
+    if (tskCase == NULL) {
+        setThrowTskCoreError(env);
+        return 0;
+    }
+
+    return (jlong) tskCase;
+}
+
+
+/*
+ * Open a TskCaseDb with an associated database
+ * @return the pointer to the case
+ * @param env pointer to java environment this was called from
+ * @param dbPath location for the database
+ * @return Returns pointer to object or exception on error
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openCaseDbMultiNat(JNIEnv *env, jclass cls, jstring host, jstring port, jstring user, jstring pass, jint asdf, jstring dbName) //jobject dbType, jstring dbName)
+{
+    TSK_TCHAR dbPathT[1024];
+    toTCHAR(env, dbPathT, 1024, dbName);
+
+    CaseDbConnectionInfo info(env->GetStringUTFChars(host, false),
+        env->GetStringUTFChars(port, false),
+        env->GetStringUTFChars(user, false),
+        env->GetStringUTFChars(pass, false),
+        CaseDbConnectionInfo::POSTGRESQL);
+
+    TskCaseDb *tskCase = TskCaseDb::openDb(dbPathT, &info);
+
+    if (tskCase == NULL) {
+        setThrowTskCoreError(env);
+        return 0;
+    }
+
+    return (jlong) tskCase;
+}
+
+
+
+/*
+ * Open a TskCaseDb with an associated database
+ * @return the pointer to the case
+ * @param env pointer to java environment this was called from
+ * @param dbPath location for the database
  * @return Returns pointer to object or exception on error
  */
 JNIEXPORT jlong JNICALL
