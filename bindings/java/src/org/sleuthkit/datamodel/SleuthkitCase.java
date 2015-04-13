@@ -50,6 +50,7 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteJDBCLoader;
+import org.sleuthkit.datamodel.TskData.DbType;
 
 /**
  * Represents the case database with methods that provide abstractions for
@@ -57,7 +58,7 @@ import org.sqlite.SQLiteJDBCLoader;
  */
 public class SleuthkitCase {
 
-	private static final int SCHEMA_VERSION_NUMBER = 3; // This must be the same as TSK_SCHEMA_VER in tsk/auto/db_sqlite.cpp.				
+	private static final int SCHEMA_VERSION_NUMBER = 3; // This must be the same as TSK_SCHEMA_VER in tsk/auto/tsk_db.h.				
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
@@ -91,8 +92,8 @@ public class SleuthkitCase {
 	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle) throws Exception {
 		Class.forName("org.sqlite.JDBC");
 		this.dbPath = dbPath;
-		caseDirPath = new java.io.File(dbPath).getParentFile().getAbsolutePath();
-		connections = new SQLiteConnections(dbPath);
+		this.caseDirPath = new java.io.File(dbPath).getParentFile().getAbsolutePath();
+		this.connections = new SQLiteConnections(dbPath);
 		init(caseHandle);
 		updateDatabaseSchema(dbPath);
 		logSQLiteJDBCDriverInfo();
@@ -113,9 +114,9 @@ public class SleuthkitCase {
 	 * @throws Exception
 	 */
 	private SleuthkitCase(String host, int port, String dbName, String userName, String password, SleuthkitJNI.CaseDbHandle caseHandle, String caseDirPath) throws Exception {
-		dbPath = "";
+		this.dbPath = "";
 		this.caseDirPath = caseDirPath;
-		connections = new PostgreSQLConnections(host, port, dbName, userName, password);
+		this.connections = new PostgreSQLConnections(host, port, dbName, userName, password);
 		init(caseHandle);
 	}
 
@@ -139,6 +140,7 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			for (ARTIFACT_TYPE type : ARTIFACT_TYPE.values()) {
 				resultSet = connection.executeQuery(statement, "SELECT COUNT(*) from blackboard_artifact_types WHERE artifact_type_id = '" + type.getTypeID() + "'"); //NON-NLS
+				resultSet.next();
 				if (resultSet.getLong(1) == 0) {
 					connection.executeUpdate(statement, "INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name) VALUES (" + type.getTypeID() + " , '" + type.getLabel() + "', '" + type.getDisplayName() + "')"); //NON-NLS
 				}
@@ -165,6 +167,7 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			for (ATTRIBUTE_TYPE type : ATTRIBUTE_TYPE.values()) {
 				resultSet = connection.executeQuery(statement, "SELECT COUNT(*) from blackboard_attribute_types WHERE attribute_type_id = '" + type.getTypeID() + "'"); //NON-NLS
+				resultSet.next();
 				if (resultSet.getLong(1) == 0) {
 					connection.executeUpdate(statement, "INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name) VALUES (" + type.getTypeID() + ", '" + type.getLabel() + "', '" + type.getDisplayName() + "')"); //NON-NLS
 				}
@@ -193,6 +196,7 @@ public class SleuthkitCase {
 		try {
 			statement = connection.createStatement();
 			resultSet = connection.executeQuery(statement, "SELECT MAX(artifact_id) FROM blackboard_artifacts");
+			resultSet.next();
 			this.nextArtifactId = resultSet.getLong(1) + 1;
 			if (this.nextArtifactId == 1) {
 				this.nextArtifactId = BASE_ARTIFACT_ID;
@@ -543,15 +547,27 @@ public class SleuthkitCase {
 	 *
 	 * @param info information to connect to network database.
 	 * @param databaseName the name of the database
+	 * @param caseDir the folder where the .aut file is stored
 	 * @return Case database object.
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public static SleuthkitCase openCase(String databaseName, CaseDbConnectionInfo info) throws TskCoreException {
-		// TODO 		
-		return null;
+	public static SleuthkitCase openCase(String databaseName, CaseDbConnectionInfo info, String caseDir) throws TskCoreException {
+		try {
+			if (info.getDbType() != DbType.UNKNOWN) {
+				if (info.settingsValid()) {
+					final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(databaseName, info);
+					return new SleuthkitCase(info.getHost(), Integer.parseInt(info.getPort()), databaseName, info.getUserName(), info.getPassword(), caseHandle, caseDir);
+				} else {
+					throw new TskCoreException("Bad database credentials.");
+				}
+			} else {
+				throw new TskCoreException("Multi-user cases are not enabled.");
+			}
+		} catch (Exception ex) {
+			throw new TskCoreException(ex.getMessage(), ex);
+		}
 	}
 
-	
 	/**
 	 * Create a new case database.
 	 *
@@ -576,9 +592,14 @@ public class SleuthkitCase {
 	 * @return Case database object.
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public static SleuthkitCase newCase(String databaseName, CaseDbConnectionInfo info) throws TskCoreException {
-		// TODO
-		return null;
+	public static SleuthkitCase newCase(String databaseName, CaseDbConnectionInfo info, String caseDirPath) throws TskCoreException {
+ 		SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.newCaseDb(databaseName, info);
+		try {
+			return new SleuthkitCase(info.getHost(), Integer.parseInt(info.getPort()),
+					databaseName, info.getUserName(), info.getPassword(), caseHandle, caseDirPath);
+		} catch (Exception ex) {
+			throw new TskCoreException("Failed to create case database " + databaseName, ex);
+		}
 	}
 
 	/**
@@ -1354,6 +1375,7 @@ public class SleuthkitCase {
 			statement.clearParameters();
 			statement.setLong(1, artifactID);
 			rs = connection.executeQuery(statement);
+			rs.next();
 			long obj_id = rs.getLong(1);
 			int artifact_type_id = rs.getInt(2);
 			return new BlackboardArtifact(this, artifactID, obj_id, artifact_type_id,
@@ -2739,13 +2761,16 @@ public class SleuthkitCase {
 		Statement s = null;
 		ResultSet rs = null;
 		try {
+			short firstone = TskData.ObjectType.ABSTRACTFILE.getObjectType();
+			short secondone = TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType();
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT tsk_files.* FROM tsk_objects, tsk_files WHERE " //NON-NLS
 					+ "tsk_objects.par_obj_id IS NULL AND " //NON-NLS
-					+ "tsk_objects.type = " + TskData.ObjectType.ABSTRACTFILE.getObjectType() + " AND " //NON-NLS
+					+ "tsk_objects.type = " + firstone  + " AND " //NON-NLS
 					+ "tsk_objects.obj_id = tsk_files.obj_id AND " //NON-NLS
-					+ "tsk_files.type = " + TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType()
-					+ " ORDER BY tsk_files.dir_type, tsk_files.name COLLATE NOCASE"); //NON-NLS
+					+ "tsk_files.type = " + secondone
+					+ " ORDER BY tsk_files.dir_type, LOWER(tsk_files.name)"); //NON-NLS
+					
 			List<VirtualDirectory> virtDirRootIds = new ArrayList<VirtualDirectory>();
 			while (rs.next()) {
 				virtDirRootIds.add(rsHelper.virtualDirectory(rs));
@@ -3286,6 +3311,7 @@ public class SleuthkitCase {
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT COUNT (*) FROM tsk_files WHERE " + sqlWhereClause); //NON-NLS
+			rs.next();
 			return rs.getLong(1);
 		} catch (SQLException e) {
 			throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.findFilesWhere().", e);
@@ -3739,6 +3765,7 @@ public class SleuthkitCase {
 				while (imageID == null) {
 					try {
 						rs = connection.executeQuery(s, "SELECT * FROM tsk_objects WHERE tsk_objects.obj_id = " + currentObjID); //NON-NLS
+						rs.next();
 						currentObjID = rs.getLong("par_obj_id"); //NON-NLS
 						if (rs.getInt("type") == TskData.ObjectType.IMG.getObjectType()) { //NON-NLS
 							imageID = rs.getLong("obj_id"); //NON-NLS
@@ -4162,9 +4189,6 @@ public class SleuthkitCase {
 	 * queries. The CaseDbQuery object will take care of acquiring
 	 * the necessary database lock and when used in a try-with-resources
 	 * block will automatically take care of releasing the lock.
-	 * If you do not use a try-with-resources block you must call 
-	 * CaseDbQuery.close() once you are done processing the results of
-	 * the query.
 	 * @param query The query string to execute.
 	 * @return A CaseDbQuery instance.
 	 * @throws TskCoreException 
@@ -4552,6 +4576,7 @@ public class SleuthkitCase {
 			statement.setString(3, color.getName());
 			connection.executeUpdate(statement);
 			resultSet = statement.getGeneratedKeys();
+			resultSet.next();
 			return new TagName(resultSet.getLong(1), displayName, description, color);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding row for " + displayName + " tag name to tag_names table", ex);
@@ -4587,6 +4612,7 @@ public class SleuthkitCase {
 			statement.setLong(5, endByteOffset);
 			connection.executeUpdate(statement);
 			resultSet = statement.getGeneratedKeys();
+			resultSet.next();
 			return new ContentTag(resultSet.getLong(1), content, tagName, comment, beginByteOffset, endByteOffset);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding row to content_tags table (obj_id = " + content.getId() + ", tag_name_id = " + tagName.getId() + ")", ex);
@@ -5147,12 +5173,12 @@ public class SleuthkitCase {
 					+ "FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
 					+ "ON tsk_objects.obj_id=tsk_files.obj_id " //NON-NLS
 					+ "WHERE (tsk_objects.par_obj_id = ? ) " //NON-NLS
-					+ "ORDER BY tsk_files.dir_type, tsk_files.name COLLATE NOCASE"), //NON-NLS
+					+ "ORDER BY tsk_files.dir_type, LOWER(tsk_files.name)"), //NON-NLS
 			SELECT_FILES_BY_PARENT_AND_TYPE("SELECT tsk_files.* " //NON-NLS
 					+ "FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
 					+ "ON tsk_objects.obj_id=tsk_files.obj_id " //NON-NLS
 					+ "WHERE (tsk_objects.par_obj_id = ? AND tsk_files.type = ? ) " //NON-NLS
-					+ "ORDER BY tsk_files.dir_type, tsk_files.name COLLATE NOCASE"), //NON-NLS
+					+ "ORDER BY tsk_files.dir_type, LOWER(tsk_files.name)"), //NON-NLS
 			SELECT_FILE_IDS_BY_PARENT("SELECT tsk_files.obj_id FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
 					+ "ON tsk_objects.obj_id=tsk_files.obj_id WHERE (tsk_objects.par_obj_id = ?)"), //NON-NLS
 			SELECT_FILE_IDS_BY_PARENT_AND_TYPE("SELECT tsk_files.obj_id " //NON-NLS
@@ -5477,6 +5503,11 @@ public class SleuthkitCase {
 		}
 
 		static Connection createConnection(String host, int port, String dbName, String userName, String password) {
+			try {
+				return DriverManager.getConnection("jdbc:postgresql://" + host + ":" + port + "/" + dbName, userName, password); // NON-NLS
+			} catch (SQLException ex) {
+				Logger.getLogger(SleuthkitCase.class.getName()).log(Level.SEVERE, null, ex);
+			}
 			return null;
 		}
 

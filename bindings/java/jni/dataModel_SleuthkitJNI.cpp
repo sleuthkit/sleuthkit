@@ -20,6 +20,7 @@
 #include <string>
 #include <algorithm>
 #include <sstream>
+
 using std::string;
 using std::vector;
 using std::map;
@@ -249,13 +250,20 @@ JNIEXPORT jlong JNICALL
 
 
 /*
- * Open a TskCaseDb with an associated database
+ * Create a TskCaseDb with an associated database
  * @return the pointer to the case
  * @param env pointer to java environment this was called from
- * @param dbPath location for the database
+ * @param env pointer to java environment this was called from
+ * @param cls the java class
+ * @param host the hostname or IP address
+ * @param port the port number as a string
+ * @param user the user name for the database
+ * @param pass the password for the database
+ * @param dbType the ordinal value of the enum for the database type
+ * @param dbName the name of the database to create
  * @return 0 on error (sets java exception), pointer to newly opened TskCaseDb object on success
  */
-JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_newCaseDbMultiNat(JNIEnv *env, jclass cls, jstring host, jstring port, jstring user, jstring pass, jint asdf, jstring dbName) //jobject dbType, jstring dbName)
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_newCaseDbMultiNat(JNIEnv *env, jclass cls, jstring host, jstring port, jstring user, jstring pass, jint dbType, jstring dbName)
 {
     TSK_TCHAR dbPathT[1024];
     toTCHAR(env, dbPathT, 1024, dbName);
@@ -264,7 +272,7 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_newCaseDbMulti
         env->GetStringUTFChars(port, false),
         env->GetStringUTFChars(user, false),
         env->GetStringUTFChars(pass, false),
-        CaseDbConnectionInfo::POSTGRESQL);
+        (CaseDbConnectionInfo::DbType)dbType);
 
     TskCaseDb *tskCase = TskCaseDb::newDb(dbPathT, &info);
 
@@ -281,10 +289,16 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_newCaseDbMulti
  * Open a TskCaseDb with an associated database
  * @return the pointer to the case
  * @param env pointer to java environment this was called from
- * @param dbPath location for the database
+ * @param cls the java class
+ * @param host the hostname or IP address
+ * @param port the port number as a string
+ * @param user the user name for the database
+ * @param pass the password for the database
+ * @param dbType the ordinal value of the enum for the database type
+ * @param dbName the name of the database to open
  * @return Returns pointer to object or exception on error
  */
-JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openCaseDbMultiNat(JNIEnv *env, jclass cls, jstring host, jstring port, jstring user, jstring pass, jint asdf, jstring dbName) //jobject dbType, jstring dbName)
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openCaseDbMultiNat(JNIEnv *env, jclass cls, jstring host, jstring port, jstring user, jstring pass, jint dbType, jstring dbName)
 {
     TSK_TCHAR dbPathT[1024];
     toTCHAR(env, dbPathT, 1024, dbName);
@@ -293,7 +307,7 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openCaseDbMult
         env->GetStringUTFChars(port, false),
         env->GetStringUTFChars(user, false),
         env->GetStringUTFChars(pass, false),
-        CaseDbConnectionInfo::POSTGRESQL);
+		(CaseDbConnectionInfo::DbType)dbType);
 
     TskCaseDb *tskCase = TskCaseDb::openDb(dbPathT, &info);
 
@@ -304,8 +318,6 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openCaseDbMult
 
     return (jlong) tskCase;
 }
-
-
 
 /*
  * Open a TskCaseDb with an associated database

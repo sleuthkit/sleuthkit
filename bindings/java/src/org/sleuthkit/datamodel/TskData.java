@@ -649,7 +649,7 @@ public class TskData {
 		}
 	}
 	
-	
+		
 	/**
 	 * FileKnown status
 	 */
@@ -665,8 +665,7 @@ public class TskData {
 			this.known = (byte)known;
 			this.name = name;
 		}
-		
-		
+				
 		/**
 		 * Convert file known type byte value to the enum type
 		 * @param known long value to convert
@@ -693,6 +692,31 @@ public class TskData {
 		 */
 		public byte getFileKnownValue() {
 			return this.known;
+		}
+	}
+
+		
+	/**
+	 * DbType is the enum covering database type. It tells you what underlying
+	 * database you can use in Autopsy and TSK.
+	 */
+	public enum DbType {
+
+		// Add any additional remote database types here, and keep it in sync
+		// with the Sleuthkit version of this enum located at:
+		// sleuthkit/tsk/auto/db_connection_info.h
+		// Be sure to add to settingsValid() if you add a type here.
+		UNKNOWN(0),
+		POSTGRESQL(1);
+
+		private int value;
+
+		DbType(int val) {
+			this.value = val;
+		}
+
+		public int getValue() {
+			return this.value;
 		}
 	}
 }
