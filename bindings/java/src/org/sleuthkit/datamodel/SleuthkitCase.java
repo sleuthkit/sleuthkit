@@ -91,8 +91,8 @@ public class SleuthkitCase {
 	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle) throws Exception {
 		Class.forName("org.sqlite.JDBC");
 		this.dbPath = dbPath;
-		caseDirPath = new java.io.File(dbPath).getParentFile().getAbsolutePath();
-		connections = new SQLiteConnections(dbPath);
+		this.caseDirPath = new java.io.File(dbPath).getParentFile().getAbsolutePath();
+		this.connections = new SQLiteConnections(dbPath);
 		init(caseHandle);
 		updateDatabaseSchema(dbPath);
 		logSQLiteJDBCDriverInfo();
@@ -113,9 +113,9 @@ public class SleuthkitCase {
 	 * @throws Exception
 	 */
 	private SleuthkitCase(String host, int port, String dbName, String userName, String password, SleuthkitJNI.CaseDbHandle caseHandle, String caseDirPath) throws Exception {
-		dbPath = "";
+		this.dbPath = "";
 		this.caseDirPath = caseDirPath;
-		connections = new PostgreSQLConnections(host, port, dbName, userName, password);
+		this.connections = new PostgreSQLConnections(host, port, dbName, userName, password);
 		init(caseHandle);
 	}
 
@@ -267,7 +267,7 @@ public class SleuthkitCase {
 	 * @throws IOException if copying fails.
 	 */
 	public void copyCaseDB(String newDBPath) throws IOException {
-		if (dbPath.isEmpty()) {
+		if (dbPath.isEmpty()) {  /// KDM is this a problem for multi-user? Check it out.
 			throw new IOException("Copying case database files is not supported for this type of case database"); //NON-NLS
 		}
 		InputStream in = null;
@@ -546,15 +546,16 @@ public class SleuthkitCase {
 	 *
 	 * @param info information to connect to network database.
 	 * @param databaseName the name of the database
+	 * @param caseDir the folder where the .aut file is stored
 	 * @return Case database object.
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public static SleuthkitCase openCase(String databaseName, CaseDbConnectionInfo info) throws TskCoreException {
+	public static SleuthkitCase openCase(String databaseName, CaseDbConnectionInfo info, String caseDir) throws TskCoreException {
 		try {
 			if (info.getDbType() != CaseDbConnectionInfo.DbType.UNKNOWN) {
 				if (info.settingsValid()) {
 					final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(databaseName, info);
-					return new SleuthkitCase(info.getHost(), Integer.parseInt(info.getPort()), databaseName, info.getUserName(), info.getPassword(), caseHandle, "C:/fake"); /// KDM deal with "fake"
+					return new SleuthkitCase(info.getHost(), Integer.parseInt(info.getPort()), databaseName, info.getUserName(), info.getPassword(), caseHandle, caseDir);
 				} else {
 					throw new TskCoreException("Bad database credentials.");
 				}
@@ -590,11 +591,11 @@ public class SleuthkitCase {
 	 * @return Case database object.
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public static SleuthkitCase newCase(String databaseName, CaseDbConnectionInfo info) throws TskCoreException {
+	public static SleuthkitCase newCase(String databaseName, CaseDbConnectionInfo info, String caseDirPath) throws TskCoreException {
  		SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.newCaseDb(databaseName, info);
 		try {
 			return new SleuthkitCase(info.getHost(), Integer.parseInt(info.getPort()),
-					databaseName, info.getUserName(), info.getPassword(), caseHandle, null); /// KDM last argument (caseDirPath) doesn't make much sense in this context. fix it.
+					databaseName, info.getUserName(), info.getPassword(), caseHandle, caseDirPath);
 		} catch (Exception ex) {
 			throw new TskCoreException("Failed to create case database " + databaseName, ex);
 		}
@@ -2761,7 +2762,8 @@ public class SleuthkitCase {
 		try {
 			short firstone = TskData.ObjectType.ABSTRACTFILE.getObjectType();
 			short secondone = TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType();
-					rs = connection.executeQuery(s, "SELECT tsk_files.* FROM tsk_objects, tsk_files WHERE " //NON-NLS
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT tsk_files.* FROM tsk_objects, tsk_files WHERE " //NON-NLS
 					+ "tsk_objects.par_obj_id IS NULL AND " //NON-NLS
 					+ "tsk_objects.type = " + firstone  + " AND " //NON-NLS
 					+ "tsk_objects.obj_id = tsk_files.obj_id AND " //NON-NLS

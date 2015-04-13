@@ -319,8 +319,6 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openCaseDbMult
     return (jlong) tskCase;
 }
 
-
-
 /*
  * Open a TskCaseDb with an associated database
  * @return the pointer to the case

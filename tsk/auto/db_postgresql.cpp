@@ -367,7 +367,7 @@ PGresult* TskDbPostgreSQL::get_query_result_set_binary(const char *sql, const ch
 }
 
 /* Verifies that result code matches expected result code. Sets TSK error values if result codes do not match. 		
-* @returns 1 if result codes match, 0 if they don't		
+* @returns 0 if result codes match, 1 if they don't		
 */	
 int TskDbPostgreSQL::verifyResultCode(int resultCode, int expectedResultCode, const char *errfmt)
 {
@@ -382,7 +382,7 @@ int TskDbPostgreSQL::verifyResultCode(int resultCode, int expectedResultCode, co
 
 /* Verifies if PGresult is valid. Result set must contain at least one row. Number of returned fileds must match expected number of fields. 
 * Sets TSK error values if result is invalid. 		
-* @returns 1 if result is valid or empty, 0 if result is invalid		
+* @returns 0 if result is valid, 1 if result is invalid	or empty
 */	
 int TskDbPostgreSQL::verifyNonEmptyResultSetSize(PGresult *res, int expectedNumFileds, const char *errfmt)
 {
@@ -401,7 +401,7 @@ int TskDbPostgreSQL::verifyNonEmptyResultSetSize(PGresult *res, int expectedNumF
 
 /* Verifies if PGresult is valid. It's acceptable for result set to be empty. If result set is not empty, number of returned fileds must match expected number of fields. 
 * Sets TSK error values if result is invalid. 		
-* @returns 1 if result is valid or empty, 0 if result is invalid		
+* @returns 0 if result is valid or empty, 1 if result is invalid		
 */	
 int TskDbPostgreSQL::verifyResultSetSize(PGresult *res, int expectedNumFileds, const char *errfmt)
 {
@@ -412,7 +412,6 @@ int TskDbPostgreSQL::verifyResultSetSize(PGresult *res, int expectedNumFileds, c
 
     // it's ok for this query to produce no results
     if (PQntuples(res) == 0){
-        PQclear(res);
         return 0;
     }
 

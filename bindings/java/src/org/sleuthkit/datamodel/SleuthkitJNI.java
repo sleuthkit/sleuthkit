@@ -327,10 +327,11 @@ public class SleuthkitJNI {
 	 * Creates a new case database. Must call .free() on CaseDbHandle instance
 	 * when done.
 	 *
-	 * @param path Location to create the database at.
+	 * @param databaseName the name of the database to create
+	 * @param info the connection info class for the database to create
 	 * @return Handle for a new TskCaseDb instance.
 	 * @throws TskCoreException exception thrown if critical error occurs within
-	 * TSK /// KDM
+	 * TSK
 	 */
 	static CaseDbHandle newCaseDb(String databaseName, CaseDbConnectionInfo info) throws TskCoreException {
 		return new CaseDbHandle(newCaseDbMultiNat(info.getHost(), info.getPort(), info.getUserName(), info.getPassword(), info.getDbType().ordinal(), databaseName));
@@ -353,10 +354,11 @@ public class SleuthkitJNI {
 	 * Opens an existing case database. Must call .free() on CaseDbHandle
 	 * instance when done.
 	 *
-	 * @param path Location of the existing database.
+	 * @param databaseName the name of the database to open
+	 * @param info the connection info class for the database to open
 	 * @return Handle for a new TskCaseDb instance.
 	 * @throws TskCoreException exception thrown if critical error occurs within
-	 * TSK //// KDM
+	 * TSK
 	 */
 	static CaseDbHandle openCaseDb(String databaseName, CaseDbConnectionInfo info) throws TskCoreException {
 		return new CaseDbHandle(openCaseDbMultiNat(info.getHost(), info.getPort(), info.getUserName(), info.getPassword(), info.getDbType().ordinal(), databaseName));
