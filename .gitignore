@@ -28,10 +28,15 @@
 /win32/Debug_NoLibs/
 /win32/*/Debug_NoLibs/
 /win32/Debug/
+/win32/Debug_PostgreSQL/
 /win32/*/Debug/
+/win32/*/Debug_PostgreSQL/
 /win32/Release/
+/win32/Release_PostgreSQL/
 /win32/*/Release/
+/win32/*/Release_PostgreSQL/
 /win32/*/x64/
+/win32/x64/
 /win32/*/*.user
 win32/ipch
 win32/BuildErrors.txt

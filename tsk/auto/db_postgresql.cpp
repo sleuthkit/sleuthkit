@@ -33,9 +33,8 @@ TskDbPostgreSQL::TskDbPostgreSQL(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFl
     : TskDb(a_dbFilePath, a_blkMapFlag)
 {
     conn = NULL;
-    wcsncpy(m_dBName, a_dbFilePath, 255);
+    wcsncpy(m_dBName, a_dbFilePath, MAX_CONN_INFO_FIELD_LENGTH - 1);
     m_blkMapFlag = a_blkMapFlag;
-    setLogInInfo();
 }
 
 TskDbPostgreSQL::~TskDbPostgreSQL()
@@ -46,12 +45,62 @@ TskDbPostgreSQL::~TskDbPostgreSQL()
     }
 }
 
-TSK_RETVAL_ENUM TskDbPostgreSQL::setLogInInfo(){
+TSK_RETVAL_ENUM TskDbPostgreSQL::setConnectionInfo(CaseDbConnectionInfo * info){
 
-    strncpy(userName, "postgres", sizeof(userName));
-    strncpy(password, "simple41", sizeof(password));
-    strncpy(hostIpAddr, "127.0.0.1", sizeof(hostIpAddr));
-    strncpy(hostPort, "5432", sizeof(hostPort));
+    if (info->getDbType() != CaseDbConnectionInfo::POSTGRESQL) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("TskDbPostgreSQL::setConnectionInfo: Connection info is for wrong database type %d", info->getDbType());
+        return TSK_ERR;
+    }
+
+    // verify input string sizes
+    if (verifyConnectionInfoStringLengths(info->getUserName().size(), info->getPassword().size(), info->getHost().size(), info->getPort().size()) != TSK_OK) {
+        return TSK_ERR;
+    }
+
+    strncpy(userName, info->getUserName().c_str(), sizeof(userName));
+    strncpy(password, info->getPassword().c_str(), sizeof(password));
+    strncpy(hostNameOrIpAddr, info->getHost().c_str(), sizeof(hostNameOrIpAddr));
+    strncpy(hostPort, info->getPort().c_str(), sizeof(hostPort));
+
+//    strncpy(userName, "postgres", sizeof(userName));
+//    strncpy(password, "simple41", sizeof(password));
+//    strncpy(hostNameOrIpAddr, "127.0.0.1", sizeof(hostNameOrIpAddr));
+//    strncpy(hostPort, "5432", sizeof(hostPort));
+    return TSK_OK;
+}
+
+TSK_RETVAL_ENUM TskDbPostgreSQL::verifyConnectionInfoStringLengths(size_t userNameStrLen, size_t pwdStrLen, size_t hostNameStrLen, size_t portStrLen) {
+
+    if (userNameStrLen >= MAX_CONN_INFO_FIELD_LENGTH - 1) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("TskDbPostgreSQL::connectToDatabase: User name is too long. Length = %d, Max length = %d", userNameStrLen, MAX_CONN_INFO_FIELD_LENGTH - 1);
+        return TSK_ERR;
+    }
+
+    if (pwdStrLen >= MAX_CONN_INFO_FIELD_LENGTH - 1) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("TskDbPostgreSQL::connectToDatabase: Password is too long. Length = %d, Max length = %d", pwdStrLen, MAX_CONN_INFO_FIELD_LENGTH - 1);
+        return TSK_ERR;
+    }
+
+    if (hostNameStrLen >= MAX_CONN_INFO_FIELD_LENGTH - 1) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("TskDbPostgreSQL::connectToDatabase: Host name is too long. Length = %d, Max length = %d", hostNameStrLen, MAX_CONN_INFO_FIELD_LENGTH - 1);
+        return TSK_ERR;
+    }
+
+    if (portStrLen > MAX_CONN_PORT_FIELD_LENGTH) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("TskDbPostgreSQL::connectToDatabase: Host port string is too long. Length = %d, Max length = %d", portStrLen, MAX_CONN_PORT_FIELD_LENGTH);
+        return TSK_ERR;
+    }
+
     return TSK_OK;
 }
 
@@ -60,32 +109,24 @@ PGconn* TskDbPostgreSQL::connectToDatabase(TSK_TCHAR *dbName) {
     // Make a connection to postgres database server
     char connectionString[1024];
 
-    // verify user name and password string sizes
-    if (strlen(userName) >= MAX_USER_NAME_PASSWORD_LENGTH) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("User name is too long. Length = %d, Max length = %d", strlen(userName), MAX_USER_NAME_PASSWORD_LENGTH);
-        return NULL;
-    }
-
-    if (strlen(password) >= MAX_USER_NAME_PASSWORD_LENGTH) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("Password is too long. Length = %d, Max length = %d", strlen(password), MAX_USER_NAME_PASSWORD_LENGTH);
+    // verify input string sizes
+    if (verifyConnectionInfoStringLengths(strlen(userName), strlen(password), strlen(hostNameOrIpAddr), strlen(hostPort)) != TSK_OK) {
         return NULL;
     }
 
     // escape strings for use within an SQL command. Usually use PQescapeLiteral but it requires connection to be already established.
-    char userName_sql[256];
-    char password_sql[256];
+    char userName_sql[MAX_CONN_INFO_FIELD_LENGTH];
+    char password_sql[MAX_CONN_INFO_FIELD_LENGTH];
+    char hostName_sql[MAX_CONN_INFO_FIELD_LENGTH];
     PQescapeString(&userName_sql[0], userName, strlen(userName));
     PQescapeString(&password_sql[0], password, strlen(password));
+    PQescapeString(&hostName_sql[0], hostNameOrIpAddr, strlen(hostNameOrIpAddr));
 
-    snprintf(connectionString, 1024, "user=%s password=%s dbname=%S hostaddr=%s port=%s", userName_sql, password_sql, dbName, hostIpAddr, hostPort);
+    snprintf(connectionString, 1024, "user=%s password=%s dbname=%S hostaddr=%s port=%s", userName_sql, password_sql, dbName, hostName_sql, hostPort);
     PGconn *dbConn = PQconnectdb(connectionString);
 
     // Check to see that the backend connection was successfully made 
-    if (verifyResultCode(PQstatus(dbConn), CONNECTION_OK, "Connection to PostgreSQL database failed, result code %d"))
+    if (verifyResultCode(PQstatus(dbConn), CONNECTION_OK, "TskDbPostgreSQL::connectToDatabase: Connection to PostgreSQL database failed, result code %d"))
     {
         PQfinish(dbConn);
         return NULL;
@@ -126,7 +167,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::createDatabase(){
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         char * str = PQerrorMessage(serverConn);
-        tsk_error_set_errstr("Database creation failed, %s", str);
+        tsk_error_set_errstr("TskDbPostgreSQL::createDatabase: Database creation failed, %s", str);
         result = TSK_ERR;
     }
 
@@ -148,7 +189,7 @@ int TskDbPostgreSQL::open(bool createDbFlag)
 
     if (createDbFlag) {
         // create new database first
-        if (verifyResultCode(createDatabase(), TSK_OK, "TskDbPostgreSQL::open - Unable to create database, result code %d")){
+        if (verifyResultCode(createDatabase(), TSK_OK, "TskDbPostgreSQL::open: Unable to create database, result code %d")){
             return -1;
         }
     }
@@ -158,7 +199,7 @@ int TskDbPostgreSQL::open(bool createDbFlag)
     if (!conn){
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskDbPostgreSQL::open - Couldn't connect to databse %S", m_dBName);
+        tsk_error_set_errstr("TskDbPostgreSQL::open: Couldn't connect to databse %S", m_dBName);
         return -1;
     }
 
@@ -167,7 +208,7 @@ int TskDbPostgreSQL::open(bool createDbFlag)
         if (initialize()) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            tsk_error_set_errstr("TskDbPostgreSQL::open - Couldn't initialize databse %S", m_dBName);
+            tsk_error_set_errstr("TskDbPostgreSQL::open: Couldn't initialize databse %S", m_dBName);
             close();    // close connection to database
             return -1;
         }
@@ -210,7 +251,7 @@ bool TskDbPostgreSQL::dbExists() {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         char * str = PQerrorMessage(conn);
-        tsk_error_set_errstr("Existing database lookup failed, %s", str);
+        tsk_error_set_errstr("TskDbPostgreSQL::dbExists: Existing database lookup failed, %s", str);
         numDb = 0;
     } else {
         // number of existing databases that matched name (if search is case sensitive then max is 1)

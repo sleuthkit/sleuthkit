@@ -51,8 +51,12 @@ public class SleuthkitJNI {
 	//database
 	private static native long newCaseDbNat(String dbPath) throws TskCoreException;
 
+	private static native long newCaseDbMultiNat(String hostNameOrIP, String portNumber, String userName, String password, int dbTypeOrdinal, String databaseName);
+	
+	private static native long openCaseDbMultiNat(String hostNameOrIP, String portNumber, String userName, String password, int dbTypeOrdinal, String databaseName);
+	
 	private static native long openCaseDbNat(String path) throws TskCoreException;
-
+		
 	private static native void closeCaseDbNat(long db) throws TskCoreException;
 
 	private static native int hashDbOpenNat(String hashDbPath) throws TskCoreException;
@@ -320,6 +324,19 @@ public class SleuthkitJNI {
 	}
 
 	/**
+	 * Creates a new case database. Must call .free() on CaseDbHandle instance
+	 * when done.
+	 *
+	 * @param path Location to create the database at.
+	 * @return Handle for a new TskCaseDb instance.
+	 * @throws TskCoreException exception thrown if critical error occurs within
+	 * TSK /// KDM
+	 */
+	static CaseDbHandle newCaseDb(String databaseName, CaseDbConnectionInfo info) throws TskCoreException {
+		return new CaseDbHandle(newCaseDbMultiNat(info.getHost(), info.getPort(), info.getUserName(), info.getPassword(), info.getDbType().ordinal(), databaseName));
+	}
+	
+	/**
 	 * Opens an existing case database. Must call .free() on CaseDbHandle
 	 * instance when done.
 	 *
@@ -329,9 +346,22 @@ public class SleuthkitJNI {
 	 * TSK
 	 */
 	static CaseDbHandle openCaseDb(String path) throws TskCoreException {
-		return new CaseDbHandle(openCaseDbNat(path));
+		return new CaseDbHandle(openCaseDbNat(path)); 
 	}
 
+	/**
+	 * Opens an existing case database. Must call .free() on CaseDbHandle
+	 * instance when done.
+	 *
+	 * @param path Location of the existing database.
+	 * @return Handle for a new TskCaseDb instance.
+	 * @throws TskCoreException exception thrown if critical error occurs within
+	 * TSK //// KDM
+	 */
+	static CaseDbHandle openCaseDb(String databaseName, CaseDbConnectionInfo info) throws TskCoreException {
+		return new CaseDbHandle(openCaseDbMultiNat(info.getHost(), info.getPort(), info.getUserName(), info.getPassword(), info.getDbType().ordinal(), databaseName));
+	}
+		
 	/**
 	 * get the Sleuth Kit version string
 	 *

@@ -20,6 +20,7 @@
 #include <string>
 #include <algorithm>
 #include <sstream>
+
 using std::string;
 using std::vector;
 using std::map;
@@ -249,6 +250,78 @@ JNIEXPORT jlong JNICALL
 
 
 /*
+ * Create a TskCaseDb with an associated database
+ * @return the pointer to the case
+ * @param env pointer to java environment this was called from
+ * @param env pointer to java environment this was called from
+ * @param cls the java class
+ * @param host the hostname or IP address
+ * @param port the port number as a string
+ * @param user the user name for the database
+ * @param pass the password for the database
+ * @param dbType the ordinal value of the enum for the database type
+ * @param dbName the name of the database to create
+ * @return 0 on error (sets java exception), pointer to newly opened TskCaseDb object on success
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_newCaseDbMultiNat(JNIEnv *env, jclass cls, jstring host, jstring port, jstring user, jstring pass, jint dbType, jstring dbName)
+{
+    TSK_TCHAR dbPathT[1024];
+    toTCHAR(env, dbPathT, 1024, dbName);
+
+    CaseDbConnectionInfo info(env->GetStringUTFChars(host, false),
+        env->GetStringUTFChars(port, false),
+        env->GetStringUTFChars(user, false),
+        env->GetStringUTFChars(pass, false),
+        (CaseDbConnectionInfo::DbType)dbType);
+
+    TskCaseDb *tskCase = TskCaseDb::newDb(dbPathT, &info);
+
+    if (tskCase == NULL) {
+        setThrowTskCoreError(env);
+        return 0;
+    }
+
+    return (jlong) tskCase;
+}
+
+
+/*
+ * Open a TskCaseDb with an associated database
+ * @return the pointer to the case
+ * @param env pointer to java environment this was called from
+ * @param cls the java class
+ * @param host the hostname or IP address
+ * @param port the port number as a string
+ * @param user the user name for the database
+ * @param pass the password for the database
+ * @param dbType the ordinal value of the enum for the database type
+ * @param dbName the name of the database to open
+ * @return Returns pointer to object or exception on error
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openCaseDbMultiNat(JNIEnv *env, jclass cls, jstring host, jstring port, jstring user, jstring pass, jint dbType, jstring dbName)
+{
+    TSK_TCHAR dbPathT[1024];
+    toTCHAR(env, dbPathT, 1024, dbName);
+
+    CaseDbConnectionInfo info(env->GetStringUTFChars(host, false),
+        env->GetStringUTFChars(port, false),
+        env->GetStringUTFChars(user, false),
+        env->GetStringUTFChars(pass, false),
+		(CaseDbConnectionInfo::DbType)dbType);
+
+    TskCaseDb *tskCase = TskCaseDb::openDb(dbPathT, &info);
+
+    if (tskCase == NULL) {
+        setThrowTskCoreError(env);
+        return 0;
+    }
+
+    return (jlong) tskCase;
+}
+
+
+
+/*
  * Open a TskCaseDb with an associated database
  * @return the pointer to the case
  * @param env pointer to java environment this was called from
@@ -271,6 +344,7 @@ JNIEXPORT jlong JNICALL
 
     return (jlong) tskCase;
 }
+
 
 /*
  * Close (cleanup) a case
