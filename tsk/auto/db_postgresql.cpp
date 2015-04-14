@@ -64,10 +64,6 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::setConnectionInfo(CaseDbConnectionInfo * info){
     strncpy(hostNameOrIpAddr, info->getHost().c_str(), sizeof(hostNameOrIpAddr));
     strncpy(hostPort, info->getPort().c_str(), sizeof(hostPort));
 
-//    strncpy(userName, "postgres", sizeof(userName));
-//    strncpy(password, "simple41", sizeof(password));
-//    strncpy(hostNameOrIpAddr, "127.0.0.1", sizeof(hostNameOrIpAddr));
-//    strncpy(hostPort, "5432", sizeof(hostPort));
     return TSK_OK;
 }
 
@@ -122,7 +118,7 @@ PGconn* TskDbPostgreSQL::connectToDatabase(TSK_TCHAR *dbName) {
     PQescapeString(&password_sql[0], password, strlen(password));
     PQescapeString(&hostName_sql[0], hostNameOrIpAddr, strlen(hostNameOrIpAddr));
 
-    snprintf(connectionString, 1024, "user=%s password=%s dbname=%S hostaddr=%s port=%s", userName_sql, password_sql, dbName, hostName_sql, hostPort);
+    snprintf(connectionString, 1024, "user=%s password=%s dbname=%S host=%s port=%s", userName_sql, password_sql, dbName, hostName_sql, hostPort);
     PGconn *dbConn = PQconnectdb(connectionString);
 
     // Check to see that the backend connection was successfully made 
