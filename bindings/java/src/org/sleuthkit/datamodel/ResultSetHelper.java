@@ -122,9 +122,23 @@ class ResultSetHelper {
 	 * @throws SQLException thrown if SQL error occurred
 	 */
 	Volume volume(ResultSet rs, VolumeSystem parent) throws SQLException {
+		/**
+		 * TODO!! 
+		 * LANDMINE!! This allows the two types of databases to have slightly
+		 * different schemas. SQLite uses desc as the column name in tsk_vs_parts
+		 * and Postgres uses descr, as desc is a reserved keyword in Postgres.
+		 * When we have to make a schema change, be sure to change this over to 
+		 * just one name. 
+		 */
+		String description;
+		try {
+			description = rs.getString("desc");
+		} catch (Exception ex) {
+			description = rs.getString("descr");
+		}
 		Volume vol = new Volume(db, rs.getLong("obj_id"), rs.getLong("addr"), //NON-NLS
 				rs.getLong("start"), rs.getLong("length"), rs.getLong("flags"), //NON-NLS
-				rs.getString("desc")); //NON-NLS
+				description);
 		vol.setParent(parent);
 		return vol;
 	}

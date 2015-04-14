@@ -126,11 +126,11 @@
 		</javac>
 	</target>
 
-	<target name="dist" depends="check-build" unless="up-to-date">
-		<antcall target="dist-do"/>
+	<target name="dist-SQLite" depends="check-build" unless="up-to-date">
+		<antcall target="dist-SQLite-do"/>
 	</target>
 
-	<target name="dist-PostgreSQL" depends="check-build, init-ivy, compile, copyLibsPostgreSQL" unless="up-to-date"	description="generate the distribution" >
+	<target name="dist" depends="check-build, init-ivy, compile, copyLibs" unless="up-to-date"	description="generate the distribution" >
 		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
 		<jar jarfile="${dist}/Tsk_DataModel.jar" basedir="${build}"/>
 	</target>
@@ -148,19 +148,19 @@
 		</condition>
 	</target>
 	
-	<target name="dist-do" depends="init-ivy, compile, copyLibs"
+	<target name="dist-SQLite-do" depends="init-ivy, compile, copyLibsSQLite"
 			description="generate the distribution" >
 		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
 		<jar jarfile="${dist}/Tsk_DataModel.jar" basedir="${build}"/>
 	</target>
 	
-	<target name="dist-debug" depends="init-ivy, compile, copyLibsDebug"
+	<target name="dist-SQLite-debug" depends="init-ivy, compile, copyLibsSQLiteDebug"
 			description="generate the distribution" >
 		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
 		<jar jarfile="${dist}/Tsk_DataModel.jar" basedir="${build}"/>
 	</target>
   
-	<target name="dist-debug-PostgreSQL" depends="init-ivy, compile, copyLibsPostgreSQLDebug"
+	<target name="dist-debug" depends="init-ivy, compile, copyLibsDebug"
 			description="generate the distribution" >
 		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
 		<jar jarfile="${dist}/Tsk_DataModel.jar" basedir="${build}"/>
