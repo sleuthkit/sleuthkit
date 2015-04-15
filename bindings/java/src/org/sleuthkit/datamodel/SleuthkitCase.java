@@ -4997,8 +4997,13 @@ public class SleuthkitCase {
 	private final class ConnectionPerThreadDispenser extends ThreadLocal<CaseDbConnection> {
 		
 		private final HashSet<CaseDbConnection> databaseConnections = new HashSet<CaseDbConnection>();
+		private boolean isClosed = false;
 
 		synchronized CaseDbConnection getConnection() throws TskCoreException {
+			if(isClosed){
+				throw new TskCoreException("Error getting case database connection - case is closed");
+			}
+			
 			CaseDbConnection connection = get();
 			if (!connection.isOpen()) {
 				throw new TskCoreException("Case database connection for current thread is not open");
@@ -5017,6 +5022,7 @@ public class SleuthkitCase {
 				entry.close();
 			}
 			databaseConnections.clear();
+			isClosed = true;
 		}
 
 		@Override
