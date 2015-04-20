@@ -1438,7 +1438,7 @@ public class SleuthkitCase {
 			case STRING:
 				statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_STRING_ATTRIBUTE);
 				statement.clearParameters();
-				statement.setString(7, escapeForBlackboard(attr.getValueString()));
+				statement.setString(7, escapeSingleQuotes(attr.getValueString()));
 				break;
 			case BYTE:
 				statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_BYTE_ATTRIBUTE);
@@ -1465,8 +1465,8 @@ public class SleuthkitCase {
 		}
 		statement.setLong(1, attr.getArtifactID());
 		statement.setInt(2, artifactTypeId);
-		statement.setString(3, escapeForBlackboard(attr.getModuleName()));
-		statement.setString(4, escapeForBlackboard(attr.getContext()));
+		statement.setString(3, escapeSingleQuotes(attr.getModuleName()));
+		statement.setString(4, escapeSingleQuotes(attr.getContext()));
 		statement.setInt(5, attr.getAttributeTypeID());
 		statement.setLong(6, attr.getValueType().getType());
 		connection.executeUpdate(statement);
@@ -4359,7 +4359,7 @@ public class SleuthkitCase {
 	 * @param text
 	 * @return text the escaped version
 	 */
-	private static String escapeForBlackboard(String text) {
+	private static String escapeSingleQuotes(String text) {
 		if (text != null) {
 			text = text.replaceAll("'", "''");
 		}
@@ -5282,8 +5282,8 @@ public class SleuthkitCase {
 			}
 		}
 
-		protected final Connection connection;
-		protected final Map<PREPARED_STATEMENT, PreparedStatement> preparedStatements;
+		private final Connection connection;
+		private final Map<PREPARED_STATEMENT, PreparedStatement> preparedStatements;
 
 		CaseDbConnection(Connection connection) {
 			this.connection = connection;
@@ -5453,6 +5453,9 @@ public class SleuthkitCase {
 
 		abstract void handleException(SQLException ex) throws SQLException;
 
+		protected Connection getConnection() {
+			return this.connection;
+		}
 	}
 
 	/**
@@ -5488,7 +5491,7 @@ public class SleuthkitCase {
 			while (locked) {
 				try {
 					// Do not pass in generateKeys, as SQLite returns generated keys anyway
-					statement = this.connection.prepareStatement(sqlStatement);
+					statement = this.getConnection().prepareStatement(sqlStatement);
 					locked = false;
 				} catch (SQLException ex) {
 					handleException(ex);
@@ -5572,7 +5575,7 @@ public class SleuthkitCase {
 			boolean locked = true;
 			while (locked) {
 				try {
-					statement = this.connection.prepareStatement(sqlStatement, generateKeys);
+					statement = this.getConnection().prepareStatement(sqlStatement, generateKeys);
 					locked = false;
 				} catch (SQLException ex) {
 					handleException(ex);

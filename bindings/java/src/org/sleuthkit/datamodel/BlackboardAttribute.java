@@ -401,8 +401,8 @@ public class BlackboardAttribute {
 
 		this.artifactID = artifactID;
 		this.attributeTypeID = attributeTypeID;
-		this.moduleName = moduleName.replace((char)0x00, (char)0x1A);
-		this.context = context.replace((char)0x00, (char)0x1A);
+		this.moduleName = replaceNulls(moduleName);
+		this.context = replaceNulls(context);
 		this.valueType = valueType;
 		this.valueInt = valueInt;
 		this.valueLong = valueLong;
@@ -410,7 +410,7 @@ public class BlackboardAttribute {
 		if (valueString == null) {
 			this.valueString = "";
 		} else {
-			this.valueString = valueString.replace((char)0x00, (char)0x1A);
+			this.valueString = replaceNulls(valueString);
 		}
 		if (valueBytes == null) {
 			this.valueBytes = new byte[0];
@@ -431,7 +431,7 @@ public class BlackboardAttribute {
 	public BlackboardAttribute(int attributeTypeID, String moduleName, int valueInt) {
 		this.artifactID = 0;
 		this.attributeTypeID = attributeTypeID;
-		this.moduleName = moduleName.replace((char)0x00, (char)0x1A);
+		this.moduleName = replaceNulls(moduleName);
 		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER;
 		this.valueInt = valueInt;
 		this.valueLong = 0;
@@ -456,7 +456,7 @@ public class BlackboardAttribute {
 	public BlackboardAttribute(int attributeTypeID, String moduleName, String context,
 			int valueInt) {
 		this(attributeTypeID, moduleName, valueInt);
-		this.context = context.replace((char)0x00, (char)0x1A);
+		this.context = replaceNulls(context);
 	}
 
 	/**
@@ -471,7 +471,7 @@ public class BlackboardAttribute {
 			long valueLong) {
 		this.artifactID = 0;
 		this.attributeTypeID = attributeTypeID;
-		this.moduleName = moduleName.replace((char)0x00, (char)0x1A);
+		this.moduleName = replaceNulls(moduleName);
 		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG;
 		this.valueInt = 0;
 		this.valueLong = valueLong;
@@ -497,7 +497,7 @@ public class BlackboardAttribute {
 	public BlackboardAttribute(int attributeTypeID, String moduleName, String context,
 			long valueLong) {
 		this(attributeTypeID, moduleName, valueLong);
-		this.context = context.replace((char)0x00, (char)0x1A);
+		this.context = replaceNulls(context);
 	}
 
 	/**
@@ -512,7 +512,7 @@ public class BlackboardAttribute {
 			double valueDouble) {
 		this.artifactID = 0;
 		this.attributeTypeID = attributeTypeID;
-		this.moduleName = moduleName.replace((char)0x00, (char)0x1A);
+		this.moduleName = replaceNulls(moduleName);
 		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE;
 		this.valueInt = 0;
 		this.valueLong = 0;
@@ -537,7 +537,7 @@ public class BlackboardAttribute {
 	public BlackboardAttribute(int attributeTypeID, String moduleName, String context,
 			double valueDouble) {
 		this(attributeTypeID, moduleName, valueDouble);
-		this.context = context.replace((char)0x00, (char)0x1A);
+		this.context = replaceNulls(context);
 	}
 
 	/**
@@ -551,7 +551,7 @@ public class BlackboardAttribute {
 	public BlackboardAttribute(int attributeTypeID, String moduleName, String valueString) {
 		this.artifactID = 0;
 		this.attributeTypeID = attributeTypeID;
-		this.moduleName = moduleName.replace((char)0x00, (char)0x1A);
+		this.moduleName = replaceNulls(moduleName);
 		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING;
 		this.valueInt = 0;
 		this.valueLong = 0;
@@ -559,7 +559,7 @@ public class BlackboardAttribute {
 		if (valueString == null) {
 			this.valueString = "";
 		} else {
-			this.valueString = valueString.replace((char)0x00, (char)0x1A);
+			this.valueString = replaceNulls(valueString);
 		}
 		this.valueBytes = new byte[0];
 		this.context = "";
@@ -580,7 +580,7 @@ public class BlackboardAttribute {
 	public BlackboardAttribute(int attributeTypeID, String moduleName, String context,
 			String valueString) {
 		this(attributeTypeID, moduleName, valueString);
-		this.context = context.replace((char)0x00, (char)0x1A);
+		this.context = replaceNulls(context);
 	}
 
 	/**
@@ -594,7 +594,7 @@ public class BlackboardAttribute {
 	public BlackboardAttribute(int attributeTypeID, String moduleName, byte[] valueBytes) {
 		this.artifactID = 0;
 		this.attributeTypeID = attributeTypeID;
-		this.moduleName = moduleName.replace((char)0x00, (char)0x1A);
+		this.moduleName = replaceNulls(moduleName);
 		this.context = "";
 		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE;
 		this.valueInt = 0;
@@ -621,7 +621,7 @@ public class BlackboardAttribute {
 	public BlackboardAttribute(int attributeTypeID, String moduleName, String context,
 			byte[] valueBytes) {
 		this(attributeTypeID, moduleName, valueBytes);
-		this.context = context.replace((char)0x00, (char)0x1A);
+		this.context = replaceNulls(context);
 	}
 
 	@Override
@@ -839,4 +839,15 @@ public class BlackboardAttribute {
 		}
 		return "";
 	}
+
+	/**
+	 * Replace all NUL characters in the string with the SUB character
+	 *
+	 * @param text
+	 * @return A string with all the NUL characters replaced.
+	 */
+	private String replaceNulls(String text) {
+		return text.replace((char) 0x00, (char) 0x1A); // translate NUL to SUB character
+	}
+	
 }
