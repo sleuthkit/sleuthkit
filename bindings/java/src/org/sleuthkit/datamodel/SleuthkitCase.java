@@ -2099,7 +2099,7 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(s, "SELECT tsk_objects.obj_id, tsk_objects.type " //NON-NLS
 					+ "FROM tsk_objects left join tsk_files " //NON-NLS
 					+ "ON tsk_objects.obj_id=tsk_files.obj_id " //NON-NLS
-					+ "WHERE tsk_objects.par_obj_id = " + c.getId()); //NON-NLS
+					+ "WHERE tsk_objects.par_obj_id = " + c.getId() + "  ORDER BY tsk_objects.obj_id"); //NON-NLS
 			Collection<ObjectInfo> infos = new ArrayList<ObjectInfo>();
 			while (rs.next()) {
 				infos.add(new ObjectInfo(rs.getLong("obj_id"), ObjectType.valueOf(rs.getShort("type")))); //NON-NLS
@@ -3062,7 +3062,7 @@ public class SleuthkitCase {
 			connection.beginTransaction();
 
 			final long parentId = parentFile.getId();
-			final String parentPath = parentFile.getParentPath() + parentFile.getName() + '/'; //NON-NLS
+			final String parentPath = parentFile.getParentPath()+ "/" + parentFile.getName() + '/'; //NON-NLS
 
 			// Insert a row for the derived file into the tsk_objects table.
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)

@@ -306,11 +306,7 @@ copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
     </ClCompile>
     <PostBuildEvent>
       <Command>copy "$(LIBEWF_HOME)\msvscpp\x64\release\libewf.dll" "$(OutDir)"
-copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"
-copy "$(POSTGRESQL_HOME_64)\bin\libpq.dll" "$(OutDir)"
-copy "$(POSTGRESQL_HOME_64)\bin\libintl-8.dll" "$(OutDir)"
-copy "$(POSTGRESQL_HOME_64)\bin\libeay32.dll" "$(OutDir)"
-copy "$(POSTGRESQL_HOME_64)\bin\ssleay32.dll" "$(OutDir)"</Command>
+copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_PostgreSQL|x64'">
