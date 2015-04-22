@@ -3062,7 +3062,7 @@ public class SleuthkitCase {
 			connection.beginTransaction();
 
 			final long parentId = parentFile.getId();
-			final String parentPath = parentFile.getParentPath()+ "/" + parentFile.getName() + '/'; //NON-NLS
+			final String parentPath = parentFile.getParentPath() + parentFile.getName() + '/'; //NON-NLS
 
 			// Insert a row for the derived file into the tsk_objects table.
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
