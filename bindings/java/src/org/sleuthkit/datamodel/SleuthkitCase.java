@@ -2693,7 +2693,10 @@ public class SleuthkitCase {
 			statement.clearParameters();
 			if (parentId != 0) {
 				statement.setLong(1, parentId);
+			} else {
+				statement.setNull(1, java.sql.Types.BIGINT);
 			}
+		
 			statement.setLong(2, TskData.ObjectType.ABSTRACTFILE.getObjectType());
 			connection.executeUpdate(statement);
 			resultSet = statement.getGeneratedKeys();
@@ -3245,6 +3248,7 @@ public class SleuthkitCase {
 			statement.setLong(1, newObjId);
 
 			// nothing to set for parameter 2, fs_obj_id since local files aren't part of file systems
+			statement.setNull(2, java.sql.Types.BIGINT);
 			statement.setString(3, fileName);
 
 			//type, has_path
