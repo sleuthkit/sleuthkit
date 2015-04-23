@@ -57,17 +57,17 @@
 		<antcall target="copyWinTskLibsToBuildSQLite" />
 	</target>
 
-	<target name="copyLibs" description="Copy native libs to the correct folder">
+	<target name="copyLibs-PostgreSQL" description="Copy native libs to the correct folder, PostgreSQL build">
 		<property name="tsk.config" value="Release_PostgreSQL"/>
-		<antcall target="copyWinTskLibsToBuild" />
+		<antcall target="copyWinTskLibsToBuild-PostgreSQL" />
 	</target>
 	
-	<target name="copyLibsDebug" description="Copy native libs to the correct folder">
+	<target name="copyLibsDebug-PostgreSQL" description="Copy native libs to the correct folder, PostgreSQL build">
 		<property name="tsk.config" value="Debug_PostgreSQL"/>
-		<antcall target="copyWinTskLibsToBuild" />
+		<antcall target="copyWinTskLibsToBuild-PostgreSQL" />
 	</target>
 
-	<target name="copyWinTskLibsToBuildSQLite" depends="copyWinTskLibs64ToBuildSQLite, copyWinTskLibs32ToBuild" description="Copy windows dlls to the correct location." />
+	<target name="copyWinTskLibsToBuildSQLite" depends="copyWinTskLibs64ToBuildSQLite, copyWinTskLibs32ToBuild-SQLite" description="Copy Windows DLLs to the correct location, SQLite build." />
 	
 	<target name="checkTskLibDirsSQLite">
 		<available property="win64.TskLib.exists" type="file" file="${basedir}/../../win32/x64/${tsk.config}/libtsk_jni.dll" />
@@ -81,7 +81,7 @@
 		<copy file="${tsk.jni.64}" todir="${x86_64}/win" overwrite="true"/>
 	</target>
 	
-	<target name="copyWinTskLibs32ToBuild" depends="checkTskLibDirs" if="win32.TskLib.exists">
+	<target name="copyWinTskLibs32ToBuild-SQLite" depends="checkTskLibDirs" if="win32.TskLib.exists">
 		<property name="tsk.jni.32" location="${basedir}/../../win32/${tsk.config}/libtsk_jni.dll" />
 		<property name="libewf.32" location="${basedir}/../../win32/${tsk.config}/libewf.dll" />
 		<property name="zlib.32" location="${basedir}/../../win32/${tsk.config}/zlib.dll" />
@@ -100,14 +100,14 @@
 		<copy file="${tsk.jni.32}" todir="${i686}/win" overwrite="true"/>
 	</target>
 		
-	<target name="copyWinTskLibsToBuild" depends="copyWinTskLibs64ToBuild" description="Copy windows dlls to the correct location." />
+	<target name="copyWinTskLibsToBuild-PostgreSQL" depends="copyWinTskLibs64ToBuild-PostgreSQL" description="Copy Windows DLLs to the correct location, PostgreSQL build." />
 	
 	<target name="checkTskLibDirs">
 		<available property="win64.TskLib.exists" type="file" file="${basedir}/../../win32/x64/${tsk.config}/libtsk_jni.dll" />
 		<available property="win32.TskLib.exists" type="file" file="${basedir}/../../win32/${tsk.config}/libtsk_jni.dll" />
 	</target>
 	
-	<target name="copyWinTskLibs64ToBuild" depends="checkTskLibDirs" if="win64.TskLib.exists">
+	<target name="copyWinTskLibs64ToBuild-PostgreSQL" depends="checkTskLibDirs" if="win64.TskLib.exists">
 		<property name="tsk.jni.64" location="${basedir}/../../win32/x64/${tsk.config}/libtsk_jni.dll" />
 		<property name="libewf.64" location="${basedir}/../../win32/x64/${tsk.config}/libewf.dll" />
 		<property name="zlib.64" location="${basedir}/../../win32/x64/${tsk.config}/zlib.dll" />
