@@ -34,7 +34,9 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
  */
 class ResultSetHelper {
 	SleuthkitCase db;
-
+	
+	private final static int TWELVE_BITS_MASK = 0xFFF; // Only keep 12 bits
+	
 	ResultSetHelper(SleuthkitCase db) {
 		this.db = db;
 	}
@@ -172,6 +174,7 @@ class ResultSetHelper {
 	 * @throws SQLException
 	 */
 	File file(ResultSet rs, FileSystem fs) throws SQLException {
+	
 		File f = new File(db, rs.getLong("obj_id"), rs.getLong("fs_obj_id"), //NON-NLS
 				TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")), //NON-NLS
 				rs.getShort("attr_id"), rs.getString("name"), rs.getLong("meta_addr"), rs.getInt("meta_seq"), //NON-NLS
@@ -180,7 +183,7 @@ class ResultSetHelper {
 				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), //NON-NLS
 				rs.getShort("meta_flags"), rs.getLong("size"), //NON-NLS
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
-				(short)rs.getInt("mode"), rs.getInt("uid"), rs.getInt("gid"), //NON-NLS /// KDM rs.getShort("mode"),
+				(short)(rs.getInt("mode") & TWELVE_BITS_MASK), rs.getInt("uid"), rs.getInt("gid"), //NON-NLS
 				rs.getString("md5"), //NON-NLS
 				FileKnown.valueOf(rs.getByte("known")), rs.getString("parent_path")); //NON-NLS
 		f.setFileSystem(fs);
