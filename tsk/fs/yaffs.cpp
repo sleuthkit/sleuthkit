@@ -70,6 +70,8 @@ v** Copyright (c) 2002-2003 Brian Carrier, @stake Inc.  All rights reserved
 *
 */
 
+static const int TWELVE_BITS_MASK = 0xFFF; // Only keep 12 bits
+
 static uint8_t 
     yaffsfs_read_header(YAFFSFS_INFO *yfs, YaffsHeader ** header, TSK_OFF_T offset);
 
@@ -1262,8 +1264,9 @@ static uint8_t
     memcpy(&head->obj_type, hdr, 4);
     memcpy(&head->parent_id, &hdr[4], 4);
     memcpy(head->name, (char*) &hdr[0xA], YAFFS_HEADER_NAME_LENGTH);
-    memcpy(&head->file_mode, &hdr[0x10C], 4);
-    memcpy(&head->user_id, &hdr[0x110], 4);
+	memcpy(&head->file_mode, &hdr[0x10C], 4);
+    head->file_mode=head->file_mode&TWELVE_BITS_MASK; // chop at 12 bits
+	memcpy(&head->user_id, &hdr[0x110], 4);
     memcpy(&head->group_id, &hdr[0x114], 4);
     memcpy(&head->atime, &hdr[0x118], 4);
     memcpy(&head->mtime, &hdr[0x11C], 4);
