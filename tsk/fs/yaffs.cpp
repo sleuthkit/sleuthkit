@@ -1265,7 +1265,6 @@ static uint8_t
     memcpy(&head->parent_id, &hdr[4], 4);
     memcpy(head->name, (char*) &hdr[0xA], YAFFS_HEADER_NAME_LENGTH);
     memcpy(&head->file_mode, &hdr[0x10C], 4);
-    head->file_mode=head->file_mode&TWELVE_BITS_MASK; // chop at 12 bits
     memcpy(&head->user_id, &hdr[0x110], 4);
     memcpy(&head->group_id, &hdr[0x114], 4);
     memcpy(&head->atime, &hdr[0x118], 4);
@@ -1892,7 +1891,7 @@ static uint8_t
     }
 
     if (type != YAFFS_TYPE_HARDLINK) {
-        a_fs_file->meta->mode = (TSK_FS_META_MODE_ENUM)header->file_mode;
+        a_fs_file->meta->mode = (TSK_FS_META_MODE_ENUM)(header->file_mode & TWELVE_BITS_MASK); // chop at 12 bits;
         a_fs_file->meta->uid = header->user_id;
         a_fs_file->meta->gid = header->group_id;
         a_fs_file->meta->mtime = header->mtime;
