@@ -2683,7 +2683,7 @@ public class SleuthkitCase {
 			}
 			String parentName = getFileName(parentId);
 			if (parentName != null) {
-				parentPath = parentPath + "/" + parentName; //NON-NLS
+				parentPath = parentPath + parentName + "/"; //NON-NLS
 			}
 
 			// Insert a row for the virtual directory into the tsk_objects table.
@@ -2905,7 +2905,7 @@ public class SleuthkitCase {
 				}
 				String parentName = getFileName(id);
 				if (parentName != null) {
-					parentPath = parentPath + "/" + parentName; //NON-NLS
+					parentPath = parentPath + parentName + "/"; //NON-NLS
 				}
 
 				// we should cache this when we start adding lots of carved files...
@@ -3222,8 +3222,8 @@ public class SleuthkitCase {
 				throw new TskCoreException(MessageFormat.format(bundle.getString("SleuthkitCase.addLocalFile.exception.msg1.text"), fileName));
 			} else {
 				parentId = parent.getId();
-				parentPath = parent.getParentPath() + "/" + parent.getName(); //NON-NLS
-			}
+				parentPath = parent.getParentPath() + parent.getName() + "/"; //NON-NLS
+				}
 
 			// Insert a row for the local/logical file into the tsk_objects table.
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
