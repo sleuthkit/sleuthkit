@@ -2596,7 +2596,7 @@ public class SleuthkitCase {
 			// Get the parent path.
 			String parentPath = getFileParentPath(parentId);
 			if (parentPath == null) {
-				parentPath = ""; //NON-NLS
+				parentPath = "/"; //NON-NLS
 			}
 			String parentName = getFileName(parentId);
 			if (parentName != null) {
