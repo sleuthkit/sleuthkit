@@ -2679,7 +2679,7 @@ public class SleuthkitCase {
 			// Get the parent path.
 			String parentPath = getFileParentPath(parentId);
 			if (parentPath == null) {
-				parentPath = ""; //NON-NLS
+				parentPath = "/"; //NON-NLS
 			}
 			String parentName = getFileName(parentId);
 			if (parentName != null) {
@@ -2901,7 +2901,7 @@ public class SleuthkitCase {
 				// get the parent path for the $CarvedFiles directory		
 				String parentPath = getFileParentPath(id);
 				if (parentPath == null) {
-					parentPath = ""; //NON-NLS
+					parentPath = "/"; //NON-NLS
 				}
 				String parentName = getFileName(id);
 				if (parentName != null) {
@@ -4122,7 +4122,7 @@ public class SleuthkitCase {
 					TSK_DB_FILES_TYPE_ENUM atype = TSK_DB_FILES_TYPE_ENUM.valueOf(type);
 					String parentPath = rs.getString("parent_path"); //NON-NLS
 					if (parentPath == null) {
-						parentPath = ""; //NON-NLS
+						parentPath = "/"; //NON-NLS
 					}
 					LayoutFile lf = new LayoutFile(this, rs.getLong("obj_id"), //NON-NLS
 							rs.getString("name"), //NON-NLS
