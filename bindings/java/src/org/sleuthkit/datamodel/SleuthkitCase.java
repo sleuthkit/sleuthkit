@@ -797,8 +797,8 @@ public class SleuthkitCase {
 					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id " //NON-NLS
 					+ "FROM blackboard_artifacts, blackboard_attributes " //NON-NLS
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id " //NON-NLS
-					+ "AND blackboard_attributes.attribute_type_id IS " + attrType.getTypeID() //NON-NLS
-					+ " AND blackboard_attributes.value_text IS '" + value + "'");	 //NON-NLS
+					+ "AND blackboard_attributes.attribute_type_id = " + attrType.getTypeID() //NON-NLS
+					+ " AND blackboard_attributes.value_text = '" + value + "'");	 //NON-NLS
 			return getArtifactsHelper(rs);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by attribute", ex);
@@ -838,7 +838,7 @@ public class SleuthkitCase {
 					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id " //NON-NLS
 					+ "FROM blackboard_artifacts, blackboard_attributes " //NON-NLS
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id " //NON-NLS
-					+ "AND blackboard_attributes.attribute_type_id IS " + attrType.getTypeID() //NON-NLS
+					+ "AND blackboard_attributes.attribute_type_id = " + attrType.getTypeID() //NON-NLS
 					+ " AND blackboard_attributes.value_text LIKE '" + subString + "'"); //NON-NLS			
 			return getArtifactsHelper(rs);
 		} catch (SQLException ex) {
@@ -872,8 +872,8 @@ public class SleuthkitCase {
 					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id " //NON-NLS
 					+ "FROM blackboard_artifacts, blackboard_attributes " //NON-NLS
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id " //NON-NLS
-					+ "AND blackboard_attributes.attribute_type_id IS " + attrType.getTypeID() //NON-NLS
-					+ " AND blackboard_attributes.value_int32 IS " + value); //NON-NLS
+					+ "AND blackboard_attributes.attribute_type_id = " + attrType.getTypeID() //NON-NLS
+					+ " AND blackboard_attributes.value_int32 = " + value); //NON-NLS
 			return getArtifactsHelper(rs);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by attribute", ex);
@@ -906,8 +906,8 @@ public class SleuthkitCase {
 					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id " //NON-NLS
 					+ "FROM blackboard_artifacts, blackboard_attributes " //NON-NLS
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id " //NON-NLS
-					+ "AND blackboard_attributes.attribute_type_id IS " + attrType.getTypeID() //NON-NLS
-					+ " AND blackboard_attributes.value_int64 IS " + value); //NON-NLS			
+					+ "AND blackboard_attributes.attribute_type_id = " + attrType.getTypeID() //NON-NLS
+					+ " AND blackboard_attributes.value_int64 = " + value); //NON-NLS			
 			return getArtifactsHelper(rs);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by attribute. " + ex.getMessage(), ex);
@@ -940,8 +940,8 @@ public class SleuthkitCase {
 					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id " //NON-NLS
 					+ "FROM blackboard_artifacts, blackboard_attributes " //NON-NLS
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id " //NON-NLS
-					+ "AND blackboard_attributes.attribute_type_id IS " + attrType.getTypeID() //NON-NLS
-					+ " AND blackboard_attributes.value_double IS " + value); //NON-NLS
+					+ "AND blackboard_attributes.attribute_type_id = " + attrType.getTypeID() //NON-NLS
+					+ " AND blackboard_attributes.value_double = " + value); //NON-NLS
 			return getArtifactsHelper(rs);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by attribute", ex);
@@ -974,8 +974,8 @@ public class SleuthkitCase {
 					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id " //NON-NLS
 					+ "FROM blackboard_artifacts, blackboard_attributes " //NON-NLS
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id " //NON-NLS
-					+ "AND blackboard_attributes.attribute_type_id IS " + attrType.getTypeID() //NON-NLS
-					+ " AND blackboard_attributes.value_byte IS " + value); //NON-NLS
+					+ "AND blackboard_attributes.attribute_type_id = " + attrType.getTypeID() //NON-NLS
+					+ " AND blackboard_attributes.value_byte = " + value); //NON-NLS
 			return getArtifactsHelper(rs);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by attribute", ex);
@@ -1345,9 +1345,9 @@ public class SleuthkitCase {
 					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id " //NON-NLS
 					+ "FROM blackboard_artifacts, blackboard_attributes " //NON-NLS
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id " //NON-NLS
-					+ "AND blackboard_attributes.attribute_type_id IS " + attrType.getTypeID() //NON-NLS
+					+ "AND blackboard_attributes.attribute_type_id = " + attrType.getTypeID() //NON-NLS
 					+ " AND blackboard_artifacts.artifact_type_id = " + artifactType.getTypeID() //NON-NLS
-					+ " AND blackboard_attributes.value_text IS '" + value + "'"); //NON-NLS
+					+ " AND blackboard_attributes.value_text = '" + value + "'"); //NON-NLS
 			return getArtifactsHelper(rs);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by artifact type and attribute. " + ex.getMessage(), ex);
