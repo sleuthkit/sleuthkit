@@ -4183,11 +4183,9 @@ public class SleuthkitCase {
 	 * closeRunQuery(resultSet) as soon as possible, when done with retrieving
 	 * data from the resultSet
 	 * @throws SQLException if error occurred during the query
-	 * @deprecated This method is deprecated. Continuing to use this method 
-	 * risks your module not functioning correctly in the future. Use specific 
-	 * DataModel methods such as executeQuery(String query) instead.
+	 * @deprecated Do not use runQuery(), use executeQuery() instead.
 	 */
-	@Deprecated // use executeQuery() instead
+	@Deprecated // Use executeQuery() instead.
 	public ResultSet runQuery(String query) throws SQLException {
 		CaseDbConnection connection;
 		try {
@@ -4210,11 +4208,10 @@ public class SleuthkitCase {
 	 *
 	 * @param resultSet with its Statement to close
 	 * @throws SQLException of closing the query results failed
-	 * @deprecated This method is deprecated. Continuing to use this method 
-	 * risks your module not functioning correctly in the future. Use specific 
-	 * DataModel methods that encapsulate the SQL layer instead.
+	 * @deprecated Do not use runQuery() and closeRunQuery(), use executeQuery() 
+	 * instead.
 	 */
-	@Deprecated // Do not use this method for new development.
+	@Deprecated // Use executeQuery() instead.
 	public void closeRunQuery(ResultSet resultSet) throws SQLException {
 		final Statement statement = resultSet.getStatement();
 		resultSet.close();
