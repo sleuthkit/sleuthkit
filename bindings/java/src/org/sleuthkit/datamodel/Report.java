@@ -52,7 +52,7 @@ public class Report {
 	 *
 	 * @return The primary key value.
 	 */
-	long getId() {
+	public long getId() {
 		return id;
 	}
 
