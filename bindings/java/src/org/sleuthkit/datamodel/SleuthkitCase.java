@@ -139,7 +139,7 @@ public class SleuthkitCase {
 		try {
 			statement = connection.createStatement();
 			for (ARTIFACT_TYPE type : ARTIFACT_TYPE.values()) {
-				resultSet = connection.executeQuery(statement, "SELECT COUNT(*) from blackboard_artifact_types WHERE artifact_type_id = '" + type.getTypeID() + "'"); //NON-NLS
+				resultSet = connection.executeQuery(statement, "SELECT COUNT(*) FROM blackboard_artifact_types WHERE artifact_type_id = '" + type.getTypeID() + "'"); //NON-NLS
 				resultSet.next();
 				if (resultSet.getLong(1) == 0) {
 					connection.executeUpdate(statement, "INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name) VALUES (" + type.getTypeID() + " , '" + type.getLabel() + "', '" + type.getDisplayName() + "')"); //NON-NLS
@@ -166,7 +166,7 @@ public class SleuthkitCase {
 		try {
 			statement = connection.createStatement();
 			for (ATTRIBUTE_TYPE type : ATTRIBUTE_TYPE.values()) {
-				resultSet = connection.executeQuery(statement, "SELECT COUNT(*) from blackboard_attribute_types WHERE attribute_type_id = '" + type.getTypeID() + "'"); //NON-NLS
+				resultSet = connection.executeQuery(statement, "SELECT COUNT(*) FROM blackboard_attribute_types WHERE attribute_type_id = '" + type.getTypeID() + "'"); //NON-NLS
 				resultSet.next();
 				if (resultSet.getLong(1) == 0) {
 					connection.executeUpdate(statement, "INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name) VALUES (" + type.getTypeID() + ", '" + type.getLabel() + "', '" + type.getDisplayName() + "')"); //NON-NLS
@@ -633,7 +633,7 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT obj_id, type from tsk_objects " //NON-NLS
+			rs = connection.executeQuery(s, "SELECT obj_id, type FROM tsk_objects " //NON-NLS
 					+ "WHERE par_obj_id IS NULL"); //NON-NLS			
 			Collection<ObjectInfo> infos = new ArrayList<ObjectInfo>();
 			while (rs.next()) {
@@ -1784,7 +1784,7 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "Select artifact_id, source, context, attribute_type_id, value_type, " //NON-NLS
+			rs = connection.executeQuery(s, "SELECT artifact_id, source, context, attribute_type_id, value_type, " //NON-NLS
 					+ "value_byte, value_text, value_int32, value_int64, value_double FROM blackboard_attributes " + whereClause); //NON-NLS
 			ArrayList<BlackboardAttribute> matches = new ArrayList<BlackboardAttribute>();
 			while (rs.next()) {
@@ -2911,8 +2911,8 @@ public class SleuthkitCase {
 				// we should cache this when we start adding lots of carved files...
 				boolean isContainerAFs = false;
 				s = connection.createStatement();
-				rs = connection.executeQuery(s, "select * from tsk_fs_info " //NON-NLS
-						+ "where obj_id = " + firstItemId); //NON-NLS
+				rs = connection.executeQuery(s, "SELECT * FROM tsk_fs_info " //NON-NLS
+						+ "WHERE obj_id = " + firstItemId); //NON-NLS
 				if (rs.next()) {
 					isContainerAFs = true;
 				}
@@ -3346,7 +3346,7 @@ public class SleuthkitCase {
 			rs.next();
 			return rs.getLong(1);
 		} catch (SQLException e) {
-			throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.findFilesWhere().", e);
+			throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.countFilesWhere().", e);
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
@@ -3421,8 +3421,11 @@ public class SleuthkitCase {
 	 * files (do not begin the WHERE clause with the word WHERE!)
 	 * @return a list of FsContent each of which satisfy the given WHERE clause
 	 * @throws TskCoreException
+	 * @deprecated This method is deprecated. Continuing to use this method 
+	 * risks your module not functioning correctly in the future. Use 
+	 * findAllFilesWhere(String sqlWhereClause) instead. 
 	 */
-	@Deprecated	// use findAllFilesWhere instead
+	@Deprecated	// use findAllFilesWhere() instead
 	public List<FsContent> findFilesWhere(String sqlWhereClause) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
@@ -3485,7 +3488,7 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "select * from tsk_file_layout where obj_id = " + id + " order by sequence");
+			rs = connection.executeQuery(s, "SELECT * FROM tsk_file_layout WHERE obj_id = " + id + " ORDER BY sequence");
 			List<TskFileRange> ranges = new ArrayList<TskFileRange>();
 			while (rs.next()) {
 				ranges.add(rsHelper.tskFileRange(rs));
@@ -3520,7 +3523,7 @@ public class SleuthkitCase {
 			rs1 = connection.executeQuery(s1, "SELECT * FROM tsk_image_info WHERE obj_id = " + id); //NON-NLS
 			if (rs1.next()) {
 				s2 = connection.createStatement();
-				rs2 = connection.executeQuery(s2, "select * from tsk_image_names where obj_id = " + rs1.getLong("obj_id")); //NON-NLS
+				rs2 = connection.executeQuery(s2, "SELECT * FROM tsk_image_names WHERE obj_id = " + rs1.getLong("obj_id")); //NON-NLS
 				List<String> imagePaths = new ArrayList<String>();
 				while (rs2.next()) {
 					imagePaths.add(rsHelper.imagePath(rs2));
@@ -3556,7 +3559,7 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "select * from tsk_vs_info " //NON-NLS
+			rs = connection.executeQuery(s, "SELECT * FROM tsk_vs_info " //NON-NLS
 					+ "where obj_id = " + id); //NON-NLS
 			if (rs.next()) {
 				return rsHelper.volumeSystem(rs, parent);
@@ -3647,7 +3650,7 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "select * from tsk_fs_info " //NON-NLS
+			rs = connection.executeQuery(s, "SELECT * FROM tsk_fs_info " //NON-NLS
 					+ "where obj_id = " + id); //NON-NLS
 			if (rs.next()) {
 				FileSystem fs = rsHelper.fileSystem(rs, parent);
@@ -3684,7 +3687,7 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "select * from tsk_vs_parts " //NON-NLS
+			rs = connection.executeQuery(s, "SELECT * FROM tsk_vs_parts " //NON-NLS
 					+ "where obj_id = " + id); //NON-NLS
 			if (rs.next()) {
 				return rsHelper.volume(rs, parent);
@@ -3978,12 +3981,12 @@ public class SleuthkitCase {
 		ResultSet rs2 = null;
 		try {
 			s1 = connection.createStatement();
-			rs1 = connection.executeQuery(s1, "select obj_id from tsk_image_info"); //NON-NLS
+			rs1 = connection.executeQuery(s1, "SELECT obj_id FROM tsk_image_info"); //NON-NLS
 			s2 = connection.createStatement();
 			Map<Long, List<String>> imgPaths = new LinkedHashMap<Long, List<String>>();
 			while (rs1.next()) {
 				long obj_id = rs1.getLong("obj_id"); //NON-NLS
-				rs2 = connection.executeQuery(s2, "select * from tsk_image_names where obj_id = " + obj_id); //NON-NLS
+				rs2 = connection.executeQuery(s2, "SELECT * FROM tsk_image_names WHERE obj_id = " + obj_id); //NON-NLS
 				List<String> paths = new ArrayList<String>();
 				while (rs2.next()) {
 					paths.add(rsHelper.imagePath(rs2));
@@ -4180,9 +4183,11 @@ public class SleuthkitCase {
 	 * closeRunQuery(resultSet) as soon as possible, when done with retrieving
 	 * data from the resultSet
 	 * @throws SQLException if error occurred during the query
-	 * @deprecated use specific datamodel methods that encapsulate SQL layer
+	 * @deprecated This method is deprecated. Continuing to use this method 
+	 * risks your module not functioning correctly in the future. Use specific 
+	 * DataModel methods such as executeQuery(String query) instead.
 	 */
-	@Deprecated
+	@Deprecated // use executeQuery() instead
 	public ResultSet runQuery(String query) throws SQLException {
 		CaseDbConnection connection;
 		try {
@@ -4205,9 +4210,11 @@ public class SleuthkitCase {
 	 *
 	 * @param resultSet with its Statement to close
 	 * @throws SQLException of closing the query results failed
-	 * @deprecated use specific datamodel methods that encapsulate SQL layer
+	 * @deprecated This method is deprecated. Continuing to use this method 
+	 * risks your module not functioning correctly in the future. Use specific 
+	 * DataModel methods that encapsulate the SQL layer instead.
 	 */
-	@Deprecated
+	@Deprecated // Do not use this method for new development.
 	public void closeRunQuery(ResultSet resultSet) throws SQLException {
 		final Statement statement = resultSet.getStatement();
 		resultSet.close();
@@ -5239,7 +5246,7 @@ public class SleuthkitCase {
 					+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
 			INSERT_DOUBLE_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_double) " //NON-NLS
 					+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
-			SELECT_FILES_BY_FILE_SYSTEM_AND_NAME("SELECT * FROM tsk_files WHERE LOWER(name) LIKE ? and LOWER(name) NOT LIKE '%journal%' AND fs_obj_id = ?"), //NON-NLS
+			SELECT_FILES_BY_FILE_SYSTEM_AND_NAME("SELECT * FROM tsk_files WHERE LOWER(name) LIKE ? AND LOWER(name) NOT LIKE '%journal%' AND fs_obj_id = ?"), //NON-NLS
 			SELECT_FILES_BY_FILE_SYSTEM_AND_PATH("SELECT * FROM tsk_files WHERE LOWER(name) LIKE ? AND LOWER(name) NOT LIKE '%journal%' AND LOWER(parent_path) LIKE ? AND fs_obj_id = ?"), //NON-NLS
 			UPDATE_FILE_MD5("UPDATE tsk_files SET md5 = ? WHERE obj_id = ?"), //NON-NLS
 			SELECT_LOCAL_PATH_FOR_FILE("SELECT path FROM tsk_files_path WHERE obj_id = ?"), //NON-NLS
@@ -5247,7 +5254,7 @@ public class SleuthkitCase {
 			SELECT_FILE_NAME("SELECT name FROM tsk_files WHERE obj_id = ?"), //NON-NLS
 			SELECT_DERIVED_FILE("SELECT derived_id, rederive FROM tsk_files_derived WHERE obj_id = ?"), //NON-NLS
 			SELECT_FILE_DERIVATION_METHOD("SELECT tool_name, tool_version, other FROM tsk_files_derived_method WHERE derived_id = ?"), //NON-NLS
-			SELECT_MAX_OBJECT_ID("SELECT MAX(obj_id) from tsk_objects"), //NON-NLS
+			SELECT_MAX_OBJECT_ID("SELECT MAX(obj_id) FROM tsk_objects"), //NON-NLS
 			INSERT_OBJECT("INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)"), //NON-NLS
 			INSERT_FILE("INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path) " //NON-NLS
 					+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
@@ -5699,7 +5706,7 @@ public class SleuthkitCase {
 			}
 			catch (SQLException ex)
 			{
-				SleuthkitCase.this.releaseSharedLock();
+				SleuthkitCase.this.releaseSharedLock()	;
 				throw new TskCoreException("Error executing query: ", ex);				
 			}
 		}
