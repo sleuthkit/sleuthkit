@@ -64,7 +64,7 @@ public class Sample {
 				}
 						
 			// print out all .txt files found
-			List<AbstractFile> files = sk.findAllFilesWhere("name like '%.txt'");
+			List<AbstractFile> files = sk.findAllFilesWhere("LOWER(name) LIKE '%.txt'");
 			for (AbstractFile file : files) {
 							System.out.println("Found text file: " + file.getName());
 						}
