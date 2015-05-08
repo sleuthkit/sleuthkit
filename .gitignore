@@ -5,6 +5,7 @@
 /bindings/java/lib/
 /bindings/java/build/
 /bindings/java/dist
+/bindings/java/doxygen/tskjni_doxygen.tag
 /bindings/java/test/output/results
 /bindings/java/test/output/gold/dummy
 /bindings/java/test/output/gold/*_BU.txt

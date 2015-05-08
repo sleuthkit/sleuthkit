@@ -1,0 +1,38 @@
+/*! \page insert_and_update_database_page INSERT and UPDATE
+
+\section types_of_databases_available Inserting Into the Database
+This page is for people who are developing code for the Autopsy framework and need to place items into the database with SQL statements. If you are not developing Autopsy framework code (Autopsy Modules are not Autopsy framework code), you should have no need to create SQL statements to insert items into the database. If you developing an Autopsy module, please see \ref query_database_page.
+
+Autopsy currently allows either \ref sqlite_db or \ref postgresql_db as the back-end database system for a case. Any code you write could be used with either as the backend database, at the user's discretion. Be sure to test your work with both platforms.
+
+
+\subsection sqlite_db SQLite
+- Use SQL statments supported by SQLite 3
+- Used for Single-user cases
+- Built-in
+- No configuration required
+- Databases are stored locally
+
+\subsection postgresql_db PostgreSQL
+- Use SQL statments supported by PostgreSQL 9.4
+- Used for Multi-user cases
+- An accessible instance of PostgreSQL must be running (on a server, or locally)
+- Proper configuration to connect to this instance of PostgreSQL required
+- Databases are stored within PostgreSQL, wherever it happens to be running
+
+
+<br>
+\section insert_pitfalls_to_avoid How to Avoid Pitfalls When INSERTing into the Database
+- Do not use INSERT OR REPLACE INTO. It does not exist in PostgreSQL.
+<br>
+<br>
+- Do not use INSERT OR IGNORE INTO. It does not exist in PostgreSQL.
+<br>
+<br>
+- Do not insert [NUL characters](http://en.wikipedia.org/wiki/Null_character) into the database as UTF-8 (NUL characters are not NULL fields). Translate NUL characters to the [SUB character](http://en.wikipedia.org/wiki/Substitute_character) with the following instead:
+\code{.java}
+private String replaceNulls(String text);
+\endcode
+<br>
+
+*/
