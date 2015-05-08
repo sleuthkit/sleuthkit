@@ -1776,6 +1776,7 @@ public class SleuthkitCase {
 	 * @return a list of matching attributes
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
+	 * \ref query_database_page
 	 */
 	public ArrayList<BlackboardAttribute> getMatchingAttributes(String whereClause) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
@@ -1811,6 +1812,7 @@ public class SleuthkitCase {
 	 * @return a list of matching artifacts
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
+	 * \ref query_database_page
 	 */
 	public ArrayList<BlackboardArtifact> getMatchingArtifacts(String whereClause) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
@@ -3334,6 +3336,7 @@ public class SleuthkitCase {
 	 * files (do not begin the WHERE clause with the word WHERE!)
 	 * @return count of files each of which satisfy the given WHERE clause
 	 * @throws TskCoreException
+	 * \ref query_database_page
 	 */
 	public long countFilesWhere(String sqlWhereClause) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
@@ -3363,6 +3366,7 @@ public class SleuthkitCase {
 	 * @return a list of AbstractFile each of which satisfy the given WHERE
 	 * clause
 	 * @throws TskCoreException
+	 * \ref query_database_page
 	 */
 	public List<AbstractFile> findAllFilesWhere(String sqlWhereClause) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
@@ -3390,6 +3394,7 @@ public class SleuthkitCase {
 	 * files (do not begin the WHERE clause with the word WHERE!)
 	 * @return a list of file ids each of which satisfy the given WHERE clause
 	 * @throws TskCoreException
+	 * \ref query_database_page
 	 */
 	public List<Long> findAllFileIdsWhere(String sqlWhereClause) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
@@ -3424,6 +3429,7 @@ public class SleuthkitCase {
 	 * @deprecated This method is deprecated. Continuing to use this method 
 	 * risks your module not functioning correctly in the future. Use 
 	 * findAllFilesWhere(String sqlWhereClause) instead. 
+	 * \ref query_database_page
 	 */
 	@Deprecated	// use findAllFilesWhere() instead
 	public List<FsContent> findFilesWhere(String sqlWhereClause) throws TskCoreException {
@@ -4184,6 +4190,7 @@ public class SleuthkitCase {
 	 * data from the resultSet
 	 * @throws SQLException if error occurred during the query
 	 * @deprecated Do not use runQuery(), use executeQuery() instead.
+	 * \ref query_database_page
 	 */
 	@Deprecated // Use executeQuery() instead.
 	public ResultSet runQuery(String query) throws SQLException {
@@ -4210,6 +4217,7 @@ public class SleuthkitCase {
 	 * @throws SQLException of closing the query results failed
 	 * @deprecated Do not use runQuery() and closeRunQuery(), use executeQuery() 
 	 * instead.
+	 * \ref query_database_page
 	 */
 	@Deprecated // Use executeQuery() instead.
 	public void closeRunQuery(ResultSet resultSet) throws SQLException {
@@ -5416,6 +5424,14 @@ public class SleuthkitCase {
 			return resultSet;
 		}
 
+		/**
+		 * 
+		 * @param statement The SQL statement to execute
+		 * @return returns the ResultSet from the execution of the query
+		 * @throws SQLException 
+		 * \ref query_database_page
+		 * \ref insert_and_update_database_page
+		 */
 		ResultSet executeQuery(PreparedStatement statement) throws SQLException {
 			ResultSet resultSet = null;
 			boolean locked = true;

@@ -209,5 +209,10 @@
 		</java>
 		
 	</target>
+	<target name="doxygen" description="build doxygen docs, requires doxygen in PATH">
+		<exec executable="doxygen" dir="${basedir}/doxygen">
+			<arg value="Doxyfile"/>
+		</exec>
+	</target>
 	
 </project>
