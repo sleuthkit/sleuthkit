@@ -97,6 +97,16 @@ WHERE id=12 AND(true)             // PostgreSQL example, will not work in SQLite
 WHERE id=12                       // Will work in both, just a bit harder to handle all the cases in query-generation code
 \endcode
 <br>
+- SQLite allows non-standard usage of the IS keyword. Standard usage of IS checks if something IS NULL or IS NOT NULL. It does not compare against specific values. Remember when comparing values to use = instead of the IS keyword. If you want to check for NULL, then IS NULL is the right tool. Example:
+\code{.java}
+WHERE value IS '4'        // Bad example. Works in SQLite, does not work in PostgreSQL
+WHERE value = '4'         // Good example. Works in both SQLite and PostgreSQL
+WHERE value != '4'        // Good example. Works in both SQLite and PostgreSQL
+WHERE value IS NULL       // Good example. Works in both SQLite and PostgreSQL
+WHERE value IS NOT NULL   // Good example. Works in both SQLite and PostgreSQL
+\endcode
+<br>
+<br>
 \subsection order_by How to ORDER BY Consistently
 - SQLite and PostgreSQL have different default sort orders for returned records, so you want to fully specify ORDER BY clauses for both database types. Example:
 \code{.java}
