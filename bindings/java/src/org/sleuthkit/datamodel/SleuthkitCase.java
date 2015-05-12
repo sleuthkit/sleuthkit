@@ -839,7 +839,7 @@ public class SleuthkitCase {
 					+ "FROM blackboard_artifacts, blackboard_attributes " //NON-NLS
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id " //NON-NLS
 					+ "AND blackboard_attributes.attribute_type_id = " + attrType.getTypeID() //NON-NLS
-					+ " AND blackboard_attributes.value_text LIKE '" + subString + "'"); //NON-NLS			
+					+ " AND LOWER(blackboard_attributes.value_text) LIKE LOWER('" + subString + "')"); //NON-NLS			
 			return getArtifactsHelper(rs);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by attribute. " + ex.getMessage(), ex);
@@ -5251,8 +5251,8 @@ public class SleuthkitCase {
 					+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
 			INSERT_DOUBLE_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_double) " //NON-NLS
 					+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
-			SELECT_FILES_BY_FILE_SYSTEM_AND_NAME("SELECT * FROM tsk_files WHERE LOWER(name) LIKE ? AND LOWER(name) NOT LIKE '%journal%' AND fs_obj_id = ?"), //NON-NLS
-			SELECT_FILES_BY_FILE_SYSTEM_AND_PATH("SELECT * FROM tsk_files WHERE LOWER(name) LIKE ? AND LOWER(name) NOT LIKE '%journal%' AND LOWER(parent_path) LIKE ? AND fs_obj_id = ?"), //NON-NLS
+			SELECT_FILES_BY_FILE_SYSTEM_AND_NAME("SELECT * FROM tsk_files WHERE LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE '%journal%' AND fs_obj_id = ?"), //NON-NLS
+			SELECT_FILES_BY_FILE_SYSTEM_AND_PATH("SELECT * FROM tsk_files WHERE LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE '%journal%' AND LOWER(parent_path) LIKE LOWER(?) AND fs_obj_id = ?"), //NON-NLS
 			UPDATE_FILE_MD5("UPDATE tsk_files SET md5 = ? WHERE obj_id = ?"), //NON-NLS
 			SELECT_LOCAL_PATH_FOR_FILE("SELECT path FROM tsk_files_path WHERE obj_id = ?"), //NON-NLS
 			SELECT_PATH_FOR_FILE("SELECT parent_path FROM tsk_files WHERE obj_id = ?"), //NON-NLS
