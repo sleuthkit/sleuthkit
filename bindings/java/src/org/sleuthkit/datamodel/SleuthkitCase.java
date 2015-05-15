@@ -118,6 +118,7 @@ public class SleuthkitCase {
 		this.caseDirPath = caseDirPath;
 		this.connections = new PostgreSQLConnections(host, port, dbName, userName, password);
 		init(caseHandle);
+		updateSchemaVersion();
 	}
 
 	private void init(SleuthkitJNI.CaseDbHandle caseHandle) throws Exception {
@@ -259,6 +260,45 @@ public class SleuthkitCase {
 		}
 	}
 
+	/**
+	 * Get the version of the schema from the database
+	 *
+	 * @throws Exception
+	 */
+	private void updateSchemaVersion() throws Exception {
+		CaseDbConnection connection = connections.getConnection();
+		ResultSet resultSet = null;
+		Statement statement = null;
+		try {
+			connection.beginTransaction();
+
+			// Get the schema version number of the case database from the tsk_db_info table.
+			int schemaVersionNumber = SCHEMA_VERSION_NUMBER;
+			statement = connection.createStatement();
+			resultSet = connection.executeQuery(statement, "SELECT schema_ver FROM tsk_db_info"); //NON-NLS
+			if (resultSet.next()) {
+				schemaVersionNumber = resultSet.getInt("schema_ver"); //NON-NLS
+			}
+			resultSet.close();
+			resultSet = null;
+
+			if (SCHEMA_VERSION_NUMBER != schemaVersionNumber) {
+				throw new Exception(bundle.getString("SleuthkitCase.SchemaVersionMismatch"));
+				// could do more updating here, if/when the convert-old-cases-to-new-cases code comes into play
+			}
+			versionNumber = schemaVersionNumber;			
+			
+
+			connection.commitTransaction();
+		} catch (Exception ex) { // Cannot do exception multi-catch in Java 6, so use catch-all.
+			connection.rollbackTransaction();
+			throw ex;
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+		}
+	}
+	
 	/**
 	 * Make a duplicate / backup copy of the current case database. Makes a new
 	 * copy only, and continues to use the current connection.
