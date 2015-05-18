@@ -48,7 +48,7 @@ class ResultSetHelper {
 	 * @return image object created
 	 * @throws TskCoreException thrown if critical error occurred within tsk
 	 * core
-	 * @throws SQLException thrown if SQL error occurres
+	 * @throws SQLException thrown if SQL error occurs
 	 */
 	Image image(ResultSet rs, String[] imagePaths) throws TskCoreException, SQLException {
 
