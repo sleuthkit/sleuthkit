@@ -656,6 +656,7 @@ WARN_LOGFILE           =
 # with spaces.
 
 INPUT                  = bindings/java/doxygen/main.dox \
+                         bindings/java/doxygen/blackboard.dox \
                          bindings/java/src
 
 # This tag can be used to specify the character encoding of the source files
