@@ -1413,7 +1413,7 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(s, "SELECT attribute_type_id FROM blackboard_attribute_types WHERE type_name = '" + attrTypeString + "'"); //NON-NLS
 			if (!rs.next()) {
 				rs.close();
-				connection.executeUpdate(s, "INSERT INTO blackboard_artifact_types (type_name, display_name) VALUES (" + attrTypeString + "', '" + displayName + "')"); //NON-NLS
+				connection.executeUpdate(s, "INSERT INTO blackboard_artifact_types (type_name, display_name) VALUES ('" + attrTypeString + "', '" + displayName + "')"); //NON-NLS
 				rs = s.getGeneratedKeys();
 			}
 			int type = rs.getInt(1);
