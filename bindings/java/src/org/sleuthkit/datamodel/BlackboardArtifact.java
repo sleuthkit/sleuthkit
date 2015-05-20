@@ -203,9 +203,27 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	private final int artifactTypeID;
 	private final String artifactTypeName;
 	private final String displayName;
-	private final SleuthkitCase Case;
+	private final SleuthkitCase sleuthkitCase;
 	private final List<BlackboardAttribute> attrsCache = new ArrayList<BlackboardAttribute>();
-	private boolean loadedCacheFromDb = false; // true once we've gone to the DB to fill in the attrsCache
+	private boolean loadedCacheFromDb = false; // true once we've gone to the DB to fill in the attrsCache.  Until it is set, it may not be complete.
+	
+	/**
+	 * Constructor for an artifact. Should only be used by SleuthkitCase
+	 * @param sleuthkitCase the case that can be used to access the database this artifact is part of
+	 * @param artifactID the id for this artifact
+	 * @param objID the object this artifact is associated with
+	 * @param artifactTypeID the type id of this artifact
+	 * @param artifactTypeName the type name of this artifact
+	 * @param displayName the display name of this artifact
+	 */
+	protected BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long objID, int artifactTypeID, String artifactTypeName, String displayName) {
+		this.sleuthkitCase = sleuthkitCase;
+		this.artifactID = artifactID;
+		this.objID = objID;
+		this.artifactTypeID = artifactTypeID;
+		this.artifactTypeName = artifactTypeName;
+		this.displayName = displayName;
+	}
 	
 	/**
 	 * Constructor for an artifact. Should only be used by SleuthkitCase
@@ -215,15 +233,21 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * @param artifactTypeID the type id of this artifact
 	 * @param artifactTypeName the type name of this artifact
 	 * @param displayName the display name of this artifact
+	 * @param isNew true if we are currently creating the artifact
 	 */
-	protected BlackboardArtifact(SleuthkitCase Case, long artifactID, long objID, int artifactTypeID, String artifactTypeName, String displayName) {
-		this.Case = Case;
+	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long objID, int artifactTypeID, String artifactTypeName, String displayName, boolean isNew) {
+		this.sleuthkitCase = sleuthkitCase;
 		this.artifactID = artifactID;
 		this.objID = objID;
 		this.artifactTypeID = artifactTypeID;
 		this.artifactTypeName = artifactTypeName;
 		this.displayName = displayName;
-	}
+		
+		// If the artifact is new, we don't need to waste a database call later to load the attributes
+		if(isNew){
+			this.loadedCacheFromDb = true;
+		}
+	}	
 
 	/**
 	 * Get the id for this artifact
@@ -272,8 +296,8 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 */
 	public void addAttribute(BlackboardAttribute attr) throws TskCoreException {
 		attr.setArtifactID(artifactID);
-		attr.setCase(Case);
-		Case.addBlackboardAttribute(attr, this.artifactTypeID);
+		attr.setCase(sleuthkitCase);
+		sleuthkitCase.addBlackboardAttribute(attr, this.artifactTypeID);
 		attrsCache.add(attr);
 	}
 
@@ -289,9 +313,9 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 		for (BlackboardAttribute attr : attributes) {
 			attr.setArtifactID(artifactID);
-			attr.setCase(Case);
+			attr.setCase(sleuthkitCase);
 		}
-		Case.addBlackboardAttributes(attributes, this.artifactTypeID);
+		sleuthkitCase.addBlackboardAttributes(attributes, this.artifactTypeID);
 		attrsCache.addAll(attributes);
 	}
 
@@ -302,7 +326,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 */
 	public List<BlackboardAttribute> getAttributes() throws TskCoreException {
 		if (loadedCacheFromDb == false) {
-			List <BlackboardAttribute> attrs =  Case.getBlackboardAttributes(this);
+			List <BlackboardAttribute> attrs =  sleuthkitCase.getBlackboardAttributes(this);
 			attrsCache.clear();
 			attrsCache.addAll(attrs);
 			loadedCacheFromDb = true;
@@ -327,7 +351,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * @return the case handle
 	 */
 	public SleuthkitCase getSleuthkitCase() {
-		return Case;
+		return sleuthkitCase;
 	}
 
 
@@ -355,6 +379,6 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 	@Override
 	public String toString() {
-		return "BlackboardArtifact{" + "artifactID=" + artifactID + ", objID=" + objID + ", artifactTypeID=" + artifactTypeID + ", artifactTypeName=" + artifactTypeName + ", displayName=" + displayName + ", Case=" + Case + '}'; //NON-NLS
+		return "BlackboardArtifact{" + "artifactID=" + artifactID + ", objID=" + objID + ", artifactTypeID=" + artifactTypeID + ", artifactTypeName=" + artifactTypeName + ", displayName=" + displayName + ", Case=" + sleuthkitCase + '}'; //NON-NLS
 	}
 }

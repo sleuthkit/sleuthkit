@@ -1794,7 +1794,7 @@ public class SleuthkitCase {
 			statement.setInt(3, artifact_type_id);
 			connection.executeUpdate(statement);
 			rs = statement.getGeneratedKeys();
-			return new BlackboardArtifact(this, rs.getLong(1), obj_id, artifact_type_id, artifactTypeName, artifactDisplayName);
+			return new BlackboardArtifact(this, rs.getLong(1), obj_id, artifact_type_id, artifactTypeName, artifactDisplayName, true);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error creating a blackboard artifact", ex);
 		} finally {
@@ -2596,11 +2596,11 @@ public class SleuthkitCase {
 			// Get the parent path.
 			String parentPath = getFileParentPath(parentId);
 			if (parentPath == null) {
-				parentPath = ""; //NON-NLS
+				parentPath = "/"; //NON-NLS
 			}
 			String parentName = getFileName(parentId);
 			if (parentName != null) {
-				parentPath = parentPath + "/" + parentName; //NON-NLS
+				parentPath = parentPath + parentName + "/"; //NON-NLS
 			}
 
 			// Insert a row for the virtual directory into the tsk_objects table.
@@ -2802,11 +2802,11 @@ public class SleuthkitCase {
 				// get the parent path for the $CarvedFiles directory		
 				String parentPath = getFileParentPath(id);
 				if (parentPath == null) {
-					parentPath = ""; //NON-NLS
+					parentPath = "/"; //NON-NLS
 				}
 				String parentName = getFileName(id);
 				if (parentName != null) {
-					parentPath = parentPath + "/" + parentName; //NON-NLS
+					parentPath = parentPath + parentName + "/"; //NON-NLS
 				}
 
 				// we should cache this when we start adding lots of carved files...
@@ -3109,8 +3109,8 @@ public class SleuthkitCase {
 				throw new TskCoreException(MessageFormat.format(bundle.getString("SleuthkitCase.addLocalFile.exception.msg1.text"), fileName));
 			} else {
 				parentId = parent.getId();
-				parentPath = parent.getParentPath() + "/" + parent.getName(); //NON-NLS
-			}
+				parentPath = parent.getParentPath() + parent.getName() + "/"; //NON-NLS
+				}
 
 			// Insert a row for the local/logical file into the tsk_objects table.
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
@@ -4005,7 +4005,7 @@ public class SleuthkitCase {
 					TSK_DB_FILES_TYPE_ENUM atype = TSK_DB_FILES_TYPE_ENUM.valueOf(type);
 					String parentPath = rs.getString("parent_path"); //NON-NLS
 					if (parentPath == null) {
-						parentPath = ""; //NON-NLS
+						parentPath = "/"; //NON-NLS
 					}
 					LayoutFile lf = new LayoutFile(this, rs.getLong("obj_id"), //NON-NLS
 							rs.getString("name"), //NON-NLS
@@ -4997,8 +4997,13 @@ public class SleuthkitCase {
 	private final class ConnectionPerThreadDispenser extends ThreadLocal<CaseDbConnection> {
 		
 		private final HashSet<CaseDbConnection> databaseConnections = new HashSet<CaseDbConnection>();
+		private boolean isClosed = false;
 
 		synchronized CaseDbConnection getConnection() throws TskCoreException {
+			if(isClosed){
+				throw new TskCoreException("Error getting case database connection - case is closed");
+			}
+			
 			CaseDbConnection connection = get();
 			if (!connection.isOpen()) {
 				throw new TskCoreException("Case database connection for current thread is not open");
@@ -5017,6 +5022,7 @@ public class SleuthkitCase {
 				entry.close();
 			}
 			databaseConnections.clear();
+			isClosed = true;
 		}
 
 		@Override
