@@ -161,7 +161,7 @@ class TskAuto {
     /**
      * Get the list of errors that were added to 
      * the internal list.  This list could be empty 
-     * if the implementign class already acted on 
+     * if the implementing class already acted on 
      * the errors or never called addToErrorList().
      * @returns list of errors.
      */
