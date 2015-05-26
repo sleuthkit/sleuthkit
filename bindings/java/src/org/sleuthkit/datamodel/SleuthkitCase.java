@@ -150,12 +150,12 @@ public class SleuthkitCase {
 				resultSet.close();
 				resultSet = null;
 			}
+			if (dbType == DbType.POSTGRESQL) {
+				int newPrimaryKeyIndex = Collections.max(Arrays.asList(ARTIFACT_TYPE.values())).getTypeID() + 1;
+				statement.execute("ALTER SEQUENCE blackboard_artifact_types_artifact_type_id_seq RESTART WITH " + newPrimaryKeyIndex);
+			}
 		} finally {
 			closeResultSet(resultSet);
-			if(dbType==DbType.POSTGRESQL) {
-				int newPrimaryKeyIndex = Collections.max(Arrays.asList(ARTIFACT_TYPE.values())).getTypeID()+1;
-				statement.execute("ALTER SEQUENCE blackboard_artifact_types_artifact_type_id_seq RESTART WITH "+newPrimaryKeyIndex);
-			}
 			closeStatement(statement);
 		}
 	}
@@ -181,12 +181,12 @@ public class SleuthkitCase {
 				resultSet.close();
 				resultSet = null;
 			}
-		} finally {
-			closeResultSet(resultSet);
 			if (dbType == DbType.POSTGRESQL) {
 				int newPrimaryKeyIndex = Collections.max(Arrays.asList(ATTRIBUTE_TYPE.values())).getTypeID() + 1;
 				statement.execute("ALTER SEQUENCE blackboard_attribute_types_attribute_type_id_seq RESTART WITH " + newPrimaryKeyIndex);
 			}
+		} finally {
+			closeResultSet(resultSet);
 			closeStatement(statement);
 		}
 	}
@@ -586,7 +586,7 @@ public class SleuthkitCase {
 	public static SleuthkitCase openCase(String dbPath) throws TskCoreException {
 		try {
 			final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
-			return new SleuthkitCase(dbPath, caseHandle, DbType.UNKNOWN);
+			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE);
 		} catch (Exception ex) {
 			throw new TskCoreException("Failed to open case database at " + dbPath, ex);
 		}
@@ -603,7 +603,7 @@ public class SleuthkitCase {
 	 */
 	public static SleuthkitCase openCase(String databaseName, CaseDbConnectionInfo info, String caseDir) throws TskCoreException {
 		try {
-			if (info.getDbType() != DbType.UNKNOWN) {
+			if (info.getDbType() != DbType.SQLITE) {
 				if (info.settingsValid()) {
 					final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(databaseName, info);
 					return new SleuthkitCase(info.getHost(), Integer.parseInt(info.getPort()), databaseName, info.getUserName(), info.getPassword(), caseHandle, caseDir, info.getDbType());
@@ -628,7 +628,7 @@ public class SleuthkitCase {
 	public static SleuthkitCase newCase(String dbPath) throws TskCoreException {
 		try {
 			SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.newCaseDb(dbPath);
-			return new SleuthkitCase(dbPath, caseHandle, DbType.UNKNOWN);
+			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE);
 		} catch (Exception ex) {
 			throw new TskCoreException("Failed to create case database at " + dbPath, ex);
 		}

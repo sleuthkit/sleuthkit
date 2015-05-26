@@ -706,7 +706,7 @@ public class TskData {
 		// with the Sleuthkit version of this enum located at:
 		// sleuthkit/tsk/auto/db_connection_info.h
 		// Be sure to add to settingsValid() if you add a type here.
-		UNKNOWN(0),
+		SQLITE(0),
 		POSTGRESQL(1);
 
 		private int value;

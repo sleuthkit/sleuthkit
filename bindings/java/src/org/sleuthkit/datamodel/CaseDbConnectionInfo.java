@@ -43,7 +43,7 @@ public class CaseDbConnectionInfo {
 
 	// Assorted constructors
 	public CaseDbConnectionInfo() {
-		dbType = DbType.UNKNOWN;
+		dbType = DbType.SQLITE;
 	}
 
 	public CaseDbConnectionInfo(String hostNameOrIP, String portNumber, String userName, String password, DbType dbType) {
@@ -116,7 +116,7 @@ public class CaseDbConnectionInfo {
 					}
 					break;
 
-				case UNKNOWN:
+				case SQLITE:
 					logger.log(Level.INFO, "Unknown database type."); //NON-NLS
 					commsEstablished = false;
 					break;
