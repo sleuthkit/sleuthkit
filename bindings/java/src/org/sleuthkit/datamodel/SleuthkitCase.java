@@ -67,6 +67,7 @@ public class SleuthkitCase {
 	private final Map<Long, Long> carvedFileContainersCache = new HashMap<Long, Long>(); // Caches the IDs of the root $CarvedFiles for each volume.
 	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system results.
 	private final ArrayList<ErrorObserver> errorObservers = new ArrayList<ErrorObserver>();
+	private final ArrayList<SleuthkitCaseErrorObserver> sleuthkitCaseErrorObservers = new ArrayList<SleuthkitCaseErrorObserver>();
 	private final String dbPath;
 	private final String caseDirPath;
 	private SleuthkitJNI.CaseDbHandle caseHandle;
@@ -4590,6 +4591,55 @@ public class SleuthkitCase {
 		}
 	}
 
+	/**
+	 * Handles errors in the Sleuthkit. To add a type, simply add it in the enum
+	 * below and handle the types you care about in your observing client.
+	 */
+	public interface SleuthkitCaseErrorObserver {
+
+		public enum TypeOfError {
+
+			DATABASE;
+		};
+
+		void receiveSleuthkitCaseError(TypeOfError typeOfError, String errorMessage);
+	}
+
+	/**
+	 * Add an observer for SleuthkitCase errors.
+	 *
+	 * @param observer The observer to add.
+	 */
+	public void addSleuthkitCaseErrorObserver(SleuthkitCaseErrorObserver observer) {
+		sleuthkitCaseErrorObservers.add(observer);
+	}
+
+	/**
+	 * Remove an observer for SleuthkitCase errors.
+	 *
+	 * @param observer The observer to remove.
+	 */
+	public void removeSleuthkitCaseErrorObserver(SleuthkitCaseErrorObserver observer) {
+		int i = sleuthkitCaseErrorObservers.indexOf(observer);
+		if (i >= 0) {
+			sleuthkitCaseErrorObservers.remove(i);
+		}
+	}
+
+	/**
+	 * Submit an error to all clients that are listening.
+	 *
+	 * @param typeOfError The error type. Different clients may handle different
+	 * types of errors.
+	 * @param errorMessage A description of the error that occurred.
+	 */
+	public void submitSleuthkitCaseError(SleuthkitCaseErrorObserver.TypeOfError typeOfError, String errorMessage) {
+		for (SleuthkitCaseErrorObserver observer : sleuthkitCaseErrorObservers) {
+			observer.receiveSleuthkitCaseError(typeOfError, errorMessage);
+		}
+	}
+
+	
 	/**
 	 * Selects all of the rows from the tag_names table in the case database.
 	 *
