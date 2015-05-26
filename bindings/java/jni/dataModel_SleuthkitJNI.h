@@ -39,7 +39,7 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_newCaseDbNat
  * Signature: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;)J
  */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_newCaseDbMultiNat
-    (JNIEnv *env, jclass cls, jstring host, jstring port, jstring user, jstring pass, jint asdf, jstring dbName);
+  (JNIEnv *, jclass, jstring, jstring, jstring, jstring, jint, jstring);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
