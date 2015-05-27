@@ -20,12 +20,12 @@ package org.sleuthkit.datamodel;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -33,16 +33,24 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
-import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.sleuthkit.datamodel.TskData.ObjectType;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
 import org.sleuthkit.datamodel.TskData.FileKnown;
+import org.sleuthkit.datamodel.TskData.ObjectType;
 import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -2596,20 +2604,22 @@ public class SleuthkitCase {
 		acquireSharedLock();
 		ResultSet rs = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILES_BY_FILE_SYSTEM_AND_NAME);
-			statement.clearParameters();
 			if (dataSource instanceof Image) {
+				PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILES_BY_FILE_SYSTEM_AND_NAME);
+					
 				for (FileSystem fileSystem : getFileSystems((Image) dataSource)) {
+					statement.clearParameters();
 					statement.setString(1, fileName.toLowerCase());
 					statement.setLong(2, fileSystem.getId());
 					rs = connection.executeQuery(statement);
 					files.addAll(resultSetToAbstractFiles(rs));
 				}
 			} else if (dataSource instanceof VirtualDirectory) {
-				//fs_obj_id is special for non-fs files (denotes data source)
-				statement.setString(1, fileName.toLowerCase());
-				statement.setLong(2, dataSource.getId());
-				rs = connection.executeQuery(statement);
+				// A future database schema could probably make this cleaner. 
+				// fs_obj_id is set only for file system files. 
+				// We will match the VirtualDirectory's name in the parent path
+				Statement s = connection.createStatement();
+				rs = connection.executeQuery(s, "SELECT * FROM tsk_files WHERE LOWER(name) LIKE '" + fileName.toLowerCase() + "'  and LOWER(name) NOT LIKE '%journal%' AND parent_path LIKE '/" + dataSource.getName() +"/%'"); //NON-NLS
 				files = resultSetToAbstractFiles(rs);
 			} else {
 				final String msg = MessageFormat.format(bundle.getString("SleuthkitCase.findFiles.exception.msg2.text"), dataSource);
@@ -2648,10 +2658,11 @@ public class SleuthkitCase {
 		acquireSharedLock();
 		ResultSet rs = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILES_BY_FILE_SYSTEM_AND_PATH);
-			statement.clearParameters();
 			if (dataSource instanceof Image) {
+				PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILES_BY_FILE_SYSTEM_AND_PATH);
+			
 				for (FileSystem fileSystem : getFileSystems((Image) dataSource)) {
+					statement.clearParameters();
 					statement.setString(1, fileName.toLowerCase());
 					statement.setString(2, "%" + dirName.toLowerCase() + "%"); //NON-NLS
 					statement.setLong(3, fileSystem.getId());
@@ -2659,10 +2670,11 @@ public class SleuthkitCase {
 					files.addAll(resultSetToAbstractFiles(rs));
 				}
 			} else if (dataSource instanceof VirtualDirectory) {
-				statement.setString(1, fileName.toLowerCase());
-				statement.setString(2, "%" + dirName.toLowerCase() + "%"); //NON-NLS
-				statement.setLong(3, dataSource.getId());
-				rs = connection.executeQuery(statement);
+				// A future database schema could probably make this cleaner. 
+				// fs_obj_id is set only for file system files. 
+				// We will match the VirtualDirectory's name in the parent path
+				Statement s = connection.createStatement();
+				rs = connection.executeQuery(s, "SELECT * FROM tsk_files WHERE LOWER(name) LIKE '" + fileName.toLowerCase() + "' and LOWER(name) NOT LIKE '%journal%' AND parent_path LIKE '/" + dataSource.getName() +"/%' AND lower(parent_path) LIKE '%" + dirName.toLowerCase() + "%'"); //NON-NLS
 				files = resultSetToAbstractFiles(rs);
 			} else {
 				final String msg = MessageFormat.format(bundle.getString("SleuthkitCase.findFiles3.exception.msg2.text"), dataSource);
@@ -4177,6 +4189,7 @@ public class SleuthkitCase {
 					final VirtualDirectory virtDir = rsHelper.virtualDirectory(rs);
 					results.add(virtDir);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS.getFileType()
+						|| type == TSK_DB_FILES_TYPE_ENUM.UNUSED_BLOCKS.getFileType()
 						|| type == TSK_DB_FILES_TYPE_ENUM.CARVED.getFileType()) {
 					TSK_DB_FILES_TYPE_ENUM atype = TSK_DB_FILES_TYPE_ENUM.valueOf(type);
 					String parentPath = rs.getString("parent_path"); //NON-NLS
