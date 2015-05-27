@@ -41,17 +41,15 @@ public class CaseDbConnectionInfo {
 	private DbType dbType;
 	private static final Logger logger = Logger.getLogger(CaseDbConnectionInfo.class.getName());
 
-	// Assorted constructors
-	public CaseDbConnectionInfo() {
-		dbType = DbType.UNKNOWN;
-	}
-
 	public CaseDbConnectionInfo(String hostNameOrIP, String portNumber, String userName, String password, DbType dbType) {
 		this.hostNameOrIP = hostNameOrIP;
 		this.portNumber = portNumber;
 		this.userName = userName;
 		this.password = password;
 		this.dbType = dbType;
+		if (this.dbType == DbType.SQLITE) {
+			logger.log(Level.WARNING, "Bad remote database case type!");
+		}
 	}
 
 	public DbType getDbType() {
@@ -116,7 +114,7 @@ public class CaseDbConnectionInfo {
 					}
 					break;
 
-				case UNKNOWN:
+				case SQLITE:
 					logger.log(Level.INFO, "Unknown database type."); //NON-NLS
 					commsEstablished = false;
 					break;

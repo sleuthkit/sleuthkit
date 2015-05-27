@@ -67,14 +67,23 @@ public class SleuthkitCase {
 	private final Map<Long, Long> carvedFileContainersCache = new HashMap<Long, Long>(); // Caches the IDs of the root $CarvedFiles for each volume.
 	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system results.
 	private final ArrayList<ErrorObserver> errorObservers = new ArrayList<ErrorObserver>();
-	private final ArrayList<SleuthkitCaseErrorObserver> sleuthkitCaseErrorObservers = new ArrayList<SleuthkitCaseErrorObserver>();
+	private static final ArrayList<SleuthkitCaseErrorObserver> sleuthkitCaseErrorObservers = new ArrayList<SleuthkitCaseErrorObserver>();
+	private static final int OUTER_LOOP_RETRY_ATTEMPTS = 5;
+	private static final int INNER_LOOP_RETRY_ATTEMPTS = 5;
+	private static final int SLEEP_LENGTH_IN_MILLISECONDS = 300;
 	private final String dbPath;
 	private final String caseDirPath;
 	private SleuthkitJNI.CaseDbHandle caseHandle;
 	private int versionNumber;
 	private String dbBackupPath;
 	private long nextArtifactId; // Used to ensure artifact ids come from the desired range.
-
+	private final String host;
+	private final int port;
+	private final String dbName;
+	private final String userName;
+	private final String password;
+	private final DbType dbType;
+	
 	// This read/write lock is used to implement a layer of locking on top of 
 	// the locking protocol provided by the underlying SQLite database. The Java
 	// locking protocol improves performance for reasons that are not currently
@@ -94,9 +103,16 @@ public class SleuthkitCase {
 	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle, DbType dbType) throws Exception {
 		Class.forName("org.sqlite.JDBC");
 		this.dbPath = dbPath;
+		this.caseHandle=caseHandle;
+		this.dbType=dbType;
 		this.caseDirPath = new java.io.File(dbPath).getParentFile().getAbsolutePath();
+		this.host="";
+		this.port=0;
+		this.dbName="";
+		this.userName="";
+		this.password="";
 		this.connections = new SQLiteConnections(dbPath);
-		init(caseHandle, dbType);
+		init(caseHandle);
 		updateDatabaseSchema(dbPath);
 		logSQLiteJDBCDriverInfo();
 	}
@@ -118,16 +134,23 @@ public class SleuthkitCase {
 	 */
 	private SleuthkitCase(String host, int port, String dbName, String userName, String password, SleuthkitJNI.CaseDbHandle caseHandle, String caseDirPath, DbType dbType) throws Exception {
 		this.dbPath = "";
+		this.host=host;
+		this.port=port;
+		this.dbName=dbName;
+		this.userName=userName;
+		this.password=password;
+		this.caseHandle=caseHandle;
 		this.caseDirPath = caseDirPath;
+		this.dbType=dbType;
 		this.connections = new PostgreSQLConnections(host, port, dbName, userName, password);
-		init(caseHandle, dbType);
+		init(caseHandle);
 		updateSchemaVersion();
 	}
 
-	private void init(SleuthkitJNI.CaseDbHandle caseHandle, DbType dbType) throws Exception {
+	private void init(SleuthkitJNI.CaseDbHandle caseHandle) throws Exception {
 		this.caseHandle = caseHandle;
-		initBlackboardArtifactTypes(dbType);
-		initBlackboardAttributeTypes(dbType);
+		initBlackboardArtifactTypes();
+		initBlackboardAttributeTypes();
 		initNextArtifactId();
 	}
 
@@ -136,7 +159,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws SQLException
 	 */
-	private void initBlackboardArtifactTypes(DbType dbType) throws SQLException, TskCoreException {
+	private void initBlackboardArtifactTypes() throws SQLException, TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		Statement statement = null;
 		ResultSet resultSet = null;
@@ -153,7 +176,7 @@ public class SleuthkitCase {
 			}
 		} finally {
 			closeResultSet(resultSet);
-			if(dbType==DbType.POSTGRESQL) {
+			if(this.dbType==DbType.POSTGRESQL) {
 				int newPrimaryKeyIndex = Collections.max(Arrays.asList(ARTIFACT_TYPE.values())).getTypeID()+1;
 				statement.execute("ALTER SEQUENCE blackboard_artifact_types_artifact_type_id_seq RESTART WITH "+newPrimaryKeyIndex);
 			}
@@ -167,7 +190,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws SQLException
 	 */
-	private void initBlackboardAttributeTypes(DbType dbType) throws SQLException, TskCoreException {
+	private void initBlackboardAttributeTypes() throws SQLException, TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		Statement statement = null;
 		ResultSet resultSet = null;
@@ -184,7 +207,7 @@ public class SleuthkitCase {
 			}
 		} finally {
 			closeResultSet(resultSet);
-			if (dbType == DbType.POSTGRESQL) {
+			if (this.dbType == DbType.POSTGRESQL) {
 				int newPrimaryKeyIndex = Collections.max(Arrays.asList(ATTRIBUTE_TYPE.values())).getTypeID() + 1;
 				statement.execute("ALTER SEQUENCE blackboard_attribute_types_attribute_type_id_seq RESTART WITH " + newPrimaryKeyIndex);
 			}
@@ -587,7 +610,7 @@ public class SleuthkitCase {
 	public static SleuthkitCase openCase(String dbPath) throws TskCoreException {
 		try {
 			final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
-			return new SleuthkitCase(dbPath, caseHandle, DbType.UNKNOWN);
+			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE);
 		} catch (Exception ex) {
 			throw new TskCoreException("Failed to open case database at " + dbPath, ex);
 		}
@@ -604,7 +627,7 @@ public class SleuthkitCase {
 	 */
 	public static SleuthkitCase openCase(String databaseName, CaseDbConnectionInfo info, String caseDir) throws TskCoreException {
 		try {
-			if (info.getDbType() != DbType.UNKNOWN) {
+			if (info.getDbType() != DbType.SQLITE) {
 				if (info.settingsValid()) {
 					final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(databaseName, info);
 					return new SleuthkitCase(info.getHost(), Integer.parseInt(info.getPort()), databaseName, info.getUserName(), info.getPassword(), caseHandle, caseDir, info.getDbType());
@@ -629,7 +652,7 @@ public class SleuthkitCase {
 	public static SleuthkitCase newCase(String dbPath) throws TskCoreException {
 		try {
 			SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.newCaseDb(dbPath);
-			return new SleuthkitCase(dbPath, caseHandle, DbType.UNKNOWN);
+			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE);
 		} catch (Exception ex) {
 			throw new TskCoreException("Failed to create case database at " + dbPath, ex);
 		}
@@ -4592,8 +4615,8 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Handles errors in the Sleuthkit. To add a type, simply add it in the enum
-	 * below and handle the types you care about in your observing client.
+	 * Handles errors in the SleuthkitCase. To add a type, simply add it in the
+	 * enum below and handle the types you care about in your observing client.
 	 */
 	public interface SleuthkitCaseErrorObserver {
 
@@ -4610,7 +4633,7 @@ public class SleuthkitCase {
 	 *
 	 * @param observer The observer to add.
 	 */
-	public void addSleuthkitCaseErrorObserver(SleuthkitCaseErrorObserver observer) {
+	public static void addSleuthkitCaseErrorObserver(SleuthkitCaseErrorObserver observer) {
 		sleuthkitCaseErrorObservers.add(observer);
 	}
 
@@ -4619,7 +4642,7 @@ public class SleuthkitCase {
 	 *
 	 * @param observer The observer to remove.
 	 */
-	public void removeSleuthkitCaseErrorObserver(SleuthkitCaseErrorObserver observer) {
+	public static void removeSleuthkitCaseErrorObserver(SleuthkitCaseErrorObserver observer) {
 		int i = sleuthkitCaseErrorObservers.indexOf(observer);
 		if (i >= 0) {
 			sleuthkitCaseErrorObservers.remove(i);
@@ -4633,9 +4656,15 @@ public class SleuthkitCase {
 	 * types of errors.
 	 * @param errorMessage A description of the error that occurred.
 	 */
-	public void submitSleuthkitCaseError(SleuthkitCaseErrorObserver.TypeOfError typeOfError, String errorMessage) {
+	public static void submitSleuthkitCaseError(SleuthkitCaseErrorObserver.TypeOfError typeOfError, String errorMessage) {
 		for (SleuthkitCaseErrorObserver observer : sleuthkitCaseErrorObservers) {
-			observer.receiveSleuthkitCaseError(typeOfError, errorMessage);
+			if (observer != null) {
+				try {
+					observer.receiveSleuthkitCaseError(typeOfError, errorMessage);
+				} catch (Exception ex) {
+					logger.log(Level.WARNING, "Observer client unable to receive message", ex);
+				}
+			}
 		}
 	}
 
@@ -5304,6 +5333,243 @@ public class SleuthkitCase {
 
 	}
 
+	private interface DbCommand {
+
+		void execute() throws SQLException;
+	}
+
+	private final static class CreateStatement implements DbCommand {
+
+		private final Connection connection;
+		private Statement statement = null;
+
+		public CreateStatement(Connection connection) {
+			this.connection = connection;
+		}
+
+		Statement getStatement() {
+			return statement;
+		}
+
+		@Override
+		public void execute() throws SQLException {
+			statement = connection.createStatement();
+		}
+	}
+
+	private final static class SetAutoCommit implements DbCommand {
+
+		private final Connection connection;
+		private final boolean mode;
+
+		SetAutoCommit(Connection connection, boolean mode) {
+			this.connection = connection;
+			this.mode = mode;
+		}
+
+		@Override
+		public void execute() throws SQLException {
+			try {
+				connection.setAutoCommit(mode);
+			}
+			catch (SQLException ex) {
+				logger.log(Level.SEVERE, String.format("Exception changing auto commit: Error code: %d SQLState: %s", ex.getErrorCode(), ex.getSQLState()), ex);
+			}		
+		}
+	}
+
+	private final static class Commit implements DbCommand {
+
+		private final Connection connection;
+
+		public Commit(Connection connection) {
+			this.connection = connection;
+		}
+
+		@Override
+		public void execute() throws SQLException {
+			try {
+				connection.commit();
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, String.format("Exception commiting transaction: Error code: %d SQLState: %s", ex.getErrorCode(), ex.getSQLState()), ex);
+				throw ex;
+			}			
+		}
+	}
+
+	private final static class ExecuteQuery implements DbCommand {
+
+		private final Statement statement;
+		private final String query;
+		private ResultSet resultSet;
+
+		ExecuteQuery(Statement statement, String query) {
+			this.statement = statement;
+			this.query = query;
+		}
+
+		ResultSet getResultSet() {
+			return resultSet;
+		}
+
+		@Override
+		public void execute() throws SQLException {
+			resultSet = statement.executeQuery(query);
+		}
+	}
+
+	private final static class ExecutePreparedStatementQuery implements DbCommand {
+
+		private final PreparedStatement preparedStatement;
+		private ResultSet resultSet;
+
+		ExecutePreparedStatementQuery(PreparedStatement preparedStatement) {
+			this.preparedStatement = preparedStatement;
+		}
+
+		ResultSet getResultSet() {
+			return resultSet;
+		}
+
+		@Override
+		public void execute() throws SQLException {
+			resultSet = preparedStatement.executeQuery();
+		}
+	}
+
+	private final static class ExecutePreparedStatementUpdate implements DbCommand {
+
+		private final PreparedStatement preparedStatement;
+
+		ExecutePreparedStatementUpdate(PreparedStatement preparedStatement) {
+			this.preparedStatement = preparedStatement;
+		}
+
+		@Override
+		public void execute() throws SQLException {
+			preparedStatement.executeUpdate();
+		}
+	}
+
+	private final static class ExecuteStatementUpdate implements DbCommand {
+
+		private final Statement statement;
+		private final String updateCommand;
+
+		ExecuteStatementUpdate(Statement statement, String updateCommand) {
+			this.statement = statement;
+			this.updateCommand = updateCommand;
+		}
+
+		@Override
+		public void execute() throws SQLException {
+			statement.executeUpdate(updateCommand);
+		}
+	}
+
+	private final static class ExecuteStatementUpdateGenerateKeys implements DbCommand {
+
+		private final Statement statement;
+		private final int generateKeys;
+		private final String updateCommand;
+
+		ExecuteStatementUpdateGenerateKeys(Statement statement, String updateCommand, int generateKeys) {
+			this.statement = statement;
+			this.generateKeys = generateKeys;
+			this.updateCommand = updateCommand;
+		}
+
+		@Override
+		public void execute() throws SQLException {
+			statement.executeUpdate(updateCommand, generateKeys);
+		}
+	}
+
+	private final static class PrepareStatement implements DbCommand {
+
+		private final Connection connection;
+		private final String input;
+		private PreparedStatement preparedStatement = null;
+
+		public PrepareStatement(Connection connection, String input) {
+			this.connection = connection;
+			this.input = input;
+		}
+
+		PreparedStatement getPreparedStatement() {
+			return preparedStatement;
+		}
+
+		@Override
+		public void execute() throws SQLException {
+			preparedStatement = connection.prepareStatement(input);
+		}
+	}
+
+	private final static class PrepareStatementGenerateKeys implements DbCommand {
+
+		private final Connection connection;
+		private final String input;
+		private final int generateKeys;
+		private PreparedStatement preparedStatement = null;
+
+		public PrepareStatementGenerateKeys(Connection connection, String input, int generateKeysInput) {
+			this.connection = connection;
+			this.input = input;
+			this.generateKeys = generateKeysInput;
+		}
+
+		PreparedStatement getPreparedStatement() {
+			return preparedStatement;
+		}
+
+		@Override
+		public void execute() throws SQLException {
+			preparedStatement = connection.prepareStatement(input, generateKeys);
+		}
+	}
+
+	private static void executeCommand(DbCommand command) throws SQLException {
+		int outerLoopRetryAttempts = OUTER_LOOP_RETRY_ATTEMPTS;
+		int innerLoopRetryAttempts = INNER_LOOP_RETRY_ATTEMPTS;
+		boolean complete = false;
+		boolean cannot_reconnect = false;
+		SQLException lastExceptionOutput = null;
+
+		while ((complete == false) && (0 < outerLoopRetryAttempts--) && (cannot_reconnect == false)) {
+			while ((complete == false) && (0 < innerLoopRetryAttempts--) && (cannot_reconnect == false)) {
+				try {
+					// Perform the operation
+					command.execute();
+					complete = true;
+				} catch (SQLException ex) {
+					lastExceptionOutput = ex;
+				}
+			}  // end inner while loop
+
+			if (complete == false) {
+				try {
+					Thread.sleep(SLEEP_LENGTH_IN_MILLISECONDS);
+				} catch (InterruptedException ex) {
+					Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, null, ex);
+				}
+				try {
+					/// TODO KDM: Close the db connection and reopen it
+					throw new SQLException(); // KDM
+				} catch (SQLException ex) {
+					lastExceptionOutput = ex;
+					cannot_reconnect = true;
+				}
+			}
+		} // end outer while loop
+		if ((complete == false) || (cannot_reconnect == true)) {
+			if (null != sleuthkitCaseErrorObservers) {
+				submitSleuthkitCaseError(SleuthkitCaseErrorObserver.TypeOfError.DATABASE, lastExceptionOutput.getMessage());
+			}
+			throw lastExceptionOutput;
+		}
+	}
+
 	/**
 	 * An abstract base class for case database connection objects.
 	 */
@@ -5429,52 +5695,22 @@ public class SleuthkitCase {
 		abstract PreparedStatement prepareStatement(String sqlStatement, int generateKeys) throws SQLException;
 
 		Statement createStatement() throws SQLException {
-			Statement statement = null;
-			boolean locked = true;
-			while (locked) {
-				try {
-					statement = this.connection.createStatement();
-					locked = false;
-				} catch (SQLException ex) {
-					handleException(ex);
-				}
-			}
-			return statement;
+			CreateStatement createStatement = new CreateStatement(this.connection);
+			executeCommand(createStatement);
+			return createStatement.getStatement();
 		}
 
 		void beginTransaction() throws SQLException {
-			boolean locked = true;
-			while (locked) {
-				try {
-					connection.setAutoCommit(false);
-					locked = false;
-				} catch (SQLException ex) {
-					handleException(ex);
-				}
-			}
+			SetAutoCommit setAutoCommit = new SetAutoCommit(connection, false);
+			executeCommand(setAutoCommit);
 		}
 
 		void commitTransaction() throws SQLException {
-			boolean locked = true;
-
-			// Exceptions can be thrown on a call to commit so we will retry
-			// until it succeeds.
-			while (locked) {
-				try {
-					connection.commit();
-					locked = false;
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, String.format("Exception commiting transaction: Error code: %d SQLState: %s", ex.getErrorCode(), ex.getSQLState()), ex);
-				}
-			}
-
+			Commit commit=new Commit(connection);
+			executeCommand(commit);
 			// You must turn auto commit back on when done with the transaction.
-			try {
-				connection.setAutoCommit(true);
-			}
-			catch (SQLException ex) {
-				logger.log(Level.SEVERE, String.format("Exception resetting auto commit: Error code: %d SQLState: %s", ex.getErrorCode(), ex.getSQLState()), ex);
-			}
+			SetAutoCommit setAutoCommit = new SetAutoCommit(connection, true);
+			executeCommand(setAutoCommit);
 		}
 
 		/**
@@ -5510,18 +5746,11 @@ public class SleuthkitCase {
 			}
 		}
 
-		ResultSet executeQuery(Statement statement, String query) throws SQLException {
-			ResultSet resultSet = null;
-			boolean locked = true;
-			while (locked) {
-				try {
-					resultSet = statement.executeQuery(query);
-					locked = false;
-				} catch (SQLException ex) {
-					handleException(ex);
-				}
-			}
-			return resultSet;
+		ResultSet executeQuery(Statement statement, String query) throws SQLException 
+		{			
+			ExecuteQuery queryCommand = new ExecuteQuery(statement, query);
+			executeCommand(queryCommand);
+			return queryCommand.getResultSet();
 		}
 
 		/**
@@ -5533,17 +5762,9 @@ public class SleuthkitCase {
 		 * \ref insert_and_update_database_page
 		 */
 		ResultSet executeQuery(PreparedStatement statement) throws SQLException {
-			ResultSet resultSet = null;
-			boolean locked = true;
-			while (locked) {
-				try {
-					resultSet = statement.executeQuery();
-					locked = false;
-				} catch (SQLException ex) {
-					handleException(ex);
-				}
-			}
-			return resultSet;
+			ExecutePreparedStatementQuery executePreparedStatementQuery = new ExecutePreparedStatementQuery(statement);
+			executeCommand(executePreparedStatementQuery);
+			return executePreparedStatementQuery.getResultSet();
 		}
 
 		void executeUpdate(Statement statement, String update) throws SQLException {
@@ -5553,15 +5774,8 @@ public class SleuthkitCase {
 		abstract void executeUpdate(Statement statement, String update, int generateKeys) throws SQLException;
 		
 		void executeUpdate(PreparedStatement statement) throws SQLException {
-			boolean locked = true;
-			while (locked) {
-				try {
-					statement.executeUpdate();
-					locked = false;
-				} catch (SQLException ex) {
-					handleException(ex);
-				}
-			}
+			ExecutePreparedStatementUpdate executePreparedStatementUpdate = new ExecutePreparedStatementUpdate(statement);
+			executeCommand(executePreparedStatementUpdate);
 		}
 
 		/**
@@ -5577,7 +5791,7 @@ public class SleuthkitCase {
 
 		abstract void handleException(SQLException ex) throws SQLException;
 
-		protected Connection getConnection() {
+		Connection getConnection() {
 			return this.connection;
 		}
 	}
@@ -5596,32 +5810,15 @@ public class SleuthkitCase {
 
 		@Override
 		void executeUpdate(Statement statement, String update, int generateKeys) throws SQLException {
-			boolean locked = true;
-			while (locked) {
-				try {
-					// Do not pass in generateKeys, as SQLite returns generated keys anyway
-					statement.executeUpdate(update);
-					locked = false;
-				} catch (SQLException ex) {
-					handleException(ex);
-				}
-			}
+			ExecuteStatementUpdate executeStatementUpdate = new ExecuteStatementUpdate(statement, update);
+			executeCommand(executeStatementUpdate);
 		}
 
 		@Override
 		PreparedStatement prepareStatement(String sqlStatement, int generateKeys) throws SQLException {
-			PreparedStatement statement = null;
-			boolean locked = true;
-			while (locked) {
-				try {
-					// Do not pass in generateKeys, as SQLite returns generated keys anyway
-					statement = this.getConnection().prepareStatement(sqlStatement);
-					locked = false;
-				} catch (SQLException ex) {
-					handleException(ex);
-				}
-			}
-			return statement;
+			PrepareStatement prepareStatement = new PrepareStatement(this.getConnection(), sqlStatement);
+			executeCommand(prepareStatement);
+			return prepareStatement.getPreparedStatement();
 		}
 
 		static Connection createConnection(String dbPath) {
@@ -5682,31 +5879,16 @@ public class SleuthkitCase {
 
 		@Override
 		void executeUpdate(Statement statement, String update, int generateKeys) throws SQLException {
-			boolean locked = true;
-			while (locked) {
-				try {
-					statement.executeUpdate(update, generateKeys);
-					locked = false;
-				} catch (SQLException ex) {
-					handleException(ex);
-				}
-			}
+			ExecuteStatementUpdateGenerateKeys executeStatementUpdateGenerateKeys = new ExecuteStatementUpdateGenerateKeys(statement, update, generateKeys);
+			executeCommand(executeStatementUpdateGenerateKeys);
 		}
 		
 		@Override
 		PreparedStatement prepareStatement(String sqlStatement, int generateKeys) throws SQLException {
-			PreparedStatement statement = null;
-			boolean locked = true;
-			while (locked) {
-				try {
-					statement = this.getConnection().prepareStatement(sqlStatement, generateKeys);
-					locked = false;
-				} catch (SQLException ex) {
-					handleException(ex);
-				}
+			PrepareStatementGenerateKeys prepareStatementGenerateKeys = new PrepareStatementGenerateKeys(this.getConnection(), sqlStatement, generateKeys);
+			executeCommand(prepareStatementGenerateKeys);
+			return prepareStatementGenerateKeys.getPreparedStatement();
 			}
-			return statement;
-		}
 
 		static Connection createConnection(String host, int port, String dbName, String userName, String password) {
 			try {
