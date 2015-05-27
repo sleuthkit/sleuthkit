@@ -344,6 +344,7 @@ class ResultSetHelper {
 				VirtualDirectory virtDir = virtualDirectory(rs);
 				children.add(virtDir);
 			} else if (type == TskData.TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS
+					|| type == TskData.TSK_DB_FILES_TYPE_ENUM.UNUSED_BLOCKS
 					|| type == TskData.TSK_DB_FILES_TYPE_ENUM.CARVED) {
 				String parentPath = rs.getString("parent_path");
 				if (parentPath == null) {

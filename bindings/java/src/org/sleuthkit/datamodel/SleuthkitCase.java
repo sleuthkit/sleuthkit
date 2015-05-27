@@ -4013,6 +4013,7 @@ public class SleuthkitCase {
 					final VirtualDirectory virtDir = rsHelper.virtualDirectory(rs);
 					results.add(virtDir);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS.getFileType()
+						|| type == TSK_DB_FILES_TYPE_ENUM.UNUSED_BLOCKS.getFileType()
 						|| type == TSK_DB_FILES_TYPE_ENUM.CARVED.getFileType()) {
 					TSK_DB_FILES_TYPE_ENUM atype = TSK_DB_FILES_TYPE_ENUM.valueOf(type);
 					String parentPath = rs.getString("parent_path"); //NON-NLS
