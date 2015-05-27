@@ -3913,7 +3913,10 @@ public class SleuthkitCase {
 			} else if (info.type == ObjectType.FS) {
 				children.add(getFileSystemById(info.id, img));
 			} else if (info.type == ObjectType.ABSTRACTFILE) {
-				children.add(getAbstractFileById(info.id));
+				AbstractFile f = getAbstractFileById(info.id);
+				if(f != null){
+					children.add(f);
+				}
 			} else {
 				throw new TskCoreException("Image has child of invalid type: " + info.type);
 			}
@@ -3959,7 +3962,10 @@ public class SleuthkitCase {
 			if (info.type == ObjectType.VOL) {
 				children.add(getVolumeById(info.id, vs));
 			} else if (info.type == ObjectType.ABSTRACTFILE) {
-				children.add(getAbstractFileById(info.id));
+				AbstractFile f = getAbstractFileById(info.id);
+				if(f != null){
+					children.add(f);
+				}
 			} else {
 				throw new TskCoreException("VolumeSystem has child of invalid type: " + info.type);
 			}
@@ -4003,7 +4009,10 @@ public class SleuthkitCase {
 			if (info.type == ObjectType.FS) {
 				children.add(getFileSystemById(info.id, vol));
 			} else if (info.type == ObjectType.ABSTRACTFILE) {
-				children.add(getAbstractFileById(info.id));
+				AbstractFile f = getAbstractFileById(info.id);
+				if(f != null){
+					children.add(f);
+				}
 			} else {
 				throw new TskCoreException("Volume has child of invalid type: " + info.type);
 			}
