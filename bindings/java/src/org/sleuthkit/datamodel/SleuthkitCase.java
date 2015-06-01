@@ -86,11 +86,6 @@ public class SleuthkitCase {
 	private int versionNumber;
 	private String dbBackupPath;
 	private long nextArtifactId; // Used to ensure artifact ids come from the desired range.
-	private final String host;
-	private final int port;
-	private final String dbName;
-	private final String userName;
-	private final String password;
 	private final DbType dbType;
 	
 	// This read/write lock is used to implement a layer of locking on top of 
@@ -115,11 +110,6 @@ public class SleuthkitCase {
 		this.caseHandle=caseHandle;
 		this.dbType=dbType;
 		this.caseDirPath = new java.io.File(dbPath).getParentFile().getAbsolutePath();
-		this.host="";
-		this.port=0;
-		this.dbName="";
-		this.userName="";
-		this.password="";
 		this.connections = new SQLiteConnections(dbPath);
 		init(caseHandle);
 		updateDatabaseSchema(dbPath);
@@ -672,6 +662,7 @@ public class SleuthkitCase {
 	 *
 	 * @param info the information to connect to the database
 	 * @param databaseName the name of the database
+	 * @param caseDirPath the path of the case
 	 * @return Case database object.
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
@@ -909,7 +900,7 @@ public class SleuthkitCase {
 	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, String subString, boolean startsWith) throws TskCoreException {
 		subString = "%" + subString; //NON-NLS
 		if (startsWith == false) {
-			subString = subString + "%"; //NON-NLS
+			subString += "%"; //NON-NLS
 		}
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
@@ -3411,6 +3402,7 @@ public class SleuthkitCase {
 	 * @param parentFile Object for parent file/directory to find children in
 	 * @return a list of AbstractFile for files/directories whose name matches
 	 * fileName and that were inside a directory described by parentFile.
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public List<AbstractFile> findFiles(Content dataSource, String fileName, AbstractFile parentFile) throws TskCoreException {
 		return findFiles(dataSource, fileName, parentFile.getName());
@@ -3544,6 +3536,7 @@ public class SleuthkitCase {
 	 * can optionally include the image and volume names. Treated in a case-
 	 * insensitive manner.
 	 * @return a list of AbstractFile that have the given file path.
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public List<AbstractFile> openFiles(Content dataSource, String filePath) throws TskCoreException {
 
@@ -5397,6 +5390,7 @@ public class SleuthkitCase {
 			}
 			catch (SQLException ex) {
 				logger.log(Level.SEVERE, String.format("Exception changing auto commit: Error code: %d SQLState: %s", ex.getErrorCode(), ex.getSQLState()), ex);
+				throw ex;
 			}		
 		}
 	}
@@ -5415,7 +5409,6 @@ public class SleuthkitCase {
 				connection.commit();
 			} catch (SQLException ex) {
 				logger.log(Level.SEVERE, String.format("Exception commiting transaction: Error code: %d SQLState: %s", ex.getErrorCode(), ex.getSQLState()), ex);
-				throw ex;
 			}			
 		}
 	}
@@ -5557,7 +5550,8 @@ public class SleuthkitCase {
 		int innerLoopRetryAttempts = INNER_LOOP_RETRY_ATTEMPTS;
 		boolean complete = false;
 		boolean cannot_reconnect = false;
-		SQLException lastExceptionOutput = null;
+		SQLException lastExceptionOutput = new SQLException(
+				bundle.getString("SleuthkitCase.CouldNotCompleteDatabaseOperation"));
 
 		while ((complete == false) && (0 < outerLoopRetryAttempts--) && (cannot_reconnect == false)) {
 			while ((complete == false) && (0 < innerLoopRetryAttempts--) && (cannot_reconnect == false)) {
@@ -5576,13 +5570,16 @@ public class SleuthkitCase {
 				} catch (InterruptedException ex) {
 					Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, null, ex);
 				}
+				/*  If you want to close the database connection and reopen it 
+				to try to recover, this is the place to do it. Fill in the TODO
+				below
 				try {
-					/// TODO KDM: Close the db connection and reopen it
-					throw new SQLException(); // KDM
+					/// TODO: Close the db connection and reopen it
 				} catch (SQLException ex) {
 					lastExceptionOutput = ex;
 					cannot_reconnect = true;
 				}
+				*/
 			}
 		} // end outer while loop
 		if ((complete == false) || (cannot_reconnect == true)) {
