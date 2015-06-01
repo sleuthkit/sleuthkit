@@ -107,7 +107,6 @@ public class SleuthkitCase {
 	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle, DbType dbType) throws Exception {
 		Class.forName("org.sqlite.JDBC");
 		this.dbPath = dbPath;
-		this.caseHandle=caseHandle;
 		this.dbType=dbType;
 		this.caseDirPath = new java.io.File(dbPath).getParentFile().getAbsolutePath();
 		this.connections = new SQLiteConnections(dbPath);
@@ -133,7 +132,6 @@ public class SleuthkitCase {
 	 */
 	private SleuthkitCase(String host, int port, String dbName, String userName, String password, SleuthkitJNI.CaseDbHandle caseHandle, String caseDirPath, DbType dbType) throws Exception {
 		this.dbPath = "";
-		this.caseHandle=caseHandle;
 		this.caseDirPath = caseDirPath;
 		this.dbType=dbType;
 		this.connections = new PostgreSQLConnections(host, port, dbName, userName, password);
