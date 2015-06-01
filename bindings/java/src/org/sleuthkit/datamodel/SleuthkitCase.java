@@ -133,11 +133,6 @@ public class SleuthkitCase {
 	 */
 	private SleuthkitCase(String host, int port, String dbName, String userName, String password, SleuthkitJNI.CaseDbHandle caseHandle, String caseDirPath, DbType dbType) throws Exception {
 		this.dbPath = "";
-		this.host=host;
-		this.port=port;
-		this.dbName=dbName;
-		this.userName=userName;
-		this.password=password;
 		this.caseHandle=caseHandle;
 		this.caseDirPath = caseDirPath;
 		this.dbType=dbType;
