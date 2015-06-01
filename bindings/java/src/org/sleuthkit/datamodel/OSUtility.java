@@ -97,6 +97,9 @@ public class OSUtility {
 		for (BlackboardArtifact art : results) {
 
 			AbstractFile file = skCase.getAbstractFileById(art.getObjectID());
+			if(file == null){
+				continue;
+			}
 
 			// Check if we're in a backup directory. If so and we're not including backups,
 			// skip this artifact.
