@@ -280,6 +280,8 @@ AC_CONFIG_COMMANDS([tsk/tsk_incs.h],
     ac_cv_header_sys_param_h=$ac_cv_header_sys_param_h
     ax_pthread_ok=$ax_pthread_ok])
 
+AC_CHECK_FUNCS([getline], [], [AC_MSG_WARN([no getline, so fiwalk will not be built])])
+AM_CONDITIONAL([BUILD_FIWALK], [test "x$ac_cv_func_getline" = "xyes"])
 
 AC_CONFIG_FILES([
     Makefile
