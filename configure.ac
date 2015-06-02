@@ -280,6 +280,20 @@ AC_CONFIG_COMMANDS([tsk/tsk_incs.h],
     ac_cv_header_sys_param_h=$ac_cv_header_sys_param_h
     ax_pthread_ok=$ax_pthread_ok])
 
+AC_MSG_CHECKING([if libtool needs -no-undefined flag to build shared libraries])
+case "$host" in
+*-*-mingw*)
+  dnl Add -no-undefined flag to LDFLAGS to let libtool build DLLs.
+  AC_MSG_RESULT([yes])
+  LIBTSK_LDFLAGS="-no-undefined"
+  AC_SUBST([LIBTSK_LDFLAGS])
+  ;;
+  *)
+  dnl No additional flags needed.
+  AC_MSG_RESULT([no])
+  ;;
+esac
+
 AC_CHECK_FUNCS([getline], [], [AC_MSG_WARN([no getline, so fiwalk will not be built])])
 AM_CONDITIONAL([BUILD_FIWALK], [test "x$ac_cv_func_getline" = "xyes"])
 
