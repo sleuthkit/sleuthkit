@@ -4579,16 +4579,9 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Handles errors in the SleuthkitCase. To add a type, simply add it in the
-	 * enum below and handle the types you care about in your observing client.
+	 * Notifies observers of errors in the SleuthkitCase.
 	 */
 	public interface ErrorObserver {
-
-		public enum TypeOfError {
-
-			DATABASE;
-			
-		};
 
 		void receiveError(Exception ex);
 	}
