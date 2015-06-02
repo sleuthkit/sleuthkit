@@ -77,6 +77,7 @@ public class SleuthkitCase {
 	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system results.
 	private final ArrayList<ErrorObserver> errorObservers = new ArrayList<ErrorObserver>();
 	private final String dbPath;
+	private final DbType dbType;
 	private final String caseDirPath;
 	private SleuthkitJNI.CaseDbHandle caseHandle;
 	private int versionNumber;
@@ -102,9 +103,10 @@ public class SleuthkitCase {
 	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle, DbType dbType) throws Exception {
 		Class.forName("org.sqlite.JDBC");
 		this.dbPath = dbPath;
+		this.dbType = dbType;
 		this.caseDirPath = new java.io.File(dbPath).getParentFile().getAbsolutePath();
 		this.connections = new SQLiteConnections(dbPath);
-		init(caseHandle, dbType);
+		init(caseHandle);
 		updateDatabaseSchema(dbPath);
 		logSQLiteJDBCDriverInfo();
 	}
@@ -126,16 +128,17 @@ public class SleuthkitCase {
 	 */
 	private SleuthkitCase(String host, int port, String dbName, String userName, String password, SleuthkitJNI.CaseDbHandle caseHandle, String caseDirPath, DbType dbType) throws Exception {
 		this.dbPath = "";
+		this.dbType = dbType;
 		this.caseDirPath = caseDirPath;
 		this.connections = new PostgreSQLConnections(host, port, dbName, userName, password);
-		init(caseHandle, dbType);
+		init(caseHandle);
 		updateSchemaVersion();
 	}
 
-	private void init(SleuthkitJNI.CaseDbHandle caseHandle, DbType dbType) throws Exception {
+	private void init(SleuthkitJNI.CaseDbHandle caseHandle) throws Exception {
 		this.caseHandle = caseHandle;
-		initBlackboardArtifactTypes(dbType);
-		initBlackboardAttributeTypes(dbType);
+		initBlackboardArtifactTypes();
+		initBlackboardAttributeTypes();
 		initNextArtifactId();
 	}
 
@@ -144,7 +147,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws SQLException
 	 */
-	private void initBlackboardArtifactTypes(DbType dbType) throws SQLException, TskCoreException {
+	private void initBlackboardArtifactTypes() throws SQLException, TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		Statement statement = null;
 		ResultSet resultSet = null;
@@ -175,7 +178,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws SQLException
 	 */
-	private void initBlackboardAttributeTypes(DbType dbType) throws SQLException, TskCoreException {
+	private void initBlackboardAttributeTypes() throws SQLException, TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		Statement statement = null;
 		ResultSet resultSet = null;
@@ -1929,11 +1932,20 @@ public class SleuthkitCase {
 		acquireExclusiveLock();
 		ResultSet rs = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_ARTIFACT, Statement.RETURN_GENERATED_KEYS);
-			statement.clearParameters();
-			statement.setLong(1, this.nextArtifactId++);
-			statement.setLong(2, obj_id);
-			statement.setInt(3, artifact_type_id);
+			PreparedStatement statement;
+			if (dbType == DbType.POSTGRESQL) {
+				statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.POSTGRESQL_INSERT_ARTIFACT, Statement.RETURN_GENERATED_KEYS);
+				statement.clearParameters();
+				statement.setLong(1, obj_id);
+				statement.setInt(2, artifact_type_id);
+			}
+			else {
+				statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_ARTIFACT, Statement.RETURN_GENERATED_KEYS);				
+				statement.clearParameters();
+				statement.setLong(1, this.nextArtifactId++);
+				statement.setLong(2, obj_id);
+				statement.setInt(3, artifact_type_id);
+			}
 			connection.executeUpdate(statement);
 			rs = statement.getGeneratedKeys();
 			rs.next();
@@ -5314,6 +5326,8 @@ public class SleuthkitCase {
 			SELECT_FILE_BY_ID("SELECT * FROM tsk_files WHERE obj_id = ? LIMIT 1"), //NON-NLS
 			INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id) " //NON-NLS
 					+ "VALUES (?, ?, ?)"), //NON-NLS
+			POSTGRESQL_INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id) " //NON-NLS
+					+ "VALUES (DEFAULT, ?, ?)"), //NON-NLS
 			INSERT_STRING_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_text) " //NON-NLS
 					+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
 			INSERT_BYTE_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_byte) " //NON-NLS
