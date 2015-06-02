@@ -75,11 +75,8 @@ public class SleuthkitCase {
 	private final ResultSetHelper rsHelper = new ResultSetHelper(this);
 	private final Map<Long, Long> carvedFileContainersCache = new HashMap<Long, Long>(); // Caches the IDs of the root $CarvedFiles for each volume.
 	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system results.
-	private final ArrayList<ErrorObserver> errorObservers = new ArrayList<ErrorObserver>();
-	private static final ArrayList<SleuthkitCaseErrorObserver> sleuthkitCaseErrorObservers = new ArrayList<SleuthkitCaseErrorObserver>();
-	private static final int OUTER_LOOP_RETRY_ATTEMPTS = 5;
-	private static final int INNER_LOOP_RETRY_ATTEMPTS = 5;
-	private static final int SLEEP_LENGTH_IN_MILLISECONDS = 300;
+	private static final ArrayList<ErrorObserver> sleuthkitCaseErrorObservers = new ArrayList<ErrorObserver>();
+	private static final int SLEEP_LENGTH_IN_MILLISECONDS = 50;
 	private final String dbPath;
 	private final String caseDirPath;
 	private SleuthkitJNI.CaseDbHandle caseHandle;
@@ -4574,67 +4571,18 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * This is a temporary workaround to avoid an API change.
-	 *
-	 * @deprecated
-	 */
-	@Deprecated
-	public interface ErrorObserver {
-
-		void receiveError(String context, String errorMessage);
-	}
-
-	/**
-	 * This is a temporary workaround to avoid an API change.
-	 *
-	 * @deprecated
-	 * @param observer The observer to add.
-	 */
-	@Deprecated
-	public void addErrorObserver(ErrorObserver observer) {
-		errorObservers.add(observer);
-	}
-
-	/**
-	 * This is a temporary workaround to avoid an API change.
-	 *
-	 * @deprecated
-	 * @param observer The observer to remove.
-	 */
-	@Deprecated
-	public void removerErrorObserver(ErrorObserver observer) {
-		int i = errorObservers.indexOf(observer);
-		if (i >= 0) {
-			errorObservers.remove(i);
-		}
-	}
-
-	/**
-	 * This is a temporary workaround to avoid an API change.
-	 *
-	 * @deprecated
-	 * @param context The context in which the error occurred.
-	 * @param errorMessage A description of the error that occurred.
-	 */
-	@Deprecated
-	public void submitError(String context, String errorMessage) {
-		for (ErrorObserver observer : errorObservers) {
-			observer.receiveError(context, errorMessage);
-		}
-	}
-
-	/**
 	 * Handles errors in the SleuthkitCase. To add a type, simply add it in the
 	 * enum below and handle the types you care about in your observing client.
 	 */
-	public interface SleuthkitCaseErrorObserver {
+	public interface ErrorObserver {
 
 		public enum TypeOfError {
 
 			DATABASE;
+			
 		};
 
-		void receiveSleuthkitCaseError(TypeOfError typeOfError, String errorMessage);
+		void receiveError(Exception ex);
 	}
 
 	/**
@@ -4642,7 +4590,7 @@ public class SleuthkitCase {
 	 *
 	 * @param observer The observer to add.
 	 */
-	public static void addSleuthkitCaseErrorObserver(SleuthkitCaseErrorObserver observer) {
+	public static void addErrorObserver(ErrorObserver observer) {
 		sleuthkitCaseErrorObservers.add(observer);
 	}
 
@@ -4651,7 +4599,7 @@ public class SleuthkitCase {
 	 *
 	 * @param observer The observer to remove.
 	 */
-	public static void removeSleuthkitCaseErrorObserver(SleuthkitCaseErrorObserver observer) {
+	public static void removeErrorObserver(ErrorObserver observer) {
 		int i = sleuthkitCaseErrorObservers.indexOf(observer);
 		if (i >= 0) {
 			sleuthkitCaseErrorObservers.remove(i);
@@ -4665,12 +4613,12 @@ public class SleuthkitCase {
 	 * types of errors.
 	 * @param errorMessage A description of the error that occurred.
 	 */
-	public static void submitSleuthkitCaseError(SleuthkitCaseErrorObserver.TypeOfError typeOfError, String errorMessage) {
-		for (SleuthkitCaseErrorObserver observer : sleuthkitCaseErrorObservers) {
+	static void notifyError(Exception ex) {
+		for (ErrorObserver observer : sleuthkitCaseErrorObservers) {
 			if (observer != null) {
 				try {
-					observer.receiveSleuthkitCaseError(typeOfError, errorMessage);
-				} catch (Exception ex) {
+					observer.receiveError(ex);
+				} catch (Exception exp) {
 					logger.log(Level.WARNING, "Observer client unable to receive message", ex);
 				}
 			}
@@ -5342,12 +5290,16 @@ public class SleuthkitCase {
 
 	}
 
-	private interface DbCommand {
+	/**
+	 * An abstract base class for case database connection objects.
+	 */
+	private abstract static class CaseDbConnection {
+			private interface DbCommand {
 
 		void execute() throws SQLException;
 	}
 
-	private final static class CreateStatement implements DbCommand {
+	final static class CreateStatement implements DbCommand {
 
 		private final Connection connection;
 		private Statement statement = null;
@@ -5366,7 +5318,7 @@ public class SleuthkitCase {
 		}
 	}
 
-	private final static class SetAutoCommit implements DbCommand {
+	final static class SetAutoCommit implements DbCommand {
 
 		private final Connection connection;
 		private final boolean mode;
@@ -5388,7 +5340,7 @@ public class SleuthkitCase {
 		}
 	}
 
-	private final static class Commit implements DbCommand {
+	final static class Commit implements DbCommand {
 
 		private final Connection connection;
 
@@ -5406,7 +5358,7 @@ public class SleuthkitCase {
 		}
 	}
 
-	private final static class ExecuteQuery implements DbCommand {
+	final static class ExecuteQuery implements DbCommand {
 
 		private final Statement statement;
 		private final String query;
@@ -5427,7 +5379,7 @@ public class SleuthkitCase {
 		}
 	}
 
-	private final static class ExecutePreparedStatementQuery implements DbCommand {
+	final static class ExecutePreparedStatementQuery implements DbCommand {
 
 		private final PreparedStatement preparedStatement;
 		private ResultSet resultSet;
@@ -5446,7 +5398,7 @@ public class SleuthkitCase {
 		}
 	}
 
-	private final static class ExecutePreparedStatementUpdate implements DbCommand {
+	final static class ExecutePreparedStatementUpdate implements DbCommand {
 
 		private final PreparedStatement preparedStatement;
 
@@ -5460,7 +5412,7 @@ public class SleuthkitCase {
 		}
 	}
 
-	private final static class ExecuteStatementUpdate implements DbCommand {
+	final static class ExecuteStatementUpdate implements DbCommand {
 
 		private final Statement statement;
 		private final String updateCommand;
@@ -5476,7 +5428,7 @@ public class SleuthkitCase {
 		}
 	}
 
-	private final static class ExecuteStatementUpdateGenerateKeys implements DbCommand {
+	final static class ExecuteStatementUpdateGenerateKeys implements DbCommand {
 
 		private final Statement statement;
 		private final int generateKeys;
@@ -5494,7 +5446,7 @@ public class SleuthkitCase {
 		}
 	}
 
-	private final static class PrepareStatement implements DbCommand {
+	final static class PrepareStatement implements DbCommand {
 
 		private final Connection connection;
 		private final String input;
@@ -5515,7 +5467,7 @@ public class SleuthkitCase {
 		}
 	}
 
-	private final static class PrepareStatementGenerateKeys implements DbCommand {
+	final static class PrepareStatementGenerateKeys implements DbCommand {
 
 		private final Connection connection;
 		private final String input;
@@ -5537,57 +5489,31 @@ public class SleuthkitCase {
 			preparedStatement = connection.prepareStatement(input, generateKeys);
 		}
 	}
+	
+	abstract boolean shouldRetry(SQLException ex);
 
-	private static void executeCommand(DbCommand command) throws SQLException {
-		int outerLoopRetryAttempts = OUTER_LOOP_RETRY_ATTEMPTS;
-		int innerLoopRetryAttempts = INNER_LOOP_RETRY_ATTEMPTS;
-		boolean complete = false;
-		boolean cannot_reconnect = false;
-		SQLException lastExceptionOutput = new SQLException(
-				bundle.getString("SleuthkitCase.CouldNotCompleteDatabaseOperation"));
-
-		while ((complete == false) && (0 < outerLoopRetryAttempts--) && (cannot_reconnect == false)) {
-			while ((complete == false) && (0 < innerLoopRetryAttempts--) && (cannot_reconnect == false)) {
+		void executeCommand(DbCommand command) throws SQLException {
+			while (true) {
 				try {
-					// Perform the operation
-					command.execute();
-					complete = true;
+					command.execute(); // Perform the operation
+					break;
 				} catch (SQLException ex) {
-					lastExceptionOutput = ex;
+					if (shouldRetry(ex)) {
+						try {
+							Thread.sleep(SLEEP_LENGTH_IN_MILLISECONDS);
+						} catch (InterruptedException exp) {
+							Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Enexpectedly unable to wait for database.", exp);
+						}
+					} else {
+						if (null != sleuthkitCaseErrorObservers) {
+							notifyError(ex);
+						}
+						throw ex;
+					}
 				}
-			}  // end inner while loop
-
-			if (complete == false) {
-				try {
-					Thread.sleep(SLEEP_LENGTH_IN_MILLISECONDS);
-				} catch (InterruptedException ex) {
-					Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, null, ex);
-				}
-				/*  If you want to close the database connection and reopen it 
-				to try to recover, this is the place to do it. Fill in the TODO
-				below
-				try {
-					/// TODO: Close the db connection and reopen it
-				} catch (SQLException ex) {
-					lastExceptionOutput = ex;
-					cannot_reconnect = true;
-				}
-				*/
 			}
-		} // end outer while loop
-		if ((complete == false) || (cannot_reconnect == true)) {
-			if (null != sleuthkitCaseErrorObservers) {
-				submitSleuthkitCaseError(SleuthkitCaseErrorObserver.TypeOfError.DATABASE, lastExceptionOutput.getMessage());
-			}
-			throw lastExceptionOutput;
 		}
-	}
-
-	/**
-	 * An abstract base class for case database connection objects.
-	 */
-	private abstract static class CaseDbConnection {
-
+		
 		enum PREPARED_STATEMENT {
 
 			SELECT_ATTRIBUTES_OF_ARTIFACT("SELECT artifact_id, source, context, attribute_type_id, value_type, " //NON-NLS
@@ -5802,8 +5728,6 @@ public class SleuthkitCase {
 			}
 		}
 
-		abstract void handleException(SQLException ex) throws SQLException;
-
 		Connection getConnection() {
 			return this.connection;
 		}
@@ -5872,14 +5796,15 @@ public class SleuthkitCase {
 			}
 			return connection;
 		}
-
+	
 		@Override
-		void handleException(SQLException ex) throws SQLException {
-			if (ex.getErrorCode() != SQLITE_BUSY_ERROR && ex.getErrorCode() != DATABASE_LOCKED_ERROR) {
-				throw ex;
+		boolean shouldRetry(SQLException ex) {
+			if (ex.getErrorCode() == SQLITE_BUSY_ERROR || ex.getErrorCode() == DATABASE_LOCKED_ERROR) {
+				return true;
+			} else {
+				return false;
 			}
 		}
-
 	}
 
 	/**
@@ -5899,6 +5824,7 @@ public class SleuthkitCase {
 		@Override
 		PreparedStatement prepareStatement(String sqlStatement, int generateKeys) throws SQLException {
 			PrepareStatementGenerateKeys prepareStatementGenerateKeys = new PrepareStatementGenerateKeys(this.getConnection(), sqlStatement, generateKeys);
+			
 			executeCommand(prepareStatementGenerateKeys);
 			return prepareStatementGenerateKeys.getPreparedStatement();
 			}
@@ -5913,10 +5839,9 @@ public class SleuthkitCase {
 		}
 
 		@Override
-		void handleException(SQLException ex) throws SQLException {
-			throw ex;
+		boolean shouldRetry(SQLException ex) {
+			return false;
 		}
-
 	}
 
 	/**
