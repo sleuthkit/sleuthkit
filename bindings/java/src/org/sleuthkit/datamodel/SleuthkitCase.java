@@ -78,13 +78,12 @@ public class SleuthkitCase {
 	private static final ArrayList<ErrorObserver> sleuthkitCaseErrorObservers = new ArrayList<ErrorObserver>();
 	private static final int SLEEP_LENGTH_IN_MILLISECONDS = 50;
 	private final String dbPath;
+	private final DbType dbType;
 	private final String caseDirPath;
 	private SleuthkitJNI.CaseDbHandle caseHandle;
 	private int versionNumber;
 	private String dbBackupPath;
 	private long nextArtifactId; // Used to ensure artifact ids come from the desired range.
-	private final DbType dbType;
-	
 	// This read/write lock is used to implement a layer of locking on top of 
 	// the locking protocol provided by the underlying SQLite database. The Java
 	// locking protocol improves performance for reasons that are not currently
@@ -104,7 +103,7 @@ public class SleuthkitCase {
 	private SleuthkitCase(String dbPath, SleuthkitJNI.CaseDbHandle caseHandle, DbType dbType) throws Exception {
 		Class.forName("org.sqlite.JDBC");
 		this.dbPath = dbPath;
-		this.dbType=dbType;
+		this.dbType = dbType;
 		this.caseDirPath = new java.io.File(dbPath).getParentFile().getAbsolutePath();
 		this.connections = new SQLiteConnections(dbPath);
 		init(caseHandle);
@@ -129,8 +128,8 @@ public class SleuthkitCase {
 	 */
 	private SleuthkitCase(String host, int port, String dbName, String userName, String password, SleuthkitJNI.CaseDbHandle caseHandle, String caseDirPath, DbType dbType) throws Exception {
 		this.dbPath = "";
+		this.dbType = dbType;
 		this.caseDirPath = caseDirPath;
-		this.dbType=dbType;
 		this.connections = new PostgreSQLConnections(host, port, dbName, userName, password);
 		init(caseHandle);
 		updateSchemaVersion();
@@ -1934,11 +1933,20 @@ public class SleuthkitCase {
 		acquireExclusiveLock();
 		ResultSet rs = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_ARTIFACT, Statement.RETURN_GENERATED_KEYS);
-			statement.clearParameters();
-			statement.setLong(1, this.nextArtifactId++);
-			statement.setLong(2, obj_id);
-			statement.setInt(3, artifact_type_id);
+			PreparedStatement statement;
+			if (dbType == DbType.POSTGRESQL) {
+				statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.POSTGRESQL_INSERT_ARTIFACT, Statement.RETURN_GENERATED_KEYS);
+				statement.clearParameters();
+				statement.setLong(1, obj_id);
+				statement.setInt(2, artifact_type_id);
+			}
+			else {
+				statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_ARTIFACT, Statement.RETURN_GENERATED_KEYS);				
+				statement.clearParameters();
+				statement.setLong(1, this.nextArtifactId++);
+				statement.setLong(2, obj_id);
+				statement.setInt(3, artifact_type_id);
+			}
 			connection.executeUpdate(statement);
 			rs = statement.getGeneratedKeys();
 			rs.next();
@@ -5546,6 +5554,8 @@ public class SleuthkitCase {
 			SELECT_FILE_BY_ID("SELECT * FROM tsk_files WHERE obj_id = ? LIMIT 1"), //NON-NLS
 			INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id) " //NON-NLS
 					+ "VALUES (?, ?, ?)"), //NON-NLS
+			POSTGRESQL_INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id) " //NON-NLS
+					+ "VALUES (DEFAULT, ?, ?)"), //NON-NLS
 			INSERT_STRING_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_text) " //NON-NLS
 					+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
 			INSERT_BYTE_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_byte) " //NON-NLS
