@@ -5782,7 +5782,7 @@ public class SleuthkitCase {
 
 		@Override
 		void executeCommand(DbCommand command) throws SQLException {
-			while (true) { //KDM
+			while (true) {
 				try {
 					command.execute(); // Perform the operation
 					break;
