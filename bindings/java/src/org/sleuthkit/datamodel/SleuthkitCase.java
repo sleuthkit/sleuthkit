@@ -5789,14 +5789,15 @@ public class SleuthkitCase {
 				} catch (SQLException ex) {
 					if (ex.getErrorCode() == SQLITE_BUSY_ERROR || ex.getErrorCode() == DATABASE_LOCKED_ERROR) {
 						try {
+							// We do not notify of error here, as this is not an
+							// error condition. It is likely a temporary busy or
+							// locked issue and we will retry.
 							Thread.sleep(SLEEP_LENGTH_IN_MILLISECONDS);
 						} catch (InterruptedException exp) {
 							Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Enexpectedly unable to wait for database.", exp);
 						}
 					} else {
-						if (null != sleuthkitCaseErrorObservers) {
-							notifyError(ex);
-						}
+						notifyError(ex);
 						throw ex;
 					}
 				}
@@ -5842,7 +5843,7 @@ public class SleuthkitCase {
 
 		@Override
 		void executeCommand(DbCommand command) throws SQLException {
-			for(int retries=0; retries < MAX_RETRIES; retries++) {
+			for (int retries = 0; retries < MAX_RETRIES; retries++) {
 				try {
 					command.execute();
 					break;
@@ -5856,6 +5857,7 @@ public class SleuthkitCase {
 							// Swallow, should never happen nor log
 						}
 					} else {
+						notifyError(ex);
 						throw ex;
 					}
 				}
