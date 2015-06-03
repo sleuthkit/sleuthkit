@@ -5336,12 +5336,7 @@ public class SleuthkitCase {
 
 			@Override
 			public void execute() throws SQLException {
-				try {
-					connection.setAutoCommit(mode);
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, String.format("Exception changing auto commit: Error code: %d SQLState: %s", ex.getErrorCode(), ex.getSQLState()), ex);
-					throw ex;
-				}
+				connection.setAutoCommit(mode);
 			}
 		}
 
@@ -5355,11 +5350,7 @@ public class SleuthkitCase {
 
 			@Override
 			public void execute() throws SQLException {
-				try {
-					connection.commit();
-				} catch (SQLException ex) {
-					logger.log(Level.SEVERE, String.format("Exception commiting transaction: Error code: %d SQLState: %s", ex.getErrorCode(), ex.getSQLState()), ex);
-				}
+				connection.commit();
 			}
 		}
 
