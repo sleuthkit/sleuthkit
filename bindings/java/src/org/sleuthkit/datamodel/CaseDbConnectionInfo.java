@@ -47,9 +47,6 @@ public class CaseDbConnectionInfo {
 		this.userName = userName;
 		this.password = password;
 		this.dbType = dbType;
-		if (this.dbType == DbType.SQLITE) {
-			logger.log(Level.WARNING, "Bad remote database case type!");
-		}
 	}
 
 	public DbType getDbType() {
