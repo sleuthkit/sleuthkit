@@ -78,7 +78,6 @@ public class SleuthkitCase {
 	private final Map<Long, Long> carvedFileContainersCache = new HashMap<Long, Long>(); // Caches the IDs of the root $CarvedFiles for each volume.
 	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system results.
 	private static final ArrayList<ErrorObserver> sleuthkitCaseErrorObservers = new ArrayList<ErrorObserver>();
-	private static final int SLEEP_LENGTH_IN_MILLISECONDS = 50;
 	private final String dbPath;
 	private final DbType dbType;
 	private final String caseDirPath;
@@ -4616,7 +4615,7 @@ public class SleuthkitCase {
 	 * types of errors.
 	 * @param errorMessage A description of the error that occurred.
 	 */
-	static void notifyError(Exception ex) {
+	private static void notifyError(Exception ex) {
 		for (ErrorObserver observer : sleuthkitCaseErrorObservers) {
 			if (observer != null) {
 				try {
@@ -5303,8 +5302,8 @@ public class SleuthkitCase {
 			void execute() throws SQLException;
 		}
 
-		protected static final int MAX_RETRIES = 5;
-
+		static final int SLEEP_LENGTH_IN_MILLISECONDS = 50;
+		
 		final static class CreateStatement implements DbCommand {
 
 			private final Connection connection;
@@ -5607,8 +5606,12 @@ public class SleuthkitCase {
 			return statement;
 		}
 
-		abstract PreparedStatement prepareStatement(String sqlStatement, int generateKeys) throws SQLException;
-
+		PreparedStatement prepareStatement(String sqlStatement, int generateKeys) throws SQLException {
+			PrepareStatement prepareStatement = new PrepareStatement(this.getConnection(), sqlStatement);
+			executeCommand(prepareStatement);
+			return prepareStatement.getPreparedStatement();
+		}
+		
 		Statement createStatement() throws SQLException {
 			CreateStatement createStatement = new CreateStatement(this.connection);
 			executeCommand(createStatement);
@@ -5684,8 +5687,11 @@ public class SleuthkitCase {
 			executeUpdate(statement, update, Statement.NO_GENERATED_KEYS);
 		}
 
-		abstract void executeUpdate(Statement statement, String update, int generateKeys) throws SQLException;
-
+		void executeUpdate(Statement statement, String update, int generateKeys) throws SQLException {
+			ExecuteStatementUpdate executeStatementUpdate = new ExecuteStatementUpdate(statement, update);
+			executeCommand(executeStatementUpdate);
+		}
+		
 		void executeUpdate(PreparedStatement statement) throws SQLException {
 			ExecutePreparedStatementUpdate executePreparedStatementUpdate = new ExecutePreparedStatementUpdate(statement);
 			executeCommand(executePreparedStatementUpdate);
@@ -5717,19 +5723,6 @@ public class SleuthkitCase {
 
 		SQLiteConnection(String dbPath) {
 			super(createConnection(dbPath));
-		}
-
-		@Override
-		void executeUpdate(Statement statement, String update, int generateKeys) throws SQLException {
-			ExecuteStatementUpdate executeStatementUpdate = new ExecuteStatementUpdate(statement, update);
-			executeCommand(executeStatementUpdate);
-		}
-
-		@Override
-		PreparedStatement prepareStatement(String sqlStatement, int generateKeys) throws SQLException {
-			PrepareStatement prepareStatement = new PrepareStatement(this.getConnection(), sqlStatement);
-			executeCommand(prepareStatement);
-			return prepareStatement.getPreparedStatement();
 		}
 
 		static Connection createConnection(String dbPath) {
@@ -5785,7 +5778,7 @@ public class SleuthkitCase {
 							// locked issue and we will retry.
 							Thread.sleep(SLEEP_LENGTH_IN_MILLISECONDS);
 						} catch (InterruptedException exp) {
-							Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Enexpectedly unable to wait for database.", exp);
+							Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Unexpectedly unable to wait for database.", exp);
 						}
 					} else {
 						notifyError(ex);
@@ -5804,7 +5797,8 @@ public class SleuthkitCase {
 		private static final String COMMUNICATION_ERROR = PSQLState.COMMUNICATION_ERROR.getState();
 		private static final String SYSTEM_ERROR = PSQLState.SYSTEM_ERROR.getState();
 		private static final String UNKNOWN_STATE = PSQLState.UNKNOWN_STATE.getState();
-
+		private static final int MAX_RETRIES = 5;
+		
 		PostgreSQLConnection(String host, int port, String dbName, String userName, String password) {
 			super(createConnection(host, port, dbName, userName, password));
 		}
@@ -5818,7 +5812,6 @@ public class SleuthkitCase {
 		@Override
 		PreparedStatement prepareStatement(String sqlStatement, int generateKeys) throws SQLException {
 			PrepareStatementGenerateKeys prepareStatementGenerateKeys = new PrepareStatementGenerateKeys(this.getConnection(), sqlStatement, generateKeys);
-
 			executeCommand(prepareStatementGenerateKeys);
 			return prepareStatementGenerateKeys.getPreparedStatement();
 		}
@@ -5842,10 +5835,9 @@ public class SleuthkitCase {
 					String sqlState = ((PSQLException) ex).getSQLState();
 					if (sqlState.equals(COMMUNICATION_ERROR) || sqlState.equals(SYSTEM_ERROR) || sqlState.equals(UNKNOWN_STATE)) {
 						try {
-							notifyError(ex);
 							Thread.sleep(SLEEP_LENGTH_IN_MILLISECONDS);
-						} catch (InterruptedException ignored) {
-							// Swallow, should never happen nor log
+						} catch (InterruptedException exp) {
+							Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Unexpectedly unable to wait for database.", exp);
 						}
 					} else {
 						notifyError(ex);
