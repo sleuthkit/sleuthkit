@@ -41,11 +41,6 @@ public class CaseDbConnectionInfo {
 	private DbType dbType;
 	private static final Logger logger = Logger.getLogger(CaseDbConnectionInfo.class.getName());
 
-	// Assorted constructors
-	public CaseDbConnectionInfo() {
-		dbType = DbType.SQLITE;
-	}
-
 	public CaseDbConnectionInfo(String hostNameOrIP, String portNumber, String userName, String password, DbType dbType) {
 		this.hostNameOrIP = hostNameOrIP;
 		this.portNumber = portNumber;

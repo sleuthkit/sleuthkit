@@ -75,12 +75,9 @@ static const int TWELVE_BITS_MASK = 0xFFF; // Only keep 12 bits
 static uint8_t 
     yaffsfs_read_header(YAFFSFS_INFO *yfs, YaffsHeader ** header, TSK_OFF_T offset);
 
-/*
-* Cache
-*
-*
-*/
-
+/**
+ * Generate an inode number based on the file's object and version numbers
+ */
 static TSK_RETVAL_ENUM
     yaffscache_obj_id_and_version_to_inode(uint32_t obj_id, uint32_t version_num, TSK_INUM_T *inode) {
         if ((obj_id & ~YAFFS_OBJECT_ID_MASK) != 0) {
@@ -95,6 +92,9 @@ static TSK_RETVAL_ENUM
         return TSK_OK;
 }
 
+/**
+ * Given the TSK-generated inode address, extract the object id and version number from it
+ */
 static TSK_RETVAL_ENUM
     yaffscache_inode_to_obj_id_and_version(TSK_INUM_T inode, uint32_t *obj_id, uint32_t *version_num) {
         *obj_id = inode & YAFFS_OBJECT_ID_MASK;
@@ -178,6 +178,14 @@ static TSK_RETVAL_ENUM
     return TSK_STOP;
 }
 
+/**
+ * Add a chunk to the cache. 
+ * @param yfs
+ * @param offset Byte offset this chunk was found in (in the disk image)
+ * @param seq_number Sequence number of this chunk
+ * @param obj_id Object Id this chunk is associated with
+ * @param parent_id Parent object ID that this chunk/object is associated with
+ */
 static TSK_RETVAL_ENUM
     yaffscache_chunk_add(YAFFSFS_INFO *yfs, TSK_OFF_T offset, uint32_t seq_number,
     uint32_t obj_id, uint32_t chunk_id, uint32_t parent_id)
@@ -231,6 +239,11 @@ static TSK_RETVAL_ENUM
     return TSK_OK;
 }
 
+
+/**
+ * Get the file object from the cache.
+ * @returns TSK_OK if it was found and TSK_STOP if we did not find it
+ */
 static TSK_RETVAL_ENUM
     yaffscache_object_find(YAFFSFS_INFO *yfs, uint32_t obj_id, YaffsCacheObject **obj)
 {
@@ -260,6 +273,10 @@ static TSK_RETVAL_ENUM
     return TSK_STOP;
 }
 
+/**
+ * Add an object to the cache if it does not already exist in there.
+ * @returns TSK_ERR  on error, TSK_OK otherwise.
+ */
 static TSK_RETVAL_ENUM
     yaffscache_object_find_or_add(YAFFSFS_INFO *yfs, uint32_t obj_id, YaffsCacheObject **obj)
 {
@@ -370,6 +387,9 @@ static TSK_RETVAL_ENUM
     return TSK_OK;
 }
 
+/**
+ * Add a chunk to its corresponding object in the cache. 
+ */
 static TSK_RETVAL_ENUM
     yaffscache_versions_insert_chunk(YAFFSFS_INFO *yfs, YaffsCacheChunk *chunk)
 {
@@ -468,20 +488,37 @@ static TSK_RETVAL_ENUM
     return TSK_OK;
 }
 
+/**
+ * Callback for yaffscache_find_children()
+ * @param obj Object that is a child
+ * @param version Version of the object
+ * @param args Pointer to what was passed into yaffscache_find_children
+ */
 typedef TSK_RETVAL_ENUM yc_find_children_cb(YaffsCacheObject *obj, YaffsCacheVersion *version, void *args);
+
+/**
+ * Search the cache for objects that are children of the given address.
+ * @param yfs
+ * @param parent_inode Inode of folder/directory
+ * @param cb Call back to call for each found child
+ * @param args Pointer to structure that will be passed to cb
+ * @returns TSK_ERR on error
+ */
 static TSK_RETVAL_ENUM
     yaffscache_find_children(YAFFSFS_INFO *yfs, TSK_INUM_T parent_inode, yc_find_children_cb cb, void *args)
 {
     YaffsCacheObject *obj;
-    YaffsCacheVersion *version;
 
     uint32_t parent_id, version_num;
     if (yaffscache_inode_to_obj_id_and_version(parent_inode, &parent_id, &version_num) != TSK_OK) {
         return TSK_ERR;
     }
 
-    for(obj = yfs->cache_objects; obj != NULL; obj = obj->yco_next) {
-        for(version = obj->yco_latest; version != NULL; version = version->ycv_prior) {
+    /* Iterate over all objects and all versions of the objects to see if one is the child
+     * of the given parent. */
+    for (obj = yfs->cache_objects; obj != NULL; obj = obj->yco_next) {
+        YaffsCacheVersion *version;
+        for (version = obj->yco_latest; version != NULL; version = version->ycv_prior) {
             /* Is this an incomplete version? */
             if (version->ycv_header_chunk == NULL)
                 continue;
@@ -497,6 +534,14 @@ static TSK_RETVAL_ENUM
     return TSK_OK;
 }
 
+/**
+ * Lookup an object based on its inode.
+ * @param yfs
+ * @param inode
+ * @param version [out] Pointer to store version of the object that was found (if inode had a version of 0)
+ * @param obj_ret [out] Pointer to store found object into
+ * @returns TSK_ERR on error. 
+ */
 static TSK_RETVAL_ENUM
     yaffscache_version_find_by_inode(YAFFSFS_INFO *yfs, TSK_INUM_T inode, YaffsCacheVersion **version, YaffsCacheObject **obj_ret) {
         uint32_t obj_id, version_num;
@@ -507,6 +552,7 @@ static TSK_RETVAL_ENUM
             return TSK_ERR;
         }
 
+        // convert inode to obj and version and find it in cache
         if (yaffscache_inode_to_obj_id_and_version(inode, &obj_id, &version_num) != TSK_OK) {
             *version = NULL;
             return TSK_ERR;
@@ -525,6 +571,7 @@ static TSK_RETVAL_ENUM
             return TSK_OK;
         }
 
+        // Find the requested version in the list. 
         for(curr = obj->yco_latest; curr != NULL; curr = curr->ycv_prior) {
             if (curr->ycv_version == version_num) {
                 if (obj_ret != NULL) {
@@ -1423,9 +1470,10 @@ static uint8_t
 }
 
 /**
-*/
+ * Cycle through the entire image and populate the cache with objects as they are found.
+ */
 static uint8_t 
-    yaffsfs_cache_fs(YAFFSFS_INFO * yfs)
+    yaffsfs_parse_image_load_cache(YAFFSFS_INFO * yfs)
 {
     uint8_t status = TSK_OK;
     uint32_t nentries = 0;
@@ -1487,10 +1535,10 @@ static uint8_t
     }
 
     if (tsk_verbose)
-        fprintf(stderr, "yaffsfs_cache_fs: read %d entries\n", nentries);
+        fprintf(stderr, "yaffsfs_parse_image_load_cache: read %d entries\n", nentries);
 
     if (tsk_verbose)
-        fprintf(stderr, "yaffsfs_cache_fs: started processing chunks for version cache...\n");
+        fprintf(stderr, "yaffsfs_parse_image_load_cache: started processing chunks for version cache...\n");
     fflush(stderr);
 
     // At this point, we have a list of chunks sorted by obj id, seq number, and offset
@@ -1498,7 +1546,7 @@ static uint8_t
     yaffscache_versions_compute(yfs);
 
     if (tsk_verbose)
-        fprintf(stderr, "yaffsfs_cache_fs: done version cache!\n");
+        fprintf(stderr, "yaffsfs_parse_image_load_cache: done version cache!\n");
     fflush(stderr);
 
 
@@ -2648,6 +2696,7 @@ static TSK_RETVAL_ENUM
             return TSK_ERR;
     }
 
+    // extract obj_id and ver_number from inum
     yaffscache_inode_to_obj_id_and_version(a_addr, &obj_id, &ver_number);
 
     // Decide if we should walk the directory structure
@@ -2657,8 +2706,8 @@ static TSK_RETVAL_ENUM
     }
     else {
         YaffsCacheObject *obj;
-        YaffsCacheVersion *version;
-        TSK_RETVAL_ENUM result = yaffscache_version_find_by_inode(yfs, a_addr, &version, &obj);
+        YaffsCacheVersion *versionFound;
+        TSK_RETVAL_ENUM result = yaffscache_version_find_by_inode(yfs, a_addr, &versionFound, &obj);
         if (result != TSK_OK) {
             if (tsk_verbose)
                 tsk_fprintf(stderr, "yaffsfs_dir_open_meta: yaffscache_version_find_by_inode failed! (inode: %d\n", a_addr);
@@ -2667,9 +2716,10 @@ static TSK_RETVAL_ENUM
         }
 
         /* Only attach files onto the latest version of the directory */
-        should_walk_children = (obj->yco_latest == version);
+        should_walk_children = (obj->yco_latest == versionFound);
     }
 
+    // Search the cache for the children of this object and add them to fs_dir
     if (should_walk_children) {
         dir_open_cb_args args;
         args.yfs = yfs;
@@ -2678,6 +2728,7 @@ static TSK_RETVAL_ENUM
         yaffscache_find_children(yfs, a_addr, yaffs_dir_open_meta_cb, &args);
     }
 
+    // add special entries to root directory
     if (obj_id == YAFFS_OBJECT_ROOT) {
         strncpy(fs_name->name, YAFFS_OBJECT_UNLINKED_NAME, fs_name->name_size);
         fs_name->meta_addr = YAFFS_OBJECT_UNLINKED;
@@ -3114,7 +3165,7 @@ TSK_FS_INFO *
     */
     //tsk_init_lock(&yaffsfs->lock);
     yaffsfs->chunkMap = new std::map<uint32_t, YaffsCacheChunkGroup>;
-    yaffsfs_cache_fs(yaffsfs);
+    yaffsfs_parse_image_load_cache(yaffsfs);
 
     if (tsk_verbose) {
         fprintf(stderr, "yaffsfs_open: done building cache!\n");
