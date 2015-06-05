@@ -201,6 +201,13 @@ static TSK_RETVAL_ENUM
     chunk->ycc_chunk_id = chunk_id;
     chunk->ycc_parent_id = parent_id;
 
+    // Bit of a hack here. In some images, the root directory (obj_id = 1) lists iself as its parent
+    // directory, which can cause issues later when we get directory contents. To prevent this,
+    // if a chunk comes in with obj_id = 1 and parent_id = 1, manually set the parent ID to zero.
+    if((obj_id == 1) && (parent_id == 1)){
+        chunk->ycc_parent_id = 0;
+    }
+
     // Find the chunk that should go right before the new chunk
     result = yaffscache_chunk_find_insertion_point(yfs, obj_id, offset, seq_number, &prev);
 
