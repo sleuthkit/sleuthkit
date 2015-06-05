@@ -1645,7 +1645,7 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(s, "SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeName + "'"); //NON-NLS
 			if (!rs.next()) {
 				rs.close();
-				connection.executeUpdate(s, "INSERT INTO blackboard_artifact_types (type_name, display_name) VALUES (" + artifactTypeName + "', '" + displayName + "')"); //NON-NLS
+				connection.executeUpdate(s, "INSERT INTO blackboard_artifact_types (type_name, display_name) VALUES ('" + artifactTypeName + "', '" + displayName + "')"); //NON-NLS
 				rs = s.getGeneratedKeys();
 			}
 			int id = rs.getInt(1);
