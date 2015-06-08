@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2012-2014 Basis Technology Corp.
+ * Copyright 2012-2015 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -39,7 +38,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +60,9 @@ import org.sqlite.SQLiteJDBCLoader;
 import org.sleuthkit.datamodel.TskData.DbType;
 import org.postgresql.util.PSQLException;
 import org.postgresql.util.PSQLState;
+import com.mchange.v2.c3p0.*;
+import java.beans.PropertyVetoException;
+import org.sqlite.SQLiteDataSource;
 
 /**
  * Represents the case database with methods that provide abstractions for
@@ -73,7 +74,7 @@ public class SleuthkitCase {
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
-	private final ConnectionPerThreadDispenser connections;
+	private final ConnectionDispenser connections;
 	private final ResultSetHelper rsHelper = new ResultSetHelper(this);
 	private final Map<Long, Long> carvedFileContainersCache = new HashMap<Long, Long>(); // Caches the IDs of the root $CarvedFiles for each volume.
 	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system results.
@@ -170,6 +171,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
+			connection.close();
 		}
 	}
 
@@ -201,6 +203,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
+			connection.close();
 		}
 	}
 
@@ -228,6 +231,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
+			connection.close();
 		}
 	}
 
@@ -280,6 +284,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
+			connection.close();
 		}
 	}
 
@@ -319,6 +324,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
+			connection.close();
 		}
 	}
 	
@@ -508,6 +514,7 @@ public class SleuthkitCase {
 			closeStatement(updateStatement);
 			closeResultSet(resultSet);
 			closeStatement(statement);
+			connection.close();
 		}
 	}
 
@@ -535,6 +542,9 @@ public class SleuthkitCase {
 	 * that is returned can be passed to methods that take a CaseDbTransaction.
 	 * The caller is responsible for calling either commit() or rollback() on
 	 * the transaction object.
+	 *
+	 * Note that any CaseDbTransaction must call close() to release the database
+	 * connection back to the pool.
 	 *
 	 * @return A CaseDbTransaction object.
 	 * @throws TskCoreException
@@ -726,6 +736,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -757,6 +768,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error getting or creating a blackboard artifact", ex);
 		} finally {
 			closeResultSet(rs);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -786,6 +798,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error getting number of blackboard artifacts by content", ex);
 		} finally {
 			closeResultSet(rs);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -815,6 +828,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error getting number of blackboard artifacts by type", ex);
 		} finally {
 			closeResultSet(rs);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -869,6 +883,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -910,6 +925,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -944,6 +960,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -978,6 +995,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -1012,6 +1030,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -1046,6 +1065,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -1084,6 +1104,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -1135,6 +1156,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -1167,6 +1189,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -1201,6 +1224,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error getting or creating a blackboard artifact", ex);
 		} finally {
 			closeResultSet(rs);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -1234,6 +1258,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error getting blackboard artifact count", ex);
 		} finally {
 			closeResultSet(rs);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -1265,6 +1290,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error getting or creating a blackboard artifact", ex);
 		} finally {
 			closeResultSet(rs);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -1418,6 +1444,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -1448,6 +1475,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error getting a blackboard artifact. " + ex.getMessage(), ex);
 		} finally {
 			closeResultSet(rs);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -1467,6 +1495,7 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding blackboard attribute " + attr.toString(), ex);
 		} finally {
+			connection.close();
 			releaseExclusiveLock();
 		}
 	}
@@ -1492,6 +1521,7 @@ public class SleuthkitCase {
 			connection.rollbackTransaction();
 			throw new TskCoreException("Error adding blackboard attributes", ex);
 		} finally {
+			connection.close();
 			releaseExclusiveLock();
 		}
 	}
@@ -1569,6 +1599,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseExclusiveLock();
 		}
 	}
@@ -1599,6 +1630,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -1630,6 +1662,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -1661,6 +1694,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -1691,6 +1725,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -1723,6 +1758,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -1756,6 +1792,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -1794,6 +1831,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseExclusiveLock();
 		}
 	}
@@ -1827,6 +1865,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error getting attributes for artifact, artifact id = " + artifact.getArtifactID(), ex);
 		} finally {
 			closeResultSet(rs);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -1864,6 +1903,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -1897,6 +1937,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -1956,6 +1997,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error creating a blackboard artifact", ex);
 		} finally {
 			closeResultSet(rs);
+			connection.close();
 			releaseExclusiveLock();
 		}
 	}
@@ -1988,6 +2030,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error checking for children of parent " + content, e);
 		} finally {
 			closeResultSet(rs);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -2020,6 +2063,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error checking for children of parent " + content, e);
 		} finally {
 			closeResultSet(rs);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -2049,6 +2093,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error getting AbstractFile children for Content", ex);
 		} finally {
 			closeResultSet(rs);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -2077,6 +2122,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error getting AbstractFile children for Content", ex);
 		} finally {
 			closeResultSet(rs);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -2109,6 +2155,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error getting AbstractFile children for Content", ex);
 		} finally {
 			closeResultSet(rs);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -2138,6 +2185,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error getting AbstractFile children for Content", ex);
 		} finally {
 			closeResultSet(rs);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -2185,6 +2233,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -2220,6 +2269,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -2255,6 +2305,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -2333,6 +2384,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -2366,6 +2418,7 @@ public class SleuthkitCase {
 			logger.log(Level.SEVERE, "Error getting file path for file " + id, ex); //NON-NLS
 		} finally {
 			closeResultSet(rs);
+			connection.close();
 			releaseSharedLock();
 		}
 		return filePath;
@@ -2400,6 +2453,7 @@ public class SleuthkitCase {
 			logger.log(Level.SEVERE, "Error getting file parent_path for file " + id, ex); //NON-NLS
 		} finally {
 			closeResultSet(rs);
+			connection.close();
 			releaseSharedLock();
 		}
 		return parentPath;
@@ -2434,6 +2488,7 @@ public class SleuthkitCase {
 			logger.log(Level.SEVERE, "Error getting file parent_path for file " + id, ex); //NON-NLS
 		} finally {
 			closeResultSet(rs);
+			connection.close();
 			releaseSharedLock();
 		}
 		return fileName;
@@ -2477,6 +2532,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs2);
 			closeResultSet(rs1);
+			connection.close();
 			releaseSharedLock();
 		}
 		return method;
@@ -2509,6 +2565,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error getting file by id, id = " + id, ex);
 		} finally {
 			closeResultSet(rs);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -2549,6 +2606,7 @@ public class SleuthkitCase {
 			logger.log(Level.SEVERE, "Error checking file system id of a file, id = " + fileId, e); //NON-NLS
 		} finally {
 			closeResultSet(rs);
+			connection.close();
 			releaseSharedLock();
 		}
 		return ret;
@@ -2645,6 +2703,7 @@ public class SleuthkitCase {
 			throw new TskCoreException(bundle.getString("SleuthkitCase.findFiles.exception.msg3.text"), e);
 		} finally {
 			closeResultSet(rs);
+			connection.close();
 			releaseSharedLock();
 		}
 		return files;
@@ -2699,13 +2758,8 @@ public class SleuthkitCase {
 		} catch (SQLException e) {
 			throw new TskCoreException(bundle.getString("SleuthkitCase.findFiles3.exception.msg3.text"), e);
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException ex) {
-					logger.log(Level.WARNING, "Error closing result set after finding files", ex); //NON-NLS
-				}
-			}
+			closeResultSet(rs);
+			connection.close();
 			releaseSharedLock();
 		}
 		return files;
@@ -2731,6 +2785,7 @@ public class SleuthkitCase {
 			localTrans.rollback();
 			throw ex;
 		} finally {
+			localTrans.close();
 			releaseExclusiveLock();
 		}
 	}
@@ -2876,6 +2931,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -3102,6 +3158,9 @@ public class SleuthkitCase {
 			} finally {
 				closeResultSet(rs);
 				closeStatement(s);
+				if(localTrans!=null) {
+					localTrans.close();
+				}
 				releaseExclusiveLock();
 			}
 		} else {
@@ -3222,6 +3281,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Failed to add derived file to case database", ex);
 		} finally {
 			closeResultSet(rs);
+			connection.close();
 			releaseExclusiveLock();
 		}
 	}
@@ -3256,6 +3316,7 @@ public class SleuthkitCase {
 			localTrans.rollback();
 			throw ex;
 		} finally {
+			localTrans.close();
 			releaseExclusiveLock();
 		}
 	}
@@ -3291,7 +3352,7 @@ public class SleuthkitCase {
 		if (trans == null) {
 			throw new TskCoreException("Passed null CaseDbTransaction");
 		}
-
+		CaseDbConnection connection = connections.getConnection();
 		acquireExclusiveLock();
 		ResultSet resultSet = null;
 		try {
@@ -3306,7 +3367,6 @@ public class SleuthkitCase {
 
 			// Insert a row for the local/logical file into the tsk_objects table.
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
-			CaseDbConnection connection = connections.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
 			statement.clearParameters();
 			statement.setLong(1, parentId);
@@ -3371,6 +3431,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error adding local file directory " + fileName + " with local path " + localPath, e);
 		} finally {
 			closeResultSet(resultSet);
+			connection.close();
 			releaseExclusiveLock();
 		}
 	}
@@ -3431,6 +3492,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -3460,6 +3522,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -3492,6 +3555,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -3524,6 +3588,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -3584,6 +3649,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();			
 			releaseSharedLock();
 		}
 	}
@@ -3624,6 +3690,7 @@ public class SleuthkitCase {
 			closeStatement(s2);
 			closeResultSet(rs1);
 			closeStatement(s1);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -3656,6 +3723,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -3752,6 +3820,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -3784,6 +3853,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -3837,6 +3907,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -3908,6 +3979,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 		return fileSystems;
@@ -4097,6 +4169,7 @@ public class SleuthkitCase {
 			closeStatement(s2);
 			closeResultSet(rs1);
 			closeStatement(s1);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -4128,6 +4201,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -4155,6 +4229,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error getting last object id", e);
 		} finally {
 			closeResultSet(rs);
+			connection.close();
 			releaseExclusiveLock();
 		}
 	}
@@ -4184,6 +4259,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error updating image paths.", ex);
 		} finally {
 			closeStatement(statement);
+			connection.close();
 			releaseExclusiveLock();
 		}
 	}
@@ -4295,6 +4371,7 @@ public class SleuthkitCase {
 		} finally {
 			//TODO unlock should be done in closeRunQuery()
 			//but currently not all code calls closeRunQuery - need to fix this
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -4346,10 +4423,10 @@ public class SleuthkitCase {
 		System.err.println(this.hashCode() + " closed"); //NON-NLS
 		System.err.flush();
 		acquireExclusiveLock();
-		connections.close();
 		fileSystemIdMap.clear();
 
 		try {
+			connections.close();
 			if (this.caseHandle != null) {
 				this.caseHandle.free();
 				this.caseHandle = null;
@@ -4392,6 +4469,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error setting Known status.", ex);
 		} finally {
 			closeStatement(statement);
+			connection.close();
 			releaseExclusiveLock();
 		}
 		return true;
@@ -4422,6 +4500,7 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error setting MD5 hash", ex);
 		} finally {
+			connection.close();
 			releaseExclusiveLock();
 		}
 	}
@@ -4453,6 +4532,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -4503,6 +4583,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -4539,6 +4620,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 		return allFilesAreHashed;
@@ -4574,6 +4656,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+			connection.close();
 			releaseSharedLock();
 		}
 		return count;
@@ -4652,6 +4735,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error selecting rows from tag_names table", ex);
 		} finally {
 			closeResultSet(resultSet);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -4682,6 +4766,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error selecting rows from tag_names table", ex);
 		} finally {
 			closeResultSet(resultSet);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -4714,6 +4799,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error adding row for " + displayName + " tag name to tag_names table", ex);
 		} finally {
 			closeResultSet(resultSet);
+			connection.close();
 			releaseExclusiveLock();
 		}
 	}
@@ -4750,6 +4836,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error adding row to content_tags table (obj_id = " + content.getId() + ", tag_name_id = " + tagName.getId() + ")", ex);
 		} finally {
 			closeResultSet(resultSet);
+			connection.close();
 			releaseExclusiveLock();
 		}
 	}
@@ -4771,6 +4858,7 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error deleting row from content_tags table (id = " + tag.getId() + ")", ex);
 		} finally {
+			connection.close();
 			releaseExclusiveLock();
 		}
 	}
@@ -4801,6 +4889,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error selecting rows from content_tags table", ex);
 		} finally {
 			closeResultSet(resultSet);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -4835,6 +4924,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error getting content_tags row count for tag name (tag_name_id = " + tagName.getId() + ")", ex);
 		} finally {
 			closeResultSet(resultSet);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -4872,6 +4962,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error getting content_tags rows (tag_name_id = " + tagName.getId() + ")", ex);
 		} finally {
 			closeResultSet(resultSet);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -4906,6 +4997,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error getting content tags data for content (obj_id = " + content.getId() + ")", ex);
 		} finally {
 			closeResultSet(resultSet);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -4940,6 +5032,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error adding row to blackboard_artifact_tags table (obj_id = " + artifact.getArtifactID() + ", tag_name_id = " + tagName.getId() + ")", ex);
 		} finally {
 			closeResultSet(resultSet);
+			connection.close();
 			releaseExclusiveLock();
 		}
 	}
@@ -4961,6 +5054,7 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error deleting row from blackboard_artifact_tags table (id = " + tag.getId() + ")", ex);
 		} finally {
+			connection.close();
 			releaseExclusiveLock();
 		}
 	}
@@ -4994,6 +5088,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error selecting rows from blackboard_artifact_tags table", ex);
 		} finally {
 			closeResultSet(resultSet);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -5028,6 +5123,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error getting blackboard artifact_content_tags row count for tag name (tag_name_id = " + tagName.getId() + ")", ex);
 		} finally {
 			closeResultSet(resultSet);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -5066,6 +5162,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error getting blackboard artifact tags data (tag_name_id = " + tagName.getId() + ")", ex);
 		} finally {
 			closeResultSet(resultSet);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -5102,6 +5199,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error getting blackboard artifact tags data (artifact_id = " + artifact.getArtifactID() + ")", ex);
 		} finally {
 			closeResultSet(resultSet);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -5157,6 +5255,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error adding report " + localPath + " to reports table", ex);
 		} finally {
 			closeResultSet(resultSet);
+			connection.close();
 			releaseExclusiveLock();
 		}
 	}
@@ -5188,6 +5287,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error querying reports table", ex);
 		} finally {
 			closeResultSet(resultSet);
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -5213,83 +5313,109 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * An abstract base class for objects that store a case database connection
-	 * for each thread that requests one.
+	 * A class for the connection pool. This dispenser will hand out connections
+	 * of the appropriate type based on the subclass that is calling
+	 * getPooledConnection();
 	 */
-	private abstract static class ConnectionPerThreadDispenser extends ThreadLocal<CaseDbConnection> {
+	abstract private static class ConnectionDispenser {
 
-		private final HashSet<CaseDbConnection> databaseConnections = new HashSet<CaseDbConnection>();
+		protected PooledDataSource pooledDataSource;
 		private boolean isClosed = false;
+
+		public ConnectionDispenser() {
+			pooledDataSource = null;
+		}
 
 		synchronized CaseDbConnection getConnection() throws TskCoreException {
 			if (isClosed) {
 				throw new TskCoreException("Error getting case database connection - case is closed");
 			}
-
-			CaseDbConnection connection = get();
-			if (!connection.isOpen()) {
-				throw new TskCoreException("Case database connection for current thread is not open");
+			try {
+				return getPooledConnection();
+			} catch (SQLException exp) {
+				throw new TskCoreException(exp.getMessage());
 			}
-			databaseConnections.add(connection);
-			return connection;
 		}
 
-		public synchronized void close() {
-			for (CaseDbConnection entry : databaseConnections) {
-				entry.close();
-			}
-			databaseConnections.clear();
+		public synchronized void close() throws TskCoreException {
 			isClosed = true;
+
+			if (pooledDataSource != null) {
+				try {
+					pooledDataSource.close();
+				} catch (SQLException exp) {
+					throw new TskCoreException(exp.getMessage());
+				}
+			}
 		}
 
-		@Override
-		abstract public CaseDbConnection initialValue();
+		abstract CaseDbConnection getPooledConnection() throws SQLException;
 	}
 
 	/**
-	 * Stores a SQLite case database connection for each thread that requests
-	 * one.
+	 * Handles the initial setup of SQLite database connections, as well as
+	 * overriding getPooledConnection()
 	 */
-	private final static class SQLiteConnections extends ConnectionPerThreadDispenser {
+	private final static class SQLiteConnections extends ConnectionDispenser {
 
-		private final String dbPath;
+		private static final Map<String, String> configurationOverrides = new HashMap<String, String>();
 
 		SQLiteConnections(String dbPath) {
-			this.dbPath = dbPath;
+			configurationOverrides.put("acquireIncrement", "10");
+			configurationOverrides.put("initialPoolSize", "20");
+			configurationOverrides.put("maxPoolSize", "100");
+			configurationOverrides.put("minPoolSize", "5");
+			configurationOverrides.put("maxStatements", "100");
+			configurationOverrides.put("maxStatementsPerConnection", "20");
+
+			try {
+				SQLiteConfig config = new SQLiteConfig();
+				config.setSynchronous(SQLiteConfig.SynchronousMode.OFF); // Reduce I/O operations, we have no OS crash recovery anyway.
+				config.setReadUncommited(true);
+				config.enforceForeignKeys(true); // Enforce foreign key constraints.
+				SQLiteDataSource unpooled = new SQLiteDataSource(config);
+				unpooled.setUrl("jdbc:sqlite:" + dbPath);
+				pooledDataSource = (PooledDataSource) DataSources.pooledDataSource(unpooled, configurationOverrides);
+			} catch (SQLException ex) {
+				SleuthkitCase.logger.log(Level.SEVERE, "Error setting up case database connection for thread", ex); //NON-NLS
+			}
 		}
 
 		@Override
-		public CaseDbConnection initialValue() {
-			return new SQLiteConnection(dbPath);
+		public CaseDbConnection getPooledConnection() throws SQLException {
+			return new SQLiteConnection(pooledDataSource.getConnection());
 		}
-
 	}
 
 	/**
-	 * Stores a PostgreSQL case database connection for each thread that
-	 * requests one.
+	 * Handles the initial setup of PostgreSQL database connections, as well as
+	 * overriding getPooledConnection()
 	 */
-	private final static class PostgreSQLConnections extends ConnectionPerThreadDispenser {
-
-		private final String host;
-		private final int port;
-		private final String dbName;
-		private final String userName;
-		private final String password;
+	private final static class PostgreSQLConnections extends ConnectionDispenser {
 
 		PostgreSQLConnections(String host, int port, String dbName, String userName, String password) {
-			this.host = host;
-			this.port = port;
-			this.dbName = dbName;
-			this.userName = userName;
-			this.password = password;
+			ComboPooledDataSource comboPooledDataSource = new ComboPooledDataSource();
+			try {
+				comboPooledDataSource.setDriverClass("org.postgresql.Driver"); //loads the jdbc driver
+			} catch (PropertyVetoException ex) {
+				Logger.getLogger(SleuthkitCase.class.getName()).log(Level.SEVERE, null, ex);
+			}
+			comboPooledDataSource.setJdbcUrl("jdbc:postgresql://" + host + ":" + port + "/" + dbName);
+			comboPooledDataSource.setUser(userName);
+			comboPooledDataSource.setPassword(password);
+			comboPooledDataSource.setAcquireIncrement(10);
+			comboPooledDataSource.setInitialPoolSize(20);
+			comboPooledDataSource.setMaxPoolSize(100);
+			comboPooledDataSource.setMinPoolSize(5);
+			comboPooledDataSource.setMaxStatements(100);
+			comboPooledDataSource.setMaxStatementsPerConnection(20);
+			pooledDataSource = comboPooledDataSource;
 		}
 
 		@Override
-		public CaseDbConnection initialValue() {
-			return new PostgreSQLConnection(host, port, dbName, userName, password);
+		public CaseDbConnection getPooledConnection() throws SQLException {
+			return new PostgreSQLConnection(pooledDataSource.getConnection());
 		}
-
 	}
 
 	/**
@@ -5303,7 +5429,7 @@ public class SleuthkitCase {
 		}
 
 		static final int SLEEP_LENGTH_IN_MILLISECONDS = 50;
-		
+
 		final static class CreateStatement implements DbCommand {
 
 			private final Connection connection;
@@ -5611,7 +5737,7 @@ public class SleuthkitCase {
 			executeCommand(prepareStatement);
 			return prepareStatement.getPreparedStatement();
 		}
-		
+
 		Statement createStatement() throws SQLException {
 			CreateStatement createStatement = new CreateStatement(this.connection);
 			executeCommand(createStatement);
@@ -5691,7 +5817,7 @@ public class SleuthkitCase {
 			ExecuteStatementUpdate executeStatementUpdate = new ExecuteStatementUpdate(statement, update);
 			executeCommand(executeStatementUpdate);
 		}
-		
+
 		void executeUpdate(PreparedStatement statement) throws SQLException {
 			ExecutePreparedStatementUpdate executePreparedStatementUpdate = new ExecutePreparedStatementUpdate(statement);
 			executeCommand(executePreparedStatementUpdate);
@@ -5704,7 +5830,7 @@ public class SleuthkitCase {
 			try {
 				connection.close();
 			} catch (SQLException ex) {
-				logger.log(Level.SEVERE, "Unable to close connection to case database", ex);
+				logger.log(Level.WARNING, "Unable to close connection to case database", ex);
 			}
 		}
 
@@ -5721,47 +5847,8 @@ public class SleuthkitCase {
 		private static final int DATABASE_LOCKED_ERROR = 0; // This should be 6 according to documentation, but it has been observed to be 0.
 		private static final int SQLITE_BUSY_ERROR = 5;
 
-		SQLiteConnection(String dbPath) {
-			super(createConnection(dbPath));
-		}
-
-		static Connection createConnection(String dbPath) {
-			Connection connection = null;
-			try {
-				SQLiteConfig config = new SQLiteConfig();
-
-				// Reduce I/O operations, we have no OS crash recovery anyway.
-				config.setSynchronous(SQLiteConfig.SynchronousMode.OFF);
-
-				// The original comment for "read_uncommited" indicating that it
-				// was being set to "allow query while in transaction". I don't fully
-				// understand why this is needed since all it does it expose dirty writes
-				// within one transaction to other queries. There was also the suggestion
-				// that it may have helped to increase performance.
-				config.setReadUncommited(true);
-
-				// Enforce foreign key constraints.
-				config.enforceForeignKeys(true);
-
-				connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath, config.toProperties()); //NON-NLS
-			} catch (SQLException ex) {
-				// The exception is caught and logged here because this 
-				// constructor will be called by an override of 
-				// ThreadLocal<T>.initialValue() which cannot throw. Calls to 
-				// ConnectionPerThreadDispenser.getConnection() will detect
-				// the error state via isOpen() and throw an appropriate 
-				// exception.
-				SleuthkitCase.logger.log(Level.SEVERE, "Error setting up case database connection for thread", ex); //NON-NLS
-				if (connection != null) {
-					try {
-						connection.close();
-					} catch (SQLException e) {
-						SleuthkitCase.logger.log(Level.SEVERE, "Failed to close connection", e);
-					}
-					connection = null;
-				}
-			}
-			return connection;
+		SQLiteConnection(Connection conn) {
+			super(conn);
 		}
 
 		@Override
@@ -5798,9 +5885,9 @@ public class SleuthkitCase {
 		private static final String SYSTEM_ERROR = PSQLState.SYSTEM_ERROR.getState();
 		private static final String UNKNOWN_STATE = PSQLState.UNKNOWN_STATE.getState();
 		private static final int MAX_RETRIES = 5;
-		
-		PostgreSQLConnection(String host, int port, String dbName, String userName, String password) {
-			super(createConnection(host, port, dbName, userName, password));
+
+		PostgreSQLConnection(Connection conn) {
+			super(conn);
 		}
 
 		@Override
@@ -5814,15 +5901,6 @@ public class SleuthkitCase {
 			PrepareStatementGenerateKeys prepareStatementGenerateKeys = new PrepareStatementGenerateKeys(this.getConnection(), sqlStatement, generateKeys);
 			executeCommand(prepareStatementGenerateKeys);
 			return prepareStatementGenerateKeys.getPreparedStatement();
-		}
-
-		static Connection createConnection(String host, int port, String dbName, String userName, String password) {
-			try {
-				return DriverManager.getConnection("jdbc:postgresql://" + host + ":" + port + "/" + dbName, userName, password); // NON-NLS
-			} catch (SQLException ex) {
-				Logger.getLogger(SleuthkitCase.class.getName()).log(Level.SEVERE, null, ex);
-			}
-			return null;
 		}
 
 		@Override
@@ -5908,6 +5986,13 @@ public class SleuthkitCase {
 			}
 		}
 
+		/**
+		 * Close the database connection
+		 *
+		 */
+		public void close() {
+			this.connection.close();
+		}
 	}
 	
 	/**
@@ -5923,14 +6008,12 @@ public class SleuthkitCase {
 	 */
 	public final class CaseDbQuery implements AutoCloseable {
 		private ResultSet resultSet;
+		private CaseDbConnection connection;
 		
 		private CaseDbQuery(String query) throws TskCoreException {
 			if (!query.regionMatches(true, 0, "SELECT", 0, "SELECT".length())) {
 				throw new TskCoreException("Unsupported query: Only SELECT queries are supported.");
 			}
-			
-			CaseDbConnection connection;
-			
 			try {
 				connection = connections.getConnection();
 			} catch (TskCoreException ex) {
@@ -5943,7 +6026,7 @@ public class SleuthkitCase {
 			}
 			catch (SQLException ex)
 			{
-				SleuthkitCase.this.releaseSharedLock()	;
+				SleuthkitCase.this.releaseSharedLock();
 				throw new TskCoreException("Error executing query: ", ex);				
 			}
 		}
@@ -5966,7 +6049,7 @@ public class SleuthkitCase {
 					}
 					resultSet.close();
 				}
-
+				connection.close();
 				SleuthkitCase.this.releaseSharedLock();				
 			}
 			catch (SQLException ex) {

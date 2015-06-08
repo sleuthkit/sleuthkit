@@ -9,6 +9,7 @@
 		<dependency org="org.postgresql" name="postgresql" rev="9.4-1201-jdbc41" >
 			<artifact name="postgresql" type="jar" />
 		</dependency>
+		<dependency org="com.mchange" name="c3p0" rev="0.9.5" />
 	</dependencies>
 </ivy-module>
 
