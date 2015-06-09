@@ -3344,7 +3344,7 @@ public class SleuthkitCase {
 		if (trans == null) {
 			throw new TskCoreException("Passed null CaseDbTransaction");
 		}
-		CaseDbConnection connection = connections.getConnection();
+		CaseDbConnection connection = trans.getConnection();
 		acquireExclusiveLock();
 		ResultSet resultSet = null;
 		try {
@@ -3423,7 +3423,6 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error adding local file directory " + fileName + " with local path " + localPath, e);
 		} finally {
 			closeResultSet(resultSet);
-			connection.close();
 			releaseExclusiveLock();
 		}
 	}
