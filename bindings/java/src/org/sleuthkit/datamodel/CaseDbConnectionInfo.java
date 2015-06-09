@@ -102,12 +102,14 @@ public class CaseDbConnectionInfo {
 		try {
 			switch (dbType) {
 				case POSTGRESQL:
+					/// TODO this should be done through the connection pool if we can.
 					Connection conn = DriverManager.getConnection(
 							"jdbc:postgresql://" + this.hostNameOrIP + ":" + this.portNumber + "/postgres",
 							this.userName,
 							this.password); // NON-NLS
 					if (conn != null) {
 						commsEstablished = true;
+						conn.close();
 					}
 					break;
 
