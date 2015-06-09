@@ -4419,7 +4419,7 @@ public class SleuthkitCase {
 		try {
 			connections.close();
 		} catch (TskCoreException ex) {
-			logger.log(Level.WARNING, "Error closing database connection pool.", ex); //NON-NLS
+			logger.log(Level.SEVERE, "Error closing database connection pool.", ex); //NON-NLS
 		}
 		try {
 			if (this.caseHandle != null) {
@@ -4427,7 +4427,7 @@ public class SleuthkitCase {
 				this.caseHandle = null;
 			}
 		} catch (TskCoreException ex) {
-			logger.log(Level.WARNING, "Error freeing case handle.", ex); //NON-NLS
+			logger.log(Level.SEVERE, "Error freeing case handle.", ex); //NON-NLS
 		} finally {
 			releaseExclusiveLock();
 		}
@@ -5318,7 +5318,7 @@ public class SleuthkitCase {
 			pooledDataSource = null;
 		}
 
-		synchronized CaseDbConnection getConnection() throws TskCoreException {
+		CaseDbConnection getConnection() throws TskCoreException {
 			if (pooledDataSource == null) {
 				throw new TskCoreException("Error getting case database connection - case is closed");
 			}
@@ -5329,7 +5329,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		synchronized void close() throws TskCoreException {
+		void close() throws TskCoreException {
 			if (pooledDataSource != null) {
 				try {
 					pooledDataSource.close();
@@ -5358,7 +5358,7 @@ public class SleuthkitCase {
 	 */
 	private final static class SQLiteConnections extends ConnectionPool {
 
-		private static final Map<String, String> configurationOverrides = new HashMap<String, String>();
+		private final Map<String, String> configurationOverrides = new HashMap<String, String>();
 
 		SQLiteConnections(String dbPath) throws SQLException {
 			configurationOverrides.put("acquireIncrement", "2");
@@ -5822,7 +5822,7 @@ public class SleuthkitCase {
 			try {
 				connection.close();
 			} catch (SQLException ex) {
-				logger.log(Level.WARNING, "Unable to close connection to case database", ex);
+				logger.log(Level.SEVERE, "Unable to close connection to case database", ex);
 			}
 		}
 
@@ -5986,7 +5986,7 @@ public class SleuthkitCase {
 		 * Close the database connection
 		 *
 		 */
-		public void close() {
+		void close() {
 			this.connection.close();
 		}
 	}
@@ -6045,9 +6045,10 @@ public class SleuthkitCase {
 					resultSet.close();
 				}
 				connection.close();
-				SleuthkitCase.this.releaseSharedLock();
 			} catch (SQLException ex) {
 				throw new TskCoreException("Error closing query: ", ex);
+			} finally {
+				SleuthkitCase.this.releaseSharedLock();
 			}
 		}
 	}
