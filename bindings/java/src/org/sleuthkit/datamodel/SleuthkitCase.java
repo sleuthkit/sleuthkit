@@ -74,7 +74,7 @@ public class SleuthkitCase {
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
-	private final ConnectionDispenser connections;
+	private final ConnectionPool connections;
 	private final ResultSetHelper rsHelper = new ResultSetHelper(this);
 	private final Map<Long, Long> carvedFileContainersCache = new HashMap<Long, Long>(); // Caches the IDs of the root $CarvedFiles for each volume.
 	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system results.
@@ -542,9 +542,6 @@ public class SleuthkitCase {
 	 * that is returned can be passed to methods that take a CaseDbTransaction.
 	 * The caller is responsible for calling either commit() or rollback() on
 	 * the transaction object.
-	 *
-	 * Note that any CaseDbTransaction must call close() to release the database
-	 * connection back to the pool.
 	 *
 	 * @return A CaseDbTransaction object.
 	 * @throws TskCoreException
@@ -2785,7 +2782,6 @@ public class SleuthkitCase {
 			localTrans.rollback();
 			throw ex;
 		} finally {
-			localTrans.close();
 			releaseExclusiveLock();
 		}
 	}
@@ -3158,9 +3154,6 @@ public class SleuthkitCase {
 			} finally {
 				closeResultSet(rs);
 				closeStatement(s);
-				if(localTrans!=null) {
-					localTrans.close();
-				}
 				releaseExclusiveLock();
 			}
 		} else {
@@ -3316,7 +3309,6 @@ public class SleuthkitCase {
 			localTrans.rollback();
 			throw ex;
 		} finally {
-			localTrans.close();
 			releaseExclusiveLock();
 		}
 	}
@@ -4427,14 +4419,16 @@ public class SleuthkitCase {
 
 		try {
 			connections.close();
+		} catch (TskCoreException ex) {
+			logger.log(Level.WARNING, "Error closing database connection pool.", ex); //NON-NLS
+		}
+		try {
 			if (this.caseHandle != null) {
 				this.caseHandle.free();
 				this.caseHandle = null;
-
 			}
 		} catch (TskCoreException ex) {
-			logger.log(Level.WARNING,
-					"Error freeing case handle.", ex); //NON-NLS
+			logger.log(Level.WARNING, "Error freeing case handle.", ex); //NON-NLS
 		} finally {
 			releaseExclusiveLock();
 		}
@@ -5313,21 +5307,20 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * A class for the connection pool. This dispenser will hand out connections
-	 * of the appropriate type based on the subclass that is calling
+	 * A class for the connection pool. This class will hand out connections of
+	 * the appropriate type based on the subclass that is calling
 	 * getPooledConnection();
 	 */
-	abstract private static class ConnectionDispenser {
+	abstract private static class ConnectionPool {
 
-		protected PooledDataSource pooledDataSource;
-		private boolean isClosed = false;
+		private PooledDataSource pooledDataSource;
 
-		public ConnectionDispenser() {
+		public ConnectionPool() {
 			pooledDataSource = null;
 		}
 
 		synchronized CaseDbConnection getConnection() throws TskCoreException {
-			if (isClosed) {
+			if (pooledDataSource == null) {
 				throw new TskCoreException("Error getting case database connection - case is closed");
 			}
 			try {
@@ -5337,30 +5330,38 @@ public class SleuthkitCase {
 			}
 		}
 
-		public synchronized void close() throws TskCoreException {
-			isClosed = true;
-
+		synchronized void close() throws TskCoreException {
 			if (pooledDataSource != null) {
 				try {
 					pooledDataSource.close();
 				} catch (SQLException exp) {
 					throw new TskCoreException(exp.getMessage());
+				} finally {
+					pooledDataSource = null;
 				}
 			}
 		}
 
 		abstract CaseDbConnection getPooledConnection() throws SQLException;
+
+		public PooledDataSource getPooledDataSource() {
+			return pooledDataSource;
+		}
+
+		public void setPooledDataSource(PooledDataSource pooledDataSource) {
+			this.pooledDataSource = pooledDataSource;
+		}
 	}
 
 	/**
 	 * Handles the initial setup of SQLite database connections, as well as
 	 * overriding getPooledConnection()
 	 */
-	private final static class SQLiteConnections extends ConnectionDispenser {
+	private final static class SQLiteConnections extends ConnectionPool {
 
 		private static final Map<String, String> configurationOverrides = new HashMap<String, String>();
 
-		SQLiteConnections(String dbPath) {
+		SQLiteConnections(String dbPath) throws SQLException {
 			configurationOverrides.put("acquireIncrement", "2");
 			configurationOverrides.put("initialPoolSize", "5");
 			configurationOverrides.put("maxPoolSize", "15");
@@ -5368,22 +5369,18 @@ public class SleuthkitCase {
 			configurationOverrides.put("maxStatements", "100");
 			configurationOverrides.put("maxStatementsPerConnection", "20");
 
-			try {
-				SQLiteConfig config = new SQLiteConfig();
-				config.setSynchronous(SQLiteConfig.SynchronousMode.OFF); // Reduce I/O operations, we have no OS crash recovery anyway.
-				config.setReadUncommited(true);
-				config.enforceForeignKeys(true); // Enforce foreign key constraints.
-				SQLiteDataSource unpooled = new SQLiteDataSource(config);
-				unpooled.setUrl("jdbc:sqlite:" + dbPath);
-				pooledDataSource = (PooledDataSource) DataSources.pooledDataSource(unpooled, configurationOverrides);
-			} catch (SQLException ex) {
-				SleuthkitCase.logger.log(Level.SEVERE, "Error setting up case database connection for thread", ex); //NON-NLS
-			}
+			SQLiteConfig config = new SQLiteConfig();
+			config.setSynchronous(SQLiteConfig.SynchronousMode.OFF); // Reduce I/O operations, we have no OS crash recovery anyway.
+			config.setReadUncommited(true);
+			config.enforceForeignKeys(true); // Enforce foreign key constraints.
+			SQLiteDataSource unpooled = new SQLiteDataSource(config);
+			unpooled.setUrl("jdbc:sqlite:" + dbPath);
+			setPooledDataSource((PooledDataSource) DataSources.pooledDataSource(unpooled, configurationOverrides));
 		}
 
 		@Override
 		public CaseDbConnection getPooledConnection() throws SQLException {
-			return new SQLiteConnection(pooledDataSource.getConnection());
+			return new SQLiteConnection(getPooledDataSource().getConnection());
 		}
 	}
 
@@ -5391,15 +5388,11 @@ public class SleuthkitCase {
 	 * Handles the initial setup of PostgreSQL database connections, as well as
 	 * overriding getPooledConnection()
 	 */
-	private final static class PostgreSQLConnections extends ConnectionDispenser {
+	private final static class PostgreSQLConnections extends ConnectionPool {
 
-		PostgreSQLConnections(String host, int port, String dbName, String userName, String password) {
+		PostgreSQLConnections(String host, int port, String dbName, String userName, String password) throws PropertyVetoException {
 			ComboPooledDataSource comboPooledDataSource = new ComboPooledDataSource();
-			try {
-				comboPooledDataSource.setDriverClass("org.postgresql.Driver"); //loads the jdbc driver
-			} catch (PropertyVetoException ex) {
-				Logger.getLogger(SleuthkitCase.class.getName()).log(Level.SEVERE, null, ex);
-			}
+			comboPooledDataSource.setDriverClass("org.postgresql.Driver"); //loads the jdbc driver
 			comboPooledDataSource.setJdbcUrl("jdbc:postgresql://" + host + ":" + port + "/" + dbName);
 			comboPooledDataSource.setUser(userName);
 			comboPooledDataSource.setPassword(password);
@@ -5409,12 +5402,12 @@ public class SleuthkitCase {
 			comboPooledDataSource.setMinPoolSize(5);
 			comboPooledDataSource.setMaxStatements(100);
 			comboPooledDataSource.setMaxStatementsPerConnection(20);
-			pooledDataSource = comboPooledDataSource;
+			setPooledDataSource(comboPooledDataSource);
 		}
 
 		@Override
 		public CaseDbConnection getPooledConnection() throws SQLException {
-			return new PostgreSQLConnection(pooledDataSource.getConnection());
+			return new PostgreSQLConnection(getPooledDataSource().getConnection());
 		}
 	}
 
@@ -5969,6 +5962,8 @@ public class SleuthkitCase {
 				this.connection.commitTransaction();
 			} catch (SQLException ex) {
 				throw new TskCoreException("Failed to commit transaction on case database", ex);
+			} finally {
+				close();
 			}
 		}
 
@@ -5983,6 +5978,8 @@ public class SleuthkitCase {
 				this.connection.rollbackTransactionWithThrow();
 			} catch (SQLException ex) {
 				throw new TskCoreException("Case database transaction rollback failed", ex);
+			} finally {
+				close();
 			}
 		}
 
@@ -5994,22 +5991,22 @@ public class SleuthkitCase {
 			this.connection.close();
 		}
 	}
-	
+
 	/**
-	 * The CaseDbQuery supports the use case where developers have a 
-	 * need for data that is not exposed through the SleuthkitCase API.
-	 * A CaseDbQuery instance gets created through the SleuthkitCase
-	 * executeDbQuery() method. It wraps the ResultSet and takes care
-	 * of acquiring and releasing the appropriate database lock.
-	 * It implements AutoCloseable so that it can be used in a try-with
-	 * -resources block freeing developers from having to remember to
-	 * close the result set and releasing the lock.
-	 * 
+	 * The CaseDbQuery supports the use case where developers have a need for
+	 * data that is not exposed through the SleuthkitCase API. A CaseDbQuery
+	 * instance gets created through the SleuthkitCase executeDbQuery() method.
+	 * It wraps the ResultSet and takes care of acquiring and releasing the
+	 * appropriate database lock. It implements AutoCloseable so that it can be
+	 * used in a try-with -resources block freeing developers from having to
+	 * remember to close the result set and releasing the lock.
+	 *
 	 */
 	public final class CaseDbQuery implements AutoCloseable {
+
 		private ResultSet resultSet;
 		private CaseDbConnection connection;
-		
+
 		private CaseDbQuery(String query) throws TskCoreException {
 			if (!query.regionMatches(true, 0, "SELECT", 0, "SELECT".length())) {
 				throw new TskCoreException("Unsupported query: Only SELECT queries are supported.");
@@ -6021,24 +6018,23 @@ public class SleuthkitCase {
 			}
 
 			try {
-				SleuthkitCase.this.acquireSharedLock();		
+				SleuthkitCase.this.acquireSharedLock();
 				resultSet = connection.executeQuery(connection.createStatement(), query);
-			}
-			catch (SQLException ex)
-			{
+			} catch (SQLException ex) {
 				SleuthkitCase.this.releaseSharedLock();
-				throw new TskCoreException("Error executing query: ", ex);				
+				throw new TskCoreException("Error executing query: ", ex);
 			}
 		}
-		
+
 		/**
 		 * Get the result set for this query.
+		 *
 		 * @return The result set.
 		 */
 		public ResultSet getResultSet() {
 			return resultSet;
 		}
-		
+
 		@Override
 		public void close() throws TskCoreException {
 			try {
@@ -6050,11 +6046,10 @@ public class SleuthkitCase {
 					resultSet.close();
 				}
 				connection.close();
-				SleuthkitCase.this.releaseSharedLock();				
-			}
-			catch (SQLException ex) {
+				SleuthkitCase.this.releaseSharedLock();
+			} catch (SQLException ex) {
 				throw new TskCoreException("Error closing query: ", ex);
 			}
-		}	
+		}
 	}
 }
