@@ -5361,9 +5361,9 @@ public class SleuthkitCase {
 		private static final Map<String, String> configurationOverrides = new HashMap<String, String>();
 
 		SQLiteConnections(String dbPath) {
-			configurationOverrides.put("acquireIncrement", "10");
-			configurationOverrides.put("initialPoolSize", "20");
-			configurationOverrides.put("maxPoolSize", "100");
+			configurationOverrides.put("acquireIncrement", "2");
+			configurationOverrides.put("initialPoolSize", "5");
+			configurationOverrides.put("maxPoolSize", "15");
 			configurationOverrides.put("minPoolSize", "5");
 			configurationOverrides.put("maxStatements", "100");
 			configurationOverrides.put("maxStatementsPerConnection", "20");
@@ -5403,9 +5403,9 @@ public class SleuthkitCase {
 			comboPooledDataSource.setJdbcUrl("jdbc:postgresql://" + host + ":" + port + "/" + dbName);
 			comboPooledDataSource.setUser(userName);
 			comboPooledDataSource.setPassword(password);
-			comboPooledDataSource.setAcquireIncrement(10);
-			comboPooledDataSource.setInitialPoolSize(20);
-			comboPooledDataSource.setMaxPoolSize(100);
+			comboPooledDataSource.setAcquireIncrement(2);
+			comboPooledDataSource.setInitialPoolSize(5);
+			comboPooledDataSource.setMaxPoolSize(15);
 			comboPooledDataSource.setMinPoolSize(5);
 			comboPooledDataSource.setMaxStatements(100);
 			comboPooledDataSource.setMaxStatementsPerConnection(20);
