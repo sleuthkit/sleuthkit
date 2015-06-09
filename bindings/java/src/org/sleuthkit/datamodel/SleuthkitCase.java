@@ -624,7 +624,7 @@ public class SleuthkitCase {
 	public static SleuthkitCase openCase(String databaseName, CaseDbConnectionInfo info, String caseDir) throws TskCoreException {
 		try {
 			if (info.getDbType() != DbType.SQLITE) {
-				if (info.settingsValid()) {
+				if (info.canConnect()) {
 					final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(databaseName, info);
 					return new SleuthkitCase(info.getHost(), Integer.parseInt(info.getPort()), databaseName, info.getUserName(), info.getPassword(), caseHandle, caseDir, info.getDbType());
 				} else {

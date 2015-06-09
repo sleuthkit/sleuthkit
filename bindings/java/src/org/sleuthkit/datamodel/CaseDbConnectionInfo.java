@@ -90,12 +90,12 @@ public class CaseDbConnectionInfo {
 	}
 
 	/**
-	 * Returns true if the current database settings are sufficient to talk to
-	 * the database type indicated
+	 * Returns true if the current database settings are sufficient to connect
+	 * to the database type indicated.
 	 *
-	 * @return
+	 * @return True or false.
 	 */
-	public boolean settingsValid() {
+	public boolean canConnect() {
 		// Check if we can talk to the database. If you add a database, be sure
 		// to add the right connection string to the switch statement below.
 		boolean commsEstablished = false;
@@ -114,7 +114,7 @@ public class CaseDbConnectionInfo {
 					break;
 
 				case SQLITE:
-					logger.log(Level.INFO, "Unknown database type."); //NON-NLS
+					logger.log(Level.INFO, "Invalid database type."); //NON-NLS
 					commsEstablished = false;
 					break;
 
