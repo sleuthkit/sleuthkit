@@ -76,7 +76,6 @@ AC_FUNC_VPRINTF
 dnl AC_CHECK_FUNCS([dup2 gethostname isascii iswprint memset munmap regcomp select setlocale strcasecmp strchr strdup strerror strndup strrchr strtol strtoul strtoull utime wcwidth])
 AC_CHECK_FUNCS([ishexnumber err errx warn warnx vasprintf getrusage])
 AC_CHECK_FUNCS([strlcpy strlcat])
-AC_CHECK_FUNCS([getline])
 
 AX_PTHREAD([
     AC_DEFINE(HAVE_PTHREAD,1,[Define if you have POSIX threads libraries and header files.])
@@ -301,6 +300,10 @@ case "$host" in
   AC_MSG_RESULT([no])
   ;;
 esac
+
+dnl Dependencies for fiwalk
+AC_CHECK_FUNCS([getline])
+AC_SEARCH_LIBS(regexec, [regex], , AC_MSG_ERROR([missing regex]))
 
 AC_CONFIG_FILES([
     Makefile
