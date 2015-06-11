@@ -76,6 +76,7 @@ AC_FUNC_VPRINTF
 dnl AC_CHECK_FUNCS([dup2 gethostname isascii iswprint memset munmap regcomp select setlocale strcasecmp strchr strdup strerror strndup strrchr strtol strtoul strtoull utime wcwidth])
 AC_CHECK_FUNCS([ishexnumber err errx warn warnx vasprintf getrusage])
 AC_CHECK_FUNCS([strlcpy strlcat])
+AC_CHECK_FUNCS([getline])
 
 AX_PTHREAD([
     AC_DEFINE(HAVE_PTHREAD,1,[Define if you have POSIX threads libraries and header files.])
@@ -300,9 +301,6 @@ case "$host" in
   AC_MSG_RESULT([no])
   ;;
 esac
-
-AC_CHECK_FUNCS([getline], [], [AC_MSG_WARN([no getline, so fiwalk will not be built])])
-AM_CONDITIONAL([BUILD_FIWALK], [test "x$ac_cv_func_getline" = "xyes"])
 
 AC_CONFIG_FILES([
     Makefile
