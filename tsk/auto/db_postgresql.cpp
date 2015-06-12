@@ -294,6 +294,23 @@ int TskDbPostgreSQL::attempt_exec(const char *sql, const char *errfmt)
     return 0;
 }
 
+
+/**
+* Validate string that was escaped by a call to PQescapeLiteral(). Sets TSK error values on error.
+* @returns 1 if string is valid, 0 otherwise
+*/
+int TskDbPostgreSQL::isEscapedStringValid(char *sql_str, char *orig_str, const char *errfmt){
+
+    if (!sql_str){
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        char * str = PQerrorMessage(conn);
+        tsk_error_set_errstr(errfmt, orig_str, str);
+        return 0;
+    }
+    return 1;
+}
+
 /**
 * Execute SQL statement and returns PostgreSQL result sets in ASCII format. Sets TSK error values on error.
 * IMPORTANT: result set needs to be freed by caling PQclear(res) when no longer needed.
@@ -671,6 +688,13 @@ int TskDbPostgreSQL::addImageInfo(int type, int ssize, int64_t & objId, const st
     // escape strings for use within an SQL command
     char *timezone_sql = PQescapeLiteral(conn, timezone.c_str(), strlen(timezone.c_str()));
     char *md5_sql = PQescapeLiteral(conn, md5.c_str(), strlen(md5.c_str()));
+    if (!isEscapedStringValid(timezone_sql, (char*) timezone.c_str(), "TskDbPostgreSQL::addImageInfo: Unable to escape time zone string: %s (Error: %s)\n") 
+        || !isEscapedStringValid(md5_sql, (char*) md5.c_str(), "TskDbPostgreSQL::addImageInfo: Unable to escape md5 string: %s (Error: %s)\n")) {
+        PQfreemem(timezone_sql);
+        PQfreemem(md5_sql);
+        return 1;
+    }
+
     snprintf(stmt, 2048, "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %d, %s, %"PRIuOFF", %s);",
         objId, type, ssize, timezone_sql, size, md5_sql);
 
@@ -690,6 +714,11 @@ int TskDbPostgreSQL::addImageName(int64_t objId, char const *imgName, int sequen
     char stmt[2048];
 
     char *imgName_sql = PQescapeLiteral(conn, imgName, strlen(imgName));
+    if (!isEscapedStringValid(imgName_sql, (char*) imgName, "TskDbPostgreSQL::addImageName: Unable to escape image name string: %s\n")) {
+        PQfreemem(imgName_sql);
+        return 1;
+    }
+
     snprintf(stmt, 2048, "INSERT INTO tsk_image_names (obj_id, name, sequence) VALUES (%lld, %s, %d)", objId, imgName_sql, sequence);
     int ret = attempt_exec(stmt, "Error adding data to tsk_image_names table: %s\n");
 
@@ -863,6 +892,15 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
     // escape strings for use within an SQL command
     char *name_sql = PQescapeLiteral(conn, name, strlen(name));
     char *escaped_path_sql = PQescapeLiteral(conn, escaped_path, strlen(escaped_path));
+    if (!isEscapedStringValid(name_sql, name, "TskDbPostgreSQL::addFile: Unable to escape file name string: %s\n") 
+        || !isEscapedStringValid(escaped_path_sql, escaped_path, "TskDbPostgreSQL::addFile: Unable to escape path string: %s\n")) {
+        free(name);
+        free(escaped_path);
+        PQfreemem(name_sql);
+        PQfreemem(escaped_path_sql);
+        return 1;
+    }
+
     char zSQL[2048];
     snprintf(zSQL, 2048, "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
         "VALUES ("
@@ -1150,6 +1188,10 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addVirtualDir(const int64_t fsObjId, const int6
 
     // escape strings for use within an SQL command
     char *name_sql = PQescapeLiteral(conn, name, strlen(name));
+    if (!isEscapedStringValid(name_sql, (char*)name, "TskDbPostgreSQL::addVirtualDir: Unable to escape file name string: %s\n")) {
+        PQfreemem(name_sql);
+        return TSK_ERR;
+    }
 
     snprintf(zSQL, 2048, "INSERT INTO tsk_files (attr_type, attr_id, has_layout, fs_obj_id, obj_id, type, "
         "name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, "
@@ -1382,6 +1424,10 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addLayoutFileInfo(const int64_t parObjId, const
 
     // escape strings for use within an SQL command
     char *name_sql = PQescapeLiteral(conn, fileName, strlen(fileName));
+    if (!isEscapedStringValid(name_sql, (char*)fileName, "TskDbPostgreSQL::addLayoutFileInfo: Unable to escape file name string: %s\n")) {
+        PQfreemem(name_sql);
+        return TSK_ERR;
+    }
 
     snprintf(zSQL, 2048, "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
         "VALUES ("
@@ -1424,6 +1470,10 @@ int TskDbPostgreSQL::addVolumeInfo(const TSK_VS_PART_INFO * vs_part,
 
     // escape strings for use within an SQL command
     char *descr_sql = PQescapeLiteral(conn, vs_part->desc, strlen(vs_part->desc));
+    if (!isEscapedStringValid(descr_sql, vs_part->desc, "TskDbPostgreSQL::addVolumeInfo: Unable to escape partition description string: %s\n")) {
+        PQfreemem(descr_sql);
+        return TSK_ERR;
+    }
 
     snprintf(zSQL, 1024, "INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags)"
         "VALUES (%lld, %" PRIuPNUM ",%" PRIuOFF ",%" PRIuOFF ",%s,%d)",
