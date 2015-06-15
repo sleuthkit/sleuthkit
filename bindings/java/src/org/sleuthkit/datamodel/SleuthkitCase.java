@@ -5363,7 +5363,7 @@ public class SleuthkitCase {
 		SQLiteConnections(String dbPath) throws SQLException {
 			configurationOverrides.put("acquireIncrement", "2");
 			configurationOverrides.put("initialPoolSize", "5");
-			configurationOverrides.put("maxPoolSize", "15");
+			configurationOverrides.put("maxPoolSize", "20");
 			configurationOverrides.put("minPoolSize", "5");
 			configurationOverrides.put("maxStatements", "100");
 			configurationOverrides.put("maxStatementsPerConnection", "20");
@@ -5397,7 +5397,7 @@ public class SleuthkitCase {
 			comboPooledDataSource.setPassword(password);
 			comboPooledDataSource.setAcquireIncrement(2);
 			comboPooledDataSource.setInitialPoolSize(5);
-			comboPooledDataSource.setMaxPoolSize(15);
+			comboPooledDataSource.setMaxPoolSize(20);
 			comboPooledDataSource.setMinPoolSize(5);
 			comboPooledDataSource.setMaxStatements(100);
 			comboPooledDataSource.setMaxStatementsPerConnection(20);
