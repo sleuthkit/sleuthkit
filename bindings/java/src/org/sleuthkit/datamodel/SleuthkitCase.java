@@ -5420,7 +5420,7 @@ public class SleuthkitCase {
 			void execute() throws SQLException;
 		}
 
-		static final int SLEEP_LENGTH_IN_MILLISECONDS = 50;
+		static final int SLEEP_LENGTH_IN_MILLISECONDS = 5000;
 
 		final static class CreateStatement implements DbCommand {
 
