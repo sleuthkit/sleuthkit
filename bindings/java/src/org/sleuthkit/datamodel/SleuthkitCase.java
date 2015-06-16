@@ -4242,7 +4242,7 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			connection.executeUpdate(statement, "DELETE FROM tsk_image_names WHERE obj_id = " + obj_id); //NON-NLS
 			for (int i = 0; i < paths.size(); i++) {
-				connection.executeUpdate(statement, "INSERT INTO tsk_image_names VALUES (" + obj_id + ", \"" + paths.get(i) + "\", " + i + ")"); //NON-NLS
+				connection.executeUpdate(statement, "INSERT INTO tsk_image_names VALUES (" + obj_id + ", '" + paths.get(i) + "', " + i + ")"); //NON-NLS
 			}
 			connection.commitTransaction();
 		} catch (SQLException ex) {
