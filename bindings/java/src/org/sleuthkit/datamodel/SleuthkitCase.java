@@ -162,12 +162,12 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Initialize the next artifact id. If there are entries in the 
+	 * Initialize the next artifact id. If there are entries in the
 	 * blackboard_artifacts table we will use max(artifact_id) + 1
 	 * otherwise we will initialize the value to 0x8000000000000000
 	 * (the maximum negative signed long).
 	 * @throws TskCoreException
-	 * @throws SQLException 
+	 * @throws SQLException
 	 */
 	private void initNextArtifactId() throws TskCoreException, SQLException {
 		CaseDbConnection connection = connections.getConnection();
@@ -183,9 +183,9 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
-		}		
+		}
 	}
-	
+
 	/**
 	 * Modify the case database to bring it up-to-date with the current version
 	 * of the database schema.
@@ -1808,7 +1808,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			releaseExclusiveLock();
-		}		
+		}
 	}
 	/**
 	 * Checks if the content object has children. Note: this is generally more
@@ -2471,7 +2471,7 @@ public class SleuthkitCase {
 		try {
 			if (dataSource instanceof Image) {
 				PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILES_BY_FILE_SYSTEM_AND_NAME);
-					
+
 				for (FileSystem fileSystem : getFileSystems((Image) dataSource)) {
 					statement.clearParameters();
 					statement.setString(1, fileName.toLowerCase());
@@ -2525,7 +2525,7 @@ public class SleuthkitCase {
 		try {
 			if (dataSource instanceof Image) {
 				PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILES_BY_FILE_SYSTEM_AND_PATH);
-			
+
 				for (FileSystem fileSystem : getFileSystems((Image) dataSource)) {
 					statement.clearParameters();
 					statement.setString(1, fileName.toLowerCase());
@@ -3122,7 +3122,7 @@ public class SleuthkitCase {
 			} else {
 				parentId = parent.getId();
 				parentPath = parent.getParentPath() + parent.getName() + "/"; //NON-NLS
-				}
+			}
 
 			// Insert a row for the local/logical file into the tsk_objects table.
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
@@ -4131,12 +4131,12 @@ public class SleuthkitCase {
 	 * the query.
 	 * @param query The query string to execute.
 	 * @return A CaseDbQuery instance.
-	 * @throws TskCoreException 
+	 * @throws TskCoreException
 	 */
 	public CaseDbQuery executeQuery(String query) throws TskCoreException {
 		return new CaseDbQuery(query);
 	}
-	
+
 	@Override
 	public void finalize() throws Throwable {
 		try {
@@ -4703,7 +4703,7 @@ public class SleuthkitCase {
 			resultSet = connection.executeQuery(statement);
 			ArrayList<ContentTag> tags = new ArrayList<ContentTag>();
 			while (resultSet.next()) {
-				TagName tagName = new TagName(resultSet.getLong(2), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")));  //NON-NLS
+				TagName tagName = new TagName(resultSet.getLong(3), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")));  //NON-NLS
 				ContentTag tag = new ContentTag(resultSet.getLong("tag_id"), content, tagName, resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset"));  //NON-NLS
 				tags.add(tag);
 			}
@@ -5017,7 +5017,7 @@ public class SleuthkitCase {
 	}
 
 	private final class ConnectionPerThreadDispenser extends ThreadLocal<CaseDbConnection> {
-		
+
 		private final HashSet<CaseDbConnection> databaseConnections = new HashSet<CaseDbConnection>();
 		private boolean isClosed = false;
 
@@ -5025,7 +5025,7 @@ public class SleuthkitCase {
 			if(isClosed){
 				throw new TskCoreException("Error getting case database connection - case is closed");
 			}
-			
+
 			CaseDbConnection connection = get();
 			if (!connection.isOpen()) {
 				throw new TskCoreException("Case database connection for current thread is not open");
@@ -5156,20 +5156,20 @@ public class SleuthkitCase {
 			Statement statement = null;
 			try {
 				SQLiteConfig config = new SQLiteConfig();
-				
+
 				// Reduce I/O operations, we have no OS crash recovery anyway.
 				config.setSynchronous(SQLiteConfig.SynchronousMode.OFF);
-				
+
 				// The original comment for "read_uncommited" indicating that it
 				// was being set to "allow query while in transaction". I don't fully
 				// understand why this is needed since all it does it expose dirty writes
 				// within one transaction to other queries. There was also the suggestion
 				// that it may have helped to increase performance.
 				config.setReadUncommited(true);
-				
+
 				// Enforce foreign key constraints.
 				config.enforceForeignKeys(true);
-				
+
 				this.connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath, config.toProperties()); //NON-NLS
 			} catch (SQLException ex) {
 				// The exception is caught and logged here because this 
@@ -5442,7 +5442,7 @@ public class SleuthkitCase {
 			}
 		}
 	}
-	
+
 	/**
 	 * The CaseDbQuery supports the use case where developers have a 
 	 * need for data that is not exposed through the SleuthkitCase API.
@@ -5452,18 +5452,18 @@ public class SleuthkitCase {
 	 * It implements AutoCloseable so that it can be used in a try-with
 	 * -resources block freeing developers from having to remember to
 	 * close the result set and releasing the lock.
-	 * 
+	 *
 	 */
 	public final class CaseDbQuery implements AutoCloseable {
 		private ResultSet resultSet;
-		
+
 		private CaseDbQuery(String query) throws TskCoreException {
 			if (!query.regionMatches(true, 0, "SELECT", 0, "SELECT".length())) {
 				throw new TskCoreException("Unsupported query: Only SELECT queries are supported.");
 			}
-			
+
 			CaseDbConnection connection;
-			
+
 			try {
 				connection = connections.getConnection();
 			} catch (TskCoreException ex) {
@@ -5471,16 +5471,16 @@ public class SleuthkitCase {
 			}
 
 			try {
-				SleuthkitCase.this.acquireSharedLock();		
+				SleuthkitCase.this.acquireSharedLock();
 				resultSet = connection.executeQuery(connection.createStatement(), query);
 			}
 			catch (SQLException ex)
 			{
 				SleuthkitCase.this.releaseSharedLock();
-				throw new TskCoreException("Error executing query: ", ex);				
+				throw new TskCoreException("Error executing query: ", ex);
 			}
 		}
-		
+
 		/**
 		 * Get the result set for this query.
 		 * @return The result set.
@@ -5488,7 +5488,7 @@ public class SleuthkitCase {
 		public ResultSet getResultSet() {
 			return resultSet;
 		}
-		
+
 		@Override
 		public void close() throws TskCoreException {
 			try {
@@ -5500,11 +5500,11 @@ public class SleuthkitCase {
 					resultSet.close();
 				}
 
-				SleuthkitCase.this.releaseSharedLock();				
+				SleuthkitCase.this.releaseSharedLock();
 			}
 			catch (SQLException ex) {
 				throw new TskCoreException("Error closing query: ", ex);
 			}
-		}	
+		}
 	}
 }

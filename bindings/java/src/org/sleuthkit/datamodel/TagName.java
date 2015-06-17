@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel;
 
 import java.util.HashMap;
+import java.util.Objects;
 
 /**
  * Instances of this class are data transfer objects (DTOs) that represent the
@@ -71,11 +72,10 @@ public class TagName implements Comparable<TagName> {
 			}
 		}
 	}
-	static long ID_NOT_SET = -1;
-	private long id = ID_NOT_SET;
+	private final long id;
 	private final String displayName;
-	private String description;
-	private HTML_COLOR color;
+	private final String description;
+	private final HTML_COLOR color;
 
 	// Clients of the org.sleuthkit.datamodel package should not directly create these objects.		
 	TagName(long id, String displayName, String description, HTML_COLOR color) {
@@ -135,16 +135,14 @@ public class TagName implements Comparable<TagName> {
 		if (this.id != other.id) {
 			return false;
 		}
-		if ((this.displayName == null) ? (other.displayName != null) : !this.displayName.equals(other.displayName)) {
-			return false;
-		}
-		if ((this.description == null) ? (other.description != null) : !this.description.equals(other.description)) {
-			return false;
-		}
-		if (this.color != other.color) {
-			return false;
-		}
-		return true;
-	}
 
+		if (false == Objects.equals(this.displayName, other.displayName)) {
+			return false;
+		}
+		if (false == Objects.equals(this.description, other.description)) {
+			return false;
+		}
+
+		return this.color == other.color;
+	}
 }
