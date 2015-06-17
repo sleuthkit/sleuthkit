@@ -102,18 +102,49 @@ public class TagName implements Comparable<TagName> {
 	}
 
 	/**
-	 * Compares this TagName to the other TagName based on null	null	null	null	null	 {@link String#compareTo(java.lang.String) of the display names
+	 * Compares this TagName to the other TagName by comparing their
+	 * displayNames with {@link String#compareTo(java.lang.String)}
 	 *
 	 * @param other The other TagName to compare this TagName to
-	 * @return -1 if this TagName's display name is before/less than the other
-	 * TagName's display name as determined by {@link String#compareTo(java.lang.String).
-	 * 0 if this TagName's display name is equal to the other TagName's
-	 * display name as determined by {@link String#compareTo(java.lang.String).
-	 * 1 if this TagName's display name is after/greater than the other TagName's
-	 * display name as determined by {@link String#compareTo(java.lang.String).
+	 * @return the result of calling compareTo on the displayNames
 	 */
 	@Override
 	public int compareTo(TagName other) {
 		return this.getDisplayName().compareTo(other.getDisplayName());
 	}
+
+	@Override
+	public int hashCode() {
+		int hash = 5;
+		hash = 89 * hash + (int) (this.id ^ (this.id >>> 32));
+		hash = 89 * hash + (this.displayName != null ? this.displayName.hashCode() : 0);
+		hash = 89 * hash + (this.description != null ? this.description.hashCode() : 0);
+		hash = 89 * hash + (this.color != null ? this.color.hashCode() : 0);
+		return hash;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		final TagName other = (TagName) obj;
+		if (this.id != other.id) {
+			return false;
+		}
+		if ((this.displayName == null) ? (other.displayName != null) : !this.displayName.equals(other.displayName)) {
+			return false;
+		}
+		if ((this.description == null) ? (other.description != null) : !this.description.equals(other.description)) {
+			return false;
+		}
+		if (this.color != other.color) {
+			return false;
+		}
+		return true;
+	}
+
 }
