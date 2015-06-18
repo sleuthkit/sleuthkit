@@ -21,6 +21,10 @@
 
 #define atoll(S) _atoi64(S)
 
+#ifndef min
+#define min(a,b)            (((a) < (b)) ? (a) : (b))
+#endif
+
 #include <string.h>
 #include <sstream>
 #include <algorithm>
@@ -278,7 +282,7 @@ int TskDbPostgreSQL::attempt_exec(const char *sql, const char *errfmt)
     }
 
     PGresult *res = PQexec(conn, sql); 
-    if (!isQueryResultValid(res, errfmt)) {
+    if (!isQueryResultValid(res, sql)) {
         return 1;
     }
 
@@ -326,7 +330,7 @@ PGresult* TskDbPostgreSQL::get_query_result_set(const char *sql, const char *err
     }
 
     PGresult *res = PQexec(conn, sql); 
-    if (!isQueryResultValid(res, errfmt)) {
+    if (!isQueryResultValid(res, sql)) {
         return NULL;
     }
 
@@ -365,7 +369,7 @@ PGresult* TskDbPostgreSQL::get_query_result_set_binary(const char *sql, const ch
                        NULL,    /* default to all text params */
                        1);      /* ask for binary results */
 
-    if (!isQueryResultValid(res, errfmt)) {
+    if (!isQueryResultValid(res, sql)) {
         return NULL;
     }
 
@@ -398,9 +402,9 @@ int TskDbPostgreSQL::verifyResultCode(int resultCode, int expectedResultCode, co
 * Sets TSK error values if result is invalid. 		
 * @returns 0 if result is valid, 1 if result is invalid	or empty
 */	
-int TskDbPostgreSQL::verifyNonEmptyResultSetSize(PGresult *res, int expectedNumFileds, const char *errfmt)
+int TskDbPostgreSQL::verifyNonEmptyResultSetSize(const char *sql, PGresult *res, int expectedNumFileds, const char *errfmt)
 {
-    if (!isQueryResultValid(res, errfmt)) {
+    if (!isQueryResultValid(res, sql)) {
         return 1;
     }
 
@@ -417,10 +421,10 @@ int TskDbPostgreSQL::verifyNonEmptyResultSetSize(PGresult *res, int expectedNumF
 * Sets TSK error values if result is invalid. 		
 * @returns 0 if result is valid or empty, 1 if result is invalid		
 */	
-int TskDbPostgreSQL::verifyResultSetSize(PGresult *res, int expectedNumFileds, const char *errfmt)
+int TskDbPostgreSQL::verifyResultSetSize(const char *sql, PGresult *res, int expectedNumFileds, const char *errfmt)
 {
     // check if a valid result set was returned
-    if (!isQueryResultValid(res, errfmt)) {
+    if (!isQueryResultValid(res, sql)) {
         return 1;
     }
 
@@ -445,15 +449,33 @@ int TskDbPostgreSQL::verifyResultSetSize(PGresult *res, int expectedNumFileds, c
 /* Verifies if PGresult is valid. Sets TSK error values if result is invalid. 		
 * @returns true if result is valid, false if result is invalid		
 */		
-bool TskDbPostgreSQL::isQueryResultValid(PGresult *res, const char *errfmt)		
+bool TskDbPostgreSQL::isQueryResultValid(PGresult *res, const char *sql)		
 {		 
     if (!res) {
         tsk_error_reset();	
         tsk_error_set_errno(TSK_ERR_AUTO_DB);	
-        tsk_error_set_errstr(errfmt, "Result set pointer is NULL\n");
+        tsk_error_set_errstr("SQL command returned a NULL result set pointer: %s", sql);
         return false;
     }		     
     return true;
+}
+
+/* Removes any existing non-UTF8 characters from string. Output string needs to be pre-allocated 
+* and it's max size is passed as input.
+*/
+void TskDbPostgreSQL::removeNonUtf8(char* newStr, int newStrMaxSize, const char* origStr)
+{
+    if (!newStr){
+        tsk_error_reset();	
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);	
+        tsk_error_set_errstr("TskDbPostgreSQL::removeNonUtf8: Output string has not been allocated");
+        return;
+    }
+
+    int strSize = min((int) strlen(origStr), newStrMaxSize);
+    strncpy(newStr, origStr, strSize);
+    newStr[strSize] = '\0';
+    tsk_cleanupUTF8(newStr, '^');
 }
 
 /** 
@@ -595,7 +617,7 @@ uint8_t TskDbPostgreSQL::addObject(TSK_DB_OBJECT_TYPE_ENUM type, int64_t parObjI
     PGresult *res = get_query_result_set(stmt, "TskDbPostgreSQL::addObj: Error adding object to row: %s (result code %d)\n");
 
     // check if a valid result set was returned
-    if (verifyNonEmptyResultSetSize(res, expectedNumFileds, "TskDbPostgreSQL::addObj: Unexpected number of results: Expected %d, Received %d\n")) {
+    if (verifyNonEmptyResultSetSize(stmt, res, expectedNumFileds, "TskDbPostgreSQL::addObj: Unexpected number of results: Expected %d, Received %d\n")) {
         return TSK_ERR;
     }
 
@@ -642,7 +664,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInf
     PGresult *res = get_query_result_set(stmt, "TskDbPostgreSQL::getVsInfo: Error selecting object by objid: %s (result code %d)\n");
 
     // check if a valid result set was returned
-    if (verifyNonEmptyResultSetSize(res, expectedNumFileds, "TskDbPostgreSQL::getVsInfo: Unexpected number of results: Expected %d, Received %d\n")) {
+    if (verifyNonEmptyResultSetSize(stmt, res, expectedNumFileds, "TskDbPostgreSQL::getVsInfo: Unexpected number of results: Expected %d, Received %d\n")) {
         return TSK_ERR;
     }
 
@@ -678,18 +700,25 @@ int TskDbPostgreSQL::addImageInfo(int type, int ssize, int64_t & objId, const st
     PGresult *res = get_query_result_set(stmt, "TskDbPostgreSQL::addObj: Error adding object to row: %s (result code %d)\n");
 
     // check if a valid result set was returned
-    if (verifyNonEmptyResultSetSize(res, expectedNumFileds, "TskDbPostgreSQL::addObj: Unexpected number of results: Expected %d, Received %d\n")) {
+    if (verifyNonEmptyResultSetSize(stmt, res, expectedNumFileds, "TskDbPostgreSQL::addObj: Unexpected number of results: Expected %d, Received %d\n")) {
         return 1;
     }
 
     // Returned value is objId
     objId = atoll(PQgetvalue(res, 0, 0));
 
+    // replace all non-UTF8 characters
+    char timeZone_local[MAX_DB_STRING_LENGTH];
+    removeNonUtf8(timeZone_local, MAX_DB_STRING_LENGTH - 1, timezone.c_str());
+
+    char md5_local[MAX_DB_STRING_LENGTH];
+    removeNonUtf8(md5_local, MAX_DB_STRING_LENGTH - 1, md5.c_str());
+
     // escape strings for use within an SQL command
-    char *timezone_sql = PQescapeLiteral(conn, timezone.c_str(), strlen(timezone.c_str()));
-    char *md5_sql = PQescapeLiteral(conn, md5.c_str(), strlen(md5.c_str()));
-    if (!isEscapedStringValid(timezone_sql, (char*) timezone.c_str(), "TskDbPostgreSQL::addImageInfo: Unable to escape time zone string: %s (Error: %s)\n") 
-        || !isEscapedStringValid(md5_sql, (char*) md5.c_str(), "TskDbPostgreSQL::addImageInfo: Unable to escape md5 string: %s (Error: %s)\n")) {
+    char *timezone_sql = PQescapeLiteral(conn, timeZone_local, strlen(timeZone_local));
+    char *md5_sql = PQescapeLiteral(conn, md5_local, strlen(md5_local));
+    if (!isEscapedStringValid(timezone_sql, timeZone_local, "TskDbPostgreSQL::addImageInfo: Unable to escape time zone string: %s (Error: %s)\n") 
+        || !isEscapedStringValid(md5_sql, md5_local, "TskDbPostgreSQL::addImageInfo: Unable to escape md5 string: %s (Error: %s)\n")) {
         PQfreemem(timezone_sql);
         PQfreemem(md5_sql);
         return 1;
@@ -713,8 +742,12 @@ int TskDbPostgreSQL::addImageName(int64_t objId, char const *imgName, int sequen
 {
     char stmt[2048];
 
-    char *imgName_sql = PQescapeLiteral(conn, imgName, strlen(imgName));
-    if (!isEscapedStringValid(imgName_sql, (char*) imgName, "TskDbPostgreSQL::addImageName: Unable to escape image name string: %s\n")) {
+    // replace all non-UTF8 characters
+    char imgName_local[MAX_DB_STRING_LENGTH];
+    removeNonUtf8(imgName_local, MAX_DB_STRING_LENGTH - 1, imgName);
+
+    char *imgName_sql = PQescapeLiteral(conn, imgName_local, strlen(imgName_local));
+    if (!isEscapedStringValid(imgName_sql, imgName_local, "TskDbPostgreSQL::addImageName: Unable to escape image name string: %s\n")) {
         PQfreemem(imgName_sql);
         return 1;
     }
@@ -889,16 +922,20 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         return 1;
     }
 
+    // replace all non-UTF8 characters
+    tsk_cleanupUTF8(name, '^');
+    tsk_cleanupUTF8(escaped_path, '^');
+
     // escape strings for use within an SQL command
     char *name_sql = PQescapeLiteral(conn, name, strlen(name));
     char *escaped_path_sql = PQescapeLiteral(conn, escaped_path, strlen(escaped_path));
     if (!isEscapedStringValid(name_sql, name, "TskDbPostgreSQL::addFile: Unable to escape file name string: %s\n") 
         || !isEscapedStringValid(escaped_path_sql, escaped_path, "TskDbPostgreSQL::addFile: Unable to escape path string: %s\n")) {
-        free(name);
-        free(escaped_path);
-        PQfreemem(name_sql);
-        PQfreemem(escaped_path_sql);
-        return 1;
+            free(name);
+            free(escaped_path);
+            PQfreemem(name_sql);
+            PQfreemem(escaped_path_sql);
+            return 1;
     }
 
     char zSQL[2048];
@@ -988,7 +1025,7 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n");
 
     // check if a valid result set was returned
-    if (verifyNonEmptyResultSetSize(res, expectedNumFileds, "TskDbPostgreSQL::findParObjId: Unexpected number of results: Expected %d, Received %d\n")) {
+    if (verifyNonEmptyResultSetSize(zSQL, res, expectedNumFileds, "TskDbPostgreSQL::findParObjId: Unexpected number of results: Expected %d, Received %d\n")) {
         return -1;
     }
 
@@ -1070,7 +1107,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getFsInfos(int64_t imgId, vector<TSK_DB_FS_INFO
     snprintf(zSQL, 1024,"SELECT obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum FROM tsk_fs_info");
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getFsInfos: Error selecting from tsk_fs_info: %s (result code %d)\n");
 
-    if (verifyResultSetSize(res, expectedNumFileds, "TskDbPostgreSQL::getFsInfos: Error selecting from tsk_fs_info: %s")) {
+    if (verifyResultSetSize(zSQL, res, expectedNumFileds, "TskDbPostgreSQL::getFsInfos: Error selecting from tsk_fs_info: %s")) {
         return TSK_ERR;
     }
 
@@ -1156,7 +1193,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getObjectInfo(int64_t objId, TSK_DB_OBJECT & ob
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getObjectInfo: Error selecting object by objid: %s (result code %d)\n");
 
     // check if a valid result set was returned
-    if (verifyNonEmptyResultSetSize(res, expectedNumFileds, "TskDbPostgreSQL::getObjectInfo: Unexpected number of results: Expected %d, Received %d\n")) {
+    if (verifyNonEmptyResultSetSize(zSQL, res, expectedNumFileds, "TskDbPostgreSQL::getObjectInfo: Unexpected number of results: Expected %d, Received %d\n")) {
         return TSK_ERR;
     }
 
@@ -1186,9 +1223,13 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addVirtualDir(const int64_t fsObjId, const int6
     if (addObject(TSK_DB_OBJECT_TYPE_FILE, parentDirId, objId))
         return TSK_ERR;
 
+    // replace all non-UTF8 characters
+    char name_local[MAX_DB_STRING_LENGTH];
+    removeNonUtf8(name_local, MAX_DB_STRING_LENGTH - 1, name);
+
     // escape strings for use within an SQL command
-    char *name_sql = PQescapeLiteral(conn, name, strlen(name));
-    if (!isEscapedStringValid(name_sql, (char*)name, "TskDbPostgreSQL::addVirtualDir: Unable to escape file name string: %s\n")) {
+    char *name_sql = PQescapeLiteral(conn, name_local, strlen(name_local));
+    if (!isEscapedStringValid(name_sql, name_local, "TskDbPostgreSQL::addVirtualDir: Unable to escape file name string: %s\n")) {
         PQfreemem(name_sql);
         return TSK_ERR;
     }
@@ -1422,9 +1463,13 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addLayoutFileInfo(const int64_t parObjId, const
         fsObjIdStrPtr = &nullStr[0];
     }
 
+    // replace all non-UTF8 characters
+    char fileName_local[MAX_DB_STRING_LENGTH];
+    removeNonUtf8(fileName_local, MAX_DB_STRING_LENGTH - 1, fileName);
+
     // escape strings for use within an SQL command
-    char *name_sql = PQescapeLiteral(conn, fileName, strlen(fileName));
-    if (!isEscapedStringValid(name_sql, (char*)fileName, "TskDbPostgreSQL::addLayoutFileInfo: Unable to escape file name string: %s\n")) {
+    char *name_sql = PQescapeLiteral(conn, fileName_local, strlen(fileName_local));
+    if (!isEscapedStringValid(name_sql, fileName_local, "TskDbPostgreSQL::addLayoutFileInfo: Unable to escape file name string: %s\n")) {
         PQfreemem(name_sql);
         return TSK_ERR;
     }
@@ -1467,6 +1512,9 @@ int TskDbPostgreSQL::addVolumeInfo(const TSK_VS_PART_INFO * vs_part,
 
     if (addObject(TSK_DB_OBJECT_TYPE_VOL, parObjId, objId))
         return 1;
+
+    // replace all non-UTF8 characters
+    tsk_cleanupUTF8(vs_part->desc, '^');
 
     // escape strings for use within an SQL command
     char *descr_sql = PQescapeLiteral(conn, vs_part->desc, strlen(vs_part->desc));
@@ -1532,7 +1580,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getVsPartInfos: Error selecting from tsk_vs_parts: %s (result code %d)\n");
 
     // check if a valid result set was returned
-    if (verifyResultSetSize(res, expectedNumFileds, "TskDbPostgreSQL::getVsPartInfos: Error selecting from tsk_vs_parts: %s")) {
+    if (verifyResultSetSize(zSQL, res, expectedNumFileds, "TskDbPostgreSQL::getVsPartInfos: Error selecting from tsk_vs_parts: %s")) {
         return TSK_ERR;
     }
 
@@ -1593,7 +1641,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getFsRootDirObjectInfo(const int64_t fsObjId, T
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getFsRootDirObjectInfo: Error selecting from tsk_objects,tsk_files: %s (result code %d)\n");
 
     // check if a valid result set was returned
-    if (verifyNonEmptyResultSetSize(res, expectedNumFileds, "TskDbPostgreSQL::getFsRootDirObjectInfo: Unexpected number of results: Expected %d, Received %d\n")) {
+    if (verifyNonEmptyResultSetSize(zSQL, res, expectedNumFileds, "TskDbPostgreSQL::getFsRootDirObjectInfo: Unexpected number of results: Expected %d, Received %d\n")) {
         return TSK_ERR;
     }
 
@@ -1621,7 +1669,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE>
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getFileLayouts: Error selecting from tsk_file_layout: %s (result code %d)\n");
 
     // check if a valid result set was returned
-    if (verifyResultSetSize(res, expectedNumFileds, "TskDbPostgreSQL::getFileLayouts: Error selecting from tsk_file_layout: %s")) {
+    if (verifyResultSetSize(zSQL, res, expectedNumFileds, "TskDbPostgreSQL::getFileLayouts: Error selecting from tsk_file_layout: %s")) {
         return TSK_ERR;
     }
 
@@ -1660,7 +1708,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getVsInfos: Error selecting from tsk_vs_info: %s (result code %d)\n");
 
     // check if a valid result set was returned
-    if (verifyResultSetSize(res, expectedNumFileds, "TskDbPostgreSQL::getVsInfos: Error selecting from tsk_vs_info: %s")) {
+    if (verifyResultSetSize(zSQL, res, expectedNumFileds, "TskDbPostgreSQL::getVsInfos: Error selecting from tsk_vs_info: %s")) {
         return TSK_ERR;
     }
 

@@ -32,6 +32,7 @@ using std::map;
 
 #define MAX_CONN_INFO_FIELD_LENGTH  256
 #define MAX_CONN_PORT_FIELD_LENGTH  5   // max number of ports on windows is 65535 
+#define MAX_DB_STRING_LENGTH        512
 
 /** \internal
  * C++ class that wraps PostgreSQL database internals. 
@@ -104,13 +105,15 @@ private:
     int initialize();
     int attempt_exec(const char *sql, const char *errfmt);
     int verifyResultCode(int resultCode, int expectedResultCode, const char *errfmt);
-    int verifyNonEmptyResultSetSize(PGresult *res, int expectedNumFileds, const char *errfmt);
-    int verifyResultSetSize(PGresult *res, int expectedNumFileds, const char *errfmt);
+    int verifyNonEmptyResultSetSize(const char *sql, PGresult *res, int expectedNumFileds, const char *errfmt);
+    int verifyResultSetSize(const char *sql, PGresult *res, int expectedNumFileds, const char *errfmt);
     PGresult* get_query_result_set(const char *sql, const char *errfmt);
     PGresult* get_query_result_set_binary(const char *sql, const char *errfmt);
-    bool isQueryResultValid(PGresult *res, const char *errfmt);
+    bool isQueryResultValid(PGresult *res, const char *sql);
     int isEscapedStringValid(char *sql_str, char *orig_str, const char *errfmt);
     int createIndexes();
+
+    void removeNonUtf8(char* newStr, int newStrMaxSize, const char* origStr);
 
     uint8_t addObject(TSK_DB_OBJECT_TYPE_ENUM type, int64_t parObjId, int64_t & objId);
     int addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr, const char *path, const unsigned char *const md5, 
