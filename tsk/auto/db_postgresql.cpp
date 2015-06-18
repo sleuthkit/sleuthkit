@@ -21,10 +21,6 @@
 
 #define atoll(S) _atoi64(S)
 
-#ifndef min
-#define min(a,b)            (((a) < (b)) ? (a) : (b))
-#endif
-
 #include <string.h>
 #include <sstream>
 #include <algorithm>
