@@ -5876,7 +5876,7 @@ public class SleuthkitCase {
 		private static final String COMMUNICATION_ERROR = PSQLState.COMMUNICATION_ERROR.getState();
 		private static final String SYSTEM_ERROR = PSQLState.SYSTEM_ERROR.getState();
 		private static final String UNKNOWN_STATE = PSQLState.UNKNOWN_STATE.getState();
-		private static final int MAX_RETRIES = 5;
+		private static final int MAX_RETRIES = 3;
 
 		PostgreSQLConnection(Connection conn) {
 			super(conn);
