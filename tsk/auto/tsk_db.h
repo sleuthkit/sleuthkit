@@ -183,7 +183,7 @@ class TskDb {
     virtual int addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLayoutRange) = 0;
     virtual int addFileLayoutRange(int64_t a_fileObjId, uint64_t a_byteStart, uint64_t a_byteLen, int a_sequence) = 0;
     
-    virtual bool isDbOpen() const = 0;
+    virtual bool isDbOpen() = 0;
     virtual int createSavepoint(const char *name) = 0;
     virtual int revertSavepoint(const char *name) = 0;
     virtual int releaseSavepoint(const char *name) = 0;
