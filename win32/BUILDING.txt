@@ -8,6 +8,10 @@ Visual Studio 2010 Express cannot make 64-bit versions of the executables.  To d
 
     http://msdn.microsoft.com/en-us/windowsserver/bb980924.aspx
 
+The SDK installation may fail, particularly if Visual Studio 2010 Service Pack 1 has been installed. In this case, re-run the SDK installer but un-check the compilers box. After the SDK is installed, run the following fix to get the 64 bit compiler:
+
+    https://www.microsoft.com/en-us/download/details.aspx?id=4422
+
 
 
 The Visual Studio Solution file has five build targets: Debug, Debug_NoLibs, Release, Debug_PostgreSQL, and Release_PostgreSQL. Debug and Release require that libewf exists (to provide support for E01 image files) and that zlib exists (to provide support for HFS+ compressed data). Debug_NoLibs does not require libewf or zlib and you should be able to compile Debug_NoLibs without any additional setup. Debug_PostgreSQL and Release_PostgreSQL require a 64-bit version of PostgreSQL 9.4 or above installed. See the PostgreSQL section below.

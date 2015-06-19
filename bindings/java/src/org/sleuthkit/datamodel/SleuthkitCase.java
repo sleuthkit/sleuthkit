@@ -209,10 +209,10 @@ public class SleuthkitCase {
 
 	/**
 	 * Initialize the next artifact id. If there are entries in the
-	 * blackboard_artifacts table we will use max(artifact_id) + 1 otherwise we
-	 * will initialize the value to 0x8000000000000000 (the maximum negative
-	 * signed long).
-	 *
+	 * blackboard_artifacts table we will use max(artifact_id) + 1
+	 * otherwise we will initialize the value to 0x8000000000000000
+	 * (the maximum negative signed long).
+	 * 
 	 * @throws TskCoreException
 	 * @throws SQLException
 	 */
@@ -2676,7 +2676,7 @@ public class SleuthkitCase {
 		try {
 			if (dataSource instanceof Image) {
 				PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILES_BY_FILE_SYSTEM_AND_NAME);
-					
+
 				for (FileSystem fileSystem : getFileSystems((Image) dataSource)) {
 					statement.clearParameters();
 					statement.setString(1, fileName.toLowerCase());
@@ -2731,7 +2731,7 @@ public class SleuthkitCase {
 		try {
 			if (dataSource instanceof Image) {
 				PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILES_BY_FILE_SYSTEM_AND_PATH);
-			
+
 				for (FileSystem fileSystem : getFileSystems((Image) dataSource)) {
 					statement.clearParameters();
 					statement.setString(1, fileName.toLowerCase());
@@ -3355,7 +3355,7 @@ public class SleuthkitCase {
 			} else {
 				parentId = parent.getId();
 				parentPath = parent.getParentPath() + parent.getName() + "/"; //NON-NLS
-				}
+			}
 
 			// Insert a row for the local/logical file into the tsk_objects table.
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
@@ -4392,12 +4392,12 @@ public class SleuthkitCase {
 	 * block will automatically take care of releasing the lock.
 	 * @param query The query string to execute.
 	 * @return A CaseDbQuery instance.
-	 * @throws TskCoreException 
+	 * @throws TskCoreException
 	 */
 	public CaseDbQuery executeQuery(String query) throws TskCoreException {
 		return new CaseDbQuery(query);
 	}
-	
+
 	@Override
 	public void finalize() throws Throwable {
 		try {
@@ -4981,7 +4981,7 @@ public class SleuthkitCase {
 			resultSet = connection.executeQuery(statement);
 			ArrayList<ContentTag> tags = new ArrayList<ContentTag>();
 			while (resultSet.next()) {
-				TagName tagName = new TagName(resultSet.getLong(2), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")));  //NON-NLS
+				TagName tagName = new TagName(resultSet.getLong(3), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")));  //NON-NLS
 				ContentTag tag = new ContentTag(resultSet.getLong("tag_id"), content, tagName, resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset"));  //NON-NLS
 				tags.add(tag);
 			}
@@ -5999,7 +5999,6 @@ public class SleuthkitCase {
 	 * appropriate database lock. It implements AutoCloseable so that it can be
 	 * used in a try-with -resources block freeing developers from having to
 	 * remember to close the result set and releasing the lock.
-	 *
 	 */
 	public final class CaseDbQuery implements AutoCloseable {
 
