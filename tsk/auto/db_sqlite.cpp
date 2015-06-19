@@ -1054,7 +1054,7 @@ TSK_RETVAL_ENUM
 * Returns true if database is opened.
 */
 bool
-    TskDbSqlite::isDbOpen() 
+    TskDbSqlite::isDbOpen()
 {
     if (m_db)
         return true;
