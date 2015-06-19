@@ -1038,7 +1038,6 @@ JNIEXPORT void JNICALL
             setThrowTskCoreError(env, msgss.str().c_str());
         }
         else if (ret == 2) {
-            
 			if(tskAuto->isDbOpen()) {
 				// if we can still talk to the database, it's a non-fatal error
 				setThrowTskDataError(env, msgss.str().c_str());

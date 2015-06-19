@@ -1060,8 +1060,7 @@ const std::string TskAutoDb::getCurDir() {
 }
 
 
-bool TskAutoDb::isDbOpen()
-{
+bool TskAutoDb::isDbOpen() {
 	if(m_db!=NULL) {
 		return m_db->isDbOpen();
 	}
