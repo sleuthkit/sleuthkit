@@ -49,6 +49,12 @@ class TskAutoDb:public TskAuto {
         const char *path);
     virtual void createBlockMap(bool flag);
     const std::string getCurDir();
+	
+	/**
+	* Check if we can talk to the database.
+	* Returns true if the database is reachable with current credentials, false otherwise.
+	*/
+	bool isDbOpen();
 
     /**
      * Calculate hash values of files and add them to database.

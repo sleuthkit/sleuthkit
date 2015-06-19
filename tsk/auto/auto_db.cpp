@@ -1058,3 +1058,12 @@ const std::string TskAutoDb::getCurDir() {
     tsk_release_lock(&m_curDirPathLock);
     return curDirPath;
 }
+
+
+bool TskAutoDb::isDbOpen()
+{
+	if(m_db!=NULL) {
+		return m_db->isDbOpen();
+	}
+	return false;
+}

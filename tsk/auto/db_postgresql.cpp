@@ -1769,12 +1769,19 @@ int TskDbPostgreSQL::releaseSavepoint(const char *name)
 /** 
 * Returns true if database is opened.
 */
-bool TskDbPostgreSQL::isDbOpen() const 
+bool TskDbPostgreSQL::isDbOpen()
 {
-    if (conn)
-        return true;
-    else
-        return false;
+	if (conn) {
+		PGconn *serverConn = connectToDatabase(&m_dBName[0]);
+		if (!serverConn) {
+			return false;
+		}
+		PQfinish(serverConn);
+		return true;
+	}
+	else {
+		return false;
+	}
 }
 
 /** 
