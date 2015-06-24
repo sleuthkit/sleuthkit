@@ -4983,7 +4983,7 @@ public class SleuthkitCase {
 			ArrayList<Report> reports = new ArrayList<Report>();
 			while (resultSet.next()) {
 				reports.add(new Report(resultSet.getLong("report_id"), //NON-NLS
-						Paths.get(getDbDirPath() + java.io.File.separator + resultSet.getString("path")).normalize().toString(),
+						Paths.get(getDbDirPath() + java.io.File.separator + resultSet.getString("path")).normalize().toString(), //NON-NLS
 						resultSet.getLong("crtime"), //NON-NLS
 						resultSet.getString("src_module_name"), //NON-NLS
 						resultSet.getString("report_name")));  //NON-NLS
