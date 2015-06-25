@@ -724,7 +724,7 @@ public abstract class AbstractFile extends AbstractContent {
 			return 0;
 		}
 
-		getLocalFile();
+		loadLocalFile();
 		if (!localFile.exists()) {
 			throw new TskCoreException(
                     MessageFormat.format(bundle.getString("AbstractFile.readLocal.exception.msg2.text"), localAbsPath));
@@ -826,8 +826,13 @@ public abstract class AbstractFile extends AbstractContent {
 		if (!localPathSet) {
 			return true;
 		} else {
-			getLocalFile();
-			return localFile.exists();
+			try {
+				loadLocalFile();
+				return localFile.exists();
+			} catch (TskCoreException ex) {
+				logger.log(Level.SEVERE, ex.getMessage());
+				return false;
+			}
 		}
 	}
 
@@ -842,30 +847,36 @@ public abstract class AbstractFile extends AbstractContent {
 		if (!localPathSet) {
 			return true;
 		} else {
-			getLocalFile();
-			return localFile.canRead();
+			try {
+				loadLocalFile();
+				return localFile.canRead();
+			} catch (TskCoreException ex) {
+				logger.log(Level.SEVERE, ex.getMessage());
+				return false;
+			}
 		}
-
 	}
 
 	/**
-	 * Lazy load local file handle and return it, if localPath has been set
+	 * Lazy load local file handle
 	 *
-	 * @return java.io.File object representing the local file, or null if local path has not been set
 	 */
-	private java.io.File getLocalFile() {
+	private void loadLocalFile() throws TskCoreException {
 		if (!localPathSet) {
-			return null;
+			throw new TskCoreException(
+					bundle.getString("AbstractFile.readLocal.exception.msg1.text"));
 		}
 
-		if (localFile == null) {
-			synchronized (this) {
-				if (localFile == null) {
-					localFile = new java.io.File(localAbsPath);
-				}
+		// already been set
+		if (localFile != null) {
+			return;
+		}
+
+		synchronized (this) {
+			if (localFile == null) {
+				localFile = new java.io.File(localAbsPath);
 			}
 		}
-		return localFile;
 	}
 
 	@Override
