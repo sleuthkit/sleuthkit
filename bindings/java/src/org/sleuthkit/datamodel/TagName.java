@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Objects;
 
@@ -26,7 +27,9 @@ import java.util.Objects;
  * names (and related properties) a user can select from to apply a tag to
  * content or a blackboard artifact.
  */
-public class TagName implements Comparable<TagName> {
+public class TagName implements Comparable<TagName>, Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	public enum HTML_COLOR {
 

@@ -4925,6 +4925,42 @@ public class SleuthkitCase {
 
 	/**
 	 * Selects the rows in the content_tags table in the case database with a
+	 * specified tag id.
+	 *
+	 * @param contentTagID the tag id of the ContentTag to retrieve.
+	 * @throws TskCoreException
+	 */
+	public ContentTag getContentTagByID(long contentTagID) throws TskCoreException {
+
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		ResultSet resultSet = null;
+		ContentTag tag = null;
+		try {
+			// SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id WHERE tag_id = ?
+			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_CONTENT_TAG_BY_ID);
+			statement.clearParameters();
+			statement.setLong(1, contentTagID);
+			resultSet = connection.executeQuery(statement);
+
+			while (resultSet.next()) {
+				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")));
+				tag = new ContentTag(resultSet.getLong("tag_id"), getContentById(resultSet.getLong("obj_id")), tagName, resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset"));
+			}
+			resultSet.close();
+
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting content tag with id = " + contentTagID, ex);
+		} finally {
+			closeResultSet(resultSet);
+			connection.close();
+			releaseSharedLock();
+		}
+		return tag;
+	}
+
+	/**
+	 * Selects the rows in the content_tags table in the case database with a
 	 * specified foreign key into the tag_names table.
 	 *
 	 * @param tagName A data transfer object (DTO) for the tag name to match.
@@ -5159,6 +5195,44 @@ public class SleuthkitCase {
 			connection.close();
 			releaseSharedLock();
 		}
+	}
+
+	/**
+	 * Selects the rows in the blackboard artifact tags table in the case
+	 * database with a specified tag id.
+	 *
+	 * @param artifactTagID the tag id of the BlackboardArtifactTag to retrieve.
+	 * @throws TskCoreException
+	 */
+	public BlackboardArtifactTag getBlackboardArtifactTagByID(long artifactTagID) throws TskCoreException {
+
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		ResultSet resultSet = null;
+		BlackboardArtifactTag tag = null;
+		try {
+			// SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id WHERE blackboard_artifact_tags.tag_id = ?
+			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_ARTIFACT_TAG_BY_ID);
+			statement.clearParameters();
+			statement.setLong(1, artifactTagID);
+			resultSet = connection.executeQuery(statement);
+
+			while (resultSet.next()) {
+				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")));
+				BlackboardArtifact artifact = getBlackboardArtifact(resultSet.getLong("artifact_id")); //NON-NLS
+				Content content = getContentById(resultSet.getLong("obj_id"));
+				tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"), artifact, content, tagName, resultSet.getString("comment"));
+			}
+			resultSet.close();
+
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting blackboard artifact tag with id = " + artifactTagID, ex);
+		} finally {
+			closeResultSet(resultSet);
+			connection.close();
+			releaseSharedLock();
+		}
+		return tag;
 	}
 
 	/**
@@ -5677,12 +5751,14 @@ public class SleuthkitCase {
 			COUNT_CONTENT_TAGS_BY_TAG_NAME("SELECT COUNT(*) FROM content_tags WHERE tag_name_id = ?"), //NON-NLS
 			SELECT_CONTENT_TAGS("SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id"), //NON-NLS
 			SELECT_CONTENT_TAGS_BY_TAG_NAME("SELECT * FROM content_tags WHERE tag_name_id = ?"), //NON-NLS
+			SELECT_CONTENT_TAG_BY_ID("SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id WHERE tag_id = ?"), //NON-NLS
 			SELECT_CONTENT_TAGS_BY_CONTENT("SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id WHERE content_tags.obj_id = ?"), //NON-NLS
 			INSERT_ARTIFACT_TAG("INSERT INTO blackboard_artifact_tags (artifact_id, tag_name_id, comment) VALUES (?, ?, ?)"), //NON-NLS
 			DELETE_ARTIFACT_TAG("DELETE FROM blackboard_artifact_tags WHERE tag_id = ?"), //NON-NLS
 			SELECT_ARTIFACT_TAGS("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id"), //NON-NLS
 			COUNT_ARTIFACTS_BY_TAG_NAME("SELECT COUNT(*) FROM blackboard_artifact_tags WHERE tag_name_id = ?"), //NON-NLS
 			SELECT_ARTIFACT_TAGS_BY_TAG_NAME("SELECT * FROM blackboard_artifact_tags WHERE tag_name_id = ?"), //NON-NLS
+			SELECT_ARTIFACT_TAG_BY_ID("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id  WHERE blackboard_artifact_tags.tag_id = ?"), //NON-NLS
 			SELECT_ARTIFACT_TAGS_BY_ARTIFACT("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id WHERE blackboard_artifact_tags.artifact_id = ?"), //NON-NLS
 			SELECT_REPORTS("SELECT * FROM reports"), //NON-NLS
 			INSERT_REPORT("INSERT INTO reports (path, crtime, src_module_name, report_name) VALUES (?, ?, ?, ?)");	 //NON-NLS
