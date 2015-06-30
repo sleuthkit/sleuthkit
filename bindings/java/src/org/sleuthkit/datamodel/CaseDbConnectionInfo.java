@@ -101,7 +101,9 @@ public class CaseDbConnectionInfo {
 		boolean commsEstablished = false;
 		try {
 			switch (dbType) {
+
 				case POSTGRESQL:
+					Class.forName("org.postgresql.Driver");
 					/// TODO this should be done through the connection pool if we can.
 					Connection conn = DriverManager.getConnection(
 							"jdbc:postgresql://" + this.hostNameOrIP + ":" + this.portNumber + "/postgres",
