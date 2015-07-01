@@ -567,7 +567,8 @@ public class SleuthkitCase {
 	 * an associated finally block.
 	 */
 	public void acquireExclusiveLock() {
-		rwLock.writeLock().lock();
+		if (dbType == DbType.SQLITE)
+			rwLock.writeLock().lock();
 	}
 
 	/**
@@ -576,7 +577,8 @@ public class SleuthkitCase {
 	 * which the lock was acquired.
 	 */
 	public void releaseExclusiveLock() {
-		rwLock.writeLock().unlock();
+		if (dbType == DbType.SQLITE)
+			rwLock.writeLock().unlock();
 	}
 
 	/**
@@ -585,7 +587,8 @@ public class SleuthkitCase {
 	 * associated finally block.
 	 */
 	public void acquireSharedLock() {
-		rwLock.readLock().lock();
+		if (dbType == DbType.SQLITE)
+			rwLock.readLock().lock();
 	}
 
 	/**
@@ -594,7 +597,8 @@ public class SleuthkitCase {
 	 * lock was acquired.
 	 */
 	public void releaseSharedLock() {
-		rwLock.readLock().unlock();
+		if (dbType == DbType.SQLITE)
+			rwLock.readLock().unlock();
 	}
 
 	/**
