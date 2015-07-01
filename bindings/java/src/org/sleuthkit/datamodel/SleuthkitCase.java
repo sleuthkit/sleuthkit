@@ -18,6 +18,10 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.mchange.v2.c3p0.ComboPooledDataSource;
+import com.mchange.v2.c3p0.DataSources;
+import com.mchange.v2.c3p0.PooledDataSource;
+import java.beans.PropertyVetoException;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -46,9 +50,12 @@ import java.util.ResourceBundle;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.postgresql.util.PSQLException;
+import org.postgresql.util.PSQLState;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
+import org.sleuthkit.datamodel.TskData.DbType;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.ObjectType;
 import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
@@ -57,13 +64,8 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 import org.sqlite.SQLiteConfig;
-import org.sqlite.SQLiteJDBCLoader;
-import org.sleuthkit.datamodel.TskData.DbType;
-import org.postgresql.util.PSQLException;
-import org.postgresql.util.PSQLState;
-import com.mchange.v2.c3p0.*;
-import java.beans.PropertyVetoException;
 import org.sqlite.SQLiteDataSource;
+import org.sqlite.SQLiteJDBCLoader;
 
 /**
  * Represents the case database with methods that provide abstractions for
@@ -5198,10 +5200,12 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Selects the rows in the blackboard artifact tags table in the case
+	 * Selects the row in the blackboard artifact tags table in the case
 	 * database with a specified tag id.
 	 *
 	 * @param artifactTagID the tag id of the BlackboardArtifactTag to retrieve.
+	 * @return the BlackBoardArtifact Tag with the given tag id, or null if no
+	 * such tag could be found
 	 * @throws TskCoreException
 	 */
 	public BlackboardArtifactTag getBlackboardArtifactTagByID(long artifactTagID) throws TskCoreException {
@@ -5220,7 +5224,7 @@ public class SleuthkitCase {
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")));
 				BlackboardArtifact artifact = getBlackboardArtifact(resultSet.getLong("artifact_id")); //NON-NLS
-				Content content = getContentById(resultSet.getLong("obj_id"));
+				Content content = getContentById(artifact.getObjectID());
 				tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"), artifact, content, tagName, resultSet.getString("comment"));
 			}
 			resultSet.close();
