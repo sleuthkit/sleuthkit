@@ -98,7 +98,7 @@ typedef struct _TSK_DB_FILE_LAYOUT_RANGE {
     int64_t fileObjId; ///< set to 0 if unknown (before it becomes a db object)
     uint64_t byteStart;
     uint64_t byteLen;
-    int sequence;
+    uint32_t sequence;
 
     //default comparator by sequence
     bool operator< (const struct _TSK_DB_FILE_LAYOUT_RANGE & rhs) const

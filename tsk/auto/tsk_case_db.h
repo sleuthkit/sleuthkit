@@ -126,7 +126,7 @@ class TskAutoDb:public TskAuto {
     //internal structure to keep track of temp. unalloc block range
     typedef struct _UNALLOC_BLOCK_WLK_TRACK {
         _UNALLOC_BLOCK_WLK_TRACK(const TskAutoDb & tskAutoDb, const TSK_FS_INFO & fsInfo, const int64_t fsObjId, int64_t chunkSize)
-            : tskAutoDb(tskAutoDb),fsInfo(fsInfo),fsObjId(fsObjId),curRangeStart(0), chunkSize(chunkSize), prevBlock(0), isStart(true) {}
+            : tskAutoDb(tskAutoDb),fsInfo(fsInfo),fsObjId(fsObjId),curRangeStart(0), chunkSize(chunkSize), prevBlock(0), isStart(true), nextSequenceNo(0) {}
         const TskAutoDb & tskAutoDb;
         const TSK_FS_INFO & fsInfo;
         const int64_t fsObjId;
@@ -136,6 +136,7 @@ class TskAutoDb:public TskAuto {
 		const int64_t chunkSize;
         TSK_DADDR_T prevBlock;
         bool isStart;
+        uint32_t nextSequenceNo;
     } UNALLOC_BLOCK_WLK_TRACK;
 
     uint8_t addImageDetails(const char *const images[], int);
