@@ -742,6 +742,7 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
         unallocBlockWlkTrack->curRangeStart = a_block->addr;
         unallocBlockWlkTrack->prevBlock = a_block->addr;
 		unallocBlockWlkTrack->size = 0;
+        unallocBlockWlkTrack->nextSequenceNo = 0;
 		return TSK_WALK_CONT;
     }
 
@@ -756,7 +757,7 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
 		+ unallocBlockWlkTrack->fsInfo.offset;
 	const uint64_t rangeSizeBytes = (1 + unallocBlockWlkTrack->prevBlock - unallocBlockWlkTrack->curRangeStart) 
 		* unallocBlockWlkTrack->fsInfo.block_size;
-	unallocBlockWlkTrack->ranges.push_back(TSK_DB_FILE_LAYOUT_RANGE(rangeStartOffset, rangeSizeBytes, 0));
+	unallocBlockWlkTrack->ranges.push_back(TSK_DB_FILE_LAYOUT_RANGE(rangeStartOffset, rangeSizeBytes, unallocBlockWlkTrack->nextSequenceNo++));
 	
 	// bookkeeping for the next range object
 	unallocBlockWlkTrack->size += rangeSizeBytes;
@@ -784,6 +785,7 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
 	unallocBlockWlkTrack->curRangeStart = a_block->addr;
 	unallocBlockWlkTrack->size = 0;
 	unallocBlockWlkTrack->ranges.clear();
+    unallocBlockWlkTrack->nextSequenceNo = 0;
 
     //we don't know what the last unalloc block is in advance
     //and will handle the last range in addFsInfoUnalloc()
@@ -839,7 +841,7 @@ TSK_RETVAL_ENUM TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
     // make range inclusive from curBlockStart to prevBlock
     const uint64_t byteStart = unallocBlockWlkTrack.curRangeStart * fsInfo->block_size + fsInfo->offset;
     const uint64_t byteLen = (1 + unallocBlockWlkTrack.prevBlock - unallocBlockWlkTrack.curRangeStart) * fsInfo->block_size;
-	unallocBlockWlkTrack.ranges.push_back(TSK_DB_FILE_LAYOUT_RANGE(byteStart, byteLen, 0));
+	unallocBlockWlkTrack.ranges.push_back(TSK_DB_FILE_LAYOUT_RANGE(byteStart, byteLen, unallocBlockWlkTrack.nextSequenceNo++));
 	unallocBlockWlkTrack.size += byteLen;
     int64_t fileObjId = 0;
 
