@@ -4544,7 +4544,7 @@ public class SleuthkitCase {
 	 * @param text
 	 * @return text the escaped version
 	 */
-	private static String escapeSingleQuotes(String text) {
+	public static String escapeSingleQuotes(String text) {
 		if (text != null) {
 			text = text.replaceAll("'", "''");
 		}
