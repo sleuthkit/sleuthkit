@@ -196,7 +196,7 @@ int TskDbPostgreSQL::open(bool createDbFlag)
     if (!conn){
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskDbPostgreSQL::open: Couldn't connect to databse %S", m_dBName);
+        tsk_error_set_errstr("TskDbPostgreSQL::open: Couldn't connect to database %S", m_dBName);
         return -1;
     }
 
@@ -205,7 +205,7 @@ int TskDbPostgreSQL::open(bool createDbFlag)
         if (initialize()) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            tsk_error_set_errstr("TskDbPostgreSQL::open: Couldn't initialize databse %S", m_dBName);
+            tsk_error_set_errstr("TskDbPostgreSQL::open: Couldn't initialize database %S", m_dBName);
             close();    // close connection to database
             return -1;
         }
@@ -787,7 +787,7 @@ int TskDbPostgreSQL::addFsInfo(const TSK_FS_INFO * fs_info, int64_t parObjId, in
 * @param fs_attr Specific attribute to add
 * @param path Path of the file
 * @param md5 Binary value of MD5 (i.e. 16 bytes) or NULL 
-* @param known Status regarding if it was found in hash databse or not
+* @param known Status regarding if it was found in hash database or not
 * @param fsObjId File system object of its file system
 * @param objId ID that was assigned to it from the objects table
 * @returns 1 on error and 0 on success
