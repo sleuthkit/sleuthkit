@@ -5157,7 +5157,7 @@ public class SleuthkitCase {
 			SELECT_ARTIFACT_TAGS_BY_ARTIFACT("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id WHERE blackboard_artifact_tags.artifact_id = ?"), //NON-NLS
 			SELECT_REPORTS("SELECT * FROM reports"), //NON-NLS
 			INSERT_REPORT("INSERT INTO reports (path, crtime, src_module_name, report_name) VALUES (?, ?, ?, ?)"),	 //NON-NLS
-			DELETE_REPORTS("DELETE FROM reports WHERE reports.report_id IN (?)"); //NON-NLS
+			DELETE_REPORTS("DELETE FROM reports WHERE reports.report_id = ?"); //NON-NLS
 
 			private final String sql;
 
