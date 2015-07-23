@@ -4997,6 +4997,25 @@ public class SleuthkitCase {
 		}
 	}
 
+	/**
+	 * Deletes a row from the reports table in the case database.
+	 * @param report A Report data transfer object (DTO) for the row to delete.
+	 * @throws TskCoreException
+	 */
+	public void deleteReport(Report report) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		try {
+			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.DELETE_REPORTS);
+			statement.setString(1, String.valueOf(report.getId()));
+			connection.executeUpdate(statement);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error querying reports table", ex);
+		} finally {
+			releaseSharedLock();
+		}
+	}
+
 	private static void closeResultSet(ResultSet resultSet) {
 		if (resultSet != null) {
 			try {
@@ -5137,7 +5156,8 @@ public class SleuthkitCase {
 			SELECT_ARTIFACT_TAGS_BY_TAG_NAME("SELECT * FROM blackboard_artifact_tags WHERE tag_name_id = ?"), //NON-NLS
 			SELECT_ARTIFACT_TAGS_BY_ARTIFACT("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id WHERE blackboard_artifact_tags.artifact_id = ?"), //NON-NLS
 			SELECT_REPORTS("SELECT * FROM reports"), //NON-NLS
-			INSERT_REPORT("INSERT INTO reports (path, crtime, src_module_name, report_name) VALUES (?, ?, ?, ?)");	 //NON-NLS
+			INSERT_REPORT("INSERT INTO reports (path, crtime, src_module_name, report_name) VALUES (?, ?, ?, ?)"),	 //NON-NLS
+			DELETE_REPORTS("DELETE FROM reports WHERE reports.report_id IN (?)"); //NON-NLS
 
 			private final String sql;
 
