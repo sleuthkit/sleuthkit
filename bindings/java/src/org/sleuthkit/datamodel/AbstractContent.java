@@ -191,9 +191,9 @@ public abstract class AbstractContent implements Content {
 
 	@Override
 	public int hashCode() {
-		int hash = 7;
+		int hash = 7 + (int) (this.objId ^ (this.objId >>> 32));
 		try {
-			hash = 41 * hash + (int) (this.objId ^ (this.objId >>> 32)) + this.getChildrenCount();
+			hash = 41 * hash + this.getChildrenCount();
 		} catch (TskCoreException ex) {
 			Logger.getLogger(AbstractContent.class.getName()).log(Level.SEVERE, null, ex);
 		}
