@@ -19,8 +19,6 @@
 package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
@@ -177,13 +175,28 @@ public abstract class AbstractContent implements Content {
 		if (this.objId != other.objId) {
 			return false;
 		}
+		
+		try {
+			// New children may have been added to an existing content
+			// object in which case they are not equal.
+			if (this.getChildrenCount() != other.getChildrenCount()) {
+				return false;
+			}
+		} catch (TskCoreException ex) {
+			Logger.getLogger(AbstractContent.class.getName()).log(Level.SEVERE, null, ex);
+		}
+		
 		return true;
 	}
 
 	@Override
 	public int hashCode() {
-		int hash = 7;
-		hash = 41 * hash + (int) (this.objId ^ (this.objId >>> 32));
+		int hash = 7 + (int) (this.objId ^ (this.objId >>> 32));
+		try {
+			hash = 41 * hash + this.getChildrenCount();
+		} catch (TskCoreException ex) {
+			Logger.getLogger(AbstractContent.class.getName()).log(Level.SEVERE, null, ex);
+		}
 		return hash;
 	}
 
