@@ -301,8 +301,9 @@ case "$host" in
   ;;
 esac
 
-AC_CHECK_FUNCS([getline], [], [AC_MSG_WARN([no getline, so fiwalk will not be built])])
-AM_CONDITIONAL([BUILD_FIWALK], [test "x$ac_cv_func_getline" = "xyes"])
+dnl Dependencies for fiwalk
+AC_CHECK_FUNCS([getline])
+AC_SEARCH_LIBS(regexec, [regex], , AC_MSG_ERROR([missing regex]))
 
 AC_CONFIG_FILES([
     Makefile
