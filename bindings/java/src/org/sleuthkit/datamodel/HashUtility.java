@@ -30,8 +30,9 @@ import java.io.InputStream;
  * Utility to calculate a hash for FsContent and store in TSK database
  */
 public class HashUtility {
+
 	private final static int BUFFER_SIZE = 16 * 1024;
-	
+
 	/**
 	 * Calculate the MD5 hash for the given FsContent and store it in the
 	 * database
@@ -68,11 +69,12 @@ public class HashUtility {
 		}
 		return hashText;
 	}
-	
+
 	/**
-	 * Determine if the passed in Hash value is that for no data (i.e. an empty file).  
-	 * Looking these values up or correlating on them causes lots of false positives. 
-	 * 
+	 * Determine if the passed in Hash value is that for no data (i.e. an empty
+	 * file). Looking these values up or correlating on them causes lots of
+	 * false positives.
+	 *
 	 * @param md5
 	 * @return True if it is the empty hash value
 	 */

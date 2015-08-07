@@ -126,8 +126,7 @@ public class SleuthkitCase {
 	 * @param userName The user name to use to connect to the case database.
 	 * @param password The password to use to connect to the case database.
 	 * @param caseHandle A handle to a case database object in the native code
-	 * @param dbType The type of database we're dealing with
-	 * SleuthKit layer.
+	 * @param dbType The type of database we're dealing with SleuthKit layer.
 	 * @param caseDirPath The path to the root case directory.
 	 * @throws Exception
 	 */
@@ -212,10 +211,10 @@ public class SleuthkitCase {
 
 	/**
 	 * Initialize the next artifact id. If there are entries in the
-	 * blackboard_artifacts table we will use max(artifact_id) + 1
-	 * otherwise we will initialize the value to 0x8000000000000000
-	 * (the maximum negative signed long).
-	 * 
+	 * blackboard_artifacts table we will use max(artifact_id) + 1 otherwise we
+	 * will initialize the value to 0x8000000000000000 (the maximum negative
+	 * signed long).
+	 *
 	 * @throws TskCoreException
 	 * @throws SQLException
 	 */
@@ -317,8 +316,7 @@ public class SleuthkitCase {
 				throw new Exception(bundle.getString("SleuthkitCase.SchemaVersionMismatch"));
 				// could do more updating here, if/when the convert-old-cases-to-new-cases code comes into play
 			}
-			versionNumber = schemaVersionNumber;			
-			
+			versionNumber = schemaVersionNumber;
 
 			connection.commitTransaction();
 		} catch (Exception ex) { // Cannot do exception multi-catch in Java 6, so use catch-all.
@@ -330,7 +328,7 @@ public class SleuthkitCase {
 			connection.close();
 		}
 	}
-	
+
 	/**
 	 * Make a duplicate / backup copy of the current case database. Makes a new
 	 * copy only, and continues to use the current connection.
@@ -569,8 +567,9 @@ public class SleuthkitCase {
 	 * an associated finally block.
 	 */
 	public void acquireExclusiveLock() {
-		if (dbType == DbType.SQLITE)
+		if (dbType == DbType.SQLITE) {
 			rwLock.writeLock().lock();
+		}
 	}
 
 	/**
@@ -579,8 +578,9 @@ public class SleuthkitCase {
 	 * which the lock was acquired.
 	 */
 	public void releaseExclusiveLock() {
-		if (dbType == DbType.SQLITE)
+		if (dbType == DbType.SQLITE) {
 			rwLock.writeLock().unlock();
+		}
 	}
 
 	/**
@@ -589,8 +589,9 @@ public class SleuthkitCase {
 	 * associated finally block.
 	 */
 	public void acquireSharedLock() {
-		if (dbType == DbType.SQLITE)
+		if (dbType == DbType.SQLITE) {
 			rwLock.readLock().lock();
+		}
 	}
 
 	/**
@@ -599,8 +600,9 @@ public class SleuthkitCase {
 	 * lock was acquired.
 	 */
 	public void releaseSharedLock() {
-		if (dbType == DbType.SQLITE)
+		if (dbType == DbType.SQLITE) {
 			rwLock.readLock().unlock();
+		}
 	}
 
 	/**
@@ -692,7 +694,6 @@ public class SleuthkitCase {
 	 * @return Object that encapsulates control of adding an image via the
 	 * SleuthKit native code layer.
 	 */
-
 	public AddImageProcess makeAddImageProcess(String timezone, boolean processUnallocSpace, boolean noFatFsOrphans) {
 		return this.caseHandle.initAddImageProcess(timezone, processUnallocSpace, noFatFsOrphans);
 	}
@@ -1882,8 +1883,7 @@ public class SleuthkitCase {
 	 * @param whereClause a sqlite where clause
 	 * @return a list of matching attributes
 	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within tsk core
-	 * \ref query_database_page
+	 * within tsk core \ref query_database_page
 	 */
 	public ArrayList<BlackboardAttribute> getMatchingAttributes(String whereClause) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
@@ -1919,8 +1919,7 @@ public class SleuthkitCase {
 	 * @param whereClause a sqlite where clause
 	 * @return a list of matching artifacts
 	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within tsk core
-	 * \ref query_database_page
+	 * within tsk core \ref query_database_page
 	 */
 	public ArrayList<BlackboardArtifact> getMatchingArtifacts(String whereClause) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
@@ -1985,9 +1984,8 @@ public class SleuthkitCase {
 				statement.clearParameters();
 				statement.setLong(1, obj_id);
 				statement.setInt(2, artifact_type_id);
-			}
-			else {
-				statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_ARTIFACT, Statement.RETURN_GENERATED_KEYS);				
+			} else {
+				statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_ARTIFACT, Statement.RETURN_GENERATED_KEYS);
 				statement.clearParameters();
 				statement.setLong(1, this.nextArtifactId++);
 				statement.setLong(2, obj_id);
@@ -2696,7 +2694,7 @@ public class SleuthkitCase {
 				// fs_obj_id is set only for file system files. 
 				// We will match the VirtualDirectory's name in the parent path
 				Statement s = connection.createStatement();
-				rs = connection.executeQuery(s, "SELECT * FROM tsk_files WHERE LOWER(name) LIKE '" + fileName.toLowerCase() + "'  and LOWER(name) NOT LIKE '%journal%' AND parent_path LIKE '/" + dataSource.getName() +"/%'"); //NON-NLS
+				rs = connection.executeQuery(s, "SELECT * FROM tsk_files WHERE LOWER(name) LIKE '" + fileName.toLowerCase() + "'  and LOWER(name) NOT LIKE '%journal%' AND parent_path LIKE '/" + dataSource.getName() + "/%'"); //NON-NLS
 				files = resultSetToAbstractFiles(rs);
 			} else {
 				final String msg = MessageFormat.format(bundle.getString("SleuthkitCase.findFiles.exception.msg2.text"), dataSource);
@@ -2752,7 +2750,7 @@ public class SleuthkitCase {
 				// fs_obj_id is set only for file system files. 
 				// We will match the VirtualDirectory's name in the parent path
 				Statement s = connection.createStatement();
-				rs = connection.executeQuery(s, "SELECT * FROM tsk_files WHERE LOWER(name) LIKE '" + fileName.toLowerCase() + "' and LOWER(name) NOT LIKE '%journal%' AND parent_path LIKE '/" + dataSource.getName() +"/%' AND lower(parent_path) LIKE '%" + dirName.toLowerCase() + "%'"); //NON-NLS
+				rs = connection.executeQuery(s, "SELECT * FROM tsk_files WHERE LOWER(name) LIKE '" + fileName.toLowerCase() + "' and LOWER(name) NOT LIKE '%journal%' AND parent_path LIKE '/" + dataSource.getName() + "/%' AND lower(parent_path) LIKE '%" + dirName.toLowerCase() + "%'"); //NON-NLS
 				files = resultSetToAbstractFiles(rs);
 			} else {
 				final String msg = MessageFormat.format(bundle.getString("SleuthkitCase.findFiles3.exception.msg2.text"), dataSource);
@@ -2833,7 +2831,7 @@ public class SleuthkitCase {
 			} else {
 				statement.setNull(1, java.sql.Types.BIGINT);
 			}
-		
+
 			statement.setLong(2, TskData.ObjectType.ABSTRACTFILE.getObjectType());
 			connection.executeUpdate(statement);
 			resultSet = statement.getGeneratedKeys();
@@ -2852,15 +2850,14 @@ public class SleuthkitCase {
 			long parentFs = this.getFileSystemId(parentId);
 			if (parentFs != -1) {
 				statement.setLong(2, parentFs);
-			}
-			else {
+			} else {
 				statement.setNull(2, java.sql.Types.BIGINT);
 			}
 			statement.setString(3, directoryName);
 
 			//type, has_path
 			statement.setShort(4, TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType());
-			statement.setShort(5, (short)1);
+			statement.setShort(5, (short) 1);
 
 			//flags
 			final TSK_FS_NAME_TYPE_ENUM dirType = TSK_FS_NAME_TYPE_ENUM.DIR;
@@ -2878,13 +2875,13 @@ public class SleuthkitCase {
 			//size
 			long size = 0;
 			statement.setLong(10, size);
-			
+
 			//  nulls for params 11-14
 			statement.setNull(11, java.sql.Types.BIGINT);
 			statement.setNull(12, java.sql.Types.BIGINT);
 			statement.setNull(13, java.sql.Types.BIGINT);
 			statement.setNull(14, java.sql.Types.BIGINT);
-			
+
 			// parent path
 			statement.setString(15, parentPath);
 
@@ -2919,11 +2916,11 @@ public class SleuthkitCase {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT tsk_files.* FROM tsk_objects, tsk_files WHERE " //NON-NLS
 					+ "tsk_objects.par_obj_id IS NULL AND " //NON-NLS
-					+ "tsk_objects.type = " + firstone  + " AND " //NON-NLS
+					+ "tsk_objects.type = " + firstone + " AND " //NON-NLS
 					+ "tsk_objects.obj_id = tsk_files.obj_id AND " //NON-NLS
 					+ "tsk_files.type = " + secondone
 					+ " ORDER BY tsk_files.dir_type, LOWER(tsk_files.name)"); //NON-NLS
-					
+
 			List<VirtualDirectory> virtDirRootIds = new ArrayList<VirtualDirectory>();
 			while (rs.next()) {
 				virtDirRootIds.add(rsHelper.virtualDirectory(rs));
@@ -3081,8 +3078,7 @@ public class SleuthkitCase {
 					// only insert into the fs_obj_id column if container is a FS
 					if (isContainerAFs) {
 						statement.setLong(2, itemToAdd.getId());
-					}
-					else {
+					} else {
 						statement.setNull(2, java.sql.Types.BIGINT);
 					}
 					statement.setString(3, itemToAdd.getName());
@@ -3092,7 +3088,7 @@ public class SleuthkitCase {
 					statement.setShort(4, type.getFileType());
 
 					// has_path
-					statement.setShort(5, (short)1);
+					statement.setShort(5, (short) 1);
 
 					// dirType
 					final TSK_FS_NAME_TYPE_ENUM dirType = TSK_FS_NAME_TYPE_ENUM.REG;
@@ -3118,7 +3114,7 @@ public class SleuthkitCase {
 					statement.setNull(12, java.sql.Types.BIGINT);
 					statement.setNull(13, java.sql.Types.BIGINT);
 					statement.setNull(14, java.sql.Types.BIGINT);
-					
+
 					// parent path
 					statement.setString(15, parentPath);
 
@@ -3230,15 +3226,14 @@ public class SleuthkitCase {
 			long fsObjId = this.getFileSystemId(parentId);
 			if (fsObjId != -1) {
 				statement.setLong(2, fsObjId);
-			}
-			else {
+			} else {
 				statement.setNull(2, java.sql.Types.BIGINT);
 			}
 			statement.setString(3, fileName);
 
 			//type, has_path
 			statement.setShort(4, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED.getFileType());
-			statement.setShort(5, (short)1);
+			statement.setShort(5, (short) 1);
 
 			//flags
 			final TSK_FS_NAME_TYPE_ENUM dirType = isFile ? TSK_FS_NAME_TYPE_ENUM.REG : TSK_FS_NAME_TYPE_ENUM.DIR;
@@ -3391,7 +3386,7 @@ public class SleuthkitCase {
 
 			//type, has_path
 			statement.setShort(4, TskData.TSK_DB_FILES_TYPE_ENUM.LOCAL.getFileType());
-			statement.setShort(5, (short)1);
+			statement.setShort(5, (short) 1);
 
 			//flags
 			final TSK_FS_NAME_TYPE_ENUM dirType = isFile ? TSK_FS_NAME_TYPE_ENUM.REG : TSK_FS_NAME_TYPE_ENUM.DIR;
@@ -3472,8 +3467,7 @@ public class SleuthkitCase {
 	 * @param sqlWhereClause a SQL where clause appropriate for the desired
 	 * files (do not begin the WHERE clause with the word WHERE!)
 	 * @return count of files each of which satisfy the given WHERE clause
-	 * @throws TskCoreException
-	 * \ref query_database_page
+	 * @throws TskCoreException \ref query_database_page
 	 */
 	public long countFilesWhere(String sqlWhereClause) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
@@ -3503,8 +3497,7 @@ public class SleuthkitCase {
 	 * files (do not begin the WHERE clause with the word WHERE!)
 	 * @return a list of AbstractFile each of which satisfy the given WHERE
 	 * clause
-	 * @throws TskCoreException
-	 * \ref query_database_page
+	 * @throws TskCoreException \ref query_database_page
 	 */
 	public List<AbstractFile> findAllFilesWhere(String sqlWhereClause) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
@@ -3532,8 +3525,7 @@ public class SleuthkitCase {
 	 * @param sqlWhereClause a SQL where clause appropriate for the desired
 	 * files (do not begin the WHERE clause with the word WHERE!)
 	 * @return a list of file ids each of which satisfy the given WHERE clause
-	 * @throws TskCoreException
-	 * \ref query_database_page
+	 * @throws TskCoreException \ref query_database_page
 	 */
 	public List<Long> findAllFileIdsWhere(String sqlWhereClause) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
@@ -3566,10 +3558,10 @@ public class SleuthkitCase {
 	 * files (do not begin the WHERE clause with the word WHERE!)
 	 * @return a list of FsContent each of which satisfy the given WHERE clause
 	 * @throws TskCoreException
-	 * @deprecated This method is deprecated. Continuing to use this method 
-	 * risks your module not functioning correctly in the future. Use 
-	 * findAllFilesWhere(String sqlWhereClause) instead. 
-	 * \ref query_database_page
+	 * @deprecated This method is deprecated. Continuing to use this method
+	 * risks your module not functioning correctly in the future. Use
+	 * findAllFilesWhere(String sqlWhereClause) instead. \ref
+	 * query_database_page
 	 */
 	@Deprecated	// use findAllFilesWhere() instead
 	public List<FsContent> findFilesWhere(String sqlWhereClause) throws TskCoreException {
@@ -3647,7 +3639,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
-			connection.close();			
+			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -4001,7 +3993,7 @@ public class SleuthkitCase {
 				children.add(getFileSystemById(info.id, img));
 			} else if (info.type == ObjectType.ABSTRACTFILE) {
 				AbstractFile f = getAbstractFileById(info.id);
-				if(f != null){
+				if (f != null) {
 					children.add(f);
 				}
 			} else {
@@ -4050,7 +4042,7 @@ public class SleuthkitCase {
 				children.add(getVolumeById(info.id, vs));
 			} else if (info.type == ObjectType.ABSTRACTFILE) {
 				AbstractFile f = getAbstractFileById(info.id);
-				if(f != null){
+				if (f != null) {
 					children.add(f);
 				}
 			} else {
@@ -4097,7 +4089,7 @@ public class SleuthkitCase {
 				children.add(getFileSystemById(info.id, vol));
 			} else if (info.type == ObjectType.ABSTRACTFILE) {
 				AbstractFile f = getAbstractFileById(info.id);
-				if(f != null){
+				if (f != null) {
 					children.add(f);
 				}
 			} else {
@@ -4352,8 +4344,8 @@ public class SleuthkitCase {
 	 * closeRunQuery(resultSet) as soon as possible, when done with retrieving
 	 * data from the resultSet
 	 * @throws SQLException if error occurred during the query
-	 * @deprecated Do not use runQuery(), use executeQuery() instead.
-	 * \ref query_database_page
+	 * @deprecated Do not use runQuery(), use executeQuery() instead. \ref
+	 * query_database_page
 	 */
 	@Deprecated // Use executeQuery() instead.
 	public ResultSet runQuery(String query) throws SQLException {
@@ -4379,9 +4371,8 @@ public class SleuthkitCase {
 	 *
 	 * @param resultSet with its Statement to close
 	 * @throws SQLException of closing the query results failed
-	 * @deprecated Do not use runQuery() and closeRunQuery(), use executeQuery() 
-	 * instead.
-	 * \ref query_database_page
+	 * @deprecated Do not use runQuery() and closeRunQuery(), use executeQuery()
+	 * instead. \ref query_database_page
 	 */
 	@Deprecated // Use executeQuery() instead.
 	public void closeRunQuery(ResultSet resultSet) throws SQLException {
@@ -4393,10 +4384,11 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * This method allows developers to run arbitrary SQL "SELECT"
-	 * queries. The CaseDbQuery object will take care of acquiring
-	 * the necessary database lock and when used in a try-with-resources
-	 * block will automatically take care of releasing the lock.
+	 * This method allows developers to run arbitrary SQL "SELECT" queries. The
+	 * CaseDbQuery object will take care of acquiring the necessary database
+	 * lock and when used in a try-with-resources block will automatically take
+	 * care of releasing the lock.
+	 *
 	 * @param query The query string to execute.
 	 * @return A CaseDbQuery instance.
 	 * @throws TskCoreException
@@ -4484,7 +4476,7 @@ public class SleuthkitCase {
 	 * core
 	 */
 	void setMd5Hash(AbstractFile file, String md5Hash) throws TskCoreException {
-		if(md5Hash == null){
+		if (md5Hash == null) {
 			return;
 		}
 		long id = file.getId();
@@ -4558,7 +4550,7 @@ public class SleuthkitCase {
 	 * @return List of AbstractFile with the given hash
 	 */
 	public List<AbstractFile> findFilesByMd5(String md5Hash) {
-		if(md5Hash == null){
+		if (md5Hash == null) {
 			return Collections.<AbstractFile>emptyList();
 		}
 		CaseDbConnection connection;
@@ -4710,7 +4702,6 @@ public class SleuthkitCase {
 		}
 	}
 
-	
 	/**
 	 * Selects all of the rows from the tag_names table in the case database.
 	 *

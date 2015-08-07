@@ -48,7 +48,7 @@ public abstract class AbstractContent implements Content {
 		this.objId = obj_id;
 		this.name = name;
 		this.parentId = UNKNOWN_ID;
-		
+
 		checkedHasChildren = false;
 		hasChildren = false;
 		childrenCount = -1;
@@ -79,34 +79,34 @@ public abstract class AbstractContent implements Content {
 		}
 		return uniquePath;
 	}
-	
+
 	@Override
 	public boolean hasChildren() throws TskCoreException {
 		if (checkedHasChildren == true) {
 			return hasChildren;
 		}
-		
+
 		hasChildren = this.getSleuthkitCase().getContentHasChildren(this);
 		checkedHasChildren = true;
-		
+
 		if (!hasChildren) {
 			childrenCount = 0;
 		}
-		
+
 		return hasChildren;
 	}
-	
+
 	@Override
 	public int getChildrenCount() throws TskCoreException {
 		if (childrenCount != -1) {
 			return childrenCount;
 		}
-		
-		childrenCount = this.getSleuthkitCase().getContentChildrenCount(this);	
-		
+
+		childrenCount = this.getSleuthkitCase().getContentChildrenCount(this);
+
 		hasChildren = childrenCount > 0;
 		checkedHasChildren = true;
-		
+
 		return childrenCount;
 	}
 
@@ -148,9 +148,10 @@ public abstract class AbstractContent implements Content {
 	@Override
 	public Content getDataSource() throws TskCoreException {
 		Content myParent = getParent();
-		if (myParent == null) 
+		if (myParent == null) {
 			return null;
-			
+		}
+
 		return myParent.getDataSource();
 	}
 
@@ -175,7 +176,7 @@ public abstract class AbstractContent implements Content {
 		if (this.objId != other.objId) {
 			return false;
 		}
-		
+
 		try {
 			// New children may have been added to an existing content
 			// object in which case they are not equal.
@@ -185,7 +186,7 @@ public abstract class AbstractContent implements Content {
 		} catch (TskCoreException ex) {
 			Logger.getLogger(AbstractContent.class.getName()).log(Level.SEVERE, null, ex);
 		}
-		
+
 		return true;
 	}
 
@@ -222,14 +223,16 @@ public abstract class AbstractContent implements Content {
 	@Override
 	public ArrayList<BlackboardArtifact> getArtifacts(int artifactTypeID) throws TskCoreException {
 		if (artifactTypeID == ARTIFACT_TYPE.TSK_GEN_INFO.getTypeID()) {
-			if (genInfoArtifact == null) 
-				// don't make one if it doesn't already exist
+			if (genInfoArtifact == null) // don't make one if it doesn't already exist
+			{
 				getGenInfoArtifact(false);
+			}
 
 			ArrayList<BlackboardArtifact> list = new ArrayList<BlackboardArtifact>();
 			// genInfoArtifact coudl still be null if there isn't an artifact
-			if (genInfoArtifact != null)
+			if (genInfoArtifact != null) {
 				list.add(genInfoArtifact);
+			}
 			return list;
 		}
 		return db.getBlackboardArtifacts(artifactTypeID, objId);
@@ -239,56 +242,53 @@ public abstract class AbstractContent implements Content {
 	public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
 		return getArtifacts(type.getTypeID());
 	}
-	
+
 	@Override
 	public BlackboardArtifact getGenInfoArtifact() throws TskCoreException {
 		return getGenInfoArtifact(true);
 	}
-	
+
 	@Override
 	public BlackboardArtifact getGenInfoArtifact(boolean create) throws TskCoreException {
 		if (genInfoArtifact != null) {
 			return genInfoArtifact;
 		}
-	
-        // go to db directly to avoid infinite loop
+
+		// go to db directly to avoid infinite loop
 		ArrayList<BlackboardArtifact> arts = db.getBlackboardArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO, objId);
 		BlackboardArtifact retArt;
 		if (arts.isEmpty()) {
 			if (create) {
 				retArt = db.newBlackboardArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO, objId);
-			}
-			else {
+			} else {
 				return null;
 			}
-		}
-		else {
+		} else {
 			retArt = arts.get(0);
 		}
 		genInfoArtifact = retArt;
 		return retArt;
 	}
-	
+
 	@Override
 	public ArrayList<BlackboardAttribute> getGenInfoAttributes(ATTRIBUTE_TYPE attr_type) throws TskCoreException {
 		ArrayList<BlackboardAttribute> returnList = new ArrayList<BlackboardAttribute>();
-		
+
 		if (genInfoArtifact == null) {
 			getGenInfoArtifact(false);
 			if (genInfoArtifact == null) {
 				return returnList;
 			}
 		}
-			
+
 		for (BlackboardAttribute attribute : genInfoArtifact.getAttributes()) {
 			if (attribute.getAttributeTypeID() == attr_type.getTypeID()) {
 				returnList.add(attribute);
 			}
 		}
-        
+
 		return returnList;
 	}
-
 
 	@Override
 	public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskCoreException {
@@ -320,41 +320,41 @@ public abstract class AbstractContent implements Content {
 		return toString(true);
 	}
 
-	public String toString(boolean preserveState){
+	public String toString(boolean preserveState) {
 		if (preserveState) {
-			return "AbstractContent [\t" + "objId " + String.format("%010d", objId) + "\t"  //NON-NLS
-					+ "name " + name + "\t" + "parentId " + parentId + "\t"  //NON-NLS
-					+ "\t" + "checkedHasChildren " + checkedHasChildren  //NON-NLS
-					+ "\t" + "hasChildren " + hasChildren  //NON-NLS
-					+ "\t" + "childrenCount " + childrenCount  //NON-NLS
+			return "AbstractContent [\t" + "objId " + String.format("%010d", objId) + "\t" //NON-NLS
+					+ "name " + name + "\t" + "parentId " + parentId + "\t" //NON-NLS
+					+ "\t" + "checkedHasChildren " + checkedHasChildren //NON-NLS
+					+ "\t" + "hasChildren " + hasChildren //NON-NLS
+					+ "\t" + "childrenCount " + childrenCount //NON-NLS
 					+ "uniquePath " + uniquePath + "]\t"; //NON-NLS
 		} else {
 			try {
 				if (getParent() != null) {
-					return "AbstractContent [\t" + "objId " + String.format("%010d", objId)  //NON-NLS
-							+ "\t" + "name " + name  //NON-NLS
-								+ "\t" + "checkedHasChildren " + checkedHasChildren  //NON-NLS
-								+ "\t" + "hasChildren " + hasChildren  //NON-NLS
-								+ "\t" + "childrenCount " + childrenCount  //NON-NLS
-							+ "\t" + "getUniquePath " + getUniquePath()  //NON-NLS
+					return "AbstractContent [\t" + "objId " + String.format("%010d", objId) //NON-NLS
+							+ "\t" + "name " + name //NON-NLS
+							+ "\t" + "checkedHasChildren " + checkedHasChildren //NON-NLS
+							+ "\t" + "hasChildren " + hasChildren //NON-NLS
+							+ "\t" + "childrenCount " + childrenCount //NON-NLS
+							+ "\t" + "getUniquePath " + getUniquePath() //NON-NLS
 							+ "\t" + "getParent " + getParent().getId() + "]\t"; //NON-NLS
 				} else {
-					return "AbstractContent [\t" + "objId "  //NON-NLS
-							+ String.format("%010d", objId) + "\t" + "name " + name  //NON-NLS
-								+ "\t" + "checkedHasChildren " + checkedHasChildren  //NON-NLS
-								+ "\t" + "hasChildren " + hasChildren  //NON-NLS
-								+ "\t" + "childrenCount " + childrenCount  //NON-NLS
-							+ "\t" + "uniquePath " + getUniquePath()  //NON-NLS
+					return "AbstractContent [\t" + "objId " //NON-NLS
+							+ String.format("%010d", objId) + "\t" + "name " + name //NON-NLS
+							+ "\t" + "checkedHasChildren " + checkedHasChildren //NON-NLS
+							+ "\t" + "hasChildren " + hasChildren //NON-NLS
+							+ "\t" + "childrenCount " + childrenCount //NON-NLS
+							+ "\t" + "uniquePath " + getUniquePath() //NON-NLS
 							+ "\t" + "parentId " + parentId + "]\t"; //NON-NLS
 				}
 			} catch (TskCoreException ex) {
 				Logger.getLogger(AbstractContent.class.getName()).log(Level.SEVERE, "Could not find Parent", ex); //NON-NLS
-				return "AbstractContent [\t" + "objId " + String.format("%010d", objId) + "\t"  //NON-NLS
-					+ "name " + name + "\t" + "parentId " + parentId + "\t"  //NON-NLS
-					+ "\t" + "checkedHasChildren " + checkedHasChildren   //NON-NLS
-					+ "\t" + "hasChildren " + hasChildren   //NON-NLS
-					+ "\t" + "childrenCount " + childrenCount   //NON-NLS
-					+ "uniquePath " + uniquePath + "]\t";  //NON-NLS
+				return "AbstractContent [\t" + "objId " + String.format("%010d", objId) + "\t" //NON-NLS
+						+ "name " + name + "\t" + "parentId " + parentId + "\t" //NON-NLS
+						+ "\t" + "checkedHasChildren " + checkedHasChildren //NON-NLS
+						+ "\t" + "hasChildren " + hasChildren //NON-NLS
+						+ "\t" + "childrenCount " + childrenCount //NON-NLS
+						+ "uniquePath " + uniquePath + "]\t";  //NON-NLS
 			}
 		}
 	}

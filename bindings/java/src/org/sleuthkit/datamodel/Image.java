@@ -29,7 +29,7 @@ import java.io.File;
 
 /**
  * Represents a disk image file, stored in tsk_image_info. Populated based on
- * data in database.  
+ * data in database.
  *
  * Caches internal tsk image handle and reuses it for reads
  */
@@ -39,8 +39,8 @@ public class Image extends AbstractContent {
 	private long type, ssize, size;
 	private String[] paths;
 	private volatile long imageHandle = 0;
-	private String timezone,md5;
-    private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
+	private String timezone, md5;
+	private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	/**
 	 * constructor most inputs are from the database
@@ -61,7 +61,7 @@ public class Image extends AbstractContent {
 		this.paths = paths;
 		this.timezone = timezone;
 		this.size = 0;
-		this.md5= md5;
+		this.md5 = md5;
 	}
 
 	/**
@@ -87,8 +87,6 @@ public class Image extends AbstractContent {
 		//frees nothing, as we are caching image handles
 	}
 
-	
-	
 	@Override
 	public void finalize() throws Throwable {
 		try {
@@ -210,7 +208,6 @@ public class Image extends AbstractContent {
 		return timezone;
 	}
 
-
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
@@ -230,13 +227,15 @@ public class Image extends AbstractContent {
 	public List<Long> getChildrenIds() throws TskCoreException {
 		return getSleuthkitCase().getImageChildrenIds(this);
 	}
+
 	@Override
-	public String toString(boolean preserveState){
+	public String toString(boolean preserveState) {
 		return super.toString(preserveState) + "Image [\t" + "\t" + "paths " + Arrays.toString(paths) + "\t" + "size " + size + "\t" + "ssize " + ssize + "\t" + "timezone " + timezone + "\t" + "type " + type + "]\t"; //NON-NLS
 	}
-	
+
 	/**
-	 * Test if the image represented by this object exists on disk. 
+	 * Test if the image represented by this object exists on disk.
+	 *
 	 * @return True if the file still exists
 	 */
 	public Boolean imageFileExists() {
@@ -244,67 +243,68 @@ public class Image extends AbstractContent {
 			File imageFile = new File(paths[0]);
 			return imageFile.exists();
 		}
-		
+
 		return false;
 	}
-	
+
 	/**
-     * Perform some sanity checks on the bounds of the image contents to 
-     * determine if we could be missing some pieces of the image. 
-     * 
-     * @returns String of error messages to display to user or empty string if there are no errors 
-     */
-    public String verifyImageSize() {
-        Logger logger1 = Logger.getLogger("verifyImageSizes"); //NON-NLS
-        String errorString = "";
-        try {
-            List<VolumeSystem> volumeSystems = getVolumeSystems();
-            for (VolumeSystem vs : volumeSystems) {
-                List<Volume> volumes = vs.getVolumes();
-                for (Volume v : volumes) {
-                    byte[] buf = new byte[512];
-                    long endOffset = (v.getStart() + v.getLength()) * 512 - 512;
-                    try {
-                        int readBytes = read(buf, endOffset, 512);
-                        if (readBytes < 0) {
-                            logger1.warning("Possible Incomplete Image: Error reading volume at offset " + endOffset); //NON-NLS
-                            errorString = MessageFormat.format(bundle.getString("Image.verifyImageSize.errStr1.text"), endOffset);
-                        }
-                    } catch (TskCoreException ex) {
-                        logger1.warning("Possible Incomplete Image: Error reading volume at offset " + endOffset + ": " + ex.getLocalizedMessage()); //NON-NLS
-                        errorString = MessageFormat.format(bundle.getString("Image.verifyImageSize.errStr2.text"), endOffset);
-                    }
-                }
-            }
-            
-            List<FileSystem> fileSystems = getFileSystems();
-            for (FileSystem fs : fileSystems) {
-                long block_size = fs.getBlock_size();
-                long endOffset = fs.getImageOffset() + fs.getSize() - block_size;
-                try {
-                    byte[] buf = new byte[(int) block_size];
-                    int readBytes = read(buf, endOffset, block_size);
-                    if (readBytes < 0) {
-                        logger1.warning("Possible Incomplete Image: Error reading file system at offset " + endOffset); //NON-NLS
-                        errorString = MessageFormat.format(bundle.getString("Image.verifyImageSize.errStr3.text"), endOffset);
-                    }
-                } catch (TskCoreException ex) {
-                    logger1.warning("Possible Incomplete Image: Error reading file system at offset " + endOffset + ": " + ex.getLocalizedMessage()); //NON-NLS
-                    errorString = MessageFormat.format(bundle.getString("Image.verifyImageSize.errStr4.text"), endOffset);
-                }
-            }
-        } catch (TskException ex) {
-            // do nothing if we got an exception from trying to get file systems and volume systems
-        }
-        return errorString;
-    }
-	
-		/**
-     * gets the md5 hash value  
-     * 
-     * @returns md5 hash if attained(from database). returns null if not set. 
-     */
+	 * Perform some sanity checks on the bounds of the image contents to
+	 * determine if we could be missing some pieces of the image.
+	 *
+	 * @returns String of error messages to display to user or empty string if
+	 * there are no errors
+	 */
+	public String verifyImageSize() {
+		Logger logger1 = Logger.getLogger("verifyImageSizes"); //NON-NLS
+		String errorString = "";
+		try {
+			List<VolumeSystem> volumeSystems = getVolumeSystems();
+			for (VolumeSystem vs : volumeSystems) {
+				List<Volume> volumes = vs.getVolumes();
+				for (Volume v : volumes) {
+					byte[] buf = new byte[512];
+					long endOffset = (v.getStart() + v.getLength()) * 512 - 512;
+					try {
+						int readBytes = read(buf, endOffset, 512);
+						if (readBytes < 0) {
+							logger1.warning("Possible Incomplete Image: Error reading volume at offset " + endOffset); //NON-NLS
+							errorString = MessageFormat.format(bundle.getString("Image.verifyImageSize.errStr1.text"), endOffset);
+						}
+					} catch (TskCoreException ex) {
+						logger1.warning("Possible Incomplete Image: Error reading volume at offset " + endOffset + ": " + ex.getLocalizedMessage()); //NON-NLS
+						errorString = MessageFormat.format(bundle.getString("Image.verifyImageSize.errStr2.text"), endOffset);
+					}
+				}
+			}
+
+			List<FileSystem> fileSystems = getFileSystems();
+			for (FileSystem fs : fileSystems) {
+				long block_size = fs.getBlock_size();
+				long endOffset = fs.getImageOffset() + fs.getSize() - block_size;
+				try {
+					byte[] buf = new byte[(int) block_size];
+					int readBytes = read(buf, endOffset, block_size);
+					if (readBytes < 0) {
+						logger1.warning("Possible Incomplete Image: Error reading file system at offset " + endOffset); //NON-NLS
+						errorString = MessageFormat.format(bundle.getString("Image.verifyImageSize.errStr3.text"), endOffset);
+					}
+				} catch (TskCoreException ex) {
+					logger1.warning("Possible Incomplete Image: Error reading file system at offset " + endOffset + ": " + ex.getLocalizedMessage()); //NON-NLS
+					errorString = MessageFormat.format(bundle.getString("Image.verifyImageSize.errStr4.text"), endOffset);
+				}
+			}
+		} catch (TskException ex) {
+			// do nothing if we got an exception from trying to get file systems and volume systems
+		}
+		return errorString;
+	}
+
+	/**
+	 * gets the md5 hash value
+	 *
+	 * @returns md5 hash if attained(from database). returns null if not set.
+	 */
 	public String getMd5() {
-			return md5;	
+		return md5;
 	}
 }
