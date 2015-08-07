@@ -19,30 +19,31 @@
 package org.sleuthkit.datamodel;
 
 /**
- * This class is a base class for data transfer object (DTO) classes that model 
+ * This class is a base class for data transfer object (DTO) classes that model
  * tags applied to content and blackboard artifacts by users.
  */
-public abstract class Tag {	
+public abstract class Tag {
+
 	static long ID_NOT_SET = -1;
 	private long id = ID_NOT_SET;
 	private final TagName name;
 	private final String comment;
-	
+
 	Tag(long id, TagName name, String comment) {
 		this.id = id;
 		this.name = name;
 		this.comment = comment;
 	}
-	
+
 	public long getId() {
 		return id;
-	}			
-		
+	}
+
 	public TagName getName() {
 		return name;
 	}
-		
+
 	public String getComment() {
 		return comment;
-	}	
+	}
 }

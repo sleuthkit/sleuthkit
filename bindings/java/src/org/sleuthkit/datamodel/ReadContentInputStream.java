@@ -112,15 +112,15 @@ public class ReadContentInputStream extends InputStream {
 		}
 
 	}
-	
+
 	@Override
 	public int available() throws IOException {
 		long len = contentSize - currentOffset;
 		if (len < 0) {
 			return 0;
 		}
-		return (int)len;
-    }
+		return (int) len;
+	}
 
 	@Override
 	public long skip(long n) throws IOException {
@@ -134,7 +134,7 @@ public class ReadContentInputStream extends InputStream {
 
 	@Override
 	public void close() throws IOException {
-		super.close(); 
+		super.close();
 		//nothing to be done currently, file handles are closed when content is gc'ed
 	}
 
@@ -142,38 +142,40 @@ public class ReadContentInputStream extends InputStream {
 	public boolean markSupported() {
 		return false;
 	}
-	
+
 	/// additional methods to facilitate stream seeking
-	
 	/**
 	 * Get total length of the stream
+	 *
 	 * @return number of bytes that can be read from this stream
 	 */
 	public long getLength() {
 		return contentSize;
 	}
-	
+
 	/**
 	 * Get current position in the stream
+	 *
 	 * @return current offset in bytes
 	 */
 	public long getCurPosition() {
 		return currentOffset;
 	}
-	
+
 	/**
 	 * Set new current position in the stream, up to and including EOF
+	 *
 	 * @param newPosition new position in the stream to be set
-	 * @return the actual position set, which can be less than position passed in
-	 * if EOF has been reached
+	 * @return the actual position set, which can be less than position passed
+	 * in if EOF has been reached
 	 */
 	public long seek(long newPosition) {
 		if (newPosition < 0) {
-			throw new IllegalArgumentException ("Illegal negative new position in the stream");
+			throw new IllegalArgumentException("Illegal negative new position in the stream");
 		}
-		
+
 		currentOffset = Math.min(newPosition, contentSize);
 		return currentOffset;
-		
+
 	}
 }

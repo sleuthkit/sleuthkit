@@ -35,12 +35,13 @@ import org.junit.runners.Parameterized;
 
 /**
  * Tests that we get all of the results by directly requesting a specific
- * object.  Basic concept of test is to sequentially request objects, starting
- * at 1.  Details of each object are printed and results are compared with
- * gold standard. 
+ * object. Basic concept of test is to sequentially request objects, starting at
+ * 1. Details of each object are printed and results are compared with gold
+ * standard.
  */
 @RunWith(Parameterized.class)
 public class SequentialTraversal extends ImgTraverser {
+
 	private static final Logger logg = Logger.getLogger(SequentialTraversal.class.getName());
 
 	public SequentialTraversal(List<String> imagePaths) {
@@ -93,15 +94,15 @@ public class SequentialTraversal extends ImgTraverser {
 		List<Exception> inp = new ArrayList<Exception>();
 		try {
 			Charset chr = Charset.forName("UTF-8");
-			OutputStreamWriter reslt = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(path), 8192*4), chr);
-			
+			OutputStreamWriter reslt = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(path), 8192 * 4), chr);
+
 			try {
-				for (int x = 1; ;x++) {
+				for (int x = 1;; x++) {
 					Content c = sk.getContentById(x);
 					if (c == null) {
 						break;
 					}
-				
+
 					reslt.append(((AbstractContent) c).toString(false).replaceAll("paths \\[([A-z]:)?.+?\\]", ""));
 					if (c instanceof File) {
 						DataModelTestSuite.hashContent(c, reslt, outputExceptionsPath);

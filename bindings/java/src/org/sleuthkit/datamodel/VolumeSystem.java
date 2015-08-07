@@ -100,11 +100,10 @@ public class VolumeSystem extends AbstractContent {
 		if (volumeSystemHandle == 0) {
 			Content dataSource = getDataSource();
 			if ((dataSource != null) && (dataSource instanceof Image)) {
-				Image image = (Image)dataSource;
+				Image image = (Image) dataSource;
 				volumeSystemHandle = SleuthkitJNI.openVs(image.getImageHandle(), imgOffset);
-			}
-			else {
-				throw new TskCoreException ("Volume System data source is not an image");
+			} else {
+				throw new TskCoreException("Volume System data source is not an image");
 			}
 		}
 

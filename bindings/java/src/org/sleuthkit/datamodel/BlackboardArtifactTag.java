@@ -19,24 +19,25 @@
 package org.sleuthkit.datamodel;
 
 /**
- * Instances of this class are data transfer objects (DTOs) that represent tags 
+ * Instances of this class are data transfer objects (DTOs) that represent tags
  * a user can apply to blackboard artifacts.
  */
 public class BlackboardArtifactTag extends Tag {
+
 	private final BlackboardArtifact artifact;
 	private final Content content;
-		
+
 	// Clients of the org.sleuthkit.datamodel package should not directly create these objects.	
 	BlackboardArtifactTag(long id, BlackboardArtifact artifact, Content content, TagName name, String comment) {
 		super(id, name, comment);
 		this.artifact = artifact;
 		this.content = content;
-	}	
-	
+	}
+
 	public BlackboardArtifact getArtifact() {
 		return artifact;
 	}
-	
+
 	public Content getContent() {
 		return content;
 	}

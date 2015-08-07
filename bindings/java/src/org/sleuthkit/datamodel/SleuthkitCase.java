@@ -164,9 +164,10 @@ public class SleuthkitCase {
 
 	/**
 	 * Initialize the next artifact id. If there are entries in the
-	 * blackboard_artifacts table we will use max(artifact_id) + 1
-	 * otherwise we will initialize the value to 0x8000000000000000
-	 * (the maximum negative signed long).
+	 * blackboard_artifacts table we will use max(artifact_id) + 1 otherwise we
+	 * will initialize the value to 0x8000000000000000 (the maximum negative
+	 * signed long).
+	 *
 	 * @throws TskCoreException
 	 * @throws SQLException
 	 */
@@ -1811,6 +1812,7 @@ public class SleuthkitCase {
 			releaseExclusiveLock();
 		}
 	}
+
 	/**
 	 * Checks if the content object has children. Note: this is generally more
 	 * efficient then preloading all children and checking if the set is empty,
@@ -2485,7 +2487,7 @@ public class SleuthkitCase {
 				// fs_obj_id is set only for file system files. 
 				// We will match the VirtualDirectory's name in the parent path
 				Statement s = connection.createStatement();
-				rs = connection.executeQuery(s, "SELECT * FROM tsk_files WHERE LOWER(name) LIKE '" + fileName.toLowerCase() + "'  and LOWER(name) NOT LIKE '%journal%' AND parent_path LIKE '/" + dataSource.getName() +"/%'"); //NON-NLS
+				rs = connection.executeQuery(s, "SELECT * FROM tsk_files WHERE LOWER(name) LIKE '" + fileName.toLowerCase() + "'  and LOWER(name) NOT LIKE '%journal%' AND parent_path LIKE '/" + dataSource.getName() + "/%'"); //NON-NLS
 				files = resultSetToAbstractFiles(rs);
 			} else {
 				final String msg = MessageFormat.format(bundle.getString("SleuthkitCase.findFiles.exception.msg2.text"), dataSource);
@@ -2540,7 +2542,7 @@ public class SleuthkitCase {
 				// fs_obj_id is set only for file system files. 
 				// We will match the VirtualDirectory's name in the parent path
 				Statement s = connection.createStatement();
-				rs = connection.executeQuery(s, "SELECT * FROM tsk_files WHERE LOWER(name) LIKE '" + fileName.toLowerCase() + "' and LOWER(name) NOT LIKE '%journal%' AND parent_path LIKE '/" + dataSource.getName() +"/%' AND lower(parent_path) LIKE '%" + dirName.toLowerCase() + "%'"); //NON-NLS
+				rs = connection.executeQuery(s, "SELECT * FROM tsk_files WHERE LOWER(name) LIKE '" + fileName.toLowerCase() + "' and LOWER(name) NOT LIKE '%journal%' AND parent_path LIKE '/" + dataSource.getName() + "/%' AND lower(parent_path) LIKE '%" + dirName.toLowerCase() + "%'"); //NON-NLS
 				files = resultSetToAbstractFiles(rs);
 			} else {
 				final String msg = MessageFormat.format(bundle.getString("SleuthkitCase.findFiles3.exception.msg2.text"), dataSource);
@@ -3739,7 +3741,7 @@ public class SleuthkitCase {
 				children.add(getFileSystemById(info.id, img));
 			} else if (info.type == ObjectType.ABSTRACTFILE) {
 				AbstractFile f = getAbstractFileById(info.id);
-				if(f != null){
+				if (f != null) {
 					children.add(f);
 				}
 			} else {
@@ -3788,7 +3790,7 @@ public class SleuthkitCase {
 				children.add(getVolumeById(info.id, vs));
 			} else if (info.type == ObjectType.ABSTRACTFILE) {
 				AbstractFile f = getAbstractFileById(info.id);
-				if(f != null){
+				if (f != null) {
 					children.add(f);
 				}
 			} else {
@@ -3835,7 +3837,7 @@ public class SleuthkitCase {
 				children.add(getFileSystemById(info.id, vol));
 			} else if (info.type == ObjectType.ABSTRACTFILE) {
 				AbstractFile f = getAbstractFileById(info.id);
-				if(f != null){
+				if (f != null) {
 					children.add(f);
 				}
 			} else {
@@ -4123,13 +4125,13 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * This method allows developers to run arbitrary SQL "SELECT"
-	 * queries. The CaseDbQuery object will take care of acquiring
-	 * the necessary database lock and when used in a try-with-resources
-	 * block will automatically take care of releasing the lock.
-	 * If you do not use a try-with-resources block you must call 
-	 * CaseDbQuery.close() once you are done processing the results of
-	 * the query.
+	 * This method allows developers to run arbitrary SQL "SELECT" queries. The
+	 * CaseDbQuery object will take care of acquiring the necessary database
+	 * lock and when used in a try-with-resources block will automatically take
+	 * care of releasing the lock. If you do not use a try-with-resources block
+	 * you must call CaseDbQuery.close() once you are done processing the
+	 * results of the query.
+	 *
 	 * @param query The query string to execute.
 	 * @return A CaseDbQuery instance.
 	 * @throws TskCoreException
@@ -4214,7 +4216,7 @@ public class SleuthkitCase {
 	 * core
 	 */
 	void setMd5Hash(AbstractFile file, String md5Hash) throws TskCoreException {
-		if(md5Hash == null){
+		if (md5Hash == null) {
 			return;
 		}
 		long id = file.getId();
@@ -4286,7 +4288,7 @@ public class SleuthkitCase {
 	 * @return List of AbstractFile with the given hash
 	 */
 	public List<AbstractFile> findFilesByMd5(String md5Hash) {
-		if(md5Hash == null){
+		if (md5Hash == null) {
 			return Collections.<AbstractFile>emptyList();
 		}
 		CaseDbConnection connection;
@@ -4999,6 +5001,7 @@ public class SleuthkitCase {
 
 	/**
 	 * Deletes a row from the reports table in the case database.
+	 *
 	 * @param report A Report data transfer object (DTO) for the row to delete.
 	 * @throws TskCoreException
 	 */
@@ -5042,7 +5045,7 @@ public class SleuthkitCase {
 		private boolean isClosed = false;
 
 		synchronized CaseDbConnection getConnection() throws TskCoreException {
-			if(isClosed){
+			if (isClosed) {
 				throw new TskCoreException("Error getting case database connection - case is closed");
 			}
 
@@ -5156,7 +5159,7 @@ public class SleuthkitCase {
 			SELECT_ARTIFACT_TAGS_BY_TAG_NAME("SELECT * FROM blackboard_artifact_tags WHERE tag_name_id = ?"), //NON-NLS
 			SELECT_ARTIFACT_TAGS_BY_ARTIFACT("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id WHERE blackboard_artifact_tags.artifact_id = ?"), //NON-NLS
 			SELECT_REPORTS("SELECT * FROM reports"), //NON-NLS
-			INSERT_REPORT("INSERT INTO reports (path, crtime, src_module_name, report_name) VALUES (?, ?, ?, ?)"),	 //NON-NLS
+			INSERT_REPORT("INSERT INTO reports (path, crtime, src_module_name, report_name) VALUES (?, ?, ?, ?)"), //NON-NLS
 			DELETE_REPORT("DELETE FROM reports WHERE reports.report_id = ?"); //NON-NLS
 
 			private final String sql;
@@ -5290,8 +5293,7 @@ public class SleuthkitCase {
 			// You must turn auto commit back on when done with the transaction.
 			try {
 				connection.setAutoCommit(true);
-			}
-			catch (SQLException ex) {
+			} catch (SQLException ex) {
 				logger.log(Level.SEVERE, String.format("Exception resetting auto commit: Error code: %d SQLState: %s", ex.getErrorCode(), ex.getSQLState()), ex);
 			}
 		}
@@ -5465,17 +5467,17 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * The CaseDbQuery supports the use case where developers have a 
-	 * need for data that is not exposed through the SleuthkitCase API.
-	 * A CaseDbQuery instance gets created through the SleuthkitCase
-	 * executeDbQuery() method. It wraps the ResultSet and takes care
-	 * of acquiring and releasing the appropriate database lock.
-	 * It implements AutoCloseable so that it can be used in a try-with
-	 * -resources block freeing developers from having to remember to
-	 * close the result set and releasing the lock.
+	 * The CaseDbQuery supports the use case where developers have a need for
+	 * data that is not exposed through the SleuthkitCase API. A CaseDbQuery
+	 * instance gets created through the SleuthkitCase executeDbQuery() method.
+	 * It wraps the ResultSet and takes care of acquiring and releasing the
+	 * appropriate database lock. It implements AutoCloseable so that it can be
+	 * used in a try-with -resources block freeing developers from having to
+	 * remember to close the result set and releasing the lock.
 	 *
 	 */
 	public final class CaseDbQuery implements AutoCloseable {
+
 		private ResultSet resultSet;
 
 		private CaseDbQuery(String query) throws TskCoreException {
@@ -5494,9 +5496,7 @@ public class SleuthkitCase {
 			try {
 				SleuthkitCase.this.acquireSharedLock();
 				resultSet = connection.executeQuery(connection.createStatement(), query);
-			}
-			catch (SQLException ex)
-			{
+			} catch (SQLException ex) {
 				SleuthkitCase.this.releaseSharedLock();
 				throw new TskCoreException("Error executing query: ", ex);
 			}
@@ -5504,6 +5504,7 @@ public class SleuthkitCase {
 
 		/**
 		 * Get the result set for this query.
+		 *
 		 * @return The result set.
 		 */
 		public ResultSet getResultSet() {
@@ -5522,8 +5523,7 @@ public class SleuthkitCase {
 				}
 
 				SleuthkitCase.this.releaseSharedLock();
-			}
-			catch (SQLException ex) {
+			} catch (SQLException ex) {
 				throw new TskCoreException("Error closing query: ", ex);
 			}
 		}

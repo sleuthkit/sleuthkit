@@ -23,39 +23,38 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Interface for all datatypes that can be found in the database.
- * Content objects make up a tree and each object can have a parent
- * and children.  For example, the child of an Image object is a 
- * Volume or File System.  This interface defines the basic methods for
- * reading the content associated with this object, the parent and children,
- * and adding artifacts. 
+ * Interface for all datatypes that can be found in the database. Content
+ * objects make up a tree and each object can have a parent and children. For
+ * example, the child of an Image object is a Volume or File System. This
+ * interface defines the basic methods for reading the content associated with
+ * this object, the parent and children, and adding artifacts.
  */
 public interface Content extends SleuthkitVisitableItem {
 
 	/**
-	 * Reads data that this content object is associated with (file contents, 
+	 * Reads data that this content object is associated with (file contents,
 	 * volume contents, etc.).
 	 *
 	 * @param buf a character array of data (in bytes) to copy read data to
 	 * @param offset byte offset in the content to start reading from
-	 * @param len number of bytes to read into buf. 
+	 * @param len number of bytes to read into buf.
 	 * @return num of bytes read, or -1 on error
 	 * @throws TskCoreException if critical error occurred during read in the
 	 * tsk core
 	 */
 	public int read(byte[] buf, long offset, long len) throws TskCoreException;
-	
+
 	/**
-	 * Free native resources after read is done on the Content object.  
-	 * After closing, read can be called again on the same Content object,
-	 * which should result in re-opening of new native resources.
+	 * Free native resources after read is done on the Content object. After
+	 * closing, read can be called again on the same Content object, which
+	 * should result in re-opening of new native resources.
 	 */
 	public void close();
 
 	/**
-	 * Get the (reported) size of the content object and, in theory, how
-	 * much you should be able to read from it.  In some cases, data corruption
-	 * may mean that you cannot read this much data.
+	 * Get the (reported) size of the content object and, in theory, how much
+	 * you should be able to read from it. In some cases, data corruption may
+	 * mean that you cannot read this much data.
 	 *
 	 * @return size of the content
 	 */
@@ -75,7 +74,7 @@ public interface Content extends SleuthkitVisitableItem {
 	 * @return the name
 	 */
 	public String getName();
-	
+
 	/**
 	 * @return returns the full path to this Content object starting with a "/"
 	 * followed by the Image name and similarly for all other segments in the
@@ -106,30 +105,29 @@ public interface Content extends SleuthkitVisitableItem {
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public List<Content> getChildren() throws TskCoreException;
-	
-	
+
 	/**
-	 * Returns true if the content object has children objects.
-	 * Note, this should be more efficient than getting children and checking it empty.
-	 * 
+	 * Returns true if the content object has children objects. Note, this
+	 * should be more efficient than getting children and checking it empty.
+	 *
 	 * @return true if has children, false otherwise.
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public boolean hasChildren() throws TskCoreException;
-	
+
 	/**
-	 * Returns count of children objects.
-	 * Note, this should be more efficient than getting children and counting them.
-	 * 
+	 * Returns count of children objects. Note, this should be more efficient
+	 * than getting children and counting them.
+	 *
 	 * @return children count
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public int getChildrenCount() throws TskCoreException;
-	
+
 	/**
 	 * @return returns the parent of this Content object or null if there isn't
 	 * one as is the case for Image.
-	 * @throws TskCoreException 
+	 * @throws TskCoreException
 	 */
 	public Content getParent() throws TskCoreException;
 
@@ -172,35 +170,37 @@ public interface Content extends SleuthkitVisitableItem {
 	 */
 	public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskCoreException;
 
-	
 	/**
-	 * Return the TSK_GEN_INFO artifact for the file so that individual attributes 
-	 * can be added to it.  Creates one if it does not already exist. 
-	 * 
+	 * Return the TSK_GEN_INFO artifact for the file so that individual
+	 * attributes can be added to it. Creates one if it does not already exist.
+	 *
 	 * @return Instance of the TSK_GEN_INFO artifact
-	 * @throws TskCoreException 
+	 * @throws TskCoreException
 	 */
 	public BlackboardArtifact getGenInfoArtifact() throws TskCoreException;
-	
+
 	/**
-	 * Return the TSK_GEN_INFO artifact for the file so that individual attributes 
-	 * can be added to it. If one does not create, behavior depends on the create 
-	 * argument. 
-	 * 
-	 * @param create If true, an artifact will be created if it does not already exist. 
-	 * @return Instance of the TSK_GEN_INFO artifact or null if artifact does not already exist and create was set to false
-	 * @throws TskCoreException 
+	 * Return the TSK_GEN_INFO artifact for the file so that individual
+	 * attributes can be added to it. If one does not create, behavior depends
+	 * on the create argument.
+	 *
+	 * @param create If true, an artifact will be created if it does not already
+	 * exist.
+	 * @return Instance of the TSK_GEN_INFO artifact or null if artifact does
+	 * not already exist and create was set to false
+	 * @throws TskCoreException
 	 */
 	public BlackboardArtifact getGenInfoArtifact(boolean create) throws TskCoreException;
-		
-	
+
 	/**
 	 * Return attributes of a given type from TSK_GEN_INFO.
-	 * @param attr_type Attribute type to find inside of the TSK_GEN_INFO artifact.
-	 * @return Attributes 
+	 *
+	 * @param attr_type Attribute type to find inside of the TSK_GEN_INFO
+	 * artifact.
+	 * @return Attributes
 	 */
 	public ArrayList<BlackboardAttribute> getGenInfoAttributes(BlackboardAttribute.ATTRIBUTE_TYPE attr_type) throws TskCoreException;
-	
+
 	/**
 	 * Get all artifacts associated with this content that have the given type
 	 * id
@@ -227,7 +227,7 @@ public interface Content extends SleuthkitVisitableItem {
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskCoreException;
-	
+
 	/**
 	 * Get the names of all the hashsets that this content is in.
 	 *
@@ -237,8 +237,8 @@ public interface Content extends SleuthkitVisitableItem {
 	public Set<String> getHashSetNames() throws TskCoreException;
 
 	/**
-	 * Get count of all artifacts associated with this content that have the given type
-	 * name
+	 * Get count of all artifacts associated with this content that have the
+	 * given type name
 	 *
 	 * @param artifactTypeName name of the type to look up
 	 * @return count of blackboard artifacts matching the type
@@ -247,8 +247,8 @@ public interface Content extends SleuthkitVisitableItem {
 	public long getArtifactsCount(String artifactTypeName) throws TskCoreException;
 
 	/**
-	 * Get count of all artifacts associated with this content that have the given type
-	 * id
+	 * Get count of all artifacts associated with this content that have the
+	 * given type id
 	 *
 	 * @param artifactTypeID type id to look up
 	 * @return count of blackboard artifacts matching the type
@@ -257,7 +257,8 @@ public interface Content extends SleuthkitVisitableItem {
 	public long getArtifactsCount(int artifactTypeID) throws TskCoreException;
 
 	/**
-	 * Get count of all artifacts associated with this content that have the given type
+	 * Get count of all artifacts associated with this content that have the
+	 * given type
 	 *
 	 * @param type type to look up
 	 * @return count of blackboard artifacts matching the type

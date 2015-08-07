@@ -19,10 +19,11 @@
 package org.sleuthkit.datamodel;
 
 /**
- * Used to pass info about a hash so that it can be added into the TSK-db from Autopsy. 
- * HashHitInfo is for the reverse direction.
+ * Used to pass info about a hash so that it can be added into the TSK-db from
+ * Autopsy. HashHitInfo is for the reverse direction.
  */
 public class HashEntry {
+
 	private String fileName;
 	private String md5Hash;
 	private String sha1Hash;
@@ -36,7 +37,7 @@ public class HashEntry {
 		this.sha256Hash = sha256Hash;
 		this.comment = comment;
 	}
-		
+
 	public String getFileName() {
 		return fileName;
 	}
@@ -51,10 +52,9 @@ public class HashEntry {
 
 	public String getSha256Hash() {
 		return sha256Hash;
-	}	
+	}
 
 	public String getComment() {
 		return comment;
 	}
 }
-

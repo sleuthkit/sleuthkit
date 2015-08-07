@@ -19,18 +19,20 @@
 package org.sleuthkit.datamodel;
 
 /**
- * An object representation of an entry in tsk_file_layout table
- * Any file can have one or more file ranges defined to specify physical file layout.
- * This is especially useful for non-fs "virtual" files created for the purpose of data analysis
+ * An object representation of an entry in tsk_file_layout table Any file can
+ * have one or more file ranges defined to specify physical file layout. This is
+ * especially useful for non-fs "virtual" files created for the purpose of data
+ * analysis
  */
 public class TskFileRange {
 
 	private long byteStart;
 	private long byteLen;
 	private long sequence;
-	
+
 	/**
 	 * Create file range to map the database object
+	 *
 	 * @param byteStart byte start with respect to the image
 	 * @param byteLen length of the range in bytes
 	 * @param sequence sequence order of the range for the file
@@ -40,26 +42,29 @@ public class TskFileRange {
 		this.byteLen = byteLen;
 		this.sequence = sequence;
 	}
-	
+
 	/**
 	 * Get start byte of the range, with respect to the image
+	 *
 	 * @return start bye of the range
 	 */
 	public long getByteStart() {
 		return byteStart;
 	}
-	
+
 	/**
 	 * Get the byte length of the range
+	 *
 	 * @return length in bytes
 	 */
 	public long getByteLen() {
 		return byteLen;
 	}
-	
+
 	/**
-	 * Get sequence of this range defining ordering of this range with respect 
+	 * Get sequence of this range defining ordering of this range with respect
 	 * to other ranges for the file
+	 *
 	 * @return sequence number of this range
 	 */
 	public long getSequence() {
