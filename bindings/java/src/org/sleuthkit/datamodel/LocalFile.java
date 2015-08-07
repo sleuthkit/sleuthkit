@@ -33,16 +33,17 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
  */
 public class LocalFile extends AbstractFile {
 
-	
 	private static final Logger logger = Logger.getLogger(LocalFile.class.getName());
 
 	/**
-	 * Create a db representation of a local file, passing a more specific file type
+	 * Create a db representation of a local file, passing a more specific file
+	 * type
 	 *
 	 * @param db
 	 * @param objId object if of this file already in database
 	 * @param name name of this local file
-	 * @param fileType TSK_DB_FILES_TYPE_ENUM type of the file (local of more specific)
+	 * @param fileType TSK_DB_FILES_TYPE_ENUM type of the file (local of more
+	 * specific)
 	 * @param dirType
 	 * @param metaType
 	 * @param dirFlag
@@ -58,7 +59,7 @@ public class LocalFile extends AbstractFile {
 	 * file, or another local file path)
 	 * @param localPath local absolute path of this local file
 	 */
-	protected LocalFile(SleuthkitCase db, long objId, String name, TSK_DB_FILES_TYPE_ENUM fileType, 
+	protected LocalFile(SleuthkitCase db, long objId, String name, TSK_DB_FILES_TYPE_ENUM fileType,
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag,
 			short metaFlags, long size,
 			long ctime, long crtime, long atime, long mtime,
@@ -73,12 +74,14 @@ public class LocalFile extends AbstractFile {
 	}
 
 	/**
-	 * Create a db representation of a local file, passing a more specific file type
+	 * Create a db representation of a local file, passing a more specific file
+	 * type
 	 *
 	 * @param db
 	 * @param objId object if of this file already in database
 	 * @param name name of this local file
-	 * @param fileType TSK_DB_FILES_TYPE_ENUM type of the file (LOCAL or more specific)
+	 * @param fileType TSK_DB_FILES_TYPE_ENUM type of the file (LOCAL or more
+	 * specific)
 	 * @param dirType
 	 * @param metaType
 	 * @param dirFlag
@@ -90,7 +93,8 @@ public class LocalFile extends AbstractFile {
 	 * @param mtime
 	 * @param md5Hash
 	 * @param knownState
-	 * @param parentPath path of the parent of this local file (e.g. virtual dir or another local file path)
+	 * @param parentPath path of the parent of this local file (e.g. virtual dir
+	 * or another local file path)
 	 * @param localPath local path of this local file, relative to the db path
 	 * @param parentId parent id of this local file to set if available
 	 */
@@ -104,7 +108,7 @@ public class LocalFile extends AbstractFile {
 		}
 
 	}
-	
+
 	/**
 	 * Create a db representation of a local file
 	 *
@@ -122,7 +126,8 @@ public class LocalFile extends AbstractFile {
 	 * @param mtime
 	 * @param md5Hash
 	 * @param knownState
-	 * @param parentPath path of the parent of this local file (e.g. virtual dir or another local file path)
+	 * @param parentPath path of the parent of this local file (e.g. virtual dir
+	 * or another local file path)
 	 * @param localPath local path of this local file, relative to the db path
 	 * @param parentId parent id of this local file to set if available
 	 */
@@ -161,7 +166,7 @@ public class LocalFile extends AbstractFile {
 	@Override
 	public List<Long> getChildrenIds() throws TskCoreException {
 		//local file/dir children, can only be other local or derived files
-		final SleuthkitCase tskCase = getSleuthkitCase();	
+		final SleuthkitCase tskCase = getSleuthkitCase();
 		final List<Long> ret = tskCase.getAbstractFileChildrenIds(this, TSK_DB_FILES_TYPE_ENUM.DERIVED);
 		ret.addAll(tskCase.getAbstractFileChildrenIds(this, TSK_DB_FILES_TYPE_ENUM.LOCAL));
 

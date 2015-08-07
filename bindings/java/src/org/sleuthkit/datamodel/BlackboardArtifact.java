@@ -24,20 +24,20 @@ import java.util.List;
 import java.util.ResourceBundle;
 
 /**
- * Represents an artifact as stored in the Blackboard. Artifacts are a collection
- * of name value pairs and have a type that represents the type of data they are
- * storing.  This class is used to create artifacts on the blackboard and is used
- * to represent artifacts queried from the blackboard.
+ * Represents an artifact as stored in the Blackboard. Artifacts are a
+ * collection of name value pairs and have a type that represents the type of
+ * data they are storing. This class is used to create artifacts on the
+ * blackboard and is used to represent artifacts queried from the blackboard.
  */
 public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	/**
-	 * Enum for artifact types.  The C++ code has the full description of 
-	 * how to use these. 
-	 * Refer to http://wiki.sleuthkit.org/index.php?title=Artifact_Examples
-	 * for details on which attributes should be used for each artifact.
+	 * Enum for artifact types. The C++ code has the full description of how to
+	 * use these. Refer to
+	 * http://wiki.sleuthkit.org/index.php?title=Artifact_Examples for details
+	 * on which attributes should be used for each artifact.
 	 */
 	/* It is very important that this list be kept up to
 	 * date and in sync with the C++ code.  Do not add
@@ -139,6 +139,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 		/**
 		 * Gets the label string for the artifact type enum
+		 *
 		 * @return label string
 		 */
 		public String getLabel() {
@@ -147,6 +148,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 		/**
 		 * Gets the type id for the artifact type enum
+		 *
 		 * @return type id
 		 */
 		public int getTypeID() {
@@ -155,6 +157,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 		/**
 		 * Gets the artifact type enum value that corresponds to the given label
+		 *
 		 * @param label label string
 		 * @return the corresponding enum
 		 */
@@ -169,6 +172,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 		/**
 		 * Gets the artifact type enum value that corresponds to the given id
+		 *
 		 * @param ID the id
 		 * @return the corresponding enum
 		 */
@@ -183,12 +187,12 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 		/**
 		 * Gets display name of the artifact
+		 *
 		 * @return display name string
 		 */
 		public String getDisplayName() {
 			return this.displayName;
 		}
-
 
 		@Override
 		public <T> T accept(SleuthkitItemVisitor<T> v) {
@@ -206,7 +210,9 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 	/**
 	 * Constructor for an artifact. Should only be used by SleuthkitCase
-	 * @param sleuthkitCase the case that can be used to access the database this artifact is part of
+	 *
+	 * @param sleuthkitCase the case that can be used to access the database
+	 * this artifact is part of
 	 * @param artifactID the id for this artifact
 	 * @param objID the object this artifact is associated with
 	 * @param artifactTypeID the type id of this artifact
@@ -224,7 +230,9 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 	/**
 	 * Constructor for an artifact. Should only be used by SleuthkitCase
-	 * @param Case the case that can be used to access the database this artifact is part of
+	 *
+	 * @param Case the case that can be used to access the database this
+	 * artifact is part of
 	 * @param artifactID the id for this artifact
 	 * @param objID the object this artifact is associated with
 	 * @param artifactTypeID the type id of this artifact
@@ -241,13 +249,14 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		this.displayName = displayName;
 
 		// If the artifact is new, we don't need to waste a database call later to load the attributes
-		if(isNew){
+		if (isNew) {
 			this.loadedCacheFromDb = true;
 		}
 	}
 
 	/**
 	 * Get the id for this artifact
+	 *
 	 * @return id
 	 */
 	public long getArtifactID() {
@@ -256,6 +265,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 	/**
 	 * Get the object id of the object this artifact is associated with
+	 *
 	 * @return object id
 	 */
 	public long getObjectID() {
@@ -264,6 +274,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 	/**
 	 * Get the artifact type id for this artifact
+	 *
 	 * @return artifact type id
 	 */
 	public int getArtifactTypeID() {
@@ -272,6 +283,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 	/**
 	 * Get the artifact type name for this artifact
+	 *
 	 * @return artifact type name
 	 */
 	public String getArtifactTypeName() {
@@ -280,6 +292,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 	/**
 	 * Get the artifact display name for this artifact
+	 *
 	 * @return artifact display name
 	 */
 	public String getDisplayName() {
@@ -288,8 +301,10 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 	/**
 	 * Add an attribute to this artifact
+	 *
 	 * @param attr the attribute to add
-	 * @throws TskCoreException if a critical error occurs and the attribute was not added
+	 * @throws TskCoreException if a critical error occurs and the attribute was
+	 * not added
 	 */
 	public void addAttribute(BlackboardAttribute attr) throws TskCoreException {
 		attr.setArtifactID(artifactID);
@@ -299,9 +314,12 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	}
 
 	/**
-	 * Add a collection of attributes to this artifact in a single transaction (faster than individually)
+	 * Add a collection of attributes to this artifact in a single transaction
+	 * (faster than individually)
+	 *
 	 * @param attributes List of attributes to add
-	 * @throws TskCoreException if a critical error occurs and the attribute was not added
+	 * @throws TskCoreException if a critical error occurs and the attribute was
+	 * not added
 	 */
 	public void addAttributes(Collection<BlackboardAttribute> attributes) throws TskCoreException {
 		if (attributes.isEmpty()) {
@@ -318,12 +336,14 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 	/**
 	 * Gets all attributes associated with this artifact
+	 *
 	 * @return a list of attributes
-	 * @throws TskCoreException if a critical error occurs and the attributes are not fetched
+	 * @throws TskCoreException if a critical error occurs and the attributes
+	 * are not fetched
 	 */
 	public List<BlackboardAttribute> getAttributes() throws TskCoreException {
 		if (loadedCacheFromDb == false) {
-			List <BlackboardAttribute> attrs =  sleuthkitCase.getBlackboardAttributes(this);
+			List<BlackboardAttribute> attrs = sleuthkitCase.getBlackboardAttributes(this);
 			attrsCache.clear();
 			attrsCache.addAll(attrs);
 			loadedCacheFromDb = true;
@@ -357,7 +377,9 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	}
 
 	/**
-	 * A method to accept a visitor SleuthkitItemVisitor, and execute an algorithm on this object
+	 * A method to accept a visitor SleuthkitItemVisitor, and execute an
+	 * algorithm on this object
+	 *
 	 * @param <T> the object type to be returned from visit()
 	 * @param v the visitor to accept
 	 * @return object of generic type T to return
@@ -369,12 +391,12 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 	/**
 	 * Gets the SleuthkitCase handle associated with this object
+	 *
 	 * @return the case handle
 	 */
 	public SleuthkitCase getSleuthkitCase() {
 		return sleuthkitCase;
 	}
-
 
 	@Override
 	public boolean equals(Object obj) {

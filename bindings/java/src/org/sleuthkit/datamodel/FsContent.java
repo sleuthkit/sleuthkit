@@ -39,15 +39,15 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 public abstract class FsContent extends AbstractFile {
 
 	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
-    private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
+	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	///read only database tsk_files fields
 	protected final long fsObjId;
 	private String uniquePath;
 	///read-write database tsk_files fields
 	private final SleuthkitCase tskCase;
-	
+
 	private List<String> metaDataText = null;
-	
+
 	/**
 	 * parent file system
 	 */
@@ -85,7 +85,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @param parentPath
 	 */
 	FsContent(SleuthkitCase db, long objId, long fsObjId, TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
-			String name, long metaAddr, int metaSeq, 
+			String name, long metaAddr, int metaSeq,
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
 			String parentPath) {
@@ -120,7 +120,7 @@ public abstract class FsContent extends AbstractFile {
 	 */
 	public FileSystem getFileSystem() throws TskCoreException {
 		if (parentFileSystem == null) {
-			synchronized(this) {
+			synchronized (this) {
 				if (parentFileSystem == null) {
 					parentFileSystem = getSleuthkitCase().getFileSystemById(fsObjId, AbstractContent.UNKNOWN_ID);
 				}
@@ -128,11 +128,11 @@ public abstract class FsContent extends AbstractFile {
 		}
 		return parentFileSystem;
 	}
-	
+
 	/**
 	 * Open JNI file handle if it is not open already
-	 * 
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
 	private void loadFileHandle() throws TskCoreException {
 		if (fileHandle == 0) {
@@ -145,7 +145,7 @@ public abstract class FsContent extends AbstractFile {
 	}
 
 	@Override
-    @SuppressWarnings("deprecation")
+	@SuppressWarnings("deprecation")
 	protected int readInt(byte[] buf, long offset, long len) throws TskCoreException {
 		try {
 			if (offset == 0 && size == 0) {
@@ -154,14 +154,13 @@ public abstract class FsContent extends AbstractFile {
 			}
 			loadFileHandle();
 			return SleuthkitJNI.readFile(fileHandle, buf, offset, len);
-		}
-		catch (TskCoreException ex) {
+		} catch (TskCoreException ex) {
 			Content dataSource = getDataSource();
 			if ((dataSource != null) && (dataSource instanceof Image)) {
-				Image image = (Image)dataSource;
+				Image image = (Image) dataSource;
 				if (!image.imageFileExists()) {
 					tskCase.submitError(bundle.getString("FsContent.readInt.err.context.text"),
-                                    bundle.getString("FsContent.readInt.err.msg.text"));
+							bundle.getString("FsContent.readInt.err.msg.text"));
 				}
 			}
 			throw ex;
@@ -210,27 +209,27 @@ public abstract class FsContent extends AbstractFile {
 		}
 		return uniquePath;
 	}
-	
+
 	/**
-	 * Return a text-based description of the file's metadata.
-	 * This is the same content as the TSK istat tool produces.
-	 * Is different information for each type of file system.
-	 * 
+	 * Return a text-based description of the file's metadata. This is the same
+	 * content as the TSK istat tool produces. Is different information for each
+	 * type of file system.
+	 *
 	 * @return List of text, one string per line.
-	 * @throws TskCoreException 
+	 * @throws TskCoreException
 	 */
 	public synchronized List<String> getMetaDataText() throws TskCoreException {
 		if (metaDataText != null) {
 			return metaDataText;
 		}
-		
+
 		// if there is no metadata for this file, return empty string
 		if (metaAddr == 0) {
 			metaDataText = new ArrayList<String>();
 			metaDataText.add("");
 			return metaDataText;
 		}
-		
+
 		loadFileHandle();
 		metaDataText = SleuthkitJNI.getFileMetaDataText(fileHandle);
 		return metaDataText;

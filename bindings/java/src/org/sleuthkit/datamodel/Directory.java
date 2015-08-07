@@ -33,8 +33,8 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 public class Directory extends FsContent {
 
 	/**
-	 * Create directory from db 
-	 * 
+	 * Create directory from db
+	 *
 	 * @param db
 	 * @param objId
 	 * @param fsObjId
@@ -57,18 +57,17 @@ public class Directory extends FsContent {
 	 * @param gid
 	 * @param md5Hash
 	 * @param knownState
-	 * @param parentPath 
-	 */	
-	protected  Directory (SleuthkitCase db, long objId, long fsObjId, 
-			TSK_FS_ATTR_TYPE_ENUM attrType, short attrId, 
-			String name, long metaAddr, int metaSeq, 
-			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, 
-			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, 
-			long size, long ctime, long crtime, long atime, long mtime, short modes, 
+	 * @param parentPath
+	 */
+	protected Directory(SleuthkitCase db, long objId, long fsObjId,
+			TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
+			String name, long metaAddr, int metaSeq,
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
+			long size, long ctime, long crtime, long atime, long mtime, short modes,
 			int uid, int gid, String md5Hash, FileKnown knownState, String parentPath) {
 		super(db, objId, fsObjId, attrType, attrId, name, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath);
 	}
-	
 
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
@@ -90,10 +89,8 @@ public class Directory extends FsContent {
 		return getSleuthkitCase().getAbstractFileChildrenIds(this);
 	}
 
-
-	
 	@Override
-	public String toString(boolean preserveState){
+	public String toString(boolean preserveState) {
 		return super.toString(preserveState) + "Directory [\t" + "]\t"; //NON-NLS
 	}
 }

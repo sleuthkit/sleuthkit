@@ -43,7 +43,7 @@ public class DerivedFile extends AbstractFile {
 
 	private volatile DerivedMethod derivedMethod;
 	private static final Logger logger = Logger.getLogger(DerivedFile.class.getName());
-    private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
+	private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private boolean hasDerivedMethod = true; ///< whether it has the derived method to lazy load or not
 
 	/**
@@ -72,12 +72,12 @@ public class DerivedFile extends AbstractFile {
 			long ctime, long crtime, long atime, long mtime,
 			String md5Hash, FileKnown knownState, String parentPath, String localPath, long parentId) {
 
-			super(db, objId, TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short) 0,
+		super(db, objId, TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short) 0,
 				name, TSK_DB_FILES_TYPE_ENUM.LOCAL, 0L, 0, dirType, metaType, dirFlag,
 				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath);
-		
-			//use the local path read infrastructure
-			setLocalPath(localPath, false); //local paths for derived files are relative to case db
+
+		//use the local path read infrastructure
+		setLocalPath(localPath, false); //local paths for derived files are relative to case db
 	}
 
 	@Override
@@ -160,9 +160,9 @@ public class DerivedFile extends AbstractFile {
 
 	@Override
 	public String toString(boolean preserveState) {
-		return super.toString(preserveState) + "DerivedFile{"  //NON-NLS
-				+  "derivedMethod=" + derivedMethod  //NON-NLS
-				+ ", hasDerivedMethod=" + hasDerivedMethod  //NON-NLS
+		return super.toString(preserveState) + "DerivedFile{" //NON-NLS
+				+ "derivedMethod=" + derivedMethod //NON-NLS
+				+ ", hasDerivedMethod=" + hasDerivedMethod //NON-NLS
 				+ '}';
 	}
 

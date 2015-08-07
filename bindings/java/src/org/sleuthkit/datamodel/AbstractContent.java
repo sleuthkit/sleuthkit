@@ -152,8 +152,9 @@ public abstract class AbstractContent implements Content {
 	@Override
 	public Content getDataSource() throws TskCoreException {
 		Content myParent = getParent();
-		if (myParent == null) 
+		if (myParent == null) {
 			return null;
+		}
 
 		return myParent.getDataSource();
 	}
@@ -211,14 +212,16 @@ public abstract class AbstractContent implements Content {
 	@Override
 	public ArrayList<BlackboardArtifact> getArtifacts(int artifactTypeID) throws TskCoreException {
 		if (artifactTypeID == ARTIFACT_TYPE.TSK_GEN_INFO.getTypeID()) {
-			if (genInfoArtifact == null) 
-				// don't make one if it doesn't already exist
+			if (genInfoArtifact == null) // don't make one if it doesn't already exist
+			{
 				getGenInfoArtifact(false);
+			}
 
 			ArrayList<BlackboardArtifact> list = new ArrayList<BlackboardArtifact>();
 			// genInfoArtifact coudl still be null if there isn't an artifact
-			if (genInfoArtifact != null)
+			if (genInfoArtifact != null) {
 				list.add(genInfoArtifact);
+			}
 			return list;
 		}
 		return db.getBlackboardArtifacts(artifactTypeID, objId);
@@ -246,12 +249,10 @@ public abstract class AbstractContent implements Content {
 		if (arts.isEmpty()) {
 			if (create) {
 				retArt = db.newBlackboardArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO, objId);
-			}
-			else {
+			} else {
 				return null;
 			}
-		}
-		else {
+		} else {
 			retArt = arts.get(0);
 		}
 		genInfoArtifact = retArt;
@@ -277,7 +278,6 @@ public abstract class AbstractContent implements Content {
 
 		return returnList;
 	}
-
 
 	@Override
 	public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskCoreException {
