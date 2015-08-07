@@ -25,44 +25,46 @@ import java.io.OutputStream;
 import java.net.URL;
 
 /**
- * Collection of methods to load libraries embedded in the TSK Datamodel Jar file.
- * 
+ * Collection of methods to load libraries embedded in the TSK Datamodel Jar
+ * file.
+ *
  * @author jwallace
  */
 public class LibraryUtils {
-	
-	public static final String[] EXTS = new String[] { ".so", ".dylib", ".dll", ".jnilib" }; //NON-NLS
-	
+
+	public static final String[] EXTS = new String[]{".so", ".dylib", ".dll", ".jnilib"}; //NON-NLS
+
 	/**
 	 * The libraries the TSK Datamodel needs.
 	 */
 	public enum Lib {
-		MSVCP ("msvcp100", ""), //NON-NLS
-		MSVCR ("msvcr100", ""), //NON-NLS
-		ZLIB ("zlib", "z"), //NON-NLS
-		LIBEWF ("libewf", "ewf"), //NON-NLS
-		TSK_JNI ("libtsk_jni", "tsk_jni"); //NON-NLS
-		
+
+		MSVCP("msvcp100", ""), //NON-NLS
+		MSVCR("msvcr100", ""), //NON-NLS
+		ZLIB("zlib", "z"), //NON-NLS
+		LIBEWF("libewf", "ewf"), //NON-NLS
+		TSK_JNI("libtsk_jni", "tsk_jni"); //NON-NLS
+
 		private final String name;
 		private final String unixName;
-		
+
 		Lib(String name, String unixName) {
 			this.name = name;
 			this.unixName = unixName;
 		}
-		
+
 		public String getLibName() {
 			return this.name;
 		}
-		
+
 		public String getUnixName() {
 			return this.unixName;
 		}
 	}
-	
+
 	/**
 	 * Load the Sleuthkit JNI.
-	 * 
+	 *
 	 * @return true if library was found and loaded
 	 */
 	public static boolean loadSleuthkitJNI() {
@@ -74,30 +76,30 @@ public class LibraryUtils {
 		}
 		return loaded;
 	}
-	
+
 	/**
 	 * Get the name of the current platform.
-	 * 
+	 *
 	 * @return a platform identifier, formatted as "OS_ARCH/OS_NAME"
 	 */
 	private static String getPlatform() {
 		String os = System.getProperty("os.name").toLowerCase();
-		if(LibraryUtils.isWindows()) {
+		if (LibraryUtils.isWindows()) {
 			os = "win"; //NON-NLS
-		} else if(LibraryUtils.isMac()) {
+		} else if (LibraryUtils.isMac()) {
 			os = "mac"; //NON-NLS
-		} else if(LibraryUtils.isLinux()) {
+		} else if (LibraryUtils.isLinux()) {
 			os = "linux"; //NON-NLS
 		}
 		// os.arch represents the architecture of the JVM, not the os
 		String arch = System.getProperty("os.arch");
 		return arch.toLowerCase() + "/" + os.toLowerCase();
 	}
-	
+
 	/**
 	 * Is the platform Windows?
-	 * 
-	 * @return 
+	 *
+	 * @return
 	 */
 	private static boolean isWindows() {
 		return System.getProperty("os.name").toLowerCase().contains("windows"); //NON-NLS
@@ -105,53 +107,53 @@ public class LibraryUtils {
 
 	/**
 	 * Is the platform Mac?
-	 * 
-	 * @return 
+	 *
+	 * @return
 	 */
 	private static boolean isMac() {
 		return System.getProperty("os.name").toLowerCase().contains("mac"); //NON-NLS
 	}
-	
+
 	/**
 	 * Is the platform Linux?
-	 * 
+	 *
 	 * @return
 	 */
 	private static boolean isLinux() {
 		return System.getProperty("os.name").equals("Linux"); //NON-NLS
 	}
-	
-    /**
+
+	/**
 	 * Attempt to extract and load the specified native library.
-	 * 
+	 *
 	 * @param library
-	 * @return 
+	 * @return
 	 */
 	private static boolean loadNativeLibFromTskJar(Lib library) {
 		String libName = library.getLibName();
-		
+
 		// find the library in the jar file
 		StringBuilder pathInJarBase = new StringBuilder();
 		pathInJarBase.append("/NATIVELIBS/"); //NON-NLS
 		pathInJarBase.append(getPlatform());
 		pathInJarBase.append("/");
 		pathInJarBase.append(libName);
-		
+
 		URL urlInJar = null;
 		String libExt = null;
 		for (String ext : EXTS) {
-			urlInJar = SleuthkitJNI.class.getResource(pathInJarBase.toString() +  ext);
+			urlInJar = SleuthkitJNI.class.getResource(pathInJarBase.toString() + ext);
 			if (urlInJar != null) {
 				libExt = ext;
 				break;
 			}
 		}
-		
+
 		if (urlInJar == null) {
 			System.out.println("Library not found in jar (" + libName + ")"); //NON-NLS
 			return false;
 		}
-		
+
 		// copy library to temp folder and load it
 		try {
 			java.io.File tempLibFile = new java.io.File(System.getProperty("java.io.tmpdir") + java.io.File.separator + libName + libExt); //NON-NLS
@@ -177,7 +179,7 @@ public class LibraryUtils {
 					}
 				}
 			}
-			
+
 			// Delete old file
 			if (tempLibFile.exists()) {
 				if (tempLibFile.delete() == false) {
@@ -192,7 +194,7 @@ public class LibraryUtils {
 
 			byte[] buffer = new byte[1024];
 			int length;
-			while((length = in.read(buffer)) > 0) {
+			while ((length = in.read(buffer)) > 0) {
 				out.write(buffer, 0, length);
 			}
 			in.close();
@@ -204,10 +206,10 @@ public class LibraryUtils {
 			// Loading failed.
 			System.out.println("Error loading library: " + e.getMessage()); //NON-NLS
 			return false;
-		} 
+		}
 		return true;
-	} 
-	
+	}
+
 	private static String getExtByPlatform() {
 		if (isWindows()) {
 			return ".dll"; //NON-NLS

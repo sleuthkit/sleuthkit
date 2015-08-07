@@ -40,13 +40,13 @@ public class VirtualDirectory extends AbstractFile {
 	//some built-in virtual directory names
 	public static final String NAME_UNALLOC = "$Unalloc"; //NON-NLS
 	public static final String NAME_CARVED = "$CarvedFiles"; //NON-NLS
-	
-	protected VirtualDirectory(SleuthkitCase db, long objId, String name, TSK_FS_NAME_TYPE_ENUM dirType, 
-			TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, 
+
+	protected VirtualDirectory(SleuthkitCase db, long objId, String name, TSK_FS_NAME_TYPE_ENUM dirType,
+			TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, String md5Hash, FileKnown knownState, String parentPath) {
-		super(db, objId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short)0, name, 
-				TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR, 0L, 0, dirType, metaType, dirFlag, 
-				metaFlags, 0L, 0L, 0L, 0L, 0L, (short)0, 0, 0, md5Hash, knownState, parentPath);
+		super(db, objId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short) 0, name,
+				TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR, 0L, 0, dirType, metaType, dirFlag,
+				metaFlags, 0L, 0L, 0L, 0L, 0L, (short) 0, 0, 0, md5Hash, knownState, parentPath);
 	}
 
 	@Override
@@ -69,8 +69,6 @@ public class VirtualDirectory extends AbstractFile {
 		//nothing to be closed
 	}
 
-	
-
 	@Override
 	public boolean isRoot() {
 		return false;
@@ -88,18 +86,17 @@ public class VirtualDirectory extends AbstractFile {
 
 	@Override
 	public Content getDataSource() throws TskCoreException {
-		Content parent =  getParent();
+		Content parent = getParent();
 		if (parent != null) {
 			return parent.getDataSource();
-		}
-		else {
+		} else {
 			//root-level VirtualDirectory, such as local files container
 			return this;
 		}
 	}
 
 	@Override
-	public String toString(boolean preserveState){
+	public String toString(boolean preserveState) {
 		return super.toString(preserveState) + "VirtualDirectory [\t" + "]\t"; //NON-NLS
-	}		
+	}
 }

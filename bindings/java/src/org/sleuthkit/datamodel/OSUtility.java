@@ -97,7 +97,7 @@ public class OSUtility {
 		for (BlackboardArtifact art : results) {
 
 			AbstractFile file = skCase.getAbstractFileById(art.getObjectID());
-			if(file == null){
+			if (file == null) {
 				continue;
 			}
 

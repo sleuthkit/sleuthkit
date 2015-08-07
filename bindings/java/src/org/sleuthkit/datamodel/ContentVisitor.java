@@ -94,7 +94,7 @@ public interface ContentVisitor<T> {
 	 * @return result of the visit
 	 */
 	T visit(VirtualDirectory ld);
-	
+
 	/**
 	 * Act on (visit) a DerivedFile content object
 	 *
@@ -102,7 +102,7 @@ public interface ContentVisitor<T> {
 	 * @return result of the visit
 	 */
 	T visit(DerivedFile lf);
-	
+
 	/**
 	 * Act on (visit) a LocalFile content object
 	 *
@@ -164,12 +164,12 @@ public interface ContentVisitor<T> {
 		public T visit(VirtualDirectory ld) {
 			return defaultVisit(ld);
 		}
-		
+
 		@Override
 		public T visit(DerivedFile df) {
 			return defaultVisit(df);
 		}
-		
+
 		@Override
 		public T visit(LocalFile lf) {
 			return defaultVisit(lf);

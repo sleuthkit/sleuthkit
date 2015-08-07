@@ -34,7 +34,8 @@ public class TskDataException extends TskException {
 
 	/**
 	 * Create exception containing the error message
-	 * @param msg the message 
+	 *
+	 * @param msg the message
 	 */
 	public TskDataException(String msg) {
 		super(msg);
@@ -42,7 +43,8 @@ public class TskDataException extends TskException {
 
 	/**
 	 * Create exception containing the error message and cause exception
-	 * @param msg the message 
+	 *
+	 * @param msg the message
 	 * @param ex cause exception
 	 */
 	public TskDataException(String msg, Exception ex) {

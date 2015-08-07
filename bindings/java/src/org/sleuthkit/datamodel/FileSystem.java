@@ -66,8 +66,6 @@ public class FileSystem extends AbstractContent {
 	public void close() {
 		//does nothing currently, we are caching the fs handles
 	}
-	
-	
 
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
@@ -93,11 +91,10 @@ public class FileSystem extends AbstractContent {
 				if (filesystemHandle == 0) {
 					Content dataSource = getDataSource();
 					if ((dataSource != null) && (dataSource instanceof Image)) {
-						Image image = (Image)dataSource;
+						Image image = (Image) dataSource;
 						filesystemHandle = SleuthkitJNI.openFs(image.getImageHandle(), imgOffset);
-					}
-					else {
-						throw new TskCoreException ("Data Source of File System is not an image");
+					} else {
+						throw new TskCoreException("Data Source of File System is not an image");
 					}
 				}
 			}
