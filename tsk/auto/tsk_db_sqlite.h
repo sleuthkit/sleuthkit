@@ -23,7 +23,7 @@
 #include "tsk_db.h"
 
 using std::map;
-
+using std::vector;
 
 /** \internal
  * C++ class that wraps the database internals. 

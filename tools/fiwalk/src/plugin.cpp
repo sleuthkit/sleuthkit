@@ -58,6 +58,41 @@ extern "C" {
 }
 #endif
 
+#ifndef HAVE_GETLINE
+
+// Here we provide a getline which works for lineptr == nullptr.
+// It is NOT a full replacement for POSIX getline, just enough to
+// do what the single use of getline here does.
+
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+
+ssize_t getline(char** lineptr, size_t*, FILE* stream) {
+  char buf[1024];
+  std::string s;
+
+  do {
+    if (std::fgets(buf, sizeof(buf), stream)) {
+      s.append(buf);
+    }
+    else if (std::ferror(stream)) {
+      errno = EINVAL;
+      return -1;
+    }
+  } while (!std::feof(stream) && s[s.size()-1] != '\n');
+
+  // allocate and copy the line
+  *lineptr = static_cast<char*>(malloc(s.size() + 1));
+  std::strcpy(*lineptr, s.c_str());
+
+  // return number of chars read, including newline
+  return s.size();
+}
+
+#endif
+
 class myglob {
 public:
     regex_t reg;

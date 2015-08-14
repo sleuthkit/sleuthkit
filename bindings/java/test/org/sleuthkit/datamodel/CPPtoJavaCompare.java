@@ -36,10 +36,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /**
- * Compares the Java test output to the C++ test output.
- * Basic concept is to run tsk_gettimes on an image to get the body
- * file format and then make equivalent output from Java code.  Diff. 
- * Does not use gold standards.
+ * Compares the Java test output to the C++ test output. Basic concept is to run
+ * tsk_gettimes on an image to get the body file format and then make equivalent
+ * output from Java code. Diff. Does not use gold standards.
  */
 @RunWith(Parameterized.class)
 public class CPPtoJavaCompare extends ImgTraverser {
@@ -68,7 +67,6 @@ public class CPPtoJavaCompare extends ImgTraverser {
 		return data;
 	}
 
-	
 	/**
 	 * Runs the test
 	 */
@@ -80,39 +78,39 @@ public class CPPtoJavaCompare extends ImgTraverser {
 			java.io.File tskOutFile = new java.io.File(standardPathCPP);
 			// get rid of copy from previous runs
 			tskOutFile.delete();
-			
+
 			runTskGetTimes(standardPathCPP, imagePaths);
-			
-			assertTrue ("TSK gettimes output is zero sized (" + standardPathCPP + ")", tskOutFile.length() > 0);
-			
+
+			assertTrue("TSK gettimes output is zero sized (" + standardPathCPP + ")", tskOutFile.length() > 0);
+
 			// perform test
 			List<Boolean> test = basicTest();
-			
+
 			// compare exceptions
 			assertEquals("Generated exceptions  (" + outputExceptionsPath + ") differ with gold standards (" + goldExceptionsPath + ") .", test.get(0), true);
-			
+
 			//compare sorted output instead of unsorted output
 			String goldFilePathSorted = DataModelTestSuite.sortedFlPth(goldFilePath);
 			String outputFilePathSorted = DataModelTestSuite.sortedFlPth(outputFilePath);
 			List<Boolean> ret = new ArrayList<Boolean>(1);
-			ret.add(DataModelTestSuite.comparecontent(goldFilePathSorted, outputFilePathSorted));			
-			assertEquals("Java output (" + outputFilePathSorted + ") differ with C++ results (" + goldFilePathSorted + ") .", ret.get(0), true);			
+			ret.add(DataModelTestSuite.comparecontent(goldFilePathSorted, outputFilePathSorted));
+			assertEquals("Java output (" + outputFilePathSorted + ") differ with C++ results (" + goldFilePathSorted + ") .", ret.get(0), true);
 		} catch (Exception ex) {
 			fail("Couldn't open gold standard file. " + ex.getMessage());
 		}
 	}
-	
-	
+
 	/**
 	 * Runs tsk_gettimes to create a standard for comparing DataModel and TSK
 	 * output.
 	 *
-	 * @param outputFile The path to the file to put the tsk data in. Sorted results will be stored in separate file. 
+	 * @param outputFile The path to the file to put the tsk data in. Sorted
+	 * results will be stored in separate file.
 	 * @param img the path to the image, is a list for compatability reasons
 	 */
-	 private static void runTskGetTimes(String outputFile, List<String> img) {
+	private static void runTskGetTimes(String outputFile, List<String> img) {
 		String tsk_loc;
-		java.io.File  up = new java.io.File(System.getProperty("user.dir"));
+		java.io.File up = new java.io.File(System.getProperty("user.dir"));
 		up = up.getParentFile();
 		up = up.getParentFile();
 		if (System.getProperty("os.name").contains("Windows")) {
@@ -120,11 +118,11 @@ public class CPPtoJavaCompare extends ImgTraverser {
 		} else {
 			tsk_loc = up.getAbsolutePath() + "/tools/autotools/tsk_gettimes";
 		}
-		
+
 		// verify it exists
 		java.io.File f = new java.io.File(tsk_loc);
 		assertTrue("cannot find tsk_gettimes method", f.exists());
-		
+
 		String[] cmd = {tsk_loc, img.get(0)};
 		try {
 			Process p = Runtime.getRuntime().exec(cmd);
@@ -148,7 +146,7 @@ public class CPPtoJavaCompare extends ImgTraverser {
 		} catch (Exception ex) {
 			logg.log(Level.SEVERE, "Failed to run CPP program", ex);
 		}
-		
+
 		java.io.File xfile = new java.io.File(DataModelTestSuite.exceptionPath(outputFile));
 		try {
 			xfile.createNewFile();
@@ -156,8 +154,8 @@ public class CPPtoJavaCompare extends ImgTraverser {
 			logg.log(Level.SEVERE, "Failed to create exceptions file", ex);
 		}
 	}
-	 
-	 /**
+
+	/**
 	 * gets the metadata from a datamodel file object
 	 *
 	 * @param fi
@@ -186,7 +184,6 @@ public class CPPtoJavaCompare extends ImgTraverser {
 		return ("0|" + name + "|" + fi.metaAddr + "|" + fi.getMetaTypeAsString() + "/" + fi.getModesAsString() + "|" + fi.getUid() + "|0|" + fi.getSize() + "|" + fi.getAtime() + "|" + fi.getMtime() + "|" + fi.getCtime() + "|" + fi.getCrtime());
 	}
 
-
 	/**
 	 * Traverses through an image and generates a TSK gettimes like
 	 * representation
@@ -199,7 +196,7 @@ public class CPPtoJavaCompare extends ImgTraverser {
 	public OutputStreamWriter traverse(SleuthkitCase sk, String path) {
 		OutputStreamWriter reslt;
 		try {
-			reslt = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(path), 8192*4), Charset.forName("UTF-8"));
+			reslt = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(path), 8192 * 4), Charset.forName("UTF-8"));
 			try {
 				tskTraverse(sk.getRootObjects(), reslt);
 				return reslt;
