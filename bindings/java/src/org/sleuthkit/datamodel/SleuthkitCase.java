@@ -1307,10 +1307,20 @@ public class SleuthkitCase {
 			statement.clearParameters();
 			statement.setLong(1, artifactID);
 			rs = connection.executeQuery(statement);
-			long obj_id = rs.getLong(1);
-			int artifact_type_id = rs.getInt(2);
-			return new BlackboardArtifact(this, artifactID, obj_id, artifact_type_id,
-					this.getArtifactTypeString(artifact_type_id), this.getArtifactTypeDisplayName(artifact_type_id));
+
+			while (rs.next()) {
+				int artifact_type_id = rs.getInt("artifact_type_id");
+				return new BlackboardArtifact(this,
+						artifactID,
+						rs.getLong("obj_id"),
+						artifact_type_id,
+						this.getArtifactTypeString(artifact_type_id),
+						this.getArtifactTypeDisplayName(artifact_type_id));
+			}
+			/* I think this should actually return null (or Optional) when there
+			 * is no artifact with the given id, but it looks like existing code is
+			 * not expecting that. -jm */
+			throw new TskCoreException("No blackboard artifact with id " + artifactID);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting a blackboard artifact. " + ex.getMessage(), ex);
 		} finally {
