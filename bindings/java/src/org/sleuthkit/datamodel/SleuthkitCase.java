@@ -699,9 +699,9 @@ public class SleuthkitCase {
 	private List<BlackboardArtifact> getArtifactsHelper(ResultSet rs) throws SQLException {
 		ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
 		while (rs.next()) {
-			final int artifactTypeID = rs.getInt(3);
+			final int artifactTypeID = rs.getInt("artifact_type_id");
 			final ARTIFACT_TYPE artType = ARTIFACT_TYPE.fromID(artifactTypeID);
-			artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2),
+			artifacts.add(new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"),
 					artifactTypeID, artType.getLabel(), artType.getDisplayName()));
 		}
 		return artifacts;
@@ -1307,20 +1307,15 @@ public class SleuthkitCase {
 			statement.clearParameters();
 			statement.setLong(1, artifactID);
 			rs = connection.executeQuery(statement);
-
-			while (rs.next()) {
-				int artifact_type_id = rs.getInt("artifact_type_id");
-				return new BlackboardArtifact(this,
-						artifactID,
-						rs.getLong("obj_id"),
-						artifact_type_id,
-						this.getArtifactTypeString(artifact_type_id),
-						this.getArtifactTypeDisplayName(artifact_type_id));
+			List<BlackboardArtifact> artifacts = getArtifactsHelper(rs);
+			if (artifacts.size() > 0) {
+				return artifacts.get(0);
+			} else {
+				/* I think this should actually return null (or Optional) when there
+				 * is no artifact with the given id, but it looks like existing code is
+				 * not expecting that.  -jm */
+				throw new TskCoreException("No blackboard artifact with id " + artifactID);
 			}
-			/* I think this should actually return null (or Optional) when there
-			 * is no artifact with the given id, but it looks like existing code is
-			 * not expecting that. -jm */
-			throw new TskCoreException("No blackboard artifact with id " + artifactID);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting a blackboard artifact. " + ex.getMessage(), ex);
 		} finally {
@@ -5097,7 +5092,7 @@ public class SleuthkitCase {
 			SELECT_ATTRIBUTES_OF_ARTIFACT("SELECT artifact_id, source, context, attribute_type_id, value_type, " //NON-NLS
 					+ "value_byte, value_text, value_int32, value_int64, value_double " //NON-NLS
 					+ "FROM blackboard_attributes WHERE artifact_id = ?"), //NON-NLS
-			SELECT_ARTIFACT_BY_ID("SELECT obj_id, artifact_type_id FROM blackboard_artifacts WHERE artifact_id = ?"), //NON-NLS
+			SELECT_ARTIFACT_BY_ID("SELECT obj_id, artifact_type_id, artifact_id FROM blackboard_artifacts WHERE artifact_id = ?"), //NON-NLS
 			SELECT_ARTIFACTS_BY_TYPE("SELECT artifact_id, obj_id FROM blackboard_artifacts " //NON-NLS
 					+ "WHERE artifact_type_id = ?"), //NON-NLS
 			COUNT_ARTIFACTS_OF_TYPE("SELECT COUNT(*) FROM blackboard_artifacts WHERE artifact_type_id = ?"), //NON-NLS
