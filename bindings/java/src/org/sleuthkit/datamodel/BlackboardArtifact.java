@@ -124,7 +124,9 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		TSK_GPS_ROUTE(36, "TSK_GPS_ROUTE", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskGpsRoute.text")), // Route based on GPS coordinates
 		TSK_REMOTE_DRIVE(37, "TSK_REMOTE_DRIVE", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskRemoteDrive.text"));
+				bundle.getString("BlackboardArtifact.tskRemoteDrive.text")),
+		TSK_FACE_DETECTED(38, "TSK_FACE_DETECTED", //NON-NLS
+				bundle.getString("BlackboardArtifact.tskFaceDetected.text"));
 
 		/* SEE ABOVE -- KEEP C++ CODE IN SYNC */
 		private final String label;
