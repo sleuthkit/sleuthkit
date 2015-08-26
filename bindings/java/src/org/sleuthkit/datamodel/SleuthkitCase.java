@@ -1471,11 +1471,15 @@ public class SleuthkitCase {
 			statement.clearParameters();
 			statement.setLong(1, artifactID);
 			rs = connection.executeQuery(statement);
-			rs.next();
-			long obj_id = rs.getLong(1);
-			int artifact_type_id = rs.getInt(2);
-			return new BlackboardArtifact(this, artifactID, obj_id, artifact_type_id,
-					this.getArtifactTypeString(artifact_type_id), this.getArtifactTypeDisplayName(artifact_type_id));
+			List<BlackboardArtifact> artifacts = getArtifactsHelper(rs);
+			if (artifacts.size() > 0) {
+				return artifacts.get(0);
+			} else {
+				/* I think this should actually return null (or Optional) when there
+				 * is no artifact with the given id, but it looks like existing code is
+				 * not expecting that.  -jm */
+				throw new TskCoreException("No blackboard artifact with id " + artifactID);
+			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting a blackboard artifact. " + ex.getMessage(), ex);
 		} finally {
@@ -5706,7 +5710,7 @@ public class SleuthkitCase {
 			SELECT_ATTRIBUTES_OF_ARTIFACT("SELECT artifact_id, source, context, attribute_type_id, value_type, " //NON-NLS
 					+ "value_byte, value_text, value_int32, value_int64, value_double " //NON-NLS
 					+ "FROM blackboard_attributes WHERE artifact_id = ?"), //NON-NLS
-			SELECT_ARTIFACT_BY_ID("SELECT obj_id, artifact_type_id FROM blackboard_artifacts WHERE artifact_id = ?"), //NON-NLS
+			SELECT_ARTIFACT_BY_ID("SELECT artifact_id ,obj_id,  artifact_type_id FROM blackboard_artifacts WHERE artifact_id = ?"), //NON-NLS
 			SELECT_ARTIFACTS_BY_TYPE("SELECT artifact_id, obj_id FROM blackboard_artifacts " //NON-NLS
 					+ "WHERE artifact_type_id = ?"), //NON-NLS
 			COUNT_ARTIFACTS_OF_TYPE("SELECT COUNT(*) FROM blackboard_artifacts WHERE artifact_type_id = ?"), //NON-NLS
