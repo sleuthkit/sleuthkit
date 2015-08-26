@@ -19,6 +19,10 @@
 package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
@@ -313,6 +317,20 @@ public abstract class AbstractContent implements Content {
 	@Override
 	public long getAllArtifactsCount() throws TskCoreException {
 		return db.getBlackboardArtifactsCount(objId);
+	}
+
+	@Override
+	public Set<String> getHashSetNames() throws TskCoreException {
+		Set<String> hashNames = new HashSet<String>();
+		ArrayList<BlackboardArtifact> artifacts = getArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT);
+
+		for (BlackboardArtifact a : artifacts) {
+			List<BlackboardAttribute> attributes = a.getAttributes(ATTRIBUTE_TYPE.TSK_SET_NAME);
+			for (BlackboardAttribute attr : attributes) {
+				hashNames.add(attr.getValueString());
+			}
+		}
+		return Collections.unmodifiableSet(hashNames);
 	}
 
 	@Override

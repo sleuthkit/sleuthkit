@@ -124,7 +124,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		TSK_GPS_ROUTE(36, "TSK_GPS_ROUTE", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskGpsRoute.text")), // Route based on GPS coordinates
 		TSK_REMOTE_DRIVE(37, "TSK_REMOTE_DRIVE", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskRemoteDrive.text")),;
+				bundle.getString("BlackboardArtifact.tskRemoteDrive.text"));
 
 		/* SEE ABOVE -- KEEP C++ CODE IN SYNC */
 		private final String label;
@@ -349,6 +349,31 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 			loadedCacheFromDb = true;
 		}
 		return attrsCache;
+	}
+
+	/**
+	 * Gets all attributes associated with this artifact that are of the given
+	 * attribute type.
+	 *
+	 * @param attributeType the type of attributes to get
+	 * @return a list of attributes of the given type
+	 * @throws TskCoreException if a critical error occurs and the attributes
+	 * are not fetched
+	 */
+	public List<BlackboardAttribute> getAttributes(final BlackboardAttribute.ATTRIBUTE_TYPE attributeType) throws TskCoreException {
+		if (loadedCacheFromDb == false) {
+			List<BlackboardAttribute> attrs = sleuthkitCase.getBlackboardAttributes(this);
+			attrsCache.clear();
+			attrsCache.addAll(attrs);
+			loadedCacheFromDb = true;
+		}
+		ArrayList<BlackboardAttribute> filteredAttributes = new ArrayList<BlackboardAttribute>();
+		for (BlackboardAttribute attr : attrsCache) {
+			if (attr.getAttributeTypeID() == attributeType.getTypeID()) {
+				filteredAttributes.add(attr);
+			}
+		}
+		return filteredAttributes;
 	}
 
 	/**

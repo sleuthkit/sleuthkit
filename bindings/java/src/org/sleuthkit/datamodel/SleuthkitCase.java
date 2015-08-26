@@ -1471,11 +1471,15 @@ public class SleuthkitCase {
 			statement.clearParameters();
 			statement.setLong(1, artifactID);
 			rs = connection.executeQuery(statement);
-			rs.next();
-			long obj_id = rs.getLong(1);
-			int artifact_type_id = rs.getInt(2);
-			return new BlackboardArtifact(this, artifactID, obj_id, artifact_type_id,
-					this.getArtifactTypeString(artifact_type_id), this.getArtifactTypeDisplayName(artifact_type_id));
+			List<BlackboardArtifact> artifacts = getArtifactsHelper(rs);
+			if (artifacts.size() > 0) {
+				return artifacts.get(0);
+			} else {
+				/* I think this should actually return null (or Optional) when there
+				 * is no artifact with the given id, but it looks like existing code is
+				 * not expecting that.  -jm */
+				throw new TskCoreException("No blackboard artifact with id " + artifactID);
+			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting a blackboard artifact. " + ex.getMessage(), ex);
 		} finally {
@@ -4387,7 +4391,9 @@ public class SleuthkitCase {
 	 * This method allows developers to run arbitrary SQL "SELECT" queries. The
 	 * CaseDbQuery object will take care of acquiring the necessary database
 	 * lock and when used in a try-with-resources block will automatically take
-	 * care of releasing the lock.
+	 * care of releasing the lock. If you do not use a try-with-resources block
+	 * you must call CaseDbQuery.close() once you are done processing the
+	 * results of the query.
 	 *
 	 * @param query The query string to execute.
 	 * @return A CaseDbQuery instance.
@@ -5256,7 +5262,7 @@ public class SleuthkitCase {
 			resultSet = connection.executeQuery(statement);
 			ArrayList<BlackboardArtifactTag> tags = new ArrayList<BlackboardArtifactTag>();
 			while (resultSet.next()) {
-				TagName tagName = new TagName(resultSet.getLong(2), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")));  //NON-NLS
+				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")));  //NON-NLS
 				Content content = getContentById(artifact.getObjectID());
 				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"), artifact, content, tagName, resultSet.getString("comment"));  //NON-NLS
 				tags.add(tag);
@@ -5355,6 +5361,26 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(resultSet);
 			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	/**
+	 * Deletes a row from the reports table in the case database.
+	 *
+	 * @param report A Report data transfer object (DTO) for the row to delete.
+	 * @throws TskCoreException
+	 */
+	public void deleteReport(Report report) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		try {
+			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.DELETE_REPORT);
+			statement.setString(1, String.valueOf(report.getId()));
+			connection.executeUpdate(statement);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error querying reports table", ex);
+		} finally {
 			releaseSharedLock();
 		}
 	}
@@ -5684,7 +5710,7 @@ public class SleuthkitCase {
 			SELECT_ATTRIBUTES_OF_ARTIFACT("SELECT artifact_id, source, context, attribute_type_id, value_type, " //NON-NLS
 					+ "value_byte, value_text, value_int32, value_int64, value_double " //NON-NLS
 					+ "FROM blackboard_attributes WHERE artifact_id = ?"), //NON-NLS
-			SELECT_ARTIFACT_BY_ID("SELECT obj_id, artifact_type_id FROM blackboard_artifacts WHERE artifact_id = ?"), //NON-NLS
+			SELECT_ARTIFACT_BY_ID("SELECT artifact_id ,obj_id,  artifact_type_id FROM blackboard_artifacts WHERE artifact_id = ?"), //NON-NLS
 			SELECT_ARTIFACTS_BY_TYPE("SELECT artifact_id, obj_id FROM blackboard_artifacts " //NON-NLS
 					+ "WHERE artifact_type_id = ?"), //NON-NLS
 			COUNT_ARTIFACTS_OF_TYPE("SELECT COUNT(*) FROM blackboard_artifacts WHERE artifact_type_id = ?"), //NON-NLS
@@ -5760,7 +5786,9 @@ public class SleuthkitCase {
 			SELECT_ARTIFACT_TAG_BY_ID("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id  WHERE blackboard_artifact_tags.tag_id = ?"), //NON-NLS
 			SELECT_ARTIFACT_TAGS_BY_ARTIFACT("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id WHERE blackboard_artifact_tags.artifact_id = ?"), //NON-NLS
 			SELECT_REPORTS("SELECT * FROM reports"), //NON-NLS
-			INSERT_REPORT("INSERT INTO reports (path, crtime, src_module_name, report_name) VALUES (?, ?, ?, ?)");	 //NON-NLS
+			INSERT_REPORT("INSERT INTO reports (path, crtime, src_module_name, report_name) VALUES (?, ?, ?, ?)"), //NON-NLS
+			DELETE_REPORT("DELETE FROM reports WHERE reports.report_id = ?"); //NON-NLS
+
 			private final String sql;
 
 			private PREPARED_STATEMENT(String sql) {

@@ -20,6 +20,7 @@ package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Interface for all datatypes that can be found in the database. Content
@@ -226,6 +227,14 @@ public interface Content extends SleuthkitVisitableItem {
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskCoreException;
+
+	/**
+	 * Get the names of all the hashsets that this content is in.
+	 *
+	 * @return the names of the hashsets that this content is in
+	 * @throwsTskCoreException if critical error occurred within tsk core
+	 */
+	public Set<String> getHashSetNames() throws TskCoreException;
 
 	/**
 	 * Get count of all artifacts associated with this content that have the
