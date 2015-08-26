@@ -86,6 +86,7 @@ enum TSK_ARTIFACT_TYPE {
     TSK_INTERESTING_ARTIFACT_HIT = 35,	///< Any artifact interesting enough that it should be called out in the UI.
 	TSK_GPS_ROUTE = 36,	///< Route based on GPS coordinates
 	TSK_REMOTE_DRIVE = 37, ///< Network drive
+	TSK_FACE_DETECTED = 38, ///< Face detected
     
     /* SEE ABOVE:
     * - KEEP JAVA CODE IN SYNC 
