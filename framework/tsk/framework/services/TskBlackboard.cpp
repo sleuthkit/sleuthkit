@@ -49,6 +49,7 @@ map<int, TskArtifactNames> initializeArtifactTypeMap(){
     retval.insert(pair<int, TskArtifactNames>(TSK_INTERESTING_ARTIFACT_HIT, TskArtifactNames("TSK_INTERESTING_ARTIFACT_HIT", "Interesting Results")));
     retval.insert(pair<int, TskArtifactNames>(TSK_GPS_ROUTE, TskArtifactNames("TSK_GPS_ROUTE", "GPS Route")));
     retval.insert(pair<int, TskArtifactNames>(TSK_REMOTE_DRIVE, TskArtifactNames("TSK_REMOTE_DRIVE", "Remote Drive")));
+	retval.insert(pair<int, TskArtifactNames>(TSK_FACE_DETECTED, TskArtifactNames("TSK_FACE_DETECTED", "Face Detected")));
 
     return retval;
 }
