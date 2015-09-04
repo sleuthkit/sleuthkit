@@ -652,6 +652,7 @@ extern "C" {
         void *a_ptr);
     extern size_t tsk_fs_dir_getsize(const TSK_FS_DIR *);
     extern TSK_FS_FILE *tsk_fs_dir_get(const TSK_FS_DIR *, size_t);
+    extern const TSK_FS_NAME *tsk_fs_dir_get_name(const TSK_FS_DIR * a_fs_dir, size_t a_idx);
     extern void tsk_fs_dir_close(TSK_FS_DIR *);
 
     extern int8_t tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
