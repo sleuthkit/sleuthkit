@@ -3260,8 +3260,9 @@ public class SleuthkitCase {
 
 	/**
 	 * Find and return list of all (abstract) files matching the specific Where
-	 * clause
-	 *
+	 * clause.  
+     * You need to know the database schema to use this, which is outlined on the 
+     * <a href="http://wiki.sleuthkit.org/index.php?title=SQLite_Database_v3_Schema">wiki</a>. You should use enums from org.sleuthkit.datamodel.TskData to make the queries easier to maintain and understand.
 	 * @param sqlWhereClause a SQL where clause appropriate for the desired
 	 * files (do not begin the WHERE clause with the word WHERE!)
 	 * @return a list of AbstractFile each of which satisfy the given WHERE
@@ -3325,8 +3326,9 @@ public class SleuthkitCase {
 	 * files (do not begin the WHERE clause with the word WHERE!)
 	 * @return a list of FsContent each of which satisfy the given WHERE clause
 	 * @throws TskCoreException
+	 * @deprecated	use SleuthkitCase.findAllFilesWhere() instead
 	 */
-	@Deprecated	// use findAllFilesWhere instead
+    @Deprecated
 	public List<FsContent> findFilesWhere(String sqlWhereClause) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
@@ -4095,7 +4097,7 @@ public class SleuthkitCase {
 	 * @throws SQLException if error occurred during the query
 	 * @deprecated use specific datamodel methods that encapsulate SQL layer
 	 */
-	@Deprecated
+    @Deprecated
 	public ResultSet runQuery(String query) throws SQLException {
 		CaseDbConnection connection;
 		try {
@@ -4120,7 +4122,7 @@ public class SleuthkitCase {
 	 * @throws SQLException of closing the query results failed
 	 * @deprecated use specific datamodel methods that encapsulate SQL layer
 	 */
-	@Deprecated
+    @Deprecated
 	public void closeRunQuery(ResultSet resultSet) throws SQLException {
 		final Statement statement = resultSet.getStatement();
 		resultSet.close();
@@ -4399,7 +4401,7 @@ public class SleuthkitCase {
 	 *
 	 * @deprecated
 	 */
-	@Deprecated
+    @Deprecated
 	public interface ErrorObserver {
 
 		void receiveError(String context, String errorMessage);
@@ -4408,10 +4410,10 @@ public class SleuthkitCase {
 	/**
 	 * This is a temporary workaround to avoid an API change.
 	 *
-	 * @deprecated
 	 * @param observer The observer to add.
+     * @deprecated
 	 */
-	@Deprecated
+    @Deprecated
 	public void addErrorObserver(ErrorObserver observer) {
 		errorObservers.add(observer);
 	}
@@ -4419,10 +4421,10 @@ public class SleuthkitCase {
 	/**
 	 * This is a temporary workaround to avoid an API change.
 	 *
-	 * @deprecated
 	 * @param observer The observer to remove.
-	 */
-	@Deprecated
+	 * @deprecated
+     */
+    @Deprecated
 	public void removerErrorObserver(ErrorObserver observer) {
 		int i = errorObservers.indexOf(observer);
 		if (i >= 0) {
@@ -4433,11 +4435,11 @@ public class SleuthkitCase {
 	/**
 	 * This is a temporary workaround to avoid an API change.
 	 *
-	 * @deprecated
 	 * @param context The context in which the error occurred.
 	 * @param errorMessage A description of the error that occurred.
+     * @deprecated
 	 */
-	@Deprecated
+    @Deprecated
 	public void submitError(String context, String errorMessage) {
 		for (ErrorObserver observer : errorObservers) {
 			observer.receiveError(context, errorMessage);
