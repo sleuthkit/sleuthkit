@@ -126,7 +126,7 @@ public class CaseDbConnectionInfo {
 					break;
 			}
 		} catch (Exception ex) {
-			logger.log(Level.INFO, "Bad permissions or bad database connection string."); //NON-NLS
+			logger.log(Level.INFO, "Bad permissions or bad database connection string", ex); //NON-NLS
 			commsEstablished = false;
 		}
 		return commsEstablished;
