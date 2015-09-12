@@ -421,6 +421,36 @@ tsk_fs_dir_get(const TSK_FS_DIR * a_fs_dir, size_t a_idx)
     return fs_file;
 }
 
+/** \ingroup fslib
+ * Return only the name for a file or subdirectory from an open directory.
+ * Useful when wanting to find files of a given name and you don't need the 
+ * additional metadata. 
+ *
+ * @param a_fs_dir Directory to analyze
+ * @param a_idx Index of file in directory to open (0-based)
+ * @returns NULL on error
+ */
+const TSK_FS_NAME *
+tsk_fs_dir_get_name(const TSK_FS_DIR * a_fs_dir, size_t a_idx)
+{
+    if ((a_fs_dir == NULL) || (a_fs_dir->tag != TSK_FS_DIR_TAG)
+        || (a_fs_dir->fs_info == NULL)) {
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr
+        ("tsk_fs_dir_get: called with NULL or unallocated structures");
+        return NULL;
+    }
+    if (a_fs_dir->names_used <= a_idx) {
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("tsk_fs_dir_get: Index (%" PRIuSIZE
+                             ") too large (%" PRIuSIZE ")", a_idx, a_fs_dir->names_used);
+        return NULL;
+    }
+    
+    return &(a_fs_dir->names[a_idx]);
+}
+
+
 #define MAX_DEPTH   128
 #define DIR_STRSZ   4096
 
