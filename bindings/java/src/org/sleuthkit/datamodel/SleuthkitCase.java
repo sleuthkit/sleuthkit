@@ -3495,8 +3495,9 @@ public class SleuthkitCase {
 
 	/**
 	 * Find and return list of all (abstract) files matching the specific Where
-	 * clause
-	 *
+	 * clause.  
+     * You need to know the database schema to use this, which is outlined on the 
+     * <a href="http://wiki.sleuthkit.org/index.php?title=SQLite_Database_v3_Schema">wiki</a>. You should use enums from org.sleuthkit.datamodel.TskData to make the queries easier to maintain and understand.
 	 * @param sqlWhereClause a SQL where clause appropriate for the desired
 	 * files (do not begin the WHERE clause with the word WHERE!)
 	 * @return a list of AbstractFile each of which satisfy the given WHERE
@@ -3562,12 +3563,9 @@ public class SleuthkitCase {
 	 * files (do not begin the WHERE clause with the word WHERE!)
 	 * @return a list of FsContent each of which satisfy the given WHERE clause
 	 * @throws TskCoreException
-	 * @deprecated This method is deprecated. Continuing to use this method
-	 * risks your module not functioning correctly in the future. Use
-	 * findAllFilesWhere(String sqlWhereClause) instead. \ref
-	 * query_database_page
+	 * @deprecated	use SleuthkitCase.findAllFilesWhere() instead
 	 */
-	@Deprecated	// use findAllFilesWhere() instead
+    @Deprecated
 	public List<FsContent> findFilesWhere(String sqlWhereClause) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
@@ -4351,7 +4349,7 @@ public class SleuthkitCase {
 	 * @deprecated Do not use runQuery(), use executeQuery() instead. \ref
 	 * query_database_page
 	 */
-	@Deprecated // Use executeQuery() instead.
+    @Deprecated
 	public ResultSet runQuery(String query) throws SQLException {
 		CaseDbConnection connection;
 		try {
@@ -4378,7 +4376,7 @@ public class SleuthkitCase {
 	 * @deprecated Do not use runQuery() and closeRunQuery(), use executeQuery()
 	 * instead. \ref query_database_page
 	 */
-	@Deprecated // Use executeQuery() instead.
+    @Deprecated
 	public void closeRunQuery(ResultSet resultSet) throws SQLException {
 		final Statement statement = resultSet.getStatement();
 		resultSet.close();
@@ -4672,6 +4670,7 @@ public class SleuthkitCase {
 	 * Add an observer for SleuthkitCase errors.
 	 *
 	 * @param observer The observer to add.
+     * @deprecated
 	 */
 	public static void addErrorObserver(ErrorObserver observer) {
 		sleuthkitCaseErrorObservers.add(observer);
@@ -4695,6 +4694,7 @@ public class SleuthkitCase {
 	 * @param typeOfError The error type. Different clients may handle different
 	 * types of errors.
 	 * @param errorMessage A description of the error that occurred.
+     * @deprecated
 	 */
 	private static void notifyError(Exception ex) {
 		for (ErrorObserver observer : sleuthkitCaseErrorObservers) {
