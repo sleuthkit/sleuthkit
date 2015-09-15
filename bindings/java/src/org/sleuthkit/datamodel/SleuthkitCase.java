@@ -4670,7 +4670,6 @@ public class SleuthkitCase {
 	 * Add an observer for SleuthkitCase errors.
 	 *
 	 * @param observer The observer to add.
-     * @deprecated
 	 */
 	public static void addErrorObserver(ErrorObserver observer) {
 		sleuthkitCaseErrorObservers.add(observer);
