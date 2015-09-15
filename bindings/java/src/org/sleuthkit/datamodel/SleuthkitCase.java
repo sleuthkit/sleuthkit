@@ -4693,7 +4693,6 @@ public class SleuthkitCase {
 	 * @param typeOfError The error type. Different clients may handle different
 	 * types of errors.
 	 * @param errorMessage A description of the error that occurred.
-     * @deprecated
 	 */
 	private static void notifyError(Exception ex) {
 		for (ErrorObserver observer : sleuthkitCaseErrorObservers) {
