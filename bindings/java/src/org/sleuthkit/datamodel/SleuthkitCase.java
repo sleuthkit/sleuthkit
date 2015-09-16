@@ -2443,10 +2443,6 @@ public class SleuthkitCase {
 	 *
 	 */
 	String getFileParentPath(long id, CaseDbTransaction transaction) {
-		if (transaction == null) {
-			return null;
-		}
-
 		CaseDbConnection connection = transaction.getConnection();
 		String parentPath = null;
 		acquireSharedLock();
@@ -2480,10 +2476,6 @@ public class SleuthkitCase {
 	 * @return file name or null
 	 */
 	String getFileName(long id, CaseDbTransaction transaction) {
-		if (transaction == null) {
-			return null;
-		}
-
 		CaseDbConnection connection = transaction.getConnection();
 		String fileName = null;
 		acquireSharedLock();
@@ -2618,10 +2610,6 @@ public class SleuthkitCase {
 	 * @return fs_id or -1 if not present
 	 */
 	private long getFileSystemId(long fileId, CaseDbTransaction transaction) {
-		if (transaction == null) {
-			logger.log(Level.SEVERE, "Error getting file system id for file {0}. Transaction is null.", fileId); //NON-NLS
-			return -1;
-		}
 		return getFileSystemId(fileId, transaction.getConnection());
 	}
 
@@ -2637,10 +2625,6 @@ public class SleuthkitCase {
 	 * @return fs_id or -1 if not present
 	 */
 	private long getFileSystemId(long fileId, CaseDbConnection connection) {
-		if (connection == null) {
-			logger.log(Level.SEVERE, "Error getting file system id for file {0}. Connection is null.", fileId); //NON-NLS
-			return -1;
-		}
 		acquireSharedLock();
 		ResultSet rs = null;
 		long ret = -1;
