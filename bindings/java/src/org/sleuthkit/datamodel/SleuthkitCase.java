@@ -2433,17 +2433,17 @@ public class SleuthkitCase {
 	/**
 	 * Get a parent_path of a file in tsk_files table or null if there is none
 	 *
+	 * Make sure the connection in transaction is used for all database
+	 * interactions called by this method
+	 *
 	 * @param id id of the file to get path for
+	 * @param transaction the SQL transaction to use
+	 *
 	 * @return file path or null
+	 *
 	 */
-	String getFileParentPath(long id) {
-		CaseDbConnection connection;
-		try {
-			connection = connections.getConnection();
-		} catch (TskCoreException ex) {
-			logger.log(Level.SEVERE, "Error getting parent file path for file " + id, ex); //NON-NLS			
-			return null;
-		}
+	String getFileParentPath(long id, CaseDbTransaction transaction) {
+		CaseDbConnection connection = transaction.getConnection();
 		String parentPath = null;
 		acquireSharedLock();
 		ResultSet rs = null;
@@ -2459,7 +2459,6 @@ public class SleuthkitCase {
 			logger.log(Level.SEVERE, "Error getting file parent_path for file " + id, ex); //NON-NLS
 		} finally {
 			closeResultSet(rs);
-			connection.close();
 			releaseSharedLock();
 		}
 		return parentPath;
@@ -2468,17 +2467,16 @@ public class SleuthkitCase {
 	/**
 	 * Get a name of a file in tsk_files table or null if there is none
 	 *
+	 * Make sure the connection in transaction is used for all database
+	 * interactions called by this method
+	 *
 	 * @param id id of the file to get name for
+	 * @param transaction the SQL transaction to use
+	 *
 	 * @return file name or null
 	 */
-	String getFileName(long id) {
-		CaseDbConnection connection;
-		try {
-			connection = connections.getConnection();
-		} catch (TskCoreException ex) {
-			logger.log(Level.SEVERE, "Error getting file name for file " + id, ex); //NON-NLS			
-			return null;
-		}
+	String getFileName(long id, CaseDbTransaction transaction) {
+		CaseDbConnection connection = transaction.getConnection();
 		String fileName = null;
 		acquireSharedLock();
 		ResultSet rs = null;
@@ -2494,7 +2492,6 @@ public class SleuthkitCase {
 			logger.log(Level.SEVERE, "Error getting file parent_path for file " + id, ex); //NON-NLS
 		} finally {
 			closeResultSet(rs);
-			connection.close();
 			releaseSharedLock();
 		}
 		return fileName;
@@ -2587,13 +2584,47 @@ public class SleuthkitCase {
 	 * @return fs_id or -1 if not present
 	 */
 	private long getFileSystemId(long fileId) {
-		CaseDbConnection connection;
+		long retValue = -1;
 		try {
-			connection = connections.getConnection();
+			CaseDbConnection connection = connections.getConnection();
+			retValue = getFileSystemId(fileId, connection);
+			connection.close();
 		} catch (TskCoreException ex) {
 			logger.log(Level.SEVERE, "Error getting file system id for file " + fileId, ex); //NON-NLS			
-			return -1;
 		}
+		return retValue;
+	}
+
+	/**
+	 * Get the object ID of the file system that a file is located in.
+	 *
+	 * Make sure the connection in transaction is used for all database
+	 * interactions called by this method
+	 *
+	 * Note: for FsContent files, this is the real fs for other non-fs
+	 * AbstractFile files, this field is used internally for data source id (the
+	 * root content obj)
+	 *
+	 * @param fileId object id of the file to get fs column id for
+	 * @param connection the database connection to use
+	 * @return fs_id or -1 if not present
+	 */
+	private long getFileSystemId(long fileId, CaseDbTransaction transaction) {
+		return getFileSystemId(fileId, transaction.getConnection());
+	}
+
+	/**
+	 * Get the object ID of the file system that a file is located in.
+	 *
+	 * Note: for FsContent files, this is the real fs for other non-fs
+	 * AbstractFile files, this field is used internally for data source id (the
+	 * root content obj)
+	 *
+	 * @param fileId object id of the file to get fs column id for
+	 * @param connection the database connection to use
+	 * @return fs_id or -1 if not present
+	 */
+	private long getFileSystemId(long fileId, CaseDbConnection connection) {
 		acquireSharedLock();
 		ResultSet rs = null;
 		long ret = -1;
@@ -2612,7 +2643,6 @@ public class SleuthkitCase {
 			logger.log(Level.SEVERE, "Error checking file system id of a file, id = " + fileId, e); //NON-NLS
 		} finally {
 			closeResultSet(rs);
-			connection.close();
 			releaseSharedLock();
 		}
 		return ret;
@@ -2799,16 +2829,19 @@ public class SleuthkitCase {
 	 * Adds a virtual directory to the database and returns a VirtualDirectory
 	 * object representing it.
 	 *
+	 * Make sure the connection in transaction is used for all database
+	 * interactions called by this method
+	 *
 	 * @param parentId the ID of the parent, or 0 if NULL
 	 * @param directoryName the name of the virtual directory to create
-	 * @param trans the transaction in the scope of which the operation is to be
-	 * performed, managed by the caller
+	 * @param transaction the transaction in the scope of which the operation is
+	 * to be performed, managed by the caller
 	 * @return a VirtualDirectory object representing the one added to the
 	 * database.
 	 * @throws TskCoreException
 	 */
-	public VirtualDirectory addVirtualDirectory(long parentId, String directoryName, CaseDbTransaction trans) throws TskCoreException {
-		if (trans == null) {
+	public VirtualDirectory addVirtualDirectory(long parentId, String directoryName, CaseDbTransaction transaction) throws TskCoreException {
+		if (transaction == null) {
 			throw new TskCoreException("Passed null CaseDbTransaction");
 		}
 
@@ -2816,18 +2849,18 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			// Get the parent path.
-			String parentPath = getFileParentPath(parentId);
+			String parentPath = getFileParentPath(parentId, transaction);
 			if (parentPath == null) {
 				parentPath = "/"; //NON-NLS
 			}
-			String parentName = getFileName(parentId);
+			String parentName = getFileName(parentId, transaction);
 			if (parentName != null) {
 				parentPath = parentPath + parentName + "/"; //NON-NLS
 			}
 
 			// Insert a row for the virtual directory into the tsk_objects table.
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
-			CaseDbConnection connection = trans.getConnection();
+			CaseDbConnection connection = transaction.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
 			statement.clearParameters();
 			if (parentId != 0) {
@@ -2851,7 +2884,7 @@ public class SleuthkitCase {
 			statement.setLong(1, newObjId);
 
 			// If the parent is part of a file system, grab its file system ID
-			long parentFs = this.getFileSystemId(parentId);
+			long parentFs = this.getFileSystemId(parentId, transaction);
 			if (parentFs != -1) {
 				statement.setLong(2, parentFs);
 			} else {
@@ -3038,11 +3071,11 @@ public class SleuthkitCase {
 				}
 
 				// get the parent path for the $CarvedFiles directory		
-				String parentPath = getFileParentPath(id);
+				String parentPath = getFileParentPath(id, localTrans);
 				if (parentPath == null) {
 					parentPath = "/"; //NON-NLS
 				}
-				String parentName = getFileName(id);
+				String parentName = getFileName(id, localTrans);
 				if (parentName != null) {
 					parentPath = parentPath + parentName + "/"; //NON-NLS
 				}
@@ -3227,7 +3260,7 @@ public class SleuthkitCase {
 			statement.setLong(1, newObjId);
 
 			// If the parentFile is part of a file system, use its file system object ID.
-			long fsObjId = this.getFileSystemId(parentId);
+			long fsObjId = this.getFileSystemId(parentId, connection);
 			if (fsObjId != -1) {
 				statement.setLong(2, fsObjId);
 			} else {
@@ -3322,6 +3355,8 @@ public class SleuthkitCase {
 	/**
 	 * Creates a new local file object, adds it to database and returns it.
 	 *
+	 * Make sure the connection in transaction is used for all database
+	 * interactions called by this method
 	 *
 	 * todo: at the moment we trust the transaction and don't do anything to
 	 * check it is valid or in the correct state. we should.
@@ -3338,19 +3373,19 @@ public class SleuthkitCase {
 	 * @param isFile whether a file or directory, true if a file
 	 * @param parent parent file object (such as virtual directory, another
 	 * local file, or FsContent type of file)
-	 * @param trans the transaction in the scope of which the operation is to be
-	 * performed, managed by the caller
+	 * @param transaction the transaction in the scope of which the operation is
+	 * to be performed, managed by the caller
 	 * @return newly created derived file object
 	 * @throws TskCoreException exception thrown if the object creation failed
 	 * due to a critical system error
 	 */
 	public LocalFile addLocalFile(String fileName, String localPath,
 			long size, long ctime, long crtime, long atime, long mtime,
-			boolean isFile, AbstractFile parent, CaseDbTransaction trans) throws TskCoreException {
-		if (trans == null) {
+			boolean isFile, AbstractFile parent, CaseDbTransaction transaction) throws TskCoreException {
+		if (transaction == null) {
 			throw new TskCoreException("Passed null CaseDbTransaction");
 		}
-		CaseDbConnection connection = trans.getConnection();
+		CaseDbConnection connection = transaction.getConnection();
 		acquireExclusiveLock();
 		ResultSet resultSet = null;
 		try {
@@ -3495,9 +3530,12 @@ public class SleuthkitCase {
 
 	/**
 	 * Find and return list of all (abstract) files matching the specific Where
-	 * clause.  
-     * You need to know the database schema to use this, which is outlined on the 
-     * <a href="http://wiki.sleuthkit.org/index.php?title=SQLite_Database_v3_Schema">wiki</a>. You should use enums from org.sleuthkit.datamodel.TskData to make the queries easier to maintain and understand.
+	 * clause. You need to know the database schema to use this, which is
+	 * outlined on the
+	 * <a href="http://wiki.sleuthkit.org/index.php?title=SQLite_Database_v3_Schema">wiki</a>.
+	 * You should use enums from org.sleuthkit.datamodel.TskData to make the
+	 * queries easier to maintain and understand.
+	 *
 	 * @param sqlWhereClause a SQL where clause appropriate for the desired
 	 * files (do not begin the WHERE clause with the word WHERE!)
 	 * @return a list of AbstractFile each of which satisfy the given WHERE
@@ -4392,6 +4430,13 @@ public class SleuthkitCase {
 	 * care of releasing the lock. If you do not use a try-with-resources block
 	 * you must call CaseDbQuery.close() once you are done processing the
 	 * results of the query.
+	 *
+	 * Also note that if you use it within a transaction to insert something
+	 * into the database, and then within that same transaction query the
+	 * inserted item from the database, you will likely not see your inserted
+	 * item, as the method uses new connections for each execution. With this
+	 * method, you must close your transaction before successfully querying for
+	 * newly-inserted items.
 	 *
 	 * @param query The query string to execute.
 	 * @return A CaseDbQuery instance.
