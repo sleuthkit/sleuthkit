@@ -2598,7 +2598,7 @@ public class SleuthkitCase {
 			retValue = getFileSystemId(fileId, connection);
 			connection.close();
 		} catch (TskCoreException ex) {
-			logger.log(Level.SEVERE, "Error getting file system id for file " + fileId, ex); //NON-NLS
+			logger.log(Level.SEVERE, "Error getting file system id for file " + fileId, ex); //NON-NLS			
 		}
 		return retValue;
 	}
@@ -3619,7 +3619,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 * @deprecated	use SleuthkitCase.findAllFilesWhere() instead
 	 */
-	@Deprecated
+    @Deprecated
 	public List<FsContent> findFilesWhere(String sqlWhereClause) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
@@ -4403,7 +4403,7 @@ public class SleuthkitCase {
 	 * @deprecated Do not use runQuery(), use executeQuery() instead. \ref
 	 * query_database_page
 	 */
-	@Deprecated
+    @Deprecated
 	public ResultSet runQuery(String query) throws SQLException {
 		CaseDbConnection connection;
 		try {
@@ -4430,7 +4430,7 @@ public class SleuthkitCase {
 	 * @deprecated Do not use runQuery() and closeRunQuery(), use executeQuery()
 	 * instead. \ref query_database_page
 	 */
-	@Deprecated
+    @Deprecated
 	public void closeRunQuery(ResultSet resultSet) throws SQLException {
 		final Statement statement = resultSet.getStatement();
 		resultSet.close();
@@ -4731,7 +4731,6 @@ public class SleuthkitCase {
 	 * Add an observer for SleuthkitCase errors.
 	 *
 	 * @param observer The observer to add.
-	 * @deprecated
 	 */
 	public static void addErrorObserver(ErrorObserver observer) {
 		sleuthkitCaseErrorObservers.add(observer);
@@ -4755,7 +4754,6 @@ public class SleuthkitCase {
 	 * @param typeOfError The error type. Different clients may handle different
 	 * types of errors.
 	 * @param errorMessage A description of the error that occurred.
-	 * @deprecated
 	 */
 	private static void notifyError(Exception ex) {
 		for (ErrorObserver observer : sleuthkitCaseErrorObservers) {
