@@ -4,7 +4,7 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
 
-AC_INIT(sleuthkit, 4.1.3)
+AC_INIT(sleuthkit, 4.2.0)
 m4_include([m4/ax_pthread.m4])
 dnl include the version from 1.12.1. This will work for 
 m4_include([m4/cppunit.m4])
@@ -84,11 +84,18 @@ AX_PTHREAD([
     LDFLAGS="$LDFLAGS $PTHREAD_CFLAGS"
     CC="$PTHREAD_CC"],[])
 
-dnl Not all compilers include /usr/local in the include and link path
-if test -d /usr/local/include; then
+case "$host" in
+*-*-mingw*)
+  dnl Adding the native /usr/local is wrong for cross-compiling
+  ;;
+*)
+  dnl Not all compilers include /usr/local in the include and link path
+  if test -d /usr/local/include; then
     CPPFLAGS="$CPPFLAGS -I/usr/local/include"
     LDFLAGS="$LDFLAGS -L/usr/local/lib"
-fi
+  fi
+  ;;
+esac
 
 dnl Add enable/disable option
 AC_ARG_ENABLE([java],
@@ -179,6 +186,13 @@ AS_IF(
     [AC_MSG_NOTICE([NOT checking for zlib because with_zlib is no])]
 )
 AS_IF([test "x$ac_cv_lib_z_inflate" = "xyes"], [ax_zlib=yes], [ax_zlib=no])
+
+AM_CONDITIONAL([X_ZLIB],[test "x$with_zlib" != "xno" && test "x$with_zlib" != "xyes"])
+AS_IF([test "x$with_zlib" != "xno"],
+   [Z_PATH="${with_zlib}/lib"],
+   [AC_MSG_NOTICE([failed to make Z_PATH])]
+)
+AC_SUBST(Z_PATH, $Z_PATH)
 
 dnl needed for sqllite
 AC_CHECK_LIB(dl, dlopen)
@@ -273,6 +287,23 @@ AC_CONFIG_COMMANDS([tsk/tsk_incs.h],
     ac_cv_header_sys_param_h=$ac_cv_header_sys_param_h
     ax_pthread_ok=$ax_pthread_ok])
 
+AC_MSG_CHECKING([if libtool needs -no-undefined flag to build shared libraries])
+case "$host" in
+*-*-mingw*)
+  dnl Add -no-undefined flag to LDFLAGS to let libtool build DLLs.
+  AC_MSG_RESULT([yes])
+  LIBTSK_LDFLAGS="-no-undefined"
+  AC_SUBST([LIBTSK_LDFLAGS])
+  ;;
+  *)
+  dnl No additional flags needed.
+  AC_MSG_RESULT([no])
+  ;;
+esac
+
+dnl Dependencies for fiwalk
+AC_CHECK_FUNCS([getline])
+AC_SEARCH_LIBS(regexec, [regex], , AC_MSG_ERROR([missing regex]))
 
 AC_CONFIG_FILES([
     Makefile

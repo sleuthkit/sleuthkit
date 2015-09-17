@@ -324,7 +324,6 @@ tsk_fs_attr_set_run(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
         return 0;
     }
 
-
     /*
      * If this is not in the begining, then we need to make a filler 
      * to account for the cluster numbers we haven't seen yet
@@ -877,7 +876,6 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
                     (off > fs_attr->nrd.initsize)) {
                     myflags = fs->block_getflags(fs, 0);
                     myflags |= TSK_FS_BLOCK_FLAG_SPARSE;
-
                     if ((a_flags & TSK_FS_FILE_WALK_FLAG_NOSPARSE) == 0) {
                         retval =
                             a_action(fs_attr->fs_file, off, 0,
@@ -972,10 +970,12 @@ tsk_fs_attr_walk(const TSK_FS_ATTR * a_fs_attr,
     }
     // resident data
     if (a_fs_attr->flags & TSK_FS_ATTR_RES) {
+		fflush(stderr);
         return tsk_fs_attr_walk_res(a_fs_attr, a_flags, a_action, a_ptr);
     }
     // non-resident data
     else if (a_fs_attr->flags & TSK_FS_ATTR_NONRES) {
+		fflush(stderr);
         return tsk_fs_attr_walk_nonres(a_fs_attr, a_flags, a_action,
             a_ptr);
     }

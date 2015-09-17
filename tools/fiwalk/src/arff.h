@@ -32,8 +32,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#include "outfile.h"
-
 using namespace std;
 #include <vector>
 #include <stdlib.h>

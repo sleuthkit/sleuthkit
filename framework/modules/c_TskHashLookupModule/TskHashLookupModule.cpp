@@ -72,7 +72,7 @@ static TSK_HDB_INFO* openHashDatabaseIndexFile(const std::string& hashDatabasePa
     }
 
     // Is there an MD5 index?
-    if (!tsk_hdb_hasindex(hashDBInfo, TSK_HDB_HTYPE_MD5_ID)) {
+    if (!tsk_hdb_has_idx(hashDBInfo, TSK_HDB_HTYPE_MD5_ID)) {
         std::wstringstream msg;
         msg << L"TskHashLookupModule::initialize - failed to find MD5 index for '" << hashDatabasePath.c_str() << L"'";
         LOGERROR(msg.str());

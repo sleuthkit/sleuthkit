@@ -1,5 +1,5 @@
 # File that we want to include in the dist
-EXTRA_DIST = README_win32.txt README.txt INSTALL.txt ChangeLog.txt NEWS.txt \
+EXTRA_DIST = README_win32.txt README.md INSTALL.txt ChangeLog.txt NEWS.txt \
     licenses/GNU-COPYING licenses/IBM-LICENSE licenses/cpl1.0.txt \
     m4/*.m4 \
     docs/README.txt \
@@ -78,7 +78,8 @@ nobase_include_HEADERS = tsk/libtsk.h tsk/tsk_incs.h \
     tsk/vs/tsk_mac.h tsk/vs/tsk_sun.h \
     tsk/fs/tsk_fs.h tsk/fs/tsk_ffs.h tsk/fs/tsk_ext2fs.h tsk/fs/tsk_fatfs.h \
     tsk/fs/tsk_ntfs.h tsk/fs/tsk_iso9660.h tsk/fs/tsk_hfs.h tsk/fs/tsk_yaffs.h \
-    tsk/hashdb/tsk_hashdb.h tsk/auto/tsk_auto.h
+    tsk/fs/tsk_exfatfs.h tsk/fs/tsk_fatxxfs.h \
+    tsk/hashdb/tsk_hashdb.h tsk/auto/tsk_auto.h tsk/auto/sqlite3.h
 
 nobase_dist_data_DATA = tsk/sorter/default.sort tsk/sorter/freebsd.sort \
     tsk/sorter/images.sort tsk/sorter/linux.sort tsk/sorter/openbsd.sort \

@@ -75,12 +75,30 @@ public:
     uint8_t digest[SIZE];
 };
 
-static int hexcharvals__[256];
-static int hexcharvals_init__ = 0;
-
 template<typename T> 
 class hash__:public T
 {
+    static uint8_t hexcharval(char v){
+        switch(v){
+        case '0': return 0;
+        case '1': return 1;
+        case '2': return 2;
+        case '3': return 3;
+        case '4': return 4;
+        case '5': return 5;
+        case '6': return 6;
+        case '7': return 7;
+        case '8': return 8;
+        case '9': return 9;
+        case 'a': case 'A': return 0x0a;
+        case 'b': case 'B': return 0x0b;
+        case 'c': case 'C': return 0x0c;
+        case 'd': case 'D': return 0x0d;
+        case 'e': case 'E': return 0x0e;
+        case 'f': case 'F': return 0x0f;
+        };
+        return 0;
+    }
 public:
     hash__(){
     }
@@ -116,21 +134,8 @@ public:
     static int hex2bin(uint8_t *binbuf,size_t binbuf_size,const char *hex)
     {
 	int bits = 0;
-	if(hexcharvals_init__==0){
-	    /* Need to initialize this */
-	    int i;
-	    for(i=0;i<10;i++){
-		hexcharvals__['0'+i] = i;
-	    }
-	    for(i=10;i<16;i++){
-		hexcharvals__['A'+i-10] = i;
-		hexcharvals__['a'+i-10] = i;
-	    }
-	    hexcharvals_init__ = 1;
-	}
 	while(hex[0] && hex[1] && binbuf_size>0){
-	    *binbuf++ = ((hexcharvals__[(uint8_t)hex[0]]<<4) |
-			 hexcharvals__[(uint8_t)hex[1]]);
+	    *binbuf++ = (hexcharval(hex[0])<<4) | hexcharval(hex[1]);
 	    hex  += 2;
 	    bits += 8;
 	    binbuf_size -= 1;
@@ -265,24 +270,6 @@ public:
     /** Compute a sha1 from a buffer and return the hash */
     static hash__<T>  hash_buf(const uint8_t *buf,size_t bufsize){
 	/* First time through find the SHA1 of 512 NULLs */
-#if 0
-	if(sha1_ctr==0){
-	    uint8_t b2[512];
-	    EVP_MD_CTX ctx2;
-	    unsigned int len = sizeof(sha1_512nulls);
-	    memset(b2,0,sizeof(b2));
-	    EVP_MD_CTX_init(&ctx2);
-	    EVP_DigestInit_ex(&ctx2, EVP_sha1(), NULL);
-	    EVP_DigestUpdate(&ctx2,b2,sizeof(b2));
-	    EVP_DigestFinal(&ctx2,sha1_512nulls,&len);
-	    sha1_ctr++;
-	}
-
-	/* If the input is 512 bytes long and all NULLs, use our SHA1 of 512 NULLs */
-	if(bufsize==512 && iszero(buf,bufsize)){
-	    return sha1_t(sha1_512nulls);
-	}
-#endif
 	hash_generator__ g;
 	g.update(buf,bufsize);
 	return g.final();

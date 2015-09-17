@@ -209,7 +209,7 @@ main(int argc, char **argv1)
     }
 
     /* We need at least one more argument */
-    if (OPTIND > argc) {
+    if (OPTIND >= argc) {
         tsk_fprintf(stderr,
             "Missing image name\n");
         usage();

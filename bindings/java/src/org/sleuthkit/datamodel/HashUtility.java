@@ -27,26 +27,26 @@ import java.util.logging.Logger;
 import java.io.InputStream;
 
 /**
- * Utility to calculate a hash for FsContent and store in tsk database
+ * Utility to calculate a hash for FsContent and store in TSK database
  */
-public class Hash {
+public class HashUtility {
 
 	private final static int BUFFER_SIZE = 16 * 1024;
-	private final byte[] buffer = new byte[BUFFER_SIZE];
 
 	/**
-	 * Generate the md5 hash for the given FsContent and store it in the
+	 * Calculate the MD5 hash for the given FsContent and store it in the
 	 * database
 	 *
 	 * @param file file object whose md5 hash we want to calculate
 	 * @return md5 of the given FsContent object
 	 */
-	public String calculateMd5(AbstractFile file) throws IOException {
+	static public String calculateMd5(AbstractFile file) throws IOException {
 		String hashText = "";
 		InputStream in = new ReadContentInputStream(file);
-		Logger logger = Logger.getLogger(Hash.class.getName());
+		Logger logger = Logger.getLogger(HashUtility.class.getName());
 		try {
-			MessageDigest md = MessageDigest.getInstance("md5");
+			byte[] buffer = new byte[BUFFER_SIZE];
+			MessageDigest md = MessageDigest.getInstance("md5"); //NON-NLS
 			int len = in.read(buffer);
 			while (len != -1) {
 				md.update(buffer, 0, len);
@@ -61,12 +61,24 @@ public class Hash {
 			}
 			file.getSleuthkitCase().setMd5Hash(file, hashText);
 		} catch (NoSuchAlgorithmException ex) {
-			logger.log(Level.WARNING, "No algorithm known as 'md5'", ex);
+			logger.log(Level.WARNING, "No algorithm known as 'md5'", ex); //NON-NLS
 		} catch (TskCoreException ex) {
-			logger.log(Level.WARNING, "Error updating content's md5 in database", ex);
+			logger.log(Level.WARNING, "Error updating content's md5 in database", ex); //NON-NLS
 		} finally {
 			in.close();
 		}
 		return hashText;
+	}
+
+	/**
+	 * Determine if the passed in Hash value is that for no data (i.e. an empty
+	 * file). Looking these values up or correlating on them causes lots of
+	 * false positives.
+	 *
+	 * @param md5
+	 * @return True if it is the empty hash value
+	 */
+	public static boolean isNoDataMd5(String md5) {
+		return md5.toLowerCase().equals("d41d8cd98f00b204e9800998ecf8427e"); //NON-NLS
 	}
 }

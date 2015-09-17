@@ -39,11 +39,11 @@
  * 3.1.2b1 would be 0x03010201.  Snapshot from Jan 2, 2003 would be
  * 0xFF030102.
  * See TSK_VERSION_STR for string form. */
-#define TSK_VERSION_NUM 0x040103ff
+#define TSK_VERSION_NUM 0x040200ff
 
 /** Version of code in string form. See TSK_VERSION_NUM for
  * integer form. */
-#define TSK_VERSION_STR "4.1.3"
+#define TSK_VERSION_STR "4.2.0"
 
 
 /* include the TSK-specific header file that we created in autoconf
@@ -83,14 +83,14 @@ extern "C" {
 #endif
 
     extern char *tsk_error_get_errstr();
-    extern void tsk_error_set_errstr(char const *format,
+    extern void tsk_error_set_errstr(const char *format,
         ...) TSK_ERROR_FORMAT_ATTRIBUTE(1, 2);
-    extern void tsk_error_vset_errstr(char const *format, va_list args);
+    extern void tsk_error_vset_errstr(const char *format, va_list args);
     extern char *tsk_error_get_errstr2();
-    extern void tsk_error_set_errstr2(char const *format,
+    extern void tsk_error_set_errstr2(const char *format,
         ...) TSK_ERROR_FORMAT_ATTRIBUTE(1, 2);
-    extern void tsk_error_vset_errstr2(char const *format, va_list args);
-    extern void tsk_error_errstr2_concat(char const *format,
+    extern void tsk_error_vset_errstr2(const char *format, va_list args);
+    extern void tsk_error_errstr2_concat(const char *format,
         ...) TSK_ERROR_FORMAT_ATTRIBUTE(1, 2);
 
     /** Return a human-readable form of tsk_error_get_errno **/
@@ -366,7 +366,8 @@ extern "C" {
 #define TSK_ERR_HDB_PROC        (TSK_ERR_HDB | 9)
 #define TSK_ERR_HDB_OPEN        (TSK_ERR_HDB | 10)
 #define TSK_ERR_HDB_CORRUPT     (TSK_ERR_HDB | 11)
-#define TSK_ERR_HDB_MAX		12
+#define TSK_ERR_HDB_UNSUPFUNC     (TSK_ERR_HDB | 11)
+#define TSK_ERR_HDB_MAX		13
 
 #define TSK_ERR_AUTO_DB (TSK_ERR_AUTO | 0)
 #define TSK_ERR_AUTO_CORRUPT (TSK_ERR_AUTO | 1)
@@ -382,6 +383,7 @@ extern "C" {
      * Flag that identifies the endian ordering of the data being read.
      */
     typedef enum {
+        TSK_UNKNOWN_ENDIAN = 0x00, ///< Endianness is unknown
         TSK_LIT_ENDIAN = 0x01,  ///< Data is in little endian
         TSK_BIG_ENDIAN = 0x02   ///< Data is in big endian
     } TSK_ENDIAN_ENUM;

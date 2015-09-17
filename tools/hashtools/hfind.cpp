@@ -2,11 +2,10 @@
  * The Sleuth Kit
  *
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
- * Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
+ * Copyright (c) 2003-2013 Brian Carrier.  All rights reserved
  *
  * This software is distributed under the Common Public License 1.0
  */
-
 
 /**
  * \file hfind.c
@@ -17,51 +16,54 @@
 
 static TSK_TCHAR *progname;
 
+/**
+ * Print usage instructions.
+ */
 static void
 usage()
 {
     TFPRINTF(stderr,
              _TSK_T
-             ("usage: %s [-eqV] [-f lookup_file] [-i db_type] db_file [hashes]\n"),
+             ("usage: %s [-eqVa] [-c] [-f lookup_file] [-i db_type] db_file [hashes]\n"),
              progname);
     tsk_fprintf(stderr,
                 "\t-e: Extended mode - where values other than just the name are printed\n");
     tsk_fprintf(stderr,
                 "\t-q: Quick mode - where a 1 is printed if it is found, else 0\n");
     tsk_fprintf(stderr, "\t-V: Print version to STDOUT\n");
+    tsk_fprintf(stderr, "\t-c db_name: Create new database with the given name.\n");
+    tsk_fprintf(stderr, "\t-a: Add given hashes to the database.\n");
     tsk_fprintf(stderr,
                 "\t-f lookup_file: File with one hash per line to lookup\n");
     tsk_fprintf(stderr,
                 "\t-i db_type: Create index file for a given hash database type\n");
     tsk_fprintf(stderr,
-                "\tdb_file: The location of the original hash database\n");
+                "\tdb_file: The path of the hash database, must have .kdb extension for -c option\n");
     tsk_fprintf(stderr,
                 "\t[hashes]: hashes to lookup (STDIN is used otherwise)\n");
-    tsk_fprintf(stderr, "\n\tSupported types: %s\n",
+    tsk_fprintf(stderr, "\n\tSupported index types: %s\n",
                 TSK_HDB_DBTYPE_SUPPORT_STR);
-
     exit(1);
 }
 
-
 /**
- * lookup callback to print the names of the files for each hash that is found
+ * Lookup callback to print the names of the files for each hash that is found.
  */
 static TSK_WALK_RET_ENUM
 lookup_act(TSK_HDB_INFO * hdb_info, const char *hash, const char *name, void *ptr)
 {
-    printf("%s\t%s\n", hash, name);
+    tsk_fprintf(stdout, "%s\t%s\n", hash, (NULL != name) ? name : "File name not available");
     return TSK_WALK_CONT;
 }
 
 /**
- * Print the message if a hash is not found.  Placed here so that it is easier to change
+ * Print a message if a hash is not found.  Placed here so that it is easier to change
  * output format for hits and misses.
  */
 static void
 print_notfound(char *hash)
 {
-    printf("%s\tHash Not Found\n", hash);
+    tsk_fprintf(stdout, "%s\tHash Not Found\n", hash);
 }
 
 int
@@ -69,16 +71,19 @@ main(int argc, char ** argv1)
 {
     int ch;
     TSK_TCHAR *idx_type = NULL;
-    TSK_TCHAR *db_file = NULL, *lookup_file = NULL;
+    TSK_TCHAR *db_file = NULL;
+    TSK_TCHAR *lookup_file = NULL;
     unsigned int flags = 0;
     TSK_HDB_INFO *hdb_info;
     TSK_TCHAR **argv;
-    
+    bool create = false;
+    bool addHash = false;
+
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
     argv = CommandLineToArgvW(GetCommandLineW(), &argc);
     if( argv == NULL) {    
-        fprintf(stderr, "Error getting wide arguments\n");
+        tsk_fprintf(stderr, "Error getting wide arguments\n");
         exit(1);
     }
 #else
@@ -88,7 +93,7 @@ main(int argc, char ** argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("ef:i:qV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("cef:i:aqV"))) > 0) {
         switch (ch) {
         case _TSK_T('e'):
             flags |= TSK_HDB_FLAG_EXT;
@@ -100,6 +105,14 @@ main(int argc, char ** argv1)
 
         case _TSK_T('i'):
             idx_type = OPTARG;
+            break;
+
+        case _TSK_T('c'):
+            create = true;
+            break;
+
+        case _TSK_T('a'):
+            addHash = true;
             break;
 
         case _TSK_T('q'):
@@ -114,6 +127,11 @@ main(int argc, char ** argv1)
             usage();
         }
     }
+    
+    if ((addHash) && ((idx_type != NULL) || (create))) {
+        tsk_fprintf(stderr, "-a cannot be specified with -c or -i\n");
+        usage();
+    }
 
     if (OPTIND + 1 > argc) {
         tsk_fprintf(stderr,
@@ -123,42 +141,82 @@ main(int argc, char ** argv1)
 
     db_file = argv[OPTIND++];
 
+    // Running in create mode (-c option). Make a new hash database and exit.
+    if (create) {
+        if (idx_type != NULL) {
+            tsk_fprintf(stderr, "-c and -i cannot be specified at same time\n");
+            usage();
+        }
+        
+        TSK_TCHAR *ext = TSTRRCHR(db_file, _TSK_T('.'));    
+        if ((NULL != ext) && (TSTRLEN(ext) >= 4) && (TSTRCMP(ext, _TSK_T(".kdb")) == 0)) {
+            if (0 == tsk_hdb_create(db_file)) {
+                tsk_fprintf(stdout, "New database %"PRIttocTSK" created\n", db_file);
+                return 0;
+            }
+            else {
+                tsk_fprintf(stderr, "Failed to create new database %"PRIttocTSK"\n", db_file);
+                return 1;
+            }        
+        }
+        else {
+            tsk_fprintf(stderr, "New database path must end in .kdb extension\n");
+            return 1;
+        }
+    }
+        
+    // Opening an existing database.    
     if ((hdb_info = tsk_hdb_open(db_file, TSK_HDB_OPEN_NONE)) == NULL) {
         tsk_error_print(stderr);
         return 1;
     }
+    
+    // Now that the database is open and its type is known, if running in add hashes mode (-a option)
+    // see if it takes updates.
+    if (addHash && !tsk_hdb_accepts_updates(hdb_info)) {
+        tsk_fprintf(stderr, "-a option specified, but the specified database does not allow hashes to be added\n");
+        usage();
+    }
 
-    /* What mode are we going to run in 
-     * 
-     * Are we going to make an index? */
+    // Running in indexing mode (-i option). Create an index file and exit.
     if (idx_type != NULL) {
-        /* Get the flags right */
         if (lookup_file != NULL) {
-            fprintf(stderr, "'-f' flag can't be used with '-i'\n");
-            usage();
-        }
-        if (flags & TSK_HDB_FLAG_QUICK) {
-            fprintf(stderr, "'-q' flag can't be used with '-i'\n");
-            usage();
-        }
-        if (flags & TSK_HDB_FLAG_EXT) {
-            fprintf(stderr, "'-e' flag can't be used with '-i'\n");
+            tsk_fprintf(stderr, "'-f' flag can't be used with '-i'\n");
             usage();
         }
 
-        if (tsk_hdb_makeindex(hdb_info, idx_type)) {
+        if (flags & TSK_HDB_FLAG_QUICK) {
+            tsk_fprintf(stderr, "'-q' flag can't be used with '-i'\n");
+            usage();
+        }
+
+        if (flags & TSK_HDB_FLAG_EXT) {
+            tsk_fprintf(stderr, "'-e' flag can't be used with '-i'\n");
+            usage();
+        }
+
+        if (!tsk_hdb_uses_external_indexes(hdb_info)) {
+            tsk_fprintf(stderr, "Database does not use external indexes, can't be used with '-i'\n");
+        }
+
+        if (tsk_hdb_is_idx_only(hdb_info)) {
+            tsk_fprintf(stderr, "Database is index only, can be used for look ups, but can't be used with '-i'\n");
+        }
+
+        if (tsk_hdb_make_index(hdb_info, idx_type)) {
             tsk_error_print(stderr);
             tsk_hdb_close(hdb_info);
             return 1;
         }
-        printf("Index Created\n");
+        
+        tsk_fprintf(stdout, "Index created\n");
         tsk_hdb_close(hdb_info);
         return 0;
     }
 
-    /* Do some hash lookups 
-     *
-     * Check if the values were passed on the command line or via a file */
+    /* Either lookup hash values or add them to DB.
+     * Check if the values were passed on the command line or via a file 
+     */
     if (OPTIND < argc) {
 
         if ((OPTIND + 1 < argc) && (flags & TSK_HDB_FLAG_QUICK)) {
@@ -191,19 +249,33 @@ main(int argc, char ** argv1)
             }
             htmp[i] = '\0';
 
-            /* Perform lookup */
-            retval =
-                tsk_hdb_lookup_str(hdb_info, (const char *)htmp, 
-                        (TSK_HDB_FLAG_ENUM)flags, lookup_act, NULL);
-            if (retval == -1) {
-                tsk_error_print(stderr);
-                return 1;
+            if (addHash) {
+                // Write a new hash to the database/index, if it's updateable
+                //@todo support sha1 and sha2-256
+                retval = tsk_hdb_add_entry(hdb_info, NULL, (const char *)htmp, NULL, NULL, NULL);
+                if (retval == 1) {
+                    printf("There was an error adding the hash.\n");
+                    tsk_error_print(stderr);
+                    return 1;
+                }
+                else if (retval == 0) {
+                    printf("Hash %s added.\n", htmp);
+                }
             }
-            if (flags & TSK_HDB_FLAG_QUICK) {
-                printf("%d\n", retval);
-            }
-            else if (retval == 0) {
-                print_notfound(htmp);
+            else {
+                /* Perform lookup */
+                retval = tsk_hdb_lookup_str(hdb_info, (const char *)htmp, 
+                         (TSK_HDB_FLAG_ENUM)flags, lookup_act, NULL);
+                if (retval == -1) {
+                    tsk_error_print(stderr);
+                    return 1;
+                }
+                if (flags & TSK_HDB_FLAG_QUICK) {
+                    printf("%d\n", retval);
+                }
+                else if (retval == 0) {
+                    print_notfound(htmp);
+                }
             }
             OPTIND++;
         }

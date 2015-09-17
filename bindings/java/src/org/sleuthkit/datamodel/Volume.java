@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.ResourceBundle;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,13 +27,14 @@ import java.util.List;
  * Populated based on data in database.
  */
 public class Volume extends AbstractContent {
-	
+
 	private long addr;
-	private long start; //in sectors, relative to volume system start
-	private long length; //in sectors
+	private long startSector; //in sectors, relative to volume system start
+	private long lengthInSectors; //in sectors
 	private long flags;
 	private String desc;
 	private volatile long volumeHandle = 0;
+	private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	/**
 	 * Constructor to create the data object mapped from tsk_vs_parts entry
@@ -40,21 +42,21 @@ public class Volume extends AbstractContent {
 	 * @param db database object
 	 * @param obj_id
 	 * @param addr
-	 * @param start	in sectors, relative to start of VS
-	 * @param length in sectors
+	 * @param startSector starting sector, relative to start of VS
+	 * @param lengthInSectors
 	 * @param flags
 	 * @param desc
 	 */
-	protected Volume(SleuthkitCase db, long obj_id, long addr, long start, long length, long flags, String desc) {
-		super(db, obj_id, "vol" + Long.toString(addr));
+	protected Volume(SleuthkitCase db, long obj_id, long addr, long startSector, long lengthInSectors, long flags, String desc) {
+		super(db, obj_id, "vol" + Long.toString(addr)); //NON-NLS
 		this.addr = addr;
-		this.start = start;
-		this.length = length;
+		this.startSector = startSector;
+		this.lengthInSectors = lengthInSectors;
 		this.flags = flags;
 		if (!desc.equals("")) {
 			this.desc = desc;
 		} else {
-			this.desc = "Unknown";
+			this.desc = bundle.getString("Volume.desc.text");
 		}
 	}
 
@@ -63,7 +65,7 @@ public class Volume extends AbstractContent {
 		synchronized (this) {
 			Content myParent = getParent();
 			if (!(myParent instanceof VolumeSystem)) {
-				throw new TskCoreException("This volume's parent should be a VolumeSystem, but it's not.");
+				throw new TskCoreException(bundle.getString("Volume.read.exception.msg1.text"));
 			}
 			VolumeSystem parentVs = (VolumeSystem) myParent;
 			// read from the volume
@@ -78,7 +80,7 @@ public class Volume extends AbstractContent {
 	@Override
 	public void close() {
 		if (volumeHandle != 0) {
-			synchronized(this) {
+			synchronized (this) {
 				if (volumeHandle != 0) {
 					SleuthkitJNI.closeVs(volumeHandle);
 					volumeHandle = 0;
@@ -86,7 +88,7 @@ public class Volume extends AbstractContent {
 			}
 		}
 	}
-	
+
 	@Override
 	public void finalize() throws Throwable {
 		try {
@@ -95,13 +97,10 @@ public class Volume extends AbstractContent {
 			super.finalize();
 		}
 	}
-	
-	
 
 	@Override
 	public long getSize() {
-		// size of the volume
-		return length;
+		return lengthInSectors * 512;
 	}
 
 	@Override
@@ -109,7 +108,7 @@ public class Volume extends AbstractContent {
 		String uniquePath = "";
 		String name = getName();
 		if (!name.isEmpty()) {
-			uniquePath = "/vol_" + name;
+			uniquePath = "/vol_" + name; //NON-NLS
 		}
 
 		Content myParent = getParent();
@@ -122,7 +121,8 @@ public class Volume extends AbstractContent {
 	//methods get exact data from database. could be manipulated to get more
 	//meaningful data.
 	/**
-	 * get the unique partition address within this volume system (assigned by The Sleuth Kit)
+	 * get the unique partition address within this volume system (assigned by
+	 * The Sleuth Kit)
 	 *
 	 * @return partition address in volume system
 	 */
@@ -131,12 +131,13 @@ public class Volume extends AbstractContent {
 	}
 
 	/**
-	 * get the starting sector address of this volume relative to start of the volume system
+	 * get the starting sector address of this volume relative to start of the
+	 * volume system
 	 *
 	 * @return starting address
 	 */
 	public long getStart() {
-		return start;
+		return startSector;
 	}
 
 	/**
@@ -145,7 +146,7 @@ public class Volume extends AbstractContent {
 	 * @return length
 	 */
 	public long getLength() {
-		return length;
+		return lengthInSectors;
 	}
 
 	/**
@@ -167,7 +168,8 @@ public class Volume extends AbstractContent {
 	}
 
 	/**
-	 * get the description. This is set by the volume system and doesn't exist for all volumes.
+	 * get the description. This is set by the volume system and doesn't exist
+	 * for all volumes.
 	 *
 	 * @return description
 	 */
@@ -230,10 +232,10 @@ public class Volume extends AbstractContent {
 		long allFlag = TskData.TSK_VS_PART_FLAG_ENUM.TSK_VS_PART_FLAG_ALL.getVsFlag();
 
 		if ((vsFlag & allocFlag) == allocFlag) {
-			result = "Allocated";
+			result = bundle.getString("Volume.vsFlagToString.allocated");
 		}
 		if ((vsFlag & unallocFlag) == unallocFlag) {
-			result = "Unallocated";
+			result = bundle.getString("Volume.vsFlagToString.unallocated");
 		}
 		// ... add more code here if needed
 
@@ -260,11 +262,6 @@ public class Volume extends AbstractContent {
 		return getSleuthkitCase().getVolumeChildrenIds(this);
 	}
 
-	@Override
-	public Image getImage() throws TskCoreException {
-		return getParent().getImage();
-	}
-
 	/**
 	 * @return a list of FileSystem that are direct descendents of this Image.
 	 * @throws TskCoreException
@@ -284,6 +281,6 @@ public class Volume extends AbstractContent {
 
 	@Override
 	public String toString(boolean preserveState) {
-		return super.toString(preserveState) + "Volume [\t" + "addr " + addr + "\t" + "desc " + desc + "\t" + "flags " + flags + "\t" + "length " + length + "\t" + "start " + start + "]\t";
+		return super.toString(preserveState) + "Volume [\t" + "addr " + addr + "\t" + "desc " + desc + "\t" + "flags " + flags + "\t" + "length " + lengthInSectors + "\t" + "start " + startSector + "]\t"; //NON-NLS
 	}
 }

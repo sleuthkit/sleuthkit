@@ -41,6 +41,9 @@
         <available file="./jni/.libs/libtsk_jni.so" property="tsk_so.present"/>
 		<available file="./jni/.libs/libtsk_jni.a" property="present"/>
 		<fail unless="present" message="Run make install on The Sleuthkit."/>
+   	<!-- Default location to find zlib and libewf. Overwritten by properties in makefile -->	
+	<property name="lib.z.path" value="/usr/lib"/>
+	<property name="lib.ewf.path" value="/usr/local/lib"/>
     </target>
 
     <!-- OS X -->
@@ -68,6 +71,8 @@
 	<target name="copyLinuxLibs" depends="testTSKLibs" if="tsk_so.present">
 		<property environment="env"/>
 		<property name="jni.so" location="${basedir}/jni/.libs/libtsk_jni.so" />
+		<property name="zlib.so" location="${lib.z.path}/libz.so"/>
+		<property name="libewf.so" location="${lib.ewf.path}/libewf.so"/>
 		<!-- x86_64 -->
 		<copy file="${jni.so}" tofile="${x86_64}/linux/libtsk_jni.so" overwrite="true"/>
 		<!-- amd64 -->

@@ -98,7 +98,7 @@ typedef struct _TSK_DB_FILE_LAYOUT_RANGE {
     int64_t fileObjId; ///< set to 0 if unknown (before it becomes a db object)
     uint64_t byteStart;
     uint64_t byteLen;
-    int sequence;
+    uint32_t sequence;
 
     //default comparator by sequence
     bool operator< (const struct _TSK_DB_FILE_LAYOUT_RANGE & rhs) const
@@ -179,13 +179,13 @@ class TskDbSqlite {
         const TSK_DB_FILES_KNOWN_ENUM known, int64_t fsObjId,
         int64_t & objId);
 
-    int addVirtualDir(const int64_t fsObjId, const int64_t parentDirId, const char * const name, int64_t & objId);
-    int addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & objId);
-    int addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
+    TSK_RETVAL_ENUM addVirtualDir(const int64_t fsObjId, const int64_t parentDirId, const char * const name, int64_t & objId);
+    TSK_RETVAL_ENUM addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & objId);
+    TSK_RETVAL_ENUM addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
         vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
-    int addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
+    TSK_RETVAL_ENUM addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
         vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
-    int addCarvedFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
+    TSK_RETVAL_ENUM addCarvedFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
         vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
     
     int addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLayoutRange);
@@ -198,14 +198,14 @@ class TskDbSqlite {
     bool inTransaction();
 
     //query methods / getters
-    uint8_t getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts);
-    uint8_t getFsInfos(int64_t imgId, vector<TSK_DB_FS_INFO> & fsInfos);
-    uint8_t getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO> & vsInfos);
-    uint8_t getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInfo);
-    uint8_t getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_PART_INFO> & vsPartInfos);
-    uint8_t getObjectInfo(int64_t objId, TSK_DB_OBJECT & objectInfo);
-    uint8_t getParentImageId (const int64_t objId, int64_t & imageId);
-    uint8_t getFsRootDirObjectInfo(const int64_t fsObjId, TSK_DB_OBJECT & rootDirObjInfo);
+    TSK_RETVAL_ENUM getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts);
+    TSK_RETVAL_ENUM getFsInfos(int64_t imgId, vector<TSK_DB_FS_INFO> & fsInfos);
+    TSK_RETVAL_ENUM getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO> & vsInfos);
+    TSK_RETVAL_ENUM getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInfo);
+    TSK_RETVAL_ENUM getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_PART_INFO> & vsPartInfos);
+    TSK_RETVAL_ENUM getObjectInfo(int64_t objId, TSK_DB_OBJECT & objectInfo);
+    TSK_RETVAL_ENUM getParentImageId (const int64_t objId, int64_t & imageId);
+    TSK_RETVAL_ENUM getFsRootDirObjectInfo(const int64_t fsObjId, TSK_DB_OBJECT & rootDirObjInfo);
 
 
   private:
@@ -224,14 +224,14 @@ class TskDbSqlite {
             char **, char **), void *callback_arg, const char *errfmt);
     int attempt_exec(const char *sql, const char *errfmt);
     int prepare_stmt(const char *sql, sqlite3_stmt ** ppStmt);
-    int addObject(TSK_DB_OBJECT_TYPE_ENUM type, int64_t parObjId, int64_t & objId);
+    uint8_t addObject(TSK_DB_OBJECT_TYPE_ENUM type, int64_t parObjId, int64_t & objId);
     int addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         const char *path, const unsigned char *const md5,
         const TSK_DB_FILES_KNOWN_ENUM known, int64_t fsObjId,
         int64_t parObjId, int64_t & objId);
-    int addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId, const int64_t fsObjId,
+    TSK_RETVAL_ENUM addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId, const int64_t fsObjId,
         const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
-    int addLayoutFileInfo(const int64_t parObjId, const int64_t fsObjId, const TSK_DB_FILES_TYPE_ENUM dbFileType, const char *fileName, const uint64_t size,
+    TSK_RETVAL_ENUM addLayoutFileInfo(const int64_t parObjId, const int64_t fsObjId, const TSK_DB_FILES_TYPE_ENUM dbFileType, const char *fileName, const uint64_t size,
         int64_t & objId);
     
     void storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_file, const char *path, const int64_t & objId);
@@ -243,6 +243,7 @@ class TskDbSqlite {
     bool m_blkMapFlag;
     bool m_utf8; //encoding used for the database file name, not the actual database
     sqlite3_stmt *m_selectFilePreparedStmt;
+    sqlite3_stmt *m_insertObjectPreparedStmt;
     map<int64_t, map<TSK_INUM_T, map<uint32_t, int64_t> > > m_parentDirIdCache; //maps a file system ID to a map, which maps a directory file system meta address to a map, which maps a sequence ID to its object ID in the database
 };
 

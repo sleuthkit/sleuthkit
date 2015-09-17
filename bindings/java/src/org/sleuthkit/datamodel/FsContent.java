@@ -18,6 +18,9 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
@@ -36,12 +39,15 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 public abstract class FsContent extends AbstractFile {
 
 	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
+	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	///read only database tsk_files fields
 	protected final long fsObjId;
 	private String uniquePath;
 	///read-write database tsk_files fields
 	private final SleuthkitCase tskCase;
-	
+
+	private List<String> metaDataText = null;
+
 	/**
 	 * parent file system
 	 */
@@ -79,11 +85,11 @@ public abstract class FsContent extends AbstractFile {
 	 * @param parentPath
 	 */
 	FsContent(SleuthkitCase db, long objId, long fsObjId, TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
-			String name, long metaAddr,
+			String name, long metaAddr, int metaSeq,
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
 			String parentPath) {
-		super(db, objId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath);
+		super(db, objId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath);
 		this.tskCase = db;
 		this.fsObjId = fsObjId;
 	}
@@ -110,10 +116,11 @@ public abstract class FsContent extends AbstractFile {
 	 * Get the parent file system
 	 *
 	 * @return the file system object of the parent
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public FileSystem getFileSystem() throws TskCoreException {
 		if (parentFileSystem == null) {
-			synchronized(this) {
+			synchronized (this) {
 				if (parentFileSystem == null) {
 					parentFileSystem = getSleuthkitCase().getFileSystemById(fsObjId, AbstractContent.UNKNOWN_ID);
 				}
@@ -122,25 +129,39 @@ public abstract class FsContent extends AbstractFile {
 		return parentFileSystem;
 	}
 
+	/**
+	 * Open JNI file handle if it is not open already
+	 *
+	 * @throws TskCoreException
+	 */
+	private void loadFileHandle() throws TskCoreException {
+		if (fileHandle == 0) {
+			synchronized (this) {
+				if (fileHandle == 0) {
+					fileHandle = SleuthkitJNI.openFile(getFileSystem().getFileSystemHandle(), metaAddr, attrType, attrId);
+				}
+			}
+		}
+	}
+
 	@Override
+	@SuppressWarnings("deprecation")
 	protected int readInt(byte[] buf, long offset, long len) throws TskCoreException {
 		try {
 			if (offset == 0 && size == 0) {
 				//special case for 0-size file
 				return 0;
 			}
-			if (fileHandle == 0) {
-				synchronized (this) {
-					if (fileHandle == 0) {
-						fileHandle = SleuthkitJNI.openFile(getFileSystem().getFileSystemHandle(), metaAddr, attrType, attrId);
-					}
-				}
-			}
+			loadFileHandle();
 			return SleuthkitJNI.readFile(fileHandle, buf, offset, len);
-		}
-		catch (TskCoreException ex) {
-			if (!getImage().imageFileExists()) {
-				tskCase.submitError("Image File Read Error", "Image file is does not exist or is inaccessible.");
+		} catch (TskCoreException ex) {
+			Content dataSource = getDataSource();
+			if ((dataSource != null) && (dataSource instanceof Image)) {
+				Image image = (Image) dataSource;
+				if (!image.imageFileExists()) {
+					tskCase.submitError(bundle.getString("FsContent.readInt.err.context.text"),
+							bundle.getString("FsContent.readInt.err.msg.text"));
+				}
 			}
 			throw ex;
 		}
@@ -148,14 +169,13 @@ public abstract class FsContent extends AbstractFile {
 
 	@Override
 	public boolean isRoot() {
-		FileSystem fs = null;
 		try {
-			fs = getFileSystem();
+			FileSystem fs = getFileSystem();
+			return fs.getRoot_inum() == this.getMetaAddr();
 		} catch (TskCoreException ex) {
-			logger.log(Level.SEVERE, "Exception while calling 'getFileSystem' on " + this, ex);
+			logger.log(Level.SEVERE, "Exception while calling 'getFileSystem' on " + this, ex); //NON-NLS
 			return false;
 		}
-		return fs.getRoot_inum() == this.getMetaAddr();
 	}
 
 	/*
@@ -174,8 +194,8 @@ public abstract class FsContent extends AbstractFile {
 	}
 
 	@Override
-	public Image getImage() throws TskCoreException {
-		return getFileSystem().getImage();
+	public Content getDataSource() throws TskCoreException {
+		return getFileSystem().getDataSource();
 	}
 
 	@Override
@@ -188,6 +208,31 @@ public abstract class FsContent extends AbstractFile {
 			uniquePath = sb.toString();
 		}
 		return uniquePath;
+	}
+
+	/**
+	 * Return a text-based description of the file's metadata. This is the same
+	 * content as the TSK istat tool produces. Is different information for each
+	 * type of file system.
+	 *
+	 * @return List of text, one string per line.
+	 * @throws TskCoreException
+	 */
+	public synchronized List<String> getMetaDataText() throws TskCoreException {
+		if (metaDataText != null) {
+			return metaDataText;
+		}
+
+		// if there is no metadata for this file, return empty string
+		if (metaAddr == 0) {
+			metaDataText = new ArrayList<String>();
+			metaDataText.add("");
+			return metaDataText;
+		}
+
+		loadFileHandle();
+		metaDataText = SleuthkitJNI.getFileMetaDataText(fileHandle);
+		return metaDataText;
 	}
 
 	@Override
@@ -215,10 +260,10 @@ public abstract class FsContent extends AbstractFile {
 	@Override
 	public String toString(boolean preserveState) {
 		return super.toString(preserveState)
-				+ "FsContent [\t"
-				+ "fsObjId " + fsObjId
-				+ "\t" + "uniquePath " + uniquePath
-				+ "\t" + "fileHandle " + fileHandle
+				+ "FsContent [\t" //NON-NLS
+				+ "fsObjId " + fsObjId //NON-NLS
+				+ "\t" + "uniquePath " + uniquePath //NON-NLS
+				+ "\t" + "fileHandle " + fileHandle //NON-NLS
 				+ "]\t";
 	}
 }

@@ -6,7 +6,23 @@ These classes allow Java programs to access data extracted by The Sleuth Kit.
 
 The Sleuth Kit is primarily a C/C++ library and set of command line tools. These classes allow programs to obtain the data that TSK can produce.   The typical steps would be to use JNI to cause the TSK library to create and populate a SQLite database.  The Java classes then directly open the SQLite database and perform queries on it. 
 
-Expand on this to mention what classes to use, etc.
+\section basics Basic
+
+NOTE: This needs to be expanded on.
+
+\subsection basics_add Adding Data to Case
+
+Use SleuthkitCase.newCase() or SleuthkitCase.openCase() to return an instance of a SleuthkitCase object. To add data to the case, use SleuthkitCase.makeAdImageProcess() to get a AddImageProcess object that allows you to populate the database in the scope of a transaction and get feedback on its update process. 
+
+To add a local file (logical file) you can use methods such as SleuthkitCase.addLocalFile(). 
+
+
+\subsection basics_analyzing Analyzing Data in Case
+
+You can either access files directly using methods such as SleuthkitCase.findFiles() or SleuthkitCase.getAbstractFileById(). 
+
+You can also access the data in its tree form by starting with SleuthkitCase.getImages() and then calling getChildren() on each of the returned objects.  See the section below on basics of the datamodel structure. 
+
 
 \section jni_hierarchy Class Hierarchy
 
@@ -18,14 +34,8 @@ Flush out here on general layout.
 
 \section jni_blackboard The Blackboard
 
-The blackboard in the database is used to communicate with modules in The Sleuth Kit framework and in Autopsy.  The blackboard concepts are described in the framework documentation (http://sleuthkit.org/sleuthkit/docs/framework-docs/mod_bbpage.html).
-This section provides a high-level overview of the relevant topics from the Java perspective (since the previous document focuses on the C++ APIs). 
+\ref mod_bbpage
 
-To make an artifact, one first calls the org.sleuthkit.datamodel.AbstractContent.newArtifact() method for the object that the artifact is being added to.  This returns a org.sleuthkit.datamodel.BlackboardArtifact object.  Attributes of type org.sleuthkit.datamodel.BlackboardAttribute are then created and added to the artifact.  
-
-To find artifacts, you have two general options.  If you have an org.sleuthkit.datamodel.AbstractContent object or a derived object, then you can use the org.sleuthkit.datamodel.AbstractContent.getArtifacts() methods to perform various queries. If you want artifacts beyond those for a single file, then you must use the various org.sleuthkit.datamodel.SleuthkitCase.getBlackboardArtifacts() methods.
-
-If you want to create an artifact type that is not defined in the framework/bindings, then use org.sleuthkit.datamodel.SleuthkitCase.addArtifactType() to define the type.  This will return back an artifact ID that you can pass in to create actual artifacts.  Note that each database instance could assign a different ID for the custom attributes and artifacts.  It all depends on what modules were run before it and if they added their own types.  Later modules will need the ID of the new type if they want to find artifacts on the blackboard.  They can get the ID for that database using org.sleuthkit.datamodel.SleuthkitCase.getArtifactTypeID().   Similarly, you can add custom attributes with org.sleuthkit.datamodel.SleuthkitCase.addAttrType() and find the ID using org.sleuthkit.datamodel.SleuthkitCase.getAttrTypeID().
 
 
 */

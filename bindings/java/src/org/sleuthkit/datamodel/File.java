@@ -36,7 +36,7 @@ public class File extends FsContent {
 
 	/**
 	 * Create a File from db
-	 * 
+	 *
 	 * @param db
 	 * @param objId
 	 * @param fsObjId
@@ -58,18 +58,16 @@ public class File extends FsContent {
 	 * @param gid
 	 * @param md5Hash
 	 * @param knownState
-	 * @param parentPath 
+	 * @param parentPath
 	 */
-	protected File(SleuthkitCase db, long objId, long fsObjId, 
-			TSK_FS_ATTR_TYPE_ENUM attrType, short attrId, String name, long metaAddr, 
-			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, 
-			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, 
-			long size, long ctime, long crtime, long atime, long mtime, 
+	protected File(SleuthkitCase db, long objId, long fsObjId,
+			TSK_FS_ATTR_TYPE_ENUM attrType, short attrId, String name, long metaAddr, int metaSeq,
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
+			long size, long ctime, long crtime, long atime, long mtime,
 			short modes, int uid, int gid, String md5Hash, FileKnown knownState, String parentPath) {
-		super(db, objId, fsObjId, attrType, attrId, name, metaAddr, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath);
+		super(db, objId, fsObjId, attrType, attrId, name, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath);
 	}
-	
-	
 
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
@@ -91,10 +89,8 @@ public class File extends FsContent {
 		return getSleuthkitCase().getAbstractFileChildrenIds(this, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED);
 	}
 
-
-
 	@Override
-	public String toString(boolean preserveState){
-		return super.toString(preserveState) + "File [\t" + "]\t";
+	public String toString(boolean preserveState) {
+		return super.toString(preserveState) + "File [\t" + "]\t"; //NON-NLS
 	}
 }

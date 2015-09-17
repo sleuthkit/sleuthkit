@@ -53,6 +53,9 @@
 #include <err.h>
 #endif
 
+#define MAX_SPARSE_SIZE 1024*1024*64
+
+
 /****************************************************************
  ** Content Output
  ****************************************************************/
@@ -252,32 +255,36 @@ void content::write_record()
 	for(seglist::const_iterator i = this->segs.begin();i!=this->segs.end();i++){
 	    char buf[1024];
 	    if(i->flags & TSK_FS_BLOCK_FLAG_SPARSE){
-		sprintf(buf,"       <byte_run file_offset='%"PRIu64"' fill='0' len='%"PRIu64"'/>\n",
-			i->file_offset,i->len);
+		sprintf(buf,"       <byte_run file_offset='%"PRIu64"' fill='0' len='%"PRIu64"'", i->file_offset,i->len);
 	    } else if (i->flags & TSK_FS_BLOCK_FLAG_RAW){
 		sprintf(buf,
-			"       <byte_run file_offset='%"PRIu64"' fs_offset='%"PRIu64"' " "img_offset='%"PRIu64"' len='%"PRIu64"'/>\n",
+			"       <byte_run file_offset='%"PRIu64"' fs_offset='%"PRIu64"' " "img_offset='%"PRIu64"' len='%"PRIu64"'",
 			i->file_offset,i->fs_offset,i->img_offset,i->len);
 	    } else if (i->flags & TSK_FS_BLOCK_FLAG_COMP){
 		if(i->fs_offset){
 		    sprintf(buf,
 			    "       <byte_run file_offset='%"PRIu64"' fs_offset='%"PRIu64"' "
-			    "img_offset='%"PRIu64"' uncompressed_len='%"PRIu64"'/>\n",
+			    "img_offset='%"PRIu64"' uncompressed_len='%"PRIu64"'",
 			    i->file_offset,i->fs_offset,i->img_offset,i->len);
 		} else {
 		    sprintf(buf,
-			    "       <byte_run file_offset='%"PRIu64"' uncompressed_len='%"PRIu64"'/>\n",
-			    i->file_offset,i->len);
+			    "       <byte_run file_offset='%"PRIu64"' uncompressed_len='%"PRIu64"'", i->file_offset,i->len);
 		}
 	    } else if (i->flags & TSK_FS_BLOCK_FLAG_RES){
 		sprintf(buf,
 			"       <byte_run file_offset='%"PRIu64"' fs_offset='%"PRIu64"' "
-                "img_offset='%"PRIu64"' len='%"PRIu64"' type='resident'/>\n",
+                        "img_offset='%"PRIu64"' len='%"PRIu64"' type='resident'",
 			i->file_offset,i->fs_offset,i->img_offset,i->len);
 	    } else{
-		sprintf(buf,"       <byte_run file_offset='%"PRIu64"' unknown_flags='%d'/>\n",i->file_offset,i->flags);
+		sprintf(buf,"       <byte_run file_offset='%"PRIu64"' unknown_flags='%d'",i->file_offset,i->flags);
 	    }
 	    runs += buf;
+
+            if(i->md5.size()){
+                runs += "><hashdigest type='MD5'>" + i->md5 + "</hashdigest></byte_run>\n";
+            } else {
+                runs += "/>\n";
+            }
 	}
 	file_info_xml("byte_runs",runs);
 	if(!invalid){
@@ -306,21 +313,23 @@ void content::write_record()
 bool content::need_file_walk()
 {
   return opt_md5 || opt_sha1 || opt_save || do_plugin || opt_magic
-      || opt_get_fragments || opt_body_file;
-//      || opt_compute_sector_hashes;
+      || opt_get_fragments || opt_body_file
+      || opt_sector_hash;
 }
 
 /** Called to create a new segment. */
 void content::add_seg(int64_t img_offset,int64_t fs_offset,
 		      int64_t file_offset,int64_t len,
-		      TSK_FS_BLOCK_FLAG_ENUM flags)
+		      TSK_FS_BLOCK_FLAG_ENUM flags,
+                      const std::string &md5)
 {
-    struct seg newseg;
+    seg newseg;
     newseg.img_offset = img_offset;
     newseg.fs_offset = fs_offset;
     newseg.file_offset = file_offset;
     newseg.len   = len;
     newseg.flags = flags;
+    newseg.md5   = md5;
     this->segs.push_back(newseg);
 }
 
@@ -386,4 +395,109 @@ content::~content()
     if(tempfile_path.size()>0){		// unlink temp file if one was created
 	::unlink(tempfile_path.c_str());
     }
+}
+
+TSK_WALK_RET_ENUM
+content::file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr, char *buf,
+	 size_t size, TSK_FS_BLOCK_FLAG_ENUM flags)
+{
+    if(opt_debug>1){
+	printf("file_act(fs_file=%p,addr=%"PRIuDADDR" buf=%p size=%d)\n",
+	       fs_file,addr,buf,(int)size);
+	if(opt_debug>1 && segs.size()==0){
+	    if(fwrite(buf,size,1,stdout)!=1) err(1,"fwrite");
+	    printf("\n");
+	}
+    }
+
+    if(size==0)  return TSK_WALK_CONT;	// can't do much with this...
+
+    if(opt_no_data==false){
+	if (flags & TSK_FS_BLOCK_FLAG_SPARSE){
+            if (size < MAX_SPARSE_SIZE && !invalid) {
+                /* Manufacture NULLs that correspond with a sparse file */
+                char nulls[65536];
+                memset(nulls,0,sizeof(nulls));
+                for(size_t i=0; i<size; i += sizeof(nulls)){
+                    size_t bytes_to_hash = sizeof(nulls);
+                    if ( i + bytes_to_hash > size) bytes_to_hash = size - i;
+                    add_bytes(nulls, a_off + i,bytes_to_hash);
+                }
+            } else {
+                set_invalid(true);		// make this data set invalid
+            }
+	}
+	else {
+	    add_bytes(buf,a_off,size);	// add these bytes to the file
+	}
+    }
+
+    /* "Address 0 is reserved in ExtX and FFS to denote a "sparse"
+       block (one which is all zeros).  TSK knows this and returns
+       zeros when a file refers to block 0.  You can check the 'flags'
+       argument to the callback to determine if the data is from
+       sparse or compressed data. RAW means that the data in the
+       buffer was read from the disk.
+
+       TSK_FS_BLOCK_FLAG_RAW - data on the disk
+       TSK_FS_BLOCK_FLAG_SPARSE - a whole
+       TSK_FS_BLOCK_FLAG_COMP - the file is compressed
+    */
+
+    uint64_t  fs_offset = addr * fs_file->fs_info->block_size;
+    uint64_t img_offset = current_partition_start + fs_offset;
+
+    if(opt_sector_hash){
+        if(h_sectorhash==0){
+            h_sectorhash = new md5_generator();
+            sectorhash_byte_counter   = 0;
+            sectorhash_initial_offset = (int64_t)a_off;
+        }
+        h_sectorhash->update((const uint8_t *)buf,size);
+        sectorhash_byte_counter += size;
+        if (sectorhash_byte_counter==sectorhash_size){
+            add_seg(0,0,sectorhash_initial_offset,sectorhash_byte_counter,flags,h_sectorhash->final().hexdigest());
+        }
+        if (sectorhash_byte_counter>=sectorhash_size){
+            delete h_sectorhash;
+            h_sectorhash=0;
+        }
+        return TSK_WALK_CONT;
+    }
+
+    /* We are not sector hashing; try to determine disk runs */
+    if(segs.size()>0){
+	/* Does this next segment fit after the prevous segment logically? */
+	if(segs.back().next_file_offset()==(uint64_t)a_off){
+
+	    /* if both the last and the current are sparse, this can be extended. */
+	    if((segs.back().flags & TSK_FS_BLOCK_FLAG_SPARSE) &&
+	       (flags & TSK_FS_BLOCK_FLAG_SPARSE)){
+
+		segs.back().len += size;
+		return TSK_WALK_CONT;
+	    }
+
+	    /* If both are compressed, then this can be extended? */
+	    if((segs.back().flags & TSK_FS_BLOCK_FLAG_COMP) &&
+	       (flags & TSK_FS_BLOCK_FLAG_COMP) &&
+	       (segs.back().img_offset + segs.back().len == img_offset)){
+		segs.back().len += size;
+		return TSK_WALK_CONT;
+	    }
+
+	    /* See if we can extend the last segment in the segment list,
+	     * or if this is the start of a new fragment.
+	     */
+	    if((segs.back().flags & TSK_FS_BLOCK_FLAG_RAW) &&
+	       (flags & TSK_FS_BLOCK_FLAG_RAW) &&
+	       (segs.back().img_offset + segs.back().len == img_offset)){
+		segs.back().len += size;
+		return TSK_WALK_CONT;
+	    }
+	}
+    }
+    /* Need to add a new element to the list */
+    add_seg(img_offset,fs_offset,(int64_t)a_off,size,flags,"");
+    return TSK_WALK_CONT;
 }

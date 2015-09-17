@@ -32,6 +32,9 @@ using namespace std;
  * Built in artifact types.
  * Refer to http://wiki.sleuthkit.org/index.php?title=Artifact_Examples
  * for details on which attributes should be used for each artifact.
+ *
+ * Refer to http://wiki.sleuthkit.org/index.php?title=Adding_Artifacts_and_Attributes
+ * for checklist of steps to add new artifacts and attributes.
  */
 
 /* Note that the below comments are the only documentation 
@@ -77,12 +80,19 @@ enum TSK_ARTIFACT_TYPE {
 	TSK_GPS_BOOKMARK = 29, ///< GPS Bookmarks
 	TSK_GPS_LAST_KNOWN_LOCATION = 30, ///< GPS Last known location
 	TSK_GPS_SEARCH = 31,	///< GPS Searches
-		 
-
-		
+	TSK_PROG_RUN = 32, ///< Application run information
+    TSK_ENCRYPTION_DETECTED = 33, ///< Encrypted File
+    TSK_EXT_MISMATCH_DETECTED = 34, ///< Extension Mismatch
+    TSK_INTERESTING_ARTIFACT_HIT = 35,	///< Any artifact interesting enough that it should be called out in the UI.
+	TSK_GPS_ROUTE = 36,	///< Route based on GPS coordinates
+	TSK_REMOTE_DRIVE = 37, ///< Network drive
+	TSK_FACE_DETECTED = 38, ///< Face detected
+    
     /* SEE ABOVE:
     * - KEEP JAVA CODE IN SYNC 
     * - UPDATE map in TskBlackboard.cpp
+	* - UPDATE Autopsy report module to display the new data
+	*     Core/src/org/sleuthkit/autopsy/report/ReportGenerator.java
     * - Update Wiki to reflect the attributes that should be part of the artifact. 
     */
 };
@@ -127,14 +137,14 @@ enum TSK_ATTRIBUTE_TYPE {
     TSK_TEXT_LANGUAGE = 28,///< String of the detected language in ISO 639-3 language code of TskBlackboard::TSK_TEXT data in the same artifact (TSK_EXTRACTED_TEXT, for example).
     TSK_ENTROPY = 29,///< DOUBLE: Entropy value of file
     TSK_HASHSET_NAME = 30,///< String of the name or file name of the hashset -- Deprecated in favor of TSK_SET_NAME
-    TSK_INTERESTING_FILE = 31,///< An interesting file hit, potentially file id, name, or path
+    TSK_INTERESTING_FILE = 31,///< An interesting file hit, potentially file id, name, or path -- Deprecated, use TSK_INTERESTING_FILE_HIT artifact instead.
     TSK_REFERRER = 32,///< String of referrer URL
     TSK_DATETIME_ACCESSED = 33,///<datetime last time accessed
     TSK_IP_ADDRESS = 34,///<String of IP Address
     TSK_PHONE_NUMBER = 35,///<String of phone number
     TSK_PATH_ID = 36,///< Object ID from database that a TSK_PATH attribute corresponds to.  Set to -1 if path is for a file that is not in database (i.e. deleted). 
     TSK_SET_NAME = 37,///< STRING: The name of a set that was used to find this artifact (to be used for hash hits, keyword hits, interesting files, etc.)
-    TSK_ENCRYPTION_DETECTED = 38,///< STRING: The type of encryption that is believed to have been used on the file.
+    //TSK_ENCRYPTION_DETECTED = 38,///< \deprecated STRING: The type of encryption that is believed to have been used on the file.
     TSK_MALWARE_DETECTED = 39,///< STRING: The name of the malware that was detected in this file.
     TSK_STEG_DETECTED = 40,///< STRING: The name of the steganography technique that was detected in this file.
     TSK_EMAIL_TO = 41, ///< String of an e-mail address that a message is being sent to directly (not cc:).
@@ -188,6 +198,23 @@ enum TSK_ATTRIBUTE_TYPE {
 	TSK_CATEGORY = 89, 	///< category/type, possible value set varies by the artifact
 	TSK_EMAIL_REPLYTO = 90, ///< ReplyTo address
 	TSK_SERVER_NAME = 91, 	///< server name
+	TSK_COUNT = 92, ///< Count related to the artifact
+	TSK_MIN_COUNT = 93, ///<  Minimum number/count
+	TSK_PATH_SOURCE = 94, ///< Path to a source file related to the artifact
+	TSK_PERMISSIONS = 95, ///< Permissions
+	TSK_ASSOCIATED_ARTIFACT = 96, ///< Artifact ID of a related artifact
+    TSK_ISDELETED = 97, ///< the artifact is recovered from deleted content
+    TSK_GEO_LATITUDE_START= 98, ///< Starting location lattitude
+    TSK_GEO_LATITUDE_END= 99, ///< Ending location lattitude
+    TSK_GEO_LONGITUDE_START= 100, ///< Starting location longitude
+    TSK_GEO_LONGITUDE_END = 101, ///< Ending Location longitude
+    TSK_READ_STATUS = 102, ///< Message read status: 1 if read, 0 if unread
+    TSK_LOCAL_PATH = 103, ///< Local path to a network share
+    TSK_REMOTE_PATH = 104, ///< Remote path of the network share
+    TSK_TEMP_DIR = 105, ///< Path to the default temp directory
+    TSK_PRODUCT_ID = 106, ///< ID string
+    TSK_OWNER = 107, ///< Registered owner for software
+    TSK_ORGANIZATION = 108, ///< Registered organization for software
 
     /* SEE ABOVE: 
     * - KEEP JAVA CODE IN SYNC 

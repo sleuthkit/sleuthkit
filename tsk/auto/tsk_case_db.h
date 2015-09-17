@@ -117,6 +117,7 @@ class TskAutoDb:public TskAuto {
     bool m_addUnallocSpace;
 	int64_t m_chunkSize;
     bool m_foundStructure;  ///< Set to true when we find either a volume or file system
+    bool m_attributeAdded; ///< Set to true when an attribute was added by processAttributes
 
     // prevent copying until we add proper logic to handle it
     TskAutoDb(const TskAutoDb&);
@@ -125,7 +126,7 @@ class TskAutoDb:public TskAuto {
     //internal structure to keep track of temp. unalloc block range
     typedef struct _UNALLOC_BLOCK_WLK_TRACK {
         _UNALLOC_BLOCK_WLK_TRACK(const TskAutoDb & tskAutoDb, const TSK_FS_INFO & fsInfo, const int64_t fsObjId, int64_t chunkSize)
-            : tskAutoDb(tskAutoDb),fsInfo(fsInfo),fsObjId(fsObjId),curRangeStart(0), chunkSize(chunkSize), prevBlock(0), isStart(true) {}
+            : tskAutoDb(tskAutoDb),fsInfo(fsInfo),fsObjId(fsObjId),curRangeStart(0), chunkSize(chunkSize), prevBlock(0), isStart(true), nextSequenceNo(0) {}
         const TskAutoDb & tskAutoDb;
         const TSK_FS_INFO & fsInfo;
         const int64_t fsObjId;
@@ -135,6 +136,7 @@ class TskAutoDb:public TskAuto {
 		const int64_t chunkSize;
         TSK_DADDR_T prevBlock;
         bool isStart;
+        uint32_t nextSequenceNo;
     } UNALLOC_BLOCK_WLK_TRACK;
 
     uint8_t addImageDetails(const char *const images[], int);
@@ -150,11 +152,11 @@ class TskAutoDb:public TskAuto {
     int md5HashAttr(unsigned char md5Hash[16], const TSK_FS_ATTR * fs_attr);
 
     static TSK_WALK_RET_ENUM fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, void *a_ptr);
-    int8_t addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo);
-    uint8_t addUnallocFsSpaceToDb(size_t & numFs);
-    uint8_t addUnallocVsSpaceToDb(size_t & numVsP);
-    uint8_t addUnallocImageSpaceToDb();
-    uint8_t addUnallocSpaceToDb();
+    TSK_RETVAL_ENUM addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo);
+    TSK_RETVAL_ENUM addUnallocFsSpaceToDb(size_t & numFs);
+    TSK_RETVAL_ENUM addUnallocVsSpaceToDb(size_t & numVsP);
+    TSK_RETVAL_ENUM addUnallocImageSpaceToDb();
+    TSK_RETVAL_ENUM addUnallocSpaceToDb();
 
 };
 

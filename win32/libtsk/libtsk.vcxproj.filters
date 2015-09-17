@@ -222,24 +222,6 @@
     <ClCompile Include="..\..\tsk\base\XGetopt.c">
       <Filter>base</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\encase_index.c">
-      <Filter>hash</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\hk_index.c">
-      <Filter>hash</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\idxonly_index.c">
-      <Filter>hash</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\md5sum_index.c">
-      <Filter>hash</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\nsrl_index.c">
-      <Filter>hash</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\tsk\hashdb\tm_lookup.c">
-      <Filter>hash</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\tsk\img\aff.c">
       <Filter>img</Filter>
     </ClCompile>
@@ -270,7 +252,57 @@
     <ClCompile Include="..\..\tsk\fs\ntfs_dent.cpp">
       <Filter>fs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\fs\yaffs.cpp" />
+    <ClCompile Include="..\..\tsk\hashdb\hashkeeper.c">
+      <Filter>hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\hashdb\idxonly.c">
+      <Filter>hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\hashdb\md5sum.c">
+      <Filter>hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\hashdb\nsrl.c">
+      <Filter>hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\hashdb\hdb_base.c">
+      <Filter>hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\hashdb\sqlite_hdb.cpp">
+      <Filter>hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\hashdb\tsk_hashdb.c">
+      <Filter>hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\hashdb\encase.c">
+      <Filter>hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\exfatfs.c">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\yaffs.cpp">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\exfatfs_dent.c">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\exfatfs_meta.c">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\fatfs_utils.c">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\fatxxfs.c">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\fatxxfs_dent.c">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\fatxxfs_meta.c">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\hashdb\binsrch_index.cpp">
+      <Filter>hash</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\tsk\vs\tsk_bsd.h">
@@ -363,6 +395,17 @@
     <ClInclude Include="..\..\tsk\img\tsk_img_i.h">
       <Filter>img</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\tsk\fs\tsk_yaffs.h" />
+    <ClInclude Include="..\..\tsk\fs\tsk_exfatfs.h">
+      <Filter>fs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\fs\tsk_fatxxfs.h">
+      <Filter>fs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\fs\tsk_yaffs.h">
+      <Filter>fs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\hashdb\tsk_hash_info.h">
+      <Filter>hash</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

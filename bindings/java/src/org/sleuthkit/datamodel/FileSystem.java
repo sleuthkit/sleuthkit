@@ -66,8 +66,6 @@ public class FileSystem extends AbstractContent {
 	public void close() {
 		//does nothing currently, we are caching the fs handles
 	}
-	
-	
 
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
@@ -76,7 +74,6 @@ public class FileSystem extends AbstractContent {
 
 	@Override
 	public long getSize() {
-		// size of the file system
 		return blockSize * blockCount;
 	}
 
@@ -92,7 +89,13 @@ public class FileSystem extends AbstractContent {
 		if (filesystemHandle == 0) {
 			synchronized (this) {
 				if (filesystemHandle == 0) {
-					filesystemHandle = SleuthkitJNI.openFs(getImage().getImageHandle(), imgOffset);
+					Content dataSource = getDataSource();
+					if ((dataSource != null) && (dataSource instanceof Image)) {
+						Image image = (Image) dataSource;
+						filesystemHandle = SleuthkitJNI.openFs(image.getImageHandle(), imgOffset);
+					} else {
+						throw new TskCoreException("Data Source of File System is not an image");
+					}
 				}
 			}
 		}
@@ -200,21 +203,16 @@ public class FileSystem extends AbstractContent {
 
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
-		return getSleuthkitCase().getFileSystemChildren(this);
+		return getSleuthkitCase().getAbstractFileChildren(this);
 	}
 
 	@Override
 	public List<Long> getChildrenIds() throws TskCoreException {
-		return getSleuthkitCase().getFileSystemChildrenIds(this);
-	}
-
-	@Override
-	public Image getImage() throws TskCoreException {
-		return getParent().getImage();
+		return getSleuthkitCase().getAbstractFileChildrenIds(this);
 	}
 
 	@Override
 	public String toString(boolean preserveState) {
-		return super.toString(preserveState) + "FileSystem [\t" + " blockCount " + blockCount + "\t" + "blockSize " + blockSize + "\t" + "firstInum " + firstInum + "\t" + "fsType " + fsType + "\t" + "imgOffset " + imgOffset + "\t" + "lastInum " + lastInum + "\t" + "rootInum " + rootInum + "\t" + "]";
+		return super.toString(preserveState) + "FileSystem [\t" + " blockCount " + blockCount + "\t" + "blockSize " + blockSize + "\t" + "firstInum " + firstInum + "\t" + "fsType " + fsType + "\t" + "imgOffset " + imgOffset + "\t" + "lastInum " + lastInum + "\t" + "rootInum " + rootInum + "\t" + "]"; //NON-NLS
 	}
 }

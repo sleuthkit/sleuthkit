@@ -1,0 +1,83 @@
+/*! \page mod_bbpage The Blackboard
+
+\section jni_bb_overview Overview
+
+The blackboard allows modules (in Autopsy or other frameworks) to communicate and store results. A module can post data to the blackboard so that subsequent modules can see its results. It can also query the blackboard to see what previous modules have posted. 
+
+\subsection jni_bb_concepts Concepts
+
+The blackboard is a collection of <em>artifacts</em>.  Each artifact has a type, such as web browser history, EXIF, or GPS track points. The Sleuth Kit has many artifact types already defined (see org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE) and you can also create your own. 
+
+Each artifact has a set of name-value pairs called <em>attributes</em>.  Attributes also have types, such as URL, Created Date, or Device Make. The Sleuth Kit has many attribute types already defined (see org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE) and you can also create your own. 
+
+When a module wants to store its results in the blackboard, it makes an artifact of the correct type and then adds attributes to it. Other modules can then query the blackboard for artifacts of a given type or artifacts associated with a given file. 
+
+
+
+\subsection jni_bb_geninfo General Information Artifact
+
+One artifact type deserves special focus. It is the org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO artifact.  A Content object should have only one artifact of this type and it is used to store single attributes that are not related to each other and that do not need their own artifact.  The most notable use of this artifact is to store the file type, using the 
+org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_FILE_TYPE_SIG.  
+
+There are special methods on the Content object, such as org.sleuthkit.datamodel.Content.getGenInfoArtifact() and org.sleuthkit.datamodel.Content.getGenInfoAttributes() that you should use to ensure that only a single TSK_GEN_INFO artifact is created per Content object and to ensure you get a cached version of the artifact. 
+
+
+
+\section jni_bb_access Accessing the Blackboard
+
+Java modules can access the blackboard from either org.sleuthkit.datamodel.SleuthkitCase or a org.sleuthkit.datamodel.Content object.  The methods associated with org.sleuthkit.datamodel.Content all limit the Blackboard to a specific file.  
+
+Refer to http://wiki.sleuthkit.org/index.php?title=Artifact_Examples for artifact and attribute combinations that are commonly used. 
+
+
+\subsection jni_bb_access_post Posting to the Blackboard
+
+The first thing you need to do is create the artifact.  All artifacts must be associated with a Content object.  You can do this by creating an instance of org.sleuthkit.datamodel.BlackboardArtifact by calling either:
+- org.sleuthkit.datamodel.Content.newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) on the Content object you are adding the artifact to
+- org.sleuthkit.datamodel.SleuthkitCase.newBlackboardArtifact(ARTIFACT_TYPE artifactType, long obj_id) or a variation.  This approach is usually taken if you don’t have a Content object already and don’t want to create one just to make an artifact. 
+With either of these approaches, the artifact is created in the database immediately. 
+
+If you want to create an attribute in the TSK_GEN_INFO artifact, use org.sleuthkit.datamodel.Content.getGenInfoArtifact() to ensure that you do not create a second TSK_GEN_INFO artifact for the file and to ensure that you used the cached version (which will be faster for you). 
+
+Next, you need to make attributes and add them to the artifact.  Attributes are created by making a new instance of org.sleuthkit.datamodel.BlackboardAttribute using one of the various constructors. After you create one with the correct type and value, you add it to the artifact using org.sleuthkit.datamodel.BlackboardArtifact.addAttribute() (or org.sleuthkit.datamodel.BlackboardArtifact.addAttributes() if you have several to add - it’s faster). 
+
+
+
+
+\subsection jni_bb_artifact2 Creating Multiple Artifacts or Multiple Attributes
+
+In some cases, it may not be clear if you should post multiple single-attribute artifacts for a file or post a single multiple-attribute artifact.  
+Here are some guidelines:
+
+ - If a single file is associated with multiple items of the same type (e.g., log entries in a log file, bookmarks in a bookmark file, cookies in a cookie database), then each instance should be posted as a separate artifact so that you can differentiate them and keep all related attributes clearly grouped (e.g., it is clear which date goes with which log entry).  
+ - All attributes in artifacts other than in org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_GEN_INFO artifacts should be closely related to each other.  
+
+
+\subsection jni_bb_query  Querying the Blackboard
+
+You can find artifacts using a variety of ways:
+- org.sleuthkit.datamodel.Content.getArtifacts() in its various forms to get a specific type of artifact for a specific Content object. 
+- org.sleuthkit.datamodel.Content.getGenInfoArtifact() to get the TSK_GEN_INFO artifact.
+- org.sleuthkit.datamodel.SleuthkitCase.getBlackboardArtifacts() in its various forms to get all artifacts of a given type (regardless of file it is associated with) or for a given file.  
+
+
+\section jni_bb_custom_types Custom Artifacts and Attributes
+
+This section outlines how to create artifact and attribute types because the standard ones do not meet your needs.
+
+\subsection jni_bb_custom_limitations Limitations
+
+There is a big limitation right now in Autopsy (and the datamodel) with respect to custom artifact and attribute types.  You can create them and query for them in modules, but the Autopsy UI and reporting infrastructure will not show them. This is because we rely on enums for the types and the custom types do not map into the enum.  We will need to address this in the future.
+
+Before you make a custom type, you should consider the 
+TSK_INTERESTING_FILE_HIT artifact.  It is very generic and we have used it 
+in the past when we did not want to make a new artifact type. You create the artifact, use the TSK_SET_NAME attribute to define the equivalent name of the custom artifact that you wanted to create, and then add whatever attributes  you want. 
+
+
+\subsection jni_bb_custom_make Making Custom Artifacts and Attributes
+org.sleuthkit.datamodel.SleuthkitCase.addArtifactType() is used to create a custom artifact.  Give it the display and unique name and it will return the unique ID.  You will need to call this once for each case to create the artifact ID.   You can then use this ID to make an artifact of the given type.  To check if the artifact type has already been added to the blackboard or to get the ID after it was created, use org.sleuthkit.datamodel.SleuthkitCase.getArtifactTypeID().
+
+To create custom attributes, use org.sleuthkit.datamodel.SleuthkitCase.addAttrType() to create the type and get its ID. Like artifacts, you must create the type for each new case. To get a type after it has been created in the case, use org.sleuthkit.datamodel.SleuthkitCase.getAttrTypeID(). 
+
+
+*/

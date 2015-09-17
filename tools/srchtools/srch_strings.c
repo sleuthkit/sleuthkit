@@ -553,8 +553,10 @@ print_strings (const char *filename, FILE *stream, uint64_t address,
       for (i = 0; i < string_min; i++)
 	{
 	  c = get_char (stream, &address, &magiccount, &magic);
-	  if (c == EOF)
+	  if (c == EOF) {
+            free(buf);
 	    return;
+          }
 	  if (! STRING_ISGRAPHIC (c))
 	    /* Found a non-graphic.  Try again starting with next char.  */
 	    goto tryline;
@@ -584,6 +586,7 @@ print_strings (const char *filename, FILE *stream, uint64_t address,
 
       buf[i] = '\0';
       fputs (buf, stdout);
+      free(buf);
 
       while (1)
 	{

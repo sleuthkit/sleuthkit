@@ -247,8 +247,10 @@ tsk_fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr)
     }
 
     retval = a_fs->dir_open_meta(a_fs, &fs_dir, a_addr);
-    if (retval != TSK_OK)
+    if (retval != TSK_OK) {
+        tsk_fs_dir_close(fs_dir);
         return NULL;
+    }
 
     return fs_dir;
 }
@@ -411,13 +413,43 @@ tsk_fs_dir_get(const TSK_FS_DIR * a_fs_dir, size_t a_idx)
         // if the sequence numbers don't match, then don't load the meta
         // should ideally have sequence in previous lookup, but it isn't 
         // in all APIs yet
-        if (fs_file->meta->seq != fs_name->meta_seq) {
+        if ((fs_file->meta) && (fs_file->meta->seq != fs_name->meta_seq)) {
             tsk_fs_meta_close(fs_file->meta);
             fs_file->meta = NULL;
         }
     }
     return fs_file;
 }
+
+/** \ingroup fslib
+ * Return only the name for a file or subdirectory from an open directory.
+ * Useful when wanting to find files of a given name and you don't need the 
+ * additional metadata. 
+ *
+ * @param a_fs_dir Directory to analyze
+ * @param a_idx Index of file in directory to open (0-based)
+ * @returns NULL on error
+ */
+const TSK_FS_NAME *
+tsk_fs_dir_get_name(const TSK_FS_DIR * a_fs_dir, size_t a_idx)
+{
+    if ((a_fs_dir == NULL) || (a_fs_dir->tag != TSK_FS_DIR_TAG)
+        || (a_fs_dir->fs_info == NULL)) {
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr
+        ("tsk_fs_dir_get: called with NULL or unallocated structures");
+        return NULL;
+    }
+    if (a_fs_dir->names_used <= a_idx) {
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("tsk_fs_dir_get: Index (%" PRIuSIZE
+                             ") too large (%" PRIuSIZE ")", a_idx, a_fs_dir->names_used);
+        return NULL;
+    }
+    
+    return &(a_fs_dir->names[a_idx]);
+}
+
 
 #define MAX_DEPTH   128
 #define DIR_STRSZ   4096
@@ -488,6 +520,9 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
          * Must have non-zero inode addr or have allocated name (if inode is 0) */
         if (((fs_file->name->meta_addr)
                 || (fs_file->name->flags & TSK_FS_NAME_FLAG_ALLOC))) {
+
+            /* Note that the NTFS code behind here has a slight hack to use the
+             * correct sequence number based on the data in fs_file->name */
             if (a_fs->file_add_meta(a_fs, fs_file,
                     fs_file->name->meta_addr)) {
                 if (tsk_verbose)
@@ -677,7 +712,6 @@ tsk_fs_dir_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr,
             ("tsk_fs_dir_walk: called with NULL or unallocated structures");
         return 1;
     }
-
 
     memset(&dinfo, 0, sizeof(DENT_DINFO));
     if ((dinfo.stack_seen = tsk_stack_create()) == NULL)
@@ -888,6 +922,10 @@ load_orphan_dir_walk_cb(TSK_FS_FILE * a_fs_file, const char *a_path,
 {
     FIND_ORPHAN_DATA *data = (FIND_ORPHAN_DATA *) a_ptr;
 
+    if( a_fs_file == NULL ) {
+        return TSK_WALK_ERROR;
+    }
+
     // ignore DOT entries
     if ((a_fs_file->name) && (a_fs_file->name->name) &&
         (TSK_FS_ISDOT(a_fs_file->name->name)))
@@ -925,8 +963,11 @@ load_orphan_dir_walk_cb(TSK_FS_FILE * a_fs_file, const char *a_path,
          * the info when we have it. */
         if ((a_fs_file->meta->type == TSK_FS_META_TYPE_DIR)
             && (TSK_FS_TYPE_ISFAT(a_fs_file->fs_info->ftype))) {
-            if (fatfs_dir_buf_add((FATFS_INFO *) a_fs_file->fs_info,
-                    a_fs_file->name->par_addr, a_fs_file->meta->addr))
+            // Make sure a_fs_file->name->par_addr is not accessed when
+            // a_fs_file->name is NULL
+            if ((a_fs_file->name) &&
+                (fatfs_dir_buf_add((FATFS_INFO *) a_fs_file->fs_info,
+                    a_fs_file->name->par_addr, a_fs_file->meta->addr)))
                 return TSK_WALK_ERROR;
         }
     }
@@ -958,7 +999,9 @@ find_orphan_meta_walk_cb(TSK_FS_FILE * a_fs_file, void *a_ptr)
     }
 
     // use their name if they have one
-    if (a_fs_file->meta->name2) {
+    if (a_fs_file->meta->name2 != NULL &&
+        a_fs_file->meta->name2->name != NULL &&
+        strlen(a_fs_file->meta->name2->name) > 0) {
         strncpy(data->fs_name->name, a_fs_file->meta->name2->name,
             data->fs_name->name_size);
     }
@@ -967,6 +1010,11 @@ find_orphan_meta_walk_cb(TSK_FS_FILE * a_fs_file, void *a_ptr)
             "OrphanFile-%" PRIuINUM, a_fs_file->meta->addr);
     }
     data->fs_name->meta_addr = a_fs_file->meta->addr;
+    /* unalloc MFT entries have their sequence number incremented
+     * when they are unallocated.  Decrement it in the file name so
+     * that it matches the typical situation where the name is one
+     * less. */
+    data->fs_name->meta_seq = a_fs_file->meta->seq - 1;
     data->fs_name->flags = TSK_FS_NAME_FLAG_UNALLOC;
     data->fs_name->type = TSK_FS_NAME_TYPE_UNDEF;
 

@@ -38,11 +38,11 @@ import org.junit.runners.Suite;
 
 /**
  *
- * Runs all regression tests and contains utility methods for the tests
- * The default ant target sets properties for the various folders. 
+ * Runs all regression tests and contains utility methods for the tests The
+ * default ant target sets properties for the various folders.
  */
 @RunWith(Suite.class)
-@Suite.SuiteClasses({org.sleuthkit.datamodel.TopDownTraversal.class, org.sleuthkit.datamodel.SequentialTraversal.class, org.sleuthkit.datamodel.CrossCompare.class, org.sleuthkit.datamodel.BottomUpTest.class, org.sleuthkit.datamodel.CPPtoJavaCompare.class})
+@Suite.SuiteClasses({org.sleuthkit.datamodel.TopDownTraversal.class, org.sleuthkit.datamodel.SequentialTraversal.class, org.sleuthkit.datamodel.CrossCompare.class, org.sleuthkit.datamodel.BottomUpTest.class, org.sleuthkit.datamodel.CPPtoJavaCompare.class, org.sleuthkit.datamodel.HashDbTest.class})
 public class DataModelTestSuite {
 
 	static final String TEST_IMAGE_DIR_NAME = "test" + java.io.File.separator + "Input";
@@ -51,6 +51,7 @@ public class DataModelTestSuite {
 	static final String RSLT = "rslt";
 	static final String SEQ = "_Seq";
 	static final String TD = "_TD";
+	static final String HASH = "_Hash";
 	static final String BTTMUP = "_BU";	// update .gitignore if this changes
 	static final String EX = "_Exc";
 	static final String TST = "types";
@@ -73,8 +74,8 @@ public class DataModelTestSuite {
 	}
 
 	/**
-	 * Generates a list of the traversals to be used for standard creations.
-	 * Not all tests need to be rebuilt. 
+	 * Generates a list of the traversals to be used for standard creations. Not
+	 * all tests need to be rebuilt.
 	 *
 	 * @return
 	 */
@@ -82,22 +83,23 @@ public class DataModelTestSuite {
 		List<ImgTraverser> ret = new ArrayList<ImgTraverser>();
 		ret.add(new SequentialTraversal(null));
 		ret.add(new TopDownTraversal(null));
-		
+
 		return ret;
 	}
 
 	/**
 	 * Creates the Sleuth Kit database for an image, then generates a string
-	 * representation of the given traversal testType of the resulting database to
-	 * use as a standard for comparison, and saves the the standard to a file.  Sorts
-	 * the data and saves both the unsorted and sorted files
+	 * representation of the given traversal testType of the resulting database
+	 * to use as a standard for comparison, and saves the the standard to a
+	 * file. Sorts the data and saves both the unsorted and sorted files
 	 *
 	 * @param outputPath The path to save the standard file to (will be
 	 * overwritten if it already exists)
 	 * @param tempDirPath An existing directory to create the test database in
 	 * @param imagePaths The path(s) to the image file(s)
 	 * @param testType The testType of traversal (i.e. test) to run.
-	 * @param outputExceptionsPath The exceptions file, will be used for logging purposes
+	 * @param outputExceptionsPath The exceptions file, will be used for logging
+	 * purposes
 	 */
 	public static void createOutput(String outputPath, String tempDirPath, List<String> imagePaths, ImgTraverser testType) {
 		java.io.File standardFile = new java.io.File(outputPath);
@@ -121,12 +123,12 @@ public class DataModelTestSuite {
 			}
 			writeExceptions(standardFile.getAbsolutePath(), inp);
 			process.commit();
-			
+
 			// dump the database based on the specific test testType
 			OutputStreamWriter standardWriter = testType.traverse(sk, standardFile.getAbsolutePath());
 			standardWriter.flush();
 			sk.close();
-			
+
 			// sort the data for later comparison (if needed)
 			runSort(standardFile.getAbsolutePath());
 		} catch (IOException ex) {
@@ -196,8 +198,6 @@ public class DataModelTestSuite {
 		}
 	}
 
-	
-
 	/**
 	 * Strips the file extension from the given string
 	 *
@@ -230,14 +230,13 @@ public class DataModelTestSuite {
 	public static String getImgName(String img) {
 		String[] imgSp;
 		if (System.getProperty("os.name").contains("Windows")) {
-			 imgSp = img.split("\\\\");
+			imgSp = img.split("\\\\");
 		} else {
-			 imgSp = img.split("/");
+			imgSp = img.split("/");
 		}
 		return stripExtension(imgSp[imgSp.length - 1]);
 	}
 
-	
 	/**
 	 * Gets the folder where results are stored in.
 	 *
@@ -246,7 +245,7 @@ public class DataModelTestSuite {
 	public static String getRsltDirPath() {
 		return System.getProperty(RSLT, "test" + java.io.File.separator + "output" + java.io.File.separator + "results");
 	}
-	
+
 	/**
 	 * Get the path for the output (result) file for a given image and test.
 	 *
@@ -287,15 +286,15 @@ public class DataModelTestSuite {
 	/**
 	 * Writes the given exception to the given file
 	 *
-	 * @param filename the path of the test output file that exceptions correspond to
+	 * @param filename the path of the test output file that exceptions
+	 * correspond to
 	 * @param ex the exception to be written
 	 */
 	protected static void writeExceptions(String filename, List<Exception> ex) {
 		String exceptionFileName = exceptionPath(filename);
 		try {
 			FileWriter exWriter = new FileWriter(exceptionFileName, true);
-			for(Exception exc: ex)
-			{
+			for (Exception exc : ex) {
 				exWriter.append(exc.toString());
 			}
 			exWriter.flush();
@@ -315,7 +314,8 @@ public class DataModelTestSuite {
 	}
 
 	/**
-	 * Reads the data for a given content object and adds the MD5 to the result object
+	 * Reads the data for a given content object and adds the MD5 to the result
+	 * object
 	 *
 	 * @param c the content object to be read
 	 * @param result the appendable to text of the MD5 to
@@ -337,7 +337,7 @@ public class DataModelTestSuite {
 
 		} catch (NoSuchAlgorithmException ex) {
 			logg.log(Level.SEVERE, "Failed to generate Hash", ex);
-		} catch (IOException ex){
+		} catch (IOException ex) {
 			logg.log(Level.SEVERE, "Failed to generate Hash", ex);
 		} catch (TskCoreException ex) {
 			List<Exception> inp = new ArrayList<Exception>();
@@ -361,31 +361,28 @@ public class DataModelTestSuite {
 		return hex.toString();
 	}
 
-	
 	/**
-	 * This is used only to regenerate the gold standards. It does not run tests. 
+	 * This is used only to regenerate the gold standards. It does not run
+	 * tests.
 	 *
 	 * @param args Ignored
 	 */
 	public static void main(String[] args) {
-		if(System.getProperty("os.name").contains("Mac")||System.getProperty("os.name").toLowerCase().contains("unix")){
+		if (System.getProperty("os.name").contains("Mac") || System.getProperty("os.name").toLowerCase().contains("unix")) {
 			java.io.File dep = new java.io.File("/usr/local/lib");
 			boolean deps = false;
-			for(String chk: dep.list())
-			{
-				deps = (deps||chk.toLowerCase().contains("tsk"));
+			for (String chk : dep.list()) {
+				deps = (deps || chk.toLowerCase().contains("tsk"));
 			}
-			if(!deps)
-			{
+			if (!deps) {
 				System.out.println("Run make install on tsk");
 				throw new RuntimeException("Run make install on tsk");
 			}
 		}
-		
+
 		String tempDirPath = System.getProperty("java.io.tmpdir");
 		tempDirPath = tempDirPath.substring(0, tempDirPath.length() - 1);
-		
-		
+
 		java.io.File goldStandardDirPath = new java.io.File(DataModelTestSuite.standardRootDirPath());
 		// delete the exception files
 		FileFilter testExFilter = new FileFilter() {
@@ -397,7 +394,7 @@ public class DataModelTestSuite {
 		for (java.io.File del : goldStandardDirPath.listFiles(testExFilter)) {
 			del.delete();
 		}
-		
+
 		// cycle through each image and test to generate output
 		List<ImgTraverser> tests = DataModelTestSuite.getTestsToRebuild();
 		List<List<String>> imagePaths = DataModelTestSuite.getImagePaths();
@@ -422,8 +419,8 @@ public class DataModelTestSuite {
 		try {
 			java.io.File fi1 = new java.io.File(original);
 			java.io.File fi2 = new java.io.File(results);
-			BufferedReader f1 = new BufferedReader(new FileReader(new java.io.File(original).getAbsolutePath()), 8192*4);
-			BufferedReader f2 = new BufferedReader(new FileReader(new java.io.File(results).getAbsolutePath()), 8192*4);
+			BufferedReader f1 = new BufferedReader(new FileReader(new java.io.File(original).getAbsolutePath()), 8192 * 4);
+			BufferedReader f2 = new BufferedReader(new FileReader(new java.io.File(results).getAbsolutePath()), 8192 * 4);
 			Scanner in1 = new Scanner(f1);
 			Scanner in2 = new Scanner(f2);
 			while (in1.hasNextLine() || in2.hasNextLine()) {
@@ -458,7 +455,7 @@ public class DataModelTestSuite {
 		} catch (InterruptedException ex) {
 			logg.log(Level.SEVERE, "Couldn't create Standard", ex);
 			throw new RuntimeException(ex);
-		} catch(IOException ex){
+		} catch (IOException ex) {
 			logg.log(Level.SEVERE, "Couldn't create Standard", ex);
 			throw new RuntimeException(ex);
 		}
@@ -473,12 +470,13 @@ public class DataModelTestSuite {
 	protected static String sortedFlPth(String path) {
 		return path.replace(".txt", "_SRT.txt");
 	}
-	
+
 	/**
-	 * Returns the name of the exception file given the name of the test output file.
-	 * 
+	 * Returns the name of the exception file given the name of the test output
+	 * file.
+	 *
 	 * @param path Path to the test output file
-	 * @return  String to exception file for the test
+	 * @return String to exception file for the test
 	 */
 	public static String exceptionPath(String path) {
 		return path.replace(".txt", DataModelTestSuite.EX + ".txt");
