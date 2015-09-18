@@ -3318,7 +3318,7 @@ ntfs_file_get_sidstr(TSK_FS_FILE * a_fs_file, char **sid_str)
 static void
 ntfs_proc_sii(TSK_FS_INFO * fs, NTFS_SXX_BUFFER * sii_buffer)
 {
-    unsigned int total_bytes_processed = 0;
+    unsigned int idx_total_bytes_processed = 0;
     unsigned int idx_buffer_length = 0;
     unsigned int sii_buffer_offset = 0;
 
@@ -3335,6 +3335,7 @@ ntfs_proc_sii(TSK_FS_INFO * fs, NTFS_SXX_BUFFER * sii_buffer)
         ntfs_idxrec *idxrec =
             (ntfs_idxrec *) & sii_buffer->buffer[sii_buffer_offset];
 
+        // total amount of data to be processed during current iteration of the "for" loop
         idx_buffer_length =
             tsk_getu32(fs->endian, idxrec->list.bufend_off);
 
@@ -3343,7 +3344,8 @@ ntfs_proc_sii(TSK_FS_INFO * fs, NTFS_SXX_BUFFER * sii_buffer)
             (ntfs_attr_sii *) ((uintptr_t) & idxrec->list +
             tsk_getu32(fs->endian, idxrec->list.begin_off));
 
-        total_bytes_processed =
+        // amount of data processed during current iteration of the "for" loop
+        idx_total_bytes_processed =
             (uint8_t) ((uintptr_t) sii - (uintptr_t) idxrec);
 
         // copy records into NTFS_INFO
@@ -3376,9 +3378,12 @@ ntfs_proc_sii(TSK_FS_INFO * fs, NTFS_SXX_BUFFER * sii_buffer)
 			}
 */
             sii++;
-            total_bytes_processed += sizeof(ntfs_attr_sii);
-        } while (total_bytes_processed + sizeof(ntfs_attr_sii) <=
-            idx_buffer_length);
+            idx_total_bytes_processed += sizeof(ntfs_attr_sii);
+            /* make sure we don't go over bounds of ntfs->sii_data.buffer */
+            if ((ntfs->sii_data.used * sizeof(ntfs_attr_sii)) + sizeof(ntfs_attr_sii) > ntfs->sii_data.size) {
+                return; // reached end of ntfs->sii_data.buffer
+            }
+        } while ((idx_total_bytes_processed + sizeof(ntfs_attr_sii) <= idx_buffer_length));  /* make sure we don't go over bounds of idxrec*/
     }
 }
 
