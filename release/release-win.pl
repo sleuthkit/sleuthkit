@@ -176,7 +176,7 @@ sub build_core {
 	# 2008 version
 	# `vcbuild /errfile:BuildErrors.txt tsk-win.sln "Release|Win32"`; 
 	# 2010 version
-	`msbuild.exe tsk-win.sln /p:Configuration=Release /clp:ErrorsOnly /nologo > BuildErrors.txt`;
+	`msbuild.exe tsk-win.sln /m /p:Configuration=Release /clp:ErrorsOnly /nologo > BuildErrors.txt`;
 	die "Build errors -- check win32/BuildErrors.txt" if (-s "BuildErrors.txt");
 
 	# Do a basic check on some of the executables
@@ -223,7 +223,7 @@ sub package_core {
 
 
 	# Copy standard files
-	`cp README.txt \"${rdir}\"`;
+	`cp README.md \"${rdir}/README.txt\"`;
 	`unix2dos \"${rdir}/README.txt\" 2> /dev/null`;
 	`cp win32/docs/README-win32.txt \"${rdir}\"`;
 	`cp NEWS.txt \"${rdir}\"`;
@@ -269,7 +269,7 @@ sub build_framework {
 	# 2008 version
 	#`vcbuild /errfile:BuildErrors.txt framework.sln "Release|Win32"`; 
 	# 2010 version
-	`msbuild.exe framework.sln /p:Configuration=Release /clp:ErrorsOnly /nologo > BuildErrors.txt`;
+	`msbuild.exe framework.sln /m /p:Configuration=Release /clp:ErrorsOnly /nologo > BuildErrors.txt`;
 	die "Build errors -- check framework/msvcpp/framework/BuildErrors.txt" if (-e "BuildErrors.txt" && -s "BuildErrors.txt");
 
 	chdir "../..";
@@ -404,5 +404,5 @@ chdir ("$TSKDIR") or die "Error changing to TSK dir $TSKDIR";
 update_code();
 build_core();
 package_core();
-build_framework();
-package_framework();
+# build_framework();
+# package_framework();
