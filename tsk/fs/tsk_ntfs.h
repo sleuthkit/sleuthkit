@@ -374,6 +374,7 @@ extern "C" {
 
 /*
  * Starting at begin_off is a stream of ntfs_idxentry structures 
+ * All offsets are relative to start of the ntfs_idxelist structure
  */
     typedef struct {
         uint8_t begin_off[4];   /* offset to start of seq of idx entries */
