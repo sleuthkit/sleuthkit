@@ -2869,7 +2869,7 @@ public class SleuthkitCase {
 				statement.setNull(1, java.sql.Types.BIGINT);
 			}
 
-			statement.setLong(2, TskData.ObjectType.ABSTRACTFILE.getObjectType());
+			statement.setInt(2, TskData.ObjectType.ABSTRACTFILE.getObjectType());
 			connection.executeUpdate(statement);
 			resultSet = statement.getGeneratedKeys();
 			resultSet.next();
