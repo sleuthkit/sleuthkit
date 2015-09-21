@@ -3318,10 +3318,7 @@ ntfs_file_get_sidstr(TSK_FS_FILE * a_fs_file, char **sid_str)
 static void
 ntfs_proc_sii(TSK_FS_INFO * fs, NTFS_SXX_BUFFER * sii_buffer)
 {
-    unsigned int total_bytes_processed = 0;
-    unsigned int idx_buffer_length = 0;
     unsigned int sii_buffer_offset = 0;
-
     NTFS_INFO *ntfs = (NTFS_INFO *) fs;
     ntfs_attr_sii *sii;
 
@@ -3332,22 +3329,36 @@ ntfs_proc_sii(TSK_FS_INFO * fs, NTFS_SXX_BUFFER * sii_buffer)
     /* Loop by cluster size */
     for (sii_buffer_offset = 0; sii_buffer_offset < sii_buffer->size;
         sii_buffer_offset += ntfs->idx_rsize_b) {
+
+        uintptr_t idx_buffer_end = 0;
+
         ntfs_idxrec *idxrec =
             (ntfs_idxrec *) & sii_buffer->buffer[sii_buffer_offset];
 
-        idx_buffer_length =
-            tsk_getu32(fs->endian, idxrec->list.bufend_off);
-
+        // stop processing if we hit corrupt data
+        if (tsk_getu32(fs->endian, idxrec->list.begin_off) > ntfs->idx_rsize_b) {
+            break;
+        }
+        else if (tsk_getu32(fs->endian, idxrec->list.bufend_off) > ntfs->idx_rsize_b) {
+            break;
+        }
+        else if (tsk_getu32(fs->endian, idxrec->list.begin_off) > tsk_getu32(fs->endian, idxrec->list.bufend_off))
+        {
+            break;
+        }
+        
         // get pointer to first record
         sii =
             (ntfs_attr_sii *) ((uintptr_t) & idxrec->list +
             tsk_getu32(fs->endian, idxrec->list.begin_off));
+        
+        // where last record ends
+        idx_buffer_end = (uintptr_t) & idxrec->list +
+            tsk_getu32(fs->endian, idxrec->list.bufend_off);
 
-        total_bytes_processed =
-            (uint8_t) ((uintptr_t) sii - (uintptr_t) idxrec);
-
+        
         // copy records into NTFS_INFO
-        do {
+        while ((uintptr_t)sii + sizeof(ntfs_attr_sii) <= idx_buffer_end) {
 /*
 			if ((tsk_getu16(fs->endian,sii->size) == 0x14) &&
 				(tsk_getu16(fs->endian,sii->data_off) == 0x14) &&
@@ -3376,9 +3387,7 @@ ntfs_proc_sii(TSK_FS_INFO * fs, NTFS_SXX_BUFFER * sii_buffer)
 			}
 */
             sii++;
-            total_bytes_processed += sizeof(ntfs_attr_sii);
-        } while (total_bytes_processed + sizeof(ntfs_attr_sii) <=
-            idx_buffer_length);
+        } 
     }
 }
 
