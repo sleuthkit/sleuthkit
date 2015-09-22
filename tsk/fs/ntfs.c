@@ -1824,6 +1824,11 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                     id_new, name, tsk_getu64(fs->endian,
                         attr->c.nr.start_vcn));
 
+            // sanity check
+            if (tsk_getu32(fs->endian, attr->c.nr.run_off) > tsk_getu32(fs->endian, attr->len)) {
+                break;
+            }
+
             /* convert the run to generic form */
             retval = ntfs_make_data_run(ntfs,
                 tsk_getu64(fs->endian, attr->c.nr.start_vcn),
