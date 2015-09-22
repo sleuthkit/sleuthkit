@@ -1657,6 +1657,15 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
         tsk_error_set_errstr("Null attribute list in ntfs_proc_attrseq");
         return TSK_ERR;
     }
+
+    if (len > ntfs->mft_rsize_b) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("invalid length in ntfs_proc_attrseq");
+        return TSK_ERR;
+    }
+
+
     /* Cycle through the list of attributes */
     for (attr = a_attrseq; ((uintptr_t) attr >= (uintptr_t) a_attrseq)
         && ((uintptr_t) attr <= ((uintptr_t) a_attrseq + len))
@@ -1825,7 +1834,9 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                         attr->c.nr.start_vcn));
 
             // sanity check
-            if (tsk_getu32(fs->endian, attr->c.nr.run_off) > tsk_getu32(fs->endian, attr->len)) {
+            if (tsk_getu16(fs->endian, attr->c.nr.run_off) > tsk_getu32(fs->endian, attr->len)) {
+                if (tsk_verbose) 
+                    tsk_fprintf(stderr, "ntfs_proc_attrseq: run offset too big\n");
                 break;
             }
 
@@ -2460,6 +2471,13 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
             }
         }
 
+        // bounds check
+        if (tsk_getu16(fs->endian, mft->attr_off) > ntfs->mft_rsize_b) {
+            if (tsk_verbose) 
+                    tsk_fprintf(stderr, "ntfs_proc_attrlist: corrupt MFT entry attribute offsets\n");
+            continue;
+        }
+
         /* Process the attribute seq for this MFT entry and add them
          * to the TSK_FS_META structure
          */
@@ -2585,9 +2603,17 @@ ntfs_dinode_copy(NTFS_INFO * ntfs, TSK_FS_FILE * a_fs_file, char *a_buf,
             NTFS_MFT_INUSE) ? TSK_FS_META_FLAG_ALLOC :
         TSK_FS_META_FLAG_UNALLOC);
 
+
     /* Process the attribute sequence to fill in the fs_meta->attr
      * list and the other info such as size and times
      */
+    if (tsk_getu16(fs->endian, mft->attr_off) > ntfs->mft_rsize_b) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("ntfs_dinode_copy: corrupt MFT entry attribute offsets");
+        return TSK_ERR;
+    }
+
     attr =
         (ntfs_attr *) ((uintptr_t) mft + tsk_getu16(fs->endian,
             mft->attr_off));
@@ -2607,7 +2633,7 @@ ntfs_dinode_copy(NTFS_INFO * ntfs, TSK_FS_FILE * a_fs_file, char *a_buf,
     else
         a_fs_file->meta->flags |= TSK_FS_META_FLAG_USED;
 
-    return 0;
+    return TSK_OK;
 }
 
 
@@ -3351,13 +3377,18 @@ ntfs_proc_sii(TSK_FS_INFO * fs, NTFS_SXX_BUFFER * sii_buffer)
 
         // stop processing if we hit corrupt data
         if (tsk_getu32(fs->endian, idxrec->list.begin_off) > ntfs->idx_rsize_b) {
+            if (tsk_verbose) 
+                tsk_fprintf(stderr, "ntfs_proc_sii: corrupt offset\n");
             break;
         }
         else if (tsk_getu32(fs->endian, idxrec->list.bufend_off) > ntfs->idx_rsize_b) {
+            if (tsk_verbose) 
+                tsk_fprintf(stderr, "ntfs_proc_sii: corrupt offset\n");
             break;
         }
-        else if (tsk_getu32(fs->endian, idxrec->list.begin_off) > tsk_getu32(fs->endian, idxrec->list.bufend_off))
-        {
+        else if (tsk_getu32(fs->endian, idxrec->list.begin_off) > tsk_getu32(fs->endian, idxrec->list.bufend_off)) {
+            if (tsk_verbose) 
+                tsk_fprintf(stderr, "ntfs_proc_sii: corrupt offset\n");
             break;
         }
         
@@ -3382,6 +3413,8 @@ ntfs_proc_sii(TSK_FS_INFO * fs, NTFS_SXX_BUFFER * sii_buffer)
 */
             /* make sure we don't go over bounds of ntfs->sii_data.buffer */
             if ((ntfs->sii_data.used + 1) * sizeof(ntfs_attr_sii) > ntfs->sii_data.size) {
+                if (tsk_verbose) 
+                    tsk_fprintf(stderr, "ntfs_proc_sii: data buffer too small\n");
                 return; // reached end of ntfs->sii_data.buffer
             }
 
