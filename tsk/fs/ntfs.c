@@ -1834,7 +1834,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                         attr->c.nr.start_vcn));
 
             // sanity check
-            if (tsk_getu32(fs->endian, attr->c.nr.run_off) > tsk_getu32(fs->endian, attr->len)) {
+            if (tsk_getu16(fs->endian, attr->c.nr.run_off) > tsk_getu32(fs->endian, attr->len)) {
                 if (tsk_verbose) 
                     tsk_fprintf(stderr, "ntfs_proc_attrseq: run offset too big\n");
                 break;
