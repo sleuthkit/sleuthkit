@@ -3366,6 +3366,11 @@ ntfs_proc_sii(TSK_FS_INFO * fs, NTFS_SXX_BUFFER * sii_buffer)
 				)
 			{
 */
+            /* make sure we don't go over bounds of ntfs->sii_data.buffer */
+            if ((ntfs->sii_data.used + 1) * sizeof(ntfs_attr_sii) > ntfs->sii_data.size) {
+                return; // reached end of ntfs->sii_data.buffer
+            }
+
             memcpy(ntfs->sii_data.buffer +
                 (ntfs->sii_data.used * sizeof(ntfs_attr_sii)), sii,
                 sizeof(ntfs_attr_sii));
@@ -3387,11 +3392,6 @@ ntfs_proc_sii(TSK_FS_INFO * fs, NTFS_SXX_BUFFER * sii_buffer)
 			}
 */
             sii++;
-
-			/* make sure we don't go over bounds of ntfs->sii_data.buffer */
-            if ((ntfs->sii_data.used * sizeof(ntfs_attr_sii)) + sizeof(ntfs_attr_sii) > ntfs->sii_data.size) {
-                return; // reached end of ntfs->sii_data.buffer
-            }
         } 
     }
 }
