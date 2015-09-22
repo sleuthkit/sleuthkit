@@ -2863,10 +2863,11 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
 {
     ssize_t cnt = 0;
     ntfs_attr *attr = NULL;
+    ntfs_attr *data_attr = NULL;
     TSK_FS_INFO *fs = NULL;
     ntfs_mft *mft = NULL;
 
-    if( ntfs == NULL ) {
+    if (ntfs == NULL) {
         goto on_error;
     }
     fs = &ntfs->fs_info;
@@ -2882,21 +2883,29 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
 
     attr = (ntfs_attr *) ((uintptr_t) mft +
         tsk_getu16(fs->endian, mft->attr_off));
+    data_attr = NULL;
 
     /* cycle through them */
-    while (((uintptr_t) attr >= (uintptr_t) mft)
-        && ((uintptr_t) attr <=
-            ((uintptr_t) mft + (uintptr_t) ntfs->mft_rsize_b))
-        && (tsk_getu32(fs->endian, attr->len) > 0
-            && (tsk_getu32(fs->endian, attr->type) != 0xffffffff)
-            && (tsk_getu32(fs->endian, attr->type) != NTFS_ATYPE_DATA))) {
+    while ((uintptr_t) attr + sizeof (ntfs_attr) <=
+            ((uintptr_t) mft + (uintptr_t) ntfs->mft_rsize_b)) {
+
+        if ((tsk_getu32(fs->endian, attr->len) == 0) ||
+            (tsk_getu32(fs->endian, attr->type) == 0xffffffff)) {
+            break;
+        }
+
+        if (tsk_getu32(fs->endian, attr->type) == NTFS_ATYPE_DATA) {
+            data_attr = attr;
+            break;
+        }
+
         attr =
             (ntfs_attr *) ((uintptr_t) attr + tsk_getu32(fs->endian,
                 attr->len));
     }
 
     /* did we get it? */
-    if (tsk_getu32(fs->endian, attr->type) != NTFS_ATYPE_DATA) {
+    if (data_attr == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
         tsk_error_set_errstr("Error Finding Bitmap Data Attribute");
@@ -2905,10 +2914,10 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
 
     /* convert to generic form */
     if ((ntfs_make_data_run(ntfs,
-                tsk_getu64(fs->endian, attr->c.nr.start_vcn),
+                tsk_getu64(fs->endian, data_attr->c.nr.start_vcn),
                 (ntfs_runlist
-                    *) ((uintptr_t) attr + tsk_getu16(fs->endian,
-                        attr->c.nr.run_off)), &(ntfs->bmap),
+                    *) ((uintptr_t) data_attr + tsk_getu16(fs->endian,
+                        data_attr->c.nr.run_off)), &(ntfs->bmap),
                 NULL, NTFS_MFT_BMAP)) != TSK_OK) {
         goto on_error;
     }
@@ -2921,7 +2930,7 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
     ntfs->bmap_buf_off = 0;
 
     // Check ntfs->bmap before it is accessed.
-    if( ntfs->bmap == NULL ) {
+    if (ntfs->bmap == NULL) {
         goto on_error;
     }
     if (ntfs->bmap->addr > fs->last_block) {
@@ -2945,12 +2954,12 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
         goto on_error;
     }
 
-    free( mft );
+    free (mft);
     return 0;
 
 on_error:
-    if( mft != NULL ) {
-        free( mft );
+    if (mft != NULL) {
+        free (mft);
     }
     return 1;
 }
