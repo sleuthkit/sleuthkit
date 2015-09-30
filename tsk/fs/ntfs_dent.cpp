@@ -1060,8 +1060,8 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
 
             /* Length from end of attribute to start of this */
             rec_len =
-                (uint32_t) (idxalloc_len - (uintptr_t) idxrec_p -
-                (uintptr_t) idxalloc);
+                (uint32_t) (idxalloc_len - ((uintptr_t) idxrec_p -
+                (uintptr_t) idxalloc));
 
             if (tsk_verbose)
                 tsk_fprintf(stderr,
@@ -1075,6 +1075,16 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             }
 
             idxelist = &idxrec_p->list;
+            if (tsk_getu32(a_fs->endian, idxelist->begin_off) > rec_len) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+                tsk_error_set_errstr
+                    ("Error: Index list offsets are invalid on entry: %"
+                    PRIuINUM, fs_dir->fs_file->meta->addr);
+                free(idxalloc);
+                return TSK_COR;
+            }
+
             idxe = (ntfs_idxentry *) ((uintptr_t) idxelist +
                 tsk_getu32(a_fs->endian, idxelist->begin_off));
 
