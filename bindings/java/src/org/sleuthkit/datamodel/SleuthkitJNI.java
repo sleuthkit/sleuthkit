@@ -197,8 +197,12 @@ public class SleuthkitJNI {
 				for (Map.Entry<String, Long> imageHandleMap : imageHandleCache.entrySet()){
 					closeImgNat(imageHandleMap.getValue()); 
 				}
-				
+
 				// clear both maps
+				/* NOTE: it is possible to close a case while ingest is going in the background.
+				 In this scenario it is possible for an igest module to try to read from source image.
+				 If this happens, image will be re-opened in a normal manner.
+				 */
 				fsHandleCache.clear();
 				imageHandleCache.clear();
 			}
