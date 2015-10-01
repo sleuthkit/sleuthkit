@@ -181,19 +181,26 @@ public class SleuthkitJNI {
 		void free() throws TskCoreException {
 			synchronized (cacheLock) {
 				// close all file system handles 
+				// loop over all images for which we have opened a file system
 				for (Map.Entry<Long, Map<Long, Long>> imageToFsMap : fsHandleCache.entrySet())
 				{
 					Map<Long, Long> imgOffSetToFsHandle = imageToFsMap.getValue();
+					// for each image loop over all file systems open as part of that image
 					for (Map.Entry<Long, Long> fsHandleMap : imgOffSetToFsHandle.entrySet())
 					{
+						// close the file system
 						closeFsNat(fsHandleMap.getValue());
 					}
-					//System.out.println(entry.getKey() + "/" + entry.getValue());
 				}
 
 				// close all open image handles
+				for (Map.Entry<String, Long> imageHandleMap : imageHandleCache.entrySet()){
+					closeImgNat(imageHandleMap.getValue()); 
+				}
 				
 				// clear both maps
+				fsHandleCache.clear();
+				imageHandleCache.clear();
 			}
 			
 			SleuthkitJNI.closeCaseDbNat(caseDbPointer);
