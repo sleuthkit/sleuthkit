@@ -182,20 +182,19 @@ public class SleuthkitJNI {
 			synchronized (cacheLock) {
 				// close all file system handles 
 				// loop over all images for which we have opened a file system
-				for (Map.Entry<Long, Map<Long, Long>> imageToFsMap : fsHandleCache.entrySet())
+				for (Map<Long, Long> imageToFsMap : fsHandleCache.values())
 				{
-					Map<Long, Long> imgOffSetToFsHandle = imageToFsMap.getValue();
 					// for each image loop over all file systems open as part of that image
-					for (Map.Entry<Long, Long> fsHandleMap : imgOffSetToFsHandle.entrySet())
+					for (Long fsHandle : imageToFsMap.values())
 					{
-						// close the file system
-						closeFsNat(fsHandleMap.getValue());
+						// close the file system handle
+						closeFsNat(fsHandle);
 					}
 				}
 
 				// close all open image handles
-				for (Map.Entry<String, Long> imageHandleMap : imageHandleCache.entrySet()){
-					closeImgNat(imageHandleMap.getValue()); 
+				for (Long imageHandle : imageHandleCache.values()){
+					closeImgNat(imageHandle); 
 				}
 
 				// clear both maps
