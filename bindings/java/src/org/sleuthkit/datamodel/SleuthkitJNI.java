@@ -173,7 +173,8 @@ public class SleuthkitJNI {
 		}
 
 		/**
-		 * Close the case database as well as close all open image and file system handles.
+		 * Close the case database as well as close all open image and file
+		 * system handles.
 		 *
 		 * @throws TskCoreException exception thrown if critical error occurs
 		 * within TSK
@@ -182,19 +183,17 @@ public class SleuthkitJNI {
 			synchronized (cacheLock) {
 				// close all file system handles 
 				// loop over all images for which we have opened a file system
-				for (Map<Long, Long> imageToFsMap : fsHandleCache.values())
-				{
+				for (Map<Long, Long> imageToFsMap : fsHandleCache.values()) {
 					// for each image loop over all file systems open as part of that image
-					for (Long fsHandle : imageToFsMap.values())
-					{
+					for (Long fsHandle : imageToFsMap.values()) {
 						// close the file system handle
 						closeFsNat(fsHandle);
 					}
 				}
 
 				// close all open image handles
-				for (Long imageHandle : imageHandleCache.values()){
-					closeImgNat(imageHandle); 
+				for (Long imageHandle : imageHandleCache.values()) {
+					closeImgNat(imageHandle);
 				}
 
 				// clear both maps
@@ -205,7 +204,7 @@ public class SleuthkitJNI {
 				fsHandleCache.clear();
 				imageHandleCache.clear();
 			}
-			
+
 			SleuthkitJNI.closeCaseDbNat(caseDbPointer);
 		}
 
@@ -437,9 +436,7 @@ public class SleuthkitJNI {
 				CaseDbHandle.imageHandleCache.put(imageKey, imageHandle);
 			}
 		}
-
 		return imageHandle;
-
 	}
 
 	/**
