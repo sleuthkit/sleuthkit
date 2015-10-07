@@ -4753,7 +4753,7 @@ public class SleuthkitCase {
 	 *
 	 * @param observer The observer to remove.
 	 */
-	public static void removerErrorObserver(ErrorObserver observer) {
+	public static void removeErrorObserver(ErrorObserver observer) {
 		int i = sleuthkitCaseErrorObservers.indexOf(observer);
 		if (i >= 0) {
 			sleuthkitCaseErrorObservers.remove(i);
