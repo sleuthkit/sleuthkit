@@ -81,7 +81,7 @@ public class SleuthkitCase {
 	private final ResultSetHelper rsHelper = new ResultSetHelper(this);
 	private final Map<Long, Long> carvedFileContainersCache = new HashMap<Long, Long>(); // Caches the IDs of the root $CarvedFiles for each volume.
 	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system results.
-	private static final ArrayList<ErrorObserver> sleuthkitCaseErrorObservers = new ArrayList<ErrorObserver>();
+	private static final ArrayList<ErrorObserver> errorObservers = new ArrayList<ErrorObserver>();
 	private final String dbPath;
 	private final DbType dbType;
 	private final String caseDirPath;
@@ -4708,7 +4708,35 @@ public class SleuthkitCase {
 	 */
 	public interface ErrorObserver {
 
-		void receiveError(Exception ex);
+		/**
+		 * List of arguments for the context string parameters. This does not
+		 * preclude the use of arbitrary context strings by client code, but it
+		 * does provide a place to define standard context strings to allow
+		 * filtering of notifications by implementations of ErrorObserver.
+		 */
+		public enum Context {
+
+			/**
+			 * Error occurred while reading image content.
+			 */
+			IMAGE_READ_ERROR("Image File Read Error"),
+			/**
+			 * Error occurred while reading database content.
+			 */
+			DATABASE_READ_ERROR("Database Read Error");
+
+			private final String contextString;
+
+			private Context(String context) {
+				this.contextString = context;
+			}
+
+			public String getContextString() {
+				return contextString;
+			}
+		};
+
+		void receiveError(String context, String errorMessage);
 	}
 
 	/**
@@ -4717,7 +4745,7 @@ public class SleuthkitCase {
 	 * @param observer The observer to add.
 	 */
 	public static void addErrorObserver(ErrorObserver observer) {
-		sleuthkitCaseErrorObservers.add(observer);
+		errorObservers.add(observer);
 	}
 
 	/**
@@ -4725,29 +4753,22 @@ public class SleuthkitCase {
 	 *
 	 * @param observer The observer to remove.
 	 */
-	public static void removeErrorObserver(ErrorObserver observer) {
-		int i = sleuthkitCaseErrorObservers.indexOf(observer);
+	public static void removerErrorObserver(ErrorObserver observer) {
+		int i = errorObservers.indexOf(observer);
 		if (i >= 0) {
-			sleuthkitCaseErrorObservers.remove(i);
+			errorObservers.remove(i);
 		}
 	}
 
 	/**
 	 * Submit an error to all clients that are listening.
 	 *
-	 * @param typeOfError The error type. Different clients may handle different
-	 * types of errors.
+	 * @param context The context in which the error occurred.
 	 * @param errorMessage A description of the error that occurred.
 	 */
-	private static void notifyError(Exception ex) {
-		for (ErrorObserver observer : sleuthkitCaseErrorObservers) {
-			if (observer != null) {
-				try {
-					observer.receiveError(ex);
-				} catch (Exception exp) {
-					logger.log(Level.WARNING, "Observer client unable to receive message", ex);
-				}
-			}
+	public static void submitError(String context, String errorMessage) {
+		for (ErrorObserver observer : errorObservers) {
+			observer.receiveError(context, errorMessage);
 		}
 	}
 
@@ -6007,7 +6028,7 @@ public class SleuthkitCase {
 							Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Unexpectedly unable to wait for database.", exp);
 						}
 					} else {
-						notifyError(ex);
+						submitError(ErrorObserver.Context.DATABASE_READ_ERROR.getContextString(), ex.getMessage());
 						throw ex;
 					}
 				}
@@ -6057,7 +6078,7 @@ public class SleuthkitCase {
 							Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Unexpectedly unable to wait for database.", exp);
 						}
 					} else {
-						notifyError(ex);
+						submitError(ErrorObserver.Context.DATABASE_READ_ERROR.getContextString(), ex.getMessage());
 						throw ex;
 					}
 				}
