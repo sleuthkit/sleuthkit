@@ -36,6 +36,8 @@
 /win32/Release_PostgreSQL/
 /win32/*/Release/
 /win32/*/Release_PostgreSQL/
+/win32/Release_NoLibs/
+/win32/*/Release_NoLibs/
 /win32/*/x64/
 /win32/x64/
 /win32/*/*.user
