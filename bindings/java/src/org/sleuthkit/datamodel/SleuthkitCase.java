@@ -81,7 +81,7 @@ public class SleuthkitCase {
 	private final ResultSetHelper rsHelper = new ResultSetHelper(this);
 	private final Map<Long, Long> carvedFileContainersCache = new HashMap<Long, Long>(); // Caches the IDs of the root $CarvedFiles for each volume.
 	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system results.
-	private static final ArrayList<ErrorObserver> errorObservers = new ArrayList<ErrorObserver>();
+	private static final ArrayList<ErrorObserver> sleuthkitCaseErrorObservers = new ArrayList<ErrorObserver>();
 	private final String dbPath;
 	private final DbType dbType;
 	private final String caseDirPath;
@@ -4745,7 +4745,7 @@ public class SleuthkitCase {
 	 * @param observer The observer to add.
 	 */
 	public static void addErrorObserver(ErrorObserver observer) {
-		errorObservers.add(observer);
+		sleuthkitCaseErrorObservers.add(observer);
 	}
 
 	/**
@@ -4754,9 +4754,9 @@ public class SleuthkitCase {
 	 * @param observer The observer to remove.
 	 */
 	public static void removerErrorObserver(ErrorObserver observer) {
-		int i = errorObservers.indexOf(observer);
+		int i = sleuthkitCaseErrorObservers.indexOf(observer);
 		if (i >= 0) {
-			errorObservers.remove(i);
+			sleuthkitCaseErrorObservers.remove(i);
 		}
 	}
 
@@ -4767,7 +4767,7 @@ public class SleuthkitCase {
 	 * @param errorMessage A description of the error that occurred.
 	 */
 	public static void submitError(String context, String errorMessage) {
-		for (ErrorObserver observer : errorObservers) {
+		for (ErrorObserver observer : sleuthkitCaseErrorObservers) {
 			observer.receiveError(context, errorMessage);
 		}
 	}
