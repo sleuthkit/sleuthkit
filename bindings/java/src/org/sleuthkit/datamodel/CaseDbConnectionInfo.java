@@ -18,9 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.DbType;
 
@@ -87,48 +84,5 @@ public class CaseDbConnectionInfo {
 
 	public void setPassword(String pass) {
 		this.password = pass;
-	}
-
-	/**
-	 * Returns true if the current database settings are sufficient to connect
-	 * to the database type indicated.
-	 *
-	 * @return True or false.
-	 */
-	public boolean canConnect() {
-		// Check if we can talk to the database. If you add a database, be sure
-		// to add the right connection string to the switch statement below.
-		boolean commsEstablished = false;
-		try {
-			switch (dbType) {
-
-				case POSTGRESQL:
-					Class.forName("org.postgresql.Driver");
-					/// TODO this should be done through the connection pool if we can.
-					Connection conn = DriverManager.getConnection(
-							"jdbc:postgresql://" + this.hostNameOrIP + ":" + this.portNumber + "/postgres",
-							this.userName,
-							this.password); // NON-NLS
-					if (conn != null) {
-						commsEstablished = true;
-						conn.close();
-					}
-					break;
-
-				case SQLITE:
-					logger.log(Level.INFO, "Invalid database type."); //NON-NLS
-					commsEstablished = false;
-					break;
-
-				default:
-					logger.log(Level.INFO, "Unset database type."); //NON-NLS
-					commsEstablished = false;
-					break;
-			}
-		} catch (Exception ex) {
-			logger.log(Level.INFO, "Bad permissions or bad database connection string", ex); //NON-NLS
-			commsEstablished = false;
-		}
-		return commsEstablished;
 	}
 }
