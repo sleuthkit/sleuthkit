@@ -311,8 +311,7 @@ copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
       <CompileAsManaged>false</CompileAsManaged>
     </ClCompile>
     <PostBuildEvent>
-      <Command>copy "$(LIBEWF_HOME)\msvscpp\release\libewf.dll" "$(OutDir)"
-copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
+      <Command>
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
