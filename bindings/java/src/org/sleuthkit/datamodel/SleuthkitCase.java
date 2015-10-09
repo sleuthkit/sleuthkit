@@ -81,7 +81,7 @@ public class SleuthkitCase {
 	private final ResultSetHelper rsHelper = new ResultSetHelper(this);
 	private final Map<Long, Long> carvedFileContainersCache = new HashMap<Long, Long>(); // Caches the IDs of the root $CarvedFiles for each volume.
 	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system results.
-	private static final ArrayList<ErrorObserver> sleuthkitCaseErrorObservers = new ArrayList<ErrorObserver>();
+	private final ArrayList<ErrorObserver> sleuthkitCaseErrorObservers = new ArrayList<ErrorObserver>();
 	private final String dbPath;
 	private final DbType dbType;
 	private final String caseDirPath;
@@ -94,6 +94,106 @@ public class SleuthkitCase {
 	// locking protocol improves performance for reasons that are not currently
 	// understood. Note that the lock is contructed to use a fairness policy.
 	private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true);
+	
+	protected interface DbCommand {
+
+		void execute() throws SQLException;
+	}
+
+	enum PREPARED_STATEMENT {
+
+		SELECT_ATTRIBUTES_OF_ARTIFACT("SELECT artifact_id, source, context, attribute_type_id, value_type, " //NON-NLS
+				+ "value_byte, value_text, value_int32, value_int64, value_double " //NON-NLS
+				+ "FROM blackboard_attributes WHERE artifact_id = ?"), //NON-NLS
+		SELECT_ARTIFACT_BY_ID("SELECT artifact_id ,obj_id,  artifact_type_id FROM blackboard_artifacts WHERE artifact_id = ?"), //NON-NLS
+		SELECT_ARTIFACTS_BY_TYPE("SELECT artifact_id, obj_id FROM blackboard_artifacts " //NON-NLS
+				+ "WHERE artifact_type_id = ?"), //NON-NLS
+		COUNT_ARTIFACTS_OF_TYPE("SELECT COUNT(*) FROM blackboard_artifacts WHERE artifact_type_id = ?"), //NON-NLS
+		COUNT_ARTIFACTS_FROM_SOURCE("SELECT COUNT(*) FROM blackboard_artifacts WHERE obj_id = ?"), //NON-NLS
+		SELECT_ARTIFACTS_BY_SOURCE_AND_TYPE("SELECT artifact_id FROM blackboard_artifacts WHERE obj_id = ? AND artifact_type_id = ?"), //NON-NLS
+		COUNT_ARTIFACTS_BY_SOURCE_AND_TYPE("SELECT COUNT(*) FROM blackboard_artifacts WHERE obj_id = ? AND artifact_type_id = ?"), //NON-NLS
+		SELECT_FILES_BY_PARENT("SELECT tsk_files.* " //NON-NLS
+				+ "FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
+				+ "ON tsk_objects.obj_id=tsk_files.obj_id " //NON-NLS
+				+ "WHERE (tsk_objects.par_obj_id = ? ) " //NON-NLS
+				+ "ORDER BY tsk_files.dir_type, LOWER(tsk_files.name)"), //NON-NLS
+		SELECT_FILES_BY_PARENT_AND_TYPE("SELECT tsk_files.* " //NON-NLS
+				+ "FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
+				+ "ON tsk_objects.obj_id=tsk_files.obj_id " //NON-NLS
+				+ "WHERE (tsk_objects.par_obj_id = ? AND tsk_files.type = ? ) " //NON-NLS
+				+ "ORDER BY tsk_files.dir_type, LOWER(tsk_files.name)"), //NON-NLS
+		SELECT_FILE_IDS_BY_PARENT("SELECT tsk_files.obj_id FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
+				+ "ON tsk_objects.obj_id=tsk_files.obj_id WHERE (tsk_objects.par_obj_id = ?)"), //NON-NLS
+		SELECT_FILE_IDS_BY_PARENT_AND_TYPE("SELECT tsk_files.obj_id " //NON-NLS
+				+ "FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
+				+ "ON tsk_objects.obj_id=tsk_files.obj_id " //NON-NLS
+				+ "WHERE (tsk_objects.par_obj_id = ? " //NON-NLS
+				+ "AND tsk_files.type = ? )"), //NON-NLS
+		SELECT_FILE_BY_ID("SELECT * FROM tsk_files WHERE obj_id = ? LIMIT 1"), //NON-NLS
+		INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id) " //NON-NLS
+				+ "VALUES (?, ?, ?)"), //NON-NLS
+		POSTGRESQL_INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id) " //NON-NLS
+				+ "VALUES (DEFAULT, ?, ?)"), //NON-NLS
+		INSERT_STRING_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_text) " //NON-NLS
+				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
+		INSERT_BYTE_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_byte) " //NON-NLS
+				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
+		INSERT_INT_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_int32) " //NON-NLS
+				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
+		INSERT_LONG_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_int64) " //NON-NLS
+				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
+		INSERT_DOUBLE_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_double) " //NON-NLS
+				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
+		SELECT_FILES_BY_FILE_SYSTEM_AND_NAME("SELECT * FROM tsk_files WHERE LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE LOWER('%journal%') AND fs_obj_id = ?"), //NON-NLS
+		SELECT_FILES_BY_FILE_SYSTEM_AND_PATH("SELECT * FROM tsk_files WHERE LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE LOWER('%journal%') AND LOWER(parent_path) LIKE LOWER(?) AND fs_obj_id = ?"), //NON-NLS
+		UPDATE_FILE_MD5("UPDATE tsk_files SET md5 = ? WHERE obj_id = ?"), //NON-NLS
+		SELECT_LOCAL_PATH_FOR_FILE("SELECT path FROM tsk_files_path WHERE obj_id = ?"), //NON-NLS
+		SELECT_PATH_FOR_FILE("SELECT parent_path FROM tsk_files WHERE obj_id = ?"), //NON-NLS
+		SELECT_FILE_NAME("SELECT name FROM tsk_files WHERE obj_id = ?"), //NON-NLS
+		SELECT_DERIVED_FILE("SELECT derived_id, rederive FROM tsk_files_derived WHERE obj_id = ?"), //NON-NLS
+		SELECT_FILE_DERIVATION_METHOD("SELECT tool_name, tool_version, other FROM tsk_files_derived_method WHERE derived_id = ?"), //NON-NLS
+		SELECT_MAX_OBJECT_ID("SELECT MAX(obj_id) FROM tsk_objects"), //NON-NLS
+		INSERT_OBJECT("INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)"), //NON-NLS
+		INSERT_FILE("INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path) " //NON-NLS
+				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
+		INSERT_LAYOUT_FILE("INSERT INTO tsk_file_layout (obj_id, byte_start, byte_len, sequence) " //NON-NLS
+				+ "VALUES (?, ?, ?, ?)"), //NON-NLS
+		INSERT_LOCAL_PATH("INSERT INTO tsk_files_path (obj_id, path) VALUES (?, ?)"), //NON-NLS
+		COUNT_CHILD_OBJECTS_BY_PARENT("SELECT COUNT(obj_id) FROM tsk_objects WHERE par_obj_id = ?"), //NON-NLS
+		SELECT_FILE_SYSTEM_BY_OBJECT("SELECT fs_obj_id from tsk_files WHERE obj_id=?"), //NON-NLS
+		SELECT_TAG_NAMES("SELECT * FROM tag_names"), //NON-NLS
+		SELECT_TAG_NAMES_IN_USE("SELECT * FROM tag_names " //NON-NLS
+				+ "WHERE tag_name_id IN " //NON-NLS
+				+ "(SELECT tag_name_id from content_tags UNION SELECT tag_name_id FROM blackboard_artifact_tags)"), //NON-NLS
+		INSERT_TAG_NAME("INSERT INTO tag_names (display_name, description, color) VALUES (?, ?, ?)"), //NON-NLS
+		INSERT_CONTENT_TAG("INSERT INTO content_tags (obj_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)"), //NON-NLS
+		DELETE_CONTENT_TAG("DELETE FROM content_tags WHERE tag_id = ?"), //NON-NLS
+		COUNT_CONTENT_TAGS_BY_TAG_NAME("SELECT COUNT(*) FROM content_tags WHERE tag_name_id = ?"), //NON-NLS
+		SELECT_CONTENT_TAGS("SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id"), //NON-NLS
+		SELECT_CONTENT_TAGS_BY_TAG_NAME("SELECT * FROM content_tags WHERE tag_name_id = ?"), //NON-NLS
+		SELECT_CONTENT_TAG_BY_ID("SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id WHERE tag_id = ?"), //NON-NLS
+		SELECT_CONTENT_TAGS_BY_CONTENT("SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id WHERE content_tags.obj_id = ?"), //NON-NLS
+		INSERT_ARTIFACT_TAG("INSERT INTO blackboard_artifact_tags (artifact_id, tag_name_id, comment) VALUES (?, ?, ?)"), //NON-NLS
+		DELETE_ARTIFACT_TAG("DELETE FROM blackboard_artifact_tags WHERE tag_id = ?"), //NON-NLS
+		SELECT_ARTIFACT_TAGS("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id"), //NON-NLS
+		COUNT_ARTIFACTS_BY_TAG_NAME("SELECT COUNT(*) FROM blackboard_artifact_tags WHERE tag_name_id = ?"), //NON-NLS
+		SELECT_ARTIFACT_TAGS_BY_TAG_NAME("SELECT * FROM blackboard_artifact_tags WHERE tag_name_id = ?"), //NON-NLS
+		SELECT_ARTIFACT_TAG_BY_ID("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id  WHERE blackboard_artifact_tags.tag_id = ?"), //NON-NLS
+		SELECT_ARTIFACT_TAGS_BY_ARTIFACT("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id WHERE blackboard_artifact_tags.artifact_id = ?"), //NON-NLS
+		SELECT_REPORTS("SELECT * FROM reports"), //NON-NLS
+		INSERT_REPORT("INSERT INTO reports (path, crtime, src_module_name, report_name) VALUES (?, ?, ?, ?)"), //NON-NLS
+		DELETE_REPORT("DELETE FROM reports WHERE reports.report_id = ?"); //NON-NLS
+
+		private final String sql;
+
+		private PREPARED_STATEMENT(String sql) {
+			this.sql = sql;
+		}
+
+		String getSQL() {
+			return sql;
+		}
+	}
 
 	/**
 	 * Private constructor, clients must use newCase() or openCase() method to
@@ -759,7 +859,7 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			String artifactTypeName = getArtifactTypeString(artifactTypeID);
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_ARTIFACTS_BY_TYPE);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ARTIFACTS_BY_TYPE);
 			statement.clearParameters();
 			statement.setInt(1, artifactTypeID);
 			rs = connection.executeQuery(statement);
@@ -790,7 +890,7 @@ public class SleuthkitCase {
 		acquireSharedLock();
 		ResultSet rs = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.COUNT_ARTIFACTS_FROM_SOURCE);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.COUNT_ARTIFACTS_FROM_SOURCE);
 			statement.clearParameters();
 			statement.setLong(1, objId);
 			rs = connection.executeQuery(statement);
@@ -820,7 +920,7 @@ public class SleuthkitCase {
 		acquireSharedLock();
 		ResultSet rs = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.COUNT_ARTIFACTS_OF_TYPE);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.COUNT_ARTIFACTS_OF_TYPE);
 			statement.clearParameters();
 			statement.setInt(1, artifactTypeID);
 			rs = connection.executeQuery(statement);
@@ -1215,7 +1315,7 @@ public class SleuthkitCase {
 		acquireSharedLock();
 		ResultSet rs = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_ARTIFACTS_BY_SOURCE_AND_TYPE);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ARTIFACTS_BY_SOURCE_AND_TYPE);
 			statement.clearParameters();
 			statement.setLong(1, obj_id);
 			statement.setInt(2, artifactTypeID);
@@ -1249,7 +1349,7 @@ public class SleuthkitCase {
 		acquireSharedLock();
 		ResultSet rs = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.COUNT_ARTIFACTS_BY_SOURCE_AND_TYPE);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.COUNT_ARTIFACTS_BY_SOURCE_AND_TYPE);
 			statement.clearParameters();
 			statement.setLong(1, obj_id);
 			statement.setInt(2, artifactTypeID);
@@ -1282,7 +1382,7 @@ public class SleuthkitCase {
 		acquireSharedLock();
 		ResultSet rs = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_ARTIFACTS_BY_TYPE);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ARTIFACTS_BY_TYPE);
 			statement.clearParameters();
 			statement.setInt(1, artifactTypeID);
 			rs = connection.executeQuery(statement);
@@ -1467,7 +1567,7 @@ public class SleuthkitCase {
 		acquireSharedLock();
 		ResultSet rs = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_ARTIFACT_BY_ID);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ARTIFACT_BY_ID);
 			statement.clearParameters();
 			statement.setLong(1, artifactID);
 			rs = connection.executeQuery(statement);
@@ -1539,27 +1639,27 @@ public class SleuthkitCase {
 		PreparedStatement statement;
 		switch (attr.getValueType()) {
 			case STRING:
-				statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_STRING_ATTRIBUTE);
+				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_STRING_ATTRIBUTE);
 				statement.clearParameters();
 				statement.setString(7, escapeSingleQuotes(attr.getValueString()));
 				break;
 			case BYTE:
-				statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_BYTE_ATTRIBUTE);
+				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_BYTE_ATTRIBUTE);
 				statement.clearParameters();
 				statement.setBytes(7, attr.getValueBytes());
 				break;
 			case INTEGER:
-				statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_INT_ATTRIBUTE);
+				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_INT_ATTRIBUTE);
 				statement.clearParameters();
 				statement.setInt(7, attr.getValueInt());
 				break;
 			case LONG:
-				statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_LONG_ATTRIBUTE);
+				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_LONG_ATTRIBUTE);
 				statement.clearParameters();
 				statement.setLong(7, attr.getValueLong());
 				break;
 			case DOUBLE:
-				statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_DOUBLE_ATTRIBUTE);
+				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_DOUBLE_ATTRIBUTE);
 				statement.clearParameters();
 				statement.setDouble(7, attr.getValueDouble());
 				break;
@@ -1850,7 +1950,7 @@ public class SleuthkitCase {
 		acquireSharedLock();
 		ResultSet rs = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_ATTRIBUTES_OF_ARTIFACT);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ATTRIBUTES_OF_ARTIFACT);
 			statement.clearParameters();
 			statement.setLong(1, artifact.getArtifactID());
 			rs = connection.executeQuery(statement);
@@ -1984,12 +2084,12 @@ public class SleuthkitCase {
 		try {
 			PreparedStatement statement;
 			if (dbType == DbType.POSTGRESQL) {
-				statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.POSTGRESQL_INSERT_ARTIFACT, Statement.RETURN_GENERATED_KEYS);
+				statement = connection.getPreparedStatement(PREPARED_STATEMENT.POSTGRESQL_INSERT_ARTIFACT, Statement.RETURN_GENERATED_KEYS);
 				statement.clearParameters();
 				statement.setLong(1, obj_id);
 				statement.setInt(2, artifact_type_id);
 			} else {
-				statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_ARTIFACT, Statement.RETURN_GENERATED_KEYS);
+				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_ARTIFACT, Statement.RETURN_GENERATED_KEYS);
 				statement.clearParameters();
 				statement.setLong(1, this.nextArtifactId++);
 				statement.setLong(2, obj_id);
@@ -2023,7 +2123,7 @@ public class SleuthkitCase {
 		acquireSharedLock();
 		ResultSet rs = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.COUNT_CHILD_OBJECTS_BY_PARENT);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.COUNT_CHILD_OBJECTS_BY_PARENT);
 			statement.clearParameters();
 			statement.setLong(1, content.getId());
 			rs = connection.executeQuery(statement);
@@ -2056,7 +2156,7 @@ public class SleuthkitCase {
 		acquireSharedLock();
 		ResultSet rs = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.COUNT_CHILD_OBJECTS_BY_PARENT);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.COUNT_CHILD_OBJECTS_BY_PARENT);
 			statement.clearParameters();
 			statement.setLong(1, content.getId());
 			rs = connection.executeQuery(statement);
@@ -2088,7 +2188,7 @@ public class SleuthkitCase {
 		acquireSharedLock();
 		ResultSet rs = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILES_BY_PARENT_AND_TYPE);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_PARENT_AND_TYPE);
 			statement.clearParameters();
 			long parentId = parent.getId();
 			statement.setLong(1, parentId);
@@ -2118,7 +2218,7 @@ public class SleuthkitCase {
 		acquireSharedLock();
 		ResultSet rs = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILES_BY_PARENT);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_PARENT);
 			statement.clearParameters();
 			long parentId = parent.getId();
 			statement.setLong(1, parentId);
@@ -2147,7 +2247,7 @@ public class SleuthkitCase {
 		acquireSharedLock();
 		ResultSet rs = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILE_IDS_BY_PARENT_AND_TYPE);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILE_IDS_BY_PARENT_AND_TYPE);
 			statement.clearParameters();
 			statement.setLong(1, parent.getId());
 			statement.setShort(2, type.getFileType());
@@ -2178,7 +2278,7 @@ public class SleuthkitCase {
 		acquireSharedLock();
 		ResultSet rs = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILE_IDS_BY_PARENT);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILE_IDS_BY_PARENT);
 			statement.clearParameters();
 			statement.setLong(1, parent.getId());
 			rs = connection.executeQuery(statement);
@@ -2413,7 +2513,7 @@ public class SleuthkitCase {
 		acquireSharedLock();
 		ResultSet rs = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_LOCAL_PATH_FOR_FILE);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_LOCAL_PATH_FOR_FILE);
 			statement.clearParameters();
 			statement.setLong(1, id);
 			rs = connection.executeQuery(statement);
@@ -2448,7 +2548,7 @@ public class SleuthkitCase {
 		acquireSharedLock();
 		ResultSet rs = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_PATH_FOR_FILE);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_PATH_FOR_FILE);
 			statement.clearParameters();
 			statement.setLong(1, id);
 			rs = connection.executeQuery(statement);
@@ -2481,7 +2581,7 @@ public class SleuthkitCase {
 		acquireSharedLock();
 		ResultSet rs = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILE_NAME);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILE_NAME);
 			statement.clearParameters();
 			statement.setLong(1, id);
 			rs = connection.executeQuery(statement);
@@ -2512,7 +2612,7 @@ public class SleuthkitCase {
 		ResultSet rs1 = null;
 		ResultSet rs2 = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_DERIVED_FILE);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_DERIVED_FILE);
 			statement.clearParameters();
 			statement.setLong(1, id);
 			rs1 = connection.executeQuery(statement);
@@ -2520,7 +2620,7 @@ public class SleuthkitCase {
 				int method_id = rs1.getInt(1);
 				String rederive = rs1.getString(1);
 				method = new DerivedFile.DerivedMethod(method_id, rederive);
-				statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILE_DERIVATION_METHOD);
+				statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILE_DERIVATION_METHOD);
 				statement.clearParameters();
 				statement.setInt(1, method_id);
 				rs2 = connection.executeQuery(statement);
@@ -2554,7 +2654,7 @@ public class SleuthkitCase {
 		acquireSharedLock();
 		ResultSet rs = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILE_BY_ID);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILE_BY_ID);
 			statement.clearParameters();
 			statement.setLong(1, id);
 			rs = connection.executeQuery(statement);
@@ -2629,7 +2729,7 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		long ret = -1;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILE_SYSTEM_BY_OBJECT);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILE_SYSTEM_BY_OBJECT);
 			statement.clearParameters();
 			statement.setLong(1, fileId);
 			rs = connection.executeQuery(statement);
@@ -2714,7 +2814,7 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			if (dataSource instanceof Image) {
-				PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILES_BY_FILE_SYSTEM_AND_NAME);
+				PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_FILE_SYSTEM_AND_NAME);
 
 				for (FileSystem fileSystem : getFileSystems((Image) dataSource)) {
 					statement.clearParameters();
@@ -2769,7 +2869,7 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			if (dataSource instanceof Image) {
-				PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_FILES_BY_FILE_SYSTEM_AND_PATH);
+				PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_FILE_SYSTEM_AND_PATH);
 
 				for (FileSystem fileSystem : getFileSystems((Image) dataSource)) {
 					statement.clearParameters();
@@ -2861,7 +2961,7 @@ public class SleuthkitCase {
 			// Insert a row for the virtual directory into the tsk_objects table.
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
 			CaseDbConnection connection = transaction.getConnection();
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
 			statement.clearParameters();
 			if (parentId != 0) {
 				statement.setLong(1, parentId);
@@ -2879,7 +2979,7 @@ public class SleuthkitCase {
 			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, 
 			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path) 
 			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)			
-			statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_FILE);
+			statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 			statement.clearParameters();
 			statement.setLong(1, newObjId);
 
@@ -3095,7 +3195,7 @@ public class SleuthkitCase {
 
 					// Insert a row for the carved file into the tsk_objects table.
 					// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
-					PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
+					PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
 					statement.clearParameters();
 					statement.setLong(1, id);
 					statement.setLong(2, TskData.ObjectType.ABSTRACTFILE.getObjectType());
@@ -3108,7 +3208,7 @@ public class SleuthkitCase {
 					// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, 
 					// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path) 
 					// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)			
-					statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_FILE);
+					statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 					statement.clearParameters();
 					statement.setLong(1, newObjId);
 
@@ -3160,7 +3260,7 @@ public class SleuthkitCase {
 					// Add a row in the tsk_layout_file table for each TskFileRange.
 					// INSERT INTO tsk_file_layout (obj_id, byte_start, byte_len, sequence) 
 					// VALUES (?, ?, ?, ?)
-					statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_LAYOUT_FILE);
+					statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_LAYOUT_FILE);
 					for (TskFileRange tskFileRange : itemToAdd.getRanges()) {
 						statement.clearParameters();
 
@@ -3240,7 +3340,7 @@ public class SleuthkitCase {
 
 			// Insert a row for the derived file into the tsk_objects table.
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
 			statement.clearParameters();
 			statement.setLong(1, parentId);
 			statement.setLong(2, TskData.ObjectType.ABSTRACTFILE.getObjectType());
@@ -3255,7 +3355,7 @@ public class SleuthkitCase {
 			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, 
 			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path) 
 			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)			
-			statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_FILE);
+			statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 			statement.clearParameters();
 			statement.setLong(1, newObjId);
 
@@ -3400,7 +3500,7 @@ public class SleuthkitCase {
 
 			// Insert a row for the local/logical file into the tsk_objects table.
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
 			statement.clearParameters();
 			statement.setLong(1, parentId);
 			statement.setLong(2, TskData.ObjectType.ABSTRACTFILE.getObjectType());
@@ -3415,7 +3515,7 @@ public class SleuthkitCase {
 			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, 
 			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path) 
 			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)			
-			statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_FILE);
+			statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 			statement.clearParameters();
 			statement.setLong(1, newObjId);
 
@@ -3477,7 +3577,7 @@ public class SleuthkitCase {
 	 * path was not added
 	 */
 	private void addFilePath(CaseDbConnection connection, long objId, String path) throws SQLException {
-		PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_LOCAL_PATH);
+		PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_LOCAL_PATH);
 		statement.clearParameters();
 		statement.setLong(1, objId);
 		statement.setString(2, path);
@@ -4248,7 +4348,7 @@ public class SleuthkitCase {
 		acquireExclusiveLock();
 		ResultSet rs = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_MAX_OBJECT_ID);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_MAX_OBJECT_ID);
 			rs = connection.executeQuery(statement);
 			long id = -1;
 			if (rs.next()) {
@@ -4532,7 +4632,7 @@ public class SleuthkitCase {
 		CaseDbConnection connection = connections.getConnection();
 		acquireExclusiveLock();
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.UPDATE_FILE_MD5);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.UPDATE_FILE_MD5);
 			statement.clearParameters();
 			statement.setString(1, md5Hash.toLowerCase());
 			statement.setLong(2, id);
@@ -4744,7 +4844,7 @@ public class SleuthkitCase {
 	 *
 	 * @param observer The observer to add.
 	 */
-	public static void addErrorObserver(ErrorObserver observer) {
+	public void addErrorObserver(ErrorObserver observer) {
 		sleuthkitCaseErrorObservers.add(observer);
 	}
 
@@ -4753,7 +4853,7 @@ public class SleuthkitCase {
 	 *
 	 * @param observer The observer to remove.
 	 */
-	public static void removeErrorObserver(ErrorObserver observer) {
+	public void removeErrorObserver(ErrorObserver observer) {
 		int i = sleuthkitCaseErrorObservers.indexOf(observer);
 		if (i >= 0) {
 			sleuthkitCaseErrorObservers.remove(i);
@@ -4766,7 +4866,7 @@ public class SleuthkitCase {
 	 * @param context The context in which the error occurred.
 	 * @param errorMessage A description of the error that occurred.
 	 */
-	public static void submitError(String context, String errorMessage) {
+	public void submitError(String context, String errorMessage) {
 		for (ErrorObserver observer : sleuthkitCaseErrorObservers) {
 			if (observer != null) {
 				observer.receiveError(context, errorMessage);
@@ -4787,7 +4887,7 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			// SELECT * FROM tag_names
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_TAG_NAMES);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_TAG_NAMES);
 			resultSet = connection.executeQuery(statement);
 			ArrayList<TagName> tagNames = new ArrayList<TagName>();
 			while (resultSet.next()) {
@@ -4818,7 +4918,7 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			// SELECT * FROM tag_names WHERE tag_name_id IN (SELECT tag_name_id from content_tags UNION SELECT tag_name_id FROM blackboard_artifact_tags)
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_TAG_NAMES_IN_USE);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_TAG_NAMES_IN_USE);
 			resultSet = connection.executeQuery(statement);
 			ArrayList<TagName> tagNames = new ArrayList<TagName>();
 			while (resultSet.next()) {
@@ -4849,7 +4949,7 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			// INSERT INTO tag_names (display_name, description, color) VALUES (?, ?, ?)			
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_TAG_NAME, Statement.RETURN_GENERATED_KEYS);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_TAG_NAME, Statement.RETURN_GENERATED_KEYS);
 			statement.clearParameters();
 			statement.setString(1, displayName);
 			statement.setString(2, description);
@@ -4884,7 +4984,7 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			// INSERT INTO content_tags (obj_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_CONTENT_TAG, Statement.RETURN_GENERATED_KEYS);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_CONTENT_TAG, Statement.RETURN_GENERATED_KEYS);
 			statement.clearParameters();
 			statement.setLong(1, content.getId());
 			statement.setLong(2, tagName.getId());
@@ -4914,7 +5014,7 @@ public class SleuthkitCase {
 		acquireExclusiveLock();
 		try {
 			// DELETE FROM content_tags WHERE tag_id = ?		
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.DELETE_CONTENT_TAG);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.DELETE_CONTENT_TAG);
 			statement.clearParameters();
 			statement.setLong(1, tag.getId());
 			connection.executeUpdate(statement);
@@ -4939,7 +5039,7 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			// SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_CONTENT_TAGS);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_CONTENT_TAGS);
 			resultSet = connection.executeQuery(statement);
 			ArrayList<ContentTag> tags = new ArrayList<ContentTag>();
 			while (resultSet.next()) {
@@ -4974,7 +5074,7 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			// SELECT COUNT(*) FROM content_tags WHERE tag_name_id = ?
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.COUNT_CONTENT_TAGS_BY_TAG_NAME);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.COUNT_CONTENT_TAGS_BY_TAG_NAME);
 			statement.clearParameters();
 			statement.setLong(1, tagName.getId());
 			resultSet = connection.executeQuery(statement);
@@ -5007,7 +5107,7 @@ public class SleuthkitCase {
 		ContentTag tag = null;
 		try {
 			// SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id WHERE tag_id = ?
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_CONTENT_TAG_BY_ID);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_CONTENT_TAG_BY_ID);
 			statement.clearParameters();
 			statement.setLong(1, contentTagID);
 			resultSet = connection.executeQuery(statement);
@@ -5046,7 +5146,7 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			// SELECT * FROM content_tags WHERE tag_name_id = ?
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_CONTENT_TAGS_BY_TAG_NAME);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_CONTENT_TAGS_BY_TAG_NAME);
 			statement.clearParameters();
 			statement.setLong(1, tagName.getId());
 			resultSet = connection.executeQuery(statement);
@@ -5081,7 +5181,7 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			// SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id WHERE content_tags.obj_id = ?
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_CONTENT_TAGS_BY_CONTENT);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_CONTENT_TAGS_BY_CONTENT);
 			statement.clearParameters();
 			statement.setLong(1, content.getId());
 			resultSet = connection.executeQuery(statement);
@@ -5118,7 +5218,7 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			// INSERT INTO blackboard_artifact_tags (artifact_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)			
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_ARTIFACT_TAG, Statement.RETURN_GENERATED_KEYS);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_ARTIFACT_TAG, Statement.RETURN_GENERATED_KEYS);
 			statement.clearParameters();
 			statement.setLong(1, artifact.getArtifactID());
 			statement.setLong(2, tagName.getId());
@@ -5146,7 +5246,7 @@ public class SleuthkitCase {
 		acquireExclusiveLock();
 		try {
 			// DELETE FROM blackboard_artifact_tags WHERE tag_id = ?
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.DELETE_ARTIFACT_TAG);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.DELETE_ARTIFACT_TAG);
 			statement.clearParameters();
 			statement.setLong(1, tag.getId());
 			connection.executeUpdate(statement);
@@ -5172,7 +5272,7 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			// SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_ARTIFACT_TAGS);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ARTIFACT_TAGS);
 			resultSet = connection.executeQuery(statement);
 			ArrayList<BlackboardArtifactTag> tags = new ArrayList<BlackboardArtifactTag>();
 			while (resultSet.next()) {
@@ -5209,7 +5309,7 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			// SELECT COUNT(*) FROM blackboard_artifact_tags WHERE tag_name_id = ?
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.COUNT_ARTIFACTS_BY_TAG_NAME);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.COUNT_ARTIFACTS_BY_TAG_NAME);
 			statement.clearParameters();
 			statement.setLong(1, tagName.getId());
 			resultSet = connection.executeQuery(statement);
@@ -5245,7 +5345,7 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			// SELECT * FROM blackboard_artifact_tags WHERE tag_name_id = ?
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_ARTIFACT_TAGS_BY_TAG_NAME);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ARTIFACT_TAGS_BY_TAG_NAME);
 			statement.clearParameters();
 			statement.setLong(1, tagName.getId());
 			resultSet = connection.executeQuery(statement);
@@ -5283,7 +5383,7 @@ public class SleuthkitCase {
 		BlackboardArtifactTag tag = null;
 		try {
 			// SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id WHERE blackboard_artifact_tags.tag_id = ?
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_ARTIFACT_TAG_BY_ID);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ARTIFACT_TAG_BY_ID);
 			statement.clearParameters();
 			statement.setLong(1, artifactTagID);
 			resultSet = connection.executeQuery(statement);
@@ -5322,7 +5422,7 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			// SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id WHERE blackboard_artifact_tags.artifact_id = ?			
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_ARTIFACT_TAGS_BY_ARTIFACT);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ARTIFACT_TAGS_BY_ARTIFACT);
 			statement.clearParameters();
 			statement.setLong(1, artifact.getArtifactID());
 			resultSet = connection.executeQuery(statement);
@@ -5380,7 +5480,7 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			// INSERT INTO reports (path, crtime, src_module_name, display_name) VALUES (?, ?, ?, ?)			
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.INSERT_REPORT, Statement.RETURN_GENERATED_KEYS);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_REPORT, Statement.RETURN_GENERATED_KEYS);
 			statement.clearParameters();
 			statement.setString(1, relativePath);
 			statement.setLong(2, createTime);
@@ -5411,7 +5511,7 @@ public class SleuthkitCase {
 		acquireSharedLock();
 		ResultSet resultSet = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.SELECT_REPORTS);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_REPORTS);
 			resultSet = connection.executeQuery(statement);
 			ArrayList<Report> reports = new ArrayList<Report>();
 			while (resultSet.next()) {
@@ -5441,7 +5541,7 @@ public class SleuthkitCase {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(CaseDbConnection.PREPARED_STATEMENT.DELETE_REPORT);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.DELETE_REPORT);
 			statement.setString(1, String.valueOf(report.getId()));
 			connection.executeUpdate(statement);
 		} catch (SQLException ex) {
@@ -5476,7 +5576,7 @@ public class SleuthkitCase {
 	 * the appropriate type based on the subclass that is calling
 	 * getPooledConnection();
 	 */
-	abstract private static class ConnectionPool {
+	abstract private class ConnectionPool {
 
 		private PooledDataSource pooledDataSource;
 
@@ -5522,7 +5622,7 @@ public class SleuthkitCase {
 	 * Handles the initial setup of SQLite database connections, as well as
 	 * overriding getPooledConnection()
 	 */
-	private final static class SQLiteConnections extends ConnectionPool {
+	private final class SQLiteConnections extends ConnectionPool {
 
 		private final Map<String, String> configurationOverrides = new HashMap<String, String>();
 
@@ -5553,7 +5653,7 @@ public class SleuthkitCase {
 	 * Handles the initial setup of PostgreSQL database connections, as well as
 	 * overriding getPooledConnection()
 	 */
-	private final static class PostgreSQLConnections extends ConnectionPool {
+	private final class PostgreSQLConnections extends ConnectionPool {
 
 		PostgreSQLConnections(String host, int port, String dbName, String userName, String password) throws PropertyVetoException {
 			ComboPooledDataSource comboPooledDataSource = new ComboPooledDataSource();
@@ -5579,16 +5679,11 @@ public class SleuthkitCase {
 	/**
 	 * An abstract base class for case database connection objects.
 	 */
-	private abstract static class CaseDbConnection {
-
-		protected interface DbCommand {
-
-			void execute() throws SQLException;
-		}
+	private abstract class CaseDbConnection {
 
 		static final int SLEEP_LENGTH_IN_MILLISECONDS = 5000;
 
-		final static class CreateStatement implements DbCommand {
+		final class CreateStatement implements DbCommand {
 
 			private final Connection connection;
 			private Statement statement = null;
@@ -5607,7 +5702,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		final static class SetAutoCommit implements DbCommand {
+		final class SetAutoCommit implements DbCommand {
 
 			private final Connection connection;
 			private final boolean mode;
@@ -5623,7 +5718,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		final static class Commit implements DbCommand {
+		final class Commit implements DbCommand {
 
 			private final Connection connection;
 
@@ -5637,7 +5732,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		final static class ExecuteQuery implements DbCommand {
+		final class ExecuteQuery implements DbCommand {
 
 			private final Statement statement;
 			private final String query;
@@ -5658,7 +5753,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		final static class ExecutePreparedStatementQuery implements DbCommand {
+		final class ExecutePreparedStatementQuery implements DbCommand {
 
 			private final PreparedStatement preparedStatement;
 			private ResultSet resultSet;
@@ -5677,7 +5772,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		final static class ExecutePreparedStatementUpdate implements DbCommand {
+		final class ExecutePreparedStatementUpdate implements DbCommand {
 
 			private final PreparedStatement preparedStatement;
 
@@ -5691,7 +5786,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		final static class ExecuteStatementUpdate implements DbCommand {
+		final class ExecuteStatementUpdate implements DbCommand {
 
 			private final Statement statement;
 			private final String updateCommand;
@@ -5707,7 +5802,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		final static class ExecuteStatementUpdateGenerateKeys implements DbCommand {
+		final class ExecuteStatementUpdateGenerateKeys implements DbCommand {
 
 			private final Statement statement;
 			private final int generateKeys;
@@ -5725,7 +5820,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		final static class PrepareStatement implements DbCommand {
+		final class PrepareStatement implements DbCommand {
 
 			private final Connection connection;
 			private final String input;
@@ -5746,7 +5841,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		final static class PrepareStatementGenerateKeys implements DbCommand {
+		final class PrepareStatementGenerateKeys implements DbCommand {
 
 			private final Connection connection;
 			private final String input;
@@ -5770,101 +5865,6 @@ public class SleuthkitCase {
 		}
 
 		abstract void executeCommand(DbCommand command) throws SQLException;
-
-		enum PREPARED_STATEMENT {
-
-			SELECT_ATTRIBUTES_OF_ARTIFACT("SELECT artifact_id, source, context, attribute_type_id, value_type, " //NON-NLS
-					+ "value_byte, value_text, value_int32, value_int64, value_double " //NON-NLS
-					+ "FROM blackboard_attributes WHERE artifact_id = ?"), //NON-NLS
-			SELECT_ARTIFACT_BY_ID("SELECT artifact_id ,obj_id,  artifact_type_id FROM blackboard_artifacts WHERE artifact_id = ?"), //NON-NLS
-			SELECT_ARTIFACTS_BY_TYPE("SELECT artifact_id, obj_id FROM blackboard_artifacts " //NON-NLS
-					+ "WHERE artifact_type_id = ?"), //NON-NLS
-			COUNT_ARTIFACTS_OF_TYPE("SELECT COUNT(*) FROM blackboard_artifacts WHERE artifact_type_id = ?"), //NON-NLS
-			COUNT_ARTIFACTS_FROM_SOURCE("SELECT COUNT(*) FROM blackboard_artifacts WHERE obj_id = ?"), //NON-NLS
-			SELECT_ARTIFACTS_BY_SOURCE_AND_TYPE("SELECT artifact_id FROM blackboard_artifacts WHERE obj_id = ? AND artifact_type_id = ?"), //NON-NLS
-			COUNT_ARTIFACTS_BY_SOURCE_AND_TYPE("SELECT COUNT(*) FROM blackboard_artifacts WHERE obj_id = ? AND artifact_type_id = ?"), //NON-NLS
-			SELECT_FILES_BY_PARENT("SELECT tsk_files.* " //NON-NLS
-					+ "FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
-					+ "ON tsk_objects.obj_id=tsk_files.obj_id " //NON-NLS
-					+ "WHERE (tsk_objects.par_obj_id = ? ) " //NON-NLS
-					+ "ORDER BY tsk_files.dir_type, LOWER(tsk_files.name)"), //NON-NLS
-			SELECT_FILES_BY_PARENT_AND_TYPE("SELECT tsk_files.* " //NON-NLS
-					+ "FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
-					+ "ON tsk_objects.obj_id=tsk_files.obj_id " //NON-NLS
-					+ "WHERE (tsk_objects.par_obj_id = ? AND tsk_files.type = ? ) " //NON-NLS
-					+ "ORDER BY tsk_files.dir_type, LOWER(tsk_files.name)"), //NON-NLS
-			SELECT_FILE_IDS_BY_PARENT("SELECT tsk_files.obj_id FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
-					+ "ON tsk_objects.obj_id=tsk_files.obj_id WHERE (tsk_objects.par_obj_id = ?)"), //NON-NLS
-			SELECT_FILE_IDS_BY_PARENT_AND_TYPE("SELECT tsk_files.obj_id " //NON-NLS
-					+ "FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
-					+ "ON tsk_objects.obj_id=tsk_files.obj_id " //NON-NLS
-					+ "WHERE (tsk_objects.par_obj_id = ? " //NON-NLS
-					+ "AND tsk_files.type = ? )"), //NON-NLS
-			SELECT_FILE_BY_ID("SELECT * FROM tsk_files WHERE obj_id = ? LIMIT 1"), //NON-NLS
-			INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id) " //NON-NLS
-					+ "VALUES (?, ?, ?)"), //NON-NLS
-			POSTGRESQL_INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id) " //NON-NLS
-					+ "VALUES (DEFAULT, ?, ?)"), //NON-NLS
-			INSERT_STRING_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_text) " //NON-NLS
-					+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
-			INSERT_BYTE_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_byte) " //NON-NLS
-					+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
-			INSERT_INT_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_int32) " //NON-NLS
-					+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
-			INSERT_LONG_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_int64) " //NON-NLS
-					+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
-			INSERT_DOUBLE_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_double) " //NON-NLS
-					+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
-			SELECT_FILES_BY_FILE_SYSTEM_AND_NAME("SELECT * FROM tsk_files WHERE LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE LOWER('%journal%') AND fs_obj_id = ?"), //NON-NLS
-			SELECT_FILES_BY_FILE_SYSTEM_AND_PATH("SELECT * FROM tsk_files WHERE LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE LOWER('%journal%') AND LOWER(parent_path) LIKE LOWER(?) AND fs_obj_id = ?"), //NON-NLS
-			UPDATE_FILE_MD5("UPDATE tsk_files SET md5 = ? WHERE obj_id = ?"), //NON-NLS
-			SELECT_LOCAL_PATH_FOR_FILE("SELECT path FROM tsk_files_path WHERE obj_id = ?"), //NON-NLS
-			SELECT_PATH_FOR_FILE("SELECT parent_path FROM tsk_files WHERE obj_id = ?"), //NON-NLS
-			SELECT_FILE_NAME("SELECT name FROM tsk_files WHERE obj_id = ?"), //NON-NLS
-			SELECT_DERIVED_FILE("SELECT derived_id, rederive FROM tsk_files_derived WHERE obj_id = ?"), //NON-NLS
-			SELECT_FILE_DERIVATION_METHOD("SELECT tool_name, tool_version, other FROM tsk_files_derived_method WHERE derived_id = ?"), //NON-NLS
-			SELECT_MAX_OBJECT_ID("SELECT MAX(obj_id) FROM tsk_objects"), //NON-NLS
-			INSERT_OBJECT("INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)"), //NON-NLS
-			INSERT_FILE("INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path) " //NON-NLS
-					+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
-			INSERT_LAYOUT_FILE("INSERT INTO tsk_file_layout (obj_id, byte_start, byte_len, sequence) " //NON-NLS
-					+ "VALUES (?, ?, ?, ?)"), //NON-NLS
-			INSERT_LOCAL_PATH("INSERT INTO tsk_files_path (obj_id, path) VALUES (?, ?)"), //NON-NLS
-			COUNT_CHILD_OBJECTS_BY_PARENT("SELECT COUNT(obj_id) FROM tsk_objects WHERE par_obj_id = ?"), //NON-NLS
-			SELECT_FILE_SYSTEM_BY_OBJECT("SELECT fs_obj_id from tsk_files WHERE obj_id=?"), //NON-NLS
-			SELECT_TAG_NAMES("SELECT * FROM tag_names"), //NON-NLS
-			SELECT_TAG_NAMES_IN_USE("SELECT * FROM tag_names " //NON-NLS
-					+ "WHERE tag_name_id IN " //NON-NLS
-					+ "(SELECT tag_name_id from content_tags UNION SELECT tag_name_id FROM blackboard_artifact_tags)"), //NON-NLS
-			INSERT_TAG_NAME("INSERT INTO tag_names (display_name, description, color) VALUES (?, ?, ?)"), //NON-NLS
-			INSERT_CONTENT_TAG("INSERT INTO content_tags (obj_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)"), //NON-NLS
-			DELETE_CONTENT_TAG("DELETE FROM content_tags WHERE tag_id = ?"), //NON-NLS
-			COUNT_CONTENT_TAGS_BY_TAG_NAME("SELECT COUNT(*) FROM content_tags WHERE tag_name_id = ?"), //NON-NLS
-			SELECT_CONTENT_TAGS("SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id"), //NON-NLS
-			SELECT_CONTENT_TAGS_BY_TAG_NAME("SELECT * FROM content_tags WHERE tag_name_id = ?"), //NON-NLS
-			SELECT_CONTENT_TAG_BY_ID("SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id WHERE tag_id = ?"), //NON-NLS
-			SELECT_CONTENT_TAGS_BY_CONTENT("SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id WHERE content_tags.obj_id = ?"), //NON-NLS
-			INSERT_ARTIFACT_TAG("INSERT INTO blackboard_artifact_tags (artifact_id, tag_name_id, comment) VALUES (?, ?, ?)"), //NON-NLS
-			DELETE_ARTIFACT_TAG("DELETE FROM blackboard_artifact_tags WHERE tag_id = ?"), //NON-NLS
-			SELECT_ARTIFACT_TAGS("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id"), //NON-NLS
-			COUNT_ARTIFACTS_BY_TAG_NAME("SELECT COUNT(*) FROM blackboard_artifact_tags WHERE tag_name_id = ?"), //NON-NLS
-			SELECT_ARTIFACT_TAGS_BY_TAG_NAME("SELECT * FROM blackboard_artifact_tags WHERE tag_name_id = ?"), //NON-NLS
-			SELECT_ARTIFACT_TAG_BY_ID("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id  WHERE blackboard_artifact_tags.tag_id = ?"), //NON-NLS
-			SELECT_ARTIFACT_TAGS_BY_ARTIFACT("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id WHERE blackboard_artifact_tags.artifact_id = ?"), //NON-NLS
-			SELECT_REPORTS("SELECT * FROM reports"), //NON-NLS
-			INSERT_REPORT("INSERT INTO reports (path, crtime, src_module_name, report_name) VALUES (?, ?, ?, ?)"), //NON-NLS
-			DELETE_REPORT("DELETE FROM reports WHERE reports.report_id = ?"); //NON-NLS
-
-			private final String sql;
-
-			private PREPARED_STATEMENT(String sql) {
-				this.sql = sql;
-			}
-
-			String getSQL() {
-				return sql;
-			}
-		}
 
 		private final Connection connection;
 		private final Map<PREPARED_STATEMENT, PreparedStatement> preparedStatements;
@@ -6004,7 +6004,7 @@ public class SleuthkitCase {
 	/**
 	 * A connection to an SQLite case database.
 	 */
-	private static final class SQLiteConnection extends CaseDbConnection {
+	private final class SQLiteConnection extends CaseDbConnection {
 
 		private static final int DATABASE_LOCKED_ERROR = 0; // This should be 6 according to documentation, but it has been observed to be 0.
 		private static final int SQLITE_BUSY_ERROR = 5;
@@ -6041,11 +6041,11 @@ public class SleuthkitCase {
 	/**
 	 * A connection to a PostgreSQL case database.
 	 */
-	private static final class PostgreSQLConnection extends CaseDbConnection {
+	private final class PostgreSQLConnection extends CaseDbConnection {
 
-		private static final String COMMUNICATION_ERROR = PSQLState.COMMUNICATION_ERROR.getState();
-		private static final String SYSTEM_ERROR = PSQLState.SYSTEM_ERROR.getState();
-		private static final String UNKNOWN_STATE = PSQLState.UNKNOWN_STATE.getState();
+		private final String COMMUNICATION_ERROR = PSQLState.COMMUNICATION_ERROR.getState();
+		private final String SYSTEM_ERROR = PSQLState.SYSTEM_ERROR.getState();
+		private final String UNKNOWN_STATE = PSQLState.UNKNOWN_STATE.getState();
 		private static final int MAX_RETRIES = 3;
 
 		PostgreSQLConnection(Connection conn) {

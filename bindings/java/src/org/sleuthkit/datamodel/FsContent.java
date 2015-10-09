@@ -159,7 +159,7 @@ public abstract class FsContent extends AbstractFile {
 			if ((dataSource != null) && (dataSource instanceof Image)) {
 				Image image = (Image) dataSource;
 				if (!image.imageFileExists()) {
-					SleuthkitCase.submitError(SleuthkitCase.ErrorObserver.Context.IMAGE_READ_ERROR.getContextString(),
+					tskCase.submitError(SleuthkitCase.ErrorObserver.Context.IMAGE_READ_ERROR.getContextString(),
 							bundle.getString("FsContent.readInt.err.msg.text"));
 				}
 			}
