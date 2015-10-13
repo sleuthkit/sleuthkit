@@ -95,12 +95,12 @@ public class SleuthkitCase {
 	// understood. Note that the lock is contructed to use a fairness policy.
 	private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true);
 	
-	protected interface DbCommand {
+	private interface DbCommand {
 
 		void execute() throws SQLException;
 	}
 
-	enum PREPARED_STATEMENT {
+	private enum PREPARED_STATEMENT {
 
 		SELECT_ATTRIBUTES_OF_ARTIFACT("SELECT artifact_id, source, context, attribute_type_id, value_type, " //NON-NLS
 				+ "value_byte, value_text, value_int32, value_int64, value_double " //NON-NLS
@@ -4869,7 +4869,11 @@ public class SleuthkitCase {
 	public void submitError(String context, String errorMessage) {
 		for (ErrorObserver observer : sleuthkitCaseErrorObservers) {
 			if (observer != null) {
-				observer.receiveError(context, errorMessage);
+				try {
+					observer.receiveError(context, errorMessage);
+				} catch (Exception ignore) {
+					logger.log(Level.WARNING, "Observer client unable to receive message: {0}, {1}", new Object[]{context, errorMessage});
+				}
 			}
 		}
 	}
