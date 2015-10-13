@@ -4871,8 +4871,8 @@ public class SleuthkitCase {
 			if (observer != null) {
 				try {
 					observer.receiveError(context, errorMessage);
-				} catch (Exception ignore) {
-					logger.log(Level.WARNING, "Observer client unable to receive message: {0}, {1}", new Object[]{context, errorMessage});
+				} catch (Exception ex) {
+					logger.log(Level.SEVERE, "Observer client unable to receive message: {0}, {1}", new Object[]{context, errorMessage, ex});
 				}
 			}
 		}
