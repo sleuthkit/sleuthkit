@@ -81,9 +81,10 @@ public class SleuthkitCase {
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private static final int IS_REACHABLE_TIMEOUT_MS = 1000;
+	// Note that the Strings below expect the Exceptions to be in English.
 	private static final String SQL_ERROR_CONNECTION_GROUP = "08";
 	private static final String SQL_ERROR_AUTHENTICATION_GROUP = "28";
-	private static final String SQL_ERROR_PRIVILEDGE_GROUP = "42";
+	private static final String SQL_ERROR_PRIVILEGE_GROUP = "42";
 	private static final String SQL_ERROR_RESOURCE_GROUP = "53";
 	private static final String SQL_ERROR_LIMIT_GROUP = "54";
 	private static final String SQL_ERROR_INTERNAL_GROUP = "xx";
@@ -6212,7 +6213,7 @@ public class SleuthkitCase {
 	// this method goes away in a day or two
 	public static boolean tryConnectOld(String hostname, String port, String username, String password, DbType dbType) {
 		try {
-			SleuthkitCase.tryConnect(hostname, port, username, password, dbType);
+			SleuthkitCase.tryConnect(new CaseDbConnectionInfo(hostname, port, username, password, dbType));
 			return true;
 		} catch (Exception ex) {
 			logger.log(Level.SEVERE, "database connection issue. This method goes away when we update our PostgreSQL error messages");
@@ -6222,59 +6223,53 @@ public class SleuthkitCase {
 
 	/**
 	 * Attempts to connect to the database with the passed in settings, throws
-	 * if the settings are sufficient to connect to the database type indicated.
-	 * Only attempts to connect to remote databases.
+	 * if the settings are not sufficient to connect to the database type
+	 * indicated. Only attempts to connect to remote databases.
 	 *
-	 * @param hostname the hostname or IP address
-	 * @param port the port number
-	 * @param username the user name
-	 * @param password the password
-	 * @param dbType the type of database.
+	 * @param info The connection information
 	 *
-	 * @throws java.lang.ClassNotFoundException
-	 * @throws java.sql.SQLException
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public static void tryConnect(String hostname, String port, String username, String password, DbType dbType) throws ClassNotFoundException, SQLException, TskCoreException {
-		// Check if we can talk to the database. If you add a database, be sure
-		// to add the right connection string to the switch statement below.
-		if (hostname == null || hostname.isEmpty()) {
-			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingHostname")); //NON-NLS
-		} else if (port == null || port.isEmpty()) {
-			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingPort")); //NON-NLS
-		} else if (username == null || username.isEmpty()) {
-			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingUsername")); //NON-NLS
-		} else if (password == null || password.isEmpty()) {
-			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingPassword")); //NON-NLS
-		}
+	public static void tryConnect(CaseDbConnectionInfo info) throws TskCoreException {
+		try {
 
-		switch (dbType) {
-			case POSTGRESQL:
-				Class.forName("org.postgresql.Driver"); //NON-NLS
-				Connection conn = DriverManager.getConnection("jdbc:postgresql://" + hostname + ":" + port + "/postgres", username, password); //NON-NLS
-				if (conn != null) {
-					conn.close();
-				}
-				break;
+			// Check if we can talk to the database.		
+			if (info.getHost() == null || info.getHost().isEmpty()) {
+				throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingHostname")); //NON-NLS
+			} else if (info.getPort() == null || info.getPort().isEmpty()) {
+				throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingPort")); //NON-NLS
+			} else if (info.getUserName() == null || info.getUserName().isEmpty()) {
+				throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingUsername")); //NON-NLS
+			} else if (info.getPassword() == null || info.getPassword().isEmpty()) {
+				throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingPassword")); //NON-NLS
+			}
 
-			case SQLITE:
-				throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.InvalidType")); //NON-NLS
-
-			default:
-				throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.UnsetType")); //NON-NLS
+			Class.forName("org.postgresql.Driver"); //NON-NLS
+			Connection conn = DriverManager.getConnection("jdbc:postgresql://" + info.getHost() + ":" + info.getPort() + "/postgres", info.getUserName(), info.getPassword()); //NON-NLS
+			if (conn != null) {
+				conn.close();
+			}
+		} catch (TskCoreException ex) {
+			throw new TskCoreException(SleuthkitCase.getUserWarning(ex, info.getHost()));
+		} catch (SQLException ex) {
+			throw new TskCoreException(SleuthkitCase.getUserWarning(ex, info.getHost()));
+		} catch (ClassNotFoundException ex) {
+			throw new TskCoreException(SleuthkitCase.getUserWarning(ex, info.getHost()));
 		}
 	}
 
 	/**
 	 * This method handles exceptions from the connection tester, tryConnect(),
 	 * returning the appropriate user-facing text for the exception received.
-	 *
+	 * This method expects the Exceptions to be in English and compares against
+     * English text.
+	 * 
 	 * @param ex the Exception to analyze
 	 * @param ipAddress the IP address to check against
 	 *
 	 * @return returns the String message to show the user
 	 */
-	public static String getUserWarning(Exception ex, String ipAddress) {
+	private static String getUserWarning(Exception ex, String ipAddress) {
 		String result = bundle.getString("DatabaseConnectionCheck.Everything"); //NON-NLS
 		if (ex instanceof SQLException) {
 			String sqlState = ((SQLException) ex).getSQLState().toLowerCase();
@@ -6295,7 +6290,7 @@ public class SleuthkitCase {
 				}
 			} else if (sqlState.startsWith(SQL_ERROR_AUTHENTICATION_GROUP)) {
 				result = bundle.getString("DatabaseConnectionCheck.Authentication"); //NON-NLS
-			} else if (sqlState.startsWith(SQL_ERROR_PRIVILEDGE_GROUP)) {
+			} else if (sqlState.startsWith(SQL_ERROR_PRIVILEGE_GROUP)) {
 				result = bundle.getString("DatabaseConnectionCheck.Access"); //NON-NLS
 			} else if (sqlState.startsWith(SQL_ERROR_RESOURCE_GROUP)) {
 				result = bundle.getString("DatabaseConnectionCheck.ServerDiskSpace"); //NON-NLS

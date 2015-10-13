@@ -18,17 +18,8 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.DbType;
 
-/**
- * The intent of this class is to hold any information needed to connect to a
- * remote database server, except for the actual database name. This does not
- * hold information to connect to a local database such as SQLite.
- *
- * It can be used generically to hold remote database connection information.
- *
- */
 public class CaseDbConnectionInfo {
 
 	private String hostNameOrIP;
@@ -36,13 +27,29 @@ public class CaseDbConnectionInfo {
 	private String userName;
 	private String password;
 	private DbType dbType;
-	private static final Logger logger = Logger.getLogger(CaseDbConnectionInfo.class.getName());
 
+	/**
+	 * The intent of this class is to hold any information needed to connect to
+	 * a remote database server, except for the actual database name. This does
+	 * not hold information to connect to a local database such as SQLite.
+	 *
+	 * It can be used generically to hold remote database connection
+	 * information.
+	 *
+	 * @param hostNameOrIP the host name
+	 * @param portNumber the port number
+	 * @param userName the user name
+	 * @param password the password
+	 * @param dbType the database type
+	 */
 	public CaseDbConnectionInfo(String hostNameOrIP, String portNumber, String userName, String password, DbType dbType) {
 		this.hostNameOrIP = hostNameOrIP;
 		this.portNumber = portNumber;
 		this.userName = userName;
 		this.password = password;
+		if (dbType == DbType.SQLITE) {
+			throw new IllegalArgumentException("SQLite database type invalid for CaseDbConnectionInfo. CaseDbConnectionInfo should be used only for remote database types");
+		}
 		this.dbType = dbType;
 	}
 
