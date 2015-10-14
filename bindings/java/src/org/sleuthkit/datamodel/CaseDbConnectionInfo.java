@@ -20,6 +20,13 @@ package org.sleuthkit.datamodel;
 
 import org.sleuthkit.datamodel.TskData.DbType;
 
+/**
+ * The intent of this class is to hold any information needed to connect to a
+ * remote database server, except for the actual database name. This does not
+ * hold information to connect to a local database such as SQLite.
+ *
+ * It can be used generically to hold remote database connection information.
+ */
 public class CaseDbConnectionInfo {
 
 	private String hostNameOrIP;
@@ -48,7 +55,7 @@ public class CaseDbConnectionInfo {
 		this.userName = userName;
 		this.password = password;
 		if (dbType == DbType.SQLITE) {
-			throw new IllegalArgumentException("SQLite database type invalid for CaseDbConnectionInfo. CaseDbConnectionInfo should be used only for remote database types");
+			throw new IllegalArgumentException("SQLite database type invalid for CaseDbConnectionInfo. CaseDbConnectionInfo should be used only for remote database types.");
 		}
 		this.dbType = dbType;
 	}

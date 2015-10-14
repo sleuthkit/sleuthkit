@@ -81,7 +81,6 @@ public class SleuthkitCase {
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private static final int IS_REACHABLE_TIMEOUT_MS = 1000;
-	// Note the Strings below require the Exceptions to be in English.
 	private static final String SQL_ERROR_CONNECTION_GROUP = "08";
 	private static final String SQL_ERROR_AUTHENTICATION_GROUP = "28";
 	private static final String SQL_ERROR_PRIVILEGE_GROUP = "42";
@@ -6226,6 +6225,11 @@ public class SleuthkitCase {
 	 * if the settings are not sufficient to connect to the database type
 	 * indicated. Only attempts to connect to remote databases.
 	 *
+	 * When issues occur, it attempts to diagnose them by looking at the
+	 * exception messages, returning the appropriate user-facing text for the
+	 * exception received. This method expects the Exceptions messages to be in
+	 * English and compares against English text.
+	 *
 	 * @param info The connection information
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
@@ -6250,32 +6254,13 @@ public class SleuthkitCase {
 				conn.close();
 			}
 		} catch (TskCoreException ex) {
-			throw new TskCoreException(SleuthkitCase.getUserWarning(ex, info.getHost()));
+			throw new TskCoreException(ex.getMessage());
 		} catch (SQLException ex) {
-			throw new TskCoreException(SleuthkitCase.getUserWarning(ex, info.getHost()));
-		} catch (ClassNotFoundException ex) {
-			throw new TskCoreException(SleuthkitCase.getUserWarning(ex, info.getHost()));
-		}
-	}
-
-	/**
-	 * This method handles exceptions from the connection tester, tryConnect(),
-	 * returning the appropriate user-facing text for the exception received.
-	 * This method expects the Exceptions to be in English and compares against
-     * English text.
-	 * 
-	 * @param ex the Exception to analyze
-	 * @param ipAddress the IP address to check against
-	 *
-	 * @return returns the String message to show the user
-	 */
-	static String getUserWarning(Exception ex, String ipAddress) {
-		String result = bundle.getString("DatabaseConnectionCheck.Everything"); //NON-NLS
-		if (ex instanceof SQLException) {
-			String sqlState = ((SQLException) ex).getSQLState().toLowerCase();
+			String result;
+			String sqlState = ex.getSQLState().toLowerCase();
 			if (sqlState.startsWith(SQL_ERROR_CONNECTION_GROUP)) {
 				try {
-					if (InetAddress.getByName(ipAddress).isReachable(IS_REACHABLE_TIMEOUT_MS)) {
+					if (InetAddress.getByName(info.getHost()).isReachable(IS_REACHABLE_TIMEOUT_MS)) {
 						// if we can reach the host, then it's probably port problem
 						result = bundle.getString("DatabaseConnectionCheck.Port"); //NON-NLS
 					} else {
@@ -6301,11 +6286,9 @@ public class SleuthkitCase {
 			} else {
 				result = bundle.getString("DatabaseConnectionCheck.Connection"); //NON-NLS
 			}
-		} else if (ex instanceof ClassNotFoundException) {
-			result = bundle.getString("DatabaseConnectionCheck.Installation"); //NON-NLS
-		} else if (ex instanceof TskCoreException) {
-			result = ex.getMessage();
+			throw new TskCoreException(result);
+		} catch (ClassNotFoundException ex) {
+			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.Installation")); //NON-NLS
 		}
-		return result;
 	}
 }
