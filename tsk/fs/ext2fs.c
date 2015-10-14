@@ -125,6 +125,7 @@ ext2fs_group_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
         }
     }
 
+// TODO: rewrite this to be two sections.  one for 64-bit and the other for 
 
     /*
      * Sanity check
@@ -153,7 +154,7 @@ ext2fs_group_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
     else if (ext2fs->grp_num == grp_num) {
         return 0;
     }
-    gd = ext2fs->grp_buf;
+    
 
     /*
      * We're not reading group descriptors often, so it is OK to do small
@@ -162,8 +163,10 @@ ext2fs_group_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
     offs = ext2fs->groups_offset + grp_num * gd_size;
     if (fs->ftype == TSK_FS_TYPE_EXT4)
         gd = ext2fs->ext4_grp_buf;
+    else 
+        gd = ext2fs->grp_buf;
     cnt = tsk_fs_read(&ext2fs->fs_info, offs, (char *) gd, gd_size);
-     /*DEBUG*/
+     
 #ifdef Ext4_DBG
         debug_print_buf((char *) ext2fs->ext4_grp_buf, gd_size);
 #endif
@@ -176,6 +179,7 @@ ext2fs_group_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
             PRI_EXT2GRP " at %" PRIuOFF, grp_num, offs);
         return 1;
     }
+
     /* Perform a sanity check on the data to make sure offsets are in range */
     if (fs->ftype == TSK_FS_TYPE_EXT4) {
         ext2fs->grp_buf = (ext2fs_gd *) ext2fs->ext4_grp_buf;
@@ -450,6 +454,7 @@ ext2fs_imap_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
      */
     if (EXT2FS_HAS_INCOMPAT_FEATURE(fs, ext2fs->fs,
             EXT2FS_FEATURE_INCOMPAT_64BIT)) {
+
         if (ext4_getu64(fs->endian,
                 ext2fs->ext4_grp_buf->bg_block_bitmap_hi,
                 ext2fs->ext4_grp_buf->bg_block_bitmap_lo)
@@ -3337,6 +3342,30 @@ ext2fs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
      * super block */
     ext2fs->groups_offset =
         roundup((EXT2FS_SBOFF + sizeof(ext2fs_sb)), fs->block_size);
+
+    // sanity check to avoid divide by zero issues
+    if (tsk_getu32(fs->endian, ext2fs->fs->s_blocks_per_group) == 0) {
+        fs->tag = 0;
+        free(ext2fs->fs);
+        tsk_fs_free((TSK_FS_INFO *)ext2fs);
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_MAGIC);
+        tsk_error_set_errstr("Not an EXTxFS file system (blocks per group)");
+        if (tsk_verbose)
+            fprintf(stderr, "ext2fs_open: blocks per group is 0\n");
+        return NULL;
+    }
+    if (tsk_getu32(fs->endian, ext2fs->fs->s_inodes_per_group) == 0) {
+        fs->tag = 0;
+        free(ext2fs->fs);
+        tsk_fs_free((TSK_FS_INFO *)ext2fs);
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_MAGIC);
+        tsk_error_set_errstr("Not an EXTxFS file system (inodes per group)");
+        if (tsk_verbose)
+            fprintf(stderr, "ext2fs_open: inodes per group is 0\n");
+        return NULL;
+    }
 
     if (tsk_getu32(fs->endian,
             ext2fs->fs->
