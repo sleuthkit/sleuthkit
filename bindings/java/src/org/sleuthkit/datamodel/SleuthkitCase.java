@@ -81,7 +81,7 @@ public class SleuthkitCase {
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private static final int IS_REACHABLE_TIMEOUT_MS = 1000;
-	// Note that the Strings below expect the Exceptions to be in English.
+	// Note the Strings below require the Exceptions to be in English.
 	private static final String SQL_ERROR_CONNECTION_GROUP = "08";
 	private static final String SQL_ERROR_AUTHENTICATION_GROUP = "28";
 	private static final String SQL_ERROR_PRIVILEGE_GROUP = "42";
@@ -6269,7 +6269,7 @@ public class SleuthkitCase {
 	 *
 	 * @return returns the String message to show the user
 	 */
-	private static String getUserWarning(Exception ex, String ipAddress) {
+	static String getUserWarning(Exception ex, String ipAddress) {
 		String result = bundle.getString("DatabaseConnectionCheck.Everything"); //NON-NLS
 		if (ex instanceof SQLException) {
 			String sqlState = ((SQLException) ex).getSQLState().toLowerCase();
