@@ -449,7 +449,8 @@ ext2fs_imap_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
      * Look up the inode allocation bitmap.
      */
     if (EXT2FS_HAS_INCOMPAT_FEATURE(fs, ext2fs->fs,
-            EXT2FS_FEATURE_INCOMPAT_64BIT)) {
+            EXT2FS_FEATURE_INCOMPAT_64BIT)
+	&& (ext2fs->ext4_grp_buf != NULL)) {
         if (ext4_getu64(fs->endian,
                 ext2fs->ext4_grp_buf->bg_block_bitmap_hi,
                 ext2fs->ext4_grp_buf->bg_block_bitmap_lo)
@@ -574,7 +575,8 @@ ext2fs_dinode_load(EXT2FS_INFO * ext2fs, TSK_INUM_T dino_inum,
         ext2fs->fs->s_inodes_per_group) * grp_num;
     if (EXT2FS_HAS_INCOMPAT_FEATURE(fs, ext2fs->fs,
             EXT2FS_FEATURE_INCOMPAT_64BIT)
-        && (tsk_getu16(fs->endian, ext2fs->fs->s_desc_size) >= 64)) {
+        && (tsk_getu16(fs->endian, ext2fs->fs->s_desc_size) >= 64)
+	&& (ext2fs->ext4_grp_buf != NULL)) {
 #ifdef Ext4_DBG
         printf("DEBUG: d_inode_load 64bit gd_size=%d\n",
             tsk_getu16(fs->endian, ext2fs->fs->s_desc_size));
