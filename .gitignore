@@ -63,6 +63,7 @@ framework/tools/tsk_analyzeimg/tsk_analyzeimg
 framework/tools/tsk_validatepipeline/tsk_validatepipeline
 rejistry++/msvcpp/*/Debug
 rejistry++/msvcpp/*/Release
+rejistry++/msvcpp/*/Release_NoLibs
 rejistry++/msvcpp/*/x64
 rejistry++/msvcpp/*/*.user
 rejistry++/msvcpp/rejistry++/ipch
