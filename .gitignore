@@ -65,6 +65,7 @@ rejistry++/msvcpp/*/Debug
 rejistry++/msvcpp/*/Release
 rejistry++/msvcpp/*/x64
 rejistry++/msvcpp/*/*.user
+rejistry++/msvcpp/rejistry++/ipch
 
 # Release files
 release/sleuthkit-*
@@ -74,10 +75,13 @@ release/sleuthkit-*
 /win32/*.sdf
 framework/msvcpp/framework/*.ncb
 framework/msvcpp/framework/*sdf
+rejistry++/msvcpp/rejistry++/*.ncb
+rejistry++/msvcpp/rejistry++/*sdf
 
 # Visual Studio user options
 /win32/tsk-win.suo
 framework/msvcpp/framework/*.suo
+rejistry++/msvcpp/rejistry++/*suo
 *.sln.cache
 win32/tsk-win.opensdf
 
