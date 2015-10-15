@@ -25,13 +25,14 @@
  * \file librejistry++.h
  *
  */
-#ifndef _REJISTRY_LIBREJISTRY++_H
-#define _REJISTRY_LIBREJISTRY++_H
+#ifndef _REJISTRY_LIBREJISTRY_H
+#define _REJISTRY_LIBREJISTRY_H
 
 #include "../src/RegistryHive.h"
 #include "../src/RegistryHiveFile.h"
 #include "../src/RegistryHiveBuffer.h"
 #include "../src/RegistryKey.h"
 #include "../src/RegistryValue.h"
+#include "../src/RejistryException.h"
 
 #endif
