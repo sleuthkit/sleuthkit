@@ -6235,26 +6235,23 @@ public class SleuthkitCase {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public static void tryConnect(CaseDbConnectionInfo info) throws TskCoreException {
+		// Check if we can talk to the database.		
+		if (info.getHost() == null || info.getHost().isEmpty()) {
+			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingHostname")); //NON-NLS
+		} else if (info.getPort() == null || info.getPort().isEmpty()) {
+			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingPort")); //NON-NLS
+		} else if (info.getUserName() == null || info.getUserName().isEmpty()) {
+			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingUsername")); //NON-NLS
+		} else if (info.getPassword() == null || info.getPassword().isEmpty()) {
+			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingPassword")); //NON-NLS
+		}
+
 		try {
-
-			// Check if we can talk to the database.		
-			if (info.getHost() == null || info.getHost().isEmpty()) {
-				throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingHostname")); //NON-NLS
-			} else if (info.getPort() == null || info.getPort().isEmpty()) {
-				throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingPort")); //NON-NLS
-			} else if (info.getUserName() == null || info.getUserName().isEmpty()) {
-				throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingUsername")); //NON-NLS
-			} else if (info.getPassword() == null || info.getPassword().isEmpty()) {
-				throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingPassword")); //NON-NLS
-			}
-
 			Class.forName("org.postgresql.Driver"); //NON-NLS
 			Connection conn = DriverManager.getConnection("jdbc:postgresql://" + info.getHost() + ":" + info.getPort() + "/postgres", info.getUserName(), info.getPassword()); //NON-NLS
 			if (conn != null) {
 				conn.close();
 			}
-		} catch (TskCoreException ex) {
-			throw new TskCoreException(ex.getMessage());
 		} catch (SQLException ex) {
 			String result;
 			String sqlState = ex.getSQLState().toLowerCase();
