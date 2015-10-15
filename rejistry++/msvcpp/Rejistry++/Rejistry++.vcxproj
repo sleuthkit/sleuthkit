@@ -20,7 +20,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}</ProjectGuid>
-    <RootNamespace>Rejistry</RootNamespace>
+    <RootNamespace>rejistry</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

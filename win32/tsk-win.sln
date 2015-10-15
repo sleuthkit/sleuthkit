@@ -61,9 +61,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libtsk", "libtsk\libtsk.vcx
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fcat", "fcat\fcat.vcxproj", "{E4A40368-152D-4D54-9E2E-4B140212F98F}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Rejistry++", "..\rejistry++\msvcpp\Rejistry++\Rejistry++.vcxproj", "{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rejistry++", "..\rejistry++\msvcpp\rejistry++\rejistry++.vcxproj", "{C41ACD23-6D88-4999-B79D-7E7828B2DBDE}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Rejistry", "..\rejistry++\msvcpp\Rejistry\Rejistry.vcxproj", "{22509FFC-8EEB-460F-B733-08F0A3EA3EB7}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rejistry", "..\rejistry++\msvcpp\rejistry\rejistry.vcxproj", "{22509FFC-8EEB-460F-B733-08F0A3EA3EB7}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C41ACD23-6D88-4999-B79D-7E7828B2DBDE} = {C41ACD23-6D88-4999-B79D-7E7828B2DBDE}
 	EndProjectSection
