@@ -109,7 +109,7 @@ static TSK_IMG_INFO *
 castImgInfo(JNIEnv * env, jlong ptr)
 {
     TSK_IMG_INFO *lcl = (TSK_IMG_INFO *) ptr;
-    if (lcl->tag != TSK_IMG_INFO_TAG) {
+    if (!lcl || lcl->tag != TSK_IMG_INFO_TAG) {
         setThrowTskCoreError(env, "Invalid IMG_INFO object");
         return 0;
     }
@@ -121,11 +121,14 @@ static TSK_VS_INFO *
 castVsInfo(JNIEnv * env, jlong ptr)
 {
     TSK_VS_INFO *lcl = (TSK_VS_INFO *) ptr;
-    if (lcl->tag != TSK_VS_INFO_TAG) {
+    if (!lcl || lcl->tag != TSK_VS_INFO_TAG) {
         setThrowTskCoreError(env, "Invalid VS_INFO object");
         return 0;
     }
-
+    // verify that image handle is still open
+    if (!castImgInfo(env, (jlong) lcl->img_info)) {
+        return 0;
+    }
     return lcl;
 }
 
@@ -133,11 +136,14 @@ static TSK_VS_PART_INFO *
 castVsPartInfo(JNIEnv * env, jlong ptr)
 {
     TSK_VS_PART_INFO *lcl = (TSK_VS_PART_INFO *) ptr;
-    if (lcl->tag != TSK_VS_PART_INFO_TAG) {
+    if (!lcl || lcl->tag != TSK_VS_PART_INFO_TAG) {
         setThrowTskCoreError(env, "Invalid VS_PART_INFO object");
         return 0;
     }
-
+    // verify that all handles are still open
+    if (!castVsInfo(env, (jlong) lcl->vs)) {
+        return 0;
+    }
     return lcl;
 }
 
@@ -145,8 +151,12 @@ static TSK_FS_INFO *
 castFsInfo(JNIEnv * env, jlong ptr)
 {
     TSK_FS_INFO *lcl = (TSK_FS_INFO *) ptr;
-    if (lcl->tag != TSK_FS_INFO_TAG) {
+    if (!lcl || lcl->tag != TSK_FS_INFO_TAG) {
         setThrowTskCoreError(env, "Invalid FS_INFO object");
+        return 0;
+    }
+    // verify that image handle is still open
+    if (!castImgInfo(env, (jlong) lcl->img_info)) {
         return 0;
     }
     return lcl;
@@ -157,8 +167,12 @@ static TSK_JNI_FILEHANDLE *
 castFsFile(JNIEnv * env, jlong ptr)
 {
     TSK_JNI_FILEHANDLE *lcl = (TSK_JNI_FILEHANDLE *) ptr;
-    if (lcl->tag != TSK_JNI_FILEHANDLE_TAG) {
+    if (!lcl || lcl->tag != TSK_JNI_FILEHANDLE_TAG) {
         setThrowTskCoreError(env, "Invalid TSK_JNI_FILEHANDLE object");
+        return 0;
+    }
+    // verify that all handles are still open
+    if (!lcl->fs_file || !castFsInfo(env, (jlong) lcl->fs_file->fs_info)) {
         return 0;
     }
     return lcl;
@@ -168,7 +182,7 @@ static TskCaseDb *
 castCaseDb(JNIEnv * env, jlong ptr)
 {
     TskCaseDb *lcl = ((TskCaseDb *) ptr);
-    if (lcl->m_tag != TSK_CASE_DB_TAG) {
+    if (!lcl || lcl->m_tag != TSK_CASE_DB_TAG) {
         setThrowTskCoreError(env,
             "Invalid TskCaseDb object");
         return 0;

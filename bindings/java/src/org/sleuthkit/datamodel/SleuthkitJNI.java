@@ -42,6 +42,9 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 public class SleuthkitJNI {
 
 	private static final int MAX_DATABASES = 256;
+	
+	// Lock used to synchronize image and file system cache
+	private static final Object cacheLock = new Object();
 
 	//Native methods
 	private static native String getVersionNat();
@@ -170,12 +173,38 @@ public class SleuthkitJNI {
 		}
 
 		/**
-		 * Close the case database
+		 * Close the case database as well as close all open image and file
+		 * system handles.
 		 *
 		 * @throws TskCoreException exception thrown if critical error occurs
 		 * within TSK
 		 */
 		void free() throws TskCoreException {
+			synchronized (cacheLock) {
+				// close all file system handles 
+				// loop over all images for which we have opened a file system
+				for (Map<Long, Long> imageToFsMap : fsHandleCache.values()) {
+					// for each image loop over all file systems open as part of that image
+					for (Long fsHandle : imageToFsMap.values()) {
+						// close the file system handle
+						closeFsNat(fsHandle);
+					}
+				}
+
+				// close all open image handles
+				for (Long imageHandle : imageHandleCache.values()) {
+					closeImgNat(imageHandle);
+				}
+
+				// clear both maps
+				/* NOTE: it is possible to close a case while ingest is going in the background.
+				 In this scenario it is possible for an igest module to try to read from source image.
+				 If this happens, image will be re-opened in a normal manner.
+				 */
+				fsHandleCache.clear();
+				imageHandleCache.clear();
+			}
+
 			SleuthkitJNI.closeCaseDbNat(caseDbPointer);
 		}
 
@@ -387,7 +416,7 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException exception thrown if critical error occurs within
 	 * TSK
 	 */
-	public synchronized static long openImage(String[] imageFiles) throws TskCoreException {
+	public static long openImage(String[] imageFiles) throws TskCoreException {
 		long imageHandle = 0;
 
 		StringBuilder keyBuilder = new StringBuilder();
@@ -396,18 +425,18 @@ public class SleuthkitJNI {
 		}
 		final String imageKey = keyBuilder.toString();
 
-		if (CaseDbHandle.imageHandleCache.containsKey(imageKey)) //get from cache
-		{
-			imageHandle = CaseDbHandle.imageHandleCache.get(imageKey);
-		} else {
-			//open new handle and cache it
-			imageHandle = openImgNat(imageFiles, imageFiles.length);
-			CaseDbHandle.fsHandleCache.put(imageHandle, new HashMap<Long, Long>());
-			CaseDbHandle.imageHandleCache.put(imageKey, imageHandle);
+		synchronized (cacheLock) {
+			if (CaseDbHandle.imageHandleCache.containsKey(imageKey)) //get from cache
+			{
+				imageHandle = CaseDbHandle.imageHandleCache.get(imageKey);
+			} else {
+				//open new handle and cache it
+				imageHandle = openImgNat(imageFiles, imageFiles.length);
+				CaseDbHandle.fsHandleCache.put(imageHandle, new HashMap<Long, Long>());
+				CaseDbHandle.imageHandleCache.put(imageKey, imageHandle);
+			}
 		}
-
 		return imageHandle;
-
 	}
 
 	/**
@@ -448,16 +477,18 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException exception thrown if critical error occurs within
 	 * TSK
 	 */
-	public synchronized static long openFs(long imgHandle, long fsOffset) throws TskCoreException {
+	public static long openFs(long imgHandle, long fsOffset) throws TskCoreException {
 		long fsHandle = 0;
-		final Map<Long, Long> imgOffSetToFsHandle = CaseDbHandle.fsHandleCache.get(imgHandle);
-		if (imgOffSetToFsHandle.containsKey(fsOffset)) {
-			//return cached
-			fsHandle = imgOffSetToFsHandle.get(fsOffset);
-		} else {
-			fsHandle = openFsNat(imgHandle, fsOffset);
-			//cache it
-			imgOffSetToFsHandle.put(fsOffset, fsHandle);
+		synchronized (cacheLock) {
+			final Map<Long, Long> imgOffSetToFsHandle = CaseDbHandle.fsHandleCache.get(imgHandle);
+			if (imgOffSetToFsHandle.containsKey(fsOffset)) {
+				//return cached
+				fsHandle = imgOffSetToFsHandle.get(fsOffset);
+			} else {
+				fsHandle = openFsNat(imgHandle, fsOffset);
+				//cache it
+				imgOffSetToFsHandle.put(fsOffset, fsHandle);
+			}
 		}
 		return fsHandle;
 	}
