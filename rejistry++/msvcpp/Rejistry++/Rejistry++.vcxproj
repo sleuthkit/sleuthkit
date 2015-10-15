@@ -107,6 +107,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\librejistry++.h" />
     <ClInclude Include="..\..\src\BinaryBlock.h" />
     <ClInclude Include="..\..\src\Buffer.h" />
     <ClInclude Include="..\..\src\ByteBuffer.h" />
