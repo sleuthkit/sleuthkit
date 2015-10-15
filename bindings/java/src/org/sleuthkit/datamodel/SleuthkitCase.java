@@ -30,8 +30,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.nio.file.Paths;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -46,6 +48,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
@@ -77,6 +80,13 @@ public class SleuthkitCase {
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
+	private static final int IS_REACHABLE_TIMEOUT_MS = 1000;
+	private static final String SQL_ERROR_CONNECTION_GROUP = "08";
+	private static final String SQL_ERROR_AUTHENTICATION_GROUP = "28";
+	private static final String SQL_ERROR_PRIVILEGE_GROUP = "42";
+	private static final String SQL_ERROR_RESOURCE_GROUP = "53";
+	private static final String SQL_ERROR_LIMIT_GROUP = "54";
+	private static final String SQL_ERROR_INTERNAL_GROUP = "xx";
 	private final ConnectionPool connections;
 	private final ResultSetHelper rsHelper = new ResultSetHelper(this);
 	private final Map<Long, Long> carvedFileContainersCache = new HashMap<Long, Long>(); // Caches the IDs of the root $CarvedFiles for each volume.
@@ -733,7 +743,7 @@ public class SleuthkitCase {
 	public static SleuthkitCase openCase(String databaseName, CaseDbConnectionInfo info, String caseDir) throws TskCoreException {
 		try {
 			if (info.getDbType() != DbType.SQLITE) {
-				if (info.canConnect()) {
+				if (tryConnectOld(info.getHost(), info.getPort(), info.getUserName(), info.getPassword(), DbType.POSTGRESQL)) {
 					final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(databaseName, info);
 					return new SleuthkitCase(info.getHost(), Integer.parseInt(info.getPort()), databaseName, info.getUserName(), info.getPassword(), caseHandle, caseDir, info.getDbType());
 				} else {
@@ -3703,7 +3713,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 * @deprecated	use SleuthkitCase.findAllFilesWhere() instead
 	 */
-    @Deprecated
+	@Deprecated
 	public List<FsContent> findFilesWhere(String sqlWhereClause) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
@@ -4487,7 +4497,7 @@ public class SleuthkitCase {
 	 * @deprecated Do not use runQuery(), use executeQuery() instead. \ref
 	 * query_database_page
 	 */
-    @Deprecated
+	@Deprecated
 	public ResultSet runQuery(String query) throws SQLException {
 		CaseDbConnection connection;
 		try {
@@ -4514,7 +4524,7 @@ public class SleuthkitCase {
 	 * @deprecated Do not use runQuery() and closeRunQuery(), use executeQuery()
 	 * instead. \ref query_database_page
 	 */
-    @Deprecated
+	@Deprecated
 	public void closeRunQuery(ResultSet resultSet) throws SQLException {
 		final Statement statement = resultSet.getStatement();
 		resultSet.close();
@@ -6223,6 +6233,86 @@ public class SleuthkitCase {
 			} finally {
 				SleuthkitCase.this.releaseSharedLock();
 			}
+		}
+	}
+
+	// this method goes away in a day or two
+	public static boolean tryConnectOld(String hostname, String port, String username, String password, DbType dbType) {
+		try {
+			SleuthkitCase.tryConnect(new CaseDbConnectionInfo(hostname, port, username, password, dbType));
+			return true;
+		} catch (Exception ex) {
+			logger.log(Level.SEVERE, "database connection issue. This method goes away when we update our PostgreSQL error messages");
+			return false;
+		}
+	}
+
+	/**
+	 * Attempts to connect to the database with the passed in settings, throws
+	 * if the settings are not sufficient to connect to the database type
+	 * indicated. Only attempts to connect to remote databases.
+	 *
+	 * When issues occur, it attempts to diagnose them by looking at the
+	 * exception messages, returning the appropriate user-facing text for the
+	 * exception received. This method expects the Exceptions messages to be in
+	 * English and compares against English text.
+	 *
+	 * @param info The connection information
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	public static void tryConnect(CaseDbConnectionInfo info) throws TskCoreException {
+		// Check if we can talk to the database.		
+		if (info.getHost() == null || info.getHost().isEmpty()) {
+			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingHostname")); //NON-NLS
+		} else if (info.getPort() == null || info.getPort().isEmpty()) {
+			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingPort")); //NON-NLS
+		} else if (info.getUserName() == null || info.getUserName().isEmpty()) {
+			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingUsername")); //NON-NLS
+		} else if (info.getPassword() == null || info.getPassword().isEmpty()) {
+			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingPassword")); //NON-NLS
+		}
+
+		try {
+			Class.forName("org.postgresql.Driver"); //NON-NLS
+			Connection conn = DriverManager.getConnection("jdbc:postgresql://" + info.getHost() + ":" + info.getPort() + "/postgres", info.getUserName(), info.getPassword()); //NON-NLS
+			if (conn != null) {
+				conn.close();
+			}
+		} catch (SQLException ex) {
+			String result;
+			String sqlState = ex.getSQLState().toLowerCase();
+			if (sqlState.startsWith(SQL_ERROR_CONNECTION_GROUP)) {
+				try {
+					if (InetAddress.getByName(info.getHost()).isReachable(IS_REACHABLE_TIMEOUT_MS)) {
+						// if we can reach the host, then it's probably port problem
+						result = bundle.getString("DatabaseConnectionCheck.Port"); //NON-NLS
+					} else {
+						result = bundle.getString("DatabaseConnectionCheck.HostnameOrPort"); //NON-NLS
+					}
+				} catch (IOException any) {
+					// it may be anything
+					result = bundle.getString("DatabaseConnectionCheck.Everything"); //NON-NLS
+				} catch (MissingResourceException any) {
+					// it may be anything
+					result = bundle.getString("DatabaseConnectionCheck.Everything"); //NON-NLS
+				}
+			} else if (sqlState.startsWith(SQL_ERROR_AUTHENTICATION_GROUP)) {
+				result = bundle.getString("DatabaseConnectionCheck.Authentication"); //NON-NLS
+			} else if (sqlState.startsWith(SQL_ERROR_PRIVILEGE_GROUP)) {
+				result = bundle.getString("DatabaseConnectionCheck.Access"); //NON-NLS
+			} else if (sqlState.startsWith(SQL_ERROR_RESOURCE_GROUP)) {
+				result = bundle.getString("DatabaseConnectionCheck.ServerDiskSpace"); //NON-NLS
+			} else if (sqlState.startsWith(SQL_ERROR_LIMIT_GROUP)) {
+				result = bundle.getString("DatabaseConnectionCheck.ServerRestart"); //NON-NLS
+			} else if (sqlState.startsWith(SQL_ERROR_INTERNAL_GROUP)) {
+				result = bundle.getString("DatabaseConnectionCheck.InternalServerIssue"); //NON-NLS
+			} else {
+				result = bundle.getString("DatabaseConnectionCheck.Connection"); //NON-NLS
+			}
+			throw new TskCoreException(result);
+		} catch (ClassNotFoundException ex) {
+			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.Installation")); //NON-NLS
 		}
 	}
 }

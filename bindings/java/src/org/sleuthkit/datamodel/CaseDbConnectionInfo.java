@@ -18,10 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.DbType;
 
 /**
@@ -30,7 +26,6 @@ import org.sleuthkit.datamodel.TskData.DbType;
  * hold information to connect to a local database such as SQLite.
  *
  * It can be used generically to hold remote database connection information.
- *
  */
 public class CaseDbConnectionInfo {
 
@@ -39,13 +34,29 @@ public class CaseDbConnectionInfo {
 	private String userName;
 	private String password;
 	private DbType dbType;
-	private static final Logger logger = Logger.getLogger(CaseDbConnectionInfo.class.getName());
 
+	/**
+	 * The intent of this class is to hold any information needed to connect to
+	 * a remote database server, except for the actual database name. This does
+	 * not hold information to connect to a local database such as SQLite.
+	 *
+	 * It can be used generically to hold remote database connection
+	 * information.
+	 *
+	 * @param hostNameOrIP the host name
+	 * @param portNumber the port number
+	 * @param userName the user name
+	 * @param password the password
+	 * @param dbType the database type
+	 */
 	public CaseDbConnectionInfo(String hostNameOrIP, String portNumber, String userName, String password, DbType dbType) {
 		this.hostNameOrIP = hostNameOrIP;
 		this.portNumber = portNumber;
 		this.userName = userName;
 		this.password = password;
+		if (dbType == DbType.SQLITE) {
+			throw new IllegalArgumentException("SQLite database type invalid for CaseDbConnectionInfo. CaseDbConnectionInfo should be used only for remote database types.");
+		}
 		this.dbType = dbType;
 	}
 
@@ -87,48 +98,5 @@ public class CaseDbConnectionInfo {
 
 	public void setPassword(String pass) {
 		this.password = pass;
-	}
-
-	/**
-	 * Returns true if the current database settings are sufficient to connect
-	 * to the database type indicated.
-	 *
-	 * @return True or false.
-	 */
-	public boolean canConnect() {
-		// Check if we can talk to the database. If you add a database, be sure
-		// to add the right connection string to the switch statement below.
-		boolean commsEstablished = false;
-		try {
-			switch (dbType) {
-
-				case POSTGRESQL:
-					Class.forName("org.postgresql.Driver");
-					/// TODO this should be done through the connection pool if we can.
-					Connection conn = DriverManager.getConnection(
-							"jdbc:postgresql://" + this.hostNameOrIP + ":" + this.portNumber + "/postgres",
-							this.userName,
-							this.password); // NON-NLS
-					if (conn != null) {
-						commsEstablished = true;
-						conn.close();
-					}
-					break;
-
-				case SQLITE:
-					logger.log(Level.INFO, "Invalid database type."); //NON-NLS
-					commsEstablished = false;
-					break;
-
-				default:
-					logger.log(Level.INFO, "Unset database type."); //NON-NLS
-					commsEstablished = false;
-					break;
-			}
-		} catch (Exception ex) {
-			logger.log(Level.INFO, "Bad permissions or bad database connection string", ex); //NON-NLS
-			commsEstablished = false;
-		}
-		return commsEstablished;
 	}
 }
