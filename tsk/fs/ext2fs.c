@@ -703,7 +703,7 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
     }
     else {
         fs_meta->mtime_nano = fs_meta->atime_nano = fs_meta->ctime_nano =
-            (uint32_t)fs_meta->crtime = 0;
+            fs_meta->crtime = 0;
     }
     fs_meta->time2.ext2.dtime_nano = 0;
     fs_meta->seq = 0;
