@@ -81,6 +81,7 @@ namespace Rejistry {
         };
 
         VKRecord(RegistryByteBuffer * buf, uint32_t offset);
+        VKRecord(const VKRecord &);
 
         virtual ~VKRecord() {}
     

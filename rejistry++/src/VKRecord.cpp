@@ -41,6 +41,9 @@ namespace Rejistry {
         }
     }
 
+    VKRecord::VKRecord(const VKRecord& sourceRecord) : Record(sourceRecord._buf, sourceRecord._offset) {        
+    }
+
     bool VKRecord::hasName() const {
         return (getWord(NAME_LENGTH_OFFSET) != 0x0);
     }
