@@ -53,4 +53,7 @@ namespace Rejistry {
         return _vk->getValue();
     }
 
+    uint32_t RegistryValue::getValueLength() const {
+        return _vk->getDataLength();
+    }
 };

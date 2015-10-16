@@ -70,6 +70,12 @@ namespace Rejistry {
          */
         ValueData * getValue() const;
 
+        /**
+         * Get the length of the value in bytes.
+         * @returns The length of the value in bytes.
+         */
+        uint32_t getValueLength() const;
+
     private:
         RegistryValue();
         RegistryValue& operator=(const RegistryValue &);
