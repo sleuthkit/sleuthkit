@@ -104,7 +104,7 @@ public class SleuthkitCase {
 	// locking protocol improves performance for reasons that are not currently
 	// understood. Note that the lock is contructed to use a fairness policy.
 	private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true);
-	
+
 	private interface DbCommand {
 
 		void execute() throws SQLException;
@@ -240,7 +240,7 @@ public class SleuthkitCase {
 	 * @param caseDirPath The path to the root case directory.
 	 * @throws Exception
 	 */
-	private SleuthkitCase(String host, int port, String dbName, String userName, String password, SleuthkitJNI.CaseDbHandle caseHandle, String caseDirPath, DbType dbType) throws Exception {
+	private SleuthkitCase(String host, int port, String dbName, String userName, String password, SleuthkitJNI.CaseDbHandle caseHandle, String caseDirPath, DbType dbType) throws TskCoreException, SQLException, PropertyVetoException {
 		this.dbPath = "";
 		this.dbType = dbType;
 		this.caseDirPath = caseDirPath;
@@ -249,7 +249,7 @@ public class SleuthkitCase {
 		updateSchemaVersion();
 	}
 
-	private void init(SleuthkitJNI.CaseDbHandle caseHandle) throws Exception {
+	private void init(SleuthkitJNI.CaseDbHandle caseHandle) throws TskCoreException, SQLException {
 		this.caseHandle = caseHandle;
 		initBlackboardArtifactTypes();
 		initBlackboardAttributeTypes();
@@ -405,7 +405,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws Exception
 	 */
-	private void updateSchemaVersion() throws Exception {
+	private void updateSchemaVersion() throws TskCoreException, SQLException {
 		CaseDbConnection connection = connections.getConnection();
 		ResultSet resultSet = null;
 		Statement statement = null;
@@ -423,13 +423,16 @@ public class SleuthkitCase {
 			resultSet = null;
 
 			if (SCHEMA_VERSION_NUMBER != schemaVersionNumber) {
-				throw new Exception(bundle.getString("SleuthkitCase.SchemaVersionMismatch"));
+				throw new TskCoreException(bundle.getString("SleuthkitCase.SchemaVersionMismatch"));
 				// could do more updating here, if/when the convert-old-cases-to-new-cases code comes into play
 			}
 			versionNumber = schemaVersionNumber;
 
 			connection.commitTransaction();
-		} catch (Exception ex) { // Cannot do exception multi-catch in Java 6, so use catch-all.
+		} catch (TskCoreException ex) {
+			connection.rollbackTransaction();
+			throw ex;
+		} catch (SQLException ex) {
 			connection.rollbackTransaction();
 			throw ex;
 		} finally {
@@ -732,7 +735,16 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Open an existing case network database.
+	 * Open an existing case network database. The flow of this method involves
+	 * trying to open case and if successful, return that case. If unsuccessful,
+	 * an exception is thrown. We catch any exceptions, and use tryConnect() to
+	 * attempt to obtain further information about the error. If tryConnect() is
+	 * unable to successfully connect, tryConnect() will throw a
+	 * TskCoreException with a message containing user-level error reporting. If
+	 * tryConnect() is able to connect, flow continues and we rethrow the
+	 * original exception obtained from trying to create the case. In this way,
+	 * we obtain more detailed information if we are able, but do not lose any
+	 * information if unable.
 	 *
 	 * @param info information to connect to network database.
 	 * @param databaseName the name of the database
@@ -742,18 +754,17 @@ public class SleuthkitCase {
 	 */
 	public static SleuthkitCase openCase(String databaseName, CaseDbConnectionInfo info, String caseDir) throws TskCoreException {
 		try {
-			if (info.getDbType() != DbType.SQLITE) {
-				if (tryConnectOld(info.getHost(), info.getPort(), info.getUserName(), info.getPassword(), DbType.POSTGRESQL)) {
-					final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(databaseName, info);
-					return new SleuthkitCase(info.getHost(), Integer.parseInt(info.getPort()), databaseName, info.getUserName(), info.getPassword(), caseHandle, caseDir, info.getDbType());
-				} else {
-					throw new TskCoreException("Bad database credentials.");
-				}
-			} else {
-				throw new TskCoreException("Multi-user cases are not enabled.");
-			}
-		} catch (Exception ex) {
-			throw new TskCoreException(ex.getMessage(), ex);
+			final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(databaseName, info);
+			return new SleuthkitCase(info.getHost(), Integer.parseInt(info.getPort()), databaseName, info.getUserName(), info.getPassword(), caseHandle, caseDir, info.getDbType());
+		} catch (TskCoreException exp) {
+			tryConnect(info); // attempt to connect, throw with user-friendly message if unable
+			throw new TskCoreException(exp.getMessage(), exp); // throw with generic message if tryConnect() was successful
+		} catch (SQLException exp) {
+			tryConnect(info); // attempt to connect, throw with user-friendly message if unable 
+			throw new TskCoreException(exp.getMessage(), exp); // throw with generic message if tryConnect() was successful
+		} catch (PropertyVetoException exp) {
+			// In this case, the JDBC driver doesn't support PostgreSQL. Use the generic message here.
+			throw new TskCoreException(exp.getMessage(), exp);
 		}
 	}
 
@@ -774,7 +785,16 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Create a new case network database.
+	 * Create a new case network database. The flow of this method involves
+	 * trying to create a new case and if successful, return that case. If
+	 * unsuccessful, an exception is thrown. We catch any exceptions, and use
+	 * tryConnect() to attempt to obtain further information about the error. If
+	 * tryConnect() is unable to successfully connect, tryConnect() will throw a
+	 * TskCoreException with a message containing user-level error reporting. If
+	 * tryConnect() is able to connect, flow continues and we rethrow the
+	 * original exception obtained from trying to create the case. In this way,
+	 * we obtain more detailed information if we are able, but do not lose any
+	 * information if unable.
 	 *
 	 * @param info the information to connect to the database
 	 * @param databaseName the name of the database
@@ -787,8 +807,18 @@ public class SleuthkitCase {
 			SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.newCaseDb(databaseName, info);
 			return new SleuthkitCase(info.getHost(), Integer.parseInt(info.getPort()),
 					databaseName, info.getUserName(), info.getPassword(), caseHandle, caseDirPath, info.getDbType());
-		} catch (Exception ex) {
-			throw new TskCoreException("Failed to create case database " + databaseName, ex);
+		} catch (TskCoreException exp) {
+			tryConnect(info); // attempt to connect, throw with user-friendly message if unable
+			throw new TskCoreException(exp.getMessage(), exp); // throw with generic message if tryConnect() was successful
+		} catch (NumberFormatException exp) {
+			tryConnect(info); // attempt to connect, throw with user-friendly message if unable
+			throw new TskCoreException(exp.getMessage(), exp); // throw with generic message if tryConnect() was successful
+		} catch (SQLException exp) {
+			tryConnect(info); // attempt to connect, throw with user-friendly message if unable
+			throw new TskCoreException(exp.getMessage(), exp); // throw with generic message if tryConnect() was successful			
+		} catch (PropertyVetoException exp) {
+			// In this case, the JDBC driver doesn't support PostgreSQL. Use the generic message here.
+			throw new TskCoreException(exp.getMessage(), exp);
 		}
 	}
 
@@ -6233,17 +6263,6 @@ public class SleuthkitCase {
 			} finally {
 				SleuthkitCase.this.releaseSharedLock();
 			}
-		}
-	}
-
-	// this method goes away in a day or two
-	public static boolean tryConnectOld(String hostname, String port, String username, String password, DbType dbType) {
-		try {
-			SleuthkitCase.tryConnect(new CaseDbConnectionInfo(hostname, port, username, password, dbType));
-			return true;
-		} catch (Exception ex) {
-			logger.log(Level.SEVERE, "database connection issue. This method goes away when we update our PostgreSQL error messages");
-			return false;
 		}
 	}
 
