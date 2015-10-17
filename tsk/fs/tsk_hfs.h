@@ -774,9 +774,16 @@ extern uint8_t hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum,
 extern void error_returned(char *errstr, ...);
 extern void error_detected(uint32_t errnum, char *errstr, ...);
 
+/**
+ * @param hfs
+ * @param level_type Type of node the records are from
+ * @param cur_key Key currently being analyzed (record data follows it)
+ * @param key_off Byte offset in tree that this key is located in
+ * @param ptr Pointer to data that was passed into parent
+ */
 typedef uint8_t(*TSK_HFS_BTREE_CB) (HFS_INFO *, int8_t level_type,
     const hfs_btree_key_cat * cur_key,
-    TSK_OFF_T key_off, void *);
+    TSK_OFF_T key_off, void *ptr);
 // return values for callback
 #define HFS_BTREE_CB_IDX_LT     1       // current key is less than target (keeps looking in node)
 #define HFS_BTREE_CB_IDX_EQGT   2       // current key is equal or greater than target (stops)

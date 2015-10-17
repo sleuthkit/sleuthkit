@@ -234,18 +234,6 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
             return HFS_BTREE_CB_LEAF_STOP;
         }
         rec_off2 = 2 + tsk_getu16(hfs->fs_info.endian, cur_key->key_len);
-        // @@@ NEED TO REPLACE THIS SOMEHOW, but need to figure out the max length
-        /*
-           if (rec_off2 > nodesize) {
-           tsk_error_set_errno(TSK_ERR_FS_GENFS);
-           tsk_error_set_errstr(
-           "hfs_dir_open_meta: offset of record+keylen %d in leaf node %d too large (%"PRIuSIZE" vs %"
-           PRIu16 ")", rec, cur_node, rec_off2, nodesize);
-           tsk_fs_name_free(fs_name);
-           free(node);
-           return TSK_COR;
-           }
-         */
         rec_type = tsk_getu16(hfs->fs_info.endian, &rec_buf[rec_off2]);
 
         // Catalog entry is for a file

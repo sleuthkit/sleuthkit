@@ -924,6 +924,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
                 size_t rec_off;
                 hfs_btree_key_cat *key;
                 uint8_t retval;
+                uint16_t keylen;
 
                 // get the record offset in the node
                 rec_off =
@@ -938,7 +939,19 @@ hfs_cat_traverse(HFS_INFO * hfs,
                     free(node);
                     return 1;
                 }
+
                 key = (hfs_btree_key_cat *) & node[rec_off];
+
+                keylen = 2 + tsk_getu16(hfs->fs_info.endian, key->key_len);
+                if ((keylen) > nodesize) {
+                    tsk_error_set_errno(TSK_ERR_FS_GENFS);
+                    tsk_error_set_errstr
+                        ("hfs_cat_traverse: length of key %d in index node %d too large (%d vs %"
+                        PRIu16 ")", rec, cur_node, keylen, nodesize);
+                    free(node);
+                    return 1;
+                }
+
 
                 /*
                    if (tsk_verbose)
@@ -948,6 +961,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
                    tsk_getu16(fs->endian, key->key_len),
                    tsk_getu32(fs->endian, key->parent_cnid));
                  */
+
 
                 /* save the info from this record unless it is too big */
                 retval =
@@ -1015,6 +1029,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
                 size_t rec_off;
                 hfs_btree_key_cat *key;
                 uint8_t retval;
+                uint16_t keylen;
 
                 // get the record offset in the node
                 rec_off =
@@ -1030,6 +1045,16 @@ hfs_cat_traverse(HFS_INFO * hfs,
                     return 1;
                 }
                 key = (hfs_btree_key_cat *) & node[rec_off];
+
+                keylen = 2 + tsk_getu16(hfs->fs_info.endian, key->key_len);
+                if ((keylen) > nodesize) {
+                    tsk_error_set_errno(TSK_ERR_FS_GENFS);
+                    tsk_error_set_errstr
+                        ("hfs_cat_traverse: length of key %d in leaf node %d too large (%d vs %"
+                        PRIu16 ")", rec, cur_node, keylen, nodesize);
+                    free(node);
+                    return 1;
+                }
 
                 /*
                    if (tsk_verbose)
