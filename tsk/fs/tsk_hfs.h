@@ -775,7 +775,7 @@ extern void error_returned(char *errstr, ...);
 extern void error_detected(uint32_t errnum, char *errstr, ...);
 
 typedef uint8_t(*TSK_HFS_BTREE_CB) (HFS_INFO *, int8_t level_type,
-    const void *targ_key, const hfs_btree_key_cat * cur_key,
+    const hfs_btree_key_cat * cur_key,
     TSK_OFF_T key_off, void *);
 // return values for callback
 #define HFS_BTREE_CB_IDX_LT     1       // current key is less than target (keeps looking in node)
@@ -784,7 +784,7 @@ typedef uint8_t(*TSK_HFS_BTREE_CB) (HFS_INFO *, int8_t level_type,
 #define HFS_BTREE_CB_LEAF_STOP  4       // stop processing keys in the leaf node
 #define HFS_BTREE_CB_ERR        5
 
-extern uint8_t hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
+extern uint8_t hfs_cat_traverse(HFS_INFO * hfs, 
     TSK_HFS_BTREE_CB a_cb, void *ptr);
 
 
