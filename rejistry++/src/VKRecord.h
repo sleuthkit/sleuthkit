@@ -43,6 +43,8 @@ namespace Rejistry {
      */
     class VKRecord : public Record {
     public:
+        static const std::wstring DEFAULT_VALUE_NAME;
+
         typedef VKRecord * VKRecordPtr;
         typedef std::vector< VKRecordPtr > VKRecordPtrList;
 
@@ -81,7 +83,7 @@ namespace Rejistry {
         };
 
         VKRecord(RegistryByteBuffer * buf, uint32_t offset);
-
+        VKRecord(const VKRecord &);
         virtual ~VKRecord() {}
     
         /**
