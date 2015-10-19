@@ -34,11 +34,15 @@
 namespace Rejistry {
 
     const std::string VKRecord::MAGIC = "vk";
+    const std::wstring VKRecord::DEFAULT_VALUE_NAME = L"(Default)";
 
     VKRecord::VKRecord(RegistryByteBuffer * buf, uint32_t offset) : Record(buf, offset) {
         if (!(getMagic() == MAGIC)) {
             throw RegistryParseException("VKRecord magic value not found.");
         }
+    }
+
+    VKRecord::VKRecord(const VKRecord& sourceRecord) : Record(sourceRecord._buf, sourceRecord._offset) {        
     }
 
     bool VKRecord::hasName() const {
@@ -51,7 +55,7 @@ namespace Rejistry {
 
     std::wstring VKRecord::getName() const {
         if (! hasName()) {
-            return L"";
+            return VKRecord::DEFAULT_VALUE_NAME;
         }
 
         uint32_t nameLength = getWord(NAME_LENGTH_OFFSET);
