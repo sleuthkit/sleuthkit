@@ -312,7 +312,7 @@ copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
     </ClCompile>
     <PostBuildEvent>
       <Command>
-</Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_PostgreSQL|Win32'">
@@ -396,7 +396,8 @@ copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"
 copy "$(POSTGRESQL_HOME_64)\bin\libpq.dll" "$(OutDir)"
 copy "$(POSTGRESQL_HOME_64)\bin\libintl-8.dll" "$(OutDir)"
 copy "$(POSTGRESQL_HOME_64)\bin\libeay32.dll" "$(OutDir)"
-copy "$(POSTGRESQL_HOME_64)\bin\ssleay32.dll" "$(OutDir)"</Command>
+copy "$(POSTGRESQL_HOME_64)\bin\ssleay32.dll" "$(OutDir)"
+copy "$(SolutionDir)\PostgreSQL_CRT\win64\msvcr120.dll" "$(OutDir)" </Command>
     </PostBuildEvent>
     <Lib>
       <AdditionalDependencies>libpq.lib</AdditionalDependencies>
