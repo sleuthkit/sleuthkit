@@ -760,7 +760,7 @@ WARN_LOGFILE           =
 
 INPUT                  = main.dox \
                          query_database.dox \
-						 blackboard.dox \
+			 blackboard.dox \
                          insert_and_update_database.dox \
 						 ../src
 

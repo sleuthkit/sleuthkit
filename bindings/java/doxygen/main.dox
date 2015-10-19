@@ -34,7 +34,7 @@ Flush out here on general layout.
 
 \section jni_blackboard The Blackboard
 
-\ref mod_bbpage
+\subpage mod_bbpage
 
 
 \section the_database The Database
