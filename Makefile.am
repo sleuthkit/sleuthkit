@@ -87,8 +87,8 @@ nobase_dist_data_DATA = tsk/sorter/default.sort tsk/sorter/freebsd.sort \
 
 api-docs:
 	doxygen tsk/docs/Doxyfile
-	doxygen framework/docs/Doxyfile
-	doxygen bindings/java/doxygen/Doxyfile
+# doxygen framework/docs/Doxyfile
+	cd bindings/java/doxygen; doxygen Doxyfile
 
 man-html:
 	cd man;build-html
