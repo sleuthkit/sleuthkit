@@ -59,6 +59,11 @@ namespace Rejistry {
         }
 
         uint32_t nameLength = getWord(NAME_LENGTH_OFFSET);
+
+        if (nameLength > MAX_NAME_LENGTH) {
+            throw RegistryParseException("Value name length exceeds maximum length.");
+        }
+
         if (hasAsciiName()) {
             // TODO: This is a little hacky but it should work fine
             // for ASCII strings.
@@ -75,7 +80,7 @@ namespace Rejistry {
 
     uint32_t VKRecord::getDataLength() const {
         uint32_t size = getDWord(DATA_LENGTH_OFFSET);
-        if (size > LARGE_DATA_SIZE){
+        if (size >= LARGE_DATA_SIZE){
             size -= LARGE_DATA_SIZE;
         }
         return size;
@@ -140,7 +145,8 @@ namespace Rejistry {
             data = new RegistryByteBuffer(new ByteBuffer(getData(DATA_OFFSET_OFFSET, 0x8), 0x8));
             break;
         default:
-            throw RegistryParseException("Unknown value type.");
+            // Unknown registry type. Create an empty buffer.
+            data = new RegistryByteBuffer(new ByteBuffer(0));
         }
 
         return new ValueData(data, getValueType());                                                            
