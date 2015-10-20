@@ -41,7 +41,9 @@ namespace Rejistry {
         }
 
         ByteBuffer::ByteBuffer(const ByteArray& buf, const uint32_t length) : Buffer(length) {
-            initializeBuffer(&buf[0], length);
+            if (buf.size() > 0) {
+                initializeBuffer(&buf[0], length);
+            }
         }
 
         void ByteBuffer::initializeBuffer(const uint8_t * buf, const uint32_t length) {
@@ -56,12 +58,25 @@ namespace Rejistry {
         }
 
         void ByteBuffer::get(ByteArray& dst, const uint32_t offset, const uint32_t length) {
+            if (length == 0) {
+                // No data requested.
+                return;
+            }
+
             if (offset > dst.size()) {
                 throw RegistryParseException("Offset is greater than destination buffer size.");
             }
 
             if ((dst.size() - offset) > length) {
                 throw RegistryParseException("Length is greater than available space in destination buffer.");
+            }
+
+            if ((_position + offset) > _limit) {
+                throw RegistryParseException("Starting position is beyond end of buffer.");
+            }
+
+            if ((_position + offset + length) > _limit) {
+                throw RegistryParseException("Number of requested bytes exceeds buffer size.");
             }
 
             memcpy(&dst[0], &_buffer[_position + offset], length);
