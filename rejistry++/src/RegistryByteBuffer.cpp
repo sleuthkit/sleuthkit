@@ -77,9 +77,13 @@ namespace Rejistry {
 
     std::wstring RegistryByteBuffer::getUTF16String(const uint32_t offset, const uint32_t length) const {
         ByteBuffer::ByteArray &data = getData(offset, length);
-
         std::wstring_convert<std::codecvt_utf16<wchar_t, 0x10ffff, std::little_endian>, wchar_t> conv;
-        return conv.from_bytes(reinterpret_cast<const char*>(&data[0]), reinterpret_cast<const char *>(&data[0] + length));
+        std::wstring result = conv.from_bytes(reinterpret_cast<const char*>(&data[0]), reinterpret_cast<const char*>(&data[0] + length));
+        std::size_t firstNull = result.find_first_of(L'\0');
+        if (firstNull != std::string::npos) {
+            result.erase(firstNull, result.size());
+        }
+        return result;
     }
 
     ByteBuffer::ByteArray RegistryByteBuffer::getData() const {
