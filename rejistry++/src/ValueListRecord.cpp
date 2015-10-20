@@ -61,7 +61,10 @@ namespace Rejistry {
         VKRecord::VKRecordPtrList::iterator it = recordList.begin();
 
         for (; it != recordList.end(); ++it) {
-            if (_wcsicmp(name.c_str(), (*it)->getName().c_str()) == 0) {
+            // If we have a name match or we are searching for the "default" entry
+            // (which matches a record with no name) we are done.
+            if ((!(*it)->hasName() && name == VKRecord::DEFAULT_VALUE_NAME) ||
+                (_wcsicmp(name.c_str(), (*it)->getName().c_str()) == 0)) {
                 // Create a copy of the record to return as the records
                 // in the list will be deleted.
                 foundRecord = new VKRecord(*(*it));
