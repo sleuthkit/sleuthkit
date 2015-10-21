@@ -142,7 +142,14 @@ namespace Rejistry {
             data = new RegistryByteBuffer(new ByteBuffer(getData(DATA_OFFSET_OFFSET, 0x4), 0x4));
             break;
         case ValueData::VALTYPE_QWORD:
-            data = new RegistryByteBuffer(new ByteBuffer(getData(DATA_OFFSET_OFFSET, 0x8), 0x8));
+            {
+                std::auto_ptr< Cell > c(new Cell(_buf, offset));
+                if (c.get() == NULL) {
+                    throw RegistryParseException("Failed to create Cell for Value data.");
+                }
+                ByteBuffer * byteBuffer = new ByteBuffer(c->getData(), length);
+                data = new RegistryByteBuffer(byteBuffer);
+            }
             break;
         default:
             // Unknown registry type. Create an empty buffer.
