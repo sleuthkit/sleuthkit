@@ -40,12 +40,12 @@
 		targetfile="${amd64}/win/libtsk_jni.dll"/>
 	</target>
 
-	<target name="copyLibsSQLite" description="Copy native libs to the correct folder">
+	<target name="copyLibs-SQLite" description="Copy native libs to the correct folder">
 		<property name="tsk.config" value="Release"/>
 		<antcall target="copyWinTskLibsToBuildSQLite" />
 	</target>
 	
-	<target name="copyLibsSQLiteDebug" description="Copy native libs to the correct folder">
+	<target name="copyLibs-SQLiteDebug" description="Copy native libs to the correct folder">
 		<property name="tsk.config" value="Debug"/>
 		<antcall target="copyWinTskLibsToBuildSQLite" />
 	</target>
@@ -55,7 +55,7 @@
 		<antcall target="copyWinTskLibsToBuild-PostgreSQL" />
 	</target>
 	
-	<target name="copyLibsDebug-PostgreSQL" description="Copy native libs to the correct folder, PostgreSQL build">
+	<target name="copyLibs-PostgreSQLDebug" description="Copy native libs to the correct folder, PostgreSQL build">
 		<property name="tsk.config" value="Debug_PostgreSQL"/>
 		<antcall target="copyWinTskLibsToBuild-PostgreSQL" />
 	</target>
