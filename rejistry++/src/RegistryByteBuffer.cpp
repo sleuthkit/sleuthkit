@@ -29,6 +29,7 @@
 #include <sstream>
 #include <locale>
 #include <codecvt>
+#include <iostream>
 
 // Local includes
 #include "RegistryByteBuffer.h"
@@ -85,8 +86,21 @@ namespace Rejistry {
         }
 
         ByteBuffer::ByteArray &data = getData(offset, length);
+        if (data.size() % 2 != 0) {
+            data.push_back('\0');
+        }
+
         std::wstring_convert<std::codecvt_utf16<wchar_t, 0x10ffff, std::little_endian>, wchar_t> conv;
-        std::wstring result = conv.from_bytes(reinterpret_cast<const char*>(&data[0]), reinterpret_cast<const char*>(&data[0] + length));
+        std::wstring result;
+
+        try {
+            result = conv.from_bytes(reinterpret_cast<const char*>(&data[0]), reinterpret_cast<const char*>(&data[0] + data.size()));
+        }
+        catch (std::exception& e)
+        {
+            return L"Error: Failed to convert string";
+        }
+
         std::size_t firstNull = result.find_first_of(L'\0');
         if (firstNull != std::string::npos) {
             result.erase(firstNull, result.size());
