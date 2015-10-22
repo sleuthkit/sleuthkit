@@ -423,13 +423,13 @@ public class SleuthkitCase {
 			resultSet = null;
 
 			if (SCHEMA_VERSION_NUMBER != schemaVersionNumber) {
-				throw new TskCoreException(bundle.getString("SleuthkitCase.SchemaVersionMismatch"));
+				throw new Exception(bundle.getString("SleuthkitCase.SchemaVersionMismatch"));
 				// could do more updating here, if/when the convert-old-cases-to-new-cases code comes into play
 			}
 			versionNumber = schemaVersionNumber;
 
 			connection.commitTransaction();
-		} catch (Exception ex) {
+		} catch (Exception ex) { // Cannot do exception multi-catch in Java 6, so use catch-all.
 			connection.rollbackTransaction();
 			throw ex;
 		} finally {
@@ -782,7 +782,7 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Create a new case database.
+	 * Create a new multi-user case database.
 	 *
 	 * @param info the information to connect to the database
 	 * @param databaseName the name of the database
