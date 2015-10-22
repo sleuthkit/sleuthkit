@@ -209,8 +209,8 @@ copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_PostgreSQL|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBEWF_HOME)\common;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;$(POSTGRESQL_HOME_64)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBZ;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBEWF_HOME)\common;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;$(POSTGRESQL_HOME_32)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBZ;WIN32;_DEBUG;HAVE_POSTGRESQL;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -223,13 +223,18 @@ copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
     <PostBuildEvent>
       <Command>copy "$(LIBEWF_HOME)\msvscpp\release\libewf.dll" "$(OutDir)"
 copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
+copy "$(POSTGRESQL_HOME_32)\bin\libpq.dll" "$(OutDir)" 
+copy "$(POSTGRESQL_HOME_32)\bin\intl.dll" "$(OutDir)" 
+copy "$(POSTGRESQL_HOME_32)\bin\libeay32.dll" "$(OutDir)"
+copy "$(POSTGRESQL_HOME_32)\bin\ssleay32.dll" "$(OutDir)"
+copy "$(SolutionDir)\PostgreSQL_CRT\win32\msvcr120.dll" "$(OutDir)" 
 </Command>
     </PostBuildEvent>
     <Lib>
       <AdditionalDependencies>libpq.lib</AdditionalDependencies>
     </Lib>
     <Lib>
-      <AdditionalLibraryDirectories>$(POSTGRESQL_HOME_64)\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(POSTGRESQL_HOME_32)\lib</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -312,15 +317,15 @@ copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
     </ClCompile>
     <PostBuildEvent>
       <Command>
-</Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_PostgreSQL|Win32'">
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBEWF_HOME)\common;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;$(POSTGRESQL_HOME_64)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBZ;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBEWF_HOME)\common;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;$(POSTGRESQL_HOME_32)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBZ;WIN32;NDEBUG;HAVE_POSTGRESQL;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
@@ -331,13 +336,17 @@ copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
     <PostBuildEvent>
       <Command>copy "$(LIBEWF_HOME)\msvscpp\release\libewf.dll" "$(OutDir)"
 copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
-</Command>
+copy "$(POSTGRESQL_HOME_32)\bin\libpq.dll" "$(OutDir)" 
+copy "$(POSTGRESQL_HOME_32)\bin\intl.dll" "$(OutDir)" 
+copy "$(POSTGRESQL_HOME_32)\bin\libeay32.dll" "$(OutDir)"
+copy "$(POSTGRESQL_HOME_32)\bin\ssleay32.dll" "$(OutDir)"
+copy "$(SolutionDir)\PostgreSQL_CRT\win32\msvcr120.dll" "$(OutDir)" </Command>
     </PostBuildEvent>
     <Lib>
       <AdditionalDependencies>libpq.lib</AdditionalDependencies>
     </Lib>
     <Lib>
-      <AdditionalLibraryDirectories>$(POSTGRESQL_HOME_64)\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(POSTGRESQL_HOME_32)\lib</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -396,7 +405,8 @@ copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"
 copy "$(POSTGRESQL_HOME_64)\bin\libpq.dll" "$(OutDir)"
 copy "$(POSTGRESQL_HOME_64)\bin\libintl-8.dll" "$(OutDir)"
 copy "$(POSTGRESQL_HOME_64)\bin\libeay32.dll" "$(OutDir)"
-copy "$(POSTGRESQL_HOME_64)\bin\ssleay32.dll" "$(OutDir)"</Command>
+copy "$(POSTGRESQL_HOME_64)\bin\ssleay32.dll" "$(OutDir)"
+copy "$(SolutionDir)\PostgreSQL_CRT\win64\msvcr120.dll" "$(OutDir)" </Command>
     </PostBuildEvent>
     <Lib>
       <AdditionalDependencies>libpq.lib</AdditionalDependencies>

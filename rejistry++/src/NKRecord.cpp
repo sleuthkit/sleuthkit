@@ -57,6 +57,11 @@ namespace Rejistry {
 
         int32_t offset = (int32_t)getDWord(CLASSNAME_OFFSET_OFFSET);
         uint16_t length = getWord(CLASSNAME_LENGTH_OFFSET);
+
+        if (length > MAX_NAME_LENGTH) {
+            throw RegistryParseException("Class name exceeds maximum length.");
+        }
+
         uint32_t classnameOffset = REGFHeader::FIRST_HBIN_OFFSET + offset;
         std::auto_ptr< Cell > c(new Cell(_buf, classnameOffset));
         if (c.get() == NULL) {
@@ -84,6 +89,11 @@ namespace Rejistry {
 
     std::wstring NKRecord::getName() const {
         uint32_t nameLength = getWord(NAME_LENGTH_OFFSET);
+
+        if (nameLength > MAX_NAME_LENGTH) {
+            throw RegistryParseException("Key name exceeds maximum length.");
+        }
+
         if (hasAsciiName()) {
             // TODO: This is a little hacky but it should work fine
             // for ASCII strings.

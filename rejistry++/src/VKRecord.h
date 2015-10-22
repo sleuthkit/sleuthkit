@@ -43,6 +43,8 @@ namespace Rejistry {
      */
     class VKRecord : public Record {
     public:
+        static const std::wstring DEFAULT_VALUE_NAME;
+
         typedef VKRecord * VKRecordPtr;
         typedef std::vector< VKRecordPtr > VKRecordPtrList;
 
@@ -81,7 +83,7 @@ namespace Rejistry {
         };
 
         VKRecord(RegistryByteBuffer * buf, uint32_t offset);
-
+        VKRecord(const VKRecord &);
         virtual ~VKRecord() {}
     
         /**
@@ -146,6 +148,8 @@ namespace Rejistry {
         static const uint8_t SMALL_DATA_SIZE = 0x05;
         static const uint16_t DB_DATA_SIZE = 0x3FD8;
         static const uint32_t LARGE_DATA_SIZE = 0x80000000;
+
+        static const uint16_t MAX_NAME_LENGTH = 32767;
 
         VKRecord();
         VKRecord& operator=(const VKRecord &);

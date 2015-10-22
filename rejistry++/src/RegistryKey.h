@@ -47,6 +47,7 @@ namespace Rejistry {
 
         RegistryKey(NKRecord* nk) { _nk = nk; }
         RegistryKey(const RegistryKey& );
+        RegistryKey& operator=(const RegistryKey &);
 
         virtual ~RegistryKey();
 
@@ -97,7 +98,6 @@ namespace Rejistry {
 
     private:
         RegistryKey();
-        RegistryKey& operator=(const RegistryKey &);
 
         NKRecord * _nk;
     };

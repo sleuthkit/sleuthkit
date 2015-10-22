@@ -48,6 +48,7 @@ namespace Rejistry {
         ByteBuffer(const ByteArray& buf, const uint32_t length);
         virtual ~ByteBuffer() { _buffer.clear(); }
 
+        /// Get one byte from the current position in the buffer.
         uint8_t get(uint32_t offset) const;
 
         /**
@@ -61,8 +62,12 @@ namespace Rejistry {
          * @throws RegistryParseException
          */
         void get(ByteArray& dst, const uint32_t offset, const uint32_t length);
+
+        /// Get two bytes from the current position in the buffer.
         uint16_t getShort(uint32_t offset) const;
+        /// Get four bytes from the current position in the buffer.
         uint32_t getInt(uint32_t offset) const;
+        /// Get eight bytes from the current position in the buffer.
         uint64_t getLong(uint32_t offset) const;
 
     private:

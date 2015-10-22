@@ -38,7 +38,7 @@ PROJECT_NAME           = "Sleuth Kit Java Bindings (JNI)"
 # could be handy for archiving the generated documentation or if some version
 # control system is used.
 
-PROJECT_NUMBER         = 4.0
+PROJECT_NUMBER         = 4.3
 
 # Using the PROJECT_BRIEF tag one can provide an optional one line description
 # for a project that appears at the top of each page and should give viewer a
@@ -760,7 +760,7 @@ WARN_LOGFILE           =
 
 INPUT                  = main.dox \
                          query_database.dox \
-						 blackboard.dox \
+			 blackboard.dox \
                          insert_and_update_database.dox \
 						 ../src
 
@@ -1046,7 +1046,7 @@ GENERATE_HTML          = YES
 # The default directory is: html.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_OUTPUT            = jni-docs
+HTML_OUTPUT            = jni-docs/4.3/
 
 # The HTML_FILE_EXTENSION tag can be used to specify the file extension for each
 # generated HTML page (for example: .htm, .php, .asp).
