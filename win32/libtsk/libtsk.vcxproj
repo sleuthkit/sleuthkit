@@ -223,13 +223,18 @@ copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
     <PostBuildEvent>
       <Command>copy "$(LIBEWF_HOME)\msvscpp\release\libewf.dll" "$(OutDir)"
 copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
+copy "$(POSTGRESQL_HOME_32)\bin\libpq.dll" "$(OutDir)" 
+copy "$(POSTGRESQL_HOME_32)\bin\intl.dll" "$(OutDir)" 
+copy "$(POSTGRESQL_HOME_32)\bin\libeay32.dll" "$(OutDir)"
+copy "$(POSTGRESQL_HOME_32)\bin\ssleay32.dll" "$(OutDir)"
+copy "$(SolutionDir)\PostgreSQL_CRT\win32\msvcr120.dll" "$(OutDir)" 
 </Command>
     </PostBuildEvent>
     <Lib>
       <AdditionalDependencies>libpq.lib</AdditionalDependencies>
     </Lib>
     <Lib>
-      <AdditionalLibraryDirectories>$(POSTGRESQL_HOME_64)\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(POSTGRESQL_HOME_32)\lib</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -331,13 +336,17 @@ copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
     <PostBuildEvent>
       <Command>copy "$(LIBEWF_HOME)\msvscpp\release\libewf.dll" "$(OutDir)"
 copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
-</Command>
+copy "$(POSTGRESQL_HOME_32)\bin\libpq.dll" "$(OutDir)" 
+copy "$(POSTGRESQL_HOME_32)\bin\intl.dll" "$(OutDir)" 
+copy "$(POSTGRESQL_HOME_32)\bin\libeay32.dll" "$(OutDir)"
+copy "$(POSTGRESQL_HOME_32)\bin\ssleay32.dll" "$(OutDir)"
+copy "$(SolutionDir)\PostgreSQL_CRT\win32\msvcr120.dll" "$(OutDir)" </Command>
     </PostBuildEvent>
     <Lib>
       <AdditionalDependencies>libpq.lib</AdditionalDependencies>
     </Lib>
     <Lib>
-      <AdditionalLibraryDirectories>$(POSTGRESQL_HOME_64)\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(POSTGRESQL_HOME_32)\lib</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
