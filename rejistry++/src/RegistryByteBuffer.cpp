@@ -30,9 +30,11 @@
 #include <locale>
 #include <codecvt>
 #include <iostream>
+#include <cwchar>
 
 // Local includes
 #include "RegistryByteBuffer.h"
+#include "RejistryException.h"
 
 namespace Rejistry {
 
@@ -86,25 +88,36 @@ namespace Rejistry {
         }
 
         ByteBuffer::ByteArray &data = getData(offset, length);
+        // If the size of the array is not a multiple of 2 it is
+        // likely to not be UTF16 encoded. The most common case is that
+        // the string is simply missing a terminating null so we add it.
         if (data.size() % 2 != 0) {
             data.push_back('\0');
+        }
+
+        // Find UTF16 null terminator.
+        uint32_t nullPos = 0;
+        for (; nullPos < data.size(); nullPos += 2) {
+            if (data[nullPos] == '\0' && data[nullPos+1] == '\0') {
+                break;
+            }
+        }
+
+        if (nullPos == 0) {
+            return L"";
         }
 
         std::wstring_convert<std::codecvt_utf16<wchar_t, 0x10ffff, std::little_endian>, wchar_t> conv;
         std::wstring result;
 
         try {
-            result = conv.from_bytes(reinterpret_cast<const char*>(&data[0]), reinterpret_cast<const char*>(&data[0] + data.size()));
+            result = conv.from_bytes(reinterpret_cast<const char*>(&data[0]), reinterpret_cast<const char*>(&data[nullPos]));
         }
-        catch (std::exception& e)
+        catch (std::exception&)
         {
-            return L"Error: Failed to convert string";
+            throw RegistryParseException("Error: Failed to convert string");
         }
 
-        std::size_t firstNull = result.find_first_of(L'\0');
-        if (firstNull != std::string::npos) {
-            result.erase(firstNull, result.size());
-        }
         return result;
     }
 
