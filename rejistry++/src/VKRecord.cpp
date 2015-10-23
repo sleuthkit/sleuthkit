@@ -67,7 +67,7 @@ namespace Rejistry {
         if (hasAsciiName()) {
             // TODO: This is a little hacky but it should work fine
             // for ASCII strings.
-            std::string name = getASCIIString(NAME_OFFSET_OFFSET, nameLength);
+            std::vector<uint8_t> name = getData(NAME_OFFSET_OFFSET, nameLength);
             return std::wstring(name.begin(), name.end());
         }
 
@@ -126,7 +126,19 @@ namespace Rejistry {
             }
             else if (DB_DATA_SIZE < length && length < LARGE_DATA_SIZE) {
                 std::auto_ptr< Cell > c(new Cell(_buf, offset));
-
+                if (c.get() == NULL) {
+                    throw RegistryParseException("Failed to create Cell for Value data.");
+                }
+                try {
+                    std::auto_ptr< DBRecord > db(c->getDBRecord());
+                    if (db.get() == NULL) {
+                        throw RegistryParseException("Failed to create Cell for DBRecord.");
+                    }
+                    data = new RegistryByteBuffer(new ByteBuffer(db->getData(length), length));
+                }
+                catch (RegistryParseException& ) {
+                    data = new RegistryByteBuffer(new ByteBuffer(c->getData(), length));
+                }
             }
             else {
                 std::auto_ptr< Cell > c(new Cell(_buf, offset));
@@ -142,7 +154,14 @@ namespace Rejistry {
             data = new RegistryByteBuffer(new ByteBuffer(getData(DATA_OFFSET_OFFSET, 0x4), 0x4));
             break;
         case ValueData::VALTYPE_QWORD:
-            data = new RegistryByteBuffer(new ByteBuffer(getData(DATA_OFFSET_OFFSET, 0x8), 0x8));
+            {
+                std::auto_ptr< Cell > c(new Cell(_buf, offset));
+                if (c.get() == NULL) {
+                    throw RegistryParseException("Failed to create Cell for Value data.");
+                }
+                ByteBuffer * byteBuffer = new ByteBuffer(c->getData(), length);
+                data = new RegistryByteBuffer(byteBuffer);
+            }
             break;
         default:
             // Unknown registry type. Create an empty buffer.

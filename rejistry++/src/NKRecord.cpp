@@ -95,9 +95,7 @@ namespace Rejistry {
         }
 
         if (hasAsciiName()) {
-            // TODO: This is a little hacky but it should work fine
-            // for ASCII strings.
-            std::string name = getASCIIString(NAME_OFFSET, nameLength);
+            std::vector<uint8_t> name = getData(NAME_OFFSET, nameLength);
             return std::wstring(name.begin(), name.end());
         }
 

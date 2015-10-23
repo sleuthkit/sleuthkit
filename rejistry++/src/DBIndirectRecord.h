@@ -57,6 +57,7 @@ namespace Rejistry {
 
     private:
         static const uint16_t OFFSET_LIST_OFFSET = 0x00;
+        static const uint32_t DB_DATA_SIZE = 0x3FD8;
 
         DBIndirectRecord() {};
         DBIndirectRecord(const DBIndirectRecord &);
