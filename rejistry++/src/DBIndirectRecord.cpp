@@ -36,12 +36,11 @@ namespace Rejistry {
 
     ByteBuffer::ByteArray DBIndirectRecord::getData(uint32_t length) const {
         std::vector<uint8_t> data;
-        data.resize(length);
 
         uint32_t count = 0;
-
+        
         while (length > 0) {
-            uint32_t size = 0x3fd8;
+            uint32_t size = std::min(DB_DATA_SIZE, length);
             uint32_t offset = getDWord(OFFSET_LIST_OFFSET + (count * 4));
             offset += REGFHeader::FIRST_HBIN_OFFSET;
             std::auto_ptr< Cell > c(new Cell(_buf, offset));
@@ -51,11 +50,8 @@ namespace Rejistry {
             }
 
             std::vector<uint8_t> cellData = c->getData();
-            data.insert(data.end(), cellData.begin(), cellData.end());
-
-            if (length < size) {
-                size = length;
-            }
+            
+            data.insert(data.end(), cellData.begin(), cellData.begin() + size);
 
             length -= size;
             count += 1;
