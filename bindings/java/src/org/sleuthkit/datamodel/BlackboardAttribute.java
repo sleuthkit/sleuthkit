@@ -418,6 +418,17 @@ public class BlackboardAttribute {
 		}
 		this.sleuthkitCase = sleuthkitCase;
 	}
+	
+	/**
+	 * Create a blackboard attribute that stores an int
+	 *
+	 * @param attributeType type of the attribute
+	 * @param moduleName name of the module that is creating the attribute
+	 * @param valueInt the value
+	 */
+	public BlackboardAttribute(ATTRIBUTE_TYPE attributeType, String moduleName, int valueInt) {
+		this(attributeType.getTypeID(), moduleName, valueInt);
+	}
 
 	/**
 	 * Create a blackboard attribute that stores an int (creates an attribute
@@ -458,6 +469,19 @@ public class BlackboardAttribute {
 		this.context = replaceNulls(context);
 	}
 
+	/**
+	 * Create a blackboard attribute that stores a long
+	 *
+	 * @param attributeType type of the attribute
+	 * @param moduleName name of the module that is creating the attribute
+	 * @param valueLong the value
+	 */
+	public BlackboardAttribute(ATTRIBUTE_TYPE attributeType, String moduleName,
+			long valueLong) {
+		this(attributeType.getTypeID(), moduleName, valueLong);
+	}
+	
+	
 	/**
 	 * Create a blackboard attribute that stores a long (creates an attribute
 	 * that can be added to an artifact)
@@ -500,6 +524,18 @@ public class BlackboardAttribute {
 	}
 
 	/**
+	 * Create a blackboard attribute that stores a double 
+	 *
+	 * @param attributeType type of the attribute
+	 * @param moduleName name of the module that is creating the attribute
+	 * @param valueDouble the value
+	 */
+	public BlackboardAttribute(ATTRIBUTE_TYPE attributeType, String moduleName,
+			double valueDouble) {
+		this(attributeType.getTypeID(), moduleName, valueDouble);
+	}
+	
+	/**
 	 * Create a blackboard attribute that stores a double (creates an attribute
 	 * that can be added to an artifact)
 	 *
@@ -539,6 +575,18 @@ public class BlackboardAttribute {
 		this.context = replaceNulls(context);
 	}
 
+	/**
+	 * Create a blackboard attribute that stores a string
+	 *
+	 * @param attributeType type of the attribute
+	 * @param moduleName name of the module that is creating the attribute
+	 * @param valueString the value
+	 */
+	public BlackboardAttribute(ATTRIBUTE_TYPE attributeType, String moduleName,
+			String valueString) {
+		this(attributeType.getTypeID(), moduleName, valueString);
+	}
+	
 	/**
 	 * Create a blackboard attribute that stores a string (creates an attribute
 	 * that can be added to an artifact)
@@ -582,6 +630,18 @@ public class BlackboardAttribute {
 		this.context = replaceNulls(context);
 	}
 
+	/**
+	 * Create a blackboard attribute that stores a byte array
+	 *
+	 * @param attributeType type of the attribute
+	 * @param moduleName name of the module that is creating the attribute
+	 * @param valueBytes the value
+	 */
+	public BlackboardAttribute(ATTRIBUTE_TYPE attributeType, String moduleName,
+			byte[] valueBytes) {
+		this(attributeType.getTypeID(), moduleName, valueBytes);
+	}
+	
 	/**
 	 * Create a blackboard attribute that stores a byte array (creates an
 	 * attribute that can be added to an artifact)
