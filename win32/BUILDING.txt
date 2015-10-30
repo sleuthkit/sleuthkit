@@ -119,5 +119,6 @@ Refer to the API docs at http://sleuthkit.org/sleuthkit/docs/api-docs/
 for details on how to use the library in an application.
 
 -------------------------------------------------------------------
-carrier <at> sleuthkit <dot> org Brian Carrier
+carrier <at> sleuthkit <dot> org 
+Brian Carrier
 
