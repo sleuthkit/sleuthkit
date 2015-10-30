@@ -83,8 +83,6 @@ Release and Debug targets.
 2) Download and install PostgreSQL 9.4 or above. You can either download
 the full installer or just the ZIP file. The official releases are from:
 http://www.postgresql.org/download/ 
-If you want just the ZIP file, you can find them at: 
-http://www.enterprisedb.com/products-services-training/pgbindownload 
 
 You will need a 32-bit version to create the 32-bit targets, and a 64-bit
 version to create the 64-bit targets. Autopsy relies on TSK, so if you
