@@ -135,7 +135,7 @@
 	<target name="dist-PostgreSQL" depends="check-build, init-ivy, compile, copyLibs-PostgreSQL" 
 			unless="up-to-date" description="generate the PostgreSQL distribution" >
 		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
-		<jar jarfile="${dist}/Tsk_DataModel.jar" basedir="${build}"/>
+		<jar jarfile="${dist}/Tsk_DataModel_PostgreSQL.jar" basedir="${build}"/>
 	</target>
 
 	<target name="check-build" depends="check-native-build">
@@ -167,7 +167,7 @@
 	<target name="Debug-PostgreSQL" depends="init-ivy, compile, copyLibs-PostgreSQLDebug" 
 			description="generate the PostgreSQL debug distribution" >
 		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
-		<jar jarfile="${dist}/Tsk_DataModel.jar" basedir="${build}"/>
+		<jar jarfile="${dist}/Tsk_DataModel_PostgreSQL.jar" basedir="${build}"/>
 	</target>
 
 	<target name="jni" depends="compile" description="make the jni.h file">
