@@ -100,7 +100,7 @@ public class SleuthkitJNI {
 	private static native HashHitInfo hashDbLookupVerbose(String hash, int dbHandle) throws TskCoreException;
 
 	//load image
-	private static native long initAddImgNat(long db, String timezone, boolean processUnallocSpace, boolean noFatFsOrphans) throws TskCoreException;
+	private static native long initAddImgNat(long db, String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) throws TskCoreException;
 
 	private static native void runAddImgNat(long process, String[] imgPath, int splits, String timezone) throws TskCoreException, TskDataException; // if runAddImg finishes without being stopped, revertAddImg or commitAddImg MUST be called
 
@@ -215,15 +215,15 @@ public class SleuthkitJNI {
 		 * Start the process of adding a disk image to the case
 		 *
 		 * @param timezone Timezone that image was from
-		 * @param processUnallocSpace true if to process unallocated space in
+		 * @param addUnallocSpace true to create virtual files for unallocated space
 		 * the image
 		 * @param noFatFsOrphans true if to skip processing of orphans on FAT
 		 * filesystems
 		 *
 		 * @return Object that can be used to manage the process.
 		 */
-		AddImageProcess initAddImageProcess(String timezone, boolean processUnallocSpace, boolean noFatFsOrphans) {
-			return new AddImageProcess(timezone, processUnallocSpace, noFatFsOrphans);
+		AddImageProcess initAddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) {
+			return new AddImageProcess(timezone, addUnallocSpace, noFatFsOrphans);
 		}
 
 		/**
@@ -233,14 +233,14 @@ public class SleuthkitJNI {
 		 */
 		public class AddImageProcess {
 
-			private String timezone;
-			private boolean processUnallocSpace;
-			private boolean noFatFsOrphans;
+			private final String timezone;
+			private final boolean addUnallocSpace;
+			private final boolean noFatFsOrphans;
 			private volatile long autoDbPointer;
 
-			private AddImageProcess(String timezone, boolean processUnallocSpace, boolean noFatFsOrphans) {
+			private AddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) {
 				this.timezone = timezone;
-				this.processUnallocSpace = processUnallocSpace;
+				this.addUnallocSpace = addUnallocSpace;
 				this.noFatFsOrphans = noFatFsOrphans;
 				autoDbPointer = 0;
 			}
@@ -261,7 +261,7 @@ public class SleuthkitJNI {
 				}
 
 				synchronized (this) {
-					autoDbPointer = initAddImgNat(caseDbPointer, timezoneLongToShort(timezone), processUnallocSpace, noFatFsOrphans);
+					autoDbPointer = initAddImgNat(caseDbPointer, timezoneLongToShort(timezone), addUnallocSpace, noFatFsOrphans);
 				}
 				if (autoDbPointer == 0) {
 					//additional check in case initAddImgNat didn't throw exception

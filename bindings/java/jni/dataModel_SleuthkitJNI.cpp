@@ -912,7 +912,7 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
  * @param env pointer to java environment this was called from
  * @partam caseHandle pointer to case to add image to
  * @param timezone timezone for the image
- * @param addUnallocSpace whether to process unallocated filesystem blocks and volumes in the image
+ * @param addUnallocSpace whether to create virtual files for the unallocated space in the disk image
  * @param noFatFsOrphans whether to skip processing orphans on FAT filesystems
  */
 JNIEXPORT jlong JNICALL
