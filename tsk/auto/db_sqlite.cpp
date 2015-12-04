@@ -716,7 +716,7 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *path,
             return fileMap[seq];
         }
         else {
-            printf("Miss: %d\n", fileMap.count(seq));
+            printf("Miss: %zu\n", fileMap.count(seq));
         }
     }
 

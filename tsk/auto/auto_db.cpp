@@ -767,9 +767,9 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
 	// Here we just return if we are a) collecting all unallocated data
 	// for the given volumen (chunkSize == 0) or b) collecting all unallocated
 	// data whose total size is at least chunkSize (chunkSize > 0)
-	if (unallocBlockWlkTrack->chunkSize == 0 ||
-		unallocBlockWlkTrack->chunkSize > 0 &&
-		unallocBlockWlkTrack->size < unallocBlockWlkTrack->chunkSize) {
+	if ((unallocBlockWlkTrack->chunkSize == 0) ||
+		((unallocBlockWlkTrack->chunkSize > 0) &&
+		(unallocBlockWlkTrack->size < unallocBlockWlkTrack->chunkSize))) {
 		return TSK_WALK_CONT;
 	}
 
