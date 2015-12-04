@@ -2335,6 +2335,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
     nextid = fs_attr_attrlist->id;      // we won't see this entry in the list
     for (list = (ntfs_attrlist *) buf;
         (list) && ((uintptr_t) list < endaddr)
+        && ((uintptr_t)list + sizeof(ntfs_attrlist) < endaddr)
         && (tsk_getu16(fs->endian, list->len) > 0);
         list =
         (ntfs_attrlist *) ((uintptr_t) list + tsk_getu16(fs->endian,
@@ -2412,7 +2413,9 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
 
         /* Sanity check. */
         if (mftToDo[a] < ntfs->fs_info.first_inum ||
-            mftToDo[a] > ntfs->fs_info.last_inum) {
+            mftToDo[a] > ntfs->fs_info.last_inum || 
+            // MFT 0 is for $MFT.  We had one system that we got a reference to it from parsing an allocated attribute list
+            mftToDo[a] == 0) {
 
             if (tsk_verbose) {
                 /* this case can easily occur if the attribute list was non-resident and the cluster has been reallocated */
@@ -2459,11 +2462,13 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
             else {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-                tsk_error_set_errstr("Extension record %" PRIuINUM
-                    " (file ref = %" PRIuINUM
-                    ") is not for attribute list of %"
-                    PRIuINUM "", mftToDo[a], tsk_getu48(fs->endian,
-                        mft->base_ref), fs_file->meta->addr);
+                tsk_error_set_errstr("ntfs_proc_attrlist: MFT %" PRIuINUM
+                    " is not an attribute list for %"
+                    PRIuINUM 
+                    " (base file ref = %" PRIuINUM ")",
+                    mftToDo[a], 
+                    fs_file->meta->addr,
+                    tsk_getu48(fs->endian, mft->base_ref));
                 free(mft);
                 free(map);
                 free(buf);
