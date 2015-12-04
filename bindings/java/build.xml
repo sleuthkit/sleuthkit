@@ -23,12 +23,8 @@
 	<property name="test-input" location="test/input"/>
 	<property name="test-types" location="test/org/sleuthkit/datamodel"/>
 	<property name="native-libs" location="build/NATIVELIBS" />
-	<property name="amd64" location="build/NATIVELIBS/amd64" />
 	<property name="x86" location="build/NATIVELIBS/x86" />
 	<property name="x86_64" location="build/NATIVELIBS/x86_64" />
-	<property name="i386" location="build/NATIVELIBS/i386" />
-	<property name="i586" location="build/NATIVELIBS/i586" />
-	<property name="i686" location="build/NATIVELIBS/i686"/>
   
 	<path id="libraries">
 		<fileset dir="${lib}">
@@ -37,7 +33,6 @@
 		<pathelement path="${build}"/>
 	</path>
 
-	<!-- Only added win folders for now -->
 	<target name="init">
 		<mkdir dir="${build}"/>
 		<mkdir dir="${dist}"/>
@@ -46,10 +41,6 @@
 		<mkdir dir="${test-standards}"/>
 		<mkdir dir="${test-results}"/>
 		<mkdir dir="${native-libs}" />
-		<mkdir dir="${amd64}" />
-		<mkdir dir="${amd64}/win" />
-		<mkdir dir="${amd64}/mac" />
-		<mkdir dir="${amd64}/linux" />
 		<mkdir dir="${x86}" />
 		<mkdir dir="${x86}/win" />
 		<mkdir dir="${x86}/linux" />
@@ -57,15 +48,6 @@
 		<mkdir dir="${x86_64}/win" />
 		<mkdir dir="${x86_64}/mac" />
 		<mkdir dir="${x86_64}/linux"/>
-		<mkdir dir="${i386}" />
-		<mkdir dir="${i386}/win" />
-		<mkdir dir="${i386}/linux"/>
-		<mkdir dir="${i586}" />
-		<mkdir dir="${i586}/win" />
-		<mkdir dir="${i586}/linux" />
-		<mkdir dir="${i686}"/>
-		<mkdir dir="${i686}/win"/>
-		<mkdir dir="${i686}/linux"/>
 	</target>
   
 	<property name="ivy.install.version" value="2.3.0-rc2" />

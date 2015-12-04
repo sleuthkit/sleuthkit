@@ -27,12 +27,12 @@
 
 	<target name="check-native-build-mac" depends="testTSKLibs" if="tsk_dylib.present">
 		<uptodate property="native-up-to-date" srcfile="./jni/.libs/libtsk_jni.dylib"
-		targetfile="${amd64}/mac/libtsk_jni.jnilib" />
+		targetfile="${x86_64}/mac/libtsk_jni.jnilib" />
 	</target>
 
 	<target name="check-native-build-unix" depends="testTSKLibs" if="tsk_so.present">
 		<uptodate property="native-up-to-date" srcfile="./jni/.libs/libtsk_jni.so"
-		targetfile="${amd64}/linux/libtsk_jni.so"/>
+		targetfile="${x86_64}/linux/libtsk_jni.so"/>
 	</target>
 
     <target name="testTSKLibs">
@@ -58,8 +58,6 @@
 		<property name="jni.jnilib" value="libtsk_jni.jnilib" />
 		<!-- x86_64 -->
         <copy file="${jni.dylib}" tofile="${x86_64}/mac/${jni.jnilib}" overwrite="true"/>
-		<!-- amd64 -->
-		<copy file="${jni.dylib}" tofile="${amd64}/mac/${jni.jnilib}" overwrite="true"/>
     </target>
 
     <!-- Non-OS X -->
@@ -75,16 +73,8 @@
 		<property name="libewf.so" location="${lib.ewf.path}/libewf.so"/>
 		<!-- x86_64 -->
 		<copy file="${jni.so}" tofile="${x86_64}/linux/libtsk_jni.so" overwrite="true"/>
-		<!-- amd64 -->
-		<copy file="${jni.so}" tofile="${amd64}/linux/libtsk_jni.so" overwrite="true"/>
 		<!-- x86 -->
 		<copy file="${jni.so}" tofile="${x86}/linux/libtsk_jni.so" overwrite="true"/>
-		<!-- i386 -->
-		<copy file="${jni.so}" tofile="${i386}/linux/libtsk_jni.so" overwrite="true"/>
-		<!-- i586 -->
-		<copy file="${jni.so}" tofile="${i586}/linux/libtsk_jni.so" overwrite="true"/>
-		<!-- i686 -->
-		<copy file="${jni.so}" tofile="${i686}/linux/libtsk_jni.so" overwrite="true"/>
 	</target>
 
 	<target name="copyLibs-SQLite" depends="copyLinuxLibs,copyMacLibs" />
