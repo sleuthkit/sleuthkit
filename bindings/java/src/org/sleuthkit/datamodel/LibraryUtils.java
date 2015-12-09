@@ -92,7 +92,7 @@ public class LibraryUtils {
 			os = "linux"; //NON-NLS
 		}
 		// os.arch represents the architecture of the JVM, not the os
-		String arch = System.getProperty("os.arch");
+		String arch = System.getProperty("os.arch").endsWith("64") ? "x86_64" : "x86";
 		return arch.toLowerCase() + "/" + os.toLowerCase();
 	}
 
