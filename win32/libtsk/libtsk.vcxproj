@@ -353,8 +353,8 @@ copy "$(SolutionDir)\PostgreSQL_CRT\win32\msvcr120.dll" "$(OutDir)" </Command>
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBEWF_HOME)\common;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBZ;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBEWF_HOME)\common;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;$(LIBVMDK_HOME)\include;$(LIBVMDK_HOME)\common;$(LIBVMDK_HOME)\libcerror;$(LIBVMDK_HOME)\libcstring;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBVMDK;HAVE_LIBZ;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
@@ -364,7 +364,8 @@ copy "$(SolutionDir)\PostgreSQL_CRT\win32\msvcr120.dll" "$(OutDir)" </Command>
     </ClCompile>
     <PostBuildEvent>
       <Command>copy "$(LIBEWF_HOME)\msvscpp\x64\release\libewf.dll" "$(OutDir)"
-copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"</Command>
+copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"
+copy "$(LIBVMDK_HOME)\msvscpp\release\libvmdk.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_NoLibs|x64'">
@@ -454,6 +455,7 @@ copy "$(SolutionDir)\PostgreSQL_CRT\win64\msvcr120.dll" "$(OutDir)" </Command>
     <ClCompile Include="..\..\tsk\fs\fatxxfs_meta.c" />
     <ClCompile Include="..\..\tsk\hashdb\hdb_base.c" />
     <ClCompile Include="..\..\tsk\hashdb\binsrch_index.cpp" />
+    <ClCompile Include="..\..\tsk\img\vmdk.c" />
     <ClCompile Include="..\..\tsk\vs\bsd.c" />
     <ClCompile Include="..\..\tsk\vs\dos.c" />
     <ClCompile Include="..\..\tsk\vs\gpt.c" />
@@ -547,6 +549,7 @@ copy "$(SolutionDir)\PostgreSQL_CRT\win64\msvcr120.dll" "$(OutDir)" </Command>
     <ClInclude Include="..\..\tsk\fs\tsk_exfatfs.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_fatxxfs.h" />
     <ClInclude Include="..\..\tsk\hashdb\tsk_hash_info.h" />
+    <ClInclude Include="..\..\tsk\img\vmdk.h" />
     <ClInclude Include="..\..\tsk\vs\tsk_bsd.h" />
     <ClInclude Include="..\..\tsk\vs\tsk_dos.h" />
     <ClInclude Include="..\..\tsk\vs\tsk_gpt.h" />
