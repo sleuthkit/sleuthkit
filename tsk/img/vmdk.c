@@ -130,8 +130,6 @@ static void
     tsk_img_free(img_info);
 }
 
-#if 0
-
 TSK_IMG_INFO *
 vmdk_open(int a_num_img,
     const TSK_TCHAR * const a_images[], unsigned int a_ssize)
@@ -185,9 +183,6 @@ vmdk_open(int a_num_img,
         }
     }
 
-
-#if defined( HAVE_LIBvmdk_V2_API )
-
     // Check the file signature before we call the library open
 #if defined( TSK_WIN32 )
     if (libvmdk_check_file_signature_wide(a_images[0], &vmdk_error) != 1)
@@ -229,12 +224,12 @@ vmdk_open(int a_num_img,
     }
 #if defined( TSK_WIN32 )
     if (libvmdk_handle_open_wide(vmdk_info->handle,
-            (wchar_t * const *) vmdk_info->images,
-            vmdk_info->num_imgs, LIBvmdk_OPEN_READ, &vmdk_error) != 1)
+            (libcstring_system_character_t*) vmdk_info->images,
+            LIBVMDK_OPEN_READ, &vmdk_error) != 1)
 #else
     if (libvmdk_handle_open(vmdk_info->handle,
-            (char *const *) vmdk_info->images,
-            vmdk_info->num_imgs, LIBvmdk_OPEN_READ, &vmdk_error) != 1)
+            (libcstring_system_character_t*) vmdk_info->images,
+            LIBVMDK_OPEN_READ, &vmdk_error) != 1)
 #endif
     {
         tsk_error_reset();
@@ -249,6 +244,24 @@ vmdk_open(int a_num_img,
 
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Error opening vmdk file\n");
+        }
+        return (NULL);
+    }
+    if( libvmdk_handle_open_extent_data_files(vmdk_info->handle, &vmdk_error ) != 1 )
+	{
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_OPEN);
+
+        getError(vmdk_error, error_string);
+        tsk_error_set_errstr("vmdk_open file: %" PRIttocTSK
+            ": Error opening extent data files for image (%s)", a_images[0],
+            error_string);
+        libvmdk_error_free(&vmdk_error);
+
+        tsk_img_free(vmdk_info);
+
+        if (tsk_verbose != 0) {
+            tsk_fprintf(stderr, "Error opening vmdk extent data files\n");
         }
         return (NULL);
     }
@@ -270,126 +283,14 @@ vmdk_open(int a_num_img,
         }
         return (NULL);
     }
-    result = libvmdk_handle_get_utf8_hash_value_md5(vmdk_info->handle,
-        (uint8_t *) vmdk_info->md5hash, 33, &vmdk_error);
 
-    if (result == -1) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_OPEN);
-
-        getError(vmdk_error, error_string);
-        tsk_error_set_errstr("vmdk_open file: %" PRIttocTSK
-            ": Error getting MD5 of image (%s)", a_images[0],
-            error_string);
-        libvmdk_error_free(&vmdk_error);
-
-        tsk_img_free(vmdk_info);
-
-        if (tsk_verbose != 0) {
-            tsk_fprintf(stderr, "Error getting size of vmdk file\n");
-        }
-        return (NULL);
-    }
-    vmdk_info->md5hash_isset = result;
-
-#else                           // V1 API
-
-    // Check the file signature before we call the library open
-#if defined( TSK_WIN32 )
-    if (libvmdk_check_file_signature_wide(a_images[0]) != 1)
-#else
-    if (libvmdk_check_file_signature(a_images[0]) != 1)
-#endif
-    {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
-        tsk_error_set_errstr("vmdk_open: Not an vmdk file");
-        tsk_img_free(vmdk_info);
-        if (tsk_verbose)
-            tsk_fprintf(stderr, "Not an vmdk file\n");
-
-        return NULL;
-    }
-
-#if defined( TSK_WIN32 )
-    vmdk_info->handle = libvmdk_open_wide(
-        (wchar_t * const *) vmdk_info->images, vmdk_info->num_imgs,
-        LIBvmdk_OPEN_READ);
-#else
-    vmdk_info->handle = libvmdk_open(
-        (char *const *) vmdk_info->images, vmdk_info->num_imgs,
-        LIBvmdk_OPEN_READ);
-#endif
-    if (vmdk_info->handle == NULL) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_OPEN);
-        tsk_error_set_errstr("vmdk_open file: %" PRIttocTSK
-            ": Error opening", vmdk_info->images[0]);
-        tsk_img_free(vmdk_info);
-
-        if (tsk_verbose != 0) {
-            tsk_fprintf(stderr, "Error opening vmdk file\n");
-        }
-        return (NULL);
-    }
-#if defined( LIBvmdk_STRING_DIGEST_HASH_LENGTH_MD5 )
-    // 2007 version
-    img_info->size = libvmdk_get_media_size(vmdk_info->handle);
-
-    vmdk_info->md5hash_isset = libvmdk_get_stored_md5_hash(vmdk_info->handle,
-        vmdk_info->md5hash, LIBvmdk_STRING_DIGEST_HASH_LENGTH_MD5);
-#else
-    // libvmdk-20080322 version
-    if (libvmdk_get_media_size(vmdk_info->handle,
-            (size64_t *) & (img_info->size)) != 1) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_OPEN);
-        tsk_error_set_errstr("vmdk_open file: %" PRIttocTSK
-            ": Error getting size of image", vmdk_info->images[0]);
-        tsk_img_free(vmdk_info);
-        if (tsk_verbose) {
-            tsk_fprintf(stderr, "Error getting size of vmdk file\n");
-        }
-        return (NULL);
-    }
-    if (libvmdk_get_md5_hash(vmdk_info->handle, md5_hash, 16) == 1) {
-        int md5_string_iterator = 0;
-        int md5_hash_iterator = 0;
-
-        for (md5_hash_iterator = 0;
-            md5_hash_iterator < 16; md5_hash_iterator++) {
-            int digit = md5_hash[md5_hash_iterator] / 16;
-
-            if (digit <= 9) {
-                vmdk_info->md5hash[md5_string_iterator++] =
-                    '0' + (char) digit;
-            }
-            else {
-                vmdk_info->md5hash[md5_string_iterator++] =
-                    'a' + (char) (digit - 10);
-            }
-            digit = md5_hash[md5_hash_iterator] % 16;
-
-            if (digit <= 9) {
-                vmdk_info->md5hash[md5_string_iterator++] =
-                    '0' + (char) digit;
-            }
-            else {
-                vmdk_info->md5hash[md5_string_iterator++] =
-                    'a' + (char) (digit - 10);
-            }
-        }
-        vmdk_info->md5hash_isset = 1;
-    }
-#endif                          /* defined( LIBvmdk_STRING_DIGEST_HASH_LENGTH_MD5 ) */
-#endif                          /* defined( HAVE_LIBvmdk_V2_API ) */
     if (a_ssize != 0) {
         img_info->sector_size = a_ssize;
     }
     else {
         img_info->sector_size = 512;
     }
-    img_info->itype = TSK_IMG_TYPE_vmdk_vmdk;
+    img_info->itype = TSK_IMG_TYPE_VMDK_VMDK;
     img_info->read = &vmdk_image_read;
     img_info->close = &vmdk_image_close;
     img_info->imgstat = &vmdk_image_imgstat;
@@ -400,5 +301,4 @@ vmdk_open(int a_num_img,
     return (img_info);
 }
 
-#endif // 0
 #endif /* HAVE_LIBVMDK */
