@@ -90,11 +90,12 @@ static void
     vmdk_image_close(TSK_IMG_INFO * img_info)
 {
     int i;
-    libcerror_error_t *error = NULL;
+    char error_string[TSK_VMDK_ERROR_STRING_SIZE];
+    libcerror_error_t *vmdk_error = NULL;
     char *errmsg = NULL;
     IMG_VMDK_INFO *vmdk_info = (IMG_VMDK_INFO *) img_info;
 
-    if( libvmdk_handle_close(vmdk_info->handle, &error ) != 0 )
+    if( libvmdk_handle_close(vmdk_info->handle, &vmdk_error ) != 0 )
     {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUX_GENERIC);
@@ -107,7 +108,7 @@ static void
     }
 
     libvmdk_handle_free(&(vmdk_info->handle), NULL);
-    if( libvmdk_handle_free(&(vmdk_info->handle), &error ) != 1 )
+    if( libvmdk_handle_free(&(vmdk_info->handle), &vmdk_error ) != 1 )
     {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUX_GENERIC);
@@ -119,7 +120,7 @@ static void
         tsk_error_set_errstr("vmdk_image_close: unable to free handle - %s", errmsg);
     }
 
-    // ELTODO: this stuff crashes in libvmdk. keep an eye. See vmdk.c.
+    // ELTODO: this stuff crashes in LIBEWF. keep an eye. See EWF.c.
     for (i = 0; i < vmdk_info->num_imgs; i++) {
         free(vmdk_info->images[i]);
     }
@@ -129,7 +130,7 @@ static void
     tsk_img_free(img_info);
 }
 
-
+#if 0
 
 TSK_IMG_INFO *
 vmdk_open(int a_num_img,
@@ -399,4 +400,5 @@ vmdk_open(int a_num_img,
     return (img_info);
 }
 
+#endif // 0
 #endif /* HAVE_LIBVMDK */

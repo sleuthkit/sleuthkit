@@ -23,8 +23,34 @@
 #include <config_msc.h>
 #endif
 
+#define HAVE_LOCAL_LIBCSTRING
+#define HAVE_LOCAL_LIBCERROR
+#define HAVE_LOCAL_LIBCTHREADS
+#define HAVE_LOCAL_LIBCDATA
+#define HAVE_LOCAL_LIBCLOCALE
+#define HAVE_LOCAL_LIBCNOTIFY
+#define HAVE_LOCAL_LIBCSPLIT
+#define HAVE_LOCAL_LIBUNA
+#define HAVE_LOCAL_LIBCFILE
+#define HAVE_LOCAL_LIBCPATH
+#define HAVE_LOCAL_LIBBFIO
+#define HAVE_LOCAL_LIBFCACHE
+#define HAVE_LOCAL_LIBFDATA
+#define HAVE_LOCAL_LIBFVALUE
+#define ZLIB_DLL
+#define LIBVMDK_DLL_EXPORT
+
 #include <libvmdk.h>
-#include <LIBVMDK_HOME\common\common.h>
+#include <common.h>
+#include <libcerror_definitions.h>
+#include <libcerror_error.h>
+#include <libcerror_system.h>
+#include <libcerror_types.h>
+#include <libcstring_definitions.h>
+#include <libcstring_narrow_string.h>
+#include <libcstring_system_string.h>
+#include <libcstring_types.h>
+#include <libcstring_wide_string.h>
 
 #ifdef __cplusplus
 extern "C" {
