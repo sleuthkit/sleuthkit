@@ -85,6 +85,20 @@ vmdk_image_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
     return cnt;
 }
 
+static void
+vmdk_image_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
+{
+    IMG_VMDK_INFO *vmdk_info = (IMG_VMDK_INFO *) img_info;
+
+    tsk_fprintf(hFile, "IMAGE FILE INFORMATION\n");
+    tsk_fprintf(hFile, "--------------------------------------------\n");
+    tsk_fprintf(hFile, "Image Type:\t\tvmdk\n");
+    tsk_fprintf(hFile, "\nSize of data in bytes:\t%" PRIuOFF "\n",
+        img_info->size);
+
+    return;
+}
+
 
 static void
     vmdk_image_close(TSK_IMG_INFO * img_info)
@@ -156,7 +170,6 @@ vmdk_open(int a_num_img,
     // See if they specified only the first of the set...    
     if (a_num_img == 1) {
         // ELTODO: ewf calls some kind of "glob" here to figure out number of segments.
-        // Perhaps use libvmdk_handle_get_number_of_extents()?
         /*if (tsk_verbose)
             tsk_fprintf(stderr,
                 "vmdk_open: found %d segment files via libvmdk_glob\n",
