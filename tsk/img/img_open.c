@@ -169,7 +169,7 @@ tsk_img_open(int num_img,
 #if HAVE_LIBVMDK
         if ((img_info = vmdk_open(num_img, images, a_ssize)) != NULL) {
             if (set == NULL) {
-                set = "EWF";
+                set = "VMDK";
                 img_set = img_info;
             }
             else {
@@ -177,7 +177,7 @@ tsk_img_open(int num_img,
                 img_info->close(img_info);
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
-                tsk_error_set_errstr("EWF or %s", set);
+                tsk_error_set_errstr("VMDK or %s", set);
                 return NULL;
             }
         }

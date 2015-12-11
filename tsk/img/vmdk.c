@@ -151,6 +151,7 @@ vmdk_open(int a_num_img,
     char error_string[TSK_VMDK_ERROR_STRING_SIZE];
     libcerror_error_t *vmdk_error = NULL;
     int result = 0;
+    int i;
 
     IMG_VMDK_INFO *vmdk_info = NULL;
     TSK_IMG_INFO *img_info = NULL;
@@ -165,38 +166,32 @@ vmdk_open(int a_num_img,
         NULL) {
         return NULL;
     }
+    vmdk_info->handle = NULL;
     img_info = (TSK_IMG_INFO *) vmdk_info;
 
     // See if they specified only the first of the set...    
-    if (a_num_img == 1) {
-        // ELTODO: ewf calls some kind of "glob" here to figure out number of segments.
-        /*if (tsk_verbose)
-            tsk_fprintf(stderr,
-                "vmdk_open: found %d segment files via libvmdk_glob\n",
-                vmdk_info->num_imgs);*/
-    }
-    else {
-        int i;
-        vmdk_info->num_imgs = a_num_img;
-        if ((vmdk_info->images =
-                (TSK_TCHAR **) tsk_malloc(a_num_img *
-                    sizeof(TSK_TCHAR *))) == NULL) {
+    // ELTODO: ewf calls some kind of "glob" here to figure out number of segments.
+
+    vmdk_info->num_imgs = a_num_img;
+    if ((vmdk_info->images =
+        (TSK_TCHAR **) tsk_malloc(a_num_img *
+        sizeof(TSK_TCHAR *))) == NULL) {
             tsk_img_free(vmdk_info);
             return NULL;
-        }
-        for (i = 0; i < a_num_img; i++) {
-            if ((vmdk_info->images[i] =
-                    (TSK_TCHAR *) tsk_malloc((TSTRLEN(a_images[i]) +
-                            1) * sizeof(TSK_TCHAR))) == NULL) {
+    }
+    for (i = 0; i < a_num_img; i++) {
+        if ((vmdk_info->images[i] =
+            (TSK_TCHAR *) tsk_malloc((TSTRLEN(a_images[i]) +
+            1) * sizeof(TSK_TCHAR))) == NULL) {
                 tsk_img_free(vmdk_info);
                 return NULL;
-            }
-            TSTRNCPY(vmdk_info->images[i], a_images[i],
-                TSTRLEN(a_images[i]) + 1);
         }
+        TSTRNCPY(vmdk_info->images[i], a_images[i],
+            TSTRLEN(a_images[i]) + 1);
     }
 
     // Check the file signature before we call the library open
+    /* ELTODO this fails even for legitimate vmdk fles. Joachim Metz doesn't use it in any of his examples.
 #if defined( TSK_WIN32 )
     if (libvmdk_check_file_signature_wide(a_images[0], &vmdk_error) != 1)
 #else
@@ -217,7 +212,7 @@ vmdk_open(int a_num_img,
             tsk_fprintf(stderr, "Not an vmdk file\n");
         }
         return (NULL);
-    }
+    }*/
 
     if (libvmdk_handle_initialize(&(vmdk_info->handle), &vmdk_error) != 1) {
         tsk_error_reset();
@@ -237,7 +232,7 @@ vmdk_open(int a_num_img,
     }
 #if defined( TSK_WIN32 )
     if (libvmdk_handle_open_wide(vmdk_info->handle,
-            (libcstring_system_character_t*) vmdk_info->images,
+            (libcstring_system_character_t *) vmdk_info->images[0],
             LIBVMDK_OPEN_READ, &vmdk_error) != 1)
 #else
     if (libvmdk_handle_open(vmdk_info->handle,
