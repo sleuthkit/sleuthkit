@@ -19,9 +19,9 @@
 #if HAVE_LIBVMDK
 
 // we used to check only for TSK_WIN32, but that fails on mingw
-#if defined(_MSC_VER)
-#include <config_msc.h>
-#endif
+//#if defined(_MSC_VER)
+//#include <config_msc.h>
+//#endif
 
 // ELTODO perhaps undefine HAVE_MULTI_THREAD_SUPPORT
 #if defined( TSK_WIN32 )
