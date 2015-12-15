@@ -26,12 +26,12 @@
  * @returns 1 if error message was not set
 */
 static uint8_t
-getError(libcerror_error_t * vmdk_error,
+getError(libvmdk_error_t * vmdk_error,
     char error_string[TSK_VMDK_ERROR_STRING_SIZE])
 {
     int retval;
     error_string[0] = '\0';
-    retval = libcerror_error_backtrace_sprint(vmdk_error,
+    retval = libvmdk_error_backtrace_sprint(vmdk_error,
         error_string, TSK_VMDK_ERROR_STRING_SIZE);
     if (retval)
         return 1;
@@ -44,7 +44,7 @@ vmdk_image_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
     size_t len)
 {
     char error_string[TSK_VMDK_ERROR_STRING_SIZE];
-    libcerror_error_t *vmdk_error = NULL;
+    libvmdk_error_t *vmdk_error = NULL;
 
     ssize_t cnt;
     IMG_VMDK_INFO *vmdk_info = (IMG_VMDK_INFO *) img_info;
@@ -105,7 +105,7 @@ static void
 {
     int i;
     char error_string[TSK_VMDK_ERROR_STRING_SIZE];
-    libcerror_error_t *vmdk_error = NULL;
+    libvmdk_error_t *vmdk_error = NULL;
     char *errmsg = NULL;
     IMG_VMDK_INFO *vmdk_info = (IMG_VMDK_INFO *) img_info;
 
@@ -149,7 +149,7 @@ vmdk_open(int a_num_img,
     const TSK_TCHAR * const a_images[], unsigned int a_ssize)
 {
     char error_string[TSK_VMDK_ERROR_STRING_SIZE];
-    libcerror_error_t *vmdk_error = NULL;
+    libvmdk_error_t *vmdk_error = NULL;
     int result = 0;
     int i;
 
@@ -232,11 +232,11 @@ vmdk_open(int a_num_img,
     }
 #if defined( TSK_WIN32 )
     if (libvmdk_handle_open_wide(vmdk_info->handle,
-            (libcstring_system_character_t *) vmdk_info->images[0],
+            (const wchar_t *) vmdk_info->images[0],
             LIBVMDK_OPEN_READ, &vmdk_error) != 1)
 #else
     if (libvmdk_handle_open(vmdk_info->handle,
-            (libcstring_system_character_t*) vmdk_info->images,
+            (const char *) vmdk_info->images,
             LIBVMDK_OPEN_READ, &vmdk_error) != 1)
 #endif
     {

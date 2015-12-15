@@ -24,34 +24,10 @@
 #endif
 
 // ELTODO perhaps undefine HAVE_MULTI_THREAD_SUPPORT
-// ELTODO - are all of these neccessary? I guess there is no downside to having them...
-#define HAVE_LOCAL_LIBCSTRING 1
-#define HAVE_LOCAL_LIBCERROR 1
-#define HAVE_LOCAL_LIBCTHREADS 1
-#define HAVE_LOCAL_LIBCDATA 1
-#define HAVE_LOCAL_LIBCLOCALE 1
-#define HAVE_LOCAL_LIBCNOTIFY 1
-#define HAVE_LOCAL_LIBCSPLIT 1
-#define HAVE_LOCAL_LIBUNA 1
-#define HAVE_LOCAL_LIBCFILE 1
-#define HAVE_LOCAL_LIBCPATH 1
-#define HAVE_LOCAL_LIBBFIO 1
-#define HAVE_LOCAL_LIBFCACHE 1
-#define HAVE_LOCAL_LIBFDATA 1
-#define HAVE_LOCAL_LIBFVALUE 1
-#define ZLIB_DLL 1
-#define LIBVMDK_DLL_EXPORT 1
+#if defined( TSK_WIN32 )
+#define LIBVMDK_HAVE_WIDE_CHARACTER_TYPE 1
+#endif
 
-#include <common.h>
-#include <libcerror_definitions.h>
-#include <libcerror_error.h>
-#include <libcerror_system.h>
-#include <libcerror_types.h>
-#include <libcstring_definitions.h>
-#include <libcstring_narrow_string.h>
-#include <libcstring_system_string.h>
-#include <libcstring_types.h>
-#include <libcstring_wide_string.h>
 #include <libvmdk.h>        // libvmdk.h needs to be last to take into account all #defines from other header files
 
 #ifdef __cplusplus
@@ -66,7 +42,7 @@ extern "C" {
         libvmdk_handle_t *handle;
         TSK_TCHAR **images;
         int num_imgs;
-        tsk_lock_t read_lock;   ///< Lock for reads since libvmdk is not thread safe -- only works if you have a single instance of VMDK_INFO for all threads.
+        tsk_lock_t read_lock;   ///< ELTODO: Lock for reads since libvmdk is not thread safe -- only works if you have a single instance of VMDK_INFO for all threads.
     } IMG_VMDK_INFO;
 
 #ifdef __cplusplus
