@@ -134,7 +134,6 @@ static void
         tsk_error_set_errstr("vmdk_image_close: unable to free handle - %s", errmsg);
     }
 
-    // ELTODO: this stuff crashes in LIBEWF. keep an eye. See EWF.c.
     for (i = 0; i < vmdk_info->num_imgs; i++) {
         free(vmdk_info->images[i]);
     }
@@ -158,7 +157,7 @@ vmdk_open(int a_num_img,
 
     if (tsk_verbose) {
         libvmdk_notify_set_verbose(1);
-        libvmdk_notify_set_stream(stderr, NULL);    // ELTODO: stderr
+        libvmdk_notify_set_stream(stderr, NULL);
     }
 
     if ((vmdk_info =
@@ -168,10 +167,7 @@ vmdk_open(int a_num_img,
     }
     vmdk_info->handle = NULL;
     img_info = (TSK_IMG_INFO *) vmdk_info;
-
-    // See if they specified only the first of the set...    
-    // ELTODO: ewf calls some kind of "glob" here to figure out number of segments.
-
+ 
     vmdk_info->num_imgs = a_num_img;
     if ((vmdk_info->images =
         (TSK_TCHAR **) tsk_malloc(a_num_img *
@@ -189,30 +185,6 @@ vmdk_open(int a_num_img,
         TSTRNCPY(vmdk_info->images[i], a_images[i],
             TSTRLEN(a_images[i]) + 1);
     }
-
-    // Check the file signature before we call the library open
-    /* ELTODO this fails even for legitimate vmdk fles. Joachim Metz doesn't use it in any of his examples.
-#if defined( TSK_WIN32 )
-    if (libvmdk_check_file_signature_wide(a_images[0], &vmdk_error) != 1)
-#else
-    if (libvmdk_check_file_signature(a_images[0], &vmdk_error) != 1)
-#endif
-    {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
-
-        getError(vmdk_error, error_string);
-        tsk_error_set_errstr("vmdk_open: Not an vmdk file (%s)",
-            error_string);
-        libvmdk_error_free(&vmdk_error);
-
-        tsk_img_free(vmdk_info);
-
-        if (tsk_verbose != 0) {
-            tsk_fprintf(stderr, "Not an vmdk file\n");
-        }
-        return (NULL);
-    }*/
 
     if (libvmdk_handle_initialize(&(vmdk_info->handle), &vmdk_error) != 1) {
         tsk_error_reset();

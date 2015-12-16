@@ -23,12 +23,11 @@
 //#include <config_msc.h>
 //#endif
 
-// ELTODO perhaps undefine HAVE_MULTI_THREAD_SUPPORT
 #if defined( TSK_WIN32 )
 #define LIBVMDK_HAVE_WIDE_CHARACTER_TYPE 1
 #endif
 
-#include <libvmdk.h>        // libvmdk.h needs to be last to take into account all #defines from other header files
+#include <libvmdk.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,7 +41,7 @@ extern "C" {
         libvmdk_handle_t *handle;
         TSK_TCHAR **images;
         int num_imgs;
-        tsk_lock_t read_lock;   ///< ELTODO: Lock for reads since libvmdk is not thread safe -- only works if you have a single instance of VMDK_INFO for all threads.
+        tsk_lock_t read_lock;   // Lock for reads since according to documentation libvmdk is not fully thread safe yet
     } IMG_VMDK_INFO;
 
 #ifdef __cplusplus
