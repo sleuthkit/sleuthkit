@@ -164,11 +164,14 @@ tsk_img_open(int num_img,
 #endif
 
         // if any of the non-raw formats were detected, then use it.
-        if (img_set != NULL)
+        if (img_set != NULL) {
+            tsk_init_lock(&(img_set->cache_lock));
             return img_set;
+        }
 
         // otherwise, try raw
         if ((img_info = raw_open(num_img, images, a_ssize)) != NULL) {
+            tsk_init_lock(&(img_info->cache_lock));
             return img_info;
         }
         else if (tsk_error_get_errno() != 0) {
@@ -211,6 +214,7 @@ tsk_img_open(int num_img,
         return NULL;
     }
 
+    tsk_init_lock(&(img_info->cache_lock));
     return img_info;
 }
 
@@ -312,6 +316,9 @@ tsk_img_open_utf8(int num_img,
         }
         free(images16);
 
+        if (retval) {
+            tsk_init_lock(&(img_info->cache_lock));
+        }
         return retval;
     }
 #else
@@ -319,6 +326,44 @@ tsk_img_open_utf8(int num_img,
 #endif
 }
 
+/**
+* \ingroup imglib
+ * Opens an an image of type TSK_IMG_TYPE_EXTERNAL. The void pointer parameter
+ * must be castable to a TSK_IMG_INFO pointer.
+ *
+ * @param ext_img_info Pointer to the partially initialized disk image
+ * structure, having a TSK_IMG_INFO as its first member
+ * @param size
+ * @param sector_size
+ * @param read
+ * @param close
+ * @param imgstat
+ *
+ * @return Pointer to TSK_IMG_INFO
+ */
+TSK_IMG_INFO *
+tsk_img_open_external(
+  void* ext_img_info,
+  TSK_OFF_T size,
+  unsigned int sector_size,
+  ssize_t(*read) (TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len),
+  void (*close) (TSK_IMG_INFO *),
+  void (*imgstat) (TSK_IMG_INFO *, FILE *)
+)
+{
+    TSK_IMG_INFO *img_info = (TSK_IMG_INFO *) ext_img_info;
+
+    img_info->tag = TSK_IMG_INFO_TAG;
+    img_info->itype = TSK_IMG_TYPE_EXTERNAL;
+    img_info->size = size;
+    img_info->sector_size = sector_size;
+    img_info->read = read;
+    img_info->close = close;
+    img_info->imgstat = imgstat;
+
+    tsk_init_lock(&(img_info->cache_lock));
+    return img_info;
+}
 
 #if 0
 /* This interface needs some more thought because the size of wchar is not standard.
@@ -416,6 +461,7 @@ tsk_img_close(TSK_IMG_INFO * a_img_info)
     if (a_img_info == NULL) {
         return;
     }
+    tsk_deinit_lock(&(a_img_info->cache_lock));
     a_img_info->close(a_img_info);
 }
 

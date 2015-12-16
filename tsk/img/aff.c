@@ -216,7 +216,8 @@ aff_close(TSK_IMG_INFO * img_info)
 {
     IMG_AFF_INFO *aff_info = (IMG_AFF_INFO *) img_info;
     af_close(aff_info->af_file);
-    tsk_img_free(aff_info);
+    img_info->tag = 0;
+    free(aff_info);
 }
 
 

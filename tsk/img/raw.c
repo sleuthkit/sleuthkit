@@ -370,7 +370,8 @@ raw_close(TSK_IMG_INFO * img_info)
     if (raw_info->cptr)
         free(raw_info->cptr);
 
-    tsk_img_free(raw_info);
+    img_info->tag = 0;
+    free(raw_info);
 }
 
 
