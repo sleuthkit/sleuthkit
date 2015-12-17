@@ -56,7 +56,7 @@ public interface Content extends SleuthkitVisitableItem {
 	 * you should be able to read from it. In some cases, data corruption may
 	 * mean that you cannot read this much data.
 	 *
-	 * @return size of the content
+	 * @return size of the content in bytes
 	 */
 	public long getSize();
 
