@@ -317,7 +317,7 @@ tsk_img_open_utf8(int num_img,
         free(images16);
 
         if (retval) {
-            tsk_init_lock(&(img_info->cache_lock));
+            tsk_init_lock(&(retval->cache_lock));
         }
         return retval;
     }
