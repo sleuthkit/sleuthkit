@@ -333,13 +333,13 @@ tsk_img_open_utf8(int num_img,
  *
  * @param ext_img_info Pointer to the partially initialized disk image
  * structure, having a TSK_IMG_INFO as its first member
- * @param size
- * @param sector_size
- * @param read
- * @param close
- * @param imgstat
+ * @param size Total size of image in bytes
+ * @param sector_size Sector size of device in bytes
+ * @param read Pointer to user-supplied read function
+ * @param close Pointer to user-supplied close function
+ * @param imgstat Pointer to user-supplied imgstat function
  *
- * @return Pointer to TSK_IMG_INFO
+ * @return Pointer to TSK_IMG_INFO or NULL on error
  */
 TSK_IMG_INFO *
 tsk_img_open_external(
@@ -351,12 +351,58 @@ tsk_img_open_external(
   void (*imgstat) (TSK_IMG_INFO *, FILE *)
 )
 {
+    // sanity checks
+    if (!ext_img_info) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("external image info pointer was null");
+        return NULL;
+    }
+
+    if (!read) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("external image read pointer was null");
+        return NULL;
+    }
+
+    if (!close) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("external image close pointer was null");
+        return NULL;
+    }
+
+    if (!imgstat) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("external image imgstat pointer was null");
+        return NULL;
+    }
+
+    if (sector_size > 0 && sector_size < 512) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("sector size is less than 512 bytes (%d)",
+            sector_size);
+        return NULL;
+    }
+
+    if (sector_size % 512 != 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("sector size is not a multiple of 512 (%d)",
+            sector_size);
+        return NULL;
+    }
+
+    // set up the TSK_IMG_INFO members
     TSK_IMG_INFO *img_info = (TSK_IMG_INFO *) ext_img_info;
 
     img_info->tag = TSK_IMG_INFO_TAG;
     img_info->itype = TSK_IMG_TYPE_EXTERNAL;
     img_info->size = size;
-    img_info->sector_size = sector_size;
+    img_info->sector_size = sector_size ? sector_size : 512;
     img_info->read = read;
     img_info->close = close;
     img_info->imgstat = imgstat;
