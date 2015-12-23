@@ -31,6 +31,9 @@ typedef int bool;
 #include "vmdk.h"
 #endif
 
+#if HAVE_LIBVHDI
+#include "vhd.h"
+#endif
 
 /**
  * \ingroup imglib
@@ -117,7 +120,7 @@ tsk_img_open(int num_img,
      */
     if (type == TSK_IMG_TYPE_DETECT) {
         TSK_IMG_INFO *img_set = NULL;
-#if HAVE_LIBAFFLIB || HAVE_LIBEWF || HAVE_LIBVMDK
+#if HAVE_LIBAFFLIB || HAVE_LIBEWF || HAVE_LIBVMDK || HAVE_LIBVHDI
         char *set = NULL;
 #endif
 
@@ -178,6 +181,26 @@ tsk_img_open(int num_img,
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
                 tsk_error_set_errstr("VMDK or %s", set);
+                return NULL;
+            }
+        }
+        else {
+            tsk_error_reset();
+        }
+#endif
+
+#if HAVE_LIBVHDI
+        if ((img_info = vhdi_open(num_img, images, a_ssize)) != NULL) {
+            if (set == NULL) {
+                set = "VHD";
+                img_set = img_info;
+            }
+            else {
+                img_set->close(img_set);
+                img_info->close(img_info);
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
+                tsk_error_set_errstr("VHD or %s", set);
                 return NULL;
             }
         }
