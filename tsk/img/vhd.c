@@ -9,7 +9,7 @@
  * Brian Carrier.
  */
 
-/** \file vmdk.c
+/** \file vhd.c
  * Internal code for TSK to interface with libvhdi.
  */
 
