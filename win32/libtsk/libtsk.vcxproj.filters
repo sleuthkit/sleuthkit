@@ -312,6 +312,9 @@
     <ClCompile Include="..\..\tsk\img\vmdk.c">
       <Filter>img</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tsk\img\vhd.c">
+      <Filter>img</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\tsk\vs\tsk_bsd.h">
@@ -426,6 +429,9 @@
       <Filter>auto</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tsk\img\vmdk.h">
+      <Filter>img</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\img\vhd.h">
       <Filter>img</Filter>
     </ClInclude>
   </ItemGroup>
