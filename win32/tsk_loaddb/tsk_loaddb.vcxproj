@@ -197,7 +197,7 @@
       <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>libvmdk.lib;libewf.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libvhdi.lib;libvmdk.lib;libewf.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(LIBVMDK_HOME)\msvscpp\release;$(LIBEWF_HOME)\msvscpp\release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <TargetMachine>MachineX86</TargetMachine>
@@ -215,7 +215,7 @@
       <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>libvmdk.lib;libewf.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libvhdi.lib;libvmdk.lib;libewf.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(LIBVMDK_HOME)\msvscpp\release;$(LIBEWF_HOME)\msvscpp\release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <TargetMachine>MachineX86</TargetMachine>
@@ -232,7 +232,7 @@
       <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>libvmdk.lib;libewf.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libvhdi.lib;libvmdk.lib;libewf.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(LIBVMDK_HOME)\msvscpp\x64\release;$(LIBEWF_HOME)\msvscpp\x64\release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
@@ -248,7 +248,7 @@
       <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>libvmdk.lib;libewf.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libvhdi.lib;libvmdk.lib;libewf.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(LIBVMDK_HOME)\msvscpp\x64\release;$(LIBEWF_HOME)\msvscpp\x64\release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
@@ -265,7 +265,7 @@
       <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>libvmdk.lib;libewf.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libvhdi.lib;libvmdk.lib;libewf.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(LIBVMDK_HOME)\msvscpp\release;$(LIBEWF_HOME)\msvscpp\release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OptimizeReferences>true</OptimizeReferences>
@@ -306,7 +306,7 @@
       <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>libvmdk.lib;libewf.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libvhdi.lib;libvmdk.lib;libewf.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(LIBVMDK_HOME)\msvscpp\release;$(LIBEWF_HOME)\msvscpp\release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OptimizeReferences>true</OptimizeReferences>
@@ -326,7 +326,7 @@
       <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>libvmdk.lib;libewf.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libvhdi.lib;libvmdk.lib;libewf.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(LIBVMDK_HOME)\msvscpp\x64\release;$(LIBEWF_HOME)\msvscpp\x64\release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OptimizeReferences>true</OptimizeReferences>
@@ -365,7 +365,7 @@
       <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>libvmdk.lib;libewf.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libvhdi.lib;libvmdk.lib;libewf.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(LIBVMDK_HOME)\msvscpp\x64\release;$(LIBEWF_HOME)\msvscpp\x64\release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OptimizeReferences>true</OptimizeReferences>
