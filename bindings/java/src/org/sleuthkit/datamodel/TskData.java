@@ -501,6 +501,7 @@ public class TskData {
 		TSK_IMG_TYPE_AFF_ANY(32, "AFF"), // All AFFLIB image formats (including beta ones) NON-NLS
 		TSK_IMG_TYPE_EWF_EWF(64, "E01"), // Expert Witness format (encase) NON-NLS
 		TSK_IMG_TYPE_VMDK_VMDK(128, "VMDK"), // VMware Virtual Disk (VMDK) NON-NLS
+		TSK_IMG_TYPE_VHD_VHD(256, "VHD"), // Virtual Hard Disk (VHD) image format NON-NLS
 		TSK_IMG_TYPE_UNSUPP(65535, bundle.getString("TskData.tskImgTypeEnum.unknown"));   // Unsupported Image Type
 
 		private long imgType;
