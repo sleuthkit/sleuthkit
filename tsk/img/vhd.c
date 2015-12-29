@@ -201,13 +201,36 @@ vhdi_open(int a_num_img,
         }
         return (NULL);
     }
+    // Check the file signature before we call the library open
+#if defined( TSK_WIN32 )
+    if( libvhdi_check_file_signature_wide((const wchar_t *) vhdi_info->images[0], &vhdi_error ) != 1 )
+#else
+    if( libvhdi_check_file_signature((const char *) vhdi_info->images[0], &vhdi_error) != 1)
+#endif
+	{
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_OPEN);
+
+        getError(vhdi_error, error_string);
+        tsk_error_set_errstr("vhdi_open file: %" PRIttocTSK
+            ": Error checking file signature for image (%s)", a_images[0],
+            error_string);
+        libvhdi_error_free(&vhdi_error);
+
+        tsk_img_free(vhdi_info);
+
+        if (tsk_verbose != 0) {
+            tsk_fprintf(stderr, "Error checking file signature for vhd file\n");
+        }
+        return (NULL);
+    }
 #if defined( TSK_WIN32 )
     if (libvhdi_file_open_wide(vhdi_info->handle,
             (const wchar_t *) vhdi_info->images[0],
             LIBVHDI_OPEN_READ, &vhdi_error) != 1)
 #else
     if (libvhdi_file_open(vhdi_info->handle,
-            (const char *) vhdi_info->images,
+            (const char *) vhdi_info->images[0],
             LIBVHDI_OPEN_READ, &vhdi_error) != 1)
 #endif
     {
@@ -223,25 +246,6 @@ vhdi_open(int a_num_img,
 
         if (tsk_verbose != 0) {
             tsk_fprintf(stderr, "Error opening vhdi file\n");
-        }
-        return (NULL);
-    }
-    // ELTODO: if this works, add #if defined( TSK_WIN32 )
-    if( libvhdi_check_file_signature_wide((const wchar_t *) vhdi_info->images[0], &vhdi_error ) != 1 )
-	{
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_OPEN);
-
-        getError(vhdi_error, error_string);
-        tsk_error_set_errstr("vhdi_open file: %" PRIttocTSK
-            ": Error checking file signature for image (%s)", a_images[0],
-            error_string);
-        libvhdi_error_free(&vhdi_error);
-
-        tsk_img_free(vhdi_info);
-
-        if (tsk_verbose != 0) {
-            tsk_fprintf(stderr, "Error checking file signature for vhd file\n");
         }
         return (NULL);
     }
