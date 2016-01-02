@@ -37,8 +37,8 @@ import org.junit.runners.Parameterized.Parameters;
 /**
  * Verifies that the current version of TSK produces the same output of previous
  * versions by doing a TopDown Depth first traversal of the given images.
- * Compares data to gold standards. 
- * Also generates the leaf file that is used by the BottomUp Test
+ * Compares data to gold standards. Also generates the leaf file that is used by
+ * the BottomUp Test
  */
 @RunWith(Parameterized.class)
 public class TopDownTraversal extends ImgTraverser {
@@ -105,11 +105,11 @@ public class TopDownTraversal extends ImgTraverser {
 		try {
 			Charset chr = Charset.forName("UTF-8");
 			// file to save the per-file info to.
-			OutputStreamWriter reslt = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(path),8192*4), chr);
-			
+			OutputStreamWriter reslt = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(path), 8192 * 4), chr);
+
 			// file to save the leaf into, which will be used by the BottomUp Test
-			OutputStreamWriter levs = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(path.replace(this.testName + ".txt", DataModelTestSuite.BTTMUP + ".txt")), 8192*4),chr);
-			
+			OutputStreamWriter levs = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(path.replace(this.testName + ".txt", DataModelTestSuite.BTTMUP + ".txt")), 8192 * 4), chr);
+
 			List<Exception> inp = topDownDF(lc, lp, reslt, levs);
 			levs.flush();
 			DataModelTestSuite.writeExceptions(path, inp);
@@ -127,13 +127,14 @@ public class TopDownTraversal extends ImgTraverser {
 	 * @param lc the list of content to be traversed
 	 * @param lp the list of a content's parents
 	 * @param resultOutput the filewriter to append output to
-	 * @param leafListOutput the filewriter to append leaves to (trace of each leaf to root dir)
+	 * @param leafListOutput the filewriter to append leaves to (trace of each
+	 * leaf to root dir)
 	 * @returns list of exceptions
 	 */
 	private List<Exception> topDownDF(List<Content> lc, List<Long> lp, Appendable resultOutput, Appendable leafListOutput) {
 		List<Exception> exceptionList = new ArrayList<Exception>();
 		for (Content c : lc) {
-			
+
 			// write data about this object to resultOutput
 			// string version of this object
 			try {
@@ -141,7 +142,7 @@ public class TopDownTraversal extends ImgTraverser {
 			} catch (IOException ex) {
 				logg.log(Level.SEVERE, "Failed to Traverse", ex);
 			}
-			
+
 			// calculate the hash value for the output -- writes the output to resultOutput
 			if (c instanceof File) {
 				DataModelTestSuite.hashContent(c, resultOutput, outputFilePath);
@@ -151,16 +152,15 @@ public class TopDownTraversal extends ImgTraverser {
 			} catch (IOException ex) {
 				logg.log(Level.SEVERE, "Failed to Traverse", ex);
 			}
-			
+
 			// add this node to the bottom of the parent list
 			lp.add(0, c.getId());
-			
+
 			try {
 				// if we are a leaf, write out the path to the node
 				if (c.getChildren().isEmpty()) {
 					leafListOutput.append(lp.toString() + "\n");
-				}
-				// recurse into the children
+				} // recurse into the children
 				else {
 					exceptionList.addAll(topDownDF(c.getChildren(), new ArrayList<Long>(lp), resultOutput, leafListOutput));
 				}

@@ -27,14 +27,14 @@ import java.util.List;
  * Populated based on data in database.
  */
 public class Volume extends AbstractContent {
-	
+
 	private long addr;
 	private long startSector; //in sectors, relative to volume system start
 	private long lengthInSectors; //in sectors
 	private long flags;
 	private String desc;
 	private volatile long volumeHandle = 0;
-    private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
+	private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	/**
 	 * Constructor to create the data object mapped from tsk_vs_parts entry
@@ -43,7 +43,7 @@ public class Volume extends AbstractContent {
 	 * @param obj_id
 	 * @param addr
 	 * @param startSector starting sector, relative to start of VS
-	 * @param lengthInSectors 
+	 * @param lengthInSectors
 	 * @param flags
 	 * @param desc
 	 */
@@ -80,7 +80,7 @@ public class Volume extends AbstractContent {
 	@Override
 	public void close() {
 		if (volumeHandle != 0) {
-			synchronized(this) {
+			synchronized (this) {
 				if (volumeHandle != 0) {
 					SleuthkitJNI.closeVs(volumeHandle);
 					volumeHandle = 0;
@@ -88,7 +88,7 @@ public class Volume extends AbstractContent {
 			}
 		}
 	}
-	
+
 	@Override
 	public void finalize() throws Throwable {
 		try {
@@ -97,8 +97,6 @@ public class Volume extends AbstractContent {
 			super.finalize();
 		}
 	}
-	
-	
 
 	@Override
 	public long getSize() {
@@ -123,7 +121,8 @@ public class Volume extends AbstractContent {
 	//methods get exact data from database. could be manipulated to get more
 	//meaningful data.
 	/**
-	 * get the unique partition address within this volume system (assigned by The Sleuth Kit)
+	 * get the unique partition address within this volume system (assigned by
+	 * The Sleuth Kit)
 	 *
 	 * @return partition address in volume system
 	 */
@@ -132,7 +131,8 @@ public class Volume extends AbstractContent {
 	}
 
 	/**
-	 * get the starting sector address of this volume relative to start of the volume system
+	 * get the starting sector address of this volume relative to start of the
+	 * volume system
 	 *
 	 * @return starting address
 	 */
@@ -168,7 +168,8 @@ public class Volume extends AbstractContent {
 	}
 
 	/**
-	 * get the description. This is set by the volume system and doesn't exist for all volumes.
+	 * get the description. This is set by the volume system and doesn't exist
+	 * for all volumes.
 	 *
 	 * @return description
 	 */
@@ -260,7 +261,6 @@ public class Volume extends AbstractContent {
 	public List<Long> getChildrenIds() throws TskCoreException {
 		return getSleuthkitCase().getVolumeChildrenIds(this);
 	}
-
 
 	/**
 	 * @return a list of FileSystem that are direct descendents of this Image.

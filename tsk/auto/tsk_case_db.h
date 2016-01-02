@@ -20,9 +20,9 @@
 #include <string>
 using std::string;
 
-
 #include "tsk_auto_i.h"
 #include "tsk_db_sqlite.h"
+#include "tsk_db_postgresql.h"
 #include "tsk/hashdb/tsk_hashdb.h"
 
 #define TSK_ADD_IMAGE_SAVEPOINT "ADDIMAGE"
@@ -33,7 +33,7 @@ using std::string;
  */
 class TskAutoDb:public TskAuto {
   public:
-    TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_knownBadDb);
+    TskAutoDb(TskDb * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_knownBadDb);
     virtual ~ TskAutoDb();
     virtual uint8_t openImage(int, const TSK_TCHAR * const images[],
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
@@ -49,6 +49,12 @@ class TskAutoDb:public TskAuto {
         const char *path);
     virtual void createBlockMap(bool flag);
     const std::string getCurDir();
+	
+	/**
+	* Check if we can talk to the database.
+	* Returns true if the database is reachable with current credentials, false otherwise.
+	*/
+	bool isDbOpen();
 
     /**
      * Calculate hash values of files and add them to database.
@@ -94,7 +100,7 @@ class TskAutoDb:public TskAuto {
     int64_t commitAddImage();
 
   private:
-    TskDbSqlite * m_db;
+    TskDb * m_db;
     int64_t m_curImgId;     ///< Object ID of image currently being processed
     int64_t m_curVsId;      ///< Object ID of volume system currently being processed
     int64_t m_curVolId;     ///< Object ID of volume currently being processed
@@ -126,7 +132,7 @@ class TskAutoDb:public TskAuto {
     //internal structure to keep track of temp. unalloc block range
     typedef struct _UNALLOC_BLOCK_WLK_TRACK {
         _UNALLOC_BLOCK_WLK_TRACK(const TskAutoDb & tskAutoDb, const TSK_FS_INFO & fsInfo, const int64_t fsObjId, int64_t chunkSize)
-            : tskAutoDb(tskAutoDb),fsInfo(fsInfo),fsObjId(fsObjId),curRangeStart(0), chunkSize(chunkSize), prevBlock(0), isStart(true) {}
+            : tskAutoDb(tskAutoDb),fsInfo(fsInfo),fsObjId(fsObjId),curRangeStart(0), chunkSize(chunkSize), prevBlock(0), isStart(true), nextSequenceNo(0) {}
         const TskAutoDb & tskAutoDb;
         const TSK_FS_INFO & fsInfo;
         const int64_t fsObjId;
@@ -136,6 +142,7 @@ class TskAutoDb:public TskAuto {
 		const int64_t chunkSize;
         TSK_DADDR_T prevBlock;
         bool isStart;
+        uint32_t nextSequenceNo;
     } UNALLOC_BLOCK_WLK_TRACK;
 
     uint8_t addImageDetails(const char *const images[], int);
@@ -172,7 +179,9 @@ class TskCaseDb {
     ~TskCaseDb();
 
     static TskCaseDb *newDb(const TSK_TCHAR * path);
+    static TskCaseDb *newDb(const TSK_TCHAR * const path, CaseDbConnectionInfo * info);
     static TskCaseDb *openDb(const TSK_TCHAR * path);
+    static TskCaseDb *openDb(const TSK_TCHAR * path, CaseDbConnectionInfo * info);
 
     void clearLookupDatabases();
     uint8_t setNSRLHashDb(TSK_TCHAR * const indexFile);
@@ -186,9 +195,8 @@ class TskCaseDb {
     // prevent copying until we add proper logic to handle it
     TskCaseDb(const TskCaseDb&);
     TskCaseDb & operator=(const TskCaseDb&);
-
-    TskCaseDb(TskDbSqlite * a_db);
-    TskDbSqlite *m_db;
+    TskCaseDb(TskDb * a_db);
+    TskDb *m_db;
     TSK_HDB_INFO * m_NSRLDb;
     TSK_HDB_INFO * m_knownBadDb;
 };

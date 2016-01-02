@@ -29,8 +29,8 @@ import org.junit.runners.Parameterized;
 /**
  *
  * Ensures that a sequential traversal of a given image produces the same result
- * as a Top Down traversal.  Does not use gold standard files.  It compares
- * the outputs from the two test runs. 
+ * as a Top Down traversal. Does not use gold standard files. It compares the
+ * outputs from the two test runs.
  */
 @RunWith(Parameterized.class)
 public class CrossCompare {
@@ -68,7 +68,7 @@ public class CrossCompare {
 		try {
 			String seqSortedOutputFile = DataModelTestSuite.sortedFlPth(DataModelTestSuite.resultFilePath(imagePaths, DataModelTestSuite.SEQ));
 			String tdSortedOutputFile = DataModelTestSuite.sortedFlPth(DataModelTestSuite.resultFilePath(imagePaths, DataModelTestSuite.TD));
-	
+
 			assertEquals("Sequential test results (" + seqSortedOutputFile + ") differ with Top Dow (" + tdSortedOutputFile + ") .", DataModelTestSuite.comparecontent(seqSortedOutputFile, tdSortedOutputFile), true);
 		} catch (Exception ex) {
 			fail("SequentialTest error: " + ex.getMessage());

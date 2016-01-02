@@ -374,6 +374,11 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
                     tsk_fs_name_copy(a_fs_name, fs_file_tmp->name);
                 }
 
+                if (fs_file_alloc) 
+                    tsk_fs_file_close(fs_file_alloc);
+                if (fs_file_del) 
+                    tsk_fs_file_close(fs_file_del);
+
                 tsk_fs_dir_close(fs_dir);
                 free(cpath);
                 return 0;

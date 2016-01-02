@@ -143,7 +143,7 @@ getFATCacheIdx(FATFS_INFO * fatfs, TSK_DADDR_T sect)
     for (i = 0; i < FATFS_FAT_CACHE_N; i++) {
         if ((fatfs->fatc_ttl[i] > 0) &&
             (sect >= fatfs->fatc_addr[i]) &&
-            (sect < (fatfs->fatc_addr[i] + FATFS_FAT_CACHE_S))) {
+            (sect < (fatfs->fatc_addr[i] + (FATFS_FAT_CACHE_B >> fatfs->ssize_sh)))) {
             int a;
 
             // update the TTLs to push i to the front

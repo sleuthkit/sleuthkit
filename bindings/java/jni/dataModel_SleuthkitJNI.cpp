@@ -20,6 +20,7 @@
 #include <string>
 #include <algorithm>
 #include <sstream>
+
 using std::string;
 using std::vector;
 using std::map;
@@ -108,7 +109,7 @@ static TSK_IMG_INFO *
 castImgInfo(JNIEnv * env, jlong ptr)
 {
     TSK_IMG_INFO *lcl = (TSK_IMG_INFO *) ptr;
-    if (lcl->tag != TSK_IMG_INFO_TAG) {
+    if (!lcl || lcl->tag != TSK_IMG_INFO_TAG) {
         setThrowTskCoreError(env, "Invalid IMG_INFO object");
         return 0;
     }
@@ -120,11 +121,14 @@ static TSK_VS_INFO *
 castVsInfo(JNIEnv * env, jlong ptr)
 {
     TSK_VS_INFO *lcl = (TSK_VS_INFO *) ptr;
-    if (lcl->tag != TSK_VS_INFO_TAG) {
+    if (!lcl || lcl->tag != TSK_VS_INFO_TAG) {
         setThrowTskCoreError(env, "Invalid VS_INFO object");
         return 0;
     }
-
+    // verify that image handle is still open
+    if (!castImgInfo(env, (jlong) lcl->img_info)) {
+        return 0;
+    }
     return lcl;
 }
 
@@ -132,11 +136,14 @@ static TSK_VS_PART_INFO *
 castVsPartInfo(JNIEnv * env, jlong ptr)
 {
     TSK_VS_PART_INFO *lcl = (TSK_VS_PART_INFO *) ptr;
-    if (lcl->tag != TSK_VS_PART_INFO_TAG) {
+    if (!lcl || lcl->tag != TSK_VS_PART_INFO_TAG) {
         setThrowTskCoreError(env, "Invalid VS_PART_INFO object");
         return 0;
     }
-
+    // verify that all handles are still open
+    if (!castVsInfo(env, (jlong) lcl->vs)) {
+        return 0;
+    }
     return lcl;
 }
 
@@ -144,8 +151,12 @@ static TSK_FS_INFO *
 castFsInfo(JNIEnv * env, jlong ptr)
 {
     TSK_FS_INFO *lcl = (TSK_FS_INFO *) ptr;
-    if (lcl->tag != TSK_FS_INFO_TAG) {
+    if (!lcl || lcl->tag != TSK_FS_INFO_TAG) {
         setThrowTskCoreError(env, "Invalid FS_INFO object");
+        return 0;
+    }
+    // verify that image handle is still open
+    if (!castImgInfo(env, (jlong) lcl->img_info)) {
         return 0;
     }
     return lcl;
@@ -156,8 +167,12 @@ static TSK_JNI_FILEHANDLE *
 castFsFile(JNIEnv * env, jlong ptr)
 {
     TSK_JNI_FILEHANDLE *lcl = (TSK_JNI_FILEHANDLE *) ptr;
-    if (lcl->tag != TSK_JNI_FILEHANDLE_TAG) {
+    if (!lcl || lcl->tag != TSK_JNI_FILEHANDLE_TAG) {
         setThrowTskCoreError(env, "Invalid TSK_JNI_FILEHANDLE object");
+        return 0;
+    }
+    // verify that all handles are still open
+    if (!lcl->fs_file || !castFsInfo(env, (jlong) lcl->fs_file->fs_info)) {
         return 0;
     }
     return lcl;
@@ -167,7 +182,7 @@ static TskCaseDb *
 castCaseDb(JNIEnv * env, jlong ptr)
 {
     TskCaseDb *lcl = ((TskCaseDb *) ptr);
-    if (lcl->m_tag != TSK_CASE_DB_TAG) {
+    if (!lcl || lcl->m_tag != TSK_CASE_DB_TAG) {
         setThrowTskCoreError(env,
             "Invalid TskCaseDb object");
         return 0;
@@ -249,6 +264,76 @@ JNIEXPORT jlong JNICALL
 
 
 /*
+ * Create a TskCaseDb with an associated database
+ * @return the pointer to the case
+ * @param env pointer to java environment this was called from
+ * @param env pointer to java environment this was called from
+ * @param cls the java class
+ * @param host the hostname or IP address
+ * @param port the port number as a string
+ * @param user the user name for the database
+ * @param pass the password for the database
+ * @param dbType the ordinal value of the enum for the database type
+ * @param dbName the name of the database to create
+ * @return 0 on error (sets java exception), pointer to newly opened TskCaseDb object on success
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_newCaseDbMultiNat(JNIEnv *env, jclass cls, jstring host, jstring port, jstring user, jstring pass, jint dbType, jstring dbName)
+{
+    TSK_TCHAR dbPathT[1024];
+    toTCHAR(env, dbPathT, 1024, dbName);
+
+    CaseDbConnectionInfo info(env->GetStringUTFChars(host, false),
+        env->GetStringUTFChars(port, false),
+        env->GetStringUTFChars(user, false),
+        env->GetStringUTFChars(pass, false),
+        (CaseDbConnectionInfo::DbType)dbType);
+
+    TskCaseDb *tskCase = TskCaseDb::newDb(dbPathT, &info);
+
+    if (tskCase == NULL) {
+        setThrowTskCoreError(env);
+        return 0;
+    }
+
+    return (jlong) tskCase;
+}
+
+
+/*
+ * Open a TskCaseDb with an associated database
+ * @return the pointer to the case
+ * @param env pointer to java environment this was called from
+ * @param cls the java class
+ * @param host the hostname or IP address
+ * @param port the port number as a string
+ * @param user the user name for the database
+ * @param pass the password for the database
+ * @param dbType the ordinal value of the enum for the database type
+ * @param dbName the name of the database to open
+ * @return Returns pointer to object or exception on error
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openCaseDbMultiNat(JNIEnv *env, jclass cls, jstring host, jstring port, jstring user, jstring pass, jint dbType, jstring dbName)
+{
+    TSK_TCHAR dbPathT[1024];
+    toTCHAR(env, dbPathT, 1024, dbName);
+
+    CaseDbConnectionInfo info(env->GetStringUTFChars(host, false),
+        env->GetStringUTFChars(port, false),
+        env->GetStringUTFChars(user, false),
+        env->GetStringUTFChars(pass, false),
+		(CaseDbConnectionInfo::DbType)dbType);
+
+    TskCaseDb *tskCase = TskCaseDb::openDb(dbPathT, &info);
+
+    if (tskCase == NULL) {
+        setThrowTskCoreError(env);
+        return 0;
+    }
+
+    return (jlong) tskCase;
+}
+
+/*
  * Open a TskCaseDb with an associated database
  * @return the pointer to the case
  * @param env pointer to java environment this was called from
@@ -271,6 +356,7 @@ JNIEXPORT jlong JNICALL
 
     return (jlong) tskCase;
 }
+
 
 /*
  * Close (cleanup) a case
@@ -826,7 +912,7 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
  * @param env pointer to java environment this was called from
  * @partam caseHandle pointer to case to add image to
  * @param timezone timezone for the image
- * @param addUnallocSpace whether to process unallocated filesystem blocks and volumes in the image
+ * @param addUnallocSpace whether to create virtual files for the unallocated space in the disk image
  * @param noFatFsOrphans whether to skip processing orphans on FAT filesystems
  */
 JNIEXPORT jlong JNICALL
@@ -966,8 +1052,14 @@ JNIEXPORT void JNICALL
             setThrowTskCoreError(env, msgss.str().c_str());
         }
         else if (ret == 2) {
-            //non fatal error
-            setThrowTskDataError(env, msgss.str().c_str());
+			if(tskAuto->isDbOpen()) {
+				// if we can still talk to the database, it's a non-fatal error
+				setThrowTskDataError(env, msgss.str().c_str());
+			}
+			else {
+				// we cannot talk to the database, fatal error
+				setThrowTskCoreError(env, msgss.str().c_str());
+			}
         }
     }
 

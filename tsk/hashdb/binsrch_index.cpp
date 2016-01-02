@@ -1054,6 +1054,7 @@ int8_t
     uint8_t wasFound = 0;
     size_t i;
     TSK_HDB_HTYPE_ENUM htype;
+    char ucHash[TSK_HDB_HTYPE_SHA1_LEN + 1]; // Set to the longest hash length + 1
 
     /* Sanity checks on the hash input */
     if (strlen(hash) == TSK_HDB_HTYPE_MD5_LEN) {
@@ -1095,6 +1096,17 @@ int8_t
         return -1;
     }
 
+    // Convert hash to uppercase
+    for(i = 0;i < strlen(hash);i++){
+        if(islower(hash[i])){
+            ucHash[i] = toupper(hash[i]);
+        }
+        else{
+            ucHash[i] = hash[i];
+        }
+    }
+    ucHash[strlen(hash)] = '\0';
+
     // Do a lookup in the index of the index file. The index of the index file is
     // a mapping of the first three digits of a hash to the offset in the index
     // file of the first index entry of the possibly empty set of index entries 
@@ -1104,7 +1116,7 @@ int8_t
         // This will give the offset into the index file for the set of hashes
         // that contains the sought hash.
         char digits[4];
-        strncpy(digits, hash, 3);
+        strncpy(digits, ucHash, 3);
         digits[3] = '\0';
         long int idx_idx_off = strtol(digits, NULL, 16);
         if ((idx_idx_off < 0) || (idx_idx_off > (long int)IDX_IDX_ENTRY_COUNT)) {
@@ -1112,7 +1124,7 @@ int8_t
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_ARG);
             tsk_error_set_errstr(
-                "%s: error finding index in secondary index for %s", func_name, hash);
+                "%s: error finding index in secondary index for %s", func_name, ucHash);
             return -1;
         }
 
@@ -1226,7 +1238,7 @@ int8_t
 
         /* Set the delimter to NULL so we can treat the hash as a string */
         hdb_binsrch_info->idx_lbuf[hdb_binsrch_info->hash_len] = '\0';
-        cmp = strcasecmp(hdb_binsrch_info->idx_lbuf, hash);
+        cmp = strcasecmp(hdb_binsrch_info->idx_lbuf, ucHash);
 
         /* The one we just read is too small, so set the new lower bound
         * at the start of the next row */
@@ -1262,7 +1274,7 @@ int8_t
 
                 /* Print the one that we found first */
                 if (hdb_binsrch_info->
-                    get_entry(hdb_info_base, hash, db_off, flags, action, ptr)) {
+                    get_entry(hdb_info_base, ucHash, db_off, flags, action, ptr)) {
                         tsk_release_lock(&hdb_binsrch_info->base.lock);
                         tsk_error_set_errstr2( "hdb_lookup");
                         return -1;
@@ -1315,7 +1327,7 @@ int8_t
                     }
 
                     hdb_binsrch_info->idx_lbuf[hdb_binsrch_info->hash_len] = '\0';
-                    if (strcasecmp(hdb_binsrch_info->idx_lbuf, hash) != 0) {
+                    if (strcasecmp(hdb_binsrch_info->idx_lbuf, ucHash) != 0) {
                         break;
                     }
 
@@ -1331,7 +1343,7 @@ int8_t
                         10);
 #endif
                     if (hdb_binsrch_info->
-                        get_entry(hdb_info_base, hash, db_off, flags, action,
+                        get_entry(hdb_info_base, ucHash, db_off, flags, action,
                         ptr)) {
                             tsk_release_lock(&hdb_binsrch_info->base.lock);
                             return -1;
@@ -1379,7 +1391,7 @@ int8_t
                     }
 
                     hdb_binsrch_info->idx_lbuf[hdb_binsrch_info->hash_len] = '\0';
-                    if (strcasecmp(hdb_binsrch_info->idx_lbuf, hash) != 0) {
+                    if (strcasecmp(hdb_binsrch_info->idx_lbuf, ucHash) != 0) {
                         break;
                     }
 #ifdef TSK_WIN32
@@ -1393,7 +1405,7 @@ int8_t
                         10);
 #endif
                     if (hdb_binsrch_info->
-                        get_entry(hdb_info_base, hash, db_off, flags, action,
+                        get_entry(hdb_info_base, ucHash, db_off, flags, action,
                         ptr)) {
                             tsk_release_lock(&hdb_binsrch_info->base.lock);
                             return -1;

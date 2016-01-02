@@ -42,6 +42,9 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 public class SleuthkitJNI {
 
 	private static final int MAX_DATABASES = 256;
+	
+	// Lock used to synchronize image and file system cache
+	private static final Object cacheLock = new Object();
 
 	//Native methods
 	private static native String getVersionNat();
@@ -51,49 +54,53 @@ public class SleuthkitJNI {
 	//database
 	private static native long newCaseDbNat(String dbPath) throws TskCoreException;
 
+	private static native long newCaseDbMultiNat(String hostNameOrIP, String portNumber, String userName, String password, int dbTypeOrdinal, String databaseName);
+
+	private static native long openCaseDbMultiNat(String hostNameOrIP, String portNumber, String userName, String password, int dbTypeOrdinal, String databaseName);
+
 	private static native long openCaseDbNat(String path) throws TskCoreException;
 
 	private static native void closeCaseDbNat(long db) throws TskCoreException;
 
 	private static native int hashDbOpenNat(String hashDbPath) throws TskCoreException;
 
-    private static native int hashDbNewNat(String hashDbPath) throws TskCoreException;
-	
-	private static native int hashDbBeginTransactionNat(int dbHandle) throws TskCoreException;	
+	private static native int hashDbNewNat(String hashDbPath) throws TskCoreException;
 
-	private static native int hashDbCommitTransactionNat(int dbHandle) throws TskCoreException;	
+	private static native int hashDbBeginTransactionNat(int dbHandle) throws TskCoreException;
 
-	private static native int hashDbRollbackTransactionNat(int dbHandle) throws TskCoreException;	
+	private static native int hashDbCommitTransactionNat(int dbHandle) throws TskCoreException;
 
-    private static native int hashDbAddEntryNat(String filename, String hashMd5, String hashSha1, String hashSha256, String comment, int dbHandle) throws TskCoreException;
+	private static native int hashDbRollbackTransactionNat(int dbHandle) throws TskCoreException;
 
-    private static native boolean hashDbIsUpdateableNat(int dbHandle);
-    
-    private static native boolean hashDbIsReindexableNat(int dbHandle);
-    
-    private static native String hashDbPathNat(int dbHandle);    
-    
-    private static native String hashDbIndexPathNat(int dbHandle);
-        
-    private static native String hashDbGetDisplayName(int dbHandle) throws TskCoreException;
+	private static native int hashDbAddEntryNat(String filename, String hashMd5, String hashSha1, String hashSha256, String comment, int dbHandle) throws TskCoreException;
+
+	private static native boolean hashDbIsUpdateableNat(int dbHandle);
+
+	private static native boolean hashDbIsReindexableNat(int dbHandle);
+
+	private static native String hashDbPathNat(int dbHandle);
+
+	private static native String hashDbIndexPathNat(int dbHandle);
+
+	private static native String hashDbGetDisplayName(int dbHandle) throws TskCoreException;
 
 	private static native void hashDbCloseAll() throws TskCoreException;
-    
-    private static native void hashDbClose(int dbHandle) throws TskCoreException;
+
+	private static native void hashDbClose(int dbHandle) throws TskCoreException;
 
 	//hash-lookup database functions   
-    private static native void hashDbCreateIndexNat(int dbHandle) throws TskCoreException;
-    
-    private static native boolean hashDbIndexExistsNat(int dbHandle) throws TskCoreException;
+	private static native void hashDbCreateIndexNat(int dbHandle) throws TskCoreException;
 
-    private static native boolean hashDbIsIdxOnlyNat(int dbHandle) throws TskCoreException;
-    
+	private static native boolean hashDbIndexExistsNat(int dbHandle) throws TskCoreException;
+
+	private static native boolean hashDbIsIdxOnlyNat(int dbHandle) throws TskCoreException;
+
 	private static native boolean hashDbLookup(String hash, int dbHandle) throws TskCoreException;
-    
-    private static native HashHitInfo hashDbLookupVerbose(String hash, int dbHandle) throws TskCoreException;
+
+	private static native HashHitInfo hashDbLookupVerbose(String hash, int dbHandle) throws TskCoreException;
 
 	//load image
-	private static native long initAddImgNat(long db, String timezone, boolean processUnallocSpace, boolean noFatFsOrphans) throws TskCoreException;
+	private static native long initAddImgNat(long db, String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) throws TskCoreException;
 
 	private static native void runAddImgNat(long process, String[] imgPath, int splits, String timezone) throws TskCoreException, TskDataException; // if runAddImg finishes without being stopped, revertAddImg or commitAddImg MUST be called
 
@@ -126,7 +133,7 @@ public class SleuthkitJNI {
 	private static native int readFileNat(long fileHandle, byte[] readBuffer, long offset, long len) throws TskCoreException;
 
 	private static native int saveFileMetaDataTextNat(long fileHandle, String fileName) throws TskCoreException;
-	
+
 	//close functions
 	private static native void closeImgNat(long imgHandle);
 
@@ -136,7 +143,6 @@ public class SleuthkitJNI {
 
 	private static native void closeFileNat(long fileHandle);
 
-
 	//util functions
 	private static native long findDeviceSizeNat(String devicePath) throws TskCoreException;
 
@@ -145,10 +151,10 @@ public class SleuthkitJNI {
 	//Linked library loading
 	static {
 		LibraryUtils.loadSleuthkitJNI();
-    }
+	}
 
 	private SleuthkitJNI() {
-	
+
 	}
 
 	/**
@@ -167,31 +173,57 @@ public class SleuthkitJNI {
 		}
 
 		/**
-		 * Close the case database
+		 * Close the case database as well as close all open image and file
+		 * system handles.
 		 *
 		 * @throws TskCoreException exception thrown if critical error occurs
 		 * within TSK
 		 */
 		void free() throws TskCoreException {
+			synchronized (cacheLock) {
+				// close all file system handles 
+				// loop over all images for which we have opened a file system
+				for (Map<Long, Long> imageToFsMap : fsHandleCache.values()) {
+					// for each image loop over all file systems open as part of that image
+					for (Long fsHandle : imageToFsMap.values()) {
+						// close the file system handle
+						closeFsNat(fsHandle);
+					}
+				}
+
+				// close all open image handles
+				for (Long imageHandle : imageHandleCache.values()) {
+					closeImgNat(imageHandle);
+				}
+
+				// clear both maps
+				/* NOTE: it is possible to close a case while ingest is going in the background.
+				 In this scenario it is possible for an igest module to try to read from source image.
+				 If this happens, image will be re-opened in a normal manner.
+				 */
+				fsHandleCache.clear();
+				imageHandleCache.clear();
+			}
+
 			SleuthkitJNI.closeCaseDbNat(caseDbPointer);
 		}
 
-		
-		/******************** Hash Database Methods ***********************/
-		
+		/**
+		 * ****************** Hash Database Methods **********************
+		 */
 		/**
 		 * Start the process of adding a disk image to the case
 		 *
 		 * @param timezone Timezone that image was from
-		 * @param processUnallocSpace true if to process unallocated space in
+		 * @param addUnallocSpace true to create virtual files for unallocated space
 		 * the image
 		 * @param noFatFsOrphans true if to skip processing of orphans on FAT
 		 * filesystems
 		 *
 		 * @return Object that can be used to manage the process.
 		 */
-		AddImageProcess initAddImageProcess(String timezone, boolean processUnallocSpace, boolean noFatFsOrphans) {
-			return new AddImageProcess(timezone, processUnallocSpace, noFatFsOrphans);
+		AddImageProcess initAddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) {
+			return new AddImageProcess(timezone, addUnallocSpace, noFatFsOrphans);
 		}
 
 		/**
@@ -201,14 +233,14 @@ public class SleuthkitJNI {
 		 */
 		public class AddImageProcess {
 
-			private String timezone;
-			private boolean processUnallocSpace;
-			private boolean noFatFsOrphans;
+			private final String timezone;
+			private final boolean addUnallocSpace;
+			private final boolean noFatFsOrphans;
 			private volatile long autoDbPointer;
 
-			private AddImageProcess(String timezone, boolean processUnallocSpace, boolean noFatFsOrphans) {
+			private AddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) {
 				this.timezone = timezone;
-				this.processUnallocSpace = processUnallocSpace;
+				this.addUnallocSpace = addUnallocSpace;
 				this.noFatFsOrphans = noFatFsOrphans;
 				autoDbPointer = 0;
 			}
@@ -229,7 +261,7 @@ public class SleuthkitJNI {
 				}
 
 				synchronized (this) {
-					autoDbPointer = initAddImgNat(caseDbPointer, timezoneLongToShort(timezone), processUnallocSpace, noFatFsOrphans);
+					autoDbPointer = initAddImgNat(caseDbPointer, timezoneLongToShort(timezone), addUnallocSpace, noFatFsOrphans);
 				}
 				if (autoDbPointer == 0) {
 					//additional check in case initAddImgNat didn't throw exception
@@ -320,6 +352,20 @@ public class SleuthkitJNI {
 	}
 
 	/**
+	 * Creates a new case database. Must call .free() on CaseDbHandle instance
+	 * when done.
+	 *
+	 * @param databaseName the name of the database to create
+	 * @param info the connection info class for the database to create
+	 * @return Handle for a new TskCaseDb instance.
+	 * @throws TskCoreException exception thrown if critical error occurs within
+	 * TSK
+	 */
+	static CaseDbHandle newCaseDb(String databaseName, CaseDbConnectionInfo info) throws TskCoreException {
+		return new CaseDbHandle(newCaseDbMultiNat(info.getHost(), info.getPort(), info.getUserName(), info.getPassword(), info.getDbType().ordinal(), databaseName));
+	}
+
+	/**
 	 * Opens an existing case database. Must call .free() on CaseDbHandle
 	 * instance when done.
 	 *
@@ -330,6 +376,20 @@ public class SleuthkitJNI {
 	 */
 	static CaseDbHandle openCaseDb(String path) throws TskCoreException {
 		return new CaseDbHandle(openCaseDbNat(path));
+	}
+
+	/**
+	 * Opens an existing case database. Must call .free() on CaseDbHandle
+	 * instance when done.
+	 *
+	 * @param databaseName the name of the database to open
+	 * @param info the connection info class for the database to open
+	 * @return Handle for a new TskCaseDb instance.
+	 * @throws TskCoreException exception thrown if critical error occurs within
+	 * TSK
+	 */
+	static CaseDbHandle openCaseDb(String databaseName, CaseDbConnectionInfo info) throws TskCoreException {
+		return new CaseDbHandle(openCaseDbMultiNat(info.getHost(), info.getPort(), info.getUserName(), info.getPassword(), info.getDbType().ordinal(), databaseName));
 	}
 
 	/**
@@ -356,7 +416,7 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException exception thrown if critical error occurs within
 	 * TSK
 	 */
-	public synchronized static long openImage(String[] imageFiles) throws TskCoreException {
+	public static long openImage(String[] imageFiles) throws TskCoreException {
 		long imageHandle = 0;
 
 		StringBuilder keyBuilder = new StringBuilder();
@@ -365,18 +425,18 @@ public class SleuthkitJNI {
 		}
 		final String imageKey = keyBuilder.toString();
 
-		if (CaseDbHandle.imageHandleCache.containsKey(imageKey)) //get from cache
-		{
-			imageHandle = CaseDbHandle.imageHandleCache.get(imageKey);
-		} else {
-			//open new handle and cache it
-			imageHandle = openImgNat(imageFiles, imageFiles.length);
-			CaseDbHandle.fsHandleCache.put(imageHandle, new HashMap<Long, Long>());
-			CaseDbHandle.imageHandleCache.put(imageKey, imageHandle);
+		synchronized (cacheLock) {
+			if (CaseDbHandle.imageHandleCache.containsKey(imageKey)) //get from cache
+			{
+				imageHandle = CaseDbHandle.imageHandleCache.get(imageKey);
+			} else {
+				//open new handle and cache it
+				imageHandle = openImgNat(imageFiles, imageFiles.length);
+				CaseDbHandle.fsHandleCache.put(imageHandle, new HashMap<Long, Long>());
+				CaseDbHandle.imageHandleCache.put(imageKey, imageHandle);
+			}
 		}
-
 		return imageHandle;
-
 	}
 
 	/**
@@ -417,16 +477,18 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException exception thrown if critical error occurs within
 	 * TSK
 	 */
-	public synchronized static long openFs(long imgHandle, long fsOffset) throws TskCoreException {
+	public static long openFs(long imgHandle, long fsOffset) throws TskCoreException {
 		long fsHandle = 0;
-		final Map<Long, Long> imgOffSetToFsHandle = CaseDbHandle.fsHandleCache.get(imgHandle);
-		if (imgOffSetToFsHandle.containsKey(fsOffset)) {
-			//return cached
-			fsHandle = imgOffSetToFsHandle.get(fsOffset);
-		} else {
-			fsHandle = openFsNat(imgHandle, fsOffset);
-			//cache it
-			imgOffSetToFsHandle.put(fsOffset, fsHandle);
+		synchronized (cacheLock) {
+			final Map<Long, Long> imgOffSetToFsHandle = CaseDbHandle.fsHandleCache.get(imgHandle);
+			if (imgOffSetToFsHandle.containsKey(fsOffset)) {
+				//return cached
+				fsHandle = imgOffSetToFsHandle.get(fsOffset);
+			} else {
+				fsHandle = openFsNat(imgHandle, fsOffset);
+				//cache it
+				imgOffSetToFsHandle.put(fsOffset, fsHandle);
+			}
 		}
 		return fsHandle;
 	}
@@ -529,10 +591,11 @@ public class SleuthkitJNI {
 	public static int readFile(long fileHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
 		return readFileNat(fileHandle, readBuffer, offset, len);
 	}
-	
-	
+
 	/**
-	 * Get human readable (some what) details about a file. This is the same as the 'istat' TSK tool
+	 * Get human readable (some what) details about a file. This is the same as
+	 * the 'istat' TSK tool
+	 *
 	 * @param fileHandle pointer to file structure in the sleuthkit
 	 * @return text
 	 * @throws TskCoreException if errors occurred
@@ -540,12 +603,12 @@ public class SleuthkitJNI {
 	public static List<String> getFileMetaDataText(long fileHandle) throws TskCoreException {
 		try {
 			java.io.File tmp = java.io.File.createTempFile("tsk", ".txt");
-			
+
 			saveFileMetaDataTextNat(fileHandle, tmp.getAbsolutePath());
-			
+
 			FileReader fr = new FileReader(tmp.getAbsolutePath());
 			BufferedReader textReader = new BufferedReader(fr);
-			
+
 			List<String> lines = new ArrayList<String>();
 			while (true) {
 				String line = textReader.readLine();
@@ -562,7 +625,6 @@ public class SleuthkitJNI {
 			throw new TskCoreException("Error reading istat output: " + ex.getLocalizedMessage());
 		}
 	}
-	
 
 	//free pointers
 	/**
@@ -607,9 +669,9 @@ public class SleuthkitJNI {
 		closeFileNat(fileHandle);
 	}
 
-	
-	/****************************** Hash database methods *****************/
-
+	/**
+	 * **************************** Hash database methods ****************
+	 */
 	/**
 	 * Create an index for the given database path.
 	 *
@@ -618,9 +680,8 @@ public class SleuthkitJNI {
 	 */
 	public static void createLookupIndexForHashDatabase(int dbHandle) throws TskCoreException {
 		hashDbCreateIndexNat(dbHandle);
-	}    
-    
-   
+	}
+
 	/**
 	 * Check if an index exists for the given database path.
 	 *
@@ -630,29 +691,30 @@ public class SleuthkitJNI {
 	 */
 	public static boolean hashDatabaseHasLookupIndex(int dbHandle) throws TskCoreException {
 		return hashDbIndexExistsNat(dbHandle);
-	}    
-    
+	}
+
 	/**
 	 * hashDatabaseCanBeReindexed
 	 *
 	 * @param dbHandle previously opened hash db handle
-	 * @return Does this database have a source database that is different than the index?
+	 * @return Does this database have a source database that is different than
+	 * the index?
 	 * @throws TskCoreException if a critical error occurs within TSK core
-	 */    
-    public static boolean hashDatabaseCanBeReindexed(int dbHandle) throws TskCoreException {
-        return hashDbIsReindexableNat(dbHandle);
-    }
-    
-    /**
+	 */
+	public static boolean hashDatabaseCanBeReindexed(int dbHandle) throws TskCoreException {
+		return hashDbIsReindexableNat(dbHandle);
+	}
+
+	/**
 	 * getHashDatabasePath
 	 *
 	 * @param dbHandle previously opened hash db handle
 	 * @return Hash db file path
 	 * @throws TskCoreException if a critical error occurs within TSK core
-	 */    
-    public static String getHashDatabasePath(int dbHandle) throws TskCoreException {
-        return hashDbPathNat(dbHandle);
-    }
+	 */
+	public static String getHashDatabasePath(int dbHandle) throws TskCoreException {
+		return hashDbPathNat(dbHandle);
+	}
 
 	/**
 	 * getHashDatabaseIndexPath
@@ -660,43 +722,42 @@ public class SleuthkitJNI {
 	 * @param dbHandle previously opened hash db handle
 	 * @return Index file path
 	 * @throws TskCoreException if a critical error occurs within TSK core
-	 */        
-    public static String getHashDatabaseIndexPath(int dbHandle) throws TskCoreException {
-        return hashDbIndexPathNat(dbHandle);
-    }
-      
+	 */
+	public static String getHashDatabaseIndexPath(int dbHandle) throws TskCoreException {
+		return hashDbIndexPathNat(dbHandle);
+	}
 
 	public static int openHashDatabase(String path) throws TskCoreException {
 		return hashDbOpenNat(path);
 	}
-	
-	
+
 	/**
-	 * Creates a hash database.  Will be of the default TSK hash database type.
+	 * Creates a hash database. Will be of the default TSK hash database type.
 	 *
 	 * @param path The path to the database
 	 * @return a handle for that database
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
-	public static int createHashDatabase(String path) throws TskCoreException {		
+	public static int createHashDatabase(String path) throws TskCoreException {
 		return hashDbNewNat(path);
 	}
 
 	/**
 	 * Close the currently open lookup databases. Resets the handle counting.
 	 *
-	 * @throws TskCoreException exception thrown if critical error occurs
-	 * within TSK
+	 * @throws TskCoreException exception thrown if critical error occurs within
+	 * TSK
 	 */
 	public static void closeAllHashDatabases() throws TskCoreException {
 		hashDbCloseAll();
 	}
 
 	/**
-	 * Close a particular open lookup database. Existing handles are not affected.
+	 * Close a particular open lookup database. Existing handles are not
+	 * affected.
 	 *
-	 * @throws TskCoreException exception thrown if critical error occurs
-	 * within TSK
+	 * @throws TskCoreException exception thrown if critical error occurs within
+	 * TSK
 	 */
 	public static void closeHashDatabase(int dbHandle) throws TskCoreException {
 		hashDbClose(dbHandle);
@@ -711,83 +772,85 @@ public class SleuthkitJNI {
 	public static String getHashDatabaseDisplayName(int dbHandle) throws TskCoreException {
 		return hashDbGetDisplayName(dbHandle);
 	}
-    
+
 	/**
 	 * Lookup the given hash value and get basic answer
+	 *
 	 * @param hash Hash value to search for
 	 * @param dbHandle Handle of database to lookup in.
 	 * @return True if hash was found in database.
-	 * @throws TskCoreException 
+	 * @throws TskCoreException
 	 */
 	public static boolean lookupInHashDatabase(String hash, int dbHandle) throws TskCoreException {
 		return hashDbLookup(hash, dbHandle);
 	}
-	
+
 	/**
-	 * Lookup hash value in DB and return details on results (more time consuming than basic lookup)
+	 * Lookup hash value in DB and return details on results (more time
+	 * consuming than basic lookup)
+	 *
 	 * @param hash Hash value to search for
 	 * @param dbHandle Handle of database to lookup in.
 	 * @return Details on hash if it was in DB or null if it was not found.
-	 * @throws TskCoreException 
+	 * @throws TskCoreException
 	 */
-    public static HashHitInfo lookupInHashDatabaseVerbose(String hash, int dbHandle) throws TskCoreException {
+	public static HashHitInfo lookupInHashDatabaseVerbose(String hash, int dbHandle) throws TskCoreException {
 		return hashDbLookupVerbose(hash, dbHandle);
 	}
-    
+
 	/**
-	 * Adds a hash value to a hash database. 
+	 * Adds a hash value to a hash database.
+	 *
 	 * @param filename Name of file (can be null)
 	 * @param md5 Text of MD5 hash (can be null)
 	 * @param sha1 Text of SHA1 hash (can be null)
 	 * @param sha256 Text of SHA256 hash (can be null)
 	 * @param dbHandle Handle to DB
-	 * @throws TskCoreException 
+	 * @throws TskCoreException
 	 */
 	public static void addToHashDatabase(String filename, String md5, String sha1, String sha256, String comment, int dbHandle) throws TskCoreException {
 		hashDbAddEntryNat(filename, md5, sha1, sha256, comment, dbHandle);
 	}
 
-    public static void addToHashDatabase(List<HashEntry> hashes, int dbHandle) throws TskCoreException {
+	public static void addToHashDatabase(List<HashEntry> hashes, int dbHandle) throws TskCoreException {
 		hashDbBeginTransactionNat(dbHandle);
 		try {
 			for (HashEntry entry : hashes) {
-				hashDbAddEntryNat(entry.getFileName(), entry.getMd5Hash(), entry.getSha1Hash(), entry.getSha256Hash(), entry.getComment(), dbHandle);			
+				hashDbAddEntryNat(entry.getFileName(), entry.getMd5Hash(), entry.getSha1Hash(), entry.getSha256Hash(), entry.getComment(), dbHandle);
 			}
 			hashDbCommitTransactionNat(dbHandle);
-		}
-		catch (TskCoreException ex) {
+		} catch (TskCoreException ex) {
 			try {
 				hashDbRollbackTransactionNat(dbHandle);
-			}
-			catch (TskCoreException ex2) {
+			} catch (TskCoreException ex2) {
 				ex2.initCause(ex);
 				throw ex2;
 			}
 			throw ex;
 		}
 	}
-	
+
 	public static boolean isUpdateableHashDatabase(int dbHandle) throws TskCoreException {
 		return hashDbIsUpdateableNat(dbHandle);
-	}    
-    
-    public static boolean hashDatabaseIsIndexOnly(int dbHandle) throws TskCoreException {
-        return hashDbIsIdxOnlyNat(dbHandle);
-    }
-    
+	}
+
+	public static boolean hashDatabaseIsIndexOnly(int dbHandle) throws TskCoreException {
+		return hashDbIsIdxOnlyNat(dbHandle);
+	}
+
 	/**
-	 * Convert this timezone from long to short form
-	 * Convert timezoneLongForm passed in from long to short form
+	 * Convert this timezone from long to short form Convert timezoneLongForm
+	 * passed in from long to short form
 	 *
 	 * @param timezoneLongForm the long form (e.g., America/New_York)
-	 * @return the short form (e.g., EST5EDT) string representation, or an empty string if
-	 * empty long form was passed in
+	 * @return the short form (e.g., EST5EDT) string representation, or an empty
+	 * string if empty long form was passed in
 	 */
 	private static String timezoneLongToShort(String timezoneLongForm) {
-		if (timezoneLongForm  == null || timezoneLongForm.isEmpty()) {
+		if (timezoneLongForm == null || timezoneLongForm.isEmpty()) {
 			return "";
 		}
-		
+
 		String timezoneShortForm = "";
 		TimeZone zone = TimeZone.getTimeZone(timezoneLongForm);
 		int offset = zone.getRawOffset() / 1000;

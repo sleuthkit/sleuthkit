@@ -87,9 +87,10 @@
 		<copy file="${jni.so}" tofile="${i686}/linux/libtsk_jni.so" overwrite="true"/>
 	</target>
 
-	<target name="copyLibs" depends="copyLinuxLibs,copyMacLibs" />
-	
-	<target name="copyLibsDebug" depends="copyLibs" />
+	<target name="copyLibs-SQLite" depends="copyLinuxLibs,copyMacLibs" />
+	<target name="copyLibs-PostgreSQL" depends="copyLinuxLibs,copyMacLibs" />
+	<target name="copyLibs-SQLiteDebug" depends="copyLinuxLibs,copyMacLibs" />
+	<target name="copyLibs-PostgreSQLDebug" depends="copyLinuxLibs,copyMacLibs" />
 	
     <target name="copyTSKLibs" depends="copyTskLibs_so,copyTskLibs_dylib">
         <!-- depends targets take care of the actual copying since the file differs on OS X and Linux -->

@@ -197,9 +197,9 @@ fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         /* Process the FS info */
         if (tsk_getu16(fs->endian, sb->a.f32.fsinfo)) {
             cnt =
-                tsk_fs_read_block(fs, (TSK_DADDR_T) tsk_getu16(fs->endian,
-                    sb->a.f32.fsinfo), fat_fsinfo_buf,
-                sizeof(FATXXFS_FSINFO));
+                tsk_fs_read(fs, 
+                    (TSK_DADDR_T) tsk_getu16(fs->endian, sb->a.f32.fsinfo) * fs->block_size, 
+                    fat_fsinfo_buf, sizeof(FATXXFS_FSINFO));
 
             if (cnt != sizeof(FATXXFS_FSINFO)) {
                 if (cnt >= 0) {
@@ -830,11 +830,11 @@ fatxxfs_open(FATFS_INFO *fatfs)
 	fatfs->subtype = TSK_FATFS_SUBTYPE_SPEC;
 	test_dir1 = tsk_fs_dir_open_meta(fs, fs->root_inum);
 
-	if(test_dir1->names_used <= 4){ // At most four automatic directores ($MBR, $FAT1, $FAT1, $OrphanFiles)
+	if (test_dir1 != NULL && test_dir1->names_used <= 4){ // At most four automatic directores ($MBR, $FAT1, $FAT1, $OrphanFiles)
 		fatfs->subtype = TSK_FATFS_SUBTYPE_ANDROID_1;
 		test_dir2 = tsk_fs_dir_open_meta(fs, fs->root_inum);
 
-		if(test_dir2->names_used > test_dir1->names_used){
+		if (test_dir2 != NULL && test_dir2->names_used > test_dir1->names_used){
 			fatfs->subtype = TSK_FATFS_SUBTYPE_ANDROID_1;
 		}
 		else{

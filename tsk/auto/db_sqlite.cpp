@@ -17,7 +17,6 @@
 #include "sqlite3.h"
 
 #include <string.h>
-
 #include <sstream>
 #include <algorithm>
 
@@ -25,13 +24,12 @@ using std::stringstream;
 using std::sort;
 using std::for_each;
 
-#define TSK_SCHEMA_VER 3
-
 /**
 * Set the locations and logging object.  Must call
 * open() before the object can be used.
 */
 TskDbSqlite::TskDbSqlite(const char *a_dbFilePathUtf8, bool a_blkMapFlag)
+    : TskDb(a_dbFilePathUtf8, a_blkMapFlag)
 {
     strncpy(m_dbFilePathUtf8, a_dbFilePathUtf8, 1024);
     m_utf8 = true;
@@ -44,6 +42,7 @@ TskDbSqlite::TskDbSqlite(const char *a_dbFilePathUtf8, bool a_blkMapFlag)
 #ifdef TSK_WIN32
 //@@@@
 TskDbSqlite::TskDbSqlite(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFlag)
+    : TskDb(a_dbFilePath, a_blkMapFlag)
 {
     wcsncpy(m_dbFilePath, a_dbFilePath, 1024);
     m_utf8 = false;
@@ -595,7 +594,7 @@ int
 * @param fs_attr Specific attribute to add
 * @param path Path of the file
 * @param md5 Binary value of MD5 (i.e. 16 bytes) or NULL 
-* @param known Status regarding if it was found in hash databse or not
+* @param known Status regarding if it was found in hash database or not
 * @param fsObjId File system object of its file system
 * @param objId ID that was assigned to it from the objects table
 * @returns 1 on error and 0 on success
@@ -717,7 +716,7 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *path,
             return fileMap[seq];
         }
         else {
-            printf("Miss: %d\n", fileMap.count(seq));
+            printf("Miss: %zu\n", fileMap.count(seq));
         }
     }
 
@@ -1055,12 +1054,24 @@ TSK_RETVAL_ENUM
 * Returns true if database is opened.
 */
 bool
-    TskDbSqlite::dbExist() const 
+    TskDbSqlite::isDbOpen()
 {
     if (m_db)
         return true;
     else
         return false;
+}
+
+bool TskDbSqlite::dbExists() {
+
+    // Check if database file already exsists
+    struct STAT_STR stat_buf;
+    if (TSTAT(m_dbFilePath, &stat_buf) == 0) {
+        // database file exists
+        return true;
+    }
+
+    return false;
 }
 
 bool

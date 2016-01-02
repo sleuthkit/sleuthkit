@@ -303,6 +303,12 @@
     <ClCompile Include="..\..\tsk\hashdb\binsrch_index.cpp">
       <Filter>hash</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tsk\auto\tsk_db.cpp">
+      <Filter>auto</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\auto\db_postgresql.cpp">
+      <Filter>auto</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\tsk\vs\tsk_bsd.h">
@@ -406,6 +412,15 @@
     </ClInclude>
     <ClInclude Include="..\..\tsk\hashdb\tsk_hash_info.h">
       <Filter>hash</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\auto\tsk_db.h">
+      <Filter>auto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\auto\tsk_db_postgresql.h">
+      <Filter>auto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\auto\db_connection_info.h">
+      <Filter>auto</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

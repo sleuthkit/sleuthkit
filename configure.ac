@@ -4,7 +4,7 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
 
-AC_INIT(sleuthkit, 4.1.3)
+AC_INIT(sleuthkit, 4.2.0)
 m4_include([m4/ax_pthread.m4])
 dnl include the version from 1.12.1. This will work for 
 m4_include([m4/cppunit.m4])
@@ -84,11 +84,25 @@ AX_PTHREAD([
     LDFLAGS="$LDFLAGS $PTHREAD_CFLAGS"
     CC="$PTHREAD_CC"],[])
 
-dnl Not all compilers include /usr/local in the include and link path
-if test -d /usr/local/include; then
+dnl Permit single-threaded builds
+AC_ARG_ENABLE([multithreading],
+    [AS_HELP_STRING([--disable-multithreading], [Build without multithreading support])])
+
+dnl Enable multithreading by default in the presence of pthread
+AS_IF([test "x$ax_pthread_ok" = "xyes" && test "x$enable_multithreading" != "xno"], [ax_multithread=yes], [ax_multithread=no])
+
+case "$host" in
+*-*-mingw*)
+  dnl Adding the native /usr/local is wrong for cross-compiling
+  ;;
+*)
+  dnl Not all compilers include /usr/local in the include and link path
+  if test -d /usr/local/include; then
     CPPFLAGS="$CPPFLAGS -I/usr/local/include"
     LDFLAGS="$LDFLAGS -L/usr/local/lib"
-fi
+  fi
+  ;;
+esac
 
 dnl Add enable/disable option
 AC_ARG_ENABLE([java],
@@ -268,8 +282,8 @@ AC_CONFIG_COMMANDS([tsk/tsk_incs.h],
         echo "#include <sys/param.h>" >> tsk/tsk_incs.h
     fi
 
-    if test x$ax_pthread_ok = xyes; then
-        echo "#define TSK_MULTITHREAD_LIB // set because we have pthreads" >> tsk/tsk_incs.h
+    if test x$ax_multithread = xyes; then
+        echo "#define TSK_MULTITHREAD_LIB // enable multithreading" >> tsk/tsk_incs.h
     fi
 
     echo "" >> tsk/tsk_incs.h
@@ -280,6 +294,23 @@ AC_CONFIG_COMMANDS([tsk/tsk_incs.h],
     ac_cv_header_sys_param_h=$ac_cv_header_sys_param_h
     ax_pthread_ok=$ax_pthread_ok])
 
+AC_MSG_CHECKING([if libtool needs -no-undefined flag to build shared libraries])
+case "$host" in
+*-*-mingw*)
+  dnl Add -no-undefined flag to LDFLAGS to let libtool build DLLs.
+  AC_MSG_RESULT([yes])
+  LIBTSK_LDFLAGS="-no-undefined"
+  AC_SUBST([LIBTSK_LDFLAGS])
+  ;;
+  *)
+  dnl No additional flags needed.
+  AC_MSG_RESULT([no])
+  ;;
+esac
+
+dnl Dependencies for fiwalk
+AC_CHECK_FUNCS([getline])
+AC_SEARCH_LIBS(regexec, [regex], , AC_MSG_ERROR([missing regex]))
 
 AC_CONFIG_FILES([
     Makefile
@@ -321,5 +352,6 @@ Building:
 
 Features:
    Java/JNI support:                      $ax_java_support
+   Multithreading:                        $ax_multithread
 ]);
 

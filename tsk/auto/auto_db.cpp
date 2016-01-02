@@ -30,7 +30,7 @@ using std::for_each;
  * @param a_NSRLDb Database of "known" files (can be NULL)
  * @param a_knownBadDb Database of "known bad" files (can be NULL)
  */
-TskAutoDb::TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_knownBadDb)
+TskAutoDb::TskAutoDb(TskDb * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_knownBadDb)
 {
     m_db = a_db;
     m_curImgId = 0;
@@ -325,7 +325,7 @@ TSK_RETVAL_ENUM
  */
 uint8_t TskAutoDb::addFilesInImgToDb()
 {
-    if (m_db == NULL || !m_db->dbExist()) {
+    if (m_db == NULL || !m_db->isDbOpen()) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         tsk_error_set_errstr("addFilesInImgToDb: m_db not open");
@@ -652,31 +652,26 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
         else {
             m_attributeAdded = true;
         }
-    }
 
-    // add the block map, if requested and the file is non-resident
-    if ((m_blkMapFlag) && (isNonResident(fs_attr))
-        && (isDotDir(fs_file) == 0)) {
-        TSK_FS_ATTR_RUN *run;
-        int sequence = 0;
+        // add the block map, if requested and the file is non-resident
+        if ((m_blkMapFlag) && (isNonResident(fs_attr))
+            && (isDotDir(fs_file) == 0)) {
+            TSK_FS_ATTR_RUN *run;
+            int sequence = 0;
 
-        for (run = fs_attr->nrd.run; run != NULL; run = run->next) {
-            unsigned int block_size = fs_file->fs_info->block_size;
+            for (run = fs_attr->nrd.run; run != NULL; run = run->next) {
+                unsigned int block_size = fs_file->fs_info->block_size;
 
-            // ignore sparse blocks
-            if (run->flags & TSK_FS_ATTR_RUN_FLAG_SPARSE)
-                continue;
+                // ignore sparse blocks
+                if (run->flags & TSK_FS_ATTR_RUN_FLAG_SPARSE)
+                    continue;
 
-            
-            // NOTE that we could be adding runs here that were not assigned
-            // to a file from the previous section.  In which case, m_curFileId
-            // will probably be set to 0.
-
-            // @@@ We probaly want to keep on going here
-            if (m_db->addFileLayoutRange(m_curFileId,
-                    run->addr * block_size, run->len * block_size, sequence++)) {
-                registerError();
-                return TSK_OK;
+                // @@@ We probaly want to keep on going here
+                if (m_db->addFileLayoutRange(m_curFileId,
+                        run->addr * block_size, run->len * block_size, sequence++)) {
+                    registerError();
+                    return TSK_OK;
+                }
             }
         }
     }
@@ -747,6 +742,7 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
         unallocBlockWlkTrack->curRangeStart = a_block->addr;
         unallocBlockWlkTrack->prevBlock = a_block->addr;
 		unallocBlockWlkTrack->size = 0;
+        unallocBlockWlkTrack->nextSequenceNo = 0;
 		return TSK_WALK_CONT;
     }
 
@@ -761,7 +757,7 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
 		+ unallocBlockWlkTrack->fsInfo.offset;
 	const uint64_t rangeSizeBytes = (1 + unallocBlockWlkTrack->prevBlock - unallocBlockWlkTrack->curRangeStart) 
 		* unallocBlockWlkTrack->fsInfo.block_size;
-	unallocBlockWlkTrack->ranges.push_back(TSK_DB_FILE_LAYOUT_RANGE(rangeStartOffset, rangeSizeBytes, 0));
+	unallocBlockWlkTrack->ranges.push_back(TSK_DB_FILE_LAYOUT_RANGE(rangeStartOffset, rangeSizeBytes, unallocBlockWlkTrack->nextSequenceNo++));
 	
 	// bookkeeping for the next range object
 	unallocBlockWlkTrack->size += rangeSizeBytes;
@@ -771,9 +767,9 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
 	// Here we just return if we are a) collecting all unallocated data
 	// for the given volumen (chunkSize == 0) or b) collecting all unallocated
 	// data whose total size is at least chunkSize (chunkSize > 0)
-	if (unallocBlockWlkTrack->chunkSize == 0 ||
-		unallocBlockWlkTrack->chunkSize > 0 &&
-		unallocBlockWlkTrack->size < unallocBlockWlkTrack->chunkSize) {
+	if ((unallocBlockWlkTrack->chunkSize == 0) ||
+		((unallocBlockWlkTrack->chunkSize > 0) &&
+		(unallocBlockWlkTrack->size < unallocBlockWlkTrack->chunkSize))) {
 		return TSK_WALK_CONT;
 	}
 
@@ -789,6 +785,7 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
 	unallocBlockWlkTrack->curRangeStart = a_block->addr;
 	unallocBlockWlkTrack->size = 0;
 	unallocBlockWlkTrack->ranges.clear();
+    unallocBlockWlkTrack->nextSequenceNo = 0;
 
     //we don't know what the last unalloc block is in advance
     //and will handle the last range in addFsInfoUnalloc()
@@ -844,7 +841,7 @@ TSK_RETVAL_ENUM TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
     // make range inclusive from curBlockStart to prevBlock
     const uint64_t byteStart = unallocBlockWlkTrack.curRangeStart * fsInfo->block_size + fsInfo->offset;
     const uint64_t byteLen = (1 + unallocBlockWlkTrack.prevBlock - unallocBlockWlkTrack.curRangeStart) * fsInfo->block_size;
-	unallocBlockWlkTrack.ranges.push_back(TSK_DB_FILE_LAYOUT_RANGE(byteStart, byteLen, 0));
+	unallocBlockWlkTrack.ranges.push_back(TSK_DB_FILE_LAYOUT_RANGE(byteStart, byteLen, unallocBlockWlkTrack.nextSequenceNo++));
 	unallocBlockWlkTrack.size += byteLen;
     int64_t fileObjId = 0;
 
@@ -1062,4 +1059,12 @@ const std::string TskAutoDb::getCurDir() {
     curDirPath = m_curDirPath;
     tsk_release_lock(&m_curDirPathLock);
     return curDirPath;
+}
+
+
+bool TskAutoDb::isDbOpen() {
+	if(m_db!=NULL) {
+		return m_db->isDbOpen();
+	}
+	return false;
 }
