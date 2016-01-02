@@ -1,14 +1,14 @@
 <project xmlns:ivy="antlib:org.apache.ivy.ant" name="DataModel" default="dist" basedir=".">
 	<description>
-		Sleuthkit Java DataModel 
+		Sleuthkit Java DataModel
 	</description>
-	<condition property="os.family" value="unix">  
-		<os family="unix"/>  
-	</condition>  
-	<condition property="os.family" value="windows">  
-		<os family="windows"/>  
-	</condition>  
-	<import file="build-${os.family}.xml"/> 
+	<condition property="os.family" value="unix">
+		<os family="unix"/>
+	</condition>
+	<condition property="os.family" value="windows">
+		<os family="windows"/>
+	</condition>
+	<import file="build-${os.family}.xml"/>
 
 	<!-- set global properties for this build -->
 	<property name="src" location="src/org/sleuthkit/datamodel"/>
@@ -29,7 +29,7 @@
 	<property name="i386" location="build/NATIVELIBS/i386" />
 	<property name="i586" location="build/NATIVELIBS/i586" />
 	<property name="i686" location="build/NATIVELIBS/i686"/>
-  
+
 	<path id="libraries">
 		<fileset dir="${lib}">
 			<include name="*.jar"/>
@@ -67,7 +67,7 @@
 		<mkdir dir="${i686}/win"/>
 		<mkdir dir="${i686}/linux"/>
 	</target>
-  
+
 	<property name="ivy.install.version" value="2.3.0-rc2" />
 	<condition property="ivy.home" value="${env.IVY_HOME}">
 		<isset property="env.IVY_HOME" />
@@ -101,14 +101,14 @@
 		<ivy:retrieve sync="true"
 					  pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
 	</target>
-  
+
 	<target name="compile-test" depends="compile"
 			description="compile the tests" >
 		<javac debug="on" srcdir="${test}" destdir="${build}" includeantruntime="false">
 			<classpath refid="libraries"/>
 		</javac>
 	</target>
-  
+
 	<target name="compile" depends="init, retrieve-deps"
 			description="compile the source" >
 		<!-- Compile the java code from ${src} into ${build} -->
@@ -132,16 +132,17 @@
 		<jar jarfile="${dist}/Tsk_DataModel.jar" basedir="${build}"/>
 	</target>
 
-	<target name="dist-PostgreSQL" depends="check-build, init-ivy, compile, copyLibs-PostgreSQL" 
+	<target name="dist-PostgreSQL" depends="check-build, init-ivy, compile, copyLibs-PostgreSQL"
 			unless="up-to-date" description="generate the PostgreSQL distribution" >
 		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
 		<jar jarfile="${dist}/Tsk_DataModel_PostgreSQL.jar" basedir="${build}"/>
 	</target>
 
 	<target name="check-build" depends="check-native-build">
-		<uptodate property="java-up-to-date" targetfile="${dist}/Tsk_DataModel.jar" >
+		<uptodate property="java-up-to-date" targetfile="${dist}/Tsk_DataModel_PostgreSQL.jar" >
 			<srcfiles dir="${src}" includes="**/*.java"/>
 		</uptodate>
+
 		<condition property="up-to-date">
 			<and>
 				<isset property="java-up-to-date"/>
@@ -152,19 +153,21 @@
 
 	 <target name="dist" depends="check-build" unless="up-to-date">
 		<antcall target="dist-SQLite"/>
+		<antcall target="dist-PostgreSQL"/>
 	 </target>
-	
+
 	<target name="Debug" depends="check-build" unless="up-to-date">
 		<antcall target="Debug-SQLite"/>
+		<antcall target="Debug-PostgreSQL"/>
 	 </target>
-	
-	<target name="Debug-SQLite" depends="check-build, init-ivy, compile, copyLibs-SQLiteDebug" 
+
+	<target name="Debug-SQLite" depends="check-build, init-ivy, compile, copyLibs-SQLiteDebug"
 			unless="up-to-date" description="generate the debug distribution" >
 		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
 		<jar jarfile="${dist}/Tsk_DataModel.jar" basedir="${build}"/>
 	</target>
-  
-	<target name="Debug-PostgreSQL" depends="init-ivy, compile, copyLibs-PostgreSQLDebug" 
+
+	<target name="Debug-PostgreSQL" depends="init-ivy, compile, copyLibs-PostgreSQLDebug"
 			description="generate the PostgreSQL debug distribution" >
 		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
 		<jar jarfile="${dist}/Tsk_DataModel_PostgreSQL.jar" basedir="${build}"/>
@@ -175,7 +178,7 @@
 			<class name="org.sleuthkit.datamodel.SleuthkitJNI"/>
 		</javah>
 	</target>
-  
+
 	<target name="clean"
 			description="clean up" >
 		<!-- Delete the ${build} and ${dist} directory trees -->
@@ -207,12 +210,12 @@
 			<arg value="${image}"/>
 			<classpath refid="libraries"/>
 		</java>
-		
+
 	</target>
 	<target name="doxygen" description="build doxygen docs, requires doxygen in PATH">
 		<exec executable="doxygen" dir="${basedir}/doxygen">
 			<arg value="Doxyfile"/>
 		</exec>
 	</target>
-	
+
 </project>
