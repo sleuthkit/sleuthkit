@@ -292,7 +292,7 @@ AC_CONFIG_COMMANDS([tsk/tsk_incs.h],
     [ac_cv_header_unistd_h=$ac_cv_header_unistd_h
     ac_cv_header_inttypes_h=$ac_cv_header_inttypes_h
     ac_cv_header_sys_param_h=$ac_cv_header_sys_param_h
-    ax_pthread_ok=$ax_pthread_ok])
+    ax_multithread=$ax_multithread])
 
 AC_MSG_CHECKING([if libtool needs -no-undefined flag to build shared libraries])
 case "$host" in
