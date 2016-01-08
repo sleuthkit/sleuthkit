@@ -45,11 +45,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -821,8 +823,8 @@ public class SleuthkitCase {
 	 * multi-step process and this returns an object that allows it to happen.
 	 *
 	 * @param timezone TZ time zone string to use for ingest of image.
-	 * @param addUnallocSpace Set to true to create virtual files for unallocated space
-	 * the image.
+	 * @param addUnallocSpace Set to true to create virtual files for
+	 * unallocated space the image.
 	 * @param noFatFsOrphans Set to true to skip processing orphan files of FAT
 	 * file systems.
 	 * @return Object that encapsulates control of adding an image via the
@@ -892,15 +894,20 @@ public class SleuthkitCase {
 		acquireSharedLock();
 		ResultSet rs = null;
 		try {
-			String artifactTypeName = getArtifactTypeString(artifactTypeID);
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ARTIFACTS_BY_TYPE);
-			statement.clearParameters();
-			statement.setInt(1, artifactTypeID);
-			rs = connection.executeQuery(statement);
+			/*String artifactTypeName = getArtifactTypeString(artifactTypeID);
+			 PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ARTIFACTS_BY_TYPE);
+			 statement.clearParameters();
+			 statement.setInt(1, artifactTypeID);*/
+			Statement s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT arts.artifact_id, arts.obj_id, types.type_name, types.display_name \n"
+					+ "FROM blackboard_artifacts AS arts\n"
+					+ "INNER JOIN blackboard_artifact_types AS types\n"
+					+ "ON arts.artifact_type_id = types.artifact_type_id\n"
+					+ "AND arts.artifact_type_id = " + artifactTypeID);
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
 			while (rs.next()) {
 				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2),
-						artifactTypeID, artifactTypeName, ARTIFACT_TYPE.fromID(artifactTypeID).getDisplayName()));
+						artifactTypeID, rs.getString(3), rs.getString(4)));
 			}
 			return artifacts;
 		} catch (SQLException ex) {
@@ -1290,6 +1297,38 @@ public class SleuthkitCase {
 				attribute_types.add(BlackboardAttribute.ATTRIBUTE_TYPE.fromLabel(rs.getString(1)));
 			}
 			return attribute_types;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting attribute types", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	/**
+	 * Gets the list of all unique artifact IDs in use.
+	 *
+	 * Gets both static and dynamic IDs.
+	 *
+	 * @return The list of unique IDs
+	 * @throws TskCoreException exception thrown if a critical error occurred
+	 * within tsk core
+	 */
+	public List<Integer> getArtifactTypesInUse() throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT DISTINCT artifact_type_id FROM blackboard_artifacts"); //NON-NLS
+			List<Integer> unique_artifact_ids = new ArrayList<Integer>();
+			while (rs.next()) {
+				unique_artifact_ids.add(rs.getInt(1));
+			}
+			return unique_artifact_ids;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting attribute types", ex);
 		} finally {
