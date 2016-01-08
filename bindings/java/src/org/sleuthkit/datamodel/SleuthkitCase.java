@@ -897,7 +897,7 @@ public class SleuthkitCase {
 					"SELECT arts.artifact_id, arts.obj_id, types.type_name, types.display_name "
 					+ "FROM blackboard_artifacts AS arts "
 					+ "INNER JOIN blackboard_artifact_types AS types "
-					+ "ON arts.artifact_type_id = types.artifact_type_id"
+					+ "ON arts.artifact_type_id = types.artifact_type_id "
 					+ "AND arts.artifact_type_id = " + artifactTypeID);
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
 			while (rs.next()) {
