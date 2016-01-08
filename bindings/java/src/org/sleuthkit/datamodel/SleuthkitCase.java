@@ -1268,7 +1268,38 @@ public class SleuthkitCase {
 		}
 		return usedArts;
 	}
-
+	
+		/**
+	 * Gets the list of all unique artifact IDs in use.
+	 *
+	 * Gets both static and dynamic IDs.
+	 *
+	 * @return The list of unique IDs
+	 * @throws TskCoreException exception thrown if a critical error occurred
+	 * within tsk core
+	 */
+	public List<Integer> getArtifactTypesInUse() throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT DISTINCT artifact_type_id FROM blackboard_artifacts"); //NON-NLS
+			List<Integer> unique_artifact_ids = new ArrayList<Integer>();
+			while (rs.next()) {
+				unique_artifact_ids.add(rs.getInt(1));
+			}
+			return unique_artifact_ids;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting attribute types", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
 	/**
 	 * Get all blackboard attribute types
 	 *
@@ -1302,37 +1333,6 @@ public class SleuthkitCase {
 		}
 	}
 
-	/**
-	 * Gets the list of all unique artifact IDs in use.
-	 *
-	 * Gets both static and dynamic IDs.
-	 *
-	 * @return The list of unique IDs
-	 * @throws TskCoreException exception thrown if a critical error occurred
-	 * within tsk core
-	 */
-	public List<Integer> getArtifactTypesInUse() throws TskCoreException {
-		CaseDbConnection connection = connections.getConnection();
-		acquireSharedLock();
-		Statement s = null;
-		ResultSet rs = null;
-		try {
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT DISTINCT artifact_type_id FROM blackboard_artifacts"); //NON-NLS
-			List<Integer> unique_artifact_ids = new ArrayList<Integer>();
-			while (rs.next()) {
-				unique_artifact_ids.add(rs.getInt(1));
-			}
-			return unique_artifact_ids;
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting attribute types", ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			connection.close();
-			releaseSharedLock();
-		}
-	}
 
 	/**
 	 * Get count of blackboard attribute types
