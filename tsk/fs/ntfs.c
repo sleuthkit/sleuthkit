@@ -2259,7 +2259,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
  * @param fs_file Main file that will have attributes added to it.
  * @param fs_attr_attrlist Attrlist attribute that needs to be parsed. 
  *
- * Return 1 on error and 0 on success
+ * @returns status of error, corrupt, or OK 
  */
 static TSK_RETVAL_ENUM
 ntfs_proc_attrlist(NTFS_INFO * ntfs,
@@ -2283,14 +2283,14 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
             PRIuINUM "\n", fs_file->meta->addr);
 
     if ((mft = (ntfs_mft *) tsk_malloc(ntfs->mft_rsize_b)) == NULL) {
-        return 1;
+        return TSK_ERR;
     }
 
     if ((map =
             (NTFS_ATTRLIST_MAP *) tsk_malloc(sizeof(NTFS_ATTRLIST_MAP))) ==
         NULL) {
         free(mft);
-        return 1;
+        return TSK_ERR;
     }
 
     /* Clear the contents of the todo buffer */
