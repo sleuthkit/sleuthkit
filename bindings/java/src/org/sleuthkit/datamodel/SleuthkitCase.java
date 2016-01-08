@@ -822,7 +822,7 @@ public class SleuthkitCase {
 	 *
 	 * @param timezone TZ time zone string to use for ingest of image.
 	 * @param addUnallocSpace Set to true to create virtual files for
-	 * unallocated space the image.
+	 * unallocated space in the image.
 	 * @param noFatFsOrphans Set to true to skip processing orphan files of FAT
 	 * file systems.
 	 * @return Object that encapsulates control of adding an image via the
@@ -892,15 +892,12 @@ public class SleuthkitCase {
 		acquireSharedLock();
 		ResultSet rs = null;
 		try {
-			/*String artifactTypeName = getArtifactTypeString(artifactTypeID);
-			 PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ARTIFACTS_BY_TYPE);
-			 statement.clearParameters();
-			 statement.setInt(1, artifactTypeID);*/
 			Statement s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT arts.artifact_id, arts.obj_id, types.type_name, types.display_name \n"
-					+ "FROM blackboard_artifacts AS arts\n"
-					+ "INNER JOIN blackboard_artifact_types AS types\n"
-					+ "ON arts.artifact_type_id = types.artifact_type_id\n"
+			rs = connection.executeQuery(s, 
+					"SELECT arts.artifact_id, arts.obj_id, types.type_name, types.display_name "
+					+ "FROM blackboard_artifacts AS arts"
+					+ "INNER JOIN blackboard_artifact_types AS types"
+					+ "ON arts.artifact_type_id = types.artifact_type_id"
 					+ "AND arts.artifact_type_id = " + artifactTypeID);
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
 			while (rs.next()) {
