@@ -22,6 +22,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.ResourceBundle;
 
 /**
@@ -43,7 +44,6 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		private final String label;
 		private final int typeID;
 		private final String displayName;
-		private final ARTIFACT_TYPE artifactType;
 
 		/**
 		 * Constructs a Type for a Blackboard Artifact
@@ -56,13 +56,6 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 			this.typeID = typeID;
 			this.label = label;
 			this.displayName = displayName;
-			this.artifactType = ARTIFACT_TYPE.fromID(typeID);
-		}
-		public Type(ARTIFACT_TYPE defaultType) {
-			this.typeID = defaultType.getTypeID();
-			this.label = defaultType.getLabel();
-			this.displayName = defaultType.getLabel();
-			this.artifactType = defaultType;
 		}
 
 		/**
@@ -70,7 +63,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		 *
 		 * @return label string
 		 */
-		public String getLabel() {
+		public String getTypeName() {
 			return this.label;
 		}
 
@@ -91,10 +84,6 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		public String getDisplayName() {
 			return this.displayName;
 		}
-		
-		public ARTIFACT_TYPE getArtifactType() {
-			return this.artifactType;
-		}
 		public boolean equals(Object that) {
 			if (this == that) {
 				return true;
@@ -106,10 +95,17 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		}
 
 		private boolean sameType(Type that) {
-			return this.label.equals(that.getLabel())
+			return this.label.equals(that.getTypeName())
 					&& this.displayName.equals(that.getDisplayName())
-					&& this.typeID == that.getTypeID() &&
-					this.artifactType == that.getArtifactType();
+					&& this.typeID == that.getTypeID();
+		}
+		@Override
+		public int hashCode() {
+			int hash = 11;
+			hash = 83 * hash + Objects.hashCode(this.typeID);
+			hash = 83 * hash + Objects.hashCode(this.displayName);
+			hash = 83 * hash + Objects.hashCode(this.label);
+			return hash;
 		}
 	}
 
