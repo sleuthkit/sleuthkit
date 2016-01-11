@@ -18,9 +18,11 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.ResourceBundle;
 
 /**
@@ -32,6 +34,88 @@ import java.util.ResourceBundle;
 public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
+
+	/**
+	 * Represents the type of an BlackboardArtifact
+	 */
+	public static final class Type implements Serializable {
+
+		private static final long serialVersionUID = 1L;
+		private final String typeName;
+		private final int typeID;
+		private final String displayName;
+
+		/**
+		 * Constructs a type for a blackboard artifact
+		 *
+		 * @param typeName The typeName of the type
+		 * @param typeID the ID of the type
+		 * @param displayName The display name of this type
+		 */
+		public Type(int typeID, String typeName, String displayName) {
+			this.typeID = typeID;
+			this.typeName = typeName;
+			this.displayName = displayName;
+		}
+
+		/**
+		 * Gets the typeName string for the artifact type enum
+		 *
+		 * @return typeName string
+		 */
+		public String getTypeName() {
+			return this.typeName;
+		}
+
+		/**
+		 * Gets the type id for the artifact type enum
+		 *
+		 * @return type id
+		 */
+		public int getTypeID() {
+			return this.typeID;
+		}
+
+		/**
+		 * Gets display name of the artifact type
+		 *
+		 * @return display name string
+		 */
+		public String getDisplayName() {
+			return this.displayName;
+		}
+		
+		@Override
+		public boolean equals(Object that) {
+			if (this == that) {
+				return true;
+			} else if (!(that instanceof Type)) {
+				return false;
+			} else {
+				return ((Type) that).sameType(this);
+			}
+		}
+
+		/**
+		 * Compares two Types to see if they are the same
+		 * @param that the other type
+		 * @return true if it is the same type
+		 */
+		private boolean sameType(Type that) {
+			return this.typeName.equals(that.getTypeName())
+					&& this.displayName.equals(that.getDisplayName())
+					&& this.typeID == that.getTypeID();
+		}
+		
+		@Override
+		public int hashCode() {
+			int hash = 11;
+			hash = 83 * hash + Objects.hashCode(this.typeID);
+			hash = 83 * hash + Objects.hashCode(this.displayName);
+			hash = 83 * hash + Objects.hashCode(this.typeName);
+			return hash;
+		}
+	}
 
 	/**
 	 * Enum for artifact types. The C++ code has the full description of how to
@@ -140,9 +224,9 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		}
 
 		/**
-		 * Gets the label string for the artifact type enum
+		 * Gets the typeName string for the artifact type enum
 		 *
-		 * @return label string
+		 * @return typeName string
 		 */
 		public String getLabel() {
 			return this.label;
@@ -158,9 +242,9 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		}
 
 		/**
-		 * Gets the artifact type enum value that corresponds to the given label
+		 * Gets the artifact type enum value that corresponds to the given typeName
 		 *
-		 * @param label label string
+		 * @param label typeName string
 		 * @return the corresponding enum
 		 */
 		static public ARTIFACT_TYPE fromLabel(String label) {

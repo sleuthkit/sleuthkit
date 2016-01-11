@@ -1278,19 +1278,23 @@ public class SleuthkitCase {
 	 * @throws TskCoreException exception thrown if a critical error occurred
 	 * within tsk core
 	 */
-	public List<Integer> getArtifactTypesInUse() throws TskCoreException {
+	public List<BlackboardArtifact.Type> getArtifactTypesInUse() throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
 		Statement s = null;
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT DISTINCT artifact_type_id FROM blackboard_artifacts"); //NON-NLS
-			List<Integer> unique_artifact_ids = new ArrayList<Integer>();
+			rs = connection.executeQuery(s, 
+					"SELECT DISTINCT arts.artifact_type_id, types.type_name, types.display_name " +
+					"FROM blackboard_artifact_types AS types " +
+					"INNER JOIN blackboard_artifacts AS arts " +
+					"ON arts.artifact_type_id = types.artifact_type_id"); //NON-NLS
+			List<BlackboardArtifact.Type> uniqueArtifactTypes = new ArrayList<BlackboardArtifact.Type>();
 			while (rs.next()) {
-				unique_artifact_ids.add(rs.getInt(1));
+				uniqueArtifactTypes.add(new BlackboardArtifact.Type(rs.getInt(1), rs.getString(2), rs.getString(3)));
 			}
-			return unique_artifact_ids;
+			return uniqueArtifactTypes;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting attribute types", ex);
 		} finally {
