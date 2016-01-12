@@ -84,21 +84,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		public String getDisplayName() {
 			return this.displayName;
 		}
-
-		/**
-		 * Gets the artifact type associated with this type
-		 *
-		 * @return the artifact type
-		 */
-		public ARTIFACT_TYPE getEnumeratedArtifactType() {
-			try {
-				return ARTIFACT_TYPE.fromID(this.typeID);
-			}
-			catch (IllegalArgumentException ex) {
-				return ARTIFACT_TYPE.TSK_USER;
-			}
-		}
-
+		
 		@Override
 		public boolean equals(Object that) {
 			if (this == that) {
@@ -144,8 +130,6 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * See framework/Services/TskBlackboard.* */
 	public enum ARTIFACT_TYPE implements SleuthkitVisitableItem {
 
-		TSK_USER(0, "TSK_USER",
-				bundle.getString("BlackboardArtifact.tskUser.text")),
 		TSK_GEN_INFO(1, "TSK_GEN_INFO", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskGenInfo.text")), ///< Default type
 		TSK_WEB_BOOKMARK(2, "TSK_WEB_BOOKMARK", //NON-NLS
