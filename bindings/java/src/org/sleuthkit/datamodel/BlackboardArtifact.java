@@ -84,7 +84,21 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		public String getDisplayName() {
 			return this.displayName;
 		}
-		
+
+		/**
+		 * Gets the artifact type associated with this type
+		 *
+		 * @return the artifact type
+		 */
+		public ARTIFACT_TYPE getArtifactType() {
+			try {
+				return ARTIFACT_TYPE.fromID(this.typeID);
+			}
+			catch (IllegalArgumentException ex) {
+				return ARTIFACT_TYPE.TSK_USER;
+			}
+		}
+
 		@Override
 		public boolean equals(Object that) {
 			if (this == that) {
@@ -98,6 +112,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 		/**
 		 * Compares two Types to see if they are the same
+		 *
 		 * @param that the other type
 		 * @return true if it is the same type
 		 */
@@ -106,7 +121,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 					&& this.displayName.equals(that.getDisplayName())
 					&& this.typeID == that.getTypeID();
 		}
-		
+
 		@Override
 		public int hashCode() {
 			int hash = 11;
@@ -129,6 +144,8 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * See framework/Services/TskBlackboard.* */
 	public enum ARTIFACT_TYPE implements SleuthkitVisitableItem {
 
+		TSK_USER(0, "TSK_USER",
+				bundle.getString("BlackboardArtifact.tskUser.text")),
 		TSK_GEN_INFO(1, "TSK_GEN_INFO", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskGenInfo.text")), ///< Default type
 		TSK_WEB_BOOKMARK(2, "TSK_WEB_BOOKMARK", //NON-NLS
@@ -242,7 +259,8 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		}
 
 		/**
-		 * Gets the artifact type enum value that corresponds to the given typeName
+		 * Gets the artifact type enum value that corresponds to the given
+		 * typeName
 		 *
 		 * @param label typeName string
 		 * @return the corresponding enum
