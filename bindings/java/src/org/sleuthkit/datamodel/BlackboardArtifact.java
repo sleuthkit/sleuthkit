@@ -90,7 +90,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		 *
 		 * @return the artifact type
 		 */
-		public ARTIFACT_TYPE getArtifactType() {
+		public ARTIFACT_TYPE getEnumeratedArtifactType() {
 			try {
 				return ARTIFACT_TYPE.fromID(this.typeID);
 			}
