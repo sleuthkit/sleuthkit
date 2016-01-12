@@ -98,6 +98,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 		/**
 		 * Compares two Types to see if they are the same
+		 *
 		 * @param that the other type
 		 * @return true if it is the same type
 		 */
@@ -106,7 +107,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 					&& this.displayName.equals(that.getDisplayName())
 					&& this.typeID == that.getTypeID();
 		}
-		
+
 		@Override
 		public int hashCode() {
 			int hash = 11;
@@ -242,7 +243,8 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		}
 
 		/**
-		 * Gets the artifact type enum value that corresponds to the given typeName
+		 * Gets the artifact type enum value that corresponds to the given
+		 * typeName
 		 *
 		 * @param label typeName string
 		 * @return the corresponding enum
