@@ -893,7 +893,7 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			Statement s = connection.createStatement();
-			rs = connection.executeQuery(s, 
+			rs = connection.executeQuery(s,
 					"SELECT arts.artifact_id, arts.obj_id, types.type_name, types.display_name "
 					+ "FROM blackboard_artifacts AS arts "
 					+ "INNER JOIN blackboard_artifact_types AS types "
@@ -975,26 +975,6 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Helper to iterate over blackboard artifacts result set containing all
-	 * columns and return a list of artifacts in the set. Must be enclosed in
-	 * acquireSharedLock. Result set and statement must be freed by the caller.
-	 *
-	 * @param rs existing, active result set (not closed by this method)
-	 * @return a list of blackboard artifacts in the result set
-	 * @throws SQLException if result set could not be iterated upon
-	 */
-	private List<BlackboardArtifact> getArtifactsHelper(ResultSet rs) throws SQLException {
-		ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
-		while (rs.next()) {
-			final int artifactTypeID = rs.getInt(3);
-			final ARTIFACT_TYPE artType = ARTIFACT_TYPE.fromID(artifactTypeID);
-			artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2),
-					artifactTypeID, artType.getLabel(), artType.getDisplayName()));
-		}
-		return artifacts;
-	}
-
-	/**
 	 * Get all blackboard artifacts that have an attribute of the given type and
 	 * String value
 	 *
@@ -1013,12 +993,19 @@ public class SleuthkitCase {
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT DISTINCT blackboard_artifacts.artifact_id, " //NON-NLS
-					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id " //NON-NLS
-					+ "FROM blackboard_artifacts, blackboard_attributes " //NON-NLS
+					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id, "
+					+ "blackboard_artifact_types.type_name, blackboard_artifact_types.display_name "//NON-NLS
+					+ "FROM blackboard_artifacts, blackboard_attributes, blackboard_artifact_types " //NON-NLS
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id " //NON-NLS
 					+ "AND blackboard_attributes.attribute_type_id = " + attrType.getTypeID() //NON-NLS
-					+ " AND blackboard_attributes.value_text = '" + value + "'");	 //NON-NLS
-			return getArtifactsHelper(rs);
+					+ " AND blackboard_attributes.value_text = '" + value + "'"
+					+ " AND blackboard_artifact_types.artifact_type_id=blackboard_artifacts.artifact_type_id");	 //NON-NLS
+			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
+			while (rs.next()) {
+				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2),
+						rs.getInt(3), rs.getString(4), rs.getString(5)));
+			}
+			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by attribute", ex);
 		} finally {
@@ -1056,11 +1043,18 @@ public class SleuthkitCase {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT DISTINCT blackboard_artifacts.artifact_id, " //NON-NLS
 					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id " //NON-NLS
-					+ "FROM blackboard_artifacts, blackboard_attributes " //NON-NLS
+					+ "blackboard_artifact_types.type_name, blackboard_artifact_types.display_name "
+					+ "FROM blackboard_artifacts, blackboard_attributes, blackboard_artifact_types " //NON-NLS
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id " //NON-NLS
 					+ "AND blackboard_attributes.attribute_type_id = " + attrType.getTypeID() //NON-NLS
-					+ " AND LOWER(blackboard_attributes.value_text) LIKE LOWER('" + subString + "')"); //NON-NLS			
-			return getArtifactsHelper(rs);
+					+ " AND LOWER(blackboard_attributes.value_text) LIKE LOWER('" + subString + "')"
+					+ " AND blackboard_artifact_types.artifact_type_id=blackboard_artifacts.artifact_type_id");
+			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
+			while (rs.next()) {
+				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2),
+						rs.getInt(3), rs.getString(4), rs.getString(5)));
+			}
+			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by attribute. " + ex.getMessage(), ex);
 		} finally {
@@ -1091,11 +1085,18 @@ public class SleuthkitCase {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT DISTINCT blackboard_artifacts.artifact_id, " //NON-NLS
 					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id " //NON-NLS
-					+ "FROM blackboard_artifacts, blackboard_attributes " //NON-NLS
+					+ "blackboard_artifact_types.type_name, blackboard_artifact_types.display_name "
+					+ "FROM blackboard_artifacts, blackboard_attributes, blackboard_artifact_types " //NON-NLS
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id " //NON-NLS
 					+ "AND blackboard_attributes.attribute_type_id = " + attrType.getTypeID() //NON-NLS
-					+ " AND blackboard_attributes.value_int32 = " + value); //NON-NLS
-			return getArtifactsHelper(rs);
+					+ " AND blackboard_attributes.value_int32 = " + value //NON-NLS
+					+ " AND blackboard_artifact_types.artifact_type_id=blackboard_artifacts.artifact_type_id");
+			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
+			while (rs.next()) {
+				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2),
+						rs.getInt(3), rs.getString(4), rs.getString(5)));
+			}
+			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by attribute", ex);
 		} finally {
@@ -1126,11 +1127,18 @@ public class SleuthkitCase {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT DISTINCT blackboard_artifacts.artifact_id, " //NON-NLS
 					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id " //NON-NLS
-					+ "FROM blackboard_artifacts, blackboard_attributes " //NON-NLS
+					+ "blackboard_artifact_types.type_name, blackboard_artifact_types.display_name "
+					+ "FROM blackboard_artifacts, blackboard_attributes, blackboard_artifact_types " //NON-NLS
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id " //NON-NLS
 					+ "AND blackboard_attributes.attribute_type_id = " + attrType.getTypeID() //NON-NLS
-					+ " AND blackboard_attributes.value_int64 = " + value); //NON-NLS			
-			return getArtifactsHelper(rs);
+					+ " AND blackboard_attributes.value_int64 = " + value //NON-NLS
+					+ " AND blackboard_artifact_types.artifact_type_id=blackboard_artifacts.artifact_type_id");
+			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
+			while (rs.next()) {
+				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2),
+						rs.getInt(3), rs.getString(4), rs.getString(5)));
+			}
+			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by attribute. " + ex.getMessage(), ex);
 		} finally {
@@ -1161,11 +1169,18 @@ public class SleuthkitCase {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT DISTINCT blackboard_artifacts.artifact_id, " //NON-NLS
 					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id " //NON-NLS
-					+ "FROM blackboard_artifacts, blackboard_attributes " //NON-NLS
+					+ "blackboard_artifact_types.type_name, blackboard_artifact_types.display_name "
+					+ "FROM blackboard_artifacts, blackboard_attributes, blackboard_artifact_types " //NON-NLS
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id " //NON-NLS
 					+ "AND blackboard_attributes.attribute_type_id = " + attrType.getTypeID() //NON-NLS
-					+ " AND blackboard_attributes.value_double = " + value); //NON-NLS
-			return getArtifactsHelper(rs);
+					+ " AND blackboard_attributes.value_double = " + value //NON-NLS
+					+ " AND blackboard_artifact_types.artifact_type_id=blackboard_artifacts.artifact_type_id");
+			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
+			while (rs.next()) {
+				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2),
+						rs.getInt(3), rs.getString(4), rs.getString(5)));
+			}
+			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by attribute", ex);
 		} finally {
@@ -1196,11 +1211,18 @@ public class SleuthkitCase {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT DISTINCT blackboard_artifacts.artifact_id, " //NON-NLS
 					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id " //NON-NLS
-					+ "FROM blackboard_artifacts, blackboard_attributes " //NON-NLS
+					+ "blackboard_artifact_types.type_name, blackboard_artifact_types.display_name "
+					+ "FROM blackboard_artifacts, blackboard_attributes, blackboard_artifact_types " //NON-NLS
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id " //NON-NLS
 					+ "AND blackboard_attributes.attribute_type_id = " + attrType.getTypeID() //NON-NLS
-					+ " AND blackboard_attributes.value_byte = " + value); //NON-NLS
-			return getArtifactsHelper(rs);
+					+ " AND blackboard_attributes.value_byte = " + value //NON-NLS
+					+ " AND blackboard_artifact_types.artifact_type_id=blackboard_artifacts.artifact_type_id");
+			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
+			while (rs.next()) {
+				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2),
+						rs.getInt(3), rs.getString(4), rs.getString(5)));
+			}
+			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by attribute", ex);
 		} finally {
@@ -1268,8 +1290,8 @@ public class SleuthkitCase {
 		}
 		return usedArts;
 	}
-	
-		/**
+
+	/**
 	 * Gets the list of all unique artifact IDs in use.
 	 *
 	 * Gets both static and dynamic IDs.
@@ -1285,11 +1307,11 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, 
-					"SELECT DISTINCT arts.artifact_type_id, types.type_name, types.display_name " +
-					"FROM blackboard_artifact_types AS types " +
-					"INNER JOIN blackboard_artifacts AS arts " +
-					"ON arts.artifact_type_id = types.artifact_type_id"); //NON-NLS
+			rs = connection.executeQuery(s,
+					"SELECT DISTINCT arts.artifact_type_id, types.type_name, types.display_name "
+					+ "FROM blackboard_artifact_types AS types "
+					+ "INNER JOIN blackboard_artifacts AS arts "
+					+ "ON arts.artifact_type_id = types.artifact_type_id"); //NON-NLS
 			List<BlackboardArtifact.Type> uniqueArtifactTypes = new ArrayList<BlackboardArtifact.Type>();
 			while (rs.next()) {
 				uniqueArtifactTypes.add(new BlackboardArtifact.Type(rs.getInt(1), rs.getString(2), rs.getString(3)));
@@ -1304,6 +1326,7 @@ public class SleuthkitCase {
 			releaseSharedLock();
 		}
 	}
+
 	/**
 	 * Get all blackboard attribute types
 	 *
@@ -1336,7 +1359,6 @@ public class SleuthkitCase {
 			releaseSharedLock();
 		}
 	}
-
 
 	/**
 	 * Get count of blackboard attribute types
@@ -1610,12 +1632,19 @@ public class SleuthkitCase {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT DISTINCT blackboard_artifacts.artifact_id, " //NON-NLS
 					+ "blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id " //NON-NLS
-					+ "FROM blackboard_artifacts, blackboard_attributes " //NON-NLS
+					+ "blackboard_artifact_types.type_name, blackboard_artifact_types.display_name "
+					+ "FROM blackboard_artifacts, blackboard_attributes, blackboard_artifact_types " //NON-NLS
 					+ "WHERE blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id " //NON-NLS
 					+ "AND blackboard_attributes.attribute_type_id = " + attrType.getTypeID() //NON-NLS
 					+ " AND blackboard_artifacts.artifact_type_id = " + artifactType.getTypeID() //NON-NLS
-					+ " AND blackboard_attributes.value_text = '" + value + "'"); //NON-NLS
-			return getArtifactsHelper(rs);
+					+ " AND blackboard_attributes.value_text = '" + value + "'" //NON-NLS
+					+ " AND blackboard_artifact_types.artifact_type_id=blackboard_artifacts.artifact_type_id");
+			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
+			while (rs.next()) {
+				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2),
+						rs.getInt(3), rs.getString(4), rs.getString(5)));
+			}
+			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting blackboard artifacts by artifact type and attribute. " + ex.getMessage(), ex);
 		} finally {
