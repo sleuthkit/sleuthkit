@@ -1667,14 +1667,18 @@ public class SleuthkitCase {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
 		ResultSet rs = null;
+		Statement s = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ARTIFACT_BY_ID);
-			statement.clearParameters();
-			statement.setLong(1, artifactID);
-			rs = connection.executeQuery(statement);
-			List<BlackboardArtifact> artifacts = getArtifactsHelper(rs);
-			if (artifacts.size() > 0) {
-				return artifacts.get(0);
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT arts.artifact_id AS artifact_id, "
+					+ "arts.obj_id AS obj_id, arts.artifact_type_id AS artifact_type_id "
+					+ "types.type_name AS type_name, types.display_name AS display_name "//NON-NLS
+					+ "FROM blackboard_artifacts AS arts, blackboard_artifact_types AS types "
+					+ "WHERE arts.artifact_id = " + artifactID
+					+ " AND arts.artifact_type_id = types.artifact_type_id");
+			if (rs.next()) {
+				return new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"),
+						rs.getInt("artifact_type_id"), rs.getString("type_name"), rs.getString("display_name"));
 			} else {
 				/* I think this should actually return null (or Optional) when there
 				 * is no artifact with the given id, but it looks like existing code is
