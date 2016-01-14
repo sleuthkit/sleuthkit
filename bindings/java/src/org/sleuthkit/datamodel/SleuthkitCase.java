@@ -1210,14 +1210,13 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get _standard_ blackboard artifact types in use. This does not currently
-	 * return user-defined ones.
+	 * Get a list of the standard blackboard artifact types.
 	 *
 	 * @return list of blackboard artifact types
 	 * @throws TskCoreException exception thrown if a critical error occurred
 	 * within tsk core
-	 * @deprecated For standard blackboard artifact, use
-	 * BlackboardArtifact.ARTIFACT_TYPE.values()
+	 * @deprecated For a list of standard blackboard artifacts, use
+	 * BlackboardArtifact.ARTIFACT_TYPE.values
 	 */
 	@Deprecated
 	public ArrayList<BlackboardArtifact.ARTIFACT_TYPE> getBlackboardArtifactTypes() throws TskCoreException {
