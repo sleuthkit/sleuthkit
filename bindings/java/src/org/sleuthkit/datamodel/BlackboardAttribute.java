@@ -103,47 +103,65 @@ public class BlackboardAttribute {
 		 * See framework/Services/TskBlackboard.* */
 
 		TSK_URL(1, "TSK_URL", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskUrl.text")),
+				bundle.getString("BlackboardAttribute.tskUrl.text"), 
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_DATETIME(2, "TSK_DATETIME", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskDatetime.text")),
+				bundle.getString("BlackboardAttribute.tskDatetime.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG),
 		TSK_NAME(3, "TSK_NAME", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskName.text")),
+				bundle.getString("BlackboardAttribute.tskName.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_PROG_NAME(4, "TSK_PROG_NAME", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskProgName.text")),
+				bundle.getString("BlackboardAttribute.tskProgName.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_VALUE(6, "TSK_VALUE", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskValue.text")),
+				bundle.getString("BlackboardAttribute.tskValue.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_FLAG(7, "TSK_FLAG", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskFlag.text")),
 		TSK_PATH(8, "TSK_PATH", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskPath.text")),
+				bundle.getString("BlackboardAttribute.tskPath.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_KEYWORD(10, "TSK_KEYWORD", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskKeyword.text")),
+				bundle.getString("BlackboardAttribute.tskKeyword.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_KEYWORD_REGEXP(11, "TSK_KEYWORD_REGEXP", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskKeywordRegexp.text")),
+				bundle.getString("BlackboardAttribute.tskKeywordRegexp.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_KEYWORD_PREVIEW(12, "TSK_KEYWORD_PREVIEW", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskKeywordPreview.text")),
+				bundle.getString("BlackboardAttribute.tskKeywordPreview.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		@Deprecated
 		// use TSK_SET_NAME instead
 		TSK_KEYWORD_SET(13, "TSK_KEYWORD_SET", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskKeywordSet.text")),
+				bundle.getString("BlackboardAttribute.tskKeywordSet.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_USER_NAME(14, "TSK_USER_NAME", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskUserName.text")),
+				bundle.getString("BlackboardAttribute.tskUserName.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_DOMAIN(15, "TSK_DOMAIN", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskDomain.text")),
+				bundle.getString("BlackboardAttribute.tskDomain.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_PASSWORD(16, "TSK_PASSWORD", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskPassword.text")),
 		TSK_NAME_PERSON(17, "TSK_NAME_PERSON", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskNamePerson.text")),
+				bundle.getString("BlackboardAttribute.tskNamePerson.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_DEVICE_MODEL(18, "TSK_DEVICE_MODEL", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskDeviceModel.text")),
+				bundle.getString("BlackboardAttribute.tskDeviceModel.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_DEVICE_MAKE(19, "TSK_DEVICE_MAKE", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskDeviceMake.text")),
+				bundle.getString("BlackboardAttribute.tskDeviceMake.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_DEVICE_ID(20, "TSK_DEVICE_ID", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskDeviceId.text")),
+				bundle.getString("BlackboardAttribute.tskDeviceId.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_EMAIL(21, "TSK_EMAIL", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskEmail.text")),
+				bundle.getString("BlackboardAttribute.tskEmail.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_HASH_MD5(22, "TSK_HASH_MD5", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskHashMd5.text")),
+				bundle.getString("BlackboardAttribute.tskHashMd5.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_HASH_SHA1(23, "TSK_HASH_SHA1", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskHashSha1.text")),
 		TSK_HASH_SHA2_256(24, "TSK_HASH_SHA2_256", //NON-NLS
@@ -151,7 +169,8 @@ public class BlackboardAttribute {
 		TSK_HASH_SHA2_512(25, "TSK_HASH_SHA2_512", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskHashSha2512.text")),
 		TSK_TEXT(26, "TSK_TEXT", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskText.text")),
+				bundle.getString("BlackboardAttribute.tskText.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_TEXT_FILE(27, "TSK_TEXT_FILE", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskTextFile.text")),
 		TSK_TEXT_LANGUAGE(28, "TSK_TEXT_LANGUAGE", //NON-NLS
@@ -167,17 +186,22 @@ public class BlackboardAttribute {
 		TSK_INTERESTING_FILE(31, "TSK_INTERESTING_FILE", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskInterestingFile.text")),
 		TSK_REFERRER(32, "TSK_REFERRER", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskReferrer.text")),
+				bundle.getString("BlackboardAttribute.tskReferrer.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_DATETIME_ACCESSED(33, "TSK_DATETIME_ACCESSED", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskDateTimeAccessed.text")),
+				bundle.getString("BlackboardAttribute.tskDateTimeAccessed.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG),
 		TSK_IP_ADDRESS(34, "TSK_IP_ADDRESS", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskIpAddress.text")),
 		TSK_PHONE_NUMBER(35, "TSK_PHONE_NUMBER", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskPhoneNumber.text")),
+				bundle.getString("BlackboardAttribute.tskPhoneNumber.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_PATH_ID(36, "TSK_PATH_ID", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskPathId.text")),
+				bundle.getString("BlackboardAttribute.tskPathId.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG),
 		TSK_SET_NAME(37, "TSK_SET_NAME", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskSetName.text")),
+				bundle.getString("BlackboardAttribute.tskSetName.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		@Deprecated
 		// use artifact instead
 		TSK_ENCRYPTION_DETECTED(38, "TSK_ENCRYPTION_DETECTED", //NON-NLS
@@ -253,7 +277,8 @@ public class BlackboardAttribute {
 		TSK_VERSION(71, "TSK_VERSION", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskVersion.text")),
 		TSK_USER_ID(72, "TSK_USER_ID", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskUserId.text")),
+				bundle.getString("BlackboardAttribute.tskUserId.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_DESCRIPTION(73, "TSK_DESCRIPTION", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskDescription.text")),
 		TSK_MESSAGE_TYPE(74, "TSK_MESSAGE_TYPE", //NON-NLS
@@ -275,7 +300,8 @@ public class BlackboardAttribute {
 		TSK_EMAIL_OFFICE(82, "TSK_EMAIL_OFFICE", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskEmailOffice.text")),
 		TSK_DATETIME_START(83, "TSK_DATETIME_START", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskDateTimeStart.text")), // start time of an event - call log, Calendar entry
+				bundle.getString("BlackboardAttribute.tskDateTimeStart.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // start time of an event - call log, Calendar entry
 		TSK_DATETIME_END(84, "TSK_DATETIME_END", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskDateTimeEnd.text")), // end time of an event - call log, Calendar entry
 		TSK_CALENDAR_ENTRY_TYPE(85, "TSK_CALENDAR_ENTRY_TYPE", //NON-NLS
@@ -331,11 +357,13 @@ public class BlackboardAttribute {
 		private String label;
 		private int typeID;
 		private String displayName;
+		private TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE dataType;
 
-		private ATTRIBUTE_TYPE(int typeID, String label, String displayName) {
+		private ATTRIBUTE_TYPE(int typeID, String label, String displayName, TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE dataType) {
 			this.typeID = typeID;
 			this.label = label;
 			this.displayName = displayName;
+			this.dataType = dataType;
 		}
 
 		/**
