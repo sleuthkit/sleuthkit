@@ -18,6 +18,8 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.io.Serializable;
+import java.util.Objects;
 import java.util.ResourceBundle;
 
 /**
@@ -42,6 +44,80 @@ public class BlackboardAttribute {
 	private SleuthkitCase sleuthkitCase;
 	private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
+	/**
+	 * Class to represent the type of a blackboard attribute
+	 */
+	public static final class Type implements Serializable {
+		private static final long serialVersionUID = 1L;
+		private final String typeName;
+		private final int typeID;
+		private final String displayName;
+		
+		public Type(int typeID, String typeName, String displayName) {
+			this.typeID = typeID;
+			this.typeName = typeName;
+			this.displayName = displayName;
+		}
+		
+		/**
+		 * Get type name of this attribute
+		 *
+		 * @return label string
+		 */
+		public String getTypeName() {
+			return this.typeName;
+		}
+
+		/**
+		 * Get type id of this attribute
+		 *
+		 * @return type id
+		 */
+		public int getTypeID() {
+			return this.typeID;
+		}
+		
+		/**
+		 * Get display name of this attribute
+		 * 
+		 * @return The display name of the type
+		 */
+		public String getDisplayName() {
+			return this.displayName;
+		}
+		
+		@Override
+		public boolean equals(Object that) {
+			if (this == that) {
+				return true;
+			} else if (!(that instanceof BlackboardAttribute.Type)) {
+				return false;
+			} else {
+				return ((BlackboardAttribute.Type) that).sameType(this);
+			}
+		}
+
+		/**
+		 * Compares two Types to see if they are the same
+		 * @param that the other type
+		 * @return true if it is the same type
+		 */
+		private boolean sameType(BlackboardAttribute.Type that) {
+			return this.typeName.equals(that.getTypeName())
+					&& this.displayName.equals(that.getDisplayName())
+					&& this.typeID == that.getTypeID();
+		}
+		
+		@Override
+		public int hashCode() {
+			int hash = 7;
+			hash = 63 * hash + Objects.hashCode(this.typeID);
+			hash = 63 * hash + Objects.hashCode(this.displayName);
+			hash = 63 * hash + Objects.hashCode(this.typeName);
+			return hash;
+		}
+	}
+	
 	/**
 	 * Enum for the data type (int, double, etc.) of this attribute's value.
 	 */

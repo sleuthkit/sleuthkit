@@ -1335,18 +1335,32 @@ public class SleuthkitCase {
 	 * @return list of blackboard attribute types
 	 * @throws TskCoreException exception thrown if a critical error occurred
 	 * within tsk core
+	 * @deprecated For a list of standard blackboard attributes, use
+	 * BlackboardAttribute.ATTRIBUTE_TYPE.values()
 	 */
+	@Deprecated
 	public ArrayList<BlackboardAttribute.ATTRIBUTE_TYPE> getBlackboardAttributeTypes() throws TskCoreException {
+		return new ArrayList<BlackboardAttribute.ATTRIBUTE_TYPE>(Arrays.asList(BlackboardAttribute.ATTRIBUTE_TYPE.values()));
+	}
+
+	/**
+	 * Gets a list of all the attribute types for this case
+	 *
+	 * @return a list of attribute types
+	 * @throws TskCoreException when there is an error getting the types
+	 */
+	public List<BlackboardAttribute.Type> getAttributeTypes() throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
 		Statement s = null;
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT type_name FROM blackboard_attribute_types"); //NON-NLS
-			ArrayList<BlackboardAttribute.ATTRIBUTE_TYPE> attribute_types = new ArrayList<BlackboardAttribute.ATTRIBUTE_TYPE>();
+			rs = connection.executeQuery(s, "SELECT attribute_type_id, type_name, display_name FROM blackboard_attribute_types"); //NON-NLS
+			ArrayList<BlackboardAttribute.Type> attribute_types = new ArrayList<BlackboardAttribute.Type>();
 			while (rs.next()) {
-				attribute_types.add(BlackboardAttribute.ATTRIBUTE_TYPE.fromLabel(rs.getString(1)));
+				attribute_types.add(new BlackboardAttribute.Type(rs.getInt(1),
+						rs.getString(2), rs.getString(3)));
 			}
 			return attribute_types;
 		} catch (SQLException ex) {
