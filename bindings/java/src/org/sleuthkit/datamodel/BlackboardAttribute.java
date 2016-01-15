@@ -211,25 +211,34 @@ public class BlackboardAttribute {
 		TSK_STEG_DETECTED(40, "TSK_STEG_DETECTED", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskStegDetected.text")),
 		TSK_EMAIL_TO(41, "TSK_EMAIL_TO", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskEmailTo.text")),
+				bundle.getString("BlackboardAttribute.tskEmailTo.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_EMAIL_CC(42, "TSK_EMAIL_CC", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskEmailCc.text")),
+				bundle.getString("BlackboardAttribute.tskEmailCc.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_EMAIL_BCC(43, "TSK_EMAIL_BCC", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskEmailBcc.text")),
+				bundle.getString("BlackboardAttribute.tskEmailBcc.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_EMAIL_FROM(44, "TSK_EMAIL_FROM", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskEmailFrom.text")),
+				bundle.getString("BlackboardAttribute.tskEmailFrom.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_EMAIL_CONTENT_PLAIN(45, "TSK_EMAIL_CONTENT_PLAIN", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskEmailContentPlain.text")),
+				bundle.getString("BlackboardAttribute.tskEmailContentPlain.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_EMAIL_CONTENT_HTML(46, "TSK_EMAIL_CONTENT_HTML", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskEmailContentHtml.text")),
+				bundle.getString("BlackboardAttribute.tskEmailContentHtml.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_EMAIL_CONTENT_RTF(47, "TSK_EMAIL_CONTENT_RTF", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskEmailContentRtf.text")),
+				bundle.getString("BlackboardAttribute.tskEmailContentRtf.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_MSG_ID(48, "TSK_MSG_ID", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskMsgId.text")),
+				bundle.getString("BlackboardAttribute.tskMsgId.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_MSG_REPLY_ID(49, "TSK_MSG_REPLY_ID", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskMsgReplyId.text")),
 		TSK_DATETIME_RCVD(50, "TSK_DATETIME_RCVD", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskDateTimeRcvd.text")),
+				bundle.getString("BlackboardAttribute.tskDateTimeRcvd.text"),
+				),
 		TSK_DATETIME_SENT(51, "TSK_DATETIME_SENT", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskDateTimeSent.text")),
 		TSK_SUBJECT(52, "TSK_SUBJECT", //NON-NLS
