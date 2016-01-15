@@ -1356,7 +1356,7 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT attribute_type, type_name, display_name FROM blackboard_attribute_types"); //NON-NLS
+			rs = connection.executeQuery(s, "SELECT attribute_type_id, type_name, display_name FROM blackboard_attribute_types"); //NON-NLS
 			ArrayList<BlackboardAttribute.Type> attribute_types = new ArrayList<BlackboardAttribute.Type>();
 			while (rs.next()) {
 				attribute_types.add(new BlackboardAttribute.Type(rs.getInt(1),
