@@ -628,6 +628,37 @@ public class SleuthkitCase {
 			connection.close();
 		}
 	}
+	/**
+	 * Update a version 3 database schema to a version 4 database schema.
+	 *
+	 * @param schemaVersionNumber The schema version number of the database.
+	 * @return 4, if the input database schema version number was 3.
+	 * @throws SQLException
+	 * @throws TskCoreException
+	 */
+	@SuppressWarnings("deprecation")
+	private int updateFromSchema3toSchema4(int schemaVersionNumber) throws SQLException, TskCoreException {
+		if (schemaVersionNumber != 3) {
+			return schemaVersionNumber;
+		}
+		CaseDbConnection connection = connections.getConnection();
+		Statement statement = null;
+		Statement updateStatement = null;
+		ResultSet resultSet = null;
+		try {
+			statement = connection.createStatement();
+			statement.execute("ALTER TABLE tsk_files ADD COLUMN mime_type TEXT;");
+			statement.execute("ALTER TABLE blackboard_attribute_types ADD COLUMN value_type INTEGER NOT NULL;");
+		}
+		finally {
+			closeStatement(updateStatement);
+			closeResultSet(resultSet);
+			closeStatement(statement);
+			connection.close();
+		}
+
+		
+	}
 
 	/**
 	 * Returns case database schema version number.

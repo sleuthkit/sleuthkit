@@ -302,9 +302,11 @@ public class BlackboardAttribute {
 				bundle.getString("BlackboardAttribute.tskUserId.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_DESCRIPTION(73, "TSK_DESCRIPTION", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskDescription.text")),
+				bundle.getString("BlackboardAttribute.tskDescription.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_MESSAGE_TYPE(74, "TSK_MESSAGE_TYPE", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskMessageType.text")), // SMS or MMS or IM ...
+				bundle.getString("BlackboardAttribute.tskMessageType.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // SMS or MMS or IM ...
 		TSK_PHONE_NUMBER_HOME(75, "TSK_PHONE_NUMBER_HOME", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskPhoneNumberHome.text")),
 		TSK_PHONE_NUMBER_OFFICE(76, "TSK_PHONE_NUMBER_OFFICE", //NON-NLS
@@ -312,30 +314,36 @@ public class BlackboardAttribute {
 		TSK_PHONE_NUMBER_MOBILE(77, "TSK_PHONE_NUMBER_MOBILE", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskPhoneNumberMobile.text")),
 		TSK_PHONE_NUMBER_FROM(78, "TSK_PHONE_NUMBER_FROM", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskPhoneNumberFrom.text")),
+				bundle.getString("BlackboardAttribute.tskPhoneNumberFrom.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_PHONE_NUMBER_TO(79, "TSK_PHONE_NUMBER_TO", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskPhoneNumberTo.text")),
+				bundle.getString("BlackboardAttribute.tskPhoneNumberTo.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_DIRECTION(80, "TSK_DIRECTION", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskDirection.text")), // Msg/Call direction: incoming, outgoing
+				bundle.getString("BlackboardAttribute.tskDirection.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Msg/Call direction: incoming, outgoing
 		TSK_EMAIL_HOME(81, "TSK_EMAIL_HOME", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskEmailHome.text")),
 		TSK_EMAIL_OFFICE(82, "TSK_EMAIL_OFFICE", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskEmailOffice.text")),
 		TSK_DATETIME_START(83, "TSK_DATETIME_START", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskDateTimeStart.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // start time of an event - call log, Calendar entry
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG), // start time of an event - call log, Calendar entry
 		TSK_DATETIME_END(84, "TSK_DATETIME_END", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskDateTimeEnd.text")), // end time of an event - call log, Calendar entry
+				bundle.getString("BlackboardAttribute.tskDateTimeEnd.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG), // end time of an event - call log, Calendar entry
 		TSK_CALENDAR_ENTRY_TYPE(85, "TSK_CALENDAR_ENTRY_TYPE", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskCalendarEntryType.text")), // meeting, task,
 		TSK_LOCATION(86, "TSK_LOCATION", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskLocation.text")), // Location string associated with an event - Conf Room Name, Address ....
+				bundle.getString("BlackboardAttribute.tskLocation.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Location string associated with an event - Conf Room Name, Address ....
 		TSK_SHORTCUT(87, "TSK_SHORTCUT", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskShortcut.text")), // Short Cut string - short code or dial string for Speed dial, a URL short cut - e.g. bitly string, Windows Desktop Short cut name etc.
 		TSK_DEVICE_NAME(88, "TSK_DEVICE_NAME", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskDeviceName.text")), // device name - a user assigned (usually) device name - such as "Joe's computer", "bob_win8", "BT Headset"
 		TSK_CATEGORY(89, "TSK_CATEGORY", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskCategory.text")), // category/type, possible value set varies by the artifact
+				bundle.getString("BlackboardAttribute.tskCategory.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // category/type, possible value set varies by the artifact
 		TSK_EMAIL_REPLYTO(90, "TSK_EMAIL_REPLYTO", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskEmailReplyTo.text")), // ReplyTo address
 		TSK_SERVER_NAME(91, "TSK_SERVER_NAME", //NON-NLS
@@ -349,31 +357,43 @@ public class BlackboardAttribute {
 		TSK_PERMISSIONS(95, "TSK_PERMISSIONS", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskPermissions.text")), // Permissions
 		TSK_ASSOCIATED_ARTIFACT(96, "TSK_ASSOCIATED_ARTIFACT", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskAssociatedArtifact.text")), // Artifact ID of a related artifact
+				bundle.getString("BlackboardAttribute.tskAssociatedArtifact.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG), // Artifact ID of a related artifact
 		TSK_ISDELETED(97, "TSK_ISDELETED", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskIsDeleted.text")), // boolean to indicate that the artifact is recovered fom deleted content
 		TSK_GEO_LATITUDE_START(98, "TSK_GEO_LATITUDE_START", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskGeoLatitudeStart.text")), // Starting location lattitude
+				bundle.getString("BlackboardAttribute.tskGeoLatitudeStart.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE), // Starting location lattitude
 		TSK_GEO_LATITUDE_END(99, "TSK_GEO_LATITUDE_END", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskGeoLatitudeEnd.text")), // Ending location lattitude
+				bundle.getString("BlackboardAttribute.tskGeoLatitudeEnd.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE), // Ending location lattitude
 		TSK_GEO_LONGITUDE_START(100, "TSK_GEO_LONGITUDE_START", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskGeoLongitudeStart.text")), // Starting location longitude
+				bundle.getString("BlackboardAttribute.tskGeoLongitudeStart.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE), // Starting location longitude
 		TSK_GEO_LONGITUDE_END(101, "TSK_GEO_LONGITUDE_END", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskGeoLongitudeEnd.text")), //Ending Location longitude
+				bundle.getString("BlackboardAttribute.tskGeoLongitudeEnd.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE), //Ending Location longitude
 		TSK_READ_STATUS(102, "TSK_READ_STATUS", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskReadStatus.text")), // Message read status: 1 if read, 0 if unread
+				bundle.getString("BlackboardAttribute.tskReadStatus.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER), // Message read status: 1 if read, 0 if unread
 		TSK_LOCAL_PATH(103, "TSK_LOCAL_PATH", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskLocalPath.text")), // Local path to a network drive
+				bundle.getString("BlackboardAttribute.tskLocalPath.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Local path to a network drive
 		TSK_REMOTE_PATH(104, "TSK_REMOTE_PATH", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskRemotePath.text")), // Remote path of a network drive
+				bundle.getString("BlackboardAttribute.tskRemotePath.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Remote path of a network drive
 		TSK_TEMP_DIR(105, "TSK_TEMP_DIR", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskTempDir.text")), // Default temporary files directory
+				bundle.getString("BlackboardAttribute.tskTempDir.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Default temporary files directory
 		TSK_PRODUCT_ID(106, "TSK_PRODUCT_ID", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskProductId.text")), // Product ID
+				bundle.getString("BlackboardAttribute.tskProductId.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Product ID
 		TSK_OWNER(107, "TSK_OWNER", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskOwner.text")), // Registered owner of a piece of software
+				bundle.getString("BlackboardAttribute.tskOwner.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Registered owner of a piece of software
 		TSK_ORGANIZATION(108, "TSK_ORGANIZATION", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskOrganization.text")), // Registered Organization for a piece of software
+				bundle.getString("BlackboardAttribute.tskOrganization.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Registered Organization for a piece of software
 		;
 		/* SEE ABOVE -- ALSO ADD TO C++ CODE */
 		private String label;
