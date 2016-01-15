@@ -1335,6 +1335,8 @@ public class SleuthkitCase {
 	 * @return list of blackboard attribute types
 	 * @throws TskCoreException exception thrown if a critical error occurred
 	 * within tsk core
+	 * @deprecated For a list of standard blackboard attributes, use
+	 * BlackboardAttribute.ATTRIBUTE_TYPE.values()
 	 */
 	@Deprecated
 	public ArrayList<BlackboardAttribute.ATTRIBUTE_TYPE> getBlackboardAttributeTypes() throws TskCoreException {
