@@ -118,7 +118,8 @@ public class BlackboardAttribute {
 				bundle.getString("BlackboardAttribute.tskValue.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_FLAG(7, "TSK_FLAG", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskFlag.text")),
+				bundle.getString("BlackboardAttribute.tskFlag.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_PATH(8, "TSK_PATH", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskPath.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
@@ -143,7 +144,8 @@ public class BlackboardAttribute {
 				bundle.getString("BlackboardAttribute.tskDomain.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_PASSWORD(16, "TSK_PASSWORD", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskPassword.text")),
+				bundle.getString("BlackboardAttribute.tskPassword.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_NAME_PERSON(17, "TSK_NAME_PERSON", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskNamePerson.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
@@ -163,28 +165,36 @@ public class BlackboardAttribute {
 				bundle.getString("BlackboardAttribute.tskHashMd5.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_HASH_SHA1(23, "TSK_HASH_SHA1", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskHashSha1.text")),
+				bundle.getString("BlackboardAttribute.tskHashSha1.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_HASH_SHA2_256(24, "TSK_HASH_SHA2_256", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskHashSha225.text")),
+				bundle.getString("BlackboardAttribute.tskHashSha225.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_HASH_SHA2_512(25, "TSK_HASH_SHA2_512", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskHashSha2512.text")),
+				bundle.getString("BlackboardAttribute.tskHashSha2512.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_TEXT(26, "TSK_TEXT", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskText.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_TEXT_FILE(27, "TSK_TEXT_FILE", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskTextFile.text")),
+				bundle.getString("BlackboardAttribute.tskTextFile.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_TEXT_LANGUAGE(28, "TSK_TEXT_LANGUAGE", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskTextLanguage.text")),
+				bundle.getString("BlackboardAttribute.tskTextLanguage.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_ENTROPY(29, "TSK_ENTROPY", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskEntropy.text")),
+				bundle.getString("BlackboardAttribute.tskEntropy.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE),
 		@Deprecated
 		// use TSK_SET_NAME instead
 		TSK_HASHSET_NAME(30, "TSK_HASHSET_NAME", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskHashsetName.text")),
+				bundle.getString("BlackboardAttribute.tskHashsetName.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		@Deprecated
 		// use TSK_INTERSTING_FILE_HIT instead
 		TSK_INTERESTING_FILE(31, "TSK_INTERESTING_FILE", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskInterestingFile.text")),
+				bundle.getString("BlackboardAttribute.tskInterestingFile.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG),
 		TSK_REFERRER(32, "TSK_REFERRER", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskReferrer.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
@@ -192,7 +202,8 @@ public class BlackboardAttribute {
 				bundle.getString("BlackboardAttribute.tskDateTimeAccessed.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG),
 		TSK_IP_ADDRESS(34, "TSK_IP_ADDRESS", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskIpAddress.text")),
+				bundle.getString("BlackboardAttribute.tskIpAddress.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_PHONE_NUMBER(35, "TSK_PHONE_NUMBER", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskPhoneNumber.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
@@ -205,11 +216,14 @@ public class BlackboardAttribute {
 		@Deprecated
 		// use artifact instead
 		TSK_ENCRYPTION_DETECTED(38, "TSK_ENCRYPTION_DETECTED", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskEncryptionDetected.text")),
+				bundle.getString("BlackboardAttribute.tskEncryptionDetected.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER),
 		TSK_MALWARE_DETECTED(39, "TSK_MALWARE_DETECTED", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskMalwareDetected.text")),
+				bundle.getString("BlackboardAttribute.tskMalwareDetected.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER),
 		TSK_STEG_DETECTED(40, "TSK_STEG_DETECTED", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskStegDetected.text")),
+				bundle.getString("BlackboardAttribute.tskStegDetected.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER),
 		TSK_EMAIL_TO(41, "TSK_EMAIL_TO", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskEmailTo.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
@@ -235,7 +249,8 @@ public class BlackboardAttribute {
 				bundle.getString("BlackboardAttribute.tskMsgId.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_MSG_REPLY_ID(49, "TSK_MSG_REPLY_ID", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskMsgReplyId.text")),
+				bundle.getString("BlackboardAttribute.tskMsgReplyId.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER),
 		TSK_DATETIME_RCVD(50, "TSK_DATETIME_RCVD", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskDateTimeRcvd.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG),
@@ -255,31 +270,39 @@ public class BlackboardAttribute {
 				bundle.getString("BlackboardAttribute.tskGeoLongitude.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE),
 		TSK_GEO_VELOCITY(56, "TSK_GEO_VELOCITY", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskGeoVelocity.text")),
+				bundle.getString("BlackboardAttribute.tskGeoVelocity.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE),
 		TSK_GEO_ALTITUDE(57, "TSK_GEO_ALTITUDE", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskGeoAltitude.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE),
 		TSK_GEO_BEARING(58, "TSK_GEO_BEARING", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskGeoBearing.text")),
+				bundle.getString("BlackboardAttribute.tskGeoBearing.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_GEO_HPRECISION(59, "TSK_GEO_HPRECISION", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskGeoHPrecision.text")),
+				bundle.getString("BlackboardAttribute.tskGeoHPrecision.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE),
 		TSK_GEO_VPRECISION(60, "TSK_GEO_VPRECISION", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskGeoVPrecision.text")),
+				bundle.getString("BlackboardAttribute.tskGeoVPrecision.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE),
 		TSK_GEO_MAPDATUM(61, "TSK_GEO_MAPDATUM", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskGeoMapDatum.text")),
+				bundle.getString("BlackboardAttribute.tskGeoMapDatum.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_FILE_TYPE_SIG(62, "TSK_FILE_TYPE_SIG", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskFileTypeSig.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_FILE_TYPE_EXT(63, "TSK_FILE_TYPE_EXT", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskFileTypeExt.text")),
+				bundle.getString("BlackboardAttribute.tskFileTypeExt.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		@Deprecated
 		// tag tables exist not, do not tag with blackboard
 		TSK_TAGGED_ARTIFACT(64, "TSK_TAGGED_ARTIFACT", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskTaggedArtifact.text")),
+				bundle.getString("BlackboardAttribute.tskTaggedArtifact.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG),
 		@Deprecated
 		// tag tables exist not, do not tag with blackboard
 		TSK_TAG_NAME(65, "TSK_TAG_NAME", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskTagName.text")),
+				bundle.getString("BlackboardAttribute.tskTagName.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_COMMENT(66, "TSK_COMMENT", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskComment.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
@@ -308,11 +331,14 @@ public class BlackboardAttribute {
 				bundle.getString("BlackboardAttribute.tskMessageType.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // SMS or MMS or IM ...
 		TSK_PHONE_NUMBER_HOME(75, "TSK_PHONE_NUMBER_HOME", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskPhoneNumberHome.text")),
+				bundle.getString("BlackboardAttribute.tskPhoneNumberHome.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_PHONE_NUMBER_OFFICE(76, "TSK_PHONE_NUMBER_OFFICE", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskPhoneNumberOffice.text")),
+				bundle.getString("BlackboardAttribute.tskPhoneNumberOffice.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_PHONE_NUMBER_MOBILE(77, "TSK_PHONE_NUMBER_MOBILE", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskPhoneNumberMobile.text")),
+				bundle.getString("BlackboardAttribute.tskPhoneNumberMobile.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_PHONE_NUMBER_FROM(78, "TSK_PHONE_NUMBER_FROM", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskPhoneNumberFrom.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
@@ -323,9 +349,11 @@ public class BlackboardAttribute {
 				bundle.getString("BlackboardAttribute.tskDirection.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Msg/Call direction: incoming, outgoing
 		TSK_EMAIL_HOME(81, "TSK_EMAIL_HOME", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskEmailHome.text")),
+				bundle.getString("BlackboardAttribute.tskEmailHome.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_EMAIL_OFFICE(82, "TSK_EMAIL_OFFICE", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskEmailOffice.text")),
+				bundle.getString("BlackboardAttribute.tskEmailOffice.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_DATETIME_START(83, "TSK_DATETIME_START", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskDateTimeStart.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG), // start time of an event - call log, Calendar entry
@@ -333,34 +361,44 @@ public class BlackboardAttribute {
 				bundle.getString("BlackboardAttribute.tskDateTimeEnd.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG), // end time of an event - call log, Calendar entry
 		TSK_CALENDAR_ENTRY_TYPE(85, "TSK_CALENDAR_ENTRY_TYPE", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskCalendarEntryType.text")), // meeting, task,
+				bundle.getString("BlackboardAttribute.tskCalendarEntryType.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // meeting, task,
 		TSK_LOCATION(86, "TSK_LOCATION", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskLocation.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Location string associated with an event - Conf Room Name, Address ....
 		TSK_SHORTCUT(87, "TSK_SHORTCUT", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskShortcut.text")), // Short Cut string - short code or dial string for Speed dial, a URL short cut - e.g. bitly string, Windows Desktop Short cut name etc.
+				bundle.getString("BlackboardAttribute.tskShortcut.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Short Cut string - short code or dial string for Speed dial, a URL short cut - e.g. bitly string, Windows Desktop Short cut name etc.
 		TSK_DEVICE_NAME(88, "TSK_DEVICE_NAME", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskDeviceName.text")), // device name - a user assigned (usually) device name - such as "Joe's computer", "bob_win8", "BT Headset"
+				bundle.getString("BlackboardAttribute.tskDeviceName.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // device name - a user assigned (usually) device name - such as "Joe's computer", "bob_win8", "BT Headset"
 		TSK_CATEGORY(89, "TSK_CATEGORY", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskCategory.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // category/type, possible value set varies by the artifact
 		TSK_EMAIL_REPLYTO(90, "TSK_EMAIL_REPLYTO", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskEmailReplyTo.text")), // ReplyTo address
+				bundle.getString("BlackboardAttribute.tskEmailReplyTo.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // ReplyTo address
 		TSK_SERVER_NAME(91, "TSK_SERVER_NAME", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskServerName.text")), // server name, e.g. a mail server name - "smtp.google.com", a DNS server name...
+				bundle.getString("BlackboardAttribute.tskServerName.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // server name, e.g. a mail server name - "smtp.google.com", a DNS server name...
 		TSK_COUNT(92, "TSK_COUNT", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskCount.text")), // Count related to the artifact
+				bundle.getString("BlackboardAttribute.tskCount.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER), // Count related to the artifact
 		TSK_MIN_COUNT(93, "TSK_MIN_COUNT", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskMinCount.text")), // Minimum number/count
+				bundle.getString("BlackboardAttribute.tskMinCount.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER), // Minimum number/count
 		TSK_PATH_SOURCE(94, "TSK_PATH_SOURCE", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskPathSource.text")), // Path to a source file related to the artifact
+				bundle.getString("BlackboardAttribute.tskPathSource.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Path to a source file related to the artifact
 		TSK_PERMISSIONS(95, "TSK_PERMISSIONS", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskPermissions.text")), // Permissions
+				bundle.getString("BlackboardAttribute.tskPermissions.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Permissions
 		TSK_ASSOCIATED_ARTIFACT(96, "TSK_ASSOCIATED_ARTIFACT", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskAssociatedArtifact.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG), // Artifact ID of a related artifact
 		TSK_ISDELETED(97, "TSK_ISDELETED", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskIsDeleted.text")), // boolean to indicate that the artifact is recovered fom deleted content
+				bundle.getString("BlackboardAttribute.tskIsDeleted.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // boolean to indicate that the artifact is recovered fom deleted content
 		TSK_GEO_LATITUDE_START(98, "TSK_GEO_LATITUDE_START", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskGeoLatitudeStart.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE), // Starting location lattitude
@@ -424,6 +462,14 @@ public class BlackboardAttribute {
 		 */
 		public int getTypeID() {
 			return this.typeID;
+		}
+		
+		/**
+		 * Gets the value type of this attribute type
+		 * @return the value type
+		 */
+		public TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE getValueType() {
+			return this.dataType;
 		}
 
 		/**

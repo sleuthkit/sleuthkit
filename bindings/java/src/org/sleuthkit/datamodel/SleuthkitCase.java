@@ -57,6 +57,7 @@ import org.postgresql.util.PSQLException;
 import org.postgresql.util.PSQLState;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
+import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
 import org.sleuthkit.datamodel.TskData.DbType;
 import org.sleuthkit.datamodel.TskData.FileKnown;
@@ -87,6 +88,7 @@ public class SleuthkitCase {
 	private static final String SQL_ERROR_RESOURCE_GROUP = "53";
 	private static final String SQL_ERROR_LIMIT_GROUP = "54";
 	private static final String SQL_ERROR_INTERNAL_GROUP = "xx";
+	private static final int MIN_USER_DEFINED_TYPE_ID = 10000;
 	private final ConnectionPool connections;
 	private final ResultSetHelper rsHelper = new ResultSetHelper(this);
 	private final Map<Long, Long> carvedFileContainersCache = new HashMap<Long, Long>(); // Caches the IDs of the root $CarvedFiles for each volume.
@@ -303,7 +305,7 @@ public class SleuthkitCase {
 				resultSet = connection.executeQuery(statement, "SELECT COUNT(*) FROM blackboard_attribute_types WHERE attribute_type_id = '" + type.getTypeID() + "'"); //NON-NLS
 				resultSet.next();
 				if (resultSet.getLong(1) == 0) {
-					connection.executeUpdate(statement, "INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name) VALUES (" + type.getTypeID() + ", '" + type.getLabel() + "', '" + type.getDisplayName() + "')"); //NON-NLS
+					connection.executeUpdate(statement, "INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name, value_type) VALUES (" + type.getTypeID() + ", '" + type.getLabel() + "', '" + type.getDisplayName() + "', '" + ATTRIBUTE_TYPE.fromLabel(type.getLabel()).getValueType().getType() + "')"); //NON-NLS
 				}
 				resultSet.close();
 				resultSet = null;
@@ -628,6 +630,7 @@ public class SleuthkitCase {
 			connection.close();
 		}
 	}
+
 	/**
 	 * Update a version 3 database schema to a version 4 database schema.
 	 *
@@ -649,15 +652,32 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			statement.execute("ALTER TABLE tsk_files ADD COLUMN mime_type TEXT;");
 			statement.execute("ALTER TABLE blackboard_attribute_types ADD COLUMN value_type INTEGER NOT NULL;");
-		}
-		finally {
+			updateStatement = connection.createStatement();
+			resultSet = statement.executeQuery(
+					"SELECT * " + //NON-NLS
+					"FROM blackboard_attribute_types AS types"); //NON-NLS
+			updateStatement = connection.createStatement();
+			while (resultSet.next()) {
+				int attributeTypeId = resultSet.getInt("attribute_type_id");
+				String attributeLabel = resultSet.getString("type_name");
+				if(attributeTypeId < MIN_USER_DEFINED_TYPE_ID) {
+					updateStatement.executeUpdate(
+						"UPDATE blackboard_attribute_types " + //NON-NLS
+						"SET value_type = " + ATTRIBUTE_TYPE.fromLabel(attributeLabel).getValueType().getType() + " " + //NON-NLS
+						"WHERE blackboard_attribute_types.attribute_type_id = " + attributeTypeId + ";"); //NON-NLS	
+				}
+								
+			}
+			resultSet.close();
+			
+			return 4;
+		} finally {
 			closeStatement(updateStatement);
 			closeResultSet(resultSet);
 			closeStatement(statement);
 			connection.close();
 		}
 
-		
 	}
 
 	/**
@@ -1742,9 +1762,29 @@ public class SleuthkitCase {
 	 * @param displayName the (non-unique) display name of the attribute type
 	 * @return the id of the new attribute
 	 * @throws TskCoreException exception thrown if a critical error occurs
+	 * @deprecated Use addArtifactAttributeType instead
 	 * within tsk core
 	 */
+	@Deprecated
 	public int addAttrType(String attrTypeString, String displayName) throws TskCoreException {
+		try {
+			return addArtifactAttributeType(attrTypeString, TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING, displayName);
+		} catch (BlackboardTypeAlreadyExistsException ex) {
+			throw new TskCoreException("Couldn't add new attribute type");
+		}
+	}
+
+	/**
+	 * add an attribute type with the given name
+	 *
+	 * @param attrTypeString name of the new attribute
+	 * @param valueType the value type of this new attribute type
+	 * @param displayName the (non-unique) display name of the attribute type
+	 * @return the id of the new attribute
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 * within tsk core
+	 */
+	public int addArtifactAttributeType(String attrTypeString, TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, String displayName) throws TskCoreException, BlackboardTypeAlreadyExistsException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireExclusiveLock();
 		Statement s = null;
@@ -1755,13 +1795,27 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(s, "SELECT attribute_type_id FROM blackboard_attribute_types WHERE type_name = '" + attrTypeString + "'"); //NON-NLS
 			if (!rs.next()) {
 				rs.close();
-				connection.executeUpdate(s, "INSERT INTO blackboard_attribute_types (type_name, display_name) VALUES ('" + attrTypeString + "', '" + displayName + "')", Statement.RETURN_GENERATED_KEYS); //NON-NLS
+				rs = connection.executeQuery(s, "SELECT MAX(attribute_type_id) AS highest_id FROM blackboard_attribute_types");
+				int max = 0;
+				if (rs.next()) {
+					max = rs.getInt(1);
+					if (max < MIN_USER_DEFINED_TYPE_ID) {
+						max = MIN_USER_DEFINED_TYPE_ID;
+					} else {
+						max++;
+					}
+				}
+				connection.executeUpdate(s, "INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name, value_type) VALUES ('" + max + "', '" + attrTypeString + "', '" + displayName + "', '" + valueType.getType() + "')", Statement.RETURN_GENERATED_KEYS); //NON-NLS
 				rs = s.getGeneratedKeys();
 				rs.next();
+				int type = rs.getInt(1);
+				connection.commitTransaction();
+				return type;
 			}
-			int type = rs.getInt(1);
-			connection.commitTransaction();
-			return type;
+			else {
+				throw new BlackboardTypeAlreadyExistsException("The attribute type that was added was already within the system.");
+			}
+
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
 			throw new TskCoreException("Error adding attribute type", ex);
