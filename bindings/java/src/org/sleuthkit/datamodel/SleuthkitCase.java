@@ -385,6 +385,7 @@ public class SleuthkitCase {
 				//    a. do nothing and return the schema version number unchanged, or
 				//    b. upgrade the database and then increment and return the schema version number.
 				schemaVersionNumber = updateFromSchema2toSchema3(schemaVersionNumber);
+				schemaVersionNumber = updateFromSchema3toSchema4(schemaVersionNumber);
 
 				// Write the updated schema version number to the the tsk_db_info table.
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + schemaVersionNumber); //NON-NLS
@@ -660,16 +661,28 @@ public class SleuthkitCase {
 			while (resultSet.next()) {
 				int attributeTypeId = resultSet.getInt("attribute_type_id");
 				String attributeLabel = resultSet.getString("type_name");
-				if(attributeTypeId < MIN_USER_DEFINED_TYPE_ID) {
+				if (attributeTypeId < MIN_USER_DEFINED_TYPE_ID) {
 					updateStatement.executeUpdate(
-						"UPDATE blackboard_attribute_types " + //NON-NLS
-						"SET value_type = " + ATTRIBUTE_TYPE.fromLabel(attributeLabel).getValueType().getType() + " " + //NON-NLS
-						"WHERE blackboard_attribute_types.attribute_type_id = " + attributeTypeId + ";"); //NON-NLS	
+							"UPDATE blackboard_attribute_types " + //NON-NLS
+							"SET value_type = " + ATTRIBUTE_TYPE.fromLabel(attributeLabel).getValueType().getType() + " " + //NON-NLS
+							"WHERE blackboard_attribute_types.attribute_type_id = " + attributeTypeId + ";"); //NON-NLS	
 				}
-								
+
 			}
 			resultSet.close();
-			
+			resultSet = statement.executeQuery("SELECT files.obj_id, attrs.value_text "
+					+ "FROM tsk_files AS files, blackboard_attributes AS attrs, blackboard_artifacts AS arts "
+					+ "WHERE files.obj_id = arts.obj_id AND "
+					+ "arts.artifact_id = attrs.artifact_id AND "
+					+ "arts.artifact_type_id = 1 AND "
+					+ "attrs.attribute_type_id = 62");
+			while (resultSet.next()) {
+				int objId = resultSet.getInt(1);
+				updateStatement.executeUpdate(
+							"UPDATE tsk_files " + //NON-NLS
+							"SET mime_type = " + resultSet.getString(2) + " " + //NON-NLS
+							"WHERE tsk_files.obj_id = " + objId + ";"); //NON-NLS	
+			}
 			return 4;
 		} finally {
 			closeStatement(updateStatement);
@@ -1762,8 +1775,7 @@ public class SleuthkitCase {
 	 * @param displayName the (non-unique) display name of the attribute type
 	 * @return the id of the new attribute
 	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * @deprecated Use addArtifactAttributeType instead
-	 * within tsk core
+	 * @deprecated Use addArtifactAttributeType instead within tsk core
 	 */
 	@Deprecated
 	public int addAttrType(String attrTypeString, String displayName) throws TskCoreException {
@@ -1811,8 +1823,7 @@ public class SleuthkitCase {
 				int type = rs.getInt(1);
 				connection.commitTransaction();
 				return type;
-			}
-			else {
+			} else {
 				throw new BlackboardTypeAlreadyExistsException("The attribute type that was added was already within the system.");
 			}
 
