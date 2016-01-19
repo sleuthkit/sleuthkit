@@ -821,8 +821,8 @@ public class SleuthkitCase {
 	 * multi-step process and this returns an object that allows it to happen.
 	 *
 	 * @param timezone TZ time zone string to use for ingest of image.
-	 * @param addUnallocSpace Set to true to create virtual files for unallocated space
-	 * the image.
+	 * @param addUnallocSpace Set to true to create virtual files for
+	 * unallocated space the image.
 	 * @param noFatFsOrphans Set to true to skip processing orphan files of FAT
 	 * file systems.
 	 * @return Object that encapsulates control of adding an image via the
@@ -1210,61 +1210,56 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get _standard_ blackboard artifact types in use. This does not currently
-	 * return user-defined ones.
+	 * Get a list of the standard blackboard artifact types.
 	 *
 	 * @return list of blackboard artifact types
 	 * @throws TskCoreException exception thrown if a critical error occurred
 	 * within tsk core
+	 * @deprecated For a list of standard blackboard artifacts, use
+	 * BlackboardArtifact.ARTIFACT_TYPE.values
 	 */
+	@Deprecated
 	public ArrayList<BlackboardArtifact.ARTIFACT_TYPE> getBlackboardArtifactTypes() throws TskCoreException {
+		return new ArrayList<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.values()));
+	}
+
+	/**
+	 * Get all of the standard blackboard artifact types that are in use in the
+	 * blackboard.
+	 *
+	 * @return List of standard blackboard artifact types
+	 * @throws TskCoreException
+	 */
+	public ArrayList<BlackboardArtifact.ARTIFACT_TYPE> getBlackboardArtifactTypesInUse() throws TskCoreException {
+		String typeIdList = "";
+		for (int i = 0; i < BlackboardArtifact.ARTIFACT_TYPE.values().length; ++i) {
+			typeIdList += BlackboardArtifact.ARTIFACT_TYPE.values()[i].getTypeID();
+			if (i < BlackboardArtifact.ARTIFACT_TYPE.values().length - 1) {
+				typeIdList += ", ";
+			}
+		}
+		String query = "SELECT DISTINCT artifact_type_id FROM blackboard_artifacts "
+				+ "WHERE artifact_type_id IN (" + typeIdList + ")";
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
 		Statement s = null;
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT artifact_type_id FROM blackboard_artifact_types"); //NON-NLS			
-			ArrayList<BlackboardArtifact.ARTIFACT_TYPE> artifact_types = new ArrayList<BlackboardArtifact.ARTIFACT_TYPE>();
+			rs = connection.executeQuery(s, query);
+			ArrayList<BlackboardArtifact.ARTIFACT_TYPE> usedArts = new ArrayList<BlackboardArtifact.ARTIFACT_TYPE>();
 			while (rs.next()) {
-				/*
-				 * Only return ones in the enum because otherwise exceptions
-				 * get thrown down the call stack. Need to remove use of enum
-				 * for the attribute types */
-				for (BlackboardArtifact.ARTIFACT_TYPE artType : BlackboardArtifact.ARTIFACT_TYPE.values()) {
-					if (artType.getTypeID() == rs.getInt(1)) {
-						artifact_types.add(artType);
-					}
-				}
+				usedArts.add(ARTIFACT_TYPE.fromID(rs.getInt(1)));
 			}
-			return artifact_types;
+			return usedArts;
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting artifact types", ex);
+			throw new TskCoreException("Error getting artifact types in use", ex);
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
 			connection.close();
 			releaseSharedLock();
 		}
-	}
-
-	/**
-	 * Get all of the blackboard artifact types that are in use in the
-	 * blackboard.
-	 *
-	 * @return List of blackboard artifact types
-	 * @throws TskCoreException
-	 */
-	public ArrayList<BlackboardArtifact.ARTIFACT_TYPE> getBlackboardArtifactTypesInUse() throws TskCoreException {
-		// @@@ TODO: This should be rewritten as a single query. 		
-		ArrayList<BlackboardArtifact.ARTIFACT_TYPE> allArts = getBlackboardArtifactTypes();
-		ArrayList<BlackboardArtifact.ARTIFACT_TYPE> usedArts = new ArrayList<BlackboardArtifact.ARTIFACT_TYPE>();
-		for (BlackboardArtifact.ARTIFACT_TYPE art : allArts) {
-			if (getBlackboardArtifactsTypeCount(art.getTypeID()) > 0) {
-				usedArts.add(art);
-			}
-		}
-		return usedArts;
 	}
 
 	/**

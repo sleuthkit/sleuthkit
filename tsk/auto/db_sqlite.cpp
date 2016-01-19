@@ -1065,10 +1065,17 @@ bool
 bool TskDbSqlite::dbExists() {
 
     // Check if database file already exsists
-    struct STAT_STR stat_buf;
-    if (TSTAT(m_dbFilePath, &stat_buf) == 0) {
-        // database file exists
-        return true;
+    if (m_utf8) {
+        struct stat stat_buf;
+        if (stat(m_dbFilePathUtf8, &stat_buf) == 0) {
+            return true;
+        }
+    }
+    else {
+        struct STAT_STR stat_buf;
+        if (TSTAT(m_dbFilePath, &stat_buf) == 0) {
+            return true;
+        }
     }
 
     return false;

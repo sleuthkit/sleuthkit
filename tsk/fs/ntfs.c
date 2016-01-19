@@ -1600,7 +1600,7 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
 
 
 /* needs to be predefined for proc_attrseq */
-static uint8_t ntfs_proc_attrlist(NTFS_INFO *, TSK_FS_FILE *,
+static TSK_RETVAL_ENUM ntfs_proc_attrlist(NTFS_INFO *, TSK_FS_FILE *,
     const TSK_FS_ATTR *);
 
 
@@ -2232,8 +2232,9 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
      * process the attribute list
      */
     if (fs_attr_attrl) {
-        if (ntfs_proc_attrlist(ntfs, fs_file, fs_attr_attrl)) {
-            return TSK_ERR;
+		TSK_RETVAL_ENUM retval;
+        if ((retval = ntfs_proc_attrlist(ntfs, fs_file, fs_attr_attrl)) != TSK_OK) {
+            return retval;
         }
     }
 
@@ -2258,9 +2259,9 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
  * @param fs_file Main file that will have attributes added to it.
  * @param fs_attr_attrlist Attrlist attribute that needs to be parsed. 
  *
- * Return 1 on error and 0 on success
+ * @returns status of error, corrupt, or OK 
  */
-static uint8_t
+static TSK_RETVAL_ENUM
 ntfs_proc_attrlist(NTFS_INFO * ntfs,
     TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr_attrlist)
 {
@@ -2282,14 +2283,14 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
             PRIuINUM "\n", fs_file->meta->addr);
 
     if ((mft = (ntfs_mft *) tsk_malloc(ntfs->mft_rsize_b)) == NULL) {
-        return 1;
+        return TSK_ERR;
     }
 
     if ((map =
             (NTFS_ATTRLIST_MAP *) tsk_malloc(sizeof(NTFS_ATTRLIST_MAP))) ==
         NULL) {
         free(mft);
-        return 1;
+        return TSK_ERR;
     }
 
     /* Clear the contents of the todo buffer */
@@ -2302,7 +2303,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
     if (buf == NULL) {
         free(mft);
         free(map);
-        return 1;
+        return TSK_ERR;
     }
     endaddr = (uintptr_t) buf + (uintptr_t) fs_attr_attrlist->size;
     if (tsk_fs_attr_walk(fs_attr_attrlist, 0, tsk_fs_load_file_action,
@@ -2310,7 +2311,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
         tsk_error_errstr2_concat("- processing attrlist");
         free(mft);
         free(map);
-        return 1;
+        return TSK_ERR;
     }
 
     /* this value should be zero, if not then we didn't read all of the
@@ -2324,7 +2325,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
         free(mft);
         free(buf);
         free(map);
-        return 1;
+        return TSK_ERR;
     }
 
     /* The TSK design requres that each attribute have its own ID.
@@ -2444,7 +2445,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
             free(map);
             free(buf);
             tsk_error_errstr2_concat(" - proc_attrlist");
-            return 1;
+            return TSK_ERR;
         }
 
         /* verify that this entry refers to the original one */
@@ -2472,7 +2473,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
                 free(mft);
                 free(map);
                 free(buf);
-                return 1;
+                return TSK_COR;
             }
         }
 
@@ -2502,14 +2503,14 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
             free(mft);
             free(map);
             free(buf);
-            return 1;
+            return TSK_ERR;
         }
     }
 
     free(mft);
     free(map);
     free(buf);
-    return 0;
+    return TSK_OK;
 }
 
 
