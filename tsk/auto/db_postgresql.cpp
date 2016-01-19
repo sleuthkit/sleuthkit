@@ -505,6 +505,10 @@ int TskDbPostgreSQL::initialize() {
         ("CREATE TABLE tsk_vs_info (obj_id BIGSERIAL PRIMARY KEY, vs_type INTEGER NOT NULL, img_offset BIGINT NOT NULL, block_size BIGINT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating tsk_vs_info table: %s\n")
         ||
+		attempt_exec
+        ("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, data_src_id TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        "Error creating tsk_vs_info table: %s\n")
+        ||
         attempt_exec
         ("CREATE TABLE tsk_fs_info (obj_id BIGSERIAL PRIMARY KEY, img_offset BIGINT NOT NULL, fs_type INTEGER NOT NULL, block_size BIGINT NOT NULL, block_count BIGINT NOT NULL, root_inum BIGINT NOT NULL, first_inum BIGINT NOT NULL, last_inum BIGINT NOT NULL, display_name TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating tsk_fs_info table: %s\n")

@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
+import java.util.UUID;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -371,6 +372,8 @@ public class SleuthkitCase {
 			}
 			resultSet.close();
 			resultSet = null;
+			statement.close();
+			statement = null;
 
 			// Do the schema update(s), if needed.
 			if (SCHEMA_VERSION_NUMBER != schemaVersionNumber) {
@@ -384,11 +387,14 @@ public class SleuthkitCase {
 				// Each method should examine the schema number passed to it and either:
 				//    a. do nothing and return the schema version number unchanged, or
 				//    b. upgrade the database and then increment and return the schema version number.
-				schemaVersionNumber = updateFromSchema2toSchema3(schemaVersionNumber);
-				schemaVersionNumber = updateFromSchema3toSchema4(schemaVersionNumber);
+				schemaVersionNumber = updateFromSchema2toSchema3(schemaVersionNumber, connection);
+				schemaVersionNumber = updateFromSchema3toSchema4(schemaVersionNumber, connection);
 
 				// Write the updated schema version number to the the tsk_db_info table.
+				statement = connection.createStatement();
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + schemaVersionNumber); //NON-NLS
+				statement.close();
+				statement = null;
 			}
 			versionNumber = schemaVersionNumber;
 
@@ -504,12 +510,10 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	@SuppressWarnings("deprecation")
-	private int updateFromSchema2toSchema3(int schemaVersionNumber) throws SQLException, TskCoreException {
+	private int updateFromSchema2toSchema3(int schemaVersionNumber, CaseDbConnection connection) throws SQLException, TskCoreException {
 		if (schemaVersionNumber != 2) {
 			return schemaVersionNumber;
 		}
-
-		CaseDbConnection connection = connections.getConnection();
 		Statement statement = null;
 		Statement updateStatement = null;
 		ResultSet resultSet = null;
@@ -641,19 +645,18 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	@SuppressWarnings("deprecation")
-	private int updateFromSchema3toSchema4(int schemaVersionNumber) throws SQLException, TskCoreException {
+	private int updateFromSchema3toSchema4(int schemaVersionNumber, CaseDbConnection connection) throws SQLException, TskCoreException {
 		if (schemaVersionNumber != 3) {
 			return schemaVersionNumber;
 		}
-		CaseDbConnection connection = connections.getConnection();
 		Statement statement = null;
 		Statement updateStatement = null;
 		ResultSet resultSet = null;
 		try {
 			statement = connection.createStatement();
 			statement.execute("ALTER TABLE tsk_files ADD COLUMN mime_type TEXT;");
-			statement.execute("ALTER TABLE blackboard_attribute_types ADD COLUMN value_type INTEGER NOT NULL;");
-			updateStatement = connection.createStatement();
+			statement.execute("ALTER TABLE blackboard_attribute_types ADD COLUMN value_type INTEGER NOT NULL DEFAULT -1;");
+			statement.execute("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, data_src_id TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));");
 			resultSet = statement.executeQuery(
 					"SELECT * " + //NON-NLS
 					"FROM blackboard_attribute_types AS types"); //NON-NLS
@@ -679,16 +682,24 @@ public class SleuthkitCase {
 			while (resultSet.next()) {
 				int objId = resultSet.getInt(1);
 				updateStatement.executeUpdate(
-							"UPDATE tsk_files " + //NON-NLS
-							"SET mime_type = " + resultSet.getString(2) + " " + //NON-NLS
-							"WHERE tsk_files.obj_id = " + objId + ";"); //NON-NLS	
+						"UPDATE tsk_files " + //NON-NLS
+						"SET mime_type = '" + resultSet.getString(2) + "' " + //NON-NLS
+						"WHERE tsk_files.obj_id = " + objId + ";"); //NON-NLS	
+			}
+			resultSet.close();
+			resultSet = statement.executeQuery("SELECT * FROM tsk_objects WHERE par_obj_id IS NULL");
+			while (resultSet.next()) {
+				long objectId = resultSet.getLong("obj_id");
+				String second = UUID.randomUUID().toString();
+				updateStatement.executeUpdate(
+						"INSERT INTO data_source_info (obj_id, data_src_id) "
+						+ "VALUES(" + objectId + ", '" + second + "');");
 			}
 			return 4;
 		} finally {
 			closeStatement(updateStatement);
 			closeResultSet(resultSet);
 			closeStatement(statement);
-			connection.close();
 		}
 
 	}
