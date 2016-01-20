@@ -270,7 +270,7 @@ int
 		||
 		attempt_exec
         ("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, data_src_id TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
-        "Error creating tsk_vs_info table: %s\n")
+        "Error creating data_source_info table: %s\n")
         ||
         attempt_exec
         ("CREATE TABLE tsk_files (obj_id INTEGER PRIMARY KEY, fs_obj_id INTEGER, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr INTEGER, meta_seq INTEGER, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size INTEGER, ctime INTEGER, crtime INTEGER, atime INTEGER, mtime INTEGER, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, parent_path TEXT, mime_type TEXT, "

@@ -306,7 +306,7 @@ public class SleuthkitCase {
 				resultSet = connection.executeQuery(statement, "SELECT COUNT(*) FROM blackboard_attribute_types WHERE attribute_type_id = '" + type.getTypeID() + "'"); //NON-NLS
 				resultSet.next();
 				if (resultSet.getLong(1) == 0) {
-					connection.executeUpdate(statement, "INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name, value_type) VALUES (" + type.getTypeID() + ", '" + type.getLabel() + "', '" + type.getDisplayName() + "', '" + ATTRIBUTE_TYPE.fromLabel(type.getLabel()).getValueType().getType() + "')"); //NON-NLS
+					connection.executeUpdate(statement, "INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name, value_type) VALUES (" + type.getTypeID() + ", '" + type.getLabel() + "', '" + type.getDisplayName() + "', '" + type.getValueType().getType() + "')"); //NON-NLS
 				}
 				resultSet.close();
 				resultSet = null;
@@ -1784,7 +1784,8 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * add an attribute type with the given name
+	 * Add an attribute type with the given name, assuming the value type is a
+	 * string.
 	 *
 	 * @param attrTypeString name of the new attribute
 	 * @param displayName the (non-unique) display name of the attribute type
@@ -1796,22 +1797,22 @@ public class SleuthkitCase {
 	public int addAttrType(String attrTypeString, String displayName) throws TskCoreException {
 		try {
 			return addArtifactAttributeType(attrTypeString, TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING, displayName);
-		} catch (BlackboardTypeAlreadyExistsException ex) {
+		} catch (TskDataException ex) {
 			throw new TskCoreException("Couldn't add new attribute type");
 		}
 	}
 
 	/**
-	 * add an attribute type with the given name
+	 * Add an attribute type with the given name
 	 *
-	 * @param attrTypeString name of the new attribute
-	 * @param valueType the value type of this new attribute type
-	 * @param displayName the (non-unique) display name of the attribute type
+	 * @param attrTypeString Name of the new attribute
+	 * @param valueType The value type of this new attribute type
+	 * @param displayName The (non-unique) display name of the attribute type
 	 * @return the id of the new attribute
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
 	 */
-	public int addArtifactAttributeType(String attrTypeString, TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, String displayName) throws TskCoreException, BlackboardTypeAlreadyExistsException {
+	public int addArtifactAttributeType(String attrTypeString, TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, String displayName) throws TskCoreException, TskDataException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireExclusiveLock();
 		Statement s = null;
@@ -1839,7 +1840,7 @@ public class SleuthkitCase {
 				connection.commitTransaction();
 				return type;
 			} else {
-				throw new BlackboardTypeAlreadyExistsException("The attribute type that was added was already within the system.");
+				throw new TskDataException("The attribute type that was added was already within the system.");
 			}
 
 		} catch (SQLException ex) {

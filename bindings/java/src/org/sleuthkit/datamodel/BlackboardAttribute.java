@@ -51,7 +51,7 @@ public class BlackboardAttribute {
 		INTEGER(1, "Integer"), ///< int NON-NLS
 		LONG(2, "Long"), ///< long NON-NLS
 		DOUBLE(3, "Double"), ///< double NON-NLS
-		BYTE(4, "Byte"),      ///< byte NON-NLS
+		BYTE(4, "Byte"), ///< byte NON-NLS
 		DATETIME(5, "DateTime");
 		private long type;
 		private String label;
@@ -104,7 +104,7 @@ public class BlackboardAttribute {
 		 * See framework/Services/TskBlackboard.* */
 
 		TSK_URL(1, "TSK_URL", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskUrl.text"), 
+				bundle.getString("BlackboardAttribute.tskUrl.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_DATETIME(2, "TSK_DATETIME", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskDatetime.text"),
@@ -251,7 +251,7 @@ public class BlackboardAttribute {
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_MSG_REPLY_ID(49, "TSK_MSG_REPLY_ID", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskMsgReplyId.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_DATETIME_RCVD(50, "TSK_DATETIME_RCVD", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskDateTimeRcvd.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME),
@@ -438,19 +438,19 @@ public class BlackboardAttribute {
 		private String label;
 		private int typeID;
 		private String displayName;
-		private TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE dataType;
+		private TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType;
 
-		private ATTRIBUTE_TYPE(int typeID, String label, String displayName, TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE dataType) {
+		private ATTRIBUTE_TYPE(int typeID, String label, String displayName, TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType) {
 			this.typeID = typeID;
 			this.label = label;
 			this.displayName = displayName;
-			this.dataType = dataType;
+			this.valueType = valueType;
 		}
 
 		/**
 		 * Get label string of this attribute
 		 *
-		 * @return label string
+		 * @return Label string
 		 */
 		public String getLabel() {
 			return this.label;
@@ -459,25 +459,26 @@ public class BlackboardAttribute {
 		/**
 		 * Get type id of this attribute
 		 *
-		 * @return type id
+		 * @return Type id
 		 */
 		public int getTypeID() {
 			return this.typeID;
 		}
-		
+
 		/**
 		 * Gets the value type of this attribute type
+		 *
 		 * @return the value type
 		 */
 		public TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE getValueType() {
-			return this.dataType;
+			return this.valueType;
 		}
 
 		/**
 		 * Get the attribute enum for the given label
 		 *
-		 * @param label label string
-		 * @return the enum value
+		 * @param label Label string
+		 * @return The enum value
 		 */
 		static public ATTRIBUTE_TYPE fromLabel(String label) {
 			for (ATTRIBUTE_TYPE v : ATTRIBUTE_TYPE.values()) {
@@ -535,7 +536,7 @@ public class BlackboardAttribute {
 		}
 		this.sleuthkitCase = sleuthkitCase;
 	}
-	
+
 	/**
 	 * Create a blackboard attribute that stores an int
 	 *
@@ -597,8 +598,7 @@ public class BlackboardAttribute {
 			long valueLong) {
 		this(attributeType.getTypeID(), moduleName, valueLong);
 	}
-	
-	
+
 	/**
 	 * Create a blackboard attribute that stores a long (creates an attribute
 	 * that can be added to an artifact)
@@ -641,7 +641,7 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * Create a blackboard attribute that stores a double 
+	 * Create a blackboard attribute that stores a double
 	 *
 	 * @param attributeType type of the attribute
 	 * @param moduleName name of the module that is creating the attribute
@@ -651,7 +651,7 @@ public class BlackboardAttribute {
 			double valueDouble) {
 		this(attributeType.getTypeID(), moduleName, valueDouble);
 	}
-	
+
 	/**
 	 * Create a blackboard attribute that stores a double (creates an attribute
 	 * that can be added to an artifact)
@@ -703,7 +703,7 @@ public class BlackboardAttribute {
 			String valueString) {
 		this(attributeType.getTypeID(), moduleName, valueString);
 	}
-	
+
 	/**
 	 * Create a blackboard attribute that stores a string (creates an attribute
 	 * that can be added to an artifact)
@@ -758,7 +758,7 @@ public class BlackboardAttribute {
 			byte[] valueBytes) {
 		this(attributeType.getTypeID(), moduleName, valueBytes);
 	}
-	
+
 	/**
 	 * Create a blackboard attribute that stores a byte array (creates an
 	 * attribute that can be added to an artifact)
