@@ -51,7 +51,8 @@ public class BlackboardAttribute {
 		INTEGER(1, "Integer"), ///< int NON-NLS
 		LONG(2, "Long"), ///< long NON-NLS
 		DOUBLE(3, "Double"), ///< double NON-NLS
-		BYTE(4, "Byte");      ///< byte NON-NLS
+		BYTE(4, "Byte"),      ///< byte NON-NLS
+		DATETIME(5, "DateTime");
 		private long type;
 		private String label;
 
@@ -107,7 +108,7 @@ public class BlackboardAttribute {
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_DATETIME(2, "TSK_DATETIME", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskDatetime.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME),
 		TSK_NAME(3, "TSK_NAME", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskName.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
@@ -200,7 +201,7 @@ public class BlackboardAttribute {
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_DATETIME_ACCESSED(33, "TSK_DATETIME_ACCESSED", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskDateTimeAccessed.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME),
 		TSK_IP_ADDRESS(34, "TSK_IP_ADDRESS", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskIpAddress.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
@@ -253,10 +254,10 @@ public class BlackboardAttribute {
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER),
 		TSK_DATETIME_RCVD(50, "TSK_DATETIME_RCVD", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskDateTimeRcvd.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME),
 		TSK_DATETIME_SENT(51, "TSK_DATETIME_SENT", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskDateTimeSent.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME),
 		TSK_SUBJECT(52, "TSK_SUBJECT", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskSubject.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
@@ -311,10 +312,10 @@ public class BlackboardAttribute {
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_DATETIME_CREATED(68, "TSK_DATETIME_CREATED", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskDateTimeCreated.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME),
 		TSK_DATETIME_MODIFIED(69, "TSK_DATETIME_MODIFIED", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskDateTimeModified.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME),
 		TSK_PROCESSOR_ARCHITECTURE(70, "TSK_PROCESSOR_ARCHITECTURE", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskProcessorArchitecture.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
@@ -356,10 +357,10 @@ public class BlackboardAttribute {
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_DATETIME_START(83, "TSK_DATETIME_START", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskDateTimeStart.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG), // start time of an event - call log, Calendar entry
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME), // start time of an event - call log, Calendar entry
 		TSK_DATETIME_END(84, "TSK_DATETIME_END", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskDateTimeEnd.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG), // end time of an event - call log, Calendar entry
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME), // end time of an event - call log, Calendar entry
 		TSK_CALENDAR_ENTRY_TYPE(85, "TSK_CALENDAR_ENTRY_TYPE", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskCalendarEntryType.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // meeting, task,
