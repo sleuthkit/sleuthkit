@@ -505,12 +505,16 @@ int TskDbPostgreSQL::initialize() {
         ("CREATE TABLE tsk_vs_info (obj_id BIGSERIAL PRIMARY KEY, vs_type INTEGER NOT NULL, img_offset BIGINT NOT NULL, block_size BIGINT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating tsk_vs_info table: %s\n")
         ||
+		attempt_exec
+        ("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, data_src_id TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        "Error creating data_source_info table: %s\n")
+        ||
         attempt_exec
         ("CREATE TABLE tsk_fs_info (obj_id BIGSERIAL PRIMARY KEY, img_offset BIGINT NOT NULL, fs_type INTEGER NOT NULL, block_size BIGINT NOT NULL, block_count BIGINT NOT NULL, root_inum BIGINT NOT NULL, first_inum BIGINT NOT NULL, last_inum BIGINT NOT NULL, display_name TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating tsk_fs_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_files (obj_id BIGSERIAL PRIMARY KEY, fs_obj_id BIGINT, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr BIGINT, meta_seq BIGINT, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size BIGINT, ctime BIGINT, crtime BIGINT, atime BIGINT, mtime BIGINT, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, parent_path TEXT, "
+        ("CREATE TABLE tsk_files (obj_id BIGSERIAL PRIMARY KEY, fs_obj_id BIGINT, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr BIGINT, meta_seq BIGINT, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size BIGINT, ctime BIGINT, crtime BIGINT, atime BIGINT, mtime BIGINT, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, parent_path TEXT, mime_type TEXT, "
         "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id));",
         "Error creating tsk_files table: %s\n")
         ||
@@ -529,7 +533,7 @@ int TskDbPostgreSQL::initialize() {
         ||
         attempt_exec("CREATE TABLE blackboard_artifact_types (artifact_type_id BIGSERIAL PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT)","Error creating blackboard_artifact_types table: %s\n")
         ||
-        attempt_exec("CREATE TABLE blackboard_attribute_types (attribute_type_id BIGSERIAL PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT)","Error creating blackboard_attribute_types table: %s\n")
+        attempt_exec("CREATE TABLE blackboard_attribute_types (attribute_type_id BIGSERIAL PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT, value_type INTEGER NOT NULL)","Error creating blackboard_attribute_types table: %s\n")
         ||
         attempt_exec("CREATE TABLE blackboard_artifacts (artifact_id BIGSERIAL PRIMARY KEY, obj_id BIGINT NOT NULL, artifact_type_id BIGINT NOT NULL, "
         "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id))",
