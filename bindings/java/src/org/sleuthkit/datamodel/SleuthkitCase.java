@@ -642,20 +642,19 @@ public class SleuthkitCase {
 					+ "arts.artifact_type_id = 1 AND "
 					+ "attrs.attribute_type_id = 62");
 			while (resultSet.next()) {
-				int objId = resultSet.getInt(1);
 				updateStatement.executeUpdate(
 						"UPDATE tsk_files " + //NON-NLS
 						"SET mime_type = '" + resultSet.getString(2) + "' " + //NON-NLS
-						"WHERE tsk_files.obj_id = " + objId + ";"); //NON-NLS	
+						"WHERE tsk_files.obj_id = " + resultSet.getInt(1) + ";"); //NON-NLS	
 			}
 			resultSet.close();
 			resultSet = statement.executeQuery("SELECT * FROM tsk_objects WHERE par_obj_id IS NULL");
 			while (resultSet.next()) {
 				long objectId = resultSet.getLong("obj_id");
-				String second = UUID.randomUUID().toString();
+				String dataSrcId = UUID.randomUUID().toString();
 				updateStatement.executeUpdate(
 						"INSERT INTO data_source_info (obj_id, data_src_id) "
-						+ "VALUES(" + objectId + ", '" + second + "');");
+						+ "VALUES(" + objectId + ", '" + dataSrcId + "');");
 			}
 			return 4;
 		} finally {
@@ -1389,11 +1388,11 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT attribute_type_id, type_name, display_name FROM blackboard_attribute_types"); //NON-NLS
+			rs = connection.executeQuery(s, "SELECT attribute_type_id, type_name, display_name, value_type FROM blackboard_attribute_types"); //NON-NLS
 			ArrayList<BlackboardAttribute.Type> attribute_types = new ArrayList<BlackboardAttribute.Type>();
 			while (rs.next()) {
 				attribute_types.add(new BlackboardAttribute.Type(rs.getInt(1),
-						rs.getString(2), rs.getString(3)));
+						rs.getString(2), rs.getString(3), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getLong(4))));
 			}
 			return attribute_types;
 		} catch (SQLException ex) {
@@ -1844,7 +1843,7 @@ public class SleuthkitCase {
 	@Deprecated
 	public int addAttrType(String attrTypeString, String displayName) throws TskCoreException {
 		try {
-			return addArtifactAttributeType(attrTypeString, TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING, displayName);
+			return addArtifactAttributeType(attrTypeString, TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING, displayName).getTypeID();
 		} catch (TskDataException ex) {
 			throw new TskCoreException("Couldn't add new attribute type");
 		}
@@ -1860,7 +1859,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
 	 */
-	public int addArtifactAttributeType(String attrTypeString, TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, String displayName) throws TskCoreException, TskDataException {
+	public BlackboardAttribute.Type addArtifactAttributeType(String attrTypeString, TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, String displayName) throws TskCoreException, TskDataException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireExclusiveLock();
 		Statement s = null;
@@ -1882,11 +1881,9 @@ public class SleuthkitCase {
 					}
 				}
 				connection.executeUpdate(s, "INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name, value_type) VALUES ('" + max + "', '" + attrTypeString + "', '" + displayName + "', '" + valueType.getType() + "')", Statement.RETURN_GENERATED_KEYS); //NON-NLS
-				rs = s.getGeneratedKeys();
-				rs.next();
-				int type = rs.getInt(1);
+				BlackboardAttribute.Type t = new BlackboardAttribute.Type(max, attrTypeString, displayName, valueType);
 				connection.commitTransaction();
-				return type;
+				return t;
 			} else {
 				throw new TskDataException("The attribute type that was added was already within the system.");
 			}
