@@ -248,7 +248,7 @@ public class SleuthkitCase {
 		this.caseDirPath = caseDirPath;
 		this.connections = new PostgreSQLConnections(host, port, dbName, userName, password);
 		init(caseHandle);
-		updateSchemaVersion();
+		updateDatabaseSchema(null);
 	}
 
 	private void init(SleuthkitJNI.CaseDbHandle caseHandle) throws Exception {
@@ -376,11 +376,13 @@ public class SleuthkitCase {
 
 			// Do the schema update(s), if needed.
 			if (SCHEMA_VERSION_NUMBER != schemaVersionNumber) {
-				// Make a backup copy of the database. Client code can get the path of the backup
-				// using the getBackupDatabasePath() method.
-				String backupFilePath = dbPath + ".schemaVer" + schemaVersionNumber + ".backup"; //NON-NLS
-				copyCaseDB(backupFilePath);
-				dbBackupPath = backupFilePath;
+				if (null != dbPath) {
+					// Make a backup copy of the database. Client code can get the path of the backup
+					// using the getBackupDatabasePath() method.
+					String backupFilePath = dbPath + ".schemaVer" + schemaVersionNumber + ".backup"; //NON-NLS
+					copyCaseDB(backupFilePath);
+					dbBackupPath = backupFilePath;
+				}
 
 				// ***CALL SCHEMA UPDATE METHODS HERE***
 				// Each method should examine the schema number passed to it and either:
@@ -394,45 +396,6 @@ public class SleuthkitCase {
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + schemaVersionNumber); //NON-NLS
 				statement.close();
 				statement = null;
-			}
-			versionNumber = schemaVersionNumber;
-
-			connection.commitTransaction();
-		} catch (Exception ex) { // Cannot do exception multi-catch in Java 6, so use catch-all.
-			connection.rollbackTransaction();
-			throw ex;
-		} finally {
-			closeResultSet(resultSet);
-			closeStatement(statement);
-			connection.close();
-		}
-	}
-
-	/**
-	 * Get the version of the schema from the database
-	 *
-	 * @throws Exception
-	 */
-	private void updateSchemaVersion() throws Exception {
-		CaseDbConnection connection = connections.getConnection();
-		ResultSet resultSet = null;
-		Statement statement = null;
-		try {
-			connection.beginTransaction();
-
-			// Get the schema version number of the case database from the tsk_db_info table.
-			int schemaVersionNumber = SCHEMA_VERSION_NUMBER;
-			statement = connection.createStatement();
-			resultSet = connection.executeQuery(statement, "SELECT schema_ver FROM tsk_db_info"); //NON-NLS
-			if (resultSet.next()) {
-				schemaVersionNumber = resultSet.getInt("schema_ver"); //NON-NLS
-			}
-			resultSet.close();
-			resultSet = null;
-
-			if (SCHEMA_VERSION_NUMBER != schemaVersionNumber) {
-				throw new Exception(bundle.getString("SleuthkitCase.SchemaVersionMismatch"));
-				// could do more updating here, if/when the convert-old-cases-to-new-cases code comes into play
 			}
 			versionNumber = schemaVersionNumber;
 
