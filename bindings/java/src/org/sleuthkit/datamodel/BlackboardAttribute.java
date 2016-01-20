@@ -687,7 +687,7 @@ public class BlackboardAttribute {
 			throw new TskDataException("Type mismatched with value type");
 		}
 		this.artifactID = 0;
-		this.attributeTypeID = attributeTypeID;
+		this.attributeTypeID = attributeType.getTypeID();
 		this.moduleName = replaceNulls(moduleName);
 		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER;
 		this.valueInt = valueInt;
@@ -770,7 +770,7 @@ public class BlackboardAttribute {
 			throw new TskDataException("Type mismatched with value type");
 		}
 		this.artifactID = 0;
-		this.attributeTypeID = attributeTypeID;
+		this.attributeTypeID = attributeType.getTypeID();
 		this.moduleName = replaceNulls(moduleName);
 		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG;
 		this.valueInt = 0;
@@ -852,7 +852,7 @@ public class BlackboardAttribute {
 			throw new TskDataException("Type mismatched with value type");
 		}
 		this.artifactID = 0;
-		this.attributeTypeID = attributeTypeID;
+		this.attributeTypeID = attributeType.getTypeID();
 		this.moduleName = replaceNulls(moduleName);
 		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE;
 		this.valueInt = 0;
@@ -938,7 +938,7 @@ public class BlackboardAttribute {
 			throw new TskDataException("Type mismatched with value type");
 		}
 		this.artifactID = 0;
-		this.attributeTypeID = attributeTypeID;
+		this.attributeTypeID = attributeType.getTypeID();
 		this.moduleName = replaceNulls(moduleName);
 		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING;
 		this.valueInt = 0;
@@ -1027,7 +1027,7 @@ public class BlackboardAttribute {
 			throw new TskDataException("Type mismatched with value type");
 		}
 		this.artifactID = 0;
-		this.attributeTypeID = attributeTypeID;
+		this.attributeTypeID = attributeType.getTypeID();
 		this.moduleName = replaceNulls(moduleName);
 		this.context = "";
 		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE;
