@@ -1011,6 +1011,8 @@ public class BlackboardAttribute {
 				return Double.toString(getValueDouble());
 			case BYTE:
 				return bytesToHexString(getValueBytes());
+			case DATETIME:
+				return FsContent.epochToTime(getValueLong());
 		}
 		return "";
 	}

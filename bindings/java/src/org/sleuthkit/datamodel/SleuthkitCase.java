@@ -1766,6 +1766,10 @@ public class SleuthkitCase {
 				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_DOUBLE_ATTRIBUTE);
 				statement.clearParameters();
 				statement.setDouble(7, attr.getValueDouble());
+			case DATETIME:
+				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_LONG_ATTRIBUTE);
+				statement.clearParameters();
+				statement.setLong(7, attr.getValueLong());
 				break;
 			default:
 				throw new TskCoreException("Unrecognized artifact attribute value type");
