@@ -84,7 +84,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		public String getDisplayName() {
 			return this.displayName;
 		}
-		
+
 		@Override
 		public boolean equals(Object that) {
 			if (this == that) {
@@ -98,6 +98,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 		/**
 		 * Compares two Types to see if they are the same
+		 *
 		 * @param that the other type
 		 * @return true if it is the same type
 		 */
@@ -106,7 +107,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 					&& this.displayName.equals(that.getDisplayName())
 					&& this.typeID == that.getTypeID();
 		}
-		
+
 		@Override
 		public int hashCode() {
 			int hash = 11;
@@ -118,15 +119,10 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	}
 
 	/**
-	 * Enum for artifact types. The C++ code has the full description of how to
-	 * use these. Refer to
+	 * Enum for artifact types. Refer to
 	 * http://wiki.sleuthkit.org/index.php?title=Artifact_Examples for details
 	 * on which attributes should be used for each artifact.
 	 */
-	/* It is very important that this list be kept up to
-	 * date and in sync with the C++ code.  Do not add
-	 * anything here unless you also add it there.
-	 * See framework/Services/TskBlackboard.* */
 	public enum ARTIFACT_TYPE implements SleuthkitVisitableItem {
 
 		TSK_GEN_INFO(1, "TSK_GEN_INFO", //NON-NLS
@@ -242,7 +238,8 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		}
 
 		/**
-		 * Gets the artifact type enum value that corresponds to the given typeName
+		 * Gets the artifact type enum value that corresponds to the given
+		 * typeName
 		 *
 		 * @param label typeName string
 		 * @return the corresponding enum

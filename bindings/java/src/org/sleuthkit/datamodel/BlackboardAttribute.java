@@ -48,17 +48,18 @@ public class BlackboardAttribute {
 	 * Class to represent the type of a blackboard attribute
 	 */
 	public static final class Type implements Serializable {
+
 		private static final long serialVersionUID = 1L;
 		private final String typeName;
 		private final int typeID;
 		private final String displayName;
-		
+
 		public Type(int typeID, String typeName, String displayName) {
 			this.typeID = typeID;
 			this.typeName = typeName;
 			this.displayName = displayName;
 		}
-		
+
 		/**
 		 * Get type name of this attribute
 		 *
@@ -76,16 +77,16 @@ public class BlackboardAttribute {
 		public int getTypeID() {
 			return this.typeID;
 		}
-		
+
 		/**
 		 * Get display name of this attribute
-		 * 
+		 *
 		 * @return The display name of the type
 		 */
 		public String getDisplayName() {
 			return this.displayName;
 		}
-		
+
 		@Override
 		public boolean equals(Object that) {
 			if (this == that) {
@@ -99,6 +100,7 @@ public class BlackboardAttribute {
 
 		/**
 		 * Compares two Types to see if they are the same
+		 *
 		 * @param that the other type
 		 * @return true if it is the same type
 		 */
@@ -107,7 +109,7 @@ public class BlackboardAttribute {
 					&& this.displayName.equals(that.getDisplayName())
 					&& this.typeID == that.getTypeID();
 		}
-		
+
 		@Override
 		public int hashCode() {
 			int hash = 7;
@@ -117,7 +119,7 @@ public class BlackboardAttribute {
 			return hash;
 		}
 	}
-	
+
 	/**
 	 * Enum for the data type (int, double, etc.) of this attribute's value.
 	 */
@@ -168,16 +170,11 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * Standard attribute types. Refer to the C++ code for the full description
-	 * of their intended use. See
+	 * Standard attribute types. See
 	 * http://wiki.sleuthkit.org/index.php?title=Artifact_Examples for more
 	 * information.
 	 */
 	public enum ATTRIBUTE_TYPE {
-		/* It is very important that this list be kept up to
-		 * date and in sync with the C++ code.  Do not add
-		 * anything here unless you also add it there.
-		 * See framework/Services/TskBlackboard.* */
 
 		TSK_URL(1, "TSK_URL", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskUrl.text"),
