@@ -1813,6 +1813,7 @@ public class SleuthkitCase {
 				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_DOUBLE_ATTRIBUTE);
 				statement.clearParameters();
 				statement.setDouble(7, attr.getValueDouble());
+				break;
 			case DATETIME:
 				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_LONG_ATTRIBUTE);
 				statement.clearParameters();
