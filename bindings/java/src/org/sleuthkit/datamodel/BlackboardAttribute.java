@@ -48,17 +48,29 @@ public class BlackboardAttribute {
 	 * Class to represent the type of a blackboard attribute
 	 */
 	public static final class Type implements Serializable {
+
 		private static final long serialVersionUID = 1L;
 		private final String typeName;
 		private final int typeID;
 		private final String displayName;
-		
-		public Type(int typeID, String typeName, String displayName) {
+		private final TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType;
+
+		public Type(int typeID, String typeName, String displayName, TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType) {
 			this.typeID = typeID;
 			this.typeName = typeName;
 			this.displayName = displayName;
+			this.valueType = valueType;
 		}
-		
+
+		/**
+		 * Get value type of this attribute
+		 *
+		 * @return value type
+		 */
+		public TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE getValueType() {
+			return this.valueType;
+		}
+
 		/**
 		 * Get type name of this attribute
 		 *
@@ -76,16 +88,16 @@ public class BlackboardAttribute {
 		public int getTypeID() {
 			return this.typeID;
 		}
-		
+
 		/**
 		 * Get display name of this attribute
-		 * 
+		 *
 		 * @return The display name of the type
 		 */
 		public String getDisplayName() {
 			return this.displayName;
 		}
-		
+
 		@Override
 		public boolean equals(Object that) {
 			if (this == that) {
@@ -99,6 +111,7 @@ public class BlackboardAttribute {
 
 		/**
 		 * Compares two Types to see if they are the same
+		 *
 		 * @param that the other type
 		 * @return true if it is the same type
 		 */
@@ -107,7 +120,7 @@ public class BlackboardAttribute {
 					&& this.displayName.equals(that.getDisplayName())
 					&& this.typeID == that.getTypeID();
 		}
-		
+
 		@Override
 		public int hashCode() {
 			int hash = 7;
@@ -117,7 +130,7 @@ public class BlackboardAttribute {
 			return hash;
 		}
 	}
-	
+
 	/**
 	 * Enum for the data type (int, double, etc.) of this attribute's value.
 	 */
@@ -494,9 +507,13 @@ public class BlackboardAttribute {
 		}
 		this.sleuthkitCase = sleuthkitCase;
 	}
-	
+
 	/**
-	 * Create a blackboard attribute that stores an int
+	 * Create a blackboard attribute that stores an int (creates an attribute
+	 * that can be added to an artifact).
+	 *
+	 * WARNING: THERE IS NO GUARANTEE THIS CONSTRUCTOR WILL MATCH THE VALUE TYPE
+	 * WITH THE ATTRIBUTE TYPE'S VALUE TYPE.
 	 *
 	 * @param attributeType type of the attribute
 	 * @param moduleName name of the module that is creating the attribute
@@ -510,11 +527,38 @@ public class BlackboardAttribute {
 	 * Create a blackboard attribute that stores an int (creates an attribute
 	 * that can be added to an artifact)
 	 *
+	 * WARNING: THERE IS NO GUARANTEE THIS CONSTRUCTOR WILL MATCH THE VALUE TYPE
+	 * WITH THE ATTRIBUTE TYPE'S VALUE TYPE.
+	 *
 	 * @param attributeTypeID type of the attribute
 	 * @param moduleName name of the module that is creating the attribute
 	 * @param valueInt the value
 	 */
 	public BlackboardAttribute(int attributeTypeID, String moduleName, int valueInt) {
+		this.artifactID = 0;
+		this.attributeTypeID = attributeTypeID;
+		this.moduleName = replaceNulls(moduleName);
+		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER;
+		this.valueInt = valueInt;
+		this.valueLong = 0;
+		this.valueDouble = 0;
+		this.valueString = "";
+		this.valueBytes = new byte[0];
+		this.context = "";
+	}
+
+	/**
+	 * Create a blackboard attribute that stores an int (creates an attribute
+	 * that can be added to an artifact)
+	 *
+	 * @param attributeType type of the attribute
+	 * @param moduleName name of the module that is creating the attribute
+	 * @param valueInt the value
+	 */
+	public BlackboardAttribute(Type attributeType, String moduleName, int valueInt) throws TskDataException {
+		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER) {
+			throw new TskDataException("Type mismatched with value type");
+		}
 		this.artifactID = 0;
 		this.attributeTypeID = attributeTypeID;
 		this.moduleName = replaceNulls(moduleName);
@@ -548,6 +592,9 @@ public class BlackboardAttribute {
 	/**
 	 * Create a blackboard attribute that stores a long
 	 *
+	 * WARNING: THERE IS NO GUARANTEE THIS CONSTRUCTOR WILL MATCH THE VALUE TYPE
+	 * WITH THE ATTRIBUTE TYPE'S VALUE TYPE.
+	 *
 	 * @param attributeType type of the attribute
 	 * @param moduleName name of the module that is creating the attribute
 	 * @param valueLong the value
@@ -556,11 +603,13 @@ public class BlackboardAttribute {
 			long valueLong) {
 		this(attributeType.getTypeID(), moduleName, valueLong);
 	}
-	
-	
+
 	/**
 	 * Create a blackboard attribute that stores a long (creates an attribute
 	 * that can be added to an artifact)
+	 *
+	 * WARNING: THERE IS NO GUARANTEE THIS CONSTRUCTOR WILL MATCH THE VALUE TYPE
+	 * WITH THE ATTRIBUTE TYPE'S VALUE TYPE.
 	 *
 	 * @param attributeTypeID type of the attribute
 	 * @param moduleName name of the module that is creating the attribute
@@ -585,6 +634,30 @@ public class BlackboardAttribute {
 	 * Create a blackboard attribute that stores a long (creates an attribute
 	 * that can be added to an artifact)
 	 *
+	 * @param attributeType type of the attribute
+	 * @param moduleName name of the module that is creating the attribute
+	 * @param valueInt the value
+	 */
+	public BlackboardAttribute(Type attributeType, String moduleName, long valueLong) throws TskDataException {
+		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG) {
+			throw new TskDataException("Type mismatched with value type");
+		}
+		this.artifactID = 0;
+		this.attributeTypeID = attributeTypeID;
+		this.moduleName = replaceNulls(moduleName);
+		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG;
+		this.valueInt = 0;
+		this.valueLong = valueLong;
+		this.valueDouble = 0;
+		this.valueString = "";
+		this.valueBytes = new byte[0];
+		this.context = "";
+	}
+
+	/**
+	 * Create a blackboard attribute that stores a long (creates an attribute
+	 * that can be added to an artifact)
+	 *
 	 * @param attributeTypeID type of the attribute
 	 * @param moduleName name of the module that is creating the attribute
 	 * @param context extra information about the attribute
@@ -600,7 +673,10 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * Create a blackboard attribute that stores a double 
+	 * Create a blackboard attribute that stores a double
+	 *
+	 * WARNING: THERE IS NO GUARANTEE THIS CONSTRUCTOR WILL MATCH THE VALUE TYPE
+	 * WITH THE ATTRIBUTE TYPE'S VALUE TYPE.
 	 *
 	 * @param attributeType type of the attribute
 	 * @param moduleName name of the module that is creating the attribute
@@ -610,10 +686,13 @@ public class BlackboardAttribute {
 			double valueDouble) {
 		this(attributeType.getTypeID(), moduleName, valueDouble);
 	}
-	
+
 	/**
 	 * Create a blackboard attribute that stores a double (creates an attribute
 	 * that can be added to an artifact)
+	 *
+	 * WARNING: THERE IS NO GUARANTEE THIS CONSTRUCTOR WILL MATCH THE VALUE TYPE
+	 * WITH THE ATTRIBUTE TYPE'S VALUE TYPE.
 	 *
 	 * @param attributeTypeID type of the attribute
 	 * @param moduleName name of the module that is creating the attribute
@@ -621,6 +700,30 @@ public class BlackboardAttribute {
 	 */
 	public BlackboardAttribute(int attributeTypeID, String moduleName,
 			double valueDouble) {
+		this.artifactID = 0;
+		this.attributeTypeID = attributeTypeID;
+		this.moduleName = replaceNulls(moduleName);
+		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE;
+		this.valueInt = 0;
+		this.valueLong = 0;
+		this.valueDouble = valueDouble;
+		this.valueString = "";
+		this.valueBytes = new byte[0];
+		this.context = "";
+	}
+
+	/**
+	 * Create a blackboard attribute that stores a double (creates an attribute
+	 * that can be added to an artifact)
+	 *
+	 * @param attributeType type of the attribute
+	 * @param moduleName name of the module that is creating the attribute
+	 * @param valueInt the value
+	 */
+	public BlackboardAttribute(Type attributeType, String moduleName, double valueDouble) throws TskDataException {
+		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE) {
+			throw new TskDataException("Type mismatched with value type");
+		}
 		this.artifactID = 0;
 		this.attributeTypeID = attributeTypeID;
 		this.moduleName = replaceNulls(moduleName);
@@ -654,6 +757,9 @@ public class BlackboardAttribute {
 	/**
 	 * Create a blackboard attribute that stores a string
 	 *
+	 * WARNING: THERE IS NO GUARANTEE THIS CONSTRUCTOR WILL MATCH THE VALUE TYPE
+	 * WITH THE ATTRIBUTE TYPE'S VALUE TYPE.
+	 *
 	 * @param attributeType type of the attribute
 	 * @param moduleName name of the module that is creating the attribute
 	 * @param valueString the value
@@ -662,16 +768,48 @@ public class BlackboardAttribute {
 			String valueString) {
 		this(attributeType.getTypeID(), moduleName, valueString);
 	}
-	
+
 	/**
 	 * Create a blackboard attribute that stores a string (creates an attribute
 	 * that can be added to an artifact)
+	 *
+	 * WARNING: THERE IS NO GUARANTEE THIS CONSTRUCTOR WILL MATCH THE VALUE TYPE
+	 * WITH THE ATTRIBUTE TYPE'S VALUE TYPE.
 	 *
 	 * @param attributeTypeID type of the attribute
 	 * @param moduleName name of the module that is creating the attribute
 	 * @param valueString the value
 	 */
 	public BlackboardAttribute(int attributeTypeID, String moduleName, String valueString) {
+		this.artifactID = 0;
+		this.attributeTypeID = attributeTypeID;
+		this.moduleName = replaceNulls(moduleName);
+		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING;
+		this.valueInt = 0;
+		this.valueLong = 0;
+		this.valueDouble = 0;
+		if (valueString == null) {
+			this.valueString = "";
+		} else {
+			this.valueString = replaceNulls(valueString);
+		}
+		this.valueBytes = new byte[0];
+		this.context = "";
+	}
+	
+	/**
+	 * Create a blackboard attribute that stores a string (creates an attribute
+	 * that can be added to an artifact)
+	 *
+	 *
+	 * @param attributeType type of the attribute
+	 * @param moduleName name of the module that is creating the attribute
+	 * @param valueString the value
+	 */
+	public BlackboardAttribute(Type attributeType, String moduleName, String valueString) throws TskDataException {
+		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING) {
+			throw new TskDataException("Type mismatched with value type");
+		}
 		this.artifactID = 0;
 		this.attributeTypeID = attributeTypeID;
 		this.moduleName = replaceNulls(moduleName);
@@ -709,6 +847,9 @@ public class BlackboardAttribute {
 	/**
 	 * Create a blackboard attribute that stores a byte array
 	 *
+	 * WARNING: THERE IS NO GUARANTEE THIS CONSTRUCTOR WILL MATCH THE VALUE TYPE
+	 * WITH THE ATTRIBUTE TYPE'S VALUE TYPE.
+	 *
 	 * @param attributeType type of the attribute
 	 * @param moduleName name of the module that is creating the attribute
 	 * @param valueBytes the value
@@ -717,16 +858,47 @@ public class BlackboardAttribute {
 			byte[] valueBytes) {
 		this(attributeType.getTypeID(), moduleName, valueBytes);
 	}
-	
+
 	/**
 	 * Create a blackboard attribute that stores a byte array (creates an
 	 * attribute that can be added to an artifact)
+	 *
+	 * WARNING: THERE IS NO GUARANTEE THIS CONSTRUCTOR WILL MATCH THE VALUE TYPE
+	 * WITH THE ATTRIBUTE TYPE'S VALUE TYPE.
 	 *
 	 * @param attributeTypeID type of the attribute
 	 * @param moduleName name of the module that is creating the attribute
 	 * @param valueBytes the value
 	 */
 	public BlackboardAttribute(int attributeTypeID, String moduleName, byte[] valueBytes) {
+		this.artifactID = 0;
+		this.attributeTypeID = attributeTypeID;
+		this.moduleName = replaceNulls(moduleName);
+		this.context = "";
+		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE;
+		this.valueInt = 0;
+		this.valueLong = 0;
+		this.valueDouble = 0;
+		this.valueString = "";
+		if (valueBytes == null) {
+			this.valueBytes = new byte[0];
+		} else {
+			this.valueBytes = valueBytes;
+		}
+	}
+
+	/**
+	 * Create a blackboard attribute that stores a byte array (creates an
+	 * attribute that can be added to an artifact)
+	 *
+	 * @param attributeType type of the attribute
+	 * @param moduleName name of the module that is creating the attribute
+	 * @param valueBytes the value
+	 */
+	public BlackboardAttribute(Type attributeType, String moduleName, byte[] valueBytes) throws TskDataException {
+		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE) {
+			throw new TskDataException("Type mismatched with value type");
+		}
 		this.artifactID = 0;
 		this.attributeTypeID = attributeTypeID;
 		this.moduleName = replaceNulls(moduleName);
