@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011 Basis Technology Corp.
+ * Copyright 2011-2016 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,8 +40,6 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
  * application
  */
 public class SleuthkitJNI {
-
-	private static final int MAX_DATABASES = 256;
 	
 	// Lock used to synchronize image and file system cache
 	private static final Object cacheLock = new Object();
@@ -162,7 +160,7 @@ public class SleuthkitJNI {
 	 */
 	public static class CaseDbHandle {
 
-		private long caseDbPointer;
+		private final long caseDbPointer;
 		//map concat. image paths to cached image handle
 		private static final Map<String, Long> imageHandleCache = new HashMap<String, Long>();
 		//map image and offsets to cached fs handle
@@ -417,7 +415,7 @@ public class SleuthkitJNI {
 	 * TSK
 	 */
 	public static long openImage(String[] imageFiles) throws TskCoreException {
-		long imageHandle = 0;
+		long imageHandle;
 
 		StringBuilder keyBuilder = new StringBuilder();
 		for (int i = 0; i < imageFiles.length; ++i) {
@@ -478,7 +476,7 @@ public class SleuthkitJNI {
 	 * TSK
 	 */
 	public static long openFs(long imgHandle, long fsOffset) throws TskCoreException {
-		long fsHandle = 0;
+		long fsHandle;
 		synchronized (cacheLock) {
 			final Map<Long, Long> imgOffSetToFsHandle = CaseDbHandle.fsHandleCache.get(imgHandle);
 			if (imgOffSetToFsHandle.containsKey(fsOffset)) {
@@ -851,7 +849,7 @@ public class SleuthkitJNI {
 			return "";
 		}
 
-		String timezoneShortForm = "";
+		String timezoneShortForm;
 		TimeZone zone = TimeZone.getTimeZone(timezoneLongForm);
 		int offset = zone.getRawOffset() / 1000;
 		int hour = offset / 3600;
@@ -867,7 +865,7 @@ public class SleuthkitJNI {
 			timezoneShortForm = timezoneShortForm + ":" + (min < 10 ? "0" : "") + Integer.toString(min);
 		}
 		if (hasDaylight) {
-			timezoneShortForm = timezoneShortForm + second;
+			timezoneShortForm += second;
 		}
 		return timezoneShortForm;
 	}
