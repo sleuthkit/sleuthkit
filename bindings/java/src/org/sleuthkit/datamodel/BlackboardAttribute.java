@@ -55,6 +55,14 @@ public class BlackboardAttribute {
 		private final String displayName;
 		private final TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType;
 
+		/**
+		 * Constructs a type
+		 * 
+		 * @param typeID the type id
+		 * @param typeName the type name
+		 * @param displayName the display name
+		 * @param valueType the value type
+		 */
 		public Type(int typeID, String typeName, String displayName, TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType) {
 			this.typeID = typeID;
 			this.typeName = typeName;
@@ -118,7 +126,8 @@ public class BlackboardAttribute {
 		private boolean sameType(BlackboardAttribute.Type that) {
 			return this.typeName.equals(that.getTypeName())
 					&& this.displayName.equals(that.getDisplayName())
-					&& this.typeID == that.getTypeID();
+					&& this.typeID == that.getTypeID()
+					&& this.valueType == that.getValueType();
 		}
 
 		@Override
