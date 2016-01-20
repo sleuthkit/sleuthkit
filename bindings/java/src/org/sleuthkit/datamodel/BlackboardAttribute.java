@@ -190,16 +190,11 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * Standard attribute types. Refer to the C++ code for the full description
-	 * of their intended use. See
+	 * Standard attribute types. See
 	 * http://wiki.sleuthkit.org/index.php?title=Artifact_Examples for more
 	 * information.
 	 */
 	public enum ATTRIBUTE_TYPE {
-		/* It is very important that this list be kept up to
-		 * date and in sync with the C++ code.  Do not add
-		 * anything here unless you also add it there.
-		 * See framework/Services/TskBlackboard.* */
 
 		TSK_URL(1, "TSK_URL", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskUrl.text"),
