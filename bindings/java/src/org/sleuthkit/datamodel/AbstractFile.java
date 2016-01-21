@@ -106,7 +106,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param knownState knownState status of the file, or null if unknown
 	 * (default)
 	 * @param parentPath
-	 * @param mimeType The mime type of the file, can be null
+	 * @param mimeType The MIME type of the file, can be null
 	 */
 	protected AbstractFile(SleuthkitCase db, long objId, TskData.TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
 			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq,
@@ -398,7 +398,7 @@ public abstract class AbstractFile extends AbstractContent {
 	/**
 	 * Gets the mime type of this file
 	 *
-	 * @return the mime type
+	 * @return The MIME type
 	 */
 	public String getMIMEType() {
 		return this.mimeType;
@@ -407,10 +407,14 @@ public abstract class AbstractFile extends AbstractContent {
 	/**
 	 * Sets the mime type for this file, updates database
 	 *
-	 * @param mimeType The mime type to set
+	 * @param mimeType The MIME type to set
 	 * @throws TskCoreException
 	 */
-	public void setMIMEType(String mimeType) throws TskCoreException {
+	public void setMIMEType(String mimeType) throws TskCoreException, TskDataException {
+		if(this.mimeType == null) {
+			throw new TskDataException("Mime type has already been set");
+		}
+		this.mimeType = mimeType;
 		getSleuthkitCase().setFileMIMEType(this, mimeType);
 	}
 
@@ -1000,6 +1004,9 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return
 	 */
 	public MimeMatchEnum isMimeType(SortedSet<String> mimeTypes) {
+		if(this.mimeType == null) {
+			return MimeMatchEnum.UNDEFINED;
+		}
 		if (mimeTypes.contains(this.mimeType)) {
 			return MimeMatchEnum.TRUE;
 		}

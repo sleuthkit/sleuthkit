@@ -4824,7 +4824,7 @@ public class SleuthkitCase {
 	 * @param mimeType the mime type
 	 * @throws TskCoreException
 	 */
-	public void setFileMIMEType(AbstractFile file, String mimeType) throws TskCoreException {
+	 void setFileMIMEType(AbstractFile file, String mimeType) throws TskCoreException {
 		if (mimeType == null) {
 			return;
 		}
@@ -4834,7 +4834,6 @@ public class SleuthkitCase {
 		try {
 			Statement statement = connection.createStatement();
 			connection.executeUpdate(statement, "UPDATE tsk_files SET mime_type = " + mimeType + " WHERE obj_id = " + fileId);
-			file.setMIMEType(mimeType);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error setting mimeType", ex);
 		} finally {
