@@ -2101,8 +2101,23 @@ public class SleuthkitCase {
 	 * @return ID of artifact added
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
+	 * @deprecated Use addBlackboardArtifactType instead
 	 */
+	@Deprecated
 	public int addArtifactType(String artifactTypeName, String displayName) throws TskCoreException {
+		return addBlackboardArtifactType(artifactTypeName, displayName).getTypeID();
+	}
+	
+	/**
+	 * Add an artifact type with the given name. Will return an artifact Type.
+	 *
+	 * @param artifactTypeName System (unique) name of artifact
+	 * @param displayName Display (non-unique) name of artifact
+	 * @return Type of the artifact added
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 * within tsk core
+	 */
+	public BlackboardArtifact.Type addBlackboardArtifactType(String artifactTypeName, String displayName) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireExclusiveLock();
 		Statement s = null;
@@ -2119,7 +2134,7 @@ public class SleuthkitCase {
 			}
 			int id = rs.getInt(1);
 			connection.commitTransaction();
-			return id;
+			return new BlackboardArtifact.Type(id, artifactTypeName, displayName);
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
 			throw new TskCoreException("Error adding artifact type", ex);
