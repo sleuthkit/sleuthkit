@@ -67,7 +67,7 @@ public class LocalFile extends AbstractFile {
 			FileKnown knownState, String parentPath, String localPath) {
 		super(db, objId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short) 0,
 				name, fileType, 0L, 0, dirType, metaType, dirFlag,
-				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath);
+				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath, null);
 
 		//use the local path functionality of AbstractFile, this sets up the infrastructure for it
 		super.setLocalPath(localPath, true); //local paths for local files are absolute paths

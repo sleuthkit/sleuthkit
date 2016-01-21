@@ -74,6 +74,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * md5 hash
 	 */
 	protected String md5Hash;
+	private String mimeType;
 	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
@@ -105,12 +106,13 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param knownState knownState status of the file, or null if unknown
 	 * (default)
 	 * @param parentPath
+	 * @param mimeType The mime type of the file, can be null
 	 */
 	protected AbstractFile(SleuthkitCase db, long objId, TskData.TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
 			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq,
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
-			String parentPath) {
+			String parentPath, String mimeType) {
 		super(db, objId, name);
 		this.attrType = attrType;
 		this.attrId = attrId;
@@ -137,6 +139,7 @@ public abstract class AbstractFile extends AbstractContent {
 			this.knownState = knownState;
 		}
 		this.parentPath = parentPath;
+		this.mimeType = mimeType;
 	}
 
 	/**
@@ -390,6 +393,25 @@ public abstract class AbstractFile extends AbstractContent {
 			result = "ERROR"; //NON-NLS
 		}
 		return result;
+	}
+
+	/**
+	 * Gets the mime type of this file
+	 *
+	 * @return the mime type
+	 */
+	public String getMIMEType() {
+		return this.mimeType;
+	}
+
+	/**
+	 * Sets the mime type for this file, updates database
+	 *
+	 * @param mimeType The mime type to set
+	 * @throws TskCoreException
+	 */
+	public void setMIMEType(String mimeType) throws TskCoreException {
+		getSleuthkitCase().setFileMIMEType(this, mimeType);
 	}
 
 	public boolean isModeSet(TskData.TSK_FS_META_MODE_ENUM mode) {
@@ -978,20 +1000,9 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return
 	 */
 	public MimeMatchEnum isMimeType(SortedSet<String> mimeTypes) {
-		try {
-			List<BlackboardAttribute> attrs = getGenInfoAttributes(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_FILE_TYPE_SIG);
-			if (attrs.isEmpty()) {
-				return MimeMatchEnum.UNDEFINED;
-			}
-
-			for (BlackboardAttribute batt : attrs) {
-				if (mimeTypes.contains(batt.getValueString())) {
-					return MimeMatchEnum.TRUE;
-				}
-			}
-			return MimeMatchEnum.FALSE;
-		} catch (TskCoreException ex) {
-			return MimeMatchEnum.UNDEFINED;
+		if (mimeTypes.contains(this.mimeType)) {
+			return MimeMatchEnum.TRUE;
 		}
+		return MimeMatchEnum.FALSE;
 	}
 }

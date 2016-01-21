@@ -2107,7 +2107,7 @@ public class SleuthkitCase {
 	public int addArtifactType(String artifactTypeName, String displayName) throws TskCoreException {
 		return addBlackboardArtifactType(artifactTypeName, displayName).getTypeID();
 	}
-	
+
 	/**
 	 * Add an artifact type with the given name. Will return an artifact Type.
 	 *
@@ -4815,6 +4815,32 @@ public class SleuthkitCase {
 			releaseExclusiveLock();
 		}
 		return true;
+	}
+
+	/**
+	 * Store the mime type in the file database
+	 *
+	 * @param fileId The id of the file to update the mime type of
+	 * @param mimeType the mime type
+	 * @throws TskCoreException
+	 */
+	public void setFileMIMEType(AbstractFile file, String mimeType) throws TskCoreException {
+		if (mimeType == null) {
+			return;
+		}
+		long fileId = file.getId();
+		CaseDbConnection connection = connections.getConnection();
+		acquireExclusiveLock();
+		try {
+			Statement statement = connection.createStatement();
+			connection.executeUpdate(statement, "UPDATE tsk_files SET mime_type = " + mimeType + " WHERE obj_id = " + fileId);
+			file.setMIMEType(mimeType);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error setting mimeType", ex);
+		} finally {
+			connection.close();
+			releaseExclusiveLock();
+		}
 	}
 
 	/**
