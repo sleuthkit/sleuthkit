@@ -4833,7 +4833,7 @@ public class SleuthkitCase {
 		acquireExclusiveLock();
 		try {
 			Statement statement = connection.createStatement();
-			connection.executeUpdate(statement, "UPDATE tsk_files SET mime_type = " + mimeType + " WHERE obj_id = " + fileId);
+			connection.executeUpdate(statement, "UPDATE tsk_files SET mime_type = '" + mimeType + "' WHERE obj_id = " + fileId);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error setting mimeType", ex);
 		} finally {

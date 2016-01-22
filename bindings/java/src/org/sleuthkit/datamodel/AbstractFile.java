@@ -106,9 +106,71 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param knownState knownState status of the file, or null if unknown
 	 * (default)
 	 * @param parentPath
-	 * @param mimeType The MIME type of the file, can be null
 	 */
 	protected AbstractFile(SleuthkitCase db, long objId, TskData.TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
+			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq,
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
+			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
+			String parentPath) {
+		super(db, objId, name);
+		this.attrType = attrType;
+		this.attrId = attrId;
+		this.fileType = fileType;
+		this.metaAddr = metaAddr;
+		this.metaSeq = metaSeq;
+		this.dirType = dirType;
+		this.metaType = metaType;
+		this.dirFlag = dirFlag;
+		this.metaFlags = TSK_FS_META_FLAG_ENUM.valuesOf(metaFlags);
+		this.size = size;
+		this.ctime = ctime;
+		this.crtime = crtime;
+		this.atime = atime;
+		this.mtime = mtime;
+		this.uid = uid;
+		this.gid = gid;
+		this.modes = TskData.TSK_FS_META_MODE_ENUM.valuesOf(modes);
+
+		this.md5Hash = md5Hash;
+		if (knownState == null) {
+			this.knownState = FileKnown.UNKNOWN;
+		} else {
+			this.knownState = knownState;
+		}
+		this.parentPath = parentPath;
+	}
+
+	/**
+	 * Initializes common fields used by AbstactFile implementations (objects in
+	 * tsk_files table)
+	 *
+	 * @param db case / db handle where this file belongs to
+	 * @param objId object id in tsk_objects table
+	 * @param attrType
+	 * @param attrId
+	 * @param name name field of the file
+	 * @param fileType type of the file
+	 * @param metaAddr
+	 * @param metaSeq
+	 * @param dirType
+	 * @param metaType
+	 * @param dirFlag
+	 * @param metaFlags
+	 * @param size
+	 * @param ctime
+	 * @param crtime
+	 * @param atime
+	 * @param mtime
+	 * @param modes
+	 * @param uid
+	 * @param gid
+	 * @param md5Hash md5sum of the file, or null or "NULL" if not present
+	 * @param knownState knownState status of the file, or null if unknown
+	 * (default)
+	 * @param parentPath
+	 * @param mimeType The MIME type of the file, can be null
+	 */
+	AbstractFile(SleuthkitCase db, long objId, TskData.TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
 			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq,
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
@@ -396,7 +458,8 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Gets the mime type of this file
+	 * Gets the mime type of this file may return null if a mime type has not
+	 * been assigned
 	 *
 	 * @return The MIME type
 	 */
@@ -408,14 +471,15 @@ public abstract class AbstractFile extends AbstractContent {
 	 * Sets the mime type for this file, updates database
 	 *
 	 * @param mimeType The MIME type to set
-	 * @throws TskCoreException
+	 * @throws TskCoreException If the mime type could not be added to the db
+	 * @throws TskDataException If the mime type has already been set
 	 */
 	public void setMIMEType(String mimeType) throws TskCoreException, TskDataException {
-		if(this.mimeType == null) {
+		if (this.mimeType != null) {
 			throw new TskDataException("Mime type has already been set");
 		}
-		this.mimeType = mimeType;
 		getSleuthkitCase().setFileMIMEType(this, mimeType);
+		this.mimeType = mimeType;
 	}
 
 	public boolean isModeSet(TskData.TSK_FS_META_MODE_ENUM mode) {
@@ -1004,7 +1068,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return
 	 */
 	public MimeMatchEnum isMimeType(SortedSet<String> mimeTypes) {
-		if(this.mimeType == null) {
+		if (this.mimeType == null) {
 			return MimeMatchEnum.UNDEFINED;
 		}
 		if (mimeTypes.contains(this.mimeType)) {
