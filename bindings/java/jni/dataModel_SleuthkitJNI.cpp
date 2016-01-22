@@ -1003,7 +1003,6 @@ JNIEXPORT void JNICALL
         return;
     }
 
-
     // move the strings into the C++ world
 
     // get pointers to each of the file names
@@ -1080,6 +1079,95 @@ JNIEXPORT void JNICALL
     // if process completes successfully, must call revertAddImgNat or commitAddImgNat to free the TskAutoDb
 }
 
+/*
+ * Create a database for the given image using a pre-created process which can be cancelled.
+ * MUST call commitAddImg or revertAddImg afterwards once runAddImg returns.  If there is an 
+ * error, you do not need to call revert or commit and the 'process' handle will be deleted.
+ * @return the 0 for success 1 for failure
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param process the add-image process created by initAddImgNat
+ * @param dataSrcId An identifier for the data source that is unique across multiple cases (e.g., a UUID)
+ * @param imgPath The full path to the image
+ * @param timezone the timezone the image is from
+ */
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env, jclass obj, jlong process, jstring dataSrcId, jstring imgPath, jstring timeZone) {
+
+    // Validate arguments.
+    TskAutoDb *tskAuto = ((TskAutoDb *) process);
+    if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
+        setThrowTskCoreError(env, "runAddImgNat: Invalid process argument");
+        return;
+    }
+    if (env->GetStringLength(dataSrcId) <= 0) {    
+        setThrowTskCoreError(env, "runAddImgNat: Invalid data source id argument");
+        return;
+    }
+    if (env->GetStringLength(imgPath) <= 0) {    
+        setThrowTskCoreError(env, "runAddImgNat: Invalid image path argument");
+        return;
+    }
+
+    // Convert the string arguments into native strings.
+    jboolean isCopy;
+    const char *data_src_id = (const char *) env->GetStringUTFChars(dataSrcId, &isCopy);
+    if (NULL == data_src_id) {
+        setThrowTskCoreError(env, "runAddImgNat: Can't convert data source id string");
+        return;
+    }
+    char **image_paths = (char **) tsk_malloc(1 * sizeof(char *));
+    if (NULL == image_paths) {
+        setThrowTskCoreError(env, "runAddImgNat: Can't malloc array for image path string");
+        env->ReleaseStringUTFChars(dataSrcId, (const char *) data_src_id);
+        return;
+    }
+    image_paths[0] = (char *) env->GetStringUTFChars(imgPath, &isCopy);    
+
+    // Set the time zone.
+    if (env->GetStringLength(timeZone) > 0) {
+        const char *time_zone = env->GetStringUTFChars(timeZone, &isCopy);
+        tskAuto->setTz(string(time_zone));
+        env->ReleaseStringUTFChars(timeZone, time_zone);
+    }
+
+    // Add the image.
+    uint8_t ret = 0;
+    if ( (ret = tskAuto->startAddImage(1, image_paths, TSK_IMG_TYPE_DETECT, 0)) != 0) {
+        stringstream msgss;
+        msgss << "runAddImgNat: Errors occured while ingesting image " << std::endl;
+        vector<TskAuto::error_record> errors = tskAuto->getErrorList();
+        for (size_t i = 0; i < errors.size(); i++) {
+            msgss << (i+1) << ". ";
+            msgss << (TskAuto::errorRecordToString(errors[i]));
+            msgss << " " << std::endl;
+        }
+        if (ret == 1) {
+            //fatal error
+            setThrowTskCoreError(env, msgss.str().c_str());
+        }
+        else if (ret == 2) {
+			if(tskAuto->isDbOpen()) {
+				// if we can still talk to the database, it's a non-fatal error
+				setThrowTskDataError(env, msgss.str().c_str());
+			}
+			else {
+				// we cannot talk to the database, fatal error
+				setThrowTskCoreError(env, msgss.str().c_str());
+			}
+        }
+    }
+
+    // @@@ SHOULD WE CLOSE HERE before we commit / revert etc.
+    //close image first before freeing the image paths
+    tskAuto->closeImage();
+
+    // cleanup
+    env->ReleaseStringUTFChars(imgPath, (const char *) image_paths[0]);
+    free(image_paths);
+    env->ReleaseStringUTFChars(dataSrcId, (const char *) data_src_id);
+
+    // if process completes successfully, must call revertAddImgNat or commitAddImgNat to free the TskAutoDb
+}
 
 
 /*

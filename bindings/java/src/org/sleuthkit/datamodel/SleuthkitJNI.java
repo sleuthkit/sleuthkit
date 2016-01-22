@@ -40,7 +40,7 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
  * application
  */
 public class SleuthkitJNI {
-	
+
 	// Lock used to synchronize image and file system cache
 	private static final Object cacheLock = new Object();
 
@@ -60,6 +60,7 @@ public class SleuthkitJNI {
 
 	private static native void closeCaseDbNat(long db) throws TskCoreException;
 
+	//hash-lookup database   
 	private static native int hashDbOpenNat(String hashDbPath) throws TskCoreException;
 
 	private static native int hashDbNewNat(String hashDbPath) throws TskCoreException;
@@ -86,7 +87,6 @@ public class SleuthkitJNI {
 
 	private static native void hashDbClose(int dbHandle) throws TskCoreException;
 
-	//hash-lookup database functions   
 	private static native void hashDbCreateIndexNat(int dbHandle) throws TskCoreException;
 
 	private static native boolean hashDbIndexExistsNat(int dbHandle) throws TskCoreException;
@@ -97,10 +97,12 @@ public class SleuthkitJNI {
 
 	private static native HashHitInfo hashDbLookupVerbose(String hash, int dbHandle) throws TskCoreException;
 
-	//load image
+	//add image
 	private static native long initAddImgNat(long db, String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) throws TskCoreException;
 
 	private static native void runAddImgNat(long process, String[] imgPath, int splits, String timezone) throws TskCoreException, TskDataException; // if runAddImg finishes without being stopped, revertAddImg or commitAddImg MUST be called
+
+	private static native void runAddImgNat(long process, String dataSourceId, String imgPath, String timezone) throws TskCoreException, TskDataException; // if runAddImg finishes without being stopped, revertAddImg or commitAddImg MUST be called
 
 	private static native void stopAddImgNat(long process) throws TskCoreException;
 
@@ -213,8 +215,8 @@ public class SleuthkitJNI {
 		 * Start the process of adding a disk image to the case
 		 *
 		 * @param timezone Timezone that image was from
-		 * @param addUnallocSpace true to create virtual files for unallocated space
-		 * the image
+		 * @param addUnallocSpace true to create virtual files for unallocated
+		 * space the image
 		 * @param noFatFsOrphans true if to skip processing of orphans on FAT
 		 * filesystems
 		 *
@@ -266,6 +268,33 @@ public class SleuthkitJNI {
 					throw new TskCoreException("AddImgProcess::run: AutoDB pointer is NULL after initAddImgNat");
 				}
 				runAddImgNat(autoDbPointer, imgPath, imgPath.length, timezone);
+			}
+
+			/**
+			 * Start the process of adding an image to the case database. MUST
+			 * call either commit() or revert() after calling run().
+			 *
+			 * @param dataSourceId An identifier for the data source that is
+			 * unique across multiple cases (e.g., a UUID).
+			 * @param imgPath Full path to the image file.
+			 * @throws TskCoreException exception thrown if critical error
+			 * occurs within TSK
+			 * @throws TskDataException exception thrown if non-critical error
+			 * occurs within TSK (should be OK to continue)
+			 */
+			public void run(String dataSourceId, String imagePath) throws TskCoreException, TskDataException {
+				if (autoDbPointer != 0) {
+					throw new TskCoreException("AddImgProcess:run: AutoDB pointer is already set");
+				}
+
+				synchronized (this) {
+					autoDbPointer = initAddImgNat(caseDbPointer, timezoneLongToShort(timezone), addUnallocSpace, noFatFsOrphans);
+				}
+				if (autoDbPointer == 0) {
+					//additional check in case initAddImgNat didn't throw exception
+					throw new TskCoreException("AddImgProcess::run: AutoDB pointer is NULL after initAddImgNat");
+				}
+				runAddImgNat(autoDbPointer, dataSourceId, imagePath, timezone);
 			}
 
 			/**
