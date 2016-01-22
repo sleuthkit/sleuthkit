@@ -112,32 +112,7 @@ public abstract class AbstractFile extends AbstractContent {
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
 			String parentPath) {
-		super(db, objId, name);
-		this.attrType = attrType;
-		this.attrId = attrId;
-		this.fileType = fileType;
-		this.metaAddr = metaAddr;
-		this.metaSeq = metaSeq;
-		this.dirType = dirType;
-		this.metaType = metaType;
-		this.dirFlag = dirFlag;
-		this.metaFlags = TSK_FS_META_FLAG_ENUM.valuesOf(metaFlags);
-		this.size = size;
-		this.ctime = ctime;
-		this.crtime = crtime;
-		this.atime = atime;
-		this.mtime = mtime;
-		this.uid = uid;
-		this.gid = gid;
-		this.modes = TskData.TSK_FS_META_MODE_ENUM.valuesOf(modes);
-
-		this.md5Hash = md5Hash;
-		if (knownState == null) {
-			this.knownState = FileKnown.UNKNOWN;
-		} else {
-			this.knownState = knownState;
-		}
-		this.parentPath = parentPath;
+		this(db, objId, attrType, attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime,mtime, modes, uid, gid, md5Hash, knownState, parentPath, null);
 	}
 
 	/**
@@ -461,7 +436,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * Gets the mime type of this file may return null if a mime type has not
 	 * been assigned
 	 *
-	 * @return The MIME type
+	 * @return The MIME type, can be null
 	 */
 	public String getMIMEType() {
 		return this.mimeType;

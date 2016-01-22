@@ -652,7 +652,19 @@ public class BlackboardAttribute {
 	 * is not integer
 	 */
 	public BlackboardAttribute(ATTRIBUTE_TYPE attributeType, String moduleName, int valueInt) throws IllegalArgumentException {
-		this(attributeType.getTypeID(), moduleName, valueInt);
+		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER) {
+			throw new IllegalArgumentException("Value types do not match");
+		}
+		this.artifactID = 0;
+		this.attributeTypeID = attributeTypeID;
+		this.moduleName = replaceNulls(moduleName);
+		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER;
+		this.valueInt = valueInt;
+		this.valueLong = 0;
+		this.valueDouble = 0;
+		this.valueString = "";
+		this.valueBytes = new byte[0];
+		this.context = "";
 	}
 
 	/**
@@ -668,19 +680,7 @@ public class BlackboardAttribute {
 	 */
 	@Deprecated
 	public BlackboardAttribute(int attributeTypeID, String moduleName, int valueInt) throws IllegalArgumentException {
-		if (ATTRIBUTE_TYPE.fromID(attributeTypeID).getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER) {
-			throw new IllegalArgumentException("Value types do not match");
-		}
-		this.artifactID = 0;
-		this.attributeTypeID = attributeTypeID;
-		this.moduleName = replaceNulls(moduleName);
-		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER;
-		this.valueInt = valueInt;
-		this.valueLong = 0;
-		this.valueDouble = 0;
-		this.valueString = "";
-		this.valueBytes = new byte[0];
-		this.context = "";
+		this(ATTRIBUTE_TYPE.fromID(attributeTypeID), moduleName, valueInt);
 	}
 
 	/**
@@ -738,7 +738,20 @@ public class BlackboardAttribute {
 	 */
 	public BlackboardAttribute(ATTRIBUTE_TYPE attributeType, String moduleName,
 			long valueLong) throws IllegalArgumentException {
-		this(attributeType.getTypeID(), moduleName, valueLong);
+		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG
+				&& attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME) {
+			throw new IllegalArgumentException("Value types do not match");
+		}
+		this.artifactID = 0;
+		this.attributeTypeID = attributeTypeID;
+		this.moduleName = replaceNulls(moduleName);
+		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG;
+		this.valueInt = 0;
+		this.valueLong = valueLong;
+		this.valueDouble = 0;
+		this.valueString = "";
+		this.valueBytes = new byte[0];
+		this.context = "";
 	}
 
 	/**
@@ -755,21 +768,7 @@ public class BlackboardAttribute {
 	@Deprecated
 	public BlackboardAttribute(int attributeTypeID, String moduleName,
 			long valueLong) throws IllegalArgumentException {
-		if (ATTRIBUTE_TYPE.fromID(attributeTypeID).getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG
-				&& ATTRIBUTE_TYPE.fromID(attributeTypeID).getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME) {
-			throw new IllegalArgumentException("Value types do not match");
-		}
-		this.artifactID = 0;
-		this.attributeTypeID = attributeTypeID;
-		this.moduleName = replaceNulls(moduleName);
-		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG;
-		this.valueInt = 0;
-		this.valueLong = valueLong;
-		this.valueDouble = 0;
-		this.valueString = "";
-		this.valueBytes = new byte[0];
-		this.context = "";
-
+		this(ATTRIBUTE_TYPE.fromID(attributeTypeID), moduleName, valueLong);
 	}
 
 	/**
@@ -783,7 +782,8 @@ public class BlackboardAttribute {
 	 * long or datetime
 	 */
 	public BlackboardAttribute(Type attributeType, String moduleName, long valueLong) throws IllegalArgumentException {
-		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG) {
+		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG
+				&& attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME) {
 			throw new IllegalArgumentException("Type mismatched with value type");
 		}
 		this.artifactID = 0;
@@ -827,7 +827,20 @@ public class BlackboardAttribute {
 	 */
 	public BlackboardAttribute(ATTRIBUTE_TYPE attributeType, String moduleName,
 			double valueDouble) throws IllegalArgumentException {
-		this(attributeType.getTypeID(), moduleName, valueDouble);
+		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE) {
+			throw new IllegalArgumentException("Value types do not match");
+		}
+		this.artifactID = 0;
+		this.attributeTypeID = attributeTypeID;
+		this.moduleName = replaceNulls(moduleName);
+		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE;
+		this.valueInt = 0;
+		this.valueLong = 0;
+		this.valueDouble = valueDouble;
+		this.valueString = "";
+		this.valueBytes = new byte[0];
+		this.context = "";
+
 	}
 
 	/**
@@ -844,19 +857,7 @@ public class BlackboardAttribute {
 	@Deprecated
 	public BlackboardAttribute(int attributeTypeID, String moduleName,
 			double valueDouble) throws IllegalArgumentException {
-		if (ATTRIBUTE_TYPE.fromID(attributeTypeID).getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE) {
-			throw new IllegalArgumentException("Value types do not match");
-		}
-		this.artifactID = 0;
-		this.attributeTypeID = attributeTypeID;
-		this.moduleName = replaceNulls(moduleName);
-		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE;
-		this.valueInt = 0;
-		this.valueLong = 0;
-		this.valueDouble = valueDouble;
-		this.valueString = "";
-		this.valueBytes = new byte[0];
-		this.context = "";
+		this(ATTRIBUTE_TYPE.fromID(attributeTypeID), moduleName, valueDouble);
 	}
 
 	/**
@@ -914,23 +915,7 @@ public class BlackboardAttribute {
 	 */
 	public BlackboardAttribute(ATTRIBUTE_TYPE attributeType, String moduleName,
 			String valueString) throws IllegalArgumentException {
-		this(attributeType.getTypeID(), moduleName, valueString);
-	}
-
-	/**
-	 * Create a blackboard attribute that stores a string (creates an attribute
-	 * that can be added to an artifact)
-	 *
-	 * @param attributeTypeID type of the attribute
-	 * @param moduleName name of the module that is creating the attribute
-	 * @param valueString the value
-	 * @throws IllegalArgumentException If the value type of the attribute type
-	 * is not string or user defined typeID/invalid ID are given.
-	 * @deprecated Use the constructor with Type instead
-	 */
-	@Deprecated
-	public BlackboardAttribute(int attributeTypeID, String moduleName, String valueString) throws IllegalArgumentException {
-		if (ATTRIBUTE_TYPE.fromID(attributeTypeID).getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING) {
+		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING) {
 			throw new IllegalArgumentException("Value types do not match");
 		}
 		this.artifactID = 0;
@@ -947,6 +932,22 @@ public class BlackboardAttribute {
 		}
 		this.valueBytes = new byte[0];
 		this.context = "";
+	}
+
+	/**
+	 * Create a blackboard attribute that stores a string (creates an attribute
+	 * that can be added to an artifact)
+	 *
+	 * @param attributeTypeID type of the attribute
+	 * @param moduleName name of the module that is creating the attribute
+	 * @param valueString the value
+	 * @throws IllegalArgumentException If the value type of the attribute type
+	 * is not string or user defined typeID/invalid ID are given.
+	 * @deprecated Use the constructor with Type instead
+	 */
+	@Deprecated
+	public BlackboardAttribute(int attributeTypeID, String moduleName, String valueString) throws IllegalArgumentException {
+		this(ATTRIBUTE_TYPE.fromID(attributeTypeID), moduleName, valueString);
 	}
 
 	/**
@@ -1009,23 +1010,7 @@ public class BlackboardAttribute {
 	 */
 	public BlackboardAttribute(ATTRIBUTE_TYPE attributeType, String moduleName,
 			byte[] valueBytes) throws IllegalArgumentException {
-		this(attributeType.getTypeID(), moduleName, valueBytes);
-	}
-
-	/**
-	 * Create a blackboard attribute that stores a byte array (creates an
-	 * attribute that can be added to an artifact)
-	 *
-	 * @param attributeTypeID type of the attribute
-	 * @param moduleName name of the module that is creating the attribute
-	 * @param valueBytes the value
-	 * @throws IllegalArgumentException If the value type of the attribute type
-	 * is not byte or user defined typeID/invalid ID are given.
-	 * @deprecated Use the constructor with Type instead
-	 */
-	@Deprecated
-	public BlackboardAttribute(int attributeTypeID, String moduleName, byte[] valueBytes) throws IllegalArgumentException {
-		if (ATTRIBUTE_TYPE.fromID(attributeTypeID).getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE) {
+		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE) {
 			throw new IllegalArgumentException("Value types do not match");
 		}
 		this.artifactID = 0;
@@ -1042,6 +1027,22 @@ public class BlackboardAttribute {
 		} else {
 			this.valueBytes = valueBytes;
 		}
+	}
+
+	/**
+	 * Create a blackboard attribute that stores a byte array (creates an
+	 * attribute that can be added to an artifact)
+	 *
+	 * @param attributeTypeID type of the attribute
+	 * @param moduleName name of the module that is creating the attribute
+	 * @param valueBytes the value
+	 * @throws IllegalArgumentException If the value type of the attribute type
+	 * is not byte or user defined typeID/invalid ID are given.
+	 * @deprecated Use the constructor with Type instead
+	 */
+	@Deprecated
+	public BlackboardAttribute(int attributeTypeID, String moduleName, byte[] valueBytes) throws IllegalArgumentException {
+		this(ATTRIBUTE_TYPE.fromID(attributeTypeID), moduleName, valueBytes);
 	}
 
 	/**
