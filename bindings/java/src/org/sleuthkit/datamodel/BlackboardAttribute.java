@@ -656,7 +656,7 @@ public class BlackboardAttribute {
 			throw new IllegalArgumentException("Value types do not match");
 		}
 		this.artifactID = 0;
-		this.attributeTypeID = attributeTypeID;
+		this.attributeTypeID = attributeType.getTypeID();
 		this.moduleName = replaceNulls(moduleName);
 		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER;
 		this.valueInt = valueInt;
@@ -743,7 +743,7 @@ public class BlackboardAttribute {
 			throw new IllegalArgumentException("Value types do not match");
 		}
 		this.artifactID = 0;
-		this.attributeTypeID = attributeTypeID;
+		this.attributeTypeID = attributeType.getTypeID();
 		this.moduleName = replaceNulls(moduleName);
 		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG;
 		this.valueInt = 0;
@@ -777,7 +777,7 @@ public class BlackboardAttribute {
 	 *
 	 * @param attributeType type of the attribute
 	 * @param moduleName name of the module that is creating the attribute
-	 * @param valueInt the value
+	 * @param valueLong the value
 	 * @throws IllegalArgumentException If the value type of the type is not
 	 * long or datetime
 	 */
@@ -831,7 +831,7 @@ public class BlackboardAttribute {
 			throw new IllegalArgumentException("Value types do not match");
 		}
 		this.artifactID = 0;
-		this.attributeTypeID = attributeTypeID;
+		this.attributeTypeID = attributeType.getTypeID();
 		this.moduleName = replaceNulls(moduleName);
 		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE;
 		this.valueInt = 0;
@@ -866,7 +866,7 @@ public class BlackboardAttribute {
 	 *
 	 * @param attributeType type of the attribute
 	 * @param moduleName name of the module that is creating the attribute
-	 * @param valueInt the value
+	 * @param valueDouble the value
 	 * @throws IllegalArgumentException If the value type of the type is not
 	 * integer
 	 */
@@ -919,7 +919,7 @@ public class BlackboardAttribute {
 			throw new IllegalArgumentException("Value types do not match");
 		}
 		this.artifactID = 0;
-		this.attributeTypeID = attributeTypeID;
+		this.attributeTypeID = attributeType.getTypeID();
 		this.moduleName = replaceNulls(moduleName);
 		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING;
 		this.valueInt = 0;
@@ -1014,7 +1014,7 @@ public class BlackboardAttribute {
 			throw new IllegalArgumentException("Value types do not match");
 		}
 		this.artifactID = 0;
-		this.attributeTypeID = attributeTypeID;
+		this.attributeTypeID = attributeType.getTypeID();
 		this.moduleName = replaceNulls(moduleName);
 		this.context = "";
 		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE;
