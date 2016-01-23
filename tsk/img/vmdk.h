@@ -18,11 +18,6 @@
 
 #if HAVE_LIBVMDK
 
-// we used to check only for TSK_WIN32, but that fails on mingw
-//#if defined(_MSC_VER)
-//#include <config_msc.h>
-//#endif
-
 #if defined( TSK_WIN32 )
 #define LIBVMDK_HAVE_WIDE_CHARACTER_TYPE 1
 #endif

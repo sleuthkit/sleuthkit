@@ -17,12 +17,6 @@
 #if HAVE_LIBEWF
 #include "tsk/img/ewf.h"
 #endif
-#if HAVE_LIBVMDK
-#include "tsk/img/vmdk.h"
-#endif
-#if HAVE_LIBVHDI
-#include "tsk/img/vhd.h"
-#endif
 #include <string.h>
 
 #include <algorithm>
