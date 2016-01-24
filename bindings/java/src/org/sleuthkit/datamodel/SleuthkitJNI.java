@@ -102,7 +102,7 @@ public class SleuthkitJNI {
 
 	private static native void runAddImgNat(long process, String[] imgPath, int splits, String timezone) throws TskCoreException, TskDataException; // if runAddImg finishes without being stopped, revertAddImg or commitAddImg MUST be called
 
-	private static native void runAddImgNat(long process, String dataSourceId, String imgPath, String timezone) throws TskCoreException, TskDataException; // if runAddImg finishes without being stopped, revertAddImg or commitAddImg MUST be called
+	private static native void runAddDataSourceNat(long process, String dataSourceId, String imgPath, String timezone) throws TskCoreException, TskDataException; // if runAddImg finishes without being stopped, revertAddImg or commitAddImg MUST be called
 
 	private static native void stopAddImgNat(long process) throws TskCoreException;
 
@@ -294,7 +294,7 @@ public class SleuthkitJNI {
 					//additional check in case initAddImgNat didn't throw exception
 					throw new TskCoreException("AddImgProcess::run: AutoDB pointer is NULL after initAddImgNat");
 				}
-				runAddImgNat(autoDbPointer, dataSourceId, imagePath, timezone);
+				runAddDataSourceNat(autoDbPointer, dataSourceId, imagePath, timezone);
 			}
 
 			/**

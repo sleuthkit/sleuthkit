@@ -1091,7 +1091,7 @@ JNIEXPORT void JNICALL
  * @param imgPath The full path to the image
  * @param timezone the timezone the image is from
  */
-JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env, jclass obj, jlong process, jstring dataSrcId, jstring imgPath, jstring timeZone) {
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddDataSourceNat(JNIEnv * env, jclass obj, jlong process, jstring dataSrcId, jstring imgPath, jstring timeZone) {
 
     // Validate arguments.
     TskAutoDb *tskAuto = ((TskAutoDb *) process);

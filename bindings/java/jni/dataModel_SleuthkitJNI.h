@@ -225,6 +225,9 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNat
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat
   (JNIEnv *, jclass, jlong, jobjectArray, jint, jstring);
 
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddDataSourceNat
+  (JNIEnv *, jclass, jlong, jstring, jstring, jstring);
+
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    stopAddImgNat
