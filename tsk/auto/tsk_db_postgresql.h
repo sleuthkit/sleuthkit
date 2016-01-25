@@ -48,6 +48,7 @@ class TskDbPostgreSQL : public TskDb {
 
     int addImageInfo(int type, int size, int64_t & objId, const string & timezone);
     int addImageInfo(int type, int size, int64_t & objId, const string & timezone, TSK_OFF_T, const string &md5);
+    int addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5, const string& dataSourceId);
     int addImageName(int64_t objId, char const *imgName, int sequence);
     int addVsInfo(const TSK_VS_INFO * vs_info, int64_t parObjId,
         int64_t & objId);
@@ -110,7 +111,7 @@ private:
     PGresult* get_query_result_set(const char *sql, const char *errfmt);
     PGresult* get_query_result_set_binary(const char *sql, const char *errfmt);
     bool isQueryResultValid(PGresult *res, const char *sql);
-    int isEscapedStringValid(char *sql_str, char *orig_str, const char *errfmt);
+    int isEscapedStringValid(const char *sql_str, const char *orig_str, const char *errfmt);
     int createIndexes();
 
     void removeNonUtf8(char* newStr, int newStrMaxSize, const char* origStr);

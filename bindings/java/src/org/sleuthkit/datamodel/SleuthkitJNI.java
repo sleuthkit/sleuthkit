@@ -100,9 +100,7 @@ public class SleuthkitJNI {
 	//add image
 	private static native long initAddImgNat(long db, String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) throws TskCoreException;
 
-	private static native void runAddImgNat(long process, String[] imgPath, int splits, String timezone) throws TskCoreException, TskDataException; // if runAddImg finishes without being stopped, revertAddImg or commitAddImg MUST be called
-
-	private static native void runAddDataSourceNat(long process, String dataSourceId, String imgPath, String timezone) throws TskCoreException, TskDataException; // if runAddImg finishes without being stopped, revertAddImg or commitAddImg MUST be called
+	private static native void runAddImgNat(long process, String dataSourceId, String[] imgPath, int splits, String timezone) throws TskCoreException, TskDataException; // if runAddImg finishes without being stopped, revertAddImg or commitAddImg MUST be called
 
 	private static native void stopAddImgNat(long process) throws TskCoreException;
 
@@ -249,40 +247,32 @@ public class SleuthkitJNI {
 			 * Start the process of adding an image to the case database. MUST
 			 * call either commit() or revert() after calling run().
 			 *
-			 * @param imgPath Full path(s) to the image file(s).
+			 * @param imageFilePaths Full path(s) to the image file(s).
 			 * @throws TskCoreException exception thrown if critical error
 			 * occurs within TSK
 			 * @throws TskDataException exception thrown if non-critical error
 			 * occurs within TSK (should be OK to continue)
+			 * @deprecated Use run(String dataSourceId, String[] imageFilePaths)
+			 * instead
 			 */
-			public void run(String[] imgPath) throws TskCoreException, TskDataException {
-				if (autoDbPointer != 0) {
-					throw new TskCoreException("AddImgProcess:run: AutoDB pointer is already set");
-				}
-
-				synchronized (this) {
-					autoDbPointer = initAddImgNat(caseDbPointer, timezoneLongToShort(timezone), addUnallocSpace, noFatFsOrphans);
-				}
-				if (autoDbPointer == 0) {
-					//additional check in case initAddImgNat didn't throw exception
-					throw new TskCoreException("AddImgProcess::run: AutoDB pointer is NULL after initAddImgNat");
-				}
-				runAddImgNat(autoDbPointer, imgPath, imgPath.length, timezone);
+			@Deprecated
+			public void run(String[] imageFilePaths) throws TskCoreException, TskDataException {
+				run(null, imageFilePaths);
 			}
 
 			/**
 			 * Start the process of adding an image to the case database. MUST
 			 * call either commit() or revert() after calling run().
 			 *
-			 * @param dataSourceId An identifier for the data source that is
-			 * unique across multiple cases (e.g., a UUID).
-			 * @param imgPath Full path to the image file.
+			 * @param dataSourceId An ASCII-printable identifier for the data
+			 * source that is unique across multiple cases (e.g., a UUID).
+			 * @param imageFilePaths Full paths to the image files.
 			 * @throws TskCoreException exception thrown if critical error
 			 * occurs within TSK
 			 * @throws TskDataException exception thrown if non-critical error
 			 * occurs within TSK (should be OK to continue)
 			 */
-			public void run(String dataSourceId, String imagePath) throws TskCoreException, TskDataException {
+			public void run(String dataSourceId, String[] imageFilePaths) throws TskCoreException, TskDataException {
 				if (autoDbPointer != 0) {
 					throw new TskCoreException("AddImgProcess:run: AutoDB pointer is already set");
 				}
@@ -294,7 +284,7 @@ public class SleuthkitJNI {
 					//additional check in case initAddImgNat didn't throw exception
 					throw new TskCoreException("AddImgProcess::run: AutoDB pointer is NULL after initAddImgNat");
 				}
-				runAddDataSourceNat(autoDbPointer, dataSourceId, imagePath, timezone);
+				runAddImgNat(autoDbPointer, dataSourceId, imageFilePaths, imageFilePaths.length, timezone);
 			}
 
 			/**

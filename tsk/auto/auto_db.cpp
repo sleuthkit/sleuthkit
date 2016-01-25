@@ -108,7 +108,7 @@ void TskAutoDb::setAddUnallocSpace(bool addUnallocSpace, int64_t chunkSize)
 
 uint8_t
     TskAutoDb::openImageUtf8(int a_num, const char *const a_images[],
-    TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize)
+    TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize, const char* dataSourceId)
 {
     uint8_t retval =
         TskAuto::openImageUtf8(a_num, a_images, a_type, a_ssize);
@@ -116,7 +116,7 @@ uint8_t
         return retval;
     }
 
-    if (addImageDetails(a_images, a_num)) {
+    if (addImageDetails(dataSourceId, a_images, a_num)) {
         return 1;
     }
     return 0;
@@ -124,7 +124,7 @@ uint8_t
 
 uint8_t
     TskAutoDb::openImage(int a_num, const TSK_TCHAR * const a_images[],
-    TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize)
+    TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize, const char* dataSourceId)
 {
 
 // make name of database
@@ -164,7 +164,7 @@ uint8_t
         img_ptrs[i] = img2;
     }
 
-    if (addImageDetails(img_ptrs, a_num)) {
+    if (addImageDetails(dataSourceId, img_ptrs, a_num)) {
         //cleanup
         for (int i = 0; i < a_num; ++i) {
             free(img_ptrs[i]);
@@ -181,7 +181,7 @@ uint8_t
 
     return 0;
 #else
-    return openImageUtf8(a_num, a_images, a_type, a_ssize);
+    return openImageUtf8(a_num, a_images, a_type, a_ssize, dataSourceId);
 #endif
 }
 
@@ -191,10 +191,10 @@ uint8_t
  * @return Returns 1 on error
  */
 uint8_t
-TskAutoDb::addImageDetails(const char *const img_ptrs[], int a_num)
+TskAutoDb::addImageDetails(const char* dataSourceId, const char *const img_ptrs[], int a_num)
 {
-   string md5 = "";
 #if HAVE_LIBEWF 
+   string md5 = "";
    if (m_img_info->itype == TSK_IMG_TYPE_EWF_EWF) {
      // @@@ This shoudl really probably be inside of a tsk_img_ method
        IMG_EWF_INFO *ewf_info = (IMG_EWF_INFO *)m_img_info;
@@ -204,8 +204,14 @@ TskAutoDb::addImageDetails(const char *const img_ptrs[], int a_num)
    }
 #endif
 
+    string dataSrcId;
+    if (NULL != dataSourceId) {
+        dataSrcId = dataSourceId; 
+    } else {
+        dataSourceId = "";
+    }
     if (m_db->addImageInfo(m_img_info->itype, m_img_info->sector_size,
-          m_curImgId, m_curImgTZone, m_img_info->size, md5)) {
+          m_curImgId, m_curImgTZone, m_img_info->size, md5, dataSourceId)) {
         registerError();
         return 1;
     }
@@ -378,7 +384,7 @@ uint8_t TskAutoDb::addFilesInImgToDb()
  */
 uint8_t
     TskAutoDb::startAddImage(int numImg, const TSK_TCHAR * const imagePaths[],
-    TSK_IMG_TYPE_ENUM imgType, unsigned int sSize)
+    TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* dataSourceId)
 {
     if (tsk_verbose)
         tsk_fprintf(stderr, "TskAutoDb::startAddImage: Starting add image process\n");
@@ -407,7 +413,7 @@ uint8_t
 
     m_imgTransactionOpen = true;
 
-    if (openImage(numImg, imagePaths, imgType, sSize)) {
+    if (openImage(numImg, imagePaths, imgType, sSize, dataSourceId)) {
         tsk_error_set_errstr2("TskAutoDb::startAddImage");
         registerError();
         if (revertAddImage())
@@ -418,10 +424,11 @@ uint8_t
     return addFilesInImgToDb();
 }
 
+
 #ifdef WIN32
 uint8_t
     TskAutoDb::startAddImage(int numImg, const char *const imagePaths[],
-    TSK_IMG_TYPE_ENUM imgType, unsigned int sSize)
+    TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* dataSourceId)
 {
     if (tsk_verbose)
         tsk_fprintf(stderr, "TskAutoDb::startAddImage_utf8: Starting add image process\n");
@@ -452,7 +459,7 @@ uint8_t
 
     m_imgTransactionOpen = true;
 
-    if (openImageUtf8(numImg, imagePaths, imgType, sSize)) {
+    if (openImageUtf8(numImg, imagePaths, imgType, sSize, dataSourceId)) {
         tsk_error_set_errstr2("TskAutoDb::startAddImage");
         registerError();
         if (revertAddImage())

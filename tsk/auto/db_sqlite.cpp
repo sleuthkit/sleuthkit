@@ -484,6 +484,38 @@ int
     return ret;
 }
 
+int TskDbSqlite::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5, const string& dataSourceId)
+{
+    // Add the data source to the tsk_objects table.
+    // We don't use addObject because we're passing in NULL as the parent
+    char stmt[1024];
+    snprintf(stmt, 1024,
+        "INSERT INTO tsk_objects (obj_id, par_obj_id, type) VALUES (NULL, NULL, %d);",
+        TSK_DB_OBJECT_TYPE_IMG);
+    if (attempt_exec(stmt, "Error adding data to tsk_objects table: %s\n")) {
+        return 1;
+    }
+    objId = sqlite3_last_insert_rowid(m_db);
+
+    // Add the data source to the tsk_image_info table.
+    char *zSQL;
+    zSQL = sqlite3_mprintf("INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %d, '%q', %"PRIuOFF", '%q');",
+        objId, type, ssize, timezone.c_str(), size, md5.c_str());
+    int ret = attempt_exec(zSQL,
+        "Error adding data to tsk_image_info table: %s\n");
+    sqlite3_free(zSQL);
+    if (1 == ret || dataSourceId.empty()) {
+        return ret;
+    }
+
+    // Add the data source to the data_source_info table.
+    zSQL = sqlite3_mprintf("INSERT INTO data_source_info (obj_id, data_src_id) VALUES (%lld, '%s');",
+        objId, dataSourceId.c_str());
+    ret = attempt_exec(zSQL, "Error adding data to tsk_image_info table: %s\n");
+    sqlite3_free(zSQL);
+    return ret;
+}
+
 /**
 * @returns 1 on error, 0 on success
 */
