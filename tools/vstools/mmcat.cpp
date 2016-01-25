@@ -6,7 +6,7 @@
  *
  * Output the contents of a partition
  *
- * This software is distributed under the Covson Public License 1.0
+ * This software is distributed under the Common Public License 1.0
  */
 
 #include "tsk/tsk_tools_i.h"

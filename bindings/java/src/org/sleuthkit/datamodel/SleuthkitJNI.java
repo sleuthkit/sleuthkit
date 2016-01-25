@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011 Basis Technology Corp.
+ * Copyright 2011-2016 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,8 +41,6 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
  */
 public class SleuthkitJNI {
 
-	private static final int MAX_DATABASES = 256;
-	
 	// Lock used to synchronize image and file system cache
 	private static final Object cacheLock = new Object();
 
@@ -62,6 +60,7 @@ public class SleuthkitJNI {
 
 	private static native void closeCaseDbNat(long db) throws TskCoreException;
 
+	//hash-lookup database   
 	private static native int hashDbOpenNat(String hashDbPath) throws TskCoreException;
 
 	private static native int hashDbNewNat(String hashDbPath) throws TskCoreException;
@@ -88,7 +87,6 @@ public class SleuthkitJNI {
 
 	private static native void hashDbClose(int dbHandle) throws TskCoreException;
 
-	//hash-lookup database functions   
 	private static native void hashDbCreateIndexNat(int dbHandle) throws TskCoreException;
 
 	private static native boolean hashDbIndexExistsNat(int dbHandle) throws TskCoreException;
@@ -99,10 +97,12 @@ public class SleuthkitJNI {
 
 	private static native HashHitInfo hashDbLookupVerbose(String hash, int dbHandle) throws TskCoreException;
 
-	//load image
+	//add image
 	private static native long initAddImgNat(long db, String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) throws TskCoreException;
 
 	private static native void runAddImgNat(long process, String[] imgPath, int splits, String timezone) throws TskCoreException, TskDataException; // if runAddImg finishes without being stopped, revertAddImg or commitAddImg MUST be called
+
+	private static native void runAddDataSourceNat(long process, String dataSourceId, String imgPath, String timezone) throws TskCoreException, TskDataException; // if runAddImg finishes without being stopped, revertAddImg or commitAddImg MUST be called
 
 	private static native void stopAddImgNat(long process) throws TskCoreException;
 
@@ -162,7 +162,7 @@ public class SleuthkitJNI {
 	 */
 	public static class CaseDbHandle {
 
-		private long caseDbPointer;
+		private final long caseDbPointer;
 		//map concat. image paths to cached image handle
 		private static final Map<String, Long> imageHandleCache = new HashMap<String, Long>();
 		//map image and offsets to cached fs handle
@@ -215,8 +215,8 @@ public class SleuthkitJNI {
 		 * Start the process of adding a disk image to the case
 		 *
 		 * @param timezone Timezone that image was from
-		 * @param addUnallocSpace true to create virtual files for unallocated space
-		 * the image
+		 * @param addUnallocSpace true to create virtual files for unallocated
+		 * space the image
 		 * @param noFatFsOrphans true if to skip processing of orphans on FAT
 		 * filesystems
 		 *
@@ -268,6 +268,33 @@ public class SleuthkitJNI {
 					throw new TskCoreException("AddImgProcess::run: AutoDB pointer is NULL after initAddImgNat");
 				}
 				runAddImgNat(autoDbPointer, imgPath, imgPath.length, timezone);
+			}
+
+			/**
+			 * Start the process of adding an image to the case database. MUST
+			 * call either commit() or revert() after calling run().
+			 *
+			 * @param dataSourceId An identifier for the data source that is
+			 * unique across multiple cases (e.g., a UUID).
+			 * @param imgPath Full path to the image file.
+			 * @throws TskCoreException exception thrown if critical error
+			 * occurs within TSK
+			 * @throws TskDataException exception thrown if non-critical error
+			 * occurs within TSK (should be OK to continue)
+			 */
+			public void run(String dataSourceId, String imagePath) throws TskCoreException, TskDataException {
+				if (autoDbPointer != 0) {
+					throw new TskCoreException("AddImgProcess:run: AutoDB pointer is already set");
+				}
+
+				synchronized (this) {
+					autoDbPointer = initAddImgNat(caseDbPointer, timezoneLongToShort(timezone), addUnallocSpace, noFatFsOrphans);
+				}
+				if (autoDbPointer == 0) {
+					//additional check in case initAddImgNat didn't throw exception
+					throw new TskCoreException("AddImgProcess::run: AutoDB pointer is NULL after initAddImgNat");
+				}
+				runAddDataSourceNat(autoDbPointer, dataSourceId, imagePath, timezone);
 			}
 
 			/**
@@ -417,7 +444,7 @@ public class SleuthkitJNI {
 	 * TSK
 	 */
 	public static long openImage(String[] imageFiles) throws TskCoreException {
-		long imageHandle = 0;
+		long imageHandle;
 
 		StringBuilder keyBuilder = new StringBuilder();
 		for (int i = 0; i < imageFiles.length; ++i) {
@@ -478,7 +505,7 @@ public class SleuthkitJNI {
 	 * TSK
 	 */
 	public static long openFs(long imgHandle, long fsOffset) throws TskCoreException {
-		long fsHandle = 0;
+		long fsHandle;
 		synchronized (cacheLock) {
 			final Map<Long, Long> imgOffSetToFsHandle = CaseDbHandle.fsHandleCache.get(imgHandle);
 			if (imgOffSetToFsHandle.containsKey(fsOffset)) {
@@ -851,7 +878,7 @@ public class SleuthkitJNI {
 			return "";
 		}
 
-		String timezoneShortForm = "";
+		String timezoneShortForm;
 		TimeZone zone = TimeZone.getTimeZone(timezoneLongForm);
 		int offset = zone.getRawOffset() / 1000;
 		int hour = offset / 3600;
@@ -867,7 +894,7 @@ public class SleuthkitJNI {
 			timezoneShortForm = timezoneShortForm + ":" + (min < 10 ? "0" : "") + Integer.toString(min);
 		}
 		if (hasDaylight) {
-			timezoneShortForm = timezoneShortForm + second;
+			timezoneShortForm += second;
 		}
 		return timezoneShortForm;
 	}

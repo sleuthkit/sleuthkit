@@ -7,8 +7,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#undef org_sleuthkit_datamodel_SleuthkitJNI_MAX_DATABASES
-#define org_sleuthkit_datamodel_SleuthkitJNI_MAX_DATABASES 256L
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    getVersionNat
@@ -224,6 +222,14 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNat
  */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat
   (JNIEnv *, jclass, jlong, jobjectArray, jint, jstring);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    runAddDataSourceNat
+ * Signature: (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddDataSourceNat
+  (JNIEnv *, jclass, jlong, jstring, jstring, jstring);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
