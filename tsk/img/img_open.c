@@ -102,17 +102,19 @@ tsk_img_open(int num_img,
         return NULL;
     }
 
-
     if (tsk_verbose)
         TFPRINTF(stderr,
             _TSK_T("tsk_img_open: Type: %d   NumImg: %d  Img1: %s\n"),
             type, num_img, images[0]);
 
-    /* If no type is given, then we use the autodetection methods
-     * In case the image file matches the signatures of multiple formats,
-     * we try all of the embedded formats
-     */
-    if (type == TSK_IMG_TYPE_DETECT) {
+
+    switch (type) {
+    case TSK_IMG_TYPE_DETECT:
+    {
+        /* If no type is given, then we use the autodetection methods
+         * In case the image file matches the signatures of multiple formats,
+         * we try all of the embedded formats
+         */
         TSK_IMG_INFO *img_set = NULL;
 #if HAVE_LIBAFFLIB || HAVE_LIBEWF
         char *set = NULL;
@@ -135,7 +137,8 @@ tsk_img_open(int num_img,
             }
         }
         else {
-            // If AFF is otherwise happy except for a password, stop trying to guess
+            // If AFF is otherwise happy except for a password,
+            // stop trying to guess
             if (tsk_error_get_errno() == TSK_ERR_IMG_PASSWD) {
                 return NULL;
             }
@@ -165,14 +168,13 @@ tsk_img_open(int num_img,
 
         // if any of the non-raw formats were detected, then use it.
         if (img_set != NULL) {
-            tsk_init_lock(&(img_set->cache_lock));
-            return img_set;
+            img_info = img_set;
+            break;
         }
 
         // otherwise, try raw
         if ((img_info = raw_open(num_img, images, a_ssize)) != NULL) {
-            tsk_init_lock(&(img_info->cache_lock));
-            return img_info;
+            break;
         }
         else if (tsk_error_get_errno() != 0) {
             return NULL;
@@ -183,11 +185,6 @@ tsk_img_open(int num_img,
         return NULL;
     }
 
-    /*
-     * Type values
-     */
-
-    switch (type) {
     case TSK_IMG_TYPE_RAW:
         img_info = raw_open(num_img, images, a_ssize);
         break;
@@ -214,6 +211,7 @@ tsk_img_open(int num_img,
         return NULL;
     }
 
+    /* we have a good img_info, set up the cache lock */
     tsk_init_lock(&(img_info->cache_lock));
     return img_info;
 }
