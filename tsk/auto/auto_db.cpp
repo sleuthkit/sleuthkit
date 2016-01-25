@@ -106,6 +106,16 @@ void TskAutoDb::setAddUnallocSpace(bool addUnallocSpace, int64_t chunkSize)
 	m_chunkSize = chunkSize;
 }
 
+/**
+ * Adds an image to the database.
+ *
+ * @param a_num Number of image parts
+ * @param a_images Array of paths to the image parts
+ * @param a_type Image type
+ * @param a_ssize Size of device sector in bytes (or 0 for default)
+ * @param dataSourceId An ascii-printable identifier for the data source that is unique across multiple cases (e.g., a UUID)
+ * @return 0 for success 1 for failure
+ */
 uint8_t
     TskAutoDb::openImageUtf8(int a_num, const char *const a_images[],
     TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize, const char* dataSourceId)
@@ -122,6 +132,16 @@ uint8_t
     return 0;
 }
 
+/**
+ * Adds an image to the database.
+ *
+ * @param a_num Number of image parts
+ * @param a_images Array of paths to the image parts
+ * @param a_type Image type
+ * @param a_ssize Size of device sector in bytes (or 0 for default)
+ * @param dataSourceId An ascii-printable identifier for the data source that is unique across multiple cases (e.g., a UUID)
+ * @return 0 for success 1 for failure
+ */
 uint8_t
     TskAutoDb::openImage(int a_num, const TSK_TCHAR * const a_images[],
     TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize, const char* dataSourceId)
@@ -187,7 +207,10 @@ uint8_t
 
 /**
  * Adds image details to the existing database tables.
+ *
+ * @param dataSrcId An ascii-printable identifier for the data source that is unique across multiple cases (e.g., a UUID)
  * @param img_ptrs The paths to the image splits
+ * @param a_num The number of paths
  * @return Returns 1 on error
  */
 uint8_t
@@ -380,7 +403,13 @@ uint8_t TskAutoDb::addFilesInImgToDb()
  * Same functionality as addFilesInImgToDb().  Reverts
  * all changes on error. User must call either commitAddImage() to commit the changes,
  * or revertAddImage() to revert them.
- * @returns 1 if critical system error occcured (data does not exist in DB), 2 if error occured while adding files to DB (but it finished), and 0 otherwise. All errors will have been registered. 
+ *
+ * @param numImg Number of image parts
+ * @param imagePaths Array of paths to the image parts
+ * @param imgType Image type
+ * @param sSize Size of device sector in bytes (or 0 for default)
+ * @param dataSourceId An ascii-printable identifier for the data source that is unique across multiple cases (e.g., a UUID)
+ * @return 0 for success 1 for failure
  */
 uint8_t
     TskAutoDb::startAddImage(int numImg, const TSK_TCHAR * const imagePaths[],
@@ -426,6 +455,19 @@ uint8_t
 
 
 #ifdef WIN32
+/**
+ * Start the process to add image/file metadata to database inside of a transaction. 
+ * Same functionality as addFilesInImgToDb().  Reverts
+ * all changes on error. User must call either commitAddImage() to commit the changes,
+ * or revertAddImage() to revert them.
+ *
+ * @param numImg Number of image parts
+ * @param imagePaths Array of paths to the image parts
+ * @param imgType Image type
+ * @param sSize Size of device sector in bytes (or 0 for default)
+ * @param dataSourceId An ascii-printable identifier for the data source that is unique across multiple cases (e.g., a UUID)
+ * @return 0 for success 1 for failure
+ */
 uint8_t
     TskAutoDb::startAddImage(int numImg, const char *const imagePaths[],
     TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* dataSourceId)

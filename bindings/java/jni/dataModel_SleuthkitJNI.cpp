@@ -982,7 +982,7 @@ JNIEXPORT jlong JNICALL
  * Add an image to a database using a pre-created process, which can be cancelled.
  * MUST call commitAddImg or revertAddImg afterwards once runAddImg returns.  If there is an 
  * error, you do not need to call revert or commit and the 'process' handle will be deleted.
- * @return the 0 for success 1 for failure
+ *
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
  * @param process the add-image process created by initAddImgNat
@@ -990,6 +990,7 @@ JNIEXPORT jlong JNICALL
  * @param paths array of strings from java, the paths to the image parts
  * @param numImgs number of image parts
  * @param timeZone the timezone the image is from
+ * @return the 0 for success 1 for failure
  */
 JNIEXPORT void JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,

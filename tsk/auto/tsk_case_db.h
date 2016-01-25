@@ -89,6 +89,9 @@ class TskAutoDb:public TskAuto {
 
     uint8_t addFilesInImgToDb();
 
+    /**
+     * 
+     */
     uint8_t startAddImage(int numImg, const TSK_TCHAR * const imagePaths[],
         TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* dataSourceId = NULL);
 #ifdef WIN32
