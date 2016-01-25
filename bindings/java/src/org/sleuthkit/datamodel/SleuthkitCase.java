@@ -4822,21 +4822,33 @@ public class SleuthkitCase {
 	 *
 	 * @param fileId The id of the file to update the mime type of
 	 * @param mimeType the mime type
-	 * @throws TskCoreException
+	 * @throws TskCoreException When there is an issue querying the database
 	 */
-	 void setFileMIMEType(AbstractFile file, String mimeType) throws TskCoreException {
+	 void setFileMIMEType(AbstractFile file, String mimeType) throws TskCoreException, TskDataException {
 		if (mimeType == null) {
 			return;
 		}
 		long fileId = file.getId();
 		CaseDbConnection connection = connections.getConnection();
+		ResultSet rs = null;
 		acquireExclusiveLock();
 		try {
 			Statement statement = connection.createStatement();
-			connection.executeUpdate(statement, "UPDATE tsk_files SET mime_type = '" + mimeType + "' WHERE obj_id = " + fileId);
+			rs = connection.executeQuery(statement, "SELECT * FROM tsk_files WHERE tsk_files.obj_id=" + fileId);
+			if(rs.next()) {
+				if(rs.getString("mime_type") != null) {
+					throw new TskDataException("Cannot reset a file's MIME type");
+				}
+				connection.executeUpdate(statement, "UPDATE tsk_files SET mime_type = '" + mimeType + "' WHERE obj_id = " + fileId);
+			}
+			else {
+				throw new TskDataException("Given file does not exist within the system");
+			}
+			
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error setting mimeType", ex);
 		} finally {
+			closeResultSet(rs);
 			connection.close();
 			releaseExclusiveLock();
 		}
