@@ -917,6 +917,41 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Gets the data sources for the case (e.g., images, local disks, virtual
+	 * directories of logical files, etc.)
+	 *
+	 * NOTE: The DataSource class is an emerging feature and at present is only
+	 * useful for obtaining the object id and the data source identifier, an
+	 * ASCII-printable identifier for the data source that is intended to be
+	 * unique across multiple cases (e.g., a UUID). In the future, this method
+	 * will be a replacement for the getRootObjects method.
+	 *
+	 * @return A list of the data sources for the case.
+	 */
+	public List<DataSource> getDataSources() throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT obj_id, data_src_id FROM data_source_info"); //NON-NLS			
+			List<DataSource> dataSources = new ArrayList<DataSource>();
+			while (rs.next()) {
+				dataSources.add(new DataSource(rs.getLong("obj_id"), rs.getString("data_src_id")));
+			}
+			return dataSources;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting data sources", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	/**
 	 * Get all blackboard artifacts of a given type.
 	 *
 	 * @param artifactTypeID artifact type id (must exist in database)
@@ -2107,7 +2142,7 @@ public class SleuthkitCase {
 	public int addArtifactType(String artifactTypeName, String displayName) throws TskCoreException {
 		return addBlackboardArtifactType(artifactTypeName, displayName).getTypeID();
 	}
-	
+
 	/**
 	 * Add an artifact type with the given name. Will return an artifact Type.
 	 *
