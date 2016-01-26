@@ -113,12 +113,12 @@ void TskAutoDb::setAddUnallocSpace(bool addUnallocSpace, int64_t chunkSize)
  * @param a_images Array of paths to the image parts
  * @param a_type Image type
  * @param a_ssize Size of device sector in bytes (or 0 for default)
- * @param dataSourceId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
- * @return 0 for success 1 for failure
+ * @param a_dataSourceId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
+ * @return 0 for success, 1 for failure
  */
 uint8_t
     TskAutoDb::openImageUtf8(int a_num, const char *const a_images[],
-    TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize, const char* dataSourceId)
+    TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize, const char* a_dataSourceId)
 {
     uint8_t retval =
         TskAuto::openImageUtf8(a_num, a_images, a_type, a_ssize);
@@ -126,7 +126,7 @@ uint8_t
         return retval;
     }
 
-    if (addImageDetails(dataSourceId, a_images, a_num)) {
+    if (addImageDetails(a_dataSourceId, a_images, a_num)) {
         return 1;
     }
     return 0;
@@ -140,11 +140,11 @@ uint8_t
  * @param a_type Image type
  * @param a_ssize Size of device sector in bytes (or 0 for default)
  * @param dataSourceId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
- * @return 0 for success 1 for failure
+ * @return 0 for success, 1 for failure
  */
 uint8_t
     TskAutoDb::openImage(int a_num, const TSK_TCHAR * const a_images[],
-    TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize, const char* dataSourceId)
+    TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize, const char* a_dataSourceId)
 {
 
 // make name of database
@@ -155,7 +155,6 @@ uint8_t
     if (retval != 0) {
         return retval;
     }
-
 
     // convert image paths to UTF-8
     char **img_ptrs = (char **) tsk_malloc(a_num * sizeof(char *));
@@ -184,7 +183,7 @@ uint8_t
         img_ptrs[i] = img2;
     }
 
-    if (addImageDetails(dataSourceId, img_ptrs, a_num)) {
+    if (addImageDetails(a_dataSourceId, img_ptrs, a_num)) {
         //cleanup
         for (int i = 0; i < a_num; ++i) {
             free(img_ptrs[i]);
@@ -209,12 +208,12 @@ uint8_t
  * Adds image details to the existing database tables.
  *
  * @param dataSrcId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
- * @param img_ptrs The paths to the image splits
- * @param a_num The number of paths
+ * @param imgPaths The paths to the image splits
+ * @param numPaths The number of paths
  * @return Returns 0 for success, 1 for failure
  */
 uint8_t
-TskAutoDb::addImageDetails(const char* dataSourceId, const char *const img_ptrs[], int a_num)
+TskAutoDb::addImageDetails(const char* dataSourceId, const char *const imgPaths[], int numPaths)
 {
    string md5 = "";
 #if HAVE_LIBEWF 
@@ -240,9 +239,9 @@ TskAutoDb::addImageDetails(const char* dataSourceId, const char *const img_ptrs[
     }
 
     // Add the image names
-    for (int i = 0; i < a_num; i++) {
+    for (int i = 0; i < numPaths; i++) {
         const char *img_ptr = NULL;
-        img_ptr = img_ptrs[i];
+        img_ptr = imgPaths[i];
 
         if (m_db->addImageName(m_curImgId, img_ptr, i)) {
             registerError();
