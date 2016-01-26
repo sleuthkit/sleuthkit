@@ -248,10 +248,9 @@ public class SleuthkitJNI {
 			 * call either commit() or revert() after calling run().
 			 *
 			 * @param imageFilePaths Full path(s) to the image file(s).
-			 * @throws TskCoreException exception thrown if critical error
-			 * occurs within TSK
-			 * @throws TskDataException exception thrown if non-critical error
-			 * occurs within TSK (should be OK to continue)
+			 * @throws TskCoreException if a critical error occurs within TSK
+			 * @throws TskDataException if a non-critical error occurs within
+			 * TSK (should be OK to continue)
 			 * @deprecated Use run(String dataSourceId, String[] imageFilePaths)
 			 * instead
 			 */
@@ -265,12 +264,12 @@ public class SleuthkitJNI {
 			 * call either commit() or revert() after calling run().
 			 *
 			 * @param dataSourceId An ASCII-printable identifier for the data
-			 * source that is unique across multiple cases (e.g., a UUID).
+			 * source that is intended to be unique across multiple cases (e.g.,
+			 * a UUID).
 			 * @param imageFilePaths Full paths to the image files.
-			 * @throws TskCoreException exception thrown if critical error
-			 * occurs within TSK
-			 * @throws TskDataException exception thrown if non-critical error
-			 * occurs within TSK (should be OK to continue)
+			 * @throws TskCoreException if a critical error occurs within TSK
+			 * @throws TskDataException if a non-critical error occurs within
+			 * TSK (should be OK to continue)
 			 */
 			public void run(String dataSourceId, String[] imageFilePaths) throws TskCoreException, TskDataException {
 				if (autoDbPointer != 0) {
