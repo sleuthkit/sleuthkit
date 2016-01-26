@@ -1291,9 +1291,9 @@ public class BlackboardAttribute {
 
 	/**
 	 *
-	 * NOTE: Dates are not yet formatted.
+	 * Gets the attribute value as a string, formatted as required.
 	 *
-	 * @return return a string form of the stored value. Formatted if needed.
+	 * @return The vlaue as a string.
 	 */
 	public String getDisplayString() {
 		switch (valueType) {

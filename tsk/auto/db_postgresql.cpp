@@ -299,7 +299,7 @@ int TskDbPostgreSQL::attempt_exec(const char *sql, const char *errfmt)
 * Validate string that was escaped by a call to PQescapeLiteral(). Sets TSK error values on error.
 * @returns 1 if string is valid, 0 otherwise
 */
-int TskDbPostgreSQL::isEscapedStringValid(char *sql_str, char *orig_str, const char *errfmt){
+int TskDbPostgreSQL::isEscapedStringValid(const char *sql_str, const char *orig_str, const char *errfmt){
 
     if (!sql_str){
         tsk_error_reset();
@@ -680,7 +680,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInf
 }
 
 /**
-* deprecated
+* @deprecated
 */
 int TskDbPostgreSQL::addImageInfo(int type, int size, int64_t & objId, const string & timezone)
 {
@@ -692,29 +692,39 @@ int TskDbPostgreSQL::addImageInfo(int type, int size, int64_t & objId, const str
 */
 int TskDbPostgreSQL::addImageInfo(int type, int ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5)
 {
+    return addImageInfo(type, size, objId, timezone, 0, "", "");
+}
+
+/**
+ * Adds image details to the existing database tables.
+ *
+ * @param type Image type
+ * @param ssize Size of device sector in bytes (or 0 for default)
+ * @param objId The object id assigned to the image (out param)
+ * @param timeZone The timezone the image is from
+ * @param size The size of the image in bytes.
+ * @param md5 MD5 hash of the image
+ * @param dataSrcId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
+ * @returns 1 on error, 0 on success
+ */
+int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5, const string& dataSourceId)
+{
+    // Add the data source to the tsk_objects table.
+    // We don't use addObject because we're passing in NULL as the parent
     char stmt[2048];
     int expectedNumFileds = 1;
-
-    // We don't use addObject because we're passing in NULL as the parent
     snprintf(stmt, 2048, "INSERT INTO tsk_objects (par_obj_id, type) VALUES (NULL, %d) RETURNING obj_id;", TSK_DB_OBJECT_TYPE_IMG);
     PGresult *res = get_query_result_set(stmt, "TskDbPostgreSQL::addObj: Error adding object to row: %s (result code %d)\n");
-
-    // check if a valid result set was returned
     if (verifyNonEmptyResultSetSize(stmt, res, expectedNumFileds, "TskDbPostgreSQL::addObj: Unexpected number of results: Expected %d, Received %d\n")) {
         return 1;
     }
-
-    // Returned value is objId
     objId = atoll(PQgetvalue(res, 0, 0));
 
-    // replace all non-UTF8 characters
+    // Add the data source to the tsk_image_info table.
     char timeZone_local[MAX_DB_STRING_LENGTH];
     removeNonUtf8(timeZone_local, MAX_DB_STRING_LENGTH - 1, timezone.c_str());
-
     char md5_local[MAX_DB_STRING_LENGTH];
     removeNonUtf8(md5_local, MAX_DB_STRING_LENGTH - 1, md5.c_str());
-
-    // escape strings for use within an SQL command
     char *timezone_sql = PQescapeLiteral(conn, timeZone_local, strlen(timeZone_local));
     char *md5_sql = PQescapeLiteral(conn, md5_local, strlen(md5_local));
     if (!isEscapedStringValid(timezone_sql, timeZone_local, "TskDbPostgreSQL::addImageInfo: Unable to escape time zone string: %s (Error: %s)\n") 
@@ -723,15 +733,25 @@ int TskDbPostgreSQL::addImageInfo(int type, int ssize, int64_t & objId, const st
         PQfreemem(md5_sql);
         return 1;
     }
-
     snprintf(stmt, 2048, "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %d, %s, %"PRIuOFF", %s);",
         objId, type, ssize, timezone_sql, size, md5_sql);
-
     int ret = attempt_exec(stmt, "Error adding data to tsk_image_info table: %s\n");
-
-    // cleanup
     PQfreemem(timezone_sql);
     PQfreemem(md5_sql);
+    if (1 == ret || dataSourceId.empty()) {
+        return ret;
+    }
+
+    // Add the data source to the data_source_info table.
+    char *dataSourceId_sql = PQescapeLiteral(conn, dataSourceId.c_str(), strlen(dataSourceId.c_str()));
+    if (!isEscapedStringValid(dataSourceId_sql, dataSourceId.c_str(), "TskDbPostgreSQL::addImageInfo: Unable to escape data source string: %s (Error: %s)\n")) {
+        PQfreemem(dataSourceId_sql);
+        return 1;
+    }
+    snprintf(stmt, 2048, "INSERT INTO data_source_info (obj_id, data_src_id) VALUES (%lld, %s);",
+        objId, dataSourceId_sql);
+    ret = attempt_exec(stmt, "Error adding data source id to data_source_info table: %s\n");
+    PQfreemem(dataSourceId_sql);
     return ret;
 }
 
