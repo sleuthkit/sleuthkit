@@ -1898,7 +1898,7 @@ public class SleuthkitCase {
 			releaseExclusiveLock();
 		}
 	}
-
+	
 	/**
 	 * Get the attribute type id associated with an attribute type name.
 	 *
@@ -1920,6 +1920,37 @@ public class SleuthkitCase {
 				typeId = rs.getInt(1);
 			}
 			return typeId;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting attribute type id", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	/**
+	 * Get the attribute type associated with an attribute type name.
+	 *
+	 * @param attrTypeName An attribute type name.
+	 * @return An attribute type or null if the attribute type does not exist.
+	 * @throws TskCoreException If an error occurs accessing the case database.
+	 *
+	 */
+	public BlackboardAttribute.Type getAttrType(String attrTypeName) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT attribute_type_id, type_name, display_name, value_type FROM blackboard_attribute_types WHERE type_name = '" + attrTypeName + "'"); //NON-NLS
+			BlackboardAttribute.Type type = null;
+			if (rs.next()) {
+				type = new BlackboardAttribute.Type(rs.getInt(1), rs.getString(2), rs.getString(3), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getLong(4)));
+			}
+			return type;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting attribute type id", ex);
 		} finally {
@@ -2024,7 +2055,7 @@ public class SleuthkitCase {
 			releaseSharedLock();
 		}
 	}
-
+	
 	/**
 	 * Get artifact type name for the given string. Will throw an error if that
 	 * artifact doesn't exist. Use addArtifactType(...) to create a new one.
