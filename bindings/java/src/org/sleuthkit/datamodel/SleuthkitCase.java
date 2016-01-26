@@ -4869,7 +4869,7 @@ public class SleuthkitCase {
 		acquireExclusiveLock();
 		try {
 			Statement statement = connection.createStatement();
-			rs = connection.executeQuery(statement, "SELECT * FROM tsk_files WHERE tsk_files.obj_id=" + fileId);
+			rs = connection.executeQuery(statement, "SELECT mime_type FROM tsk_files WHERE tsk_files.obj_id=" + fileId);
 			if(rs.next()) {
 				if(rs.getString("mime_type") != null) {
 					throw new TskDataException("Cannot reset a file's MIME type");
