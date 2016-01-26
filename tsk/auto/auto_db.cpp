@@ -106,9 +106,19 @@ void TskAutoDb::setAddUnallocSpace(bool addUnallocSpace, int64_t chunkSize)
 	m_chunkSize = chunkSize;
 }
 
+/**
+ * Adds an image to the database.
+ *
+ * @param a_num Number of image parts
+ * @param a_images Array of paths to the image parts
+ * @param a_type Image type
+ * @param a_ssize Size of device sector in bytes (or 0 for default)
+ * @param a_dataSourceId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
+ * @return 0 for success, 1 for failure
+ */
 uint8_t
     TskAutoDb::openImageUtf8(int a_num, const char *const a_images[],
-    TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize)
+    TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize, const char* a_dataSourceId)
 {
     uint8_t retval =
         TskAuto::openImageUtf8(a_num, a_images, a_type, a_ssize);
@@ -116,15 +126,25 @@ uint8_t
         return retval;
     }
 
-    if (addImageDetails(a_images, a_num)) {
+    if (addImageDetails(a_dataSourceId, a_images, a_num)) {
         return 1;
     }
     return 0;
 }
 
+/**
+ * Adds an image to the database.
+ *
+ * @param a_num Number of image parts
+ * @param a_images Array of paths to the image parts
+ * @param a_type Image type
+ * @param a_ssize Size of device sector in bytes (or 0 for default)
+ * @param dataSourceId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
+ * @return 0 for success, 1 for failure
+ */
 uint8_t
     TskAutoDb::openImage(int a_num, const TSK_TCHAR * const a_images[],
-    TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize)
+    TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize, const char* a_dataSourceId)
 {
 
 // make name of database
@@ -135,7 +155,6 @@ uint8_t
     if (retval != 0) {
         return retval;
     }
-
 
     // convert image paths to UTF-8
     char **img_ptrs = (char **) tsk_malloc(a_num * sizeof(char *));
@@ -164,7 +183,7 @@ uint8_t
         img_ptrs[i] = img2;
     }
 
-    if (addImageDetails(img_ptrs, a_num)) {
+    if (addImageDetails(a_dataSourceId, img_ptrs, a_num)) {
         //cleanup
         for (int i = 0; i < a_num; ++i) {
             free(img_ptrs[i]);
@@ -181,17 +200,20 @@ uint8_t
 
     return 0;
 #else
-    return openImageUtf8(a_num, a_images, a_type, a_ssize);
+    return openImageUtf8(a_num, a_images, a_type, a_ssize, dataSourceId);
 #endif
 }
 
 /**
  * Adds image details to the existing database tables.
- * @param img_ptrs The paths to the image splits
- * @return Returns 1 on error
+ *
+ * @param dataSrcId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
+ * @param imgPaths The paths to the image splits
+ * @param numPaths The number of paths
+ * @return Returns 0 for success, 1 for failure
  */
 uint8_t
-TskAutoDb::addImageDetails(const char *const img_ptrs[], int a_num)
+TskAutoDb::addImageDetails(const char* dataSourceId, const char *const imgPaths[], int numPaths)
 {
    string md5 = "";
 #if HAVE_LIBEWF 
@@ -204,16 +226,22 @@ TskAutoDb::addImageDetails(const char *const img_ptrs[], int a_num)
    }
 #endif
 
+    string dataSrcId;
+    if (NULL != dataSourceId) {
+        dataSrcId = dataSourceId; 
+    } else {
+        dataSrcId = "";
+    }
     if (m_db->addImageInfo(m_img_info->itype, m_img_info->sector_size,
-          m_curImgId, m_curImgTZone, m_img_info->size, md5)) {
+          m_curImgId, m_curImgTZone, m_img_info->size, md5, dataSrcId)) {
         registerError();
         return 1;
     }
 
     // Add the image names
-    for (int i = 0; i < a_num; i++) {
+    for (int i = 0; i < numPaths; i++) {
         const char *img_ptr = NULL;
-        img_ptr = img_ptrs[i];
+        img_ptr = imgPaths[i];
 
         if (m_db->addImageName(m_curImgId, img_ptr, i)) {
             registerError();
@@ -371,14 +399,19 @@ uint8_t TskAutoDb::addFilesInImgToDb()
 
 /**
  * Start the process to add image/file metadata to database inside of a transaction. 
- * Same functionality as addFilesInImgToDb().  Reverts
- * all changes on error. User must call either commitAddImage() to commit the changes,
+ * User must call either commitAddImage() to commit the changes,
  * or revertAddImage() to revert them.
- * @returns 1 if critical system error occcured (data does not exist in DB), 2 if error occured while adding files to DB (but it finished), and 0 otherwise. All errors will have been registered. 
+ *
+ * @param numImg Number of image parts
+ * @param imagePaths Array of paths to the image parts
+ * @param imgType Image type
+ * @param sSize Size of device sector in bytes (or 0 for default)
+ * @param dataSourceId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
+ * @return 0 for success, 1 for failure
  */
 uint8_t
     TskAutoDb::startAddImage(int numImg, const TSK_TCHAR * const imagePaths[],
-    TSK_IMG_TYPE_ENUM imgType, unsigned int sSize)
+    TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* dataSourceId)
 {
     if (tsk_verbose)
         tsk_fprintf(stderr, "TskAutoDb::startAddImage: Starting add image process\n");
@@ -407,7 +440,7 @@ uint8_t
 
     m_imgTransactionOpen = true;
 
-    if (openImage(numImg, imagePaths, imgType, sSize)) {
+    if (openImage(numImg, imagePaths, imgType, sSize, dataSourceId)) {
         tsk_error_set_errstr2("TskAutoDb::startAddImage");
         registerError();
         if (revertAddImage())
@@ -418,10 +451,24 @@ uint8_t
     return addFilesInImgToDb();
 }
 
+
 #ifdef WIN32
+/**
+ * Start the process to add image/file metadata to database inside of a transaction. 
+ * Same functionality as addFilesInImgToDb().  Reverts
+ * all changes on error. User must call either commitAddImage() to commit the changes,
+ * or revertAddImage() to revert them.
+ *
+ * @param numImg Number of image parts
+ * @param imagePaths Array of paths to the image parts
+ * @param imgType Image type
+ * @param sSize Size of device sector in bytes (or 0 for default)
+ * @param dataSourceId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
+ * @return 0 for success 1, for failure
+ */
 uint8_t
     TskAutoDb::startAddImage(int numImg, const char *const imagePaths[],
-    TSK_IMG_TYPE_ENUM imgType, unsigned int sSize)
+    TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* dataSourceId)
 {
     if (tsk_verbose)
         tsk_fprintf(stderr, "TskAutoDb::startAddImage_utf8: Starting add image process\n");
@@ -452,7 +499,7 @@ uint8_t
 
     m_imgTransactionOpen = true;
 
-    if (openImageUtf8(numImg, imagePaths, imgType, sSize)) {
+    if (openImageUtf8(numImg, imagePaths, imgType, sSize, dataSourceId)) {
         tsk_error_set_errstr2("TskAutoDb::startAddImage");
         registerError();
         if (revertAddImage())
