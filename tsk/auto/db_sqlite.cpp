@@ -473,7 +473,7 @@ int
  * @param timeZone The timezone the image is from
  * @param size The size of the image in bytes.
  * @param md5 MD5 hash of the image
- * @param dataSrcId An ascii-printable identifier for the data source that is unique across multiple cases (e.g., a UUID)
+ * @param dataSrcId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
  * @returns 1 on error, 0 on success
  */
 int TskDbSqlite::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5, const string& dataSourceId)

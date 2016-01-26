@@ -986,7 +986,7 @@ JNIEXPORT jlong JNICALL
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
  * @param process the add-image process created by initAddImgNat
- * @param dataSrcId An ascii-printable identifier for the data source that is unique across multiple cases (e.g., a UUID)
+ * @param dataSrcId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
  * @param paths array of strings from java, the paths to the image parts
  * @param numImgs number of image parts
  * @param timeZone the timezone the image is from

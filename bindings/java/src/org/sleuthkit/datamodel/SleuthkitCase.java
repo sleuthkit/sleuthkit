@@ -869,36 +869,6 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Gets the metadata for a data source (e.g., an image, a local disk, a
-	 * logical file, etc.)
-	 *
-	 * @param objectId The object id of the data source.
-	 * @return A data source info object.
-	 */
-	public DataSourceInfo getDataSourceInfo(long objectId) throws TskCoreException {
-		CaseDbConnection connection = connections.getConnection();
-		acquireSharedLock();
-		Statement s = null;
-		ResultSet rs = null;
-		try {
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, String.format("SELECT data_src_id FROM data_source_info WHERE obj_id = %d", objectId)); //NON-NLS			
-			String dataSourceId = null;
-			if (rs.next()) {
-				dataSourceId = rs.getString("data_src_id");
-			}
-			return new DataSourceInfo(objectId, dataSourceId);
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting data source info", ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			connection.close();
-			releaseSharedLock();
-		}
-	}
-
-	/**
 	 * Get the list of root objects (data sources) from the case database, e.g.,
 	 * image files, logical (local) files, virtual directories.
 	 *
@@ -938,6 +908,41 @@ public class SleuthkitCase {
 			return rootObjs;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting root objects", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	/**
+	 * Gets the data sources for the case (e.g., images, local disks, virtual
+	 * directory of logical files, etc.)
+	 *
+	 * NOTE: The DataSource class is an emerging feature and at present is only
+	 * useful for obtaining the object id and the data source identifier, an
+	 * ASCII-printable identifier for the data source that is intended to be
+	 * unique across multiple cases (e.g., a UUID). In the future, this method
+	 * will be a replacement for the getRootObjects method.
+	 *
+	 * @return A list of the data sources for the case.
+	 */
+	public List<DataSource> getDataSourceSources() throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT obj_id, data_src_id FROM data_source_info"); //NON-NLS			
+			List<DataSource> dataSources = new ArrayList<DataSource>();
+			while (rs.next()) {
+				dataSources.add(new DataSource(rs.getLong("obj_id"), rs.getString("data_src_id")));
+			}
+			return dataSources;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting data source info", ex);
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);

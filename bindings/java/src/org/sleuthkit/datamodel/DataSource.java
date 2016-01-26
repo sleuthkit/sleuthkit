@@ -19,23 +19,23 @@
 package org.sleuthkit.datamodel;
 
 /**
- * Metadata for a data source (e.g., an image, a local disk, a logical file,
- * etc.)
+ * A data source (e.g., an image, a local disk, a virtual directory of logical
+ * files, etc.)
  */
-public final class DataSourceInfo {
+public final class DataSource {
 
 	private final long objectId;
 	private final String dataSourceId;
 
 	/**
-	 * Metadata for a data source (e.g., an image, a local disk, a logical file,
-	 * etc.)
+	 * Constructs a data source (e.g., an image, a local disk, a virtual
+	 * directory of logical files, etc.)
 	 *
 	 * @param objectId The object id of the data source.
 	 * @param dataSourceId An ASCII-printable identifier for the data source
-	 * that is unique across multiple cases (e.g., a UUID).
+	 * that is intended to be unique across multiple cases (e.g., a UUID).
 	 */
-	DataSourceInfo(long objectId, String dataSourceId) {
+	DataSource(long objectId, String dataSourceId) {
 		this.objectId = objectId;
 		this.dataSourceId = dataSourceId;
 	}
@@ -50,13 +50,13 @@ public final class DataSourceInfo {
 	}
 
 	/**
-	 * Gets the data source id of this data source. The id is an ASCII-printable
-	 * identifier for the data source that is unique across multiple cases
-	 * (e.g., a UUID).
+	 * Gets the ASCII-printable identifier for the data source. This identifier
+	 * is intended to be unique across multiple cases (e.g., a UUID).
 	 *
-	 * @return The data source id, may be null
+	 * @return The data source id, may be null.
 	 */
 	public String getDataSourceId() {
 		return this.dataSourceId;
 	}
+
 }

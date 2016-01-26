@@ -113,7 +113,7 @@ void TskAutoDb::setAddUnallocSpace(bool addUnallocSpace, int64_t chunkSize)
  * @param a_images Array of paths to the image parts
  * @param a_type Image type
  * @param a_ssize Size of device sector in bytes (or 0 for default)
- * @param dataSourceId An ascii-printable identifier for the data source that is unique across multiple cases (e.g., a UUID)
+ * @param dataSourceId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
  * @return 0 for success 1 for failure
  */
 uint8_t
@@ -139,7 +139,7 @@ uint8_t
  * @param a_images Array of paths to the image parts
  * @param a_type Image type
  * @param a_ssize Size of device sector in bytes (or 0 for default)
- * @param dataSourceId An ascii-printable identifier for the data source that is unique across multiple cases (e.g., a UUID)
+ * @param dataSourceId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
  * @return 0 for success 1 for failure
  */
 uint8_t
@@ -208,7 +208,7 @@ uint8_t
 /**
  * Adds image details to the existing database tables.
  *
- * @param dataSrcId An ascii-printable identifier for the data source that is unique across multiple cases (e.g., a UUID)
+ * @param dataSrcId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
  * @param img_ptrs The paths to the image splits
  * @param a_num The number of paths
  * @return Returns 0 for success, 1 for failure
@@ -407,7 +407,7 @@ uint8_t TskAutoDb::addFilesInImgToDb()
  * @param imagePaths Array of paths to the image parts
  * @param imgType Image type
  * @param sSize Size of device sector in bytes (or 0 for default)
- * @param dataSourceId An ascii-printable identifier for the data source that is unique across multiple cases (e.g., a UUID)
+ * @param dataSourceId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
  * @return 0 for success, 1 for failure
  */
 uint8_t
@@ -464,7 +464,7 @@ uint8_t
  * @param imagePaths Array of paths to the image parts
  * @param imgType Image type
  * @param sSize Size of device sector in bytes (or 0 for default)
- * @param dataSourceId An ascii-printable identifier for the data source that is unique across multiple cases (e.g., a UUID)
+ * @param dataSourceId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
  * @return 0 for success 1, for failure
  */
 uint8_t
