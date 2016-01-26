@@ -869,6 +869,36 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Gets the metadata for a data source (e.g., an image, a local disk, a
+	 * logical file, etc.)
+	 *
+	 * @param objectId The object id of the data source.
+	 * @return A data source info object.
+	 */
+	public DataSourceInfo getDataSourceInfo(long objectId) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, String.format("SELECT data_src_id FROM data_source_info WHERE obj_id = %d", objectId)); //NON-NLS			
+			String dataSourceId = null;
+			if (rs.next()) {
+				dataSourceId = rs.getString("data_src_id");
+			}
+			return new DataSourceInfo(objectId, dataSourceId);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting data source info", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	/**
 	 * Get the list of root objects (data sources) from the case database, e.g.,
 	 * image files, logical (local) files, virtual directories.
 	 *
@@ -2107,7 +2137,7 @@ public class SleuthkitCase {
 	public int addArtifactType(String artifactTypeName, String displayName) throws TskCoreException {
 		return addBlackboardArtifactType(artifactTypeName, displayName).getTypeID();
 	}
-	
+
 	/**
 	 * Add an artifact type with the given name. Will return an artifact Type.
 	 *

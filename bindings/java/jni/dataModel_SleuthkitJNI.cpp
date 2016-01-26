@@ -990,7 +990,7 @@ JNIEXPORT jlong JNICALL
  * @param paths array of strings from java, the paths to the image parts
  * @param numImgs number of image parts
  * @param timeZone the timezone the image is from
- * @return the 0 for success 1 for failure
+ * @return 0 for success, 1 for failure
  */
 JNIEXPORT void JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
