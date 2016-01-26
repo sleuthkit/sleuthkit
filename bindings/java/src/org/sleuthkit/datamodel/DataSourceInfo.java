@@ -31,7 +31,7 @@ public final class DataSourceInfo {
 	 * Metadata for a data source (e.g., an image, a local disk, a logical file,
 	 * etc.)
 	 *
-	 * @param objectId The object id od the data source.
+	 * @param objectId The object id of the data source.
 	 * @param dataSourceId An ASCII-printable identifier for the data source
 	 * that is unique across multiple cases (e.g., a UUID).
 	 */
@@ -50,7 +50,7 @@ public final class DataSourceInfo {
 	}
 
 	/**
-	 * Gets the data source id of this dat aource. The id is an ASCII-printable
+	 * Gets the data source id of this data source. The id is an ASCII-printable
 	 * identifier for the data source that is unique across multiple cases
 	 * (e.g., a UUID).
 	 *

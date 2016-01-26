@@ -211,13 +211,13 @@ uint8_t
  * @param dataSrcId An ascii-printable identifier for the data source that is unique across multiple cases (e.g., a UUID)
  * @param img_ptrs The paths to the image splits
  * @param a_num The number of paths
- * @return Returns 1 on error
+ * @return Returns 0 for success, 1 for failure
  */
 uint8_t
 TskAutoDb::addImageDetails(const char* dataSourceId, const char *const img_ptrs[], int a_num)
 {
-#if HAVE_LIBEWF 
    string md5 = "";
+#if HAVE_LIBEWF 
    if (m_img_info->itype == TSK_IMG_TYPE_EWF_EWF) {
      // @@@ This shoudl really probably be inside of a tsk_img_ method
        IMG_EWF_INFO *ewf_info = (IMG_EWF_INFO *)m_img_info;
@@ -231,10 +231,10 @@ TskAutoDb::addImageDetails(const char* dataSourceId, const char *const img_ptrs[
     if (NULL != dataSourceId) {
         dataSrcId = dataSourceId; 
     } else {
-        dataSourceId = "";
+        dataSrcId = "";
     }
     if (m_db->addImageInfo(m_img_info->itype, m_img_info->sector_size,
-          m_curImgId, m_curImgTZone, m_img_info->size, md5, dataSourceId)) {
+          m_curImgId, m_curImgTZone, m_img_info->size, md5, dataSrcId)) {
         registerError();
         return 1;
     }
@@ -400,8 +400,7 @@ uint8_t TskAutoDb::addFilesInImgToDb()
 
 /**
  * Start the process to add image/file metadata to database inside of a transaction. 
- * Same functionality as addFilesInImgToDb().  Reverts
- * all changes on error. User must call either commitAddImage() to commit the changes,
+ * User must call either commitAddImage() to commit the changes,
  * or revertAddImage() to revert them.
  *
  * @param numImg Number of image parts
@@ -409,7 +408,7 @@ uint8_t TskAutoDb::addFilesInImgToDb()
  * @param imgType Image type
  * @param sSize Size of device sector in bytes (or 0 for default)
  * @param dataSourceId An ascii-printable identifier for the data source that is unique across multiple cases (e.g., a UUID)
- * @return 0 for success 1 for failure
+ * @return 0 for success, 1 for failure
  */
 uint8_t
     TskAutoDb::startAddImage(int numImg, const TSK_TCHAR * const imagePaths[],
@@ -466,7 +465,7 @@ uint8_t
  * @param imgType Image type
  * @param sSize Size of device sector in bytes (or 0 for default)
  * @param dataSourceId An ascii-printable identifier for the data source that is unique across multiple cases (e.g., a UUID)
- * @return 0 for success 1 for failure
+ * @return 0 for success 1, for failure
  */
 uint8_t
     TskAutoDb::startAddImage(int numImg, const char *const imagePaths[],

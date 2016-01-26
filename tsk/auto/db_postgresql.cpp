@@ -702,8 +702,8 @@ int TskDbPostgreSQL::addImageInfo(int type, int ssize, int64_t & objId, const st
  * @param ssize Size of device sector in bytes (or 0 for default)
  * @param objId The object id assigned to the image (out param)
  * @param timeZone The timezone the image is from
- * @param size
- * @param md5 MD% hash of the image
+ * @param size The size of the image in bytes.
+ * @param md5 MD5 hash of the image
  * @param dataSrcId An ascii-printable identifier for the data source that is unique across multiple cases (e.g., a UUID)
  * @returns 1 on error, 0 on success
  */
