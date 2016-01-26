@@ -292,7 +292,7 @@ class ResultSetHelper {
 						rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 						rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
 						parentPath, localPath,
-						parentId);
+						parentId, rs.getString("mime_type"));
 
 		return df;
 	}
@@ -327,7 +327,7 @@ class ResultSetHelper {
 						rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 						rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
 						parentPath, localPath,
-						parentId);
+						parentId, rs.getString("mime_type"));
 
 		return lf;
 	}
