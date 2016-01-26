@@ -918,7 +918,7 @@ public class SleuthkitCase {
 
 	/**
 	 * Gets the data sources for the case (e.g., images, local disks, virtual
-	 * directory of logical files, etc.)
+	 * directories of logical files, etc.)
 	 *
 	 * NOTE: The DataSource class is an emerging feature and at present is only
 	 * useful for obtaining the object id and the data source identifier, an
@@ -928,7 +928,7 @@ public class SleuthkitCase {
 	 *
 	 * @return A list of the data sources for the case.
 	 */
-	public List<DataSource> getDataSourceSources() throws TskCoreException {
+	public List<DataSource> getDataSources() throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
 		Statement s = null;
@@ -942,7 +942,7 @@ public class SleuthkitCase {
 			}
 			return dataSources;
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting data source info", ex);
+			throw new TskCoreException("Error getting data sources", ex);
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
