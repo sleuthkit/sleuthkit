@@ -999,7 +999,7 @@ JNIEXPORT void JNICALL
     TskAutoDb *tskAuto = ((TskAutoDb *) process);
     if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
         setThrowTskCoreError(env, 
-            "runAddDataSourceNat: Invalid TskAutoDb object passed in");
+            "runAddImgNat: Invalid TskAutoDb object passed in");
         return;
     }
 
@@ -1008,7 +1008,7 @@ JNIEXPORT void JNICALL
     if (NULL != dataSrcId) {    
         data_src_id = (const char *) env->GetStringUTFChars(dataSrcId, &isCopy);
         if (NULL == data_src_id) {
-            setThrowTskCoreError(env, "runAddDataSourceNat: Can't convert data source id string");
+            setThrowTskCoreError(env, "runAddImgNat: Can't convert data source id string");
             return;
         }
     }
