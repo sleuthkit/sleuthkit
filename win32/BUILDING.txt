@@ -21,12 +21,14 @@ https://www.microsoft.com/en-us/download/details.aspx?id=4422
 
 
 
-There are six build targets: - Debug_NoLibs and Release_NoLibs do not
-depend on any third-party libraries. - Debug and Release depend on libewf
-and zlib to be built so that E01 images aresupported. - Debug_PostgreSQL
-and Release_PostgreSQL depend on libewf for E01 and PostgreSQL libraries.
-This target is needed by Autopsy and other programs that want to write
-database results to a central PostgreSQL database instead of just SQLite.
+There are six build targets: 
+    - Debug_NoLibs and Release_NoLibs do not depend on any third-party libraries. 
+    - Debug and Release depend on libewf and zlib to be built so that E01 images
+      are supported. 
+    - Debug_PostgreSQL and Release_PostgreSQL depend on libewf for E01 and 
+      PostgreSQL libraries. This target is needed by collaborative Autopsy and 
+      other programs that rely on TSK that need to write database results to a 
+      central PostgreSQL database instead of just SQLite.
 
 
 ------------------------------------------------------------------------
@@ -111,7 +113,7 @@ zlib, libpq, libintl-8, libeay32, and ssleay32 DLL files (which are
 copied to the TSK build directories).
 
 7) If you are using JNI along with the PostgreSQL build, in NetBeans
-build the DataModel PostgreSQL target or in ant 'ant PostgreSQL'.
+build the DataModel PostgreSQL target or in ant 'ant dist-PostgreSQL'.
 
 Refer to the API docs at http://sleuthkit.org/sleuthkit/docs/api-docs/
 for details on how to use the library in an application.
