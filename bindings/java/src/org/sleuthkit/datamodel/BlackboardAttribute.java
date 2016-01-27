@@ -135,6 +135,7 @@ public class BlackboardAttribute {
 			hash = 63 * hash + Objects.hashCode(this.typeID);
 			hash = 63 * hash + Objects.hashCode(this.displayName);
 			hash = 63 * hash + Objects.hashCode(this.typeName);
+			hash = 63 * hash + Objects.hashCode(this.valueType);
 			return hash;
 		}
 		
