@@ -32,10 +32,9 @@ import java.util.ResourceBundle;
 public class BlackboardAttribute {
 
 	private long artifactID;
-	private BlackboardAttribute.Type type;
+	private BlackboardAttribute.Type attributeType;
 	private String moduleName;
 	private String context;
-	private TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType;
 	private int valueInt;
 	private long valueLong;
 	private double valueDouble;
@@ -138,6 +137,14 @@ public class BlackboardAttribute {
 			hash = 63 * hash + Objects.hashCode(this.typeName);
 			return hash;
 		}
+		
+		@Override
+		public String toString() {
+			return "(typeID= " + this.typeID
+					+ ", displayName=" + this.displayName
+					+ ", typeName=" + this.typeName
+					+ ", valueType=" + this.valueType + ")";
+		}
 	}
 
 	/**
@@ -187,6 +194,7 @@ public class BlackboardAttribute {
 			}
 			throw new IllegalArgumentException("No TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE matching type: " + type);
 		}
+
 		/**
 		 * Get the enum type for the given type id
 		 *
@@ -630,15 +638,14 @@ public class BlackboardAttribute {
 	 * @param sleuthkitCase the case that can be used to make calls into the
 	 * blackboard db
 	 */
-	BlackboardAttribute(long artifactID, int attributeTypeID, String moduleName, String context,
+	BlackboardAttribute(long artifactID, BlackboardAttribute.Type attributeType, String moduleName, String context,
 			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, int valueInt, long valueLong, double valueDouble,
 			String valueString, byte[] valueBytes, SleuthkitCase sleuthkitCase) {
 
 		this.artifactID = artifactID;
-		this.attributeTypeID = attributeTypeID;
+		this.attributeType = attributeType;
 		this.moduleName = replaceNulls(moduleName);
 		this.context = replaceNulls(context);
-		this.valueType = valueType;
 		this.valueInt = valueInt;
 		this.valueLong = valueLong;
 		this.valueDouble = valueDouble;
@@ -670,9 +677,9 @@ public class BlackboardAttribute {
 			throw new IllegalArgumentException("Value types do not match");
 		}
 		this.artifactID = 0;
-		this.attributeTypeID = attributeType.getTypeID();
+		this.attributeType = new BlackboardAttribute.Type(attributeType.getTypeID(), attributeType.getLabel(), attributeType.getDisplayName(),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER);
 		this.moduleName = replaceNulls(moduleName);
-		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER;
 		this.valueInt = valueInt;
 		this.valueLong = 0;
 		this.valueDouble = 0;
@@ -712,9 +719,8 @@ public class BlackboardAttribute {
 			throw new IllegalArgumentException("Type mismatched with value type");
 		}
 		this.artifactID = 0;
-		this.attributeTypeID = attributeType.getTypeID();
+		this.attributeType = attributeType;
 		this.moduleName = replaceNulls(moduleName);
-		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER;
 		this.valueInt = valueInt;
 		this.valueLong = 0;
 		this.valueDouble = 0;
@@ -757,9 +763,9 @@ public class BlackboardAttribute {
 			throw new IllegalArgumentException("Value types do not match");
 		}
 		this.artifactID = 0;
-		this.attributeTypeID = attributeType.getTypeID();
+		this.attributeType = new BlackboardAttribute.Type(attributeType.getTypeID(), attributeType.getLabel(), attributeType.getDisplayName(),
+				attributeType.getValueType());
 		this.moduleName = replaceNulls(moduleName);
-		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG;
 		this.valueInt = 0;
 		this.valueLong = valueLong;
 		this.valueDouble = 0;
@@ -801,9 +807,8 @@ public class BlackboardAttribute {
 			throw new IllegalArgumentException("Type mismatched with value type");
 		}
 		this.artifactID = 0;
-		this.attributeTypeID = attributeType.getTypeID();
+		this.attributeType = attributeType;
 		this.moduleName = replaceNulls(moduleName);
-		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG;
 		this.valueInt = 0;
 		this.valueLong = valueLong;
 		this.valueDouble = 0;
@@ -845,9 +850,9 @@ public class BlackboardAttribute {
 			throw new IllegalArgumentException("Value types do not match");
 		}
 		this.artifactID = 0;
-		this.attributeTypeID = attributeType.getTypeID();
+		this.attributeType = new BlackboardAttribute.Type(attributeType.getTypeID(), attributeType.getLabel(), attributeType.getDisplayName(),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE);;
 		this.moduleName = replaceNulls(moduleName);
-		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE;
 		this.valueInt = 0;
 		this.valueLong = 0;
 		this.valueDouble = valueDouble;
@@ -889,9 +894,8 @@ public class BlackboardAttribute {
 			throw new IllegalArgumentException("Type mismatched with value type");
 		}
 		this.artifactID = 0;
-		this.attributeTypeID = attributeType.getTypeID();
+		this.attributeType = attributeType;
 		this.moduleName = replaceNulls(moduleName);
-		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE;
 		this.valueInt = 0;
 		this.valueLong = 0;
 		this.valueDouble = valueDouble;
@@ -933,9 +937,9 @@ public class BlackboardAttribute {
 			throw new IllegalArgumentException("Value types do not match");
 		}
 		this.artifactID = 0;
-		this.attributeTypeID = attributeType.getTypeID();
+		this.attributeType = new BlackboardAttribute.Type(attributeType.getTypeID(), attributeType.getLabel(), attributeType.getDisplayName(),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
 		this.moduleName = replaceNulls(moduleName);
-		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING;
 		this.valueInt = 0;
 		this.valueLong = 0;
 		this.valueDouble = 0;
@@ -980,9 +984,8 @@ public class BlackboardAttribute {
 			throw new IllegalArgumentException("Type mismatched with value type");
 		}
 		this.artifactID = 0;
-		this.attributeTypeID = attributeType.getTypeID();
+		this.attributeType = attributeType;
 		this.moduleName = replaceNulls(moduleName);
-		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING;
 		this.valueInt = 0;
 		this.valueLong = 0;
 		this.valueDouble = 0;
@@ -1028,10 +1031,10 @@ public class BlackboardAttribute {
 			throw new IllegalArgumentException("Value types do not match");
 		}
 		this.artifactID = 0;
-		this.attributeTypeID = attributeType.getTypeID();
+		this.attributeType = new BlackboardAttribute.Type(attributeType.getTypeID(), attributeType.getLabel(), attributeType.getDisplayName(),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE);
 		this.moduleName = replaceNulls(moduleName);
 		this.context = "";
-		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE;
 		this.valueInt = 0;
 		this.valueLong = 0;
 		this.valueDouble = 0;
@@ -1074,10 +1077,9 @@ public class BlackboardAttribute {
 			throw new IllegalArgumentException("Type mismatched with value type");
 		}
 		this.artifactID = 0;
-		this.attributeTypeID = attributeType.getTypeID();
+		this.attributeType = attributeType;
 		this.moduleName = replaceNulls(moduleName);
 		this.context = "";
-		this.valueType = TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE;
 		this.valueInt = 0;
 		this.valueLong = 0;
 		this.valueDouble = 0;
@@ -1129,7 +1131,7 @@ public class BlackboardAttribute {
 
 	@Override
 	public String toString() {
-		return "BlackboardAttribute{" + "artifactID=" + artifactID + ", attributeTypeID=" + attributeTypeID + ", moduleName=" + moduleName + ", context=" + context + ", valueType=" + valueType + ", valueInt=" + valueInt + ", valueLong=" + valueLong + ", valueDouble=" + valueDouble + ", valueString=" + valueString + ", valueBytes=" + valueBytes + ", Case=" + sleuthkitCase + '}'; //NON-NLS
+		return "BlackboardAttribute{" + "artifactID=" + artifactID + ", attributeType=" + attributeType.toString() + ", moduleName=" + moduleName + ", context=" + context + ", valueInt=" + valueInt + ", valueLong=" + valueLong + ", valueDouble=" + valueDouble + ", valueString=" + valueString + ", valueBytes=" + valueBytes + ", Case=" + sleuthkitCase + '}'; //NON-NLS
 	}
 
 	/**
@@ -1147,7 +1149,7 @@ public class BlackboardAttribute {
 	 * @return type id
 	 */
 	public int getAttributeTypeID() {
-		return attributeTypeID;
+		return attributeType.getTypeID();
 	}
 
 	/**
@@ -1156,7 +1158,7 @@ public class BlackboardAttribute {
 	 * @return type name string
 	 */
 	public String getAttributeTypeName() throws TskCoreException {
-		return sleuthkitCase.getAttrTypeString(attributeTypeID);
+		return attributeType.getTypeName();
 	}
 
 	/**
@@ -1165,7 +1167,7 @@ public class BlackboardAttribute {
 	 * @return type display name
 	 */
 	public String getAttributeTypeDisplayName() throws TskCoreException {
-		return sleuthkitCase.getAttrTypeDisplayName(attributeTypeID);
+		return attributeType.getDisplayName();
 	}
 
 	/**
@@ -1177,7 +1179,7 @@ public class BlackboardAttribute {
 	 * @return value type
 	 */
 	public TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE getValueType() {
-		return valueType;
+		return attributeType.getValueType();
 	}
 
 	/**
@@ -1296,11 +1298,11 @@ public class BlackboardAttribute {
 	 * @return The vlaue as a string.
 	 */
 	public String getDisplayString() {
-		switch (valueType) {
+		switch (attributeType.getValueType()) {
 			case STRING:
 				return getValueString();
 			case INTEGER:
-				if (attributeTypeID == ATTRIBUTE_TYPE.TSK_READ_STATUS.getTypeID()) {
+				if (attributeType.getTypeID() == ATTRIBUTE_TYPE.TSK_READ_STATUS.getTypeID()) {
 					if (getValueInt() == 0) {
 						return "Unread";
 					} else {
