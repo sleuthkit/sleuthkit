@@ -32,7 +32,7 @@ import java.util.ResourceBundle;
 public class BlackboardAttribute {
 
 	private long artifactID;
-	private int attributeTypeID;
+	private BlackboardAttribute.Type type;
 	private String moduleName;
 	private String context;
 	private TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType;

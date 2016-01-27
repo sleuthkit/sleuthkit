@@ -2167,7 +2167,9 @@ public class SleuthkitCase {
 	 * @return ID of artifact added
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
+	 * @deprecated Use addBlackboardArtifactType instead
 	 */
+	@Deprecated
 	public int addArtifactType(String artifactTypeName, String displayName) throws TskCoreException {
 		return addBlackboardArtifactType(artifactTypeName, displayName).getTypeID();
 	}
