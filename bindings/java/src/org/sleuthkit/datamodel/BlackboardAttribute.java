@@ -187,6 +187,20 @@ public class BlackboardAttribute {
 			}
 			throw new IllegalArgumentException("No TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE matching type: " + type);
 		}
+		/**
+		 * Get the enum type for the given type id
+		 *
+		 * @param type type id
+		 * @return enum type
+		 */
+		static public TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE fromLabel(String label) {
+			for (TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE v : TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.values()) {
+				if (v.label.equals(label)) {
+					return v;
+				}
+			}
+			throw new IllegalArgumentException("No TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE matching type: " + label);
+		}
 	}
 
 	/**
