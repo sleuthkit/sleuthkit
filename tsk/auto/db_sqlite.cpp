@@ -267,10 +267,14 @@ int
         attempt_exec
         ("CREATE TABLE tsk_fs_info (obj_id INTEGER PRIMARY KEY, img_offset INTEGER NOT NULL, fs_type INTEGER NOT NULL, block_size INTEGER NOT NULL, block_count INTEGER NOT NULL, root_inum INTEGER NOT NULL, first_inum INTEGER NOT NULL, last_inum INTEGER NOT NULL, display_name TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating tsk_fs_info table: %s\n")
+		||
+		attempt_exec
+        ("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, data_src_id TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        "Error creating data_source_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_files (obj_id INTEGER PRIMARY KEY, fs_obj_id INTEGER, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr INTEGER, meta_seq INTEGER, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size INTEGER, ctime INTEGER, crtime INTEGER, atime INTEGER, mtime INTEGER, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, parent_path TEXT, "
-        "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id));",
+        ("CREATE TABLE tsk_files (obj_id INTEGER PRIMARY KEY, fs_obj_id INTEGER, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr INTEGER, meta_seq INTEGER, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size INTEGER, ctime INTEGER, crtime INTEGER, atime INTEGER, mtime INTEGER, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, parent_path TEXT, mime_type TEXT, "
+         "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id));",
         "Error creating tsk_files table: %s\n")
         ||
         attempt_exec
@@ -315,7 +319,7 @@ int
         "Error creating blackboard_artifact_types table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE blackboard_attribute_types (attribute_type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT)",
+        ("CREATE TABLE blackboard_attribute_types (attribute_type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT, value_type INTEGER NOT NULL)",
         "Error creating blackboard_attribute_types table: %s\n")
         ||
         attempt_exec
@@ -457,26 +461,49 @@ int
 int
     TskDbSqlite::addImageInfo(int type, int ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5)
 {
-    char
-        stmt[1024];
-    char *zSQL;
-    int ret;
+    return addImageInfo(type, ssize, objId, timezone, size, md5, "");
+}
 
-    // We dont' use addObject because we're passing in NULL as the parent
+/**
+ * Adds image details to the existing database tables.
+ *
+ * @param type Image type
+ * @param ssize Size of device sector in bytes (or 0 for default)
+ * @param objId The object id assigned to the image (out param)
+ * @param timeZone The timezone the image is from
+ * @param size The size of the image in bytes.
+ * @param md5 MD5 hash of the image
+ * @param dataSrcId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
+ * @returns 1 on error, 0 on success
+ */
+int TskDbSqlite::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5, const string& dataSourceId)
+{
+
+    // Add the data source to the tsk_objects table.
+    // We don't use addObject because we're passing in NULL as the parent
+    char stmt[1024];
     snprintf(stmt, 1024,
         "INSERT INTO tsk_objects (obj_id, par_obj_id, type) VALUES (NULL, NULL, %d);",
         TSK_DB_OBJECT_TYPE_IMG);
-    if (attempt_exec(stmt, "Error adding data to tsk_objects table: %s\n"))
+    if (attempt_exec(stmt, "Error adding data to tsk_objects table: %s\n")) {
         return 1;
-
+    }
     objId = sqlite3_last_insert_rowid(m_db);
 
-    zSQL = sqlite3_mprintf("INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %d, '%q', %"PRIuOFF", '%q');",
+    // Add the data source to the tsk_image_info table.
+    char *sql;
+    sql = sqlite3_mprintf("INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %d, '%q', %"PRIuOFF", '%q');",
         objId, type, ssize, timezone.c_str(), size, md5.c_str());
+    int ret = attempt_exec(sql, "Error adding data to tsk_image_info table: %s\n");
+    sqlite3_free(sql);
+    if (1 == ret || dataSourceId.empty()) {
+        return ret;
+    }
 
-    ret = attempt_exec(zSQL,
-        "Error adding data to tsk_image_info table: %s\n");
-    sqlite3_free(zSQL);
+    // Add the data source to the data_source_info table.
+    sql = sqlite3_mprintf("INSERT INTO data_source_info (obj_id, data_src_id) VALUES (%lld, '%s');", objId, dataSourceId.c_str());
+    ret = attempt_exec(sql, "Error adding data to tsk_image_info table: %s\n");
+    sqlite3_free(sql);
     return ret;
 }
 

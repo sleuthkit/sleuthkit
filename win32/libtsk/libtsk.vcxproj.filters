@@ -309,6 +309,12 @@
     <ClCompile Include="..\..\tsk\auto\db_postgresql.cpp">
       <Filter>auto</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tsk\img\vmdk.c">
+      <Filter>img</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\img\vhd.c">
+      <Filter>img</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\tsk\vs\tsk_bsd.h">
@@ -421,6 +427,12 @@
     </ClInclude>
     <ClInclude Include="..\..\tsk\auto\db_connection_info.h">
       <Filter>auto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\img\vmdk.h">
+      <Filter>img</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\img\vhd.h">
+      <Filter>img</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -978,41 +978,47 @@ JNIEXPORT jlong JNICALL
 }
 
 
-
 /*
- * Create a database for the given image using a pre-created process which can be cancelled.
+ * Add an image to a database using a pre-created process, which can be cancelled.
  * MUST call commitAddImg or revertAddImg afterwards once runAddImg returns.  If there is an 
  * error, you do not need to call revert or commit and the 'process' handle will be deleted.
- * @return the 0 for success 1 for failure
+ *
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
  * @param process the add-image process created by initAddImgNat
+ * @param dataSrcId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
  * @param paths array of strings from java, the paths to the image parts
- * @param num_imgs number of image parts
- * @param timezone the timezone the image is from
+ * @param numImgs number of image parts
+ * @param timeZone the timezone the image is from
  */
 JNIEXPORT void JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
-    jclass obj, jlong process, jobjectArray paths, jint num_imgs, jstring timezone) {
-    jboolean isCopy;
+    jclass obj, jlong process, jstring dataSrcId, jobjectArray paths, jint numImgs, jstring timeZone) {
 
     TskAutoDb *tskAuto = ((TskAutoDb *) process);
     if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
-        setThrowTskCoreError(env,
+        setThrowTskCoreError(env, 
             "runAddImgNat: Invalid TskAutoDb object passed in");
         return;
     }
 
+    jboolean isCopy;
+    const char *data_src_id = NULL;
+    if (NULL != dataSrcId) {    
+        data_src_id = (const char *) env->GetStringUTFChars(dataSrcId, &isCopy);
+        if (NULL == data_src_id) {
+            setThrowTskCoreError(env, "runAddImgNat: Can't convert data source id string");
+            return;
+        }
+    }
 
-    // move the strings into the C++ world
-
-    // get pointers to each of the file names
-    char **imagepaths8 = (char **) tsk_malloc(num_imgs * sizeof(char *));
+    // Get pointers to each of the image file names.
+    char **imagepaths8 = (char **) tsk_malloc(numImgs * sizeof(char *));
     if (imagepaths8 == NULL) {
         setThrowTskCoreError(env);
         return;
     }
-    for (int i = 0; i < num_imgs; i++) {
+    for (int i = 0; i < numImgs; i++) {
         jstring jsPath = (jstring) env->GetObjectArrayElement(paths,
                 i);
         imagepaths8[i] =
@@ -1025,19 +1031,18 @@ JNIEXPORT void JNICALL
             return;
         }
     }
-    
-    if (env->GetStringLength(timezone) > 0) {
-        const char * tzchar = env->
-            GetStringUTFChars(timezone, &isCopy);
 
-        tskAuto->setTz(string(tzchar));
-        env->ReleaseStringUTFChars(timezone, tzchar);
+    // Set the time zone.
+    if (env->GetStringLength(timeZone) > 0) {
+        const char *time_zone = env->GetStringUTFChars(timeZone, &isCopy);
+        tskAuto->setTz(string(time_zone));
+        env->ReleaseStringUTFChars(timeZone, time_zone);
     }
 
-    // process the image (parts)
+    // Add the data source.
     uint8_t ret = 0;
-    if ( (ret = tskAuto->startAddImage((int) num_imgs, imagepaths8,
-        TSK_IMG_TYPE_DETECT, 0)) != 0) {
+    if ( (ret = tskAuto->startAddImage((int) numImgs, imagepaths8,
+        TSK_IMG_TYPE_DETECT, 0, data_src_id)) != 0) {
         stringstream msgss;
         msgss << "Errors occured while ingesting image " << std::endl;
         vector<TskAuto::error_record> errors = tskAuto->getErrorList();
@@ -1067,8 +1072,8 @@ JNIEXPORT void JNICALL
     //close image first before freeing the image paths
     tskAuto->closeImage();
 
-    // cleanup
-    for (int i = 0; i < num_imgs; i++) {
+    // Cleanup
+    for (int i = 0; i < numImgs; i++) {
         jstring jsPath = (jstring)
             env->GetObjectArrayElement(paths, i);
         env->
@@ -1076,10 +1081,10 @@ JNIEXPORT void JNICALL
         env->DeleteLocalRef(jsPath);
     }
     free(imagepaths8);
+    env->ReleaseStringUTFChars(dataSrcId, (const char *) data_src_id);
 
     // if process completes successfully, must call revertAddImgNat or commitAddImgNat to free the TskAutoDb
 }
-
 
 
 /*
