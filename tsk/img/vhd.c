@@ -1,13 +1,12 @@
 /*
- * The Sleuth Kit - Add on for Virtual Hard Disk (VHD) image support
- *
- * Copyright (c) 2006, 2011 Joachim Metz <jbmetz@users.sourceforge.net>
+ * Brian Carrier [carrier <at> sleuthkit [dot] org]
+ * Copyright (c) 2006-2016 Brian Carrier, Basis Technology.  All rights reserved
+ * Copyright (c) 2005 Brian Carrier.  All rights reserved
  *
  * This software is distributed under the Common Public License 1.0
  *
- * Based on raw image support of the Sleuth Kit from
- * Brian Carrier.
  */
+
 
 /** \file vhd.c
  * Internal code for TSK to interface with libvhdi.
