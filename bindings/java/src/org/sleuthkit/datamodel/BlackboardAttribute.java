@@ -639,8 +639,7 @@ public class BlackboardAttribute {
 	 * @param sleuthkitCase the case that can be used to make calls into the
 	 * blackboard db
 	 */
-	BlackboardAttribute(long artifactID, BlackboardAttribute.Type attributeType, String moduleName, String context,
-			TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, int valueInt, long valueLong, double valueDouble,
+	BlackboardAttribute(long artifactID, BlackboardAttribute.Type attributeType, String moduleName, String context, int valueInt, long valueLong, double valueDouble,
 			String valueString, byte[] valueBytes, SleuthkitCase sleuthkitCase) {
 
 		this.artifactID = artifactID;

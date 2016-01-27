@@ -2228,16 +2228,15 @@ public class SleuthkitCase {
 			ArrayList<BlackboardAttribute> attributes = new ArrayList<BlackboardAttribute>();
 			while (rs.next()) {
 				final BlackboardAttribute attr = new BlackboardAttribute(
-						rs.getLong(1),
-						new BlackboardAttribute.Type(rs.getInt(4), rs.getString(11), rs.getString(12), BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getInt(5))),
-						rs.getString(2),
-						rs.getString(3),
-						BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getInt(5)),
-						rs.getInt(8),
-						rs.getLong(9),
-						rs.getDouble(10),
-						rs.getString(7),
-						rs.getBytes(6), this
+						rs.getLong("artifact_id"),
+						new BlackboardAttribute.Type(rs.getInt("attribute_type_id"), rs.getString("type_name"), rs.getString("display_name"), BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getInt("value_type"))),
+						rs.getString("source"),
+						rs.getString("context"),
+						rs.getInt("value_int32"),
+						rs.getLong("value_int64"),
+						rs.getDouble("value_double"),
+						rs.getString("value_text"),
+						rs.getBytes("value_byte"), this
 				);
 				attributes.add(attr);
 			}
@@ -2275,10 +2274,17 @@ public class SleuthkitCase {
 					+ " AND attrs.attribute_type_id = types.attribute_type_id"); //NON-NLS
 			ArrayList<BlackboardAttribute> matches = new ArrayList<BlackboardAttribute>();
 			while (rs.next()) {
-				BlackboardAttribute attr = new BlackboardAttribute(rs.getLong("artifact_id"), 
-						new BlackboardAttribute.Type(rs.getInt(4), rs.getString(11), rs.getString(12), BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getInt(5))), rs.getString("source"), rs.getString("context"), //NON-NLS
-						BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getInt("value_type")), rs.getInt("value_int32"), rs.getLong("value_int64"), rs.getDouble("value_double"), //NON-NLS
-						rs.getString("value_text"), rs.getBytes("value_byte"), this); //NON-NLS
+				BlackboardAttribute attr = new BlackboardAttribute(
+						rs.getLong("artifact_id"),
+						new BlackboardAttribute.Type(rs.getInt("attribute_type_id"), rs.getString("type_name"), rs.getString("display_name"), BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getInt("value_type"))),
+						rs.getString("source"),
+						rs.getString("context"),
+						rs.getInt("value_int32"),
+						rs.getLong("value_int64"),
+						rs.getDouble("value_double"),
+						rs.getString("value_text"),
+						rs.getBytes("value_byte"), this
+				);
 				matches.add(attr);
 			}
 			return matches;
