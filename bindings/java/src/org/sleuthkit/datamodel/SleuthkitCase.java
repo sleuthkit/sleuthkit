@@ -1933,7 +1933,7 @@ public class SleuthkitCase {
 			releaseExclusiveLock();
 		}
 	}
-
+	
 	/**
 	 * Get the attribute type id associated with an attribute type name.
 	 *
@@ -1955,6 +1955,37 @@ public class SleuthkitCase {
 				typeId = rs.getInt(1);
 			}
 			return typeId;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting attribute type id", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	/**
+	 * Get the attribute type associated with an attribute type name.
+	 *
+	 * @param attrTypeName An attribute type name.
+	 * @return An attribute type or null if the attribute type does not exist.
+	 * @throws TskCoreException If an error occurs accessing the case database.
+	 *
+	 */
+	public BlackboardAttribute.Type getAttributeType(String attrTypeName) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT attribute_type_id, type_name, display_name, value_type FROM blackboard_attribute_types WHERE type_name = '" + attrTypeName + "'"); //NON-NLS
+			BlackboardAttribute.Type type = null;
+			if (rs.next()) {
+				type = new BlackboardAttribute.Type(rs.getInt(1), rs.getString(2), rs.getString(3), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getLong(4)));
+			}
+			return type;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting attribute type id", ex);
 		} finally {
@@ -2059,7 +2090,7 @@ public class SleuthkitCase {
 			releaseSharedLock();
 		}
 	}
-
+	
 	/**
 	 * Get artifact type name for the given string. Will throw an error if that
 	 * artifact doesn't exist. Use addArtifactType(...) to create a new one.
@@ -2136,9 +2167,7 @@ public class SleuthkitCase {
 	 * @return ID of artifact added
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
-	 * @deprecated Use addBlackboardArtifactType instead
 	 */
-	@Deprecated
 	public int addArtifactType(String artifactTypeName, String displayName) throws TskCoreException {
 		return addBlackboardArtifactType(artifactTypeName, displayName).getTypeID();
 	}
@@ -4850,6 +4879,43 @@ public class SleuthkitCase {
 			releaseExclusiveLock();
 		}
 		return true;
+	}
+
+	/**
+	 * Store the mime type in the file database
+	 *
+	 * @param fileId The id of the file to update the mime type of
+	 * @param mimeType the mime type
+	 * @throws TskCoreException When there is an issue querying the database
+	 */
+	 void setFileMIMEType(AbstractFile file, String mimeType) throws TskCoreException, TskDataException {
+		if (mimeType == null) {
+			return;
+		}
+		long fileId = file.getId();
+		CaseDbConnection connection = connections.getConnection();
+		ResultSet rs = null;
+		acquireExclusiveLock();
+		try {
+			Statement statement = connection.createStatement();
+			rs = connection.executeQuery(statement, "SELECT mime_type FROM tsk_files WHERE tsk_files.obj_id=" + fileId);
+			if(rs.next()) {
+				if(rs.getString("mime_type") != null) {
+					throw new TskDataException("Cannot reset a file's MIME type");
+				}
+				connection.executeUpdate(statement, "UPDATE tsk_files SET mime_type = '" + mimeType + "' WHERE obj_id = " + fileId);
+			}
+			else {
+				throw new TskDataException("Given file does not exist within the system");
+			}
+			
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error setting mimeType", ex);
+		} finally {
+			closeResultSet(rs);
+			connection.close();
+			releaseExclusiveLock();
+		}
 	}
 
 	/**

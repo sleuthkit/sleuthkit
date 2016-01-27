@@ -182,7 +182,7 @@ class ResultSetHelper {
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 				(short) rs.getInt("mode"), rs.getInt("uid"), rs.getInt("gid"), //NON-NLS
 				rs.getString("md5"), //NON-NLS
-				FileKnown.valueOf(rs.getByte("known")), rs.getString("parent_path")); //NON-NLS
+				FileKnown.valueOf(rs.getByte("known")), rs.getString("parent_path"), rs.getString("mime_type")); //NON-NLS
 		f.setFileSystem(fs);
 		return f;
 	}
@@ -292,7 +292,7 @@ class ResultSetHelper {
 						rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 						rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
 						parentPath, localPath,
-						parentId);
+						parentId, rs.getString("mime_type"));
 
 		return df;
 	}
@@ -327,7 +327,7 @@ class ResultSetHelper {
 						rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 						rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
 						parentPath, localPath,
-						parentId);
+						parentId, rs.getString("mime_type"));
 
 		return lf;
 	}
