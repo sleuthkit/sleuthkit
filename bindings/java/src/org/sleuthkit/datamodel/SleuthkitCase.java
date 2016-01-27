@@ -1973,7 +1973,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException If an error occurs accessing the case database.
 	 *
 	 */
-	public BlackboardAttribute.Type getAttrType(String attrTypeName) throws TskCoreException {
+	public BlackboardAttribute.Type getAttributeType(String attrTypeName) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
 		Statement s = null;
