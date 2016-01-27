@@ -678,7 +678,7 @@ public class BlackboardAttribute {
 		}
 		this.artifactID = 0;
 		this.attributeType = new BlackboardAttribute.Type(attributeType.getTypeID(), attributeType.getLabel(), attributeType.getDisplayName(),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER);
+				attributeType.getValueType());
 		this.moduleName = replaceNulls(moduleName);
 		this.valueInt = valueInt;
 		this.valueLong = 0;
@@ -851,7 +851,7 @@ public class BlackboardAttribute {
 		}
 		this.artifactID = 0;
 		this.attributeType = new BlackboardAttribute.Type(attributeType.getTypeID(), attributeType.getLabel(), attributeType.getDisplayName(),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE);;
+				attributeType.getValueType());
 		this.moduleName = replaceNulls(moduleName);
 		this.valueInt = 0;
 		this.valueLong = 0;
@@ -938,7 +938,7 @@ public class BlackboardAttribute {
 		}
 		this.artifactID = 0;
 		this.attributeType = new BlackboardAttribute.Type(attributeType.getTypeID(), attributeType.getLabel(), attributeType.getDisplayName(),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+				attributeType.getValueType());
 		this.moduleName = replaceNulls(moduleName);
 		this.valueInt = 0;
 		this.valueLong = 0;
@@ -1032,7 +1032,7 @@ public class BlackboardAttribute {
 		}
 		this.artifactID = 0;
 		this.attributeType = new BlackboardAttribute.Type(attributeType.getTypeID(), attributeType.getLabel(), attributeType.getDisplayName(),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE);
+				attributeType.getValueType());
 		this.moduleName = replaceNulls(moduleName);
 		this.context = "";
 		this.valueInt = 0;
@@ -1292,10 +1292,9 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 *
 	 * Gets the attribute value as a string, formatted as required.
 	 *
-	 * @return The vlaue as a string.
+	 * @return The value as a string.
 	 */
 	public String getDisplayString() {
 		switch (attributeType.getValueType()) {

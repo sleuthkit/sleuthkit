@@ -1998,37 +1998,6 @@ public class SleuthkitCase {
 	}
 	
 	/**
-	 * Get the attribute type associated with an attribute type name.
-	 *
-	 * @param attributeTypeID An attribute type ID.
-	 * @return An attribute type or null if the attribute type does not exist.
-	 * @throws TskCoreException If an error occurs accessing the case database.
-	 *
-	 */
-	public BlackboardAttribute.Type getAttributeType(int attributeTypeID) throws TskCoreException {
-		CaseDbConnection connection = connections.getConnection();
-		acquireSharedLock();
-		Statement s = null;
-		ResultSet rs = null;
-		try {
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT attribute_type_id, type_name, display_name, value_type FROM blackboard_attribute_types WHERE attribute_type_id = " + attributeTypeID); //NON-NLS
-			BlackboardAttribute.Type type = null;
-			if (rs.next()) {
-				type = new BlackboardAttribute.Type(rs.getInt(1), rs.getString(2), rs.getString(3), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getLong(4)));
-			}
-			return type;
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting attribute type id", ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			connection.close();
-			releaseSharedLock();
-		}
-	}
-
-	/**
 	 * Get the string associated with the given id. Will throw an error if that
 	 * id does not exist
 	 *
