@@ -1181,6 +1181,15 @@ public class BlackboardAttribute {
 	public TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE getValueType() {
 		return attributeType.getValueType();
 	}
+	
+	/**
+	 * Get the attribute type of this attribute
+	 * 
+	 * @return the attribute type 
+	 */
+	public BlackboardAttribute.Type getAttributeType() {
+		return this.attributeType;
+	}
 
 	/**
 	 * Get the value if it is an int
