@@ -1993,7 +1993,7 @@ public class SleuthkitCase {
 			releaseSharedLock();
 		}
 	}
-	
+
 	/**
 	 * Get the string associated with the given id. Will throw an error if that
 	 * id does not exist
@@ -2172,7 +2172,7 @@ public class SleuthkitCase {
 	 * @deprecated Use addBlackboardArtifactType instead
 	 */
 	@Deprecated
-	public int addArtifactType(String artifactTypeName, String displayName) throws TskCoreException {
+	public int addArtifactType(String artifactTypeName, String displayName) throws TskCoreException, TskDataException {
 		return addBlackboardArtifactType(artifactTypeName, displayName).getTypeID();
 	}
 
@@ -2183,9 +2183,10 @@ public class SleuthkitCase {
 	 * @param displayName Display (non-unique) name of artifact
 	 * @return Type of the artifact added
 	 * @throws TskCoreException exception thrown if a critical error occurs
+	 * @throws TskDataException exception thrown if given data is already in db
 	 * within tsk core
 	 */
-	public BlackboardArtifact.Type addBlackboardArtifactType(String artifactTypeName, String displayName) throws TskCoreException {
+	public BlackboardArtifact.Type addBlackboardArtifactType(String artifactTypeName, String displayName) throws TskCoreException, TskDataException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireExclusiveLock();
 		Statement s = null;
@@ -2196,13 +2197,23 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(s, "SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeName + "'"); //NON-NLS
 			if (!rs.next()) {
 				rs.close();
-				connection.executeUpdate(s, "INSERT INTO blackboard_artifact_types (type_name, display_name) VALUES ('" + artifactTypeName + "', '" + displayName + "')", Statement.RETURN_GENERATED_KEYS); //NON-NLS
-				rs = s.getGeneratedKeys();
-				rs.next();
+				rs = connection.executeQuery(s, "SELECT MAX(artifact_type_id) AS highest_id FROM blackboard_artifact_types");
+				int max = 0;
+				if (rs.next()) {
+					max = rs.getInt(1);
+					if (max < MIN_USER_DEFINED_TYPE_ID) {
+						max = MIN_USER_DEFINED_TYPE_ID;
+					} else {
+						max++;
+					}
+				}
+				connection.executeUpdate(s, "INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name) VALUES ('" + max + "', '" + artifactTypeName + "', '" + displayName + "')", Statement.RETURN_GENERATED_KEYS); //NON-NLS
+				BlackboardArtifact.Type type = new BlackboardArtifact.Type(max, artifactTypeName, displayName);
+				connection.commitTransaction();
+				return type;
+			} else {
+				throw new TskDataException("The attribute type that was added was already within the system.");
 			}
-			int id = rs.getInt(1);
-			connection.commitTransaction();
-			return new BlackboardArtifact.Type(id, artifactTypeName, displayName);
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
 			throw new TskCoreException("Error adding artifact type", ex);
