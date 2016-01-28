@@ -1903,17 +1903,17 @@ public class SleuthkitCase {
 			if (!rs.next()) {
 				rs.close();
 				rs = connection.executeQuery(s, "SELECT MAX(attribute_type_id) AS highest_id FROM blackboard_attribute_types");
-				int max = 0;
+				int maxID = 0;
 				if (rs.next()) {
-					max = rs.getInt(1);
-					if (max < MIN_USER_DEFINED_TYPE_ID) {
-						max = MIN_USER_DEFINED_TYPE_ID;
+					maxID = rs.getInt(1);
+					if (maxID < MIN_USER_DEFINED_TYPE_ID) {
+						maxID = MIN_USER_DEFINED_TYPE_ID;
 					} else {
-						max++;
+						maxID++;
 					}
 				}
-				connection.executeUpdate(s, "INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name, value_type) VALUES ('" + max + "', '" + attrTypeString + "', '" + displayName + "', '" + valueType.getType() + "')", Statement.RETURN_GENERATED_KEYS); //NON-NLS
-				BlackboardAttribute.Type t = new BlackboardAttribute.Type(max, attrTypeString, displayName, valueType);
+				connection.executeUpdate(s, "INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name, value_type) VALUES ('" + maxID + "', '" + attrTypeString + "', '" + displayName + "', '" + valueType.getType() + "')"); //NON-NLS
+				BlackboardAttribute.Type t = new BlackboardAttribute.Type(maxID, attrTypeString, displayName, valueType);
 				connection.commitTransaction();
 				return t;
 			} else {
