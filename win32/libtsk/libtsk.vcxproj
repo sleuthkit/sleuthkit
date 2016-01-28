@@ -189,8 +189,8 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBEWF_HOME)\common;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBZ;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBZ;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -203,14 +203,15 @@
     <PostBuildEvent>
       <Command>copy "$(LIBEWF_HOME)\msvscpp\release\libewf.dll" "$(OutDir)"
 copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
-</Command>
+copy "$(LIBVMDK_HOME)\msvscpp\release\libvmdk.dll" "$(OutDir)"
+copy "$(LIBVHDI_HOME)\msvscpp\release\libvhdi.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_PostgreSQL|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBEWF_HOME)\common;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;$(POSTGRESQL_HOME_32)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBZ;WIN32;_DEBUG;HAVE_POSTGRESQL;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;$(POSTGRESQL_HOME_32)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;HAVE_LIBVMDK;HAVE_LIBEWF;HAVE_LIBZ;HAVE_LIBVHDI;WIN32;_DEBUG;HAVE_POSTGRESQL;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -221,7 +222,9 @@ copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
       <CompileAs>Default</CompileAs>
     </ClCompile>
     <PostBuildEvent>
-      <Command>copy "$(LIBEWF_HOME)\msvscpp\release\libewf.dll" "$(OutDir)"
+      <Command>copy "$(LIBVMDK_HOME)\msvscpp\release\libvmdk.dll" "$(OutDir)"
+copy "$(LIBEWF_HOME)\msvscpp\release\libewf.dll" "$(OutDir)"
+copy "$(LIBVHDI_HOME)\msvscpp\release\libvhdi.dll" "$(OutDir)"
 copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
 copy "$(POSTGRESQL_HOME_32)\bin\libpq.dll" "$(OutDir)" 
 copy "$(POSTGRESQL_HOME_32)\bin\intl.dll" "$(OutDir)" 
@@ -240,8 +243,8 @@ copy "$(SolutionDir)\PostgreSQL_CRT\win32\msvcr120.dll" "$(OutDir)"
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBEWF_HOME)\common;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBZ;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBZ;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader>
@@ -252,14 +255,15 @@ copy "$(SolutionDir)\PostgreSQL_CRT\win32\msvcr120.dll" "$(OutDir)"
     <PostBuildEvent>
       <Command>copy "$(LIBEWF_HOME)\msvscpp\x64\release\libewf.dll" "$(OutDir)"
 copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"
-</Command>
+copy "$(LIBVMDK_HOME)\msvscpp\x64\release\libvmdk.dll" "$(OutDir)"
+copy "$(LIBVHDI_HOME)\msvscpp\x64\release\libvhdi.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_PostgreSQL|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBEWF_HOME)\common;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;$(POSTGRESQL_HOME_64)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBZ;WIN32;_DEBUG;HAVE_POSTGRESQL;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;$(POSTGRESQL_HOME_64)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBZ;HAVE_LIBVMDK;HAVE_LIBVHDI;WIN32;_DEBUG;HAVE_POSTGRESQL;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader>
@@ -270,6 +274,8 @@ copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"
     <PostBuildEvent>
       <Command>copy "$(LIBEWF_HOME)\msvscpp\x64\release\libewf.dll" "$(OutDir)"
 copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"
+copy "$(LIBVMDK_HOME)\msvscpp\x64\release\libvmdk.dll" "$(OutDir)"
+copy "$(LIBVHDI_HOME)\msvscpp\x64\release\libvhdi.dll" "$(OutDir)"
 copy "$(POSTGRESQL_HOME_64)\bin\libpq.dll" "$(OutDir)"
 copy "$(POSTGRESQL_HOME_64)\bin\libintl-8.dll" "$(OutDir)"
 copy "$(POSTGRESQL_HOME_64)\bin\libeay32.dll" "$(OutDir)"
@@ -286,8 +292,8 @@ copy "$(POSTGRESQL_HOME_64)\bin\ssleay32.dll" "$(OutDir)"</Command>
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBEWF_HOME)\common;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBZ;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBZ;HAVE_LIBVMDK;HAVE_LIBVHDI;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
@@ -298,7 +304,8 @@ copy "$(POSTGRESQL_HOME_64)\bin\ssleay32.dll" "$(OutDir)"</Command>
     <PostBuildEvent>
       <Command>copy "$(LIBEWF_HOME)\msvscpp\release\libewf.dll" "$(OutDir)"
 copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
-</Command>
+copy "$(LIBVMDK_HOME)\msvscpp\release\libvmdk.dll" "$(OutDir)"
+copy "$(LIBVHDI_HOME)\msvscpp\release\libvhdi.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_NoLibs|Win32'">
@@ -324,8 +331,8 @@ copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBEWF_HOME)\common;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;$(POSTGRESQL_HOME_32)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBZ;WIN32;NDEBUG;HAVE_POSTGRESQL;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;$(POSTGRESQL_HOME_32)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBEWF;HAVE_LIBZ;WIN32;NDEBUG;HAVE_POSTGRESQL;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
@@ -334,7 +341,9 @@ copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <PostBuildEvent>
-      <Command>copy "$(LIBEWF_HOME)\msvscpp\release\libewf.dll" "$(OutDir)"
+      <Command>copy "$(LIBVMDK_HOME)\msvscpp\release\libvmdk.dll" "$(OutDir)"
+copy "$(LIBEWF_HOME)\msvscpp\release\libewf.dll" "$(OutDir)"
+copy "$(LIBVHDI_HOME)\msvscpp\release\libvhdi.dll" "$(OutDir)"
 copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
 copy "$(POSTGRESQL_HOME_32)\bin\libpq.dll" "$(OutDir)" 
 copy "$(POSTGRESQL_HOME_32)\bin\intl.dll" "$(OutDir)" 
@@ -353,8 +362,8 @@ copy "$(SolutionDir)\PostgreSQL_CRT\win32\msvcr120.dll" "$(OutDir)" </Command>
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBEWF_HOME)\common;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBZ;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBVMDK;HAVE_LIBVHDI;HAVE_LIBZ;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
@@ -364,7 +373,9 @@ copy "$(SolutionDir)\PostgreSQL_CRT\win32\msvcr120.dll" "$(OutDir)" </Command>
     </ClCompile>
     <PostBuildEvent>
       <Command>copy "$(LIBEWF_HOME)\msvscpp\x64\release\libewf.dll" "$(OutDir)"
-copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"</Command>
+copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"
+copy "$(LIBVMDK_HOME)\msvscpp\x64\release\libvmdk.dll" "$(OutDir)"
+copy "$(LIBVHDI_HOME)\msvscpp\x64\release\libvhdi.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_NoLibs|x64'">
@@ -390,8 +401,8 @@ copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"</Command>
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBEWF_HOME)\common;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;$(POSTGRESQL_HOME_64)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBZ;WIN32;NDEBUG;HAVE_POSTGRESQL;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\;$(LIBVMDK_HOME)\include;$(LIBVHDI_HOME)\include;$(LIBEWF_HOME)\include;$(LIBEWF_HOME)\..\zlib;$(POSTGRESQL_HOME_64)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_DEPRECATE;HAVE_LIBEWF;HAVE_LIBZ;HAVE_LIBVMDK;HAVE_LIBVHDI;WIN32;NDEBUG;HAVE_POSTGRESQL;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
@@ -406,7 +417,9 @@ copy "$(POSTGRESQL_HOME_64)\bin\libpq.dll" "$(OutDir)"
 copy "$(POSTGRESQL_HOME_64)\bin\libintl-8.dll" "$(OutDir)"
 copy "$(POSTGRESQL_HOME_64)\bin\libeay32.dll" "$(OutDir)"
 copy "$(POSTGRESQL_HOME_64)\bin\ssleay32.dll" "$(OutDir)"
-copy "$(SolutionDir)\PostgreSQL_CRT\win64\msvcr120.dll" "$(OutDir)" </Command>
+copy "$(SolutionDir)\PostgreSQL_CRT\win64\msvcr120.dll" "$(OutDir)" 
+copy "$(LIBVMDK_HOME)\msvscpp\x64\release\libvmdk.dll" "$(OutDir)"
+copy "$(LIBVHDI_HOME)\msvscpp\x64\release\libvhdi.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Lib>
       <AdditionalDependencies>libpq.lib</AdditionalDependencies>
@@ -454,6 +467,8 @@ copy "$(SolutionDir)\PostgreSQL_CRT\win64\msvcr120.dll" "$(OutDir)" </Command>
     <ClCompile Include="..\..\tsk\fs\fatxxfs_meta.c" />
     <ClCompile Include="..\..\tsk\hashdb\hdb_base.c" />
     <ClCompile Include="..\..\tsk\hashdb\binsrch_index.cpp" />
+    <ClCompile Include="..\..\tsk\img\vhd.c" />
+    <ClCompile Include="..\..\tsk\img\vmdk.c" />
     <ClCompile Include="..\..\tsk\vs\bsd.c" />
     <ClCompile Include="..\..\tsk\vs\dos.c" />
     <ClCompile Include="..\..\tsk\vs\gpt.c" />
@@ -547,6 +562,8 @@ copy "$(SolutionDir)\PostgreSQL_CRT\win64\msvcr120.dll" "$(OutDir)" </Command>
     <ClInclude Include="..\..\tsk\fs\tsk_exfatfs.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_fatxxfs.h" />
     <ClInclude Include="..\..\tsk\hashdb\tsk_hash_info.h" />
+    <ClInclude Include="..\..\tsk\img\vhd.h" />
+    <ClInclude Include="..\..\tsk\img\vmdk.h" />
     <ClInclude Include="..\..\tsk\vs\tsk_bsd.h" />
     <ClInclude Include="..\..\tsk\vs\tsk_dos.h" />
     <ClInclude Include="..\..\tsk\vs\tsk_gpt.h" />
