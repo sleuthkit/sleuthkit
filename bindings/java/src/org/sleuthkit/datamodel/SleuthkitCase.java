@@ -320,9 +320,9 @@ public class SleuthkitCase {
 
 	/**
 	 * Initialize the next artifact id. If there are entries in the
-	 * blackboard_artifacts table we will use max(artifact_id) + 1 otherwise we
-	 * will initialize the value to 0x8000000000000000 (the maximum negative
-	 * signed long).
+ blackboard_artifacts table we will use maxID(artifact_id) + 1 otherwise we
+ will initialize the value to 0x8000000000000000 (the maximum negative
+ signed long).
 	 *
 	 * @throws TskCoreException
 	 * @throws SQLException
@@ -2198,17 +2198,17 @@ public class SleuthkitCase {
 			if (!rs.next()) {
 				rs.close();
 				rs = connection.executeQuery(s, "SELECT MAX(artifact_type_id) AS highest_id FROM blackboard_artifact_types");
-				int max = 0;
+				int maxID = 0;
 				if (rs.next()) {
-					max = rs.getInt(1);
-					if (max < MIN_USER_DEFINED_TYPE_ID) {
-						max = MIN_USER_DEFINED_TYPE_ID;
+					maxID = rs.getInt(1);
+					if (maxID < MIN_USER_DEFINED_TYPE_ID) {
+						maxID = MIN_USER_DEFINED_TYPE_ID;
 					} else {
-						max++;
+						maxID++;
 					}
 				}
-				connection.executeUpdate(s, "INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name) VALUES ('" + max + "', '" + artifactTypeName + "', '" + displayName + "')", Statement.RETURN_GENERATED_KEYS); //NON-NLS
-				BlackboardArtifact.Type type = new BlackboardArtifact.Type(max, artifactTypeName, displayName);
+				connection.executeUpdate(s, "INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name) VALUES ('" + maxID + "', '" + artifactTypeName + "', '" + displayName + "')"); //NON-NLS
+				BlackboardArtifact.Type type = new BlackboardArtifact.Type(maxID, artifactTypeName, displayName);
 				connection.commitTransaction();
 				return type;
 			} else {
@@ -4630,9 +4630,9 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get last (max) object id of content object in tsk_objects.
+	 * Get last (maxID) object id of content object in tsk_objects.
 	 *
-	 * @return currently max id
+	 * @return currently maxID id
 	 * @throws TskCoreException exception thrown when database error occurs and
 	 * last object id could not be queried
 	 */
