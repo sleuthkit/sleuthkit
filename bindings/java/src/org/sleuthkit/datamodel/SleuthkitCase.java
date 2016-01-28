@@ -4630,9 +4630,9 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get last (maxID) object id of content object in tsk_objects.
+	 * Get last (max) object id of content object in tsk_objects.
 	 *
-	 * @return currently maxID id
+	 * @return currently max id
 	 * @throws TskCoreException exception thrown when database error occurs and
 	 * last object id could not be queried
 	 */
