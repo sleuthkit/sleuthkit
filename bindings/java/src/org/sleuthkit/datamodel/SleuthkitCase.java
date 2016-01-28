@@ -320,9 +320,9 @@ public class SleuthkitCase {
 
 	/**
 	 * Initialize the next artifact id. If there are entries in the
- blackboard_artifacts table we will use max(artifact_id) + 1 otherwise we
- will initialize the value to 0x8000000000000000 (the maximum negative
- signed long).
+	 * blackboard_artifacts table we will use max(artifact_id) + 1 otherwise we
+	 * will initialize the value to 0x8000000000000000 (the maximum negative
+	 * signed long).
 	 *
 	 * @throws TskCoreException
 	 * @throws SQLException
