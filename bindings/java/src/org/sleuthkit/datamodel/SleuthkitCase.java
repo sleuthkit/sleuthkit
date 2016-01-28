@@ -115,9 +115,6 @@ public class SleuthkitCase {
 
 	private enum PREPARED_STATEMENT {
 
-		SELECT_ATTRIBUTES_OF_ARTIFACT("SELECT artifact_id, source, context, attribute_type_id, value_type, " //NON-NLS
-				+ "value_byte, value_text, value_int32, value_int64, value_double " //NON-NLS
-				+ "FROM blackboard_attributes WHERE artifact_id = ?"), //NON-NLS
 		SELECT_ARTIFACTS_BY_TYPE("SELECT artifact_id, obj_id FROM blackboard_artifacts " //NON-NLS
 				+ "WHERE artifact_type_id = ?"), //NON-NLS
 		COUNT_ARTIFACTS_OF_TYPE("SELECT COUNT(*) FROM blackboard_artifacts WHERE artifact_type_id = ?"), //NON-NLS
@@ -1933,15 +1930,16 @@ public class SleuthkitCase {
 			releaseExclusiveLock();
 		}
 	}
-	
+
 	/**
 	 * Get the attribute type id associated with an attribute type name.
 	 *
 	 * @param attrTypeName An attribute type name.
 	 * @return An attribute id or -1 if the attribute type does not exist.
 	 * @throws TskCoreException If an error occurs accessing the case database.
-	 *
+	 * @deprecated Use getAttributeType instead
 	 */
+	@Deprecated
 	public int getAttrTypeID(String attrTypeName) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
@@ -1995,7 +1993,7 @@ public class SleuthkitCase {
 			releaseSharedLock();
 		}
 	}
-
+	
 	/**
 	 * Get the string associated with the given id. Will throw an error if that
 	 * id does not exist
@@ -2004,7 +2002,9 @@ public class SleuthkitCase {
 	 * @return string associated with the given id
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
+	 * @deprecated Use getAttributeType instead
 	 */
+	@Deprecated
 	public String getAttrTypeString(int attrTypeID) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
@@ -2036,7 +2036,9 @@ public class SleuthkitCase {
 	 * @return string associated with the given id
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
+	 * @deprecated Use getAttributeType instead
 	 */
+	@Deprecated
 	public String getAttrTypeDisplayName(int attrTypeID) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
@@ -2090,7 +2092,7 @@ public class SleuthkitCase {
 			releaseSharedLock();
 		}
 	}
-	
+
 	/**
 	 * Get artifact type name for the given string. Will throw an error if that
 	 * artifact doesn't exist. Use addArtifactType(...) to create a new one.
@@ -2167,7 +2169,9 @@ public class SleuthkitCase {
 	 * @return ID of artifact added
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
+	 * @deprecated Use addBlackboardArtifactType instead
 	 */
+	@Deprecated
 	public int addArtifactType(String artifactTypeName, String displayName) throws TskCoreException {
 		return addBlackboardArtifactType(artifactTypeName, displayName).getTypeID();
 	}
@@ -2215,23 +2219,25 @@ public class SleuthkitCase {
 		acquireSharedLock();
 		ResultSet rs = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ATTRIBUTES_OF_ARTIFACT);
-			statement.clearParameters();
-			statement.setLong(1, artifact.getArtifactID());
-			rs = connection.executeQuery(statement);
+			Statement statement = connection.createStatement();
+			rs = connection.executeQuery(statement, "SELECT attrs.artifact_id, attrs.source, attrs.context, attrs.attribute_type_id, "
+					+ "attrs.value_type, attrs.value_byte, attrs.value_text, attrs.value_int32, "
+					+ "attrs.value_int64, attrs.value_double, types.type_name, types.display_name "
+					+ "FROM blackboard_attributes AS attrs, blackboard_attribute_types AS types WHERE attrs.artifact_id = " + artifact.getArtifactID()
+					+ " AND attrs.attribute_type_id = types.attribute_type_id");
 			ArrayList<BlackboardAttribute> attributes = new ArrayList<BlackboardAttribute>();
 			while (rs.next()) {
 				final BlackboardAttribute attr = new BlackboardAttribute(
-						rs.getLong(1),
-						rs.getInt(4),
-						rs.getString(2),
-						rs.getString(3),
-						BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getInt(5)),
-						rs.getInt(8),
-						rs.getLong(9),
-						rs.getDouble(10),
-						rs.getString(7),
-						rs.getBytes(6), this);
+						rs.getLong("artifact_id"),
+						new BlackboardAttribute.Type(rs.getInt("attribute_type_id"), rs.getString("type_name"), rs.getString("display_name"), BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getInt("value_type"))),
+						rs.getString("source"),
+						rs.getString("context"),
+						rs.getInt("value_int32"),
+						rs.getLong("value_int64"),
+						rs.getDouble("value_double"),
+						rs.getString("value_text"),
+						rs.getBytes("value_byte"), this
+				);
 				attributes.add(attr);
 			}
 			return attributes;
@@ -2261,13 +2267,24 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT artifact_id, source, context, attribute_type_id, value_type, " //NON-NLS
-					+ "value_byte, value_text, value_int32, value_int64, value_double FROM blackboard_attributes " + whereClause); //NON-NLS
+			rs = connection.executeQuery(s, "SELECT attrs.artifact_id, attrs.source, attrs.context, attrs.attribute_type_id, "
+					+ "attrs.value_type, attrs.value_byte, attrs.value_text, attrs.value_int32, "
+					+ "attrs.value_int64, attrs.value_double, types.type_name, types.display_name "
+					+ "FROM blackboard_attributes AS attrs, blackboard_attribute_types AS types " + whereClause
+					+ " AND attrs.attribute_type_id = types.attribute_type_id"); //NON-NLS
 			ArrayList<BlackboardAttribute> matches = new ArrayList<BlackboardAttribute>();
 			while (rs.next()) {
-				BlackboardAttribute attr = new BlackboardAttribute(rs.getLong("artifact_id"), rs.getInt("attribute_type_id"), rs.getString("source"), rs.getString("context"), //NON-NLS
-						BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getInt("value_type")), rs.getInt("value_int32"), rs.getLong("value_int64"), rs.getDouble("value_double"), //NON-NLS
-						rs.getString("value_text"), rs.getBytes("value_byte"), this); //NON-NLS
+				BlackboardAttribute attr = new BlackboardAttribute(
+						rs.getLong("artifact_id"),
+						new BlackboardAttribute.Type(rs.getInt("attribute_type_id"), rs.getString("type_name"), rs.getString("display_name"), BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getInt("value_type"))),
+						rs.getString("source"),
+						rs.getString("context"),
+						rs.getInt("value_int32"),
+						rs.getLong("value_int64"),
+						rs.getDouble("value_double"),
+						rs.getString("value_text"),
+						rs.getBytes("value_byte"), this
+				);
 				matches.add(attr);
 			}
 			return matches;
@@ -4888,7 +4905,7 @@ public class SleuthkitCase {
 	 * @param mimeType the mime type
 	 * @throws TskCoreException When there is an issue querying the database
 	 */
-	 void setFileMIMEType(AbstractFile file, String mimeType) throws TskCoreException, TskDataException {
+	void setFileMIMEType(AbstractFile file, String mimeType) throws TskCoreException, TskDataException {
 		if (mimeType == null) {
 			return;
 		}
@@ -4899,16 +4916,15 @@ public class SleuthkitCase {
 		try {
 			Statement statement = connection.createStatement();
 			rs = connection.executeQuery(statement, "SELECT mime_type FROM tsk_files WHERE tsk_files.obj_id=" + fileId);
-			if(rs.next()) {
-				if(rs.getString("mime_type") != null) {
+			if (rs.next()) {
+				if (rs.getString("mime_type") != null) {
 					throw new TskDataException("Cannot reset a file's MIME type");
 				}
 				connection.executeUpdate(statement, "UPDATE tsk_files SET mime_type = '" + mimeType + "' WHERE obj_id = " + fileId);
-			}
-			else {
+			} else {
 				throw new TskDataException("Given file does not exist within the system");
 			}
-			
+
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error setting mimeType", ex);
 		} finally {
