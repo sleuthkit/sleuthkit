@@ -62,7 +62,7 @@ public class BlackboardAttribute {
 		 * @param displayName the display name
 		 * @param valueType the value type
 		 */
-		public Type(int typeID, String typeName, String displayName, TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType) {
+		Type(int typeID, String typeName, String displayName, TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType) {
 			this.typeID = typeID;
 			this.typeName = typeName;
 			this.displayName = displayName;
