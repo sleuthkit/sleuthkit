@@ -56,7 +56,7 @@ https://github.com/sleuthkit/libvhdi_64bit
 build libvhdi_dll. Note that TSK will use only the Release version of
 libvhdi_dll. Note that libvhdi will need to be converted to Visual Studio 2010 and be upgraded to support a 64-bit build.
 
-6) Set the LIBVHDI_HOME environment variable to point to the libvhdi folder that you created and built in step 3. 
+6) Set the LIBVHDI_HOME environment variable to point to the libvhdi folder that you created and built in step 4. 
 
 If you are using our upgraded version of libvmdk and the libvhdi repository is checked out into C:\cygwin64\home\user_name\libvhdi_64bit then LIBVHDI_HOME = C:\cygwin64\home\user_name\libvhdi_64bit
 
