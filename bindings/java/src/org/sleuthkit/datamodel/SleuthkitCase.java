@@ -915,7 +915,7 @@ public class SleuthkitCase {
 
 	/**
 	 * Gets the data sources for the case (e.g., images, local disks, virtual
-	 * directories of logical files, etc.)
+	 * directories of local/logical files and/or directories, etc.)
 	 *
 	 * NOTE: The DataSource class is an emerging feature and at present is only
 	 * useful for obtaining the object id and the data source identifier, an
@@ -924,6 +924,7 @@ public class SleuthkitCase {
 	 * will be a replacement for the getRootObjects method.
 	 *
 	 * @return A list of the data sources for the case.
+	 * @throws TskCoreException if there is a problem getting the data sources.
 	 */
 	public List<DataSource> getDataSources() throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
@@ -940,6 +941,45 @@ public class SleuthkitCase {
 			return dataSources;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting data sources", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	/**
+	 * Gets a specific data source for the case (e.g., an images, local disk,
+	 * virtual directory of local/logical files and/or directories, etc.).
+	 *
+	 * NOTE: The DataSource class is an emerging feature and at present is only
+	 * useful for obtaining the object id and the data source identifier, an
+	 * ASCII-printable identifier for the data source that is intended to be
+	 * unique across multiple cases (e.g., a UUID). In the future, this method
+	 * will be a replacement for the getRootObjects method.
+	 *
+	 * @param objectId The object id of the data source.
+	 * @return The data source.
+	 * @throws TskDataException if there is no data source for the given object
+	 * id.
+	 * @throws TskCoreException if there is a problem getting the data source.
+	 */
+	public DataSource getDataSource(long objectId) throws TskDataException, TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT data_src_id FROM data_source_info WHERE obj_id = " + objectId); //NON-NLS			
+			if (rs.next()) {
+				return new DataSource(objectId, rs.getString("data_src_id"));
+			} else {
+				throw new TskCoreException(String.format("There is no data source with object id = %d", objectId));
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting data source (objectId = %d)", objectId), ex);
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
