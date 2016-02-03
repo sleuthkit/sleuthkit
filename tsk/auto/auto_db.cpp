@@ -139,7 +139,7 @@ uint8_t
  * @param a_images Array of paths to the image parts
  * @param a_type Image type
  * @param a_ssize Size of device sector in bytes (or 0 for default)
- * @param dataSourceId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
+ * @param a_dataSourceId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
  * @return 0 for success, 1 for failure
  */
 uint8_t
@@ -200,7 +200,7 @@ uint8_t
 
     return 0;
 #else
-    return openImageUtf8(a_num, a_images, a_type, a_ssize, dataSourceId);
+    return openImageUtf8(a_num, a_images, a_type, a_ssize, a_dataSourceId);
 #endif
 }
 
