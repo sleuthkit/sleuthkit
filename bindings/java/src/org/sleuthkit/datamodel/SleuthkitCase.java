@@ -950,7 +950,7 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Gets a specific data source for the case (e.g., an images, local disk,
+	 * Gets a specific data source for the case (e.g., an image, local disk,
 	 * virtual directory of local/logical files and/or directories, etc.).
 	 *
 	 * NOTE: The DataSource class is an emerging feature and at present is only
