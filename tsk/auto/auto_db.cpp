@@ -406,12 +406,12 @@ uint8_t TskAutoDb::addFilesInImgToDb()
  * @param imagePaths Array of paths to the image parts
  * @param imgType Image type
  * @param sSize Size of device sector in bytes (or 0 for default)
- * @param dataSourceId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
+ * @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID)
  * @return 0 for success, 1 for failure
  */
 uint8_t
     TskAutoDb::startAddImage(int numImg, const TSK_TCHAR * const imagePaths[],
-    TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* dataSourceId)
+    TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* deviceId)
 {
     if (tsk_verbose)
         tsk_fprintf(stderr, "TskAutoDb::startAddImage: Starting add image process\n");
@@ -440,7 +440,7 @@ uint8_t
 
     m_imgTransactionOpen = true;
 
-    if (openImage(numImg, imagePaths, imgType, sSize, dataSourceId)) {
+    if (openImage(numImg, imagePaths, imgType, sSize, deviceId)) {
         tsk_error_set_errstr2("TskAutoDb::startAddImage");
         registerError();
         if (revertAddImage())
@@ -463,12 +463,12 @@ uint8_t
  * @param imagePaths Array of paths to the image parts
  * @param imgType Image type
  * @param sSize Size of device sector in bytes (or 0 for default)
- * @param dataSourceId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
+ * @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID)
  * @return 0 for success 1, for failure
  */
 uint8_t
     TskAutoDb::startAddImage(int numImg, const char *const imagePaths[],
-    TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* dataSourceId)
+    TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* deviceId)
 {
     if (tsk_verbose)
         tsk_fprintf(stderr, "TskAutoDb::startAddImage_utf8: Starting add image process\n");
@@ -499,7 +499,7 @@ uint8_t
 
     m_imgTransactionOpen = true;
 
-    if (openImageUtf8(numImg, imagePaths, imgType, sSize, dataSourceId)) {
+    if (openImageUtf8(numImg, imagePaths, imgType, sSize, deviceId)) {
         tsk_error_set_errstr2("TskAutoDb::startAddImage");
         registerError();
         if (revertAddImage())

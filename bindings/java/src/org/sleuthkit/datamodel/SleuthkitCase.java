@@ -615,7 +615,7 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			statement.execute("ALTER TABLE tsk_files ADD COLUMN mime_type TEXT;");
 			statement.execute("ALTER TABLE blackboard_attribute_types ADD COLUMN value_type INTEGER NOT NULL DEFAULT -1;");
-			statement.execute("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, data_src_id TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));");
+			statement.execute("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, device_id TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));");
 			resultSet = statement.executeQuery(
 					"SELECT * " + //NON-NLS
 					"FROM blackboard_attribute_types AS types"); //NON-NLS
@@ -648,10 +648,9 @@ public class SleuthkitCase {
 			resultSet = statement.executeQuery("SELECT * FROM tsk_objects WHERE par_obj_id IS NULL");
 			while (resultSet.next()) {
 				long objectId = resultSet.getLong("obj_id");
-				String dataSrcId = UUID.randomUUID().toString();
-				updateStatement.executeUpdate(
-						"INSERT INTO data_source_info (obj_id, data_src_id) "
-						+ "VALUES(" + objectId + ", '" + dataSrcId + "');");
+				String deviceId = UUID.randomUUID().toString();
+				updateStatement.executeUpdate("INSERT INTO data_source_info (obj_id, device_id) "
+						+ "VALUES(" + objectId + ", '" + deviceId + "');");
 			}
 			return 4;
 		} finally {

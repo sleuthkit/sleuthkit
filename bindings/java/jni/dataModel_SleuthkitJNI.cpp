@@ -986,14 +986,14 @@ JNIEXPORT jlong JNICALL
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
  * @param process the add-image process created by initAddImgNat
- * @param dataSrcId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
+ * @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID)
  * @param paths array of strings from java, the paths to the image parts
  * @param numImgs number of image parts
  * @param timeZone the timezone the image is from
  */
 JNIEXPORT void JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
-    jclass obj, jlong process, jstring dataSrcId, jobjectArray paths, jint numImgs, jstring timeZone) {
+    jclass obj, jlong process, jstring deviceId, jobjectArray paths, jint numImgs, jstring timeZone) {
 
     TskAutoDb *tskAuto = ((TskAutoDb *) process);
     if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
@@ -1003,10 +1003,10 @@ JNIEXPORT void JNICALL
     }
 
     jboolean isCopy;
-    const char *data_src_id = NULL;
-    if (NULL != dataSrcId) {    
-        data_src_id = (const char *) env->GetStringUTFChars(dataSrcId, &isCopy);
-        if (NULL == data_src_id) {
+    const char *device_id = NULL;
+    if (NULL != deviceId) {    
+        device_id = (const char *) env->GetStringUTFChars(deviceId, &isCopy);
+        if (NULL == device_id) {
             setThrowTskCoreError(env, "runAddImgNat: Can't convert data source id string");
             return;
         }
@@ -1042,7 +1042,7 @@ JNIEXPORT void JNICALL
     // Add the data source.
     uint8_t ret = 0;
     if ( (ret = tskAuto->startAddImage((int) numImgs, imagepaths8,
-        TSK_IMG_TYPE_DETECT, 0, data_src_id)) != 0) {
+        TSK_IMG_TYPE_DETECT, 0, device_id)) != 0) {
         stringstream msgss;
         msgss << "Errors occured while ingesting image " << std::endl;
         vector<TskAuto::error_record> errors = tskAuto->getErrorList();
@@ -1081,7 +1081,7 @@ JNIEXPORT void JNICALL
         env->DeleteLocalRef(jsPath);
     }
     free(imagepaths8);
-    env->ReleaseStringUTFChars(dataSrcId, (const char *) data_src_id);
+    env->ReleaseStringUTFChars(deviceId, (const char *) device_id);
 
     // if process completes successfully, must call revertAddImgNat or commitAddImgNat to free the TskAutoDb
 }
