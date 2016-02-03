@@ -269,7 +269,7 @@ int
         "Error creating tsk_fs_info table: %s\n")
 		||
 		attempt_exec
-        ("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, data_src_id TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        ("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, device_id TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating data_source_info table: %s\n")
         ||
         attempt_exec
@@ -473,10 +473,10 @@ int
  * @param timeZone The timezone the image is from
  * @param size The size of the image in bytes.
  * @param md5 MD5 hash of the image
- * @param dataSrcId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
+ * @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID).
  * @returns 1 on error, 0 on success
  */
-int TskDbSqlite::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5, const string& dataSourceId)
+int TskDbSqlite::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5, const string& deviceId)
 {
 
     // Add the data source to the tsk_objects table.
@@ -496,12 +496,12 @@ int TskDbSqlite::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const 
         objId, type, ssize, timezone.c_str(), size, md5.c_str());
     int ret = attempt_exec(sql, "Error adding data to tsk_image_info table: %s\n");
     sqlite3_free(sql);
-    if (1 == ret || dataSourceId.empty()) {
+    if (1 == ret || deviceId.empty()) {
         return ret;
     }
 
     // Add the data source to the data_source_info table.
-    sql = sqlite3_mprintf("INSERT INTO data_source_info (obj_id, data_src_id) VALUES (%lld, '%s');", objId, dataSourceId.c_str());
+    sql = sqlite3_mprintf("INSERT INTO data_source_info (obj_id, device_id) VALUES (%lld, '%s');", objId, deviceId.c_str());
     ret = attempt_exec(sql, "Error adding data to tsk_image_info table: %s\n");
     sqlite3_free(sql);
     return ret;
