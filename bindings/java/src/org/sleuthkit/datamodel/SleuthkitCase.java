@@ -933,10 +933,10 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT obj_id, data_src_id FROM data_source_info"); //NON-NLS			
+			rs = connection.executeQuery(s, "SELECT obj_id, device_id FROM data_source_info"); //NON-NLS			
 			List<DataSource> dataSources = new ArrayList<DataSource>();
 			while (rs.next()) {
-				dataSources.add(new AbstractDataSource(rs.getLong("obj_id"), rs.getString("data_src_id")));
+				dataSources.add(new AbstractDataSource(rs.getLong("obj_id"), rs.getString("device_id")));
 			}
 			return dataSources;
 		} catch (SQLException ex) {
@@ -972,14 +972,14 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT data_src_id FROM data_source_info WHERE obj_id = " + objectId); //NON-NLS			
+			rs = connection.executeQuery(s, "SELECT device_id FROM data_source_info WHERE obj_id = " + objectId); //NON-NLS			
 			if (rs.next()) {
-				return new AbstractDataSource(objectId, rs.getString("data_src_id"));
+				return new AbstractDataSource(objectId, rs.getString("device_id"));
 			} else {
-				throw new TskCoreException(String.format("There is no data source with object id = %d", objectId));
+				throw new TskCoreException(String.format("There is no data source with obj_id = %d", objectId));
 			}
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error getting data source (objectId = %d)", objectId), ex);
+			throw new TskCoreException(String.format("Error getting data source with obj_id = %d", objectId), ex);
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
