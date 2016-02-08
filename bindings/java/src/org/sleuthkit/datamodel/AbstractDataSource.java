@@ -26,16 +26,37 @@ package org.sleuthkit.datamodel;
  * useful for obtaining the object id and the device id, an ASCII-printable
  * identifier for the device associated with the data source that is intended to
  * be unique across multiple cases (e.g., a UUID). In the future, this interface
- * will extend the Content interface.
+ * will extend the Content interface and this class will become an abstract
+ * superclass.
  */
-public interface DataSource {
+class AbstractDataSource implements DataSource {
+
+	private final long objectId;
+	private final String deviceId;
+
+	/**
+	 * Constructs a data source (e.g., an image, a local disk, a virtual
+	 * directory of logical files, etc.).
+	 *
+	 * @param objectId The object id of the data source.
+	 * @param deviceId An ASCII-printable identifier for the device associated
+	 * with the data source that is intended to be unique across multiple cases
+	 * (e.g., a UUID).
+	 */
+	AbstractDataSource(long objectId, String deviceId) {
+		this.objectId = objectId;
+		this.deviceId = deviceId;
+	}
 
 	/**
 	 * Gets the object id of this data source.
 	 *
 	 * @return The object id.
 	 */
-	long getId();
+	@Override
+	public long getId() {
+		return this.objectId;
+	}
 
 	/**
 	 * Gets the ASCII-printable identifier for the device associated with the
@@ -44,6 +65,9 @@ public interface DataSource {
 	 *
 	 * @return The device id.
 	 */
-	String getDeviceId();
+	@Override
+	public String getDeviceId() {
+		return this.deviceId;
+	}
 
 }

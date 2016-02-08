@@ -19,31 +19,35 @@
 package org.sleuthkit.datamodel;
 
 /**
- * A data source (e.g., an image, a local disk, a virtual directory of logical
- * files, etc.).
+ * A local/logical files and/or directories data source.
  *
  * NOTE: The DataSource interface is an emerging feature and at present is only
  * useful for obtaining the object id and the device id, an ASCII-printable
  * identifier for the device associated with the data source that is intended to
  * be unique across multiple cases (e.g., a UUID). In the future, this interface
- * will extend the Content interface.
+ * will extend the Content interface and the AbstractDataSource will become an
+ * abstract superclass.
  */
-public interface DataSource {
+public class LocalFilesDataSource extends AbstractDataSource {
+
+	private final VirtualDirectory rootDirectory;
 
 	/**
-	 * Gets the object id of this data source.
+	 * Constructs a local/logical files and/or directories data source.
 	 *
-	 * @return The object id.
+	 * @param deviceId An ASCII-printable identifier for the device associated
+	 * with the data source that is intended to be unique across multiple cases
+	 * (e.g., a UUID).
+	 * @param rootDirectory The virtual directory that is the root for the
+	 * local/logical files and/or directories.
 	 */
-	long getId();
+	LocalFilesDataSource(String deviceId, VirtualDirectory rootDirectory) {
+		super(rootDirectory.getId(), deviceId);
+		this.rootDirectory = rootDirectory;
+	}
 
-	/**
-	 * Gets the ASCII-printable identifier for the device associated with the
-	 * data source. This identifier is intended to be unique across multiple
-	 * cases (e.g., a UUID).
-	 *
-	 * @return The device id.
-	 */
-	String getDeviceId();
+	public VirtualDirectory getRootDirectory() {
+		return rootDirectory;
+	}
 
 }

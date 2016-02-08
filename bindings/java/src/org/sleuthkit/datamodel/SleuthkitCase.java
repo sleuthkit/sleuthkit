@@ -916,11 +916,12 @@ public class SleuthkitCase {
 	 * Gets the data sources for the case (e.g., images, local disks, virtual
 	 * directories of local/logical files and/or directories, etc.)
 	 *
-	 * NOTE: The DataSource class is an emerging feature and at present is only
-	 * useful for obtaining the object id and the data source identifier, an
-	 * ASCII-printable identifier for the data source that is intended to be
-	 * unique across multiple cases (e.g., a UUID). In the future, this method
-	 * will be a replacement for the getRootObjects method.
+	 * NOTE: The DataSource interface is an emerging feature and at present is
+	 * only useful for obtaining the object id and the device id, an
+	 * ASCII-printable identifier for the device associated with the data source
+	 * that is intended to be unique across multiple cases (e.g., a UUID). In
+	 * the future, this method will be a replacement for the getRootObjects
+	 * method.
 	 *
 	 * @return A list of the data sources for the case.
 	 * @throws TskCoreException if there is a problem getting the data sources.
@@ -935,7 +936,7 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(s, "SELECT obj_id, data_src_id FROM data_source_info"); //NON-NLS			
 			List<DataSource> dataSources = new ArrayList<DataSource>();
 			while (rs.next()) {
-				dataSources.add(new DataSource(rs.getLong("obj_id"), rs.getString("data_src_id")));
+				dataSources.add(new AbstractDataSource(rs.getLong("obj_id"), rs.getString("data_src_id")));
 			}
 			return dataSources;
 		} catch (SQLException ex) {
@@ -952,11 +953,11 @@ public class SleuthkitCase {
 	 * Gets a specific data source for the case (e.g., an image, local disk,
 	 * virtual directory of local/logical files and/or directories, etc.).
 	 *
-	 * NOTE: The DataSource class is an emerging feature and at present is only
-	 * useful for obtaining the object id and the data source identifier, an
-	 * ASCII-printable identifier for the data source that is intended to be
-	 * unique across multiple cases (e.g., a UUID). In the future, this method
-	 * will be a replacement for the getRootObjects method.
+	 * NOTE: The AbstractDataSource class is an emerging feature and at present
+	 * is only useful for obtaining the object id and the data source
+	 * identifier, an ASCII-printable identifier for the data source that is
+	 * intended to be unique across multiple cases (e.g., a UUID). In the
+	 * future, this method will be a replacement for the getRootObjects method.
 	 *
 	 * @param objectId The object id of the data source.
 	 * @return The data source.
@@ -973,7 +974,7 @@ public class SleuthkitCase {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT data_src_id FROM data_source_info WHERE obj_id = " + objectId); //NON-NLS			
 			if (rs.next()) {
-				return new DataSource(objectId, rs.getString("data_src_id"));
+				return new AbstractDataSource(objectId, rs.getString("data_src_id"));
 			} else {
 				throw new TskCoreException(String.format("There is no data source with object id = %d", objectId));
 			}
@@ -3363,6 +3364,36 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error creating virtual directory '" + directoryName + "'", e);
 		} finally {
 			closeResultSet(resultSet);
+			releaseExclusiveLock();
+		}
+	}
+
+	/**
+	 * Adds a local/logical files and/or directories data source.
+	 *
+	 * @param deviceId An ASCII-printable identifier for the device associated
+	 * with the data source that is intended to be unique across multiple cases
+	 * (e.g., a UUID).
+	 * @param directoryName
+	 * @param transaction A transaction in the scope of which the operation is
+	 * to be performed, managed by the caller
+	 * @return The new local files data source.
+	 * @throws TskCoreException if there is an error adding the data source.
+	 */
+	public LocalFilesDataSource addLocalFilesDataSource(String deviceId, String directoryName, CaseDbTransaction transaction) throws TskCoreException {
+		acquireExclusiveLock();
+		Statement statement = null;
+		try {
+			VirtualDirectory rootDirectory = addVirtualDirectory(0, directoryName, transaction);
+			CaseDbConnection connection = transaction.getConnection();
+			statement = connection.createStatement();
+			statement.executeUpdate("INSERT INTO data_source_info (obj_id, device_id) "
+					+ "VALUES(" + rootDirectory.getId() + ", '" + deviceId + "');");
+			return new LocalFilesDataSource(deviceId, rootDirectory);
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error creating local files data source with device id %s and directory name %s", deviceId, directoryName), ex);
+		} finally {
+			closeStatement(statement);
 			releaseExclusiveLock();
 		}
 	}
