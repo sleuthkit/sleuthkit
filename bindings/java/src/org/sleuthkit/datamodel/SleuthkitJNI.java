@@ -100,7 +100,7 @@ public class SleuthkitJNI {
 	//add image
 	private static native long initAddImgNat(long db, String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) throws TskCoreException;
 
-	private static native void runAddImgNat(long process, String dataSourceId, String[] imgPath, int splits, String timezone) throws TskCoreException, TskDataException; // if runAddImg finishes without being stopped, revertAddImg or commitAddImg MUST be called
+	private static native void runAddImgNat(long process, String deviceId, String[] imgPath, int splits, String timezone) throws TskCoreException, TskDataException; // if runAddImg finishes without being stopped, revertAddImg or commitAddImg MUST be called
 
 	private static native void stopAddImgNat(long process) throws TskCoreException;
 
@@ -263,15 +263,15 @@ public class SleuthkitJNI {
 			 * Start the process of adding an image to the case database. MUST
 			 * call either commit() or revert() after calling run().
 			 *
-			 * @param dataSourceId An ASCII-printable identifier for the data
-			 * source that is intended to be unique across multiple cases (e.g.,
-			 * a UUID).
+			 * @param deviceId An ASCII-printable identifier for the device
+			 * associated with a data source that is intended to be unique
+			 * across multiple cases (e.g., a UUID).
 			 * @param imageFilePaths Full paths to the image files.
 			 * @throws TskCoreException if a critical error occurs within TSK
 			 * @throws TskDataException if a non-critical error occurs within
 			 * TSK (should be OK to continue)
 			 */
-			public void run(String dataSourceId, String[] imageFilePaths) throws TskCoreException, TskDataException {
+			public void run(String deviceId, String[] imageFilePaths) throws TskCoreException, TskDataException {
 				if (autoDbPointer != 0) {
 					throw new TskCoreException("AddImgProcess:run: AutoDB pointer is already set");
 				}
@@ -283,7 +283,7 @@ public class SleuthkitJNI {
 					//additional check in case initAddImgNat didn't throw exception
 					throw new TskCoreException("AddImgProcess::run: AutoDB pointer is NULL after initAddImgNat");
 				}
-				runAddImgNat(autoDbPointer, dataSourceId, imageFilePaths, imageFilePaths.length, timezone);
+				runAddImgNat(autoDbPointer, deviceId, imageFilePaths, imageFilePaths.length, timezone);
 			}
 
 			/**

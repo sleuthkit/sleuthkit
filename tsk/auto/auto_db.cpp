@@ -113,12 +113,12 @@ void TskAutoDb::setAddUnallocSpace(bool addUnallocSpace, int64_t chunkSize)
  * @param a_images Array of paths to the image parts
  * @param a_type Image type
  * @param a_ssize Size of device sector in bytes (or 0 for default)
- * @param a_dataSourceId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
+ * @param a_deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID).
  * @return 0 for success, 1 for failure
  */
 uint8_t
     TskAutoDb::openImageUtf8(int a_num, const char *const a_images[],
-    TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize, const char* a_dataSourceId)
+    TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize, const char* a_deviceId)
 {
     uint8_t retval =
         TskAuto::openImageUtf8(a_num, a_images, a_type, a_ssize);
@@ -126,7 +126,7 @@ uint8_t
         return retval;
     }
 
-    if (addImageDetails(a_dataSourceId, a_images, a_num)) {
+    if (addImageDetails(a_deviceId, a_images, a_num)) {
         return 1;
     }
     return 0;
@@ -139,12 +139,12 @@ uint8_t
  * @param a_images Array of paths to the image parts
  * @param a_type Image type
  * @param a_ssize Size of device sector in bytes (or 0 for default)
- * @param dataSourceId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
+ * @param a_deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID).
  * @return 0 for success, 1 for failure
  */
 uint8_t
     TskAutoDb::openImage(int a_num, const TSK_TCHAR * const a_images[],
-    TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize, const char* a_dataSourceId)
+    TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize, const char* a_deviceId)
 {
 
 // make name of database
@@ -183,7 +183,7 @@ uint8_t
         img_ptrs[i] = img2;
     }
 
-    if (addImageDetails(a_dataSourceId, img_ptrs, a_num)) {
+    if (addImageDetails(a_deviceId, img_ptrs, a_num)) {
         //cleanup
         for (int i = 0; i < a_num; ++i) {
             free(img_ptrs[i]);
@@ -207,13 +207,13 @@ uint8_t
 /**
  * Adds image details to the existing database tables.
  *
- * @param dataSrcId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
+ * @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID).
  * @param imgPaths The paths to the image splits
  * @param numPaths The number of paths
  * @return Returns 0 for success, 1 for failure
  */
 uint8_t
-TskAutoDb::addImageDetails(const char* dataSourceId, const char *const imgPaths[], int numPaths)
+TskAutoDb::addImageDetails(const char* deviceId, const char *const imgPaths[], int numPaths)
 {
    string md5 = "";
 #if HAVE_LIBEWF 
@@ -226,14 +226,14 @@ TskAutoDb::addImageDetails(const char* dataSourceId, const char *const imgPaths[
    }
 #endif
 
-    string dataSrcId;
-    if (NULL != dataSourceId) {
-        dataSrcId = dataSourceId; 
+    string devId;
+    if (NULL != deviceId) {
+        devId = deviceId; 
     } else {
-        dataSrcId = "";
+        devId = "";
     }
     if (m_db->addImageInfo(m_img_info->itype, m_img_info->sector_size,
-          m_curImgId, m_curImgTZone, m_img_info->size, md5, dataSrcId)) {
+          m_curImgId, m_curImgTZone, m_img_info->size, md5, devId)) {
         registerError();
         return 1;
     }
@@ -406,12 +406,12 @@ uint8_t TskAutoDb::addFilesInImgToDb()
  * @param imagePaths Array of paths to the image parts
  * @param imgType Image type
  * @param sSize Size of device sector in bytes (or 0 for default)
- * @param dataSourceId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
+ * @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID)
  * @return 0 for success, 1 for failure
  */
 uint8_t
     TskAutoDb::startAddImage(int numImg, const TSK_TCHAR * const imagePaths[],
-    TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* dataSourceId)
+    TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* deviceId)
 {
     if (tsk_verbose)
         tsk_fprintf(stderr, "TskAutoDb::startAddImage: Starting add image process\n");
@@ -440,7 +440,7 @@ uint8_t
 
     m_imgTransactionOpen = true;
 
-    if (openImage(numImg, imagePaths, imgType, sSize, dataSourceId)) {
+    if (openImage(numImg, imagePaths, imgType, sSize, deviceId)) {
         tsk_error_set_errstr2("TskAutoDb::startAddImage");
         registerError();
         if (revertAddImage())
@@ -463,12 +463,12 @@ uint8_t
  * @param imagePaths Array of paths to the image parts
  * @param imgType Image type
  * @param sSize Size of device sector in bytes (or 0 for default)
- * @param dataSourceId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
+ * @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID)
  * @return 0 for success 1, for failure
  */
 uint8_t
     TskAutoDb::startAddImage(int numImg, const char *const imagePaths[],
-    TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* dataSourceId)
+    TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* deviceId)
 {
     if (tsk_verbose)
         tsk_fprintf(stderr, "TskAutoDb::startAddImage_utf8: Starting add image process\n");
@@ -499,7 +499,7 @@ uint8_t
 
     m_imgTransactionOpen = true;
 
-    if (openImageUtf8(numImg, imagePaths, imgType, sSize, dataSourceId)) {
+    if (openImageUtf8(numImg, imagePaths, imgType, sSize, deviceId)) {
         tsk_error_set_errstr2("TskAutoDb::startAddImage");
         registerError();
         if (revertAddImage())

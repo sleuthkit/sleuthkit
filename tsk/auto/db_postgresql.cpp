@@ -506,7 +506,7 @@ int TskDbPostgreSQL::initialize() {
         "Error creating tsk_vs_info table: %s\n")
         ||
 		attempt_exec
-        ("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, data_src_id TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        ("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, device_id TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating data_source_info table: %s\n")
         ||
         attempt_exec
@@ -704,10 +704,10 @@ int TskDbPostgreSQL::addImageInfo(int type, int ssize, int64_t & objId, const st
  * @param timeZone The timezone the image is from
  * @param size The size of the image in bytes.
  * @param md5 MD5 hash of the image
- * @param dataSrcId An ASCII-printable identifier for the data source that is intended to be unique across multiple cases (e.g., a UUID)
+ * @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID).
  * @returns 1 on error, 0 on success
  */
-int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5, const string& dataSourceId)
+int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5, const string& deviceId)
 {
     // Add the data source to the tsk_objects table.
     // We don't use addObject because we're passing in NULL as the parent
@@ -738,20 +738,20 @@ int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, co
     int ret = attempt_exec(stmt, "Error adding data to tsk_image_info table: %s\n");
     PQfreemem(timezone_sql);
     PQfreemem(md5_sql);
-    if (1 == ret || dataSourceId.empty()) {
+    if (1 == ret || deviceId.empty()) {
         return ret;
     }
 
     // Add the data source to the data_source_info table.
-    char *dataSourceId_sql = PQescapeLiteral(conn, dataSourceId.c_str(), strlen(dataSourceId.c_str()));
-    if (!isEscapedStringValid(dataSourceId_sql, dataSourceId.c_str(), "TskDbPostgreSQL::addImageInfo: Unable to escape data source string: %s (Error: %s)\n")) {
-        PQfreemem(dataSourceId_sql);
+    char *deviceId_sql = PQescapeLiteral(conn, deviceId.c_str(), strlen(deviceId.c_str()));
+    if (!isEscapedStringValid(deviceId_sql, deviceId.c_str(), "TskDbPostgreSQL::addImageInfo: Unable to escape data source string: %s (Error: %s)\n")) {
+        PQfreemem(deviceId_sql);
         return 1;
     }
-    snprintf(stmt, 2048, "INSERT INTO data_source_info (obj_id, data_src_id) VALUES (%lld, %s);",
-        objId, dataSourceId_sql);
+    snprintf(stmt, 2048, "INSERT INTO data_source_info (obj_id, device_id) VALUES (%lld, %s);",
+        objId, deviceId_sql);
     ret = attempt_exec(stmt, "Error adding data source id to data_source_info table: %s\n");
-    PQfreemem(dataSourceId_sql);
+    PQfreemem(deviceId_sql);
     return ret;
 }
 

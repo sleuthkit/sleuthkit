@@ -49,14 +49,14 @@ build libewf_dll (at the time of this writing, that includes downloading the zli
 4) Download libvhdi-alpha-20160108 (or later). To get official release code to work with TSK you will need to perform steps outlined in step 5. The official releases are from: 
 https://github.com/libyal/libvhdi
 
-Alternatively we recommend that you download a version of libvhdi that we've upgraded. This version is already converted to Visual Studio 2010, is upgraded for 64-bit support, and stores libvhdi_dll in proper locations for use with TSK. You should skip step 5 when using this version. You can download the upgraded version here:
+If you want to build 64-bit libraries though, download a version of libvhdi that we've upgraded. This version is already converted to Visual Studio 2010, is upgraded for 64-bit support, and stores libvhdi_dll in proper locations for use with TSK. You should skip step 5 when using this version. You can download the upgraded version here:
 https://github.com/sleuthkit/libvhdi_64bit
 
 5) This step only needs to be performed if you are using an official build of libvhdi and not our upgraded version of libvhdi. Open archive file and follow the README instructions in libvhdi to
 build libvhdi_dll. Note that TSK will use only the Release version of
 libvhdi_dll. Note that libvhdi will need to be converted to Visual Studio 2010 and be upgraded to support a 64-bit build.
 
-6) Set the LIBVHDI_HOME environment variable to point to the libvhdi folder that you created and built in step 3. 
+6) Set the LIBVHDI_HOME environment variable to point to the libvhdi folder that you created and built in step 4. 
 
 If you are using our upgraded version of libvmdk and the libvhdi repository is checked out into C:\cygwin64\home\user_name\libvhdi_64bit then LIBVHDI_HOME = C:\cygwin64\home\user_name\libvhdi_64bit
 
@@ -64,13 +64,13 @@ If you are using our upgraded version of libvmdk and the libvhdi repository is c
 7) Download libvmdk-alpha-20160119 (or later). To get official release code to work with TSK you will need to perform steps outlined in step 8. The official releases are from: 
 https://github.com/libyal/libvmdk
 
-Alternatively we recommend that you download a version of libvmdk that we've upgraded. This version is already converted to Visual Studio 2010, is upgraded for 64-bit support, and stores libvmdk_dll in proper locations for use with TSK. At the time of writing this, libvmdk requires zlib source code in order to build the Visual Studio project. Our upgraded version includes the zlib source code. You should skip step 8 when using this version. You can download the upgraded version here:
+If you want to build 64-bit libraries though, download a version of libvmdk that we've upgraded. This version is already converted to Visual Studio 2010, is upgraded for 64-bit support, and stores libvmdk_dll in proper locations for use with TSK. At the time of writing this, libvmdk requires zlib source code in order to build the Visual Studio project. Our upgraded version includes the zlib source code. You should skip step 8 when using this version. You can download the upgraded version here:
 https://github.com/sleuthkit/libvmdk_64bit
 
 8) This step only needs to be performed if you are using an official build of libvmdk and not our upgraded version of libvmdk. Open archive file and follow the README instructions in libvmdk to
-build libvmdk_dll (at the time of this writing, that includes downloading the zlib dll). Note that TSK will use only the Release version of libvmdk_dll. Note that libvmdk will need to be converted to Visual Studio 2010 and be upgraded to support a 64-bit build.
+build libvmdk_dll (at the time of this writing, that includes downloading the zlib dll). Note that TSK will use only the Release version of libvmdk_dll. Later steps also depend on the zlib dll being built inside of libvmdk. Note that libvmdk will need to be converted to Visual Studio 2010 and be upgraded to support a 64-bit build.
 
-9) Set the LIBVHDI_HOME environment variable to point to the libvmdk folder that you created and built in step 7. 
+9) Set the LIBVMDK_HOME environment variable to point to the libvmdk folder that you created and built in step 7. 
 
 If you are using our upgraded version of libvmdk and the repository is checked out into C:\cygwin64\home\user_name\libvmdk_64bit then the libvmdk_64bit folder will contain 2 sub-folders: libvmdk (containing livmdk source code) and zlib (containing zlib source code). In order to be used with TSK the user needs to define an environment variable LIBVMDK_HOME pointed at C:\cygwin64\home\user_name\libvmdk_64bit\libvmdk
 
