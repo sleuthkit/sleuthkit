@@ -269,7 +269,7 @@ int
         "Error creating tsk_fs_info table: %s\n")
 		||
 		attempt_exec
-        ("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, device_id TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        ("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, device_id TEXT NOT NULL,  time_zone TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating data_source_info table: %s\n")
         ||
         attempt_exec
@@ -501,7 +501,7 @@ int TskDbSqlite::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const 
     }
 
     // Add the data source to the data_source_info table.
-    sql = sqlite3_mprintf("INSERT INTO data_source_info (obj_id, device_id) VALUES (%lld, '%s');", objId, deviceId.c_str());
+    sql = sqlite3_mprintf("INSERT INTO data_source_info (obj_id, device_id, time_zone) VALUES (%lld, '%s', '%s');", objId, deviceId.c_str(), timezone.c_str());
     ret = attempt_exec(sql, "Error adding data to tsk_image_info table: %s\n");
     sqlite3_free(sql);
     return ret;

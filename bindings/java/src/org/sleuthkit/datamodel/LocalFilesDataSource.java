@@ -40,9 +40,11 @@ public class LocalFilesDataSource extends AbstractDataSource {
 	 * (e.g., a UUID).
 	 * @param rootDirectory The virtual directory that is the root for the
 	 * local/logical files and/or directories.
+	 * @param timeZone Time zone used to process the data source, may be the
+	 * empty string.
 	 */
-	LocalFilesDataSource(String deviceId, VirtualDirectory rootDirectory) {
-		super(rootDirectory.getId(), deviceId);
+	LocalFilesDataSource(String deviceId, VirtualDirectory rootDirectory, String timeZone) {
+		super(rootDirectory.getId(), deviceId, timeZone);
 		this.rootDirectory = rootDirectory;
 	}
 
