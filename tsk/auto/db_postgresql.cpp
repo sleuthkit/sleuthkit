@@ -756,7 +756,7 @@ int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, co
     }
     snprintf(stmt, 2048, "INSERT INTO data_source_info (obj_id, device_id, time_zone) VALUES (%lld, %s, %s);",
         objId, deviceId_sql, timeZone_sql);
-    ret = attempt_exec(stmt, "Error adding data source id to data_source_info table: %s\n");
+    ret = attempt_exec(stmt, "Error adding device id to data_source_info table: %s\n");
     PQfreemem(deviceId_sql);
     PQfreemem(timeZone_sql);
     return ret;
