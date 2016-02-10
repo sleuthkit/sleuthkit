@@ -200,7 +200,7 @@ uint8_t
 
     return 0;
 #else
-    return openImageUtf8(a_num, a_images, a_type, a_ssize, dataSourceId);
+    return openImageUtf8(a_num, a_images, a_type, a_ssize, a_deviceId);
 #endif
 }
 

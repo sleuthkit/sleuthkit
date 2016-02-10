@@ -46,4 +46,11 @@ public interface DataSource {
 	 */
 	String getDeviceId();
 
+	/**
+	 * Gets the time zone that was used to process the data source.
+	 *
+	 * @return The time zone.
+	 */
+	String getTimeZone();
+
 }

@@ -603,35 +603,22 @@ public class SleuthkitCase {
 	 * @throws SQLException
 	 * @throws TskCoreException
 	 */
-	@SuppressWarnings("deprecation")
 	private int updateFromSchema3toSchema4(int schemaVersionNumber, CaseDbConnection connection) throws SQLException, TskCoreException {
 		if (schemaVersionNumber != 3) {
 			return schemaVersionNumber;
 		}
+
 		Statement statement = null;
 		Statement updateStatement = null;
+		Statement statement2 = null;
 		ResultSet resultSet = null;
+		ResultSet resultSet2 = null;
 		try {
+			// Add mime_type column to tsk_files table. Populate with general 
+			// info artifact file signature data.
 			statement = connection.createStatement();
-			statement.execute("ALTER TABLE tsk_files ADD COLUMN mime_type TEXT;");
-			statement.execute("ALTER TABLE blackboard_attribute_types ADD COLUMN value_type INTEGER NOT NULL DEFAULT -1;");
-			statement.execute("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, device_id TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));");
-			resultSet = statement.executeQuery(
-					"SELECT * " + //NON-NLS
-					"FROM blackboard_attribute_types AS types"); //NON-NLS
 			updateStatement = connection.createStatement();
-			while (resultSet.next()) {
-				int attributeTypeId = resultSet.getInt("attribute_type_id");
-				String attributeLabel = resultSet.getString("type_name");
-				if (attributeTypeId < MIN_USER_DEFINED_TYPE_ID) {
-					updateStatement.executeUpdate(
-							"UPDATE blackboard_attribute_types " + //NON-NLS
-							"SET value_type = " + ATTRIBUTE_TYPE.fromLabel(attributeLabel).getValueType().getType() + " " + //NON-NLS
-							"WHERE blackboard_attribute_types.attribute_type_id = " + attributeTypeId + ";"); //NON-NLS	
-				}
-
-			}
-			resultSet.close();
+			statement.execute("ALTER TABLE tsk_files ADD COLUMN mime_type TEXT;");
 			resultSet = statement.executeQuery("SELECT files.obj_id, attrs.value_text "
 					+ "FROM tsk_files AS files, blackboard_attributes AS attrs, blackboard_artifacts AS arts "
 					+ "WHERE files.obj_id = arts.obj_id AND "
@@ -645,17 +632,44 @@ public class SleuthkitCase {
 						"WHERE tsk_files.obj_id = " + resultSet.getInt(1) + ";"); //NON-NLS	
 			}
 			resultSet.close();
+
+			// Add value_type column to blackboard_attribute_types table.
+			statement.execute("ALTER TABLE blackboard_attribute_types ADD COLUMN value_type INTEGER NOT NULL DEFAULT -1;");
+			resultSet = statement.executeQuery("SELECT * FROM blackboard_attribute_types AS types"); //NON-NLS			
+			while (resultSet.next()) {
+				int attributeTypeId = resultSet.getInt("attribute_type_id");
+				String attributeLabel = resultSet.getString("type_name");
+				if (attributeTypeId < MIN_USER_DEFINED_TYPE_ID) {
+					updateStatement.executeUpdate(
+							"UPDATE blackboard_attribute_types " + //NON-NLS
+							"SET value_type = " + ATTRIBUTE_TYPE.fromLabel(attributeLabel).getValueType().getType() + " " + //NON-NLS
+							"WHERE blackboard_attribute_types.attribute_type_id = " + attributeTypeId + ";"); //NON-NLS	
+				}
+			}
+			resultSet.close();
+
+			// Add a data sources info table.
+			statement2 = connection.createStatement();
+			statement.execute("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, device_id TEXT NOT NULL, time_zone TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));");
 			resultSet = statement.executeQuery("SELECT * FROM tsk_objects WHERE par_obj_id IS NULL");
 			while (resultSet.next()) {
 				long objectId = resultSet.getLong("obj_id");
-				String deviceId = UUID.randomUUID().toString();
-				updateStatement.executeUpdate("INSERT INTO data_source_info (obj_id, device_id) "
-						+ "VALUES(" + objectId + ", '" + deviceId + "');");
+				String timeZone = "";
+				resultSet2 = statement2.executeQuery("SELECT tzone FROM tsk_image_info WHERE obj_id = " + objectId);
+				if (resultSet2.next()) {
+					timeZone = resultSet2.getString("tzone");
+				}
+				resultSet2.close();
+				updateStatement.executeUpdate("INSERT INTO data_source_info (obj_id, device_id, time_zone) "
+						+ "VALUES(" + objectId + ", '" + UUID.randomUUID().toString() + "' , '" + timeZone + "');");
 			}
+
 			return 4;
 		} finally {
-			closeStatement(updateStatement);
+			closeResultSet(resultSet2);
 			closeResultSet(resultSet);
+			closeStatement(statement2);
+			closeStatement(updateStatement);
 			closeStatement(statement);
 		}
 
@@ -933,10 +947,10 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT obj_id, device_id FROM data_source_info"); //NON-NLS			
+			rs = connection.executeQuery(s, "SELECT obj_id, device_id, time_zone FROM data_source_info"); //NON-NLS			
 			List<DataSource> dataSources = new ArrayList<DataSource>();
 			while (rs.next()) {
-				dataSources.add(new AbstractDataSource(rs.getLong("obj_id"), rs.getString("device_id")));
+				dataSources.add(new AbstractDataSource(rs.getLong("obj_id"), rs.getString("device_id"), rs.getString("time_zone")));
 			}
 			return dataSources;
 		} catch (SQLException ex) {
@@ -972,9 +986,9 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT device_id FROM data_source_info WHERE obj_id = " + objectId); //NON-NLS			
+			rs = connection.executeQuery(s, "SELECT device_id, time_zone FROM data_source_info WHERE obj_id = " + objectId); //NON-NLS			
 			if (rs.next()) {
-				return new AbstractDataSource(objectId, rs.getString("device_id"));
+				return new AbstractDataSource(objectId, rs.getString("device_id"), rs.getString("time_zone"));
 			} else {
 				throw new TskCoreException(String.format("There is no data source with obj_id = %d", objectId));
 			}
@@ -3374,24 +3388,27 @@ public class SleuthkitCase {
 	 * @param deviceId An ASCII-printable identifier for the device associated
 	 * with the data source that is intended to be unique across multiple cases
 	 * (e.g., a UUID).
-	 * @param directoryName
+	 * @param rootDirectoryName The name for the root virtual directory for the
+	 * data source.
+	 * @param timeZone The time zone used to process the data source, may be the
+	 * empty string.
 	 * @param transaction A transaction in the scope of which the operation is
-	 * to be performed, managed by the caller
+	 * to be performed, managed by the caller.
 	 * @return The new local files data source.
 	 * @throws TskCoreException if there is an error adding the data source.
 	 */
-	public LocalFilesDataSource addLocalFilesDataSource(String deviceId, String directoryName, CaseDbTransaction transaction) throws TskCoreException {
+	public LocalFilesDataSource addLocalFilesDataSource(String deviceId, String rootDirectoryName, String timeZone, CaseDbTransaction transaction) throws TskCoreException {
 		acquireExclusiveLock();
 		Statement statement = null;
 		try {
-			VirtualDirectory rootDirectory = addVirtualDirectory(0, directoryName, transaction);
+			VirtualDirectory rootDirectory = addVirtualDirectory(0, rootDirectoryName, transaction);
 			CaseDbConnection connection = transaction.getConnection();
 			statement = connection.createStatement();
-			statement.executeUpdate("INSERT INTO data_source_info (obj_id, device_id) "
-					+ "VALUES(" + rootDirectory.getId() + ", '" + deviceId + "');");
-			return new LocalFilesDataSource(deviceId, rootDirectory);
+			statement.executeUpdate("INSERT INTO data_source_info (obj_id, device_id, time_zone) "
+					+ "VALUES(" + rootDirectory.getId() + ", '" + deviceId + "', '" + timeZone + "');");
+			return new LocalFilesDataSource(deviceId, rootDirectory, timeZone);
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error creating local files data source with device id %s and directory name %s", deviceId, directoryName), ex);
+			throw new TskCoreException(String.format("Error creating local files data source with device id %s and directory name %s", deviceId, rootDirectoryName), ex);
 		} finally {
 			closeStatement(statement);
 			releaseExclusiveLock();

@@ -33,6 +33,7 @@ class AbstractDataSource implements DataSource {
 
 	private final long objectId;
 	private final String deviceId;
+	private final String timeZone;
 
 	/**
 	 * Constructs a data source (e.g., an image, a local disk, a virtual
@@ -42,10 +43,12 @@ class AbstractDataSource implements DataSource {
 	 * @param deviceId An ASCII-printable identifier for the device associated
 	 * with the data source that is intended to be unique across multiple cases
 	 * (e.g., a UUID).
+	 * @param timeZone The time zone that was used to process the data source.
 	 */
-	AbstractDataSource(long objectId, String deviceId) {
+	AbstractDataSource(long objectId, String deviceId, String timeZone) {
 		this.objectId = objectId;
 		this.deviceId = deviceId;
+		this.timeZone = timeZone;
 	}
 
 	/**
@@ -55,7 +58,7 @@ class AbstractDataSource implements DataSource {
 	 */
 	@Override
 	public long getId() {
-		return this.objectId;
+		return objectId;
 	}
 
 	/**
@@ -67,7 +70,17 @@ class AbstractDataSource implements DataSource {
 	 */
 	@Override
 	public String getDeviceId() {
-		return this.deviceId;
+		return deviceId;
+	}
+
+	/**
+	 * Gets the time zone that was used to process the data source.
+	 *
+	 * @return The time zone.
+	 */
+	@Override
+	public String getTimeZone() {
+		return timeZone;
 	}
 
 }

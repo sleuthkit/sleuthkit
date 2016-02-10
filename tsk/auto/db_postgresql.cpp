@@ -506,7 +506,7 @@ int TskDbPostgreSQL::initialize() {
         "Error creating tsk_vs_info table: %s\n")
         ||
 		attempt_exec
-        ("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, device_id TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        ("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, device_id TEXT NOT NULL, time_zone TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating data_source_info table: %s\n")
         ||
         attempt_exec
@@ -748,10 +748,17 @@ int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, co
         PQfreemem(deviceId_sql);
         return 1;
     }
-    snprintf(stmt, 2048, "INSERT INTO data_source_info (obj_id, device_id) VALUES (%lld, %s);",
-        objId, deviceId_sql);
+    char *timeZone_sql = PQescapeLiteral(conn, timezone.c_str(), strlen(timezone.c_str()));
+    if (!isEscapedStringValid(timeZone_sql, timezone.c_str(), "TskDbPostgreSQL::addImageInfo: Unable to escape data source string: %s (Error: %s)\n")) {
+        PQfreemem(deviceId_sql);
+        PQfreemem(timeZone_sql);
+        return 1;
+    }
+    snprintf(stmt, 2048, "INSERT INTO data_source_info (obj_id, device_id, time_zone) VALUES (%lld, %s, %s);",
+        objId, deviceId_sql, timeZone_sql);
     ret = attempt_exec(stmt, "Error adding data source id to data_source_info table: %s\n");
     PQfreemem(deviceId_sql);
+    PQfreemem(timeZone_sql);
     return ret;
 }
 

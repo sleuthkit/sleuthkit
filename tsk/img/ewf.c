@@ -34,9 +34,7 @@ getError(libewf_error_t * ewf_error,
     error_string[0] = '\0';
     retval = libewf_error_backtrace_sprint(ewf_error,
         error_string, TSK_EWF_ERROR_STRING_SIZE);
-    if (retval)
-        return 1;
-    return 0;
+    return retval <= 0;
 }
 #endif
 
@@ -144,7 +142,7 @@ ewf_image_close(TSK_IMG_INFO * img_info)
     }
 
     tsk_deinit_lock(&(ewf_info->read_lock));
-    tsk_img_free(img_info);
+    tsk_img_free(ewf_info);
 }
 
 /* Tests if the image file header against the
