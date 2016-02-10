@@ -390,6 +390,7 @@ tsk_img_open_utf8(int num_img,
 TSK_IMG_INFO *
 tsk_img_open_external(
   void* ext_img_info,
+  TSK_IMG_INFO *img_info,
   TSK_OFF_T size,
   unsigned int sector_size,
   ssize_t(*read) (TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len),
@@ -443,7 +444,7 @@ tsk_img_open_external(
     }
 
     // set up the TSK_IMG_INFO members
-    TSK_IMG_INFO *img_info = (TSK_IMG_INFO *) ext_img_info;
+    img_info = (TSK_IMG_INFO *) ext_img_info;
 
     img_info->tag = TSK_IMG_INFO_TAG;
     img_info->itype = TSK_IMG_TYPE_EXTERNAL;
