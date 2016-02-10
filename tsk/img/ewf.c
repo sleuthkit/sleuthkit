@@ -144,7 +144,7 @@ ewf_image_close(TSK_IMG_INFO * img_info)
     }
 
     tsk_deinit_lock(&(ewf_info->read_lock));
-    tsk_img_free(img_info);
+    tsk_img_free(ewf_info);
 }
 
 /* Tests if the image file header against the
