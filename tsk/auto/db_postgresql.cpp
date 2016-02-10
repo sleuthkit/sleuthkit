@@ -720,7 +720,7 @@ int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, co
     }
     objId = atoll(PQgetvalue(res, 0, 0));
 
-    // Add the data source to the tsk_image_info table.
+    // Add the device to the tsk_image_info table.
     char timeZone_local[MAX_DB_STRING_LENGTH];
     removeNonUtf8(timeZone_local, MAX_DB_STRING_LENGTH - 1, timezone.c_str());
     char md5_local[MAX_DB_STRING_LENGTH];
@@ -742,7 +742,7 @@ int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, co
         return ret;
     }
 
-    // Add the data source to the data_source_info table.
+    // Add the device to the data_source_info table.
     char *deviceId_sql = PQescapeLiteral(conn, deviceId.c_str(), strlen(deviceId.c_str()));
     if (!isEscapedStringValid(deviceId_sql, deviceId.c_str(), "TskDbPostgreSQL::addImageInfo: Unable to escape data source string: %s (Error: %s)\n")) {
         PQfreemem(deviceId_sql);
@@ -756,7 +756,7 @@ int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, co
     }
     snprintf(stmt, 2048, "INSERT INTO data_source_info (obj_id, device_id, time_zone) VALUES (%lld, %s, %s);",
         objId, deviceId_sql, timeZone_sql);
-    ret = attempt_exec(stmt, "Error adding data source id to data_source_info table: %s\n");
+    ret = attempt_exec(stmt, "Error adding device id to data_source_info table: %s\n");
     PQfreemem(deviceId_sql);
     PQfreemem(timeZone_sql);
     return ret;
