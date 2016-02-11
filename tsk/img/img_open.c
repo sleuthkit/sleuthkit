@@ -390,7 +390,6 @@ tsk_img_open_utf8(int num_img,
 TSK_IMG_INFO *
 tsk_img_open_external(
   void* ext_img_info,
-  TSK_IMG_INFO *img_info,
   TSK_OFF_T size,
   unsigned int sector_size,
   ssize_t(*read) (TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len),
@@ -398,6 +397,7 @@ tsk_img_open_external(
   void (*imgstat) (TSK_IMG_INFO *, FILE *)
 )
 {
+    TSK_IMG_INFO *img_info;
     // sanity checks
     if (!ext_img_info) {
         tsk_error_reset();
