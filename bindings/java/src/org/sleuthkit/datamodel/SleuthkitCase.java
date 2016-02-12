@@ -609,10 +609,10 @@ public class SleuthkitCase {
 		}
 
 		Statement statement = null;
-		Statement updateStatement = null;
-		Statement statement2 = null;
 		ResultSet resultSet = null;
-		ResultSet resultSet2 = null;
+		Statement queryStatement = null;
+		ResultSet queryResultSet = null;
+		Statement updateStatement = null;
 		try {
 			// Add mime_type column to tsk_files table. Populate with general 
 			// info artifact file signature data.
@@ -632,7 +632,7 @@ public class SleuthkitCase {
 						"WHERE tsk_files.obj_id = " + resultSet.getInt(1) + ";"); //NON-NLS	
 			}
 			resultSet.close();
-
+			
 			// Add value_type column to blackboard_attribute_types table.
 			statement.execute("ALTER TABLE blackboard_attribute_types ADD COLUMN value_type INTEGER NOT NULL DEFAULT -1;");
 			resultSet = statement.executeQuery("SELECT * FROM blackboard_attribute_types AS types"); //NON-NLS			
@@ -648,28 +648,65 @@ public class SleuthkitCase {
 			}
 			resultSet.close();
 
-			// Add a data sources info table.
-			statement2 = connection.createStatement();
+			// Add a data_sources_info table.
+			queryStatement = connection.createStatement();
 			statement.execute("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, device_id TEXT NOT NULL, time_zone TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));");
 			resultSet = statement.executeQuery("SELECT * FROM tsk_objects WHERE par_obj_id IS NULL");
 			while (resultSet.next()) {
 				long objectId = resultSet.getLong("obj_id");
 				String timeZone = "";
-				resultSet2 = statement2.executeQuery("SELECT tzone FROM tsk_image_info WHERE obj_id = " + objectId);
-				if (resultSet2.next()) {
-					timeZone = resultSet2.getString("tzone");
+				queryResultSet = queryStatement.executeQuery("SELECT tzone FROM tsk_image_info WHERE obj_id = " + objectId);
+				if (queryResultSet.next()) {
+					timeZone = queryResultSet.getString("tzone");
 				}
-				resultSet2.close();
+				queryResultSet.close();
 				updateStatement.executeUpdate("INSERT INTO data_source_info (obj_id, device_id, time_zone) "
 						+ "VALUES(" + objectId + ", '" + UUID.randomUUID().toString() + "' , '" + timeZone + "');");
 			}
+			resultSet.close();
+
+			// Add data_source_obj_id column to the tsk_files table. Populate it
+			// by working up the chain of ancestors for each file looking for a  
+			// NULL parent (0 from ResultSet.getLong("par_obj_id")). The ancestor 
+			// with no parent is the data source for the file. 
+			// 
+			// NOTE: The virtual directory that is the root of a local/logical 
+			// files data source gets its own object id in the data_source_obj_id 
+			// column.
+			//
+			// NOTE: A new case database will have the following FK constraint: 
+			//
+			// REFERENCES data_source_info (obj_id)
+			//
+			// Sacrificing that in the upgrade to avoid having to create and
+			// populate a new tsk_files table (using a default value for the new 
+			// column and then overwriting it instead).
+			//
+			statement.execute("ALTER TABLE tsk_files ADD COLUMN data_source_obj_id BIGINT NOT NULL DEFAULT -1;");
+			resultSet = statement.executeQuery("SELECT tsk_files.obj_id, par_obj_id FROM tsk_files, tsk_objects WHERE tsk_files.obj_id = tsk_objects.obj_id");
+			while (resultSet.next()) {
+				long fileId = resultSet.getLong("obj_id");
+				long dataSourceId = fileId;
+				long parentId = resultSet.getLong("par_obj_id");
+				while (0 != parentId) {
+					dataSourceId = parentId;
+					queryResultSet = queryStatement.executeQuery("SELECT par_obj_id FROM tsk_objects WHERE obj_id = " + parentId + ";");
+					if (queryResultSet.next()) {
+						parentId = queryResultSet.getLong("par_obj_id");
+					}
+					queryResultSet.close();
+				}
+				updateStatement.executeUpdate("UPDATE tsk_files SET data_source_obj_id = " + dataSourceId + " WHERE obj_id = " + fileId + ";");
+			}
+			resultSet.close();
 
 			return 4;
+			
 		} finally {
-			closeResultSet(resultSet2);
-			closeResultSet(resultSet);
-			closeStatement(statement2);
+			closeResultSet(queryResultSet);
+			closeStatement(queryStatement);
 			closeStatement(updateStatement);
+			closeResultSet(resultSet);
 			closeStatement(statement);
 		}
 
