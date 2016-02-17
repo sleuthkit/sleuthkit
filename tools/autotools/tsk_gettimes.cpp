@@ -214,10 +214,10 @@ main(int argc, char **argv1)
             "Missing image name\n");
         usage();
     }
-
-    TskGetTimes tskGetTimes(sec_skew, do_hash);
-    if (tskGetTimes.openImage(argc - OPTIND, &argv[OPTIND], imgtype,
-            ssize)) {
+	
+	TskGetTimes tskGetTimes(sec_skew, do_hash);
+	int64_t objId=0;
+    if (tskGetTimes.openImage(argc - OPTIND, &argv[OPTIND], imgtype, ssize, objId)) {
         tsk_error_print(stderr);
         exit(1);
     }

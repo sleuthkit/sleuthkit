@@ -69,11 +69,12 @@ bool TskAuto::isCurVsValid() const {
  * be equal to num_img and they must be in a sorted order)
  * @param a_imgType The disk image type (can be autodetection)
  * @param a_sSize Size of device sector in bytes (or 0 for default)
+ * @param dataSourceObjId The object ID for the data source
  * @returns 1 on error (messages were NOT registered), 0 on success
  */
 uint8_t
     TskAuto::openImage(int a_numImg, const TSK_TCHAR * const a_images[],
-    TSK_IMG_TYPE_ENUM a_imgType, unsigned int a_sSize)
+    TSK_IMG_TYPE_ENUM a_imgType, unsigned int a_sSize, int64_t & dataSourceObjId)
 {
     resetErrorList();
     if (m_img_info)
@@ -97,11 +98,12 @@ uint8_t
  * be equal to num_img and they must be in a sorted order)
  * @param a_imgType The disk image type (can be autodetection)
  * @param a_sSize Size of device sector in bytes (or 0 for default)
+ * @param dataSourceObjId The object ID for the data source
  * @returns 1 on error (messages were NOT registered), 0 on success
  */
 uint8_t
     TskAuto::openImageUtf8(int a_numImg, const char *const a_images[],
-    TSK_IMG_TYPE_ENUM a_imgType, unsigned int a_sSize)
+    TSK_IMG_TYPE_ENUM a_imgType, unsigned int a_sSize, int64_t & dataSourceObjId)
 {
     resetErrorList();
     if (m_img_info)
@@ -517,7 +519,7 @@ TSK_WALK_RET_ENUM
         // we have no way to register an error...
         return TSK_WALK_STOP;
     }
-    
+
     TSK_RETVAL_ENUM retval = tsk->processFile(a_fs_file, a_path);
     if ((retval == TSK_STOP) || (tsk->getStopProcessing()))
         return TSK_WALK_STOP;

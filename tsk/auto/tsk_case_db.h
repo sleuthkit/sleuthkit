@@ -36,9 +36,9 @@ class TskAutoDb:public TskAuto {
     TskAutoDb(TskDb * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_knownBadDb);
     virtual ~ TskAutoDb();
     virtual uint8_t openImage(int, const TSK_TCHAR * const images[],
-        TSK_IMG_TYPE_ENUM, unsigned int a_ssize, const char* deviceId = NULL);
+        TSK_IMG_TYPE_ENUM, unsigned int a_ssize, int64_t & dataSourceObjId, const char* deviceId = NULL);
     virtual uint8_t openImageUtf8(int, const char *const images[],
-        TSK_IMG_TYPE_ENUM, unsigned int a_ssize, const char* deviceId = NULL);
+        TSK_IMG_TYPE_ENUM, unsigned int a_ssize, int64_t & dataSourceObjId, const char* deviceId = NULL);
     virtual void closeImage();
     virtual void setTz(string tzone);
 
@@ -46,7 +46,7 @@ class TskAutoDb:public TskAuto {
     virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file,
-        const char *path);
+		const char *path);
     virtual void createBlockMap(bool flag);
     const std::string getCurDir();
 	
@@ -154,7 +154,7 @@ class TskAutoDb:public TskAuto {
         const unsigned char *const md5,
         const TSK_DB_FILES_KNOWN_ENUM known);
     virtual TSK_RETVAL_ENUM processAttribute(TSK_FS_FILE *,
-        const TSK_FS_ATTR * fs_attr, const char *path);
+		const TSK_FS_ATTR * fs_attr, const char *path);
     static TSK_WALK_RET_ENUM md5HashCallback(TSK_FS_FILE * file,
         TSK_OFF_T offset, TSK_DADDR_T addr, char *buf, size_t size,
         TSK_FS_BLOCK_FLAG_ENUM a_flags, void *ptr);

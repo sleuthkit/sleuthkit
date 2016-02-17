@@ -408,7 +408,8 @@ main(int argc, char **argv1)
 
     tskCompareDir.setFileFilterFlags(TSK_FS_DIR_WALK_FLAG_ALLOC);
 
-    if (tskCompareDir.openImage(argc - OPTIND - 1, &argv[OPTIND], imgtype, ssize)) {
+	int64_t objId=0;
+    if (tskCompareDir.openImage(argc - OPTIND - 1, &argv[OPTIND], imgtype, ssize, objId)) {
         tsk_error_print(stderr);
         exit(1);
     }
