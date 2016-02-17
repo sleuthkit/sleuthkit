@@ -137,7 +137,7 @@ class TskAuto {
      * @returns STOP or OK. All error must have been registered. 
      */
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file,
-		const char *path) = 0;
+        const char *path) = 0;
 
     
     /**

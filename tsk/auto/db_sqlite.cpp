@@ -267,8 +267,8 @@ int
         attempt_exec
         ("CREATE TABLE tsk_fs_info (obj_id INTEGER PRIMARY KEY, img_offset INTEGER NOT NULL, fs_type INTEGER NOT NULL, block_size INTEGER NOT NULL, block_count INTEGER NOT NULL, root_inum INTEGER NOT NULL, first_inum INTEGER NOT NULL, last_inum INTEGER NOT NULL, display_name TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating tsk_fs_info table: %s\n")
-		||
-		attempt_exec
+        ||
+        attempt_exec
         ("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, device_id TEXT NOT NULL,  time_zone TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating data_source_info table: %s\n")
         ||
@@ -896,7 +896,7 @@ int
         "VALUES ("
         "%" PRId64 ",%" PRId64 ","
         "%" PRId64 "," 
-		"%d,"
+        "%d,"
         "%d,%d,'%q',"
         "%" PRIuINUM ",%d,"
         "%d,%d,%d,%d,"
@@ -905,7 +905,7 @@ int
         "%d,%d,%d,%Q,%d,"
         "'%q')",
         fsObjId, objId,
-		dataSourceObjId,
+        dataSourceObjId,
         TSK_DB_FILES_TYPE_FS,
         type, idx, name,
         fs_file->name->meta_addr, fs_file->name->meta_seq, 
@@ -1022,7 +1022,7 @@ int
 * @returns 1 on error
 */
 int TskDbSqlite::addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLayoutRange) {
-	return addFileLayoutRange(fileLayoutRange.fileObjId, fileLayoutRange.byteStart, fileLayoutRange.byteLen, fileLayoutRange.sequence);
+    return addFileLayoutRange(fileLayoutRange.fileObjId, fileLayoutRange.byteStart, fileLayoutRange.byteLen, fileLayoutRange.sequence);
 }
 
 
@@ -1055,11 +1055,11 @@ TSK_RETVAL_ENUM
         fsObjIdStrPtr = fsObjIdStr;
     }
 
-	zSQL = sqlite3_mprintf(
-		"INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
+    zSQL = sqlite3_mprintf(
+        "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
         "VALUES ("
         "1, %Q, %lld,"
-		"%" PRId64 ","
+        "%" PRId64 ","
         "%d,"
         "NULL,NULL,'%q',"
         "NULL,NULL,"
@@ -1067,7 +1067,7 @@ TSK_RETVAL_ENUM
         "%" PRIuOFF ","
         "NULL,NULL,NULL,NULL,NULL,NULL,NULL)",
         fsObjIdStrPtr, objId,
-		dataSourceObjId,
+        dataSourceObjId,
         dbFileType,
         fileName,
         TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG,
@@ -1214,7 +1214,7 @@ TSK_RETVAL_ENUM TskDbSqlite::addVirtualDir(const int64_t fsObjId, const int64_t 
 
     if (addObject(TSK_DB_OBJECT_TYPE_FILE, parentDirId, objId))
         return TSK_ERR;
-	zSQL = sqlite3_mprintf(
+    zSQL = sqlite3_mprintf(
         "INSERT INTO tsk_files (attr_type, attr_id, has_layout, fs_obj_id, obj_id, data_source_obj_id, type, attr_type, "
         "attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, "
         "crtime, ctime, atime, mtime, mode, gid, uid, known, parent_path) "
@@ -1223,7 +1223,7 @@ TSK_RETVAL_ENUM TskDbSqlite::addVirtualDir(const int64_t fsObjId, const int64_t 
         "NULL,"
         "%lld,"
         "%lld,"
-		"%" PRId64 ","
+        "%" PRId64 ","
         "%d,"
         "NULL,NULL,'%q',"
         "NULL,NULL,"
@@ -1232,7 +1232,7 @@ TSK_RETVAL_ENUM TskDbSqlite::addVirtualDir(const int64_t fsObjId, const int64_t 
         "NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'/')",
         fsObjId,
         objId,
-		dataSourceObjId,
+        dataSourceObjId,
         TSK_DB_FILES_TYPE_VIRTUAL_DIR,
         name,
         TSK_FS_NAME_TYPE_DIR, TSK_FS_META_TYPE_DIR,

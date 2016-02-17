@@ -505,7 +505,7 @@ int TskDbPostgreSQL::initialize() {
         ("CREATE TABLE tsk_vs_info (obj_id BIGSERIAL PRIMARY KEY, vs_type INTEGER NOT NULL, img_offset BIGINT NOT NULL, block_size BIGINT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating tsk_vs_info table: %s\n")
         ||
-		attempt_exec
+        attempt_exec
         ("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, device_id TEXT NOT NULL, time_zone TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating data_source_info table: %s\n")
         ||
@@ -861,7 +861,7 @@ int TskDbPostgreSQL::addFsFile(TSK_FS_FILE * fs_file,
 */
 int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr, const char *path,
     const unsigned char *const md5, const TSK_DB_FILES_KNOWN_ENUM known, int64_t fsObjId, int64_t parObjId, int64_t & objId, 
-	int64_t dataSourceObjId)
+    int64_t dataSourceObjId)
 {
     time_t mtime = 0;
     time_t crtime = 0;
@@ -973,7 +973,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         "VALUES ("
         "%" PRId64 ",%" PRId64 ","
         "%" PRId64 ","
-		"%d,"
+        "%d,"
         "%d,%d,%s,"
         "%" PRIuINUM ",%d,"
         "%d,%d,%d,%d,"
@@ -982,7 +982,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         "%d,%d,%d,%s,%d,"
         "%s)",
         fsObjId, objId, 
-		dataSourceObjId,
+        dataSourceObjId,
         TSK_DB_FILES_TYPE_FS,
         type, idx, name_sql,
         fs_file->name->meta_addr, fs_file->name->meta_seq, 
@@ -1266,7 +1266,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addVirtualDir(const int64_t fsObjId, const int6
         PQfreemem(name_sql);
         return TSK_ERR;
     }
-	snprintf(zSQL, 2048, "INSERT INTO tsk_files (attr_type, attr_id, has_layout, fs_obj_id, obj_id, data_source_obj_id type, "
+    snprintf(zSQL, 2048, "INSERT INTO tsk_files (attr_type, attr_id, has_layout, fs_obj_id, obj_id, data_source_obj_id type, "
         "name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, "
         "crtime, ctime, atime, mtime, mode, gid, uid, known, parent_path) "
         "VALUES ("
@@ -1275,7 +1275,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addVirtualDir(const int64_t fsObjId, const int6
         "%lld,"
         "%lld,"
         "%" PRId64 ","
-		"%d,"
+        "%d,"
         "%s,"
         "NULL,NULL,"
         "%d,%d,%d,%d,"
@@ -1283,7 +1283,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addVirtualDir(const int64_t fsObjId, const int6
         "NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'/')",
         fsObjId,
         objId,
-		dataSourceObjId,
+        dataSourceObjId,
         TSK_DB_FILES_TYPE_VIRTUAL_DIR,
         name_sql,
         TSK_FS_NAME_TYPE_DIR, TSK_FS_META_TYPE_DIR,
@@ -1515,7 +1515,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addLayoutFileInfo(const int64_t parObjId, const
     snprintf(zSQL, 2048, "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
         "VALUES ("
         "1, %s, %lld,"
-		"%" PRId64 ","
+        "%" PRId64 ","
         "%d,"
         "NULL,NULL,%s,"
         "NULL,NULL,"
@@ -1524,7 +1524,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addLayoutFileInfo(const int64_t parObjId, const
         "NULL,NULL,NULL,NULL,NULL,NULL,NULL)",
         fsObjIdStrPtr, objId,
         dataSourceObjId,
-		dbFileType,
+        dbFileType,
         name_sql,
         TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG,
         TSK_FS_NAME_FLAG_UNALLOC, TSK_FS_META_FLAG_UNALLOC, size);
@@ -1859,17 +1859,17 @@ int TskDbPostgreSQL::releaseSavepoint(const char *name)
 */
 bool TskDbPostgreSQL::isDbOpen()
 {
-	if (conn) {
-		PGconn *serverConn = connectToDatabase(&m_dBName[0]);
-		if (!serverConn) {
-			return false;
-		}
-		PQfinish(serverConn);
-		return true;
-	}
-	else {
-		return false;
-	}
+    if (conn) {
+        PGconn *serverConn = connectToDatabase(&m_dBName[0]);
+        if (!serverConn) {
+            return false;
+        }
+        PQfinish(serverConn);
+        return true;
+    }
+    else {
+        return false;
+    }
 }
 
 /** 
