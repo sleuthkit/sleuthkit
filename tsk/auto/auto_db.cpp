@@ -438,7 +438,6 @@ uint8_t
     }
 
     m_imgTransactionOpen = true;
-	int64_t dataSourceObjId=-1;
     if (openImage(numImg, imagePaths, imgType, sSize, deviceId)) {
         tsk_error_set_errstr2("TskAutoDb::startAddImage");
         registerError();
@@ -469,7 +468,6 @@ uint8_t
     TskAutoDb::startAddImage(int numImg, const char *const imagePaths[],
     TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* deviceId)
 {
-	 int64_t dataSourceObjId=-1;
     if (tsk_verbose) 
         tsk_fprintf(stderr, "TskAutoDb::startAddImage_utf8: Starting add image process\n");
    
