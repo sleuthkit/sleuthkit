@@ -113,16 +113,15 @@ void TskAutoDb::setAddUnallocSpace(bool addUnallocSpace, int64_t chunkSize)
  * @param a_images Array of paths to the image parts
  * @param a_type Image type
  * @param a_ssize Size of device sector in bytes (or 0 for default)
- * @param dataSourceObjId The object ID for the data source
  * @param a_deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID).
  * @return 0 for success, 1 for failure
  */
 uint8_t
     TskAutoDb::openImageUtf8(int a_num, const char *const a_images[],
-    TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize, int64_t & dataSourceObjId, const char* a_deviceId)
+    TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize, const char* a_deviceId)
 {
     uint8_t retval =
-        TskAuto::openImageUtf8(a_num, a_images, a_type, a_ssize, dataSourceObjId);
+        TskAuto::openImageUtf8(a_num, a_images, a_type, a_ssize);
     if (retval != 0) {
         return retval;
     }
@@ -130,7 +129,6 @@ uint8_t
     if (addImageDetails(a_deviceId, a_images, a_num)) {
         return 1;
     }
-	dataSourceObjId = m_curImgId;
     return 0;
 }
 
@@ -141,19 +139,18 @@ uint8_t
  * @param a_images Array of paths to the image parts
  * @param a_type Image type
  * @param a_ssize Size of device sector in bytes (or 0 for default)
- * @param dataSourceObjId The object ID for the data source
  * @param a_deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID).
  * @return 0 for success, 1 for failure
  */
 uint8_t
     TskAutoDb::openImage(int a_num, const TSK_TCHAR * const a_images[],
-    TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize, int64_t & dataSourceObjId, const char* a_deviceId)
+    TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize, const char* a_deviceId)
 {
 
 // make name of database
 #ifdef TSK_WIN32
 
-    uint8_t retval = TskAuto::openImage(a_num, a_images, a_type, a_ssize, dataSourceObjId);
+    uint8_t retval = TskAuto::openImage(a_num, a_images, a_type, a_ssize);
 
     if (retval != 0) {
         return retval;
@@ -200,10 +197,10 @@ uint8_t
         free(img_ptrs[i]);
     }
     free(img_ptrs);
-	dataSourceObjId = m_curImgId;
+	
     return 0;
 #else
-    return openImageUtf8(a_num, a_images, a_type, a_ssize, dataSourceObjId, a_deviceId);
+    return openImageUtf8(a_num, a_images, a_type, a_ssize, a_deviceId);
 #endif
 }
 
@@ -339,7 +336,8 @@ TSK_RETVAL_ENUM
     const unsigned char *const md5,
     const TSK_DB_FILES_KNOWN_ENUM known)
 {
-    if (m_db->addFsFile(fs_file, fs_attr, path, md5, known, m_curFsId, m_curFileId, m_curImgId)) {
+    if (m_db->addFsFile(fs_file, fs_attr, path, md5, known, m_curFsId, m_curFileId,
+			m_curImgId)) {
         registerError();
         return TSK_ERR;
     }
@@ -441,8 +439,7 @@ uint8_t
     }
 
     m_imgTransactionOpen = true;
-	int64_t dataSourceObjId=-1;
-    if (openImage(numImg, imagePaths, imgType, sSize, dataSourceObjId, deviceId)) {
+    if (openImage(numImg, imagePaths, imgType, sSize, deviceId)) {
         tsk_error_set_errstr2("TskAutoDb::startAddImage");
         registerError();
         if (revertAddImage())
@@ -472,7 +469,6 @@ uint8_t
     TskAutoDb::startAddImage(int numImg, const char *const imagePaths[],
     TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* deviceId)
 {
-	 int64_t dataSourceObjId=-1;
     if (tsk_verbose) 
         tsk_fprintf(stderr, "TskAutoDb::startAddImage_utf8: Starting add image process\n");
    
@@ -502,7 +498,7 @@ uint8_t
 
     m_imgTransactionOpen = true;
 
-    if (openImageUtf8(numImg, imagePaths, imgType, sSize, dataSourceObjId, deviceId)) {
+    if (openImageUtf8(numImg, imagePaths, imgType, sSize, deviceId)) {
         tsk_error_set_errstr2("TskAutoDb::startAddImage");
         registerError();
         if (revertAddImage())
