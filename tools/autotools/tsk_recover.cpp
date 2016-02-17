@@ -489,8 +489,8 @@ main(int argc, char **argv1)
     TskRecover tskRecover(argv[argc-1]);
 
     tskRecover.setFileFilterFlags(walkflag);    
-	
-	if (tskRecover.openImage(argc - OPTIND - 1, &argv[OPTIND], imgtype, ssize)) {
+    if (tskRecover.openImage(argc - OPTIND - 1, &argv[OPTIND], imgtype,
+            ssize)) {
         tsk_error_print(stderr);
         exit(1);
     }
