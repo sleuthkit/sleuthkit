@@ -336,7 +336,8 @@ TSK_RETVAL_ENUM
     const unsigned char *const md5,
     const TSK_DB_FILES_KNOWN_ENUM known)
 {
-    if (m_db->addFsFile(fs_file, fs_attr, path, md5, known, m_curFsId, m_curFileId, m_curImgId)) {
+    if (m_db->addFsFile(fs_file, fs_attr, path, md5, known, m_curFsId, m_curFileId,
+			m_curImgId)) {
         registerError();
         return TSK_ERR;
     }
