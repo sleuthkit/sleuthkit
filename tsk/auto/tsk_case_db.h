@@ -49,12 +49,12 @@ class TskAutoDb:public TskAuto {
         const char *path);
     virtual void createBlockMap(bool flag);
     const std::string getCurDir();
-	
-	/**
-	* Check if we can talk to the database.
-	* Returns true if the database is reachable with current credentials, false otherwise.
-	*/
-	bool isDbOpen();
+    
+    /**
+    * Check if we can talk to the database.
+    * Returns true if the database is reachable with current credentials, false otherwise.
+    */
+    bool isDbOpen();
 
     /**
      * Calculate hash values of files and add them to database.
@@ -78,12 +78,12 @@ class TskAutoDb:public TskAuto {
      */
     virtual void setAddUnallocSpace(bool addUnallocSpace);
 
-	/**
+    /**
      * When enabled, records for unallocated file system space will be added to the database. Default value is false.
      * @param addUnallocSpace If true, create records for contigious unallocated file system sectors.
-	 * @param chunkSize the number of bytes to group unallocated data into. A value of 0 will create
-	 * one large chunk and group only on volume boundaries. A value of -1 will group each consecutive
-	 * chunk.
+     * @param chunkSize the number of bytes to group unallocated data into. A value of 0 will create
+     * one large chunk and group only on volume boundaries. A value of -1 will group each consecutive
+     * chunk.
      */
     virtual void setAddUnallocSpace(bool addUnallocSpace, int64_t chunkSize);
 
@@ -124,7 +124,7 @@ class TskAutoDb:public TskAuto {
     TSK_HDB_INFO * m_knownBadDb;
     bool m_noFatFsOrphans;
     bool m_addUnallocSpace;
-	int64_t m_chunkSize;
+    int64_t m_chunkSize;
     bool m_foundStructure;  ///< Set to true when we find either a volume or file system
     bool m_attributeAdded; ///< Set to true when an attribute was added by processAttributes
 
@@ -139,10 +139,10 @@ class TskAutoDb:public TskAuto {
         const TskAutoDb & tskAutoDb;
         const TSK_FS_INFO & fsInfo;
         const int64_t fsObjId;
-		vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;																																										
+        vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;																																										
         TSK_DADDR_T curRangeStart;
-		int64_t size;
-		const int64_t chunkSize;
+        int64_t size;
+        const int64_t chunkSize;
         TSK_DADDR_T prevBlock;
         bool isStart;
         uint32_t nextSequenceNo;
