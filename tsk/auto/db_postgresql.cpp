@@ -514,8 +514,8 @@ int TskDbPostgreSQL::initialize() {
         "Error creating tsk_fs_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_files (obj_id BIGSERIAL PRIMARY KEY, fs_obj_id BIGINT, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr BIGINT, meta_seq BIGINT, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size BIGINT, ctime BIGINT, crtime BIGINT, atime BIGINT, mtime BIGINT, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, parent_path TEXT, mime_type TEXT, "
-        "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id));",
+        ("CREATE TABLE tsk_files (obj_id BIGSERIAL PRIMARY KEY, fs_obj_id BIGINT, data_source_obj_id BIGINT NOT NULL, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr BIGINT, meta_seq BIGINT, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size BIGINT, ctime BIGINT, crtime BIGINT, atime BIGINT, mtime BIGINT, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, parent_path TEXT, mime_type TEXT, "
+        "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id), FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id));",
         "Error creating tsk_files table: %s\n")
         ||
         attempt_exec("CREATE TABLE tsk_files_path (obj_id BIGSERIAL PRIMARY KEY, path TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id))",
@@ -821,12 +821,13 @@ int TskDbPostgreSQL::addFsInfo(const TSK_FS_INFO * fs_info, int64_t parObjId, in
 * @param known Status regarding if it was found in hash database or not
 * @param fsObjId File system object of its file system
 * @param objId ID that was assigned to it from the objects table
+* @param dataSourceObjId The object Id of the data source
 * @returns 1 on error and 0 on success
 */
 int TskDbPostgreSQL::addFsFile(TSK_FS_FILE * fs_file,
     const TSK_FS_ATTR * fs_attr, const char *path,
     const unsigned char *const md5, const TSK_DB_FILES_KNOWN_ENUM known,
-    int64_t fsObjId, int64_t & objId)
+    int64_t fsObjId, int64_t & objId, int64_t dataSourceObjId)
 {
     int64_t parObjId = 0;
 
@@ -849,16 +850,18 @@ int TskDbPostgreSQL::addFsFile(TSK_FS_FILE * fs_file,
         }    
     }
 
-    return addFile(fs_file, fs_attr, path, md5, known, fsObjId, parObjId, objId);
+    return addFile(fs_file, fs_attr, path, md5, known, fsObjId, parObjId, objId, dataSourceObjId);
 }
 
 /**
 * Add file data to the file table
 * @param md5 binary value of MD5 (i.e. 16 bytes) or NULL
+* @param dataSourceObjId The object Id of the data source
 * Return 0 on success, 1 on error.
 */
 int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr, const char *path,
-    const unsigned char *const md5, const TSK_DB_FILES_KNOWN_ENUM known, int64_t fsObjId, int64_t parObjId, int64_t & objId)
+    const unsigned char *const md5, const TSK_DB_FILES_KNOWN_ENUM known, int64_t fsObjId, int64_t parObjId, int64_t & objId, 
+	int64_t dataSourceObjId)
 {
     time_t mtime = 0;
     time_t crtime = 0;
@@ -966,10 +969,11 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
     }
 
     char zSQL[2048];
-    snprintf(zSQL, 2048, "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
+    snprintf(zSQL, 2048, "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
         "VALUES ("
         "%" PRId64 ",%" PRId64 ","
-        "%d,"
+        "%" PRId64 ","
+		"%d,"
         "%d,%d,%s,"
         "%" PRIuINUM ",%d,"
         "%d,%d,%d,%d,"
@@ -977,7 +981,8 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         "%llu,%llu,%llu,%llu,"
         "%d,%d,%d,%s,%d,"
         "%s)",
-        fsObjId, objId,
+        fsObjId, objId, 
+		dataSourceObjId,
         TSK_DB_FILES_TYPE_FS,
         type, idx, name_sql,
         fs_file->name->meta_addr, fs_file->name->meta_seq, 
@@ -1242,9 +1247,10 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getObjectInfo(int64_t objId, TSK_DB_OBJECT & ob
 * @param parentDirId (in) parent dir object id of the new directory: either another virtual directory or root fs directory
 * @param name name (int) of the new virtual directory
 * @param objId (out) object id of the created virtual directory object
+* @param dataSourceObjId The object Id of the data source
 * @returns TSK_ERR on error or TSK_OK on success
 */
-TSK_RETVAL_ENUM TskDbPostgreSQL::addVirtualDir(const int64_t fsObjId, const int64_t parentDirId, const char * const name, int64_t & objId) {
+TSK_RETVAL_ENUM TskDbPostgreSQL::addVirtualDir(const int64_t fsObjId, const int64_t parentDirId, const char * const name, int64_t & objId, int64_t dataSourceObjId) {
     char zSQL[2048];
 
     if (addObject(TSK_DB_OBJECT_TYPE_FILE, parentDirId, objId))
@@ -1260,8 +1266,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addVirtualDir(const int64_t fsObjId, const int6
         PQfreemem(name_sql);
         return TSK_ERR;
     }
-
-    snprintf(zSQL, 2048, "INSERT INTO tsk_files (attr_type, attr_id, has_layout, fs_obj_id, obj_id, type, "
+	snprintf(zSQL, 2048, "INSERT INTO tsk_files (attr_type, attr_id, has_layout, fs_obj_id, obj_id, data_source_obj_id type, "
         "name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, "
         "crtime, ctime, atime, mtime, mode, gid, uid, known, parent_path) "
         "VALUES ("
@@ -1269,7 +1274,8 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addVirtualDir(const int64_t fsObjId, const int6
         "NULL,"
         "%lld,"
         "%lld,"
-        "%d,"
+        "%" PRId64 ","
+		"%d,"
         "%s,"
         "NULL,NULL,"
         "%d,%d,%d,%d,"
@@ -1277,6 +1283,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addVirtualDir(const int64_t fsObjId, const int6
         "NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'/')",
         fsObjId,
         objId,
+		dataSourceObjId,
         TSK_DB_FILES_TYPE_VIRTUAL_DIR,
         name_sql,
         TSK_FS_NAME_TYPE_DIR, TSK_FS_META_TYPE_DIR,
@@ -1298,9 +1305,10 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addVirtualDir(const int64_t fsObjId, const int6
 * The dir has is associated with its root dir parent for the fs.
 * @param fsObjId (in) fs id to find root dir for and create $Unalloc dir for
 * @param objId (out) object id of the $Unalloc dir created
+* @param dataSourceObjId The object Id of the data source
 * @returns TSK_ERR on error or TSK_OK on success
 */
-TSK_RETVAL_ENUM TskDbPostgreSQL::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & objId) {
+TSK_RETVAL_ENUM TskDbPostgreSQL::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & objId, int64_t dataSourceObjId) {
 
     const char * const unallocDirName = "$Unalloc";
 
@@ -1310,7 +1318,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addUnallocFsBlockFilesParent(const int64_t fsOb
         return TSK_ERR;
     }
 
-    return addVirtualDir(fsObjId, rootDirObjInfo.objId, unallocDirName, objId);
+    return addVirtualDir(fsObjId, rootDirObjInfo.objId, unallocDirName, objId, dataSourceObjId);
 }
 
 //internal function object to check for range overlap
@@ -1353,10 +1361,11 @@ typedef struct _checkFileLayoutRangeOverlap{
 * @param size Number of bytes in file
 * @param ranges vector containing one or more TSK_DB_FILE_LAYOUT_RANGE layout ranges (in)
 * @param objId object id of the file object created (output)
+* @param dataSourceObjId The object ID for the data source
 * @returns TSK_OK on success or TSK_ERR on error.
 */
-TSK_RETVAL_ENUM TskDbPostgreSQL::addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
-    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_UNALLOC_BLOCKS, parentObjId, fsObjId, size, ranges, objId);
+TSK_RETVAL_ENUM TskDbPostgreSQL::addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId, int64_t dataSourceObjId) {
+    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_UNALLOC_BLOCKS, parentObjId, fsObjId, size, ranges, objId, dataSourceObjId);
 }
 
 /**
@@ -1367,10 +1376,11 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addUnallocBlockFile(const int64_t parentObjId, 
 * @param size Number of bytes in file
 * @param ranges vector containing one or more TSK_DB_FILE_LAYOUT_RANGE layout ranges (in)
 * @param objId object id of the file object created (output)
+* @param dataSourceObjId The object ID for the data source
 * @returns TSK_OK on success or TSK_ERR on error.
 */
-TSK_RETVAL_ENUM TskDbPostgreSQL::addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
-    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_UNUSED_BLOCKS, parentObjId, fsObjId, size, ranges, objId);
+TSK_RETVAL_ENUM TskDbPostgreSQL::addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId, int64_t dataSourceObjId) {
+    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_UNUSED_BLOCKS, parentObjId, fsObjId, size, ranges, objId, dataSourceObjId);
 }
 
 /**
@@ -1381,18 +1391,20 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addUnusedBlockFile(const int64_t parentObjId, c
 * @param size Number of bytes in file
 * @param ranges vector containing one or more TSK_DB_FILE_LAYOUT_RANGE layout ranges (in)
 * @param objId object id of the file object created (output)
+* @param dataSourceObjId The object ID for the data source
 * @returns TSK_OK on success or TSK_ERR on error.
 */
-TSK_RETVAL_ENUM TskDbPostgreSQL::addCarvedFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
-    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_CARVED, parentObjId, fsObjId, size, ranges, objId);
+TSK_RETVAL_ENUM TskDbPostgreSQL::addCarvedFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId, int64_t dataSourceObjId) {
+    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_CARVED, parentObjId, fsObjId, size, ranges, objId, dataSourceObjId);
 }
 
 /**
 * Internal helper method to add unalloc, unused and carved files with layout ranges to db
 * Generates file_name and populates tsk_files, tsk_objects and tsk_file_layout tables
+* @param dataSourceObjId The object Id of the data source
 * @returns TSK_ERR on error or TSK_OK on success
 */
-TSK_RETVAL_ENUM TskDbPostgreSQL::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
+TSK_RETVAL_ENUM TskDbPostgreSQL::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId, int64_t dataSourceObjId) {
     const size_t numRanges = ranges.size();
 
     if (numRanges < 1) {
@@ -1444,7 +1456,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_
     fileNameSs << "_" << (ranges[numRanges-1].byteStart + ranges[numRanges-1].byteLen);
 
     //insert into tsk files and tsk objects
-    if (addLayoutFileInfo(parentObjId, fsObjId, dbFileType, fileNameSs.str().c_str(), size, objId) ) {
+    if (addLayoutFileInfo(parentObjId, fsObjId, dbFileType, fileNameSs.str().c_str(), size, objId, dataSourceObjId) ) {
         return TSK_ERR;
     }
 
@@ -1469,10 +1481,10 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_
 * @param fileName file name for the layout file
 * @param size Number of bytes in file
 * @param objId layout file Id (output)
+* @param dataSourceObjId The object Id of the data source
 * @returns TSK_OK on success or TSK_ERR on error.
 */
-TSK_RETVAL_ENUM TskDbPostgreSQL::addLayoutFileInfo(const int64_t parObjId, const int64_t fsObjId, const TSK_DB_FILES_TYPE_ENUM dbFileType, const char *fileName,
-    const uint64_t size, int64_t & objId)
+TSK_RETVAL_ENUM TskDbPostgreSQL::addLayoutFileInfo(const int64_t parObjId, const int64_t fsObjId, const TSK_DB_FILES_TYPE_ENUM dbFileType, const char *fileName, const uint64_t size, int64_t & objId, int64_t dataSourceObjId)
 {
     char zSQL[2048];
 
@@ -1500,10 +1512,10 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addLayoutFileInfo(const int64_t parObjId, const
         PQfreemem(name_sql);
         return TSK_ERR;
     }
-
-    snprintf(zSQL, 2048, "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
+    snprintf(zSQL, 2048, "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
         "VALUES ("
         "1, %s, %lld,"
+		"%" PRId64 ","
         "%d,"
         "NULL,NULL,%s,"
         "NULL,NULL,"
@@ -1511,7 +1523,8 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addLayoutFileInfo(const int64_t parObjId, const
         "%" PRIuOFF ","
         "NULL,NULL,NULL,NULL,NULL,NULL,NULL)",
         fsObjIdStrPtr, objId,
-        dbFileType,
+        dataSourceObjId,
+		dbFileType,
         name_sql,
         TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG,
         TSK_FS_NAME_FLAG_UNALLOC, TSK_FS_META_FLAG_UNALLOC, size);
@@ -1893,7 +1906,7 @@ bool TskDbPostgreSQL::inTransaction() {
 }
 
 
-/* ELTODO: These functions will be needed when functionality to get PostgreSQL quesries in binary format is added.
+/* ELTODO: These functions will be needed when functionality to get PostgreSQL queries in binary format is added.
 // PostgreSQL returns binary results in network byte order so then need to be converted to local byte order.
 int64_t ntoh64(int64_t *input)
 {
@@ -1928,114 +1941,6 @@ hton_any(T &input)
     return output;
 }*/
 
-// ELTODO: delete this test code
-/*
-void TskDbPostgreSQL::test()
-{
-    TSK_VS_INFO vsInfo;
-    vsInfo.tag = 20;
-    vsInfo.img_info = (TSK_IMG_INFO *)21;
-    vsInfo.block_size = 22;
-    vsInfo.vstype = TSK_VS_TYPE_BSD;        ///< Type of volume system / media management
-    vsInfo.offset = 23;     ///< Byte offset where VS starts in disk image
-    vsInfo.endian = TSK_BIG_ENDIAN; ///< Endian ordering of data
-    vsInfo.part_list = (TSK_VS_PART_INFO *)24;    ///< Linked list of partitions
-    vsInfo.part_count = 25;  ///< number of partitions 
-
-    int64_t objId;
-    const std::string timezone = "America/New York";
-    const std::string md5 = "";
-    int error = addImageInfo(1, 512, objId, timezone, 2097152, md5);
-
-    int max = (unsigned int)-1;
-    char largeNum[32] = "44294967296";
-    int64_t largeNumInt = atoll(largeNum);
-    __int64 largeNumInt2 = _atoi64(largeNum);
-    const std::string timezone2 = "That's America/New York";
-    const std::string md52 = "C:\\Temp";
-    error = addImageInfo(1, 512, objId, timezone2, 2097152, md52);
-
-
-    //    int64_t parObjId = 2;
-    int64_t parObjId = 444294967296;
-
-    error = addVsInfo(&vsInfo, parObjId, objId);
-    TSK_DB_VS_INFO vsInfoRes;
-    getVsInfo(1, vsInfoRes);
-
-    TSK_DB_OBJECT objectInfo;
-    TSK_RETVAL_ENUM ret = getObjectInfo(objId, objectInfo);
-
-    // insert files
-    addObject(TSK_DB_OBJECT_TYPE_VS, 2, objId);    
-    char zSQL[2048];
-    snprintf(zSQL, 2048, "INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, root_inum, first_inum, last_inum) VALUES (2,0,2,512,4096,2,2,65430)");
-    if (attempt_exec(zSQL, "TskDbPostgreSQL::INSERT INTO tsk_fs_info\n")) {
-        return;
-    }
-
-    //Ln 859: addObject() - parObjId=2, type=TSK_DB_OBJECT_TYPE_FILE. objId = 3;
-    addObject(TSK_DB_OBJECT_TYPE_VS, 2, objId);
-    snprintf(zSQL, 2048, "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) VALUES (2,3,0,1,0,'',2,0,3,2,1,5,16384,0,0,0,0,0,0,0,NULL,0,'/')");
-    if (attempt_exec(zSQL, "TskDbPostgreSQL::INSERT INTO tsk_files\n")) {
-        return;
-    }
-
-    //Ln 859: addObject() - parObjId=3, type=TSK_DB_OBJECT_TYPE_FILE. objId = 4;
-    addObject(TSK_DB_OBJECT_TYPE_VS, 3, objId);
-    snprintf(zSQL, 2048, "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) VALUES (2,4,0,1,0,'test.txt',4,0,5,1,1,1,6,1181684630,0,1181620800,1181684630,511,0,0,NULL,0,'/')");
-    if (attempt_exec(zSQL, "TskDbPostgreSQL::INSERT INTO tsk_files\n")) {
-        return;
-    }
-    //Ln 859: addObject() - parObjId=3, type=TSK_DB_OBJECT_TYPE_FILE. objId = 5;
-    addObject(TSK_DB_OBJECT_TYPE_VS, 3, objId);
-    snprintf(zSQL, 2048, "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) VALUES (2,5,0,1,0,'$MBR',65427,0,10,10,1,5,512,0,0,0,0,0,0,0,NULL,0,'/')");
-    if (attempt_exec(zSQL, "TskDbPostgreSQL::INSERT INTO tsk_files\n")) {
-        return;
-    }
-
-    for (int indx = 3; indx <=5; indx++) {
-        snprintf(zSQL, 1024, "SELECT fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path FROM tsk_files WHERE obj_id = %d", indx);
-        PGresult *res = PQexec(conn, zSQL);
-        if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            char * str = PQerrorMessage(conn);
-            tsk_error_set_errstr("TskDbPostgreSQL::getVsInfo: Error selecting object by objid: %s (result code %d)\n", PQerrorMessage(conn));
-            PQclear(res);
-            continue;
-        }
-
-        int numResults = PQntuples(res);
-        int fs_obj_id = atoi(PQgetvalue(res, 0, 0));         
-        int obj_id = atoi(PQgetvalue(res, 0, 1)); 
-        int type  = atoi(PQgetvalue(res, 0, 2));      
-        int attr_type = atoi(PQgetvalue(res, 0, 3));  
-        int attr_id = atoi(PQgetvalue(res, 0, 4));  
-        char* name = PQgetvalue(res, 0, 5); 
-        int meta_addr = atoi(PQgetvalue(res, 0, 6)); 
-        int meta_seq = atoi(PQgetvalue(res, 0, 7)); 
-        int dir_type  = atoi(PQgetvalue(res, 0, 8)); 
-        int meta_type = atoi(PQgetvalue(res, 0, 9)); 
-        int dir_flags = atoi(PQgetvalue(res, 0, 10)); 
-        int meta_flags = atoi(PQgetvalue(res, 0, 11));
-        int size = atoi(PQgetvalue(res, 0, 12)); 
-        int crtime = atoi(PQgetvalue(res, 0, 13));
-        int ctime = atoi(PQgetvalue(res, 0, 14)); 
-        int atime = atoi(PQgetvalue(res, 0, 15));         
-        int mtime = atoi(PQgetvalue(res, 0, 16)); 
-        int mode = atoi(PQgetvalue(res, 0, 17)); 
-        int uid = atoi(PQgetvalue(res, 0, 18));      
-        int gid = atoi(PQgetvalue(res, 0, 19)); 
-        char* md5 = PQgetvalue(res, 0, 20); 
-        int known = atoi(PQgetvalue(res, 0, 21)); 
-        char* parent_path = PQgetvalue(res, 0, 22);
-
-        //cleanup
-        PQclear(res);    
-    }
-
-};*/
 
 
 #endif // TSK_WIN32

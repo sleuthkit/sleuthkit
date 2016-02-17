@@ -197,7 +197,7 @@ uint8_t
         free(img_ptrs[i]);
     }
     free(img_ptrs);
-
+	
     return 0;
 #else
     return openImageUtf8(a_num, a_images, a_type, a_ssize, a_deviceId);
@@ -218,7 +218,7 @@ TskAutoDb::addImageDetails(const char* deviceId, const char *const imgPaths[], i
    string md5 = "";
 #if HAVE_LIBEWF 
    if (m_img_info->itype == TSK_IMG_TYPE_EWF_EWF) {
-     // @@@ This shoudl really probably be inside of a tsk_img_ method
+     // @@@ This should really probably be inside of a tsk_img_ method
        IMG_EWF_INFO *ewf_info = (IMG_EWF_INFO *)m_img_info;
        if (ewf_info->md5hash_isset) {
            md5 = ewf_info->md5hash;
@@ -336,8 +336,8 @@ TSK_RETVAL_ENUM
     const unsigned char *const md5,
     const TSK_DB_FILES_KNOWN_ENUM known)
 {
-    if (m_db->addFsFile(fs_file, fs_attr, path, md5, known, m_curFsId,
-            m_curFileId)) {
+    if (m_db->addFsFile(fs_file, fs_attr, path, md5, known, m_curFsId, m_curFileId,
+			m_curImgId)) {
         registerError();
         return TSK_ERR;
     }
@@ -439,7 +439,6 @@ uint8_t
     }
 
     m_imgTransactionOpen = true;
-
     if (openImage(numImg, imagePaths, imgType, sSize, deviceId)) {
         tsk_error_set_errstr2("TskAutoDb::startAddImage");
         registerError();
@@ -448,7 +447,7 @@ uint8_t
         return 1;
     }
     
-    return addFilesInImgToDb();
+	return addFilesInImgToDb();
 }
 
 
@@ -470,7 +469,7 @@ uint8_t
     TskAutoDb::startAddImage(int numImg, const char *const imagePaths[],
     TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* deviceId)
 {
-    if (tsk_verbose)
+    if (tsk_verbose) 
         tsk_fprintf(stderr, "TskAutoDb::startAddImage_utf8: Starting add image process\n");
    
 
@@ -601,8 +600,8 @@ TskAutoDb::setTz(string tzone)
 TSK_RETVAL_ENUM
 TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
 {
-
-    // Check if the process has been canceled
+    
+	// Check if the process has been canceled
      if (m_stopped) {
         if (tsk_verbose)
             tsk_fprintf(stderr, "TskAutoDb::processFile: Stop request detected\n");
@@ -634,7 +633,7 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
 
     // insert a general row if we didn't add a specific attribute one
     if ((retval == TSK_OK) && (m_attributeAdded == false)) {
-        retval = insertFileData(fs_file, NULL, path, NULL, TSK_DB_FILES_KNOWN_UNKNOWN);
+		retval = insertFileData(fs_file, NULL, path, NULL, TSK_DB_FILES_KNOWN_UNKNOWN);
     }
     
     // reset the file id
@@ -652,7 +651,7 @@ TSK_RETVAL_ENUM
 TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
     const TSK_FS_ATTR * fs_attr, const char *path)
 {
-    // add the file metadata for the default attribute type
+	// add the file metadata for the default attribute type
     if (isDefaultType(fs_file, fs_attr)) {
 
         // calculate the MD5 hash if the attribute is a file
@@ -692,7 +691,7 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
             }
         }
 
-        if (insertFileData(fs_attr->fs_file, fs_attr, path, md5, file_known) == TSK_ERR) {
+		if (insertFileData(fs_attr->fs_file, fs_attr, path, md5, file_known) == TSK_ERR) {
             registerError();
             return TSK_OK;
         }
@@ -715,7 +714,7 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
 
                 // @@@ We probaly want to keep on going here
                 if (m_db->addFileLayoutRange(m_curFileId,
-                        run->addr * block_size, run->len * block_size, sequence++)) {
+					run->addr * block_size, run->len * block_size, sequence++)) {
                     registerError();
                     return TSK_OK;
                 }
@@ -819,12 +818,12 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
 		(unallocBlockWlkTrack->size < unallocBlockWlkTrack->chunkSize))) {
 		return TSK_WALK_CONT;
 	}
-
+	
 	// at this point we are either chunking and have reached the chunk limit
 	// or we're not chunking. Either way we now add what we've got to the DB
 	int64_t fileObjId = 0;
 	if (unallocBlockWlkTrack->tskAutoDb.m_db->addUnallocBlockFile(unallocBlockWlkTrack->tskAutoDb.m_curUnallocDirId, 
-		unallocBlockWlkTrack->fsObjId, unallocBlockWlkTrack->size, unallocBlockWlkTrack->ranges, fileObjId) == TSK_ERR) {
+		unallocBlockWlkTrack->fsObjId, unallocBlockWlkTrack->size, unallocBlockWlkTrack->ranges, fileObjId, ((TskAutoDb*)a_ptr)->m_curImgId) == TSK_ERR) {
             // @@@ Handle error -> Don't have access to registerError() though...
     }
 
@@ -857,7 +856,7 @@ TSK_RETVAL_ENUM TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
     }
 
     //create a "fake" dir to hold the unalloc files for the fs
-    if (m_db->addUnallocFsBlockFilesParent(dbFsInfo.objId, m_curUnallocDirId) == TSK_ERR) {
+	if (m_db->addUnallocFsBlockFilesParent(dbFsInfo.objId, m_curUnallocDirId, m_curImgId) == TSK_ERR) {
         tsk_error_set_errstr2("addFsInfoUnalloc: error creating dir for unallocated space");
         registerError();
         return TSK_ERR;
@@ -892,7 +891,7 @@ TSK_RETVAL_ENUM TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
 	unallocBlockWlkTrack.size += byteLen;
     int64_t fileObjId = 0;
 
-    if (m_db->addUnallocBlockFile(m_curUnallocDirId, dbFsInfo.objId, unallocBlockWlkTrack.size, unallocBlockWlkTrack.ranges, fileObjId) == TSK_ERR) {
+    if (m_db->addUnallocBlockFile(m_curUnallocDirId, dbFsInfo.objId, unallocBlockWlkTrack.size, unallocBlockWlkTrack.ranges, fileObjId, m_curImgId) == TSK_ERR) {
         registerError();
         tsk_fs_close(fsInfo);
         return TSK_ERR;
@@ -1059,7 +1058,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocVsSpaceToDb(size_t & numVsP) {
         TSK_DB_FILE_LAYOUT_RANGE tempRange(byteStart, byteLen, 0);
         ranges.push_back(tempRange);
         int64_t fileObjId = 0;
-        if (m_db->addUnallocBlockFile(vsPart.objId, 0, tempRange.byteLen, ranges, fileObjId) == TSK_ERR) {
+        if (m_db->addUnallocBlockFile(vsPart.objId, 0, tempRange.byteLen, ranges, fileObjId, m_curImgId) == TSK_ERR) {
             registerError();
             return TSK_ERR;
         }
@@ -1089,7 +1088,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocImageSpaceToDb() {
         vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;
         ranges.push_back(tempRange);
         int64_t fileObjId = 0;
-        retImgFile = m_db->addUnallocBlockFile(m_curImgId, 0, imgSize, ranges, fileObjId);
+        retImgFile = m_db->addUnallocBlockFile(m_curImgId, 0, imgSize, ranges, fileObjId, m_curImgId);
     }
     return retImgFile;
 }
