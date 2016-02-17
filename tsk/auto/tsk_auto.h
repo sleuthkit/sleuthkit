@@ -69,9 +69,9 @@ class TskAuto {
      virtual ~ TskAuto();
 
     virtual uint8_t openImage(int, const TSK_TCHAR * const images[],
-        TSK_IMG_TYPE_ENUM, unsigned int a_ssize, int64_t & dataSourceObjId);
+        TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
     virtual uint8_t openImageUtf8(int, const char *const images[],
-        TSK_IMG_TYPE_ENUM, unsigned int a_ssize, int64_t & dataSourceObjId);
+        TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
     virtual uint8_t openImageHandle(TSK_IMG_INFO *);
     virtual void closeImage();
 

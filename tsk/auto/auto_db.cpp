@@ -122,7 +122,7 @@ uint8_t
     TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize, int64_t & dataSourceObjId, const char* a_deviceId)
 {
     uint8_t retval =
-        TskAuto::openImageUtf8(a_num, a_images, a_type, a_ssize, dataSourceObjId);
+        TskAuto::openImageUtf8(a_num, a_images, a_type, a_ssize);
     if (retval != 0) {
         return retval;
     }
@@ -130,7 +130,6 @@ uint8_t
     if (addImageDetails(a_deviceId, a_images, a_num)) {
         return 1;
     }
-	dataSourceObjId = m_curImgId;
     return 0;
 }
 
@@ -153,7 +152,7 @@ uint8_t
 // make name of database
 #ifdef TSK_WIN32
 
-    uint8_t retval = TskAuto::openImage(a_num, a_images, a_type, a_ssize, dataSourceObjId);
+    uint8_t retval = TskAuto::openImage(a_num, a_images, a_type, a_ssize);
 
     if (retval != 0) {
         return retval;
@@ -200,7 +199,7 @@ uint8_t
         free(img_ptrs[i]);
     }
     free(img_ptrs);
-	dataSourceObjId = m_curImgId;
+	
     return 0;
 #else
     return openImageUtf8(a_num, a_images, a_type, a_ssize, dataSourceObjId, a_deviceId);

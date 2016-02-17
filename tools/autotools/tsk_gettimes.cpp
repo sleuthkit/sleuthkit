@@ -216,8 +216,8 @@ main(int argc, char **argv1)
     }
 	
 	TskGetTimes tskGetTimes(sec_skew, do_hash);
-	int64_t objId=0;
-    if (tskGetTimes.openImage(argc - OPTIND, &argv[OPTIND], imgtype, ssize, objId)) {
+	
+    if (tskGetTimes.openImage(argc - OPTIND, &argv[OPTIND], imgtype, ssize)) {
         tsk_error_print(stderr);
         exit(1);
     }
