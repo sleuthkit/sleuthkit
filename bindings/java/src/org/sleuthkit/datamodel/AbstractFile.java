@@ -566,8 +566,8 @@ public abstract class AbstractFile extends AbstractContent {
 	public Content getDataSource() throws TskCoreException {
 		if (0 == this.dataSourceObjectId) {
 			// This lazy initialization is used to support the deprecated 
-			// protected constructor of this class and its known subclasses and 
-			// should be removed when that constructor is removed. 
+			// protected constructor of this class and any unknown subclasses
+			// and should be removed when that constructor is removed. 
 			Content dataSource = super.getDataSource();
 			this.dataSourceObjectId = dataSource.getId();
 			return dataSource;
