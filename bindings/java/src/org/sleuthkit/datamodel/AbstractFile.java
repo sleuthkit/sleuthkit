@@ -556,9 +556,9 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Gets the root data source (image, virtual directory, etc.) of this file.
+	 * Gets the data source (image, virtual directory, etc.) for this file.
 	 *
-	 * @return Content associated with data source.
+	 * @return The data source.
 	 * @throws TskCoreException if there was an error querying the case
 	 * database.
 	 */
@@ -567,8 +567,7 @@ public abstract class AbstractFile extends AbstractContent {
 		if (0 == this.dataSourceObjectId) {
 			// This lazy initialization is used to support the deprecated 
 			// protected constructor of this class and its known subclasses and 
-			// should be removed when that constructor is removed and 
-			// subclassing outside of this package is prohibited. 
+			// should be removed when that constructor is removed. 
 			Content dataSource = super.getDataSource();
 			this.dataSourceObjectId = dataSource.getId();
 			return dataSource;
@@ -578,10 +577,10 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Gets the root data source (image, virtual directory, etc.) object id of
-	 * this file.
+	 * Gets the object id of the data source (image, virtual directory, etc.)
+	 * for this file.
 	 *
-	 * @return The root data source object id.
+	 * @return The object id of the data source.
 	 */
 	long getDataSourceObjectId() {
 		return dataSourceObjectId;
