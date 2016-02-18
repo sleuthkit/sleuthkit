@@ -969,7 +969,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
     }
 
     char zSQL[2048];
-    snprintf(zSQL, 2048, "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
+    snprintf(zSQL, 2048, "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
         "VALUES ("
         "%" PRId64 ",%" PRId64 ","
         "%" PRId64 ","
@@ -1266,7 +1266,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addVirtualDir(const int64_t fsObjId, const int6
         PQfreemem(name_sql);
         return TSK_ERR;
     }
-    snprintf(zSQL, 2048, "INSERT INTO tsk_files (attr_type, attr_id, has_layout, fs_obj_id, obj_id, data_source_obj_id type, "
+    snprintf(zSQL, 2048, "INSERT INTO tsk_files (attr_type, attr_id, has_layout, fs_obj_id, obj_id, data_source_obj_id, type, "
         "name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, "
         "crtime, ctime, atime, mtime, mode, gid, uid, known, parent_path) "
         "VALUES ("
