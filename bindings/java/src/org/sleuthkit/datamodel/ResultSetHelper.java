@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  * 
- * Copyright 2014 Basis Technology Corp.
+ * Copyright 2011-2016 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,6 +23,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import org.sleuthkit.datamodel.TskData.FileKnown;
+import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
@@ -172,7 +173,7 @@ class ResultSetHelper {
 	 */
 	File file(ResultSet rs, FileSystem fs) throws SQLException {
 
-		File f = new File(db, rs.getLong("obj_id"), rs.getLong("fs_obj_id"), //NON-NLS
+		File f = new File(db, rs.getLong("obj_id"), rs.getLong("data_source_obj_id"), rs.getLong("fs_obj_id"), //NON-NLS
 				TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")), //NON-NLS
 				rs.getShort("attr_id"), rs.getString("name"), rs.getLong("meta_addr"), rs.getInt("meta_seq"), //NON-NLS
 				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
@@ -198,7 +199,7 @@ class ResultSetHelper {
 	 * @throws SQLException thrown if SQL error occurred
 	 */
 	Directory directory(ResultSet rs, FileSystem fs, String name) throws SQLException {
-		Directory dir = new Directory(db, rs.getLong("obj_id"), rs.getLong("fs_obj_id"), //NON-NLS
+		Directory dir = new Directory(db, rs.getLong("obj_id"), rs.getLong("data_source_obj_id"), rs.getLong("fs_obj_id"), //NON-NLS
 				TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")), //NON-NLS
 				rs.getShort("attr_id"), name, rs.getLong("meta_addr"), rs.getInt("meta_seq"), //NON-NLS
 				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
@@ -226,13 +227,17 @@ class ResultSetHelper {
 			parentPath = "";
 		}
 
-		final VirtualDirectory vd = new VirtualDirectory(db, rs.getLong("obj_id"), //NON-NLS
+		final VirtualDirectory vd = new VirtualDirectory(db,
+				rs.getLong("obj_id"), //NON-NLS
+				rs.getLong("data_source_obj_id"), //NON-NLS
 				rs.getString("name"), //NON-NLS
 				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
 				TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
-				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"), //NON-NLS
-				rs.getLong("size"), rs.getString("md5"), //NON-NLS
-				FileKnown.valueOf(rs.getByte("known")), parentPath); //NON-NLS
+				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), //NON-NLS
+				rs.getShort("meta_flags"), //NON-NLS
+				rs.getString("md5"), //NON-NLS
+				FileKnown.valueOf(rs.getByte("known")), //NON-NLS
+				parentPath);
 		return vd;
 	}
 
@@ -284,7 +289,7 @@ class ResultSetHelper {
 		}
 
 		final DerivedFile df
-				= new DerivedFile(db, objId, rs.getString("name"), //NON-NLS
+				= new DerivedFile(db, objId, rs.getLong("data_source_obj_id"), rs.getString("name"), //NON-NLS
 						TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
 						TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
 						TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"), //NON-NLS
@@ -319,16 +324,17 @@ class ResultSetHelper {
 		}
 
 		final LocalFile lf
-				= new LocalFile(db, objId, rs.getString("name"), //NON-NLS
+				= new LocalFile(db, objId, rs.getLong("data_source_obj_id"), rs.getString("name"), //NON-NLS
+						TSK_DB_FILES_TYPE_ENUM.valueOf(rs.getShort("type")), //NON-NLS
 						TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
 						TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
 						TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"), //NON-NLS
 						rs.getLong("size"), //NON-NLS
 						rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 						rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
-						parentPath, localPath,
-						parentId, rs.getString("mime_type"));
-
+						parentId, parentPath, 
+						localPath,
+						rs.getString("mime_type"));						
 		return lf;
 	}
 
@@ -366,7 +372,10 @@ class ResultSetHelper {
 					parentPath = "";
 				}
 				final LayoutFile lf
-						= new LayoutFile(db, rs.getLong("obj_id"), rs.getString("name"),
+						= new LayoutFile(db,
+								rs.getLong("obj_id"),
+								rs.getLong("data_source_obj_id"),
+								rs.getString("name"),
 								type,
 								TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
 								TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")),

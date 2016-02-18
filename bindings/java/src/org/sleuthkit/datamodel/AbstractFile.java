@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  * 
- * Copyright 2011 Basis Technology Corp.
+ * Copyright 2011-2016 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -77,6 +77,7 @@ public abstract class AbstractFile extends AbstractContent {
 	private String mimeType;
 	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
+	private long dataSourceObjectId;
 
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
@@ -106,13 +107,16 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param knownState knownState status of the file, or null if unknown
 	 * (default)
 	 * @param parentPath
+	 * @deprecated Do not make subclasses of AbstractFile outside of this
+	 * package.
 	 */
+	@Deprecated
 	protected AbstractFile(SleuthkitCase db, long objId, TskData.TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
 			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq,
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
 			String parentPath) {
-		this(db, objId, attrType, attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime,mtime, modes, uid, gid, md5Hash, knownState, parentPath, null);
+		this(db, objId, 0, attrType, attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null);
 	}
 
 	/**
@@ -121,6 +125,8 @@ public abstract class AbstractFile extends AbstractContent {
 	 *
 	 * @param db case / db handle where this file belongs to
 	 * @param objId object id in tsk_objects table
+	 * @param dataSourceObjectId The object id of the root data source of this
+	 * file.
 	 * @param attrType
 	 * @param attrId
 	 * @param name name field of the file
@@ -145,12 +151,13 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param parentPath
 	 * @param mimeType The MIME type of the file, can be null
 	 */
-	protected AbstractFile(SleuthkitCase db, long objId, TskData.TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
+	AbstractFile(SleuthkitCase db, long objId, long dataSourceObjectId, TskData.TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
 			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq,
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
 			String parentPath, String mimeType) {
 		super(db, objId, name);
+		this.dataSourceObjectId = dataSourceObjectId;
 		this.attrType = attrType;
 		this.attrId = attrId;
 		this.fileType = fileType;
@@ -546,6 +553,36 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	public String getParentPath() {
 		return parentPath;
+	}
+
+	/**
+	 * Gets the data source for this file.
+	 *
+	 * @return The data source.
+	 * @throws TskCoreException if there was an error querying the case
+	 * database.
+	 */
+	@Override
+	public Content getDataSource() throws TskCoreException {
+		if (0 == this.dataSourceObjectId) {
+			// This lazy initialization is used to support the deprecated 
+			// protected constructor of this class and any unknown subclasses
+			// and should be removed when that constructor is removed. 
+			Content dataSource = super.getDataSource();
+			this.dataSourceObjectId = dataSource.getId();
+			return dataSource;
+		} else {
+			return getSleuthkitCase().getContentById(this.dataSourceObjectId);
+		}
+	}
+
+	/**
+	 * Gets the object id of the data source for this file.
+	 *
+	 * @return The object id of the data source.
+	 */
+	long getDataSourceObjectId() {
+		return dataSourceObjectId;
 	}
 
 	/**

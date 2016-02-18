@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  * 
- * Copyright 2013 Basis Technology Corp.
+ * Copyright 2011-2016 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -67,23 +67,26 @@ public class DerivedFile extends AbstractFile {
 	 * file, or another derived file path)
 	 * @param localPath local path of this derived file, relative to the db path
 	 * @param parentId parent id of this derived file to set if available
+	 * @deprecated Do not make subclasses of DerivedFile outside of this
+	 * package.
 	 */
+	@Deprecated
 	protected DerivedFile(SleuthkitCase db, long objId, String name, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size,
 			long ctime, long crtime, long atime, long mtime,
 			String md5Hash, FileKnown knownState, String parentPath, String localPath, long parentId) {
-
-		super(db, objId, TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short) 0,
-				name, TSK_DB_FILES_TYPE_ENUM.LOCAL, 0L, 0, dirType, metaType, dirFlag,
-				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath, null);
-
-		//use the local path read infrastructure
-		setLocalPath(localPath, false); //local paths for derived files are relative to case db
+		this(db, objId, 0, name, dirType, metaType, dirFlag, metaFlags, size,
+				ctime, crtime, atime, mtime,
+				md5Hash, knownState,
+				parentPath, localPath, parentId, null);
 	}
+
 	/**
 	 * Create a db representation of a derived file
 	 *
 	 * @param db
 	 * @param objId object if of this file already in database
+	 * @param dataSourceObjectId The object id of the root data source of this
+	 * file.
 	 * @param name name of this derived file
 	 * @param dirType
 	 * @param metaType
@@ -101,11 +104,11 @@ public class DerivedFile extends AbstractFile {
 	 * @param localPath local path of this derived file, relative to the db path
 	 * @param parentId parent id of this derived file to set if available
 	 */
-	protected DerivedFile(SleuthkitCase db, long objId, String name, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size,
+	DerivedFile(SleuthkitCase db, long objId, long dataSourceObjectId, String name, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size,
 			long ctime, long crtime, long atime, long mtime,
 			String md5Hash, FileKnown knownState, String parentPath, String localPath, long parentId, String mimeType) {
 
-		super(db, objId, TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short) 0,
+		super(db, objId, dataSourceObjectId, TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short) 0,
 				name, TSK_DB_FILES_TYPE_ENUM.LOCAL, 0L, 0, dirType, metaType, dirFlag,
 				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath, mimeType);
 
