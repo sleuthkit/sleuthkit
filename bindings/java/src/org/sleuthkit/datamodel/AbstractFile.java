@@ -556,7 +556,7 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Gets the data source (image, virtual directory, etc.) for this file.
+	 * Gets the data source for this file.
 	 *
 	 * @return The data source.
 	 * @throws TskCoreException if there was an error querying the case
@@ -577,8 +577,7 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Gets the object id of the data source (image, virtual directory, etc.)
-	 * for this file.
+	 * Gets the object id of the data source for this file.
 	 *
 	 * @return The object id of the data source.
 	 */

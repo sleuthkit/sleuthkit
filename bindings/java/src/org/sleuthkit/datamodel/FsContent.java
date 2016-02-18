@@ -91,9 +91,7 @@ public abstract class FsContent extends AbstractFile {
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
 			String parentPath) {
-		super(db, objId, 0, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null);
-		this.tskCase = db;
-		this.fsObjId = fsObjId;
+		this(db, objId, 0, fsObjId, attrType, attrId, name, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null);
 	}
 
 	FsContent(SleuthkitCase db, long objId, long dataSourceObjectId, long fsObjId, TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,

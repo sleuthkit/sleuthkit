@@ -664,24 +664,16 @@ public class SleuthkitCase {
 			}
 			resultSet.close();
 
-			// Add data_source_obj_id column to the tsk_files table. Populate it
-			// by working up the chain of ancestors for each file looking for a  
-			// NULL parent (0 from ResultSet.getLong("par_obj_id")). The ancestor 
-			// with no parent is the data source for the file. 
-			// 
-			// NOTE: The virtual directory that is the root of a local/logical 
-			// files data source gets its own object id in the data_source_obj_id 
-			// column.
+			// Add data_source_obj_id column to the tsk_files table. 
 			//
 			// NOTE: A new case database will have the following FK constraint: 
 			//
 			// REFERENCES data_source_info (obj_id)
 			//
 			// The constraint is sacrificed here to avoid having to create and
-			// populate a new tsk_files table - using a default value for the new 
-			// column and then overwriting it instead.
-			// RJCTODO: Do this right.
+			// populate a new tsk_files table.
 			//
+			// TODO: Do this right.
 			statement.execute("ALTER TABLE tsk_files ADD COLUMN data_source_obj_id BIGINT NOT NULL DEFAULT -1;");
 			resultSet = statement.executeQuery("SELECT tsk_files.obj_id, par_obj_id FROM tsk_files, tsk_objects WHERE tsk_files.obj_id = tsk_objects.obj_id");
 			while (resultSet.next()) {
@@ -2686,8 +2678,7 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get info about children of a given Content from the database. TODO: the
-	 * files of this method are volumes, file systems, and fs files.
+	 * Get info about children of a given Content from the database.
 	 *
 	 * @param c Parent object to run query against
 	 * @throws TskCoreException exception thrown if a critical error occurs
@@ -3248,7 +3239,9 @@ public class SleuthkitCase {
 			if (0 != parentId) {
 				parentPath = getFileParentPath(parentId, transaction);
 				String parentName = getFileName(parentId, transaction);
-				parentPath = parentPath + parentName + "/"; //NON-NLS
+				if (null != parentName) {
+					parentPath = parentPath + parentName + "/"; //NON-NLS
+				}
 			} else {
 				parentPath = "/"; //NON-NLS
 			}
@@ -3310,8 +3303,7 @@ public class SleuthkitCase {
 			statement.setShort(9, metaFlags);
 
 			//size
-			long size = 0;
-			statement.setLong(10, size);
+			statement.setLong(10, 0);
 
 			//  nulls for params 11-14
 			statement.setNull(11, java.sql.Types.BIGINT);
@@ -3334,7 +3326,7 @@ public class SleuthkitCase {
 			connection.executeUpdate(statement);
 
 			return new VirtualDirectory(this, newObjId, dataSourceObjectId, directoryName, dirType,
-					metaType, dirFlag, metaFlags, size, null, FileKnown.UNKNOWN,
+					metaType, dirFlag, metaFlags, null, FileKnown.UNKNOWN,
 					parentPath);
 		} catch (SQLException e) {
 			throw new TskCoreException("Error creating virtual directory '" + directoryName + "'", e);
@@ -3384,7 +3376,7 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			statement.executeUpdate("INSERT INTO data_source_info (obj_id, device_id, time_zone) "
 					+ "VALUES(" + newObjId + ", '" + deviceId + "', '" + timeZone + "');");
-						
+
 			// Insert a row for the root virtual directory of the data source 
 			// into the tsk_files table. Note that its data source object id is
 			// its own object id.
@@ -3408,23 +3400,22 @@ public class SleuthkitCase {
 			final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue()
 					| TSK_FS_META_FLAG_ENUM.USED.getValue());
 			preparedStatement.setShort(9, metaFlags);
-			long size = 0;
-			preparedStatement.setLong(10, size);
+			preparedStatement.setLong(10, 0);
 			preparedStatement.setNull(11, java.sql.Types.BIGINT);
 			preparedStatement.setNull(12, java.sql.Types.BIGINT);
 			preparedStatement.setNull(13, java.sql.Types.BIGINT);
 			preparedStatement.setNull(14, java.sql.Types.BIGINT);
 			String parentPath = "/"; //NON-NLS
-			preparedStatement.setString(15, parentPath); 
+			preparedStatement.setString(15, parentPath);
 			preparedStatement.setLong(16, newObjId);
 			connection.executeUpdate(preparedStatement);
 
-			VirtualDirectory rootDirectory = new VirtualDirectory(this, 
-					newObjId, newObjId, rootDirectoryName, 
-					dirType, metaType, dirFlag, metaFlags, size, null, 
+			VirtualDirectory rootDirectory = new VirtualDirectory(this,
+					newObjId, newObjId, rootDirectoryName,
+					dirType, metaType, dirFlag, metaFlags, null,
 					FileKnown.UNKNOWN, parentPath);
 			return new LocalFilesDataSource(deviceId, rootDirectory, timeZone);
-			
+
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error creating local files data source with device id %s and directory name %s", deviceId, rootDirectoryName), ex);
 		} finally {

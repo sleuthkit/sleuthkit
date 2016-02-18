@@ -73,11 +73,9 @@ public class VirtualDirectory extends AbstractFile {
 	VirtualDirectory(SleuthkitCase db, long objId, String name, TSK_FS_NAME_TYPE_ENUM dirType,
 			TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, String md5Hash, FileKnown knownState, String parentPath) {
-		super(db, objId, 0, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short) 0, name,
-				TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR, 0L, 0, dirType, metaType, dirFlag,
-				metaFlags, 0L, 0L, 0L, 0L, 0L, (short) 0, 0, 0, md5Hash, knownState, parentPath, null);
-	}	
-	
+		this(db, objId, 0, name, dirType, metaType, dirFlag, metaFlags, md5Hash, knownState, parentPath);
+	}
+
 	/**
 	 * Constructs a virtual directory that can be used as a parent for
 	 * unallocated space files, carved files, or derived files. A virtual
@@ -102,7 +100,7 @@ public class VirtualDirectory extends AbstractFile {
 	 */
 	VirtualDirectory(SleuthkitCase db, long objId, long dataSourceObjectId, String name, TSK_FS_NAME_TYPE_ENUM dirType,
 			TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
-			long size, String md5Hash, FileKnown knownState, String parentPath) {
+			String md5Hash, FileKnown knownState, String parentPath) {
 		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short) 0, name,
 				TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR, 0L, 0, dirType, metaType, dirFlag,
 				metaFlags, 0L, 0L, 0L, 0L, 0L, (short) 0, 0, 0, md5Hash, knownState, parentPath, null);

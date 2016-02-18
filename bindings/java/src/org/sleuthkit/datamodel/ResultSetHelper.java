@@ -235,7 +235,6 @@ class ResultSetHelper {
 				TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
 				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), //NON-NLS
 				rs.getShort("meta_flags"), //NON-NLS
-				rs.getLong("size"), //NON-NLS
 				rs.getString("md5"), //NON-NLS
 				FileKnown.valueOf(rs.getByte("known")), //NON-NLS
 				parentPath);
