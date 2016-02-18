@@ -3277,13 +3277,19 @@ public class SleuthkitCase {
 			statement.clearParameters();
 			statement.setLong(1, newObjId);
 
-			// If the parent is part of a file system, grab its file system ID
-			long parentFs = this.getFileSystemId(parentId, transaction);
-			if (parentFs != -1) {
-				statement.setLong(2, parentFs);
+			// If the parent is part of a file system, grab its file system ID			
+			if (0 != parentId) {
+				long parentFs = this.getFileSystemId(parentId, transaction);
+				if (parentFs != -1) {
+					statement.setLong(2, parentFs);
+				} else {
+					statement.setNull(2, java.sql.Types.BIGINT);
+				}
 			} else {
 				statement.setNull(2, java.sql.Types.BIGINT);
 			}
+
+			// name
 			statement.setString(3, directoryName);
 
 			//type
@@ -3356,16 +3362,73 @@ public class SleuthkitCase {
 	public LocalFilesDataSource addLocalFilesDataSource(String deviceId, String rootDirectoryName, String timeZone, CaseDbTransaction transaction) throws TskCoreException {
 		acquireExclusiveLock();
 		Statement statement = null;
+		ResultSet resultSet = null;
 		try {
-			VirtualDirectory rootDirectory = addVirtualDirectory(0, rootDirectoryName, transaction);
+			// Insert a row for the root virtual directory of the data source 
+			// into the tsk_objects table.
+			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
 			CaseDbConnection connection = transaction.getConnection();
+			PreparedStatement preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
+			preparedStatement.clearParameters();
+			preparedStatement.setNull(1, java.sql.Types.BIGINT);
+			preparedStatement.setInt(2, TskData.ObjectType.ABSTRACTFILE.getObjectType());
+			connection.executeUpdate(preparedStatement);
+			resultSet = preparedStatement.getGeneratedKeys();
+			resultSet.next();
+			long newObjId = resultSet.getLong(1);
+			resultSet.close();
+			resultSet = null;
+
+			// Insert a row for the virtual directory of the data source into 
+			// the data_source_info table.
 			statement = connection.createStatement();
 			statement.executeUpdate("INSERT INTO data_source_info (obj_id, device_id, time_zone) "
-					+ "VALUES(" + rootDirectory.getId() + ", '" + deviceId + "', '" + timeZone + "');");
+					+ "VALUES(" + newObjId + ", '" + deviceId + "', '" + timeZone + "');");
+						
+			// Insert a row for the root virtual directory of the data source 
+			// into the tsk_files table. Note that its data source object id is
+			// its own object id.
+			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, 
+			// dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, 
+			// atime, mtime, parent_path, data_source_obj_id) 
+			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)			
+			preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
+			preparedStatement.clearParameters();
+			preparedStatement.setLong(1, newObjId);
+			preparedStatement.setNull(2, java.sql.Types.BIGINT);
+			preparedStatement.setString(3, rootDirectoryName);
+			preparedStatement.setShort(4, TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType());
+			preparedStatement.setShort(5, (short) 1);
+			TSK_FS_NAME_TYPE_ENUM dirType = TSK_FS_NAME_TYPE_ENUM.DIR;
+			preparedStatement.setShort(6, TSK_FS_NAME_TYPE_ENUM.DIR.getValue());
+			TSK_FS_META_TYPE_ENUM metaType = TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
+			preparedStatement.setShort(7, metaType.getValue());
+			TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.ALLOC;
+			preparedStatement.setShort(8, dirFlag.getValue());
+			final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue()
+					| TSK_FS_META_FLAG_ENUM.USED.getValue());
+			preparedStatement.setShort(9, metaFlags);
+			long size = 0;
+			preparedStatement.setLong(10, size);
+			preparedStatement.setNull(11, java.sql.Types.BIGINT);
+			preparedStatement.setNull(12, java.sql.Types.BIGINT);
+			preparedStatement.setNull(13, java.sql.Types.BIGINT);
+			preparedStatement.setNull(14, java.sql.Types.BIGINT);
+			String parentPath = "/"; //NON-NLS
+			preparedStatement.setString(15, parentPath); 
+			preparedStatement.setLong(16, newObjId);
+			connection.executeUpdate(preparedStatement);
+
+			VirtualDirectory rootDirectory = new VirtualDirectory(this, 
+					newObjId, newObjId, rootDirectoryName, 
+					dirType, metaType, dirFlag, metaFlags, size, null, 
+					FileKnown.UNKNOWN, parentPath);
 			return new LocalFilesDataSource(deviceId, rootDirectory, timeZone);
+			
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error creating local files data source with device id %s and directory name %s", deviceId, rootDirectoryName), ex);
 		} finally {
+			closeResultSet(resultSet);
 			closeStatement(statement);
 			releaseExclusiveLock();
 		}
@@ -3901,7 +3964,7 @@ public class SleuthkitCase {
 
 			return new LocalFile(this, newObjId, dataSourceObjId, fileName, TSK_DB_FILES_TYPE_ENUM.LOCAL, dirType, metaType, dirFlag, metaFlags,
 					size, ctime, crtime, atime, mtime, null, null, parentId, parentPath, localPath, null);
-						
+
 		} catch (SQLException e) {
 			throw new TskCoreException("Error adding local file directory " + fileName + " with local path " + localPath, e);
 		} finally {

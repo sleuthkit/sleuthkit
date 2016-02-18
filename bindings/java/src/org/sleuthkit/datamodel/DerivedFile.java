@@ -74,13 +74,10 @@ public class DerivedFile extends AbstractFile {
 	protected DerivedFile(SleuthkitCase db, long objId, String name, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size,
 			long ctime, long crtime, long atime, long mtime,
 			String md5Hash, FileKnown knownState, String parentPath, String localPath, long parentId) {
-
-		super(db, objId, 0, TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short) 0,
-				name, TSK_DB_FILES_TYPE_ENUM.LOCAL, 0L, 0, dirType, metaType, dirFlag,
-				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath, null);
-
-		//use the local path read infrastructure
-		setLocalPath(localPath, false); //local paths for derived files are relative to case db
+		this(db, objId, 0, name, dirType, metaType, dirFlag, metaFlags, size,
+				ctime, crtime, atime, mtime,
+				md5Hash, knownState,
+				parentPath, localPath, parentId, null);
 	}
 
 	/**

@@ -20,7 +20,6 @@ package org.sleuthkit.datamodel;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
@@ -32,8 +31,6 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
  * Represents a local file (on user's machine) that has been added to the case
  */
 public class LocalFile extends AbstractFile {
-
-	private static final Logger logger = Logger.getLogger(LocalFile.class.getName());
 
 	/**
 	 * Create a db representation of a local file, passing a more specific file
