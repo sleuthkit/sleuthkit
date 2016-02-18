@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  * 
- * Copyright 2014 Basis Technology Corp.
+ * Copyright 2011-2016 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,6 +23,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import org.sleuthkit.datamodel.TskData.FileKnown;
+import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
@@ -325,15 +326,16 @@ class ResultSetHelper {
 
 		final LocalFile lf
 				= new LocalFile(db, objId, rs.getLong("data_source_obj_id"), rs.getString("name"), //NON-NLS
+						TSK_DB_FILES_TYPE_ENUM.valueOf(rs.getShort("type")), //NON-NLS
 						TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
 						TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
 						TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"), //NON-NLS
 						rs.getLong("size"), //NON-NLS
 						rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 						rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
-						parentPath, localPath,
-						parentId, rs.getString("mime_type"));
-
+						parentId, parentPath, 
+						localPath,
+						rs.getString("mime_type"));						
 		return lf;
 	}
 

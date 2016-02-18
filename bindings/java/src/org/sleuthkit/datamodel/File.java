@@ -18,7 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.util.Collections;
 import java.util.List;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
@@ -59,8 +58,7 @@ public class File extends FsContent {
 	 * @param md5Hash
 	 * @param knownState
 	 * @param parentPath
-	 * @deprecated Do not make public subclasses of File outside of this
-	 * package.
+	 * @deprecated Do not make subclasses of File outside of this package.
 	 */
 	@Deprecated
 	protected File(SleuthkitCase db, long objId, long fsObjId,

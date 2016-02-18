@@ -107,7 +107,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param knownState knownState status of the file, or null if unknown
 	 * (default)
 	 * @param parentPath
-	 * @deprecated Do not make public subclasses of AbstractFile outside of this
+	 * @deprecated Do not make subclasses of AbstractFile outside of this
 	 * package.
 	 */
 	@Deprecated
@@ -556,8 +556,7 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Gets the root data source (image, virtual directory, etc.) of this
-	 * content.
+	 * Gets the root data source (image, virtual directory, etc.) of this file.
 	 *
 	 * @return Content associated with data source.
 	 * @throws TskCoreException if there was an error querying the case
@@ -566,12 +565,26 @@ public abstract class AbstractFile extends AbstractContent {
 	@Override
 	public Content getDataSource() throws TskCoreException {
 		if (0 == this.dataSourceObjectId) {
+			// This lazy initialization is used to support the deprecated 
+			// protected constructor of this class and its known subclasses and 
+			// should be removed when that constructor is removed and 
+			// subclassing outside of this package is prohibited. 
 			Content dataSource = super.getDataSource();
 			this.dataSourceObjectId = dataSource.getId();
 			return dataSource;
 		} else {
 			return getSleuthkitCase().getContentById(this.dataSourceObjectId);
 		}
+	}
+
+	/**
+	 * Gets the root data source (image, virtual directory, etc.) object id of
+	 * this file.
+	 *
+	 * @return The root data source object id.
+	 */
+	long getDataSourceObjectId() {
+		return dataSourceObjectId;
 	}
 
 	/**

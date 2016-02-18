@@ -83,8 +83,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @param md5Hash String of MD5 hash of content or null if not known
 	 * @param knownState
 	 * @param parentPath
-	 * @deprecated Do not make public subclasses of FsContent outside of this
-	 * package.
+	 * @deprecated Do not make subclasses of FsContent outside of this package.
 	 */
 	@Deprecated
 	FsContent(SleuthkitCase db, long objId, long fsObjId, TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,

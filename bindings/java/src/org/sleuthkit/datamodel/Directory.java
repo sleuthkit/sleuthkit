@@ -58,8 +58,7 @@ public class Directory extends FsContent {
 	 * @param md5Hash
 	 * @param knownState
 	 * @param parentPath
-	 * @deprecated Do not make public subclasses of Directory outside of this
-	 * package.
+	 * @deprecated Do not make subclasses of Directory outside of this package.
 	 */
 	@Deprecated
 	protected Directory(SleuthkitCase db, long objId, long fsObjId,

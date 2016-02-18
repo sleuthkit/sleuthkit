@@ -48,7 +48,7 @@ public class LayoutFile extends AbstractFile {
 
 	/**
 	 * Constructs a layout file.
-	 * 
+	 *
 	 * @param db
 	 * @param objId
 	 * @param name
@@ -62,8 +62,7 @@ public class LayoutFile extends AbstractFile {
 	 * @param knownState
 	 * @param parentPath
 	 * @deprecated
-	 * @deprecated Do not make public subclasses of LayoutFile outside of this
-	 * package.
+	 * @deprecated Do not make subclasses of LayoutFile outside of this package.
 	 */
 	@Deprecated
 	protected LayoutFile(SleuthkitCase db, long objId, String name,

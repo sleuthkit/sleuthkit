@@ -3051,28 +3051,6 @@ public class SleuthkitCase {
 	/**
 	 * Get the object ID of the file system that a file is located in.
 	 *
-	 * Note: for FsContent files, this is the real fs for other non-fs
-	 * AbstractFile files, this field is used internally for data source id (the
-	 * root content obj)
-	 *
-	 * @param fileId object id of the file to get fs column id for
-	 * @return fs_id or -1 if not present
-	 */
-	private long getFileSystemId(long fileId) {
-		long retValue = -1;
-		try {
-			CaseDbConnection connection = connections.getConnection();
-			retValue = getFileSystemId(fileId, connection);
-			connection.close();
-		} catch (TskCoreException ex) {
-			logger.log(Level.SEVERE, "Error getting file system id for file " + fileId, ex); //NON-NLS			
-		}
-		return retValue;
-	}
-
-	/**
-	 * Get the object ID of the file system that a file is located in.
-	 *
 	 * Make sure the connection in transaction is used for all database
 	 * interactions called by this method
 	 *
@@ -3141,7 +3119,8 @@ public class SleuthkitCase {
 		try {
 			statement = connection.createStatement();
 			resultSet = connection.executeQuery(statement, query);
-			return resultSet.next();
+			resultSet.next();
+			return (resultSet.getLong(1) > 0L);
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error executing query %s", query), ex);
 		} finally {
@@ -3218,11 +3197,11 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * wraps the version of addVirtualDirectory that takes a Transaction in a
-	 * transaction local to this method
+	 * Adds a virtual directory to the database and returns a VirtualDirectory
+	 * object representing it.
 	 *
-	 * @param parentId
-	 * @param directoryName
+	 * @param parentId the ID of the parent, or 0 if NULL
+	 * @param directoryName the name of the virtual directory to create
 	 * @return
 	 * @throws TskCoreException
 	 */
@@ -3265,13 +3244,13 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			// Get the parent path.
-			String parentPath = getFileParentPath(parentId, transaction);
-			if (parentPath == null) {
-				parentPath = "/"; //NON-NLS
-			}
-			String parentName = getFileName(parentId, transaction);
-			if (parentName != null) {
+			String parentPath;
+			if (0 != parentId) {
+				parentPath = getFileParentPath(parentId, transaction);
+				String parentName = getFileName(parentId, transaction);
 				parentPath = parentPath + parentName + "/"; //NON-NLS
+			} else {
+				parentPath = "/"; //NON-NLS
 			}
 
 			// Insert a row for the virtual directory into the tsk_objects table.
@@ -3284,7 +3263,6 @@ public class SleuthkitCase {
 			} else {
 				statement.setNull(1, java.sql.Types.BIGINT);
 			}
-
 			statement.setInt(2, TskData.ObjectType.ABSTRACTFILE.getObjectType());
 			connection.executeUpdate(statement);
 			resultSet = statement.getGeneratedKeys();
@@ -3293,8 +3271,8 @@ public class SleuthkitCase {
 
 			// Insert a row for the virtual directory into the tsk_files table.
 			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, 
-			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path) 
-			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)			
+			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, data_source_obj_id) 
+			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)			
 			statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 			statement.clearParameters();
 			statement.setLong(1, newObjId);
@@ -3308,7 +3286,7 @@ public class SleuthkitCase {
 			}
 			statement.setString(3, directoryName);
 
-			//type, has_path
+			//type
 			statement.setShort(4, TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType());
 			statement.setShort(5, (short) 1);
 
@@ -3318,7 +3296,7 @@ public class SleuthkitCase {
 			final TSK_FS_META_TYPE_ENUM metaType = TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
 			statement.setShort(7, metaType.getValue());
 
-			//note: using alloc under assumption that derived files derive from alloc files
+			//allocated
 			final TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.ALLOC;
 			statement.setShort(8, dirFlag.getValue());
 			final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue()
@@ -3338,9 +3316,18 @@ public class SleuthkitCase {
 			// parent path
 			statement.setString(15, parentPath);
 
+			// data source object id (same as object id if this is a data source)
+			long dataSourceObjectId;
+			if (0 == parentId) {
+				dataSourceObjectId = newObjId;
+			} else {
+				dataSourceObjectId = getDataSourceObjectId(connection, parentId);
+			}
+			statement.setLong(16, dataSourceObjectId);
+
 			connection.executeUpdate(statement);
 
-			return new VirtualDirectory(this, newObjId, directoryName, dirType,
+			return new VirtualDirectory(this, newObjId, dataSourceObjectId, directoryName, dirType,
 					metaType, dirFlag, metaFlags, size, null, FileKnown.UNKNOWN,
 					parentPath);
 		} catch (SQLException e) {
@@ -3397,16 +3384,11 @@ public class SleuthkitCase {
 		Statement s = null;
 		ResultSet rs = null;
 		try {
-			short firstone = TskData.ObjectType.ABSTRACTFILE.getObjectType();
-			short secondone = TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType();
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT tsk_files.* FROM tsk_objects, tsk_files WHERE " //NON-NLS
-					+ "tsk_objects.par_obj_id IS NULL AND " //NON-NLS
-					+ "tsk_objects.type = " + firstone + " AND " //NON-NLS
-					+ "tsk_objects.obj_id = tsk_files.obj_id AND " //NON-NLS
-					+ "tsk_files.type = " + secondone
-					+ " ORDER BY tsk_files.dir_type, LOWER(tsk_files.name)"); //NON-NLS
-
+			rs = connection.executeQuery(s, "SELECT * FROM tsk_files WHERE" //NON-NLS
+					+ " type = " + TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType()
+					+ " AND obj_id = data_source_obj_id"
+					+ " ORDER BY dir_type, LOWER(name)"); //NON-NLS
 			List<VirtualDirectory> virtDirRootIds = new ArrayList<VirtualDirectory>();
 			while (rs.next()) {
 				virtDirRootIds.add(rsHelper.virtualDirectory(rs));
@@ -3529,7 +3511,8 @@ public class SleuthkitCase {
 					parentPath = parentPath + parentName + "/"; //NON-NLS
 				}
 
-				// we should cache this when we start adding lots of carved files...
+				// TODO (AUT-1903): We should cache this when we start adding 
+				// lots of carved files...
 				boolean isContainerAFs = false;
 				s = connection.createStatement();
 				rs = connection.executeQuery(s, "SELECT * FROM tsk_fs_info " //NON-NLS
@@ -3540,7 +3523,8 @@ public class SleuthkitCase {
 				rs.close();
 				rs = null;
 
-				// This result is another thing that should be cached.
+				// TODO (AUT-1903): This result is another thing that should be 
+				// cached.
 				long dataSourceObjectId = getDataSourceObjectId(connection, id);
 
 				for (CarvedFileContainer itemToAdd : filesToAdd) {
@@ -3558,8 +3542,8 @@ public class SleuthkitCase {
 
 					// Insert a row for the carved file into the tsk_files table.
 					// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, 
-					// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path) 
-					// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)			
+					// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, data_source_obj_id) 
+					// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)			
 					statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 					statement.clearParameters();
 					statement.setLong(1, newObjId);
@@ -3754,14 +3738,14 @@ public class SleuthkitCase {
 			statement.setString(15, parentPath);
 
 			// root data source object id
-			long dataSourceObjId = getDataSourceObjectId(connection, parentId); 
+			long dataSourceObjId = getDataSourceObjectId(connection, parentId);
 			statement.setLong(16, dataSourceObjId);
-						
+
 			connection.executeUpdate(statement);
 
 			//add localPath 
 			addFilePath(connection, newObjId, localPath);
-						
+
 			connection.commitTransaction();
 
 			//TODO add derived method to tsk_files_derived and tsk_files_derived_method 
@@ -3907,16 +3891,17 @@ public class SleuthkitCase {
 			statement.setString(15, parentPath);
 
 			// root data source object id
-			long dataSourceObjId = getDataSourceObjectId(connection, parent.getId()); 
+			long dataSourceObjId = getDataSourceObjectId(connection, parent.getId());
 			statement.setLong(16, dataSourceObjId);
-			
+
 			connection.executeUpdate(statement);
 
 			//add localPath 
 			addFilePath(connection, newObjId, localPath);
 
-			return new LocalFile(this, newObjId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
-					size, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId, null);
+			return new LocalFile(this, newObjId, dataSourceObjId, fileName, TSK_DB_FILES_TYPE_ENUM.LOCAL, dirType, metaType, dirFlag, metaFlags,
+					size, ctime, crtime, atime, mtime, null, null, parentId, parentPath, localPath, null);
+						
 		} catch (SQLException e) {
 			throw new TskCoreException("Error adding local file directory " + fileName + " with local path " + localPath, e);
 		} finally {
@@ -4111,7 +4096,15 @@ public class SleuthkitCase {
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT * FROM tsk_files WHERE " + sqlWhereClause); //NON-NLS
-			return resultSetToFsContents(rs);
+			List<FsContent> results = new ArrayList<FsContent>();
+			List<AbstractFile> temp = resultSetToAbstractFiles(rs);
+			for (AbstractFile f : temp) {
+				final TSK_DB_FILES_TYPE_ENUM type = f.getType();
+				if (type.equals(TskData.TSK_DB_FILES_TYPE_ENUM.FS)) {
+					results.add((FsContent) f);
+				}
+			}
+			return results;
 		} catch (SQLException e) {
 			throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.findFilesWhere().", e);
 		} finally {
@@ -4741,7 +4734,9 @@ public class SleuthkitCase {
 	 * @return currently max id
 	 * @throws TskCoreException exception thrown when database error occurs and
 	 * last object id could not be queried
+	 * @deprecated Do not use, assumes a single-threaded, single-user case.
 	 */
+	@Deprecated
 	public long getLastObjectId() throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireExclusiveLock();
@@ -4852,25 +4847,6 @@ public class SleuthkitCase {
 			logger.log(Level.SEVERE, "Error getting abstract files from result set", e); //NON-NLS
 		}
 
-		return results;
-	}
-
-	/**
-	 * Creates FsContent objects from SQL query result set on tsk_files table
-	 *
-	 * @param rs the result set with the query files
-	 * @return list of fscontent objects matching the query
-	 * @throws SQLException if SQL query result getting failed
-	 */
-	private List<FsContent> resultSetToFsContents(ResultSet rs) throws SQLException {
-		List<FsContent> results = new ArrayList<FsContent>();
-		List<AbstractFile> temp = resultSetToAbstractFiles(rs);
-		for (AbstractFile f : temp) {
-			final TSK_DB_FILES_TYPE_ENUM type = f.getType();
-			if (type.equals(TskData.TSK_DB_FILES_TYPE_ENUM.FS)) {
-				results.add((FsContent) f);
-			}
-		}
 		return results;
 	}
 

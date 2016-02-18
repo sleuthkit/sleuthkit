@@ -67,7 +67,7 @@ public class DerivedFile extends AbstractFile {
 	 * file, or another derived file path)
 	 * @param localPath local path of this derived file, relative to the db path
 	 * @param parentId parent id of this derived file to set if available
-	 * @deprecated Do not make public subclasses of DerivedFile outside of this
+	 * @deprecated Do not make subclasses of DerivedFile outside of this
 	 * package.
 	 */
 	@Deprecated
@@ -82,7 +82,7 @@ public class DerivedFile extends AbstractFile {
 		//use the local path read infrastructure
 		setLocalPath(localPath, false); //local paths for derived files are relative to case db
 	}
-	
+
 	/**
 	 * Create a db representation of a derived file
 	 *

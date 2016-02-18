@@ -58,8 +58,7 @@ public class LocalFile extends AbstractFile {
 	 * @param parentPath path of the parent of this local file (e.g. fs zip
 	 * file, or another local file path)
 	 * @param localPath local absolute path of this local file
-	 * @deprecated Do not make public subclasses of LocalFile outside of this
-	 * package.
+	 * @deprecated Do not make subclasses of LocalFile outside of this package.
 	 */
 	@Deprecated
 	protected LocalFile(SleuthkitCase db, long objId, String name, TSK_DB_FILES_TYPE_ENUM fileType,
@@ -71,11 +70,8 @@ public class LocalFile extends AbstractFile {
 		super(db, objId, 0, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short) 0,
 				name, fileType, 0L, 0, dirType, metaType, dirFlag,
 				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath, null);
-
-		//use the local path functionality of AbstractFile, this sets up the infrastructure for it
-		super.setLocalPath(localPath, true); //local paths for local files are absolute paths
 	}
-	
+
 	/**
 	 * Create a db representation of a local file, passing a more specific file
 	 * type
@@ -98,6 +94,7 @@ public class LocalFile extends AbstractFile {
 	 * @param mtime
 	 * @param md5Hash
 	 * @param knownState
+	 * @param parentId
 	 * @param parentPath path of the parent of this local file (e.g. fs zip
 	 * file, or another local file path)
 	 * @param localPath local absolute path of this local file
@@ -107,11 +104,16 @@ public class LocalFile extends AbstractFile {
 			short metaFlags, long size,
 			long ctime, long crtime, long atime, long mtime,
 			String md5Hash,
-			FileKnown knownState, String parentPath, String localPath, String mimeType) {
+			FileKnown knownState, long parentId, String parentPath, String localPath, String mimeType) {
 		super(db, dataSourceObjectId, objId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short) 0,
 				name, fileType, 0L, 0, dirType, metaType, dirFlag,
 				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath, mimeType);
 
+		// TODO (AUT-1904): The parent id should be passed through contructors.
+		if (parentId > 0) {
+			setParentId(parentId);
+		}
+				
 		//use the local path functionality of AbstractFile, this sets up the infrastructure for it
 		super.setLocalPath(localPath, true); //local paths for local files are absolute paths
 	}
@@ -140,53 +142,13 @@ public class LocalFile extends AbstractFile {
 	 * or another local file path)
 	 * @param localPath local path of this local file, relative to the db path
 	 * @param parentId parent id of this local file to set if available
+	 * @deprecated Do not make subclasses of LocalFile outside of this package.
 	 */
+	@Deprecated
 	protected LocalFile(SleuthkitCase db, long objId, String name, TSK_DB_FILES_TYPE_ENUM fileType, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size,
 			long ctime, long crtime, long atime, long mtime,
 			String md5Hash, FileKnown knownState, String parentPath, String localPath, long parentId) {
-		this(db, objId, name, fileType, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, md5Hash, knownState, parentPath, localPath);
-
-		if (parentId > 0) {
-			setParentId(parentId);
-		}
-
-	}
-	/**
-	 * Create a db representation of a local file, passing a more specific file
-	 * type
-	 *
-	 * @param db
-	 * @param objId object if of this file already in database
-	 * @param dataSourceObjectId The object id of the root data source of this
-	 * file.
-	 * @param name name of this local file
-	 * @param fileType TSK_DB_FILES_TYPE_ENUM type of the file (LOCAL or more
-	 * specific)
-	 * @param dirType
-	 * @param metaType
-	 * @param dirFlag
-	 * @param metaFlags
-	 * @param size size of the file
-	 * @param ctime
-	 * @param crtime
-	 * @param atime
-	 * @param mtime
-	 * @param md5Hash
-	 * @param knownState
-	 * @param parentPath path of the parent of this local file (e.g. virtual dir
-	 * or another local file path)
-	 * @param localPath local path of this local file, relative to the db path
-	 * @param parentId parent id of this local file to set if available
-	 */
-	protected LocalFile(SleuthkitCase db, long objId, long dataSourceObjectId, String name, TSK_DB_FILES_TYPE_ENUM fileType, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size,
-			long ctime, long crtime, long atime, long mtime,
-			String md5Hash, FileKnown knownState, String parentPath, String localPath, long parentId, String mimeType) {
-		this(db, objId, dataSourceObjectId, name, fileType, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, md5Hash, knownState, parentPath, localPath, mimeType);
-
-		if (parentId > 0) {
-			setParentId(parentId);
-		}
-
+		this(db, objId, 0, name, fileType, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, md5Hash, knownState, parentId, parentPath, localPath, null);
 	}
 
 	/**
@@ -210,43 +172,15 @@ public class LocalFile extends AbstractFile {
 	 * or another local file path)
 	 * @param localPath local path of this local file, relative to the db path
 	 * @param parentId parent id of this local file to set if available
+	 * @deprecated Do not make subclasses of LocalFile outside of this package.
 	 */
+	@Deprecated
 	protected LocalFile(SleuthkitCase db, long objId, String name, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size,
 			long ctime, long crtime, long atime, long mtime,
 			String md5Hash, FileKnown knownState, String parentPath, String localPath, long parentId) {
-		this(db, objId, name, TSK_DB_FILES_TYPE_ENUM.LOCAL, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, md5Hash, knownState, parentPath, localPath);
+		this(db, objId, 0, name, TSK_DB_FILES_TYPE_ENUM.LOCAL, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, md5Hash, knownState, parentId, parentPath, localPath, null);
 	}
 	
-	/**
-	 * Create a db representation of a local file
-	 *
-	 * @param db
-	 * @param objId object if of this file already in database
-	 * @param dataSourceObjectId The object id of the root data source of this
-	 * file.
-	 * @param name name of this local file
-	 * @param dirType
-	 * @param metaType
-	 * @param dirFlag
-	 * @param metaFlags
-	 * @param size size of the file
-	 * @param ctime
-	 * @param crtime
-	 * @param atime
-	 * @param mtime
-	 * @param md5Hash
-	 * @param knownState
-	 * @param parentPath path of the parent of this local file (e.g. virtual dir
-	 * or another local file path)
-	 * @param localPath local path of this local file, relative to the db path
-	 * @param parentId parent id of this local file to set if available
-	 */
-	protected LocalFile(SleuthkitCase db, long objId, long dataSourceObjectId, String name, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size,
-			long ctime, long crtime, long atime, long mtime,
-			String md5Hash, FileKnown knownState, String parentPath, String localPath, long parentId, String mimeType) {
-		this(db, dataSourceObjectId, objId, name, TSK_DB_FILES_TYPE_ENUM.LOCAL, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, md5Hash, knownState, parentPath, localPath, mimeType);
-	}
-
 	@Override
 	public List<TskFileRange> getRanges() throws TskCoreException {
 		return Collections.<TskFileRange>emptyList();
