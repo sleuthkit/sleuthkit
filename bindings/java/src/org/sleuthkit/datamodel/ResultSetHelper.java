@@ -382,7 +382,7 @@ class ResultSetHelper {
 								TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")),
 								rs.getShort("meta_flags"),
 								rs.getLong("size"),
-								rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), parentPath);
+								rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), parentPath, rs.getString("mime_type"));
 				children.add(lf);
 			} else if (type == TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED) {
 				final DerivedFile df = derivedFile(rs, parentId);
