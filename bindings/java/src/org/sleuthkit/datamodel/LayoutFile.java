@@ -70,17 +70,17 @@ public class LayoutFile extends AbstractFile {
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, String md5Hash, FileKnown knownState, String parentPath) {
-		this(db, objId, 0, name, fileType, dirType, metaType, dirFlag, metaFlags, size, md5Hash, knownState, parentPath);
+		this(db, objId, 0, name, fileType, dirType, metaType, dirFlag, metaFlags, size, md5Hash, knownState, parentPath, null);
 	}
 
 	LayoutFile(SleuthkitCase db, long objId, long dataSourceObjectId, String name,
 			TSK_DB_FILES_TYPE_ENUM fileType,
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
-			long size, String md5Hash, FileKnown knownState, String parentPath) {
-		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short) 0, name, fileType, 0L, 0, dirType, metaType, dirFlag, metaFlags, size, 0L, 0L, 0L, 0L, (short) 0, 0, 0, md5Hash, knownState, parentPath, null);
+			long size, String md5Hash, FileKnown knownState, String parentPath, String mimeType) {
+		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short) 0, name, fileType, 0L, 0, dirType, metaType, dirFlag, metaFlags, size, 0L, 0L, 0L, 0L, (short) 0, 0, 0, md5Hash, knownState, parentPath, mimeType);
 	}
-
+		
 	/**
 	 * Get number of file layout ranges associated with this layout file
 	 *
