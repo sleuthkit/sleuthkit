@@ -3675,7 +3675,7 @@ public class SleuthkitCase {
 
 					addedFiles.add(new LayoutFile(this, newObjId, dataSourceObjectId, itemToAdd.getName(),
 							type, dirType, metaType, dirFlag, metaFlags,
-							itemToAdd.getSize(), null, FileKnown.UNKNOWN, parentPath));
+							itemToAdd.getSize(), null, FileKnown.UNKNOWN, parentPath, null));
 				}
 				localTrans.commit();
 				return addedFiles;
@@ -4884,7 +4884,7 @@ public class SleuthkitCase {
 							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
 							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"), //NON-NLS
 							rs.getLong("size"), //NON-NLS
-							rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), parentPath); //NON-NLS
+							rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), parentPath, rs.getString("mime_type")); //NON-NLS
 					results.add(lf);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.DERIVED.getFileType()) {
 					final DerivedFile df;
