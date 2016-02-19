@@ -67,6 +67,9 @@ public class LocalFile extends AbstractFile {
 		super(db, objId, 0, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short) 0,
 				name, fileType, 0L, 0, dirType, metaType, dirFlag,
 				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath, null);
+		
+		//use the local path functionality of AbstractFile, this sets up the infrastructure for it
+		super.setLocalPath(localPath, true); //local paths for local files are absolute paths
 	}
 
 	/**
@@ -110,7 +113,7 @@ public class LocalFile extends AbstractFile {
 		if (parentId > 0) {
 			setParentId(parentId);
 		}
-				
+
 		//use the local path functionality of AbstractFile, this sets up the infrastructure for it
 		super.setLocalPath(localPath, true); //local paths for local files are absolute paths
 	}
@@ -177,7 +180,7 @@ public class LocalFile extends AbstractFile {
 			String md5Hash, FileKnown knownState, String parentPath, String localPath, long parentId) {
 		this(db, objId, 0, name, TSK_DB_FILES_TYPE_ENUM.LOCAL, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, md5Hash, knownState, parentId, parentPath, localPath, null);
 	}
-	
+
 	@Override
 	public List<TskFileRange> getRanges() throws TskCoreException {
 		return Collections.<TskFileRange>emptyList();
