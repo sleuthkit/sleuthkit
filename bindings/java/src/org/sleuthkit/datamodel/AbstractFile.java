@@ -440,27 +440,18 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Gets the mime type of this file may return null if a mime type has not
-	 * been assigned
+	 * Gets the MIME type of this file.
 	 *
-	 * @return The MIME type, can be null
+	 * @return The MIME type name or null if the MIME type has not been set.
 	 */
 	public String getMIMEType() {
 		return this.mimeType;
 	}
 
 	/**
-	 * Sets the mime type for this file, updates database
-	 *
-	 * @param mimeType The MIME type to set
-	 * @throws TskCoreException If the mime type could not be added to the db
-	 * @throws TskDataException If the mime type has already been set
+	 * Sets the MIME type for this file.
 	 */
-	public void setMIMEType(String mimeType) throws TskCoreException, TskDataException {
-		if (this.mimeType != null) {
-			throw new TskDataException("Mime type has already been set");
-		}
-		getSleuthkitCase().setFileMIMEType(this, mimeType);
+	public void setMIMEType(String mimeType) {
 		this.mimeType = mimeType;
 	}
 
