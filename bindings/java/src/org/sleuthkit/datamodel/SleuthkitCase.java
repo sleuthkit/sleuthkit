@@ -3849,31 +3849,25 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Creates a new local file object, adds it to database and returns it.
+	 * Adds a local/logical file to the case database. The database operations
+	 * are done within a caller-managed transaction; the caller is responsible
+	 * for committing or rolling back the transaction.
 	 *
-	 * Make sure the connection in transaction is used for all database
-	 * interactions called by this method
-	 *
-	 * todo: at the moment we trust the transaction and don't do anything to
-	 * check it is valid or in the correct state. we should.
-	 *
-	 *
-	 * @param fileName file name the derived file
-	 * @param localPath local absolute path of the local file, including the
-	 * file name.
-	 * @param size size of the derived file in bytes
-	 * @param ctime
-	 * @param crtime
-	 * @param atime
-	 * @param mtime
-	 * @param isFile whether a file or directory, true if a file
-	 * @param parent parent file object (such as virtual directory, another
-	 * local file, or FsContent type of file)
-	 * @param transaction the transaction in the scope of which the operation is
-	 * to be performed, managed by the caller
-	 * @return newly created derived file object
-	 * @throws TskCoreException exception thrown if the object creation failed
-	 * due to a critical system error
+	 * @param fileName The name of the file.
+	 * @param localPath The absolute path (including the file name) of the
+	 * local/logical in secondary storage.
+	 * @param size The size of the file in bytes.
+	 * @param ctime The changed time of the file.
+	 * @param crtime The creation time of the file.
+	 * @param atime The accessed time of the file
+	 * @param mtime The modified time of the file.
+	 * @param isFile True, unless the file is a directory.
+	 * @param parent The parent of the file (e.g., a virtual directory)
+	 * @param transaction A caller-managed transaction within which the add file
+	 * operations are performed.
+	 * @return An object representing the local/logical file.
+	 * @throws TskCoreException if there is an error completing a case database
+	 * operation.
 	 */
 	public LocalFile addLocalFile(String fileName, String localPath,
 			long size, long ctime, long crtime, long atime, long mtime,
@@ -3884,21 +3878,19 @@ public class SleuthkitCase {
 		Statement queryStatement = null;
 		ResultSet resultSet = null;
 		try {
-			long parentId = parent.getId();
-			String parentPath = parent.getParentPath() + parent.getName() + "/"; //NON-NLS
 
 			// Insert a row for the local/logical file into the tsk_objects table.
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
 			statement.clearParameters();
-			statement.setLong(1, parentId);
+			statement.setLong(1, parent.getId());
 			statement.setLong(2, TskData.ObjectType.ABSTRACTFILE.getObjectType());
 			connection.executeUpdate(statement);
 			resultSet = statement.getGeneratedKeys();
 			if (!resultSet.next()) {
-				throw new TskCoreException(String.format("Failed to INSERT local file %s (%s) in tsk_objects table", fileName, localPath));
+				throw new TskCoreException(String.format("Failed to INSERT local file %s (%s) with parent id %d in tsk_objects table", fileName, localPath, parent.getId()));
 			}
-			long newObjId = resultSet.getLong(1);
+			long objectId = resultSet.getLong(1);
 			resultSet.close();
 			resultSet = null;
 
@@ -3908,56 +3900,47 @@ public class SleuthkitCase {
 			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)			
 			statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 			statement.clearParameters();
-			statement.setLong(1, newObjId);
-
-			// nothing to set for parameter 2, fs_obj_id since local files aren't part of file systems
-			statement.setNull(2, java.sql.Types.BIGINT);
+			statement.setLong(1, objectId);
+			statement.setNull(2, java.sql.Types.BIGINT); // Not part of a file system
 			statement.setString(3, fileName);
-
-			//type, has_path
 			statement.setShort(4, TskData.TSK_DB_FILES_TYPE_ENUM.LOCAL.getFileType());
 			statement.setShort(5, (short) 1);
-
-			//flags
-			final TSK_FS_NAME_TYPE_ENUM dirType = isFile ? TSK_FS_NAME_TYPE_ENUM.REG : TSK_FS_NAME_TYPE_ENUM.DIR;
+			TSK_FS_NAME_TYPE_ENUM dirType = isFile ? TSK_FS_NAME_TYPE_ENUM.REG : TSK_FS_NAME_TYPE_ENUM.DIR;
 			statement.setShort(6, dirType.getValue());
-			final TSK_FS_META_TYPE_ENUM metaType = isFile ? TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG : TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
+			TSK_FS_META_TYPE_ENUM metaType = isFile ? TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG : TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
 			statement.setShort(7, metaType.getValue());
-
-			//note: using alloc under assumption that derived files derive from alloc files
-			final TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.ALLOC;
+			TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.ALLOC;
 			statement.setShort(8, dirFlag.getValue());
-			final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue()
-					| TSK_FS_META_FLAG_ENUM.USED.getValue());
+			short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue() | TSK_FS_META_FLAG_ENUM.USED.getValue());
 			statement.setShort(9, metaFlags);
-
-			//size
 			statement.setLong(10, size);
-
-			//mactimes
-			//long ctime, long crtime, long atime, long mtime,
 			statement.setLong(11, ctime);
 			statement.setLong(12, crtime);
 			statement.setLong(13, atime);
 			statement.setLong(14, mtime);
-
-			//parent path
+			String parentPath = parent.getParentPath() + parent.getName() + "/"; //NON-NLS
 			statement.setString(15, parentPath);
-
-			// root data source object id
-			long dataSourceObjId = getDataSourceObjectId(connection, parent.getId());
+			long dataSourceObjId = getDataSourceObjectId(connection, parent.getId()); // RJCTODO: Let this be passed in or make a story
 			statement.setLong(16, dataSourceObjId);
-
 			connection.executeUpdate(statement);
+			addFilePath(connection, objectId, localPath);
+			return new LocalFile(this,
+					objectId,
+					fileName,
+					TSK_DB_FILES_TYPE_ENUM.LOCAL,
+					dirType,
+					metaType,
+					dirFlag,
+					metaFlags,
+					size,
+					ctime, crtime, atime, mtime,
+					null, null, null,
+					parent.getId(), parentPath,
+					dataSourceObjId,
+					localPath);
 
-			//add localPath 
-			addFilePath(connection, newObjId, localPath);
-
-			return new LocalFile(this, newObjId, dataSourceObjId, fileName, TSK_DB_FILES_TYPE_ENUM.LOCAL, dirType, metaType, dirFlag, metaFlags,
-					size, ctime, crtime, atime, mtime, null, null, parentId, parentPath, localPath, null);
-
-		} catch (SQLException e) {
-			throw new TskCoreException("Error adding local file directory " + fileName + " with local path " + localPath, e);
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Failed to INSERT local file %s (%s) with parent id %d in tsk_files table", fileName, localPath, parent.getId()), ex);
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(queryStatement);
@@ -3966,15 +3949,40 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Given the object id of some object, works up the tree of ancestors to the
-	 * root data source and returns the object id of the data source. The
-	 * trivial case where the input object id is for a root data source is
-	 * handled.
+	 * Given an object id, works up the tree of ancestors to the data source for
+	 * the object and gets the object id of the data source. The trivial case
+	 * where the input object id is for a source is handled.
 	 *
 	 * @param connection A case database connection.
-	 * @param objectId The object id of the object for which the root data
-	 * source is to be found.
-	 * @return The object id of the root data source.
+	 * @param objectId An object id.
+	 * @return A data source object id.
+	 * @deprecated This only exists to support deprecated TSK object
+	 * constructors.
+	 */
+	@Deprecated
+	long getDataSourceObjectId(long objectId) {
+		try {
+			CaseDbConnection connection = connections.getConnection();
+			try {
+				return getDataSourceObjectId(connection, objectId);
+			} finally {
+				connection.close();
+			}
+		} catch (TskCoreException ex) {
+			logger.log(Level.SEVERE, "Error getting data source object id for a file", ex);
+			return 0;
+		}
+	}
+
+	/**
+	 * Given an object id, works up the tree of ancestors to the data source for
+	 * the object and gets the object id of the data source. The trivial case
+	 * where the input object id is for a source is handled.
+	 *
+	 * @param connection A case database connection.
+	 * @param objectId An object id.
+	 * @return A data source object id.
+	 * @throws TskCoreException if there is an erro querying the case database.
 	 */
 	private long getDataSourceObjectId(CaseDbConnection connection, long objectId) throws TskCoreException {
 		acquireSharedLock();
@@ -5258,6 +5266,7 @@ public class SleuthkitCase {
 			releaseSharedLock();
 		}
 		return count;
+
 	}
 
 	/**
@@ -6028,6 +6037,7 @@ public class SleuthkitCase {
 				statement.close();
 			} catch (SQLException ex) {
 				logger.log(Level.SEVERE, "Error closing Statement", ex); //NON-NLS
+
 			}
 		}
 	}

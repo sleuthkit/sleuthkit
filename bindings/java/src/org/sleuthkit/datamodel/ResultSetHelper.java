@@ -303,39 +303,38 @@ class ResultSetHelper {
 	}
 
 	/**
-	 * Creates an local file given result set and parent id (optional)
+	 * Creates a LocalFile file object from a SELECT * FROM tsk_files table
+	 * result set.
 	 *
-	 * @param rs exsting active result set
-	 * @param parentId parent id or AbstractContent.UNKNOWN_ID
-	 * @return local file object created
-	 * @throws SQLException
+	 * @param rs The result set.
+	 * @param parentId The parent id of the file or AbstractContent.UNKNOWN_ID.
+	 * @return The LocalFile object.
+	 * @throws SQLException if there is an error querying the case database.
 	 */
 	LocalFile localFile(ResultSet rs, long parentId) throws SQLException {
-		boolean hasLocalPath = rs.getBoolean("has_path"); //NON-NLS
 		long objId = rs.getLong("obj_id"); //NON-NLS
 		String localPath = null;
-		if (hasLocalPath) {
+		if (rs.getBoolean("has_path")) {
 			localPath = db.getFilePath(objId);
 		}
-
 		String parentPath = rs.getString("parent_path"); //NON-NLS
-		if (parentPath == null) {
+		if (null == parentPath) {
 			parentPath = "";
 		}
-
-		final LocalFile lf
-				= new LocalFile(db, objId, rs.getLong("data_source_obj_id"), rs.getString("name"), //NON-NLS
-						TSK_DB_FILES_TYPE_ENUM.valueOf(rs.getShort("type")), //NON-NLS
-						TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
-						TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
-						TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"), //NON-NLS
-						rs.getLong("size"), //NON-NLS
-						rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
-						rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
-						parentId, parentPath, 
-						localPath,
-						rs.getString("mime_type"));						
-		return lf;
+		LocalFile file = new LocalFile(db,
+				objId,
+				rs.getString("name"), //NON-NLS
+				TSK_DB_FILES_TYPE_ENUM.valueOf(rs.getShort("type")), //NON-NLS
+				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
+				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"), //NON-NLS
+				rs.getLong("size"), //NON-NLS
+				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
+				rs.getString("mime_type"), rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
+				parentId, parentPath,
+				rs.getLong("data_source_obj_id"),
+				localPath
+		);
+		return file;
 	}
 
 	/**
