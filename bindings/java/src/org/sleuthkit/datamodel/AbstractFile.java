@@ -110,21 +110,21 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param parentPath
 	 * @param mimeType The MIME type of the file, can be null
 	 */
-	AbstractFile(SleuthkitCase db, 
-			long objId, 
-			long dataSourceObjectId, 
+	AbstractFile(SleuthkitCase db,
+			long objId,
+			long dataSourceObjectId,
 			TskData.TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
-			String name, 
-			TskData.TSK_DB_FILES_TYPE_ENUM fileType, 
+			String name,
+			TskData.TSK_DB_FILES_TYPE_ENUM fileType,
 			long metaAddr, int metaSeq,
-			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, 
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
-			long size, 
-			long ctime, long crtime, long atime, long mtime, 
-			short modes, 
-			int uid, int gid, 
+			long size,
+			long ctime, long crtime, long atime, long mtime,
+			short modes,
+			int uid, int gid,
 			String md5Hash, FileKnown knownState,
-			String parentPath, 
+			String parentPath,
 			String mimeType) {
 		super(db, objId, name);
 		this.dataSourceObjectId = dataSourceObjectId;
@@ -525,16 +525,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	@Override
 	public Content getDataSource() throws TskCoreException {
-		if (0 == this.dataSourceObjectId) {
-			// This lazy initialization is used to support the deprecated 
-			// protected constructor of this class and any unknown subclasses
-			// and should be removed when that constructor is removed. 
-			Content dataSource = super.getDataSource();
-			this.dataSourceObjectId = dataSource.getId();
-			return dataSource;
-		} else {
-			return getSleuthkitCase().getContentById(this.dataSourceObjectId);
-		}
+		return getSleuthkitCase().getContentById(this.dataSourceObjectId);
 	}
 
 	/**
@@ -1081,12 +1072,13 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @deprecated Do not make subclasses outside of this package.
 	 */
 	@Deprecated
+	@SuppressWarnings("deprecation")
 	protected AbstractFile(SleuthkitCase db, long objId, TskData.TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
 			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq,
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
 			String parentPath) {
-		this(db, objId, 0, attrType, attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null);
+		this(db, objId, db.getDataSourceObjectId(objId), attrType, attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null);
 	}
 
 }
