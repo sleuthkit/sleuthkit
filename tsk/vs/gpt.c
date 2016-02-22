@@ -16,6 +16,73 @@
 #include "tsk_dos.h"
 
 
+/*
+ *Check if GUID matches a given value.
+ */
+static int
+gpt_guid_match(GUID * g, uint32_t d1, uint16_t d2, uint16_t d3, uint64_t d4)
+{
+    if(g->data_1 != d1 || g->data_2 != d2 || g->data_3 != d3)
+        return 0;
+        
+    uint64_t p4 = (uint64_t)g->data_4[0];
+    int i;
+    for(i=1; i<8; ++i){
+        p4 = p4 << 8;
+        p4 += (uint64_t)g->data_4[i];
+    }
+    
+    if(p4 != d4)
+        return 0;
+    else
+        return 1;
+}
+
+
+
+/*
+ *get_guid_type
+ *
+ *Get partition type by reading GUID value.
+ *
+ *Source: https://en.wikipedia.org/wiki/GUID_Partition_Table
+ */
+static void
+gpt_guid_type(char * desc, GUID * g)
+{
+    if(gpt_guid_match(g, 0, 0, 0, 0))
+        snprintf(desc, GUID_DESC_LEN, "Unused entry");
+    else if(gpt_guid_match(g, 0x024DEE41, 0x33E7, 0x11D3, 0x9D690008C781F39F))
+        snprintf(desc, GUID_DESC_LEN, "MBR partition scheme");
+    else if(gpt_guid_match(g, 0xC12A7328, 0xF81F, 0x11D2, 0xBA4B00A0C93EC93B))
+        snprintf(desc, GUID_DESC_LEN, "EFI System partition");
+    else if(gpt_guid_match(g, 0x21686148, 0x6449, 0x6E6F, 0x744E656564454649))
+        snprintf(desc, GUID_DESC_LEN, "BIOS Boot partition");
+    else if(gpt_guid_match(g, 0xD3BFE2DE, 0x3DAF, 0x11DF, 0xBA40E3A556D89593))
+        snprintf(desc, GUID_DESC_LEN, "Intel Fast Flash partition");
+    else if(gpt_guid_match(g, 0xF4019732, 0x066E, 0x4E12, 0x8273346C5641494F))
+        snprintf(desc, GUID_DESC_LEN, "Sony boot partition");
+    else if(gpt_guid_match(g, 0xBFBFAFE7, 0xA34F, 0x448A, 0x9A5B6213EB736C22))
+        snprintf(desc, GUID_DESC_LEN, "Lenovo boot partition");
+    else if(gpt_guid_match(g, 0xE3C9E316, 0x0B5C, 0x4DB8, 0x817DF92DF00215AE))
+        snprintf(desc, GUID_DESC_LEN, "Microsoft Reserved Partition");
+    else if(gpt_guid_match(g, 0xDE94BBA4, 0x06D1, 0x4D40, 0xA16ABFD50179D6AC))
+        snprintf(desc, GUID_DESC_LEN, "Windows Recovery Environment");
+    else if(gpt_guid_match(g, 0xEBD0A0A2, 0xB9E5, 0x4433, 0x87C068B6B72699C7))
+        snprintf(desc, GUID_DESC_LEN, "Basic data partition");
+    else if(gpt_guid_match(g, 0x5808C8AA, 0x7E8F, 0x42E0, 0x85D2E1E90434CFB3))
+        snprintf(desc, GUID_DESC_LEN, "Logical Disk Manager metadata partition");
+    else if(gpt_guid_match(g, 0xAF9B60A0, 0x1431, 0x4F62, 0xBC683311714A69AD))
+        snprintf(desc, GUID_DESC_LEN, "Logical Disk Manager data partition");
+    else if(gpt_guid_match(g, 0x37AFFC90, 0xEF7D, 0x4E96, 0x91C32D7AE055B174))
+        snprintf(desc, GUID_DESC_LEN, "GPFS partition");
+    else if(gpt_guid_match(g, 0xE75CAF8F, 0xF680, 0x4CEE, 0xAFA3B001E56EFC2D))
+        snprintf(desc, GUID_DESC_LEN, "Storage Spaces partition");
+    else
+        snprintf(desc, GUID_DESC_LEN, "[Unkown type]");
+}
+
+
 /* 
  * Process the partition table at the sector address 
  * 
@@ -192,9 +259,9 @@ gpt_load_table(TSK_VS_INFO * vs)
         for (; (uintptr_t) ent < (uintptr_t) ent_buf + vs->block_size &&
             i < tsk_getu32(vs->endian, &head->tab_num_ent); i++) {
 
-            UTF16 *name16;
+            /*UTF16 *name16;
             UTF8 *name8;
-            int retVal;
+            int retVal;*/
 
             if (tsk_verbose)
                 tsk_fprintf(stderr,
@@ -223,28 +290,16 @@ gpt_load_table(TSK_VS_INFO * vs)
             }
 
 
-            if ((name = tsk_malloc(256)) == NULL) {
+            if ((name = tsk_malloc(GUID_DESC_LEN)) == NULL) {
                 free(sect_buf);
                 free(ent_buf);
                 return 1;
             }
 
-            name16 = (UTF16 *) ((uintptr_t) ent->name);
-            name8 = (UTF8 *) name;
+            
+            /*Find GUID partition type and use as description*/
+            gpt_guid_type(name, &(ent->type_guid));
 
-            retVal =
-                tsk_UTF16toUTF8(vs->endian, (const UTF16 **) &name16,
-                (UTF16 *) ((uintptr_t) name16 + sizeof(ent->name)),
-                &name8,
-                (UTF8 *) ((uintptr_t) name8 + 256), TSKlenientConversion);
-
-            if (retVal != TSKconversionOK) {
-                if (tsk_verbose)
-                    tsk_fprintf(stderr,
-                        "gpt_load_table: Error converting name to UTF8: %d\n",
-                        retVal);
-                *name = '\0';
-            }
 
             if (NULL == tsk_vs_part_add(vs,
                     (TSK_DADDR_T) tsk_getu64(vs->endian, ent->start_lba),
