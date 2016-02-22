@@ -28,13 +28,13 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 
 /**
- * A representation of a local/logical file (e.g., on user's machine) that has
- * been added to the case.
+ * A representation of a local/logical file (e.g., on a user's machine) that has
+ * been added to a case.
  */
 public class LocalFile extends AbstractFile {
 
 	/**
-	 * Constructs a representation of a local/logical file (e.g., on user's
+	 * Constructs a representation of a local/logical file (e.g., on a user's
 	 * machine) that has been added to the case database.
 	 *
 	 * @param db The case database to which the file has been added.
@@ -79,7 +79,7 @@ public class LocalFile extends AbstractFile {
 			String localPath) {
 		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short) 0,
 				name, fileType, 0L, 0, dirType, metaType, dirFlag,
-				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath, mimeType);		
+				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath, mimeType);
 		// TODO (AUT-1904): The parent id should be passed to AbstractContent 
 		// through the class hierarchy contructors, using 
 		// AbstractContent.UNKNOWN_ID as needed.
@@ -149,7 +149,7 @@ public class LocalFile extends AbstractFile {
 	 * Accepts a content visitor (Visitor design pattern).
 	 *
 	 * @param visitor A ContentVisitor supplying an algorithm to run using this
-	 * virtual directory as input.
+	 * local file as input.
 	 * @return The output of the algorithm.
 	 */
 	@Override
@@ -161,7 +161,7 @@ public class LocalFile extends AbstractFile {
 	 * Accepts a Sleuthkit item visitor (Visitor design pattern).
 	 *
 	 * @param visitor A SleuthkitItemVisitor supplying an algorithm to run using
-	 * this virtual directory as input.
+	 * this local file as input.
 	 * @return The output of the algorithm.
 	 */
 	@Override
@@ -170,7 +170,7 @@ public class LocalFile extends AbstractFile {
 	}
 
 	/**
-	 * Provides a string representation of this virtual directory.
+	 * Provides a string representation of this local file.
 	 *
 	 * @param preserveState True if state should be included in the string
 	 * representation of this object.
@@ -183,7 +183,7 @@ public class LocalFile extends AbstractFile {
 	}
 
 	/**
-	 * Constructs a representation of a local/logical file (e.g., on user's
+	 * Constructs a representation of a local/logical file (e.g., on a user's
 	 * machine) that has been added to the case database.
 	 *
 	 * @param db The case database to which the file has been added.
@@ -239,7 +239,7 @@ public class LocalFile extends AbstractFile {
 	}
 
 	/**
-	 * Constructs a representation of a local/logical file (e.g., on user's
+	 * Constructs a representation of a local/logical file (e.g., on a user's
 	 * machine) that has been added to the case database.
 	 *
 	 * @param db The case database to which the file has been added.
@@ -283,7 +283,7 @@ public class LocalFile extends AbstractFile {
 	}
 
 	/**
-	 * Constructs a representation of a local/logical file (e.g., on user's
+	 * Constructs a representation of a local/logical file (e.g., on a user's
 	 * machine) that has been added to the case.
 	 *
 	 * @param db The case database to which the file has been added.

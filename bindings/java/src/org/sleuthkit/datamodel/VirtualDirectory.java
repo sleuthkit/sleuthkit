@@ -224,10 +224,16 @@ public class VirtualDirectory extends AbstractFile {
 	 * @deprecated Do not make subclasses outside of this package.
 	 */
 	@Deprecated
-	VirtualDirectory(SleuthkitCase db, long objId, String name, TSK_FS_NAME_TYPE_ENUM dirType,
-			TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
-			long size, String md5Hash, FileKnown knownState, String parentPath) {
-		this(db, objId, 0, name, dirType, metaType, dirFlag, metaFlags, md5Hash, knownState, parentPath);
+	@SuppressWarnings("deprecation")
+	VirtualDirectory(SleuthkitCase db, 
+			long objId, 
+			String name, 
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, 
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
+			long size, 
+			String md5Hash, FileKnown knownState, 
+			String parentPath) {
+		this(db, objId, db.getDataSourceObjectId(objId), name, dirType, metaType, dirFlag, metaFlags, md5Hash, knownState, parentPath);
 	}
-
+	
 }
