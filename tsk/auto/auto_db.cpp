@@ -773,7 +773,7 @@ TskAutoDb::md5HashAttr(unsigned char md5Hash[16], const TSK_FS_ATTR * fs_attr)
 * Creates file ranges and file entries 
 * A single file entry per consecutive range of blocks
 * @param a_block block being walked
-* @param a_ptr point to TskAutoDb class
+* @param a_ptr a pointer to an UNALLOC_BLOCK_WLK_TRACK struct
 * @returns TSK_WALK_CONT if continue, otherwise TSK_WALK_STOP if stop processing requested
 */
 TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, void *a_ptr) {
@@ -823,7 +823,7 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
     // or we're not chunking. Either way we now add what we've got to the DB
     int64_t fileObjId = 0;
     if (unallocBlockWlkTrack->tskAutoDb.m_db->addUnallocBlockFile(unallocBlockWlkTrack->tskAutoDb.m_curUnallocDirId, 
-        unallocBlockWlkTrack->fsObjId, unallocBlockWlkTrack->size, unallocBlockWlkTrack->ranges, fileObjId, ((TskAutoDb*)a_ptr)->m_curImgId) == TSK_ERR) {
+        unallocBlockWlkTrack->fsObjId, unallocBlockWlkTrack->size, unallocBlockWlkTrack->ranges, fileObjId, unallocBlockWlkTrack->tskAutoDb.m_curImgId) == TSK_ERR) {
             // @@@ Handle error -> Don't have access to registerError() though...
     }
 
@@ -915,7 +915,7 @@ TSK_RETVAL_ENUM TskAutoDb::addUnallocSpaceToDb() {
     size_t numVsP = 0;
     size_t numFs = 0;
 
-    TSK_RETVAL_ENUM retFsSpace = addUnallocFsSpaceToDb(numFs); 
+    TSK_RETVAL_ENUM retFsSpace = addUnallocFsSpaceToDb(numFs);
     TSK_RETVAL_ENUM retVsSpace = addUnallocVsSpaceToDb(numVsP);
 
     //handle case when no fs and no vs partitions
