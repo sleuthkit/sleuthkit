@@ -138,7 +138,7 @@ public class BlackboardAttribute {
 			hash = 63 * hash + Objects.hashCode(this.valueType);
 			return hash;
 		}
-		
+
 		@Override
 		public String toString() {
 			return "(typeID= " + this.typeID
@@ -1154,7 +1154,6 @@ public class BlackboardAttribute {
 	 * @return type id
 	 * @deprecated Use getAttributeType
 	 */
-	
 	@Deprecated
 	public int getAttributeTypeID() {
 		return attributeType.getTypeID();
@@ -1166,7 +1165,6 @@ public class BlackboardAttribute {
 	 * @return type name string
 	 * @deprecated Use getAttributeType
 	 */
-	
 	@Deprecated
 	public String getAttributeTypeName() throws TskCoreException {
 		return attributeType.getTypeName();
@@ -1178,7 +1176,6 @@ public class BlackboardAttribute {
 	 * @return type display name
 	 * @deprecated Use getAttributeType
 	 */
-	
 	@Deprecated
 	public String getAttributeTypeDisplayName() throws TskCoreException {
 		return attributeType.getDisplayName();
@@ -1191,19 +1188,18 @@ public class BlackboardAttribute {
 	 * value get method.
 	 *
 	 * @return value type
-	 * 
+	 *
 	 * @deprecated Use getAttributeType
 	 */
-	
 	@Deprecated
 	public TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE getValueType() {
 		return attributeType.getValueType();
 	}
-	
+
 	/**
 	 * Get the attribute type of this attribute
-	 * 
-	 * @return the attribute type 
+	 *
+	 * @return the attribute type
 	 */
 	public BlackboardAttribute.Type getAttributeType() {
 		return this.attributeType;
