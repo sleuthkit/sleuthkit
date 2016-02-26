@@ -1152,7 +1152,7 @@ public class BlackboardAttribute {
 	 * Get the attribute type id
 	 *
 	 * @return type id
-	 * @deprecated Use getAttributeType
+	 * @deprecated Use getAttributeType().getTypeID()
 	 */
 	@Deprecated
 	public int getAttributeTypeID() {
@@ -1163,7 +1163,7 @@ public class BlackboardAttribute {
 	 * Get the attribute type name string
 	 *
 	 * @return type name string
-	 * @deprecated Use getAttributeType
+	 * @deprecated Use getAttributeType().getTypeName()
 	 */
 	@Deprecated
 	public String getAttributeTypeName() throws TskCoreException {
@@ -1174,7 +1174,7 @@ public class BlackboardAttribute {
 	 * Get the attribute type display name
 	 *
 	 * @return type display name
-	 * @deprecated Use getAttributeType
+	 * @deprecated Use getAttributeType().getDisplayName()
 	 */
 	@Deprecated
 	public String getAttributeTypeDisplayName() throws TskCoreException {
@@ -1189,7 +1189,7 @@ public class BlackboardAttribute {
 	 *
 	 * @return value type
 	 *
-	 * @deprecated Use getAttributeType
+	 * @deprecated Use getAttributeType().getValueType()
 	 */
 	@Deprecated
 	public TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE getValueType() {
