@@ -68,7 +68,7 @@ public class OSInfo {
 		haveFsContent = true;
 		attributeMap = new HashMap<Integer, String>();
 		for (BlackboardAttribute attr : a_art.getAttributes()) {
-			attributeMap.put(attr.getAttributeTypeID(), attr.getValueString());
+			attributeMap.put(attr.getAttributeType().getTypeID(), attr.getValueString());
 		}
 
 		if (a_parent != null) {
@@ -105,7 +105,7 @@ public class OSInfo {
 		}
 		attributeMap = new HashMap<Integer, String>();
 		for (BlackboardAttribute attr : a_art.getAttributes()) {
-			attributeMap.put(attr.getAttributeTypeID(), attr.getValueString());
+			attributeMap.put(attr.getAttributeType().getTypeID(), attr.getValueString());
 		}
 	}
 

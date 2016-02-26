@@ -286,7 +286,7 @@ public abstract class AbstractContent implements Content {
 		}
 
 		for (BlackboardAttribute attribute : genInfoArtifact.getAttributes()) {
-			if (attribute.getAttributeTypeID() == attr_type.getTypeID()) {
+			if (attribute.getAttributeType().getTypeID() == attr_type.getTypeID()) {
 				returnList.add(attribute);
 			}
 		}

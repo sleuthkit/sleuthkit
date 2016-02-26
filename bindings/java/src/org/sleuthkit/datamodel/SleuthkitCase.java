@@ -1873,7 +1873,7 @@ public class SleuthkitCase {
 
 	private void addBlackBoardAttribute(BlackboardAttribute attr, int artifactTypeId, CaseDbConnection connection) throws SQLException, TskCoreException {
 		PreparedStatement statement;
-		switch (attr.getValueType()) {
+		switch (attr.getAttributeType().getValueType()) {
 			case STRING:
 				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_STRING_ATTRIBUTE);
 				statement.clearParameters();
@@ -1911,8 +1911,8 @@ public class SleuthkitCase {
 		statement.setInt(2, artifactTypeId);
 		statement.setString(3, escapeSingleQuotes(attr.getModuleName()));
 		statement.setString(4, escapeSingleQuotes(attr.getContext()));
-		statement.setInt(5, attr.getAttributeTypeID());
-		statement.setLong(6, attr.getValueType().getType());
+		statement.setInt(5, attr.getAttributeType().getTypeID());
+		statement.setLong(6, attr.getAttributeType().getValueType().getType());
 		connection.executeUpdate(statement);
 	}
 
