@@ -325,9 +325,9 @@ public abstract class AbstractContent implements Content {
 		ArrayList<BlackboardArtifact> artifacts = getArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT);
 
 		for (BlackboardArtifact a : artifacts) {
-			List<BlackboardAttribute> attributes = a.getAttributes(ATTRIBUTE_TYPE.TSK_SET_NAME);
-			for (BlackboardAttribute attr : attributes) {
-				hashNames.add(attr.getValueString());
+			BlackboardAttribute attribute = a.getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_SET_NAME));
+			if (attribute != null) {
+				hashNames.add(attribute.getValueString());
 			}
 		}
 		return Collections.unmodifiableSet(hashNames);
