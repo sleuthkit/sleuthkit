@@ -461,12 +461,24 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		}
 		return filteredAttributes;
 	}
-	
+
+	/**
+	 * Gets the attribute of this artifact of given type.
+	 *
+	 * @param attributeType The type of attribute to get
+	 * @return The attribute of that type, returns null if there is no attribute
+	 * of that type.
+	 * @throws TskCoreException if a critical error occurs and the attributes
+	 * are not fetched
+	 */
 	public BlackboardAttribute getAttribute(BlackboardAttribute.Type attributeType) throws TskCoreException {
 		List<BlackboardAttribute> attributes = this.getAttributes();
-		for(BlackboardAttribute attribute : attributes) {
-			
+		for (BlackboardAttribute attribute : attributes) {
+			if (attribute.getAttributeType().equals(attributeType)) {
+				return attribute;
+			}
 		}
+		return null;
 	}
 
 	/**
