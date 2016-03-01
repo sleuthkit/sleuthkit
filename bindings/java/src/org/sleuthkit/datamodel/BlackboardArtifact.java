@@ -455,7 +455,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		}
 		ArrayList<BlackboardAttribute> filteredAttributes = new ArrayList<BlackboardAttribute>();
 		for (BlackboardAttribute attr : attrsCache) {
-			if (attr.getAttributeTypeID() == attributeType.getTypeID()) {
+			if (attr.getAttributeType().getTypeID() == attributeType.getTypeID()) {
 				filteredAttributes.add(attr);
 			}
 		}
