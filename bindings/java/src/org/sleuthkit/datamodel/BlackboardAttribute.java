@@ -68,7 +68,13 @@ public class BlackboardAttribute {
 			this.displayName = displayName;
 			this.valueType = valueType;
 		}
-		
+
+		/**
+		 * Constructs a type
+		 *
+		 * @param type The attribute type represented by this type object being
+		 * constructed
+		 */
 		public Type(BlackboardAttribute.ATTRIBUTE_TYPE type) {
 			this.typeID = type.getTypeID();
 			this.typeName = type.getLabel();
