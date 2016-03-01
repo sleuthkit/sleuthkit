@@ -70,6 +70,19 @@ public class BlackboardAttribute {
 		}
 
 		/**
+		 * Constructs a type
+		 *
+		 * @param type The attribute type represented by this type object being
+		 * constructed
+		 */
+		public Type(BlackboardAttribute.ATTRIBUTE_TYPE type) {
+			this.typeID = type.getTypeID();
+			this.typeName = type.getLabel();
+			this.displayName = type.getDisplayName();
+			this.valueType = type.getValueType();
+		}
+
+		/**
 		 * Get value type of this attribute
 		 *
 		 * @return value type
@@ -682,8 +695,7 @@ public class BlackboardAttribute {
 			throw new IllegalArgumentException("Value types do not match");
 		}
 		this.artifactID = 0;
-		this.attributeType = new BlackboardAttribute.Type(attributeType.getTypeID(), attributeType.getLabel(), attributeType.getDisplayName(),
-				attributeType.getValueType());
+		this.attributeType = new BlackboardAttribute.Type(attributeType);
 		this.moduleName = replaceNulls(moduleName);
 		this.valueInt = valueInt;
 		this.valueLong = 0;
@@ -768,8 +780,7 @@ public class BlackboardAttribute {
 			throw new IllegalArgumentException("Value types do not match");
 		}
 		this.artifactID = 0;
-		this.attributeType = new BlackboardAttribute.Type(attributeType.getTypeID(), attributeType.getLabel(), attributeType.getDisplayName(),
-				attributeType.getValueType());
+		this.attributeType = new BlackboardAttribute.Type(attributeType);
 		this.moduleName = replaceNulls(moduleName);
 		this.valueInt = 0;
 		this.valueLong = valueLong;
@@ -855,8 +866,7 @@ public class BlackboardAttribute {
 			throw new IllegalArgumentException("Value types do not match");
 		}
 		this.artifactID = 0;
-		this.attributeType = new BlackboardAttribute.Type(attributeType.getTypeID(), attributeType.getLabel(), attributeType.getDisplayName(),
-				attributeType.getValueType());
+		this.attributeType = new BlackboardAttribute.Type(attributeType);
 		this.moduleName = replaceNulls(moduleName);
 		this.valueInt = 0;
 		this.valueLong = 0;
@@ -942,8 +952,7 @@ public class BlackboardAttribute {
 			throw new IllegalArgumentException("Value types do not match");
 		}
 		this.artifactID = 0;
-		this.attributeType = new BlackboardAttribute.Type(attributeType.getTypeID(), attributeType.getLabel(), attributeType.getDisplayName(),
-				attributeType.getValueType());
+		this.attributeType = new BlackboardAttribute.Type(attributeType);
 		this.moduleName = replaceNulls(moduleName);
 		this.valueInt = 0;
 		this.valueLong = 0;
@@ -1036,8 +1045,7 @@ public class BlackboardAttribute {
 			throw new IllegalArgumentException("Value types do not match");
 		}
 		this.artifactID = 0;
-		this.attributeType = new BlackboardAttribute.Type(attributeType.getTypeID(), attributeType.getLabel(), attributeType.getDisplayName(),
-				attributeType.getValueType());
+		this.attributeType = new BlackboardAttribute.Type(attributeType);
 		this.moduleName = replaceNulls(moduleName);
 		this.context = "";
 		this.valueInt = 0;
