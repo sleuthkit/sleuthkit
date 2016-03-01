@@ -442,7 +442,10 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * @return a list of attributes of the given type
 	 * @throws TskCoreException if a critical error occurs and the attributes
 	 * are not fetched
+	 * @deprecated There should not be multiple attributes of a type on an
+	 * artifact. Use getAttribute(BlackboardAttribute.Type) instead.
 	 */
+	@Deprecated
 	public List<BlackboardAttribute> getAttributes(final BlackboardAttribute.ATTRIBUTE_TYPE attributeType) throws TskCoreException {
 		if (loadedCacheFromDb == false) {
 			List<BlackboardAttribute> attrs = sleuthkitCase.getBlackboardAttributes(this);
@@ -457,6 +460,25 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 			}
 		}
 		return filteredAttributes;
+	}
+
+	/**
+	 * Gets the attribute of this artifact of given type.
+	 *
+	 * @param attributeType The type of attribute to get
+	 * @return The attribute of that type, returns null if there is no attribute
+	 * of that type.
+	 * @throws TskCoreException if a critical error occurs and the attributes
+	 * are not fetched
+	 */
+	public BlackboardAttribute getAttribute(BlackboardAttribute.Type attributeType) throws TskCoreException {
+		List<BlackboardAttribute> attributes = this.getAttributes();
+		for (BlackboardAttribute attribute : attributes) {
+			if (attribute.getAttributeType().equals(attributeType)) {
+				return attribute;
+			}
+		}
+		return null;
 	}
 
 	/**
