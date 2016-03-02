@@ -2069,6 +2069,37 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Get the artifact type associated with an artifact type name.
+	 *
+	 * @param artTypeName An artifact type name.
+	 * @return An artifact type or null if the artifact type does not exist.
+	 * @throws TskCoreException If an error occurs accessing the case database.
+	 *
+	 */
+	public BlackboardArtifact.Type getArtifactType(String artTypeName) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT artifact_type_id, type_name, display_name FROM blackboard_artifact_types WHERE type_name = '" + artTypeName + "'"); //NON-NLS
+			BlackboardArtifact.Type type = null;
+			if (rs.next()) {
+				type = new BlackboardArtifact.Type(rs.getInt(1), rs.getString(2), rs.getString(3));
+			}
+			return type;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting attribute type id", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	/**
 	 * Get the string associated with the given id. Will throw an error if that
 	 * id does not exist
 	 *
@@ -2143,7 +2174,9 @@ public class SleuthkitCase {
 	 * @return An artifact id or -1 if the attribute type does not exist.
 	 * @throws TskCoreException If an error occurs accessing the case database.
 	 *
+	 * @deprecated Use getArtifactType instead
 	 */
+	@Deprecated
 	public int getArtifactTypeID(String artifactTypeName) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
@@ -2175,7 +2208,10 @@ public class SleuthkitCase {
 	 * @return name of that artifact type
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
+	 *
+	 * @deprecated Use getArtifactType instead
 	 */
+	@Deprecated
 	String getArtifactTypeString(int artifactTypeID) throws TskCoreException {
 		// TODO: This should return null, not throw an exception
 		CaseDbConnection connection = connections.getConnection();
@@ -2209,7 +2245,10 @@ public class SleuthkitCase {
 	 * @return display name of that artifact type
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 * within tsk core
+	 *
+	 * @deprecated Use getArtifactType instead
 	 */
+	@Deprecated
 	String getArtifactTypeDisplayName(int artifactTypeID) throws TskCoreException {
 		// TODO: This should return null, not throw an exception
 		CaseDbConnection connection = connections.getConnection();
