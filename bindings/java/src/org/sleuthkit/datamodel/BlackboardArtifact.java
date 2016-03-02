@@ -59,6 +59,17 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		}
 
 		/**
+		 * Constructs a type for a blackboard artifact
+		 *
+		 * @param type the artifact type enum from which this type will be based
+		 */
+		public Type(ARTIFACT_TYPE type) {
+			this.typeID = type.getTypeID();
+			this.typeName = type.getLabel();
+			this.displayName = type.getDisplayName();
+		}
+
+		/**
 		 * Gets the typeName string for the artifact type enum
 		 *
 		 * @return typeName string
