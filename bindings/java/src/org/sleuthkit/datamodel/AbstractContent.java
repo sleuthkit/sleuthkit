@@ -221,7 +221,7 @@ public abstract class AbstractContent implements Content {
 
 	@Override
 	public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskCoreException {
-		return getArtifacts(db.getArtifactTypeID(artifactTypeName));
+		return getArtifacts(db.getArtifactType(artifactTypeName).getTypeID());
 	}
 
 	@Override
