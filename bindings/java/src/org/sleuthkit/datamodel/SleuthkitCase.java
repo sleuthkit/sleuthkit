@@ -1578,6 +1578,30 @@ public class SleuthkitCase {
 			releaseSharedLock();
 		}
 	}
+	
+	private ArrayList<BlackboardArtifact> getArtifactsHelper(String whereClause) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		ResultSet rs = null;
+		try {
+			Statement statement = connection.createStatement();
+			String query = "SELECT arts.artifact_id, arts.obj_id, types.artifact_type_id, types.type_name, types.display_name "
+					+ "FROM blackboard_artifacts AS arts, blackboard_artifact_types AS types WHERE "
+					+ whereClause;
+			rs = connection.executeQuery(statement, query);
+			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
+			while (rs.next()) {
+				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2), rs.getInt(3), rs.getString(4), rs.getString(5)));
+			}
+			return artifacts;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting or creating a blackboard artifact", ex);
+		} finally {
+			closeResultSet(rs);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
 
 	/**
 	 * Helper method to get count of all artifacts matching the type id name and
@@ -1655,11 +1679,7 @@ public class SleuthkitCase {
 	 * within TSK core
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(String artifactTypeName, long obj_id) throws TskCoreException {
-		BlackboardArtifact.Type type = this.getArtifactType(artifactTypeName);
-		if (type == null) {
-			return new ArrayList<BlackboardArtifact>();
-		}
-		return getArtifactsHelper(type, obj_id);
+		return getArtifactsHelper("arts.obj_id = " + obj_id + " AND types.type_name = '" + artifactTypeName + "';");
 	}
 
 	/**
@@ -1672,7 +1692,7 @@ public class SleuthkitCase {
 	 * within TSK core
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(int artifactTypeID, long obj_id) throws TskCoreException {
-		return getArtifactsHelper(this.getArtifactType(artifactTypeID), obj_id);
+		return getArtifactsHelper("arts.obj_id = " + obj_id + " AND types.artifact_type_id = " + artifactTypeID + ";");
 	}
 
 	/**
@@ -1685,7 +1705,7 @@ public class SleuthkitCase {
 	 * within TSK core
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType, long obj_id) throws TskCoreException {
-		return getArtifactsHelper(new BlackboardArtifact.Type(artifactType), obj_id);
+		return getArtifactsHelper("arts.obj_id = " + obj_id + " AND types.artifact_type_id = " + artifactType.getTypeID() + " AND types.type_name = '" + artifactType.getDisplayName() + "';");
 	}
 
 	/**
@@ -1743,11 +1763,7 @@ public class SleuthkitCase {
 	 * within TSK core
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(String artifactTypeName) throws TskCoreException {
-		BlackboardArtifact.Type type = this.getArtifactType(artifactTypeName);
-		if (type == null) {
-			return new ArrayList<BlackboardArtifact>();
-		}
-		return getArtifactsHelper(type);
+		return getArtifactsHelper("types.type_name = '" + artifactTypeName + "';");
 	}
 
 	/**
@@ -1759,7 +1775,7 @@ public class SleuthkitCase {
 	 * within TSK core
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType) throws TskCoreException {
-		return getArtifactsHelper(new BlackboardArtifact.Type(artifactType));
+		return getArtifactsHelper("types.type_name = '" + artifactType.getDisplayName() + "' AND types.artifact_type_id = " + artifactType.getTypeID() + ";");
 	}
 
 	/**
