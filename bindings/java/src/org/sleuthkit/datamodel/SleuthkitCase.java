@@ -2158,7 +2158,7 @@ public class SleuthkitCase {
 			}
 			return type;
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting attribute type id", ex);
+			throw new TskCoreException("Error getting artifacts from the database", ex);
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
