@@ -2137,6 +2137,37 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Get the artifact type associated with an artifact type name.
+	 *
+	 * @param artTypeName An artifact type name.
+	 * @return An artifact type or null if the artifact type does not exist.
+	 * @throws TskCoreException If an error occurs accessing the case database.
+	 *
+	 */
+	public BlackboardArtifact.Type getArtifactType(String artTypeName) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT artifact_type_id, type_name, display_name FROM blackboard_artifact_types WHERE type_name = '" + artTypeName + "'"); //NON-NLS
+			BlackboardArtifact.Type type = null;
+			if (rs.next()) {
+				type = new BlackboardArtifact.Type(rs.getInt(1), rs.getString(2), rs.getString(3));
+			}
+			return type;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting attribute type id", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	/**
 	 * Get the artifact type id associated with an artifact type name.
 	 *
 	 * @param artifactTypeName An artifact type name.
