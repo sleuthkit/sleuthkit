@@ -46,7 +46,7 @@ public class BlackboardAttribute {
 	/**
 	 * Class to represent the type of a blackboard attribute
 	 */
-	public static final class Type implements Serializable, Comparable<Type> {
+	public static final class Type implements Serializable {
 
 		private static final long serialVersionUID = 1L;
 		private final String typeName;
@@ -158,11 +158,6 @@ public class BlackboardAttribute {
 					+ ", displayName=" + this.displayName
 					+ ", typeName=" + this.typeName
 					+ ", valueType=" + this.valueType + ")";
-		}
-
-		@Override
-		public int compareTo(Type o) {
-			return this.getTypeID() - o.getTypeID();
 		}
 	}
 
