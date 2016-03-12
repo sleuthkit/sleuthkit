@@ -3266,17 +3266,15 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			// Get the parent path.
-			String parentPath;
-			if (0 != parentId) {
-				parentPath = getFileParentPath(parentId, transaction);
-				String parentName = getFileName(parentId, transaction);
-				if (null != parentName) {
-					parentPath = parentPath + parentName + "/"; //NON-NLS
-				}
-			} else {
+			String parentPath = getFileParentPath(parentId, transaction);
+			if (parentPath == null) {
 				parentPath = "/"; //NON-NLS
 			}
-
+			String parentName = getFileName(parentId, transaction);
+			if (parentName != null) {
+				parentPath = parentPath + parentName + "/"; //NON-NLS
+			}			
+			
 			// Insert a row for the virtual directory into the tsk_objects table.
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
 			CaseDbConnection connection = transaction.getConnection();
