@@ -75,6 +75,7 @@ printit(TSK_FS_FILE * fs_file, const char *a_path,
 				tsk_fs_name_print_mac_md5(stdout, fs_file, a_path, fs_attr,
 					fls_data->macpre, fls_data->sec_skew,
 					hash_results.md5_digest);
+                                tsk_printf("\n");
 			}
 			else{
 				// If the hash calculation had errors, pass in a buffer of nulls
@@ -82,11 +83,13 @@ printit(TSK_FS_FILE * fs_file, const char *a_path,
 				tsk_fs_name_print_mac_md5(stdout, fs_file, a_path, fs_attr,
 					fls_data->macpre, fls_data->sec_skew,
 					null_buf);
+                                tsk_printf("\n");
 			}
         }
         else {
             tsk_fs_name_print_mac(stdout, fs_file, a_path,
                 fs_attr, fls_data->macpre, fls_data->sec_skew);
+            tsk_printf("\n");
         }
     }
     else if (fls_data->flags & TSK_FS_FLS_LONG) {

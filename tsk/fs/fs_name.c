@@ -570,20 +570,21 @@ tsk_fs_name_print_long(FILE * hFile, const TSK_FS_FILE * fs_file,
 /**
  * \internal
  *
-** Print output in the format that mactime reads.
-**
-** If the flags in the fs_file->meta structure are set to FS_FLAG_ALLOC
-** then it is assumed that the inode has been reallocated and the
-** contents are not displayed
-**
-** fs is not required (only used for block size).
+ * Print output in the format that mactime reads.
+ *
+ * If the flags in the fs_file->meta structure are set to FS_FLAG_ALLOC
+ * then it is assumed that the inode has been reallocated and the
+ * contents are not displayed
+ * Newline is not printed at the end
+ *
+ * fs is not required (only used for block size).
  * @param hFile handle to print results to
  * @param fs_file File to print details about
  * @param a_path Parent directory of file (needs to end with "/")
  * @param fs_attr Attribute in file that is being called for (NULL for non-NTFS)
  * @param prefix Path of mounting point for image
  * @param time_skew number of seconds skew to adjust time
-*/
+ */
 void
 tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
     const char *a_path, const TSK_FS_ATTR * fs_attr,
@@ -596,13 +597,14 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
 /**
  * \internal
  *
-** Print output in the format that mactime reads.
-**
-** If the flags in the fs_file->meta structure are set to FS_FLAG_ALLOC
-** then it is assumed that the inode has been reallocated and the
-** contents are not displayed
-**
-** fs is not required (only used for block size).
+ * Print output in the format that mactime reads.
+ *
+ * If the flags in the fs_file->meta structure are set to FS_FLAG_ALLOC
+ * then it is assumed that the inode has been reallocated and the
+ * contents are not displayed
+ * Newline is not printed at the end
+ *
+ * fs is not required (only used for block size).
  * @param hFile handle to print results to
  * @param fs_file File to print details about
  * @param a_path Parent directory of file (needs to end with "/")
@@ -610,7 +612,7 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
  * @param prefix Path of mounting point for image
  * @param time_skew number of seconds skew to adjust time
  * @param hash_results Holds the calculated md5 hash
-*/
+ */
 void
 tsk_fs_name_print_mac_md5(FILE * hFile, const TSK_FS_FILE * fs_file,
     const char *a_path, const TSK_FS_ATTR * fs_attr,
@@ -735,7 +737,7 @@ tsk_fs_name_print_mac_md5(FILE * hFile, const TSK_FS_FILE * fs_file,
     }
 
     if (!fs_file->meta) {
-        tsk_fprintf(hFile, "0|0|0|0\n");
+        tsk_fprintf(hFile, "0|0|0|0");
     }
     else {
         // special case for NTFS FILE_NAME attribute
@@ -763,10 +765,10 @@ tsk_fs_name_print_mac_md5(FILE * hFile, const TSK_FS_FILE * fs_file,
                     fs_file->meta->time2.ntfs.fn_ctime);
 
             if (fs_file->meta->time2.ntfs.fn_crtime)
-                tsk_fprintf(hFile, "%" PRIu32 "\n",
+                tsk_fprintf(hFile, "%" PRIu32,
                     fs_file->meta->time2.ntfs.fn_crtime - time_skew);
             else
-                tsk_fprintf(hFile, "%" PRIu32 "\n",
+                tsk_fprintf(hFile, "%" PRIu32,
                     fs_file->meta->time2.ntfs.fn_crtime);
         }
         else {
@@ -790,10 +792,10 @@ tsk_fs_name_print_mac_md5(FILE * hFile, const TSK_FS_FILE * fs_file,
                 tsk_fprintf(hFile, "%" PRIu32 "|", fs_file->meta->ctime);
 
             if (fs_file->meta->crtime)
-                tsk_fprintf(hFile, "%" PRIu32 "\n",
+                tsk_fprintf(hFile, "%" PRIu32,
                     fs_file->meta->crtime - time_skew);
             else
-                tsk_fprintf(hFile, "%" PRIu32 "\n", fs_file->meta->crtime);
+                tsk_fprintf(hFile, "%" PRIu32, fs_file->meta->crtime);
         }
     }
 }
