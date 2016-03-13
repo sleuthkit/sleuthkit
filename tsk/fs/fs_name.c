@@ -1,14 +1,14 @@
 /*
 ** fs_name
-** The Sleuth Kit 
+** The Sleuth Kit
 **
-** Display and manipulate directory entries 
+** Display and manipulate directory entries
 ** This file contains generic functions that call the appropriate function
 ** depending on the file system type.
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2006-2013 Brian Carrier.  All Rights reserved
-** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved 
+** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
@@ -139,7 +139,7 @@ tsk_fs_name_free(TSK_FS_NAME * fs_name)
 
 /** \internal
  * Copy the contents of a TSK_FS_NAME structure to another
- * structure. 
+ * structure.
  * @param a_fs_name_to Destination structure to copy to
  * @param a_fs_name_from Source structure to copy from
  * @returns 1 on error
@@ -214,7 +214,7 @@ tsk_fs_name_copy(TSK_FS_NAME * a_fs_name_to,
 
 /**
  * \ingroup fslib
- * Makes the "ls -l" permissions string for a file. 
+ * Makes the "ls -l" permissions string for a file.
  *
  * @param a_fs_meta File to be processed
  * @param a_buf [out] Buffer to write results to (must be 12 bytes or longer)
@@ -351,7 +351,7 @@ tsk_fs_print_time(FILE * hFile, time_t time)
 
 // @@@ We could merge this with the tsk_fs_time_to_str in
 // the future when the feature to include time resolution
-// is added to TSK_FS_META (and then that value would be 
+// is added to TSK_FS_META (and then that value would be
 // passed in and tsk_fs_time_to_str would decide what to
 // round up/down to
 
@@ -379,14 +379,14 @@ tsk_fs_print_day(FILE * hFile, time_t time)
 
 
 /**
-* \internal
+ * \internal
  * Simple print of dentry type / inode type, deleted, inode, and
  * name
  *
  * fs_attr is used for alternate data streams in NTFS, set to NULL
  * for all other file systems
  *
- * A newline is not printed at the end
+ * Newline is not printed at the end
  *
  * If path is NULL, then skip else use. it has the full directory name
  *  It needs to end with "/"
@@ -409,7 +409,7 @@ tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
     /* type of file - based on inode type: we want letters though for
      * regular files so we use the dent_str though */
     if (fs_file->meta) {
-        /* 
+        /*
          * An NTFS directory can have a Data stream, in which
          * case it would be printed with modes of a
          * directory, although it is really a file
@@ -495,12 +495,13 @@ tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
 /**
  * \internal
  * Print contents of  fs_name entry format like ls -l
-**
-** All elements are tab delimited 
-**
-** If path is NULL, then skip else use. it has the full directory name
-**  It needs to end with "/"
-*/
+ *
+ * All elements are tab delimited.
+ * Newline is not printed at the end
+ *
+ * If path is NULL, then skip else use. it has the full directory name
+ *  It needs to end with "/"
+ */
 void
 tsk_fs_name_print_long(FILE * hFile, const TSK_FS_FILE * fs_file,
     const char *a_path, TSK_FS_INFO * fs, const TSK_FS_ATTR * fs_attr,
@@ -520,7 +521,7 @@ tsk_fs_name_print_long(FILE * hFile, const TSK_FS_FILE * fs_file,
         tsk_fs_print_time(hFile, 0);    // crtime
 
         // size, uid, gid
-        tsk_fprintf(hFile, "\t0\t0\t0\n");
+        tsk_fprintf(hFile, "\t0\t0\t0");
     }
     else {
 
@@ -556,7 +557,7 @@ tsk_fs_name_print_long(FILE * hFile, const TSK_FS_FILE * fs_file,
         else
             tsk_fprintf(hFile, "\t%" PRIuOFF, fs_file->meta->size);
 
-        tsk_fprintf(hFile, "\t%" PRIuGID "\t%" PRIuUID "\n",
+        tsk_fprintf(hFile, "\t%" PRIuGID "\t%" PRIuUID,
             fs_file->meta->gid, fs_file->meta->uid);
     }
 
