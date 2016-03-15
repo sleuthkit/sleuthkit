@@ -64,8 +64,14 @@ else
   _ACJNI_FOLLOW_SYMLINKS("$_ACJNI_JAVAC")
   _JTOPDIR=`echo "$_ACJNI_FOLLOWED" | sed -e 's://*:/:g' -e 's:/[[^/]]*$::'`
   case "$host_os" in
-        darwin*)        _JTOPDIR=`echo "$_JTOPDIR" | sed -e 's:/[[^/]]*$::'`
-                        if test -d "$_JTOPDIR/Headers" 
+  		darwin*) if test -x "/usr/libexec/java_home"
+			then
+				_JTOPDIR=`/usr/libexec/java_home`
+			else
+				_JTOPDIR=`echo "$_JTOPDIR" | sed -e 's:/[[^/]]*$::'`
+			fi;
+
+            if test -d "$_JTOPDIR/Headers" 
 			then
 				_JINC="$_JTOPDIR/Headers"
 			elif test -d "$_JTOPDIR/include" 
