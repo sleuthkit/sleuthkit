@@ -424,7 +424,7 @@ public abstract class AbstractFile extends AbstractContent {
 				query = this.getSleuthkitCase().executeQuery(String.format("SELECT mime_type FROM tsk_files WHERE obj_id = %d", getId()));
 				result = query.getResultSet();
 				if (result.next()) {
-					result.getString("mime_type");
+					mimeType = result.getString("mime_type"); // Returns null if column value is NULL
 				}
 			} catch (TskException ex) {
 				Logger.getLogger(AbstractFile.class.getName()).log(Level.SEVERE, String.format("Error querying tsk_files.mime_type, obj_id = %d", getId()), ex);
