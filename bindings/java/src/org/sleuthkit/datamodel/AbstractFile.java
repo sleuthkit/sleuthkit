@@ -21,6 +21,8 @@ package org.sleuthkit.datamodel;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -415,7 +417,37 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return The MIME type name or null if the MIME type has not been set.
 	 */
 	public String getMIMEType() {
-		return this.mimeType;
+		if (null == mimeType) {
+			SleuthkitCase.CaseDbQuery query = null;
+			ResultSet result = null;
+			try {
+				query = this.getSleuthkitCase().executeQuery(String.format("SELECT mime_type FROM tsk_files WHERE obj_id = %d", getId()));
+				result = query.getResultSet();
+				if (result.next()) {
+					result.getString("mime_type");
+				}
+			} catch (TskException ex) {
+				Logger.getLogger(AbstractFile.class.getName()).log(Level.SEVERE, String.format("Error querying tsk_files.mime_type, obj_id = %d", getId()), ex);
+			} catch (SQLException ex) {
+				Logger.getLogger(AbstractFile.class.getName()).log(Level.SEVERE, String.format("Error querying tsk_files.mime_type, obj_id = %d", getId()), ex);
+			} finally {
+				if (null != result) {
+					try {
+						result.close();
+					} catch (SQLException ex) {
+						Logger.getLogger(AbstractFile.class.getName()).log(Level.SEVERE, String.format("Error closing result set, obj_id = %d", getId()), ex);
+					}
+				}
+				if (null != query) {
+					try {
+						query.close();
+					} catch (TskCoreException ex) {
+						Logger.getLogger(AbstractFile.class.getName()).log(Level.SEVERE, String.format("Error closing query, obj_id = %d", getId()), ex);
+					}
+				}
+			}
+		}
+		return mimeType;
 	}
 
 	/**
