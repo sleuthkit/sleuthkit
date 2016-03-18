@@ -155,7 +155,7 @@ mac_load_table(TSK_VS_INFO * vs)
     free(part_buf);
     part_buf = NULL;
 
-    // Bail if we did find any valid entries
+    // Bail if we didn't find any valid entries
     if (vs->part_count == 0) {
         return 1;
     }
