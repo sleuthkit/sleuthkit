@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  * 
- * Copyright 2011 Basis Technology Corp.
+ * Copyright 2011-2016 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +21,6 @@ package org.sleuthkit.datamodel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -37,8 +36,8 @@ public abstract class AbstractContent implements Content {
 
 	public final static long UNKNOWN_ID = -1;
 	private final SleuthkitCase db;
-	private long objId;
-	private String name;
+	private final long objId;
+	private final String name;
 	private Content parent;
 	private String uniquePath;
 	protected long parentId;
@@ -117,7 +116,7 @@ public abstract class AbstractContent implements Content {
 	@Override
 	public synchronized Content getParent() throws TskCoreException {
 		if (parent == null) {
-			ObjectInfo parentInfo = null;
+			ObjectInfo parentInfo;
 			try {
 				parentInfo = db.getParentInfo(this);
 			} catch (TskCoreException ex) {

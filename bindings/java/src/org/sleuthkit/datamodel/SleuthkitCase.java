@@ -1543,7 +1543,7 @@ public class SleuthkitCase {
 			releaseSharedLock();
 		}
 	}
-	
+
 	private ArrayList<BlackboardArtifact> getArtifactsHelper(String whereClause) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
@@ -2038,7 +2038,7 @@ public class SleuthkitCase {
 			}
 			return type;
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting attribute type id", ex);
+			throw new TskCoreException("Error getting artifact type from the database", ex);
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
@@ -3081,15 +3081,13 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			// Get the parent path.
-			String parentPath;
-			if (0 != parentId) {
-				parentPath = getFileParentPath(parentId, transaction);
-				String parentName = getFileName(parentId, transaction);
-				if (null != parentName) {
-					parentPath = parentPath + parentName + "/"; //NON-NLS
-				}
-			} else {
+			String parentPath = getFileParentPath(parentId, transaction);
+			if (parentPath == null) {
 				parentPath = "/"; //NON-NLS
+			}
+			String parentName = getFileName(parentId, transaction);
+			if (parentName != null) {
+				parentPath = parentPath + parentName + "/"; //NON-NLS
 			}
 
 			// Insert a row for the virtual directory into the tsk_objects table.
@@ -4806,8 +4804,7 @@ public class SleuthkitCase {
 			statement.close();
 		}
 	}
-	
-	
+
 	/**
 	 * Get the string associated with the given id. Will throw an error if that
 	 * id does not exist
@@ -4908,7 +4905,6 @@ public class SleuthkitCase {
 			releaseSharedLock();
 		}
 	}
-
 
 	/**
 	 * This method allows developers to run arbitrary SQL "SELECT" queries. The

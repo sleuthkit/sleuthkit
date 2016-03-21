@@ -21,6 +21,8 @@ package org.sleuthkit.datamodel;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -415,7 +417,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return The MIME type name or null if the MIME type has not been set.
 	 */
 	public String getMIMEType() {
-		return this.mimeType;
+		return mimeType;
 	}
 
 	/**
