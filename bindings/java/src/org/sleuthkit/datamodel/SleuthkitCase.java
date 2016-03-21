@@ -1543,41 +1543,6 @@ public class SleuthkitCase {
 			releaseSharedLock();
 		}
 	}
-
-	/**
-	 * Helper method to get all artifacts matching the type id name and object
-	 * id
-	 *
-	 * @param artifactTypeID artifact type id
-	 * @param artifactTypeName artifact type name
-	 * @param obj_id associated object id
-	 * @return list of blackboard artifacts
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within TSK core
-	 */
-	private ArrayList<BlackboardArtifact> getArtifactsHelper(BlackboardArtifact.Type type, long obj_id) throws TskCoreException {
-		CaseDbConnection connection = connections.getConnection();
-		acquireSharedLock();
-		ResultSet rs = null;
-		try {
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ARTIFACTS_BY_SOURCE_AND_TYPE);
-			statement.clearParameters();
-			statement.setLong(1, obj_id);
-			statement.setInt(2, type.getTypeID());
-			rs = connection.executeQuery(statement);
-			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
-			while (rs.next()) {
-				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), obj_id, type.getTypeID(), type.getTypeName(), type.getTypeName()));
-			}
-			return artifacts;
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting or creating a blackboard artifact", ex);
-		} finally {
-			closeResultSet(rs);
-			connection.close();
-			releaseSharedLock();
-		}
-	}
 	
 	private ArrayList<BlackboardArtifact> getArtifactsHelper(String whereClause) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
@@ -1585,8 +1550,8 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			Statement statement = connection.createStatement();
-			String query = "SELECT arts.artifact_id, arts.obj_id, types.artifact_type_id, types.type_name, types.display_name "
-					+ "FROM blackboard_artifacts AS arts, blackboard_artifact_types AS types WHERE "
+			String query = "SELECT blackboard_artifacts.artifact_id, blackboard_artifacts.obj_id, blackboard_artifact_types.artifact_type_id, blackboard_artifact_types.type_name, blackboard_artifact_types.display_name "
+					+ "FROM blackboard_artifacts, blackboard_artifact_types WHERE "
 					+ whereClause;
 			rs = connection.executeQuery(statement, query);
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
@@ -1638,38 +1603,6 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Helper method to get all artifacts matching the type id name.
-	 *
-	 * @param artifactTypeID artifact type id
-	 * @param artifactTypeName artifact type name
-	 * @return list of blackboard artifacts
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within TSK core
-	 */
-	private ArrayList<BlackboardArtifact> getArtifactsHelper(BlackboardArtifact.Type type) throws TskCoreException {
-		CaseDbConnection connection = connections.getConnection();
-		acquireSharedLock();
-		ResultSet rs = null;
-		try {
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ARTIFACTS_BY_TYPE);
-			statement.clearParameters();
-			statement.setInt(1, type.getTypeID());
-			rs = connection.executeQuery(statement);
-			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
-			while (rs.next()) {
-				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2), type.getTypeID(), type.getTypeName(), type.getDisplayName()));
-			}
-			return artifacts;
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting or creating a blackboard artifact", ex);
-		} finally {
-			closeResultSet(rs);
-			connection.close();
-			releaseSharedLock();
-		}
-	}
-
-	/**
 	 * Get all blackboard artifacts of a given type for the given object id
 	 *
 	 * @param artifactTypeName artifact type name
@@ -1679,7 +1612,7 @@ public class SleuthkitCase {
 	 * within TSK core
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(String artifactTypeName, long obj_id) throws TskCoreException {
-		return getArtifactsHelper("arts.obj_id = " + obj_id + " AND types.type_name = '" + artifactTypeName + "';");
+		return getArtifactsHelper("blackboard_artifacts.obj_id = " + obj_id + " AND blackboard_artifact_types.type_name = '" + artifactTypeName + "';");
 	}
 
 	/**
@@ -1692,7 +1625,7 @@ public class SleuthkitCase {
 	 * within TSK core
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(int artifactTypeID, long obj_id) throws TskCoreException {
-		return getArtifactsHelper("arts.obj_id = " + obj_id + " AND types.artifact_type_id = " + artifactTypeID + ";");
+		return getArtifactsHelper("blackboard_artifacts.obj_id = " + obj_id + " AND blackboard_artifact_types.artifact_type_id = " + artifactTypeID + ";");
 	}
 
 	/**
@@ -1705,7 +1638,7 @@ public class SleuthkitCase {
 	 * within TSK core
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType, long obj_id) throws TskCoreException {
-		return getArtifactsHelper("arts.obj_id = " + obj_id + " AND types.artifact_type_id = " + artifactType.getTypeID() + " AND types.type_name = '" + artifactType.getDisplayName() + "';");
+		return getArtifactsHelper("blackboard_artifacts.obj_id = " + obj_id + " AND blackboard_artifact_types.artifact_type_id = " + artifactType.getTypeID() + " AND blackboard_artifact_types.type_name = '" + artifactType.getLabel() + "';");
 	}
 
 	/**
@@ -1719,7 +1652,7 @@ public class SleuthkitCase {
 	 * within TSK core
 	 */
 	public long getBlackboardArtifactsCount(String artifactTypeName, long obj_id) throws TskCoreException {
-		int artifactTypeID = this.getArtifactTypeID(artifactTypeName);
+		int artifactTypeID = this.getArtifactType(artifactTypeName).getTypeID();
 		if (artifactTypeID == -1) {
 			return 0;
 		}
@@ -1763,7 +1696,7 @@ public class SleuthkitCase {
 	 * within TSK core
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(String artifactTypeName) throws TskCoreException {
-		return getArtifactsHelper("types.type_name = '" + artifactTypeName + "';");
+		return getArtifactsHelper("blackboard_artifact_types.type_name = '" + artifactTypeName + "';");
 	}
 
 	/**
@@ -1775,7 +1708,7 @@ public class SleuthkitCase {
 	 * within TSK core
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType) throws TskCoreException {
-		return getArtifactsHelper("types.type_name = '" + artifactType.getDisplayName() + "' AND types.artifact_type_id = " + artifactType.getTypeID() + ";");
+		return getArtifactsHelper("blackboard_artifact_types.type_name = '" + artifactType.getLabel() + "' AND blackboard_artifact_types.artifact_type_id = " + artifactType.getTypeID() + ";");
 	}
 
 	/**
@@ -2137,107 +2070,6 @@ public class SleuthkitCase {
 			return type;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting attribute type id", ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			connection.close();
-			releaseSharedLock();
-		}
-	}
-
-	/**
-	 * Get the string associated with the given id. Will throw an error if that
-	 * id does not exist
-	 *
-	 * @param attrTypeID attribute id
-	 * @return string associated with the given id
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within tsk core
-	 * @deprecated Use getAttributeType instead
-	 */
-	@Deprecated
-	public String getAttrTypeString(int attrTypeID) throws TskCoreException {
-		CaseDbConnection connection = connections.getConnection();
-		acquireSharedLock();
-		Statement s = null;
-		ResultSet rs = null;
-		try {
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT type_name FROM blackboard_attribute_types WHERE attribute_type_id = " + attrTypeID); //NON-NLS
-			if (rs.next()) {
-				return rs.getString(1);
-			} else {
-				throw new TskCoreException("No type with that id");
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting or creating a attribute type name", ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			connection.close();
-			releaseSharedLock();
-		}
-	}
-
-	/**
-	 * Get the display name for the attribute with the given id. Will throw an
-	 * error if that id does not exist
-	 *
-	 * @param attrTypeID attribute id
-	 * @return string associated with the given id
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within tsk core
-	 * @deprecated Use getAttributeType instead
-	 */
-	@Deprecated
-	public String getAttrTypeDisplayName(int attrTypeID) throws TskCoreException {
-		CaseDbConnection connection = connections.getConnection();
-		acquireSharedLock();
-		Statement s = null;
-		ResultSet rs = null;
-		try {
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT display_name FROM blackboard_attribute_types WHERE attribute_type_id = " + attrTypeID); //NON-NLS
-			if (rs.next()) {
-				return rs.getString(1);
-			} else {
-				throw new TskCoreException("No type with that id");
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting or creating a attribute type name", ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			connection.close();
-			releaseSharedLock();
-		}
-	}
-
-	/**
-	 * Get the artifact type id associated with an artifact type name.
-	 *
-	 * @param artifactTypeName An artifact type name.
-	 * @return An artifact id or -1 if the attribute type does not exist.
-	 * @throws TskCoreException If an error occurs accessing the case database.
-	 *
-	 * @deprecated Use getArtifactType instead
-	 */
-	@Deprecated
-	public int getArtifactTypeID(String artifactTypeName) throws TskCoreException {
-		CaseDbConnection connection = connections.getConnection();
-		acquireSharedLock();
-		Statement s = null;
-		ResultSet rs = null;
-		try {
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeName + "'"); //NON-NLS
-			int typeId = -1;
-			if (rs.next()) {
-				typeId = rs.getInt(1);
-			}
-			return typeId;
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting artifact type id", ex);
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
@@ -4974,6 +4806,109 @@ public class SleuthkitCase {
 			statement.close();
 		}
 	}
+	
+	
+	/**
+	 * Get the string associated with the given id. Will throw an error if that
+	 * id does not exist
+	 *
+	 * @param attrTypeID attribute id
+	 * @return string associated with the given id
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 * within tsk core
+	 * @deprecated Use getAttributeType instead
+	 */
+	@Deprecated
+	public String getAttrTypeString(int attrTypeID) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT type_name FROM blackboard_attribute_types WHERE attribute_type_id = " + attrTypeID); //NON-NLS
+			if (rs.next()) {
+				return rs.getString(1);
+			} else {
+				throw new TskCoreException("No type with that id");
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting or creating a attribute type name", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	/**
+	 * Get the display name for the attribute with the given id. Will throw an
+	 * error if that id does not exist
+	 *
+	 * @param attrTypeID attribute id
+	 * @return string associated with the given id
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 * within tsk core
+	 * @deprecated Use getAttributeType instead
+	 */
+	@Deprecated
+	public String getAttrTypeDisplayName(int attrTypeID) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT display_name FROM blackboard_attribute_types WHERE attribute_type_id = " + attrTypeID); //NON-NLS
+			if (rs.next()) {
+				return rs.getString(1);
+			} else {
+				throw new TskCoreException("No type with that id");
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting or creating a attribute type name", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	/**
+	 * Get the artifact type id associated with an artifact type name.
+	 *
+	 * @param artifactTypeName An artifact type name.
+	 * @return An artifact id or -1 if the attribute type does not exist.
+	 * @throws TskCoreException If an error occurs accessing the case database.
+	 *
+	 * @deprecated Use getArtifactType instead
+	 */
+	@Deprecated
+	public int getArtifactTypeID(String artifactTypeName) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeName + "'"); //NON-NLS
+			int typeId = -1;
+			if (rs.next()) {
+				typeId = rs.getInt(1);
+			}
+			return typeId;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting artifact type id", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
 
 	/**
 	 * This method allows developers to run arbitrary SQL "SELECT" queries. The
