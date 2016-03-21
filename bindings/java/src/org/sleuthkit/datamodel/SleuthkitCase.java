@@ -118,7 +118,6 @@ public class SleuthkitCase {
 				+ "WHERE artifact_type_id = ?"), //NON-NLS
 		COUNT_ARTIFACTS_OF_TYPE("SELECT COUNT(*) FROM blackboard_artifacts WHERE artifact_type_id = ?"), //NON-NLS
 		COUNT_ARTIFACTS_FROM_SOURCE("SELECT COUNT(*) FROM blackboard_artifacts WHERE obj_id = ?"), //NON-NLS
-		SELECT_ARTIFACTS_BY_SOURCE_AND_TYPE("SELECT artifact_id FROM blackboard_artifacts WHERE obj_id = ? AND artifact_type_id = ?"), //NON-NLS
 		COUNT_ARTIFACTS_BY_SOURCE_AND_TYPE("SELECT COUNT(*) FROM blackboard_artifacts WHERE obj_id = ? AND artifact_type_id = ?"), //NON-NLS
 		SELECT_FILES_BY_PARENT("SELECT tsk_files.* " //NON-NLS
 				+ "FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
@@ -1418,7 +1417,7 @@ public class SleuthkitCase {
 			releaseSharedLock();
 		}
 	}
-	
+
 	/**
 	 * Get all of the standard blackboard artifact types that are in use in the
 	 * blackboard.
@@ -1574,6 +1573,16 @@ public class SleuthkitCase {
 		}
 	}
 
+	/**
+	 * Gets blackboard artifacts that match a given WHERE clause. Uses a SELECT
+	 * statement that does a join of the blackboard_artifacts and
+	 * blackboard_artifact_types tables to get all of the required data.
+	 *
+	 * @param whereClause The WHERE clause to append to the SELECT statement.
+	 * @return A list of BlackboardArtifact objects.
+	 * @throws TskCoreException If there is a problem querying the case
+	 * database.
+	 */
 	private ArrayList<BlackboardArtifact> getArtifactsHelper(String whereClause) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
@@ -1668,7 +1677,7 @@ public class SleuthkitCase {
 	 * within TSK core
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType, long obj_id) throws TskCoreException {
-		return getArtifactsHelper("blackboard_artifacts.obj_id = " + obj_id + " AND blackboard_artifact_types.artifact_type_id = " + artifactType.getTypeID() + " AND blackboard_artifact_types.type_name = '" + artifactType.getLabel() + "';");
+		return getArtifactsHelper("blackboard_artifacts.obj_id = " + obj_id + " AND blackboard_artifact_types.artifact_type_id = " + artifactType.getTypeID() + "';");
 	}
 
 	/**
@@ -1738,7 +1747,7 @@ public class SleuthkitCase {
 	 * within TSK core
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType) throws TskCoreException {
-		return getArtifactsHelper("blackboard_artifact_types.type_name = '" + artifactType.getLabel() + "' AND blackboard_artifact_types.artifact_type_id = " + artifactType.getTypeID() + ";");
+		return getArtifactsHelper("blackboard_artifact_types.artifact_type_id = " + artifactType.getTypeID() + ";");
 	}
 
 	/**
@@ -2099,7 +2108,7 @@ public class SleuthkitCase {
 			}
 			return type;
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting attribute type id", ex);
+			throw new TskCoreException("Error getting artifact type from the database", ex);
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
