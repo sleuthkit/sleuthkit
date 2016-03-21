@@ -171,7 +171,7 @@ public class BlackboardAttribute {
 		LONG(2, "Long"), ///< long NON-NLS
 		DOUBLE(3, "Double"), ///< double NON-NLS
 		BYTE(4, "Byte"), ///< byte NON-NLS
-		DATETIME(5, "DateTime");
+		DATETIME(5, "DateTime"); ///NON-NLS
 		private long type;
 		private String label;
 

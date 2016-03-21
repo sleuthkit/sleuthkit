@@ -1390,6 +1390,36 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Gets a list of all the artifact types for this case
+	 *
+	 * @return a list of artifact types
+	 *
+	 * @throws TskCoreException when there is an error getting the types
+	 */
+	public Iterable<BlackboardArtifact.Type> getArtifactTypes() throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT artifact_type_id, type_name, display_name FROM blackboard_artifact_types"); //NON-NLS
+			ArrayList<BlackboardArtifact.Type> artifactTypes = new ArrayList<BlackboardArtifact.Type>();
+			while (rs.next()) {
+				artifactTypes.add(new BlackboardArtifact.Type(rs.getInt(1), rs.getString(2), rs.getString(3)));
+			}
+			return artifactTypes;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting artifact types", ex); //NON-NLS
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+	
+	/**
 	 * Get all of the standard blackboard artifact types that are in use in the
 	 * blackboard.
 	 *
