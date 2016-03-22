@@ -43,6 +43,8 @@
 #   permitted in any medium without royalty provided the copyright notice
 #   and this notice are preserved. This file is offered as-is, without any
 #   warranty.
+#
+# TSK: This has been modifed to not error out if JNI things cannot be resolved
 
 #serial 11
 
@@ -59,10 +61,11 @@ else
 	fi
 	AC_PATH_PROG([_ACJNI_JAVAC], [$JAVAC], [no])
 	if test "x$_ACJNI_JAVAC" = xno; then
-		AC_MSG_ERROR([cannot find JDK; try setting \$JAVAC or \$JAVA_HOME])
-	fi
+		AS_ECHO(["cannot find JDK; try setting \$JAVAC or \$JAVA_HOME"])
+    else 
 	_ACJNI_FOLLOW_SYMLINKS("$_ACJNI_JAVAC")
 	_JTOPDIR=`echo "$_ACJNI_FOLLOWED" | sed -e 's://*:/:g' -e 's:/[[^/]]*$::'`
+    fi 
 fi
 
 case "$host_os" in
@@ -86,7 +89,7 @@ AC_CHECK_FILE([$_JINC/jni.h],
 	[_JTOPDIR=`echo "$_JTOPDIR" | sed -e 's:/[[^/]]*$::'`
 	 AC_CHECK_FILE([$_JTOPDIR/include/jni.h],
 		[JNI_INCLUDE_DIRS="$JNI_INCLUDE_DIRS $_JTOPDIR/include"],
-                AC_MSG_ERROR([cannot find JDK header files]))
+                AS_ECHO(["cannot find JDK header files"]))
 	])
 
 # get the likely subdirectories for system specific java includes
