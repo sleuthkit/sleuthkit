@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2012-2015 Basis Technology Corp.
+ * Copyright 2011-2016 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,7 +38,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -93,7 +92,7 @@ public class SleuthkitCase {
 	private final ConnectionPool connections;
 	private final ResultSetHelper rsHelper = new ResultSetHelper(this);
 	private final Map<Long, Long> carvedFileContainersCache = new HashMap<Long, Long>(); // Caches the IDs of the root $CarvedFiles for each volume.
-	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system results.
+	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system files.
 	private final ArrayList<ErrorObserver> sleuthkitCaseErrorObservers = new ArrayList<ErrorObserver>();
 	private final String dbPath;
 	private final DbType dbType;
@@ -119,7 +118,6 @@ public class SleuthkitCase {
 				+ "WHERE artifact_type_id = ?"), //NON-NLS
 		COUNT_ARTIFACTS_OF_TYPE("SELECT COUNT(*) FROM blackboard_artifacts WHERE artifact_type_id = ?"), //NON-NLS
 		COUNT_ARTIFACTS_FROM_SOURCE("SELECT COUNT(*) FROM blackboard_artifacts WHERE obj_id = ?"), //NON-NLS
-		SELECT_ARTIFACTS_BY_SOURCE_AND_TYPE("SELECT artifact_id FROM blackboard_artifacts WHERE obj_id = ? AND artifact_type_id = ?"), //NON-NLS
 		COUNT_ARTIFACTS_BY_SOURCE_AND_TYPE("SELECT COUNT(*) FROM blackboard_artifacts WHERE obj_id = ? AND artifact_type_id = ?"), //NON-NLS
 		SELECT_FILES_BY_PARENT("SELECT tsk_files.* " //NON-NLS
 				+ "FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
@@ -153,8 +151,8 @@ public class SleuthkitCase {
 				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
 		INSERT_DOUBLE_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_double) " //NON-NLS
 				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
-		SELECT_FILES_BY_FILE_SYSTEM_AND_NAME("SELECT * FROM tsk_files WHERE LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE LOWER('%journal%') AND fs_obj_id = ?"), //NON-NLS
-		SELECT_FILES_BY_FILE_SYSTEM_AND_PATH("SELECT * FROM tsk_files WHERE LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE LOWER('%journal%') AND LOWER(parent_path) LIKE LOWER(?) AND fs_obj_id = ?"), //NON-NLS
+		SELECT_FILES_BY_DATA_SOURCE_AND_NAME("SELECT * FROM tsk_files WHERE LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE LOWER('%journal%') AND data_source_obj_id = ?"), //NON-NLS
+		SELECT_FILES_BY_DATA_SOURCE_AND_PARENT_PATH_AND_NAME("SELECT * FROM tsk_files WHERE LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE LOWER('%journal%') AND LOWER(parent_path) LIKE LOWER(?) AND data_source_obj_id = ?"), //NON-NLS
 		UPDATE_FILE_MD5("UPDATE tsk_files SET md5 = ? WHERE obj_id = ?"), //NON-NLS
 		SELECT_LOCAL_PATH_FOR_FILE("SELECT path FROM tsk_files_path WHERE obj_id = ?"), //NON-NLS
 		SELECT_PATH_FOR_FILE("SELECT parent_path FROM tsk_files WHERE obj_id = ?"), //NON-NLS
@@ -163,8 +161,8 @@ public class SleuthkitCase {
 		SELECT_FILE_DERIVATION_METHOD("SELECT tool_name, tool_version, other FROM tsk_files_derived_method WHERE derived_id = ?"), //NON-NLS
 		SELECT_MAX_OBJECT_ID("SELECT MAX(obj_id) FROM tsk_objects"), //NON-NLS
 		INSERT_OBJECT("INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)"), //NON-NLS
-		INSERT_FILE("INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path) " //NON-NLS
-				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
+		INSERT_FILE("INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, data_source_obj_id) " //NON-NLS
+				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
 		INSERT_LAYOUT_FILE("INSERT INTO tsk_file_layout (obj_id, byte_start, byte_len, sequence) " //NON-NLS
 				+ "VALUES (?, ?, ?, ?)"), //NON-NLS
 		INSERT_LOCAL_PATH("INSERT INTO tsk_files_path (obj_id, path) VALUES (?, ?)"), //NON-NLS
@@ -609,10 +607,10 @@ public class SleuthkitCase {
 		}
 
 		Statement statement = null;
-		Statement updateStatement = null;
-		Statement statement2 = null;
 		ResultSet resultSet = null;
-		ResultSet resultSet2 = null;
+		Statement queryStatement = null;
+		ResultSet queryResultSet = null;
+		Statement updateStatement = null;
 		try {
 			// Add mime_type column to tsk_files table. Populate with general 
 			// info artifact file signature data.
@@ -648,28 +646,49 @@ public class SleuthkitCase {
 			}
 			resultSet.close();
 
-			// Add a data sources info table.
-			statement2 = connection.createStatement();
+			// Add a data_sources_info table.
+			queryStatement = connection.createStatement();
 			statement.execute("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, device_id TEXT NOT NULL, time_zone TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));");
 			resultSet = statement.executeQuery("SELECT * FROM tsk_objects WHERE par_obj_id IS NULL");
 			while (resultSet.next()) {
 				long objectId = resultSet.getLong("obj_id");
 				String timeZone = "";
-				resultSet2 = statement2.executeQuery("SELECT tzone FROM tsk_image_info WHERE obj_id = " + objectId);
-				if (resultSet2.next()) {
-					timeZone = resultSet2.getString("tzone");
+				queryResultSet = queryStatement.executeQuery("SELECT tzone FROM tsk_image_info WHERE obj_id = " + objectId);
+				if (queryResultSet.next()) {
+					timeZone = queryResultSet.getString("tzone");
 				}
-				resultSet2.close();
+				queryResultSet.close();
 				updateStatement.executeUpdate("INSERT INTO data_source_info (obj_id, device_id, time_zone) "
 						+ "VALUES(" + objectId + ", '" + UUID.randomUUID().toString() + "' , '" + timeZone + "');");
 			}
+			resultSet.close();
+
+			// Add data_source_obj_id column to the tsk_files table. 
+			//
+			// NOTE: A new case database will have the following FK constraint: 
+			//
+			// REFERENCES data_source_info (obj_id)
+			//
+			// The constraint is sacrificed here to avoid having to create and
+			// populate a new tsk_files table.
+			//
+			// TODO: Do this right.
+			statement.execute("ALTER TABLE tsk_files ADD COLUMN data_source_obj_id BIGINT NOT NULL DEFAULT -1;");
+			resultSet = statement.executeQuery("SELECT tsk_files.obj_id, par_obj_id FROM tsk_files, tsk_objects WHERE tsk_files.obj_id = tsk_objects.obj_id");
+			while (resultSet.next()) {
+				long fileId = resultSet.getLong("obj_id");
+				long dataSourceId = getDataSourceObjectId(connection, fileId);
+				updateStatement.executeUpdate("UPDATE tsk_files SET data_source_obj_id = " + dataSourceId + " WHERE obj_id = " + fileId + ";");
+			}
+			resultSet.close();
 
 			return 4;
+
 		} finally {
-			closeResultSet(resultSet2);
-			closeResultSet(resultSet);
-			closeStatement(statement2);
+			closeResultSet(queryResultSet);
+			closeStatement(queryStatement);
 			closeStatement(updateStatement);
+			closeResultSet(resultSet);
 			closeStatement(statement);
 		}
 
@@ -1370,6 +1389,36 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Gets a list of all the artifact types for this case
+	 *
+	 * @return a list of artifact types
+	 *
+	 * @throws TskCoreException when there is an error getting the types
+	 */
+	public Iterable<BlackboardArtifact.Type> getArtifactTypes() throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT artifact_type_id, type_name, display_name FROM blackboard_artifact_types"); //NON-NLS
+			ArrayList<BlackboardArtifact.Type> artifactTypes = new ArrayList<BlackboardArtifact.Type>();
+			while (rs.next()) {
+				artifactTypes.add(new BlackboardArtifact.Type(rs.getInt(1), rs.getString(2), rs.getString(3)));
+			}
+			return artifactTypes;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting artifact types", ex); //NON-NLS
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	/**
 	 * Get all of the standard blackboard artifact types that are in use in the
 	 * blackboard.
 	 *
@@ -1525,29 +1574,29 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Helper method to get all artifacts matching the type id name and object
-	 * id
+	 * Gets blackboard artifacts that match a given WHERE clause. Uses a SELECT
+	 * statement that does a join of the blackboard_artifacts and
+	 * blackboard_artifact_types tables to get all of the required data.
 	 *
-	 * @param artifactTypeID artifact type id
-	 * @param artifactTypeName artifact type name
-	 * @param obj_id associated object id
-	 * @return list of blackboard artifacts
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within TSK core
+	 * @param whereClause The WHERE clause to append to the SELECT statement.
+	 * @return A list of BlackboardArtifact objects.
+	 * @throws TskCoreException If there is a problem querying the case
+	 * database.
 	 */
-	private ArrayList<BlackboardArtifact> getArtifactsHelper(int artifactTypeID, String artifactTypeName, long obj_id) throws TskCoreException {
+	private ArrayList<BlackboardArtifact> getArtifactsHelper(String whereClause) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
 		ResultSet rs = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ARTIFACTS_BY_SOURCE_AND_TYPE);
-			statement.clearParameters();
-			statement.setLong(1, obj_id);
-			statement.setInt(2, artifactTypeID);
-			rs = connection.executeQuery(statement);
+			Statement statement = connection.createStatement();
+			String query = "SELECT blackboard_artifacts.artifact_id, blackboard_artifacts.obj_id, blackboard_artifact_types.artifact_type_id, blackboard_artifact_types.type_name, blackboard_artifact_types.display_name "
+					+ "FROM blackboard_artifacts, blackboard_artifact_types "
+					+ "WHERE blackboard_artifacts.artifact_type_id = blackboard_artifact_types.artifact_type_id AND "
+					+ whereClause;
+			rs = connection.executeQuery(statement, query);
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
 			while (rs.next()) {
-				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), obj_id, artifactTypeID, artifactTypeName, this.getArtifactTypeDisplayName(artifactTypeID)));
+				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2), rs.getInt(3), rs.getString(4), rs.getString(5)));
 			}
 			return artifacts;
 		} catch (SQLException ex) {
@@ -1594,38 +1643,6 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Helper method to get all artifacts matching the type id name.
-	 *
-	 * @param artifactTypeID artifact type id
-	 * @param artifactTypeName artifact type name
-	 * @return list of blackboard artifacts
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within TSK core
-	 */
-	private ArrayList<BlackboardArtifact> getArtifactsHelper(int artifactTypeID, String artifactTypeName) throws TskCoreException {
-		CaseDbConnection connection = connections.getConnection();
-		acquireSharedLock();
-		ResultSet rs = null;
-		try {
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ARTIFACTS_BY_TYPE);
-			statement.clearParameters();
-			statement.setInt(1, artifactTypeID);
-			rs = connection.executeQuery(statement);
-			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
-			while (rs.next()) {
-				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2), artifactTypeID, artifactTypeName, this.getArtifactTypeDisplayName(artifactTypeID)));
-			}
-			return artifacts;
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting or creating a blackboard artifact", ex);
-		} finally {
-			closeResultSet(rs);
-			connection.close();
-			releaseSharedLock();
-		}
-	}
-
-	/**
 	 * Get all blackboard artifacts of a given type for the given object id
 	 *
 	 * @param artifactTypeName artifact type name
@@ -1635,11 +1652,7 @@ public class SleuthkitCase {
 	 * within TSK core
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(String artifactTypeName, long obj_id) throws TskCoreException {
-		int artifactTypeID = this.getArtifactTypeID(artifactTypeName);
-		if (artifactTypeID == -1) {
-			return new ArrayList<BlackboardArtifact>();
-		}
-		return getArtifactsHelper(artifactTypeID, artifactTypeName, obj_id);
+		return getArtifactsHelper("blackboard_artifacts.obj_id = " + obj_id + " AND blackboard_artifact_types.type_name = '" + artifactTypeName + "';");
 	}
 
 	/**
@@ -1652,8 +1665,7 @@ public class SleuthkitCase {
 	 * within TSK core
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(int artifactTypeID, long obj_id) throws TskCoreException {
-		String artifactTypeName = this.getArtifactTypeString(artifactTypeID);
-		return getArtifactsHelper(artifactTypeID, artifactTypeName, obj_id);
+		return getArtifactsHelper("blackboard_artifacts.obj_id = " + obj_id + " AND blackboard_artifact_types.artifact_type_id = " + artifactTypeID + ";");
 	}
 
 	/**
@@ -1666,7 +1678,7 @@ public class SleuthkitCase {
 	 * within TSK core
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType, long obj_id) throws TskCoreException {
-		return getArtifactsHelper(artifactType.getTypeID(), artifactType.getLabel(), obj_id);
+		return getArtifactsHelper("blackboard_artifacts.obj_id = " + obj_id + " AND blackboard_artifact_types.artifact_type_id = " + artifactType.getTypeID() + ";");
 	}
 
 	/**
@@ -1680,7 +1692,7 @@ public class SleuthkitCase {
 	 * within TSK core
 	 */
 	public long getBlackboardArtifactsCount(String artifactTypeName, long obj_id) throws TskCoreException {
-		int artifactTypeID = this.getArtifactTypeID(artifactTypeName);
+		int artifactTypeID = this.getArtifactType(artifactTypeName).getTypeID();
 		if (artifactTypeID == -1) {
 			return 0;
 		}
@@ -1724,11 +1736,7 @@ public class SleuthkitCase {
 	 * within TSK core
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(String artifactTypeName) throws TskCoreException {
-		int artifactTypeID = this.getArtifactTypeID(artifactTypeName);
-		if (artifactTypeID == -1) {
-			return new ArrayList<BlackboardArtifact>();
-		}
-		return getArtifactsHelper(artifactTypeID, artifactTypeName);
+		return getArtifactsHelper("blackboard_artifact_types.type_name = '" + artifactTypeName + "';");
 	}
 
 	/**
@@ -1740,7 +1748,7 @@ public class SleuthkitCase {
 	 * within TSK core
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType) throws TskCoreException {
-		return getArtifactsHelper(artifactType.getTypeID(), artifactType.getLabel());
+		return getArtifactsHelper("blackboard_artifact_types.artifact_type_id = " + artifactType.getTypeID() + ";");
 	}
 
 	/**
@@ -1873,7 +1881,7 @@ public class SleuthkitCase {
 
 	private void addBlackBoardAttribute(BlackboardAttribute attr, int artifactTypeId, CaseDbConnection connection) throws SQLException, TskCoreException {
 		PreparedStatement statement;
-		switch (attr.getValueType()) {
+		switch (attr.getAttributeType().getValueType()) {
 			case STRING:
 				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_STRING_ATTRIBUTE);
 				statement.clearParameters();
@@ -1911,8 +1919,8 @@ public class SleuthkitCase {
 		statement.setInt(2, artifactTypeId);
 		statement.setString(3, escapeSingleQuotes(attr.getModuleName()));
 		statement.setString(4, escapeSingleQuotes(attr.getContext()));
-		statement.setInt(5, attr.getAttributeTypeID());
-		statement.setLong(6, attr.getValueType().getType());
+		statement.setInt(5, attr.getAttributeType().getTypeID());
+		statement.setLong(6, attr.getAttributeType().getValueType().getType());
 		connection.executeUpdate(statement);
 	}
 
@@ -2049,96 +2057,28 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get the string associated with the given id. Will throw an error if that
-	 * id does not exist
+	 * Get the artifact type associated with an artifact type name.
 	 *
-	 * @param attrTypeID attribute id
-	 * @return string associated with the given id
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within tsk core
-	 * @deprecated Use getAttributeType instead
-	 */
-	@Deprecated
-	public String getAttrTypeString(int attrTypeID) throws TskCoreException {
-		CaseDbConnection connection = connections.getConnection();
-		acquireSharedLock();
-		Statement s = null;
-		ResultSet rs = null;
-		try {
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT type_name FROM blackboard_attribute_types WHERE attribute_type_id = " + attrTypeID); //NON-NLS
-			if (rs.next()) {
-				return rs.getString(1);
-			} else {
-				throw new TskCoreException("No type with that id");
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting or creating a attribute type name", ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			connection.close();
-			releaseSharedLock();
-		}
-	}
-
-	/**
-	 * Get the display name for the attribute with the given id. Will throw an
-	 * error if that id does not exist
-	 *
-	 * @param attrTypeID attribute id
-	 * @return string associated with the given id
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within tsk core
-	 * @deprecated Use getAttributeType instead
-	 */
-	@Deprecated
-	public String getAttrTypeDisplayName(int attrTypeID) throws TskCoreException {
-		CaseDbConnection connection = connections.getConnection();
-		acquireSharedLock();
-		Statement s = null;
-		ResultSet rs = null;
-		try {
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT display_name FROM blackboard_attribute_types WHERE attribute_type_id = " + attrTypeID); //NON-NLS
-			if (rs.next()) {
-				return rs.getString(1);
-			} else {
-				throw new TskCoreException("No type with that id");
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting or creating a attribute type name", ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			connection.close();
-			releaseSharedLock();
-		}
-	}
-
-	/**
-	 * Get the artifact type id associated with an artifact type name.
-	 *
-	 * @param artifactTypeName An artifact type name.
-	 * @return An artifact id or -1 if the attribute type does not exist.
+	 * @param artTypeName An artifact type name.
+	 * @return An artifact type or null if the artifact type does not exist.
 	 * @throws TskCoreException If an error occurs accessing the case database.
 	 *
 	 */
-	public int getArtifactTypeID(String artifactTypeName) throws TskCoreException {
+	public BlackboardArtifact.Type getArtifactType(String artTypeName) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
 		Statement s = null;
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeName + "'"); //NON-NLS
-			int typeId = -1;
+			rs = connection.executeQuery(s, "SELECT artifact_type_id, type_name, display_name FROM blackboard_artifact_types WHERE type_name = '" + artTypeName + "'"); //NON-NLS
+			BlackboardArtifact.Type type = null;
 			if (rs.next()) {
-				typeId = rs.getInt(1);
+				type = new BlackboardArtifact.Type(rs.getInt(1), rs.getString(2), rs.getString(3));
 			}
-			return typeId;
+			return type;
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting artifact type id", ex);
+			throw new TskCoreException("Error getting artifact type from the database", ex);
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
@@ -2148,64 +2088,28 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get artifact type name for the given string. Will throw an error if that
-	 * artifact doesn't exist. Use addArtifactType(...) to create a new one.
+	 * Get the artifact type associated with an artifact type name.
 	 *
-	 * @param artifactTypeID id for an artifact type
-	 * @return name of that artifact type
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within tsk core
+	 * @param artTypeId An artifact type id.
+	 * @return An artifact type or null if the artifact type does not exist.
+	 * @throws TskCoreException If an error occurs accessing the case database.
+	 *
 	 */
-	String getArtifactTypeString(int artifactTypeID) throws TskCoreException {
-		// TODO: This should return null, not throw an exception
+	BlackboardArtifact.Type getArtifactType(int artTypeId) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
 		Statement s = null;
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT type_name FROM blackboard_artifact_types WHERE artifact_type_id = " + artifactTypeID); //NON-NLS
+			rs = connection.executeQuery(s, "SELECT artifact_type_id, type_name, display_name FROM blackboard_artifact_types WHERE artifact_type_id = " + artTypeId + ""); //NON-NLS
+			BlackboardArtifact.Type type = null;
 			if (rs.next()) {
-				return rs.getString(1);
-			} else {
-				throw new TskCoreException("Error getting artifact type name, artifact type id = " + artifactTypeID + " not found");
+				type = new BlackboardArtifact.Type(rs.getInt(1), rs.getString(2), rs.getString(3));
 			}
+			return type;
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting artifact type name, artifact type id = " + artifactTypeID, ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			connection.close();
-			releaseSharedLock();
-		}
-	}
-
-	/**
-	 * Get artifact type display name for the given string. Will throw an error
-	 * if that artifact doesn't exist. Use addArtifactType(...) to create a new
-	 * one.
-	 *
-	 * @param artifactTypeID id for an artifact type
-	 * @return display name of that artifact type
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within tsk core
-	 */
-	String getArtifactTypeDisplayName(int artifactTypeID) throws TskCoreException {
-		// TODO: This should return null, not throw an exception
-		CaseDbConnection connection = connections.getConnection();
-		acquireSharedLock();
-		Statement s = null;
-		ResultSet rs = null;
-		try {
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT display_name FROM blackboard_artifact_types WHERE artifact_type_id = " + artifactTypeID); //NON-NLS
-			if (rs.next()) {
-				return rs.getString(1);
-			} else {
-				throw new TskCoreException("Error getting artifact type display name, artifact type id = " + artifactTypeID + " not found");
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting artifact type display name, artifact type id = " + artifactTypeID, ex);
+			throw new TskCoreException("Error getting artifact type from the database", ex);
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
@@ -2382,7 +2286,8 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(s, "SELECT artifact_id, obj_id, artifact_type_id FROM blackboard_artifacts " + whereClause); //NON-NLS
 			ArrayList<BlackboardArtifact> matches = new ArrayList<BlackboardArtifact>();
 			while (rs.next()) {
-				BlackboardArtifact artifact = new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2), rs.getInt(3), this.getArtifactTypeString(rs.getInt(3)), this.getArtifactTypeDisplayName(rs.getInt(3)));
+				BlackboardArtifact.Type type = this.getArtifactType(rs.getInt(3));
+				BlackboardArtifact artifact = new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2), rs.getInt(3), type.getTypeName(), type.getDisplayName());
 				matches.add(artifact);
 			}
 			return matches;
@@ -2408,7 +2313,8 @@ public class SleuthkitCase {
 	 * within tsk core
 	 */
 	public BlackboardArtifact newBlackboardArtifact(int artifactTypeID, long obj_id) throws TskCoreException {
-		return newBlackboardArtifact(artifactTypeID, obj_id, getArtifactTypeString(artifactTypeID), getArtifactTypeDisplayName(artifactTypeID));
+		BlackboardArtifact.Type type = getArtifactType(artifactTypeID);
+		return newBlackboardArtifact(artifactTypeID, obj_id, type.getTypeName(), type.getDisplayName());
 	}
 
 	/**
@@ -2658,8 +2564,7 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get info about children of a given Content from the database. TODO: the
-	 * results of this method are volumes, file systems, and fs files.
+	 * Get info about children of a given Content from the database.
 	 *
 	 * @param c Parent object to run query against
 	 * @throws TskCoreException exception thrown if a critical error occurs
@@ -3005,9 +2910,9 @@ public class SleuthkitCase {
 			statement.clearParameters();
 			statement.setLong(1, id);
 			rs = connection.executeQuery(statement);
-			List<AbstractFile> results;
-			if ((results = resultSetToAbstractFiles(rs)).size() > 0) {
-				return results.get(0);
+			List<AbstractFile> files = resultSetToAbstractFiles(rs);
+			if (files.size() > 0) {
+				return files.get(0);
 			} else {
 				return null;
 			}
@@ -3018,28 +2923,6 @@ public class SleuthkitCase {
 			connection.close();
 			releaseSharedLock();
 		}
-	}
-
-	/**
-	 * Get the object ID of the file system that a file is located in.
-	 *
-	 * Note: for FsContent files, this is the real fs for other non-fs
-	 * AbstractFile files, this field is used internally for data source id (the
-	 * root content obj)
-	 *
-	 * @param fileId object id of the file to get fs column id for
-	 * @return fs_id or -1 if not present
-	 */
-	private long getFileSystemId(long fileId) {
-		long retValue = -1;
-		try {
-			CaseDbConnection connection = connections.getConnection();
-			retValue = getFileSystemId(fileId, connection);
-			connection.close();
-		} catch (TskCoreException ex) {
-			logger.log(Level.SEVERE, "Error getting file system id for file " + fileId, ex); //NON-NLS			
-		}
-		return retValue;
 	}
 
 	/**
@@ -3105,37 +2988,23 @@ public class SleuthkitCase {
 	 * @throws TskCoreException thrown if check failed
 	 */
 	public boolean isFileFromSource(Content dataSource, long fileId) throws TskCoreException {
-		if (dataSource.getParent() != null) {
-			final String msg = MessageFormat.format(bundle.getString("SleuthkitCase.isFileFromSource.exception.msg.text"), dataSource);
-			logger.log(Level.SEVERE, msg);
-			throw new IllegalArgumentException(msg);
-		}
-
-		//get fs_id for file id
-		long fsId = getFileSystemId(fileId);
-		if (fsId == -1) {
-			return false;
-		}
-
-		//if image, check if one of fs in data source
-		if (dataSource instanceof Image) {
-			Collection<FileSystem> fss = getFileSystems((Image) dataSource);
-			for (FileSystem fs : fss) {
-				if (fs.getId() == fsId) {
-					return true;
-				}
-			}
-			return false;
-		} //if VirtualDirectory, check if dataSource id is the fs_id
-		else if (dataSource instanceof VirtualDirectory) {
-			//fs_obj_id is not a real fs in this case
-			//we are currently using this field internally to get to data source of non-fs files quicker
-			//this will be fixed in 2.5 schema
-			return dataSource.getId() == fsId;
-		} else {
-			final String msg = MessageFormat.format(bundle.getString("SleuthkitCase.isFileFromSource.exception.msg2.text"), dataSource);
-			logger.log(Level.SEVERE, msg);
-			throw new IllegalArgumentException(msg);
+		String query = String.format("SELECT COUNT(*) FROM tsk_files WHERE obj_id = %d AND data_source_obj_id = %d", fileId, dataSource.getId()); //NON-NLS
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		Statement statement = null;
+		ResultSet resultSet = null;
+		try {
+			statement = connection.createStatement();
+			resultSet = connection.executeQuery(statement, query);
+			resultSet.next();
+			return (resultSet.getLong(1) > 0L);
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error executing query %s", query), ex);
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+			connection.close();
+			releaseSharedLock();
 		}
 	}
 
@@ -3149,43 +3018,21 @@ public class SleuthkitCase {
 	 * @throws TskCoreException thrown if check failed
 	 */
 	public List<AbstractFile> findFiles(Content dataSource, String fileName) throws TskCoreException {
-		if (dataSource.getParent() != null) {
-			final String msg = MessageFormat.format(bundle.getString("SleuthkitCase.isFileFromSource.exception.msg1.text"), dataSource);
-			logger.log(Level.SEVERE, msg);
-			throw new IllegalArgumentException(msg);
-		}
-
 		List<AbstractFile> files = new ArrayList<AbstractFile>();
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
-		ResultSet rs = null;
+		ResultSet resultSet = null;
 		try {
-			if (dataSource instanceof Image) {
-				PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_FILE_SYSTEM_AND_NAME);
-
-				for (FileSystem fileSystem : getFileSystems((Image) dataSource)) {
-					statement.clearParameters();
-					statement.setString(1, fileName.toLowerCase());
-					statement.setLong(2, fileSystem.getId());
-					rs = connection.executeQuery(statement);
-					files.addAll(resultSetToAbstractFiles(rs));
-				}
-			} else if (dataSource instanceof VirtualDirectory) {
-				// A future database schema could probably make this cleaner. 
-				// fs_obj_id is set only for file system files. 
-				// We will match the VirtualDirectory's name in the parent path
-				Statement s = connection.createStatement();
-				rs = connection.executeQuery(s, "SELECT * FROM tsk_files WHERE LOWER(name) LIKE '" + fileName.toLowerCase() + "'  and LOWER(name) NOT LIKE '%journal%' AND parent_path LIKE '/" + dataSource.getName() + "/%'"); //NON-NLS
-				files = resultSetToAbstractFiles(rs);
-			} else {
-				final String msg = MessageFormat.format(bundle.getString("SleuthkitCase.findFiles.exception.msg2.text"), dataSource);
-				logger.log(Level.SEVERE, msg);
-				throw new IllegalArgumentException(msg);
-			}
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_DATA_SOURCE_AND_NAME);
+			statement.clearParameters();
+			statement.setString(1, fileName.toLowerCase());
+			statement.setLong(2, dataSource.getId());
+			resultSet = connection.executeQuery(statement);
+			files.addAll(resultSetToAbstractFiles(resultSet));
 		} catch (SQLException e) {
 			throw new TskCoreException(bundle.getString("SleuthkitCase.findFiles.exception.msg3.text"), e);
 		} finally {
-			closeResultSet(rs);
+			closeResultSet(resultSet);
 			connection.close();
 			releaseSharedLock();
 		}
@@ -3204,44 +3051,22 @@ public class SleuthkitCase {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public List<AbstractFile> findFiles(Content dataSource, String fileName, String dirName) throws TskCoreException {
-		if (dataSource.getParent() != null) {
-			final String msg = MessageFormat.format(bundle.getString("SleuthkitCase.findFiles3.exception.msg1.text"), dataSource);
-			logger.log(Level.SEVERE, msg);
-			throw new IllegalArgumentException(msg);
-		}
-
 		List<AbstractFile> files = new ArrayList<AbstractFile>();
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
-		ResultSet rs = null;
+		ResultSet resultSet = null;
 		try {
-			if (dataSource instanceof Image) {
-				PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_FILE_SYSTEM_AND_PATH);
-
-				for (FileSystem fileSystem : getFileSystems((Image) dataSource)) {
-					statement.clearParameters();
-					statement.setString(1, fileName.toLowerCase());
-					statement.setString(2, "%" + dirName.toLowerCase() + "%"); //NON-NLS
-					statement.setLong(3, fileSystem.getId());
-					rs = connection.executeQuery(statement);
-					files.addAll(resultSetToAbstractFiles(rs));
-				}
-			} else if (dataSource instanceof VirtualDirectory) {
-				// A future database schema could probably make this cleaner. 
-				// fs_obj_id is set only for file system files. 
-				// We will match the VirtualDirectory's name in the parent path
-				Statement s = connection.createStatement();
-				rs = connection.executeQuery(s, "SELECT * FROM tsk_files WHERE LOWER(name) LIKE '" + fileName.toLowerCase() + "' and LOWER(name) NOT LIKE '%journal%' AND parent_path LIKE '/" + dataSource.getName() + "/%' AND lower(parent_path) LIKE '%" + dirName.toLowerCase() + "%'"); //NON-NLS
-				files = resultSetToAbstractFiles(rs);
-			} else {
-				final String msg = MessageFormat.format(bundle.getString("SleuthkitCase.findFiles3.exception.msg2.text"), dataSource);
-				logger.log(Level.SEVERE, msg);
-				throw new IllegalArgumentException(msg);
-			}
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_DATA_SOURCE_AND_PARENT_PATH_AND_NAME);
+			statement.clearParameters();
+			statement.setString(1, fileName.toLowerCase());
+			statement.setString(2, "%" + dirName.toLowerCase() + "%"); //NON-NLS
+			statement.setLong(3, dataSource.getId());
+			resultSet = connection.executeQuery(statement);
+			files.addAll(resultSetToAbstractFiles(resultSet));
 		} catch (SQLException e) {
 			throw new TskCoreException(bundle.getString("SleuthkitCase.findFiles3.exception.msg3.text"), e);
 		} finally {
-			closeResultSet(rs);
+			closeResultSet(resultSet);
 			connection.close();
 			releaseSharedLock();
 		}
@@ -3249,11 +3074,11 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * wraps the version of addVirtualDirectory that takes a Transaction in a
-	 * transaction local to this method
+	 * Adds a virtual directory to the database and returns a VirtualDirectory
+	 * object representing it.
 	 *
-	 * @param parentId
-	 * @param directoryName
+	 * @param parentId the ID of the parent, or 0 if NULL
+	 * @param directoryName the name of the virtual directory to create
 	 * @return
 	 * @throws TskCoreException
 	 */
@@ -3315,7 +3140,6 @@ public class SleuthkitCase {
 			} else {
 				statement.setNull(1, java.sql.Types.BIGINT);
 			}
-
 			statement.setInt(2, TskData.ObjectType.ABSTRACTFILE.getObjectType());
 			connection.executeUpdate(statement);
 			resultSet = statement.getGeneratedKeys();
@@ -3324,22 +3148,28 @@ public class SleuthkitCase {
 
 			// Insert a row for the virtual directory into the tsk_files table.
 			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, 
-			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path) 
-			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)			
+			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, data_source_obj_id) 
+			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)			
 			statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 			statement.clearParameters();
 			statement.setLong(1, newObjId);
 
-			// If the parent is part of a file system, grab its file system ID
-			long parentFs = this.getFileSystemId(parentId, transaction);
-			if (parentFs != -1) {
-				statement.setLong(2, parentFs);
+			// If the parent is part of a file system, grab its file system ID			
+			if (0 != parentId) {
+				long parentFs = this.getFileSystemId(parentId, transaction);
+				if (parentFs != -1) {
+					statement.setLong(2, parentFs);
+				} else {
+					statement.setNull(2, java.sql.Types.BIGINT);
+				}
 			} else {
 				statement.setNull(2, java.sql.Types.BIGINT);
 			}
+
+			// name
 			statement.setString(3, directoryName);
 
-			//type, has_path
+			//type
 			statement.setShort(4, TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType());
 			statement.setShort(5, (short) 1);
 
@@ -3349,7 +3179,7 @@ public class SleuthkitCase {
 			final TSK_FS_META_TYPE_ENUM metaType = TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
 			statement.setShort(7, metaType.getValue());
 
-			//note: using alloc under assumption that derived files derive from alloc files
+			//allocated
 			final TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.ALLOC;
 			statement.setShort(8, dirFlag.getValue());
 			final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue()
@@ -3357,8 +3187,7 @@ public class SleuthkitCase {
 			statement.setShort(9, metaFlags);
 
 			//size
-			long size = 0;
-			statement.setLong(10, size);
+			statement.setLong(10, 0);
 
 			//  nulls for params 11-14
 			statement.setNull(11, java.sql.Types.BIGINT);
@@ -3369,10 +3198,19 @@ public class SleuthkitCase {
 			// parent path
 			statement.setString(15, parentPath);
 
+			// data source object id (same as object id if this is a data source)
+			long dataSourceObjectId;
+			if (0 == parentId) {
+				dataSourceObjectId = newObjId;
+			} else {
+				dataSourceObjectId = getDataSourceObjectId(connection, parentId);
+			}
+			statement.setLong(16, dataSourceObjectId);
+
 			connection.executeUpdate(statement);
 
-			return new VirtualDirectory(this, newObjId, directoryName, dirType,
-					metaType, dirFlag, metaFlags, size, null, FileKnown.UNKNOWN,
+			return new VirtualDirectory(this, newObjId, dataSourceObjectId, directoryName, dirType,
+					metaType, dirFlag, metaFlags, null, FileKnown.UNKNOWN,
 					parentPath);
 		} catch (SQLException e) {
 			throw new TskCoreException("Error creating virtual directory '" + directoryName + "'", e);
@@ -3400,16 +3238,72 @@ public class SleuthkitCase {
 	public LocalFilesDataSource addLocalFilesDataSource(String deviceId, String rootDirectoryName, String timeZone, CaseDbTransaction transaction) throws TskCoreException {
 		acquireExclusiveLock();
 		Statement statement = null;
+		ResultSet resultSet = null;
 		try {
-			VirtualDirectory rootDirectory = addVirtualDirectory(0, rootDirectoryName, transaction);
+			// Insert a row for the root virtual directory of the data source 
+			// into the tsk_objects table.
+			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
 			CaseDbConnection connection = transaction.getConnection();
+			PreparedStatement preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
+			preparedStatement.clearParameters();
+			preparedStatement.setNull(1, java.sql.Types.BIGINT);
+			preparedStatement.setInt(2, TskData.ObjectType.ABSTRACTFILE.getObjectType());
+			connection.executeUpdate(preparedStatement);
+			resultSet = preparedStatement.getGeneratedKeys();
+			resultSet.next();
+			long newObjId = resultSet.getLong(1);
+			resultSet.close();
+			resultSet = null;
+
+			// Insert a row for the virtual directory of the data source into 
+			// the data_source_info table.
 			statement = connection.createStatement();
 			statement.executeUpdate("INSERT INTO data_source_info (obj_id, device_id, time_zone) "
-					+ "VALUES(" + rootDirectory.getId() + ", '" + deviceId + "', '" + timeZone + "');");
+					+ "VALUES(" + newObjId + ", '" + deviceId + "', '" + timeZone + "');");
+
+			// Insert a row for the root virtual directory of the data source 
+			// into the tsk_files table. Note that its data source object id is
+			// its own object id.
+			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, 
+			// dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, 
+			// atime, mtime, parent_path, data_source_obj_id) 
+			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)			
+			preparedStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
+			preparedStatement.clearParameters();
+			preparedStatement.setLong(1, newObjId);
+			preparedStatement.setNull(2, java.sql.Types.BIGINT);
+			preparedStatement.setString(3, rootDirectoryName);
+			preparedStatement.setShort(4, TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType());
+			preparedStatement.setShort(5, (short) 1);
+			TSK_FS_NAME_TYPE_ENUM dirType = TSK_FS_NAME_TYPE_ENUM.DIR;
+			preparedStatement.setShort(6, TSK_FS_NAME_TYPE_ENUM.DIR.getValue());
+			TSK_FS_META_TYPE_ENUM metaType = TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
+			preparedStatement.setShort(7, metaType.getValue());
+			TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.ALLOC;
+			preparedStatement.setShort(8, dirFlag.getValue());
+			final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue()
+					| TSK_FS_META_FLAG_ENUM.USED.getValue());
+			preparedStatement.setShort(9, metaFlags);
+			preparedStatement.setLong(10, 0);
+			preparedStatement.setNull(11, java.sql.Types.BIGINT);
+			preparedStatement.setNull(12, java.sql.Types.BIGINT);
+			preparedStatement.setNull(13, java.sql.Types.BIGINT);
+			preparedStatement.setNull(14, java.sql.Types.BIGINT);
+			String parentPath = "/"; //NON-NLS
+			preparedStatement.setString(15, parentPath);
+			preparedStatement.setLong(16, newObjId);
+			connection.executeUpdate(preparedStatement);
+
+			VirtualDirectory rootDirectory = new VirtualDirectory(this,
+					newObjId, newObjId, rootDirectoryName,
+					dirType, metaType, dirFlag, metaFlags, null,
+					FileKnown.UNKNOWN, parentPath);
 			return new LocalFilesDataSource(deviceId, rootDirectory, timeZone);
+
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error creating local files data source with device id %s and directory name %s", deviceId, rootDirectoryName), ex);
 		} finally {
+			closeResultSet(resultSet);
 			closeStatement(statement);
 			releaseExclusiveLock();
 		}
@@ -3428,16 +3322,11 @@ public class SleuthkitCase {
 		Statement s = null;
 		ResultSet rs = null;
 		try {
-			short firstone = TskData.ObjectType.ABSTRACTFILE.getObjectType();
-			short secondone = TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType();
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT tsk_files.* FROM tsk_objects, tsk_files WHERE " //NON-NLS
-					+ "tsk_objects.par_obj_id IS NULL AND " //NON-NLS
-					+ "tsk_objects.type = " + firstone + " AND " //NON-NLS
-					+ "tsk_objects.obj_id = tsk_files.obj_id AND " //NON-NLS
-					+ "tsk_files.type = " + secondone
-					+ " ORDER BY tsk_files.dir_type, LOWER(tsk_files.name)"); //NON-NLS
-
+			rs = connection.executeQuery(s, "SELECT * FROM tsk_files WHERE" //NON-NLS
+					+ " type = " + TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType()
+					+ " AND obj_id = data_source_obj_id"
+					+ " ORDER BY dir_type, LOWER(name)"); //NON-NLS
 			List<VirtualDirectory> virtDirRootIds = new ArrayList<VirtualDirectory>();
 			while (rs.next()) {
 				virtDirRootIds.add(rsHelper.virtualDirectory(rs));
@@ -3560,7 +3449,8 @@ public class SleuthkitCase {
 					parentPath = parentPath + parentName + "/"; //NON-NLS
 				}
 
-				// we should cache this when we start adding lots of carved files...
+				// TODO (AUT-1903): We should cache this when we start adding 
+				// lots of carved files...
 				boolean isContainerAFs = false;
 				s = connection.createStatement();
 				rs = connection.executeQuery(s, "SELECT * FROM tsk_fs_info " //NON-NLS
@@ -3570,6 +3460,10 @@ public class SleuthkitCase {
 				}
 				rs.close();
 				rs = null;
+
+				// TODO (AUT-1903): This result is another thing that should be 
+				// cached.
+				long dataSourceObjectId = getDataSourceObjectId(connection, id);
 
 				for (CarvedFileContainer itemToAdd : filesToAdd) {
 
@@ -3586,8 +3480,8 @@ public class SleuthkitCase {
 
 					// Insert a row for the carved file into the tsk_files table.
 					// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, 
-					// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path) 
-					// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)			
+					// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, data_source_obj_id) 
+					// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)			
 					statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 					statement.clearParameters();
 					statement.setLong(1, newObjId);
@@ -3635,6 +3529,9 @@ public class SleuthkitCase {
 					// parent path
 					statement.setString(15, parentPath);
 
+					// data source object id
+					statement.setLong(16, dataSourceObjectId);
+
 					connection.executeUpdate(statement);
 
 					// Add a row in the tsk_layout_file table for each TskFileRange.
@@ -3660,9 +3557,9 @@ public class SleuthkitCase {
 						connection.executeUpdate(statement);
 					}
 
-					addedFiles.add(new LayoutFile(this, newObjId, itemToAdd.getName(),
+					addedFiles.add(new LayoutFile(this, newObjId, dataSourceObjectId, itemToAdd.getName(),
 							type, dirType, metaType, dirFlag, metaFlags,
-							itemToAdd.getSize(), null, FileKnown.UNKNOWN, parentPath));
+							itemToAdd.getSize(), null, FileKnown.UNKNOWN, parentPath, null));
 				}
 				localTrans.commit();
 				return addedFiles;
@@ -3733,8 +3630,8 @@ public class SleuthkitCase {
 
 			// Insert a row for the virtual directory into the tsk_files table.
 			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, 
-			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path) 
-			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)			
+			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, data_source_obj_id) 
+			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)			
 			statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 			statement.clearParameters();
 			statement.setLong(1, newObjId);
@@ -3778,6 +3675,10 @@ public class SleuthkitCase {
 			//parent path
 			statement.setString(15, parentPath);
 
+			// root data source object id
+			long dataSourceObjId = getDataSourceObjectId(connection, parentId);
+			statement.setLong(16, dataSourceObjId);
+
 			connection.executeUpdate(statement);
 
 			//add localPath 
@@ -3786,8 +3687,8 @@ public class SleuthkitCase {
 			connection.commitTransaction();
 
 			//TODO add derived method to tsk_files_derived and tsk_files_derived_method 
-			return new DerivedFile(this, newObjId, fileName, dirType, metaType, dirFlag, metaFlags,
-					size, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId);
+			return new DerivedFile(this, newObjId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
+					size, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId, null);
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
 			throw new TskCoreException("Failed to add derived file to case database", ex);
@@ -3799,8 +3700,7 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 *
-	 * wraps the version of addLocalFile that takes a Transaction in a
+	 * Wraps the version of addLocalFile that takes a Transaction in a
 	 * transaction local to this method.
 	 *
 	 * @param fileName
@@ -3833,118 +3733,168 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Creates a new local file object, adds it to database and returns it.
+	 * Adds a local/logical file to the case database. The database operations
+	 * are done within a caller-managed transaction; the caller is responsible
+	 * for committing or rolling back the transaction.
 	 *
-	 * Make sure the connection in transaction is used for all database
-	 * interactions called by this method
-	 *
-	 * todo: at the moment we trust the transaction and don't do anything to
-	 * check it is valid or in the correct state. we should.
-	 *
-	 *
-	 * @param fileName file name the derived file
-	 * @param localPath local absolute path of the local file, including the
-	 * file name.
-	 * @param size size of the derived file in bytes
-	 * @param ctime
-	 * @param crtime
-	 * @param atime
-	 * @param mtime
-	 * @param isFile whether a file or directory, true if a file
-	 * @param parent parent file object (such as virtual directory, another
-	 * local file, or FsContent type of file)
-	 * @param transaction the transaction in the scope of which the operation is
-	 * to be performed, managed by the caller
-	 * @return newly created derived file object
-	 * @throws TskCoreException exception thrown if the object creation failed
-	 * due to a critical system error
+	 * @param fileName The name of the file.
+	 * @param localPath The absolute path (including the file name) of the
+	 * local/logical in secondary storage.
+	 * @param size The size of the file in bytes.
+	 * @param ctime The changed time of the file.
+	 * @param crtime The creation time of the file.
+	 * @param atime The accessed time of the file
+	 * @param mtime The modified time of the file.
+	 * @param isFile True, unless the file is a directory.
+	 * @param parent The parent of the file (e.g., a virtual directory)
+	 * @param transaction A caller-managed transaction within which the add file
+	 * operations are performed.
+	 * @return An object representing the local/logical file.
+	 * @throws TskCoreException if there is an error completing a case database
+	 * operation.
 	 */
 	public LocalFile addLocalFile(String fileName, String localPath,
 			long size, long ctime, long crtime, long atime, long mtime,
 			boolean isFile, AbstractFile parent, CaseDbTransaction transaction) throws TskCoreException {
-		if (transaction == null) {
-			throw new TskCoreException("Passed null CaseDbTransaction");
-		}
+
 		CaseDbConnection connection = transaction.getConnection();
 		acquireExclusiveLock();
+		Statement queryStatement = null;
 		ResultSet resultSet = null;
 		try {
-			long parentId = -1;
-			String parentPath;
-			if (parent == null) {
-				throw new TskCoreException(MessageFormat.format(bundle.getString("SleuthkitCase.addLocalFile.exception.msg1.text"), fileName));
-			} else {
-				parentId = parent.getId();
-				parentPath = parent.getParentPath() + parent.getName() + "/"; //NON-NLS
-			}
 
 			// Insert a row for the local/logical file into the tsk_objects table.
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
 			statement.clearParameters();
-			statement.setLong(1, parentId);
+			statement.setLong(1, parent.getId());
 			statement.setLong(2, TskData.ObjectType.ABSTRACTFILE.getObjectType());
 			connection.executeUpdate(statement);
 			resultSet = statement.getGeneratedKeys();
-			resultSet.next();
-			long newObjId = resultSet.getLong(1);
+			if (!resultSet.next()) {
+				throw new TskCoreException(String.format("Failed to INSERT local file %s (%s) with parent id %d in tsk_objects table", fileName, localPath, parent.getId()));
+			}
+			long objectId = resultSet.getLong(1);
 			resultSet.close();
 			resultSet = null;
 
 			// Insert a row for the local/logical file into the tsk_files table.
 			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, 
-			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path) 
-			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)			
+			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, data_source_obj_id) 
+			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)			
 			statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 			statement.clearParameters();
-			statement.setLong(1, newObjId);
-
-			// nothing to set for parameter 2, fs_obj_id since local files aren't part of file systems
-			statement.setNull(2, java.sql.Types.BIGINT);
+			statement.setLong(1, objectId);
+			statement.setNull(2, java.sql.Types.BIGINT); // Not part of a file system
 			statement.setString(3, fileName);
-
-			//type, has_path
 			statement.setShort(4, TskData.TSK_DB_FILES_TYPE_ENUM.LOCAL.getFileType());
 			statement.setShort(5, (short) 1);
-
-			//flags
-			final TSK_FS_NAME_TYPE_ENUM dirType = isFile ? TSK_FS_NAME_TYPE_ENUM.REG : TSK_FS_NAME_TYPE_ENUM.DIR;
+			TSK_FS_NAME_TYPE_ENUM dirType = isFile ? TSK_FS_NAME_TYPE_ENUM.REG : TSK_FS_NAME_TYPE_ENUM.DIR;
 			statement.setShort(6, dirType.getValue());
-			final TSK_FS_META_TYPE_ENUM metaType = isFile ? TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG : TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
+			TSK_FS_META_TYPE_ENUM metaType = isFile ? TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG : TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
 			statement.setShort(7, metaType.getValue());
-
-			//note: using alloc under assumption that derived files derive from alloc files
-			final TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.ALLOC;
+			TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.ALLOC;
 			statement.setShort(8, dirFlag.getValue());
-			final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue()
-					| TSK_FS_META_FLAG_ENUM.USED.getValue());
+			short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue() | TSK_FS_META_FLAG_ENUM.USED.getValue());
 			statement.setShort(9, metaFlags);
-
-			//size
 			statement.setLong(10, size);
-
-			//mactimes
-			//long ctime, long crtime, long atime, long mtime,
 			statement.setLong(11, ctime);
 			statement.setLong(12, crtime);
 			statement.setLong(13, atime);
 			statement.setLong(14, mtime);
-
-			//parent path
+			String parentPath = parent.getParentPath() + parent.getName() + "/"; //NON-NLS
 			statement.setString(15, parentPath);
-
+			long dataSourceObjId = getDataSourceObjectId(connection, parent.getId()); // RJCTODO: Let this be passed in or make a story
+			statement.setLong(16, dataSourceObjId);
 			connection.executeUpdate(statement);
+			addFilePath(connection, objectId, localPath);
+			return new LocalFile(this,
+					objectId,
+					fileName,
+					TSK_DB_FILES_TYPE_ENUM.LOCAL,
+					dirType,
+					metaType,
+					dirFlag,
+					metaFlags,
+					size,
+					ctime, crtime, atime, mtime,
+					null, null, null,
+					parent.getId(), parentPath,
+					dataSourceObjId,
+					localPath);
 
-			//add localPath 
-			addFilePath(connection, newObjId, localPath);
-
-			return new LocalFile(this, newObjId, fileName, dirType, metaType, dirFlag, metaFlags,
-					size, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId);
-		} catch (SQLException e) {
-			throw new TskCoreException("Error adding local file directory " + fileName + " with local path " + localPath, e);
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Failed to INSERT local file %s (%s) with parent id %d in tsk_files table", fileName, localPath, parent.getId()), ex);
 		} finally {
 			closeResultSet(resultSet);
+			closeStatement(queryStatement);
 			releaseExclusiveLock();
+		}
+	}
+
+	/**
+	 * Given an object id, works up the tree of ancestors to the data source for
+	 * the object and gets the object id of the data source. The trivial case
+	 * where the input object id is for a source is handled.
+	 *
+	 * @param connection A case database connection.
+	 * @param objectId An object id.
+	 * @return A data source object id.
+	 * @deprecated This only exists to support deprecated TSK object
+	 * constructors.
+	 */
+	@Deprecated
+	long getDataSourceObjectId(long objectId) {
+		try {
+			CaseDbConnection connection = connections.getConnection();
+			try {
+				return getDataSourceObjectId(connection, objectId);
+			} finally {
+				connection.close();
+			}
+		} catch (TskCoreException ex) {
+			logger.log(Level.SEVERE, "Error getting data source object id for a file", ex);
+			return 0;
+		}
+	}
+
+	/**
+	 * Given an object id, works up the tree of ancestors to the data source for
+	 * the object and gets the object id of the data source. The trivial case
+	 * where the input object id is for a source is handled.
+	 *
+	 * @param connection A case database connection.
+	 * @param objectId An object id.
+	 * @return A data source object id.
+	 * @throws TskCoreException if there is an erro querying the case database.
+	 */
+	private long getDataSourceObjectId(CaseDbConnection connection, long objectId) throws TskCoreException {
+		acquireSharedLock();
+		Statement statement = null;
+		ResultSet resultSet = null;
+		try {
+			statement = connection.createStatement();
+			long dataSourceObjId;
+			long ancestorId = objectId;
+			do {
+				dataSourceObjId = ancestorId;
+				String query = String.format("SELECT par_obj_id FROM tsk_objects WHERE obj_id = %s;", ancestorId);
+				resultSet = statement.executeQuery(query);
+				if (resultSet.next()) {
+					ancestorId = resultSet.getLong("par_obj_id");
+				} else {
+					throw new TskCoreException(String.format("tsk_objects table is corrupt, SQL query returned no result: %s", query));
+				}
+				resultSet.close();
+				resultSet = null;
+			} while (0 != ancestorId); // Not NULL
+			return dataSourceObjId;
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error finding root data source for object (obj_id = %d)", objectId), ex);
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+			releaseSharedLock();
 		}
 	}
 
@@ -4092,7 +4042,15 @@ public class SleuthkitCase {
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT * FROM tsk_files WHERE " + sqlWhereClause); //NON-NLS
-			return resultSetToFsContents(rs);
+			List<FsContent> results = new ArrayList<FsContent>();
+			List<AbstractFile> temp = resultSetToAbstractFiles(rs);
+			for (AbstractFile f : temp) {
+				final TSK_DB_FILES_TYPE_ENUM type = f.getType();
+				if (type.equals(TskData.TSK_DB_FILES_TYPE_ENUM.FS)) {
+					results.add((FsContent) f);
+				}
+			}
+			return results;
 		} catch (SQLException e) {
 			throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.findFilesWhere().", e);
 		} finally {
@@ -4722,7 +4680,9 @@ public class SleuthkitCase {
 	 * @return currently max id
 	 * @throws TskCoreException exception thrown when database error occurs and
 	 * last object id could not be queried
+	 * @deprecated Do not use, assumes a single-threaded, single-user case.
 	 */
+	@Deprecated
 	public long getLastObjectId() throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireExclusiveLock();
@@ -4781,7 +4741,7 @@ public class SleuthkitCase {
 	 *
 	 * @param rs ResultSet to get content from. Caller is responsible for
 	 * closing it.
-	 * @return list of file objects from tsk_files table containing the results
+	 * @return list of file objects from tsk_files table containing the files
 	 * @throws SQLException if the query fails
 	 */
 	private List<AbstractFile> resultSetToAbstractFiles(ResultSet rs) throws SQLException {
@@ -4808,13 +4768,15 @@ public class SleuthkitCase {
 					if (parentPath == null) {
 						parentPath = "/"; //NON-NLS
 					}
-					LayoutFile lf = new LayoutFile(this, rs.getLong("obj_id"), //NON-NLS
+					LayoutFile lf = new LayoutFile(this,
+							rs.getLong("obj_id"), //NON-NLS
+							rs.getLong("data_source_obj_id"),
 							rs.getString("name"), //NON-NLS
 							atype,
 							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
 							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"), //NON-NLS
 							rs.getLong("size"), //NON-NLS
-							rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), parentPath); //NON-NLS
+							rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), parentPath, rs.getString("mime_type")); //NON-NLS
 					results.add(lf);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.DERIVED.getFileType()) {
 					final DerivedFile df;
@@ -4835,29 +4797,9 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Creates FsContent objects from SQL query result set on tsk_files table
-	 *
-	 * @param rs the result set with the query results
-	 * @return list of fscontent objects matching the query
-	 * @throws SQLException if SQL query result getting failed
-	 */
-	private List<FsContent> resultSetToFsContents(ResultSet rs) throws SQLException {
-		List<FsContent> results = new ArrayList<FsContent>();
-		List<AbstractFile> temp = resultSetToAbstractFiles(rs);
-		for (AbstractFile f : temp) {
-			final TSK_DB_FILES_TYPE_ENUM type = f.getType();
-			if (type.equals(TskData.TSK_DB_FILES_TYPE_ENUM.FS)) {
-				results.add((FsContent) f);
-			}
-		}
-		return results;
-	}
-
-	/**
 	 * Process a read-only query on the tsk database, any table Can be used to
 	 * e.g. to find files of a given criteria. resultSetToFsContents() will
-	 * convert the results to useful objects. MUST CALL closeRunQuery() when
-	 * done
+	 * convert the files to useful objects. MUST CALL closeRunQuery() when done
 	 *
 	 * @param query the given string query to run
 	 * @return	the resultSet from running the query. Caller MUST CALL
@@ -4890,7 +4832,7 @@ public class SleuthkitCase {
 	 * Closes ResultSet and its Statement previously retrieved from runQuery()
 	 *
 	 * @param resultSet with its Statement to close
-	 * @throws SQLException of closing the query results failed
+	 * @throws SQLException of closing the query files failed
 	 * @deprecated Do not use runQuery() and closeRunQuery(), use executeQuery()
 	 * instead. \ref query_database_page
 	 */
@@ -4904,12 +4846,113 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Get the string associated with the given id. Will throw an error if that
+	 * id does not exist
+	 *
+	 * @param attrTypeID attribute id
+	 * @return string associated with the given id
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 * within tsk core
+	 * @deprecated Use getAttributeType instead
+	 */
+	@Deprecated
+	public String getAttrTypeString(int attrTypeID) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT type_name FROM blackboard_attribute_types WHERE attribute_type_id = " + attrTypeID); //NON-NLS
+			if (rs.next()) {
+				return rs.getString(1);
+			} else {
+				throw new TskCoreException("No type with that id");
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting or creating a attribute type name", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	/**
+	 * Get the display name for the attribute with the given id. Will throw an
+	 * error if that id does not exist
+	 *
+	 * @param attrTypeID attribute id
+	 * @return string associated with the given id
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 * within tsk core
+	 * @deprecated Use getAttributeType instead
+	 */
+	@Deprecated
+	public String getAttrTypeDisplayName(int attrTypeID) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT display_name FROM blackboard_attribute_types WHERE attribute_type_id = " + attrTypeID); //NON-NLS
+			if (rs.next()) {
+				return rs.getString(1);
+			} else {
+				throw new TskCoreException("No type with that id");
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting or creating a attribute type name", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	/**
+	 * Get the artifact type id associated with an artifact type name.
+	 *
+	 * @param artifactTypeName An artifact type name.
+	 * @return An artifact id or -1 if the attribute type does not exist.
+	 * @throws TskCoreException If an error occurs accessing the case database.
+	 *
+	 * @deprecated Use getArtifactType instead
+	 */
+	@Deprecated
+	public int getArtifactTypeID(String artifactTypeName) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeName + "'"); //NON-NLS
+			int typeId = -1;
+			if (rs.next()) {
+				typeId = rs.getInt(1);
+			}
+			return typeId;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting artifact type id", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	/**
 	 * This method allows developers to run arbitrary SQL "SELECT" queries. The
 	 * CaseDbQuery object will take care of acquiring the necessary database
 	 * lock and when used in a try-with-resources block will automatically take
 	 * care of releasing the lock. If you do not use a try-with-resources block
-	 * you must call CaseDbQuery.close() once you are done processing the
-	 * results of the query.
+	 * you must call CaseDbQuery.close() once you are done processing the files
+	 * of the query.
 	 *
 	 * Also note that if you use it within a transaction to insert something
 	 * into the database, and then within that same transaction query the
@@ -4997,36 +5040,27 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Store the mime type in the file database
+	 * Stores the MIME type of a file in the case database.
 	 *
 	 * @param fileId The id of the file to update the mime type of
 	 * @param mimeType the mime type
-	 * @throws TskCoreException When there is an issue querying the database
+	 * @throws TskCoreException if there is an error completing a database
+	 * operation.
 	 */
-	void setFileMIMEType(AbstractFile file, String mimeType) throws TskCoreException, TskDataException {
-		if (mimeType == null) {
-			return;
-		}
-		long fileId = file.getId();
+	public void setFileMIMEType(AbstractFile file, String mimeType) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
+		Statement statement = null;
 		ResultSet rs = null;
 		acquireExclusiveLock();
 		try {
-			Statement statement = connection.createStatement();
-			rs = connection.executeQuery(statement, "SELECT mime_type FROM tsk_files WHERE tsk_files.obj_id=" + fileId);
-			if (rs.next()) {
-				if (rs.getString("mime_type") != null) {
-					throw new TskDataException("Cannot reset a file's MIME type");
-				}
-				connection.executeUpdate(statement, "UPDATE tsk_files SET mime_type = '" + mimeType + "' WHERE obj_id = " + fileId);
-			} else {
-				throw new TskDataException("Given file does not exist within the system");
-			}
-
+			statement = connection.createStatement();
+			connection.executeUpdate(statement, String.format("UPDATE tsk_files SET mime_type = '%s' WHERE obj_id = %d", mimeType, file.getId()));
+			file.setMIMEType(mimeType);
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error setting mimeType", ex);
+			throw new TskCoreException(String.format("Error setting MIME type for file (obj_id = %s)", file.getId()), ex);
 		} finally {
 			closeResultSet(rs);
+			closeStatement(statement);
 			connection.close();
 			releaseExclusiveLock();
 		}
@@ -5217,6 +5251,7 @@ public class SleuthkitCase {
 			releaseSharedLock();
 		}
 		return count;
+
 	}
 
 	/**
@@ -5987,6 +6022,7 @@ public class SleuthkitCase {
 				statement.close();
 			} catch (SQLException ex) {
 				logger.log(Level.SEVERE, "Error closing Statement", ex); //NON-NLS
+
 			}
 		}
 	}

@@ -147,14 +147,15 @@ mac_load_table(TSK_VS_INFO * vs)
 
         if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) part_start,
                 (TSK_DADDR_T) part_size, (TSK_VS_PART_FLAG_ENUM)flag, str, -1,
-                idx))
+                idx)) {
             free(part_buf);
             return 1;
+        }
     }
     free(part_buf);
     part_buf = NULL;
 
-    // Bail if we did find any valid entries
+    // Bail if we didn't find any valid entries
     if (vs->part_count == 0) {
         return 1;
     }

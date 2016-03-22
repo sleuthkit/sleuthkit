@@ -91,7 +91,8 @@ public interface Content extends SleuthkitVisitableItem {
 	public long getId();
 
 	/**
-	 * Get the root data source of this content (image, virtual directory, etc.)
+	 * Gets the root data source (image, virtual directory, etc.) of this
+	 * content.
 	 *
 	 * @return Content associated with data source or null if one can't be found
 	 * @throws TskCoreException if critical error occurred within tsk core

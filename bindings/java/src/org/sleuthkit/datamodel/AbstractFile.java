@@ -1,7 +1,7 @@
 /*
- * Autopsy Forensic Browser
+ * SleuthKit Java Bindings
  * 
- * Copyright 2011 Basis Technology Corp.
+ * Copyright 2011-2016 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,6 +21,8 @@ package org.sleuthkit.datamodel;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,9 +38,8 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 
 /**
- * Common fields methods for objects stored in tsk_files table Abstract files
- * are divided into subtypes defined in TSK_DB_FILES_TYPE_ENUM and further
- * divided into files and directories
+ * An abstract base class for classes that represent of files that have been
+ * added to the case.
  */
 public abstract class AbstractFile extends AbstractContent {
 
@@ -77,6 +78,7 @@ public abstract class AbstractFile extends AbstractContent {
 	private String mimeType;
 	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
+	private long dataSourceObjectId;
 
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
@@ -84,43 +86,8 @@ public abstract class AbstractFile extends AbstractContent {
 	 *
 	 * @param db case / db handle where this file belongs to
 	 * @param objId object id in tsk_objects table
-	 * @param attrType
-	 * @param attrId
-	 * @param name name field of the file
-	 * @param fileType type of the file
-	 * @param metaAddr
-	 * @param metaSeq
-	 * @param dirType
-	 * @param metaType
-	 * @param dirFlag
-	 * @param metaFlags
-	 * @param size
-	 * @param ctime
-	 * @param crtime
-	 * @param atime
-	 * @param mtime
-	 * @param modes
-	 * @param uid
-	 * @param gid
-	 * @param md5Hash md5sum of the file, or null or "NULL" if not present
-	 * @param knownState knownState status of the file, or null if unknown
-	 * (default)
-	 * @param parentPath
-	 */
-	protected AbstractFile(SleuthkitCase db, long objId, TskData.TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
-			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq,
-			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
-			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
-			String parentPath) {
-		this(db, objId, attrType, attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime,mtime, modes, uid, gid, md5Hash, knownState, parentPath, null);
-	}
-
-	/**
-	 * Initializes common fields used by AbstactFile implementations (objects in
-	 * tsk_files table)
-	 *
-	 * @param db case / db handle where this file belongs to
-	 * @param objId object id in tsk_objects table
+	 * @param dataSourceObjectId The object id of the root data source of this
+	 * file.
 	 * @param attrType
 	 * @param attrId
 	 * @param name name field of the file
@@ -145,12 +112,24 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param parentPath
 	 * @param mimeType The MIME type of the file, can be null
 	 */
-	protected AbstractFile(SleuthkitCase db, long objId, TskData.TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
-			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq,
-			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
-			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
-			String parentPath, String mimeType) {
+	AbstractFile(SleuthkitCase db,
+			long objId,
+			long dataSourceObjectId,
+			TskData.TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
+			String name,
+			TskData.TSK_DB_FILES_TYPE_ENUM fileType,
+			long metaAddr, int metaSeq,
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
+			long size,
+			long ctime, long crtime, long atime, long mtime,
+			short modes,
+			int uid, int gid,
+			String md5Hash, FileKnown knownState,
+			String parentPath,
+			String mimeType) {
 		super(db, objId, name);
+		this.dataSourceObjectId = dataSourceObjectId;
 		this.attrType = attrType;
 		this.attrId = attrId;
 		this.fileType = fileType;
@@ -433,27 +412,18 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Gets the mime type of this file may return null if a mime type has not
-	 * been assigned
+	 * Gets the MIME type of this file.
 	 *
-	 * @return The MIME type, can be null
+	 * @return The MIME type name or null if the MIME type has not been set.
 	 */
 	public String getMIMEType() {
-		return this.mimeType;
+		return mimeType;
 	}
 
 	/**
-	 * Sets the mime type for this file, updates database
-	 *
-	 * @param mimeType The MIME type to set
-	 * @throws TskCoreException If the mime type could not be added to the db
-	 * @throws TskDataException If the mime type has already been set
+	 * Sets the MIME type for this file.
 	 */
-	public void setMIMEType(String mimeType) throws TskCoreException, TskDataException {
-		if (this.mimeType != null) {
-			throw new TskDataException("Mime type has already been set");
-		}
-		getSleuthkitCase().setFileMIMEType(this, mimeType);
+	public void setMIMEType(String mimeType) {
 		this.mimeType = mimeType;
 	}
 
@@ -546,6 +516,27 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	public String getParentPath() {
 		return parentPath;
+	}
+
+	/**
+	 * Gets the data source for this file.
+	 *
+	 * @return The data source.
+	 * @throws TskCoreException if there was an error querying the case
+	 * database.
+	 */
+	@Override
+	public Content getDataSource() throws TskCoreException {
+		return getSleuthkitCase().getContentById(this.dataSourceObjectId);
+	}
+
+	/**
+	 * Gets the object id of the data source for this file.
+	 *
+	 * @return The object id of the data source.
+	 */
+	long getDataSourceObjectId() {
+		return dataSourceObjectId;
 	}
 
 	/**
@@ -1051,4 +1042,45 @@ public abstract class AbstractFile extends AbstractContent {
 		}
 		return MimeMatchEnum.FALSE;
 	}
+
+	/**
+	 * Initializes common fields used by AbstactFile implementations (objects in
+	 * tsk_files table)
+	 *
+	 * @param db case / db handle where this file belongs to
+	 * @param objId object id in tsk_objects table
+	 * @param attrType
+	 * @param attrId
+	 * @param name name field of the file
+	 * @param fileType type of the file
+	 * @param metaAddr
+	 * @param metaSeq
+	 * @param dirType
+	 * @param metaType
+	 * @param dirFlag
+	 * @param metaFlags
+	 * @param size
+	 * @param ctime
+	 * @param crtime
+	 * @param atime
+	 * @param mtime
+	 * @param modes
+	 * @param uid
+	 * @param gid
+	 * @param md5Hash md5sum of the file, or null or "NULL" if not present
+	 * @param knownState knownState status of the file, or null if unknown
+	 * (default)
+	 * @param parentPath
+	 * @deprecated Do not make subclasses outside of this package.
+	 */
+	@Deprecated
+	@SuppressWarnings("deprecation")
+	protected AbstractFile(SleuthkitCase db, long objId, TskData.TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
+			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq,
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
+			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
+			String parentPath) {
+		this(db, objId, db.getDataSourceObjectId(objId), attrType, attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null);
+	}
+
 }

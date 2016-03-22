@@ -62,11 +62,24 @@ public class BlackboardAttribute {
 		 * @param displayName the display name
 		 * @param valueType the value type
 		 */
-		Type(int typeID, String typeName, String displayName, TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType) {
+		public Type(int typeID, String typeName, String displayName, TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType) {
 			this.typeID = typeID;
 			this.typeName = typeName;
 			this.displayName = displayName;
 			this.valueType = valueType;
+		}
+
+		/**
+		 * Constructs a type
+		 *
+		 * @param type The attribute type represented by this type object being
+		 * constructed
+		 */
+		public Type(BlackboardAttribute.ATTRIBUTE_TYPE type) {
+			this.typeID = type.getTypeID();
+			this.typeName = type.getLabel();
+			this.displayName = type.getDisplayName();
+			this.valueType = type.getValueType();
 		}
 
 		/**
@@ -138,7 +151,7 @@ public class BlackboardAttribute {
 			hash = 63 * hash + Objects.hashCode(this.valueType);
 			return hash;
 		}
-		
+
 		@Override
 		public String toString() {
 			return "(typeID= " + this.typeID
@@ -158,7 +171,7 @@ public class BlackboardAttribute {
 		LONG(2, "Long"), ///< long NON-NLS
 		DOUBLE(3, "Double"), ///< double NON-NLS
 		BYTE(4, "Byte"), ///< byte NON-NLS
-		DATETIME(5, "DateTime");
+		DATETIME(5, "DateTime"); ///NON-NLS
 		private long type;
 		private String label;
 
@@ -677,8 +690,7 @@ public class BlackboardAttribute {
 			throw new IllegalArgumentException("Value types do not match");
 		}
 		this.artifactID = 0;
-		this.attributeType = new BlackboardAttribute.Type(attributeType.getTypeID(), attributeType.getLabel(), attributeType.getDisplayName(),
-				attributeType.getValueType());
+		this.attributeType = new BlackboardAttribute.Type(attributeType);
 		this.moduleName = replaceNulls(moduleName);
 		this.valueInt = valueInt;
 		this.valueLong = 0;
@@ -763,8 +775,7 @@ public class BlackboardAttribute {
 			throw new IllegalArgumentException("Value types do not match");
 		}
 		this.artifactID = 0;
-		this.attributeType = new BlackboardAttribute.Type(attributeType.getTypeID(), attributeType.getLabel(), attributeType.getDisplayName(),
-				attributeType.getValueType());
+		this.attributeType = new BlackboardAttribute.Type(attributeType);
 		this.moduleName = replaceNulls(moduleName);
 		this.valueInt = 0;
 		this.valueLong = valueLong;
@@ -850,8 +861,7 @@ public class BlackboardAttribute {
 			throw new IllegalArgumentException("Value types do not match");
 		}
 		this.artifactID = 0;
-		this.attributeType = new BlackboardAttribute.Type(attributeType.getTypeID(), attributeType.getLabel(), attributeType.getDisplayName(),
-				attributeType.getValueType());
+		this.attributeType = new BlackboardAttribute.Type(attributeType);
 		this.moduleName = replaceNulls(moduleName);
 		this.valueInt = 0;
 		this.valueLong = 0;
@@ -937,8 +947,7 @@ public class BlackboardAttribute {
 			throw new IllegalArgumentException("Value types do not match");
 		}
 		this.artifactID = 0;
-		this.attributeType = new BlackboardAttribute.Type(attributeType.getTypeID(), attributeType.getLabel(), attributeType.getDisplayName(),
-				attributeType.getValueType());
+		this.attributeType = new BlackboardAttribute.Type(attributeType);
 		this.moduleName = replaceNulls(moduleName);
 		this.valueInt = 0;
 		this.valueLong = 0;
@@ -1031,8 +1040,7 @@ public class BlackboardAttribute {
 			throw new IllegalArgumentException("Value types do not match");
 		}
 		this.artifactID = 0;
-		this.attributeType = new BlackboardAttribute.Type(attributeType.getTypeID(), attributeType.getLabel(), attributeType.getDisplayName(),
-				attributeType.getValueType());
+		this.attributeType = new BlackboardAttribute.Type(attributeType);
 		this.moduleName = replaceNulls(moduleName);
 		this.context = "";
 		this.valueInt = 0;
@@ -1147,7 +1155,9 @@ public class BlackboardAttribute {
 	 * Get the attribute type id
 	 *
 	 * @return type id
+	 * @deprecated Use getAttributeType().getTypeID()
 	 */
+	@Deprecated
 	public int getAttributeTypeID() {
 		return attributeType.getTypeID();
 	}
@@ -1156,7 +1166,9 @@ public class BlackboardAttribute {
 	 * Get the attribute type name string
 	 *
 	 * @return type name string
+	 * @deprecated Use getAttributeType().getTypeName()
 	 */
+	@Deprecated
 	public String getAttributeTypeName() throws TskCoreException {
 		return attributeType.getTypeName();
 	}
@@ -1165,7 +1177,9 @@ public class BlackboardAttribute {
 	 * Get the attribute type display name
 	 *
 	 * @return type display name
+	 * @deprecated Use getAttributeType().getDisplayName()
 	 */
+	@Deprecated
 	public String getAttributeTypeDisplayName() throws TskCoreException {
 		return attributeType.getDisplayName();
 	}
@@ -1177,9 +1191,21 @@ public class BlackboardAttribute {
 	 * value get method.
 	 *
 	 * @return value type
+	 *
+	 * @deprecated Use getAttributeType().getValueType()
 	 */
+	@Deprecated
 	public TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE getValueType() {
 		return attributeType.getValueType();
+	}
+
+	/**
+	 * Get the attribute type of this attribute
+	 *
+	 * @return the attribute type
+	 */
+	public BlackboardAttribute.Type getAttributeType() {
+		return this.attributeType;
 	}
 
 	/**

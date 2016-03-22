@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  * 
- * Copyright 2011 Basis Technology Corp.
+ * Copyright 2011-2016 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +21,6 @@ package org.sleuthkit.datamodel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -37,8 +36,8 @@ public abstract class AbstractContent implements Content {
 
 	public final static long UNKNOWN_ID = -1;
 	private final SleuthkitCase db;
-	private long objId;
-	private String name;
+	private final long objId;
+	private final String name;
 	private Content parent;
 	private String uniquePath;
 	protected long parentId;
@@ -117,7 +116,7 @@ public abstract class AbstractContent implements Content {
 	@Override
 	public synchronized Content getParent() throws TskCoreException {
 		if (parent == null) {
-			ObjectInfo parentInfo = null;
+			ObjectInfo parentInfo;
 			try {
 				parentInfo = db.getParentInfo(this);
 			} catch (TskCoreException ex) {
@@ -221,7 +220,7 @@ public abstract class AbstractContent implements Content {
 
 	@Override
 	public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskCoreException {
-		return getArtifacts(db.getArtifactTypeID(artifactTypeName));
+		return getArtifacts(db.getArtifactType(artifactTypeName).getTypeID());
 	}
 
 	@Override
@@ -286,7 +285,7 @@ public abstract class AbstractContent implements Content {
 		}
 
 		for (BlackboardAttribute attribute : genInfoArtifact.getAttributes()) {
-			if (attribute.getAttributeTypeID() == attr_type.getTypeID()) {
+			if (attribute.getAttributeType().getTypeID() == attr_type.getTypeID()) {
 				returnList.add(attribute);
 			}
 		}
@@ -325,9 +324,9 @@ public abstract class AbstractContent implements Content {
 		ArrayList<BlackboardArtifact> artifacts = getArtifacts(BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT);
 
 		for (BlackboardArtifact a : artifacts) {
-			List<BlackboardAttribute> attributes = a.getAttributes(ATTRIBUTE_TYPE.TSK_SET_NAME);
-			for (BlackboardAttribute attr : attributes) {
-				hashNames.add(attr.getValueString());
+			BlackboardAttribute attribute = a.getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_SET_NAME));
+			if (attribute != null) {
+				hashNames.add(attribute.getValueString());
 			}
 		}
 		return Collections.unmodifiableSet(hashNames);

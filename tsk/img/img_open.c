@@ -397,6 +397,7 @@ tsk_img_open_external(
   void (*imgstat) (TSK_IMG_INFO *, FILE *)
 )
 {
+    TSK_IMG_INFO *img_info;
     // sanity checks
     if (!ext_img_info) {
         tsk_error_reset();
@@ -443,7 +444,7 @@ tsk_img_open_external(
     }
 
     // set up the TSK_IMG_INFO members
-    TSK_IMG_INFO *img_info = (TSK_IMG_INFO *) ext_img_info;
+    img_info = (TSK_IMG_INFO *) ext_img_info;
 
     img_info->tag = TSK_IMG_INFO_TAG;
     img_info->itype = TSK_IMG_TYPE_EXTERNAL;
