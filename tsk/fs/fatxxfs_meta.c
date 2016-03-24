@@ -361,12 +361,13 @@ fatxxfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     fs_meta->addr = a_inum;
 
     if (a_cluster_is_alloc) {
-
 		if(FATXXFS_IS_DELETED(dentry->name, a_fatfs)){
-				flags = TSK_FS_META_FLAG_UNALLOC;
+			flags = TSK_FS_META_FLAG_UNALLOC;
 		}
 		else{
-			flags = TSK_FS_META_FLAG_ALLOC;
+			flags = TSK_FS_META_FLAG_ALLOC |
+                (dentry->name[0] == FATXXFS_SLOT_EMPTY ?
+                 TSK_FS_META_FLAG_UNUSED : TSK_FS_META_FLAG_USED);
 		}
     }
     else {
