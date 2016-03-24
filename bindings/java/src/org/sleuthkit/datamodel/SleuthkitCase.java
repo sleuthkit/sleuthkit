@@ -2130,8 +2130,12 @@ public class SleuthkitCase {
 	 * @deprecated Use addBlackboardArtifactType instead
 	 */
 	@Deprecated
-	public int addArtifactType(String artifactTypeName, String displayName) throws TskCoreException, TskDataException {
-		return addBlackboardArtifactType(artifactTypeName, displayName).getTypeID();
+	public int addArtifactType(String artifactTypeName, String displayName) throws TskCoreException {
+		try {
+			return addBlackboardArtifactType(artifactTypeName, displayName).getTypeID();
+		} catch (TskDataException ex) {
+			throw new TskCoreException("Failed to add artifact type.", ex);
+		}
 	}
 
 	/**
