@@ -365,14 +365,16 @@ fatxxfs_dinode_copy(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
 			flags = TSK_FS_META_FLAG_UNALLOC;
 		}
 		else{
-			flags = TSK_FS_META_FLAG_ALLOC |
-                (dentry->name[0] == FATXXFS_SLOT_EMPTY ?
-                 TSK_FS_META_FLAG_UNUSED : TSK_FS_META_FLAG_USED);
+			flags = TSK_FS_META_FLAG_ALLOC;
 		}
     }
     else {
         flags = TSK_FS_META_FLAG_UNALLOC;
     }
+
+    flags |= (dentry->name[0] == FATXXFS_SLOT_EMPTY ?
+              TSK_FS_META_FLAG_UNUSED : TSK_FS_META_FLAG_USED);
+
     fs_meta->flags = (TSK_FS_META_FLAG_ENUM)flags;
 
     if ((dentry->attrib & FATFS_ATTR_LFN) == FATFS_ATTR_LFN) {
