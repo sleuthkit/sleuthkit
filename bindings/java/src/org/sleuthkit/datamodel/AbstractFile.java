@@ -423,7 +423,7 @@ public abstract class AbstractFile extends AbstractContent {
 	/**
 	 * Sets the MIME type for this file.
 	 */
-	public void setMIMEType(String mimeType) {
+	void setMIMEType(String mimeType) {
 		this.mimeType = mimeType;
 	}
 
