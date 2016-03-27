@@ -34,8 +34,8 @@ import java.util.ResourceBundle;
  * be created by constructing a BlackboardAttribute.Type object and calling the
  * SleuthkitCase.addArtifactAttributeType method. The BlackboardAttribute.Type
  * object that is returned can then be used to create instances of the custom
- * attribute by calling the appropriate BlackboardAttribute constructor and to
- * do blackboard queries involving the custom type.
+ * attribute by calling the appropriate BlackboardAttribute constructor. It can
+ * also be used to do blackboard queries involving the custom type.
  */
 public class BlackboardAttribute {
 
@@ -202,46 +202,60 @@ public class BlackboardAttribute {
 		 */
 		DATETIME(5, "DateTime");
 
-		private final long type;
-		private final String label;
+		private final long typeId;
+		private final String typeName;
+		/*
+		 * TODO (AUT-2070): Add a localized displayName field and a 
+		 * getDisplayName method for API consistency.
+		 */
 
 		/**
 		 * Constructs an attribute value type object.
 		 *
 		 * @param type The type id of the value type.
-		 * @param label The display name of the value type.
+		 * @param typeName The type name of the value type.
 		 */
-		private TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE(long type, String label) {
-			this.type = type;
-			this.label = label;
+		private TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE(long type, String typeName) {
+			this.typeId = type;
+			this.typeName = typeName;
 		}
 
 		/**
 		 * Gets the type id for this attribute value type.
+		 *
+		 * TODO (AUT-2070): Deprecate and provide a getTypeId method instead for
+		 * API consistency.
 		 */
 		public long getType() {
-			return type;
+			return typeId;
 		}
 
 		/**
 		 * Gets the type name for this attribute value type.
+		 *
+		 * TODO (AUT-2070): Deprecate and provide a getTypeName method instead
+		 * for API consistency.
 		 */
 		public String getLabel() {
-			return this.label;
+			return this.typeName;
 		}
 
 		/**
 		 * Gets the attribute value type for a given value type id.
 		 *
 		 * @param typeId A value type id.
-		 * @return A value type enum object.
+		 * @return A BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE
+		 * object.
 		 * @throws IllegalArgumentException If the given type id does not map to
 		 * a supported value type.
+		 *
+		 * TODO (AUT-2070): Deprecate and provide a fromTypeId method instead
+		 * for API consistency.
 		 */
 		static public TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE fromType(long typeId) {
-			for (TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE v : TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.values()) {
-				if (v.type == typeId) {
-					return v;
+			for (TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType : TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.values()) {
+				if (valueType.typeId == typeId) {
+					return valueType;
 				}
 			}
 			throw new IllegalArgumentException("No TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE matching type: " + typeId);
@@ -251,14 +265,18 @@ public class BlackboardAttribute {
 		 * Gets the attribute value type for a given value type name.
 		 *
 		 * @param typeName A type name.
-		 * @return A standard artifact type enum object.
+		 * @return A BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE
+		 * object.
 		 * @throws IllegalArgumentException If the given type name does not map
 		 * to a supported value type.
+		 *
+		 * TODO (AUT-2070): Deprecate and provide a fromTypeName method instead
+		 * for API consistency.
 		 */
 		static public TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE fromLabel(String typeName) {
-			for (TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE v : TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.values()) {
-				if (v.label.equals(typeName)) {
-					return v;
+			for (TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType : TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.values()) {
+				if (valueType.typeName.equals(typeName)) {
+					return valueType;
 				}
 			}
 			throw new IllegalArgumentException("No TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE matching type: " + typeName);
@@ -268,7 +286,7 @@ public class BlackboardAttribute {
 
 	/**
 	 * Specifies the type ids, type names, display names, and value types of the
-	 * standard attributes types. See
+	 * standard attribute types. See
 	 * http://wiki.sleuthkit.org/index.php?title=Artifact_Examples for more
 	 * information.
 	 */
@@ -468,7 +486,8 @@ public class BlackboardAttribute {
 				bundle.getString("BlackboardAttribute.tskGeoMapDatum.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		/**
-		 * @deprecated Use mime type field of the AbstractFile object instead.
+		 * @deprecated Use the mime type field of the AbstractFile object
+		 * instead.
 		 */
 		@Deprecated
 		TSK_FILE_TYPE_SIG(62, "TSK_FILE_TYPE_SIG", //NON-NLS
@@ -478,14 +497,16 @@ public class BlackboardAttribute {
 				bundle.getString("BlackboardAttribute.tskFileTypeExt.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		/**
-		 * @deprecated Do not use. Tags are no longer artifact attributes.
+		 * @deprecated Do not use. Tags are no longer implemented as artifact
+		 * attributes.
 		 */
 		@Deprecated
 		TSK_TAGGED_ARTIFACT(64, "TSK_TAGGED_ARTIFACT", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskTaggedArtifact.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG),
 		/**
-		 * @deprecated Do not use. Tags are no longer artifact attributes.
+		 * @deprecated Do not use. Tags are no longer implemented as artifact
+		 * attributes.
 		 */
 		@Deprecated
 		TSK_TAG_NAME(65, "TSK_TAG_NAME", //NON-NLS
@@ -621,8 +642,8 @@ public class BlackboardAttribute {
 				bundle.getString("BlackboardAttribute.tskOrganization.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Registered Organization for a piece of software
 		;
-		private final String label;
 		private final int typeID;
+		private final String typeName;
 		private final String displayName;
 		private final TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType;
 
@@ -630,13 +651,13 @@ public class BlackboardAttribute {
 		 * Constructs a standard attribute type.
 		 *
 		 * @param typeID The id of the type.
-		 * @param label The name of the type.
+		 * @param typeName The name of the type.
 		 * @param displayName The display name of the type
-		 * @param valueType The value type of the typ.
+		 * @param valueType The value type of the type.
 		 */
-		private ATTRIBUTE_TYPE(int typeID, String label, String displayName, TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType) {
+		private ATTRIBUTE_TYPE(int typeID, String typeName, String displayName, TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType) {
 			this.typeID = typeID;
-			this.label = label;
+			this.typeName = typeName;
 			this.displayName = displayName;
 			this.valueType = valueType;
 		}
@@ -654,9 +675,12 @@ public class BlackboardAttribute {
 		 * Gets the type name of this standard attribute type.
 		 *
 		 * @return The type name.
+		 *
+		 * TODO (AUT-2070): Deprecate and provide a getTypeName method instead
+		 * for API consistency.
 		 */
 		public String getLabel() {
-			return this.label;
+			return this.typeName;
 		}
 
 		/**
@@ -681,14 +705,17 @@ public class BlackboardAttribute {
 		 * Gets the standard attribute type for a given type id.
 		 *
 		 * @param typeID A standard attribute type id.
-		 * @return A standard artifact type enum object.
+		 * @return A BlackboardAttribute.ATTRIBUTE_TYPE object.
 		 * @throws IllegalArgumentException If the given type id does not map to
 		 * a standard attribute type.
+		 *
+		 * TODO (AUT-2070): Deprecate and provide a fromTypeId method instead
+		 * for API consistency.
 		 */
 		static public ATTRIBUTE_TYPE fromID(int typeID) {
-			for (ATTRIBUTE_TYPE v : ATTRIBUTE_TYPE.values()) {
-				if (v.typeID == typeID) {
-					return v;
+			for (ATTRIBUTE_TYPE attrType : ATTRIBUTE_TYPE.values()) {
+				if (attrType.typeID == typeID) {
+					return attrType;
 				}
 			}
 			throw new IllegalArgumentException("No ATTRIBUTE_TYPE matching type: " + typeID);
@@ -698,14 +725,17 @@ public class BlackboardAttribute {
 		 * Gets the standard attribute type for a given type name.
 		 *
 		 * @param typeName A standard attribute type name.
-		 * @return A standard artifact type enum object.
+		 * @return A BlackboardAttribute.ATTRIBUTE_TYPE object.
 		 * @throws IllegalArgumentException If the given type name does not map
 		 * to a standard attribute type.
+		 *
+		 * TODO (AUT-2070): Deprecate and provide a fromTypeName method instead
+		 * for API consistency.
 		 */
 		static public ATTRIBUTE_TYPE fromLabel(String typeName) {
-			for (ATTRIBUTE_TYPE v : ATTRIBUTE_TYPE.values()) {
-				if (v.label.equals(typeName)) {
-					return v;
+			for (ATTRIBUTE_TYPE attrType : ATTRIBUTE_TYPE.values()) {
+				if (attrType.typeName.equals(typeName)) {
+					return attrType;
 				}
 			}
 			throw new IllegalArgumentException("No ATTRIBUTE_TYPE matching type: " + typeName);
@@ -756,8 +786,27 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * Creates a standard attribute with an integer value. The attribute should
-	 * be added to an appropriate artifact.
+	 * Sets the artifact id.
+	 *
+	 * @param artifactID The artifact id.
+	 */
+	void setArtifactId(long artifactID) {
+		this.artifactID = artifactID;
+	}
+
+	/**
+	 * Sets the reference to the SleuthkitCase object that represents the case
+	 * database.
+	 *
+	 * @param sleuthkitCase A reference to a SleuthkitCase object.
+	 */
+	void setCaseDatabase(SleuthkitCase sleuthkitCase) {
+		this.sleuthkitCase = sleuthkitCase;
+	}
+
+	/**
+	 * Constructs a standard attribute with an integer value. The attribute
+	 * should be added to an appropriate artifact.
 	 *
 	 * @param attributeType The standard attribute type.
 	 * @param moduleName The display name of the module creating this attribute.
@@ -782,10 +831,10 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * Creates an attribute with an integer value. The attribute should be added
-	 * to an appropriate artifact.
+	 * Constructs an attribute with an integer value. The attribute should be
+	 * added to an appropriate artifact.
 	 *
-	 * @param attributeType The standard attribute type.
+	 * @param attributeType The attribute type.
 	 * @param moduleName The display name of the module creating this attribute.
 	 * @param valueInt The attribute value.
 	 * @throws IllegalArgumentException If the value type of the specified
@@ -807,8 +856,8 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * Creates a standard attribute with a long/datetime value. If the value is
-	 * a datetime, it should be seconds from January 1, 1970. The attribute
+	 * Constructs a standard attribute with a long/datetime value. If the value
+	 * is a datetime, it should be seconds from January 1, 1970. The attribute
 	 * should be added to an appropriate artifact.
 	 *
 	 * @param attributeType The standard attribute type.
@@ -836,10 +885,10 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * Creates an attribute with a long/datetime value. The attribute should be
-	 * added to an appropriate artifact.
+	 * Constructs an attribute with a long/datetime value. The attribute should
+	 * be added to an appropriate artifact.
 	 *
-	 * @param attributeType The standard attribute type.
+	 * @param attributeType The attribute type.
 	 * @param moduleName The display name of the module that creating this
 	 * attribute.
 	 * @param valueLong The attribute value.
@@ -864,8 +913,8 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * Creates a standard attribute with a double value. The attribute should be
-	 * added to an appropriate artifact.
+	 * Constructs a standard attribute with a double value. The attribute should
+	 * be added to an appropriate artifact.
 	 *
 	 * @param attributeType The standard attribute type.
 	 * @param moduleName The display name of the module creating this attribute.
@@ -892,10 +941,10 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * Creates an attribute with a double value. The attribute should be added
-	 * to an appropriate artifact.
+	 * Constructs an attribute with a double value. The attribute should be
+	 * added to an appropriate artifact.
 	 *
-	 * @param attributeType The standard attribute type.
+	 * @param attributeType The attribute type.
 	 * @param moduleName The display name of the module creating this attribute.
 	 * @param valueDouble The attribute value.
 	 * @throws IllegalArgumentException If the value type of the specified
@@ -917,8 +966,8 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * Creates a standard attribute with an string value. The attribute should
-	 * be added to an appropriate artifact.
+	 * Constructs a standard attribute with an string value. The attribute
+	 * should be added to an appropriate artifact.
 	 *
 	 * @param attributeType The standard attribute type.
 	 * @param moduleName The display name of the module creating this attribute.
@@ -948,10 +997,10 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * Creates an attribute with a string value. The attribute should be added
-	 * to an appropriate artifact.
+	 * Constructs an attribute with a string value. The attribute should be
+	 * added to an appropriate artifact.
 	 *
-	 * @param attributeType The standard attribute type.
+	 * @param attributeType The attribute type.
 	 * @param moduleName The display name of the module creating this attribute.
 	 * @param valueString The attribute value.
 	 * @throws IllegalArgumentException If the value type of the specified
@@ -977,7 +1026,7 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * Creates a standard attribute with a byte array value. The attribute
+	 * Constructs a standard attribute with a byte array value. The attribute
 	 * should be added to an appropriate artifact.
 	 *
 	 * @param attributeType The standard attribute type.
@@ -1007,10 +1056,10 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * Creates an attribute with a byte array value. The attribute should be
+	 * Constructs an attribute with a byte array value. The attribute should be
 	 * added to an appropriate artifact.
 	 *
-	 * @param attributeType The standard attribute type.
+	 * @param attributeType The attribute type.
 	 * @param moduleName The display name of the module creating this attribute.
 	 * @param valueBytes The attribute value.
 	 * @throws IllegalArgumentException If the value type of the specified
@@ -1037,7 +1086,8 @@ public class BlackboardAttribute {
 
 	/**
 	 * Gets the id of the artifact associated with this attribute, if the
-	 * attribute was added to an artifact.
+	 * attribute was added to an artifact. Attributes should always be added to
+	 * artifacts after they are constructed.
 	 *
 	 * @return The artifact id or zero if the artifact id has not been set.
 	 */
@@ -1052,33 +1102,6 @@ public class BlackboardAttribute {
 	 */
 	public BlackboardAttribute.Type getAttributeType() {
 		return this.attributeType;
-	}
-
-	/**
-	 * Gets the attribute type id.
-	 *
-	 * @return The type id.
-	 */
-	public int getAttributeTypeID() {
-		return attributeType.getTypeID();
-	}
-
-	/**
-	 * Gets the attribute type name.
-	 *
-	 * @return The type name.
-	 */
-	public String getAttributeTypeName() throws TskCoreException {
-		return attributeType.getTypeName();
-	}
-
-	/**
-	 * Get the attribute type display name.
-	 *
-	 * @return type The display name.
-	 */
-	public String getAttributeTypeDisplayName() throws TskCoreException {
-		return attributeType.getDisplayName();
 	}
 
 	/**
@@ -1150,23 +1173,13 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * Gets the context of this attribute.
-	 *
-	 * @return The context, may be the empty string because setting the context
-	 * is deprecated.
-	 */
-	public String getContext() {
-		return context;
-	}
-
-	/**
 	 * Gets the artifact associated with this attribute. The artifact can be
 	 * used to get the source content for the artifact as well as any other
 	 * attributes associated with the artifact.
 	 *
 	 * @return The artifact.
 	 * @throws TskCoreException If there is no artifact associated with this
-	 * attribute or there is an error reading from the case database.x
+	 * attribute or there is an error reading from the case database.
 	 */
 	public BlackboardArtifact getParentArtifact() throws TskCoreException {
 		return sleuthkitCase.getBlackboardArtifact(artifactID);
@@ -1198,28 +1211,6 @@ public class BlackboardAttribute {
 	public String toString() {
 		return "BlackboardAttribute{" + "artifactID=" + artifactID + ", attributeType=" + attributeType.toString() + ", moduleName=" + moduleName + ", context=" + context + ", valueInt=" + valueInt + ", valueLong=" + valueLong + ", valueDouble=" + valueDouble + ", valueString=" + valueString + ", valueBytes=" + Arrays.toString(valueBytes) + ", Case=" + sleuthkitCase + '}'; //NON-NLS
 	}
-
-	/**
-	 * Sets the artifact id.
-	 *
-	 * @param artifactID The artifact id.
-	 */
-	protected void setArtifactID(long artifactID) {
-		this.artifactID = artifactID;
-	}
-
-	/**
-	 * Sets the reference to the SleuthkitCase object that represents the case
-	 * database.
-	 *
-	 * @param sleuthkitCase A reference to a SleuthkitCase object.
-	 */
-	protected void setCase(SleuthkitCase sleuthkitCase) {
-		this.sleuthkitCase = sleuthkitCase;
-	}
-
-	// from http://stackoverflow.com/questions/9655181/convert-from-byte-array-to-hex-string-in-java
-	final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
 
 	/**
 	 * Gets the attribute value as a string, formatted as required.
@@ -1257,10 +1248,13 @@ public class BlackboardAttribute {
 	/**
 	 * Converts a byte array to a string.
 	 *
-	 * @param bytes
-	 * @return
+	 * @param bytes The byte array.
+	 * @return The string.
 	 */
+	final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
+
 	private static String bytesToHexString(byte[] bytes) {
+		// from http://stackoverflow.com/questions/9655181/convert-from-byte-array-to-hex-string-in-java
 		char[] hexChars = new char[bytes.length * 2];
 		for (int j = 0; j < bytes.length; j++) {
 			int v = bytes[j] & 0xFF;
@@ -1469,6 +1463,90 @@ public class BlackboardAttribute {
 			byte[] valueBytes) {
 		this(attributeTypeID, moduleName, valueBytes);
 		this.context = replaceNulls(context);
+	}
+
+	/**
+	 * Sets the artifact id.
+	 *
+	 * @param artifactID The artifact id.
+	 * @deprecated The preferred method for doing this is to add the attribute
+	 * to a BlackboardArtifact object by calling BlackboardArtifact.addAttribute
+	 * or BlackboardArtifact.addAttributes, both of which post the attributes to
+	 * the blackboard.
+	 */
+	@Deprecated
+	protected void setArtifactID(long artifactID) {
+		setArtifactId(artifactID);
+	}
+
+	/**
+	 * Sets the reference to the SleuthkitCase object that represents the case
+	 * database.
+	 *
+	 * @param sleuthkitCase A reference to a SleuthkitCase object.
+	 * @deprecated The preferred method for doing this is to add the attribute
+	 * to a BlackboardArtifact object by calling BlackboardArtifact.addAttribute
+	 * or BlackboardArtifact.addAttributes, both of which post the attributes to
+	 * the blackboard.
+	 */
+	@Deprecated
+	protected void setCase(SleuthkitCase sleuthkitCase) {
+		setCaseDatabase(sleuthkitCase);
+	}
+
+	/**
+	 * Gets the context of this attribute.
+	 *
+	 * @return The context, may be the empty string.
+	 * @deprecated Setting context for an attribute is deprecated.
+	 */
+	@Deprecated
+	public String getContext() {
+		return context;
+	}
+
+	/**
+	 * Gets the context of this attribute. This method should be deleted when
+	 * the deprecation period for context is completed.
+	 *
+	 * @return The context, may be the empty string.
+	 */
+	String getContextString() {
+		return context;
+	}
+
+	/**
+	 * Gets the attribute type id.
+	 *
+	 * @return The type id.
+	 * @deprecated Use BlackboardAttribute.getAttributeType.getTypeID instead.
+	 */
+	@Deprecated
+	public int getAttributeTypeID() {
+		return attributeType.getTypeID();
+	}
+
+	/**
+	 * Gets the attribute type name.
+	 *
+	 * @return The type name.
+	 * @deprecated Use BlackboardAttribute.getAttributeType.getTypeName instead.
+	 */
+	@Deprecated
+	public String getAttributeTypeName() throws TskCoreException {
+		return attributeType.getTypeName();
+	}
+
+	/**
+	 * Gets the attribute type display name.
+	 *
+	 * @return type The display name.
+	 * @deprecated Use BlackboardAttribute.getAttributeType.getDisplayName
+	 * instead.
+	 */
+	@Deprecated
+	public String getAttributeTypeDisplayName() throws TskCoreException {
+		return attributeType.getDisplayName();
 	}
 
 }
