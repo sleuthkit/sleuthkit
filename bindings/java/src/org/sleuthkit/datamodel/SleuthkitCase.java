@@ -459,12 +459,16 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Update a version 2 database schema to a version 3 database schema.
+	 * Updates a schema version 2 database to a schema version 3 database.
 	 *
-	 * @param schemaVersionNumber The schema version number of the database.
-	 * @return 3, if the input database schema version number was 2.
-	 * @throws SQLException
-	 * @throws TskCoreException
+	 * @param schemaVersionNumber The current schema version number of the
+	 * database.
+	 * @param connection A connection to the case database.
+	 * @return The new database schema version.
+	 * @throws SQLException If there is an error completing a database
+	 * operation.
+	 * @throws TskCoreException If there is an error completing a database
+	 * operation via another SleuthkitCase method.
 	 */
 	@SuppressWarnings("deprecation")
 	private int updateFromSchema2toSchema3(int schemaVersionNumber, CaseDbConnection connection) throws SQLException, TskCoreException {
@@ -594,12 +598,16 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Update a version 3 database schema to a version 4 database schema.
+	 * Updates a schema version 3 database to a schema version 4 database.
 	 *
-	 * @param schemaVersionNumber The schema version number of the database.
-	 * @return 4, if the input database schema version number was 3.
-	 * @throws SQLException
-	 * @throws TskCoreException
+	 * @param schemaVersionNumber The current schema version number of the
+	 * database.
+	 * @param connection A connection to the case database.
+	 * @return The new database schema version.
+	 * @throws SQLException If there is an error completing a database
+	 * operation.
+	 * @throws TskCoreException If there is an error completing a database
+	 * operation via another SleuthkitCase method.
 	 */
 	private int updateFromSchema3toSchema4(int schemaVersionNumber, CaseDbConnection connection) throws SQLException, TskCoreException {
 		if (schemaVersionNumber != 3) {
@@ -797,13 +805,13 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Open an existing multi user case database.
+	 * Open an existing multi-user case database.
 	 *
-	 * @param info information to connect to network database.
-	 * @param databaseName the name of the database
-	 * @param caseDir the folder where the .aut file is stored
-	 * @return Case database object.
-	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 * @param databaseName The name of the database.
+	 * @param info Connection information for the the database.
+	 * @param caseDir The folder where the case metadata fils is stored.
+	 * @return A case database object.
+	 * @throws TskCoreException If there is a problem opening the database.
 	 */
 	public static SleuthkitCase openCase(String databaseName, CaseDbConnectionInfo info, String caseDir) throws TskCoreException {
 		try {
@@ -2930,18 +2938,12 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get the object ID of the file system that a file is located in.
+	 * Gets the object id of the file system that a file is located in.
 	 *
-	 * Make sure the connection in transaction is used for all database
-	 * interactions called by this method
-	 *
-	 * Note: for FsContent files, this is the real fs for other non-fs
-	 * AbstractFile files, this field is used internally for data source id (the
-	 * root content obj)
-	 *
-	 * @param fileId object id of the file to get fs column id for
-	 * @param connection the database connection to use
-	 * @return fs_id or -1 if not present
+	 * @param fileId The object id of the file.
+	 * @param transaction A case database transaction.
+	 * @return The file system object id or -1, if the file is not in a file
+	 * system.
 	 */
 	private long getFileSystemId(long fileId, CaseDbTransaction transaction) {
 		return getFileSystemId(fileId, transaction.getConnection());
@@ -3905,6 +3907,7 @@ public class SleuthkitCase {
 	/**
 	 * Add a path (such as a local path) for a content object to tsk_file_paths
 	 *
+	 * @param connection A case database connection.
 	 * @param objId object id of the file to add the path for
 	 * @param path the path to add
 	 * @throws SQLException exception thrown when database error occurred and
@@ -5044,12 +5047,12 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Stores the MIME type of a file in the case database.
+	 * Stores the MIME type of a file in the case database and updates the MIME
+	 * type of the given file object.
 	 *
-	 * @param fileId The id of the file to update the mime type of
-	 * @param mimeType the mime type
-	 * @throws TskCoreException if there is an error completing a database
-	 * operation.
+	 * @param file A file.
+	 * @param mimeType The MIME type.
+	 * @throws TskCoreException If there is an error updating the case database.
 	 */
 	public void setFileMIMEType(AbstractFile file, String mimeType) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();

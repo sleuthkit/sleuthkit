@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  * 
- * Copyright 2011 Basis Technology Corp.
+ * Copyright 2011-2016 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -233,7 +233,7 @@ public interface Content extends SleuthkitVisitableItem {
 	 * Get the names of all the hashsets that this content is in.
 	 *
 	 * @return the names of the hashsets that this content is in
-	 * @throwsTskCoreException if critical error occurred within tsk core
+	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public Set<String> getHashSetNames() throws TskCoreException;
 
