@@ -126,7 +126,7 @@ uint8_t
         return retval;
     }
 
-    if (addImageDetails(a_deviceId, a_images, a_num)) {
+    if (addImageDetails(a_images, a_num, a_deviceId)) {
         return 1;
     }
     return 0;
@@ -183,7 +183,7 @@ uint8_t
         img_ptrs[i] = img2;
     }
 
-    if (addImageDetails(a_deviceId, img_ptrs, a_num)) {
+    if (addImageDetails(img_ptrs, a_num, a_deviceId)) {
         //cleanup
         for (int i = 0; i < a_num; ++i) {
             free(img_ptrs[i]);
@@ -207,13 +207,13 @@ uint8_t
 /**
  * Adds image details to the existing database tables.
  *
- * @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID).
  * @param imgPaths The paths to the image splits
  * @param numPaths The number of paths
+ * @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID).
  * @return Returns 0 for success, 1 for failure
  */
 uint8_t
-TskAutoDb::addImageDetails(const char* deviceId, const char *const imgPaths[], int numPaths)
+TskAutoDb::addImageDetails(const char *const imgPaths[], int numPaths, const char* deviceId)
 {
    string md5 = "";
 #if HAVE_LIBEWF 
