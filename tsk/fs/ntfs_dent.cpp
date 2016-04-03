@@ -273,6 +273,45 @@ ntfs_dent_copy(NTFS_INFO * ntfs, ntfs_idxentry * idxe,
 }
 
 
+/* Copy the short file name pointed to by idxe into fs_name.
+ * No other fields are copied.  Just the name into shrt_name. */
+static uint8_t
+ntfs_dent_copy_short_only(NTFS_INFO * ntfs, ntfs_idxentry * idxe,
+    TSK_FS_NAME * fs_name)
+{
+    ntfs_attr_fname *fname = (ntfs_attr_fname *) & idxe->stream;
+    TSK_FS_INFO *fs = (TSK_FS_INFO *) & ntfs->fs_info;
+    UTF16 *name16;
+    UTF8 *name8;
+    int retVal;
+
+    name16 = (UTF16 *) & fname->name;
+    name8 = (UTF8 *) fs_name->shrt_name;
+
+    retVal = tsk_UTF16toUTF8(fs->endian, (const UTF16 **) &name16,
+        (UTF16 *) ((uintptr_t) name16 +
+            fname->nlen * 2), &name8,
+        (UTF8 *) ((uintptr_t) name8 +
+            fs_name->shrt_name_size), TSKlenientConversion);
+
+    if (retVal != TSKconversionOK) {
+        *name8 = '\0';
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "Error converting NTFS 8.3 name to UTF8: %d %" PRIuINUM,
+                retVal, fs_name->meta_addr);
+    }
+
+    /* Make sure it is NULL Terminated */
+    if ((uintptr_t) name8 > (uintptr_t) fs_name->shrt_name + fs_name->shrt_name_size)
+        fs_name->shrt_name[fs_name->shrt_name_size] = '\0';
+    else
+        *name8 = '\0';
+
+    return 0;
+}
+
+
 
 
 /* This is a sanity check to see if the time is valid
@@ -321,9 +360,10 @@ ntfs_proc_idxentry(NTFS_INFO * a_ntfs, TSK_FS_DIR * a_fs_dir,
 {
     uintptr_t endaddr, endaddr_alloc;
     TSK_FS_NAME *fs_name;
+    TSK_FS_NAME *fs_name_preventry = NULL;
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & a_ntfs->fs_info;
 
-    if ((fs_name = tsk_fs_name_alloc(NTFS_MAXNAMLEN_UTF8, 0)) == NULL) {
+    if ((fs_name = tsk_fs_name_alloc(NTFS_MAXNAMLEN_UTF8, 16)) == NULL) {
         return TSK_ERR;
     }
 
@@ -447,32 +487,52 @@ ntfs_proc_idxentry(NTFS_INFO * a_ntfs, TSK_FS_DIR * a_fs_dir,
                         "ntfs_proc_idxentry: Skipping because of invalid times\n");
                 continue;
             }
-        }
-
+        } 
         
 
         /* For all fname entries, there will exist a DOS style 8.3
-         * entry.  We don't process those because we already processed
-         * them before in their full version.  If the type is
-         * full POSIX or WIN32 that does not satisfy DOS, then a
-         * type NTFS_FNAME_DOS will exist.  If the name is WIN32,
-         * but already satisfies DOS, then a type NTFS_FNAME_WINDOS
-         * will exist
+         * entry.  
+         * If the original name is 8.3 compliant, it will be in
+         * a WINDOS type.  If it is not compliant, then it will 
+         * exist in a POSIX or WIN32 type and the 8.3 compliant
+         * one will be in DOS. The DOS entry typically follows
+         * the WIN32 or POSIX. 
          *
-         * Note that we could be missing some info from deleted files
+         * Our approach is to stash away the non-compliant names
+         * for one more entry to see if the next try is its 
+         * corresponding 8.3 entry. 
+         *
+         * If the 8.3 entry is not for the previous entry, we 
+         * skip it on the theory that it corresponds to a previous
+         * WIN32 or POSIX entry. Note that we could be missing some info from deleted files
          * if the windows version was deleted and the DOS wasn't...
-         *
-         * @@@ This should be added to the shrt_name entry of TSK_FS_NAME.  The short
-         * name entry typically comes after the long name
          */
 
         if (fname->nspace == NTFS_FNAME_DOS) {
-            if (tsk_verbose)
-                tsk_fprintf(stderr,
-                    "ntfs_proc_idxentry: Skipping because of name space: %d\n",
-                    fname->nspace);
+            // Was the previous entry not 8.3 compliant?
+            if (fs_name_preventry) {
+                // check its the same entry and if so, add short name
+                if (fs_name_preventry->meta_addr == tsk_getu48(fs->endian, a_idxe->file_ref)) {
+                    ntfs_dent_copy_short_only(a_ntfs, a_idxe, fs_name_preventry);
+                }
+
+                // regardless, add preventry to dir and move on to next entry.
+                if (tsk_fs_dir_add(a_fs_dir, fs_name_preventry)) {
+                    tsk_fs_name_free(fs_name);
+                    return TSK_ERR;
+                }
+                fs_name_preventry = NULL;
+            }
 
             goto incr_entry;
+        }
+        // if we stashed the previous entry and the next wasn't a DOS entry, add it to the list
+        else if (fs_name_preventry) {
+            if (tsk_fs_dir_add(a_fs_dir, fs_name_preventry)) {
+                tsk_fs_name_free(fs_name);
+                return TSK_ERR;
+            }
+            fs_name_preventry = NULL;
         }
 
         /* Copy it into the generic form */
@@ -510,9 +570,17 @@ ntfs_proc_idxentry(NTFS_INFO * a_ntfs, TSK_FS_DIR * a_fs_dir,
                     tsk_getu16(fs->endian, a_idxe->idxlen)),
                 fs_name->flags);
 
-        if (tsk_fs_dir_add(a_fs_dir, fs_name)) {
-            tsk_fs_name_free(fs_name);
-            return TSK_ERR;
+        // WINDOS entries will not have a short 8.3 veresion, so add them now.
+        // otherwise, we stash the name to see if we get the 8.3 next. 
+        if (fname->nspace == NTFS_FNAME_WINDOS) {
+            if (tsk_fs_dir_add(a_fs_dir, fs_name)) {
+                tsk_fs_name_free(fs_name);
+                return TSK_ERR;
+            }
+            fs_name_preventry = NULL;
+        }
+        else {
+            fs_name_preventry = fs_name;
         }
 
       incr_entry:
@@ -541,6 +609,15 @@ ntfs_proc_idxentry(NTFS_INFO * a_ntfs, TSK_FS_DIR * a_fs_dir,
         }
 
     }                           /* end of loop of index entries */
+
+    // final check in case we were looking for the short name, we never saw
+    if (fs_name_preventry) {
+        if (tsk_fs_dir_add(a_fs_dir, fs_name_preventry)) {
+            tsk_fs_name_free(fs_name);
+            return TSK_ERR;
+        }
+        fs_name_preventry = NULL;
+    }
 
     tsk_fs_name_free(fs_name);
     return TSK_OK;
