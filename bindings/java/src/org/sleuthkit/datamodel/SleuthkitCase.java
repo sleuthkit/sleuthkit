@@ -2295,11 +2295,12 @@ public class SleuthkitCase {
 		Statement s = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT artifact_id, obj_id, artifact_type_id FROM blackboard_artifacts " + whereClause); //NON-NLS
+			rs = connection.executeQuery(s, "SELECT blackboard_artifacts.artifact_id, blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id,"
+					+ " blackboard_artifact_types.type_name, blackboard_artifact_types.display_name"
+					+ " FROM blackboard_artifacts, blackboard_artifact_types " + whereClause); //NON-NLS
 			ArrayList<BlackboardArtifact> matches = new ArrayList<BlackboardArtifact>();
 			while (rs.next()) {
-				BlackboardArtifact.Type type = this.getArtifactType(rs.getInt(3));
-				BlackboardArtifact artifact = new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2), rs.getInt(3), type.getTypeName(), type.getDisplayName());
+				BlackboardArtifact artifact = new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2), rs.getInt(3), rs.getString(4), rs.getString(5));
 				matches.add(artifact);
 			}
 			return matches;
