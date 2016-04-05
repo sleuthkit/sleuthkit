@@ -2057,6 +2057,37 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Get the attribute type associated with an attribute type ID.
+	 *
+	 * @param typeID An attribute type ID.
+	 * @return An attribute type or null if the attribute type does not exist.
+	 * @throws TskCoreException If an error occurs accessing the case database.
+	 *
+	 */
+	private BlackboardAttribute.Type getAttributeType(int typeID) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT attribute_type_id, type_name, display_name, value_type FROM blackboard_attribute_types WHERE attribute_type_id = " + typeID + ""); //NON-NLS
+			BlackboardAttribute.Type type = null;
+			if (rs.next()) {
+				type = new BlackboardAttribute.Type(rs.getInt(1), rs.getString(2), rs.getString(3), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getLong(4)));
+			}
+			return type;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting attribute type id", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	/**
 	 * Get the artifact type associated with an artifact type name.
 	 *
 	 * @param artTypeName An artifact type name.
@@ -2236,16 +2267,20 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT attrs.artifact_id, attrs.source, attrs.context, attrs.attribute_type_id, "
-					+ "attrs.value_type, attrs.value_byte, attrs.value_text, attrs.value_int32, "
-					+ "attrs.value_int64, attrs.value_double, types.type_name, types.display_name "
-					+ "FROM blackboard_attributes AS attrs, blackboard_attribute_types AS types " + whereClause
-					+ " AND attrs.attribute_type_id = types.attribute_type_id"); //NON-NLS
+			rs = connection.executeQuery(s, "SELECT artifact_id, source, context, attribute_type_id, "
+					+ "value_type, value_byte, value_text, value_int32, "
+					+ "value_int64, value_double "
+					+ "FROM blackboard_attributes " + whereClause); //NON-NLS
 			ArrayList<BlackboardAttribute> matches = new ArrayList<BlackboardAttribute>();
+			BlackboardAttribute.Type type = null;
+			if (rs.next()) {
+				type = this.getAttributeType(rs.getInt("attribute_type_id"));
+				rs.previous();
+			}
 			while (rs.next()) {
 				BlackboardAttribute attr = new BlackboardAttribute(
 						rs.getLong("artifact_id"),
-						new BlackboardAttribute.Type(rs.getInt("attribute_type_id"), rs.getString("type_name"), rs.getString("display_name"), BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getInt("value_type"))),
+						type,
 						rs.getString("source"),
 						rs.getString("context"),
 						rs.getInt("value_int32"),
@@ -2283,12 +2318,16 @@ public class SleuthkitCase {
 		Statement s = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT blackboard_artifacts.artifact_id, blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id,"
-					+ " blackboard_artifact_types.type_name, blackboard_artifact_types.display_name"
-					+ " FROM blackboard_artifacts, blackboard_artifact_types " + whereClause); //NON-NLS
+			rs = connection.executeQuery(s, "SELECT artifact_id, obj_id, artifact_type_id"
+					+ " FROM blackboard_artifacts " + whereClause); //NON-NLS
 			ArrayList<BlackboardArtifact> matches = new ArrayList<BlackboardArtifact>();
+			BlackboardArtifact.Type type = null;
+			if (rs.next()) {
+				type = this.getArtifactType(rs.getInt(3));
+				rs.previous();
+			}
 			while (rs.next()) {
-				BlackboardArtifact artifact = new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2), rs.getInt(3), rs.getString(4), rs.getString(5));
+				BlackboardArtifact artifact = new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2), type.getTypeID(), type.getTypeName(), type.getDisplayName());
 				matches.add(artifact);
 			}
 			return matches;
