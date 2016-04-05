@@ -105,6 +105,8 @@ public class SleuthkitCase {
 	// the locking protocol provided by the underlying SQLite database. The Java
 	// locking protocol improves performance for reasons that are not currently
 	// understood. Note that the lock is contructed to use a fairness policy.
+	private Map<Integer, BlackboardArtifact.Type> artifactTypeMap;
+	private Map<Integer, BlackboardAttribute.Type> attributeTypeMap;
 	private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true);
 
 	private interface DbCommand {
@@ -2065,6 +2067,9 @@ public class SleuthkitCase {
 	 *
 	 */
 	private BlackboardAttribute.Type getAttributeType(int typeID) throws TskCoreException {
+		if(this.attributeTypeMap.containsKey(typeID)) {
+			return this.attributeTypeMap.get(typeID);
+		}
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
 		Statement s = null;
@@ -2075,6 +2080,7 @@ public class SleuthkitCase {
 			BlackboardAttribute.Type type = null;
 			if (rs.next()) {
 				type = new BlackboardAttribute.Type(rs.getInt(1), rs.getString(2), rs.getString(3), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getLong(4)));
+				this.attributeTypeMap.put(typeID, type);
 			}
 			return type;
 		} catch (SQLException ex) {
@@ -2127,6 +2133,9 @@ public class SleuthkitCase {
 	 *
 	 */
 	BlackboardArtifact.Type getArtifactType(int artTypeId) throws TskCoreException {
+		if(this.artifactTypeMap.containsKey(artTypeId)) {
+			return artifactTypeMap.get(artTypeId);
+		}
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
 		Statement s = null;
@@ -2137,6 +2146,7 @@ public class SleuthkitCase {
 			BlackboardArtifact.Type type = null;
 			if (rs.next()) {
 				type = new BlackboardArtifact.Type(rs.getInt(1), rs.getString(2), rs.getString(3));
+				this.artifactTypeMap.put(artTypeId, type);
 			}
 			return type;
 		} catch (SQLException ex) {
