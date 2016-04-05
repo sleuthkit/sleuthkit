@@ -107,6 +107,8 @@ public class SleuthkitCase {
 	// understood. Note that the lock is contructed to use a fairness policy.
 	private Map<Integer, BlackboardArtifact.Type> artifactTypeMap;
 	private Map<Integer, BlackboardAttribute.Type> attributeTypeMap;
+	private Map<String, BlackboardArtifact.Type> artifactTypeMap2;
+	private Map<String, BlackboardAttribute.Type> attributeTypeMap2;
 	private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true);
 
 	private interface DbCommand {
@@ -223,6 +225,10 @@ public class SleuthkitCase {
 		init(caseHandle);
 		updateDatabaseSchema(dbPath);
 		logSQLiteJDBCDriverInfo();
+		artifactTypeMap = new HashMap<Integer, BlackboardArtifact.Type>();
+		attributeTypeMap = new HashMap<Integer, BlackboardAttribute.Type>();
+		artifactTypeMap2 = new HashMap<String, BlackboardArtifact.Type>();
+		attributeTypeMap2 = new HashMap<String, BlackboardAttribute.Type>();
 	}
 
 	/**
@@ -246,6 +252,10 @@ public class SleuthkitCase {
 		this.connections = new PostgreSQLConnections(host, port, dbName, userName, password);
 		init(caseHandle);
 		updateDatabaseSchema(null);
+		artifactTypeMap = new HashMap<Integer, BlackboardArtifact.Type>();
+		attributeTypeMap = new HashMap<Integer, BlackboardAttribute.Type>();
+		artifactTypeMap2 = new HashMap<String, BlackboardArtifact.Type>();
+		attributeTypeMap2 = new HashMap<String, BlackboardAttribute.Type>();
 	}
 
 	private void init(SleuthkitJNI.CaseDbHandle caseHandle) throws Exception {
@@ -274,6 +284,8 @@ public class SleuthkitCase {
 				}
 				resultSet.close();
 				resultSet = null;
+				this.artifactTypeMap.put(type.getTypeID(), new BlackboardArtifact.Type(type));
+				this.artifactTypeMap2.put(type.getLabel(), new BlackboardArtifact.Type(type));
 			}
 			if (dbType == DbType.POSTGRESQL) {
 				int newPrimaryKeyIndex = Collections.max(Arrays.asList(ARTIFACT_TYPE.values())).getTypeID() + 1;
@@ -306,6 +318,8 @@ public class SleuthkitCase {
 				}
 				resultSet.close();
 				resultSet = null;
+				this.attributeTypeMap.put(type.getTypeID(), new BlackboardAttribute.Type(type));
+				this.attributeTypeMap2.put(type.getLabel(), new BlackboardAttribute.Type(type));
 			}
 			if (this.dbType == DbType.POSTGRESQL) {
 				int newPrimaryKeyIndex = Collections.max(Arrays.asList(ATTRIBUTE_TYPE.values())).getTypeID() + 1;
@@ -2067,7 +2081,7 @@ public class SleuthkitCase {
 	 *
 	 */
 	private BlackboardAttribute.Type getAttributeType(int typeID) throws TskCoreException {
-		if(this.attributeTypeMap.containsKey(typeID)) {
+		if (this.attributeTypeMap.containsKey(typeID)) {
 			return this.attributeTypeMap.get(typeID);
 		}
 		CaseDbConnection connection = connections.getConnection();
@@ -2133,7 +2147,7 @@ public class SleuthkitCase {
 	 *
 	 */
 	BlackboardArtifact.Type getArtifactType(int artTypeId) throws TskCoreException {
-		if(this.artifactTypeMap.containsKey(artTypeId)) {
+		if (this.artifactTypeMap.containsKey(artTypeId)) {
 			return artifactTypeMap.get(artTypeId);
 		}
 		CaseDbConnection connection = connections.getConnection();
