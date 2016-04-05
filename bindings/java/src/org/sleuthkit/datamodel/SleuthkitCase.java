@@ -1590,7 +1590,8 @@ public class SleuthkitCase {
 		try {
 			Statement statement = connection.createStatement();
 			String query = "SELECT blackboard_artifacts.artifact_id, blackboard_artifacts.obj_id, blackboard_artifact_types.artifact_type_id, blackboard_artifact_types.type_name, blackboard_artifact_types.display_name "
-					+ "FROM blackboard_artifacts, blackboard_artifact_types WHERE "
+					+ "FROM blackboard_artifacts, blackboard_artifact_types "
+					+ "WHERE blackboard_artifacts.artifact_type_id = blackboard_artifact_types.artifact_type_id AND "
 					+ whereClause;
 			rs = connection.executeQuery(statement, query);
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
