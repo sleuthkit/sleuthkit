@@ -100,15 +100,15 @@ public class SleuthkitCase {
 	private SleuthkitJNI.CaseDbHandle caseHandle;
 	private int versionNumber;
 	private String dbBackupPath;
+	private Map<Integer, BlackboardArtifact.Type> artifactTypeMap;
+	private Map<Integer, BlackboardAttribute.Type> attributeTypeMap;
+	private Map<String, BlackboardArtifact.Type> artifactTypeMap2;
+	private Map<String, BlackboardAttribute.Type> attributeTypeMap2;
 	private long nextArtifactId; // Used to ensure artifact ids come from the desired range.
 	// This read/write lock is used to implement a layer of locking on top of 
 	// the locking protocol provided by the underlying SQLite database. The Java
 	// locking protocol improves performance for reasons that are not currently
 	// understood. Note that the lock is contructed to use a fairness policy.
-	private Map<Integer, BlackboardArtifact.Type> artifactTypeMap;
-	private Map<Integer, BlackboardAttribute.Type> attributeTypeMap;
-	private Map<String, BlackboardArtifact.Type> artifactTypeMap2;
-	private Map<String, BlackboardAttribute.Type> attributeTypeMap2;
 	private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true);
 
 	private interface DbCommand {
@@ -2050,6 +2050,9 @@ public class SleuthkitCase {
 	 *
 	 */
 	public BlackboardAttribute.Type getAttributeType(String attrTypeName) throws TskCoreException {
+		if (this.attributeTypeMap2.containsKey(attrTypeName)) {
+			return this.attributeTypeMap2.get(attrTypeName);
+		}
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
 		Statement s = null;
@@ -2060,6 +2063,8 @@ public class SleuthkitCase {
 			BlackboardAttribute.Type type = null;
 			if (rs.next()) {
 				type = new BlackboardAttribute.Type(rs.getInt(1), rs.getString(2), rs.getString(3), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getLong(4)));
+				this.attributeTypeMap.put(type.getTypeID(), type);
+				this.attributeTypeMap2.put(attrTypeName, type);
 			}
 			return type;
 		} catch (SQLException ex) {
@@ -2095,6 +2100,7 @@ public class SleuthkitCase {
 			if (rs.next()) {
 				type = new BlackboardAttribute.Type(rs.getInt(1), rs.getString(2), rs.getString(3), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getLong(4)));
 				this.attributeTypeMap.put(typeID, type);
+				this.attributeTypeMap2.put(type.getTypeName(), type);
 			}
 			return type;
 		} catch (SQLException ex) {
@@ -2116,6 +2122,9 @@ public class SleuthkitCase {
 	 *
 	 */
 	public BlackboardArtifact.Type getArtifactType(String artTypeName) throws TskCoreException {
+		if (this.artifactTypeMap2.containsKey(artTypeName)) {
+			return this.artifactTypeMap2.get(artTypeName);
+		}
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
 		Statement s = null;
@@ -2126,6 +2135,8 @@ public class SleuthkitCase {
 			BlackboardArtifact.Type type = null;
 			if (rs.next()) {
 				type = new BlackboardArtifact.Type(rs.getInt(1), rs.getString(2), rs.getString(3));
+				this.artifactTypeMap.put(type.getTypeID(), type);
+				this.artifactTypeMap2.put(artTypeName, type);
 			}
 			return type;
 		} catch (SQLException ex) {
@@ -2161,6 +2172,7 @@ public class SleuthkitCase {
 			if (rs.next()) {
 				type = new BlackboardArtifact.Type(rs.getInt(1), rs.getString(2), rs.getString(3));
 				this.artifactTypeMap.put(artTypeId, type);
+				this.artifactTypeMap2.put(type.getTypeName(), type);
 			}
 			return type;
 		} catch (SQLException ex) {
@@ -2296,12 +2308,9 @@ public class SleuthkitCase {
 					+ "value_int64, value_double "
 					+ "FROM blackboard_attributes " + whereClause); //NON-NLS
 			ArrayList<BlackboardAttribute> matches = new ArrayList<BlackboardAttribute>();
-			BlackboardAttribute.Type type = null;
-			if (rs.next()) {
-				type = this.getAttributeType(rs.getInt("attribute_type_id"));
-				rs.previous();
-			}
 			while (rs.next()) {
+				BlackboardAttribute.Type type;
+				type = this.getAttributeType(rs.getInt("attribute_type_id"));
 				BlackboardAttribute attr = new BlackboardAttribute(
 						rs.getLong("artifact_id"),
 						type,
@@ -2345,12 +2354,9 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(s, "SELECT artifact_id, obj_id, artifact_type_id"
 					+ " FROM blackboard_artifacts " + whereClause); //NON-NLS
 			ArrayList<BlackboardArtifact> matches = new ArrayList<BlackboardArtifact>();
-			BlackboardArtifact.Type type = null;
-			if (rs.next()) {
-				type = this.getArtifactType(rs.getInt(3));
-				rs.previous();
-			}
 			while (rs.next()) {
+				BlackboardArtifact.Type type;
+				type = this.getArtifactType(rs.getInt(3));
 				BlackboardArtifact artifact = new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2), type.getTypeID(), type.getTypeName(), type.getDisplayName());
 				matches.add(artifact);
 			}
