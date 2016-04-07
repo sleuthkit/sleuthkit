@@ -1999,9 +1999,11 @@ public class SleuthkitCase {
 					}
 				}
 				connection.executeUpdate(s, "INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name, value_type) VALUES ('" + maxID + "', '" + attrTypeString + "', '" + displayName + "', '" + valueType.getType() + "')"); //NON-NLS
-				BlackboardAttribute.Type t = new BlackboardAttribute.Type(maxID, attrTypeString, displayName, valueType);
+				BlackboardAttribute.Type type = new BlackboardAttribute.Type(maxID, attrTypeString, displayName, valueType);
+				this.typeIdToAttributeTypeMap.put(type.getTypeID(), type);
+				this.typeNameToAttributeTypeMap.put(type.getTypeName(), type);
 				connection.commitTransaction();
-				return t;
+				return type;
 			} else {
 				throw new TskDataException("The attribute type that was added was already within the system.");
 			}
@@ -2246,6 +2248,8 @@ public class SleuthkitCase {
 				}
 				connection.executeUpdate(s, "INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name) VALUES ('" + maxID + "', '" + artifactTypeName + "', '" + displayName + "')"); //NON-NLS
 				BlackboardArtifact.Type type = new BlackboardArtifact.Type(maxID, artifactTypeName, displayName);
+				this.typeIdToArtifactTypeMap.put(type.getTypeID(), type);
+				this.typeNameToArtifactTypeMap.put(type.getTypeName(), type);
 				connection.commitTransaction();
 				return type;
 			} else {
