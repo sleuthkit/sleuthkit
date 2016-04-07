@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  * 
- * Copyright 2013 Basis Technology Corp.
+ * Copyright 2011-2016 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -51,7 +51,7 @@ public class TagName implements Comparable<TagName>, Serializable {
 		FUCHSIA("Fuchsia"), //NON-NLS
 		PURPLE("Purple"); //NON-NLS
 		private final static HashMap<String, HTML_COLOR> colorMap = new HashMap<String, HTML_COLOR>();
-		private String name;
+		private final String name;
 
 		static {
 			for (HTML_COLOR color : HTML_COLOR.values()) {
@@ -105,8 +105,7 @@ public class TagName implements Comparable<TagName>, Serializable {
 	}
 
 	/**
-	 * Compares this TagName to the other TagName by comparing their
-	 * displayNames with {@link String#compareTo(java.lang.String)}
+	 * Compares two TagName objects by comparing their display names.
 	 *
 	 * @param other The other TagName to compare this TagName to
 	 * @return the result of calling compareTo on the displayNames

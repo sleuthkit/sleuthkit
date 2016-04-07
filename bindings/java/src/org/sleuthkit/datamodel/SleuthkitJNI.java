@@ -686,12 +686,9 @@ public class SleuthkitJNI {
 	}
 
 	/**
-	 * **************************** Hash database methods ****************
-	 */
-	/**
-	 * Create an index for the given database path.
+	 * Create an index for a hash database.
 	 *
-	 * @param dbPath The path to the database
+	 * @param dbHandle A hash database handle.
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
 	public static void createLookupIndexForHashDatabase(int dbHandle) throws TskCoreException {
@@ -699,9 +696,9 @@ public class SleuthkitJNI {
 	}
 
 	/**
-	 * Check if an index exists for the given database path.
+	 * Check if an index exists for a hash database.
 	 *
-	 * @param dbPath
+	 * @param dbHandle A hash database handle.
 	 * @return true if index exists
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
@@ -821,6 +818,7 @@ public class SleuthkitJNI {
 	 * @param md5 Text of MD5 hash (can be null)
 	 * @param sha1 Text of SHA1 hash (can be null)
 	 * @param sha256 Text of SHA256 hash (can be null)
+	 * @param comment A comment (can be null)
 	 * @param dbHandle Handle to DB
 	 * @throws TskCoreException
 	 */

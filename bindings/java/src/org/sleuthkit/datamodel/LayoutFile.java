@@ -254,8 +254,8 @@ public class LayoutFile extends AbstractFile {
 	 *
 	 * @param db The case database to which the file has been added.
 	 * @param objId The object id of the file in the case database.
-	 * @param dataSourceObjectId The object id of the data source for the file.
 	 * @param name The name of the file.
+	 * @param fileType The type of the file.
 	 * @param dirType The type of the file, usually as reported in the name
 	 * structure of the file system. May be set to TSK_FS_NAME_TYPE_ENUM.UNDEF.
 	 * @param metaType The type of the file, usually as reported in the metadata
@@ -270,9 +270,6 @@ public class LayoutFile extends AbstractFile {
 	 * @param knownState The known state of the file from a hash database
 	 * lookup, null if not yet looked up.
 	 * @param parentPath The path of the parent of the file.
-	 * @param mimeType The MIME type of the file, null if it has not yet been
-	 * determined.
-	 * @deprecated
 	 * @deprecated Do not make subclasses outside of this package.
 	 */
 	@Deprecated

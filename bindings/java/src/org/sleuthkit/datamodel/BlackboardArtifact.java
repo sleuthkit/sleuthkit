@@ -401,8 +401,8 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * not added
 	 */
 	public void addAttribute(BlackboardAttribute attr) throws TskCoreException {
-		attr.setArtifactID(artifactID);
-		attr.setCase(sleuthkitCase);
+		attr.setArtifactId(artifactID);
+		attr.setCaseDatabase(sleuthkitCase);
 		sleuthkitCase.addBlackboardAttribute(attr, this.artifactTypeID);
 		attrsCache.add(attr);
 	}
@@ -421,8 +421,8 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		}
 
 		for (BlackboardAttribute attr : attributes) {
-			attr.setArtifactID(artifactID);
-			attr.setCase(sleuthkitCase);
+			attr.setArtifactId(artifactID);
+			attr.setCaseDatabase(sleuthkitCase);
 		}
 		sleuthkitCase.addBlackboardAttributes(attributes, this.artifactTypeID);
 		attrsCache.addAll(attributes);
