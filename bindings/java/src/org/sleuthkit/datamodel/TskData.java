@@ -24,17 +24,17 @@ import java.util.EnumSet;
 import java.util.Set;
 
 /**
- * Contains enums for the integer values stored in the database and returned by the 
- * various data model objects. 
+ * Contains enums for the integer values stored in the database and returned by
+ * the various data model objects.
  */
 public class TskData {
 
 	private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
-	/** 
-     * The type of the file system file, as reported in the name structure of the file system.
-     * This is the dir_type column in the tsk_files table.
-     */
+	/**
+	 * The type of the file system file, as reported in the name structure of
+	 * the file system. This is the dir_type column in the tsk_files table.
+	 */
 	public enum TSK_FS_NAME_TYPE_ENUM {
 
 		UNDEF(0, "-"), ///< Unknown type
@@ -79,6 +79,7 @@ public class TskData {
 		 * Convert to the enum type from the short value
 		 *
 		 * @param dir_type enum type value to convert
+		 *
 		 * @return converted long value
 		 */
 		static public TSK_FS_NAME_TYPE_ENUM valueOf(short dir_type) {
@@ -92,10 +93,10 @@ public class TskData {
 		}
 	}
 
-    /**
-     * The type of the file system file, as reported in the metadata structure of the file system.
-     * This is the meta_type column in the tsk_files table.
-     */
+	/**
+	 * The type of the file system file, as reported in the metadata structure
+	 * of the file system. This is the meta_type column in the tsk_files table.
+	 */
 	public enum TSK_FS_META_TYPE_ENUM {
 
 		TSK_FS_META_TYPE_UNDEF(0, "-"),
@@ -143,10 +144,11 @@ public class TskData {
 		}
 	}
 
-    /**
-     * The allocated status of a file system file, as reported in the name structure of the file system.
-     * This is the dir_flags column in the tsk_files table.
-     */
+	/**
+	 * The allocated status of a file system file, as reported in the name
+	 * structure of the file system. This is the dir_flags column in the
+	 * tsk_files table.
+	 */
 	public enum TSK_FS_NAME_FLAG_ENUM {
 
 		ALLOC(1, bundle.getString("TskData.tskFsNameFlagEnum.allocated")), ///< Name is in an allocated state
@@ -178,6 +180,7 @@ public class TskData {
 		 * Convert dirFlag int value to the enum type
 		 *
 		 * @param dirFlag int value to convert
+		 *
 		 * @return the enum type corresponding to dirFlag
 		 */
 		public static TSK_FS_NAME_FLAG_ENUM valueOf(int dirFlag) {
@@ -191,10 +194,11 @@ public class TskData {
 		}
 	}
 
-    /**
-     * The allocated status of the file system file, as reported in the metadata structure of the file system.
-     * This is the meta_flags column in the tsk_files table.
-     */
+	/**
+	 * The allocated status of the file system file, as reported in the metadata
+	 * structure of the file system. This is the meta_flags column in the
+	 * tsk_files table.
+	 */
 	public enum TSK_FS_META_FLAG_ENUM {
 
 		ALLOC(1, bundle.getString("TskData.tskFsMetaFlagEnum.allocated")), ///< Metadata structure is currently in an allocated state
@@ -235,6 +239,7 @@ public class TskData {
 		 * Returns all the enum elements that match the flags in metaFlag
 		 *
 		 * @param metaFlags Flags to convert to Enums.
+		 *
 		 * @return matching TSK_FS_META_FLAG_ENUM elements
 		 */
 		public static Set<TSK_FS_META_FLAG_ENUM> valuesOf(short metaFlags) {
@@ -261,10 +266,10 @@ public class TskData {
 
 	}
 
-    /**
-     * Type of data that is stored in the attribute for a file system file.
-     * This is the attr_type column in the tsk_files table.
-     */
+	/**
+	 * Type of data that is stored in the attribute for a file system file. This
+	 * is the attr_type column in the tsk_files table.
+	 */
 	public enum TSK_FS_ATTR_TYPE_ENUM {
 
 		TSK_FS_ATTR_TYPE_NOT_FOUND(0x00), // 0
@@ -318,8 +323,8 @@ public class TskData {
 	};
 
 	/**
-	 * Flags for a partition in the disk image. 
-     * This is the flags column in the tsk_vs_parts table.
+	 * Flags for a partition in the disk image. This is the flags column in the
+	 * tsk_vs_parts table.
 	 */
 	public enum TSK_VS_PART_FLAG_ENUM {
 
@@ -345,12 +350,14 @@ public class TskData {
 
 	}
 
-    /**
-     * The permissions of a file system file.
-     * This is the mode column in the tsk_files table.
-     */
+	/**
+	 * The permissions of a file system file. This is the mode column in the
+	 * tsk_files table.
+	 */
 	public enum TSK_FS_META_MODE_ENUM {
-		/* The following describe the file permissions */
+		/*
+		 * The following describe the file permissions
+		 */
 
 		TSK_FS_META_MODE_ISUID(0004000), ///< set user id on execution
 		TSK_FS_META_MODE_ISGID(0002000), ///< set group id on execution
@@ -388,6 +395,7 @@ public class TskData {
 		 * given modes
 		 *
 		 * @param modes
+		 *
 		 * @return matching TSK_FS_META_MODE_ENUM elements
 		 */
 		public static Set<TSK_FS_META_MODE_ENUM> valuesOf(short modes) {
@@ -406,6 +414,7 @@ public class TskData {
 
 		/**
 		 * @param modes the set of modes to convert
+		 *
 		 * @return the short int representing the given set of modes
 		 */
 		public static short toInt(Set<TSK_FS_META_MODE_ENUM> modes) {
@@ -417,11 +426,10 @@ public class TskData {
 		}
 	};
 
-    
-    /**
-     * The type of the file system.
-     * This is the fs_type column in the tsk_fs_info table.
-     */
+	/**
+	 * The type of the file system. This is the fs_type column in the
+	 * tsk_fs_info table.
+	 */
 	public enum TSK_FS_TYPE_ENUM {
 
 		TSK_FS_TYPE_DETECT(0x00000000), ///< Use autodetection methods
@@ -472,6 +480,7 @@ public class TskData {
 		 * enum type
 		 *
 		 * @param fsTypeValue int value to convert
+		 *
 		 * @return the enum type - first enum type matching the fsTypeValue
 		 */
 		public static TSK_FS_TYPE_ENUM valueOf(int fsTypeValue) {
@@ -486,11 +495,11 @@ public class TskData {
 
 	};
 
-    /**
-     * The type of the disk image.
-     * This is the types column in the tsk_images_info table.
-     */
-    public enum TSK_IMG_TYPE_ENUM {
+	/**
+	 * The type of the disk image. This is the types column in the
+	 * tsk_images_info table.
+	 */
+	public enum TSK_IMG_TYPE_ENUM {
 
 		TSK_IMG_TYPE_DETECT(0, bundle.getString("TskData.tskImgTypeEnum.autoDetect")), // Auto Detection
 		TSK_IMG_TYPE_RAW_SING(1, bundle.getString("TskData.tskImgTypeEnum.rawSingle")), // Single raw file (dd)
@@ -541,11 +550,11 @@ public class TskData {
 		}
 	};
 
-    /**
-     * The type of the partition in the partition table.
-     * This is the flags column in the tsk_vs_parts table.
-     */
-    public enum TSK_VS_TYPE_ENUM {
+	/**
+	 * The type of the partition in the partition table. This is the flags
+	 * column in the tsk_vs_parts table.
+	 */
+	public enum TSK_VS_TYPE_ENUM {
 
 		TSK_VS_TYPE_DETECT(0x0000, bundle.getString("TskData.tskVSTypeEnum.autoDetect")), ///< Use autodetection methods
 		TSK_VS_TYPE_DOS(0x0001, "DOS"), ///< DOS Partition table NON-NLS
@@ -593,11 +602,10 @@ public class TskData {
 		}
 	};
 
-
-    /**
-     * High-level type of an object from the database. 
-     * This is the type column in the tsk_objects table. 
-     */
+	/**
+	 * High-level type of an object from the database. This is the type column
+	 * in the tsk_objects table.
+	 */
 	public enum ObjectType {
 
 		IMG(0), ///< Disk Image - see tsk_image_info for more details
@@ -625,6 +633,7 @@ public class TskData {
 		 * Convert object type short value to the enum type
 		 *
 		 * @param objectType long value to convert
+		 *
 		 * @return the enum type
 		 */
 		public static ObjectType valueOf(short objectType) {
@@ -638,9 +647,10 @@ public class TskData {
 		}
 	}
 
-    /**
-     * The type of file in a database, such as file system versus local file. 
-     * This is the type field in the tsk_files table. */
+	/**
+	 * The type of file in a database, such as file system versus local file.
+	 * This is the type field in the tsk_files table.
+	 */
 	public enum TSK_DB_FILES_TYPE_ENUM {
 
 		FS(0, "File System"), ///< File that can be found in file system tree. 
@@ -664,6 +674,7 @@ public class TskData {
 		 * Convert db files type short value to the enum type
 		 *
 		 * @param fileType long value to convert
+		 *
 		 * @return the enum type
 		 */
 		public static TSK_DB_FILES_TYPE_ENUM valueOf(short fileType) {
@@ -690,10 +701,10 @@ public class TskData {
 		}
 	}
 
-    /**
-     * Identifies if a file was in a hash database or not. 
-     * This is the known column in the tsk_files table. 
-     */
+	/**
+	 * Identifies if a file was in a hash database or not. This is the known
+	 * column in the tsk_files table.
+	 */
 	public enum FileKnown {
 
 		UNKNOWN(0, bundle.getString("TskData.fileKnown.unknown")), ///< File marked as unknown by hash db
@@ -712,6 +723,7 @@ public class TskData {
 		 * Convert file known type byte value to the enum type
 		 *
 		 * @param known long value to convert
+		 *
 		 * @return the enum type
 		 */
 		public static FileKnown valueOf(byte known) {

@@ -63,39 +63,47 @@ public abstract class FsContent extends AbstractFile {
 	 * Constructs an abstract base class for representations of a file system
 	 * files or directories that have been added to a case.
 	 *
-	 * @param db The case database to which the file has been added.
-	 * @param objId The object id of the file in the case database.
+	 * @param db                 The case database to which the file has been
+	 *                           added.
+	 * @param objId              The object id of the file in the case database.
 	 * @param dataSourceObjectId The object id of the data source for the file.
-	 * @param fsObjId The object id of the file system to which this file
-	 * belongs.
-	 * @param attrType The type attribute given to the file by the file system.
-	 * @param attrId The type id given to the file by the file system.
-	 * @param name The name of the file.
-	 * @param metaAddr The meta address of the file.
-	 * @param metaSeq The meta sequence number of the file.
-	 * @param dirType The type of the file, usually as reported in the name
-	 * structure of the file system. May be set to TSK_FS_NAME_TYPE_ENUM.UNDEF.
-	 * @param metaType The type of the file, usually as reported in the metadata
-	 * structure of the file system. May be set to
-	 * TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
-	 * @param dirFlag The allocated status of the file, usually as reported in
-	 * the name structure of the file system.
-	 * @param metaFlags The allocated status of the file, usually as reported in
-	 * the metadata structure of the file system.
-	 * @param size The size of the file.
-	 * @param ctime The changed time of the file.
-	 * @param crtime The created time of the file.
-	 * @param atime The accessed time of the file.
-	 * @param mtime The modified time of the file.
-	 * @param modes The modes for the file.
-	 * @param uid The UID for the file.
-	 * @param gid The GID for the file.
-	 * @param md5Hash The MD5 hash of the file, null if not yet calculated.
-	 * @param knownState The known state of the file from a hash database
-	 * lookup, null if not yet looked up.
-	 * @param parentPath The path of the parent of the file.
-	 * @param mimeType The MIME type of the file, null if it has not yet been
-	 * determined.
+	 * @param fsObjId            The object id of the file system to which this
+	 *                           file belongs.
+	 * @param attrType           The type attribute given to the file by the
+	 *                           file system.
+	 * @param attrId             The type id given to the file by the file
+	 *                           system.
+	 * @param name               The name of the file.
+	 * @param metaAddr           The meta address of the file.
+	 * @param metaSeq            The meta sequence number of the file.
+	 * @param dirType            The type of the file, usually as reported in
+	 *                           the name structure of the file system. May be
+	 *                           set to TSK_FS_NAME_TYPE_ENUM.UNDEF.
+	 * @param metaType           The type of the file, usually as reported in
+	 *                           the metadata structure of the file system. May
+	 *                           be set to
+	 *                           TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
+	 * @param dirFlag            The allocated status of the file, usually as
+	 *                           reported in the name structure of the file
+	 *                           system.
+	 * @param metaFlags          The allocated status of the file, usually as
+	 *                           reported in the metadata structure of the file
+	 *                           system.
+	 * @param size               The size of the file.
+	 * @param ctime              The changed time of the file.
+	 * @param crtime             The created time of the file.
+	 * @param atime              The accessed time of the file.
+	 * @param mtime              The modified time of the file.
+	 * @param modes              The modes for the file.
+	 * @param uid                The UID for the file.
+	 * @param gid                The GID for the file.
+	 * @param md5Hash            The MD5 hash of the file, null if not yet
+	 *                           calculated.
+	 * @param knownState         The known state of the file from a hash
+	 *                           database lookup, null if not yet looked up.
+	 * @param parentPath         The path of the parent of the file.
+	 * @param mimeType           The MIME type of the file, null if it has not
+	 *                           yet been determined.
 	 */
 	@SuppressWarnings("deprecation")
 	FsContent(SleuthkitCase db,
@@ -141,6 +149,7 @@ public abstract class FsContent extends AbstractFile {
 	 * Gets the parent file system of this file or directory.
 	 *
 	 * @return the file system object of the parent
+	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	@SuppressWarnings("deprecation")
@@ -185,10 +194,12 @@ public abstract class FsContent extends AbstractFile {
 	/**
 	 * Reads bytes from this file or directory.
 	 *
-	 * @param buf Buffer to read into.
+	 * @param buf    Buffer to read into.
 	 * @param offset Start position in the file.
-	 * @param len Number of bytes to read.
+	 * @param len    Number of bytes to read.
+	 *
 	 * @return Number of bytes read.
+	 *
 	 * @throws TskCoreException if there is a problem reading the file.
 	 */
 	@Override
@@ -229,8 +240,9 @@ public abstract class FsContent extends AbstractFile {
 	 * Gets the parent directory of this file or directory.
 	 *
 	 * @return The parent directory
+	 *
 	 * @throws TskCoreException if there was an error querying the case
-	 * database.
+	 *                          database.
 	 */
 	public AbstractFile getParentDirectory() throws TskCoreException {
 		return getSleuthkitCase().getParentDirectory(this);
@@ -240,6 +252,7 @@ public abstract class FsContent extends AbstractFile {
 	 * Gets the data source (image) for this file or directory directory.
 	 *
 	 * @return The data source.
+	 *
 	 * @throws TskCoreException if there is an error querying the case database.
 	 */
 	@Override
@@ -271,6 +284,7 @@ public abstract class FsContent extends AbstractFile {
 	 * each type of file system.
 	 *
 	 * @return List of text, one element per line.
+	 *
 	 * @throws TskCoreException
 	 */
 	public synchronized List<String> getMetaDataText() throws TskCoreException {
@@ -324,9 +338,10 @@ public abstract class FsContent extends AbstractFile {
 	 * Provides a string representation of this file or directory.
 	 *
 	 * @param preserveState True if state should be included in the string
-	 * representation of this object.
+	 *                      representation of this object.
+	 *
 	 * @throws TskCoreException if there was an error querying the case
-	 * database.
+	 *                          database.
 	 */
 	@Override
 	@SuppressWarnings("deprecation")
@@ -343,36 +358,39 @@ public abstract class FsContent extends AbstractFile {
 	 * Constructs an abstract base class for representations of a file system
 	 * files or directories that have been added to a case.
 	 *
-	 * @param db The case database to which the file has been added.
-	 * @param objId The object id of the file in the case database.
-	 * @param fsObjId The object id of the file system to which this file
-	 * belongs.
-	 * @param attrType The type attribute given to the file by the file system.
-	 * @param attrId The type id given to the file by the file system.
-	 * @param name The name of the file.
-	 * @param metaAddr The meta address of the file.
-	 * @param metaSeq The meta sequence number of the file.
-	 * @param dirType The type of the file, usually as reported in the name
-	 * structure of the file system. May be set to TSK_FS_NAME_TYPE_ENUM.UNDEF.
-	 * @param metaType The type of the file, usually as reported in the metadata
-	 * structure of the file system. May be set to
-	 * TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
-	 * @param dirFlag The allocated status of the file, usually as reported in
-	 * the name structure of the file system.
-	 * @param metaFlags The allocated status of the file, usually as reported in
-	 * the metadata structure of the file system.
-	 * @param size The size of the file.
-	 * @param ctime The changed time of the file.
-	 * @param crtime The created time of the file.
-	 * @param atime The accessed time of the file.
-	 * @param mtime The modified time of the file.
-	 * @param modes The modes for the file.
-	 * @param uid The UID for the file.
-	 * @param gid The GID for the file.
-	 * @param md5Hash The MD5 hash of the file, null if not yet calculated.
+	 * @param db         The case database to which the file has been added.
+	 * @param objId      The object id of the file in the case database.
+	 * @param fsObjId    The object id of the file system to which this file
+	 *                   belongs.
+	 * @param attrType   The type attribute given to the file by the file
+	 *                   system.
+	 * @param attrId     The type id given to the file by the file system.
+	 * @param name       The name of the file.
+	 * @param metaAddr   The meta address of the file.
+	 * @param metaSeq    The meta sequence number of the file.
+	 * @param dirType    The type of the file, usually as reported in the name
+	 *                   structure of the file system. May be set to
+	 *                   TSK_FS_NAME_TYPE_ENUM.UNDEF.
+	 * @param metaType   The type of the file, usually as reported in the
+	 *                   metadata structure of the file system. May be set to
+	 *                   TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
+	 * @param dirFlag    The allocated status of the file, usually as reported
+	 *                   in the name structure of the file system.
+	 * @param metaFlags  The allocated status of the file, usually as reported
+	 *                   in the metadata structure of the file system.
+	 * @param size       The size of the file.
+	 * @param ctime      The changed time of the file.
+	 * @param crtime     The created time of the file.
+	 * @param atime      The accessed time of the file.
+	 * @param mtime      The modified time of the file.
+	 * @param modes      The modes for the file.
+	 * @param uid        The UID for the file.
+	 * @param gid        The GID for the file.
+	 * @param md5Hash    The MD5 hash of the file, null if not yet calculated.
 	 * @param knownState The known state of the file from a hash database
-	 * lookup, null if not yet looked up.
+	 *                   lookup, null if not yet looked up.
 	 * @param parentPath The path of the parent of the file.
+	 *
 	 * @deprecated Do not make subclasses outside of this package.
 	 */
 	@Deprecated

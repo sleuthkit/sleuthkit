@@ -65,10 +65,10 @@ public class BlackboardAttribute {
 		/**
 		 * Constructs an attribute type.
 		 *
-		 * @param typeID The type id.
-		 * @param typeName The type name.
+		 * @param typeID      The type id.
+		 * @param typeName    The type name.
 		 * @param displayName The display name for the type.
-		 * @param valueType The type of the value.
+		 * @param valueType   The type of the value.
 		 */
 		public Type(int typeID, String typeName, String displayName, TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType) {
 			this.typeID = typeID;
@@ -81,7 +81,7 @@ public class BlackboardAttribute {
 		 * Constructs a standard attribute type.
 		 *
 		 * @param type The specification of the type provided by the
-		 * TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE enumeration.
+		 *             TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE enumeration.
 		 */
 		public Type(BlackboardAttribute.ATTRIBUTE_TYPE type) {
 			this.typeID = type.getTypeID();
@@ -142,6 +142,7 @@ public class BlackboardAttribute {
 		 * attribute type object.
 		 *
 		 * @param that the other type
+		 *
 		 * @return true if it is the same type
 		 */
 		private boolean sameType(BlackboardAttribute.Type that) {
@@ -205,14 +206,14 @@ public class BlackboardAttribute {
 		private final long typeId;
 		private final String typeName;
 		/*
-		 * TODO (AUT-2070): Add a localized displayName field and a 
+		 * TODO (AUT-2070): Add a localized displayName field and a
 		 * getDisplayName method for API consistency.
 		 */
 
 		/**
 		 * Constructs an attribute value type object.
 		 *
-		 * @param type The type id of the value type.
+		 * @param type     The type id of the value type.
 		 * @param typeName The type name of the value type.
 		 */
 		private TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE(long type, String typeName) {
@@ -244,10 +245,12 @@ public class BlackboardAttribute {
 		 * Gets the attribute value type for a given value type id.
 		 *
 		 * @param typeId A value type id.
+		 *
 		 * @return A BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE
-		 * object.
+		 *         object.
+		 *
 		 * @throws IllegalArgumentException If the given type id does not map to
-		 * a supported value type.
+		 *                                  a supported value type.
 		 *
 		 * TODO (AUT-2070): Deprecate and provide a fromTypeId method instead
 		 * for API consistency.
@@ -265,10 +268,12 @@ public class BlackboardAttribute {
 		 * Gets the attribute value type for a given value type name.
 		 *
 		 * @param typeName A type name.
+		 *
 		 * @return A BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE
-		 * object.
+		 *         object.
+		 *
 		 * @throws IllegalArgumentException If the given type name does not map
-		 * to a supported value type.
+		 *                                  to a supported value type.
 		 *
 		 * TODO (AUT-2070): Deprecate and provide a fromTypeName method instead
 		 * for API consistency.
@@ -650,10 +655,10 @@ public class BlackboardAttribute {
 		/**
 		 * Constructs a standard attribute type.
 		 *
-		 * @param typeID The id of the type.
-		 * @param typeName The name of the type.
+		 * @param typeID      The id of the type.
+		 * @param typeName    The name of the type.
 		 * @param displayName The display name of the type
-		 * @param valueType The value type of the type.
+		 * @param valueType   The value type of the type.
 		 */
 		private ATTRIBUTE_TYPE(int typeID, String typeName, String displayName, TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType) {
 			this.typeID = typeID;
@@ -705,9 +710,11 @@ public class BlackboardAttribute {
 		 * Gets the standard attribute type for a given type id.
 		 *
 		 * @param typeID A standard attribute type id.
+		 *
 		 * @return A BlackboardAttribute.ATTRIBUTE_TYPE object.
+		 *
 		 * @throws IllegalArgumentException If the given type id does not map to
-		 * a standard attribute type.
+		 *                                  a standard attribute type.
 		 *
 		 * TODO (AUT-2070): Deprecate and provide a fromTypeId method instead
 		 * for API consistency.
@@ -725,9 +732,11 @@ public class BlackboardAttribute {
 		 * Gets the standard attribute type for a given type name.
 		 *
 		 * @param typeName A standard attribute type name.
+		 *
 		 * @return A BlackboardAttribute.ATTRIBUTE_TYPE object.
+		 *
 		 * @throws IllegalArgumentException If the given type name does not map
-		 * to a standard attribute type.
+		 *                                  to a standard attribute type.
 		 *
 		 * TODO (AUT-2070): Deprecate and provide a fromTypeName method instead
 		 * for API consistency.
@@ -748,19 +757,19 @@ public class BlackboardAttribute {
 	 * based on a query of the blackboard _attributes table in the case
 	 * database.
 	 *
-	 * @param artifactID The artifact id for this attribute
+	 * @param artifactID      The artifact id for this attribute
 	 * @param attributeTypeID The attribute type id.
-	 * @param moduleName The display name of the module that created this
-	 * attribute.
-	 * @param context Contextual information about this attribute.
-	 * @param valueType The attribute value type.
-	 * @param valueInt The value from the the value_int32 column.
-	 * @param valueLong The value from the the value_int64 column.
-	 * @param valueDouble The value from the the value_double column.
-	 * @param valueString The value from the the value_text column.
-	 * @param valueBytes The value from the the value_byte column.
-	 * @param sleuthkitCase A reference to the SleuthkitCase object representing
-	 * the case database.
+	 * @param moduleName      The display name of the module that created this
+	 *                        attribute.
+	 * @param context         Contextual information about this attribute.
+	 * @param valueType       The attribute value type.
+	 * @param valueInt        The value from the the value_int32 column.
+	 * @param valueLong       The value from the the value_int64 column.
+	 * @param valueDouble     The value from the the value_double column.
+	 * @param valueString     The value from the the value_text column.
+	 * @param valueBytes      The value from the the value_byte column.
+	 * @param sleuthkitCase   A reference to the SleuthkitCase object
+	 *                        representing the case database.
 	 */
 	BlackboardAttribute(long artifactID, BlackboardAttribute.Type attributeType, String moduleName, String context, int valueInt, long valueLong, double valueDouble,
 			String valueString, byte[] valueBytes, SleuthkitCase sleuthkitCase) {
@@ -809,11 +818,13 @@ public class BlackboardAttribute {
 	 * should be added to an appropriate artifact.
 	 *
 	 * @param attributeType The standard attribute type.
-	 * @param moduleName The display name of the module creating this attribute.
-	 * @param valueInt The attribute value.
+	 * @param moduleName    The display name of the module creating this
+	 *                      attribute.
+	 * @param valueInt      The attribute value.
+	 *
 	 * @throws IllegalArgumentException If the value type of the specified
-	 * standard attribute type is not
-	 * TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER.
+	 *                                  standard attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER.
 	 */
 	public BlackboardAttribute(ATTRIBUTE_TYPE attributeType, String moduleName, int valueInt) throws IllegalArgumentException {
 		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER) {
@@ -835,10 +846,13 @@ public class BlackboardAttribute {
 	 * added to an appropriate artifact.
 	 *
 	 * @param attributeType The attribute type.
-	 * @param moduleName The display name of the module creating this attribute.
-	 * @param valueInt The attribute value.
+	 * @param moduleName    The display name of the module creating this
+	 *                      attribute.
+	 * @param valueInt      The attribute value.
+	 *
 	 * @throws IllegalArgumentException If the value type of the specified
-	 * attribute type is not TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER.
+	 *                                  attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER.
 	 */
 	public BlackboardAttribute(Type attributeType, String moduleName, int valueInt) throws IllegalArgumentException {
 		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER) {
@@ -861,11 +875,15 @@ public class BlackboardAttribute {
 	 * should be added to an appropriate artifact.
 	 *
 	 * @param attributeType The standard attribute type.
-	 * @param moduleName The display name of the module creating this attribute.
-	 * @param valueLong The attribute value.
+	 * @param moduleName    The display name of the module creating this
+	 *                      attribute.
+	 * @param valueLong     The attribute value.
+	 *
 	 * @throws IllegalArgumentException If the value type of the specified
-	 * standard attribute type is not TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG
-	 * or TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME.
+	 *                                  standard attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG
+	 *                                  or
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME.
 	 */
 	public BlackboardAttribute(ATTRIBUTE_TYPE attributeType, String moduleName,
 			long valueLong) throws IllegalArgumentException {
@@ -889,12 +907,15 @@ public class BlackboardAttribute {
 	 * be added to an appropriate artifact.
 	 *
 	 * @param attributeType The attribute type.
-	 * @param moduleName The display name of the module that creating this
-	 * attribute.
-	 * @param valueLong The attribute value.
+	 * @param moduleName    The display name of the module that creating this
+	 *                      attribute.
+	 * @param valueLong     The attribute value.
+	 *
 	 * @throws IllegalArgumentException If the value type of the specified
-	 * standard attribute type is not TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG
-	 * or TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME.
+	 *                                  standard attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG
+	 *                                  or
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME.
 	 */
 	public BlackboardAttribute(Type attributeType, String moduleName, long valueLong) throws IllegalArgumentException {
 		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG
@@ -917,11 +938,13 @@ public class BlackboardAttribute {
 	 * be added to an appropriate artifact.
 	 *
 	 * @param attributeType The standard attribute type.
-	 * @param moduleName The display name of the module creating this attribute.
-	 * @param valueDouble The attribute value.
+	 * @param moduleName    The display name of the module creating this
+	 *                      attribute.
+	 * @param valueDouble   The attribute value.
+	 *
 	 * @throws IllegalArgumentException If the value type of the specified
-	 * standard attribute type is not
-	 * TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE.
+	 *                                  standard attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE.
 	 */
 	public BlackboardAttribute(ATTRIBUTE_TYPE attributeType, String moduleName,
 			double valueDouble) throws IllegalArgumentException {
@@ -945,10 +968,13 @@ public class BlackboardAttribute {
 	 * added to an appropriate artifact.
 	 *
 	 * @param attributeType The attribute type.
-	 * @param moduleName The display name of the module creating this attribute.
-	 * @param valueDouble The attribute value.
+	 * @param moduleName    The display name of the module creating this
+	 *                      attribute.
+	 * @param valueDouble   The attribute value.
+	 *
 	 * @throws IllegalArgumentException If the value type of the specified
-	 * attribute type is not TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE.
+	 *                                  attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE.
 	 */
 	public BlackboardAttribute(Type attributeType, String moduleName, double valueDouble) throws IllegalArgumentException {
 		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE) {
@@ -970,11 +996,13 @@ public class BlackboardAttribute {
 	 * should be added to an appropriate artifact.
 	 *
 	 * @param attributeType The standard attribute type.
-	 * @param moduleName The display name of the module creating this attribute.
-	 * @param valueString The attribute value.
+	 * @param moduleName    The display name of the module creating this
+	 *                      attribute.
+	 * @param valueString   The attribute value.
+	 *
 	 * @throws IllegalArgumentException If the value type of the specified
-	 * standard attribute type is not
-	 * TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING.
+	 *                                  standard attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING.
 	 */
 	public BlackboardAttribute(ATTRIBUTE_TYPE attributeType, String moduleName,
 			String valueString) throws IllegalArgumentException {
@@ -1001,10 +1029,13 @@ public class BlackboardAttribute {
 	 * added to an appropriate artifact.
 	 *
 	 * @param attributeType The attribute type.
-	 * @param moduleName The display name of the module creating this attribute.
-	 * @param valueString The attribute value.
+	 * @param moduleName    The display name of the module creating this
+	 *                      attribute.
+	 * @param valueString   The attribute value.
+	 *
 	 * @throws IllegalArgumentException If the value type of the specified
-	 * attribute type is not TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING.
+	 *                                  attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING.
 	 */
 	public BlackboardAttribute(Type attributeType, String moduleName, String valueString) throws IllegalArgumentException {
 		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING) {
@@ -1030,10 +1061,13 @@ public class BlackboardAttribute {
 	 * should be added to an appropriate artifact.
 	 *
 	 * @param attributeType The standard attribute type.
-	 * @param moduleName The display name of the module creating this attribute.
-	 * @param valueBytes The attribute value.
+	 * @param moduleName    The display name of the module creating this
+	 *                      attribute.
+	 * @param valueBytes    The attribute value.
+	 *
 	 * @throws IllegalArgumentException If the value type of the specified
-	 * standard attribute type is not TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE.
+	 *                                  standard attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE.
 	 */
 	public BlackboardAttribute(ATTRIBUTE_TYPE attributeType, String moduleName,
 			byte[] valueBytes) throws IllegalArgumentException {
@@ -1060,10 +1094,13 @@ public class BlackboardAttribute {
 	 * added to an appropriate artifact.
 	 *
 	 * @param attributeType The attribute type.
-	 * @param moduleName The display name of the module creating this attribute.
-	 * @param valueBytes The attribute value.
+	 * @param moduleName    The display name of the module creating this
+	 *                      attribute.
+	 * @param valueBytes    The attribute value.
+	 *
 	 * @throws IllegalArgumentException If the value type of the specified
-	 * attribute type is not TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE.
+	 *                                  attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE.
 	 */
 	public BlackboardAttribute(Type attributeType, String moduleName, byte[] valueBytes) throws IllegalArgumentException {
 		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE) {
@@ -1178,8 +1215,10 @@ public class BlackboardAttribute {
 	 * attributes associated with the artifact.
 	 *
 	 * @return The artifact.
+	 *
 	 * @throws TskCoreException If there is no artifact associated with this
-	 * attribute or there is an error reading from the case database.
+	 *                          attribute or there is an error reading from the
+	 *                          case database.
 	 */
 	public BlackboardArtifact getParentArtifact() throws TskCoreException {
 		return sleuthkitCase.getBlackboardArtifact(artifactID);
@@ -1249,6 +1288,7 @@ public class BlackboardAttribute {
 	 * Converts a byte array to a string.
 	 *
 	 * @param bytes The byte array.
+	 *
 	 * @return The string.
 	 */
 	final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
@@ -1268,6 +1308,7 @@ public class BlackboardAttribute {
 	 * Replace all NUL characters in the string with the SUB character
 	 *
 	 * @param text The input string.
+	 *
 	 * @return The output string.
 	 */
 	private String replaceNulls(String text) {
@@ -1279,12 +1320,15 @@ public class BlackboardAttribute {
 	 * be added to an appropriate artifact.
 	 *
 	 * @param attributeTypeID The standard attribute type id.
-	 * @param moduleName The display name of the module creating this attribute.
-	 * @param valueInt The attribute value.
+	 * @param moduleName      The display name of the module creating this
+	 *                        attribute.
+	 * @param valueInt        The attribute value.
+	 *
 	 * @throws IllegalArgumentException If the value type of the specified
-	 * standard attribute type is not
-	 * TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER or the type id is not for a
-	 * standard type.
+	 *                                  standard attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER
+	 *                                  or the type id is not for a standard
+	 *                                  type.
 	 * @deprecated
 	 */
 	@Deprecated
@@ -1297,13 +1341,16 @@ public class BlackboardAttribute {
 	 * be added to an appropriate artifact.
 	 *
 	 * @param attributeTypeID The standard attribute type id.
-	 * @param moduleName The display name of the module creating this attribute.
-	 * @param context Extra information about the attribute.
-	 * @param valueInt The attribute value.
+	 * @param moduleName      The display name of the module creating this
+	 *                        attribute.
+	 * @param context         Extra information about the attribute.
+	 * @param valueInt        The attribute value.
+	 *
 	 * @throws IllegalArgumentException If the value type of the specified
-	 * standard attribute type is not
-	 * TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER or the type id is not for a
-	 * standard type.
+	 *                                  standard attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER
+	 *                                  or the type id is not for a standard
+	 *                                  type.
 	 * @deprecated
 	 */
 	@Deprecated
@@ -1318,13 +1365,17 @@ public class BlackboardAttribute {
 	 * should be added to an appropriate artifact.
 	 *
 	 * @param attributeTypeID The standard attribute type id.
-	 * @param moduleName The display name of the module that creating this
-	 * attribute.
-	 * @param valueLong The attribute value.
+	 * @param moduleName      The display name of the module that creating this
+	 *                        attribute.
+	 * @param valueLong       The attribute value.
+	 *
 	 * @throws IllegalArgumentException If the value type of the specified
-	 * standard attribute type is not TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG
-	 * or TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME or the type id is not for
-	 * a standard type.
+	 *                                  standard attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG
+	 *                                  or
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME
+	 *                                  or the type id is not for a standard
+	 *                                  type.
 	 */
 	@Deprecated
 	public BlackboardAttribute(int attributeTypeID, String moduleName,
@@ -1337,14 +1388,18 @@ public class BlackboardAttribute {
 	 * should be added to an appropriate artifact.
 	 *
 	 * @param attributeTypeID The standard attribute type id.
-	 * @param moduleName The display name of the module that creating this
-	 * attribute.
-	 * @param context Extra information about the attribute.
-	 * @param valueLong The attribute value.
+	 * @param moduleName      The display name of the module that creating this
+	 *                        attribute.
+	 * @param context         Extra information about the attribute.
+	 * @param valueLong       The attribute value.
+	 *
 	 * @throws IllegalArgumentException If the value type of the specified
-	 * standard attribute type is not TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG
-	 * or TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME or the type id is not for
-	 * a standard type.
+	 *                                  standard attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG
+	 *                                  or
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME
+	 *                                  or the type id is not for a standard
+	 *                                  type.
 	 */
 	@Deprecated
 	public BlackboardAttribute(int attributeTypeID, String moduleName, String context,
@@ -1358,11 +1413,15 @@ public class BlackboardAttribute {
 	 * added to an appropriate artifact.
 	 *
 	 * @param attributeTypeID The standard attribute type id.
-	 * @param moduleName The display name of the module creating this attribute.
-	 * @param valueDouble The attribute value.
+	 * @param moduleName      The display name of the module creating this
+	 *                        attribute.
+	 * @param valueDouble     The attribute value.
+	 *
 	 * @throws IllegalArgumentException If the value type of the specified
-	 * standard attribute type is not TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE
-	 * or the type id is not for a standard type.
+	 *                                  standard attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE
+	 *                                  or the type id is not for a standard
+	 *                                  type.
 	 * @deprecated
 	 */
 	@Deprecated
@@ -1376,12 +1435,16 @@ public class BlackboardAttribute {
 	 * added to an appropriate artifact.
 	 *
 	 * @param attributeTypeID The standard attribute type id.
-	 * @param moduleName The display name of the module creating this attribute.
-	 * @param context Extra information about the attribute.
-	 * @param valueDouble The attribute value.
+	 * @param moduleName      The display name of the module creating this
+	 *                        attribute.
+	 * @param context         Extra information about the attribute.
+	 * @param valueDouble     The attribute value.
+	 *
 	 * @throws IllegalArgumentException If the value type of the specified
-	 * standard attribute type is not TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE
-	 * or the type id is not for a standard type.
+	 *                                  standard attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE
+	 *                                  or the type id is not for a standard
+	 *                                  type.
 	 * @deprecated
 	 */
 	@Deprecated
@@ -1396,11 +1459,15 @@ public class BlackboardAttribute {
 	 * added to an appropriate artifact.
 	 *
 	 * @param attributeTypeID The standard attribute type id.
-	 * @param moduleName The display name of the module creating this attribute.
-	 * @param valueString The attribute value.
+	 * @param moduleName      The display name of the module creating this
+	 *                        attribute.
+	 * @param valueString     The attribute value.
+	 *
 	 * @throws IllegalArgumentException If the value type of the specified
-	 * standard attribute type is not TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING
-	 * or the type id is not for a standard type.
+	 *                                  standard attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING
+	 *                                  or the type id is not for a standard
+	 *                                  type.
 	 * @deprecated
 	 */
 	@Deprecated
@@ -1413,12 +1480,16 @@ public class BlackboardAttribute {
 	 * added to an appropriate artifact.
 	 *
 	 * @param attributeTypeID The standard attribute type id.
-	 * @param moduleName The display name of the module creating this attribute.
-	 * @param context Extra information about the attribute.
-	 * @param valueString The attribute value.
+	 * @param moduleName      The display name of the module creating this
+	 *                        attribute.
+	 * @param context         Extra information about the attribute.
+	 * @param valueString     The attribute value.
+	 *
 	 * @throws IllegalArgumentException If the value type of the specified
-	 * standard attribute type is not TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING
-	 * or the type id is not for a standard type.
+	 *                                  standard attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING
+	 *                                  or the type id is not for a standard
+	 *                                  type.
 	 * @deprecated
 	 */
 	@Deprecated
@@ -1433,11 +1504,15 @@ public class BlackboardAttribute {
 	 * should be added to an appropriate artifact.
 	 *
 	 * @param attributeTypeID The standard attribute type id.
-	 * @param moduleName The display name of the module creating this attribute.
-	 * @param valueBytes The attribute value.
+	 * @param moduleName      The display name of the module creating this
+	 *                        attribute.
+	 * @param valueBytes      The attribute value.
+	 *
 	 * @throws IllegalArgumentException If the value type of the specified
-	 * standard attribute type is not TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE
-	 * or the type id is not for a standard type.
+	 *                                  standard attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE
+	 *                                  or the type id is not for a standard
+	 *                                  type.
 	 * @deprecated
 	 */
 	@Deprecated
@@ -1450,12 +1525,16 @@ public class BlackboardAttribute {
 	 * should be added to an appropriate artifact.
 	 *
 	 * @param attributeTypeID The standard attribute type id.
-	 * @param moduleName The display name of the module creating this attribute.
-	 * @param context Extra information about the attribute.
-	 * @param valueBytes The attribute value.
+	 * @param moduleName      The display name of the module creating this
+	 *                        attribute.
+	 * @param context         Extra information about the attribute.
+	 * @param valueBytes      The attribute value.
+	 *
 	 * @throws IllegalArgumentException If the value type of the specified
-	 * standard attribute type is not TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE
-	 * or the type id is not for a standard type.
+	 *                                  standard attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE
+	 *                                  or the type id is not for a standard
+	 *                                  type.
 	 * @deprecated
 	 */
 	@Deprecated
@@ -1469,6 +1548,7 @@ public class BlackboardAttribute {
 	 * Sets the artifact id.
 	 *
 	 * @param artifactID The artifact id.
+	 *
 	 * @deprecated The preferred method for doing this is to add the attribute
 	 * to a BlackboardArtifact object by calling BlackboardArtifact.addAttribute
 	 * or BlackboardArtifact.addAttributes, both of which post the attributes to
@@ -1484,6 +1564,7 @@ public class BlackboardAttribute {
 	 * database.
 	 *
 	 * @param sleuthkitCase A reference to a SleuthkitCase object.
+	 *
 	 * @deprecated The preferred method for doing this is to add the attribute
 	 * to a BlackboardArtifact object by calling BlackboardArtifact.addAttribute
 	 * or BlackboardArtifact.addAttributes, both of which post the attributes to
@@ -1498,6 +1579,7 @@ public class BlackboardAttribute {
 	 * Gets the context of this attribute.
 	 *
 	 * @return The context, may be the empty string.
+	 *
 	 * @deprecated Setting context for an attribute is deprecated.
 	 */
 	@Deprecated
@@ -1519,6 +1601,7 @@ public class BlackboardAttribute {
 	 * Gets the attribute type id.
 	 *
 	 * @return The type id.
+	 *
 	 * @deprecated Use BlackboardAttribute.getAttributeType.getTypeID instead.
 	 */
 	@Deprecated
@@ -1530,6 +1613,7 @@ public class BlackboardAttribute {
 	 * Gets the attribute type name.
 	 *
 	 * @return The type name.
+	 *
 	 * @deprecated Use BlackboardAttribute.getAttributeType.getTypeName instead.
 	 */
 	@Deprecated
@@ -1541,6 +1625,7 @@ public class BlackboardAttribute {
 	 * Gets the attribute type display name.
 	 *
 	 * @return type The display name.
+	 *
 	 * @deprecated Use BlackboardAttribute.getAttributeType.getDisplayName
 	 * instead.
 	 */

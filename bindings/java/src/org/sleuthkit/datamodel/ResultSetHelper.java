@@ -45,12 +45,14 @@ class ResultSetHelper {
 	 * Create an image from the result set containing query results on
 	 * tsk_image_info table
 	 *
-	 * @param rs result set containing query results
+	 * @param rs         result set containing query results
 	 * @param imagePaths image file paths
+	 *
 	 * @return image object created
+	 *
 	 * @throws TskCoreException thrown if critical error occurred within tsk
-	 * core
-	 * @throws SQLException thrown if SQL error occurs
+	 *                          core
+	 * @throws SQLException     thrown if SQL error occurs
 	 */
 	Image image(ResultSet rs, String[] imagePaths) throws TskCoreException, SQLException {
 
@@ -84,7 +86,9 @@ class ResultSetHelper {
 	 * Get image path string from the result set on tsk_image_names table
 	 *
 	 * @param rs result set with the tsk_image_names query result
+	 *
 	 * @return image path
+	 *
 	 * @throws SQLException thrown if SQL error occurred
 	 */
 	String imagePath(ResultSet rs) throws SQLException {
@@ -95,9 +99,11 @@ class ResultSetHelper {
 	 * Create an VolumeSystem object from the result set containing query
 	 * results on tsk_vs_info table
 	 *
-	 * @param rs resultset containing query results
+	 * @param rs     resultset containing query results
 	 * @param parent parent image
+	 *
 	 * @return volume system object newly created
+	 *
 	 * @throws SQLException exception thrown if SQL error occurred
 	 */
 	VolumeSystem volumeSystem(ResultSet rs, Image parent) throws SQLException {
@@ -117,9 +123,11 @@ class ResultSetHelper {
 	 * Create an Volume object from the result set containing query results on
 	 * tsk_vs_parts table
 	 *
-	 * @param rs result set containing query results
+	 * @param rs     result set containing query results
 	 * @param parent parent volume system
+	 *
 	 * @return newly created Volume object
+	 *
 	 * @throws SQLException thrown if SQL error occurred
 	 */
 	Volume volume(ResultSet rs, VolumeSystem parent) throws SQLException {
@@ -147,9 +155,11 @@ class ResultSetHelper {
 	 * Create a FileSystem object from the result set containing query results
 	 * on tsk_fs_info table
 	 *
-	 * @param rs the result set
+	 * @param rs     the result set
 	 * @param parent parent content object
+	 *
 	 * @return newly create FileSystem object
+	 *
 	 * @throws SQLException thrown if SQL error occurred
 	 */
 	FileSystem fileSystem(ResultSet rs, Content parent) throws SQLException {
@@ -168,7 +178,9 @@ class ResultSetHelper {
 	 *
 	 * @param rs the result set
 	 * @param fs parent file system
+	 *
 	 * @return a newly create File
+	 *
 	 * @throws SQLException
 	 */
 	File file(ResultSet rs, FileSystem fs) throws SQLException {
@@ -194,8 +206,10 @@ class ResultSetHelper {
 	 *
 	 * @param rs the result set
 	 * @param fs parent file system
+	 *
 	 * @name the directory name (TODO why do we need it passed, just query it )
 	 * @return a newly created Directory object
+	 *
 	 * @throws SQLException thrown if SQL error occurred
 	 */
 	Directory directory(ResultSet rs, FileSystem fs, String name) throws SQLException {
@@ -218,7 +232,9 @@ class ResultSetHelper {
 	 * Create a virtual directory object from a result set
 	 *
 	 * @param rs the result set
+	 *
 	 * @return
+	 *
 	 * @throws SQLException
 	 */
 	VirtualDirectory virtualDirectory(ResultSet rs) throws SQLException {
@@ -247,7 +263,9 @@ class ResultSetHelper {
 	 *
 	 * @param rs the result set
 	 * @param fs the parent file system,
+	 *
 	 * @return a newly created Directory object
+	 *
 	 * @throws SQLException thrown if SQL error occurred
 	 */
 	Directory directory(ResultSet rs, FileSystem fs) throws SQLException {
@@ -259,7 +277,9 @@ class ResultSetHelper {
 	 * tsk_file_layout table
 	 *
 	 * @param rs the result set containg query results
+	 *
 	 * @return newly create tsk file range object
+	 *
 	 * @throws SQLException thrown if SQL error occurred
 	 */
 	TskFileRange tskFileRange(ResultSet rs) throws SQLException {
@@ -270,9 +290,11 @@ class ResultSetHelper {
 	/**
 	 * Creates an derived file given result set and parent id (optional)
 	 *
-	 * @param rs exsting active result set
+	 * @param rs       exsting active result set
 	 * @param parentId parent id or AbstractContent.UNKNOWN_ID
+	 *
 	 * @return derived file object created
+	 *
 	 * @throws SQLException
 	 */
 	DerivedFile derivedFile(ResultSet rs, long parentId) throws SQLException {
@@ -306,9 +328,11 @@ class ResultSetHelper {
 	 * Creates a LocalFile file object from a SELECT * FROM tsk_files table
 	 * result set.
 	 *
-	 * @param rs The result set.
+	 * @param rs       The result set.
 	 * @param parentId The parent id of the file or AbstractContent.UNKNOWN_ID.
+	 *
 	 * @return The LocalFile object.
+	 *
 	 * @throws SQLException if there is an error querying the case database.
 	 */
 	LocalFile localFile(ResultSet rs, long parentId) throws SQLException {
@@ -343,7 +367,9 @@ class ResultSetHelper {
 	 *
 	 * @param rs
 	 * @param parentId
+	 *
 	 * @return
+	 *
 	 * @throws SQLException
 	 */
 	List<Content> fileChildren(ResultSet rs, long parentId) throws SQLException {

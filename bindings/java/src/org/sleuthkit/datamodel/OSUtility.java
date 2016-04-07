@@ -36,8 +36,10 @@ public class OSUtility {
 	 * Get all non-backup OSInfo data
 	 *
 	 * @param skCase - Have to pass this in because we don't have access to the
-	 * normal method
+	 *               normal method
+	 *
 	 * @return List of OSInfo objects
+	 *
 	 * @throws TskCoreException
 	 */
 	public static List<OSInfo> getOSInfo(SleuthkitCase skCase) throws TskCoreException {
@@ -49,10 +51,12 @@ public class OSUtility {
 	 * include backups.
 	 *
 	 * @param skCase - Have to pass this in because we don't have access to the
-	 * normal method
-	 * @param fsc - FsContent from the same file system we want the OS
-	 * information from
+	 *               normal method
+	 * @param fsc    - FsContent from the same file system we want the OS
+	 *               information from
+	 *
 	 * @return - List of OSInfo objects
+	 *
 	 * @throws TskCoreException
 	 */
 	public static List<OSInfo> getOSInfo(SleuthkitCase skCase, FsContent fsc) throws TskCoreException {
@@ -64,8 +68,10 @@ public class OSUtility {
 	 * backups
 	 *
 	 * @param skCase - Have to pass this in because we don't have access to the
-	 * normal method
+	 *               normal method
+	 *
 	 * @return - List of OSInfo objects
+	 *
 	 * @throws TskCoreException
 	 */
 	public static List<OSInfo> getAllOSInfo(SleuthkitCase skCase) throws TskCoreException {
@@ -75,15 +81,17 @@ public class OSUtility {
 	/**
 	 * Internal method to find and combine the requested OS Info data.
 	 *
-	 * @param skCase - Have to pass this in because we don't have access to the
-	 * normal method
+	 * @param skCase         - Have to pass this in because we don't have access
+	 *                       to the normal method
 	 * @param includeBackups - true if we should include registry data found in
-	 * "RegBack"
-	 * @param restrictFs - true if an file system id is being provided to match
-	 * against
-	 * @param fsId - the file system ID that the registry hives must be on (if
-	 * restrictFs is set)
+	 *                       "RegBack"
+	 * @param restrictFs     - true if an file system id is being provided to
+	 *                       match against
+	 * @param fsId           - the file system ID that the registry hives must
+	 *                       be on (if restrictFs is set)
+	 *
 	 * @return - List of OSInfo objects
+	 *
 	 * @throws TskCoreException
 	 */
 	private static List<OSInfo> getOSInfoInternal(SleuthkitCase skCase, boolean includeBackups,

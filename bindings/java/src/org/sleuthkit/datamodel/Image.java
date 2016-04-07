@@ -45,11 +45,11 @@ public class Image extends AbstractContent {
 	/**
 	 * constructor most inputs are from the database
 	 *
-	 * @param db database object
+	 * @param db       database object
 	 * @param obj_id
 	 * @param type
-	 * @param ssize Sector Size
-	 * @param name Display Name
+	 * @param ssize    Sector Size
+	 * @param name     Display Name
 	 * @param paths
 	 * @param timezone
 	 * @param md5
@@ -155,6 +155,7 @@ public class Image extends AbstractContent {
 
 	/**
 	 * @return a list of VolumeSystem associated with this Image.
+	 *
 	 * @throws TskCoreException
 	 */
 	public List<VolumeSystem> getVolumeSystems() throws TskCoreException {
@@ -172,6 +173,7 @@ public class Image extends AbstractContent {
 
 	/**
 	 * @return a list of Volume associated with this Image.
+	 *
 	 * @throws TskCoreException
 	 */
 	public List<Volume> getVolumes() throws TskCoreException {
@@ -189,8 +191,9 @@ public class Image extends AbstractContent {
 
 	/**
 	 * @return a list of FileSystems in this Image. This includes FileSystems
-	 * that are both children of this Image as well as children of Volumes in
-	 * this image.
+	 *         that are both children of this Image as well as children of
+	 *         Volumes in this image.
+	 *
 	 * @throws TskCoreException
 	 */
 	public List<FileSystem> getFileSystems() throws TskCoreException {

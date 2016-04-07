@@ -175,7 +175,7 @@ public class SleuthkitJNI {
 		 * system handles.
 		 *
 		 * @throws TskCoreException exception thrown if critical error occurs
-		 * within TSK
+		 *                          within TSK
 		 */
 		void free() throws TskCoreException {
 			synchronized (cacheLock) {
@@ -195,9 +195,11 @@ public class SleuthkitJNI {
 				}
 
 				// clear both maps
-				/* NOTE: it is possible to close a case while ingest is going in the background.
-				 In this scenario it is possible for an igest module to try to read from source image.
-				 If this happens, image will be re-opened in a normal manner.
+				/*
+				 * NOTE: it is possible to close a case while ingest is going in
+				 * the background. In this scenario it is possible for an igest
+				 * module to try to read from source image. If this happens,
+				 * image will be re-opened in a normal manner.
 				 */
 				fsHandleCache.clear();
 				imageHandleCache.clear();
@@ -212,11 +214,11 @@ public class SleuthkitJNI {
 		/**
 		 * Start the process of adding a disk image to the case
 		 *
-		 * @param timezone Timezone that image was from
+		 * @param timezone        Timezone that image was from
 		 * @param addUnallocSpace true to create virtual files for unallocated
-		 * space the image
-		 * @param noFatFsOrphans true if to skip processing of orphans on FAT
-		 * filesystems
+		 *                        space the image
+		 * @param noFatFsOrphans  true if to skip processing of orphans on FAT
+		 *                        filesystems
 		 *
 		 * @return Object that can be used to manage the process.
 		 */
@@ -248,9 +250,10 @@ public class SleuthkitJNI {
 			 * call either commit() or revert() after calling run().
 			 *
 			 * @param imageFilePaths Full path(s) to the image file(s).
+			 *
 			 * @throws TskCoreException if a critical error occurs within TSK
 			 * @throws TskDataException if a non-critical error occurs within
-			 * TSK (should be OK to continue)
+			 *                          TSK (should be OK to continue)
 			 * @deprecated Use run(String dataSourceId, String[] imageFilePaths)
 			 * instead
 			 */
@@ -263,13 +266,15 @@ public class SleuthkitJNI {
 			 * Start the process of adding an image to the case database. MUST
 			 * call either commit() or revert() after calling run().
 			 *
-			 * @param deviceId An ASCII-printable identifier for the device
-			 * associated with a data source that is intended to be unique
-			 * across multiple cases (e.g., a UUID).
+			 * @param deviceId       An ASCII-printable identifier for the
+			 *                       device associated with a data source that
+			 *                       is intended to be unique across multiple
+			 *                       cases (e.g., a UUID).
 			 * @param imageFilePaths Full paths to the image files.
+			 *
 			 * @throws TskCoreException if a critical error occurs within TSK
 			 * @throws TskDataException if a non-critical error occurs within
-			 * TSK (should be OK to continue)
+			 *                          TSK (should be OK to continue)
 			 */
 			public void run(String deviceId, String[] imageFilePaths) throws TskCoreException, TskDataException {
 				if (autoDbPointer != 0) {
@@ -292,7 +297,7 @@ public class SleuthkitJNI {
 			 * stopped run() returns.
 			 *
 			 * @throws TskCoreException exception thrown if critical error
-			 * occurs within TSK
+			 *                          occurs within TSK
 			 */
 			public void stop() throws TskCoreException {
 				if (autoDbPointer == 0) {
@@ -308,7 +313,7 @@ public class SleuthkitJNI {
 			 * operations can be performed. This method is threadsafe.
 			 *
 			 * @throws TskCoreException exception thrown if critical error
-			 * occurs within TSK
+			 *                          occurs within TSK
 			 */
 			public synchronized void revert() throws TskCoreException {
 				if (autoDbPointer == 0) {
@@ -325,11 +330,11 @@ public class SleuthkitJNI {
 			 * transaction and committing the new image data to the database.
 			 *
 			 * @return The id of the image that was added. This releases the C++
-			 * object and no additional operations can be performed. This method
-			 * is threadsafe.
+			 *         object and no additional operations can be performed.
+			 *         This method is threadsafe.
 			 *
 			 * @throws TskCoreException exception thrown if critical error
-			 * occurs within TSK
+			 *                          occurs within TSK
 			 */
 			public synchronized long commit() throws TskCoreException {
 				if (autoDbPointer == 0) {
@@ -359,9 +364,11 @@ public class SleuthkitJNI {
 	 * when done.
 	 *
 	 * @param path Location to create the database at.
+	 *
 	 * @return Handle for a new TskCaseDb instance.
+	 *
 	 * @throws TskCoreException exception thrown if critical error occurs within
-	 * TSK
+	 *                          TSK
 	 */
 	static CaseDbHandle newCaseDb(String path) throws TskCoreException {
 		return new CaseDbHandle(newCaseDbNat(path));
@@ -372,10 +379,12 @@ public class SleuthkitJNI {
 	 * when done.
 	 *
 	 * @param databaseName the name of the database to create
-	 * @param info the connection info class for the database to create
+	 * @param info         the connection info class for the database to create
+	 *
 	 * @return Handle for a new TskCaseDb instance.
+	 *
 	 * @throws TskCoreException exception thrown if critical error occurs within
-	 * TSK
+	 *                          TSK
 	 */
 	static CaseDbHandle newCaseDb(String databaseName, CaseDbConnectionInfo info) throws TskCoreException {
 		return new CaseDbHandle(newCaseDbMultiNat(info.getHost(), info.getPort(), info.getUserName(), info.getPassword(), info.getDbType().ordinal(), databaseName));
@@ -386,9 +395,11 @@ public class SleuthkitJNI {
 	 * instance when done.
 	 *
 	 * @param path Location of the existing database.
+	 *
 	 * @return Handle for a new TskCaseDb instance.
+	 *
 	 * @throws TskCoreException exception thrown if critical error occurs within
-	 * TSK
+	 *                          TSK
 	 */
 	static CaseDbHandle openCaseDb(String path) throws TskCoreException {
 		return new CaseDbHandle(openCaseDbNat(path));
@@ -399,10 +410,12 @@ public class SleuthkitJNI {
 	 * instance when done.
 	 *
 	 * @param databaseName the name of the database to open
-	 * @param info the connection info class for the database to open
+	 * @param info         the connection info class for the database to open
+	 *
 	 * @return Handle for a new TskCaseDb instance.
+	 *
 	 * @throws TskCoreException exception thrown if critical error occurs within
-	 * TSK
+	 *                          TSK
 	 */
 	static CaseDbHandle openCaseDb(String databaseName, CaseDbConnectionInfo info) throws TskCoreException {
 		return new CaseDbHandle(openCaseDbMultiNat(info.getHost(), info.getPort(), info.getUserName(), info.getPassword(), info.getDbType().ordinal(), databaseName));
@@ -428,9 +441,11 @@ public class SleuthkitJNI {
 	 * open the image and return the image info pointer
 	 *
 	 * @param imageFiles the paths to the images
+	 *
 	 * @return the image info pointer
+	 *
 	 * @throws TskCoreException exception thrown if critical error occurs within
-	 * TSK
+	 *                          TSK
 	 */
 	public static long openImage(String[] imageFiles) throws TskCoreException {
 		long imageHandle;
@@ -459,10 +474,13 @@ public class SleuthkitJNI {
 	 * Get volume system Handle
 	 *
 	 * @param imgHandle a handle to previously opened image
-	 * @param vsOffset byte offset in the image to the volume system (usually 0)
+	 * @param vsOffset  byte offset in the image to the volume system (usually
+	 *                  0)
+	 *
 	 * @return pointer to a vsHandle structure in the sleuthkit
+	 *
 	 * @throws TskCoreException exception thrown if critical error occurs within
-	 * TSK
+	 *                          TSK
 	 */
 	public static long openVs(long imgHandle, long vsOffset) throws TskCoreException {
 		return openVsNat(imgHandle, vsOffset);
@@ -473,10 +491,12 @@ public class SleuthkitJNI {
 	 * Get volume Handle
 	 *
 	 * @param vsHandle pointer to the volume system structure in the sleuthkit
-	 * @param volId id of the volume
+	 * @param volId    id of the volume
+	 *
 	 * @return pointer to a volHandle structure in the sleuthkit
+	 *
 	 * @throws TskCoreException exception thrown if critical error occurs within
-	 * TSK
+	 *                          TSK
 	 */
 	public static long openVsPart(long vsHandle, long volId) throws TskCoreException {
 		//returned long is ptr to vs Handle object in tsk
@@ -488,10 +508,12 @@ public class SleuthkitJNI {
 	 * not need be reopened next time for the duration of the application
 	 *
 	 * @param imgHandle pointer to imgHandle in sleuthkit
-	 * @param fsOffset byte offset to the file system
+	 * @param fsOffset  byte offset to the file system
+	 *
 	 * @return pointer to a fsHandle structure in the sleuthkit
+	 *
 	 * @throws TskCoreException exception thrown if critical error occurs within
-	 * TSK
+	 *                          TSK
 	 */
 	public static long openFs(long imgHandle, long fsOffset) throws TskCoreException {
 		long fsHandle;
@@ -513,12 +535,14 @@ public class SleuthkitJNI {
 	 * Get file Handle
 	 *
 	 * @param fsHandle fsHandle pointer in the sleuthkit
-	 * @param fileId id of the file
+	 * @param fileId   id of the file
 	 * @param attrType file attribute type to open
-	 * @param attrId file attribute id to open
+	 * @param attrId   file attribute id to open
+	 *
 	 * @return pointer to a file structure in the sleuthkit
+	 *
 	 * @throws TskCoreException exception thrown if critical error occurs within
-	 * TSK
+	 *                          TSK
 	 */
 	public static long openFile(long fsHandle, long fileId, TSK_FS_ATTR_TYPE_ENUM attrType, int attrId) throws TskCoreException {
 		return openFileNat(fsHandle, fileId, attrType.getValue(), attrId);
@@ -530,12 +554,14 @@ public class SleuthkitJNI {
 	 *
 	 * @param imgHandle
 	 * @param readBuffer buffer to read to
-	 * @param offset byte offset in the image to start at
-	 * @param len amount of data to read
+	 * @param offset     byte offset in the image to start at
+	 * @param len        amount of data to read
+	 *
 	 * @return the number of characters read, or -1 if the end of the stream has
-	 * been reached
+	 *         been reached
+	 *
 	 * @throws TskCoreException exception thrown if critical error occurs within
-	 * TSK
+	 *                          TSK
 	 */
 	public static int readImg(long imgHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
 		//returned byte[] is the data buffer
@@ -545,14 +571,16 @@ public class SleuthkitJNI {
 	/**
 	 * reads data from an volume system
 	 *
-	 * @param vsHandle pointer to a volume system structure in the sleuthkit
+	 * @param vsHandle   pointer to a volume system structure in the sleuthkit
 	 * @param readBuffer buffer to read to
-	 * @param offset sector offset in the image to start at
-	 * @param len amount of data to read
+	 * @param offset     sector offset in the image to start at
+	 * @param len        amount of data to read
+	 *
 	 * @return the number of characters read, or -1 if the end of the stream has
-	 * been reached
+	 *         been reached
+	 *
 	 * @throws TskCoreException exception thrown if critical error occurs within
-	 * TSK
+	 *                          TSK
 	 */
 	public static int readVs(long vsHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
 		return readVsNat(vsHandle, readBuffer, offset, len);
@@ -561,14 +589,16 @@ public class SleuthkitJNI {
 	/**
 	 * reads data from an volume
 	 *
-	 * @param volHandle pointer to a volume structure in the sleuthkit
+	 * @param volHandle  pointer to a volume structure in the sleuthkit
 	 * @param readBuffer buffer to read to
-	 * @param offset byte offset in the image to start at
-	 * @param len amount of data to read
+	 * @param offset     byte offset in the image to start at
+	 * @param len        amount of data to read
+	 *
 	 * @return the number of characters read, or -1 if the end of the stream has
-	 * been reached
+	 *         been reached
+	 *
 	 * @throws TskCoreException exception thrown if critical error occurs within
-	 * TSK
+	 *                          TSK
 	 */
 	public static int readVsPart(long volHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
 		//returned byte[] is the data buffer
@@ -578,14 +608,16 @@ public class SleuthkitJNI {
 	/**
 	 * reads data from an file system
 	 *
-	 * @param fsHandle pointer to a file system structure in the sleuthkit
+	 * @param fsHandle   pointer to a file system structure in the sleuthkit
 	 * @param readBuffer buffer to read to
-	 * @param offset byte offset in the image to start at
-	 * @param len amount of data to read
+	 * @param offset     byte offset in the image to start at
+	 * @param len        amount of data to read
+	 *
 	 * @return the number of characters read, or -1 if the end of the stream has
-	 * been reached
+	 *         been reached
+	 *
 	 * @throws TskCoreException exception thrown if critical error occurs within
-	 * TSK
+	 *                          TSK
 	 */
 	public static int readFs(long fsHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
 		//returned byte[] is the data buffer
@@ -597,12 +629,14 @@ public class SleuthkitJNI {
 	 *
 	 * @param fileHandle pointer to a file structure in the sleuthkit
 	 * @param readBuffer pre-allocated buffer to read to
-	 * @param offset byte offset in the image to start at
-	 * @param len amount of data to read
+	 * @param offset     byte offset in the image to start at
+	 * @param len        amount of data to read
+	 *
 	 * @return the number of characters read, or -1 if the end of the stream has
-	 * been reached
+	 *         been reached
+	 *
 	 * @throws TskCoreException exception thrown if critical error occurs within
-	 * TSK
+	 *                          TSK
 	 */
 	public static int readFile(long fileHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
 		return readFileNat(fileHandle, readBuffer, offset, len);
@@ -613,7 +647,9 @@ public class SleuthkitJNI {
 	 * the 'istat' TSK tool
 	 *
 	 * @param fileHandle pointer to file structure in the sleuthkit
+	 *
 	 * @return text
+	 *
 	 * @throws TskCoreException if errors occurred
 	 */
 	public static List<String> getFileMetaDataText(long fileHandle) throws TskCoreException {
@@ -689,6 +725,7 @@ public class SleuthkitJNI {
 	 * Create an index for a hash database.
 	 *
 	 * @param dbHandle A hash database handle.
+	 *
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
 	public static void createLookupIndexForHashDatabase(int dbHandle) throws TskCoreException {
@@ -699,7 +736,9 @@ public class SleuthkitJNI {
 	 * Check if an index exists for a hash database.
 	 *
 	 * @param dbHandle A hash database handle.
+	 *
 	 * @return true if index exists
+	 *
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
 	public static boolean hashDatabaseHasLookupIndex(int dbHandle) throws TskCoreException {
@@ -710,8 +749,10 @@ public class SleuthkitJNI {
 	 * hashDatabaseCanBeReindexed
 	 *
 	 * @param dbHandle previously opened hash db handle
+	 *
 	 * @return Does this database have a source database that is different than
-	 * the index?
+	 *         the index?
+	 *
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
 	public static boolean hashDatabaseCanBeReindexed(int dbHandle) throws TskCoreException {
@@ -722,7 +763,9 @@ public class SleuthkitJNI {
 	 * getHashDatabasePath
 	 *
 	 * @param dbHandle previously opened hash db handle
+	 *
 	 * @return Hash db file path
+	 *
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
 	public static String getHashDatabasePath(int dbHandle) throws TskCoreException {
@@ -733,7 +776,9 @@ public class SleuthkitJNI {
 	 * getHashDatabaseIndexPath
 	 *
 	 * @param dbHandle previously opened hash db handle
+	 *
 	 * @return Index file path
+	 *
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
 	public static String getHashDatabaseIndexPath(int dbHandle) throws TskCoreException {
@@ -748,7 +793,9 @@ public class SleuthkitJNI {
 	 * Creates a hash database. Will be of the default TSK hash database type.
 	 *
 	 * @param path The path to the database
+	 *
 	 * @return a handle for that database
+	 *
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
 	public static int createHashDatabase(String path) throws TskCoreException {
@@ -759,7 +806,7 @@ public class SleuthkitJNI {
 	 * Close the currently open lookup databases. Resets the handle counting.
 	 *
 	 * @throws TskCoreException exception thrown if critical error occurs within
-	 * TSK
+	 *                          TSK
 	 */
 	public static void closeAllHashDatabases() throws TskCoreException {
 		hashDbCloseAll();
@@ -770,7 +817,7 @@ public class SleuthkitJNI {
 	 * affected.
 	 *
 	 * @throws TskCoreException exception thrown if critical error occurs within
-	 * TSK
+	 *                          TSK
 	 */
 	public static void closeHashDatabase(int dbHandle) throws TskCoreException {
 		hashDbClose(dbHandle);
@@ -780,6 +827,7 @@ public class SleuthkitJNI {
 	 * Get the name of the database
 	 *
 	 * @param dbHandle previously opened hash db handle
+	 *
 	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
 	public static String getHashDatabaseDisplayName(int dbHandle) throws TskCoreException {
@@ -789,9 +837,11 @@ public class SleuthkitJNI {
 	/**
 	 * Lookup the given hash value and get basic answer
 	 *
-	 * @param hash Hash value to search for
+	 * @param hash     Hash value to search for
 	 * @param dbHandle Handle of database to lookup in.
+	 *
 	 * @return True if hash was found in database.
+	 *
 	 * @throws TskCoreException
 	 */
 	public static boolean lookupInHashDatabase(String hash, int dbHandle) throws TskCoreException {
@@ -802,9 +852,11 @@ public class SleuthkitJNI {
 	 * Lookup hash value in DB and return details on results (more time
 	 * consuming than basic lookup)
 	 *
-	 * @param hash Hash value to search for
+	 * @param hash     Hash value to search for
 	 * @param dbHandle Handle of database to lookup in.
+	 *
 	 * @return Details on hash if it was in DB or null if it was not found.
+	 *
 	 * @throws TskCoreException
 	 */
 	public static HashHitInfo lookupInHashDatabaseVerbose(String hash, int dbHandle) throws TskCoreException {
@@ -815,11 +867,12 @@ public class SleuthkitJNI {
 	 * Adds a hash value to a hash database.
 	 *
 	 * @param filename Name of file (can be null)
-	 * @param md5 Text of MD5 hash (can be null)
-	 * @param sha1 Text of SHA1 hash (can be null)
-	 * @param sha256 Text of SHA256 hash (can be null)
-	 * @param comment A comment (can be null)
+	 * @param md5      Text of MD5 hash (can be null)
+	 * @param sha1     Text of SHA1 hash (can be null)
+	 * @param sha256   Text of SHA256 hash (can be null)
+	 * @param comment  A comment (can be null)
 	 * @param dbHandle Handle to DB
+	 *
 	 * @throws TskCoreException
 	 */
 	public static void addToHashDatabase(String filename, String md5, String sha1, String sha256, String comment, int dbHandle) throws TskCoreException {
@@ -857,8 +910,9 @@ public class SleuthkitJNI {
 	 * passed in from long to short form
 	 *
 	 * @param timezoneLongForm the long form (e.g., America/New_York)
+	 *
 	 * @return the short form (e.g., EST5EDT) string representation, or an empty
-	 * string if empty long form was passed in
+	 *         string if empty long form was passed in
 	 */
 	private static String timezoneLongToShort(String timezoneLongForm) {
 		if (timezoneLongForm == null || timezoneLongForm.isEmpty()) {
@@ -891,9 +945,11 @@ public class SleuthkitJNI {
 	 * devPath
 	 *
 	 * @param devPath device path pointing to the device
+	 *
 	 * @return size of the device in bytes
+	 *
 	 * @throws TskCoreException exception thrown if the device size could not be
-	 * queried
+	 *                          queried
 	 */
 	public static long findDeviceSize(String devPath) throws TskCoreException {
 		return findDeviceSizeNat(devPath);

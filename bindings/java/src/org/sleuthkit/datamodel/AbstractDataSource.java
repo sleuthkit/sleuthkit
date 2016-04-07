@@ -41,8 +41,8 @@ class AbstractDataSource implements DataSource {
 	 *
 	 * @param objectId The object id of the data source.
 	 * @param deviceId An ASCII-printable identifier for the device associated
-	 * with the data source that is intended to be unique across multiple cases
-	 * (e.g., a UUID).
+	 *                 with the data source that is intended to be unique across
+	 *                 multiple cases (e.g., a UUID).
 	 * @param timeZone The time zone that was used to process the data source.
 	 */
 	AbstractDataSource(long objectId, String deviceId, String timeZone) {

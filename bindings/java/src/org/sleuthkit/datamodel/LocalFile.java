@@ -37,33 +37,40 @@ public class LocalFile extends AbstractFile {
 	 * Constructs a representation of a local/logical file (e.g., on a user's
 	 * machine) that has been added to the case database.
 	 *
-	 * @param db The case database to which the file has been added.
-	 * @param objId The object id of the file in the case database.
-	 * @param name The name of the file.
-	 * @param fileType The type of the file.
-	 * @param dirType The type of the file, usually as reported in the name
-	 * structure of the file system. May be set to TSK_FS_NAME_TYPE_ENUM.UNDEF.
-	 * @param metaType The type of the file, usually as reported in the metadata
-	 * structure of the file system. May be set to
-	 * TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
-	 * @param dirFlag The allocated status of the file, usually as reported in
-	 * the name structure of the file system.
-	 * @param metaFlags The allocated status of the file, usually as reported in
-	 * the metadata structure of the file system.
-	 * @param size The size of the file.
-	 * @param ctime The changed time of the file.
-	 * @param crtime The created time of the file.
-	 * @param atime The accessed time of the file.
-	 * @param mtime The modified time of the file.
-	 * @param mimeType The MIME type of the file, null if it has not yet been
-	 * determined.
-	 * @param md5Hash The MD5 hash of the file, null if not yet calculated.
-	 * @param knownState The known state of the file from a hash database
-	 * lookup, null if not yet looked up.
-	 * @param parentId The object id of parent of the file.
-	 * @param parentPath The path of the parent of the file.
+	 * @param db                 The case database to which the file has been
+	 *                           added.
+	 * @param objId              The object id of the file in the case database.
+	 * @param name               The name of the file.
+	 * @param fileType           The type of the file.
+	 * @param dirType            The type of the file, usually as reported in
+	 *                           the name structure of the file system. May be
+	 *                           set to TSK_FS_NAME_TYPE_ENUM.UNDEF.
+	 * @param metaType           The type of the file, usually as reported in
+	 *                           the metadata structure of the file system. May
+	 *                           be set to
+	 *                           TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
+	 * @param dirFlag            The allocated status of the file, usually as
+	 *                           reported in the name structure of the file
+	 *                           system.
+	 * @param metaFlags          The allocated status of the file, usually as
+	 *                           reported in the metadata structure of the file
+	 *                           system.
+	 * @param size               The size of the file.
+	 * @param ctime              The changed time of the file.
+	 * @param crtime             The created time of the file.
+	 * @param atime              The accessed time of the file.
+	 * @param mtime              The modified time of the file.
+	 * @param mimeType           The MIME type of the file, null if it has not
+	 *                           yet been determined.
+	 * @param md5Hash            The MD5 hash of the file, null if not yet
+	 *                           calculated.
+	 * @param knownState         The known state of the file from a hash
+	 *                           database lookup, null if not yet looked up.
+	 * @param parentId           The object id of parent of the file.
+	 * @param parentPath         The path of the parent of the file.
 	 * @param dataSourceObjectId The object id of the data source for the file.
-	 * @param localPath The absolute path of the file in secondary storage.
+	 * @param localPath          The absolute path of the file in secondary
+	 *                           storage.
 	 */
 	LocalFile(SleuthkitCase db,
 			long objId,
@@ -94,8 +101,9 @@ public class LocalFile extends AbstractFile {
 	 * data source, an empty list.
 	 *
 	 * @return An empty list of extents (TskFileRange objects)
+	 *
 	 * @throws TskCoreException if there was an error querying the case
-	 * database.
+	 *                          database.
 	 */
 	@Override
 	public List<TskFileRange> getRanges() throws TskCoreException {
@@ -118,8 +126,9 @@ public class LocalFile extends AbstractFile {
 	 * file.
 	 *
 	 * @return A list of the children.
+	 *
 	 * @throws TskCoreException if there was an error querying the case
-	 * database.
+	 *                          database.
 	 */
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
@@ -134,8 +143,9 @@ public class LocalFile extends AbstractFile {
 	 * children of this local file.
 	 *
 	 * @return A list of the children.
+	 *
 	 * @throws TskCoreException if there was an error querying the case
-	 * database.
+	 *                          database.
 	 */
 	@Override
 	public List<Long> getChildrenIds() throws TskCoreException {
@@ -149,7 +159,8 @@ public class LocalFile extends AbstractFile {
 	 * Accepts a content visitor (Visitor design pattern).
 	 *
 	 * @param visitor A ContentVisitor supplying an algorithm to run using this
-	 * local file as input.
+	 *                local file as input.
+	 *
 	 * @return The output of the algorithm.
 	 */
 	@Override
@@ -161,7 +172,8 @@ public class LocalFile extends AbstractFile {
 	 * Accepts a Sleuthkit item visitor (Visitor design pattern).
 	 *
 	 * @param visitor A SleuthkitItemVisitor supplying an algorithm to run using
-	 * this local file as input.
+	 *                this local file as input.
+	 *
 	 * @return The output of the algorithm.
 	 */
 	@Override
@@ -173,9 +185,10 @@ public class LocalFile extends AbstractFile {
 	 * Provides a string representation of this local file.
 	 *
 	 * @param preserveState True if state should be included in the string
-	 * representation of this object.
+	 *                      representation of this object.
+	 *
 	 * @throws TskCoreException if there was an error querying the case
-	 * database.
+	 *                          database.
 	 */
 	@Override
 	public String toString(boolean preserveState) {
@@ -186,29 +199,31 @@ public class LocalFile extends AbstractFile {
 	 * Constructs a representation of a local/logical file (e.g., on a user's
 	 * machine) that has been added to the case database.
 	 *
-	 * @param db The case database to which the file has been added.
-	 * @param objId The object id of the file in the case database.
-	 * @param name The name of the file.
-	 * @param fileType The type of the file.
-	 * @param dirType The type of the file, usually as reported in the name
-	 * structure of the file system. May be set to TSK_FS_NAME_TYPE_ENUM.UNDEF.
-	 * @param metaType The type of the file, usually as reported in the metadata
-	 * structure of the file system. May be set to
-	 * TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
-	 * @param dirFlag The allocated status of the file, usually as reported in
-	 * the name structure of the file system.
-	 * @param metaFlags The allocated status of the file, usually as reported in
-	 * the metadata structure of the file system.
-	 * @param size The size of the file.
-	 * @param ctime The changed time of the file.
-	 * @param crtime The created time of the file.
-	 * @param atime The accessed time of the file.
-	 * @param mtime The modified time of the file.
-	 * @param md5Hash The MD5 hash of the file, null if not yet calculated.
+	 * @param db         The case database to which the file has been added.
+	 * @param objId      The object id of the file in the case database.
+	 * @param name       The name of the file.
+	 * @param fileType   The type of the file.
+	 * @param dirType    The type of the file, usually as reported in the name
+	 *                   structure of the file system. May be set to
+	 *                   TSK_FS_NAME_TYPE_ENUM.UNDEF.
+	 * @param metaType   The type of the file, usually as reported in the
+	 *                   metadata structure of the file system. May be set to
+	 *                   TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
+	 * @param dirFlag    The allocated status of the file, usually as reported
+	 *                   in the name structure of the file system.
+	 * @param metaFlags  The allocated status of the file, usually as reported
+	 *                   in the metadata structure of the file system.
+	 * @param size       The size of the file.
+	 * @param ctime      The changed time of the file.
+	 * @param crtime     The created time of the file.
+	 * @param atime      The accessed time of the file.
+	 * @param mtime      The modified time of the file.
+	 * @param md5Hash    The MD5 hash of the file, null if not yet calculated.
 	 * @param knownState The known state of the file from a hash database
-	 * lookup, null if not yet looked up.
+	 *                   lookup, null if not yet looked up.
 	 * @param parentPath The path of the parent of the file.
-	 * @param localPath The absolute path of the file in secondary storage.
+	 * @param localPath  The absolute path of the file in secondary storage.
+	 *
 	 * @deprecated Do not make subclasses outside of this package.
 	 */
 	@Deprecated
@@ -242,30 +257,32 @@ public class LocalFile extends AbstractFile {
 	 * Constructs a representation of a local/logical file (e.g., on a user's
 	 * machine) that has been added to the case database.
 	 *
-	 * @param db The case database to which the file has been added.
-	 * @param objId The object id of the file in the case database.
-	 * @param name The name of the file.
-	 * @param fileType The type of the file.
-	 * @param dirType The type of the file, usually as reported in the name
-	 * structure of the file system. May be set to TSK_FS_NAME_TYPE_ENUM.UNDEF.
-	 * @param metaType The type of the file, usually as reported in the metadata
-	 * structure of the file system. May be set to
-	 * TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
-	 * @param dirFlag The allocated status of the file, usually as reported in
-	 * the name structure of the file system.
-	 * @param metaFlags The allocated status of the file, usually as reported in
-	 * the metadata structure of the file system.
-	 * @param size The size of the file.
-	 * @param ctime The changed time of the file.
-	 * @param crtime The created time of the file.
-	 * @param atime The accessed time of the file.
-	 * @param mtime The modified time of the file.
-	 * @param md5Hash The MD5 hash of the file, null if not yet calculated.
+	 * @param db         The case database to which the file has been added.
+	 * @param objId      The object id of the file in the case database.
+	 * @param name       The name of the file.
+	 * @param fileType   The type of the file.
+	 * @param dirType    The type of the file, usually as reported in the name
+	 *                   structure of the file system. May be set to
+	 *                   TSK_FS_NAME_TYPE_ENUM.UNDEF.
+	 * @param metaType   The type of the file, usually as reported in the
+	 *                   metadata structure of the file system. May be set to
+	 *                   TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
+	 * @param dirFlag    The allocated status of the file, usually as reported
+	 *                   in the name structure of the file system.
+	 * @param metaFlags  The allocated status of the file, usually as reported
+	 *                   in the metadata structure of the file system.
+	 * @param size       The size of the file.
+	 * @param ctime      The changed time of the file.
+	 * @param crtime     The created time of the file.
+	 * @param atime      The accessed time of the file.
+	 * @param mtime      The modified time of the file.
+	 * @param md5Hash    The MD5 hash of the file, null if not yet calculated.
 	 * @param knownState The known state of the file from a hash database
-	 * lookup, null if not yet looked up.
+	 *                   lookup, null if not yet looked up.
 	 * @param parentPath The path of the parent of the file.
-	 * @param localPath The absolute path of the file in secondary storage.
-	 * @param parentId The object id of parent of the file.
+	 * @param localPath  The absolute path of the file in secondary storage.
+	 * @param parentId   The object id of parent of the file.
+	 *
 	 * @deprecated Do not make subclasses outside of this package.
 	 */
 	@Deprecated
@@ -286,29 +303,31 @@ public class LocalFile extends AbstractFile {
 	 * Constructs a representation of a local/logical file (e.g., on a user's
 	 * machine) that has been added to the case.
 	 *
-	 * @param db The case database to which the file has been added.
-	 * @param objId The object id of the file in the case database.
-	 * @param name The name of the file.
-	 * @param dirType The type of the file, usually as reported in the name
-	 * structure of the file system. May be set to TSK_FS_NAME_TYPE_ENUM.UNDEF.
-	 * @param metaType The type of the file, usually as reported in the metadata
-	 * structure of the file system. May be set to
-	 * TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
-	 * @param dirFlag The allocated status of the file, usually as reported in
-	 * the name structure of the file system.
-	 * @param metaFlags The allocated status of the file, usually as reported in
-	 * the metadata structure of the file system.
-	 * @param size The size of the file.
-	 * @param ctime The changed time of the file.
-	 * @param crtime The created time of the file.
-	 * @param atime The accessed time of the file.
-	 * @param mtime The modified time of the file.
-	 * @param md5Hash The MD5 hash of the file, null if not yet calculated.
+	 * @param db         The case database to which the file has been added.
+	 * @param objId      The object id of the file in the case database.
+	 * @param name       The name of the file.
+	 * @param dirType    The type of the file, usually as reported in the name
+	 *                   structure of the file system. May be set to
+	 *                   TSK_FS_NAME_TYPE_ENUM.UNDEF.
+	 * @param metaType   The type of the file, usually as reported in the
+	 *                   metadata structure of the file system. May be set to
+	 *                   TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
+	 * @param dirFlag    The allocated status of the file, usually as reported
+	 *                   in the name structure of the file system.
+	 * @param metaFlags  The allocated status of the file, usually as reported
+	 *                   in the metadata structure of the file system.
+	 * @param size       The size of the file.
+	 * @param ctime      The changed time of the file.
+	 * @param crtime     The created time of the file.
+	 * @param atime      The accessed time of the file.
+	 * @param mtime      The modified time of the file.
+	 * @param md5Hash    The MD5 hash of the file, null if not yet calculated.
 	 * @param knownState The known state of the file from a hash database
-	 * lookup, null if not yet looked up.
+	 *                   lookup, null if not yet looked up.
 	 * @param parentPath The path of the parent of the file.
-	 * @param localPath The absolute path of the file in secondary storage.
-	 * @param parentId The object id of parent of the file.
+	 * @param localPath  The absolute path of the file in secondary storage.
+	 * @param parentId   The object id of parent of the file.
+	 *
 	 * @deprecated Do not make subclasses outside of this package.
 	 */
 	@Deprecated

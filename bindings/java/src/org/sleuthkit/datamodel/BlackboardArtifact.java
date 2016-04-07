@@ -48,8 +48,8 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		/**
 		 * Constructs a type for a blackboard artifact
 		 *
-		 * @param typeName The typeName of the type
-		 * @param typeID the ID of the type
+		 * @param typeName    The typeName of the type
+		 * @param typeID      the ID of the type
 		 * @param displayName The display name of this type
 		 */
 		public Type(int typeID, String typeName, String displayName) {
@@ -111,6 +111,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		 * Compares two Types to see if they are the same
 		 *
 		 * @param that the other type
+		 *
 		 * @return true if it is the same type
 		 */
 		private boolean sameType(Type that) {
@@ -219,7 +220,9 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		TSK_FACE_DETECTED(38, "TSK_FACE_DETECTED", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskFaceDetected.text"));
 
-		/* SEE ABOVE -- KEEP C++ CODE IN SYNC */
+		/*
+		 * SEE ABOVE -- KEEP C++ CODE IN SYNC
+		 */
 		private final String label;
 		private final int typeID;
 		private final String displayName;
@@ -253,6 +256,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		 * typeName
 		 *
 		 * @param label typeName string
+		 *
 		 * @return the corresponding enum
 		 */
 		static public ARTIFACT_TYPE fromLabel(String label) {
@@ -268,6 +272,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		 * Gets the artifact type enum value that corresponds to the given id
 		 *
 		 * @param ID the id
+		 *
 		 * @return the corresponding enum
 		 */
 		static public ARTIFACT_TYPE fromID(int ID) {
@@ -305,13 +310,13 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	/**
 	 * Constructor for an artifact. Should only be used by SleuthkitCase
 	 *
-	 * @param sleuthkitCase the case that can be used to access the database
-	 * this artifact is part of
-	 * @param artifactID the id for this artifact
-	 * @param objID the object this artifact is associated with
-	 * @param artifactTypeID the type id of this artifact
+	 * @param sleuthkitCase    the case that can be used to access the database
+	 *                         this artifact is part of
+	 * @param artifactID       the id for this artifact
+	 * @param objID            the object this artifact is associated with
+	 * @param artifactTypeID   the type id of this artifact
 	 * @param artifactTypeName the type name of this artifact
-	 * @param displayName the display name of this artifact
+	 * @param displayName      the display name of this artifact
 	 */
 	protected BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long objID, int artifactTypeID, String artifactTypeName, String displayName) {
 		this.sleuthkitCase = sleuthkitCase;
@@ -325,14 +330,14 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	/**
 	 * Constructor for an artifact. Should only be used by SleuthkitCase
 	 *
-	 * @param Case the case that can be used to access the database this
-	 * artifact is part of
-	 * @param artifactID the id for this artifact
-	 * @param objID the object this artifact is associated with
-	 * @param artifactTypeID the type id of this artifact
+	 * @param Case             the case that can be used to access the database
+	 *                         this artifact is part of
+	 * @param artifactID       the id for this artifact
+	 * @param objID            the object this artifact is associated with
+	 * @param artifactTypeID   the type id of this artifact
 	 * @param artifactTypeName the type name of this artifact
-	 * @param displayName the display name of this artifact
-	 * @param isNew true if we are currently creating the artifact
+	 * @param displayName      the display name of this artifact
+	 * @param isNew            true if we are currently creating the artifact
 	 */
 	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long objID, int artifactTypeID, String artifactTypeName, String displayName, boolean isNew) {
 		this.sleuthkitCase = sleuthkitCase;
@@ -397,8 +402,9 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * Add an attribute to this artifact
 	 *
 	 * @param attr the attribute to add
+	 *
 	 * @throws TskCoreException if a critical error occurs and the attribute was
-	 * not added
+	 *                          not added
 	 */
 	public void addAttribute(BlackboardAttribute attr) throws TskCoreException {
 		attr.setArtifactId(artifactID);
@@ -412,8 +418,9 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * (faster than individually)
 	 *
 	 * @param attributes List of attributes to add
+	 *
 	 * @throws TskCoreException if a critical error occurs and the attribute was
-	 * not added
+	 *                          not added
 	 */
 	public void addAttributes(Collection<BlackboardAttribute> attributes) throws TskCoreException {
 		if (attributes.isEmpty()) {
@@ -432,8 +439,9 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * Gets all attributes associated with this artifact
 	 *
 	 * @return a list of attributes
+	 *
 	 * @throws TskCoreException if a critical error occurs and the attributes
-	 * are not fetched
+	 *                          are not fetched
 	 */
 	public List<BlackboardAttribute> getAttributes() throws TskCoreException {
 		if (loadedCacheFromDb == false) {
@@ -450,9 +458,11 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * attribute type.
 	 *
 	 * @param attributeType the type of attributes to get
+	 *
 	 * @return a list of attributes of the given type
+	 *
 	 * @throws TskCoreException if a critical error occurs and the attributes
-	 * are not fetched
+	 *                          are not fetched
 	 * @deprecated There should not be multiple attributes of a type on an
 	 * artifact. Use getAttribute(BlackboardAttribute.Type) instead.
 	 */
@@ -477,10 +487,12 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * Gets the attribute of this artifact of given type.
 	 *
 	 * @param attributeType The type of attribute to get
+	 *
 	 * @return The attribute of that type, returns null if there is no attribute
-	 * of that type.
+	 *         of that type.
+	 *
 	 * @throws TskCoreException if a critical error occurs and the attributes
-	 * are not fetched
+	 *                          are not fetched
 	 */
 	public BlackboardAttribute getAttribute(BlackboardAttribute.Type attributeType) throws TskCoreException {
 		List<BlackboardAttribute> attributes = this.getAttributes();
@@ -497,7 +509,8 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * algorithm on this object
 	 *
 	 * @param <T> the object type to be returned from visit()
-	 * @param v the visitor to accept
+	 * @param v   the visitor to accept
+	 *
 	 * @return object of generic type T to return
 	 */
 	@Override

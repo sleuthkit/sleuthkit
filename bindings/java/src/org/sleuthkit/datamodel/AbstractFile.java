@@ -84,14 +84,14 @@ public abstract class AbstractFile extends AbstractContent {
 	 * Initializes common fields used by AbstactFile implementations (objects in
 	 * tsk_files table)
 	 *
-	 * @param db case / db handle where this file belongs to
-	 * @param objId object id in tsk_objects table
+	 * @param db                 case / db handle where this file belongs to
+	 * @param objId              object id in tsk_objects table
 	 * @param dataSourceObjectId The object id of the root data source of this
-	 * file.
+	 *                           file.
 	 * @param attrType
 	 * @param attrId
-	 * @param name name field of the file
-	 * @param fileType type of the file
+	 * @param name               name field of the file
+	 * @param fileType           type of the file
 	 * @param metaAddr
 	 * @param metaSeq
 	 * @param dirType
@@ -106,11 +106,12 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param modes
 	 * @param uid
 	 * @param gid
-	 * @param md5Hash md5sum of the file, or null or "NULL" if not present
-	 * @param knownState knownState status of the file, or null if unknown
-	 * (default)
+	 * @param md5Hash            md5sum of the file, or null or "NULL" if not
+	 *                           present
+	 * @param knownState         knownState status of the file, or null if
+	 *                           unknown (default)
 	 * @param parentPath
-	 * @param mimeType The MIME type of the file, can be null
+	 * @param mimeType           The MIME type of the file, can be null
 	 */
 	AbstractFile(SleuthkitCase db,
 			long objId,
@@ -477,7 +478,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * that extensions only have ASCII alphanumeric chars
 	 *
 	 * @return filename extension in lowercase (not including the period) or
-	 * empty string if there is no extension
+	 *         empty string if there is no extension
 	 */
 	public String getNameExtension() {
 		String ext;
@@ -522,8 +523,9 @@ public abstract class AbstractFile extends AbstractContent {
 	 * Gets the data source for this file.
 	 *
 	 * @return The data source.
+	 *
 	 * @throws TskCoreException if there was an error querying the case
-	 * database.
+	 *                          database.
 	 */
 	@Override
 	public Content getDataSource() throws TskCoreException {
@@ -545,8 +547,9 @@ public abstract class AbstractFile extends AbstractContent {
 	 * or more block ranges associated with it
 	 *
 	 * @return list of file layout ranges
+	 *
 	 * @throws TskCoreException exception thrown if critical error occurred
-	 * within tsk core
+	 *                          within tsk core
 	 */
 	public List<TskFileRange> getRanges() throws TskCoreException {
 		if (ranges == null) {
@@ -559,11 +562,14 @@ public abstract class AbstractFile extends AbstractContent {
 	 * Convert an internal offset to an image offset
 	 *
 	 * @param fileOffset the byte offset in this layout file to map
+	 *
 	 * @return the corresponding byte offset in the image where the file offset
-	 * is located, or -1 if the file has no range layout information or if the
-	 * fileOffset is larger than file size
+	 *         is located, or -1 if the file has no range layout information or
+	 *         if the fileOffset is larger than file size
+	 *
 	 * @throws TskCoreException exception thrown if critical error occurred
-	 * within tsk core and offset could not be converted
+	 *                          within tsk core and offset could not be
+	 *                          converted
 	 */
 	public long convertToImgOffset(long fileOffset) throws TskCoreException {
 		long imgOffset = -1;
@@ -623,9 +629,11 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * @param uniquePath the unique path to an AbstractFile (or subclass)
-	 * usually obtained by a call to AbstractFile.getUniquePath.
+	 *                   usually obtained by a call to
+	 *                   AbstractFile.getUniquePath.
+	 *
 	 * @return the path to to an AbstractFile (or subclass) with the image and
-	 * volume path segments removed.
+	 *         volume path segments removed.
 	 */
 	public static String createNonUniquePath(String uniquePath) {
 
@@ -653,7 +661,8 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * @return a list of AbstractFiles that are the children of this Directory.
-	 * Only returns children of type TskData.TSK_DB_FILES_TYPE_ENUM.FS.
+	 *         Only returns children of type TskData.TSK_DB_FILES_TYPE_ENUM.FS.
+	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public List<AbstractFile> listFiles() throws TskCoreException {
@@ -699,6 +708,7 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * @param flag the TSK_FS_NAME_FLAG_ENUM to check
+	 *
 	 * @return true if the given flag is set in this FsContent object.
 	 */
 	public boolean isDirNameFlagSet(TSK_FS_NAME_FLAG_ENUM flag) {
@@ -707,7 +717,7 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * @return a string representation of the directory name flag (type
-	 * TSK_FS_NAME_FLAG_ENUM)
+	 *         TSK_FS_NAME_FLAG_ENUM)
 	 */
 	public String getDirFlagAsString() {
 		return dirFlag.toString();
@@ -728,6 +738,7 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * @param metaFlag the TSK_FS_META_FLAG_ENUM to check
+	 *
 	 * @return true if the given meta flag is set in this FsContent object.
 	 */
 	public boolean isMetaFlagSet(TSK_FS_META_FLAG_ENUM metaFlag) {
@@ -749,10 +760,12 @@ public abstract class AbstractFile extends AbstractContent {
 	/**
 	 * Internal custom read (non-local) method that child classes can implement
 	 *
-	 * @param buf buffer to read into
+	 * @param buf    buffer to read into
 	 * @param offset start reading position in the file
-	 * @param len number of bytes to read
+	 * @param len    number of bytes to read
+	 *
 	 * @return number of bytes read
+	 *
 	 * @throws TskCoreException exception thrown when file could not be read
 	 */
 	protected int readInt(byte[] buf, long offset, long len) throws TskCoreException {
@@ -762,10 +775,12 @@ public abstract class AbstractFile extends AbstractContent {
 	/**
 	 * Local file path read support
 	 *
-	 * @param buf buffer to read into
+	 * @param buf    buffer to read into
 	 * @param offset start reading position in the file
-	 * @param len number of bytes to read
+	 * @param len    number of bytes to read
+	 *
 	 * @return number of bytes read
+	 *
 	 * @throws TskCoreException exception thrown when file could not be read
 	 */
 	protected final int readLocal(byte[] buf, long offset, long len) throws TskCoreException {
@@ -830,9 +845,9 @@ public abstract class AbstractFile extends AbstractContent {
 	 * the case db path or an absolute path. When set, subsequent invocations of
 	 * read() will read the file in the local path.
 	 *
-	 * @param localPath local path to be set
+	 * @param localPath  local path to be set
 	 * @param isAbsolute true if the path is absolute, false if relative to the
-	 * case db
+	 *                   case db
 	 */
 	protected void setLocalPath(String localPath, boolean isAbsolute) {
 
@@ -990,6 +1005,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * Return the epoch into string in ISO 8601 dateTime format
 	 *
 	 * @param epoch time in seconds
+	 *
 	 * @return formatted date time string as "yyyy-MM-dd HH:mm:ss"
 	 */
 	public static String epochToTime(long epoch) {
@@ -1004,6 +1020,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * Convert from ISO 8601 formatted date time string to epoch time in seconds
 	 *
 	 * @param time formatted date time string as "yyyy-MM-dd HH:mm:ss"
+	 *
 	 * @return epoch time in seconds
 	 */
 	public static long timeToEpoch(String time) {
@@ -1031,6 +1048,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * blackboard attribute for file type.
 	 *
 	 * @param mimeTypes Set of file types to compare against
+	 *
 	 * @return
 	 */
 	public MimeMatchEnum isMimeType(SortedSet<String> mimeTypes) {
@@ -1047,12 +1065,12 @@ public abstract class AbstractFile extends AbstractContent {
 	 * Initializes common fields used by AbstactFile implementations (objects in
 	 * tsk_files table)
 	 *
-	 * @param db case / db handle where this file belongs to
-	 * @param objId object id in tsk_objects table
+	 * @param db         case / db handle where this file belongs to
+	 * @param objId      object id in tsk_objects table
 	 * @param attrType
 	 * @param attrId
-	 * @param name name field of the file
-	 * @param fileType type of the file
+	 * @param name       name field of the file
+	 * @param fileType   type of the file
 	 * @param metaAddr
 	 * @param metaSeq
 	 * @param dirType
@@ -1067,10 +1085,11 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param modes
 	 * @param uid
 	 * @param gid
-	 * @param md5Hash md5sum of the file, or null or "NULL" if not present
+	 * @param md5Hash    md5sum of the file, or null or "NULL" if not present
 	 * @param knownState knownState status of the file, or null if unknown
-	 * (default)
+	 *                   (default)
 	 * @param parentPath
+	 *
 	 * @deprecated Do not make subclasses outside of this package.
 	 */
 	@Deprecated

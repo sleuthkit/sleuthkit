@@ -44,10 +44,10 @@ public class CaseDbConnectionInfo {
 	 * information.
 	 *
 	 * @param hostNameOrIP the host name
-	 * @param portNumber the port number
-	 * @param userName the user name
-	 * @param password the password
-	 * @param dbType the database type
+	 * @param portNumber   the port number
+	 * @param userName     the user name
+	 * @param password     the password
+	 * @param dbType       the database type
 	 */
 	public CaseDbConnectionInfo(String hostNameOrIP, String portNumber, String userName, String password, DbType dbType) {
 		this.hostNameOrIP = hostNameOrIP;
