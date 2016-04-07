@@ -50,6 +50,7 @@ import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -225,10 +226,6 @@ public class SleuthkitCase {
 		init(caseHandle);
 		updateDatabaseSchema(dbPath);
 		logSQLiteJDBCDriverInfo();
-		typeIdToArtifactTypeMap = new HashMap<Integer, BlackboardArtifact.Type>();
-		typeIdToAttributeTypeMap = new HashMap<Integer, BlackboardAttribute.Type>();
-		typeNameToArtifactTypeMap = new HashMap<String, BlackboardArtifact.Type>();
-		typeNameToAttributeTypeMap = new HashMap<String, BlackboardAttribute.Type>();
 	}
 
 	/**
@@ -256,10 +253,10 @@ public class SleuthkitCase {
 
 	private void init(SleuthkitJNI.CaseDbHandle caseHandle) throws Exception {
 		this.caseHandle = caseHandle;
-		typeIdToArtifactTypeMap = new HashMap<Integer, BlackboardArtifact.Type>();
-		typeIdToAttributeTypeMap = new HashMap<Integer, BlackboardAttribute.Type>();
-		typeNameToArtifactTypeMap = new HashMap<String, BlackboardArtifact.Type>();
-		typeNameToAttributeTypeMap = new HashMap<String, BlackboardAttribute.Type>();
+		typeIdToArtifactTypeMap = new ConcurrentHashMap<Integer, BlackboardArtifact.Type>();
+		typeIdToAttributeTypeMap = new ConcurrentHashMap<Integer, BlackboardAttribute.Type>();
+		typeNameToArtifactTypeMap = new ConcurrentHashMap<String, BlackboardArtifact.Type>();
+		typeNameToAttributeTypeMap = new ConcurrentHashMap<String, BlackboardAttribute.Type>();
 		initBlackboardArtifactTypes();
 		initBlackboardAttributeTypes();
 		initNextArtifactId();
@@ -2326,7 +2323,7 @@ public class SleuthkitCase {
 			ArrayList<BlackboardAttribute> matches = new ArrayList<BlackboardAttribute>();
 			while (rs.next()) {
 				BlackboardAttribute.Type type;
-				//attribute types are cached, so this avoids a db call
+				// attribute type is cached, so this does not necessarily call to the db
 				type = this.getAttributeType(rs.getInt("attribute_type_id"));
 				BlackboardAttribute attr = new BlackboardAttribute(
 						rs.getLong("artifact_id"),
@@ -2373,7 +2370,7 @@ public class SleuthkitCase {
 			ArrayList<BlackboardArtifact> matches = new ArrayList<BlackboardArtifact>();
 			while (rs.next()) {
 				BlackboardArtifact.Type type;
-				// artifact type is cached, so this avoids db calls
+				// artifact type is cached, so this does not necessarily call to the db
 				type = this.getArtifactType(rs.getInt(3));
 				BlackboardArtifact artifact = new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2), type.getTypeID(), type.getTypeName(), type.getDisplayName());
 				matches.add(artifact);
