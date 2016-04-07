@@ -252,14 +252,14 @@ public class SleuthkitCase {
 		this.connections = new PostgreSQLConnections(host, port, dbName, userName, password);
 		init(caseHandle);
 		updateDatabaseSchema(null);
-		artifactTypeMap = new HashMap<Integer, BlackboardArtifact.Type>();
-		attributeTypeMap = new HashMap<Integer, BlackboardAttribute.Type>();
-		artifactTypeMap2 = new HashMap<String, BlackboardArtifact.Type>();
-		attributeTypeMap2 = new HashMap<String, BlackboardAttribute.Type>();
 	}
 
 	private void init(SleuthkitJNI.CaseDbHandle caseHandle) throws Exception {
 		this.caseHandle = caseHandle;
+		artifactTypeMap = new HashMap<Integer, BlackboardArtifact.Type>();
+		attributeTypeMap = new HashMap<Integer, BlackboardAttribute.Type>();
+		artifactTypeMap2 = new HashMap<String, BlackboardArtifact.Type>();
+		attributeTypeMap2 = new HashMap<String, BlackboardAttribute.Type>();
 		initBlackboardArtifactTypes();
 		initBlackboardAttributeTypes();
 		initNextArtifactId();
