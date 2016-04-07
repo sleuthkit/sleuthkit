@@ -2315,9 +2315,9 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT artifact_id, source, context, attribute_type_id, "
-					+ "value_type, value_byte, value_text, value_int32, "
-					+ "value_int64, value_double "
+			rs = connection.executeQuery(s, "SELECT blackboard_attributes.artifact_id, blackboard_attributes.source, blackboard_attributes.context, blackboard_attributes.attribute_type_id, "
+					+ "blackboard_attributes.value_type, blackboard_attributes.value_byte, blackboard_attributes.value_text, blackboard_attributes.value_int32, "
+					+ "blackboard_attributes.value_int64, blackboard_attributes.value_double "
 					+ "FROM blackboard_attributes " + whereClause); //NON-NLS
 			ArrayList<BlackboardAttribute> matches = new ArrayList<BlackboardAttribute>();
 			while (rs.next()) {
@@ -2364,7 +2364,7 @@ public class SleuthkitCase {
 		Statement s = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT artifact_id, obj_id, artifact_type_id"
+			rs = connection.executeQuery(s, "SELECT blackboard_artifacts.artifact_id, blackboard_artifacts.obj_id, blackboard_artifacts.artifact_type_id"
 					+ " FROM blackboard_artifacts " + whereClause); //NON-NLS
 			ArrayList<BlackboardArtifact> matches = new ArrayList<BlackboardArtifact>();
 			while (rs.next()) {
