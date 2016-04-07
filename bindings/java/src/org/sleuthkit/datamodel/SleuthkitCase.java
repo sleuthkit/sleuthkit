@@ -179,8 +179,8 @@ public class SleuthkitCase {
 		} catch (ClassNotFoundException ex) {
 			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.Installation")); //NON-NLS
 		}
-	}	
-	
+	}
+
 	/**
 	 * Private constructor, clients must use newCase() or openCase() method to
 	 * create an instance of this class.
@@ -1370,20 +1370,6 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get a list of the standard blackboard artifact types.
-	 *
-	 * @return list of blackboard artifact types
-	 * @throws TskCoreException exception thrown if a critical error occurred
-	 * within tsk core
-	 * @deprecated For a list of standard blackboard artifacts, use
-	 * BlackboardArtifact.ARTIFACT_TYPE.values
-	 */
-	@Deprecated
-	public ArrayList<BlackboardArtifact.ARTIFACT_TYPE> getBlackboardArtifactTypes() throws TskCoreException {
-		return new ArrayList<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.values()));
-	}
-
-	/**
 	 * Gets a list of all the artifact types for this case
 	 *
 	 * @return a list of artifact types
@@ -1486,23 +1472,6 @@ public class SleuthkitCase {
 			connection.close();
 			releaseSharedLock();
 		}
-	}
-
-	/**
-	 * Get all blackboard attribute types
-	 *
-	 * Gets both static (in enum) and dynamic attributes types (created by
-	 * modules at runtime)
-	 *
-	 * @return list of blackboard attribute types
-	 * @throws TskCoreException exception thrown if a critical error occurred
-	 * within tsk core
-	 * @deprecated For a list of standard blackboard attributes, use
-	 * BlackboardAttribute.ATTRIBUTE_TYPE.values()
-	 */
-	@Deprecated
-	public ArrayList<BlackboardAttribute.ATTRIBUTE_TYPE> getBlackboardAttributeTypes() throws TskCoreException {
-		return new ArrayList<BlackboardAttribute.ATTRIBUTE_TYPE>(Arrays.asList(BlackboardAttribute.ATTRIBUTE_TYPE.values()));
 	}
 
 	/**
@@ -1920,25 +1889,6 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Add an attribute type with the given name, assuming the value type is a
-	 * string.
-	 *
-	 * @param attrTypeString name of the new attribute
-	 * @param displayName the (non-unique) display name of the attribute type
-	 * @return the id of the new attribute
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * @deprecated Use addArtifactAttributeType instead within tsk core
-	 */
-	@Deprecated
-	public int addAttrType(String attrTypeString, String displayName) throws TskCoreException {
-		try {
-			return addArtifactAttributeType(attrTypeString, TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING, displayName).getTypeID();
-		} catch (TskDataException ex) {
-			throw new TskCoreException("Couldn't add new attribute type");
-		}
-	}
-
-	/**
 	 * Add an attribute type with the given name
 	 *
 	 * @param attrTypeString Name of the new attribute
@@ -1987,38 +1937,6 @@ public class SleuthkitCase {
 			closeStatement(s);
 			connection.close();
 			releaseExclusiveLock();
-		}
-	}
-
-	/**
-	 * Get the attribute type id associated with an attribute type name.
-	 *
-	 * @param attrTypeName An attribute type name.
-	 * @return An attribute id or -1 if the attribute type does not exist.
-	 * @throws TskCoreException If an error occurs accessing the case database.
-	 * @deprecated Use getAttributeType instead
-	 */
-	@Deprecated
-	public int getAttrTypeID(String attrTypeName) throws TskCoreException {
-		CaseDbConnection connection = connections.getConnection();
-		acquireSharedLock();
-		Statement s = null;
-		ResultSet rs = null;
-		try {
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT attribute_type_id FROM blackboard_attribute_types WHERE type_name = '" + attrTypeName + "'"); //NON-NLS
-			int typeId = -1;
-			if (rs.next()) {
-				typeId = rs.getInt(1);
-			}
-			return typeId;
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting attribute type id", ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			connection.close();
-			releaseSharedLock();
 		}
 	}
 
@@ -2163,26 +2081,6 @@ public class SleuthkitCase {
 			closeStatement(s);
 			connection.close();
 			releaseSharedLock();
-		}
-	}
-
-	/**
-	 * Add an artifact type with the given name. Will return an id that can be
-	 * used to look that artifact type up.
-	 *
-	 * @param artifactTypeName System (unique) name of artifact
-	 * @param displayName Display (non-unique) name of artifact
-	 * @return ID of artifact added
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within tsk core
-	 * @deprecated Use addBlackboardArtifactType instead
-	 */
-	@Deprecated
-	public int addArtifactType(String artifactTypeName, String displayName) throws TskCoreException {
-		try {
-			return addBlackboardArtifactType(artifactTypeName, displayName).getTypeID();
-		} catch (TskDataException ex) {
-			throw new TskCoreException("Failed to add artifact type.", ex);
 		}
 	}
 
@@ -3879,32 +3777,6 @@ public class SleuthkitCase {
 	 * @param connection A case database connection.
 	 * @param objectId An object id.
 	 * @return A data source object id.
-	 * @deprecated This only exists to support deprecated TSK object
-	 * constructors.
-	 */
-	@Deprecated
-	long getDataSourceObjectId(long objectId) {
-		try {
-			CaseDbConnection connection = connections.getConnection();
-			try {
-				return getDataSourceObjectId(connection, objectId);
-			} finally {
-				connection.close();
-			}
-		} catch (TskCoreException ex) {
-			logger.log(Level.SEVERE, "Error getting data source object id for a file", ex);
-			return 0;
-		}
-	}
-
-	/**
-	 * Given an object id, works up the tree of ancestors to the data source for
-	 * the object and gets the object id of the data source. The trivial case
-	 * where the input object id is for a source is handled.
-	 *
-	 * @param connection A case database connection.
-	 * @param objectId An object id.
-	 * @return A data source object id.
 	 * @throws TskCoreException if there is an erro querying the case database.
 	 */
 	private long getDataSourceObjectId(CaseDbConnection connection, long objectId) throws TskCoreException {
@@ -4055,44 +3927,6 @@ public class SleuthkitCase {
 			return ret;
 		} catch (SQLException e) {
 			throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.findAllFileIdsWhere(): " + sqlWhereClause, e);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			connection.close();
-			releaseSharedLock();
-		}
-	}
-
-	/**
-	 * Find and return list of files matching the specific Where clause. Use
-	 * findAllFilesWhere instead. It returns a more generic data type
-	 *
-	 * @param sqlWhereClause a SQL where clause appropriate for the desired
-	 * files (do not begin the WHERE clause with the word WHERE!)
-	 * @return a list of FsContent each of which satisfy the given WHERE clause
-	 * @throws TskCoreException
-	 * @deprecated	use SleuthkitCase.findAllFilesWhere() instead
-	 */
-	@Deprecated
-	public List<FsContent> findFilesWhere(String sqlWhereClause) throws TskCoreException {
-		CaseDbConnection connection = connections.getConnection();
-		acquireSharedLock();
-		Statement s = null;
-		ResultSet rs = null;
-		try {
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT * FROM tsk_files WHERE " + sqlWhereClause); //NON-NLS
-			List<FsContent> results = new ArrayList<FsContent>();
-			List<AbstractFile> temp = resultSetToAbstractFiles(rs);
-			for (AbstractFile f : temp) {
-				final TSK_DB_FILES_TYPE_ENUM type = f.getType();
-				if (type.equals(TskData.TSK_DB_FILES_TYPE_ENUM.FS)) {
-					results.add((FsContent) f);
-				}
-			}
-			return results;
-		} catch (SQLException e) {
-			throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.findFilesWhere().", e);
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
@@ -4715,36 +4549,6 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get last (max) object id of content object in tsk_objects.
-	 *
-	 * @return currently max id
-	 * @throws TskCoreException exception thrown when database error occurs and
-	 * last object id could not be queried
-	 * @deprecated Do not use, assumes a single-threaded, single-user case.
-	 */
-	@Deprecated
-	public long getLastObjectId() throws TskCoreException {
-		CaseDbConnection connection = connections.getConnection();
-		acquireExclusiveLock();
-		ResultSet rs = null;
-		try {
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_MAX_OBJECT_ID);
-			rs = connection.executeQuery(statement);
-			long id = -1;
-			if (rs.next()) {
-				id = rs.getLong(1);
-			}
-			return id;
-		} catch (SQLException e) {
-			throw new TskCoreException("Error getting last object id", e);
-		} finally {
-			closeResultSet(rs);
-			connection.close();
-			releaseExclusiveLock();
-		}
-	}
-
-	/**
 	 * Set the file paths for the image given by obj_id
 	 *
 	 * @param obj_id the ID of the image to update
@@ -4834,156 +4638,6 @@ public class SleuthkitCase {
 		}
 
 		return results;
-	}
-
-	/**
-	 * Process a read-only query on the tsk database, any table Can be used to
-	 * e.g. to find files of a given criteria. resultSetToFsContents() will
-	 * convert the files to useful objects. MUST CALL closeRunQuery() when done
-	 *
-	 * @param query the given string query to run
-	 * @return	the resultSet from running the query. Caller MUST CALL
-	 * closeRunQuery(resultSet) as soon as possible, when done with retrieving
-	 * data from the resultSet
-	 * @throws SQLException if error occurred during the query
-	 * @deprecated Do not use runQuery(), use executeQuery() instead. \ref
-	 * query_database_page
-	 */
-	@Deprecated
-	public ResultSet runQuery(String query) throws SQLException {
-		CaseDbConnection connection;
-		try {
-			connection = connections.getConnection();
-		} catch (TskCoreException ex) {
-			throw new SQLException("Error getting connection for ad hoc query", ex);
-		}
-		acquireSharedLock();
-		try {
-			return connection.executeQuery(connection.createStatement(), query);
-		} finally {
-			//TODO unlock should be done in closeRunQuery()
-			//but currently not all code calls closeRunQuery - need to fix this
-			connection.close();
-			releaseSharedLock();
-		}
-	}
-
-	/**
-	 * Closes ResultSet and its Statement previously retrieved from runQuery()
-	 *
-	 * @param resultSet with its Statement to close
-	 * @throws SQLException of closing the query files failed
-	 * @deprecated Do not use runQuery() and closeRunQuery(), use executeQuery()
-	 * instead. \ref query_database_page
-	 */
-	@Deprecated
-	public void closeRunQuery(ResultSet resultSet) throws SQLException {
-		final Statement statement = resultSet.getStatement();
-		resultSet.close();
-		if (statement != null) {
-			statement.close();
-		}
-	}
-
-	/**
-	 * Get the string associated with the given id. Will throw an error if that
-	 * id does not exist
-	 *
-	 * @param attrTypeID attribute id
-	 * @return string associated with the given id
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within tsk core
-	 * @deprecated Use getAttributeType instead
-	 */
-	@Deprecated
-	public String getAttrTypeString(int attrTypeID) throws TskCoreException {
-		CaseDbConnection connection = connections.getConnection();
-		acquireSharedLock();
-		Statement s = null;
-		ResultSet rs = null;
-		try {
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT type_name FROM blackboard_attribute_types WHERE attribute_type_id = " + attrTypeID); //NON-NLS
-			if (rs.next()) {
-				return rs.getString(1);
-			} else {
-				throw new TskCoreException("No type with that id");
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting or creating a attribute type name", ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			connection.close();
-			releaseSharedLock();
-		}
-	}
-
-	/**
-	 * Get the display name for the attribute with the given id. Will throw an
-	 * error if that id does not exist
-	 *
-	 * @param attrTypeID attribute id
-	 * @return string associated with the given id
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 * within tsk core
-	 * @deprecated Use getAttributeType instead
-	 */
-	@Deprecated
-	public String getAttrTypeDisplayName(int attrTypeID) throws TskCoreException {
-		CaseDbConnection connection = connections.getConnection();
-		acquireSharedLock();
-		Statement s = null;
-		ResultSet rs = null;
-		try {
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT display_name FROM blackboard_attribute_types WHERE attribute_type_id = " + attrTypeID); //NON-NLS
-			if (rs.next()) {
-				return rs.getString(1);
-			} else {
-				throw new TskCoreException("No type with that id");
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting or creating a attribute type name", ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			connection.close();
-			releaseSharedLock();
-		}
-	}
-
-	/**
-	 * Get the artifact type id associated with an artifact type name.
-	 *
-	 * @param artifactTypeName An artifact type name.
-	 * @return An artifact id or -1 if the attribute type does not exist.
-	 * @throws TskCoreException If an error occurs accessing the case database.
-	 *
-	 * @deprecated Use getArtifactType instead
-	 */
-	@Deprecated
-	public int getArtifactTypeID(String artifactTypeName) throws TskCoreException {
-		CaseDbConnection connection = connections.getConnection();
-		acquireSharedLock();
-		Statement s = null;
-		ResultSet rs = null;
-		try {
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeName + "'"); //NON-NLS
-			int typeId = -1;
-			if (rs.next()) {
-				typeId = rs.getInt(1);
-			}
-			return typeId;
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting artifact type id", ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			connection.close();
-			releaseSharedLock();
-		}
 	}
 
 	/**
@@ -6066,7 +5720,7 @@ public class SleuthkitCase {
 
 		void receiveError(String context, String errorMessage);
 	}
-	
+
 	/**
 	 * Stores a pair of object ID and its type
 	 */
@@ -6080,7 +5734,7 @@ public class SleuthkitCase {
 			this.type = type;
 		}
 	}
-	
+
 	private interface DbCommand {
 
 		void execute() throws SQLException;
@@ -6175,7 +5829,7 @@ public class SleuthkitCase {
 			return sql;
 		}
 	}
-	
+
 	/**
 	 * A class for the connection pool. This class will hand out connections of
 	 * the appropriate type based on the subclass that is calling
@@ -6827,4 +6481,346 @@ public class SleuthkitCase {
 		}
 	}
 
+	/**
+	 * Given an object id, works up the tree of ancestors to the data source for
+	 * the object and gets the object id of the data source. The trivial case
+	 * where the input object id is for a source is handled.
+	 *
+	 * @param connection A case database connection.
+	 * @param objectId An object id.
+	 * @return A data source object id.
+	 * @deprecated This only exists to support deprecated TSK object
+	 * constructors.
+	 */
+	@Deprecated
+	long getDataSourceObjectId(long objectId) {
+		try {
+			CaseDbConnection connection = connections.getConnection();
+			try {
+				return getDataSourceObjectId(connection, objectId);
+			} finally {
+				connection.close();
+			}
+		} catch (TskCoreException ex) {
+			logger.log(Level.SEVERE, "Error getting data source object id for a file", ex);
+			return 0;
+		}
+	}
+
+	/**
+	 * Get last (max) object id of content object in tsk_objects.
+	 *
+	 * @return currently max id
+	 * @throws TskCoreException exception thrown when database error occurs and
+	 * last object id could not be queried
+	 * @deprecated Do not use, assumes a single-threaded, single-user case.
+	 */
+	@Deprecated
+	public long getLastObjectId() throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireExclusiveLock();
+		ResultSet rs = null;
+		try {
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_MAX_OBJECT_ID);
+			rs = connection.executeQuery(statement);
+			long id = -1;
+			if (rs.next()) {
+				id = rs.getLong(1);
+			}
+			return id;
+		} catch (SQLException e) {
+			throw new TskCoreException("Error getting last object id", e);
+		} finally {
+			closeResultSet(rs);
+			connection.close();
+			releaseExclusiveLock();
+		}
+	}
+		
+	/**
+	 * Find and return list of files matching the specific Where clause. Use
+	 * findAllFilesWhere instead. It returns a more generic data type
+	 *
+	 * @param sqlWhereClause a SQL where clause appropriate for the desired
+	 * files (do not begin the WHERE clause with the word WHERE!)
+	 * @return a list of FsContent each of which satisfy the given WHERE clause
+	 * @throws TskCoreException
+	 * @deprecated	use SleuthkitCase.findAllFilesWhere() instead
+	 */
+	@Deprecated
+	public List<FsContent> findFilesWhere(String sqlWhereClause) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT * FROM tsk_files WHERE " + sqlWhereClause); //NON-NLS
+			List<FsContent> results = new ArrayList<FsContent>();
+			List<AbstractFile> temp = resultSetToAbstractFiles(rs);
+			for (AbstractFile f : temp) {
+				final TSK_DB_FILES_TYPE_ENUM type = f.getType();
+				if (type.equals(TskData.TSK_DB_FILES_TYPE_ENUM.FS)) {
+					results.add((FsContent) f);
+				}
+			}
+			return results;
+		} catch (SQLException e) {
+			throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.findFilesWhere().", e);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+	
+	/**
+	 * Get the artifact type id associated with an artifact type name.
+	 *
+	 * @param artifactTypeName An artifact type name.
+	 * @return An artifact id or -1 if the attribute type does not exist.
+	 * @throws TskCoreException If an error occurs accessing the case database.
+	 *
+	 * @deprecated Use getArtifactType instead
+	 */
+	@Deprecated
+	public int getArtifactTypeID(String artifactTypeName) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeName + "'"); //NON-NLS
+			int typeId = -1;
+			if (rs.next()) {
+				typeId = rs.getInt(1);
+			}
+			return typeId;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting artifact type id", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+	
+	/**
+	 * Gets a list of the standard blackboard artifact type enum objects.
+	 *
+	 * @return The members of the BlackboardArtifact.ARTIFACT_TYPE enum.
+	 * @throws TskCoreException Specified, but not thrown.
+	 * @deprecated For a list of standard blackboard artifacts type enum
+	 * objects, use BlackboardArtifact.ARTIFACT_TYPE.values.
+	 */
+	@Deprecated
+	public ArrayList<BlackboardArtifact.ARTIFACT_TYPE> getBlackboardArtifactTypes() throws TskCoreException {
+		return new ArrayList<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.values()));
+	}
+
+	/**
+	 * Adds a custom artifact type. The artifact type name must be unique, but
+	 * the display name need not be unique.
+	 *
+	 * @param artifactTypeName The artifact type name.
+	 * @param displayName The artifact type display name.
+	 * @return The artifact type id assigned to the artifact type.
+	 * @throws TskCoreException If there is an error adding the type to the case
+	 * database.
+	 * @deprecated Use SleuthkitCase.addBlackboardArtifactType instead.
+	 */
+	@Deprecated
+	public int addArtifactType(String artifactTypeName, String displayName) throws TskCoreException {
+		try {
+			return addBlackboardArtifactType(artifactTypeName, displayName).getTypeID();
+		} catch (TskDataException ex) {
+			throw new TskCoreException("Failed to add artifact type.", ex);
+		}
+	}
+
+	/**
+	 * Adds a custom attribute type with a string value type. The attribute type
+	 * name must be unique, but the display name need not be unique.
+	 *
+	 * @param attrTypeString The attribute type name.
+	 * @param displayName The attribute type display name.
+	 * @return The attribute type id.
+	 * @throws TskCoreException If there is an error adding the type to the case
+	 * database.
+	 * @deprecated Use SleuthkitCase.addArtifactAttributeType instead.
+	 */
+	@Deprecated
+	public int addAttrType(String attrTypeString, String displayName) throws TskCoreException {
+		try {
+			return addArtifactAttributeType(attrTypeString, TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING, displayName).getTypeID();
+		} catch (TskDataException ex) {
+			throw new TskCoreException("Couldn't add new attribute type");
+		}
+	}
+
+	/**
+	 * Gets the attribute type id associated with an attribute type name.
+	 *
+	 * @param attrTypeName An attribute type name.
+	 * @return An attribute id or -1 if the attribute type does not exist.
+	 * @throws TskCoreException If an error occurs accessing the case database.
+	 * @deprecated Use SleuthkitCase.getAttributeType instead.
+	 */
+	@Deprecated
+	public int getAttrTypeID(String attrTypeName) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT attribute_type_id FROM blackboard_attribute_types WHERE type_name = '" + attrTypeName + "'"); //NON-NLS
+			int typeId = -1;
+			if (rs.next()) {
+				typeId = rs.getInt(1);
+			}
+			return typeId;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting attribute type id", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	/**
+	 * Get the string associated with the given id. Will throw an error if that
+	 * id does not exist
+	 *
+	 * @param attrTypeID attribute id
+	 * @return string associated with the given id
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 * within tsk core
+	 * @deprecated Use getAttributeType instead
+	 */
+	@Deprecated
+	public String getAttrTypeString(int attrTypeID) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT type_name FROM blackboard_attribute_types WHERE attribute_type_id = " + attrTypeID); //NON-NLS
+			if (rs.next()) {
+				return rs.getString(1);
+			} else {
+				throw new TskCoreException("No type with that id");
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting or creating a attribute type name", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	/**
+	 * Get the display name for the attribute with the given id. Will throw an
+	 * error if that id does not exist
+	 *
+	 * @param attrTypeID attribute id
+	 * @return string associated with the given id
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 * within tsk core
+	 * @deprecated Use getAttributeType instead
+	 */
+	@Deprecated
+	public String getAttrTypeDisplayName(int attrTypeID) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT display_name FROM blackboard_attribute_types WHERE attribute_type_id = " + attrTypeID); //NON-NLS
+			if (rs.next()) {
+				return rs.getString(1);
+			} else {
+				throw new TskCoreException("No type with that id");
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting or creating a attribute type name", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+	
+	/**
+	 * Gets a list of the standard blackboard attribute type enum objects.
+	 *
+	 * @return The members of the BlackboardAttribute.ATTRIBUTE_TYPE enum.
+	 * @throws TskCoreException Specified, but not thrown.
+	 * @deprecated For a list of standard blackboard attribute types enum
+	 * objects, use BlackboardAttribute.ATTRIBUTE_TYP.values.
+	 */
+	@Deprecated
+	public ArrayList<BlackboardAttribute.ATTRIBUTE_TYPE> getBlackboardAttributeTypes() throws TskCoreException {
+		return new ArrayList<BlackboardAttribute.ATTRIBUTE_TYPE>(Arrays.asList(BlackboardAttribute.ATTRIBUTE_TYPE.values()));
+	}
+	
+	/**
+	 * Process a read-only query on the tsk database, any table Can be used to
+	 * e.g. to find files of a given criteria. resultSetToFsContents() will
+	 * convert the files to useful objects. MUST CALL closeRunQuery() when done
+	 *
+	 * @param query the given string query to run
+	 * @return	the resultSet from running the query. Caller MUST CALL
+	 * closeRunQuery(resultSet) as soon as possible, when done with retrieving
+	 * data from the resultSet
+	 * @throws SQLException if error occurred during the query
+	 * @deprecated Do not use runQuery(), use executeQuery() instead. \ref
+	 * query_database_page
+	 */
+	@Deprecated
+	public ResultSet runQuery(String query) throws SQLException {
+		CaseDbConnection connection;
+		try {
+			connection = connections.getConnection();
+		} catch (TskCoreException ex) {
+			throw new SQLException("Error getting connection for ad hoc query", ex);
+		}
+		acquireSharedLock();
+		try {
+			return connection.executeQuery(connection.createStatement(), query);
+		} finally {
+			//TODO unlock should be done in closeRunQuery()
+			//but currently not all code calls closeRunQuery - need to fix this
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	/**
+	 * Closes ResultSet and its Statement previously retrieved from runQuery()
+	 *
+	 * @param resultSet with its Statement to close
+	 * @throws SQLException of closing the query files failed
+	 * @deprecated Do not use runQuery() and closeRunQuery(), use executeQuery()
+	 * instead. \ref query_database_page
+	 */
+	@Deprecated
+	public void closeRunQuery(ResultSet resultSet) throws SQLException {
+		final Statement statement = resultSet.getStatement();
+		resultSet.close();
+		if (statement != null) {
+			statement.close();
+		}
+	}
+	
 }
