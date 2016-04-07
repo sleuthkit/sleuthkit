@@ -112,101 +112,75 @@ public class SleuthkitCase {
 	// understood. Note that the lock is contructed to use a fairness policy.
 	private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true);
 
-	private interface DbCommand {
-
-		void execute() throws SQLException;
-	}
-
-	private enum PREPARED_STATEMENT {
-
-		SELECT_ARTIFACTS_BY_TYPE("SELECT artifact_id, obj_id FROM blackboard_artifacts " //NON-NLS
-				+ "WHERE artifact_type_id = ?"), //NON-NLS
-		COUNT_ARTIFACTS_OF_TYPE("SELECT COUNT(*) FROM blackboard_artifacts WHERE artifact_type_id = ?"), //NON-NLS
-		COUNT_ARTIFACTS_FROM_SOURCE("SELECT COUNT(*) FROM blackboard_artifacts WHERE obj_id = ?"), //NON-NLS
-		COUNT_ARTIFACTS_BY_SOURCE_AND_TYPE("SELECT COUNT(*) FROM blackboard_artifacts WHERE obj_id = ? AND artifact_type_id = ?"), //NON-NLS
-		SELECT_FILES_BY_PARENT("SELECT tsk_files.* " //NON-NLS
-				+ "FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
-				+ "ON tsk_objects.obj_id=tsk_files.obj_id " //NON-NLS
-				+ "WHERE (tsk_objects.par_obj_id = ? ) " //NON-NLS
-				+ "ORDER BY tsk_files.dir_type, LOWER(tsk_files.name)"), //NON-NLS
-		SELECT_FILES_BY_PARENT_AND_TYPE("SELECT tsk_files.* " //NON-NLS
-				+ "FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
-				+ "ON tsk_objects.obj_id=tsk_files.obj_id " //NON-NLS
-				+ "WHERE (tsk_objects.par_obj_id = ? AND tsk_files.type = ? ) " //NON-NLS
-				+ "ORDER BY tsk_files.dir_type, LOWER(tsk_files.name)"), //NON-NLS
-		SELECT_FILE_IDS_BY_PARENT("SELECT tsk_files.obj_id FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
-				+ "ON tsk_objects.obj_id=tsk_files.obj_id WHERE (tsk_objects.par_obj_id = ?)"), //NON-NLS
-		SELECT_FILE_IDS_BY_PARENT_AND_TYPE("SELECT tsk_files.obj_id " //NON-NLS
-				+ "FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
-				+ "ON tsk_objects.obj_id=tsk_files.obj_id " //NON-NLS
-				+ "WHERE (tsk_objects.par_obj_id = ? " //NON-NLS
-				+ "AND tsk_files.type = ? )"), //NON-NLS
-		SELECT_FILE_BY_ID("SELECT * FROM tsk_files WHERE obj_id = ? LIMIT 1"), //NON-NLS
-		INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id) " //NON-NLS
-				+ "VALUES (?, ?, ?)"), //NON-NLS
-		POSTGRESQL_INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id) " //NON-NLS
-				+ "VALUES (DEFAULT, ?, ?)"), //NON-NLS
-		INSERT_STRING_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_text) " //NON-NLS
-				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
-		INSERT_BYTE_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_byte) " //NON-NLS
-				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
-		INSERT_INT_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_int32) " //NON-NLS
-				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
-		INSERT_LONG_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_int64) " //NON-NLS
-				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
-		INSERT_DOUBLE_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_double) " //NON-NLS
-				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
-		SELECT_FILES_BY_DATA_SOURCE_AND_NAME("SELECT * FROM tsk_files WHERE LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE LOWER('%journal%') AND data_source_obj_id = ?"), //NON-NLS
-		SELECT_FILES_BY_DATA_SOURCE_AND_PARENT_PATH_AND_NAME("SELECT * FROM tsk_files WHERE LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE LOWER('%journal%') AND LOWER(parent_path) LIKE LOWER(?) AND data_source_obj_id = ?"), //NON-NLS
-		UPDATE_FILE_MD5("UPDATE tsk_files SET md5 = ? WHERE obj_id = ?"), //NON-NLS
-		SELECT_LOCAL_PATH_FOR_FILE("SELECT path FROM tsk_files_path WHERE obj_id = ?"), //NON-NLS
-		SELECT_PATH_FOR_FILE("SELECT parent_path FROM tsk_files WHERE obj_id = ?"), //NON-NLS
-		SELECT_FILE_NAME("SELECT name FROM tsk_files WHERE obj_id = ?"), //NON-NLS
-		SELECT_DERIVED_FILE("SELECT derived_id, rederive FROM tsk_files_derived WHERE obj_id = ?"), //NON-NLS
-		SELECT_FILE_DERIVATION_METHOD("SELECT tool_name, tool_version, other FROM tsk_files_derived_method WHERE derived_id = ?"), //NON-NLS
-		SELECT_MAX_OBJECT_ID("SELECT MAX(obj_id) FROM tsk_objects"), //NON-NLS
-		INSERT_OBJECT("INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)"), //NON-NLS
-		INSERT_FILE("INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, data_source_obj_id) " //NON-NLS
-				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
-		INSERT_LAYOUT_FILE("INSERT INTO tsk_file_layout (obj_id, byte_start, byte_len, sequence) " //NON-NLS
-				+ "VALUES (?, ?, ?, ?)"), //NON-NLS
-		INSERT_LOCAL_PATH("INSERT INTO tsk_files_path (obj_id, path) VALUES (?, ?)"), //NON-NLS
-		COUNT_CHILD_OBJECTS_BY_PARENT("SELECT COUNT(obj_id) FROM tsk_objects WHERE par_obj_id = ?"), //NON-NLS
-		SELECT_FILE_SYSTEM_BY_OBJECT("SELECT fs_obj_id from tsk_files WHERE obj_id=?"), //NON-NLS
-		SELECT_TAG_NAMES("SELECT * FROM tag_names"), //NON-NLS
-		SELECT_TAG_NAMES_IN_USE("SELECT * FROM tag_names " //NON-NLS
-				+ "WHERE tag_name_id IN " //NON-NLS
-				+ "(SELECT tag_name_id from content_tags UNION SELECT tag_name_id FROM blackboard_artifact_tags)"), //NON-NLS
-		INSERT_TAG_NAME("INSERT INTO tag_names (display_name, description, color) VALUES (?, ?, ?)"), //NON-NLS
-		INSERT_CONTENT_TAG("INSERT INTO content_tags (obj_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)"), //NON-NLS
-		DELETE_CONTENT_TAG("DELETE FROM content_tags WHERE tag_id = ?"), //NON-NLS
-		COUNT_CONTENT_TAGS_BY_TAG_NAME("SELECT COUNT(*) FROM content_tags WHERE tag_name_id = ?"), //NON-NLS
-		SELECT_CONTENT_TAGS("SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id"), //NON-NLS
-		SELECT_CONTENT_TAGS_BY_TAG_NAME("SELECT * FROM content_tags WHERE tag_name_id = ?"), //NON-NLS
-		SELECT_CONTENT_TAG_BY_ID("SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id WHERE tag_id = ?"), //NON-NLS
-		SELECT_CONTENT_TAGS_BY_CONTENT("SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id WHERE content_tags.obj_id = ?"), //NON-NLS
-		INSERT_ARTIFACT_TAG("INSERT INTO blackboard_artifact_tags (artifact_id, tag_name_id, comment) VALUES (?, ?, ?)"), //NON-NLS
-		DELETE_ARTIFACT_TAG("DELETE FROM blackboard_artifact_tags WHERE tag_id = ?"), //NON-NLS
-		SELECT_ARTIFACT_TAGS("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id"), //NON-NLS
-		COUNT_ARTIFACTS_BY_TAG_NAME("SELECT COUNT(*) FROM blackboard_artifact_tags WHERE tag_name_id = ?"), //NON-NLS
-		SELECT_ARTIFACT_TAGS_BY_TAG_NAME("SELECT * FROM blackboard_artifact_tags WHERE tag_name_id = ?"), //NON-NLS
-		SELECT_ARTIFACT_TAG_BY_ID("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id  WHERE blackboard_artifact_tags.tag_id = ?"), //NON-NLS
-		SELECT_ARTIFACT_TAGS_BY_ARTIFACT("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id WHERE blackboard_artifact_tags.artifact_id = ?"), //NON-NLS
-		SELECT_REPORTS("SELECT * FROM reports"), //NON-NLS
-		INSERT_REPORT("INSERT INTO reports (path, crtime, src_module_name, report_name) VALUES (?, ?, ?, ?)"), //NON-NLS
-		DELETE_REPORT("DELETE FROM reports WHERE reports.report_id = ?"); //NON-NLS
-
-		private final String sql;
-
-		private PREPARED_STATEMENT(String sql) {
-			this.sql = sql;
+	/**
+	 * Attempts to connect to the database with the passed in settings, throws
+	 * if the settings are not sufficient to connect to the database type
+	 * indicated. Only attempts to connect to remote databases.
+	 *
+	 * When issues occur, it attempts to diagnose them by looking at the
+	 * exception messages, returning the appropriate user-facing text for the
+	 * exception received. This method expects the Exceptions messages to be in
+	 * English and compares against English text.
+	 *
+	 * @param info The connection information
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	public static void tryConnect(CaseDbConnectionInfo info) throws TskCoreException {
+		// Check if we can talk to the database.		
+		if (info.getHost() == null || info.getHost().isEmpty()) {
+			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingHostname")); //NON-NLS
+		} else if (info.getPort() == null || info.getPort().isEmpty()) {
+			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingPort")); //NON-NLS
+		} else if (info.getUserName() == null || info.getUserName().isEmpty()) {
+			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingUsername")); //NON-NLS
+		} else if (info.getPassword() == null || info.getPassword().isEmpty()) {
+			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingPassword")); //NON-NLS
 		}
 
-		String getSQL() {
-			return sql;
+		try {
+			Class.forName("org.postgresql.Driver"); //NON-NLS
+			Connection conn = DriverManager.getConnection("jdbc:postgresql://" + info.getHost() + ":" + info.getPort() + "/postgres", info.getUserName(), info.getPassword()); //NON-NLS
+			if (conn != null) {
+				conn.close();
+			}
+		} catch (SQLException ex) {
+			String result;
+			String sqlState = ex.getSQLState().toLowerCase();
+			if (sqlState.startsWith(SQL_ERROR_CONNECTION_GROUP)) {
+				try {
+					if (InetAddress.getByName(info.getHost()).isReachable(IS_REACHABLE_TIMEOUT_MS)) {
+						// if we can reach the host, then it's probably port problem
+						result = bundle.getString("DatabaseConnectionCheck.Port"); //NON-NLS
+					} else {
+						result = bundle.getString("DatabaseConnectionCheck.HostnameOrPort"); //NON-NLS
+					}
+				} catch (IOException any) {
+					// it may be anything
+					result = bundle.getString("DatabaseConnectionCheck.Everything"); //NON-NLS
+				} catch (MissingResourceException any) {
+					// it may be anything
+					result = bundle.getString("DatabaseConnectionCheck.Everything"); //NON-NLS
+				}
+			} else if (sqlState.startsWith(SQL_ERROR_AUTHENTICATION_GROUP)) {
+				result = bundle.getString("DatabaseConnectionCheck.Authentication"); //NON-NLS
+			} else if (sqlState.startsWith(SQL_ERROR_PRIVILEGE_GROUP)) {
+				result = bundle.getString("DatabaseConnectionCheck.Access"); //NON-NLS
+			} else if (sqlState.startsWith(SQL_ERROR_RESOURCE_GROUP)) {
+				result = bundle.getString("DatabaseConnectionCheck.ServerDiskSpace"); //NON-NLS
+			} else if (sqlState.startsWith(SQL_ERROR_LIMIT_GROUP)) {
+				result = bundle.getString("DatabaseConnectionCheck.ServerRestart"); //NON-NLS
+			} else if (sqlState.startsWith(SQL_ERROR_INTERNAL_GROUP)) {
+				result = bundle.getString("DatabaseConnectionCheck.InternalServerIssue"); //NON-NLS
+			} else {
+				result = bundle.getString("DatabaseConnectionCheck.Connection"); //NON-NLS
+			}
+			throw new TskCoreException(result);
+		} catch (ClassNotFoundException ex) {
+			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.Installation")); //NON-NLS
 		}
-	}
-
+	}	
+	
 	/**
 	 * Private constructor, clients must use newCase() or openCase() method to
 	 * create an instance of this class.
@@ -2631,20 +2605,6 @@ public class SleuthkitCase {
 			closeResultSet(rs);
 			connection.close();
 			releaseSharedLock();
-		}
-	}
-
-	/**
-	 * Stores a pair of object ID and its type
-	 */
-	static class ObjectInfo {
-
-		long id;
-		TskData.ObjectType type;
-
-		ObjectInfo(long id, ObjectType type) {
-			this.id = id;
-			this.type = type;
 		}
 	}
 
@@ -5335,42 +5295,6 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Notifies observers of errors in the SleuthkitCase.
-	 */
-	public interface ErrorObserver {
-
-		/**
-		 * List of arguments for the context string parameters. This does not
-		 * preclude the use of arbitrary context strings by client code, but it
-		 * does provide a place to define standard context strings to allow
-		 * filtering of notifications by implementations of ErrorObserver.
-		 */
-		public enum Context {
-
-			/**
-			 * Error occurred while reading image content.
-			 */
-			IMAGE_READ_ERROR("Image File Read Error"),
-			/**
-			 * Error occurred while reading database content.
-			 */
-			DATABASE_READ_ERROR("Database Read Error");
-
-			private final String contextString;
-
-			private Context(String context) {
-				this.contextString = context;
-			}
-
-			public String getContextString() {
-				return contextString;
-			}
-		};
-
-		void receiveError(String context, String errorMessage);
-	}
-
-	/**
 	 * Add an observer for SleuthkitCase errors.
 	 *
 	 * @param observer The observer to add.
@@ -6108,6 +6032,151 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Notifies observers of errors in the SleuthkitCase.
+	 */
+	public interface ErrorObserver {
+
+		/**
+		 * List of arguments for the context string parameters. This does not
+		 * preclude the use of arbitrary context strings by client code, but it
+		 * does provide a place to define standard context strings to allow
+		 * filtering of notifications by implementations of ErrorObserver.
+		 */
+		public enum Context {
+
+			/**
+			 * Error occurred while reading image content.
+			 */
+			IMAGE_READ_ERROR("Image File Read Error"),
+			/**
+			 * Error occurred while reading database content.
+			 */
+			DATABASE_READ_ERROR("Database Read Error");
+
+			private final String contextString;
+
+			private Context(String context) {
+				this.contextString = context;
+			}
+
+			public String getContextString() {
+				return contextString;
+			}
+		};
+
+		void receiveError(String context, String errorMessage);
+	}
+	
+	/**
+	 * Stores a pair of object ID and its type
+	 */
+	static class ObjectInfo {
+
+		long id;
+		TskData.ObjectType type;
+
+		ObjectInfo(long id, ObjectType type) {
+			this.id = id;
+			this.type = type;
+		}
+	}
+	
+	private interface DbCommand {
+
+		void execute() throws SQLException;
+	}
+
+	private enum PREPARED_STATEMENT {
+
+		SELECT_ARTIFACTS_BY_TYPE("SELECT artifact_id, obj_id FROM blackboard_artifacts " //NON-NLS
+				+ "WHERE artifact_type_id = ?"), //NON-NLS
+		COUNT_ARTIFACTS_OF_TYPE("SELECT COUNT(*) FROM blackboard_artifacts WHERE artifact_type_id = ?"), //NON-NLS
+		COUNT_ARTIFACTS_FROM_SOURCE("SELECT COUNT(*) FROM blackboard_artifacts WHERE obj_id = ?"), //NON-NLS
+		COUNT_ARTIFACTS_BY_SOURCE_AND_TYPE("SELECT COUNT(*) FROM blackboard_artifacts WHERE obj_id = ? AND artifact_type_id = ?"), //NON-NLS
+		SELECT_FILES_BY_PARENT("SELECT tsk_files.* " //NON-NLS
+				+ "FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
+				+ "ON tsk_objects.obj_id=tsk_files.obj_id " //NON-NLS
+				+ "WHERE (tsk_objects.par_obj_id = ? ) " //NON-NLS
+				+ "ORDER BY tsk_files.dir_type, LOWER(tsk_files.name)"), //NON-NLS
+		SELECT_FILES_BY_PARENT_AND_TYPE("SELECT tsk_files.* " //NON-NLS
+				+ "FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
+				+ "ON tsk_objects.obj_id=tsk_files.obj_id " //NON-NLS
+				+ "WHERE (tsk_objects.par_obj_id = ? AND tsk_files.type = ? ) " //NON-NLS
+				+ "ORDER BY tsk_files.dir_type, LOWER(tsk_files.name)"), //NON-NLS
+		SELECT_FILE_IDS_BY_PARENT("SELECT tsk_files.obj_id FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
+				+ "ON tsk_objects.obj_id=tsk_files.obj_id WHERE (tsk_objects.par_obj_id = ?)"), //NON-NLS
+		SELECT_FILE_IDS_BY_PARENT_AND_TYPE("SELECT tsk_files.obj_id " //NON-NLS
+				+ "FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
+				+ "ON tsk_objects.obj_id=tsk_files.obj_id " //NON-NLS
+				+ "WHERE (tsk_objects.par_obj_id = ? " //NON-NLS
+				+ "AND tsk_files.type = ? )"), //NON-NLS
+		SELECT_FILE_BY_ID("SELECT * FROM tsk_files WHERE obj_id = ? LIMIT 1"), //NON-NLS
+		INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id) " //NON-NLS
+				+ "VALUES (?, ?, ?)"), //NON-NLS
+		POSTGRESQL_INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id) " //NON-NLS
+				+ "VALUES (DEFAULT, ?, ?)"), //NON-NLS
+		INSERT_STRING_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_text) " //NON-NLS
+				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
+		INSERT_BYTE_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_byte) " //NON-NLS
+				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
+		INSERT_INT_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_int32) " //NON-NLS
+				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
+		INSERT_LONG_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_int64) " //NON-NLS
+				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
+		INSERT_DOUBLE_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_double) " //NON-NLS
+				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
+		SELECT_FILES_BY_DATA_SOURCE_AND_NAME("SELECT * FROM tsk_files WHERE LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE LOWER('%journal%') AND data_source_obj_id = ?"), //NON-NLS
+		SELECT_FILES_BY_DATA_SOURCE_AND_PARENT_PATH_AND_NAME("SELECT * FROM tsk_files WHERE LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE LOWER('%journal%') AND LOWER(parent_path) LIKE LOWER(?) AND data_source_obj_id = ?"), //NON-NLS
+		UPDATE_FILE_MD5("UPDATE tsk_files SET md5 = ? WHERE obj_id = ?"), //NON-NLS
+		SELECT_LOCAL_PATH_FOR_FILE("SELECT path FROM tsk_files_path WHERE obj_id = ?"), //NON-NLS
+		SELECT_PATH_FOR_FILE("SELECT parent_path FROM tsk_files WHERE obj_id = ?"), //NON-NLS
+		SELECT_FILE_NAME("SELECT name FROM tsk_files WHERE obj_id = ?"), //NON-NLS
+		SELECT_DERIVED_FILE("SELECT derived_id, rederive FROM tsk_files_derived WHERE obj_id = ?"), //NON-NLS
+		SELECT_FILE_DERIVATION_METHOD("SELECT tool_name, tool_version, other FROM tsk_files_derived_method WHERE derived_id = ?"), //NON-NLS
+		SELECT_MAX_OBJECT_ID("SELECT MAX(obj_id) FROM tsk_objects"), //NON-NLS
+		INSERT_OBJECT("INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)"), //NON-NLS
+		INSERT_FILE("INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, data_source_obj_id) " //NON-NLS
+				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
+		INSERT_LAYOUT_FILE("INSERT INTO tsk_file_layout (obj_id, byte_start, byte_len, sequence) " //NON-NLS
+				+ "VALUES (?, ?, ?, ?)"), //NON-NLS
+		INSERT_LOCAL_PATH("INSERT INTO tsk_files_path (obj_id, path) VALUES (?, ?)"), //NON-NLS
+		COUNT_CHILD_OBJECTS_BY_PARENT("SELECT COUNT(obj_id) FROM tsk_objects WHERE par_obj_id = ?"), //NON-NLS
+		SELECT_FILE_SYSTEM_BY_OBJECT("SELECT fs_obj_id from tsk_files WHERE obj_id=?"), //NON-NLS
+		SELECT_TAG_NAMES("SELECT * FROM tag_names"), //NON-NLS
+		SELECT_TAG_NAMES_IN_USE("SELECT * FROM tag_names " //NON-NLS
+				+ "WHERE tag_name_id IN " //NON-NLS
+				+ "(SELECT tag_name_id from content_tags UNION SELECT tag_name_id FROM blackboard_artifact_tags)"), //NON-NLS
+		INSERT_TAG_NAME("INSERT INTO tag_names (display_name, description, color) VALUES (?, ?, ?)"), //NON-NLS
+		INSERT_CONTENT_TAG("INSERT INTO content_tags (obj_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)"), //NON-NLS
+		DELETE_CONTENT_TAG("DELETE FROM content_tags WHERE tag_id = ?"), //NON-NLS
+		COUNT_CONTENT_TAGS_BY_TAG_NAME("SELECT COUNT(*) FROM content_tags WHERE tag_name_id = ?"), //NON-NLS
+		SELECT_CONTENT_TAGS("SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id"), //NON-NLS
+		SELECT_CONTENT_TAGS_BY_TAG_NAME("SELECT * FROM content_tags WHERE tag_name_id = ?"), //NON-NLS
+		SELECT_CONTENT_TAG_BY_ID("SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id WHERE tag_id = ?"), //NON-NLS
+		SELECT_CONTENT_TAGS_BY_CONTENT("SELECT * FROM content_tags INNER JOIN tag_names ON content_tags.tag_name_id = tag_names.tag_name_id WHERE content_tags.obj_id = ?"), //NON-NLS
+		INSERT_ARTIFACT_TAG("INSERT INTO blackboard_artifact_tags (artifact_id, tag_name_id, comment) VALUES (?, ?, ?)"), //NON-NLS
+		DELETE_ARTIFACT_TAG("DELETE FROM blackboard_artifact_tags WHERE tag_id = ?"), //NON-NLS
+		SELECT_ARTIFACT_TAGS("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id"), //NON-NLS
+		COUNT_ARTIFACTS_BY_TAG_NAME("SELECT COUNT(*) FROM blackboard_artifact_tags WHERE tag_name_id = ?"), //NON-NLS
+		SELECT_ARTIFACT_TAGS_BY_TAG_NAME("SELECT * FROM blackboard_artifact_tags WHERE tag_name_id = ?"), //NON-NLS
+		SELECT_ARTIFACT_TAG_BY_ID("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id  WHERE blackboard_artifact_tags.tag_id = ?"), //NON-NLS
+		SELECT_ARTIFACT_TAGS_BY_ARTIFACT("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id WHERE blackboard_artifact_tags.artifact_id = ?"), //NON-NLS
+		SELECT_REPORTS("SELECT * FROM reports"), //NON-NLS
+		INSERT_REPORT("INSERT INTO reports (path, crtime, src_module_name, report_name) VALUES (?, ?, ?, ?)"), //NON-NLS
+		DELETE_REPORT("DELETE FROM reports WHERE reports.report_id = ?"); //NON-NLS
+
+		private final String sql;
+
+		private PREPARED_STATEMENT(String sql) {
+			this.sql = sql;
+		}
+
+		String getSQL() {
+			return sql;
+		}
+	}
+	
+	/**
 	 * A class for the connection pool. This class will hand out connections of
 	 * the appropriate type based on the subclass that is calling
 	 * getPooledConnection();
@@ -6758,72 +6827,4 @@ public class SleuthkitCase {
 		}
 	}
 
-	/**
-	 * Attempts to connect to the database with the passed in settings, throws
-	 * if the settings are not sufficient to connect to the database type
-	 * indicated. Only attempts to connect to remote databases.
-	 *
-	 * When issues occur, it attempts to diagnose them by looking at the
-	 * exception messages, returning the appropriate user-facing text for the
-	 * exception received. This method expects the Exceptions messages to be in
-	 * English and compares against English text.
-	 *
-	 * @param info The connection information
-	 *
-	 * @throws org.sleuthkit.datamodel.TskCoreException
-	 */
-	public static void tryConnect(CaseDbConnectionInfo info) throws TskCoreException {
-		// Check if we can talk to the database.		
-		if (info.getHost() == null || info.getHost().isEmpty()) {
-			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingHostname")); //NON-NLS
-		} else if (info.getPort() == null || info.getPort().isEmpty()) {
-			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingPort")); //NON-NLS
-		} else if (info.getUserName() == null || info.getUserName().isEmpty()) {
-			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingUsername")); //NON-NLS
-		} else if (info.getPassword() == null || info.getPassword().isEmpty()) {
-			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingPassword")); //NON-NLS
-		}
-
-		try {
-			Class.forName("org.postgresql.Driver"); //NON-NLS
-			Connection conn = DriverManager.getConnection("jdbc:postgresql://" + info.getHost() + ":" + info.getPort() + "/postgres", info.getUserName(), info.getPassword()); //NON-NLS
-			if (conn != null) {
-				conn.close();
-			}
-		} catch (SQLException ex) {
-			String result;
-			String sqlState = ex.getSQLState().toLowerCase();
-			if (sqlState.startsWith(SQL_ERROR_CONNECTION_GROUP)) {
-				try {
-					if (InetAddress.getByName(info.getHost()).isReachable(IS_REACHABLE_TIMEOUT_MS)) {
-						// if we can reach the host, then it's probably port problem
-						result = bundle.getString("DatabaseConnectionCheck.Port"); //NON-NLS
-					} else {
-						result = bundle.getString("DatabaseConnectionCheck.HostnameOrPort"); //NON-NLS
-					}
-				} catch (IOException any) {
-					// it may be anything
-					result = bundle.getString("DatabaseConnectionCheck.Everything"); //NON-NLS
-				} catch (MissingResourceException any) {
-					// it may be anything
-					result = bundle.getString("DatabaseConnectionCheck.Everything"); //NON-NLS
-				}
-			} else if (sqlState.startsWith(SQL_ERROR_AUTHENTICATION_GROUP)) {
-				result = bundle.getString("DatabaseConnectionCheck.Authentication"); //NON-NLS
-			} else if (sqlState.startsWith(SQL_ERROR_PRIVILEGE_GROUP)) {
-				result = bundle.getString("DatabaseConnectionCheck.Access"); //NON-NLS
-			} else if (sqlState.startsWith(SQL_ERROR_RESOURCE_GROUP)) {
-				result = bundle.getString("DatabaseConnectionCheck.ServerDiskSpace"); //NON-NLS
-			} else if (sqlState.startsWith(SQL_ERROR_LIMIT_GROUP)) {
-				result = bundle.getString("DatabaseConnectionCheck.ServerRestart"); //NON-NLS
-			} else if (sqlState.startsWith(SQL_ERROR_INTERNAL_GROUP)) {
-				result = bundle.getString("DatabaseConnectionCheck.InternalServerIssue"); //NON-NLS
-			} else {
-				result = bundle.getString("DatabaseConnectionCheck.Connection"); //NON-NLS
-			}
-			throw new TskCoreException(result);
-		} catch (ClassNotFoundException ex) {
-			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.Installation")); //NON-NLS
-		}
-	}
 }
