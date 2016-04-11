@@ -148,7 +148,7 @@ class TskAutoDb:public TskAuto {
         uint32_t nextSequenceNo;
     } UNALLOC_BLOCK_WLK_TRACK;
 
-    uint8_t addImageDetails(const char *, const char *const images[], int);
+    uint8_t addImageDetails(const char *const images[], int, const char *);
     TSK_RETVAL_ENUM insertFileData(TSK_FS_FILE * fs_file,
         const TSK_FS_ATTR *, const char *path,
         const unsigned char *const md5,

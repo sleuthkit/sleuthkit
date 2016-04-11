@@ -33,10 +33,10 @@ public class VolumeSystem extends AbstractContent {
 	/**
 	 * Constructor most inputs are from the database
 	 *
-	 * @param db case database handle
-	 * @param obj_id the unique content object id for the volume system
-	 * @param name name of the volume system
-	 * @param type type of the volume system
+	 * @param db        case database handle
+	 * @param obj_id    the unique content object id for the volume system
+	 * @param name      name of the volume system
+	 * @param type      type of the volume system
 	 * @param imgOffset offset of the volume system with respect to image
 	 * @param blockSize block size of this volume system
 	 */
@@ -94,6 +94,7 @@ public class VolumeSystem extends AbstractContent {
 	 * otherwise resuse the existing handle.
 	 *
 	 * @return volume system Handle pointer
+	 *
 	 * @throws TskException
 	 */
 	protected synchronized long getVolumeSystemHandle() throws TskCoreException {
@@ -153,6 +154,7 @@ public class VolumeSystem extends AbstractContent {
 
 	/**
 	 * @return a list of Volumes that are direct children of this VolumeSystem
+	 *
 	 * @throws TskCoreException
 	 */
 	public List<Volume> getVolumes() throws TskCoreException {

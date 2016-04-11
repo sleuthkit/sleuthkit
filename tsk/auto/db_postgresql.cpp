@@ -738,7 +738,7 @@ int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, co
     int ret = attempt_exec(stmt, "Error adding data to tsk_image_info table: %s\n");
     PQfreemem(timezone_sql);
     PQfreemem(md5_sql);
-    if (1 == ret || deviceId.empty()) {
+    if (1 == ret) {
         return ret;
     }
 
@@ -1042,11 +1042,11 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
             return fileMap[seq];
         }
         else {
-            printf("Miss: %d\n", fileMap.count(seq));
+            // printf("Miss: %d\n", fileMap.count(seq));
         }
     }
 
-    fprintf(stderr, "Miss: %s (%"PRIu64")\n", fs_file->name->name, fs_file->name->meta_addr);
+    // fprintf(stderr, "Miss: %s (%"PRIu64")\n", fs_file->name->name, fs_file->name->meta_addr);
 
     // Find the parent file id in the database using the parent metadata address
     // @@@ This should use sequence number when the new database supports it

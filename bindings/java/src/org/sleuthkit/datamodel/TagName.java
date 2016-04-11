@@ -108,6 +108,7 @@ public class TagName implements Comparable<TagName>, Serializable {
 	 * Compares two TagName objects by comparing their display names.
 	 *
 	 * @param other The other TagName to compare this TagName to
+	 *
 	 * @return the result of calling compareTo on the displayNames
 	 */
 	@Override

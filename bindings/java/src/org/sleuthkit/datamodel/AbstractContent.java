@@ -136,7 +136,8 @@ public abstract class AbstractContent implements Content {
 	 * Set the ID of the this AbstractContent's parent
 	 *
 	 * @param parentId the ID of the parent. Note: use
-	 * AbstractContent.UNKNOWN_ID if the parent's ID is not known.
+	 *                 AbstractContent.UNKNOWN_ID if the parent's ID is not
+	 *                 known.
 	 */
 	void setParentId(long parentId) {
 		this.parentId = parentId;

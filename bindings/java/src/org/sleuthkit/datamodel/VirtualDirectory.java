@@ -51,33 +51,38 @@ public class VirtualDirectory extends AbstractFile {
 	 * directory can also be a data source, with local/logical files as its
 	 * children. Not a file system directory.
 	 *
-	 * @param db The case database.
-	 * @param objId The object id of the virtual directory.
+	 * @param db                 The case database.
+	 * @param objId              The object id of the virtual directory.
 	 * @param dataSourceObjectId The object id of the data source for the
-	 * virtual directory; same as objId if the virtual directory is a data
-	 * source.
-	 * @param name The name of the virtual directory.
-	 * @param dirType The TSK_FS_NAME_TYPE_ENUM for the virtual directory.
-	 * @param metaType The TSK_FS_META_TYPE_ENUM for the virtual directory.
-	 * @param dirFlag The TSK_FS_META_TYPE_ENUM for the virtual directory.
-	 * @param metaFlags The meta flags for the virtual directory.
-	 * @param size The size of the virtual directory, should be zero.
-	 * @param md5Hash The MD5 hash for the virtual directory.
-	 * @param knownState The known state for the virtual directory
-	 * @param parentPath The parent path for the virtual directory, should be
-	 * "/" if the virtual directory is a data source.
+	 *                           virtual directory; same as objId if the virtual
+	 *                           directory is a data source.
+	 * @param name               The name of the virtual directory.
+	 * @param dirType            The TSK_FS_NAME_TYPE_ENUM for the virtual
+	 *                           directory.
+	 * @param metaType           The TSK_FS_META_TYPE_ENUM for the virtual
+	 *                           directory.
+	 * @param dirFlag            The TSK_FS_META_TYPE_ENUM for the virtual
+	 *                           directory.
+	 * @param metaFlags          The meta flags for the virtual directory.
+	 * @param size               The size of the virtual directory, should be
+	 *                           zero.
+	 * @param md5Hash            The MD5 hash for the virtual directory.
+	 * @param knownState         The known state for the virtual directory
+	 * @param parentPath         The parent path for the virtual directory,
+	 *                           should be "/" if the virtual directory is a
+	 *                           data source.
 	 */
-	VirtualDirectory(SleuthkitCase db, 
-			long objId, 
-			long dataSourceObjectId, 
-			String name, 
-			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, 
+	VirtualDirectory(SleuthkitCase db,
+			long objId,
+			long dataSourceObjectId,
+			String name,
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
-			String md5Hash, FileKnown knownState, 
+			String md5Hash, FileKnown knownState,
 			String parentPath) {
 		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short) 0, name,
 				TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR, 0L, 0, dirType, metaType, dirFlag,
-				metaFlags, 0L, 0L, 0L, 0L, 0L, (short) 0, 0, 0, md5Hash, knownState, parentPath, null);		
+				metaFlags, 0L, 0L, 0L, 0L, 0L, (short) 0, 0, 0, md5Hash, knownState, parentPath, null);
 	}
 
 	/**
@@ -95,8 +100,9 @@ public class VirtualDirectory extends AbstractFile {
 	 * returns the virtual directory.
 	 *
 	 * @return The data source.
+	 *
 	 * @throws TskCoreException if there was an error querying the case
-	 * database.
+	 *                          database.
 	 */
 	@Override
 	public Content getDataSource() throws TskCoreException {
@@ -112,8 +118,9 @@ public class VirtualDirectory extends AbstractFile {
 	 * Gets the children of this virtual directory.
 	 *
 	 * @return List of children.
+	 *
 	 * @throws TskCoreException if there was an error querying the case
-	 * database.
+	 *                          database.
 	 */
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
@@ -124,8 +131,9 @@ public class VirtualDirectory extends AbstractFile {
 	 * Gets the object ids of the children of this virtual directory.
 	 *
 	 * @return List of child object ids.
+	 *
 	 * @throws TskCoreException if there was an error querying the case
-	 * database.
+	 *                          database.
 	 */
 	@Override
 	public List<Long> getChildrenIds() throws TskCoreException {
@@ -137,8 +145,9 @@ public class VirtualDirectory extends AbstractFile {
 	 * within its data source, always an empty list.
 	 *
 	 * @return An empty list.
+	 *
 	 * @throws TskCoreException if there was an error querying the case
-	 * database.
+	 *                          database.
 	 */
 	@Override
 	public List<TskFileRange> getRanges() throws TskCoreException {
@@ -167,7 +176,8 @@ public class VirtualDirectory extends AbstractFile {
 	 * Accepts a content visitor (Visitor design pattern).
 	 *
 	 * @param visitor A ContentVisitor supplying an algorithm to run using this
-	 * virtual directory as input.
+	 *                virtual directory as input.
+	 *
 	 * @return The output of the algorithm.
 	 */
 	@Override
@@ -179,7 +189,8 @@ public class VirtualDirectory extends AbstractFile {
 	 * Accepts a Sleuthkit item visitor (Visitor design pattern).
 	 *
 	 * @param visitor A SleuthkitItemVisitor supplying an algorithm to run using
-	 * this virtual directory as input.
+	 *                this virtual directory as input.
+	 *
 	 * @return The output of the algorithm.
 	 */
 	@Override
@@ -191,9 +202,10 @@ public class VirtualDirectory extends AbstractFile {
 	 * Provides a string representation of this virtual directory.
 	 *
 	 * @param preserveState True if state should be included in the string
-	 * representation of this object.
+	 *                      representation of this object.
+	 *
 	 * @throws TskCoreException if there was an error querying the case
-	 * database.
+	 *                          database.
 	 */
 	@Override
 	public String toString(boolean preserveState) {
@@ -206,34 +218,39 @@ public class VirtualDirectory extends AbstractFile {
 	 * directory can also be a data source, with local/logical files as its
 	 * children. Not a file system directory.
 	 *
-	 * @param db The case database.
-	 * @param objId The object id of the virtual directory.
+	 * @param db                 The case database.
+	 * @param objId              The object id of the virtual directory.
 	 * @param dataSourceObjectId The object id of the data source for the
-	 * virtual directory; same as objId if the virtual directory is a data
-	 * source.
-	 * @param name The name of the virtual directory.
-	 * @param dirType The TSK_FS_NAME_TYPE_ENUM for the virtual directory.
-	 * @param metaType The TSK_FS_META_TYPE_ENUM for the virtual directory.
-	 * @param dirFlag The TSK_FS_META_TYPE_ENUM for the virtual directory.
-	 * @param metaFlags The meta flags for the virtual directory.
-	 * @param size The size value for the virtual directory
-	 * @param md5Hash The MD5 hash for the virtual directory.
-	 * @param knownState The known state for the virtual directory
-	 * @param parentPath The parent path for the virtual directory, should be
-	 * "/" if the virtual directory is a data source.
+	 *                           virtual directory; same as objId if the virtual
+	 *                           directory is a data source.
+	 * @param name               The name of the virtual directory.
+	 * @param dirType            The TSK_FS_NAME_TYPE_ENUM for the virtual
+	 *                           directory.
+	 * @param metaType           The TSK_FS_META_TYPE_ENUM for the virtual
+	 *                           directory.
+	 * @param dirFlag            The TSK_FS_META_TYPE_ENUM for the virtual
+	 *                           directory.
+	 * @param metaFlags          The meta flags for the virtual directory.
+	 * @param size               The size value for the virtual directory
+	 * @param md5Hash            The MD5 hash for the virtual directory.
+	 * @param knownState         The known state for the virtual directory
+	 * @param parentPath         The parent path for the virtual directory,
+	 *                           should be "/" if the virtual directory is a
+	 *                           data source.
+	 *
 	 * @deprecated Do not make subclasses outside of this package.
 	 */
 	@Deprecated
 	@SuppressWarnings("deprecation")
-	VirtualDirectory(SleuthkitCase db, 
-			long objId, 
-			String name, 
-			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, 
+	VirtualDirectory(SleuthkitCase db,
+			long objId,
+			String name,
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
-			long size, 
-			String md5Hash, FileKnown knownState, 
+			long size,
+			String md5Hash, FileKnown knownState,
 			String parentPath) {
 		this(db, objId, db.getDataSourceObjectId(objId), name, dirType, metaType, dirFlag, metaFlags, md5Hash, knownState, parentPath);
 	}
-	
+
 }

@@ -47,32 +47,39 @@ public class DerivedFile extends AbstractFile {
 	 * user's machine). A typical example of a derived file is a file extracted
 	 * from an archive file.
 	 *
-	 * @param db The case database to which the file has been added.
-	 * @param objId The object id of the file in the case database.
+	 * @param db                 The case database to which the file has been
+	 *                           added.
+	 * @param objId              The object id of the file in the case database.
 	 * @param dataSourceObjectId The object id of the data source for the file.
-	 * @param name The name of the file.
-	 * @param dirType The type of the file, usually as reported in the name
-	 * structure of the file system. May be set to TSK_FS_NAME_TYPE_ENUM.UNDEF.
-	 * @param metaType The type of the file, usually as reported in the metadata
-	 * structure of the file system. May be set to
-	 * TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
-	 * @param dirFlag The allocated status of the file, usually as reported in
-	 * the name structure of the file system.
-	 * @param metaFlags The allocated status of the file, usually as reported in
-	 * the metadata structure of the file system.
-	 * @param size The size of the file.
-	 * @param ctime The changed time of the file.
-	 * @param crtime The created time of the file.
-	 * @param atime The accessed time of the file.
-	 * @param mtime The modified time of the file.
-	 * @param md5Hash The MD5 hash of the file, null if not yet calculated.
-	 * @param knownState The known state of the file from a hash database
-	 * lookup, null if not yet looked up.
-	 * @param parentPath The path of the parent of the file.
-	 * @param localPath The absolute path of the file in secondary storage.
-	 * @param parentId The object id of parent of the file.
-	 * @param mimeType The MIME type of the file, null if it has not yet been
-	 * determined.
+	 * @param name               The name of the file.
+	 * @param dirType            The type of the file, usually as reported in
+	 *                           the name structure of the file system. May be
+	 *                           set to TSK_FS_NAME_TYPE_ENUM.UNDEF.
+	 * @param metaType           The type of the file, usually as reported in
+	 *                           the metadata structure of the file system. May
+	 *                           be set to
+	 *                           TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
+	 * @param dirFlag            The allocated status of the file, usually as
+	 *                           reported in the name structure of the file
+	 *                           system.
+	 * @param metaFlags          The allocated status of the file, usually as
+	 *                           reported in the metadata structure of the file
+	 *                           system.
+	 * @param size               The size of the file.
+	 * @param ctime              The changed time of the file.
+	 * @param crtime             The created time of the file.
+	 * @param atime              The accessed time of the file.
+	 * @param mtime              The modified time of the file.
+	 * @param md5Hash            The MD5 hash of the file, null if not yet
+	 *                           calculated.
+	 * @param knownState         The known state of the file from a hash
+	 *                           database lookup, null if not yet looked up.
+	 * @param parentPath         The path of the parent of the file.
+	 * @param localPath          The absolute path of the file in secondary
+	 *                           storage.
+	 * @param parentId           The object id of parent of the file.
+	 * @param mimeType           The MIME type of the file, null if it has not
+	 *                           yet been determined.
 	 */
 	DerivedFile(SleuthkitCase db,
 			long objId,
@@ -110,8 +117,9 @@ public class DerivedFile extends AbstractFile {
 	 * Gets the derived files, if any, that are children of this derived file.
 	 *
 	 * @return A list of the children.
+	 *
 	 * @throws TskCoreException if there was an error querying the case
-	 * database.
+	 *                          database.
 	 */
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
@@ -123,8 +131,9 @@ public class DerivedFile extends AbstractFile {
 	 * this derived file.
 	 *
 	 * @return A list of the children.
+	 *
 	 * @throws TskCoreException if there was an error querying the case
-	 * database.
+	 *                          database.
 	 */
 	@Override
 	public List<Long> getChildrenIds() throws TskCoreException {
@@ -135,8 +144,9 @@ public class DerivedFile extends AbstractFile {
 	 * Gets the method used to derive this file, if it has been recorded.
 	 *
 	 * @return Derived method or null.
+	 *
 	 * @throws TskCoreException if there was an error querying the case
-	 * database.
+	 *                          database.
 	 */
 	public synchronized DerivedMethod getDerivedMethod() throws TskCoreException {
 		if (derivedMethod == null && hasDerivedMethod == true) {
@@ -158,7 +168,8 @@ public class DerivedFile extends AbstractFile {
 	 * Accepts a content visitor (Visitor design pattern).
 	 *
 	 * @param visitor A ContentVisitor supplying an algorithm to run using this
-	 * derived file as input.
+	 *                derived file as input.
+	 *
 	 * @return The output of the algorithm.
 	 */
 	@Override
@@ -170,7 +181,8 @@ public class DerivedFile extends AbstractFile {
 	 * Accepts a Sleuthkit item visitor (Visitor design pattern).
 	 *
 	 * @param visitor A SleuthkitItemVisitor supplying an algorithm to run using
-	 * this derived file as input.
+	 *                this derived file as input.
+	 *
 	 * @return The output of the algorithm.
 	 */
 	@Override
@@ -196,9 +208,10 @@ public class DerivedFile extends AbstractFile {
 	 * Provides a string representation of this derived file.
 	 *
 	 * @param preserveState True if state should be included in the string
-	 * representation of this object.
+	 *                      representation of this object.
+	 *
 	 * @throws TskCoreException if there was an error querying the case
-	 * database.
+	 *                          database.
 	 */
 	@Override
 	public String toString(boolean preserveState) {
@@ -213,10 +226,10 @@ public class DerivedFile extends AbstractFile {
 	 */
 	public static class DerivedMethod {
 
-		private final int derivedId; 
-		private String toolName; 
-		private String toolVersion; 
-		private String other; 
+		private final int derivedId;
+		private String toolName;
+		private String toolVersion;
+		private String other;
 		private String rederiveDetails;
 
 		public DerivedMethod(int derivedId, String rederiveDetails) {
@@ -269,35 +282,37 @@ public class DerivedFile extends AbstractFile {
 	}
 
 	/**
-	/**
+	 * /**
 	 * Constructs a representation of a file or directory that has been derived
 	 * from another file and is stored outside of the data source (e.g., on a
 	 * user's machine). A typical example of a derived file is a file extracted
 	 * from an archive file.
 	 *
-	 * @param db The case database to which the file has been added.
-	 * @param objId The object id of the file in the case database.
-	 * @param name The name of the file.
-	 * @param dirType The type of the file, usually as reported in the name
-	 * structure of the file system. May be set to TSK_FS_NAME_TYPE_ENUM.UNDEF.
-	 * @param metaType The type of the file, usually as reported in the metadata
-	 * structure of the file system. May be set to
-	 * TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
-	 * @param dirFlag The allocated status of the file, usually as reported in
-	 * the name structure of the file system.
-	 * @param metaFlags The allocated status of the file, usually as reported in
-	 * the metadata structure of the file system.
-	 * @param size The size of the file.
-	 * @param ctime The changed time of the file.
-	 * @param crtime The created time of the file.
-	 * @param atime The accessed time of the file.
-	 * @param mtime The modified time of the file.
-	 * @param md5Hash The MD5 hash of the file, null if not yet calculated.
+	 * @param db         The case database to which the file has been added.
+	 * @param objId      The object id of the file in the case database.
+	 * @param name       The name of the file.
+	 * @param dirType    The type of the file, usually as reported in the name
+	 *                   structure of the file system. May be set to
+	 *                   TSK_FS_NAME_TYPE_ENUM.UNDEF.
+	 * @param metaType   The type of the file, usually as reported in the
+	 *                   metadata structure of the file system. May be set to
+	 *                   TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
+	 * @param dirFlag    The allocated status of the file, usually as reported
+	 *                   in the name structure of the file system.
+	 * @param metaFlags  The allocated status of the file, usually as reported
+	 *                   in the metadata structure of the file system.
+	 * @param size       The size of the file.
+	 * @param ctime      The changed time of the file.
+	 * @param crtime     The created time of the file.
+	 * @param atime      The accessed time of the file.
+	 * @param mtime      The modified time of the file.
+	 * @param md5Hash    The MD5 hash of the file, null if not yet calculated.
 	 * @param knownState The known state of the file from a hash database
-	 * lookup, null if not yet looked up.
+	 *                   lookup, null if not yet looked up.
 	 * @param parentPath The path of the parent of the file.
-	 * @param localPath The absolute path of the file in secondary storage.
-	 * @param parentId The object id of parent of the file.
+	 * @param localPath  The absolute path of the file in secondary storage.
+	 * @param parentId   The object id of parent of the file.
+	 *
 	 * @deprecated Do not make subclasses outside of this package.
 	 */
 	@Deprecated
