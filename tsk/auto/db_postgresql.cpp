@@ -25,6 +25,7 @@
 #include <sstream>
 #include <algorithm>
 #include <cstdint>
+#include "guid.h"
 
 using std::stringstream;
 using std::sort;
@@ -738,12 +739,26 @@ int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, co
     int ret = attempt_exec(stmt, "Error adding data to tsk_image_info table: %s\n");
     PQfreemem(timezone_sql);
     PQfreemem(md5_sql);
-    if (1 == ret || deviceId.empty()) {
+    if (1 == ret) {
         return ret;
     }
 
     // Add the data source to the data_source_info table.
-    char *deviceId_sql = PQescapeLiteral(conn, deviceId.c_str(), strlen(deviceId.c_str()));
+    // Add the data source to the data_source_info table.
+    stringstream deviceIdStr;
+#ifdef GUID_WINDOWS
+    if (deviceId.empty()) {
+        // Use a GUID as the default.
+        GuidGenerator generator;
+        Guid guid = generator.newGuid();
+        deviceIdStr << guid;
+    } else {
+        deviceIdStr << deviceId;
+    }
+#else
+    deviceIdStr << deviceId;
+#endif
+    char *deviceId_sql = PQescapeLiteral(conn, deviceId.c_str(), strlen(deviceIdStr.str().c_str()));
     if (!isEscapedStringValid(deviceId_sql, deviceId.c_str(), "TskDbPostgreSQL::addImageInfo: Unable to escape data source string: %s (Error: %s)\n")) {
         PQfreemem(deviceId_sql);
         return 1;
