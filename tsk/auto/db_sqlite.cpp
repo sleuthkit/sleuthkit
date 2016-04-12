@@ -15,7 +15,7 @@
 
 #include "tsk_db_sqlite.h"
 #include "sqlite3.h"
-
+#include "guid.h"
 #include <string.h>
 #include <sstream>
 #include <algorithm>
@@ -501,7 +501,20 @@ int TskDbSqlite::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const 
     }
 
     // Add the data source to the data_source_info table.
-    sql = sqlite3_mprintf("INSERT INTO data_source_info (obj_id, device_id, time_zone) VALUES (%lld, '%s', '%s');", objId, deviceId.c_str(), timezone.c_str());
+    stringstream deviceIdStr;
+#ifdef GUID_WINDOWS
+    if (deviceId.empty()) {
+        // Use a GUID as the default.
+        GuidGenerator generator;
+        Guid guid = generator.newGuid();
+        deviceIdStr << guid;
+    } else {
+        deviceIdStr << deviceId;
+    }
+#else
+    deviceIdStr << deviceId;
+#endif
+    sql = sqlite3_mprintf("INSERT INTO data_source_info (obj_id, device_id, time_zone) VALUES (%lld, '%s', '%s');", objId, deviceIdStr.str().c_str(), timezone.c_str());
     ret = attempt_exec(sql, "Error adding data to tsk_image_info table: %s\n");
     sqlite3_free(sql);
     return ret;
