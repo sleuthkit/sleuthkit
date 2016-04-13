@@ -38,6 +38,8 @@
 
 namespace Rejistry {
 
+    std::wstring_convert<std::codecvt_utf16<wchar_t, 0x10ffff, std::little_endian>, wchar_t> conv;
+
     RegistryByteBuffer::RegistryByteBuffer(ByteBuffer * buffer) {
         if (buffer == NULL) {
             throw std::invalid_argument("Buffer must not be null.");
@@ -107,7 +109,6 @@ namespace Rejistry {
             return L"";
         }
 
-        std::wstring_convert<std::codecvt_utf16<wchar_t, 0x10ffff, std::little_endian>, wchar_t> conv;
         std::wstring result;
 
         try {
