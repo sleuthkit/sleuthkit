@@ -28,7 +28,6 @@
 #include <map>
 #include <vector>
 
-
 /** 
  * Class to hold the pair of MFT entry and sequence. 
  */
@@ -210,6 +209,11 @@ ntfs_parent_act(TSK_FS_FILE * fs_file, void *ptr)
 {
     NTFS_INFO *ntfs = (NTFS_INFO *) fs_file->fs_info;
     TSK_FS_META_NAME_LIST *fs_name_list;
+
+    if ((fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC) &&
+        fs_file->meta->type == TSK_FS_META_TYPE_REG) {
+        ntfs->alloc_file_count++;
+    }
 
     /* go through each file name structure */
     fs_name_list = fs_file->meta->name2;
