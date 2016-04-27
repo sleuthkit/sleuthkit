@@ -236,6 +236,8 @@ ntfs_dent_copy(NTFS_INFO * ntfs, ntfs_idxentry * idxe,
     UTF8 *name8;
     int retVal;
 
+    tsk_fs_name_reset(fs_name);
+
     fs_name->meta_addr = tsk_getu48(fs->endian, idxe->file_ref);
     fs_name->meta_seq = tsk_getu16(fs->endian, idxe->seq_num);
 
