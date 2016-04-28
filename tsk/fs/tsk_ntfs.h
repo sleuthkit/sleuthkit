@@ -644,7 +644,8 @@ extern "C" {
         NTFS_SXX_BUFFER sds_data;       // (r/w shared - lock) 
 #endif
 
-        uint32_t alloc_file_count;      // number of allocated regular files
+        uint32_t alloc_file_count;      // number of allocated regular files, will be -1
+                                        // until a directory is opened.
     } NTFS_INFO;
 
 
