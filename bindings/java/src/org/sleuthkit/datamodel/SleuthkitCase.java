@@ -504,18 +504,18 @@ public class SleuthkitCase {
 			statement.execute("CREATE INDEX attribute_valueInt64 ON blackboard_attributes(value_int64);"); //NON-NLS
 			statement.execute("CREATE INDEX attribute_valueDouble ON blackboard_attributes(value_double);"); //NON-NLS
 			resultSet = statement.executeQuery(
-					"SELECT attrs.artifact_id, arts.artifact_type_id " + //NON-NLS
-					"FROM blackboard_attributes AS attrs " + //NON-NLS
-					"INNER JOIN blackboard_artifacts AS arts " + //NON-NLS
-					"WHERE attrs.artifact_id = arts.artifact_id;"); //NON-NLS
+					"SELECT attrs.artifact_id, arts.artifact_type_id " //NON-NLS
+					+ "FROM blackboard_attributes AS attrs " //NON-NLS
+					+ "INNER JOIN blackboard_artifacts AS arts " //NON-NLS
+					+ "WHERE attrs.artifact_id = arts.artifact_id;"); //NON-NLS
 			updateStatement = connection.createStatement();
 			while (resultSet.next()) {
 				long artifactId = resultSet.getLong(1);
 				int artifactTypeId = resultSet.getInt(2);
 				updateStatement.executeUpdate(
-						"UPDATE blackboard_attributes " + //NON-NLS
-						"SET artifact_type_id = " + artifactTypeId + " " + //NON-NLS
-						"WHERE blackboard_attributes.artifact_id = " + artifactId + ";"); //NON-NLS					
+						"UPDATE blackboard_attributes " //NON-NLS
+						+ "SET artifact_type_id = " + artifactTypeId + " " //NON-NLS
+						+ "WHERE blackboard_attributes.artifact_id = " + artifactId + ";"); //NON-NLS					
 			}
 			resultSet.close();
 			resultSet = null;
@@ -574,14 +574,13 @@ public class SleuthkitCase {
 				}
 			}
 			statement.execute(
-					"DELETE FROM blackboard_attributes WHERE artifact_id IN " + //NON-NLS
-					"(SELECT artifact_id FROM blackboard_artifacts WHERE artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() + //NON-NLS
-					" OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ");"); //NON-NLS
+					"DELETE FROM blackboard_attributes WHERE artifact_id IN " //NON-NLS
+					+ "(SELECT artifact_id FROM blackboard_artifacts WHERE artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() //NON-NLS
+					+ " OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ");"); //NON-NLS
 			statement.execute(
-					"DELETE FROM blackboard_artifacts WHERE " + //NON-NLS
-					"artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() + //NON-NLS	
-					" OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ";"); //NON-NLS
-
+					"DELETE FROM blackboard_artifacts WHERE " //NON-NLS
+					+ "artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() //NON-NLS
+					+ " OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ";"); //NON-NLS
 			return 3;
 		} finally {
 			closeStatement(updateStatement);
@@ -629,9 +628,9 @@ public class SleuthkitCase {
 					+ "attrs.attribute_type_id = 62");
 			while (resultSet.next()) {
 				updateStatement.executeUpdate(
-						"UPDATE tsk_files " + //NON-NLS
-						"SET mime_type = '" + resultSet.getString(2) + "' " + //NON-NLS
-						"WHERE tsk_files.obj_id = " + resultSet.getInt(1) + ";"); //NON-NLS	
+						"UPDATE tsk_files " //NON-NLS
+						+ "SET mime_type = '" + resultSet.getString(2) + "' " //NON-NLS
+						+ "WHERE tsk_files.obj_id = " + resultSet.getInt(1) + ";"); //NON-NLS	
 			}
 			resultSet.close();
 
@@ -643,9 +642,9 @@ public class SleuthkitCase {
 				String attributeLabel = resultSet.getString("type_name");
 				if (attributeTypeId < MIN_USER_DEFINED_TYPE_ID) {
 					updateStatement.executeUpdate(
-							"UPDATE blackboard_attribute_types " + //NON-NLS
-							"SET value_type = " + ATTRIBUTE_TYPE.fromLabel(attributeLabel).getValueType().getType() + " " + //NON-NLS
-							"WHERE blackboard_attribute_types.attribute_type_id = " + attributeTypeId + ";"); //NON-NLS	
+							"UPDATE blackboard_attribute_types " //NON-NLS
+							+ "SET value_type = " + ATTRIBUTE_TYPE.fromLabel(attributeLabel).getValueType().getType() + " " //NON-NLS
+							+ "WHERE blackboard_attribute_types.attribute_type_id = " + attributeTypeId + ";"); //NON-NLS	
 				}
 			}
 			resultSet.close();
@@ -3462,19 +3461,23 @@ public class SleuthkitCase {
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public List<LayoutFile> addCarvedFiles(List<CarvedFileContainer> filesToAdd) throws TskCoreException {
+	public synchronized List<LayoutFile> addCarvedFiles(List<CarvedFileContainer> filesToAdd) throws TskCoreException {
 		if (filesToAdd != null && filesToAdd.isEmpty() == false) {
 			List<LayoutFile> addedFiles = new ArrayList<LayoutFile>();
 			CaseDbTransaction localTrans = null;
 			Statement s = null;
 			ResultSet rs = null;
+			boolean addedToCache = false;
+			long firstItemId = 0;
 			acquireExclusiveLock();
 			try {
 				localTrans = beginTransaction();
 				CaseDbConnection connection = localTrans.getConnection();
 
-				// get the ID of the appropriate '$CarvedFiles' directory
-				long firstItemId = filesToAdd.get(0).getId();
+				// Get the ID of the appropriate '$CarvedFiles' directory. 
+				// Each batch will all come from the same Volume or Image,
+				// so we only need to check the first one.
+				firstItemId = getRootId(filesToAdd.get(0).getId());
 				long id = 0;
 				// first, check the cache
 				Long carvedDirId = carvedFileContainersCache.get(firstItemId);
@@ -3512,6 +3515,7 @@ public class SleuthkitCase {
 					if (carvedFilesDir != null) {
 						// add it to the cache
 						carvedFileContainersCache.put(firstItemId, carvedFilesDir.getId());
+						addedToCache = true;
 						id = carvedFilesDir.getId();
 					} else {
 						// a carved files directory does not exist; create one
@@ -3519,6 +3523,7 @@ public class SleuthkitCase {
 						id = vd.getId();
 						// add it to the cache
 						carvedFileContainersCache.put(firstItemId, id);
+						addedToCache = true;
 					}
 				}
 
@@ -3536,8 +3541,7 @@ public class SleuthkitCase {
 				// lots of carved files...
 				boolean isContainerAFs = false;
 				s = connection.createStatement();
-				rs = connection.executeQuery(s, "SELECT * FROM tsk_fs_info " //NON-NLS
-						+ "WHERE obj_id = " + firstItemId); //NON-NLS
+				rs = connection.executeQuery(s, "SELECT * FROM tsk_fs_info WHERE obj_id = " + firstItemId); //NON-NLS
 				if (rs.next()) {
 					isContainerAFs = true;
 				}
@@ -3571,7 +3575,7 @@ public class SleuthkitCase {
 
 					// only insert into the fs_obj_id column if container is a FS
 					if (isContainerAFs) {
-						statement.setLong(2, itemToAdd.getId());
+						statement.setLong(2, getRootId(itemToAdd.getId()));
 					} else {
 						statement.setNull(2, java.sql.Types.BIGINT);
 					}
@@ -3650,6 +3654,17 @@ public class SleuthkitCase {
 				if (null != localTrans) {
 					localTrans.rollback();
 				}
+				if (addedToCache) {
+					carvedFileContainersCache.remove(firstItemId);
+				}
+				throw new TskCoreException("Failed to add carved file to case database", ex);
+			} catch (TskCoreException ex) {
+				if (null != localTrans) {
+					localTrans.rollback();
+				}
+				if (addedToCache) {
+					carvedFileContainersCache.remove(firstItemId);
+				}
 				throw new TskCoreException("Failed to add carved file to case database", ex);
 			} finally {
 				closeResultSet(rs);
@@ -3659,6 +3674,35 @@ public class SleuthkitCase {
 		} else {
 			return Collections.emptyList();
 		}
+	}
+
+	/**
+	 * Finds the root ID of the Volume or Image of the AbstractFile passed in.
+	 *
+	 * @param unallocatedBlockObjectId the object ID of the unallocated block we
+	 *                                 want to find the top level Volume or
+	 *                                 Image parent for.
+	 *
+	 * @return The obj_id of the root parent Volume or Image, -1 if none found.
+	 * 
+	 * @throws TskCoreException if getParent() fails.
+	 */
+	private long getRootId(long unallocatedBlockObjectId) throws TskCoreException {
+		long id = -1;
+		Content parent;
+		try {
+			parent = getContentById(unallocatedBlockObjectId);
+			while (parent != null) {
+				if (parent instanceof Volume || parent instanceof Image) {
+					id = parent.getId();
+					break;
+				}
+				parent = parent.getParent();
+			}
+		} catch (TskCoreException ex) {
+			throw new TskCoreException("Error getting Volume or Image parent of AbstractFile.", ex); //NON-NLS
+		}
+		return id;
 	}
 
 	/**
