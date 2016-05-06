@@ -416,7 +416,7 @@ int
     TskDbSqlite::setupFilePreparedStmt()
 {
     if (prepare_stmt
-        ("SELECT obj_id FROM tsk_files WHERE meta_addr IS ? AND fs_obj_id IS ?",
+        ("SELECT obj_id FROM tsk_files WHERE meta_addr IS ? AND fs_obj_id IS ? and parent_path IS ?",
         &m_selectFilePreparedStmt)) {
             return 1;
     }
@@ -691,11 +691,13 @@ uint32_t TskDbSqlite::hash(const unsigned char *str) {
 }
 
 /**
-* Store meta_addr to object id mapping of the directory in a local cache map
+* Store info about a directory in a complex map structure as a cache for the
+* files who are a child of this directory and want to know its object id. 
+*
 * @param fsObjId fs id of this directory
 * @param fs_file File for the directory to store
-* @param path Full path (parent and this file) of this directory
-* @param objId object id of this directory from the objects table
+* @param path Full path (parent and this file) of the directory
+* @param objId object id of the directory 
 */
 void TskDbSqlite::storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_file, const char *path, const int64_t & objId) {
     // skip the . and .. entries
@@ -704,6 +706,8 @@ void TskDbSqlite::storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_file
     }
 
     uint32_t seq;
+    uint32_t path_hash = hash((const unsigned char *)path);
+
     /* NTFS uses sequence, otherwise we hash the path. We do this to map to the
     * correct parent folder if there are two from the root dir that eventually point to
     * the same folder (one deleted and one allocated) or two hard links. */
@@ -715,17 +719,17 @@ void TskDbSqlite::storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_file
         seq = fs_file->meta->seq;
     }
     else {
-        seq = hash((const unsigned char *)path);
+        seq = path_hash;
     }
 
-    map<TSK_INUM_T, map<uint32_t, int64_t> > &fsMap = m_parentDirIdCache[fsObjId];
+    map<TSK_INUM_T, map<uint32_t, map<uint32_t, int64_t> > > &fsMap = m_parentDirIdCache[fsObjId];
     if (fsMap.count(fs_file->name->meta_addr) == 0) {
-        fsMap[fs_file->name->meta_addr][seq] = objId;
+        fsMap[fs_file->name->meta_addr][seq][path_hash] = objId;
     }
     else {
-        map<uint32_t, int64_t> &fileMap = fsMap[fs_file->name->meta_addr];
+        map<uint32_t, map<uint32_t, int64_t> > &fileMap = fsMap[fs_file->name->meta_addr];
         if (fileMap.count(seq) == 0) {
-            fileMap[seq] = objId;
+            fileMap[seq][path_hash] = objId;
         }
     }
 }
@@ -739,6 +743,8 @@ void TskDbSqlite::storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_file
 */
 int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *path, const int64_t & fsObjId) {
     uint32_t seq;
+    uint32_t path_hash = hash((const unsigned char *)path);
+
     /* NTFS uses sequence, otherwise we hash the path. We do this to map to the
     * correct parent folder if there are two from the root dir that eventually point to
     * the same folder (one deleted and one allocated) or two hard links. */
@@ -746,15 +752,18 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *path,
         seq = fs_file->name->par_seq;
     }
     else {
-        seq = hash((const unsigned char *)path);
+        seq = path_hash;
     }
 
     //get from cache by parent meta addr, if available
-    map<TSK_INUM_T, map<uint32_t, int64_t> > &fsMap = m_parentDirIdCache[fsObjId];
+    map<TSK_INUM_T, map<uint32_t, map<uint32_t, int64_t> > > &fsMap = m_parentDirIdCache[fsObjId];
     if (fsMap.count(fs_file->name->par_addr) > 0) {
-        map<uint32_t, int64_t>  &fileMap = fsMap[fs_file->name->par_addr];
+        map<uint32_t, map<uint32_t, int64_t> > &fileMap = fsMap[fs_file->name->par_addr];
         if (fileMap.count(seq) > 0) {
-            return fileMap[seq];
+            map<uint32_t, int64_t> &pathMap = fileMap[seq];
+            if (pathMap.count(path_hash) > 0) {
+                return pathMap[path_hash];
+            }
         }
         else {
             // printf("Miss: %zu\n", fileMap.count(seq));
@@ -770,6 +779,8 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *path,
         "TskDbSqlite::findParObjId: Error binding meta_addr to statment: %s (result code %d)\n")
         || attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 2, fsObjId),
         "TskDbSqlite::findParObjId: Error binding fs_obj_id to statment: %s (result code %d)\n")
+        || attempt(sqlite3_bind_text(m_selectFilePreparedStmt, 3, path, -1, SQLITE_STATIC),
+        "TskDbSqlite::findParObjId: Error binding path to statment: %s (result code %d)\n")
         || attempt(sqlite3_step(m_selectFilePreparedStmt), SQLITE_ROW,
         "TskDbSqlite::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n"))
     {
