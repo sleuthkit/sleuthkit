@@ -405,9 +405,6 @@ int TskDbPostgreSQL::verifyNonEmptyResultSetSize(const char *sql, PGresult *res,
         return 1;
     }
 
-    int a = PQntuples(res);
-    int b = PQnfields(res);
-
     if (PQntuples(res) < 1 || PQnfields(res) != expectedNumFileds){
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
