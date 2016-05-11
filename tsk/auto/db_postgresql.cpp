@@ -1039,6 +1039,8 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
 */
 int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *path, const int64_t & fsObjId) {
     uint32_t seq;
+    uint32_t path_hash = hash((const unsigned char *)path);
+
     /* NTFS uses sequence, otherwise we hash the path. We do this to map to the
     * correct parent folder if there are two from the root dir that eventually point to
     * the same folder (one deleted and one allocated) or two hard links. */
@@ -1046,29 +1048,55 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
         seq = fs_file->name->par_seq;
     }
     else {
-        seq = hash((const unsigned char *)path);
+        seq = path_hash;
     }
 
     //get from cache by parent meta addr, if available
-    map<TSK_INUM_T, map<uint32_t, int64_t> > &fsMap = m_parentDirIdCache[fsObjId];
+    map<TSK_INUM_T, map<uint32_t, map<uint32_t, int64_t> > > &fsMap = m_parentDirIdCache[fsObjId];
     if (fsMap.count(fs_file->name->par_addr) > 0) {
-        map<uint32_t, int64_t>  &fileMap = fsMap[fs_file->name->par_addr];
+        map<uint32_t, map<uint32_t, int64_t> > &fileMap = fsMap[fs_file->name->par_addr];
         if (fileMap.count(seq) > 0) {
-            return fileMap[seq];
+            map<uint32_t, int64_t> &pathMap = fileMap[seq];
+            if (pathMap.count(path_hash) > 0) {
+                return pathMap[path_hash];
+            }
         }
         else {
             // printf("Miss: %d\n", fileMap.count(seq));
         }
     }
 
+
+    // clean up path------------------
+    // +2 = space for leading slash and terminating null
+    size_t path_len = strlen(path) + 2;
+    char *escaped_path;
+    if ((escaped_path = (char *) tsk_malloc(path_len)) == NULL) { 
+        return 1;
+    }
+
+    strncpy(escaped_path, "/", path_len);
+    strncat(escaped_path, path, path_len - strlen(escaped_path));
+
+    // replace all non-UTF8 characters
+    tsk_cleanupUTF8(escaped_path, '^');
+
+    // escape strings for use within an SQL command
+    char *escaped_path_sql = PQescapeLiteral(conn, escaped_path, strlen(escaped_path));
+    if (!isEscapedStringValid(escaped_path_sql, escaped_path, "TskDbPostgreSQL::findParObjId: Unable to escape path string: %s\n")) {
+        free(escaped_path);
+        PQfreemem(escaped_path_sql);
+        return 1;
+    }
+    //---------------------------------
+
     // fprintf(stderr, "Miss: %s (%"PRIu64")\n", fs_file->name->name, fs_file->name->meta_addr);
 
     // Find the parent file id in the database using the parent metadata address
     // @@@ This should use sequence number when the new database supports it
-
     char zSQL[1024];
     int expectedNumFileds = 1;
-    snprintf(zSQL, 1024, "SELECT obj_id FROM tsk_files WHERE meta_addr = %" PRIu64 " AND fs_obj_id = %" PRId64 "", fs_file->name->par_addr, fsObjId);
+    snprintf(zSQL, 1024, "SELECT obj_id FROM tsk_files WHERE meta_addr = %" PRIu64 " AND fs_obj_id = %" PRId64 " AND parent_path = %s", fs_file->name->par_addr, fsObjId, escaped_path_sql);
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n");
 
     // check if a valid result set was returned
@@ -1078,6 +1106,8 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
 
     int64_t parObjId = atoll(PQgetvalue(res, 0, 0));
     PQclear(res);
+    free(escaped_path);
+    PQfreemem(escaped_path_sql);
     return parObjId;
 }
 
@@ -1101,11 +1131,13 @@ uint32_t TskDbPostgreSQL::hash(const unsigned char *str) {
 }
 
 /**
-* Store meta_addr to object id mapping of the directory in a local cache map
+* Store info about a directory in a complex map structure as a cache for the
+* files who are a child of this directory and want to know its object id. 
+*
 * @param fsObjId fs id of this directory
 * @param fs_file File for the directory to store
-* @param path Full path (parent and this file) of this directory
-* @param objId object id of this directory from the objects table
+* @param path Full path (parent and this file) of the directory
+* @param objId object id of the directory 
 */
 void TskDbPostgreSQL::storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_file, const char *path, const int64_t & objId) {
     // skip the . and .. entries
@@ -1114,6 +1146,8 @@ void TskDbPostgreSQL::storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_
     }
 
     uint32_t seq;
+    uint32_t path_hash = hash((const unsigned char *)path);
+
     /* NTFS uses sequence, otherwise we hash the path. We do this to map to the
     * correct parent folder if there are two from the root dir that eventually point to
     * the same folder (one deleted and one allocated) or two hard links. */
@@ -1125,17 +1159,17 @@ void TskDbPostgreSQL::storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_
         seq = fs_file->meta->seq;
     }
     else {
-        seq = hash((const unsigned char *)path);
+        seq = path_hash;
     }
-
-    map<TSK_INUM_T, map<uint32_t, int64_t> > &fsMap = m_parentDirIdCache[fsObjId];
+    
+    map<TSK_INUM_T, map<uint32_t, map<uint32_t, int64_t> > > &fsMap = m_parentDirIdCache[fsObjId];
     if (fsMap.count(fs_file->name->meta_addr) == 0) {
-        fsMap[fs_file->name->meta_addr][seq] = objId;
+        fsMap[fs_file->name->meta_addr][seq][path_hash] = objId;
     }
     else {
-        map<uint32_t, int64_t> &fileMap = fsMap[fs_file->name->meta_addr];
+        map<uint32_t, map<uint32_t, int64_t> > &fileMap = fsMap[fs_file->name->meta_addr];
         if (fileMap.count(seq) == 0) {
-            fileMap[seq] = objId;
+            fileMap[seq][path_hash] = objId;
         }
     }
 }
