@@ -1106,6 +1106,8 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
 
     int64_t parObjId = atoll(PQgetvalue(res, 0, 0));
     PQclear(res);
+    free(escaped_path);
+    PQfreemem(escaped_path_sql);
     return parObjId;
 }
 
