@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2012-2014 Basis Technology Corp.
+ * Copyright 2012-2016 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,13 +20,25 @@ package org.sleuthkit.datamodel;
 
 import java.util.List;
 
+/**
+ * Contains a representation of a carved file.
+ */
 public final class CarvedFileContainer {
 
-	private String mCarvedFileName;
-	private long mCarvedFileSize;
-	private long mContainerId;
-	private List<TskFileRange> mRangeData;
+	private final String mCarvedFileName;
+	private final long mCarvedFileSize;
+	private final long mContainerId;
+	private final List<TskFileRange> mRangeData;
 
+	/**
+	 * @param carvedFileName The name of the carved file as a String
+	 * @param carvedFileSize The size of the carved file in bytes
+	 * @param containerId    The obj_id of the unallocated space block
+	 *                       'container' where the carved file was found.
+	 * @param rangeData      The actual offset ranges inside the unallocated
+	 *                       space block 'container' where the carved file
+	 *                       resides.
+	 */
 	public CarvedFileContainer(String carvedFileName, long carvedFileSize, long containerId, List<TskFileRange> rangeData) {
 		mCarvedFileName = carvedFileName;
 		mCarvedFileSize = carvedFileSize;
