@@ -277,7 +277,7 @@ extern "C" {
         char *name;             ///< Name of attribute (in UTF-8).  Will be NULL if attribute doesn't have a name. 
         size_t name_size;       ///< Number of bytes allocated to name
         TSK_FS_ATTR_TYPE_ENUM type;     ///< Type of attribute
-        uint16_t id;            ///< Id of attribute
+        int16_t id;            ///< Id of attribute
 
         TSK_OFF_T size;         ///< Size in bytes of the attribute resident and non-resident content (does not include skiplen for non-resident attributes)
 
@@ -481,7 +481,7 @@ extern "C" {
                 time_t fn_atime_nano;   ///< NTFS access time stored in FILE_NAME in nano-second resolution
                 time_t fn_ctime;   ///< NTFS change (MFT Entry) time stored in FILE_NAME
                 time_t fn_ctime_nano;   ///< NTFS change (MFT Entry) time stored in FILE_NAME in nano-second resolution
-                uint16_t fn_id; ///< Attribute ID used to populate FN times. 
+                int16_t fn_id; ///< Attribute ID used to populate FN times. 
             } ntfs;
         } time2;
 
