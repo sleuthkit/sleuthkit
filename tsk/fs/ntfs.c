@@ -1678,7 +1678,6 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
 
         int retVal, i;
         uint32_t type;
-        uint16_t id_temp_unit;
         int16_t id, id_new;
         
         // sanity check on bounds of attribute. Prevents other
@@ -1690,7 +1689,6 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
         
         /* Get the type of this attribute */
         type = tsk_getu32(fs->endian, attr->type);
-        id_temp_unit = tsk_getu16(fs->endian, attr->id);
         id = (int16_t)tsk_getu16(fs->endian, attr->id);
         id_new = id;
 
