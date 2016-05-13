@@ -831,7 +831,7 @@ int TskDbPostgreSQL::addFsInfo(const TSK_FS_INFO * fs_info, int64_t parObjId, in
 * Add a file system file to the database
 * @param fs_file File structure to add
 * @param fs_attr Specific attribute to add
-* @param path Path of the file
+* @param path Path of parent folder
 * @param md5 Binary value of MD5 (i.e. 16 bytes) or NULL 
 * @param known Status regarding if it was found in hash database or not
 * @param fsObjId File system object of its file system
@@ -1058,7 +1058,7 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
         if (fileMap.count(seq) > 0) {
             map<uint32_t, int64_t> &pathMap = fileMap[seq];
             if (pathMap.count(path_hash) > 0) {
-                return pathMap[path_hash];
+                //return pathMap[path_hash];
             }
         }
         else {
@@ -1066,37 +1066,63 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
         }
     }
 
+    // Need to break up 'path' in to the parent folder to match in 'parent_path' and the folder 
+    // name to match with the 'name' column in tsk_files table
 
-    // clean up path------------------
-    // +2 = space for leading slash and terminating null
-    size_t path_len = strlen(path) + 2;
-    char *escaped_path;
-    if ((escaped_path = (char *) tsk_malloc(path_len)) == NULL) { 
-        return 1;
+    // path usually ends with "/" which needs to be stripped off
+    char *cleaned_parent_path = (char *) tsk_malloc(strlen(path) + 1);  // +1 for terminating null
+    size_t path_len = strlen(path);  
+    size_t cleaned_path_len = strlen(path) + 1;
+    const char *ch = "/";    
+    if (path_len > 0 && strcmp(&path[path_len - 1], ch) == 0) {
+        //path_len--; // remove trailing slash
+        strncpy(cleaned_parent_path, path, path_len - 1);  // remove trailing slash
+    } else {
+        cleaned_parent_path[0] = '\0';  // add terminating null to the empty path
     }
 
-    strncpy(escaped_path, "/", path_len);
-    strncat(escaped_path, path, path_len - strlen(escaped_path));
+    char *parent_file_name = (char *) tsk_malloc(cleaned_path_len);    
+    char *escaped_parent_path = (char *) tsk_malloc(cleaned_path_len + 2);  // +2 is for leading slash and terminating null
+    strncpy(&escaped_parent_path[0], "/", 1);  // add leasing slash   
+    
+    // Find the last instance of "/"
+    const char *chptr = strrchr(cleaned_parent_path, *ch);
+    if (chptr) {
+        // character found in the string
+        size_t position = chptr - cleaned_parent_path;
+
+        // everythig to the left is 'parent_path'
+        strncpy(&escaped_parent_path[1], cleaned_parent_path, position+1);   // copy after leading slash, include the trailing slash
+
+        // everything to the right is 'name'
+        strcpy(parent_file_name, chptr+1);
+    } else {
+        strncpy(parent_file_name, cleaned_parent_path, cleaned_path_len); // copy the terminating null character as well
+    }
 
     // replace all non-UTF8 characters
-    tsk_cleanupUTF8(escaped_path, '^');
+    tsk_cleanupUTF8(escaped_parent_path, '^');
+    tsk_cleanupUTF8(parent_file_name, '^');
 
     // escape strings for use within an SQL command
-    char *escaped_path_sql = PQescapeLiteral(conn, escaped_path, strlen(escaped_path));
-    if (!isEscapedStringValid(escaped_path_sql, escaped_path, "TskDbPostgreSQL::findParObjId: Unable to escape path string: %s\n")) {
-        free(escaped_path);
+    char *escaped_path_sql = PQescapeLiteral(conn, escaped_parent_path, strlen(escaped_parent_path));
+    char *escaped_parent_name_sql = PQescapeLiteral(conn, parent_file_name, strlen(parent_file_name));
+    if (!isEscapedStringValid(escaped_path_sql, escaped_parent_path, "TskDbPostgreSQL::findParObjId: Unable to escape path string: %s\n")
+        || !isEscapedStringValid(escaped_parent_name_sql, parent_file_name, "TskDbPostgreSQL::findParObjId: Unable to escape path string: %s\n")) {
+        free(escaped_parent_path);
+        free(cleaned_parent_path);
+        free(parent_file_name);
         PQfreemem(escaped_path_sql);
+        PQfreemem(escaped_parent_name_sql);
         return 1;
     }
-    //---------------------------------
-
-    // fprintf(stderr, "Miss: %s (%"PRIu64")\n", fs_file->name->name, fs_file->name->meta_addr);
 
     // Find the parent file id in the database using the parent metadata address
     // @@@ This should use sequence number when the new database supports it
     char zSQL[1024];
     int expectedNumFileds = 1;
-    snprintf(zSQL, 1024, "SELECT obj_id FROM tsk_files WHERE meta_addr = %" PRIu64 " AND fs_obj_id = %" PRId64 " AND parent_path = %s", fs_file->name->par_addr, fsObjId, escaped_path_sql);
+    snprintf(zSQL, 1024, "SELECT obj_id FROM tsk_files WHERE meta_addr = %" PRIu64 " AND fs_obj_id = %" PRId64 " AND parent_path = %s AND name = %s", 
+        fs_file->name->par_addr, fsObjId, escaped_path_sql, escaped_parent_name_sql);
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n");
 
     // check if a valid result set was returned
@@ -1106,8 +1132,11 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
 
     int64_t parObjId = atoll(PQgetvalue(res, 0, 0));
     PQclear(res);
-    free(escaped_path);
+    free(parent_file_name);    
+    free(escaped_parent_path);
+    free(cleaned_parent_path);
     PQfreemem(escaped_path_sql);
+    PQfreemem(escaped_parent_name_sql);
     return parObjId;
 }
 

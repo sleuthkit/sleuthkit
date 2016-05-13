@@ -632,7 +632,7 @@ int
 * Add a file system file to the database
 * @param fs_file File structure to add
 * @param fs_attr Specific attribute to add
-* @param path Path of the file
+* @param path Path of parent folder
 * @param md5 Binary value of MD5 (i.e. 16 bytes) or NULL 
 * @param known Status regarding if it was found in hash database or not
 * @param fsObjId File system object of its file system
