@@ -191,6 +191,8 @@ class TskDb {
     virtual bool inTransaction() = 0;
     virtual bool dbExists() = 0;
 
+    virtual void getParentPathAndName(const char *path, char **ret_parent_path, char **ret_parent_name);
+
     //query methods / getters
     virtual TSK_RETVAL_ENUM getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts) = 0;
     virtual TSK_RETVAL_ENUM getFsInfos(int64_t imgId, vector<TSK_DB_FS_INFO> & fsInfos) = 0;

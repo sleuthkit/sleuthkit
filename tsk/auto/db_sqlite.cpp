@@ -416,7 +416,7 @@ int
     TskDbSqlite::setupFilePreparedStmt()
 {
     if (prepare_stmt
-        ("SELECT obj_id FROM tsk_files WHERE meta_addr IS ? AND fs_obj_id IS ? and parent_path IS ?",
+        ("SELECT obj_id FROM tsk_files WHERE meta_addr IS ? AND fs_obj_id IS ? AND parent_path IS ? AND name IS ?",
         &m_selectFilePreparedStmt)) {
             return 1;
     }
@@ -772,6 +772,12 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *path,
 
     // fprintf(stderr, "Miss: %s (%"PRIu64 " - %" PRIu64 ")\n", fs_file->name->name, fs_file->name->meta_addr,
     //                fs_file->name->par_addr);
+    
+    // Need to break up 'path' in to the parent folder to match in 'parent_path' and the folder 
+    // name to match with the 'name' column in tsk_files table
+    char *parent_file_name = 0;    
+    char *escaped_parent_path = 0;  
+    TskDb::getParentPathAndName(path, &escaped_parent_path, &parent_file_name);
 
     // Find the parent file id in the database using the parent metadata address
     // @@@ This should use sequence number when the new database supports it
@@ -779,7 +785,9 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *path,
         "TskDbSqlite::findParObjId: Error binding meta_addr to statment: %s (result code %d)\n")
         || attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 2, fsObjId),
         "TskDbSqlite::findParObjId: Error binding fs_obj_id to statment: %s (result code %d)\n")
-        || attempt(sqlite3_bind_text(m_selectFilePreparedStmt, 3, path, -1, SQLITE_STATIC),
+        || attempt(sqlite3_bind_text(m_selectFilePreparedStmt, 3, escaped_parent_path, -1, SQLITE_STATIC),
+        "TskDbSqlite::findParObjId: Error binding path to statment: %s (result code %d)\n")
+        || attempt(sqlite3_bind_text(m_selectFilePreparedStmt, 4, parent_file_name, -1, SQLITE_STATIC),
         "TskDbSqlite::findParObjId: Error binding path to statment: %s (result code %d)\n")
         || attempt(sqlite3_step(m_selectFilePreparedStmt), SQLITE_ROW,
         "TskDbSqlite::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n"))
