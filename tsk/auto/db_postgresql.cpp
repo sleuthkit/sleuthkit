@@ -1073,12 +1073,16 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
     char *cleaned_parent_path = (char *) tsk_malloc(strlen(path) + 1);  // +1 for terminating null
     size_t path_len = strlen(path);  
     size_t cleaned_path_len = strlen(path) + 1;
-    const char *ch = "/";    
-    if (path_len > 0 && strcmp(&path[path_len - 1], ch) == 0) {
-        //path_len--; // remove trailing slash
-        strncpy(cleaned_parent_path, path, path_len - 1);  // remove trailing slash
-    } else {
+    const char *ch = "/";  
+    if (path_len == 0) {
         cleaned_parent_path[0] = '\0';  // add terminating null to the empty path
+    } else {
+        if (strcmp(&path[path_len - 1], ch) == 0) {
+            //path_len--; // remove trailing slash
+            strncpy(cleaned_parent_path, path, path_len - 1);  // remove trailing slash
+        } else {
+            strncpy(cleaned_parent_path, path, path_len);  // name doesn't contain trailing slash
+        }
     }
 
     char *parent_file_name = (char *) tsk_malloc(cleaned_path_len);    
@@ -1097,6 +1101,7 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
         // everything to the right is 'name'
         strcpy(parent_file_name, chptr+1);
     } else {
+        // "/" character not found. the entire path is parent file name. parent path is "/"
         strncpy(parent_file_name, cleaned_parent_path, cleaned_path_len); // copy the terminating null character as well
     }
 
