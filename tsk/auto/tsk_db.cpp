@@ -62,7 +62,7 @@ void TskDb::getParentPathAndName(const char *path, char **ret_parent_path, char 
 
     // path usually ends with "/" which needs to be stripped off
     size_t path_len = strlen(path);  
-    size_t cleaned_path_len = strlen(path) + 1;
+    size_t cleaned_path_len = strlen(path) + 1; // +1 is for leading slash
     const char *ch = "/";  
     if (path_len == 0) {
         cleaned_parent_path[0] = '\0';  // add terminating null to the empty path
