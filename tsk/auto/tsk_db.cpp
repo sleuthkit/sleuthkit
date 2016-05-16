@@ -47,9 +47,11 @@ static char parent_path[MAX_PATH_LENGTH + 2]; // +2 is for leading slash and tra
 
 /*
 * Utility method to break up path into parent folder and folder/file name.
-*
+* @param path Path of folder that we want to analyze
+* @param ret_parent_path pointer to where parent path should be stored
+* @param ret_name pointer to where folder/file name should be stored
 */
-void TskDb::getParentPathAndName(const char *path, char **ret_parent_path, char **ret_parent_name){
+void TskDb::getParentPathAndName(const char *path, char **ret_parent_path, char **ret_name){
     // Need to break up 'path' in to the parent folder to match in 'parent_path' and the folder 
     // name to match with the 'name' column in tsk_files table
 
@@ -99,5 +101,5 @@ void TskDb::getParentPathAndName(const char *path, char **ret_parent_path, char 
 
     // assign return values to pointers
     *ret_parent_path = &parent_path[0];
-    *ret_parent_name = &parent_file_name[0];
+    *ret_name = &parent_file_name[0];
 }
