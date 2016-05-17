@@ -1033,13 +1033,13 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
 /**
 * Find parent object id of TSK_FS_FILE. Use local cache map, if not found, fall back to SQL
 * @param fs_file file to find parent obj id for
-* @param path Path of parent folder that we want to match
+* @param parentPath Path of parent folder that we want to match
 * @param fsObjId fs id of this file
 * @returns parent obj id ( > 0), -1 on error
 */
-int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *path, const int64_t & fsObjId) {
+int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *parentPath, const int64_t & fsObjId) {
     uint32_t seq;
-    uint32_t path_hash = hash((const unsigned char *)path);
+    uint32_t path_hash = hash((const unsigned char *)parentPath);
 
     /* NTFS uses sequence, otherwise we hash the path. We do this to map to the
     * correct parent folder if there are two from the root dir that eventually point to
@@ -1058,7 +1058,7 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
         if (fileMap.count(seq) > 0) {
             map<uint32_t, int64_t> &pathMap = fileMap[seq];
             if (pathMap.count(path_hash) > 0) {
-                return pathMap[path_hash];
+                //return pathMap[path_hash];
             }
         }
         else {
@@ -1068,20 +1068,44 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
 
     // Need to break up 'path' in to the parent folder to match in 'parent_path' and the folder 
     // name to match with the 'name' column in tsk_files table
-    char *parent_file_name = 0;    
-    char *escaped_parent_path = 0;  
-    if (TskDb::getParentPathAndName(path, &escaped_parent_path, &parent_file_name)){
-        return -1;
+    char * input_path = (char *)  malloc(strlen(parentPath) + 1); // +1 is for terminating null
+    sprintf(input_path, "%s", parentPath); // (sprintf also adds terminating null)
+
+    char *parent_name = "";
+    char *parent_path = "";
+    getParentPathAndName(input_path, &parent_path, &parent_name);
+    
+    // the parent path must start and end with a "/"
+    size_t parent_len = strlen(parent_path);
+    char *proper_parent_path = (char *)  malloc(parent_len + 3); // +3 is for leading slash, trailing slash, and terminating null
+    if (parent_len == 0) {
+        sprintf(&proper_parent_path[0], "%s", "/");
+    }
+    else {
+        size_t num_elem = 0;
+        // check if first element is a "/"
+        if (strcmp(&parent_path[0], "/") != 0) {
+            num_elem += sprintf(&proper_parent_path[0], "%s", "/"); // add leading slash
+        } 
+
+        num_elem += sprintf(&proper_parent_path[num_elem], "%s", parent_path); // copy parent path
+        
+        // check if last element is a "/"
+        if (strcmp(&parent_path[parent_len-1], "/") != 0) {
+            num_elem += sprintf(&proper_parent_path[num_elem], "%s", "/"); // add trailing slash (sprintf also adds terminating null)
+        }
     }
 
     // escape strings for use within an SQL command
-    char *escaped_path_sql = PQescapeLiteral(conn, escaped_parent_path, strlen(escaped_parent_path));
-    char *escaped_parent_name_sql = PQescapeLiteral(conn, parent_file_name, strlen(parent_file_name));
-    if (!isEscapedStringValid(escaped_path_sql, escaped_parent_path, "TskDbPostgreSQL::findParObjId: Unable to escape path string: %s\n")
-        || !isEscapedStringValid(escaped_parent_name_sql, parent_file_name, "TskDbPostgreSQL::findParObjId: Unable to escape path string: %s\n")) {
-        PQfreemem(escaped_path_sql);
-        PQfreemem(escaped_parent_name_sql);
-        return -1;
+    char *escaped_path_sql = PQescapeLiteral(conn, proper_parent_path, strlen(proper_parent_path));
+    char *escaped_parent_name_sql = PQescapeLiteral(conn, parent_name, strlen(parent_name));
+    if (!isEscapedStringValid(escaped_path_sql, proper_parent_path, "TskDbPostgreSQL::findParObjId: Unable to escape path string: %s\n")
+        || !isEscapedStringValid(escaped_parent_name_sql, parent_name, "TskDbPostgreSQL::findParObjId: Unable to escape path string: %s\n")) {
+            free(proper_parent_path);
+            free(input_path);
+            PQfreemem(escaped_path_sql);
+            PQfreemem(escaped_parent_name_sql);
+            return -1;
     }
 
     // Find the parent file id in the database using the parent metadata address
@@ -1094,10 +1118,14 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
 
     // check if a valid result set was returned
     if (verifyNonEmptyResultSetSize(zSQL, res, expectedNumFileds, "TskDbPostgreSQL::findParObjId: Unexpected number of results: Expected %d, Received %d\n")) {
+        free(proper_parent_path);
+        free(input_path);
         return -1;
     }
 
     int64_t parObjId = atoll(PQgetvalue(res, 0, 0));
+    free(proper_parent_path);
+    free(input_path);
     PQclear(res);
     PQfreemem(escaped_path_sql);
     PQfreemem(escaped_parent_name_sql);
