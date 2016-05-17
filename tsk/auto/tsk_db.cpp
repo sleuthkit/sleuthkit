@@ -65,6 +65,9 @@ void TskDb::getParentPathAndName(const char *path, char **ret_parent_path, char 
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         tsk_error_set_errstr("TskDb::getParentPathAndName: Path is too long. Length = %d, Max length = %d", path_len, MAX_PATH_LENGTH);
+        // assign return values to pointers
+        *ret_parent_path = &parent_path[0];
+        *ret_name = &parent_file_name[0];
         return;
     }
 
