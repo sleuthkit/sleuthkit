@@ -777,7 +777,9 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *path,
     // name to match with the 'name' column in tsk_files table
     char *parent_file_name = 0;    
     char *escaped_parent_path = 0;  
-    TskDb::getParentPathAndName(path, &escaped_parent_path, &parent_file_name);
+    if (TskDb::getParentPathAndName(path, &escaped_parent_path, &parent_file_name)){
+        return -1;
+    }
 
     // Find the parent file id in the database using the parent metadata address
     // @@@ This should use sequence number when the new database supports it

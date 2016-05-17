@@ -1070,7 +1070,9 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
     // name to match with the 'name' column in tsk_files table
     char *parent_file_name = 0;    
     char *escaped_parent_path = 0;  
-    TskDb::getParentPathAndName(path, &escaped_parent_path, &parent_file_name);
+    if (TskDb::getParentPathAndName(path, &escaped_parent_path, &parent_file_name)){
+        return -1;
+    }
 
     // escape strings for use within an SQL command
     char *escaped_path_sql = PQescapeLiteral(conn, escaped_parent_path, strlen(escaped_parent_path));
@@ -1079,7 +1081,7 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
         || !isEscapedStringValid(escaped_parent_name_sql, parent_file_name, "TskDbPostgreSQL::findParObjId: Unable to escape path string: %s\n")) {
         PQfreemem(escaped_path_sql);
         PQfreemem(escaped_parent_name_sql);
-        return 1;
+        return -1;
     }
 
     // Find the parent file id in the database using the parent metadata address
