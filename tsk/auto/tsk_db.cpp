@@ -42,6 +42,7 @@ TSK_RETVAL_ENUM TskDb::setConnectionInfo(CaseDbConnectionInfo * info){
 
 /*
 * Utility method to break up path into parent folder and folder/file name. 
+* NOTE: input path may be modified inside this method!
 * @param path Path of folder that we want to analyze
 * @param ret_parent_path pointer to parent path
 * @param ret_name pointer to where folder/file name
