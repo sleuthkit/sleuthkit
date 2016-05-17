@@ -1058,7 +1058,7 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
         if (fileMap.count(seq) > 0) {
             map<uint32_t, int64_t> &pathMap = fileMap[seq];
             if (pathMap.count(path_hash) > 0) {
-                //return pathMap[path_hash];
+                return pathMap[path_hash];
             }
         }
         else {
