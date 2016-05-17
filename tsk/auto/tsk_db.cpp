@@ -60,10 +60,17 @@ void TskDb::getParentPathAndName(const char *path, char **ret_parent_path, char 
     parent_file_name[0] = '\0';
     parent_path[0] = '\0';
 
-    // path usually ends with "/" which needs to be stripped off
     size_t path_len = strlen(path);  
+    if (path_len >= MAX_PATH_LENGTH) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("TskDb::getParentPathAndName: Path is too long. Length = %d, Max length = %d", path_len, MAX_PATH_LENGTH);
+        return;
+    }
+
+   // path usually ends with "/" which needs to be stripped off
     size_t cleaned_path_len = strlen(path) + 1; // +1 is for leading slash
-    const char *ch = "/";  
+   const char *ch = "/";  
     if (path_len == 0) {
         cleaned_parent_path[0] = '\0';  // add terminating null to the empty path
     } else {
