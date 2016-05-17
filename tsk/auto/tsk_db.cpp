@@ -68,9 +68,9 @@ void TskDb::getParentPathAndName(const char *path, char **ret_parent_path, char 
         return;
     }
 
-   // path usually ends with "/" which needs to be stripped off
+    // path usually ends with "/" which needs to be stripped off
     size_t cleaned_path_len = strlen(path) + 1; // +1 is for leading slash
-   const char *ch = "/";  
+    const char *ch = "/";  
     if (path_len == 0) {
         cleaned_parent_path[0] = '\0';  // add terminating null to the empty path
     } else {
@@ -83,7 +83,7 @@ void TskDb::getParentPathAndName(const char *path, char **ret_parent_path, char 
     }
 
     parent_path[0] = '/';  // add leasing slash to the parent path  
-    
+
     // Find the last instance of "/"
     const char *chptr = strrchr(cleaned_parent_path, *ch);
     if (chptr) {
