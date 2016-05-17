@@ -72,11 +72,12 @@ void TskDb::getParentPathAndName(char *path, char **ret_parent_path, char **ret_
         path[path_len - 1] = '\0'; 
     }
 
-    // Find the last '/'. Set the pointer for the file name to the char after it. Set '/' to '\0'
+    // Find the last '/' 
     char *chptr = strrchr(path, *ch);
     if (chptr) {
         // character found in the string
         size_t position = chptr - path;
+        // Set the pointer for the file name to the char after it. Set '/' to '\0'
         *ret_name = chptr+1;
         path[position] = '\0';
         *ret_parent_path = path;
