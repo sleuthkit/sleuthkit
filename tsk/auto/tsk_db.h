@@ -150,6 +150,12 @@ ostream& operator <<(ostream &os,const TSK_DB_VS_PART_INFO &vsPartInfos);
  * C++ class that serves as interface to direct database handling classes. 
  */
 class TskDb {
+
+    // these buffers are used to manipulate strings in getParentPathAndName()
+    #define MAX_PATH_LENGTH 2048
+    char parent_name[MAX_PATH_LENGTH];
+    char parent_path[MAX_PATH_LENGTH + 2]; // +2 is for leading slash and trailing slash
+
   public:
 #ifdef TSK_WIN32
 //@@@@
@@ -191,7 +197,7 @@ class TskDb {
     virtual bool inTransaction() = 0;
     virtual bool dbExists() = 0;
 
-    virtual void getParentPathAndName(char *path, char **ret_parent_path, char **ret_name);
+    virtual bool getParentPathAndName(const char *path, char **ret_parent_path, char **ret_name);
 
     //query methods / getters
     virtual TSK_RETVAL_ENUM getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts) = 0;

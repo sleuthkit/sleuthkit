@@ -775,32 +775,10 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *paren
     
     // Need to break up 'path' in to the parent folder to match in 'parent_path' and the folder 
     // name to match with the 'name' column in tsk_files table
-    char * input_path = (char *)  malloc(strlen(parentPath) + 1); // +1 is for terminating null 
-    sprintf(input_path, "%s", parentPath);
-
     char *parent_name = "";
-    char *parent_path = "";
-    getParentPathAndName(input_path, &parent_path, &parent_name);
-    
-    // the parent path must start and end with a "/"
-    size_t parent_len = strlen(parent_path);
-    char *proper_parent_path = (char *)  malloc(parent_len + 3); // +3 is for leading slash, trailing slash, and terminating null
-    if (parent_len == 0) {
-        sprintf(&proper_parent_path[0], "%s", "/");
-    }
-    else {
-        size_t num_elem = 0;
-        // check if first element is a "/"
-        if (strcmp(&parent_path[0], "/") != 0) {
-            num_elem += sprintf(&proper_parent_path[0], "%s", "/"); // add leading slash
-        } 
-
-        num_elem += sprintf(&proper_parent_path[num_elem], "%s", parent_path); // copy parent path
-        
-        // check if last element is a "/"
-        if (strcmp(&parent_path[parent_len-1], "/") != 0) {
-            num_elem += sprintf(&proper_parent_path[num_elem], "%s", "/"); // add trailing slash (sprintf also adds terminating null)
-        }
+    char *parent_path = ""; 
+    if (TskDb::getParentPathAndName(parentPath, &parent_path, &parent_name)){
+        return -1;
     }
 
     // Find the parent file id in the database using the parent metadata address
@@ -809,7 +787,7 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *paren
         "TskDbSqlite::findParObjId: Error binding meta_addr to statment: %s (result code %d)\n")
         || attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 2, fsObjId),
         "TskDbSqlite::findParObjId: Error binding fs_obj_id to statment: %s (result code %d)\n")
-        || attempt(sqlite3_bind_text(m_selectFilePreparedStmt, 3, proper_parent_path, -1, SQLITE_STATIC),
+        || attempt(sqlite3_bind_text(m_selectFilePreparedStmt, 3, parent_path, -1, SQLITE_STATIC),
         "TskDbSqlite::findParObjId: Error binding path to statment: %s (result code %d)\n")
         || attempt(sqlite3_bind_text(m_selectFilePreparedStmt, 4, parent_name, -1, SQLITE_STATIC),
         "TskDbSqlite::findParObjId: Error binding path to statment: %s (result code %d)\n")
@@ -818,8 +796,6 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *paren
     {
         // Statement may be used again, even after error
         sqlite3_reset(m_selectFilePreparedStmt);
-        free(proper_parent_path);
-        free(input_path);
         return -1;
     }
 
@@ -827,13 +803,9 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *paren
 
     if (attempt(sqlite3_reset(m_selectFilePreparedStmt),
         "TskDbSqlite::findParObjId: Error resetting 'select file id by meta_addr' statement: %s\n")) {
-            free(proper_parent_path);
-            free(input_path);
             return -1;
     }
 
-    free(proper_parent_path);
-    free(input_path);
     return parObjId;
 }
 
