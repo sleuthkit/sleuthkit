@@ -1155,14 +1155,16 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	@Deprecated
 	@SuppressWarnings("deprecation")
-	public short getAttrId() {
-		/* NOTE: in extremely rare occurances attrId can be larger than what a signed short can hold (2^15).
-		 * Therefore this method has been deprecated. For backwards compatibility, attribute
-		 * ids that are larger than 32K are converted to a negative number.
+	public short getAttrId() {	
+		/*
+		 * NOTE: previously attrId used to be stored in AbstractFile as (signed)
+		 * short even though it is stored as uint16 in TSK. In extremely rare
+		 * occurances attrId can be larger than what a signed short can hold
+		 * (2^15). Changes were made to AbstractFile to store attrId as integer.
+		 * Therefore this method has been deprecated. For backwards
+		 * compatibility, attribute ids that are larger than 32K are converted
+		 * to a negative number.
 		 */
-		if (attrId > 33000){
-			int aa = 9;
-		}
 		return (short) attrId;	// casting to signed short converts values over 32K to negative values
 	}
 }
