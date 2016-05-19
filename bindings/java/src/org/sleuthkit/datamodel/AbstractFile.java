@@ -21,8 +21,6 @@ package org.sleuthkit.datamodel;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,7 +50,7 @@ public abstract class AbstractFile extends AbstractContent {
 	protected final long metaAddr, ctime, crtime, atime, mtime;
 	protected final int metaSeq;
 	protected final int uid, gid;
-	protected final short attrId;
+	protected final int attrId;
 	protected final TskData.TSK_FS_ATTR_TYPE_ENUM attrType;
 	protected final Set<TskData.TSK_FS_META_MODE_ENUM> modes;
 	//local file support
@@ -116,7 +114,7 @@ public abstract class AbstractFile extends AbstractContent {
 	AbstractFile(SleuthkitCase db,
 			long objId,
 			long dataSourceObjectId,
-			TskData.TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
+			TskData.TSK_FS_ATTR_TYPE_ENUM attrType, int attrId,
 			String name,
 			TskData.TSK_DB_FILES_TYPE_ENUM fileType,
 			long metaAddr, int metaSeq,
@@ -182,10 +180,19 @@ public abstract class AbstractFile extends AbstractContent {
 	 *
 	 * @return attribute id
 	 */
+	public int getAttributeId() {
+		return attrId;
+	}
+	
+	/**
+	 * Get the attribute id
+	 *
+	 * @return attribute id
+
 	public short getAttrId() {
 		return attrId;
 	}
-
+	 */
 	/**
 	 * Get the change time
 	 *
@@ -1099,7 +1106,53 @@ public abstract class AbstractFile extends AbstractContent {
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
 			String parentPath) {
-		this(db, objId, db.getDataSourceObjectId(objId), attrType, attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null);
+		this(db, objId, db.getDataSourceObjectId(objId), attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null);
+	}
+	
+	
+	/**
+	 * Initializes common fields used by AbstactFile implementations (objects in
+	 * tsk_files table). This deprecated version has attrId filed defined as a short
+	 * which has since been changed to an int.
+	 *
+	 * @param db                 case / db handle where this file belongs to
+	 * @param objId              object id in tsk_objects table
+	 * @param dataSourceObjectId The object id of the root data source of this
+	 *                           file.
+	 * @param attrType
+	 * @param attrId
+	 * @param name               name field of the file
+	 * @param fileType           type of the file
+	 * @param metaAddr
+	 * @param metaSeq
+	 * @param dirType
+	 * @param metaType
+	 * @param dirFlag
+	 * @param metaFlags
+	 * @param size
+	 * @param ctime
+	 * @param crtime
+	 * @param atime
+	 * @param mtime
+	 * @param modes
+	 * @param uid
+	 * @param gid
+	 * @param md5Hash            md5sum of the file, or null or "NULL" if not
+	 *                           present
+	 * @param knownState         knownState status of the file, or null if
+	 *                           unknown (default)
+	 * @param parentPath
+	 * @param mimeType           The MIME type of the file, can be null
+	 * 
+	 * @deprecated Do not make subclasses outside of this package.
+	 */
+	@Deprecated
+	@SuppressWarnings("deprecation")
+	AbstractFile(SleuthkitCase db, long objId, long dataSourceObjectId, TskData.TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
+			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime, short modes,
+			int uid, int gid, String md5Hash, FileKnown knownState, String parentPath, String mimeType) {
+		this(db, objId, dataSourceObjectId, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null);
 	}
 
 }
