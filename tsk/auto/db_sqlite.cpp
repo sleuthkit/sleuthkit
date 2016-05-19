@@ -416,7 +416,7 @@ int
     TskDbSqlite::setupFilePreparedStmt()
 {
     if (prepare_stmt
-        ("SELECT obj_id FROM tsk_files WHERE meta_addr IS ? AND fs_obj_id IS ? and parent_path IS ?",
+        ("SELECT obj_id FROM tsk_files WHERE meta_addr IS ? AND fs_obj_id IS ? AND parent_path IS ? AND name IS ?",
         &m_selectFilePreparedStmt)) {
             return 1;
     }
@@ -632,7 +632,7 @@ int
 * Add a file system file to the database
 * @param fs_file File structure to add
 * @param fs_attr Specific attribute to add
-* @param path Path of the file
+* @param path Path of parent folder
 * @param md5 Binary value of MD5 (i.e. 16 bytes) or NULL 
 * @param known Status regarding if it was found in hash database or not
 * @param fsObjId File system object of its file system
@@ -737,13 +737,13 @@ void TskDbSqlite::storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_file
 /**
 * Find parent object id of TSK_FS_FILE. Use local cache map, if not found, fall back to SQL
 * @param fs_file file to find parent obj id for
-* @param path Path of parent folder that we want to match
+* @param parentPath Path of parent folder that we want to match
 * @param fsObjId fs id of this file
 * @returns parent obj id ( > 0), -1 on error
 */
-int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *path, const int64_t & fsObjId) {
+int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *parentPath, const int64_t & fsObjId) {
     uint32_t seq;
-    uint32_t path_hash = hash((const unsigned char *)path);
+    uint32_t path_hash = hash((const unsigned char *)parentPath);
 
     /* NTFS uses sequence, otherwise we hash the path. We do this to map to the
     * correct parent folder if there are two from the root dir that eventually point to
@@ -772,6 +772,14 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *path,
 
     // fprintf(stderr, "Miss: %s (%"PRIu64 " - %" PRIu64 ")\n", fs_file->name->name, fs_file->name->meta_addr,
     //                fs_file->name->par_addr);
+    
+    // Need to break up 'path' in to the parent folder to match in 'parent_path' and the folder 
+    // name to match with the 'name' column in tsk_files table
+    char *parent_name = "";
+    char *parent_path = ""; 
+    if (TskDb::getParentPathAndName(parentPath, &parent_path, &parent_name)){
+        return -1;
+    }
 
     // Find the parent file id in the database using the parent metadata address
     // @@@ This should use sequence number when the new database supports it
@@ -779,7 +787,9 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *path,
         "TskDbSqlite::findParObjId: Error binding meta_addr to statment: %s (result code %d)\n")
         || attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 2, fsObjId),
         "TskDbSqlite::findParObjId: Error binding fs_obj_id to statment: %s (result code %d)\n")
-        || attempt(sqlite3_bind_text(m_selectFilePreparedStmt, 3, path, -1, SQLITE_STATIC),
+        || attempt(sqlite3_bind_text(m_selectFilePreparedStmt, 3, parent_path, -1, SQLITE_STATIC),
+        "TskDbSqlite::findParObjId: Error binding path to statment: %s (result code %d)\n")
+        || attempt(sqlite3_bind_text(m_selectFilePreparedStmt, 4, parent_name, -1, SQLITE_STATIC),
         "TskDbSqlite::findParObjId: Error binding path to statment: %s (result code %d)\n")
         || attempt(sqlite3_step(m_selectFilePreparedStmt), SQLITE_ROW,
         "TskDbSqlite::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n"))
