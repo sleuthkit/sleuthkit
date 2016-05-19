@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  * 
- * Copyright 2014 Basis Technology Corp.
+ * Copyright 2011-2016 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,6 +23,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import org.sleuthkit.datamodel.TskData.FileKnown;
+import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
@@ -44,12 +45,14 @@ class ResultSetHelper {
 	 * Create an image from the result set containing query results on
 	 * tsk_image_info table
 	 *
-	 * @param rs result set containing query results
+	 * @param rs         result set containing query results
 	 * @param imagePaths image file paths
+	 *
 	 * @return image object created
+	 *
 	 * @throws TskCoreException thrown if critical error occurred within tsk
-	 * core
-	 * @throws SQLException thrown if SQL error occurres
+	 *                          core
+	 * @throws SQLException     thrown if SQL error occurs
 	 */
 	Image image(ResultSet rs, String[] imagePaths) throws TskCoreException, SQLException {
 
@@ -83,7 +86,9 @@ class ResultSetHelper {
 	 * Get image path string from the result set on tsk_image_names table
 	 *
 	 * @param rs result set with the tsk_image_names query result
+	 *
 	 * @return image path
+	 *
 	 * @throws SQLException thrown if SQL error occurred
 	 */
 	String imagePath(ResultSet rs) throws SQLException {
@@ -94,9 +99,11 @@ class ResultSetHelper {
 	 * Create an VolumeSystem object from the result set containing query
 	 * results on tsk_vs_info table
 	 *
-	 * @param rs resultset containing query results
+	 * @param rs     resultset containing query results
 	 * @param parent parent image
+	 *
 	 * @return volume system object newly created
+	 *
 	 * @throws SQLException exception thrown if SQL error occurred
 	 */
 	VolumeSystem volumeSystem(ResultSet rs, Image parent) throws SQLException {
@@ -116,15 +123,30 @@ class ResultSetHelper {
 	 * Create an Volume object from the result set containing query results on
 	 * tsk_vs_parts table
 	 *
-	 * @param rs result set containing query results
+	 * @param rs     result set containing query results
 	 * @param parent parent volume system
+	 *
 	 * @return newly created Volume object
+	 *
 	 * @throws SQLException thrown if SQL error occurred
 	 */
 	Volume volume(ResultSet rs, VolumeSystem parent) throws SQLException {
+		/**
+		 * TODO!! LANDMINE!! This allows the two types of databases to have
+		 * slightly different schemas. SQLite uses desc as the column name in
+		 * tsk_vs_parts and Postgres uses descr, as desc is a reserved keyword
+		 * in Postgres. When we have to make a schema change, be sure to change
+		 * this over to just one name.
+		 */
+		String description;
+		try {
+			description = rs.getString("desc");
+		} catch (Exception ex) {
+			description = rs.getString("descr");
+		}
 		Volume vol = new Volume(db, rs.getLong("obj_id"), rs.getLong("addr"), //NON-NLS
 				rs.getLong("start"), rs.getLong("length"), rs.getLong("flags"), //NON-NLS
-				rs.getString("desc")); //NON-NLS
+				description);
 		vol.setParent(parent);
 		return vol;
 	}
@@ -133,9 +155,11 @@ class ResultSetHelper {
 	 * Create a FileSystem object from the result set containing query results
 	 * on tsk_fs_info table
 	 *
-	 * @param rs the result set
+	 * @param rs     the result set
 	 * @param parent parent content object
+	 *
 	 * @return newly create FileSystem object
+	 *
 	 * @throws SQLException thrown if SQL error occurred
 	 */
 	FileSystem fileSystem(ResultSet rs, Content parent) throws SQLException {
@@ -154,11 +178,14 @@ class ResultSetHelper {
 	 *
 	 * @param rs the result set
 	 * @param fs parent file system
+	 *
 	 * @return a newly create File
+	 *
 	 * @throws SQLException
 	 */
 	File file(ResultSet rs, FileSystem fs) throws SQLException {
-		File f = new File(db, rs.getLong("obj_id"), rs.getLong("fs_obj_id"), //NON-NLS
+
+		File f = new File(db, rs.getLong("obj_id"), rs.getLong("data_source_obj_id"), rs.getLong("fs_obj_id"), //NON-NLS
 				TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")), //NON-NLS
 				rs.getShort("attr_id"), rs.getString("name"), rs.getLong("meta_addr"), rs.getInt("meta_seq"), //NON-NLS
 				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
@@ -166,9 +193,9 @@ class ResultSetHelper {
 				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), //NON-NLS
 				rs.getShort("meta_flags"), rs.getLong("size"), //NON-NLS
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
-				rs.getShort("mode"), rs.getInt("uid"), rs.getInt("gid"), //NON-NLS
+				(short) rs.getInt("mode"), rs.getInt("uid"), rs.getInt("gid"), //NON-NLS
 				rs.getString("md5"), //NON-NLS
-				FileKnown.valueOf(rs.getByte("known")), rs.getString("parent_path")); //NON-NLS
+				FileKnown.valueOf(rs.getByte("known")), rs.getString("parent_path"), rs.getString("mime_type")); //NON-NLS
 		f.setFileSystem(fs);
 		return f;
 	}
@@ -179,12 +206,14 @@ class ResultSetHelper {
 	 *
 	 * @param rs the result set
 	 * @param fs parent file system
+	 *
 	 * @name the directory name (TODO why do we need it passed, just query it )
 	 * @return a newly created Directory object
+	 *
 	 * @throws SQLException thrown if SQL error occurred
 	 */
 	Directory directory(ResultSet rs, FileSystem fs, String name) throws SQLException {
-		Directory dir = new Directory(db, rs.getLong("obj_id"), rs.getLong("fs_obj_id"), //NON-NLS
+		Directory dir = new Directory(db, rs.getLong("obj_id"), rs.getLong("data_source_obj_id"), rs.getLong("fs_obj_id"), //NON-NLS
 				TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")), //NON-NLS
 				rs.getShort("attr_id"), name, rs.getLong("meta_addr"), rs.getInt("meta_seq"), //NON-NLS
 				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
@@ -203,7 +232,9 @@ class ResultSetHelper {
 	 * Create a virtual directory object from a result set
 	 *
 	 * @param rs the result set
+	 *
 	 * @return
+	 *
 	 * @throws SQLException
 	 */
 	VirtualDirectory virtualDirectory(ResultSet rs) throws SQLException {
@@ -212,13 +243,17 @@ class ResultSetHelper {
 			parentPath = "";
 		}
 
-		final VirtualDirectory vd = new VirtualDirectory(db, rs.getLong("obj_id"), //NON-NLS
+		final VirtualDirectory vd = new VirtualDirectory(db,
+				rs.getLong("obj_id"), //NON-NLS
+				rs.getLong("data_source_obj_id"), //NON-NLS
 				rs.getString("name"), //NON-NLS
 				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
 				TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
-				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"), //NON-NLS
-				rs.getLong("size"), rs.getString("md5"), //NON-NLS
-				FileKnown.valueOf(rs.getByte("known")), parentPath); //NON-NLS
+				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), //NON-NLS
+				rs.getShort("meta_flags"), //NON-NLS
+				rs.getString("md5"), //NON-NLS
+				FileKnown.valueOf(rs.getByte("known")), //NON-NLS
+				parentPath);
 		return vd;
 	}
 
@@ -228,7 +263,9 @@ class ResultSetHelper {
 	 *
 	 * @param rs the result set
 	 * @param fs the parent file system,
+	 *
 	 * @return a newly created Directory object
+	 *
 	 * @throws SQLException thrown if SQL error occurred
 	 */
 	Directory directory(ResultSet rs, FileSystem fs) throws SQLException {
@@ -240,7 +277,9 @@ class ResultSetHelper {
 	 * tsk_file_layout table
 	 *
 	 * @param rs the result set containg query results
+	 *
 	 * @return newly create tsk file range object
+	 *
 	 * @throws SQLException thrown if SQL error occurred
 	 */
 	TskFileRange tskFileRange(ResultSet rs) throws SQLException {
@@ -251,9 +290,11 @@ class ResultSetHelper {
 	/**
 	 * Creates an derived file given result set and parent id (optional)
 	 *
-	 * @param rs exsting active result set
+	 * @param rs       exsting active result set
 	 * @param parentId parent id or AbstractContent.UNKNOWN_ID
+	 *
 	 * @return derived file object created
+	 *
 	 * @throws SQLException
 	 */
 	DerivedFile derivedFile(ResultSet rs, long parentId) throws SQLException {
@@ -270,7 +311,7 @@ class ResultSetHelper {
 		}
 
 		final DerivedFile df
-				= new DerivedFile(db, objId, rs.getString("name"), //NON-NLS
+				= new DerivedFile(db, objId, rs.getLong("data_source_obj_id"), rs.getString("name"), //NON-NLS
 						TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
 						TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
 						TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"), //NON-NLS
@@ -278,44 +319,46 @@ class ResultSetHelper {
 						rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 						rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
 						parentPath, localPath,
-						parentId);
+						parentId, rs.getString("mime_type"));
 
 		return df;
 	}
 
 	/**
-	 * Creates an local file given result set and parent id (optional)
+	 * Creates a LocalFile file object from a SELECT * FROM tsk_files table
+	 * result set.
 	 *
-	 * @param rs exsting active result set
-	 * @param parentId parent id or AbstractContent.UNKNOWN_ID
-	 * @return local file object created
-	 * @throws SQLException
+	 * @param rs       The result set.
+	 * @param parentId The parent id of the file or AbstractContent.UNKNOWN_ID.
+	 *
+	 * @return The LocalFile object.
+	 *
+	 * @throws SQLException if there is an error querying the case database.
 	 */
 	LocalFile localFile(ResultSet rs, long parentId) throws SQLException {
-		boolean hasLocalPath = rs.getBoolean("has_path"); //NON-NLS
 		long objId = rs.getLong("obj_id"); //NON-NLS
 		String localPath = null;
-		if (hasLocalPath) {
+		if (rs.getBoolean("has_path")) {
 			localPath = db.getFilePath(objId);
 		}
-
 		String parentPath = rs.getString("parent_path"); //NON-NLS
-		if (parentPath == null) {
+		if (null == parentPath) {
 			parentPath = "";
 		}
-
-		final LocalFile lf
-				= new LocalFile(db, objId, rs.getString("name"), //NON-NLS
-						TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
-						TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
-						TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"), //NON-NLS
-						rs.getLong("size"), //NON-NLS
-						rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
-						rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
-						parentPath, localPath,
-						parentId);
-
-		return lf;
+		LocalFile file = new LocalFile(db,
+				objId,
+				rs.getString("name"), //NON-NLS
+				TSK_DB_FILES_TYPE_ENUM.valueOf(rs.getShort("type")), //NON-NLS
+				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
+				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"), //NON-NLS
+				rs.getLong("size"), //NON-NLS
+				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
+				rs.getString("mime_type"), rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
+				parentId, parentPath,
+				rs.getLong("data_source_obj_id"),
+				localPath
+		);
+		return file;
 	}
 
 	/**
@@ -324,7 +367,9 @@ class ResultSetHelper {
 	 *
 	 * @param rs
 	 * @param parentId
+	 *
 	 * @return
+	 *
 	 * @throws SQLException
 	 */
 	List<Content> fileChildren(ResultSet rs, long parentId) throws SQLException {
@@ -352,14 +397,17 @@ class ResultSetHelper {
 					parentPath = "";
 				}
 				final LayoutFile lf
-						= new LayoutFile(db, rs.getLong("obj_id"), rs.getString("name"),
+						= new LayoutFile(db,
+								rs.getLong("obj_id"),
+								rs.getLong("data_source_obj_id"),
+								rs.getString("name"),
 								type,
 								TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
 								TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")),
 								TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")),
 								rs.getShort("meta_flags"),
 								rs.getLong("size"),
-								rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), parentPath);
+								rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), parentPath, rs.getString("mime_type"));
 				children.add(lf);
 			} else if (type == TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED) {
 				final DerivedFile df = derivedFile(rs, parentId);

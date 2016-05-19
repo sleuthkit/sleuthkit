@@ -70,6 +70,8 @@ v** Copyright (c) 2002-2003 Brian Carrier, @stake Inc.  All rights reserved
 *
 */
 
+static const int TWELVE_BITS_MASK = 0xFFF; // Only keep 12 bits
+
 static uint8_t 
     yaffsfs_read_header(YAFFSFS_INFO *yfs, YaffsHeader ** header, TSK_OFF_T offset);
 
@@ -1943,7 +1945,7 @@ static uint8_t
     }
 
     if (type != YAFFS_TYPE_HARDLINK) {
-        a_fs_file->meta->mode = (TSK_FS_META_MODE_ENUM)header->file_mode;
+        a_fs_file->meta->mode = (TSK_FS_META_MODE_ENUM)(header->file_mode & TWELVE_BITS_MASK); // chop at 12 bits;
         a_fs_file->meta->uid = header->user_id;
         a_fs_file->meta->gid = header->group_id;
         a_fs_file->meta->mtime = header->mtime;

@@ -33,10 +33,10 @@ public class Report {
 	/**
 	 * Construct a data transfer object for a row in the reports table.
 	 *
-	 * @param id Primary key from associated row in the case database.
-	 * @param path Absolute path to report.
+	 * @param id          Primary key from associated row in the case database.
+	 * @param path        Absolute path to report.
 	 * @param createdTime Created time of report (in UNIX epoch time).
-	 * @param reportName May be empty
+	 * @param reportName  May be empty
 	 */
 	Report(long id, String path, long createdTime, String sourceModuleName, String reportName) {
 		this.id = id;
@@ -52,7 +52,7 @@ public class Report {
 	 *
 	 * @return The primary key value.
 	 */
-	long getId() {
+	public long getId() {
 		return id;
 	}
 

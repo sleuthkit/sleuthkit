@@ -118,7 +118,7 @@ test_get_apis(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr, int a_len)
 
         if (fs_attr != fs_attr2) {
             fprintf(stderr,
-                "Attribute from get_type not same addr as original %lu vs %lu from %"
+                "Attribute from get_type not same addr as original %p vs %p from %"
                 PRIuINUM "\n", fs_attr, fs_attr2, a_addr);
             tsk_error_print(stderr);
             return 1;

@@ -15,9 +15,8 @@
 
 #include "tsk_db_sqlite.h"
 #include "sqlite3.h"
-
+#include "guid.h"
 #include <string.h>
-
 #include <sstream>
 #include <algorithm>
 
@@ -25,13 +24,12 @@ using std::stringstream;
 using std::sort;
 using std::for_each;
 
-#define TSK_SCHEMA_VER 3
-
 /**
 * Set the locations and logging object.  Must call
 * open() before the object can be used.
 */
 TskDbSqlite::TskDbSqlite(const char *a_dbFilePathUtf8, bool a_blkMapFlag)
+    : TskDb(a_dbFilePathUtf8, a_blkMapFlag)
 {
     strncpy(m_dbFilePathUtf8, a_dbFilePathUtf8, 1024);
     m_utf8 = true;
@@ -44,6 +42,7 @@ TskDbSqlite::TskDbSqlite(const char *a_dbFilePathUtf8, bool a_blkMapFlag)
 #ifdef TSK_WIN32
 //@@@@
 TskDbSqlite::TskDbSqlite(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFlag)
+    : TskDb(a_dbFilePath, a_blkMapFlag)
 {
     wcsncpy(m_dbFilePath, a_dbFilePath, 1024);
     m_utf8 = false;
@@ -270,8 +269,12 @@ int
         "Error creating tsk_fs_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_files (obj_id INTEGER PRIMARY KEY, fs_obj_id INTEGER, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr INTEGER, meta_seq INTEGER, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size INTEGER, ctime INTEGER, crtime INTEGER, atime INTEGER, mtime INTEGER, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, parent_path TEXT, "
-        "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id));",
+        ("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, device_id TEXT NOT NULL,  time_zone TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        "Error creating data_source_info table: %s\n")
+        ||
+        attempt_exec
+        ("CREATE TABLE tsk_files (obj_id INTEGER PRIMARY KEY, fs_obj_id INTEGER, data_source_obj_id INTEGER NOT NULL, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr INTEGER, meta_seq INTEGER, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size INTEGER, ctime INTEGER, crtime INTEGER, atime INTEGER, mtime INTEGER, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, parent_path TEXT, mime_type TEXT, "
+         "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id), FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id));",
         "Error creating tsk_files table: %s\n")
         ||
         attempt_exec
@@ -316,7 +319,7 @@ int
         "Error creating blackboard_artifact_types table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE blackboard_attribute_types (attribute_type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT)",
+        ("CREATE TABLE blackboard_attribute_types (attribute_type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT, value_type INTEGER NOT NULL)",
         "Error creating blackboard_attribute_types table: %s\n")
         ||
         attempt_exec
@@ -413,7 +416,7 @@ int
     TskDbSqlite::setupFilePreparedStmt()
 {
     if (prepare_stmt
-        ("SELECT obj_id FROM tsk_files WHERE meta_addr IS ? AND fs_obj_id IS ?",
+        ("SELECT obj_id FROM tsk_files WHERE meta_addr IS ? AND fs_obj_id IS ? and parent_path IS ?",
         &m_selectFilePreparedStmt)) {
             return 1;
     }
@@ -458,26 +461,62 @@ int
 int
     TskDbSqlite::addImageInfo(int type, int ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5)
 {
-    char
-        stmt[1024];
-    char *zSQL;
-    int ret;
+    return addImageInfo(type, ssize, objId, timezone, size, md5, "");
+}
 
-    // We dont' use addObject because we're passing in NULL as the parent
+/**
+ * Adds image details to the existing database tables.
+ *
+ * @param type Image type
+ * @param ssize Size of device sector in bytes (or 0 for default)
+ * @param objId The object id assigned to the image (out param)
+ * @param timeZone The timezone the image is from
+ * @param size The size of the image in bytes.
+ * @param md5 MD5 hash of the image
+ * @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID).
+ * @returns 1 on error, 0 on success
+ */
+int TskDbSqlite::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5, const string& deviceId)
+{
+
+    // Add the data source to the tsk_objects table.
+    // We don't use addObject because we're passing in NULL as the parent
+    char stmt[1024];
     snprintf(stmt, 1024,
         "INSERT INTO tsk_objects (obj_id, par_obj_id, type) VALUES (NULL, NULL, %d);",
         TSK_DB_OBJECT_TYPE_IMG);
-    if (attempt_exec(stmt, "Error adding data to tsk_objects table: %s\n"))
+    if (attempt_exec(stmt, "Error adding data to tsk_objects table: %s\n")) {
         return 1;
-
+    }
     objId = sqlite3_last_insert_rowid(m_db);
 
-    zSQL = sqlite3_mprintf("INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %d, '%q', %"PRIuOFF", '%q');",
+    // Add the data source to the tsk_image_info table.
+    char *sql;
+    sql = sqlite3_mprintf("INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %d, '%q', %"PRIuOFF", '%q');",
         objId, type, ssize, timezone.c_str(), size, md5.c_str());
+    int ret = attempt_exec(sql, "Error adding data to tsk_image_info table: %s\n");
+    sqlite3_free(sql);
+    if (1 == ret) {
+        return ret;
+    }
 
-    ret = attempt_exec(zSQL,
-        "Error adding data to tsk_image_info table: %s\n");
-    sqlite3_free(zSQL);
+    // Add the data source to the data_source_info table.
+    stringstream deviceIdStr;
+#ifdef GUID_WINDOWS
+    if (deviceId.empty()) {
+        // Use a GUID as the default.
+        GuidGenerator generator;
+        Guid guid = generator.newGuid();
+        deviceIdStr << guid;
+    } else {
+        deviceIdStr << deviceId;
+    }
+#else
+    deviceIdStr << deviceId;
+#endif
+    sql = sqlite3_mprintf("INSERT INTO data_source_info (obj_id, device_id, time_zone) VALUES (%lld, '%s', '%s');", objId, deviceIdStr.str().c_str(), timezone.c_str());
+    ret = attempt_exec(sql, "Error adding data to tsk_image_info table: %s\n");
+    sqlite3_free(sql);
     return ret;
 }
 
@@ -595,16 +634,17 @@ int
 * @param fs_attr Specific attribute to add
 * @param path Path of the file
 * @param md5 Binary value of MD5 (i.e. 16 bytes) or NULL 
-* @param known Status regarding if it was found in hash databse or not
+* @param known Status regarding if it was found in hash database or not
 * @param fsObjId File system object of its file system
 * @param objId ID that was assigned to it from the objects table
+* @param dataSourceObjId The object ID for the data source
 * @returns 1 on error and 0 on success
 */
 int
     TskDbSqlite::addFsFile(TSK_FS_FILE * fs_file,
     const TSK_FS_ATTR * fs_attr, const char *path,
     const unsigned char *const md5, const TSK_DB_FILES_KNOWN_ENUM known,
-    int64_t fsObjId, int64_t & objId)
+    int64_t fsObjId, int64_t & objId, int64_t dataSourceObjId)
 {
     int64_t parObjId = 0;
 
@@ -627,7 +667,7 @@ int
         }    
     }
 
-    return addFile(fs_file, fs_attr, path, md5, known, fsObjId, parObjId, objId);
+    return addFile(fs_file, fs_attr, path, md5, known, fsObjId, parObjId, objId, dataSourceObjId);
 }
 
 
@@ -651,11 +691,13 @@ uint32_t TskDbSqlite::hash(const unsigned char *str) {
 }
 
 /**
-* Store meta_addr to object id mapping of the directory in a local cache map
+* Store info about a directory in a complex map structure as a cache for the
+* files who are a child of this directory and want to know its object id. 
+*
 * @param fsObjId fs id of this directory
 * @param fs_file File for the directory to store
-* @param path Full path (parent and this file) of this directory
-* @param objId object id of this directory from the objects table
+* @param path Full path (parent and this file) of the directory
+* @param objId object id of the directory 
 */
 void TskDbSqlite::storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_file, const char *path, const int64_t & objId) {
     // skip the . and .. entries
@@ -664,6 +706,8 @@ void TskDbSqlite::storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_file
     }
 
     uint32_t seq;
+    uint32_t path_hash = hash((const unsigned char *)path);
+
     /* NTFS uses sequence, otherwise we hash the path. We do this to map to the
     * correct parent folder if there are two from the root dir that eventually point to
     * the same folder (one deleted and one allocated) or two hard links. */
@@ -675,17 +719,17 @@ void TskDbSqlite::storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_file
         seq = fs_file->meta->seq;
     }
     else {
-        seq = hash((const unsigned char *)path);
+        seq = path_hash;
     }
 
-    map<TSK_INUM_T, map<uint32_t, int64_t> > &fsMap = m_parentDirIdCache[fsObjId];
+    map<TSK_INUM_T, map<uint32_t, map<uint32_t, int64_t> > > &fsMap = m_parentDirIdCache[fsObjId];
     if (fsMap.count(fs_file->name->meta_addr) == 0) {
-        fsMap[fs_file->name->meta_addr][seq] = objId;
+        fsMap[fs_file->name->meta_addr][seq][path_hash] = objId;
     }
     else {
-        map<uint32_t, int64_t> &fileMap = fsMap[fs_file->name->meta_addr];
+        map<uint32_t, map<uint32_t, int64_t> > &fileMap = fsMap[fs_file->name->meta_addr];
         if (fileMap.count(seq) == 0) {
-            fileMap[seq] = objId;
+            fileMap[seq][path_hash] = objId;
         }
     }
 }
@@ -699,6 +743,8 @@ void TskDbSqlite::storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_file
 */
 int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *path, const int64_t & fsObjId) {
     uint32_t seq;
+    uint32_t path_hash = hash((const unsigned char *)path);
+
     /* NTFS uses sequence, otherwise we hash the path. We do this to map to the
     * correct parent folder if there are two from the root dir that eventually point to
     * the same folder (one deleted and one allocated) or two hard links. */
@@ -706,22 +752,26 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *path,
         seq = fs_file->name->par_seq;
     }
     else {
-        seq = hash((const unsigned char *)path);
+        seq = path_hash;
     }
 
     //get from cache by parent meta addr, if available
-    map<TSK_INUM_T, map<uint32_t, int64_t> > &fsMap = m_parentDirIdCache[fsObjId];
+    map<TSK_INUM_T, map<uint32_t, map<uint32_t, int64_t> > > &fsMap = m_parentDirIdCache[fsObjId];
     if (fsMap.count(fs_file->name->par_addr) > 0) {
-        map<uint32_t, int64_t>  &fileMap = fsMap[fs_file->name->par_addr];
+        map<uint32_t, map<uint32_t, int64_t> > &fileMap = fsMap[fs_file->name->par_addr];
         if (fileMap.count(seq) > 0) {
-            return fileMap[seq];
+            map<uint32_t, int64_t> &pathMap = fileMap[seq];
+            if (pathMap.count(path_hash) > 0) {
+                return pathMap[path_hash];
+            }
         }
         else {
-            printf("Miss: %d\n", fileMap.count(seq));
+            // printf("Miss: %zu\n", fileMap.count(seq));
         }
     }
 
-    fprintf(stderr, "Miss: %s (%"PRIu64")\n", fs_file->name->name, fs_file->name->meta_addr);
+    // fprintf(stderr, "Miss: %s (%"PRIu64 " - %" PRIu64 ")\n", fs_file->name->name, fs_file->name->meta_addr,
+    //                fs_file->name->par_addr);
 
     // Find the parent file id in the database using the parent metadata address
     // @@@ This should use sequence number when the new database supports it
@@ -729,6 +779,8 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *path,
         "TskDbSqlite::findParObjId: Error binding meta_addr to statment: %s (result code %d)\n")
         || attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 2, fsObjId),
         "TskDbSqlite::findParObjId: Error binding fs_obj_id to statment: %s (result code %d)\n")
+        || attempt(sqlite3_bind_text(m_selectFilePreparedStmt, 3, path, -1, SQLITE_STATIC),
+        "TskDbSqlite::findParObjId: Error binding path to statment: %s (result code %d)\n")
         || attempt(sqlite3_step(m_selectFilePreparedStmt), SQLITE_ROW,
         "TskDbSqlite::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n"))
     {
@@ -750,6 +802,7 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *path,
 /**
 * Add file data to the file table
 * @param md5 binary value of MD5 (i.e. 16 bytes) or NULL
+* @param dataSourceObjId The object ID for the data source
 * Return 0 on success, 1 on error.
 */
 int
@@ -757,7 +810,7 @@ int
     const TSK_FS_ATTR * fs_attr, const char *path,
     const unsigned char *const md5, const TSK_DB_FILES_KNOWN_ENUM known,
     int64_t fsObjId, int64_t parObjId,
-    int64_t & objId)
+    int64_t & objId, int64_t dataSourceObjId)
 {
 
 
@@ -864,9 +917,10 @@ int
     }
 
     zSQL = sqlite3_mprintf(
-        "INSERT INTO tsk_files (fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
+        "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
         "VALUES ("
         "%" PRId64 ",%" PRId64 ","
+        "%" PRId64 "," 
         "%d,"
         "%d,%d,'%q',"
         "%" PRIuINUM ",%d,"
@@ -876,6 +930,7 @@ int
         "%d,%d,%d,%Q,%d,"
         "'%q')",
         fsObjId, objId,
+        dataSourceObjId,
         TSK_DB_FILES_TYPE_FS,
         type, idx, name,
         fs_file->name->meta_addr, fs_file->name->meta_seq, 
@@ -1005,11 +1060,12 @@ int TskDbSqlite::addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLayoutR
 * @param fileName file name for the layout file
 * @param size Number of bytes in file
 * @param objId layout file Id (output)
+* @param dataSourceObjId The object Id of the data source
 * @returns TSK_OK on success or TSK_ERR on error.
 */
 TSK_RETVAL_ENUM
     TskDbSqlite::addLayoutFileInfo(const int64_t parObjId, const int64_t fsObjId, const TSK_DB_FILES_TYPE_ENUM dbFileType, const char *fileName,
-    const uint64_t size, int64_t & objId)
+    const uint64_t size, int64_t & objId, int64_t dataSourceObjId)
 {
     char *zSQL;
 
@@ -1025,9 +1081,10 @@ TSK_RETVAL_ENUM
     }
 
     zSQL = sqlite3_mprintf(
-        "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
+        "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
         "VALUES ("
         "1, %Q, %lld,"
+        "%" PRId64 ","
         "%d,"
         "NULL,NULL,'%q',"
         "NULL,NULL,"
@@ -1035,6 +1092,7 @@ TSK_RETVAL_ENUM
         "%" PRIuOFF ","
         "NULL,NULL,NULL,NULL,NULL,NULL,NULL)",
         fsObjIdStrPtr, objId,
+        dataSourceObjId,
         dbFileType,
         fileName,
         TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG,
@@ -1055,12 +1113,31 @@ TSK_RETVAL_ENUM
 * Returns true if database is opened.
 */
 bool
-    TskDbSqlite::dbExist() const 
+    TskDbSqlite::isDbOpen()
 {
     if (m_db)
         return true;
     else
         return false;
+}
+
+bool TskDbSqlite::dbExists() {
+
+    // Check if database file already exsists
+    if (m_utf8) {
+        struct stat stat_buf;
+        if (stat(m_dbFilePathUtf8, &stat_buf) == 0) {
+            return true;
+        }
+    }
+    else {
+        struct STAT_STR stat_buf;
+        if (TSTAT(m_dbFilePath, &stat_buf) == 0) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool
@@ -1078,10 +1155,11 @@ bool
 * @param size Number of bytes in file
 * @param ranges vector containing one or more TSK_DB_FILE_LAYOUT_RANGE layout ranges (in)
 * @param objId object id of the file object created (output)
+* @param dataSourceObjId The object ID for the data source
 * @returns TSK_OK on success or TSK_ERR on error.
 */
-TSK_RETVAL_ENUM TskDbSqlite::addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
-    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_UNALLOC_BLOCKS, parentObjId, fsObjId, size, ranges, objId);
+TSK_RETVAL_ENUM TskDbSqlite::addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId, int64_t dataSourceObjId) {
+    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_UNALLOC_BLOCKS, parentObjId, fsObjId, size, ranges, objId, dataSourceObjId);
 }
 
 /**
@@ -1092,10 +1170,11 @@ TSK_RETVAL_ENUM TskDbSqlite::addUnallocBlockFile(const int64_t parentObjId, cons
 * @param size Number of bytes in file
 * @param ranges vector containing one or more TSK_DB_FILE_LAYOUT_RANGE layout ranges (in)
 * @param objId object id of the file object created (output)
+* @param dataSourceObjId The object ID for the data source
 * @returns TSK_OK on success or TSK_ERR on error.
 */
-TSK_RETVAL_ENUM TskDbSqlite::addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
-    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_UNUSED_BLOCKS, parentObjId, fsObjId, size, ranges, objId);
+TSK_RETVAL_ENUM TskDbSqlite::addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId, int64_t dataSourceObjId) {
+    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_UNUSED_BLOCKS, parentObjId, fsObjId, size, ranges, objId, dataSourceObjId);
 }
 
 /**
@@ -1106,10 +1185,11 @@ TSK_RETVAL_ENUM TskDbSqlite::addUnusedBlockFile(const int64_t parentObjId, const
 * @param size Number of bytes in file
 * @param ranges vector containing one or more TSK_DB_FILE_LAYOUT_RANGE layout ranges (in)
 * @param objId object id of the file object created (output)
+* @param dataSourceObjId The object ID for the data source
 * @returns TSK_OK on success or TSK_ERR on error.
 */
-TSK_RETVAL_ENUM TskDbSqlite::addCarvedFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
-    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_CARVED, parentObjId, fsObjId, size, ranges, objId);
+TSK_RETVAL_ENUM TskDbSqlite::addCarvedFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId, int64_t dataSourceObjId) {
+    return addFileWithLayoutRange(TSK_DB_FILES_TYPE_CARVED, parentObjId, fsObjId, size, ranges, objId, dataSourceObjId);
 }
 
 //internal function object to check for range overlap
@@ -1151,16 +1231,16 @@ typedef struct _checkFileLayoutRangeOverlap{
 * @param parentDirId (in) parent dir object id of the new directory: either another virtual directory or root fs directory
 * @param name name (int) of the new virtual directory
 * @param objId (out) object id of the created virtual directory object
+* @param dataSourceObjId The object Id of the data source
 * @returns TSK_ERR on error or TSK_OK on success
 */
-TSK_RETVAL_ENUM TskDbSqlite::addVirtualDir(const int64_t fsObjId, const int64_t parentDirId, const char * const name, int64_t & objId) {
+TSK_RETVAL_ENUM TskDbSqlite::addVirtualDir(const int64_t fsObjId, const int64_t parentDirId, const char * const name, int64_t & objId, int64_t dataSourceObjId) {
     char *zSQL;
 
     if (addObject(TSK_DB_OBJECT_TYPE_FILE, parentDirId, objId))
         return TSK_ERR;
-
     zSQL = sqlite3_mprintf(
-        "INSERT INTO tsk_files (attr_type, attr_id, has_layout, fs_obj_id, obj_id, type, attr_type, "
+        "INSERT INTO tsk_files (attr_type, attr_id, has_layout, fs_obj_id, obj_id, data_source_obj_id, type, attr_type, "
         "attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, "
         "crtime, ctime, atime, mtime, mode, gid, uid, known, parent_path) "
         "VALUES ("
@@ -1168,6 +1248,7 @@ TSK_RETVAL_ENUM TskDbSqlite::addVirtualDir(const int64_t fsObjId, const int64_t 
         "NULL,"
         "%lld,"
         "%lld,"
+        "%" PRId64 ","
         "%d,"
         "NULL,NULL,'%q',"
         "NULL,NULL,"
@@ -1176,6 +1257,7 @@ TSK_RETVAL_ENUM TskDbSqlite::addVirtualDir(const int64_t fsObjId, const int64_t 
         "NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'/')",
         fsObjId,
         objId,
+        dataSourceObjId,
         TSK_DB_FILES_TYPE_VIRTUAL_DIR,
         name,
         TSK_FS_NAME_TYPE_DIR, TSK_FS_META_TYPE_DIR,
@@ -1195,9 +1277,10 @@ TSK_RETVAL_ENUM TskDbSqlite::addVirtualDir(const int64_t fsObjId, const int64_t 
 * The dir has is associated with its root dir parent for the fs.
 * @param fsObjId (in) fs id to find root dir for and create $Unalloc dir for
 * @param objId (out) object id of the $Unalloc dir created
+* @param dataSourceObjId The object ID for the data source
 * @returns TSK_ERR on error or TSK_OK on success
 */
-TSK_RETVAL_ENUM TskDbSqlite::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & objId) {
+TSK_RETVAL_ENUM TskDbSqlite::addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & objId, int64_t dataSourceObjId) {
 
     const char * const unallocDirName = "$Unalloc";
 
@@ -1207,15 +1290,16 @@ TSK_RETVAL_ENUM TskDbSqlite::addUnallocFsBlockFilesParent(const int64_t fsObjId,
         return TSK_ERR;
     }
 
-    return addVirtualDir(fsObjId, rootDirObjInfo.objId, unallocDirName, objId);
+    return addVirtualDir(fsObjId, rootDirObjInfo.objId, unallocDirName, objId, dataSourceObjId);
 }
 
 /**
 * Internal helper method to add unalloc, unused and carved files with layout ranges to db
 * Generates file_name and populates tsk_files, tsk_objects and tsk_file_layout tables
+* @param dataSourceObjId The object ID for the data source
 * @returns TSK_ERR on error or TSK_OK on success
 */
-TSK_RETVAL_ENUM TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId) {
+TSK_RETVAL_ENUM TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId, int64_t dataSourceObjId) {
     const size_t numRanges = ranges.size();
 
     if (numRanges < 1) {
@@ -1267,7 +1351,7 @@ TSK_RETVAL_ENUM TskDbSqlite::addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM
     fileNameSs << "_" << (ranges[numRanges-1].byteStart + ranges[numRanges-1].byteLen);
 
     //insert into tsk files and tsk objects
-    if (addLayoutFileInfo(parentObjId, fsObjId, dbFileType, fileNameSs.str().c_str(), size, objId) ) {
+    if (addLayoutFileInfo(parentObjId, fsObjId, dbFileType, fileNameSs.str().c_str(), size, objId, dataSourceObjId) ) {
         return TSK_ERR;
     }
 

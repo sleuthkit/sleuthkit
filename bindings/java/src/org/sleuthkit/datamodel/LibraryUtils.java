@@ -43,6 +43,8 @@ public class LibraryUtils {
 		MSVCR("msvcr100", ""), //NON-NLS
 		ZLIB("zlib", "z"), //NON-NLS
 		LIBEWF("libewf", "ewf"), //NON-NLS
+		LIBVMDK("libvmdk", "vmdk"), //NON-NLS
+		LIBVHDI("libvhdi", "vhd"), //NON-NLS
 		TSK_JNI("libtsk_jni", "tsk_jni"); //NON-NLS
 
 		private final String name;
@@ -127,6 +129,7 @@ public class LibraryUtils {
 	 * Attempt to extract and load the specified native library.
 	 *
 	 * @param library
+	 *
 	 * @return
 	 */
 	private static boolean loadNativeLibFromTskJar(Lib library) {

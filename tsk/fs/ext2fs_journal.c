@@ -327,7 +327,7 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
             (big_tsk_getu32(head->entry_type) == EXT2_J_ETYPE_SB2)) {
             tsk_printf("%" PRIuDADDR ":\tSuperblock (seq: %" PRIu32 ")\n",
                 i, big_tsk_getu32(head->entry_seq));
-            journ_sb = head;
+            journ_sb = (ext2fs_journ_sb *)head;
             tsk_printf("sb version: %d\n",
                 big_tsk_getu32(head->entry_type));
             tsk_printf("sb version: %d\n",
@@ -368,7 +368,7 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
                     || (big_tsk_getu32(head->entry_seq) <
                         jinfo->start_seq)) ? "Unallocated " : "Allocated ",
                 big_tsk_getu32(head->entry_seq));
-            commit_head = head;
+            commit_head = (ext4fs_journ_commit_head *)head;
             //tsk_printf("commit seq %" PRIu32 "\n", big_tsk_getu32(commit_head->c_header.entry_seq));
             if (big_tsk_getu32(journ_sb->
                     feature_compat) & JBD2_FEATURE_COMPAT_CHECKSUM) {

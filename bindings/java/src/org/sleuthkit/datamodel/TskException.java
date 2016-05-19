@@ -38,7 +38,7 @@ public abstract class TskException extends Exception {
 	 * Create exception containing the error message and cause exception
 	 *
 	 * @param msg the message
-	 * @param ex cause exception
+	 * @param ex  cause exception
 	 */
 	public TskException(String msg, Exception ex) {
 		super(msg, ex);

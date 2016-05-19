@@ -38,6 +38,7 @@ public interface SleuthkitItemVisitor<T> {
 	 * Act on (visit) a Directory content object
 	 *
 	 * @param d the directory to visit / act on
+	 *
 	 * @return result of the visit
 	 */
 	T visit(Directory d);
@@ -46,6 +47,7 @@ public interface SleuthkitItemVisitor<T> {
 	 * Act on (visit) a File content object
 	 *
 	 * @param f the file to visit / act on
+	 *
 	 * @return result of the visit
 	 */
 	T visit(File f);
@@ -54,6 +56,7 @@ public interface SleuthkitItemVisitor<T> {
 	 * Act on (visit) a FileSystem content object
 	 *
 	 * @param fs the filesystem to visit / act on
+	 *
 	 * @return result of the visit
 	 */
 	T visit(FileSystem fs);
@@ -62,6 +65,7 @@ public interface SleuthkitItemVisitor<T> {
 	 * Act on (visit) an Image content object
 	 *
 	 * @param i the image to visit / act on
+	 *
 	 * @return result of the visit
 	 */
 	T visit(Image i);
@@ -70,6 +74,7 @@ public interface SleuthkitItemVisitor<T> {
 	 * Act on (visit) a Volume content object
 	 *
 	 * @param v the volume to visit / act on
+	 *
 	 * @return result of the visit
 	 */
 	T visit(Volume v);
@@ -78,6 +83,7 @@ public interface SleuthkitItemVisitor<T> {
 	 * Act on (visit) a VolumeSystem content object
 	 *
 	 * @param vs the volume system to visit / act on
+	 *
 	 * @return result of the visit
 	 */
 	T visit(VolumeSystem vs);
@@ -86,6 +92,7 @@ public interface SleuthkitItemVisitor<T> {
 	 * Act on (visit) a blackboard artifact object
 	 *
 	 * @param ba blackboard artifact object to visit / act on
+	 *
 	 * @return result of the visit
 	 */
 	T visit(BlackboardArtifact ba);
@@ -94,6 +101,7 @@ public interface SleuthkitItemVisitor<T> {
 	 * Act on (visit) a blackboard artifact type
 	 *
 	 * @param tw blackboard artifact type to visit / act on
+	 *
 	 * @return result of the visit
 	 */
 	T visit(BlackboardArtifact.ARTIFACT_TYPE tw);
@@ -102,6 +110,7 @@ public interface SleuthkitItemVisitor<T> {
 	 * Act on (visit) a layout file content object
 	 *
 	 * @param lf layout file to visit / act on
+	 *
 	 * @return result of the visit
 	 */
 	T visit(LayoutFile lf);
@@ -110,6 +119,7 @@ public interface SleuthkitItemVisitor<T> {
 	 * Act on (visit) a LayoutDirectory content object
 	 *
 	 * @param ld layout dir to visit / act on
+	 *
 	 * @return result of the visit
 	 */
 	T visit(VirtualDirectory ld);
@@ -118,6 +128,7 @@ public interface SleuthkitItemVisitor<T> {
 	 * Act on (visit) a DerivedFile content object
 	 *
 	 * @param df derived file to visit / act on
+	 *
 	 * @return result of the visit
 	 */
 	T visit(DerivedFile df);
@@ -126,6 +137,7 @@ public interface SleuthkitItemVisitor<T> {
 	 * Act on (visit) a LocalFile content object
 	 *
 	 * @param lf local file to visit / act on
+	 *
 	 * @return result of the visit
 	 */
 	T visit(LocalFile lf);
@@ -137,7 +149,7 @@ public interface SleuthkitItemVisitor<T> {
 	 * methods for the objects on which the algorithm needs to act differently.
 	 *
 	 * @param <T> generic type, signifies the object type to be returned from
-	 * visit()
+	 *            visit()
 	 */
 	static abstract public class Default<T> implements SleuthkitItemVisitor<T> {
 

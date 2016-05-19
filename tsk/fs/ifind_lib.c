@@ -266,56 +266,41 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
              * Check if this is the name that we are currently looking for,
              * as identified in 'cur_dir'
              */
-            /* FAT is a special case because we check the short name */
-            if (TSK_FS_TYPE_ISFAT(a_fs->ftype)) {
-                if ((fs_file->name->name)
-                    && (a_fs->name_cmp(a_fs, fs_file->name->name,
-                            cur_dir) == 0)) {
-                    found_name = 1;
-                }
-                else if ((fs_file->name->shrt_name)
-                    && (a_fs->name_cmp(a_fs, fs_file->name->shrt_name,
-                            cur_dir) == 0)) {
-                    found_name = 1;
-                }
+            if ((fs_file->name->name)
+                && (a_fs->name_cmp(a_fs, fs_file->name->name,
+                        cur_dir) == 0)) {
+                found_name = 1;
+            }
+            else if ((fs_file->name->shrt_name)
+                && (a_fs->name_cmp(a_fs, fs_file->name->shrt_name,
+                        cur_dir) == 0)) {
+                found_name = 1;
             }
 
-            /* NTFS gets a case insensitive comparison */
-            else if (TSK_FS_TYPE_ISNTFS(a_fs->ftype)) {
-                if ((fs_file->name->name)
-                    && (a_fs->name_cmp(a_fs, fs_file->name->name,
-                            cur_dir) == 0)) {
-                    /*  ensure we have the right attribute name */
-                    if (cur_attr == NULL) {
-                        found_name = 1;
-                    }
-                    else {
-                        if (fs_file->meta) {
-                            int cnt, i;
+            /* For NTFS, we have to check the attribute name. */
+            if ((found_name == 1) && (TSK_FS_TYPE_ISNTFS(a_fs->ftype))) {
+                /*  ensure we have the right attribute name */
+                if (cur_attr != NULL) {
+                    found_name = 0;
+                    if (fs_file->meta) {
+                        int cnt, i;
 
-                            // cycle through the attributes
-                            cnt = tsk_fs_file_attr_getsize(fs_file);
-                            for (i = 0; i < cnt; i++) {
-                                const TSK_FS_ATTR *fs_attr =
-                                    tsk_fs_file_attr_get_idx(fs_file, i);
-                                if (!fs_attr)
-                                    continue;
+                        // cycle through the attributes
+                        cnt = tsk_fs_file_attr_getsize(fs_file);
+                        for (i = 0; i < cnt; i++) {
+                            const TSK_FS_ATTR *fs_attr =
+                                tsk_fs_file_attr_get_idx(fs_file, i);
+                            if (!fs_attr)
+                                continue;
 
-                                if ((fs_attr->name)
-                                    && (a_fs->name_cmp(a_fs, fs_attr->name,
-                                            cur_attr) == 0)) {
-                                    found_name = 1;
-                                }
+                            if ((fs_attr->name)
+                                && (a_fs->name_cmp(a_fs, fs_attr->name,
+                                        cur_attr) == 0)) {
+                                found_name = 1;
+                                break;
                             }
                         }
                     }
-                }
-            }
-            else {
-                if ((fs_file->name->name)
-                    && (a_fs->name_cmp(a_fs, fs_file->name->name,
-                            cur_dir) == 0)) {
-                    found_name = 1;
                 }
             }
 
@@ -373,6 +358,11 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
                 if (a_fs_name) {
                     tsk_fs_name_copy(a_fs_name, fs_file_tmp->name);
                 }
+
+                if (fs_file_alloc) 
+                    tsk_fs_file_close(fs_file_alloc);
+                if (fs_file_del) 
+                    tsk_fs_file_close(fs_file_del);
 
                 tsk_fs_dir_close(fs_dir);
                 free(cpath);

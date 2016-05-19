@@ -27,7 +27,13 @@ typedef int bool;
 #include "ewf.h"
 #endif
 
+#if HAVE_LIBVMDK
+#include "vmdk.h"
+#endif
 
+#if HAVE_LIBVHDI
+#include "vhd.h"
+#endif
 
 /**
  * \ingroup imglib
@@ -102,19 +108,21 @@ tsk_img_open(int num_img,
         return NULL;
     }
 
-
     if (tsk_verbose)
         TFPRINTF(stderr,
             _TSK_T("tsk_img_open: Type: %d   NumImg: %d  Img1: %s\n"),
             type, num_img, images[0]);
 
-    /* If no type is given, then we use the autodetection methods
-     * In case the image file matches the signatures of multiple formats,
-     * we try all of the embedded formats
-     */
-    if (type == TSK_IMG_TYPE_DETECT) {
+
+    switch (type) {
+    case TSK_IMG_TYPE_DETECT:
+    {
+        /* If no type is given, then we use the autodetection methods
+         * In case the image file matches the signatures of multiple formats,
+         * we try all of the embedded formats
+         */
         TSK_IMG_INFO *img_set = NULL;
-#if HAVE_LIBAFFLIB || HAVE_LIBEWF
+#if HAVE_LIBAFFLIB || HAVE_LIBEWF || HAVE_LIBVMDK || HAVE_LIBVHDI
         char *set = NULL;
 #endif
 
@@ -135,7 +143,8 @@ tsk_img_open(int num_img,
             }
         }
         else {
-            // If AFF is otherwise happy except for a password, stop trying to guess
+            // If AFF is otherwise happy except for a password,
+            // stop trying to guess
             if (tsk_error_get_errno() == TSK_ERR_IMG_PASSWD) {
                 return NULL;
             }
@@ -163,13 +172,55 @@ tsk_img_open(int num_img,
         }
 #endif
 
+#if HAVE_LIBVMDK
+        if ((img_info = vmdk_open(num_img, images, a_ssize)) != NULL) {
+            if (set == NULL) {
+                set = "VMDK";
+                img_set = img_info;
+            }
+            else {
+                img_set->close(img_set);
+                img_info->close(img_info);
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
+                tsk_error_set_errstr("VMDK or %s", set);
+                return NULL;
+            }
+        }
+        else {
+            tsk_error_reset();
+        }
+#endif
+
+#if HAVE_LIBVHDI
+        if ((img_info = vhdi_open(num_img, images, a_ssize)) != NULL) {
+            if (set == NULL) {
+                set = "VHD";
+                img_set = img_info;
+            }
+            else {
+                img_set->close(img_set);
+                img_info->close(img_info);
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
+                tsk_error_set_errstr("VHD or %s", set);
+                return NULL;
+            }
+        }
+        else {
+            tsk_error_reset();
+        }
+#endif
+
         // if any of the non-raw formats were detected, then use it.
-        if (img_set != NULL)
-            return img_set;
+        if (img_set != NULL) {
+            img_info = img_set;
+            break;
+        }
 
         // otherwise, try raw
         if ((img_info = raw_open(num_img, images, a_ssize)) != NULL) {
-            return img_info;
+            break;
         }
         else if (tsk_error_get_errno() != 0) {
             return NULL;
@@ -180,11 +231,6 @@ tsk_img_open(int num_img,
         return NULL;
     }
 
-    /*
-     * Type values
-     */
-
-    switch (type) {
     case TSK_IMG_TYPE_RAW:
         img_info = raw_open(num_img, images, a_ssize);
         break;
@@ -211,6 +257,8 @@ tsk_img_open(int num_img,
         return NULL;
     }
 
+    /* we have a good img_info, set up the cache lock */
+    tsk_init_lock(&(img_info->cache_lock));
     return img_info;
 }
 
@@ -312,6 +360,9 @@ tsk_img_open_utf8(int num_img,
         }
         free(images16);
 
+        if (retval) {
+            tsk_init_lock(&(retval->cache_lock));
+        }
         return retval;
     }
 #else
@@ -319,6 +370,93 @@ tsk_img_open_utf8(int num_img,
 #endif
 }
 
+/**
+* \ingroup imglib
+ * Opens an an image of type TSK_IMG_TYPE_EXTERNAL. The void pointer parameter
+ * must be castable to a TSK_IMG_INFO pointer.  It is up to 
+ * the caller to set the tag value in ext_img_info.  This 
+ * method will initialize the cache lock. 
+ *
+ * @param ext_img_info Pointer to the partially initialized disk image
+ * structure, having a TSK_IMG_INFO as its first member
+ * @param size Total size of image in bytes
+ * @param sector_size Sector size of device in bytes
+ * @param read Pointer to user-supplied read function
+ * @param close Pointer to user-supplied close function
+ * @param imgstat Pointer to user-supplied imgstat function
+ *
+ * @return Pointer to TSK_IMG_INFO or NULL on error
+ */
+TSK_IMG_INFO *
+tsk_img_open_external(
+  void* ext_img_info,
+  TSK_OFF_T size,
+  unsigned int sector_size,
+  ssize_t(*read) (TSK_IMG_INFO * img, TSK_OFF_T off, char *buf, size_t len),
+  void (*close) (TSK_IMG_INFO *),
+  void (*imgstat) (TSK_IMG_INFO *, FILE *)
+)
+{
+    TSK_IMG_INFO *img_info;
+    // sanity checks
+    if (!ext_img_info) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("external image info pointer was null");
+        return NULL;
+    }
+
+    if (!read) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("external image read pointer was null");
+        return NULL;
+    }
+
+    if (!close) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("external image close pointer was null");
+        return NULL;
+    }
+
+    if (!imgstat) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("external image imgstat pointer was null");
+        return NULL;
+    }
+
+    if (sector_size > 0 && sector_size < 512) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("sector size is less than 512 bytes (%d)",
+            sector_size);
+        return NULL;
+    }
+
+    if (sector_size % 512 != 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_ARG);
+        tsk_error_set_errstr("sector size is not a multiple of 512 (%d)",
+            sector_size);
+        return NULL;
+    }
+
+    // set up the TSK_IMG_INFO members
+    img_info = (TSK_IMG_INFO *) ext_img_info;
+
+    img_info->tag = TSK_IMG_INFO_TAG;
+    img_info->itype = TSK_IMG_TYPE_EXTERNAL;
+    img_info->size = size;
+    img_info->sector_size = sector_size ? sector_size : 512;
+    img_info->read = read;
+    img_info->close = close;
+    img_info->imgstat = imgstat;
+
+    tsk_init_lock(&(img_info->cache_lock));
+    return img_info;
+}
 
 #if 0
 /* This interface needs some more thought because the size of wchar is not standard.
@@ -416,6 +554,7 @@ tsk_img_close(TSK_IMG_INFO * a_img_info)
     if (a_img_info == NULL) {
         return;
     }
+    tsk_deinit_lock(&(a_img_info->cache_lock));
     a_img_info->close(a_img_info);
 }
 

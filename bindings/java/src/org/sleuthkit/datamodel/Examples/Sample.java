@@ -21,6 +21,7 @@ package org.sleuthkit.datamodel.Examples;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.AbstractFile;
@@ -46,7 +47,7 @@ public class Sample {
 			ArrayList<String> paths = new ArrayList<String>();
 			paths.add(imagePath);
 			try {
-				process.run(paths.toArray(new String[paths.size()]));
+				process.run(UUID.randomUUID().toString(), paths.toArray(new String[paths.size()]));
 			} catch (TskDataException ex) {
 				Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, ex);
 			}
@@ -63,7 +64,7 @@ public class Sample {
 			}
 
 			// print out all .txt files found
-			List<AbstractFile> files = sk.findAllFilesWhere("name like '%.txt'");
+			List<AbstractFile> files = sk.findAllFilesWhere("LOWER(name) LIKE LOWER('%.txt')");
 			for (AbstractFile file : files) {
 				System.out.println("Found text file: " + file.getName());
 			}

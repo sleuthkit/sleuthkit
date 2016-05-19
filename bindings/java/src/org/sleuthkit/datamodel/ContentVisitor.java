@@ -35,6 +35,7 @@ public interface ContentVisitor<T> {
 	 * Act on (visit) a Directory content object
 	 *
 	 * @param d the directory to visit / act on
+	 *
 	 * @return result of the visit
 	 */
 	T visit(Directory d);
@@ -43,6 +44,7 @@ public interface ContentVisitor<T> {
 	 * Act on (visit) a File content object
 	 *
 	 * @param f File to visit / act on
+	 *
 	 * @return result of the visit
 	 */
 	T visit(File f);
@@ -51,6 +53,7 @@ public interface ContentVisitor<T> {
 	 * Act on (visit) a FileSystem content object
 	 *
 	 * @param fs file system to visit / act on
+	 *
 	 * @return result of the visit
 	 */
 	T visit(FileSystem fs);
@@ -59,6 +62,7 @@ public interface ContentVisitor<T> {
 	 * Act on (visit) an Image content object
 	 *
 	 * @param i image to visit / act on
+	 *
 	 * @return result of the visit
 	 */
 	T visit(Image i);
@@ -67,6 +71,7 @@ public interface ContentVisitor<T> {
 	 * Act on (visit) a Volume content object
 	 *
 	 * @param v volume to visit / act on
+	 *
 	 * @return result of the visit
 	 */
 	T visit(Volume v);
@@ -75,6 +80,7 @@ public interface ContentVisitor<T> {
 	 * Act on (visit) a VolumeSystem content object
 	 *
 	 * @param vs volume system to visit / act on
+	 *
 	 * @return result of the visit
 	 */
 	T visit(VolumeSystem vs);
@@ -83,6 +89,7 @@ public interface ContentVisitor<T> {
 	 * Act on (visit) a LayoutFile content object
 	 *
 	 * @param lf layout file to visit / act on
+	 *
 	 * @return result of the visit
 	 */
 	T visit(LayoutFile lf);
@@ -91,6 +98,7 @@ public interface ContentVisitor<T> {
 	 * Act on (visit) a LayoutDirectory content object
 	 *
 	 * @param ld layout dir to visit / act on
+	 *
 	 * @return result of the visit
 	 */
 	T visit(VirtualDirectory ld);
@@ -99,6 +107,7 @@ public interface ContentVisitor<T> {
 	 * Act on (visit) a DerivedFile content object
 	 *
 	 * @param lf local file to visit / act on
+	 *
 	 * @return result of the visit
 	 */
 	T visit(DerivedFile lf);
@@ -107,6 +116,7 @@ public interface ContentVisitor<T> {
 	 * Act on (visit) a LocalFile content object
 	 *
 	 * @param df derived file to visit / act on
+	 *
 	 * @return result of the visit
 	 */
 	T visit(LocalFile df);
@@ -119,7 +129,7 @@ public interface ContentVisitor<T> {
 	 * differently.
 	 *
 	 * @param <T> generic type, signifies the object type to be returned from
-	 * visit()
+	 *            visit()
 	 */
 	static abstract public class Default<T> implements ContentVisitor<T> {
 

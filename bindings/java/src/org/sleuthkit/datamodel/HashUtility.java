@@ -38,6 +38,7 @@ public class HashUtility {
 	 * database
 	 *
 	 * @param file file object whose md5 hash we want to calculate
+	 *
 	 * @return md5 of the given FsContent object
 	 */
 	static public String calculateMd5(AbstractFile file) throws IOException {
@@ -76,6 +77,7 @@ public class HashUtility {
 	 * false positives.
 	 *
 	 * @param md5
+	 *
 	 * @return True if it is the empty hash value
 	 */
 	public static boolean isNoDataMd5(String md5) {

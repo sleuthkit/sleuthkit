@@ -1,16 +1,11 @@
 <?xml version="1.0" encoding="windows-1252"?>
 <project name="TSKTestTargets">
-	<!-- some dlls come from LIBEWF_HOME -->
-	<property environment="env"/>	
-	<condition property="ewfFound">
-			<isset property="env.LIBEWF_HOME"/>
-	</condition>
-    <property name="dlls" value="${env.LIBEWF_HOME}/msvscpp/zlib;${env.LIBEWF_HOME}/msvscpp/Release;../../win32/Release"/>
+		
+    <property name="dlls" value="../../win32/Release"/>
 
 	<target name="test" 
 			description="Runs the regression tests."
 			depends="compile-test" >
-		<fail unless="ewfFound" message="LIBEWF_HOME must be set as an environment variable."/>
 		<junit fork="on" haltonfailure="yes" dir=".">
 			<sysproperty key="java.library.path" value="${dlls}"/>	
 			<sysproperty key="rslt" value="${test-results}"/>
@@ -25,7 +20,6 @@
 	<target name="test-rebuild"
 			description="Rebuilds gold standards for tests."
 			depends="compile-test" >
-		<fail unless="ewfFound" message="LIBEWF_HOME must be set as an environment variable."/>
 		<java classname="org.sleuthkit.datamodel.DataModelTestSuite" classpathref="libraries"	fork="true" failonerror="true">
 			<sysproperty key="java.library.path" value="${dlls}"/>	
 			<sysproperty key="gold" value="${test-standards}"/>
@@ -41,37 +35,69 @@
 		targetfile="${x86}/win/libtsk_jni.dll"/>
 	</target>
 
-
 	<target name="check-build-64" if="win64.TskLib.exists">
 		<uptodate property="native-up-to-date" srcfile="${basedir}/../../win32/x64/Release/libtsk_jni.dll"
 		targetfile="${amd64}/win/libtsk_jni.dll"/>
 	</target>
 
-	<target name="copyLibs" description="Copy native libs to the correct folder">
+	<target name="copyLibs-SQLite" description="Copy native libs to the correct folder">
 		<property name="tsk.config" value="Release"/>
-		<antcall target="copyWinTskLibsToBuild" />
+		<antcall target="copyWinTskLibsToBuildSQLite" />
 	</target>
 	
-	<target name="copyLibsDebug" description="Copy native libs to the correct folder">
+	<target name="copyLibs-SQLiteDebug" description="Copy native libs to the correct folder">
 		<property name="tsk.config" value="Debug"/>
-		<antcall target="copyWinTskLibsToBuild" />
+		<antcall target="copyWinTskLibsToBuildSQLite" />
+	</target>
+
+	<target name="copyLibs-PostgreSQL" description="Copy native libs to the correct folder, PostgreSQL build">
+		<property name="tsk.config" value="Release_PostgreSQL"/>
+		<antcall target="copyWinTskLibsToBuild-PostgreSQL" />
 	</target>
 	
-	<target name="copyWinTskLibsToBuild" depends="copyWinTskLibs64ToBuild,copyWinTskLibs32ToBuild" description="Copy windows dlls to the correct location." />
+	<target name="copyLibs-PostgreSQLDebug" description="Copy native libs to the correct folder, PostgreSQL build">
+		<property name="tsk.config" value="Debug_PostgreSQL"/>
+		<antcall target="copyWinTskLibsToBuild-PostgreSQL" />
+	</target>
+
+	<target name="copyWinTskLibsToBuildSQLite" depends="copyWinTskLibs64ToBuildSQLite, copyWinTskLibs32ToBuild-SQLite" description="Copy Windows DLLs to the correct location, SQLite build." />
 	
-	<target name="checkTskLibDirs">
+	<target name="checkTskLibDirsSQLite">
 		<available property="win64.TskLib.exists" type="file" file="${basedir}/../../win32/x64/${tsk.config}/libtsk_jni.dll" />
 		<available property="win32.TskLib.exists" type="file" file="${basedir}/../../win32/${tsk.config}/libtsk_jni.dll" />
 	</target>
 	
-	<target name="copyWinTskLibs64ToBuild" depends="checkTskLibDirs" if="win64.TskLib.exists">
+	<target name="copyWinTskLibs64ToBuildSQLite" depends="checkTskLibDirsSQLite" if="win64.TskLib.exists">
 		<property name="tsk.jni.64" location="${basedir}/../../win32/x64/${tsk.config}/libtsk_jni.dll" />
 		
 		<copy file="${tsk.jni.64}" todir="${amd64}/win" overwrite="true"/>
 		<copy file="${tsk.jni.64}" todir="${x86_64}/win" overwrite="true"/>
 	</target>
 	
-	<target name="copyWinTskLibs32ToBuild" depends="checkTskLibDirs" if="win32.TskLib.exists">
+	<target name="copyWinTskLibs32ToBuild-SQLite" depends="checkTskLibDirs" if="win32.TskLib.exists">
+		<property name="tsk.jni.32" location="${basedir}/../../win32/${tsk.config}/libtsk_jni.dll" />
+		
+		<copy file="${tsk.jni.32}" todir="${i386}/win" overwrite="true"/>
+		<copy file="${tsk.jni.32}" todir="${x86}/win" overwrite="true"/>
+		<copy file="${tsk.jni.32}" todir="${i586}/win" overwrite="true"/>	
+		<copy file="${tsk.jni.32}" todir="${i686}/win" overwrite="true"/>
+	</target>
+		
+	<target name="copyWinTskLibsToBuild-PostgreSQL" depends="copyWinTskLibs64ToBuild-PostgreSQL,copyWinTskLibs32ToBuild-PostgreSQL" description="Copy Windows DLLs to the correct location, PostgreSQL build." />
+	
+	<target name="checkTskLibDirs">
+		<available property="win64.TskLib.exists" type="file" file="${basedir}/../../win32/x64/${tsk.config}/libtsk_jni.dll" />
+		<available property="win32.TskLib.exists" type="file" file="${basedir}/../../win32/${tsk.config}/libtsk_jni.dll" />
+	</target>
+	
+	<target name="copyWinTskLibs64ToBuild-PostgreSQL" depends="checkTskLibDirs" if="win64.TskLib.exists">
+		<property name="tsk.jni.64" location="${basedir}/../../win32/x64/${tsk.config}/libtsk_jni.dll" />
+		
+		<copy file="${tsk.jni.64}" todir="${amd64}/win" overwrite="true"/>
+		<copy file="${tsk.jni.64}" todir="${x86_64}/win" overwrite="true"/>
+	</target>
+	
+	<target name="copyWinTskLibs32ToBuild-PostgreSQL" depends="checkTskLibDirs" if="win32.TskLib.exists">
 		<property name="tsk.jni.32" location="${basedir}/../../win32/${tsk.config}/libtsk_jni.dll" />
 		
 		<copy file="${tsk.jni.32}" todir="${i386}/win" overwrite="true"/>

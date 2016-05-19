@@ -141,6 +141,33 @@ tsk_fs_dir_copy(const TSK_FS_DIR * a_src_dir, TSK_FS_DIR * a_dst_dir)
 }
 
 
+
+
+/**
+ * Test if a_fs_dir already contains an entry for the given
+ * meta data address. If so, return the allocation state.
+ *
+ * @returns TSK_FS_NAME_FLAG_ALLOC, TSK_FS_NAME_FLAG_UNALLOC, or 0 if not found.
+ */
+uint8_t
+tsk_fs_dir_contains(TSK_FS_DIR * a_fs_dir, TSK_INUM_T meta_addr)
+{
+    size_t i;
+    uint8_t bestFound = 0;
+
+    for (i = 0; i < a_fs_dir->names_used; i++) {
+        if (meta_addr == a_fs_dir->names[i].meta_addr) {
+            bestFound = a_fs_dir->names[i].flags;
+            // stop as soon as we get an alloc. 
+            // if we get unalloc, keep going in case there
+            // is alloc later.
+            if (bestFound == TSK_FS_NAME_FLAG_ALLOC) 
+                break;
+        }
+    }
+    return bestFound;
+}
+
 /** \internal
  * Add a FS_DENT structure to a FS_DIR structure by copying its
  * contents into the internal buffer. Checks for
@@ -485,6 +512,30 @@ typedef struct {
 } DENT_DINFO;
 
 
+/**
+ * Saves the list_inum_named from DENT_DINFO to FS_INFO.
+ * This can be called from a couple of places, so the logic
+ * is here in a single method.
+ */
+static void
+save_inum_named(TSK_FS_INFO *a_fs, DENT_DINFO *dinfo) {
+
+    /* We finished the dir walk successfully, so reassign
+     * ownership of the dinfo's list_inum_named to the shared
+     * list_inum_named in TSK_FS_INFO, under a lock, if
+     * another thread hasn't already done so.
+     */
+    tsk_take_lock(&a_fs->list_inum_named_lock);
+    if (a_fs->list_inum_named == NULL) {
+        a_fs->list_inum_named = dinfo->list_inum_named;
+    }
+    else {
+        tsk_list_free(dinfo->list_inum_named);
+    }
+    dinfo->list_inum_named = NULL;
+    tsk_release_lock(&a_fs->list_inum_named_lock);
+}
+
 /* dir_walk local function that is used for recursive calls.  Callers
  * should initially call the non-local version. */
 static TSK_WALK_RET_ENUM
@@ -570,6 +621,20 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                 a_dinfo->list_inum_named = NULL;
                 a_dinfo->save_inum_named = 0;
             }
+        }
+
+
+        /* Optimization. If we are about to recurse into the
+         * orphan directory and we are the last item in the
+         * directory and the flag has been set to save inum_named,
+         * then save inum_named now to FS_INFO so that we can use
+         * it for the orphan folder.  Otherwise, we do a full
+         * inode walk again for nothing. */
+        if ((fs_file->name->meta_addr == TSK_FS_ORPHANDIR_INUM(a_fs)) && 
+            (i == fs_dir->names_used-1) && 
+            (a_dinfo->save_inum_named == 1)) {
+            save_inum_named(a_fs, a_dinfo);
+            a_dinfo->save_inum_named = 0;
         }
 
         /* Recurse into a directory if:
@@ -738,6 +803,8 @@ tsk_fs_dir_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr,
     retval = tsk_fs_dir_walk_lcl(a_fs, &dinfo, a_addr, a_flags,
         a_action, a_ptr);
 
+    // if we were saving the list of named files in the temp list,
+    // then now save them to FS_INFO
     if (dinfo.save_inum_named == 1) {
         if (retval != TSK_WALK_CONT) {
             /* There was an error and we stopped early, so we should get
@@ -747,20 +814,7 @@ tsk_fs_dir_walk(TSK_FS_INFO * a_fs, TSK_INUM_T a_addr,
             dinfo.list_inum_named = NULL;
         }
         else {
-            /* We finished the dir walk successfully, so reassign
-             * ownership of the dinfo's list_inum_named to the shared
-             * list_inum_named in TSK_FS_INFO, under a lock, if
-             * another thread hasn't already done so.
-             */
-            tsk_take_lock(&a_fs->list_inum_named_lock);
-            if (a_fs->list_inum_named == NULL) {
-                a_fs->list_inum_named = dinfo.list_inum_named;
-            }
-            else {
-                tsk_list_free(dinfo.list_inum_named);
-            }
-            tsk_release_lock(&a_fs->list_inum_named_lock);
-            dinfo.list_inum_named = NULL;
+            save_inum_named(a_fs, &dinfo);
         }
     }
 
