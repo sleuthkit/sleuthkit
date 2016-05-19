@@ -183,16 +183,7 @@ public abstract class AbstractFile extends AbstractContent {
 	public int getAttributeId() {
 		return attrId;
 	}
-	
-	/**
-	 * Get the attribute id
-	 *
-	 * @return attribute id
 
-	public short getAttrId() {
-		return attrId;
-	}
-	 */
 	/**
 	 * Get the change time
 	 *
@@ -1155,4 +1146,23 @@ public abstract class AbstractFile extends AbstractContent {
 		this(db, objId, dataSourceObjectId, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null);
 	}
 
+	/**
+	 * Get the attribute id
+	 *
+	 * @return attribute id
+	 *
+	 * @deprecated Do not make subclasses outside of this package.
+	 */
+	@Deprecated
+	@SuppressWarnings("deprecation")
+	public short getAttrId() {
+		/* NOTE: in extremely rare occurances attrId can be larger than what a signed short can hold (2^15).
+		 * Therefore this method has been deprecated. For backwards compatibility, attribute
+		 * ids that are larger than 32K are converted to a negative number.
+		 */
+		if (attrId > 33000){
+			int aa = 9;
+		}
+		return (short) attrId;	// casting to signed short converts values over 32K to negative values
+	}
 }
