@@ -1151,7 +1151,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 *
 	 * @return attribute id
 	 *
-	 * @deprecated Do not make subclasses outside of this package.
+	 * @deprecated Use getAttributeId() method instead as it returns integer instead of short.
 	 */
 	@Deprecated
 	@SuppressWarnings("deprecation")
