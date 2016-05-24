@@ -77,7 +77,8 @@ public final class IngestJobInfo {
 	}
 
 	/**
-	 *
+	 * Class representing information about an ingest module, used in ingest job
+	 * info to show which ingest modules were run.
 	 */
 	public final class IngestModuleInfo {
 
