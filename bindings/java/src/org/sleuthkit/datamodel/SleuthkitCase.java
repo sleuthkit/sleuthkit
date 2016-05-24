@@ -201,6 +201,12 @@ public class SleuthkitCase {
 		init(caseHandle);
 		updateDatabaseSchema(dbPath);
 		logSQLiteJDBCDriverInfo();
+		// Initializing ingest module types is done here because it is possible 
+		// the table is not there when init is called. It must be there after
+		// the schema update.
+		CaseDbConnection connection = connections.getConnection();
+		this.initIngestModuleTypes(connection);
+		connection.close();
 	}
 
 	/**
@@ -227,6 +233,12 @@ public class SleuthkitCase {
 		this.connections = new PostgreSQLConnections(host, port, dbName, userName, password);
 		init(caseHandle);
 		updateDatabaseSchema(null);
+		// Initializing ingest module types is done here because it is possible 
+		// the table is not there when init is called. It must be there after
+		// the schema update.
+		CaseDbConnection connection = connections.getConnection();
+		this.initIngestModuleTypes(connection);
+		connection.close();
 	}
 
 	private void init(SleuthkitJNI.CaseDbHandle caseHandle) throws Exception {
@@ -736,30 +748,35 @@ public class SleuthkitCase {
 			// info artifact file signature data.
 			statement = connection.createStatement();
 			statement.execute("CREATE TABLE ingest_module_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)");
-			populateIngestModuleTypes();
 			statement.execute("CREATE TABLE ingest_modules (ingest_module_id INTEGER PRIMARY KEY, display_name TEXT NOT NULL, unique_name TEXT UNIQUE NOT NULL, type_id INTEGER NOT NULL, version TEXT NOT NULL, FOREIGN KEY(type_id) REFERENCES ingest_module_types(type_id));");
 			statement.execute("CREATE TABLE ingest_jobs (ingest_job_id INTEGER PRIMARY KEY, data_src_id INTEGER NOT NULL, host_name TEXT NOT NULL, start_date INTEGER NOT NULL, end_date INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(data_src_id) REFERENCES tsk_objects(obj_id));");
 			statement.execute("CREATE TABLE ingest_job_modules (ingest_job_id INTEGER, ingest_module_id INTEGER, FOREIGN KEY(ingest_job_id) REFERENCES ingest_jobs(ingest_job_id), FOREIGN KEY(ingest_module_id) REFERENCES ingest_modules(ingest_module_id));");
+			initIngestModuleTypes(connection);
 			return 5;
 		} finally {
 			closeStatement(statement);
 		}
 	}
 
-	private void populateIngestModuleTypes() throws TskCoreException {
-		CaseDbConnection connection = connections.getConnection();
+	private void initIngestModuleTypes(CaseDbConnection connection) throws TskCoreException {
 		acquireSharedLock();
 		Statement s = null;
+		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
 			for (IngestModuleType type : IngestModuleType.values()) {
-				s.execute("INSERT INTO ingest_module_types (type_id, type_name) VALUES (" + type.getTypeID() + ", '" + type.getTypeName() + "');");
+				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_module_types WHERE type_id=" + type.getTypeID() + ";");
+				if (!rs.next()) {
+					s.execute("INSERT INTO ingest_module_types (type_id, type_name) VALUES (" + type.getTypeID() + ", '" + type.getTypeName() + "');");
+				}
+				rs.close();
+				rs = null;
 			}
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting root objects", ex);
+			throw new TskCoreException("Error adding ingest module types to table.", ex);
 		} finally {
+			closeResultSet(rs);
 			closeStatement(s);
-			connection.close();
 			releaseSharedLock();
 		}
 	}
@@ -6002,7 +6019,7 @@ public class SleuthkitCase {
 			}
 		}
 	}
-	
+
 	void setIngestJobEndDate(int ingestJobId, long endDate) throws TskCoreException, TskDataException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
@@ -6016,8 +6033,7 @@ public class SleuthkitCase {
 				} else {
 					throw new TskDataException("Given ingest job has already been finished.");
 				}
-			}
-			else {
+			} else {
 				throw new TskDataException("Given ingest job was not found in database.");
 			}
 		} catch (SQLException ex) {
