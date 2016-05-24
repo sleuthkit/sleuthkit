@@ -96,7 +96,7 @@ public class DerivedFile extends AbstractFile {
 			String mimeType) {
 		// TODO (AUT-1904): The parent id should be passed to AbstractContent 
 		// through the class hierarchy contructors.
-		super(db, objId, dataSourceObjectId, TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short) 0,
+		super(db, objId, dataSourceObjectId, TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0,
 				name, TSK_DB_FILES_TYPE_ENUM.LOCAL, 0L, 0, dirType, metaType, dirFlag,
 				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath, mimeType);
 		setLocalPath(localPath, false);

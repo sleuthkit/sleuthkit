@@ -545,7 +545,33 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	public static long openFile(long fsHandle, long fileId, TSK_FS_ATTR_TYPE_ENUM attrType, int attrId) throws TskCoreException {
-		return openFileNat(fsHandle, fileId, attrType.getValue(), attrId);
+		/*
+		 * NOTE: previously attrId used to be stored in AbstractFile as (signed)
+		 * short even though it is stored as uint16 in TSK. In extremely rare
+		 * occurances attrId can be larger than what a signed short can hold
+		 * (2^15). Changes were made to AbstractFile to store attrId as integer.
+		 * However, a depricated method still exists in AbstractFile to get
+		 * attrId as short. In that method we convert attribute ids that are
+		 * larger than 32K to a negative number. Therefore if encountered, we
+		 * need to convert negative attribute id to uint16 which is what TSK is
+		 * using to store attribute id.
+		 */
+		return openFileNat(fsHandle, fileId, attrType.getValue(), convertSignedToUnsigned(attrId));
+	}
+	
+	/**
+	 * Converts signed integer to an unsigned integer.
+	 *
+	 * @param val value to be converter
+	 *
+	 * @return unsigned integer value
+	 */
+	private static int convertSignedToUnsigned(int val) {
+		if (val >= 0) {
+			return val;
+		}
+
+		return val & 0xffff;	// convert negative value to positive value
 	}
 
 	//do reads
