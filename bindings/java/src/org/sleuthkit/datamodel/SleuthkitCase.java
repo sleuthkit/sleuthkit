@@ -6021,6 +6021,16 @@ public class SleuthkitCase {
 		}
 	}
 
+	/**
+	 * Sets the end date for the given ingest job
+	 *
+	 * @param ingestJobId The ingest job to set the end date for
+	 * @param endDate     The end date
+	 *
+	 * @throws TskCoreException If inserting into the database fails
+	 * @throws TskDataException If the ingest job is not found, or already has
+	 *                          an end time.
+	 */
 	void setIngestJobEndDate(int ingestJobId, long endDate) throws TskCoreException, TskDataException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
@@ -6046,6 +6056,17 @@ public class SleuthkitCase {
 		}
 	}
 
+	/**
+	 *
+	 * @param dataSource
+	 * @param hostName
+	 * @param ingestModules
+	 * @param jobStart
+	 *
+	 * @return
+	 *
+	 * @throws TskCoreException
+	 */
 	public final IngestJobInfo addIngestJob(Content dataSource, String hostName, List<IngestModuleInfo> ingestModules, long jobStart) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
@@ -6059,7 +6080,7 @@ public class SleuthkitCase {
 				//We want 1 + the maximum job id.
 				id = resultSet.getInt(1) + 1;
 			}
-			statement.executeUpdate("INSERT INTO ingest_jobs (ingest_job_id, data_src_id, host_name, start_date_time, end_date_time, settings_dir) "
+			statement.executeUpdate("INSERT INTO ingest_jobs (ingest_job_id, data_src_id, host_name, start_date, end_date, settings_dir) "
 					+ "VALUES (" + id + ", " + dataSource.getId() + ", '" + hostName + "', " + jobStart + ", 0, '');");
 			return new IngestJobInfo(id, dataSource.getId(), hostName, jobStart, "", ingestModules, this);
 		} catch (SQLException ex) {
@@ -6071,6 +6092,17 @@ public class SleuthkitCase {
 		}
 	}
 
+	/**
+	 *
+	 * @param displayName
+	 * @param uniqueName
+	 * @param type
+	 * @param version
+	 *
+	 * @return
+	 *
+	 * @throws TskCoreException
+	 */
 	public IngestModuleInfo addIngestModule(String displayName, String uniqueName, IngestModuleType type, String version) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		ResultSet resultSet = null;
@@ -6091,8 +6123,7 @@ public class SleuthkitCase {
 				statement.execute("INSERT INTO ingest_modules (ingest_module_id, display_name, unique_name, type_id, version) "
 						+ "VALUES (" + id + ", '" + displayName + "', '" + uniqueName + "', " + type.getTypeID() + ", '" + version + "';");
 				return new IngestModuleInfo(id, displayName, uniqueName, type.getTypeID(), version);
-			}
-			else {
+			} else {
 				return new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"), uniqueName, resultSet.getInt("type_id"), resultSet.getString("version"));
 			}
 		} catch (SQLException ex) {
@@ -6102,6 +6133,35 @@ public class SleuthkitCase {
 			closeStatement(statement);
 			connection.close();
 		}
+	}
+
+	/**
+	 *
+	 * @return @throws TskCoreException
+	 */
+	public final List<IngestJobInfo> getIngestJobs() throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		ResultSet resultSet = null;
+		Statement statement = null;
+		List<IngestJobInfo> ingestJobs = new ArrayList<IngestJobInfo>();
+		try {
+			statement = connection.createStatement();
+			resultSet = statement.executeQuery("SELECT * FROM ingest_jobs");
+			while (resultSet.next()) {
+				ingestJobs.add(new IngestJobInfo(resultSet.getInt("ingest_job_id"), resultSet.getLong("data_src_id"), resultSet.getString("host_name"), resultSet.getLong("start_date"), resultSet.getLong("end_date"), resultSet.getString("settings_dir"), this.getIngestModules(resultSet.getInt("ingest_job_id"), connection), this));
+			}
+
+		} catch (SQLException ex) {
+			throw new TskCoreException("Couldn't add new module to database.", ex);
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+			connection.close();
+		}
+	}
+
+	private List<IngestModuleInfo> getIngestModules() {
+
 	}
 
 	/**

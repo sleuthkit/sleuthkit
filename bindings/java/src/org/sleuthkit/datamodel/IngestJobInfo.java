@@ -34,11 +34,43 @@ public final class IngestJobInfo {
 	private final List<IngestModuleInfo> ingestModuleInfo;
 	private final SleuthkitCase skCase;
 
+	/**
+	 * Constructs an IngestJobInfo that has not ended
+	 * @param ingestJobId
+	 * @param dataSourceId
+	 * @param hostName
+	 * @param startDate
+	 * @param settingsDir
+	 * @param ingestModuleInfo
+	 * @param skCase 
+	 */
 	IngestJobInfo(int ingestJobId, long dataSourceId, String hostName, long startDate, String settingsDir, List<IngestModuleInfo> ingestModuleInfo, SleuthkitCase skCase) {
 		this.ingestJobId = ingestJobId;
 		this.dataSourceId = dataSourceId;
 		this.hostName = hostName;
 		this.startDate = startDate;
+		this.settingsDir = settingsDir;
+		this.skCase = skCase;
+		this.ingestModuleInfo = ingestModuleInfo;
+	}
+	
+	/**
+	 * Constructs an IngestJobInfo that has already ended
+	 * @param ingestJobId
+	 * @param dataSourceId
+	 * @param hostName
+	 * @param startDate
+	 * @param endDate
+	 * @param settingsDir
+	 * @param ingestModuleInfo
+	 * @param skCase 
+	 */
+	IngestJobInfo(int ingestJobId, long dataSourceId, String hostName, long startDate, long endDate, String settingsDir, List<IngestModuleInfo> ingestModuleInfo, SleuthkitCase skCase) {
+		this.ingestJobId = ingestJobId;
+		this.dataSourceId = dataSourceId;
+		this.hostName = hostName;
+		this.startDate = startDate;
+		this.endDate = endDate;
 		this.settingsDir = settingsDir;
 		this.skCase = skCase;
 		this.ingestModuleInfo = ingestModuleInfo;
