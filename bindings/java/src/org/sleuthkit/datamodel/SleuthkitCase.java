@@ -59,6 +59,7 @@ import org.postgresql.util.PSQLState;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE;
+import org.sleuthkit.datamodel.IngestJobInfo.IngestModuleInfo;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
 import org.sleuthkit.datamodel.TskData.DbType;
 import org.sleuthkit.datamodel.TskData.FileKnown;
@@ -6042,6 +6043,44 @@ public class SleuthkitCase {
 			closeResultSet(resultSet);
 			connection.close();
 			releaseSharedLock();
+		}
+	}
+
+	public final IngestJobInfo addIngestJob(Content dataSource, String hostName, List<IngestModuleInfo> ingestModules, long jobStart) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		ResultSet resultSet = null;
+		Statement statement = null;
+		try {
+			statement = connection.createStatement();
+			resultSet = statement.executeQuery("SELECT MAX(ingest_job_id) FROM ingest_jobs");
+			int id = 0;
+			if (resultSet.next()) {
+				//We want 1 + the maximum job id.
+				id = resultSet.getInt(0) + 1;
+			}
+			statement.executeUpdate("INSERT INTO ingest_jobs (ingest_job_id, data_src_id, host_name, start_date_time, end_date_time, settings_dir) "
+					+ "VALUES (" + id + ", " + dataSource.getId() + ", '" + hostName + "', " + jobStart + ", 0, '');");
+			for (IngestModuleInfo ingestModule : ingestModules) {
+				this.addIngestModule(ingestModule, connection);
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error updating the end date.", ex);
+		} finally {
+			closeResultSet(resultSet);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	private void addIngestModule(IngestModuleInfo ingestModule, CaseDbConnection connection) throws SQLException {
+		ResultSet resultSet = null;
+		Statement statement = null;
+		statement = connection.createStatement();
+		resultSet = statement.executeQuery("SELECT unique_name FROM ingest_modules WHERE unique_name='" + ingestModule.getUniqueName());
+		if (!resultSet.next()) {
+			statement.execute("INSERT INTO ingest_modules (ingest_module_id, display_name, unique_name, type_id, version) "
+					+ "VALUES (
 		}
 	}
 
