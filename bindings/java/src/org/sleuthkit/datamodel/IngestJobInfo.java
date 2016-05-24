@@ -26,7 +26,7 @@ import java.util.List;
 public final class IngestJobInfo {
 
 	private final int ingestJobId;
-	private final int dataSourceId;
+	private final long dataSourceId;
 	private final String hostName;
 	private final long startDate;
 	private long endDate = 0;
@@ -34,7 +34,7 @@ public final class IngestJobInfo {
 	private final List<IngestModuleInfo> ingestModuleInfo;
 	private final SleuthkitCase skCase;
 
-	IngestJobInfo(int ingestJobId, int dataSourceId, String hostName, long startDate, String settingsDir, List<IngestModuleInfo> ingestModuleInfo, SleuthkitCase skCase) {
+	IngestJobInfo(int ingestJobId, long dataSourceId, String hostName, long startDate, String settingsDir, List<IngestModuleInfo> ingestModuleInfo, SleuthkitCase skCase) {
 		this.ingestJobId = ingestJobId;
 		this.dataSourceId = dataSourceId;
 		this.hostName = hostName;
@@ -80,7 +80,7 @@ public final class IngestJobInfo {
 	 * Class representing information about an ingest module, used in ingest job
 	 * info to show which ingest modules were run.
 	 */
-	public final class IngestModuleInfo {
+	public static final class IngestModuleInfo {
 
 		private final int ingestModuleId;
 		private final String displayName;

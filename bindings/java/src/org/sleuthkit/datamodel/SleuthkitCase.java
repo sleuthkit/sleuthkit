@@ -6057,13 +6057,11 @@ public class SleuthkitCase {
 			int id = 0;
 			if (resultSet.next()) {
 				//We want 1 + the maximum job id.
-				id = resultSet.getInt(0) + 1;
+				id = resultSet.getInt(1) + 1;
 			}
 			statement.executeUpdate("INSERT INTO ingest_jobs (ingest_job_id, data_src_id, host_name, start_date_time, end_date_time, settings_dir) "
 					+ "VALUES (" + id + ", " + dataSource.getId() + ", '" + hostName + "', " + jobStart + ", 0, '');");
-			for (IngestModuleInfo ingestModule : ingestModules) {
-				this.addIngestModule(ingestModule, connection);
-			}
+			return new IngestJobInfo(id, dataSource.getId(), hostName, jobStart, "", ingestModules, this);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error updating the end date.", ex);
 		} finally {
@@ -6073,14 +6071,36 @@ public class SleuthkitCase {
 		}
 	}
 
-	private void addIngestModule(IngestModuleInfo ingestModule, CaseDbConnection connection) throws SQLException {
+	public IngestModuleInfo addIngestModule(String displayName, String uniqueName, IngestModuleType type, String version) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
 		ResultSet resultSet = null;
 		Statement statement = null;
-		statement = connection.createStatement();
-		resultSet = statement.executeQuery("SELECT unique_name FROM ingest_modules WHERE unique_name='" + ingestModule.getUniqueName());
-		if (!resultSet.next()) {
-			statement.execute("INSERT INTO ingest_modules (ingest_module_id, display_name, unique_name, type_id, version) "
-					+ "VALUES (
+		try {
+			statement = connection.createStatement();
+			resultSet = statement.executeQuery("SELECT * FROM ingest_modules WHERE unique_name='" + uniqueName);
+			if (!resultSet.next()) {
+				resultSet = null;
+				resultSet.close();
+				resultSet = statement.executeQuery("SELECT MAX(ingest_module_id) FROM ingest_modules");
+				int id = 0;
+				if (resultSet.next()) {
+					id = resultSet.getInt(1) + 1;
+				}
+				resultSet.close();
+				resultSet = null;
+				statement.execute("INSERT INTO ingest_modules (ingest_module_id, display_name, unique_name, type_id, version) "
+						+ "VALUES (" + id + ", '" + displayName + "', '" + uniqueName + "', " + type.getTypeID() + ", '" + version + "';");
+				return new IngestModuleInfo(id, displayName, uniqueName, type.getTypeID(), version);
+			}
+			else {
+				return new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"), uniqueName, resultSet.getInt("type_id"), resultSet.getString("version"));
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Couldn't add new module to database.", ex);
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+			connection.close();
 		}
 	}
 
