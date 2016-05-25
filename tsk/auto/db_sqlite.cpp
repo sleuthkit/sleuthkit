@@ -335,7 +335,7 @@ int
         "Error creating ingest_jobs table: %s\n")
 		||
 		attempt_exec
-        ("CREATE TABLE ingest_job_modules (ingest_job_id INTEGER, ingest_module_id INTEGER, FOREIGN KEY(ingest_job_id) REFERENCES ingest_jobs(ingest_job_id), FOREIGN KEY(ingest_module_id) REFERENCES ingest_modules(ingest_module_id));",
+        ("CREATE TABLE ingest_job_modules (ingest_job_id INTEGER, ingest_module_id INTEGER, position INTEGER, FOREIGN KEY(ingest_job_id) REFERENCES ingest_jobs(ingest_job_id), FOREIGN KEY(ingest_module_id) REFERENCES ingest_modules(ingest_module_id));",
         "Error creating ingest_job_modules table: %s\n")
         ||
         attempt_exec
