@@ -6057,15 +6057,17 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Adds the given ingest job to the database
 	 *
-	 * @param dataSource
-	 * @param hostName
-	 * @param ingestModules
-	 * @param jobStart
+	 * @param dataSource    The datasource the ingest job is being run on
+	 * @param hostName      The name of the host
+	 * @param ingestModules The ingest modules being run during the ingest job
+	 * @param jobStart      The time the job started
 	 *
-	 * @return
+	 * @return An information object representing the ingest job added to the
+	 *         database.
 	 *
-	 * @throws TskCoreException
+	 * @throws TskCoreException If adding the job to the database fails.
 	 */
 	public final IngestJobInfo addIngestJob(Content dataSource, String hostName, List<IngestModuleInfo> ingestModules, long jobStart) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
@@ -6082,6 +6084,10 @@ public class SleuthkitCase {
 			}
 			statement.executeUpdate("INSERT INTO ingest_jobs (ingest_job_id, data_src_id, host_name, start_date, end_date, settings_dir) "
 					+ "VALUES (" + id + ", " + dataSource.getId() + ", '" + hostName + "', " + jobStart + ", 0, '');");
+			for (IngestModuleInfo ingestModule : ingestModules) {
+				statement.executeUpdate("INSERT INTO ingest_job_modules (ingest_job_id, ingest_module_id) "
+						+ "VALUES (" + id + ", " + ingestModule.getIngestModuleId() + ");");
+			}
 			return new IngestJobInfo(id, dataSource.getId(), hostName, jobStart, "", ingestModules, this);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error updating the end date.", ex);
@@ -6093,15 +6099,18 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Adds the given ingest module to the database.
 	 *
-	 * @param displayName
-	 * @param uniqueName
-	 * @param type
-	 * @param version
+	 * @param displayName The display name of the module
+	 * @param uniqueName  The unique name of the module. Must be unique to this
+	 *                    module.
+	 * @param type        The type of the module.
+	 * @param version     The version of the module.
 	 *
-	 * @return
+	 * @return An ingest module info object representing the module added to the
+	 *         db.
 	 *
-	 * @throws TskCoreException
+	 * @throws TskCoreException When the ingest module cannot be added.
 	 */
 	public IngestModuleInfo addIngestModule(String displayName, String uniqueName, IngestModuleType type, String version) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
@@ -6109,7 +6118,7 @@ public class SleuthkitCase {
 		Statement statement = null;
 		try {
 			statement = connection.createStatement();
-			resultSet = statement.executeQuery("SELECT * FROM ingest_modules WHERE unique_name='" + uniqueName);
+			resultSet = statement.executeQuery("SELECT * FROM ingest_modules WHERE unique_name = '" + uniqueName + "'");
 			if (!resultSet.next()) {
 				resultSet = null;
 				resultSet.close();
@@ -6136,8 +6145,11 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Gets all of the ingest jobs that have been run.
 	 *
-	 * @return @throws TskCoreException
+	 * @return The information about the ingest jobs that have been run
+	 *
+	 * @throws TskCoreException If there is a problem getting the ingest jobs
 	 */
 	public final List<IngestJobInfo> getIngestJobs() throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
@@ -6150,9 +6162,9 @@ public class SleuthkitCase {
 			while (resultSet.next()) {
 				ingestJobs.add(new IngestJobInfo(resultSet.getInt("ingest_job_id"), resultSet.getLong("data_src_id"), resultSet.getString("host_name"), resultSet.getLong("start_date"), resultSet.getLong("end_date"), resultSet.getString("settings_dir"), this.getIngestModules(resultSet.getInt("ingest_job_id"), connection), this));
 			}
-
+			return ingestJobs;
 		} catch (SQLException ex) {
-			throw new TskCoreException("Couldn't add new module to database.", ex);
+			throw new TskCoreException("Couldn't get the ingest jobs.", ex);
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
@@ -6160,8 +6172,33 @@ public class SleuthkitCase {
 		}
 	}
 
-	private List<IngestModuleInfo> getIngestModules() {
-
+	/**
+	 * Gets the ingest modules associated with the ingest job
+	 *
+	 * @param ingestJobId The id of the ingest job to get ingest modules for
+	 * @param connection  The database connection
+	 *
+	 * @return The ingest modules of the job
+	 *
+	 * @throws SQLException If it fails to get the modules from the db.
+	 */
+	private List<IngestModuleInfo> getIngestModules(int ingestJobId, CaseDbConnection connection) throws SQLException {
+		ResultSet resultSet = null;
+		Statement statement = null;
+		List<IngestModuleInfo> ingestModules = new ArrayList<IngestModuleInfo>();
+		statement = connection.createStatement();
+		resultSet = statement.executeQuery("SELECT ingest_module_id FROM ingest_job_modules WHERE ingest_job_id = " + ingestJobId);
+		String query = "SELECT * FROM ingest_modules WHERE ";
+		while (resultSet.next()) {
+			query += "ingest_module_id = " + resultSet.getInt("ingest_module_id") + " OR ";
+		}
+		query = query.substring(0, query.length() - 4) + ";";
+		resultSet.close();
+		resultSet = statement.executeQuery(query);
+		while (resultSet.next()) {
+			ingestModules.add(new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"), resultSet.getString("unique_name"), resultSet.getInt("type_id"), resultSet.getString("version")));
+		}
+		return ingestModules;
 	}
 
 	/**
