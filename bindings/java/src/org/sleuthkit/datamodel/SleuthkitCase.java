@@ -6083,9 +6083,10 @@ public class SleuthkitCase {
 			}
 			statement.executeUpdate("INSERT INTO ingest_jobs (ingest_job_id, data_src_id, host_name, start_date, end_date, settings_dir) "
 					+ "VALUES (" + id + ", " + dataSource.getId() + ", '" + hostName + "', " + jobStart + ", 0, '');");
-			for (IngestModuleInfo ingestModule : ingestModules) {
-				statement.executeUpdate("INSERT INTO ingest_job_modules (ingest_job_id, ingest_module_id) "
-						+ "VALUES (" + id + ", " + ingestModule.getIngestModuleId() + ");");
+			for (int i = 0; i < ingestModules.size(); i++) {
+				IngestModuleInfo ingestModule = ingestModules.get(i);
+				statement.executeUpdate("INSERT INTO ingest_job_modules (ingest_job_id, ingest_module_id, position) "
+						+ "VALUES (" + id + ", " + ingestModule.getIngestModuleId() + ", " + i + ");");
 			}
 			return new IngestJobInfo(id, dataSource.getId(), hostName, jobStart, "", ingestModules, this);
 		} catch (SQLException ex) {
@@ -6186,7 +6187,7 @@ public class SleuthkitCase {
 		Statement statement = null;
 		List<IngestModuleInfo> ingestModules = new ArrayList<IngestModuleInfo>();
 		statement = connection.createStatement();
-		resultSet = statement.executeQuery("SELECT ingest_module_id FROM ingest_job_modules WHERE ingest_job_id = " + ingestJobId);
+		resultSet = statement.executeQuery("SELECT ingest_module_id FROM ingest_job_modules WHERE ingest_job_id = " + ingestJobId + "ORDER BY (position);");
 		String query = "SELECT * FROM ingest_modules WHERE ";
 		while (resultSet.next()) {
 			query += "ingest_module_id = " + resultSet.getInt("ingest_module_id") + " OR ";
