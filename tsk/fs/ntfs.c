@@ -4900,10 +4900,10 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     ntfs->csize_b = ntfs->fs->csize * ntfs->ssize_b;
     fs->first_block = 0;
     /* This field is defined as 64-bits but according to the
-     * NTFS drivers in Linux, windows only uses 32-bits
+     * NTFS drivers in Linux, old Windows versions used only 32-bits
      */
     fs->block_count =
-        (TSK_DADDR_T) tsk_getu32(fs->endian,
+        (TSK_DADDR_T) tsk_getu64(fs->endian,
         ntfs->fs->vol_size_s) / ntfs->fs->csize;
     if (fs->block_count == 0) {
         tsk_error_reset();
