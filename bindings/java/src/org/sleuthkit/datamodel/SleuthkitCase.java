@@ -504,17 +504,22 @@ public class SleuthkitCase {
 			statement.execute("CREATE INDEX attribute_valueInt64 ON blackboard_attributes(value_int64);"); //NON-NLS
 			statement.execute("CREATE INDEX attribute_valueDouble ON blackboard_attributes(value_double);"); //NON-NLS
 			resultSet = statement.executeQuery(
-					"SELECT attrs.artifact_id, arts.artifact_type_id " + //NON-NLS
-					"FROM blackboard_attributes AS attrs " + //NON-NLS
-					"INNER JOIN blackboard_artifacts AS arts " + //NON-NLS
+					"SELECT attrs.artifact_id, arts.artifact_type_id "
+					+ //NON-NLS
+					"FROM blackboard_attributes AS attrs "
+					+ //NON-NLS
+					"INNER JOIN blackboard_artifacts AS arts "
+					+ //NON-NLS
 					"WHERE attrs.artifact_id = arts.artifact_id;"); //NON-NLS
 			updateStatement = connection.createStatement();
 			while (resultSet.next()) {
 				long artifactId = resultSet.getLong(1);
 				int artifactTypeId = resultSet.getInt(2);
 				updateStatement.executeUpdate(
-						"UPDATE blackboard_attributes " + //NON-NLS
-						"SET artifact_type_id = " + artifactTypeId + " " + //NON-NLS
+						"UPDATE blackboard_attributes "
+						+ //NON-NLS
+						"SET artifact_type_id = " + artifactTypeId + " "
+						+ //NON-NLS
 						"WHERE blackboard_attributes.artifact_id = " + artifactId + ";"); //NON-NLS					
 			}
 			resultSet.close();
@@ -574,12 +579,16 @@ public class SleuthkitCase {
 				}
 			}
 			statement.execute(
-					"DELETE FROM blackboard_attributes WHERE artifact_id IN " + //NON-NLS
-					"(SELECT artifact_id FROM blackboard_artifacts WHERE artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() + //NON-NLS
+					"DELETE FROM blackboard_attributes WHERE artifact_id IN "
+					+ //NON-NLS
+					"(SELECT artifact_id FROM blackboard_artifacts WHERE artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID()
+					+ //NON-NLS
 					" OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ");"); //NON-NLS
 			statement.execute(
-					"DELETE FROM blackboard_artifacts WHERE " + //NON-NLS
-					"artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() + //NON-NLS	
+					"DELETE FROM blackboard_artifacts WHERE "
+					+ //NON-NLS
+					"artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID()
+					+ //NON-NLS	
 					" OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ";"); //NON-NLS
 
 			return 3;
@@ -629,8 +638,10 @@ public class SleuthkitCase {
 					+ "attrs.attribute_type_id = 62");
 			while (resultSet.next()) {
 				updateStatement.executeUpdate(
-						"UPDATE tsk_files " + //NON-NLS
-						"SET mime_type = '" + resultSet.getString(2) + "' " + //NON-NLS
+						"UPDATE tsk_files "
+						+ //NON-NLS
+						"SET mime_type = '" + resultSet.getString(2) + "' "
+						+ //NON-NLS
 						"WHERE tsk_files.obj_id = " + resultSet.getInt(1) + ";"); //NON-NLS	
 			}
 			resultSet.close();
@@ -643,8 +654,10 @@ public class SleuthkitCase {
 				String attributeLabel = resultSet.getString("type_name");
 				if (attributeTypeId < MIN_USER_DEFINED_TYPE_ID) {
 					updateStatement.executeUpdate(
-							"UPDATE blackboard_attribute_types " + //NON-NLS
-							"SET value_type = " + ATTRIBUTE_TYPE.fromLabel(attributeLabel).getValueType().getType() + " " + //NON-NLS
+							"UPDATE blackboard_attribute_types "
+							+ //NON-NLS
+							"SET value_type = " + ATTRIBUTE_TYPE.fromLabel(attributeLabel).getValueType().getType() + " "
+							+ //NON-NLS
 							"WHERE blackboard_attribute_types.attribute_type_id = " + attributeTypeId + ";"); //NON-NLS	
 				}
 			}
@@ -3422,6 +3435,207 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Adds a set of files carved from an image, volume, or file system to the
+	 * case.
+	 *
+	 * @param carvingResult The carving results (parent and carved files) to be
+	 *                      added.
+	 *
+	 * @return A list of LayoutFile representations of the carved files.
+	 *
+	 * @throws TskCoreException If there is a problem completing a case database
+	 *                          operation.
+	 */
+	public final List<LayoutFile> addCarvedFiles(CarvingResult carvingResult) throws TskCoreException {
+		List<LayoutFile> addedFiles = new ArrayList<LayoutFile>();
+		CaseDbTransaction localTrans = null;
+		Statement s = null;
+		ResultSet rs = null;
+		acquireExclusiveLock();
+		try {
+			localTrans = beginTransaction();
+			CaseDbConnection connection = localTrans.getConnection();
+
+			Content parent = carvingResult.getCarvedFilesParent();
+
+			// first, check the cache
+			long carvedFilesDirId;
+			Long cachedCarvedFilesDirId = carvedFileContainersCache.get(parent.getId());
+			if (null != cachedCarvedFilesDirId) {
+				carvedFilesDirId = cachedCarvedFilesDirId;
+			} else {
+				List<Content> children = Collections.<Content>emptyList();
+				if (parent instanceof FileSystem) {
+					FileSystem fs = (FileSystem) parent;
+					children = fs.getRootDirectory().getChildren();
+				} else if (parent instanceof Volume
+						|| parent instanceof Image) {
+					children = parent.getChildren();
+				} else {
+					throw new TskCoreException("The given ID (" + parent.getId() + ") was not an image, volume or file system.");
+				}
+
+				// see if any of the children are a '$CarvedFiles' directory
+				Content carvedFilesDir = null;
+				for (Content child : children) {
+					if (child.getName().equals(VirtualDirectory.NAME_CARVED)) {
+						carvedFilesDir = child;
+						break;
+					}
+				}
+
+				// if we found it, add it to the cache and grab its ID
+				if (carvedFilesDir != null) {
+					// add it to the cache
+					carvedFileContainersCache.put(parent.getId(), carvedFilesDir.getId());
+					carvedFilesDirId = carvedFilesDir.getId();
+				} else {
+					// a carved files directory does not exist; create one
+					VirtualDirectory vd = addVirtualDirectory(parent.getId(), VirtualDirectory.NAME_CARVED, localTrans);
+					carvedFilesDirId = vd.getId();
+					// add it to the cache
+					carvedFileContainersCache.put(parent.getId(), carvedFilesDirId);
+				}
+			}
+
+			// get the parent path for the $CarvedFiles directory		
+			String parentPath = getFileParentPath(carvedFilesDirId, localTrans);
+			if (parentPath == null) {
+				parentPath = "/"; //NON-NLS
+			}
+			String parentName = getFileName(carvedFilesDirId, localTrans);
+			if (parentName != null) {
+				parentPath = parentPath + parentName + "/"; //NON-NLS
+			}
+
+			// TODO (AUT-1903): We should cache this when we start adding 
+			// lots of carved files...
+			boolean isContainerAFs = false;
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, "SELECT * FROM tsk_fs_info " //NON-NLS
+					+ "WHERE obj_id = " + parent.getId()); //NON-NLS
+			if (rs.next()) {
+				isContainerAFs = true;
+			}
+			rs.close();
+			rs = null;
+
+			// TODO (AUT-1903): This result is another thing that should be 
+			// cached.
+			long dataSourceObjectId = getDataSourceObjectId(connection, carvedFilesDirId);
+
+			for (CarvingResult.CarvedFile itemToAdd : carvingResult.getCarvedFiles()) {
+
+				// Insert a row for the carved file into the tsk_objects table.
+				// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
+				PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
+				statement.clearParameters();
+				statement.setLong(1, carvedFilesDirId);
+				statement.setLong(2, TskData.ObjectType.ABSTRACTFILE.getObjectType());
+				connection.executeUpdate(statement);
+				rs = statement.getGeneratedKeys();
+				rs.next();
+				long newObjId = rs.getLong(1);
+
+				// Insert a row for the carved file into the tsk_files table.
+				// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, 
+				// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, data_source_obj_id) 
+				// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)			
+				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
+				statement.clearParameters();
+				statement.setLong(1, newObjId);
+
+				// only insert into the fs_obj_id column if container is a FS
+				if (isContainerAFs) {
+					statement.setLong(2, parent.getId());
+				} else {
+					statement.setNull(2, java.sql.Types.BIGINT);
+				}
+				statement.setString(3, itemToAdd.getName());
+
+				// type
+				final TSK_DB_FILES_TYPE_ENUM type = TSK_DB_FILES_TYPE_ENUM.CARVED;
+				statement.setShort(4, type.getFileType());
+
+				// has_path
+				statement.setShort(5, (short) 1);
+
+				// dirType
+				final TSK_FS_NAME_TYPE_ENUM dirType = TSK_FS_NAME_TYPE_ENUM.REG;
+				statement.setShort(6, dirType.getValue());
+
+				// metaType
+				final TSK_FS_META_TYPE_ENUM metaType = TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG;
+				statement.setShort(7, metaType.getValue());
+
+				// dirFlag
+				final TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.UNALLOC;
+				statement.setShort(8, dirFlag.getValue());
+
+				// metaFlags
+				final short metaFlags = TSK_FS_META_FLAG_ENUM.UNALLOC.getValue();
+				statement.setShort(9, metaFlags);
+
+				// size
+				statement.setLong(10, itemToAdd.getSizeInBytes());
+
+				// nulls for params 11-14
+				statement.setNull(11, java.sql.Types.BIGINT);
+				statement.setNull(12, java.sql.Types.BIGINT);
+				statement.setNull(13, java.sql.Types.BIGINT);
+				statement.setNull(14, java.sql.Types.BIGINT);
+
+				// parent path
+				statement.setString(15, parentPath);
+
+				// data source object id
+				statement.setLong(16, dataSourceObjectId);
+
+				connection.executeUpdate(statement);
+
+				// Add a row in the tsk_layout_file table for each TskFileRange.
+				// INSERT INTO tsk_file_layout (obj_id, byte_start, byte_len, sequence) 
+				// VALUES (?, ?, ?, ?)
+				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_LAYOUT_FILE);
+				for (TskFileRange tskFileRange : itemToAdd.getLayoutInParent()) {
+					statement.clearParameters();
+
+					// set the object ID
+					statement.setLong(1, newObjId);
+
+					// set byte_start
+					statement.setLong(2, tskFileRange.getByteStart());
+
+					// set byte_len
+					statement.setLong(3, tskFileRange.getByteLen());
+
+					// set the sequence number
+					statement.setLong(4, tskFileRange.getSequence());
+
+					// execute it
+					connection.executeUpdate(statement);
+				}
+
+				addedFiles.add(new LayoutFile(this, newObjId, dataSourceObjectId, itemToAdd.getName(),
+						type, dirType, metaType, dirFlag, metaFlags,
+						itemToAdd.getSizeInBytes(), null, FileKnown.UNKNOWN, parentPath, null));
+			}
+			localTrans.commit();
+			return addedFiles;
+
+		} catch (SQLException ex) {
+			if (null != localTrans) {
+				localTrans.rollback();
+			}
+			throw new TskCoreException("Failed to add carved file to case database", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			releaseExclusiveLock();
+		}
+	}
+
+	/**
 	 * Adds a carved file to the VirtualDirectory '$CarvedFiles' in the volume
 	 * or image given by systemId. Creates $CarvedFiles virtual directory if it
 	 * does not exist already.
@@ -3435,18 +3649,25 @@ public class SleuthkitCase {
 	 * @return A LayoutFile object representing the carved file.
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 * @deprecated Use addCarvedFile(CarvingResult) instead
 	 */
+	@Deprecated
 	public LayoutFile addCarvedFile(String carvedFileName, long carvedFileSize, long containerId, List<TskFileRange> data) throws TskCoreException {
-
-		List<CarvedFileContainer> carvedFileContainer = new ArrayList<CarvedFileContainer>();
-		carvedFileContainer.add(new CarvedFileContainer(carvedFileName, carvedFileSize, containerId, data));
-
-		List<LayoutFile> layoutCarvedFiles = addCarvedFiles(carvedFileContainer);
-		if (layoutCarvedFiles != null) {
-			return layoutCarvedFiles.get(0);
+		CarvingResult.CarvedFile carvedFile = new CarvingResult.CarvedFile(carvedFileName, carvedFileSize, data);
+		List<CarvingResult.CarvedFile> files = new ArrayList<CarvingResult.CarvedFile>();
+		files.add(carvedFile);
+		CarvingResult carvingResult;
+		Content parent = getContentById(containerId);
+		if (parent instanceof Image) {
+			carvingResult = new CarvingResult((Image) parent, files);
+		} else if (parent instanceof Volume) {
+			carvingResult = new CarvingResult((Volume) parent, files);
+		} else if (parent instanceof FileSystem) {
+			carvingResult = new CarvingResult((FileSystem) parent, files);
 		} else {
-			return null;
+			throw new TskCoreException(String.format("Parent (id =%d) is not an image, volume or file system", containerId));
 		}
+		return addCarvedFiles(carvingResult).get(0);
 	}
 
 	/**
@@ -3461,204 +3682,27 @@ public class SleuthkitCase {
 	 *         database
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 * @deprecated Use addCarvedFile(CarvingResult) instead
 	 */
+	@Deprecated
 	public List<LayoutFile> addCarvedFiles(List<CarvedFileContainer> filesToAdd) throws TskCoreException {
-		if (filesToAdd != null && filesToAdd.isEmpty() == false) {
-			List<LayoutFile> addedFiles = new ArrayList<LayoutFile>();
-			CaseDbTransaction localTrans = null;
-			Statement s = null;
-			ResultSet rs = null;
-			acquireExclusiveLock();
-			try {
-				localTrans = beginTransaction();
-				CaseDbConnection connection = localTrans.getConnection();
-
-				// get the ID of the appropriate '$CarvedFiles' directory
-				long firstItemId = filesToAdd.get(0).getId();
-				long id = 0;
-				// first, check the cache
-				Long carvedDirId = carvedFileContainersCache.get(firstItemId);
-				if (carvedDirId != null) {
-					id = carvedDirId;
-				} else {
-					// it's not in the cache. Go to the DB
-					// determine if we've got a volume system or file system ID
-					Content parent = getContentById(firstItemId);
-					if (parent == null) {
-						throw new TskCoreException("No Content object found with this ID (" + firstItemId + ").");
-					}
-
-					List<Content> children = Collections.<Content>emptyList();
-					if (parent instanceof FileSystem) {
-						FileSystem fs = (FileSystem) parent;
-						children = fs.getRootDirectory().getChildren();
-					} else if (parent instanceof Volume
-							|| parent instanceof Image) {
-						children = parent.getChildren();
-					} else {
-						throw new TskCoreException("The given ID (" + firstItemId + ") was not an image, volume or file system.");
-					}
-
-					// see if any of the children are a '$CarvedFiles' directory
-					Content carvedFilesDir = null;
-					for (Content child : children) {
-						if (child.getName().equals(VirtualDirectory.NAME_CARVED)) {
-							carvedFilesDir = child;
-							break;
-						}
-					}
-
-					// if we found it, add it to the cache and grab its ID
-					if (carvedFilesDir != null) {
-						// add it to the cache
-						carvedFileContainersCache.put(firstItemId, carvedFilesDir.getId());
-						id = carvedFilesDir.getId();
-					} else {
-						// a carved files directory does not exist; create one
-						VirtualDirectory vd = addVirtualDirectory(firstItemId, VirtualDirectory.NAME_CARVED, localTrans);
-						id = vd.getId();
-						// add it to the cache
-						carvedFileContainersCache.put(firstItemId, id);
-					}
-				}
-
-				// get the parent path for the $CarvedFiles directory		
-				String parentPath = getFileParentPath(id, localTrans);
-				if (parentPath == null) {
-					parentPath = "/"; //NON-NLS
-				}
-				String parentName = getFileName(id, localTrans);
-				if (parentName != null) {
-					parentPath = parentPath + parentName + "/"; //NON-NLS
-				}
-
-				// TODO (AUT-1903): We should cache this when we start adding 
-				// lots of carved files...
-				boolean isContainerAFs = false;
-				s = connection.createStatement();
-				rs = connection.executeQuery(s, "SELECT * FROM tsk_fs_info " //NON-NLS
-						+ "WHERE obj_id = " + firstItemId); //NON-NLS
-				if (rs.next()) {
-					isContainerAFs = true;
-				}
-				rs.close();
-				rs = null;
-
-				// TODO (AUT-1903): This result is another thing that should be 
-				// cached.
-				long dataSourceObjectId = getDataSourceObjectId(connection, id);
-
-				for (CarvedFileContainer itemToAdd : filesToAdd) {
-
-					// Insert a row for the carved file into the tsk_objects table.
-					// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
-					PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
-					statement.clearParameters();
-					statement.setLong(1, id);
-					statement.setLong(2, TskData.ObjectType.ABSTRACTFILE.getObjectType());
-					connection.executeUpdate(statement);
-					rs = statement.getGeneratedKeys();
-					rs.next();
-					long newObjId = rs.getLong(1);
-
-					// Insert a row for the carved file into the tsk_files table.
-					// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, 
-					// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, data_source_obj_id) 
-					// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)			
-					statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
-					statement.clearParameters();
-					statement.setLong(1, newObjId);
-
-					// only insert into the fs_obj_id column if container is a FS
-					if (isContainerAFs) {
-						statement.setLong(2, itemToAdd.getId());
-					} else {
-						statement.setNull(2, java.sql.Types.BIGINT);
-					}
-					statement.setString(3, itemToAdd.getName());
-
-					// type
-					final TSK_DB_FILES_TYPE_ENUM type = TSK_DB_FILES_TYPE_ENUM.CARVED;
-					statement.setShort(4, type.getFileType());
-
-					// has_path
-					statement.setShort(5, (short) 1);
-
-					// dirType
-					final TSK_FS_NAME_TYPE_ENUM dirType = TSK_FS_NAME_TYPE_ENUM.REG;
-					statement.setShort(6, dirType.getValue());
-
-					// metaType
-					final TSK_FS_META_TYPE_ENUM metaType = TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG;
-					statement.setShort(7, metaType.getValue());
-
-					// dirFlag
-					final TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.UNALLOC;
-					statement.setShort(8, dirFlag.getValue());
-
-					// metaFlags
-					final short metaFlags = TSK_FS_META_FLAG_ENUM.UNALLOC.getValue();
-					statement.setShort(9, metaFlags);
-
-					// size
-					statement.setLong(10, itemToAdd.getSize());
-
-					// nulls for params 11-14
-					statement.setNull(11, java.sql.Types.BIGINT);
-					statement.setNull(12, java.sql.Types.BIGINT);
-					statement.setNull(13, java.sql.Types.BIGINT);
-					statement.setNull(14, java.sql.Types.BIGINT);
-
-					// parent path
-					statement.setString(15, parentPath);
-
-					// data source object id
-					statement.setLong(16, dataSourceObjectId);
-
-					connection.executeUpdate(statement);
-
-					// Add a row in the tsk_layout_file table for each TskFileRange.
-					// INSERT INTO tsk_file_layout (obj_id, byte_start, byte_len, sequence) 
-					// VALUES (?, ?, ?, ?)
-					statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_LAYOUT_FILE);
-					for (TskFileRange tskFileRange : itemToAdd.getRanges()) {
-						statement.clearParameters();
-
-						// set the object ID
-						statement.setLong(1, newObjId);
-
-						// set byte_start
-						statement.setLong(2, tskFileRange.getByteStart());
-
-						// set byte_len
-						statement.setLong(3, tskFileRange.getByteLen());
-
-						// set the sequence number
-						statement.setLong(4, tskFileRange.getSequence());
-
-						// execute it
-						connection.executeUpdate(statement);
-					}
-
-					addedFiles.add(new LayoutFile(this, newObjId, dataSourceObjectId, itemToAdd.getName(),
-							type, dirType, metaType, dirFlag, metaFlags,
-							itemToAdd.getSize(), null, FileKnown.UNKNOWN, parentPath, null));
-				}
-				localTrans.commit();
-				return addedFiles;
-			} catch (SQLException ex) {
-				if (null != localTrans) {
-					localTrans.rollback();
-				}
-				throw new TskCoreException("Failed to add carved file to case database", ex);
-			} finally {
-				closeResultSet(rs);
-				closeStatement(s);
-				releaseExclusiveLock();
-			}
-		} else {
-			return Collections.emptyList();
+		List<CarvingResult.CarvedFile> carvedFiles = new ArrayList<CarvingResult.CarvedFile>();
+		for (CarvedFileContainer container : filesToAdd) {
+			CarvingResult.CarvedFile carvedFile = new CarvingResult.CarvedFile(container.getName(), container.getSize(), container.getRanges());
+			carvedFiles.add(carvedFile);
 		}
+			CarvingResult carvingResult;
+		Content parent = getContentById(filesToAdd.get(0).getId());
+		if (parent instanceof Image) {
+			carvingResult = new CarvingResult((Image) parent, carvedFiles);
+		} else if (parent instanceof Volume) {
+			carvingResult = new CarvingResult((Volume) parent, carvedFiles);
+		} else if (parent instanceof FileSystem) {
+			carvingResult = new CarvingResult((FileSystem) parent, carvedFiles);
+		} else {
+			throw new TskCoreException(String.format("Parent (id =%d) is not an image, volume or file system", parent.getId()));
+		}
+		return addCarvedFiles(carvingResult);
 	}
 
 	/**
