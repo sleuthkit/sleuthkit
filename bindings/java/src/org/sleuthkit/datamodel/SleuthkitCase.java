@@ -3636,76 +3636,6 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Adds a carved file to the VirtualDirectory '$CarvedFiles' in the volume
-	 * or image given by systemId. Creates $CarvedFiles virtual directory if it
-	 * does not exist already.
-	 *
-	 * @param carvedFileName the name of the carved file to add
-	 * @param carvedFileSize the size of the carved file to add
-	 * @param containerId    the ID of the parent volume, file system, or image
-	 * @param data           the layout information - a list of offsets that
-	 *                       make up this carved file.
-	 *
-	 * @return A LayoutFile object representing the carved file.
-	 *
-	 * @throws org.sleuthkit.datamodel.TskCoreException
-	 * @deprecated Use addCarvedFile(CarvingResult) instead
-	 */
-	@Deprecated
-	public LayoutFile addCarvedFile(String carvedFileName, long carvedFileSize, long containerId, List<TskFileRange> data) throws TskCoreException {
-		CarvingResult.CarvedFile carvedFile = new CarvingResult.CarvedFile(carvedFileName, carvedFileSize, data);
-		List<CarvingResult.CarvedFile> files = new ArrayList<CarvingResult.CarvedFile>();
-		files.add(carvedFile);
-		CarvingResult carvingResult;
-		Content parent = getContentById(containerId);
-		if (parent instanceof Image) {
-			carvingResult = new CarvingResult((Image) parent, files);
-		} else if (parent instanceof Volume) {
-			carvingResult = new CarvingResult((Volume) parent, files);
-		} else if (parent instanceof FileSystem) {
-			carvingResult = new CarvingResult((FileSystem) parent, files);
-		} else {
-			throw new TskCoreException(String.format("Parent (id =%d) is not an image, volume or file system", containerId));
-		}
-		return addCarvedFiles(carvingResult).get(0);
-	}
-
-	/**
-	 * Adds a collection of carved files to the VirtualDirectory '$CarvedFiles'
-	 * in the volume or image given by systemId. Creates $CarvedFiles virtual
-	 * directory if it does not exist already.
-	 *
-	 * @param filesToAdd a list of CarvedFileContainer files to add as carved
-	 *                   files
-	 *
-	 * @return List<LayoutFile> This is a list of the files added to the
-	 *         database
-	 *
-	 * @throws org.sleuthkit.datamodel.TskCoreException
-	 * @deprecated Use addCarvedFile(CarvingResult) instead
-	 */
-	@Deprecated
-	public List<LayoutFile> addCarvedFiles(List<CarvedFileContainer> filesToAdd) throws TskCoreException {
-		List<CarvingResult.CarvedFile> carvedFiles = new ArrayList<CarvingResult.CarvedFile>();
-		for (CarvedFileContainer container : filesToAdd) {
-			CarvingResult.CarvedFile carvedFile = new CarvingResult.CarvedFile(container.getName(), container.getSize(), container.getRanges());
-			carvedFiles.add(carvedFile);
-		}
-			CarvingResult carvingResult;
-		Content parent = getContentById(filesToAdd.get(0).getId());
-		if (parent instanceof Image) {
-			carvingResult = new CarvingResult((Image) parent, carvedFiles);
-		} else if (parent instanceof Volume) {
-			carvingResult = new CarvingResult((Volume) parent, carvedFiles);
-		} else if (parent instanceof FileSystem) {
-			carvingResult = new CarvingResult((FileSystem) parent, carvedFiles);
-		} else {
-			throw new TskCoreException(String.format("Parent (id =%d) is not an image, volume or file system", parent.getId()));
-		}
-		return addCarvedFiles(carvingResult);
-	}
-
-	/**
 	 * Creates a new derived file object, adds it to database and returns it.
 	 *
 	 * TODO add support for adding derived method
@@ -7144,4 +7074,74 @@ public class SleuthkitCase {
 		}
 	}
 
+	/**
+	 * Adds a carved file to the VirtualDirectory '$CarvedFiles' in the volume
+	 * or image given by systemId. Creates $CarvedFiles virtual directory if it
+	 * does not exist already.
+	 *
+	 * @param carvedFileName the name of the carved file to add
+	 * @param carvedFileSize the size of the carved file to add
+	 * @param containerId    the ID of the parent volume, file system, or image
+	 * @param data           the layout information - a list of offsets that
+	 *                       make up this carved file.
+	 *
+	 * @return A LayoutFile object representing the carved file.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 * @deprecated Use addCarvedFile(CarvingResult) instead
+	 */
+	@Deprecated
+	public LayoutFile addCarvedFile(String carvedFileName, long carvedFileSize, long containerId, List<TskFileRange> data) throws TskCoreException {
+		CarvingResult.CarvedFile carvedFile = new CarvingResult.CarvedFile(carvedFileName, carvedFileSize, data);
+		List<CarvingResult.CarvedFile> files = new ArrayList<CarvingResult.CarvedFile>();
+		files.add(carvedFile);
+		CarvingResult carvingResult;
+		Content parent = getContentById(containerId);
+		if (parent instanceof Image) {
+			carvingResult = new CarvingResult((Image) parent, files);
+		} else if (parent instanceof Volume) {
+			carvingResult = new CarvingResult((Volume) parent, files);
+		} else if (parent instanceof FileSystem) {
+			carvingResult = new CarvingResult((FileSystem) parent, files);
+		} else {
+			throw new TskCoreException(String.format("Parent (id =%d) is not an image, volume or file system", containerId));
+		}
+		return addCarvedFiles(carvingResult).get(0);
+	}
+
+	/**
+	 * Adds a collection of carved files to the VirtualDirectory '$CarvedFiles'
+	 * in the volume or image given by systemId. Creates $CarvedFiles virtual
+	 * directory if it does not exist already.
+	 *
+	 * @param filesToAdd a list of CarvedFileContainer files to add as carved
+	 *                   files
+	 *
+	 * @return List<LayoutFile> This is a list of the files added to the
+	 *         database
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 * @deprecated Use addCarvedFile(CarvingResult) instead
+	 */
+	@Deprecated
+	public List<LayoutFile> addCarvedFiles(List<CarvedFileContainer> filesToAdd) throws TskCoreException {
+		List<CarvingResult.CarvedFile> carvedFiles = new ArrayList<CarvingResult.CarvedFile>();
+		for (CarvedFileContainer container : filesToAdd) {
+			CarvingResult.CarvedFile carvedFile = new CarvingResult.CarvedFile(container.getName(), container.getSize(), container.getRanges());
+			carvedFiles.add(carvedFile);
+		}
+			CarvingResult carvingResult;
+		Content parent = getContentById(filesToAdd.get(0).getId());
+		if (parent instanceof Image) {
+			carvingResult = new CarvingResult((Image) parent, carvedFiles);
+		} else if (parent instanceof Volume) {
+			carvingResult = new CarvingResult((Volume) parent, carvedFiles);
+		} else if (parent instanceof FileSystem) {
+			carvingResult = new CarvingResult((FileSystem) parent, carvedFiles);
+		} else {
+			throw new TskCoreException(String.format("Parent (id =%d) is not an image, volume or file system", parent.getId()));
+		}
+		return addCarvedFiles(carvingResult);
+	}
+		
 }
