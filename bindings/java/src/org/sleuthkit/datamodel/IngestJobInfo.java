@@ -109,8 +109,6 @@ public final class IngestJobInfo {
 			throw ex;
 		}
 	}
-<<<<<<< HEAD
-=======
 
 	/**
 	 * Sets the ingest status for the ingest job info, and updates the database.
@@ -133,5 +131,4 @@ public final class IngestJobInfo {
 			throw ex;
 		}
 	}
->>>>>>> 2146
 }
