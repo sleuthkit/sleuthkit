@@ -206,6 +206,7 @@ public class SleuthkitCase {
 		// the schema update.
 		CaseDbConnection connection = connections.getConnection();
 		this.initIngestModuleTypes(connection);
+		this.initIngestStatusTypes(connection);
 		connection.close();
 	}
 
@@ -238,6 +239,7 @@ public class SleuthkitCase {
 		// the schema update.
 		CaseDbConnection connection = connections.getConnection();
 		this.initIngestModuleTypes(connection);
+		this.initIngestStatusTypes(connection);
 		connection.close();
 	}
 
@@ -748,10 +750,12 @@ public class SleuthkitCase {
 			// info artifact file signature data.
 			statement = connection.createStatement();
 			statement.execute("CREATE TABLE ingest_module_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)");
+			statement.execute("CREATE TABLE ingest_status_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)");
 			statement.execute("CREATE TABLE ingest_modules (ingest_module_id INTEGER PRIMARY KEY, display_name TEXT NOT NULL, unique_name TEXT UNIQUE NOT NULL, type_id INTEGER NOT NULL, version TEXT NOT NULL, FOREIGN KEY(type_id) REFERENCES ingest_module_types(type_id));");
-			statement.execute("CREATE TABLE ingest_jobs (ingest_job_id INTEGER PRIMARY KEY, data_src_id INTEGER NOT NULL, host_name TEXT NOT NULL, start_date INTEGER NOT NULL, end_date INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(data_src_id) REFERENCES tsk_objects(obj_id));");
+			statement.execute("CREATE TABLE ingest_jobs (ingest_job_id INTEGER PRIMARY KEY, data_src_id INTEGER NOT NULL, host_name TEXT NOT NULL, start_date INTEGER NOT NULL, end_date INTEGER NOT NULL, status_id INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(data_src_id) REFERENCES tsk_objects(obj_id));");
 			statement.execute("CREATE TABLE ingest_job_modules (ingest_job_id INTEGER, ingest_module_id INTEGER, position INTEGER, FOREIGN KEY(ingest_job_id) REFERENCES ingest_jobs(ingest_job_id), FOREIGN KEY(ingest_module_id) REFERENCES ingest_modules(ingest_module_id));");
 			initIngestModuleTypes(connection);
+			initIngestStatusTypes(connection);
 			return 5;
 		} finally {
 			closeStatement(statement);
@@ -768,6 +772,29 @@ public class SleuthkitCase {
 				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_module_types WHERE type_id=" + type.getTypeID() + ";");
 				if (!rs.next()) {
 					s.execute("INSERT INTO ingest_module_types (type_id, type_name) VALUES (" + type.getTypeID() + ", '" + type.getTypeName() + "');");
+				}
+				rs.close();
+				rs = null;
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error adding ingest module types to table.", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			releaseSharedLock();
+		}
+	}
+
+	private void initIngestStatusTypes(CaseDbConnection connection) throws TskCoreException {
+		acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			for (IngestStatusType type : IngestStatusType.values()) {
+				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_status_types WHERE type_id=" + type.getTypeId()+ ";");
+				if (!rs.next()) {
+					s.execute("INSERT INTO ingest_status_types (type_id, type_name) VALUES (" + type.getTypeId() + ", '" + type.getTypeName() + "');");
 				}
 				rs.close();
 				rs = null;
@@ -6043,6 +6070,27 @@ public class SleuthkitCase {
 				} else {
 					throw new TskDataException("Given ingest job has already been finished.");
 				}
+			} else {
+				throw new TskDataException("Given ingest job was not found in database.");
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error updating the end date.", ex);
+		} finally {
+			closeResultSet(resultSet);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	void setIngestStatus(int ingestJobId, IngestStatusType status) throws TskCoreException, TskDataException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		ResultSet resultSet = null;
+		try {
+			Statement statement = connection.createStatement();
+			resultSet = statement.executeQuery("SELECT ingest_job_id FROM ingest_jobs WHERE ingest_job_id=" + ingestJobId);
+			if (!resultSet.next()) {
+				statement.executeUpdate("UPDATE ingest_jobs SET status_id=" + status.getTypeId() + " WHERE ingest_job_id=" + ingestJobId + ";");
 			} else {
 				throw new TskDataException("Given ingest job was not found in database.");
 			}
