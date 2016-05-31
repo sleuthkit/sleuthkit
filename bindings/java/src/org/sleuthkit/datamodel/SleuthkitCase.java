@@ -6209,7 +6209,7 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			resultSet = statement.executeQuery("SELECT * FROM ingest_jobs");
 			while (resultSet.next()) {
-				ingestJobs.add(new IngestJobInfo(resultSet.getInt("ingest_job_id"), resultSet.getLong("data_src_id"), resultSet.getString("host_name"), resultSet.getLong("start_date"), resultSet.getLong("end_date"), resultSet.getString("settings_dir"), this.getIngestModules(resultSet.getInt("ingest_job_id"), connection), this));
+				ingestJobs.add(new IngestJobInfo(resultSet.getInt("ingest_job_id"), resultSet.getLong("data_src_id"), resultSet.getString("host_name"), resultSet.getLong("start_date"), resultSet.getLong("end_date"), resultSet.getInt("status_id"), resultSet.getString("settings_dir"), this.getIngestModules(resultSet.getInt("ingest_job_id"), connection), this));
 			}
 			return ingestJobs;
 		} catch (SQLException ex) {

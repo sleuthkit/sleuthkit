@@ -67,7 +67,7 @@ public final class IngestJobInfo {
 	 * @param ingestModuleInfo
 	 * @param skCase 
 	 */
-	IngestJobInfo(int ingestJobId, long dataSourceId, String hostName, long startDate, long endDate, String settingsDir, List<IngestModuleInfo> ingestModuleInfo, SleuthkitCase skCase) {
+	IngestJobInfo(int ingestJobId, long dataSourceId, String hostName, long startDate, long endDate, IngestStatusType status, String settingsDir, List<IngestModuleInfo> ingestModuleInfo, SleuthkitCase skCase) {
 		this.ingestJobId = ingestJobId;
 		this.dataSourceId = dataSourceId;
 		this.hostName = hostName;
