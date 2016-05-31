@@ -6129,8 +6129,9 @@ public class SleuthkitCase {
 				}
 				resultSet.close();
 				resultSet = null;
-				statement.execute("INSERT INTO ingest_modules (ingest_module_id, display_name, unique_name, type_id, version) "
-						+ "VALUES (" + id + ", '" + displayName + "', '" + uniqueName + "', " + type.getTypeID() + ", '" + version + "';");
+				String update = "INSERT INTO ingest_modules (ingest_module_id, display_name, unique_name, type_id, version) "
+						+ "VALUES (" + id + ", '" + displayName + "', '" + uniqueName + "', " + type.getTypeID() + ", '" + version + "');";
+				statement.execute(update);
 				return new IngestModuleInfo(id, displayName, uniqueName, type.getTypeID(), version);
 			} else {
 				return new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"), uniqueName, resultSet.getInt("type_id"), resultSet.getString("version"));
