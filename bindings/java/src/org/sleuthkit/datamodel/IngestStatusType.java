@@ -32,7 +32,7 @@ enum IngestStatusType {
 		return typeName;
 	}
 	
-	public IngestStatusType fromID(int typeId) {
+	public static IngestStatusType fromID(int typeId) {
 		for (IngestStatusType statusType : IngestStatusType.values()) {
 			if(statusType.getTypeId() == typeId) {
 				return statusType;
