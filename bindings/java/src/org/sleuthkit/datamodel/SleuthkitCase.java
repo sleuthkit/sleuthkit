@@ -6036,8 +6036,8 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			Statement statement = connection.createStatement();
-			resultSet = statement.executeQuery("SELECT ingest_job_id FROM ingest_jobs WHERE ingest_job_id=" + ingestJobId);
-			if (!resultSet.next()) {
+			resultSet = statement.executeQuery("SELECT end_date FROM ingest_jobs WHERE ingest_job_id=" + ingestJobId);
+			if (resultSet.next()) {
 				if (resultSet.getInt(1) == 0) {
 					statement.executeUpdate("UPDATE ingest_jobs SET end_date=" + endDate + " WHERE ingest_job_id=" + ingestJobId + ";");
 				} else {
@@ -6120,8 +6120,8 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			resultSet = statement.executeQuery("SELECT * FROM ingest_modules WHERE unique_name = '" + uniqueName + "'");
 			if (!resultSet.next()) {
-				resultSet = null;
 				resultSet.close();
+				resultSet = null;
 				resultSet = statement.executeQuery("SELECT MAX(ingest_module_id) FROM ingest_modules");
 				int id = 0;
 				if (resultSet.next()) {
