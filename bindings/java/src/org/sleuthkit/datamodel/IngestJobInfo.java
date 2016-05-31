@@ -112,6 +112,14 @@ public final class IngestJobInfo {
 <<<<<<< HEAD
 =======
 
+	/**
+	 * Sets the ingest status for the ingest job info, and updates the database.
+	 *
+	 * @param status The new status
+	 *
+	 * @throws TskCoreException If the update fails
+	 * @throws TskDataException If the job is not in the db.
+	 */
 	public void setIngestStatus(IngestStatusType status) throws TskCoreException, TskDataException {
 		IngestStatusType oldStatus = this.status;
 		this.status = status;
