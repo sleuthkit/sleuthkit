@@ -33,6 +33,7 @@ public final class IngestJobInfo {
 	private final String settingsDir;
 	private final List<IngestModuleInfo> ingestModuleInfo;
 	private final SleuthkitCase skCase;
+	private IngestStatusType status;
 
 	IngestJobInfo(int ingestJobId, int dataSourceId, String hostName, long startDate, String settingsDir, List<IngestModuleInfo> ingestModuleInfo, SleuthkitCase skCase) {
 		this.ingestJobId = ingestJobId;
@@ -42,6 +43,7 @@ public final class IngestJobInfo {
 		this.settingsDir = settingsDir;
 		this.skCase = skCase;
 		this.ingestModuleInfo = ingestModuleInfo;
+		this.status = IngestStatusType.STARTED;
 	}
 
 	/**
@@ -76,5 +78,17 @@ public final class IngestJobInfo {
 		}
 	}
 
-
+	public void setIngestStatus(IngestStatusType status) throws TskCoreException, TskDataException {
+		IngestStatusType oldStatus = this.status;
+		this.status = status;
+		try {
+			skCase.setIngestStatus(ingestJobId, status);
+		} catch (TskCoreException ex) {
+			this.status = oldStatus;
+			throw ex;
+		} catch (TskDataException ex) {
+			this.status = oldStatus;
+			throw ex;
+		}
+	}
 }
