@@ -752,7 +752,7 @@ public class SleuthkitCase {
 			statement.execute("CREATE TABLE ingest_module_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)");
 			statement.execute("CREATE TABLE ingest_status_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)");
 			statement.execute("CREATE TABLE ingest_modules (ingest_module_id INTEGER PRIMARY KEY, display_name TEXT NOT NULL, unique_name TEXT UNIQUE NOT NULL, type_id INTEGER NOT NULL, version TEXT NOT NULL, FOREIGN KEY(type_id) REFERENCES ingest_module_types(type_id));");
-			statement.execute("CREATE TABLE ingest_jobs (ingest_job_id INTEGER PRIMARY KEY, data_src_id INTEGER NOT NULL, host_name TEXT NOT NULL, start_date INTEGER NOT NULL, end_date INTEGER NOT NULL, status_id INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(data_src_id) REFERENCES tsk_objects(obj_id));");
+			statement.execute("CREATE TABLE ingest_jobs (ingest_job_id INTEGER PRIMARY KEY, data_src_id INTEGER NOT NULL, host_name TEXT NOT NULL, start_date INTEGER NOT NULL, end_date INTEGER NOT NULL, status_id INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(data_src_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(status_id) REFERENCES ingest_status_types(type_id));");
 			statement.execute("CREATE TABLE ingest_job_modules (ingest_job_id INTEGER, ingest_module_id INTEGER, position INTEGER, FOREIGN KEY(ingest_job_id) REFERENCES ingest_jobs(ingest_job_id), FOREIGN KEY(ingest_module_id) REFERENCES ingest_modules(ingest_module_id));");
 			initIngestModuleTypes(connection);
 			initIngestStatusTypes(connection);
