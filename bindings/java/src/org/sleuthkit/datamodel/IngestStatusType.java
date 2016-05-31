@@ -5,7 +5,7 @@
  */
 package org.sleuthkit.datamodel;
 
-enum IngestStatusType {
+public enum IngestStatusType {
 
 	STARTED(0, "Started"),
 	CANCELLED(1, "Cancelled"),

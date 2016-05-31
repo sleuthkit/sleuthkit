@@ -6089,7 +6089,7 @@ public class SleuthkitCase {
 		try {
 			Statement statement = connection.createStatement();
 			resultSet = statement.executeQuery("SELECT ingest_job_id FROM ingest_jobs WHERE ingest_job_id=" + ingestJobId);
-			if (!resultSet.next()) {
+			if (resultSet.next()) {
 				statement.executeUpdate("UPDATE ingest_jobs SET status_id=" + status.getTypeId() + " WHERE ingest_job_id=" + ingestJobId + ";");
 			} else {
 				throw new TskDataException("Given ingest job was not found in database.");
@@ -6129,8 +6129,8 @@ public class SleuthkitCase {
 				//We want 1 + the maximum job id.
 				id = resultSet.getInt(1) + 1;
 			}
-			statement.executeUpdate("INSERT INTO ingest_jobs (ingest_job_id, data_src_id, host_name, start_date, end_date, settings_dir) "
-					+ "VALUES (" + id + ", " + dataSource.getId() + ", '" + hostName + "', " + jobStart + ", 0, '');");
+			statement.executeUpdate("INSERT INTO ingest_jobs (ingest_job_id, data_src_id, host_name, start_date, end_date, status_id, settings_dir) "
+					+ "VALUES (" + id + ", " + dataSource.getId() + ", '" + hostName + "', " + jobStart + ", 0, 0, '');");
 			for (int i = 0; i < ingestModules.size(); i++) {
 				IngestModuleInfo ingestModule = ingestModules.get(i);
 				statement.executeUpdate("INSERT INTO ingest_job_modules (ingest_job_id, ingest_module_id, position) "
