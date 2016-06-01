@@ -21,65 +21,39 @@ package org.sleuthkit.datamodel;
 import java.util.List;
 
 /**
- * A carving result consisting of a set of carved files and the image, volume,
- * or file system from which they were carved.
+ * A carving result consisting of a set of carved files and the parent content
+ * (e.g., an unallocated space file or an image data source) from which the
+ * files were carved.
  */
 public final class CarvingResult {
 
-	private final Content carvedFilesParent;
+	private final Content parent;
 	private final List<CarvedFile> carvedFiles;
 
 	/**
 	 * Constructs a carving result consisting of a set of carved files and the
-	 * image from which they were carved.
+	 * parent content (e.g., an unallocated space file or an image data source)
+	 * from which the files were carved.
 	 *
-	 *
-	 * @param carvedFilesParent An image that is the parent of a set of carved
-	 *                          files.
-	 * @param carvedFiles       The carved files.
+	 * @param parent      The parent of a set of carved files.
+	 * @param carvedFiles The carved files.
 	 */
-	public CarvingResult(Image carvedFilesParent, List<CarvedFile> carvedFiles) {
-		this.carvedFilesParent = carvedFilesParent;
+	public CarvingResult(Content parent, List<CarvedFile> carvedFiles) {
+		this.parent = parent;
 		this.carvedFiles = carvedFiles;
 	}
 
 	/**
-	 * Constructs a carving result consisting of a set of carved files and the
-	 * volume from which they were carved.
-	 *
-	 * @param carvedFilesParent A volume that is the parent of a set of carved
-	 *                          files.
-	 * @param carvedFiles       The carved files.
-	 */
-	public CarvingResult(FileSystem carvedFilesParent, List<CarvedFile> carvedFiles) {
-		this.carvedFilesParent = carvedFilesParent;
-		this.carvedFiles = carvedFiles;
-	}
-
-	/**
-	 * Constructs a carving result consisting of a set of carved files and file
-	 * system from which they were carved.
-	 *
-	 * @param carvedFilesParent A file system that is the parent of a set of
-	 *                          carved files.
-	 * @param carvedFiles       The carved files.
-	 */
-	public CarvingResult(Volume carvedFilesParent, List<CarvedFile> carvedFiles) {
-		this.carvedFilesParent = carvedFilesParent;
-		this.carvedFiles = carvedFiles;
-	}
-
-	/**
-	 * Gets the parent of a set the carved files in a carving result.
+	 * Gets the parent of the carved files in a carving result.
 	 *
 	 * @return The carved files parent.
 	 */
-	final Content getCarvedFilesParent() {
-		return carvedFilesParent;
+	final Content getParent() {
+		return parent;
 	}
 
 	/**
-	 * Gets the set of carved files in a carving result.
+	 * Gets the carved files in a carving result.
 	 *
 	 * @return The carved files.
 	 */
@@ -88,7 +62,8 @@ public final class CarvingResult {
 	}
 
 	/**
-	 * A file carved out of a parent image, volume, or file system.
+	 * A file carved out of parent content (e.g., an unallocated space file or
+	 * an image data source).
 	 */
 	public static class CarvedFile {
 
@@ -97,8 +72,8 @@ public final class CarvingResult {
 		private final List<TskFileRange> layoutInParent;
 
 		/**
-		 * Constructs a file carved out of a parent image, volume, or file
-		 * system.
+		 * Constructs a file carved out of parent content (e.g., an unallocated
+		 * space file or an image data source).
 		 *
 		 * @param name           The name of the file.
 		 * @param sizeInBytes    The size of the file in bytes.
@@ -111,7 +86,7 @@ public final class CarvingResult {
 		}
 
 		/**
-		 * Gets the name of a carved file.
+		 * Gets the name of the carved file.
 		 *
 		 * @return The file name.
 		 */
@@ -120,7 +95,7 @@ public final class CarvingResult {
 		}
 
 		/**
-		 * Gets the size of a carved file.
+		 * Gets the size of the carved file.
 		 *
 		 * @return The size of the file in bytes.
 		 */
@@ -129,8 +104,7 @@ public final class CarvingResult {
 		}
 
 		/**
-		 * Gets the layout of the carved file within its parent image, voluem,
-		 * or file system.
+		 * Gets the layout of the carved file within its parent.
 		 *
 		 * @return A list of TskRange objects representing the layoput of the
 		 *         carved file within its parent.
