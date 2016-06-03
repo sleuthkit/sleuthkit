@@ -5821,7 +5821,17 @@ public class SleuthkitCase {
 		// or one of its subdirectories.
 		String relativePath = ""; //NON-NLS
 		try {
-			relativePath = new File(getDbDirPath()).toURI().relativize(new File(localPath).toURI()).getPath();
+			/*
+			 * Note: The following call to .relativize() may be dangerous in
+			 * case-sensitive operating systems and should be looked at. For
+			 * now, we are simply relativizing the paths as all lower case, then
+			 * using the length of the result to pull out the appropriate number
+			 * of characters from the localPath String.
+			 */
+			String casePathLower = getDbDirPath().toLowerCase();
+			String localPathLower = localPath.toLowerCase();
+			int length = new File(casePathLower).toURI().relativize(new File(localPathLower).toURI()).getPath().length();
+			relativePath = new File(localPath.substring(localPathLower.length() - length)).getPath();
 		} catch (IllegalArgumentException ex) {
 			String errorMessage = String.format("Local path %s not in the database directory or one of its subdirectories", localPath);
 			throw new TskCoreException(errorMessage, ex);
