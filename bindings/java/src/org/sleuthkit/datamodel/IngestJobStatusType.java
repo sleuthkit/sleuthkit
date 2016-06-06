@@ -7,15 +7,13 @@ package org.sleuthkit.datamodel;
 
 enum IngestJobStatusType {
 
-	STARTED(0, "Started"),
-	CANCELLED(1, "Cancelled"),
-	COMPLETED(2, "Completed");
+	STARTED(0),
+	CANCELLED(1),
+	COMPLETED(2);
 	private int typeId;
-	private String typeName;
 
-	IngestJobStatusType(int statusId, String statusName) {
+	IngestJobStatusType(int statusId) {
 		this.typeId = statusId;
-		this.typeName = statusName;
 	}
 
 	/**
@@ -23,13 +21,6 @@ enum IngestJobStatusType {
 	 */
 	public int getTypeId() {
 		return typeId;
-	}
-
-	/**
-	 * @return the typeName
-	 */
-	public String getTypeName() {
-		return typeName;
 	}
 	
 	public static IngestJobStatusType fromID(int typeId) {
