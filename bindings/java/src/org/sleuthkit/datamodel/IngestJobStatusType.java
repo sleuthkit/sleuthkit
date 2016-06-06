@@ -35,18 +35,7 @@ enum IngestJobStatusType {
 	public int getTypeId() {
 		return typeId;
 	}
-<<<<<<< HEAD
 
-	/**
-	 * @return the typeName
-	 */
-	public String getTypeName() {
-		return typeName;
-	}
-
-=======
-	
->>>>>>> 2146
 	public static IngestJobStatusType fromID(int typeId) {
 		for (IngestJobStatusType statusType : IngestJobStatusType.values()) {
 			if (statusType.getTypeId() == typeId) {
