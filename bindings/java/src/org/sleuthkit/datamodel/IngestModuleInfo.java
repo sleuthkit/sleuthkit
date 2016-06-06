@@ -28,6 +28,7 @@ public final class IngestModuleInfo {
 	 * Used to keep track of the module types
 	 */
 	public static enum IngestModuleType {
+		//DO NOT CHANGE ORDER
 		DATA_SOURCE_LEVEL, FILE_LEVEL;
 
 		public static IngestModuleType fromID(int typeId) {
