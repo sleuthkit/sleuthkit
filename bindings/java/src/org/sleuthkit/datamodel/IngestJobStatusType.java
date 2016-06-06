@@ -5,7 +5,7 @@
  */
 package org.sleuthkit.datamodel;
 
-enum IngestStatusType {
+enum IngestJobStatusType {
 
 	STARTED(0, "Started"),
 	CANCELLED(1, "Cancelled"),
@@ -13,7 +13,7 @@ enum IngestStatusType {
 	private int typeId;
 	private String typeName;
 
-	IngestStatusType(int statusId, String statusName) {
+	IngestJobStatusType(int statusId, String statusName) {
 		this.typeId = statusId;
 		this.typeName = statusName;
 	}
@@ -32,8 +32,8 @@ enum IngestStatusType {
 		return typeName;
 	}
 	
-	public static IngestStatusType fromID(int typeId) {
-		for (IngestStatusType statusType : IngestStatusType.values()) {
+	public static IngestJobStatusType fromID(int typeId) {
+		for (IngestJobStatusType statusType : IngestJobStatusType.values()) {
 			if(statusType.getTypeId() == typeId) {
 				return statusType;
 			}
