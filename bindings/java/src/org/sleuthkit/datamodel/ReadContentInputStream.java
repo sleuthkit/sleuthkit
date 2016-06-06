@@ -39,6 +39,18 @@ public class ReadContentInputStream extends InputStream {
 		this.contentSize = content.getSize();
 	}
 
+	/**
+	 * Create a ReadContentInputStream that starts offset from the start of data
+	 *
+	 * @param content The Content object to read from
+	 * @param offset  The initial offset to start reading from
+	 */
+	public ReadContentInputStream(Content content, int offset) {
+		this.content = content;
+		this.currentOffset = offset;
+		this.contentSize = content.getSize();
+	}
+
 	@Override
 	public int read() throws IOException {
 		byte[] buff = new byte[1];
