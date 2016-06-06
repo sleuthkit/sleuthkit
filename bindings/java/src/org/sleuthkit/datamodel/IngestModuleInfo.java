@@ -28,32 +28,11 @@ public final class IngestModuleInfo {
 	 * Used to keep track of the module types
 	 */
 	public static enum IngestModuleType {
-		DATA_SOURCE_LEVEL(0, "Data Source Level"), FILE_LEVEL(1, "File Level");
-		private final int typeID;
-		private final String typeName;
-
-		private IngestModuleType(int typeID, String typeName) {
-			this.typeID = typeID;
-			this.typeName = typeName;
-		}
-
-		/**
-		 * @return the typeID
-		 */
-		public int getTypeID() {
-			return typeID;
-		}
-
-		/**
-		 * @return the typeName
-		 */
-		public String getTypeName() {
-			return typeName;
-		}
+		DATA_SOURCE_LEVEL, FILE_LEVEL;
 
 		public static IngestModuleType fromID(int typeId) {
 			for (IngestModuleType moduleType : IngestModuleType.values()) {
-				if (moduleType.getTypeID() == typeId) {
+				if (moduleType.ordinal() == typeId) {
 					return moduleType;
 				}
 			}

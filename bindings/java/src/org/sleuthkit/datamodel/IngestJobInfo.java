@@ -26,6 +26,23 @@ import java.util.List;
  */
 public final class IngestJobInfo {
 
+	public enum IngestJobStatusType {
+
+		//DO NOT CHANGE ORDER
+		STARTED,
+		CANCELLED,
+		COMPLETED;
+
+		public static IngestJobStatusType fromID(int typeId) {
+			for (IngestJobStatusType statusType : IngestJobStatusType.values()) {
+				if (statusType.ordinal() == typeId) {
+					return statusType;
+				}
+			}
+			return null;
+		}
+	}
+
 	private final int ingestJobId;
 	private final long dataSourceId;
 	private final String hostName;
@@ -38,13 +55,14 @@ public final class IngestJobInfo {
 
 	/**
 	 * Constructs an IngestJobInfo that has not ended
-	 * @param ingestJobId
-	 * @param dataSourceId
-	 * @param hostName
-	 * @param startDate
-	 * @param settingsDir
-	 * @param ingestModuleInfo
-	 * @param skCase 
+	 *
+	 * @param ingestJobId      The id of the ingest job
+	 * @param dataSourceId     The data source the job is being run on
+	 * @param hostName         The host on which the job was executed
+	 * @param startDateTime    The date time the job was started
+	 * @param settingsDir      The directory of the job settings
+	 * @param ingestModuleInfo The ingest modules being run for this job
+	 * @param skCase           A reference to sleuthkit case
 	 */
 	IngestJobInfo(int ingestJobId, long dataSourceId, String hostName, Date startDateTime, String settingsDir, List<IngestModuleInfo> ingestModuleInfo, SleuthkitCase skCase) {
 		this.ingestJobId = ingestJobId;
@@ -56,17 +74,18 @@ public final class IngestJobInfo {
 		this.ingestModuleInfo = ingestModuleInfo;
 		this.status = IngestJobStatusType.STARTED;
 	}
-	
+
 	/**
 	 * Constructs an IngestJobInfo that has already ended
-	 * @param ingestJobId
-	 * @param dataSourceId
-	 * @param hostName
-	 * @param startDate
-	 * @param endDate
-	 * @param settingsDir
-	 * @param ingestModuleInfo
-	 * @param skCase 
+	 *
+	 * @param ingestJobId      The id of the ingest job
+	 * @param dataSourceId     The data source the job is being run on
+	 * @param hostName         The host on which the job was executed
+	 * @param startDateTime    The date time the job was started
+	 * @param endDateTime      The date time the job was ended (if it ended)
+	 * @param settingsDir      The directory of the job settings
+	 * @param ingestModuleInfo The ingest modules being run for this job
+	 * @param skCase           A reference to sleuthkit case
 	 */
 	IngestJobInfo(int ingestJobId, long dataSourceId, String hostName, Date startDateTime, Date endDateTime, IngestJobStatusType status, String settingsDir, List<IngestModuleInfo> ingestModuleInfo, SleuthkitCase skCase) {
 		this.ingestJobId = ingestJobId;
@@ -77,6 +96,7 @@ public final class IngestJobInfo {
 		this.settingsDir = settingsDir;
 		this.skCase = skCase;
 		this.ingestModuleInfo = ingestModuleInfo;
+		this.status = status;
 	}
 
 	/**
@@ -89,7 +109,6 @@ public final class IngestJobInfo {
 
 	/**
 	 * Sets the end date for the ingest job info, and updates the database.
-	 * Cannot be done multiple times
 	 *
 	 * @param endDate the endDateTime to set
 	 *
@@ -102,7 +121,7 @@ public final class IngestJobInfo {
 	public void setEndDateTime(Date endDateTime) throws TskCoreException, TskDataException {
 		this.endDateTime = endDateTime;
 		try {
-			skCase.setIngestJobEndDateTime(ingestJobId, endDateTime.getTime());
+			skCase.setIngestJobEndDateTime(getIngestJobId(), endDateTime.getTime());
 		} catch (TskCoreException ex) {
 			this.endDateTime = new Date(0);
 			throw ex;
@@ -120,11 +139,11 @@ public final class IngestJobInfo {
 	 * @throws TskCoreException If the update fails
 	 * @throws TskDataException If the job is not in the db.
 	 */
-	public void setIngestStatus(IngestJobStatusType status) throws TskCoreException, TskDataException {
-		IngestJobStatusType oldStatus = this.status;
+	public void setIngestJobStatus(IngestJobStatusType status) throws TskCoreException, TskDataException {
+		IngestJobStatusType oldStatus = this.getStatus();
 		this.status = status;
 		try {
-			skCase.setIngestStatus(ingestJobId, status);
+			skCase.setIngestStatus(getIngestJobId(), status);
 		} catch (TskCoreException ex) {
 			this.status = oldStatus;
 			throw ex;
@@ -132,5 +151,54 @@ public final class IngestJobInfo {
 			this.status = oldStatus;
 			throw ex;
 		}
+	}
+
+	/**
+	 * @return the ingestJobId
+	 */
+	public int getIngestJobId() {
+		return ingestJobId;
+	}
+
+	/**
+	 * @return the dataSourceId
+	 */
+	public long getDataSourceId() {
+		return dataSourceId;
+	}
+
+	/**
+	 * @return the hostName
+	 */
+	public String getHostName() {
+		return hostName;
+	}
+
+	/**
+	 * @return the startDateTime
+	 */
+	public Date getStartDateTime() {
+		return startDateTime;
+	}
+
+	/**
+	 * @return the settingsDir
+	 */
+	public String getSettingsDir() {
+		return settingsDir;
+	}
+
+	/**
+	 * @return the ingestModuleInfo
+	 */
+	public List<IngestModuleInfo> getIngestModuleInfo() {
+		return ingestModuleInfo;
+	}
+
+	/**
+	 * @return the status
+	 */
+	public IngestJobStatusType getStatus() {
+		return status;
 	}
 }

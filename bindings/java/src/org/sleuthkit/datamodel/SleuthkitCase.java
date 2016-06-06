@@ -60,6 +60,7 @@ import org.postgresql.util.PSQLState;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE;
+import org.sleuthkit.datamodel.IngestJobInfo.IngestJobStatusType;
 import org.sleuthkit.datamodel.IngestModuleInfo.IngestModuleType;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
 import org.sleuthkit.datamodel.TskData.DbType;
@@ -766,9 +767,9 @@ public class SleuthkitCase {
 		try {
 			s = connection.createStatement();
 			for (IngestModuleType type : IngestModuleType.values()) {
-				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_module_types WHERE type_id=" + type.getTypeID() + ";");
+				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_module_types WHERE type_id=" + type.ordinal()+ ";");
 				if (!rs.next()) {
-					s.execute("INSERT INTO ingest_module_types (type_id, type_name) VALUES (" + type.getTypeID() + ", '" + type.toString() + "');");
+					s.execute("INSERT INTO ingest_module_types (type_id, type_name) VALUES (" + type.ordinal()+ ", '" + type.toString() + "');");
 				}
 				rs.close();
 				rs = null;
@@ -787,9 +788,9 @@ public class SleuthkitCase {
 		try {
 			s = connection.createStatement();
 			for (IngestJobStatusType type : IngestJobStatusType.values()) {
-				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_job_status_types WHERE type_id=" + type.getTypeId() + ";");
+				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_job_status_types WHERE type_id=" + type.ordinal()+ ";");
 				if (!rs.next()) {
-					s.execute("INSERT INTO ingest_job_status_types (type_id, type_name) VALUES (" + type.getTypeId() + ", '" + type.toString() + "');");
+					s.execute("INSERT INTO ingest_job_status_types (type_id, type_name) VALUES (" + type.ordinal()+ ", '" + type.toString() + "');");
 				}
 				rs.close();
 				rs = null;
@@ -6080,7 +6081,7 @@ public class SleuthkitCase {
 			Statement statement = connection.createStatement();
 			resultSet = statement.executeQuery("SELECT ingest_job_id FROM ingest_jobs WHERE ingest_job_id=" + ingestJobId);
 			if (resultSet.next()) {
-				statement.executeUpdate("UPDATE ingest_jobs SET status_id=" + status.getTypeId() + " WHERE ingest_job_id=" + ingestJobId + ";");
+				statement.executeUpdate("UPDATE ingest_jobs SET status_id=" + status.ordinal()+ " WHERE ingest_job_id=" + ingestJobId + ";");
 			} else {
 				throw new TskDataException("Given ingest job was not found in database.");
 			}
@@ -6168,7 +6169,7 @@ public class SleuthkitCase {
 				resultSet.close();
 				resultSet = null;
 				String update = "INSERT INTO ingest_modules (ingest_module_id, display_name, unique_name, type_id, version) "
-						+ "VALUES (" + id + ", '" + displayName + "', '" + uniqueName + "', " + type.getTypeID() + ", '" + version + "');";
+						+ "VALUES (" + id + ", '" + displayName + "', '" + uniqueName + "', " + type.ordinal()+ ", '" + version + "');";
 				statement.execute(update);
 				return new IngestModuleInfo(id, displayName, uniqueName, type, version);
 			} else {
