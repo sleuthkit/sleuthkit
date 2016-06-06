@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -59,6 +60,7 @@ import org.postgresql.util.PSQLState;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE;
+import org.sleuthkit.datamodel.IngestModuleInfo.IngestModuleType;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
 import org.sleuthkit.datamodel.TskData.DbType;
 import org.sleuthkit.datamodel.TskData.FileKnown;
@@ -669,11 +671,9 @@ public class SleuthkitCase {
 				String attributeLabel = resultSet.getString("type_name");
 				if (attributeTypeId < MIN_USER_DEFINED_TYPE_ID) {
 					updateStatement.executeUpdate(
-							"UPDATE blackboard_attribute_types "
-							+ //NON-NLS
-							"SET value_type = " + ATTRIBUTE_TYPE.fromLabel(attributeLabel).getValueType().getType() + " "
-							+ //NON-NLS
-							"WHERE blackboard_attribute_types.attribute_type_id = " + attributeTypeId + ";"); //NON-NLS	
+							"UPDATE blackboard_attribute_types " //NON-NLS
+							+ "SET value_type = " + ATTRIBUTE_TYPE.fromLabel(attributeLabel).getValueType().getType() + " " //NON-NLS
+							+ "WHERE blackboard_attribute_types.attribute_type_id = " + attributeTypeId + ";"); //NON-NLS	
 				}
 			}
 			resultSet.close();
@@ -727,7 +727,7 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Updates a schema version 3 database to a schema version 4 database.
+	 * Updates a schema version 4 database to a schema version 5 database.
 	 *
 	 * @param schemaVersionNumber The current schema version number of the
 	 *                            database.
@@ -746,14 +746,12 @@ public class SleuthkitCase {
 		}
 		Statement statement = null;
 		try {
-			// Add mime_type column to tsk_files table. Populate with general 
-			// info artifact file signature data.
 			statement = connection.createStatement();
 			statement.execute("CREATE TABLE ingest_module_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)");
-			statement.execute("CREATE TABLE ingest_status_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)");
+			statement.execute("CREATE TABLE ingest_job_status_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)");
 			statement.execute("CREATE TABLE ingest_modules (ingest_module_id INTEGER PRIMARY KEY, display_name TEXT NOT NULL, unique_name TEXT UNIQUE NOT NULL, type_id INTEGER NOT NULL, version TEXT NOT NULL, FOREIGN KEY(type_id) REFERENCES ingest_module_types(type_id));");
-			statement.execute("CREATE TABLE ingest_jobs (ingest_job_id INTEGER PRIMARY KEY, data_src_id INTEGER NOT NULL, host_name TEXT NOT NULL, start_date INTEGER NOT NULL, end_date INTEGER NOT NULL, status_id INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(data_src_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(status_id) REFERENCES ingest_status_types(type_id));");
-			statement.execute("CREATE TABLE ingest_job_modules (ingest_job_id INTEGER, ingest_module_id INTEGER, position INTEGER, FOREIGN KEY(ingest_job_id) REFERENCES ingest_jobs(ingest_job_id), FOREIGN KEY(ingest_module_id) REFERENCES ingest_modules(ingest_module_id));");
+			statement.execute("CREATE TABLE ingest_jobs (ingest_job_id INTEGER PRIMARY KEY, data_src_id INTEGER NOT NULL, host_name TEXT NOT NULL, start_date_time INTEGER NOT NULL, end_date_time INTEGER NOT NULL, status_id INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(data_src_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(status_id) REFERENCES ingest_status_types(type_id));");
+			statement.execute("CREATE TABLE ingest_job_modules (ingest_job_id INTEGER, ingest_module_id INTEGER, pipeline_position INTEGER, FOREIGN KEY(ingest_job_id) REFERENCES ingest_jobs(ingest_job_id), FOREIGN KEY(ingest_module_id) REFERENCES ingest_modules(ingest_module_id));");
 			initIngestModuleTypes(connection);
 			initIngestStatusTypes(connection);
 			return 5;
@@ -763,7 +761,6 @@ public class SleuthkitCase {
 	}
 
 	private void initIngestModuleTypes(CaseDbConnection connection) throws TskCoreException {
-		acquireSharedLock();
 		Statement s = null;
 		ResultSet rs = null;
 		try {
@@ -771,7 +768,7 @@ public class SleuthkitCase {
 			for (IngestModuleType type : IngestModuleType.values()) {
 				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_module_types WHERE type_id=" + type.getTypeID() + ";");
 				if (!rs.next()) {
-					s.execute("INSERT INTO ingest_module_types (type_id, type_name) VALUES (" + type.getTypeID() + ", '" + type.getTypeName() + "');");
+					s.execute("INSERT INTO ingest_module_types (type_id, type_name) VALUES (" + type.getTypeID() + ", '" + type.toString() + "');");
 				}
 				rs.close();
 				rs = null;
@@ -781,20 +778,18 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
-			releaseSharedLock();
 		}
 	}
 
 	private void initIngestStatusTypes(CaseDbConnection connection) throws TskCoreException {
-		acquireSharedLock();
 		Statement s = null;
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			for (IngestStatusType type : IngestStatusType.values()) {
-				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_status_types WHERE type_id=" + type.getTypeId()+ ";");
+			for (IngestJobStatusType type : IngestJobStatusType.values()) {
+				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_job_status_types WHERE type_id=" + type.getTypeId() + ";");
 				if (!rs.next()) {
-					s.execute("INSERT INTO ingest_status_types (type_id, type_name) VALUES (" + type.getTypeId() + ", '" + type.getTypeName() + "');");
+					s.execute("INSERT INTO ingest_job_status_types (type_id, type_name) VALUES (" + type.getTypeId() + ", '" + type.toString() + "');");
 				}
 				rs.close();
 				rs = null;
@@ -804,7 +799,6 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
-			releaseSharedLock();
 		}
 	}
 
@@ -6057,19 +6051,15 @@ public class SleuthkitCase {
 	 * @throws TskDataException If the ingest job is not found, or already has
 	 *                          an end time.
 	 */
-	void setIngestJobEndDate(int ingestJobId, long endDate) throws TskCoreException, TskDataException {
+	void setIngestJobEndDateTime(int ingestJobId, long endDateTime) throws TskCoreException, TskDataException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
 		ResultSet resultSet = null;
 		try {
 			Statement statement = connection.createStatement();
-			resultSet = statement.executeQuery("SELECT end_date FROM ingest_jobs WHERE ingest_job_id=" + ingestJobId);
-			if (resultSet.next()) {
-				if (resultSet.getInt(1) == 0) {
-					statement.executeUpdate("UPDATE ingest_jobs SET end_date=" + endDate + " WHERE ingest_job_id=" + ingestJobId + ";");
-				} else {
-					throw new TskDataException("Given ingest job has already been finished.");
-				}
+			resultSet = statement.executeQuery("SELECT ingest_job_id FROM ingest_jobs WHERE ingest_job_id=" + ingestJobId);
+			if (!resultSet.next()) {
+				statement.executeUpdate("UPDATE ingest_jobs SET end_date_time=" + endDateTime + " WHERE ingest_job_id=" + ingestJobId + ";");
 			} else {
 				throw new TskDataException("Given ingest job was not found in database.");
 			}
@@ -6082,7 +6072,7 @@ public class SleuthkitCase {
 		}
 	}
 
-	void setIngestStatus(int ingestJobId, IngestStatusType status) throws TskCoreException, TskDataException {
+	void setIngestStatus(int ingestJobId, IngestJobStatusType status) throws TskCoreException, TskDataException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
 		ResultSet resultSet = null;
@@ -6136,7 +6126,7 @@ public class SleuthkitCase {
 				statement.executeUpdate("INSERT INTO ingest_job_modules (ingest_job_id, ingest_module_id, position) "
 						+ "VALUES (" + id + ", " + ingestModule.getIngestModuleId() + ", " + i + ");");
 			}
-			return new IngestJobInfo(id, dataSource.getId(), hostName, jobStart, "", ingestModules, this);
+			return new IngestJobInfo(id, dataSource.getId(), hostName, new Date(jobStart), "", ingestModules, this);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error updating the end date.", ex);
 		} finally {
@@ -6180,9 +6170,9 @@ public class SleuthkitCase {
 				String update = "INSERT INTO ingest_modules (ingest_module_id, display_name, unique_name, type_id, version) "
 						+ "VALUES (" + id + ", '" + displayName + "', '" + uniqueName + "', " + type.getTypeID() + ", '" + version + "');";
 				statement.execute(update);
-				return new IngestModuleInfo(id, displayName, uniqueName, type.getTypeID(), version);
+				return new IngestModuleInfo(id, displayName, uniqueName, type, version);
 			} else {
-				return new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"), uniqueName, resultSet.getInt("type_id"), resultSet.getString("version"));
+				return new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"), uniqueName, IngestModuleType.fromID(resultSet.getInt("type_id")), resultSet.getString("version"));
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Couldn't add new module to database.", ex);
@@ -6209,7 +6199,7 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			resultSet = statement.executeQuery("SELECT * FROM ingest_jobs");
 			while (resultSet.next()) {
-				ingestJobs.add(new IngestJobInfo(resultSet.getInt("ingest_job_id"), resultSet.getLong("data_src_id"), resultSet.getString("host_name"), resultSet.getLong("start_date"), resultSet.getLong("end_date"), IngestStatusType.fromID(resultSet.getInt("status_id")), resultSet.getString("settings_dir"), this.getIngestModules(resultSet.getInt("ingest_job_id"), connection), this));
+				ingestJobs.add(new IngestJobInfo(resultSet.getInt("ingest_job_id"), resultSet.getLong("data_src_id"), resultSet.getString("host_name"), new Date(resultSet.getLong("start_date")), new Date(resultSet.getLong("end_date")), IngestJobStatusType.fromID(resultSet.getInt("status_id")), resultSet.getString("settings_dir"), this.getIngestModules(resultSet.getInt("ingest_job_id"), connection), this));
 			}
 			return ingestJobs;
 		} catch (SQLException ex) {
@@ -6245,7 +6235,7 @@ public class SleuthkitCase {
 		resultSet.close();
 		resultSet = statement.executeQuery(query);
 		while (resultSet.next()) {
-			ingestModules.add(new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"), resultSet.getString("unique_name"), resultSet.getInt("type_id"), resultSet.getString("version")));
+			ingestModules.add(new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"), resultSet.getString("unique_name"), IngestModuleType.fromID(resultSet.getInt("type_id")), resultSet.getString("version")));
 		}
 		return ingestModules;
 	}

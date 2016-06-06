@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -28,12 +29,12 @@ public final class IngestJobInfo {
 	private final int ingestJobId;
 	private final long dataSourceId;
 	private final String hostName;
-	private final long startDate;
-	private long endDate = 0;
+	private final Date startDateTime;
+	private Date endDateTime = new Date(0);
 	private final String settingsDir;
 	private final List<IngestModuleInfo> ingestModuleInfo;
 	private final SleuthkitCase skCase;
-	private IngestStatusType status;
+	private IngestJobStatusType status;
 
 	/**
 	 * Constructs an IngestJobInfo that has not ended
@@ -45,15 +46,15 @@ public final class IngestJobInfo {
 	 * @param ingestModuleInfo
 	 * @param skCase 
 	 */
-	IngestJobInfo(int ingestJobId, long dataSourceId, String hostName, long startDate, String settingsDir, List<IngestModuleInfo> ingestModuleInfo, SleuthkitCase skCase) {
+	IngestJobInfo(int ingestJobId, long dataSourceId, String hostName, Date startDateTime, String settingsDir, List<IngestModuleInfo> ingestModuleInfo, SleuthkitCase skCase) {
 		this.ingestJobId = ingestJobId;
 		this.dataSourceId = dataSourceId;
 		this.hostName = hostName;
-		this.startDate = startDate;
+		this.startDateTime = startDateTime;
 		this.settingsDir = settingsDir;
 		this.skCase = skCase;
 		this.ingestModuleInfo = ingestModuleInfo;
-		this.status = IngestStatusType.STARTED;
+		this.status = IngestJobStatusType.STARTED;
 	}
 	
 	/**
@@ -67,29 +68,30 @@ public final class IngestJobInfo {
 	 * @param ingestModuleInfo
 	 * @param skCase 
 	 */
-	IngestJobInfo(int ingestJobId, long dataSourceId, String hostName, long startDate, long endDate, IngestStatusType status, String settingsDir, List<IngestModuleInfo> ingestModuleInfo, SleuthkitCase skCase) {
+	IngestJobInfo(int ingestJobId, long dataSourceId, String hostName, Date startDateTime, Date endDateTime, IngestJobStatusType status, String settingsDir, List<IngestModuleInfo> ingestModuleInfo, SleuthkitCase skCase) {
 		this.ingestJobId = ingestJobId;
 		this.dataSourceId = dataSourceId;
 		this.hostName = hostName;
-		this.startDate = startDate;
-		this.endDate = endDate;
+		this.startDateTime = startDateTime;
+		this.endDateTime = endDateTime;
 		this.settingsDir = settingsDir;
 		this.skCase = skCase;
 		this.ingestModuleInfo = ingestModuleInfo;
 	}
 
 	/**
-	 * @return the endDate
+	 * @return the end date time of the job (equal to the epoch if it has not
+	 *         been set yet).
 	 */
-	public long getEndDate() {
-		return endDate;
+	public Date getEndDateTime() {
+		return endDateTime;
 	}
 
 	/**
 	 * Sets the end date for the ingest job info, and updates the database.
 	 * Cannot be done multiple times
 	 *
-	 * @param endDate the endDate to set
+	 * @param endDate the endDateTime to set
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException If the update fails.
 	 * @throws org.sleuthkit.datamodel.TskDataException If the job has already
@@ -97,15 +99,15 @@ public final class IngestJobInfo {
 	 *                                                  or is not in the
 	 *                                                  database.
 	 */
-	public void setEndDate(long endDate) throws TskCoreException, TskDataException {
-		this.endDate = endDate;
+	public void setEndDateTime(Date endDateTime) throws TskCoreException, TskDataException {
+		this.endDateTime = endDateTime;
 		try {
-			skCase.setIngestJobEndDate(ingestJobId, endDate);
+			skCase.setIngestJobEndDateTime(ingestJobId, endDateTime.getTime());
 		} catch (TskCoreException ex) {
-			this.endDate = 0;
+			this.endDateTime = new Date(0);
 			throw ex;
 		} catch (TskDataException ex) {
-			this.endDate = 0;
+			this.endDateTime = new Date(0);
 			throw ex;
 		}
 	}
@@ -118,8 +120,8 @@ public final class IngestJobInfo {
 	 * @throws TskCoreException If the update fails
 	 * @throws TskDataException If the job is not in the db.
 	 */
-	public void setIngestStatus(IngestStatusType status) throws TskCoreException, TskDataException {
-		IngestStatusType oldStatus = this.status;
+	public void setIngestStatus(IngestJobStatusType status) throws TskCoreException, TskDataException {
+		IngestJobStatusType oldStatus = this.status;
 		this.status = status;
 		try {
 			skCase.setIngestStatus(ingestJobId, status);
