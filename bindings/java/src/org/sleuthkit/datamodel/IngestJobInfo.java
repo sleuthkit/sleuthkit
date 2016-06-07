@@ -120,10 +120,9 @@ public final class IngestJobInfo {
 	/**
 	 * Sets the end date for the ingest job info, and updates the database.
 	 *
-	 * @param endDate the endDateTime to set
+	 * @param endDateTime the endDateTime to set
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
-	 * @throws org.sleuthkit.datamodel.TskDataException
 	 */
 	public void setEndDateTime(Date endDateTime) throws TskCoreException {
 		Date oldDate = this.endDateTime;
@@ -142,7 +141,6 @@ public final class IngestJobInfo {
 	 * @param status The new status
 	 *
 	 * @throws TskCoreException
-	 * @throws TskDataException
 	 */
 	public void setIngestJobStatus(IngestJobStatusType status) throws TskCoreException {
 		IngestJobStatusType oldStatus = this.getStatus();
