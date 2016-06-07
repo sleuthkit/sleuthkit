@@ -20,18 +20,27 @@ package org.sleuthkit.datamodel;
 
 import java.util.Date;
 import java.util.List;
+import java.util.ResourceBundle;
 
 /**
  * Represents information for an ingest job.
  */
 public final class IngestJobInfo {
 
+	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
+
 	public enum IngestJobStatusType {
 
 		//DO NOT CHANGE ORDER
-		STARTED,
-		CANCELLED,
-		COMPLETED;
+		STARTED(bundle.getString("IngestJobInfo.IngestJobStatusType.Started.displayName")),
+		CANCELLED(bundle.getString("IngestJobInfo.IngestJobStatusType.Cancelled.displayName")),
+		COMPLETED(bundle.getString("IngestJobInfo.IngestJobStatusType.Completed.displayName"));
+
+		private String displayName;
+		
+		private IngestJobStatusType(String displayName) {
+			this.displayName = displayName;
+		}
 
 		public static IngestJobStatusType fromID(int typeId) {
 			for (IngestJobStatusType statusType : IngestJobStatusType.values()) {
@@ -43,7 +52,7 @@ public final class IngestJobInfo {
 		}
 	}
 
-	private final int ingestJobId;
+	private final long ingestJobId;
 	private final long dataSourceId;
 	private final String hostName;
 	private final Date startDateTime;
@@ -64,7 +73,7 @@ public final class IngestJobInfo {
 	 * @param ingestModuleInfo The ingest modules being run for this job
 	 * @param skCase           A reference to sleuthkit case
 	 */
-	IngestJobInfo(int ingestJobId, long dataSourceId, String hostName, Date startDateTime, String settingsDir, List<IngestModuleInfo> ingestModuleInfo, SleuthkitCase skCase) {
+	IngestJobInfo(long ingestJobId, long dataSourceId, String hostName, Date startDateTime, String settingsDir, List<IngestModuleInfo> ingestModuleInfo, SleuthkitCase skCase) {
 		this.ingestJobId = ingestJobId;
 		this.dataSourceId = dataSourceId;
 		this.hostName = hostName;
@@ -83,11 +92,12 @@ public final class IngestJobInfo {
 	 * @param hostName         The host on which the job was executed
 	 * @param startDateTime    The date time the job was started
 	 * @param endDateTime      The date time the job was ended (if it ended)
+	 * @param status           The status of the job
 	 * @param settingsDir      The directory of the job settings
 	 * @param ingestModuleInfo The ingest modules being run for this job
 	 * @param skCase           A reference to sleuthkit case
 	 */
-	IngestJobInfo(int ingestJobId, long dataSourceId, String hostName, Date startDateTime, Date endDateTime, IngestJobStatusType status, String settingsDir, List<IngestModuleInfo> ingestModuleInfo, SleuthkitCase skCase) {
+	IngestJobInfo(long ingestJobId, long dataSourceId, String hostName, Date startDateTime, Date endDateTime, IngestJobStatusType status, String settingsDir, List<IngestModuleInfo> ingestModuleInfo, SleuthkitCase skCase) {
 		this.ingestJobId = ingestJobId;
 		this.dataSourceId = dataSourceId;
 		this.hostName = hostName;
@@ -112,21 +122,19 @@ public final class IngestJobInfo {
 	 *
 	 * @param endDate the endDateTime to set
 	 *
-	 * @throws org.sleuthkit.datamodel.TskCoreException If the update fails.
-	 * @throws org.sleuthkit.datamodel.TskDataException If the job has already
-	 *                                                  been given an end date
-	 *                                                  or is not in the
-	 *                                                  database.
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 * @throws org.sleuthkit.datamodel.TskDataException
 	 */
 	public void setEndDateTime(Date endDateTime) throws TskCoreException, TskDataException {
+		Date oldDate = this.endDateTime;
 		this.endDateTime = endDateTime;
 		try {
 			skCase.setIngestJobEndDateTime(getIngestJobId(), endDateTime.getTime());
 		} catch (TskCoreException ex) {
-			this.endDateTime = new Date(0);
+			this.endDateTime = oldDate;
 			throw ex;
 		} catch (TskDataException ex) {
-			this.endDateTime = new Date(0);
+			this.endDateTime = oldDate;
 			throw ex;
 		}
 	}
@@ -136,8 +144,8 @@ public final class IngestJobInfo {
 	 *
 	 * @param status The new status
 	 *
-	 * @throws TskCoreException If the update fails
-	 * @throws TskDataException If the job is not in the db.
+	 * @throws TskCoreException
+	 * @throws TskDataException
 	 */
 	public void setIngestJobStatus(IngestJobStatusType status) throws TskCoreException, TskDataException {
 		IngestJobStatusType oldStatus = this.getStatus();
@@ -156,7 +164,7 @@ public final class IngestJobInfo {
 	/**
 	 * @return the ingestJobId
 	 */
-	public int getIngestJobId() {
+	public long getIngestJobId() {
 		return ingestJobId;
 	}
 

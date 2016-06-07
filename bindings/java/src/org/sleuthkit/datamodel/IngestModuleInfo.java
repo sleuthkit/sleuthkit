@@ -18,18 +18,29 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.ResourceBundle;
+
 /**
  * Class representing information about an ingest module, used in ingest job
  * info to show which ingest modules were run.
  */
 public final class IngestModuleInfo {
 
+	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
+
 	/**
 	 * Used to keep track of the module types
 	 */
 	public static enum IngestModuleType {
 		//DO NOT CHANGE ORDER
-		DATA_SOURCE_LEVEL, FILE_LEVEL;
+		DATA_SOURCE_LEVEL(bundle.getString("IngestModuleInfo.IngestModuleType.DataSourceLevel.displayName")),
+		FILE_LEVEL(bundle.getString("IngestModuleInfo.IngestModuleType.FileLevel.displayName"));
+		
+		String displayName;
+		
+		private IngestModuleType(String displayName) {
+			this.displayName = displayName;
+		}
 
 		public static IngestModuleType fromID(int typeId) {
 			for (IngestModuleType moduleType : IngestModuleType.values()) {
@@ -42,13 +53,21 @@ public final class IngestModuleInfo {
 
 	}
 
-	private final int ingestModuleId;
+	private final long ingestModuleId;
 	private final String displayName;
 	private final String uniqueName;
 	private final IngestModuleType type;
 	private final String version;
 
-	IngestModuleInfo(int ingestModuleId, String displayName, String uniqueName, IngestModuleType type, String version) {
+	/**
+	 *
+	 * @param ingestModuleId The id of the ingest module
+	 * @param displayName    The display name of the ingest module
+	 * @param uniqueName     The unique name of the ingest module.
+	 * @param type           The ingest module type of the module.
+	 * @param version        The version number of the module.
+	 */
+	IngestModuleInfo(long ingestModuleId, String displayName, String uniqueName, IngestModuleType type, String version) {
 		this.ingestModuleId = ingestModuleId;
 		this.displayName = displayName;
 		this.uniqueName = uniqueName;
@@ -59,7 +78,7 @@ public final class IngestModuleInfo {
 	/**
 	 * @return the ingestModuleId
 	 */
-	public int getIngestModuleId() {
+	public long getIngestModuleId() {
 		return ingestModuleId;
 	}
 

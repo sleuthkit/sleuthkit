@@ -656,11 +656,9 @@ public class SleuthkitCase {
 					+ "attrs.attribute_type_id = 62");
 			while (resultSet.next()) {
 				updateStatement.executeUpdate(
-						"UPDATE tsk_files "
-						+ //NON-NLS
-						"SET mime_type = '" + resultSet.getString(2) + "' "
-						+ //NON-NLS
-						"WHERE tsk_files.obj_id = " + resultSet.getInt(1) + ";"); //NON-NLS	
+						"UPDATE tsk_files " //NON-NLS
+						+ "SET mime_type = '" + resultSet.getString(2) + "' " //NON-NLS
+						+ "WHERE tsk_files.obj_id = " + resultSet.getInt(1) + ";"); //NON-NLS	
 			}
 			resultSet.close();
 
@@ -748,11 +746,11 @@ public class SleuthkitCase {
 		Statement statement = null;
 		try {
 			statement = connection.createStatement();
-			statement.execute("CREATE TABLE ingest_module_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)");
-			statement.execute("CREATE TABLE ingest_job_status_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)");
-			statement.execute("CREATE TABLE ingest_modules (ingest_module_id INTEGER PRIMARY KEY, display_name TEXT NOT NULL, unique_name TEXT UNIQUE NOT NULL, type_id INTEGER NOT NULL, version TEXT NOT NULL, FOREIGN KEY(type_id) REFERENCES ingest_module_types(type_id));");
-			statement.execute("CREATE TABLE ingest_jobs (ingest_job_id INTEGER PRIMARY KEY, data_src_id INTEGER NOT NULL, host_name TEXT NOT NULL, start_date_time INTEGER NOT NULL, end_date_time INTEGER NOT NULL, status_id INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(data_src_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(status_id) REFERENCES ingest_status_types(type_id));");
-			statement.execute("CREATE TABLE ingest_job_modules (ingest_job_id INTEGER, ingest_module_id INTEGER, pipeline_position INTEGER, FOREIGN KEY(ingest_job_id) REFERENCES ingest_jobs(ingest_job_id), FOREIGN KEY(ingest_module_id) REFERENCES ingest_modules(ingest_module_id));");
+			statement.execute("CREATE TABLE ingest_module_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)"); //NON-NLS
+			statement.execute("CREATE TABLE ingest_job_status_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)"); //NON-NLS
+			statement.execute("CREATE TABLE ingest_modules (ingest_module_id INTEGER PRIMARY KEY, display_name TEXT NOT NULL, unique_name TEXT UNIQUE NOT NULL, type_id INTEGER NOT NULL, version TEXT NOT NULL, FOREIGN KEY(type_id) REFERENCES ingest_module_types(type_id));"); //NON-NLS
+			statement.execute("CREATE TABLE ingest_jobs (ingest_job_id INTEGER PRIMARY KEY, data_src_id INTEGER NOT NULL, host_name TEXT NOT NULL, start_date_time INTEGER NOT NULL, end_date_time INTEGER NOT NULL, status_id INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(data_src_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(status_id) REFERENCES ingest_job_status_types(type_id));"); //NON-NLS
+			statement.execute("CREATE TABLE ingest_job_modules (ingest_job_id INTEGER, ingest_module_id INTEGER, pipeline_position INTEGER, PRIMARY KEY(ingest_job_id, ingest_module_id), FOREIGN KEY(ingest_job_id) REFERENCES ingest_jobs(ingest_job_id), FOREIGN KEY(ingest_module_id) REFERENCES ingest_modules(ingest_module_id));"); //NON-NLS
 			initIngestModuleTypes(connection);
 			initIngestStatusTypes(connection);
 			return 5;
@@ -767,9 +765,9 @@ public class SleuthkitCase {
 		try {
 			s = connection.createStatement();
 			for (IngestModuleType type : IngestModuleType.values()) {
-				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_module_types WHERE type_id=" + type.ordinal()+ ";");
+				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_module_types WHERE type_id=" + type.ordinal() + ";");
 				if (!rs.next()) {
-					s.execute("INSERT INTO ingest_module_types (type_id, type_name) VALUES (" + type.ordinal()+ ", '" + type.toString() + "');");
+					s.execute("INSERT INTO ingest_module_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "');");
 				}
 				rs.close();
 				rs = null;
@@ -788,9 +786,9 @@ public class SleuthkitCase {
 		try {
 			s = connection.createStatement();
 			for (IngestJobStatusType type : IngestJobStatusType.values()) {
-				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_job_status_types WHERE type_id=" + type.ordinal()+ ";");
+				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_job_status_types WHERE type_id=" + type.ordinal() + ";");
 				if (!rs.next()) {
-					s.execute("INSERT INTO ingest_job_status_types (type_id, type_name) VALUES (" + type.ordinal()+ ", '" + type.toString() + "');");
+					s.execute("INSERT INTO ingest_job_status_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "');");
 				}
 				rs.close();
 				rs = null;
@@ -6052,18 +6050,13 @@ public class SleuthkitCase {
 	 * @throws TskDataException If the ingest job is not found, or already has
 	 *                          an end time.
 	 */
-	void setIngestJobEndDateTime(int ingestJobId, long endDateTime) throws TskCoreException, TskDataException {
+	void setIngestJobEndDateTime(long ingestJobId, long endDateTime) throws TskCoreException, TskDataException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
 		ResultSet resultSet = null;
 		try {
 			Statement statement = connection.createStatement();
-			resultSet = statement.executeQuery("SELECT ingest_job_id FROM ingest_jobs WHERE ingest_job_id=" + ingestJobId);
-			if (!resultSet.next()) {
-				statement.executeUpdate("UPDATE ingest_jobs SET end_date_time=" + endDateTime + " WHERE ingest_job_id=" + ingestJobId + ";");
-			} else {
-				throw new TskDataException("Given ingest job was not found in database.");
-			}
+			statement.executeUpdate("UPDATE ingest_jobs SET end_date_time=" + endDateTime + " WHERE ingest_job_id=" + ingestJobId + ";");
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error updating the end date.", ex);
 		} finally {
@@ -6073,7 +6066,7 @@ public class SleuthkitCase {
 		}
 	}
 
-	void setIngestStatus(int ingestJobId, IngestJobStatusType status) throws TskCoreException, TskDataException {
+	void setIngestStatus(long ingestJobId, IngestJobStatusType status) throws TskCoreException, TskDataException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
 		ResultSet resultSet = null;
@@ -6081,7 +6074,7 @@ public class SleuthkitCase {
 			Statement statement = connection.createStatement();
 			resultSet = statement.executeQuery("SELECT ingest_job_id FROM ingest_jobs WHERE ingest_job_id=" + ingestJobId);
 			if (resultSet.next()) {
-				statement.executeUpdate("UPDATE ingest_jobs SET status_id=" + status.ordinal()+ " WHERE ingest_job_id=" + ingestJobId + ";");
+				statement.executeUpdate("UPDATE ingest_jobs SET status_id=" + status.ordinal() + " WHERE ingest_job_id=" + ingestJobId + ";");
 			} else {
 				throw new TskDataException("Given ingest job was not found in database.");
 			}
@@ -6107,29 +6100,29 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException If adding the job to the database fails.
 	 */
-	public final IngestJobInfo addIngestJob(Content dataSource, String hostName, List<IngestModuleInfo> ingestModules, long jobStart) throws TskCoreException {
+	public final IngestJobInfo addIngestJob(Content dataSource, String hostName, List<IngestModuleInfo> ingestModules, Date jobStart) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
 		ResultSet resultSet = null;
 		Statement statement = null;
 		try {
 			statement = connection.createStatement();
-			resultSet = statement.executeQuery("SELECT MAX(ingest_job_id) FROM ingest_jobs");
-			int id = 0;
-			if (resultSet.next()) {
-				//We want 1 + the maximum job id.
-				id = resultSet.getInt(1) + 1;
-			}
-			statement.executeUpdate("INSERT INTO ingest_jobs (ingest_job_id, data_src_id, host_name, start_date, end_date, status_id, settings_dir) "
-					+ "VALUES (" + id + ", " + dataSource.getId() + ", '" + hostName + "', " + jobStart + ", 0, 0, '');");
+			String update = "INSERT INTO ingest_jobs (data_src_id, host_name, start_date_time, end_date_time, status_id, settings_dir) "
+					+ "VALUES (" + dataSource.getId() + ", '" + hostName + "', " + jobStart.getTime() + ", 0, 0, '');";
+			statement.executeUpdate(update);
+			resultSet = statement.getGeneratedKeys();
+			resultSet.next();
+			long id = resultSet.getLong(1);
 			for (int i = 0; i < ingestModules.size(); i++) {
 				IngestModuleInfo ingestModule = ingestModules.get(i);
-				statement.executeUpdate("INSERT INTO ingest_job_modules (ingest_job_id, ingest_module_id, position) "
+				statement.executeUpdate("INSERT INTO ingest_job_modules (ingest_job_id, ingest_module_id, pipeline_position) "
 						+ "VALUES (" + id + ", " + ingestModule.getIngestModuleId() + ", " + i + ");");
 			}
-			return new IngestJobInfo(id, dataSource.getId(), hostName, new Date(jobStart), "", ingestModules, this);
+			resultSet.close();
+			resultSet = null;
+			return new IngestJobInfo(id, dataSource.getId(), hostName, jobStart, "", ingestModules, this);
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error updating the end date.", ex);
+			throw new TskCoreException("Error adding the ingest job.", ex);
 		} finally {
 			closeResultSet(resultSet);
 			connection.close();
@@ -6151,7 +6144,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException When the ingest module cannot be added.
 	 */
-	public IngestModuleInfo addIngestModule(String displayName, String uniqueName, IngestModuleType type, String version) throws TskCoreException {
+	public final IngestModuleInfo addIngestModule(String displayName, String uniqueName, IngestModuleType type, String version) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		ResultSet resultSet = null;
 		Statement statement = null;
@@ -6161,16 +6154,14 @@ public class SleuthkitCase {
 			if (!resultSet.next()) {
 				resultSet.close();
 				resultSet = null;
-				resultSet = statement.executeQuery("SELECT MAX(ingest_module_id) FROM ingest_modules");
-				int id = 0;
-				if (resultSet.next()) {
-					id = resultSet.getInt(1) + 1;
-				}
+				String update = "INSERT INTO ingest_modules (display_name, unique_name, type_id, version) "
+						+ "VALUES ('" + displayName + "', '" + uniqueName + "', " + type.ordinal() + ", '" + version + "');";
+				statement.execute(update);
+				resultSet = statement.getGeneratedKeys();
+				resultSet.next();
+				long id = resultSet.getLong(1);
 				resultSet.close();
 				resultSet = null;
-				String update = "INSERT INTO ingest_modules (ingest_module_id, display_name, unique_name, type_id, version) "
-						+ "VALUES (" + id + ", '" + displayName + "', '" + uniqueName + "', " + type.ordinal()+ ", '" + version + "');";
-				statement.execute(update);
 				return new IngestModuleInfo(id, displayName, uniqueName, type, version);
 			} else {
 				return new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"), uniqueName, IngestModuleType.fromID(resultSet.getInt("type_id")), resultSet.getString("version"));
@@ -6227,7 +6218,9 @@ public class SleuthkitCase {
 		Statement statement = null;
 		List<IngestModuleInfo> ingestModules = new ArrayList<IngestModuleInfo>();
 		statement = connection.createStatement();
-		resultSet = statement.executeQuery("SELECT ingest_module_id FROM ingest_job_modules WHERE ingest_job_id = " + ingestJobId + "ORDER BY (position);");
+		resultSet = statement.executeQuery("SELECT ingest_job_modules.ingest_module_id, ingest_modules.display_name, ingest_modules.unique_name, "
+				+ "ingest_modules.type_id, ingest_modules.version, FROM ingest_job_modules, ingest_modules WHERE ingest_job_modules.ingest_job_id = " + ingestJobId 
+				+ "AND (ingest_modules.ingest_job_id = ingest_job_modules.ingest_job_id) ORDER BY (ingest_job_modules.pipeline_position);");
 		String query = "SELECT * FROM ingest_modules WHERE ";
 		while (resultSet.next()) {
 			query += "ingest_module_id = " + resultSet.getInt("ingest_module_id") + " OR ";
