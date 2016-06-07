@@ -36,7 +36,7 @@ public final class IngestModuleInfo {
 		DATA_SOURCE_LEVEL(bundle.getString("IngestModuleInfo.IngestModuleType.DataSourceLevel.displayName")),
 		FILE_LEVEL(bundle.getString("IngestModuleInfo.IngestModuleType.FileLevel.displayName"));
 		
-		String displayName;
+		private String displayName;
 		
 		private IngestModuleType(String displayName) {
 			this.displayName = displayName;
@@ -49,6 +49,13 @@ public final class IngestModuleInfo {
 				}
 			}
 			return null;
+		}
+
+		/**
+		 * @return the displayName
+		 */
+		public String getDisplayName() {
+			return displayName;
 		}
 
 	}

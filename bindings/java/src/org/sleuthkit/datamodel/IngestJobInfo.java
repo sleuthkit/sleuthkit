@@ -50,6 +50,13 @@ public final class IngestJobInfo {
 			}
 			return null;
 		}
+
+		/**
+		 * @return the displayName
+		 */
+		public String getDisplayName() {
+			return displayName;
+		}
 	}
 
 	private final long ingestJobId;

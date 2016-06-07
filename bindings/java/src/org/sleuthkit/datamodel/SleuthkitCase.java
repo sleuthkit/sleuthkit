@@ -6044,11 +6044,9 @@ public class SleuthkitCase {
 	 * Sets the end date for the given ingest job
 	 *
 	 * @param ingestJobId The ingest job to set the end date for
-	 * @param endDate     The end date
+	 * @param endDateTime The end date
 	 *
 	 * @throws TskCoreException If inserting into the database fails
-	 * @throws TskDataException If the ingest job is not found, or already has
-	 *                          an end time.
 	 */
 	void setIngestJobEndDateTime(long ingestJobId, long endDateTime) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
