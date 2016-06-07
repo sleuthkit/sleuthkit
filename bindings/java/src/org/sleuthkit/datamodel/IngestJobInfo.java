@@ -37,7 +37,7 @@ public final class IngestJobInfo {
 		COMPLETED(bundle.getString("IngestJobInfo.IngestJobStatusType.Completed.displayName"));
 
 		private String displayName;
-		
+
 		private IngestJobStatusType(String displayName) {
 			this.displayName = displayName;
 		}
@@ -125,15 +125,12 @@ public final class IngestJobInfo {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 * @throws org.sleuthkit.datamodel.TskDataException
 	 */
-	public void setEndDateTime(Date endDateTime) throws TskCoreException, TskDataException {
+	public void setEndDateTime(Date endDateTime) throws TskCoreException {
 		Date oldDate = this.endDateTime;
 		this.endDateTime = endDateTime;
 		try {
 			skCase.setIngestJobEndDateTime(getIngestJobId(), endDateTime.getTime());
 		} catch (TskCoreException ex) {
-			this.endDateTime = oldDate;
-			throw ex;
-		} catch (TskDataException ex) {
 			this.endDateTime = oldDate;
 			throw ex;
 		}
@@ -147,15 +144,12 @@ public final class IngestJobInfo {
 	 * @throws TskCoreException
 	 * @throws TskDataException
 	 */
-	public void setIngestJobStatus(IngestJobStatusType status) throws TskCoreException, TskDataException {
+	public void setIngestJobStatus(IngestJobStatusType status) throws TskCoreException {
 		IngestJobStatusType oldStatus = this.getStatus();
 		this.status = status;
 		try {
-			skCase.setIngestStatus(getIngestJobId(), status);
+			skCase.setIngestJobStatus(getIngestJobId(), status);
 		} catch (TskCoreException ex) {
-			this.status = oldStatus;
-			throw ex;
-		} catch (TskDataException ex) {
 			this.status = oldStatus;
 			throw ex;
 		}

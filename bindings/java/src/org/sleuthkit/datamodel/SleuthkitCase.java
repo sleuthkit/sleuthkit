@@ -6050,38 +6050,29 @@ public class SleuthkitCase {
 	 * @throws TskDataException If the ingest job is not found, or already has
 	 *                          an end time.
 	 */
-	void setIngestJobEndDateTime(long ingestJobId, long endDateTime) throws TskCoreException, TskDataException {
+	void setIngestJobEndDateTime(long ingestJobId, long endDateTime) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
-		ResultSet resultSet = null;
 		try {
 			Statement statement = connection.createStatement();
 			statement.executeUpdate("UPDATE ingest_jobs SET end_date_time=" + endDateTime + " WHERE ingest_job_id=" + ingestJobId + ";");
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error updating the end date.", ex);
 		} finally {
-			closeResultSet(resultSet);
 			connection.close();
 			releaseSharedLock();
 		}
 	}
 
-	void setIngestStatus(long ingestJobId, IngestJobStatusType status) throws TskCoreException, TskDataException {
+	void setIngestJobStatus(long ingestJobId, IngestJobStatusType status) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
-		ResultSet resultSet = null;
 		try {
 			Statement statement = connection.createStatement();
-			resultSet = statement.executeQuery("SELECT ingest_job_id FROM ingest_jobs WHERE ingest_job_id=" + ingestJobId);
-			if (resultSet.next()) {
-				statement.executeUpdate("UPDATE ingest_jobs SET status_id=" + status.ordinal() + " WHERE ingest_job_id=" + ingestJobId + ";");
-			} else {
-				throw new TskDataException("Given ingest job was not found in database.");
-			}
+			statement.executeUpdate("UPDATE ingest_jobs SET status_id=" + status.ordinal() + " WHERE ingest_job_id=" + ingestJobId + ";");
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error updating the end date.", ex);
 		} finally {
-			closeResultSet(resultSet);
 			connection.close();
 			releaseSharedLock();
 		}
@@ -6219,7 +6210,7 @@ public class SleuthkitCase {
 		List<IngestModuleInfo> ingestModules = new ArrayList<IngestModuleInfo>();
 		statement = connection.createStatement();
 		resultSet = statement.executeQuery("SELECT ingest_job_modules.ingest_module_id, ingest_modules.display_name, ingest_modules.unique_name, "
-				+ "ingest_modules.type_id, ingest_modules.version, FROM ingest_job_modules, ingest_modules WHERE ingest_job_modules.ingest_job_id = " + ingestJobId 
+				+ "ingest_modules.type_id, ingest_modules.version, FROM ingest_job_modules, ingest_modules WHERE ingest_job_modules.ingest_job_id = " + ingestJobId
 				+ "AND (ingest_modules.ingest_job_id = ingest_job_modules.ingest_job_id) ORDER BY (ingest_job_modules.pipeline_position);");
 		String query = "SELECT * FROM ingest_modules WHERE ";
 		while (resultSet.next()) {
