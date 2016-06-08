@@ -3436,11 +3436,10 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Adds a set of files carved from an image, volume, or file system to the
-	 * case.
+	 * Adds a carving result to the case database.
 	 *
-	 * @param carvingResult The carving results (parent and carved files) to be
-	 *                      added.
+	 * @param carvingResult The carving result (a set of carved files and their
+	 *                      parent) to be added.
 	 *
 	 * @return A list of LayoutFile representations of the carved files.
 	 *
@@ -3451,34 +3450,33 @@ public class SleuthkitCase {
 		CaseDbTransaction transaction = null;
 		Statement statement = null;
 		ResultSet resultSet = null;
-		acquireExclusiveLock();
+		acquireExclusiveLock(); // This is a no-op for a PostgreSQL case database.
 		try {
 			transaction = beginTransaction();
 			CaseDbConnection connection = transaction.getConnection();
 
 			/*
-			 * Find the root file system, volume, or image ancestor of the
-			 * carved files parent. This is necessary because the carved files
-			 * will be "re-parented" as children of the $CarvedFiles virtual
-			 * directory of this ancestor.
+			 * Currently carved files are "re-parented" as children of the
+			 * $CarvedFiles virtual directory of the root file system, volume,
+			 * or image ancestor of the carved files parent.
 			 */
 			Content root = carvingResult.getParent();
-			while ((root instanceof FileSystem == false)
-					&& (root instanceof Volume == false)
-					&& (root instanceof Image == false)) {
+			while (null != root
+					&& root instanceof FileSystem == false
+					&& root instanceof Volume == false
+					&& root instanceof Image == false) {
 				root = root.getParent();
 			}
 
 			/*
-			 * Get or create the cached $CarvedFiles virtual directory for the
-			 * root ancestor.
+			 * Get or create the $CarvedFiles virtual directory for the root
+			 * ancestor.
 			 */
 			VirtualDirectory carvedFilesDir = rootIdsToCarvedFileDirs.get(root.getId());
 			if (null == carvedFilesDir) {
 				List<Content> children = Collections.emptyList();
 				if (root instanceof FileSystem) {
-					FileSystem fileSystem = (FileSystem) root;
-					children = fileSystem.getRootDirectory().getChildren();
+					children = ((FileSystem) root).getRootDirectory().getChildren();
 				} else if (root instanceof Volume || root instanceof Image) {
 					children = root.getChildren();
 				}
@@ -3506,8 +3504,8 @@ public class SleuthkitCase {
 				 */
 				PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
 				prepStmt.clearParameters();
-				prepStmt.setLong(1, carvedFilesDir.getId());
-				prepStmt.setLong(2, TskData.ObjectType.ABSTRACTFILE.getObjectType());
+				prepStmt.setLong(1, carvedFilesDir.getId()); // par_obj_id
+				prepStmt.setLong(2, TskData.ObjectType.ABSTRACTFILE.getObjectType()); // type
 				connection.executeUpdate(prepStmt);
 				resultSet = prepStmt.getGeneratedKeys();
 				resultSet.next();
@@ -3522,26 +3520,26 @@ public class SleuthkitCase {
 				 */
 				prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
 				prepStmt.clearParameters();
-				prepStmt.setLong(1, carvedFileId);
+				prepStmt.setLong(1, carvedFileId); // obj_id
 				if (root instanceof FileSystem) {
-					prepStmt.setLong(2, root.getId());
+					prepStmt.setLong(2, root.getId()); // fs_obj_id
 				} else {
-					prepStmt.setNull(2, java.sql.Types.BIGINT);
+					prepStmt.setNull(2, java.sql.Types.BIGINT); // fs_obj_id
 				}
-				prepStmt.setString(3, carvedFile.getName());
-				prepStmt.setShort(4, TSK_DB_FILES_TYPE_ENUM.CARVED.getFileType());
-				prepStmt.setShort(5, (short) 1); // Has a path
-				prepStmt.setShort(6, TSK_FS_NAME_TYPE_ENUM.REG.getValue());
-				prepStmt.setShort(7, TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG.getValue());
-				prepStmt.setShort(8, TSK_FS_NAME_FLAG_ENUM.UNALLOC.getValue());
-				prepStmt.setShort(9, TSK_FS_META_FLAG_ENUM.UNALLOC.getValue());
-				prepStmt.setLong(10, carvedFile.getSizeInBytes());
-				prepStmt.setNull(11, java.sql.Types.BIGINT);
-				prepStmt.setNull(12, java.sql.Types.BIGINT);
-				prepStmt.setNull(13, java.sql.Types.BIGINT);
-				prepStmt.setNull(14, java.sql.Types.BIGINT);
-				prepStmt.setString(15, carvedFilesDir.getUniquePath());
-				prepStmt.setLong(16, carvedFilesDir.getDataSourceObjectId());
+				prepStmt.setString(3, carvedFile.getName()); // name
+				prepStmt.setShort(4, TSK_DB_FILES_TYPE_ENUM.CARVED.getFileType()); // type
+				prepStmt.setShort(5, (short) 1); // has_path
+				prepStmt.setShort(6, TSK_FS_NAME_TYPE_ENUM.REG.getValue()); // dir_type
+				prepStmt.setShort(7, TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG.getValue()); // meta_type
+				prepStmt.setShort(8, TSK_FS_NAME_FLAG_ENUM.UNALLOC.getValue()); // dir_flags
+				prepStmt.setShort(9, TSK_FS_META_FLAG_ENUM.UNALLOC.getValue()); // nmeta_flags
+				prepStmt.setLong(10, carvedFile.getSizeInBytes()); // size
+				prepStmt.setNull(11, java.sql.Types.BIGINT); // ctime
+				prepStmt.setNull(12, java.sql.Types.BIGINT); // crtime
+				prepStmt.setNull(13, java.sql.Types.BIGINT); // atime
+				prepStmt.setNull(14, java.sql.Types.BIGINT); // mtime
+				prepStmt.setString(15, carvedFilesDir.getUniquePath()); // parent path
+				prepStmt.setLong(16, carvedFilesDir.getDataSourceObjectId()); // data_source_obj_id
 				connection.executeUpdate(prepStmt);
 
 				// Add a row in the tsk_layout_file table for each TskFileRange.
@@ -3550,10 +3548,10 @@ public class SleuthkitCase {
 				prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_LAYOUT_FILE);
 				for (TskFileRange tskFileRange : carvedFile.getLayoutInParent()) {
 					prepStmt.clearParameters();
-					prepStmt.setLong(1, carvedFileId);
-					prepStmt.setLong(2, tskFileRange.getByteStart());
-					prepStmt.setLong(3, tskFileRange.getByteLen());
-					prepStmt.setLong(4, tskFileRange.getSequence());
+					prepStmt.setLong(1, carvedFileId); // obj_id
+					prepStmt.setLong(2, tskFileRange.getByteStart()); // byte_start
+					prepStmt.setLong(3, tskFileRange.getByteLen()); // byte_len
+					prepStmt.setLong(4, tskFileRange.getSequence()); // sequence
 					connection.executeUpdate(prepStmt);
 				}
 
@@ -3586,7 +3584,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
-			releaseExclusiveLock();
+			releaseExclusiveLock(); // This is a no-op for a PostgreSQL case database.
 		}
 	}
 
@@ -7062,14 +7060,12 @@ public class SleuthkitCase {
 		files.add(carvedFile);
 		CarvingResult carvingResult;
 		Content parent = getContentById(containerId);
-		if (parent instanceof Image) {
-			carvingResult = new CarvingResult((Image) parent, files);
-		} else if (parent instanceof Volume) {
-			carvingResult = new CarvingResult((Volume) parent, files);
-		} else if (parent instanceof FileSystem) {
-			carvingResult = new CarvingResult((FileSystem) parent, files);
+		if (parent instanceof FileSystem
+				|| parent instanceof Volume
+				|| parent instanceof Image) {
+			carvingResult = new CarvingResult(parent, files);
 		} else {
-			throw new TskCoreException(String.format("Parent (id =%d) is not an image, volume or file system", containerId));
+			throw new TskCoreException(String.format("Parent (id =%d) is not an file system, volume or image", containerId));
 		}
 		return addCarvedFiles(carvingResult).get(0);
 	}
@@ -7097,14 +7093,12 @@ public class SleuthkitCase {
 		}
 		CarvingResult carvingResult;
 		Content parent = getContentById(filesToAdd.get(0).getId());
-		if (parent instanceof Image) {
-			carvingResult = new CarvingResult((Image) parent, carvedFiles);
-		} else if (parent instanceof Volume) {
-			carvingResult = new CarvingResult((Volume) parent, carvedFiles);
-		} else if (parent instanceof FileSystem) {
-			carvingResult = new CarvingResult((FileSystem) parent, carvedFiles);
+		if (parent instanceof FileSystem
+				|| parent instanceof Volume
+				|| parent instanceof Image) {
+			carvingResult = new CarvingResult(parent, carvedFiles);
 		} else {
-			throw new TskCoreException(String.format("Parent (id =%d) is not an image, volume or file system", parent.getId()));
+			throw new TskCoreException(String.format("Parent (id =%d) is not an file system, volume or image", parent.getId()));
 		}
 		return addCarvedFiles(carvingResult);
 	}

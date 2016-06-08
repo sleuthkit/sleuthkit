@@ -21,9 +21,8 @@ package org.sleuthkit.datamodel;
 import java.util.List;
 
 /**
- * A carving result consisting of a set of carved files and the parent content
- * (e.g., an unallocated space file or an image data source) from which the
- * files were carved.
+ * A carving result consisting of a set of carved files and the parent from
+ * which the files were carved.
  */
 public final class CarvingResult {
 
@@ -32,11 +31,11 @@ public final class CarvingResult {
 
 	/**
 	 * Constructs a carving result consisting of a set of carved files and the
-	 * parent content (e.g., an unallocated space file or an image data source)
-	 * from which the files were carved.
+	 * parent from which the files were carved.
 	 *
-	 * @param parent      The parent of a set of carved files.
-	 * @param carvedFiles The carved files.
+	 * @param parent      The parent of the set of carved files in the carving
+	 *                    result.
+	 * @param carvedFiles The set of carved files in the carving result.
 	 */
 	public CarvingResult(Content parent, List<CarvedFile> carvedFiles) {
 		this.parent = parent;
@@ -46,7 +45,7 @@ public final class CarvingResult {
 	/**
 	 * Gets the parent of the carved files in a carving result.
 	 *
-	 * @return The carved files parent.
+	 * @return The parent of the set of carved files in the carving result.
 	 */
 	final Content getParent() {
 		return parent;
@@ -55,15 +54,14 @@ public final class CarvingResult {
 	/**
 	 * Gets the carved files in a carving result.
 	 *
-	 * @return The carved files.
+	 * @return The set of carved files in the carving result.
 	 */
 	final List<CarvedFile> getCarvedFiles() {
 		return carvedFiles;
 	}
 
 	/**
-	 * A file carved out of parent content (e.g., an unallocated space file or
-	 * an image data source).
+	 * A carved file.
 	 */
 	public static class CarvedFile {
 
@@ -72,12 +70,11 @@ public final class CarvingResult {
 		private final List<TskFileRange> layoutInParent;
 
 		/**
-		 * Constructs a file carved out of parent content (e.g., an unallocated
-		 * space file or an image data source).
+		 * Constructs a carved file.
 		 *
 		 * @param name           The name of the file.
 		 * @param sizeInBytes    The size of the file in bytes.
-		 * @param layoutInParent The layout of the file within the parent.
+		 * @param layoutInParent The layout of the file within its parent.
 		 */
 		public CarvedFile(String name, long sizeInBytes, List<TskFileRange> layoutInParent) {
 			this.name = name;
@@ -106,7 +103,7 @@ public final class CarvingResult {
 		/**
 		 * Gets the layout of the carved file within its parent.
 		 *
-		 * @return A list of TskRange objects representing the layoput of the
+		 * @return A list of TskRange objects representing the layout of the
 		 *         carved file within its parent.
 		 */
 		final List<TskFileRange> getLayoutInParent() {
