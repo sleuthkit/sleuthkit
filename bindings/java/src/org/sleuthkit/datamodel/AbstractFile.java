@@ -651,7 +651,9 @@ public abstract class AbstractFile extends AbstractContent {
 		// name, if they exist).
 		StringBuilder strbuf = new StringBuilder();
 		for (; index < pathSegments.length; ++index) {
-			strbuf.append("/").append(pathSegments[index]);
+			if (!pathSegments[index].isEmpty()) {
+				strbuf.append("/").append(pathSegments[index]);
+			}
 		}
 
 		return strbuf.toString();
