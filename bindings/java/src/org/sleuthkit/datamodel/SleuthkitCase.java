@@ -6055,7 +6055,7 @@ public class SleuthkitCase {
 			Statement statement = connection.createStatement();
 			statement.executeUpdate("UPDATE ingest_jobs SET end_date_time=" + endDateTime + " WHERE ingest_job_id=" + ingestJobId + ";");
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error updating the end date.", ex);
+			throw new TskCoreException("Error updating the end date (ingest_job_id = " + ingestJobId + ".", ex);
 		} finally {
 			connection.close();
 			releaseSharedLock();
@@ -6069,7 +6069,7 @@ public class SleuthkitCase {
 			Statement statement = connection.createStatement();
 			statement.executeUpdate("UPDATE ingest_jobs SET status_id=" + status.ordinal() + " WHERE ingest_job_id=" + ingestJobId + ";");
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error updating the end date.", ex);
+			throw new TskCoreException("Error ingest job status (ingest_job_id = " + ingestJobId + ".", ex);
 		} finally {
 			connection.close();
 			releaseSharedLock();
@@ -6081,7 +6081,8 @@ public class SleuthkitCase {
 	 *
 	 * @param dataSource    The datasource the ingest job is being run on
 	 * @param hostName      The name of the host
-	 * @param ingestModules The ingest modules being run during the ingest job
+	 * @param ingestModules The ingest modules being run during the ingest job.
+	 *                      Should be in pipeline order.
 	 * @param jobStart      The time the job started
 	 *
 	 * @return An information object representing the ingest job added to the
@@ -6089,7 +6090,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException If adding the job to the database fails.
 	 */
-	public final IngestJobInfo addIngestJob(Content dataSource, String hostName, List<IngestModuleInfo> ingestModules, Date jobStart) throws TskCoreException {
+	public final IngestJobInfo addIngestJob(Content dataSource, String hostName, List<IngestModuleInfo> ingestModules, Date jobStart, Date jobEnd, IngestJobStatusType status, String settingsDir) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
 		ResultSet resultSet = null;
@@ -6097,7 +6098,7 @@ public class SleuthkitCase {
 		try {
 			statement = connection.createStatement();
 			String update = "INSERT INTO ingest_jobs (data_src_id, host_name, start_date_time, end_date_time, status_id, settings_dir) "
-					+ "VALUES (" + dataSource.getId() + ", '" + hostName + "', " + jobStart.getTime() + ", 0, 0, '');";
+					+ "VALUES (" + dataSource.getId() + ", '" + hostName + "', " + jobStart.getTime() + ", " + jobEnd.getTime() + ", " + status.ordinal() + ", '" + settingsDir + "');";
 			statement.executeUpdate(update);
 			resultSet = statement.getGeneratedKeys();
 			resultSet.next();
@@ -6139,24 +6140,26 @@ public class SleuthkitCase {
 		Statement statement = null;
 		try {
 			statement = connection.createStatement();
-			resultSet = statement.executeQuery("SELECT * FROM ingest_modules WHERE unique_name = '" + uniqueName + "'");
-			if (!resultSet.next()) {
-				resultSet.close();
-				resultSet = null;
-				String update = "INSERT INTO ingest_modules (display_name, unique_name, type_id, version) "
-						+ "VALUES ('" + displayName + "', '" + uniqueName + "', " + type.ordinal() + ", '" + version + "');";
-				statement.execute(update);
-				resultSet = statement.getGeneratedKeys();
-				resultSet.next();
-				long id = resultSet.getLong(1);
-				resultSet.close();
-				resultSet = null;
-				return new IngestModuleInfo(id, displayName, uniqueName, type, version);
-			} else {
-				return new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"), uniqueName, IngestModuleType.fromID(resultSet.getInt("type_id")), resultSet.getString("version"));
-			}
+			String update = "INSERT INTO ingest_modules (display_name, unique_name, type_id, version) "
+					+ "VALUES ('" + displayName + "', '" + uniqueName + "', " + type.ordinal() + ", '" + version + "');";
+			statement.execute(update);
+			resultSet = statement.getGeneratedKeys();
+			resultSet.next();
+			long id = resultSet.getLong(1);
+			resultSet.close();
+			resultSet = null;
+			return new IngestModuleInfo(id, displayName, uniqueName, type, version);
 		} catch (SQLException ex) {
-			throw new TskCoreException("Couldn't add new module to database.", ex);
+			try {
+				resultSet = statement.executeQuery("SELECT * FROM ingest_modules WHERE unique_name = '" + uniqueName + "'");
+				if (resultSet.next()) {
+					return new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"), uniqueName, IngestModuleType.fromID(resultSet.getInt("type_id")), resultSet.getString("version"));
+				} else {
+					throw new TskCoreException("Couldn't add new module to database.", ex);
+				}
+			} catch (SQLException ex1) {
+				throw new TskCoreException("Couldn't add new module to database.", ex1);
+			}
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
