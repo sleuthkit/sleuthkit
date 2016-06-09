@@ -740,7 +740,7 @@ public class SleuthkitCase {
 			statement.execute("CREATE TABLE ingest_module_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)"); //NON-NLS
 			statement.execute("CREATE TABLE ingest_job_status_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)"); //NON-NLS
 			statement.execute("CREATE TABLE ingest_modules (ingest_module_id INTEGER PRIMARY KEY, display_name TEXT NOT NULL, unique_name TEXT UNIQUE NOT NULL, type_id INTEGER NOT NULL, version TEXT NOT NULL, FOREIGN KEY(type_id) REFERENCES ingest_module_types(type_id));"); //NON-NLS
-			statement.execute("CREATE TABLE ingest_jobs (ingest_job_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, host_name TEXT NOT NULL, start_date_time INTEGER NOT NULL, end_date_time INTEGER NOT NULL, status_id INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(status_id) REFERENCES ingest_job_status_types(type_id));"); //NON-NLS
+			statement.execute("CREATE TABLE ingest_jobs (ingest_job_id INTEGER PRIMARY KEY, obj_id BIGINT NOT NULL, host_name TEXT NOT NULL, start_date_time BIGINT NOT NULL, end_date_time BIGINT NOT NULL, status_id INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(status_id) REFERENCES ingest_job_status_types(type_id));"); //NON-NLS
 			statement.execute("CREATE TABLE ingest_job_modules (ingest_job_id INTEGER, ingest_module_id INTEGER, pipeline_position INTEGER, PRIMARY KEY(ingest_job_id, ingest_module_id), FOREIGN KEY(ingest_job_id) REFERENCES ingest_jobs(ingest_job_id), FOREIGN KEY(ingest_module_id) REFERENCES ingest_modules(ingest_module_id));"); //NON-NLS
 			initIngestModuleTypes(connection);
 			initIngestStatusTypes(connection);
@@ -6068,13 +6068,15 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Adds the given ingest job to the database
 	 *
 	 * @param dataSource    The datasource the ingest job is being run on
 	 * @param hostName      The name of the host
 	 * @param ingestModules The ingest modules being run during the ingest job.
 	 *                      Should be in pipeline order.
 	 * @param jobStart      The time the job started
+	 * @param jobEnd        The time the job ended
+	 * @param status        The ingest job status
+	 * @param settingsDir   The directory of the job's settings
 	 *
 	 * @return An information object representing the ingest job added to the
 	 *         database.
