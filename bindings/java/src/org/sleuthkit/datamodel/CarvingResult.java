@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -39,7 +40,7 @@ public final class CarvingResult {
 	 */
 	public CarvingResult(Content parent, List<CarvedFile> carvedFiles) {
 		this.parent = parent;
-		this.carvedFiles = carvedFiles;
+		this.carvedFiles = new ArrayList<CarvedFile>(carvedFiles);
 	}
 
 	/**
