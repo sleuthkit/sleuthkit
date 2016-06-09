@@ -92,7 +92,6 @@ public class SleuthkitCase {
 	private static final int MIN_USER_DEFINED_TYPE_ID = 10000;
 	private final ConnectionPool connections;
 	private final ResultSetHelper rsHelper = new ResultSetHelper(this);
-	private final Map<Long, Long> carvedFileContainersCache = new HashMap<Long, Long>(); // Caches the IDs of the root $CarvedFiles for each volume.
 	private final Map<Long, VirtualDirectory> rootIdsToCarvedFileDirs = new HashMap<Long, VirtualDirectory>();
 	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system files.
 	private final ArrayList<ErrorObserver> sleuthkitCaseErrorObservers = new ArrayList<ErrorObserver>();
