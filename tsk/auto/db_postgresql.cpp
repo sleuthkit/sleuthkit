@@ -574,7 +574,7 @@ int TskDbPostgreSQL::initialize() {
         "Error creating ingest_modules table: %s\n")
 		||
 		attempt_exec
-        ("CREATE TABLE ingest_jobs (ingest_job_id INTEGER PRIMARY KEY, data_src_id INTEGER NOT NULL, host_name TEXT NOT NULL, start_date_time INTEGER NOT NULL, end_date_time INTEGER NOT NULL, status_id INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(data_src_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(status_id) REFERENCES ingest_job_status_types(type_id));",
+        ("CREATE TABLE ingest_jobs (ingest_job_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, host_name TEXT NOT NULL, start_date_time INTEGER NOT NULL, end_date_time INTEGER NOT NULL, status_id INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(status_id) REFERENCES ingest_job_status_types(type_id));",
         "Error creating ingest_jobs table: %s\n")
 		||
 		attempt_exec

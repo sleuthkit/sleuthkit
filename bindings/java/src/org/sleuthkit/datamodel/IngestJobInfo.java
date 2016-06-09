@@ -60,7 +60,7 @@ public final class IngestJobInfo {
 	}
 
 	private final long ingestJobId;
-	private final long dataSourceId;
+	private final long objectId;
 	private final String hostName;
 	private final Date startDateTime;
 	private Date endDateTime = new Date(0);
@@ -73,16 +73,16 @@ public final class IngestJobInfo {
 	 * Constructs an IngestJobInfo that has not ended
 	 *
 	 * @param ingestJobId      The id of the ingest job
-	 * @param dataSourceId     The data source the job is being run on
+	 * @param objectId     The data source the job is being run on
 	 * @param hostName         The host on which the job was executed
 	 * @param startDateTime    The date time the job was started
 	 * @param settingsDir      The directory of the job settings
 	 * @param ingestModuleInfo The ingest modules being run for this job
 	 * @param skCase           A reference to sleuthkit case
 	 */
-	IngestJobInfo(long ingestJobId, long dataSourceId, String hostName, Date startDateTime, String settingsDir, List<IngestModuleInfo> ingestModuleInfo, SleuthkitCase skCase) {
+	IngestJobInfo(long ingestJobId, long objectId, String hostName, Date startDateTime, String settingsDir, List<IngestModuleInfo> ingestModuleInfo, SleuthkitCase skCase) {
 		this.ingestJobId = ingestJobId;
-		this.dataSourceId = dataSourceId;
+		this.objectId = objectId;
 		this.hostName = hostName;
 		this.startDateTime = startDateTime;
 		this.settingsDir = settingsDir;
@@ -106,7 +106,7 @@ public final class IngestJobInfo {
 	 */
 	IngestJobInfo(long ingestJobId, long dataSourceId, String hostName, Date startDateTime, Date endDateTime, IngestJobStatusType status, String settingsDir, List<IngestModuleInfo> ingestModuleInfo, SleuthkitCase skCase) {
 		this.ingestJobId = ingestJobId;
-		this.dataSourceId = dataSourceId;
+		this.objectId = dataSourceId;
 		this.hostName = hostName;
 		this.startDateTime = startDateTime;
 		this.endDateTime = endDateTime;
@@ -168,10 +168,10 @@ public final class IngestJobInfo {
 	}
 
 	/**
-	 * @return the dataSourceId
+	 * @return the objectId
 	 */
-	public long getDataSourceId() {
-		return dataSourceId;
+	public long getObjectId() {
+		return objectId;
 	}
 
 	/**

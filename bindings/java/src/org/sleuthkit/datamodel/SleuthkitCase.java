@@ -522,23 +522,18 @@ public class SleuthkitCase {
 			statement.execute("CREATE INDEX attribute_valueInt64 ON blackboard_attributes(value_int64);"); //NON-NLS
 			statement.execute("CREATE INDEX attribute_valueDouble ON blackboard_attributes(value_double);"); //NON-NLS
 			resultSet = statement.executeQuery(
-					"SELECT attrs.artifact_id, arts.artifact_type_id "
-					+ //NON-NLS
-					"FROM blackboard_attributes AS attrs "
-					+ //NON-NLS
-					"INNER JOIN blackboard_artifacts AS arts "
-					+ //NON-NLS
-					"WHERE attrs.artifact_id = arts.artifact_id;"); //NON-NLS
+					"SELECT attrs.artifact_id, arts.artifact_type_id " //NON-NLS
+					+ "FROM blackboard_attributes AS attrs " //NON-NLS
+					+ "INNER JOIN blackboard_artifacts AS arts " //NON-NLS
+					+ "WHERE attrs.artifact_id = arts.artifact_id;"); //NON-NLS
 			updateStatement = connection.createStatement();
 			while (resultSet.next()) {
 				long artifactId = resultSet.getLong(1);
 				int artifactTypeId = resultSet.getInt(2);
 				updateStatement.executeUpdate(
-						"UPDATE blackboard_attributes "
-						+ //NON-NLS
-						"SET artifact_type_id = " + artifactTypeId + " "
-						+ //NON-NLS
-						"WHERE blackboard_attributes.artifact_id = " + artifactId + ";"); //NON-NLS					
+						"UPDATE blackboard_attributes " //NON-NLS
+						+ "SET artifact_type_id = " + artifactTypeId + " " //NON-NLS
+						+ "WHERE blackboard_attributes.artifact_id = " + artifactId + ";"); //NON-NLS					
 			}
 			resultSet.close();
 			resultSet = null;
@@ -597,17 +592,13 @@ public class SleuthkitCase {
 				}
 			}
 			statement.execute(
-					"DELETE FROM blackboard_attributes WHERE artifact_id IN "
-					+ //NON-NLS
-					"(SELECT artifact_id FROM blackboard_artifacts WHERE artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID()
-					+ //NON-NLS
-					" OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ");"); //NON-NLS
+					"DELETE FROM blackboard_attributes WHERE artifact_id IN " //NON-NLS
+					+ "(SELECT artifact_id FROM blackboard_artifacts WHERE artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() //NON-NLS
+					+ " OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ");"); //NON-NLS
 			statement.execute(
-					"DELETE FROM blackboard_artifacts WHERE "
-					+ //NON-NLS
-					"artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID()
-					+ //NON-NLS	
-					" OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ";"); //NON-NLS
+					"DELETE FROM blackboard_artifacts WHERE " //NON-NLS
+					+ "artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() //NON-NLS
+					+ " OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ";"); //NON-NLS
 
 			return 3;
 		} finally {
@@ -749,7 +740,7 @@ public class SleuthkitCase {
 			statement.execute("CREATE TABLE ingest_module_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)"); //NON-NLS
 			statement.execute("CREATE TABLE ingest_job_status_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)"); //NON-NLS
 			statement.execute("CREATE TABLE ingest_modules (ingest_module_id INTEGER PRIMARY KEY, display_name TEXT NOT NULL, unique_name TEXT UNIQUE NOT NULL, type_id INTEGER NOT NULL, version TEXT NOT NULL, FOREIGN KEY(type_id) REFERENCES ingest_module_types(type_id));"); //NON-NLS
-			statement.execute("CREATE TABLE ingest_jobs (ingest_job_id INTEGER PRIMARY KEY, data_src_id INTEGER NOT NULL, host_name TEXT NOT NULL, start_date_time INTEGER NOT NULL, end_date_time INTEGER NOT NULL, status_id INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(data_src_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(status_id) REFERENCES ingest_job_status_types(type_id));"); //NON-NLS
+			statement.execute("CREATE TABLE ingest_jobs (ingest_job_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, host_name TEXT NOT NULL, start_date_time INTEGER NOT NULL, end_date_time INTEGER NOT NULL, status_id INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(status_id) REFERENCES ingest_job_status_types(type_id));"); //NON-NLS
 			statement.execute("CREATE TABLE ingest_job_modules (ingest_job_id INTEGER, ingest_module_id INTEGER, pipeline_position INTEGER, PRIMARY KEY(ingest_job_id, ingest_module_id), FOREIGN KEY(ingest_job_id) REFERENCES ingest_jobs(ingest_job_id), FOREIGN KEY(ingest_module_id) REFERENCES ingest_modules(ingest_module_id));"); //NON-NLS
 			initIngestModuleTypes(connection);
 			initIngestStatusTypes(connection);
@@ -6096,8 +6087,9 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		Statement statement = null;
 		try {
+			connection.beginTransaction();
 			statement = connection.createStatement();
-			String update = "INSERT INTO ingest_jobs (data_src_id, host_name, start_date_time, end_date_time, status_id, settings_dir) "
+			String update = "INSERT INTO ingest_jobs (obj_id, host_name, start_date_time, end_date_time, status_id, settings_dir) "
 					+ "VALUES (" + dataSource.getId() + ", '" + hostName + "', " + jobStart.getTime() + ", " + jobEnd.getTime() + ", " + status.ordinal() + ", '" + settingsDir + "');";
 			statement.executeUpdate(update);
 			resultSet = statement.getGeneratedKeys();
@@ -6110,8 +6102,10 @@ public class SleuthkitCase {
 			}
 			resultSet.close();
 			resultSet = null;
+			connection.commitTransaction();
 			return new IngestJobInfo(id, dataSource.getId(), hostName, jobStart, "", ingestModules, this);
 		} catch (SQLException ex) {
+			connection.rollbackTransaction();
 			throw new TskCoreException("Error adding the ingest job.", ex);
 		} finally {
 			closeResultSet(resultSet);
@@ -6140,15 +6134,23 @@ public class SleuthkitCase {
 		Statement statement = null;
 		try {
 			statement = connection.createStatement();
-			String update = "INSERT INTO ingest_modules (display_name, unique_name, type_id, version) "
-					+ "VALUES ('" + displayName + "', '" + uniqueName + "', " + type.ordinal() + ", '" + version + "');";
-			statement.execute(update);
-			resultSet = statement.getGeneratedKeys();
-			resultSet.next();
-			long id = resultSet.getLong(1);
-			resultSet.close();
-			resultSet = null;
-			return new IngestModuleInfo(id, displayName, uniqueName, type, version);
+			resultSet = statement.executeQuery("SELECT * FROM ingest_modules WHERE unique_name = '" + uniqueName + "'");
+			if (!resultSet.next()) {
+				resultSet.close();
+				resultSet = null;
+
+				String update = "INSERT INTO ingest_modules (display_name, unique_name, type_id, version) "
+						+ "VALUES ('" + displayName + "', '" + uniqueName + "', " + type.ordinal() + ", '" + version + "');";
+				statement.execute(update);
+				resultSet = statement.getGeneratedKeys();
+				resultSet.next();
+				long id = resultSet.getLong(1);
+				resultSet.close();
+				resultSet = null;
+				return new IngestModuleInfo(id, displayName, uniqueName, type, version);
+			} else {
+				return new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"), uniqueName, IngestModuleType.fromID(resultSet.getInt("type_id")), resultSet.getString("version"));
+			}
 		} catch (SQLException ex) {
 			try {
 				resultSet = statement.executeQuery("SELECT * FROM ingest_modules WHERE unique_name = '" + uniqueName + "'");
@@ -6183,7 +6185,7 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			resultSet = statement.executeQuery("SELECT * FROM ingest_jobs");
 			while (resultSet.next()) {
-				ingestJobs.add(new IngestJobInfo(resultSet.getInt("ingest_job_id"), resultSet.getLong("data_src_id"), resultSet.getString("host_name"), new Date(resultSet.getLong("start_date")), new Date(resultSet.getLong("end_date")), IngestJobStatusType.fromID(resultSet.getInt("status_id")), resultSet.getString("settings_dir"), this.getIngestModules(resultSet.getInt("ingest_job_id"), connection), this));
+				ingestJobs.add(new IngestJobInfo(resultSet.getInt("ingest_job_id"), resultSet.getLong("obj_id"), resultSet.getString("host_name"), new Date(resultSet.getLong("start_date")), new Date(resultSet.getLong("end_date")), IngestJobStatusType.fromID(resultSet.getInt("status_id")), resultSet.getString("settings_dir"), this.getIngestModules(resultSet.getInt("ingest_job_id"), connection), this));
 			}
 			return ingestJobs;
 		} catch (SQLException ex) {
@@ -6209,21 +6211,22 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		Statement statement = null;
 		List<IngestModuleInfo> ingestModules = new ArrayList<IngestModuleInfo>();
-		statement = connection.createStatement();
-		resultSet = statement.executeQuery("SELECT ingest_job_modules.ingest_module_id, ingest_modules.display_name, ingest_modules.unique_name, "
-				+ "ingest_modules.type_id, ingest_modules.version, FROM ingest_job_modules, ingest_modules WHERE ingest_job_modules.ingest_job_id = " + ingestJobId
-				+ "AND (ingest_modules.ingest_job_id = ingest_job_modules.ingest_job_id) ORDER BY (ingest_job_modules.pipeline_position);");
-		String query = "SELECT * FROM ingest_modules WHERE ";
-		while (resultSet.next()) {
-			query += "ingest_module_id = " + resultSet.getInt("ingest_module_id") + " OR ";
+		try {
+			statement = connection.createStatement();
+			resultSet = statement.executeQuery("SELECT ingest_job_modules.ingest_module_id, ingest_job_modules.pipeline_position, ingest_modules.display_name, ingest_modules.unique_name, "
+					+ "ingest_modules.type_id, ingest_modules.version "
+					+ "FROM ingest_job_modules, ingest_modules "
+					+ "WHERE ingest_job_modules.ingest_job_id = " + ingestJobId + " "
+					+ "AND (ingest_modules.ingest_job_id = ingest_job_modules.ingest_job_id) "
+					+ "ORDER BY (ingest_job_modules.pipeline_position);");
+			while (resultSet.next()) {
+				ingestModules.add(new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"), resultSet.getString("unique_name"), IngestModuleType.fromID(resultSet.getInt("type_id")), resultSet.getString("version")));
+			}
+			return ingestModules;
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
 		}
-		query = query.substring(0, query.length() - 4) + ";";
-		resultSet.close();
-		resultSet = statement.executeQuery(query);
-		while (resultSet.next()) {
-			ingestModules.add(new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"), resultSet.getString("unique_name"), IngestModuleType.fromID(resultSet.getInt("type_id")), resultSet.getString("version")));
-		}
-		return ingestModules;
 	}
 
 	/**
