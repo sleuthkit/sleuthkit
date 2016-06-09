@@ -503,24 +503,18 @@ public class SleuthkitCase {
 			statement.execute("CREATE INDEX attribute_valueInt32 ON blackboard_attributes(value_int32);"); //NON-NLS
 			statement.execute("CREATE INDEX attribute_valueInt64 ON blackboard_attributes(value_int64);"); //NON-NLS
 			statement.execute("CREATE INDEX attribute_valueDouble ON blackboard_attributes(value_double);"); //NON-NLS
-			resultSet = statement.executeQuery(
-					"SELECT attrs.artifact_id, arts.artifact_type_id "
-					+ //NON-NLS
-					"FROM blackboard_attributes AS attrs "
-					+ //NON-NLS
-					"INNER JOIN blackboard_artifacts AS arts "
-					+ //NON-NLS
-					"WHERE attrs.artifact_id = arts.artifact_id;"); //NON-NLS
+			resultSet = statement.executeQuery("SELECT attrs.artifact_id, arts.artifact_type_id " //NON-NLS
+					+ "FROM blackboard_attributes AS attrs " //NON-NLS
+					+ "INNER JOIN blackboard_artifacts AS arts " //NON-NLS
+					+ "WHERE attrs.artifact_id = arts.artifact_id;"); //NON-NLS
 			updateStatement = connection.createStatement();
 			while (resultSet.next()) {
 				long artifactId = resultSet.getLong(1);
 				int artifactTypeId = resultSet.getInt(2);
 				updateStatement.executeUpdate(
-						"UPDATE blackboard_attributes "
-						+ //NON-NLS
-						"SET artifact_type_id = " + artifactTypeId + " "
-						+ //NON-NLS
-						"WHERE blackboard_attributes.artifact_id = " + artifactId + ";"); //NON-NLS					
+						"UPDATE blackboard_attributes " //NON-NLS
+						+ "SET artifact_type_id = " + artifactTypeId + " " //NON-NLS
+						+ "WHERE blackboard_attributes.artifact_id = " + artifactId + ";"); //NON-NLS					
 			}
 			resultSet.close();
 			resultSet = null;
@@ -579,17 +573,14 @@ public class SleuthkitCase {
 				}
 			}
 			statement.execute(
-					"DELETE FROM blackboard_attributes WHERE artifact_id IN "
-					+ //NON-NLS
-					"(SELECT artifact_id FROM blackboard_artifacts WHERE artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID()
-					+ //NON-NLS
-					" OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ");"); //NON-NLS
+					"DELETE FROM blackboard_attributes WHERE artifact_id IN " //NON-NLS
+					+ "(SELECT artifact_id FROM blackboard_artifacts WHERE artifact_type_id = " //NON-NLS
+					+ ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID()
+					+ " OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ");"); //NON-NLS
 			statement.execute(
-					"DELETE FROM blackboard_artifacts WHERE "
-					+ //NON-NLS
-					"artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID()
-					+ //NON-NLS	
-					" OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ";"); //NON-NLS
+					"DELETE FROM blackboard_artifacts WHERE artifact_type_id = " //NON-NLS
+					+ ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID()
+					+ " OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ";"); //NON-NLS
 
 			return 3;
 		} finally {
