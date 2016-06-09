@@ -6149,7 +6149,7 @@ public class SleuthkitCase {
 				resultSet = null;
 				return new IngestModuleInfo(id, displayName, uniqueName, type, version);
 			} else {
-				return new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"), uniqueName, IngestModuleType.fromID(resultSet.getInt("type_id")), resultSet.getString("version"));
+				return new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"), resultSet.getString("unique_name"), IngestModuleType.fromID(resultSet.getInt("type_id")), resultSet.getString("version"));
 			}
 		} catch (SQLException ex) {
 			try {
