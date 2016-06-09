@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2012-2014 Basis Technology Corp.
+ * Copyright 2011-2016 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,12 +20,16 @@ package org.sleuthkit.datamodel;
 
 import java.util.List;
 
+/**
+ * @deprecated Use CarvingResult instead. 
+ */
+@Deprecated
 public final class CarvedFileContainer {
 
-	private String mCarvedFileName;
-	private long mCarvedFileSize;
-	private long mContainerId;
-	private List<TskFileRange> mRangeData;
+	private final String mCarvedFileName;
+	private final long mCarvedFileSize;
+	private final long mContainerId;
+	private final List<TskFileRange> mRangeData;
 
 	public CarvedFileContainer(String carvedFileName, long carvedFileSize, long containerId, List<TskFileRange> rangeData) {
 		mCarvedFileName = carvedFileName;
