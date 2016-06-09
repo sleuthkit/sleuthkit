@@ -63,7 +63,7 @@ public final class CarvingResult {
 	/**
 	 * A carved file.
 	 */
-	public static class CarvedFile {
+	public final static class CarvedFile {
 
 		private final String name;
 		private final long sizeInBytes;
