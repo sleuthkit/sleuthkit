@@ -5485,7 +5485,7 @@ public class SleuthkitCase {
 			resultSet = connection.executeQuery(statement);
 			ArrayList<ContentTag> tags = new ArrayList<ContentTag>();
 			while (resultSet.next()) {
-				TagName tagName = new TagName(resultSet.getLong(2), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")));  //NON-NLS
+				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")));  //NON-NLS
 				Content content = getContentById(resultSet.getLong("obj_id")); //NON-NLS
 				tags.add(new ContentTag(resultSet.getLong("tag_id"), content, tagName, resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset")));  //NON-NLS
 			}
@@ -5636,7 +5636,7 @@ public class SleuthkitCase {
 			resultSet = connection.executeQuery(statement);
 			ArrayList<ContentTag> tags = new ArrayList<ContentTag>();
 			while (resultSet.next()) {
-				TagName tagName = new TagName(resultSet.getLong(3), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")));  //NON-NLS
+				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")));  //NON-NLS
 				ContentTag tag = new ContentTag(resultSet.getLong("tag_id"), content, tagName, resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset"));  //NON-NLS
 				tags.add(tag);
 			}
@@ -5921,7 +5921,17 @@ public class SleuthkitCase {
 		// or one of its subdirectories.
 		String relativePath = ""; //NON-NLS
 		try {
-			relativePath = new File(getDbDirPath()).toURI().relativize(new File(localPath).toURI()).getPath();
+			/*
+			 * Note: The following call to .relativize() may be dangerous in
+			 * case-sensitive operating systems and should be looked at. For
+			 * now, we are simply relativizing the paths as all lower case, then
+			 * using the length of the result to pull out the appropriate number
+			 * of characters from the localPath String.
+			 */
+			String casePathLower = getDbDirPath().toLowerCase();
+			String localPathLower = localPath.toLowerCase();
+			int length = new File(casePathLower).toURI().relativize(new File(localPathLower).toURI()).getPath().length();
+			relativePath = new File(localPath.substring(localPathLower.length() - length)).getPath();
 		} catch (IllegalArgumentException ex) {
 			String errorMessage = String.format("Local path %s not in the database directory or one of its subdirectories", localPath);
 			throw new TskCoreException(errorMessage, ex);
