@@ -23,7 +23,11 @@
 // the hash, so there are 2 ^ 12 or 4096 possible entries.
 static const size_t IDX_IDX_ENTRY_COUNT = 4096;
 static const size_t IDX_IDX_SIZE = IDX_IDX_ENTRY_COUNT * sizeof(uint64_t);
-static const uint64_t IDX_IDX_ENTRY_NOT_SET = 0xFFFFFFFFFFFFFFFF;
+#if defined( __BORLANDC__ ) && ( __BORLANDC__ < 0x0560 )
+static const uint64_t IDX_IDX_ENTRY_NOT_SET = 0xFFFFFFFFFFFFFFFFUL;
+#else
+static const uint64_t IDX_IDX_ENTRY_NOT_SET = 0xFFFFFFFFFFFFFFFFULL;
+#endif
 
 
 /**

@@ -35,7 +35,6 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
     const char *func_name = "fatfs_open";
     FATFS_INFO *fatfs = NULL;
     TSK_FS_INFO *fs = NULL;
-    TSK_OFF_T boot_sector_offset = 0;
 	int find_boot_sector_attempt = 0;
     ssize_t bytes_read = 0;
     FATFS_MASTER_BOOT_RECORD *bootSector;
@@ -63,13 +62,20 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
 
 	// Look for a FAT boot sector. Try up to three times because FAT32 and exFAT file systems have backup boot sectors.
     for (find_boot_sector_attempt = 0; find_boot_sector_attempt < 3; ++find_boot_sector_attempt) {
-        if (find_boot_sector_attempt == 1) {
-			// The FATXX backup boot sector is located in sector 6, look there.
-            boot_sector_offset = 6 * fs->img_info->sector_size; 
-		}
-        else if (find_boot_sector_attempt == 2) {
-			// The exFAT backup boot sector is located in sector 12, look there.
-            boot_sector_offset = 12 * fs->img_info->sector_size;
+        TSK_OFF_T boot_sector_offset;
+
+        switch (find_boot_sector_attempt) {
+            case 0:
+                boot_sector_offset = 0;
+                break;
+            case 1:
+			    // The FATXX backup boot sector is located in sector 6, look there.
+                boot_sector_offset = 6 * fs->img_info->sector_size; 
+                break;
+            case 2:
+                // The exFAT backup boot sector is located in sector 12, look there.
+                boot_sector_offset = 12 * fs->img_info->sector_size;
+                break;
 		}
 
         // Read in the prospective boot sector. 

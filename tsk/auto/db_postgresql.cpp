@@ -9,7 +9,7 @@
 */
 
 /**
-* \file db_postresql.cpp
+* \file db_postgresql.cpp
 * Contains code to perform operations against PostgreSQL database. 
 */
 

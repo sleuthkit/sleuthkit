@@ -149,7 +149,8 @@ TskCaseDb::openDb(const TSK_TCHAR * path)
 /**
 * Opens a multi-user case from an existing database.
 *
-* @param CaseDbConnectionInfo object containing datbase connection info.
+* @param path 
+* @param info CaseDbConnectionInfo object containing datbase connection info.
 * @returns Pointer to a new TskCaseDb object, NULL on error
 */
 TskCaseDb *

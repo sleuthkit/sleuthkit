@@ -49,16 +49,17 @@ exfatfs_get_fs_size_params(FATFS_INFO *a_fatfs)
 
     assert(a_fatfs != NULL);
     
+    exfatbs = (EXFATFS_MASTER_BOOT_REC*)(&a_fatfs->boot_sector_buffer);
+
     /* Get bytes per sector.
      * Bytes per sector is a base 2 logarithm, defining a range of sizes with 
      * a min of 512 bytes and a max of 4096 bytes. */ 
-    exfatbs = (EXFATFS_MASTER_BOOT_REC*)(&a_fatfs->boot_sector_buffer);
     a_fatfs->ssize_sh = (uint16_t)exfatbs->bytes_per_sector;
     if ((a_fatfs->ssize_sh < 9) || (a_fatfs->ssize_sh > 12))
     {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
-        tsk_error_set_errstr("Not an FATFS file system (invalid sector size)");
+        tsk_error_set_errstr("Not an exFAT file system (invalid sector size)");
         if (tsk_verbose) {
             fprintf(stderr, "%s: Invalid sector size base 2 logarithm (%d), not in range (9 - 12)\n", func_name, a_fatfs->ssize);
         }
@@ -75,7 +76,7 @@ exfatfs_get_fs_size_params(FATFS_INFO *a_fatfs)
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr("Not an exFAT file system (invalid cluster size)");
         if (tsk_verbose) {
-            fprintf(stderr, "%s: Invalid cluster size (%d)\n", func_name, a_fatfs->csize);
+            fprintf(stderr, "%s: Invalid cluster size (%d)\n", func_name, exfatbs->sectors_per_cluster);
         }
         return FATFS_FAIL;
     }
