@@ -3501,6 +3501,7 @@ public class SleuthkitCase {
 			 * Add the carved files to the database as children of the
 			 * $CarvedFile directory of the root ancestor.
 			 */
+			String parentPath = getFileParentPath(carvedFilesDir.getId(), transaction) + carvedFilesDir.getName() + "/";
 			List<LayoutFile> carvedFiles = new ArrayList<LayoutFile>();
 			for (CarvingResult.CarvedFile carvedFile : carvingResult.getCarvedFiles()) {
 				/*
@@ -3543,7 +3544,7 @@ public class SleuthkitCase {
 				prepStmt.setNull(12, java.sql.Types.BIGINT); // crtime
 				prepStmt.setNull(13, java.sql.Types.BIGINT); // atime
 				prepStmt.setNull(14, java.sql.Types.BIGINT); // mtime
-				prepStmt.setString(15, carvedFilesDir.getUniquePath()); // parent path
+				prepStmt.setString(15, parentPath); // parent path
 				prepStmt.setLong(16, carvedFilesDir.getDataSourceObjectId()); // data_source_obj_id
 				connection.executeUpdate(prepStmt);
 
@@ -3577,7 +3578,7 @@ public class SleuthkitCase {
 						carvedFile.getSizeInBytes(),
 						null,
 						FileKnown.UNKNOWN,
-						carvedFilesDir.getUniquePath(),
+						parentPath,
 						null));
 			}
 
