@@ -76,7 +76,7 @@ exfatfs_get_fs_size_params(FATFS_INFO *a_fatfs)
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr("Not an exFAT file system (invalid cluster size)");
         if (tsk_verbose) {
-            fprintf(stderr, "%s: Invalid cluster size (%d)\n", func_name, a_fatfs->csize);
+            fprintf(stderr, "%s: Invalid cluster size (%d)\n", func_name, exfatbs->sectors_per_cluster);
         }
         return FATFS_FAIL;
     }
