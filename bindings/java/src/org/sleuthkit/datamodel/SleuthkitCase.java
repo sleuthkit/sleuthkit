@@ -6047,10 +6047,15 @@ public class SleuthkitCase {
 		try {
 			connection.beginTransaction();
 			statement = connection.createStatement();
-			String update = "INSERT INTO ingest_jobs (obj_id, host_name, start_date_time, end_date_time, status_id, settings_dir) "
-					+ "VALUES (" + dataSource.getId() + ", '" + hostName + "', " + jobStart.getTime() + ", " + jobEnd.getTime() + ", " + status.ordinal() + ", '" + settingsDir + "');";
-			statement.executeUpdate(update);
-			resultSet = statement.getGeneratedKeys();
+			PreparedStatement insertStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_INGEST_JOB, Statement.RETURN_GENERATED_KEYS);
+			insertStatement.setLong(1, dataSource.getId());
+			insertStatement.setString(2, hostName);
+			insertStatement.setLong(3, jobStart.getTime());
+			insertStatement.setLong(4, jobEnd.getTime());
+			insertStatement.setInt(5, status.ordinal());
+			insertStatement.setString(6, settingsDir);
+			connection.executeUpdate(insertStatement);
+			resultSet = insertStatement.getGeneratedKeys();
 			resultSet.next();
 			long id = resultSet.getLong(1);
 			for (int i = 0; i < ingestModules.size(); i++) {
@@ -6096,10 +6101,12 @@ public class SleuthkitCase {
 			if (!resultSet.next()) {
 				resultSet.close();
 				resultSet = null;
-
-				String update = "INSERT INTO ingest_modules (display_name, unique_name, type_id, version) "
-						+ "VALUES ('" + displayName + "', '" + uniqueName + "', " + type.ordinal() + ", '" + version + "');";
-				statement.execute(update);
+				PreparedStatement insertStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_INGEST_MODULE, Statement.RETURN_GENERATED_KEYS);
+				insertStatement.setString(1, displayName);
+				insertStatement.setString(2, uniqueName);
+				insertStatement.setInt(3, type.ordinal());
+				insertStatement.setString(4, version);
+				connection.executeUpdate(insertStatement);
 				resultSet = statement.getGeneratedKeys();
 				resultSet.next();
 				long id = resultSet.getLong(1);
@@ -6319,7 +6326,9 @@ public class SleuthkitCase {
 		SELECT_ARTIFACT_TAGS_BY_ARTIFACT("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id WHERE blackboard_artifact_tags.artifact_id = ?"), //NON-NLS
 		SELECT_REPORTS("SELECT * FROM reports"), //NON-NLS
 		INSERT_REPORT("INSERT INTO reports (path, crtime, src_module_name, report_name) VALUES (?, ?, ?, ?)"), //NON-NLS
-		DELETE_REPORT("DELETE FROM reports WHERE reports.report_id = ?"); //NON-NLS
+		DELETE_REPORT("DELETE FROM reports WHERE reports.report_id = ?"), //NON-NLS
+		INSERT_INGEST_JOB("INSERT INTO ingest_jobs (obj_id, host_name, start_date_time, end_date_time, status_id, settings_dir) VALUES (?, ?, ?, ?, ?, ?)"), //NON-NLS
+		INSERT_INGEST_MODULE("INSERT INTO ingest_modules (display_name, unique_name, type_id, version) VALUES(?, ?, ?, ?)"); //NON-NLS
 
 		private final String sql;
 
