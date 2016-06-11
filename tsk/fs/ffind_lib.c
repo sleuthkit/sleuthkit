@@ -1,12 +1,12 @@
 /*
 ** ffind  (file find)
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** Find the file that uses the specified inode (including deleted files)
-** 
+**
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
-** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved 
+** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
@@ -25,11 +25,11 @@
  * line tool.
  */
 #include "tsk_fs_i.h"
-#include "tsk_ntfs.h"           // NTFS has an optimized version of this function
+#include "tsk_ntfs.h"         // NTFS has an optimized version of this function
 
 
 
-/** \internal 
+/** \internal
 * Structure to store data for callbacks.
 */
 typedef struct {
@@ -37,6 +37,34 @@ typedef struct {
     uint8_t flags;
     uint8_t found;
 } FFIND_DATA;
+
+
+/* Prints the buffer removing control characters.
+ *
+ * Return 0 on success and 1 on error.
+ */
+static int
+printit(const char *buffer)
+{
+    size_t index = 0;
+    char *buf = NULL;
+
+    buf = tsk_malloc(strlen(buffer) + 1);
+    if (buf == NULL)
+      return 1;
+
+    strcpy(buf, buffer);
+
+    for (index = 0; index < strlen(buf); index++)
+      if (TSK_IS_CNTRL(buf[index]))
+        buf[index] = '^';
+
+    tsk_printf("%s", buf);
+
+    free(buf);
+
+    return 0;
+}
 
 
 static TSK_WALK_RET_ENUM
@@ -50,7 +78,10 @@ find_file_act(TSK_FS_FILE * fs_file, const char *a_path, void *ptr)
         if (fs_file->name->flags & TSK_FS_NAME_FLAG_UNALLOC)
             tsk_printf("* ");
 
-        tsk_printf("/%s%s\n", a_path, fs_file->name->name);
+        tsk_printf("/");
+        if (printit(a_path) != 0 || printit(fs_file->name->name) != 0)
+          return TSK_WALK_ERROR;
+        tsk_printf("\n");
 
         if (!(data->flags & TSK_FS_FFIND_ALL)) {
             return TSK_WALK_STOP;
@@ -100,7 +131,7 @@ tsk_fs_ffind(TSK_FS_INFO * fs, TSK_FS_FFIND_FLAG_ENUM lclflags,
     if (data.found == 0) {
 
         /* With FAT, we can at least give the name of the file and call
-         * it orphan 
+         * it orphan
          */
         if (TSK_FS_TYPE_ISFAT(fs->ftype)) {
             TSK_FS_FILE *fs_file =
@@ -109,8 +140,11 @@ tsk_fs_ffind(TSK_FS_INFO * fs, TSK_FS_FFIND_FLAG_ENUM lclflags,
                 && (fs_file->meta->name2 != NULL)) {
                 if (fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC)
                     tsk_printf("* ");
-                tsk_printf("%s/%s\n", TSK_FS_ORPHAN_STR,
-                    fs_file->meta->name2->name);
+
+                tsk_printf("%s/", TSK_FS_ORPHAN_STR);
+                if (printit(fs_file->meta->name2->name) != 0)
+                  return 1;
+                tsk_printf("\n");
             }
             if (fs_file)
                 tsk_fs_file_close(fs_file);
