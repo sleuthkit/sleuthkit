@@ -203,6 +203,13 @@ public class SleuthkitCase {
 		this.connections = new SQLiteConnections(dbPath);
 		init(caseHandle);
 		updateDatabaseSchema(dbPath);
+		// Initializing ingest module types is done here because it is possible 
+		// the table is not there when init is called. It must be there after
+		// the schema update.
+		CaseDbConnection connection = connections.getConnection();
+		this.initIngestModuleTypes(connection);
+		this.initIngestStatusTypes(connection);
+		connection.close();
 		logSQLiteJDBCDriverInfo();
 		// Initializing ingest module types is done here because it is possible 
 		// the table is not there when init is called. It must be there after
@@ -349,6 +356,48 @@ public class SleuthkitCase {
 			closeResultSet(resultSet);
 			closeStatement(statement);
 			connection.close();
+		}
+	}
+
+	private void initIngestModuleTypes(CaseDbConnection connection) throws TskCoreException {
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			for (IngestModuleType type : IngestModuleType.values()) {
+				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_module_types WHERE type_id=" + type.ordinal() + ";");
+				if (!rs.next()) {
+					s.execute("INSERT INTO ingest_module_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "');");
+				}
+				rs.close();
+				rs = null;
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error adding ingest module types to table.", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+		}
+	}
+
+	private void initIngestStatusTypes(CaseDbConnection connection) throws TskCoreException {
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			for (IngestJobStatusType type : IngestJobStatusType.values()) {
+				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_job_status_types WHERE type_id=" + type.ordinal() + ";");
+				if (!rs.next()) {
+					s.execute("INSERT INTO ingest_job_status_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "');");
+				}
+				rs.close();
+				rs = null;
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error adding ingest module types to table.", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
 		}
 	}
 
@@ -530,9 +579,17 @@ public class SleuthkitCase {
 				long artifactId = resultSet.getLong(1);
 				int artifactTypeId = resultSet.getInt(2);
 				updateStatement.executeUpdate(
+<<<<<<< HEAD
 						"UPDATE blackboard_attributes " //NON-NLS
 						+ "SET artifact_type_id = " + artifactTypeId + " " //NON-NLS
 						+ "WHERE blackboard_attributes.artifact_id = " + artifactId + ";"); //NON-NLS					
+=======
+						"UPDATE blackboard_attributes "
+						+ //NON-NLS
+						"SET artifact_type_id = " + artifactTypeId + " "
+						+ //NON-NLS
+						"WHERE blackboard_attributes.artifact_id = " + artifactId + ";"); //NON-NLS					
+>>>>>>> upstream/release-4.3.0
 			}
 			resultSet.close();
 			resultSet = null;
@@ -592,12 +649,20 @@ public class SleuthkitCase {
 			}
 			statement.execute(
 					"DELETE FROM blackboard_attributes WHERE artifact_id IN " //NON-NLS
+<<<<<<< HEAD
 					+ "(SELECT artifact_id FROM blackboard_artifacts WHERE artifact_type_id = " //NON-NLS
 					+ ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID()
 					+ " OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ");"); //NON-NLS
 			statement.execute(
 					"DELETE FROM blackboard_artifacts WHERE artifact_type_id = " //NON-NLS
 					+ ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID()
+=======
+					+ "(SELECT artifact_id FROM blackboard_artifacts WHERE artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() //NON-NLS
+					+ " OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ");"); //NON-NLS
+			statement.execute(
+					"DELETE FROM blackboard_artifacts WHERE " //NON-NLS
+					+ "artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() //NON-NLS	
+>>>>>>> upstream/release-4.3.0
 					+ " OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ";"); //NON-NLS
 
 			return 3;
@@ -704,6 +769,20 @@ public class SleuthkitCase {
 			}
 			resultSet.close();
 			statement = connection.createStatement();
+			statement.execute("CREATE TABLE ingest_module_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)"); //NON-NLS
+			statement.execute("CREATE TABLE ingest_job_status_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)"); //NON-NLS
+			if (this.dbType.equals(DbType.SQLITE)) {
+				statement.execute("CREATE TABLE ingest_modules (ingest_module_id INTEGER PRIMARY KEY, display_name TEXT NOT NULL, unique_name TEXT UNIQUE NOT NULL, type_id INTEGER NOT NULL, version TEXT NOT NULL, FOREIGN KEY(type_id) REFERENCES ingest_module_types(type_id));"); //NON-NLS
+				statement.execute("CREATE TABLE ingest_jobs (ingest_job_id INTEGER PRIMARY KEY, obj_id BIGINT NOT NULL, host_name TEXT NOT NULL, start_date_time BIGINT NOT NULL, end_date_time BIGINT NOT NULL, status_id INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(status_id) REFERENCES ingest_job_status_types(type_id));"); //NON-NLS
+			} else {
+				statement.execute("CREATE TABLE ingest_modules (ingest_module_id BIGSERIAL PRIMARY KEY, display_name TEXT NOT NULL, unique_name TEXT UNIQUE NOT NULL, type_id INTEGER NOT NULL, version TEXT NOT NULL, FOREIGN KEY(type_id) REFERENCES ingest_module_types(type_id));"); //NON-NLS
+				statement.execute("CREATE TABLE ingest_jobs (ingest_job_id BIGSERIAL PRIMARY KEY, obj_id BIGINT NOT NULL, host_name TEXT NOT NULL, start_date_time BIGINT NOT NULL, end_date_time BIGINT NOT NULL, status_id INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(status_id) REFERENCES ingest_job_status_types(type_id));"); //NON-NLS
+			}
+
+			statement.execute("CREATE TABLE ingest_job_modules (ingest_job_id INTEGER, ingest_module_id INTEGER, pipeline_position INTEGER, PRIMARY KEY(ingest_job_id, ingest_module_id), FOREIGN KEY(ingest_job_id) REFERENCES ingest_jobs(ingest_job_id), FOREIGN KEY(ingest_module_id) REFERENCES ingest_modules(ingest_module_id));"); //NON-NLS
+			initIngestModuleTypes(connection);
+			initIngestStatusTypes(connection);
+
 			statement.execute("CREATE TABLE ingest_module_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)"); //NON-NLS
 			statement.execute("CREATE TABLE ingest_job_status_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)"); //NON-NLS
 			if (this.dbType.equals(DbType.SQLITE)) {
