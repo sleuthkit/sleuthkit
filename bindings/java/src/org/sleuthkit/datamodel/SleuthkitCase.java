@@ -211,13 +211,6 @@ public class SleuthkitCase {
 		this.initIngestStatusTypes(connection);
 		connection.close();
 		logSQLiteJDBCDriverInfo();
-		// Initializing ingest module types is done here because it is possible 
-		// the table is not there when init is called. It must be there after
-		// the schema update.
-		CaseDbConnection connection = connections.getConnection();
-		this.initIngestModuleTypes(connection);
-		this.initIngestStatusTypes(connection);
-		connection.close();
 	}
 
 	/**
@@ -579,17 +572,9 @@ public class SleuthkitCase {
 				long artifactId = resultSet.getLong(1);
 				int artifactTypeId = resultSet.getInt(2);
 				updateStatement.executeUpdate(
-<<<<<<< HEAD
 						"UPDATE blackboard_attributes " //NON-NLS
 						+ "SET artifact_type_id = " + artifactTypeId + " " //NON-NLS
-						+ "WHERE blackboard_attributes.artifact_id = " + artifactId + ";"); //NON-NLS					
-=======
-						"UPDATE blackboard_attributes "
-						+ //NON-NLS
-						"SET artifact_type_id = " + artifactTypeId + " "
-						+ //NON-NLS
-						"WHERE blackboard_attributes.artifact_id = " + artifactId + ";"); //NON-NLS					
->>>>>>> upstream/release-4.3.0
+						+ "WHERE blackboard_attributes.artifact_id = " + artifactId + ";"); //NON-NLS
 			}
 			resultSet.close();
 			resultSet = null;
@@ -649,20 +634,12 @@ public class SleuthkitCase {
 			}
 			statement.execute(
 					"DELETE FROM blackboard_attributes WHERE artifact_id IN " //NON-NLS
-<<<<<<< HEAD
 					+ "(SELECT artifact_id FROM blackboard_artifacts WHERE artifact_type_id = " //NON-NLS
 					+ ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID()
 					+ " OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ");"); //NON-NLS
 			statement.execute(
-					"DELETE FROM blackboard_artifacts WHERE artifact_type_id = " //NON-NLS
-					+ ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID()
-=======
-					+ "(SELECT artifact_id FROM blackboard_artifacts WHERE artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() //NON-NLS
-					+ " OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ");"); //NON-NLS
-			statement.execute(
 					"DELETE FROM blackboard_artifacts WHERE " //NON-NLS
 					+ "artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() //NON-NLS	
->>>>>>> upstream/release-4.3.0
 					+ " OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ";"); //NON-NLS
 
 			return 3;
@@ -807,48 +784,6 @@ public class SleuthkitCase {
 			closeStatement(statement);
 		}
 
-	}
-
-	private void initIngestModuleTypes(CaseDbConnection connection) throws TskCoreException {
-		Statement s = null;
-		ResultSet rs = null;
-		try {
-			s = connection.createStatement();
-			for (IngestModuleType type : IngestModuleType.values()) {
-				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_module_types WHERE type_id=" + type.ordinal() + ";");
-				if (!rs.next()) {
-					s.execute("INSERT INTO ingest_module_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "');");
-				}
-				rs.close();
-				rs = null;
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error adding ingest module types to table.", ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-		}
-	}
-
-	private void initIngestStatusTypes(CaseDbConnection connection) throws TskCoreException {
-		Statement s = null;
-		ResultSet rs = null;
-		try {
-			s = connection.createStatement();
-			for (IngestJobStatusType type : IngestJobStatusType.values()) {
-				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_job_status_types WHERE type_id=" + type.ordinal() + ";");
-				if (!rs.next()) {
-					s.execute("INSERT INTO ingest_job_status_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "');");
-				}
-				rs.close();
-				rs = null;
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error adding ingest module types to table.", ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-		}
 	}
 
 	/**
