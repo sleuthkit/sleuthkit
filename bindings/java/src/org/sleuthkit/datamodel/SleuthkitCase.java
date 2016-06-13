@@ -562,13 +562,10 @@ public class SleuthkitCase {
 			statement.execute("CREATE INDEX attribute_valueInt64 ON blackboard_attributes(value_int64);"); //NON-NLS
 			statement.execute("CREATE INDEX attribute_valueDouble ON blackboard_attributes(value_double);"); //NON-NLS
 			resultSet = statement.executeQuery(
-					"SELECT attrs.artifact_id, arts.artifact_type_id "
-					+ //NON-NLS
-					"FROM blackboard_attributes AS attrs "
-					+ //NON-NLS
-					"INNER JOIN blackboard_artifacts AS arts "
-					+ //NON-NLS
-					"WHERE attrs.artifact_id = arts.artifact_id;"); //NON-NLS
+					"SELECT attrs.artifact_id, arts.artifact_type_id " //NON-NLS
+					+ "FROM blackboard_attributes AS attrs " //NON-NLS
+					+ "INNER JOIN blackboard_artifacts AS arts " //NON-NLS
+					+ "WHERE attrs.artifact_id = arts.artifact_id;"); //NON-NLS
 			updateStatement = connection.createStatement();
 			while (resultSet.next()) {
 				long artifactId = resultSet.getLong(1);
@@ -637,17 +634,13 @@ public class SleuthkitCase {
 				}
 			}
 			statement.execute(
-					"DELETE FROM blackboard_attributes WHERE artifact_id IN "
-					+ //NON-NLS
-					"(SELECT artifact_id FROM blackboard_artifacts WHERE artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID()
-					+ //NON-NLS
-					" OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ");"); //NON-NLS
+					"DELETE FROM blackboard_attributes WHERE artifact_id IN " //NON-NLS
+					+ "(SELECT artifact_id FROM blackboard_artifacts WHERE artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() //NON-NLS
+					+ " OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ");"); //NON-NLS
 			statement.execute(
-					"DELETE FROM blackboard_artifacts WHERE "
-					+ //NON-NLS
-					"artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID()
-					+ //NON-NLS	
-					" OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ";"); //NON-NLS
+					"DELETE FROM blackboard_artifacts WHERE " //NON-NLS
+					+ "artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() //NON-NLS	
+					+ " OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ";"); //NON-NLS
 
 			return 3;
 		} finally {
@@ -696,11 +689,9 @@ public class SleuthkitCase {
 					+ "attrs.attribute_type_id = 62");
 			while (resultSet.next()) {
 				updateStatement.executeUpdate(
-						"UPDATE tsk_files "
-						+ //NON-NLS
-						"SET mime_type = '" + resultSet.getString(2) + "' "
-						+ //NON-NLS
-						"WHERE tsk_files.obj_id = " + resultSet.getInt(1) + ";"); //NON-NLS	
+						"UPDATE tsk_files " //NON-NLS
+						+ "SET mime_type = '" + resultSet.getString(2) + "' " //NON-NLS
+						+ "WHERE tsk_files.obj_id = " + resultSet.getInt(1) + ";"); //NON-NLS	
 			}
 			resultSet.close();
 
@@ -712,11 +703,9 @@ public class SleuthkitCase {
 				String attributeLabel = resultSet.getString("type_name");
 				if (attributeTypeId < MIN_USER_DEFINED_TYPE_ID) {
 					updateStatement.executeUpdate(
-							"UPDATE blackboard_attribute_types "
-							+ //NON-NLS
-							"SET value_type = " + ATTRIBUTE_TYPE.fromLabel(attributeLabel).getValueType().getType() + " "
-							+ //NON-NLS
-							"WHERE blackboard_attribute_types.attribute_type_id = " + attributeTypeId + ";"); //NON-NLS	
+							"UPDATE blackboard_attribute_types " //NON-NLS
+							+ "SET value_type = " + ATTRIBUTE_TYPE.fromLabel(attributeLabel).getValueType().getType() + " " //NON-NLS
+							+ "WHERE blackboard_attribute_types.attribute_type_id = " + attributeTypeId + ";"); //NON-NLS	
 				}
 			}
 			resultSet.close();
