@@ -6081,8 +6081,7 @@ public class SleuthkitCase {
 	 * Adds the given ingest module to the database.
 	 *
 	 * @param displayName The display name of the module
-	 * @param uniqueName  The unique name of the module. Must be unique to this
-	 *                    module.
+	 * @param uniqueName  The factory class name of the module.
 	 * @param type        The type of the module.
 	 * @param version     The version of the module.
 	 *
@@ -6091,10 +6090,11 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException When the ingest module cannot be added.
 	 */
-	public final IngestModuleInfo addIngestModule(String displayName, String uniqueName, IngestModuleType type, String version) throws TskCoreException {
+	public final IngestModuleInfo addIngestModule(String displayName, String factoryClassName, IngestModuleType type, String version) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		ResultSet resultSet = null;
 		Statement statement = null;
+		String uniqueName = factoryClassName + "-" + displayName + "-" + type.toString() + "-" + version;
 		try {
 			statement = connection.createStatement();
 			resultSet = statement.executeQuery("SELECT * FROM ingest_modules WHERE unique_name = '" + uniqueName + "'");
