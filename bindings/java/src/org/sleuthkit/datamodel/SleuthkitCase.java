@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -59,6 +60,8 @@ import org.postgresql.util.PSQLState;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE;
+import org.sleuthkit.datamodel.IngestJobInfo.IngestJobStatusType;
+import org.sleuthkit.datamodel.IngestModuleInfo.IngestModuleType;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
 import org.sleuthkit.datamodel.TskData.DbType;
 import org.sleuthkit.datamodel.TskData.FileKnown;
@@ -78,7 +81,7 @@ import org.sqlite.SQLiteJDBCLoader;
  */
 public class SleuthkitCase {
 
-	private static final int SCHEMA_VERSION_NUMBER = 4; // This must be the same as TSK_SCHEMA_VER in tsk/auto/tsk_db.h.				
+	private static final int SCHEMA_VERSION_NUMBER = 5; // This must be the same as TSK_SCHEMA_VER in tsk/auto/tsk_db.h.				
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
@@ -201,6 +204,13 @@ public class SleuthkitCase {
 		init(caseHandle);
 		updateDatabaseSchema(dbPath);
 		logSQLiteJDBCDriverInfo();
+		// Initializing ingest module types is done here because it is possible 
+		// the table is not there when init is called. It must be there after
+		// the schema update.
+		CaseDbConnection connection = connections.getConnection();
+		this.initIngestModuleTypes(connection);
+		this.initIngestStatusTypes(connection);
+		connection.close();
 	}
 
 	/**
@@ -227,6 +237,13 @@ public class SleuthkitCase {
 		this.connections = new PostgreSQLConnections(host, port, dbName, userName, password);
 		init(caseHandle);
 		updateDatabaseSchema(null);
+		// Initializing ingest module types is done here because it is possible 
+		// the table is not there when init is called. It must be there after
+		// the schema update.
+		CaseDbConnection connection = connections.getConnection();
+		this.initIngestModuleTypes(connection);
+		this.initIngestStatusTypes(connection);
+		connection.close();
 	}
 
 	private void init(SleuthkitJNI.CaseDbHandle caseHandle) throws Exception {
@@ -376,6 +393,7 @@ public class SleuthkitCase {
 				//    b. upgrade the database and then increment and return the schema version number.
 				schemaVersionNumber = updateFromSchema2toSchema3(schemaVersionNumber, connection);
 				schemaVersionNumber = updateFromSchema3toSchema4(schemaVersionNumber, connection);
+				schemaVersionNumber = updateFromSchema4toSchema5(schemaVersionNumber, connection);
 
 				// Write the updated schema version number to the the tsk_db_info table.
 				statement = connection.createStatement();
@@ -697,6 +715,88 @@ public class SleuthkitCase {
 			closeStatement(statement);
 		}
 
+	}
+
+	/**
+	 * Updates a schema version 4 database to a schema version 5 database.
+	 *
+	 * @param schemaVersionNumber The current schema version number of the
+	 *                            database.
+	 * @param connection          A connection to the case database.
+	 *
+	 * @return The new database schema version.
+	 *
+	 * @throws SQLException     If there is an error completing a database
+	 *                          operation.
+	 * @throws TskCoreException If there is an error completing a database
+	 *                          operation via another SleuthkitCase method.
+	 */
+	private int updateFromSchema4toSchema5(int schemaVersionNumber, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersionNumber != 4) {
+			return schemaVersionNumber;
+		}
+		Statement statement = null;
+		try {
+			statement = connection.createStatement();
+			statement.execute("CREATE TABLE ingest_module_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)"); //NON-NLS
+			statement.execute("CREATE TABLE ingest_job_status_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)"); //NON-NLS
+			if (this.dbType.equals(DbType.SQLITE)) {
+				statement.execute("CREATE TABLE ingest_modules (ingest_module_id INTEGER PRIMARY KEY, display_name TEXT NOT NULL, unique_name TEXT UNIQUE NOT NULL, type_id INTEGER NOT NULL, version TEXT NOT NULL, FOREIGN KEY(type_id) REFERENCES ingest_module_types(type_id));"); //NON-NLS
+				statement.execute("CREATE TABLE ingest_jobs (ingest_job_id INTEGER PRIMARY KEY, obj_id BIGINT NOT NULL, host_name TEXT NOT NULL, start_date_time BIGINT NOT NULL, end_date_time BIGINT NOT NULL, status_id INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(status_id) REFERENCES ingest_job_status_types(type_id));"); //NON-NLS
+			} else {
+				statement.execute("CREATE TABLE ingest_modules (ingest_module_id BIGSERIAL PRIMARY KEY, display_name TEXT NOT NULL, unique_name TEXT UNIQUE NOT NULL, type_id INTEGER NOT NULL, version TEXT NOT NULL, FOREIGN KEY(type_id) REFERENCES ingest_module_types(type_id));"); //NON-NLS
+				statement.execute("CREATE TABLE ingest_jobs (ingest_job_id BIGSERIAL PRIMARY KEY, obj_id BIGINT NOT NULL, host_name TEXT NOT NULL, start_date_time BIGINT NOT NULL, end_date_time BIGINT NOT NULL, status_id INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(status_id) REFERENCES ingest_job_status_types(type_id));"); //NON-NLS
+			}
+
+			statement.execute("CREATE TABLE ingest_job_modules (ingest_job_id INTEGER, ingest_module_id INTEGER, pipeline_position INTEGER, PRIMARY KEY(ingest_job_id, ingest_module_id), FOREIGN KEY(ingest_job_id) REFERENCES ingest_jobs(ingest_job_id), FOREIGN KEY(ingest_module_id) REFERENCES ingest_modules(ingest_module_id));"); //NON-NLS
+			initIngestModuleTypes(connection);
+			initIngestStatusTypes(connection);
+			return 5;
+		} finally {
+			closeStatement(statement);
+		}
+	}
+
+	private void initIngestModuleTypes(CaseDbConnection connection) throws TskCoreException {
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			for (IngestModuleType type : IngestModuleType.values()) {
+				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_module_types WHERE type_id=" + type.ordinal() + ";");
+				if (!rs.next()) {
+					s.execute("INSERT INTO ingest_module_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "');");
+				}
+				rs.close();
+				rs = null;
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error adding ingest module types to table.", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+		}
+	}
+
+	private void initIngestStatusTypes(CaseDbConnection connection) throws TskCoreException {
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			for (IngestJobStatusType type : IngestJobStatusType.values()) {
+				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_job_status_types WHERE type_id=" + type.ordinal() + ";");
+				if (!rs.next()) {
+					s.execute("INSERT INTO ingest_job_status_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "');");
+				}
+				rs.close();
+				rs = null;
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error adding ingest module types to table.", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+		}
 	}
 
 	/**
@@ -5888,6 +5988,213 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Sets the end date for the given ingest job
+	 *
+	 * @param ingestJobId The ingest job to set the end date for
+	 * @param endDateTime The end date
+	 *
+	 * @throws TskCoreException If inserting into the database fails
+	 */
+	void setIngestJobEndDateTime(long ingestJobId, long endDateTime) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		try {
+			Statement statement = connection.createStatement();
+			statement.executeUpdate("UPDATE ingest_jobs SET end_date_time=" + endDateTime + " WHERE ingest_job_id=" + ingestJobId + ";");
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error updating the end date (ingest_job_id = " + ingestJobId + ".", ex);
+		} finally {
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	void setIngestJobStatus(long ingestJobId, IngestJobStatusType status) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		try {
+			Statement statement = connection.createStatement();
+			statement.executeUpdate("UPDATE ingest_jobs SET status_id=" + status.ordinal() + " WHERE ingest_job_id=" + ingestJobId + ";");
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error ingest job status (ingest_job_id = " + ingestJobId + ".", ex);
+		} finally {
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	/**
+	 *
+	 * @param dataSource    The datasource the ingest job is being run on
+	 * @param hostName      The name of the host
+	 * @param ingestModules The ingest modules being run during the ingest job.
+	 *                      Should be in pipeline order.
+	 * @param jobStart      The time the job started
+	 * @param jobEnd        The time the job ended
+	 * @param status        The ingest job status
+	 * @param settingsDir   The directory of the job's settings
+	 *
+	 * @return An information object representing the ingest job added to the
+	 *         database.
+	 *
+	 * @throws TskCoreException If adding the job to the database fails.
+	 */
+	public final IngestJobInfo addIngestJob(Content dataSource, String hostName, List<IngestModuleInfo> ingestModules, Date jobStart, Date jobEnd, IngestJobStatusType status, String settingsDir) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		ResultSet resultSet = null;
+		Statement statement = null;
+		try {
+			connection.beginTransaction();
+			statement = connection.createStatement();
+			PreparedStatement insertStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_INGEST_JOB, Statement.RETURN_GENERATED_KEYS);
+			insertStatement.setLong(1, dataSource.getId());
+			insertStatement.setString(2, hostName);
+			insertStatement.setLong(3, jobStart.getTime());
+			insertStatement.setLong(4, jobEnd.getTime());
+			insertStatement.setInt(5, status.ordinal());
+			insertStatement.setString(6, settingsDir);
+			connection.executeUpdate(insertStatement);
+			resultSet = insertStatement.getGeneratedKeys();
+			resultSet.next();
+			long id = resultSet.getLong(1);
+			for (int i = 0; i < ingestModules.size(); i++) {
+				IngestModuleInfo ingestModule = ingestModules.get(i);
+				statement.executeUpdate("INSERT INTO ingest_job_modules (ingest_job_id, ingest_module_id, pipeline_position) "
+						+ "VALUES (" + id + ", " + ingestModule.getIngestModuleId() + ", " + i + ");");
+			}
+			resultSet.close();
+			resultSet = null;
+			connection.commitTransaction();
+			return new IngestJobInfo(id, dataSource.getId(), hostName, jobStart, "", ingestModules, this);
+		} catch (SQLException ex) {
+			connection.rollbackTransaction();
+			throw new TskCoreException("Error adding the ingest job.", ex);
+		} finally {
+			closeResultSet(resultSet);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	/**
+	 * Adds the given ingest module to the database.
+	 *
+	 * @param displayName The display name of the module
+	 * @param uniqueName  The factory class name of the module.
+	 * @param type        The type of the module.
+	 * @param version     The version of the module.
+	 *
+	 * @return An ingest module info object representing the module added to the
+	 *         db.
+	 *
+	 * @throws TskCoreException When the ingest module cannot be added.
+	 */
+	public final IngestModuleInfo addIngestModule(String displayName, String factoryClassName, IngestModuleType type, String version) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		ResultSet resultSet = null;
+		Statement statement = null;
+		String uniqueName = factoryClassName + "-" + displayName + "-" + type.toString() + "-" + version;
+		try {
+			statement = connection.createStatement();
+			resultSet = statement.executeQuery("SELECT * FROM ingest_modules WHERE unique_name = '" + uniqueName + "'");
+			if (!resultSet.next()) {
+				resultSet.close();
+				resultSet = null;
+				PreparedStatement insertStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_INGEST_MODULE, Statement.RETURN_GENERATED_KEYS);
+				insertStatement.setString(1, displayName);
+				insertStatement.setString(2, uniqueName);
+				insertStatement.setInt(3, type.ordinal());
+				insertStatement.setString(4, version);
+				connection.executeUpdate(insertStatement);
+				resultSet = statement.getGeneratedKeys();
+				resultSet.next();
+				long id = resultSet.getLong(1);
+				resultSet.close();
+				resultSet = null;
+				return new IngestModuleInfo(id, displayName, uniqueName, type, version);
+			} else {
+				return new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"), resultSet.getString("unique_name"), IngestModuleType.fromID(resultSet.getInt("type_id")), resultSet.getString("version"));
+			}
+		} catch (SQLException ex) {
+			try {
+				resultSet = statement.executeQuery("SELECT * FROM ingest_modules WHERE unique_name = '" + uniqueName + "'");
+				if (resultSet.next()) {
+					return new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"), uniqueName, IngestModuleType.fromID(resultSet.getInt("type_id")), resultSet.getString("version"));
+				} else {
+					throw new TskCoreException("Couldn't add new module to database.", ex);
+				}
+			} catch (SQLException ex1) {
+				throw new TskCoreException("Couldn't add new module to database.", ex1);
+			}
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+			connection.close();
+		}
+	}
+
+	/**
+	 * Gets all of the ingest jobs that have been run.
+	 *
+	 * @return The information about the ingest jobs that have been run
+	 *
+	 * @throws TskCoreException If there is a problem getting the ingest jobs
+	 */
+	public final List<IngestJobInfo> getIngestJobs() throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		ResultSet resultSet = null;
+		Statement statement = null;
+		List<IngestJobInfo> ingestJobs = new ArrayList<IngestJobInfo>();
+		try {
+			statement = connection.createStatement();
+			resultSet = statement.executeQuery("SELECT * FROM ingest_jobs");
+			while (resultSet.next()) {
+				ingestJobs.add(new IngestJobInfo(resultSet.getInt("ingest_job_id"), resultSet.getLong("obj_id"), resultSet.getString("host_name"), new Date(resultSet.getLong("start_date")), new Date(resultSet.getLong("end_date")), IngestJobStatusType.fromID(resultSet.getInt("status_id")), resultSet.getString("settings_dir"), this.getIngestModules(resultSet.getInt("ingest_job_id"), connection), this));
+			}
+			return ingestJobs;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Couldn't get the ingest jobs.", ex);
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+			connection.close();
+		}
+	}
+
+	/**
+	 * Gets the ingest modules associated with the ingest job
+	 *
+	 * @param ingestJobId The id of the ingest job to get ingest modules for
+	 * @param connection  The database connection
+	 *
+	 * @return The ingest modules of the job
+	 *
+	 * @throws SQLException If it fails to get the modules from the db.
+	 */
+	private List<IngestModuleInfo> getIngestModules(int ingestJobId, CaseDbConnection connection) throws SQLException {
+		ResultSet resultSet = null;
+		Statement statement = null;
+		List<IngestModuleInfo> ingestModules = new ArrayList<IngestModuleInfo>();
+		try {
+			statement = connection.createStatement();
+			resultSet = statement.executeQuery("SELECT ingest_job_modules.ingest_module_id, ingest_job_modules.pipeline_position, ingest_modules.display_name, ingest_modules.unique_name, "
+					+ "ingest_modules.type_id, ingest_modules.version "
+					+ "FROM ingest_job_modules, ingest_modules "
+					+ "WHERE ingest_job_modules.ingest_job_id = " + ingestJobId + " "
+					+ "AND (ingest_modules.ingest_job_id = ingest_job_modules.ingest_job_id) "
+					+ "ORDER BY (ingest_job_modules.pipeline_position);");
+			while (resultSet.next()) {
+				ingestModules.add(new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"), resultSet.getString("unique_name"), IngestModuleType.fromID(resultSet.getInt("type_id")), resultSet.getString("version")));
+			}
+			return ingestModules;
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+		}
+	}
+
+	/**
 	 * Notifies observers of errors in the SleuthkitCase.
 	 */
 	public interface ErrorObserver {
@@ -6019,7 +6326,9 @@ public class SleuthkitCase {
 		SELECT_ARTIFACT_TAGS_BY_ARTIFACT("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id WHERE blackboard_artifact_tags.artifact_id = ?"), //NON-NLS
 		SELECT_REPORTS("SELECT * FROM reports"), //NON-NLS
 		INSERT_REPORT("INSERT INTO reports (path, crtime, src_module_name, report_name) VALUES (?, ?, ?, ?)"), //NON-NLS
-		DELETE_REPORT("DELETE FROM reports WHERE reports.report_id = ?"); //NON-NLS
+		DELETE_REPORT("DELETE FROM reports WHERE reports.report_id = ?"), //NON-NLS
+		INSERT_INGEST_JOB("INSERT INTO ingest_jobs (obj_id, host_name, start_date_time, end_date_time, status_id, settings_dir) VALUES (?, ?, ?, ?, ?, ?)"), //NON-NLS
+		INSERT_INGEST_MODULE("INSERT INTO ingest_modules (display_name, unique_name, type_id, version) VALUES(?, ?, ?, ?)"); //NON-NLS
 
 		private final String sql;
 
