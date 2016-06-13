@@ -59,6 +59,8 @@ import org.postgresql.util.PSQLState;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE;
+import org.sleuthkit.datamodel.IngestJobInfo.IngestJobStatusType;
+import org.sleuthkit.datamodel.IngestModuleInfo.IngestModuleType;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
 import org.sleuthkit.datamodel.TskData.DbType;
 import org.sleuthkit.datamodel.TskData.FileKnown;
@@ -200,6 +202,13 @@ public class SleuthkitCase {
 		this.connections = new SQLiteConnections(dbPath);
 		init(caseHandle);
 		updateDatabaseSchema(dbPath);
+		// Initializing ingest module types is done here because it is possible 
+		// the table is not there when init is called. It must be there after
+		// the schema update.
+		CaseDbConnection connection = connections.getConnection();
+		this.initIngestModuleTypes(connection);
+		this.initIngestStatusTypes(connection);
+		connection.close();
 		logSQLiteJDBCDriverInfo();
 	}
 
@@ -227,6 +236,13 @@ public class SleuthkitCase {
 		this.connections = new PostgreSQLConnections(host, port, dbName, userName, password);
 		init(caseHandle);
 		updateDatabaseSchema(null);
+		// Initializing ingest module types is done here because it is possible 
+		// the table is not there when init is called. It must be there after
+		// the schema update.
+		CaseDbConnection connection = connections.getConnection();
+		this.initIngestModuleTypes(connection);
+		this.initIngestStatusTypes(connection);
+		connection.close();
 	}
 
 	private void init(SleuthkitJNI.CaseDbHandle caseHandle) throws Exception {
