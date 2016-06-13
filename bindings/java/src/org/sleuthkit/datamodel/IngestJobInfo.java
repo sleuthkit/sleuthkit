@@ -115,4 +115,97 @@ public final class IngestJobInfo {
 		this.ingestModuleInfo = ingestModuleInfo;
 		this.status = status;
 	}
+
+	/**
+	 * @return the end date time of the job (equal to the epoch if it has not
+	 *         been set yet).
+	 */
+	public Date getEndDateTime() {
+		return endDateTime;
+	}
+
+	/**
+	 * Sets the end date for the ingest job info, and updates the database.
+	 *
+	 * @param endDateTime the endDateTime to set
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	public void setEndDateTime(Date endDateTime) throws TskCoreException {
+		Date oldDate = this.endDateTime;
+		this.endDateTime = endDateTime;
+		try {
+			skCase.setIngestJobEndDateTime(getIngestJobId(), endDateTime.getTime());
+		} catch (TskCoreException ex) {
+			this.endDateTime = oldDate;
+			throw ex;
+		}
+	}
+
+	/**
+	 * Sets the ingest status for the ingest job info, and updates the database.
+	 *
+	 * @param status The new status
+	 *
+	 * @throws TskCoreException
+	 */
+	public void setIngestJobStatus(IngestJobStatusType status) throws TskCoreException {
+		IngestJobStatusType oldStatus = this.getStatus();
+		this.status = status;
+		try {
+			skCase.setIngestJobStatus(getIngestJobId(), status);
+		} catch (TskCoreException ex) {
+			this.status = oldStatus;
+			throw ex;
+		}
+	}
+
+	/**
+	 * @return the ingestJobId
+	 */
+	public long getIngestJobId() {
+		return ingestJobId;
+	}
+
+	/**
+	 * @return the objectId
+	 */
+	public long getObjectId() {
+		return objectId;
+	}
+
+	/**
+	 * @return the hostName
+	 */
+	public String getHostName() {
+		return hostName;
+	}
+
+	/**
+	 * @return the startDateTime
+	 */
+	public Date getStartDateTime() {
+		return startDateTime;
+	}
+
+	/**
+	 * @return the settingsDir
+	 */
+	public String getSettingsDir() {
+		return settingsDir;
+	}
+
+	/**
+	 * @return the ingestModuleInfo
+	 */
+	public List<IngestModuleInfo> getIngestModuleInfo() {
+		return ingestModuleInfo;
+	}
+
+	/**
+	 * @return the status
+	 */
+	public IngestJobStatusType getStatus() {
+		return status;
+	}
 }
