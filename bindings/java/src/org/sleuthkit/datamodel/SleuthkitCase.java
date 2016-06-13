@@ -393,7 +393,6 @@ public class SleuthkitCase {
 				//    b. upgrade the database and then increment and return the schema version number.
 				schemaVersionNumber = updateFromSchema2toSchema3(schemaVersionNumber, connection);
 				schemaVersionNumber = updateFromSchema3toSchema4(schemaVersionNumber, connection);
-				schemaVersionNumber = updateFromSchema4toSchema5(schemaVersionNumber, connection);
 
 				// Write the updated schema version number to the the tsk_db_info table.
 				statement = connection.createStatement();
@@ -704,39 +703,6 @@ public class SleuthkitCase {
 				updateStatement.executeUpdate("UPDATE tsk_files SET data_source_obj_id = " + dataSourceId + " WHERE obj_id = " + fileId + ";");
 			}
 			resultSet.close();
-
-			return 4;
-
-		} finally {
-			closeResultSet(queryResultSet);
-			closeStatement(queryStatement);
-			closeStatement(updateStatement);
-			closeResultSet(resultSet);
-			closeStatement(statement);
-		}
-
-	}
-
-	/**
-	 * Updates a schema version 4 database to a schema version 5 database.
-	 *
-	 * @param schemaVersionNumber The current schema version number of the
-	 *                            database.
-	 * @param connection          A connection to the case database.
-	 *
-	 * @return The new database schema version.
-	 *
-	 * @throws SQLException     If there is an error completing a database
-	 *                          operation.
-	 * @throws TskCoreException If there is an error completing a database
-	 *                          operation via another SleuthkitCase method.
-	 */
-	private int updateFromSchema4toSchema5(int schemaVersionNumber, CaseDbConnection connection) throws SQLException, TskCoreException {
-		if (schemaVersionNumber != 4) {
-			return schemaVersionNumber;
-		}
-		Statement statement = null;
-		try {
 			statement = connection.createStatement();
 			statement.execute("CREATE TABLE ingest_module_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)"); //NON-NLS
 			statement.execute("CREATE TABLE ingest_job_status_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)"); //NON-NLS
@@ -751,10 +717,17 @@ public class SleuthkitCase {
 			statement.execute("CREATE TABLE ingest_job_modules (ingest_job_id INTEGER, ingest_module_id INTEGER, pipeline_position INTEGER, PRIMARY KEY(ingest_job_id, ingest_module_id), FOREIGN KEY(ingest_job_id) REFERENCES ingest_jobs(ingest_job_id), FOREIGN KEY(ingest_module_id) REFERENCES ingest_modules(ingest_module_id));"); //NON-NLS
 			initIngestModuleTypes(connection);
 			initIngestStatusTypes(connection);
-			return 5;
+
+			return 4;
+
 		} finally {
+			closeResultSet(queryResultSet);
+			closeStatement(queryStatement);
+			closeStatement(updateStatement);
+			closeResultSet(resultSet);
 			closeStatement(statement);
 		}
+
 	}
 
 	private void initIngestModuleTypes(CaseDbConnection connection) throws TskCoreException {
