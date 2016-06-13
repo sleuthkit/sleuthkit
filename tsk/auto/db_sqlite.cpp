@@ -470,7 +470,7 @@ int
  * @param type Image type
  * @param ssize Size of device sector in bytes (or 0 for default)
  * @param objId The object id assigned to the image (out param)
- * @param timeZone The timezone the image is from
+ * @param timezone The timezone the image is from
  * @param size The size of the image in bytes.
  * @param md5 MD5 hash of the image
  * @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID).

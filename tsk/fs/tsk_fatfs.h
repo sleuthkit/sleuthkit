@@ -231,7 +231,7 @@ extern "C" {
 
         uint16_t ssize;         /* size of sectors in bytes */
         uint16_t ssize_sh;      /* power of 2 for size of sectors.  >> to divide by sector size.  << to multiply by sector size */
-        uint8_t csize;          /* size of clusters in sectors */
+        uint32_t csize;          /* size of clusters in sectors */
         uint8_t numfat;         /* number of fat tables */
         uint32_t sectperfat;    /* sectors per fat table */
         uint16_t numroot;       /* number of 32-byte dentries in root dir */
