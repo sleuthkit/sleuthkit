@@ -335,6 +335,48 @@ public class SleuthkitCase {
 		}
 	}
 
+	private void initIngestModuleTypes(CaseDbConnection connection) throws TskCoreException {
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			for (IngestModuleType type : IngestModuleType.values()) {
+				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_module_types WHERE type_id=" + type.ordinal() + ";");
+				if (!rs.next()) {
+					s.execute("INSERT INTO ingest_module_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "');");
+				}
+				rs.close();
+				rs = null;
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error adding ingest module types to table.", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+		}
+	}
+
+	private void initIngestStatusTypes(CaseDbConnection connection) throws TskCoreException {
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			for (IngestJobStatusType type : IngestJobStatusType.values()) {
+				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_job_status_types WHERE type_id=" + type.ordinal() + ";");
+				if (!rs.next()) {
+					s.execute("INSERT INTO ingest_job_status_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "');");
+				}
+				rs.close();
+				rs = null;
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error adding ingest module types to table.", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+		}
+	}
+
 	/**
 	 * Modify the case database to bring it up-to-date with the current version
 	 * of the database schema.
@@ -504,17 +546,22 @@ public class SleuthkitCase {
 			statement.execute("CREATE INDEX attribute_valueInt64 ON blackboard_attributes(value_int64);"); //NON-NLS
 			statement.execute("CREATE INDEX attribute_valueDouble ON blackboard_attributes(value_double);"); //NON-NLS
 			resultSet = statement.executeQuery(
-					"SELECT attrs.artifact_id, arts.artifact_type_id " + //NON-NLS
-					"FROM blackboard_attributes AS attrs " + //NON-NLS
-					"INNER JOIN blackboard_artifacts AS arts " + //NON-NLS
+					"SELECT attrs.artifact_id, arts.artifact_type_id "
+					+ //NON-NLS
+					"FROM blackboard_attributes AS attrs "
+					+ //NON-NLS
+					"INNER JOIN blackboard_artifacts AS arts "
+					+ //NON-NLS
 					"WHERE attrs.artifact_id = arts.artifact_id;"); //NON-NLS
 			updateStatement = connection.createStatement();
 			while (resultSet.next()) {
 				long artifactId = resultSet.getLong(1);
 				int artifactTypeId = resultSet.getInt(2);
 				updateStatement.executeUpdate(
-						"UPDATE blackboard_attributes " + //NON-NLS
-						"SET artifact_type_id = " + artifactTypeId + " " + //NON-NLS
+						"UPDATE blackboard_attributes "
+						+ //NON-NLS
+						"SET artifact_type_id = " + artifactTypeId + " "
+						+ //NON-NLS
 						"WHERE blackboard_attributes.artifact_id = " + artifactId + ";"); //NON-NLS					
 			}
 			resultSet.close();
@@ -574,12 +621,16 @@ public class SleuthkitCase {
 				}
 			}
 			statement.execute(
-					"DELETE FROM blackboard_attributes WHERE artifact_id IN " + //NON-NLS
-					"(SELECT artifact_id FROM blackboard_artifacts WHERE artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() + //NON-NLS
+					"DELETE FROM blackboard_attributes WHERE artifact_id IN "
+					+ //NON-NLS
+					"(SELECT artifact_id FROM blackboard_artifacts WHERE artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID()
+					+ //NON-NLS
 					" OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ");"); //NON-NLS
 			statement.execute(
-					"DELETE FROM blackboard_artifacts WHERE " + //NON-NLS
-					"artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() + //NON-NLS	
+					"DELETE FROM blackboard_artifacts WHERE "
+					+ //NON-NLS
+					"artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID()
+					+ //NON-NLS	
 					" OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ";"); //NON-NLS
 
 			return 3;
@@ -629,8 +680,10 @@ public class SleuthkitCase {
 					+ "attrs.attribute_type_id = 62");
 			while (resultSet.next()) {
 				updateStatement.executeUpdate(
-						"UPDATE tsk_files " + //NON-NLS
-						"SET mime_type = '" + resultSet.getString(2) + "' " + //NON-NLS
+						"UPDATE tsk_files "
+						+ //NON-NLS
+						"SET mime_type = '" + resultSet.getString(2) + "' "
+						+ //NON-NLS
 						"WHERE tsk_files.obj_id = " + resultSet.getInt(1) + ";"); //NON-NLS	
 			}
 			resultSet.close();
@@ -643,8 +696,10 @@ public class SleuthkitCase {
 				String attributeLabel = resultSet.getString("type_name");
 				if (attributeTypeId < MIN_USER_DEFINED_TYPE_ID) {
 					updateStatement.executeUpdate(
-							"UPDATE blackboard_attribute_types " + //NON-NLS
-							"SET value_type = " + ATTRIBUTE_TYPE.fromLabel(attributeLabel).getValueType().getType() + " " + //NON-NLS
+							"UPDATE blackboard_attribute_types "
+							+ //NON-NLS
+							"SET value_type = " + ATTRIBUTE_TYPE.fromLabel(attributeLabel).getValueType().getType() + " "
+							+ //NON-NLS
 							"WHERE blackboard_attribute_types.attribute_type_id = " + attributeTypeId + ";"); //NON-NLS	
 				}
 			}
@@ -685,6 +740,20 @@ public class SleuthkitCase {
 				updateStatement.executeUpdate("UPDATE tsk_files SET data_source_obj_id = " + dataSourceId + " WHERE obj_id = " + fileId + ";");
 			}
 			resultSet.close();
+
+			statement.execute("CREATE TABLE ingest_module_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)"); //NON-NLS
+			statement.execute("CREATE TABLE ingest_job_status_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)"); //NON-NLS
+			if (this.dbType.equals(DbType.SQLITE)) {
+				statement.execute("CREATE TABLE ingest_modules (ingest_module_id INTEGER PRIMARY KEY, display_name TEXT NOT NULL, unique_name TEXT UNIQUE NOT NULL, type_id INTEGER NOT NULL, version TEXT NOT NULL, FOREIGN KEY(type_id) REFERENCES ingest_module_types(type_id));"); //NON-NLS
+				statement.execute("CREATE TABLE ingest_jobs (ingest_job_id INTEGER PRIMARY KEY, obj_id BIGINT NOT NULL, host_name TEXT NOT NULL, start_date_time BIGINT NOT NULL, end_date_time BIGINT NOT NULL, status_id INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(status_id) REFERENCES ingest_job_status_types(type_id));"); //NON-NLS
+			} else {
+				statement.execute("CREATE TABLE ingest_modules (ingest_module_id BIGSERIAL PRIMARY KEY, display_name TEXT NOT NULL, unique_name TEXT UNIQUE NOT NULL, type_id INTEGER NOT NULL, version TEXT NOT NULL, FOREIGN KEY(type_id) REFERENCES ingest_module_types(type_id));"); //NON-NLS
+				statement.execute("CREATE TABLE ingest_jobs (ingest_job_id BIGSERIAL PRIMARY KEY, obj_id BIGINT NOT NULL, host_name TEXT NOT NULL, start_date_time BIGINT NOT NULL, end_date_time BIGINT NOT NULL, status_id INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(status_id) REFERENCES ingest_job_status_types(type_id));"); //NON-NLS
+			}
+
+			statement.execute("CREATE TABLE ingest_job_modules (ingest_job_id INTEGER, ingest_module_id INTEGER, pipeline_position INTEGER, PRIMARY KEY(ingest_job_id, ingest_module_id), FOREIGN KEY(ingest_job_id) REFERENCES ingest_jobs(ingest_job_id), FOREIGN KEY(ingest_module_id) REFERENCES ingest_modules(ingest_module_id));"); //NON-NLS
+			initIngestModuleTypes(connection);
+			initIngestStatusTypes(connection);
 
 			return 4;
 
