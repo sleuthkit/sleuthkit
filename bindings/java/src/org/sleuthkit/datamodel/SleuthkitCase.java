@@ -574,7 +574,7 @@ public class SleuthkitCase {
 				updateStatement.executeUpdate(
 						"UPDATE blackboard_attributes " //NON-NLS
 						+ "SET artifact_type_id = " + artifactTypeId + " " //NON-NLS
-						+ "WHERE blackboard_attributes.artifact_id = " + artifactId + ";"); //NON-NLS
+						+ "WHERE blackboard_attributes.artifact_id = " + artifactId + ";"); //NON-NLS					
 			}
 			resultSet.close();
 			resultSet = null;
@@ -638,8 +638,8 @@ public class SleuthkitCase {
 					+ ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID()
 					+ " OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ");"); //NON-NLS
 			statement.execute(
-					"DELETE FROM blackboard_artifacts WHERE " //NON-NLS
-					+ "artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() //NON-NLS	
+					"DELETE FROM blackboard_artifacts WHERE artifact_type_id = " //NON-NLS
+					+ ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID()
 					+ " OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ";"); //NON-NLS
 
 			return 3;
