@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -59,6 +60,8 @@ import org.postgresql.util.PSQLState;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE;
+import org.sleuthkit.datamodel.IngestJobInfo.IngestJobStatusType;
+import org.sleuthkit.datamodel.IngestModuleInfo.IngestModuleType;
 import org.sleuthkit.datamodel.SleuthkitJNI.CaseDbHandle.AddImageProcess;
 import org.sleuthkit.datamodel.TskData.DbType;
 import org.sleuthkit.datamodel.TskData.FileKnown;
@@ -78,7 +81,7 @@ import org.sqlite.SQLiteJDBCLoader;
  */
 public class SleuthkitCase {
 
-	private static final int SCHEMA_VERSION_NUMBER = 4; // This must be the same as TSK_SCHEMA_VER in tsk/auto/tsk_db.h.				
+	private static final int SCHEMA_VERSION_NUMBER = 5; // This must be the same as TSK_SCHEMA_VER in tsk/auto/tsk_db.h.				
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
@@ -92,7 +95,7 @@ public class SleuthkitCase {
 	private static final int MIN_USER_DEFINED_TYPE_ID = 10000;
 	private final ConnectionPool connections;
 	private final ResultSetHelper rsHelper = new ResultSetHelper(this);
-	private final Map<Long, Long> carvedFileContainersCache = new HashMap<Long, Long>(); // Caches the IDs of the root $CarvedFiles for each volume.
+	private final Map<Long, VirtualDirectory> rootIdsToCarvedFileDirs = new HashMap<Long, VirtualDirectory>();
 	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system files.
 	private final ArrayList<ErrorObserver> sleuthkitCaseErrorObservers = new ArrayList<ErrorObserver>();
 	private final String dbPath;
@@ -201,6 +204,13 @@ public class SleuthkitCase {
 		init(caseHandle);
 		updateDatabaseSchema(dbPath);
 		logSQLiteJDBCDriverInfo();
+		// Initializing ingest module types is done here because it is possible 
+		// the table is not there when init is called. It must be there after
+		// the schema update.
+		CaseDbConnection connection = connections.getConnection();
+		this.initIngestModuleTypes(connection);
+		this.initIngestStatusTypes(connection);
+		connection.close();
 	}
 
 	/**
@@ -227,6 +237,13 @@ public class SleuthkitCase {
 		this.connections = new PostgreSQLConnections(host, port, dbName, userName, password);
 		init(caseHandle);
 		updateDatabaseSchema(null);
+		// Initializing ingest module types is done here because it is possible 
+		// the table is not there when init is called. It must be there after
+		// the schema update.
+		CaseDbConnection connection = connections.getConnection();
+		this.initIngestModuleTypes(connection);
+		this.initIngestStatusTypes(connection);
+		connection.close();
 	}
 
 	private void init(SleuthkitJNI.CaseDbHandle caseHandle) throws Exception {
@@ -504,18 +521,18 @@ public class SleuthkitCase {
 			statement.execute("CREATE INDEX attribute_valueInt64 ON blackboard_attributes(value_int64);"); //NON-NLS
 			statement.execute("CREATE INDEX attribute_valueDouble ON blackboard_attributes(value_double);"); //NON-NLS
 			resultSet = statement.executeQuery(
-					"SELECT attrs.artifact_id, arts.artifact_type_id " + //NON-NLS
-					"FROM blackboard_attributes AS attrs " + //NON-NLS
-					"INNER JOIN blackboard_artifacts AS arts " + //NON-NLS
-					"WHERE attrs.artifact_id = arts.artifact_id;"); //NON-NLS
+					"SELECT attrs.artifact_id, arts.artifact_type_id " //NON-NLS
+					+ "FROM blackboard_attributes AS attrs " //NON-NLS
+					+ "INNER JOIN blackboard_artifacts AS arts " //NON-NLS
+					+ "WHERE attrs.artifact_id = arts.artifact_id;"); //NON-NLS
 			updateStatement = connection.createStatement();
 			while (resultSet.next()) {
 				long artifactId = resultSet.getLong(1);
 				int artifactTypeId = resultSet.getInt(2);
 				updateStatement.executeUpdate(
-						"UPDATE blackboard_attributes " + //NON-NLS
-						"SET artifact_type_id = " + artifactTypeId + " " + //NON-NLS
-						"WHERE blackboard_attributes.artifact_id = " + artifactId + ";"); //NON-NLS					
+						"UPDATE blackboard_attributes " //NON-NLS
+						+ "SET artifact_type_id = " + artifactTypeId + " " //NON-NLS
+						+ "WHERE blackboard_attributes.artifact_id = " + artifactId + ";"); //NON-NLS					
 			}
 			resultSet.close();
 			resultSet = null;
@@ -574,13 +591,14 @@ public class SleuthkitCase {
 				}
 			}
 			statement.execute(
-					"DELETE FROM blackboard_attributes WHERE artifact_id IN " + //NON-NLS
-					"(SELECT artifact_id FROM blackboard_artifacts WHERE artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() + //NON-NLS
-					" OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ");"); //NON-NLS
+					"DELETE FROM blackboard_attributes WHERE artifact_id IN " //NON-NLS
+					+ "(SELECT artifact_id FROM blackboard_artifacts WHERE artifact_type_id = " //NON-NLS
+					+ ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID()
+					+ " OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ");"); //NON-NLS
 			statement.execute(
-					"DELETE FROM blackboard_artifacts WHERE " + //NON-NLS
-					"artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID() + //NON-NLS	
-					" OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ";"); //NON-NLS
+					"DELETE FROM blackboard_artifacts WHERE artifact_type_id = " //NON-NLS
+					+ ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID()
+					+ " OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ";"); //NON-NLS
 
 			return 3;
 		} finally {
@@ -629,9 +647,9 @@ public class SleuthkitCase {
 					+ "attrs.attribute_type_id = 62");
 			while (resultSet.next()) {
 				updateStatement.executeUpdate(
-						"UPDATE tsk_files " + //NON-NLS
-						"SET mime_type = '" + resultSet.getString(2) + "' " + //NON-NLS
-						"WHERE tsk_files.obj_id = " + resultSet.getInt(1) + ";"); //NON-NLS	
+						"UPDATE tsk_files " //NON-NLS
+						+ "SET mime_type = '" + resultSet.getString(2) + "' " //NON-NLS
+						+ "WHERE tsk_files.obj_id = " + resultSet.getInt(1) + ";"); //NON-NLS	
 			}
 			resultSet.close();
 
@@ -643,9 +661,9 @@ public class SleuthkitCase {
 				String attributeLabel = resultSet.getString("type_name");
 				if (attributeTypeId < MIN_USER_DEFINED_TYPE_ID) {
 					updateStatement.executeUpdate(
-							"UPDATE blackboard_attribute_types " + //NON-NLS
-							"SET value_type = " + ATTRIBUTE_TYPE.fromLabel(attributeLabel).getValueType().getType() + " " + //NON-NLS
-							"WHERE blackboard_attribute_types.attribute_type_id = " + attributeTypeId + ";"); //NON-NLS	
+							"UPDATE blackboard_attribute_types " //NON-NLS
+							+ "SET value_type = " + ATTRIBUTE_TYPE.fromLabel(attributeLabel).getValueType().getType() + " " //NON-NLS
+							+ "WHERE blackboard_attribute_types.attribute_type_id = " + attributeTypeId + ";"); //NON-NLS	
 				}
 			}
 			resultSet.close();
@@ -685,6 +703,20 @@ public class SleuthkitCase {
 				updateStatement.executeUpdate("UPDATE tsk_files SET data_source_obj_id = " + dataSourceId + " WHERE obj_id = " + fileId + ";");
 			}
 			resultSet.close();
+			statement = connection.createStatement();
+			statement.execute("CREATE TABLE ingest_module_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)"); //NON-NLS
+			statement.execute("CREATE TABLE ingest_job_status_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)"); //NON-NLS
+			if (this.dbType.equals(DbType.SQLITE)) {
+				statement.execute("CREATE TABLE ingest_modules (ingest_module_id INTEGER PRIMARY KEY, display_name TEXT NOT NULL, unique_name TEXT UNIQUE NOT NULL, type_id INTEGER NOT NULL, version TEXT NOT NULL, FOREIGN KEY(type_id) REFERENCES ingest_module_types(type_id));"); //NON-NLS
+				statement.execute("CREATE TABLE ingest_jobs (ingest_job_id INTEGER PRIMARY KEY, obj_id BIGINT NOT NULL, host_name TEXT NOT NULL, start_date_time BIGINT NOT NULL, end_date_time BIGINT NOT NULL, status_id INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(status_id) REFERENCES ingest_job_status_types(type_id));"); //NON-NLS
+			} else {
+				statement.execute("CREATE TABLE ingest_modules (ingest_module_id BIGSERIAL PRIMARY KEY, display_name TEXT NOT NULL, unique_name TEXT UNIQUE NOT NULL, type_id INTEGER NOT NULL, version TEXT NOT NULL, FOREIGN KEY(type_id) REFERENCES ingest_module_types(type_id));"); //NON-NLS
+				statement.execute("CREATE TABLE ingest_jobs (ingest_job_id BIGSERIAL PRIMARY KEY, obj_id BIGINT NOT NULL, host_name TEXT NOT NULL, start_date_time BIGINT NOT NULL, end_date_time BIGINT NOT NULL, status_id INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(status_id) REFERENCES ingest_job_status_types(type_id));"); //NON-NLS
+			}
+
+			statement.execute("CREATE TABLE ingest_job_modules (ingest_job_id INTEGER, ingest_module_id INTEGER, pipeline_position INTEGER, PRIMARY KEY(ingest_job_id, ingest_module_id), FOREIGN KEY(ingest_job_id) REFERENCES ingest_jobs(ingest_job_id), FOREIGN KEY(ingest_module_id) REFERENCES ingest_modules(ingest_module_id));"); //NON-NLS
+			initIngestModuleTypes(connection);
+			initIngestStatusTypes(connection);
 
 			return 4;
 
@@ -696,6 +728,48 @@ public class SleuthkitCase {
 			closeStatement(statement);
 		}
 
+	}
+
+	private void initIngestModuleTypes(CaseDbConnection connection) throws TskCoreException {
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			for (IngestModuleType type : IngestModuleType.values()) {
+				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_module_types WHERE type_id=" + type.ordinal() + ";");
+				if (!rs.next()) {
+					s.execute("INSERT INTO ingest_module_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "');");
+				}
+				rs.close();
+				rs = null;
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error adding ingest module types to table.", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+		}
+	}
+
+	private void initIngestStatusTypes(CaseDbConnection connection) throws TskCoreException {
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			for (IngestJobStatusType type : IngestJobStatusType.values()) {
+				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_job_status_types WHERE type_id=" + type.ordinal() + ";");
+				if (!rs.next()) {
+					s.execute("INSERT INTO ingest_job_status_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "');");
+				}
+				rs.close();
+				rs = null;
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error adding ingest module types to table.", ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+		}
 	}
 
 	/**
@@ -742,9 +816,9 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Acquire the lock that provides exclusive access to the case database.
-	 * Call this method in a try block with a call to the lock release method in
-	 * an associated finally block.
+	 * Acquire the lock that provides exclusive access to the case database if
+	 * it is a SQLite database. Call this method in a try block with a call to
+	 * the lock release method in an associated finally block.
 	 */
 	public void acquireExclusiveLock() {
 		if (dbType == DbType.SQLITE) {
@@ -753,9 +827,9 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Release the lock that provides exclusive access to the database. This
-	 * method should always be called in the finally block of a try block in
-	 * which the lock was acquired.
+	 * Release the lock that provides exclusive access to the database if it is
+	 * a SQLite database. This method should always be called in the finally
+	 * block of a try block in which the lock was acquired.
 	 */
 	public void releaseExclusiveLock() {
 		if (dbType == DbType.SQLITE) {
@@ -764,9 +838,9 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Acquire the lock that provides shared access to the case database. Call
-	 * this method in a try block with a call to the lock release method in an
-	 * associated finally block.
+	 * Acquire the lock that provides shared access to the case database if it
+	 * is a SQLite database. Call this method in a try block with a call to the
+	 * lock release method in an associated finally block.
 	 */
 	public void acquireSharedLock() {
 		if (dbType == DbType.SQLITE) {
@@ -775,9 +849,9 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Release the lock that provides shared access to the database. This method
-	 * should always be called in the finally block of a try block in which the
-	 * lock was acquired.
+	 * Release the lock that provides shared access to the database if it is a
+	 * SQLite database. This method should always be called in the finally block
+	 * of a try block in which the lock was acquired.
 	 */
 	public void releaseSharedLock() {
 		if (dbType == DbType.SQLITE) {
@@ -3422,242 +3496,181 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Adds a carved file to the VirtualDirectory '$CarvedFiles' in the volume
-	 * or image given by systemId. Creates $CarvedFiles virtual directory if it
-	 * does not exist already.
+	 * Adds a carving result to the case database.
 	 *
-	 * @param carvedFileName the name of the carved file to add
-	 * @param carvedFileSize the size of the carved file to add
-	 * @param containerId    the ID of the parent volume, file system, or image
-	 * @param data           the layout information - a list of offsets that
-	 *                       make up this carved file.
+	 * @param carvingResult The carving result (a set of carved files and their
+	 *                      parent) to be added.
 	 *
-	 * @return A LayoutFile object representing the carved file.
+	 * @return A list of LayoutFile representations of the carved files.
 	 *
-	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 * @throws TskCoreException If there is a problem completing a case database
+	 *                          operation.
 	 */
-	public LayoutFile addCarvedFile(String carvedFileName, long carvedFileSize, long containerId, List<TskFileRange> data) throws TskCoreException {
-
-		List<CarvedFileContainer> carvedFileContainer = new ArrayList<CarvedFileContainer>();
-		carvedFileContainer.add(new CarvedFileContainer(carvedFileName, carvedFileSize, containerId, data));
-
-		List<LayoutFile> layoutCarvedFiles = addCarvedFiles(carvedFileContainer);
-		if (layoutCarvedFiles != null) {
-			return layoutCarvedFiles.get(0);
-		} else {
-			return null;
+	public final List<LayoutFile> addCarvedFiles(CarvingResult carvingResult) throws TskCoreException {
+		assert (null != carvingResult);
+		if (null == carvingResult) {
+			throw new TskCoreException("Carving is null");
 		}
-	}
+		assert (null != carvingResult.getParent());
+		if (null == carvingResult.getParent()) {
+			throw new TskCoreException("Carving result has null parent");
+		}
+		assert (null != carvingResult.getCarvedFiles());
+		if (null == carvingResult.getCarvedFiles()) {
+			throw new TskCoreException("Carving result has null carved files");
+		}
+		CaseDbTransaction transaction = null;
+		Statement statement = null;
+		ResultSet resultSet = null;
+		acquireExclusiveLock();
+		long newCacheKey = 0; // Used to roll back cache if transaction is rolled back.
+		try {
+			transaction = beginTransaction();
+			CaseDbConnection connection = transaction.getConnection();
 
-	/**
-	 * Adds a collection of carved files to the VirtualDirectory '$CarvedFiles'
-	 * in the volume or image given by systemId. Creates $CarvedFiles virtual
-	 * directory if it does not exist already.
-	 *
-	 * @param filesToAdd a list of CarvedFileContainer files to add as carved
-	 *                   files
-	 *
-	 * @return List<LayoutFile> This is a list of the files added to the
-	 *         database
-	 *
-	 * @throws org.sleuthkit.datamodel.TskCoreException
-	 */
-	public List<LayoutFile> addCarvedFiles(List<CarvedFileContainer> filesToAdd) throws TskCoreException {
-		if (filesToAdd != null && filesToAdd.isEmpty() == false) {
-			List<LayoutFile> addedFiles = new ArrayList<LayoutFile>();
-			CaseDbTransaction localTrans = null;
-			Statement s = null;
-			ResultSet rs = null;
-			acquireExclusiveLock();
-			try {
-				localTrans = beginTransaction();
-				CaseDbConnection connection = localTrans.getConnection();
-
-				// get the ID of the appropriate '$CarvedFiles' directory
-				long firstItemId = filesToAdd.get(0).getId();
-				long id = 0;
-				// first, check the cache
-				Long carvedDirId = carvedFileContainersCache.get(firstItemId);
-				if (carvedDirId != null) {
-					id = carvedDirId;
-				} else {
-					// it's not in the cache. Go to the DB
-					// determine if we've got a volume system or file system ID
-					Content parent = getContentById(firstItemId);
-					if (parent == null) {
-						throw new TskCoreException("No Content object found with this ID (" + firstItemId + ").");
-					}
-
-					List<Content> children = Collections.<Content>emptyList();
-					if (parent instanceof FileSystem) {
-						FileSystem fs = (FileSystem) parent;
-						children = fs.getRootDirectory().getChildren();
-					} else if (parent instanceof Volume
-							|| parent instanceof Image) {
-						children = parent.getChildren();
-					} else {
-						throw new TskCoreException("The given ID (" + firstItemId + ") was not an image, volume or file system.");
-					}
-
-					// see if any of the children are a '$CarvedFiles' directory
-					Content carvedFilesDir = null;
-					for (Content child : children) {
-						if (child.getName().equals(VirtualDirectory.NAME_CARVED)) {
-							carvedFilesDir = child;
-							break;
-						}
-					}
-
-					// if we found it, add it to the cache and grab its ID
-					if (carvedFilesDir != null) {
-						// add it to the cache
-						carvedFileContainersCache.put(firstItemId, carvedFilesDir.getId());
-						id = carvedFilesDir.getId();
-					} else {
-						// a carved files directory does not exist; create one
-						VirtualDirectory vd = addVirtualDirectory(firstItemId, VirtualDirectory.NAME_CARVED, localTrans);
-						id = vd.getId();
-						// add it to the cache
-						carvedFileContainersCache.put(firstItemId, id);
-					}
+			/*
+			 * Carved files are "re-parented" as children of the $CarvedFiles
+			 * virtual directory of the root file system, volume, or image
+			 * ancestor of the carved files parent, but if no such ancestor is
+			 * found, then the parent specified in the carving result is used.
+			 */
+			Content root = carvingResult.getParent();
+			while (null != root) {
+				if (root instanceof FileSystem || root instanceof Volume || root instanceof Image) {
+					break;
 				}
-
-				// get the parent path for the $CarvedFiles directory		
-				String parentPath = getFileParentPath(id, localTrans);
-				if (parentPath == null) {
-					parentPath = "/"; //NON-NLS
-				}
-				String parentName = getFileName(id, localTrans);
-				if (parentName != null) {
-					parentPath = parentPath + parentName + "/"; //NON-NLS
-				}
-
-				// TODO (AUT-1903): We should cache this when we start adding 
-				// lots of carved files...
-				boolean isContainerAFs = false;
-				s = connection.createStatement();
-				rs = connection.executeQuery(s, "SELECT * FROM tsk_fs_info " //NON-NLS
-						+ "WHERE obj_id = " + firstItemId); //NON-NLS
-				if (rs.next()) {
-					isContainerAFs = true;
-				}
-				rs.close();
-				rs = null;
-
-				// TODO (AUT-1903): This result is another thing that should be 
-				// cached.
-				long dataSourceObjectId = getDataSourceObjectId(connection, id);
-
-				for (CarvedFileContainer itemToAdd : filesToAdd) {
-
-					// Insert a row for the carved file into the tsk_objects table.
-					// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
-					PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
-					statement.clearParameters();
-					statement.setLong(1, id);
-					statement.setLong(2, TskData.ObjectType.ABSTRACTFILE.getObjectType());
-					connection.executeUpdate(statement);
-					rs = statement.getGeneratedKeys();
-					rs.next();
-					long newObjId = rs.getLong(1);
-
-					// Insert a row for the carved file into the tsk_files table.
-					// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, 
-					// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, data_source_obj_id) 
-					// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)			
-					statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
-					statement.clearParameters();
-					statement.setLong(1, newObjId);
-
-					// only insert into the fs_obj_id column if container is a FS
-					if (isContainerAFs) {
-						statement.setLong(2, itemToAdd.getId());
-					} else {
-						statement.setNull(2, java.sql.Types.BIGINT);
-					}
-					statement.setString(3, itemToAdd.getName());
-
-					// type
-					final TSK_DB_FILES_TYPE_ENUM type = TSK_DB_FILES_TYPE_ENUM.CARVED;
-					statement.setShort(4, type.getFileType());
-
-					// has_path
-					statement.setShort(5, (short) 1);
-
-					// dirType
-					final TSK_FS_NAME_TYPE_ENUM dirType = TSK_FS_NAME_TYPE_ENUM.REG;
-					statement.setShort(6, dirType.getValue());
-
-					// metaType
-					final TSK_FS_META_TYPE_ENUM metaType = TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG;
-					statement.setShort(7, metaType.getValue());
-
-					// dirFlag
-					final TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.UNALLOC;
-					statement.setShort(8, dirFlag.getValue());
-
-					// metaFlags
-					final short metaFlags = TSK_FS_META_FLAG_ENUM.UNALLOC.getValue();
-					statement.setShort(9, metaFlags);
-
-					// size
-					statement.setLong(10, itemToAdd.getSize());
-
-					// nulls for params 11-14
-					statement.setNull(11, java.sql.Types.BIGINT);
-					statement.setNull(12, java.sql.Types.BIGINT);
-					statement.setNull(13, java.sql.Types.BIGINT);
-					statement.setNull(14, java.sql.Types.BIGINT);
-
-					// parent path
-					statement.setString(15, parentPath);
-
-					// data source object id
-					statement.setLong(16, dataSourceObjectId);
-
-					connection.executeUpdate(statement);
-
-					// Add a row in the tsk_layout_file table for each TskFileRange.
-					// INSERT INTO tsk_file_layout (obj_id, byte_start, byte_len, sequence) 
-					// VALUES (?, ?, ?, ?)
-					statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_LAYOUT_FILE);
-					for (TskFileRange tskFileRange : itemToAdd.getRanges()) {
-						statement.clearParameters();
-
-						// set the object ID
-						statement.setLong(1, newObjId);
-
-						// set byte_start
-						statement.setLong(2, tskFileRange.getByteStart());
-
-						// set byte_len
-						statement.setLong(3, tskFileRange.getByteLen());
-
-						// set the sequence number
-						statement.setLong(4, tskFileRange.getSequence());
-
-						// execute it
-						connection.executeUpdate(statement);
-					}
-
-					addedFiles.add(new LayoutFile(this, newObjId, dataSourceObjectId, itemToAdd.getName(),
-							type, dirType, metaType, dirFlag, metaFlags,
-							itemToAdd.getSize(), null, FileKnown.UNKNOWN, parentPath, null));
-				}
-				localTrans.commit();
-				return addedFiles;
-			} catch (SQLException ex) {
-				if (null != localTrans) {
-					localTrans.rollback();
-				}
-				throw new TskCoreException("Failed to add carved file to case database", ex);
-			} finally {
-				closeResultSet(rs);
-				closeStatement(s);
-				releaseExclusiveLock();
+				root = root.getParent();
 			}
-		} else {
-			return Collections.emptyList();
+			if (null == root) {
+				root = carvingResult.getParent();
+			}
+
+			/*
+			 * Get or create the $CarvedFiles virtual directory for the root
+			 * ancestor.
+			 */
+			VirtualDirectory carvedFilesDir = rootIdsToCarvedFileDirs.get(root.getId());
+			if (null == carvedFilesDir) {
+				List<Content> rootChildren;
+				if (root instanceof FileSystem) {
+					rootChildren = ((FileSystem) root).getRootDirectory().getChildren();
+				} else {
+					rootChildren = root.getChildren();
+				}
+				for (Content child : rootChildren) {
+					if (child instanceof VirtualDirectory && child.getName().equals(VirtualDirectory.NAME_CARVED)) {
+						carvedFilesDir = (VirtualDirectory) child;
+						break;
+					}
+				}
+				if (null == carvedFilesDir) {
+					carvedFilesDir = addVirtualDirectory(root.getId(), VirtualDirectory.NAME_CARVED, transaction);
+				}
+				newCacheKey = root.getId();
+				rootIdsToCarvedFileDirs.put(newCacheKey, carvedFilesDir);
+			}
+
+			/*
+			 * Add the carved files to the database as children of the
+			 * $CarvedFile directory of the root ancestor.
+			 */
+			String parentPath = getFileParentPath(carvedFilesDir.getId(), transaction) + carvedFilesDir.getName() + "/";
+			List<LayoutFile> carvedFiles = new ArrayList<LayoutFile>();
+			for (CarvingResult.CarvedFile carvedFile : carvingResult.getCarvedFiles()) {
+				/*
+				 * Insert a row for the carved file into the tsk_objects table:
+				 * INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
+				 */
+				PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
+				prepStmt.clearParameters();
+				prepStmt.setLong(1, carvedFilesDir.getId()); // par_obj_id
+				prepStmt.setLong(2, TskData.ObjectType.ABSTRACTFILE.getObjectType()); // type
+				connection.executeUpdate(prepStmt);
+				resultSet = prepStmt.getGeneratedKeys();
+				resultSet.next();
+				long carvedFileId = resultSet.getLong(1);
+
+				/*
+				 * Insert a row for the carved file into the tsk_files table:
+				 * INSERT INTO tsk_files (obj_id, fs_obj_id, name, type,
+				 * has_path, dir_type, meta_type, dir_flags, meta_flags, size,
+				 * ctime, crtime, atime, mtime, parent_path, data_source_obj_id)
+				 * VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				 */
+				prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
+				prepStmt.clearParameters();
+				prepStmt.setLong(1, carvedFileId); // obj_id
+				if (root instanceof FileSystem) {
+					prepStmt.setLong(2, root.getId()); // fs_obj_id
+				} else {
+					prepStmt.setNull(2, java.sql.Types.BIGINT); // fs_obj_id
+				}
+				prepStmt.setString(3, carvedFile.getName()); // name
+				prepStmt.setShort(4, TSK_DB_FILES_TYPE_ENUM.CARVED.getFileType()); // type
+				prepStmt.setShort(5, (short) 1); // has_path
+				prepStmt.setShort(6, TSK_FS_NAME_TYPE_ENUM.REG.getValue()); // dir_type
+				prepStmt.setShort(7, TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG.getValue()); // meta_type
+				prepStmt.setShort(8, TSK_FS_NAME_FLAG_ENUM.UNALLOC.getValue()); // dir_flags
+				prepStmt.setShort(9, TSK_FS_META_FLAG_ENUM.UNALLOC.getValue()); // nmeta_flags
+				prepStmt.setLong(10, carvedFile.getSizeInBytes()); // size
+				prepStmt.setNull(11, java.sql.Types.BIGINT); // ctime
+				prepStmt.setNull(12, java.sql.Types.BIGINT); // crtime
+				prepStmt.setNull(13, java.sql.Types.BIGINT); // atime
+				prepStmt.setNull(14, java.sql.Types.BIGINT); // mtime
+				prepStmt.setString(15, parentPath); // parent path
+				prepStmt.setLong(16, carvedFilesDir.getDataSourceObjectId()); // data_source_obj_id
+				connection.executeUpdate(prepStmt);
+
+				/*
+				 * Insert a row in the tsk_layout_file table for each chunk of
+				 * the carved file. INSERT INTO tsk_file_layout (obj_id,
+				 * byte_start, byte_len, sequence) VALUES (?, ?, ?, ?)
+				 */
+				prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_LAYOUT_FILE);
+				for (TskFileRange tskFileRange : carvedFile.getLayoutInParent()) {
+					prepStmt.clearParameters();
+					prepStmt.setLong(1, carvedFileId); // obj_id
+					prepStmt.setLong(2, tskFileRange.getByteStart()); // byte_start
+					prepStmt.setLong(3, tskFileRange.getByteLen()); // byte_len
+					prepStmt.setLong(4, tskFileRange.getSequence()); // sequence
+					connection.executeUpdate(prepStmt);
+				}
+
+				/*
+				 * Create a layout file representation of the carved file.
+				 */
+				carvedFiles.add(new LayoutFile(this,
+						carvedFileId,
+						carvedFilesDir.getDataSourceObjectId(),
+						carvedFile.getName(),
+						TSK_DB_FILES_TYPE_ENUM.CARVED,
+						TSK_FS_NAME_TYPE_ENUM.REG,
+						TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG,
+						TSK_FS_NAME_FLAG_ENUM.UNALLOC,
+						TSK_FS_META_FLAG_ENUM.UNALLOC.getValue(),
+						carvedFile.getSizeInBytes(),
+						null,
+						FileKnown.UNKNOWN,
+						parentPath,
+						null));
+			}
+
+			transaction.commit();
+			return carvedFiles;
+
+		} catch (SQLException ex) {
+			if (null != transaction) {
+				transaction.rollback();
+				if (0 != newCacheKey) {
+					rootIdsToCarvedFileDirs.remove(newCacheKey);
+				}
+			}
+			throw new TskCoreException("Failed to add carved files to case database", ex);
+
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+			releaseExclusiveLock();
 		}
 	}
 
@@ -5821,7 +5834,17 @@ public class SleuthkitCase {
 		// or one of its subdirectories.
 		String relativePath = ""; //NON-NLS
 		try {
-			relativePath = new File(getDbDirPath()).toURI().relativize(new File(localPath).toURI()).getPath();
+			/*
+			 * Note: The following call to .relativize() may be dangerous in
+			 * case-sensitive operating systems and should be looked at. For
+			 * now, we are simply relativizing the paths as all lower case, then
+			 * using the length of the result to pull out the appropriate number
+			 * of characters from the localPath String.
+			 */
+			String casePathLower = getDbDirPath().toLowerCase();
+			String localPathLower = localPath.toLowerCase();
+			int length = new File(casePathLower).toURI().relativize(new File(localPathLower).toURI()).getPath().length();
+			relativePath = new File(localPath.substring(localPathLower.length() - length)).getPath();
 		} catch (IllegalArgumentException ex) {
 			String errorMessage = String.format("Local path %s not in the database directory or one of its subdirectories", localPath);
 			throw new TskCoreException(errorMessage, ex);
@@ -5934,6 +5957,213 @@ public class SleuthkitCase {
 				logger.log(Level.SEVERE, "Error closing Statement", ex); //NON-NLS
 
 			}
+		}
+	}
+
+	/**
+	 * Sets the end date for the given ingest job
+	 *
+	 * @param ingestJobId The ingest job to set the end date for
+	 * @param endDateTime The end date
+	 *
+	 * @throws TskCoreException If inserting into the database fails
+	 */
+	void setIngestJobEndDateTime(long ingestJobId, long endDateTime) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		try {
+			Statement statement = connection.createStatement();
+			statement.executeUpdate("UPDATE ingest_jobs SET end_date_time=" + endDateTime + " WHERE ingest_job_id=" + ingestJobId + ";");
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error updating the end date (ingest_job_id = " + ingestJobId + ".", ex);
+		} finally {
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	void setIngestJobStatus(long ingestJobId, IngestJobStatusType status) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		try {
+			Statement statement = connection.createStatement();
+			statement.executeUpdate("UPDATE ingest_jobs SET status_id=" + status.ordinal() + " WHERE ingest_job_id=" + ingestJobId + ";");
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error ingest job status (ingest_job_id = " + ingestJobId + ".", ex);
+		} finally {
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	/**
+	 *
+	 * @param dataSource    The datasource the ingest job is being run on
+	 * @param hostName      The name of the host
+	 * @param ingestModules The ingest modules being run during the ingest job.
+	 *                      Should be in pipeline order.
+	 * @param jobStart      The time the job started
+	 * @param jobEnd        The time the job ended
+	 * @param status        The ingest job status
+	 * @param settingsDir   The directory of the job's settings
+	 *
+	 * @return An information object representing the ingest job added to the
+	 *         database.
+	 *
+	 * @throws TskCoreException If adding the job to the database fails.
+	 */
+	public final IngestJobInfo addIngestJob(Content dataSource, String hostName, List<IngestModuleInfo> ingestModules, Date jobStart, Date jobEnd, IngestJobStatusType status, String settingsDir) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		ResultSet resultSet = null;
+		Statement statement = null;
+		try {
+			connection.beginTransaction();
+			statement = connection.createStatement();
+			PreparedStatement insertStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_INGEST_JOB, Statement.RETURN_GENERATED_KEYS);
+			insertStatement.setLong(1, dataSource.getId());
+			insertStatement.setString(2, hostName);
+			insertStatement.setLong(3, jobStart.getTime());
+			insertStatement.setLong(4, jobEnd.getTime());
+			insertStatement.setInt(5, status.ordinal());
+			insertStatement.setString(6, settingsDir);
+			connection.executeUpdate(insertStatement);
+			resultSet = insertStatement.getGeneratedKeys();
+			resultSet.next();
+			long id = resultSet.getLong(1);
+			for (int i = 0; i < ingestModules.size(); i++) {
+				IngestModuleInfo ingestModule = ingestModules.get(i);
+				statement.executeUpdate("INSERT INTO ingest_job_modules (ingest_job_id, ingest_module_id, pipeline_position) "
+						+ "VALUES (" + id + ", " + ingestModule.getIngestModuleId() + ", " + i + ");");
+			}
+			resultSet.close();
+			resultSet = null;
+			connection.commitTransaction();
+			return new IngestJobInfo(id, dataSource.getId(), hostName, jobStart, "", ingestModules, this);
+		} catch (SQLException ex) {
+			connection.rollbackTransaction();
+			throw new TskCoreException("Error adding the ingest job.", ex);
+		} finally {
+			closeResultSet(resultSet);
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	/**
+	 * Adds the given ingest module to the database.
+	 *
+	 * @param displayName The display name of the module
+	 * @param uniqueName  The factory class name of the module.
+	 * @param type        The type of the module.
+	 * @param version     The version of the module.
+	 *
+	 * @return An ingest module info object representing the module added to the
+	 *         db.
+	 *
+	 * @throws TskCoreException When the ingest module cannot be added.
+	 */
+	public final IngestModuleInfo addIngestModule(String displayName, String factoryClassName, IngestModuleType type, String version) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		ResultSet resultSet = null;
+		Statement statement = null;
+		String uniqueName = factoryClassName + "-" + displayName + "-" + type.toString() + "-" + version;
+		try {
+			statement = connection.createStatement();
+			resultSet = statement.executeQuery("SELECT * FROM ingest_modules WHERE unique_name = '" + uniqueName + "'");
+			if (!resultSet.next()) {
+				resultSet.close();
+				resultSet = null;
+				PreparedStatement insertStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_INGEST_MODULE, Statement.RETURN_GENERATED_KEYS);
+				insertStatement.setString(1, displayName);
+				insertStatement.setString(2, uniqueName);
+				insertStatement.setInt(3, type.ordinal());
+				insertStatement.setString(4, version);
+				connection.executeUpdate(insertStatement);
+				resultSet = statement.getGeneratedKeys();
+				resultSet.next();
+				long id = resultSet.getLong(1);
+				resultSet.close();
+				resultSet = null;
+				return new IngestModuleInfo(id, displayName, uniqueName, type, version);
+			} else {
+				return new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"), resultSet.getString("unique_name"), IngestModuleType.fromID(resultSet.getInt("type_id")), resultSet.getString("version"));
+			}
+		} catch (SQLException ex) {
+			try {
+				resultSet = statement.executeQuery("SELECT * FROM ingest_modules WHERE unique_name = '" + uniqueName + "'");
+				if (resultSet.next()) {
+					return new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"), uniqueName, IngestModuleType.fromID(resultSet.getInt("type_id")), resultSet.getString("version"));
+				} else {
+					throw new TskCoreException("Couldn't add new module to database.", ex);
+				}
+			} catch (SQLException ex1) {
+				throw new TskCoreException("Couldn't add new module to database.", ex1);
+			}
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+			connection.close();
+		}
+	}
+
+	/**
+	 * Gets all of the ingest jobs that have been run.
+	 *
+	 * @return The information about the ingest jobs that have been run
+	 *
+	 * @throws TskCoreException If there is a problem getting the ingest jobs
+	 */
+	public final List<IngestJobInfo> getIngestJobs() throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		ResultSet resultSet = null;
+		Statement statement = null;
+		List<IngestJobInfo> ingestJobs = new ArrayList<IngestJobInfo>();
+		try {
+			statement = connection.createStatement();
+			resultSet = statement.executeQuery("SELECT * FROM ingest_jobs");
+			while (resultSet.next()) {
+				ingestJobs.add(new IngestJobInfo(resultSet.getInt("ingest_job_id"), resultSet.getLong("obj_id"), resultSet.getString("host_name"), new Date(resultSet.getLong("start_date")), new Date(resultSet.getLong("end_date")), IngestJobStatusType.fromID(resultSet.getInt("status_id")), resultSet.getString("settings_dir"), this.getIngestModules(resultSet.getInt("ingest_job_id"), connection), this));
+			}
+			return ingestJobs;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Couldn't get the ingest jobs.", ex);
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+			connection.close();
+		}
+	}
+
+	/**
+	 * Gets the ingest modules associated with the ingest job
+	 *
+	 * @param ingestJobId The id of the ingest job to get ingest modules for
+	 * @param connection  The database connection
+	 *
+	 * @return The ingest modules of the job
+	 *
+	 * @throws SQLException If it fails to get the modules from the db.
+	 */
+	private List<IngestModuleInfo> getIngestModules(int ingestJobId, CaseDbConnection connection) throws SQLException {
+		ResultSet resultSet = null;
+		Statement statement = null;
+		List<IngestModuleInfo> ingestModules = new ArrayList<IngestModuleInfo>();
+		try {
+			statement = connection.createStatement();
+			resultSet = statement.executeQuery("SELECT ingest_job_modules.ingest_module_id, ingest_job_modules.pipeline_position, ingest_modules.display_name, ingest_modules.unique_name, "
+					+ "ingest_modules.type_id, ingest_modules.version "
+					+ "FROM ingest_job_modules, ingest_modules "
+					+ "WHERE ingest_job_modules.ingest_job_id = " + ingestJobId + " "
+					+ "AND (ingest_modules.ingest_job_id = ingest_job_modules.ingest_job_id) "
+					+ "ORDER BY (ingest_job_modules.pipeline_position);");
+			while (resultSet.next()) {
+				ingestModules.add(new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"), resultSet.getString("unique_name"), IngestModuleType.fromID(resultSet.getInt("type_id")), resultSet.getString("version")));
+			}
+			return ingestModules;
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
 		}
 	}
 
@@ -6069,7 +6299,9 @@ public class SleuthkitCase {
 		SELECT_ARTIFACT_TAGS_BY_ARTIFACT("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id WHERE blackboard_artifact_tags.artifact_id = ?"), //NON-NLS
 		SELECT_REPORTS("SELECT * FROM reports"), //NON-NLS
 		INSERT_REPORT("INSERT INTO reports (path, crtime, src_module_name, report_name) VALUES (?, ?, ?, ?)"), //NON-NLS
-		DELETE_REPORT("DELETE FROM reports WHERE reports.report_id = ?"); //NON-NLS
+		DELETE_REPORT("DELETE FROM reports WHERE reports.report_id = ?"), //NON-NLS
+		INSERT_INGEST_JOB("INSERT INTO ingest_jobs (obj_id, host_name, start_date_time, end_date_time, status_id, settings_dir) VALUES (?, ?, ?, ?, ?, ?)"), //NON-NLS
+		INSERT_INGEST_MODULE("INSERT INTO ingest_modules (display_name, unique_name, type_id, version) VALUES(?, ?, ?, ?)"); //NON-NLS
 
 		private final String sql;
 
@@ -7098,6 +7330,72 @@ public class SleuthkitCase {
 		if (statement != null) {
 			statement.close();
 		}
+	}
+
+	/**
+	 * Adds a carved file to the VirtualDirectory '$CarvedFiles' in the volume
+	 * or image given by systemId. Creates $CarvedFiles virtual directory if it
+	 * does not exist already.
+	 *
+	 * @param carvedFileName the name of the carved file to add
+	 * @param carvedFileSize the size of the carved file to add
+	 * @param containerId    the ID of the parent volume, file system, or image
+	 * @param data           the layout information - a list of offsets that
+	 *                       make up this carved file.
+	 *
+	 * @return A LayoutFile object representing the carved file.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 * @deprecated Use addCarvedFile(CarvingResult) instead
+	 */
+	@Deprecated
+	public LayoutFile addCarvedFile(String carvedFileName, long carvedFileSize, long containerId, List<TskFileRange> data) throws TskCoreException {
+		CarvingResult.CarvedFile carvedFile = new CarvingResult.CarvedFile(carvedFileName, carvedFileSize, data);
+		List<CarvingResult.CarvedFile> files = new ArrayList<CarvingResult.CarvedFile>();
+		files.add(carvedFile);
+		CarvingResult carvingResult;
+		Content parent = getContentById(containerId);
+		if (parent instanceof FileSystem
+				|| parent instanceof Volume
+				|| parent instanceof Image) {
+			carvingResult = new CarvingResult(parent, files);
+		} else {
+			throw new TskCoreException(String.format("Parent (id =%d) is not an file system, volume or image", containerId));
+		}
+		return addCarvedFiles(carvingResult).get(0);
+	}
+
+	/**
+	 * Adds a collection of carved files to the VirtualDirectory '$CarvedFiles'
+	 * in the volume or image given by systemId. Creates $CarvedFiles virtual
+	 * directory if it does not exist already.
+	 *
+	 * @param filesToAdd a list of CarvedFileContainer files to add as carved
+	 *                   files
+	 *
+	 * @return List<LayoutFile> This is a list of the files added to the
+	 *         database
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 * @deprecated Use addCarvedFile(CarvingResult) instead
+	 */
+	@Deprecated
+	public List<LayoutFile> addCarvedFiles(List<CarvedFileContainer> filesToAdd) throws TskCoreException {
+		List<CarvingResult.CarvedFile> carvedFiles = new ArrayList<CarvingResult.CarvedFile>();
+		for (CarvedFileContainer container : filesToAdd) {
+			CarvingResult.CarvedFile carvedFile = new CarvingResult.CarvedFile(container.getName(), container.getSize(), container.getRanges());
+			carvedFiles.add(carvedFile);
+		}
+		CarvingResult carvingResult;
+		Content parent = getContentById(filesToAdd.get(0).getId());
+		if (parent instanceof FileSystem
+				|| parent instanceof Volume
+				|| parent instanceof Image) {
+			carvingResult = new CarvingResult(parent, carvedFiles);
+		} else {
+			throw new TskCoreException(String.format("Parent (id =%d) is not an file system, volume or image", parent.getId()));
+		}
+		return addCarvedFiles(carvingResult);
 	}
 
 }
