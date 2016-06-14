@@ -981,7 +981,7 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
                             tsk_error_reset();
                             tsk_error_set_errno(TSK_ERR_FS_FWALK);
                             tsk_error_set_errstr
-                                ("ntfs_uncompress_compunit: Phrase token length is too large:  %d (max: %"PRIuSIZE")",
+                                ("ntfs_uncompress_compunit: Phrase token length is too large:  %d (max: %" PRIuSIZE")",
                                 length,
                                 comp->buf_size_b - start_position_index);
                             return 1;
@@ -992,7 +992,7 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
                             tsk_error_reset();
                             tsk_error_set_errno(TSK_ERR_FS_FWALK);
                             tsk_error_set_errstr
-                                ("ntfs_uncompress_compunit: Phrase token length is too large for rest of uncomp buf:  %"PRIuSIZE" (max: %"
+                                ("ntfs_uncompress_compunit: Phrase token length is too large for rest of uncomp buf:  %" PRIuSIZE" (max: %"
                                 PRIuSIZE ")",
                                 end_position_index - start_position_index +
                                 1, comp->buf_size_b - comp->uncomp_idx);
