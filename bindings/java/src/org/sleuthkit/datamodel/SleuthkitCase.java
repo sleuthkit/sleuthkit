@@ -6154,6 +6154,7 @@ public class SleuthkitCase {
 					+ "ingest_modules.type_id, ingest_modules.version "
 					+ "FROM ingest_job_modules, ingest_modules "
 					+ "WHERE ingest_job_modules.ingest_job_id = " + ingestJobId + " "
+					+ "AND ingest_modules.ingest_module_id = ingest_job_modules.ingest_module_id "
 					+ "ORDER BY (ingest_job_modules.pipeline_position);");
 			while (resultSet.next()) {
 				ingestModules.add(new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"), resultSet.getString("unique_name"), IngestModuleType.fromID(resultSet.getInt("type_id")), resultSet.getString("version")));
