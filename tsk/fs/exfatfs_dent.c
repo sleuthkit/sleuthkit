@@ -401,10 +401,6 @@ exfats_parse_special_file_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY
     assert(a_name_info->fs_name->name_size == FATFS_MAXNAMLEN_UTF8);
     assert(a_name_info->fs_dir != NULL);
     assert(a_dentry != NULL);
-    assert(exfatfs_get_enum_from_type(a_dentry->data[0]) == EXFATFS_DIR_ENTRY_TYPE_VOLUME_GUID ||
-           exfatfs_get_enum_from_type(a_dentry->data[0]) == EXFATFS_DIR_ENTRY_TYPE_ALLOC_BITMAP ||
-           exfatfs_get_enum_from_type(a_dentry->data[0]) == EXFATFS_DIR_ENTRY_TYPE_UPCASE_TABLE ||
-           exfatfs_get_enum_from_type(a_dentry->data[0]) == EXFATFS_DIR_ENTRY_TYPE_ACT);
     assert(fatfs_inum_is_in_range(a_name_info->fatfs, a_inum));
 
     /* Starting parse of a new name, save the previous name, if any. */
@@ -441,6 +437,8 @@ exfats_parse_special_file_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY
         case EXFATFS_DIR_ENTRY_TYPE_FILE:
         case EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM:
         case EXFATFS_DIR_ENTRY_TYPE_FILE_NAME:
+        default:
+            a_name_info->fs_name->name[0] = '\0';
             break;
     }
 
