@@ -6122,7 +6122,7 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			resultSet = statement.executeQuery("SELECT * FROM ingest_jobs");
 			while (resultSet.next()) {
-				ingestJobs.add(new IngestJobInfo(resultSet.getInt("ingest_job_id"), resultSet.getLong("obj_id"), resultSet.getString("host_name"), new Date(resultSet.getLong("start_date")), new Date(resultSet.getLong("end_date")), IngestJobStatusType.fromID(resultSet.getInt("status_id")), resultSet.getString("settings_dir"), this.getIngestModules(resultSet.getInt("ingest_job_id"), connection), this));
+				ingestJobs.add(new IngestJobInfo(resultSet.getInt("ingest_job_id"), resultSet.getLong("obj_id"), resultSet.getString("host_name"), new Date(resultSet.getLong("start_date_time")), new Date(resultSet.getLong("end_date_time")), IngestJobStatusType.fromID(resultSet.getInt("status_id")), resultSet.getString("settings_dir"), this.getIngestModules(resultSet.getInt("ingest_job_id"), connection), this));
 			}
 			return ingestJobs;
 		} catch (SQLException ex) {
@@ -6154,7 +6154,7 @@ public class SleuthkitCase {
 					+ "ingest_modules.type_id, ingest_modules.version "
 					+ "FROM ingest_job_modules, ingest_modules "
 					+ "WHERE ingest_job_modules.ingest_job_id = " + ingestJobId + " "
-					+ "AND (ingest_modules.ingest_job_id = ingest_job_modules.ingest_job_id) "
+					+ "AND ingest_modules.ingest_module_id = ingest_job_modules.ingest_module_id "
 					+ "ORDER BY (ingest_job_modules.pipeline_position);");
 			while (resultSet.next()) {
 				ingestModules.add(new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"), resultSet.getString("unique_name"), IngestModuleType.fromID(resultSet.getInt("type_id")), resultSet.getString("version")));
