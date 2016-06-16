@@ -779,7 +779,6 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
         }
     }
 
-
     /* cycle through the number of runs we have */
     retval = TSK_WALK_CONT;
     for (fs_attr_run = fs_attr->nrd.run; fs_attr_run;
@@ -803,6 +802,7 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
                 tsk_error_set_errstr
                     ("Invalid address in run (too large): %" PRIuDADDR "",
                     addr + len_idx);
+                free(buf);
                 return 1;
             }
 
@@ -843,6 +843,7 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
                         tsk_error_set_errstr2
                             ("tsk_fs_file_walk: Error reading block at %"
                             PRIuDADDR, addr + len_idx);
+                        free(buf);
                         return 1;
                     }
                     if ((off + fs->block_size > fs_attr->nrd.initsize)
