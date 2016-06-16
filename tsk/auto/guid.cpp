@@ -124,7 +124,7 @@ Guid::Guid(const string &fromString)
     else
     {
       charTwo = ch;
-      auto byte = hexPairToChar(charOne, charTwo);
+      unsigned char byte = hexPairToChar(charOne, charTwo);
       _bytes.push_back(byte);
       lookingForFirstChar = true;
     }
@@ -178,8 +178,8 @@ Guid GuidGenerator::newGuid()
 #ifdef GUID_CFUUID
 Guid GuidGenerator::newGuid()
 {
-  auto newId = CFUUIDCreate(NULL);
-  auto bytes = CFUUIDGetUUIDBytes(newId);
+  CFUUIDRef newId = CFUUIDCreate(NULL);
+  CFUUIDBytes bytes = CFUUIDGetUUIDBytes(newId);
   CFRelease(newId);
 
   const unsigned char byteArray[16] =
