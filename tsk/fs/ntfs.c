@@ -2335,9 +2335,12 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
      * process. */
     nextid = fs_attr_attrlist->id;      // we won't see this entry in the list
     for (list = (ntfs_attrlist *) buf;
-        (list) && ((uintptr_t) list < endaddr)
-        && ((uintptr_t)list + sizeof(ntfs_attrlist) < endaddr)
-        && (tsk_getu16(fs->endian, list->len) > 0);
+        (list)
+        // ntfs_attrlist contains the first byte of the name, which might actually be 0-length
+        && (uintptr_t) list + sizeof(ntfs_attrlist) - 1 <= endaddr
+        && tsk_getu16(fs->endian, list->len) > 0
+        && (uintptr_t) list + tsk_getu16(fs->endian, list->len) <= endaddr
+        && (uintptr_t) list + sizeof(ntfs_attrlist) - 1 + 2 * list->nlen <= endaddr;
         list =
         (ntfs_attrlist *) ((uintptr_t) list + tsk_getu16(fs->endian,
                 list->len))) {
