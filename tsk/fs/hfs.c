@@ -3925,6 +3925,8 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                                         (" - hfs_load_extended_attrs");
                                     goto on_error;
                                 }
+
+                                free(uncBuf);
 #else
                                 // ZLIB compression library is not available, so we will load a zero-length
                                 // default DATA attribute.  Without this, icat may misbehave.
@@ -3945,7 +3947,6 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                                         (" - hfs_load_extended_attrs");
                                     goto on_error;
                                 }
-
 #endif
 
                             }   // END if leading byte is 0x0F  ELSE clause
@@ -3985,7 +3986,6 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                     goto on_error;
                 }
 
-                // tsk_fs_attr_set_str copies buffer, it's no longer needed
                 free(buffer);
 
                 attribute_counter++;
