@@ -3979,14 +3979,14 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
                 // set the details in the fs_attr structure
                 if (tsk_fs_attr_set_str(fs_file, fs_attr, nameBuff,
-                        attrType, attribute_counter, (void *) buffer,
+                        attrType, attribute_counter, buffer,
                         attributeLength)) {
                     error_returned(" - hfs_load_extended_attrs");
                     goto on_error;
                 }
-                // TODO: does the previous function take ownership of buffer?
-                // or does it need to be freed here?
-                buffer = NULL;
+
+                // tsk_fs_attr_set_str copies buffer, it's no longer needed
+                free(buffer);
 
                 attribute_counter++;
             }                   // END if comp == 0
