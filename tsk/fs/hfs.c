@@ -3492,7 +3492,9 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
     uint16_t attribute_counter = 2;     // The ID of the next attribute to be loaded.
     HFS_INFO *hfs;
     char *buffer = NULL;   // buffer to hold the attribute
-
+#ifdef HAVE_LIBZ
+    char *uncBuf = NULL;   // buffer to hold uncompressed attribute
+#endif
 
     tsk_error_reset();
 
@@ -3875,7 +3877,6 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                             else {      // Leading byte is not 0x0F
 
 #ifdef HAVE_LIBZ
-                                char *uncBuf;
                                 uint64_t uLen;
                                 unsigned long bytesConsumed;
                                 int infResult;
@@ -4070,11 +4071,18 @@ on_exit:
     return 0;
 
 on_error:
-    if( buffer != NULL ) {
-        free( buffer );
+    if (buffer != NULL) {
+        free(buffer);
     }
-    if( nodeData != NULL ) {
-        free( nodeData );
+
+#ifdef HAVE_LIBZ
+    if (uncBuf != NULL) {
+        free(uncBuf);
+    }
+#endif
+
+    if (nodeData != NULL) {
+        free(nodeData);
     }
     close_attr_file(&attrFile);
     return 1;
