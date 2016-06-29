@@ -154,6 +154,8 @@ public class SleuthkitJNI {
 	private SleuthkitJNI() {
 
 	}
+	
+	
 
 	/**
 	 * Handle to TSK Case database

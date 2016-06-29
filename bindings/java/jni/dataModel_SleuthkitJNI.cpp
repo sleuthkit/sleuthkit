@@ -282,13 +282,19 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_newCaseDbMulti
     TSK_TCHAR dbPathT[1024];
     toTCHAR(env, dbPathT, 1024, dbName);
 
-    CaseDbConnectionInfo info(env->GetStringUTFChars(host, false),
-        env->GetStringUTFChars(port, false),
-        env->GetStringUTFChars(user, false),
-        env->GetStringUTFChars(pass, false),
-        (CaseDbConnectionInfo::DbType)dbType);
+    const char* host_utf8 = env->GetStringUTFChars(host, NULL);
+    const char* port_utf8 = env->GetStringUTFChars(port, NULL);
+    const char* user_utf8 = env->GetStringUTFChars(user, NULL);
+    const char* pass_utf8 = env->GetStringUTFChars(pass, NULL);
+    CaseDbConnectionInfo info(host_utf8, port_utf8, user_utf8, pass_utf8, (CaseDbConnectionInfo::DbType)dbType);
 
     TskCaseDb *tskCase = TskCaseDb::newDb(dbPathT, &info);
+
+    // free memory allocated by env->GetStringUTFChars()
+    env->ReleaseStringUTFChars(host, host_utf8);
+    env->ReleaseStringUTFChars(port, port_utf8);
+    env->ReleaseStringUTFChars(user, user_utf8);
+    env->ReleaseStringUTFChars(pass, pass_utf8);
 
     if (tskCase == NULL) {
         setThrowTskCoreError(env);
@@ -317,13 +323,19 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openCaseDbMult
     TSK_TCHAR dbPathT[1024];
     toTCHAR(env, dbPathT, 1024, dbName);
 
-    CaseDbConnectionInfo info(env->GetStringUTFChars(host, false),
-        env->GetStringUTFChars(port, false),
-        env->GetStringUTFChars(user, false),
-        env->GetStringUTFChars(pass, false),
-		(CaseDbConnectionInfo::DbType)dbType);
+    const char* host_utf8 = env->GetStringUTFChars(host, NULL);
+    const char* port_utf8 = env->GetStringUTFChars(port, NULL);
+    const char* user_utf8 = env->GetStringUTFChars(user, NULL);
+    const char* pass_utf8 = env->GetStringUTFChars(pass, NULL);
+    CaseDbConnectionInfo info(host_utf8, port_utf8, user_utf8, pass_utf8, (CaseDbConnectionInfo::DbType)dbType);
 
     TskCaseDb *tskCase = TskCaseDb::openDb(dbPathT, &info);
+
+    // free memory allocated by env->GetStringUTFChars()
+    env->ReleaseStringUTFChars(host, host_utf8);
+    env->ReleaseStringUTFChars(port, port_utf8);
+    env->ReleaseStringUTFChars(user, user_utf8);
+    env->ReleaseStringUTFChars(pass, pass_utf8);
 
     if (tskCase == NULL) {
         setThrowTskCoreError(env);
@@ -623,8 +635,8 @@ JNIEXPORT jboolean JNICALL
         return (jboolean)false;
     }
 
-    return (jboolean)((tsk_hdb_uses_external_indexes(db) == static_cast<uint8_t>(1)) && 
-                      (!tsk_hdb_is_idx_only(db) == static_cast<uint8_t>(1)));
+    return (jboolean)((tsk_hdb_uses_external_indexes(db) == 1) && 
+                      (tsk_hdb_is_idx_only(db) == 0));
 }
  
 /**

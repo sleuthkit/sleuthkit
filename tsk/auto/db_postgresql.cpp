@@ -560,6 +560,26 @@ int TskDbPostgreSQL::initialize() {
         attempt_exec
         ("CREATE TABLE tsk_vs_parts (obj_id BIGSERIAL PRIMARY KEY, addr BIGINT NOT NULL, start BIGINT NOT NULL, length BIGINT NOT NULL, descr TEXT, flags INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating tsk_vol_info table: %s\n")
+		||
+		attempt_exec
+        ("CREATE TABLE ingest_module_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)",
+        "Error creating ingest_module_types table: %s\n")
+		||
+		attempt_exec
+        ("CREATE TABLE ingest_job_status_types (type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL)",
+        "Error creating ingest_job_status_types table: %s\n")
+		||
+		attempt_exec
+        ("CREATE TABLE ingest_modules (ingest_module_id BIGSERIAL PRIMARY KEY, display_name TEXT NOT NULL, unique_name TEXT UNIQUE NOT NULL, type_id INTEGER NOT NULL, version TEXT NOT NULL, FOREIGN KEY(type_id) REFERENCES ingest_module_types(type_id));",
+        "Error creating ingest_modules table: %s\n")
+		||
+		attempt_exec
+        ("CREATE TABLE ingest_jobs (ingest_job_id BIGSERIAL PRIMARY KEY, obj_id BIGINT NOT NULL, host_name TEXT NOT NULL, start_date_time BIGINT NOT NULL, end_date_time BIGINT NOT NULL, status_id INTEGER NOT NULL, settings_dir TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(status_id) REFERENCES ingest_job_status_types(type_id));",
+        "Error creating ingest_jobs table: %s\n")
+		||
+		attempt_exec
+        ("CREATE TABLE ingest_job_modules (ingest_job_id INTEGER, ingest_module_id INTEGER, pipeline_position INTEGER, PRIMARY KEY(ingest_job_id, ingest_module_id), FOREIGN KEY(ingest_job_id) REFERENCES ingest_jobs(ingest_job_id), FOREIGN KEY(ingest_module_id) REFERENCES ingest_modules(ingest_module_id));",
+        "Error creating ingest_job_modules table: %s\n")
         ||
         attempt_exec
         ("CREATE TABLE reports (report_id BIGSERIAL PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL)","Error creating reports table: %s\n")) {
