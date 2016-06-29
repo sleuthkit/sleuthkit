@@ -5929,7 +5929,7 @@ public class SleuthkitCase {
 		acquireSharedLock();
 		try {
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.DELETE_REPORT);
-			statement.setString(1, String.valueOf(report.getId()));
+			statement.setLong(1, report.getId());
 			connection.executeUpdate(statement);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error querying reports table", ex);
