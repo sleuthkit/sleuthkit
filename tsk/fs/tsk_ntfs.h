@@ -24,7 +24,7 @@ extern "C" {
 
 
 // the SID code has been buggy on some systems and byitself it does
-// not provide much security info.  It is being disabled until fixed. 
+// not provide much security info.  It is being disabled until fixed.
 #define TSK_USE_SID 1
 
 //#define NTFS_FS_MAGIC 0x5346544E      /* "NTFS" in little endian */
@@ -54,7 +54,7 @@ extern "C" {
  * begining of the original structure
  */
     typedef struct {
-        uint8_t upd_val[2];     // what they should be 
+        uint8_t upd_val[2];     // what they should be
         uint8_t upd_seq;        // array of size 2*(upd_cnt-1) w/orig vals
     } ntfs_upd;
 
@@ -100,8 +100,8 @@ extern "C" {
         uint8_t flags[2];       // 22
         uint8_t size[4];        // 24
         uint8_t alloc_size[4];  //28
-        uint8_t base_ref[6];    // 32 
-        uint8_t base_seq[2];    // 38 
+        uint8_t base_ref[6];    // 32
+        uint8_t base_seq[2];    // 38
         uint8_t next_attrid[2]; // 40 The next id to be assigned
         uint8_t f1[2];          // XP Only
         uint8_t entry[4];       // XP Only - Number of this entry
@@ -145,8 +145,8 @@ extern "C" {
         uint8_t len[4];         // 4 - length including header
         uint8_t res;            // 8 - resident flag
         uint8_t nlen;           // 9 - name length
-        uint8_t name_off[2];    // 10 - offset to name 
-        uint8_t flags[2];       // 12  
+        uint8_t name_off[2];    // 10 - offset to name
+        uint8_t flags[2];       // 12
         uint8_t id[2];          // 14 - unique identifier
 
         union {
@@ -154,7 +154,7 @@ extern "C" {
             struct {
                 uint8_t ssize[4];       // 16 - size of content
                 uint8_t soff[2];        // 20 - offset to content (after name)
-                uint8_t idxflag[2];     // 22 - indexed flag 
+                uint8_t idxflag[2];     // 22 - indexed flag
             } r;
             /* Non-resident Values */
             struct {
@@ -175,7 +175,7 @@ extern "C" {
 #define NTFS_MFT_NONRES	1       /* non-resident */
 
 
-/* Values for flag field 
+/* Values for flag field
  * should only exist for $DATA attributes */
 #define NTFS_ATTR_FLAG_COMP	0x0001  /* compressed */
 #define NTFS_ATTR_FLAG_ENC	0x4000  /* encrypted */
@@ -308,7 +308,7 @@ extern "C" {
 #define NTFS_VINFO_REPOBJ	0x0020  // Repair Object Ids
 #define NTFS_VINFO_MODCHK	0x8000  // Modified by chkdsk
 
-/* versions 
+/* versions
  * NT = Maj=1 Min=2
  * 2k = Maj=3 Min=0
  * xp = Maj=3 Min=1
@@ -322,14 +322,14 @@ extern "C" {
 
 
 /************************************************************************
- * attribute list 
+ * attribute list
  */
     typedef struct {
         uint8_t type[4];        // Attribute Type
         uint8_t len[2];         // length of entry
         uint8_t nlen;           // number of chars in name
         uint8_t f1;             // 7
-        uint8_t start_vcn[8];   // starting VCN or NTFS_ATTRL_RES 
+        uint8_t start_vcn[8];   // starting VCN or NTFS_ATTRL_RES
         uint8_t file_ref[6];    // file reference to new MFT entry
         uint8_t seq[2];         // 22
         uint8_t id[2];          // id (also in the attribute header)
@@ -343,7 +343,7 @@ extern "C" {
 
 /************************************************************************
  * runlist
- * 
+ *
  * Used to store the non-resident runs for an attribute.
  * It is located in the MFT and pointed to by the run_off in the header
  */
@@ -364,8 +364,8 @@ extern "C" {
 
 
 /************************************************************************
- * Index root for directories 
- * 
+ * Index root for directories
+ *
  * the attribute has two parts.  The header is general to all index entries
  * and applies to $IDX_ALLOC as well. The buffer part contains the
  * index entries that are allocated to $IDX_ROOT.
@@ -373,7 +373,7 @@ extern "C" {
  */
 
 /*
- * Starting at begin_off is a stream of ntfs_idxentry structures 
+ * Starting at begin_off is a stream of ntfs_idxentry structures
  * All offsets are relative to start of the ntfs_idxelist structure
  */
     typedef struct {
@@ -406,7 +406,7 @@ extern "C" {
  * this is structure for the nodes of the B+ index trees
  * It contains a list of index entry data structures.  Each
  * buffer corresponds to one node.  The $IDX_ALLOC attribute
- * is an array of these data structures 
+ * is an array of these data structures
  */
 
 
@@ -435,7 +435,7 @@ extern "C" {
         uint8_t f1[3];
         uint8_t stream;         /* length of strlen - invalid for last entry */
         /* loc of subnode is found in last 8-bytes
-         * of idx entry (idxlen - 8).  use macro 
+         * of idx entry (idxlen - 8).  use macro
          */
     } ntfs_idxentry;
 
@@ -443,7 +443,7 @@ extern "C" {
 #define NTFS_IDX_LAST	0x02    /* last indx entry in the node */
 
 /* return the address of the subnode entry, it is located in the last
- * 8 bytes of the structure 
+ * 8 bytes of the structure
  */
 #define GET_IDXENTRY_SUB(fs, e)	\
 	(tsk_getu64(fs->endian, (int)e + tsk_getu16(fs->endian, e->idxlen) - 8))
@@ -605,8 +605,6 @@ extern "C" {
 
 
 
-
-
 /************************************************************************
 */
     typedef struct {
@@ -635,13 +633,13 @@ extern "C" {
 
         /* orphan_map_lock protects orphan_map */
         tsk_lock_t orphan_map_lock;
-        void *orphan_map;       // map that lists par directory to its orphans. (r/w shared - lock) 
+        void *orphan_map;       // map that lists par directory to its orphans. (r/w shared - lock)
 
 #if TSK_USE_SID
         /* sid_lock protects sii_data, sds_data */
         tsk_lock_t sid_lock;
-        NTFS_SXX_BUFFER sii_data;       // (r/w shared - lock) 
-        NTFS_SXX_BUFFER sds_data;       // (r/w shared - lock) 
+        NTFS_SXX_BUFFER sii_data;       // (r/w shared - lock)
+        NTFS_SXX_BUFFER sds_data;       // (r/w shared - lock)
 #endif
 
         uint32_t alloc_file_count;      // number of allocated regular files, will be -1
@@ -650,6 +648,7 @@ extern "C" {
 
 
     extern uint32_t nt2unixtime(uint64_t ntdate);
+    extern uint32_t nt2nano(uint64_t ntdate);
     extern uint8_t ntfs_attrname_lookup(TSK_FS_INFO *, uint16_t, char *,
         int);
     extern TSK_RETVAL_ENUM ntfs_dinode_lookup(NTFS_INFO *, char *,

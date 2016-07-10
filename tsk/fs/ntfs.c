@@ -101,7 +101,7 @@ nt2unixtime(uint64_t ntdate)
  * to only the nanoseconds
  *
  */
-static uint32_t
+uint32_t
 nt2nano(uint64_t ntdate)
 {
     return (uint32_t) (ntdate % 10000000)*100;
@@ -1609,8 +1609,8 @@ static TSK_RETVAL_ENUM ntfs_proc_attrlist(NTFS_INFO *, TSK_FS_FILE *,
  * MFTNUM. With the case of attribute lists, a file may use multiple
  * MFT entires and therefore have multiple attributes with the same
  * type and id pair (if they are in different MFT entries). This map
- * is created by proc_attrlist when it assigns unique IDs to the 
- * other entries.  proc_attrseq uses this when it adds the attributes. 
+ * is created by proc_attrlist when it assigns unique IDs to the
+ * other entries.  proc_attrseq uses this when it adds the attributes.
  */
 typedef struct {
     int num_used;
@@ -1632,7 +1632,7 @@ typedef struct {
  * @param attrseq Start of the attribute sequence to analyze
  * @param len Length of the attribute sequence buffer
  * @param a_attrinum MFT entry address that the attribute sequence came from (diff from fs_file for attribute lists)
- * @param a_attr_map List that maps to new IDs that were assigned by processing 
+ * @param a_attr_map List that maps to new IDs that were assigned by processing
  * the attribute list attribute (if it exists) or NULL if there is no attrlist.
  * @returns Error code
  */
@@ -1679,20 +1679,20 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
         int retVal, i;
         uint32_t type;
         uint16_t id, id_new;
-        
+
         // sanity check on bounds of attribute. Prevents other
         // issues later on that use attr->len for bounds checks.
         if (((uintptr_t) attr + tsk_getu32(fs->endian,
                                attr->len)) > (uintptr_t) (a_attrseq + len)) {
             break;
         }
-        
+
         /* Get the type of this attribute */
         type = tsk_getu32(fs->endian, attr->type);
         id = tsk_getu16(fs->endian, attr->id);
         id_new = id;
 
-        /* If the map was supplied, search through it to see if this 
+        /* If the map was supplied, search through it to see if this
          * entry is in there.  Use that ID instead so that we always have
          * unique IDs for each attribute -- even if it spans multiple MFT entries. */
         if (a_attr_map) {
@@ -1835,7 +1835,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
 
             // sanity check
             if (tsk_getu16(fs->endian, attr->c.nr.run_off) > tsk_getu32(fs->endian, attr->len)) {
-                if (tsk_verbose) 
+                if (tsk_verbose)
                     tsk_fprintf(stderr, "ntfs_proc_attrseq: run offset too big\n");
                 break;
             }
@@ -1879,8 +1879,8 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
              * We could also check for a start_vcn if this does
              * not fix the problem.
              *
-             * NOTE: This should not be needed now that TSK assigns 
-             * unique ID values to the extended attributes. 
+             * NOTE: This should not be needed now that TSK assigns
+             * unique ID values to the extended attributes.
              */
             if (id_new == 0) {
                 int cnt, i;
@@ -2077,29 +2077,29 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             if (fname->nspace == NTFS_FNAME_DOS) {
                 continue;
             }
-            
+
             fs_file->meta->time2.ntfs.fn_mtime =
                 nt2unixtime(tsk_getu64(fs->endian, fname->mtime));
             fs_file->meta->time2.ntfs.fn_mtime_nano =
                 nt2nano(tsk_getu64(fs->endian, fname->mtime));
-            
+
             fs_file->meta->time2.ntfs.fn_atime =
                 nt2unixtime(tsk_getu64(fs->endian, fname->atime));
             fs_file->meta->time2.ntfs.fn_atime_nano =
                 nt2nano(tsk_getu64(fs->endian, fname->atime));
-            
+
             fs_file->meta->time2.ntfs.fn_ctime =
                 nt2unixtime(tsk_getu64(fs->endian, fname->ctime));
             fs_file->meta->time2.ntfs.fn_ctime_nano =
                 nt2nano(tsk_getu64(fs->endian, fname->ctime));
-            
+
             fs_file->meta->time2.ntfs.fn_crtime =
                 nt2unixtime(tsk_getu64(fs->endian, fname->crtime));
             fs_file->meta->time2.ntfs.fn_crtime_nano =
                 nt2nano(tsk_getu64(fs->endian, fname->crtime));
 
             fs_file->meta->time2.ntfs.fn_id = id;
-            
+
 
             /* Seek to the end of the fs_name structures in TSK_FS_META */
             if (fs_file->meta->name2) {
@@ -2257,9 +2257,9 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
  *
  * @param ntfs File system being analyzed
  * @param fs_file Main file that will have attributes added to it.
- * @param fs_attr_attrlist Attrlist attribute that needs to be parsed. 
+ * @param fs_attr_attrlist Attrlist attribute that needs to be parsed.
  *
- * @returns status of error, corrupt, or OK 
+ * @returns status of error, corrupt, or OK
  */
 static TSK_RETVAL_ENUM
 ntfs_proc_attrlist(NTFS_INFO * ntfs,
@@ -2330,7 +2330,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
 
     /* The TSK design requres that each attribute have its own ID.
      * Therefore, we need to identify all of the unique attributes
-     * so that we can assign a unique ID to them. 
+     * so that we can assign a unique ID to them.
      * In this process, we will also identify the unique MFT entries to
      * process. */
     nextid = fs_attr_attrlist->id;      // we won't see this entry in the list
@@ -2360,7 +2360,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
         if (id > nextid)
             nextid = id;
 
-        /* First identify the unique attributes.  
+        /* First identify the unique attributes.
          * we can have duplicate entries at different VCNs.  Ignore those. */
         found = 0;
         for (i = 0; i < map->num_used; i++) {
@@ -2382,7 +2382,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
                 map->num_used++;
         }
 
-        /* also check the todo list -- skip the base entry 
+        /* also check the todo list -- skip the base entry
          * the goal here is to get a unique list of MFT entries
          * to later process. */
         if (mftnum != fs_file->meta->addr) {
@@ -2414,7 +2414,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
 
         /* Sanity check. */
         if (mftToDo[a] < ntfs->fs_info.first_inum ||
-            mftToDo[a] > ntfs->fs_info.last_inum || 
+            mftToDo[a] > ntfs->fs_info.last_inum ||
             // MFT 0 is for $MFT.  We had one system that we got a reference to it from parsing an allocated attribute list
             mftToDo[a] == 0) {
 
@@ -2465,9 +2465,9 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
                 tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
                 tsk_error_set_errstr("ntfs_proc_attrlist: MFT %" PRIuINUM
                     " is not an attribute list for %"
-                    PRIuINUM 
+                    PRIuINUM
                     " (base file ref = %" PRIuINUM ")",
-                    mftToDo[a], 
+                    mftToDo[a],
                     fs_file->meta->addr,
                     tsk_getu48(fs->endian, mft->base_ref));
                 free(mft);
@@ -2479,7 +2479,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
 
         // bounds check
         if (tsk_getu16(fs->endian, mft->attr_off) > ntfs->mft_rsize_b) {
-            if (tsk_verbose) 
+            if (tsk_verbose)
                     tsk_fprintf(stderr, "ntfs_proc_attrlist: corrupt MFT entry attribute offsets\n");
             continue;
         }
@@ -2602,7 +2602,7 @@ ntfs_dinode_copy(NTFS_INFO * ntfs, TSK_FS_FILE * a_fs_file, char *a_buf,
     a_fs_file->meta->time2.ntfs.fn_crtime = 0;
     a_fs_file->meta->time2.ntfs.fn_crtime_nano = 0;
     a_fs_file->meta->time2.ntfs.fn_id = 0;
-    
+
     /* add the flags */
     a_fs_file->meta->flags =
         ((tsk_getu16(fs->endian, mft->flags) &
@@ -2730,15 +2730,15 @@ ntfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
     }
 
     /* Check if the metadata is the same sequence as the name - if it was already set.
-     * Note that this is not as effecient and elegant as desired, but works for now. 
-     * Better design would be to pass sequence into dinode_lookup and have a more 
+     * Note that this is not as effecient and elegant as desired, but works for now.
+     * Better design would be to pass sequence into dinode_lookup and have a more
      * obvious way to pass the desired sequence in.  fs_dir_walk_lcl sets the name
      * before calling this, which motivated this quick fix. */
     if ((a_fs_file->name != NULL) && (a_fs_file->name->meta_addr == mftnum)) {
 
-        /* NTFS Updates the sequence when an entry is deleted and not when 
+        /* NTFS Updates the sequence when an entry is deleted and not when
          * it is allocated.  So, if we have a deleted MFT entry, then use
-         * its previous sequence number to compare with the name so that we 
+         * its previous sequence number to compare with the name so that we
          * still match them up (until the entry is allocated again). */
         uint16_t seqToCmp = a_fs_file->meta->seq;
         if (a_fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC) {
@@ -3383,31 +3383,31 @@ ntfs_proc_sii(TSK_FS_INFO * fs, NTFS_SXX_BUFFER * sii_buffer)
 
         // stop processing if we hit corrupt data
         if (tsk_getu32(fs->endian, idxrec->list.begin_off) > ntfs->idx_rsize_b) {
-            if (tsk_verbose) 
+            if (tsk_verbose)
                 tsk_fprintf(stderr, "ntfs_proc_sii: corrupt offset\n");
             break;
         }
         else if (tsk_getu32(fs->endian, idxrec->list.bufend_off) > ntfs->idx_rsize_b) {
-            if (tsk_verbose) 
+            if (tsk_verbose)
                 tsk_fprintf(stderr, "ntfs_proc_sii: corrupt offset\n");
             break;
         }
         else if (tsk_getu32(fs->endian, idxrec->list.begin_off) > tsk_getu32(fs->endian, idxrec->list.bufend_off)) {
-            if (tsk_verbose) 
+            if (tsk_verbose)
                 tsk_fprintf(stderr, "ntfs_proc_sii: corrupt offset\n");
             break;
         }
-        
+
         // get pointer to first record
         sii =
             (ntfs_attr_sii *) ((uintptr_t) & idxrec->list +
             tsk_getu32(fs->endian, idxrec->list.begin_off));
-        
+
         // where last record ends
         idx_buffer_end = (uintptr_t) & idxrec->list +
             tsk_getu32(fs->endian, idxrec->list.bufend_off);
 
-        
+
         // copy records into NTFS_INFO
         while ((uintptr_t)sii + sizeof(ntfs_attr_sii) <= idx_buffer_end) {
 /*
@@ -3419,7 +3419,7 @@ ntfs_proc_sii(TSK_FS_INFO * fs, NTFS_SXX_BUFFER * sii_buffer)
 */
             /* make sure we don't go over bounds of ntfs->sii_data.buffer */
             if ((ntfs->sii_data.used + 1) * sizeof(ntfs_attr_sii) > ntfs->sii_data.size) {
-                if (tsk_verbose) 
+                if (tsk_verbose)
                     tsk_fprintf(stderr, "ntfs_proc_sii: data buffer too small\n");
                 return; // reached end of ntfs->sii_data.buffer
             }
@@ -3445,7 +3445,7 @@ ntfs_proc_sii(TSK_FS_INFO * fs, NTFS_SXX_BUFFER * sii_buffer)
 			}
 */
             sii++;
-        } 
+        }
     }
 }
 
@@ -3560,7 +3560,7 @@ ntfs_load_secure(NTFS_INFO * ntfs)
         return 0;
     }
 
-    // allocate the structure for the processed version of the data   
+    // allocate the structure for the processed version of the data
     ntfs->sii_data.used = 0;    // use this to count the number of $SII entries
     if ((ntfs->sii_data.buffer =
             (char *) tsk_malloc(sii_buffer.size)) == NULL) {
@@ -4461,9 +4461,9 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
         /*
          * Times
          */
-        
+
         /* Times - take it from fs_file->meta instead of redoing the work */
-        
+
         if (sec_skew != 0) {
             tsk_fprintf(hFile, "\nAdjusted times:\n");
             if (fs_file->meta->time2.ntfs.fn_mtime)
@@ -4474,7 +4474,7 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
                 fs_file->meta->time2.ntfs.fn_ctime -= sec_skew;
             if (fs_file->meta->time2.ntfs.fn_crtime)
                 fs_file->meta->time2.ntfs.fn_crtime -= sec_skew;
-            
+
             tsk_fprintf(hFile, "Created:\t%s\n",
                         tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->time2.ntfs.fn_crtime), timeBuf));
             tsk_fprintf(hFile, "File Modified:\t%s\n",
@@ -4483,7 +4483,7 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
                         tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->time2.ntfs.fn_ctime), timeBuf));
             tsk_fprintf(hFile, "Accessed:\t%s\n",
                         tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->time2.ntfs.fn_atime), timeBuf));
-            
+
             if (fs_file->meta->time2.ntfs.fn_mtime)
                 fs_file->meta->time2.ntfs.fn_mtime += sec_skew;
             if (fs_file->meta->time2.ntfs.fn_atime)
@@ -4492,10 +4492,10 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
                 fs_file->meta->time2.ntfs.fn_ctime += sec_skew;
             if (fs_file->meta->time2.ntfs.fn_crtime)
                 fs_file->meta->time2.ntfs.fn_crtime += sec_skew;
-            
+
             tsk_fprintf(hFile, "\nOriginal times:\n");
         }
-        
+
         tsk_fprintf(hFile, "Created:\t%s\n",
                     tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->time2.ntfs.fn_crtime), timeBuf));
         tsk_fprintf(hFile, "File Modified:\t%s\n",
