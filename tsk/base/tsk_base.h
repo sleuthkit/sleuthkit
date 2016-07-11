@@ -108,10 +108,10 @@ extern "C" {
     } tsk_lock_t;
 
     // non-windows
-#else 
+#else
 /* Note that there is an assumption that TSK_MULTITHREADED_LIB was
- * set only if we have ptheads. If we add a check for HAVE_PTHREAD 
- * here, it causes problems when you try to include the library in 
+ * set only if we have ptheads. If we add a check for HAVE_PTHREAD
+ * here, it causes problems when you try to include the library in
  * a tool because they do not have tsk_config.h included.
  */
 #include <pthread.h>
@@ -177,6 +177,8 @@ extern "C" {
     extern void tsk_fprintf(FILE * fd, const char *msg, ...);
     extern void tsk_printf(const char *msg, ...);
 
+    // print path removing special characters
+    extern int tsk_print_sanitized(FILE * fd, const char *str);
 
 
 /** \name printf macros if system does not define them */
@@ -519,14 +521,14 @@ class TskStack {
     /**
     * Push a value to the top of TSK_STACK. See tsk_stack_push() for details.
     * @param a_val Value to push on
-    * @returns 1 on error 
+    * @returns 1 on error
     */
     uint8_t push(uint64_t a_val) {
         return tsk_stack_push(m_stack, a_val);
     };
     /**
     * Search a TSK_STACK for a given value. See tsk_stack_find() for details.
-    * @param a_val Value to search for 
+    * @param a_val Value to search for
     * @returns 1 if found and 0 if not
     */
     uint8_t find(uint64_t a_val) {
@@ -552,7 +554,7 @@ class TskStack {
 class TskError {
   public:
     /**
-    * Return the string with the current error message.  The string does not end with a 
+    * Return the string with the current error message.  The string does not end with a
     * newline. See tsk_error_get() for details.
     *
     * @returns String with error message or NULL if there is no error
