@@ -251,7 +251,7 @@ void arff::add_value(string name,int64_t value)
 	strftime(buf,sizeof(buf),TM_FORMAT,gmtime((time_t *)&valuet));
 	break;
     default:
-	sprintf(buf,"%"PRIu64,value);
+	sprintf(buf,"%" PRIu64,value);
 	break;
     }
     (*values.back())[code] = buf;
