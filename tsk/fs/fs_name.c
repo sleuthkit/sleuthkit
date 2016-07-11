@@ -213,35 +213,6 @@ tsk_fs_name_copy(TSK_FS_NAME * a_fs_name_to,
  ***********************************************************************/
 
 /**
- * Print the path removing control characters.
- *
- * Return 0 on success and 1 on error.
- */
-static int
-tsk_print_path(FILE * hFile, const char *path)
-{
-    size_t index = 0;
-    char *buf = NULL;
-
-    buf = tsk_malloc(strlen(path) + 1);
-    if (buf == NULL)
-      return 1;
-
-    strcpy(buf, path);
-
-    for (index = 0; index < strlen(buf); index++)
-      if (TSK_IS_CNTRL(buf[index]))
-        buf[index] = '^';
-
-    tsk_fprintf(hFile, "%s", buf);
-
-    free(buf);
-
-    return 0;
-}
-
-
-/**
  * \ingroup fslib
  * Makes the "ls -l" permissions string for a file.
  *
@@ -481,9 +452,9 @@ tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
                 flags & TSK_FS_NAME_FLAG_UNALLOC)) ? "(realloc)" : "");
 
     if ((print_path) && (a_path != NULL))
-        tsk_print_path(hFile, a_path);
+        tsk_print_sanitized(hFile, a_path);
 
-    tsk_print_path(hFile, fs_file->name->name);
+    tsk_print_sanitized(hFile, fs_file->name->name);
 
     /*  This will add the short name in parentheses
         if (fs_file->name->shrt_name != NULL && fs_file->name->shrt_name[0] != '\0')
@@ -495,7 +466,7 @@ tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
         if ((fs_attr->type != TSK_FS_ATTR_TYPE_NTFS_IDXROOT) ||
             (strcmp(fs_attr->name, "$I30") != 0)) {
             tsk_fprintf(hFile, ":");
-            tsk_print_path(hFile, fs_attr->name);
+            tsk_print_sanitized(hFile, fs_attr->name);
         }
     }
 
@@ -665,14 +636,14 @@ tsk_fs_name_print_mac_md5(FILE * hFile, const TSK_FS_FILE * fs_file,
 
     // remove any control chars as we print the names
     if (a_path != NULL)
-      tsk_print_path(hFile, a_path);
+      tsk_print_sanitized(hFile, a_path);
 
-    tsk_print_path(hFile, fs_file->name->name);
+    tsk_print_sanitized(hFile, fs_file->name->name);
 
     /* print the data stream name if it exists and is not the default NTFS */
     if (isADS) {
         tsk_fprintf(hFile, ":");
-        tsk_print_path(hFile, fs_attr->name);
+        tsk_print_sanitized(hFile, fs_attr->name);
     }
 
     // special label if FNAME

@@ -39,34 +39,6 @@ typedef struct {
 } FFIND_DATA;
 
 
-/* Prints the buffer removing control characters.
- *
- * Return 0 on success and 1 on error.
- */
-static int
-printit(const char *buffer)
-{
-    size_t index = 0;
-    char *buf = NULL;
-
-    buf = tsk_malloc(strlen(buffer) + 1);
-    if (buf == NULL)
-      return 1;
-
-    strcpy(buf, buffer);
-
-    for (index = 0; index < strlen(buf); index++)
-      if (TSK_IS_CNTRL(buf[index]))
-        buf[index] = '^';
-
-    tsk_printf("%s", buf);
-
-    free(buf);
-
-    return 0;
-}
-
-
 static TSK_WALK_RET_ENUM
 find_file_act(TSK_FS_FILE * fs_file, const char *a_path, void *ptr)
 {
@@ -79,7 +51,8 @@ find_file_act(TSK_FS_FILE * fs_file, const char *a_path, void *ptr)
             tsk_printf("* ");
 
         tsk_printf("/");
-        if (printit(a_path) != 0 || printit(fs_file->name->name) != 0)
+        if (tsk_print_sanitized(stdout, a_path) != 0 ||
+            tsk_print_sanitized(stdout, fs_file->name->name) != 0)
           return TSK_WALK_ERROR;
         tsk_printf("\n");
 
@@ -142,7 +115,8 @@ tsk_fs_ffind(TSK_FS_INFO * fs, TSK_FS_FFIND_FLAG_ENUM lclflags,
                     tsk_printf("* ");
 
                 tsk_printf("%s/", TSK_FS_ORPHAN_STR);
-                if (printit(fs_file->meta->name2->name) != 0)
+                if (tsk_print_sanitized(stdout,
+                                        fs_file->meta->name2->name) != 0)
                   return 1;
                 tsk_printf("\n");
             }

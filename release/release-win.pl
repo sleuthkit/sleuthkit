@@ -395,8 +395,9 @@ sub package_framework {
 # Assumes path in /cygwin/style
 sub copy_runtime_2010 { 
     my $dest = shift(@_);
-    `cp /cygdrive/c/windows/system32/msvcp100.dll \"$dest\"`;
-    `cp /cygdrive/c/windows/system32/msvcr100.dll \"$dest\"`;
+    # Copy 32-bit version
+    `cp /cygdrive/c/windows/sysWow64/msvcp100.dll \"$dest\"`;
+    `cp /cygdrive/c/windows/sysWow64/msvcr100.dll \"$dest\"`;
 }
 
 chdir ("$TSKDIR") or die "Error changing to TSK dir $TSKDIR";
