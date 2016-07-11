@@ -683,6 +683,7 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
                 tsk_fs_attrlist_getnew(fs_meta->attr,
                     TSK_FS_ATTR_NONRES)) == NULL) {
             fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
+            tsk_fs_attr_run_free(data_run_head);
             return 1;
         }
 
@@ -702,6 +703,8 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
         }
         // create a one cluster run
         else {
+            tsk_fs_attr_run_free(data_run_head);
+
             TSK_FS_ATTR_RUN *data_run_tmp = tsk_fs_attr_run_alloc();
             if (data_run_tmp == NULL) {
                 fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;

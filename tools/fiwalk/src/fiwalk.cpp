@@ -307,8 +307,8 @@ void file_info(const string name, int64_t value)
 {
     if(a) a->add_value(name,value); 
     if(t || x){
-	if(t) fprintf(t,"%s: %"PRId64"\n",cstr(name),value);
-	if(x) x->xmlprintf(name,"","%"PRId64,value);
+	if(t) fprintf(t,"%s: %" PRId64 "\n",cstr(name),value);
+	if(x) x->xmlprintf(name,"","%" PRId64,value);
     }
 }
 

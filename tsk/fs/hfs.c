@@ -3492,7 +3492,9 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
     uint16_t attribute_counter = 2;     // The ID of the next attribute to be loaded.
     HFS_INFO *hfs;
     char *buffer = NULL;   // buffer to hold the attribute
-
+#ifdef HAVE_LIBZ
+    char *uncBuf = NULL;   // buffer to hold uncompressed attribute
+#endif
 
     tsk_error_reset();
 
@@ -3875,7 +3877,6 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                             else {      // Leading byte is not 0x0F
 
 #ifdef HAVE_LIBZ
-                                char *uncBuf;
                                 uint64_t uLen;
                                 unsigned long bytesConsumed;
                                 int infResult;
@@ -3924,6 +3925,8 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                                         (" - hfs_load_extended_attrs");
                                     goto on_error;
                                 }
+
+                                free(uncBuf);
 #else
                                 // ZLIB compression library is not available, so we will load a zero-length
                                 // default DATA attribute.  Without this, icat may misbehave.
@@ -3944,7 +3947,6 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                                         (" - hfs_load_extended_attrs");
                                     goto on_error;
                                 }
-
 #endif
 
                             }   // END if leading byte is 0x0F  ELSE clause
@@ -3978,14 +3980,13 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
                 // set the details in the fs_attr structure
                 if (tsk_fs_attr_set_str(fs_file, fs_attr, nameBuff,
-                        attrType, attribute_counter, (void *) buffer,
+                        attrType, attribute_counter, buffer,
                         attributeLength)) {
                     error_returned(" - hfs_load_extended_attrs");
                     goto on_error;
                 }
-                // TODO: does the previous function take ownership of buffer?
-                // or does it need to be freed here?
-                buffer = NULL;
+
+                free(buffer);
 
                 attribute_counter++;
             }                   // END if comp == 0
@@ -4070,11 +4071,18 @@ on_exit:
     return 0;
 
 on_error:
-    if( buffer != NULL ) {
-        free( buffer );
+    if (buffer != NULL) {
+        free(buffer);
     }
-    if( nodeData != NULL ) {
-        free( nodeData );
+
+#ifdef HAVE_LIBZ
+    if (uncBuf != NULL) {
+        free(uncBuf);
+    }
+#endif
+
+    if (nodeData != NULL) {
+        free(nodeData);
     }
     close_attr_file(&attrFile);
     return 1;
