@@ -405,7 +405,15 @@ int TskDbPostgreSQL::verifyNonEmptyResultSetSize(const char *sql, PGresult *res,
         return 1;
     }
 
-    if (PQntuples(res) < 1 || PQnfields(res) != expectedNumFileds){
+    // this query must produce at least one result
+    if (PQntuples(res) < 1){
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("SQL command returned empty result set: %s", sql);
+        return 1;
+    }
+
+    if (PQnfields(res) != expectedNumFileds){
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         tsk_error_set_errstr(errfmt, PQnfields(res), expectedNumFileds);
@@ -453,7 +461,7 @@ bool TskDbPostgreSQL::isQueryResultValid(PGresult *res, const char *sql)
         tsk_error_set_errno(TSK_ERR_AUTO_DB);	
         tsk_error_set_errstr("SQL command returned a NULL result set pointer: %s", sql);
         return false;
-    }		     
+    }
     return true;
 }
 
@@ -638,7 +646,7 @@ uint8_t TskDbPostgreSQL::addObject(TSK_DB_OBJECT_TYPE_ENUM type, int64_t parObjI
     PGresult *res = get_query_result_set(stmt, "TskDbPostgreSQL::addObj: Error adding object to row: %s (result code %d)\n");
 
     // check if a valid result set was returned
-    if (verifyNonEmptyResultSetSize(stmt, res, expectedNumFileds, "TskDbPostgreSQL::addObj: Unexpected number of results: Expected %d, Received %d\n")) {
+    if (verifyNonEmptyResultSetSize(stmt, res, expectedNumFileds, "TskDbPostgreSQL::addObj: Unexpected number of collumns in result set: Expected %d, Received %d\n")) {
         return TSK_ERR;
     }
 
@@ -685,7 +693,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInf
     PGresult *res = get_query_result_set(stmt, "TskDbPostgreSQL::getVsInfo: Error selecting object by objid: %s (result code %d)\n");
 
     // check if a valid result set was returned
-    if (verifyNonEmptyResultSetSize(stmt, res, expectedNumFileds, "TskDbPostgreSQL::getVsInfo: Unexpected number of results: Expected %d, Received %d\n")) {
+    if (verifyNonEmptyResultSetSize(stmt, res, expectedNumFileds, "TskDbPostgreSQL::getVsInfo: Unexpected number of collumns in result set: Expected %d, Received %d\n")) {
         return TSK_ERR;
     }
 
@@ -736,7 +744,7 @@ int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, co
     int expectedNumFileds = 1;
     snprintf(stmt, 2048, "INSERT INTO tsk_objects (par_obj_id, type) VALUES (NULL, %d) RETURNING obj_id;", TSK_DB_OBJECT_TYPE_IMG);
     PGresult *res = get_query_result_set(stmt, "TskDbPostgreSQL::addObj: Error adding object to row: %s (result code %d)\n");
-    if (verifyNonEmptyResultSetSize(stmt, res, expectedNumFileds, "TskDbPostgreSQL::addObj: Unexpected number of results: Expected %d, Received %d\n")) {
+    if (verifyNonEmptyResultSetSize(stmt, res, expectedNumFileds, "TskDbPostgreSQL::addObj: Unexpected number of collumns in result set: Expected %d, Received %d\n")) {
         return 1;
     }
     objId = atoll(PQgetvalue(res, 0, 0));
@@ -1113,7 +1121,7 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n");
 
     // check if a valid result set was returned
-    if (verifyNonEmptyResultSetSize(zSQL, res, expectedNumFileds, "TskDbPostgreSQL::findParObjId: Unexpected number of results: Expected %d, Received %d\n")) {
+    if (verifyNonEmptyResultSetSize(zSQL, res, expectedNumFileds, "TskDbPostgreSQL::findParObjId: Unexpected number of collumns in result set: Expected %d, Received %d\n")) {
         return -1;
     }
 
@@ -1287,7 +1295,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getObjectInfo(int64_t objId, TSK_DB_OBJECT & ob
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getObjectInfo: Error selecting object by objid: %s (result code %d)\n");
 
     // check if a valid result set was returned
-    if (verifyNonEmptyResultSetSize(zSQL, res, expectedNumFileds, "TskDbPostgreSQL::getObjectInfo: Unexpected number of results: Expected %d, Received %d\n")) {
+    if (verifyNonEmptyResultSetSize(zSQL, res, expectedNumFileds, "TskDbPostgreSQL::getObjectInfo: Unexpected number of collumns in result set: Expected %d, Received %d\n")) {
         return TSK_ERR;
     }
 
@@ -1743,7 +1751,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getFsRootDirObjectInfo(const int64_t fsObjId, T
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::getFsRootDirObjectInfo: Error selecting from tsk_objects,tsk_files: %s (result code %d)\n");
 
     // check if a valid result set was returned
-    if (verifyNonEmptyResultSetSize(zSQL, res, expectedNumFileds, "TskDbPostgreSQL::getFsRootDirObjectInfo: Unexpected number of results: Expected %d, Received %d\n")) {
+    if (verifyNonEmptyResultSetSize(zSQL, res, expectedNumFileds, "TskDbPostgreSQL::getFsRootDirObjectInfo: Unexpected number of collumns in result set: Expected %d, Received %d\n")) {
         return TSK_ERR;
     }
 
