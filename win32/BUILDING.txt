@@ -35,7 +35,8 @@ The steps below outline the process required to compile the Debug and
 Release targets.
 
 1) Download libewf-20130128 (or later). The official releases are from:
-https://github.com/libyal/libewf
+https://github.com/libyal/libewf, but you may need to go to 
+https://github.com/libyal/libewf/wiki to get a stable release. 
 
 If you want to build 64-bit libraries though, download a version that
 we've upgraded: https://github.com/sleuthkit/libewf_64bit

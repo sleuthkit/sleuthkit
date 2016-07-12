@@ -2999,6 +2999,15 @@ TSK_FS_INFO *
     yaffsfs->cache_objects = NULL;
     yaffsfs->chunkMap = NULL;
 
+    fs = &(yaffsfs->fs_info);
+
+    fs->tag = TSK_FS_INFO_TAG;
+    fs->ftype = ftype;
+    fs->flags = (TSK_FS_INFO_FLAG_ENUM)0;
+    fs->img_info = img_info;
+    fs->offset = offset;
+    fs->endian = TSK_LIT_ENDIAN;
+
     // Read config file (if it exists)
     config_file_status = yaffs_load_config_file(img_info, configParams);
     if(config_file_status == YAFFS_CONFIG_ERROR){
@@ -3047,15 +3056,6 @@ TSK_FS_INFO *
     else{
         yaffsfs->autoDetect = 0;
     }
-
-    fs = &(yaffsfs->fs_info);
-
-    fs->tag = TSK_FS_INFO_TAG;
-    fs->ftype = ftype;
-    fs->flags = (TSK_FS_INFO_FLAG_ENUM)0;
-    fs->img_info = img_info;
-    fs->offset = offset;
-    fs->endian = TSK_LIT_ENDIAN;
 
     // Determine the layout of the spare area
     // If it was specified in the config file, use those values. Otherwise do the auto-detection

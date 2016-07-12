@@ -549,6 +549,7 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
         TSK_OFF_T recoversize = fs_meta->size;
         int retval;
         TSK_FS_ATTR_RUN *data_run = NULL;
+        TSK_FS_ATTR_RUN *data_run_tmp = NULL;
         TSK_FS_ATTR_RUN *data_run_head = NULL;
         TSK_OFF_T full_len_s = 0;
         uint8_t canRecover = 1; // set to 0 if recovery is not possible
@@ -683,6 +684,7 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
                 tsk_fs_attrlist_getnew(fs_meta->attr,
                     TSK_FS_ATTR_NONRES)) == NULL) {
             fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
+            tsk_fs_attr_run_free(data_run_head);
             return 1;
         }
 
@@ -702,7 +704,9 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
         }
         // create a one cluster run
         else {
-            TSK_FS_ATTR_RUN *data_run_tmp = tsk_fs_attr_run_alloc();
+            tsk_fs_attr_run_free(data_run_head);
+
+            data_run_tmp = tsk_fs_attr_run_alloc();
             if (data_run_tmp == NULL) {
                 fs_meta->attr_state = TSK_FS_META_ATTR_ERROR;
                 return 1;
