@@ -663,8 +663,7 @@ public class BlackboardAttribute {
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Registered Organization for a piece of software
 		TSK_CHUNK_ID(114, "TSK_CHUNK_ID", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskChunkID.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG), // Registered Organization for a piece of software
-		;
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER),;
 		private final int typeID;
 		private final String typeName;
 		private final String displayName;
