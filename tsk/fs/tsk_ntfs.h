@@ -603,6 +603,17 @@ extern "C" {
 
 #endif
 
+/* Update Sequence Journal Struct */
+/************************************************************************
+*/
+
+    typedef struct {
+
+        TSK_FS_FILE *fs_file;
+        TSK_INUM_T usnj_inum;
+        uint32_t bsize;
+
+    } NTFS_USNJINFO;
 
 
 /************************************************************************
@@ -644,6 +655,7 @@ extern "C" {
 
         uint32_t alloc_file_count;      // number of allocated regular files, will be -1
                                         // until a directory is opened.
+        NTFS_USNJINFO *usnjinfo;        // update sequence number journal
     } NTFS_INFO;
 
 
@@ -664,6 +676,7 @@ extern "C" {
         uint32_t type_toid, uint8_t type_used, uint16_t id_toid,
         uint8_t id_used, TSK_FS_DIR_WALK_FLAG_ENUM dir_walk_flags,
         TSK_FS_DIR_WALK_CB action, void *ptr);
+
 
 #ifdef __cplusplus
 }
