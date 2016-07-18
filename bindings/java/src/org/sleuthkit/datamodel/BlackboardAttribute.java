@@ -647,10 +647,10 @@ public class BlackboardAttribute {
 		TSK_ORGANIZATION(108, "TSK_ORGANIZATION", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskOrganization.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Registered Organization for a piece of software
-		TSK_CREDIT_CARD_NUMBER(109, "TSK_CREDIT_CARD_NUMBER", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskCreditCardNumber.text"),
+		TSK_ACCOUNT_NUMBER(109, "TSK_ACCOUNT_NUMBER", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskAccountNumber.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Registered Organization for a piece of software
-		TSK_CREDIT_CARD_EXPIRATION(110, "TSK_CREDIT_CARD_NUMBER", //NON-NLS
+		TSK_CREDIT_CARD_EXPIRATION(110, "TSK_CREDIT_CARD_EXPIRATION", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskCreditCardExpiration.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Registered Organization for a piece of software
 		TSK_CREDIT_CARD_SERVICE_CODE(111, "TSK_CREDIT_CARD_SERVICE_CODE", //NON-NLS
@@ -662,8 +662,8 @@ public class BlackboardAttribute {
 		TSK_CREDIT_CARD_LRC(113, "TSK_CREDIT_CARD_LRC", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskCreditCardLRC.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Registered Organization for a piece of software
-		TSK_CHUNK_ID(114, "TSK_CHUNK_ID", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskChunkID.text"),
+		TSK_SOLR_DOCUMENT_ID(114, "TSK_SOLR_DOCUMENT_ID", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskSolrDocumentID.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER),;
 		private final int typeID;
 		private final String typeName;
