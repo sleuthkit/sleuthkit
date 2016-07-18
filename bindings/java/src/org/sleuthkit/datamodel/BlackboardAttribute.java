@@ -649,19 +649,19 @@ public class BlackboardAttribute {
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Registered Organization for a piece of software
 		TSK_ACCOUNT_NUMBER(109, "TSK_ACCOUNT_NUMBER", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskAccountNumber.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Registered Organization for a piece of software
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), 
 		TSK_CREDIT_CARD_EXPIRATION(110, "TSK_CREDIT_CARD_EXPIRATION", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskCreditCardExpiration.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Registered Organization for a piece of software
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), 
 		TSK_CREDIT_CARD_SERVICE_CODE(111, "TSK_CREDIT_CARD_SERVICE_CODE", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskCreditCardServiceCode.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Registered Organization for a piece of software
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), 
 		TSK_CREDIT_CARD_DISCRETIONARY(112, "TSK_CREDIT_CARD_DISCRETIONARY", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskCreditCardDiscretionary.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Registered Organization for a piece of software
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), 
 		TSK_CREDIT_CARD_LRC(113, "TSK_CREDIT_CARD_LRC", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskCreditCardLRC.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Registered Organization for a piece of software
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Credit Card Longitudinal Redundancy Check
 		TSK_SOLR_DOCUMENT_ID(114, "TSK_SOLR_DOCUMENT_ID", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskSolrDocumentID.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER),;
