@@ -303,9 +303,19 @@ int
         "FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id))",
         "Error creating blackboard_artifact_tags table: %s\n")
         ||
+		attempt_exec("CREATE TABLE review_statuses (review_status_id INTEGER PRIMARY KEY, "
+		"review_status_name TEXT NOT NULL, "
+		"display_name TEXT NOT NULL)",
+		"Error creating review_statuses table: %s\n")
+        ||
         attempt_exec
-        ("CREATE TABLE blackboard_artifacts (artifact_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, artifact_type_id INTEGER NOT NULL, "
-        "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id))",
+        ("CREATE TABLE blackboard_artifacts (artifact_id INTEGER PRIMARY KEY, "
+		"obj_id INTEGER NOT NULL, "
+		"artifact_type_id INTEGER NOT NULL, "
+		"review_status_id INTEGER NOT NULL, "
+        "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), "
+		"FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id), "
+		"FOREIGN KEY(review_status_id) REFERENCES review_statuses(review_status_id))",
         "Error creating blackboard_artifact table: %s\n")
         ||
         attempt_exec
@@ -315,7 +325,7 @@ int
         "Error creating blackboard_attribute table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE blackboard_artifact_types (artifact_type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT)",
+        ("CREATE TABLE blackboard_artifact_types (artifact_type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT NOT NULL)",
         "Error creating blackboard_artifact_types table: %s\n")
         ||
         attempt_exec
