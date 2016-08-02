@@ -823,22 +823,40 @@ public abstract class AbstractFile extends AbstractContent {
 		}
 
 		try {
-			//move to the user request offset in the stream
-			long curOffset = localFileHandle.getFilePointer();
-			if (curOffset != offset) {
-				localFileHandle.seek(offset);
+			// Test if the file is encoded
+			EncodedFileUtil.EncodingType encodingType = EncodedFileUtil.getEncoding(localFileHandle);
+			if( ! encodingType.equals(EncodedFileUtil.EncodingType.NONE)){
+				// The file is encoded, so we need to alter the offset to read (since there's
+				// a header on the encoded file) and then decode each byte
+				long encodedOffset = offset + EncodedFileUtil.getHeaderLength();
+				
+				//move to the user request offset in the stream
+				long curOffset = localFileHandle.getFilePointer();
+				if (curOffset != encodedOffset) {
+					localFileHandle.seek(encodedOffset);
+				}
+				bytesRead = localFileHandle.read(buf, 0, (int) len);	
+				for(int i = 0;i < bytesRead;i++){
+					buf[i] = (byte)EncodedFileUtil.encodeByte(buf[i], encodingType);
+				}
+				return bytesRead;
+			} else {
+				//move to the user request offset in the stream
+				long curOffset = localFileHandle.getFilePointer();
+				if (curOffset != offset) {
+					localFileHandle.seek(offset);
+				}
+				//note, we are always writing at 0 offset of user buffer
+				return localFileHandle.read(buf, 0, (int) len);	
 			}
-			//note, we are always writing at 0 offset of user buffer
-			bytesRead = localFileHandle.read(buf, 0, (int) len);
 		} catch (IOException ex) {
 			final String msg = MessageFormat.format(bundle.getString("AbstractFile.readLocal.exception.msg5.text"), localAbsPath);
 			logger.log(Level.SEVERE, msg, ex);
 			//local file could have been deleted / moved
 			throw new TskCoreException(msg, ex);
 		}
-
-		return bytesRead;
 	}
+
 
 	/**
 	 * Set local path for the file, as stored in db tsk_files_path, relative to
