@@ -837,7 +837,7 @@ public abstract class AbstractFile extends AbstractContent {
 				}
 				bytesRead = localFileHandle.read(buf, 0, (int) len);	
 				for(int i = 0;i < bytesRead;i++){
-					buf[i] = (byte)EncodedFileUtil.encodeByte(buf[i], encodingType);
+					buf[i] = EncodedFileUtil.encodeByte(buf[i], encodingType);
 				}
 				return bytesRead;
 			} else {
