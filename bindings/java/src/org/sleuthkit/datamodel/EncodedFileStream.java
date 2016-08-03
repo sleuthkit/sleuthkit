@@ -19,31 +19,57 @@
 package org.sleuthkit.datamodel;
 
 import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
 /**
  * Output stream wrapper for encoding files being written to disk.
  * The idea is to prevent malicious files from getting extracted onto
- * the users hard drive in their original form.
+ * the user's hard drive in their original form.
  */
 public class EncodedFileStream extends BufferedOutputStream{
 	private EncodedFileUtil.EncodingType type;
     
+	/**
+	 * Create an encoded output stream using the default encoding.
+	 * @param out
+	 * @throws IOException 
+	 */
     public EncodedFileStream(OutputStream out) throws IOException{
         this(out, EncodedFileUtil.getDefaultEncoding());
     }
 	
+	/**
+	 * Create an encoded output stream using the specified encoding.
+	 * @param out
+	 * @param type
+	 * @throws IOException 
+	 */
 	public EncodedFileStream(OutputStream out, EncodedFileUtil.EncodingType type) throws IOException{
         super(out);
 		this.type = type;
         writeHeader();		
 	}
 	
+	/**
+	 * Create an encoded output stream using the default encoding and the
+	 * specified buffer size.
+	 * @param out
+	 * @param size
+	 * @throws IOException 
+	 */
 	public EncodedFileStream(OutputStream out, int size) throws IOException{
 		this(out, size, EncodedFileUtil.getDefaultEncoding());
 	}
-    
+
+	/**
+	 * Create an encoded output stream using the specified encoding and buffer size.
+	 * @param out
+	 * @param size
+	 * @param type
+	 * @throws IOException 
+	 */
     public EncodedFileStream(OutputStream out, int size, EncodedFileUtil.EncodingType type) throws IOException{
         super(out, size);
 		this.type = type;

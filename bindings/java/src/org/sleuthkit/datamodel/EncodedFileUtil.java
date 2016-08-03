@@ -26,16 +26,28 @@ import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
 
-
+/**
+ * Utility methods to support encoding/decoding files written to disk.
+ */
 public class EncodedFileUtil {
 	
 	final static private int HEADER_LENGTH = 32;  // All headers must be this long
 	final static private String XOR1_HEADER =  "AUTOPSY_CONTAINER_XOR1_xxxxxxxxx";
 	
+	/**
+	 * Get the default encoding method.
+	 * @return 
+	 */
 	static EncodingType getDefaultEncoding(){
 		return EncodingType.XOR1;
 	}
 	
+	/**
+	 * Get the header for the given encoding type.
+	 * @param type
+	 * @return
+	 * @throws IOException 
+	 */
 	static String getHeader(EncodingType type) throws IOException{
 		switch (type){
 			case XOR1:
@@ -45,9 +57,18 @@ public class EncodedFileUtil {
 		}
 	}
 	
+	/**
+	 * Get the encoded version of the given type's header.
+	 * Used by EncodedFileStream so that after the header is fed through the encoding
+	 * scheme, the original plaintext header will appear at the beginning of the file.
+	 * This should not be used for testing which encoding scheme was used on a file.
+	 * @param type
+	 * @return
+	 * @throws IOException 
+	 */
 	static byte [] getEncodedHeader(EncodingType type) throws IOException{
 		if(type.equals(EncodingType.NONE)){
-			throw new IOException("Attempting to encode a file with EncodingType.NONE");
+			throw new IOException("Attempting to get encoded header for EncodingType.NONE");
 		}
 		byte [] encHeader = new byte[HEADER_LENGTH];
 		byte [] plainHeader = getHeader(type).getBytes();
@@ -62,6 +83,13 @@ public class EncodedFileUtil {
 		return HEADER_LENGTH;
 	}
 	
+	/**
+	 * Encode (or decode) a byte using the given encoding scheme.
+	 * @param b
+	 * @param type
+	 * @return
+	 * @throws IOException 
+	 */
 	static byte encodeByte(byte b, EncodingType type) throws IOException{
 		switch (type){
 			case XOR1:
@@ -71,26 +99,32 @@ public class EncodedFileUtil {
 		}
     }
 	
-	static EncodingType getEncoding(RandomAccessFile fileHandle){
-		try{
-			long curOffset = fileHandle.getFilePointer();
-			if (curOffset != 0) {
-				fileHandle.seek(0);
-			}
-			byte[] header = new byte[HEADER_LENGTH];
-			int bytesRead = fileHandle.read(header, 0, HEADER_LENGTH);
-			if(bytesRead != HEADER_LENGTH){
-				return EncodingType.NONE;
-			}
-			
-			return(getTypeFromHeader(header));
-		} catch (IOException ex){
-			// Add stuff
-			ex.printStackTrace(); // FIX FIX FIX
+	/**
+	 * Determine whether a file was encoded and which type of encoding was used.
+	 * @param fileHandle
+	 * @return 
+	 * @throws IOException
+	 */
+	static EncodingType getEncoding(RandomAccessFile fileHandle) throws IOException{
+
+		long curOffset = fileHandle.getFilePointer();
+		if (curOffset != 0) {
+			fileHandle.seek(0);
+		}
+		byte[] header = new byte[HEADER_LENGTH];
+		int bytesRead = fileHandle.read(header, 0, HEADER_LENGTH);
+		if(bytesRead != HEADER_LENGTH){
 			return EncodingType.NONE;
 		}
+
+		return(getTypeFromHeader(header));
 	}
 	
+	/**
+	 * Compare the buffer containing the potential header against the encoding headers.
+	 * @param header
+	 * @return 
+	 */
 	static private EncodingType getTypeFromHeader(byte[] header){
 		if(header.length != HEADER_LENGTH){
 			return EncodingType.NONE;
@@ -104,10 +138,23 @@ public class EncodedFileUtil {
 		
 	}
 	
+	/**
+	 * Encode a file on disk using the default method.
+	 * @param sourcePath
+	 * @param destPath
+	 * @throws IOException 
+	 */
 	static public void encodeFile(String sourcePath, String destPath) throws IOException{
 		encodeFile(sourcePath, destPath, getDefaultEncoding());
 	}
 	
+	/**
+	 * Encode a file on disk using the given encoding method.
+	 * @param sourcePath
+	 * @param destPath
+	 * @param type
+	 * @throws IOException 
+	 */
 	static public void encodeFile(String sourcePath, String destPath, EncodingType type) throws IOException{
 		
 		FileInputStream in = new FileInputStream(sourcePath);
