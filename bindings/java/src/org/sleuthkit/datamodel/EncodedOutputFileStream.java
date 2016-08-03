@@ -28,7 +28,7 @@ import java.io.OutputStream;
  * The idea is to prevent malicious files from getting extracted onto
  * the user's hard drive in their original form.
  */
-public class EncodedFileStream extends BufferedOutputStream{
+public class EncodedOutputFileStream extends BufferedOutputStream{
 	private EncodedFileUtil.EncodingType type;
     
 	/**
@@ -36,7 +36,7 @@ public class EncodedFileStream extends BufferedOutputStream{
 	 * @param out
 	 * @throws IOException 
 	 */
-    public EncodedFileStream(OutputStream out) throws IOException{
+    public EncodedOutputFileStream(OutputStream out) throws IOException{
         this(out, EncodedFileUtil.getDefaultEncoding());
     }
 	
@@ -46,7 +46,7 @@ public class EncodedFileStream extends BufferedOutputStream{
 	 * @param type
 	 * @throws IOException 
 	 */
-	public EncodedFileStream(OutputStream out, EncodedFileUtil.EncodingType type) throws IOException{
+	public EncodedOutputFileStream(OutputStream out, EncodedFileUtil.EncodingType type) throws IOException{
         super(out);
 		this.type = type;
         writeHeader();		
@@ -59,7 +59,7 @@ public class EncodedFileStream extends BufferedOutputStream{
 	 * @param size
 	 * @throws IOException 
 	 */
-	public EncodedFileStream(OutputStream out, int size) throws IOException{
+	public EncodedOutputFileStream(OutputStream out, int size) throws IOException{
 		this(out, size, EncodedFileUtil.getDefaultEncoding());
 	}
 
@@ -70,7 +70,7 @@ public class EncodedFileStream extends BufferedOutputStream{
 	 * @param type
 	 * @throws IOException 
 	 */
-    public EncodedFileStream(OutputStream out, int size, EncodedFileUtil.EncodingType type) throws IOException{
+    public EncodedOutputFileStream(OutputStream out, int size, EncodedFileUtil.EncodingType type) throws IOException{
         super(out, size);
 		this.type = type;
         writeHeader();

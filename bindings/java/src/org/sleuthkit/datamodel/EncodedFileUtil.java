@@ -159,7 +159,7 @@ public class EncodedFileUtil {
 		
 		FileInputStream in = new FileInputStream(sourcePath);
 		try {
-			OutputStream out = new EncodedFileStream(new BufferedOutputStream(new FileOutputStream(destPath)));
+			OutputStream out = new EncodedOutputFileStream(new BufferedOutputStream(new FileOutputStream(destPath)));
 			try {
 				// Transfer bytes from in to out
 				byte[] buf = new byte[1024];
