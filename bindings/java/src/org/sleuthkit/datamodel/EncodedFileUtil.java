@@ -105,19 +105,22 @@ public class EncodedFileUtil {
 	 * @return 
 	 * @throws IOException
 	 */
-	static EncodingType getEncoding(RandomAccessFile fileHandle) throws IOException{
+	static EncodingType getEncoding(RandomAccessFile fileHandle){
+		try{
+			long curOffset = fileHandle.getFilePointer();
+			if (curOffset != 0) {
+				fileHandle.seek(0);
+			}
+			byte[] header = new byte[HEADER_LENGTH];
+			int bytesRead = fileHandle.read(header, 0, HEADER_LENGTH);
+			if(bytesRead != HEADER_LENGTH){
+				return EncodingType.NONE;
+			}
 
-		long curOffset = fileHandle.getFilePointer();
-		if (curOffset != 0) {
-			fileHandle.seek(0);
-		}
-		byte[] header = new byte[HEADER_LENGTH];
-		int bytesRead = fileHandle.read(header, 0, HEADER_LENGTH);
-		if(bytesRead != HEADER_LENGTH){
+			return(getTypeFromHeader(header));
+		} catch (IOException ex){
 			return EncodingType.NONE;
 		}
-
-		return(getTypeFromHeader(header));
 	}
 	
 	/**
@@ -159,7 +162,7 @@ public class EncodedFileUtil {
 		
 		FileInputStream in = new FileInputStream(sourcePath);
 		try {
-			OutputStream out = new EncodedOutputFileStream(new BufferedOutputStream(new FileOutputStream(destPath)));
+			OutputStream out = new EncodedFileOutputStream(new BufferedOutputStream(new FileOutputStream(destPath)));
 			try {
 				// Transfer bytes from in to out
 				byte[] buf = new byte[1024];

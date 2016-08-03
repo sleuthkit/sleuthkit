@@ -19,7 +19,6 @@
 package org.sleuthkit.datamodel;
 
 import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -28,7 +27,7 @@ import java.io.OutputStream;
  * The idea is to prevent malicious files from getting extracted onto
  * the user's hard drive in their original form.
  */
-public class EncodedOutputFileStream extends BufferedOutputStream{
+public class EncodedFileOutputStream extends BufferedOutputStream{
 	private EncodedFileUtil.EncodingType type;
     
 	/**
@@ -36,7 +35,7 @@ public class EncodedOutputFileStream extends BufferedOutputStream{
 	 * @param out
 	 * @throws IOException 
 	 */
-    public EncodedOutputFileStream(OutputStream out) throws IOException{
+    public EncodedFileOutputStream(OutputStream out) throws IOException{
         this(out, EncodedFileUtil.getDefaultEncoding());
     }
 	
@@ -46,7 +45,7 @@ public class EncodedOutputFileStream extends BufferedOutputStream{
 	 * @param type
 	 * @throws IOException 
 	 */
-	public EncodedOutputFileStream(OutputStream out, EncodedFileUtil.EncodingType type) throws IOException{
+	public EncodedFileOutputStream(OutputStream out, EncodedFileUtil.EncodingType type) throws IOException{
         super(out);
 		this.type = type;
         writeHeader();		
@@ -59,7 +58,7 @@ public class EncodedOutputFileStream extends BufferedOutputStream{
 	 * @param size
 	 * @throws IOException 
 	 */
-	public EncodedOutputFileStream(OutputStream out, int size) throws IOException{
+	public EncodedFileOutputStream(OutputStream out, int size) throws IOException{
 		this(out, size, EncodedFileUtil.getDefaultEncoding());
 	}
 
@@ -70,7 +69,7 @@ public class EncodedOutputFileStream extends BufferedOutputStream{
 	 * @param type
 	 * @throws IOException 
 	 */
-    public EncodedOutputFileStream(OutputStream out, int size, EncodedFileUtil.EncodingType type) throws IOException{
+    public EncodedFileOutputStream(OutputStream out, int size, EncodedFileUtil.EncodingType type) throws IOException{
         super(out, size);
 		this.type = type;
         writeHeader();
