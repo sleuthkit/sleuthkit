@@ -53,7 +53,7 @@ public class EncodedFileUtil {
 			case XOR1:
 				return XOR1_HEADER;
 			default:
-				throw new IOException("Attempting to get header for EncodingType.NONE");
+				throw new IOException("Can not get header for " + type.toString());
 		}
 	}
 	
@@ -67,8 +67,8 @@ public class EncodedFileUtil {
 	 * @throws IOException 
 	 */
 	static byte [] getEncodedHeader(EncodingType type) throws IOException{
-		if(type.equals(EncodingType.NONE)){
-			throw new IOException("Attempting to get encoded header for EncodingType.NONE");
+		if(! type.canEncode()){
+			throw new IOException("Can not get encoded header for " + type.toString());
 		}
 		byte [] encHeader = new byte[HEADER_LENGTH];
 		byte [] plainHeader = getHeader(type).getBytes();
@@ -95,7 +95,7 @@ public class EncodedFileUtil {
 			case XOR1:
 				return ((byte)(b ^ 0xa5)); 
 			default:
-				throw new IOException("Attempting to encode byte with EncodingType.NONE");
+				throw new IOException("Can not encode byte with encoding type " + type.toString());
 		}
     }
 	
@@ -159,7 +159,9 @@ public class EncodedFileUtil {
 	 * @throws IOException 
 	 */
 	static public void encodeFile(String sourcePath, String destPath, EncodingType type) throws IOException{
-		
+		if(!type.canEncode()){
+			throw new IOException("Can not encode file with encoding type " + type.toString());
+		}
 		FileInputStream in = new FileInputStream(sourcePath);
 		try {
 			OutputStream out = new EncodedFileOutputStream(new BufferedOutputStream(new FileOutputStream(destPath)));
@@ -180,7 +182,25 @@ public class EncodedFileUtil {
 	}
 	
 	public enum EncodingType{
-		XOR1,
-		NONE;
+		XOR1(true, "XOR"),
+		NONE(false, "none"),
+		UNKNOWN(false, "unknown");
+		
+		private final boolean isValidEncoding;
+		private final String desc;
+		
+		private EncodingType(boolean isValidEncoding, String desc){
+			this.isValidEncoding = isValidEncoding;
+			this.desc = desc;
+		}
+		
+		public boolean canEncode(){
+			return isValidEncoding;
+		}
+		
+		@Override
+		public String toString(){
+			return desc;
+		}
 	}
 }

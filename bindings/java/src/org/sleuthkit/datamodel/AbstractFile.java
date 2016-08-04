@@ -74,6 +74,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	protected String md5Hash;
 	private String mimeType;
+	private EncodedFileUtil.EncodingType encodingType;
 	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private long dataSourceObjectId;
@@ -155,6 +156,7 @@ public abstract class AbstractFile extends AbstractContent {
 		}
 		this.parentPath = parentPath;
 		this.mimeType = mimeType;
+		this.encodingType = EncodedFileUtil.EncodingType.UNKNOWN;
 	}
 
 	/**
