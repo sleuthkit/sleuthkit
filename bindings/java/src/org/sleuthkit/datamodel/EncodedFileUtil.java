@@ -35,20 +35,12 @@ public class EncodedFileUtil {
 	final static private String XOR1_HEADER =  "AUTOPSY_CONTAINER_XOR1_xxxxxxxxx";
 	
 	/**
-	 * Get the default encoding method.
-	 * @return 
-	 */
-	static EncodingType getDefaultEncoding(){
-		return EncodingType.XOR1;
-	}
-	
-	/**
 	 * Get the header for the given encoding type.
 	 * @param type
 	 * @return
 	 * @throws IOException 
 	 */
-	static String getHeader(EncodingType type) throws IOException{
+	static String getHeader(TskData.EncodingType type) throws IOException{
 		switch (type){
 			case XOR1:
 				return XOR1_HEADER;
@@ -66,8 +58,8 @@ public class EncodedFileUtil {
 	 * @return
 	 * @throws IOException 
 	 */
-	static byte [] getEncodedHeader(EncodingType type) throws IOException{
-		if(! type.canEncode()){
+	static byte [] getEncodedHeader(TskData.EncodingType type) throws IOException{
+		if(type.equals(TskData.EncodingType.NONE)){
 			throw new IOException("Can not get encoded header for " + type.toString());
 		}
 		byte [] encHeader = new byte[HEADER_LENGTH];
@@ -90,7 +82,7 @@ public class EncodedFileUtil {
 	 * @return
 	 * @throws IOException 
 	 */
-	static byte encodeByte(byte b, EncodingType type) throws IOException{
+	static byte encodeByte(byte b, TskData.EncodingType type) throws IOException{
 		switch (type){
 			case XOR1:
 				return ((byte)(b ^ 0xa5)); 
@@ -105,7 +97,7 @@ public class EncodedFileUtil {
 	 * @return 
 	 * @throws IOException
 	 */
-	static EncodingType getEncoding(RandomAccessFile fileHandle){
+	static TskData.EncodingType getEncoding(RandomAccessFile fileHandle){
 		try{
 			long curOffset = fileHandle.getFilePointer();
 			if (curOffset != 0) {
@@ -114,12 +106,12 @@ public class EncodedFileUtil {
 			byte[] header = new byte[HEADER_LENGTH];
 			int bytesRead = fileHandle.read(header, 0, HEADER_LENGTH);
 			if(bytesRead != HEADER_LENGTH){
-				return EncodingType.NONE;
+				return TskData.EncodingType.NONE;
 			}
 
 			return(getTypeFromHeader(header));
 		} catch (IOException ex){
-			return EncodingType.NONE;
+			return TskData.EncodingType.NONE;
 		}
 	}
 	
@@ -128,27 +120,17 @@ public class EncodedFileUtil {
 	 * @param header
 	 * @return 
 	 */
-	static private EncodingType getTypeFromHeader(byte[] header){
+	static private TskData.EncodingType getTypeFromHeader(byte[] header){
 		if(header.length != HEADER_LENGTH){
-			return EncodingType.NONE;
+			return TskData.EncodingType.NONE;
 		}
 		
 		if(Arrays.equals(header, XOR1_HEADER.getBytes())){
-			return EncodingType.XOR1;
+			return TskData.EncodingType.XOR1;
 		} else {
-			return EncodingType.NONE;
+			return TskData.EncodingType.NONE;
 		}
 		
-	}
-	
-	/**
-	 * Encode a file on disk using the default method.
-	 * @param sourcePath
-	 * @param destPath
-	 * @throws IOException 
-	 */
-	static public void encodeFile(String sourcePath, String destPath) throws IOException{
-		encodeFile(sourcePath, destPath, getDefaultEncoding());
 	}
 	
 	/**
@@ -158,13 +140,13 @@ public class EncodedFileUtil {
 	 * @param type
 	 * @throws IOException 
 	 */
-	static public void encodeFile(String sourcePath, String destPath, EncodingType type) throws IOException{
-		if(!type.canEncode()){
+	static public void encodeFile(String sourcePath, String destPath, TskData.EncodingType type) throws IOException{
+		if(type.equals(TskData.EncodingType.NONE)){
 			throw new IOException("Can not encode file with encoding type " + type.toString());
 		}
 		FileInputStream in = new FileInputStream(sourcePath);
 		try {
-			OutputStream out = new EncodedFileOutputStream(new BufferedOutputStream(new FileOutputStream(destPath)));
+			OutputStream out = new EncodedFileOutputStream(new BufferedOutputStream(new FileOutputStream(destPath)), type);
 			try {
 				// Transfer bytes from in to out
 				byte[] buf = new byte[1024];
@@ -180,27 +162,5 @@ public class EncodedFileUtil {
 		}
 		
 	}
-	
-	public enum EncodingType{
-		XOR1(true, "XOR"),
-		NONE(false, "none"),
-		UNKNOWN(false, "unknown");
-		
-		private final boolean isValidEncoding;
-		private final String desc;
-		
-		private EncodingType(boolean isValidEncoding, String desc){
-			this.isValidEncoding = isValidEncoding;
-			this.desc = desc;
-		}
-		
-		public boolean canEncode(){
-			return isValidEncoding;
-		}
-		
-		@Override
-		public String toString(){
-			return desc;
-		}
-	}
+
 }

@@ -59,6 +59,7 @@ public abstract class AbstractFile extends AbstractContent {
 	private String localAbsPath; ///< absolute path representation of the local path
 	private volatile RandomAccessFile localFileHandle;
 	private volatile java.io.File localFile;
+	private TskData.EncodingType encodingType;
 	//range support
 	private List<TskFileRange> ranges;
 	/*
@@ -74,7 +75,6 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	protected String md5Hash;
 	private String mimeType;
-	private EncodedFileUtil.EncodingType encodingType;
 	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private long dataSourceObjectId;
@@ -156,7 +156,7 @@ public abstract class AbstractFile extends AbstractContent {
 		}
 		this.parentPath = parentPath;
 		this.mimeType = mimeType;
-		this.encodingType = EncodedFileUtil.EncodingType.UNKNOWN;
+		this.encodingType = TskData.EncodingType.NONE;
 	}
 
 	/**
@@ -825,9 +825,7 @@ public abstract class AbstractFile extends AbstractContent {
 		}
 
 		try {
-			// Test if the file is encoded
-			EncodedFileUtil.EncodingType encodingType = EncodedFileUtil.getEncoding(localFileHandle);
-			if( ! encodingType.equals(EncodedFileUtil.EncodingType.NONE)){
+			if( ! encodingType.equals(TskData.EncodingType.NONE)){
 				// The file is encoded, so we need to alter the offset to read (since there's
 				// a header on the encoded file) and then decode each byte
 				long encodedOffset = offset + EncodedFileUtil.getHeaderLength();
@@ -902,6 +900,14 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	public String getLocalAbsPath() {
 		return localAbsPath;
+	}
+	
+	/**
+	 * Set the type of encoding used on the file (for local/derived files only)
+	 * @param encodingType 
+	 */
+	protected final void setEncodingType(TskData.EncodingType encodingType){
+		this.encodingType = encodingType;
 	}
 
 	/**

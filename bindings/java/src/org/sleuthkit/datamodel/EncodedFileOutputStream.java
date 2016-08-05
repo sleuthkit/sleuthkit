@@ -28,16 +28,7 @@ import java.io.OutputStream;
  * the user's hard drive in their original form.
  */
 public class EncodedFileOutputStream extends BufferedOutputStream{
-	private EncodedFileUtil.EncodingType type;
-    
-	/**
-	 * Create an encoded output stream using the default encoding.
-	 * @param out
-	 * @throws IOException 
-	 */
-    public EncodedFileOutputStream(OutputStream out) throws IOException{
-        this(out, EncodedFileUtil.getDefaultEncoding());
-    }
+	private TskData.EncodingType type;
 	
 	/**
 	 * Create an encoded output stream using the specified encoding.
@@ -45,21 +36,10 @@ public class EncodedFileOutputStream extends BufferedOutputStream{
 	 * @param type
 	 * @throws IOException 
 	 */
-	public EncodedFileOutputStream(OutputStream out, EncodedFileUtil.EncodingType type) throws IOException{
+	public EncodedFileOutputStream(OutputStream out, TskData.EncodingType type) throws IOException{
         super(out);
 		this.type = type;
         writeHeader();		
-	}
-	
-	/**
-	 * Create an encoded output stream using the default encoding and the
-	 * specified buffer size.
-	 * @param out
-	 * @param size
-	 * @throws IOException 
-	 */
-	public EncodedFileOutputStream(OutputStream out, int size) throws IOException{
-		this(out, size, EncodedFileUtil.getDefaultEncoding());
 	}
 
 	/**
@@ -69,7 +49,7 @@ public class EncodedFileOutputStream extends BufferedOutputStream{
 	 * @param type
 	 * @throws IOException 
 	 */
-    public EncodedFileOutputStream(OutputStream out, int size, EncodedFileUtil.EncodingType type) throws IOException{
+    public EncodedFileOutputStream(OutputStream out, int size, TskData.EncodingType type) throws IOException{
         super(out, size);
 		this.type = type;
         writeHeader();

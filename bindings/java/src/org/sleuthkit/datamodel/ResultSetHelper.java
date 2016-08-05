@@ -301,8 +301,10 @@ class ResultSetHelper {
 		boolean hasLocalPath = rs.getBoolean("has_path"); //NON-NLS
 		long objId = rs.getLong("obj_id"); //NON-NLS
 		String localPath = null;
+		TskData.EncodingType encodingType = TskData.EncodingType.NONE;
 		if (hasLocalPath) {
 			localPath = db.getFilePath(objId);
+			encodingType = db.getEncodingType(objId);
 		}
 
 		String parentPath = rs.getString("parent_path"); //NON-NLS
@@ -319,7 +321,8 @@ class ResultSetHelper {
 						rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 						rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
 						parentPath, localPath,
-						parentId, rs.getString("mime_type"));
+						parentId, rs.getString("mime_type"),
+						encodingType);
 
 		return df;
 	}
@@ -338,8 +341,10 @@ class ResultSetHelper {
 	LocalFile localFile(ResultSet rs, long parentId) throws SQLException {
 		long objId = rs.getLong("obj_id"); //NON-NLS
 		String localPath = null;
+		TskData.EncodingType encodingType = TskData.EncodingType.NONE;
 		if (rs.getBoolean("has_path")) {
 			localPath = db.getFilePath(objId);
+			encodingType = db.getEncodingType(objId);
 		}
 		String parentPath = rs.getString("parent_path"); //NON-NLS
 		if (null == parentPath) {
@@ -356,7 +361,8 @@ class ResultSetHelper {
 				rs.getString("mime_type"), rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
 				parentId, parentPath,
 				rs.getLong("data_source_obj_id"),
-				localPath
+				localPath,
+				encodingType
 		);
 		return file;
 	}

@@ -278,7 +278,7 @@ int
         "Error creating tsk_files table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_files_path (obj_id INTEGER PRIMARY KEY, path TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id))",
+        ("CREATE TABLE tsk_files_path (obj_id INTEGER PRIMARY KEY, path TEXT NOT NULL, encoding_type INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id))",
         "Error creating tsk_files_path table: %s\n")
         ||
         attempt_exec

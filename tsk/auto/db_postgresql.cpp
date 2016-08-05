@@ -527,7 +527,7 @@ int TskDbPostgreSQL::initialize() {
         "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id), FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id));",
         "Error creating tsk_files table: %s\n")
         ||
-        attempt_exec("CREATE TABLE tsk_files_path (obj_id BIGSERIAL PRIMARY KEY, path TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id))",
+        attempt_exec("CREATE TABLE tsk_files_path (obj_id BIGSERIAL PRIMARY KEY, path TEXT NOT NULL, encoding_type INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id))",
         "Error creating tsk_files_path table: %s\n")
         ||
         attempt_exec("CREATE TABLE tsk_files_derived (obj_id BIGSERIAL PRIMARY KEY, derived_id BIGINT NOT NULL, rederive TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id))","Error creating tsk_files_derived table: %s\n")
