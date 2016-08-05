@@ -376,7 +376,7 @@ public class DerivedFile extends AbstractFile {
 	 * @param mimeType           The MIME type of the file, null if it has not
 	 *                           yet been determined.
 	 * 
-	 * @Deprecated Use the version with the explicit encoding type instead.
+	 * @Deprecated Do not make subclasses outside of this package.
 	 */
 	@Deprecated
 	DerivedFile(SleuthkitCase db,

@@ -384,7 +384,7 @@ public class LocalFile extends AbstractFile {
 	 * @param localPath          The absolute path of the file in secondary
 	 *                           storage.
 	 * 
-	 * @Deprecated Use the version with explicit encoding type instead
+	 * @Deprecated Do not make subclasses outside of this package
 	 */
 	@Deprecated
 	LocalFile(SleuthkitCase db,

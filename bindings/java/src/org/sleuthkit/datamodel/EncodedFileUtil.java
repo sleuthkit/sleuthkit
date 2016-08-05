@@ -85,7 +85,7 @@ public class EncodedFileUtil {
 	static byte encodeByte(byte b, TskData.EncodingType type) throws IOException{
 		switch (type){
 			case XOR1:
-				return ((byte)(b ^ 0xa5)); 
+				return ((byte)(b ^ 0xca)); 
 			default:
 				throw new IOException("Can not encode byte with encoding type " + type.toString());
 		}
