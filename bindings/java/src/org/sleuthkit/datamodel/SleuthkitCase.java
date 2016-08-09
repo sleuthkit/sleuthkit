@@ -209,6 +209,7 @@ public class SleuthkitCase {
 		CaseDbConnection connection = connections.getConnection();
 		this.initIngestModuleTypes(connection);
 		this.initIngestStatusTypes(connection);
+		this.initEncodingTypes(connection);
 		connection.close();
 		logSQLiteJDBCDriverInfo();
 	}
@@ -243,6 +244,7 @@ public class SleuthkitCase {
 		CaseDbConnection connection = connections.getConnection();
 		this.initIngestModuleTypes(connection);
 		this.initIngestStatusTypes(connection);
+		this.initEncodingTypes(connection);
 		connection.close();
 	}
 
@@ -391,6 +393,32 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
+		}
+	}
+	
+	/**
+	 * Put the file encoding types into the table.
+	 * This must be called after the database upgrades or the encoding_types table will not exist.
+	 *
+	 * @throws SQLException
+	 */
+	private void initEncodingTypes(CaseDbConnection connection) throws SQLException, TskCoreException {
+		Statement statement = null;
+		ResultSet resultSet = null;
+		try {
+			statement = connection.createStatement();
+			for (TskData.EncodingType type : TskData.EncodingType.values()) {
+				resultSet = connection.executeQuery(statement, "SELECT COUNT(*) FROM file_encoding_types WHERE encoding_type = " + type.getType()); //NON-NLS
+				resultSet.next();
+				if (resultSet.getLong(1) == 0) {
+					connection.executeUpdate(statement, "INSERT INTO file_encoding_types (encoding_type, name) VALUES (" + type.getType() + " , '" + type.name() + "')"); //NON-NLS
+				}
+				resultSet.close();
+				resultSet = null;
+			}
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
 		}
 	}
 
@@ -800,10 +828,16 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			updateStatement = connection.createStatement();
 
+			// Add the encoding table
+			statement.execute("CREATE TABLE file_encoding_types (encoding_type INTEGER PRIMARY KEY, name TEXT NOT NULL);");
+			initEncodingTypes(connection);
+			
 			// Add encoding type column to tsk_files_path
+			// This should really have the FOREIGN KEY constraint but there are problems 
+			// getting that to work, so we don't add it on this upgrade path.
 			statement.execute("ALTER TABLE tsk_files_path ADD COLUMN encoding_type INTEGER NOT NULL DEFAULT 0;");
-
-			return 4;
+			
+			return 5;
 
 		} finally {
 			closeResultSet(queryResultSet);

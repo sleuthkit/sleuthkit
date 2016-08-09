@@ -25,7 +25,8 @@ import java.io.OutputStream;
 /**
  * Output stream wrapper for encoding files being written to disk.
  * The idea is to prevent malicious files from getting extracted onto
- * the user's hard drive in their original form.
+ * the user's hard drive in their original form. The encoding type used here
+ * should match the one used to create the derived file database entry for this file.
  */
 public class EncodedFileOutputStream extends BufferedOutputStream{
 	private TskData.EncodingType type;

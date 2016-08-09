@@ -278,7 +278,10 @@ int
         "Error creating tsk_files table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_files_path (obj_id INTEGER PRIMARY KEY, path TEXT NOT NULL, encoding_type INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id))",
+        ("CREATE TABLE file_encoding_types (encoding_type INTEGER PRIMARY KEY, name TEXT NOT NULL);",
+        "Error creating file_encoding_types table: %s\n")
+        ||  
+        attempt_exec("CREATE TABLE tsk_files_path (obj_id BIGSERIAL PRIMARY KEY, path TEXT NOT NULL, encoding_type INTEGER NOT NULL, FOREIGN KEY(encoding_type) references file_encoding_types(encoding_type), FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id))",
         "Error creating tsk_files_path table: %s\n")
         ||
         attempt_exec

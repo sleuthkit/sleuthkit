@@ -776,8 +776,10 @@ public class TskData {
 	
 	/**
 	 * Encoding type records whether locally stored files have been encoded
-	 * or not, and the method used to do so. 
-	 * Files can be encoded using EncodedFileOutputStream.
+	 * or not, and the method used to do so. This is the encoding_type column
+	 * in the tsk_files_path table.
+	 * Files are encoded using EncodedFileOutputStream and are saved to the
+	 * database as derived files with the appropriate encoding type argument.
 	 */
 	public enum EncodingType{
 		// Update EncodedFileUtil.java to handle any new types
