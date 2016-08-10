@@ -402,10 +402,10 @@ public class SleuthkitCase {
 		try {
 			s = connection.createStatement();
 			for (ReviewStatus status : ReviewStatus.values()) {
-				rs = connection.executeQuery(s, "SELECT review_status_id FROM review_statuses WHERE review_status_id= " + status.getId());//NON-NLS
+				rs = connection.executeQuery(s, "SELECT review_status_id FROM review_statuses WHERE review_status_id= " + status.getID());//NON-NLS
 				if (false == rs.next()) {
 					s.execute("INSERT INTO review_statuses(review_status_id, review_status_name, display_name) "//NON-NLS
-							+ "VALUES(" + status.getId() + ",\"" + status.getName() + "\",\"" + status.getDisplayName() + "\")");//NON-NLS
+							+ "VALUES(" + status.getID() + ",\"" + status.getName() + "\",\"" + status.getDisplayName() + "\")");//NON-NLS
 				}
 				closeResultSet(rs);
 			}
@@ -824,7 +824,7 @@ public class SleuthkitCase {
 			}
 
 			//add review_status column to artifacts table.
-			statement.execute("ALTER TABLE blackboard_artifacts ADD COLUMN review_status_id INTEGER NOT NULL DEFAULT " + ReviewStatus.UNDECIDED.getId());
+			statement.execute("ALTER TABLE blackboard_artifacts ADD COLUMN review_status_id INTEGER NOT NULL DEFAULT " + ReviewStatus.UNDECIDED.getID());
 			return 5;
 
 		} finally {
@@ -6308,9 +6308,9 @@ public class SleuthkitCase {
 				+ "AND tsk_files.type = ? )"), //NON-NLS
 		SELECT_FILE_BY_ID("SELECT * FROM tsk_files WHERE obj_id = ? LIMIT 1"), //NON-NLS
 		INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id, review_status_id) " //NON-NLS
-				+ "VALUES (?, ?, ?," + ReviewStatus.UNDECIDED.getId() + ")"), //NON-NLS
+				+ "VALUES (?, ?, ?," + ReviewStatus.UNDECIDED.getID() + ")"), //NON-NLS
 		POSTGRESQL_INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id, review_status_id) " //NON-NLS
-				+ "VALUES (DEFAULT, ?, ?," + ReviewStatus.UNDECIDED.getId() + ")"), //NON-NLS
+				+ "VALUES (DEFAULT, ?, ?," + ReviewStatus.UNDECIDED.getID() + ")"), //NON-NLS
 		INSERT_STRING_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_text) " //NON-NLS
 				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
 		INSERT_BYTE_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_byte) " //NON-NLS
