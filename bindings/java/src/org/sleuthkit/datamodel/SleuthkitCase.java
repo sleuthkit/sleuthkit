@@ -5093,6 +5093,37 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Set the review status of the given artifact to newStatus
+	 *
+	 * @param artifact  The artifact whose review status is being set.
+	 * @param newStatus The new review status for the given artifact. Must not
+	 *                  be null.
+	 *
+	 * @throws TskCoreException thrown if a critical error occurred within tsk
+	 *                          core
+	 */
+	public void setReviewStatus(BlackboardArtifact artifact, ReviewStatus newStatus) throws TskCoreException {
+		if (newStatus == null) {
+			return;
+		}
+		CaseDbConnection connection = connections.getConnection();
+		acquireExclusiveLock();
+		Statement statement = null;
+		try {
+			statement = connection.createStatement();
+			connection.executeUpdate(statement, "UPDATE blackboard_artifacts "
+					+ " SET review_status_id=" + newStatus.getID()
+					+ " WHERE blackboard_artifacts.artifact_id = " + artifact.getArtifactID());
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error setting review status", ex);
+		} finally {
+			closeStatement(statement);
+			connection.close();
+			releaseExclusiveLock();
+		}
+	}
+
+	/**
 	 * Return the number of objects in the database of a given file type.
 	 *
 	 * @param contentType Type of file to count

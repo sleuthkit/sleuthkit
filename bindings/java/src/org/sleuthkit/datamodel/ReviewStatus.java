@@ -18,6 +18,8 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 /**
@@ -32,11 +34,29 @@ public enum ReviewStatus {
 	private final Integer id;
 	private final String name;
 	private final String displayName;
+	private final static Map<Integer, ReviewStatus> idToStatus = new HashMap<>();
+
+	static {
+		for (ReviewStatus status : values()) {
+			idToStatus.put(status.getID(), status);
+		};
+	}
 
 	private ReviewStatus(Integer id, String name, String displayNameKey) {
 		this.id = id;
 		this.name = name;
 		this.displayName = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString(displayNameKey);
+	}
+
+	/**
+	 * Get the Review Status with the given id, if one exists.
+	 *
+	 * @param id The review status id to instantiate.
+	 *
+	 * @return The review status with the given id, or null if none exists.
+	 */
+	public static ReviewStatus withID(int id) {
+		return idToStatus.get(id);
 	}
 
 	/**
