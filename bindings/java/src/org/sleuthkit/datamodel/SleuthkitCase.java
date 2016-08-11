@@ -381,9 +381,9 @@ public class SleuthkitCase {
 		try {
 			s = connection.createStatement();
 			for (IngestJobStatusType type : IngestJobStatusType.values()) {
-				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_job_status_types WHERE type_id=" + type.ordinal() + ";"); //NON-NLS
+				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_job_status_types WHERE type_id=" + type.ordinal() + ";");
 				if (!rs.next()) {
-					s.execute("INSERT INTO ingest_job_status_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "');");//NON-NLS
+					s.execute("INSERT INTO ingest_job_status_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "');");
 				}
 				rs.close();
 				rs = null;
@@ -396,6 +396,13 @@ public class SleuthkitCase {
 		}
 	}
 
+	/**
+	 * Initialize the review statuses lookup table from the ReviewStatus enum.
+	 *
+	 * @param connection The CaseDbConnection to use for DB operations.
+	 *
+	 * @throws TskCoreException if there is an error initializing the table.
+	 */
 	private void initReviewStatuses(CaseDbConnection connection) throws TskCoreException {
 		Statement s = null;
 		ResultSet rs = null;
@@ -816,14 +823,21 @@ public class SleuthkitCase {
 		Statement statement = null;
 		try {
 			statement = connection.createStatement();
-			// Add a review_statuses table.
+			// Add the review_statuses lookup table.
 			if (this.dbType.equals(DbType.SQLITE)) {
 				statement.execute("CREATE TABLE review_statuses (review_status_id INTEGER PRIMARY KEY, review_status_name TEXT NOT NULL, display_name TEXT NOT NULL)");
 			} else {
 				statement.execute("CREATE TABLE review_statuses (review_status_id BIGSERIAL PRIMARY KEY, review_status_name TEXT NOT NULL, display_name TEXT NOT NULL)");
 			}
 
-			//add review_status column to artifacts table.
+			/*
+			 * Add review_status_id column to artifacts table.
+			 *
+			 * NOTE: For DBs created with schema 5 we define a foreign key
+			 * constraint on the review_status_column. We don't bother with this
+			 * for DBs updated to schema 5 because of limitations of the SQLite
+			 * ALTER TABLE command.
+			 */
 			statement.execute("ALTER TABLE blackboard_artifacts ADD COLUMN review_status_id INTEGER NOT NULL DEFAULT " + ReviewStatus.UNDECIDED.getID());
 			return 5;
 

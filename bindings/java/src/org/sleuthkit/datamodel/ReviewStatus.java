@@ -22,7 +22,6 @@ import java.util.ResourceBundle;
 
 /**
  * Enum to represent the review status of a artifact.
- *
  */
 public enum ReviewStatus {
 
@@ -59,7 +58,7 @@ public enum ReviewStatus {
 	}
 
 	/**
-	 * Get the displayName The display name of this review status.
+	 * Get the display name of this review status.
 	 *
 	 * @return the displayName The display name of this review status.
 	 */
