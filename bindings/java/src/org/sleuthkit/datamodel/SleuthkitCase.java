@@ -81,7 +81,7 @@ import org.sqlite.SQLiteJDBCLoader;
  */
 public class SleuthkitCase {
 
-	private static final int SCHEMA_VERSION_NUMBER = 4; // This must be the same as TSK_SCHEMA_VER in tsk/auto/tsk_db.h.				
+	private static final int SCHEMA_VERSION_NUMBER = 5; // This must be the same as TSK_SCHEMA_VER in tsk/auto/tsk_db.h.				
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
@@ -209,6 +209,7 @@ public class SleuthkitCase {
 		CaseDbConnection connection = connections.getConnection();
 		this.initIngestModuleTypes(connection);
 		this.initIngestStatusTypes(connection);
+		this.initEncodingTypes(connection);
 		connection.close();
 		logSQLiteJDBCDriverInfo();
 	}
@@ -243,6 +244,7 @@ public class SleuthkitCase {
 		CaseDbConnection connection = connections.getConnection();
 		this.initIngestModuleTypes(connection);
 		this.initIngestStatusTypes(connection);
+		this.initEncodingTypes(connection);
 		connection.close();
 	}
 
@@ -393,6 +395,32 @@ public class SleuthkitCase {
 			closeStatement(s);
 		}
 	}
+	
+	/**
+	 * Put the file encoding types into the table.
+	 * This must be called after the database upgrades or the encoding_types table will not exist.
+	 *
+	 * @throws SQLException
+	 */
+	private void initEncodingTypes(CaseDbConnection connection) throws SQLException, TskCoreException {
+		Statement statement = null;
+		ResultSet resultSet = null;
+		try {
+			statement = connection.createStatement();
+			for (TskData.EncodingType type : TskData.EncodingType.values()) {
+				resultSet = connection.executeQuery(statement, "SELECT COUNT(*) FROM file_encoding_types WHERE encoding_type = " + type.getType()); //NON-NLS
+				resultSet.next();
+				if (resultSet.getLong(1) == 0) {
+					connection.executeUpdate(statement, "INSERT INTO file_encoding_types (encoding_type, name) VALUES (" + type.getType() + " , '" + type.name() + "')"); //NON-NLS
+				}
+				resultSet.close();
+				resultSet = null;
+			}
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+		}
+	}
 
 	/**
 	 * Modify the case database to bring it up-to-date with the current version
@@ -435,6 +463,7 @@ public class SleuthkitCase {
 				//    b. upgrade the database and then increment and return the schema version number.
 				schemaVersionNumber = updateFromSchema2toSchema3(schemaVersionNumber, connection);
 				schemaVersionNumber = updateFromSchema3toSchema4(schemaVersionNumber, connection);
+				schemaVersionNumber = updateFromSchema4toSchema5(schemaVersionNumber, connection);
 
 				// Write the updated schema version number to the the tsk_db_info table.
 				statement = connection.createStatement();
@@ -771,6 +800,55 @@ public class SleuthkitCase {
 
 	}
 
+	/**
+	 * Updates a schema version 4 database to a schema version 5 database.
+	 *
+	 * @param schemaVersionNumber The current schema version number of the
+	 *                            database.
+	 * @param connection          A connection to the case database.
+	 *
+	 * @return The new database schema version.
+	 *
+	 * @throws SQLException     If there is an error completing a database
+	 *                          operation.
+	 * @throws TskCoreException If there is an error completing a database
+	 *                          operation via another SleuthkitCase method.
+	 */
+	private int updateFromSchema4toSchema5(int schemaVersionNumber, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersionNumber != 4) {
+			return schemaVersionNumber;
+		}
+
+		Statement statement = null;
+		ResultSet resultSet = null;
+		Statement queryStatement = null;
+		ResultSet queryResultSet = null;
+		Statement updateStatement = null;
+		try {
+			statement = connection.createStatement();
+			updateStatement = connection.createStatement();
+
+			// Add the encoding table
+			statement.execute("CREATE TABLE file_encoding_types (encoding_type INTEGER PRIMARY KEY, name TEXT NOT NULL);");
+			initEncodingTypes(connection);
+			
+			// Add encoding type column to tsk_files_path
+			// This should really have the FOREIGN KEY constraint but there are problems 
+			// getting that to work, so we don't add it on this upgrade path.
+			statement.execute("ALTER TABLE tsk_files_path ADD COLUMN encoding_type INTEGER NOT NULL DEFAULT 0;");
+			
+			return 5;
+
+		} finally {
+			closeResultSet(queryResultSet);
+			closeStatement(queryStatement);
+			closeStatement(updateStatement);
+			closeResultSet(resultSet);
+			closeStatement(statement);
+		}
+
+	}
+	
 	/**
 	 * Returns case database schema version number.
 	 *
@@ -2918,6 +2996,42 @@ public class SleuthkitCase {
 		}
 		return filePath;
 	}
+	
+	/**
+	 * Get the encoding type for a file in tsk_files_path table
+	 *
+	 * @param id id of the file to get path for
+	 *
+	 * @return Encoding type (NONE if nothing was found)
+	 */
+	TskData.EncodingType getEncodingType(long id) {
+		CaseDbConnection connection;
+		try {
+			connection = connections.getConnection();
+		} catch (TskCoreException ex) {
+			logger.log(Level.SEVERE, "Error getting file path for file " + id, ex); //NON-NLS			
+			return null;
+		}
+		TskData.EncodingType type = TskData.EncodingType.NONE;
+		acquireSharedLock();
+		ResultSet rs = null;
+		try {
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ENCODING_FOR_FILE);
+			statement.clearParameters();
+			statement.setLong(1, id);
+			rs = connection.executeQuery(statement);
+			if (rs.next()) {
+				type = TskData.EncodingType.valueOf(rs.getInt(1));
+			}
+		} catch (SQLException ex) {
+			logger.log(Level.SEVERE, "Error getting encoding type for file " + id, ex); //NON-NLS
+		} finally {
+			closeResultSet(rs);
+			connection.close();
+			releaseSharedLock();
+		}
+		return type;
+	}
 
 	/**
 	 * Get a parent_path of a file in tsk_files table or null if there is none
@@ -3695,6 +3809,7 @@ public class SleuthkitCase {
 	 *                        unused
 	 * @param otherDetails    details of derivation method/tool, currently
 	 *                        unused
+	 * @param encodingType    Type of encoding used on the file (or NONE if no encoding)
 	 *
 	 * @return newly created derived file object
 	 *
@@ -3704,7 +3819,8 @@ public class SleuthkitCase {
 	public DerivedFile addDerivedFile(String fileName, String localPath,
 			long size, long ctime, long crtime, long atime, long mtime,
 			boolean isFile, AbstractFile parentFile,
-			String rederiveDetails, String toolName, String toolVersion, String otherDetails) throws TskCoreException {
+			String rederiveDetails, String toolName, String toolVersion, 
+			String otherDetails, TskData.EncodingType encodingType) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireExclusiveLock();
 		ResultSet rs = null;
@@ -3781,13 +3897,13 @@ public class SleuthkitCase {
 			connection.executeUpdate(statement);
 
 			//add localPath 
-			addFilePath(connection, newObjId, localPath);
+			addFilePath(connection, newObjId, localPath, encodingType);
 
 			connection.commitTransaction();
 
 			//TODO add derived method to tsk_files_derived and tsk_files_derived_method 
 			return new DerivedFile(this, newObjId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
-					size, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId, null);
+					size, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId, null,encodingType);
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
 			throw new TskCoreException("Failed to add derived file to case database", ex);
@@ -3810,6 +3926,7 @@ public class SleuthkitCase {
 	 * @param atime
 	 * @param mtime
 	 * @param isFile
+	 * @param encodingType
 	 * @param parent
 	 *
 	 * @return
@@ -3818,11 +3935,12 @@ public class SleuthkitCase {
 	 */
 	public LocalFile addLocalFile(String fileName, String localPath,
 			long size, long ctime, long crtime, long atime, long mtime,
-			boolean isFile, AbstractFile parent) throws TskCoreException {
+			boolean isFile, TskData.EncodingType encodingType,
+			AbstractFile parent) throws TskCoreException {
 		acquireExclusiveLock();
 		CaseDbTransaction localTrans = beginTransaction();
 		try {
-			LocalFile created = addLocalFile(fileName, localPath, size, ctime, crtime, atime, mtime, isFile, parent, localTrans);
+			LocalFile created = addLocalFile(fileName, localPath, size, ctime, crtime, atime, mtime, isFile, encodingType, parent, localTrans);
 			localTrans.commit();
 			return created;
 		} catch (TskCoreException ex) {
@@ -3847,6 +3965,7 @@ public class SleuthkitCase {
 	 * @param atime       The accessed time of the file
 	 * @param mtime       The modified time of the file.
 	 * @param isFile      True, unless the file is a directory.
+	 * @param encodingType Type of encoding used on the file
 	 * @param parent      The parent of the file (e.g., a virtual directory)
 	 * @param transaction A caller-managed transaction within which the add file
 	 *                    operations are performed.
@@ -3858,7 +3977,8 @@ public class SleuthkitCase {
 	 */
 	public LocalFile addLocalFile(String fileName, String localPath,
 			long size, long ctime, long crtime, long atime, long mtime,
-			boolean isFile, AbstractFile parent, CaseDbTransaction transaction) throws TskCoreException {
+			boolean isFile, TskData.EncodingType encodingType,
+			AbstractFile parent, CaseDbTransaction transaction) throws TskCoreException {
 
 		CaseDbConnection connection = transaction.getConnection();
 		acquireExclusiveLock();
@@ -3910,7 +4030,7 @@ public class SleuthkitCase {
 			long dataSourceObjId = getDataSourceObjectId(connection, parent.getId()); // RJCTODO: Let this be passed in or make a story
 			statement.setLong(16, dataSourceObjId);
 			connection.executeUpdate(statement);
-			addFilePath(connection, objectId, localPath);
+			addFilePath(connection, objectId, localPath, encodingType);
 			return new LocalFile(this,
 					objectId,
 					fileName,
@@ -3924,7 +4044,8 @@ public class SleuthkitCase {
 					null, null, null,
 					parent.getId(), parentPath,
 					dataSourceObjId,
-					localPath);
+					localPath,
+					encodingType);
 
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Failed to INSERT local file %s (%s) with parent id %d in tsk_files table", fileName, localPath, parent.getId()), ex);
@@ -3987,11 +4108,12 @@ public class SleuthkitCase {
 	 * @throws SQLException exception thrown when database error occurred and
 	 *                      path was not added
 	 */
-	private void addFilePath(CaseDbConnection connection, long objId, String path) throws SQLException {
+	private void addFilePath(CaseDbConnection connection, long objId, String path, TskData.EncodingType type) throws SQLException {
 		PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_LOCAL_PATH);
 		statement.clearParameters();
 		statement.setLong(1, objId);
 		statement.setString(2, path);
+		statement.setInt(3, type.getType());
 		connection.executeUpdate(statement);
 	}
 
@@ -6264,6 +6386,7 @@ public class SleuthkitCase {
 		SELECT_FILES_BY_DATA_SOURCE_AND_PARENT_PATH_AND_NAME("SELECT * FROM tsk_files WHERE LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE LOWER('%journal%') AND LOWER(parent_path) LIKE LOWER(?) AND data_source_obj_id = ?"), //NON-NLS
 		UPDATE_FILE_MD5("UPDATE tsk_files SET md5 = ? WHERE obj_id = ?"), //NON-NLS
 		SELECT_LOCAL_PATH_FOR_FILE("SELECT path FROM tsk_files_path WHERE obj_id = ?"), //NON-NLS
+		SELECT_ENCODING_FOR_FILE("SELECT encoding_type FROM tsk_files_path WHERE obj_id = ?"), // NON-NLS
 		SELECT_PATH_FOR_FILE("SELECT parent_path FROM tsk_files WHERE obj_id = ?"), //NON-NLS
 		SELECT_FILE_NAME("SELECT name FROM tsk_files WHERE obj_id = ?"), //NON-NLS
 		SELECT_DERIVED_FILE("SELECT derived_id, rederive FROM tsk_files_derived WHERE obj_id = ?"), //NON-NLS
@@ -6274,7 +6397,7 @@ public class SleuthkitCase {
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
 		INSERT_LAYOUT_FILE("INSERT INTO tsk_file_layout (obj_id, byte_start, byte_len, sequence) " //NON-NLS
 				+ "VALUES (?, ?, ?, ?)"), //NON-NLS
-		INSERT_LOCAL_PATH("INSERT INTO tsk_files_path (obj_id, path) VALUES (?, ?)"), //NON-NLS
+		INSERT_LOCAL_PATH("INSERT INTO tsk_files_path (obj_id, path, encoding_type) VALUES (?, ?, ?)"), //NON-NLS
 		COUNT_CHILD_OBJECTS_BY_PARENT("SELECT COUNT(obj_id) FROM tsk_objects WHERE par_obj_id = ?"), //NON-NLS
 		SELECT_FILE_SYSTEM_BY_OBJECT("SELECT fs_obj_id from tsk_files WHERE obj_id=?"), //NON-NLS
 		SELECT_TAG_NAMES("SELECT * FROM tag_names"), //NON-NLS
@@ -7397,4 +7520,103 @@ public class SleuthkitCase {
 		return addCarvedFiles(carvingResult);
 	}
 
+	/**
+	 * Creates a new derived file object, adds it to database and returns it.
+	 *
+	 * TODO add support for adding derived method
+	 *
+	 * @param fileName        file name the derived file
+	 * @param localPath       local path of the derived file, including the file
+	 *                        name. The path is relative to the database path.
+	 * @param size            size of the derived file in bytes
+	 * @param ctime
+	 * @param crtime
+	 * @param atime
+	 * @param mtime
+	 * @param isFile          whether a file or directory, true if a file
+	 * @param parentFile      parent file object (derived or local file)
+	 * @param rederiveDetails details needed to re-derive file (will be specific
+	 *                        to the derivation method), currently unused
+	 * @param toolName        name of derivation method/tool, currently unused
+	 * @param toolVersion     version of derivation method/tool, currently
+	 *                        unused
+	 * @param otherDetails    details of derivation method/tool, currently
+	 *                        unused
+	 *
+	 * @return newly created derived file object
+	 *
+	 * @throws TskCoreException exception thrown if the object creation failed
+	 *                          due to a critical system error
+	 * @Deprecated Use the newer version with explicit encoding type parameter
+	 */
+	@Deprecated
+	public DerivedFile addDerivedFile(String fileName, String localPath,
+			long size, long ctime, long crtime, long atime, long mtime,
+			boolean isFile, AbstractFile parentFile,
+			String rederiveDetails, String toolName, String toolVersion, String otherDetails) throws TskCoreException {
+		return addDerivedFile(fileName, localPath, size, ctime, crtime, atime, mtime,
+				isFile, parentFile, rederiveDetails, toolName, toolVersion,
+				otherDetails, TskData.EncodingType.NONE);
+	}
+	
+	/**
+	 * Adds a local/logical file to the case database. The database operations
+	 * are done within a caller-managed transaction; the caller is responsible
+	 * for committing or rolling back the transaction.
+	 *
+	 * @param fileName    The name of the file.
+	 * @param localPath   The absolute path (including the file name) of the
+	 *                    local/logical in secondary storage.
+	 * @param size        The size of the file in bytes.
+	 * @param ctime       The changed time of the file.
+	 * @param crtime      The creation time of the file.
+	 * @param atime       The accessed time of the file
+	 * @param mtime       The modified time of the file.
+	 * @param isFile      True, unless the file is a directory.
+	 * @param parent      The parent of the file (e.g., a virtual directory)
+	 * @param transaction A caller-managed transaction within which the add file
+	 *                    operations are performed.
+	 *
+	 * @return An object representing the local/logical file.
+	 *
+	 * @throws TskCoreException if there is an error completing a case database
+	 *                          operation.
+	 * @Deprecated Use the newer version with explicit encoding type parameter
+	 */
+	@Deprecated
+	public LocalFile addLocalFile(String fileName, String localPath,
+			long size, long ctime, long crtime, long atime, long mtime,
+			boolean isFile,
+			AbstractFile parent, CaseDbTransaction transaction) throws TskCoreException {
+		return addLocalFile(fileName, localPath, size, ctime, crtime, atime, mtime, isFile,
+				TskData.EncodingType.NONE, parent, transaction);
+	}
+	
+	/**
+	 * Wraps the version of addLocalFile that takes a Transaction in a
+	 * transaction local to this method.
+	 *
+	 * @param fileName
+	 * @param localPath
+	 * @param size
+	 * @param ctime
+	 * @param crtime
+	 * @param atime
+	 * @param mtime
+	 * @param isFile
+	 * @param parent
+	 *
+	 * @return
+	 *
+	 * @throws TskCoreException
+	 * @Deprecated Use the newer version with explicit encoding type parameter
+	 */
+	@Deprecated
+	public LocalFile addLocalFile(String fileName, String localPath,
+			long size, long ctime, long crtime, long atime, long mtime,
+			boolean isFile,
+			AbstractFile parent) throws TskCoreException {
+		return addLocalFile(fileName, localPath, size, ctime, crtime, atime,mtime,
+				isFile, TskData.EncodingType.NONE, parent);
+	}
 }

@@ -83,7 +83,8 @@ public class LocalFile extends AbstractFile {
 			String mimeType, String md5Hash, FileKnown knownState,
 			long parentId, String parentPath,
 			long dataSourceObjectId,
-			String localPath) {
+			String localPath,
+			TskData.EncodingType encodingType) {
 		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0,
 				name, fileType, 0L, 0, dirType, metaType, dirFlag,
 				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath, mimeType);
@@ -94,6 +95,7 @@ public class LocalFile extends AbstractFile {
 			setParentId(parentId);
 		}
 		super.setLocalPath(localPath, true);
+		setEncodingType(encodingType);
 	}
 
 	/**
@@ -341,6 +343,65 @@ public class LocalFile extends AbstractFile {
 			String md5Hash, FileKnown knownState,
 			String parentPath, String localPath, long parentId) {
 		this(db, objId, name, TSK_DB_FILES_TYPE_ENUM.LOCAL, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, md5Hash, knownState, parentPath, localPath);
+	}
+	
+	/**
+	 * Constructs a representation of a local/logical file (e.g., on a user's
+	 * machine) that has been added to the case database.
+	 *
+	 * @param db                 The case database to which the file has been
+	 *                           added.
+	 * @param objId              The object id of the file in the case database.
+	 * @param name               The name of the file.
+	 * @param fileType           The type of the file.
+	 * @param dirType            The type of the file, usually as reported in
+	 *                           the name structure of the file system. May be
+	 *                           set to TSK_FS_NAME_TYPE_ENUM.UNDEF.
+	 * @param metaType           The type of the file, usually as reported in
+	 *                           the metadata structure of the file system. May
+	 *                           be set to
+	 *                           TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
+	 * @param dirFlag            The allocated status of the file, usually as
+	 *                           reported in the name structure of the file
+	 *                           system.
+	 * @param metaFlags          The allocated status of the file, usually as
+	 *                           reported in the metadata structure of the file
+	 *                           system.
+	 * @param size               The size of the file.
+	 * @param ctime              The changed time of the file.
+	 * @param crtime             The created time of the file.
+	 * @param atime              The accessed time of the file.
+	 * @param mtime              The modified time of the file.
+	 * @param mimeType           The MIME type of the file, null if it has not
+	 *                           yet been determined.
+	 * @param md5Hash            The MD5 hash of the file, null if not yet
+	 *                           calculated.
+	 * @param knownState         The known state of the file from a hash
+	 *                           database lookup, null if not yet looked up.
+	 * @param parentId           The object id of parent of the file.
+	 * @param parentPath         The path of the parent of the file.
+	 * @param dataSourceObjectId The object id of the data source for the file.
+	 * @param localPath          The absolute path of the file in secondary
+	 *                           storage.
+	 * 
+	 * @Deprecated Do not make subclasses outside of this package
+	 */
+	@Deprecated
+	LocalFile(SleuthkitCase db,
+			long objId,
+			String name,
+			TSK_DB_FILES_TYPE_ENUM fileType,
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
+			long size,
+			long ctime, long crtime, long atime, long mtime,
+			String mimeType, String md5Hash, FileKnown knownState,
+			long parentId, String parentPath,
+			long dataSourceObjectId,
+			String localPath) {
+		this(db, objId, name, fileType, dirType, metaType, dirFlag, metaFlags, size, 
+				ctime, crtime, atime, mtime, mimeType, md5Hash, knownState,
+				parentId, parentPath, dataSourceObjectId, localPath, TskData.EncodingType.NONE);
 	}
 
 }
