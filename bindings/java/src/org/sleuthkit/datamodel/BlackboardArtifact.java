@@ -305,6 +305,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	private final int artifactTypeID;
 	private final String artifactTypeName;
 	private final String displayName;
+	private final ReviewStatus reviewStatus;
 	private final SleuthkitCase sleuthkitCase;
 	private final List<BlackboardAttribute> attrsCache = new ArrayList<BlackboardAttribute>();
 	private boolean loadedCacheFromDb = false; // true once we've gone to the DB to fill in the attrsCache.  Until it is set, it may not be complete.
@@ -319,14 +320,16 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * @param artifactTypeID   the type id of this artifact
 	 * @param artifactTypeName the type name of this artifact
 	 * @param displayName      the display name of this artifact
+	 * @param reviewStatus     the review status of this artifact
 	 */
-	protected BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long objID, int artifactTypeID, String artifactTypeName, String displayName) {
+	protected BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long objID, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus) {
 		this.sleuthkitCase = sleuthkitCase;
 		this.artifactID = artifactID;
 		this.objID = objID;
 		this.artifactTypeID = artifactTypeID;
 		this.artifactTypeName = artifactTypeName;
 		this.displayName = displayName;
+		this.reviewStatus = reviewStatus;
 	}
 
 	/**
@@ -339,9 +342,10 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * @param artifactTypeID   the type id of this artifact
 	 * @param artifactTypeName the type name of this artifact
 	 * @param displayName      the display name of this artifact
+	 * @param reviewStatus     the review status of this artifact
 	 * @param isNew            true if we are currently creating the artifact
 	 */
-	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long objID, int artifactTypeID, String artifactTypeName, String displayName, boolean isNew) {
+	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long objID, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, boolean isNew) {
 		this.sleuthkitCase = sleuthkitCase;
 		this.artifactID = artifactID;
 		this.objID = objID;
@@ -353,6 +357,11 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		if (isNew) {
 			this.loadedCacheFromDb = true;
 		}
+		this.reviewStatus = reviewStatus;
+	}
+
+	public ReviewStatus getReviewStatus() {
+		return reviewStatus;
 	}
 
 	/**
