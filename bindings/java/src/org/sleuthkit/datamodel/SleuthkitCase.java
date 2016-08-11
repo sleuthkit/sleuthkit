@@ -1768,7 +1768,7 @@ public class SleuthkitCase {
 					+ "blackboard_artifact_types.artifact_type_id, "
 					+ "blackboard_artifact_types.type_name, "
 					+ "blackboard_artifact_types.display_name,"
-					+ "blackboard_artifact_types.review_status_id,"
+					+ "blackboard_artifacts.review_status_id "
 					+ "FROM blackboard_artifacts, blackboard_artifact_types "
 					+ "WHERE blackboard_artifacts.artifact_type_id = blackboard_artifact_types.artifact_type_id AND "
 					+ whereClause;
