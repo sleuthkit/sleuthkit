@@ -26,7 +26,7 @@ usage()
     TFPRINTF(stderr,
              _TSK_T
              ("usage: %s [-f fstype] [-i imgtype] [-b dev_sector_size]"
-              " [-o imgoffset] [-vV] image inode\n"),
+              " [-o imgoffset] [-lvV] image inode\n"),
              progname);
     tsk_fprintf(stderr,
                 "\t-i imgtype: The format of the image file "
@@ -40,6 +40,7 @@ usage()
     tsk_fprintf(stderr,
                 "\t-o imgoffset: The offset of the file system"
                 " in the image (in sectors)\n");
+    tsk_fprintf(stderr, "\t-l: Long output format with detailed information\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: print version\n");
 
@@ -63,6 +64,7 @@ main(int argc, char **argv1)
     TSK_TCHAR *cp = NULL;
     unsigned int ssize = 0;
     TSK_TCHAR **argv = NULL;
+    TSK_FS_USNJLS_FLAG_ENUM flag = TSK_FS_USNJLS_NONE;
 
 #ifdef TSK_WIN32
     // On Windows, get the wide arguments (mingw doesn't support wmain)
@@ -78,7 +80,7 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("b:f:i:o:vV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("b:f:i:o:lvV"))) > 0) {
         switch (ch) {
         case _TSK_T('?'): {
             default:
@@ -125,6 +127,9 @@ main(int argc, char **argv1)
                 tsk_error_print(stderr);
                 exit(1);
             }
+            break;
+        case _TSK_T('l'):
+            flag = TSK_FS_USNJLS_LONG;
             break;
         case _TSK_T('v'):
             tsk_verbose++;
@@ -224,7 +229,7 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    if (tsk_fs_usnjls(fs, inum)) {
+    if (tsk_fs_usnjls(fs, inum, flag)) {
         tsk_error_print(stderr);
         fs->close(fs);
         img->close(img);
