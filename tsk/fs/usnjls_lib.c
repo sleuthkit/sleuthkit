@@ -21,39 +21,6 @@
 
 
 /*
- * call back action function for usnjentry_walk, simple printing
- */
-static TSK_WALK_RET_ENUM
-print_usnjent_act(TSK_USN_RECORD_HEADER *a_header, void *a_record, void *a_ptr)
-{
-    switch(a_header->major_version) {
-    case 2: {
-        TSK_USN_RECORD_V2 *record = (TSK_USN_RECORD_V2 *) a_record;
-
-        tsk_fprintf(stdout, "%" PRIu32 ".%" PRIu32 " " "%" PRIu32 " "
-                    "%" PRIu64 "-%" PRIu32 " " "%" PRIu64 "-%" PRIu32 " "
-                    "%" PRIu32 " " "%" PRIu32 ".%" PRIu32 " " "%" PRIu32 " "
-                    "%" PRIu32 " " "%" PRIu32 " " "%" PRIu32 " ",
-                    a_header->major_version, a_header->minor_version,
-                    a_header->length, record->refnum, record->refnum_seq,
-                    record->parent_refnum, record->parent_refnum_seq,
-                    record->usn, record->time_sec, record->time_nsec,
-                    record->reason, record->source_info, record->security,
-                    record->attributes);
-        if (tsk_print_sanitized(stdout, record->fname) == 1)
-            return TSK_WALK_ERROR;
-        tsk_fprintf(stdout, "\n");
-
-        break;
-    }
-    default: return TSK_WALK_ERROR;
-    }
-
-    return TSK_WALK_CONT;
-}
-
-
-/*
  * unpack reason field and print its content
  */
 static void
@@ -239,44 +206,97 @@ print_usn_attributes(TSK_FS_NTFS_FILE_ATTRIBUTES attributes)
 }
 
 
+static TSK_WALK_RET_ENUM
+print_v2_record(TSK_USN_RECORD_HEADER *header, TSK_USN_RECORD_V2 *record)
+{
+    tsk_fprintf(stdout, "%" PRIu32 ".%" PRIu32 " " "%" PRIu32 " "
+                "%" PRIu64 "-%" PRIu32 " " "%" PRIu64 "-%" PRIu32 " "
+                "%" PRIu32 " " "%" PRIu32 ".%" PRIu32 " " "%" PRIu32 " "
+                "%" PRIu32 " " "%" PRIu32 " " "%" PRIu32 " ",
+                header->major_version, header->minor_version,
+                header->length, record->refnum, record->refnum_seq,
+                record->parent_refnum, record->parent_refnum_seq,
+                record->usn, record->time_sec, record->time_nsec,
+                record->reason, record->source_info, record->security,
+                record->attributes);
+    if (tsk_print_sanitized(stdout, record->fname) == 1)
+        return TSK_WALK_ERROR;
+    tsk_fprintf(stdout, "\n");
+
+    return TSK_WALK_CONT;
+}
+
+
+static TSK_WALK_RET_ENUM
+print_v2_record_long(TSK_USN_RECORD_HEADER *header, TSK_USN_RECORD_V2 *record)
+{
+    tsk_fprintf(stdout,
+                "Version: %" PRIu32 ".%" PRIu32 " Length: %" PRIu32 "\n"
+                "Reference Number: %" PRIu64 "-%" PRIu32 "\n"
+                "Parent Reference Number: %" PRIu64 "-%" PRIu32 "\n"
+                "Update Sequence Number: %" PRIu32 "\n"
+                "Time: %" PRIu32 ".%" PRIu32 "\n",
+                header->major_version, header->minor_version,
+                header->length, record->refnum, record->refnum_seq,
+                record->parent_refnum, record->parent_refnum_seq,
+                record->usn, record->time_sec, record->time_nsec);
+    print_usn_reason(record->reason);
+    print_usn_source_info(record->source_info);
+    tsk_fprintf(stdout, "Security Id: %" PRIu32 "\n", record->security);
+    print_usn_attributes(record->attributes);
+    tsk_fprintf(stdout, "Name: ");
+    if (tsk_print_sanitized(stdout, record->fname) == 1)
+        return TSK_WALK_ERROR;
+    tsk_fprintf(stdout, "\n\n");
+
+    return TSK_WALK_CONT;
+}
+
+
+static TSK_WALK_RET_ENUM
+print_v2_record_mac(TSK_USN_RECORD_HEADER *header, TSK_USN_RECORD_V2 *record)
+{
+    tsk_fprintf(stdout, "%" PRIu32 ".%" PRIu32 "|" "%" PRIu32 "|"
+                "%" PRIu64 "-%" PRIu32 "|" "%" PRIu64 "-%" PRIu32 "|"
+                "%" PRIu32 "|" "%" PRIu32 ".%" PRIu32 "|" "%" PRIu32 "|"
+                "%" PRIu32 "|" "%" PRIu32 "|" "%" PRIu32 "|",
+                header->major_version, header->minor_version,
+                header->length, record->refnum, record->refnum_seq,
+                record->parent_refnum, record->parent_refnum_seq,
+                record->usn, record->time_sec, record->time_nsec,
+                record->reason, record->source_info, record->security,
+                record->attributes);
+    if (tsk_print_sanitized(stdout, record->fname) == 1)
+        return TSK_WALK_ERROR;
+    tsk_fprintf(stdout, "\n");
+
+    return TSK_WALK_CONT;
+}
+
+
 /*
- * call back action function for usnjentry_walk, long information printing
+ * call back action function for usnjentry_walk
  */
 static TSK_WALK_RET_ENUM
-print_usnjent_act_long(TSK_USN_RECORD_HEADER *a_header, void *a_record,
-                       void *a_ptr)
+print_usnjent_act(TSK_USN_RECORD_HEADER *a_header, void *a_record, void *a_ptr)
 {
+    TSK_FS_USNJLS_FLAG_ENUM *flag = (TSK_FS_USNJLS_FLAG_ENUM*) a_ptr;
+
     switch(a_header->major_version) {
     case 2: {
         TSK_USN_RECORD_V2 *record = (TSK_USN_RECORD_V2 *) a_record;
 
-        tsk_fprintf(stdout,
-                    "Version: %" PRIu32 ".%" PRIu32 " Length: %" PRIu32 "\n"
-                    "Reference Number: %" PRIu64 "-%" PRIu32 "\n"
-                    "Parent Reference Number: %" PRIu64 "-%" PRIu32 "\n"
-                    "Update Sequence Number: %" PRIu32 "\n"
-                    "Time: %" PRIu32 ".%" PRIu32 "\n",
-                    a_header->major_version, a_header->minor_version,
-                    a_header->length, record->refnum, record->refnum_seq,
-                    record->parent_refnum, record->parent_refnum_seq,
-                    record->usn, record->time_sec, record->time_nsec);
-        print_usn_reason(record->reason);
-        print_usn_source_info(record->source_info);
-        tsk_fprintf(stdout, "Security Id: %" PRIu32 "\n", record->security);
-        print_usn_attributes(record->attributes);
-        tsk_fprintf(stdout, "Name: ");
-        if (tsk_print_sanitized(stdout, record->fname) == 1)
-            return TSK_WALK_ERROR;
-        tsk_fprintf(stdout, "\n");
-
-        tsk_fprintf(stdout, "\n");
-
-        break;
+        switch(*flag) {
+        case TSK_FS_USNJLS_NONE:
+            return print_v2_record(a_header, record);
+        case TSK_FS_USNJLS_LONG:
+            return print_v2_record_long(a_header, record);
+        case TSK_FS_USNJLS_MAC:
+            return print_v2_record_mac(a_header, record);
+        }
     }
     default: return TSK_WALK_ERROR;
     }
-
-    return TSK_WALK_CONT;
 }
 
 
@@ -292,13 +312,5 @@ tsk_fs_usnjls(TSK_FS_INFO * fs, TSK_INUM_T inode, TSK_FS_USNJLS_FLAG_ENUM flags)
     if (ret == 1)
         return 1;
 
-    if (flags & TSK_FS_USNJLS_LONG) {
-        return tsk_ntfs_usnjentry_walk(fs, print_usnjent_act_long, NULL);
-    } else {
-        tsk_fprintf(stdout,
-                    "Version Length Inode ParentInode Usn Timestamp Reason "
-                    "SourceInfo Security Attributes Name\n");
-
-        return tsk_ntfs_usnjentry_walk(fs, print_usnjent_act, NULL);
-    }
+    return tsk_ntfs_usnjentry_walk(fs, print_usnjent_act, &flags);
 }

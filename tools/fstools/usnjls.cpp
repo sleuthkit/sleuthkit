@@ -26,7 +26,7 @@ usage()
     TFPRINTF(stderr,
              _TSK_T
              ("usage: %s [-f fstype] [-i imgtype] [-b dev_sector_size]"
-              " [-o imgoffset] [-lvV] image inode\n"),
+              " [-o imgoffset] [-lmvV] image inode\n"),
              progname);
     tsk_fprintf(stderr,
                 "\t-i imgtype: The format of the image file "
@@ -41,6 +41,7 @@ usage()
                 "\t-o imgoffset: The offset of the file system"
                 " in the image (in sectors)\n");
     tsk_fprintf(stderr, "\t-l: Long output format with detailed information\n");
+    tsk_fprintf(stderr, "\t-m: Time machine output format\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: print version\n");
 
@@ -80,7 +81,7 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("b:f:i:o:lvV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("b:f:i:o:lmvV"))) > 0) {
         switch (ch) {
         case _TSK_T('?'): {
             default:
@@ -130,6 +131,9 @@ main(int argc, char **argv1)
             break;
         case _TSK_T('l'):
             flag = TSK_FS_USNJLS_LONG;
+            break;
+        case _TSK_T('m'):
+            flag = TSK_FS_USNJLS_MAC;
             break;
         case _TSK_T('v'):
             tsk_verbose++;
