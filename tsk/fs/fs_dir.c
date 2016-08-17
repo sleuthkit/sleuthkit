@@ -1192,6 +1192,10 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
             TSK_FS_META_FLAG_UNALLOC | TSK_FS_META_FLAG_USED,
             find_orphan_meta_walk_cb, &data)) {
         tsk_fs_name_free(data.fs_name);
+        if (data.orphan_subdir_list) {
+            tsk_list_free(data.orphan_subdir_list);
+            data.orphan_subdir_list = NULL;
+        }
         tsk_release_lock(&a_fs->orphan_dir_lock);
         return TSK_ERR;
     }
