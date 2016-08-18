@@ -1220,6 +1220,15 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
                     &a_fs_dir->names[a_fs_dir->names_used - 1]);
             }
             a_fs_dir->names_used--;
+            TSK_FS_NAME *fs_name = &a_fs_dir->names[a_fs_dir->names_used];
+            if (fs_name->name) {
+                free(fs_name->name);
+                fs_name->name = NULL;
+            }
+            if (fs_name->shrt_name) {
+                free(fs_name->shrt_name);
+                fs_name->shrt_name = NULL;
+            }
         }
     }
 
