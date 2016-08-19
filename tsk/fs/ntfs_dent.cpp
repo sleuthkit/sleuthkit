@@ -656,7 +656,7 @@ ntfs_fix_idxrec(NTFS_INFO * ntfs, ntfs_idxrec * idxrec, uint32_t len)
 
     /* sanity check so we don't run over in the next loop */
     if ((unsigned int) ((tsk_getu16(fs->endian, idxrec->upd_cnt) - 1) *
-            ntfs->ssize_b) > len) {
+            512) > len) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
         tsk_error_set_errstr
@@ -676,7 +676,7 @@ ntfs_fix_idxrec(NTFS_INFO * ntfs, ntfs_idxrec * idxrec, uint32_t len)
     for (i = 1; i < tsk_getu16(fs->endian, idxrec->upd_cnt); i++) {
 
         /* The offset into the buffer of the value to analyze */
-        int offset = i * ntfs->ssize_b - 2;
+        int offset = i * 512 - 2;
         uint8_t *new_val, *old_val;
 
         /* get the current sequence value */
