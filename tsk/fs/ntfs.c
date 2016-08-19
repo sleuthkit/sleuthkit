@@ -358,7 +358,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
     mft = (ntfs_mft *) a_buf;
     if ((tsk_getu16(fs->endian, mft->upd_cnt) > 0) &&
         (((uint32_t) (tsk_getu16(fs->endian,
-                        mft->upd_cnt) - 1) * 512) >
+                        mft->upd_cnt) - 1) * NTFS_UPDATE_SEQ_STRIDE) >
             a_ntfs->mft_rsize_b)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
@@ -384,7 +384,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
     for (i = 1; i < tsk_getu16(fs->endian, mft->upd_cnt); i++) {
         uint8_t *new_val, *old_val;
         /* The offset into the buffer of the value to analyze */
-        size_t offset = i * 512 - 2;
+        size_t offset = i * NTFS_UPDATE_SEQ_STRIDE - 2;
         /* get the current sequence value */
         uint16_t cur_seq =
             tsk_getu16(fs->endian, (uintptr_t) a_buf + offset);
