@@ -824,11 +824,8 @@ public class SleuthkitCase {
 		try {
 			statement = connection.createStatement();
 			// Add the review_statuses lookup table.
-			if (this.dbType.equals(DbType.SQLITE)) {
-				statement.execute("CREATE TABLE review_statuses (review_status_id INTEGER PRIMARY KEY, review_status_name TEXT NOT NULL, display_name TEXT NOT NULL)");
-			} else {
-				statement.execute("CREATE TABLE review_statuses (review_status_id BIGSERIAL PRIMARY KEY, review_status_name TEXT NOT NULL, display_name TEXT NOT NULL)");
-			}
+
+			statement.execute("CREATE TABLE review_statuses (review_status_id INTEGER PRIMARY KEY, review_status_name TEXT NOT NULL, display_name TEXT NOT NULL)");
 
 			/*
 			 * Add review_status_id column to artifacts table.

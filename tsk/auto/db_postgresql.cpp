@@ -544,7 +544,7 @@ int TskDbPostgreSQL::initialize() {
         ||
         attempt_exec("CREATE TABLE blackboard_attribute_types (attribute_type_id BIGSERIAL PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT, value_type INTEGER NOT NULL)","Error creating blackboard_attribute_types table: %s\n")
         ||
-		attempt_exec("CREATE TABLE review_statuses (review_status_id BIGSERIAL PRIMARY KEY, "
+		attempt_exec("CREATE TABLE review_statuses (review_status_id INTEGER PRIMARY KEY, "
 		"review_status_name TEXT NOT NULL, "
 		"display_name TEXT NOT NULL)",
 		"Error creating review_statuses table: %s\n")
