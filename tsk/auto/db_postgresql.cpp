@@ -544,8 +544,18 @@ int TskDbPostgreSQL::initialize() {
         ||
         attempt_exec("CREATE TABLE blackboard_attribute_types (attribute_type_id BIGSERIAL PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT, value_type INTEGER NOT NULL)","Error creating blackboard_attribute_types table: %s\n")
         ||
-        attempt_exec("CREATE TABLE blackboard_artifacts (artifact_id BIGSERIAL PRIMARY KEY, obj_id BIGINT NOT NULL, artifact_type_id BIGINT NOT NULL, "
-        "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id))",
+		attempt_exec("CREATE TABLE review_statuses (review_status_id INTEGER PRIMARY KEY, "
+		"review_status_name TEXT NOT NULL, "
+		"display_name TEXT NOT NULL)",
+		"Error creating review_statuses table: %s\n")
+        ||
+        attempt_exec("CREATE TABLE blackboard_artifacts (artifact_id BIGSERIAL PRIMARY KEY, "
+		"obj_id BIGINT NOT NULL, "
+		"artifact_type_id BIGINT NOT NULL, "
+		"review_status_id INTEGER NOT NULL, "
+        "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), "
+		"FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id)), "
+		"FOREIGN KEY(review_status_id) REFERENCES review_statuses(review_status_id)",
         "Error creating blackboard_artifact table: %s\n")
         ||
         attempt_exec("ALTER SEQUENCE blackboard_artifacts_artifact_id_seq minvalue -9223372036854775808 restart with -9223372036854775808", "Error setting starting value for artifact_id: %s\n")
