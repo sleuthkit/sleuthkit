@@ -18,21 +18,17 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.io.BufferedOutputStream;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
 
 /**
  * Utility methods to support encoding/decoding files written to disk.
  */
-public class EncodedFileUtil {
+class EncodedFileUtil {
 	
 	final static private int HEADER_LENGTH = 32;  // All headers must be this long
-	final static private String XOR1_HEADER =  "AUTOPSY_CONTAINER_XOR1_xxxxxxxxx";
+	final static private String XOR1_HEADER =  "TSK_CONTAINER_XOR1_xxxxxxxxxxxxx";
 	
 	/**
 	 * Get the header for the given encoding type.
@@ -71,12 +67,17 @@ public class EncodedFileUtil {
 		return encHeader;
 	}
 	
+	/**
+	 * Returns the length of the encoded header.
+	 * This is a fixed length to allow easier detection.
+	 * @return 
+	 */
 	static int getHeaderLength(){
 		return HEADER_LENGTH;
 	}
 	
 	/**
-	 * Encode (or decode) a byte using the given encoding scheme.
+	 * Encode a byte using the given encoding scheme.
 	 * @param b
 	 * @param type
 	 * @return
@@ -90,6 +91,22 @@ public class EncodedFileUtil {
 				throw new IOException("Can not encode byte with encoding type " + type.toString());
 		}
     }
+	
+	/**
+	 * Decode a byte using the given encoding scheme.
+	 * @param b
+	 * @param type
+	 * @return
+	 * @throws IOException 
+	 */
+	static byte decodeByte(byte b, TskData.EncodingType type) throws IOException{
+		switch (type){
+			case XOR1:
+				return ((byte)(b ^ 0xca)); 
+			default:
+				throw new IOException("Can not decode byte with encoding type " + type.toString());
+		}
+    }	
 	
 	/**
 	 * Determine whether a file was encoded and which type of encoding was used.
@@ -132,35 +149,4 @@ public class EncodedFileUtil {
 		}
 		
 	}
-	
-	/**
-	 * Encode a file on disk using the given encoding method.
-	 * @param sourcePath
-	 * @param destPath
-	 * @param type
-	 * @throws IOException 
-	 */
-	static public void encodeFile(String sourcePath, String destPath, TskData.EncodingType type) throws IOException{
-		if(type.equals(TskData.EncodingType.NONE)){
-			throw new IOException("Can not encode file with encoding type " + type.toString());
-		}
-		FileInputStream in = new FileInputStream(sourcePath);
-		try {
-			OutputStream out = new EncodedFileOutputStream(new BufferedOutputStream(new FileOutputStream(destPath)), type);
-			try {
-				// Transfer bytes from in to out
-				byte[] buf = new byte[1024];
-				int len;
-				while ((len = in.read(buf)) > 0) {
-					out.write(buf, 0, len);
-				}
-			} finally {
-				out.close();
-			}
-		} finally {
-			in.close();
-		}
-		
-	}
-
 }

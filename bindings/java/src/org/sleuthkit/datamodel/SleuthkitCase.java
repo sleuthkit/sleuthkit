@@ -821,12 +821,8 @@ public class SleuthkitCase {
 
 		Statement statement = null;
 		ResultSet resultSet = null;
-		Statement queryStatement = null;
-		ResultSet queryResultSet = null;
-		Statement updateStatement = null;
 		try {
 			statement = connection.createStatement();
-			updateStatement = connection.createStatement();
 
 			// Add the encoding table
 			statement.execute("CREATE TABLE file_encoding_types (encoding_type INTEGER PRIMARY KEY, name TEXT NOT NULL);");
@@ -840,9 +836,6 @@ public class SleuthkitCase {
 			return 5;
 
 		} finally {
-			closeResultSet(queryResultSet);
-			closeStatement(queryStatement);
-			closeStatement(updateStatement);
 			closeResultSet(resultSet);
 			closeStatement(statement);
 		}
@@ -2960,6 +2953,36 @@ public class SleuthkitCase {
 			releaseSharedLock();
 		}
 	}
+	
+	/**
+	 * Returns a result set containing the local file path and encoding type
+	 * for a given file.
+	 * @param id
+	 * @return 
+	 */
+	ResultSet getTskFilesPathData(long id){
+				CaseDbConnection connection;
+		try {
+			connection = connections.getConnection();
+		} catch (TskCoreException ex) {
+			logger.log(Level.SEVERE, "Error getting file path for file " + id, ex); //NON-NLS			
+			return null;
+		}
+		acquireSharedLock();
+		ResultSet rs = null;
+		try {
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_LOCAL_PATH_AND_ENCODING_FOR_FILE);
+			statement.clearParameters();
+			statement.setLong(1, id);
+			rs = connection.executeQuery(statement);
+		} catch (SQLException ex) {
+			logger.log(Level.SEVERE, "Error getting file path for file " + id, ex); //NON-NLS
+		} finally {
+			connection.close();
+			releaseSharedLock();
+		}
+		return rs;
+	}
 
 	/**
 	 * Get a path of a file in tsk_files_path table or null if there is none
@@ -4066,7 +4089,7 @@ public class SleuthkitCase {
 	 *
 	 * @return A data source object id.
 	 *
-	 * @throws TskCoreException if there is an erro querying the case database.
+	 * @throws TskCoreException if there is an error querying the case database.
 	 */
 	private long getDataSourceObjectId(CaseDbConnection connection, long objectId) throws TskCoreException {
 		acquireSharedLock();
@@ -6387,6 +6410,7 @@ public class SleuthkitCase {
 		UPDATE_FILE_MD5("UPDATE tsk_files SET md5 = ? WHERE obj_id = ?"), //NON-NLS
 		SELECT_LOCAL_PATH_FOR_FILE("SELECT path FROM tsk_files_path WHERE obj_id = ?"), //NON-NLS
 		SELECT_ENCODING_FOR_FILE("SELECT encoding_type FROM tsk_files_path WHERE obj_id = ?"), // NON-NLS
+		SELECT_LOCAL_PATH_AND_ENCODING_FOR_FILE("SELECT path, encoding_type FROM tsk_files_path WHERE obj_id = ?"), // NON_NLS
 		SELECT_PATH_FOR_FILE("SELECT parent_path FROM tsk_files WHERE obj_id = ?"), //NON-NLS
 		SELECT_FILE_NAME("SELECT name FROM tsk_files WHERE obj_id = ?"), //NON-NLS
 		SELECT_DERIVED_FILE("SELECT derived_id, rederive FROM tsk_files_derived WHERE obj_id = ?"), //NON-NLS

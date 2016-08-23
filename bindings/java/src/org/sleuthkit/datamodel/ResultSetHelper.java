@@ -303,9 +303,14 @@ class ResultSetHelper {
 		String localPath = null;
 		TskData.EncodingType encodingType = TskData.EncodingType.NONE;
 		if (hasLocalPath) {
-			localPath = db.getFilePath(objId);
-			encodingType = db.getEncodingType(objId);
-		}
+			ResultSet rsFilesPath = db.getTskFilesPathData(objId);
+			xx
+			if(rsFilesPath != null){
+				localPath = rsFilesPath.getString("path");
+				encodingType = TskData.EncodingType.valueOf(rsFilesPath.getInt("encoding_type"));
+				rsFilesPath.close();
+			}
+		} // COPY TO LOCAL FILE
 
 		String parentPath = rs.getString("parent_path"); //NON-NLS
 		if (parentPath == null) {

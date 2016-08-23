@@ -837,7 +837,7 @@ public abstract class AbstractFile extends AbstractContent {
 				}
 				bytesRead = localFileHandle.read(buf, 0, (int) len);	
 				for(int i = 0;i < bytesRead;i++){
-					buf[i] = EncodedFileUtil.encodeByte(buf[i], encodingType);
+					buf[i] = EncodedFileUtil.decodeByte(buf[i], encodingType);
 				}
 				return bytesRead;
 			} else {
@@ -867,7 +867,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param isAbsolute true if the path is absolute, false if relative to the
 	 *                   case db
 	 */
-	protected void setLocalPath(String localPath, boolean isAbsolute) {
+	void setLocalFilePath(String localPath, boolean isAbsolute) {
 
 		if (localPath == null || localPath.equals("")) {
 			this.localPath = "";
@@ -906,7 +906,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * Set the type of encoding used on the file (for local/derived files only)
 	 * @param encodingType 
 	 */
-	protected final void setEncodingType(TskData.EncodingType encodingType){
+	final void setEncodingType(TskData.EncodingType encodingType){
 		this.encodingType = encodingType;
 	}
 
@@ -1194,5 +1194,21 @@ public abstract class AbstractFile extends AbstractContent {
 		 * to a negative number.
 		 */
 		return (short) attrId;	// casting to signed short converts values over 32K to negative values
+	}
+	
+	/**
+	 * Set local path for the file, as stored in db tsk_files_path, relative to
+	 * the case db path or an absolute path. When set, subsequent invocations of
+	 * read() will read the file in the local path.
+	 *
+	 * @param localPath  local path to be set
+	 * @param isAbsolute true if the path is absolute, false if relative to the
+	 *                   case db
+	 * 
+	 * @deprecated Do not make subclasses outside of this package.
+	 */
+	@Deprecated
+	protected void setLocalPath(String localPath, boolean isAbsolute) {
+		setLocalFilePath(localPath, isAbsolute);
 	}
 }
