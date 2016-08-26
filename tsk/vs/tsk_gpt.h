@@ -29,7 +29,7 @@ extern "C" {
 #define GPT_HEAD_SIG	0x5452415020494645ULL
 
 /*Length of a GUID partition type description*/
-#define GUID_DESC_LEN 64
+#define GUID_DESC_LEN 256
 
 /*Definiation of GUID struct.*/
     typedef struct{
@@ -37,7 +37,7 @@ extern "C" {
         uint16_t data_2;
         uint16_t data_3;
         uint8_t data_4[8];
-    } GUID;
+    } gpt_guid;
 
 
     typedef struct {
@@ -61,8 +61,8 @@ extern "C" {
 
 /* The location of this is specified in the header - tab_start */
     typedef struct {
-        GUID type_guid;         /* partition type GUID */
-        GUID id_guid;           /* unique partition GUID */
+        gpt_guid type_guid;         /* partition type GUID */
+        gpt_guid id_guid;           /* unique partition GUID */
         uint8_t start_lba[8];   /* Starting lba of part */
         uint8_t end_lba[8];     /* end lba of part */
         uint8_t flags[8];       /* flags */
