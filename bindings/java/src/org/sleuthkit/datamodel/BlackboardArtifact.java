@@ -564,4 +564,51 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	public String toString() {
 		return "BlackboardArtifact{" + "artifactID=" + artifactID + ", objID=" + objID + ", artifactTypeID=" + artifactTypeID + ", artifactTypeName=" + artifactTypeName + ", displayName=" + displayName + ", Case=" + sleuthkitCase + '}'; //NON-NLS
 	}
+
+	/**
+	 * Enum to represent the review status of an artifact.
+	 */
+	public enum ReviewStatus {
+
+		APPROVED(1, "APPROVED", "ReviewStatus.Approved"), //approved by human user
+		REJECTED(2, "REJECTED", "ReviewStatus.Rejected"), //rejected by humna user
+		UNDECIDED(3, "UNDECIDED", "ReviewStatus.Undecided"); // not yet reviewed by human user
+
+		private final Integer id;
+		private final String name;
+		private final String displayName;
+
+		private ReviewStatus(Integer id, String name, String displayNameKey) {
+			this.id = id;
+			this.name = name;
+			this.displayName = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString(displayNameKey);
+		}
+
+		/**
+		 * Get the ID of this review status.
+		 *
+		 * @return the ID of this review status.
+		 */
+		public Integer getID() {
+			return id;
+		}
+
+		/**
+		 * Get the name of this review status.
+		 *
+		 * @return the name of this review status.
+		 */
+		String getName() {
+			return name;
+		}
+
+		/**
+		 * Get the display name of this review status.
+		 *
+		 * @return the displayName The display name of this review status.
+		 */
+		public String getDisplayName() {
+			return displayName;
+		}
+	}
 }
