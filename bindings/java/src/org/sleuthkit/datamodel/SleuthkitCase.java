@@ -408,7 +408,7 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			for (ReviewStatus status : ReviewStatus.values()) {
+			for (BlackboardArtifact.ReviewStatus status : BlackboardArtifact.ReviewStatus.values()) {
 				rs = connection.executeQuery(s, "SELECT review_status_id FROM review_statuses WHERE review_status_id= " + status.getID());//NON-NLS
 				if (false == rs.next()) {
 					s.execute("INSERT INTO review_statuses(review_status_id, review_status_name, display_name) "//NON-NLS
@@ -835,7 +835,7 @@ public class SleuthkitCase {
 			 * for DBs updated to schema 5 because of limitations of the SQLite
 			 * ALTER TABLE command.
 			 */
-			statement.execute("ALTER TABLE blackboard_artifacts ADD COLUMN review_status_id INTEGER NOT NULL DEFAULT " + ReviewStatus.UNDECIDED.getID());
+			statement.execute("ALTER TABLE blackboard_artifacts ADD COLUMN review_status_id INTEGER NOT NULL DEFAULT " + BlackboardArtifact.ReviewStatus.UNDECIDED.getID());
 			return 5;
 
 		} finally {
@@ -1208,7 +1208,7 @@ public class SleuthkitCase {
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
 			while (rs.next()) {
 				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2),
-						artifactTypeID, rs.getString(3), rs.getString(4), ReviewStatus.withID(rs.getInt("review_status_id"))));
+						artifactTypeID, rs.getString(3), rs.getString(4), BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
 			}
 			return artifacts;
 		} catch (SQLException ex) {
@@ -1318,7 +1318,7 @@ public class SleuthkitCase {
 			while (rs.next()) {
 				artifacts.add(new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"),
 						rs.getInt("artifact_type_id"), rs.getString("type_name"), rs.getString("display_name"),
-						ReviewStatus.withID(rs.getInt("review_status_id"))));
+						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
 			}
 			return artifacts;
 		} catch (SQLException ex) {
@@ -1372,7 +1372,7 @@ public class SleuthkitCase {
 			while (rs.next()) {
 				artifacts.add(new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"),
 						rs.getInt("artifact_type_id"), rs.getString("type_name"), rs.getString("display_name"),
-						ReviewStatus.withID(rs.getInt("review_status_id"))));
+						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
 			}
 			return artifacts;
 		} catch (SQLException ex) {
@@ -1419,7 +1419,7 @@ public class SleuthkitCase {
 			while (rs.next()) {
 				artifacts.add(new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"),
 						rs.getInt("artifact_type_id"), rs.getString("type_name"), rs.getString("display_name"),
-						ReviewStatus.withID(rs.getInt("review_status_id"))));
+						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
 			}
 			return artifacts;
 		} catch (SQLException ex) {
@@ -1466,7 +1466,7 @@ public class SleuthkitCase {
 			while (rs.next()) {
 				artifacts.add(new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"),
 						rs.getInt("artifact_type_id"), rs.getString("type_name"), rs.getString("display_name"),
-						ReviewStatus.withID(rs.getInt("review_status_id"))));
+						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
 			}
 			return artifacts;
 		} catch (SQLException ex) {
@@ -1513,7 +1513,7 @@ public class SleuthkitCase {
 			while (rs.next()) {
 				artifacts.add(new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"),
 						rs.getInt("artifact_type_id"), rs.getString("type_name"), rs.getString("display_name"),
-						ReviewStatus.withID(rs.getInt("review_status_id"))));
+						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
 			}
 			return artifacts;
 		} catch (SQLException ex) {
@@ -1560,7 +1560,7 @@ public class SleuthkitCase {
 			while (rs.next()) {
 				artifacts.add(new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"),
 						rs.getInt("artifact_type_id"), rs.getString("type_name"), rs.getString("display_name"),
-						ReviewStatus.withID(rs.getInt("review_status_id"))));
+						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
 			}
 			return artifacts;
 		} catch (SQLException ex) {
@@ -1776,7 +1776,7 @@ public class SleuthkitCase {
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
 			while (rs.next()) {
 				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2), rs.getInt(3), rs.getString(4), rs.getString(5),
-						ReviewStatus.withID(rs.getInt("review_status_id"))));
+						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
 			}
 			return artifacts;
 		} catch (SQLException ex) {
@@ -1983,7 +1983,7 @@ public class SleuthkitCase {
 			while (rs.next()) {
 				artifacts.add(new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"),
 						rs.getInt("artifact_type_id"), rs.getString("type_name"), rs.getString("display_name"),
-						ReviewStatus.withID(rs.getInt("review_status_id"))));
+						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
 			}
 			return artifacts;
 		} catch (SQLException ex) {
@@ -2023,7 +2023,7 @@ public class SleuthkitCase {
 			if (rs.next()) {
 				return new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"),
 						rs.getInt("artifact_type_id"), rs.getString("type_name"), rs.getString("display_name"),
-						ReviewStatus.withID(rs.getInt("review_status_id")));
+						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id")));
 			} else {
 				/*
 				 * I think this should actually return null (or Optional) when
@@ -2511,7 +2511,7 @@ public class SleuthkitCase {
 				type = this.getArtifactType(rs.getInt(3));
 				BlackboardArtifact artifact = new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2),
 						type.getTypeID(), type.getTypeName(), type.getDisplayName(),
-						ReviewStatus.withID(rs.getInt("review_status_id")));
+						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id")));
 				matches.add(artifact);
 			}
 			return matches;
@@ -2579,7 +2579,7 @@ public class SleuthkitCase {
 			connection.executeUpdate(statement);
 			rs = statement.getGeneratedKeys();
 			rs.next();
-			return new BlackboardArtifact(this, rs.getLong(1), obj_id, artifact_type_id, artifactTypeName, artifactDisplayName, ReviewStatus.UNDECIDED, true);
+			return new BlackboardArtifact(this, rs.getLong(1), obj_id, artifact_type_id, artifactTypeName, artifactDisplayName, BlackboardArtifact.ReviewStatus.UNDECIDED, true);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error creating a blackboard artifact", ex);
 		} finally {
@@ -5129,7 +5129,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException thrown if a critical error occurred within tsk
 	 *                          core
 	 */
-	public void setReviewStatus(BlackboardArtifact artifact, ReviewStatus newStatus) throws TskCoreException {
+	public void setReviewStatus(BlackboardArtifact artifact, BlackboardArtifact.ReviewStatus newStatus) throws TskCoreException {
 		if (newStatus == null) {
 			return;
 		}
@@ -6377,9 +6377,9 @@ public class SleuthkitCase {
 				+ "AND tsk_files.type = ? )"), //NON-NLS
 		SELECT_FILE_BY_ID("SELECT * FROM tsk_files WHERE obj_id = ? LIMIT 1"), //NON-NLS
 		INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id, review_status_id) " //NON-NLS
-				+ "VALUES (?, ?, ?," + ReviewStatus.UNDECIDED.getID() + ")"), //NON-NLS
+				+ "VALUES (?, ?, ?," + BlackboardArtifact.ReviewStatus.UNDECIDED.getID() + ")"), //NON-NLS
 		POSTGRESQL_INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id, review_status_id) " //NON-NLS
-				+ "VALUES (DEFAULT, ?, ?," + ReviewStatus.UNDECIDED.getID() + ")"), //NON-NLS
+				+ "VALUES (DEFAULT, ?, ?," + BlackboardArtifact.ReviewStatus.UNDECIDED.getID() + ")"), //NON-NLS
 		INSERT_STRING_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_text) " //NON-NLS
 				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
 		INSERT_BYTE_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_byte) " //NON-NLS
