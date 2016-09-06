@@ -36,6 +36,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -271,7 +272,7 @@ public class SleuthkitCase {
 			for (ARTIFACT_TYPE type : ARTIFACT_TYPE.values()) {
 				resultSet = connection.executeQuery(statement, "SELECT COUNT(*) FROM blackboard_artifact_types WHERE artifact_type_id = '" + type.getTypeID() + "'"); //NON-NLS
 				resultSet.next();
-				if (resultSet.getLong(1) == 0) {
+				if (resultSet.getLong("COUNT(*)") == 0) {
 					connection.executeUpdate(statement, "INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name) VALUES (" + type.getTypeID() + " , '" + type.getLabel() + "', '" + type.getDisplayName() + "')"); //NON-NLS
 				}
 				resultSet.close();
@@ -305,7 +306,7 @@ public class SleuthkitCase {
 			for (ATTRIBUTE_TYPE type : ATTRIBUTE_TYPE.values()) {
 				resultSet = connection.executeQuery(statement, "SELECT COUNT(*) FROM blackboard_attribute_types WHERE attribute_type_id = '" + type.getTypeID() + "'"); //NON-NLS
 				resultSet.next();
-				if (resultSet.getLong(1) == 0) {
+				if (resultSet.getLong("COUNT(*)") == 0) {
 					connection.executeUpdate(statement, "INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name, value_type) VALUES (" + type.getTypeID() + ", '" + type.getLabel() + "', '" + type.getDisplayName() + "', '" + type.getValueType().getType() + "')"); //NON-NLS
 				}
 				resultSet.close();
@@ -341,7 +342,7 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			resultSet = connection.executeQuery(statement, "SELECT MAX(artifact_id) FROM blackboard_artifacts");
 			resultSet.next();
-			this.nextArtifactId = resultSet.getLong(1) + 1;
+			this.nextArtifactId = resultSet.getLong("MAX(artifact_id)") + 1;
 			if (this.nextArtifactId == 1) {
 				this.nextArtifactId = BASE_ARTIFACT_ID;
 			}
@@ -566,11 +567,11 @@ public class SleuthkitCase {
 					"SELECT attrs.artifact_id, arts.artifact_type_id " //NON-NLS
 					+ "FROM blackboard_attributes AS attrs " //NON-NLS
 					+ "INNER JOIN blackboard_artifacts AS arts " //NON-NLS
-					+ "WHERE attrs.artifact_id = arts.artifact_id;"); //NON-NLS
+							+ "WHERE attrs.artifact_id = arts.artifact_id;"); //NON-NLS
 			updateStatement = connection.createStatement();
 			while (resultSet.next()) {
-				long artifactId = resultSet.getLong(1);
-				int artifactTypeId = resultSet.getInt(2);
+				long artifactId = resultSet.getLong("artifact_id");
+				int artifactTypeId = resultSet.getInt("artifact_type_id");
 				updateStatement.executeUpdate(
 						"UPDATE blackboard_attributes " //NON-NLS
 						+ "SET artifact_type_id = " + artifactTypeId + " " //NON-NLS
@@ -690,8 +691,8 @@ public class SleuthkitCase {
 			while (resultSet.next()) {
 				updateStatement.executeUpdate(
 						"UPDATE tsk_files " //NON-NLS
-						+ "SET mime_type = '" + resultSet.getString(2) + "' " //NON-NLS
-						+ "WHERE tsk_files.obj_id = " + resultSet.getInt(1) + ";"); //NON-NLS	
+						+ "SET mime_type = '" + resultSet.getString("value_text") + "' " //NON-NLS
+						+ "WHERE tsk_files.obj_id = " + resultSet.getInt("obj_id") + ";"); //NON-NLS	
 			}
 			resultSet.close();
 
@@ -1135,8 +1136,8 @@ public class SleuthkitCase {
 					+ "AND arts.artifact_type_id = " + artifactTypeID);
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
 			while (rs.next()) {
-				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2),
-						artifactTypeID, rs.getString(3), rs.getString(4)));
+				artifacts.add(new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"),
+						artifactTypeID, rs.getString("type_name"), rs.getString("display_name")));
 			}
 			return artifacts;
 		} catch (SQLException ex) {
@@ -1168,7 +1169,7 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(statement);
 			long count = 0;
 			if (rs.next()) {
-				count = rs.getLong(1);
+				count = rs.getLong("COUNT(*)");
 			}
 			return count;
 		} catch (SQLException ex) {
@@ -1200,7 +1201,7 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(statement);
 			long count = 0;
 			if (rs.next()) {
-				count = rs.getLong(1);
+				count = rs.getLong("COUNT(*)");
 			}
 			return count;
 		} catch (SQLException ex) {
@@ -1506,7 +1507,8 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(s, "SELECT artifact_type_id, type_name, display_name FROM blackboard_artifact_types"); //NON-NLS
 			ArrayList<BlackboardArtifact.Type> artifactTypes = new ArrayList<BlackboardArtifact.Type>();
 			while (rs.next()) {
-				artifactTypes.add(new BlackboardArtifact.Type(rs.getInt(1), rs.getString(2), rs.getString(3)));
+				artifactTypes.add(new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
+						rs.getString("type_name"), rs.getString("display_name")));
 			}
 			return artifactTypes;
 		} catch (SQLException ex) {
@@ -1546,7 +1548,7 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(s, query);
 			ArrayList<BlackboardArtifact.ARTIFACT_TYPE> usedArts = new ArrayList<BlackboardArtifact.ARTIFACT_TYPE>();
 			while (rs.next()) {
-				usedArts.add(ARTIFACT_TYPE.fromID(rs.getInt(1)));
+				usedArts.add(ARTIFACT_TYPE.fromID(rs.getInt("artifact_type_id")));
 			}
 			return usedArts;
 		} catch (SQLException ex) {
@@ -1583,7 +1585,8 @@ public class SleuthkitCase {
 					+ "ON arts.artifact_type_id = types.artifact_type_id"); //NON-NLS
 			List<BlackboardArtifact.Type> uniqueArtifactTypes = new ArrayList<BlackboardArtifact.Type>();
 			while (rs.next()) {
-				uniqueArtifactTypes.add(new BlackboardArtifact.Type(rs.getInt(1), rs.getString(2), rs.getString(3)));
+				uniqueArtifactTypes.add(new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
+						rs.getString("type_name"), rs.getString("display_name")));
 			}
 			return uniqueArtifactTypes;
 		} catch (SQLException ex) {
@@ -1613,8 +1616,8 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(s, "SELECT attribute_type_id, type_name, display_name, value_type FROM blackboard_attribute_types"); //NON-NLS
 			ArrayList<BlackboardAttribute.Type> attribute_types = new ArrayList<BlackboardAttribute.Type>();
 			while (rs.next()) {
-				attribute_types.add(new BlackboardAttribute.Type(rs.getInt(1),
-						rs.getString(2), rs.getString(3), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getLong(4))));
+				attribute_types.add(new BlackboardAttribute.Type(rs.getInt("attribute_type_id"), rs.getString("type_name"),
+						rs.getString("display_name"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getLong("value_type"))));
 			}
 			return attribute_types;
 		} catch (SQLException ex) {
@@ -1648,7 +1651,7 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(s, "SELECT COUNT(*) FROM blackboard_attribute_types"); //NON-NLS
 			int count = 0;
 			if (rs.next()) {
-				count = rs.getInt(1);
+				count = rs.getInt("COUNT(*)");
 			}
 			return count;
 		} catch (SQLException ex) {
@@ -1686,7 +1689,8 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(statement, query);
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
 			while (rs.next()) {
-				artifacts.add(new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2), rs.getInt(3), rs.getString(4), rs.getString(5)));
+				artifacts.add(new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"),
+						rs.getInt("artifact_type_id"), rs.getString("type_name"), rs.getString("display_name")));
 			}
 			return artifacts;
 		} catch (SQLException ex) {
@@ -1722,7 +1726,7 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(statement);
 			long count = 0;
 			if (rs.next()) {
-				count = rs.getLong(1);
+				count = rs.getLong("COUNT(*)");
 			}
 			return count;
 		} catch (SQLException ex) {
@@ -2066,7 +2070,7 @@ public class SleuthkitCase {
 				rs = connection.executeQuery(s, "SELECT MAX(attribute_type_id) AS highest_id FROM blackboard_attribute_types");
 				int maxID = 0;
 				if (rs.next()) {
-					maxID = rs.getInt(1);
+					maxID = rs.getInt("highest_id");
 					if (maxID < MIN_USER_DEFINED_TYPE_ID) {
 						maxID = MIN_USER_DEFINED_TYPE_ID;
 					} else {
@@ -2117,7 +2121,8 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(s, "SELECT attribute_type_id, type_name, display_name, value_type FROM blackboard_attribute_types WHERE type_name = '" + attrTypeName + "'"); //NON-NLS
 			BlackboardAttribute.Type type = null;
 			if (rs.next()) {
-				type = new BlackboardAttribute.Type(rs.getInt(1), rs.getString(2), rs.getString(3), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getLong(4)));
+				type = new BlackboardAttribute.Type(rs.getInt("attribute_type_id"), rs.getString("type_name"),
+						rs.getString("display_name"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getLong("value_type")));
 				this.typeIdToAttributeTypeMap.put(type.getTypeID(), type);
 				this.typeNameToAttributeTypeMap.put(attrTypeName, type);
 			}
@@ -2155,7 +2160,8 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(s, "SELECT attribute_type_id, type_name, display_name, value_type FROM blackboard_attribute_types WHERE attribute_type_id = " + typeID + ""); //NON-NLS
 			BlackboardAttribute.Type type = null;
 			if (rs.next()) {
-				type = new BlackboardAttribute.Type(rs.getInt(1), rs.getString(2), rs.getString(3), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getLong(4)));
+				type = new BlackboardAttribute.Type(rs.getInt("attribute_type_id"), rs.getString("type_name"),
+						rs.getString("display_name"), TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getLong("value_type")));
 				this.typeIdToAttributeTypeMap.put(typeID, type);
 				this.typeNameToAttributeTypeMap.put(type.getTypeName(), type);
 			}
@@ -2193,7 +2199,8 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(s, "SELECT artifact_type_id, type_name, display_name FROM blackboard_artifact_types WHERE type_name = '" + artTypeName + "'"); //NON-NLS
 			BlackboardArtifact.Type type = null;
 			if (rs.next()) {
-				type = new BlackboardArtifact.Type(rs.getInt(1), rs.getString(2), rs.getString(3));
+				type = new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
+						rs.getString("type_name"), rs.getString("display_name"));
 				this.typeIdToArtifactTypeMap.put(type.getTypeID(), type);
 				this.typeNameToArtifactTypeMap.put(artTypeName, type);
 			}
@@ -2231,7 +2238,8 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(s, "SELECT artifact_type_id, type_name, display_name FROM blackboard_artifact_types WHERE artifact_type_id = " + artTypeId + ""); //NON-NLS
 			BlackboardArtifact.Type type = null;
 			if (rs.next()) {
-				type = new BlackboardArtifact.Type(rs.getInt(1), rs.getString(2), rs.getString(3));
+				type = new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
+						rs.getString("type_name"), rs.getString("display_name"));
 				this.typeIdToArtifactTypeMap.put(artTypeId, type);
 				this.typeNameToArtifactTypeMap.put(type.getTypeName(), type);
 			}
@@ -2272,7 +2280,7 @@ public class SleuthkitCase {
 				rs = connection.executeQuery(s, "SELECT MAX(artifact_type_id) AS highest_id FROM blackboard_artifact_types");
 				int maxID = 0;
 				if (rs.next()) {
-					maxID = rs.getInt(1);
+					maxID = rs.getInt("highest_id");
 					if (maxID < MIN_USER_DEFINED_TYPE_ID) {
 						maxID = MIN_USER_DEFINED_TYPE_ID;
 					} else {
@@ -2314,7 +2322,8 @@ public class SleuthkitCase {
 			while (rs.next()) {
 				final BlackboardAttribute attr = new BlackboardAttribute(
 						rs.getLong("artifact_id"),
-						new BlackboardAttribute.Type(rs.getInt("attribute_type_id"), rs.getString("type_name"), rs.getString("display_name"), BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getInt("value_type"))),
+						new BlackboardAttribute.Type(rs.getInt("attribute_type_id"), rs.getString("type_name"),
+								rs.getString("display_name"), BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getInt("value_type"))),
 						rs.getString("source"),
 						rs.getString("context"),
 						rs.getInt("value_int32"),
@@ -2411,8 +2420,9 @@ public class SleuthkitCase {
 			while (rs.next()) {
 				BlackboardArtifact.Type type;
 				// artifact type is cached, so this does not necessarily call to the db
-				type = this.getArtifactType(rs.getInt(3));
-				BlackboardArtifact artifact = new BlackboardArtifact(this, rs.getLong(1), rs.getLong(2), type.getTypeID(), type.getTypeName(), type.getDisplayName());
+				type = this.getArtifactType(rs.getInt("artifact_type_id"));
+				BlackboardArtifact artifact = new BlackboardArtifact(this, rs.getLong("artifact_id"),
+						rs.getLong("obj_id"), type.getTypeID(), type.getTypeName(), type.getDisplayName());
 				matches.add(artifact);
 			}
 			return matches;
@@ -2480,7 +2490,8 @@ public class SleuthkitCase {
 			connection.executeUpdate(statement);
 			rs = statement.getGeneratedKeys();
 			rs.next();
-			return new BlackboardArtifact(this, rs.getLong(1), obj_id, artifact_type_id, artifactTypeName, artifactDisplayName, true);
+			return new BlackboardArtifact(this, rs.getLong("last_insert_rowid()"),
+					obj_id, artifact_type_id, artifactTypeName, artifactDisplayName, true);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error creating a blackboard artifact", ex);
 		} finally {
@@ -2513,7 +2524,7 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(statement);
 			boolean hasChildren = false;
 			if (rs.next()) {
-				hasChildren = rs.getInt(1) > 0;
+				hasChildren = rs.getInt("COUNT(obj_id)") > 0;
 			}
 			return hasChildren;
 		} catch (SQLException e) {
@@ -2548,7 +2559,7 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(statement);
 			int countChildren = -1;
 			if (rs.next()) {
-				countChildren = rs.getInt(1);
+				countChildren = rs.getInt("COUNT(obj_id)");
 			}
 			return countChildren;
 		} catch (SQLException e) {
@@ -2646,7 +2657,7 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(statement);
 			List<Long> children = new ArrayList<Long>();
 			while (rs.next()) {
-				children.add(rs.getLong(1));
+				children.add(rs.getLong("obj_id"));
 			}
 			return children;
 		} catch (SQLException ex) {
@@ -2678,7 +2689,7 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(statement);
 			List<Long> children = new ArrayList<Long>();
 			while (rs.next()) {
-				children.add(rs.getLong(1));
+				children.add(rs.getLong("obj_id"));
 			}
 			return children;
 		} catch (SQLException ex) {
@@ -2748,7 +2759,7 @@ public class SleuthkitCase {
 					+ "ON child.par_obj_id = parent.obj_id " //NON-NLS
 					+ "WHERE child.obj_id = " + c.getId()); //NON-NLS
 			if (rs.next()) {
-				return new ObjectInfo(rs.getLong(1), ObjectType.valueOf(rs.getShort(2)));
+				return new ObjectInfo(rs.getLong("obj_id"), ObjectType.valueOf(rs.getShort("type")));
 			} else {
 				throw new TskCoreException("Given content (id: " + c.getId() + ") has no parent");
 			}
@@ -2786,7 +2797,7 @@ public class SleuthkitCase {
 					+ "ON child.par_obj_id = parent.obj_id " //NON-NLS
 					+ "WHERE child.obj_id = " + contentId); //NON-NLS
 			if (rs.next()) {
-				return new ObjectInfo(rs.getLong(1), ObjectType.valueOf(rs.getShort(2)));
+				return new ObjectInfo(rs.getLong("obj_id"), ObjectType.valueOf(rs.getShort("type")));
 			} else {
 				throw new TskCoreException("Given content (id: " + contentId + ") has no parent.");
 			}
@@ -2907,7 +2918,7 @@ public class SleuthkitCase {
 			statement.setLong(1, id);
 			rs = connection.executeQuery(statement);
 			if (rs.next()) {
-				filePath = rs.getString(1);
+				filePath = rs.getString("path");
 			}
 		} catch (SQLException ex) {
 			logger.log(Level.SEVERE, "Error getting file path for file " + id, ex); //NON-NLS
@@ -2942,7 +2953,7 @@ public class SleuthkitCase {
 			statement.setLong(1, id);
 			rs = connection.executeQuery(statement);
 			if (rs.next()) {
-				parentPath = rs.getString(1);
+				parentPath = rs.getString("parent_path");
 			}
 		} catch (SQLException ex) {
 			logger.log(Level.SEVERE, "Error getting file parent_path for file " + id, ex); //NON-NLS
@@ -2975,7 +2986,7 @@ public class SleuthkitCase {
 			statement.setLong(1, id);
 			rs = connection.executeQuery(statement);
 			if (rs.next()) {
-				fileName = rs.getString(1);
+				fileName = rs.getString("name");
 			}
 		} catch (SQLException ex) {
 			logger.log(Level.SEVERE, "Error getting file parent_path for file " + id, ex); //NON-NLS
@@ -3008,17 +3019,17 @@ public class SleuthkitCase {
 			statement.setLong(1, id);
 			rs1 = connection.executeQuery(statement);
 			if (rs1.next()) {
-				int method_id = rs1.getInt(1);
-				String rederive = rs1.getString(1);
+				int method_id = rs1.getInt("derived_id");
+				String rederive = rs1.getString("rederive");
 				method = new DerivedFile.DerivedMethod(method_id, rederive);
 				statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILE_DERIVATION_METHOD);
 				statement.clearParameters();
 				statement.setInt(1, method_id);
 				rs2 = connection.executeQuery(statement);
 				if (rs2.next()) {
-					method.setToolName(rs2.getString(1));
-					method.setToolVersion(rs2.getString(2));
-					method.setOther(rs2.getString(3));
+					method.setToolName(rs2.getString("tool_name"));
+					method.setToolVersion(rs2.getString("tool_version"));
+					method.setOther(rs2.getString("other"));
 				}
 			}
 		} catch (SQLException e) {
@@ -3101,7 +3112,7 @@ public class SleuthkitCase {
 			statement.setLong(1, fileId);
 			rs = connection.executeQuery(statement);
 			if (rs.next()) {
-				ret = rs.getLong(1);
+				ret = rs.getLong("fs_obj_id");
 				if (ret == 0) {
 					ret = -1;
 				}
@@ -3136,7 +3147,7 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			resultSet = connection.executeQuery(statement, query);
 			resultSet.next();
-			return (resultSet.getLong(1) > 0L);
+			return (resultSet.getLong("COUNT(*)") > 0L);
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error executing query %s", query), ex);
 		} finally {
@@ -3291,7 +3302,7 @@ public class SleuthkitCase {
 			connection.executeUpdate(statement);
 			resultSet = statement.getGeneratedKeys();
 			resultSet.next();
-			long newObjId = resultSet.getLong(1);
+			long newObjId = resultSet.getLong("last_insert_rowid()");
 
 			// Insert a row for the virtual directory into the tsk_files table.
 			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, 
@@ -3402,7 +3413,7 @@ public class SleuthkitCase {
 			connection.executeUpdate(preparedStatement);
 			resultSet = preparedStatement.getGeneratedKeys();
 			resultSet.next();
-			long newObjId = resultSet.getLong(1);
+			long newObjId = resultSet.getLong("last_insert_rowid()");
 			resultSet.close();
 			resultSet = null;
 
@@ -3587,8 +3598,8 @@ public class SleuthkitCase {
 				connection.executeUpdate(prepStmt);
 				resultSet = prepStmt.getGeneratedKeys();
 				resultSet.next();
-				long carvedFileId = resultSet.getLong(1);
-
+				long carvedFileId = resultSet.getLong("last_insert_rowid()");
+				
 				/*
 				 * Insert a row for the carved file into the tsk_files table:
 				 * INSERT INTO tsk_files (obj_id, fs_obj_id, name, type,
@@ -3723,7 +3734,7 @@ public class SleuthkitCase {
 			connection.executeUpdate(statement);
 			rs = statement.getGeneratedKeys();
 			rs.next();
-			long newObjId = rs.getLong(1);
+			long newObjId = rs.getLong("last_insert_rowid()");
 			rs.close();
 			rs = null;
 
@@ -3877,7 +3888,7 @@ public class SleuthkitCase {
 			if (!resultSet.next()) {
 				throw new TskCoreException(String.format("Failed to INSERT local file %s (%s) with parent id %d in tsk_objects table", fileName, localPath, parent.getId()));
 			}
-			long objectId = resultSet.getLong(1);
+			long objectId = resultSet.getLong("last_insert_rowid()");
 			resultSet.close();
 			resultSet = null;
 
@@ -4032,9 +4043,9 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT COUNT (*) FROM tsk_files WHERE " + sqlWhereClause); //NON-NLS
+			rs = connection.executeQuery(s, "SELECT COUNT(*) FROM tsk_files WHERE " + sqlWhereClause); //NON-NLS
 			rs.next();
-			return rs.getLong(1);
+			return rs.getLong("COUNT(*)");
 		} catch (SQLException e) {
 			throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.countFilesWhere().", e);
 		} finally {
@@ -4103,7 +4114,7 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(s, "SELECT obj_id FROM tsk_files WHERE " + sqlWhereClause); //NON-NLS
 			List<Long> ret = new ArrayList<Long>();
 			while (rs.next()) {
-				ret.add(rs.getLong(1));
+				ret.add(rs.getLong("obj_id"));
 			}
 			return ret;
 		} catch (SQLException e) {
@@ -5041,7 +5052,7 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(s, "SELECT COUNT(*) FROM tsk_files WHERE meta_type = '" + contentShort.toString() + "'"); //NON-NLS
 			int count = 0;
 			if (rs.next()) {
-				count = rs.getInt(1);
+				count = rs.getInt("COUNT(*)");
 			}
 			return count;
 		} catch (SQLException ex) {
@@ -5131,7 +5142,7 @@ public class SleuthkitCase {
 					+ "WHERE dir_type = '" + TskData.TSK_FS_NAME_TYPE_ENUM.REG.getValue() + "' " //NON-NLS
 					+ "AND md5 IS NULL " //NON-NLS
 					+ "AND size > '0'"); //NON-NLS
-			if (rs.next() && rs.getInt(1) == 0) {
+			if (rs.next() && rs.getInt("COUNT(*)") == 0) {
 				allFilesAreHashed = true;
 			}
 		} catch (SQLException ex) {
@@ -5168,7 +5179,7 @@ public class SleuthkitCase {
 					+ "WHERE md5 IS NOT NULL " //NON-NLS
 					+ "AND size > '0'"); //NON-NLS
 			if (rs.next()) {
-				count = rs.getInt(1);
+				count = rs.getInt("COUNT(*)");
 			}
 		} catch (SQLException ex) {
 			logger.log(Level.WARNING, "Failed to query for all the files.", ex); //NON-NLS
@@ -5308,7 +5319,7 @@ public class SleuthkitCase {
 			connection.executeUpdate(statement);
 			resultSet = statement.getGeneratedKeys();
 			resultSet.next();
-			return new TagName(resultSet.getLong(1), displayName, description, color);
+			return new TagName(resultSet.getLong("last_insert_rowid()"), displayName, description, color);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding row for " + displayName + " tag name to tag_names table", ex);
 		} finally {
@@ -5347,7 +5358,7 @@ public class SleuthkitCase {
 			connection.executeUpdate(statement);
 			resultSet = statement.getGeneratedKeys();
 			resultSet.next();
-			return new ContentTag(resultSet.getLong(1), content, tagName, comment, beginByteOffset, endByteOffset);
+			return new ContentTag(resultSet.getLong("last_insert_rowid()"), content, tagName, comment, beginByteOffset, endByteOffset);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding row to content_tags table (obj_id = " + content.getId() + ", tag_name_id = " + tagName.getId() + ")", ex);
 		} finally {
@@ -5435,7 +5446,7 @@ public class SleuthkitCase {
 			statement.setLong(1, tagName.getId());
 			resultSet = connection.executeQuery(statement);
 			if (resultSet.next()) {
-				return resultSet.getLong(1);
+				return resultSet.getLong("COUNT(*)");
 			} else {
 				throw new TskCoreException("Error getting content_tags row count for tag name (tag_name_id = " + tagName.getId() + ")");
 			}
@@ -5589,7 +5600,7 @@ public class SleuthkitCase {
 			connection.executeUpdate(statement);
 			resultSet = statement.getGeneratedKeys();
 			resultSet.next();
-			return new BlackboardArtifactTag(resultSet.getLong(1), artifact, getContentById(artifact.getObjectID()), tagName, comment);
+			return new BlackboardArtifactTag(resultSet.getLong("last_insert_rowid()"), artifact, getContentById(artifact.getObjectID()), tagName, comment);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding row to blackboard_artifact_tags table (obj_id = " + artifact.getArtifactID() + ", tag_name_id = " + tagName.getId() + ")", ex);
 		} finally {
@@ -5680,7 +5691,7 @@ public class SleuthkitCase {
 			statement.setLong(1, tagName.getId());
 			resultSet = connection.executeQuery(statement);
 			if (resultSet.next()) {
-				return resultSet.getLong(1);
+				return resultSet.getLong("COUNT(*)");
 			} else {
 				throw new TskCoreException("Error getting blackboard_artifact_tags row count for tag name (tag_name_id = " + tagName.getId() + ")");
 			}
@@ -5874,7 +5885,7 @@ public class SleuthkitCase {
 			connection.executeUpdate(statement);
 			resultSet = statement.getGeneratedKeys();
 			resultSet.next();
-			return new Report(resultSet.getLong(1), localPath, createTime, sourceModuleName, reportName);
+			return new Report(resultSet.getLong("last_insert_rowid()"), localPath, createTime, sourceModuleName, reportName);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding report " + localPath + " to reports table", ex);
 		} finally {
@@ -6029,7 +6040,7 @@ public class SleuthkitCase {
 			connection.executeUpdate(insertStatement);
 			resultSet = insertStatement.getGeneratedKeys();
 			resultSet.next();
-			long id = resultSet.getLong(1);
+			long id = resultSet.getLong("last_insert_rowid()");
 			for (int i = 0; i < ingestModules.size(); i++) {
 				IngestModuleInfo ingestModule = ingestModules.get(i);
 				statement.executeUpdate("INSERT INTO ingest_job_modules (ingest_job_id, ingest_module_id, pipeline_position) "
@@ -6081,18 +6092,20 @@ public class SleuthkitCase {
 				connection.executeUpdate(insertStatement);
 				resultSet = statement.getGeneratedKeys();
 				resultSet.next();
-				long id = resultSet.getLong(1);
+				long id = resultSet.getLong("last_insert_rowid()");
 				resultSet.close();
 				resultSet = null;
 				return new IngestModuleInfo(id, displayName, uniqueName, type, version);
 			} else {
-				return new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"), resultSet.getString("unique_name"), IngestModuleType.fromID(resultSet.getInt("type_id")), resultSet.getString("version"));
+				return new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"),
+						resultSet.getString("unique_name"), IngestModuleType.fromID(resultSet.getInt("type_id")), resultSet.getString("version"));
 			}
 		} catch (SQLException ex) {
 			try {
 				resultSet = statement.executeQuery("SELECT * FROM ingest_modules WHERE unique_name = '" + uniqueName + "'");
 				if (resultSet.next()) {
-					return new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"), uniqueName, IngestModuleType.fromID(resultSet.getInt("type_id")), resultSet.getString("version"));
+					return new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"),
+							uniqueName, IngestModuleType.fromID(resultSet.getInt("type_id")), resultSet.getString("version"));
 				} else {
 					throw new TskCoreException("Couldn't add new module to database.", ex);
 				}
@@ -6122,7 +6135,10 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			resultSet = statement.executeQuery("SELECT * FROM ingest_jobs");
 			while (resultSet.next()) {
-				ingestJobs.add(new IngestJobInfo(resultSet.getInt("ingest_job_id"), resultSet.getLong("obj_id"), resultSet.getString("host_name"), new Date(resultSet.getLong("start_date_time")), new Date(resultSet.getLong("end_date_time")), IngestJobStatusType.fromID(resultSet.getInt("status_id")), resultSet.getString("settings_dir"), this.getIngestModules(resultSet.getInt("ingest_job_id"), connection), this));
+				ingestJobs.add(new IngestJobInfo(resultSet.getInt("ingest_job_id"), resultSet.getLong("obj_id"),
+						resultSet.getString("host_name"),new Date(resultSet.getLong("start_date_time")),
+						new Date(resultSet.getLong("end_date_time")), IngestJobStatusType.fromID(resultSet.getInt("status_id")),
+						resultSet.getString("settings_dir"), this.getIngestModules(resultSet.getInt("ingest_job_id"), connection), this));
 			}
 			return ingestJobs;
 		} catch (SQLException ex) {
@@ -6157,7 +6173,8 @@ public class SleuthkitCase {
 					+ "AND ingest_modules.ingest_module_id = ingest_job_modules.ingest_module_id "
 					+ "ORDER BY (ingest_job_modules.pipeline_position);");
 			while (resultSet.next()) {
-				ingestModules.add(new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"), resultSet.getString("unique_name"), IngestModuleType.fromID(resultSet.getInt("type_id")), resultSet.getString("version")));
+				ingestModules.add(new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"),
+						resultSet.getString("unique_name"), IngestModuleType.fromID(resultSet.getInt("type_id")), resultSet.getString("version")));
 			}
 			return ingestModules;
 		} finally {
@@ -7013,7 +7030,7 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(statement);
 			long id = -1;
 			if (rs.next()) {
-				id = rs.getLong(1);
+				id = rs.getLong("MAX(obj_id)");
 			}
 			return id;
 		} catch (SQLException e) {
@@ -7088,7 +7105,7 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(s, "SELECT artifact_type_id FROM blackboard_artifact_types WHERE type_name = '" + artifactTypeName + "'"); //NON-NLS
 			int typeId = -1;
 			if (rs.next()) {
-				typeId = rs.getInt(1);
+				typeId = rs.getInt("artifact_type_id");
 			}
 			return typeId;
 		} catch (SQLException ex) {
@@ -7180,7 +7197,7 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(s, "SELECT attribute_type_id FROM blackboard_attribute_types WHERE type_name = '" + attrTypeName + "'"); //NON-NLS
 			int typeId = -1;
 			if (rs.next()) {
-				typeId = rs.getInt(1);
+				typeId = rs.getInt("attribute_type_id");
 			}
 			return typeId;
 		} catch (SQLException ex) {
@@ -7215,7 +7232,7 @@ public class SleuthkitCase {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT type_name FROM blackboard_attribute_types WHERE attribute_type_id = " + attrTypeID); //NON-NLS
 			if (rs.next()) {
-				return rs.getString(1);
+				return rs.getString("type_name");
 			} else {
 				throw new TskCoreException("No type with that id");
 			}
@@ -7251,7 +7268,7 @@ public class SleuthkitCase {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT display_name FROM blackboard_attribute_types WHERE attribute_type_id = " + attrTypeID); //NON-NLS
 			if (rs.next()) {
-				return rs.getString(1);
+				return rs.getString("display_name");
 			} else {
 				throw new TskCoreException("No type with that id");
 			}
