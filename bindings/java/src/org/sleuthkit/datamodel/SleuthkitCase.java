@@ -36,7 +36,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -567,7 +566,7 @@ public class SleuthkitCase {
 					"SELECT attrs.artifact_id, arts.artifact_type_id " //NON-NLS
 					+ "FROM blackboard_attributes AS attrs " //NON-NLS
 					+ "INNER JOIN blackboard_artifacts AS arts " //NON-NLS
-							+ "WHERE attrs.artifact_id = arts.artifact_id;"); //NON-NLS
+					+ "WHERE attrs.artifact_id = arts.artifact_id;"); //NON-NLS
 			updateStatement = connection.createStatement();
 			while (resultSet.next()) {
 				long artifactId = resultSet.getLong("artifact_id");
