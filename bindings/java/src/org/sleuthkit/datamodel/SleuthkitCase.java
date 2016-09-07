@@ -81,7 +81,7 @@ import org.sqlite.SQLiteJDBCLoader;
  */
 public class SleuthkitCase {
 
-	private static final int SCHEMA_VERSION_NUMBER = 4; // This must be the same as TSK_SCHEMA_VER in tsk/auto/tsk_db.h.				
+	private static final int SCHEMA_VERSION_NUMBER = 5; // This must be the same as TSK_SCHEMA_VER in tsk/auto/tsk_db.h.
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
@@ -209,6 +209,7 @@ public class SleuthkitCase {
 		CaseDbConnection connection = connections.getConnection();
 		this.initIngestModuleTypes(connection);
 		this.initIngestStatusTypes(connection);
+		this.initReviewStatuses(connection);
 		connection.close();
 		logSQLiteJDBCDriverInfo();
 	}
@@ -243,6 +244,7 @@ public class SleuthkitCase {
 		CaseDbConnection connection = connections.getConnection();
 		this.initIngestModuleTypes(connection);
 		this.initIngestStatusTypes(connection);
+		this.initReviewStatuses(connection);
 		connection.close();
 	}
 
@@ -387,7 +389,35 @@ public class SleuthkitCase {
 				rs = null;
 			}
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error adding ingest module types to table.", ex);
+			throw new TskCoreException("Error adding ingest module types to table.", ex);//NON-NLS
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+		}
+	}
+
+	/**
+	 * Initialize the review statuses lookup table from the ReviewStatus enum.
+	 *
+	 * @param connection The CaseDbConnection to use for DB operations.
+	 *
+	 * @throws TskCoreException if there is an error initializing the table.
+	 */
+	private void initReviewStatuses(CaseDbConnection connection) throws TskCoreException {
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			for (ReviewStatus status : ReviewStatus.values()) {
+				rs = connection.executeQuery(s, "SELECT review_status_id FROM review_statuses WHERE review_status_id= " + status.getID());//NON-NLS
+				if (false == rs.next()) {
+					s.execute("INSERT INTO review_statuses(review_status_id, review_status_name, display_name) "//NON-NLS
+							+ "VALUES(" + status.getID() + ",\"" + status.getName() + "\",\"" + status.getDisplayName() + "\")");//NON-NLS
+				}
+				closeResultSet(rs);
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error adding review statuses to table.", ex);//NON-NLS
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
@@ -435,6 +465,7 @@ public class SleuthkitCase {
 				//    b. upgrade the database and then increment and return the schema version number.
 				schemaVersionNumber = updateFromSchema2toSchema3(schemaVersionNumber, connection);
 				schemaVersionNumber = updateFromSchema3toSchema4(schemaVersionNumber, connection);
+				schemaVersionNumber = updateFromSchema4toSchema5(schemaVersionNumber, connection);
 
 				// Write the updated schema version number to the the tsk_db_info table.
 				statement = connection.createStatement();
@@ -768,7 +799,48 @@ public class SleuthkitCase {
 			closeResultSet(resultSet);
 			closeStatement(statement);
 		}
+	}
 
+	/**
+	 * Updates a schema version 4 database to a schema version 5 database.
+	 *
+	 * @param schemaVersionNumber The current schema version number of the
+	 *                            database.
+	 * @param connection          A connection to the case database.
+	 *
+	 * @return The new database schema version.
+	 *
+	 * @throws SQLException     If there is an error completing a database
+	 *                          operation.
+	 * @throws TskCoreException If there is an error completing a database
+	 *                          operation via another SleuthkitCase method.
+	 */
+	private int updateFromSchema4toSchema5(int schemaVersionNumber, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersionNumber != 4) {
+			return schemaVersionNumber;
+		}
+
+		Statement statement = null;
+		try {
+			statement = connection.createStatement();
+			// Add the review_statuses lookup table.
+
+			statement.execute("CREATE TABLE review_statuses (review_status_id INTEGER PRIMARY KEY, review_status_name TEXT NOT NULL, display_name TEXT NOT NULL)");
+
+			/*
+			 * Add review_status_id column to artifacts table.
+			 *
+			 * NOTE: For DBs created with schema 5 we define a foreign key
+			 * constraint on the review_status_column. We don't bother with this
+			 * for DBs updated to schema 5 because of limitations of the SQLite
+			 * ALTER TABLE command.
+			 */
+			statement.execute("ALTER TABLE blackboard_artifacts ADD COLUMN review_status_id INTEGER NOT NULL DEFAULT " + ReviewStatus.UNDECIDED.getID());
+			return 5;
+
+		} finally {
+			closeStatement(statement);
+		}
 	}
 
 	/**
@@ -6246,10 +6318,10 @@ public class SleuthkitCase {
 				+ "WHERE (tsk_objects.par_obj_id = ? " //NON-NLS
 				+ "AND tsk_files.type = ? )"), //NON-NLS
 		SELECT_FILE_BY_ID("SELECT * FROM tsk_files WHERE obj_id = ? LIMIT 1"), //NON-NLS
-		INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id) " //NON-NLS
-				+ "VALUES (?, ?, ?)"), //NON-NLS
-		POSTGRESQL_INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id) " //NON-NLS
-				+ "VALUES (DEFAULT, ?, ?)"), //NON-NLS
+		INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id, review_status_id) " //NON-NLS
+				+ "VALUES (?, ?, ?," + ReviewStatus.UNDECIDED.getID() + ")"), //NON-NLS
+		POSTGRESQL_INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_type_id, review_status_id) " //NON-NLS
+				+ "VALUES (DEFAULT, ?, ?," + ReviewStatus.UNDECIDED.getID() + ")"), //NON-NLS
 		INSERT_STRING_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_text) " //NON-NLS
 				+ "VALUES (?,?,?,?,?,?,?)"), //NON-NLS
 		INSERT_BYTE_ATTRIBUTE("INSERT INTO blackboard_attributes (artifact_id, artifact_type_id, source, context, attribute_type_id, value_type, value_byte) " //NON-NLS
