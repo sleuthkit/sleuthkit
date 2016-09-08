@@ -2502,8 +2502,8 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(s, "SELECT blackboard_artifacts.artifact_id, "
 					+ "blackboard_artifacts.obj_id, "
 					+ "blackboard_artifacts.artifact_type_id,"
-					+ "blackboard_artifacts.review_status_id AS review_status_id,"
-					+ " FROM blackboard_artifacts " + whereClause); //NON-NLS
+					+ "blackboard_artifacts.review_status_id AS review_status_id  "
+					+ "FROM blackboard_artifacts " + whereClause); //NON-NLS
 			ArrayList<BlackboardArtifact> matches = new ArrayList<BlackboardArtifact>();
 			while (rs.next()) {
 				BlackboardArtifact.Type type;

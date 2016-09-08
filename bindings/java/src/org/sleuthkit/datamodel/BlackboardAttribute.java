@@ -663,6 +663,24 @@ public class BlackboardAttribute {
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Credit Card Longitudinal Redundancy Check
 		TSK_SOLR_DOCUMENT_ID(114, "TSK_SOLR_DOCUMENT_ID", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskSolrDocumentID.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_CREDIT_CARD_SCHEME(115, "TSK_CREDIT_CARD_SCHEME",
+				bundle.getString("BlackboardAttribute.tskCreditCardScheme.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_PAYMENT_CARD_TYPE(116, "TSK_PAYMENT_CARD_TYPE",
+				bundle.getString("BlackboardAttribute.tskPaymentCardType.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_BRAND(117, "TSK_BRAND",
+				bundle.getString("BlackboardAttribute.tskBrand.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_BANK_NAME(118, "TSK_BANK_NAME",
+				bundle.getString("BlackboardAttribute.tskBankName.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_COUNTRY(119, "TSK_COUNTRY",
+				bundle.getString("BlackboardAttribute.tskCountry.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_CITY(120, "TSK_CITY",
+				bundle.getString("BlackboardAttribute.tskCity.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),;
 		private final int typeID;
 		private final String typeName;
