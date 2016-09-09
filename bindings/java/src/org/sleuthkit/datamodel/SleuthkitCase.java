@@ -2771,7 +2771,7 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT parent.obj_id AS obj_id, parent.type AS type" //NON-NLS
+			rs = connection.executeQuery(s, "SELECT parent.obj_id AS obj_id, parent.type AS type " //NON-NLS
 					+ "FROM tsk_objects AS parent INNER JOIN tsk_objects AS child " //NON-NLS
 					+ "ON child.par_obj_id = parent.obj_id " //NON-NLS
 					+ "WHERE child.obj_id = " + c.getId()); //NON-NLS
