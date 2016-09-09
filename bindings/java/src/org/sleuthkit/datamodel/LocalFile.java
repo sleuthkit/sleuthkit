@@ -83,7 +83,8 @@ public class LocalFile extends AbstractFile {
 			String mimeType, String md5Hash, FileKnown knownState,
 			long parentId, String parentPath,
 			long dataSourceObjectId,
-			String localPath) {
+			String localPath,
+			TskData.EncodingType encodingType) {
 		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0,
 				name, fileType, 0L, 0, dirType, metaType, dirFlag,
 				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath, mimeType);
@@ -93,7 +94,8 @@ public class LocalFile extends AbstractFile {
 		if (parentId > 0) {
 			setParentId(parentId);
 		}
-		super.setLocalPath(localPath, true);
+		super.setLocalFilePath(localPath, true);
+		setEncodingType(encodingType);
 	}
 
 	/**
@@ -250,7 +252,8 @@ public class LocalFile extends AbstractFile {
 				null, md5Hash, knownState,
 				AbstractContent.UNKNOWN_ID, parentPath,
 				db.getDataSourceObjectId(objId),
-				localPath);
+				localPath,
+				TskData.EncodingType.NONE);
 	}
 
 	/**
@@ -342,5 +345,4 @@ public class LocalFile extends AbstractFile {
 			String parentPath, String localPath, long parentId) {
 		this(db, objId, name, TSK_DB_FILES_TYPE_ENUM.LOCAL, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, md5Hash, knownState, parentPath, localPath);
 	}
-
 }

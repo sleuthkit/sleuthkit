@@ -93,13 +93,15 @@ public class DerivedFile extends AbstractFile {
 			String parentPath,
 			String localPath,
 			long parentId,
-			String mimeType) {
+			String mimeType,
+			TskData.EncodingType encodingType) {
 		// TODO (AUT-1904): The parent id should be passed to AbstractContent 
 		// through the class hierarchy contructors.
 		super(db, objId, dataSourceObjectId, TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0,
 				name, TSK_DB_FILES_TYPE_ENUM.LOCAL, 0L, 0, dirType, metaType, dirFlag,
 				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath, mimeType);
-		setLocalPath(localPath, false);
+		setLocalFilePath(localPath, false);
+		setEncodingType(encodingType);
 	}
 
 	/**
@@ -139,7 +141,7 @@ public class DerivedFile extends AbstractFile {
 	public List<Long> getChildrenIds() throws TskCoreException {
 		return getSleuthkitCase().getAbstractFileChildrenIds(this, TSK_DB_FILES_TYPE_ENUM.DERIVED);
 	}
-
+	
 	/**
 	 * Gets the method used to derive this file, if it has been recorded.
 	 *
@@ -331,7 +333,7 @@ public class DerivedFile extends AbstractFile {
 		this(db, objId, db.getDataSourceObjectId(objId), name, dirType, metaType, dirFlag, metaFlags, size,
 				ctime, crtime, atime, mtime,
 				md5Hash, knownState,
-				parentPath, localPath, parentId, null);
+				parentPath, localPath, parentId, null, TskData.EncodingType.NONE);
 	}
 
 }

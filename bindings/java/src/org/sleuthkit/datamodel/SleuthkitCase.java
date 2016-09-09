@@ -81,7 +81,7 @@ import org.sqlite.SQLiteJDBCLoader;
  */
 public class SleuthkitCase {
 
-	private static final int SCHEMA_VERSION_NUMBER = 4; // This must be the same as TSK_SCHEMA_VER in tsk/auto/tsk_db.h.				
+	private static final int SCHEMA_VERSION_NUMBER = 5; // This must be the same as TSK_SCHEMA_VER in tsk/auto/tsk_db.h.				
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
@@ -209,6 +209,7 @@ public class SleuthkitCase {
 		CaseDbConnection connection = connections.getConnection();
 		this.initIngestModuleTypes(connection);
 		this.initIngestStatusTypes(connection);
+		this.initEncodingTypes(connection);
 		connection.close();
 		logSQLiteJDBCDriverInfo();
 	}
@@ -243,6 +244,7 @@ public class SleuthkitCase {
 		CaseDbConnection connection = connections.getConnection();
 		this.initIngestModuleTypes(connection);
 		this.initIngestStatusTypes(connection);
+		this.initEncodingTypes(connection);
 		connection.close();
 	}
 
@@ -393,6 +395,32 @@ public class SleuthkitCase {
 			closeStatement(s);
 		}
 	}
+	
+	/**
+	 * Put the file encoding types into the table.
+	 * This must be called after the database upgrades or the encoding_types table will not exist.
+	 *
+	 * @throws SQLException
+	 */
+	private void initEncodingTypes(CaseDbConnection connection) throws SQLException, TskCoreException {
+		Statement statement = null;
+		ResultSet resultSet = null;
+		try {
+			statement = connection.createStatement();
+			for (TskData.EncodingType type : TskData.EncodingType.values()) {
+				resultSet = connection.executeQuery(statement, "SELECT COUNT(*) FROM file_encoding_types WHERE encoding_type = " + type.getType()); //NON-NLS
+				resultSet.next();
+				if (resultSet.getLong(1) == 0) {
+					connection.executeUpdate(statement, "INSERT INTO file_encoding_types (encoding_type, name) VALUES (" + type.getType() + " , '" + type.name() + "')"); //NON-NLS
+				}
+				resultSet.close();
+				resultSet = null;
+			}
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+		}
+	}
 
 	/**
 	 * Modify the case database to bring it up-to-date with the current version
@@ -435,6 +463,7 @@ public class SleuthkitCase {
 				//    b. upgrade the database and then increment and return the schema version number.
 				schemaVersionNumber = updateFromSchema2toSchema3(schemaVersionNumber, connection);
 				schemaVersionNumber = updateFromSchema3toSchema4(schemaVersionNumber, connection);
+				schemaVersionNumber = updateFromSchema4toSchema5(schemaVersionNumber, connection);
 
 				// Write the updated schema version number to the the tsk_db_info table.
 				statement = connection.createStatement();
@@ -771,6 +800,48 @@ public class SleuthkitCase {
 
 	}
 
+	/**
+	 * Updates a schema version 4 database to a schema version 5 database.
+	 *
+	 * @param schemaVersionNumber The current schema version number of the
+	 *                            database.
+	 * @param connection          A connection to the case database.
+	 *
+	 * @return The new database schema version.
+	 *
+	 * @throws SQLException     If there is an error completing a database
+	 *                          operation.
+	 * @throws TskCoreException If there is an error completing a database
+	 *                          operation via another SleuthkitCase method.
+	 */
+	private int updateFromSchema4toSchema5(int schemaVersionNumber, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersionNumber != 4) {
+			return schemaVersionNumber;
+		}
+
+		Statement statement = null;
+		ResultSet resultSet = null;
+		try {
+			statement = connection.createStatement();
+
+			// Add the encoding table
+			statement.execute("CREATE TABLE file_encoding_types (encoding_type INTEGER PRIMARY KEY, name TEXT NOT NULL);");
+			initEncodingTypes(connection);
+			
+			// Add encoding type column to tsk_files_path
+			// This should really have the FOREIGN KEY constraint but there are problems 
+			// getting that to work, so we don't add it on this upgrade path.
+			statement.execute("ALTER TABLE tsk_files_path ADD COLUMN encoding_type INTEGER NOT NULL DEFAULT 0;");
+			
+			return 5;
+
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+		}
+
+	}
+	
 	/**
 	 * Returns case database schema version number.
 	 *
@@ -2609,7 +2680,7 @@ public class SleuthkitCase {
 			statement.setLong(1, parentId);
 			statement.setShort(2, type.getFileType());
 			rs = connection.executeQuery(statement);
-			return rsHelper.fileChildren(rs, parentId);
+			return rsHelper.fileChildren(rs, connection, parentId);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting AbstractFile children for Content", ex);
 		} finally {
@@ -2640,7 +2711,7 @@ public class SleuthkitCase {
 			long parentId = parent.getId();
 			statement.setLong(1, parentId);
 			rs = connection.executeQuery(statement);
-			return rsHelper.fileChildren(rs, parentId);
+			return rsHelper.fileChildren(rs, connection, parentId);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting AbstractFile children for Content", ex);
 		} finally {
@@ -2946,6 +3017,42 @@ public class SleuthkitCase {
 		}
 		return filePath;
 	}
+	
+	/**
+	 * Get the encoding type for a file in tsk_files_path table
+	 *
+	 * @param id id of the file to get path for
+	 *
+	 * @return Encoding type (NONE if nothing was found)
+	 */
+	TskData.EncodingType getEncodingType(long id) {
+		CaseDbConnection connection;
+		try {
+			connection = connections.getConnection();
+		} catch (TskCoreException ex) {
+			logger.log(Level.SEVERE, "Error getting file path for file " + id, ex); //NON-NLS			
+			return null;
+		}
+		TskData.EncodingType type = TskData.EncodingType.NONE;
+		acquireSharedLock();
+		ResultSet rs = null;
+		try {
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ENCODING_FOR_FILE);
+			statement.clearParameters();
+			statement.setLong(1, id);
+			rs = connection.executeQuery(statement);
+			if (rs.next()) {
+				type = TskData.EncodingType.valueOf(rs.getInt(1));
+			}
+		} catch (SQLException ex) {
+			logger.log(Level.SEVERE, "Error getting encoding type for file " + id, ex); //NON-NLS
+		} finally {
+			closeResultSet(rs);
+			connection.close();
+			releaseSharedLock();
+		}
+		return type;
+	}
 
 	/**
 	 * Get a parent_path of a file in tsk_files table or null if there is none
@@ -3079,7 +3186,7 @@ public class SleuthkitCase {
 			statement.clearParameters();
 			statement.setLong(1, id);
 			rs = connection.executeQuery(statement);
-			List<AbstractFile> files = resultSetToAbstractFiles(rs);
+			List<AbstractFile> files = resultSetToAbstractFiles(rs, connection);
 			if (files.size() > 0) {
 				return files.get(0);
 			} else {
@@ -3197,7 +3304,7 @@ public class SleuthkitCase {
 			statement.setString(1, fileName.toLowerCase());
 			statement.setLong(2, dataSource.getId());
 			resultSet = connection.executeQuery(statement);
-			files.addAll(resultSetToAbstractFiles(resultSet));
+			files.addAll(resultSetToAbstractFiles(resultSet, connection));
 		} catch (SQLException e) {
 			throw new TskCoreException(bundle.getString("SleuthkitCase.findFiles.exception.msg3.text"), e);
 		} finally {
@@ -3233,7 +3340,7 @@ public class SleuthkitCase {
 			statement.setString(2, "%" + dirName.toLowerCase() + "%"); //NON-NLS
 			statement.setLong(3, dataSource.getId());
 			resultSet = connection.executeQuery(statement);
-			files.addAll(resultSetToAbstractFiles(resultSet));
+			files.addAll(resultSetToAbstractFiles(resultSet, connection));
 		} catch (SQLException e) {
 			throw new TskCoreException(bundle.getString("SleuthkitCase.findFiles3.exception.msg3.text"), e);
 		} finally {
@@ -3723,6 +3830,7 @@ public class SleuthkitCase {
 	 *                        unused
 	 * @param otherDetails    details of derivation method/tool, currently
 	 *                        unused
+	 * @param encodingType    Type of encoding used on the file (or NONE if no encoding)
 	 *
 	 * @return newly created derived file object
 	 *
@@ -3732,7 +3840,8 @@ public class SleuthkitCase {
 	public DerivedFile addDerivedFile(String fileName, String localPath,
 			long size, long ctime, long crtime, long atime, long mtime,
 			boolean isFile, AbstractFile parentFile,
-			String rederiveDetails, String toolName, String toolVersion, String otherDetails) throws TskCoreException {
+			String rederiveDetails, String toolName, String toolVersion, 
+			String otherDetails, TskData.EncodingType encodingType) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireExclusiveLock();
 		ResultSet rs = null;
@@ -3809,13 +3918,13 @@ public class SleuthkitCase {
 			connection.executeUpdate(statement);
 
 			//add localPath 
-			addFilePath(connection, newObjId, localPath);
+			addFilePath(connection, newObjId, localPath, encodingType);
 
 			connection.commitTransaction();
 
 			//TODO add derived method to tsk_files_derived and tsk_files_derived_method 
 			return new DerivedFile(this, newObjId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
-					size, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId, null);
+					size, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId, null,encodingType);
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
 			throw new TskCoreException("Failed to add derived file to case database", ex);
@@ -3838,6 +3947,7 @@ public class SleuthkitCase {
 	 * @param atime
 	 * @param mtime
 	 * @param isFile
+	 * @param encodingType
 	 * @param parent
 	 *
 	 * @return
@@ -3846,11 +3956,12 @@ public class SleuthkitCase {
 	 */
 	public LocalFile addLocalFile(String fileName, String localPath,
 			long size, long ctime, long crtime, long atime, long mtime,
-			boolean isFile, AbstractFile parent) throws TskCoreException {
+			boolean isFile, TskData.EncodingType encodingType,
+			AbstractFile parent) throws TskCoreException {
 		acquireExclusiveLock();
 		CaseDbTransaction localTrans = beginTransaction();
 		try {
-			LocalFile created = addLocalFile(fileName, localPath, size, ctime, crtime, atime, mtime, isFile, parent, localTrans);
+			LocalFile created = addLocalFile(fileName, localPath, size, ctime, crtime, atime, mtime, isFile, encodingType, parent, localTrans);
 			localTrans.commit();
 			return created;
 		} catch (TskCoreException ex) {
@@ -3875,6 +3986,7 @@ public class SleuthkitCase {
 	 * @param atime       The accessed time of the file
 	 * @param mtime       The modified time of the file.
 	 * @param isFile      True, unless the file is a directory.
+	 * @param encodingType Type of encoding used on the file
 	 * @param parent      The parent of the file (e.g., a virtual directory)
 	 * @param transaction A caller-managed transaction within which the add file
 	 *                    operations are performed.
@@ -3886,7 +3998,8 @@ public class SleuthkitCase {
 	 */
 	public LocalFile addLocalFile(String fileName, String localPath,
 			long size, long ctime, long crtime, long atime, long mtime,
-			boolean isFile, AbstractFile parent, CaseDbTransaction transaction) throws TskCoreException {
+			boolean isFile, TskData.EncodingType encodingType,
+			AbstractFile parent, CaseDbTransaction transaction) throws TskCoreException {
 
 		CaseDbConnection connection = transaction.getConnection();
 		acquireExclusiveLock();
@@ -3938,7 +4051,7 @@ public class SleuthkitCase {
 			long dataSourceObjId = getDataSourceObjectId(connection, parent.getId()); // RJCTODO: Let this be passed in or make a story
 			statement.setLong(16, dataSourceObjId);
 			connection.executeUpdate(statement);
-			addFilePath(connection, objectId, localPath);
+			addFilePath(connection, objectId, localPath, encodingType);
 			return new LocalFile(this,
 					objectId,
 					fileName,
@@ -3952,7 +4065,8 @@ public class SleuthkitCase {
 					null, null, null,
 					parent.getId(), parentPath,
 					dataSourceObjId,
-					localPath);
+					localPath,
+					encodingType);
 
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Failed to INSERT local file %s (%s) with parent id %d in tsk_files table", fileName, localPath, parent.getId()), ex);
@@ -3973,7 +4087,7 @@ public class SleuthkitCase {
 	 *
 	 * @return A data source object id.
 	 *
-	 * @throws TskCoreException if there is an erro querying the case database.
+	 * @throws TskCoreException if there is an error querying the case database.
 	 */
 	private long getDataSourceObjectId(CaseDbConnection connection, long objectId) throws TskCoreException {
 		acquireSharedLock();
@@ -4015,11 +4129,12 @@ public class SleuthkitCase {
 	 * @throws SQLException exception thrown when database error occurred and
 	 *                      path was not added
 	 */
-	private void addFilePath(CaseDbConnection connection, long objId, String path) throws SQLException {
+	private void addFilePath(CaseDbConnection connection, long objId, String path, TskData.EncodingType type) throws SQLException {
 		PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_LOCAL_PATH);
 		statement.clearParameters();
 		statement.setLong(1, objId);
 		statement.setString(2, path);
+		statement.setInt(3, type.getType());
 		connection.executeUpdate(statement);
 	}
 
@@ -4098,7 +4213,7 @@ public class SleuthkitCase {
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT * FROM tsk_files WHERE " + sqlWhereClause); //NON-NLS
-			return resultSetToAbstractFiles(rs);
+			return resultSetToAbstractFiles(rs, connection);
 		} catch (SQLException e) {
 			throw new TskCoreException("SQLException thrown when calling 'SleuthkitCase.findAllFilesWhere(): " + sqlWhereClause, e);
 		} finally {
@@ -4840,7 +4955,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws SQLException if the query fails
 	 */
-	private List<AbstractFile> resultSetToAbstractFiles(ResultSet rs) throws SQLException {
+	private List<AbstractFile> resultSetToAbstractFiles(ResultSet rs, CaseDbConnection connection) throws SQLException {
 		ArrayList<AbstractFile> results = new ArrayList<AbstractFile>();
 		try {
 			while (rs.next()) {
@@ -4876,11 +4991,11 @@ public class SleuthkitCase {
 					results.add(lf);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.DERIVED.getFileType()) {
 					final DerivedFile df;
-					df = rsHelper.derivedFile(rs, AbstractContent.UNKNOWN_ID);
+					df = rsHelper.derivedFile(rs, connection, AbstractContent.UNKNOWN_ID);
 					results.add(df);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.LOCAL.getFileType()) {
 					final LocalFile lf;
-					lf = rsHelper.localFile(rs, AbstractContent.UNKNOWN_ID);
+					lf = rsHelper.localFile(rs, connection, AbstractContent.UNKNOWN_ID);
 					results.add(lf);
 				}
 
@@ -5123,7 +5238,7 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(s, "SELECT * FROM tsk_files WHERE " //NON-NLS
 					+ " md5 = '" + md5Hash.toLowerCase() + "' " //NON-NLS
 					+ "AND size > 0"); //NON-NLS
-			return resultSetToAbstractFiles(rs);
+			return resultSetToAbstractFiles(rs, connection);
 		} catch (SQLException ex) {
 			logger.log(Level.WARNING, "Error querying database.", ex); //NON-NLS
 			return Collections.<AbstractFile>emptyList();
@@ -6322,6 +6437,8 @@ public class SleuthkitCase {
 		SELECT_FILES_BY_DATA_SOURCE_AND_PARENT_PATH_AND_NAME("SELECT * FROM tsk_files WHERE LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE LOWER('%journal%') AND LOWER(parent_path) LIKE LOWER(?) AND data_source_obj_id = ?"), //NON-NLS
 		UPDATE_FILE_MD5("UPDATE tsk_files SET md5 = ? WHERE obj_id = ?"), //NON-NLS
 		SELECT_LOCAL_PATH_FOR_FILE("SELECT path FROM tsk_files_path WHERE obj_id = ?"), //NON-NLS
+		SELECT_ENCODING_FOR_FILE("SELECT encoding_type FROM tsk_files_path WHERE obj_id = ?"), // NON-NLS
+		SELECT_LOCAL_PATH_AND_ENCODING_FOR_FILE("SELECT path, encoding_type FROM tsk_files_path WHERE obj_id = ?"), // NON_NLS
 		SELECT_PATH_FOR_FILE("SELECT parent_path FROM tsk_files WHERE obj_id = ?"), //NON-NLS
 		SELECT_FILE_NAME("SELECT name FROM tsk_files WHERE obj_id = ?"), //NON-NLS
 		SELECT_DERIVED_FILE("SELECT derived_id, rederive FROM tsk_files_derived WHERE obj_id = ?"), //NON-NLS
@@ -6332,7 +6449,7 @@ public class SleuthkitCase {
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"), //NON-NLS
 		INSERT_LAYOUT_FILE("INSERT INTO tsk_file_layout (obj_id, byte_start, byte_len, sequence) " //NON-NLS
 				+ "VALUES (?, ?, ?, ?)"), //NON-NLS
-		INSERT_LOCAL_PATH("INSERT INTO tsk_files_path (obj_id, path) VALUES (?, ?)"), //NON-NLS
+		INSERT_LOCAL_PATH("INSERT INTO tsk_files_path (obj_id, path, encoding_type) VALUES (?, ?, ?)"), //NON-NLS
 		COUNT_CHILD_OBJECTS_BY_PARENT("SELECT COUNT(obj_id) AS count FROM tsk_objects WHERE par_obj_id = ?"), //NON-NLS
 		SELECT_FILE_SYSTEM_BY_OBJECT("SELECT fs_obj_id from tsk_files WHERE obj_id=?"), //NON-NLS
 		SELECT_TAG_NAMES("SELECT * FROM tag_names"), //NON-NLS
@@ -7023,6 +7140,433 @@ public class SleuthkitCase {
 			}
 		}
 	}
+	
+	/**
+	 * Database helper class the wraps most of the mappings from ResultSet to
+	 * Content subclass constructors.
+	 */
+	class ResultSetHelper {
+
+		SleuthkitCase db;
+
+		ResultSetHelper(SleuthkitCase db) {
+			this.db = db;
+		}
+
+		/**
+		 * Create an image from the result set containing query results on
+		 * tsk_image_info table
+		 *
+		 * @param rs         result set containing query results
+		 * @param imagePaths image file paths
+		 *
+		 * @return image object created
+		 *
+		 * @throws TskCoreException thrown if critical error occurred within tsk
+		 *                          core
+		 * @throws SQLException     thrown if SQL error occurs
+		 */
+		Image image(ResultSet rs, String[] imagePaths) throws TskCoreException, SQLException {
+
+			long obj_id, type, ssize;
+			String tzone, md5;
+
+			obj_id = rs.getLong("obj_id"); //NON-NLS
+			type = rs.getLong("type"); //NON-NLS
+			ssize = rs.getLong("ssize"); //NON-NLS
+			tzone = rs.getString("tzone"); //NON-NLS
+			md5 = "";
+			if (db.getSchemaVersion() > 2) {
+				md5 = rs.getString("md5"); //NON-NLS
+			}
+
+			String name = rs.getString("display_name");
+			if (name == null) {
+				if (imagePaths.length > 0) {
+					String path1 = imagePaths[0];
+					name = (new java.io.File(path1)).getName();
+				} else {
+					name = "";
+				}
+			}
+
+			Image img = new Image(db, obj_id, type, ssize, name, imagePaths, tzone, md5);
+			return img;
+		}
+
+		/**
+		 * Get image path string from the result set on tsk_image_names table
+		 *
+		 * @param rs result set with the tsk_image_names query result
+		 *
+		 * @return image path
+		 *
+		 * @throws SQLException thrown if SQL error occurred
+		 */
+		String imagePath(ResultSet rs) throws SQLException {
+			return rs.getString("name"); //NON-NLS
+		}
+
+		/**
+		 * Create an VolumeSystem object from the result set containing query
+		 * results on tsk_vs_info table
+		 *
+		 * @param rs     resultset containing query results
+		 * @param parent parent image
+		 *
+		 * @return volume system object newly created
+		 *
+		 * @throws SQLException exception thrown if SQL error occurred
+		 */
+		VolumeSystem volumeSystem(ResultSet rs, Image parent) throws SQLException {
+
+			long id = rs.getLong("obj_id"); //NON-NLS
+			long type = rs.getLong("vs_type"); //NON-NLS
+			long imgOffset = rs.getLong("img_offset"); //NON-NLS
+			long blockSize = rs.getLong("block_size"); //NON-NLS
+
+			VolumeSystem vs = new VolumeSystem(db, id, "", type, imgOffset, blockSize);
+
+			vs.setParent(parent);
+			return vs;
+		}
+
+		/**
+		 * Create an Volume object from the result set containing query results
+		 * on tsk_vs_parts table
+		 *
+		 * @param rs     result set containing query results
+		 * @param parent parent volume system
+		 *
+		 * @return newly created Volume object
+		 *
+		 * @throws SQLException thrown if SQL error occurred
+		 */
+		Volume volume(ResultSet rs, VolumeSystem parent) throws SQLException {
+			/**
+			 * TODO!! LANDMINE!! This allows the two types of databases to have
+			 * slightly different schemas. SQLite uses desc as the column name
+			 * in tsk_vs_parts and Postgres uses descr, as desc is a reserved
+			 * keyword in Postgres. When we have to make a schema change, be
+			 * sure to change this over to just one name.
+			 */
+			String description;
+			try {
+				description = rs.getString("desc");
+			} catch (Exception ex) {
+				description = rs.getString("descr");
+			}
+			Volume vol = new Volume(db, rs.getLong("obj_id"), rs.getLong("addr"), //NON-NLS
+					rs.getLong("start"), rs.getLong("length"), rs.getLong("flags"), //NON-NLS
+					description);
+			vol.setParent(parent);
+			return vol;
+		}
+
+		/**
+		 * Create a FileSystem object from the result set containing query
+		 * results on tsk_fs_info table
+		 *
+		 * @param rs     the result set
+		 * @param parent parent content object
+		 *
+		 * @return newly create FileSystem object
+		 *
+		 * @throws SQLException thrown if SQL error occurred
+		 */
+		FileSystem fileSystem(ResultSet rs, Content parent) throws SQLException {
+
+			TskData.TSK_FS_TYPE_ENUM fsType = TskData.TSK_FS_TYPE_ENUM.valueOf(rs.getInt("fs_type")); //NON-NLS
+			FileSystem fs = new FileSystem(db, rs.getLong("obj_id"), "", rs.getLong("img_offset"), //NON-NLS
+					fsType, rs.getLong("block_size"), rs.getLong("block_count"), //NON-NLS
+					rs.getLong("root_inum"), rs.getLong("first_inum"), rs.getLong("last_inum")); //NON-NLS
+			fs.setParent(parent);
+			return fs;
+		}
+
+		/**
+		 * Create a File object from the result set containing query results on
+		 * tsk_files table
+		 *
+		 * @param rs the result set
+		 * @param fs parent file system
+		 *
+		 * @return a newly create File
+		 *
+		 * @throws SQLException
+		 */
+		org.sleuthkit.datamodel.File file(ResultSet rs, FileSystem fs) throws SQLException {
+
+			org.sleuthkit.datamodel.File f = new org.sleuthkit.datamodel.File(db, rs.getLong("obj_id"), rs.getLong("data_source_obj_id"), rs.getLong("fs_obj_id"), //NON-NLS
+					TskData.TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")), //NON-NLS
+					rs.getInt("attr_id"), rs.getString("name"), rs.getLong("meta_addr"), rs.getInt("meta_seq"), //NON-NLS
+					TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
+					TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
+					TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), //NON-NLS
+					rs.getShort("meta_flags"), rs.getLong("size"), //NON-NLS
+					rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
+					(short) rs.getInt("mode"), rs.getInt("uid"), rs.getInt("gid"), //NON-NLS
+					rs.getString("md5"), //NON-NLS
+					FileKnown.valueOf(rs.getByte("known")), rs.getString("parent_path"), rs.getString("mime_type")); //NON-NLS
+			f.setFileSystem(fs);
+			return f;
+		}
+
+		/**
+		 * Create a Directory object from the result set containing query
+		 * results on tsk_files table
+		 *
+		 * @param rs the result set
+		 * @param fs parent file system
+		 *
+		 * @name the directory name (TODO why do we need it passed, just query
+		 * it )
+		 * @return a newly created Directory object
+		 *
+		 * @throws SQLException thrown if SQL error occurred
+		 */
+		Directory directory(ResultSet rs, FileSystem fs, String name) throws SQLException {
+			Directory dir = new Directory(db, rs.getLong("obj_id"), rs.getLong("data_source_obj_id"), rs.getLong("fs_obj_id"), //NON-NLS
+					TskData.TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")), //NON-NLS
+					rs.getInt("attr_id"), name, rs.getLong("meta_addr"), rs.getInt("meta_seq"), //NON-NLS
+					TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
+					TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
+					TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), //NON-NLS
+					rs.getShort("meta_flags"), rs.getLong("size"), //NON-NLS
+					rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
+					rs.getShort("mode"), rs.getInt("uid"), rs.getInt("gid"), //NON-NLS
+					rs.getString("md5"), //NON-NLS
+					FileKnown.valueOf(rs.getByte("known")), rs.getString("parent_path")); //NON-NLS
+			dir.setFileSystem(fs);
+			return dir;
+		}
+
+		/**
+		 * Create a virtual directory object from a result set
+		 *
+		 * @param rs the result set
+		 *
+		 * @return
+		 *
+		 * @throws SQLException
+		 */
+		VirtualDirectory virtualDirectory(ResultSet rs) throws SQLException {
+			String parentPath = rs.getString("parent_path"); //NON-NLS
+			if (parentPath == null) {
+				parentPath = "";
+			}
+
+			final VirtualDirectory vd = new VirtualDirectory(db,
+					rs.getLong("obj_id"), //NON-NLS
+					rs.getLong("data_source_obj_id"), //NON-NLS
+					rs.getString("name"), //NON-NLS
+					TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
+					TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
+					TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), //NON-NLS
+					rs.getShort("meta_flags"), //NON-NLS
+					rs.getString("md5"), //NON-NLS
+					FileKnown.valueOf(rs.getByte("known")), //NON-NLS
+					parentPath);
+			return vd;
+		}
+
+		/**
+		 * Create a Directory object from the result set containing query
+		 * results on tsk_files table
+		 *
+		 * @param rs the result set
+		 * @param fs the parent file system,
+		 *
+		 * @return a newly created Directory object
+		 *
+		 * @throws SQLException thrown if SQL error occurred
+		 */
+		Directory directory(ResultSet rs, FileSystem fs) throws SQLException {
+			return directory(rs, fs, rs.getString("name")); //NON-NLS
+		}
+
+		/**
+		 * Create a tsk file layout range object from the resultset on
+		 * tsk_file_layout table
+		 *
+		 * @param rs the result set containg query results
+		 *
+		 * @return newly create tsk file range object
+		 *
+		 * @throws SQLException thrown if SQL error occurred
+		 */
+		TskFileRange tskFileRange(ResultSet rs) throws SQLException {
+			return new TskFileRange(rs.getLong("byte_start"), //NON-NLS
+					rs.getLong("byte_len"), rs.getLong("sequence")); //NON-NLS
+		}
+
+		/**
+		 * Creates an derived file given result set and parent id (optional)
+		 *
+		 * @param rs       exsting active result set
+		 * @param parentId parent id or AbstractContent.UNKNOWN_ID
+		 *
+		 * @return derived file object created
+		 *
+		 * @throws SQLException
+		 */
+		DerivedFile derivedFile(ResultSet rs, CaseDbConnection connection, long parentId) throws SQLException {
+			boolean hasLocalPath = rs.getBoolean("has_path"); //NON-NLS
+			long objId = rs.getLong("obj_id"); //NON-NLS
+			String localPath = null;
+			TskData.EncodingType encodingType = TskData.EncodingType.NONE;
+			if (hasLocalPath) {
+				ResultSet rsFilePath = null;
+				try {
+					PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_LOCAL_PATH_AND_ENCODING_FOR_FILE);
+					statement.clearParameters();
+					statement.setLong(1, objId);
+					rsFilePath = connection.executeQuery(statement);
+					if (rsFilePath.next()) {
+						localPath = rsFilePath.getString("path");
+						encodingType = TskData.EncodingType.valueOf(rsFilePath.getInt("encoding_type"));
+					}
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error getting encoding type for file " + objId, ex); //NON-NLS
+				} finally {
+					closeResultSet(rsFilePath);
+				}
+			}
+
+			String parentPath = rs.getString("parent_path"); //NON-NLS
+			if (parentPath == null) {
+				parentPath = "";
+			}
+
+			final DerivedFile df
+					= new DerivedFile(db, objId, rs.getLong("data_source_obj_id"), rs.getString("name"), //NON-NLS
+							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
+							TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
+							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"), //NON-NLS
+							rs.getLong("size"), //NON-NLS
+							rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
+							rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
+							parentPath, localPath,
+							parentId, rs.getString("mime_type"),
+							encodingType);
+
+			return df;
+		}
+
+		/**
+		 * Creates a LocalFile file object from a SELECT * FROM tsk_files table
+		 * result set.
+		 *
+		 * @param rs       The result set.
+		 * @param parentId The parent id of the file or
+		 *                 AbstractContent.UNKNOWN_ID.
+		 *
+		 * @return The LocalFile object.
+		 *
+		 * @throws SQLException if there is an error querying the case database.
+		 */
+		LocalFile localFile(ResultSet rs, CaseDbConnection connection, long parentId) throws SQLException {
+			long objId = rs.getLong("obj_id"); //NON-NLS
+			String localPath = null;
+			TskData.EncodingType encodingType = TskData.EncodingType.NONE;
+			if (rs.getBoolean("has_path")) {
+				ResultSet rsFilePath = null;
+				try {
+					PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_LOCAL_PATH_AND_ENCODING_FOR_FILE);
+					statement.clearParameters();
+					statement.setLong(1, objId);
+					rsFilePath = connection.executeQuery(statement);
+					if (rsFilePath.next()) {
+						localPath = rsFilePath.getString("path");
+						encodingType = TskData.EncodingType.valueOf(rsFilePath.getInt("encoding_type"));
+					}
+				} catch (SQLException ex) {
+					logger.log(Level.SEVERE, "Error getting encoding type for file " + objId, ex); //NON-NLS
+				} finally {
+					closeResultSet(rsFilePath);
+				}
+			}
+			String parentPath = rs.getString("parent_path"); //NON-NLS
+			if (null == parentPath) {
+				parentPath = "";
+			}
+			LocalFile file = new LocalFile(db,
+					objId,
+					rs.getString("name"), //NON-NLS
+					TSK_DB_FILES_TYPE_ENUM.valueOf(rs.getShort("type")), //NON-NLS
+					TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
+					TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), rs.getShort("meta_flags"), //NON-NLS
+					rs.getLong("size"), //NON-NLS
+					rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
+					rs.getString("mime_type"), rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
+					parentId, parentPath,
+					rs.getLong("data_source_obj_id"),
+					localPath,
+					encodingType
+			);
+			return file;
+		}
+
+		/**
+		 * Returns the list of abstractFile objects from a result of selecting
+		 * many files that meet a certain criteria.
+		 *
+		 * @param rs
+		 * @param parentId
+		 *
+		 * @return
+		 *
+		 * @throws SQLException
+		 */
+		List<Content> fileChildren(ResultSet rs, CaseDbConnection connection, long parentId) throws SQLException {
+			List<Content> children = new ArrayList<Content>();
+
+			while (rs.next()) {
+				TskData.TSK_DB_FILES_TYPE_ENUM type = TskData.TSK_DB_FILES_TYPE_ENUM.valueOf(rs.getShort("type"));
+
+				if (type == TskData.TSK_DB_FILES_TYPE_ENUM.FS) {
+					FsContent result;
+					if (rs.getShort("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue()) {
+						result = directory(rs, null);
+					} else {
+						result = file(rs, null);
+					}
+					children.add(result);
+				} else if (type == TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR) {
+					VirtualDirectory virtDir = virtualDirectory(rs);
+					children.add(virtDir);
+				} else if (type == TskData.TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS
+						|| type == TskData.TSK_DB_FILES_TYPE_ENUM.UNUSED_BLOCKS
+						|| type == TskData.TSK_DB_FILES_TYPE_ENUM.CARVED) {
+					String parentPath = rs.getString("parent_path");
+					if (parentPath == null) {
+						parentPath = "";
+					}
+					final LayoutFile lf
+							= new LayoutFile(db,
+									rs.getLong("obj_id"),
+									rs.getLong("data_source_obj_id"),
+									rs.getString("name"),
+									type,
+									TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")),
+									TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")),
+									TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")),
+									rs.getShort("meta_flags"),
+									rs.getLong("size"),
+									rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), parentPath, rs.getString("mime_type"));
+					children.add(lf);
+				} else if (type == TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED) {
+					final DerivedFile df = derivedFile(rs, connection, parentId);
+					children.add(df);
+				} else if (type == TskData.TSK_DB_FILES_TYPE_ENUM.LOCAL) {
+					final LocalFile lf = localFile(rs, connection, parentId);
+					children.add(lf);
+				}
+			}
+			return children;
+		}
+	}
+	
 
 	/**
 	 * Given an object id, works up the tree of ancestors to the data source for
@@ -7107,7 +7651,7 @@ public class SleuthkitCase {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT * FROM tsk_files WHERE " + sqlWhereClause); //NON-NLS
 			List<FsContent> results = new ArrayList<FsContent>();
-			List<AbstractFile> temp = resultSetToAbstractFiles(rs);
+			List<AbstractFile> temp = resultSetToAbstractFiles(rs, connection);
 			for (AbstractFile f : temp) {
 				final TSK_DB_FILES_TYPE_ENUM type = f.getType();
 				if (type.equals(TskData.TSK_DB_FILES_TYPE_ENUM.FS)) {
@@ -7456,4 +8000,103 @@ public class SleuthkitCase {
 		return addCarvedFiles(carvingResult);
 	}
 
+	/**
+	 * Creates a new derived file object, adds it to database and returns it.
+	 *
+	 * TODO add support for adding derived method
+	 *
+	 * @param fileName        file name the derived file
+	 * @param localPath       local path of the derived file, including the file
+	 *                        name. The path is relative to the database path.
+	 * @param size            size of the derived file in bytes
+	 * @param ctime
+	 * @param crtime
+	 * @param atime
+	 * @param mtime
+	 * @param isFile          whether a file or directory, true if a file
+	 * @param parentFile      parent file object (derived or local file)
+	 * @param rederiveDetails details needed to re-derive file (will be specific
+	 *                        to the derivation method), currently unused
+	 * @param toolName        name of derivation method/tool, currently unused
+	 * @param toolVersion     version of derivation method/tool, currently
+	 *                        unused
+	 * @param otherDetails    details of derivation method/tool, currently
+	 *                        unused
+	 *
+	 * @return newly created derived file object
+	 *
+	 * @throws TskCoreException exception thrown if the object creation failed
+	 *                          due to a critical system error
+	 * @Deprecated Use the newer version with explicit encoding type parameter
+	 */
+	@Deprecated
+	public DerivedFile addDerivedFile(String fileName, String localPath,
+			long size, long ctime, long crtime, long atime, long mtime,
+			boolean isFile, AbstractFile parentFile,
+			String rederiveDetails, String toolName, String toolVersion, String otherDetails) throws TskCoreException {
+		return addDerivedFile(fileName, localPath, size, ctime, crtime, atime, mtime,
+				isFile, parentFile, rederiveDetails, toolName, toolVersion,
+				otherDetails, TskData.EncodingType.NONE);
+	}
+	
+	/**
+	 * Adds a local/logical file to the case database. The database operations
+	 * are done within a caller-managed transaction; the caller is responsible
+	 * for committing or rolling back the transaction.
+	 *
+	 * @param fileName    The name of the file.
+	 * @param localPath   The absolute path (including the file name) of the
+	 *                    local/logical in secondary storage.
+	 * @param size        The size of the file in bytes.
+	 * @param ctime       The changed time of the file.
+	 * @param crtime      The creation time of the file.
+	 * @param atime       The accessed time of the file
+	 * @param mtime       The modified time of the file.
+	 * @param isFile      True, unless the file is a directory.
+	 * @param parent      The parent of the file (e.g., a virtual directory)
+	 * @param transaction A caller-managed transaction within which the add file
+	 *                    operations are performed.
+	 *
+	 * @return An object representing the local/logical file.
+	 *
+	 * @throws TskCoreException if there is an error completing a case database
+	 *                          operation.
+	 * @Deprecated Use the newer version with explicit encoding type parameter
+	 */
+	@Deprecated
+	public LocalFile addLocalFile(String fileName, String localPath,
+			long size, long ctime, long crtime, long atime, long mtime,
+			boolean isFile,
+			AbstractFile parent, CaseDbTransaction transaction) throws TskCoreException {
+		return addLocalFile(fileName, localPath, size, ctime, crtime, atime, mtime, isFile,
+				TskData.EncodingType.NONE, parent, transaction);
+	}
+	
+	/**
+	 * Wraps the version of addLocalFile that takes a Transaction in a
+	 * transaction local to this method.
+	 *
+	 * @param fileName
+	 * @param localPath
+	 * @param size
+	 * @param ctime
+	 * @param crtime
+	 * @param atime
+	 * @param mtime
+	 * @param isFile
+	 * @param parent
+	 *
+	 * @return
+	 *
+	 * @throws TskCoreException
+	 * @Deprecated Use the newer version with explicit encoding type parameter
+	 */
+	@Deprecated
+	public LocalFile addLocalFile(String fileName, String localPath,
+			long size, long ctime, long crtime, long atime, long mtime,
+			boolean isFile,
+			AbstractFile parent) throws TskCoreException {
+		return addLocalFile(fileName, localPath, size, ctime, crtime, atime,mtime,
+				isFile, TskData.EncodingType.NONE, parent);
+	}
 }
