@@ -710,7 +710,7 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			updateStatement = connection.createStatement();
 			statement.execute("ALTER TABLE tsk_files ADD COLUMN mime_type TEXT;");
-			resultSet = statement.executeQuery("SELECT files.obj_id, attrs.value_text "
+			resultSet = statement.executeQuery("SELECT files.obj_id AS obj_id, attrs.value_text AS value_text "
 					+ "FROM tsk_files AS files, blackboard_attributes AS attrs, blackboard_artifacts AS arts "
 					+ "WHERE files.obj_id = arts.obj_id AND "
 					+ "arts.artifact_id = attrs.artifact_id AND "
@@ -1199,7 +1199,8 @@ public class SleuthkitCase {
 		try {
 			Statement s = connection.createStatement();
 			rs = connection.executeQuery(s,
-					"SELECT arts.artifact_id, arts.obj_id, types.type_name, types.display_name "
+					"SELECT arts.artifact_id AS artifact_id, arts.obj_id AS obj_id, "
+					+ "types.type_name AS type_name, types.display_name AS display_name "
 					+ "FROM blackboard_artifacts AS arts "
 					+ "INNER JOIN blackboard_artifact_types AS types "
 					+ "ON arts.artifact_type_id = types.artifact_type_id "
