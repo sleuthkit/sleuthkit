@@ -2719,7 +2719,6 @@ public class SleuthkitCase {
 		}
 	}
 
-	//filechildren method
 	/**
 	 * Get list of IDs for abstract files of a given type that are children of a
 	 * given content.
