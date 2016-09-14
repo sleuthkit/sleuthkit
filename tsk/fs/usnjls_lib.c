@@ -20,6 +20,16 @@
 #include "tsk_fs_i.h"
 
 
+static void
+print_date(time_t secs, time_t subsecs)
+{
+    char buf[128];
+
+    tsk_fs_time_to_str_subsecs(secs, subsecs, buf);
+    tsk_fprintf(stdout, "Time: %s\n", buf);
+}
+
+
 /*
  * unpack reason field and print its content
  */
@@ -234,12 +244,11 @@ print_v2_record_long(TSK_USN_RECORD_HEADER *header, TSK_USN_RECORD_V2 *record)
                 "Version: %" PRIu32 ".%" PRIu32 " Length: %" PRIu32 "\n"
                 "Reference Number: %" PRIu64 "-%" PRIu32 "\n"
                 "Parent Reference Number: %" PRIu64 "-%" PRIu32 "\n"
-                "Update Sequence Number: %" PRIu32 "\n"
-                "Time: %" PRIu32 ".%" PRIu32 "\n",
+                "Update Sequence Number: %" PRIu32 "\n",
                 header->major_version, header->minor_version,
                 header->length, record->refnum, record->refnum_seq,
-                record->parent_refnum, record->parent_refnum_seq,
-                record->usn, record->time_sec, record->time_nsec);
+                record->parent_refnum, record->parent_refnum_seq, record->usn);
+    print_date(record->time_sec, record->time_nsec);
     print_usn_reason(record->reason);
     print_usn_source_info(record->source_info);
     tsk_fprintf(stdout, "Security Id: %" PRIu32 "\n", record->security);
