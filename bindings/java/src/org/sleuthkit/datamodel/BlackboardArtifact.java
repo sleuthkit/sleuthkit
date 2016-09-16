@@ -221,8 +221,8 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 				bundle.getString("BlackboardArtifact.tskRemoteDrive.text")),
 		TSK_FACE_DETECTED(38, "TSK_FACE_DETECTED", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskFaceDetected.text")),
-		TSK_CREDIT_CARD_ACCOUNT(39, "TSK_CREDIT_CARD_ACCOUNT", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskCreditCardAccount.text"));
+		TSK_ACCOUNT(39, "TSK_ACCOUNT", //NON-NLS
+				bundle.getString("BlackboardArtifact.tskAccount.text"));
 
 		/*
 		 * SEE ABOVE -- KEEP C++ CODE IN SYNC

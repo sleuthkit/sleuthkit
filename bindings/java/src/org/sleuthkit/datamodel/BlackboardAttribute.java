@@ -646,8 +646,8 @@ public class BlackboardAttribute {
 		TSK_ORGANIZATION(108, "TSK_ORGANIZATION", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskOrganization.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Registered Organization for a piece of software
-		TSK_ACCOUNT_NUMBER(109, "TSK_ACCOUNT_NUMBER", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskAccountNumber.text"),
+		TSK_CREDIT_CARD_NUMBER(109, "TSK_CREDIT_CARD_NUMBER", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskCreditCardNumber.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_CREDIT_CARD_EXPIRATION(110, "TSK_CREDIT_CARD_EXPIRATION", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskCreditCardExpiration.text"),
@@ -681,6 +681,9 @@ public class BlackboardAttribute {
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_CITY(120, "TSK_CITY",
 				bundle.getString("BlackboardAttribute.tskCity.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_ACCOUNT_TYPE(121, "TSK_ACCOUNT_TYPE",
+				bundle.getString("BlackboardAttribute.tskAccountType.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),;
 		private final int typeID;
 		private final String typeName;
