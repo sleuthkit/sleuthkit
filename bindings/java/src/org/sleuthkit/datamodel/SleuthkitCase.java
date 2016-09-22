@@ -1817,9 +1817,11 @@ public class SleuthkitCase {
 		try {
 			Statement statement = connection.createStatement();
 			String query = "SELECT blackboard_artifacts.artifact_id AS artifact_id, "
-					+ "blackboard_artifacts.obj_id AS obj_id, blackboard_artifact_types.artifact_type_id AS artifact_type_id, "
-					+ "blackboard_artifact_types.type_name AS type_name, blackboard_artifact_types.display_name AS display_name, "
-					+ "blackboard_artifacts.review_status_id AS review_status_id"
+					+ "blackboard_artifacts.obj_id AS obj_id, "
+					+ "blackboard_artifact_types.artifact_type_id AS artifact_type_id, "
+					+ "blackboard_artifact_types.type_name AS type_name, "
+					+ "blackboard_artifact_types.display_name AS display_name, "
+					+ "blackboard_artifacts.review_status_id AS review_status_id "
 					+ "FROM blackboard_artifacts, blackboard_artifact_types "
 					+ "WHERE blackboard_artifacts.artifact_type_id = blackboard_artifact_types.artifact_type_id "
 					+ " AND blackboard_artifacts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID()
@@ -1923,7 +1925,7 @@ public class SleuthkitCase {
 	 *                          within TSK core
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(ARTIFACT_TYPE artifactType, long obj_id) throws TskCoreException {
-		return getArtifactsHelper("blackboard_artifacts.obj_id = " + obj_id + " AND blackboard_artifact_types.artifact_type_id = " + artifactType.getTypeID() + ";");
+		return getBlackboardArtifacts(artifactType.getTypeID(), obj_id);
 	}
 
 	/**
