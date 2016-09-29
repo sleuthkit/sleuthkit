@@ -862,7 +862,7 @@ public class SleuthkitCase {
 			 * ALTER TABLE command.
 			 */
 			statement.execute("ALTER TABLE blackboard_artifacts ADD COLUMN review_status_id INTEGER NOT NULL DEFAULT " + BlackboardArtifact.ReviewStatus.UNDECIDED.getID());
-						
+
 			// Add the encoding table
 			statement.execute("CREATE TABLE file_encoding_types (encoding_type INTEGER PRIMARY KEY, name TEXT NOT NULL);");
 			initEncodingTypes(connection);
@@ -1231,33 +1231,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	public ArrayList<BlackboardArtifact> getBlackboardArtifacts(int artifactTypeID) throws TskCoreException {
-		CaseDbConnection connection = connections.getConnection();
-		acquireSharedLock();
-		ResultSet rs = null;
-		try {
-			Statement s = connection.createStatement();
-			rs = connection.executeQuery(s,
-					"SELECT arts.artifact_id AS artifact_id, arts.obj_id AS obj_id, "
-					+ "types.type_name AS type_name, types.display_name AS display_name "
-					+ " arts.review_status_id AS review_status_id " 							
-					+ "FROM blackboard_artifacts AS arts "
-					+ "INNER JOIN blackboard_artifact_types AS types "
-					+ "ON arts.artifact_type_id = types.artifact_type_id "
-					+ "AND arts.artifact_type_id = " + artifactTypeID);
-			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
-			while (rs.next()) {
-				artifacts.add(new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"),
-						artifactTypeID, rs.getString("type_name"), rs.getString("display_name"),
-				BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
-			}
-			return artifacts;
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting or creating a blackboard artifact", ex);
-		} finally {
-			closeResultSet(rs);
-			connection.close();
-			releaseSharedLock();
-		}
+		return getArtifactsHelper("blackboard_artifacts.artifact_type_id = " + artifactTypeID);
 	}
 
 	/**
@@ -1800,8 +1774,8 @@ public class SleuthkitCase {
 
 	/**
 	 * Gets unrejected blackboard artifacts that match a given WHERE clause.
-	 * Uses a SELECT	 * statement that does a join of the blackboard_artifacts and
-	 * blackboard_artifact_types tables to get all of the required data.
+	 * Uses a SELECT	* statement that does a join of the blackboard_artifacts
+	 * and blackboard_artifact_types tables to get all of the required data.
 	 *
 	 * @param whereClause The WHERE clause to append to the SELECT statement.
 	 *
@@ -1846,7 +1820,7 @@ public class SleuthkitCase {
 	/**
 	 * Helper method to get count of all artifacts matching the type id and
 	 * object id. Does not included rejected artifacts.
-	 	 *
+	 *
 	 * @param artifactTypeID artifact type id
 	 * @param obj_id         associated object id
 	 *
