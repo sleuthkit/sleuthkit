@@ -3053,32 +3053,27 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get a parent_path of a file in tsk_files table or null if there is none
+	 * Gets the parent_path of a file.
 	 *
-	 * Make sure the connection in transaction is used for all database
-	 * interactions called by this method
+	 * @param objectId   The object id of the file.
+	 * @param connection An open database connection.
 	 *
-	 * @param id          id of the file to get path for
-	 * @param transaction the SQL transaction to use
-	 *
-	 * @return file path or null
-	 *
+	 * @return The path of the file or null.
 	 */
-	String getFileParentPath(long id, CaseDbTransaction transaction) {
-		CaseDbConnection connection = transaction.getConnection();
+	String getFileParentPath(long objectId, CaseDbConnection connection) {
 		String parentPath = null;
 		acquireSharedLock();
 		ResultSet rs = null;
 		try {
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_PATH_FOR_FILE);
 			statement.clearParameters();
-			statement.setLong(1, id);
+			statement.setLong(1, objectId);
 			rs = connection.executeQuery(statement);
 			if (rs.next()) {
 				parentPath = rs.getString("parent_path");
 			}
 		} catch (SQLException ex) {
-			logger.log(Level.SEVERE, "Error getting file parent_path for file " + id, ex); //NON-NLS
+			logger.log(Level.SEVERE, "Error getting file parent_path for file " + objectId, ex); //NON-NLS
 		} finally {
 			closeResultSet(rs);
 			releaseSharedLock();
@@ -3087,31 +3082,27 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get a name of a file in tsk_files table or null if there is none
+	 * Gets the name of a file.
 	 *
-	 * Make sure the connection in transaction is used for all database
-	 * interactions called by this method
+	 * @param objectId   The object id of the file.
+	 * @param connection An open database connection.
 	 *
-	 * @param id          id of the file to get name for
-	 * @param transaction the SQL transaction to use
-	 *
-	 * @return file name or null
+	 * @return The path of the file or null.
 	 */
-	String getFileName(long id, CaseDbTransaction transaction) {
-		CaseDbConnection connection = transaction.getConnection();
+	String getFileName(long objectId, CaseDbConnection connection) {
 		String fileName = null;
 		acquireSharedLock();
 		ResultSet rs = null;
 		try {
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILE_NAME);
 			statement.clearParameters();
-			statement.setLong(1, id);
+			statement.setLong(1, objectId);
 			rs = connection.executeQuery(statement);
 			if (rs.next()) {
 				fileName = rs.getString("name");
 			}
 		} catch (SQLException ex) {
-			logger.log(Level.SEVERE, "Error getting file parent_path for file " + id, ex); //NON-NLS
+			logger.log(Level.SEVERE, "Error getting file parent_path for file " + objectId, ex); //NON-NLS
 		} finally {
 			closeResultSet(rs);
 			releaseSharedLock();
@@ -3197,19 +3188,6 @@ public class SleuthkitCase {
 			connection.close();
 			releaseSharedLock();
 		}
-	}
-
-	/**
-	 * Gets the object id of the file system that a file is located in.
-	 *
-	 * @param fileId      The object id of the file.
-	 * @param transaction A case database transaction.
-	 *
-	 * @return The file system object id or -1, if the file is not in a file
-	 *         system.
-	 */
-	private long getFileSystemId(long fileId, CaseDbTransaction transaction) {
-		return getFileSystemId(fileId, transaction.getConnection());
 	}
 
 	/**
@@ -3368,7 +3346,11 @@ public class SleuthkitCase {
 			localTrans.commit();
 			return newVD;
 		} catch (TskCoreException ex) {
-			localTrans.rollback();
+			try {
+				localTrans.rollback();
+			} catch (TskCoreException ex2) {
+				logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
+			}
 			throw ex;
 		} finally {
 			releaseExclusiveLock();
@@ -3401,18 +3383,18 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			// Get the parent path.
-			String parentPath = getFileParentPath(parentId, transaction);
+			CaseDbConnection connection = transaction.getConnection();
+			String parentPath = getFileParentPath(parentId, connection);
 			if (parentPath == null) {
 				parentPath = "/"; //NON-NLS
 			}
-			String parentName = getFileName(parentId, transaction);
+			String parentName = getFileName(parentId, connection);
 			if (parentName != null) {
 				parentPath = parentPath + parentName + "/"; //NON-NLS
 			}
 
 			// Insert a row for the virtual directory into the tsk_objects table.
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
-			CaseDbConnection connection = transaction.getConnection();
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
 			statement.clearParameters();
 			if (parentId != 0) {
@@ -3436,7 +3418,7 @@ public class SleuthkitCase {
 
 			// If the parent is part of a file system, grab its file system ID
 			if (0 != parentId) {
-				long parentFs = this.getFileSystemId(parentId, transaction);
+				long parentFs = this.getFileSystemId(parentId, connection);
 				if (parentFs != -1) {
 					statement.setLong(2, parentFs);
 				} else {
@@ -3706,7 +3688,7 @@ public class SleuthkitCase {
 			 * Add the carved files to the database as children of the
 			 * $CarvedFile directory of the root ancestor.
 			 */
-			String parentPath = getFileParentPath(carvedFilesDir.getId(), transaction) + carvedFilesDir.getName() + "/";
+			String parentPath = getFileParentPath(carvedFilesDir.getId(), connection) + carvedFilesDir.getName() + "/";
 			List<LayoutFile> carvedFiles = new ArrayList<LayoutFile>();
 			for (CarvingResult.CarvedFile carvedFile : carvingResult.getCarvedFiles()) {
 				/*
@@ -3792,12 +3774,29 @@ public class SleuthkitCase {
 
 		} catch (SQLException ex) {
 			if (null != transaction) {
-				transaction.rollback();
+				try {
+					transaction.rollback();
+				} catch (TskCoreException ex2) {
+					logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
+				}
 				if (0 != newCacheKey) {
 					rootIdsToCarvedFileDirs.remove(newCacheKey);
 				}
 			}
 			throw new TskCoreException("Failed to add carved files to case database", ex);
+
+		} catch (TskCoreException ex) {
+			if (null != transaction) {
+				try {
+					transaction.rollback();
+				} catch (TskCoreException ex2) {
+					logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
+				}
+				if (0 != newCacheKey) {
+					rootIdsToCarvedFileDirs.remove(newCacheKey);
+				}
+			}
+			throw ex;
 
 		} finally {
 			closeResultSet(resultSet);
@@ -3964,7 +3963,11 @@ public class SleuthkitCase {
 			localTrans.commit();
 			return created;
 		} catch (TskCoreException ex) {
-			localTrans.rollback();
+			try {
+				localTrans.rollback();
+			} catch (TskCoreException ex2) {
+				logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
+			}
 			throw ex;
 		} finally {
 			releaseExclusiveLock();
