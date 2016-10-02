@@ -43,8 +43,8 @@ TSK_RETVAL_ENUM TskDb::setConnectionInfo(CaseDbConnectionInfo * info){
 /*
 * Utility method to break up path into parent folder and folder/file name. 
 * @param path Path of folder that we want to analyze
-* @param ret_parent_path pointer to parent path
-* @param ret_name pointer to where folder/file name
+* @param ret_parent_path pointer to parent path (begins and ends with '/')
+* @param ret_name pointer to final folder/file name
 * @returns 0 on success, 1 on error
 */
 bool TskDb::getParentPathAndName(const char *path, char **ret_parent_path, char **ret_name){
@@ -67,37 +67,40 @@ bool TskDb::getParentPathAndName(const char *path, char **ret_parent_path, char 
     }
 
     // check if empty path or just "/" were passed in
-    if (path_len == 0 || (path_len == 1 && strcmp(&path[0], "/") == 0)) {
+    if (path_len == 0 || (strcmp(path, "/") == 0)) {
         *ret_name = "";
         *ret_parent_path = "/";
         return 0;
-    } else {
-        // path usually ends with "/" which needs to be stripped off.
-        // input is "const car*" so we must copy into memory that we can modify.
-        // check if the first character in input path is slash
-        if (strcmp(&path[0], "/") != 0) {
-            sprintf(&parent_path[0], "%s", "/");           // add leasing slash to the parent path (sprintf also adds terminating null)
-        }
-        if (strcmp(&path[path_len - 1], "/") == 0) {
-            strncpy(&parent_path[1], path, path_len - 1);   // remove trailing slash
-            parent_path[path_len] = '\0';                   // add terminating null
-        } else {
-            sprintf(&parent_path[1], "%s", path);           // copy input path
-        }
+    } 
+    
+    
+    // step 1, copy everything into parent_path and clean it up
+    // add leading slash if its not in input.  
+    if (path[0] != '/') {
+        sprintf(parent_path, "%s", "/");     
+    }
+
+    strncat(parent_path, path, MAX_PATH_LENGTH);
+
+    // remove trailing slash
+    if (parent_path[strlen(parent_path)-1] == '/') {
+        parent_path[strlen(parent_path)-1] = '\0';
     }
 
     // replace all non-UTF8 characters
     tsk_cleanupUTF8(parent_path, '^');
 
+    // Step 2, move the final folder/file to parent_file
+
     // Find the last '/' 
-    char *ch = "/";    
-    char *chptr = strrchr(parent_path, *ch);
+    char *chptr = strrchr(parent_path, '/');
     if (chptr) {
         // character found in the string
         size_t position = chptr - parent_path;
 
-        sprintf(&parent_name[0], "%s", chptr+1);  // copy everything after slash into patent_name
+        sprintf(parent_name, "%s", chptr+1);  // copy everything after slash into parent_name
         *ret_name = parent_name;
+
         parent_path[position + 1] = '\0';   // add terminating null after last "/"
         *ret_parent_path = parent_path;
     } else {
