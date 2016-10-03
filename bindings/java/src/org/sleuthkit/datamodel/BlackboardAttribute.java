@@ -646,32 +646,32 @@ public class BlackboardAttribute {
 		TSK_ORGANIZATION(108, "TSK_ORGANIZATION", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskOrganization.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Registered Organization for a piece of software
-		TSK_ACCOUNT_NUMBER(109, "TSK_ACCOUNT_NUMBER", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskAccountNumber.text"),
+		TSK_CARD_NUMBER(109, "TSK_CARD_NUMBER", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskCardNumber.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
-		TSK_CREDIT_CARD_EXPIRATION(110, "TSK_CREDIT_CARD_EXPIRATION", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskCreditCardExpiration.text"),
+		TSK_CARD_EXPIRATION(110, "TSK_CARD_EXPIRATION", //for card as 4 digits MMYY //NON-NLS
+				bundle.getString("BlackboardAttribute.tskCardExpiration.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
-		TSK_CREDIT_CARD_SERVICE_CODE(111, "TSK_CREDIT_CARD_SERVICE_CODE", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskCreditCardServiceCode.text"),
+		TSK_CARD_SERVICE_CODE(111, "TSK_CARD_SERVICE_CODE", // 3 digits //NON-NLS
+				bundle.getString("BlackboardAttribute.tskCardServiceCode.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
-		TSK_CREDIT_CARD_DISCRETIONARY(112, "TSK_CREDIT_CARD_DISCRETIONARY", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskCreditCardDiscretionary.text"),
+		TSK_CARD_DISCRETIONARY(112, "TSK_CARD_DISCRETIONARY", //data used at the discretion of the issuer //NON-NLS
+				bundle.getString("BlackboardAttribute.tskCardDiscretionary.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
-		TSK_CREDIT_CARD_LRC(113, "TSK_CREDIT_CARD_LRC", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskCreditCardLRC.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING), // Credit Card Longitudinal Redundancy Check
-		TSK_SOLR_DOCUMENT_ID(114, "TSK_SOLR_DOCUMENT_ID", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskSolrDocumentID.text"),
+		TSK_CARD_LRC(113, "TSK_CARD_LRC", //NON-NLS  //Longitudunal Redundancy Check character //NON-NLS
+				bundle.getString("BlackboardAttribute.tskCardLRC.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
-		TSK_CREDIT_CARD_SCHEME(115, "TSK_CREDIT_CARD_SCHEME",
-				bundle.getString("BlackboardAttribute.tskCreditCardScheme.text"),
+		TSK_KEYWORD_SEARCH_DOCUMENT_ID(114, "TSK_KEYWORD_SEARCH_DOCUMENT_ID", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskKeywordSearchDocumentID.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
-		TSK_PAYMENT_CARD_TYPE(116, "TSK_PAYMENT_CARD_TYPE",
-				bundle.getString("BlackboardAttribute.tskPaymentCardType.text"),
+		TSK_CARD_SCHEME(115, "TSK_CARD_SCHEME", //amex, visa, mastercard, discover, etc //NON-NLS
+				bundle.getString("BlackboardAttribute.tskCardScheme.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
-		TSK_BRAND(117, "TSK_BRAND",
-				bundle.getString("BlackboardAttribute.tskBrand.text"),
+		TSK_CARD_TYPE(116, "TSK_CARD_TYPE", // debit vs credit //NON-NLS
+				bundle.getString("BlackboardAttribute.tskCardType.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_BRAND_NAME(117, "TSK_BRAND_NAME",
+				bundle.getString("BlackboardAttribute.tskBrandName.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_BANK_NAME(118, "TSK_BANK_NAME",
 				bundle.getString("BlackboardAttribute.tskBankName.text"),
@@ -681,7 +681,11 @@ public class BlackboardAttribute {
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_CITY(120, "TSK_CITY",
 				bundle.getString("BlackboardAttribute.tskCity.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),;
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_ACCOUNT_TYPE(121, "TSK_ACCOUNT_TYPE",
+				bundle.getString("BlackboardAttribute.tskAccountType.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+
 		private final int typeID;
 		private final String typeName;
 		private final String displayName;
