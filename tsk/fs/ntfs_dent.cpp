@@ -851,12 +851,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         return TSK_COR;
     }
 
-    /* Get the header of the index entry list */
-    idxelist = &idxroot->list;
-
-    /* Get the offset to the start of the index entry list */
-    idxe = (ntfs_idxentry *) ((uintptr_t) idxelist +
-        tsk_getu32(a_fs->endian, idxelist->begin_off));
+    
 
     /*
      * NTFS does not have "." and ".." entries in the index trees
@@ -931,12 +926,15 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             "ntfs_dir_open_meta: Processing $IDX_ROOT of inum %" PRIuINUM
             "\n", a_addr);
 
+    /* Get the header of the index entry list */
+    idxelist = &idxroot->list;
+
     /* Verify the offset pointers */
     if ((tsk_getu32(a_fs->endian, idxelist->seqend_off) <
             tsk_getu32(a_fs->endian, idxelist->begin_off)) ||
         (tsk_getu32(a_fs->endian, idxelist->bufend_off) <
             tsk_getu32(a_fs->endian, idxelist->seqend_off)) ||
-        (((uintptr_t) idxe + tsk_getu32(a_fs->endian,
+        (((uintptr_t) idxelist + tsk_getu32(a_fs->endian,
                     idxelist->bufend_off)) >
             ((uintptr_t) fs_attr_root->rd.buf +
                 fs_attr_root->rd.buf_size))) {
@@ -947,6 +945,10 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             fs_dir->fs_file->meta->addr);
         return TSK_COR;
     }
+
+    /* Get the offset to the start of the index entry list */
+    idxe = (ntfs_idxentry *) ((uintptr_t) idxelist +
+        tsk_getu32(a_fs->endian, idxelist->begin_off));
 
     retval_tmp = ntfs_proc_idxentry(ntfs, fs_dir,
         (fs_dir->fs_file->meta->flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0,
