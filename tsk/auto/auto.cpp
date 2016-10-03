@@ -669,7 +669,8 @@ uint8_t
 uint8_t
 TskAuto::isFATSystemFiles(TSK_FS_FILE *a_fs_file)
 {
-    if (a_fs_file && a_fs_file->fs_info && a_fs_file->name) {
+    if (a_fs_file && a_fs_file->fs_info && a_fs_file->name
+        && TSK_FS_TYPE_ISFAT(a_fs_file->fs_info->ftype)) {
         FATFS_INFO *fatfs = (FATFS_INFO*)a_fs_file->fs_info;
         TSK_INUM_T addr = a_fs_file->name->meta_addr;
         if ((addr == fatfs->mbr_virt_inum) || 
