@@ -349,7 +349,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
     /* The MFT entries have error and integrity checks in them
      * called update sequences.  They must be checked and removed
      * so that later functions can process the data as normal.
-     * They are located in the last 2 bytes of each 512-byte sector
+     * They are located in the last 2 bytes of each 512-bytes of data.
      *
      * We first verify that the the 2-byte value is a give value and
      * then replace it with what should be there
@@ -358,7 +358,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
     mft = (ntfs_mft *) a_buf;
     if ((tsk_getu16(fs->endian, mft->upd_cnt) > 0) &&
         (((uint32_t) (tsk_getu16(fs->endian,
-                        mft->upd_cnt) - 1) * a_ntfs->ssize_b) >
+                        mft->upd_cnt) - 1) * NTFS_UPDATE_SEQ_STRIDE) >
             a_ntfs->mft_rsize_b)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
@@ -384,7 +384,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
     for (i = 1; i < tsk_getu16(fs->endian, mft->upd_cnt); i++) {
         uint8_t *new_val, *old_val;
         /* The offset into the buffer of the value to analyze */
-        size_t offset = i * a_ntfs->ssize_b - 2;
+        size_t offset = i * NTFS_UPDATE_SEQ_STRIDE - 2;
         /* get the current sequence value */
         uint16_t cur_seq =
             tsk_getu16(fs->endian, (uintptr_t) a_buf + offset);
