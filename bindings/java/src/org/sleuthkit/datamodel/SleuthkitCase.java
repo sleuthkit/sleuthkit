@@ -256,6 +256,7 @@ public class SleuthkitCase {
 		initBlackboardArtifactTypes();
 		initBlackboardAttributeTypes();
 		initNextArtifactId();
+		initStandardTagNames();
 	}
 
 	/**
@@ -351,6 +352,11 @@ public class SleuthkitCase {
 			closeStatement(statement);
 			connection.close();
 		}
+	}
+
+	private void initStandardTagNames() throws TskCoreException {
+		addTagName(bundle.getString("SleuthkitCase.initStandardTagNames.bookmark.text"),
+				"", TagName.HTML_COLOR.NONE);
 	}
 
 	private void initIngestModuleTypes(CaseDbConnection connection) throws TskCoreException {
