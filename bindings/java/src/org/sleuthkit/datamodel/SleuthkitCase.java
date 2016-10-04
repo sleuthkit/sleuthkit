@@ -354,6 +354,13 @@ public class SleuthkitCase {
 		}
 	}
 
+	/**
+	 * Initialize standard tag names by adding them into the tag_names database.
+	 * Currently, bookmark is the only standard tag name. Consider adding CAT
+	 * tags here as well to avoid a race condition in multi-user cases.
+	 * 
+	 * @throws TskCoreException 
+	 */
 	private void initStandardTagNames() throws TskCoreException {
 		addTagName(bundle.getString("SleuthkitCase.initStandardTagNames.bookmark.text"),
 				"", TagName.HTML_COLOR.NONE);
