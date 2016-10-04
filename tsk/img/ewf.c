@@ -138,7 +138,11 @@ ewf_image_close(TSK_IMG_INFO * img_info)
     }
     else {
         libewf_error_t *error;
+#ifdef TSK_WIN32
+        libewf_glob_wide_free( ewf_info->images, ewf_info->num_imgs, &error);
+#else
         libewf_glob_free( ewf_info->images, ewf_info->num_imgs, &error);
+#endif
     }
 
     tsk_deinit_lock(&(ewf_info->read_lock));
