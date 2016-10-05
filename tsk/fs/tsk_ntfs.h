@@ -47,6 +47,8 @@ extern "C" {
 /* (64 * 1024) = 65536 */
 #define NTFS_MAX_UNCOMPRESSION_BUFFER_SIZE 65536
 
+#define NTFS_UPDATE_SEQ_STRIDE  512
+
 
 
 /************************************************************************

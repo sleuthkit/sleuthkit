@@ -766,7 +766,7 @@ int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, co
         PQfreemem(md5_sql);
         return 1;
     }
-    snprintf(stmt, 2048, "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %d, %s, %"PRIuOFF", %s);",
+    snprintf(stmt, 2048, "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %lld, %s, %"PRIuOFF", %s);",
         objId, type, ssize, timezone_sql, size, md5_sql);
     int ret = attempt_exec(stmt, "Error adding data to tsk_image_info table: %s\n");
     PQfreemem(timezone_sql);
@@ -881,12 +881,12 @@ int TskDbPostgreSQL::addFsFile(TSK_FS_FILE * fs_file,
     if (fs_file->name == NULL)
         return 0;
 
-    /* we want the root directory to have its parent be the file system
-    * object.  We need to have special care though because the ".." entries
-    * in sub-folders of the root directory have a meta_addr of the root dir. */
+    // Find the object id for the parent folder.
+
+    /* Root directory's parent should be the file system object.
+     * Make sure it doesn't have a name, so that we don't pick up ".." entries */
     if ((fs_file->fs_info->root_inum == fs_file->name->meta_addr) && 
-        ((fs_file->name->name == NULL) || (0 == TSK_FS_ISDOT(fs_file->name->name)))) {
-            // this entry is for root directory
+        ((fs_file->name->name == NULL) || (strlen(fs_file->name->name) == 0))) {
             parObjId = fsObjId;
     }
     else {

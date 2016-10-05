@@ -226,6 +226,7 @@ public class BlackboardAttribute {
 		 *
 		 * TODO (AUT-2070): Deprecate and provide a getTypeId method instead for
 		 * API consistency.
+		 * @return attribute value type id
 		 */
 		public long getType() {
 			return typeId;
@@ -236,6 +237,7 @@ public class BlackboardAttribute {
 		 *
 		 * TODO (AUT-2070): Deprecate and provide a getTypeName method instead
 		 * for API consistency.
+		 * @return attribute value type name
 		 */
 		public String getLabel() {
 			return this.typeName;
@@ -1240,10 +1242,7 @@ public class BlackboardAttribute {
 			return false;
 		}
 		final BlackboardAttribute other = (BlackboardAttribute) obj;
-		if (this.artifactID != other.artifactID) {
-			return false;
-		}
-		return true;
+		return this.artifactID == other.artifactID;
 	}
 
 	@Override
@@ -1284,6 +1283,8 @@ public class BlackboardAttribute {
 		return "";
 	}
 
+	final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
+
 	/**
 	 * Converts a byte array to a string.
 	 *
@@ -1291,8 +1292,6 @@ public class BlackboardAttribute {
 	 *
 	 * @return The string.
 	 */
-	final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
-
 	private static String bytesToHexString(byte[] bytes) {
 		// from http://stackoverflow.com/questions/9655181/convert-from-byte-array-to-hex-string-in-java
 		char[] hexChars = new char[bytes.length * 2];
