@@ -358,12 +358,29 @@ public class SleuthkitCase {
 	 * Initialize standard tag names by adding them into the tag_names database.
 	 * Currently, bookmark is the only standard tag name. Consider adding CAT
 	 * tags here as well to avoid a race condition in multi-user cases.
-	 * 
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
+	 * @throws SQLException
 	 */
-	private void initStandardTagNames() throws TskCoreException {
-		addTagName(bundle.getString("SleuthkitCase.initStandardTagNames.bookmark.text"),
-				"", TagName.HTML_COLOR.NONE);
+	private void initStandardTagNames() throws TskCoreException, SQLException {
+		long count = -1;
+		String bookmarkDisplayName = bundle.getString("SleuthkitCase.initStandardTagNames.bookmark.text");
+		CaseDbConnection connection = connections.getConnection();
+		Statement statement = null;
+		ResultSet resultSet = null;
+		try {
+			statement = connection.createStatement();
+			resultSet = connection.executeQuery(statement, "SELECT COUNT(*) AS count FROM tag_names WHERE display_name = '" + bookmarkDisplayName + "'"); //NON-NLS
+			resultSet.next();
+			count = resultSet.getLong("count");
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+			connection.close();
+		}
+		if (count == 0) {
+			addTagName(bookmarkDisplayName, "", TagName.HTML_COLOR.NONE);
+		}
 	}
 
 	private void initIngestModuleTypes(CaseDbConnection connection) throws TskCoreException {
