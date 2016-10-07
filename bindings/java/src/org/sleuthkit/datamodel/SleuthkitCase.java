@@ -200,7 +200,8 @@ public class SleuthkitCase {
 		this.dbType = dbType;
 		this.caseDirPath = new java.io.File(dbPath).getParentFile().getAbsolutePath();
 		this.connections = new SQLiteConnections(dbPath);
-		init(caseHandle);
+		this.caseHandle = caseHandle;
+		init();
 		updateDatabaseSchema(dbPath);
 		// Initializing ingest module types is done here because it is possible
 		// the table is not there when init is called. It must be there after
@@ -209,6 +210,7 @@ public class SleuthkitCase {
 		this.initIngestModuleTypes(connection);
 		this.initIngestStatusTypes(connection);
 		this.initEncodingTypes(connection);
+		this.initStandardTagNames();
 		connection.close();
 		logSQLiteJDBCDriverInfo();
 	}
@@ -235,7 +237,8 @@ public class SleuthkitCase {
 		this.dbType = dbType;
 		this.caseDirPath = caseDirPath;
 		this.connections = new PostgreSQLConnections(host, port, dbName, userName, password);
-		init(caseHandle);
+		this.caseHandle = caseHandle;
+		init();
 		updateDatabaseSchema(null);
 		// Initializing ingest module types is done here because it is possible
 		// the table is not there when init is called. It must be there after
@@ -244,11 +247,11 @@ public class SleuthkitCase {
 		this.initIngestModuleTypes(connection);
 		this.initIngestStatusTypes(connection);
 		this.initEncodingTypes(connection);
+		this.initStandardTagNames();
 		connection.close();
 	}
 
-	private void init(SleuthkitJNI.CaseDbHandle caseHandle) throws Exception {
-		this.caseHandle = caseHandle;
+	private void init() throws Exception {
 		typeIdToArtifactTypeMap = new ConcurrentHashMap<Integer, BlackboardArtifact.Type>();
 		typeIdToAttributeTypeMap = new ConcurrentHashMap<Integer, BlackboardAttribute.Type>();
 		typeNameToArtifactTypeMap = new ConcurrentHashMap<String, BlackboardArtifact.Type>();
@@ -256,7 +259,6 @@ public class SleuthkitCase {
 		initBlackboardArtifactTypes();
 		initBlackboardAttributeTypes();
 		initNextArtifactId();
-		initStandardTagNames();
 	}
 
 	/**
@@ -356,30 +358,34 @@ public class SleuthkitCase {
 
 	/**
 	 * Initialize standard tag names by adding them into the tag_names database.
-	 * Currently, bookmark is the only standard tag name. Consider adding CAT
-	 * tags here as well to avoid a race condition in multi-user cases.
 	 *
-	 * @throws TskCoreException
-	 * @throws SQLException
+	 * @throws TskCoreException if there is a problem getting a database
+	 *                          connection.
+	 * @throws SQLException     if ther is an error executing an SQL statement.
 	 */
 	private void initStandardTagNames() throws TskCoreException, SQLException {
-		long count = -1;
 		String bookmarkDisplayName = bundle.getString("SleuthkitCase.initStandardTagNames.bookmark.text");
 		CaseDbConnection connection = connections.getConnection();
 		Statement statement = null;
 		ResultSet resultSet = null;
 		try {
 			statement = connection.createStatement();
+			statement.execute("INSERT INTO tag_names (display_name, description, color) VALUES ('" + bookmarkDisplayName + "', '', '" + TagName.HTML_COLOR.NONE.getName() + "');"); //NON-NLS
+		} catch (SQLException ex) {
+			/*
+			 * If the exception is a violation of the tag names uniqueness
+			 * constraint, it can be ignored because another user has added the
+			 * tag name. Otherwise, propagate the exception.
+			 */
 			resultSet = connection.executeQuery(statement, "SELECT COUNT(*) AS count FROM tag_names WHERE display_name = '" + bookmarkDisplayName + "'"); //NON-NLS
 			resultSet.next();
-			count = resultSet.getLong("count");
+			if (resultSet.getLong("count") == 0) {
+				throw ex;
+			}
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
 			connection.close();
-		}
-		if (count == 0) {
-			addTagName(bookmarkDisplayName, "", TagName.HTML_COLOR.NONE);
 		}
 	}
 
