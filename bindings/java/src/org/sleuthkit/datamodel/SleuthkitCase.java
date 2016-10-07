@@ -202,16 +202,6 @@ public class SleuthkitCase {
 		this.connections = new SQLiteConnections(dbPath);
 		this.caseHandle = caseHandle;
 		init();
-		updateDatabaseSchema(dbPath);
-		// Initializing ingest module types is done here because it is possible
-		// the table is not there when init is called. It must be there after
-		// the schema update.
-		CaseDbConnection connection = connections.getConnection();
-		this.initIngestModuleTypes(connection);
-		this.initIngestStatusTypes(connection);
-		this.initEncodingTypes(connection);
-		this.initStandardTagNames();
-		connection.close();
 		logSQLiteJDBCDriverInfo();
 	}
 
@@ -239,16 +229,6 @@ public class SleuthkitCase {
 		this.connections = new PostgreSQLConnections(host, port, dbName, userName, password);
 		this.caseHandle = caseHandle;
 		init();
-		updateDatabaseSchema(null);
-		// Initializing ingest module types is done here because it is possible
-		// the table is not there when init is called. It must be there after
-		// the schema update.
-		CaseDbConnection connection = connections.getConnection();
-		this.initIngestModuleTypes(connection);
-		this.initIngestStatusTypes(connection);
-		this.initEncodingTypes(connection);
-		this.initStandardTagNames();
-		connection.close();
 	}
 
 	private void init() throws Exception {
@@ -256,9 +236,23 @@ public class SleuthkitCase {
 		typeIdToAttributeTypeMap = new ConcurrentHashMap<Integer, BlackboardAttribute.Type>();
 		typeNameToArtifactTypeMap = new ConcurrentHashMap<String, BlackboardArtifact.Type>();
 		typeNameToAttributeTypeMap = new ConcurrentHashMap<String, BlackboardAttribute.Type>();
+
+		/*
+		 * The following methods need to be called before updateDatabaseSchema
+		 * due to the way that updateFromSchema2toSchema3 was implemented.
+		 */
 		initBlackboardArtifactTypes();
 		initBlackboardAttributeTypes();
 		initNextArtifactId();
+		
+		updateDatabaseSchema(null);
+		
+		CaseDbConnection connection = connections.getConnection();
+		initIngestModuleTypes(connection);
+		initIngestStatusTypes(connection);
+		initEncodingTypes(connection);
+		connection.close();		
+		initStandardTagNames();
 	}
 
 	/**
