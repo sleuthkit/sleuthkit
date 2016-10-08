@@ -289,6 +289,15 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openFileNat
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    getVolOffsetNat
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getVolOffsetNat
+  (JNIEnv *, jclass, jlong, jlong);
+
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    readImgNat
  * Signature: (J[BJJ)I
  */

@@ -1296,6 +1296,31 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openFsNat
     return (jlong) fs_info;
 }
 
+/*
+ * Open file system with the given offset
+ * @return the offset to the volume from vol_id
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param a_vs_info the pointer to the volume system object
+ * @param vol_id the id of the volume 
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getVolOffsetNat
+	(JNIEnv * env, jclass obj, jlong a_vs_info, jlong vol_id) {
+    TSK_VS_INFO *vs_info = castVsInfo(env, a_vs_info);
+    if (vs_info == 0) {
+        return 0;
+    }
+    const TSK_VS_PART_INFO *vol_part_info;
+
+    vol_part_info = tsk_vs_part_get(vs_info, (TSK_PNUM_T) vol_id);
+    if (vol_part_info == NULL) {
+        setThrowTskCoreError(env, tsk_error_get());
+    }
+
+    TSK_DADDR_T offset = vol_part_info->start;
+    return offset;
+}
+
 
 /*
  * Open the file with the given id in the given file system

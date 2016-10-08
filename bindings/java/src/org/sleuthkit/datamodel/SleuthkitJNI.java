@@ -119,6 +119,8 @@ public class SleuthkitJNI {
 
 	private static native long openFileNat(long fsHandle, long fileId, int attrType, int attrId) throws TskCoreException;
 
+	private static native long getVolOffsetNat(long vsHandle, long volId) throws TskCoreException;
+
 	//read functions
 	private static native int readImgNat(long imgHandle, byte[] readBuffer, long offset, long len) throws TskCoreException;
 
@@ -487,6 +489,21 @@ public class SleuthkitJNI {
 	public static long openVs(long imgHandle, long vsOffset) throws TskCoreException {
 		return openVsNat(imgHandle, vsOffset);
 	}
+
+	/**
+	 * Get offset to volume 
+	 * 
+	 * @param vsHandle a handle to previously opened volume system
+	 * @param volId the id of the volume on the volume system
+	 * 
+	 * @return the offset to the volume from volId
+	 * 
+	 * @throws TskCoreException exception thrown if critical error occurs within
+	 *                          TSK
+	 */
+	public static long getVolOffset(long vsHandle, long volId) throws TskCoreException { 
+		return getVolOffsetNat(vsHandle, volId);
+	} 
 
 	//get pointers
 	/**
