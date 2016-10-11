@@ -244,22 +244,24 @@ public class SleuthkitCase {
 		initBlackboardArtifactTypes();
 		initBlackboardAttributeTypes();
 		initNextArtifactId();
-		
+
 		updateDatabaseSchema(null);
-		
+
+		initStandardTagNames();
+
 		CaseDbConnection connection = connections.getConnection();
 		initIngestModuleTypes(connection);
 		initIngestStatusTypes(connection);
-		this.initReviewStatuses(connection);
+		initReviewStatuses(connection);
 		initEncodingTypes(connection);
 		connection.close();		
-		initStandardTagNames();
 	}
 
 	/**
 	 * Make sure the predefined artifact types are in the artifact types table.
 	 *
 	 * @throws SQLException
+	 * @throws TskCoreException
 	 */
 	private void initBlackboardArtifactTypes() throws SQLException, TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
@@ -268,19 +270,23 @@ public class SleuthkitCase {
 		try {
 			statement = connection.createStatement();
 			for (ARTIFACT_TYPE type : ARTIFACT_TYPE.values()) {
-				resultSet = connection.executeQuery(statement, "SELECT COUNT(*) AS count FROM blackboard_artifact_types WHERE artifact_type_id = '" + type.getTypeID() + "'"); //NON-NLS
-				resultSet.next();
-				if (resultSet.getLong("count") == 0) {
-					connection.executeUpdate(statement, "INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name) VALUES (" + type.getTypeID() + " , '" + type.getLabel() + "', '" + type.getDisplayName() + "')"); //NON-NLS
+				try {
+					statement.execute("INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name) VALUES (" + type.getTypeID() + " , '" + type.getLabel() + "', '" + type.getDisplayName() + "')"); //NON-NLS
+				} catch (SQLException ex) {
+					resultSet = connection.executeQuery(statement, "SELECT COUNT(*) AS count FROM blackboard_artifact_types WHERE artifact_type_id = '" + type.getTypeID() + "'"); //NON-NLS
+					resultSet.next();
+					if (resultSet.getLong("count") == 0) {
+						throw ex;
+					}
+					resultSet.close();
+					resultSet = null;
 				}
-				resultSet.close();
-				resultSet = null;
 				this.typeIdToArtifactTypeMap.put(type.getTypeID(), new BlackboardArtifact.Type(type));
 				this.typeNameToArtifactTypeMap.put(type.getLabel(), new BlackboardArtifact.Type(type));
 			}
 			if (dbType == DbType.POSTGRESQL) {
 				int newPrimaryKeyIndex = Collections.max(Arrays.asList(ARTIFACT_TYPE.values())).getTypeID() + 1;
-				statement.execute("ALTER SEQUENCE blackboard_artifact_types_artifact_type_id_seq RESTART WITH " + newPrimaryKeyIndex);
+				statement.execute("ALTER SEQUENCE blackboard_artifact_types_artifact_type_id_seq RESTART WITH " + newPrimaryKeyIndex); //NON-NLS
 			}
 		} finally {
 			closeResultSet(resultSet);
@@ -294,6 +300,7 @@ public class SleuthkitCase {
 	 * attribute types table.
 	 *
 	 * @throws SQLException
+	 * @throws TskCoreException
 	 */
 	private void initBlackboardAttributeTypes() throws SQLException, TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
@@ -302,19 +309,23 @@ public class SleuthkitCase {
 		try {
 			statement = connection.createStatement();
 			for (ATTRIBUTE_TYPE type : ATTRIBUTE_TYPE.values()) {
-				resultSet = connection.executeQuery(statement, "SELECT COUNT(*) AS count FROM blackboard_attribute_types WHERE attribute_type_id = '" + type.getTypeID() + "'"); //NON-NLS
-				resultSet.next();
-				if (resultSet.getLong("count") == 0) {
-					connection.executeUpdate(statement, "INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name, value_type) VALUES (" + type.getTypeID() + ", '" + type.getLabel() + "', '" + type.getDisplayName() + "', '" + type.getValueType().getType() + "')"); //NON-NLS
+				try {
+					statement.execute("INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name, value_type) VALUES (" + type.getTypeID() + ", '" + type.getLabel() + "', '" + type.getDisplayName() + "', '" + type.getValueType().getType() + "')"); //NON-NLS
+				} catch (SQLException ex) {
+					resultSet = connection.executeQuery(statement, "SELECT COUNT(*) AS count FROM blackboard_attribute_types WHERE attribute_type_id = '" + type.getTypeID() + "'"); //NON-NLS
+					resultSet.next();
+					if (resultSet.getLong("count") == 0) {
+						throw ex;
+					}
+					resultSet.close();
+					resultSet = null;
 				}
-				resultSet.close();
-				resultSet = null;
 				this.typeIdToAttributeTypeMap.put(type.getTypeID(), new BlackboardAttribute.Type(type));
 				this.typeNameToAttributeTypeMap.put(type.getLabel(), new BlackboardAttribute.Type(type));
 			}
 			if (this.dbType == DbType.POSTGRESQL) {
 				int newPrimaryKeyIndex = Collections.max(Arrays.asList(ATTRIBUTE_TYPE.values())).getTypeID() + 1;
-				statement.execute("ALTER SEQUENCE blackboard_attribute_types_attribute_type_id_seq RESTART WITH " + newPrimaryKeyIndex);
+				statement.execute("ALTER SEQUENCE blackboard_attribute_types_attribute_type_id_seq RESTART WITH " + newPrimaryKeyIndex); //NON-NLS
 			}
 		} finally {
 			closeResultSet(resultSet);
@@ -329,16 +340,16 @@ public class SleuthkitCase {
 	 * will initialize the value to 0x8000000000000000 (the maximum negative
 	 * signed long).
 	 *
-	 * @throws TskCoreException
 	 * @throws SQLException
+	 * @throws TskCoreException
 	 */
-	private void initNextArtifactId() throws TskCoreException, SQLException {
+	private void initNextArtifactId() throws SQLException, TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		Statement statement = null;
 		ResultSet resultSet = null;
 		try {
 			statement = connection.createStatement();
-			resultSet = connection.executeQuery(statement, "SELECT MAX(artifact_id) AS max_artifact_id FROM blackboard_artifacts");
+			resultSet = connection.executeQuery(statement, "SELECT MAX(artifact_id) AS max_artifact_id FROM blackboard_artifacts"); //NON-NLS
 			resultSet.next();
 			this.nextArtifactId = resultSet.getLong("max_artifact_id") + 1;
 			if (this.nextArtifactId == 1) {
@@ -354,11 +365,11 @@ public class SleuthkitCase {
 	/**
 	 * Initialize standard tag names by adding them into the tag_names database.
 	 *
+	 * @throws SQLException     if there is an error executing an SQL statement.
 	 * @throws TskCoreException if there is a problem getting a database
 	 *                          connection.
-	 * @throws SQLException     if ther is an error executing an SQL statement.
 	 */
-	private void initStandardTagNames() throws TskCoreException, SQLException {
+	private void initStandardTagNames() throws SQLException, TskCoreException {
 		String bookmarkDisplayName = bundle.getString("SleuthkitCase.initStandardTagNames.bookmark.text");
 		CaseDbConnection connection = connections.getConnection();
 		Statement statement = null;
@@ -384,73 +395,96 @@ public class SleuthkitCase {
 		}
 	}
 
-	private void initIngestModuleTypes(CaseDbConnection connection) throws TskCoreException {
-		Statement s = null;
-		ResultSet rs = null;
+	/**
+	 * Initialize ingest module types by adding them into the
+	 * ingest_module_types database.
+	 *
+	 * @throws SQLException
+	 * @throws TskCoreException 
+	 */
+	private void initIngestModuleTypes(CaseDbConnection connection) throws SQLException, TskCoreException {
+		Statement statement = null;
+		ResultSet resultSet = null;
 		try {
-			s = connection.createStatement();
+			statement = connection.createStatement();
 			for (IngestModuleType type : IngestModuleType.values()) {
-				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_module_types WHERE type_id=" + type.ordinal() + ";");
-				if (!rs.next()) {
-					s.execute("INSERT INTO ingest_module_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "');");
+				try {
+					statement.execute("INSERT INTO ingest_module_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "');"); //NON-NLS
+				} catch (SQLException ex) {
+					resultSet = connection.executeQuery(statement, "SELECT COUNT(*) as count FROM ingest_module_types WHERE type_id = " + type.ordinal() + ";"); //NON-NLS
+					resultSet.next();
+					if (resultSet.getLong("count") == 0) {
+						throw ex;
+					}
+					resultSet.close();
+					resultSet = null;
 				}
-				rs.close();
-				rs = null;
 			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error adding ingest module types to table.", ex);
 		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
+			closeResultSet(resultSet);
+			closeStatement(statement);
 		}
 	}
 
-	private void initIngestStatusTypes(CaseDbConnection connection) throws TskCoreException {
-		Statement s = null;
-		ResultSet rs = null;
+	/**
+	 * Initialize ingest status types by adding them into the
+	 * ingest_job_status_types database.
+	 *
+	 * @throws SQLException
+	 * @throws TskCoreException 
+	 */
+	private void initIngestStatusTypes(CaseDbConnection connection) throws SQLException, TskCoreException {
+		Statement statement = null;
+		ResultSet resultSet = null;
 		try {
-			s = connection.createStatement();
+			statement = connection.createStatement();
 			for (IngestJobStatusType type : IngestJobStatusType.values()) {
-				rs = connection.executeQuery(s, "SELECT type_id FROM ingest_job_status_types WHERE type_id=" + type.ordinal() + ";");
-				if (!rs.next()) {
-					s.execute("INSERT INTO ingest_job_status_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "');");
+				try {
+					statement.execute("INSERT INTO ingest_job_status_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "');"); //NON-NLS
+				} catch (SQLException ex) {
+					resultSet = connection.executeQuery(statement, "SELECT COUNT(*) as count FROM ingest_job_status_types WHERE type_id = " + type.ordinal() + ";"); //NON-NLS
+					resultSet.next();
+					if (resultSet.getLong("count") == 0) {
+						throw ex;
+					}
+					resultSet.close();
+					resultSet = null;
 				}
-				rs.close();
-				rs = null;
 			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error adding ingest module types to table.", ex);//NON-NLS
 		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
+			closeResultSet(resultSet);
+			closeStatement(statement);
 		}
 	}
 
 	/**
 	 * Initialize the review statuses lookup table from the ReviewStatus enum.
 	 *
-	 * @param connection The CaseDbConnection to use for DB operations.
-	 *
+	 * @throws SQLException
 	 * @throws TskCoreException if there is an error initializing the table.
 	 */
-	private void initReviewStatuses(CaseDbConnection connection) throws TskCoreException {
-		Statement s = null;
-		ResultSet rs = null;
+	private void initReviewStatuses(CaseDbConnection connection) throws SQLException, TskCoreException {
+		Statement statement = null;
+		ResultSet resultSet = null;
 		try {
-			s = connection.createStatement();
+			statement = connection.createStatement();
 			for (BlackboardArtifact.ReviewStatus status : BlackboardArtifact.ReviewStatus.values()) {
-				rs = connection.executeQuery(s, "SELECT review_status_id FROM review_statuses WHERE review_status_id= " + status.getID());//NON-NLS
-				if (false == rs.next()) {
-					s.execute("INSERT INTO review_statuses(review_status_id, review_status_name, display_name) "//NON-NLS
-							+ "VALUES(" + status.getID() + ",\"" + status.getName() + "\",\"" + status.getDisplayName() + "\")");//NON-NLS
+				try {
+					statement.execute("INSERT INTO review_statuses (review_status_id, review_status_name, display_name) " //NON-NLS
+							+ "VALUES (" + status.getID() + ",\"" + status.getName() + "\",\"" + status.getDisplayName() + "\")"); //NON-NLS
+				} catch (SQLException ex) {
+					resultSet = connection.executeQuery(statement, "SELECT COUNT(*) as count FROM review_statuses WHERE review_status_id = " + status.getID()); //NON-NLS
+					resultSet.next();
+					if (resultSet.getLong("count") == 0) {
+						throw ex;
+					}
+					resultSet.close();
+					resultSet = null;
 				}
-				closeResultSet(rs);
 			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error adding review statuses to table.", ex);//NON-NLS
 		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
+			closeResultSet(resultSet);
+			closeStatement(statement);
 		}
 	}
 
@@ -459,6 +493,7 @@ public class SleuthkitCase {
 	 * database upgrades or the encoding_types table will not exist.
 	 *
 	 * @throws SQLException
+	 * @throws TskCoreException
 	 */
 	private void initEncodingTypes(CaseDbConnection connection) throws SQLException, TskCoreException {
 		Statement statement = null;
@@ -466,13 +501,17 @@ public class SleuthkitCase {
 		try {
 			statement = connection.createStatement();
 			for (TskData.EncodingType type : TskData.EncodingType.values()) {
-				resultSet = connection.executeQuery(statement, "SELECT COUNT(*) FROM file_encoding_types WHERE encoding_type = " + type.getType()); //NON-NLS
-				resultSet.next();
-				if (resultSet.getLong(1) == 0) {
-					connection.executeUpdate(statement, "INSERT INTO file_encoding_types (encoding_type, name) VALUES (" + type.getType() + " , '" + type.name() + "')"); //NON-NLS
+				try {
+					statement.execute("INSERT INTO file_encoding_types (encoding_type, name) VALUES (" + type.getType() + " , '" + type.name() + "')"); //NON-NLS
+				} catch (SQLException ex) {
+					resultSet = connection.executeQuery(statement, "SELECT COUNT(*) as count FROM file_encoding_types WHERE encoding_type = " + type.getType()); //NON-NLS
+					resultSet.next();
+					if (resultSet.getLong("count") == 0) {
+						throw ex;
+					}
+					resultSet.close();
+					resultSet = null;
 				}
-				resultSet.close();
-				resultSet = null;
 			}
 		} finally {
 			closeResultSet(resultSet);
