@@ -271,7 +271,7 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			for (ARTIFACT_TYPE type : ARTIFACT_TYPE.values()) {
 				try {
-					connection.executeUpdate(statement, "INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name) VALUES (" + type.getTypeID() + " , '" + type.getLabel() + "', '" + type.getDisplayName() + "')"); //NON-NLS
+					statement.execute("INSERT INTO blackboard_artifact_types (artifact_type_id, type_name, display_name) VALUES (" + type.getTypeID() + " , '" + type.getLabel() + "', '" + type.getDisplayName() + "')"); //NON-NLS
 				} catch (SQLException ex) {
 					resultSet = connection.executeQuery(statement, "SELECT COUNT(*) AS count FROM blackboard_artifact_types WHERE artifact_type_id = '" + type.getTypeID() + "'"); //NON-NLS
 					resultSet.next();
@@ -310,7 +310,7 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			for (ATTRIBUTE_TYPE type : ATTRIBUTE_TYPE.values()) {
 				try {
-					connection.executeUpdate(statement, "INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name, value_type) VALUES (" + type.getTypeID() + ", '" + type.getLabel() + "', '" + type.getDisplayName() + "', '" + type.getValueType().getType() + "')"); //NON-NLS
+					statement.execute("INSERT INTO blackboard_attribute_types (attribute_type_id, type_name, display_name, value_type) VALUES (" + type.getTypeID() + ", '" + type.getLabel() + "', '" + type.getDisplayName() + "', '" + type.getValueType().getType() + "')"); //NON-NLS
 				} catch (SQLException ex) {
 					resultSet = connection.executeQuery(statement, "SELECT COUNT(*) AS count FROM blackboard_attribute_types WHERE attribute_type_id = '" + type.getTypeID() + "'"); //NON-NLS
 					resultSet.next();
@@ -376,7 +376,7 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			statement = connection.createStatement();
-			connection.executeUpdate(statement, "INSERT INTO tag_names (display_name, description, color) VALUES ('" + bookmarkDisplayName + "', '', '" + TagName.HTML_COLOR.NONE.getName() + "');"); //NON-NLS
+			statement.execute("INSERT INTO tag_names (display_name, description, color) VALUES ('" + bookmarkDisplayName + "', '', '" + TagName.HTML_COLOR.NONE.getName() + "');"); //NON-NLS
 		} catch (SQLException ex) {
 			/*
 			 * If the exception is a violation of the tag names uniqueness
@@ -409,7 +409,7 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			for (IngestModuleType type : IngestModuleType.values()) {
 				try {
-					connection.executeUpdate(statement, "INSERT INTO ingest_module_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "');"); //NON-NLS
+					statement.execute("INSERT INTO ingest_module_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "');"); //NON-NLS
 				} catch (SQLException ex) {
 					resultSet = connection.executeQuery(statement, "SELECT COUNT(*) as count FROM ingest_module_types WHERE type_id = " + type.ordinal() + ";"); //NON-NLS
 					resultSet.next();
@@ -440,7 +440,7 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			for (IngestJobStatusType type : IngestJobStatusType.values()) {
 				try {
-					connection.executeUpdate(statement, "INSERT INTO ingest_job_status_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "');"); //NON-NLS
+					statement.execute("INSERT INTO ingest_job_status_types (type_id, type_name) VALUES (" + type.ordinal() + ", '" + type.toString() + "');"); //NON-NLS
 				} catch (SQLException ex) {
 					resultSet = connection.executeQuery(statement, "SELECT COUNT(*) as count FROM ingest_job_status_types WHERE type_id = " + type.ordinal() + ";"); //NON-NLS
 					resultSet.next();
@@ -470,7 +470,7 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			for (BlackboardArtifact.ReviewStatus status : BlackboardArtifact.ReviewStatus.values()) {
 				try {
-					connection.executeUpdate(statement, "INSERT INTO review_statuses (review_status_id, review_status_name, display_name) " //NON-NLS
+					statement.execute("INSERT INTO review_statuses (review_status_id, review_status_name, display_name) " //NON-NLS
 							+ "VALUES (" + status.getID() + ",\"" + status.getName() + "\",\"" + status.getDisplayName() + "\")"); //NON-NLS
 				} catch (SQLException ex) {
 					resultSet = connection.executeQuery(statement, "SELECT COUNT(*) as count FROM review_statuses WHERE review_status_id = " + status.getID()); //NON-NLS
@@ -502,7 +502,7 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			for (TskData.EncodingType type : TskData.EncodingType.values()) {
 				try {
-					connection.executeUpdate(statement, "INSERT INTO file_encoding_types (encoding_type, name) VALUES (" + type.getType() + " , '" + type.name() + "')"); //NON-NLS
+					statement.execute("INSERT INTO file_encoding_types (encoding_type, name) VALUES (" + type.getType() + " , '" + type.name() + "')"); //NON-NLS
 				} catch (SQLException ex) {
 					resultSet = connection.executeQuery(statement, "SELECT COUNT(*) as count FROM file_encoding_types WHERE encoding_type = " + type.getType()); //NON-NLS
 					resultSet.next();
