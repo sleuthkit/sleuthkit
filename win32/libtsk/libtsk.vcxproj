@@ -310,7 +310,9 @@ copy "$(POSTGRESQL_HOME_64)\bin\ssleay32.dll" "$(OutDir)"</Command>
       <Command>copy "$(LIBEWF_HOME)\msvscpp\release\libewf.dll" "$(OutDir)"
 copy "$(LIBEWF_HOME)\msvscpp\release\zlib.dll" "$(OutDir)"
 copy "$(LIBVMDK_HOME)\msvscpp\release\libvmdk.dll" "$(OutDir)"
-copy "$(LIBVHDI_HOME)\msvscpp\release\libvhdi.dll" "$(OutDir)"</Command>
+copy "$(LIBVHDI_HOME)\msvscpp\release\libvhdi.dll" "$(OutDir)"
+xcopy /E /Y "$(UniversalCRTSdkDir)\redist\ucrt\DLLS\$(PlatformTarget)" "$(OutDir)"
+xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_NoLibs|Win32'">
@@ -355,7 +357,9 @@ copy "$(POSTGRESQL_HOME_32)\bin\libintl-8.dll" "$(OutDir)"
 copy "$(POSTGRESQL_HOME_32)\bin\libiconv-2.dll" "$(OutDir)" 
 copy "$(POSTGRESQL_HOME_32)\bin\libeay32.dll" "$(OutDir)"
 copy "$(POSTGRESQL_HOME_32)\bin\ssleay32.dll" "$(OutDir)"
-copy "$(SolutionDir)\PostgreSQL_CRT\win32\msvcr120.dll" "$(OutDir)" </Command>
+copy "$(SolutionDir)\PostgreSQL_CRT\win32\msvcr120.dll" "$(OutDir)"
+xcopy /E /Y "$(UniversalCRTSdkDir)\redist\ucrt\DLLS\$(PlatformTarget)" "$(OutDir)"
+xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Lib>
       <AdditionalDependencies>libpq.lib</AdditionalDependencies>
@@ -381,7 +385,9 @@ copy "$(SolutionDir)\PostgreSQL_CRT\win32\msvcr120.dll" "$(OutDir)" </Command>
       <Command>copy "$(LIBEWF_HOME)\msvscpp\x64\release\libewf.dll" "$(OutDir)"
 copy "$(LIBEWF_HOME)\msvscpp\x64\release\zlib.dll" "$(OutDir)"
 copy "$(LIBVMDK_HOME)\msvscpp\x64\release\libvmdk.dll" "$(OutDir)"
-copy "$(LIBVHDI_HOME)\msvscpp\x64\release\libvhdi.dll" "$(OutDir)"</Command>
+copy "$(LIBVHDI_HOME)\msvscpp\x64\release\libvhdi.dll" "$(OutDir)"
+xcopy /E /Y "$(UniversalCRTSdkDir)\redist\ucrt\DLLS\$(PlatformTarget)" "$(OutDir)"
+xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_NoLibs|x64'">
@@ -426,7 +432,9 @@ copy "$(POSTGRESQL_HOME_64)\bin\libeay32.dll" "$(OutDir)"
 copy "$(POSTGRESQL_HOME_64)\bin\ssleay32.dll" "$(OutDir)"
 copy "$(SolutionDir)\PostgreSQL_CRT\win64\msvcr120.dll" "$(OutDir)" 
 copy "$(LIBVMDK_HOME)\msvscpp\x64\release\libvmdk.dll" "$(OutDir)"
-copy "$(LIBVHDI_HOME)\msvscpp\x64\release\libvhdi.dll" "$(OutDir)"</Command>
+copy "$(LIBVHDI_HOME)\msvscpp\x64\release\libvhdi.dll" "$(OutDir)"
+xcopy /E /Y "$(UniversalCRTSdkDir)\redist\ucrt\DLLS\$(PlatformTarget)" "$(OutDir)"
+xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(OutDir)"</Command>
     </PostBuildEvent>
     <Lib>
       <AdditionalDependencies>libpq.lib</AdditionalDependencies>
