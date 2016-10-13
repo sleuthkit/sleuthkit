@@ -67,6 +67,9 @@ extern "C" {
         uint16_t);
     extern uint8_t tsk_guess_end_u32(TSK_ENDIAN_ENUM *, uint8_t *,
         uint32_t);
+    extern uint8_t tsk_guess_end_u64(TSK_ENDIAN_ENUM *, uint8_t *,
+        uint64_t);
+
 
 /** \internal
 * Read a 16-bit unsigned value.

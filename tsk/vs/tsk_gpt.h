@@ -60,7 +60,7 @@ extern "C" {
     typedef enum {
         PRIMARY_TABLE,
         SECONDARY_TABLE,
-    } GPT_TYPE_ENUM;
+    } GPT_LOCATION_ENUM;
 
 
 #ifdef __cplusplus

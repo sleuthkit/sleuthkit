@@ -22,7 +22,7 @@
  * It is loaded into the internal sorted list 
  */
 static uint8_t
-gpt_load_table(TSK_VS_INFO * vs, GPT_TYPE_ENUM gpt_type)
+gpt_load_table(TSK_VS_INFO * vs, GPT_LOCATION_ENUM gpt_type)
 {
     gpt_head *head;
     gpt_entry *ent;
@@ -35,19 +35,14 @@ gpt_load_table(TSK_VS_INFO * vs, GPT_TYPE_ENUM gpt_type)
     TSK_DADDR_T max_addr = (vs->img_info->size - vs->offset) / vs->block_size;  // max sector
     TSK_DADDR_T gpt_relative_addr;
     TSK_DADDR_T gpt_absolute_addr;
-    TSK_DADDR_T dos_sect_relative_addr;
-    TSK_DADDR_T dos_sect_absolute_addr;
 
     if(gpt_type == PRIMARY_TABLE){
-        dos_sect_relative_addr = GPT_PART_SOFFSET;
-        dos_sect_absolute_addr = vs->offset / vs->block_size + GPT_PART_SOFFSET;
         gpt_relative_addr = GPT_PART_SOFFSET + 1;
         gpt_absolute_addr = vs->offset / vs->block_size + GPT_PART_SOFFSET + 1;
     } else {
         gpt_relative_addr = ((vs->img_info->size - vs->offset) / vs->block_size) - 1;
         gpt_absolute_addr = (vs->img_info->size / vs->block_size) - 1;
     }
-
 
     if (tsk_verbose)
         tsk_fprintf(stderr, "gpt_load_table: Sector: %" PRIuDADDR "\n",
@@ -57,6 +52,8 @@ gpt_load_table(TSK_VS_INFO * vs, GPT_TYPE_ENUM gpt_type)
         return 1;
 
     if(gpt_type == PRIMARY_TABLE){
+        TSK_DADDR_T dos_sect_relative_addr = GPT_PART_SOFFSET;
+        TSK_DADDR_T dos_sect_absolute_addr = vs->offset / vs->block_size + GPT_PART_SOFFSET;
         dos_part = (dos_sect *) sect_buf;
 
         cnt = tsk_vs_read_block
@@ -113,10 +110,13 @@ gpt_load_table(TSK_VS_INFO * vs, GPT_TYPE_ENUM gpt_type)
 
     /* Do the endianness test for the secondary table since the test in the dos safety table was skipped */
     if(gpt_type == SECONDARY_TABLE){
-        if(tsk_getu64(TSK_BIG_ENDIAN, head->head_lba) == gpt_relative_addr){
-            vs->endian = TSK_BIG_ENDIAN;
-        } else {
-            vs->endian = TSK_LIT_ENDIAN;
+        if (tsk_vs_guessu64(vs, head->signature, GPT_HEAD_SIG)) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_VS_MAGIC);
+            tsk_error_set_errstr("GPT Header: %" PRIx64, tsk_getu64(vs->endian,
+                &head->signature));
+            free(sect_buf);
+            return 1;
         }
     }
 
