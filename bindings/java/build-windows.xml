@@ -37,7 +37,7 @@
 
 	<target name="check-build-64" if="win64.TskLib.exists">
 		<uptodate property="native-up-to-date" srcfile="${basedir}/../../win32/x64/Release/libtsk_jni.dll"
-		targetfile="${amd64}/win/libtsk_jni.dll"/>
+		targetfile="${x86_64}/win/libtsk_jni.dll"/>
 	</target>
 
 	<target name="copyLibs-SQLite" description="Copy native libs to the correct folder">
@@ -70,17 +70,13 @@
 	<target name="copyWinTskLibs64ToBuildSQLite" depends="checkTskLibDirsSQLite" if="win64.TskLib.exists">
 		<property name="tsk.jni.64" location="${basedir}/../../win32/x64/${tsk.config}/libtsk_jni.dll" />
 		
-		<copy file="${tsk.jni.64}" todir="${amd64}/win" overwrite="true"/>
 		<copy file="${tsk.jni.64}" todir="${x86_64}/win" overwrite="true"/>
 	</target>
 	
 	<target name="copyWinTskLibs32ToBuild-SQLite" depends="checkTskLibDirs" if="win32.TskLib.exists">
 		<property name="tsk.jni.32" location="${basedir}/../../win32/${tsk.config}/libtsk_jni.dll" />
 		
-		<copy file="${tsk.jni.32}" todir="${i386}/win" overwrite="true"/>
 		<copy file="${tsk.jni.32}" todir="${x86}/win" overwrite="true"/>
-		<copy file="${tsk.jni.32}" todir="${i586}/win" overwrite="true"/>	
-		<copy file="${tsk.jni.32}" todir="${i686}/win" overwrite="true"/>
 	</target>
 		
 	<target name="copyWinTskLibsToBuild-PostgreSQL" depends="copyWinTskLibs64ToBuild-PostgreSQL,copyWinTskLibs32ToBuild-PostgreSQL" description="Copy Windows DLLs to the correct location, PostgreSQL build." />
@@ -93,16 +89,12 @@
 	<target name="copyWinTskLibs64ToBuild-PostgreSQL" depends="checkTskLibDirs" if="win64.TskLib.exists">
 		<property name="tsk.jni.64" location="${basedir}/../../win32/x64/${tsk.config}/libtsk_jni.dll" />
 		
-		<copy file="${tsk.jni.64}" todir="${amd64}/win" overwrite="true"/>
 		<copy file="${tsk.jni.64}" todir="${x86_64}/win" overwrite="true"/>
 	</target>
 	
 	<target name="copyWinTskLibs32ToBuild-PostgreSQL" depends="checkTskLibDirs" if="win32.TskLib.exists">
 		<property name="tsk.jni.32" location="${basedir}/../../win32/${tsk.config}/libtsk_jni.dll" />
 		
-		<copy file="${tsk.jni.32}" todir="${i386}/win" overwrite="true"/>
 		<copy file="${tsk.jni.32}" todir="${x86}/win" overwrite="true"/>
-		<copy file="${tsk.jni.32}" todir="${i586}/win" overwrite="true"/>	
-		<copy file="${tsk.jni.32}" todir="${i686}/win" overwrite="true"/>
 	</target>
 </project>
