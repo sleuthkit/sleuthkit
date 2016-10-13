@@ -53,6 +53,7 @@ TskAutoDb::TskAutoDb(TskDb * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_kno
         m_fileHashFlag = true;
     else
         m_fileHashFlag = false;
+    m_addFileSystems = true;
     m_noFatFsOrphans = false;
     m_addUnallocSpace = false;
     m_chunkSize = -1;
@@ -88,6 +89,11 @@ void
  TskAutoDb::hashFiles(bool flag)
 {
     m_fileHashFlag = flag;
+}
+
+void TskAutoDb::setAddFileSystems(bool addFileSystems)
+{
+    m_addFileSystems = addFileSystems;
 }
 
 void TskAutoDb::setNoFatFsOrphans(bool noFatFsOrphans)
@@ -447,7 +453,11 @@ uint8_t
         return 1;
     }
     
-    return addFilesInImgToDb();
+    if (m_addFileSystems) {
+        return addFilesInImgToDb();
+    } else {
+        return 0;
+    }
 }
 
 
@@ -506,7 +516,11 @@ uint8_t
         return 1;
     }
 
-    return addFilesInImgToDb();
+    if (m_addFileSystems) {
+        return addFilesInImgToDb();
+    } else {
+        return 0;
+    }
 }
 #endif
 

@@ -21,6 +21,7 @@ package org.sleuthkit.datamodel;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -29,6 +30,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 
 /**
@@ -63,7 +67,7 @@ public class SleuthkitJNI {
 
 	/**
 	 * Encapsulates a handle to a SleuthKit case database with support for
-	 * adding images to the database. Adding an image
+	 * adding images to the database.
 	 */
 	public static class CaseDbHandle {
 
@@ -126,20 +130,53 @@ public class SleuthkitJNI {
 		}
 
 		/**
+		 * Adds an image to the case database. For finer-grained control of the
+		 * process of adding the image, call CaseDbHandle.initAddImageProcess
+		 * instead.
+		 *
+		 * @param deviceObjId      The object id of the device associated with
+		 *                         the image.
+		 * @param imageFilePaths   The image file paths.
+		 * @param timeZone         The time zone for the image.
+		 * @param addFileSystems   Pass true to attempt to add file systems
+		 *                         within the image to the case database.
+		 * @param addUnallocSpace  Pass true to create virtual files for
+		 *                         unallocated space. Ignored if addFileSystems
+		 *                         is false.
+		 * @param skipFatFsOrphans Pass true to skip processing of orphan files
+		 *                         for FAT file systems. Ignored if
+		 *                         addFileSystems is false.
+		 *
+		 * @return The object id of the image.
+		 *
+		 * @throws TskCoreException if there is an error adding the image to
+		 *                          case database.
+		 */
+		long addImage(long deviceObjId, List<String> imageFilePaths, String timeZone, boolean addFileSystems, boolean addUnallocSpace, boolean skipFatFsOrphans) throws TskCoreException {
+			try {
+				long tskAutoDbPointer = initializeAddImgNat(caseDbPointer, timezoneLongToShort(timeZone), addFileSystems, addUnallocSpace, skipFatFsOrphans);
+				runAddImgNat(tskAutoDbPointer, UUID.randomUUID().toString(), imageFilePaths.toArray(new String[0]), imageFilePaths.size(), timeZone);
+				return commitAddImgNat(tskAutoDbPointer);
+			} catch (TskDataException ex) {
+				throw new TskCoreException("Error adding image to case database", ex);
+			}
+		}
+
+		/**
 		 * Initializes a multi-step process for adding an image to the case
 		 * database.
 		 *
-		 * @param timeZone        The time zone of the image.
-		 * @param addUnallocSpace Pass true to create virtual files for
-		 *                        unallocated space.
-		 * @param noFatFsOrphans  Pass true to skip processing of orphan files
-		 *                        for FAT file systems.
+		 * @param timeZone         The time zone of the image.
+		 * @param addUnallocSpace  Pass true to create virtual files for
+		 *                         unallocated space.
+		 * @param skipFatFsOrphans Pass true to skip processing of orphan files
+		 *                         for FAT file systems.
 		 *
 		 * @return An object that can be used to exercise fine-grained control
 		 *         of the process of adding the image to the case database.
 		 */
-		AddImageProcess initAddImageProcess(String timeZone, boolean addUnallocSpace, boolean noFatFsOrphans) {
-			return new AddImageProcess(timeZone, addUnallocSpace, noFatFsOrphans);
+		AddImageProcess initAddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans) {
+			return new AddImageProcess(timeZone, addUnallocSpace, skipFatFsOrphans);
 		}
 
 		/**
@@ -150,23 +187,23 @@ public class SleuthkitJNI {
 
 			private final String timeZone;
 			private final boolean addUnallocSpace;
-			private final boolean noFatFsOrphans;
+			private final boolean skipFatFsOrphans;
 			private volatile long tskAutoDbPointer;
 
 			/**
 			 * Consdtructs an object that encapsulates a multi-step process to
 			 * add an image to the case database.
 			 *
-			 * @param timeZone        The time zone of the image.
-			 * @param addUnallocSpace Pass true to create virtual files for
-			 *                        unallocated space.
-			 * @param noFatFsOrphans  Pass true to skip processing of orphan
-			 *                        files for FAT file systems.
+			 * @param timeZone         The time zone of the image.
+			 * @param addUnallocSpace  Pass true to create virtual files for
+			 *                         unallocated space.
+			 * @param skipFatFsOrphans Pass true to skip processing of orphan
+			 *                         files for FAT file systems.
 			 */
-			private AddImageProcess(String timeZone, boolean addUnallocSpace, boolean noFatFsOrphans) {
+			private AddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans) {
 				this.timeZone = timeZone;
 				this.addUnallocSpace = addUnallocSpace;
-				this.noFatFsOrphans = noFatFsOrphans;
+				this.skipFatFsOrphans = skipFatFsOrphans;
 				tskAutoDbPointer = 0;
 			}
 
@@ -193,7 +230,7 @@ public class SleuthkitJNI {
 				}
 
 				synchronized (this) {
-					tskAutoDbPointer = initAddImgNat(caseDbPointer, timezoneLongToShort(timeZone), addUnallocSpace, noFatFsOrphans);
+					tskAutoDbPointer = initAddImgNat(caseDbPointer, timezoneLongToShort(timeZone), addUnallocSpace, skipFatFsOrphans);
 				}
 				if (0 == tskAutoDbPointer) {
 					throw new TskCoreException("initAddImgNat returned a NULL TskAutoDb pointer");
@@ -239,7 +276,7 @@ public class SleuthkitJNI {
 			 * Completes the process of adding an image to the case database
 			 * that was started by calling AddImageProcess.run.
 			 *
-			 * @return The object id of the image that was added. 
+			 * @return The object id of the image that was added.
 			 *
 			 * @throws TskCoreException if a critical error occurs within the
 			 *                          SleuthKit.
@@ -256,7 +293,8 @@ public class SleuthkitJNI {
 			}
 
 			/**
-			 * Gets the file system directory currently being processed by the SleuthKit.
+			 * Gets the file system directory currently being processed by the
+			 * SleuthKit.
 			 *
 			 * @return The directory
 			 */
@@ -959,7 +997,9 @@ public class SleuthkitJNI {
 
 	private static native HashHitInfo hashDbLookupVerbose(String hash, int dbHandle) throws TskCoreException;
 
-	private static native long initAddImgNat(long db, String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) throws TskCoreException;
+	private static native long initAddImgNat(long db, String timezone, boolean addUnallocSpace, boolean skipFatFsOrphans) throws TskCoreException;
+
+	private static native long initializeAddImgNat(long db, String timezone, boolean addFileSystems, boolean addUnallocSpace, boolean skipFatFsOrphans) throws TskCoreException;
 
 	private static native void runAddImgNat(long process, String deviceId, String[] imgPath, int splits, String timezone) throws TskCoreException, TskDataException;
 
