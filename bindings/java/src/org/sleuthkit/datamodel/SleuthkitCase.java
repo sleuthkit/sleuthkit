@@ -471,7 +471,7 @@ public class SleuthkitCase {
 			for (BlackboardArtifact.ReviewStatus status : BlackboardArtifact.ReviewStatus.values()) {
 				try {
 					statement.execute("INSERT INTO review_statuses (review_status_id, review_status_name, display_name) " //NON-NLS
-							+ "VALUES (" + status.getID() + ",\"" + status.getName() + "\",\"" + status.getDisplayName() + "\")"); //NON-NLS
+							+ "VALUES (" + status.getID() + ",'" + status.getName() + "','" + status.getDisplayName() + "')"); //NON-NLS
 				} catch (SQLException ex) {
 					resultSet = connection.executeQuery(statement, "SELECT COUNT(*) as count FROM review_statuses WHERE review_status_id = " + status.getID()); //NON-NLS
 					resultSet.next();
@@ -954,6 +954,15 @@ public class SleuthkitCase {
 	 */
 	public int getSchemaVersion() {
 		return this.versionNumber;
+	}
+	
+	/**
+	 * Returns the type of database in use.
+	 * 
+	 * @return database type 
+	 */
+	public DbType getDatabaseType() {
+		return this.dbType;
 	}
 
 	/**
