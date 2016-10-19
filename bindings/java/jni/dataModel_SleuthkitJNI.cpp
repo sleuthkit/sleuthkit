@@ -919,17 +919,39 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
 }
 
 /*
- * Create an add-image process that can later be run with specific inputs
- * @return the pointer to the process or NULL on error
- * @param env pointer to java environment this was called from
- * @partam caseHandle pointer to case to add image to
- * @param timezone timezone for the image
- * @param addUnallocSpace whether to create virtual files for the unallocated space in the disk image
- * @param noFatFsOrphans whether to skip processing orphans on FAT filesystems
+ * Initialize a process for adding an image to a case database.
+ *
+ * @param env Pointer to java environment.
+ * @param obj Pointer the Java class object.
+ * @partam caseHandle Pointer to a TskCaseDb object.
+ * @param timeZone The time zone for the image.
+ * @param addUnallocSpace Pass true to create virtual files for unallocated space. Ignored if addFileSystems is false.
+ * @param skipFatFsOrphans Pass true to skip processing of orphan files for FAT file systems. Ignored if addFileSystems is false.
+ *
+ * @return A pointer to the process (TskAutoDb object) or NULL on error.
  */
 JNIEXPORT jlong JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNat(JNIEnv * env,
-    jclass obj, jlong caseHandle, jstring timezone, jboolean addUnallocSpace, jboolean noFatFsOrphans) {
+    jclass obj, jlong caseHandle, jstring timeZone, jboolean addUnallocSpace, jboolean skipFatFsOrphans) {
+    return Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNat(env, obj, caseHandle, timeZone, true, addUnallocSpace, skipFatFsOrphans);
+}
+
+/*
+ * Initialize a process for adding an image to a case database.
+ *
+ * @param env Pointer to java environment.
+ * @param obj Pointer the Java class object.
+ * @partam caseHandle Pointer to a TskCaseDb object.
+ * @param timeZone The time zone for the image.
+ * @param addFileSystems Pass true to attempt to add file systems within the image to the case database.
+ * @param addUnallocSpace Pass true to create virtual files for unallocated space. Ignored if addFileSystems is false.
+ * @param skipFatFsOrphans Pass true to skip processing of orphan files for FAT file systems. Ignored if addFileSystems is false.
+ *
+ * @return A pointer to the process (TskAutoDb object) or NULL on error.
+ */
+JNIEXPORT jlong JNICALL
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNat(JNIEnv * env, jclass obj, 
+    jlong caseHandle, jstring timeZone, jboolean addFileSystems, jboolean addUnallocSpace, jboolean skipFatFsOrphans) {
     jboolean isCopy;
 
     TskCaseDb *tskCase = castCaseDb(env, caseHandle);
@@ -938,11 +960,11 @@ JNIEXPORT jlong JNICALL
         return 0;
     }
 
-    if (env->GetStringUTFLength(timezone) > 0) {
-        const char *tzstr = env->GetStringUTFChars(timezone, &isCopy);
+    if (env->GetStringUTFLength(timeZone) > 0) {
+        const char *tzstr = env->GetStringUTFChars(timeZone, &isCopy);
 
         if (strlen(tzstr) > 64) {
-            env->ReleaseStringUTFChars(timezone, tzstr);
+            env->ReleaseStringUTFChars(timeZone, tzstr);
             stringstream ss;
             ss << "Timezone is too long";
             setThrowTskCoreError(env, ss.str().c_str());
@@ -951,7 +973,7 @@ JNIEXPORT jlong JNICALL
 
         char envstr[70];
         snprintf(envstr, 70, "TZ=%s", tzstr);
-        env->ReleaseStringUTFChars(timezone, tzstr);
+        env->ReleaseStringUTFChars(timeZone, tzstr);
 
         if (0 != putenv(envstr)) {
             stringstream ss;
@@ -972,13 +994,19 @@ JNIEXPORT jlong JNICALL
     }
 
     // set the options flags
-    if (addUnallocSpace) {
-        tskAuto->setAddUnallocSpace(true, 500*1024*1024);
-    }
-    else {
+    tskAuto->setAddFileSystems(addFileSystems?true:false);
+    if (addFileSystems) {
+        if (addUnallocSpace) {
+            tskAuto->setAddUnallocSpace(true, 500*1024*1024);
+        }
+        else {
+            tskAuto->setAddUnallocSpace(false);
+        }
+        tskAuto->setNoFatFsOrphans(skipFatFsOrphans?true:false);
+    } else {
         tskAuto->setAddUnallocSpace(false);
+        tskAuto->setNoFatFsOrphans(true);
     }
-    tskAuto->setNoFatFsOrphans(noFatFsOrphans?true:false);
 
     // we don't use the block map and it slows it down
     tskAuto->createBlockMap(false);
@@ -988,7 +1016,6 @@ JNIEXPORT jlong JNICALL
 
     return (jlong) tskAuto;
 }
-
 
 /*
  * Add an image to a database using a pre-created process, which can be cancelled.

@@ -396,9 +396,6 @@ tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
     const char *a_path, TSK_FS_INFO * fs, const TSK_FS_ATTR * fs_attr,
     uint8_t print_path)
 {
-    size_t i;
-    char *buf;
-
     /* type of file - based on dentry type */
     if (fs_file->name->type < TSK_FS_NAME_TYPE_STR_MAX)
         tsk_fprintf(hFile, "%s/",
@@ -603,7 +600,6 @@ tsk_fs_name_print_mac_md5(FILE * hFile, const TSK_FS_FILE * fs_file,
     char ls[12];
     size_t i;
     uint8_t isADS = 0;
-    char *buf;
 
     if ((!hFile) || (!fs_file))
         return;

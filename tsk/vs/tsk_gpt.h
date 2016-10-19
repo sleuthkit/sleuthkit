@@ -57,6 +57,11 @@ extern "C" {
         uint8_t name[72];       /* name in unicode */
     } gpt_entry;
 
+    typedef enum {
+        PRIMARY_TABLE,
+        SECONDARY_TABLE,
+    } GPT_LOCATION_ENUM;
+
 
 #ifdef __cplusplus
 }
