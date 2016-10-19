@@ -20,7 +20,7 @@
   */
 typedef struct {
     char *name;
-    uint8_t code;
+    uint16_t code;
     char *comment;
 } IMG_TYPES;
 
@@ -39,6 +39,12 @@ static IMG_TYPES img_open_table[] = {
 #endif
 #if HAVE_LIBEWF
     {"ewf", TSK_IMG_TYPE_EWF_EWF, "Expert Witness Format (EnCase)"},
+#endif
+#if HAVE_LIBVMDK
+    {"vmdk", TSK_IMG_TYPE_VMDK_VMDK, "Virtual Machine Disk (VmWare, Virtual Box)"},
+#endif
+#if HAVE_LIBVHDI
+    {"vhd", TSK_IMG_TYPE_VHD_VHD, "Virtual Hard Drive (Microsoft)"},
 #endif
     {0},
 };
