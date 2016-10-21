@@ -2016,14 +2016,12 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_findDeviceSize
  */
 JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupportedNat
   (JNIEnv * env, jclass obj, jstring imagePathJ) {
-
+      
     TskIsImageSupported tskIsImage;
     TSK_TCHAR imagePathT[1024];
     toTCHAR(env, imagePathT, 1024, imagePathJ);
-    //const char* imagePaths[1];
     TSK_TCHAR ** imagePaths = (TSK_TCHAR**)tsk_malloc((1) * sizeof(TSK_TCHAR*));
     bool result;
-    //const char * imagePath = env->GetStringUTFChars(imagePathJ, 0);
     imagePaths[0] = imagePathT;
     if (tskIsImage.openImage(1, imagePaths, TSK_IMG_TYPE_DETECT,
             0)) {
@@ -2037,7 +2035,7 @@ JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupp
             }
             else {
                 result = false;
-            }     
+            }   
         }
     }
 
