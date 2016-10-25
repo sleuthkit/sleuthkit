@@ -152,9 +152,9 @@ public class SleuthkitJNI {
 		 * @throws TskCoreException if there is an error adding the image to
 		 *                          case database.
 		 */
-		long addImage(long deviceObjId, List<String> imageFilePaths, String timeZone, boolean addFileSystems, boolean addUnallocSpace, boolean skipFatFsOrphans) throws TskCoreException {
+		long addImageInfo(long deviceObjId, List<String> imageFilePaths, String timeZone) throws TskCoreException {
 			try {
-				long tskAutoDbPointer = initializeAddImgNat(caseDbPointer, timezoneLongToShort(timeZone), addFileSystems, addUnallocSpace, skipFatFsOrphans);
+				long tskAutoDbPointer = initializeAddImgNat(caseDbPointer, timezoneLongToShort(timeZone), false, false, false);
 				runAddImgNat(tskAutoDbPointer, UUID.randomUUID().toString(), imageFilePaths.toArray(new String[0]), imageFilePaths.size(), timeZone);
 				return commitAddImgNat(tskAutoDbPointer);
 			} catch (TskDataException ex) {

@@ -8129,4 +8129,157 @@ public class SleuthkitCase {
 		return addLocalFile(fileName, localPath, size, ctime, crtime, atime, mtime,
 				isFile, TskData.EncodingType.NONE, parent);
 	}
+	
+	/**
+     * Adds an image to the case database.
+	 *
+	 * @param deviceObjId      The object id of the device associated with the
+	 *                         image.
+	 * @param imageFilePaths   The image file paths.
+	 * @param timeZone         The time zone for the image.
+	 *
+	 * @return An Image object.
+	 *
+	 * @throws TskCoreException if there is an error adding the image to case
+	 *                          database.
+	 */
+	public Image addImageInfo(long deviceObjId, List<String> imageFilePaths, String timeZone) throws TskCoreException {
+		long imageId = this.caseHandle.addImageInfo(deviceObjId, imageFilePaths, timeZone);
+		return getImageById(imageId);
+	}
+
+	/**
+	 * Adds one or more layout files for a parent Content object to the case database.
+	 *
+	 * @param parent     The parent Content.
+	 * @param fileRanges File range objects for the file(s).
+	 *
+	 * @return A list of LayoutFile objects.
+	 *
+	 * @throws TskCoreException If there is a problem completing a case database
+	 *                          operation.
+	 */
+	public final List<LayoutFile> addLayoutFiles(Content parent, List<TskFileRange> fileRanges) throws TskCoreException{
+		assert (null != fileRanges);
+		if (null == fileRanges) {
+			throw new TskCoreException("TskFileRange object is null");
+		}
+		
+		assert (null != parent);
+		if (null == parent) {
+			throw new TskCoreException("Conent is null");
+		}
+		
+		CaseDbTransaction transaction = null;
+		Statement statement = null;
+		ResultSet resultSet = null;
+		acquireExclusiveLock();
+		
+		try {
+			transaction = beginTransaction();
+			CaseDbConnection connection = transaction.getConnection();
+			
+			List<LayoutFile> fileRangeLayoutFiles = new ArrayList<LayoutFile>();
+			for (TskFileRange fileRange: fileRanges) {
+				/*
+				 * Insert a row for the Tsk file range into the tsk_objects table:
+				 * INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
+				 */
+				PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
+				prepStmt.clearParameters();
+				prepStmt.setLong(1, parent.getId()); // par_obj_id
+				prepStmt.setLong(2, TskData.ObjectType.ABSTRACTFILE.getObjectType()); // type
+				connection.executeUpdate(prepStmt);
+				resultSet = prepStmt.getGeneratedKeys();
+				resultSet.next();
+				long fileRangeId = resultSet.getLong(1); //last_insert_rowid()
+				long end_byte_in_parent = fileRange.getByteStart() + fileRange.getByteLen() - 1;
+				/*
+				 * Insert a row for the Tsk file range into the tsk_files table:
+				 * INSERT INTO tsk_files (obj_id, fs_obj_id, name, type,
+				 * has_path, dir_type, meta_type, dir_flags, meta_flags, size,
+				 * ctime, crtime, atime, mtime, parent_path, data_source_obj_id)
+				 * VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				 */
+				prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
+				prepStmt.clearParameters();
+				prepStmt.setLong(1, fileRangeId); // obj_id	from tsk_objects			
+				prepStmt.setNull(2, java.sql.Types.BIGINT); // fs_obj_id				
+				prepStmt.setString(3, "Unalloc_" + parent.getId() + "_" + fileRange.getByteStart() + "_" + end_byte_in_parent); // name of form Unalloc_[image obj_id]_[start byte in parent]_[end byte in parent]
+				prepStmt.setShort(4, TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS.getFileType()); // type
+				prepStmt.setNull(5, java.sql.Types.BIGINT); // has_path
+				prepStmt.setShort(6, TSK_FS_NAME_TYPE_ENUM.REG.getValue()); // dir_type
+				prepStmt.setShort(7, TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG.getValue()); // meta_type
+				prepStmt.setShort(8, TSK_FS_NAME_FLAG_ENUM.UNALLOC.getValue()); // dir_flags
+				prepStmt.setShort(9, TSK_FS_META_FLAG_ENUM.UNALLOC.getValue()); // nmeta_flags
+				prepStmt.setLong(10, fileRange.getByteLen()); // size //ZL: TODO is this 2GB or file size
+				prepStmt.setNull(11, java.sql.Types.BIGINT); // ctime
+				prepStmt.setNull(12, java.sql.Types.BIGINT); // crtime
+				prepStmt.setNull(13, java.sql.Types.BIGINT); // atime
+				prepStmt.setNull(14, java.sql.Types.BIGINT); // mtime
+				prepStmt.setNull(15, java.sql.Types.VARCHAR); // parent path
+				prepStmt.setLong(16, parent.getId()); // data_source_obj_id
+				connection.executeUpdate(prepStmt);
+
+				/*
+				 * Insert a row in the tsk_layout_file table for each chunk of
+				 * the carved file. INSERT INTO tsk_file_layout (obj_id,
+				 * byte_start, byte_len, sequence) VALUES (?, ?, ?, ?)
+				 */
+				prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_LAYOUT_FILE);
+				prepStmt.clearParameters();
+				prepStmt.setLong(1, fileRangeId); // obj_id
+				prepStmt.setLong(2, fileRange.getByteStart()); // byte_start
+				prepStmt.setLong(3, fileRange.getByteLen()); // byte_len
+				prepStmt.setLong(4, fileRange.getSequence()); // sequence
+				connection.executeUpdate(prepStmt);
+
+				/*
+				 * Create a layout file representation of the carved file.
+				 */
+				fileRangeLayoutFiles.add(new LayoutFile(this,
+						fileRangeId,
+						parent.getId(),
+						Long.toString(fileRange.getSequence()),
+						TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS,
+						TSK_FS_NAME_TYPE_ENUM.REG,
+						TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG,
+						TSK_FS_NAME_FLAG_ENUM.UNALLOC,
+						TSK_FS_META_FLAG_ENUM.UNALLOC.getValue(),
+						fileRange.getByteLen(), 
+						null,
+						FileKnown.UNKNOWN,
+						parent.getUniquePath(),
+						null));
+			}
+
+			transaction.commit();
+			return fileRangeLayoutFiles;
+
+		} catch (SQLException ex) {
+			if (null != transaction) {
+				try {
+					transaction.rollback();
+				} catch (TskCoreException ex2) {
+					logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
+				}
+			}
+			throw new TskCoreException("Failed to add layout files to case database", ex);
+
+		} catch (TskCoreException ex) {
+			if (null != transaction) {
+				try {
+					transaction.rollback();
+				} catch (TskCoreException ex2) {
+					logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
+				}
+			}
+			throw ex;
+
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+			releaseExclusiveLock();
+		}	
+	}
 }
