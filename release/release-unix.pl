@@ -560,4 +560,4 @@ make_tar();
 verify_tar();
 copy_tar();
 
-del_clone();
+# del_clone();
