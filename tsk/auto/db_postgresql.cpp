@@ -964,7 +964,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
     // combine name and attribute name
     size_t len = strlen(fs_file->name->name);
     char *name;
-    size_t nlen = len + attr_nlen + 5;
+    size_t nlen = len + attr_nlen + 11; // Extra space for possible colon and '-slack'
     if ((name = (char *) tsk_malloc(nlen)) == NULL) {
         return 1;
     }
@@ -1055,6 +1055,53 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         PQfreemem(name_sql);
         PQfreemem(escaped_path_sql);
         return 1;
+    }
+
+    // Add entry for the slack space if applicable
+    if((fs_attr != NULL)
+           && (fs_attr->flags & TSK_FS_ATTR_NONRES) 
+           && (fs_attr->nrd.allocsize !=  fs_attr->size)){
+        strncat(name, "-slack", 6);
+        name_sql = PQescapeLiteral(conn, name, strlen(name));
+        TSK_OFF_T slackSize = fs_attr->nrd.allocsize - fs_attr->size;
+
+        if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId)) {
+            free(name);
+            free(escaped_path);
+            return 1;
+        }
+
+        snprintf(zSQL, 2048, "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
+            "VALUES ("
+            "%" PRId64 ",%" PRId64 ","
+            "%" PRId64 ","
+            "%d,"
+            "%d,%d,%s,"
+            "%" PRIuINUM ",%d,"
+            "%d,%d,%d,%d,"
+            "%" PRIuOFF ","
+            "%llu,%llu,%llu,%llu,"
+            "%d,%d,%d,%s,%d,"
+            "%s)",
+            fsObjId, objId, 
+            dataSourceObjId,
+            TSK_DB_FILES_TYPE_SLACK,
+            type, idx, name_sql,
+            fs_file->name->meta_addr, fs_file->name->meta_seq, 
+            fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
+            size, 
+            (unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime, 
+            meta_mode, gid, uid, NULL, known,
+            escaped_path_sql);
+
+        if (attempt_exec(zSQL, "TskDbPostgreSQL::addFile: Error adding data to tsk_files table: %s\n")) {
+            free(name);
+            free(escaped_path);
+            PQfreemem(name_sql);
+            PQfreemem(escaped_path_sql);
+            return 1;
+        }
+
     }
 
     //if dir, update parent id cache

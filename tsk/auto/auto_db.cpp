@@ -348,6 +348,103 @@ TSK_RETVAL_ENUM
         return TSK_ERR;
     }
 
+    //return insertSlackFileData(fs_file, fs_attr, path, md5, known);
+    return TSK_OK;
+}
+
+TSK_RETVAL_ENUM
+    TskAutoDb::insertSlackFileData(TSK_FS_FILE * fs_file,
+    const TSK_FS_ATTR * fs_attr, const char *path,
+    const unsigned char *const md5,
+    const TSK_DB_FILES_KNOWN_ENUM known)
+{
+    // Should do check that file name does not already end in "-slack". Or maybe can just test for type somehow later
+    int name_length;
+    TSK_FS_NAME* slack_name;
+    TSK_FS_NAME* orig_name;
+
+    if((fs_file->name == NULL) || (fs_file->name->name == NULL) ||
+        (fs_file->meta == NULL)){
+            printf("Null name, name->name, or meta\n");
+    } 
+    else {
+        printf("fs_file: %s\n  size: %d\n  content len:  %d\n", fs_file->name->name, fs_file->meta->size,
+            fs_file->meta->content_len);
+    }
+
+    if(fs_file->meta == NULL){
+        printf("  fs_file->meta is null, giving up\n");
+        return TSK_OK;
+    }
+    printf("  type: %x\n", fs_file->meta->type);
+    if(fs_file->meta->type != TSK_FS_META_TYPE_REG){
+        printf("  Not a file\n");
+        return TSK_OK;
+    }
+    if(fs_file->name == NULL){
+        printf("  fs_file->name is null! giving up\n");
+        return TSK_OK;
+    }
+
+    if(fs_file->name->name == NULL){
+        printf("  fs_file->name->name is null! giving up\n");
+        return TSK_OK;
+    }
+
+    if(fs_file->meta->attr_state == TSK_FS_META_ATTR_STUDIED){
+        printf("  attr_state is studied\n");
+        TSK_FS_ATTR *fs_attr_cur;
+        for (fs_attr_cur = fs_file->meta->attr->head; fs_attr_cur;fs_attr_cur = fs_attr_cur->next) {
+            printf("  attr name: %s\n", fs_attr_cur->name);
+            printf("    flags: %x (non-resident: %x)", fs_attr_cur->flags, fs_attr_cur->flags & TSK_FS_ATTR_NONRES);
+            printf("    attr type: %x\n", fs_attr_cur->type);
+            printf("    alloc: 0x%llx\n", fs_attr_cur->nrd.allocsize);
+            printf("    size:  0x%llx\n", fs_attr_cur->size);
+
+        }
+
+    }
+    else {
+        printf("  attr_state is not studied\n");
+    }
+
+    // Ok we're good to go.
+    //TSK_FS_FILE * slack_file = tsk_fs_file_alloc(fs_file->fs_info);
+
+    // Allocate the new name structure
+    name_length = strlen(fs_file->name->name) + 6;
+    if ((slack_name = tsk_fs_name_alloc(name_length, 32)) == NULL) {
+        return TSK_ERR;
+    }
+
+    if(tsk_fs_name_copy(slack_name, fs_file->name)){
+        tsk_fs_name_free(slack_name);
+        return TSK_ERR;
+    }
+
+    // The name copy could end up resizing the array. It currently allocates an extra 16 bytes but we shouldn't count on that.
+    if(slack_name->name_size < name_length){
+        tsk_fs_name_realloc(slack_name, name_length);
+    }
+
+    // Add the "-slack"
+    strncat(slack_name->name, "-slack", 6);
+
+    printf("  Trying to add fs_file %s with metadata addr %x\n", slack_name->name, fs_file->meta->addr);
+
+    // Swap in the new name block and re-add the file
+    orig_name = fs_file->name;
+    fs_file->name = slack_name;
+    if (m_db->addFsFile(fs_file, fs_attr, path, md5, known, m_curFsId, m_curFileId,
+            m_curImgId)) {
+        fs_file->name = orig_name;
+        tsk_fs_name_free(slack_name);
+        registerError();
+        return TSK_ERR;
+    }
+    fs_file->name = orig_name;
+    tsk_fs_name_free(slack_name);
+    
     return TSK_OK;
 }
 
@@ -622,7 +719,7 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
         return TSK_STOP;
     }
 
-     /* If no longe processing the same directroy as the last file, 
+     /* If no longer processing the same directory as the last file, 
       * then update the class-level setting. */
     int64_t cur = fs_file->name->par_addr;
     if (m_curDirId != cur) {
