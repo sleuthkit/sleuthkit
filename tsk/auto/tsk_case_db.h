@@ -68,7 +68,7 @@ class TskAutoDb:public TskAuto {
      * Sets whether or not the file systems for an image should be added when 
      * the image is added to the case database. The default value is true. 
      */
-    void TskAutoDb::setAddFileSystems(bool addFileSytems);
+    void setAddFileSystems(bool addFileSytems);
 
     /**
      * Skip processing of orphans on FAT filesystems.  

@@ -558,8 +558,8 @@ int TskDbPostgreSQL::initialize() {
 		"artifact_type_id BIGINT NOT NULL, "
 		"review_status_id INTEGER NOT NULL, "
         "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), "
-		"FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id)), "
-		"FOREIGN KEY(review_status_id) REFERENCES review_statuses(review_status_id)",
+		"FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id), "
+		"FOREIGN KEY(review_status_id) REFERENCES review_statuses(review_status_id))",
         "Error creating blackboard_artifact table: %s\n")
         ||
         attempt_exec("ALTER SEQUENCE blackboard_artifacts_artifact_id_seq minvalue -9223372036854775808 restart with -9223372036854775808", "Error setting starting value for artifact_id: %s\n")
