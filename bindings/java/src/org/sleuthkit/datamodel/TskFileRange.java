@@ -34,8 +34,8 @@ public class TskFileRange {
 	 * Create file range to map the database object
 	 *
 	 * @param byteStart byte start with respect to the image
-	 * @param byteLen length of the range in bytes
-	 * @param sequence sequence order of the range for the file
+	 * @param byteLen   length of the range in bytes
+	 * @param sequence  sequence order of the range for the file
 	 */
 	public TskFileRange(long byteStart, long byteLen, long sequence) {
 		this.byteStart = byteStart;

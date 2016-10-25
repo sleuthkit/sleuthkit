@@ -245,12 +245,12 @@ public:
 	hashed_bytes += bufsize;
     }
     void release(){			/* free allocated memory */
-	if(initialized){
 		free(md);
+		md = 0;
 		free(mdctx);
+		mdctx = 0;
 	    initialized = false;
 	    hashed_bytes = 0;
-	}
     }
     hash__<T> final() {
 	if(finalized){

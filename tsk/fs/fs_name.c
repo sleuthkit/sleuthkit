@@ -1,14 +1,14 @@
 /*
 ** fs_name
-** The Sleuth Kit 
+** The Sleuth Kit
 **
-** Display and manipulate directory entries 
+** Display and manipulate directory entries
 ** This file contains generic functions that call the appropriate function
 ** depending on the file system type.
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2006-2013 Brian Carrier.  All Rights reserved
-** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved 
+** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
@@ -139,7 +139,7 @@ tsk_fs_name_free(TSK_FS_NAME * fs_name)
 
 /** \internal
  * Copy the contents of a TSK_FS_NAME structure to another
- * structure. 
+ * structure.
  * @param a_fs_name_to Destination structure to copy to
  * @param a_fs_name_from Source structure to copy from
  * @returns 1 on error
@@ -214,7 +214,7 @@ tsk_fs_name_copy(TSK_FS_NAME * a_fs_name_to,
 
 /**
  * \ingroup fslib
- * Makes the "ls -l" permissions string for a file. 
+ * Makes the "ls -l" permissions string for a file.
  *
  * @param a_fs_meta File to be processed
  * @param a_buf [out] Buffer to write results to (must be 12 bytes or longer)
@@ -351,7 +351,7 @@ tsk_fs_print_time(FILE * hFile, time_t time)
 
 // @@@ We could merge this with the tsk_fs_time_to_str in
 // the future when the feature to include time resolution
-// is added to TSK_FS_META (and then that value would be 
+// is added to TSK_FS_META (and then that value would be
 // passed in and tsk_fs_time_to_str would decide what to
 // round up/down to
 
@@ -379,14 +379,14 @@ tsk_fs_print_day(FILE * hFile, time_t time)
 
 
 /**
-* \internal
+ * \internal
  * Simple print of dentry type / inode type, deleted, inode, and
  * name
  *
  * fs_attr is used for alternate data streams in NTFS, set to NULL
  * for all other file systems
  *
- * A newline is not printed at the end
+ * Newline is not printed at the end
  *
  * If path is NULL, then skip else use. it has the full directory name
  *  It needs to end with "/"
@@ -409,7 +409,7 @@ tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
     /* type of file - based on inode type: we want letters though for
      * regular files so we use the dent_str though */
     if (fs_file->meta) {
-        /* 
+        /*
          * An NTFS directory can have a Data stream, in which
          * case it would be printed with modes of a
          * directory, although it is really a file
@@ -451,23 +451,10 @@ tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
             && (fs_file->name->
                 flags & TSK_FS_NAME_FLAG_UNALLOC)) ? "(realloc)" : "");
 
-    if ((print_path) && (a_path != NULL)) {
-        buf = malloc(strlen(a_path) + 1);
-        strcpy(buf, a_path);
-        for (i = 0; i < strlen(buf); i++) {
-            if (TSK_IS_CNTRL(buf[i])) buf[i] = '^';
-        }
-        tsk_fprintf(hFile, "%s", buf);
-        free(buf);
-    }
+    if ((print_path) && (a_path != NULL))
+        tsk_print_sanitized(hFile, a_path);
 
-    buf = malloc(strlen(fs_file->name->name) + 1);
-    strcpy(buf, fs_file->name->name);
-    for (i = 0; i < strlen(buf); i++) {
-        if (TSK_IS_CNTRL(buf[i])) buf[i] = '^';
-    }
-    tsk_fprintf(hFile, "%s", buf);
-    free(buf);
+    tsk_print_sanitized(hFile, fs_file->name->name);
 
     /*  This will add the short name in parentheses
         if (fs_file->name->shrt_name != NULL && fs_file->name->shrt_name[0] != '\0')
@@ -479,13 +466,7 @@ tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
         if ((fs_attr->type != TSK_FS_ATTR_TYPE_NTFS_IDXROOT) ||
             (strcmp(fs_attr->name, "$I30") != 0)) {
             tsk_fprintf(hFile, ":");
-            buf = malloc(strlen(fs_attr->name) + 1);
-            strcpy(buf, fs_attr->name);
-            for (i = 0; i < strlen(buf); i++) {
-                if (TSK_IS_CNTRL(buf[i])) buf[i] = '^';
-            }
-            tsk_fprintf(hFile, "%s", buf);
-            free(buf);
+            tsk_print_sanitized(hFile, fs_attr->name);
         }
     }
 
@@ -495,12 +476,13 @@ tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
 /**
  * \internal
  * Print contents of  fs_name entry format like ls -l
-**
-** All elements are tab delimited 
-**
-** If path is NULL, then skip else use. it has the full directory name
-**  It needs to end with "/"
-*/
+ *
+ * All elements are tab delimited.
+ * Newline is not printed at the end
+ *
+ * If path is NULL, then skip else use. it has the full directory name
+ *  It needs to end with "/"
+ */
 void
 tsk_fs_name_print_long(FILE * hFile, const TSK_FS_FILE * fs_file,
     const char *a_path, TSK_FS_INFO * fs, const TSK_FS_ATTR * fs_attr,
@@ -520,7 +502,7 @@ tsk_fs_name_print_long(FILE * hFile, const TSK_FS_FILE * fs_file,
         tsk_fs_print_time(hFile, 0);    // crtime
 
         // size, uid, gid
-        tsk_fprintf(hFile, "\t0\t0\t0\n");
+        tsk_fprintf(hFile, "\t0\t0\t0");
     }
     else {
 
@@ -556,7 +538,7 @@ tsk_fs_name_print_long(FILE * hFile, const TSK_FS_FILE * fs_file,
         else
             tsk_fprintf(hFile, "\t%" PRIuOFF, fs_file->meta->size);
 
-        tsk_fprintf(hFile, "\t%" PRIuGID "\t%" PRIuUID "\n",
+        tsk_fprintf(hFile, "\t%" PRIuGID "\t%" PRIuUID,
             fs_file->meta->gid, fs_file->meta->uid);
     }
 
@@ -569,20 +551,21 @@ tsk_fs_name_print_long(FILE * hFile, const TSK_FS_FILE * fs_file,
 /**
  * \internal
  *
-** Print output in the format that mactime reads.
-**
-** If the flags in the fs_file->meta structure are set to FS_FLAG_ALLOC
-** then it is assumed that the inode has been reallocated and the
-** contents are not displayed
-**
-** fs is not required (only used for block size).
+ * Print output in the format that mactime reads.
+ *
+ * If the flags in the fs_file->meta structure are set to FS_FLAG_ALLOC
+ * then it is assumed that the inode has been reallocated and the
+ * contents are not displayed
+ * Newline is not printed at the end
+ *
+ * fs is not required (only used for block size).
  * @param hFile handle to print results to
  * @param fs_file File to print details about
  * @param a_path Parent directory of file (needs to end with "/")
  * @param fs_attr Attribute in file that is being called for (NULL for non-NTFS)
  * @param prefix Path of mounting point for image
  * @param time_skew number of seconds skew to adjust time
-*/
+ */
 void
 tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
     const char *a_path, const TSK_FS_ATTR * fs_attr,
@@ -595,13 +578,14 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
 /**
  * \internal
  *
-** Print output in the format that mactime reads.
-**
-** If the flags in the fs_file->meta structure are set to FS_FLAG_ALLOC
-** then it is assumed that the inode has been reallocated and the
-** contents are not displayed
-**
-** fs is not required (only used for block size).
+ * Print output in the format that mactime reads.
+ *
+ * If the flags in the fs_file->meta structure are set to FS_FLAG_ALLOC
+ * then it is assumed that the inode has been reallocated and the
+ * contents are not displayed
+ * Newline is not printed at the end
+ *
+ * fs is not required (only used for block size).
  * @param hFile handle to print results to
  * @param fs_file File to print details about
  * @param a_path Parent directory of file (needs to end with "/")
@@ -609,7 +593,7 @@ tsk_fs_name_print_mac(FILE * hFile, const TSK_FS_FILE * fs_file,
  * @param prefix Path of mounting point for image
  * @param time_skew number of seconds skew to adjust time
  * @param hash_results Holds the calculated md5 hash
-*/
+ */
 void
 tsk_fs_name_print_mac_md5(FILE * hFile, const TSK_FS_FILE * fs_file,
     const char *a_path, const TSK_FS_ATTR * fs_attr,
@@ -651,33 +635,15 @@ tsk_fs_name_print_mac_md5(FILE * hFile, const TSK_FS_FILE * fs_file,
     tsk_fprintf(hFile, "%s", prefix);
 
     // remove any control chars as we print the names
-    if (a_path != NULL) {
-        buf = malloc(strlen(a_path) + 1);
-        strcpy(buf, a_path);
-        for (i = 0; i < strlen(buf); i++) {
-            if (TSK_IS_CNTRL(buf[i])) buf[i] = '^';
-        }
-        tsk_fprintf(hFile, "%s", buf);
-        free(buf);
-    }
-    buf = malloc(strlen(fs_file->name->name) + 1);
-    strcpy(buf, fs_file->name->name);
-    for (i = 0; i < strlen(buf); i++) {
-        if (TSK_IS_CNTRL(buf[i])) buf[i] = '^';
-    }
-    tsk_fprintf(hFile, "%s", buf);
-    free(buf);
+    if (a_path != NULL)
+      tsk_print_sanitized(hFile, a_path);
+
+    tsk_print_sanitized(hFile, fs_file->name->name);
 
     /* print the data stream name if it exists and is not the default NTFS */
     if (isADS) {
         tsk_fprintf(hFile, ":");
-        buf = malloc(strlen(fs_attr->name) + 1);
-        strcpy(buf, fs_attr->name);
-        for (i = 0; i < strlen(buf); i++) {
-            if (TSK_IS_CNTRL(buf[i])) buf[i] = '^';
-        }
-        tsk_fprintf(hFile, "%s", buf);
-        free(buf);
+        tsk_print_sanitized(hFile, fs_attr->name);
     }
 
     // special label if FNAME
@@ -734,7 +700,7 @@ tsk_fs_name_print_mac_md5(FILE * hFile, const TSK_FS_FILE * fs_file,
     }
 
     if (!fs_file->meta) {
-        tsk_fprintf(hFile, "0|0|0|0\n");
+        tsk_fprintf(hFile, "0|0|0|0");
     }
     else {
         // special case for NTFS FILE_NAME attribute
@@ -762,10 +728,10 @@ tsk_fs_name_print_mac_md5(FILE * hFile, const TSK_FS_FILE * fs_file,
                     fs_file->meta->time2.ntfs.fn_ctime);
 
             if (fs_file->meta->time2.ntfs.fn_crtime)
-                tsk_fprintf(hFile, "%" PRIu32 "\n",
+                tsk_fprintf(hFile, "%" PRIu32,
                     fs_file->meta->time2.ntfs.fn_crtime - time_skew);
             else
-                tsk_fprintf(hFile, "%" PRIu32 "\n",
+                tsk_fprintf(hFile, "%" PRIu32,
                     fs_file->meta->time2.ntfs.fn_crtime);
         }
         else {
@@ -789,10 +755,10 @@ tsk_fs_name_print_mac_md5(FILE * hFile, const TSK_FS_FILE * fs_file,
                 tsk_fprintf(hFile, "%" PRIu32 "|", fs_file->meta->ctime);
 
             if (fs_file->meta->crtime)
-                tsk_fprintf(hFile, "%" PRIu32 "\n",
+                tsk_fprintf(hFile, "%" PRIu32,
                     fs_file->meta->crtime - time_skew);
             else
-                tsk_fprintf(hFile, "%" PRIu32 "\n", fs_file->meta->crtime);
+                tsk_fprintf(hFile, "%" PRIu32, fs_file->meta->crtime);
         }
     }
 }

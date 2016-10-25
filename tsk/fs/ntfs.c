@@ -349,7 +349,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
     /* The MFT entries have error and integrity checks in them
      * called update sequences.  They must be checked and removed
      * so that later functions can process the data as normal.
-     * They are located in the last 2 bytes of each 512-byte sector
+     * They are located in the last 2 bytes of each 512-bytes of data.
      *
      * We first verify that the the 2-byte value is a give value and
      * then replace it with what should be there
@@ -358,7 +358,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
     mft = (ntfs_mft *) a_buf;
     if ((tsk_getu16(fs->endian, mft->upd_cnt) > 0) &&
         (((uint32_t) (tsk_getu16(fs->endian,
-                        mft->upd_cnt) - 1) * a_ntfs->ssize_b) >
+                        mft->upd_cnt) - 1) * NTFS_UPDATE_SEQ_STRIDE) >
             a_ntfs->mft_rsize_b)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
@@ -384,7 +384,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
     for (i = 1; i < tsk_getu16(fs->endian, mft->upd_cnt); i++) {
         uint8_t *new_val, *old_val;
         /* The offset into the buffer of the value to analyze */
-        size_t offset = i * a_ntfs->ssize_b - 2;
+        size_t offset = i * NTFS_UPDATE_SEQ_STRIDE - 2;
         /* get the current sequence value */
         uint16_t cur_seq =
             tsk_getu16(fs->endian, (uintptr_t) a_buf + offset);
@@ -1600,7 +1600,7 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
 
 
 /* needs to be predefined for proc_attrseq */
-static uint8_t ntfs_proc_attrlist(NTFS_INFO *, TSK_FS_FILE *,
+static TSK_RETVAL_ENUM ntfs_proc_attrlist(NTFS_INFO *, TSK_FS_FILE *,
     const TSK_FS_ATTR *);
 
 
@@ -1657,6 +1657,15 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
         tsk_error_set_errstr("Null attribute list in ntfs_proc_attrseq");
         return TSK_ERR;
     }
+
+    if (len > ntfs->mft_rsize_b) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("invalid length in ntfs_proc_attrseq");
+        return TSK_ERR;
+    }
+
+
     /* Cycle through the list of attributes */
     for (attr = a_attrseq; ((uintptr_t) attr >= (uintptr_t) a_attrseq)
         && ((uintptr_t) attr <= ((uintptr_t) a_attrseq + len))
@@ -1667,13 +1676,21 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
         (ntfs_attr *) ((uintptr_t) attr + tsk_getu32(fs->endian,
                 attr->len))) {
 
-        int retVal;
-        int i;
-
+        int retVal, i;
+        uint32_t type;
+        uint16_t id, id_new;
+        
+        // sanity check on bounds of attribute. Prevents other
+        // issues later on that use attr->len for bounds checks.
+        if (((uintptr_t) attr + tsk_getu32(fs->endian,
+                               attr->len)) > (uintptr_t) (a_attrseq + len)) {
+            break;
+        }
+        
         /* Get the type of this attribute */
-        uint32_t type = tsk_getu32(fs->endian, attr->type);
-        uint16_t id = tsk_getu16(fs->endian, attr->id);
-        uint16_t id_new = id;
+        type = tsk_getu32(fs->endian, attr->type);
+        id = tsk_getu16(fs->endian, attr->id);
+        id_new = id;
 
         /* If the map was supplied, search through it to see if this 
          * entry is in there.  Use that ID instead so that we always have
@@ -1815,6 +1832,13 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                     " Name: %s  Start VCN: %" PRIu64 "\n", type, id,
                     id_new, name, tsk_getu64(fs->endian,
                         attr->c.nr.start_vcn));
+
+            // sanity check
+            if (tsk_getu16(fs->endian, attr->c.nr.run_off) > tsk_getu32(fs->endian, attr->len)) {
+                if (tsk_verbose) 
+                    tsk_fprintf(stderr, "ntfs_proc_attrseq: run offset too big\n");
+                break;
+            }
 
             /* convert the run to generic form */
             retval = ntfs_make_data_run(ntfs,
@@ -2208,8 +2232,9 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
      * process the attribute list
      */
     if (fs_attr_attrl) {
-        if (ntfs_proc_attrlist(ntfs, fs_file, fs_attr_attrl)) {
-            return TSK_ERR;
+		TSK_RETVAL_ENUM retval;
+        if ((retval = ntfs_proc_attrlist(ntfs, fs_file, fs_attr_attrl)) != TSK_OK) {
+            return retval;
         }
     }
 
@@ -2234,9 +2259,9 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
  * @param fs_file Main file that will have attributes added to it.
  * @param fs_attr_attrlist Attrlist attribute that needs to be parsed. 
  *
- * Return 1 on error and 0 on success
+ * @returns status of error, corrupt, or OK 
  */
-static uint8_t
+static TSK_RETVAL_ENUM
 ntfs_proc_attrlist(NTFS_INFO * ntfs,
     TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr_attrlist)
 {
@@ -2258,14 +2283,14 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
             PRIuINUM "\n", fs_file->meta->addr);
 
     if ((mft = (ntfs_mft *) tsk_malloc(ntfs->mft_rsize_b)) == NULL) {
-        return 1;
+        return TSK_ERR;
     }
 
     if ((map =
             (NTFS_ATTRLIST_MAP *) tsk_malloc(sizeof(NTFS_ATTRLIST_MAP))) ==
         NULL) {
         free(mft);
-        return 1;
+        return TSK_ERR;
     }
 
     /* Clear the contents of the todo buffer */
@@ -2278,7 +2303,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
     if (buf == NULL) {
         free(mft);
         free(map);
-        return 1;
+        return TSK_ERR;
     }
     endaddr = (uintptr_t) buf + (uintptr_t) fs_attr_attrlist->size;
     if (tsk_fs_attr_walk(fs_attr_attrlist, 0, tsk_fs_load_file_action,
@@ -2286,7 +2311,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
         tsk_error_errstr2_concat("- processing attrlist");
         free(mft);
         free(map);
-        return 1;
+        return TSK_ERR;
     }
 
     /* this value should be zero, if not then we didn't read all of the
@@ -2300,7 +2325,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
         free(mft);
         free(buf);
         free(map);
-        return 1;
+        return TSK_ERR;
     }
 
     /* The TSK design requres that each attribute have its own ID.
@@ -2311,6 +2336,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
     nextid = fs_attr_attrlist->id;      // we won't see this entry in the list
     for (list = (ntfs_attrlist *) buf;
         (list) && ((uintptr_t) list < endaddr)
+        && ((uintptr_t)list + sizeof(ntfs_attrlist) < endaddr)
         && (tsk_getu16(fs->endian, list->len) > 0);
         list =
         (ntfs_attrlist *) ((uintptr_t) list + tsk_getu16(fs->endian,
@@ -2388,7 +2414,9 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
 
         /* Sanity check. */
         if (mftToDo[a] < ntfs->fs_info.first_inum ||
-            mftToDo[a] > ntfs->fs_info.last_inum) {
+            mftToDo[a] > ntfs->fs_info.last_inum || 
+            // MFT 0 is for $MFT.  We had one system that we got a reference to it from parsing an allocated attribute list
+            mftToDo[a] == 0) {
 
             if (tsk_verbose) {
                 /* this case can easily occur if the attribute list was non-resident and the cluster has been reallocated */
@@ -2417,7 +2445,7 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
             free(map);
             free(buf);
             tsk_error_errstr2_concat(" - proc_attrlist");
-            return 1;
+            return TSK_ERR;
         }
 
         /* verify that this entry refers to the original one */
@@ -2435,16 +2463,25 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
             else {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
-                tsk_error_set_errstr("Extension record %" PRIuINUM
-                    " (file ref = %" PRIuINUM
-                    ") is not for attribute list of %"
-                    PRIuINUM "", mftToDo[a], tsk_getu48(fs->endian,
-                        mft->base_ref), fs_file->meta->addr);
+                tsk_error_set_errstr("ntfs_proc_attrlist: MFT %" PRIuINUM
+                    " is not an attribute list for %"
+                    PRIuINUM 
+                    " (base file ref = %" PRIuINUM ")",
+                    mftToDo[a], 
+                    fs_file->meta->addr,
+                    tsk_getu48(fs->endian, mft->base_ref));
                 free(mft);
                 free(map);
                 free(buf);
-                return 1;
+                return TSK_COR;
             }
+        }
+
+        // bounds check
+        if (tsk_getu16(fs->endian, mft->attr_off) > ntfs->mft_rsize_b) {
+            if (tsk_verbose) 
+                    tsk_fprintf(stderr, "ntfs_proc_attrlist: corrupt MFT entry attribute offsets\n");
+            continue;
         }
 
         /* Process the attribute seq for this MFT entry and add them
@@ -2466,14 +2503,14 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
             free(mft);
             free(map);
             free(buf);
-            return 1;
+            return TSK_ERR;
         }
     }
 
     free(mft);
     free(map);
     free(buf);
-    return 0;
+    return TSK_OK;
 }
 
 
@@ -2572,9 +2609,17 @@ ntfs_dinode_copy(NTFS_INFO * ntfs, TSK_FS_FILE * a_fs_file, char *a_buf,
             NTFS_MFT_INUSE) ? TSK_FS_META_FLAG_ALLOC :
         TSK_FS_META_FLAG_UNALLOC);
 
+
     /* Process the attribute sequence to fill in the fs_meta->attr
      * list and the other info such as size and times
      */
+    if (tsk_getu16(fs->endian, mft->attr_off) > ntfs->mft_rsize_b) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("ntfs_dinode_copy: corrupt MFT entry attribute offsets");
+        return TSK_ERR;
+    }
+
     attr =
         (ntfs_attr *) ((uintptr_t) mft + tsk_getu16(fs->endian,
             mft->attr_off));
@@ -2594,7 +2639,7 @@ ntfs_dinode_copy(NTFS_INFO * ntfs, TSK_FS_FILE * a_fs_file, char *a_buf,
     else
         a_fs_file->meta->flags |= TSK_FS_META_FLAG_USED;
 
-    return 0;
+    return TSK_OK;
 }
 
 
@@ -2855,10 +2900,11 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
 {
     ssize_t cnt = 0;
     ntfs_attr *attr = NULL;
+    ntfs_attr *data_attr = NULL;
     TSK_FS_INFO *fs = NULL;
     ntfs_mft *mft = NULL;
 
-    if( ntfs == NULL ) {
+    if (ntfs == NULL) {
         goto on_error;
     }
     fs = &ntfs->fs_info;
@@ -2874,21 +2920,29 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
 
     attr = (ntfs_attr *) ((uintptr_t) mft +
         tsk_getu16(fs->endian, mft->attr_off));
+    data_attr = NULL;
 
     /* cycle through them */
-    while (((uintptr_t) attr >= (uintptr_t) mft)
-        && ((uintptr_t) attr <=
-            ((uintptr_t) mft + (uintptr_t) ntfs->mft_rsize_b))
-        && (tsk_getu32(fs->endian, attr->len) > 0
-            && (tsk_getu32(fs->endian, attr->type) != 0xffffffff)
-            && (tsk_getu32(fs->endian, attr->type) != NTFS_ATYPE_DATA))) {
+    while ((uintptr_t) attr + sizeof (ntfs_attr) <=
+            ((uintptr_t) mft + (uintptr_t) ntfs->mft_rsize_b)) {
+
+        if ((tsk_getu32(fs->endian, attr->len) == 0) ||
+            (tsk_getu32(fs->endian, attr->type) == 0xffffffff)) {
+            break;
+        }
+
+        if (tsk_getu32(fs->endian, attr->type) == NTFS_ATYPE_DATA) {
+            data_attr = attr;
+            break;
+        }
+
         attr =
             (ntfs_attr *) ((uintptr_t) attr + tsk_getu32(fs->endian,
                 attr->len));
     }
 
     /* did we get it? */
-    if (tsk_getu32(fs->endian, attr->type) != NTFS_ATYPE_DATA) {
+    if (data_attr == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
         tsk_error_set_errstr("Error Finding Bitmap Data Attribute");
@@ -2897,10 +2951,10 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
 
     /* convert to generic form */
     if ((ntfs_make_data_run(ntfs,
-                tsk_getu64(fs->endian, attr->c.nr.start_vcn),
+                tsk_getu64(fs->endian, data_attr->c.nr.start_vcn),
                 (ntfs_runlist
-                    *) ((uintptr_t) attr + tsk_getu16(fs->endian,
-                        attr->c.nr.run_off)), &(ntfs->bmap),
+                    *) ((uintptr_t) data_attr + tsk_getu16(fs->endian,
+                        data_attr->c.nr.run_off)), &(ntfs->bmap),
                 NULL, NTFS_MFT_BMAP)) != TSK_OK) {
         goto on_error;
     }
@@ -2913,7 +2967,7 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
     ntfs->bmap_buf_off = 0;
 
     // Check ntfs->bmap before it is accessed.
-    if( ntfs->bmap == NULL ) {
+    if (ntfs->bmap == NULL) {
         goto on_error;
     }
     if (ntfs->bmap->addr > fs->last_block) {
@@ -2937,12 +2991,12 @@ ntfs_load_bmap(NTFS_INFO * ntfs)
         goto on_error;
     }
 
-    free( mft );
+    free (mft);
     return 0;
 
 on_error:
-    if( mft != NULL ) {
-        free( mft );
+    if (mft != NULL) {
+        free (mft);
     }
     return 1;
 }
@@ -3310,10 +3364,7 @@ ntfs_file_get_sidstr(TSK_FS_FILE * a_fs_file, char **sid_str)
 static void
 ntfs_proc_sii(TSK_FS_INFO * fs, NTFS_SXX_BUFFER * sii_buffer)
 {
-    unsigned int total_bytes_processed = 0;
-    unsigned int idx_buffer_length = 0;
     unsigned int sii_buffer_offset = 0;
-
     NTFS_INFO *ntfs = (NTFS_INFO *) fs;
     ntfs_attr_sii *sii;
 
@@ -3324,22 +3375,41 @@ ntfs_proc_sii(TSK_FS_INFO * fs, NTFS_SXX_BUFFER * sii_buffer)
     /* Loop by cluster size */
     for (sii_buffer_offset = 0; sii_buffer_offset < sii_buffer->size;
         sii_buffer_offset += ntfs->idx_rsize_b) {
+
+        uintptr_t idx_buffer_end = 0;
+
         ntfs_idxrec *idxrec =
             (ntfs_idxrec *) & sii_buffer->buffer[sii_buffer_offset];
 
-        idx_buffer_length =
-            tsk_getu32(fs->endian, idxrec->list.bufend_off);
-
+        // stop processing if we hit corrupt data
+        if (tsk_getu32(fs->endian, idxrec->list.begin_off) > ntfs->idx_rsize_b) {
+            if (tsk_verbose) 
+                tsk_fprintf(stderr, "ntfs_proc_sii: corrupt offset\n");
+            break;
+        }
+        else if (tsk_getu32(fs->endian, idxrec->list.bufend_off) > ntfs->idx_rsize_b) {
+            if (tsk_verbose) 
+                tsk_fprintf(stderr, "ntfs_proc_sii: corrupt offset\n");
+            break;
+        }
+        else if (tsk_getu32(fs->endian, idxrec->list.begin_off) > tsk_getu32(fs->endian, idxrec->list.bufend_off)) {
+            if (tsk_verbose) 
+                tsk_fprintf(stderr, "ntfs_proc_sii: corrupt offset\n");
+            break;
+        }
+        
         // get pointer to first record
         sii =
             (ntfs_attr_sii *) ((uintptr_t) & idxrec->list +
             tsk_getu32(fs->endian, idxrec->list.begin_off));
+        
+        // where last record ends
+        idx_buffer_end = (uintptr_t) & idxrec->list +
+            tsk_getu32(fs->endian, idxrec->list.bufend_off);
 
-        total_bytes_processed =
-            (uint8_t) ((uintptr_t) sii - (uintptr_t) idxrec);
-
+        
         // copy records into NTFS_INFO
-        do {
+        while ((uintptr_t)sii + sizeof(ntfs_attr_sii) <= idx_buffer_end) {
 /*
 			if ((tsk_getu16(fs->endian,sii->size) == 0x14) &&
 				(tsk_getu16(fs->endian,sii->data_off) == 0x14) &&
@@ -3347,6 +3417,13 @@ ntfs_proc_sii(TSK_FS_INFO * fs, NTFS_SXX_BUFFER * sii_buffer)
 				)
 			{
 */
+            /* make sure we don't go over bounds of ntfs->sii_data.buffer */
+            if ((ntfs->sii_data.used + 1) * sizeof(ntfs_attr_sii) > ntfs->sii_data.size) {
+                if (tsk_verbose) 
+                    tsk_fprintf(stderr, "ntfs_proc_sii: data buffer too small\n");
+                return; // reached end of ntfs->sii_data.buffer
+            }
+
             memcpy(ntfs->sii_data.buffer +
                 (ntfs->sii_data.used * sizeof(ntfs_attr_sii)), sii,
                 sizeof(ntfs_attr_sii));
@@ -3368,9 +3445,7 @@ ntfs_proc_sii(TSK_FS_INFO * fs, NTFS_SXX_BUFFER * sii_buffer)
 			}
 */
             sii++;
-            total_bytes_processed += sizeof(ntfs_attr_sii);
-        } while (total_bytes_processed + sizeof(ntfs_attr_sii) <=
-            idx_buffer_length);
+        } 
     }
 }
 
@@ -4825,10 +4900,10 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     ntfs->csize_b = ntfs->fs->csize * ntfs->ssize_b;
     fs->first_block = 0;
     /* This field is defined as 64-bits but according to the
-     * NTFS drivers in Linux, windows only uses 32-bits
+     * NTFS drivers in Linux, old Windows versions used only 32-bits
      */
     fs->block_count =
-        (TSK_DADDR_T) tsk_getu32(fs->endian,
+        (TSK_DADDR_T) tsk_getu64(fs->endian,
         ntfs->fs->vol_size_s) / ntfs->fs->csize;
     if (fs->block_count == 0) {
         tsk_error_reset();
@@ -5012,6 +5087,8 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     ntfs->attrdef = NULL;
     ntfs->orphan_map = NULL;
 
+    // initialize the number of allocated files
+    ntfs->alloc_file_count = -1;
 
     if (tsk_verbose) {
         tsk_fprintf(stderr,

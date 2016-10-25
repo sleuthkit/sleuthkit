@@ -166,8 +166,9 @@ public class ReadContentInputStream extends InputStream {
 	 * Set new current position in the stream, up to and including EOF
 	 *
 	 * @param newPosition new position in the stream to be set
+	 *
 	 * @return the actual position set, which can be less than position passed
-	 * in if EOF has been reached
+	 *         in if EOF has been reached
 	 */
 	public long seek(long newPosition) {
 		if (newPosition < 0) {

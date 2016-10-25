@@ -51,13 +51,14 @@ public class OSInfo {
 	/**
 	 * Initialize an OSInfo object
 	 *
-	 * @param a_art - OSInfo artifact associated with one registry hive
-	 * @param a_isBackup - True if the registry hive was found in a "RegBack"
-	 * directory
+	 * @param a_art          - OSInfo artifact associated with one registry hive
+	 * @param a_isBackup     - True if the registry hive was found in a
+	 *                       "RegBack" directory
 	 * @param a_fileSystemId - File system ID for FS containing the registry
-	 * hive
-	 * @param a_parent - Parent directory containing the registry hive. Can be
-	 * null
+	 *                       hive
+	 * @param a_parent       - Parent directory containing the registry hive.
+	 *                       Can be null
+	 *
 	 * @throws TskCoreException
 	 */
 	public OSInfo(BlackboardArtifact a_art, boolean a_isBackup, long a_fileSystemId, Content a_parent) throws TskCoreException {
@@ -68,7 +69,7 @@ public class OSInfo {
 		haveFsContent = true;
 		attributeMap = new HashMap<Integer, String>();
 		for (BlackboardAttribute attr : a_art.getAttributes()) {
-			attributeMap.put(attr.getAttributeTypeID(), attr.getValueString());
+			attributeMap.put(attr.getAttributeType().getTypeID(), attr.getValueString());
 		}
 
 		if (a_parent != null) {
@@ -83,11 +84,12 @@ public class OSInfo {
 	/**
 	 * Initialize an OSInfo object (without file system information)
 	 *
-	 * @param a_art - OSInfo artifact associated with one registry hive
+	 * @param a_art      - OSInfo artifact associated with one registry hive
 	 * @param a_isBackup - True if the registry hive was found in a "RegBack"
-	 * directory
-	 * @param a_parent - Parent directory containing the registry hive. Can be
-	 * null
+	 *                   directory
+	 * @param a_parent   - Parent directory containing the registry hive. Can be
+	 *                   null
+	 *
 	 * @throws TskCoreException
 	 */
 	public OSInfo(BlackboardArtifact a_art, boolean a_isBackup, Content a_parent) throws TskCoreException {
@@ -105,7 +107,7 @@ public class OSInfo {
 		}
 		attributeMap = new HashMap<Integer, String>();
 		for (BlackboardAttribute attr : a_art.getAttributes()) {
-			attributeMap.put(attr.getAttributeTypeID(), attr.getValueString());
+			attributeMap.put(attr.getAttributeType().getTypeID(), attr.getValueString());
 		}
 	}
 
@@ -113,6 +115,7 @@ public class OSInfo {
 	 * Determine whether two OSInfo objects should be combined.
 	 *
 	 * @param a_osInfo - the OSInfo object to compare against
+	 *
 	 * @return
 	 */
 	public boolean matches(OSInfo a_osInfo) {
@@ -164,6 +167,7 @@ public class OSInfo {
 	 * Generic method to get an OSInfo attribute value by ATTRIBUTE_TYPE.
 	 *
 	 * @param attrType - the attribute to get
+	 *
 	 * @return
 	 */
 	public String getAttributeValue(ATTRIBUTE_TYPE attrType) {

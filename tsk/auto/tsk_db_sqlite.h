@@ -11,151 +11,24 @@
 /**
  * \file tsk_db_sqlite.h
  * Contains the SQLite code for maintaining the case-level database.
- * In the future, an interface will be developed for these so that 
- * different databases can exist. 
+ * The class is an extension of TSK abstract database handling class. 
  */
 
 #ifndef _TSK_DB_SQLITE_H
 #define _TSK_DB_SQLITE_H
 
 #include <map>
-#include <vector>
-
-#include <string>
-#include <ostream>
-
 
 #include "sqlite3.h"
-#include "tsk_auto_i.h"
+#include "tsk_db.h"
 
 using std::map;
 using std::vector;
-using std::string;
-using std::ostream;
-
-typedef struct sqlite3 sqlite3;
-
-
-/**
- * Values for the type column in the tsk_objects table. 
- */
-typedef enum {
-    TSK_DB_OBJECT_TYPE_IMG = 0, ///< Object is a disk image
-    TSK_DB_OBJECT_TYPE_VS,      ///< Object is a volume system. 
-    TSK_DB_OBJECT_TYPE_VOL,     ///< Object is a volume 
-    TSK_DB_OBJECT_TYPE_FS,      ///< Object is a file system
-    TSK_DB_OBJECT_TYPE_FILE,    ///< Object is a file (exact type can be determined in the tsk_files table via TSK_DB_FILES_TYPE_ENUM)
-} TSK_DB_OBJECT_TYPE_ENUM;
-
-/**
- * Values for the files type column in the tsk_files table.
- */
-typedef enum {
-    TSK_DB_FILES_TYPE_FS = 0,   ///< File that can be found in file system tree. 
-    TSK_DB_FILES_TYPE_CARVED,   ///< Set of blocks for a file found from carving.  Could be on top of a TSK_DB_FILES_TYPE_UNALLOC_BLOCKS range. 
-    TSK_DB_FILES_TYPE_DERIVED,  ///< File derived from a parent file (i.e. from ZIP)
-    TSK_DB_FILES_TYPE_LOCAL,    ///< Local file that was added (not from a disk image)
-    TSK_DB_FILES_TYPE_UNALLOC_BLOCKS,   ///< Set of blocks not allocated by file system.  Parent should be image, volume, or file system.  Many columns in tsk_files will be NULL. Set layout in tsk_file_layout. 
-    TSK_DB_FILES_TYPE_UNUSED_BLOCKS, ///< Set of blocks that are unallocated AND not used by a carved or other file type.  Parent should be UNALLOC_BLOCKS, many columns in tsk_files will be NULL, set layout in tsk_file_layout. 
-    TSK_DB_FILES_TYPE_VIRTUAL_DIR, ///< Virtual directory (not on fs) with no meta-data entry that can be used to group files of types other than TSK_DB_FILES_TYPE_FS. Its parent is either another TSK_DB_FILES_TYPE_FS or a root directory or type TSK_DB_FILES_TYPE_FS.
-} TSK_DB_FILES_TYPE_ENUM;
-
-
-
-/**
-* Values for the "known" column of the tsk_files table
-*/
-typedef enum  {
-    TSK_DB_FILES_KNOWN_UNKNOWN = 0,  ///< Not matched against an index
-    TSK_DB_FILES_KNOWN_KNOWN = 1,    ///< Match found in a "known" file index (such as NIST NSRL)and could be good or bad.  
-    TSK_DB_FILES_KNOWN_KNOWN_BAD = 2,      ///< Match found in a "known bad" index
-    TSK_DB_FILES_KNOWN_KNOWN_GOOD = 3,      ///< Match found in a "known good" index
-} TSK_DB_FILES_KNOWN_ENUM;
-
-
-/**
-* Structure wrapping a single tsk objects db entry
-*/
-typedef struct _TSK_DB_OBJECT {
-    int64_t objId; ///< set to 0 if unknown (before it becomes a db object)
-    int64_t parObjId;
-    TSK_DB_OBJECT_TYPE_ENUM type;    
-} TSK_DB_OBJECT;
-
-ostream& operator <<(ostream &os,const TSK_DB_OBJECT &dbObject);
-
-/**
-* Structure wrapping a single file_layout db entry
-*/
-typedef struct _TSK_DB_FILE_LAYOUT_RANGE {
-    //default constructor
-    _TSK_DB_FILE_LAYOUT_RANGE()
-        : fileObjId(0),byteStart(0),byteLen(0),sequence(0) {}
-    //constructor for non-db object (before it becomes one)
-    _TSK_DB_FILE_LAYOUT_RANGE(uint64_t byteStart, uint64_t byteLen, int sequence)
-        : fileObjId(0),byteStart(byteStart),byteLen(byteLen),sequence(sequence) {}
- 
-    int64_t fileObjId; ///< set to 0 if unknown (before it becomes a db object)
-    uint64_t byteStart;
-    uint64_t byteLen;
-    uint32_t sequence;
-
-    //default comparator by sequence
-    bool operator< (const struct _TSK_DB_FILE_LAYOUT_RANGE & rhs) const
-    { return sequence < rhs.sequence; }
-
-} TSK_DB_FILE_LAYOUT_RANGE;
-
-ostream& operator <<(ostream &os,const TSK_DB_FILE_LAYOUT_RANGE &layoutRange);
-
-/**
-* Structure wrapping a single fs info db entry
-*/
-typedef struct _TSK_DB_FS_INFO {
-    int64_t objId; ///< set to 0 if unknown (before it becomes a db object)
-    TSK_OFF_T imgOffset;
-    TSK_FS_TYPE_ENUM fType;
-    unsigned int block_size;
-    TSK_DADDR_T block_count;
-    TSK_INUM_T root_inum;
-    TSK_INUM_T first_inum;
-    TSK_INUM_T last_inum;     
-} TSK_DB_FS_INFO;
-
-ostream& operator <<(ostream &os,const TSK_DB_FS_INFO &fsInfo);
-
-
-/**
-* Structure wrapping a single vs info db entry
-*/
-typedef struct _TSK_DB_VS_INFO {
-    int64_t objId; ///< set to 0 if unknown (before it becomes a db object)
-    TSK_VS_TYPE_ENUM vstype;
-    TSK_DADDR_T offset;
-    unsigned int block_size;  
-} TSK_DB_VS_INFO;
-
-ostream& operator <<(ostream &os,const TSK_DB_VS_INFO &vsInfo);
-
-/**
-* Structure wrapping a single vs part db entry
-*/
-#define TSK_MAX_DB_VS_PART_INFO_DESC_LEN 512
-typedef struct _TSK_DB_VS_PART_INFO {
-    int64_t objId; ///< set to 0 if unknown (before it becomes a db object)
-    TSK_PNUM_T addr;
-    TSK_DADDR_T start;
-    TSK_DADDR_T len;
-    char desc[TSK_MAX_DB_VS_PART_INFO_DESC_LEN];
-    TSK_VS_PART_FLAG_ENUM flags;  
-} TSK_DB_VS_PART_INFO;
-
-ostream& operator <<(ostream &os,const TSK_DB_VS_PART_INFO &vsPartInfos);
 
 /** \internal
  * C++ class that wraps the database internals. 
  */
-class TskDbSqlite {
+class TskDbSqlite : public TskDb {
   public:
 #ifdef TSK_WIN32
 //@@@@
@@ -167,6 +40,7 @@ class TskDbSqlite {
     int close();
     int addImageInfo(int type, int size, int64_t & objId, const string & timezone);
     int addImageInfo(int type, int size, int64_t & objId, const string & timezone, TSK_OFF_T, const string &md5);
+    int addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5, const string& deviceId);
     int addImageName(int64_t objId, char const *imgName, int sequence);
     int addVsInfo(const TSK_VS_INFO * vs_info, int64_t parObjId,
         int64_t & objId);
@@ -177,25 +51,26 @@ class TskDbSqlite {
     int addFsFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         const char *path, const unsigned char *const md5,
         const TSK_DB_FILES_KNOWN_ENUM known, int64_t fsObjId,
-        int64_t & objId);
+        int64_t & objId, int64_t dataSourceObjId);
 
-    TSK_RETVAL_ENUM addVirtualDir(const int64_t fsObjId, const int64_t parentDirId, const char * const name, int64_t & objId);
-    TSK_RETVAL_ENUM addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & objId);
+    TSK_RETVAL_ENUM addVirtualDir(const int64_t fsObjId, const int64_t parentDirId, const char * const name, int64_t & objId, int64_t dataSourceObjId);
+    TSK_RETVAL_ENUM addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & objId, int64_t dataSourceObjId);
     TSK_RETVAL_ENUM addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
-        vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
+        vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId, int64_t dataSourceObjId);
     TSK_RETVAL_ENUM addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
-        vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
+        vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId, int64_t dataSourceObjId);
     TSK_RETVAL_ENUM addCarvedFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
-        vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
+        vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId, int64_t dataSourceObjId);
     
     int addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLayoutRange);
     int addFileLayoutRange(int64_t a_fileObjId, uint64_t a_byteStart, uint64_t a_byteLen, int a_sequence);
     
-    bool dbExist() const;
+    bool isDbOpen();
     int createSavepoint(const char *name);
     int revertSavepoint(const char *name);
     int releaseSavepoint(const char *name);
     bool inTransaction();
+    bool dbExists();
 
     //query methods / getters
     TSK_RETVAL_ENUM getFileLayouts(vector<TSK_DB_FILE_LAYOUT_RANGE> & fileLayouts);
@@ -228,11 +103,10 @@ class TskDbSqlite {
     int addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         const char *path, const unsigned char *const md5,
         const TSK_DB_FILES_KNOWN_ENUM known, int64_t fsObjId,
-        int64_t parObjId, int64_t & objId);
+        int64_t parObjId, int64_t & objId, int64_t dataSourceObjId);
     TSK_RETVAL_ENUM addFileWithLayoutRange(const TSK_DB_FILES_TYPE_ENUM dbFileType, const int64_t parentObjId, const int64_t fsObjId,
-        const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId);
-    TSK_RETVAL_ENUM addLayoutFileInfo(const int64_t parObjId, const int64_t fsObjId, const TSK_DB_FILES_TYPE_ENUM dbFileType, const char *fileName, const uint64_t size,
-        int64_t & objId);
+        const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId, int64_t dataSourceObjId);
+    TSK_RETVAL_ENUM addLayoutFileInfo(const int64_t parObjId, const int64_t fsObjId, const TSK_DB_FILES_TYPE_ENUM dbFileType, const char *fileName, const uint64_t size, int64_t & objId, int64_t dataSourceObjId);
     
     void storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_file, const char *path, const int64_t & objId);
     int64_t findParObjId(const TSK_FS_FILE * fs_file, const char *path, const int64_t & fsObjId);
@@ -244,7 +118,7 @@ class TskDbSqlite {
     bool m_utf8; //encoding used for the database file name, not the actual database
     sqlite3_stmt *m_selectFilePreparedStmt;
     sqlite3_stmt *m_insertObjectPreparedStmt;
-    map<int64_t, map<TSK_INUM_T, map<uint32_t, int64_t> > > m_parentDirIdCache; //maps a file system ID to a map, which maps a directory file system meta address to a map, which maps a sequence ID to its object ID in the database
+    map<int64_t, map<TSK_INUM_T, map<uint32_t, map<uint32_t, int64_t> > > > m_parentDirIdCache; //maps a file system ID to a map, which maps a directory file system meta address to a map, which maps a sequence ID to a map, which maps a hash of a path to its object ID in the database
 };
 
 #endif

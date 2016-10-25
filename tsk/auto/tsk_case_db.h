@@ -20,9 +20,9 @@
 #include <string>
 using std::string;
 
-
 #include "tsk_auto_i.h"
 #include "tsk_db_sqlite.h"
+#include "tsk_db_postgresql.h"
 #include "tsk/hashdb/tsk_hashdb.h"
 
 #define TSK_ADD_IMAGE_SAVEPOINT "ADDIMAGE"
@@ -33,12 +33,12 @@ using std::string;
  */
 class TskAutoDb:public TskAuto {
   public:
-    TskAutoDb(TskDbSqlite * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_knownBadDb);
+    TskAutoDb(TskDb * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_knownBadDb);
     virtual ~ TskAutoDb();
     virtual uint8_t openImage(int, const TSK_TCHAR * const images[],
-        TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
+        TSK_IMG_TYPE_ENUM, unsigned int a_ssize, const char* deviceId = NULL);
     virtual uint8_t openImageUtf8(int, const char *const images[],
-        TSK_IMG_TYPE_ENUM, unsigned int a_ssize);
+        TSK_IMG_TYPE_ENUM, unsigned int a_ssize, const char* deviceId = NULL);
     virtual void closeImage();
     virtual void setTz(string tzone);
 
@@ -49,6 +49,12 @@ class TskAutoDb:public TskAuto {
         const char *path);
     virtual void createBlockMap(bool flag);
     const std::string getCurDir();
+    
+    /**
+    * Check if we can talk to the database.
+    * Returns true if the database is reachable with current credentials, false otherwise.
+    */
+    bool isDbOpen();
 
     /**
      * Calculate hash values of files and add them to database.
@@ -72,29 +78,32 @@ class TskAutoDb:public TskAuto {
      */
     virtual void setAddUnallocSpace(bool addUnallocSpace);
 
-	/**
+    /**
      * When enabled, records for unallocated file system space will be added to the database. Default value is false.
      * @param addUnallocSpace If true, create records for contigious unallocated file system sectors.
-	 * @param chunkSize the number of bytes to group unallocated data into. A value of 0 will create
-	 * one large chunk and group only on volume boundaries. A value of -1 will group each consecutive
-	 * chunk.
+     * @param chunkSize the number of bytes to group unallocated data into. A value of 0 will create
+     * one large chunk and group only on volume boundaries. A value of -1 will group each consecutive
+     * chunk.
      */
     virtual void setAddUnallocSpace(bool addUnallocSpace, int64_t chunkSize);
 
     uint8_t addFilesInImgToDb();
 
+    /**
+     * 
+     */
     uint8_t startAddImage(int numImg, const TSK_TCHAR * const imagePaths[],
-        TSK_IMG_TYPE_ENUM imgType, unsigned int sSize);
+        TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* deviceId = NULL);
 #ifdef WIN32
     uint8_t startAddImage(int numImg, const char *const imagePaths[],
-        TSK_IMG_TYPE_ENUM imgType, unsigned int sSize);
+        TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* deviceId = NULL);
 #endif
     void stopAddImage();
     int revertAddImage();
     int64_t commitAddImage();
 
   private:
-    TskDbSqlite * m_db;
+    TskDb * m_db;
     int64_t m_curImgId;     ///< Object ID of image currently being processed
     int64_t m_curVsId;      ///< Object ID of volume system currently being processed
     int64_t m_curVolId;     ///< Object ID of volume currently being processed
@@ -115,7 +124,7 @@ class TskAutoDb:public TskAuto {
     TSK_HDB_INFO * m_knownBadDb;
     bool m_noFatFsOrphans;
     bool m_addUnallocSpace;
-	int64_t m_chunkSize;
+    int64_t m_chunkSize;
     bool m_foundStructure;  ///< Set to true when we find either a volume or file system
     bool m_attributeAdded; ///< Set to true when an attribute was added by processAttributes
 
@@ -130,16 +139,16 @@ class TskAutoDb:public TskAuto {
         const TskAutoDb & tskAutoDb;
         const TSK_FS_INFO & fsInfo;
         const int64_t fsObjId;
-		vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;																																										
+        vector<TSK_DB_FILE_LAYOUT_RANGE> ranges;																																										
         TSK_DADDR_T curRangeStart;
-		int64_t size;
-		const int64_t chunkSize;
+        int64_t size;
+        const int64_t chunkSize;
         TSK_DADDR_T prevBlock;
         bool isStart;
         uint32_t nextSequenceNo;
     } UNALLOC_BLOCK_WLK_TRACK;
 
-    uint8_t addImageDetails(const char *const images[], int);
+    uint8_t addImageDetails(const char *const images[], int, const char *);
     TSK_RETVAL_ENUM insertFileData(TSK_FS_FILE * fs_file,
         const TSK_FS_ATTR *, const char *path,
         const unsigned char *const md5,
@@ -173,7 +182,9 @@ class TskCaseDb {
     ~TskCaseDb();
 
     static TskCaseDb *newDb(const TSK_TCHAR * path);
+    static TskCaseDb *newDb(const TSK_TCHAR * const path, CaseDbConnectionInfo * info);
     static TskCaseDb *openDb(const TSK_TCHAR * path);
+    static TskCaseDb *openDb(const TSK_TCHAR * path, CaseDbConnectionInfo * info);
 
     void clearLookupDatabases();
     uint8_t setNSRLHashDb(TSK_TCHAR * const indexFile);
@@ -187,9 +198,8 @@ class TskCaseDb {
     // prevent copying until we add proper logic to handle it
     TskCaseDb(const TskCaseDb&);
     TskCaseDb & operator=(const TskCaseDb&);
-
-    TskCaseDb(TskDbSqlite * a_db);
-    TskDbSqlite *m_db;
+    TskCaseDb(TskDb * a_db);
+    TskDb *m_db;
     TSK_HDB_INFO * m_NSRLDb;
     TSK_HDB_INFO * m_knownBadDb;
 };

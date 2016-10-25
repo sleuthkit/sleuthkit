@@ -47,6 +47,8 @@ extern "C" {
 /* (64 * 1024) = 65536 */
 #define NTFS_MAX_UNCOMPRESSION_BUFFER_SIZE 65536
 
+#define NTFS_UPDATE_SEQ_STRIDE  512
+
 
 
 /************************************************************************
@@ -374,6 +376,7 @@ extern "C" {
 
 /*
  * Starting at begin_off is a stream of ntfs_idxentry structures 
+ * All offsets are relative to start of the ntfs_idxelist structure
  */
     typedef struct {
         uint8_t begin_off[4];   /* offset to start of seq of idx entries */
@@ -642,6 +645,9 @@ extern "C" {
         NTFS_SXX_BUFFER sii_data;       // (r/w shared - lock) 
         NTFS_SXX_BUFFER sds_data;       // (r/w shared - lock) 
 #endif
+
+        uint32_t alloc_file_count;      // number of allocated regular files, will be -1
+                                        // until a directory is opened.
     } NTFS_INFO;
 
 

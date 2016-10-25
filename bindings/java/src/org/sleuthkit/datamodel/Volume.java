@@ -39,10 +39,10 @@ public class Volume extends AbstractContent {
 	/**
 	 * Constructor to create the data object mapped from tsk_vs_parts entry
 	 *
-	 * @param db database object
+	 * @param db              database object
 	 * @param obj_id
 	 * @param addr
-	 * @param startSector starting sector, relative to start of VS
+	 * @param startSector     starting sector, relative to start of VS
 	 * @param lengthInSectors
 	 * @param flags
 	 * @param desc
@@ -182,6 +182,7 @@ public class Volume extends AbstractContent {
 	 * Convert volume type flag to string
 	 *
 	 * @param vsFlag long flag to convert
+	 *
 	 * @return string representation
 	 */
 	public static String vsFlagToValue(long vsFlag) {
@@ -200,6 +201,7 @@ public class Volume extends AbstractContent {
 	 * Convert volume flag string to long
 	 *
 	 * @param vsFlag string representation of the flag
+	 *
 	 * @return long representation of the flag
 	 */
 	public static long valueToVsFlag(String vsFlag) {
@@ -218,6 +220,7 @@ public class Volume extends AbstractContent {
 	 * Convert long representation of the flag to user readable format
 	 *
 	 * @param vsFlag long repr. of the flag
+	 *
 	 * @return user readable string representation
 	 */
 	public static String vsFlagToString(long vsFlag) {
@@ -264,6 +267,7 @@ public class Volume extends AbstractContent {
 
 	/**
 	 * @return a list of FileSystem that are direct descendents of this Image.
+	 *
 	 * @throws TskCoreException
 	 */
 	public List<FileSystem> getFileSystems() throws TskCoreException {

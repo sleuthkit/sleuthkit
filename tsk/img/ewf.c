@@ -34,9 +34,7 @@ getError(libewf_error_t * ewf_error,
     error_string[0] = '\0';
     retval = libewf_error_backtrace_sprint(ewf_error,
         error_string, TSK_EWF_ERROR_STRING_SIZE);
-    if (retval)
-        return 1;
-    return 0;
+    return retval <= 0;
 }
 #endif
 
@@ -140,11 +138,15 @@ ewf_image_close(TSK_IMG_INFO * img_info)
     }
     else {
         libewf_error_t *error;
+#ifdef TSK_WIN32
+        libewf_glob_wide_free( ewf_info->images, ewf_info->num_imgs, &error);
+#else
         libewf_glob_free( ewf_info->images, ewf_info->num_imgs, &error);
+#endif
     }
 
     tsk_deinit_lock(&(ewf_info->read_lock));
-    tsk_img_free(img_info);
+    tsk_img_free(ewf_info);
 }
 
 /* Tests if the image file header against the
@@ -196,6 +198,7 @@ TSK_IMG_INFO *
 ewf_open(int a_num_img,
     const TSK_TCHAR * const a_images[], unsigned int a_ssize)
 {
+    int is_error;
 #if defined( HAVE_LIBEWF_V2_API )
     char error_string[TSK_EWF_ERROR_STRING_SIZE];
 
@@ -225,14 +228,15 @@ ewf_open(int a_num_img,
     if (a_num_img == 1) {
 #if defined( HAVE_LIBEWF_V2_API)
 #ifdef TSK_WIN32
-        if (libewf_glob_wide(a_images[0], TSTRLEN(a_images[0]),
+        is_error = (libewf_glob_wide(a_images[0], TSTRLEN(a_images[0]),
                 LIBEWF_FORMAT_UNKNOWN, &ewf_info->images,
-                &ewf_info->num_imgs, &ewf_error) == -1) {
+                &ewf_info->num_imgs, &ewf_error) == -1);
 #else
-        if (libewf_glob(a_images[0], TSTRLEN(a_images[0]),
+        is_error = (libewf_glob(a_images[0], TSTRLEN(a_images[0]),
                 LIBEWF_FORMAT_UNKNOWN, &ewf_info->images,
-                &ewf_info->num_imgs, &ewf_error) == -1) {
+                &ewf_info->num_imgs, &ewf_error) == -1);
 #endif
+        if (is_error){
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
 
@@ -297,10 +301,11 @@ ewf_open(int a_num_img,
 
     // Check the file signature before we call the library open
 #if defined( TSK_WIN32 )
-    if (libewf_check_file_signature_wide(a_images[0], &ewf_error) != 1)
+    is_error = (libewf_check_file_signature_wide(a_images[0], &ewf_error) != 1);
 #else
-    if (libewf_check_file_signature(a_images[0], &ewf_error) != 1)
+    is_error = (libewf_check_file_signature(a_images[0], &ewf_error) != 1);
 #endif
+    if (is_error)
     {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
@@ -335,14 +340,15 @@ ewf_open(int a_num_img,
         return (NULL);
     }
 #if defined( TSK_WIN32 )
-    if (libewf_handle_open_wide(ewf_info->handle,
+    is_error = (libewf_handle_open_wide(ewf_info->handle,
             (wchar_t * const *) ewf_info->images,
-            ewf_info->num_imgs, LIBEWF_OPEN_READ, &ewf_error) != 1)
+            ewf_info->num_imgs, LIBEWF_OPEN_READ, &ewf_error) != 1);
 #else
-    if (libewf_handle_open(ewf_info->handle,
+    is_error = (libewf_handle_open(ewf_info->handle,
             (char *const *) ewf_info->images,
-            ewf_info->num_imgs, LIBEWF_OPEN_READ, &ewf_error) != 1)
+            ewf_info->num_imgs, LIBEWF_OPEN_READ, &ewf_error) != 1);
 #endif
+    if (is_error)
     {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
@@ -403,10 +409,11 @@ ewf_open(int a_num_img,
 
     // Check the file signature before we call the library open
 #if defined( TSK_WIN32 )
-    if (libewf_check_file_signature_wide(a_images[0]) != 1)
+    is_error = (libewf_check_file_signature_wide(a_images[0]) != 1);
 #else
-    if (libewf_check_file_signature(a_images[0]) != 1)
+    is_error = (libewf_check_file_signature(a_images[0]) != 1);
 #endif
+    if (is_error)
     {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_MAGIC);

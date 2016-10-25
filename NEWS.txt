@@ -1,6 +1,26 @@
 Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
+
+
+---------------- VERSION 4.3.1 --------------
+- NTFS works on 4k sectors
+- Added support in Java to store local files in encoded form (XORed)
+- Added Java Account object into datamodel
+- Added notion of a review status to blackboard artifacts
+- Upgraded version of PostgreSQL
+- Various minor bug fixes
+
+
+---------------- VERSION 4.3.0 --------------
+- PostgreSQL support (Windows only)
+- New Release_ NoLibs Visual Studio target
+- Support for virtual machine formats via libvmdk and libvhdi (Windows only)
+- Schema updates (data sources table, mime type, attributes store type)
+- tsk_img_open can take externally created TSK_IMG_INFO
+- Various minor bug fixes
+
+
 ---------------- VERSION 4.2.0 --------------
 - ExFAT support added
 - New database schema

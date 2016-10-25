@@ -27,6 +27,7 @@ public interface SleuthkitVisitableItem {
 	 * visitor pattern support
 	 *
 	 * @param v visitor
+	 *
 	 * @return visitor return value
 	 */
 	public <T> T accept(SleuthkitItemVisitor<T> v);

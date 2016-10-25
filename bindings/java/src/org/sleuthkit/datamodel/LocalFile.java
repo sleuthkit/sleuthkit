@@ -1,7 +1,7 @@
 /*
- * Sleuth Kit Data Model
+ * SleuthKit Java Bindings
  * 
- * Copyright 2013 Basis Technology Corp.
+ * Copyright 2011-2016 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +20,6 @@ package org.sleuthkit.datamodel;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
@@ -29,157 +28,321 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 
 /**
- * Represents a local file (on user's machine) that has been added to the case
+ * A representation of a local/logical file (e.g., on a user's machine) that has
+ * been added to a case.
  */
 public class LocalFile extends AbstractFile {
 
-	private static final Logger logger = Logger.getLogger(LocalFile.class.getName());
-
 	/**
-	 * Create a db representation of a local file, passing a more specific file
-	 * type
+	 * Constructs a representation of a local/logical file (e.g., on a user's
+	 * machine) that has been added to the case database.
 	 *
-	 * @param db
-	 * @param objId object if of this file already in database
-	 * @param name name of this local file
-	 * @param fileType TSK_DB_FILES_TYPE_ENUM type of the file (local of more
-	 * specific)
-	 * @param dirType
-	 * @param metaType
-	 * @param dirFlag
-	 * @param metaFlags
-	 * @param size size of the file
-	 * @param ctime
-	 * @param crtime
-	 * @param atime
-	 * @param mtime
-	 * @param md5Hash
-	 * @param knownState
-	 * @param parentPath path of the parent of this local file (e.g. fs zip
-	 * file, or another local file path)
-	 * @param localPath local absolute path of this local file
+	 * @param db                 The case database to which the file has been
+	 *                           added.
+	 * @param objId              The object id of the file in the case database.
+	 * @param name               The name of the file.
+	 * @param fileType           The type of the file.
+	 * @param dirType            The type of the file, usually as reported in
+	 *                           the name structure of the file system. May be
+	 *                           set to TSK_FS_NAME_TYPE_ENUM.UNDEF.
+	 * @param metaType           The type of the file, usually as reported in
+	 *                           the metadata structure of the file system. May
+	 *                           be set to
+	 *                           TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
+	 * @param dirFlag            The allocated status of the file, usually as
+	 *                           reported in the name structure of the file
+	 *                           system.
+	 * @param metaFlags          The allocated status of the file, usually as
+	 *                           reported in the metadata structure of the file
+	 *                           system.
+	 * @param size               The size of the file.
+	 * @param ctime              The changed time of the file.
+	 * @param crtime             The created time of the file.
+	 * @param atime              The accessed time of the file.
+	 * @param mtime              The modified time of the file.
+	 * @param mimeType           The MIME type of the file, null if it has not
+	 *                           yet been determined.
+	 * @param md5Hash            The MD5 hash of the file, null if not yet
+	 *                           calculated.
+	 * @param knownState         The known state of the file from a hash
+	 *                           database lookup, null if not yet looked up.
+	 * @param parentId           The object id of parent of the file.
+	 * @param parentPath         The path of the parent of the file.
+	 * @param dataSourceObjectId The object id of the data source for the file.
+	 * @param localPath          The absolute path of the file in secondary
+	 *                           storage.
 	 */
-	protected LocalFile(SleuthkitCase db, long objId, String name, TSK_DB_FILES_TYPE_ENUM fileType,
-			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag,
-			short metaFlags, long size,
+	LocalFile(SleuthkitCase db,
+			long objId,
+			String name,
+			TSK_DB_FILES_TYPE_ENUM fileType,
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
+			long size,
 			long ctime, long crtime, long atime, long mtime,
-			String md5Hash,
-			FileKnown knownState, String parentPath, String localPath) {
-		super(db, objId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short) 0,
+			String mimeType, String md5Hash, FileKnown knownState,
+			long parentId, String parentPath,
+			long dataSourceObjectId,
+			String localPath,
+			TskData.EncodingType encodingType) {
+		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0,
 				name, fileType, 0L, 0, dirType, metaType, dirFlag,
-				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath);
-
-		//use the local path functionality of AbstractFile, this sets up the infrastructure for it
-		super.setLocalPath(localPath, true); //local paths for local files are absolute paths
-	}
-
-	/**
-	 * Create a db representation of a local file, passing a more specific file
-	 * type
-	 *
-	 * @param db
-	 * @param objId object if of this file already in database
-	 * @param name name of this local file
-	 * @param fileType TSK_DB_FILES_TYPE_ENUM type of the file (LOCAL or more
-	 * specific)
-	 * @param dirType
-	 * @param metaType
-	 * @param dirFlag
-	 * @param metaFlags
-	 * @param size size of the file
-	 * @param ctime
-	 * @param crtime
-	 * @param atime
-	 * @param mtime
-	 * @param md5Hash
-	 * @param knownState
-	 * @param parentPath path of the parent of this local file (e.g. virtual dir
-	 * or another local file path)
-	 * @param localPath local path of this local file, relative to the db path
-	 * @param parentId parent id of this local file to set if available
-	 */
-	protected LocalFile(SleuthkitCase db, long objId, String name, TSK_DB_FILES_TYPE_ENUM fileType, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size,
-			long ctime, long crtime, long atime, long mtime,
-			String md5Hash, FileKnown knownState, String parentPath, String localPath, long parentId) {
-		this(db, objId, name, fileType, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, md5Hash, knownState, parentPath, localPath);
-
+				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath, mimeType);
+		// TODO (AUT-1904): The parent id should be passed to AbstractContent 
+		// through the class hierarchy contructors, using 
+		// AbstractContent.UNKNOWN_ID as needed.
 		if (parentId > 0) {
 			setParentId(parentId);
 		}
-
+		super.setLocalFilePath(localPath, true);
+		setEncodingType(encodingType);
 	}
 
 	/**
-	 * Create a db representation of a local file
+	 * Gets the extents in terms of byte addresses of this local file within its
+	 * data source, an empty list.
 	 *
-	 * @param db
-	 * @param objId object if of this file already in database
-	 * @param name name of this local file
-	 * @param dirType
-	 * @param metaType
-	 * @param dirFlag
-	 * @param metaFlags
-	 * @param size size of the file
-	 * @param ctime
-	 * @param crtime
-	 * @param atime
-	 * @param mtime
-	 * @param md5Hash
-	 * @param knownState
-	 * @param parentPath path of the parent of this local file (e.g. virtual dir
-	 * or another local file path)
-	 * @param localPath local path of this local file, relative to the db path
-	 * @param parentId parent id of this local file to set if available
+	 * @return An empty list of extents (TskFileRange objects)
+	 *
+	 * @throws TskCoreException if there was an error querying the case
+	 *                          database.
 	 */
-	protected LocalFile(SleuthkitCase db, long objId, String name, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size,
-			long ctime, long crtime, long atime, long mtime,
-			String md5Hash, FileKnown knownState, String parentPath, String localPath, long parentId) {
-		this(db, objId, name, TSK_DB_FILES_TYPE_ENUM.LOCAL, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, md5Hash, knownState, parentPath, localPath);
-	}
-
 	@Override
 	public List<TskFileRange> getRanges() throws TskCoreException {
 		return Collections.<TskFileRange>emptyList();
 	}
 
+	/**
+	 * Indicates whether or not this local file is the root of a file system,
+	 * always returns false.
+	 *
+	 * @return False.
+	 */
 	@Override
 	public boolean isRoot() {
-		//not a root of a fs, since it always has a parent
 		return false;
 	}
 
+	/**
+	 * Gets the derived or local files, if any, that are children of this local
+	 * file.
+	 *
+	 * @return A list of the children.
+	 *
+	 * @throws TskCoreException if there was an error querying the case
+	 *                          database.
+	 */
+	@Override
+	public List<Content> getChildren() throws TskCoreException {
+		final SleuthkitCase tskCase = getSleuthkitCase();
+		final List<Content> children = tskCase.getAbstractFileChildren(this, TSK_DB_FILES_TYPE_ENUM.DERIVED);
+		children.addAll(tskCase.getAbstractFileChildren(this, TSK_DB_FILES_TYPE_ENUM.LOCAL));
+		return children;
+	}
+
+	/**
+	 * Gets the object ids of the derived or local files, if any, that are
+	 * children of this local file.
+	 *
+	 * @return A list of the children.
+	 *
+	 * @throws TskCoreException if there was an error querying the case
+	 *                          database.
+	 */
+	@Override
+	public List<Long> getChildrenIds() throws TskCoreException {
+		final SleuthkitCase tskCase = getSleuthkitCase();
+		final List<Long> childIds = tskCase.getAbstractFileChildrenIds(this, TSK_DB_FILES_TYPE_ENUM.DERIVED);
+		childIds.addAll(tskCase.getAbstractFileChildrenIds(this, TSK_DB_FILES_TYPE_ENUM.LOCAL));
+		return childIds;
+	}
+
+	/**
+	 * Accepts a content visitor (Visitor design pattern).
+	 *
+	 * @param visitor A ContentVisitor supplying an algorithm to run using this
+	 *                local file as input.
+	 *
+	 * @return The output of the algorithm.
+	 */
 	@Override
 	public <T> T accept(ContentVisitor<T> v) {
 		return v.visit(this);
 	}
 
-	@Override
-	public List<Content> getChildren() throws TskCoreException {
-		//local file/dir children, can only be other local or derived files
-		final SleuthkitCase tskCase = getSleuthkitCase();
-		final List<Content> ret = tskCase.getAbstractFileChildren(this, TSK_DB_FILES_TYPE_ENUM.DERIVED);
-		ret.addAll(tskCase.getAbstractFileChildren(this, TSK_DB_FILES_TYPE_ENUM.LOCAL));
-
-		return ret;
-	}
-
-	@Override
-	public List<Long> getChildrenIds() throws TskCoreException {
-		//local file/dir children, can only be other local or derived files
-		final SleuthkitCase tskCase = getSleuthkitCase();
-		final List<Long> ret = tskCase.getAbstractFileChildrenIds(this, TSK_DB_FILES_TYPE_ENUM.DERIVED);
-		ret.addAll(tskCase.getAbstractFileChildrenIds(this, TSK_DB_FILES_TYPE_ENUM.LOCAL));
-
-		return ret;
-	}
-
+	/**
+	 * Accepts a Sleuthkit item visitor (Visitor design pattern).
+	 *
+	 * @param visitor A SleuthkitItemVisitor supplying an algorithm to run using
+	 *                this local file as input.
+	 *
+	 * @return The output of the algorithm.
+	 */
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
 	}
 
+	/**
+	 * Provides a string representation of this local file.
+	 *
+	 * @param preserveState True if state should be included in the string
+	 *                      representation of this object.
+	 *
+	 * @throws TskCoreException if there was an error querying the case
+	 *                          database.
+	 */
 	@Override
 	public String toString(boolean preserveState) {
 		return super.toString(preserveState) + "LocalFile [\t" + "]\t"; //NON-NLS
+	}
+
+	/**
+	 * Constructs a representation of a local/logical file (e.g., on a user's
+	 * machine) that has been added to the case database.
+	 *
+	 * @param db         The case database to which the file has been added.
+	 * @param objId      The object id of the file in the case database.
+	 * @param name       The name of the file.
+	 * @param fileType   The type of the file.
+	 * @param dirType    The type of the file, usually as reported in the name
+	 *                   structure of the file system. May be set to
+	 *                   TSK_FS_NAME_TYPE_ENUM.UNDEF.
+	 * @param metaType   The type of the file, usually as reported in the
+	 *                   metadata structure of the file system. May be set to
+	 *                   TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
+	 * @param dirFlag    The allocated status of the file, usually as reported
+	 *                   in the name structure of the file system.
+	 * @param metaFlags  The allocated status of the file, usually as reported
+	 *                   in the metadata structure of the file system.
+	 * @param size       The size of the file.
+	 * @param ctime      The changed time of the file.
+	 * @param crtime     The created time of the file.
+	 * @param atime      The accessed time of the file.
+	 * @param mtime      The modified time of the file.
+	 * @param md5Hash    The MD5 hash of the file, null if not yet calculated.
+	 * @param knownState The known state of the file from a hash database
+	 *                   lookup, null if not yet looked up.
+	 * @param parentPath The path of the parent of the file.
+	 * @param localPath  The absolute path of the file in secondary storage.
+	 *
+	 * @deprecated Do not make subclasses outside of this package.
+	 */
+	@Deprecated
+	@SuppressWarnings("deprecation")
+	protected LocalFile(SleuthkitCase db,
+			long objId,
+			String name,
+			TSK_DB_FILES_TYPE_ENUM fileType,
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
+			long size,
+			long ctime, long crtime, long atime, long mtime,
+			String md5Hash, FileKnown knownState,
+			String parentPath,
+			String localPath) {
+		this(db,
+				objId,
+				name,
+				fileType,
+				dirType, metaType,
+				dirFlag, metaFlags,
+				size,
+				ctime, crtime, atime, mtime,
+				null, md5Hash, knownState,
+				AbstractContent.UNKNOWN_ID, parentPath,
+				db.getDataSourceObjectId(objId),
+				localPath,
+				TskData.EncodingType.NONE);
+	}
+
+	/**
+	 * Constructs a representation of a local/logical file (e.g., on a user's
+	 * machine) that has been added to the case database.
+	 *
+	 * @param db         The case database to which the file has been added.
+	 * @param objId      The object id of the file in the case database.
+	 * @param name       The name of the file.
+	 * @param fileType   The type of the file.
+	 * @param dirType    The type of the file, usually as reported in the name
+	 *                   structure of the file system. May be set to
+	 *                   TSK_FS_NAME_TYPE_ENUM.UNDEF.
+	 * @param metaType   The type of the file, usually as reported in the
+	 *                   metadata structure of the file system. May be set to
+	 *                   TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
+	 * @param dirFlag    The allocated status of the file, usually as reported
+	 *                   in the name structure of the file system.
+	 * @param metaFlags  The allocated status of the file, usually as reported
+	 *                   in the metadata structure of the file system.
+	 * @param size       The size of the file.
+	 * @param ctime      The changed time of the file.
+	 * @param crtime     The created time of the file.
+	 * @param atime      The accessed time of the file.
+	 * @param mtime      The modified time of the file.
+	 * @param md5Hash    The MD5 hash of the file, null if not yet calculated.
+	 * @param knownState The known state of the file from a hash database
+	 *                   lookup, null if not yet looked up.
+	 * @param parentPath The path of the parent of the file.
+	 * @param localPath  The absolute path of the file in secondary storage.
+	 * @param parentId   The object id of parent of the file.
+	 *
+	 * @deprecated Do not make subclasses outside of this package.
+	 */
+	@Deprecated
+	protected LocalFile(SleuthkitCase db,
+			long objId,
+			String name,
+			TSK_DB_FILES_TYPE_ENUM fileType,
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
+			long size,
+			long ctime, long crtime, long atime, long mtime,
+			String md5Hash, FileKnown knownState,
+			String parentPath, String localPath, long parentId) {
+		this(db, objId, name, fileType, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, md5Hash, knownState, parentPath, localPath);
+	}
+
+	/**
+	 * Constructs a representation of a local/logical file (e.g., on a user's
+	 * machine) that has been added to the case.
+	 *
+	 * @param db         The case database to which the file has been added.
+	 * @param objId      The object id of the file in the case database.
+	 * @param name       The name of the file.
+	 * @param dirType    The type of the file, usually as reported in the name
+	 *                   structure of the file system. May be set to
+	 *                   TSK_FS_NAME_TYPE_ENUM.UNDEF.
+	 * @param metaType   The type of the file, usually as reported in the
+	 *                   metadata structure of the file system. May be set to
+	 *                   TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
+	 * @param dirFlag    The allocated status of the file, usually as reported
+	 *                   in the name structure of the file system.
+	 * @param metaFlags  The allocated status of the file, usually as reported
+	 *                   in the metadata structure of the file system.
+	 * @param size       The size of the file.
+	 * @param ctime      The changed time of the file.
+	 * @param crtime     The created time of the file.
+	 * @param atime      The accessed time of the file.
+	 * @param mtime      The modified time of the file.
+	 * @param md5Hash    The MD5 hash of the file, null if not yet calculated.
+	 * @param knownState The known state of the file from a hash database
+	 *                   lookup, null if not yet looked up.
+	 * @param parentPath The path of the parent of the file.
+	 * @param localPath  The absolute path of the file in secondary storage.
+	 * @param parentId   The object id of parent of the file.
+	 *
+	 * @deprecated Do not make subclasses outside of this package.
+	 */
+	@Deprecated
+	protected LocalFile(SleuthkitCase db,
+			long objId,
+			String name,
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
+			long size,
+			long ctime, long crtime, long atime, long mtime,
+			String md5Hash, FileKnown knownState,
+			String parentPath, String localPath, long parentId) {
+		this(db, objId, name, TSK_DB_FILES_TYPE_ENUM.LOCAL, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, md5Hash, knownState, parentPath, localPath);
 	}
 }

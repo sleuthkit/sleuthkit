@@ -32,6 +32,7 @@
 /* constants for first byte of name[] */
 #define FATXXFS_SLOT_E5		0x05    /* actual value is 0xe5 */
 #define FATXXFS_SLOT_DELETED	0xe5
+#define FATXXFS_SLOT_EMPTY 0x00
 
 /* Macro to test allocation status
  * Have seen FAT image that uses non-standard flags in the short name (00 00 -> unallocated, 20 00 -> allocated)

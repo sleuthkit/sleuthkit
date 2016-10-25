@@ -185,7 +185,7 @@ tsk_error_get()
 
     memset(errstr_print, 0, TSK_ERROR_STRING_MAX_LENGTH);
     if (t_errno & TSK_ERR_AUX) {
-        if ((TSK_ERR_MASK && t_errno) < TSK_ERR_AUX_MAX)
+        if ((TSK_ERR_MASK & t_errno) < TSK_ERR_AUX_MAX)
             snprintf(&errstr_print[pidx],
                 TSK_ERROR_STRING_MAX_LENGTH - pidx, "%s",
                 tsk_err_aux_str[t_errno & TSK_ERR_MASK]);

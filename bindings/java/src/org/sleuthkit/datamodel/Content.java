@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  * 
- * Copyright 2011 Basis Technology Corp.
+ * Copyright 2011-2016 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,12 +35,14 @@ public interface Content extends SleuthkitVisitableItem {
 	 * Reads data that this content object is associated with (file contents,
 	 * volume contents, etc.).
 	 *
-	 * @param buf a character array of data (in bytes) to copy read data to
+	 * @param buf    a character array of data (in bytes) to copy read data to
 	 * @param offset byte offset in the content to start reading from
-	 * @param len number of bytes to read into buf.
+	 * @param len    number of bytes to read into buf.
+	 *
 	 * @return num of bytes read, or -1 on error
+	 *
 	 * @throws TskCoreException if critical error occurred during read in the
-	 * tsk core
+	 *                          tsk core
 	 */
 	public int read(byte[] buf, long offset, long len) throws TskCoreException;
 
@@ -56,7 +58,7 @@ public interface Content extends SleuthkitVisitableItem {
 	 * you should be able to read from it. In some cases, data corruption may
 	 * mean that you cannot read this much data.
 	 *
-	 * @return size of the content
+	 * @return size of the content in bytes
 	 */
 	public long getSize();
 
@@ -64,6 +66,7 @@ public interface Content extends SleuthkitVisitableItem {
 	 * Visitor pattern support
 	 *
 	 * @param v visitor supplying an algorithm to run on the content object
+	 *
 	 * @return visitor return value resulting from running the algorithm
 	 */
 	public <T> T accept(ContentVisitor<T> v);
@@ -77,8 +80,8 @@ public interface Content extends SleuthkitVisitableItem {
 
 	/**
 	 * @return returns the full path to this Content object starting with a "/"
-	 * followed by the Image name and similarly for all other segments in the
-	 * hierarchy.
+	 *         followed by the Image name and similarly for all other segments
+	 *         in the hierarchy.
 	 */
 	public String getUniquePath() throws TskCoreException;
 
@@ -91,9 +94,11 @@ public interface Content extends SleuthkitVisitableItem {
 	public long getId();
 
 	/**
-	 * Get the root data source of this content (image, virtual directory, etc.)
+	 * Gets the root data source (image, virtual directory, etc.) of this
+	 * content.
 	 *
 	 * @return Content associated with data source or null if one can't be found
+	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public Content getDataSource() throws TskCoreException;
@@ -102,6 +107,7 @@ public interface Content extends SleuthkitVisitableItem {
 	 * Gets the child content objects of this content.
 	 *
 	 * @return List of children
+	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public List<Content> getChildren() throws TskCoreException;
@@ -111,6 +117,7 @@ public interface Content extends SleuthkitVisitableItem {
 	 * should be more efficient than getting children and checking it empty.
 	 *
 	 * @return true if has children, false otherwise.
+	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public boolean hasChildren() throws TskCoreException;
@@ -120,13 +127,15 @@ public interface Content extends SleuthkitVisitableItem {
 	 * than getting children and counting them.
 	 *
 	 * @return children count
+	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public int getChildrenCount() throws TskCoreException;
 
 	/**
 	 * @return returns the parent of this Content object or null if there isn't
-	 * one as is the case for Image.
+	 *         one as is the case for Image.
+	 *
 	 * @throws TskCoreException
 	 */
 	public Content getParent() throws TskCoreException;
@@ -135,6 +144,7 @@ public interface Content extends SleuthkitVisitableItem {
 	 * Gets the child content ids of this content.
 	 *
 	 * @return List of children ids
+	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public List<Long> getChildrenIds() throws TskCoreException;
@@ -143,9 +153,11 @@ public interface Content extends SleuthkitVisitableItem {
 	 * Create and add an artifact associated with this content to the blackboard
 	 *
 	 * @param artifactTypeID id of the artifact type (if the id doesn't already
-	 * exist an exception will be thrown)
+	 *                       exist an exception will be thrown)
+	 *
 	 * @return the blackboard artifact created (the artifact type id can be
-	 * looked up from this)
+	 *         looked up from this)
+	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException;
@@ -154,8 +166,10 @@ public interface Content extends SleuthkitVisitableItem {
 	 * Create and add an artifact associated with this content to the blackboard
 	 *
 	 * @param type artifact enum tyoe
+	 *
 	 * @return the blackboard artifact created (the artifact type id can be
-	 * looked up from this)
+	 *         looked up from this)
+	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException;
@@ -165,7 +179,9 @@ public interface Content extends SleuthkitVisitableItem {
 	 * name
 	 *
 	 * @param artifactTypeName name of the type to look up
+	 *
 	 * @return a list of blackboard artifacts matching the type
+	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskCoreException;
@@ -175,6 +191,7 @@ public interface Content extends SleuthkitVisitableItem {
 	 * attributes can be added to it. Creates one if it does not already exist.
 	 *
 	 * @return Instance of the TSK_GEN_INFO artifact
+	 *
 	 * @throws TskCoreException
 	 */
 	public BlackboardArtifact getGenInfoArtifact() throws TskCoreException;
@@ -185,9 +202,11 @@ public interface Content extends SleuthkitVisitableItem {
 	 * on the create argument.
 	 *
 	 * @param create If true, an artifact will be created if it does not already
-	 * exist.
+	 *               exist.
+	 *
 	 * @return Instance of the TSK_GEN_INFO artifact or null if artifact does
-	 * not already exist and create was set to false
+	 *         not already exist and create was set to false
+	 *
 	 * @throws TskCoreException
 	 */
 	public BlackboardArtifact getGenInfoArtifact(boolean create) throws TskCoreException;
@@ -196,7 +215,8 @@ public interface Content extends SleuthkitVisitableItem {
 	 * Return attributes of a given type from TSK_GEN_INFO.
 	 *
 	 * @param attr_type Attribute type to find inside of the TSK_GEN_INFO
-	 * artifact.
+	 *                  artifact.
+	 *
 	 * @return Attributes
 	 */
 	public ArrayList<BlackboardAttribute> getGenInfoAttributes(BlackboardAttribute.ATTRIBUTE_TYPE attr_type) throws TskCoreException;
@@ -206,7 +226,9 @@ public interface Content extends SleuthkitVisitableItem {
 	 * id
 	 *
 	 * @param artifactTypeID type id to look up
+	 *
 	 * @return a list of blackboard artifacts matching the type
+	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public ArrayList<BlackboardArtifact> getArtifacts(int artifactTypeID) throws TskCoreException;
@@ -215,7 +237,9 @@ public interface Content extends SleuthkitVisitableItem {
 	 * Get all artifacts associated with this content that have the given type
 	 *
 	 * @param type type to look up
+	 *
 	 * @return a list of blackboard artifacts matching the type
+	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException;
@@ -224,6 +248,7 @@ public interface Content extends SleuthkitVisitableItem {
 	 * Get all artifacts associated with this content
 	 *
 	 * @return a list of blackboard artifacts
+	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskCoreException;
@@ -232,7 +257,8 @@ public interface Content extends SleuthkitVisitableItem {
 	 * Get the names of all the hashsets that this content is in.
 	 *
 	 * @return the names of the hashsets that this content is in
-	 * @throwsTskCoreException if critical error occurred within tsk core
+	 *
+	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public Set<String> getHashSetNames() throws TskCoreException;
 
@@ -241,7 +267,9 @@ public interface Content extends SleuthkitVisitableItem {
 	 * given type name
 	 *
 	 * @param artifactTypeName name of the type to look up
+	 *
 	 * @return count of blackboard artifacts matching the type
+	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public long getArtifactsCount(String artifactTypeName) throws TskCoreException;
@@ -251,7 +279,9 @@ public interface Content extends SleuthkitVisitableItem {
 	 * given type id
 	 *
 	 * @param artifactTypeID type id to look up
+	 *
 	 * @return count of blackboard artifacts matching the type
+	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public long getArtifactsCount(int artifactTypeID) throws TskCoreException;
@@ -261,7 +291,9 @@ public interface Content extends SleuthkitVisitableItem {
 	 * given type
 	 *
 	 * @param type type to look up
+	 *
 	 * @return count of blackboard artifacts matching the type
+	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public long getArtifactsCount(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException;
@@ -270,6 +302,7 @@ public interface Content extends SleuthkitVisitableItem {
 	 * Get count of all artifacts associated with this content
 	 *
 	 * @return count of all blackboard artifacts for this content
+	 *
 	 * @throws TskCoreException if critical error occurred within tsk core
 	 */
 	public long getAllArtifactsCount() throws TskCoreException;

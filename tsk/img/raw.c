@@ -727,7 +727,7 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
 }
 
 
-/* tsk_img_malloc - init lock after tsk_malloc 
+/* tsk_img_malloc - tsk_malloc, then set image tag
  * This is for img module and all its inheritances
  */
 void *
@@ -736,25 +736,18 @@ tsk_img_malloc(size_t a_len)
     TSK_IMG_INFO *imgInfo;
     if ((imgInfo = (TSK_IMG_INFO *) tsk_malloc(a_len)) == NULL)
         return NULL;
-    //init lock
-    tsk_init_lock(&(imgInfo->cache_lock));
     imgInfo->tag = TSK_IMG_INFO_TAG;
-
     return (void *) imgInfo;
 }
 
 
-/* tsk_img_free - deinit lock  before free memory 
+/* tsk_img_free - unset image tag, then free memory
  * This is for img module and all its inheritances
  */
 void
 tsk_img_free(void *a_ptr)
 {
     TSK_IMG_INFO *imgInfo = (TSK_IMG_INFO *) a_ptr;
-
-    //deinit lock
-    tsk_deinit_lock(&(imgInfo->cache_lock));
     imgInfo->tag = 0;
-
     free(imgInfo);
 }

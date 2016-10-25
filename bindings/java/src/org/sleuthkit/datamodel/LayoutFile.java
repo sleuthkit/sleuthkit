@@ -1,7 +1,7 @@
 /*
- * Autopsy Forensic Browser
+ * SleuthKit Java Bindings
  * 
- * Copyright 2011 Basis Technology Corp.
+ * Copyright 2011-2016 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,79 +29,141 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 
 /**
- * Layout file object representation of a layout file stored in tsk_files table.
- * Layout files are not fs files, but "virtual" files created from blocks of
- * data (e.g. unallocated) that are treated as files for convenience and
- * uniformity.
+ * A representation of a layout file that has been added to a case. Layout files
+ * are not file system files, but "virtual" files created from blocks of data
+ * (e.g. unallocated) that are treated as files for convenience and uniformity.
  *
- * Because layout files are not real fs files, they only utilize a subset of
- * meta-data attributes. A layout file normally contains 1 or more entry in
- * tsk_file_layout table that define ordered byte block ranges, with respect to
- * the image.
+ * Because layout files are not real file system files, they only utilize a
+ * subset of meta-data attributes. A layout file normally contains one or more
+ * entry in tsk_file_layout table that define ordered byte block ranges, with
+ * respect to the image.
  *
  * The class also supports reads of layout files, reading blocks across ranges
- * in a sequence
+ * in a sequence.
  */
 public class LayoutFile extends AbstractFile {
 
 	private long imageHandle = -1;
 
-	protected LayoutFile(SleuthkitCase db, long objId, String name,
+	/**
+	 * Constructs a representation of a layout file that has been added to a
+	 * case. Layout files are not file system files, but "virtual" files created
+	 * from blocks of data (e.g. unallocated) that are treated as files for
+	 * convenience and uniformity.
+	 *
+	 * @param db                 The case database to which the file has been
+	 *                           added.
+	 * @param objId              The object id of the file in the case database.
+	 * @param dataSourceObjectId The object id of the data source for the file.
+	 * @param name               The name of the file.
+	 * @param fileType           The type of the file.
+	 * @param dirType            The type of the file, usually as reported in
+	 *                           the name structure of the file system. May be
+	 *                           set to TSK_FS_NAME_TYPE_ENUM.UNDEF.
+	 * @param metaType           The type of the file, usually as reported in
+	 *                           the metadata structure of the file system. May
+	 *                           be set to
+	 *                           TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
+	 * @param dirFlag            The allocated status of the file, usually as
+	 *                           reported in the name structure of the file
+	 *                           system.
+	 * @param metaFlags          The allocated status of the file, usually as
+	 *                           reported in the metadata structure of the file
+	 *                           system.
+	 * @param size               The size of the file.
+	 * @param md5Hash            The MD5 hash of the file, null if not yet
+	 *                           calculated.
+	 * @param knownState         The known state of the file from a hash
+	 *                           database lookup, null if not yet looked up.
+	 * @param parentPath         The path of the parent of the file.
+	 * @param mimeType           The MIME type of the file, null if it has not
+	 *                           yet been determined.
+	 */
+	LayoutFile(SleuthkitCase db,
+			long objId,
+			long dataSourceObjectId,
+			String name,
 			TSK_DB_FILES_TYPE_ENUM fileType,
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
-			long size, String md5Hash, FileKnown knownState, String parentPath) {
-		super(db, objId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, (short) 0, name, fileType, 0L, 0, dirType, metaType, dirFlag, metaFlags, size, 0L, 0L, 0L, 0L, (short) 0, 0, 0, md5Hash, knownState, parentPath);
-		//this.size = calcSize(); //update calculated size
+			long size,
+			String md5Hash, FileKnown knownState,
+			String parentPath, String mimeType) {
+		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, name, fileType, 0L, 0, dirType, metaType, dirFlag, metaFlags, size, 0L, 0L, 0L, 0L, (short) 0, 0, 0, md5Hash, knownState, parentPath, mimeType);
 	}
 
 	/**
-	 * Get number of file layout ranges associated with this layout file
+	 * Gets the number of file layout ranges associated with this layout file.
 	 *
-	 * @return number of file layout ranges objects associated
+	 * @return The number of file layout ranges.
 	 */
 	public int getNumParts() {
 		int numParts = 0;
 		try {
 			numParts = getRanges().size();
 		} catch (TskCoreException ex) {
-			Logger.getLogger(LayoutFile.class.getName()).log(Level.INFO, "Error getting layout content ranges for size", ex); //NON-NLS
+			Logger.getLogger(LayoutFile.class.getName()).log(Level.SEVERE, String.format("Error getting layout ranges for layout file (objId = %d)", getId()), ex); //NON-NLS
 		}
 		return numParts;
 	}
 
+	/**
+	 * Indicates whether or not this layout file is the root of a file system,
+	 * always returns false.
+	 *
+	 * @return False.
+	 */
+	@Override
+	public boolean isRoot() {
+		return false;
+	}
+
+	/**
+	 * Gets the derived files, if any, that are children of this file.
+	 *
+	 * @return A list of the children.
+	 *
+	 * @throws TskCoreException if there was an error querying the case
+	 *                          database.
+	 */
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
 		return getSleuthkitCase().getAbstractFileChildren(this, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED);
 	}
 
+	/**
+	 * Gets the object ids of the derived files, if any, that are children of
+	 * this file.
+	 *
+	 * @return A list of the children.
+	 *
+	 * @throws TskCoreException if there was an error querying the case
+	 *                          database.
+	 */
 	@Override
 	public List<Long> getChildrenIds() throws TskCoreException {
 		return getSleuthkitCase().getAbstractFileChildrenIds(this, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED);
 	}
 
 	/**
-	 * Calculate the size from all ranges / blocks
-	 *
-	 * @return total content size in bytes
+	 * Does nothing, a layout file cannot be directly opened, read, or closed.
+	 * Use the readInt method to get layout file content.
 	 */
-	private long calcSize() {
-		long calcSize = 0;
-		try {
-			for (TskFileRange range : getRanges()) {
-				calcSize += range.getByteLen();
-			}
-		} catch (TskCoreException ex) {
-			Logger.getLogger(LayoutFile.class.getName()).log(Level.SEVERE, "Error calculating layout file size from ranges", ex); //NON-NLS
-		}
-		return calcSize;
-	}
-
 	@Override
 	public void close() {
-		//nothing to be closed
 	}
 
+	/**
+	 * Reads bytes from the layout ranges associated with this file.
+	 *
+	 * @param buf    Buffer to read into.
+	 * @param offset Start position in the file.
+	 * @param len    Number of bytes to read.
+	 *
+	 * @return Number of bytes read.
+	 *
+	 * @throws TskCoreException if there is a problem reading the file.
+	 */
 	@Override
 	protected int readInt(byte[] buf, long offset, long len) throws TskCoreException {
 		long offsetInThisLayoutContent = 0; // current offset in this LayoutContent
@@ -140,14 +202,15 @@ public class LayoutFile extends AbstractFile {
 		return bytesRead;
 	}
 
-	/*
-	 * Read bytes from an image into a buffer, starting at given position in buffer
-	 * 
-	 * @param imgHandle		the image to read from
-	 * @param buf			the array to read into
-	 * @param offsetInBuf	where to start in the array
-	 * @param offsetInImage	where to start in the image
-	 * @param lenToRead		how far to read in the image
+	/**
+	 * Reads bytes from an image into a buffer, starting at given position in
+	 * buffer.
+	 *
+	 * @param imgHandle	    The image to read from.
+	 * @param buf	          The array to read into.
+	 * @param offsetInBuf	  Where to start in the array.
+	 * @param offsetInImage	Where to start in the image.
+	 * @param lenToRead	    How far to read in the image.
 	 */
 	private int readImgToOffset(long imgHandle, byte[] buf, int offsetInBuf, long offsetInImage, int lenToRead) throws TskCoreException {
 		byte[] currentBuffer = new byte[lenToRead]; // the buffer for the current range object
@@ -156,23 +219,82 @@ public class LayoutFile extends AbstractFile {
 		return lenRead;
 	}
 
+	/**
+	 * Accepts a content visitor (Visitor design pattern).
+	 *
+	 * @param visitor A ContentVisitor supplying an algorithm to run using this
+	 *                file as input.
+	 *
+	 * @return The output of the algorithm.
+	 */
 	@Override
 	public <T> T accept(ContentVisitor<T> v) {
 		return v.visit(this);
 	}
 
+	/**
+	 * Accepts a Sleuthkit item visitor (Visitor design pattern).
+	 *
+	 * @param visitor A SleuthkitItemVisitor supplying an algorithm to run using
+	 *                this file as input.
+	 *
+	 * @return The output of the algorithm.
+	 */
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
 	}
 
-	@Override
-	public boolean isRoot() {
-		return false;
-	}
-
+	/**
+	 * Provides a string representation of this file.
+	 *
+	 * @param preserveState True if state should be included in the string
+	 *                      representation of this object.
+	 *
+	 * @throws TskCoreException if there was an error querying the case
+	 *                          database.
+	 */
 	@Override
 	public String toString(boolean preserveState) {
 		return super.toString(preserveState) + "LayoutFile [\t" + "]\t"; //NON-NLS
 	}
+
+	/**
+	 * Constructs a representation of a layout file that has been added to a
+	 * case. Layout files are not file system files, but "virtual" files created
+	 * from blocks of data (e.g. unallocated) that are treated as files for
+	 * convenience and uniformity.
+	 *
+	 * @param db         The case database to which the file has been added.
+	 * @param objId      The object id of the file in the case database.
+	 * @param name       The name of the file.
+	 * @param fileType   The type of the file.
+	 * @param dirType    The type of the file, usually as reported in the name
+	 *                   structure of the file system. May be set to
+	 *                   TSK_FS_NAME_TYPE_ENUM.UNDEF.
+	 * @param metaType   The type of the file, usually as reported in the
+	 *                   metadata structure of the file system. May be set to
+	 *                   TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
+	 * @param dirFlag    The allocated status of the file, usually as reported
+	 *                   in the name structure of the file system.
+	 * @param metaFlags  The allocated status of the file, usually as reported
+	 *                   in the metadata structure of the file system.
+	 * @param size       The size of the file.
+	 * @param md5Hash    The MD5 hash of the file, null if not yet calculated.
+	 * @param knownState The known state of the file from a hash database
+	 *                   lookup, null if not yet looked up.
+	 * @param parentPath The path of the parent of the file.
+	 *
+	 * @deprecated Do not make subclasses outside of this package.
+	 */
+	@Deprecated
+	@SuppressWarnings("deprecation")
+	protected LayoutFile(SleuthkitCase db, long objId, String name,
+			TSK_DB_FILES_TYPE_ENUM fileType,
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
+			long size, String md5Hash, FileKnown knownState, String parentPath) {
+		this(db, objId, db.getDataSourceObjectId(objId), name, fileType, dirType, metaType, dirFlag, metaFlags, size, md5Hash, knownState, parentPath, null);
+	}
+
 }

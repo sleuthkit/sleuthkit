@@ -453,7 +453,8 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
                     PRIuOFF ") is larger than FILLER (%" PRIuOFF ") (%"
                     PRIuINUM ")", a_data_run_new->offset,
                     data_run_cur->offset, a_fs_attr->fs_file->meta->addr);
-                dump_attr(a_fs_attr);
+                if (tsk_verbose)
+                    dump_attr(a_fs_attr);
                 return 1;
             }
 
@@ -561,7 +562,8 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
             "): No filler entry for %" PRIuDADDR ". Final: %" PRIuDADDR,
             a_fs_attr->fs_file->meta->addr, a_data_run_new->offset,
             data_run_prev->offset + data_run_prev->len);
-        dump_attr(a_fs_attr);
+        if (tsk_verbose)
+            dump_attr(a_fs_attr);
         return 1;
     }
 
@@ -777,7 +779,6 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
         }
     }
 
-
     /* cycle through the number of runs we have */
     retval = TSK_WALK_CONT;
     for (fs_attr_run = fs_attr->nrd.run; fs_attr_run;
@@ -801,6 +802,7 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
                 tsk_error_set_errstr
                     ("Invalid address in run (too large): %" PRIuDADDR "",
                     addr + len_idx);
+                free(buf);
                 return 1;
             }
 
@@ -841,6 +843,7 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
                         tsk_error_set_errstr2
                             ("tsk_fs_file_walk: Error reading block at %"
                             PRIuDADDR, addr + len_idx);
+                        free(buf);
                         return 1;
                     }
                     if ((off + fs->block_size > fs_attr->nrd.initsize)

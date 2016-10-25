@@ -1,7 +1,7 @@
 /*
- * Sleuth Kit Data Model
+ * SleuthKit Java Bindings
  * 
- * Copyright 2011 Basis Technology Corp.
+ * Copyright 2011-2016 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,9 +30,8 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 
 /**
- * Generalized class that stores metadata that are common to both File and
- * Directory objects stored in tsk_files table Caches internal tsk file handle
- * and reuses it for reads
+ * An abstract base class for representations of a file system files or
+ * directories that have been added to a case.
  *
  * TODO move common getters to AbstractFile class
  */
@@ -40,84 +39,120 @@ public abstract class FsContent extends AbstractFile {
 
 	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
-	///read only database tsk_files fields
-	protected final long fsObjId;
 	private String uniquePath;
-	///read-write database tsk_files fields
 	private final SleuthkitCase tskCase;
-
 	private List<String> metaDataText = null;
+	private volatile FileSystem parentFileSystem;
 
 	/**
-	 * parent file system
+	 * @deprecated Use getFileSystemId instead.
 	 */
-	private volatile FileSystem parentFileSystem;
-	///other members
+	// TODO: Make private.
+	@Deprecated
+	protected final long fsObjId;
+
 	/**
-	 * file Handle
+	 *
+	 * @deprecated Use getFileHandle instead.
 	 */
+	// TODO: Make private.
+	@Deprecated
 	protected volatile long fileHandle = 0;
 
 	/**
-	 * Create an FsContent object from a database object
+	 * Constructs an abstract base class for representations of a file system
+	 * files or directories that have been added to a case.
 	 *
-	 * @param db
-	 * @param objId
-	 * @param fsObjId
-	 * @param attrType
-	 * @param attrId
-	 * @param name
-	 * @param metaAddr
-	 * @param dirType
-	 * @param metaType
-	 * @param dirFlag
-	 * @param metaFlags
-	 * @param size
-	 * @param ctime
-	 * @param crtime
-	 * @param atime
-	 * @param mtime
-	 * @param modes
-	 * @param uid
-	 * @param gid
-	 * @param md5Hash String of MD5 hash of content or null if not known
-	 * @param knownState
-	 * @param parentPath
+	 * @param db                 The case database to which the file has been
+	 *                           added.
+	 * @param objId              The object id of the file in the case database.
+	 * @param dataSourceObjectId The object id of the data source for the file.
+	 * @param fsObjId            The object id of the file system to which this
+	 *                           file belongs.
+	 * @param attrType           The type attribute given to the file by the
+	 *                           file system.
+	 * @param attrId             The type id given to the file by the file
+	 *                           system.
+	 * @param name               The name of the file.
+	 * @param metaAddr           The meta address of the file.
+	 * @param metaSeq            The meta sequence number of the file.
+	 * @param dirType            The type of the file, usually as reported in
+	 *                           the name structure of the file system. May be
+	 *                           set to TSK_FS_NAME_TYPE_ENUM.UNDEF.
+	 * @param metaType           The type of the file, usually as reported in
+	 *                           the metadata structure of the file system. May
+	 *                           be set to
+	 *                           TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
+	 * @param dirFlag            The allocated status of the file, usually as
+	 *                           reported in the name structure of the file
+	 *                           system.
+	 * @param metaFlags          The allocated status of the file, usually as
+	 *                           reported in the metadata structure of the file
+	 *                           system.
+	 * @param size               The size of the file.
+	 * @param ctime              The changed time of the file.
+	 * @param crtime             The created time of the file.
+	 * @param atime              The accessed time of the file.
+	 * @param mtime              The modified time of the file.
+	 * @param modes              The modes for the file.
+	 * @param uid                The UID for the file.
+	 * @param gid                The GID for the file.
+	 * @param md5Hash            The MD5 hash of the file, null if not yet
+	 *                           calculated.
+	 * @param knownState         The known state of the file from a hash
+	 *                           database lookup, null if not yet looked up.
+	 * @param parentPath         The path of the parent of the file.
+	 * @param mimeType           The MIME type of the file, null if it has not
+	 *                           yet been determined.
 	 */
-	FsContent(SleuthkitCase db, long objId, long fsObjId, TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
-			String name, long metaAddr, int metaSeq,
-			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
-			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
-			String parentPath) {
-		super(db, objId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath);
+	@SuppressWarnings("deprecation")
+	FsContent(SleuthkitCase db,
+			long objId,
+			long dataSourceObjectId,
+			long fsObjId,
+			TSK_FS_ATTR_TYPE_ENUM attrType, int attrId,
+			String name,
+			long metaAddr, int metaSeq,
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
+			long size,
+			long ctime, long crtime, long atime, long mtime,
+			short modes, int uid, int gid,
+			String md5Hash, FileKnown knownState,
+			String parentPath,
+			String mimeType) {
+		super(db, objId, dataSourceObjectId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, mimeType);
 		this.tskCase = db;
 		this.fsObjId = fsObjId;
 	}
 
 	/**
-	 * Get the parent file system id
+	 * Get the object id of the parent file system of this file or directory.
 	 *
 	 * @return the parent file system id
 	 */
+	@SuppressWarnings("deprecation")
 	public long getFileSystemId() {
 		return fsObjId;
 	}
 
 	/**
-	 * Sets the parent file system, called by parent during object creation
+	 * Sets the parent file system of this file or directory.
 	 *
-	 * @param parent parent file system object
+	 * @param parent The parent file system object.
 	 */
 	void setFileSystem(FileSystem parent) {
 		parentFileSystem = parent;
 	}
 
 	/**
-	 * Get the parent file system
+	 * Gets the parent file system of this file or directory.
 	 *
 	 * @return the file system object of the parent
+	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
+	@SuppressWarnings("deprecation")
 	public FileSystem getFileSystem() throws TskCoreException {
 		if (parentFileSystem == null) {
 			synchronized (this) {
@@ -130,10 +165,11 @@ public abstract class FsContent extends AbstractFile {
 	}
 
 	/**
-	 * Open JNI file handle if it is not open already
+	 * Opens a JNI file handle for this file or directory.
 	 *
-	 * @throws TskCoreException
+	 * @throws TskCoreException if there is a problem opening the handle.
 	 */
+	@SuppressWarnings("deprecation")
 	private void loadFileHandle() throws TskCoreException {
 		if (fileHandle == 0) {
 			synchronized (this) {
@@ -144,6 +180,28 @@ public abstract class FsContent extends AbstractFile {
 		}
 	}
 
+	/**
+	 * Gets the JNI file handle for this file or directory, zero if the file has
+	 * not been opened by calling loadHandle.
+	 *
+	 * @return The JNI file handle.
+	 */
+	@SuppressWarnings("deprecation")
+	long getFileHandle() {
+		return fileHandle;
+	}
+
+	/**
+	 * Reads bytes from this file or directory.
+	 *
+	 * @param buf    Buffer to read into.
+	 * @param offset Start position in the file.
+	 * @param len    Number of bytes to read.
+	 *
+	 * @return Number of bytes read.
+	 *
+	 * @throws TskCoreException if there is a problem reading the file.
+	 */
 	@Override
 	@SuppressWarnings("deprecation")
 	protected int readInt(byte[] buf, long offset, long len) throws TskCoreException {
@@ -159,7 +217,7 @@ public abstract class FsContent extends AbstractFile {
 			if ((dataSource != null) && (dataSource instanceof Image)) {
 				Image image = (Image) dataSource;
 				if (!image.imageFileExists()) {
-					tskCase.submitError(bundle.getString("FsContent.readInt.err.context.text"),
+					tskCase.submitError(SleuthkitCase.ErrorObserver.Context.IMAGE_READ_ERROR.getContextString(),
 							bundle.getString("FsContent.readInt.err.msg.text"));
 				}
 			}
@@ -178,26 +236,36 @@ public abstract class FsContent extends AbstractFile {
 		}
 	}
 
-	/*
-	 * -------------------------------------------------------------------------
-	 * Getters to retrieve meta-data attributes values
-	 * -------------------------------------------------------------------------
-	 */
 	/**
-	 * Gets parent directory
+	 * Gets the parent directory of this file or directory.
 	 *
-	 * @return the parent Directory
-	 * @throws TskCoreException exception thrown if error occurred in tsk core
+	 * @return The parent directory
+	 *
+	 * @throws TskCoreException if there was an error querying the case
+	 *                          database.
 	 */
 	public AbstractFile getParentDirectory() throws TskCoreException {
 		return getSleuthkitCase().getParentDirectory(this);
 	}
 
+	/**
+	 * Gets the data source (image) for this file or directory directory.
+	 *
+	 * @return The data source.
+	 *
+	 * @throws TskCoreException if there is an error querying the case database.
+	 */
 	@Override
 	public Content getDataSource() throws TskCoreException {
 		return getFileSystem().getDataSource();
 	}
 
+	/**
+	 * Get the full path to this file or directory, starting with a "/" and the
+	 * image name and then all the other segments in the path.
+	 *
+	 * @throws TskCoreException if there is an error querying the case database.
+	 */
 	@Override
 	public synchronized String getUniquePath() throws TskCoreException {
 		if (uniquePath == null) {
@@ -211,11 +279,12 @@ public abstract class FsContent extends AbstractFile {
 	}
 
 	/**
-	 * Return a text-based description of the file's metadata. This is the same
-	 * content as the TSK istat tool produces. Is different information for each
-	 * type of file system.
+	 * Gets a text-based description of the file's metadata. This is the same
+	 * content as the TSK istat tool produces and is different information for
+	 * each type of file system.
 	 *
-	 * @return List of text, one string per line.
+	 * @return List of text, one element per line.
+	 *
 	 * @throws TskCoreException
 	 */
 	public synchronized List<String> getMetaDataText() throws TskCoreException {
@@ -235,7 +304,11 @@ public abstract class FsContent extends AbstractFile {
 		return metaDataText;
 	}
 
+	/**
+	 * Closes the JNI file handle for this file or directory.
+	 */
 	@Override
+	@SuppressWarnings("deprecation")
 	public void close() {
 		if (fileHandle != 0) {
 			synchronized (this) {
@@ -248,6 +321,10 @@ public abstract class FsContent extends AbstractFile {
 		}
 	}
 
+	/**
+	 * Closes the JNI file handle for this file or directory when the FsContent
+	 * object is garbage-collected.
+	 */
 	@Override
 	public void finalize() throws Throwable {
 		try {
@@ -257,7 +334,17 @@ public abstract class FsContent extends AbstractFile {
 		}
 	}
 
+	/**
+	 * Provides a string representation of this file or directory.
+	 *
+	 * @param preserveState True if state should be included in the string
+	 *                      representation of this object.
+	 *
+	 * @throws TskCoreException if there was an error querying the case
+	 *                          database.
+	 */
 	@Override
+	@SuppressWarnings("deprecation")
 	public String toString(boolean preserveState) {
 		return super.toString(preserveState)
 				+ "FsContent [\t" //NON-NLS
@@ -265,5 +352,111 @@ public abstract class FsContent extends AbstractFile {
 				+ "\t" + "uniquePath " + uniquePath //NON-NLS
 				+ "\t" + "fileHandle " + fileHandle //NON-NLS
 				+ "]\t";
+	}
+
+	/**
+	 * Constructs an abstract base class for representations of a file system
+	 * files or directories that have been added to a case.
+	 *
+	 * @param db         The case database to which the file has been added.
+	 * @param objId      The object id of the file in the case database.
+	 * @param fsObjId    The object id of the file system to which this file
+	 *                   belongs.
+	 * @param attrType   The type attribute given to the file by the file
+	 *                   system.
+	 * @param attrId     The type id given to the file by the file system.
+	 * @param name       The name of the file.
+	 * @param metaAddr   The meta address of the file.
+	 * @param metaSeq    The meta sequence number of the file.
+	 * @param dirType    The type of the file, usually as reported in the name
+	 *                   structure of the file system. May be set to
+	 *                   TSK_FS_NAME_TYPE_ENUM.UNDEF.
+	 * @param metaType   The type of the file, usually as reported in the
+	 *                   metadata structure of the file system. May be set to
+	 *                   TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
+	 * @param dirFlag    The allocated status of the file, usually as reported
+	 *                   in the name structure of the file system.
+	 * @param metaFlags  The allocated status of the file, usually as reported
+	 *                   in the metadata structure of the file system.
+	 * @param size       The size of the file.
+	 * @param ctime      The changed time of the file.
+	 * @param crtime     The created time of the file.
+	 * @param atime      The accessed time of the file.
+	 * @param mtime      The modified time of the file.
+	 * @param modes      The modes for the file.
+	 * @param uid        The UID for the file.
+	 * @param gid        The GID for the file.
+	 * @param md5Hash    The MD5 hash of the file, null if not yet calculated.
+	 * @param knownState The known state of the file from a hash database
+	 *                   lookup, null if not yet looked up.
+	 * @param parentPath The path of the parent of the file.
+	 *
+	 * @deprecated Do not make subclasses outside of this package.
+	 */
+	@Deprecated
+	@SuppressWarnings("deprecation")
+	FsContent(SleuthkitCase db, long objId, long fsObjId, TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
+			String name, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime,
+			short modes, int uid, int gid, String md5Hash, FileKnown knownState, String parentPath) {
+		this(db, objId, db.getDataSourceObjectId(objId), fsObjId, attrType, (int) attrId, name, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null);
+	}
+
+	/**
+	 * Constructs an abstract base class for representations of a file system
+	 * files or directories that have been added to a case. This deprecated
+	 * version has attrId filed defined as a short which has since been changed
+	 * to an int.
+	 *
+	 * @param db                 The case database to which the file has been
+	 *                           added.
+	 * @param objId              The object id of the file in the case database.
+	 * @param dataSourceObjectId The object id of the data source for the file.
+	 * @param fsObjId            The object id of the file system to which this
+	 *                           file belongs.
+	 * @param attrType           The type attribute given to the file by the
+	 *                           file system.
+	 * @param attrId             The type id given to the file by the file
+	 *                           system.
+	 * @param name               The name of the file.
+	 * @param metaAddr           The meta address of the file.
+	 * @param metaSeq            The meta sequence number of the file.
+	 * @param dirType            The type of the file, usually as reported in
+	 *                           the name structure of the file system. May be
+	 *                           set to TSK_FS_NAME_TYPE_ENUM.UNDEF.
+	 * @param metaType           The type of the file, usually as reported in
+	 *                           the metadata structure of the file system. May
+	 *                           be set to
+	 *                           TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
+	 * @param dirFlag            The allocated status of the file, usually as
+	 *                           reported in the name structure of the file
+	 *                           system.
+	 * @param metaFlags          The allocated status of the file, usually as
+	 *                           reported in the metadata structure of the file
+	 *                           system.
+	 * @param size               The size of the file.
+	 * @param ctime              The changed time of the file.
+	 * @param crtime             The created time of the file.
+	 * @param atime              The accessed time of the file.
+	 * @param mtime              The modified time of the file.
+	 * @param modes              The modes for the file.
+	 * @param uid                The UID for the file.
+	 * @param gid                The GID for the file.
+	 * @param md5Hash            The MD5 hash of the file, null if not yet
+	 *                           calculated.
+	 * @param knownState         The known state of the file from a hash
+	 *                           database lookup, null if not yet looked up.
+	 * @param parentPath         The path of the parent of the file.
+	 * @param mimeType           The MIME type of the file, null if it has not
+	 *                           yet been determined.
+	 * @deprecated Do not make subclasses outside of this package.
+	 */
+	@Deprecated
+	@SuppressWarnings("deprecation")
+	FsContent(SleuthkitCase db, long objId, long dataSourceObjectId, long fsObjId, TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
+			String name, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime,
+			short modes, int uid, int gid, String md5Hash, FileKnown knownState, String parentPath, String mimeType) {
+		this(db, objId, dataSourceObjectId, fsObjId, attrType, (int) attrId, name, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, mimeType);
 	}
 }

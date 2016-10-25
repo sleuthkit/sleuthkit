@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  * 
- * Copyright 2013 Basis Technology Corp.
+ * Copyright 2011-2016 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Objects;
 
@@ -26,7 +27,9 @@ import java.util.Objects;
  * names (and related properties) a user can select from to apply a tag to
  * content or a blackboard artifact.
  */
-public class TagName implements Comparable<TagName> {
+public class TagName implements Comparable<TagName>, Serializable {
+
+	private static final long serialVersionUID = 1L;
 
 	public enum HTML_COLOR {
 
@@ -48,7 +51,7 @@ public class TagName implements Comparable<TagName> {
 		FUCHSIA("Fuchsia"), //NON-NLS
 		PURPLE("Purple"); //NON-NLS
 		private final static HashMap<String, HTML_COLOR> colorMap = new HashMap<String, HTML_COLOR>();
-		private String name;
+		private final String name;
 
 		static {
 			for (HTML_COLOR color : HTML_COLOR.values()) {
@@ -102,10 +105,10 @@ public class TagName implements Comparable<TagName> {
 	}
 
 	/**
-	 * Compares this TagName to the other TagName by comparing their
-	 * displayNames with {@link String#compareTo(java.lang.String)}
+	 * Compares two TagName objects by comparing their display names.
 	 *
 	 * @param other The other TagName to compare this TagName to
+	 *
 	 * @return the result of calling compareTo on the displayNames
 	 */
 	@Override
@@ -132,17 +135,9 @@ public class TagName implements Comparable<TagName> {
 			return false;
 		}
 		final TagName other = (TagName) obj;
-		if (this.id != other.id) {
-			return false;
-		}
-
-		if (false == Objects.equals(this.displayName, other.displayName)) {
-			return false;
-		}
-		if (false == Objects.equals(this.description, other.description)) {
-			return false;
-		}
-
-		return this.color == other.color;
+		return (this.id == other.id 
+				&& Objects.equals(this.displayName, other.displayName)
+				&& Objects.equals(this.description, other.description)
+				&& Objects.equals(this.color, other.color));
 	}
 }

@@ -817,14 +817,17 @@ hfs_cat_compare_keys(HFS_INFO * hfs, const hfs_btree_key_cat * key1,
 
 
 /** \internal
+ * 
+ * Traverse the HFS catalog file.  Call the callback for each
+ * record. 
+ *
  * @param hfs File system
- * @param targ_data can be null
  * @param a_cb callback 
  * @param ptr Pointer to pass to callback
  * @returns 1 on error
  */
 uint8_t
-hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
+hfs_cat_traverse(HFS_INFO * hfs,
     TSK_HFS_BTREE_CB a_cb, void *ptr)
 {
     TSK_FS_INFO *fs = &(hfs->fs_info);
@@ -921,6 +924,7 @@ hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
                 size_t rec_off;
                 hfs_btree_key_cat *key;
                 uint8_t retval;
+                uint16_t keylen;
 
                 // get the record offset in the node
                 rec_off =
@@ -935,7 +939,19 @@ hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
                     free(node);
                     return 1;
                 }
+
                 key = (hfs_btree_key_cat *) & node[rec_off];
+
+                keylen = 2 + tsk_getu16(hfs->fs_info.endian, key->key_len);
+                if ((keylen) > nodesize) {
+                    tsk_error_set_errno(TSK_ERR_FS_GENFS);
+                    tsk_error_set_errstr
+                        ("hfs_cat_traverse: length of key %d in index node %d too large (%d vs %"
+                        PRIu16 ")", rec, cur_node, keylen, nodesize);
+                    free(node);
+                    return 1;
+                }
+
 
                 /*
                    if (tsk_verbose)
@@ -946,9 +962,10 @@ hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
                    tsk_getu32(fs->endian, key->parent_cnid));
                  */
 
+
                 /* save the info from this record unless it is too big */
                 retval =
-                    a_cb(hfs, HFS_BT_NODE_TYPE_IDX, targ_data, key,
+                    a_cb(hfs, HFS_BT_NODE_TYPE_IDX, key,
                     cur_off + rec_off, ptr);
                 if (retval == HFS_BTREE_CB_ERR) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
@@ -1012,6 +1029,7 @@ hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
                 size_t rec_off;
                 hfs_btree_key_cat *key;
                 uint8_t retval;
+                uint16_t keylen;
 
                 // get the record offset in the node
                 rec_off =
@@ -1028,6 +1046,16 @@ hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
                 }
                 key = (hfs_btree_key_cat *) & node[rec_off];
 
+                keylen = 2 + tsk_getu16(hfs->fs_info.endian, key->key_len);
+                if ((keylen) > nodesize) {
+                    tsk_error_set_errno(TSK_ERR_FS_GENFS);
+                    tsk_error_set_errstr
+                        ("hfs_cat_traverse: length of key %d in leaf node %d too large (%d vs %"
+                        PRIu16 ")", rec, cur_node, keylen, nodesize);
+                    free(node);
+                    return 1;
+                }
+
                 /*
                    if (tsk_verbose)
                    tsk_fprintf(stderr,
@@ -1039,7 +1067,7 @@ hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
                 //                rec_cnid = tsk_getu32(fs->endian, key->file_id);
 
                 retval =
-                    a_cb(hfs, HFS_BT_NODE_TYPE_LEAF, targ_data, key,
+                    a_cb(hfs, HFS_BT_NODE_TYPE_LEAF, key,
                     cur_off + rec_off, ptr);
                 if (retval == HFS_BTREE_CB_LEAF_STOP) {
                     is_done = 1;
@@ -1078,13 +1106,19 @@ hfs_cat_traverse(HFS_INFO * hfs, const void *targ_data,
     return 0;
 }
 
+typedef struct {
+    const hfs_btree_key_cat *targ_key;
+    TSK_OFF_T off;
+} HFS_CAT_GET_RECORD_OFFSET_DATA;
 
 static uint8_t
 hfs_cat_get_record_offset_cb(HFS_INFO * hfs, int8_t level_type,
-    const void *targ_data, const hfs_btree_key_cat * cur_key,
+    const hfs_btree_key_cat * cur_key,
     TSK_OFF_T key_off, void *ptr)
 {
-    const hfs_btree_key_cat *targ_key = (hfs_btree_key_cat *) targ_data;
+    HFS_CAT_GET_RECORD_OFFSET_DATA *offset_data = (HFS_CAT_GET_RECORD_OFFSET_DATA *)ptr;
+    const hfs_btree_key_cat *targ_key = offset_data->targ_key;
+
     if (tsk_verbose)
         tsk_fprintf(stderr,
             "hfs_cat_get_record_offset_cb: %s node want: %" PRIu32
@@ -1108,8 +1142,7 @@ hfs_cat_get_record_offset_cb(HFS_INFO * hfs, int8_t level_type,
             return HFS_BTREE_CB_LEAF_GO;
         }
         else if (diff == 0) {
-            TSK_OFF_T *off = (TSK_OFF_T *) ptr;
-            *off =
+            offset_data->off = 
                 key_off + 2 + tsk_getu16(hfs->fs_info.endian,
                 cur_key->key_len);
         }
@@ -1129,11 +1162,13 @@ hfs_cat_get_record_offset_cb(HFS_INFO * hfs, int8_t level_type,
 static TSK_OFF_T
 hfs_cat_get_record_offset(HFS_INFO * hfs, const hfs_btree_key_cat * needle)
 {
-    TSK_OFF_T off = 0;
-    if (hfs_cat_traverse(hfs, needle, hfs_cat_get_record_offset_cb, &off)) {
+    HFS_CAT_GET_RECORD_OFFSET_DATA offset_data;
+    offset_data.off = 0;
+    offset_data.targ_key = needle;
+    if (hfs_cat_traverse(hfs, hfs_cat_get_record_offset_cb, &offset_data)) {
         return 0;
     }
-    return off;
+    return offset_data.off;
 }
 
 
@@ -3457,7 +3492,9 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
     uint16_t attribute_counter = 2;     // The ID of the next attribute to be loaded.
     HFS_INFO *hfs;
     char *buffer = NULL;   // buffer to hold the attribute
-
+#ifdef HAVE_LIBZ
+    char *uncBuf = NULL;   // buffer to hold uncompressed attribute
+#endif
 
     tsk_error_reset();
 
@@ -3840,7 +3877,6 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                             else {      // Leading byte is not 0x0F
 
 #ifdef HAVE_LIBZ
-                                char *uncBuf;
                                 uint64_t uLen;
                                 unsigned long bytesConsumed;
                                 int infResult;
@@ -3889,6 +3925,8 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                                         (" - hfs_load_extended_attrs");
                                     goto on_error;
                                 }
+
+                                free(uncBuf);
 #else
                                 // ZLIB compression library is not available, so we will load a zero-length
                                 // default DATA attribute.  Without this, icat may misbehave.
@@ -3909,7 +3947,6 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                                         (" - hfs_load_extended_attrs");
                                     goto on_error;
                                 }
-
 #endif
 
                             }   // END if leading byte is 0x0F  ELSE clause
@@ -3943,14 +3980,13 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
                 // set the details in the fs_attr structure
                 if (tsk_fs_attr_set_str(fs_file, fs_attr, nameBuff,
-                        attrType, attribute_counter, (void *) buffer,
+                        attrType, attribute_counter, buffer,
                         attributeLength)) {
                     error_returned(" - hfs_load_extended_attrs");
                     goto on_error;
                 }
-                // TODO: does the previous function take ownership of buffer?
-                // or does it need to be freed here?
-                buffer = NULL;
+
+                free(buffer);
 
                 attribute_counter++;
             }                   // END if comp == 0
@@ -4035,11 +4071,18 @@ on_exit:
     return 0;
 
 on_error:
-    if( buffer != NULL ) {
-        free( buffer );
+    if (buffer != NULL) {
+        free(buffer);
     }
-    if( nodeData != NULL ) {
-        free( nodeData );
+
+#ifdef HAVE_LIBZ
+    if (uncBuf != NULL) {
+        free(uncBuf);
+    }
+#endif
+
+    if (nodeData != NULL) {
+        free(nodeData);
     }
     close_attr_file(&attrFile);
     return 1;

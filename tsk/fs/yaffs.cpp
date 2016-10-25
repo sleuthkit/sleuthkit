@@ -70,6 +70,8 @@ v** Copyright (c) 2002-2003 Brian Carrier, @stake Inc.  All rights reserved
 *
 */
 
+static const int TWELVE_BITS_MASK = 0xFFF; // Only keep 12 bits
+
 static uint8_t 
     yaffsfs_read_header(YAFFSFS_INFO *yfs, YaffsHeader ** header, TSK_OFF_T offset);
 
@@ -1943,7 +1945,7 @@ static uint8_t
     }
 
     if (type != YAFFS_TYPE_HARDLINK) {
-        a_fs_file->meta->mode = (TSK_FS_META_MODE_ENUM)header->file_mode;
+        a_fs_file->meta->mode = (TSK_FS_META_MODE_ENUM)(header->file_mode & TWELVE_BITS_MASK); // chop at 12 bits;
         a_fs_file->meta->uid = header->user_id;
         a_fs_file->meta->gid = header->group_id;
         a_fs_file->meta->mtime = header->mtime;
@@ -2997,6 +2999,15 @@ TSK_FS_INFO *
     yaffsfs->cache_objects = NULL;
     yaffsfs->chunkMap = NULL;
 
+    fs = &(yaffsfs->fs_info);
+
+    fs->tag = TSK_FS_INFO_TAG;
+    fs->ftype = ftype;
+    fs->flags = (TSK_FS_INFO_FLAG_ENUM)0;
+    fs->img_info = img_info;
+    fs->offset = offset;
+    fs->endian = TSK_LIT_ENDIAN;
+
     // Read config file (if it exists)
     config_file_status = yaffs_load_config_file(img_info, configParams);
     if(config_file_status == YAFFS_CONFIG_ERROR){
@@ -3045,15 +3056,6 @@ TSK_FS_INFO *
     else{
         yaffsfs->autoDetect = 0;
     }
-
-    fs = &(yaffsfs->fs_info);
-
-    fs->tag = TSK_FS_INFO_TAG;
-    fs->ftype = ftype;
-    fs->flags = (TSK_FS_INFO_FLAG_ENUM)0;
-    fs->img_info = img_info;
-    fs->offset = offset;
-    fs->endian = TSK_LIT_ENDIAN;
 
     // Determine the layout of the spare area
     // If it was specified in the config file, use those values. Otherwise do the auto-detection

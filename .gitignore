@@ -5,6 +5,8 @@
 /bindings/java/lib/
 /bindings/java/build/
 /bindings/java/dist
+/bindings/java/doxygen/docs/
+/bindings/java/doxygen/tskjni_doxygen.tag
 /bindings/java/test/output/results
 /bindings/java/test/output/gold/dummy
 /bindings/java/test/output/gold/*_BU.txt
@@ -28,10 +30,17 @@
 /win32/Debug_NoLibs/
 /win32/*/Debug_NoLibs/
 /win32/Debug/
+/win32/Debug_PostgreSQL/
 /win32/*/Debug/
+/win32/*/Debug_PostgreSQL/
 /win32/Release/
+/win32/Release_PostgreSQL/
 /win32/*/Release/
+/win32/*/Release_PostgreSQL/
+/win32/Release_NoLibs/
+/win32/*/Release_NoLibs/
 /win32/*/x64/
+/win32/x64/
 /win32/*/*.user
 win32/ipch
 win32/BuildErrors.txt
@@ -52,6 +61,12 @@ framework/modules/c_InterestingFilesModule/tsk
 framework/config.h
 framework/tools/tsk_analyzeimg/tsk_analyzeimg
 framework/tools/tsk_validatepipeline/tsk_validatepipeline
+rejistry++/msvcpp/*/Debug
+rejistry++/msvcpp/*/Release
+rejistry++/msvcpp/*/Release_NoLibs
+rejistry++/msvcpp/*/x64
+rejistry++/msvcpp/*/*.user
+rejistry++/msvcpp/rejistry++/ipch
 
 # Release files
 release/sleuthkit-*
@@ -61,10 +76,13 @@ release/sleuthkit-*
 /win32/*.sdf
 framework/msvcpp/framework/*.ncb
 framework/msvcpp/framework/*sdf
+rejistry++/msvcpp/rejistry++/*.ncb
+rejistry++/msvcpp/rejistry++/*sdf
 
 # Visual Studio user options
 /win32/tsk-win.suo
 framework/msvcpp/framework/*.suo
+rejistry++/msvcpp/rejistry++/*suo
 *.sln.cache
 win32/tsk-win.opensdf
 

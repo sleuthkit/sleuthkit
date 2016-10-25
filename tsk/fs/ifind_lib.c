@@ -3,7 +3,7 @@
 ** The Sleuth Kit
 **
 ** Given an image  and block number, identify which inode it is used by
-** 
+**
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
 ** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
@@ -40,7 +40,7 @@ typedef struct {
 } IFIND_PAR_DATA;
 
 
-/* inode walk call back for tsk_fs_ifind_par to find unallocated files 
+/* inode walk call back for tsk_fs_ifind_par to find unallocated files
  * based on parent directory
  */
 static TSK_WALK_RET_ENUM
@@ -63,13 +63,13 @@ ifind_par_act(TSK_FS_FILE * fs_file, void *ptr)
             if ((fs_name = tsk_fs_name_alloc(256, 0)) == NULL)
                 return TSK_WALK_ERROR;
 
-            /* Fill in the basics of the fs_name entry 
+            /* Fill in the basics of the fs_name entry
              * so we can print in the fls formats */
             fs_name->meta_addr = fs_file->meta->addr;
             fs_name->flags = TSK_FS_NAME_FLAG_UNALLOC;
             strncpy(fs_name->name, fs_name_list->name, fs_name->name_size);
 
-            // now look for the $Data and $IDXROOT attributes 
+            // now look for the $Data and $IDXROOT attributes
             fs_file->name = fs_name;
             printed = 0;
 
@@ -87,6 +87,7 @@ ifind_par_act(TSK_FS_FILE * fs_file, void *ptr)
                     if (data->flags & TSK_FS_IFIND_PAR_LONG) {
                         tsk_fs_name_print_long(stdout, fs_file, NULL,
                             fs_file->fs_info, fs_attr, 0, 0);
+                        tsk_printf("\n");
                     }
                     else {
                         tsk_fs_name_print(stdout, fs_file, NULL,
@@ -102,6 +103,7 @@ ifind_par_act(TSK_FS_FILE * fs_file, void *ptr)
                 if (data->flags & TSK_FS_IFIND_PAR_LONG) {
                     tsk_fs_name_print_long(stdout, fs_file, NULL,
                         fs_file->fs_info, NULL, 0, 0);
+                    tsk_printf("\n");
                 }
                 else {
                     tsk_fs_name_print(stdout, fs_file, NULL,
@@ -121,7 +123,7 @@ ifind_par_act(TSK_FS_FILE * fs_file, void *ptr)
 
 
 /**
- * Searches for unallocated MFT entries that have a given 
+ * Searches for unallocated MFT entries that have a given
  * MFT entry as their parent directory (as reported in FILE_NAME).
  * @param fs File system to search
  * @param lclflags Flags
@@ -152,11 +154,11 @@ tsk_fs_ifind_par(TSK_FS_INFO * fs, TSK_FS_IFIND_FLAG_ENUM lclflags,
 
 /**
  * \ingroup fslib
- * 
+ *
  * Find the meta data address for a given file name (UTF-8).
  * The basic idea of the function is to break the given name into its
  * subdirectories and start looking for each (starting in the root
- * directory). 
+ * directory).
  *
  * @param a_fs FS to analyze
  * @param a_path UTF-8 path of file to search for
@@ -174,7 +176,7 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
     char *cur_attr;             // The "current" attribute of the dir we are looking for
     TSK_INUM_T next_meta;
     uint8_t is_done;
-    char *strtok_last; 
+    char *strtok_last;
     *a_result = 0;
 
     // copy path to a buffer that we can modify
@@ -184,7 +186,7 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
     }
     strncpy(cpath, a_path, clen);
 
-    // Get the first part of the directory path. 
+    // Get the first part of the directory path.
     cur_dir = (char *) strtok_r(cpath, "/", &strtok_last);
     cur_attr = NULL;
 
@@ -221,7 +223,7 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
     // initialize the first place to look, the root dir
     next_meta = a_fs->root_inum;
 
-    // we loop until we know the outcome and then exit. 
+    // we loop until we know the outcome and then exit.
     // everything should return from inside the loop.
     is_done = 0;
     while (is_done == 0) {
@@ -262,60 +264,45 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
                 return -1;
             }
 
-            /* 
+            /*
              * Check if this is the name that we are currently looking for,
              * as identified in 'cur_dir'
              */
-            /* FAT is a special case because we check the short name */
-            if (TSK_FS_TYPE_ISFAT(a_fs->ftype)) {
-                if ((fs_file->name->name)
-                    && (a_fs->name_cmp(a_fs, fs_file->name->name,
-                            cur_dir) == 0)) {
-                    found_name = 1;
-                }
-                else if ((fs_file->name->shrt_name)
-                    && (a_fs->name_cmp(a_fs, fs_file->name->shrt_name,
-                            cur_dir) == 0)) {
-                    found_name = 1;
-                }
+            if ((fs_file->name->name)
+                && (a_fs->name_cmp(a_fs, fs_file->name->name,
+                        cur_dir) == 0)) {
+                found_name = 1;
+            }
+            else if ((fs_file->name->shrt_name)
+                && (a_fs->name_cmp(a_fs, fs_file->name->shrt_name,
+                        cur_dir) == 0)) {
+                found_name = 1;
             }
 
-            /* NTFS gets a case insensitive comparison */
-            else if (TSK_FS_TYPE_ISNTFS(a_fs->ftype)) {
-                if ((fs_file->name->name)
-                    && (a_fs->name_cmp(a_fs, fs_file->name->name,
-                            cur_dir) == 0)) {
-                    /*  ensure we have the right attribute name */
-                    if (cur_attr == NULL) {
-                        found_name = 1;
-                    }
-                    else {
-                        if (fs_file->meta) {
-                            int cnt, i;
+            /* For NTFS, we have to check the attribute name. */
+            if ((found_name == 1) && (TSK_FS_TYPE_ISNTFS(a_fs->ftype))) {
+                /*  ensure we have the right attribute name */
+                if (cur_attr != NULL) {
+                    found_name = 0;
+                    if (fs_file->meta) {
+                        int cnt, i;
 
-                            // cycle through the attributes
-                            cnt = tsk_fs_file_attr_getsize(fs_file);
-                            for (i = 0; i < cnt; i++) {
-                                const TSK_FS_ATTR *fs_attr =
-                                    tsk_fs_file_attr_get_idx(fs_file, i);
-                                if (!fs_attr)
-                                    continue;
+                        // cycle through the attributes
+                        cnt = tsk_fs_file_attr_getsize(fs_file);
+                        for (i = 0; i < cnt; i++) {
+                            const TSK_FS_ATTR *fs_attr =
+                                tsk_fs_file_attr_get_idx(fs_file, i);
+                            if (!fs_attr)
+                                continue;
 
-                                if ((fs_attr->name)
-                                    && (a_fs->name_cmp(a_fs, fs_attr->name,
-                                            cur_attr) == 0)) {
-                                    found_name = 1;
-                                }
+                            if ((fs_attr->name)
+                                && (a_fs->name_cmp(a_fs, fs_attr->name,
+                                        cur_attr) == 0)) {
+                                found_name = 1;
+                                break;
                             }
                         }
                     }
-                }
-            }
-            else {
-                if ((fs_file->name->name)
-                    && (a_fs->name_cmp(a_fs, fs_file->name->name,
-                            cur_dir) == 0)) {
-                    found_name = 1;
                 }
             }
 
@@ -343,7 +330,7 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
             }
         }
 
-        // we found a directory, go into it 
+        // we found a directory, go into it
         if ((fs_file_alloc) || (fs_file_del)) {
 
             const char *pname;
@@ -373,6 +360,11 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
                 if (a_fs_name) {
                     tsk_fs_name_copy(a_fs_name, fs_file_tmp->name);
                 }
+
+                if (fs_file_alloc)
+                    tsk_fs_file_close(fs_file_alloc);
+                if (fs_file_del)
+                    tsk_fs_file_close(fs_file_del);
 
                 tsk_fs_dir_close(fs_dir);
                 free(cpath);
@@ -560,7 +552,7 @@ ifind_data_act(TSK_FS_FILE * fs_file, void *ptr)
 
 
 
-/* 
+/*
  * Find the inode that has allocated block blk
  * Return 1 on error, 0 if no error */
 uint8_t

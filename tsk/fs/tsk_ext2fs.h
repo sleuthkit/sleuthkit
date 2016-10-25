@@ -644,9 +644,9 @@ extern "C" {
         /* lock protects grp_buf, grp_num, bmap_buf, bmap_grp_num, imap_buf, imap_grp_num */
         tsk_lock_t lock;
 
-        void *v_grp_buf;
-        ext4fs_gd *ext4_grp_buf;
-        ext2fs_gd *grp_buf;     /* cached group descriptor r/w shared - lock */
+        // one of the below will be allocated and populated by ext2fs_group_load depending on the FS type
+        ext4fs_gd *ext4_grp_buf; /* cached group descriptor for 64-bit ext4 r/w shared - lock */
+        ext2fs_gd *grp_buf;     /* cached group descriptor for ext2,ext3,32-bit ext4 r/w shared - lock */
 
         EXT2_GRPNUM_T grp_num;  /* cached group number r/w shared - lock */
 

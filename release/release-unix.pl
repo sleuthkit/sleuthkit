@@ -81,6 +81,8 @@ sub clone_repo() {
 
     system ("git clone git\@github.com:sleuthkit/sleuthkit.git ${CLONEDIR}");
     chdir "${CLONEDIR}" or die "Error changing into $CLONEDIR";
+
+    system ("git checkout ${BRANCH}");
 }
 
 # Deletes the clone directory -- if it exists
@@ -139,8 +141,8 @@ sub tag_dir {
 
 # Commit the updated version info in the current source directory
 sub checkin_vers {
-    print "Checking in version updates\n";
     unless ($TESTING) {
+        print "Checking in version updates to master\n";
         system ("git commit -a -m \"New version files for ${VER}\"");
         system ("git push origin master");
     }
@@ -390,6 +392,24 @@ sub make_tar {
     die "Missing $TARBALL after make dist" unless (-e $TARBALL);
 }
 
+# Compiles the framework to verify it is all good
+sub compile_framework() {
+    chdir ("framework") or die "error changing into framework";
+
+    print "Running bootstrap\n";
+    system ("./bootstrap");
+    die "Error running bootstrap in framework" unless (-e "./configure");
+
+    print "Running configure\n";
+    system ("./configure > /dev/null");
+    die "Error running framework configure in tar file" unless (-e "./Makefile");
+
+    print "Running make\n";
+    system ("make > /dev/null");
+    die "Error compiling framework" unless ((-e "tools/tsk_analyzeimg/tsk_analyzeimg") && (-e "runtime/modules/libtskEntropyModule.a"));
+    chdir "..";
+}
+
 # Verify that the tar ball contains all of the
 # expected files
 # Starts and ends in the clone dir
@@ -445,20 +465,7 @@ sub verify_tar {
     chdir "../..";
 
     # Compile the framework
-    chdir ("framework") or die "error changing into framework";
-
-    print "Running bootstrap\n";
-    system ("./bootstrap");
-    die "Error running bootstrap in framework" unless (-e "./configure");
-
-    print "Running configure\n";
-    system ("./configure > /dev/null");
-    die "Error running framework configure in tar file" unless (-e "./Makefile");
-
-    print "Running make\n";
-    system ("make > /dev/null");
-    die "Error compiling framework" unless ((-e "tools/tsk_analyzeimg/tsk_analyzeimg") && (-e "runtime/modules/libtskEntropyModule.a"));
-    chdir "..";
+    # compile_framework();
 
     # We're done.  Clean up
     chdir "..";
@@ -470,6 +477,8 @@ sub verify_tar {
     # stop if asked to
     die ("Stopping") if $a eq "n";
 }
+
+
 
 sub copy_tar() {
     copy ("${TARBALL}", "$RELDIR") or die "error moving sleuthkit tar ball to release folder";
@@ -483,8 +492,7 @@ sub copy_tar() {
 # Get the version argument
 if (scalar (@ARGV) != 1) {
     print stderr "Missing release version argument (i.e.  3.0.1)\n";
-    print stderr "\tversion: Version of release\n";
-    print stderr "Makes a release of the master branch\n";
+    print stderr "Makes a release of the current branch\n";
     exit;
 }
 
@@ -552,4 +560,4 @@ make_tar();
 verify_tar();
 copy_tar();
 
-del_clone();
+# del_clone();

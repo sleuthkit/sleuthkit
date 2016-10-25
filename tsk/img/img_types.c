@@ -38,7 +38,7 @@ static IMG_TYPES img_open_table[] = {
         "All AFFLIB image formats (including beta ones)"},
 #endif
 #if HAVE_LIBEWF
-    {"ewf", TSK_IMG_TYPE_EWF_EWF, "Expert Witness format (encase)"},
+    {"ewf", TSK_IMG_TYPE_EWF_EWF, "Expert Witness Format (EnCase)"},
 #endif
     {0},
 };

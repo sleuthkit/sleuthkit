@@ -193,27 +193,27 @@ hfsmode2tsknametype(uint16_t a_mode)
 typedef struct {
     TSK_FS_DIR *fs_dir;
     TSK_FS_NAME *fs_name;
+    uint32_t cnid;
 } HFS_DIR_OPEN_META_INFO;
 
 static uint8_t
 hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
-    const void *targ_data, const hfs_btree_key_cat * cur_key,
+    const hfs_btree_key_cat * cur_key,
     TSK_OFF_T key_off, void *ptr)
 {
-    uint32_t *cnid_p = (uint32_t *) targ_data;
     HFS_DIR_OPEN_META_INFO *info = (HFS_DIR_OPEN_META_INFO *) ptr;
     TSK_FS_INFO *fs = &hfs->fs_info;
 
     if (tsk_verbose)
         fprintf(stderr,
             "hfs_dir_open_meta_cb: want %" PRIu32 " vs got %" PRIu32
-            " (%s node)\n", *cnid_p, tsk_getu32(hfs->fs_info.endian,
+            " (%s node)\n", info->cnid, tsk_getu32(hfs->fs_info.endian,
                 cur_key->parent_cnid),
             (level_type == HFS_BT_NODE_TYPE_IDX) ? "Index" : "Leaf");
 
     if (level_type == HFS_BT_NODE_TYPE_IDX) {
         if (tsk_getu32(hfs->fs_info.endian,
-                cur_key->parent_cnid) < *cnid_p) {
+                cur_key->parent_cnid) < info->cnid) {
             return HFS_BTREE_CB_IDX_LT;
         }
         else {
@@ -226,26 +226,14 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
         size_t rec_off2;
 
         if (tsk_getu32(hfs->fs_info.endian,
-                cur_key->parent_cnid) < *cnid_p) {
+                cur_key->parent_cnid) < info->cnid) {
             return HFS_BTREE_CB_LEAF_GO;
         }
         else if (tsk_getu32(hfs->fs_info.endian,
-                cur_key->parent_cnid) > *cnid_p) {
+                cur_key->parent_cnid) > info->cnid) {
             return HFS_BTREE_CB_LEAF_STOP;
         }
         rec_off2 = 2 + tsk_getu16(hfs->fs_info.endian, cur_key->key_len);
-        // @@@ NEED TO REPLACE THIS SOMEHOW, but need to figure out the max length
-        /*
-           if (rec_off2 > nodesize) {
-           tsk_error_set_errno(TSK_ERR_FS_GENFS);
-           tsk_error_set_errstr(
-           "hfs_dir_open_meta: offset of record+keylen %d in leaf node %d too large (%"PRIuSIZE" vs %"
-           PRIu16 ")", rec, cur_node, rec_off2, nodesize);
-           tsk_fs_name_free(fs_name);
-           free(node);
-           return TSK_COR;
-           }
-         */
         rec_type = tsk_getu16(hfs->fs_info.endian, &rec_buf[rec_off2]);
 
         // Catalog entry is for a file
@@ -488,7 +476,8 @@ hfs_dir_open_meta(TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir,
         }
     }
 
-    if (hfs_cat_traverse(hfs, &cnid, hfs_dir_open_meta_cb, &info)) {
+    info.cnid = cnid;
+    if (hfs_cat_traverse(hfs, hfs_dir_open_meta_cb, &info)) {
         tsk_fs_name_free(fs_name);
         return TSK_ERR;
     }

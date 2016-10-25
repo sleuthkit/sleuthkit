@@ -1,5 +1,5 @@
 # File that we want to include in the dist
-EXTRA_DIST = README_win32.txt README.md INSTALL.txt ChangeLog.txt NEWS.txt \
+EXTRA_DIST = README_win32.txt README.md INSTALL.txt ChangeLog.txt NEWS.txt API-CHANGES.txt \
     licenses/GNU-COPYING licenses/IBM-LICENSE licenses/cpl1.0.txt \
     m4/*.m4 \
     docs/README.txt \
@@ -17,6 +17,8 @@ EXTRA_DIST = README_win32.txt README.md INSTALL.txt ChangeLog.txt NEWS.txt \
     bindings/java/nbproject/project.xml \
     bindings/java/src/org/sleuthkit/datamodel/*.java \
     bindings/java/src/org/sleuthkit/datamodel/*.html \
+    bindings/java/src/org/sleuthkit/datamodel/*.properties \
+    bindings/java/src/org/sleuthkit/datamodel/Examples/*.java \
     bindings/java/src/*.html \
     framework/*.txt \
     framework/Makefile.am \
@@ -87,8 +89,8 @@ nobase_dist_data_DATA = tsk/sorter/default.sort tsk/sorter/freebsd.sort \
 
 api-docs:
 	doxygen tsk/docs/Doxyfile
-	doxygen framework/docs/Doxyfile
-	doxygen bindings/java/doxygen/Doxyfile
+# doxygen framework/docs/Doxyfile
+	cd bindings/java/doxygen; doxygen Doxyfile
 
 man-html:
 	cd man;build-html

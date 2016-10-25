@@ -1,8 +1,8 @@
 /*
 ** fls
-** The Sleuth Kit 
+** The Sleuth Kit
 **
-** Given an image and directory inode, display the file names and 
+** Given an image and directory inode, display the file names and
 ** directories that exist (both active and deleted)
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
@@ -20,13 +20,13 @@
 **
 */
 
-/** \file fls_lib.c 
+/** \file fls_lib.c
  * Contains the library code associated with the TSK fls tool to list files in a directory.
  */
 
 #include "tsk_fs_i.h"
 
-/** \internal 
+/** \internal
 * Structure to store data for callbacks.
 */
 typedef struct {
@@ -43,7 +43,7 @@ typedef struct {
 
 /* this is a wrapper type function that takes care of the runtime
  * flags
- * 
+ *
  * fs_attr should be set to NULL for all non-NTFS file systems
  */
 static void
@@ -75,6 +75,7 @@ printit(TSK_FS_FILE * fs_file, const char *a_path,
 				tsk_fs_name_print_mac_md5(stdout, fs_file, a_path, fs_attr,
 					fls_data->macpre, fls_data->sec_skew,
 					hash_results.md5_digest);
+                                tsk_printf("\n");
 			}
 			else{
 				// If the hash calculation had errors, pass in a buffer of nulls
@@ -82,17 +83,20 @@ printit(TSK_FS_FILE * fs_file, const char *a_path,
 				tsk_fs_name_print_mac_md5(stdout, fs_file, a_path, fs_attr,
 					fls_data->macpre, fls_data->sec_skew,
 					null_buf);
+                                tsk_printf("\n");
 			}
         }
         else {
             tsk_fs_name_print_mac(stdout, fs_file, a_path,
                 fs_attr, fls_data->macpre, fls_data->sec_skew);
+            tsk_printf("\n");
         }
     }
     else if (fls_data->flags & TSK_FS_FLS_LONG) {
         tsk_fs_name_print_long(stdout, fs_file, a_path, fs_file->fs_info,
             fs_attr, TSK_FS_FLS_FULL & fls_data->flags ? 1 : 0,
             fls_data->sec_skew);
+        tsk_printf("\n");
     }
     else {
         tsk_fs_name_print(stdout, fs_file, a_path, fs_file->fs_info,
@@ -102,7 +106,7 @@ printit(TSK_FS_FILE * fs_file, const char *a_path,
 }
 
 
-/* 
+/*
  * call back action function for dent_walk
  */
 static TSK_WALK_RET_ENUM
@@ -159,8 +163,8 @@ print_dent_act(TSK_FS_FILE * fs_file, const char *a_path, void *ptr)
                     printed = 1;
 
                     /* If it is . or .. only print it if the flags say so,
-                     * we continue with other streams though in case the 
-                     * directory has a data stream 
+                     * we continue with other streams though in case the
+                     * directory has a data stream
                      */
                     if (!((TSK_FS_ISDOT(fs_file->name->name)) &&
                             ((fls_data->flags & TSK_FS_FLS_DOT) == 0)))
@@ -172,8 +176,8 @@ print_dent_act(TSK_FS_FILE * fs_file, const char *a_path, void *ptr)
                     (fs_attr->id == fs_file->meta->time2.ntfs.fn_id) &&
                     (fls_data->flags & TSK_FS_FLS_MAC)) {
                     /* If it is . or .. only print it if the flags say so,
-                     * we continue with other streams though in case the 
-                     * directory has a data stream 
+                     * we continue with other streams though in case the
+                     * directory has a data stream
                      */
                     if (!((TSK_FS_ISDOT(fs_file->name->name)) &&
                             ((fls_data->flags & TSK_FS_FLS_DOT) == 0)))

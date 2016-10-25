@@ -1,7 +1,7 @@
 /*
- * Autopsy Forensic Browser
+ * SleuthKit Java Bindings
  * 
- * Copyright 2011 Basis Technology Corp.
+ * Copyright 2011-2016 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,9 +36,8 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 
 /**
- * Common fields methods for objects stored in tsk_files table Abstract files
- * are divided into subtypes defined in TSK_DB_FILES_TYPE_ENUM and further
- * divided into files and directories
+ * An abstract base class for classes that represent of files that have been
+ * added to the case.
  */
 public abstract class AbstractFile extends AbstractContent {
 
@@ -51,7 +50,7 @@ public abstract class AbstractFile extends AbstractContent {
 	protected final long metaAddr, ctime, crtime, atime, mtime;
 	protected final int metaSeq;
 	protected final int uid, gid;
-	protected final short attrId;
+	protected final int attrId;
 	protected final TskData.TSK_FS_ATTR_TYPE_ENUM attrType;
 	protected final Set<TskData.TSK_FS_META_MODE_ENUM> modes;
 	//local file support
@@ -60,6 +59,7 @@ public abstract class AbstractFile extends AbstractContent {
 	private String localAbsPath; ///< absolute path representation of the local path
 	private volatile RandomAccessFile localFileHandle;
 	private volatile java.io.File localFile;
+	private TskData.EncodingType encodingType;
 	//range support
 	private List<TskFileRange> ranges;
 	/*
@@ -74,19 +74,23 @@ public abstract class AbstractFile extends AbstractContent {
 	 * md5 hash
 	 */
 	protected String md5Hash;
+	private String mimeType;
 	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
+	private long dataSourceObjectId;
 
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
 	 * tsk_files table)
 	 *
-	 * @param db case / db handle where this file belongs to
-	 * @param objId object id in tsk_objects table
+	 * @param db                 case / db handle where this file belongs to
+	 * @param objId              object id in tsk_objects table
+	 * @param dataSourceObjectId The object id of the root data source of this
+	 *                           file.
 	 * @param attrType
 	 * @param attrId
-	 * @param name name field of the file
-	 * @param fileType type of the file
+	 * @param name               name field of the file
+	 * @param fileType           type of the file
 	 * @param metaAddr
 	 * @param metaSeq
 	 * @param dirType
@@ -101,17 +105,31 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param modes
 	 * @param uid
 	 * @param gid
-	 * @param md5Hash md5sum of the file, or null or "NULL" if not present
-	 * @param knownState knownState status of the file, or null if unknown
-	 * (default)
+	 * @param md5Hash            md5sum of the file, or null or "NULL" if not
+	 *                           present
+	 * @param knownState         knownState status of the file, or null if
+	 *                           unknown (default)
 	 * @param parentPath
+	 * @param mimeType           The MIME type of the file, can be null
 	 */
-	protected AbstractFile(SleuthkitCase db, long objId, TskData.TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
-			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq,
-			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
-			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
-			String parentPath) {
+	AbstractFile(SleuthkitCase db,
+			long objId,
+			long dataSourceObjectId,
+			TskData.TSK_FS_ATTR_TYPE_ENUM attrType, int attrId,
+			String name,
+			TskData.TSK_DB_FILES_TYPE_ENUM fileType,
+			long metaAddr, int metaSeq,
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
+			long size,
+			long ctime, long crtime, long atime, long mtime,
+			short modes,
+			int uid, int gid,
+			String md5Hash, FileKnown knownState,
+			String parentPath,
+			String mimeType) {
 		super(db, objId, name);
+		this.dataSourceObjectId = dataSourceObjectId;
 		this.attrType = attrType;
 		this.attrId = attrId;
 		this.fileType = fileType;
@@ -137,6 +155,8 @@ public abstract class AbstractFile extends AbstractContent {
 			this.knownState = knownState;
 		}
 		this.parentPath = parentPath;
+		this.mimeType = mimeType;
+		this.encodingType = TskData.EncodingType.NONE;
 	}
 
 	/**
@@ -162,7 +182,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 *
 	 * @return attribute id
 	 */
-	public short getAttrId() {
+	public int getAttributeId() {
 		return attrId;
 	}
 
@@ -392,6 +412,22 @@ public abstract class AbstractFile extends AbstractContent {
 		return result;
 	}
 
+	/**
+	 * Gets the MIME type of this file.
+	 *
+	 * @return The MIME type name or null if the MIME type has not been set.
+	 */
+	public String getMIMEType() {
+		return mimeType;
+	}
+
+	/**
+	 * Sets the MIME type for this file.
+	 */
+	void setMIMEType(String mimeType) {
+		this.mimeType = mimeType;
+	}
+
 	public boolean isModeSet(TskData.TSK_FS_META_MODE_ENUM mode) {
 		return modes.contains(mode);
 	}
@@ -442,7 +478,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * that extensions only have ASCII alphanumeric chars
 	 *
 	 * @return filename extension in lowercase (not including the period) or
-	 * empty string if there is no extension
+	 *         empty string if there is no extension
 	 */
 	public String getNameExtension() {
 		String ext;
@@ -484,13 +520,36 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
+	 * Gets the data source for this file.
+	 *
+	 * @return The data source.
+	 *
+	 * @throws TskCoreException if there was an error querying the case
+	 *                          database.
+	 */
+	@Override
+	public Content getDataSource() throws TskCoreException {
+		return getSleuthkitCase().getContentById(this.dataSourceObjectId);
+	}
+
+	/**
+	 * Gets the object id of the data source for this file.
+	 *
+	 * @return The object id of the data source.
+	 */
+	long getDataSourceObjectId() {
+		return dataSourceObjectId;
+	}
+
+	/**
 	 * Gets file ranges associated with the file. File ranges are objects in
 	 * tsk_file_layout table Any file type (especially unallocated) may have 1
 	 * or more block ranges associated with it
 	 *
 	 * @return list of file layout ranges
+	 *
 	 * @throws TskCoreException exception thrown if critical error occurred
-	 * within tsk core
+	 *                          within tsk core
 	 */
 	public List<TskFileRange> getRanges() throws TskCoreException {
 		if (ranges == null) {
@@ -503,11 +562,14 @@ public abstract class AbstractFile extends AbstractContent {
 	 * Convert an internal offset to an image offset
 	 *
 	 * @param fileOffset the byte offset in this layout file to map
+	 *
 	 * @return the corresponding byte offset in the image where the file offset
-	 * is located, or -1 if the file has no range layout information or if the
-	 * fileOffset is larger than file size
+	 *         is located, or -1 if the file has no range layout information or
+	 *         if the fileOffset is larger than file size
+	 *
 	 * @throws TskCoreException exception thrown if critical error occurred
-	 * within tsk core and offset could not be converted
+	 *                          within tsk core and offset could not be
+	 *                          converted
 	 */
 	public long convertToImgOffset(long fileOffset) throws TskCoreException {
 		long imgOffset = -1;
@@ -567,9 +629,11 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * @param uniquePath the unique path to an AbstractFile (or subclass)
-	 * usually obtained by a call to AbstractFile.getUniquePath.
+	 *                   usually obtained by a call to
+	 *                   AbstractFile.getUniquePath.
+	 *
 	 * @return the path to to an AbstractFile (or subclass) with the image and
-	 * volume path segments removed.
+	 *         volume path segments removed.
 	 */
 	public static String createNonUniquePath(String uniquePath) {
 
@@ -589,7 +653,9 @@ public abstract class AbstractFile extends AbstractContent {
 		// name, if they exist).
 		StringBuilder strbuf = new StringBuilder();
 		for (; index < pathSegments.length; ++index) {
-			strbuf.append("/").append(pathSegments[index]);
+			if (!pathSegments[index].isEmpty()) {
+				strbuf.append("/").append(pathSegments[index]);
+			}
 		}
 
 		return strbuf.toString();
@@ -597,7 +663,8 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * @return a list of AbstractFiles that are the children of this Directory.
-	 * Only returns children of type TskData.TSK_DB_FILES_TYPE_ENUM.FS.
+	 *         Only returns children of type TskData.TSK_DB_FILES_TYPE_ENUM.FS.
+	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public List<AbstractFile> listFiles() throws TskCoreException {
@@ -643,6 +710,7 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * @param flag the TSK_FS_NAME_FLAG_ENUM to check
+	 *
 	 * @return true if the given flag is set in this FsContent object.
 	 */
 	public boolean isDirNameFlagSet(TSK_FS_NAME_FLAG_ENUM flag) {
@@ -651,7 +719,7 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * @return a string representation of the directory name flag (type
-	 * TSK_FS_NAME_FLAG_ENUM)
+	 *         TSK_FS_NAME_FLAG_ENUM)
 	 */
 	public String getDirFlagAsString() {
 		return dirFlag.toString();
@@ -672,6 +740,7 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * @param metaFlag the TSK_FS_META_FLAG_ENUM to check
+	 *
 	 * @return true if the given meta flag is set in this FsContent object.
 	 */
 	public boolean isMetaFlagSet(TSK_FS_META_FLAG_ENUM metaFlag) {
@@ -693,10 +762,12 @@ public abstract class AbstractFile extends AbstractContent {
 	/**
 	 * Internal custom read (non-local) method that child classes can implement
 	 *
-	 * @param buf buffer to read into
+	 * @param buf    buffer to read into
 	 * @param offset start reading position in the file
-	 * @param len number of bytes to read
+	 * @param len    number of bytes to read
+	 *
 	 * @return number of bytes read
+	 *
 	 * @throws TskCoreException exception thrown when file could not be read
 	 */
 	protected int readInt(byte[] buf, long offset, long len) throws TskCoreException {
@@ -706,10 +777,12 @@ public abstract class AbstractFile extends AbstractContent {
 	/**
 	 * Local file path read support
 	 *
-	 * @param buf buffer to read into
+	 * @param buf    buffer to read into
 	 * @param offset start reading position in the file
-	 * @param len number of bytes to read
+	 * @param len    number of bytes to read
+	 *
 	 * @return number of bytes read
+	 *
 	 * @throws TskCoreException exception thrown when file could not be read
 	 */
 	protected final int readLocal(byte[] buf, long offset, long len) throws TskCoreException {
@@ -752,33 +825,49 @@ public abstract class AbstractFile extends AbstractContent {
 		}
 
 		try {
-			//move to the user request offset in the stream
-			long curOffset = localFileHandle.getFilePointer();
-			if (curOffset != offset) {
-				localFileHandle.seek(offset);
+			if( ! encodingType.equals(TskData.EncodingType.NONE)){
+				// The file is encoded, so we need to alter the offset to read (since there's
+				// a header on the encoded file) and then decode each byte
+				long encodedOffset = offset + EncodedFileUtil.getHeaderLength();
+				
+				//move to the user request offset in the stream
+				long curOffset = localFileHandle.getFilePointer();
+				if (curOffset != encodedOffset) {
+					localFileHandle.seek(encodedOffset);
+				}
+				bytesRead = localFileHandle.read(buf, 0, (int) len);	
+				for(int i = 0;i < bytesRead;i++){
+					buf[i] = EncodedFileUtil.decodeByte(buf[i], encodingType);
+				}
+				return bytesRead;
+			} else {
+				//move to the user request offset in the stream
+				long curOffset = localFileHandle.getFilePointer();
+				if (curOffset != offset) {
+					localFileHandle.seek(offset);
+				}
+				//note, we are always writing at 0 offset of user buffer
+				return localFileHandle.read(buf, 0, (int) len);	
 			}
-			//note, we are always writing at 0 offset of user buffer
-			bytesRead = localFileHandle.read(buf, 0, (int) len);
 		} catch (IOException ex) {
 			final String msg = MessageFormat.format(bundle.getString("AbstractFile.readLocal.exception.msg5.text"), localAbsPath);
 			logger.log(Level.SEVERE, msg, ex);
 			//local file could have been deleted / moved
 			throw new TskCoreException(msg, ex);
 		}
-
-		return bytesRead;
 	}
+
 
 	/**
 	 * Set local path for the file, as stored in db tsk_files_path, relative to
 	 * the case db path or an absolute path. When set, subsequent invocations of
 	 * read() will read the file in the local path.
 	 *
-	 * @param localPath local path to be set
+	 * @param localPath  local path to be set
 	 * @param isAbsolute true if the path is absolute, false if relative to the
-	 * case db
+	 *                   case db
 	 */
-	protected void setLocalPath(String localPath, boolean isAbsolute) {
+	void setLocalFilePath(String localPath, boolean isAbsolute) {
 
 		if (localPath == null || localPath.equals("")) {
 			this.localPath = "";
@@ -811,6 +900,14 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	public String getLocalAbsPath() {
 		return localAbsPath;
+	}
+	
+	/**
+	 * Set the type of encoding used on the file (for local/derived files only)
+	 * @param encodingType 
+	 */
+	final void setEncodingType(TskData.EncodingType encodingType){
+		this.encodingType = encodingType;
 	}
 
 	/**
@@ -934,6 +1031,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * Return the epoch into string in ISO 8601 dateTime format
 	 *
 	 * @param epoch time in seconds
+	 *
 	 * @return formatted date time string as "yyyy-MM-dd HH:mm:ss"
 	 */
 	public static String epochToTime(long epoch) {
@@ -948,6 +1046,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * Convert from ISO 8601 formatted date time string to epoch time in seconds
 	 *
 	 * @param time formatted date time string as "yyyy-MM-dd HH:mm:ss"
+	 *
 	 * @return epoch time in seconds
 	 */
 	public static long timeToEpoch(String time) {
@@ -975,23 +1074,141 @@ public abstract class AbstractFile extends AbstractContent {
 	 * blackboard attribute for file type.
 	 *
 	 * @param mimeTypes Set of file types to compare against
+	 *
 	 * @return
 	 */
 	public MimeMatchEnum isMimeType(SortedSet<String> mimeTypes) {
-		try {
-			List<BlackboardAttribute> attrs = getGenInfoAttributes(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_FILE_TYPE_SIG);
-			if (attrs.isEmpty()) {
-				return MimeMatchEnum.UNDEFINED;
-			}
-
-			for (BlackboardAttribute batt : attrs) {
-				if (mimeTypes.contains(batt.getValueString())) {
-					return MimeMatchEnum.TRUE;
-				}
-			}
-			return MimeMatchEnum.FALSE;
-		} catch (TskCoreException ex) {
+		if (this.mimeType == null) {
 			return MimeMatchEnum.UNDEFINED;
 		}
+		if (mimeTypes.contains(this.mimeType)) {
+			return MimeMatchEnum.TRUE;
+		}
+		return MimeMatchEnum.FALSE;
+	}
+
+	/**
+	 * Initializes common fields used by AbstactFile implementations (objects in
+	 * tsk_files table)
+	 *
+	 * @param db         case / db handle where this file belongs to
+	 * @param objId      object id in tsk_objects table
+	 * @param attrType
+	 * @param attrId
+	 * @param name       name field of the file
+	 * @param fileType   type of the file
+	 * @param metaAddr
+	 * @param metaSeq
+	 * @param dirType
+	 * @param metaType
+	 * @param dirFlag
+	 * @param metaFlags
+	 * @param size
+	 * @param ctime
+	 * @param crtime
+	 * @param atime
+	 * @param mtime
+	 * @param modes
+	 * @param uid
+	 * @param gid
+	 * @param md5Hash    md5sum of the file, or null or "NULL" if not present
+	 * @param knownState knownState status of the file, or null if unknown
+	 *                   (default)
+	 * @param parentPath
+	 *
+	 * @deprecated Do not make subclasses outside of this package.
+	 */
+	@Deprecated
+	@SuppressWarnings("deprecation")
+	protected AbstractFile(SleuthkitCase db, long objId, TskData.TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
+			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq,
+			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
+			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
+			String parentPath) {
+		this(db, objId, db.getDataSourceObjectId(objId), attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null);
+	}
+	
+	
+	/**
+	 * Initializes common fields used by AbstactFile implementations (objects in
+	 * tsk_files table). This deprecated version has attrId filed defined as a short
+	 * which has since been changed to an int.
+	 *
+	 * @param db                 case / db handle where this file belongs to
+	 * @param objId              object id in tsk_objects table
+	 * @param dataSourceObjectId The object id of the root data source of this
+	 *                           file.
+	 * @param attrType
+	 * @param attrId
+	 * @param name               name field of the file
+	 * @param fileType           type of the file
+	 * @param metaAddr
+	 * @param metaSeq
+	 * @param dirType
+	 * @param metaType
+	 * @param dirFlag
+	 * @param metaFlags
+	 * @param size
+	 * @param ctime
+	 * @param crtime
+	 * @param atime
+	 * @param mtime
+	 * @param modes
+	 * @param uid
+	 * @param gid
+	 * @param md5Hash            md5sum of the file, or null or "NULL" if not
+	 *                           present
+	 * @param knownState         knownState status of the file, or null if
+	 *                           unknown (default)
+	 * @param parentPath
+	 * @param mimeType           The MIME type of the file, can be null
+	 * 
+	 * @deprecated Do not make subclasses outside of this package.
+	 */
+	@Deprecated
+	@SuppressWarnings("deprecation")
+	AbstractFile(SleuthkitCase db, long objId, long dataSourceObjectId, TskData.TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
+			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
+			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime, short modes,
+			int uid, int gid, String md5Hash, FileKnown knownState, String parentPath, String mimeType) {
+		this(db, objId, dataSourceObjectId, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null);
+	}
+
+	/**
+	 * Get the attribute id
+	 *
+	 * @return attribute id
+	 *
+	 * @deprecated Use getAttributeId() method instead as it returns integer instead of short.
+	 */
+	@Deprecated
+	@SuppressWarnings("deprecation")
+	public short getAttrId() {	
+		/*
+		 * NOTE: previously attrId used to be stored in AbstractFile as (signed)
+		 * short even though it is stored as uint16 in TSK. In extremely rare
+		 * occurances attrId can be larger than what a signed short can hold
+		 * (2^15). Changes were made to AbstractFile to store attrId as integer.
+		 * Therefore this method has been deprecated. For backwards
+		 * compatibility, attribute ids that are larger than 32K are converted
+		 * to a negative number.
+		 */
+		return (short) attrId;	// casting to signed short converts values over 32K to negative values
+	}
+	
+	/**
+	 * Set local path for the file, as stored in db tsk_files_path, relative to
+	 * the case db path or an absolute path. When set, subsequent invocations of
+	 * read() will read the file in the local path.
+	 *
+	 * @param localPath  local path to be set
+	 * @param isAbsolute true if the path is absolute, false if relative to the
+	 *                   case db
+	 * 
+	 * @deprecated Do not make subclasses outside of this package.
+	 */
+	@Deprecated
+	protected void setLocalPath(String localPath, boolean isAbsolute) {
+		setLocalFilePath(localPath, isAbsolute);
 	}
 }

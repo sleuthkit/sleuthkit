@@ -20,6 +20,7 @@
 #include <string>
 #include <algorithm>
 #include <sstream>
+
 using std::string;
 using std::vector;
 using std::map;
@@ -108,7 +109,7 @@ static TSK_IMG_INFO *
 castImgInfo(JNIEnv * env, jlong ptr)
 {
     TSK_IMG_INFO *lcl = (TSK_IMG_INFO *) ptr;
-    if (lcl->tag != TSK_IMG_INFO_TAG) {
+    if (!lcl || lcl->tag != TSK_IMG_INFO_TAG) {
         setThrowTskCoreError(env, "Invalid IMG_INFO object");
         return 0;
     }
@@ -120,11 +121,14 @@ static TSK_VS_INFO *
 castVsInfo(JNIEnv * env, jlong ptr)
 {
     TSK_VS_INFO *lcl = (TSK_VS_INFO *) ptr;
-    if (lcl->tag != TSK_VS_INFO_TAG) {
+    if (!lcl || lcl->tag != TSK_VS_INFO_TAG) {
         setThrowTskCoreError(env, "Invalid VS_INFO object");
         return 0;
     }
-
+    // verify that image handle is still open
+    if (!castImgInfo(env, (jlong) lcl->img_info)) {
+        return 0;
+    }
     return lcl;
 }
 
@@ -132,11 +136,14 @@ static TSK_VS_PART_INFO *
 castVsPartInfo(JNIEnv * env, jlong ptr)
 {
     TSK_VS_PART_INFO *lcl = (TSK_VS_PART_INFO *) ptr;
-    if (lcl->tag != TSK_VS_PART_INFO_TAG) {
+    if (!lcl || lcl->tag != TSK_VS_PART_INFO_TAG) {
         setThrowTskCoreError(env, "Invalid VS_PART_INFO object");
         return 0;
     }
-
+    // verify that all handles are still open
+    if (!castVsInfo(env, (jlong) lcl->vs)) {
+        return 0;
+    }
     return lcl;
 }
 
@@ -144,8 +151,12 @@ static TSK_FS_INFO *
 castFsInfo(JNIEnv * env, jlong ptr)
 {
     TSK_FS_INFO *lcl = (TSK_FS_INFO *) ptr;
-    if (lcl->tag != TSK_FS_INFO_TAG) {
+    if (!lcl || lcl->tag != TSK_FS_INFO_TAG) {
         setThrowTskCoreError(env, "Invalid FS_INFO object");
+        return 0;
+    }
+    // verify that image handle is still open
+    if (!castImgInfo(env, (jlong) lcl->img_info)) {
         return 0;
     }
     return lcl;
@@ -156,8 +167,12 @@ static TSK_JNI_FILEHANDLE *
 castFsFile(JNIEnv * env, jlong ptr)
 {
     TSK_JNI_FILEHANDLE *lcl = (TSK_JNI_FILEHANDLE *) ptr;
-    if (lcl->tag != TSK_JNI_FILEHANDLE_TAG) {
+    if (!lcl || lcl->tag != TSK_JNI_FILEHANDLE_TAG) {
         setThrowTskCoreError(env, "Invalid TSK_JNI_FILEHANDLE object");
+        return 0;
+    }
+    // verify that all handles are still open
+    if (!lcl->fs_file || !castFsInfo(env, (jlong) lcl->fs_file->fs_info)) {
         return 0;
     }
     return lcl;
@@ -167,7 +182,7 @@ static TskCaseDb *
 castCaseDb(JNIEnv * env, jlong ptr)
 {
     TskCaseDb *lcl = ((TskCaseDb *) ptr);
-    if (lcl->m_tag != TSK_CASE_DB_TAG) {
+    if (!lcl || lcl->m_tag != TSK_CASE_DB_TAG) {
         setThrowTskCoreError(env,
             "Invalid TskCaseDb object");
         return 0;
@@ -249,6 +264,88 @@ JNIEXPORT jlong JNICALL
 
 
 /*
+ * Create a TskCaseDb with an associated database
+ * @return the pointer to the case
+ * @param env pointer to java environment this was called from
+ * @param env pointer to java environment this was called from
+ * @param cls the java class
+ * @param host the hostname or IP address
+ * @param port the port number as a string
+ * @param user the user name for the database
+ * @param pass the password for the database
+ * @param dbType the ordinal value of the enum for the database type
+ * @param dbName the name of the database to create
+ * @return 0 on error (sets java exception), pointer to newly opened TskCaseDb object on success
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_newCaseDbMultiNat(JNIEnv *env, jclass cls, jstring host, jstring port, jstring user, jstring pass, jint dbType, jstring dbName)
+{
+    TSK_TCHAR dbPathT[1024];
+    toTCHAR(env, dbPathT, 1024, dbName);
+
+    const char* host_utf8 = env->GetStringUTFChars(host, NULL);
+    const char* port_utf8 = env->GetStringUTFChars(port, NULL);
+    const char* user_utf8 = env->GetStringUTFChars(user, NULL);
+    const char* pass_utf8 = env->GetStringUTFChars(pass, NULL);
+    CaseDbConnectionInfo info(host_utf8, port_utf8, user_utf8, pass_utf8, (CaseDbConnectionInfo::DbType)dbType);
+
+    TskCaseDb *tskCase = TskCaseDb::newDb(dbPathT, &info);
+
+    // free memory allocated by env->GetStringUTFChars()
+    env->ReleaseStringUTFChars(host, host_utf8);
+    env->ReleaseStringUTFChars(port, port_utf8);
+    env->ReleaseStringUTFChars(user, user_utf8);
+    env->ReleaseStringUTFChars(pass, pass_utf8);
+
+    if (tskCase == NULL) {
+        setThrowTskCoreError(env);
+        return 0;
+    }
+
+    return (jlong) tskCase;
+}
+
+
+/*
+ * Open a TskCaseDb with an associated database
+ * @return the pointer to the case
+ * @param env pointer to java environment this was called from
+ * @param cls the java class
+ * @param host the hostname or IP address
+ * @param port the port number as a string
+ * @param user the user name for the database
+ * @param pass the password for the database
+ * @param dbType the ordinal value of the enum for the database type
+ * @param dbName the name of the database to open
+ * @return Returns pointer to object or exception on error
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openCaseDbMultiNat(JNIEnv *env, jclass cls, jstring host, jstring port, jstring user, jstring pass, jint dbType, jstring dbName)
+{
+    TSK_TCHAR dbPathT[1024];
+    toTCHAR(env, dbPathT, 1024, dbName);
+
+    const char* host_utf8 = env->GetStringUTFChars(host, NULL);
+    const char* port_utf8 = env->GetStringUTFChars(port, NULL);
+    const char* user_utf8 = env->GetStringUTFChars(user, NULL);
+    const char* pass_utf8 = env->GetStringUTFChars(pass, NULL);
+    CaseDbConnectionInfo info(host_utf8, port_utf8, user_utf8, pass_utf8, (CaseDbConnectionInfo::DbType)dbType);
+
+    TskCaseDb *tskCase = TskCaseDb::openDb(dbPathT, &info);
+
+    // free memory allocated by env->GetStringUTFChars()
+    env->ReleaseStringUTFChars(host, host_utf8);
+    env->ReleaseStringUTFChars(port, port_utf8);
+    env->ReleaseStringUTFChars(user, user_utf8);
+    env->ReleaseStringUTFChars(pass, pass_utf8);
+
+    if (tskCase == NULL) {
+        setThrowTskCoreError(env);
+        return 0;
+    }
+
+    return (jlong) tskCase;
+}
+
+/*
  * Open a TskCaseDb with an associated database
  * @return the pointer to the case
  * @param env pointer to java environment this was called from
@@ -271,6 +368,7 @@ JNIEXPORT jlong JNICALL
 
     return (jlong) tskCase;
 }
+
 
 /*
  * Close (cleanup) a case
@@ -537,8 +635,8 @@ JNIEXPORT jboolean JNICALL
         return (jboolean)false;
     }
 
-    return (jboolean)((tsk_hdb_uses_external_indexes(db) == static_cast<uint8_t>(1)) && 
-                      (!tsk_hdb_is_idx_only(db) == static_cast<uint8_t>(1)));
+    return (jboolean)((tsk_hdb_uses_external_indexes(db) == 1) && 
+                      (tsk_hdb_is_idx_only(db) == 0));
 }
  
 /**
@@ -826,7 +924,7 @@ JNIEXPORT jobject JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_hashDbLookup
  * @param env pointer to java environment this was called from
  * @partam caseHandle pointer to case to add image to
  * @param timezone timezone for the image
- * @param addUnallocSpace whether to process unallocated filesystem blocks and volumes in the image
+ * @param addUnallocSpace whether to create virtual files for the unallocated space in the disk image
  * @param noFatFsOrphans whether to skip processing orphans on FAT filesystems
  */
 JNIEXPORT jlong JNICALL
@@ -892,41 +990,47 @@ JNIEXPORT jlong JNICALL
 }
 
 
-
 /*
- * Create a database for the given image using a pre-created process which can be cancelled.
+ * Add an image to a database using a pre-created process, which can be cancelled.
  * MUST call commitAddImg or revertAddImg afterwards once runAddImg returns.  If there is an 
  * error, you do not need to call revert or commit and the 'process' handle will be deleted.
- * @return the 0 for success 1 for failure
+ *
  * @param env pointer to java environment this was called from
  * @param obj the java object this was called from
  * @param process the add-image process created by initAddImgNat
+ * @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID)
  * @param paths array of strings from java, the paths to the image parts
- * @param num_imgs number of image parts
- * @param timezone the timezone the image is from
+ * @param numImgs number of image parts
+ * @param timeZone the timezone the image is from
  */
 JNIEXPORT void JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
-    jclass obj, jlong process, jobjectArray paths, jint num_imgs, jstring timezone) {
-    jboolean isCopy;
+    jclass obj, jlong process, jstring deviceId, jobjectArray paths, jint numImgs, jstring timeZone) {
 
     TskAutoDb *tskAuto = ((TskAutoDb *) process);
     if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
-        setThrowTskCoreError(env,
+        setThrowTskCoreError(env, 
             "runAddImgNat: Invalid TskAutoDb object passed in");
         return;
     }
 
+    jboolean isCopy;
+    const char *device_id = NULL;
+    if (NULL != deviceId) {    
+        device_id = (const char *) env->GetStringUTFChars(deviceId, &isCopy);
+        if (NULL == device_id) {
+            setThrowTskCoreError(env, "runAddImgNat: Can't convert data source id string");
+            return;
+        }
+    }
 
-    // move the strings into the C++ world
-
-    // get pointers to each of the file names
-    char **imagepaths8 = (char **) tsk_malloc(num_imgs * sizeof(char *));
+    // Get pointers to each of the image file names.
+    char **imagepaths8 = (char **) tsk_malloc(numImgs * sizeof(char *));
     if (imagepaths8 == NULL) {
         setThrowTskCoreError(env);
         return;
     }
-    for (int i = 0; i < num_imgs; i++) {
+    for (int i = 0; i < numImgs; i++) {
         jstring jsPath = (jstring) env->GetObjectArrayElement(paths,
                 i);
         imagepaths8[i] =
@@ -939,19 +1043,18 @@ JNIEXPORT void JNICALL
             return;
         }
     }
-    
-    if (env->GetStringLength(timezone) > 0) {
-        const char * tzchar = env->
-            GetStringUTFChars(timezone, &isCopy);
 
-        tskAuto->setTz(string(tzchar));
-        env->ReleaseStringUTFChars(timezone, tzchar);
+    // Set the time zone.
+    if (env->GetStringLength(timeZone) > 0) {
+        const char *time_zone = env->GetStringUTFChars(timeZone, &isCopy);
+        tskAuto->setTz(string(time_zone));
+        env->ReleaseStringUTFChars(timeZone, time_zone);
     }
 
-    // process the image (parts)
+    // Add the data source.
     uint8_t ret = 0;
-    if ( (ret = tskAuto->startAddImage((int) num_imgs, imagepaths8,
-        TSK_IMG_TYPE_DETECT, 0)) != 0) {
+    if ( (ret = tskAuto->startAddImage((int) numImgs, imagepaths8,
+        TSK_IMG_TYPE_DETECT, 0, device_id)) != 0) {
         stringstream msgss;
         msgss << "Errors occured while ingesting image " << std::endl;
         vector<TskAuto::error_record> errors = tskAuto->getErrorList();
@@ -966,8 +1069,14 @@ JNIEXPORT void JNICALL
             setThrowTskCoreError(env, msgss.str().c_str());
         }
         else if (ret == 2) {
-            //non fatal error
-            setThrowTskDataError(env, msgss.str().c_str());
+			if(tskAuto->isDbOpen()) {
+				// if we can still talk to the database, it's a non-fatal error
+				setThrowTskDataError(env, msgss.str().c_str());
+			}
+			else {
+				// we cannot talk to the database, fatal error
+				setThrowTskCoreError(env, msgss.str().c_str());
+			}
         }
     }
 
@@ -975,8 +1084,8 @@ JNIEXPORT void JNICALL
     //close image first before freeing the image paths
     tskAuto->closeImage();
 
-    // cleanup
-    for (int i = 0; i < num_imgs; i++) {
+    // Cleanup
+    for (int i = 0; i < numImgs; i++) {
         jstring jsPath = (jstring)
             env->GetObjectArrayElement(paths, i);
         env->
@@ -984,10 +1093,10 @@ JNIEXPORT void JNICALL
         env->DeleteLocalRef(jsPath);
     }
     free(imagepaths8);
+    env->ReleaseStringUTFChars(deviceId, (const char *) device_id);
 
     // if process completes successfully, must call revertAddImgNat or commitAddImgNat to free the TskAutoDb
 }
-
 
 
 /*
