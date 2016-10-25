@@ -142,7 +142,7 @@ sub tag_dir {
 # Commit the updated version info in the current source directory
 sub checkin_vers {
     unless ($TESTING) {
-        print "Checking in version updates\n";
+        print "Checking in version updates to master\n";
         system ("git commit -a -m \"New version files for ${VER}\"");
         system ("git push origin master");
     }
@@ -492,8 +492,7 @@ sub copy_tar() {
 # Get the version argument
 if (scalar (@ARGV) != 1) {
     print stderr "Missing release version argument (i.e.  3.0.1)\n";
-    print stderr "\tversion: Version of release\n";
-    print stderr "Makes a release of the master branch\n";
+    print stderr "Makes a release of the current branch\n";
     exit;
 }
 
