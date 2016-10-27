@@ -120,6 +120,15 @@ public interface ContentVisitor<T> {
 	 * @return result of the visit
 	 */
 	T visit(LocalFile df);
+	
+	/**
+	 * Act on (visit) a SlackFile content object
+	 *
+	 * @param sf slack file to visit / act on
+	 *
+	 * @return result of the visit
+	 */
+	T visit(SlackFile sf);	
 
 	/**
 	 * The default content visitor - quickest method for implementing a custom
@@ -183,6 +192,11 @@ public interface ContentVisitor<T> {
 		@Override
 		public T visit(LocalFile lf) {
 			return defaultVisit(lf);
+		}
+		
+		@Override
+		public T visit(SlackFile sf) {
+			return defaultVisit(sf);
 		}
 	}
 }

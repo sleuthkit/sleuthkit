@@ -631,8 +631,26 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	public static int readFile(long fileHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
-		return readFileNat(fileHandle, readBuffer, offset, len);
+		return readFileNat(fileHandle, readBuffer, offset, 0, len);
 	}
+	
+	/**
+	 * reads data from the slack space of a file
+	 *
+	 * @param fileHandle pointer to a file structure in the sleuthkit
+	 * @param readBuffer pre-allocated buffer to read to
+	 * @param offset     byte offset in the slack to start at
+	 * @param len        amount of data to read
+	 *
+	 * @return the number of characters read, or -1 if the end of the stream has
+	 *         been reached
+	 *
+	 * @throws TskCoreException exception thrown if critical error occurs within
+	 *                          TSK
+	 */
+	public static int readFileSlack(long fileHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
+		return readFileNat(fileHandle, readBuffer, offset, 1, len);
+	}	
 
 	/**
 	 * Get human readable (some what) details about a file. This is the same as
@@ -1027,7 +1045,7 @@ public class SleuthkitJNI {
 
 	private static native int readFsNat(long fsHandle, byte[] readBuffer, long offset, long len) throws TskCoreException;
 
-	private static native int readFileNat(long fileHandle, byte[] readBuffer, long offset, long len) throws TskCoreException;
+	private static native int readFileNat(long fileHandle, byte[] readBuffer, long offset, int offset_type, long len) throws TskCoreException;
 
 	private static native int saveFileMetaDataTextNat(long fileHandle, String fileName) throws TskCoreException;
 

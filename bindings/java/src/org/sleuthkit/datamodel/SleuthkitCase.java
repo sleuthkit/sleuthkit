@@ -5179,8 +5179,10 @@ public class SleuthkitCase {
 					final LocalFile lf;
 					lf = localFile(rs, connection, AbstractContent.UNKNOWN_ID);
 					results.add(lf);
+				} else if (type == TSK_DB_FILES_TYPE_ENUM.SLACK.getFileType()) {
+					final SlackFile sf = slackFile(rs, null);
+					results.add(sf);
 				}
-
 			} //end for each resultSet
 		} catch (SQLException e) {
 			logger.log(Level.SEVERE, "Error getting abstract files from result set", e); //NON-NLS
@@ -5214,6 +5216,10 @@ public class SleuthkitCase {
 				(short) rs.getInt("mode"), rs.getInt("uid"), rs.getInt("gid"), //NON-NLS
 				rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
 				rs.getString("parent_path"), rs.getString("mime_type")); //NON-NLS
+		if(TSK_DB_FILES_TYPE_ENUM.valueOf(rs.getShort("type")).equals(TskData.TSK_DB_FILES_TYPE_ENUM.SLACK)){
+			System.out.println("Have a slack file - this shouldn't be happening " + f.getName());
+			f.setFileType(TSK_DB_FILES_TYPE_ENUM.SLACK);
+		}
 		f.setFileSystem(fs);
 		return f;
 	}
@@ -5366,6 +5372,34 @@ public class SleuthkitCase {
 				localPath, encodingType);
 		return file;
 	}
+	
+		/**
+	 * Create a Slack File object from the result set containing query results on
+	 * tsk_files table
+	 *
+	 * @param rs the result set
+	 * @param fs parent file system
+	 *
+	 * @return a newly create Slack File
+	 *
+	 * @throws SQLException
+	 */
+	org.sleuthkit.datamodel.SlackFile slackFile(ResultSet rs, FileSystem fs) throws SQLException {
+		org.sleuthkit.datamodel.SlackFile f = new org.sleuthkit.datamodel.SlackFile(this, rs.getLong("obj_id"), //NON-NLS
+				rs.getLong("data_source_obj_id"), rs.getLong("fs_obj_id"), //NON-NLS
+				TskData.TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")), //NON-NLS
+				rs.getInt("attr_id"), rs.getString("name"), rs.getLong("meta_addr"), rs.getInt("meta_seq"), //NON-NLS
+				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
+				TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
+				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), //NON-NLS
+				rs.getShort("meta_flags"), rs.getLong("size"), //NON-NLS
+				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
+				(short) rs.getInt("mode"), rs.getInt("uid"), rs.getInt("gid"), //NON-NLS
+				rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
+				rs.getString("parent_path"), rs.getString("mime_type")); //NON-NLS
+		f.setFileSystem(fs);
+		return f;
+	}
 
 	/**
 	 * Returns the list of abstractFile objects from a result of selecting many
@@ -5423,6 +5457,11 @@ public class SleuthkitCase {
 					case LOCAL: {
 						final LocalFile lf = localFile(rs, connection, parentId);
 						children.add(lf);
+						break;
+					}
+					case SLACK: {
+						final SlackFile sf = slackFile(rs, null);
+						children.add(sf);
 						break;
 					}
 					default:

@@ -330,10 +330,10 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readFsNat
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    readFileNat
- * Signature: (J[BJJ)I
+ * Signature: (J[BJIJ)I
  */
 JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat
-  (JNIEnv *, jclass, jlong, jbyteArray, jlong, jlong);
+  (JNIEnv *, jclass, jlong, jbyteArray, jlong, jint, jlong);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI

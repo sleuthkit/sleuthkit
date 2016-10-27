@@ -690,6 +690,14 @@ extern "C" {
         TSK_FS_FILE_READ_FLAG_NOID = 0x02,      ///< Ignore the Id argument given in the API (use only the type)
     } TSK_FS_FILE_READ_FLAG_ENUM;
 
+    /**
+     * Flag used by readFileNat to specify if the offset is relative to the start of the file
+     * or the start of the slack space */
+    typedef enum {
+        TSK_FS_FILE_READ_OFFSET_TYPE_START_OF_FILE = 0x00,
+        TSK_FS_FILE_READ_OFFSET_TYPE_START_OF_SLACK = 0x01,
+    } TSK_FS_FILE_READ_OFFSET_TYPE_ENUM;
+
     extern void tsk_fs_file_close(TSK_FS_FILE * a_fs_file);
     extern TSK_FS_FILE *tsk_fs_file_open(TSK_FS_INFO * a_fs,
         TSK_FS_FILE * a_fs_file, const char *a_path);

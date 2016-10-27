@@ -170,7 +170,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @throws TskCoreException if there is a problem opening the handle.
 	 */
 	@SuppressWarnings("deprecation")
-	private void loadFileHandle() throws TskCoreException {
+	void loadFileHandle() throws TskCoreException {
 		if (fileHandle == 0) {
 			synchronized (this) {
 				if (fileHandle == 0) {
