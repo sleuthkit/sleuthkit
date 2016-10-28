@@ -41,7 +41,7 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
  */
 public abstract class AbstractFile extends AbstractContent {
 
-	protected TskData.TSK_DB_FILES_TYPE_ENUM fileType;
+	protected final TskData.TSK_DB_FILES_TYPE_ENUM fileType;
 	protected final TSK_FS_NAME_TYPE_ENUM dirType;
 	protected final TSK_FS_META_TYPE_ENUM metaType;
 	protected final TSK_FS_NAME_FLAG_ENUM dirFlag;
@@ -609,20 +609,6 @@ public abstract class AbstractFile extends AbstractContent {
 	public boolean isFile() {
 		return metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG);
 
-	}
-	
-	/**
-	 * Is this object a slack file
-	 * 
-	 * @return true if a slack file, false otherwise
-	 */
-	public boolean isSlackFile() {
-		return fileType.equals(TskData.TSK_DB_FILES_TYPE_ENUM.SLACK);
-	}
-	
-	// TEMP TEMP TEMP
-	public void setFileType(TskData.TSK_DB_FILES_TYPE_ENUM type){
-		fileType = type;
 	}
 
 	/**

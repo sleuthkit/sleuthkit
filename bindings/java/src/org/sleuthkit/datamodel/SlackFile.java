@@ -26,12 +26,12 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 
 /**
- * A representation of a file system file that has been added to a case.
+ * A representation of a slack file that has been added to a case.
  */
-public class File extends FsContent {
+public class SlackFile extends FsContent {
 
 	/**
-	 * Constructs a representation of a file system file that has been added to
+	 * Constructs a representation of the slack space from a file system file that has been added to
 	 * the case.
 	 *
 	 * @param db                 The case database to which the file has been
@@ -76,7 +76,7 @@ public class File extends FsContent {
 	 * @param mimeType           The MIME type of the file, null if it has not
 	 *                           yet been determined.
 	 */
-	File(SleuthkitCase db,
+	SlackFile(SleuthkitCase db,
 			long objId,
 			long dataSourceObjectId,
 			long fsObjId,
@@ -89,7 +89,43 @@ public class File extends FsContent {
 			long ctime, long crtime, long atime, long mtime,
 			short modes, int uid, int gid,
 			String md5Hash, FileKnown knownState, String parentPath, String mimeType) {
-		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, mimeType);
+		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.SLACK, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, mimeType);
+	}
+	
+	/**
+	 * Reads bytes from the slack space
+	 *
+	 * @param buf    Buffer to read into.
+	 * @param offset Start position in the slack space.
+	 * @param len    Number of bytes to read.
+	 *
+	 * @return Number of bytes read.
+	 *
+	 * @throws TskCoreException if there is a problem reading the file.
+	 */
+	@Override
+	@SuppressWarnings("deprecation")
+	protected int readInt(byte[] buf, long offset, long len) throws TskCoreException {
+		try {
+			if (offset == 0 && size == 0) {
+				//special case for 0-size file
+				return 0;
+			}
+			loadFileHandle();
+
+			return SleuthkitJNI.readFileSlack(fileHandle, buf, offset, len);
+		} catch (TskCoreException ex) {
+			Content dataSource = getDataSource();
+			if ((dataSource != null) && (dataSource instanceof Image)) {
+				Image image = (Image) dataSource;
+				if (!image.imageFileExists()) {
+					// FIX THIS LATER
+					//tskCase.submitError(SleuthkitCase.ErrorObserver.Context.IMAGE_READ_ERROR.getContextString(),
+					//		bundle.getString("FsContent.readInt.err.msg.text"));
+				}
+			}
+			throw ex;
+		}
 	}
 
 	/**
@@ -200,7 +236,7 @@ public class File extends FsContent {
 	 */
 	@Deprecated
 	@SuppressWarnings("deprecation")
-	protected File(SleuthkitCase db,
+	protected SlackFile(SleuthkitCase db,
 			long objId,
 			long fsObjId,
 			TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
@@ -265,7 +301,7 @@ public class File extends FsContent {
 	 */
 	@Deprecated
 	@SuppressWarnings("deprecation")
-	File(SleuthkitCase db, long objId, long dataSourceObjectId, long fsObjId, TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
+	SlackFile(SleuthkitCase db, long objId, long dataSourceObjectId, long fsObjId, TSK_FS_ATTR_TYPE_ENUM attrType, short attrId,
 			String name, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime,
 			short modes, int uid, int gid, String md5Hash, FileKnown knownState, String parentPath, String mimeType) {

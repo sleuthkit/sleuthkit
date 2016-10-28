@@ -984,7 +984,6 @@ int
         meta_mode, gid, uid, md5TextPtr, known,
         escaped_path);
 
-    printf("Adding file %s with objid %x\n", name, objId);
     if (attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
         free(name);
         free(escaped_path);
@@ -996,14 +995,8 @@ int
     if((fs_attr != NULL)
            && (fs_attr->flags & TSK_FS_ATTR_NONRES) 
            && (fs_attr->nrd.allocsize !=  fs_attr->size)){
-        printf("Adding slack for %s\n", name);
-        printf("  Non-resident\n");
-        printf("  Alloc: 0x%x\n", fs_attr->nrd.allocsize);
-        printf("  Size:  0x%x\n", fs_attr->size);
         strncat(name, "-slack", 6);
-        printf("  Slack file: %s\n", name);
         TSK_OFF_T slackSize = fs_attr->nrd.allocsize - fs_attr->size;
-        printf("  Slack file size: 0x%x\n", slackSize);
 
         if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId)) {
             free(name);
