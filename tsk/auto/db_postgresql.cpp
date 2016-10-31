@@ -1089,7 +1089,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
             type, idx, name_sql,
             fs_file->name->meta_addr, fs_file->name->meta_seq, 
             fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
-            size, 
+            slackSize, 
             (unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime, 
             meta_mode, gid, uid, NULL, known,
             escaped_path_sql);

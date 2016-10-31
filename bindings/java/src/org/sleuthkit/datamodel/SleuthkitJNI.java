@@ -617,6 +617,25 @@ public class SleuthkitJNI {
 	}
 
 	/**
+	 * enum used to tell readFileNat whether the offset is from the beginning
+	 * of the file or from the beginning of the slack space.
+	 */
+	private enum TSK_FS_FILE_READ_OFFSET_TYPE_ENUM{
+		START_OF_FILE(0),
+		START_OF_SLACK(1);
+		
+		private final int val;
+		
+		TSK_FS_FILE_READ_OFFSET_TYPE_ENUM(int val){
+			this.val = val;
+		}
+		
+		int getValue(){
+			return val;
+		}
+	}
+	
+	/**
 	 * reads data from an file
 	 *
 	 * @param fileHandle pointer to a file structure in the sleuthkit
@@ -631,7 +650,7 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	public static int readFile(long fileHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
-		return readFileNat(fileHandle, readBuffer, offset, 0, len);
+		return readFileNat(fileHandle, readBuffer, offset, TSK_FS_FILE_READ_OFFSET_TYPE_ENUM.START_OF_FILE.getValue(), len);
 	}
 	
 	/**
@@ -649,7 +668,7 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	public static int readFileSlack(long fileHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
-		return readFileNat(fileHandle, readBuffer, offset, 1, len);
+		return readFileNat(fileHandle, readBuffer, offset, TSK_FS_FILE_READ_OFFSET_TYPE_ENUM.START_OF_SLACK.getValue(), len);
 	}	
 
 	/**

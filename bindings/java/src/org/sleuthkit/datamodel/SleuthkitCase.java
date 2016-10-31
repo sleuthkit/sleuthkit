@@ -5216,10 +5216,6 @@ public class SleuthkitCase {
 				(short) rs.getInt("mode"), rs.getInt("uid"), rs.getInt("gid"), //NON-NLS
 				rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
 				rs.getString("parent_path"), rs.getString("mime_type")); //NON-NLS
-		if(TSK_DB_FILES_TYPE_ENUM.valueOf(rs.getShort("type")).equals(TskData.TSK_DB_FILES_TYPE_ENUM.SLACK)){
-			System.out.println("Have a slack file - this shouldn't be happening " + f.getName());
-			f.setFileType(TSK_DB_FILES_TYPE_ENUM.SLACK);
-		}
 		f.setFileSystem(fs);
 		return f;
 	}
