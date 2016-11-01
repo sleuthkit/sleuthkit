@@ -24,7 +24,7 @@
 
 TskIsImageSupported::TskIsImageSupported()
 {
-    m_wasDataFound = true;
+    m_wasDataFound = false;
 }
 
 bool TskIsImageSupported::isImageSupported()

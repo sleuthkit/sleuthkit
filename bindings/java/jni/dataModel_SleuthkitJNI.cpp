@@ -2020,11 +2020,13 @@ JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupp
     TskIsImageSupported tskIsImage;
     TSK_TCHAR imagePathT[1024];
     toTCHAR(env, imagePathT, 1024, imagePathJ);
+
+    // It seems like passing &imagePathT should work instead of making this new array,
+    // but it generated an EXCEPTION_ACCESS_VIOLATION during testing.
     TSK_TCHAR ** imagePaths = (TSK_TCHAR**)tsk_malloc((1) * sizeof(TSK_TCHAR*));
     bool result;
     imagePaths[0] = imagePathT;
-    if (tskIsImage.openImage(1, imagePaths, TSK_IMG_TYPE_DETECT,
-            0)) {
+    if (tskIsImage.openImage(1, imagePaths, TSK_IMG_TYPE_DETECT, 0)) {
         result = false;
     } else {
         if (tskIsImage.findFilesInImg()) {
