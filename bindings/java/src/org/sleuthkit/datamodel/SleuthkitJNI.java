@@ -946,6 +946,10 @@ public class SleuthkitJNI {
 	public static long findDeviceSize(String devPath) throws TskCoreException {
 		return findDeviceSizeNat(devPath);
 	}
+	
+	public static boolean isImageSupported(String imagePath){
+		return isImageSupportedNat(imagePath);
+	}
 
 	private static native String getVersionNat();
 
@@ -1042,5 +1046,7 @@ public class SleuthkitJNI {
 	private static native long findDeviceSizeNat(String devicePath) throws TskCoreException;
 
 	private static native String getCurDirNat(long process);
+	
+	private static native boolean isImageSupportedNat(String imagePath);
 
 }

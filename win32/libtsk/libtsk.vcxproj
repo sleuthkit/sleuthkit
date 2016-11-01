@@ -473,6 +473,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
   <ItemGroup>
     <ClCompile Include="..\..\tsk\auto\db_postgresql.cpp" />
     <ClCompile Include="..\..\tsk\auto\guid.cpp" />
+    <ClCompile Include="..\..\tsk\auto\is_image_supported.cpp" />
     <ClCompile Include="..\..\tsk\auto\tsk_db.cpp" />
     <ClCompile Include="..\..\tsk\fs\exfatfs_dent.c" />
     <ClCompile Include="..\..\tsk\fs\exfatfs.c" />
@@ -576,6 +577,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClInclude Include="..\..\tsk\auto\guid.h" />
     <ClInclude Include="..\..\tsk\auto\tsk_db.h" />
     <ClInclude Include="..\..\tsk\auto\tsk_db_postgresql.h" />
+    <ClInclude Include="..\..\tsk\auto\tsk_is_image_supported.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_exfatfs.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_fatxxfs.h" />
     <ClInclude Include="..\..\tsk\hashdb\tsk_hash_info.h" />
