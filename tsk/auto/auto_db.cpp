@@ -342,6 +342,20 @@ TSK_RETVAL_ENUM
     const unsigned char *const md5,
     const TSK_DB_FILES_KNOWN_ENUM known)
 {
+    printf("\n");
+    if((fs_file->name != NULL) && (fs_file->name->name != NULL)){
+        printf("File: %s\n", fs_file->name->name);
+    }else {
+        printf("File: <unknown>\n");
+    }
+    if(fs_attr != NULL){
+        printf("  Size:       %d\n", fs_file->meta->size);
+        printf("  Alloc size: %d\n", fs_attr->nrd.allocsize);
+        printf("  Comp size:  %d\n", fs_attr->nrd.compsize);
+        printf("  Init size:  %d\n", fs_attr->nrd.initsize);
+    }
+
+
     if (m_db->addFsFile(fs_file, fs_attr, path, md5, known, m_curFsId, m_curFileId,
             m_curImgId)) {
         registerError();
