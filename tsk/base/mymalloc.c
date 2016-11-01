@@ -32,7 +32,7 @@ tsk_malloc(size_t len)
     if ((ptr = malloc(len)) == 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUX_MALLOC);
-        tsk_error_set_errstr("tsk_malloc: %s (%"PRIuSIZE" requested)", strerror(errno), len);
+        tsk_error_set_errstr("tsk_malloc: %s (%" PRIuSIZE" requested)", strerror(errno), len);
     }
     else {
         memset(ptr, 0, len);
@@ -47,7 +47,7 @@ tsk_realloc(void *ptr, size_t len)
     if ((ptr = realloc(ptr, len)) == 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUX_MALLOC);
-        tsk_error_set_errstr("tsk_realloc: %s (%"PRIuSIZE" requested)", strerror(errno), len);
+        tsk_error_set_errstr("tsk_realloc: %s (%" PRIuSIZE" requested)", strerror(errno), len);
     }
     return (ptr);
 }
