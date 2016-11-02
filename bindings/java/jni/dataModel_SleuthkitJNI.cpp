@@ -11,6 +11,7 @@
 #include "tsk/tsk_tools_i.h"
 #include "tsk/auto/tsk_case_db.h"
 #include "tsk/hashdb/tsk_hash_info.h"
+#include "tsk/auto/tsk_is_image_supported.h"
 #include "jni.h"
 #include "dataModel_SleuthkitJNI.h"
 #include <locale.h>
@@ -2011,4 +2012,44 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_findDeviceSize
       env->ReleaseStringUTFChars(devPathJ , devPath); 
 
       return devSize;
+}
+
+/*
+ * Test whether an image is supported
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param imagePathJ the image path
+ * @return true if the image can be processed, false otherwise
+ */
+JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupportedNat
+  (JNIEnv * env, jclass obj, jstring imagePathJ) {
+      
+    TskIsImageSupported tskIsImage;
+    TSK_TCHAR imagePathT[1024];
+    toTCHAR(env, imagePathT, 1024, imagePathJ);
+
+    // It seems like passing &imagePathT should work instead of making this new array,
+    // but it generated an EXCEPTION_ACCESS_VIOLATION during testing.
+    TSK_TCHAR ** imagePaths = (TSK_TCHAR**)tsk_malloc((1) * sizeof(TSK_TCHAR*));
+    bool result;
+    imagePaths[0] = imagePathT;
+    if (tskIsImage.openImage(1, imagePaths, TSK_IMG_TYPE_DETECT, 0)) {
+        result = false;
+    } else {
+        if (tskIsImage.findFilesInImg()) {
+            result = false;
+        } else {
+            if (tskIsImage.isImageSupported()) {
+                result = true;
+            }
+            else {
+                result = false;
+            }   
+        }
+    }
+
+    // Cleanup
+    free(imagePaths);
+
+    return (jboolean) result;
 }

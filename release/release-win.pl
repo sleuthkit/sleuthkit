@@ -175,7 +175,7 @@ sub build_core {
 
 	# 2008 version
 	# `vcbuild /errfile:BuildErrors.txt tsk-win.sln "Release|Win32"`; 
-	# 2010 version
+	# 2010/2015 version
 	`msbuild.exe tsk-win.sln /m /p:Configuration=Release /clp:ErrorsOnly /nologo > BuildErrors.txt`;
 	die "Build errors -- check win32/BuildErrors.txt" if (-s "BuildErrors.txt");
 
@@ -240,7 +240,7 @@ sub package_core {
 	#`cp \"${RELDIR}/Microsoft.VC90.CRT.manifest\" \"${rdir}/bin\"`;
 
 	# 2010 version
-	copy_runtime_2010("${rdir}/bin");
+	# copy_runtime_2010("${rdir}/bin");
 
 	# Zip up the files - move there to make the path in the zip short
 	chdir ("$RELDIR") or die "Error changing directories to $RELDIR";
@@ -268,7 +268,7 @@ sub build_framework {
 
 	# 2008 version
 	#`vcbuild /errfile:BuildErrors.txt framework.sln "Release|Win32"`; 
-	# 2010 version
+	# 2010/2015 version
 	`msbuild.exe framework.sln /m /p:Configuration=Release /clp:ErrorsOnly /nologo > BuildErrors.txt`;
 	die "Build errors -- check framework/msvcpp/framework/BuildErrors.txt" if (-e "BuildErrors.txt" && -s "BuildErrors.txt");
 

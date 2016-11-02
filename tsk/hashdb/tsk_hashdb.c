@@ -176,7 +176,7 @@ TSK_HDB_INFO *
             if (TSK_HDB_DBTYPE_INVALID_ID == db_type) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
-                tsk_error_set_errstr("%s: error determining hash database type of %"PRIttocTSK, func_name, db_path);
+                tsk_error_set_errstr("%s: error determining hash database type of %" PRIttocTSK, func_name, db_path);
                 free(db_path);
                 return NULL;
             }
@@ -188,7 +188,7 @@ TSK_HDB_INFO *
             else {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_HDB_OPEN);
-                tsk_error_set_errstr("%s: failed to open %"PRIttocTSK, func_name, db_path);
+                tsk_error_set_errstr("%s: failed to open %" PRIttocTSK, func_name, db_path);
                 free(db_path);
                 return NULL;
             }
@@ -216,7 +216,7 @@ TSK_HDB_INFO *
         if (NULL == hIdx) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_OPEN);
-            tsk_error_set_errstr("%s: database is index only, failed to open index %"PRIttocTSK, func_name, db_path);
+            tsk_error_set_errstr("%s: database is index only, failed to open index %" PRIttocTSK, func_name, db_path);
             free(db_path);
             return NULL;
         } 

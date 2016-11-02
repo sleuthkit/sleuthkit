@@ -391,6 +391,14 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_findDeviceSize
 JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getCurDirNat
   (JNIEnv *, jclass, jlong);
 
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    isImageSupportedNat
+ * Signature: (Ljava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupportedNat
+  (JNIEnv *, jclass, jstring);
+
 #ifdef __cplusplus
 }
 #endif

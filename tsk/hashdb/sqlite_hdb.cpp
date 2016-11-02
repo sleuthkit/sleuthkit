@@ -414,7 +414,7 @@ uint8_t
     if (TSK_HDB_HTYPE_MD5_LEN != md5_str_len) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
-        tsk_error_set_errstr("sqlite_hdb_add_entry: md5 length incorrect (=%"PRIuSIZE")", md5_str_len);
+        tsk_error_set_errstr("sqlite_hdb_add_entry: md5 length incorrect (=%" PRIuSIZE")", md5_str_len);
         return 1;
     }
 
@@ -491,7 +491,7 @@ int8_t
     if (TSK_HDB_HTYPE_MD5_LEN != len) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
-        tsk_error_set_errstr("sqlite_hdb_lookup_str: hash length incorrect (=%"PRIuSIZE"), expecting %d", len, TSK_HDB_HTYPE_MD5_LEN);
+        tsk_error_set_errstr("sqlite_hdb_lookup_str: hash length incorrect (=%" PRIuSIZE"), expecting %d", len, TSK_HDB_HTYPE_MD5_LEN);
         return 1;
     }
 
@@ -525,7 +525,7 @@ int8_t
     if (MD5_BLOB_LEN != len) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
-        tsk_error_set_errstr("sqlite_hdb_lookup_bin: len=%"PRIu8", expected %"PRIuSIZE, len, MD5_BLOB_LEN);
+        tsk_error_set_errstr("sqlite_hdb_lookup_bin: len=%" PRIu8", expected %" PRIuSIZE, len, MD5_BLOB_LEN);
         return -1;
     }
 
@@ -595,7 +595,7 @@ int8_t sqlite_hdb_lookup_verbose_str(TSK_HDB_INFO *hdb_info_base, const char *ha
     if (TSK_HDB_HTYPE_MD5_LEN != len) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
-        tsk_error_set_errstr("sqlite_hdb_lookup_verbose_str: hash length incorrect (=%"PRIuSIZE"), expecting %d", len, TSK_HDB_HTYPE_MD5_LEN);
+        tsk_error_set_errstr("sqlite_hdb_lookup_verbose_str: hash length incorrect (=%" PRIuSIZE"), expecting %d", len, TSK_HDB_HTYPE_MD5_LEN);
         return -1;
     }
 
