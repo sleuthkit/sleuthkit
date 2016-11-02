@@ -324,7 +324,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * @param displayName      the display name of this artifact
 	 * @param reviewStatus     the review status of this artifact
 	 */
-	protected BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long objID, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus) {
+	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long objID, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus) {
 		this.sleuthkitCase = sleuthkitCase;
 		this.artifactID = artifactID;
 		this.objID = objID;
@@ -348,18 +348,11 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * @param isNew            true if we are currently creating the artifact
 	 */
 	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long objID, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, boolean isNew) {
-		this.sleuthkitCase = sleuthkitCase;
-		this.artifactID = artifactID;
-		this.objID = objID;
-		this.artifactTypeID = artifactTypeID;
-		this.artifactTypeName = artifactTypeName;
-		this.displayName = displayName;
-
+		this(sleuthkitCase, artifactID, objID, artifactTypeID, artifactTypeName, displayName, reviewStatus);
 		// If the artifact is new, we don't need to waste a database call later to load the attributes
 		if (isNew) {
 			this.loadedCacheFromDb = true;
 		}
-		this.reviewStatus = reviewStatus;
 	}
 
 	public ReviewStatus getReviewStatus() {
@@ -631,5 +624,25 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		public String getDisplayName() {
 			return displayName;
 		}
+	}
+
+	/**
+	 * Constructor for an artifact. Should only be used by SleuthkitCase. Sets
+	 * the initial review status as "undecided"
+	 *
+	 * @param sleuthkitCase    the case that can be used to access the database
+	 *                         this artifact is part of
+	 * @param artifactID       the id for this artifact
+	 * @param objID            the object this artifact is associated with
+	 * @param artifactTypeID   the type id of this artifact
+	 * @param artifactTypeName the type name of this artifact
+	 * @param displayName      the display name of this artifact
+	 *
+	 * @deprecated use new BlackboardArtifact(SleuthkitCase, long, long, int,
+	 * String, String, ReviewStatus) instead
+	 */
+	@Deprecated
+	protected BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long objID, int artifactTypeID, String artifactTypeName, String displayName) {
+		this(sleuthkitCase, artifactID, objID, artifactTypeID, artifactTypeName, displayName, ReviewStatus.UNDECIDED);
 	}
 }
