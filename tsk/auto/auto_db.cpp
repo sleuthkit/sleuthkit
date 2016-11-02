@@ -353,6 +353,12 @@ TSK_RETVAL_ENUM
         printf("  Alloc size: %d\n", fs_attr->nrd.allocsize);
         printf("  Comp size:  %d\n", fs_attr->nrd.compsize);
         printf("  Init size:  %d\n", fs_attr->nrd.initsize);
+        printf("  Runs:\n");
+        TSK_FS_ATTR_RUN * run = fs_attr->nrd.run;
+        while(run != fs_attr->nrd.run_end){
+            printf("  %d, length %d\n", run->addr, run->len);
+            run = run->next;
+        }
     }
 
 
