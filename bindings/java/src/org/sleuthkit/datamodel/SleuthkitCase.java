@@ -5376,7 +5376,7 @@ public class SleuthkitCase {
 	 * @param rs the result set
 	 * @param fs parent file system
 	 *
-	 * @return a newly create Slack File
+	 * @return a newly created Slack File
 	 *
 	 * @throws SQLException
 	 */
