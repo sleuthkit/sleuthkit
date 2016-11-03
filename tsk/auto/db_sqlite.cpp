@@ -991,10 +991,15 @@ int
         return 1;
     }
 
-    // Add entry for the slack space if applicable
+	// Add entry for the slack space.
+	// Current conditions for creating a slack file:
+	//   - Data is non-resident
+	//   - The allocated size is greater than the file size
+	//   - The data is not compressed
     if((fs_attr != NULL)
+		   && (!(fs_file->meta->flags & TSK_FS_META_FLAG_COMP))
            && (fs_attr->flags & TSK_FS_ATTR_NONRES) 
-           && (fs_attr->nrd.allocsize !=  fs_attr->size)){
+           && (fs_attr->nrd.allocsize >  fs_attr->size)){
         strncat(name, "-slack", 6);
         TSK_OFF_T slackSize = fs_attr->nrd.allocsize - fs_attr->size;
 
