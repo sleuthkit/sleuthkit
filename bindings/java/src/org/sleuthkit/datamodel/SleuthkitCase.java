@@ -8212,7 +8212,7 @@ public class SleuthkitCase {
 				prepStmt.setShort(7, TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG.getValue()); // meta_type
 				prepStmt.setShort(8, TSK_FS_NAME_FLAG_ENUM.UNALLOC.getValue()); // dir_flags
 				prepStmt.setShort(9, TSK_FS_META_FLAG_ENUM.UNALLOC.getValue()); // nmeta_flags
-				prepStmt.setLong(10, fileRange.getByteLen()); // size //ZL: TODO is this 2GB or file size
+				prepStmt.setLong(10, fileRange.getByteLen()); // size 
 				prepStmt.setNull(11, java.sql.Types.BIGINT); // ctime
 				prepStmt.setNull(12, java.sql.Types.BIGINT); // crtime
 				prepStmt.setNull(13, java.sql.Types.BIGINT); // atime
