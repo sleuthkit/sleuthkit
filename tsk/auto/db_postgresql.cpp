@@ -776,7 +776,7 @@ int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, co
         PQfreemem(md5_sql);
         return 1;
     }
-    snprintf(stmt, 2048, "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %lld, %s, %"PRIuOFF", %s);",
+    snprintf(stmt, 2048, "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %lld, %s, %" PRIuOFF ", %s);",
         objId, type, ssize, timezone_sql, size, md5_sql);
     int ret = attempt_exec(stmt, "Error adding data to tsk_image_info table: %s\n");
     PQfreemem(timezone_sql);
@@ -1238,7 +1238,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getFsInfos(int64_t imgId, vector<TSK_DB_FS_INFO
         if (getParentImageId(fsObjId, curImgId) == TSK_ERR) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            tsk_error_set_errstr("Error finding parent for: %"PRIu64, fsObjId);
+            tsk_error_set_errstr("Error finding parent for: %" PRIu64 , fsObjId);
             return TSK_ERR;
         }
 
@@ -1580,7 +1580,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addLayoutFileInfo(const int64_t parObjId, const
     char *fsObjIdStrPtr = NULL;
     char fsObjIdStr[32];
     if (fsObjId != 0) {
-        snprintf(fsObjIdStr, 32, "%"PRIu64, fsObjId);
+        snprintf(fsObjIdStr, 32, "%" PRIu64 , fsObjId);
         fsObjIdStrPtr = fsObjIdStr;
     } else {
         fsObjIdStrPtr = &nullStr[0];
@@ -1718,7 +1718,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_
         if (getParentImageId(vsPartObjId, curImgId) == TSK_ERR) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            tsk_error_set_errstr("Error finding parent for: %"PRIu64, vsPartObjId);
+            tsk_error_set_errstr("Error finding parent for: %" PRIu64 , vsPartObjId);
             return TSK_ERR;
         }
 
@@ -1846,7 +1846,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO
         if (getParentImageId(vsObjId, curImgId) == TSK_ERR) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            tsk_error_set_errstr("Error finding parent for: %"PRIu64, vsObjId);
+            tsk_error_set_errstr("Error finding parent for: %" PRIu64 , vsObjId);
             PQclear(res);
             return TSK_ERR;
         }

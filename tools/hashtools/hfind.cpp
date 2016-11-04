@@ -151,11 +151,11 @@ main(int argc, char ** argv1)
         TSK_TCHAR *ext = TSTRRCHR(db_file, _TSK_T('.'));    
         if ((NULL != ext) && (TSTRLEN(ext) >= 4) && (TSTRCMP(ext, _TSK_T(".kdb")) == 0)) {
             if (0 == tsk_hdb_create(db_file)) {
-                tsk_fprintf(stdout, "New database %"PRIttocTSK" created\n", db_file);
+                tsk_fprintf(stdout, "New database %" PRIttocTSK" created\n", db_file);
                 return 0;
             }
             else {
-                tsk_fprintf(stderr, "Failed to create new database %"PRIttocTSK"\n", db_file);
+                tsk_fprintf(stderr, "Failed to create new database %" PRIttocTSK"\n", db_file);
                 return 1;
             }        
         }
