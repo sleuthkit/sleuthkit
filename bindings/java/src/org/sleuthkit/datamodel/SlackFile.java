@@ -123,8 +123,6 @@ public class SlackFile extends FsContent {
 			if ((dataSource != null) && (dataSource instanceof Image)) {
 				Image image = (Image) dataSource;
 				if (!image.imageFileExists()) {
-					// FIX THIS LATER
-					
 					tskCase.submitError(SleuthkitCase.ErrorObserver.Context.IMAGE_READ_ERROR.getContextString(),
 							bundle.getString("SlackFile.readInt.err.msg.text"));
 				}
