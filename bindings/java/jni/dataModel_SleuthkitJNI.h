@@ -403,6 +403,17 @@ JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupp
 }
 #endif
 #endif
+/* Header for class org_sleuthkit_datamodel_SleuthkitJNI_TSK_FS_FILE_READ_OFFSET_TYPE_ENUM */
+
+#ifndef _Included_org_sleuthkit_datamodel_SleuthkitJNI_TSK_FS_FILE_READ_OFFSET_TYPE_ENUM
+#define _Included_org_sleuthkit_datamodel_SleuthkitJNI_TSK_FS_FILE_READ_OFFSET_TYPE_ENUM
+#ifdef __cplusplus
+extern "C" {
+#endif
+#ifdef __cplusplus
+}
+#endif
+#endif
 /* Header for class org_sleuthkit_datamodel_SleuthkitJNI_CaseDbHandle */
 
 #ifndef _Included_org_sleuthkit_datamodel_SleuthkitJNI_CaseDbHandle

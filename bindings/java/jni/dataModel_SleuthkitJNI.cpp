@@ -1672,6 +1672,14 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFsNat(JNIEnv * env,
 }
 
 
+/**
+ * Flag used by readFileNat to specify if the offset is relative to the start of the file
+ * or the start of the slack space 
+ */
+typedef enum {
+	TSK_FS_FILE_READ_OFFSET_TYPE_START_OF_FILE = 0x00,
+	TSK_FS_FILE_READ_OFFSET_TYPE_START_OF_SLACK = 0x01,
+} TSK_FS_FILE_READ_OFFSET_TYPE_ENUM;
 
 /*
  * Read bytes from the given file
