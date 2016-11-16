@@ -141,6 +141,15 @@ public interface SleuthkitItemVisitor<T> {
 	 * @return result of the visit
 	 */
 	T visit(LocalFile lf);
+	
+	/**
+	 * Act on (visit) a SlackFile content object
+	 *
+	 * @param sf slack file to visit / act on
+	 *
+	 * @return result of the visit
+	 */
+	T visit(SlackFile sf);	
 
 	/**
 	 * The default visitor - quickest method for implementing a custom visitor.
@@ -213,6 +222,11 @@ public interface SleuthkitItemVisitor<T> {
 		@Override
 		public T visit(LocalFile lf) {
 			return defaultVisit(lf);
+		}
+
+		@Override
+		public T visit(SlackFile sf) {
+			return defaultVisit(sf);
 		}
 	}
 }

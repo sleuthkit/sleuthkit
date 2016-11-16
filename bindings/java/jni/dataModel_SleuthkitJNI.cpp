@@ -1672,6 +1672,14 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFsNat(JNIEnv * env,
 }
 
 
+/**
+ * Flag used by readFileNat to specify if the offset is relative to the start of the file
+ * or the start of the slack space 
+ */
+typedef enum {
+	TSK_FS_FILE_READ_OFFSET_TYPE_START_OF_FILE = 0x00,
+	TSK_FS_FILE_READ_OFFSET_TYPE_START_OF_SLACK = 0x01,
+} TSK_FS_FILE_READ_OFFSET_TYPE_ENUM;
 
 /*
  * Read bytes from the given file
@@ -1685,7 +1693,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFsNat(JNIEnv * env,
  */
 JNIEXPORT jint JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat(JNIEnv * env,
-    jclass obj, jlong a_file_handle, jbyteArray jbuf, jlong offset, jlong len)
+    jclass obj, jlong a_file_handle, jbyteArray jbuf, jlong offset, jint offset_type, jlong len)
 {
 	//use fixed size stack-allocated buffer if possible
     char fixed_buf [FIXED_BUF_SIZE];
@@ -1712,9 +1720,16 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat(JNIEnv * env,
 
     TSK_FS_ATTR * tsk_fs_attr = file_handle->fs_attr;
 
+    TSK_FS_FILE_READ_FLAG_ENUM readFlag = TSK_FS_FILE_READ_FLAG_NONE;
+    TSK_OFF_T readOffset = (TSK_OFF_T) offset;
+    if(offset_type == TSK_FS_FILE_READ_OFFSET_TYPE_START_OF_SLACK){
+        readFlag = TSK_FS_FILE_READ_FLAG_SLACK;
+        readOffset += tsk_fs_attr->size;
+    }
+
     //read attribute
-    ssize_t bytesread = tsk_fs_attr_read(tsk_fs_attr,  (TSK_OFF_T) offset, buf, (size_t) len,
-        TSK_FS_FILE_READ_FLAG_NONE);
+    ssize_t bytesread = tsk_fs_attr_read(tsk_fs_attr,  readOffset, buf, (size_t) len,
+        readFlag);
     if (bytesread == -1) {
         if (dynBuf) {
             free(buf);

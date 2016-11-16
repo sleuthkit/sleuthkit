@@ -614,6 +614,25 @@ public class SleuthkitJNI {
 	}
 
 	/**
+	 * enum used to tell readFileNat whether the offset is from the beginning
+	 * of the file or from the beginning of the slack space.
+	 */
+	private enum TSK_FS_FILE_READ_OFFSET_TYPE_ENUM{
+		START_OF_FILE(0),
+		START_OF_SLACK(1);
+		
+		private final int val;
+		
+		TSK_FS_FILE_READ_OFFSET_TYPE_ENUM(int val){
+			this.val = val;
+		}
+		
+		int getValue(){
+			return val;
+		}
+	}
+	
+	/**
 	 * reads data from an file
 	 *
 	 * @param fileHandle pointer to a file structure in the sleuthkit
@@ -628,8 +647,26 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	public static int readFile(long fileHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
-		return readFileNat(fileHandle, readBuffer, offset, len);
+		return readFileNat(fileHandle, readBuffer, offset, TSK_FS_FILE_READ_OFFSET_TYPE_ENUM.START_OF_FILE.getValue(), len);
 	}
+	
+	/**
+	 * reads data from the slack space of a file
+	 *
+	 * @param fileHandle pointer to a file structure in the sleuthkit
+	 * @param readBuffer pre-allocated buffer to read to
+	 * @param offset     byte offset in the slack to start at
+	 * @param len        amount of data to read
+	 *
+	 * @return the number of characters read, or -1 if the end of the stream has
+	 *         been reached
+	 *
+	 * @throws TskCoreException exception thrown if critical error occurs within
+	 *                          TSK
+	 */
+	public static int readFileSlack(long fileHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
+		return readFileNat(fileHandle, readBuffer, offset, TSK_FS_FILE_READ_OFFSET_TYPE_ENUM.START_OF_SLACK.getValue(), len);
+	}	
 
 	/**
 	 * Get human readable (some what) details about a file. This is the same as
@@ -1028,7 +1065,7 @@ public class SleuthkitJNI {
 
 	private static native int readFsNat(long fsHandle, byte[] readBuffer, long offset, long len) throws TskCoreException;
 
-	private static native int readFileNat(long fileHandle, byte[] readBuffer, long offset, long len) throws TskCoreException;
+	private static native int readFileNat(long fileHandle, byte[] readBuffer, long offset, int offset_type, long len) throws TskCoreException;
 
 	private static native int saveFileMetaDataTextNat(long fileHandle, String fileName) throws TskCoreException;
 

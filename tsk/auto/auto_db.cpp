@@ -342,6 +342,7 @@ TSK_RETVAL_ENUM
     const unsigned char *const md5,
     const TSK_DB_FILES_KNOWN_ENUM known)
 {
+
     if (m_db->addFsFile(fs_file, fs_attr, path, md5, known, m_curFsId, m_curFileId,
             m_curImgId)) {
         registerError();
@@ -622,7 +623,7 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
         return TSK_STOP;
     }
 
-     /* If no longe processing the same directroy as the last file, 
+     /* If no longer processing the same directory as the last file, 
       * then update the class-level setting. */
     int64_t cur = fs_file->name->par_addr;
     if (m_curDirId != cur) {
