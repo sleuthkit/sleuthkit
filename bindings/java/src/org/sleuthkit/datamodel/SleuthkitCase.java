@@ -81,7 +81,7 @@ import org.sqlite.SQLiteJDBCLoader;
  */
 public class SleuthkitCase {
 
-	private static final int SCHEMA_VERSION_NUMBER = 5; // This must be the same as TSK_SCHEMA_VER in tsk/auto/tsk_db.h.
+	private static final int SCHEMA_VERSION_NUMBER = 6; // This must be the same as TSK_SCHEMA_VER in tsk/auto/tsk_db.h.
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
@@ -254,7 +254,7 @@ public class SleuthkitCase {
 		initIngestStatusTypes(connection);
 		initReviewStatuses(connection);
 		initEncodingTypes(connection);
-		connection.close();		
+		connection.close();
 	}
 
 	/**
@@ -400,7 +400,7 @@ public class SleuthkitCase {
 	 * ingest_module_types database.
 	 *
 	 * @throws SQLException
-	 * @throws TskCoreException 
+	 * @throws TskCoreException
 	 */
 	private void initIngestModuleTypes(CaseDbConnection connection) throws SQLException, TskCoreException {
 		Statement statement = null;
@@ -431,7 +431,7 @@ public class SleuthkitCase {
 	 * ingest_job_status_types database.
 	 *
 	 * @throws SQLException
-	 * @throws TskCoreException 
+	 * @throws TskCoreException
 	 */
 	private void initIngestStatusTypes(CaseDbConnection connection) throws SQLException, TskCoreException {
 		Statement statement = null;
@@ -561,6 +561,7 @@ public class SleuthkitCase {
 				schemaVersionNumber = updateFromSchema2toSchema3(schemaVersionNumber, connection);
 				schemaVersionNumber = updateFromSchema3toSchema4(schemaVersionNumber, connection);
 				schemaVersionNumber = updateFromSchema4toSchema5(schemaVersionNumber, connection);
+				schemaVersionNumber = updateFromSchema5toSchema6(schemaVersionNumber, connection);
 
 				// Write the updated schema version number to the the tsk_db_info table.
 				statement = connection.createStatement();
@@ -948,6 +949,60 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Updates a schema version 4 database to a schema version 5 database.
+	 *
+	 * @param schemaVersionNumber The current schema version number of the
+	 *                            database.
+	 * @param connection          A connection to the case database.
+	 *
+	 * @return The new database schema version.
+	 *
+	 * @throws SQLException     If there is an error completing a database
+	 *                          operation.
+	 * @throws TskCoreException If there is an error completing a database
+	 *                          operation via another SleuthkitCase method.
+	 */
+	private int updateFromSchema5toSchema6(int schemaVersionNumber, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersionNumber != 5) {
+			return schemaVersionNumber;
+		}
+
+		/*
+		 * This upgrade fixes a bug where some releases had artifact review
+		 * status support in the case database and others did not.
+		 */
+		Statement statement = null;
+		ResultSet resultSet = null;
+		try {
+			/*
+			 * Add the review_statuses lookup table, if missing.
+			 */
+			statement = connection.createStatement();
+			statement.execute("CREATE TABLE IF NOT EXISTS review_statuses (review_status_id INTEGER PRIMARY KEY, review_status_name TEXT NOT NULL, display_name TEXT NOT NULL)");
+
+			resultSet = connection.executeQuery(statement, "SELECT COUNT(*) AS count FROM review_statuses"); //NON-NLS
+			resultSet.next();
+			if (resultSet.getLong("count") == 0) {
+				/*
+				 * Add review_status_id column to artifacts table.
+				 *
+				 * NOTE: For DBs created with schema 5 or 6 we define a foreign
+				 * key constraint on the review_status_column. We don't bother
+				 * with this for DBs updated to schema 5 or 6 because of
+				 * limitations of the SQLite ALTER TABLE command.
+				 */
+				statement.execute("ALTER TABLE blackboard_artifacts ADD COLUMN review_status_id INTEGER NOT NULL DEFAULT " + BlackboardArtifact.ReviewStatus.UNDECIDED.getID());
+			}
+
+			return 6;
+
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+		}
+	}
+
+	/**
 	 * Returns case database schema version number.
 	 *
 	 * @return The schema version number as an integer.
@@ -955,15 +1010,15 @@ public class SleuthkitCase {
 	public int getSchemaVersion() {
 		return this.versionNumber;
 	}
-	
+
 	/**
- 	 * Returns the type of database in use.
- 	 * 
- 	 * @return database type 
- 	 */
- 	public DbType getDatabaseType() {
- 		return this.dbType;
- 	}	
+	 * Returns the type of database in use.
+	 *
+	 * @return database type
+	 */
+	public DbType getDatabaseType() {
+		return this.dbType;
+	}
 
 	/**
 	 * Returns the path of a backup copy of the database made when a schema
@@ -5368,10 +5423,10 @@ public class SleuthkitCase {
 				localPath, encodingType);
 		return file;
 	}
-	
-		/**
-	 * Create a Slack File object from the result set containing query results on
-	 * tsk_files table
+
+	/**
+	 * Create a Slack File object from the result set containing query results
+	 * on tsk_files table
 	 *
 	 * @param rs the result set
 	 * @param fs parent file system
@@ -8164,14 +8219,14 @@ public class SleuthkitCase {
 		return addLocalFile(fileName, localPath, size, ctime, crtime, atime, mtime,
 				isFile, TskData.EncodingType.NONE, parent);
 	}
-	
+
 	/**
-     * Adds an image to the case database.
+	 * Adds an image to the case database.
 	 *
-	 * @param deviceObjId      The object id of the device associated with the
-	 *                         image.
-	 * @param imageFilePaths   The image file paths.
-	 * @param timeZone         The time zone for the image.
+	 * @param deviceObjId    The object id of the device associated with the
+	 *                       image.
+	 * @param imageFilePaths The image file paths.
+	 * @param timeZone       The time zone for the image.
 	 *
 	 * @return An Image object.
 	 *
@@ -8184,7 +8239,8 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Adds one or more layout files for a parent Content object to the case database.
+	 * Adds one or more layout files for a parent Content object to the case
+	 * database.
 	 *
 	 * @param parent     The parent Content.
 	 * @param fileRanges File range objects for the file(s).
@@ -8194,31 +8250,32 @@ public class SleuthkitCase {
 	 * @throws TskCoreException If there is a problem completing a case database
 	 *                          operation.
 	 */
-	public final List<LayoutFile> addLayoutFiles(Content parent, List<TskFileRange> fileRanges) throws TskCoreException{
+	public final List<LayoutFile> addLayoutFiles(Content parent, List<TskFileRange> fileRanges) throws TskCoreException {
 		assert (null != fileRanges);
 		if (null == fileRanges) {
 			throw new TskCoreException("TskFileRange object is null");
 		}
-		
+
 		assert (null != parent);
 		if (null == parent) {
 			throw new TskCoreException("Conent is null");
 		}
-		
+
 		CaseDbTransaction transaction = null;
 		Statement statement = null;
 		ResultSet resultSet = null;
 		acquireExclusiveLock();
-		
+
 		try {
 			transaction = beginTransaction();
 			CaseDbConnection connection = transaction.getConnection();
-			
+
 			List<LayoutFile> fileRangeLayoutFiles = new ArrayList<LayoutFile>();
-			for (TskFileRange fileRange: fileRanges) {
+			for (TskFileRange fileRange : fileRanges) {
 				/*
-				 * Insert a row for the Tsk file range into the tsk_objects table:
-				 * INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
+				 * Insert a row for the Tsk file range into the tsk_objects
+				 * table: INSERT INTO tsk_objects (par_obj_id, type) VALUES (?,
+				 * ?)
 				 */
 				PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
 				prepStmt.clearParameters();
@@ -8281,7 +8338,7 @@ public class SleuthkitCase {
 						TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG,
 						TSK_FS_NAME_FLAG_ENUM.UNALLOC,
 						TSK_FS_META_FLAG_ENUM.UNALLOC.getValue(),
-						fileRange.getByteLen(), 
+						fileRange.getByteLen(),
 						null,
 						FileKnown.UNKNOWN,
 						parent.getUniquePath(),
@@ -8315,6 +8372,6 @@ public class SleuthkitCase {
 			closeResultSet(resultSet);
 			closeStatement(statement);
 			releaseExclusiveLock();
-		}	
+		}
 	}
 }
