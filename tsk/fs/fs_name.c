@@ -305,7 +305,7 @@ tsk_fs_time_to_str(time_t time, char buf[128])
             (int) tmTime->tm_mon + 1, (int) tmTime->tm_mday,
             tmTime->tm_hour,
             (int) tmTime->tm_min, (int) tmTime->tm_sec,
-            _tzname[(tmTime->tm_isdst == 0) ? 0 : 1]);
+            TZNAME[(tmTime->tm_isdst == 0) ? 0 : 1]);
     }
     return buf;
 }
@@ -334,7 +334,7 @@ tsk_fs_time_to_str_subsecs(time_t time, unsigned int subsecs,
             (int) tmTime->tm_mon + 1, (int) tmTime->tm_mday,
             tmTime->tm_hour,
             (int) tmTime->tm_min, (int) tmTime->tm_sec,
-            subsecs, _tzname[(tmTime->tm_isdst == 0) ? 0 : 1]);
+            subsecs, TZNAME[(tmTime->tm_isdst == 0) ? 0 : 1]);
     }
     return buf;
 }
@@ -373,7 +373,7 @@ tsk_fs_print_day(FILE * hFile, time_t time)
         tsk_fprintf(hFile, "%.4d-%.2d-%.2d 00:00:00 (%s)",
             (int) tmTime->tm_year + 1900,
             (int) tmTime->tm_mon + 1, (int) tmTime->tm_mday,
-            _tzname[(tmTime->tm_isdst == 0) ? 0 : 1]);
+            TZNAME[(tmTime->tm_isdst == 0) ? 0 : 1]);
     }
 }
 
