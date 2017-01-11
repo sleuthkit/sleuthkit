@@ -936,6 +936,13 @@ public class SleuthkitCase {
 			statement.execute("CREATE TABLE file_encoding_types (encoding_type INTEGER PRIMARY KEY, name TEXT NOT NULL);");
 			initEncodingTypes(connection);
 
+			/*
+			 * This needs to be done due to a Autopsy/TSK out of synch problem.
+			 * Without this, it is possible to upgrade from version 4 to 5 and
+			 * then 5 to 6, but not from 4 to 6.
+			 */
+			initReviewStatuses(connection);
+
 			// Add encoding type column to tsk_files_path
 			// This should really have the FOREIGN KEY constraint but there are problems
 			// getting that to work, so we don't add it on this upgrade path.
