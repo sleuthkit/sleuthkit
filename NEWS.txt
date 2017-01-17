@@ -2,6 +2,10 @@ Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
 
+---------------- VERSION 4.4.0 --------------
+- Compiling in Windows now uses Visual Studio 2015
+- tsk_loaddb now adds new files for slack space and JNI was upgraded
+  accordingly.
 
 ---------------- VERSION 4.3.1 --------------
 - NTFS works on 4k sectors
