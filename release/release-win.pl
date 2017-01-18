@@ -2,26 +2,27 @@
 
 # Release script for Windows Executables.  Note that this is run
 # after release-unix.pl, which will create the needed tag directories
-# and update the version variables accordingly.  
+# and update the version variables accordingly.
+#
+# This only builds the 32-bit, release target  
 #
 # Assumes:
-#- LIBEWF_HOME environment variable is set and LIBEWF is compiled in there
-#- msbuild is in PATH (currently, this requires that I have c:\wndows\microsoft.NET\Framework\v4XXX in the path)
-#
+#- libewf, libvmdk, and libvhdi are configured and built
+#- The correct msbuild is in the PATH
+#-- VS2015 and VS2008 put this in different places.  If VS2008 is found first, you'll get errors
+#   about not finding the 140_xp platform. 
+#-- The easiest way to do this is to launch Cygwin using the appropriate batch file, which sets
+#   the correct environment variables. 
 #
 # This requires Cygwin with:
 # - git 
 # - zip
-#
-# It will only work with Visual Studio 2010 express. 
 #
 
 use strict;
 
 my $TESTING = 0;
 print "TESTING MODE (no commits)\n" if ($TESTING);
-
-
 
 unless (@ARGV == 1) {
 	print stderr "Missing arguments: version\n";
@@ -31,12 +32,9 @@ unless (@ARGV == 1) {
 
 }
 
-
-
 my $RELDIR = `pwd`;	# The release directory
 chomp $RELDIR;
-my $SVNDIR = "$RELDIR/../";
-my $TSKDIR = "${SVNDIR}";
+my $TSKDIR = "$RELDIR/../";
 
 my $TAGNAME = $ARGV[0];
 unless ($TAGNAME eq "no-tag") {
@@ -55,12 +53,18 @@ my $VER = "";
 #die "Missing redist dir $REDIST_LOC" unless (-d "$REDIST_LOC");
 
 
-# Verify LIBEWF is built
+# Verify LIBX libraries exist / built
 die "LIBEWF missing" unless (-d "$ENV{'LIBEWF_HOME'}");
 die "libewf dll missing" 
 	unless (-e "$ENV{'LIBEWF_HOME'}/msvscpp/Release/libewf.dll" ); 
 
+die "libvhdi dll missing" 
+	unless (-e "$ENV{'LIBVHDI_HOME'}/msvscpp/Release/libvhdi.dll" ); 
 
+die "libvhdi dll missing" 
+	unless (-e "$ENV{'LIBVMDK_HOME'}/msvscpp/Release/libvmdk.dll" ); 
+
+	
 #######################
 
 # Function to execute a command and send output to pipe
@@ -109,7 +113,7 @@ sub update_code {
 
 
 	if ($no_tag == 0) {
-		`git submodule update`;
+		#`git submodule update`;
 		# Make sure we have no changes in the current tree
 		exec_pipe(*OUT, "git status -s | grep \"^ M\"");
 		my $foo = read_pipe_line(*OUT);
@@ -121,9 +125,9 @@ sub update_code {
 		# Make sure src dir is up to date
 		print "Updating source directory\n";
 		`git pull`;
-		`git submodule init`;
-		`git submodule update`;
-		`git submodule foreach git checkout master`;
+		#`git submodule init`;
+		#`git submodule update`;
+		#`git submodule foreach git checkout master`;
 
 		# Verify the tag exists
 		exec_pipe(*OUT, "git tag | grep \"^${TAGNAME}\"");
@@ -241,6 +245,8 @@ sub package_core {
 
 	# 2010 version
 	# copy_runtime_2010("${rdir}/bin");
+	
+	# 2015 - nothing is needed anymore because they were all setup in the Release folder
 
 	# Zip up the files - move there to make the path in the zip short
 	chdir ("$RELDIR") or die "Error changing directories to $RELDIR";
