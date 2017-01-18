@@ -17,7 +17,7 @@
 * \defgroup hashdblib_cpp C++ Hash Database Classes
 */
 
-#include "tsk/auto/sqlite3.h"
+#include <sqlite3.h>
 
 #ifndef _TSK_HDB_H
 #define _TSK_HDB_H
