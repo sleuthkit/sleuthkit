@@ -1,31 +1,31 @@
-                Last Updated: 28 January 2016
+                Last Updated: 18 October 2016
 
-This file describes how to build TSK using Visual Studio (see
+This file describes how to build TSK using Visual Studio 2015 (see
 README_win32.txt for instructions on building the win32 libraries and
-executables from Linux). If you do not have a copy of Visual Studio, you
-can use the free Express Edition:
-
-http://www.microsoft.com/express/vc/
-
-Visual Studio 2010 Express cannot make 64-bit versions of the
-executables. To do that, you must download and install an additional SDK:
-
-http://msdn.microsoft.com/en-us/windowsserver/bb980924.aspx
-
-The SDK installation may fail, particularly if Visual Studio 2010 Service
-Pack 1 has been installed. In this case, re-run the SDK installer but
-un-check the compilers box. After the SDK is installed, run the following
-fix to get the 64 bit compiler:
-
-https://www.microsoft.com/en-us/download/details.aspx?id=4422
+executables from Linux). 
 
 
+Installing Visual Studio
+
+If you do not have a copy of Visual Studio, you can use the free
+Community Edition:
+
+    http://www.microsoft.com/express/vc/
+
+When installing it, choose to do a custom installation to ensure
+that Visual C++ is added.  You will also need to choose support to make
+XP executables. 
+
+
+Building
 
 There are six build targets: 
     - Debug_NoLibs and Release_NoLibs do not depend on any third-party libraries. 
     - Debug and Release depend on libewf, libvmdk, libvhdi, and zlib to be built so that E01 images as well as VMDK and VHD virtual machine formats are supported. 
     - Debug_PostgreSQL and Release_PostgreSQL depend on libewf, zlib, libvmdk, livhdi, and PostgreSQL libraries so that E01 images as well as VMDK and VHD virtual machine formats are supported. This target is needed by collaborative Autopsy and other programs that rely on TSK that need to write database results to a central PostgreSQL database instead of just SQLite.
 
+
+Note: The following instructions are for 64 bit versions to TSK only.
 
 ------------------------------------------------------------------------
 Debug and Release Targets
@@ -34,55 +34,39 @@ Debug and Release Targets
 The steps below outline the process required to compile the Debug and
 Release targets.
 
-1) Download libewf-20130128 (or later). The official releases are from:
-https://github.com/libyal/libewf, but you may need to go to 
-https://github.com/libyal/libewf/wiki to get a stable release. 
-
-If you want to build 64-bit libraries though, download a version that
-we've upgraded: https://github.com/sleuthkit/libewf_64bit
+1) Download libewf from https://github.com/sleuthkit/libewf_64bit. This repository contains a version of libewf updated by us to build a 64 bit library. 
+For 32 bit and bleeding edge versions see the official releases at: https://github.com/libyal/libewf
 
 2) Open archive file and follow the README instructions in libewf to
-build libewf_dll (at the time of this writing, that includes downloading the zlib dll). Note that TSK will use only the Release version of libewf_dll. Later steps also depend on the zlib dll being built inside of libewf. Note that libewf will need to be converted to Visual Studio 2010 and be upgraded to support a 64-bit build.
+build libewf_dll (at the time of this writing, that includes downloading the zlib dll). Note that TSK will use only the Release version of libewf_dll. Later steps also depend on the zlib dll being built inside of libewf.
 
 3) Set the LIBEWF_HOME environment variable to point to the libewf folder that you created and built in step 2.
 
+4) Download libvhdi from https://github.com/sleuthkit/libvhdi_64bit. This repository contains a version of libvhdi updated by us to build a 64 bit library.
+For 32 bit and bleeding edge versions see the official releases at: https://github.com/libyal/libvhdi
 
-4) Download libvhdi-alpha-20160108 (or later). To get official release code to work with TSK you will need to perform steps outlined in step 5. The official releases are from: 
-https://github.com/libyal/libvhdi
+Open the solution file and build the libvhdi project.
 
-If you want to build 64-bit libraries though, download a version of libvhdi that we've upgraded. This version is already converted to Visual Studio 2010, is upgraded for 64-bit support, and stores libvhdi_dll in proper locations for use with TSK. You should skip step 5 when using this version. You can download the upgraded version here:
-https://github.com/sleuthkit/libvhdi_64bit
+5) Set the LIBVHDI_HOME environment variable to point to the libvhdi folder that you created and built in step 4. 
 
-5) This step only needs to be performed if you are using an official build of libvhdi and not our upgraded version of libvhdi. Open archive file and follow the README instructions in libvhdi to
-build libvhdi_dll. Note that TSK will use only the Release version of
-libvhdi_dll. Note that libvhdi will need to be converted to Visual Studio 2010 and be upgraded to support a 64-bit build.
+The LIBVHDI_HOME environment variable should look something like this: C:\cygwin64\home\user_name\libvhdi_64bit
 
-6) Set the LIBVHDI_HOME environment variable to point to the libvhdi folder that you created and built in step 4. 
+6) Download libvmdk from https://github.com/sleuthkit/libvmdk_64bit. This repository contains a version of libvmdk updated by us to build a 64 bit library.
+For 32 bit and bleeding edge versions see the official releases at: https://github.com/libyal/libvhdi
 
-If you are using our upgraded version of libvmdk and the libvhdi repository is checked out into C:\cygwin64\home\user_name\libvhdi_64bit then LIBVHDI_HOME = C:\cygwin64\home\user_name\libvhdi_64bit
+At the time of writing this, libvmdk requires zlib source code in order to build the Visual Studio project. Our upgraded version includes the zlib source code.
 
+7) Set the LIBVMDK_HOME environment variable to point to the libvmdk folder that you created and built in step 6. 
 
-7) Download libvmdk-alpha-20160119 (or later). To get official release code to work with TSK you will need to perform steps outlined in step 8. The official releases are from: 
-https://github.com/libyal/libvmdk
+The LIBVMDK_HOME environment variable should look something like this: C:\cygwin64\home\user_name\libvmdk_64bit\libvmdk
 
-If you want to build 64-bit libraries though, download a version of libvmdk that we've upgraded. This version is already converted to Visual Studio 2010, is upgraded for 64-bit support, and stores libvmdk_dll in proper locations for use with TSK. At the time of writing this, libvmdk requires zlib source code in order to build the Visual Studio project. Our upgraded version includes the zlib source code. You should skip step 8 when using this version. You can download the upgraded version here:
-https://github.com/sleuthkit/libvmdk_64bit
+8) If you want to build libtsk_jni for the Java JNI bindings, then set the JDK_HOME environment variable to point to the top directory of your Java SDK.
 
-8) This step only needs to be performed if you are using an official build of libvmdk and not our upgraded version of libvmdk. Open archive file and follow the README instructions in libvmdk to
-build libvmdk_dll (at the time of this writing, that includes downloading the zlib dll). Note that TSK will use only the Release version of libvmdk_dll. Later steps also depend on the zlib dll being built inside of libvmdk. Note that libvmdk will need to be converted to Visual Studio 2010 and be upgraded to support a 64-bit build.
+9) Open the TSK Visual Studio Solution file, tsk-win.sln, in the win32 directory.
 
-9) Set the LIBVMDK_HOME environment variable to point to the libvmdk folder that you created and built in step 7. 
+10) Compile a Debug, Debug_NoLibs, or Release version of the libraries and executables. The resulting libraries and executables on a 32-bit build will be put in win32/Debug, win32/Debug_NoLibs, or win32/Release as appropriate. A 64-bit build will put them into the win32/x64 folders. You can change the type of build using the pulldown in Visual Studio and switching between Win32 and x64.
 
-If you are using our upgraded version of libvmdk and the repository is checked out into C:\cygwin64\home\user_name\libvmdk_64bit then the libvmdk_64bit folder will contain 2 sub-folders: libvmdk (containing livmdk source code) and zlib (containing zlib source code). In order to be used with TSK the user needs to define an environment variable LIBVMDK_HOME pointed at C:\cygwin64\home\user_name\libvmdk_64bit\libvmdk
-
-
-10) If you want to build libtsk_jni for the Java JNI bindings, then set the JDK_HOME environment variable to point to the top directory of your Java SDK.
-
-11) Open the TSK Visual Studio Solution file, tsk-win.sln, in the win32 directory.
-
-12) Compile a Debug, Debug_NoLibs, or Release version of the libraries and executables. The resulting libraries and executables on a 32-bit build will be put in win32/Debug, win32/Debug_NoLibs, or win32/Release as appropriate. A 64-bit build will put them into the win32/x64 folders. You can change the type of build using the pulldown in Visual Studio and switching between Win32 and x64.
-
-13) Note that the libraries and executables will depend on the libewf, libvmdk, libvhdi, and zlib DLL files (which are copied to the TSK build directories).
+11) Note that the libraries and executables will depend on the libewf, libvmdk, libvhdi, and zlib DLL files (which are copied to the TSK build directories).
 
 
 

@@ -217,6 +217,14 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initAddImgNat
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    initializeAddImgNat
+ * Signature: (JLjava/lang/String;ZZZ)J
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNat
+  (JNIEnv *, jclass, jlong, jstring, jboolean, jboolean, jboolean);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    runAddImgNat
  * Signature: (JLjava/lang/String;[Ljava/lang/String;ILjava/lang/String;)V
  */
@@ -322,10 +330,10 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readFsNat
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    readFileNat
- * Signature: (J[BJJ)I
+ * Signature: (J[BJIJ)I
  */
 JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat
-  (JNIEnv *, jclass, jlong, jbyteArray, jlong, jlong);
+  (JNIEnv *, jclass, jlong, jbyteArray, jlong, jint, jlong);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
@@ -383,6 +391,25 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_findDeviceSize
 JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getCurDirNat
   (JNIEnv *, jclass, jlong);
 
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    isImageSupportedNat
+ * Signature: (Ljava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupportedNat
+  (JNIEnv *, jclass, jstring);
+
+#ifdef __cplusplus
+}
+#endif
+#endif
+/* Header for class org_sleuthkit_datamodel_SleuthkitJNI_TSK_FS_FILE_READ_OFFSET_TYPE_ENUM */
+
+#ifndef _Included_org_sleuthkit_datamodel_SleuthkitJNI_TSK_FS_FILE_READ_OFFSET_TYPE_ENUM
+#define _Included_org_sleuthkit_datamodel_SleuthkitJNI_TSK_FS_FILE_READ_OFFSET_TYPE_ENUM
+#ifdef __cplusplus
+extern "C" {
+#endif
 #ifdef __cplusplus
 }
 #endif

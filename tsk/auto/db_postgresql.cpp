@@ -776,7 +776,7 @@ int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, co
         PQfreemem(md5_sql);
         return 1;
     }
-    snprintf(stmt, 2048, "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %lld, %s, %"PRIuOFF", %s);",
+    snprintf(stmt, 2048, "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %lld, %s, %" PRIuOFF ", %s);",
         objId, type, ssize, timezone_sql, size, md5_sql);
     int ret = attempt_exec(stmt, "Error adding data to tsk_image_info table: %s\n");
     PQfreemem(timezone_sql);
@@ -964,7 +964,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
     // combine name and attribute name
     size_t len = strlen(fs_file->name->name);
     char *name;
-    size_t nlen = len + attr_nlen + 5;
+    size_t nlen = len + attr_nlen + 11; // Extra space for possible colon and '-slack'
     if ((name = (char *) tsk_malloc(nlen)) == NULL) {
         return 1;
     }
@@ -1055,6 +1055,58 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         PQfreemem(name_sql);
         PQfreemem(escaped_path_sql);
         return 1;
+    }
+
+    // Add entry for the slack space.
+    // Current conditions for creating a slack file:
+    //   - Data is non-resident
+    //   - The allocated size is greater than the file size
+    //   - The data is not compressed
+    if((fs_attr != NULL)
+           && (! (fs_file->meta->flags & TSK_FS_META_FLAG_COMP))
+           && (fs_attr->flags & TSK_FS_ATTR_NONRES) 
+           && (fs_attr->nrd.allocsize >  fs_attr->size)){
+        strncat(name, "-slack", 6);
+        name_sql = PQescapeLiteral(conn, name, strlen(name));
+        TSK_OFF_T slackSize = fs_attr->nrd.allocsize - fs_attr->size;
+
+        if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId)) {
+            free(name);
+            free(escaped_path);
+            return 1;
+        }
+
+        snprintf(zSQL, 2048, "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
+            "VALUES ("
+            "%" PRId64 ",%" PRId64 ","
+            "%" PRId64 ","
+            "%d,"
+            "%d,%d,%s,"
+            "%" PRIuINUM ",%d,"
+            "%d,%d,%d,%d,"
+            "%" PRIuOFF ","
+            "%llu,%llu,%llu,%llu,"
+            "%d,%d,%d,%s,%d,"
+            "%s)",
+            fsObjId, objId, 
+            dataSourceObjId,
+            TSK_DB_FILES_TYPE_SLACK,
+            type, idx, name_sql,
+            fs_file->name->meta_addr, fs_file->name->meta_seq, 
+            fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
+            slackSize, 
+            (unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime, 
+            meta_mode, gid, uid, NULL, known,
+            escaped_path_sql);
+
+        if (attempt_exec(zSQL, "TskDbPostgreSQL::addFile: Error adding data to tsk_files table: %s\n")) {
+            free(name);
+            free(escaped_path);
+            PQfreemem(name_sql);
+            PQfreemem(escaped_path_sql);
+            return 1;
+        }
+
     }
 
     //if dir, update parent id cache
@@ -1238,7 +1290,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getFsInfos(int64_t imgId, vector<TSK_DB_FS_INFO
         if (getParentImageId(fsObjId, curImgId) == TSK_ERR) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            tsk_error_set_errstr("Error finding parent for: %"PRIu64, fsObjId);
+            tsk_error_set_errstr("Error finding parent for: %" PRIu64 , fsObjId);
             return TSK_ERR;
         }
 
@@ -1580,7 +1632,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addLayoutFileInfo(const int64_t parObjId, const
     char *fsObjIdStrPtr = NULL;
     char fsObjIdStr[32];
     if (fsObjId != 0) {
-        snprintf(fsObjIdStr, 32, "%"PRIu64, fsObjId);
+        snprintf(fsObjIdStr, 32, "%" PRIu64 , fsObjId);
         fsObjIdStrPtr = fsObjIdStr;
     } else {
         fsObjIdStrPtr = &nullStr[0];
@@ -1718,7 +1770,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_
         if (getParentImageId(vsPartObjId, curImgId) == TSK_ERR) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            tsk_error_set_errstr("Error finding parent for: %"PRIu64, vsPartObjId);
+            tsk_error_set_errstr("Error finding parent for: %" PRIu64 , vsPartObjId);
             return TSK_ERR;
         }
 
@@ -1846,7 +1898,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO
         if (getParentImageId(vsObjId, curImgId) == TSK_ERR) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            tsk_error_set_errstr("Error finding parent for: %"PRIu64, vsObjId);
+            tsk_error_set_errstr("Error finding parent for: %" PRIu64 , vsObjId);
             PQclear(res);
             return TSK_ERR;
         }

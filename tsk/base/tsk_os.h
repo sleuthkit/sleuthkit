@@ -145,6 +145,7 @@ typedef WCHAR TSK_TCHAR;        ///< Character data type that is UTF-16 (wchar_t
 #define TSNPRINTF _snwprintf
 #define TPUTENV	_wputenv
 #define TZSET	_tzset
+#define TZNAME _tzname
 
 #if defined(_MSC_VER)
 #define TSTRTOULL _wcstoui64
@@ -197,6 +198,7 @@ typedef char TSK_TCHAR;         ///< Character data type that is UTF-16 (wchar_t
 
 #define TPUTENV	putenv
 #define TZSET	tzset
+#define TZNAME	tzname
 
 #define PRIcTSK _TSK_T("s")     ///< sprintf macro to print a UTF-8 char string to TSK_TCHAR buffer
 #define PRIwTSK _TSK_T("S")     ///< sprintf macro to print a UTF-16 wchar_t string to TSK_TCHAR buffer

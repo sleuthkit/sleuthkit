@@ -41,4 +41,8 @@ extern void tsk_vs_part_free(TSK_VS_INFO *);
 
 #define tsk_vs_guessu32(vs, x, mag)   \
     tsk_guess_end_u32(&(vs->endian), (x), (mag))
+
+#define tsk_vs_guessu64(vs, x, mag)   \
+    tsk_guess_end_u64(&(vs->endian), (x), (mag))
+
 #endif

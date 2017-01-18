@@ -732,16 +732,26 @@ ntfs_make_data_run(NTFS_INFO * ntfs, TSK_OFF_T start_vcn,
  * is filled with sparse clusters. The entire compression unit
  * can also be sparse.
  *
- * When the data is compressed, it is broken up into 4k blocks. Each
- * of the blocks is compressed and the resulting data is stored with
- * a 2-byte header that identifies the compressed size.   The
- * compressed data contains token groups, which contain a 1 byte
- * header followed by 8 variable length tokens.  There are two types
- * of tokens. Symbol tokens are 1 byte in length and the 1byte value
- * should be directly copied into the uncompressed data.  Phrase tokens
- * identify a run of data in the same compression unit that should be
- * copied to the current location.  Each bit in the 1-byte header identifies
- * the type of the 8 tokens in the group.
+ * The uncompressed content in the compression unit is further broken
+ * into 4k (pre-compression) blocks.  When stored, each 4k block has
+ * a 2-byte header that identifies the compressed size (and if there 
+ * was compression).  
+ * 
+ * The compressed data is a series of token groups.  Each token group
+ * contains a 1-byte header and 8 tokens.  The 8-bits in the token
+ * group header identify the type of each token in the group. 
+ *
+ * There are two types of tokens. 
+ * Symbol tokens are 1 byte in length and the 1-byte value is the value
+ * for that position in the file and it should be direcly copied into the
+ * uncompressed data.  Phrase tokens identify a previous run of data 
+ * in the same compression unit that should be
+ * copied to the current location.  These contain offset and length info.
+ *
+ * The attribute will have enough cluster addresses to store all of 
+ * the content, but the addresses will be 0 in the compression unit
+ * if it is all sparse and the ending clusters will be 0 in the 
+ * compression unit if they are not needed. 
  *
  */
 
@@ -981,7 +991,7 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
                             tsk_error_reset();
                             tsk_error_set_errno(TSK_ERR_FS_FWALK);
                             tsk_error_set_errstr
-                                ("ntfs_uncompress_compunit: Phrase token length is too large:  %d (max: %"PRIuSIZE")",
+                                ("ntfs_uncompress_compunit: Phrase token length is too large:  %d (max: %" PRIuSIZE")",
                                 length,
                                 comp->buf_size_b - start_position_index);
                             return 1;
@@ -992,7 +1002,7 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
                             tsk_error_reset();
                             tsk_error_set_errno(TSK_ERR_FS_FWALK);
                             tsk_error_set_errstr
-                                ("ntfs_uncompress_compunit: Phrase token length is too large for rest of uncomp buf:  %"PRIuSIZE" (max: %"
+                                ("ntfs_uncompress_compunit: Phrase token length is too large for rest of uncomp buf:  %" PRIuSIZE" (max: %"
                                 PRIuSIZE ")",
                                 end_position_index - start_position_index +
                                 1, comp->buf_size_b - comp->uncomp_idx);
@@ -1015,7 +1025,7 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
             }                   // end of loop inside of block
         }
 
-        // this block contains uncompressed data uncompressed data
+        // this block contains uncompressed data 
         else {
             while (cl_index < blk_end && cl_index < comp->comp_len) {
                 /* This seems to happen only with corrupt data -- such as

@@ -81,7 +81,7 @@ import org.sqlite.SQLiteJDBCLoader;
  */
 public class SleuthkitCase {
 
-	private static final int SCHEMA_VERSION_NUMBER = 5; // This must be the same as TSK_SCHEMA_VER in tsk/auto/tsk_db.h.
+	private static final int SCHEMA_VERSION_NUMBER = 6; // This must be the same as TSK_SCHEMA_VER in tsk/auto/tsk_db.h.
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
@@ -254,7 +254,7 @@ public class SleuthkitCase {
 		initIngestStatusTypes(connection);
 		initReviewStatuses(connection);
 		initEncodingTypes(connection);
-		connection.close();		
+		connection.close();
 	}
 
 	/**
@@ -400,7 +400,7 @@ public class SleuthkitCase {
 	 * ingest_module_types database.
 	 *
 	 * @throws SQLException
-	 * @throws TskCoreException 
+	 * @throws TskCoreException
 	 */
 	private void initIngestModuleTypes(CaseDbConnection connection) throws SQLException, TskCoreException {
 		Statement statement = null;
@@ -431,7 +431,7 @@ public class SleuthkitCase {
 	 * ingest_job_status_types database.
 	 *
 	 * @throws SQLException
-	 * @throws TskCoreException 
+	 * @throws TskCoreException
 	 */
 	private void initIngestStatusTypes(CaseDbConnection connection) throws SQLException, TskCoreException {
 		Statement statement = null;
@@ -561,6 +561,7 @@ public class SleuthkitCase {
 				schemaVersionNumber = updateFromSchema2toSchema3(schemaVersionNumber, connection);
 				schemaVersionNumber = updateFromSchema3toSchema4(schemaVersionNumber, connection);
 				schemaVersionNumber = updateFromSchema4toSchema5(schemaVersionNumber, connection);
+				schemaVersionNumber = updateFromSchema5toSchema6(schemaVersionNumber, connection);
 
 				// Write the updated schema version number to the the tsk_db_info table.
 				statement = connection.createStatement();
@@ -935,6 +936,13 @@ public class SleuthkitCase {
 			statement.execute("CREATE TABLE file_encoding_types (encoding_type INTEGER PRIMARY KEY, name TEXT NOT NULL);");
 			initEncodingTypes(connection);
 
+			/*
+			 * This needs to be done due to a Autopsy/TSK out of synch problem.
+			 * Without this, it is possible to upgrade from version 4 to 5 and
+			 * then 5 to 6, but not from 4 to 6.
+			 */
+			initReviewStatuses(connection);
+
 			// Add encoding type column to tsk_files_path
 			// This should really have the FOREIGN KEY constraint but there are problems
 			// getting that to work, so we don't add it on this upgrade path.
@@ -948,6 +956,60 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Updates a schema version 4 database to a schema version 5 database.
+	 *
+	 * @param schemaVersionNumber The current schema version number of the
+	 *                            database.
+	 * @param connection          A connection to the case database.
+	 *
+	 * @return The new database schema version.
+	 *
+	 * @throws SQLException     If there is an error completing a database
+	 *                          operation.
+	 * @throws TskCoreException If there is an error completing a database
+	 *                          operation via another SleuthkitCase method.
+	 */
+	private int updateFromSchema5toSchema6(int schemaVersionNumber, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersionNumber != 5) {
+			return schemaVersionNumber;
+		}
+
+		/*
+		 * This upgrade fixes a bug where some releases had artifact review
+		 * status support in the case database and others did not.
+		 */
+		Statement statement = null;
+		ResultSet resultSet = null;
+		try {
+			/*
+			 * Add the review_statuses lookup table, if missing.
+			 */
+			statement = connection.createStatement();
+			statement.execute("CREATE TABLE IF NOT EXISTS review_statuses (review_status_id INTEGER PRIMARY KEY, review_status_name TEXT NOT NULL, display_name TEXT NOT NULL)");
+
+			resultSet = connection.executeQuery(statement, "SELECT COUNT(*) AS count FROM review_statuses"); //NON-NLS
+			resultSet.next();
+			if (resultSet.getLong("count") == 0) {
+				/*
+				 * Add review_status_id column to artifacts table.
+				 *
+				 * NOTE: For DBs created with schema 5 or 6 we define a foreign
+				 * key constraint on the review_status_column. We don't bother
+				 * with this for DBs updated to schema 5 or 6 because of
+				 * limitations of the SQLite ALTER TABLE command.
+				 */
+				statement.execute("ALTER TABLE blackboard_artifacts ADD COLUMN review_status_id INTEGER NOT NULL DEFAULT " + BlackboardArtifact.ReviewStatus.UNDECIDED.getID());
+			}
+
+			return 6;
+
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+		}
+	}
+
+	/**
 	 * Returns case database schema version number.
 	 *
 	 * @return The schema version number as an integer.
@@ -955,15 +1017,15 @@ public class SleuthkitCase {
 	public int getSchemaVersion() {
 		return this.versionNumber;
 	}
-	
+
 	/**
- 	 * Returns the type of database in use.
- 	 * 
- 	 * @return database type 
- 	 */
- 	public DbType getDatabaseType() {
- 		return this.dbType;
- 	}	
+	 * Returns the type of database in use.
+	 *
+	 * @return database type
+	 */
+	public DbType getDatabaseType() {
+		return this.dbType;
+	}
 
 	/**
 	 * Returns the path of a backup copy of the database made when a schema
@@ -1403,7 +1465,7 @@ public class SleuthkitCase {
 			rs = connection.executeQuery(s, "SELECT DISTINCT arts.artifact_id AS artifact_id, " //NON-NLS
 					+ "arts.obj_id AS obj_id, arts.artifact_type_id AS artifact_type_id, "
 					+ "types.type_name AS type_name, types.display_name AS display_name, "//NON-NLS
-					+ " arts.review_status_id AS review_status_id" //NON-NLS
+					+ " arts.review_status_id AS review_status_id " //NON-NLS
 					+ "FROM blackboard_artifacts AS arts, blackboard_attributes AS attrs, blackboard_artifact_types AS types " //NON-NLS
 					+ "WHERE arts.artifact_id = attrs.artifact_id " //NON-NLS
 					+ " AND attrs.attribute_type_id = " + attrType.getTypeID() //NON-NLS
@@ -5179,8 +5241,10 @@ public class SleuthkitCase {
 					final LocalFile lf;
 					lf = localFile(rs, connection, AbstractContent.UNKNOWN_ID);
 					results.add(lf);
+				} else if (type == TSK_DB_FILES_TYPE_ENUM.SLACK.getFileType()) {
+					final SlackFile sf = slackFile(rs, null);
+					results.add(sf);
 				}
-
 			} //end for each resultSet
 		} catch (SQLException e) {
 			logger.log(Level.SEVERE, "Error getting abstract files from result set", e); //NON-NLS
@@ -5368,6 +5432,34 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Create a Slack File object from the result set containing query results
+	 * on tsk_files table
+	 *
+	 * @param rs the result set
+	 * @param fs parent file system
+	 *
+	 * @return a newly created Slack File
+	 *
+	 * @throws SQLException
+	 */
+	org.sleuthkit.datamodel.SlackFile slackFile(ResultSet rs, FileSystem fs) throws SQLException {
+		org.sleuthkit.datamodel.SlackFile f = new org.sleuthkit.datamodel.SlackFile(this, rs.getLong("obj_id"), //NON-NLS
+				rs.getLong("data_source_obj_id"), rs.getLong("fs_obj_id"), //NON-NLS
+				TskData.TSK_FS_ATTR_TYPE_ENUM.valueOf(rs.getShort("attr_type")), //NON-NLS
+				rs.getInt("attr_id"), rs.getString("name"), rs.getLong("meta_addr"), rs.getInt("meta_seq"), //NON-NLS
+				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
+				TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
+				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), //NON-NLS
+				rs.getShort("meta_flags"), rs.getLong("size"), //NON-NLS
+				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
+				(short) rs.getInt("mode"), rs.getInt("uid"), rs.getInt("gid"), //NON-NLS
+				rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
+				rs.getString("parent_path"), rs.getString("mime_type")); //NON-NLS
+		f.setFileSystem(fs);
+		return f;
+	}
+
+	/**
 	 * Returns the list of abstractFile objects from a result of selecting many
 	 * files that meet a certain criteria.
 	 *
@@ -5423,6 +5515,11 @@ public class SleuthkitCase {
 					case LOCAL: {
 						final LocalFile lf = localFile(rs, connection, parentId);
 						children.add(lf);
+						break;
+					}
+					case SLACK: {
+						final SlackFile sf = slackFile(rs, null);
+						children.add(sf);
 						break;
 					}
 					default:
@@ -8128,5 +8225,160 @@ public class SleuthkitCase {
 			AbstractFile parent) throws TskCoreException {
 		return addLocalFile(fileName, localPath, size, ctime, crtime, atime, mtime,
 				isFile, TskData.EncodingType.NONE, parent);
+	}
+
+	/**
+	 * Adds an image to the case database.
+	 *
+	 * @param deviceObjId    The object id of the device associated with the
+	 *                       image.
+	 * @param imageFilePaths The image file paths.
+	 * @param timeZone       The time zone for the image.
+	 *
+	 * @return An Image object.
+	 *
+	 * @throws TskCoreException if there is an error adding the image to case
+	 *                          database.
+	 */
+	public Image addImageInfo(long deviceObjId, List<String> imageFilePaths, String timeZone) throws TskCoreException {
+		long imageId = this.caseHandle.addImageInfo(deviceObjId, imageFilePaths, timeZone);
+		return getImageById(imageId);
+	}
+
+	/**
+	 * Adds one or more layout files for a parent Content object to the case
+	 * database.
+	 *
+	 * @param parent     The parent Content.
+	 * @param fileRanges File range objects for the file(s).
+	 *
+	 * @return A list of LayoutFile objects.
+	 *
+	 * @throws TskCoreException If there is a problem completing a case database
+	 *                          operation.
+	 */
+	public final List<LayoutFile> addLayoutFiles(Content parent, List<TskFileRange> fileRanges) throws TskCoreException {
+		assert (null != fileRanges);
+		if (null == fileRanges) {
+			throw new TskCoreException("TskFileRange object is null");
+		}
+
+		assert (null != parent);
+		if (null == parent) {
+			throw new TskCoreException("Conent is null");
+		}
+
+		CaseDbTransaction transaction = null;
+		Statement statement = null;
+		ResultSet resultSet = null;
+		acquireExclusiveLock();
+
+		try {
+			transaction = beginTransaction();
+			CaseDbConnection connection = transaction.getConnection();
+
+			List<LayoutFile> fileRangeLayoutFiles = new ArrayList<LayoutFile>();
+			for (TskFileRange fileRange : fileRanges) {
+				/*
+				 * Insert a row for the Tsk file range into the tsk_objects
+				 * table: INSERT INTO tsk_objects (par_obj_id, type) VALUES (?,
+				 * ?)
+				 */
+				PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
+				prepStmt.clearParameters();
+				prepStmt.setLong(1, parent.getId()); // par_obj_id
+				prepStmt.setLong(2, TskData.ObjectType.ABSTRACTFILE.getObjectType()); // type
+				connection.executeUpdate(prepStmt);
+				resultSet = prepStmt.getGeneratedKeys();
+				resultSet.next();
+				long fileRangeId = resultSet.getLong(1); //last_insert_rowid()
+				long end_byte_in_parent = fileRange.getByteStart() + fileRange.getByteLen() - 1;
+				/*
+				 * Insert a row for the Tsk file range into the tsk_files table:
+				 * INSERT INTO tsk_files (obj_id, fs_obj_id, name, type,
+				 * has_path, dir_type, meta_type, dir_flags, meta_flags, size,
+				 * ctime, crtime, atime, mtime, parent_path, data_source_obj_id)
+				 * VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				 */
+				prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
+				prepStmt.clearParameters();
+				prepStmt.setLong(1, fileRangeId); // obj_id	from tsk_objects			
+				prepStmt.setNull(2, java.sql.Types.BIGINT); // fs_obj_id				
+				prepStmt.setString(3, "Unalloc_" + parent.getId() + "_" + fileRange.getByteStart() + "_" + end_byte_in_parent); // name of form Unalloc_[image obj_id]_[start byte in parent]_[end byte in parent]
+				prepStmt.setShort(4, TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS.getFileType()); // type
+				prepStmt.setNull(5, java.sql.Types.BIGINT); // has_path
+				prepStmt.setShort(6, TSK_FS_NAME_TYPE_ENUM.REG.getValue()); // dir_type
+				prepStmt.setShort(7, TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG.getValue()); // meta_type
+				prepStmt.setShort(8, TSK_FS_NAME_FLAG_ENUM.UNALLOC.getValue()); // dir_flags
+				prepStmt.setShort(9, TSK_FS_META_FLAG_ENUM.UNALLOC.getValue()); // nmeta_flags
+				prepStmt.setLong(10, fileRange.getByteLen()); // size 
+				prepStmt.setNull(11, java.sql.Types.BIGINT); // ctime
+				prepStmt.setNull(12, java.sql.Types.BIGINT); // crtime
+				prepStmt.setNull(13, java.sql.Types.BIGINT); // atime
+				prepStmt.setNull(14, java.sql.Types.BIGINT); // mtime
+				prepStmt.setNull(15, java.sql.Types.VARCHAR); // parent path
+				prepStmt.setLong(16, parent.getId()); // data_source_obj_id
+				connection.executeUpdate(prepStmt);
+
+				/*
+				 * Insert a row in the tsk_layout_file table for each chunk of
+				 * the carved file. INSERT INTO tsk_file_layout (obj_id,
+				 * byte_start, byte_len, sequence) VALUES (?, ?, ?, ?)
+				 */
+				prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_LAYOUT_FILE);
+				prepStmt.clearParameters();
+				prepStmt.setLong(1, fileRangeId); // obj_id
+				prepStmt.setLong(2, fileRange.getByteStart()); // byte_start
+				prepStmt.setLong(3, fileRange.getByteLen()); // byte_len
+				prepStmt.setLong(4, fileRange.getSequence()); // sequence
+				connection.executeUpdate(prepStmt);
+
+				/*
+				 * Create a layout file representation of the carved file.
+				 */
+				fileRangeLayoutFiles.add(new LayoutFile(this,
+						fileRangeId,
+						parent.getId(),
+						Long.toString(fileRange.getSequence()),
+						TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS,
+						TSK_FS_NAME_TYPE_ENUM.REG,
+						TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG,
+						TSK_FS_NAME_FLAG_ENUM.UNALLOC,
+						TSK_FS_META_FLAG_ENUM.UNALLOC.getValue(),
+						fileRange.getByteLen(),
+						null,
+						FileKnown.UNKNOWN,
+						parent.getUniquePath(),
+						null));
+			}
+
+			transaction.commit();
+			return fileRangeLayoutFiles;
+
+		} catch (SQLException ex) {
+			if (null != transaction) {
+				try {
+					transaction.rollback();
+				} catch (TskCoreException ex2) {
+					logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
+				}
+			}
+			throw new TskCoreException("Failed to add layout files to case database", ex);
+
+		} catch (TskCoreException ex) {
+			if (null != transaction) {
+				try {
+					transaction.rollback();
+				} catch (TskCoreException ex2) {
+					logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
+				}
+			}
+			throw ex;
+
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+			releaseExclusiveLock();
+		}
 	}
 }

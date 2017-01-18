@@ -25,6 +25,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
+import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
@@ -74,6 +75,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @param attrId             The type id given to the file by the file
 	 *                           system.
 	 * @param name               The name of the file.
+	 * @param fileType           The type of file
 	 * @param metaAddr           The meta address of the file.
 	 * @param metaSeq            The meta sequence number of the file.
 	 * @param dirType            The type of the file, usually as reported in
@@ -112,6 +114,7 @@ public abstract class FsContent extends AbstractFile {
 			long fsObjId,
 			TSK_FS_ATTR_TYPE_ENUM attrType, int attrId,
 			String name,
+			TSK_DB_FILES_TYPE_ENUM fileType,
 			long metaAddr, int metaSeq,
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
@@ -121,7 +124,7 @@ public abstract class FsContent extends AbstractFile {
 			String md5Hash, FileKnown knownState,
 			String parentPath,
 			String mimeType) {
-		super(db, objId, dataSourceObjectId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, mimeType);
+		super(db, objId, dataSourceObjectId, attrType, attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, mimeType);
 		this.tskCase = db;
 		this.fsObjId = fsObjId;
 	}
@@ -170,7 +173,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @throws TskCoreException if there is a problem opening the handle.
 	 */
 	@SuppressWarnings("deprecation")
-	private void loadFileHandle() throws TskCoreException {
+	void loadFileHandle() throws TskCoreException {
 		if (fileHandle == 0) {
 			synchronized (this) {
 				if (fileHandle == 0) {
@@ -399,7 +402,7 @@ public abstract class FsContent extends AbstractFile {
 			String name, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime,
 			short modes, int uid, int gid, String md5Hash, FileKnown knownState, String parentPath) {
-		this(db, objId, db.getDataSourceObjectId(objId), fsObjId, attrType, (int) attrId, name, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null);
+		this(db, objId, db.getDataSourceObjectId(objId), fsObjId, attrType, (int) attrId, name, TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null);
 	}
 
 	/**
@@ -457,6 +460,6 @@ public abstract class FsContent extends AbstractFile {
 			String name, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime,
 			short modes, int uid, int gid, String md5Hash, FileKnown knownState, String parentPath, String mimeType) {
-		this(db, objId, dataSourceObjectId, fsObjId, attrType, (int) attrId, name, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, mimeType);
+		this(db, objId, dataSourceObjectId, fsObjId, attrType, (int) attrId, name, TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, mimeType);
 	}
 }

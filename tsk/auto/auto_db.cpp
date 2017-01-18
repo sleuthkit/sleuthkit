@@ -53,6 +53,7 @@ TskAutoDb::TskAutoDb(TskDb * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_kno
         m_fileHashFlag = true;
     else
         m_fileHashFlag = false;
+    m_addFileSystems = true;
     m_noFatFsOrphans = false;
     m_addUnallocSpace = false;
     m_chunkSize = -1;
@@ -88,6 +89,11 @@ void
  TskAutoDb::hashFiles(bool flag)
 {
     m_fileHashFlag = flag;
+}
+
+void TskAutoDb::setAddFileSystems(bool addFileSystems)
+{
+    m_addFileSystems = addFileSystems;
 }
 
 void TskAutoDb::setNoFatFsOrphans(bool noFatFsOrphans)
@@ -336,6 +342,7 @@ TSK_RETVAL_ENUM
     const unsigned char *const md5,
     const TSK_DB_FILES_KNOWN_ENUM known)
 {
+
     if (m_db->addFsFile(fs_file, fs_attr, path, md5, known, m_curFsId, m_curFileId,
             m_curImgId)) {
         registerError();
@@ -447,7 +454,11 @@ uint8_t
         return 1;
     }
     
-    return addFilesInImgToDb();
+    if (m_addFileSystems) {
+        return addFilesInImgToDb();
+    } else {
+        return 0;
+    }
 }
 
 
@@ -506,7 +517,11 @@ uint8_t
         return 1;
     }
 
-    return addFilesInImgToDb();
+    if (m_addFileSystems) {
+        return addFilesInImgToDb();
+    } else {
+        return 0;
+    }
 }
 #endif
 
@@ -608,7 +623,7 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
         return TSK_STOP;
     }
 
-     /* If no longe processing the same directroy as the last file, 
+     /* If no longer processing the same directory as the last file, 
       * then update the class-level setting. */
     int64_t cur = fs_file->name->par_addr;
     if (m_curDirId != cur) {
@@ -850,7 +865,7 @@ TSK_RETVAL_ENUM TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
     //open the fs we have from database
     TSK_FS_INFO * fsInfo = tsk_fs_open_img(m_img_info, dbFsInfo.imgOffset, dbFsInfo.fType);
     if (fsInfo == NULL) {
-        tsk_error_set_errstr2("TskAutoDb::addFsInfoUnalloc: error opening fs at offset %"PRIuOFF, dbFsInfo.imgOffset);
+        tsk_error_set_errstr2("TskAutoDb::addFsInfoUnalloc: error opening fs at offset %" PRIuOFF, dbFsInfo.imgOffset);
         registerError();
         return TSK_ERR;
     }

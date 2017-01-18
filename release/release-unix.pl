@@ -142,9 +142,9 @@ sub tag_dir {
 # Commit the updated version info in the current source directory
 sub checkin_vers {
     unless ($TESTING) {
-        print "Checking in version updates to master\n";
+        print "Checking in version updates to current branch\n";
         system ("git commit -a -m \"New version files for ${VER}\"");
-        system ("git push origin master");
+        system ("git push origin ${BRANCH}");
     }
 }
 
@@ -560,4 +560,5 @@ make_tar();
 verify_tar();
 copy_tar();
 
-# del_clone();
+#del_clone();
+print "You still need to merge into master and develop from the clone\n";

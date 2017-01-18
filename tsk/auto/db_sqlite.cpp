@@ -525,7 +525,7 @@ int TskDbSqlite::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const 
 
     // Add the data source to the tsk_image_info table.
     char *sql;
-    sql = sqlite3_mprintf("INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %lld, '%q', %"PRIuOFF", '%q');",
+    sql = sqlite3_mprintf("INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %lld, '%q', %" PRIuOFF ", '%q');",
         objId, type, ssize, timezone.c_str(), size, md5.c_str());
     int ret = attempt_exec(sql, "Error adding data to tsk_image_info table: %s\n");
     sqlite3_free(sql);
@@ -803,7 +803,7 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *paren
         }
     }
 
-    // fprintf(stderr, "Miss: %s (%"PRIu64 " - %" PRIu64 ")\n", fs_file->name->name, fs_file->name->meta_addr,
+    // fprintf(stderr, "Miss: %s (%" PRIu64  " - %" PRIu64 ")\n", fs_file->name->name, fs_file->name->meta_addr,
     //                fs_file->name->par_addr);
     
     // Need to break up 'path' in to the parent folder to match in 'parent_path' and the folder 
@@ -914,7 +914,7 @@ int
     size_t len = strlen(fs_file->name->name);
     char *
         name;
-    size_t nlen = len + attr_nlen + 5;
+    size_t nlen = len + attr_nlen + 11; // Extra space for possible colon and '-slack'
     if ((name = (char *) tsk_malloc(nlen)) == NULL) {
         return 1;
     }
@@ -989,6 +989,58 @@ int
         sqlite3_free(zSQL);
         return 1;
     }
+
+    // Add entry for the slack space.
+	// Current conditions for creating a slack file:
+	//   - Data is non-resident
+	//   - The allocated size is greater than the file size
+	//   - The data is not compressed
+    if((fs_attr != NULL)
+           && (!(fs_file->meta->flags & TSK_FS_META_FLAG_COMP))
+           && (fs_attr->flags & TSK_FS_ATTR_NONRES) 
+           && (fs_attr->nrd.allocsize >  fs_attr->size)){
+        strncat(name, "-slack", 6);
+        TSK_OFF_T slackSize = fs_attr->nrd.allocsize - fs_attr->size;
+
+        if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId)) {
+            free(name);
+            free(escaped_path);
+            return 1;
+        }
+
+        // Run the same insert with the new name, size, and type
+        zSQL = sqlite3_mprintf(
+        "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
+        "VALUES ("
+        "%" PRId64 ",%" PRId64 ","
+        "%" PRId64 "," 
+        "%d,"
+        "%d,%d,'%q',"
+        "%" PRIuINUM ",%d,"
+        "%d,%d,%d,%d,"
+        "%" PRIuOFF ","
+        "%llu,%llu,%llu,%llu,"
+        "%d,%d,%d,%Q,%d,"
+        "'%q')",
+        fsObjId, objId,
+        dataSourceObjId,
+        TSK_DB_FILES_TYPE_SLACK,
+        type, idx, name,
+        fs_file->name->meta_addr, fs_file->name->meta_seq, 
+        fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
+        slackSize, 
+        (unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime, 
+        meta_mode, gid, uid, md5TextPtr, known,
+        escaped_path);
+
+        if (attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
+            free(name);
+            free(escaped_path);
+            sqlite3_free(zSQL);
+            return 1;
+        }
+    }
+
     sqlite3_free(zSQL);
 
     //if dir, update parent id cache
@@ -1119,7 +1171,7 @@ TSK_RETVAL_ENUM
     char *fsObjIdStrPtr = NULL;
     char fsObjIdStr[32];
     if (fsObjId != 0) {
-        snprintf(fsObjIdStr, 32, "%"PRIu64, fsObjId);
+        snprintf(fsObjIdStr, 32, "%" PRIu64 , fsObjId);
         fsObjIdStrPtr = fsObjIdStr;
     }
 
@@ -1503,7 +1555,7 @@ TSK_RETVAL_ENUM TskDbSqlite::getFsInfos(int64_t imgId, vector<TSK_DB_FS_INFO> & 
         if (getParentImageId(fsObjId, curImgId) == TSK_ERR) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            tsk_error_set_errstr("Error finding parent for: %"PRIu64, fsObjId);
+            tsk_error_set_errstr("Error finding parent for: %" PRIu64 , fsObjId);
             return TSK_ERR;
         }
 
@@ -1556,7 +1608,7 @@ TSK_RETVAL_ENUM TskDbSqlite::getVsInfos(int64_t imgId, vector<TSK_DB_VS_INFO> & 
         if (getParentImageId(vsObjId, curImgId) == TSK_ERR) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            tsk_error_set_errstr("Error finding parent for: %"PRIu64, vsObjId);
+            tsk_error_set_errstr("Error finding parent for: %" PRIu64 , vsObjId);
             return TSK_ERR;
         }
 
@@ -1606,7 +1658,7 @@ TSK_RETVAL_ENUM TskDbSqlite::getVsPartInfos(int64_t imgId, vector<TSK_DB_VS_PART
         if (getParentImageId(vsPartObjId, curImgId) == TSK_ERR) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            tsk_error_set_errstr("Error finding parent for: %"PRIu64, vsPartObjId);
+            tsk_error_set_errstr("Error finding parent for: %" PRIu64 , vsPartObjId);
             return TSK_ERR;
         }
 

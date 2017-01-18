@@ -65,6 +65,12 @@ class TskAutoDb:public TskAuto {
     virtual void hashFiles(bool flag);
 
     /**
+     * Sets whether or not the file systems for an image should be added when 
+     * the image is added to the case database. The default value is true. 
+     */
+    void setAddFileSystems(bool addFileSytems);
+
+    /**
      * Skip processing of orphans on FAT filesystems.  
      * This will make the loading of the database much faster
      * but you will not have all deleted files.  Default value is false. 
@@ -122,6 +128,7 @@ class TskAutoDb:public TskAuto {
     bool m_imgTransactionOpen;
     TSK_HDB_INFO * m_NSRLDb;
     TSK_HDB_INFO * m_knownBadDb;
+    bool m_addFileSystems;
     bool m_noFatFsOrphans;
     bool m_addUnallocSpace;
     int64_t m_chunkSize;
