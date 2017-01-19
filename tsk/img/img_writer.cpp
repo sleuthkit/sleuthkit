@@ -23,7 +23,7 @@
 #include <winioctl.h>
 #endif
 
-TSK_RETVAL_ENUM tsk_img_writer_add(TSK_IMG_WRITER* img_writer, TSK_OFF_T addr, char *buffer, size_t len) {
+static TSK_RETVAL_ENUM tsk_img_writer_add(TSK_IMG_WRITER* img_writer, TSK_OFF_T addr, char *buffer, size_t len) {
 #ifndef TSK_WIN32
     return TSK_ERR;
 #else
@@ -36,7 +36,7 @@ TSK_RETVAL_ENUM tsk_img_writer_add(TSK_IMG_WRITER* img_writer, TSK_OFF_T addr, c
     return TSK_OK;
 #endif
 }
-TSK_RETVAL_ENUM tsk_img_writer_close(TSK_IMG_WRITER* img_writer) {
+static TSK_RETVAL_ENUM tsk_img_writer_close(TSK_IMG_WRITER* img_writer) {
 #ifndef TSK_WIN32
     return TSK_ERR;
 #else
@@ -47,7 +47,7 @@ TSK_RETVAL_ENUM tsk_img_writer_close(TSK_IMG_WRITER* img_writer) {
     return TSK_OK;
 #endif
 }
-TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
+static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
 #ifndef TSK_WIN32
     return TSK_ERR;
 #else
