@@ -28,6 +28,19 @@ extern "C" {
         TSK_IMG_INFO img_info;
         int is_finished;
 
+        TSK_TCHAR* fileName;
+        HANDLE outputFileHandle;
+
+        unsigned char* footer;
+
+        uint32_t blockSize;
+        TSK_OFF_T imageSize;
+        uint32_t totalBlocks;
+        uint32_t sectorBitmapLength;
+        uint32_t sectorsPerBlock;
+        TSK_OFF_T batOffset;
+        TSK_OFF_T nextDataOffset;
+
         TSK_RETVAL_ENUM(*add)(TSK_IMG_WRITER* img_writer, TSK_OFF_T addr, char *buffer, size_t len);
         TSK_RETVAL_ENUM(*close)(TSK_IMG_WRITER* img_writer);
         TSK_RETVAL_ENUM(*finish_image)(TSK_IMG_WRITER* img_writer);
