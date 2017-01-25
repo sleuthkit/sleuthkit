@@ -25,6 +25,7 @@
 
 /* This is a little lower than the actual maximum size for the VHD */
 #define VHD_MAX_IMAGE_SIZE 2000000000000
+#define VHD_DEFAULT_BLOCK_SIZE 0x200000
 #define VHD_SECTOR_SIZE 0x200
 #define VHD_FOOTER_LENGTH 0x200
 #define VHD_DISK_HEADER_LENGTH 0x400
@@ -37,6 +38,10 @@ bool getBit(unsigned char * buffer, TSK_OFF_T index) {
 }
 
 void setBit(unsigned char * buffer, TSK_OFF_T index, bool val) {
+	if (tsk_verbose) {
+		//tsk_fprintf(stderr, "setBit: Setting bit 0x%x to %d\n", index, val);
+		//fflush(stderr);
+	}
 	unsigned char b = buffer[index / 8];
 	unsigned char mask = 0xff ^ (1 << (7 - (index % 8)));
 	b = (b & mask) | (val << (7 - (index % 8)));
@@ -106,8 +111,10 @@ void checkIfBlockIsFinished(TSK_IMG_WRITER* writer, TSK_OFF_T blockNum) {
 TSK_RETVAL_ENUM addToExistingBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char *buffer,
 	size_t len, TSK_OFF_T blockNum) {
 
-	tsk_fprintf(stdout, "Block %d adding to existing block starting at rel offset 0x%llx\n",
-		blockNum, addr % writer->blockSize);
+	if (tsk_verbose) {
+		tsk_fprintf(stderr, "addToExistingBlock: Adding data to existing block 0x%x\n", blockNum);
+		fflush(stderr);
+	}
 
 	/* Seek to where this buffer should start in the image */
 	if (TSK_OK != seekToOffset(writer, writer->blockToOffset[blockNum] + writer->sectorBitmapLength +
@@ -161,26 +168,61 @@ TSK_RETVAL_ENUM addToExistingBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
 
 TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char *buffer, size_t len, TSK_OFF_T blockNum) {
 
+	if (tsk_verbose) {
+		tsk_fprintf(stderr, "addNewBlock: Adding new block 0x%x\n", blockNum);
+		fflush(stderr);
+	}
+
 	writer->blockStatus[blockNum] = IMG_WRITER_BLOCK_STATUS_ALLOC;
 	writer->blockToOffset[blockNum] = writer->nextDataOffset;
 
+	if (tsk_verbose) {
+		tsk_fprintf(stderr, "addNewBlock: Allocating memory\n fullBuffer length: 0x%x\n sectorBitmap length: 0x%x\n completedSectors length: 0x%x\n",
+			writer->blockSize, writer->sectorBitmapLength, writer->sectorBitmapArrayLength);
+		fflush(stderr);
+	}
 	char * fullBuffer = (char *)tsk_malloc(writer->blockSize * sizeof(char));
 	char * sectorBitmap = (char *)tsk_malloc(writer->sectorBitmapLength * sizeof(char));
 	unsigned char * completedSectors = (unsigned char *)tsk_malloc(((writer->sectorBitmapArrayLength) * sizeof(char)));
 
 	/* Create the full new block and record the sectors written */
+	if (tsk_verbose) {
+		tsk_fprintf(stderr, "addNewBlock: Writing sector bitmap and full buffer. len = 0x%x\n", len);
+		fflush(stderr);
+	}
 	TSK_OFF_T startingOffset = addr % writer->blockSize;
 	for (size_t i = 0; i < len; i++) {
 
 		if (((startingOffset + i) % VHD_SECTOR_SIZE) == 0) {
 			TSK_OFF_T currentSector = (startingOffset + i) / VHD_SECTOR_SIZE;
 			setBit(completedSectors, currentSector, true);
+			if (tsk_verbose) {
+				tsk_fprintf(stderr, "addNewBlock: Setting sectorBitmap[%d] to completedSectors[%d]\n",
+					currentSector / 8, currentSector / 8);
+				fflush(stderr);
+			}
 			sectorBitmap[currentSector / 8] = completedSectors[currentSector / 8];
 		}
 
+		if (tsk_verbose) {
+			//tsk_fprintf(stderr, "addNewBlock: Setting fullBuffer[0x%x] to buffer[0x%x]\n",
+			//	startingOffset + i, i);
+			//fflush(stderr);
+		}
 		fullBuffer[startingOffset + i] = buffer[i];
 	}
 	writer->blockToSectorBitmap[blockNum] = completedSectors;
+
+	if (tsk_verbose) {
+		tsk_fprintf(stderr, "addNewBlock: Sector bitmap");
+		for (int i = 0; i < writer->sectorBitmapArrayLength; i++) {
+			if (i % 16 == 0) {
+				tsk_fprintf(stderr, "\n");
+			}
+			tsk_fprintf(stderr, "%02x ", completedSectors[i]);
+		}
+		fflush(stderr);
+	}
 
 	/* Prepare the new block offset */
 	TSK_OFF_T nextDataOffsetSector = writer->nextDataOffset / VHD_SECTOR_SIZE;
@@ -242,7 +284,6 @@ TSK_RETVAL_ENUM addBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char *buffer, s
 	if (writer->blockStatus[blockNum] == IMG_WRITER_BLOCK_STATUS_FINISHED){
 		return TSK_OK;
 	}
-	fflush(stderr);
 
 	if (writer->blockStatus[blockNum] == IMG_WRITER_BLOCK_STATUS_ALLOC) {
 		addToExistingBlock(writer, addr, buffer, len, blockNum);
@@ -273,16 +314,28 @@ static TSK_RETVAL_ENUM tsk_img_writer_add(TSK_IMG_WRITER* writer, TSK_OFF_T addr
 		return TSK_ERR;
 	}
 
-	if (addr % writer->blockSize == 0) {
-		/* The buffer matches up with the blocks */
+	if ((addr / writer->blockSize) == ((addr + len) / writer->blockSize)) {
+		/* The buffer is contained in a single block */
+		if (tsk_verbose) {
+			tsk_fprintf(stderr, "tsk_img_writer_add: Data fits in one block (0x%x)", (addr / writer->blockSize));
+		}
 		return addBlock(writer, addr, buffer, len);
 	}
 	else {
 		/* The buffer spans two blocks */
+
+
 		TSK_OFF_T firstPartLength = writer->blockSize - (addr % writer->blockSize);
+
+		if (tsk_verbose) {
+			tsk_fprintf(stderr, "tsk_img_writer_add: Data spans two blocks (0x%x and 0x%x)\n",
+				(addr / writer->blockSize), ((addr + len) / writer->blockSize));
+			tsk_fprintf(stderr, "tsk_img_writer_add: first part len: 0x%llx\n", firstPartLength);
+			tsk_fprintf(stderr, "tsk_img_writer_add: second part len: 0x%llx\n", addr % writer->blockSize);
+		}
 		addBlock(writer, addr, buffer, firstPartLength);
 		if (addr + firstPartLength < writer->imageSize) {
-			addBlock(writer, addr + firstPartLength, buffer + firstPartLength, addr % writer->blockSize);
+			addBlock(writer, addr + firstPartLength, buffer + firstPartLength, (addr + len) % writer->blockSize);
 		}
 	}
 
@@ -408,7 +461,8 @@ TSK_RETVAL_ENUM writeFooter(TSK_IMG_WRITER* writer) {
         addIntToBuffer(writer->footer, 8, 2, 4);         // Features
         addIntToBuffer(writer->footer, 0xc, 0x10000, 4); // File format version
         addIntToBuffer(writer->footer, 0x10, 0x200, 8);  // Data offset
-        // 0x14 is a four byte timestamp - leave blank
+        // 0x18 is a four byte timestamp - leave blank (or maybe not...)
+		addIntToBuffer(writer->footer, 0x18, 0x200a44cf, 4);
         addStringToBuffer(writer->footer, 0x1c, "win ", 4);  // Creator app
         addIntToBuffer(writer->footer, 0x20, 0x60001, 4);    // Creator version
         addStringToBuffer(writer->footer, 0x24, "Wi2k", 4);  // Creator host OS
@@ -418,6 +472,13 @@ TSK_RETVAL_ENUM writeFooter(TSK_IMG_WRITER* writer) {
         addIntToBuffer(writer->footer, 0x3a, heads, 1);            // Geometry
         addIntToBuffer(writer->footer, 0x3b, sectorsPerTrack, 1);  // Geometry
         addIntToBuffer(writer->footer, 0x3c, 3, 4);                // Disk type
+
+		// Maybe we need the UUID to be set to something?
+		addIntToBuffer(writer->footer, 0x44, 0xde08e6bb, 4);// UUID1
+		addIntToBuffer(writer->footer, 0x48, 0xf7684142, 4);
+		addIntToBuffer(writer->footer, 0x4c, 0x938758ea, 4);
+		addIntToBuffer(writer->footer, 0x50, 0x77385e49, 4);
+
         addIntToBuffer(writer->footer, 0x40, generateChecksum(writer->footer, VHD_FOOTER_LENGTH), 4); // Checksum
     }
 
@@ -478,6 +539,7 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR *
         tsk_fprintf(stderr,
             "tsk_img_writer_create: Creating image writer in directory %" PRIttocTSK" with basename %" PRIttocTSK"\n",
             directory, basename);
+		fflush(stderr);
     }
 
     IMG_RAW_INFO* raw_info = (IMG_RAW_INFO *)img_info;
@@ -502,7 +564,7 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR *
     if (writer->imageSize > VHD_MAX_IMAGE_SIZE) {
         return TSK_ERR;
     }
-    writer->blockSize = TSK_IMG_INFO_CACHE_LEN;
+    writer->blockSize = VHD_DEFAULT_BLOCK_SIZE;
     writer->totalBlocks = uint32_t(writer->imageSize / writer->blockSize);
     if (writer->imageSize % writer->blockSize != 0) {
         writer->totalBlocks++;
@@ -527,6 +589,7 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR *
     if (tsk_verbose) {
         tsk_fprintf(stderr,
             "tsk_img_writer_create: Output file: %" PRIttocTSK"\n", writer->fileName);
+		fflush(stderr);
     }
 
     /* TODO: Decide what to do if the file already exisits. For now, always overwrite */
@@ -534,6 +597,8 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR *
         FILE_SHARE_READ, NULL, CREATE_ALWAYS, 0,
         NULL);
     if (writer->outputFileHandle == INVALID_HANDLE_VALUE) {
+		tsk_fprintf(stderr, "Error opening VHD!!!"); // temp
+		fflush(stderr);
         int lastError = (int)GetLastError();
         writer->outputFileHandle = 0; /* so we don't close it next time */
         tsk_error_reset();
@@ -542,6 +607,11 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR *
             "\" - %d", writer->fileName, lastError);
         return TSK_ERR;
     }
+
+	if (tsk_verbose) {
+		tsk_fprintf(stderr, "tsk_img_writer_create: Writing VHD headers");
+		fflush(stderr);
+	}
 
     /* Write the backup copy of the footer */
     TSK_RETVAL_ENUM retval = writeFooter(writer);
@@ -553,6 +623,10 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR *
         return retval;
     }
 
+	if (tsk_verbose) {
+		tsk_fprintf(stderr, "tsk_img_writer_create: Writing block allocation table");
+		fflush(stderr);
+	}
     /* Write the (empty) Block Allocation Table */
     writer->batOffset = VHD_FOOTER_LENGTH + VHD_DISK_HEADER_LENGTH;
     uint32_t batLengthOnDisk = 4 * writer->totalBlocks;
@@ -577,6 +651,15 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR *
 
     /* Offset for the first data block - 0x600 bytes for the two headers plus the BAT length*/
     writer->nextDataOffset = 0x600 + batLengthOnDisk;
+
+	if (tsk_verbose) {
+		tsk_fprintf(stderr, "VHD data:\n imageSize: %x\n blockSize: %x\n totalBlocks: %x\n sectorBitmapLength: %x\n ", 
+			writer->imageSize, writer->blockSize, writer->totalBlocks, writer->sectorBitmapLength);
+		tsk_fprintf(stderr, " sectorBitmapInMemory: %x\n sectorsPerBlock: %x\n", 
+			writer->sectorBitmapArrayLength, writer->sectorsPerBlock);
+		fflush(stderr);
+
+	}
 
 	/* Initialze all the bookkeeping arrays */
 	writer->blockStatus = (IMG_WRITER_BLOCK_STATUS_ENUM*)tsk_malloc(writer->totalBlocks * sizeof(IMG_WRITER_BLOCK_STATUS_ENUM));
