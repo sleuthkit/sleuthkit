@@ -23,6 +23,13 @@ extern "C" {
     TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO* img_info, const TSK_TCHAR * directory,
         const TSK_TCHAR * basename);
 
+	enum IMG_WRITER_BLOCK_STATUS_ENUM {
+		IMG_WRITER_BLOCK_STATUS_UNALLOC = 0,
+		IMG_WRITER_BLOCK_STATUS_ALLOC = 1,
+		IMG_WRITER_BLOCK_STATUS_FINISHED = 2
+	};
+	typedef enum IMG_WRITER_BLOCK_STATUS_ENUM IMG_WRITER_BLOCK_STATUS_ENUM;
+
     typedef struct TSK_IMG_WRITER TSK_IMG_WRITER;
     struct TSK_IMG_WRITER {
         TSK_IMG_INFO img_info;
@@ -37,9 +44,14 @@ extern "C" {
         TSK_OFF_T imageSize;
         uint32_t totalBlocks;
         uint32_t sectorBitmapLength;
+		uint32_t sectorBitmapArrayLength;
         uint32_t sectorsPerBlock;
         TSK_OFF_T batOffset;
         TSK_OFF_T nextDataOffset;
+
+		IMG_WRITER_BLOCK_STATUS_ENUM* blockStatus;
+		TSK_OFF_T* blockToOffset;
+		unsigned char ** blockToSectorBitmap;
 
         TSK_RETVAL_ENUM(*add)(TSK_IMG_WRITER* img_writer, TSK_OFF_T addr, char *buffer, size_t len);
         TSK_RETVAL_ENUM(*close)(TSK_IMG_WRITER* img_writer);
