@@ -18,6 +18,7 @@
 #include "tsk_img_i.h"
 #include "img_writer.h"
 #include "raw.h"
+#include <time.h>
 
 #ifdef TSK_WIN32
 #include <winioctl.h>
@@ -31,6 +32,51 @@
 #define VHD_DISK_HEADER_LENGTH 0x400
 
 TSK_RETVAL_ENUM writeFooter(TSK_IMG_WRITER* writer);
+
+// TEMP LOGGING
+char messageBuffer[0x2000];
+char logBuffer[0x2000];
+void openLogFile(TSK_IMG_WRITER * writer);
+void writeLogFile(TSK_IMG_WRITER * writer, const char * message) {
+	if (writer->logFileHandle == 0) {
+		// Open it back up
+		openLogFile(writer);
+	}
+	time_t ltime; /* calendar time */
+	ltime = time(NULL); /* get current cal time */
+	sprintf(logBuffer, "%s : ", asctime(localtime(&ltime)));
+	strcat(logBuffer, message);
+
+	DWORD bytesWritten;
+	if (FALSE == WriteFile(writer->logFileHandle, logBuffer,
+		strlen(logBuffer), &bytesWritten, NULL)) {
+		int lastError = GetLastError();
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_IMG_WRITE);
+		tsk_error_set_errstr("writeLogFile: error writing log",
+			lastError);
+	}
+}
+
+void openLogFile(TSK_IMG_WRITER * writer) {
+	writer->logFileHandle = CreateFile(L"C:\\cygwin\\home\\apriestman\\Work\\autopsy\\vhdTesting\\tskOutput\\tskLog.txt", FILE_APPEND_DATA,
+		FILE_SHARE_READ, NULL, OPEN_ALWAYS, 0,
+		NULL);
+	if (writer->logFileHandle == INVALID_HANDLE_VALUE) {
+		tsk_fprintf(stderr, "Error opening VHD!!!"); // temp
+		fflush(stderr);
+		int lastError = (int)GetLastError();
+		writer->outputFileHandle = 0; /* so we don't close it next time */
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_IMG_OPEN);
+		tsk_error_set_errstr("openLogFile: file  %d", lastError);
+	}
+	writeLogFile(writer, "Opened log file\n");
+
+}
+
+
+
 
 bool getBit(unsigned char * buffer, TSK_OFF_T index) {
 	unsigned char b = buffer[index / 8];
@@ -309,6 +355,13 @@ static TSK_RETVAL_ENUM tsk_img_writer_add(TSK_IMG_WRITER* writer, TSK_OFF_T addr
 			(TSK_OFF_T)len);
 	}
 
+	sprintf(messageBuffer, "tsk_img_writer_add: addr: 0x%llx  len: 0x%llx\n", addr, len);
+	writeLogFile(writer, messageBuffer);
+
+	if (writer->outputFileHandle == 0) {
+		writeLogFile(writer, "tsk_img_writer_add: outputFileHandle is closed");
+	}
+
 	/* This should never happen, but best to check */
 	if (addr % VHD_SECTOR_SIZE != 0) {
 		return TSK_ERR;
@@ -351,12 +404,18 @@ static TSK_RETVAL_ENUM tsk_img_writer_close(TSK_IMG_WRITER* img_writer) {
         tsk_fprintf(stderr,
             "tsk_img_writer_close: Closing image writer");
     }
+	writeLogFile(img_writer, "Closing image writer");
+	
     if (img_writer->outputFileHandle != 0) {
         CloseHandle(img_writer->outputFileHandle);
         img_writer->outputFileHandle = 0;
 
 		/* TODO: Free the data */
     }	
+	if (img_writer->logFileHandle != 0) {
+		CloseHandle(img_writer->logFileHandle);
+		img_writer->logFileHandle = 0;
+	}
 
     return TSK_OK;
 #endif
@@ -529,16 +588,48 @@ TSK_RETVAL_ENUM writeDynamicDiskHeader(TSK_IMG_WRITER * writer) {
  * Create and initailize the TSK_IMG_WRITER struct and save reference in img_info,
  * then write the headers to the output file
  */
-TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR * directory,
-    const TSK_TCHAR * basename) {
+TSK_RETVAL_ENUM tsk_img_writer_create_from_dir(TSK_IMG_INFO * img_info, const TSK_TCHAR * directory,
+	const TSK_TCHAR * basename) {
 
 #ifndef TSK_WIN32
-    return TSK_ERR;
+	return TSK_ERR;
+#else
+	if (tsk_verbose) {
+		tsk_fprintf(stderr,
+			"tsk_img_writer_create: Creating image writer in directory %" PRIttocTSK" with basename %" PRIttocTSK"\n",
+			directory, basename);
+		fflush(stderr);
+	}
+
+	/* Set up the output file */
+	size_t len = TSTRLEN(directory) + TSTRLEN(basename) + 10;
+	TSK_TCHAR * outputFileName = (TSK_TCHAR *)malloc(len * sizeof(TSK_TCHAR));
+	TSTRNCPY(outputFileName, directory, TSTRLEN(directory) + 1);
+	TSTRNCAT(outputFileName, _TSK_T("\\"), 2);
+	TSTRNCAT(outputFileName, basename, TSTRLEN(basename) + 1);
+	TSTRNCAT(outputFileName, _TSK_T(".vhd"), 5);
+	if (tsk_verbose) {
+		tsk_fprintf(stderr,
+			"tsk_img_writer_create: Output file: %" PRIttocTSK"\n", outputFileName);
+		fflush(stderr);
+	}
+
+	return tsk_img_writer_create(img_info, outputFileName);
+#endif
+}
+
+/*
+* Create and initailize the TSK_IMG_WRITER struct and save reference in img_info,
+* then write the headers to the output file
+*/
+TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR * outputFileName) {
+#ifndef TSK_WIN32
+	return TSK_ERR;
 #else
     if (tsk_verbose) {
         tsk_fprintf(stderr,
-            "tsk_img_writer_create: Creating image writer in directory %" PRIttocTSK" with basename %" PRIttocTSK"\n",
-            directory, basename);
+            "tsk_img_writer_create: Creating image writer in %" PRIttocTSK"\n",
+            outputFileName);
 		fflush(stderr);
     }
 
@@ -559,6 +650,9 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR *
     writer->close = tsk_img_writer_close;
     writer->finish_image = tsk_img_writer_finish_image;
 
+	writer->fileName = (TSK_TCHAR*)tsk_malloc((TSTRLEN(outputFileName) + 1) * sizeof(TCHAR));
+	TSTRNCPY(writer->fileName, outputFileName, TSTRLEN(outputFileName) + 1);
+
     /* Calculation time */
     writer->imageSize = raw_info->img_info.size;
     if (writer->imageSize > VHD_MAX_IMAGE_SIZE) {
@@ -578,19 +672,6 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR *
 	if (0 != writer->sectorBitmapLength % VHD_SECTOR_SIZE) {
 		writer->sectorBitmapLength += VHD_SECTOR_SIZE - (writer->sectorBitmapLength % VHD_SECTOR_SIZE);
 	}
-
-    /* Set up the output file */
-    size_t len = TSTRLEN(directory) + TSTRLEN(basename) + 10;
-    writer->fileName = (TSK_TCHAR *)malloc(len * sizeof(TSK_TCHAR));
-    TSTRNCPY(writer->fileName, directory, TSTRLEN(directory) + 1);
-    TSTRNCAT(writer->fileName, _TSK_T("\\"), 2);
-    TSTRNCAT(writer->fileName, basename, TSTRLEN(basename) + 1);
-    TSTRNCAT(writer->fileName, _TSK_T(".vhd"), 5);
-    if (tsk_verbose) {
-        tsk_fprintf(stderr,
-            "tsk_img_writer_create: Output file: %" PRIttocTSK"\n", writer->fileName);
-		fflush(stderr);
-    }
 
     /* TODO: Decide what to do if the file already exisits. For now, always overwrite */
     writer->outputFileHandle = CreateFile(writer->fileName, FILE_WRITE_DATA,

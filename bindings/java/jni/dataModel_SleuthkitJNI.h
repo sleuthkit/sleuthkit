@@ -226,10 +226,10 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddI
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    runAddImgNat
- * Signature: (JLjava/lang/String;[Ljava/lang/String;ILjava/lang/String;)V
+ * Signature: (JLjava/lang/String;[Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V
  */
 JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat
-  (JNIEnv *, jclass, jlong, jstring, jobjectArray, jint, jstring);
+  (JNIEnv *, jclass, jlong, jstring, jobjectArray, jint, jstring, jstring);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
@@ -398,6 +398,14 @@ JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getCurDirNat
  */
 JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupportedNat
   (JNIEnv *, jclass, jstring);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    enableImageWriterNat
+ * Signature: (JLjava/lang/String;Ljava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_enableImageWriterNat
+  (JNIEnv *, jclass, jlong, jstring, jstring);
 
 #ifdef __cplusplus
 }

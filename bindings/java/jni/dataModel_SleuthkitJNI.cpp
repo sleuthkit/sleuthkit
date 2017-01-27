@@ -12,6 +12,7 @@
 #include "tsk/auto/tsk_case_db.h"
 #include "tsk/hashdb/tsk_hash_info.h"
 #include "tsk/auto/tsk_is_image_supported.h"
+#include "tsk/img/img_writer.h"
 #include "jni.h"
 #include "dataModel_SleuthkitJNI.h"
 #include <locale.h>
@@ -1033,7 +1034,8 @@ JNIEXPORT jlong JNICALL
  */
 JNIEXPORT void JNICALL
     Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
-    jclass obj, jlong process, jstring deviceId, jobjectArray paths, jint numImgs, jstring timeZone) {
+    jclass obj, jlong process, jstring deviceId, jobjectArray paths, jint numImgs, 
+	jstring timeZone, jstring imageWriterPathJ) {
 
     TskAutoDb *tskAuto = ((TskAutoDb *) process);
     if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
@@ -1078,6 +1080,24 @@ JNIEXPORT void JNICALL
         tskAuto->setTz(string(time_zone));
         env->ReleaseStringUTFChars(timeZone, time_zone);
     }
+
+	// Set up image writer, if the output path is present
+	if (env->GetStringLength(imageWriterPathJ) > 0) {
+		const char *imageWriterPath = env->GetStringUTFChars(imageWriterPathJ, &isCopy);
+		if (TSK_OK != tskAuto->enableImageWriter(imageWriterPath)) {
+			env->ReleaseStringUTFChars(imageWriterPathJ, imageWriterPath);
+			setThrowTskCoreError(env,
+				"runAddImgNat: error enabling image writer.");
+			return;
+		}
+		env->ReleaseStringUTFChars(imageWriterPathJ, imageWriterPath);
+	}
+	else {
+		tskAuto->disableImageWriter();
+		setThrowTskCoreError(env,
+			"runAddImgNat: Disabling image writer.");
+		return;
+	}
 
     // Add the data source.
     uint8_t ret = 0;
@@ -2060,4 +2080,35 @@ JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupp
     free(imagePaths);
 
     return (jboolean) result;
+}
+
+/*
+ * Enable image writing during ingest
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param directoryJ directory to store the image in
+ * @param baseNameJ base name for the new image
+ * @return 0 if successful, -1 otherwise
+ */
+JNIEXPORT jint JNICALL
+Java_org_sleuthkit_datamodel_SleuthkitJNI_enableImageWriterNat (JNIEnv * env, jclass obj,
+	jlong a_img_info, jstring directoryJ, jstring baseNameJ) {
+
+	TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
+	if (img_info == 0) {
+		//exception already set
+		return -1;
+	}
+
+	TSK_TCHAR directoryT[1024];
+	toTCHAR(env, directoryT, 1024, directoryJ);
+
+	TSK_TCHAR baseNameT[1024];
+	toTCHAR(env, baseNameT, 1024, baseNameJ);
+
+	if (TSK_ERR == tsk_img_writer_create_from_dir(img_info, directoryT, baseNameT)) {
+		return -1;
+	}
+
+	return 0;
 }

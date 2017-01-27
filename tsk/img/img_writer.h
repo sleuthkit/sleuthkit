@@ -20,8 +20,9 @@
 extern "C" {
 #endif
 
-    TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO* img_info, const TSK_TCHAR * directory,
+    TSK_RETVAL_ENUM tsk_img_writer_create_from_dir(TSK_IMG_INFO* img_info, const TSK_TCHAR * directory,
         const TSK_TCHAR * basename);
+	TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO* img_info, const TSK_TCHAR * outputPath);
 
 	enum IMG_WRITER_BLOCK_STATUS_ENUM {
 		IMG_WRITER_BLOCK_STATUS_UNALLOC = 0,
@@ -48,6 +49,9 @@ extern "C" {
         uint32_t sectorsPerBlock;
         TSK_OFF_T batOffset;
         TSK_OFF_T nextDataOffset;
+
+		// TEMP
+		HANDLE logFileHandle;
 
 		IMG_WRITER_BLOCK_STATUS_ENUM* blockStatus;
 		TSK_OFF_T* blockToOffset;

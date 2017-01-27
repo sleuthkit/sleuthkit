@@ -152,7 +152,7 @@ public class SleuthkitJNI {
 		long addImageInfo(long deviceObjId, List<String> imageFilePaths, String timeZone) throws TskCoreException {
 			try {
 				long tskAutoDbPointer = initializeAddImgNat(caseDbPointer, timezoneLongToShort(timeZone), false, false, false);
-				runAddImgNat(tskAutoDbPointer, UUID.randomUUID().toString(), imageFilePaths.toArray(new String[0]), imageFilePaths.size(), timeZone);
+				runAddImgNat(tskAutoDbPointer, UUID.randomUUID().toString(), imageFilePaths.toArray(new String[0]), imageFilePaths.size(), timeZone, "");
 				return commitAddImgNat(tskAutoDbPointer);
 			} catch (TskDataException ex) {
 				throw new TskCoreException("Error adding image to case database", ex);
@@ -232,7 +232,7 @@ public class SleuthkitJNI {
 				if (0 == tskAutoDbPointer) {
 					throw new TskCoreException("initAddImgNat returned a NULL TskAutoDb pointer");
 				}
-				runAddImgNat(tskAutoDbPointer, deviceId, imageFilePaths, imageFilePaths.length, timeZone);
+				runAddImgNat(tskAutoDbPointer, deviceId, imageFilePaths, imageFilePaths.length, timeZone, "C:\\cygwin\\home\\apriestman\\Work\\autopsy\\vhdTesting\\tskOutput\\autopsyVHD2.vhd");
 			}
 
 			/**
@@ -984,6 +984,10 @@ public class SleuthkitJNI {
 	public static boolean isImageSupported(String imagePath){
 		return isImageSupportedNat(imagePath);
 	}
+	
+	public static int enableImageWriter(long imgHandle, String directory, String baseName){
+		return enableImageWriterNat(imgHandle, directory, baseName);
+	}
 
 	private static native String getVersionNat();
 
@@ -1039,7 +1043,7 @@ public class SleuthkitJNI {
 
 	private static native long initializeAddImgNat(long db, String timezone, boolean addFileSystems, boolean addUnallocSpace, boolean skipFatFsOrphans) throws TskCoreException;
 
-	private static native void runAddImgNat(long process, String deviceId, String[] imgPath, int splits, String timezone) throws TskCoreException, TskDataException;
+	private static native void runAddImgNat(long process, String deviceId, String[] imgPath, int splits, String timezone, String imageWriterPath) throws TskCoreException, TskDataException;
 
 	private static native void stopAddImgNat(long process) throws TskCoreException;
 
@@ -1082,5 +1086,7 @@ public class SleuthkitJNI {
 	private static native String getCurDirNat(long process);
 	
 	private static native boolean isImageSupportedNat(String imagePath);
+	
+	private static native int enableImageWriterNat(long imgHandle, String directory, String baseName);
 
 }
