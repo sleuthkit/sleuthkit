@@ -211,6 +211,76 @@ uint8_t
 }
 
 /**
+* Adds an image to the database.
+*
+* @param a_num Number of image parts
+* @param a_img_info Image info handle
+* @param a_images Array of paths to the image parts
+* @param a_type Image type
+* @param a_ssize Size of device sector in bytes (or 0 for default)
+* @param a_deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID).
+* @return 0 for success, 1 for failure
+*/
+#ifdef TSK_WIN32
+uint8_t
+TskAutoDb::openImage(int a_num, TSK_IMG_INFO * a_img_info, const TSK_TCHAR * const a_images[],
+	TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize, const char* a_deviceId)
+{
+
+	// make name of database
+	uint8_t retval = TskAuto::openImageHandle(a_img_info);
+
+	if (retval != 0) {
+		return retval;
+	}
+
+	// convert image paths to UTF-8
+	char **img_ptrs = (char **)tsk_malloc(a_num * sizeof(char *));
+	if (img_ptrs == NULL) {
+		return 1;
+	}
+
+	for (int i = 0; i < a_num; i++) {
+		char * img2 = (char*)tsk_malloc(1024 * sizeof(char));
+		UTF8 *ptr8;
+		UTF16 *ptr16;
+
+		ptr8 = (UTF8 *)img2;
+		ptr16 = (UTF16 *)a_images[i];
+
+		retval =
+			tsk_UTF16toUTF8_lclorder((const UTF16 **)&ptr16, (UTF16 *)
+				& ptr16[TSTRLEN(a_images[i]) + 1], &ptr8,
+				(UTF8 *)((uintptr_t)ptr8 + 1024), TSKlenientConversion);
+		if (retval != TSKconversionOK) {
+			tsk_error_reset();
+			tsk_error_set_errno(TSK_ERR_AUTO_UNICODE);
+			tsk_error_set_errstr("Error converting image to UTF-8\n");
+			return 1;
+		}
+		img_ptrs[i] = img2;
+	}
+
+	if (addImageDetails(img_ptrs, a_num, a_deviceId)) {
+		//cleanup
+		for (int i = 0; i < a_num; ++i) {
+			free(img_ptrs[i]);
+		}
+		free(img_ptrs);
+		return 1;
+	}
+
+	//cleanup
+	for (int i = 0; i < a_num; ++i) {
+		free(img_ptrs[i]);
+	}
+	free(img_ptrs);
+
+	return 0;
+}
+#endif
+
+/**
  * Adds image details to the existing database tables.
  *
  * @param imgPaths The paths to the image splits
@@ -459,6 +529,65 @@ uint8_t
     } else {
         return 0;
     }
+}
+
+/**
+* Start the process to add image/file metadata to database inside of a transaction.
+* User must call either commitAddImage() to commit the changes,
+* or revertAddImage() to revert them.
+*
+* @param numImg Number of image parts
+* @param imagePaths Array of paths to the image parts
+* @param imgType Image type
+* @param sSize Size of device sector in bytes (or 0 for default)
+* @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID)
+* @return 0 for success, 1 for failure
+*/
+uint8_t
+TskAutoDb::startAddImage(int numImg, TSK_IMG_INFO * a_img_info,
+	TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* deviceId)
+{
+	if (tsk_verbose)
+		tsk_fprintf(stderr, "TskAutoDb::startAddImage: Starting add image process\n");
+
+	if (m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT) == 0) {
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_AUTO_DB);
+		tsk_error_set_errstr("TskAutoDb::startAddImage(): An add-image savepoint already exists");
+		registerError();
+		return 1;
+	}
+
+	// @@@ This check is a bit paranoid, and may need to be removed in the future
+	if (m_db->inTransaction()) {
+		tsk_error_reset();
+		tsk_error_set_errno(TSK_ERR_AUTO_DB);
+		tsk_error_set_errstr("TskAutoDb::startAddImage(): Already in a transaction, image might not be commited");
+		registerError();
+		return 1;
+	}
+
+	if (m_db->createSavepoint(TSK_ADD_IMAGE_SAVEPOINT)) {
+		registerError();
+		return 1;
+	}
+
+	m_imgTransactionOpen = true;
+	openImageHandle(a_img_info);
+	if (openImage(numImg, imagePaths, imgType, sSize, deviceId)) {
+		tsk_error_set_errstr2("TskAutoDb::startAddImage");
+		registerError();
+		if (revertAddImage())
+			registerError();
+		return 1;
+	}
+
+	if (m_addFileSystems) {
+		return addFilesInImgToDb();
+	}
+	else {
+		return 0;
+	}
 }
 
 

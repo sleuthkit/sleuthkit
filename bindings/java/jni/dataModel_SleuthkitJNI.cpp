@@ -1126,6 +1126,87 @@ JNIEXPORT void JNICALL
     // if process completes successfully, must call revertAddImgNat or commitAddImgNat to free the TskAutoDb
 }
 
+/*
+* Add an image to a database using a pre-created process, which can be cancelled.
+* MUST call commitAddImg or revertAddImg afterwards once runAddImg returns.  If there is an
+* error, you do not need to call revert or commit and the 'process' handle will be deleted.
+*
+* @param env pointer to java environment this was called from
+* @param obj the java object this was called from
+* @param process the add-image process created by initAddImgNat
+* @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID)
+* @param a_img_info image info object
+* @param numImgs number of image parts
+* @param timeZone the timezone the image is from
+*/
+JNIEXPORT void JNICALL
+Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
+	jclass obj, jlong process, jstring deviceId, jlong a_img_info, jint numImgs, jstring timeZone) {
+	
+	TskAutoDb *tskAuto = ((TskAutoDb *)process);
+	if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
+		setThrowTskCoreError(env,
+			"runAddImgNat: Invalid TskAutoDb object passed in");
+		return;
+	}
+
+	jboolean isCopy;
+	const char *device_id = NULL;
+	if (NULL != deviceId) {
+		device_id = (const char *)env->GetStringUTFChars(deviceId, &isCopy);
+		if (NULL == device_id) {
+			setThrowTskCoreError(env, "runAddImgNat: Can't convert data source id string");
+			return;
+		}
+	}
+
+	// Set the time zone.
+	if (env->GetStringLength(timeZone) > 0) {
+		const char *time_zone = env->GetStringUTFChars(timeZone, &isCopy);
+		tskAuto->setTz(string(time_zone));
+		env->ReleaseStringUTFChars(timeZone, time_zone);
+	}
+
+	// Add the data source.
+	uint8_t ret = 0;
+	tskAuto->
+	if ((ret = tskAuto->startAddImage((int)numImgs, a_img_info,
+		TSK_IMG_TYPE_DETECT, 0, device_id)) != 0) {
+		stringstream msgss;
+		msgss << "Errors occured while ingesting image " << std::endl;
+		vector<TskAuto::error_record> errors = tskAuto->getErrorList();
+		for (size_t i = 0; i < errors.size(); i++) {
+			msgss << (i + 1) << ". ";
+			msgss << (TskAuto::errorRecordToString(errors[i]));
+			msgss << " " << std::endl;
+		}
+
+		if (ret == 1) {
+			//fatal error
+			setThrowTskCoreError(env, msgss.str().c_str());
+		}
+		else if (ret == 2) {
+			if (tskAuto->isDbOpen()) {
+				// if we can still talk to the database, it's a non-fatal error
+				setThrowTskDataError(env, msgss.str().c_str());
+			}
+			else {
+				// we cannot talk to the database, fatal error
+				setThrowTskCoreError(env, msgss.str().c_str());
+			}
+		}
+	}
+
+	// @@@ SHOULD WE CLOSE HERE before we commit / revert etc.
+	//close image first before freeing the image paths
+	tskAuto->closeImage();
+
+	// Cleanup
+	env->ReleaseStringUTFChars(deviceId, (const char *)device_id);
+
+	// if process completes successfully, must call revertAddImgNat or commitAddImgNat to free the TskAutoDb
+}
+
 
 /*
  * Cancel the given add-image process.
