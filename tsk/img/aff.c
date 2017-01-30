@@ -216,6 +216,11 @@ aff_close(TSK_IMG_INFO * img_info)
 {
     IMG_AFF_INFO *aff_info = (IMG_AFF_INFO *) img_info;
     af_close(aff_info->af_file);
+	for (int i = 0; i < img_info->num_img; i++) {
+		if (img_info->images[i])
+			free(img_info->images[i]);
+	}
+	free(img_info->images);
     tsk_img_free(aff_info);
 }
 
