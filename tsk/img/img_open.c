@@ -590,15 +590,15 @@ tsk_img_get_names(TSK_IMG_INFO *a_img_info, int *a_num_imgs)
         case TSK_IMG_TYPE_RAW:
             {
                 IMG_RAW_INFO *raw_info = (IMG_RAW_INFO *)a_img_info;
-                *a_num_imgs = raw_info->num_img;
-                return raw_info->images;
+                *a_num_imgs = raw_info->img_info.num_img;
+                return raw_info->img_info.images;
             }
 #if HAVE_LIBEWF
         case TSK_IMG_TYPE_EWF_EWF:
             {
                 IMG_EWF_INFO *ewf_info = (IMG_EWF_INFO *)a_img_info;
-                *a_num_imgs = ewf_info->num_imgs;
-                return ewf_info->images;
+                *a_num_imgs = ewf_info->img_info.num_img;
+                return ewf_info->img_info.images;
             }
             break;
 #endif
