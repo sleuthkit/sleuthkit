@@ -132,7 +132,7 @@ uint8_t
         return retval;
     }
 
-    if (addImageDetails(a_images, a_num, a_deviceId)) {
+    if (addImageDetails(a_deviceId)) {
         return 1;
     }
     return 0;
@@ -162,134 +162,36 @@ uint8_t
         return retval;
     }
 
-    // convert image paths to UTF-8
-    char **img_ptrs = (char **) tsk_malloc(a_num * sizeof(char *));
-    if (img_ptrs == NULL) {
-        return 1;
-    }
-
-    for (int i = 0; i < a_num; i++) {
-        char * img2 = (char*) tsk_malloc(1024 * sizeof(char));
-        UTF8 *ptr8;
-        UTF16 *ptr16;
-
-        ptr8 = (UTF8 *) img2;
-        ptr16 = (UTF16 *) a_images[i];
-
-        retval =
-            tsk_UTF16toUTF8_lclorder((const UTF16 **) &ptr16, (UTF16 *)
-            & ptr16[TSTRLEN(a_images[i]) + 1], &ptr8,
-            (UTF8 *) ((uintptr_t) ptr8 + 1024), TSKlenientConversion);
-        if (retval != TSKconversionOK) {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_AUTO_UNICODE);
-            tsk_error_set_errstr("Error converting image to UTF-8\n");
-            return 1;
-        }
-        img_ptrs[i] = img2;
-    }
-
-    if (addImageDetails(img_ptrs, a_num, a_deviceId)) {
-        //cleanup
-        for (int i = 0; i < a_num; ++i) {
-            free(img_ptrs[i]);
-        }
-        free(img_ptrs);
-        return 1;
-    }
-
-    //cleanup
-    for (int i = 0; i < a_num; ++i) {
-        free(img_ptrs[i]);
-    }
-    free(img_ptrs);
-    
-    return 0;
+	return (addImageDetails(a_deviceId));
 #else
     return openImageUtf8(a_num, a_images, a_type, a_ssize, a_deviceId);
 #endif
 }
 
 /**
-* Adds an image to the database.
+* Adds an image to the database. Requires that m_img_info is already initialized
 *
-* @param a_num Number of image parts
-* @param a_img_info Image info handle
-* @param a_images Array of paths to the image parts
-* @param a_type Image type
-* @param a_ssize Size of device sector in bytes (or 0 for default)
 * @param a_deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID).
 * @return 0 for success, 1 for failure
 */
-#ifdef TSK_WIN32
 uint8_t
-TskAutoDb::openImage(int a_num, TSK_IMG_INFO * a_img_info, const TSK_TCHAR * const a_images[],
-	TSK_IMG_TYPE_ENUM a_type, unsigned int a_ssize, const char* a_deviceId)
+TskAutoDb::openImage(const char* a_deviceId)
 {
-
-	// make name of database
-	uint8_t retval = TskAuto::openImageHandle(a_img_info);
-
-	if (retval != 0) {
-		return retval;
-	}
-
-	// convert image paths to UTF-8
-	char **img_ptrs = (char **)tsk_malloc(a_num * sizeof(char *));
-	if (img_ptrs == NULL) {
+	if (m_img_info == NULL) {
 		return 1;
 	}
 
-	for (int i = 0; i < a_num; i++) {
-		char * img2 = (char*)tsk_malloc(1024 * sizeof(char));
-		UTF8 *ptr8;
-		UTF16 *ptr16;
-
-		ptr8 = (UTF8 *)img2;
-		ptr16 = (UTF16 *)a_images[i];
-
-		retval =
-			tsk_UTF16toUTF8_lclorder((const UTF16 **)&ptr16, (UTF16 *)
-				& ptr16[TSTRLEN(a_images[i]) + 1], &ptr8,
-				(UTF8 *)((uintptr_t)ptr8 + 1024), TSKlenientConversion);
-		if (retval != TSKconversionOK) {
-			tsk_error_reset();
-			tsk_error_set_errno(TSK_ERR_AUTO_UNICODE);
-			tsk_error_set_errstr("Error converting image to UTF-8\n");
-			return 1;
-		}
-		img_ptrs[i] = img2;
-	}
-
-	if (addImageDetails(img_ptrs, a_num, a_deviceId)) {
-		//cleanup
-		for (int i = 0; i < a_num; ++i) {
-			free(img_ptrs[i]);
-		}
-		free(img_ptrs);
-		return 1;
-	}
-
-	//cleanup
-	for (int i = 0; i < a_num; ++i) {
-		free(img_ptrs[i]);
-	}
-	free(img_ptrs);
-
-	return 0;
+	return(addImageDetails(a_deviceId));
 }
-#endif
 
 /**
  * Adds image details to the existing database tables.
  *
- * @param imgPaths The paths to the image splits
- * @param numPaths The number of paths
  * @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID).
  * @return Returns 0 for success, 1 for failure
  */
 uint8_t
-TskAutoDb::addImageDetails(const char *const imgPaths[], int numPaths, const char* deviceId)
+TskAutoDb::addImageDetails(const char* deviceId)
 {
    string md5 = "";
 #if HAVE_LIBEWF 
@@ -314,16 +216,56 @@ TskAutoDb::addImageDetails(const char *const imgPaths[], int numPaths, const cha
         return 1;
     }
 
+	char **img_ptrs;
+#ifdef TSK_WIN32
+	// convert image paths to UTF-8
+	img_ptrs = (char **)tsk_malloc(m_img_info->num_img * sizeof(char *));
+	if (img_ptrs == NULL) {
+		return 1;
+	}
+
+	for (int i = 0; i < m_img_info->num_img; i++) {
+		char * img2 = (char*)tsk_malloc(1024 * sizeof(char));
+		UTF8 *ptr8;
+		UTF16 *ptr16;
+
+		ptr8 = (UTF8 *)img2;
+		ptr16 = (UTF16 *)m_img_info->images[i];
+
+		uint8_t retval =
+			tsk_UTF16toUTF8_lclorder((const UTF16 **)&ptr16, (UTF16 *)
+				& ptr16[TSTRLEN(m_img_info->images[i]) + 1], &ptr8,
+				(UTF8 *)((uintptr_t)ptr8 + 1024), TSKlenientConversion);
+		if (retval != TSKconversionOK) {
+			tsk_error_reset();
+			tsk_error_set_errno(TSK_ERR_AUTO_UNICODE);
+			tsk_error_set_errstr("Error converting image to UTF-8\n");
+			return 1;
+		}
+		img_ptrs[i] = img2;
+	}
+#else 
+	img_ptrs = m_img_info->images;
+#endif
+
     // Add the image names
-    for (int i = 0; i < numPaths; i++) {
+    for (int i = 0; i < m_img_info->num_img; i++) {
         const char *img_ptr = NULL;
-        img_ptr = imgPaths[i];
+        img_ptr = img_ptrs[i];
 
         if (m_db->addImageName(m_curImgId, img_ptr, i)) {
             registerError();
             return 1;
         }
     }
+
+#ifdef TSK_WIN32
+	//cleanup
+	for (int i = 0; i < m_img_info->num_img; ++i) {
+		free(img_ptrs[i]);
+	}
+	free(img_ptrs);
+#endif
 
     return 0;
 }
@@ -535,18 +477,19 @@ uint8_t
 * Start the process to add image/file metadata to database inside of a transaction.
 * User must call either commitAddImage() to commit the changes,
 * or revertAddImage() to revert them.
+* This version of startAddImage assumes that m_img_info has already been set up.
 *
-* @param numImg Number of image parts
-* @param imagePaths Array of paths to the image parts
-* @param imgType Image type
-* @param sSize Size of device sector in bytes (or 0 for default)
 * @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID)
 * @return 0 for success, 1 for failure
 */
 uint8_t
-TskAutoDb::startAddImage(int numImg, TSK_IMG_INFO * a_img_info,
-	TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* deviceId)
+TskAutoDb::startAddImage(const char* deviceId)
 {
+
+	if (m_img_info == NULL) {
+		return 1;
+	}
+
 	if (tsk_verbose)
 		tsk_fprintf(stderr, "TskAutoDb::startAddImage: Starting add image process\n");
 
@@ -573,8 +516,7 @@ TskAutoDb::startAddImage(int numImg, TSK_IMG_INFO * a_img_info,
 	}
 
 	m_imgTransactionOpen = true;
-	openImageHandle(a_img_info);
-	if (openImage(numImg, imagePaths, imgType, sSize, deviceId)) {
+	if (openImage(deviceId)) {
 		tsk_error_set_errstr2("TskAutoDb::startAddImage");
 		registerError();
 		if (revertAddImage())

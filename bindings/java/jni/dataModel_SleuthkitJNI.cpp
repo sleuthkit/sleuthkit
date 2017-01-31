@@ -1032,7 +1032,7 @@ JNIEXPORT jlong JNICALL
  * @param timeZone the timezone the image is from
  */
 JNIEXPORT void JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_runOpenAndAddImgNat(JNIEnv * env,
     jclass obj, jlong process, jstring deviceId, jobjectArray paths, jint numImgs, jstring timeZone) {
 
     TskAutoDb *tskAuto = ((TskAutoDb *) process);
@@ -1136,12 +1136,11 @@ JNIEXPORT void JNICALL
 * @param process the add-image process created by initAddImgNat
 * @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID)
 * @param a_img_info image info object
-* @param numImgs number of image parts
 * @param timeZone the timezone the image is from
 */
 JNIEXPORT void JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
-	jclass obj, jlong process, jstring deviceId, jlong a_img_info, jint numImgs, jstring timeZone) {
+	jclass obj, jlong process, jstring deviceId, jlong a_img_info, jstring timeZone) {
 	
 	TskAutoDb *tskAuto = ((TskAutoDb *)process);
 	if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
@@ -1167,11 +1166,13 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
 		env->ReleaseStringUTFChars(timeZone, time_zone);
 	}
 
+	// Save the image handle to the TskAutoDb object
+	TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
+	tskAuto->openImageHandle(img_info);
+
 	// Add the data source.
 	uint8_t ret = 0;
-	tskAuto->
-	if ((ret = tskAuto->startAddImage((int)numImgs, a_img_info,
-		TSK_IMG_TYPE_DETECT, 0, device_id)) != 0) {
+	if ((ret = tskAuto->startAddImage(device_id)) != 0) {
 		stringstream msgss;
 		msgss << "Errors occured while ingesting image " << std::endl;
 		vector<TskAuto::error_record> errors = tskAuto->getErrorList();
