@@ -2,11 +2,22 @@
 
 This file describes how to build TSK using Visual Studio 2015 (see
 README_win32.txt for instructions on building the win32 libraries and
-executables from Linux). If you do not have a copy of Visual Studio, you
-can use the free Community Edition:
+executables from Linux). 
 
-http://www.microsoft.com/express/vc/
 
+Installing Visual Studio
+
+If you do not have a copy of Visual Studio, you can use the free
+Community Edition:
+
+    http://www.microsoft.com/express/vc/
+
+When installing it, choose to do a custom installation to ensure
+that Visual C++ is added.  You will also need to choose support to make
+XP executables. 
+
+
+Building
 
 There are six build targets: 
     - Debug_NoLibs and Release_NoLibs do not depend on any third-party libraries. 

@@ -24,6 +24,7 @@ Doxyfile                text
 *.vcproj            text eol=crlf
 *.vcxproj*            text eol=crlf
 *.sln               text eol=crlf
+*.bat			text eol=crlf
 
 .gitignore          text 
 
