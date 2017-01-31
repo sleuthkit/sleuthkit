@@ -85,9 +85,13 @@ extern "C" {
         uint32_t tag;           ///< Set to TSK_IMG_INFO_TAG when struct is alloc
         TSK_IMG_TYPE_ENUM itype;        ///< Type of disk image format
         TSK_OFF_T size;         ///< Total size of image in bytes
+        int num_img;            ///< Number of image files
         unsigned int sector_size;       ///< sector size of device in bytes (typically 512)
         unsigned int page_size;         ///< page size of NAND page in bytes (defaults to 2048)
         unsigned int spare_size;        ///< spare or OOB size of NAND in bytes (defaults to 64)
+
+        // the following are protected by cache_lock in IMG_INFO
+        TSK_TCHAR **images;    ///< Image names
 
         tsk_lock_t cache_lock;  ///< Lock for cache and associated values
         char cache[TSK_IMG_INFO_CACHE_NUM][TSK_IMG_INFO_CACHE_LEN];     ///< read cache (r/w shared - lock) 

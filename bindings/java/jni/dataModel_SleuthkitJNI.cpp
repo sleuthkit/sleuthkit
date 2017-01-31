@@ -1033,9 +1033,8 @@ JNIEXPORT jlong JNICALL
  * @param timeZone the timezone the image is from
  */
 JNIEXPORT void JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
-    jclass obj, jlong process, jstring deviceId, jobjectArray paths, jint numImgs, 
-	jstring timeZone, jstring imageWriterPathJ) {
+    Java_org_sleuthkit_datamodel_SleuthkitJNI_runOpenAndAddImgNat(JNIEnv * env,
+    jclass obj, jlong process, jstring deviceId, jobjectArray paths, jint numImgs, jstring timeZone) {
 
     TskAutoDb *tskAuto = ((TskAutoDb *) process);
     if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
@@ -1080,24 +1079,6 @@ JNIEXPORT void JNICALL
         tskAuto->setTz(string(time_zone));
         env->ReleaseStringUTFChars(timeZone, time_zone);
     }
-
-	// Set up image writer, if the output path is present
-	if (env->GetStringLength(imageWriterPathJ) > 0) {
-		const char *imageWriterPath = env->GetStringUTFChars(imageWriterPathJ, &isCopy);
-		if (TSK_OK != tskAuto->enableImageWriter(imageWriterPath)) {
-			env->ReleaseStringUTFChars(imageWriterPathJ, imageWriterPath);
-			setThrowTskCoreError(env,
-				"runAddImgNat: error enabling image writer.");
-			return;
-		}
-		env->ReleaseStringUTFChars(imageWriterPathJ, imageWriterPath);
-	}
-	else {
-		tskAuto->disableImageWriter();
-		setThrowTskCoreError(env,
-			"runAddImgNat: Disabling image writer.");
-		return;
-	}
 
     // Add the data source.
     uint8_t ret = 0;
@@ -1144,6 +1125,106 @@ JNIEXPORT void JNICALL
     env->ReleaseStringUTFChars(deviceId, (const char *) device_id);
 
     // if process completes successfully, must call revertAddImgNat or commitAddImgNat to free the TskAutoDb
+}
+
+/*
+* Add an image to a database using a pre-created process, which can be cancelled.
+* MUST call commitAddImg or revertAddImg afterwards once runAddImg returns.  If there is an
+* error, you do not need to call revert or commit and the 'process' handle will be deleted.
+*
+* @param env pointer to java environment this was called from
+* @param obj the java object this was called from
+* @param process the add-image process created by initAddImgNat
+* @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID)
+* @param a_img_info image info object
+* @param timeZone the timezone the image is from
+*/
+JNIEXPORT void JNICALL
+Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
+	jclass obj, jlong process, jstring deviceId, jlong a_img_info, jstring timeZone, jstring imageWriterPathJ) {
+	
+	TskAutoDb *tskAuto = ((TskAutoDb *)process);
+	if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
+		setThrowTskCoreError(env,
+			"runAddImgNat: Invalid TskAutoDb object passed in");
+		return;
+	}
+
+	jboolean isCopy;
+	const char *device_id = NULL;
+	if (NULL != deviceId) {
+		device_id = (const char *)env->GetStringUTFChars(deviceId, &isCopy);
+		if (NULL == device_id) {
+			setThrowTskCoreError(env, "runAddImgNat: Can't convert data source id string");
+			return;
+		}
+	}
+
+	// Set the time zone.
+	if (env->GetStringLength(timeZone) > 0) {
+		const char *time_zone = env->GetStringUTFChars(timeZone, &isCopy);
+		tskAuto->setTz(string(time_zone));
+		env->ReleaseStringUTFChars(timeZone, time_zone);
+	}
+
+	// Save the image handle to the TskAutoDb object
+	TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
+	tskAuto->openImageHandle(img_info);
+
+	// Set up image writer, if the output path is present
+	if (env->GetStringLength(imageWriterPathJ) > 0) {
+		const char *imageWriterPath = env->GetStringUTFChars(imageWriterPathJ, &isCopy);
+		if (TSK_OK != tskAuto->enableImageWriter(imageWriterPath)) {
+			env->ReleaseStringUTFChars(imageWriterPathJ, imageWriterPath);
+			setThrowTskCoreError(env,
+				"runAddImgNat: error enabling image writer.");
+			return;
+		}
+		env->ReleaseStringUTFChars(imageWriterPathJ, imageWriterPath);
+	}
+	else {
+		tskAuto->disableImageWriter();
+		setThrowTskCoreError(env,
+			"runAddImgNat: Disabling image writer.");
+		return;
+	}
+
+	// Add the data source.
+	uint8_t ret = 0;
+	if ((ret = tskAuto->startAddImage(device_id)) != 0) {
+		stringstream msgss;
+		msgss << "Errors occured while ingesting image " << std::endl;
+		vector<TskAuto::error_record> errors = tskAuto->getErrorList();
+		for (size_t i = 0; i < errors.size(); i++) {
+			msgss << (i + 1) << ". ";
+			msgss << (TskAuto::errorRecordToString(errors[i]));
+			msgss << " " << std::endl;
+		}
+
+		if (ret == 1) {
+			//fatal error
+			setThrowTskCoreError(env, msgss.str().c_str());
+		}
+		else if (ret == 2) {
+			if (tskAuto->isDbOpen()) {
+				// if we can still talk to the database, it's a non-fatal error
+				setThrowTskDataError(env, msgss.str().c_str());
+			}
+			else {
+				// we cannot talk to the database, fatal error
+				setThrowTskCoreError(env, msgss.str().c_str());
+			}
+		}
+	}
+
+	// @@@ SHOULD WE CLOSE HERE before we commit / revert etc.
+	//close image first before freeing the image paths
+	tskAuto->closeImage();
+
+	// Cleanup
+	env->ReleaseStringUTFChars(deviceId, (const char *)device_id);
+
+	// if process completes successfully, must call revertAddImgNat or commitAddImgNat to free the TskAutoDb
 }
 
 

@@ -636,7 +636,7 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR *
     IMG_RAW_INFO* raw_info = (IMG_RAW_INFO *)img_info;
 
     /* This should not be run on split images*/
-    if (raw_info->num_img != 1) {
+    if (img_info->num_img != 1) {
         return TSK_ERR;
     }
 
