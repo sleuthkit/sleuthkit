@@ -610,7 +610,9 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return true if a file, false otherwise
 	 */
 	public boolean isFile() {
-		return metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG);
+		return metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG) 
+				||(metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF) 
+				&& dirType.equals(TSK_FS_NAME_TYPE_ENUM.REG));
 
 	}
 
