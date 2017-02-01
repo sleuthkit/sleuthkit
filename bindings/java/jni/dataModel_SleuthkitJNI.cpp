@@ -1724,7 +1724,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat(JNIEnv * env,
     TSK_OFF_T readOffset = (TSK_OFF_T) offset;
     if(offset_type == TSK_FS_FILE_READ_OFFSET_TYPE_START_OF_SLACK){
         readFlag = TSK_FS_FILE_READ_FLAG_SLACK;
-        readOffset += tsk_fs_attr->size;
+        readOffset += tsk_fs_attr->nrd.initsize;
     }
 
     //read attribute
