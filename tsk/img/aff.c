@@ -216,6 +216,11 @@ aff_close(TSK_IMG_INFO * img_info)
 {
     IMG_AFF_INFO *aff_info = (IMG_AFF_INFO *) img_info;
     af_close(aff_info->af_file);
+	for (int i = 0; i < img_info->num_img; i++) {
+		if (img_info->images[i])
+			free(img_info->images[i]);
+	}
+	free(img_info->images);
     tsk_img_free(aff_info);
 }
 
@@ -283,6 +288,25 @@ aff_open(const TSK_TCHAR * const images[], unsigned int a_ssize)
     img_info->read = aff_read;
     img_info->close = aff_close;
     img_info->imgstat = aff_imgstat;
+
+    // Save the image path in TSK_IMG_INFO - this is mostly for consistency with the other
+    // image types and is not currently used
+    img_info->num_img = 1;
+    img_info->images =
+        (TSK_TCHAR **)tsk_malloc(sizeof(TSK_TCHAR *) * img_info->num_img);
+    if (img_info->images == NULL) {
+        free(image);
+        return NULL;
+    }
+    size_t len = TSTRLEN(images[0]);
+    img_info->images[0] =
+        (TSK_TCHAR *)tsk_malloc(sizeof(TSK_TCHAR) * (len + 1));
+    if (img_info->images[0] == NULL) {
+        free(img_info->images);
+        free(image);
+        return NULL;
+    }
+    TSTRNCPY(img_info->images[0], images[0], len + 1);
 
     img_info->sector_size = 512;
     if (a_ssize)

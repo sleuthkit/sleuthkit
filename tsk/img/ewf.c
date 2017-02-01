@@ -131,15 +131,15 @@ ewf_image_close(TSK_IMG_INFO * img_info)
     // not clear from the docs what we should do in v1...
     // @@@ Probably a memory leak in v1 unless libewf_close deals with it
     if (ewf_info->used_ewf_glob == 0) {
-        for (i = 0; i < ewf_info->num_imgs; i++) {
-            free(ewf_info->images[i]);
+        for (i = 0; i < ewf_info->img_info.num_img; i++) {
+            free(ewf_info->img_info.images[i]);
         }
-        free(ewf_info->images);
+        free(ewf_info->img_info.images);
     }
     else {
         libewf_error_t *error;
 #ifdef TSK_WIN32
-        libewf_glob_wide_free( ewf_info->images, ewf_info->num_imgs, &error);
+        libewf_glob_wide_free( ewf_info->img_info.images, ewf_info->img_info.num_img, &error);
 #else
         libewf_glob_free( ewf_info->images, ewf_info->num_imgs, &error);
 #endif
@@ -229,8 +229,8 @@ ewf_open(int a_num_img,
 #if defined( HAVE_LIBEWF_V2_API)
 #ifdef TSK_WIN32
         is_error = (libewf_glob_wide(a_images[0], TSTRLEN(a_images[0]),
-                LIBEWF_FORMAT_UNKNOWN, &ewf_info->images,
-                &ewf_info->num_imgs, &ewf_error) == -1);
+                LIBEWF_FORMAT_UNKNOWN, &ewf_info->img_info.images,
+                &ewf_info->img_info.num_img, &ewf_error) == -1);
 #else
         is_error = (libewf_glob(a_images[0], TSTRLEN(a_images[0]),
                 LIBEWF_FORMAT_UNKNOWN, &ewf_info->images,
@@ -273,25 +273,25 @@ ewf_open(int a_num_img,
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "ewf_open: found %d segment files via libewf_glob\n",
-                ewf_info->num_imgs);
+                ewf_info->img_info.num_img);
     }
     else {
         int i;
-        ewf_info->num_imgs = a_num_img;
-        if ((ewf_info->images =
+        ewf_info->img_info.num_img = a_num_img;
+        if ((ewf_info->img_info.images =
                 (TSK_TCHAR **) tsk_malloc(a_num_img *
                     sizeof(TSK_TCHAR *))) == NULL) {
             tsk_img_free(ewf_info);
             return NULL;
         }
         for (i = 0; i < a_num_img; i++) {
-            if ((ewf_info->images[i] =
+            if ((ewf_info->img_info.images[i] =
                     (TSK_TCHAR *) tsk_malloc((TSTRLEN(a_images[i]) +
                             1) * sizeof(TSK_TCHAR))) == NULL) {
                 tsk_img_free(ewf_info);
                 return NULL;
             }
-            TSTRNCPY(ewf_info->images[i], a_images[i],
+            TSTRNCPY(ewf_info->img_info.images[i], a_images[i],
                 TSTRLEN(a_images[i]) + 1);
         }
     }
@@ -341,8 +341,8 @@ ewf_open(int a_num_img,
     }
 #if defined( TSK_WIN32 )
     is_error = (libewf_handle_open_wide(ewf_info->handle,
-            (wchar_t * const *) ewf_info->images,
-            ewf_info->num_imgs, LIBEWF_OPEN_READ, &ewf_error) != 1);
+            (wchar_t * const *) ewf_info->img_info.images,
+            ewf_info->img_info.num_img, LIBEWF_OPEN_READ, &ewf_error) != 1);
 #else
     is_error = (libewf_handle_open(ewf_info->handle,
             (char *const *) ewf_info->images,

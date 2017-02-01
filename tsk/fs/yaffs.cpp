@@ -728,25 +728,22 @@ static void
  */
 static YAFFS_CONFIG_STATUS
 yaffs_load_config_file(TSK_IMG_INFO * a_img_info, std::map<std::string, std::string> & results){
-    const TSK_TCHAR ** image_names;
-    int num_imgs;
     size_t config_file_name_len;
     TSK_TCHAR * config_file_name;
     FILE* config_file;
     char buf[1001];
 
-    // Get the image name(s)
-    image_names = tsk_img_get_names(a_img_info, &num_imgs);
-    if(num_imgs < 1){
+    // Ensure there is at least one image name
+    if(a_img_info->num_img < 1){
         return YAFFS_CONFIG_ERROR;
     }
 
     // Construct the name of the config file from the first image name
-    config_file_name_len = TSTRLEN(image_names[0]);
+    config_file_name_len = TSTRLEN(a_img_info->images[0]);
     config_file_name_len += TSTRLEN(YAFFS_CONFIG_FILE_SUFFIX);
     config_file_name = (TSK_TCHAR *) tsk_malloc(sizeof(TSK_TCHAR) * (config_file_name_len + 1));
 
-    TSTRNCPY(config_file_name, image_names[0], TSTRLEN(image_names[0]) + 1);
+    TSTRNCPY(config_file_name, a_img_info->images[0], TSTRLEN(a_img_info->images[0]) + 1);
     TSTRNCAT(config_file_name, YAFFS_CONFIG_FILE_SUFFIX, TSTRLEN(YAFFS_CONFIG_FILE_SUFFIX) + 1);
 
 #ifdef TSK_WIN32

@@ -40,9 +40,6 @@ extern void tsk_img_free(void *);
 extern TSK_TCHAR **tsk_img_findFiles(const TSK_TCHAR * a_startingName,
     int *a_numFound);
 
-extern const TSK_TCHAR **
-    tsk_img_get_names(TSK_IMG_INFO *a_img_info, int *a_num_imgs); 
-
 #ifdef __cplusplus
 }
 #endif
