@@ -37,7 +37,7 @@ class TskAutoDb:public TskAuto {
     virtual ~ TskAutoDb();
     virtual uint8_t openImage(int, const TSK_TCHAR * const images[],
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize, const char* deviceId = NULL);
-	virtual uint8_t openImage(const char* a_deviceId = NULL);
+    virtual uint8_t openImage(const char* a_deviceId = NULL);
     virtual uint8_t openImageUtf8(int, const char *const images[],
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize, const char* deviceId = NULL);
     virtual void closeImage();
@@ -102,7 +102,7 @@ class TskAutoDb:public TskAuto {
     uint8_t startAddImage(int numImg, const TSK_TCHAR * const imagePaths[],
         TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* deviceId = NULL);
 #ifdef WIN32
-	uint8_t startAddImage(const char* deviceId = NULL);
+    uint8_t startAddImage(const char* deviceId = NULL);
     uint8_t startAddImage(int numImg, const char *const imagePaths[],
         TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* deviceId = NULL);
 #endif

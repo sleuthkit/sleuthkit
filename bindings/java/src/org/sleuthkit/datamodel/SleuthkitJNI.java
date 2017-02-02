@@ -234,7 +234,6 @@ public class SleuthkitJNI {
 				if (0 == tskAutoDbPointer) {
 					throw new TskCoreException("initAddImgNat returned a NULL TskAutoDb pointer");
 				}
-				//runAddImgNat(tskAutoDbPointer, deviceId, imageFilePaths, imageFilePaths.length, timeZone);
 				runAddImgNat(tskAutoDbPointer, deviceId, imageHandle, timeZone);
 			}
 

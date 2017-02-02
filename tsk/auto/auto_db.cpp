@@ -162,7 +162,7 @@ uint8_t
         return retval;
     }
 
-	return (addImageDetails(a_deviceId));
+    return (addImageDetails(a_deviceId));
 #else
     return openImageUtf8(a_num, a_images, a_type, a_ssize, a_deviceId);
 #endif
@@ -177,11 +177,11 @@ uint8_t
 uint8_t
 TskAutoDb::openImage(const char* a_deviceId)
 {
-	if (m_img_info == NULL) {
-		return 1;
-	}
+    if (m_img_info == NULL) {
+        return 1;
+    }
 
-	return(addImageDetails(a_deviceId));
+    return(addImageDetails(a_deviceId));
 }
 
 /**
@@ -216,36 +216,36 @@ TskAutoDb::addImageDetails(const char* deviceId)
         return 1;
     }
 
-	char **img_ptrs;
+    char **img_ptrs;
 #ifdef TSK_WIN32
-	// convert image paths to UTF-8
-	img_ptrs = (char **)tsk_malloc(m_img_info->num_img * sizeof(char *));
-	if (img_ptrs == NULL) {
-		return 1;
-	}
+    // convert image paths to UTF-8
+    img_ptrs = (char **)tsk_malloc(m_img_info->num_img * sizeof(char *));
+    if (img_ptrs == NULL) {
+        return 1;
+    }
 
-	for (int i = 0; i < m_img_info->num_img; i++) {
-		char * img2 = (char*)tsk_malloc(1024 * sizeof(char));
-		UTF8 *ptr8;
-		UTF16 *ptr16;
+    for (int i = 0; i < m_img_info->num_img; i++) {
+        char * img2 = (char*)tsk_malloc(1024 * sizeof(char));
+        UTF8 *ptr8;
+        UTF16 *ptr16;
 
-		ptr8 = (UTF8 *)img2;
-		ptr16 = (UTF16 *)m_img_info->images[i];
+        ptr8 = (UTF8 *)img2;
+        ptr16 = (UTF16 *)m_img_info->images[i];
 
-		uint8_t retval =
-			tsk_UTF16toUTF8_lclorder((const UTF16 **)&ptr16, (UTF16 *)
-				& ptr16[TSTRLEN(m_img_info->images[i]) + 1], &ptr8,
-				(UTF8 *)((uintptr_t)ptr8 + 1024), TSKlenientConversion);
-		if (retval != TSKconversionOK) {
-			tsk_error_reset();
-			tsk_error_set_errno(TSK_ERR_AUTO_UNICODE);
-			tsk_error_set_errstr("Error converting image to UTF-8\n");
-			return 1;
-		}
-		img_ptrs[i] = img2;
-	}
+        uint8_t retval =
+            tsk_UTF16toUTF8_lclorder((const UTF16 **)&ptr16, (UTF16 *)
+                & ptr16[TSTRLEN(m_img_info->images[i]) + 1], &ptr8,
+                (UTF8 *)((uintptr_t)ptr8 + 1024), TSKlenientConversion);
+        if (retval != TSKconversionOK) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_AUTO_UNICODE);
+            tsk_error_set_errstr("Error converting image to UTF-8\n");
+            return 1;
+        }
+        img_ptrs[i] = img2;
+    }
 #else 
-	img_ptrs = m_img_info->images;
+    img_ptrs = m_img_info->images;
 #endif
 
     // Add the image names
@@ -260,11 +260,11 @@ TskAutoDb::addImageDetails(const char* deviceId)
     }
 
 #ifdef TSK_WIN32
-	//cleanup
-	for (int i = 0; i < m_img_info->num_img; ++i) {
-		free(img_ptrs[i]);
-	}
-	free(img_ptrs);
+    //cleanup
+    for (int i = 0; i < m_img_info->num_img; ++i) {
+        free(img_ptrs[i]);
+    }
+    free(img_ptrs);
 #endif
 
     return 0;
@@ -486,50 +486,50 @@ uint8_t
 TskAutoDb::startAddImage(const char* deviceId)
 {
 
-	if (m_img_info == NULL) {
-		return 1;
-	}
+    if (m_img_info == NULL) {
+        return 1;
+    }
 
-	if (tsk_verbose)
-		tsk_fprintf(stderr, "TskAutoDb::startAddImage: Starting add image process\n");
+    if (tsk_verbose)
+        tsk_fprintf(stderr, "TskAutoDb::startAddImage: Starting add image process\n");
 
-	if (m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT) == 0) {
-		tsk_error_reset();
-		tsk_error_set_errno(TSK_ERR_AUTO_DB);
-		tsk_error_set_errstr("TskAutoDb::startAddImage(): An add-image savepoint already exists");
-		registerError();
-		return 1;
-	}
+    if (m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT) == 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("TskAutoDb::startAddImage(): An add-image savepoint already exists");
+        registerError();
+        return 1;
+    }
 
-	// @@@ This check is a bit paranoid, and may need to be removed in the future
-	if (m_db->inTransaction()) {
-		tsk_error_reset();
-		tsk_error_set_errno(TSK_ERR_AUTO_DB);
-		tsk_error_set_errstr("TskAutoDb::startAddImage(): Already in a transaction, image might not be commited");
-		registerError();
-		return 1;
-	}
+    // @@@ This check is a bit paranoid, and may need to be removed in the future
+    if (m_db->inTransaction()) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("TskAutoDb::startAddImage(): Already in a transaction, image might not be commited");
+        registerError();
+        return 1;
+    }
 
-	if (m_db->createSavepoint(TSK_ADD_IMAGE_SAVEPOINT)) {
-		registerError();
-		return 1;
-	}
+    if (m_db->createSavepoint(TSK_ADD_IMAGE_SAVEPOINT)) {
+        registerError();
+        return 1;
+    }
 
-	m_imgTransactionOpen = true;
-	if (openImage(deviceId)) {
-		tsk_error_set_errstr2("TskAutoDb::startAddImage");
-		registerError();
-		if (revertAddImage())
-			registerError();
-		return 1;
-	}
+    m_imgTransactionOpen = true;
+    if (openImage(deviceId)) {
+        tsk_error_set_errstr2("TskAutoDb::startAddImage");
+        registerError();
+        if (revertAddImage())
+            registerError();
+        return 1;
+    }
 
-	if (m_addFileSystems) {
-		return addFilesInImgToDb();
-	}
-	else {
-		return 0;
-	}
+    if (m_addFileSystems) {
+        return addFilesInImgToDb();
+    }
+    else {
+        return 0;
+    }
 }
 
 
