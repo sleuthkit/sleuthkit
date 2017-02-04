@@ -88,12 +88,12 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
 
 #else
         if ((cimg->fd =
-                open(raw_info->images[idx], O_RDONLY | O_BINARY)) < 0) {
+                open(raw_info->img_info.images[idx], O_RDONLY | O_BINARY)) < 0) {
             cimg->fd = 0; /* so we don't close it next time */
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_OPEN);
             tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
-                "\" - %s", raw_info->images[idx], strerror(errno));
+                "\" - %s", raw_info->img_info.images[idx], strerror(errno));
             return -1;
         }
 #endif
@@ -157,7 +157,7 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_SEEK);
             tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK
-                "\" offset %" PRIuOFF " seek - %s", raw_info->images[idx],
+                "\" offset %" PRIuOFF " seek - %s", raw_info->img_info.images[idx],
                 rel_offset, strerror(errno));
             return -1;
         }
@@ -169,7 +169,7 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_READ);
         tsk_error_set_errstr("raw_read: file \"%" PRIttocTSK "\" offset: %"
-            PRIuOFF " read len: %" PRIuSIZE " - %s", raw_info->images[idx],
+            PRIuOFF " read len: %" PRIuSIZE " - %s", raw_info->img_info.images[idx],
             rel_offset, len, strerror(errno));
         return -1;
     }
