@@ -37,6 +37,7 @@ class TskAutoDb:public TskAuto {
     virtual ~ TskAutoDb();
     virtual uint8_t openImage(int, const TSK_TCHAR * const images[],
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize, const char* deviceId = NULL);
+    virtual uint8_t openImage(const char* a_deviceId = NULL);
     virtual uint8_t openImageUtf8(int, const char *const images[],
         TSK_IMG_TYPE_ENUM, unsigned int a_ssize, const char* deviceId = NULL);
     virtual void closeImage();
@@ -101,6 +102,7 @@ class TskAutoDb:public TskAuto {
     uint8_t startAddImage(int numImg, const TSK_TCHAR * const imagePaths[],
         TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* deviceId = NULL);
 #ifdef WIN32
+    uint8_t startAddImage(const char* deviceId = NULL);
     uint8_t startAddImage(int numImg, const char *const imagePaths[],
         TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* deviceId = NULL);
 #endif
@@ -155,7 +157,7 @@ class TskAutoDb:public TskAuto {
         uint32_t nextSequenceNo;
     } UNALLOC_BLOCK_WLK_TRACK;
 
-    uint8_t addImageDetails(const char *const images[], int, const char *);
+    uint8_t addImageDetails(const char *);
     TSK_RETVAL_ENUM insertFileData(TSK_FS_FILE * fs_file,
         const TSK_FS_ATTR *, const char *path,
         const unsigned char *const md5,

@@ -152,7 +152,7 @@ public class SleuthkitJNI {
 		long addImageInfo(long deviceObjId, List<String> imageFilePaths, String timeZone) throws TskCoreException {
 			try {
 				long tskAutoDbPointer = initializeAddImgNat(caseDbPointer, timezoneLongToShort(timeZone), false, false, false);
-				runAddImgNat(tskAutoDbPointer, UUID.randomUUID().toString(), imageFilePaths.toArray(new String[0]), imageFilePaths.size(), timeZone);
+				runOpenAndAddImgNat(tskAutoDbPointer, UUID.randomUUID().toString(), imageFilePaths.toArray(new String[0]), imageFilePaths.size(), timeZone);
 				return commitAddImgNat(tskAutoDbPointer);
 			} catch (TskDataException ex) {
 				throw new TskCoreException("Error adding image to case database", ex);
@@ -226,13 +226,15 @@ public class SleuthkitJNI {
 					throw new TskCoreException("Add image process already started");
 				}
 
-				synchronized (this) {
+				long imageHandle = openImage(imageFilePaths);
+				
+				synchronized (this) {					
 					tskAutoDbPointer = initAddImgNat(caseDbPointer, timezoneLongToShort(timeZone), addUnallocSpace, skipFatFsOrphans);
 				}
 				if (0 == tskAutoDbPointer) {
 					throw new TskCoreException("initAddImgNat returned a NULL TskAutoDb pointer");
 				}
-				runAddImgNat(tskAutoDbPointer, deviceId, imageFilePaths, imageFilePaths.length, timeZone);
+				runAddImgNat(tskAutoDbPointer, deviceId, imageHandle, timeZone);
 			}
 
 			/**
@@ -1039,7 +1041,9 @@ public class SleuthkitJNI {
 
 	private static native long initializeAddImgNat(long db, String timezone, boolean addFileSystems, boolean addUnallocSpace, boolean skipFatFsOrphans) throws TskCoreException;
 
-	private static native void runAddImgNat(long process, String deviceId, String[] imgPath, int splits, String timezone) throws TskCoreException, TskDataException;
+	private static native void runOpenAndAddImgNat(long process, String deviceId, String[] imgPath, int splits, String timezone) throws TskCoreException, TskDataException;
+	
+	private static native void runAddImgNat(long process, String deviceId, long a_img_info, String timeZone) throws TskCoreException, TskDataException;
 
 	private static native void stopAddImgNat(long process) throws TskCoreException;
 

@@ -132,7 +132,7 @@ uint8_t
         return retval;
     }
 
-    if (addImageDetails(a_images, a_num, a_deviceId)) {
+    if (addImageDetails(a_deviceId)) {
         return 1;
     }
     return 0;
@@ -162,64 +162,36 @@ uint8_t
         return retval;
     }
 
-    // convert image paths to UTF-8
-    char **img_ptrs = (char **) tsk_malloc(a_num * sizeof(char *));
-    if (img_ptrs == NULL) {
-        return 1;
-    }
-
-    for (int i = 0; i < a_num; i++) {
-        char * img2 = (char*) tsk_malloc(1024 * sizeof(char));
-        UTF8 *ptr8;
-        UTF16 *ptr16;
-
-        ptr8 = (UTF8 *) img2;
-        ptr16 = (UTF16 *) a_images[i];
-
-        retval =
-            tsk_UTF16toUTF8_lclorder((const UTF16 **) &ptr16, (UTF16 *)
-            & ptr16[TSTRLEN(a_images[i]) + 1], &ptr8,
-            (UTF8 *) ((uintptr_t) ptr8 + 1024), TSKlenientConversion);
-        if (retval != TSKconversionOK) {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_AUTO_UNICODE);
-            tsk_error_set_errstr("Error converting image to UTF-8\n");
-            return 1;
-        }
-        img_ptrs[i] = img2;
-    }
-
-    if (addImageDetails(img_ptrs, a_num, a_deviceId)) {
-        //cleanup
-        for (int i = 0; i < a_num; ++i) {
-            free(img_ptrs[i]);
-        }
-        free(img_ptrs);
-        return 1;
-    }
-
-    //cleanup
-    for (int i = 0; i < a_num; ++i) {
-        free(img_ptrs[i]);
-    }
-    free(img_ptrs);
-    
-    return 0;
+    return (addImageDetails(a_deviceId));
 #else
     return openImageUtf8(a_num, a_images, a_type, a_ssize, a_deviceId);
 #endif
 }
 
 /**
+* Adds an image to the database. Requires that m_img_info is already initialized
+*
+* @param a_deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID).
+* @return 0 for success, 1 for failure
+*/
+uint8_t
+TskAutoDb::openImage(const char* a_deviceId)
+{
+    if (m_img_info == NULL) {
+        return 1;
+    }
+
+    return(addImageDetails(a_deviceId));
+}
+
+/**
  * Adds image details to the existing database tables.
  *
- * @param imgPaths The paths to the image splits
- * @param numPaths The number of paths
  * @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID).
  * @return Returns 0 for success, 1 for failure
  */
 uint8_t
-TskAutoDb::addImageDetails(const char *const imgPaths[], int numPaths, const char* deviceId)
+TskAutoDb::addImageDetails(const char* deviceId)
 {
    string md5 = "";
 #if HAVE_LIBEWF 
@@ -244,16 +216,56 @@ TskAutoDb::addImageDetails(const char *const imgPaths[], int numPaths, const cha
         return 1;
     }
 
+    char **img_ptrs;
+#ifdef TSK_WIN32
+    // convert image paths to UTF-8
+    img_ptrs = (char **)tsk_malloc(m_img_info->num_img * sizeof(char *));
+    if (img_ptrs == NULL) {
+        return 1;
+    }
+
+    for (int i = 0; i < m_img_info->num_img; i++) {
+        char * img2 = (char*)tsk_malloc(1024 * sizeof(char));
+        UTF8 *ptr8;
+        UTF16 *ptr16;
+
+        ptr8 = (UTF8 *)img2;
+        ptr16 = (UTF16 *)m_img_info->images[i];
+
+        uint8_t retval =
+            tsk_UTF16toUTF8_lclorder((const UTF16 **)&ptr16, (UTF16 *)
+                & ptr16[TSTRLEN(m_img_info->images[i]) + 1], &ptr8,
+                (UTF8 *)((uintptr_t)ptr8 + 1024), TSKlenientConversion);
+        if (retval != TSKconversionOK) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_AUTO_UNICODE);
+            tsk_error_set_errstr("Error converting image to UTF-8\n");
+            return 1;
+        }
+        img_ptrs[i] = img2;
+    }
+#else 
+    img_ptrs = m_img_info->images;
+#endif
+
     // Add the image names
-    for (int i = 0; i < numPaths; i++) {
+    for (int i = 0; i < m_img_info->num_img; i++) {
         const char *img_ptr = NULL;
-        img_ptr = imgPaths[i];
+        img_ptr = img_ptrs[i];
 
         if (m_db->addImageName(m_curImgId, img_ptr, i)) {
             registerError();
             return 1;
         }
     }
+
+#ifdef TSK_WIN32
+    //cleanup
+    for (int i = 0; i < m_img_info->num_img; ++i) {
+        free(img_ptrs[i]);
+    }
+    free(img_ptrs);
+#endif
 
     return 0;
 }
@@ -457,6 +469,65 @@ uint8_t
     if (m_addFileSystems) {
         return addFilesInImgToDb();
     } else {
+        return 0;
+    }
+}
+
+/**
+* Start the process to add image/file metadata to database inside of a transaction.
+* User must call either commitAddImage() to commit the changes,
+* or revertAddImage() to revert them.
+* This version of startAddImage assumes that m_img_info has already been set up.
+*
+* @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID)
+* @return 0 for success, 1 for failure
+*/
+uint8_t
+TskAutoDb::startAddImage(const char* deviceId)
+{
+
+    if (m_img_info == NULL) {
+        return 1;
+    }
+
+    if (tsk_verbose)
+        tsk_fprintf(stderr, "TskAutoDb::startAddImage: Starting add image process\n");
+
+    if (m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT) == 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("TskAutoDb::startAddImage(): An add-image savepoint already exists");
+        registerError();
+        return 1;
+    }
+
+    // @@@ This check is a bit paranoid, and may need to be removed in the future
+    if (m_db->inTransaction()) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("TskAutoDb::startAddImage(): Already in a transaction, image might not be commited");
+        registerError();
+        return 1;
+    }
+
+    if (m_db->createSavepoint(TSK_ADD_IMAGE_SAVEPOINT)) {
+        registerError();
+        return 1;
+    }
+
+    m_imgTransactionOpen = true;
+    if (openImage(deviceId)) {
+        tsk_error_set_errstr2("TskAutoDb::startAddImage");
+        registerError();
+        if (revertAddImage())
+            registerError();
+        return 1;
+    }
+
+    if (m_addFileSystems) {
+        return addFilesInImgToDb();
+    }
+    else {
         return 0;
     }
 }
