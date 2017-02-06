@@ -19,9 +19,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-    TSK_RETVAL_ENUM tsk_img_writer_create_from_dir(TSK_IMG_INFO* img_info, const TSK_TCHAR * directory,
-        const TSK_TCHAR * basename);
 	TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO* img_info, const TSK_TCHAR * outputPath);
 
 	enum IMG_WRITER_BLOCK_STATUS_ENUM {
@@ -54,7 +51,7 @@ extern "C" {
 		HANDLE logFileHandle;
 
 		IMG_WRITER_BLOCK_STATUS_ENUM* blockStatus;
-		TSK_OFF_T* blockToOffset;
+        uint32_t* blockToSectorNumber;
 		unsigned char ** blockToSectorBitmap;
 
         TSK_RETVAL_ENUM(*add)(TSK_IMG_WRITER* img_writer, TSK_OFF_T addr, char *buffer, size_t len);

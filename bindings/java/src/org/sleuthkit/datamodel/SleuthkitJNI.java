@@ -168,12 +168,15 @@ public class SleuthkitJNI {
 		 *                         unallocated space.
 		 * @param skipFatFsOrphans Pass true to skip processing of orphan files
 		 *                         for FAT file systems.
+		 * @param imageWriterPath  Path that a copy of the image should be written to.
+		 *                         Use empty string to disable image writing
 		 *
 		 * @return An object that can be used to exercise fine-grained control
 		 *         of the process of adding the image to the case database.
 		 */
-		AddImageProcess initAddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans) {
-			return new AddImageProcess(timeZone, addUnallocSpace, skipFatFsOrphans);
+		//AddImageProcess initAddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans) {
+		AddImageProcess initAddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans, String imageWriterPath) {
+			return new AddImageProcess(timeZone, addUnallocSpace, skipFatFsOrphans, imageWriterPath);
 		}
 
 		/**
@@ -185,6 +188,7 @@ public class SleuthkitJNI {
 			private final String timeZone;
 			private final boolean addUnallocSpace;
 			private final boolean skipFatFsOrphans;
+			private final String imageWriterPath;
 			private volatile long tskAutoDbPointer;
 
 			/**
@@ -196,11 +200,14 @@ public class SleuthkitJNI {
 			 *                         unallocated space.
 			 * @param skipFatFsOrphans Pass true to skip processing of orphan
 			 *                         files for FAT file systems.
+			 * @param imageWriterPath  Path that a copy of the image should be written to.
+			 *                         Use empty string to disable image writing
 			 */
-			private AddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans) {
+			private AddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans, String imageWriterPath) {
 				this.timeZone = timeZone;
 				this.addUnallocSpace = addUnallocSpace;
 				this.skipFatFsOrphans = skipFatFsOrphans;
+				this.imageWriterPath = imageWriterPath;
 				tskAutoDbPointer = 0;
 			}
 
@@ -236,7 +243,7 @@ public class SleuthkitJNI {
 				}
 
 				//runAddImgNat(tskAutoDbPointer, deviceId, imageFilePaths, imageFilePaths.length, timeZone);
-				runAddImgNat(tskAutoDbPointer, deviceId, imageHandle, timeZone, "C:\\cygwin\\home\\apriestman\\Work\\autopsy\\vhdTesting\\tskOutput\\autopsyVHD3.vhd");
+				runAddImgNat(tskAutoDbPointer, deviceId, imageHandle, timeZone, imageWriterPath);
 			}
 
 			/**
@@ -988,10 +995,6 @@ public class SleuthkitJNI {
 	public static boolean isImageSupported(String imagePath){
 		return isImageSupportedNat(imagePath);
 	}
-	
-	public static int enableImageWriter(long imgHandle, String directory, String baseName){
-		return enableImageWriterNat(imgHandle, directory, baseName);
-	}
 
 	private static native String getVersionNat();
 
@@ -1092,7 +1095,5 @@ public class SleuthkitJNI {
 	private static native String getCurDirNat(long process);
 	
 	private static native boolean isImageSupportedNat(String imagePath);
-	
-	private static native int enableImageWriterNat(long imgHandle, String directory, String baseName);
 
 }

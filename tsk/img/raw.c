@@ -359,6 +359,8 @@ raw_close(TSK_IMG_INFO * img_info)
 #ifdef TSK_WIN32
     if (raw_info->img_writer != NULL) {
         raw_info->img_writer->close(raw_info->img_writer);
+        free(raw_info->img_writer);
+        raw_info->img_writer = NULL;
     }
 #endif
 
@@ -759,11 +761,6 @@ tsk_img_malloc(size_t a_len)
 void
 tsk_img_free(void *a_ptr)
 {
-    IMG_RAW_INFO *rawInfo = (IMG_RAW_INFO *)a_ptr;
-    if (rawInfo->img_writer != NULL) {
-        free(rawInfo->img_writer);
-        rawInfo->img_writer = NULL;
-    }
     TSK_IMG_INFO *imgInfo = (TSK_IMG_INFO *) a_ptr;
     imgInfo->tag = 0;
     free(imgInfo);

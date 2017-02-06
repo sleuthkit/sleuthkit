@@ -81,10 +81,7 @@ uint8_t
         closeImage();
 
     m_internalOpen = true;
-	enableImageWriter("C:\\cygwin\\home\\apriestman\\Work\\autopsy\\vhdTesting\\tskOutput\\newTest.vhd");
     m_img_info = tsk_img_open(a_numImg, a_images, a_imgType, a_sSize);
-	tsk_img_writer_create(m_img_info, m_imageWriterPath);
-	//tsk_img_writer_create_from_dir(m_img_info, L"C:\\cygwin\\home\\apriestman\\Work\\autopsy\\vhdTesting\\tskOutput", a_images[0]);
     if (m_img_info)
         return 0;
     else

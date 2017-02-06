@@ -1223,12 +1223,14 @@ public class SleuthkitCase {
 	 *                        unallocated space in the image.
 	 * @param noFatFsOrphans  Set to true to skip processing orphan files of FAT
 	 *                        file systems.
+     * @param imageWriterPath  Path that a copy of the image should be written to.
+     *                         Use empty string to disable image writing
 	 *
 	 * @return Object that encapsulates control of adding an image via the
 	 *         SleuthKit native code layer.
 	 */
-	public AddImageProcess makeAddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) {
-		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans);
+	public AddImageProcess makeAddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans, String imageWriterPath) {
+		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, imageWriterPath);
 	}
 
 	/**
