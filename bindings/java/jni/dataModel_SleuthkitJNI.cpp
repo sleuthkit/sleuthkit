@@ -1166,13 +1166,12 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
         env->ReleaseStringUTFChars(timeZone, time_zone);
     }
 
-    // Save the image handle to the TskAutoDb object
+    // Set up the TSK_IMG_INFO object
     TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
-    tskAuto->openImageHandle(img_info);
 
     // Add the data source.
     uint8_t ret = 0;
-    if ((ret = tskAuto->startAddImage(device_id)) != 0) {
+    if ((ret = tskAuto->startAddImage(img_info, device_id)) != 0) {
         stringstream msgss;
         msgss << "Errors occured while ingesting image " << std::endl;
         vector<TskAuto::error_record> errors = tskAuto->getErrorList();

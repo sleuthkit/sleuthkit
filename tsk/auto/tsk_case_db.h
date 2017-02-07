@@ -101,8 +101,8 @@ class TskAutoDb:public TskAuto {
      */
     uint8_t startAddImage(int numImg, const TSK_TCHAR * const imagePaths[],
         TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* deviceId = NULL);
+    uint8_t startAddImage(TSK_IMG_INFO * img_info, const char* deviceId = NULL);
 #ifdef WIN32
-    uint8_t startAddImage(const char* deviceId = NULL);
     uint8_t startAddImage(int numImg, const char *const imagePaths[],
         TSK_IMG_TYPE_ENUM imgType, unsigned int sSize, const char* deviceId = NULL);
 #endif
