@@ -207,7 +207,7 @@ toTCHAR(JNIEnv * env, TSK_TCHAR * buffer, size_t size, jstring strJ)
     char *str8 = (char *) env->GetStringUTFChars(strJ, &isCopy);
 
 #ifdef TSK_WIN32
-	// Windows TCHAR is UTF16 in Windows, so convert
+    // Windows TCHAR is UTF16 in Windows, so convert
     UTF16 *utf16 = (UTF16 *) buffer;
     UTF8 *utf8 = (UTF8 *) str8;;
     TSKConversionResult retval;
@@ -225,12 +225,12 @@ toTCHAR(JNIEnv * env, TSK_TCHAR * buffer, size_t size, jstring strJ)
         return 1;
     }
 
-	// "utf16" now points to last char. Need to NULL terminate the string.
+    // "utf16" now points to last char. Need to NULL terminate the string.
     *utf16 = '\0';
 
 #else
-	// nothing to convert.  Keep it as UTF8
-	strncpy((char *)&buffer[0], str8, size);
+    // nothing to convert.  Keep it as UTF8
+    strncpy((char *)&buffer[0], str8, size);
 #endif
 
     env->ReleaseStringUTFChars(strJ, str8);
@@ -1098,14 +1098,14 @@ JNIEXPORT void JNICALL
             setThrowTskCoreError(env, msgss.str().c_str());
         }
         else if (ret == 2) {
-			if(tskAuto->isDbOpen()) {
-				// if we can still talk to the database, it's a non-fatal error
-				setThrowTskDataError(env, msgss.str().c_str());
-			}
-			else {
-				// we cannot talk to the database, fatal error
-				setThrowTskCoreError(env, msgss.str().c_str());
-			}
+            if(tskAuto->isDbOpen()) {
+                // if we can still talk to the database, it's a non-fatal error
+                setThrowTskDataError(env, msgss.str().c_str());
+            }
+            else {
+                // we cannot talk to the database, fatal error
+                setThrowTskCoreError(env, msgss.str().c_str());
+            }
         }
     }
 
@@ -1141,87 +1141,89 @@ JNIEXPORT void JNICALL
 */
 JNIEXPORT void JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
-	jclass obj, jlong process, jstring deviceId, jlong a_img_info, jstring timeZone, jstring imageWriterPathJ) {
-	
-	TskAutoDb *tskAuto = ((TskAutoDb *)process);
-	if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
-		setThrowTskCoreError(env,
-			"runAddImgNat: Invalid TskAutoDb object passed in");
-		return;
-	}
+    jclass obj, jlong process, jstring deviceId, jlong a_img_info, jstring timeZone, jstring imageWriterPathJ) {
+    
+    TskAutoDb *tskAuto = ((TskAutoDb *)process);
+    if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
+        setThrowTskCoreError(env,
+            "runAddImgNat: Invalid TskAutoDb object passed in");
+        return;
+    }
 
-	jboolean isCopy;
-	const char *device_id = NULL;
-	if (NULL != deviceId) {
-		device_id = (const char *)env->GetStringUTFChars(deviceId, &isCopy);
-		if (NULL == device_id) {
-			setThrowTskCoreError(env, "runAddImgNat: Can't convert data source id string");
-			return;
-		}
-	}
+    jboolean isCopy;
+    const char *device_id = NULL;
+    if (NULL != deviceId) {
+        device_id = (const char *)env->GetStringUTFChars(deviceId, &isCopy);
+        if (NULL == device_id) {
+            setThrowTskCoreError(env, "runAddImgNat: Can't convert data source id string");
+            return;
+        }
+    }
 
-	// Set the time zone.
-	if (env->GetStringLength(timeZone) > 0) {
-		const char *time_zone = env->GetStringUTFChars(timeZone, &isCopy);
-		tskAuto->setTz(string(time_zone));
-		env->ReleaseStringUTFChars(timeZone, time_zone);
-	}
+    // Set the time zone.
+    if (env->GetStringLength(timeZone) > 0) {
+        const char *time_zone = env->GetStringUTFChars(timeZone, &isCopy);
+        tskAuto->setTz(string(time_zone));
+        env->ReleaseStringUTFChars(timeZone, time_zone);
+    }
 
-	// Save the image handle to the TskAutoDb object
-	TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
-	tskAuto->openImageHandle(img_info);
+    // Set up the TSK_IMG_INFO object
+    // openImageHandle gets called again in startAddImage but we need it to   MAYBE NOT!!!!
+    // be set up before enableImageWriter
+    TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
+    //tskAuto->openImageHandle(img_info);
 
-	// Set up image writer, if the output path is present
-	if (env->GetStringLength(imageWriterPathJ) > 0) {
-		const char *imageWriterPath = env->GetStringUTFChars(imageWriterPathJ, &isCopy);
-		if (TSK_OK != tskAuto->enableImageWriter(imageWriterPath)) {
-			env->ReleaseStringUTFChars(imageWriterPathJ, imageWriterPath);
-			setThrowTskCoreError(env,
-				"runAddImgNat: error enabling image writer.");
-			return;
-		}
-		env->ReleaseStringUTFChars(imageWriterPathJ, imageWriterPath);
-	}
-	else {
-		tskAuto->disableImageWriter();
-	}
+    // Set up image writer, if the output path is present
+    if (env->GetStringLength(imageWriterPathJ) > 0) {
+        const char *imageWriterPath = env->GetStringUTFChars(imageWriterPathJ, &isCopy);
+        if (TSK_OK != tskAuto->enableImageWriter(imageWriterPath)) {
+            env->ReleaseStringUTFChars(imageWriterPathJ, imageWriterPath);
+            setThrowTskCoreError(env,
+                "runAddImgNat: error enabling image writer.");
+            return;
+        }
+        env->ReleaseStringUTFChars(imageWriterPathJ, imageWriterPath);
+    }
+    else {
+        tskAuto->disableImageWriter();
+    }
 
-	// Add the data source.
-	uint8_t ret = 0;
-	if ((ret = tskAuto->startAddImage(device_id)) != 0) {
-		stringstream msgss;
-		msgss << "Errors occured while ingesting image " << std::endl;
-		vector<TskAuto::error_record> errors = tskAuto->getErrorList();
-		for (size_t i = 0; i < errors.size(); i++) {
-			msgss << (i + 1) << ". ";
-			msgss << (TskAuto::errorRecordToString(errors[i]));
-			msgss << " " << std::endl;
-		}
+    // Add the data source.
+    uint8_t ret = 0;
+    if ((ret = tskAuto->startAddImage(img_info, device_id)) != 0) {
+        stringstream msgss;
+        msgss << "Errors occured while ingesting image " << std::endl;
+        vector<TskAuto::error_record> errors = tskAuto->getErrorList();
+        for (size_t i = 0; i < errors.size(); i++) {
+            msgss << (i + 1) << ". ";
+            msgss << (TskAuto::errorRecordToString(errors[i]));
+            msgss << " " << std::endl;
+        }
 
-		if (ret == 1) {
-			//fatal error
-			setThrowTskCoreError(env, msgss.str().c_str());
-		}
-		else if (ret == 2) {
-			if (tskAuto->isDbOpen()) {
-				// if we can still talk to the database, it's a non-fatal error
-				setThrowTskDataError(env, msgss.str().c_str());
-			}
-			else {
-				// we cannot talk to the database, fatal error
-				setThrowTskCoreError(env, msgss.str().c_str());
-			}
-		}
-	}
+        if (ret == 1) {
+            //fatal error
+            setThrowTskCoreError(env, msgss.str().c_str());
+        }
+        else if (ret == 2) {
+            if (tskAuto->isDbOpen()) {
+                // if we can still talk to the database, it's a non-fatal error
+                setThrowTskDataError(env, msgss.str().c_str());
+            }
+            else {
+                // we cannot talk to the database, fatal error
+                setThrowTskCoreError(env, msgss.str().c_str());
+            }
+        }
+    }
 
-	// @@@ SHOULD WE CLOSE HERE before we commit / revert etc.
-	//close image first before freeing the image paths
-	tskAuto->closeImage();
+    // @@@ SHOULD WE CLOSE HERE before we commit / revert etc.
+    //close image first before freeing the image paths
+    tskAuto->closeImage();
 
-	// Cleanup
-	env->ReleaseStringUTFChars(deviceId, (const char *)device_id);
+    // Cleanup
+    env->ReleaseStringUTFChars(deviceId, (const char *)device_id);
 
-	// if process completes successfully, must call revertAddImgNat or commitAddImgNat to free the TskAutoDb
+    // if process completes successfully, must call revertAddImgNat or commitAddImgNat to free the TskAutoDb
 }
 
 
@@ -1443,7 +1445,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_openFileNat(JNIEnv * env,
         return 0;
     }
 
-	
+    
     TSK_FS_FILE *file_info;
     //open file
     file_info = tsk_fs_file_open_meta(fs_info, NULL, (TSK_INUM_T) file_id);
@@ -1570,7 +1572,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readImgNat(JNIEnv * env,
     if (dynBuf) {
         free(buf);
     }
-	if (copiedbytes == -1) {
+    if (copiedbytes == -1) {
         setThrowTskCoreError(env, tsk_error_get());
     }
     return (jint)copiedbytes;
@@ -1624,7 +1626,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readVsNat(JNIEnv * env,
     }
 
     // package it up for return
-	// adjust number bytes to copy
+    // adjust number bytes to copy
     ssize_t copybytes = bytesread;
     jsize jbuflen = env->GetArrayLength(jbuf);
     if (jbuflen < copybytes)
@@ -1775,8 +1777,8 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFsNat(JNIEnv * env,
  * or the start of the slack space 
  */
 typedef enum {
-	TSK_FS_FILE_READ_OFFSET_TYPE_START_OF_FILE = 0x00,
-	TSK_FS_FILE_READ_OFFSET_TYPE_START_OF_SLACK = 0x01,
+    TSK_FS_FILE_READ_OFFSET_TYPE_START_OF_FILE = 0x00,
+    TSK_FS_FILE_READ_OFFSET_TYPE_START_OF_SLACK = 0x01,
 } TSK_FS_FILE_READ_OFFSET_TYPE_ENUM;
 
 /*
@@ -1793,7 +1795,7 @@ JNIEXPORT jint JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat(JNIEnv * env,
     jclass obj, jlong a_file_handle, jbyteArray jbuf, jlong offset, jint offset_type, jlong len)
 {
-	//use fixed size stack-allocated buffer if possible
+    //use fixed size stack-allocated buffer if possible
     char fixed_buf [FIXED_BUF_SIZE];
 
     char * buf = fixed_buf;
@@ -1822,7 +1824,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat(JNIEnv * env,
     TSK_OFF_T readOffset = (TSK_OFF_T) offset;
     if(offset_type == TSK_FS_FILE_READ_OFFSET_TYPE_START_OF_SLACK){
         readFlag = TSK_FS_FILE_READ_FLAG_SLACK;
-        readOffset += tsk_fs_attr->size;
+        readOffset += tsk_fs_attr->nrd.initsize;
     }
 
     //read attribute
@@ -1838,10 +1840,10 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat(JNIEnv * env,
 
     // package it up for return
     // adjust number bytes to copy
-	ssize_t copybytes = bytesread;
-	jsize jbuflen = env->GetArrayLength(jbuf);
-	if (jbuflen < copybytes)
-		copybytes = jbuflen;
+    ssize_t copybytes = bytesread;
+    jsize jbuflen = env->GetArrayLength(jbuf);
+    if (jbuflen < copybytes)
+        copybytes = jbuflen;
 
     ssize_t copiedbytes = copyBufToByteArray(env, jbuf, buf, copybytes);
     if (dynBuf) {
@@ -1961,7 +1963,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_closeFileNat(JNIEnv * env,
         //exception already set
         return;
     }
-	
+    
     TSK_FS_FILE * file_info = file_handle->fs_file;
     tsk_fs_file_close(file_info); //also closes the attribute
 

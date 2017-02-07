@@ -591,7 +591,8 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * is this a virtual file or directory
+	 * is this a virtual file or directory that was created by The Sleuth 
+     * Kit or Autopsy for general structure and organization. 
 	 *
 	 * @return true if it's virtual, false otherwise
 	 */
@@ -602,17 +603,22 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Is this object a file
+	 * Is this object a file.  Should return true for all types of files, 
+     * including file system, logical, derived, layout, and slack space 
+     * for files.
 	 *
 	 * @return true if a file, false otherwise
 	 */
 	public boolean isFile() {
-		return metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG);
+		return metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG) 
+				||(metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF) 
+				&& dirType.equals(TSK_FS_NAME_TYPE_ENUM.REG));
 
 	}
 
 	/**
-	 * Is this object a directory
+	 * Is this object a directory.  Should return true for file system
+     * folders and virtual folders. 
 	 *
 	 * @return true if directory, false otherwise
 	 */

@@ -242,7 +242,6 @@ public class SleuthkitJNI {
 					throw new TskCoreException("initAddImgNat returned a NULL TskAutoDb pointer");
 				}
 
-				//runAddImgNat(tskAutoDbPointer, deviceId, imageFilePaths, imageFilePaths.length, timeZone);
 				runAddImgNat(tskAutoDbPointer, deviceId, imageHandle, timeZone, imageWriterPath);
 			}
 
@@ -307,7 +306,7 @@ public class SleuthkitJNI {
 			 * @return The directory
 			 */
 			public synchronized String currentDirectory() {
-				return tskAutoDbPointer == 0 ? "NO_INFO" : getCurDirNat(tskAutoDbPointer); //NON-NLS
+				return tskAutoDbPointer == 0 ? "" : getCurDirNat(tskAutoDbPointer); //NON-NLS
 			}
 
 			/**

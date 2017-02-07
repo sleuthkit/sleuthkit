@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2016 Basis Technology Corp.
+ * Copyright 2011-2017 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -603,9 +603,10 @@ public class SleuthkitCase {
 			in = new BufferedInputStream(inFile);
 			OutputStream outFile = new FileOutputStream(newDBPath);
 			out = new BufferedOutputStream(outFile);
-			int bytesRead = 0;
-			while ((bytesRead = in.read()) != -1) {
+			int bytesRead = in.read();
+			while (bytesRead != -1) {
 				out.write(bytesRead);
+				bytesRead = in.read();
 			}
 		} finally {
 			try {
@@ -1257,18 +1258,23 @@ public class SleuthkitCase {
 
 			List<Content> rootObjs = new ArrayList<Content>();
 			for (ObjectInfo i : infos) {
-				if (i.type == ObjectType.IMG) {
-					rootObjs.add(getImageById(i.id));
-				} else if (i.type == ObjectType.ABSTRACTFILE) {
-					// Check if virtual dir for local files.
-					AbstractFile af = getAbstractFileById(i.id);
-					if (af instanceof VirtualDirectory) {
-						rootObjs.add(af);
-					} else {
-						throw new TskCoreException("Parentless object has wrong type to be a root (ABSTRACTFILE, but not VIRTUAL_DIRECTORY: " + i.type);
+				if (null != i.type) {
+					switch (i.type) {
+						case IMG:
+							rootObjs.add(getImageById(i.id));
+							break;
+						case ABSTRACTFILE:
+							// Check if virtual dir for local files.
+							AbstractFile af = getAbstractFileById(i.id);
+							if (af instanceof VirtualDirectory) {
+								rootObjs.add(af);
+							} else {
+								throw new TskCoreException("Parentless object has wrong type to be a root (ABSTRACTFILE, but not VIRTUAL_DIRECTORY: " + i.type);
+							}
+							break;
+						default:
+							throw new TskCoreException("Parentless object has wrong type to be a root: " + i.type);
 					}
-				} else {
-					throw new TskCoreException("Parentless object has wrong type to be a root: " + i.type);
 				}
 			}
 			return rootObjs;
@@ -1509,9 +1515,9 @@ public class SleuthkitCase {
 	 *                          queried
 	 */
 	public List<BlackboardArtifact> getBlackboardArtifacts(BlackboardAttribute.ATTRIBUTE_TYPE attrType, String subString, boolean startsWith) throws TskCoreException {
-		subString = "%" + subString; //NON-NLS
+		String valSubStr = "%" + subString; //NON-NLS
 		if (startsWith == false) {
-			subString += "%"; //NON-NLS
+			valSubStr += "%"; //NON-NLS
 		}
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
@@ -1526,7 +1532,7 @@ public class SleuthkitCase {
 					+ " FROM blackboard_artifacts AS arts, blackboard_attributes AS attrs, blackboard_artifact_types AS types " //NON-NLS
 					+ " WHERE arts.artifact_id = attrs.artifact_id " //NON-NLS
 					+ " AND attrs.attribute_type_id = " + attrType.getTypeID() //NON-NLS
-					+ " AND LOWER(attrs.value_text) LIKE LOWER('" + subString + "')"
+					+ " AND LOWER(attrs.value_text) LIKE LOWER('" + valSubStr + "')"
 					+ " AND types.artifact_type_id=arts.artifact_type_id "
 					+ " AND arts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID());
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
@@ -2305,7 +2311,7 @@ public class SleuthkitCase {
 		statement.setLong(1, attr.getArtifactID());
 		statement.setInt(2, artifactTypeId);
 		statement.setString(3, escapeSingleQuotes(attr.getModuleName()));
-		statement.setString(4, escapeSingleQuotes(attr.getContextString()));
+		statement.setString(4, "");
 		statement.setInt(5, attr.getAttributeType().getTypeID());
 		statement.setLong(6, attr.getAttributeType().getValueType().getType());
 		connection.executeUpdate(statement);
@@ -2761,7 +2767,8 @@ public class SleuthkitCase {
 			} else {
 				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_ARTIFACT, Statement.RETURN_GENERATED_KEYS);
 				statement.clearParameters();
-				statement.setLong(1, this.nextArtifactId++);
+				this.nextArtifactId++;
+				statement.setLong(1, this.nextArtifactId);
 				statement.setLong(2, obj_id);
 				statement.setInt(3, artifact_type_id);
 			}
@@ -3803,6 +3810,143 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Adds one or more layout files for a parent Content object to the case
+	 * database.
+	 *
+	 * @param parent     The parent Content.
+	 * @param fileRanges File range objects for the file(s).
+	 *
+	 * @return A list of LayoutFile objects.
+	 *
+	 * @throws TskCoreException If there is a problem completing a case database
+	 *                          operation.
+	 */
+	public final List<LayoutFile> addLayoutFiles(Content parent, List<TskFileRange> fileRanges) throws TskCoreException {
+		assert (null != fileRanges);
+		if (null == fileRanges) {
+			throw new TskCoreException("TskFileRange object is null");
+		}
+
+		assert (null != parent);
+		if (null == parent) {
+			throw new TskCoreException("Conent is null");
+		}
+
+		CaseDbTransaction transaction = null;
+		Statement statement = null;
+		ResultSet resultSet = null;
+		acquireExclusiveLock();
+
+		try {
+			transaction = beginTransaction();
+			CaseDbConnection connection = transaction.getConnection();
+
+			List<LayoutFile> fileRangeLayoutFiles = new ArrayList<LayoutFile>();
+			for (TskFileRange fileRange : fileRanges) {
+				/*
+				 * Insert a row for the Tsk file range into the tsk_objects
+				 * table: INSERT INTO tsk_objects (par_obj_id, type) VALUES (?,
+				 * ?)
+				 */
+				PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
+				prepStmt.clearParameters();
+				prepStmt.setLong(1, parent.getId()); // par_obj_id
+				prepStmt.setLong(2, TskData.ObjectType.ABSTRACTFILE.getObjectType()); // type
+				connection.executeUpdate(prepStmt);
+				resultSet = prepStmt.getGeneratedKeys();
+				resultSet.next();
+				long fileRangeId = resultSet.getLong(1); //last_insert_rowid()
+				long end_byte_in_parent = fileRange.getByteStart() + fileRange.getByteLen() - 1;
+				/*
+				 * Insert a row for the Tsk file range into the tsk_files table:
+				 * INSERT INTO tsk_files (obj_id, fs_obj_id, name, type,
+				 * has_path, dir_type, meta_type, dir_flags, meta_flags, size,
+				 * ctime, crtime, atime, mtime, parent_path, data_source_obj_id)
+				 * VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+				 */
+				prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
+				prepStmt.clearParameters();
+				prepStmt.setLong(1, fileRangeId); // obj_id	from tsk_objects			
+				prepStmt.setNull(2, java.sql.Types.BIGINT); // fs_obj_id				
+				prepStmt.setString(3, "Unalloc_" + parent.getId() + "_" + fileRange.getByteStart() + "_" + end_byte_in_parent); // name of form Unalloc_[image obj_id]_[start byte in parent]_[end byte in parent]
+				prepStmt.setShort(4, TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS.getFileType()); // type
+				prepStmt.setNull(5, java.sql.Types.BIGINT); // has_path
+				prepStmt.setShort(6, TSK_FS_NAME_TYPE_ENUM.REG.getValue()); // dir_type
+				prepStmt.setShort(7, TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG.getValue()); // meta_type
+				prepStmt.setShort(8, TSK_FS_NAME_FLAG_ENUM.UNALLOC.getValue()); // dir_flags
+				prepStmt.setShort(9, TSK_FS_META_FLAG_ENUM.UNALLOC.getValue()); // nmeta_flags
+				prepStmt.setLong(10, fileRange.getByteLen()); // size 
+				prepStmt.setNull(11, java.sql.Types.BIGINT); // ctime
+				prepStmt.setNull(12, java.sql.Types.BIGINT); // crtime
+				prepStmt.setNull(13, java.sql.Types.BIGINT); // atime
+				prepStmt.setNull(14, java.sql.Types.BIGINT); // mtime
+				prepStmt.setNull(15, java.sql.Types.VARCHAR); // parent path
+				prepStmt.setLong(16, parent.getId()); // data_source_obj_id
+				connection.executeUpdate(prepStmt);
+
+				/*
+				 * Insert a row in the tsk_layout_file table for each chunk of
+				 * the carved file. INSERT INTO tsk_file_layout (obj_id,
+				 * byte_start, byte_len, sequence) VALUES (?, ?, ?, ?)
+				 */
+				prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_LAYOUT_FILE);
+				prepStmt.clearParameters();
+				prepStmt.setLong(1, fileRangeId); // obj_id
+				prepStmt.setLong(2, fileRange.getByteStart()); // byte_start
+				prepStmt.setLong(3, fileRange.getByteLen()); // byte_len
+				prepStmt.setLong(4, fileRange.getSequence()); // sequence
+				connection.executeUpdate(prepStmt);
+
+				/*
+				 * Create a layout file representation of the carved file.
+				 */
+				fileRangeLayoutFiles.add(new LayoutFile(this,
+						fileRangeId,
+						parent.getId(),
+						Long.toString(fileRange.getSequence()),
+						TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS,
+						TSK_FS_NAME_TYPE_ENUM.REG,
+						TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG,
+						TSK_FS_NAME_FLAG_ENUM.UNALLOC,
+						TSK_FS_META_FLAG_ENUM.UNALLOC.getValue(),
+						fileRange.getByteLen(),
+						null,
+						FileKnown.UNKNOWN,
+						parent.getUniquePath(),
+						null));
+			}
+
+			transaction.commit();
+			return fileRangeLayoutFiles;
+
+		} catch (SQLException ex) {
+			if (null != transaction) {
+				try {
+					transaction.rollback();
+				} catch (TskCoreException ex2) {
+					logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
+				}
+			}
+			throw new TskCoreException("Failed to add layout files to case database", ex);
+
+		} catch (TskCoreException ex) {
+			if (null != transaction) {
+				try {
+					transaction.rollback();
+				} catch (TskCoreException ex2) {
+					logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
+				}
+			}
+			throw ex;
+
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+			releaseExclusiveLock();
+		}
+	}	
+	
+	/**
 	 * Adds a carving result to the case database.
 	 *
 	 * @param carvingResult The carving result (a set of carved files and their
@@ -4472,12 +4616,12 @@ public class SleuthkitCase {
 		String path = AbstractFile.createNonUniquePath(filePath).toLowerCase();
 
 		// split the file name from the parent path
-		int lastSlash = path.lastIndexOf("/"); //NON-NLS
+		int lastSlash = path.lastIndexOf('/'); //NON-NLS
 
 		// if the last slash is at the end, strip it off
 		if (lastSlash == path.length()) {
 			path = path.substring(0, lastSlash - 1);
-			lastSlash = path.lastIndexOf("/"); //NON-NLS
+			lastSlash = path.lastIndexOf('/'); //NON-NLS
 		}
 
 		String parentPath = path.substring(0, lastSlash);
@@ -4991,15 +5135,20 @@ public class SleuthkitCase {
 		Collection<ObjectInfo> childInfos = getChildrenInfo(vs);
 		List<Content> children = new ArrayList<Content>();
 		for (ObjectInfo info : childInfos) {
-			if (info.type == ObjectType.VOL) {
-				children.add(getVolumeById(info.id, vs));
-			} else if (info.type == ObjectType.ABSTRACTFILE) {
-				AbstractFile f = getAbstractFileById(info.id);
-				if (f != null) {
-					children.add(f);
+			if (null != info.type) {
+				switch (info.type) {
+					case VOL:
+						children.add(getVolumeById(info.id, vs));
+						break;
+					case ABSTRACTFILE:
+						AbstractFile f = getAbstractFileById(info.id);
+						if (f != null) {
+							children.add(f);
+						}
+						break;
+					default:
+						throw new TskCoreException("VolumeSystem has child of invalid type: " + info.type);
 				}
-			} else {
-				throw new TskCoreException("VolumeSystem has child of invalid type: " + info.type);
 			}
 		}
 		return children;
@@ -5042,15 +5191,20 @@ public class SleuthkitCase {
 		Collection<ObjectInfo> childInfos = getChildrenInfo(vol);
 		List<Content> children = new ArrayList<Content>();
 		for (ObjectInfo info : childInfos) {
-			if (info.type == ObjectType.FS) {
-				children.add(getFileSystemById(info.id, vol));
-			} else if (info.type == ObjectType.ABSTRACTFILE) {
-				AbstractFile f = getAbstractFileById(info.id);
-				if (f != null) {
-					children.add(f);
+			if (null != info.type) {
+				switch (info.type) {
+					case FS:
+						children.add(getFileSystemById(info.id, vol));
+						break;
+					case ABSTRACTFILE:
+						AbstractFile f = getAbstractFileById(info.id);
+						if (f != null) {
+							children.add(f);
+						}
+						break;
+					default:
+						throw new TskCoreException("Volume has child of invalid type: " + info.type);
 				}
-			} else {
-				throw new TskCoreException("Volume has child of invalid type: " + info.type);
 			}
 		}
 		return children;
@@ -5079,6 +5233,24 @@ public class SleuthkitCase {
 		return children;
 	}
 
+	/**
+	 * Adds an image to the case database.
+	 *
+	 * @param deviceObjId    The object id of the device associated with the
+	 *                       image.
+	 * @param imageFilePaths The image file paths.
+	 * @param timeZone       The time zone for the image.
+	 *
+	 * @return An Image object.
+	 *
+	 * @throws TskCoreException if there is an error adding the image to case
+	 *                          database.
+	 */
+	public Image addImageInfo(long deviceObjId, List<String> imageFilePaths, String timeZone) throws TskCoreException {
+		long imageId = this.caseHandle.addImageInfo(deviceObjId, imageFilePaths, timeZone);
+		return getImageById(imageId);
+	}
+	
 	/**
 	 * Returns a map of image object IDs to a list of fully qualified file paths
 	 * for that image
@@ -5558,7 +5730,7 @@ public class SleuthkitCase {
 	}
 
 	@Override
-	public void finalize() throws Throwable {
+	protected void finalize() throws Throwable {
 		try {
 			close();
 		} finally {
@@ -5570,8 +5742,6 @@ public class SleuthkitCase {
 	 * Call to free resources when done with instance.
 	 */
 	public void close() {
-		System.err.println(this.hashCode() + " closed"); //NON-NLS
-		System.err.flush();
 		acquireExclusiveLock();
 		fileSystemIdMap.clear();
 
@@ -5762,10 +5932,11 @@ public class SleuthkitCase {
 	 * @return text the escaped version
 	 */
 	public static String escapeSingleQuotes(String text) {
+		String escapedText = null;
 		if (text != null) {
-			text = text.replaceAll("'", "''");
+			escapedText = text.replaceAll("'", "''");
 		}
-		return text;
+		return escapedText;
 	}
 
 	/**
@@ -6810,6 +6981,8 @@ public class SleuthkitCase {
 			}
 		} catch (SQLException ex) {
 			try {
+				closeStatement(statement);
+				statement = connection.createStatement();
 				resultSet = statement.executeQuery("SELECT * FROM ingest_modules WHERE unique_name = '" + uniqueName + "'");
 				if (resultSet.next()) {
 					return new IngestModuleInfo(resultSet.getInt("ingest_module_id"), resultSet.getString("display_name"),
@@ -6934,12 +7107,20 @@ public class SleuthkitCase {
 	 */
 	static class ObjectInfo {
 
-		long id;
-		TskData.ObjectType type;
+		private long id;
+		private TskData.ObjectType type;
 
 		ObjectInfo(long id, ObjectType type) {
 			this.id = id;
 			this.type = type;
+		}
+
+		long getId() {
+			return id;
+		}
+
+		TskData.ObjectType getType() {
+			return type;
 		}
 	}
 
@@ -7161,7 +7342,7 @@ public class SleuthkitCase {
 			private final Connection connection;
 			private Statement statement = null;
 
-			public CreateStatement(Connection connection) {
+			CreateStatement(Connection connection) {
 				this.connection = connection;
 			}
 
@@ -7195,7 +7376,7 @@ public class SleuthkitCase {
 
 			private final Connection connection;
 
-			public Commit(Connection connection) {
+			Commit(Connection connection) {
 				this.connection = connection;
 			}
 
@@ -7299,7 +7480,7 @@ public class SleuthkitCase {
 			private final String input;
 			private PreparedStatement preparedStatement = null;
 
-			public PrepareStatement(Connection connection, String input) {
+			PrepareStatement(Connection connection, String input) {
 				this.connection = connection;
 				this.input = input;
 			}
@@ -7321,7 +7502,7 @@ public class SleuthkitCase {
 			private final int generateKeys;
 			private PreparedStatement preparedStatement = null;
 
-			public PrepareStatementGenerateKeys(Connection connection, String input, int generateKeysInput) {
+			PrepareStatementGenerateKeys(Connection connection, String input, int generateKeysInput) {
 				this.connection = connection;
 				this.input = input;
 				this.generateKeys = generateKeysInput;
@@ -8101,11 +8282,10 @@ public class SleuthkitCase {
 	 * in the volume or image given by systemId. Creates $CarvedFiles virtual
 	 * directory if it does not exist already.
 	 *
-	 * @param filesToAdd a list of CarvedFileContainer files to add as carved
-	 *                   files
+	 * @param filesToAdd A list of CarvedFileContainer files to add as carved
+	 *                   files.
 	 *
-	 * @return List<LayoutFile> This is a list of the files added to the
-	 *         database
+	 * @return A list of the files added to the database.
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 * @deprecated Use addCarvedFile(CarvingResult) instead
@@ -8229,158 +8409,4 @@ public class SleuthkitCase {
 				isFile, TskData.EncodingType.NONE, parent);
 	}
 
-	/**
-	 * Adds an image to the case database.
-	 *
-	 * @param deviceObjId    The object id of the device associated with the
-	 *                       image.
-	 * @param imageFilePaths The image file paths.
-	 * @param timeZone       The time zone for the image.
-	 *
-	 * @return An Image object.
-	 *
-	 * @throws TskCoreException if there is an error adding the image to case
-	 *                          database.
-	 */
-	public Image addImageInfo(long deviceObjId, List<String> imageFilePaths, String timeZone) throws TskCoreException {
-		long imageId = this.caseHandle.addImageInfo(deviceObjId, imageFilePaths, timeZone);
-		return getImageById(imageId);
-	}
-
-	/**
-	 * Adds one or more layout files for a parent Content object to the case
-	 * database.
-	 *
-	 * @param parent     The parent Content.
-	 * @param fileRanges File range objects for the file(s).
-	 *
-	 * @return A list of LayoutFile objects.
-	 *
-	 * @throws TskCoreException If there is a problem completing a case database
-	 *                          operation.
-	 */
-	public final List<LayoutFile> addLayoutFiles(Content parent, List<TskFileRange> fileRanges) throws TskCoreException {
-		assert (null != fileRanges);
-		if (null == fileRanges) {
-			throw new TskCoreException("TskFileRange object is null");
-		}
-
-		assert (null != parent);
-		if (null == parent) {
-			throw new TskCoreException("Conent is null");
-		}
-
-		CaseDbTransaction transaction = null;
-		Statement statement = null;
-		ResultSet resultSet = null;
-		acquireExclusiveLock();
-
-		try {
-			transaction = beginTransaction();
-			CaseDbConnection connection = transaction.getConnection();
-
-			List<LayoutFile> fileRangeLayoutFiles = new ArrayList<LayoutFile>();
-			for (TskFileRange fileRange : fileRanges) {
-				/*
-				 * Insert a row for the Tsk file range into the tsk_objects
-				 * table: INSERT INTO tsk_objects (par_obj_id, type) VALUES (?,
-				 * ?)
-				 */
-				PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
-				prepStmt.clearParameters();
-				prepStmt.setLong(1, parent.getId()); // par_obj_id
-				prepStmt.setLong(2, TskData.ObjectType.ABSTRACTFILE.getObjectType()); // type
-				connection.executeUpdate(prepStmt);
-				resultSet = prepStmt.getGeneratedKeys();
-				resultSet.next();
-				long fileRangeId = resultSet.getLong(1); //last_insert_rowid()
-				long end_byte_in_parent = fileRange.getByteStart() + fileRange.getByteLen() - 1;
-				/*
-				 * Insert a row for the Tsk file range into the tsk_files table:
-				 * INSERT INTO tsk_files (obj_id, fs_obj_id, name, type,
-				 * has_path, dir_type, meta_type, dir_flags, meta_flags, size,
-				 * ctime, crtime, atime, mtime, parent_path, data_source_obj_id)
-				 * VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-				 */
-				prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
-				prepStmt.clearParameters();
-				prepStmt.setLong(1, fileRangeId); // obj_id	from tsk_objects			
-				prepStmt.setNull(2, java.sql.Types.BIGINT); // fs_obj_id				
-				prepStmt.setString(3, "Unalloc_" + parent.getId() + "_" + fileRange.getByteStart() + "_" + end_byte_in_parent); // name of form Unalloc_[image obj_id]_[start byte in parent]_[end byte in parent]
-				prepStmt.setShort(4, TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS.getFileType()); // type
-				prepStmt.setNull(5, java.sql.Types.BIGINT); // has_path
-				prepStmt.setShort(6, TSK_FS_NAME_TYPE_ENUM.REG.getValue()); // dir_type
-				prepStmt.setShort(7, TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG.getValue()); // meta_type
-				prepStmt.setShort(8, TSK_FS_NAME_FLAG_ENUM.UNALLOC.getValue()); // dir_flags
-				prepStmt.setShort(9, TSK_FS_META_FLAG_ENUM.UNALLOC.getValue()); // nmeta_flags
-				prepStmt.setLong(10, fileRange.getByteLen()); // size 
-				prepStmt.setNull(11, java.sql.Types.BIGINT); // ctime
-				prepStmt.setNull(12, java.sql.Types.BIGINT); // crtime
-				prepStmt.setNull(13, java.sql.Types.BIGINT); // atime
-				prepStmt.setNull(14, java.sql.Types.BIGINT); // mtime
-				prepStmt.setNull(15, java.sql.Types.VARCHAR); // parent path
-				prepStmt.setLong(16, parent.getId()); // data_source_obj_id
-				connection.executeUpdate(prepStmt);
-
-				/*
-				 * Insert a row in the tsk_layout_file table for each chunk of
-				 * the carved file. INSERT INTO tsk_file_layout (obj_id,
-				 * byte_start, byte_len, sequence) VALUES (?, ?, ?, ?)
-				 */
-				prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_LAYOUT_FILE);
-				prepStmt.clearParameters();
-				prepStmt.setLong(1, fileRangeId); // obj_id
-				prepStmt.setLong(2, fileRange.getByteStart()); // byte_start
-				prepStmt.setLong(3, fileRange.getByteLen()); // byte_len
-				prepStmt.setLong(4, fileRange.getSequence()); // sequence
-				connection.executeUpdate(prepStmt);
-
-				/*
-				 * Create a layout file representation of the carved file.
-				 */
-				fileRangeLayoutFiles.add(new LayoutFile(this,
-						fileRangeId,
-						parent.getId(),
-						Long.toString(fileRange.getSequence()),
-						TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS,
-						TSK_FS_NAME_TYPE_ENUM.REG,
-						TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG,
-						TSK_FS_NAME_FLAG_ENUM.UNALLOC,
-						TSK_FS_META_FLAG_ENUM.UNALLOC.getValue(),
-						fileRange.getByteLen(),
-						null,
-						FileKnown.UNKNOWN,
-						parent.getUniquePath(),
-						null));
-			}
-
-			transaction.commit();
-			return fileRangeLayoutFiles;
-
-		} catch (SQLException ex) {
-			if (null != transaction) {
-				try {
-					transaction.rollback();
-				} catch (TskCoreException ex2) {
-					logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
-				}
-			}
-			throw new TskCoreException("Failed to add layout files to case database", ex);
-
-		} catch (TskCoreException ex) {
-			if (null != transaction) {
-				try {
-					transaction.rollback();
-				} catch (TskCoreException ex2) {
-					logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
-				}
-			}
-			throw ex;
-
-		} finally {
-			closeResultSet(resultSet);
-			closeStatement(statement);
-			releaseExclusiveLock();
-		}
-	}
 }

@@ -482,14 +482,15 @@ uint8_t
 * Start the process to add image/file metadata to database inside of a transaction.
 * User must call either commitAddImage() to commit the changes,
 * or revertAddImage() to revert them.
-* This version of startAddImage assumes that m_img_info has already been set up.
 *
+* @param img_info Previously initialized TSK_IMG_INFO object
 * @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID)
 * @return 0 for success, 1 for failure
 */
 uint8_t
-TskAutoDb::startAddImage(const char* deviceId)
+TskAutoDb::startAddImage(TSK_IMG_INFO * img_info, const char* deviceId)
 {
+    openImageHandle(img_info);
 
     if (m_img_info == NULL) {
         return 1;

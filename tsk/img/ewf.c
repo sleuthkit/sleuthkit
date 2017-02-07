@@ -141,7 +141,7 @@ ewf_image_close(TSK_IMG_INFO * img_info)
 #ifdef TSK_WIN32
         libewf_glob_wide_free( ewf_info->img_info.images, ewf_info->img_info.num_img, &error);
 #else
-        libewf_glob_free( ewf_info->images, ewf_info->num_imgs, &error);
+        libewf_glob_free( ewf_info->img_info.images, ewf_info->img_info.num_img, &error);
 #endif
     }
 
@@ -233,8 +233,8 @@ ewf_open(int a_num_img,
                 &ewf_info->img_info.num_img, &ewf_error) == -1);
 #else
         is_error = (libewf_glob(a_images[0], TSTRLEN(a_images[0]),
-                LIBEWF_FORMAT_UNKNOWN, &ewf_info->images,
-                &ewf_info->num_imgs, &ewf_error) == -1);
+                LIBEWF_FORMAT_UNKNOWN, &ewf_info->img_info.images,
+                &ewf_info->img_info.num_img, &ewf_error) == -1);
 #endif
         if (is_error){
             tsk_error_reset();
@@ -251,15 +251,15 @@ ewf_open(int a_num_img,
 #else                           //use v1
 
 #ifdef TSK_WIN32
-        ewf_info->num_imgs =
+        ewf_info->img_info.num_img =
             libewf_glob_wide(a_images[0], TSTRLEN(a_images[0]),
-            LIBEWF_FORMAT_UNKNOWN, &ewf_info->images);
+            LIBEWF_FORMAT_UNKNOWN, &ewf_info->img_info.images);
 #else
-        ewf_info->num_imgs =
+        ewf_info->img_info.num_img =
             libewf_glob(a_images[0], TSTRLEN(a_images[0]),
-            LIBEWF_FORMAT_UNKNOWN, &ewf_info->images);
+            LIBEWF_FORMAT_UNKNOWN, &ewf_info->img_info.images);
 #endif
-        if (ewf_info->num_imgs <= 0) {
+        if (ewf_info->img_info.num_img <= 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
             tsk_error_set_errstr("ewf_open: Not an E01 glob name");
@@ -345,8 +345,8 @@ ewf_open(int a_num_img,
             ewf_info->img_info.num_img, LIBEWF_OPEN_READ, &ewf_error) != 1);
 #else
     is_error = (libewf_handle_open(ewf_info->handle,
-            (char *const *) ewf_info->images,
-            ewf_info->num_imgs, LIBEWF_OPEN_READ, &ewf_error) != 1);
+            (char *const *) ewf_info->img_info.images,
+            ewf_info->img_info.num_img, LIBEWF_OPEN_READ, &ewf_error) != 1);
 #endif
     if (is_error)
     {
@@ -427,18 +427,18 @@ ewf_open(int a_num_img,
 
 #if defined( TSK_WIN32 )
     ewf_info->handle = libewf_open_wide(
-        (wchar_t * const *) ewf_info->images, ewf_info->num_imgs,
+        (wchar_t * const *) ewf_info->img_info.images, ewf_info->img_info.num_img,
         LIBEWF_OPEN_READ);
 #else
     ewf_info->handle = libewf_open(
-        (char *const *) ewf_info->images, ewf_info->num_imgs,
+        (char *const *) ewf_info->img_info.images, ewf_info->img_info.num_img,
         LIBEWF_OPEN_READ);
 #endif
     if (ewf_info->handle == NULL) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
         tsk_error_set_errstr("ewf_open file: %" PRIttocTSK
-            ": Error opening", ewf_info->images[0]);
+            ": Error opening", ewf_info->img_info.images[0]);
         tsk_img_free(ewf_info);
 
         if (tsk_verbose != 0) {
@@ -459,7 +459,7 @@ ewf_open(int a_num_img,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
         tsk_error_set_errstr("ewf_open file: %" PRIttocTSK
-            ": Error getting size of image", ewf_info->images[0]);
+            ": Error getting size of image", ewf_info->img_info.images[0]);
         tsk_img_free(ewf_info);
         if (tsk_verbose) {
             tsk_fprintf(stderr, "Error getting size of EWF file\n");
