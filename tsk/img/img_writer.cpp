@@ -33,14 +33,23 @@
 TSK_RETVAL_ENUM writeFooter(TSK_IMG_WRITER* writer);
 
 // TEMP LOGGING TEMP
+// This will be removed once finishImage is complete
 char messageBuffer[0x2000];
 char logBuffer[0x2000];
+bool openLogFileFailed = false;
 void openLogFile(TSK_IMG_WRITER * writer);
 void writeLogFile(TSK_IMG_WRITER * writer, const char * message) {
+    if (openLogFileFailed) {
+        return;
+    }
     if (writer->logFileHandle == 0) {
-        // Open it back up
+        // Open it up
         openLogFile(writer);
     }
+    if (openLogFileFailed) {
+        return;
+    }
+
     time_t ltime; /* calendar time */
     ltime = time(NULL); /* get current cal time */
     sprintf(logBuffer, "%s : ", asctime(localtime(&ltime)));
@@ -69,7 +78,10 @@ void openLogFile(TSK_IMG_WRITER * writer) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
         tsk_error_set_errstr("openLogFile: file  %d", lastError);
+        openLogFileFailed = true;
+        return;
     }
+    openLogFileFailed = false;
     writeLogFile(writer, "Opened log file\n");
 
 }
