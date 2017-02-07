@@ -688,10 +688,16 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR *
     if (writer->outputFileHandle == INVALID_HANDLE_VALUE) {
         int lastError = (int)GetLastError();
         writer->outputFileHandle = 0; /* so we don't close it next time */
+
+        /* Close everything and free the memory */
+        tsk_img_writer_close(writer);
+        free(raw_info->img_writer);
+        raw_info->img_writer = NULL;
+
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
         tsk_error_set_errstr("tsk_img_writer_create: file \"%" PRIttocTSK
-            "\" - %d", writer->fileName, lastError);
+            "\" - %d", outputFileName, lastError);
         return TSK_ERR;
     }
 
