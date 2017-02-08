@@ -2276,7 +2276,7 @@ public class SleuthkitCase {
 			case STRING:
 				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_STRING_ATTRIBUTE);
 				statement.clearParameters();
-				statement.setString(7, escapeSingleQuotes(attr.getValueString()));
+				statement.setString(7, attr.getValueString());
 				break;
 			case BYTE:
 				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_BYTE_ATTRIBUTE);
@@ -2308,7 +2308,7 @@ public class SleuthkitCase {
 		}
 		statement.setLong(1, attr.getArtifactID());
 		statement.setInt(2, artifactTypeId);
-		statement.setString(3, escapeSingleQuotes(attr.getModuleName()));
+		statement.setString(3, attr.getModuleName());
 		statement.setString(4, "");
 		statement.setInt(5, attr.getAttributeType().getTypeID());
 		statement.setLong(6, attr.getAttributeType().getValueType().getType());
