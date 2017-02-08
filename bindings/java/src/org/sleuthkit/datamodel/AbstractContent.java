@@ -123,7 +123,7 @@ public abstract class AbstractContent implements Content {
 				// there is not parent; not an error if we've got a data source
 				return null;
 			}
-			parent = db.getContentById(parentInfo.id);
+			parent = db.getContentById(parentInfo.getId());
 		}
 		return parent;
 	}
