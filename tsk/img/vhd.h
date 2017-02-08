@@ -32,8 +32,6 @@ extern "C" {
     typedef struct {
         TSK_IMG_INFO img_info;
         libvhdi_file_t *handle;
-        TSK_TCHAR **images;
-        int num_imgs;
         tsk_lock_t read_lock;   // Lock for reads since according to documentation libvhdi is not fully thread safe yet
     } IMG_VHDI_INFO;
 

@@ -50,17 +50,17 @@ public class SlackFile extends FsContent {
 	 * @param name               The name of the file.
 	 * @param metaAddr           The meta address of the file.
 	 * @param metaSeq            The meta sequence number of the file.
-	 * @param dirType            The type of the file, usually as reported in
+	 * @param dirType            The type of the base file, usually as reported in
 	 *                           the name structure of the file system. May be
 	 *                           set to TSK_FS_NAME_TYPE_ENUM.UNDEF.
-	 * @param metaType           The type of the file, usually as reported in
+	 * @param metaType           The type of the base file, usually as reported in
 	 *                           the metadata structure of the file system. May
 	 *                           be set to
 	 *                           TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF.
-	 * @param dirFlag            The allocated status of the file, usually as
+	 * @param dirFlag            The allocated status of the base file, usually as
 	 *                           reported in the name structure of the file
 	 *                           system.
-	 * @param metaFlags          The allocated status of the file, usually as
+	 * @param metaFlags          The allocated status of the base file, usually as
 	 *                           reported in the metadata structure of the file
 	 *                           system.
 	 * @param size               The size of the file.

@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2016 Basis Technology Corp.
+ * Copyright 2011-2017 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,6 +39,7 @@ import java.util.ResourceBundle;
  */
 public class BlackboardAttribute {
 
+	private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private BlackboardAttribute.Type attributeType;
 	private final String moduleName;
@@ -226,6 +227,7 @@ public class BlackboardAttribute {
 		 *
 		 * TODO (AUT-2070): Deprecate and provide a getTypeId method instead for
 		 * API consistency.
+		 *
 		 * @return attribute value type id
 		 */
 		public long getType() {
@@ -237,6 +239,7 @@ public class BlackboardAttribute {
 		 *
 		 * TODO (AUT-2070): Deprecate and provide a getTypeName method instead
 		 * for API consistency.
+		 *
 		 * @return attribute value type name
 		 */
 		public String getLabel() {
@@ -259,7 +262,7 @@ public class BlackboardAttribute {
 		 */
 		static public TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE fromType(long typeId) {
 			for (TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType : TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.values()) {
-				if (valueType.typeId == typeId) {
+				if (valueType.getType() == typeId) {
 					return valueType;
 				}
 			}
@@ -282,7 +285,7 @@ public class BlackboardAttribute {
 		 */
 		static public TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE fromLabel(String typeName) {
 			for (TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType : TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.values()) {
-				if (valueType.typeName.equals(typeName)) {
+				if (valueType.getLabel().equals(typeName)) {
 					return valueType;
 				}
 			}
@@ -762,7 +765,7 @@ public class BlackboardAttribute {
 		 */
 		static public ATTRIBUTE_TYPE fromID(int typeID) {
 			for (ATTRIBUTE_TYPE attrType : ATTRIBUTE_TYPE.values()) {
-				if (attrType.typeID == typeID) {
+				if (attrType.getTypeID() == typeID) {
 					return attrType;
 				}
 			}
@@ -784,7 +787,7 @@ public class BlackboardAttribute {
 		 */
 		static public ATTRIBUTE_TYPE fromLabel(String typeName) {
 			for (ATTRIBUTE_TYPE attrType : ATTRIBUTE_TYPE.values()) {
-				if (attrType.typeName.equals(typeName)) {
+				if (attrType.getLabel().equals(typeName)) {
 					return attrType;
 				}
 			}
@@ -832,25 +835,6 @@ public class BlackboardAttribute {
 		} else {
 			this.valueBytes = valueBytes;
 		}
-		this.sleuthkitCase = sleuthkitCase;
-	}
-
-	/**
-	 * Sets the artifact id.
-	 *
-	 * @param artifactID The artifact id.
-	 */
-	void setArtifactId(long artifactID) {
-		this.artifactID = artifactID;
-	}
-
-	/**
-	 * Sets the reference to the SleuthkitCase object that represents the case
-	 * database.
-	 *
-	 * @param sleuthkitCase A reference to a SleuthkitCase object.
-	 */
-	void setCaseDatabase(SleuthkitCase sleuthkitCase) {
 		this.sleuthkitCase = sleuthkitCase;
 	}
 
@@ -1238,7 +1222,7 @@ public class BlackboardAttribute {
 	 * @return The attribute value.
 	 */
 	public byte[] getValueBytes() {
-		return valueBytes;
+		return Arrays.copyOf(valueBytes, valueBytes.length);
 	}
 
 	/**
@@ -1281,7 +1265,7 @@ public class BlackboardAttribute {
 			return false;
 		}
 		final BlackboardAttribute other = (BlackboardAttribute) obj;
-		return this.artifactID == other.artifactID;
+		return this.artifactID == other.getArtifactID();
 	}
 
 	@Override
@@ -1322,7 +1306,24 @@ public class BlackboardAttribute {
 		return "";
 	}
 
-	final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
+	/**
+	 * Sets the artifact id.
+	 *
+	 * @param artifactID The artifact id.
+	 */
+	void setArtifactId(long artifactID) {
+		this.artifactID = artifactID;
+	}
+
+	/**
+	 * Sets the reference to the SleuthkitCase object that represents the case
+	 * database.
+	 *
+	 * @param sleuthkitCase A reference to a SleuthkitCase object.
+	 */
+	void setCaseDatabase(SleuthkitCase sleuthkitCase) {
+		this.sleuthkitCase = sleuthkitCase;
+	}
 
 	/**
 	 * Converts a byte array to a string.
@@ -1336,8 +1337,8 @@ public class BlackboardAttribute {
 		char[] hexChars = new char[bytes.length * 2];
 		for (int j = 0; j < bytes.length; j++) {
 			int v = bytes[j] & 0xFF;
-			hexChars[j * 2] = hexArray[v >>> 4];
-			hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+			hexChars[j * 2] = HEX_ARRAY[v >>> 4];
+			hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
 		}
 		return new String(hexChars);
 	}
@@ -1626,11 +1627,13 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * Gets the context of this attribute. This method should be deleted when
-	 * the deprecation period for context is completed.
+	 * Gets the context of this attribute.
 	 *
 	 * @return The context, may be the empty string.
+	 *
+	 * @deprecated Setting context for an attribute is deprecated.
 	 */
+	@Deprecated
 	String getContextString() {
 		return context;
 	}
@@ -1652,6 +1655,8 @@ public class BlackboardAttribute {
 	 *
 	 * @return The type name.
 	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 *
 	 * @deprecated Use BlackboardAttribute.getAttributeType.getTypeName instead.
 	 */
 	@Deprecated
@@ -1663,6 +1668,8 @@ public class BlackboardAttribute {
 	 * Gets the attribute type display name.
 	 *
 	 * @return type The display name.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 *
 	 * @deprecated Use BlackboardAttribute.getAttributeType.getDisplayName
 	 * instead.
