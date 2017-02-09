@@ -1243,19 +1243,7 @@ public class BlackboardAttribute {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public void addSource(String source) throws TskCoreException {
-		String newSources = sources;
-		if (null != source && !source.isEmpty()) {
-			Set<String> modules = new HashSet<String>(Arrays.asList(source.split(",")));
-			if (!modules.contains(source)) {
-				newSources = newSources + "," + source;
-			} else {
-				newSources = source;
-			}
-		} else {
-			newSources = source;
-		}
-		sleuthkitCase.addSourceToArtifactAttribute(this, source);
-		sources = newSources;
+		this.sources = sleuthkitCase.addSourceToArtifactAttribute(this, source);
 	}
 
 	/**
@@ -1352,9 +1340,9 @@ public class BlackboardAttribute {
 	/**
 	 * Gets the sources of this attribute.
 	 *
-	 * @return A comma-separated-values list of sources, may be empty. The
-	 *         CSV is due to a deliberate denormalization of the source field in
-	 *         the case database and this method is a helper method for the
+	 * @return A comma-separated-values list of sources, may be empty. The CSV
+	 *         is due to a deliberate denormalization of the source field in the
+	 *         case database and this method is a helper method for the
 	 *         SleuthkitCase class.
 	 */
 	String getSourcesCSV() {
