@@ -45,11 +45,13 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -2308,11 +2310,101 @@ public class SleuthkitCase {
 		}
 		statement.setLong(1, attr.getArtifactID());
 		statement.setInt(2, artifactTypeId);
-		statement.setString(3, escapeSingleQuotes(attr.getModuleName()));
+		statement.setString(3, escapeSingleQuotes(attr.getSourcesCSV()));
 		statement.setString(4, "");
 		statement.setInt(5, attr.getAttributeType().getTypeID());
 		statement.setLong(6, attr.getAttributeType().getValueType().getType());
 		connection.executeUpdate(statement);
+	}
+
+	/**
+	 * Adds a source name to the source column of one or more rows in the
+	 * blackboard attrbutes table. The source name will be added to a CSV list
+	 * in any rows that exactly match the attribute's artifact_id and value.
+	 *
+	 * @param attr   The artifact attribute
+	 * @param source The source name.
+	 *
+	 * @throws TskCoreException
+	 */
+	void addSourceToArtifactAttribute(BlackboardAttribute attr, String source) throws TskCoreException {
+		/*
+		 * WARNING: This is a temporary implementation that is not safe and
+		 * denormalizes the case datbase.
+		 *
+		 * TODO (JIRA-2294): Provide a safe and normalized solution to tracking
+		 * the sources of artifact attributes.
+		 */
+		if (null == source || source.isEmpty()) {
+			throw new TskCoreException("Attempt to add null or empty source module name to artifact attribute");
+		}
+		CaseDbConnection connection = connections.getConnection();
+		acquireExclusiveLock();
+		Statement queryStmt = null;
+		Statement updateStmt = null;
+		ResultSet result = null;
+		try {
+			connection.beginTransaction();
+			String valueClause;
+			switch (attr.getAttributeType().getValueType()) {
+				case STRING:
+					valueClause = " value_text = '" + attr.getValueString() + "'";
+					break;
+				case INTEGER:
+					valueClause = " value_int32 = " + attr.getValueInt();
+					break;
+				case LONG:
+				case DATETIME:
+					valueClause = " value_int64 = " + attr.getValueLong();
+					break;
+				case DOUBLE:
+					valueClause = " value_double = " + attr.getValueDouble();
+					break;
+				case BYTE:
+					valueClause = " value_byte = x'" + BlackboardAttribute.bytesToHexString(attr.getValueBytes()) + "'";
+					break;
+				default:
+					throw new TskCoreException(String.format("Unrecognized value type for attribute %s", attr.getDisplayString()));
+			}
+			String query = "SELECT source FROM blackboard_attributes WHERE"
+					+ " artifact_id = " + attr.getArtifactID()
+					+ " AND attribute_type_id = " + attr.getAttributeType().getTypeID()
+					+ " AND value_type = " + attr.getAttributeType().getValueType().getType()
+					+ " AND " + valueClause + ";";
+			queryStmt = connection.createStatement();
+			updateStmt = connection.createStatement();
+			result = connection.executeQuery(queryStmt, query);
+			while (result.next()) {
+				String oldSources = result.getString("source");
+				String newSources;
+				if (null != oldSources && !oldSources.isEmpty()) {
+					Set<String> modules = new HashSet<String>(Arrays.asList(oldSources.split(",")));
+					if (!modules.contains(oldSources)) {
+						newSources = oldSources + "," + oldSources;
+					} else {
+						newSources = oldSources;
+					}
+				} else {
+					newSources = oldSources;
+				}
+				String update = "UPDATE blackboard_attributes SET source = '" + newSources + "' WHERE"
+						+ " artifact_id = " + attr.getArtifactID()
+						+ " AND attribute_type_id = " + attr.getAttributeType().getTypeID()
+						+ " AND value_type = " + attr.getAttributeType().getValueType().getType()
+						+ " AND " + valueClause + ";";
+				connection.executeUpdate(updateStmt, update);
+			}
+			connection.commitTransaction();
+		} catch (SQLException ex) {
+			connection.rollbackTransaction();
+			throw new TskCoreException(String.format("Error adding source module to attribute %s", attr.getDisplayString()), ex);
+		} finally {
+			closeResultSet(result);
+			closeStatement(updateStmt);
+			closeStatement(queryStmt);
+			connection.close();
+			releaseExclusiveLock();
+		}
 	}
 
 	/**
@@ -3942,8 +4034,8 @@ public class SleuthkitCase {
 			closeStatement(statement);
 			releaseExclusiveLock();
 		}
-	}	
-	
+	}
+
 	/**
 	 * Adds a carving result to the case database.
 	 *
@@ -5248,7 +5340,7 @@ public class SleuthkitCase {
 		long imageId = this.caseHandle.addImageInfo(deviceObjId, imageFilePaths, timeZone);
 		return getImageById(imageId);
 	}
-	
+
 	/**
 	 * Returns a map of image object IDs to a list of fully qualified file paths
 	 * for that image
