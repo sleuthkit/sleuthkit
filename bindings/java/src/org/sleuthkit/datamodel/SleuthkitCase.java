@@ -2327,7 +2327,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException
 	 */
-	void addSourceToArtifactAttribute(BlackboardAttribute attr, String source) throws TskCoreException {
+	String addSourceToArtifactAttribute(BlackboardAttribute attr, String source) throws TskCoreException {
 		/*
 		 * WARNING: This is a temporary implementation that is not safe and
 		 * denormalizes the case datbase.
@@ -2343,58 +2343,86 @@ public class SleuthkitCase {
 		Statement queryStmt = null;
 		Statement updateStmt = null;
 		ResultSet result = null;
+		String newSources = "";
 		try {
 			connection.beginTransaction();
-			String valueClause;
-			switch (attr.getAttributeType().getValueType()) {
-				case STRING:
-					valueClause = " value_text = '" + attr.getValueString() + "'";
-					break;
-				case INTEGER:
-					valueClause = " value_int32 = " + attr.getValueInt();
-					break;
-				case LONG:
-				case DATETIME:
-					valueClause = " value_int64 = " + attr.getValueLong();
-					break;
-				case DOUBLE:
-					valueClause = " value_double = " + attr.getValueDouble();
-					break;
-				case BYTE:
-					valueClause = " value_byte = x'" + BlackboardAttribute.bytesToHexString(attr.getValueBytes()) + "'";
-					break;
-				default:
-					throw new TskCoreException(String.format("Unrecognized value type for attribute %s", attr.getDisplayString()));
-			}
-			String query = "SELECT source FROM blackboard_attributes WHERE"
-					+ " artifact_id = " + attr.getArtifactID()
-					+ " AND attribute_type_id = " + attr.getAttributeType().getTypeID()
-					+ " AND value_type = " + attr.getAttributeType().getValueType().getType()
-					+ " AND " + valueClause + ";";
-			queryStmt = connection.createStatement();
-			updateStmt = connection.createStatement();
-			result = connection.executeQuery(queryStmt, query);
-			while (result.next()) {
-				String oldSources = result.getString("source");
-				String newSources;
-				if (null != oldSources && !oldSources.isEmpty()) {
-					Set<String> modules = new HashSet<String>(Arrays.asList(oldSources.split(",")));
-					if (!modules.contains(oldSources)) {
-						newSources = oldSources + "," + oldSources;
-					} else {
-						newSources = oldSources;
-					}
-				} else {
-					newSources = oldSources;
+			String valueClause = "";
+			BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType = attr.getAttributeType().getValueType();
+			if (BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE != valueType) {
+				switch (valueType) {
+					case STRING:
+						valueClause = " value_text = '" + attr.getValueString() + "'";
+						break;
+					case INTEGER:
+						valueClause = " value_int32 = " + attr.getValueInt();
+						break;
+					case LONG:
+					case DATETIME:
+						valueClause = " value_int64 = " + attr.getValueLong();
+						break;
+					case DOUBLE:
+						valueClause = " value_double = " + attr.getValueDouble();
+						break;
+					default:
+						throw new TskCoreException(String.format("Unrecognized value type for attribute %s", attr.getDisplayString()));
 				}
-				String update = "UPDATE blackboard_attributes SET source = '" + newSources + "' WHERE"
+				String query = "SELECT source FROM blackboard_attributes WHERE"
 						+ " artifact_id = " + attr.getArtifactID()
 						+ " AND attribute_type_id = " + attr.getAttributeType().getTypeID()
 						+ " AND value_type = " + attr.getAttributeType().getValueType().getType()
 						+ " AND " + valueClause + ";";
-				connection.executeUpdate(updateStmt, update);
+				queryStmt = connection.createStatement();
+				updateStmt = connection.createStatement();
+				result = connection.executeQuery(queryStmt, query);
+			} else {
+				/*
+				 * SELECT source FROM blackboard_attributes WHERE artifact_id =
+				 * ? AND attribute_type_id = ? AND value_type = 4 AND value_byte
+				 * = ?
+				 */
+				PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ATTR_BY_VALUE_BYTE);
+				statement.clearParameters();
+				statement.setLong(1, attr.getArtifactID());
+				statement.setLong(2, attr.getAttributeType().getTypeID());
+				statement.setBytes(3, attr.getValueBytes());
+				result = connection.executeQuery(statement);
+			}
+			while (result.next()) {
+				String oldSources = result.getString("source");
+				if (null != oldSources && !oldSources.isEmpty()) {
+					Set<String> uniqueSources = new HashSet<String>(Arrays.asList(oldSources.split(",")));
+					if (!uniqueSources.contains(source)) {
+						newSources = oldSources + "," + source;
+					} else {
+						newSources = oldSources;
+					}
+				} else {
+					newSources = source;
+				}
+				if (BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE != valueType) {
+					String update = "UPDATE blackboard_attributes SET source = '" + newSources + "' WHERE"
+							+ " artifact_id = " + attr.getArtifactID()
+							+ " AND attribute_type_id = " + attr.getAttributeType().getTypeID()
+							+ " AND value_type = " + attr.getAttributeType().getValueType().getType()
+							+ " AND " + valueClause + ";";
+					connection.executeUpdate(updateStmt, update);
+				} else {
+					/*
+					 * UPDATE blackboard_attributes SET source = ? WHERE
+					 * artifact_id = ? AND attribute_type_id = ? AND value_type
+					 * = 4 AND value_byte = ?
+					 */
+					PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.UPDATE_ATTR_BY_VALUE_BYTE);
+					statement.clearParameters();
+					statement.setString(1, newSources);
+					statement.setLong(2, attr.getArtifactID());
+					statement.setLong(3, attr.getAttributeType().getTypeID());
+					statement.setBytes(4, attr.getValueBytes());
+					connection.executeUpdate(statement);
+				}
 			}
 			connection.commitTransaction();
+			return newSources;
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
 			throw new TskCoreException(String.format("Error adding source module to attribute %s", attr.getDisplayString()), ex);
@@ -7302,7 +7330,9 @@ public class SleuthkitCase {
 		INSERT_REPORT("INSERT INTO reports (path, crtime, src_module_name, report_name) VALUES (?, ?, ?, ?)"), //NON-NLS
 		DELETE_REPORT("DELETE FROM reports WHERE reports.report_id = ?"), //NON-NLS
 		INSERT_INGEST_JOB("INSERT INTO ingest_jobs (obj_id, host_name, start_date_time, end_date_time, status_id, settings_dir) VALUES (?, ?, ?, ?, ?, ?)"), //NON-NLS
-		INSERT_INGEST_MODULE("INSERT INTO ingest_modules (display_name, unique_name, type_id, version) VALUES(?, ?, ?, ?)"); //NON-NLS
+		INSERT_INGEST_MODULE("INSERT INTO ingest_modules (display_name, unique_name, type_id, version) VALUES(?, ?, ?, ?)"), //NON-NLS
+		SELECT_ATTR_BY_VALUE_BYTE("SELECT source FROM blackboard_attributes WHERE artifact_id = ? AND attribute_type_id = ? AND value_type = 4 AND value_byte = ?"), //NON-NLS
+		UPDATE_ATTR_BY_VALUE_BYTE("UPDATE blackboard_attributes SET source = ? WHERE artifact_id = ? AND attribute_type_id = ? AND value_type = 4 AND value_byte = ?"); //NON-NLS
 
 		private final String sql;
 

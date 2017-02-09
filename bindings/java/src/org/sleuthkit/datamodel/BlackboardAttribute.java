@@ -693,6 +693,12 @@ public class BlackboardAttribute {
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_ACCOUNT_TYPE(121, "TSK_ACCOUNT_TYPE",
 				bundle.getString("BlackboardAttribute.tskAccountType.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_KEYWORD_SEARCH_TYPE(122, "TSK_KEYWORD_SEARCH_TYPE", // Keyword search type, exact match, sub-string or regex //NON-NLS
+				bundle.getString("BlackboardAttribute.tskKeywordSearchType.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER),
+		TSK_KEYWORD_HIT_DOCUMENT_IDS(123, "TSK_KEYWORD_HIT_DOCUMENT_IDS", // Comma separated list of document ids that had a keyword hit //NON-NLS
+				bundle.getString("BlackboardAttribute.tskKeywordHitDocumentIDs.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
 
 		private final int typeID;
@@ -1237,19 +1243,7 @@ public class BlackboardAttribute {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public void addSource(String source) throws TskCoreException {
-		String newSources = sources;
-		if (null != source && !source.isEmpty()) {
-			Set<String> modules = new HashSet<String>(Arrays.asList(source.split(",")));
-			if (!modules.contains(source)) {
-				newSources = newSources + "," + source;
-			} else {
-				newSources = source;
-			}
-		} else {
-			newSources = source;
-		}
-		sleuthkitCase.addSourceToArtifactAttribute(this, source);
-		sources = newSources;
+		this.sources = sleuthkitCase.addSourceToArtifactAttribute(this, source);
 	}
 
 	/**
@@ -1346,9 +1340,9 @@ public class BlackboardAttribute {
 	/**
 	 * Gets the sources of this attribute.
 	 *
-	 * @return A comma-separated-values list of sources, may be empty. The
-	 *         CSV is due to a deliberate denormalization of the source field in
-	 *         the case database and this method is a helper method for the
+	 * @return A comma-separated-values list of sources, may be empty. The CSV
+	 *         is due to a deliberate denormalization of the source field in the
+	 *         case database and this method is a helper method for the
 	 *         SleuthkitCase class.
 	 */
 	String getSourcesCSV() {
