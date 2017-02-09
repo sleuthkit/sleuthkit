@@ -2310,7 +2310,7 @@ public class SleuthkitCase {
 		}
 		statement.setLong(1, attr.getArtifactID());
 		statement.setInt(2, artifactTypeId);
-		statement.setString(3, escapeSingleQuotes(attr.getSourceCSV()));
+		statement.setString(3, escapeSingleQuotes(attr.getSourcesCSV()));
 		statement.setString(4, "");
 		statement.setInt(5, attr.getAttributeType().getTypeID());
 		statement.setLong(6, attr.getAttributeType().getValueType().getType());
@@ -2318,24 +2318,24 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Adds a module name to the source column of one or more rows in the
-	 * blackboard attrbutes table. The module name will be added to a CSV list
+	 * Adds a source name to the source column of one or more rows in the
+	 * blackboard attrbutes table. The source name will be added to a CSV list
 	 * in any rows that exactly match the attribute's artifact_id and value.
 	 *
-	 * @param attr       The artifact attribute
-	 * @param moduleName The source module name.
+	 * @param attr   The artifact attribute
+	 * @param source The source name.
 	 *
 	 * @throws TskCoreException
 	 */
-	void addSourceModuleToArtifactAttribute(BlackboardAttribute attr, String moduleName) throws TskCoreException {
+	void addSourceToArtifactAttribute(BlackboardAttribute attr, String source) throws TskCoreException {
 		/*
 		 * WARNING: This is a temporary implementation that is not safe and
 		 * denormalizes the case datbase.
 		 *
-		 * TODO (JIRA-): Provide a dafe and normalized solutino to tracking the
-		 * source modules of artifact attributes.
+		 * TODO (JIRA-2294): Provide a safe and normalized solution to tracking
+		 * the sources of artifact attributes.
 		 */
-		if (null == moduleName || moduleName.isEmpty()) {
+		if (null == source || source.isEmpty()) {
 			throw new TskCoreException("Attempt to add null or empty source module name to artifact attribute");
 		}
 		CaseDbConnection connection = connections.getConnection();
@@ -2375,19 +2375,19 @@ public class SleuthkitCase {
 			updateStmt = connection.createStatement();
 			result = connection.executeQuery(queryStmt, query);
 			while (result.next()) {
-				String source = result.getString("source");
-				String sourceModules;
-				if (null != source && !source.isEmpty()) {
-					Set<String> modules = new HashSet<String>(Arrays.asList(source.split(",")));
-					if (!modules.contains(moduleName)) {
-						sourceModules = source + "," + moduleName;
+				String oldSources = result.getString("source");
+				String newSources;
+				if (null != oldSources && !oldSources.isEmpty()) {
+					Set<String> modules = new HashSet<String>(Arrays.asList(oldSources.split(",")));
+					if (!modules.contains(oldSources)) {
+						newSources = oldSources + "," + oldSources;
 					} else {
-						sourceModules = source;
+						newSources = oldSources;
 					}
 				} else {
-					sourceModules = moduleName;
+					newSources = oldSources;
 				}
-				String update = "UPDATE blackboard_attributes SET source = '" + sourceModules + "' WHERE"
+				String update = "UPDATE blackboard_attributes SET source = '" + newSources + "' WHERE"
 						+ " artifact_id = " + attr.getArtifactID()
 						+ " AND attribute_type_id = " + attr.getAttributeType().getTypeID()
 						+ " AND value_type = " + attr.getAttributeType().getValueType().getType()
