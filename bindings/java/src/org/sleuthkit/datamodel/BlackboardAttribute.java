@@ -21,11 +21,9 @@ package org.sleuthkit.datamodel;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.ResourceBundle;
-import java.util.Set;
 
 /**
  * Represents an attribute of an artifact posted to the blackboard. Instances
@@ -801,48 +799,6 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * Constructs an artifact attribute. To be used when creating an attribute
-	 * based on a query of the blackboard _attributes table in the case
-	 * database.
-	 *
-	 * @param artifactID      The artifact id for this attribute
-	 * @param attributeTypeID The attribute type id.
-	 * @param source          The source of this attribute.
-	 * @param context         Contextual information about this attribute.
-	 * @param valueType       The attribute value type.
-	 * @param valueInt        The value from the the value_int32 column.
-	 * @param valueLong       The value from the the value_int64 column.
-	 * @param valueDouble     The value from the the value_double column.
-	 * @param valueString     The value from the the value_text column.
-	 * @param valueBytes      The value from the the value_byte column.
-	 * @param sleuthkitCase   A reference to the SleuthkitCase object
-	 *                        representing the case database.
-	 */
-	BlackboardAttribute(long artifactID, BlackboardAttribute.Type attributeType, String source, String context,
-			int valueInt, long valueLong, double valueDouble, String valueString, byte[] valueBytes,
-			SleuthkitCase sleuthkitCase) {
-
-		this.artifactID = artifactID;
-		this.attributeType = attributeType;
-		this.sources = replaceNulls(source);
-		this.context = replaceNulls(context);
-		this.valueInt = valueInt;
-		this.valueLong = valueLong;
-		this.valueDouble = valueDouble;
-		if (valueString == null) {
-			this.valueString = "";
-		} else {
-			this.valueString = replaceNulls(valueString);
-		}
-		if (valueBytes == null) {
-			this.valueBytes = new byte[0];
-		} else {
-			this.valueBytes = valueBytes;
-		}
-		this.sleuthkitCase = sleuthkitCase;
-	}
-
-	/**
 	 * Constructs a standard attribute with an integer value. The attribute
 	 * should be added to an appropriate artifact.
 	 *
@@ -1312,6 +1268,48 @@ public class BlackboardAttribute {
 		return "";
 	}
 
+	/**
+	 * Constructs an artifact attribute. To be used when creating an attribute
+	 * based on a query of the blackboard _attributes table in the case
+	 * database.
+	 *
+	 * @param artifactID      The artifact id for this attribute
+	 * @param attributeTypeID The attribute type id.
+	 * @param source          The source of this attribute.
+	 * @param context         Contextual information about this attribute.
+	 * @param valueType       The attribute value type.
+	 * @param valueInt        The value from the the value_int32 column.
+	 * @param valueLong       The value from the the value_int64 column.
+	 * @param valueDouble     The value from the the value_double column.
+	 * @param valueString     The value from the the value_text column.
+	 * @param valueBytes      The value from the the value_byte column.
+	 * @param sleuthkitCase   A reference to the SleuthkitCase object
+	 *                        representing the case database.
+	 */
+	BlackboardAttribute(long artifactID, BlackboardAttribute.Type attributeType, String source, String context,
+			int valueInt, long valueLong, double valueDouble, String valueString, byte[] valueBytes,
+			SleuthkitCase sleuthkitCase) {
+
+		this.artifactID = artifactID;
+		this.attributeType = attributeType;
+		this.sources = replaceNulls(source);
+		this.context = replaceNulls(context);
+		this.valueInt = valueInt;
+		this.valueLong = valueLong;
+		this.valueDouble = valueDouble;
+		if (valueString == null) {
+			this.valueString = "";
+		} else {
+			this.valueString = replaceNulls(valueString);
+		}
+		if (valueBytes == null) {
+			this.valueBytes = new byte[0];
+		} else {
+			this.valueBytes = valueBytes;
+		}
+		this.sleuthkitCase = sleuthkitCase;
+	}
+	
 	/**
 	 * Sets the reference to the SleuthkitCase object that represents the case
 	 * database.
