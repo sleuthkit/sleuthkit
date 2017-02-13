@@ -293,7 +293,9 @@ fatfs_utf16_inode_str_2_utf8(FATFS_INFO *a_fatfs, UTF16 *a_src, size_t a_src_len
         return TSKsourceIllegal; 
     }
 
-    conv_result = tsk_UTF16toUTF8(fs->endian, (const UTF16**)&a_src, (UTF16*)&a_src[a_src_len], &a_dest, (UTF8*)&a_dest[a_dest_len], TSKlenientConversion);
+    conv_result = tsk_UTF16toUTF8(fs->endian,
+                                  (const UTF16**)&a_src, (UTF16*) ((uintptr_t) a_src + a_src_len),
+                                  &a_dest, (UTF8*) ((uintptr_t) a_dest + a_dest_len), TSKlenientConversion);
     if (conv_result == TSKconversionOK) {
         /* Make sure the result is NULL-terminated. */
         if ((uintptr_t) a_dest > (uintptr_t)a_dest + sizeof(a_dest)) {
