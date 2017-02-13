@@ -202,7 +202,6 @@ vhdi_open(int a_num_img,
     }
     // Check the file signature before we call the library open
 #if defined( TSK_WIN32 )
-    tsk_fprintf(stderr, "Trying to open file: %s\n", vhdi_info->img_info.images[0]);
     if( libvhdi_check_file_signature_wide((const wchar_t *) vhdi_info->img_info.images[0], &vhdi_error ) != 1 )
 #else
     if( libvhdi_check_file_signature((const char *) vhdi_info->images[0], &vhdi_error) != 1)
@@ -216,7 +215,6 @@ vhdi_open(int a_num_img,
             ": Error checking file signature for image (%s)", a_images[0],
             error_string);
 
-        tsk_fprintf(stderr, "VHD error string: %s\n", error_string); // temp temp
         libvhdi_error_free(&vhdi_error);
 
         tsk_img_free(vhdi_info);
