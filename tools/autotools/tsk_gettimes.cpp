@@ -226,7 +226,6 @@ main(int argc, char **argv1)
         // we already logged the errors
         exit(1);
     }
-    tskGetTimes.closeImage();
     
     exit(0);
 }

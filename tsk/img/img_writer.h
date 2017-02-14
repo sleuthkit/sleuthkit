@@ -20,7 +20,6 @@
 extern "C" {
 #endif
 	TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO* img_info, const TSK_TCHAR * outputPath);
-    
 
 	enum IMG_WRITER_BLOCK_STATUS_ENUM {
 		IMG_WRITER_BLOCK_STATUS_UNALLOC = 0,
@@ -59,8 +58,6 @@ extern "C" {
         TSK_RETVAL_ENUM(*close)(TSK_IMG_WRITER* img_writer);
         TSK_RETVAL_ENUM(*finish_image)(TSK_IMG_WRITER* img_writer);
     };
-
-    TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer); // TEMP
 
 #ifdef __cplusplus
 }

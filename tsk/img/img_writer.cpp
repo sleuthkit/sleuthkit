@@ -464,11 +464,10 @@ static TSK_RETVAL_ENUM tsk_img_writer_close(TSK_IMG_WRITER* img_writer) {
 }
 
 /*
- * Will go through the image and manually read and copy any missing sectors
- * @param writer Image writer object
+ * Will go through the image and manually read and copy any incomplete blocks
+ * @param img_writer Image writer object
  */
-// CHANGE BACK TO STATIC!!!!!
-TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
+static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
 #ifndef TSK_WIN32
     return TSK_ERR;
 #else
@@ -488,7 +487,11 @@ TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
     char * buffer = (char*)tsk_malloc(TSK_IMG_INFO_CACHE_LEN * sizeof(char));
     for (uint32_t i = 0; i < img_writer->totalBlocks; i++) {
         if (img_writer->blockStatus[i] != IMG_WRITER_BLOCK_STATUS_FINISHED) {
-            // First attempt - just read in every 65k block
+
+            /* Read in the entire block in cache-length chunks.
+             * We don't use the sector bitmap here because there is a chance the memory will get freed by
+             * another thread running tsk_img_writer_add.
+            */
             startOfBlock = i * img_writer->blockSize;
             for(offset = startOfBlock; offset < startOfBlock + img_writer->blockSize;offset += TSK_IMG_INFO_CACHE_LEN){
                 raw_info->img_info.read(img_writer->img_info, offset, buffer, TSK_IMG_INFO_CACHE_LEN);

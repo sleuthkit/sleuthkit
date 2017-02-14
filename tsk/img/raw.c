@@ -358,8 +358,6 @@ raw_close(TSK_IMG_INFO * img_info)
 
 #ifdef TSK_WIN32
     if (raw_info->img_writer != NULL) {
-        tsk_fprintf(stderr, "Calling finish from raw_close\n");
-        raw_info->img_writer->finish_image(raw_info->img_writer);
         raw_info->img_writer->close(raw_info->img_writer);
         free(raw_info->img_writer);
         raw_info->img_writer = NULL;
