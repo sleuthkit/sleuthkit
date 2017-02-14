@@ -19,7 +19,7 @@
 
 #include <map>
 
-#include "sqlite3.h"
+#include <sqlite3.h>
 #include "tsk_db.h"
 
 using std::map;

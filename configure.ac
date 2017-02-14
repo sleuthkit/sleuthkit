@@ -125,6 +125,7 @@ AC_CHECK_HEADERS(vector, , , AC_MSG_ERROR([missing STL vector class header]))
 
 dnl needed for sqllite
 AC_CHECK_LIB(dl, dlopen) 
+AC_CHECK_LIB(sqlite3, sqlite3_open)
 dnl sqlite requires pthread libraries - this was copied from its configure.ac
 dnl AC_SEARCH_LIBS(pthread_create, pthread)
 dnl AC_SEARCH_LIBS(dlopen, dl)
