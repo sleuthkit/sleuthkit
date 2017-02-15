@@ -464,7 +464,8 @@ static TSK_RETVAL_ENUM tsk_img_writer_close(TSK_IMG_WRITER* img_writer) {
 }
 
 /*
- * Will go through the image and manually read and copy any incomplete blocks
+ * Will go through the image and manually read any incomplete blocks to
+ * complete the image.
  * @param img_writer Image writer object
  */
 static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
@@ -488,7 +489,8 @@ static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
     for (uint32_t i = 0; i < img_writer->totalBlocks; i++) {
         if (img_writer->blockStatus[i] != IMG_WRITER_BLOCK_STATUS_FINISHED) {
 
-            /* Read in the entire block in cache-length chunks.
+            /* Read in the entire block in cache-length chunks. Each read will lead to a call to
+             * tsk_img_writer_add with the new data.
              * We don't use the sector bitmap here because there is a chance the memory will get freed by
              * another thread running tsk_img_writer_add.
             */
