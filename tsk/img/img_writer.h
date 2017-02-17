@@ -30,7 +30,7 @@ extern "C" {
 
     typedef struct TSK_IMG_WRITER TSK_IMG_WRITER;
     struct TSK_IMG_WRITER {
-        TSK_IMG_INFO img_info;
+        TSK_IMG_INFO * img_info;
         int is_finished;
 
         TSK_TCHAR* fileName;

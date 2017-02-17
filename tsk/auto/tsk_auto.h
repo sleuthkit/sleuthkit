@@ -276,10 +276,6 @@ class TskAuto {
      * When called, will cause TskAuto to not continue to recurse into directories and volumes. 
      */
     void setStopProcessing(); 
-
-	/**
-	 * When called, will cause
-	*/
 };
 
 

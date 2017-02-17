@@ -1168,10 +1168,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
     }
 
     // Set up the TSK_IMG_INFO object
-    // openImageHandle gets called again in startAddImage but we need it to   MAYBE NOT!!!!
-    // be set up before enableImageWriter
     TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
-    //tskAuto->openImageHandle(img_info);
 
     // Set up image writer, if the output path is present
     if (env->GetStringLength(imageWriterPathJ) > 0) {
@@ -2161,3 +2158,4 @@ JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupp
 
     return (jboolean) result;
 }
+

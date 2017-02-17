@@ -53,6 +53,8 @@ void writeLogFile(TSK_IMG_WRITER * writer, const char * message) {
     time_t ltime; /* calendar time */
     ltime = time(NULL); /* get current cal time */
     sprintf(logBuffer, "%s : ", asctime(localtime(&ltime)));
+    logBuffer[24] = ' ';
+    logBuffer[25] = ' ';
     strcat(logBuffer, message);
 
     DWORD bytesWritten;
@@ -368,6 +370,10 @@ static TSK_RETVAL_ENUM tsk_img_writer_add(TSK_IMG_WRITER* writer, TSK_OFF_T addr
 #ifndef TSK_WIN32
     return TSK_ERR;
 #else
+    if (writer->is_finished) {
+        return TSK_OK;
+    }
+
     if (tsk_verbose) {
         tsk_fprintf(stderr,
             "tsk_img_writer_add: Adding data at offset: %"
@@ -458,8 +464,9 @@ static TSK_RETVAL_ENUM tsk_img_writer_close(TSK_IMG_WRITER* img_writer) {
 }
 
 /*
- * NOT IMPLENTED YET - Will go through the image and manually read and copy any missing sectors
- * @param writer Image writer object
+ * Will go through the image and manually read any incomplete blocks to
+ * complete the image.
+ * @param img_writer Image writer object
  */
 static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
 #ifndef TSK_WIN32
@@ -469,6 +476,31 @@ static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
         tsk_fprintf(stderr,
             "tsk_img_writer_finish_image: Finishing image");
     }
+
+    if (img_writer->is_finished == 1) {
+        return TSK_OK;
+    }
+
+    IMG_RAW_INFO * raw_info = (IMG_RAW_INFO *)(img_writer->img_info);
+    TSK_OFF_T offset;
+    TSK_OFF_T startOfBlock;
+
+    char * buffer = (char*)tsk_malloc(TSK_IMG_INFO_CACHE_LEN * sizeof(char));
+    for (uint32_t i = 0; i < img_writer->totalBlocks; i++) {
+        if (img_writer->blockStatus[i] != IMG_WRITER_BLOCK_STATUS_FINISHED) {
+
+            /* Read in the entire block in cache-length chunks. Each read will lead to a call to
+             * tsk_img_writer_add with the new data.
+             * We don't use the sector bitmap here because there is a chance the memory will get freed by
+             * another thread running tsk_img_writer_add.
+            */
+            startOfBlock = i * img_writer->blockSize;
+            for(offset = startOfBlock; offset < startOfBlock + img_writer->blockSize;offset += TSK_IMG_INFO_CACHE_LEN){
+                raw_info->img_info.read(img_writer->img_info, offset, buffer, TSK_IMG_INFO_CACHE_LEN);
+            }
+        }
+    }
+
     img_writer->is_finished = 1;
     return TSK_OK;
 #endif
@@ -654,6 +686,7 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR *
     TSK_IMG_WRITER* writer = raw_info->img_writer;
     writer->is_finished = 0;
     writer->footer = NULL;
+    writer->img_info = img_info;
     writer->add = tsk_img_writer_add;
     writer->close = tsk_img_writer_close;
     writer->finish_image = tsk_img_writer_finish_image;
