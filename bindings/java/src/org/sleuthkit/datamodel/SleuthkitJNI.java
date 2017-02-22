@@ -975,7 +975,36 @@ public class SleuthkitJNI {
 		}
 		return timezoneShortForm;
 	}
+	
+	/**
+	 * Fills in any gaps in the image created by image writer.
+	 *
+	 * @param imgHandle
+	 *
+	 * @throws TskCoreException exception thrown if critical error occurs within
+	 *                          TSK
+	 */
+	public static void finishImageWriter(long imgHandle) throws TskCoreException {
+		finishImageWriterNat(imgHandle);
+	}
+	
+	/**
+	 * Get the current progress of the finish image process (0-100)
+	 * @param imgHandle 
+	 * @return Percentage of blocks completed (0-100)
+	 */
+	public static int getFinishImageProgress(long imgHandle){
+		return getFinishImageProgressNat(imgHandle);
+	}
 
+	/**
+	 * Cancel the finish image process
+	 * @param imgHandle
+	 */
+	public static void cancelFinishImage(long imgHandle){
+		cancelFinishImageNat(imgHandle);
+	}
+	
 	/**
 	 * Get size of a device (physical, logical device, image) pointed to by
 	 * devPath
@@ -1094,5 +1123,11 @@ public class SleuthkitJNI {
 	private static native String getCurDirNat(long process);
 	
 	private static native boolean isImageSupportedNat(String imagePath);
+	
+	private static native void finishImageWriterNat(long a_img_info);
+	
+	private static native int getFinishImageProgressNat(long a_img_info);
+	
+	private static native void cancelFinishImageNat(long a_img_info);
 
 }

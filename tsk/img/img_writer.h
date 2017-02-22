@@ -32,6 +32,8 @@ extern "C" {
     struct TSK_IMG_WRITER {
         TSK_IMG_INFO * img_info;
         int is_finished;
+        int finishProgress;
+        int cancelFinish;
 
         TSK_TCHAR* fileName;
         HANDLE outputFileHandle;

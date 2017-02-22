@@ -407,6 +407,30 @@ JNIEXPORT jstring JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getCurDirNat
 JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupportedNat
   (JNIEnv *, jclass, jstring);
 
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    finishImageWriterNat
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_finishImageWriterNat
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    getFinishImageProgressNat
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getFinishImageProgressNat
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    cancelFinishImageNat
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_cancelFinishImageNat
+  (JNIEnv *, jclass, jlong);
+
 #ifdef __cplusplus
 }
 #endif
