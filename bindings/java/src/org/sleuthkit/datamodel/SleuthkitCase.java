@@ -2278,7 +2278,7 @@ public class SleuthkitCase {
 			case STRING:
 				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_STRING_ATTRIBUTE);
 				statement.clearParameters();
-				statement.setString(7, escapeSingleQuotes(attr.getValueString()));
+				statement.setString(7, attr.getValueString());
 				break;
 			case BYTE:
 				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_BYTE_ATTRIBUTE);
@@ -2310,7 +2310,7 @@ public class SleuthkitCase {
 		}
 		statement.setLong(1, attr.getArtifactID());
 		statement.setInt(2, artifactTypeId);
-		statement.setString(3, escapeSingleQuotes(attr.getSourcesCSV()));
+		statement.setString(3, attr.getSourcesCSV());
 		statement.setString(4, "");
 		statement.setInt(5, attr.getAttributeType().getTypeID());
 		statement.setLong(6, attr.getAttributeType().getValueType().getType());
@@ -2319,7 +2319,7 @@ public class SleuthkitCase {
 
 	/**
 	 * Adds a source name to the source column of one or more rows in the
-	 * blackboard attrbutes table. The source name will be added to a CSV list
+	 * blackboard attributes table. The source name will be added to a CSV list
 	 * in any rows that exactly match the attribute's artifact_id and value.
 	 *
 	 * @param attr   The artifact attribute
