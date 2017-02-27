@@ -18,6 +18,9 @@
 #include "tsk_img_i.h"
 #include "img_writer.h"
 #include "raw.h"
+#include <unistd.h> // TEMP TEMP TEMP
+#include <chrono> // TEMP
+#include <thread> // TEMP 
 #include <time.h>
 
 #ifdef TSK_WIN32
@@ -31,64 +34,6 @@
 #define VHD_DISK_HEADER_LENGTH 0x400
 
 TSK_RETVAL_ENUM writeFooter(TSK_IMG_WRITER* writer);
-
-// TEMP LOGGING TEMP
-// This will be removed once finishImage is complete
-char messageBuffer[0x2000];
-char logBuffer[0x2000];
-bool openLogFileFailed = false;
-void openLogFile(TSK_IMG_WRITER * writer);
-void writeLogFile(TSK_IMG_WRITER * writer, const char * message) {
-    if (openLogFileFailed) {
-        return;
-    }
-    if (writer->logFileHandle == 0) {
-        // Open it up
-        openLogFile(writer);
-    }
-    if (openLogFileFailed) {
-        return;
-    }
-
-    time_t ltime; /* calendar time */
-    ltime = time(NULL); /* get current cal time */
-    sprintf(logBuffer, "%s : ", asctime(localtime(&ltime)));
-    logBuffer[24] = ' ';
-    logBuffer[25] = ' ';
-    strcat(logBuffer, message);
-
-    DWORD bytesWritten;
-    if (FALSE == WriteFile(writer->logFileHandle, logBuffer,
-        strlen(logBuffer), &bytesWritten, NULL)) {
-        int lastError = GetLastError();
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_WRITE);
-        tsk_error_set_errstr("writeLogFile: error writing log",
-            lastError);
-    }
-}
-
-void openLogFile(TSK_IMG_WRITER * writer) {
-    writer->logFileHandle = CreateFile(L"C:\\cygwin\\home\\apriestman\\Work\\autopsy\\vhdTesting\\tskOutput\\tskLog.txt", FILE_APPEND_DATA,
-        FILE_SHARE_READ, NULL, OPEN_ALWAYS, 0,
-        NULL);
-    if (writer->logFileHandle == INVALID_HANDLE_VALUE) {
-        tsk_fprintf(stderr, "Error opening VHD!!!"); // temp
-        fflush(stderr);
-        int lastError = (int)GetLastError();
-        writer->outputFileHandle = 0; /* so we don't close it next time */
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_OPEN);
-        tsk_error_set_errstr("openLogFile: file  %d", lastError);
-        openLogFileFailed = true;
-        return;
-    }
-    openLogFileFailed = false;
-    writeLogFile(writer, "Opened log file\n");
-
-}
-// END TEMP LOGGING
-
 
 /*
  * Considering the buffer to be an array of bits, get the entry at
@@ -481,12 +426,24 @@ static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
         return TSK_OK;
     }
 
+    if (img_writer->cancelFinish) {
+        return TSK_ERR;
+    }
+
     IMG_RAW_INFO * raw_info = (IMG_RAW_INFO *)(img_writer->img_info);
     TSK_OFF_T offset;
     TSK_OFF_T startOfBlock;
 
     char * buffer = (char*)tsk_malloc(TSK_IMG_INFO_CACHE_LEN * sizeof(char));
-    for (uint32_t i = 0; i < img_writer->totalBlocks; i++) {
+    for (TSK_OFF_T i = 0; i < img_writer->totalBlocks; i++) {
+        if (img_writer->cancelFinish) {
+            return TSK_ERR;
+        }
+
+        /* Simple progress indicator - current block / totalBlocks (as an integer)
+         */
+        img_writer->finishProgress = (i * 100) / img_writer->totalBlocks;
+
         if (img_writer->blockStatus[i] != IMG_WRITER_BLOCK_STATUS_FINISHED) {
 
             /* Read in the entire block in cache-length chunks. Each read will lead to a call to
@@ -496,6 +453,9 @@ static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
             */
             startOfBlock = i * img_writer->blockSize;
             for(offset = startOfBlock; offset < startOfBlock + img_writer->blockSize;offset += TSK_IMG_INFO_CACHE_LEN){
+                if (img_writer->cancelFinish) {
+                    return TSK_ERR;
+                }
                 raw_info->img_info.read(img_writer->img_info, offset, buffer, TSK_IMG_INFO_CACHE_LEN);
             }
         }
@@ -685,6 +645,8 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR *
         return TSK_ERR;
     TSK_IMG_WRITER* writer = raw_info->img_writer;
     writer->is_finished = 0;
+    writer->finishProgress = 0;
+    writer->cancelFinish = 0;
     writer->footer = NULL;
     writer->img_info = img_info;
     writer->add = tsk_img_writer_add;
