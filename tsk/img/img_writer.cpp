@@ -435,7 +435,7 @@ static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
     TSK_OFF_T startOfBlock;
 
     char * buffer = (char*)tsk_malloc(TSK_IMG_INFO_CACHE_LEN * sizeof(char));
-    for (uint32_t i = 0; i < img_writer->totalBlocks; i++) {
+    for (TSK_OFF_T i = 0; i < img_writer->totalBlocks; i++) {
         if (img_writer->cancelFinish) {
             return TSK_ERR;
         }
