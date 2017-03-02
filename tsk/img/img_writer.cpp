@@ -442,7 +442,7 @@ static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
 
         /* Simple progress indicator - current block / totalBlocks (as an integer)
          */
-        img_writer->finishProgress = (i * 100) / img_writer->totalBlocks;
+        img_writer->finishProgress = (int)((i * 100) / img_writer->totalBlocks);
 
         if (img_writer->blockStatus[i] != IMG_WRITER_BLOCK_STATUS_FINISHED) {
 
@@ -602,7 +602,6 @@ static TSK_RETVAL_ENUM writeDynamicDiskHeader(TSK_IMG_WRITER * writer) {
     if (FALSE == WriteFile(writer->outputFileHandle, diskHeader, VHD_DISK_HEADER_LENGTH, &bytesWritten, NULL)) {
         int lastError = GetLastError();
         tsk_error_reset();
-        tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_WRITE);
         tsk_error_set_errstr("writeFooter: error writing VHD header",
             lastError);
@@ -630,6 +629,9 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR *
     /* Everything will break if the buffers coming in are larger than the block 
        size (i.e., they could span three blocks instead of just two)*/
     if (TSK_IMG_INFO_CACHE_LEN > VHD_DEFAULT_BLOCK_SIZE) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_OPEN);
+        tsk_error_set_errstr("tsk_img_writer_create: tsk cache length is larger than the block size");
         return TSK_ERR;
     }
 
@@ -637,6 +639,9 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR *
 
     /* This should not be run on split images*/
     if (img_info->num_img != 1) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_OPEN);
+        tsk_error_set_errstr("tsk_img_writer_create: image writer can not be used on split images");
         return TSK_ERR;
     }
 
@@ -659,6 +664,9 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR *
     /* Calculation time */
     writer->imageSize = raw_info->img_info.size;
     if (writer->imageSize > VHD_MAX_IMAGE_SIZE) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_OPEN);
+        tsk_error_set_errstr("tsk_img_writer_create: image file is too large to copy");
         return TSK_ERR;
     }
     writer->blockSize = VHD_DEFAULT_BLOCK_SIZE;
@@ -691,8 +699,7 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR *
 
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
-        tsk_error_set_errstr("tsk_img_writer_create: file \"%" PRIttocTSK
-            "\" - %d", outputFileName, lastError);
+        tsk_error_set_errstr("tsk_img_writer_create: error creating file \"%" PRIttocTSK "\"", outputFileName);
         return TSK_ERR;
     }
 

@@ -531,7 +531,10 @@ TskAutoDb::startAddImage(TSK_IMG_INFO * img_info, const char* deviceId)
     }
 
     if (m_imageWriterEnabled) {
-        tsk_img_writer_create(m_img_info, m_imageWriterPath);
+        if (tsk_img_writer_create(m_img_info, m_imageWriterPath)) {
+            registerError();
+            return 1;
+        }
     }
 
     if (m_addFileSystems) {
