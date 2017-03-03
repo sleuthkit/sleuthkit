@@ -208,24 +208,12 @@ public abstract class FsContent extends AbstractFile {
 	@Override
 	@SuppressWarnings("deprecation")
 	protected int readInt(byte[] buf, long offset, long len) throws TskCoreException {
-		try {
-			if (offset == 0 && size == 0) {
-				//special case for 0-size file
-				return 0;
-			}
-			loadFileHandle();
-			return SleuthkitJNI.readFile(fileHandle, buf, offset, len);
-		} catch (TskCoreException ex) {
-			Content dataSource = getDataSource();
-			if ((dataSource != null) && (dataSource instanceof Image)) {
-				Image image = (Image) dataSource;
-				if (!image.imageFileExists()) {
-					tskCase.submitError(SleuthkitCase.ErrorObserver.Context.IMAGE_READ_ERROR.getContextString(),
-							bundle.getString("FsContent.readInt.err.msg.text"));
-				}
-			}
-			throw ex;
+		if (offset == 0 && size == 0) {
+			//special case for 0-size file
+			return 0;
 		}
+		loadFileHandle();
+		return SleuthkitJNI.readFile(fileHandle, buf, offset, len);
 	}
 
 	@Override
