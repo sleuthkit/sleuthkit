@@ -8408,5 +8408,23 @@ public class SleuthkitCase {
 		return addLocalFile(fileName, localPath, size, ctime, crtime, atime, mtime,
 				isFile, TskData.EncodingType.NONE, parent);
 	}
+	
+	/**
+	 * Start process of adding a image to the case. Adding an image is a
+	 * multi-step process and this returns an object that allows it to happen.
+	 *
+	 * @param timezone        TZ time zone string to use for ingest of image.
+	 * @param addUnallocSpace Set to true to create virtual files for
+	 *                        unallocated space in the image.
+	 * @param noFatFsOrphans  Set to true to skip processing orphan files of FAT
+	 *                        file systems.
+	 *
+	 * @return Object that encapsulates control of adding an image via the
+	 *         SleuthKit native code layer
+	 * @Deprecated Use the newer version with explicit image writer path parameter
+	 */
+	public AddImageProcess makeAddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) {
+		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, "");
+	}
 
 }

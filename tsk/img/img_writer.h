@@ -19,7 +19,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-	TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO* img_info, const TSK_TCHAR * outputPath);
+	TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO* img_info, const TSK_TCHAR * outputPath);    
 
 	enum IMG_WRITER_BLOCK_STATUS_ENUM {
 		IMG_WRITER_BLOCK_STATUS_UNALLOC = 0,
@@ -32,6 +32,8 @@ extern "C" {
     struct TSK_IMG_WRITER {
         TSK_IMG_INFO * img_info;
         int is_finished;
+        int finishProgress;
+        int cancelFinish;
 
         TSK_TCHAR* fileName;
         HANDLE outputFileHandle;
