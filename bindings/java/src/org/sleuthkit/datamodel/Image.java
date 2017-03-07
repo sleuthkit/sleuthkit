@@ -244,9 +244,8 @@ public class Image extends AbstractContent {
 	 */
 	public Boolean imageFileExists() {
 		if (paths.length > 0) {
-			return true; // TEMP - Hack until we fix this for local disks
-			//File imageFile = new File(paths[0]);
-			//return imageFile.exists();
+			File imageFile = new File(paths[0]);
+			return imageFile.exists();
 		}
 
 		return false;
