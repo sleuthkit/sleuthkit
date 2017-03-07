@@ -456,7 +456,8 @@ static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
                 if (img_writer->cancelFinish) {
                     return TSK_ERR;
                 }
-                raw_info->img_info.read(img_writer->img_info, offset, buffer, TSK_IMG_INFO_CACHE_LEN);
+                /* Using tsk_img_read here to make sure we get the lock */
+                tsk_img_read(img_writer->img_info, offset, buffer, TSK_IMG_INFO_CACHE_LEN);
             }
         }
     }
