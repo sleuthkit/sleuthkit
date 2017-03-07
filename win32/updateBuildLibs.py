@@ -119,8 +119,7 @@ def gitPull(libHome, repo, branch):
     call = ["git", "pull"]
     print("Pulling " + repo + "/" + branch)
     sys.stdout.flush()
-    ccwd = os.path.join("..", "..", repo)
-    ret = subprocess.call(call, stdout=sys.stdout, cwd=ccwd)
+    ret = subprocess.call(call, stdout=sys.stdout, cwd=libHome)
 
     if ret != 0:
         passed = False
