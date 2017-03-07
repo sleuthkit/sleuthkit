@@ -237,7 +237,8 @@ public class Image extends AbstractContent {
 	}
 
 	/**
-	 * Test if the image represented by this object exists on disk.
+	 * Test if the file that created this image exists on disk.
+	 * Does not work on local disks - will always return false
 	 *
 	 * @return True if the file still exists
 	 */
