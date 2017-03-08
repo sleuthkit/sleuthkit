@@ -237,15 +237,15 @@ public class Image extends AbstractContent {
 	}
 
 	/**
-	 * Test if the image represented by this object exists on disk.
+	 * Test if the file that created this image exists on disk.
+	 * Does not work on local disks - will always return false
 	 *
 	 * @return True if the file still exists
 	 */
 	public Boolean imageFileExists() {
 		if (paths.length > 0) {
-			return true; // TEMP - Hack until we fix this for local disks
-			//File imageFile = new File(paths[0]);
-			//return imageFile.exists();
+			File imageFile = new File(paths[0]);
+			return imageFile.exists();
 		}
 
 		return false;
