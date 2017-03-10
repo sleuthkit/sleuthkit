@@ -214,7 +214,6 @@ vhdi_open(int a_num_img,
         tsk_error_set_errstr("vhdi_open file: %" PRIttocTSK
             ": Error checking file signature for image (%s)", a_images[0],
             error_string);
-
         libvhdi_error_free(&vhdi_error);
 
         tsk_img_free(vhdi_info);
