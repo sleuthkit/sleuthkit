@@ -14,6 +14,8 @@
 #ifndef _RAW_H
 #define _RAW_H
 
+#include "img_writer.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -36,6 +38,7 @@ extern "C" {
     typedef struct {
         TSK_IMG_INFO img_info;
         uint8_t is_winobj;
+        TSK_IMG_WRITER *img_writer;
 
         // the following are protected by cache_lock in IMG_INFO
         TSK_OFF_T *max_off;

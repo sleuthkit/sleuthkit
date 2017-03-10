@@ -168,12 +168,14 @@ public class SleuthkitJNI {
 		 *                         unallocated space.
 		 * @param skipFatFsOrphans Pass true to skip processing of orphan files
 		 *                         for FAT file systems.
+		 * @param imageWriterPath  Path that a copy of the image should be written to.
+		 *                         Use empty string to disable image writing
 		 *
 		 * @return An object that can be used to exercise fine-grained control
 		 *         of the process of adding the image to the case database.
 		 */
-		AddImageProcess initAddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans) {
-			return new AddImageProcess(timeZone, addUnallocSpace, skipFatFsOrphans);
+		AddImageProcess initAddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans, String imageWriterPath) {
+			return new AddImageProcess(timeZone, addUnallocSpace, skipFatFsOrphans, imageWriterPath);
 		}
 
 		/**
@@ -185,6 +187,7 @@ public class SleuthkitJNI {
 			private final String timeZone;
 			private final boolean addUnallocSpace;
 			private final boolean skipFatFsOrphans;
+			private final String imageWriterPath;
 			private volatile long tskAutoDbPointer;
 
 			/**
@@ -196,11 +199,14 @@ public class SleuthkitJNI {
 			 *                         unallocated space.
 			 * @param skipFatFsOrphans Pass true to skip processing of orphan
 			 *                         files for FAT file systems.
+			 * @param imageWriterPath  Path that a copy of the image should be written to.
+			 *                         Use empty string to disable image writing
 			 */
-			private AddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans) {
+			private AddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans, String imageWriterPath) {
 				this.timeZone = timeZone;
 				this.addUnallocSpace = addUnallocSpace;
 				this.skipFatFsOrphans = skipFatFsOrphans;
+				this.imageWriterPath = imageWriterPath;
 				tskAutoDbPointer = 0;
 			}
 
@@ -234,7 +240,8 @@ public class SleuthkitJNI {
 				if (0 == tskAutoDbPointer) {
 					throw new TskCoreException("initAddImgNat returned a NULL TskAutoDb pointer");
 				}
-				runAddImgNat(tskAutoDbPointer, deviceId, imageHandle, timeZone);
+
+				runAddImgNat(tskAutoDbPointer, deviceId, imageHandle, timeZone, imageWriterPath);
 			}
 
 			/**
@@ -967,7 +974,36 @@ public class SleuthkitJNI {
 		}
 		return timezoneShortForm;
 	}
+	
+	/**
+	 * Fills in any gaps in the image created by image writer.
+	 *
+	 * @param imgHandle
+	 *
+	 * @throws TskCoreException exception thrown if critical error occurs within
+	 *                          TSK
+	 */
+	public static void finishImageWriter(long imgHandle) throws TskCoreException {
+		finishImageWriterNat(imgHandle);
+	}
+	
+	/**
+	 * Get the current progress of the finish image process (0-100)
+	 * @param imgHandle 
+	 * @return Percentage of blocks completed (0-100)
+	 */
+	public static int getFinishImageProgress(long imgHandle){
+		return getFinishImageProgressNat(imgHandle);
+	}
 
+	/**
+	 * Cancel the finish image process
+	 * @param imgHandle
+	 */
+	public static void cancelFinishImage(long imgHandle){
+		cancelFinishImageNat(imgHandle);
+	}
+	
 	/**
 	 * Get size of a device (physical, logical device, image) pointed to by
 	 * devPath
@@ -1043,7 +1079,7 @@ public class SleuthkitJNI {
 
 	private static native void runOpenAndAddImgNat(long process, String deviceId, String[] imgPath, int splits, String timezone) throws TskCoreException, TskDataException;
 	
-	private static native void runAddImgNat(long process, String deviceId, long a_img_info, String timeZone) throws TskCoreException, TskDataException;
+	private static native void runAddImgNat(long process, String deviceId, long a_img_info, String timeZone, String imageWriterPath) throws TskCoreException, TskDataException;
 
 	private static native void stopAddImgNat(long process) throws TskCoreException;
 
@@ -1086,5 +1122,11 @@ public class SleuthkitJNI {
 	private static native String getCurDirNat(long process);
 	
 	private static native boolean isImageSupportedNat(String imagePath);
+	
+	private static native void finishImageWriterNat(long a_img_info);
+	
+	private static native int getFinishImageProgressNat(long a_img_info);
+	
+	private static native void cancelFinishImageNat(long a_img_info);
 
 }

@@ -15,6 +15,7 @@
 
 #include "tsk_auto_i.h"
 #include "tsk/fs/tsk_fatxxfs.h"
+#include "tsk/img/img_writer.h"
 
 
 // @@@ Follow through some error paths for sanity check and update docs somewhere to relfect the new scheme
@@ -109,8 +110,9 @@ uint8_t
 
     m_internalOpen = true;
     m_img_info = tsk_img_open_utf8(a_numImg, a_images, a_imgType, a_sSize);
-    if (m_img_info)
-        return 0;
+	if (m_img_info) {
+		return 0;
+	}
     else
         return 1;
 }
@@ -599,6 +601,55 @@ void TskAuto::setStopProcessing() {
 
 bool TskAuto::getStopProcessing() const {
     return m_stopAllProcessing;
+}
+
+
+TSK_RETVAL_ENUM
+TskAuto::enableImageWriter(const char * imagePath) {
+#ifdef TSK_WIN32
+	m_imageWriterEnabled = false;
+
+	size_t ilen;
+	UTF16 *utf16;
+	UTF8 *utf8;
+	TSKConversionResult retval2;
+
+	// we allocate the buffer with the same number of chars as the UTF-8 length
+	ilen = strlen(imagePath);
+	if ((m_imageWriterPath =
+		(wchar_t *)tsk_malloc((ilen + 1) * sizeof(wchar_t))) == NULL) {
+		free(m_imageWriterPath);
+		return TSK_ERR;
+	}
+
+	utf8 = (UTF8 *)imagePath;
+	utf16 = (UTF16 *)m_imageWriterPath;
+
+	retval2 =
+		tsk_UTF8toUTF16((const UTF8 **)&utf8, &utf8[ilen],
+			&utf16, &utf16[ilen], TSKlenientConversion);
+	if (retval2 != TSKconversionOK) {
+		tsk_error_set_errno(TSK_ERR_IMG_CONVERT);
+		tsk_error_set_errstr
+		("enableImageWriter: Error converting output path %s %d",
+			imagePath, retval2);
+		free(m_imageWriterPath);
+		return TSK_ERR;
+	}
+	*utf16 = '\0';
+
+	// At this point the path conversion was successful, so image writer is ready to go
+	m_imageWriterEnabled = true;
+
+#else
+	m_imageWriterEnabled = false;
+#endif
+	return TSK_OK;
+}
+
+void
+TskAuto::disableImageWriter() {
+	m_imageWriterEnabled = false;
 }
 
 uint8_t TskAuto::registerError() {

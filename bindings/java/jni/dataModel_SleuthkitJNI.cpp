@@ -12,6 +12,8 @@
 #include "tsk/auto/tsk_case_db.h"
 #include "tsk/hashdb/tsk_hash_info.h"
 #include "tsk/auto/tsk_is_image_supported.h"
+#include "tsk/img/img_writer.h"
+#include "tsk/img/raw.h"
 #include "jni.h"
 #include "dataModel_SleuthkitJNI.h"
 #include <locale.h>
@@ -1140,7 +1142,7 @@ JNIEXPORT void JNICALL
 */
 JNIEXPORT void JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
-    jclass obj, jlong process, jstring deviceId, jlong a_img_info, jstring timeZone) {
+    jclass obj, jlong process, jstring deviceId, jlong a_img_info, jstring timeZone, jstring imageWriterPathJ) {
     
     TskAutoDb *tskAuto = ((TskAutoDb *)process);
     if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
@@ -1168,6 +1170,21 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
 
     // Set up the TSK_IMG_INFO object
     TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
+
+    // Set up image writer, if the output path is present
+    if (env->GetStringLength(imageWriterPathJ) > 0) {
+        const char *imageWriterPath = env->GetStringUTFChars(imageWriterPathJ, &isCopy);
+        if (TSK_OK != tskAuto->enableImageWriter(imageWriterPath)) {
+            env->ReleaseStringUTFChars(imageWriterPathJ, imageWriterPath);
+            setThrowTskCoreError(env,
+                "runAddImgNat: error enabling image writer.");
+            return;
+        }
+        env->ReleaseStringUTFChars(imageWriterPathJ, imageWriterPath);
+    }
+    else {
+        tskAuto->disableImageWriter();
+    }
 
     // Add the data source.
     uint8_t ret = 0;
@@ -2141,4 +2158,54 @@ JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupp
     free(imagePaths);
 
     return (jboolean) result;
+}
+
+
+/*
+ * Finish the image being created by image writer.
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param a_img_info the image info pointer
+ */
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_finishImageWriterNat
+(JNIEnv * env, jclass obj, jlong a_img_info) {
+    // Set up the TSK_IMG_INFO object
+    TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
+    IMG_RAW_INFO *raw_info = (IMG_RAW_INFO*)img_info;
+
+    if (raw_info->img_writer != NULL) {
+        raw_info->img_writer->finish_image(raw_info->img_writer);
+    }
+
+}
+
+/*
+ * Get the progess of the finishImage process as an integer from 0 to 100
+ */
+JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getFinishImageProgressNat
+(JNIEnv * env, jclass obj, jlong a_img_info) {
+    // Set up the TSK_IMG_INFO object
+    TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
+    IMG_RAW_INFO *raw_info = (IMG_RAW_INFO*)img_info;
+
+    if (raw_info->img_writer != NULL) {
+        return (raw_info->img_writer->finishProgress);
+    }
+    return 0;
+
+}
+
+/*
+* Cancel the finishImage process
+*/
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_cancelFinishImageNat
+(JNIEnv * env, jclass obj, jlong a_img_info) {
+    // Set up the TSK_IMG_INFO object
+    TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
+    IMG_RAW_INFO *raw_info = (IMG_RAW_INFO*)img_info;
+
+    if (raw_info->img_writer != NULL) {
+        raw_info->img_writer->cancelFinish = 1;
+    }
+    return ;
 }

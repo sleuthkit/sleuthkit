@@ -150,6 +150,11 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
             return -1;
         }
         cnt = (ssize_t) nread;
+
+        if (raw_info->img_writer != NULL) {
+            /* img_writer is not used with split images, so rel_offset is just the normal offset*/
+            raw_info->img_writer->add(raw_info->img_writer, rel_offset, buf, cnt);
+        }
     }
 #else
     if (cimg->seek_pos != rel_offset) {
@@ -350,6 +355,15 @@ static void
 raw_close(TSK_IMG_INFO * img_info)
 {
     IMG_RAW_INFO *raw_info = (IMG_RAW_INFO *) img_info;
+
+#ifdef TSK_WIN32
+    if (raw_info->img_writer != NULL) {
+        raw_info->img_writer->close(raw_info->img_writer);
+        free(raw_info->img_writer);
+        raw_info->img_writer = NULL;
+    }
+#endif
+
     int i;
     for (i = 0; i < SPLIT_CACHE; i++) {
         if (raw_info->cache[i].fd != 0)
