@@ -397,13 +397,6 @@ static TSK_RETVAL_ENUM tsk_img_writer_close(TSK_IMG_WRITER* img_writer) {
         img_writer->fileName = NULL;
     }
 
-
-    // TEMP TEMP TEMP
-    if (img_writer->logFileHandle != 0) {
-        CloseHandle(img_writer->logFileHandle);
-        img_writer->logFileHandle = 0;
-    }
-
     return TSK_OK;
 #endif
 }
