@@ -18,9 +18,6 @@
 #include "tsk_img_i.h"
 #include "img_writer.h"
 #include "raw.h"
-#include <unistd.h> // TEMP TEMP TEMP
-#include <chrono> // TEMP
-#include <thread> // TEMP 
 #include <time.h>
 
 #ifdef TSK_WIN32
