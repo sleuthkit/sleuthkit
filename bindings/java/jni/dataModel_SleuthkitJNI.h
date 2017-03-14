@@ -410,9 +410,9 @@ JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupp
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    finishImageWriterNat
- * Signature: (J)V
+ * Signature: (J)I
  */
-JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_finishImageWriterNat
+JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_finishImageWriterNat
   (JNIEnv *, jclass, jlong);
 
 /*
