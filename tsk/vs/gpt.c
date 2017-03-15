@@ -325,6 +325,7 @@ tsk_vs_gpt_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset)
     vs->part_count = 0;
     vs->endian = 0;
     vs->block_size = img_info->sector_size;
+    vs->is_backup = 0;
 
     /* Assign functions */
     vs->close = gpt_close;
@@ -355,6 +356,7 @@ tsk_vs_gpt_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset)
             if (tsk_verbose)
                 tsk_fprintf(stderr, "gpt_open: Trying secondary table\n");
             vs->block_size = img_info->sector_size;
+            vs->is_backup = 1;
             if(gpt_load_table(vs, SECONDARY_TABLE)){
 
                 /* Try other sector sizes again */
