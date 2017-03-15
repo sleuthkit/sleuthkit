@@ -85,9 +85,10 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
         }
         if ((vs = tsk_vs_gpt_open(img_info, offset)) != NULL) {
 
-            if ((set != NULL) && (strcmp(set, "DOS") == 0) && (vs->is_backup == 1)) {
+            if ((set != NULL) && (strcmp(set, "DOS") == 0) && (vs->is_backup)) {
                 /* In this case we've found a DOS partition and a backup GPT partition.
                  * The DOS partition takes priority in this case (and are already in set and vs_set) */
+                vs->close(vs);
                 if (tsk_verbose)
                     tsk_fprintf(stderr,
                         "mm_open: Ignoring secondary GPT Partition\n");
