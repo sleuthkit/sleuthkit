@@ -1226,8 +1226,8 @@ public class SleuthkitCase {
 	 *                        unallocated space in the image.
 	 * @param noFatFsOrphans  Set to true to skip processing orphan files of FAT
 	 *                        file systems.
-     * @param imageWriterSettings  Settings for image writer from the local disk panel.
-     *                             Use null to disable image writing
+     * @param imageWriterPath Path for image writer from the local disk panel.
+     *                        Use an empty string to disable image writing
 	 *
 	 * @return Object that encapsulates control of adding an image via the
 	 *         SleuthKit native code layer.
@@ -6824,16 +6824,14 @@ public class SleuthkitCase {
 	}
 	
 	/**
-	 * put stuff here!!!!!
-	 * @param newPath
-	 * @param objectId 
+	 * Change the path for an image in the database.
+	 * @param newPath    New path to the image
+	 * @param objectId   Data source ID of the image
 	 * @throws TskCoreException
 	 */
 	public void updateImagePath(String newPath, long objectId) throws TskCoreException{
-		System.out.println("\n#### Want to update path for " + objectId + " to " + newPath);
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
-		//ResultSet resultSet = null;
 		try {
 			// UPDATE tsk_image_names SET name = ? WHERE obj_id = ?
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.UPDATE_IMAGE_PATH);
@@ -6841,11 +6839,9 @@ public class SleuthkitCase {
 			statement.setString(1, newPath);
 			statement.setLong(2, objectId);
 			connection.executeUpdate(statement);
-			//connection.commitTransaction();
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error updating image path in database for object " + objectId, ex);
 		} finally {
-			//closeResultSet(resultSet);
 			connection.close();
 			releaseSharedLock();
 		}
