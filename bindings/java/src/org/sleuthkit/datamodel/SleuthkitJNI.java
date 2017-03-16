@@ -983,8 +983,8 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException exception thrown if critical error occurs within
 	 *                          TSK
 	 */
-	public static void finishImageWriter(long imgHandle) throws TskCoreException {
-		finishImageWriterNat(imgHandle);
+	public static int finishImageWriter(long imgHandle) throws TskCoreException {
+		return finishImageWriterNat(imgHandle);
 	}
 	
 	/**
@@ -1123,7 +1123,7 @@ public class SleuthkitJNI {
 	
 	private static native boolean isImageSupportedNat(String imagePath);
 	
-	private static native void finishImageWriterNat(long a_img_info);
+	private static native int finishImageWriterNat(long a_img_info);
 	
 	private static native int getFinishImageProgressNat(long a_img_info);
 	

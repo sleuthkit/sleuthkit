@@ -2167,16 +2167,16 @@ JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupp
  * @param obj the java object this was called from
  * @param a_img_info the image info pointer
  */
-JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_finishImageWriterNat
+JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_finishImageWriterNat
 (JNIEnv * env, jclass obj, jlong a_img_info) {
     // Set up the TSK_IMG_INFO object
     TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
     IMG_RAW_INFO *raw_info = (IMG_RAW_INFO*)img_info;
 
     if (raw_info->img_writer != NULL) {
-        raw_info->img_writer->finish_image(raw_info->img_writer);
+        return raw_info->img_writer->finish_image(raw_info->img_writer);
     }
-
+    return -1;
 }
 
 /*

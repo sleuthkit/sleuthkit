@@ -1226,13 +1226,14 @@ public class SleuthkitCase {
 	 *                        unallocated space in the image.
 	 * @param noFatFsOrphans  Set to true to skip processing orphan files of FAT
 	 *                        file systems.
-     * @param imageWriterPath  Path that a copy of the image should be written to.
-     *                         Use empty string to disable image writing
+     * @param imageWriterPath Path for image writer from the local disk panel.
+     *                        Use an empty string to disable image writing
 	 *
 	 * @return Object that encapsulates control of adding an image via the
 	 *         SleuthKit native code layer.
 	 */
-	public AddImageProcess makeAddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans, String imageWriterPath) {
+	public AddImageProcess makeAddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans,
+			String imageWriterPath) {
 		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, imageWriterPath);
 	}
 
@@ -6821,6 +6822,30 @@ public class SleuthkitCase {
 			releaseSharedLock();
 		}
 	}
+	
+	/**
+	 * Change the path for an image in the database.
+	 * @param newPath    New path to the image
+	 * @param objectId   Data source ID of the image
+	 * @throws TskCoreException
+	 */
+	public void updateImagePath(String newPath, long objectId) throws TskCoreException{
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		try {
+			// UPDATE tsk_image_names SET name = ? WHERE obj_id = ?
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.UPDATE_IMAGE_PATH);
+			statement.clearParameters();
+			statement.setString(1, newPath);
+			statement.setLong(2, objectId);
+			connection.executeUpdate(statement);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error updating image path in database for object " + objectId, ex);
+		} finally {
+			connection.close();
+			releaseSharedLock();
+		}
+	}
 
 	/**
 	 * Inserts a row into the reports table in the case database.
@@ -7334,7 +7359,8 @@ public class SleuthkitCase {
 		INSERT_INGEST_JOB("INSERT INTO ingest_jobs (obj_id, host_name, start_date_time, end_date_time, status_id, settings_dir) VALUES (?, ?, ?, ?, ?, ?)"), //NON-NLS
 		INSERT_INGEST_MODULE("INSERT INTO ingest_modules (display_name, unique_name, type_id, version) VALUES(?, ?, ?, ?)"), //NON-NLS
 		SELECT_ATTR_BY_VALUE_BYTE("SELECT source FROM blackboard_attributes WHERE artifact_id = ? AND attribute_type_id = ? AND value_type = 4 AND value_byte = ?"), //NON-NLS
-		UPDATE_ATTR_BY_VALUE_BYTE("UPDATE blackboard_attributes SET source = ? WHERE artifact_id = ? AND attribute_type_id = ? AND value_type = 4 AND value_byte = ?"); //NON-NLS
+		UPDATE_ATTR_BY_VALUE_BYTE("UPDATE blackboard_attributes SET source = ? WHERE artifact_id = ? AND attribute_type_id = ? AND value_type = 4 AND value_byte = ?"), //NON-NLS
+		UPDATE_IMAGE_PATH("UPDATE tsk_image_names SET name = ? WHERE obj_id = ?"); // NON-NLS 
 
 		private final String sql;
 
@@ -8545,6 +8571,7 @@ public class SleuthkitCase {
 	 *         SleuthKit native code layer
 	 * @Deprecated Use the newer version with explicit image writer path parameter
 	 */
+	@Deprecated
 	public AddImageProcess makeAddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) {
 		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, "");
 	}
