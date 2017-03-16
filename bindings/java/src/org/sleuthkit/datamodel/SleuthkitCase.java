@@ -8569,10 +8569,11 @@ public class SleuthkitCase {
 	 *
 	 * @return Object that encapsulates control of adding an image via the
 	 *         SleuthKit native code layer
-	 * @Deprecated Use the newer version with explicit image writer settings parameter
+	 * @Deprecated Use the newer version with explicit image writer path parameter
 	 */
+	@Deprecated
 	public AddImageProcess makeAddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) {
-		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, null);
+		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, "");
 	}
 
 }
