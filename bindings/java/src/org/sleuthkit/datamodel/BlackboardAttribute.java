@@ -328,7 +328,7 @@ public class BlackboardAttribute {
 		TSK_KEYWORD(10, "TSK_KEYWORD", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskKeyword.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
-		TSK_KEYWORD_REGEXP(11, "TSK_KEYWORD_REGEXP", //NON-NLS
+		TSK_KEYWORD_REGEXP(11, "TSK_KEYWORD_REGEXP", //NON-NLS 
 				bundle.getString("BlackboardAttribute.tskKeywordRegexp.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_KEYWORD_PREVIEW(12, "TSK_KEYWORD_PREVIEW", //NON-NLS
