@@ -232,7 +232,7 @@ public class SleuthkitJNI {
 					throw new TskCoreException("Add image process already started");
 				}
 
-				long imageHandle = openImage(imageFilePaths);
+				long imageHandle = openImage(imageFilePaths, false);
 				
 				synchronized (this) {					
 					tskAutoDbPointer = initAddImgNat(caseDbPointer, timezoneLongToShort(timeZone), addUnallocSpace, skipFatFsOrphans);
@@ -420,6 +420,26 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	public static long openImage(String[] imageFiles) throws TskCoreException {
+		return openImage(imageFiles, true);		
+	}
+	
+	/**
+	 * open the image and return the image info pointer
+	 * This is a temporary measure to allow ingest of multiple local disks on the same drive
+	 * letter. We need to clear the cache to make sure cached data from the first drive
+	 * is not used.
+	 *
+	 * @param imageFiles the paths to the images
+	 * @param useCache   true if the image handle cache should be used, false to always go to TSK
+	 *                      to open a fresh copy
+	 *
+	 * @return the image info pointer
+	 *
+	 * @throws TskCoreException exception thrown if critical error occurs within
+	 *                          TSK
+	 */
+	private static long openImage(String[] imageFiles, boolean useCache) throws TskCoreException {
+
 		long imageHandle;
 
 		StringBuilder keyBuilder = new StringBuilder();
@@ -427,9 +447,18 @@ public class SleuthkitJNI {
 			keyBuilder.append(imageFiles[i]);
 		}
 		final String imageKey = keyBuilder.toString();
+		
+
 
 		synchronized (cacheLock) {
-			if (CaseDbHandle.imageHandleCache.containsKey(imageKey)) //get from cache
+			// If we're getting a fresh copy, remove any existing cache references
+			if(!useCache && CaseDbHandle.imageHandleCache.containsKey(imageKey)){
+				long tempImageHandle = CaseDbHandle.imageHandleCache.get(imageKey);
+				CaseDbHandle.fsHandleCache.remove(tempImageHandle);
+				CaseDbHandle.imageHandleCache.remove(imageKey);
+			}
+			
+			if (useCache && CaseDbHandle.imageHandleCache.containsKey(imageKey)) //get from cache
 			{
 				imageHandle = CaseDbHandle.imageHandleCache.get(imageKey);
 			} else {
