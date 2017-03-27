@@ -407,7 +407,6 @@ hfs_extents_to_attr(TSK_FS_INFO * a_fs, const hfs_ext_desc * a_extents,
             return NULL;
         }
 
-
         cur_run->addr = addr;
         cur_run->len = len;
         cur_run->offset = cur_off;
@@ -3552,9 +3551,6 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
     *compDataInRSRC = FALSE;
 
     endian = attrFile.fs->endian;
-
-
-
 
     // Start with the root node
     nodeID = attrFile.rootNode;
