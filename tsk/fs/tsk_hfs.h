@@ -531,6 +531,15 @@ typedef struct {
     unsigned char attr_bytes[0];        /* the bytes of the attribute after the header, if any. */
 } DECMPFS_DISK_HEADER;
 
+typedef enum {
+  DECMPFS_TYPE_ZLIB_ATTR = 3,
+  DECMPFS_TYPE_ZLIB_RSRC = 4,
+  DECMPFS_TYPE_DATALESS = 5,
+  DECMPFS_TYPE_LZVN_ATTR = 7,
+  DECMPFS_TYPE_LZVN_RSRC = 8,
+  DECMPFS_TYPE_RAW_ATTR = 9,
+  DECMPFS_TYPE_RAW_RSRC = 10
+} DECMPFS_TYPE_ENUM;
 
 #define COMPRESSION_UNIT_SIZE 65536U
 

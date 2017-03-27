@@ -5899,7 +5899,7 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         tsk_fprintf(hFile, "    Uncompressed size: %llu\n", uncSize);
 
         switch (cmpType) {
-        case 3:
+        case DECMPFS_TYPE_ZLIB_ATTR:
             // Data is inline
             tsk_fprintf(hFile,
                 "    Data follows compression record in the CMPF attribute\n");
@@ -5916,25 +5916,27 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
             }
             break;
 
-        case 4:
+        case DECMPFS_TYPE_ZLIB_RSRC:
             // Data is zlib compressed in the resource fork
             tsk_fprintf(hFile,
                 "    Data is zlib compressed in the resource fork\n");
             break;
 
-        case 8:
+        case DECMPFS_TYPE_LZVN_RSRC:
             // Data is lzvn compressed in the resource fork
             tsk_fprintf(hFile,
                 "    Data is lzvn compressed in the resource fork\n");
             break;
 
         default:
-            tsk_fprintf(hFile, "    Compression type is UNKNOWN\n");
+            tsk_fprintf(hFile, "    Compression type is %u: UNKNOWN\n",
+                cmpType);
         }
 
         free(aBuf);
 
-        if ((cmpType == 4 || cmpType == 8)
+        if ((cmpType == DECMPFS_TYPE_ZLIB_RSRC ||
+             cmpType == DECMPFS_TYPE_LZVN_RSRC)
             && (tsk_getu64(fs->endian, entry.cat.resource.logic_sz) == 0))
             tsk_fprintf(hFile,
                 "WARNING: Compression record indicates compressed data"
