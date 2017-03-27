@@ -201,6 +201,43 @@ AS_IF([test "x$with_zlib" != "xno"],
 )
 AC_SUBST(Z_PATH, $Z_PATH)
 
+dnl Check if we should link liblzfse
+AC_ARG_WITH([liblzfse],
+    [AS_HELP_STRING([--without-liblzfse],[Do not use liblzfse even if it is installed])]
+    [AS_HELP_STRING([--with-liblzfse=dir],[Specify that liblzfse is installed in directory 'dir'])],
+    dnl If --with-liblzfse or --without-liblzfse is given
+    [],
+    dnl if nothing was specified, default to a test
+    [with_liblzfse=yes])
+
+dnl check for the lib if they did not specify no
+AS_IF(
+   [test "x$with_lzfse" != "xno"],
+   [AC_MSG_NOTICE([checking for liblzfse])]
+   dnl Test the dir if they specified something beyond yes/no
+   [AS_IF([test "x$with_liblzfse" != "xyes"],
+       [AC_MSG_NOTICE([LOOKING for liblzfse in ${with_liblzfse}])]
+       [AS_IF([test -d ${with_liblzfse}],
+           [CPPFLAGS="$CPPFLAGS -I${with_liblzfse}/include"
+                LDFLAGS="$LDFLAGS -L${with_liblzfse}/lib"],
+           dnl Dir given was not correct
+           [AC_MSG_FAILURE([liblzfse directory not found at ${with_liblzfse}])]
+       )]
+    )]
+    dnl Check for the header file first to make sure they have the dev install
+    [AC_CHECK_HEADERS([lzvn.h],
+      [AC_CHECK_LIB([lzfse], [lzvn_decode_buffer],
+         [],
+         [AC_MSG_WARN([Found liblzfse headers, but could not link to liblzfse library.  Will build without liblzfse.])]
+         [with_liblzfse=no]
+      )],
+      [AC_MSG_WARN([Could not find usable liblzfse headers.  Will build without liblzfse.])]
+      [with_liblzfse=no]
+    )],
+    [AC_MSG_NOTICE([NOT checking for liblzfse because with_liblzfse is no])]
+)
+AS_IF([test "x$ac_cv_lib_lzfse_lzvn_decode_buffer" = "xyes"], [ax_liblzfse=yes], [ax_liblzfse=no])
+
 dnl needed for sqllite
 AC_CHECK_LIB(dl, dlopen)
 
@@ -349,6 +386,7 @@ Building:
    afflib support:                        $ax_afflib
    libewf support:                        $ax_libewf
    zlib support:                          $ax_zlib
+   liblzfse support:                      $ax_liblzfse
 
 Features:
    Java/JNI support:                      $ax_java_support
