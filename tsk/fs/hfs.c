@@ -4185,8 +4185,6 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
         return NULL;
     }
 
-
-
     // Try to look at the Resource Fork for an HFS+ file
     // Should be able to cast this to hfs_fork *
     fork_info = (hfs_fork *) fs_file->meta->content_ptr;        // The data fork
@@ -4480,8 +4478,6 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
         if (!isCompressed) {
             // We only load this attribute if this fork has non-zero length
             // or if this is a REG or LNK file.  Otherwise, we skip
-
-
             logicalSize = tsk_getu64(fs->endian, forkx->logic_sz);
 
             if (logicalSize > 0 ||
@@ -4616,9 +4612,7 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
                 return 1;
             }
 
-
             if (isCompressed && compDataInRSRCFork) {
-
                 // OK, we are going to load those same resource fork blocks as the "DATA"
                 // attribute, but will mark it as compressed.
                 // get an attribute structure to store the resource fork data in.  We will
@@ -4717,10 +4711,6 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
 
     return 0;
 }
-
-
-
-
 
 
 /** \internal
