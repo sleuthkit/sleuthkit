@@ -87,6 +87,8 @@
 #include <zlib.h>
 #endif
 
+#include <lzvn.h>
+
 #define XSWAP(a,b) { a ^= b; b ^= a; a ^= b; }
 
 // Forward declarations:
@@ -2847,7 +2849,9 @@ int hfs_decompress_zlib_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t
 
 int hfs_decompress_lzvn_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t* uncLen)
 {
-    return 0;
+    *uncLen = lzvn_decode_buffer(uncBuf, COMPRESSION_UNIT_SIZE, rawBuf, len);
+// TODO: failure?
+    return 1;
 }
 
 
