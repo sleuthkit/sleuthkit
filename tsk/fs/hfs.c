@@ -3664,7 +3664,6 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 break;
             }
 
-
             // Extract the child node ID from the data of the record
             recData = &record[keyLength + 2];   // This is +2 because key_len does not include the
             // length of the key_len field itself.
@@ -4396,10 +4395,8 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
         return 1;
     }
 
-
     fs = (TSK_FS_INFO *) fs_file->fs_info;
     hfs = (HFS_INFO *) fs;
-
 
     if (tsk_verbose)
         tsk_fprintf(stderr,
