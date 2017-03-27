@@ -2714,7 +2714,7 @@ hfs_read_zlib_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTab
         return 0;
     }
 
-    for (indx = 0; indx < tableSize; indx++) {
+    for (indx = 0; indx < tableSize; ++indx) {
         offsetTable[indx].offset =
             tsk_getu32(TSK_LIT_ENDIAN, offsetTableData + indx * 8);
         offsetTable[indx].length =
@@ -2732,7 +2732,75 @@ hfs_read_zlib_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTab
 
 int
 hfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTableOut, uint32_t* tableSizeOut, uint32_t* tableOffsetOut) {
-    return 0;
+    int attrReadResult;
+    char fourBytes[4];
+    uint32_t tableDataSize;
+    uint32_t tableSize;         // Size of the offset table
+    char *offsetTableData;
+    CMP_OFFSET_ENTRY *offsetTable;
+
+    // The offset table is a sequence of 4-byte offsets of compressed
+    // blocks. The first 4 bytes is thus the offset of the first block,
+    // but also 4 times the number of entries in the table.
+    attrReadResult = tsk_fs_attr_read(rAttr, 0, fourBytes, 4,
+                                      TSK_FS_FILE_READ_FLAG_NONE);
+    if (attrReadResult != 4) {
+        error_returned
+            (" %s: trying to read the offset table size, "
+            "return value of %u should have been 4", __func__, attrReadResult);
+        return 0;
+    }
+
+    tableDataSize = tsk_getu32(TSK_LIT_ENDIAN, fourBytes);
+
+    offsetTableData = tsk_malloc(tableDataSize);
+    if (offsetTableData == NULL) {
+        error_returned
+            (" %s: space for the offset table raw data", __func__);
+        return 0;
+    }
+
+    // table entries are 4 bytes, last entry is end of data
+    tableSize = tableDataSize / 4 - 1;
+
+    offsetTable =
+        (CMP_OFFSET_ENTRY *) tsk_malloc(tableSize *
+        sizeof(CMP_OFFSET_ENTRY));
+    if (offsetTable == NULL) {
+        error_returned
+            (" %s: space for the offset table", __func__);
+        free(offsetTableData);
+        return 0;
+    }
+
+    attrReadResult = tsk_fs_attr_read(rAttr, 0,
+        offsetTableData, tableDataSize, TSK_FS_FILE_READ_FLAG_NONE);
+    if (attrReadResult != tableDataSize) {
+        error_returned
+            (" %s: reading in the compression offset table, "
+            "return value %u should have been %u", __func__, attrReadResult,
+            tableDataSize);
+        free(offsetTableData);
+        free(offsetTable);
+        return 0;
+    }
+
+    uint32_t a = tableDataSize;
+    uint32_t b;
+
+    for (size_t i = 0; i < tableSize; ++i) {
+        b = tsk_getu32(TSK_LIT_ENDIAN, offsetTableData + 4*(i+1));
+        offsetTable[i].offset = a;
+        offsetTable[i].length = b - a;
+        a = b;
+    }
+
+    free(offsetTableData);
+
+    *offsetTableOut = offsetTable;
+    *tableSizeOut = tableSize;
+    *tableOffsetOut = 0;
+    return 1;
 }
 
 
