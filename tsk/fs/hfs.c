@@ -5870,7 +5870,6 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         DECMPFS_DISK_HEADER *cmph;
         uint32_t cmpType;
         uint64_t uncSize;
-        unsigned char reallyCompressed = FALSE;
         uint64_t cmpSize = 0;
 
         // Read the attribute.  It cannot be too large because it is stored in
@@ -5899,42 +5898,46 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         cmpType = tsk_getu32(TSK_LIT_ENDIAN, cmph->compression_type);
         uncSize = tsk_getu64(TSK_LIT_ENDIAN, cmph->uncompressed_size);
 
-        if (cmpType == 3) {
-            // Data is inline
-            if ((cmph->attr_bytes[0] & 0x0F) == 0x0F) {
-                reallyCompressed = FALSE;
-                cmpSize = fs_attr->size - 17;   // subtr. size of header + 1 indicator byte
-            }
-            else {
-                reallyCompressed = TRUE;
-                cmpSize = fs_attr->size - 16;   // subt size of header
-            }
-        }
-        else if (cmpType == 4) {
-            // Data is compressed in the resource fork
-            reallyCompressed = TRUE;
-        }
         tsk_fprintf(hFile, "\nCompressed File:\n");
         tsk_fprintf(hFile, "    Uncompressed size: %llu\n", uncSize);
-        if (cmpType == 4) {
-            tsk_fprintf(hFile,
-                "    Data is zlib compressed in the resource fork\n");
-        }
-        else if (cmpType == 3) {
+
+        switch (cmpType) {
+        case 3:
+            // Data is inline
             tsk_fprintf(hFile,
                 "    Data follows compression record in the CMPF attribute\n");
             tsk_fprintf(hFile, "    %" PRIu64 " bytes of data at offset ",
                 cmpSize);
-            if (reallyCompressed)
-                tsk_fprintf(hFile, "16, zlib compressed\n");
-            else
+
+            if ((cmph->attr_bytes[0] & 0x0F) == 0x0F) {
+                cmpSize = fs_attr->size - 17;   // subtr. size of header + 1 indicator byte
                 tsk_fprintf(hFile, "17, not compressed\n");
-        }
-        else {
+            }
+            else {
+                cmpSize = fs_attr->size - 16;   // subt size of header
+                tsk_fprintf(hFile, "16, zlib compressed\n");
+            }
+            break;
+
+        case 4:
+            // Data is zlib compressed in the resource fork
+            tsk_fprintf(hFile,
+                "    Data is zlib compressed in the resource fork\n");
+            break;
+
+        case 8:
+            // Data is lzvn compressed in the resource fork
+            tsk_fprintf(hFile,
+                "    Data is lzvn compressed in the resource fork\n");
+            break;
+
+        default:
             tsk_fprintf(hFile, "    Compression type is UNKNOWN\n");
         }
+
         free(aBuf);
-        if (cmpType == 4
+
+        if ((cmpType == 4 || cmpType == 8)
             && (tsk_getu64(fs->endian, entry.cat.resource.logic_sz) == 0))
             tsk_fprintf(hFile,
                 "WARNING: Compression record indicates compressed data"
