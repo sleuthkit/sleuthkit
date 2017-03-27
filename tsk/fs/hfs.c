@@ -3830,7 +3830,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                     *isCompressed = TRUE;       // The data is governed by a compression record (but might not be compressed)
                     *uncompressedSize = uncSize;
 
-                    if (cmpType == 3) {
+                    if (cmpType == DECMPFS_TYPE_ZLIB_ATTR) {
                         // Data is inline.  We will load the uncompressed data as a resident attribute.
 
                         TSK_FS_ATTR *fs_attr_unc;
@@ -3955,7 +3955,8 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                             }   // END if leading byte is 0x0F  ELSE clause
                         }       // END if attributeLength <= 16  ELSE clause
                     }
-                    else if (cmpType == 4) {
+                    else if (cmpType == DECMPFS_TYPE_ZLIB_RSRC ||
+                             cmpType == DECMPFS_TYPE_LZVN_RSRC) {
                         // Data is compressed in the resource fork
                         *compDataInRSRC = TRUE; // The compressed data is in the RSRC fork
                         if (tsk_verbose)
