@@ -2850,8 +2850,7 @@ int hfs_decompress_zlib_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t
 int hfs_decompress_lzvn_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t* uncLen)
 {
     *uncLen = lzvn_decode_buffer(uncBuf, COMPRESSION_UNIT_SIZE, rawBuf, len);
-// TODO: failure?
-    return 1;
+    return 1;  // apparently this can't fail
 }
 
 
