@@ -3375,7 +3375,7 @@ hfs_file_read_lzvn_rsrc(const TSK_FS_ATTR * a_fs_attr,
 #endif
 
 
-int hfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize)
+int hfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize, int* dstBufFree)
 {
     char* uncBuf = NULL;
 #ifndef HAVE_LIBZ
@@ -3390,6 +3390,7 @@ int hfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, c
 
         *dstBuf = rawBuf + 1;  // + 1 indicator byte
         *dstSize = uncSize;
+        *dstBufFree = FALSE;
     }
     else {    // Leading byte is not 0x0F
 #ifdef HAVE_LIBZ
@@ -3441,6 +3442,7 @@ int hfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, c
 
         *dstBuf = uncBuf;
         *dstSize = uncSize;
+        *dstBufFree = TRUE;
 #else
         // ZLIB compression library is not available, so we will load a
         // zero-length default DATA attribute. Without this, icat may
@@ -3454,6 +3456,7 @@ int hfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, c
         // loading zero bytes.
         *dstBuf = dummy;
         *dstSize = 0;
+        *dstBufFree = FALSE;
 #endif
     }
 
@@ -3461,11 +3464,12 @@ int hfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, c
 }
 
 
-int hfs_decompress_lzvn_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize)
+int hfs_decompress_lzvn_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize, int* dstBufFree)
 {
     char* uncBuf = (char *) tsk_malloc((size_t) uncSize);
     *dstSize = lzvn_decode_buffer(uncBuf, uncSize, rawBuf, rawSize);
     *dstBuf = uncBuf;
+    *dstBufFree = TRUE;
     return 1;  // apparently this can't fail
 }
 
@@ -3480,7 +3484,8 @@ hfs_file_read_compressed_attr(TSK_FS_FILE* fs_file,
                                                      uint32_t rawSize,
                                                      uint64_t uncSize,
                                                      char** dstBuf,
-                                                     uint64_t* dstSize))
+                                                     uint64_t* dstSize,
+                                                     int* dstBufFree))
 {
     // Data is inline. We will load the uncompressed data as a
     // resident attribute.
@@ -3511,9 +3516,10 @@ hfs_file_read_compressed_attr(TSK_FS_FILE* fs_file,
 
     char* dstBuf;
     size_t dstSize;
+    int dstBufFree;
 
-    if (!decompress_attr(buffer + 16, attributeLength - 16,
-                         uncSize, &dstBuf, &dstSize)) {
+    if (!decompress_attr(buffer + 16, attributeLength - 16, uncSize,
+                         &dstBuf, &dstSize, &dstBufFree)) {
         return 0;
     }
 
@@ -3527,13 +3533,13 @@ hfs_file_read_compressed_attr(TSK_FS_FILE* fs_file,
                             dstSize))
     {
         error_returned(" - %s", __func__);
-        if (dstSize > 0) {
+        if (dstBufFree) {
             free(dstBuf);
         }
         return 0;
     }
 
-    if (dstSize > 0) {
+    if (dstBufFree) {
         free(dstBuf);
     }
     return 1;
