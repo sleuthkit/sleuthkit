@@ -3375,6 +3375,197 @@ hfs_file_read_lzvn_rsrc(const TSK_FS_ATTR * a_fs_attr,
 #endif
 
 
+int hfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize)
+{
+    char* uncBuf = NULL;
+#ifndef HAVE_LIBZ
+    static uint8_t dummy[1];
+#endif
+
+    if ((rawBuf[0] & 0x0F) == 0x0F) {
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "%s: Leading byte, 0x0F, indicates that the data is not really compressed.\n"
+                "%s:  Loading the default DATA attribute.", __func__, __func__);
+
+        *dstBuf = rawBuf + 1;  // + 1 indicator byte
+        *dstSize = uncSize;
+    }
+    else {    // Leading byte is not 0x0F
+#ifdef HAVE_LIBZ
+        uint64_t uLen;
+        unsigned long bytesConsumed;
+        int infResult;
+
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                        "%s: Uncompressing (inflating) data.", __func__);
+        // Uncompress the remainder of the attribute, and load as 128-0
+        // Note: cast is OK because uncSize will be quite modest, < 4000.
+
+        uncBuf = (char *) tsk_malloc((size_t) uncSize + 100); // add some extra space
+        if (uncBuf == NULL) {
+            error_returned
+                (" - %s, space for the uncompressed attr", __func__);
+            return 0; 
+        }
+
+        infResult = zlib_inflate(rawBuf, (uint64_t) rawSize,
+                                 uncBuf, (uint64_t) (uncSize + 100),
+                                 &uLen, &bytesConsumed);
+        if (infResult != 0) {
+            error_returned
+                (" %s, zlib could not uncompress attr", __func__);
+            free(uncBuf); 
+            return 0;
+        }
+
+        if (bytesConsumed != rawSize) {
+            error_detected(TSK_ERR_FS_READ,
+                " %s, decompressor did not consume the whole compressed data",
+                __func__);
+            free(uncBuf);
+            return 0; 
+        }
+
+        if (uLen != uncSize) {
+            error_detected(TSK_ERR_FS_READ,
+                " %s, actual uncompressed size not equal to the size in the compression record", __func__);
+            free(uncBuf);
+            return 0; 
+        }
+
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                        "%s: Loading decompressed data as default DATA attribute.", __func__);
+
+        *dstBuf = uncBuf;
+        *dstSize = uncSize;
+#else
+        // ZLIB compression library is not available, so we will load a
+        // zero-length default DATA attribute. Without this, icat may
+        // misbehave.
+
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                        "%s: ZLIB not available, so loading an empty default DATA attribute.\n", __func__);
+
+        // Dummy is one byte long, so the ptr is not null, but only
+        // loading zero bytes.
+        *dstBuf = dummy;
+        *dstSize = 0;
+#endif
+    }
+
+    return 1;
+}
+
+
+int hfs_decompress_lzvn_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize)
+{
+    char* uncBuf = (char *) tsk_malloc((size_t) uncSize);
+    *dstSize = lzvn_decode_buffer(uncBuf, uncSize, rawBuf, rawSize);
+    *dstBuf = uncBuf;
+    return 1;  // apparently this can't fail
+}
+
+
+int
+hfs_file_read_compressed_attr(TSK_FS_FILE* fs_file,
+                              uint8_t cmpType,
+                              char* buffer,
+                              uint32_t attributeLength,
+                              uint64_t uncSize,
+                              int (*decompress_attr)(char* rawBuf,
+                                                     uint32_t rawSize,
+                                                     uint64_t uncSize,
+                                                     char** dstBuf,
+                                                     uint64_t* dstSize))
+{
+    // Data is inline. We will load the uncompressed data as a
+    // resident attribute.
+    if (tsk_verbose)
+        tsk_fprintf(stderr,
+            "%s: Compressed data is inline in the attribute, will load this as the default DATA attribute.\n", __func__);
+
+    if (attributeLength <= 16) {
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "%s: WARNING, Compression Record of type %u is not followed by"
+                " compressed data. No data will be loaded into the DATA"
+                " attribute.\n", __func__, cmpType);
+
+        // oddly, this is not actually considered an error
+        return 1;
+    }
+    
+    TSK_FS_ATTR *fs_attr_unc;
+
+    // There is data following the compression record, as there should be.
+    if ((fs_attr_unc = tsk_fs_attrlist_getnew(
+          fs_file->meta->attr, TSK_FS_ATTR_RES)) == NULL)
+    {
+        error_returned(" - %s, FS_ATTR for uncompressed data", __func__);
+        return 0;
+    }
+
+    char* dstBuf;
+    size_t dstSize;
+
+    if (!decompress_attr(buffer + 16, attributeLength - 16,
+                         uncSize, &dstBuf, &dstSize)) {
+        return 0;
+    }
+
+    // Load the remainder of the attribute as 128-0
+    // set the details in the fs_attr structure.
+    // Note, we are loading this as a RESIDENT attribute.
+    if (tsk_fs_attr_set_str(fs_file,
+                            fs_attr_unc, "DATA",
+                            TSK_FS_ATTR_TYPE_HFS_DATA,
+                            HFS_FS_ATTR_ID_DATA, dstBuf,
+                            dstSize))
+    {
+        error_returned(" - %s", __func__);
+        if (dstSize > 0) {
+            free(dstBuf);
+        }
+        return 0;
+    }
+
+    if (dstSize > 0) {
+        free(dstBuf);
+    }
+    return 1;
+}
+
+
+int hfs_file_read_zlib_attr(TSK_FS_FILE* fs_file,
+                            char* buffer,
+                            uint32_t attributeLength,
+                            uint64_t uncSize)
+{
+    return hfs_file_read_compressed_attr(
+        fs_file, DECMPFS_TYPE_ZLIB_ATTR,
+        buffer, attributeLength, uncSize,
+        hfs_decompress_zlib_attr
+    );
+}
+
+
+int hfs_file_read_lzvn_attr(TSK_FS_FILE* fs_file,
+                            char* buffer,
+                            uint32_t attributeLength,
+                            uint64_t uncSize)
+{
+    return hfs_file_read_compressed_attr(
+        fs_file, DECMPFS_TYPE_LZVN_ATTR,
+        buffer, attributeLength, uncSize,
+        hfs_decompress_lzvn_attr
+    );
+}
+
+
 typedef struct {
     TSK_FS_INFO *fs;            // the HFS file system
     TSK_FS_FILE *file;          // the Attributes file, if open
@@ -3519,7 +3710,7 @@ hfs_attrTypeName(uint32_t typeNum)
 static uint8_t
 hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
     unsigned char *isCompressed, unsigned char *cmpType,
-    uint64_t * uncompressedSize)
+    uint64_t *uncompressedSize)
 {
     TSK_FS_INFO *fs = fs_file->fs_info;
     uint64_t fileID;
@@ -3534,9 +3725,6 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
     uint16_t attribute_counter = 2;     // The ID of the next attribute to be loaded.
     HFS_INFO *hfs;
     char *buffer = NULL;   // buffer to hold the attribute
-#ifdef HAVE_LIBZ
-    char *uncBuf = NULL;   // buffer to hold uncompressed attribute
-#endif
 
     tsk_error_reset();
 
@@ -3858,8 +4046,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 if (strcmp(nameBuff, "com.apple.decmpfs") == 0 &&
                     tsk_getu32(endian, attrData->record_type) == HFS_ATTR_RECORD_INLINE_DATA) {
                     // Now, look at the compression record
-                    DECMPFS_DISK_HEADER *cmph =
-                        (DECMPFS_DISK_HEADER *) buffer;
+                    DECMPFS_DISK_HEADER *cmph = (DECMPFS_DISK_HEADER *) buffer;
                     *cmpType =
                         tsk_getu32(TSK_LIT_ENDIAN, cmph->compression_type);
                     uint64_t uncSize = tsk_getu64(TSK_LIT_ENDIAN,
@@ -3873,138 +4060,32 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                     *isCompressed = TRUE;       // The data is governed by a compression record (but might not be compressed)
                     *uncompressedSize = uncSize;
 
-                    if (*cmpType == DECMPFS_TYPE_ZLIB_ATTR) {
-                        // Data is inline.  We will load the uncompressed data as a resident attribute.
-
-                        TSK_FS_ATTR *fs_attr_unc;
-
-                        if (tsk_verbose)
-                            tsk_fprintf(stderr,
-                                "hfs_load_extended_attrs: Compressed data is inline in the attribute, will load this as the default DATA attribute.\n");
-
-                        if (attributeLength <= 16) {
-                            if (tsk_verbose)
-                                tsk_fprintf(stderr,
-                                    "hfs_load_extended_attrs: WARNING, Compression Record of type 3 is not followed by"
-                                    " compressed data. No data will be loaded into the DATA attribute.\n");
+                    switch (*cmpType) {
+                    // Data is inline. We will load the uncompressed
+                    // data as a resident attribute.
+                    case DECMPFS_TYPE_ZLIB_ATTR:
+                        if (!hfs_file_read_zlib_attr(
+                                fs_file, buffer, attributeLength, uncSize))
+                        {
+                            goto on_error;
                         }
-                        else {
-                            // There is data following the compression record, as there should be.
-                            if ((fs_attr_unc =
-                                    tsk_fs_attrlist_getnew(fs_file->meta->
-                                        attr, TSK_FS_ATTR_RES)) == NULL) {
-                                error_returned
-                                    (" - hfs_load_extended_attrs, FS_ATTR for uncompressed data");
-                                goto on_error;
-                            }
+                        break;
 
-                            if ((cmph->attr_bytes[0] & 0x0F) == 0x0F) {
-                                if (tsk_verbose)
-                                    tsk_fprintf(stderr,
-                                        "hfs_load_extended_attrs: Leading byte, 0x0F, indicates that the data is not really compressed.\n"
-                                        "hfs_load_extended_attrs:  Loading the default DATA attribute.");
-                                //cmpSize = attributeLength - 17; // subtr. size of header + 1 indicator byte
+                    case DECMPFS_TYPE_LZVN_ATTR:
+                        if (!hfs_file_read_lzvn_attr(
+                                fs_file, buffer, attributeLength, uncSize))
+                        {
+                            goto on_error;
+                        }
+                        break;
 
-                                // Load the remainder of the attribute as 128-0
-                                // set the details in the fs_attr structure.  Note, we are loading this
-                                // as a RESIDENT attribute.
-                                if (tsk_fs_attr_set_str(fs_file,
-                                        fs_attr_unc, "DATA",
-                                        TSK_FS_ATTR_TYPE_HFS_DATA,
-                                        HFS_FS_ATTR_ID_DATA,
-                                        (void *) (buffer + 17),
-                                        (size_t) uncSize)) {
-                                    error_returned
-                                        (" - hfs_load_extended_attrs");
-                                    goto on_error;
-                                }
-
-                            }
-                            else {      // Leading byte is not 0x0F
-
-#ifdef HAVE_LIBZ
-                                uint64_t uLen;
-                                unsigned long bytesConsumed;
-                                int infResult;
-
-                                if (tsk_verbose)
-                                    tsk_fprintf(stderr,
-                                        "hfs_load_extended_attrs: Uncompressing (inflating) data.");
-                                // Uncompress the remainder of the attribute, and load as 128-0
-                                // Note: cast is OK because uncSize will be quite modest, less than 4000.
-                                uncBuf = (char *) tsk_malloc((size_t) uncSize + 100);   // add some extra space
-                                if (uncBuf == NULL) {
-                                    error_returned
-                                        (" - hfs_load_extended_attrs, space for the uncompressed attr");
-                                    goto on_error;
-                                }
-
-                                infResult = zlib_inflate(buffer + 16, (uint64_t) (attributeLength - 16),        // source, srcLen
-                                    uncBuf, (uint64_t) (uncSize + 100), // dest, destLen
-                                    &uLen, &bytesConsumed);     // returned by the function
-                                if (infResult != 0) {
-                                    error_returned
-                                        (" hfs_load_extended_attrs, zlib could not uncompress attr");
-                                    goto on_error;
-                                }
-                                if (bytesConsumed != attributeLength - 16) {
-                                    error_detected(TSK_ERR_FS_READ,
-                                        " hfs_load_extended_attrs, zlib did not consumed the whole compressed data");
-                                    goto on_error;
-                                }
-                                if (uLen != uncSize) {
-                                    error_detected(TSK_ERR_FS_READ,
-                                        " hfs_load_extended_attrs, actual uncompressed size not equal to the size in the compression record");
-                                    goto on_error;
-                                }
-                                if (tsk_verbose)
-                                    tsk_fprintf(stderr,
-                                        "hfs_load_extended_attrs: Loading inflated data as default DATA attribute.");
-                                // set the details in the fs_attr structure.  Note, we are loading this
-                                // as a RESIDENT attribute.
-                                if (tsk_fs_attr_set_str(fs_file,
-                                        fs_attr_unc, "DATA",
-                                        TSK_FS_ATTR_TYPE_HFS_DATA,
-                                        HFS_FS_ATTR_ID_DATA, uncBuf,
-                                        (size_t) uncSize)) {
-                                    error_returned
-                                        (" - hfs_load_extended_attrs");
-                                    goto on_error;
-                                }
-
-                                free(uncBuf);
-#else
-                                // ZLIB compression library is not available, so we will load a zero-length
-                                // default DATA attribute.  Without this, icat may misbehave.
-
-                                // This is one byte long, so the ptr is not null, but only loading zero bytes.
-                                uint8_t uncBuf[1];
-
-                                if (tsk_verbose)
-                                    tsk_fprintf(stderr,
-                                        "hfs_load_extended_attrs: ZLIB not available, so loading an empty default DATA attribute.\n");
-
-                                if (tsk_fs_attr_set_str(fs_file,
-                                        fs_attr_unc, "DATA",
-                                        TSK_FS_ATTR_TYPE_HFS_DATA,
-                                        HFS_FS_ATTR_ID_DATA, uncBuf,
-                                        (size_t) 0)) {
-                                    error_returned
-                                        (" - hfs_load_extended_attrs");
-                                    goto on_error;
-                                }
-#endif
-
-                            }   // END if leading byte is 0x0F  ELSE clause
-                        }       // END if attributeLength <= 16  ELSE clause
-                    }
-                    else if (*cmpType == DECMPFS_TYPE_ZLIB_RSRC ||
-                             *cmpType == DECMPFS_TYPE_LZVN_RSRC) {
-                        // Data is compressed in the resource fork
-                        // The compressed data is in the RSRC fork
+                    // Data is compressed in the resource fork
+                    case DECMPFS_TYPE_ZLIB_RSRC:
+                    case DECMPFS_TYPE_LZVN_RSRC:
                         if (tsk_verbose)
                             tsk_fprintf(stderr,
-                                "hfs_load_extended_attrs: Compressed data is in the file Resource Fork.\n");
+                                "%s: Compressed data is in the file Resource Fork.\n", __func__);
+                        break;
                     }
                 }
                 else {          // Attrbute name is NOT com.apple.decmpfs
@@ -4122,12 +4203,6 @@ on_error:
     if (buffer != NULL) {
         free(buffer);
     }
-
-#ifdef HAVE_LIBZ
-    if (uncBuf != NULL) {
-        free(uncBuf);
-    }
-#endif
 
     if (nodeData != NULL) {
         free(nodeData);
