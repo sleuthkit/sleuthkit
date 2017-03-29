@@ -17,7 +17,7 @@
 ** Copyright (c) 2008, 2012 ATC-NY.  All rights reserved.
 ** This file contains data developed with support from the National
 ** Institute of Justice, Office of Justice Programs, U.S. Department of Justice.
-** 
+**
 ** Wyatt Banks [wbanks@crucialsecurity.com]
 ** Copyright (c) 2005 Crucial Security Inc.  All rights reserved.
 **
@@ -332,7 +332,7 @@ hfs_ext_compare_keys(HFS_INFO * hfs, uint32_t cnid,
 /** \internal
  * Returns the length of an HFS+ B-tree INDEX key based on the tree header
  * structure and the length claimed in the record.  With some trees,
- * the length given in the record is not used. 
+ * the length given in the record is not used.
  * Note that this neither detects nor correctly handles 8-bit keys
  * (which should not be present in HFS+).
  *
@@ -427,11 +427,11 @@ hfs_extents_to_attr(TSK_FS_INFO * a_fs, const hfs_ext_desc * a_extents,
 
 /**
  * Look in the extents catalog for entries for a given file. Add the runs
- * to the passed attribute structure. 
+ * to the passed attribute structure.
  *
  * @param hfs File system being analyzed
  * @param cnid file id of file to search for
- * @param a_attr Attribute to add extents runs to 
+ * @param a_attr Attribute to add extents runs to
  * @param dataForkQ  if true, then find extents for the data fork.  If false, then find extents for the Resource fork.
  * @returns 1 on error and 0 on success
  */
@@ -498,7 +498,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
         }
     }
 
-    // allocate a node buffer 
+    // allocate a node buffer
     nodesize = tsk_getu16(fs->endian, hfs->extents_header.nodesize);
     if ((node = (char *) tsk_malloc(nodesize)) == NULL) {
         return 1;
@@ -532,7 +532,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
         ssize_t cnt;
         hfs_btree_node *node_desc;
 
-        // sanity check 
+        // sanity check
         if (cur_node > tsk_getu32(fs->endian,
                 hfs->extents_header.totalNodes)) {
             tsk_error_set_errno(TSK_ERR_FS_GENFS);
@@ -595,7 +595,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 size_t rec_off;
                 hfs_btree_key_ext *key;
 
-                // get the record offset in the node 
+                // get the record offset in the node
                 rec_off =
                     tsk_getu16(fs->endian,
                     &node[nodesize - (rec + 1) * 2]);
@@ -872,7 +872,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
         ssize_t cnt;
         hfs_btree_node *node_desc;
 
-        // sanity check 
+        // sanity check
         if (cur_node > tsk_getu32(fs->endian,
                 hfs->catalog_header.totalNodes)) {
             tsk_error_set_errno(TSK_ERR_FS_GENFS);
@@ -1154,7 +1154,7 @@ hfs_cat_get_record_offset_cb(HFS_INFO * hfs, int8_t level_type,
 
 /** \internal
  * Find the byte offset (from the start of the catalog file) to a record
- * in the catalog file.  
+ * in the catalog file.
  * @param hfs File System being analyzed
  * @param needle Key to search for
  * @returns Byte offset or 0 on error. 0 is also returned if catalog
@@ -1177,7 +1177,7 @@ hfs_cat_get_record_offset(HFS_INFO * hfs, const hfs_btree_key_cat * needle)
 /** \internal
  * Given a byte offset to a leaf record in teh catalog file, read the data as
  * a thread record. This will zero the buffer and read in the size of the thread
- * data. 
+ * data.
  * @param hfs File System
  * @param off Byte offset of record in catalog file (not including key)
  * @param thread [out] Buffer to write thread data into.
@@ -1241,7 +1241,7 @@ hfs_cat_read_thread_record(HFS_INFO * hfs, TSK_OFF_T off,
 
 /** \internal
  * Read a catalog record into a local data structure.  This reads the
- * correct amount, depending on if it is a file or folder. 
+ * correct amount, depending on if it is a file or folder.
  * @param hfs File system being analyzed
  * @param off Byte offset (in catalog file) of record (not including key)
  * @param record [out] Structure to read data into
@@ -1559,7 +1559,7 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat,
 
 /** \internal
  * Lookup an entry in the catalog file and save it into the entry.  Do not
- * call this for the special files that do not have an entry in the catalog. 
+ * call this for the special files that do not have an entry in the catalog.
  * data structure.
  * @param hfs File system being analyzed
  * @param inum Address (cnid) of file to open
@@ -1856,7 +1856,7 @@ hfs_make_specialbase(TSK_FS_FILE * fs_file)
 
 /**
  * \internal
- * Create an FS_INODE structure for the catalog file. 
+ * Create an FS_INODE structure for the catalog file.
  *
  * @param hfs File system to analyze
  * @param fs_file Structure to copy file information into.
@@ -1889,7 +1889,7 @@ hfs_make_catalog(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
         tsk_getu64(fs->endian, hfs->fs->cat_file.logic_sz);
 
 
-    // convert the  runs in the volume header to attribute runs 
+    // convert the  runs in the volume header to attribute runs
     if (((attr_run =
                 hfs_extents_to_attr(fs, hfs->fs->cat_file.extents,
                     0)) == NULL) && (tsk_error_get_errno() != 0)) {
@@ -2005,7 +2005,7 @@ hfs_make_extents(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
 
 /**
  * \internal
- * Create an FS_INODE structure for the blockmap / allocation file. 
+ * Create an FS_INODE structure for the blockmap / allocation file.
  *
  * @param hfs File system to analyze
  * @param fs_file Structure to copy file information into.
@@ -2086,7 +2086,7 @@ hfs_make_blockmap(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
 
 /**
 * \internal
- * Create an FS_INODE structure for the startup / boot file. 
+ * Create an FS_INODE structure for the startup / boot file.
  *
  * @param hfs File system to analyze
  * @param fs_file Structure to copy file information into.
@@ -2167,7 +2167,7 @@ hfs_make_startfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
 
 /**
  * \internal
- * Create an FS_INODE structure for the attributes file. 
+ * Create an FS_INODE structure for the attributes file.
  *
  * @param hfs File system to analyze
  * @param fs_file Structure to copy file information into.
@@ -2240,7 +2240,7 @@ hfs_make_attrfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
 
 /**
  * \internal
- * Create an FS_FILE structure for the BadBlocks file. 
+ * Create an FS_FILE structure for the BadBlocks file.
  *
  * @param hfs File system to analyze
  * @param fs_file Structure to copy file information into.
@@ -2293,7 +2293,7 @@ hfs_make_badblockfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
         return 1;
     }
 
-    /* @@@ We have a chicken and egg problem here...  The current design of 
+    /* @@@ We have a chicken and egg problem here...  The current design of
      * fs_attr_set() requires the size to be set, but we dont' know the size
      * until we look into the extents file (which adds to an attribute...).
      * This does not seem to be the best design...  neeed a way to test this. */
@@ -2315,7 +2315,7 @@ hfs_make_badblockfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
 
 
 /** \internal
- * Copy the catalog file or folder record entry into a TSK data structure. 
+ * Copy the catalog file or folder record entry into a TSK data structure.
  * @param a_hfs File system being analyzed
  * @param a_hfs_entry Catalog record entry (HFS_ENTRY *)
  * @param a_fs_file Structure to copy data into (TSK_FS_FILE *)
@@ -2382,8 +2382,8 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const HFS_ENTRY * a_hfs_entry,
     }
 
 
-    /* 
-     * Copy the file type specific stuff first 
+    /*
+     * Copy the file type specific stuff first
      */
     hfsmode = tsk_getu16(fs->endian, std->perm.mode);
 
@@ -2415,7 +2415,7 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const HFS_ENTRY * a_hfs_entry,
     }
 
     /*
-     * Copy the standard stuff.  
+     * Copy the standard stuff.
      * Use default values (as defined in spec) if mode is not defined.
      */
     if ((hfsmode & HFS_IN_IFMT) == 0) {
@@ -2453,7 +2453,7 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const HFS_ENTRY * a_hfs_entry,
 
     a_fs_meta->addr = tsk_getu32(fs->endian, std->cnid);
 
-    // All entries here are used.  
+    // All entries here are used.
     a_fs_meta->flags = TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED;
 
     if (std->perm.o_flags & HFS_PERM_OFLAG_COMPRESSED)
@@ -2505,12 +2505,12 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const HFS_ENTRY * a_hfs_entry,
 
 
 /** \internal
- * Load a catalog file entry and save it in the TSK_FS_FILE structure. 
- * 
+ * Load a catalog file entry and save it in the TSK_FS_FILE structure.
+ *
  * @param fs File system to read from.
- * @param a_fs_file Structure to read into. 
+ * @param a_fs_file Structure to read into.
  * @param inum File address to load
- * @returns 1 on error 
+ * @returns 1 on error
  */
 static uint8_t
 hfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
@@ -3407,7 +3407,7 @@ int hfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, c
         if (uncBuf == NULL) {
             error_returned
                 (" - %s, space for the uncompressed attr", __func__);
-            return 0; 
+            return 0;
         }
 
         infResult = zlib_inflate(rawBuf, (uint64_t) rawSize,
@@ -3416,7 +3416,7 @@ int hfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, c
         if (infResult != 0) {
             error_returned
                 (" %s, zlib could not uncompress attr", __func__);
-            free(uncBuf); 
+            free(uncBuf);
             return 0;
         }
 
@@ -3425,14 +3425,14 @@ int hfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, c
                 " %s, decompressor did not consume the whole compressed data",
                 __func__);
             free(uncBuf);
-            return 0; 
+            return 0;
         }
 
         if (uLen != uncSize) {
             error_detected(TSK_ERR_FS_READ,
                 " %s, actual uncompressed size not equal to the size in the compression record", __func__);
             free(uncBuf);
-            return 0; 
+            return 0;
         }
 
         if (tsk_verbose)
@@ -3498,7 +3498,7 @@ hfs_file_read_compressed_attr(TSK_FS_FILE* fs_file,
         // oddly, this is not actually considered an error
         return 1;
     }
-    
+
     TSK_FS_ATTR *fs_attr_unc;
 
     // There is data following the compression record, as there should be.
@@ -4855,7 +4855,7 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
 * http://developer.apple.com/technotes/tn/tn1150.html
 *
 * @param hfs File system being analyzed
-* @param b Block address 
+* @param b Block address
 * @returns 1 if allocated, 0 if not, -1 on error
 */
 static int8_t
@@ -5577,14 +5577,14 @@ print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
 }
 
 /**
- * Print details on a specific file to a file handle. 
+ * Print details on a specific file to a file handle.
  *
  * @param fs File system file is located in
  * @param hFile File name to print text to
  * @param inum Address of file in file system
  * @param numblock The number of blocks in file to force print (can go beyond file size)
  * @param sec_skew Clock skew in seconds to also print times in
- * 
+ *
  * @returns 1 on error and 0 on success
  */
 static uint8_t
@@ -6228,7 +6228,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     /*
      * Handle an HFS-wrapped HFS+ image, which is a HFS volume that contains
-     * the HFS+ volume inside of it. 
+     * the HFS+ volume inside of it.
      */
     if (tsk_getu16(fs->endian, hfs->fs->signature) == HFS_VH_SIG_HFS) {
 
@@ -6249,7 +6249,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             uint32_t drAlBlkSiz =
                 tsk_getu32(fs->endian, wrapper_sb->drAlBlkSiz);
 
-            // start of embedded FS 
+            // start of embedded FS
             uint16_t startBlock = tsk_getu16(fs->endian,
                 wrapper_sb->drEmbedExtent_startBlock);
 
