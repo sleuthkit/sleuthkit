@@ -6043,6 +6043,13 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
             }
             break;
 
+        case DECMPFS_TYPE_LZVN_ATTR:
+            // Data is inline
+            tsk_fprintf(hFile,
+                "    Data follows compression record in the CMPF attribute\n");
+            tsk_fprintf(hFile, "    %" PRIu64 " bytes of data at offset 16, lzvn compressed", cmpSize);
+            break;
+
         case DECMPFS_TYPE_ZLIB_RSRC:
             // Data is zlib compressed in the resource fork
             tsk_fprintf(hFile,
