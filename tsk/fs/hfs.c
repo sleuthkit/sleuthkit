@@ -2624,8 +2624,8 @@ hfs_read_zlib_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTab
     uint32_t offsetTableOffset;
     char fourBytes[4];          // Size of the offset table, little endian
     uint32_t tableSize;         // Size of the offset table
-    char *offsetTableData;
-    CMP_OFFSET_ENTRY *offsetTable;
+    char *offsetTableData = NULL;
+    CMP_OFFSET_ENTRY *offsetTable = NULL;
     size_t indx;
 
     // Read the resource fork header
@@ -2671,8 +2671,7 @@ hfs_read_zlib_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTab
     if (offsetTable == NULL) {
         error_returned
             (" %s: space for the offset table", __func__);
-        free(offsetTableData);
-        return 0;
+        goto on_error;
     }
 
     attrReadResult = tsk_fs_attr_read(rAttr, offsetTableOffset + 4,
@@ -2682,9 +2681,7 @@ hfs_read_zlib_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTab
             (" %s: reading in the compression offset table, "
             "return value %u should have been %u", __func__, attrReadResult,
             tableSize * 8);
-        free(offsetTableData);
-        free(offsetTable);
-        return 0;
+        goto on_error;
     }
 
     for (indx = 0; indx < tableSize; ++indx) {
@@ -2700,6 +2697,11 @@ hfs_read_zlib_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTab
     *tableSizeOut = tableSize;
     *tableOffsetOut = offsetTableOffset;
     return 1;
+
+on_error:
+    free(offsetTable);
+    free(offsetTableData);
+    return 0;
 }
 
 
