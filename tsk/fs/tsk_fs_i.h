@@ -93,7 +93,7 @@ extern "C" {
         const char *, TSK_FS_ATTR_TYPE_ENUM, uint16_t, void *, size_t);
     extern uint8_t tsk_fs_attr_set_run(TSK_FS_FILE *,
         TSK_FS_ATTR * a_fs_attr, TSK_FS_ATTR_RUN * data_run_new,
-        const char *name, TSK_FS_ATTR_TYPE_ENUM type, uint16_t id,
+        const char *name, TSK_FS_ATTR_TYPE_ENUM type, int16_t id,
         TSK_OFF_T size, TSK_OFF_T initsize, TSK_OFF_T allocsize,
         TSK_FS_ATTR_FLAG_ENUM flags, uint32_t compsize);
     extern uint8_t tsk_fs_attr_add_run(TSK_FS_INFO * fs,

@@ -275,7 +275,7 @@ tsk_fs_attr_set_str(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
 uint8_t
 tsk_fs_attr_set_run(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
     TSK_FS_ATTR_RUN * a_data_run_new, const char *name,
-    TSK_FS_ATTR_TYPE_ENUM type, uint16_t id, TSK_OFF_T size,
+    TSK_FS_ATTR_TYPE_ENUM type, int16_t id, TSK_OFF_T size,
     TSK_OFF_T init_size, TSK_OFF_T alloc_size,
     TSK_FS_ATTR_FLAG_ENUM flags, uint32_t compsize)
 {

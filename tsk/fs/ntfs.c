@@ -1688,7 +1688,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
 
         int retVal, i;
         uint32_t type;
-        uint16_t id, id_new;
+        int16_t id, id_new;
         
         // sanity check on bounds of attribute. Prevents other
         // issues later on that use attr->len for bounds checks.
@@ -1699,7 +1699,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
         
         /* Get the type of this attribute */
         type = tsk_getu32(fs->endian, attr->type);
-        id = tsk_getu16(fs->endian, attr->id);
+        id = (int16_t)tsk_getu16(fs->endian, attr->id);
         id_new = id;
 
         /* If the map was supplied, search through it to see if this 
