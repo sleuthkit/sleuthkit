@@ -3429,17 +3429,6 @@ int hfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, c
             return 0;
         }
 
-        if (uLen != uncSize) {
-            error_detected(TSK_ERR_FS_READ,
-                " %s, actual uncompressed size not equal to the size in the compression record", __func__);
-            free(uncBuf);
-            return 0;
-        }
-
-        if (tsk_verbose)
-            tsk_fprintf(stderr,
-                        "%s: Loading decompressed data as default DATA attribute.", __func__);
-
         *dstBuf = uncBuf;
         *dstSize = uncSize;
         *dstBufFree = TRUE;
@@ -3522,6 +3511,20 @@ hfs_file_read_compressed_attr(TSK_FS_FILE* fs_file,
                          &dstBuf, &dstSize, &dstBufFree)) {
         return 0;
     }
+
+    if (dstSize != uncSize) {
+        error_detected(TSK_ERR_FS_READ,
+            " %s, actual uncompressed size not equal to the size in the compression record", __func__);
+        if (dstBufFree) {
+            free(dstBuf);
+        }
+        return 0;
+    }
+
+    if (tsk_verbose)
+       tsk_fprintf(stderr,
+                   "%s: Loading decompressed data as default DATA attribute.",
+                   __func__);
 
     // Load the remainder of the attribute as 128-0
     // set the details in the fs_attr structure.
