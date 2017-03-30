@@ -2738,8 +2738,8 @@ hfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTab
     char fourBytes[4];
     uint32_t tableDataSize;
     uint32_t tableSize;         // Size of the offset table
-    char *offsetTableData;
-    CMP_OFFSET_ENTRY *offsetTable;
+    char *offsetTableData = NULL;
+    CMP_OFFSET_ENTRY *offsetTable = NULL;
 
     // The offset table is a sequence of 4-byte offsets of compressed
     // blocks. The first 4 bytes is thus the offset of the first block,
@@ -2771,8 +2771,7 @@ hfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTab
     if (offsetTable == NULL) {
         error_returned
             (" %s: space for the offset table", __func__);
-        free(offsetTableData);
-        return 0;
+        goto on_error;
     }
 
     attrReadResult = tsk_fs_attr_read(rAttr, 0,
@@ -2782,9 +2781,7 @@ hfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTab
             (" %s: reading in the compression offset table, "
             "return value %u should have been %u", __func__, attrReadResult,
             tableDataSize);
-        free(offsetTableData);
-        free(offsetTable);
-        return 0;
+        goto on_error;
     }
 
     uint32_t a = tableDataSize;
@@ -2803,6 +2800,11 @@ hfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTab
     *tableSizeOut = tableSize;
     *tableOffsetOut = 0;
     return 1;
+
+on_error:
+    free(offsetTable);
+    free(offsetTableData);
+    return 0;
 }
 
 
@@ -2874,7 +2876,7 @@ hfs_attr_walk_compressed_rsrc(const TSK_FS_ATTR * fs_attr,
     int attrReadResult;
     uint32_t offsetTableOffset;
     uint32_t tableSize;         // The number of table entries
-    CMP_OFFSET_ENTRY *offsetTable;
+    CMP_OFFSET_ENTRY *offsetTable = NULL;
     size_t indx;                // index for looping over the offset table
     TSK_OFF_T off = 0;          // the offset in the uncompressed data stream consumed thus far
 
@@ -2939,17 +2941,14 @@ hfs_attr_walk_compressed_rsrc(const TSK_FS_ATTR * fs_attr,
     if (rawBuf == NULL) {
         error_returned
             (" %s: buffers for reading and uncompressing", __func__);
-        free(offsetTable);
-        return 1;
+        goto on_error;
     }
 
     uncBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE);
     if (uncBuf == NULL) {
         error_returned
             (" %s: buffers for reading and uncompressing", __func__);
-        free(offsetTable);
-        free(rawBuf);
-        return 1;
+        goto on_error;
     }
 
     // FOR entry in the table DO
@@ -2979,38 +2978,31 @@ hfs_attr_walk_compressed_rsrc(const TSK_FS_ATTR * fs_attr,
         if (len > COMPRESSION_UNIT_SIZE + 1) {
             error_detected(TSK_ERR_FS_READ,
                 "%s: block size is too large: %u", __func__, len);
-            free(offsetTable);
-            free(rawBuf);
-            free(uncBuf);
-            return 1;
+            goto on_error;
         }
 
         // Read in the block of (potentially) compressed data
         attrReadResult = tsk_fs_attr_read(rAttr, offset,
             rawBuf, len, TSK_FS_FILE_READ_FLAG_NONE);
         if (attrReadResult != len) {
-            if (attrReadResult < 0)
+            if (attrReadResult < 0) {
                 error_returned
                     (" %s: reading in the compression offset table, "
                     "return value %u should have been %u", __func__,
                     attrReadResult, len);
-            else
+            }
+            else {
                 error_detected(TSK_ERR_FS_READ,
                     "%s: reading in the compression offset table, "
                     "return value %u should have been %u", __func__,
                     attrReadResult, len);
-            free(offsetTable);
-            free(rawBuf);
-            free(uncBuf);
-            return 1;
+            }
+            goto on_error;
         }
 
         // (Potentially) decompress the block
         if (!decompress_block(rawBuf, len, uncBuf, &uncLen)) {
-            free(offsetTable);
-            free(rawBuf);
-            free(uncBuf);
-            return 1;
+            goto on_error;
         }
 
         // Call the a_action callback with "Lumps" that are at most the block size.
@@ -3034,10 +3026,7 @@ hfs_attr_walk_compressed_rsrc(const TSK_FS_ATTR * fs_attr,
             if (lumpSize > SIZE_MAX) {
                 error_detected(TSK_ERR_FS_FWALK,
                     " %s: lumpSize is too large for the action", __func__);
-                free(offsetTable);
-                free(rawBuf);
-                free(uncBuf);
-                return 1;
+                goto on_error;
             }
 
             retval = a_action(fs_attr->fs_file, off, 0, lumpStart,
@@ -3047,13 +3036,11 @@ hfs_attr_walk_compressed_rsrc(const TSK_FS_ATTR * fs_attr,
             if (retval == TSK_WALK_ERROR) {
                 error_detected(TSK_ERR_FS | 201,
                     "%s: callback returned an error", __func__);
-                free(offsetTable);
-                free(rawBuf);
-                free(uncBuf);
-                return 1;
+                goto on_error;
             }
-            if (retval == TSK_WALK_STOP)
+            else if (retval == TSK_WALK_STOP) {
                 break;
+            }
 
             // Find the next lump
             off += lumpSize;
@@ -3063,6 +3050,12 @@ hfs_attr_walk_compressed_rsrc(const TSK_FS_ATTR * fs_attr,
     }
 
     // Done, so free up the allocated resources.
+    free(offsetTable);
+    free(rawBuf);
+    free(uncBuf);
+    return 0;
+
+on_error:
     free(offsetTable);
     free(rawBuf);
     free(uncBuf);
@@ -3117,7 +3110,7 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
     int attrReadResult;
     uint32_t offsetTableOffset;
     uint32_t tableSize;         // Size of the offset table
-    CMP_OFFSET_ENTRY *offsetTable;
+    CMP_OFFSET_ENTRY *offsetTable = NULL;
     size_t indx;                // index for looping over the offset table
     uint64_t sizeUpperBound;
     uint64_t cummulativeSize = 0;
@@ -3201,8 +3194,7 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
         error_detected(TSK_ERR_FS_ARG,
             "%s: range of bytes requested %lld - %lld falls outside of the length upper bound of the uncompressed stream %llu\n",
             __func__, a_offset, a_offset + a_len, sizeUpperBound);
-        free(offsetTable);
-        return -1;
+        goto on_error;
     }
 
     // Compute the range of compression units needed for the request
@@ -3237,17 +3229,14 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
     if (rawBuf == NULL) {
         error_returned
             (" %s: buffers for reading and uncompressing", __func__);
-        free(offsetTable);
-        return -1;
+        goto on_error;
     }
 
     uncBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE);
     if (uncBuf == NULL) {
         error_returned
             (" %s: buffers for reading and uncompressing", __func__);
-        free(offsetTable);
-        free(rawBuf);
-        return -1;
+        goto on_error;
     }
 
     // Read from the indicated comp units
@@ -3274,37 +3263,30 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
         if (len > COMPRESSION_UNIT_SIZE + 1) {
           error_detected(TSK_ERR_FS_READ,
               "%s: block size is too large: %u", __func__, len);
-          free(offsetTable);
-          free(rawBuf);
-          free(uncBuf);
-          return -1;
+          goto on_error;
         }
 
         // Read in the block of compressed data
         attrReadResult = tsk_fs_attr_read(rAttr, offset,
             rawBuf, len, TSK_FS_FILE_READ_FLAG_NONE);
         if (attrReadResult != len) {
-            if (attrReadResult < 0)
+            if (attrReadResult < 0 ) {
                 error_returned
                     (" %s: reading in the compression offset table, "
                     "return value %u should have been %u", __func__,
                     attrReadResult, len);
-            else
+            }
+            else {
                 error_detected(TSK_ERR_FS_READ,
                     "%s: reading in the compression offset table, "
                     "return value %u should have been %u", __func__,
                     attrReadResult, len);
-            free(offsetTable);
-            free(rawBuf);
-            free(uncBuf);
-            return -1;
+            }
+            goto on_error;
         }
 
         if (!decompress_block(rawBuf, len, uncBuf, &uncLen)) {
-            free(offsetTable);
-            free(rawBuf);
-            free(uncBuf);
-            return -1;
+            goto on_error;
         }
 
         // There are now uncLen bytes of uncompressed data available from this comp unit.
@@ -3344,8 +3326,13 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
     free(rawBuf);
     free(uncBuf);
 
-    return (ssize_t) bytesCopied;       // cast OK, cannot be greater than a_len which cannot be
-    // greater than SIZE_MAX/2 (rounded down).
+    return (ssize_t) bytesCopied;       // cast OK, cannot be greater than a_len which cannot be greater than SIZE_MAX/2 (rounded down).
+
+on_error:
+    free(offsetTable);
+    free(rawBuf);
+    free(uncBuf);
+    return -1;
 }
 
 
@@ -3505,7 +3492,7 @@ hfs_file_read_compressed_attr(TSK_FS_FILE* fs_file,
 
     char* dstBuf;
     size_t dstSize;
-    int dstBufFree;
+    int dstBufFree = FALSE;
 
     if (!decompress_attr(buffer + 16, attributeLength - 16, uncSize,
                          &dstBuf, &dstSize, &dstBufFree)) {
@@ -3515,10 +3502,7 @@ hfs_file_read_compressed_attr(TSK_FS_FILE* fs_file,
     if (dstSize != uncSize) {
         error_detected(TSK_ERR_FS_READ,
             " %s, actual uncompressed size not equal to the size in the compression record", __func__);
-        if (dstBufFree) {
-            free(dstBuf);
-        }
-        return 0;
+        goto on_error;
     }
 
     if (tsk_verbose)
@@ -3536,16 +3520,19 @@ hfs_file_read_compressed_attr(TSK_FS_FILE* fs_file,
                             dstSize))
     {
         error_returned(" - %s", __func__);
-        if (dstBufFree) {
-            free(dstBuf);
-        }
-        return 0;
+        goto on_error;
     }
 
     if (dstBufFree) {
         free(dstBuf);
     }
     return 1;
+
+on_error:
+    if (dstBufFree) {
+        free(dstBuf);
+    }
+    return 0;
 }
 
 
