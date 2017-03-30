@@ -5871,7 +5871,6 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
                     tsk_fprintf(hFile, "\n");
             }
         }
-
     }
 
     // Force the loading of all attributes.
@@ -5892,7 +5891,6 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
                 continue;
 
             type = hfs_attrTypeName((uint32_t) fs_attr->type);
-
 
             // We will need to do something better than this, in the end.
             //type = "Data";
@@ -5996,18 +5994,15 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         switch (cmpType) {
         case DECMPFS_TYPE_ZLIB_ATTR:
             // Data is inline
-            tsk_fprintf(hFile,
-                "    Data follows compression record in the CMPF attribute\n");
-            tsk_fprintf(hFile, "    %" PRIu64 " bytes of data at offset ",
-                cmpSize);
+            {
+                // size of header, with indicator byte if uncompressed
+                uint32_t off = (cmph->attr_bytes[0] & 0x0F) == 0x0F ? 17 : 16;
+                cmpSize = fs_attr->size - off;
 
-            if ((cmph->attr_bytes[0] & 0x0F) == 0x0F) {
-                cmpSize = fs_attr->size - 17;   // subtr. size of header + 1 indicator byte
-                tsk_fprintf(hFile, "17, not compressed\n");
-            }
-            else {
-                cmpSize = fs_attr->size - 16;   // subt size of header
-                tsk_fprintf(hFile, "16, zlib compressed\n");
+                tsk_fprintf(hFile,
+                    "    Data follows compression record in the CMPF attribute\n"
+                    "    %" PRIu64 " bytes of data at offset %u, %s compressed\n",
+                    cmpSize, off, off == 16 ? "zlib" : "not");
             }
             break;
 
@@ -6015,7 +6010,7 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
             // Data is inline
             tsk_fprintf(hFile,
                 "    Data follows compression record in the CMPF attribute\n");
-            tsk_fprintf(hFile, "    %" PRIu64 " bytes of data at offset 16, lzvn compressed", cmpSize);
+            tsk_fprintf(hFile, "    %" PRIu64 " bytes of data at offset 16, lzvn compressed", fs_attr->size - 16);
             break;
 
         case DECMPFS_TYPE_ZLIB_RSRC:
