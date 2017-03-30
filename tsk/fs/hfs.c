@@ -388,7 +388,7 @@ hfs_extents_to_attr(TSK_FS_INFO * a_fs, const hfs_ext_desc * a_extents,
             "hfs_extents_to_attr: Converting extents from offset %" PRIuOFF
             " to runlist\n", a_start_off);
 
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < 8; ++i) {
         TSK_FS_ATTR_RUN *cur_run;
 
         uint32_t addr = tsk_getu32(a_fs->endian, a_extents[i].start_blk);
@@ -590,7 +590,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                     " @ %" PRIu64 " has %" PRIu16 " records\n", cur_node,
                     cur_off, num_rec);
 
-            for (rec = 0; rec < num_rec; rec++) {
+            for (rec = 0; rec < num_rec; ++rec) {
                 int cmp;
                 size_t rec_off;
                 hfs_btree_key_ext *key;
@@ -671,7 +671,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                     PRIu64 " has %" PRIu16 " records\n", cur_node, cur_off,
                     num_rec);
 
-            for (rec = 0; rec < num_rec; rec++) {
+            for (rec = 0; rec < num_rec; ++rec) {
                 size_t rec_off;
                 hfs_btree_key_ext *key;
                 uint32_t rec_cnid;
@@ -921,7 +921,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
             uint32_t next_node = 0;
             int rec;
 
-            for (rec = 0; rec < num_rec; rec++) {
+            for (rec = 0; rec < num_rec; ++rec) {
                 size_t rec_off;
                 hfs_btree_key_cat *key;
                 uint8_t retval;
@@ -1026,7 +1026,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
         else if (node_desc->type == HFS_BT_NODE_TYPE_LEAF) {
             int rec;
 
-            for (rec = 0; rec < num_rec; rec++) {
+            for (rec = 0; rec < num_rec; ++rec) {
                 size_t rec_off;
                 hfs_btree_key_cat *key;
                 uint8_t retval;
@@ -1361,8 +1361,7 @@ hfs_lookup_hard_link(HFS_INFO * hfs, TSK_INUM_T linknum,
         snprintf(fBuff, 30, "iNode%" PRIuINUM, linknum);
     }
 
-    for (indx = 0; indx < tsk_fs_dir_getsize(mdir); indx++) {
-
+    for (indx = 0; indx < tsk_fs_dir_getsize(mdir); ++indx) {
         if ((mdir->names != NULL) && mdir->names[indx].name &&
             (fs->name_cmp(fs, mdir->names[indx].name, fBuff) == 0)) {
             // OK this is the one
@@ -3171,7 +3170,7 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
     }
 
     // Compute the range of compression units needed for the request
-    for (indx = 0; indx < tableSize; indx++) {
+    for (indx = 0; indx < tableSize; ++indx) {
         if (cummulativeSize <= (uint64_t) a_offset &&   // casts OK because a_offset >= 0
             (cummulativeSize + COMPRESSION_UNIT_SIZE >
                 (uint64_t) a_offset)) {
@@ -3213,7 +3212,7 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
     }
 
     // Read from the indicated comp units
-    for (indx = startUnit; indx <= endUnit; indx++) {
+    for (indx = startUnit; indx <= endUnit; ++indx) {
         uint32_t offset = offsetTableOffset + offsetTable[indx].offset;
         uint32_t len = offsetTable[indx].length;
         uint64_t uncLen;
@@ -3804,7 +3803,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
             goto on_error;
         }
 
-        for (recIndx = 0; recIndx < numRec; recIndx++) {
+        for (recIndx = 0; recIndx < numRec; ++recIndx) {
             uint16_t keyLength;
             int comp;           // comparison result
             char *compStr;      // comparison result, as a string
@@ -3908,7 +3907,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
         // Note, leaf node could have one (or maybe zero) records
 
         // Loop over the records in this node
-        for (recIndx = 0; recIndx < numRec; recIndx++) {
+        for (recIndx = 0; recIndx < numRec; ++recIndx) {
             // Offset of the record
             uint8_t *recOffsetData = &nodeData[attrFile.nodeSize - 2 * (recIndx + 1)];  // data describing where this record is
             uint16_t recOffset = tsk_getu16(endian, recOffsetData);
@@ -4086,7 +4085,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 free(buffer);
                 buffer = NULL;
 
-                attribute_counter++;
+                ++attribute_counter;
             }                   // END if comp == 0
             if (comp == 1) {
                 // since this record key is greater than our search key, all
@@ -4357,7 +4356,7 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
     typeList = (hfs_resource_type_list *) (map + typeListOffset);
     numTypes = tsk_getu16(fs_info->endian, typeList->typeCount) + 1;
 
-    for (mindx = 0; mindx < numTypes; mindx++) {
+    for (mindx = 0; mindx < numTypes; ++mindx) {
         uint16_t numRes;
         uint16_t refOff;
         int pindx;              // index for looping over resources
@@ -4369,7 +4368,7 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
         refOff = tsk_getu16(fs_info->endian, tlItem->offset);
 
 
-        for (pindx = 0; pindx < numRes; pindx++) {
+        for (pindx = 0; pindx < numRes; ++pindx) {
             int16_t nameOffset;
             char *nameBuffer;
             RES_DESCRIPTOR *rsrc;
@@ -4953,7 +4952,7 @@ hfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start_blk,
     /*
      * Iterate
      */
-    for (addr = start_blk; addr <= end_blk; addr++) {
+    for (addr = start_blk; addr <= end_blk; ++addr) {
         int retval;
         int myflags;
 
@@ -5057,7 +5056,7 @@ hfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     if (start_inum > end_inum)
         XSWAP(start_inum, end_inum);
 
-    for (inum = start_inum; inum <= end_inum; inum++) {
+    for (inum = start_inum; inum <= end_inum; ++inum) {
         int retval;
 
         if (hfs_inode_lookup(fs, fs_file, inum)) {
@@ -5527,7 +5526,7 @@ print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
 
     if (print->accumulating) {
         if (addr == print->startBlock + print->blockCount) {
-            print->blockCount++;
+            ++print->blockCount;
         }
         else {
             output_print_addr(print);
@@ -5719,7 +5718,7 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
                 "File type:\t%04" PRIx32 "  ",
                 tsk_getu32(fs->endian, entry.cat.std.u_info.file_type));
 
-            for (windx = 0; windx < 4; windx++) {
+            for (windx = 0; windx < 4; ++windx) {
                 uint8_t cu = entry.cat.std.u_info.file_type[windx];
                 if (cu >= 32 && cu <= 126)
                     tsk_fprintf(hFile, "%c", (char) cu);
@@ -5730,7 +5729,7 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
             tsk_fprintf(hFile,
                 "File creator:\t%04" PRIx32 "  ",
                 tsk_getu32(fs->endian, entry.cat.std.u_info.file_cr));
-            for (windx = 0; windx < 4; windx++) {
+            for (windx = 0; windx < 4; ++windx) {
                 uint8_t cu = entry.cat.std.u_info.file_cr[windx];
                 if (cu >= 32 && cu <= 126)
                     tsk_fprintf(hFile, "%c", (char) cu);
@@ -5885,7 +5884,7 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
 
         // cycle through the attributes
         cnt = tsk_fs_file_attr_getsize(fs_file);
-        for (i = 0; i < cnt; i++) {
+        for (i = 0; i < cnt; ++i) {
             const char *type;   // type of the attribute as a string
             const TSK_FS_ATTR *fs_attr =
                 tsk_fs_file_attr_get_idx(fs_file, i);
