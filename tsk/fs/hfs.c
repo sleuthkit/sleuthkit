@@ -2549,20 +2549,11 @@ hfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
                 "Extents File not present");
             return 1;
         }
-        if (hfs_make_extents(hfs, a_fs_file)) {
-            return 1;
-        }
-        else {
-            return 0;
-        }
+
+        return hfs_make_extents(hfs, a_fs_file);
     }
     else if (inum == HFS_CATALOG_FILE_ID) {
-        if (hfs_make_catalog(hfs, a_fs_file)) {
-            return 1;
-        }
-        else {
-            return 0;
-        }
+        return hfs_make_catalog(hfs, a_fs_file);
     }
     else if (inum == HFS_BAD_BLOCK_FILE_ID) {
         // Note: the Extents file and the BadBlocks file are really the same.
@@ -2571,20 +2562,10 @@ hfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
                 "BadBlocks File not present");
             return 1;
         }
-        if (hfs_make_badblockfile(hfs, a_fs_file)) {
-            return 1;
-        }
-        else {
-            return 0;
-        }
+        return hfs_make_badblockfile(hfs, a_fs_file);
     }
     else if (inum == HFS_ALLOCATION_FILE_ID) {
-        if (hfs_make_blockmap(hfs, a_fs_file)) {
-            return 1;
-        }
-        else {
-            return 0;
-        }
+        return hfs_make_blockmap(hfs, a_fs_file);
     }
     else if (inum == HFS_STARTUP_FILE_ID) {
         if (!hfs->has_startup_file) {
@@ -2592,12 +2573,7 @@ hfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
                 "Startup File not present");
             return 1;
         }
-        if (hfs_make_startfile(hfs, a_fs_file)) {
-            return 1;
-        }
-        else {
-            return 0;
-        }
+        return hfs_make_startfile(hfs, a_fs_file);
     }
     else if (inum == HFS_ATTRIBUTES_FILE_ID) {
         if (!hfs->has_attributes_file) {
@@ -2605,12 +2581,7 @@ hfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
                 "Attributes File not present");
             return 1;
         }
-        if (hfs_make_attrfile(hfs, a_fs_file)) {
-            return 1;
-        }
-        else {
-            return 0;
-        }
+        return hfs_make_attrfile(hfs, a_fs_file);
     }
 
     /* Lookup inode and store it in the HFS structure */
