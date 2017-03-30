@@ -11,8 +11,9 @@ from sys import platform as _platform
 import time
 import traceback
 
+MSBUILD_PATH = os.path.normpath("c:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild.exe")
 
-def pullAndBuildAll(branch):
+def pullAndBuildAllDependencies(branch):
     '''
         Compile libewf, libvhdi, libvmdk.
         Args:
@@ -47,12 +48,7 @@ def pullAndBuildAll(branch):
         buildDependentLibs(vhdiHome, 32, "libvhdi")
     if(passed): 
         buildDependentLibs(vmdkHome, 32, "libvmdk")
-    if(passed):
-        buildTSK(32, "Release")
-    if(passed):
-        buildTSK(32, "Release_NoLibs")
-    if(passed):
-        buildTSK(32, "Release_PostgreSQL")
+
 
     # build 64-bit of libewf, libvhdi, libvmdk and TSK 
     if(passed): 
@@ -61,6 +57,16 @@ def pullAndBuildAll(branch):
         buildDependentLibs(vhdiHome, 64, "libvhdi")
     if(passed): 
         buildDependentLibs(vmdkHome, 64, "libvmdk")
+
+
+def buildTSKAll():
+    if(passed):
+        buildTSK(32, "Release")
+    if(passed):
+        buildTSK(32, "Release_NoLibs")
+    if(passed):
+        buildTSK(32, "Release_PostgreSQL")
+
     if(passed):
         buildTSK(64, "Release")
     if(passed):
@@ -136,9 +142,7 @@ def buildDependentLibs(libHome, wPlatform, targetDll):
     '''
     global passed
     passed = True
-
-    msbuild = "/cygdrive/c/Program Files (x86)/MSBuild/14.0/Bin/MSBuild.exe"
-
+ 
     print("Building " + str(wPlatform) + "-bit " + targetDll)
     sys.stdout.flush()
 
@@ -166,7 +170,7 @@ def buildDependentLibs(libHome, wPlatform, targetDll):
     os.chdir(os.path.join(libHome, "msvscpp"))
 
     vs = []
-    vs.append("/cygdrive/c/Program Files (x86)/MSBuild/14.0/Bin/MSBuild.exe")
+    vs.append(MSBUILD_PATH)
     vs.append(os.path.join(targetDll + ".sln"))
     vs.append("/p:configuration=" + target)
     if wPlatform == 64:
@@ -208,7 +212,7 @@ def buildTSK(wPlatform, target):
     sys.stdout.flush()
 
     vs = []
-    vs.append("/cygdrive/c/Program Files (x86)/MSBuild/14.0/Bin/MSBuild.exe")
+    vs.append(MSBUILD_PATH)
     vs.append(os.path.join("tsk-win.sln"))
     vs.append("/p:configuration=" + target)
     if wPlatform == 64:
@@ -257,7 +261,8 @@ def main():
 
     branch = sys.argv[1]
 
-    pullAndBuildAll(branch)
+    pullAndBuildAllDependencies(branch)
+    buildTSKAll()
 
 class OS:
   LINUX, MAC, WIN, CYGWIN = range(4)
