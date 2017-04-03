@@ -3833,7 +3833,6 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
             char *compStr;      // comparison result, as a string
             uint8_t *recData;   // pointer to the data part of the record
             uint32_t keyFileID;
-            int diff;           // difference in bytes between the record start and the record data
 
             // Offset of the record
             uint8_t *recOffsetData = &nodeData[attrFile.nodeSize - 2 * (recIndx + 1)];  // data describing where this record is
@@ -3893,8 +3892,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
             // Data must start on an even offset from the beginning of the record.
             // So, correct this if needed.
-            diff = recData - record;
-            if (2 * (diff / 2) != diff) {
+            if ((recData - record) % 2) {
                 recData += 1;
             }
 
@@ -3976,7 +3974,6 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 uint8_t *recData;       // pointer to the data part of the record
                 hfs_attr_data *attrData;
                 uint32_t attributeLength;
-                int diff;       // Difference in bytes between the start of the record and the start of data.
 
                 int conversionResult;
                 char nameBuff[MAX_ATTR_NAME_LENGTH];
@@ -3989,8 +3986,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
                 // Data must start on an even offset from the beginning of the record.
                 // So, correct this if needed.
-                diff = recData - record;
-                if (2 * (diff / 2) != diff) {
+                if ((recData - record) % 2) {
                     recData += 1;
                 }
 
