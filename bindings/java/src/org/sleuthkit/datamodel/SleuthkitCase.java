@@ -4136,7 +4136,13 @@ public class SleuthkitCase {
 					}
 				}
 				if (null == carvedFilesDir) {
-					carvedFilesDir = addVirtualDirectory(root.getId(), VirtualDirectory.NAME_CARVED, transaction);
+					long parId = root.getId();
+					// $CarvedFiles should be a child of the root directory, not the file system
+					if (root instanceof FileSystem) {
+						Content rootDir = ((FileSystem) root).getRootDirectory();
+						parId = rootDir.getId();
+					}
+					carvedFilesDir = addVirtualDirectory(parId, VirtualDirectory.NAME_CARVED, transaction);
 				}
 				newCacheKey = root.getId();
 				rootIdsToCarvedFileDirs.put(newCacheKey, carvedFilesDir);
