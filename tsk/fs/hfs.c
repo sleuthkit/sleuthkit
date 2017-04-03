@@ -81,15 +81,17 @@
 #include <strings.h>
 #endif
 
+#define XSWAP(a,b) { a ^= b; b ^= a; a ^= b; }
+
 // Compression Stuff
 
 #ifdef HAVE_LIBZ
 #include <zlib.h>
 #endif
 
+#ifdef HAVE_LIBLZFSE
 #include <lzvn.h>
-
-#define XSWAP(a,b) { a ^= b; b ^= a; a ^= b; }
+#endif
 
 // Forward declarations:
 static uint8_t hfs_load_attrs(TSK_FS_FILE * fs_file);
@@ -98,9 +100,6 @@ static uint8_t hfs_load_extended_attrs(TSK_FS_FILE * file,
     uint64_t * uncSize);
 void error_detected(uint32_t errnum, char *errstr, ...);
 void error_returned(char *errstr, ...);
-
-
-
 
 #ifdef HAVE_LIBZ
 
@@ -2607,7 +2606,6 @@ hfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
     return 0;
 }
 
-#ifdef HAVE_LIBZ
 
 typedef struct {
     uint32_t offset;
@@ -2780,6 +2778,7 @@ on_error:
 }
 
 
+#ifdef HAVE_LIBZ
 int hfs_decompress_zlib_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t* uncLen)
 {
     // see if this block is compressed
@@ -2819,13 +2818,16 @@ int hfs_decompress_zlib_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t
 
     return 1;
 }
+#endif
 
 
+#ifdef HAVE_LIBLZFSE
 int hfs_decompress_lzvn_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t* uncLen)
 {
     *uncLen = lzvn_decode_buffer(uncBuf, COMPRESSION_UNIT_SIZE, rawBuf, len);
     return 1;  // apparently this can't fail
 }
+#endif
 
 
 uint8_t
@@ -3035,6 +3037,7 @@ on_error:
 }
 
 
+#ifdef HAVE_LIBZ
 uint8_t
 hfs_attr_walk_zlib_rsrc(const TSK_FS_ATTR * fs_attr,
     int flags, TSK_FS_FILE_WALK_CB a_action, void *ptr)
@@ -3045,8 +3048,10 @@ hfs_attr_walk_zlib_rsrc(const TSK_FS_ATTR * fs_attr,
       hfs_decompress_zlib_block
     );
 }
+#endif
 
 
+#ifdef HAVE_LIBLZFSE
 uint8_t
 hfs_attr_walk_lzvn_rsrc(const TSK_FS_ATTR * fs_attr,
     int flags, TSK_FS_FILE_WALK_CB a_action, void *ptr)
@@ -3057,6 +3062,7 @@ hfs_attr_walk_lzvn_rsrc(const TSK_FS_ATTR * fs_attr,
       hfs_decompress_lzvn_block
     );
 }
+#endif
 
 
 /** \internal
@@ -3308,6 +3314,7 @@ on_error:
 }
 
 
+#ifdef HAVE_LIBZ
 ssize_t
 hfs_file_read_zlib_rsrc(const TSK_FS_ATTR * a_fs_attr,
     TSK_OFF_T a_offset, char *a_buf, size_t a_len)
@@ -3318,8 +3325,10 @@ hfs_file_read_zlib_rsrc(const TSK_FS_ATTR * a_fs_attr,
         hfs_decompress_zlib_block
     );
 }
+#endif
 
 
+#ifdef HAVE_LIBLZFSE
 ssize_t
 hfs_file_read_lzvn_rsrc(const TSK_FS_ATTR * a_fs_attr,
     TSK_OFF_T a_offset, char *a_buf, size_t a_len)
@@ -3330,17 +3339,11 @@ hfs_file_read_lzvn_rsrc(const TSK_FS_ATTR * a_fs_attr,
         hfs_decompress_lzvn_block
     );
 }
-
 #endif
 
 
 int hfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize, int* dstBufFree)
 {
-    char* uncBuf = NULL;
-#ifndef HAVE_LIBZ
-    static uint8_t dummy[1];
-#endif
-
     if ((rawBuf[0] & 0x0F) == 0x0F) {
         if (tsk_verbose)
             tsk_fprintf(stderr,
@@ -3353,6 +3356,7 @@ int hfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, c
     }
     else {    // Leading byte is not 0x0F
 #ifdef HAVE_LIBZ
+        char* uncBuf = NULL;
         uint64_t uLen;
         unsigned long bytesConsumed;
         int infResult;
@@ -3400,8 +3404,10 @@ int hfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, c
             tsk_fprintf(stderr,
                         "%s: ZLIB not available, so loading an empty default DATA attribute.\n", __func__);
 
-        // Dummy is one byte long, so the ptr is not null, but only
-        // loading zero bytes.
+        // Dummy is one byte long, so the ptr is not null, but we set the
+        // length to zero bytes, so it is never read.
+        static uint8_t dummy[1];
+
         *dstBuf = dummy;
         *dstSize = 0;
         *dstBufFree = FALSE;
@@ -3414,11 +3420,29 @@ int hfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, c
 
 int hfs_decompress_lzvn_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize, int* dstBufFree)
 {
+#ifdef HAVE_LIBLZFSE
     char* uncBuf = (char *) tsk_malloc((size_t) uncSize);
     *dstSize = lzvn_decode_buffer(uncBuf, uncSize, rawBuf, rawSize);
     *dstBuf = uncBuf;
     *dstBufFree = TRUE;
-    return 1;  // apparently this can't fail
+#else
+    // liblzfse compression library is not available, so we will load a
+    // zero-length default DATA attribute. Without this, icat may
+    // misbehave.
+
+    if (tsk_verbose)
+        tsk_fprintf(stderr,
+                   "%s: lzfse not available, so loading an empty default DATA attribute.\n", __func__);
+
+    // Dummy is one byte long, so the ptr is not null, but we set the
+    // length to zero bytes, so it is never read.
+    static uint8_t dummy[1];
+
+    *dstBuf = dummy;
+    *dstSize = 0;
+    *dstBufFree = FALSE;
+#endif
+    return 1;
 }
 
 
@@ -4736,8 +4760,9 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
                     fs_attr->w = hfs_attr_walk_zlib_rsrc;
                     fs_attr->r = hfs_file_read_zlib_rsrc;
 #else
-                    // We don't have zlib, so the uncompressed data is not available to us,
-                    // however, we must have a default DATA attribute, or icat will misbehave.
+                    // We don't have zlib, so the uncompressed data is not
+                    // available to us; however, we must have a default DATA
+                    // attribute, or icat will misbehave.
                     if (tsk_verbose)
                         tsk_fprintf(stderr,
                             "hfs_load_attrs: No zlib compression library, so setting a zero-length default DATA attribute.\n");
@@ -4752,8 +4777,24 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
                     break;
 
                 case DECMPFS_TYPE_LZVN_RSRC:
+#ifdef HAVE_LIBLZFSE
                     fs_attr->w = hfs_attr_walk_lzvn_rsrc;
                     fs_attr->r = hfs_file_read_lzvn_rsrc;
+#else
+                    // We don't have liblzfse, so the uncompressed data is not
+                    // available to us; however, we must have a default DATA
+                    // attribute, or icat will misbehave.
+                    if (tsk_verbose)
+                        tsk_fprintf(stderr,
+                            "hfs_load_attrs: No liblzsfe compression library, so setting a zero-length default DATA attribute.\n");
+
+                    if (tsk_fs_attr_set_run(fs_file, fs_attr, NULL, "DATA",
+                            TSK_FS_ATTR_TYPE_HFS_DATA, HFS_FS_ATTR_ID_DATA, 0,
+                            0, 0, 0, 0)) {
+                        error_returned(" - hfs_load_attrs (non-file)");
+                        return 1;
+                    }
+#endif
                     break;
                 }
 
