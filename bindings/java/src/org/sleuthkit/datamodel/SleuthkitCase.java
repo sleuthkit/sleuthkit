@@ -3710,7 +3710,7 @@ public class SleuthkitCase {
 				parentPath = "/"; //NON-NLS
 			}
 			String parentName = getFileName(parentId, connection);
-			if (parentName != null) {
+			if (parentName != null && !parentName.isEmpty()) {
 				parentPath = parentPath + parentName + "/"; //NON-NLS
 			}
 
