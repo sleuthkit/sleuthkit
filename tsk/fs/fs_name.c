@@ -485,6 +485,7 @@ tsk_fs_name_print_long(FILE * hFile, const TSK_FS_FILE * fs_file,
     const char *a_path, TSK_FS_INFO * fs, const TSK_FS_ATTR * fs_attr,
     uint8_t print_path, int32_t sec_skew)
 {
+	int bNo_NTFS_TimeFields = 0;
     tsk_fs_name_print(hFile, fs_file, a_path, fs, fs_attr, print_path);
 
     if ((fs == NULL) || (fs_file->meta == NULL)) {
@@ -528,6 +529,38 @@ tsk_fs_name_print_long(FILE * hFile, const TSK_FS_FILE * fs_file,
             tsk_fs_print_time(hFile, fs_file->meta->crtime - sec_skew);
         else
             tsk_fs_print_time(hFile, fs_file->meta->crtime);
+
+
+		//Now for NTFS, dump the four additional timestamps from the $FILE_NAME structure only if it is NTFS
+		if(TSK_FS_TYPE_ISNTFS(fs->ftype) && !bNo_NTFS_TimeFields )
+		{
+			 
+			/* MAC times */
+			tsk_fprintf(hFile, "\t");
+			if (fs_file->meta->time2.ntfs.fn_mtime)
+				tsk_fs_print_time(hFile, fs_file->meta->time2.ntfs.fn_mtime - sec_skew);
+			else
+				tsk_fs_print_time(hFile, fs_file->meta->time2.ntfs.fn_mtime);
+
+			tsk_fprintf(hFile, "\t");
+			/* FAT only gives the day of last access */
+			if (fs_file->meta->time2.ntfs.fn_atime == 0)
+				tsk_fs_print_day(hFile, fs_file->meta->time2.ntfs.fn_atime);
+			else
+				tsk_fs_print_time(hFile, fs_file->meta->time2.ntfs.fn_atime - sec_skew);
+
+			tsk_fprintf(hFile, "\t");
+			if (fs_file->meta->time2.ntfs.fn_ctime)
+				tsk_fs_print_time(hFile, fs_file->meta->time2.ntfs.fn_ctime - sec_skew);
+			else
+				tsk_fs_print_time(hFile, fs_file->meta->time2.ntfs.fn_ctime);
+
+			tsk_fprintf(hFile, "\t");
+			if (fs_file->meta->time2.ntfs.fn_crtime)
+				tsk_fs_print_time(hFile, fs_file->meta->time2.ntfs.fn_crtime - sec_skew);
+			else
+				tsk_fs_print_time(hFile, fs_file->meta->time2.ntfs.fn_crtime);
+		}
 
         /* use the stream size if one was given */
         if (fs_attr)
