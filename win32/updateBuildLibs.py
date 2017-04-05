@@ -249,7 +249,8 @@ def usage():
     '''
     Print out how to use this script.
     '''
-    print('Usage: python3 updataBuildlibs.py')
+    print('Usage: python3 updataBuildlibs.py [branch]')
+    print('branch is which branch to build and is optional. Currently only work for master')
     sys.stdout.flush()
     sys.exit(1)
 
