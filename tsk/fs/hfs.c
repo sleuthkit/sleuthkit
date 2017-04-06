@@ -2986,10 +2986,7 @@ hfs_attr_walk_compressed_rsrc(const TSK_FS_ATTR * fs_attr,
 
         while (remaining > 0) {
             int retval;         // action return value
-            if (remaining <= blockSize)
-                lumpSize = remaining;
-            else
-                lumpSize = blockSize;
+            lumpSize = remaining <= blockSize ? remaining : blockSize;
 
             // Apply the callback function
             if (tsk_verbose)
