@@ -6047,7 +6047,7 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
             // Data is inline
             tsk_fprintf(hFile,
                 "    Data follows compression record in the CMPF attribute\n");
-            tsk_fprintf(hFile, "    %" PRIu64 " bytes of data at offset 16, lzvn compressed", fs_attr->size - 16);
+            tsk_fprintf(hFile, "    %" PRIu64 " bytes of data at offset 16, lzvn compressed\n", fs_attr->size - 16);
             break;
 
         case DECMPFS_TYPE_ZLIB_RSRC:
