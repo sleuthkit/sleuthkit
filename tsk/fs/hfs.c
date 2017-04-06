@@ -2778,11 +2778,30 @@ on_error:
 }
 
 
+int hfs_decompress_noncompressed_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t* uncLen) {
+    // actually an uncompressed block of data; just copy
+    if (tsk_verbose)
+        tsk_fprintf(stderr,
+           "%s: Copying an uncompressed compression unit\n", __func__);
+
+    if ((len - 1) > COMPRESSION_UNIT_SIZE) {
+        error_detected(TSK_ERR_FS_READ,
+            "%s: uncompressed block length %u is longer "
+            "than compression unit size %u", __func__, len - 1,
+            COMPRESSION_UNIT_SIZE);
+        return 0;
+    }
+    memcpy(uncBuf, rawBuf + 1, len - 1);
+    *uncLen = len - 1;
+    return 1;
+}
+
+
 #ifdef HAVE_LIBZ
 int hfs_decompress_zlib_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t* uncLen)
 {
     // see if this block is compressed
-    if ((len > 0) && ((rawBuf[0] & 0x0F) != 0x0F)) {
+    if (len > 0 && (rawBuf[0] & 0x0F) != 0x0F) {
         // Uncompress the chunk of data
         if (tsk_verbose)
             tsk_fprintf(stderr,
@@ -2798,25 +2817,12 @@ int hfs_decompress_zlib_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t
                   __func__, infResult);
             return 0;
         }
+        return 1;
     }
     else {
         // actually an uncompressed block of data; just copy
-        if (tsk_verbose)
-            tsk_fprintf(stderr,
-               "%s: Copying an uncompressed compression unit\n", __func__);
-
-        if ((len - 1) > COMPRESSION_UNIT_SIZE) {
-            error_detected(TSK_ERR_FS_READ,
-                "%s: uncompressed block length %u is longer "
-                "than compression unit size %u", __func__, len - 1,
-                COMPRESSION_UNIT_SIZE);
-            return 0;
-        }
-        memcpy(uncBuf, rawBuf + 1, len - 1);
-        *uncLen = len - 1;
+        return hfs_decompress_noncompressed_block(rawBuf, len, uncBuf, uncLen);
     }
-
-    return 1;
 }
 #endif
 
@@ -2824,8 +2830,15 @@ int hfs_decompress_zlib_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t
 #ifdef HAVE_LIBLZFSE
 int hfs_decompress_lzvn_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t* uncLen)
 {
-    *uncLen = lzvn_decode_buffer(uncBuf, COMPRESSION_UNIT_SIZE, rawBuf, len);
-    return 1;  // apparently this can't fail
+    // see if this block is compressed
+    if (len > 0 && rawBuf[0] != 0x06) {
+        *uncLen = lzvn_decode_buffer(uncBuf, COMPRESSION_UNIT_SIZE, rawBuf, len);
+        return 1;  // apparently this can't fail
+    }
+    else {
+        // actually an uncompressed block of data; just copy
+        return hfs_decompress_noncompressed_block(rawBuf, len, uncBuf, uncLen);
+    }
 }
 #endif
 
@@ -3362,19 +3375,26 @@ hfs_file_read_lzvn_rsrc(const TSK_FS_ATTR * a_fs_attr,
 #endif
 
 
+int hfs_decompress_noncompressed_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize, int* dstBufFree) {
+    if (tsk_verbose)
+        tsk_fprintf(stderr,
+            "%s: Leading byte, 0x%02x, indicates that the data is not really compressed.\n"
+            "%s:  Loading the default DATA attribute.", __func__, rawBuf[0], __func__);
+
+    *dstBuf = rawBuf + 1;  // + 1 indicator byte
+    *dstSize = uncSize;
+    *dstBufFree = FALSE;
+    return 1;
+}
+
+
 int hfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize, int* dstBufFree)
 {
     if ((rawBuf[0] & 0x0F) == 0x0F) {
-        if (tsk_verbose)
-            tsk_fprintf(stderr,
-                "%s: Leading byte, 0x0F, indicates that the data is not really compressed.\n"
-                "%s:  Loading the default DATA attribute.", __func__, __func__);
-
-        *dstBuf = rawBuf + 1;  // + 1 indicator byte
-        *dstSize = uncSize;
-        *dstBufFree = FALSE;
+        return hfs_decompress_noncompressed_attr(
+            rawBuf, rawSize, uncSize, dstBuf, dstSize, dstBufFree);
     }
-    else {    // Leading byte is not 0x0F
+    else {
 #ifdef HAVE_LIBZ
         char* uncBuf = NULL;
         uint64_t uLen;
@@ -3440,29 +3460,35 @@ int hfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, c
 
 int hfs_decompress_lzvn_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize, int* dstBufFree)
 {
+    if (rawBuf[0] == 0x06) {
+        return hfs_decompress_noncompressed_attr(
+            rawBuf, rawSize, uncSize, dstBuf, dstSize, dstBufFree);
+    }
+    else {
 #ifdef HAVE_LIBLZFSE
-    char* uncBuf = (char *) tsk_malloc((size_t) uncSize);
-    *dstSize = lzvn_decode_buffer(uncBuf, uncSize, rawBuf, rawSize);
-    *dstBuf = uncBuf;
-    *dstBufFree = TRUE;
+        char* uncBuf = (char *) tsk_malloc((size_t) uncSize);
+        *dstSize = lzvn_decode_buffer(uncBuf, uncSize, rawBuf, rawSize);
+        *dstBuf = uncBuf;
+        *dstBufFree = TRUE;
 #else
-    // liblzfse compression library is not available, so we will load a
-    // zero-length default DATA attribute. Without this, icat may
-    // misbehave.
+        // liblzfse compression library is not available, so we will load a
+        // zero-length default DATA attribute. Without this, icat may
+        // misbehave.
 
-    if (tsk_verbose)
-        tsk_fprintf(stderr,
-                   "%s: lzfse not available, so loading an empty default DATA attribute.\n", __func__);
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                       "%s: lzfse not available, so loading an empty default DATA attribute.\n", __func__);
 
-    // Dummy is one byte long, so the ptr is not null, but we set the
-    // length to zero bytes, so it is never read.
-    static uint8_t dummy[1];
+        // Dummy is one byte long, so the ptr is not null, but we set the
+        // length to zero bytes, so it is never read.
+        static uint8_t dummy[1];
 
-    *dstBuf = dummy;
-    *dstSize = 0;
-    *dstBufFree = FALSE;
+        *dstBuf = dummy;
+        *dstSize = 0;
+        *dstBufFree = FALSE;
 #endif
-    return 1;
+        return 1;
+    }
 }
 
 
@@ -6065,9 +6091,16 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
 
         case DECMPFS_TYPE_LZVN_ATTR:
             // Data is inline
-            tsk_fprintf(hFile,
-                "    Data follows compression record in the CMPF attribute\n");
-            tsk_fprintf(hFile, "    %" PRIu64 " bytes of data at offset 16, lzvn compressed\n", fs_attr->size - 16);
+            {
+                // size of header, with indicator byte if uncompressed
+                uint32_t off = cmph->attr_bytes[0] == 0x06 ? 17 : 16;
+                cmpSize = fs_attr->size - off;
+
+                tsk_fprintf(hFile,
+                    "    Data follows compression record in the CMPF attribute\n"
+                    "    %" PRIu64 " bytes of data at offset %u, %s compressed\n",
+                    cmpSize, off, off == 16 ? "lzvn" : "not");
+            }
             break;
 
         case DECMPFS_TYPE_ZLIB_RSRC:
