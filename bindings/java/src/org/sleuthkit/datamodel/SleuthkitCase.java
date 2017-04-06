@@ -2354,7 +2354,7 @@ public class SleuthkitCase {
 			if (BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE != valueType) {
 				switch (valueType) {
 					case STRING:
-						valueClause = " value_text = '" + attr.getValueString() + "'";
+						valueClause = " value_text = '" + escapeSingleQuotes(attr.getValueString()) + "'";
 						break;
 					case INTEGER:
 						valueClause = " value_int32 = " + attr.getValueInt();
