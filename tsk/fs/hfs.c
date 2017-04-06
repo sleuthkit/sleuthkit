@@ -2979,7 +2979,19 @@ hfs_attr_walk_compressed_rsrc(const TSK_FS_ATTR * fs_attr,
             goto on_error;
         }
 
-        // Call the a_action callback with "Lumps" that are at most the block size.
+        const uint32_t expUncLen = indx == tableSize - 1 ?
+          rAttr->fs_file->meta->size % COMPRESSION_UNIT_SIZE :
+          COMPRESSION_UNIT_SIZE;
+
+        if (uncLen != expUncLen) {
+            error_detected(TSK_ERR_FS_READ,
+                "%s: compressed block decompressed to %u bytes, "
+                "should have been %u bytes", __func__, uncLen, expUncLen);
+            goto on_error;
+        }
+
+        // Call the a_action callback with "Lumps"
+        // that are at most the block size.
         blockSize = fs->block_size;
         remaining = uncLen;
         lumpStart = uncBuf;
@@ -3261,6 +3273,17 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
         }
 
         if (!decompress_block(rawBuf, len, uncBuf, &uncLen)) {
+            goto on_error;
+        }
+
+        const uint32_t expUncLen = indx == tableSize - 1 ?
+          rAttr->fs_file->meta->size % COMPRESSION_UNIT_SIZE :
+          COMPRESSION_UNIT_SIZE;
+
+        if (uncLen != expUncLen) {
+            error_detected(TSK_ERR_FS_READ,
+                "%s: compressed block decompressed to %u bytes, "
+                "should have been %u bytes", __func__, uncLen, expUncLen);
             goto on_error;
         }
 
