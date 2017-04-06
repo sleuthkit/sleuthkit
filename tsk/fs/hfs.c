@@ -2992,8 +2992,10 @@ hfs_attr_walk_compressed_rsrc(const TSK_FS_ATTR * fs_attr,
             goto on_error;
         }
 
+        // If size is a multiple of COMPRESSION_UNIT_SIZE,
+        // expected uncompressed length is COMPRESSION_UNIT_SIZE
         const uint32_t expUncLen = indx == tableSize - 1 ?
-          rAttr->fs_file->meta->size % COMPRESSION_UNIT_SIZE :
+          ((rAttr->fs_file->meta->size - 1) % COMPRESSION_UNIT_SIZE) + 1 :
           COMPRESSION_UNIT_SIZE;
 
         if (uncLen != expUncLen) {
@@ -3289,8 +3291,10 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
             goto on_error;
         }
 
+        // If size is a multiple of COMPRESSION_UNIT_SIZE,
+        // expected uncompressed length is COMPRESSION_UNIT_SIZE
         const uint32_t expUncLen = indx == tableSize - 1 ?
-          rAttr->fs_file->meta->size % COMPRESSION_UNIT_SIZE :
+          ((rAttr->fs_file->meta->size - 1) % COMPRESSION_UNIT_SIZE) + 1 :
           COMPRESSION_UNIT_SIZE;
 
         if (uncLen != expUncLen) {
