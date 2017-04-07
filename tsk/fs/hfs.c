@@ -2816,6 +2816,14 @@ int hfs_decompress_zlib_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t
                   __func__, infResult);
             return 0;
         }
+
+        if (bytesConsumed != len) {
+            error_detected(TSK_ERR_FS_READ,
+                " %s, decompressor did not consume the whole compressed data",
+                __func__);
+            return 0;
+        }
+
         return 1;
     }
     else {
