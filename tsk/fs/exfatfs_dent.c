@@ -86,7 +86,7 @@ exfatfs_reset_name_info(EXFATFS_FS_NAME_INFO *a_name_info)
  * Add the TSK_FS_NAME object of an EXFATFS_FS_NAME_INFO object to its
  * TSK_FS_DIR object and reset the fields of a EXFATFS_FS_NAME_INFO to their
  * initialized state. This allows for reuse of the object.
- * The conversion from UTF16 to UTF8 happens here.
+ * The conversion from UTF16 to UTF8 happens here if needed.
  *
  * @param a_name_info The name info object.
  */
@@ -99,23 +99,25 @@ exfatfs_add_name_to_dir_and_reset_info(EXFATFS_FS_NAME_INFO *a_name_info)
     assert(a_name_info->fs_name->name_size == FATFS_MAXNAMLEN_UTF8);
     assert(a_name_info->fs_dir != NULL);
 
-    /* If the parsing of the directory entry or directory entry set produced
-     * a name, add the TSK_FS_NAME object to the TSK_FS_DIR object. */
-    if (a_name_info->current_file_name_length_utf16_chars > 0) {
-        
+    /* If the name has not been converted to UTF8 yet, do it now */
+    if ((strlen(a_name_info->fs_name->name) == 0) && 
+        (a_name_info->current_file_name_length_utf16_chars > 0)) {
+
         /* Convert the UTF16 name to UTF8 */
         if (fatfs_utf16_inode_str_2_utf8(a_name_info->fatfs,
             (UTF16*)a_name_info->file_name_utf16, a_name_info->current_file_name_length_utf16_chars,
             (UTF8*)a_name_info->fs_name->name, a_name_info->fs_name->name_size,
-            a_name_info->fs_name->meta_addr, "file name segment") != TSKconversionOK){
+            a_name_info->fs_name->meta_addr, "file name segment") != TSKconversionOK) {
 
-            /* It might be that we have a partial name, so we want to 
+            /* It might be that we have a partial name, so we want to
              * continue regardless of the result here */
         }
-
-        if (strlen(a_name_info->fs_name->name) > 0) {
-            tsk_fs_dir_add(a_name_info->fs_dir, a_name_info->fs_name);
-        }
+    }
+       
+    /* If the parsing of the directory entry or directory entry set produced
+    * a name, add the TSK_FS_NAME object to the TSK_FS_DIR object. */
+    if (strlen(a_name_info->fs_name->name) > 0) {
+        tsk_fs_dir_add(a_name_info->fs_dir, a_name_info->fs_name);
     }
 
     exfatfs_reset_name_info(a_name_info);
