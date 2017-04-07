@@ -3144,8 +3144,6 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
     uint32_t offsetTableSize;         // Size of the offset table
     CMP_OFFSET_ENTRY *offsetTable = NULL;
     size_t indx;                // index for looping over the offset table
-    uint64_t sizeUpperBound;
-    uint64_t cummulativeSize = 0;
     uint32_t startUnit = 0;
     uint32_t startUnitOffset = 0;
     uint32_t endUnit = 0;
@@ -3219,32 +3217,19 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
       return -1;
     }
 
-    sizeUpperBound = offsetTableSize * COMPRESSION_UNIT_SIZE;
-
-    // cast is OK because both a_offset and a_len are >= 0
-    if ((uint64_t) (a_offset + a_len) > sizeUpperBound) {
-        error_detected(TSK_ERR_FS_ARG,
-            "%s: range of bytes requested %lld - %lld falls outside of the length upper bound of the uncompressed stream %llu\n",
-            __func__, a_offset, a_offset + a_len, sizeUpperBound);
-        goto on_error;
-    }
-
     // Compute the range of compression units needed for the request
-    for (indx = 0; indx < offsetTableSize; ++indx) {
-        if (cummulativeSize <= (uint64_t) a_offset &&   // casts OK because a_offset >= 0
-            (cummulativeSize + COMPRESSION_UNIT_SIZE >
-                (uint64_t) a_offset)) {
-            startUnit = indx;
-            startUnitOffset = (uint32_t) (a_offset - cummulativeSize);  // This cast is OK, result can't be too large,
-            // due to enclosing test.
-        }
+    startUnit = a_offset / COMPRESSION_UNIT_SIZE;
+    startUnitOffset = a_offset % COMPRESSION_UNIT_SIZE;
+    endUnit = (a_offset + a_len - 1) / COMPRESSION_UNIT_SIZE;
 
-        if ((cummulativeSize < (uint64_t) (a_offset + a_len)) &&        // casts OK because a_offset and a_len > 0
-            (cummulativeSize + COMPRESSION_UNIT_SIZE >=
-                (uint64_t) (a_offset + a_len))) {
-            endUnit = indx;
-        }
-        cummulativeSize += COMPRESSION_UNIT_SIZE;
+    if (startUnit >= offsetTableSize || endUnit >= offsetTableSize) {
+        error_detected(TSK_ERR_FS_ARG,
+            "%s: range of bytes requested %lld - %lld falls past the "
+            "end of the uncompressed stream %llu\n",
+            __func__, a_offset, a_offset + a_len,
+            offsetTable[offsetTableSize-1].offset +
+            offsetTable[offsetTableSize-1].length);
+        goto on_error;
     }
 
     if (tsk_verbose)
