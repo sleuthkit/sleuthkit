@@ -1485,7 +1485,6 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat,
                 return 0;
             }
         }
-
     }
     else if (file_type == HFS_LINKDIR_FILE_TYPE
         && file_creator == HFS_LINKDIR_FILE_CREATOR) {
@@ -2448,7 +2447,6 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const HFS_ENTRY * a_hfs_entry,
         a_fs_meta->crtime_nano = 0;
     a_fs_meta->time2.hfs.bkup_time_nano = 0;
 
-
     a_fs_meta->addr = tsk_getu32(fs->endian, std->cnid);
 
     // All entries here are used.
@@ -2526,6 +2524,7 @@ hfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
     if (a_fs_file->meta == NULL) {
         a_fs_file->meta = tsk_fs_meta_alloc(HFS_FILE_CONTENT_LEN);
     }
+
     if (a_fs_file->meta == NULL) {
         return 1;
     }
@@ -2843,6 +2842,85 @@ int hfs_decompress_lzvn_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t
 #endif
 
 
+ssize_t read_and_decompress_block(
+  const TSK_FS_ATTR* rAttr,
+  char* rawBuf,
+  char* uncBuf,
+  const CMP_OFFSET_ENTRY* offsetTable,
+  uint32_t offsetTableSize,
+  uint32_t offsetTableOffset,
+  size_t indx,
+  int (*decompress_block)(char* rawBuf,
+                          uint32_t len,
+                          char* uncBuf,
+                          uint64_t* uncLen)
+)
+{
+    int attrReadResult;
+    uint32_t offset = offsetTableOffset + offsetTable[indx].offset;
+    uint32_t len = offsetTable[indx].length;
+    uint64_t uncLen;
+
+    if (tsk_verbose)
+        tsk_fprintf(stderr,
+            "%s: Reading compression unit %d, length %d\n",
+            __func__, indx, len);
+
+    /* Github #383 referenced that if len is 0, then the below code causes
+     * problems. Added this check, but I don't have data to verify this on.
+     * it looks like it should at least not crash, but it isn't clear if it
+     * will also do the right thing and if should actually break here
+     * instead. */
+    if (len == 0) {
+      return 0;
+    }
+
+    if (len > COMPRESSION_UNIT_SIZE + 1) {
+      error_detected(TSK_ERR_FS_READ,
+          "%s: block size is too large: %u", __func__, len);
+      return -1;
+    }
+
+    // Read in the block of compressed data
+    attrReadResult = tsk_fs_attr_read(rAttr, offset,
+        rawBuf, len, TSK_FS_FILE_READ_FLAG_NONE);
+    if (attrReadResult != len) {
+        char msg[] =
+            "%s%s: reading in the compression offset table, "
+            "return value %u should have been %u";
+
+        if (attrReadResult < 0 ) {
+            error_returned(msg, " ", __func__, attrReadResult, len);
+        }
+        else {
+            error_detected(TSK_ERR_FS_READ, "", __func__, attrReadResult, len);
+        }
+        return -1;
+    }
+
+    if (!decompress_block(rawBuf, len, uncBuf, &uncLen)) {
+        return -1;
+    }
+
+    // If size is a multiple of COMPRESSION_UNIT_SIZE,
+    // expected uncompressed length is COMPRESSION_UNIT_SIZE
+    const uint32_t expUncLen = indx == offsetTableSize - 1 ?
+        ((rAttr->fs_file->meta->size - 1) % COMPRESSION_UNIT_SIZE) + 1 :
+        COMPRESSION_UNIT_SIZE;
+
+    if (uncLen != expUncLen) {
+        error_detected(TSK_ERR_FS_READ,
+            "%s: compressed block decompressed to %u bytes, "
+            "should have been %u bytes", __func__, uncLen, expUncLen);
+        return -1;
+    }
+
+    // There are now uncLen bytes of uncompressed data available from
+    // this comp unit.
+    return uncLen;
+}
+
+
 uint8_t
 hfs_attr_walk_compressed_rsrc(const TSK_FS_ATTR * fs_attr,
     int flags, TSK_FS_FILE_WALK_CB a_action, void *ptr,
@@ -2860,9 +2938,8 @@ hfs_attr_walk_compressed_rsrc(const TSK_FS_ATTR * fs_attr,
     const TSK_FS_ATTR *rAttr;   // resource fork attribute
     char *rawBuf = NULL;               // compressed data
     char *uncBuf = NULL;               // uncompressed data
-    int attrReadResult;
     uint32_t offsetTableOffset;
-    uint32_t tableSize;         // The number of table entries
+    uint32_t offsetTableSize;         // The number of table entries
     CMP_OFFSET_ENTRY *offsetTable = NULL;
     size_t indx;                // index for looping over the offset table
     TSK_OFF_T off = 0;          // the offset in the uncompressed data stream consumed thus far
@@ -2916,7 +2993,7 @@ hfs_attr_walk_compressed_rsrc(const TSK_FS_ATTR * fs_attr,
     }
 
     // read the offset table from the fork header
-    if (!read_block_table(rAttr, &offsetTable, &tableSize, &offsetTableOffset)) {
+    if (!read_block_table(rAttr, &offsetTable, &offsetTableSize, &offsetTableOffset)) {
       return 1;
     }
 
@@ -2939,70 +3016,24 @@ hfs_attr_walk_compressed_rsrc(const TSK_FS_ATTR * fs_attr,
     }
 
     // FOR entry in the table DO
-    for (indx = 0; indx < tableSize; ++indx) {
-        uint32_t offset = offsetTableOffset + offsetTable[indx].offset;
-        uint32_t len = offsetTable[indx].length;
-        uint64_t uncLen;        // uncompressed length
+    for (indx = 0; indx < offsetTableSize; ++indx) {
+        ssize_t uncLen;        // uncompressed length
         unsigned int blockSize;
         uint64_t lumpSize;
         uint64_t remaining;
         char *lumpStart;
 
-        if (tsk_verbose)
-            tsk_fprintf(stderr,
-                "%s: reading one compression unit, number %d, length %d\n",
-                __func__, indx, len);
-
-        /* Github #383 referenced that if len is 0, then the below code causes
-         * problems. Added this check, but I don't have data to verify this on.
-         * it looks like it should at least not crash, but it isn't clear if it
-         * will also do the right thing and if should actually break here
-         * instead. */
-        if (len == 0) {
+        switch ((uncLen = read_and_decompress_block(
+                    rAttr, rawBuf, uncBuf,
+                    offsetTable, offsetTableSize, offsetTableOffset, indx,
+                    decompress_block)))
+        {
+        case -1:
+            goto on_error;
+        case  0:
             continue;
-        }
-
-        if (len > COMPRESSION_UNIT_SIZE + 1) {
-            error_detected(TSK_ERR_FS_READ,
-                "%s: block size is too large: %u", __func__, len);
-            goto on_error;
-        }
-
-        // Read in the block of (potentially) compressed data
-        attrReadResult = tsk_fs_attr_read(rAttr, offset,
-            rawBuf, len, TSK_FS_FILE_READ_FLAG_NONE);
-        if (attrReadResult != len) {
-            if (attrReadResult < 0) {
-                error_returned
-                    (" %s: reading in the compression offset table, "
-                    "return value %u should have been %u", __func__,
-                    attrReadResult, len);
-            }
-            else {
-                error_detected(TSK_ERR_FS_READ,
-                    "%s: reading in the compression offset table, "
-                    "return value %u should have been %u", __func__,
-                    attrReadResult, len);
-            }
-            goto on_error;
-        }
-
-        // (Potentially) decompress the block
-        if (!decompress_block(rawBuf, len, uncBuf, &uncLen)) {
-            goto on_error;
-        }
-
-        // If size is a multiple of COMPRESSION_UNIT_SIZE,
-        // expected uncompressed length is COMPRESSION_UNIT_SIZE
-        const uint32_t expUncLen = indx == tableSize - 1 ?
-          ((rAttr->fs_file->meta->size - 1) % COMPRESSION_UNIT_SIZE) + 1 :
-          COMPRESSION_UNIT_SIZE;
-
-        if (uncLen != expUncLen) {
-            error_detected(TSK_ERR_FS_READ,
-                "%s: compressed block decompressed to %u bytes, "
-                "should have been %u bytes", __func__, uncLen, expUncLen);
-            goto on_error;
+        default:
+            break;
         }
 
         // Call the a_action callback with "Lumps"
@@ -3109,9 +3140,8 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
     const TSK_FS_ATTR *rAttr;
     char *rawBuf = NULL;
     char *uncBuf = NULL;
-    int attrReadResult;
     uint32_t offsetTableOffset;
-    uint32_t tableSize;         // Size of the offset table
+    uint32_t offsetTableSize;         // Size of the offset table
     CMP_OFFSET_ENTRY *offsetTable = NULL;
     size_t indx;                // index for looping over the offset table
     uint64_t sizeUpperBound;
@@ -3185,11 +3215,11 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
     }
 
     // read the offset table from the fork header
-    if (!read_block_table(rAttr, &offsetTable, &tableSize, &offsetTableOffset)) {
+    if (!read_block_table(rAttr, &offsetTable, &offsetTableSize, &offsetTableOffset)) {
       return -1;
     }
 
-    sizeUpperBound = tableSize * COMPRESSION_UNIT_SIZE;
+    sizeUpperBound = offsetTableSize * COMPRESSION_UNIT_SIZE;
 
     // cast is OK because both a_offset and a_len are >= 0
     if ((uint64_t) (a_offset + a_len) > sizeUpperBound) {
@@ -3200,7 +3230,7 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
     }
 
     // Compute the range of compression units needed for the request
-    for (indx = 0; indx < tableSize; ++indx) {
+    for (indx = 0; indx < offsetTableSize; ++indx) {
         if (cummulativeSize <= (uint64_t) a_offset &&   // casts OK because a_offset >= 0
             (cummulativeSize + COMPRESSION_UNIT_SIZE >
                 (uint64_t) a_offset)) {
@@ -3243,70 +3273,25 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
 
     // Read from the indicated comp units
     for (indx = startUnit; indx <= endUnit; ++indx) {
-        uint32_t offset = offsetTableOffset + offsetTable[indx].offset;
-        uint32_t len = offsetTable[indx].length;
         uint64_t uncLen;
         char *uncBufPtr = uncBuf;
         size_t bytesToCopy;
 
-        if (tsk_verbose)
-            tsk_fprintf(stderr,
-                "%s: Reading compression unit %" PRIu32
-                "\n", __func__, indx);
-
-        /* Github #383 referenced that if len is 0, then the below code causes
-         * problems. Added this check, but I don't have data to verify this on.
-         * it looks like it should at least not crash, but it isn't clear if it
-         * will also do the right thing and if should actually break here instead. */
-        if (len == 0) {
+        switch ((uncLen = read_and_decompress_block(
+                    rAttr, rawBuf, uncBuf,
+                    offsetTable, offsetTableSize, offsetTableOffset, indx,
+                    decompress_block)))
+        {
+        case -1:
+            goto on_error;
+        case  0:
             continue;
+        default:
+            break;
         }
 
-        if (len > COMPRESSION_UNIT_SIZE + 1) {
-          error_detected(TSK_ERR_FS_READ,
-              "%s: block size is too large: %u", __func__, len);
-          goto on_error;
-        }
-
-        // Read in the block of compressed data
-        attrReadResult = tsk_fs_attr_read(rAttr, offset,
-            rawBuf, len, TSK_FS_FILE_READ_FLAG_NONE);
-        if (attrReadResult != len) {
-            if (attrReadResult < 0 ) {
-                error_returned
-                    (" %s: reading in the compression offset table, "
-                    "return value %u should have been %u", __func__,
-                    attrReadResult, len);
-            }
-            else {
-                error_detected(TSK_ERR_FS_READ,
-                    "%s: reading in the compression offset table, "
-                    "return value %u should have been %u", __func__,
-                    attrReadResult, len);
-            }
-            goto on_error;
-        }
-
-        if (!decompress_block(rawBuf, len, uncBuf, &uncLen)) {
-            goto on_error;
-        }
-
-        // If size is a multiple of COMPRESSION_UNIT_SIZE,
-        // expected uncompressed length is COMPRESSION_UNIT_SIZE
-        const uint32_t expUncLen = indx == tableSize - 1 ?
-          ((rAttr->fs_file->meta->size - 1) % COMPRESSION_UNIT_SIZE) + 1 :
-          COMPRESSION_UNIT_SIZE;
-
-        if (uncLen != expUncLen) {
-            error_detected(TSK_ERR_FS_READ,
-                "%s: compressed block decompressed to %u bytes, "
-                "should have been %u bytes", __func__, uncLen, expUncLen);
-            goto on_error;
-        }
-
-        // There are now uncLen bytes of uncompressed data available from this comp unit.
-
-        // If this is the first comp unit, then we must skip over the startUnitOffset bytes.
+        // If this is the first comp unit, then we must skip over the
+        // startUnitOffset bytes.
         if (indx == startUnit) {
             uncLen -= startUnitOffset;
             uncBufPtr += startUnitOffset;
