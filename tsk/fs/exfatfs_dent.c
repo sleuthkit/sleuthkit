@@ -299,9 +299,7 @@ exfats_parse_file_name_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
     }
 
     /* Copy two bytes per character */
-    for (int i = 0; i < num_utf16_chars_to_copy * 2; i++) {
-        a_name_info->file_name_utf16[(a_name_info->current_file_name_length_utf16_chars * 2) + i] = dentry->utf16_name_chars[i];
-    }
+    memcpy(&a_name_info->file_name_utf16[(a_name_info->current_file_name_length_utf16_chars * 2)], dentry->utf16_name_chars, num_utf16_chars_to_copy * 2);
     a_name_info->current_file_name_length_utf16_chars += num_utf16_chars_to_copy;
 
     /* If all of the secondary entries for the set are present, save the name,

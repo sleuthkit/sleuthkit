@@ -192,7 +192,7 @@ extern "C" {
      */
     typedef struct {
         uint8_t entry_type;        ///< 0x83 normally, 0x03 if the media was formatted without a volume label
-        uint8_t volume_label_length_chars;  ///< Number of characters in the volume label (max 11)
+        uint8_t volume_label_length_chars;  ///< Number of characters in the volume label
         uint8_t volume_label[EXFATFS_MAX_VOLUME_LABEL_LEN_BYTE];  ///< Volume label in UTF16
     } EXFATFS_VOL_LABEL_DIR_ENTRY;
 
