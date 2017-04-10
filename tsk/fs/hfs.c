@@ -4003,6 +4003,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 uint8_t *recData;       // pointer to the data part of the record
                 hfs_attr_data *attrData;
                 uint32_t attributeLength;
+                uint32_t recordType;
 
                 int conversionResult;
                 char nameBuff[MAX_ATTR_NAME_LENGTH];
@@ -4020,6 +4021,15 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 }
 
                 attrData = (hfs_attr_data *) recData;
+
+                // Check we can process the record type before allocating memory
+                recordType = tsk_getu32(endian, attrData->record_type);
+                if (recordType != HFS_ATTR_RECORD_INLINE_DATA) {
+                  error_detected(TSK_ERR_FS_UNSUPTYPE,
+                      "hfs_load_extended_attrs: Unsupported record type: (%d)",
+                      recordType);
+                  goto on_error;
+                }
 
                 // This is the length of the useful data, not including the record header
                 attributeLength = tsk_getu32(endian, attrData->attr_size);
