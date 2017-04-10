@@ -3987,6 +3987,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 }
 
                 free(buffer);
+                buffer = NULL;
 
                 attribute_counter++;
             }                   // END if comp == 0
