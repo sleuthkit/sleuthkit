@@ -2755,8 +2755,9 @@ hfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTab
 
     uint32_t a = tableDataSize;
     uint32_t b;
+    size_t i;
 
-    for (size_t i = 0; i < tableSize; ++i) {
+    for (i = 0; i < tableSize; ++i) {
         b = tsk_getu32(TSK_LIT_ENDIAN, offsetTableData + 4*(i+1));
         offsetTable[i].offset = a;
         offsetTable[i].length = b - a;
