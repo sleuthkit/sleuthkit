@@ -30,7 +30,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -7463,10 +7466,11 @@ public class SleuthkitCase {
 	 */
 	private final class PostgreSQLConnections extends ConnectionPool {
 
-		PostgreSQLConnections(String host, int port, String dbName, String userName, String password) throws PropertyVetoException {
+		PostgreSQLConnections(String host, int port, String dbName, String userName, String password) throws PropertyVetoException, UnsupportedEncodingException {
 			ComboPooledDataSource comboPooledDataSource = new ComboPooledDataSource();
 			comboPooledDataSource.setDriverClass("org.postgresql.Driver"); //loads the jdbc driver
-			comboPooledDataSource.setJdbcUrl("jdbc:postgresql://" + host + ":" + port + "/" + dbName);
+			comboPooledDataSource.setJdbcUrl("jdbc:postgresql://" + host + ":" + port + "/" 
+					+ URLEncoder.encode(dbName, StandardCharsets.UTF_8.toString()));
 			comboPooledDataSource.setUser(userName);
 			comboPooledDataSource.setPassword(password);
 			comboPooledDataSource.setAcquireIncrement(2);
