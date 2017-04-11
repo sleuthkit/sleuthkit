@@ -1431,6 +1431,7 @@ ext2fs_make_data_run_extent_index(TSK_FS_INFO * fs_info,
         }
         tsk_error_set_errstr("ext2fs_make_data_run_extent_index: Block %"
             PRIuDADDR, idx_block);
+        free(buf);
         return 1;
     }
     header = (ext2fs_extent_header *) buf;
@@ -1440,17 +1441,21 @@ ext2fs_make_data_run_extent_index(TSK_FS_INFO * fs_info,
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
         tsk_error_set_errstr
             ("ext2fs_make_data_run_extent_index: extent header magic valid incorrect!");
+        free(buf);
         return 1;
     }
 
     data_run = tsk_fs_attr_run_alloc();
     if (data_run == NULL) {
+        free(buf);
         return 1;
     }
     data_run->addr = idx_block;
     data_run->len = fs_blocksize;
 
     if (tsk_fs_attr_add_run(fs_info, fs_attr_extent, data_run)) {
+        tsk_fs_attr_run_free(data_run);
+        free(buf);
         return 1;
     }
 
@@ -1461,6 +1466,7 @@ ext2fs_make_data_run_extent_index(TSK_FS_INFO * fs_info,
             i++) {
             ext2fs_extent extent = extents[i];
             if (ext2fs_make_data_run_extent(fs_info, fs_attr, &extent)) {
+                free(buf);
                 return 1;
             }
         }
@@ -1477,6 +1483,7 @@ ext2fs_make_data_run_extent_index(TSK_FS_INFO * fs_info,
                 endian, index->ei_leaf_lo);
             if (ext2fs_make_data_run_extent_index(fs_info, fs_attr,
                     fs_attr_extent, child_block)) {
+                free(buf);
                 return 1;
             }
         }
