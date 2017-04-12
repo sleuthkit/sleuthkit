@@ -56,6 +56,9 @@ static void setBit(unsigned char * buffer, TSK_OFF_T index, bool val) {
  * Move the file pointer to the given offset (relative the beginning of the file)
  */
 static TSK_RETVAL_ENUM seekToOffset(TSK_IMG_WRITER * writer, TSK_OFF_T offset) {
+#ifndef TSK_WIN32
+    return TSK_ERR;
+#else
     LARGE_INTEGER li;
     li.QuadPart = offset;
 
@@ -73,12 +76,16 @@ static TSK_RETVAL_ENUM seekToOffset(TSK_IMG_WRITER * writer, TSK_OFF_T offset) {
         return TSK_ERR;
     }
     return TSK_OK;
+#endif
 }
 
 /*
  * Move the file pointer from the current location
  */
 static TSK_RETVAL_ENUM seekAhead(TSK_IMG_WRITER * writer, TSK_OFF_T dist) {
+#ifndef TSK_WIN32
+    return TSK_ERR;
+#else
     LARGE_INTEGER li;
     li.QuadPart = dist;
 
@@ -96,6 +103,7 @@ static TSK_RETVAL_ENUM seekAhead(TSK_IMG_WRITER * writer, TSK_OFF_T dist) {
         return TSK_ERR;
     }
     return TSK_OK;
+#endif
 }
 
 /*
@@ -133,6 +141,9 @@ static void checkIfBlockIsFinished(TSK_IMG_WRITER* writer, TSK_OFF_T blockNum) {
  */
 static TSK_RETVAL_ENUM addToExistingBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char *buffer,
     size_t len, TSK_OFF_T blockNum) {
+#ifndef TSK_WIN32
+    return TSK_ERR;
+#else
 
     if (tsk_verbose) {
         tsk_fprintf(stderr, "addToExistingBlock: Adding data to existing block 0x%x\n", blockNum);
@@ -187,12 +198,16 @@ static TSK_RETVAL_ENUM addToExistingBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr
     }
 
     return TSK_OK;
+#endif
 }
 
 /* 
  * Add a new block to the VHD and copy in the buffer
  */
 static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char *buffer, size_t len, TSK_OFF_T blockNum) {
+#ifndef TSK_WIN32
+    return TSK_ERR;
+#else
 
     if (tsk_verbose) {
         tsk_fprintf(stderr, "addNewBlock: Adding new block 0x%x\n", blockNum);
@@ -276,6 +291,7 @@ static TSK_RETVAL_ENUM addNewBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char 
     free(sectorBitmap);
 
     return TSK_OK;
+#endif
 }
 
 /*
@@ -498,6 +514,9 @@ static uint32_t generateChecksum(unsigned char * buffer, int len) {
  * Save it so we only have to generate it once.
  */
 static TSK_RETVAL_ENUM writeFooter(TSK_IMG_WRITER* writer) {
+#ifndef TSK_WIN32
+    return TSK_ERR;
+#else
     if (writer->footer == NULL) {
         writer->footer = (unsigned char *)tsk_malloc(VHD_FOOTER_LENGTH * sizeof(unsigned char));
 
@@ -569,12 +588,16 @@ static TSK_RETVAL_ENUM writeFooter(TSK_IMG_WRITER* writer) {
         return TSK_ERR;
     }
     return TSK_OK;
+#endif
 }
 
 /*
  * Write the dynamic disk header to the file
  */
 static TSK_RETVAL_ENUM writeDynamicDiskHeader(TSK_IMG_WRITER * writer) {
+#ifndef TSK_WIN32
+    return TSK_ERR;
+#else
     unsigned char * diskHeader = (unsigned char *)malloc(VHD_DISK_HEADER_LENGTH * sizeof(unsigned char));
     for (int i = 0; i < VHD_DISK_HEADER_LENGTH; i++) {
         diskHeader[i] = 0;
@@ -599,6 +622,7 @@ static TSK_RETVAL_ENUM writeDynamicDiskHeader(TSK_IMG_WRITER * writer) {
         return TSK_ERR;
     }
     return TSK_OK;
+#endif
 }
 
 /*
