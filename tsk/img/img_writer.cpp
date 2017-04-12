@@ -448,9 +448,7 @@ static TSK_RETVAL_ENUM writeDynamicDiskHeader(TSK_IMG_WRITER * writer) {
     }
     return TSK_OK;
 }
-#endif /* End of private methods */
 
-/* Public API starts here */
 
 /*
  * Add a buffer to the VHD. The buffer can span multiple blocks.
@@ -460,9 +458,7 @@ static TSK_RETVAL_ENUM writeDynamicDiskHeader(TSK_IMG_WRITER * writer) {
  * @param len    Length of the data (this must be a multiple of the sector size)
  */
 static TSK_RETVAL_ENUM tsk_img_writer_add(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char *buffer, size_t len) {
-#ifndef TSK_WIN32
-    return TSK_ERR;
-#else
+
     if (writer->is_finished) {
         return TSK_OK;
     }
@@ -493,7 +489,6 @@ static TSK_RETVAL_ENUM tsk_img_writer_add(TSK_IMG_WRITER* writer, TSK_OFF_T addr
     }
 
     return TSK_OK;
-#endif
 }
 
 /*
@@ -501,9 +496,7 @@ static TSK_RETVAL_ENUM tsk_img_writer_add(TSK_IMG_WRITER* writer, TSK_OFF_T addr
  * @param writer Image writer object
  */
 static TSK_RETVAL_ENUM tsk_img_writer_close(TSK_IMG_WRITER* img_writer) {
-#ifndef TSK_WIN32
-    return TSK_ERR;
-#else
+
     if (tsk_verbose) {
         tsk_fprintf(stderr,
             "tsk_img_writer_close: Closing image writer");
@@ -546,7 +539,6 @@ static TSK_RETVAL_ENUM tsk_img_writer_close(TSK_IMG_WRITER* img_writer) {
     }
 
     return TSK_OK;
-#endif
 }
 
 /*
@@ -555,9 +547,6 @@ static TSK_RETVAL_ENUM tsk_img_writer_close(TSK_IMG_WRITER* img_writer) {
  * @param img_writer Image writer object
  */
 static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
-#ifndef TSK_WIN32
-    return TSK_ERR;
-#else
     if (tsk_verbose) {
         tsk_fprintf(stderr,
             "tsk_img_writer_finish_image: Finishing image");
@@ -605,9 +594,11 @@ static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
 
     img_writer->is_finished = 1;
     return TSK_OK;
-#endif
 }
 
+#endif
+
+/* Any method that can be accessed from WIN32 or non-WIN32 goes after this point */
 
 /*
  * Create and initailize the TSK_IMG_WRITER struct and save reference in img_info,
