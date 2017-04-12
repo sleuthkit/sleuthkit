@@ -44,10 +44,10 @@ typedef struct {
     uint8_t expected_secondary_entry_count;
     uint8_t actual_secondary_entry_count;
     uint16_t expected_check_sum;
-    uint8_t expected_name_length_utf16_chars;
-    uint8_t current_file_name_length_utf16_chars;
-    uint8_t file_name_utf16[(EXFATFS_MAX_FILE_NAME_LENGTH_UTF16_CHARS + 1) * 2];
-    uint8_t actual_name_length_utf8_bytes;
+    uint8_t expected_name_length_utf16_chars;     /* Name length (in characters) as reported by the file stream dentry */
+    uint8_t current_file_name_length_utf16_chars; /* Number of UTF16 name characters read in so far */
+    uint8_t file_name_utf16[(EXFATFS_MAX_FILE_NAME_LENGTH_UTF16_CHARS + 1) * 2];  /* The UTF16 characters read in so far*/
+    uint8_t actual_name_length_utf8_bytes;  /* Length of the UTF8 version of the name (stored in fs_name) */
     TSK_FS_NAME *fs_name;
     TSK_FS_DIR *fs_dir;
 } EXFATFS_FS_NAME_INFO;
