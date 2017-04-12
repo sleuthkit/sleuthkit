@@ -269,27 +269,27 @@ exfats_parse_file_name_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
     assert(exfatfs_get_enum_from_type(dentry->entry_type) == EXFATFS_DIR_ENTRY_TYPE_FILE_NAME);
     assert(fatfs_inum_is_in_range(a_name_info->fatfs, a_inum));
 
-    if(exfatfs_get_enum_from_type(a_name_info->last_dentry_type) != EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM &&
-        exfatfs_get_enum_from_type(a_name_info->last_dentry_type) != EXFATFS_DIR_ENTRY_TYPE_FILE_NAME){
+    if (exfatfs_get_enum_from_type(a_name_info->last_dentry_type) != EXFATFS_DIR_ENTRY_TYPE_FILE_STREAM &&
+        exfatfs_get_enum_from_type(a_name_info->last_dentry_type) != EXFATFS_DIR_ENTRY_TYPE_FILE_NAME) {
         /* A file name entry must follow a stream or name entry, so this entry is
-         * is a false positive or there is corruption. Save the current name, 
-         * if any, and ignore this buffer. */ 
+         * is a false positive or there is corruption. Save the current name,
+         * if any, and ignore this buffer. */
         exfatfs_add_name_to_dir_and_reset_info(a_name_info);
         return;
     }
 
-    if(exfatfs_get_alloc_status_from_type(a_name_info->last_dentry_type) !=
-        exfatfs_get_alloc_status_from_type(dentry->entry_type)){
-        /* The in-use bits of all of the entries in an entry set should be 
-         * same, so this entry is a false positive or there is corruption. 
-         * Save the current name, if any, and ignore this buffer. */ 
+    if (exfatfs_get_alloc_status_from_type(a_name_info->last_dentry_type) !=
+        exfatfs_get_alloc_status_from_type(dentry->entry_type)) {
+        /* The in-use bits of all of the entries in an entry set should be
+         * same, so this entry is a false positive or there is corruption.
+         * Save the current name, if any, and ignore this buffer. */
         exfatfs_add_name_to_dir_and_reset_info(a_name_info);
         return;
     }
 
-    /* Set the current entry type. This is used to check the sequence and 
+    /* Set the current entry type. This is used to check the sequence and
      * in-use state of the entries in the set. */
-    a_name_info->last_dentry_type = 
+    a_name_info->last_dentry_type =
         (EXFATFS_DIR_ENTRY_TYPE)dentry->entry_type;
 
     /* Determine how many name chars remain according to the name length from
@@ -301,8 +301,10 @@ exfats_parse_file_name_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
     }
 
     /* Copy two bytes per character */
-    memcpy(&a_name_info->file_name_utf16[(a_name_info->current_file_name_length_utf16_chars * 2)], dentry->utf16_name_chars, num_utf16_chars_to_copy * 2);
-    a_name_info->current_file_name_length_utf16_chars += num_utf16_chars_to_copy;
+    if (num_utf16_chars_to_copy <= EXFATFS_MAX_FILE_NAME_LENGTH_UTF16_CHARS - a_name_info->current_file_name_length_utf16_chars) {
+        memcpy(&a_name_info->file_name_utf16[(a_name_info->current_file_name_length_utf16_chars * 2)], dentry->utf16_name_chars, num_utf16_chars_to_copy * 2);
+        a_name_info->current_file_name_length_utf16_chars += num_utf16_chars_to_copy;
+    }
 
     /* If all of the secondary entries for the set are present, save the name,
      * if any. */
