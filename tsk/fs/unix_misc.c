@@ -317,7 +317,7 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
     /* if there is still data left, read the indirect */
     if (length > 0) {
         int level;
-        char *buf[4];
+        char *buf[4] = {NULL};
         size_t fs_bufsize0;
         size_t fs_bufsize1;
         size_t ptrsperblock;
