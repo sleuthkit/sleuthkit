@@ -1361,7 +1361,7 @@ public class SleuthkitCase {
 			if (rs.next()) {
 				return new AbstractDataSource(objectId, rs.getString("device_id"), rs.getString("time_zone"));
 			} else {
-				throw new TskCoreException(String.format("There is no data source with obj_id = %d", objectId));
+				throw new TskDataException(String.format("There is no data source with obj_id = %d", objectId));
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting data source with obj_id = %d", objectId), ex);
