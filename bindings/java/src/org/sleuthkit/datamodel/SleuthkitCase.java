@@ -30,7 +30,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -1358,7 +1361,7 @@ public class SleuthkitCase {
 			if (rs.next()) {
 				return new AbstractDataSource(objectId, rs.getString("device_id"), rs.getString("time_zone"));
 			} else {
-				throw new TskCoreException(String.format("There is no data source with obj_id = %d", objectId));
+				throw new TskDataException(String.format("There is no data source with obj_id = %d", objectId));
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting data source with obj_id = %d", objectId), ex);
@@ -2354,7 +2357,7 @@ public class SleuthkitCase {
 			if (BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE != valueType) {
 				switch (valueType) {
 					case STRING:
-						valueClause = " value_text = '" + attr.getValueString() + "'";
+						valueClause = " value_text = '" + escapeSingleQuotes(attr.getValueString()) + "'";
 						break;
 					case INTEGER:
 						valueClause = " value_int32 = " + attr.getValueInt();
@@ -3710,7 +3713,7 @@ public class SleuthkitCase {
 				parentPath = "/"; //NON-NLS
 			}
 			String parentName = getFileName(parentId, connection);
-			if (parentName != null) {
+			if (parentName != null && !parentName.isEmpty()) {
 				parentPath = parentPath + parentName + "/"; //NON-NLS
 			}
 
@@ -7463,10 +7466,11 @@ public class SleuthkitCase {
 	 */
 	private final class PostgreSQLConnections extends ConnectionPool {
 
-		PostgreSQLConnections(String host, int port, String dbName, String userName, String password) throws PropertyVetoException {
+		PostgreSQLConnections(String host, int port, String dbName, String userName, String password) throws PropertyVetoException, UnsupportedEncodingException {
 			ComboPooledDataSource comboPooledDataSource = new ComboPooledDataSource();
 			comboPooledDataSource.setDriverClass("org.postgresql.Driver"); //loads the jdbc driver
-			comboPooledDataSource.setJdbcUrl("jdbc:postgresql://" + host + ":" + port + "/" + dbName);
+			comboPooledDataSource.setJdbcUrl("jdbc:postgresql://" + host + ":" + port + "/" 
+					+ URLEncoder.encode(dbName, StandardCharsets.UTF_8.toString()));
 			comboPooledDataSource.setUser(userName);
 			comboPooledDataSource.setPassword(password);
 			comboPooledDataSource.setAcquireIncrement(2);

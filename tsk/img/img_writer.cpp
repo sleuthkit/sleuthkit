@@ -24,13 +24,16 @@
 #include <winioctl.h>
 #endif
 
+/* Keep all non-public methods and variables inside this block */
+#ifdef TSK_WIN32
+
 #define VHD_MAX_IMAGE_SIZE 2000000000000 /* VHD_MAX_IMAGE_SIZE is a little lower than the actual maximum size for the VHD */
 #define VHD_DEFAULT_BLOCK_SIZE 0x200000  /* This needs to be 0x200000 to load the VHD in Windows */
 #define VHD_SECTOR_SIZE 0x200
 #define VHD_FOOTER_LENGTH 0x200
 #define VHD_DISK_HEADER_LENGTH 0x400
 
-TSK_RETVAL_ENUM writeFooter(TSK_IMG_WRITER* writer);
+static TSK_RETVAL_ENUM writeFooter(TSK_IMG_WRITER* writer);
 
 /*
  * Considering the buffer to be an array of bits, get the entry at
@@ -301,6 +304,152 @@ static TSK_RETVAL_ENUM addBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char *bu
     return TSK_OK;
 }
 
+
+/*
+* Utility function to write integer values to the VHD headers.
+* Will write val as an nBytes-long value to the buffer at the given offset.
+* Byte ordering is big endian
+*/
+static void addIntToBuffer(unsigned char * buffer, int offset, TSK_OFF_T val, int nBytes) {
+    for (int i = 0; i < nBytes; i++) {
+        buffer[offset + i] = (val >> (8 * (nBytes - 1 - i))) & 0xff;
+    }
+}
+
+/*
+* Utility function to write strings to the VHD headers.
+*/
+static void addStringToBuffer(unsigned char * buffer, int offset, char const * str, int nBytes) {
+    for (int i = 0; i < nBytes; i++) {
+        buffer[offset + i] = str[i];
+    }
+}
+
+/*
+* Calculate the checksum for the header. It's the one's complement of the sum of
+* all the bytes (apart from the checksum)
+*/
+static uint32_t generateChecksum(unsigned char * buffer, int len) {
+
+    uint32_t sum = 0;
+    for (int i = 0; i < len; i++) {
+        sum += buffer[i];
+    }
+
+    return (~sum);
+}
+
+/*
+* Write the footer (which is also the first sector) to the file.
+* Will write to the current file position.
+* Save it so we only have to generate it once.
+*/
+static TSK_RETVAL_ENUM writeFooter(TSK_IMG_WRITER* writer) {
+    if (writer->footer == NULL) {
+        writer->footer = (unsigned char *)tsk_malloc(VHD_FOOTER_LENGTH * sizeof(unsigned char));
+
+        /* First calculate geometry values */
+        uint32_t cylinders;
+        uint32_t heads;
+        uint32_t sectorsPerTrack;
+        uint32_t totalSectors = uint32_t(writer->imageSize / VHD_SECTOR_SIZE);
+        if (writer->imageSize % VHD_SECTOR_SIZE != 0) {
+            totalSectors++;
+        }
+
+        uint32_t cylinderTimesHeads;
+        if (totalSectors > 65535 * 16 * 255) {
+            totalSectors = 65535 * 16 * 255;
+        }
+
+        if (totalSectors >= 65535 * 16 * 63) {
+            sectorsPerTrack = 255;
+            heads = 16;
+            cylinderTimesHeads = totalSectors / sectorsPerTrack;
+        }
+        else {
+            sectorsPerTrack = 17;
+            cylinderTimesHeads = totalSectors / sectorsPerTrack;
+            heads = (cylinderTimesHeads + 1023) / 1024;
+            if (heads < 4) {
+                heads = 4;
+            }
+            if (cylinderTimesHeads >= (heads * 1024) || heads > 16) {
+                sectorsPerTrack = 31;
+                heads = 16;
+                cylinderTimesHeads = totalSectors / sectorsPerTrack;
+            }
+            if (cylinderTimesHeads >= (heads * 1024)) {
+                sectorsPerTrack = 63;
+                heads = 16;
+                cylinderTimesHeads = totalSectors / sectorsPerTrack;
+            }
+        }
+        cylinders = cylinderTimesHeads / heads;
+
+        /* Write the footer */
+        addStringToBuffer(writer->footer, 0, "conectix", 8);
+        addIntToBuffer(writer->footer, 8, 2, 4);         // Features
+        addIntToBuffer(writer->footer, 0xc, 0x10000, 4); // File format version
+        addIntToBuffer(writer->footer, 0x10, 0x200, 8);  // Data offset
+                                                         // 0x18 is a four byte timestamp - ok to leave blank
+        addStringToBuffer(writer->footer, 0x1c, "win ", 4);  // Creator app
+        addIntToBuffer(writer->footer, 0x20, 0x60001, 4);    // Creator version
+        addStringToBuffer(writer->footer, 0x24, "Wi2k", 4);  // Creator host OS
+        addIntToBuffer(writer->footer, 0x28, writer->imageSize, 8);  // Original size
+        addIntToBuffer(writer->footer, 0x30, writer->imageSize, 8);  // Current size
+        addIntToBuffer(writer->footer, 0x38, cylinders, 2);        // Geometry
+        addIntToBuffer(writer->footer, 0x3a, heads, 1);            // Geometry
+        addIntToBuffer(writer->footer, 0x3b, sectorsPerTrack, 1);  // Geometry
+        addIntToBuffer(writer->footer, 0x3c, 3, 4);                // Disk type
+                                                                   // Bytes 0x44 to 0x54 are a UUID, which is ok to leave blank
+
+        addIntToBuffer(writer->footer, 0x40, generateChecksum(writer->footer, VHD_FOOTER_LENGTH), 4); // Checksum
+    }
+
+    DWORD bytesWritten;
+    if (FALSE == WriteFile(writer->outputFileHandle, writer->footer, VHD_FOOTER_LENGTH, &bytesWritten, NULL)) {
+        int lastError = GetLastError();
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_WRITE);
+        tsk_error_set_errstr("writeFooter: error writing VHD footer",
+            lastError);
+        return TSK_ERR;
+    }
+    return TSK_OK;
+}
+
+/*
+* Write the dynamic disk header to the file
+*/
+static TSK_RETVAL_ENUM writeDynamicDiskHeader(TSK_IMG_WRITER * writer) {
+    unsigned char * diskHeader = (unsigned char *)malloc(VHD_DISK_HEADER_LENGTH * sizeof(unsigned char));
+    for (int i = 0; i < VHD_DISK_HEADER_LENGTH; i++) {
+        diskHeader[i] = 0;
+    }
+
+    addStringToBuffer(diskHeader, 0, "cxsparse", 8); // Cookie
+    addIntToBuffer(diskHeader, 8, 0xffffffff, 4);    // Data offset (1)
+    addIntToBuffer(diskHeader, 0xc, 0xffffffff, 4);  // Data offset (2)
+    addIntToBuffer(diskHeader, 0x10, 0x600, 8);      // BAT offset
+    addIntToBuffer(diskHeader, 0x18, 0x10000, 4);    // Header version
+    addIntToBuffer(diskHeader, 0x1c, writer->totalBlocks, 4); // Blocks on disk
+    addIntToBuffer(diskHeader, 0x20, writer->blockSize, 4);   // Block size
+    addIntToBuffer(diskHeader, 0x24, generateChecksum(diskHeader, 0x400), 4); // Checksum
+
+    DWORD bytesWritten;
+    if (FALSE == WriteFile(writer->outputFileHandle, diskHeader, VHD_DISK_HEADER_LENGTH, &bytesWritten, NULL)) {
+        int lastError = GetLastError();
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_WRITE);
+        tsk_error_set_errstr("writeFooter: error writing VHD header",
+            lastError);
+        return TSK_ERR;
+    }
+    return TSK_OK;
+}
+
+
 /*
  * Add a buffer to the VHD. The buffer can span multiple blocks.
  * @param writer Image writer object
@@ -309,9 +458,7 @@ static TSK_RETVAL_ENUM addBlock(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char *bu
  * @param len    Length of the data (this must be a multiple of the sector size)
  */
 static TSK_RETVAL_ENUM tsk_img_writer_add(TSK_IMG_WRITER* writer, TSK_OFF_T addr, char *buffer, size_t len) {
-#ifndef TSK_WIN32
-    return TSK_ERR;
-#else
+
     if (writer->is_finished) {
         return TSK_OK;
     }
@@ -342,7 +489,6 @@ static TSK_RETVAL_ENUM tsk_img_writer_add(TSK_IMG_WRITER* writer, TSK_OFF_T addr
     }
 
     return TSK_OK;
-#endif
 }
 
 /*
@@ -350,9 +496,7 @@ static TSK_RETVAL_ENUM tsk_img_writer_add(TSK_IMG_WRITER* writer, TSK_OFF_T addr
  * @param writer Image writer object
  */
 static TSK_RETVAL_ENUM tsk_img_writer_close(TSK_IMG_WRITER* img_writer) {
-#ifndef TSK_WIN32
-    return TSK_ERR;
-#else
+
     if (tsk_verbose) {
         tsk_fprintf(stderr,
             "tsk_img_writer_close: Closing image writer");
@@ -395,7 +539,6 @@ static TSK_RETVAL_ENUM tsk_img_writer_close(TSK_IMG_WRITER* img_writer) {
     }
 
     return TSK_OK;
-#endif
 }
 
 /*
@@ -404,9 +547,6 @@ static TSK_RETVAL_ENUM tsk_img_writer_close(TSK_IMG_WRITER* img_writer) {
  * @param img_writer Image writer object
  */
 static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
-#ifndef TSK_WIN32
-    return TSK_ERR;
-#else
     if (tsk_verbose) {
         tsk_fprintf(stderr,
             "tsk_img_writer_finish_image: Finishing image");
@@ -454,152 +594,11 @@ static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
 
     img_writer->is_finished = 1;
     return TSK_OK;
+}
+
 #endif
-}
 
-
-/* 
- * Utility function to write integer values to the VHD headers.
- * Will write val as an nBytes-long value to the buffer at the given offset.
- * Byte ordering is big endian
- */
-static void addIntToBuffer(unsigned char * buffer, int offset, TSK_OFF_T val, int nBytes) {
-    for (int i = 0; i < nBytes; i++) {
-        buffer[offset + i] = (val >> (8 * (nBytes - 1 - i))) & 0xff;
-    }
-}
-
-/* 
- * Utility function to write strings to the VHD headers.
- */
-static void addStringToBuffer(unsigned char * buffer, int offset, char const * str, int nBytes) {
-    for (int i = 0; i < nBytes; i++) {
-        buffer[offset + i] = str[i];
-    }
-}
-
-/*
- * Calculate the checksum for the header. It's the one's complement of the sum of
- * all the bytes (apart from the checksum)
- */
-static uint32_t generateChecksum(unsigned char * buffer, int len) {
-
-    uint32_t sum = 0;
-    for (int i = 0; i < len; i++) {
-        sum += buffer[i];
-    }
-
-    return (~sum);
-}
-
-/* 
- * Write the footer (which is also the first sector) to the file.
- * Will write to the current file position.
- * Save it so we only have to generate it once.
- */
-static TSK_RETVAL_ENUM writeFooter(TSK_IMG_WRITER* writer) {
-    if (writer->footer == NULL) {
-        writer->footer = (unsigned char *)tsk_malloc(VHD_FOOTER_LENGTH * sizeof(unsigned char));
-
-        /* First calculate geometry values */
-        uint32_t cylinders;
-        uint32_t heads;
-        uint32_t sectorsPerTrack;
-        uint32_t totalSectors = uint32_t(writer->imageSize / VHD_SECTOR_SIZE);
-        if (writer->imageSize % VHD_SECTOR_SIZE != 0) {
-            totalSectors++;
-        }
-
-        uint32_t cylinderTimesHeads;
-        if (totalSectors > 65535 * 16 * 255){
-            totalSectors = 65535 * 16 * 255;
-        }
-
-        if (totalSectors >= 65535 * 16 * 63){
-            sectorsPerTrack = 255;
-            heads = 16;
-            cylinderTimesHeads = totalSectors / sectorsPerTrack;
-        } else {
-            sectorsPerTrack = 17;
-            cylinderTimesHeads = totalSectors / sectorsPerTrack;
-            heads = (cylinderTimesHeads + 1023) / 1024;
-            if (heads < 4){
-                heads = 4;
-            }
-            if (cylinderTimesHeads >= (heads * 1024) || heads > 16){
-                sectorsPerTrack = 31;
-                heads = 16;
-                cylinderTimesHeads = totalSectors / sectorsPerTrack;
-            }
-            if (cylinderTimesHeads >= (heads * 1024)){
-                sectorsPerTrack = 63;
-                heads = 16;
-                cylinderTimesHeads = totalSectors / sectorsPerTrack;
-            }
-        }
-        cylinders = cylinderTimesHeads / heads;
-
-        /* Write the footer */
-        addStringToBuffer(writer->footer, 0, "conectix", 8);
-        addIntToBuffer(writer->footer, 8, 2, 4);         // Features
-        addIntToBuffer(writer->footer, 0xc, 0x10000, 4); // File format version
-        addIntToBuffer(writer->footer, 0x10, 0x200, 8);  // Data offset
-        // 0x18 is a four byte timestamp - ok to leave blank
-        addStringToBuffer(writer->footer, 0x1c, "win ", 4);  // Creator app
-        addIntToBuffer(writer->footer, 0x20, 0x60001, 4);    // Creator version
-        addStringToBuffer(writer->footer, 0x24, "Wi2k", 4);  // Creator host OS
-        addIntToBuffer(writer->footer, 0x28, writer->imageSize, 8);  // Original size
-        addIntToBuffer(writer->footer, 0x30, writer->imageSize, 8);  // Current size
-        addIntToBuffer(writer->footer, 0x38, cylinders, 2);        // Geometry
-        addIntToBuffer(writer->footer, 0x3a, heads, 1);            // Geometry
-        addIntToBuffer(writer->footer, 0x3b, sectorsPerTrack, 1);  // Geometry
-        addIntToBuffer(writer->footer, 0x3c, 3, 4);                // Disk type
-        // Bytes 0x44 to 0x54 are a UUID, which is ok to leave blank
-
-        addIntToBuffer(writer->footer, 0x40, generateChecksum(writer->footer, VHD_FOOTER_LENGTH), 4); // Checksum
-    }
-
-    DWORD bytesWritten;
-    if (FALSE == WriteFile(writer->outputFileHandle, writer->footer, VHD_FOOTER_LENGTH, &bytesWritten, NULL)) {
-        int lastError = GetLastError();
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_WRITE);
-        tsk_error_set_errstr("writeFooter: error writing VHD footer",
-            lastError);
-        return TSK_ERR;
-    }
-    return TSK_OK;
-}
-
-/*
- * Write the dynamic disk header to the file
- */
-static TSK_RETVAL_ENUM writeDynamicDiskHeader(TSK_IMG_WRITER * writer) {
-    unsigned char * diskHeader = (unsigned char *)malloc(VHD_DISK_HEADER_LENGTH * sizeof(unsigned char));
-    for (int i = 0; i < VHD_DISK_HEADER_LENGTH; i++) {
-        diskHeader[i] = 0;
-    }
-
-    addStringToBuffer(diskHeader, 0, "cxsparse", 8); // Cookie
-    addIntToBuffer(diskHeader, 8, 0xffffffff, 4);    // Data offset (1)
-    addIntToBuffer(diskHeader, 0xc, 0xffffffff, 4);  // Data offset (2)
-    addIntToBuffer(diskHeader, 0x10, 0x600, 8);      // BAT offset
-    addIntToBuffer(diskHeader, 0x18, 0x10000, 4);    // Header version
-    addIntToBuffer(diskHeader, 0x1c, writer->totalBlocks, 4); // Blocks on disk
-    addIntToBuffer(diskHeader, 0x20, writer->blockSize, 4);   // Block size
-    addIntToBuffer(diskHeader, 0x24, generateChecksum(diskHeader, 0x400), 4); // Checksum
-
-    DWORD bytesWritten;
-    if (FALSE == WriteFile(writer->outputFileHandle, diskHeader, VHD_DISK_HEADER_LENGTH, &bytesWritten, NULL)) {
-        int lastError = GetLastError();
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_IMG_WRITE);
-        tsk_error_set_errstr("writeFooter: error writing VHD header",
-            lastError);
-        return TSK_ERR;
-    }
-    return TSK_OK;
-}
+/* Any method that can be accessed from WIN32 or non-WIN32 goes after this point */
 
 /*
  * Create and initailize the TSK_IMG_WRITER struct and save reference in img_info,

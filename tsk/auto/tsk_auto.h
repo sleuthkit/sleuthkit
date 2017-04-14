@@ -251,7 +251,7 @@ class TskAuto {
         const TSK_FS_ATTR * fs_attr);
     uint8_t isNonResident(const TSK_FS_ATTR * fs_attr);
 	bool m_imageWriterEnabled;
-	wchar_t * m_imageWriterPath;
+    TSK_TCHAR * m_imageWriterPath;
 
     
     TSK_RETVAL_ENUM processAttributes(TSK_FS_FILE * fs_file,

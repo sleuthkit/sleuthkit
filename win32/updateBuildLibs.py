@@ -249,18 +249,22 @@ def usage():
     '''
     Print out how to use this script.
     '''
-    print('Usage: python3 updataBuildlibs.py branch product')
-    print('branch is which branch to build. Must exist libewf, libvhdi and libvmdk.')
+    print('Usage: python3 updataBuildlibs.py [branch]')
+    print('branch is which branch to build and is optional. Currently only works for master')
     sys.stdout.flush()
     sys.exit(1)
 
 def main():
-    if len(sys.argv) < 2:
-        print('Missing arguments.')
+    #by default we use master branch to update the source
+    branch = 'master'
+
+    if len(sys.argv) == 2:    #keep this parameter here for the future we may let user use different branch to update source
+        branch = sys.argv[1]
+    elif len(sys.argv) > 2:
+        print('Wrong arguments.')
         usage()
 
-    branch = sys.argv[1]
-
+    print('Updating source by %s branch.' % branch)
     pullAndBuildAllDependencies(branch)
     buildTSKAll()
 
