@@ -190,7 +190,8 @@ public class SleuthkitJNI {
 			private final boolean skipFatFsOrphans;
 			private final String imageWriterPath;
 			private volatile long tskAutoDbPointer;
-			private volatile boolean isCanceled;
+			//@GuardedBy("this")
+			private boolean isCanceled;
 
 			/**
 			 * Constructs an object that encapsulates a multi-step process to
@@ -232,21 +233,20 @@ public class SleuthkitJNI {
 			 *                          the process)
 			 */
 			public void run(String deviceId, String[] imageFilePaths) throws TskCoreException, TskDataException {
-				if (0 != tskAutoDbPointer) {
-					throw new TskCoreException("Add image process already started");
-				}
-				long imageHandle = openImage(imageFilePaths, false);
+				long imageHandle;
 				synchronized (this) {
+					if (0 != tskAutoDbPointer) {
+						throw new TskCoreException("Add image process already started");
+					}
+					imageHandle = openImage(imageFilePaths, false);
 					if (!isCanceled) {
 						tskAutoDbPointer = initAddImgNat(caseDbPointer, timezoneLongToShort(timeZone), addUnallocSpace, skipFatFsOrphans);
 					}
+					if (0 == tskAutoDbPointer) {
+						throw new TskCoreException("initAddImgNat returned a NULL TskAutoDb pointer");
+					}
 				}
-				if (0 == tskAutoDbPointer) {
-					throw new TskCoreException("initAddImgNat returned a NULL TskAutoDb pointer");
-				}
-				if (!isCanceled) {
-					runAddImgNat(tskAutoDbPointer, deviceId, imageHandle, timeZone, imageWriterPath);
-				}
+				runAddImgNat(tskAutoDbPointer, deviceId, imageHandle, timeZone, imageWriterPath);
 			}
 
 			/**
@@ -258,12 +258,11 @@ public class SleuthkitJNI {
 			 * @throws TskCoreException if a critical error occurs within the
 			 *                          SleuthKit.
 			 */
-			public void stop() throws TskCoreException {
-				isCanceled = true; //isCanceled must be set to true prior to tskAutoDbPointer being checked
-				if (tskAutoDbPointer != 0) { //tskAutoDbPointer must be checked after isCancelled is set to true
+			public synchronized void stop() throws TskCoreException {
+				isCanceled = true;
+				if (tskAutoDbPointer != 0) {
 					stopAddImgNat(tskAutoDbPointer);
 				}
-
 			}
 
 			/**
