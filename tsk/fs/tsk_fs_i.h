@@ -186,7 +186,7 @@ extern "C" {
     extern TSK_FS_INFO *fatfs_open(TSK_IMG_INFO *, TSK_OFF_T,
         TSK_FS_TYPE_ENUM, uint8_t);
     extern TSK_FS_INFO *ffs_open(TSK_IMG_INFO *, TSK_OFF_T,
-        TSK_FS_TYPE_ENUM);
+        TSK_FS_TYPE_ENUM, uint8_t);
     extern TSK_FS_INFO *ntfs_open(TSK_IMG_INFO *, TSK_OFF_T,
         TSK_FS_TYPE_ENUM, uint8_t);
     extern TSK_FS_INFO *rawfs_open(TSK_IMG_INFO *, TSK_OFF_T);
