@@ -41,6 +41,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -86,6 +87,7 @@ import org.sqlite.SQLiteJDBCLoader;
  */
 public class SleuthkitCase {
 
+	private static final int MAX_DB_NAME_LEN_BEFORE_TIMESTAMP = 47;
 	private static final int SCHEMA_VERSION_NUMBER = 6; // This must be the same as TSK_SCHEMA_VER in tsk/auto/tsk_db.h.
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -102,6 +104,7 @@ public class SleuthkitCase {
 	private final Map<Long, VirtualDirectory> rootIdsToCarvedFileDirs = new HashMap<Long, VirtualDirectory>();
 	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system files.
 	private final ArrayList<ErrorObserver> sleuthkitCaseErrorObservers = new ArrayList<ErrorObserver>();
+	private final String databaseName;
 	private final String dbPath;
 	private final DbType dbType;
 	private final String caseDirPath;
@@ -203,7 +206,9 @@ public class SleuthkitCase {
 		Class.forName("org.sqlite.JDBC");
 		this.dbPath = dbPath;
 		this.dbType = dbType;
-		this.caseDirPath = new java.io.File(dbPath).getParentFile().getAbsolutePath();
+		File dbFile = new File(dbPath);
+		this.caseDirPath = dbFile.getParentFile().getAbsolutePath();
+		this.databaseName = dbFile.getName();
 		this.connections = new SQLiteConnections(dbPath);
 		this.caseHandle = caseHandle;
 		init();
@@ -229,6 +234,7 @@ public class SleuthkitCase {
 	 */
 	private SleuthkitCase(String host, int port, String dbName, String userName, String password, SleuthkitJNI.CaseDbHandle caseHandle, String caseDirPath, DbType dbType) throws Exception {
 		this.dbPath = "";
+		this.databaseName = dbName;
 		this.dbType = dbType;
 		this.caseDirPath = caseDirPath;
 		this.connections = new PostgreSQLConnections(host, port, dbName, userName, password);
@@ -636,7 +642,7 @@ public class SleuthkitCase {
 		try {
 			SleuthkitCase.logger.info(String.format("sqlite-jdbc version %s loaded in %s mode", //NON-NLS
 					SQLiteJDBCLoader.getVersion(), SQLiteJDBCLoader.isNativeMode()
-							? "native" : "pure-java")); //NON-NLS
+					? "native" : "pure-java")); //NON-NLS
 		} catch (Exception ex) {
 			SleuthkitCase.logger.log(Level.SEVERE, "Error querying case database mode", ex);
 		}
@@ -1058,6 +1064,15 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Gets the case database name.
+	 *
+	 * @return The case database name.
+	 */
+	public String getDatabaseName() {
+		return databaseName;
+	}
+
+	/**
 	 * Get the full path to the case directory. For a SQLite case database, this
 	 * is the same as the database directory path.
 	 *
@@ -1166,11 +1181,11 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Create a new case database.
+	 * Creates a new SQLite case database.
 	 *
 	 * @param dbPath Path to where SQlite case database should be created.
 	 *
-	 * @return Case database object.
+	 * @return A case database object.
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
@@ -1184,17 +1199,22 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Create a new multi-user case database.
+	 * Creates a new PostgreSQL case database.
 	 *
-	 * @param info         the information to connect to the database
-	 * @param databaseName the name of the database
-	 * @param caseDirPath  the path of the case
+	 * @param caseName    The name of the case. It will be used to create a case
+	 *                    database name that can be safely used in SQL commands
+	 *                    and will not be subject to name collisions on the case
+	 *                    database server. Use getDatabaseName to get the
+	 *                    created name.
+	 * @param info        The information to connect to the database.
+	 * @param caseDirPath The case directory path.
 	 *
-	 * @return Case database object.
+	 * @return A case database object.
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public static SleuthkitCase newCase(String databaseName, CaseDbConnectionInfo info, String caseDirPath) throws TskCoreException {
+	public static SleuthkitCase newCase(String caseName, CaseDbConnectionInfo info, String caseDirPath) throws TskCoreException {
+		String databaseName = createCaseDataBaseName(caseName);
 		try {
 			/**
 			 * The flow of this method involves trying to create a new case and
@@ -1221,6 +1241,70 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Transforms a candidate PostgreSQL case database name into one that can be
+	 * safely used in SQL commands and will not be subject to name collisions on
+	 * the case database server.
+	 *
+	 * @param candidateDbName A candidate case database name.
+	 *
+	 * @return A case database name.
+	 */
+	private static String createCaseDataBaseName(String candidateDbName) {
+		String dbName;
+		if (!candidateDbName.isEmpty()) {
+			/*
+			 * Replace all non-ASCII characters.
+			 */
+			dbName = candidateDbName.replaceAll("[^\\p{ASCII}]", "_"); //NON-NLS
+
+			/*
+			 * Replace all control characters.
+			 */
+			dbName = dbName.replaceAll("[\\p{Cntrl}]", "_"); //NON-NLS
+
+			/*
+			 * Replace /, \, :, ?, space, ' ".
+			 */
+			dbName = dbName.replaceAll("[ /?:'\"\\\\]", "_"); //NON-NLS
+
+			/*
+			 * Make it all lowercase.
+			 */
+			dbName = dbName.toLowerCase();
+
+			/*
+			 * Must start with letter or underscore. If not, prepend an
+			 * underscore.
+			 */
+			if ((dbName.length() > 0 && !(Character.isLetter(dbName.codePointAt(0))) && !(dbName.codePointAt(0) == '_'))) {
+				dbName = "_" + dbName;
+			}
+
+			/*
+			 * Truncate to 63 - 16 = 47 chars to accomodate a timestamp for
+			 * uniqueness.
+			 */
+			if (dbName.length() > MAX_DB_NAME_LEN_BEFORE_TIMESTAMP) {
+				dbName = dbName.substring(0, MAX_DB_NAME_LEN_BEFORE_TIMESTAMP);
+			}
+
+		} else {
+			/*
+			 * Must start with letter or underscore.
+			 */
+			dbName = "_";
+		}
+		/*
+		 * Add the time stmap.
+		 */
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
+		Date date = new Date();
+		dbName = dbName + "_" + dateFormat.format(date);
+
+		return dbName;
+	}
+
+	/**
 	 * Start process of adding a image to the case. Adding an image is a
 	 * multi-step process and this returns an object that allows it to happen.
 	 *
@@ -1229,8 +1313,8 @@ public class SleuthkitCase {
 	 *                        unallocated space in the image.
 	 * @param noFatFsOrphans  Set to true to skip processing orphan files of FAT
 	 *                        file systems.
-     * @param imageWriterPath Path for image writer from the local disk panel.
-     *                        Use an empty string to disable image writing
+	 * @param imageWriterPath Path for image writer from the local disk panel.
+	 *                        Use an empty string to disable image writing
 	 *
 	 * @return Object that encapsulates control of adding an image via the
 	 *         SleuthKit native code layer.
@@ -6831,14 +6915,16 @@ public class SleuthkitCase {
 			releaseSharedLock();
 		}
 	}
-	
+
 	/**
 	 * Change the path for an image in the database.
-	 * @param newPath    New path to the image
-	 * @param objectId   Data source ID of the image
+	 *
+	 * @param newPath  New path to the image
+	 * @param objectId Data source ID of the image
+	 *
 	 * @throws TskCoreException
 	 */
-	public void updateImagePath(String newPath, long objectId) throws TskCoreException{
+	public void updateImagePath(String newPath, long objectId) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
 		try {
@@ -7469,7 +7555,7 @@ public class SleuthkitCase {
 		PostgreSQLConnections(String host, int port, String dbName, String userName, String password) throws PropertyVetoException, UnsupportedEncodingException {
 			ComboPooledDataSource comboPooledDataSource = new ComboPooledDataSource();
 			comboPooledDataSource.setDriverClass("org.postgresql.Driver"); //loads the jdbc driver
-			comboPooledDataSource.setJdbcUrl("jdbc:postgresql://" + host + ":" + port + "/" 
+			comboPooledDataSource.setJdbcUrl("jdbc:postgresql://" + host + ":" + port + "/"
 					+ URLEncoder.encode(dbName, StandardCharsets.UTF_8.toString()));
 			comboPooledDataSource.setUser(userName);
 			comboPooledDataSource.setPassword(password);
@@ -8566,7 +8652,7 @@ public class SleuthkitCase {
 		return addLocalFile(fileName, localPath, size, ctime, crtime, atime, mtime,
 				isFile, TskData.EncodingType.NONE, parent);
 	}
-	
+
 	/**
 	 * Start process of adding a image to the case. Adding an image is a
 	 * multi-step process and this returns an object that allows it to happen.
@@ -8579,7 +8665,9 @@ public class SleuthkitCase {
 	 *
 	 * @return Object that encapsulates control of adding an image via the
 	 *         SleuthKit native code layer
-	 * @Deprecated Use the newer version with explicit image writer path parameter
+	 *
+	 * @Deprecated Use the newer version with explicit image writer path
+	 * parameter
 	 */
 	@Deprecated
 	public AddImageProcess makeAddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) {
