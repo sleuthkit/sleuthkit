@@ -190,7 +190,6 @@ public class SleuthkitJNI {
 			private final boolean skipFatFsOrphans;
 			private final String imageWriterPath;
 			private volatile long tskAutoDbPointer;
-			//@GuardedBy("this")
 			private boolean isCanceled;
 
 			/**
@@ -238,8 +237,8 @@ public class SleuthkitJNI {
 					if (0 != tskAutoDbPointer) {
 						throw new TskCoreException("Add image process already started");
 					}
-					imageHandle = openImage(imageFilePaths, false);
-					if (!isCanceled) {
+					if (!isCanceled) { //with isCanceled being guarded by this it will have the same value everywhere in this synchronized block
+						imageHandle = openImage(imageFilePaths, false);
 						tskAutoDbPointer = initAddImgNat(caseDbPointer, timezoneLongToShort(timeZone), addUnallocSpace, skipFatFsOrphans);
 					}
 					if (0 == tskAutoDbPointer) {
