@@ -232,7 +232,7 @@ public class SleuthkitJNI {
 			 *                          the process)
 			 */
 			public void run(String deviceId, String[] imageFilePaths) throws TskCoreException, TskDataException {
-				long imageHandle;
+				long imageHandle = 0;
 				synchronized (this) {
 					if (0 != tskAutoDbPointer) {
 						throw new TskCoreException("Add image process already started");
@@ -245,7 +245,9 @@ public class SleuthkitJNI {
 						throw new TskCoreException("initAddImgNat returned a NULL TskAutoDb pointer");
 					}
 				}
-				runAddImgNat(tskAutoDbPointer, deviceId, imageHandle, timeZone, imageWriterPath);
+				if (imageHandle != 0) {
+					runAddImgNat(tskAutoDbPointer, deviceId, imageHandle, timeZone, imageWriterPath);
+				}
 			}
 
 			/**
