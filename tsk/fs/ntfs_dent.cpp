@@ -1264,16 +1264,6 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         for (size_t a = 0; a < childFiles.size(); a++) {
             TSK_FS_FILE *fs_file_orp = NULL;
 
-            /* Check if fs_dir already has an allocated entry for this
-             * file.  If so, ignore it. We used to rely on fs_dir_add
-             * to get rid of this, but it wasted a lot of lookups. If 
-             * We have only unalloc for this same entry (from idx entries),
-             * then try to add it.   If we got an allocated entry from
-             * the idx entries, then assume we have everything. */
-            if (tsk_fs_dir_contains(fs_dir, childFiles[a].getAddr()) == TSK_FS_NAME_FLAG_ALLOC) {
-                continue;
-            }
-
             /* Fill in the basics of the fs_name entry
              * so we can print in the fls formats */
             fs_name->meta_addr = childFiles[a].getAddr();

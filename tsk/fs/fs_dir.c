@@ -141,33 +141,6 @@ tsk_fs_dir_copy(const TSK_FS_DIR * a_src_dir, TSK_FS_DIR * a_dst_dir)
 }
 
 
-
-
-/**
- * Test if a_fs_dir already contains an entry for the given
- * meta data address. If so, return the allocation state.
- *
- * @returns TSK_FS_NAME_FLAG_ALLOC, TSK_FS_NAME_FLAG_UNALLOC, or 0 if not found.
- */
-uint8_t
-tsk_fs_dir_contains(TSK_FS_DIR * a_fs_dir, TSK_INUM_T meta_addr)
-{
-    size_t i;
-    uint8_t bestFound = 0;
-
-    for (i = 0; i < a_fs_dir->names_used; i++) {
-        if (meta_addr == a_fs_dir->names[i].meta_addr) {
-            bestFound = a_fs_dir->names[i].flags;
-            // stop as soon as we get an alloc. 
-            // if we get unalloc, keep going in case there
-            // is alloc later.
-            if (bestFound == TSK_FS_NAME_FLAG_ALLOC) 
-                break;
-        }
-    }
-    return bestFound;
-}
-
 /** \internal
  * Add a FS_DENT structure to a FS_DIR structure by copying its
  * contents into the internal buffer. Checks for

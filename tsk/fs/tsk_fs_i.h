@@ -139,7 +139,6 @@ extern "C" {
     extern uint8_t tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir,
         const TSK_FS_NAME * a_fs_dent);
     extern void tsk_fs_dir_reset(TSK_FS_DIR * a_fs_dir);
-    extern uint8_t tsk_fs_dir_contains(TSK_FS_DIR * a_fs_dir, TSK_INUM_T meta_addr);
 
     /* Orphan Directory Support */
     TSK_RETVAL_ENUM tsk_fs_dir_load_inum_named(TSK_FS_INFO * a_fs);
