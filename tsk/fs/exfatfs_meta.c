@@ -1223,7 +1223,7 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     if ((a_is_alloc) &&
         (exfatfs_get_alloc_status_from_type(file_dentry->entry_type) == 1) &&
         (exfatfs_get_alloc_status_from_type(stream_dentry.entry_type) == 1)) {
-        a_fs_file->meta->flags = TSK_FS_META_FLAG_ALLOC;
+        a_fs_file->meta->flags = TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED;
 
         /* If the FAT chain bit of the secondary flags of the stream entry is set,
          * the file is not fragmented and there is no FAT chain to walk. If the 
@@ -1310,7 +1310,7 @@ exfatfs_copy_file_name_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
      * settings - essentially a "belt and suspenders" check. */
     if ((a_is_alloc) &&
         (exfatfs_get_alloc_status_from_type(dentry->entry_type) == 1)) {
-        a_fs_file->meta->flags = TSK_FS_META_FLAG_ALLOC;
+        a_fs_file->meta->flags = TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED;
     }
     else {
         a_fs_file->meta->flags = TSK_FS_META_FLAG_UNALLOC;
@@ -1353,7 +1353,7 @@ exfatfs_inode_copy_init(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
 
     /* Set the allocation status based on the cluster allocation status. File 
      * entry set entries may change this. */
-    a_fs_file->meta->flags = a_is_alloc ? TSK_FS_META_FLAG_ALLOC : TSK_FS_META_FLAG_UNALLOC;
+    a_fs_file->meta->flags = a_is_alloc ? TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED : TSK_FS_META_FLAG_UNALLOC;
 
     /* As for FATXX, make regular file the default type. */
     fs_meta->type = TSK_FS_META_TYPE_REG;
