@@ -3781,6 +3781,14 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 // This is the length of the useful data, not including the record header
                 attributeLength = tsk_getu32(endian, attrData->attr_size);
 
+                // Check the attribute fits in the node
+                //if (recordType != HFS_ATTR_RECORD_INLINE_DATA) {
+                if (recOffset + keyLength + 2 + attributeLength > attrFile.nodeSize) {
+                  error_detected(TSK_ERR_FS_READ,
+                      "hfs_load_extended_attrs: Unable to process attribute");
+                  goto on_error;
+                }
+
                 buffer = malloc(attributeLength);
                 if (buffer == NULL) {
                     error_detected(TSK_ERR_AUX_MALLOC,
