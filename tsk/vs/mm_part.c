@@ -272,13 +272,9 @@ tsk_vs_part_walk(TSK_VS_INFO * a_vs, TSK_PNUM_T a_start, TSK_PNUM_T a_last,
 
     for (part = a_vs->part_list; part != NULL; part = part->next) {
         if ((part->addr >= a_start) && ((part->flags & a_flags) != 0)) {
-            int retval;
-            retval = a_action(a_vs, part, a_ptr);
-            if (retval == TSK_WALK_STOP) {
-                return 0;
-            }
-            else if (retval == TSK_WALK_ERROR) {
-                return 1;
+            switch (a_action(a_vs, part, a_ptr)) {
+            case TSK_WALK_STOP:   return 0;
+            case TSK_WALK_ERROR:  return 1;
             }
         }
 
