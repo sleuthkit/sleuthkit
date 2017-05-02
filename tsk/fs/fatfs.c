@@ -216,7 +216,7 @@ getFATCacheIdx(FATFS_INFO * fatfs, TSK_DADDR_T sect)
  * Set *value to the entry in the File Allocation Table (FAT) 
  * for the given cluster
  *
- * *value is in clusters and may need to be coverted to
+ * *value is in clusters and may need to be converted to
  * sectors by the calling function
  *
  * Invalid values in the FAT (i.e. greater than the largest
@@ -479,7 +479,7 @@ fatfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
     }
 
     /* cycle through the sectors.  We do the sectors before the first
-     * cluster seperate from the data area */
+     * cluster separate from the data area */
     addr = a_start_blk;
 
     /* Before the data area beings (FAT, root directory etc.) */
@@ -761,7 +761,7 @@ fatfs_fscheck(TSK_FS_INFO * fs, FILE * hFile)
     tsk_error_set_errstr("fscheck not implemented for FAT yet");
     return 1;
 
-    /* Check that allocated dentries point to start of allcated cluster chain */
+    /* Check that allocated dentries point to start of allocated cluster chain */
 
 
     /* Size of file is consistent with cluster chain length */

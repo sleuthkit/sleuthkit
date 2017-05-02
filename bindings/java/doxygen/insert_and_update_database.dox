@@ -7,14 +7,14 @@ Autopsy currently allows either \ref sqlite_db or \ref postgresql_db as the back
 
 
 \subsection sqlite_db SQLite
-- Use SQL statments supported by SQLite 3
+- Use SQL statements supported by SQLite 3
 - Used for Single-user cases
 - Built-in
 - No configuration required
 - Databases are stored locally
 
 \subsection postgresql_db PostgreSQL
-- Use SQL statments supported by PostgreSQL 9.4
+- Use SQL statements supported by PostgreSQL 9.4
 - Used for Multi-user cases
 - An accessible instance of PostgreSQL must be running (on a server, or locally)
 - Proper configuration to connect to this instance of PostgreSQL required

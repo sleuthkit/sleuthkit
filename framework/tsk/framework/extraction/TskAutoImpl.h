@@ -52,8 +52,8 @@ private:
     bool m_vsSeen;
     uint64_t m_numFilesSeen;
     time_t m_lastUpdateMsg;
-    std::queue<Scheduler::task_struct> m_filesToSchedule;   ///< Scheduler tasks to submit once transaction is commited
-    static const unsigned int m_numOfFilesToQueue = 1000;    ///< max number of files to queue up in a transaction before commiting
+    std::queue<Scheduler::task_struct> m_filesToSchedule;   ///< Scheduler tasks to submit once transaction is committed
+    static const unsigned int m_numOfFilesToQueue = 1000;    ///< max number of files to queue up in a transaction before committing
 
     TSK_RETVAL_ENUM insertFileData(TSK_FS_FILE * fs_file,
         const TSK_FS_ATTR *, const char *path, uint64_t & fileId);

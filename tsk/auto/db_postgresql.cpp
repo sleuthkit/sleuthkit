@@ -314,7 +314,7 @@ int TskDbPostgreSQL::isEscapedStringValid(const char *sql_str, const char *orig_
 
 /**
 * Execute SQL statement and returns PostgreSQL result sets in ASCII format. Sets TSK error values on error.
-* IMPORTANT: result set needs to be freed by caling PQclear(res) when no longer needed.
+* IMPORTANT: result set needs to be freed by calling PQclear(res) when no longer needed.
 * @returns Result set on success, NULL on error
 */
 PGresult* TskDbPostgreSQL::get_query_result_set(const char *sql, const char *errfmt)
@@ -345,7 +345,7 @@ PGresult* TskDbPostgreSQL::get_query_result_set(const char *sql, const char *err
 /**
 * Execute a statement and returns PostgreSQL result sets in binary format. Sets TSK error values on error.
 * IMPORTANT: PostgreSQL returns binary representations in network byte order, which need to be converted to the local byte order.
-* IMPORTANT: result set needs to be freed by caling PQclear(res) when no longer needed.
+* IMPORTANT: result set needs to be freed by calling PQclear(res) when no longer needed.
 * @returns Result set on success, NULL on error
 */
 PGresult* TskDbPostgreSQL::get_query_result_set_binary(const char *sql, const char *errfmt)
@@ -1937,7 +1937,7 @@ int TskDbPostgreSQL::createSavepoint(const char *name)
     // In PostgreSQL savepoints can only be established when inside a transaction block.
     // NOTE: this will only work if we have 1 savepoint. If we use multiple savepoints, PostgreSQL will 
     // not allow us to call "BEGIN" inside a transaction. We will need to keep track of whether we are
-    // in transaction and only call "BEGIN" if we are not in trasaction. Alternatively we can keep
+    // in transaction and only call "BEGIN" if we are not in transaction. Alternatively we can keep
     // calling "BEGIN" every time we create a savepoint and simply ignore the error if there is one.
     // Also see note inside TskDbPostgreSQL::releaseSavepoint().
     snprintf(buff, 1024, "BEGIN;");
@@ -1988,7 +1988,7 @@ int TskDbPostgreSQL::releaseSavepoint(const char *name)
     // "COMMIT" when releasing the outer most savepoint.
     snprintf(buff, 1024, "COMMIT;");
 
-    return attempt_exec(buff, "Error commiting transaction: %s\n");
+    return attempt_exec(buff, "Error committing transaction: %s\n");
 }
 
 /** 

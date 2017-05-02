@@ -81,13 +81,13 @@ class TskAutoDb:public TskAuto {
 
     /**
      * When enabled, records for unallocated file system space will be added to the database. Default value is false.
-     * @param addUnallocSpace If true, create records for contigious unallocated file system sectors. 
+     * @param addUnallocSpace If true, create records for contiguous unallocated file system sectors. 
      */
     virtual void setAddUnallocSpace(bool addUnallocSpace);
 
     /**
      * When enabled, records for unallocated file system space will be added to the database. Default value is false.
-     * @param addUnallocSpace If true, create records for contigious unallocated file system sectors.
+     * @param addUnallocSpace If true, create records for contiguous unallocated file system sectors.
      * @param chunkSize the number of bytes to group unallocated data into. A value of 0 will create
      * one large chunk and group only on volume boundaries. A value of -1 will group each consecutive
      * chunk.

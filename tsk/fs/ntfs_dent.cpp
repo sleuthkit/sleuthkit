@@ -118,7 +118,7 @@ static std::map<TSK_INUM_T, NTFS_PAR_MAP> * getParentMap(NTFS_INFO *ntfs) {
 /** \internal
  * Add a parent and child pair to the map stored in NTFS_INFO
  *
- * Note: This routine assumes &ntfs->orhpan_map_lock is locked by the caller.
+ * Note: This routine assumes &ntfs->orphan_map_lock is locked by the caller.
  *
  * @param ntfs structure to add the pair to
  * @param par Parent address
@@ -137,7 +137,7 @@ ntfs_parent_map_add(NTFS_INFO * ntfs, TSK_FS_META_NAME_LIST *name_list, TSK_FS_M
 /** \internal
  * Returns if a parent has children or not.
  *
- * Note: This routine assumes &ntfs->orhpan_map_lock is locked by the caller.
+ * Note: This routine assumes &ntfs->orphan_map_lock is locked by the caller.
  *
  * @param ntfs File system that has already been analyzed
  * @param par Parent inode to find child files for
@@ -160,7 +160,7 @@ ntfs_parent_map_exists(NTFS_INFO *ntfs, TSK_INUM_T par, uint32_t seq)
  * Look up a map entry by the parent address. You should call ntfs_parent_map_exists() before this, otherwise
  * an empty entry could be created. 
  *
- * Note: This routine assumes &ntfs->orhpan_map_lock is locked by the caller.
+ * Note: This routine assumes &ntfs->orphan_map_lock is locked by the caller.
  *
  * @param ntfs File system that has already been analyzed
  * @param par Parent inode to find child files for
@@ -579,7 +579,7 @@ ntfs_proc_idxentry(NTFS_INFO * a_ntfs, TSK_FS_DIR * a_fs_dir,
                     tsk_getu16(fs->endian, a_idxe->idxlen)),
                 fs_name->flags);
 
-        // WINDOS entries will not have a short 8.3 veresion, so add them now.
+        // WINDOS entries will not have a short 8.3 version, so add them now.
         // otherwise, we stash the name to see if we get the 8.3 next. 
         if (fname->nspace == NTFS_FNAME_WINDOS) {
             if (tsk_fs_dir_add(a_fs_dir, fs_name)) {
@@ -721,10 +721,10 @@ ntfs_fix_idxrec(NTFS_INFO * ntfs, ntfs_idxrec * idxrec, uint32_t len)
 
 /** \internal
 * Process a directory and load up FS_DIR with the entries. If a pointer to
-* an already allocated FS_DIR struture is given, it will be cleared.  If no existing
+* an already allocated FS_DIR structure is given, it will be cleared.  If no existing
 * FS_DIR structure is passed (i.e. NULL), then a new one will be created. If the return
 * value is error or corruption, then the FS_DIR structure could
-* have entries (depending on when the error occured).
+* have entries (depending on when the error occurred).
 *
 * @param a_fs File system to analyze
 * @param a_fs_dir Pointer to FS_DIR pointer. Can contain an already allocated
@@ -1061,7 +1061,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
                     PRIx32 "\n", off, tsk_getu32(a_fs->endian,
                         idxrec->magic));
 
-            /* Is this the begining of an index record? */
+            /* Is this the beginning of an index record? */
             if (tsk_getu32(a_fs->endian,
                     idxrec->magic) != NTFS_IDXREC_MAGIC)
                 continue;
@@ -1515,7 +1515,7 @@ ntfs_find_file_rec(TSK_FS_INFO * fs, NTFS_DINFO * dinfo,
  * @param dir_walk_flags Flags to use during search
  * @param action Callback that will be called for each name that uses the specified addresses.
  * @param ptr Pointer that will be passed into action when it is called (so that you can pass in other data)
- * @returns 1 on error, 0 on sucess
+ * @returns 1 on error, 0 on success
  */
 
 uint8_t

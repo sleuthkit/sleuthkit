@@ -491,7 +491,7 @@ uint8_t
 * @param md5 Text representation of MD5 hash (can be NULL)
 * @param sha1 Text representation of SHA1 hash (can be NULL)
 * @param sha256 Text representation of SHA256 hash (can be NULL)
-* @param comment A comment to asociate with the hash (can be NULL)
+* @param comment A comment to associate with the hash (can be NULL)
 * @return 1 on error, 0 on success
 */
 uint8_t

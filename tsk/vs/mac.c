@@ -208,7 +208,7 @@ tsk_vs_mac_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset)
 
     //vs->sect_offset = offset + MAC_PART_OFFSET;
 
-    /* inititialize settings */
+    /* initialize settings */
     vs->part_list = NULL;
     vs->part_count = 0;
     vs->endian = 0;
