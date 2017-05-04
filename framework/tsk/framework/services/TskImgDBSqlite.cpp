@@ -437,7 +437,7 @@ int TskImgDBSqlite::open()
     // We, however, are using this setting as a workaround for database
     // corruption issues we have been experiencing when the database is
     // updated by multiple concurrent processes.
-    // Database corruption was occuring when SQLite determined that the 
+    // Database corruption was occurring when SQLite determined that the 
     // number of database pages in the database was greater than a value
     // that it had previously cached. 
     // This workaround is a crude mechanism to get around that situation.
@@ -1037,7 +1037,7 @@ SectorRuns * TskImgDBSqlite::getFreeSectors() const
                 if (flags & TSK_FS_META_FLAG_UNALLOC)
                     continue;
 
-                // @@@ We can probably find a more effecient storage method than this...
+                // @@@ We can probably find a more efficient storage method than this...
                 int error = 0;
                 for (int64_t i = 0; i < len; i++) {
                     if (tsk_list_add(&seen[fs_id], addr+i)) {

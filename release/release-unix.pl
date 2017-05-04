@@ -170,7 +170,7 @@ sub update_configver {
     close (CONF_OUT);
 
     if ($found != 1) {
-        die "$found (instead of 1) occurances of AC_INIT found in configure.ac";
+        die "$found (instead of 1) occurrences of AC_INIT found in configure.ac";
     }
 
     unlink ("configure.ac") or die "Error deleting configure.ac";
@@ -229,7 +229,7 @@ sub update_hver {
     close (CONF_OUT);
 
     if ($found != 2) {
-        die "$found (instead of 2) occurances of VERSION in tsk_base.h";
+        die "$found (instead of 2) occurrences of VERSION in tsk_base.h";
     }
 
     unlink ("tsk/base/tsk_base.h") or die "Error deleting tsk/base/tsk_base.h";
@@ -263,7 +263,7 @@ sub update_pkgver {
     close (CONF_OUT);
 
     if ($found != 1) {
-        die "Error: Found $found (instead of 1) occurances of Version: in RPM spec file";
+        die "Error: Found $found (instead of 1) occurrences of Version: in RPM spec file";
     }
 
     unlink ($IFILE) or die "Error deleting $IFILE";
@@ -362,7 +362,7 @@ sub update_libver {
     close (CONF_OUT);
 
     if ($found != 1) {
-        die "Error: Found only $found (instead of 1) occurances of version-info lib makefile";
+        die "Error: Found only $found (instead of 1) occurrences of version-info lib makefile";
     }
 
     unlink ($IFILE) or die "Error deleting $IFILE";

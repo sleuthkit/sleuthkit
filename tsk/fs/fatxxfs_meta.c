@@ -148,7 +148,7 @@ is_83_name(FATXXFS_DENTRY * de)
  * @param [in] a_cluster_is_alloc The allocation status, possibly unknown, of the 
  * cluster from which the buffer was filled. 
  * @param [in] a_do_basic_tests_only Whether to do basic or in-depth testing. 
- * @return 1 if the buffer likely contains a direcotry entry, 0 otherwise
+ * @return 1 if the buffer likely contains a directory entry, 0 otherwise
  */
 uint8_t
 fatxxfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_cluster_is_alloc, uint8_t a_do_basic_tests_only)

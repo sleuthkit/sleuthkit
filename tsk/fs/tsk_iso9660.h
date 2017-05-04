@@ -61,7 +61,7 @@
  * Contains the structures and function APIs for ISO9660 file system support.
  */
 
-/* refernece documents used:
+/* reference documents used:
  * IEEE P1281 - System Use Sharing Protocol, version 1.12
  * IEEE P1282 - Rock Ridge Interchange Protocol, version 1.12
  * ECMA-119 - Volume and File Structure of CDROM for Information Interchange,

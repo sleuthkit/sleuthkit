@@ -552,7 +552,7 @@ public class SleuthkitJNI {
 		/*
 		 * NOTE: previously attrId used to be stored in AbstractFile as (signed)
 		 * short even though it is stored as uint16 in TSK. In extremely rare
-		 * occurances attrId can be larger than what a signed short can hold
+		 * occurrences attrId can be larger than what a signed short can hold
 		 * (2^15). Changes were made to AbstractFile to store attrId as integer.
 		 * However, a depricated method still exists in AbstractFile to get
 		 * attrId as short. In that method we convert attribute ids that are
