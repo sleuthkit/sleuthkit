@@ -75,7 +75,7 @@ void
 * setup of values.  
 * @param hdb_info Allocated struct to initialize.
 * @param db_path 
-* @return 0 on sucess, 1 on failure.
+* @return 0 on success, 1 on failure.
 */
 uint8_t 
     hdb_info_base_open(TSK_HDB_INFO *hdb_info, const TSK_TCHAR *db_path)
@@ -268,7 +268,7 @@ uint8_t hdb_base_rollback_transaction(TSK_HDB_INFO *hdb_info)
 * \ingroup hashdblib
 * De-initializes struct representation of a hash database.
 * @param hdb_info Struct representation of a hash database.
-* @return 0 on sucess, 1 on failure.
+* @return 0 on success, 1 on failure.
 */
 void hdb_info_base_close(TSK_HDB_INFO *hdb_info)
 {

@@ -274,7 +274,7 @@ image was being scanned for parent directory information.
 - 2982965: fs_attr length bug fix.
 - 2988619: mmls -B display error. 
 - 2988330: ntfs SII cluster size increment bug
-- 2991487: Zeroed content in NTFS files that were not fully intialized.
+- 2991487: Zeroed content in NTFS files that were not fully initialized.
 - 2993767: Slow FAT listings of OrphanFiles because hunt for parent
 directory resulted in many searches for OrphanFiles.  Added cache
 of OrphanFiles.
@@ -575,7 +575,7 @@ Patch by Rob Joyce.
 
 10/31/07: Update: Finished upgrade to fatfs_file_walk_off so that
 walking can start at a specific offset.  Also finished upgrade that
-caches FAT run list to make the fatfs_file_walk_off more effecient.
+caches FAT run list to make the fatfs_file_walk_off more efficient.
 
 11/14/07: Update: Fixed few places where off_t was being used 
 instead of OFF_T.  Reported by GiHan Kim. 
@@ -734,7 +734,7 @@ UFS group descriptors.  Reported by Simson Garfinkel.
 9/6/06: Update: Changed TCHAR and _T to TSK_TCHAR and _TSK_T to avoid
 conflicts with other libraries.
 
-9/18/06: Update: Added tsk_list_* functions and strutures.
+9/18/06: Update: Added tsk_list_* functions and structures.
 
 9/18/06: Update: Added checks for recursive FAT directories. 
 
@@ -1655,7 +1655,7 @@ data units instead of size in bytes (suggestion by Harald Katzer).
 
 ---------------- VERSION 1.66 --------------
 09/02/03: Bug Fix: Would not compile under OpenBSD 3 because fs_tools.h
-  & mm_tools was missing a defined statment (reported by Randy - m0th_man)
+  & mm_tools was missing a defined statement (reported by Randy - m0th_man)
 NOTE: Bugs now will have an entry into the Source Forge bug tracking
   sytem.  
 10/13/03: Bug Fix: buffer was not being cleared between uses and length
@@ -1727,7 +1727,7 @@ NOTE: Bugs now will have an entry into the Source Forge bug tracking
   fragments in the last group that were larger than the maximum 
   fragment
 04/11/03: Bug Fix: 'ffs' allows the image to not be a multiple of the
-  block size.  A read error occured when it tried to read the last
+  block size.  A read error occurred when it tried to read the last
   fragments since a whole block could not be read.
 04/15/03: Update: Added debug statements to FAT code.
 04/26/03: Update: Added verbose statements to FAT code
@@ -1836,7 +1836,7 @@ NOTE: Bugs now will have an entry into the Source Forge bug tracking
 09/26/02: Update: Added create time for NTFS / STANDARD_INFO to 
   istat output.
 09/26/02: Update: Changed the method that the NTFS time is converted
-  to UNIX time.  Should be more effecient.
+  to UNIX time.  Should be more efficient.
 10/09/02: Update: dcat error changed.
 10/02/02: Update: Includes a Beta version of 'sorter'
 
@@ -1864,7 +1864,7 @@ NOTE: Bugs now will have an entry into the Source Forge bug tracking
   values from on-disk buffers
 09/19/02: Bug Fix: fixed memory leak in ntfs_load_ver() 
 09/19/02: Bug Fix: Update sequence errors were displayed because of a
-  bug that occured when an MFT entry crossed a run in $MFT.  Only occured
+  bug that occurred when an MFT entry crossed a run in $MFT.  Only occurred
   with 512-byte clusters and an odd number of clusters in a run.
 09/19/02: Update: New argument to ils, istat, and fls that allows user to
   specify a time skew in seconds of the compromised system.  Originated

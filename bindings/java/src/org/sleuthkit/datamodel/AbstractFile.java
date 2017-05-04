@@ -575,7 +575,7 @@ public abstract class AbstractFile extends AbstractContent {
 		long imgOffset = -1;
 		for (TskFileRange byteRange : getRanges()) {
 
-			// if fileOffset is within the current byteRange, calcuate the image
+			// if fileOffset is within the current byteRange, calculate the image
 			// offset and break
 			long rangeLength = byteRange.getByteLen();
 			if (fileOffset < rangeLength) {
@@ -1193,7 +1193,7 @@ public abstract class AbstractFile extends AbstractContent {
 		/*
 		 * NOTE: previously attrId used to be stored in AbstractFile as (signed)
 		 * short even though it is stored as uint16 in TSK. In extremely rare
-		 * occurances attrId can be larger than what a signed short can hold
+		 * occurrences attrId can be larger than what a signed short can hold
 		 * (2^15). Changes were made to AbstractFile to store attrId as integer.
 		 * Therefore this method has been deprecated. For backwards
 		 * compatibility, attribute ids that are larger than 32K are converted

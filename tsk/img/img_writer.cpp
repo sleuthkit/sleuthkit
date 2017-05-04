@@ -601,7 +601,7 @@ static TSK_RETVAL_ENUM tsk_img_writer_finish_image(TSK_IMG_WRITER* img_writer) {
 /* Any method that can be accessed from WIN32 or non-WIN32 goes after this point */
 
 /*
- * Create and initailize the TSK_IMG_WRITER struct and save reference in img_info,
+ * Create and initialize the TSK_IMG_WRITER struct and save reference in img_info,
  * then write the headers to the output file
  * @param img_info        the TSK_IMG_INFO object
  * @param outputFileName  path to the VHD
@@ -730,7 +730,7 @@ TSK_RETVAL_ENUM tsk_img_writer_create(TSK_IMG_INFO * img_info, const TSK_TCHAR *
     /* Offset for the first data block - 0x600 bytes for the two headers plus the BAT length*/
     writer->nextDataOffset = 0x600 + batLengthOnDisk;
 
-    /* Initialze all the bookkeeping arrays */
+    /* Initialize all the bookkeeping arrays */
     writer->blockStatus = (IMG_WRITER_BLOCK_STATUS_ENUM*)tsk_malloc(writer->totalBlocks * sizeof(IMG_WRITER_BLOCK_STATUS_ENUM));
     writer->blockToSectorNumber = (uint32_t*)tsk_malloc(writer->totalBlocks * sizeof(uint32_t));
     writer->blockToSectorBitmap = (unsigned char **)tsk_malloc(writer->totalBlocks * sizeof(unsigned char *));

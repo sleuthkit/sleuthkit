@@ -668,7 +668,7 @@ exfatfs_is_file_name_dentry(FATFS_DENTRY *a_dentry)
  * @param [in] a_cluster_is_alloc The allocation status, possibly unknown, of the 
  * cluster from which the buffer was filled. 
  * @param [in] a_do_basic_tests_only Whether to do basic or in-depth testing. 
- * @return 1 if the buffer likely contains a direcotry entry, 0 otherwise
+ * @return 1 if the buffer likely contains a directory entry, 0 otherwise
  */
 uint8_t
 exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_cluster_is_alloc, uint8_t a_do_basic_tests_only)
@@ -1223,7 +1223,7 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     if ((a_is_alloc) &&
         (exfatfs_get_alloc_status_from_type(file_dentry->entry_type) == 1) &&
         (exfatfs_get_alloc_status_from_type(stream_dentry.entry_type) == 1)) {
-        a_fs_file->meta->flags = TSK_FS_META_FLAG_ALLOC;
+        a_fs_file->meta->flags = TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED;
 
         /* If the FAT chain bit of the secondary flags of the stream entry is set,
          * the file is not fragmented and there is no FAT chain to walk. If the 
@@ -1310,7 +1310,7 @@ exfatfs_copy_file_name_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
      * settings - essentially a "belt and suspenders" check. */
     if ((a_is_alloc) &&
         (exfatfs_get_alloc_status_from_type(dentry->entry_type) == 1)) {
-        a_fs_file->meta->flags = TSK_FS_META_FLAG_ALLOC;
+        a_fs_file->meta->flags = TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED;
     }
     else {
         a_fs_file->meta->flags = TSK_FS_META_FLAG_UNALLOC;
@@ -1327,7 +1327,7 @@ exfatfs_copy_file_name_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
 /**
  * \internal
  * Initialize the members of a TSK_FS_META object before copying the contents
- * of an an inode consisting of one or more raw exFAT directry entries into it. 
+ * of an an inode consisting of one or more raw exFAT directory entries into it.
  *
  * @param [in] a_fatfs Source file system for the directory entries.
  * @param [in] a_inum Address of the inode.
@@ -1353,7 +1353,7 @@ exfatfs_inode_copy_init(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
 
     /* Set the allocation status based on the cluster allocation status. File 
      * entry set entries may change this. */
-    a_fs_file->meta->flags = a_is_alloc ? TSK_FS_META_FLAG_ALLOC : TSK_FS_META_FLAG_UNALLOC;
+    a_fs_file->meta->flags = a_is_alloc ? TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED : TSK_FS_META_FLAG_UNALLOC;
 
     /* As for FATXX, make regular file the default type. */
     fs_meta->type = TSK_FS_META_TYPE_REG;
@@ -1642,7 +1642,7 @@ exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
     /* Check the allocation status of the sector. This status will be used
      * not only as meta data to be reported, but also as a way to choose
      * between the basic or in-depth version of the tests (below) that 
-     * determine whether or not the bytes corrresponding to the inode are 
+     * determine whether or not the bytes corresponding to the inode are 
      * likely to be a directory entry. Note that in other places in the code 
      * information about whether or not the sector that contains the inode is
      * part of a folder is used to select the test. Here, that information is 

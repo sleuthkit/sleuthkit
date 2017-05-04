@@ -1086,7 +1086,7 @@ JNIEXPORT void JNICALL
     if ( (ret = tskAuto->startAddImage((int) numImgs, imagepaths8,
         TSK_IMG_TYPE_DETECT, 0, device_id)) != 0) {
         stringstream msgss;
-        msgss << "Errors occured while ingesting image " << std::endl;
+        msgss << "Errors occurred while ingesting image " << std::endl;
         vector<TskAuto::error_record> errors = tskAuto->getErrorList();
         for (size_t i = 0; i < errors.size(); i++) {
             msgss << (i+1) << ". ";
@@ -1190,7 +1190,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
     uint8_t ret = 0;
     if ((ret = tskAuto->startAddImage(img_info, device_id)) != 0) {
         stringstream msgss;
-        msgss << "Errors occured while ingesting image " << std::endl;
+        msgss << "Errors occurred while ingesting image " << std::endl;
         vector<TskAuto::error_record> errors = tskAuto->getErrorList();
         for (size_t i = 0; i < errors.size(); i++) {
             msgss << (i + 1) << ". ";

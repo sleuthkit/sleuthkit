@@ -703,7 +703,7 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
     }
 
     /* get size info for each file - we do not open each one because that
-     * could cause us to run out of file decsriptors when we only need a few.
+     * could cause us to run out of file descriptors when we only need a few.
      * The descriptors are opened as needed */
     for (i = 1; i < raw_info->img_info.num_img; i++) {
         TSK_OFF_T size;
