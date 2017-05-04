@@ -35,11 +35,13 @@ class NTFS_META_ADDR {
 private:
     uint64_t addr; ///< MFT entry
     uint32_t seq; ///< Sequence 
+    uint32_t hash; ///< Hash of the path
 
 public:
-    NTFS_META_ADDR(uint64_t a_addr, uint32_t a_seq) {
+    NTFS_META_ADDR(uint64_t a_addr, uint32_t a_seq, uint32_t a_hash) {
         addr = a_addr;
         seq = a_seq;
+        hash = a_hash;
     }
 
     uint64_t getAddr() {
@@ -48,6 +50,10 @@ public:
 
     uint32_t getSeq() {
         return seq;
+    }
+
+    uint32_t getHash(){
+        return hash;
     }
 };
 
@@ -70,8 +76,8 @@ public:
          * @param inum Address of child in the folder.
          * @param seq Sequence of child in the folder
          */
-        void add (uint32_t parSeq, TSK_INUM_T inum, uint32_t seq) {
-            NTFS_META_ADDR addr(inum, seq);
+        void add (uint32_t parSeq, TSK_INUM_T inum, uint32_t seq, uint32_t hash) {
+            NTFS_META_ADDR addr(inum, seq, hash);
             seq2addrs[parSeq].push_back(addr);
         }
 
@@ -130,7 +136,7 @@ ntfs_parent_map_add(NTFS_INFO * ntfs, TSK_FS_META_NAME_LIST *name_list, TSK_FS_M
 {
     std::map<TSK_INUM_T, NTFS_PAR_MAP> *tmpParentMap = getParentMap(ntfs);
     NTFS_PAR_MAP &tmpParMap = (*tmpParentMap)[name_list->par_inode];
-    tmpParMap.add(name_list->par_seq, child_meta->addr, child_meta->seq);
+    tmpParMap.add(name_list->par_seq, child_meta->addr, child_meta->seq, tsk_fs_dir_hash(name_list->name));
     return 0;
 }
 
@@ -1270,7 +1276,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
              * We have only unalloc for this same entry (from idx entries),
              * then try to add it.   If we got an allocated entry from
              * the idx entries, then assume we have everything. */
-            if (tsk_fs_dir_contains(fs_dir, childFiles[a].getAddr()) == TSK_FS_NAME_FLAG_ALLOC) {
+            if (tsk_fs_dir_contains(fs_dir, childFiles[a].getAddr(), childFiles[a].getHash()) == TSK_FS_NAME_FLAG_ALLOC) {
                 continue;
             }
 
