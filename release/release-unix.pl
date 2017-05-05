@@ -274,11 +274,20 @@ sub update_pkgver {
 # note that this version is independent from the
 # release version.
 sub update_libver {
-    print "Updating library version\n";
+    print "Updating Unix API version\n";
+
+    print "\nGit History for tsk/Makefile.am:\n";
+    exec_pipe(*OUT, "git log -- --pretty=short tsk/Makefile.am | head -12");
+    my $foo = read_pipe_line(*OUT);
+    while ($foo ne "") {
+        print "$foo";
+        $foo = read_pipe_line(*OUT);
+    }
+    close(OUT);
 
     my $a;
     while (1) {
-        $a = prompt_user("Update the library version (no if this is a restart) [y/n]");
+        $a = prompt_user("Update this version (no if this is a restart or you already did it) [y/n]");
         last if (($a eq "n") || ($a eq  "y"));
         print "Invalid response: $a\n";
     }
@@ -287,6 +296,7 @@ sub update_libver {
     exec_pipe(*OUT, "cat tsk/Makefile.am | grep version\-info");
     print "Current Makefile Contents: " . read_pipe_line(*OUT) . "\n";
     close (OUT);
+
 
     my $cur;
     my $rev;
@@ -552,6 +562,15 @@ update_pkgver();
 bootstrap();
 
 checkin_vers();
+
+my $a;
+while (1) {
+    $a = prompt_user("Tag and release? (or stop if only updating version in branch) [y/n]");
+    last if (($a eq "n") || ($a eq "y"));
+    print "Invalid response: $a\n";
+}
+exit if ($a eq "n");
+
 
 # Create a tag 
 tag_dir();
