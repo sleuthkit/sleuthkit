@@ -4676,11 +4676,12 @@ public class SleuthkitCase {
 	 * Add a path (such as a local path) for a content object to tsk_file_paths
 	 *
 	 * @param connection A case database connection.
-	 * @param objId      object id of the file to add the path for
-	 * @param path       the path to add
+	 * @param objId      The object id of the file for which to add the path.
+	 * @param path       The path to add.
+	 * @param type       The TSK encoding type of the file.
 	 *
-	 * @throws SQLException exception thrown when database error occurred and
-	 *                      path was not added
+	 * @throws SQLException Thrown if database error occurred and path was not
+	 *                      added.
 	 */
 	private void addFilePath(CaseDbConnection connection, long objId, String path, TskData.EncodingType type) throws SQLException {
 		PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_LOCAL_PATH);
@@ -5586,6 +5587,19 @@ public class SleuthkitCase {
 	 * @return list of file objects from tsk_files table containing the files
 	 *
 	 * @throws SQLException if the query fails
+	 */
+	/**
+	 * Creates AbstractFile objects for the result set of a tsk_files table
+	 * query of the form "SELECT * FROM tsk_files WHERE XYZ".
+	 *
+	 * @param rs         A result set from a query of the tsk_files table of the
+	 *                   form "SELECT * FROM tsk_files WHERE XYZ".
+	 * @param connection A case database connection.
+	 *
+	 * @return A list of AbstractFile objects.
+	 *
+	 * @throws SQLException Thrown if there is a problem iterating through the
+	 *                      record set.
 	 */
 	private List<AbstractFile> resultSetToAbstractFiles(ResultSet rs, CaseDbConnection connection) throws SQLException {
 		ArrayList<AbstractFile> results = new ArrayList<AbstractFile>();
@@ -8580,7 +8594,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException exception thrown if the object creation failed
 	 *                          due to a critical system error
-	 * @Deprecated Use the newer version with explicit encoding type parameter
+	 * @deprecated Use the newer version with explicit encoding type parameter
 	 */
 	@Deprecated
 	public DerivedFile addDerivedFile(String fileName, String localPath,
@@ -8614,7 +8628,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException if there is an error completing a case database
 	 *                          operation.
-	 * @Deprecated Use the newer version with explicit encoding type parameter
+	 * @deprecated Use the newer version with explicit encoding type parameter
 	 */
 	@Deprecated
 	public LocalFile addLocalFile(String fileName, String localPath,
@@ -8642,7 +8656,7 @@ public class SleuthkitCase {
 	 * @return
 	 *
 	 * @throws TskCoreException
-	 * @Deprecated Use the newer version with explicit encoding type parameter
+	 * @deprecated Use the newer version with explicit encoding type parameter
 	 */
 	@Deprecated
 	public LocalFile addLocalFile(String fileName, String localPath,
@@ -8666,7 +8680,7 @@ public class SleuthkitCase {
 	 * @return Object that encapsulates control of adding an image via the
 	 *         SleuthKit native code layer
 	 *
-	 * @Deprecated Use the newer version with explicit image writer path
+	 * @deprecated Use the newer version with explicit image writer path
 	 * parameter
 	 */
 	@Deprecated
