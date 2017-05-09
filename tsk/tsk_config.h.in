@@ -70,9 +70,6 @@
    zero-length file name argument. */
 #undef HAVE_LSTAT_EMPTY_STRING_BUG
 
-/* Define to 1 if you have the <lzvn.h> header file. */
-#undef HAVE_LZVN_H
-
 /* Define to 1 if you have the <map> header file. */
 #undef HAVE_MAP
 
