@@ -57,9 +57,6 @@
 /* Define to 1 if you have the <libewf.h> header file. */
 #undef HAVE_LIBEWF_H
 
-/* Define to 1 if you have the `lzfse' library (-llzfse). */
-#undef HAVE_LIBLZFSE
-
 /* Define to 1 if you have the `stdc++' library (-lstdc++). */
 #undef HAVE_LIBSTDC__
 
@@ -72,9 +69,6 @@
 /* Define to 1 if `lstat' has the bug that it succeeds when given the
    zero-length file name argument. */
 #undef HAVE_LSTAT_EMPTY_STRING_BUG
-
-/* Define to 1 if you have the <lzvn.h> header file. */
-#undef HAVE_LZVN_H
 
 /* Define to 1 if you have the <map> header file. */
 #undef HAVE_MAP
