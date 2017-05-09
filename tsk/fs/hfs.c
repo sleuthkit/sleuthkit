@@ -3516,7 +3516,7 @@ hfs_file_read_compressed_attr(TSK_FS_FILE* fs_file,
     }
 
     char* dstBuf;
-    size_t dstSize;
+    uint64_t dstSize;
     int dstBufFree = FALSE;
 
     if (!decompress_attr(buffer + 16, attributeLength - 16, uncSize,
