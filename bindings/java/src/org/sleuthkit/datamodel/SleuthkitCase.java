@@ -5971,13 +5971,29 @@ public class SleuthkitCase {
 	 */
 	public void close() {
 		acquireExclusiveLock();
-		fileSystemIdMap.clear();
 
 		try {
 			connections.close();
 		} catch (TskCoreException ex) {
 			logger.log(Level.SEVERE, "Error closing database connection pool.", ex); //NON-NLS
 		}
+
+		fileSystemIdMap.clear();
+				
+		/*
+		 * This is an undocumented, legacy hack. Empirically, it seems to be
+		 * necessary due to problems with finalizers in the SleuthKit Java
+		 * bindings data model calling native methods that read garbage from
+		 * freed memory, leading to access violations otherwise. Why the garbage
+		 * collector is called twice is not known, but it appears to be intended
+		 * to try to force the garbage collection to occur.
+		 *
+		 * TODO (JIRA-2611): Make JNI code more robust when handling file
+		 * closure
+		 */
+		System.gc();
+		System.gc();
+		
 		try {
 			if (this.caseHandle != null) {
 				this.caseHandle.free();
