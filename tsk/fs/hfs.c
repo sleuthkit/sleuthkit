@@ -89,7 +89,7 @@
 #include <zlib.h>
 #endif
 
-#include "hfs_lzvn.h"
+#include "lzvn.h"
 
 // Forward declarations:
 static uint8_t hfs_load_attrs(TSK_FS_FILE * fs_file);

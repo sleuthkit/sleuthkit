@@ -14,7 +14,7 @@ libtskfs_la_SOURCES  = tsk_fs_i.h fs_inode.c fs_io.c fs_block.c fs_open.c \
     fatfs_utils.c \
     ntfs.c ntfs_dent.cpp swapfs.c rawfs.c \
     iso9660.c iso9660_dent.c \
-    hfs.c hfs_dent.c hfs_journal.c hfs_unicompare.c \
+    hfs.c hfs_dent.c hfs_journal.c hfs_unicompare.c lzvn.c \
     dcalc_lib.c dcat_lib.c dls_lib.c dstat_lib.c ffind_lib.c \
     fls_lib.c icat_lib.c ifind_lib.c ils_lib.c \
     walk_cpp.cpp yaffs.cpp
