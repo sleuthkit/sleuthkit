@@ -271,7 +271,7 @@ bool TskDbPostgreSQL::dbExists() {
 */
 int TskDbPostgreSQL::attempt_exec(const char *sql, const char *errfmt)
 {
-    if (!conn){
+    if (!conn) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         tsk_error_set_errstr("Can't execute PostgreSQL query, not connected to database. Query: %s", sql);
@@ -279,6 +279,7 @@ int TskDbPostgreSQL::attempt_exec(const char *sql, const char *errfmt)
     }
 
     PGresult *res = PQexec(conn, sql); 
+
     if (!isQueryResultValid(res, sql)) {
         return 1;
     }
@@ -1049,7 +1050,10 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         meta_mode, gid, uid, NULL, known,
         escaped_path_sql);
 
-    if (attempt_exec(zSQL, "TskDbPostgreSQL::addFile: Error adding data to tsk_files table: %s\n")) {
+    char errorMes[2048];
+    sprintf(errorMes, "TskDbPostgreSQL::addFile: Error adding data to tsk_files table (fs_obj_id: %lld obj_id: %lld meta_addr: %lld): %%s\n",
+        fsObjId, objId, fs_file->name->meta_addr);
+    if (attempt_exec(zSQL, errorMes)) {
         free(name);
         free(escaped_path);
         PQfreemem(name_sql);
@@ -1181,18 +1185,60 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
 
     // Find the parent file id in the database using the parent metadata address
     // @@@ This should use sequence number when the new database supports it
-    char zSQL[1024];
+    char zSQL_fixed[1024];
+    char *zSQL_dynamic = NULL;
+    char *zSQL = zSQL_fixed;
     int expectedNumFileds = 1;
-    snprintf(zSQL, 1024, "SELECT obj_id FROM tsk_files WHERE meta_addr = %" PRIu64 " AND fs_obj_id = %" PRId64 " AND parent_path = %s AND name = %s", 
-        fs_file->name->par_addr, fsObjId, escaped_path_sql, escaped_parent_name_sql);
+    if (0 > snprintf(zSQL, 1024, "SELECT obj_id FROM tsk_files WHERE meta_addr = %" PRIu64 " AND fs_obj_id = %" PRId64 " AND parent_path = %s AND name = %s",
+        fs_file->name->par_addr, fsObjId, escaped_path_sql, escaped_parent_name_sql)) {
+
+        printf("meta_addr: %lld name: %s parent_path: %s", fs_file->name->par_addr, escaped_parent_name_sql, escaped_path_sql);
+        fflush(stdout);
+
+        // The parent path was too long to fit in the standard buffer, so create a larger one
+        // (This case will be very rare - we don't want to do the malloc for every file)
+        int bufLen = strlen(escaped_path_sql) + strlen(escaped_parent_name_sql) + 200;
+        if ((zSQL_dynamic = (char *)tsk_malloc(bufLen)) == NULL) {
+            PQfreemem(escaped_path_sql);
+            PQfreemem(escaped_parent_name_sql);
+            return -1;
+        }
+        zSQL = zSQL_dynamic;
+
+        snprintf(zSQL, bufLen, "SELECT parent_path,name FROM tsk_files WHERE meta_addr = %" PRIu64,
+            fs_file->name->par_addr, fsObjId);
+        PGresult* res2 = get_query_result_set(zSQL, "TskDbPostgreSQL::myThing: Error selecting file id by meta_addr: %s (result code %d)\n");
+        printf("  name: %s    parent_path: %s\n", PQgetvalue(res2, 0, 1), PQgetvalue(res2, 0, 0));
+        fflush(stdout);
+        PQclear(res2);
+
+        
+
+        if (0 > snprintf(zSQL, bufLen, "SELECT obj_id FROM tsk_files WHERE meta_addr = %" PRIu64 " AND fs_obj_id = %" PRId64 " AND parent_path = %s AND name = %s",
+                fs_file->name->par_addr, fsObjId, escaped_path_sql, escaped_parent_name_sql)) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_AUTO_DB);
+            tsk_error_set_errstr("Error creating query for parent object ID for: %s", parentPath);
+            free(zSQL_dynamic);
+            PQfreemem(escaped_path_sql);
+            PQfreemem(escaped_parent_name_sql);
+            return -1;
+        }
+    }
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n");
 
     // check if a valid result set was returned
     if (verifyNonEmptyResultSetSize(zSQL, res, expectedNumFileds, "TskDbPostgreSQL::findParObjId: Unexpected number of columns in result set: Expected %d, Received %d\n")) {
+        if (zSQL_dynamic != NULL) {
+            free(zSQL_dynamic);
+        }
         return -1;
     }
 
     int64_t parObjId = atoll(PQgetvalue(res, 0, 0));
+    if (zSQL_dynamic != NULL) {
+        free(zSQL_dynamic);
+    }
     PQclear(res);
     PQfreemem(escaped_path_sql);
     PQfreemem(escaped_parent_name_sql);
