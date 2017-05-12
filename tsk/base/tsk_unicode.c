@@ -484,7 +484,7 @@ isLegalUTF8(const UTF8 * source, int length)
         if ((a = (*--srcptr)) < 0x80 || a > 0xBF)
             return false;
     case 2:
-        if ((a = (*--srcptr)) > 0xBF)
+        if ((a = (*--srcptr)) < 0x80 || a > 0xBF)
             return false;
 
         switch (*source) {
