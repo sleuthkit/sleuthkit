@@ -1030,7 +1030,24 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
     zSQL_fixed[2047] = '\0';
     char *zSQL_dynamic = NULL; // Only used if the query does not fit in the fixed length buffer
     char *zSQL = zSQL_fixed;
-    if (0 > snprintf(zSQL, 2047, "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
+    int bufLen = 2048;
+
+    // Check if the path may be too long. The rest of the query should take up far less than 500 bytes.
+    if (strlen(name_sql) + strlen(escaped_path_sql) + 500 > bufLen) {
+        // The query may be long to fit in the standard buffer, so create a larger one.
+        // This should be a very rare case and allows us to not use malloc most of the time.
+        // The same buffer will be used for the slack file entry.
+        bufLen = strlen(escaped_path_sql) + strlen(name_sql) + 500;
+        if ((zSQL_dynamic = (char *)tsk_malloc(bufLen)) == NULL) {
+            PQfreemem(escaped_path_sql);
+            PQfreemem(name_sql);
+            return -1;
+        }
+        zSQL_dynamic[bufLen - 1] = '\0';
+        zSQL = zSQL_dynamic;
+    }
+
+    if (0 > snprintf(zSQL, bufLen - 1, "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
         "VALUES ("
         "%" PRId64 ",%" PRId64 ","
         "%" PRId64 ","
@@ -1053,52 +1070,17 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         meta_mode, gid, uid, NULL, known,
         escaped_path_sql)) {
 
-        // The name/parent path was too long to fit in the standard buffer, so create a larger one.
-        // This should be a very rare case and allows us to not use malloc most of the time.
-        int bufLen = strlen(escaped_path_sql) + strlen(name_sql) + 400;
-        if ((zSQL_dynamic = (char *)tsk_malloc(bufLen)) == NULL) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_AUTO_DB);
+            tsk_error_set_errstr("Error inserting file with object ID for: %" PRId64 , objId);
+            if (zSQL_dynamic != NULL) {
+                free(zSQL_dynamic);
+            }
             free(name);
             free(escaped_path);
             PQfreemem(name_sql);
             PQfreemem(escaped_path_sql);
             return -1;
-        }
-        zSQL_dynamic[bufLen - 1] = '\0';
-        zSQL = zSQL_dynamic;
-
-        if (0 > snprintf(zSQL, bufLen - 1, "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
-            "VALUES ("
-            "%" PRId64 ",%" PRId64 ","
-            "%" PRId64 ","
-            "%d,"
-            "%d,%d,%s,"
-            "%" PRIuINUM ",%d,"
-            "%d,%d,%d,%d,"
-            "%" PRIuOFF ","
-            "%llu,%llu,%llu,%llu,"
-            "%d,%d,%d,%s,%d,"
-            "%s)",
-            fsObjId, objId,
-            dataSourceObjId,
-            TSK_DB_FILES_TYPE_FS,
-            type, idx, name_sql,
-            fs_file->name->meta_addr, fs_file->name->meta_seq,
-            fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
-            size,
-            (unsigned long long)crtime, (unsigned long long)ctime, (unsigned long long) atime, (unsigned long long) mtime,
-            meta_mode, gid, uid, NULL, known,
-            escaped_path_sql)) {
-                tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_AUTO_DB);
-                tsk_error_set_errstr("Error inserting file with object ID for: %" PRId64 , objId);
-                free(zSQL_dynamic);
-                free(name);
-                free(escaped_path);
-                PQfreemem(name_sql);
-                PQfreemem(escaped_path_sql);
-                return -1;
-        }
-
     }
 
     char errorMes[2048];
@@ -1113,12 +1095,6 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
             free(zSQL_dynamic);
         }
         return 1;
-    }
-
-    zSQL = zSQL_fixed;
-    if (zSQL_dynamic != NULL) {
-        free(zSQL_dynamic);
-        zSQL_dynamic = NULL;
     }
 
     // Add entry for the slack space.
@@ -1141,7 +1117,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
             return 1;
         }
 
-        if (0 > snprintf(zSQL, 2047, "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
+        if (0 > snprintf(zSQL, bufLen - 1, "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
             "VALUES ("
             "%" PRId64 ",%" PRId64 ","
             "%" PRId64 ","
@@ -1164,51 +1140,17 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
             meta_mode, gid, uid, NULL, known,
             escaped_path_sql)) {
 
-            // The name/parent path was too long to fit in the standard buffer, so create a larger one.
-            // This should be a very rare case and allows us to not use malloc most of the time.
-            int bufLen = strlen(escaped_path_sql) + strlen(name_sql) + 400;
-            if ((zSQL_dynamic = (char *)tsk_malloc(bufLen)) == NULL) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_AUTO_DB);
+                tsk_error_set_errstr("Error inserting slack file with object ID for: %" PRId64, objId);
                 free(name);
                 free(escaped_path);
                 PQfreemem(name_sql);
                 PQfreemem(escaped_path_sql);
-                return -1;
-            }
-            zSQL_dynamic[bufLen - 1] = '\0';
-            zSQL = zSQL_dynamic;
-
-            if (0 > snprintf(zSQL, bufLen - 1, "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
-                "VALUES ("
-                "%" PRId64 ",%" PRId64 ","
-                "%" PRId64 ","
-                "%d,"
-                "%d,%d,%s,"
-                "%" PRIuINUM ",%d,"
-                "%d,%d,%d,%d,"
-                "%" PRIuOFF ","
-                "%llu,%llu,%llu,%llu,"
-                "%d,%d,%d,%s,%d,"
-                "%s)",
-                fsObjId, objId,
-                dataSourceObjId,
-                TSK_DB_FILES_TYPE_SLACK,
-                type, idx, name_sql,
-                fs_file->name->meta_addr, fs_file->name->meta_seq,
-                fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
-                slackSize,
-                (unsigned long long)crtime, (unsigned long long)ctime, (unsigned long long) atime, (unsigned long long) mtime,
-                meta_mode, gid, uid, NULL, known,
-                escaped_path_sql)) {
-                    tsk_error_reset();
-                    tsk_error_set_errno(TSK_ERR_AUTO_DB);
-                    tsk_error_set_errstr("Error inserting slack file with object ID for: %" PRId64, objId);
-                    free(name);
-                    free(escaped_path);
-                    PQfreemem(name_sql);
-                    PQfreemem(escaped_path_sql);
+                if (zSQL_dynamic != NULL) {
                     free(zSQL_dynamic);
-                    return -1;
-            }
+                }
+                return -1;
         }
 
         if (attempt_exec(zSQL, "TskDbPostgreSQL::addFile: Error adding data to tsk_files table: %s\n")) {
@@ -1302,13 +1244,13 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
     zSQL_fixed[1023] = '\0';
     char *zSQL_dynamic = NULL; // Only used if the query does not fit in the fixed length buffer
     char *zSQL = zSQL_fixed;
-    int expectedNumFileds = 1;
-    if (0 > snprintf(zSQL, 1023, "SELECT obj_id FROM tsk_files WHERE meta_addr = %" PRIu64 " AND fs_obj_id = %" PRId64 " AND parent_path = %s AND name = %s",
-        fs_file->name->par_addr, fsObjId, escaped_path_sql, escaped_parent_name_sql)) {
+    int bufLen = 1024;
 
+    // Check if the path may be too long
+    if (strlen(escaped_parent_name_sql) + strlen(escaped_path_sql) + 200 > bufLen) {
         // The parent path was too long to fit in the standard buffer, so create a larger one.
         // This should be a very rare case and allows us to not use malloc most of the time.
-        int bufLen = strlen(escaped_path_sql) + strlen(escaped_parent_name_sql) + 200;
+        bufLen = strlen(escaped_path_sql) + strlen(escaped_parent_name_sql) + 200;
         if ((zSQL_dynamic = (char *)tsk_malloc(bufLen)) == NULL) {
             PQfreemem(escaped_path_sql);
             PQfreemem(escaped_parent_name_sql);
@@ -1316,17 +1258,21 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
         }
         zSQL_dynamic[bufLen - 1] = '\0';
         zSQL = zSQL_dynamic;
+    }
 
-        if (0 > snprintf(zSQL, bufLen - 1, "SELECT obj_id FROM tsk_files WHERE meta_addr = %" PRIu64 " AND fs_obj_id = %" PRId64 " AND parent_path = %s AND name = %s",
-                fs_file->name->par_addr, fsObjId, escaped_path_sql, escaped_parent_name_sql)) {
+    int expectedNumFileds = 1;
+    if (0 > snprintf(zSQL, bufLen - 1, "SELECT obj_id FROM tsk_files WHERE meta_addr = %" PRIu64 " AND fs_obj_id = %" PRId64 " AND parent_path = %s AND name = %s",
+        fs_file->name->par_addr, fsObjId, escaped_path_sql, escaped_parent_name_sql)) {
+
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
             tsk_error_set_errstr("Error creating query for parent object ID for: %s", parentPath);
-            free(zSQL_dynamic);
+            if (zSQL_dynamic != NULL) {
+                free(zSQL_dynamic);
+            }
             PQfreemem(escaped_path_sql);
             PQfreemem(escaped_parent_name_sql);
             return -1;
-        }
     }
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n");
 
