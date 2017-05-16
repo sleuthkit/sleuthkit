@@ -150,19 +150,21 @@ tsk_fs_dir_copy(const TSK_FS_DIR * a_src_dir, TSK_FS_DIR * a_dst_dir)
  * @returns TSK_FS_NAME_FLAG_ALLOC, TSK_FS_NAME_FLAG_UNALLOC, or 0 if not found.
  */
 uint8_t
-tsk_fs_dir_contains(TSK_FS_DIR * a_fs_dir, TSK_INUM_T meta_addr)
+tsk_fs_dir_contains(TSK_FS_DIR * a_fs_dir, TSK_INUM_T meta_addr, uint32_t hash)
 {
     size_t i;
     uint8_t bestFound = 0;
 
     for (i = 0; i < a_fs_dir->names_used; i++) {
         if (meta_addr == a_fs_dir->names[i].meta_addr) {
-            bestFound = a_fs_dir->names[i].flags;
-            // stop as soon as we get an alloc. 
-            // if we get unalloc, keep going in case there
-            // is alloc later.
-            if (bestFound == TSK_FS_NAME_FLAG_ALLOC) 
-                break;
+            if (hash == tsk_fs_dir_hash(a_fs_dir->names[i].name)) {
+                bestFound = a_fs_dir->names[i].flags;
+                // stop as soon as we get an alloc. 
+                // if we get unalloc, keep going in case there
+                // is alloc later.
+                if (bestFound == TSK_FS_NAME_FLAG_ALLOC)
+                    break;
+            }
         }
     }
     return bestFound;
@@ -1246,4 +1248,24 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
 
     tsk_release_lock(&a_fs->orphan_dir_lock);
     return TSK_OK;
+}
+
+/** \internal
+* return a hash of the passed in string. We use this
+* for full paths.
+* From: http://www.cse.yorku.ca/~oz/hash.html
+* @param str  The path to hash
+*/
+uint32_t tsk_fs_dir_hash(const char *str) {
+    uint32_t hash = 5381;
+    int c;
+
+    while ((c = *str++)) {
+        // skip slashes -> normalizes leading/ending/double slashes
+        if (c == '/')
+            continue;
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+    }
+
+    return hash;
 }
