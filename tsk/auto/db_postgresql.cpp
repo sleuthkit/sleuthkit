@@ -1083,10 +1083,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
             return -1;
     }
 
-    char errorMes[2048];
-    sprintf(errorMes, "TskDbPostgreSQL::addFile: Error adding data to tsk_files table (fs_obj_id: %lld obj_id: %lld meta_addr: %lld): %%s\n",
-        fsObjId, objId, fs_file->name->meta_addr);
-    if (attempt_exec(zSQL, errorMes)) {
+    if (attempt_exec(zSQL, "TskDbPostgreSQL::addFile: Error adding data to tsk_files table: %s\n")) {
         free(name);
         free(escaped_path);
         PQfreemem(name_sql);
