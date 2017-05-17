@@ -1039,9 +1039,11 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         // The same buffer will be used for the slack file entry.
         bufLen = strlen(escaped_path_sql) + strlen(name_sql) + 500;
         if ((zSQL_dynamic = (char *)tsk_malloc(bufLen)) == NULL) {
+            free(name);
+            free(escaped_path);
             PQfreemem(escaped_path_sql);
             PQfreemem(name_sql);
-            return -1;
+            return 1;
         }
         zSQL_dynamic[bufLen - 1] = '\0';
         zSQL = zSQL_dynamic;
@@ -1080,7 +1082,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
             free(escaped_path);
             PQfreemem(name_sql);
             PQfreemem(escaped_path_sql);
-            return -1;
+            return 1;
     }
 
     if (attempt_exec(zSQL, "TskDbPostgreSQL::addFile: Error adding data to tsk_files table: %s\n")) {
@@ -1147,7 +1149,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
                 if (zSQL_dynamic != NULL) {
                     free(zSQL_dynamic);
                 }
-                return -1;
+                return 1;
         }
 
         if (attempt_exec(zSQL, "TskDbPostgreSQL::addFile: Error adding data to tsk_files table: %s\n")) {
