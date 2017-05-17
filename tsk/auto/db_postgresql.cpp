@@ -1039,9 +1039,11 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         // The same buffer will be used for the slack file entry.
         bufLen = strlen(escaped_path_sql) + strlen(name_sql) + 500;
         if ((zSQL_dynamic = (char *)tsk_malloc(bufLen)) == NULL) {
+            free(name);
+            free(escaped_path);
             PQfreemem(escaped_path_sql);
             PQfreemem(name_sql);
-            return -1;
+            return 1;
         }
         zSQL_dynamic[bufLen - 1] = '\0';
         zSQL = zSQL_dynamic;
@@ -1080,7 +1082,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
             free(escaped_path);
             PQfreemem(name_sql);
             PQfreemem(escaped_path_sql);
-            return -1;
+            return 1;
     }
 
     if (attempt_exec(zSQL, "TskDbPostgreSQL::addFile: Error adding data to tsk_files table: %s\n")) {
@@ -1147,7 +1149,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
                 if (zSQL_dynamic != NULL) {
                     free(zSQL_dynamic);
                 }
-                return -1;
+                return 1;
         }
 
         if (attempt_exec(zSQL, "TskDbPostgreSQL::addFile: Error adding data to tsk_files table: %s\n")) {
@@ -1222,7 +1224,7 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
     char *parent_name = "";
     char *parent_path = ""; 
     if (TskDb::getParentPathAndName(parentPath, &parent_path, &parent_name)){
-        return -1;
+        return 1;
     }
 
     // escape strings for use within an SQL command
@@ -1232,7 +1234,7 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
         || !isEscapedStringValid(escaped_parent_name_sql, parent_name, "TskDbPostgreSQL::findParObjId: Unable to escape path string: %s\n")) {
             PQfreemem(escaped_path_sql);
             PQfreemem(escaped_parent_name_sql);
-            return -1;
+            return 1;
     }
 
     // Find the parent file id in the database using the parent metadata address
@@ -1251,7 +1253,7 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
         if ((zSQL_dynamic = (char *)tsk_malloc(bufLen)) == NULL) {
             PQfreemem(escaped_path_sql);
             PQfreemem(escaped_parent_name_sql);
-            return -1;
+            return 1;
         }
         zSQL_dynamic[bufLen - 1] = '\0';
         zSQL = zSQL_dynamic;
@@ -1269,7 +1271,7 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
             }
             PQfreemem(escaped_path_sql);
             PQfreemem(escaped_parent_name_sql);
-            return -1;
+            return 1;
     }
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n");
 
@@ -1278,7 +1280,7 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
         if (zSQL_dynamic != NULL) {
             free(zSQL_dynamic);
         }
-        return -1;
+        return 1;
     }
 
     int64_t parObjId = atoll(PQgetvalue(res, 0, 0));
