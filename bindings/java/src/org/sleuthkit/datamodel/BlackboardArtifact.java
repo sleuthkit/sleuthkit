@@ -405,33 +405,6 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	}
 
 	/**
-	 * Gets a short description for the Artifact, often the most commonly
-	 * helpful field.
-	 *
-	 * @return String representation of a commonly helpful atrribute for this
-	 *         type of Artifact, or the empty string if the specified attribute
-	 *         is unavailable or an attribute is not specifed for this Artifact
-	 *         type
-	 *
-	 * @throws org.sleuthkit.datamodel.TskCoreException
-	 */
-	public String getShortDescription() throws TskCoreException {
-		BlackboardAttribute attr = null;
-		if (artifactTypeID == ARTIFACT_TYPE.TSK_WEB_BOOKMARK.getTypeID()) {
-			attr = getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL));
-		} else if (artifactTypeID == ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID()) {
-			attr = getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_KEYWORD_PREVIEW));
-		} else if (artifactTypeID == ARTIFACT_TYPE.TSK_CALLLOG.getTypeID()) {
-			attr = getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM));
-		}
-		if (attr != null && attr.getDisplayString() != null && !attr.getDisplayString().isEmpty()) {
-			return attr.getDisplayString();
-		} else {
-			return "";
-		}
-	}
-
-	/**
 	 * Add an attribute to this artifact
 	 *
 	 * @param attr the attribute to add
