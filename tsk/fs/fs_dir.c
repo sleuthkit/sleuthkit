@@ -672,18 +672,27 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                     return TSK_WALK_ERROR;
                 }
 
-                if ((a_dinfo->depth < MAX_DEPTH) &&
-                    (DIR_STRSZ >
+                /* If we've exceeded the max depth or max length, don't
+                 * recurse any further into this directory */
+                if ((a_dinfo->depth >= MAX_DEPTH) ||
+                    (DIR_STRSZ <=
                         strlen(a_dinfo->dirs) +
-                        strlen(fs_file->name->name))) {
-                    a_dinfo->didx[a_dinfo->depth] =
-                        &a_dinfo->dirs[strlen(a_dinfo->dirs)];
-                    strncpy(a_dinfo->didx[a_dinfo->depth],
-                        fs_file->name->name,
-                        DIR_STRSZ - strlen(a_dinfo->dirs));
-                    strncat(a_dinfo->dirs, "/", DIR_STRSZ);
-                    depth_added = 1;
+                        strlen(fs_file->name->name))) {   
+                    if (tsk_verbose) {
+                        tsk_fprintf(stdout,
+                            "tsk_fs_dir_walk_lcl: directory : %"
+                            PRIuINUM " exceeded max length / depth\n", fs_file->name->meta_addr);
+                    }
+                    return TSK_WALK_ERROR;
                 }
+
+                a_dinfo->didx[a_dinfo->depth] =
+                    &a_dinfo->dirs[strlen(a_dinfo->dirs)];
+                strncpy(a_dinfo->didx[a_dinfo->depth],
+                    fs_file->name->name,
+                    DIR_STRSZ - strlen(a_dinfo->dirs));
+                strncat(a_dinfo->dirs, "/", DIR_STRSZ);
+                depth_added = 1;
                 a_dinfo->depth++;
 
                 /* We do not want to save info about named unalloc files
