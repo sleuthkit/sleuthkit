@@ -267,7 +267,7 @@ bool TskDbPostgreSQL::dbExists() {
 
 /**
 * Execute SQL command returning no data. Sets TSK error values on error.
-* @returns 1 on error, 0 on success
+* @returns TSK_ERR or TSK_STOP on error, 0 on success
 */
 int TskDbPostgreSQL::attempt_exec(const char *sql, const char *errfmt)
 {
@@ -275,13 +275,13 @@ int TskDbPostgreSQL::attempt_exec(const char *sql, const char *errfmt)
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         tsk_error_set_errstr("Can't execute PostgreSQL query, not connected to database. Query: %s", sql);
-        return 1;
+        return TSK_STOP;
     }
 
     PGresult *res = PQexec(conn, sql); 
 
     if (!isQueryResultValid(res, sql)) {
-        return 1;
+        return TSK_STOP;
     }
 
     if (PQresultStatus(res) != PGRES_COMMAND_OK) {
@@ -290,7 +290,7 @@ int TskDbPostgreSQL::attempt_exec(const char *sql, const char *errfmt)
         char * str = PQerrorMessage(conn);
         tsk_error_set_errstr(errfmt, str);
         PQclear(res);
-        return 1;
+        return TSK_ERR;
     }
     PQclear(res);
     return 0;
@@ -880,7 +880,7 @@ int TskDbPostgreSQL::addFsInfo(const TSK_FS_INFO * fs_info, int64_t parObjId, in
 * @param fsObjId File system object of its file system
 * @param objId ID that was assigned to it from the objects table
 * @param dataSourceObjId The object Id of the data source
-* @returns 1 on error and 0 on success
+* @returns TSK_ERR or TSK_STOP on error and 0 on success
 */
 int TskDbPostgreSQL::addFsFile(TSK_FS_FILE * fs_file,
     const TSK_FS_ATTR * fs_attr, const char *path,
@@ -904,8 +904,11 @@ int TskDbPostgreSQL::addFsFile(TSK_FS_FILE * fs_file,
         parObjId = findParObjId(fs_file, path, fsObjId);
         if (parObjId == -1) {
             //error
-            return 1;
-        }    
+            return TSK_ERR;
+        }
+        else if (parObjId == -2) {
+            return TSK_STOP;
+        }
     }
 
     return addFile(fs_file, fs_attr, path, md5, known, fsObjId, parObjId, objId, dataSourceObjId);
@@ -915,7 +918,7 @@ int TskDbPostgreSQL::addFsFile(TSK_FS_FILE * fs_file,
 * Add file data to the file table
 * @param md5 binary value of MD5 (i.e. 16 bytes) or NULL
 * @param dataSourceObjId The object Id of the data source
-* Return 0 on success, 1 on error.
+* Return 0 on success, TSK_ERR or TSK_STOP on error
 */
 int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr, const char *path,
     const unsigned char *const md5, const TSK_DB_FILES_KNOWN_ENUM known, int64_t fsObjId, int64_t parObjId, int64_t & objId, 
@@ -967,7 +970,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
     char *name;
     size_t nlen = len + attr_nlen + 11; // Extra space for possible colon and '-slack'
     if ((name = (char *) tsk_malloc(nlen)) == NULL) {
-        return 1;
+        return TSK_ERR;
     }
 
     strncpy(name, fs_file->name->name, nlen);
@@ -984,7 +987,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
     char *escaped_path;
     if ((escaped_path = (char *) tsk_malloc(path_len)) == NULL) { 
         free(name);
-        return 1;
+        return TSK_ERR;
     }
 
     strncpy(escaped_path, "/", path_len);
@@ -1007,7 +1010,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
     if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId)) {
         free(name);
         free(escaped_path);
-        return 1;
+        return TSK_ERR;
     }
 
     // replace all non-UTF8 characters
@@ -1023,7 +1026,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
             free(escaped_path);
             PQfreemem(name_sql);
             PQfreemem(escaped_path_sql);
-            return 1;
+            return TSK_ERR;
     }
 
     char zSQL_fixed[2048];
@@ -1043,7 +1046,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
             free(escaped_path);
             PQfreemem(escaped_path_sql);
             PQfreemem(name_sql);
-            return 1;
+            return TSK_ERR;
         }
         zSQL_dynamic[bufLen - 1] = '\0';
         zSQL = zSQL_dynamic;
@@ -1082,10 +1085,11 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
             free(escaped_path);
             PQfreemem(name_sql);
             PQfreemem(escaped_path_sql);
-            return 1;
+            return TSK_ERR;
     }
 
-    if (attempt_exec(zSQL, "TskDbPostgreSQL::addFile: Error adding data to tsk_files table: %s\n")) {
+    int res = attempt_exec(zSQL, "TskDbPostgreSQL::addFile: Error adding data to tsk_files table: %s\n");
+    if (res != TSK_OK) {
         free(name);
         free(escaped_path);
         PQfreemem(name_sql);
@@ -1093,7 +1097,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         if (zSQL_dynamic != NULL) {
             free(zSQL_dynamic);
         }
-        return 1;
+        return res;
     }
 
     // Add entry for the slack space.
@@ -1113,7 +1117,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId)) {
             free(name);
             free(escaped_path);
-            return 1;
+            return TSK_ERR;
         }
 
         if (0 > snprintf(zSQL, bufLen - 1, "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
@@ -1149,10 +1153,11 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
                 if (zSQL_dynamic != NULL) {
                     free(zSQL_dynamic);
                 }
-                return 1;
+                return TSK_ERR;
         }
 
-        if (attempt_exec(zSQL, "TskDbPostgreSQL::addFile: Error adding data to tsk_files table: %s\n")) {
+        res = attempt_exec(zSQL, "TskDbPostgreSQL::addFile: Error adding data to tsk_files table: %s\n");
+        if (res != TSK_OK) {
             free(name);
             free(escaped_path);
             PQfreemem(name_sql);
@@ -1160,7 +1165,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
             if (zSQL_dynamic != NULL) {
                 free(zSQL_dynamic);
             }
-            return 1;
+            return res;
         }
 
     }
@@ -1188,7 +1193,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
 * @param fs_file file to find parent obj id for
 * @param parentPath Path of parent folder that we want to match
 * @param fsObjId fs id of this file
-* @returns parent obj id ( > 0), -1 on error
+* @returns parent obj id ( > 0), -1 on general error, -2 on database error
 */
 int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *parentPath, const int64_t & fsObjId) {
     uint32_t seq;
@@ -1274,6 +1279,14 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
             return -1;
     }
     PGresult* res = get_query_result_set(zSQL, "TskDbPostgreSQL::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n");
+
+    // If the result set is null, then the transaction is most likely in a bad state
+    if (res == NULL) {
+        if (zSQL_dynamic != NULL) {
+            free(zSQL_dynamic);
+        }
+        return -2;
+    }
 
     // check if a valid result set was returned
     if (verifyNonEmptyResultSetSize(zSQL, res, expectedNumFileds, "TskDbPostgreSQL::findParObjId: Unexpected number of columns in result set: Expected %d, Received %d\n")) {

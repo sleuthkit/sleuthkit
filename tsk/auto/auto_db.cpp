@@ -347,7 +347,7 @@ TskAutoDb::filterFs(TSK_FS_INFO * fs_info)
 
 /* Insert the file data into the file table.
  * @param md5 Binary MD5 value (i.e. 16 bytes) or NULL
- * Returns TSK_ERR on error.
+ * Returns TSK_ERR or TSK_STOP on error.
  */
 TSK_RETVAL_ENUM
     TskAutoDb::insertFileData(TSK_FS_FILE * fs_file,
@@ -355,11 +355,11 @@ TSK_RETVAL_ENUM
     const unsigned char *const md5,
     const TSK_DB_FILES_KNOWN_ENUM known)
 {
-
-    if (m_db->addFsFile(fs_file, fs_attr, path, md5, known, m_curFsId, m_curFileId,
-            m_curImgId)) {
+    int res = m_db->addFsFile(fs_file, fs_attr, path, md5, known, m_curFsId, m_curFileId,
+        m_curImgId);
+    if (res != TSK_OK) {
         registerError();
-        return TSK_ERR;
+        return (TSK_RETVAL_ENUM)res;
     }
 
     return TSK_OK;
@@ -793,9 +793,14 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
             }
         }
 
-        if (insertFileData(fs_attr->fs_file, fs_attr, path, md5, file_known) == TSK_ERR) {
+        int retVal = insertFileData(fs_attr->fs_file, fs_attr, path, md5, file_known);
+        if (retVal == TSK_ERR) {
             registerError();
             return TSK_OK;
+        }
+        else if (retVal == TSK_STOP) {
+            registerError();
+            return TSK_STOP;
         }
         else {
             m_attributeAdded = true;
