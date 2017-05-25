@@ -7885,7 +7885,6 @@ public class SleuthkitCase {
 							Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Unexpectedly unable to wait for database.", exp);
 						}
 					} else {
-						submitError(ErrorObserver.Context.DATABASE_READ_ERROR.getContextString(), ex.getMessage());
 						throw ex;
 					}
 				}
@@ -7935,7 +7934,6 @@ public class SleuthkitCase {
 							Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Unexpectedly unable to wait for database.", exp);
 						}
 					} else {
-						submitError(ErrorObserver.Context.DATABASE_READ_ERROR.getContextString(), ex.getMessage());
 						throw ex;
 					}
 				}
