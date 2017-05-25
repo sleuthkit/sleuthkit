@@ -6297,45 +6297,6 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Add an observer for SleuthkitCase errors.
-	 *
-	 * @param observer The observer to add.
-	 */
-	public void addErrorObserver(ErrorObserver observer) {
-		sleuthkitCaseErrorObservers.add(observer);
-	}
-
-	/**
-	 * Remove an observer for SleuthkitCase errors.
-	 *
-	 * @param observer The observer to remove.
-	 */
-	public void removeErrorObserver(ErrorObserver observer) {
-		int i = sleuthkitCaseErrorObservers.indexOf(observer);
-		if (i >= 0) {
-			sleuthkitCaseErrorObservers.remove(i);
-		}
-	}
-
-	/**
-	 * Submit an error to all clients that are listening.
-	 *
-	 * @param context      The context in which the error occurred.
-	 * @param errorMessage A description of the error that occurred.
-	 */
-	public void submitError(String context, String errorMessage) {
-		for (ErrorObserver observer : sleuthkitCaseErrorObservers) {
-			if (observer != null) {
-				try {
-					observer.receiveError(context, errorMessage);
-				} catch (Exception ex) {
-					logger.log(Level.SEVERE, "Observer client unable to receive message: {0}, {1}", new Object[]{context, errorMessage, ex});
-				}
-			}
-		}
-	}
-
-	/**
 	 * Selects all of the rows from the tag_names table in the case database.
 	 *
 	 * @return A list, possibly empty, of TagName data transfer objects (DTOs)
@@ -8117,6 +8078,54 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Add an observer for SleuthkitCase errors.
+	 *
+	 * @param observer The observer to add.
+	 *
+	 * @deprecated Catch exceptions instead.
+	 */
+	@Deprecated
+	public void addErrorObserver(ErrorObserver observer) {
+		sleuthkitCaseErrorObservers.add(observer);
+	}
+
+	/**
+	 * Remove an observer for SleuthkitCase errors.
+	 *
+	 * @param observer The observer to remove.
+	 *
+	 * @deprecated Catch exceptions instead.
+	 */
+	@Deprecated
+	public void removeErrorObserver(ErrorObserver observer) {
+		int i = sleuthkitCaseErrorObservers.indexOf(observer);
+		if (i >= 0) {
+			sleuthkitCaseErrorObservers.remove(i);
+		}
+	}
+
+	/**
+	 * Submit an error to all clients that are listening.
+	 *
+	 * @param context      The context in which the error occurred.
+	 * @param errorMessage A description of the error that occurred.
+	 *
+	 * @deprecated Catch exceptions instead.
+	 */
+	@Deprecated
+	public void submitError(String context, String errorMessage) {
+		for (ErrorObserver observer : sleuthkitCaseErrorObservers) {
+			if (observer != null) {
+				try {
+					observer.receiveError(context, errorMessage);
+				} catch (Exception ex) {
+					logger.log(Level.SEVERE, "Observer client unable to receive message: {0}, {1}", new Object[]{context, errorMessage, ex});
+				}
+			}
+		}
+	}
+	
+	/**
 	 * Notifies observers of errors in the SleuthkitCase.
 	 *
 	 * @deprecated Catch exceptions instead.
@@ -8154,7 +8163,7 @@ public class SleuthkitCase {
 
 		void receiveError(String context, String errorMessage);
 	}
-	
+
 	/**
 	 * Given an object id, works up the tree of ancestors to the data source for
 	 * the object and gets the object id of the data source. The trivial case
@@ -8705,6 +8714,6 @@ public class SleuthkitCase {
 	@Deprecated
 	public AddImageProcess makeAddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) {
 		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, "");
-	}	
-	
+	}
+
 }
