@@ -5979,7 +5979,7 @@ public class SleuthkitCase {
 		}
 
 		fileSystemIdMap.clear();
-				
+
 		/*
 		 * This is an undocumented, legacy hack. Empirically, it seems to be
 		 * necessary due to problems with finalizers in the SleuthKit Java
@@ -5993,7 +5993,7 @@ public class SleuthkitCase {
 		 */
 		System.gc();
 		System.gc();
-		
+
 		try {
 			if (this.caseHandle != null) {
 				this.caseHandle.free();
@@ -7337,42 +7337,6 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Notifies observers of errors in the SleuthkitCase.
-	 */
-	public interface ErrorObserver {
-
-		/**
-		 * List of arguments for the context string parameters. This does not
-		 * preclude the use of arbitrary context strings by client code, but it
-		 * does provide a place to define standard context strings to allow
-		 * filtering of notifications by implementations of ErrorObserver.
-		 */
-		public enum Context {
-
-			/**
-			 * Error occurred while reading image content.
-			 */
-			IMAGE_READ_ERROR("Image File Read Error"),
-			/**
-			 * Error occurred while reading database content.
-			 */
-			DATABASE_READ_ERROR("Database Read Error");
-
-			private final String contextString;
-
-			private Context(String context) {
-				this.contextString = context;
-			}
-
-			public String getContextString() {
-				return contextString;
-			}
-		};
-
-		void receiveError(String context, String errorMessage);
-	}
-
-	/**
 	 * Stores a pair of object ID and its type
 	 */
 	static class ObjectInfo {
@@ -8153,6 +8117,45 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Notifies observers of errors in the SleuthkitCase.
+	 *
+	 * @deprecated Catch exceptions instead.
+	 */
+	@Deprecated
+	public interface ErrorObserver {
+
+		/**
+		 * List of arguments for the context string parameters. This does not
+		 * preclude the use of arbitrary context strings by client code, but it
+		 * does provide a place to define standard context strings to allow
+		 * filtering of notifications by implementations of ErrorObserver.
+		 */
+		public enum Context {
+
+			/**
+			 * Error occurred while reading image content.
+			 */
+			IMAGE_READ_ERROR("Image File Read Error"),
+			/**
+			 * Error occurred while reading database content.
+			 */
+			DATABASE_READ_ERROR("Database Read Error");
+
+			private final String contextString;
+
+			private Context(String context) {
+				this.contextString = context;
+			}
+
+			public String getContextString() {
+				return contextString;
+			}
+		};
+
+		void receiveError(String context, String errorMessage);
+	}
+	
+	/**
 	 * Given an object id, works up the tree of ancestors to the data source for
 	 * the object and gets the object id of the data source. The trivial case
 	 * where the input object id is for a source is handled.
@@ -8702,6 +8705,6 @@ public class SleuthkitCase {
 	@Deprecated
 	public AddImageProcess makeAddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) {
 		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, "");
-	}
-
+	}	
+	
 }
