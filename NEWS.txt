@@ -2,6 +2,19 @@ Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
 
+---------------- VERSION 4.4.1 --------------
+- New Features:
+-- Can create a sparse VHD file when reading a local drive with new
+   IMAGE_WRITER structure. Currently being used by Autopsy, but no TSK
+   command line tools.
+
+- Bug fixes:
+-- Lots of cleanup and fixes. Including:
+-- memory leaks
+-- UTF8 and UTF16 cleanup 
+-- Missing NTFS files (in fairly rare cases)
+-- Really long folder structures and database inserts
+
 ---------------- VERSION 4.4.0 --------------
 - Compiling in Windows now uses Visual Studio 2015
 - tsk_loaddb now adds new files for slack space and JNI was upgraded
