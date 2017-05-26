@@ -103,6 +103,7 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile)
 
     if (tsk_verbose)
         tsk_fprintf(stderr, "parse_susp: count is: %d\n", count);
+    int sizeofRock = sizeof(rockridge_ext);
 
     // allocate the output data structure
     rr = (rockridge_ext *) tsk_malloc(sizeof(rockridge_ext));
@@ -305,8 +306,14 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile)
                 break;
             }
 
-            strncpy(rr->fn, &rr_nm->name[0], (int) rr_nm->len - 5);
-            rr->fn[(int) rr_nm->len - 5] = '\0';
+            // Make sure the name will fit in the buffer
+            int len = rr_nm->len - 5;
+            if (len >= ISO9660_MAXNAMLEN_RR) {
+                len = ISO9660_MAXNAMLEN_RR - 1;
+            }
+
+            strncpy(rr->fn, &rr_nm->name[0], len);
+            rr->fn[len] = '\0';
             if (hFile) {
                 fprintf(hFile, "NM Entry\n");
                 fprintf(hFile, "* %s\n", rr->fn);
