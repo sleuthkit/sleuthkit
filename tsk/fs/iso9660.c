@@ -98,7 +98,7 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile)
 {
     rockridge_ext *rr;
     ISO_INFO *iso = (ISO_INFO *) fs;
-
+    int len;
     char *end = buf + count - 1;
 
     if (tsk_verbose)
@@ -306,7 +306,7 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile)
             }
 
             // Make sure the name will fit in the buffer
-            int len = rr_nm->len - 5;
+            len = rr_nm->len - 5;
             if (len >= ISO9660_MAXNAMLEN_RR) {
                 len = ISO9660_MAXNAMLEN_RR - 1;
             }
