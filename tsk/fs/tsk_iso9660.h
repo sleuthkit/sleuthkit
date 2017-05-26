@@ -97,6 +97,7 @@
 
 #define ISO9660_MAXNAMLEN_STD	128     ///< Maximum length of standard name
 #define ISO9660_MAXNAMLEN_JOL   128     ///< maximum UTF-16 joliet name (in bytes)
+#define ISO9660_MAXNAMLEN_RR    256     ///< Maximum length of a Rock Ridge extension name
 #define ISO9660_MAXNAMLEN   (ISO9660_MAXNAMLEN_JOL << 1)        // mult jol by 2 to account for UTF-16 to UTF-8 conversion
 
 /* Bits in permissions used in extended attribute records.  */
@@ -351,7 +352,7 @@ typedef struct {
     TSK_GID_T gid;              /* group */
     uint16_t mode;              /* posix file mode */
     uint32_t nlink;             /* number of links */
-    char fn[ISO9660_MAXNAMLEN_STD];     /* alternate filename */
+    char fn[ISO9660_MAXNAMLEN_RR];     /* alternate filename */
 } rockridge_ext;
 
 /** \internal
