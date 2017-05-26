@@ -103,7 +103,6 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile)
 
     if (tsk_verbose)
         tsk_fprintf(stderr, "parse_susp: count is: %d\n", count);
-    int sizeofRock = sizeof(rockridge_ext);
 
     // allocate the output data structure
     rr = (rockridge_ext *) tsk_malloc(sizeof(rockridge_ext));
