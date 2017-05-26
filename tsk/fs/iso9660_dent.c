@@ -142,7 +142,7 @@ iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, char *buf,
         dd = (iso9660_dentry *) & buf[buf_idx];
 
         // process the entry (if it has a defined and valid length)
-        if ((dd->entry_len) && (buf_idx + dd->entry_len < a_length)) {
+        if ((dd->entry_len) && (buf_idx + dd->entry_len <= a_length)) {
 
             /* We need to find the data in the pre-processed list because that
              * contains the meta data address that TSK assigned to this file.
