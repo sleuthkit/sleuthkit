@@ -98,7 +98,7 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile)
 {
     rockridge_ext *rr;
     ISO_INFO *iso = (ISO_INFO *) fs;
-    int len;
+
     char *end = buf + count - 1;
 
     if (tsk_verbose)
@@ -290,6 +290,7 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile)
         // RR -- alternative name
         else if ((head->sig[0] == 'N') && (head->sig[1] == 'M')) {
             iso9660_rr_nm_entry *rr_nm;
+            int len;
 
             if ((uintptr_t)buf + sizeof(iso9660_rr_nm_entry) - 1> (uintptr_t)end) {
                 if (tsk_verbose) 
