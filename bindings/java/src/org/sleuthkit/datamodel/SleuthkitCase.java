@@ -5972,14 +5972,6 @@ public class SleuthkitCase {
 	public void close() {
 		acquireExclusiveLock();
 
-		try {
-			connections.close();
-		} catch (TskCoreException ex) {
-			logger.log(Level.SEVERE, "Error closing database connection pool.", ex); //NON-NLS
-		}
-
-		fileSystemIdMap.clear();
-				
 		/*
 		 * This is an undocumented, legacy hack. Empirically, it seems to be
 		 * necessary due to problems with finalizers in the SleuthKit Java
@@ -5993,7 +5985,15 @@ public class SleuthkitCase {
 		 */
 		System.gc();
 		System.gc();
-		
+
+		try {
+			connections.close();
+		} catch (TskCoreException ex) {
+			logger.log(Level.SEVERE, "Error closing database connection pool.", ex); //NON-NLS
+		}
+
+		fileSystemIdMap.clear();
+
 		try {
 			if (this.caseHandle != null) {
 				this.caseHandle.free();
