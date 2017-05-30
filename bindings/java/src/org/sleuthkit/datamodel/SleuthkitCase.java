@@ -6297,45 +6297,6 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Add an observer for SleuthkitCase errors.
-	 *
-	 * @param observer The observer to add.
-	 */
-	public void addErrorObserver(ErrorObserver observer) {
-		sleuthkitCaseErrorObservers.add(observer);
-	}
-
-	/**
-	 * Remove an observer for SleuthkitCase errors.
-	 *
-	 * @param observer The observer to remove.
-	 */
-	public void removeErrorObserver(ErrorObserver observer) {
-		int i = sleuthkitCaseErrorObservers.indexOf(observer);
-		if (i >= 0) {
-			sleuthkitCaseErrorObservers.remove(i);
-		}
-	}
-
-	/**
-	 * Submit an error to all clients that are listening.
-	 *
-	 * @param context      The context in which the error occurred.
-	 * @param errorMessage A description of the error that occurred.
-	 */
-	public void submitError(String context, String errorMessage) {
-		for (ErrorObserver observer : sleuthkitCaseErrorObservers) {
-			if (observer != null) {
-				try {
-					observer.receiveError(context, errorMessage);
-				} catch (Exception ex) {
-					logger.log(Level.SEVERE, "Observer client unable to receive message: {0}, {1}", new Object[]{context, errorMessage, ex});
-				}
-			}
-		}
-	}
-
-	/**
 	 * Selects all of the rows from the tag_names table in the case database.
 	 *
 	 * @return A list, possibly empty, of TagName data transfer objects (DTOs)
@@ -7337,42 +7298,6 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Notifies observers of errors in the SleuthkitCase.
-	 */
-	public interface ErrorObserver {
-
-		/**
-		 * List of arguments for the context string parameters. This does not
-		 * preclude the use of arbitrary context strings by client code, but it
-		 * does provide a place to define standard context strings to allow
-		 * filtering of notifications by implementations of ErrorObserver.
-		 */
-		public enum Context {
-
-			/**
-			 * Error occurred while reading image content.
-			 */
-			IMAGE_READ_ERROR("Image File Read Error"),
-			/**
-			 * Error occurred while reading database content.
-			 */
-			DATABASE_READ_ERROR("Database Read Error");
-
-			private final String contextString;
-
-			private Context(String context) {
-				this.contextString = context;
-			}
-
-			public String getContextString() {
-				return contextString;
-			}
-		};
-
-		void receiveError(String context, String errorMessage);
-	}
-
-	/**
 	 * Stores a pair of object ID and its type
 	 */
 	static class ObjectInfo {
@@ -7960,7 +7885,6 @@ public class SleuthkitCase {
 							Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Unexpectedly unable to wait for database.", exp);
 						}
 					} else {
-						submitError(ErrorObserver.Context.DATABASE_READ_ERROR.getContextString(), ex.getMessage());
 						throw ex;
 					}
 				}
@@ -8010,7 +7934,6 @@ public class SleuthkitCase {
 							Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Unexpectedly unable to wait for database.", exp);
 						}
 					} else {
-						submitError(ErrorObserver.Context.DATABASE_READ_ERROR.getContextString(), ex.getMessage());
 						throw ex;
 					}
 				}
@@ -8150,6 +8073,93 @@ public class SleuthkitCase {
 				SleuthkitCase.this.releaseSharedLock();
 			}
 		}
+	}
+
+	/**
+	 * Add an observer for SleuthkitCase errors.
+	 *
+	 * @param observer The observer to add.
+	 *
+	 * @deprecated Catch exceptions instead.
+	 */
+	@Deprecated
+	public void addErrorObserver(ErrorObserver observer) {
+		sleuthkitCaseErrorObservers.add(observer);
+	}
+
+	/**
+	 * Remove an observer for SleuthkitCase errors.
+	 *
+	 * @param observer The observer to remove.
+	 *
+	 * @deprecated Catch exceptions instead.
+	 */
+	@Deprecated
+	public void removeErrorObserver(ErrorObserver observer) {
+		int i = sleuthkitCaseErrorObservers.indexOf(observer);
+		if (i >= 0) {
+			sleuthkitCaseErrorObservers.remove(i);
+		}
+	}
+
+	/**
+	 * Submit an error to all clients that are listening.
+	 *
+	 * @param context      The context in which the error occurred.
+	 * @param errorMessage A description of the error that occurred.
+	 *
+	 * @deprecated Catch exceptions instead.
+	 */
+	@Deprecated
+	public void submitError(String context, String errorMessage) {
+		for (ErrorObserver observer : sleuthkitCaseErrorObservers) {
+			if (observer != null) {
+				try {
+					observer.receiveError(context, errorMessage);
+				} catch (Exception ex) {
+					logger.log(Level.SEVERE, "Observer client unable to receive message: {0}, {1}", new Object[]{context, errorMessage, ex});
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Notifies observers of errors in the SleuthkitCase.
+	 *
+	 * @deprecated Catch exceptions instead.
+	 */
+	@Deprecated
+	public interface ErrorObserver {
+
+		/**
+		 * List of arguments for the context string parameters. This does not
+		 * preclude the use of arbitrary context strings by client code, but it
+		 * does provide a place to define standard context strings to allow
+		 * filtering of notifications by implementations of ErrorObserver.
+		 */
+		public enum Context {
+
+			/**
+			 * Error occurred while reading image content.
+			 */
+			IMAGE_READ_ERROR("Image File Read Error"),
+			/**
+			 * Error occurred while reading database content.
+			 */
+			DATABASE_READ_ERROR("Database Read Error");
+
+			private final String contextString;
+
+			private Context(String context) {
+				this.contextString = context;
+			}
+
+			public String getContextString() {
+				return contextString;
+			}
+		};
+
+		void receiveError(String context, String errorMessage);
 	}
 
 	/**

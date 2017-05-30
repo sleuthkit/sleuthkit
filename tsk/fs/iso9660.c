@@ -290,6 +290,7 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile)
         // RR -- alternative name
         else if ((head->sig[0] == 'N') && (head->sig[1] == 'M')) {
             iso9660_rr_nm_entry *rr_nm;
+            int len;
 
             if ((uintptr_t)buf + sizeof(iso9660_rr_nm_entry) - 1> (uintptr_t)end) {
                 if (tsk_verbose) 
@@ -305,8 +306,14 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile)
                 break;
             }
 
-            strncpy(rr->fn, &rr_nm->name[0], (int) rr_nm->len - 5);
-            rr->fn[(int) rr_nm->len - 5] = '\0';
+            // Make sure the name will fit in the buffer
+            len = rr_nm->len - 5;
+            if (len >= ISO9660_MAXNAMLEN_RR) {
+                len = ISO9660_MAXNAMLEN_RR - 1;
+            }
+
+            strncpy(rr->fn, &rr_nm->name[0], len);
+            rr->fn[len] = '\0';
             if (hFile) {
                 fprintf(hFile, "NM Entry\n");
                 fprintf(hFile, "* %s\n", rr->fn);
