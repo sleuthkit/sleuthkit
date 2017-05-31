@@ -694,7 +694,10 @@ public class BlackboardAttribute {
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_KEYWORD_SEARCH_TYPE(122, "TSK_KEYWORD_SEARCH_TYPE", // Keyword search type, exact match, sub-string or regex //NON-NLS
 				bundle.getString("BlackboardAttribute.tskKeywordSearchType.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER);
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER),
+		TSK_HEADERS(123, "TSK_HEADERS", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskHeaders.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
 
 		private final int typeID;
 		private final String typeName;
