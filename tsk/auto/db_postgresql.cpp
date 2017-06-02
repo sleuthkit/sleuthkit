@@ -1057,13 +1057,21 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         return 1;
     }
 
+    //if dir, update parent id cache (do this before objId may be changed creating the slack file)
+    if (meta_type == TSK_FS_META_TYPE_DIR) {
+        std::string fullPath = std::string(path) + fs_file->name->name;
+        storeObjId(fsObjId, fs_file, fullPath.c_str(), objId);
+    }
+
     // Add entry for the slack space.
     // Current conditions for creating a slack file:
+    //   - File name is not empty, "." or ".."
     //   - Data is non-resident
     //   - The allocated size is greater than the initialized file size
     //     See github issue #756 on why initsize and not size. 
     //   - The data is not compressed
     if((fs_attr != NULL)
+           && ((strlen(name) > 0) && (!TSK_FS_ISDOT(name)))
            && (! (fs_file->meta->flags & TSK_FS_META_FLAG_COMP))
            && (fs_attr->flags & TSK_FS_ATTR_NONRES) 
            && (fs_attr->nrd.allocsize >  fs_attr->nrd.initsize)){
@@ -1094,7 +1102,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
             TSK_DB_FILES_TYPE_SLACK,
             type, idx, name_sql,
             fs_file->name->meta_addr, fs_file->name->meta_seq, 
-            fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
+            TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG, fs_file->name->flags, meta_flags,
             slackSize, 
             (unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime, 
             meta_mode, gid, uid, NULL, known,
@@ -1108,12 +1116,6 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
             return 1;
         }
 
-    }
-
-    //if dir, update parent id cache
-    if (meta_type == TSK_FS_META_TYPE_DIR) {
-        std::string fullPath = std::string(path) + fs_file->name->name;
-        storeObjId(fsObjId, fs_file, fullPath.c_str(), objId);
     }
 
     // cleanup
