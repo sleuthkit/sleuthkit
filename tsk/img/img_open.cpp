@@ -35,6 +35,10 @@
 #include "vhd.h"
 #endif
 
+#if HAVE_LIBAFF4
+#include "aff4.h"
+#endif
+
 /**
  * \ingroup imglib
  * Opens a single (non-split) disk image file so that it can be read.  This is a
@@ -129,7 +133,7 @@ tsk_img_open(int num_img,
          * we try all of the embedded formats
          */
         TSK_IMG_INFO *img_set = NULL;
-#if HAVE_LIBAFFLIB || HAVE_LIBEWF || HAVE_LIBVMDK || HAVE_LIBVHDI
+#if HAVE_LIBAFFLIB || HAVE_LIBEWF || HAVE_LIBVMDK || HAVE_LIBVHDI || HAVE_LIBAFF4
         const char *set = NULL;
 #endif
 
@@ -171,6 +175,26 @@ tsk_img_open(int num_img,
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
                 tsk_error_set_errstr("EWF or %s", set);
+                return NULL;
+            }
+        }
+        else {
+            tsk_error_reset();
+        }
+#endif
+
+#if HAVE_LIBAFF4
+        if ((img_info = aff4_open(num_img, images, a_ssize)) != NULL) {
+            if (set == NULL) {
+                set = "AFF4";
+                img_set = img_info;
+            }
+            else {
+                img_set->close(img_set);
+                img_info->close(img_info);
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_IMG_UNKTYPE);
+                tsk_error_set_errstr("AFF4 or %s", set);
                 return NULL;
             }
         }
@@ -270,6 +294,10 @@ tsk_img_open(int num_img,
 #if HAVE_LIBVHDI
     case TSK_IMG_TYPE_VHD_VHD:
         img_info = vhdi_open(num_img, images, a_ssize);
+
+#if HAVE_LIBAFF4
+    case TSK_IMG_TYPE_AFF4_AFF4:
+        img_info = aff4_open(num_img, images, a_ssize);
         break;
 #endif
 
