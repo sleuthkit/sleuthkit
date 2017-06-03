@@ -45,6 +45,9 @@
 /* Define to 1 if you have the `ishexnumber' function. */
 #undef HAVE_ISHEXNUMBER
 
+/* Define to 1 if you have the `aff4' library (-laff4). */
+#undef HAVE_LIBAFF4
+
 /* Define to 1 if you have the `afflib' library (-lafflib). */
 #undef HAVE_LIBAFFLIB
 

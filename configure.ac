@@ -231,6 +231,33 @@ AS_IF([test "x$with_libewf" != "xno"],
 )
 AS_IF([test "x$ac_cv_lib_ewf_libewf_get_version" = "xyes"], [ax_libewf=yes], [ax_libewf=no])
 
+dnl Check if we should link libaff4.
+AC_ARG_WITH([libaff4],
+    [AS_HELP_STRING([--without-libaff4],[Do not use libaff4 even if it is installed])]
+    [AS_HELP_STRING([--with-libaff4=dir],[Specify that libaff4 is installed in directory 'dir'])],
+    dnl If --with-libaff4 or --without-libaff4 is given
+    [],
+    dnl if nothing was specified, default to a test
+    [with_libaff4=yes])
+
+dnl check for the lib if they did not specify no
+AS_IF([test "x$with_libaff4" != "xno"],
+    dnl Test the dir if they specified something beyond yes/no
+    [AS_IF([test "x$with_libaff4" != "xyes"],
+        [AS_IF([test -d ${with_libaff4}/include],
+            [CPPFLAGS="$CPPFLAGS -I${with_libaff4}/include"  
+                LDFLAGS="$LDFLAGS -L${with_libaff4}/lib"],
+            dnl Dir given was not correct
+            [AC_MSG_FAILURE([libaff4 directory not found at ${with_libaff4}])])
+        ]
+    )]
+    dnl Check for the header file first to make sure they have the dev install
+    [AC_CHECK_HEADERS([aff4/libaff4-c.h],
+      [AC_CHECK_LIB([aff4], [AFF4_version], [], [NO_LIBAFF4=true])]
+    )]
+)
+AS_IF([test "x$ac_cv_lib_aff4_AFF4_version" = "xyes"], [ax_libaff4=yes], [ax_libaff4=no])
+
 dnl sqlite requires pthread libraries - this was copied from its configure.ac
 dnl AC_SEARCH_LIBS(pthread_create, pthread)
 AC_SEARCH_LIBS(dlopen, dl)
@@ -348,6 +375,7 @@ AC_MSG_NOTICE([
 Building:
    afflib support:                        $ax_afflib
    libewf support:                        $ax_libewf
+   libaff4 support:                       $ax_libaff4
    zlib support:                          $ax_zlib
 
 Features:
