@@ -40,6 +40,9 @@ static IMG_TYPES img_open_table[] = {
 #if HAVE_LIBEWF
     {"ewf", TSK_IMG_TYPE_EWF_EWF, "Expert Witness Format (EnCase)"},
 #endif
+#if HAVE_LIBAFF4
+    {"aff4", TSK_IMG_TYPE_AFF4_AFF4, "Advanced Forensic Format 4 (AFF4)"},
+#endif
 #if HAVE_LIBVMDK
     {"vmdk", TSK_IMG_TYPE_VMDK_VMDK, "Virtual Machine Disk (VmWare, Virtual Box)"},
 #endif
