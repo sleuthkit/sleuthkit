@@ -80,7 +80,7 @@ public class BottomUpTest {
 			SleuthkitCase sk = SleuthkitCase.newCase(dbPath);
 			String timezone = "";
 			title = title + DataModelTestSuite.BTTMUP + ".txt";
-			SleuthkitJNI.CaseDbHandle.AddImageProcess process = sk.makeAddImageProcess(timezone, true, false);
+			SleuthkitJNI.CaseDbHandle.AddImageProcess process = sk.makeAddImageProcess(timezone, true, false, "");
 			try {
 				process.run(imagePaths.toArray(new String[imagePaths.size()]));
 			} catch (TskDataException ex) {

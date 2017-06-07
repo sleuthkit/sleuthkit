@@ -53,7 +53,7 @@ extern "C" {
 
 /************************************************************************
  * Update sequence structure.  This is located at upd_off from the
- * begining of the original structure
+ * beginning of the original structure
  */
     typedef struct {
         uint8_t upd_val[2];     // what they should be 

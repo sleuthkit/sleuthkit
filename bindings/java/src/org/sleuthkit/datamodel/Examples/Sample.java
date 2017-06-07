@@ -43,7 +43,7 @@ public class Sample {
 
 			// initialize the case with an image
 			String timezone = "";
-			AddImageProcess process = sk.makeAddImageProcess(timezone, true, false);
+			AddImageProcess process = sk.makeAddImageProcess(timezone, true, false, "");
 			ArrayList<String> paths = new ArrayList<String>();
 			paths.add(imagePath);
 			try {

@@ -15,9 +15,10 @@
 
 #include "tsk_auto_i.h"
 #include "tsk/fs/tsk_fatxxfs.h"
+#include "tsk/img/img_writer.h"
 
 
-// @@@ Follow through some error paths for sanity check and update docs somewhere to relfect the new scheme
+// @@@ Follow through some error paths for sanity check and update docs somewhere to reflect the new scheme
 
 TskAuto::TskAuto()
 {
@@ -109,8 +110,9 @@ uint8_t
 
     m_internalOpen = true;
     m_img_info = tsk_img_open_utf8(a_numImg, a_images, a_imgType, a_sSize);
-    if (m_img_info)
-        return 0;
+	if (m_img_info) {
+		return 0;
+	}
     else
         return 1;
 }
@@ -209,7 +211,7 @@ TskAuto::filterFs(TSK_FS_INFO * fs_info) {
  * Starts in sector 0 of the opened disk images and looks for a
  * volume or file system. Will call processFile() on each file
  * that is found.
- * @return 1 if an error occured (message will have been registered) and 0 on success
+ * @return 1 if an error occurred (message will have been registered) and 0 on success
  */
 uint8_t
 TskAuto::findFilesInImg()
@@ -272,7 +274,7 @@ TSK_WALK_RET_ENUM
  * that is found.
  * @param a_start Byte offset to start analyzing from.
  * @param a_vtype Volume system type to analyze
- * @return 1 if an error occured (messages will have been registered) and 0 on success
+ * @return 1 if an error occurred (messages will have been registered) and 0 on success
  */
 uint8_t
 TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
@@ -322,7 +324,7 @@ TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
  * volume system or file system. Will call processFile() on each file
  * that is found.
  * @param a_start Byte offset to start analyzing from.
- * @return 1 if an error occured (message will have been registered), 0 on success
+ * @return 1 if an error occurred (message will have been registered), 0 on success
  */
 uint8_t
 TskAuto::findFilesInVs(TSK_OFF_T a_start)
@@ -385,7 +387,7 @@ TSK_RETVAL_ENUM
  *
  * @param a_start Byte offset of file system starting location.
  *
- * @returns 1 if an error occured (messages will have been registered) and 0 on success
+ * @returns 1 if an error occurred (messages will have been registered) and 0 on success
  */
 uint8_t
 TskAuto::findFilesInFs(TSK_OFF_T a_start)
@@ -402,7 +404,7 @@ TskAuto::findFilesInFs(TSK_OFF_T a_start)
  * @param a_start Byte offset of file system starting location.
  * @param a_ftype Type of file system that is located at the offset.
  *
- * @returns 1 if an error occured (messages will have been registered) and 0 on success
+ * @returns 1 if an error occurred (messages will have been registered) and 0 on success
  */
 uint8_t
 TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype)
@@ -421,7 +423,7 @@ TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype)
  * @param a_ftype Type of file system that will be analyzed.
  * @param a_inum inum to start walking files system at.
  *
- * @returns 1 if an error occured (messages will have been registered) and 0 on success
+ * @returns 1 if an error occurred (messages will have been registered) and 0 on success
  */
 uint8_t
     TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype,
@@ -470,7 +472,7 @@ uint8_t
  * @param a_start Byte offset of file system starting location.
  * @param a_inum inum to start walking files system at.
  *
- * @returns 1 if an error occured (messages will have been registered) and 0 on success
+ * @returns 1 if an error occurred (messages will have been registered) and 0 on success
  */
 uint8_t
 TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_INUM_T a_inum)
@@ -484,7 +486,7 @@ TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_INUM_T a_inum)
  *
  * @param a_fs_info Pointer to a previously opened file system.
  *
- * @returns 1 if an error occured (messages will have been registered) and 0 on success
+ * @returns 1 if an error occurred (messages will have been registered) and 0 on success
  */
 uint8_t
 TskAuto::findFilesInFs(TSK_FS_INFO * a_fs_info)
@@ -599,6 +601,55 @@ void TskAuto::setStopProcessing() {
 
 bool TskAuto::getStopProcessing() const {
     return m_stopAllProcessing;
+}
+
+
+TSK_RETVAL_ENUM
+TskAuto::enableImageWriter(const char * imagePath) {
+#ifdef TSK_WIN32
+	m_imageWriterEnabled = false;
+
+	size_t ilen;
+	UTF16 *utf16;
+	UTF8 *utf8;
+	TSKConversionResult retval2;
+
+	// we allocate the buffer with the same number of chars as the UTF-8 length
+	ilen = strlen(imagePath);
+	if ((m_imageWriterPath =
+		(wchar_t *)tsk_malloc((ilen + 1) * sizeof(wchar_t))) == NULL) {
+		free(m_imageWriterPath);
+		return TSK_ERR;
+	}
+
+	utf8 = (UTF8 *)imagePath;
+	utf16 = (UTF16 *)m_imageWriterPath;
+
+	retval2 =
+		tsk_UTF8toUTF16((const UTF8 **)&utf8, &utf8[ilen],
+			&utf16, &utf16[ilen], TSKlenientConversion);
+	if (retval2 != TSKconversionOK) {
+		tsk_error_set_errno(TSK_ERR_IMG_CONVERT);
+		tsk_error_set_errstr
+		("enableImageWriter: Error converting output path %s %d",
+			imagePath, retval2);
+		free(m_imageWriterPath);
+		return TSK_ERR;
+	}
+	*utf16 = '\0';
+
+	// At this point the path conversion was successful, so image writer is ready to go
+	m_imageWriterEnabled = true;
+
+#else
+	m_imageWriterEnabled = false;
+#endif
+	return TSK_OK;
+}
+
+void
+TskAuto::disableImageWriter() {
+	m_imageWriterEnabled = false;
 }
 
 uint8_t TskAuto::registerError() {

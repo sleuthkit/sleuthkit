@@ -12,7 +12,7 @@ Note that the C++ interfaces simply create and use C structs behind
 the scenes.  Therefore, the methods are very similar to the C
 functions. References to the C++ classes were given in earlier
 sections of the User's Guide. It is assumed that the user has read 
-the preceeding sections of the User's Guide to get an understanding of
+the preceding sections of the User's Guide to get an understanding of
 what TSK is capable of doing. This section provides references and links 
 to the main C++ classes. 
 

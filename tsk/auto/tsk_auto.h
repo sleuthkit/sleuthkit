@@ -139,6 +139,16 @@ class TskAuto {
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file,
         const char *path) = 0;
 
+	/**
+	 * Enables image writer, which creates a copy of the image as it is being processed.
+	 * @param imagePath UTF8 version of path to write the image to
+	 */
+	virtual TSK_RETVAL_ENUM enableImageWriter(const char * imagePath);
+
+	/**
+	* Disables image writer
+	*/
+	virtual void disableImageWriter();
     
     /**
      * Internal method that TskAuto calls when it encounters issues while processing an image.
@@ -225,6 +235,7 @@ class TskAuto {
     void setCurVsPart(const TSK_VS_PART_INFO *);
 
 
+
   protected:
     TSK_IMG_INFO * m_img_info;
     bool m_internalOpen;        ///< True if m_img_info was opened in TskAuto and false if passed in
@@ -239,6 +250,8 @@ class TskAuto {
     uint8_t isDefaultType(TSK_FS_FILE * fs_file,
         const TSK_FS_ATTR * fs_attr);
     uint8_t isNonResident(const TSK_FS_ATTR * fs_attr);
+	bool m_imageWriterEnabled;
+    TSK_TCHAR * m_imageWriterPath;
 
     
     TSK_RETVAL_ENUM processAttributes(TSK_FS_FILE * fs_file,

@@ -168,12 +168,15 @@ public class SleuthkitJNI {
 		 *                         unallocated space.
 		 * @param skipFatFsOrphans Pass true to skip processing of orphan files
 		 *                         for FAT file systems.
+		 * @param imageWriterPath  Path that a copy of the image should be
+		 *                         written to. Use empty string to disable image
+		 *                         writing
 		 *
 		 * @return An object that can be used to exercise fine-grained control
 		 *         of the process of adding the image to the case database.
 		 */
-		AddImageProcess initAddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans) {
-			return new AddImageProcess(timeZone, addUnallocSpace, skipFatFsOrphans);
+		AddImageProcess initAddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans, String imageWriterPath) {
+			return new AddImageProcess(timeZone, addUnallocSpace, skipFatFsOrphans, imageWriterPath);
 		}
 
 		/**
@@ -185,7 +188,9 @@ public class SleuthkitJNI {
 			private final String timeZone;
 			private final boolean addUnallocSpace;
 			private final boolean skipFatFsOrphans;
+			private final String imageWriterPath;
 			private volatile long tskAutoDbPointer;
+			private boolean isCanceled;
 
 			/**
 			 * Constructs an object that encapsulates a multi-step process to
@@ -196,12 +201,17 @@ public class SleuthkitJNI {
 			 *                         unallocated space.
 			 * @param skipFatFsOrphans Pass true to skip processing of orphan
 			 *                         files for FAT file systems.
+			 * @param imageWriterPath  Path that a copy of the image should be
+			 *                         written to. Use empty string to disable
+			 *                         image writing
 			 */
-			private AddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans) {
+			private AddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans, String imageWriterPath) {
 				this.timeZone = timeZone;
 				this.addUnallocSpace = addUnallocSpace;
 				this.skipFatFsOrphans = skipFatFsOrphans;
+				this.imageWriterPath = imageWriterPath;
 				tskAutoDbPointer = 0;
+				this.isCanceled = false;
 			}
 
 			/**
@@ -222,19 +232,22 @@ public class SleuthkitJNI {
 			 *                          the process)
 			 */
 			public void run(String deviceId, String[] imageFilePaths) throws TskCoreException, TskDataException {
-				if (0 != tskAutoDbPointer) {
-					throw new TskCoreException("Add image process already started");
+				long imageHandle = 0;
+				synchronized (this) {
+					if (0 != tskAutoDbPointer) {
+						throw new TskCoreException("Add image process already started");
+					}
+					if (!isCanceled) { //with isCanceled being guarded by this it will have the same value everywhere in this synchronized block
+						imageHandle = openImage(imageFilePaths, false);
+						tskAutoDbPointer = initAddImgNat(caseDbPointer, timezoneLongToShort(timeZone), addUnallocSpace, skipFatFsOrphans);
+					}
+					if (0 == tskAutoDbPointer) {
+						throw new TskCoreException("initAddImgNat returned a NULL TskAutoDb pointer");
+					}
 				}
-
-				long imageHandle = openImage(imageFilePaths);
-				
-				synchronized (this) {					
-					tskAutoDbPointer = initAddImgNat(caseDbPointer, timezoneLongToShort(timeZone), addUnallocSpace, skipFatFsOrphans);
+				if (imageHandle != 0) {
+					runAddImgNat(tskAutoDbPointer, deviceId, imageHandle, timeZone, imageWriterPath);
 				}
-				if (0 == tskAutoDbPointer) {
-					throw new TskCoreException("initAddImgNat returned a NULL TskAutoDb pointer");
-				}
-				runAddImgNat(tskAutoDbPointer, deviceId, imageHandle, timeZone);
 			}
 
 			/**
@@ -246,12 +259,11 @@ public class SleuthkitJNI {
 			 * @throws TskCoreException if a critical error occurs within the
 			 *                          SleuthKit.
 			 */
-			public void stop() throws TskCoreException {
-				if (tskAutoDbPointer == 0) {
-					throw new TskCoreException("AddImgProcess::stop: AutoDB pointer is NULL");
+			public synchronized void stop() throws TskCoreException {
+				isCanceled = true;
+				if (tskAutoDbPointer != 0) {
+					stopAddImgNat(tskAutoDbPointer);
 				}
-
-				stopAddImgNat(tskAutoDbPointer);
 			}
 
 			/**
@@ -413,6 +425,26 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	public static long openImage(String[] imageFiles) throws TskCoreException {
+		return openImage(imageFiles, true);
+	}
+
+	/**
+	 * open the image and return the image info pointer This is a temporary
+	 * measure to allow ingest of multiple local disks on the same drive letter.
+	 * We need to clear the cache to make sure cached data from the first drive
+	 * is not used.
+	 *
+	 * @param imageFiles the paths to the images
+	 * @param useCache   true if the image handle cache should be used, false to
+	 *                   always go to TSK to open a fresh copy
+	 *
+	 * @return the image info pointer
+	 *
+	 * @throws TskCoreException exception thrown if critical error occurs within
+	 *                          TSK
+	 */
+	private static long openImage(String[] imageFiles, boolean useCache) throws TskCoreException {
+
 		long imageHandle;
 
 		StringBuilder keyBuilder = new StringBuilder();
@@ -422,7 +454,14 @@ public class SleuthkitJNI {
 		final String imageKey = keyBuilder.toString();
 
 		synchronized (cacheLock) {
-			if (CaseDbHandle.imageHandleCache.containsKey(imageKey)) //get from cache
+			// If we're getting a fresh copy, remove any existing cache references
+			if (!useCache && CaseDbHandle.imageHandleCache.containsKey(imageKey)) {
+				long tempImageHandle = CaseDbHandle.imageHandleCache.get(imageKey);
+				CaseDbHandle.fsHandleCache.remove(tempImageHandle);
+				CaseDbHandle.imageHandleCache.remove(imageKey);
+			}
+
+			if (useCache && CaseDbHandle.imageHandleCache.containsKey(imageKey)) //get from cache
 			{
 				imageHandle = CaseDbHandle.imageHandleCache.get(imageKey);
 			} else {
@@ -513,7 +552,7 @@ public class SleuthkitJNI {
 		/*
 		 * NOTE: previously attrId used to be stored in AbstractFile as (signed)
 		 * short even though it is stored as uint16 in TSK. In extremely rare
-		 * occurances attrId can be larger than what a signed short can hold
+		 * occurrences attrId can be larger than what a signed short can hold
 		 * (2^15). Changes were made to AbstractFile to store attrId as integer.
 		 * However, a depricated method still exists in AbstractFile to get
 		 * attrId as short. In that method we convert attribute ids that are
@@ -616,24 +655,24 @@ public class SleuthkitJNI {
 	}
 
 	/**
-	 * enum used to tell readFileNat whether the offset is from the beginning
-	 * of the file or from the beginning of the slack space.
+	 * enum used to tell readFileNat whether the offset is from the beginning of
+	 * the file or from the beginning of the slack space.
 	 */
-	private enum TSK_FS_FILE_READ_OFFSET_TYPE_ENUM{
+	private enum TSK_FS_FILE_READ_OFFSET_TYPE_ENUM {
 		START_OF_FILE(0),
 		START_OF_SLACK(1);
-		
+
 		private final int val;
-		
-		TSK_FS_FILE_READ_OFFSET_TYPE_ENUM(int val){
+
+		TSK_FS_FILE_READ_OFFSET_TYPE_ENUM(int val) {
 			this.val = val;
 		}
-		
-		int getValue(){
+
+		int getValue() {
 			return val;
 		}
 	}
-	
+
 	/**
 	 * reads data from an file
 	 *
@@ -651,7 +690,7 @@ public class SleuthkitJNI {
 	public static int readFile(long fileHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
 		return readFileNat(fileHandle, readBuffer, offset, TSK_FS_FILE_READ_OFFSET_TYPE_ENUM.START_OF_FILE.getValue(), len);
 	}
-	
+
 	/**
 	 * reads data from the slack space of a file
 	 *
@@ -668,7 +707,7 @@ public class SleuthkitJNI {
 	 */
 	public static int readFileSlack(long fileHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
 		return readFileNat(fileHandle, readBuffer, offset, TSK_FS_FILE_READ_OFFSET_TYPE_ENUM.START_OF_SLACK.getValue(), len);
-	}	
+	}
 
 	/**
 	 * Get human readable (some what) details about a file. This is the same as
@@ -969,6 +1008,38 @@ public class SleuthkitJNI {
 	}
 
 	/**
+	 * Fills in any gaps in the image created by image writer.
+	 *
+	 * @param imgHandle
+	 *
+	 * @throws TskCoreException exception thrown if critical error occurs within
+	 *                          TSK
+	 */
+	public static int finishImageWriter(long imgHandle) throws TskCoreException {
+		return finishImageWriterNat(imgHandle);
+	}
+
+	/**
+	 * Get the current progress of the finish image process (0-100)
+	 *
+	 * @param imgHandle
+	 *
+	 * @return Percentage of blocks completed (0-100)
+	 */
+	public static int getFinishImageProgress(long imgHandle) {
+		return getFinishImageProgressNat(imgHandle);
+	}
+
+	/**
+	 * Cancel the finish image process
+	 *
+	 * @param imgHandle
+	 */
+	public static void cancelFinishImage(long imgHandle) {
+		cancelFinishImageNat(imgHandle);
+	}
+
+	/**
 	 * Get size of a device (physical, logical device, image) pointed to by
 	 * devPath
 	 *
@@ -982,8 +1053,8 @@ public class SleuthkitJNI {
 	public static long findDeviceSize(String devPath) throws TskCoreException {
 		return findDeviceSizeNat(devPath);
 	}
-	
-	public static boolean isImageSupported(String imagePath){
+
+	public static boolean isImageSupported(String imagePath) {
 		return isImageSupportedNat(imagePath);
 	}
 
@@ -1042,8 +1113,8 @@ public class SleuthkitJNI {
 	private static native long initializeAddImgNat(long db, String timezone, boolean addFileSystems, boolean addUnallocSpace, boolean skipFatFsOrphans) throws TskCoreException;
 
 	private static native void runOpenAndAddImgNat(long process, String deviceId, String[] imgPath, int splits, String timezone) throws TskCoreException, TskDataException;
-	
-	private static native void runAddImgNat(long process, String deviceId, long a_img_info, String timeZone) throws TskCoreException, TskDataException;
+
+	private static native void runAddImgNat(long process, String deviceId, long a_img_info, String timeZone, String imageWriterPath) throws TskCoreException, TskDataException;
 
 	private static native void stopAddImgNat(long process) throws TskCoreException;
 
@@ -1084,7 +1155,13 @@ public class SleuthkitJNI {
 	private static native long findDeviceSizeNat(String devicePath) throws TskCoreException;
 
 	private static native String getCurDirNat(long process);
-	
+
 	private static native boolean isImageSupportedNat(String imagePath);
+
+	private static native int finishImageWriterNat(long a_img_info);
+
+	private static native int getFinishImageProgressNat(long a_img_info);
+
+	private static native void cancelFinishImageNat(long a_img_info);
 
 }

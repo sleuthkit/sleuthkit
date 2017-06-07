@@ -43,7 +43,7 @@ There are also a series of protected methods in TskAuto that will help you to sk
 
 The goal of TskAuto is to get through the disk image and process as many files as possible.  Therefore, it will continue even if an error is encountered.  
 
-The public methods will return a value if any error occured.  As an error occured, it was registered with TskAuto and recorded in a list. To determine how many and which errors occured, use the TskAuto::getErrorList() method.   
+The public methods will return a value if any error occurred.  As an error occurred, it was registered with TskAuto and recorded in a list. To determine how many and which errors occurred, use the TskAuto::getErrorList() method.   
 
 If you encounter error scenarios while implementing TskAuto::processFile() or TskAuto::processAttribute(), then you should also send the errors to TskAuto::registerError() so that they are all recorded in a central location. 
 

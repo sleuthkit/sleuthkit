@@ -30,7 +30,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -38,6 +41,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -83,6 +87,7 @@ import org.sqlite.SQLiteJDBCLoader;
  */
 public class SleuthkitCase {
 
+	private static final int MAX_DB_NAME_LEN_BEFORE_TIMESTAMP = 47;
 	private static final int SCHEMA_VERSION_NUMBER = 6; // This must be the same as TSK_SCHEMA_VER in tsk/auto/tsk_db.h.
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -99,6 +104,7 @@ public class SleuthkitCase {
 	private final Map<Long, VirtualDirectory> rootIdsToCarvedFileDirs = new HashMap<Long, VirtualDirectory>();
 	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system files.
 	private final ArrayList<ErrorObserver> sleuthkitCaseErrorObservers = new ArrayList<ErrorObserver>();
+	private final String databaseName;
 	private final String dbPath;
 	private final DbType dbType;
 	private final String caseDirPath;
@@ -200,7 +206,9 @@ public class SleuthkitCase {
 		Class.forName("org.sqlite.JDBC");
 		this.dbPath = dbPath;
 		this.dbType = dbType;
-		this.caseDirPath = new java.io.File(dbPath).getParentFile().getAbsolutePath();
+		File dbFile = new File(dbPath);
+		this.caseDirPath = dbFile.getParentFile().getAbsolutePath();
+		this.databaseName = dbFile.getName();
 		this.connections = new SQLiteConnections(dbPath);
 		this.caseHandle = caseHandle;
 		init();
@@ -226,6 +234,7 @@ public class SleuthkitCase {
 	 */
 	private SleuthkitCase(String host, int port, String dbName, String userName, String password, SleuthkitJNI.CaseDbHandle caseHandle, String caseDirPath, DbType dbType) throws Exception {
 		this.dbPath = "";
+		this.databaseName = dbName;
 		this.dbType = dbType;
 		this.caseDirPath = caseDirPath;
 		this.connections = new PostgreSQLConnections(host, port, dbName, userName, password);
@@ -633,7 +642,7 @@ public class SleuthkitCase {
 		try {
 			SleuthkitCase.logger.info(String.format("sqlite-jdbc version %s loaded in %s mode", //NON-NLS
 					SQLiteJDBCLoader.getVersion(), SQLiteJDBCLoader.isNativeMode()
-							? "native" : "pure-java")); //NON-NLS
+					? "native" : "pure-java")); //NON-NLS
 		} catch (Exception ex) {
 			SleuthkitCase.logger.log(Level.SEVERE, "Error querying case database mode", ex);
 		}
@@ -1055,6 +1064,15 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Gets the case database name.
+	 *
+	 * @return The case database name.
+	 */
+	public String getDatabaseName() {
+		return databaseName;
+	}
+
+	/**
 	 * Get the full path to the case directory. For a SQLite case database, this
 	 * is the same as the database directory path.
 	 *
@@ -1163,11 +1181,11 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Create a new case database.
+	 * Creates a new SQLite case database.
 	 *
 	 * @param dbPath Path to where SQlite case database should be created.
 	 *
-	 * @return Case database object.
+	 * @return A case database object.
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
@@ -1181,17 +1199,22 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Create a new multi-user case database.
+	 * Creates a new PostgreSQL case database.
 	 *
-	 * @param info         the information to connect to the database
-	 * @param databaseName the name of the database
-	 * @param caseDirPath  the path of the case
+	 * @param caseName    The name of the case. It will be used to create a case
+	 *                    database name that can be safely used in SQL commands
+	 *                    and will not be subject to name collisions on the case
+	 *                    database server. Use getDatabaseName to get the
+	 *                    created name.
+	 * @param info        The information to connect to the database.
+	 * @param caseDirPath The case directory path.
 	 *
-	 * @return Case database object.
+	 * @return A case database object.
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public static SleuthkitCase newCase(String databaseName, CaseDbConnectionInfo info, String caseDirPath) throws TskCoreException {
+	public static SleuthkitCase newCase(String caseName, CaseDbConnectionInfo info, String caseDirPath) throws TskCoreException {
+		String databaseName = createCaseDataBaseName(caseName);
 		try {
 			/**
 			 * The flow of this method involves trying to create a new case and
@@ -1218,6 +1241,70 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Transforms a candidate PostgreSQL case database name into one that can be
+	 * safely used in SQL commands and will not be subject to name collisions on
+	 * the case database server.
+	 *
+	 * @param candidateDbName A candidate case database name.
+	 *
+	 * @return A case database name.
+	 */
+	private static String createCaseDataBaseName(String candidateDbName) {
+		String dbName;
+		if (!candidateDbName.isEmpty()) {
+			/*
+			 * Replace all non-ASCII characters.
+			 */
+			dbName = candidateDbName.replaceAll("[^\\p{ASCII}]", "_"); //NON-NLS
+
+			/*
+			 * Replace all control characters.
+			 */
+			dbName = dbName.replaceAll("[\\p{Cntrl}]", "_"); //NON-NLS
+
+			/*
+			 * Replace /, \, :, ?, space, ' ".
+			 */
+			dbName = dbName.replaceAll("[ /?:'\"\\\\]", "_"); //NON-NLS
+
+			/*
+			 * Make it all lowercase.
+			 */
+			dbName = dbName.toLowerCase();
+
+			/*
+			 * Must start with letter or underscore. If not, prepend an
+			 * underscore.
+			 */
+			if ((dbName.length() > 0 && !(Character.isLetter(dbName.codePointAt(0))) && !(dbName.codePointAt(0) == '_'))) {
+				dbName = "_" + dbName;
+			}
+
+			/*
+			 * Truncate to 63 - 16 = 47 chars to accomodate a timestamp for
+			 * uniqueness.
+			 */
+			if (dbName.length() > MAX_DB_NAME_LEN_BEFORE_TIMESTAMP) {
+				dbName = dbName.substring(0, MAX_DB_NAME_LEN_BEFORE_TIMESTAMP);
+			}
+
+		} else {
+			/*
+			 * Must start with letter or underscore.
+			 */
+			dbName = "_";
+		}
+		/*
+		 * Add the time stmap.
+		 */
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
+		Date date = new Date();
+		dbName = dbName + "_" + dateFormat.format(date);
+
+		return dbName;
+	}
+
+	/**
 	 * Start process of adding a image to the case. Adding an image is a
 	 * multi-step process and this returns an object that allows it to happen.
 	 *
@@ -1226,12 +1313,15 @@ public class SleuthkitCase {
 	 *                        unallocated space in the image.
 	 * @param noFatFsOrphans  Set to true to skip processing orphan files of FAT
 	 *                        file systems.
+	 * @param imageWriterPath Path for image writer from the local disk panel.
+	 *                        Use an empty string to disable image writing
 	 *
 	 * @return Object that encapsulates control of adding an image via the
 	 *         SleuthKit native code layer.
 	 */
-	public AddImageProcess makeAddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) {
-		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans);
+	public AddImageProcess makeAddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans,
+			String imageWriterPath) {
+		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, imageWriterPath);
 	}
 
 	/**
@@ -1355,7 +1445,7 @@ public class SleuthkitCase {
 			if (rs.next()) {
 				return new AbstractDataSource(objectId, rs.getString("device_id"), rs.getString("time_zone"));
 			} else {
-				throw new TskCoreException(String.format("There is no data source with obj_id = %d", objectId));
+				throw new TskDataException(String.format("There is no data source with obj_id = %d", objectId));
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting data source with obj_id = %d", objectId), ex);
@@ -2278,7 +2368,7 @@ public class SleuthkitCase {
 			case STRING:
 				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_STRING_ATTRIBUTE);
 				statement.clearParameters();
-				statement.setString(7, escapeSingleQuotes(attr.getValueString()));
+				statement.setString(7, attr.getValueString());
 				break;
 			case BYTE:
 				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_BYTE_ATTRIBUTE);
@@ -2310,7 +2400,7 @@ public class SleuthkitCase {
 		}
 		statement.setLong(1, attr.getArtifactID());
 		statement.setInt(2, artifactTypeId);
-		statement.setString(3, escapeSingleQuotes(attr.getSourcesCSV()));
+		statement.setString(3, attr.getSourcesCSV());
 		statement.setString(4, "");
 		statement.setInt(5, attr.getAttributeType().getTypeID());
 		statement.setLong(6, attr.getAttributeType().getValueType().getType());
@@ -2319,7 +2409,7 @@ public class SleuthkitCase {
 
 	/**
 	 * Adds a source name to the source column of one or more rows in the
-	 * blackboard attrbutes table. The source name will be added to a CSV list
+	 * blackboard attributes table. The source name will be added to a CSV list
 	 * in any rows that exactly match the attribute's artifact_id and value.
 	 *
 	 * @param attr   The artifact attribute
@@ -2351,7 +2441,7 @@ public class SleuthkitCase {
 			if (BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE != valueType) {
 				switch (valueType) {
 					case STRING:
-						valueClause = " value_text = '" + attr.getValueString() + "'";
+						valueClause = " value_text = '" + escapeSingleQuotes(attr.getValueString()) + "'";
 						break;
 					case INTEGER:
 						valueClause = " value_int32 = " + attr.getValueInt();
@@ -3707,7 +3797,7 @@ public class SleuthkitCase {
 				parentPath = "/"; //NON-NLS
 			}
 			String parentName = getFileName(parentId, connection);
-			if (parentName != null) {
+			if (parentName != null && !parentName.isEmpty()) {
 				parentPath = parentPath + parentName + "/"; //NON-NLS
 			}
 
@@ -4133,7 +4223,13 @@ public class SleuthkitCase {
 					}
 				}
 				if (null == carvedFilesDir) {
-					carvedFilesDir = addVirtualDirectory(root.getId(), VirtualDirectory.NAME_CARVED, transaction);
+					long parId = root.getId();
+					// $CarvedFiles should be a child of the root directory, not the file system
+					if (root instanceof FileSystem) {
+						Content rootDir = ((FileSystem) root).getRootDirectory();
+						parId = rootDir.getId();
+					}
+					carvedFilesDir = addVirtualDirectory(parId, VirtualDirectory.NAME_CARVED, transaction);
 				}
 				newCacheKey = root.getId();
 				rootIdsToCarvedFileDirs.put(newCacheKey, carvedFilesDir);
@@ -4580,11 +4676,12 @@ public class SleuthkitCase {
 	 * Add a path (such as a local path) for a content object to tsk_file_paths
 	 *
 	 * @param connection A case database connection.
-	 * @param objId      object id of the file to add the path for
-	 * @param path       the path to add
+	 * @param objId      The object id of the file for which to add the path.
+	 * @param path       The path to add.
+	 * @param type       The TSK encoding type of the file.
 	 *
-	 * @throws SQLException exception thrown when database error occurred and
-	 *                      path was not added
+	 * @throws SQLException Thrown if database error occurred and path was not
+	 *                      added.
 	 */
 	private void addFilePath(CaseDbConnection connection, long objId, String path, TskData.EncodingType type) throws SQLException {
 		PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_LOCAL_PATH);
@@ -5491,6 +5588,19 @@ public class SleuthkitCase {
 	 *
 	 * @throws SQLException if the query fails
 	 */
+	/**
+	 * Creates AbstractFile objects for the result set of a tsk_files table
+	 * query of the form "SELECT * FROM tsk_files WHERE XYZ".
+	 *
+	 * @param rs         A result set from a query of the tsk_files table of the
+	 *                   form "SELECT * FROM tsk_files WHERE XYZ".
+	 * @param connection A case database connection.
+	 *
+	 * @return A list of AbstractFile objects.
+	 *
+	 * @throws SQLException Thrown if there is a problem iterating through the
+	 *                      record set.
+	 */
 	private List<AbstractFile> resultSetToAbstractFiles(ResultSet rs, CaseDbConnection connection) throws SQLException {
 		ArrayList<AbstractFile> results = new ArrayList<AbstractFile>();
 		try {
@@ -5861,13 +5971,29 @@ public class SleuthkitCase {
 	 */
 	public void close() {
 		acquireExclusiveLock();
-		fileSystemIdMap.clear();
+
+		/*
+		 * This is an undocumented, legacy hack. Empirically, it seems to be
+		 * necessary due to problems with finalizers in the SleuthKit Java
+		 * bindings data model calling native methods that read garbage from
+		 * freed memory, leading to access violations otherwise. Why the garbage
+		 * collector is called twice is not known, but it appears to be intended
+		 * to try to force the garbage collection to occur.
+		 *
+		 * TODO (JIRA-2611): Make JNI code more robust when handling file
+		 * closure
+		 */
+		System.gc();
+		System.gc();
 
 		try {
 			connections.close();
 		} catch (TskCoreException ex) {
 			logger.log(Level.SEVERE, "Error closing database connection pool.", ex); //NON-NLS
 		}
+
+		fileSystemIdMap.clear();
+
 		try {
 			if (this.caseHandle != null) {
 				this.caseHandle.free();
@@ -6168,45 +6294,6 @@ public class SleuthkitCase {
 		}
 		return count;
 
-	}
-
-	/**
-	 * Add an observer for SleuthkitCase errors.
-	 *
-	 * @param observer The observer to add.
-	 */
-	public void addErrorObserver(ErrorObserver observer) {
-		sleuthkitCaseErrorObservers.add(observer);
-	}
-
-	/**
-	 * Remove an observer for SleuthkitCase errors.
-	 *
-	 * @param observer The observer to remove.
-	 */
-	public void removeErrorObserver(ErrorObserver observer) {
-		int i = sleuthkitCaseErrorObservers.indexOf(observer);
-		if (i >= 0) {
-			sleuthkitCaseErrorObservers.remove(i);
-		}
-	}
-
-	/**
-	 * Submit an error to all clients that are listening.
-	 *
-	 * @param context      The context in which the error occurred.
-	 * @param errorMessage A description of the error that occurred.
-	 */
-	public void submitError(String context, String errorMessage) {
-		for (ErrorObserver observer : sleuthkitCaseErrorObservers) {
-			if (observer != null) {
-				try {
-					observer.receiveError(context, errorMessage);
-				} catch (Exception ex) {
-					logger.log(Level.SEVERE, "Observer client unable to receive message: {0}, {1}", new Object[]{context, errorMessage, ex});
-				}
-			}
-		}
 	}
 
 	/**
@@ -6821,6 +6908,32 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Change the path for an image in the database.
+	 *
+	 * @param newPath  New path to the image
+	 * @param objectId Data source ID of the image
+	 *
+	 * @throws TskCoreException
+	 */
+	public void updateImagePath(String newPath, long objectId) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		try {
+			// UPDATE tsk_image_names SET name = ? WHERE obj_id = ?
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.UPDATE_IMAGE_PATH);
+			statement.clearParameters();
+			statement.setString(1, newPath);
+			statement.setLong(2, objectId);
+			connection.executeUpdate(statement);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error updating image path in database for object " + objectId, ex);
+		} finally {
+			connection.close();
+			releaseSharedLock();
+		}
+	}
+
+	/**
 	 * Inserts a row into the reports table in the case database.
 	 *
 	 * @param localPath        The path of the report file, must be in the
@@ -7185,42 +7298,6 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Notifies observers of errors in the SleuthkitCase.
-	 */
-	public interface ErrorObserver {
-
-		/**
-		 * List of arguments for the context string parameters. This does not
-		 * preclude the use of arbitrary context strings by client code, but it
-		 * does provide a place to define standard context strings to allow
-		 * filtering of notifications by implementations of ErrorObserver.
-		 */
-		public enum Context {
-
-			/**
-			 * Error occurred while reading image content.
-			 */
-			IMAGE_READ_ERROR("Image File Read Error"),
-			/**
-			 * Error occurred while reading database content.
-			 */
-			DATABASE_READ_ERROR("Database Read Error");
-
-			private final String contextString;
-
-			private Context(String context) {
-				this.contextString = context;
-			}
-
-			public String getContextString() {
-				return contextString;
-			}
-		};
-
-		void receiveError(String context, String errorMessage);
-	}
-
-	/**
 	 * Stores a pair of object ID and its type
 	 */
 	static class ObjectInfo {
@@ -7332,7 +7409,8 @@ public class SleuthkitCase {
 		INSERT_INGEST_JOB("INSERT INTO ingest_jobs (obj_id, host_name, start_date_time, end_date_time, status_id, settings_dir) VALUES (?, ?, ?, ?, ?, ?)"), //NON-NLS
 		INSERT_INGEST_MODULE("INSERT INTO ingest_modules (display_name, unique_name, type_id, version) VALUES(?, ?, ?, ?)"), //NON-NLS
 		SELECT_ATTR_BY_VALUE_BYTE("SELECT source FROM blackboard_attributes WHERE artifact_id = ? AND attribute_type_id = ? AND value_type = 4 AND value_byte = ?"), //NON-NLS
-		UPDATE_ATTR_BY_VALUE_BYTE("UPDATE blackboard_attributes SET source = ? WHERE artifact_id = ? AND attribute_type_id = ? AND value_type = 4 AND value_byte = ?"); //NON-NLS
+		UPDATE_ATTR_BY_VALUE_BYTE("UPDATE blackboard_attributes SET source = ? WHERE artifact_id = ? AND attribute_type_id = ? AND value_type = 4 AND value_byte = ?"), //NON-NLS
+		UPDATE_IMAGE_PATH("UPDATE tsk_image_names SET name = ? WHERE obj_id = ?"); // NON-NLS 
 
 		private final String sql;
 
@@ -7429,10 +7507,11 @@ public class SleuthkitCase {
 	 */
 	private final class PostgreSQLConnections extends ConnectionPool {
 
-		PostgreSQLConnections(String host, int port, String dbName, String userName, String password) throws PropertyVetoException {
+		PostgreSQLConnections(String host, int port, String dbName, String userName, String password) throws PropertyVetoException, UnsupportedEncodingException {
 			ComboPooledDataSource comboPooledDataSource = new ComboPooledDataSource();
 			comboPooledDataSource.setDriverClass("org.postgresql.Driver"); //loads the jdbc driver
-			comboPooledDataSource.setJdbcUrl("jdbc:postgresql://" + host + ":" + port + "/" + dbName);
+			comboPooledDataSource.setJdbcUrl("jdbc:postgresql://" + host + ":" + port + "/"
+					+ URLEncoder.encode(dbName, StandardCharsets.UTF_8.toString()));
 			comboPooledDataSource.setUser(userName);
 			comboPooledDataSource.setPassword(password);
 			comboPooledDataSource.setAcquireIncrement(2);
@@ -7806,7 +7885,6 @@ public class SleuthkitCase {
 							Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Unexpectedly unable to wait for database.", exp);
 						}
 					} else {
-						submitError(ErrorObserver.Context.DATABASE_READ_ERROR.getContextString(), ex.getMessage());
 						throw ex;
 					}
 				}
@@ -7856,7 +7934,6 @@ public class SleuthkitCase {
 							Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Unexpectedly unable to wait for database.", exp);
 						}
 					} else {
-						submitError(ErrorObserver.Context.DATABASE_READ_ERROR.getContextString(), ex.getMessage());
 						throw ex;
 					}
 				}
@@ -7996,6 +8073,93 @@ public class SleuthkitCase {
 				SleuthkitCase.this.releaseSharedLock();
 			}
 		}
+	}
+
+	/**
+	 * Add an observer for SleuthkitCase errors.
+	 *
+	 * @param observer The observer to add.
+	 *
+	 * @deprecated Catch exceptions instead.
+	 */
+	@Deprecated
+	public void addErrorObserver(ErrorObserver observer) {
+		sleuthkitCaseErrorObservers.add(observer);
+	}
+
+	/**
+	 * Remove an observer for SleuthkitCase errors.
+	 *
+	 * @param observer The observer to remove.
+	 *
+	 * @deprecated Catch exceptions instead.
+	 */
+	@Deprecated
+	public void removeErrorObserver(ErrorObserver observer) {
+		int i = sleuthkitCaseErrorObservers.indexOf(observer);
+		if (i >= 0) {
+			sleuthkitCaseErrorObservers.remove(i);
+		}
+	}
+
+	/**
+	 * Submit an error to all clients that are listening.
+	 *
+	 * @param context      The context in which the error occurred.
+	 * @param errorMessage A description of the error that occurred.
+	 *
+	 * @deprecated Catch exceptions instead.
+	 */
+	@Deprecated
+	public void submitError(String context, String errorMessage) {
+		for (ErrorObserver observer : sleuthkitCaseErrorObservers) {
+			if (observer != null) {
+				try {
+					observer.receiveError(context, errorMessage);
+				} catch (Exception ex) {
+					logger.log(Level.SEVERE, "Observer client unable to receive message: {0}, {1}", new Object[]{context, errorMessage, ex});
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Notifies observers of errors in the SleuthkitCase.
+	 *
+	 * @deprecated Catch exceptions instead.
+	 */
+	@Deprecated
+	public interface ErrorObserver {
+
+		/**
+		 * List of arguments for the context string parameters. This does not
+		 * preclude the use of arbitrary context strings by client code, but it
+		 * does provide a place to define standard context strings to allow
+		 * filtering of notifications by implementations of ErrorObserver.
+		 */
+		public enum Context {
+
+			/**
+			 * Error occurred while reading image content.
+			 */
+			IMAGE_READ_ERROR("Image File Read Error"),
+			/**
+			 * Error occurred while reading database content.
+			 */
+			DATABASE_READ_ERROR("Database Read Error");
+
+			private final String contextString;
+
+			private Context(String context) {
+				this.contextString = context;
+			}
+
+			public String getContextString() {
+				return contextString;
+			}
+		};
+
+		void receiveError(String context, String errorMessage);
 	}
 
 	/**
@@ -8456,7 +8620,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException exception thrown if the object creation failed
 	 *                          due to a critical system error
-	 * @Deprecated Use the newer version with explicit encoding type parameter
+	 * @deprecated Use the newer version with explicit encoding type parameter
 	 */
 	@Deprecated
 	public DerivedFile addDerivedFile(String fileName, String localPath,
@@ -8490,7 +8654,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException if there is an error completing a case database
 	 *                          operation.
-	 * @Deprecated Use the newer version with explicit encoding type parameter
+	 * @deprecated Use the newer version with explicit encoding type parameter
 	 */
 	@Deprecated
 	public LocalFile addLocalFile(String fileName, String localPath,
@@ -8518,7 +8682,7 @@ public class SleuthkitCase {
 	 * @return
 	 *
 	 * @throws TskCoreException
-	 * @Deprecated Use the newer version with explicit encoding type parameter
+	 * @deprecated Use the newer version with explicit encoding type parameter
 	 */
 	@Deprecated
 	public LocalFile addLocalFile(String fileName, String localPath,
@@ -8527,6 +8691,27 @@ public class SleuthkitCase {
 			AbstractFile parent) throws TskCoreException {
 		return addLocalFile(fileName, localPath, size, ctime, crtime, atime, mtime,
 				isFile, TskData.EncodingType.NONE, parent);
+	}
+
+	/**
+	 * Start process of adding a image to the case. Adding an image is a
+	 * multi-step process and this returns an object that allows it to happen.
+	 *
+	 * @param timezone        TZ time zone string to use for ingest of image.
+	 * @param addUnallocSpace Set to true to create virtual files for
+	 *                        unallocated space in the image.
+	 * @param noFatFsOrphans  Set to true to skip processing orphan files of FAT
+	 *                        file systems.
+	 *
+	 * @return Object that encapsulates control of adding an image via the
+	 *         SleuthKit native code layer
+	 *
+	 * @deprecated Use the newer version with explicit image writer path
+	 * parameter
+	 */
+	@Deprecated
+	public AddImageProcess makeAddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) {
+		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, "");
 	}
 
 }

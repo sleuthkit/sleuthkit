@@ -43,7 +43,7 @@
 	(name[0] == FATXXFS_SLOT_DELETED) 
 
 /* 
- *Return 1 if c is an valid charactor for a short file name 
+ *Return 1 if c is an valid character for a short file name 
  *
  * NOTE: 0x05 is allowed in name[0], and 0x2e (".") is allowed for name[0]
  * and name[1] and 0xe5 is allowed for name[0]

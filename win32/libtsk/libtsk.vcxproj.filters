@@ -318,6 +318,9 @@
     <ClCompile Include="..\..\tsk\auto\is_image_supported.cpp">
       <Filter>auto</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tsk\img\img_writer.cpp">
+      <Filter>img</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\tsk\vs\tsk_bsd.h">
@@ -439,6 +442,9 @@
     </ClInclude>
     <ClInclude Include="..\..\tsk\auto\tsk_is_image_supported.h">
       <Filter>auto</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\img\img_writer.h">
+      <Filter>img</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

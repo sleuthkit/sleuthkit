@@ -135,7 +135,7 @@ static const UTF8 firstByteMark[7] =
  * \ingroup baselib
  * Convert a UTF-16 string to UTF-8.  
  * @param endian Endian ordering flag of UTF-16 text
- * @param sourceStart Pointer to pointer to start of UTF-16 string.  Will be updated to last char proccessed.
+ * @param sourceStart Pointer to pointer to start of UTF-16 string.  Will be updated to last char processed.
  * @param sourceEnd Pointer to one entry past end of UTF-16 string
  * @param targetStart Pointer to pointer to place where UTF-8 string should be written.  Will be updated to next place to write to. 
  * @param targetEnd Pointer to end of UTF-8 buffer
@@ -248,7 +248,7 @@ tsk_UTF16toUTF8(TSK_ENDIAN_ENUM endian, const UTF16 ** sourceStart,
 /** 
 * \ingroup baselib
 * Convert a UTF-16 string in local endian ordering to UTF-8.  
-* @param sourceStart Pointer to pointer to start of UTF-16 string.  Will be updated to last char proccessed.
+* @param sourceStart Pointer to pointer to start of UTF-16 string.  Will be updated to last char processed.
 * @param sourceEnd Pointer to one entry past end of UTF-16 string
 * @param targetStart Pointer to pointer to place where UTF-8 string should be written.  Will be updated to next place to write to. 
 * @param targetEnd Pointer to end of UTF-8 buffer
@@ -484,7 +484,7 @@ isLegalUTF8(const UTF8 * source, int length)
         if ((a = (*--srcptr)) < 0x80 || a > 0xBF)
             return false;
     case 2:
-        if ((a = (*--srcptr)) > 0xBF)
+        if ((a = (*--srcptr)) < 0x80 || a > 0xBF)
             return false;
 
         switch (*source) {
@@ -573,7 +573,7 @@ tsk_cleanupUTF8(char *source, const char replacement)
 /** 
 * \ingroup baselib
 * Convert a UTF-8 string to UTF-16 (in local endian ordering).  
-* @param sourceStart Pointer to pointer to start of UTF-8 string.  Will be updated to last char proccessed.
+* @param sourceStart Pointer to pointer to start of UTF-8 string.  Will be updated to last char processed.
 * @param sourceEnd Pointer to one entry past end of UTF-8 string
 * @param targetStart Pointer to pointer to place where UTF-16 string should be written.  Will be updated to next place to write to. 
 * @param targetEnd Pointer to end of UTF-16 buffer

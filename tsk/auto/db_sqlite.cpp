@@ -160,9 +160,9 @@ uint8_t
 {
 
     if (attempt(sqlite3_bind_int64(m_insertObjectPreparedStmt, 1, parObjId),
-        "TskDbSqlite::addObj: Error binding parent to statment: %s (result code %d)\n")
+        "TskDbSqlite::addObj: Error binding parent to statement: %s (result code %d)\n")
         || attempt(sqlite3_bind_int(m_insertObjectPreparedStmt, 2, type),
-        "TskDbSqlite::addObj: Error binding type to statment: %s (result code %d)\n")
+        "TskDbSqlite::addObj: Error binding type to statement: %s (result code %d)\n")
         || attempt(sqlite3_step(m_insertObjectPreparedStmt), SQLITE_DONE,
         "TskDbSqlite::addObj: Error adding object to row: %s (result code %d)\n"))
     {
@@ -227,7 +227,7 @@ int
     if (sqlite3_file_control(m_db, NULL, SQLITE_FCNTL_CHUNK_SIZE, &chunkSize) != SQLITE_OK) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskDbSqlite::initialze: error setting chunk size %s", sqlite3_errmsg(m_db));
+        tsk_error_set_errstr("TskDbSqlite::initialize: error setting chunk size %s", sqlite3_errmsg(m_db));
         return 1;
     }
 
@@ -443,7 +443,7 @@ int
 }
 
 /**
-* Must be called on an intialized database, before adding any content to it.
+* Must be called on an initialized database, before adding any content to it.
 */
 int
     TskDbSqlite::setupFilePreparedStmt()
@@ -817,13 +817,13 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE * fs_file, const char *paren
     // Find the parent file id in the database using the parent metadata address
     // @@@ This should use sequence number when the new database supports it
     if (attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 1, fs_file->name->par_addr),
-        "TskDbSqlite::findParObjId: Error binding meta_addr to statment: %s (result code %d)\n")
+        "TskDbSqlite::findParObjId: Error binding meta_addr to statement: %s (result code %d)\n")
         || attempt(sqlite3_bind_int64(m_selectFilePreparedStmt, 2, fsObjId),
-        "TskDbSqlite::findParObjId: Error binding fs_obj_id to statment: %s (result code %d)\n")
+        "TskDbSqlite::findParObjId: Error binding fs_obj_id to statement: %s (result code %d)\n")
         || attempt(sqlite3_bind_text(m_selectFilePreparedStmt, 3, parent_path, -1, SQLITE_STATIC),
-        "TskDbSqlite::findParObjId: Error binding path to statment: %s (result code %d)\n")
+        "TskDbSqlite::findParObjId: Error binding path to statement: %s (result code %d)\n")
         || attempt(sqlite3_bind_text(m_selectFilePreparedStmt, 4, parent_name, -1, SQLITE_STATIC),
-        "TskDbSqlite::findParObjId: Error binding path to statment: %s (result code %d)\n")
+        "TskDbSqlite::findParObjId: Error binding path to statement: %s (result code %d)\n")
         || attempt(sqlite3_step(m_selectFilePreparedStmt), SQLITE_ROW,
         "TskDbSqlite::findParObjId: Error selecting file id by meta_addr: %s (result code %d)\n"))
     {
@@ -990,13 +990,21 @@ int
         return 1;
     }
 
+    //if dir, update parent id cache (do this before objId may be changed creating the slack file)
+    if (meta_type == TSK_FS_META_TYPE_DIR) {
+        std::string fullPath = std::string(path) + fs_file->name->name;
+        storeObjId(fsObjId, fs_file, fullPath.c_str(), objId);
+    }
+
     // Add entry for the slack space.
 	// Current conditions for creating a slack file:
+    //   - File name is not empty, "." or ".."
 	//   - Data is non-resident
 	//   - The allocated size is greater than the initialized file size
     //     See github issue #756 on why initsize and not size.
 	//   - The data is not compressed
     if((fs_attr != NULL)
+           && ((strlen(name) > 0 ) && (! TSK_FS_ISDOT(name)))
            && (!(fs_file->meta->flags & TSK_FS_META_FLAG_COMP))
            && (fs_attr->flags & TSK_FS_ATTR_NONRES) 
            && (fs_attr->nrd.allocsize >  fs_attr->nrd.initsize)){
@@ -1028,7 +1036,7 @@ int
         TSK_DB_FILES_TYPE_SLACK,
         type, idx, name,
         fs_file->name->meta_addr, fs_file->name->meta_seq, 
-        fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
+        TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG, fs_file->name->flags, meta_flags,
         slackSize, 
         (unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime, 
         meta_mode, gid, uid, md5TextPtr, known,
@@ -1043,12 +1051,6 @@ int
     }
 
     sqlite3_free(zSQL);
-
-    //if dir, update parent id cache
-    if (meta_type == TSK_FS_META_TYPE_DIR) {
-        std::string fullPath = std::string(path) + fs_file->name->name;
-        storeObjId(fsObjId, fs_file, fullPath.c_str(), objId);
-    }
 
     free(name);
     free(escaped_path);
@@ -1706,7 +1708,7 @@ TSK_RETVAL_ENUM TskDbSqlite::getObjectInfo(int64_t objId, TSK_DB_OBJECT & object
     }
 
     if (attempt(sqlite3_bind_int64(objectsStatement, 1, objId),
-        "TskDbSqlite::getObjectInfo: Error binding objId to statment: %s (result code %d)\n")
+        "TskDbSqlite::getObjectInfo: Error binding objId to statement: %s (result code %d)\n")
         || attempt(sqlite3_step(objectsStatement), SQLITE_ROW,
         "TskDbSqlite::getObjectInfo: Error selecting object by objid: %s (result code %d)\n")) {
             sqlite3_finalize(objectsStatement);
@@ -1740,7 +1742,7 @@ TSK_RETVAL_ENUM TskDbSqlite::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInfo) {
     }
 
     if (attempt(sqlite3_bind_int64(vsInfoStatement, 1, objId),
-        "TskDbSqlite::getVsInfo: Error binding objId to statment: %s (result code %d)\n")
+        "TskDbSqlite::getVsInfo: Error binding objId to statement: %s (result code %d)\n")
         || attempt(sqlite3_step(vsInfoStatement), SQLITE_ROW,
         "TskDbSqlite::getVsInfo: Error selecting object by objid: %s (result code %d)\n")) {
             sqlite3_finalize(vsInfoStatement);
@@ -1807,7 +1809,7 @@ TSK_RETVAL_ENUM TskDbSqlite::getFsRootDirObjectInfo(const int64_t fsObjId, TSK_D
     }
 
     if (attempt(sqlite3_bind_int64(rootDirInfoStatement, 1, fsObjId),
-        "TskDbSqlite::getFsRootDirObjectInfo: Error binding objId to statment: %s (result code %d)\n")
+        "TskDbSqlite::getFsRootDirObjectInfo: Error binding objId to statement: %s (result code %d)\n")
         || attempt(sqlite3_step(rootDirInfoStatement), SQLITE_ROW,
         "TskDbSqlite::getFsRootDirObjectInfo: Error selecting object by objid: %s (result code %d)\n")) {
             sqlite3_finalize(rootDirInfoStatement);

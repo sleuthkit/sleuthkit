@@ -14,6 +14,7 @@
  */
 
 #include "tsk_case_db.h"
+#include "tsk/img/img_writer.h"
 #if HAVE_LIBEWF
 #include "tsk/img/ewf.h"
 #endif
@@ -368,7 +369,7 @@ TSK_RETVAL_ENUM
  * Analyzes the open image and adds image info to a database.
  * Does not deal with transactions and such.  Refer to startAddImage()
  * for more control. 
- * @returns 1 if a critical error occured (DB doesn't exist, no file system, etc.), 2 if errors occured at some point adding files to the DB (corrupt file, etc.), and 0 otherwise.  Errors will have been registered.
+ * @returns 1 if a critical error occurred (DB doesn't exist, no file system, etc.), 2 if errors occurred at some point adding files to the DB (corrupt file, etc.), and 0 otherwise.  Errors will have been registered.
  */
 uint8_t TskAutoDb::addFilesInImgToDb()
 {
@@ -382,7 +383,7 @@ uint8_t TskAutoDb::addFilesInImgToDb()
 
     // @@@ This seems bad because we are overriding what the user may
     // have set. We should remove the public API if we are going to 
-    // override it -- presumabably this was added so that we always have
+    // override it -- presumably this was added so that we always have
     // unallocated volume space...
     setVolFilterFlags((TSK_VS_PART_FLAG_ENUM) (TSK_VS_PART_FLAG_ALLOC |
             TSK_VS_PART_FLAG_UNALLOC));
@@ -447,7 +448,7 @@ uint8_t
     if (m_db->inTransaction()) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskAutoDb::startAddImage(): Already in a transaction, image might not be commited");
+        tsk_error_set_errstr("TskAutoDb::startAddImage(): Already in a transaction, image might not be committed");
         registerError();
         return 1;
     }
@@ -464,6 +465,10 @@ uint8_t
         if (revertAddImage())
             registerError();
         return 1;
+    }
+
+    if (m_imageWriterEnabled) {
+        tsk_img_writer_create(m_img_info, m_imageWriterPath);
     }
     
     if (m_addFileSystems) {
@@ -506,7 +511,7 @@ TskAutoDb::startAddImage(TSK_IMG_INFO * img_info, const char* deviceId)
     if (m_db->inTransaction()) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskAutoDb::startAddImage(): Already in a transaction, image might not be commited");
+        tsk_error_set_errstr("TskAutoDb::startAddImage(): Already in a transaction, image might not be committed");
         registerError();
         return 1;
     }
@@ -523,6 +528,13 @@ TskAutoDb::startAddImage(TSK_IMG_INFO * img_info, const char* deviceId)
         if (revertAddImage())
             registerError();
         return 1;
+    }
+
+    if (m_imageWriterEnabled) {
+        if (tsk_img_writer_create(m_img_info, m_imageWriterPath)) {
+            registerError();
+            return 1;
+        }
     }
 
     if (m_addFileSystems) {
@@ -568,7 +580,7 @@ uint8_t
     if (m_db->inTransaction()) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskAutoDb::startAddImage(): Already in a transaction, image might not be commited");
+        tsk_error_set_errstr("TskAutoDb::startAddImage(): Already in a transaction, image might not be committed");
         registerError();
         return 1;
     }
@@ -587,6 +599,9 @@ uint8_t
         if (revertAddImage())
             registerError();
         return 1;
+    }
+    if (m_imageWriterEnabled) {
+        tsk_img_writer_create(m_img_info, m_imageWriterPath);
     }
 
     if (m_addFileSystems) {
@@ -613,7 +628,7 @@ void
 }
 
 /**
- * Revert all changes after the startAddImage() process has run sucessfully.
+ * Revert all changes after the startAddImage() process has run successfully.
  * @returns 1 on error (error was NOT registered in list), 0 on success
  */
 int
@@ -650,7 +665,7 @@ int64_t
 TskAutoDb::commitAddImage()
 {
     if (tsk_verbose)
-        tsk_fprintf(stderr, "TskAutoDb::commitAddImage: Commiting add image process\n");
+        tsk_fprintf(stderr, "TskAutoDb::commitAddImage: Committing add image process\n");
 
     if (m_imgTransactionOpen == false) {
         tsk_error_reset();
@@ -799,7 +814,7 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
                 if (run->flags & TSK_FS_ATTR_RUN_FLAG_SPARSE)
                     continue;
 
-                // @@@ We probaly want to keep on going here
+                // @@@ We probably want to keep on going here
                 if (m_db->addFileLayoutRange(m_curFileId,
                     run->addr * block_size, run->len * block_size, sequence++)) {
                     registerError();

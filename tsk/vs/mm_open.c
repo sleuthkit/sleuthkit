@@ -84,41 +84,52 @@ tsk_vs_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset,
             tsk_error_reset();
         }
         if ((vs = tsk_vs_gpt_open(img_info, offset)) != NULL) {
-            if (set != NULL) {
 
-                /* GPT drives have a DOS Safety partition table.
-                 * Test to see if we can ignore one */
-                if (strcmp(set, "DOS") == 0) {
-                    TSK_VS_PART_INFO *tmp_set;
-                    for (tmp_set = vs_set->part_list; tmp_set;
-                        tmp_set = tmp_set->next) {
-                        if ((tmp_set->desc)
-                            && (strncmp(tmp_set->desc, "GPT Safety",
+            if ((set != NULL) && (strcmp(set, "DOS") == 0) && (vs->is_backup)) {
+                /* In this case we've found a DOS partition and a backup GPT partition.
+                 * The DOS partition takes priority in this case (and are already in set and vs_set) */
+                vs->close(vs);
+                if (tsk_verbose)
+                    tsk_fprintf(stderr,
+                        "mm_open: Ignoring secondary GPT Partition\n");
+            }
+            else {
+                if (set != NULL) {
+
+                    /* GPT drives have a DOS Safety partition table.
+                     * Test to see if we can ignore one */
+                    if (strcmp(set, "DOS") == 0) {
+                        TSK_VS_PART_INFO *tmp_set;
+                        for (tmp_set = vs_set->part_list; tmp_set;
+                            tmp_set = tmp_set->next) {
+                            if ((tmp_set->desc)
+                                && (strncmp(tmp_set->desc, "GPT Safety",
                                     10) == 0)
-                            && (tmp_set->start <= 63)) {
+                                && (tmp_set->start <= 63)) {
 
-                            if (tsk_verbose)
-                                tsk_fprintf(stderr,
-                                    "mm_open: Ignoring DOS Safety GPT Partition\n");
-                            set = NULL;
-                            vs_set = NULL;
-                            break;
+                                if (tsk_verbose)
+                                    tsk_fprintf(stderr,
+                                        "mm_open: Ignoring DOS Safety GPT Partition\n");
+                                set = NULL;
+                                vs_set = NULL;
+                                break;
+                            }
                         }
                     }
-                }
 
-                if (set != NULL) {
-                    vs_set->close(vs_set);
-                    vs->close(vs);
-                    tsk_error_reset();
-                    tsk_error_set_errno(TSK_ERR_VS_UNKTYPE);
-                    tsk_error_set_errstr("GPT or %s at %" PRIuDADDR, set,
-                        offset);
-                    return NULL;
+                    if (set != NULL) {
+                        vs_set->close(vs_set);
+                        vs->close(vs);
+                        tsk_error_reset();
+                        tsk_error_set_errno(TSK_ERR_VS_UNKTYPE);
+                        tsk_error_set_errstr("GPT or %s at %" PRIuDADDR, set,
+                            offset);
+                        return NULL;
+                    }
                 }
+                set = "GPT";
+                vs_set = vs;
             }
-            set = "GPT";
-            vs_set = vs;
         }
         else {
             tsk_error_reset();

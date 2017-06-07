@@ -806,7 +806,7 @@ dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
  * This will automatically call load_ext_table for extended
  * partitions
  *
- * sect_cur is the addres of the table to load
+ * sect_cur is the address of the table to load
  *
  * 0 is returned if the load is successful and 1 if error
  */
@@ -1051,7 +1051,7 @@ tsk_vs_dos_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset, uint8_t test)
 
     vs->offset = offset;
 
-    /* inititialize settings */
+    /* initialize settings */
     vs->part_list = NULL;
     vs->part_count = 0;
     vs->endian = 0;

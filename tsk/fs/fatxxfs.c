@@ -546,7 +546,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
 
     /* Calculate the block info
      * 
-     * The sector of the begining of the data area  - which is 
+     * The sector of the beginning of the data area  - which is 
      * after all of the FATs
      *
      * For TSK_FS_TYPE_FAT12 and TSK_FS_TYPE_FAT16, the data area starts with the root
@@ -830,7 +830,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
 	fatfs->subtype = TSK_FATFS_SUBTYPE_SPEC;
 	test_dir1 = tsk_fs_dir_open_meta(fs, fs->root_inum);
 
-	if (test_dir1 != NULL && test_dir1->names_used <= 4){ // At most four automatic directores ($MBR, $FAT1, $FAT1, $OrphanFiles)
+	if (test_dir1 != NULL && test_dir1->names_used <= 4){ // At most four automatic directories ($MBR, $FAT1, $FAT1, $OrphanFiles)
 		fatfs->subtype = TSK_FATFS_SUBTYPE_ANDROID_1;
 		test_dir2 = tsk_fs_dir_open_meta(fs, fs->root_inum);
 

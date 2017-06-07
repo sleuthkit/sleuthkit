@@ -12,6 +12,8 @@
 #include "tsk/auto/tsk_case_db.h"
 #include "tsk/hashdb/tsk_hash_info.h"
 #include "tsk/auto/tsk_is_image_supported.h"
+#include "tsk/img/img_writer.h"
+#include "tsk/img/raw.h"
 #include "jni.h"
 #include "dataModel_SleuthkitJNI.h"
 #include <locale.h>
@@ -164,8 +166,23 @@ castFsInfo(JNIEnv * env, jlong ptr)
 }
 
 
-static TSK_JNI_FILEHANDLE *
+static TSK_FS_FILE *
 castFsFile(JNIEnv * env, jlong ptr)
+{
+	TSK_FS_FILE *lcl = (TSK_FS_FILE *)ptr;
+	if (!lcl || lcl->tag != TSK_FS_FILE_TAG) {
+		setThrowTskCoreError(env, "Invalid FS_FILE object");
+		return 0;
+	}
+	// verify that file system handle is still open
+	if (!castFsInfo(env, (jlong)lcl->fs_info)) {
+		return 0;
+	}
+	return lcl;
+}
+
+static TSK_JNI_FILEHANDLE *
+castJniFileHandle(JNIEnv * env, jlong ptr)
 {
     TSK_JNI_FILEHANDLE *lcl = (TSK_JNI_FILEHANDLE *) ptr;
     if (!lcl || lcl->tag != TSK_JNI_FILEHANDLE_TAG) {
@@ -173,7 +190,7 @@ castFsFile(JNIEnv * env, jlong ptr)
         return 0;
     }
     // verify that all handles are still open
-    if (!lcl->fs_file || !castFsInfo(env, (jlong) lcl->fs_file->fs_info)) {
+    if (!castFsFile(env, (jlong) lcl->fs_file)) {
         return 0;
     }
     return lcl;
@@ -1084,7 +1101,7 @@ JNIEXPORT void JNICALL
     if ( (ret = tskAuto->startAddImage((int) numImgs, imagepaths8,
         TSK_IMG_TYPE_DETECT, 0, device_id)) != 0) {
         stringstream msgss;
-        msgss << "Errors occured while ingesting image " << std::endl;
+        msgss << "Errors occurred while ingesting image " << std::endl;
         vector<TskAuto::error_record> errors = tskAuto->getErrorList();
         for (size_t i = 0; i < errors.size(); i++) {
             msgss << (i+1) << ". ";
@@ -1140,7 +1157,7 @@ JNIEXPORT void JNICALL
 */
 JNIEXPORT void JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
-    jclass obj, jlong process, jstring deviceId, jlong a_img_info, jstring timeZone) {
+    jclass obj, jlong process, jstring deviceId, jlong a_img_info, jstring timeZone, jstring imageWriterPathJ) {
     
     TskAutoDb *tskAuto = ((TskAutoDb *)process);
     if (!tskAuto || tskAuto->m_tag != TSK_AUTO_TAG) {
@@ -1169,11 +1186,26 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
     // Set up the TSK_IMG_INFO object
     TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
 
+    // Set up image writer, if the output path is present
+    if (env->GetStringLength(imageWriterPathJ) > 0) {
+        const char *imageWriterPath = env->GetStringUTFChars(imageWriterPathJ, &isCopy);
+        if (TSK_OK != tskAuto->enableImageWriter(imageWriterPath)) {
+            env->ReleaseStringUTFChars(imageWriterPathJ, imageWriterPath);
+            setThrowTskCoreError(env,
+                "runAddImgNat: error enabling image writer.");
+            return;
+        }
+        env->ReleaseStringUTFChars(imageWriterPathJ, imageWriterPath);
+    }
+    else {
+        tskAuto->disableImageWriter();
+    }
+
     // Add the data source.
     uint8_t ret = 0;
     if ((ret = tskAuto->startAddImage(img_info, device_id)) != 0) {
         stringstream msgss;
-        msgss << "Errors occured while ingesting image " << std::endl;
+        msgss << "Errors occurred while ingesting image " << std::endl;
         vector<TskAuto::error_record> errors = tskAuto->getErrorList();
         for (size_t i = 0; i < errors.size(); i++) {
             msgss << (i + 1) << ". ";
@@ -1790,7 +1822,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat(JNIEnv * env,
         }
     }
 
-    const TSK_JNI_FILEHANDLE *file_handle = castFsFile(env, a_file_handle);
+    const TSK_JNI_FILEHANDLE *file_handle = castJniFileHandle(env, a_file_handle);
     if (file_handle == 0) {
         if (dynBuf) {
             free(buf);
@@ -1845,7 +1877,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat(JNIEnv * env,
 JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_saveFileMetaDataTextNat
   (JNIEnv *env, jclass obj, jlong a_file_handle, jstring a_tmp_path)
 {
-    const TSK_JNI_FILEHANDLE *file_handle = castFsFile(env, a_file_handle);
+    const TSK_JNI_FILEHANDLE *file_handle = castJniFileHandle(env, a_file_handle);
     if (file_handle == 0) {
         //exception already set
         return -1;
@@ -1939,7 +1971,7 @@ JNIEXPORT void JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_closeFileNat(JNIEnv * env,
     jclass obj, jlong a_file_info)
 {
-    TSK_JNI_FILEHANDLE *file_handle = castFsFile(env, a_file_info);
+    TSK_JNI_FILEHANDLE *file_handle = castJniFileHandle(env, a_file_info);
     if (file_handle == 0) {
         //exception already set
         return;
@@ -2141,4 +2173,54 @@ JNIEXPORT jboolean JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_isImageSupp
     free(imagePaths);
 
     return (jboolean) result;
+}
+
+
+/*
+ * Finish the image being created by image writer.
+ * @param env pointer to java environment this was called from
+ * @param obj the java object this was called from
+ * @param a_img_info the image info pointer
+ */
+JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_finishImageWriterNat
+(JNIEnv * env, jclass obj, jlong a_img_info) {
+    // Set up the TSK_IMG_INFO object
+    TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
+    IMG_RAW_INFO *raw_info = (IMG_RAW_INFO*)img_info;
+
+    if (raw_info->img_writer != NULL) {
+        return raw_info->img_writer->finish_image(raw_info->img_writer);
+    }
+    return -1;
+}
+
+/*
+ * Get the progess of the finishImage process as an integer from 0 to 100
+ */
+JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_getFinishImageProgressNat
+(JNIEnv * env, jclass obj, jlong a_img_info) {
+    // Set up the TSK_IMG_INFO object
+    TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
+    IMG_RAW_INFO *raw_info = (IMG_RAW_INFO*)img_info;
+
+    if (raw_info->img_writer != NULL) {
+        return (raw_info->img_writer->finishProgress);
+    }
+    return 0;
+
+}
+
+/*
+* Cancel the finishImage process
+*/
+JNIEXPORT void JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_cancelFinishImageNat
+(JNIEnv * env, jclass obj, jlong a_img_info) {
+    // Set up the TSK_IMG_INFO object
+    TSK_IMG_INFO *img_info = castImgInfo(env, a_img_info);
+    IMG_RAW_INFO *raw_info = (IMG_RAW_INFO*)img_info;
+
+    if (raw_info->img_writer != NULL) {
+        raw_info->img_writer->cancelFinish = 1;
+    }
+    return ;
 }

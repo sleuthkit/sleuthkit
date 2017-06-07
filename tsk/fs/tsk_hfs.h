@@ -247,7 +247,7 @@ typedef struct {
     uint8_t blk_cnt[4];         /* block count */
 } hfs_ext_desc;
 
-/* Structre used in the extents tree */
+/* Structure used in the extents tree */
 typedef struct {
     hfs_ext_desc extents[8];
 } hfs_extents;

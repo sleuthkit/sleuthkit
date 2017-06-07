@@ -87,7 +87,7 @@ namespace
      * Interesting file set definitions are read from a configuration file in 
      * the initialize() module API and the file queries are executed in the 
      * report() module API. The following vector stores the search objects 
-     * between calls to intitialize() and report(). 
+     * between calls to initialize() and report(). 
      */
     std::vector<InterestingFilesSet> fileSets;
 
