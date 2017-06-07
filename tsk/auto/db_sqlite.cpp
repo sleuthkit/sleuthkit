@@ -14,7 +14,6 @@
 */
 
 #include "tsk_db_sqlite.h"
-#include "sqlite3.h"
 #include "guid.h"
 #include <string.h>
 #include <sstream>
