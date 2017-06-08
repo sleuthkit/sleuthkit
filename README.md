@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/sleuthkit/sleuthkit.svg?branch=develop)](https://travis-ci.org/sleuthkit/sleuthkit)
+
 # [The Sleuth Kit](http://www.sleuthkit.org/sleuthkit)
 README File
 
