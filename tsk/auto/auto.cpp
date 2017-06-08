@@ -255,9 +255,8 @@ TSK_WALK_RET_ENUM
         return TSK_WALK_STOP;    
 
     // process it
-    TSK_RETVAL_ENUM retval2 =
-        tsk->findFilesInFsRet(a_vs_part->start *
-        a_vs_part->vs->block_size, TSK_FS_TYPE_DETECT);
+    TSK_RETVAL_ENUM retval2 = tsk->findFilesInFsRet(
+        a_vs_part->start * a_vs_part->vs->block_size, TSK_FS_TYPE_DETECT);
     if ((retval2 == TSK_STOP) || (tsk->getStopProcessing())) {
         return TSK_WALK_STOP;
     }
@@ -360,8 +359,10 @@ TSK_RETVAL_ENUM
             return TSK_ERR;
         }
         else if (getCurVsPartFlag() & TSK_VS_PART_FLAG_ALLOC) {
-            tsk_error_set_errstr2 ("Sector offset: %" PRIuOFF ", Partition Type: %s",
-                a_start/512, getCurVsPartDescr().c_str() );
+            tsk_error_set_errstr2 (
+                "Sector offset: %" PRIuOFF ", Partition Type: %s",
+                a_start/512, getCurVsPartDescr().c_str()
+            );
             registerError();
             return TSK_ERR;
         }
