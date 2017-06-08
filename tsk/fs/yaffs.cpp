@@ -52,7 +52,7 @@ v** Copyright (c) 2002-2003 Brian Carrier, @stake Inc.  All rights reserved
 *    - Since inodes are composed using the object id in the least 
 *      significant bits and the version up higher, requesting the
 *      inode that matches the object id you are looking for will
-*      retreive the latest version of this object.
+*      retrieve the latest version of this object.
 *
 *    - Files always exist in the latest version of their parent directory 
 *      only.
@@ -728,25 +728,22 @@ static void
  */
 static YAFFS_CONFIG_STATUS
 yaffs_load_config_file(TSK_IMG_INFO * a_img_info, std::map<std::string, std::string> & results){
-    const TSK_TCHAR ** image_names;
-    int num_imgs;
     size_t config_file_name_len;
     TSK_TCHAR * config_file_name;
     FILE* config_file;
     char buf[1001];
 
-    // Get the image name(s)
-    image_names = tsk_img_get_names(a_img_info, &num_imgs);
-    if(num_imgs < 1){
+    // Ensure there is at least one image name
+    if(a_img_info->num_img < 1){
         return YAFFS_CONFIG_ERROR;
     }
 
     // Construct the name of the config file from the first image name
-    config_file_name_len = TSTRLEN(image_names[0]);
+    config_file_name_len = TSTRLEN(a_img_info->images[0]);
     config_file_name_len += TSTRLEN(YAFFS_CONFIG_FILE_SUFFIX);
     config_file_name = (TSK_TCHAR *) tsk_malloc(sizeof(TSK_TCHAR) * (config_file_name_len + 1));
 
-    TSTRNCPY(config_file_name, image_names[0], TSTRLEN(image_names[0]) + 1);
+    TSTRNCPY(config_file_name, a_img_info->images[0], TSTRLEN(a_img_info->images[0]) + 1);
     TSTRNCAT(config_file_name, YAFFS_CONFIG_FILE_SUFFIX, TSTRLEN(YAFFS_CONFIG_FILE_SUFFIX) + 1);
 
 #ifdef TSK_WIN32
@@ -931,7 +928,7 @@ yaffs_validate_config_file(std::map<std::string, std::string> & paramMap){
 * Results of the analysis (if the format could be determined) will be stored
 * in yfs variables. 
 *
-* @param yfs File system being anlayzed
+* @param yfs File system being analyzed
 * @param maxBlocksToTest Number of block groups to scan to detect spare area or 0 if there is no limit.
 * @returns TSK_ERR if format could not be detected and TSK_OK if it could be.
 */
@@ -1046,7 +1043,7 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
             continue;
         }
 
-        // If this block is potentially valid (i.e., the spare contains something besides 0x00 and 0xff), copy all the spares into
+        // If this block is potentialy valid (i.e., the spare contains something besides 0x00 and 0xff), copy all the spares into
         // the big array of extracted spare areas
 
         // Copy this spare area
@@ -1126,7 +1123,7 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
                     (0xff == allSpares[thisChunkBase + currentOffset + 3])){
                         if(tsk_verbose && (! yfs->autoDetect)){
                             tsk_fprintf(stderr,
-                                "yaffs_initialize_spare_format: Elimimating offset %d - invalid sequence number 0xffffffff\n", 
+                                "yaffs_initialize_spare_format: Eliminating offset %d - invalid sequence number 0xffffffff\n", 
                                 currentOffset);
                         }
                         goodOffset = 0;
@@ -1140,7 +1137,7 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
                     (0 == allSpares[thisChunkBase + currentOffset + 3])){
                         if(tsk_verbose && (! yfs->autoDetect)){
                             tsk_fprintf(stderr,
-                                "yaffs_initialize_spare_format: Elimimating offset %d - invalid sequence number 0\n", 
+                                "yaffs_initialize_spare_format: Eliminating offset %d - invalid sequence number 0\n", 
                                 currentOffset);
                         }
                         goodOffset = 0;
@@ -1154,7 +1151,7 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
                     (allSpares[lastChunkBase + currentOffset + 3] != allSpares[thisChunkBase + currentOffset + 3])){
                         if(tsk_verbose && (! yfs->autoDetect)){
                             tsk_fprintf(stderr,
-                                "yaffs_initialize_spare_format: Elimimating offset %d - did not match previous chunk sequence number\n", 
+                                "yaffs_initialize_spare_format: Eliminating offset %d - did not match previous chunk sequence number\n", 
                                 currentOffset);
                         }
                         goodOffset = 0;
@@ -1168,7 +1165,7 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
                     (0 == allSpares[thisChunkBase + currentOffset + 7])){
                         if(tsk_verbose && (! yfs->autoDetect)){
                             tsk_fprintf(stderr,
-                                "yaffs_initialize_spare_format: Elimimating offset %d - invalid object id 0\n", 
+                                "yaffs_initialize_spare_format: Eliminating offset %d - invalid object id 0\n", 
                                 currentOffset);
                         }
                         goodOffset = 0;
@@ -1187,7 +1184,7 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
                 if(allSameByte){
                     if(tsk_verbose && (! yfs->autoDetect)){
                         tsk_fprintf(stderr,
-                            "yaffs_initialize_spare_format: Elimimating offset %d - all repeated bytes\n", 
+                            "yaffs_initialize_spare_format: Eliminating offset %d - all repeated bytes\n", 
                             currentOffset);
                     }
                     goodOffset = 0;
@@ -1556,7 +1553,7 @@ static uint8_t
     fflush(stderr);
 
 
-    // Having multiple inodes point to the same object seems to cause trouble in TSK, especally in orphan file detection,
+    // Having multiple inodes point to the same object seems to cause trouble in TSK, especially in orphan file detection,
     //  so set the version number of the final one to zero.
     // While we're at it, find the highest obj_id and the highest version (before resetting to zero)
     TSK_INUM_T orphanParentID = yfs->fs_info.last_inum;
@@ -2999,6 +2996,15 @@ TSK_FS_INFO *
     yaffsfs->cache_objects = NULL;
     yaffsfs->chunkMap = NULL;
 
+    fs = &(yaffsfs->fs_info);
+
+    fs->tag = TSK_FS_INFO_TAG;
+    fs->ftype = ftype;
+    fs->flags = (TSK_FS_INFO_FLAG_ENUM)0;
+    fs->img_info = img_info;
+    fs->offset = offset;
+    fs->endian = TSK_LIT_ENDIAN;
+
     // Read config file (if it exists)
     config_file_status = yaffs_load_config_file(img_info, configParams);
     if(config_file_status == YAFFS_CONFIG_ERROR){
@@ -3047,15 +3053,6 @@ TSK_FS_INFO *
     else{
         yaffsfs->autoDetect = 0;
     }
-
-    fs = &(yaffsfs->fs_info);
-
-    fs->tag = TSK_FS_INFO_TAG;
-    fs->ftype = ftype;
-    fs->flags = (TSK_FS_INFO_FLAG_ENUM)0;
-    fs->img_info = img_info;
-    fs->offset = offset;
-    fs->endian = TSK_LIT_ENDIAN;
 
     // Determine the layout of the spare area
     // If it was specified in the config file, use those values. Otherwise do the auto-detection

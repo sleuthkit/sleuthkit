@@ -58,7 +58,7 @@
  *
  * So, the way this is solved is that generic mft_lookup is used to get
  * any MFT entry, even $MFT.  If $MFT is not cached then we calculate
- * the address of where to read based on mutliplication and guessing.
+ * the address of where to read based on multiplication and guessing.
  * When we are loading the $MFT, we set 'loading_the_MFT' to 1 so
  * that we can update things as we go along.  When we read $MFT we
  * read all the attributes and save info about the $Data one.  If
@@ -349,7 +349,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
     /* The MFT entries have error and integrity checks in them
      * called update sequences.  They must be checked and removed
      * so that later functions can process the data as normal.
-     * They are located in the last 2 bytes of each 512-byte sector
+     * They are located in the last 2 bytes of each 512-bytes of data.
      *
      * We first verify that the the 2-byte value is a give value and
      * then replace it with what should be there
@@ -358,7 +358,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
     mft = (ntfs_mft *) a_buf;
     if ((tsk_getu16(fs->endian, mft->upd_cnt) > 0) &&
         (((uint32_t) (tsk_getu16(fs->endian,
-                        mft->upd_cnt) - 1) * a_ntfs->ssize_b) >
+                        mft->upd_cnt) - 1) * NTFS_UPDATE_SEQ_STRIDE) >
             a_ntfs->mft_rsize_b)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
@@ -384,7 +384,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
     for (i = 1; i < tsk_getu16(fs->endian, mft->upd_cnt); i++) {
         uint8_t *new_val, *old_val;
         /* The offset into the buffer of the value to analyze */
-        size_t offset = i * a_ntfs->ssize_b - 2;
+        size_t offset = i * NTFS_UPDATE_SEQ_STRIDE - 2;
         /* get the current sequence value */
         uint16_t cur_seq =
             tsk_getu16(fs->endian, (uintptr_t) a_buf + offset);
@@ -728,20 +728,30 @@ ntfs_make_data_run(NTFS_INFO * ntfs, TSK_OFF_T start_vcn,
  * NTFS Breaks compressed data into compression units, which are
  * typically 16 clusters in size. If the data in the comp  unit
  * compresses to something smaller than 16 clusters then the
- * compresed data is stored and the rest of the compression unit
+ * compressed data is stored and the rest of the compression unit
  * is filled with sparse clusters. The entire compression unit
  * can also be sparse.
  *
- * When the data is compressed, it is broken up into 4k blocks. Each
- * of the blocks is compressed and the resulting data is stored with
- * a 2-byte header that identifies the compressed size.   The
- * compressed data contains token groups, which contain a 1 byte
- * header followed by 8 variable length tokens.  There are two types
- * of tokens. Symbol tokens are 1 byte in length and the 1byte value
- * should be directly copied into the uncompressed data.  Phrase tokens
- * identify a run of data in the same compression unit that should be
- * copied to the current location.  Each bit in the 1-byte header identifies
- * the type of the 8 tokens in the group.
+ * The uncompressed content in the compression unit is further broken
+ * into 4k (pre-compression) blocks.  When stored, each 4k block has
+ * a 2-byte header that identifies the compressed size (and if there
+ * was compression).
+ *
+ * The compressed data is a series of token groups.  Each token group
+ * contains a 1-byte header and 8 tokens.  The 8-bits in the token
+ * group header identify the type of each token in the group.
+ *
+ * There are two types of tokens.
+ * Symbol tokens are 1 byte in length and the 1-byte value is the value
+ * for that position in the file and it should be direcly copied into the
+ * uncompressed data.  Phrase tokens identify a previous run of data
+ * in the same compression unit that should be
+ * copied to the current location.  These contain offset and length info.
+ *
+ * The attribute will have enough cluster addresses to store all of
+ * the content, but the addresses will be 0 in the compression unit
+ * if it is all sparse and the ending clusters will be 0 in the
+ * compression unit if they are not needed.
  *
  */
 
@@ -894,7 +904,7 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
 
                     /* Determine token type and parse appropriately. *
                      * Symbol tokens are the symbol themselves, so copy it
-                     * into the umcompressed buffer
+                     * into the uncompressed buffer
                      */
                     if ((header & NTFS_TOKEN_MASK) == NTFS_SYMBOL_TOKEN) {
                         if (tsk_verbose)
@@ -981,7 +991,7 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
                             tsk_error_reset();
                             tsk_error_set_errno(TSK_ERR_FS_FWALK);
                             tsk_error_set_errstr
-                                ("ntfs_uncompress_compunit: Phrase token length is too large:  %d (max: %"PRIuSIZE")",
+                                ("ntfs_uncompress_compunit: Phrase token length is too large:  %d (max: %" PRIuSIZE")",
                                 length,
                                 comp->buf_size_b - start_position_index);
                             return 1;
@@ -992,7 +1002,7 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
                             tsk_error_reset();
                             tsk_error_set_errno(TSK_ERR_FS_FWALK);
                             tsk_error_set_errstr
-                                ("ntfs_uncompress_compunit: Phrase token length is too large for rest of uncomp buf:  %"PRIuSIZE" (max: %"
+                                ("ntfs_uncompress_compunit: Phrase token length is too large for rest of uncomp buf:  %" PRIuSIZE" (max: %"
                                 PRIuSIZE ")",
                                 end_position_index - start_position_index +
                                 1, comp->buf_size_b - comp->uncomp_idx);
@@ -1015,7 +1025,7 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
             }                   // end of loop inside of block
         }
 
-        // this block contains uncompressed data uncompressed data
+        // this block contains uncompressed data
         else {
             while (cl_index < blk_end && cl_index < comp->comp_len) {
                 /* This seems to happen only with corrupt data -- such as
@@ -1871,7 +1881,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
              *
              * When we are processing a non-base entry, we may
              * find an attribute with an id of 0 and it is an
-             * extention of a previous run (i.e. non-zero start VCN)
+             * extension of a previous run (i.e. non-zero start VCN)
              *
              * We will lookup if we already have such an attribute
              * and get its ID
@@ -2328,16 +2338,19 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
         return TSK_ERR;
     }
 
-    /* The TSK design requres that each attribute have its own ID.
+    /* The TSK design requires that each attribute have its own ID.
      * Therefore, we need to identify all of the unique attributes
      * so that we can assign a unique ID to them.
      * In this process, we will also identify the unique MFT entries to
      * process. */
     nextid = fs_attr_attrlist->id;      // we won't see this entry in the list
     for (list = (ntfs_attrlist *) buf;
-        (list) && ((uintptr_t) list < endaddr)
-        && ((uintptr_t)list + sizeof(ntfs_attrlist) < endaddr)
-        && (tsk_getu16(fs->endian, list->len) > 0);
+        (list)
+        // ntfs_attrlist contains the first byte of the name, which might actually be 0-length
+        && (uintptr_t) list + sizeof(ntfs_attrlist) - 1 <= endaddr
+        && tsk_getu16(fs->endian, list->len) > 0
+        && (uintptr_t) list + tsk_getu16(fs->endian, list->len) <= endaddr
+        && (uintptr_t) list + sizeof(ntfs_attrlist) - 1 + 2 * list->nlen <= endaddr;
         list =
         (ntfs_attrlist *) ((uintptr_t) list + tsk_getu16(fs->endian,
                 list->len))) {
@@ -2730,7 +2743,7 @@ ntfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
     }
 
     /* Check if the metadata is the same sequence as the name - if it was already set.
-     * Note that this is not as effecient and elegant as desired, but works for now.
+     * Note that this is not as efficient and elegant as desired, but works for now.
      * Better design would be to pass sequence into dinode_lookup and have a more
      * obvious way to pass the desired sequence in.  fs_dir_walk_lcl sets the name
      * before calling this, which motivated this quick fix. */

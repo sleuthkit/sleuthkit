@@ -135,17 +135,9 @@ public class TagName implements Comparable<TagName>, Serializable {
 			return false;
 		}
 		final TagName other = (TagName) obj;
-		if (this.id != other.id) {
-			return false;
-		}
-
-		if (false == Objects.equals(this.displayName, other.displayName)) {
-			return false;
-		}
-		if (false == Objects.equals(this.description, other.description)) {
-			return false;
-		}
-
-		return this.color == other.color;
+		return (this.id == other.id 
+				&& Objects.equals(this.displayName, other.displayName)
+				&& Objects.equals(this.description, other.description)
+				&& Objects.equals(this.color, other.color));
 	}
 }

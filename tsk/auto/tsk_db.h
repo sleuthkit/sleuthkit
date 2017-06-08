@@ -11,7 +11,7 @@
 /**
  * \file tsk_db.h
  * Contains TSK interface to abstract database handling class. The intent of this class
- * is so that different databases can be seamlesly used by TSK. 
+ * is so that different databases can be seamlessly used by TSK. 
  */
 
 #ifndef _TSK_DB_H
@@ -28,7 +28,7 @@ using std::ostream;
 using std::vector;
 using std::string;
 
-#define TSK_SCHEMA_VER 4
+#define TSK_SCHEMA_VER 6
 
 /**
  * Values for the type column in the tsk_objects table. 
@@ -52,6 +52,7 @@ typedef enum {
     TSK_DB_FILES_TYPE_UNALLOC_BLOCKS,   ///< Set of blocks not allocated by file system.  Parent should be image, volume, or file system.  Many columns in tsk_files will be NULL. Set layout in tsk_file_layout. 
     TSK_DB_FILES_TYPE_UNUSED_BLOCKS, ///< Set of blocks that are unallocated AND not used by a carved or other file type.  Parent should be UNALLOC_BLOCKS, many columns in tsk_files will be NULL, set layout in tsk_file_layout. 
     TSK_DB_FILES_TYPE_VIRTUAL_DIR, ///< Virtual directory (not on fs) with no meta-data entry that can be used to group files of types other than TSK_DB_FILES_TYPE_FS. Its parent is either another TSK_DB_FILES_TYPE_FS or a root directory or type TSK_DB_FILES_TYPE_FS.
+    TSK_DB_FILES_TYPE_SLACK   ///< Slack space for a single file
 } TSK_DB_FILES_TYPE_ENUM;
 
 

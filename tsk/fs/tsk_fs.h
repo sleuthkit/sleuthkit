@@ -72,7 +72,7 @@ extern "C" {
         TSK_FS_BLOCK_FLAG_META = 0x0008,        ///< Block (could) contain file system metadata (and not TSK_FS_BLOCK_FLAG_CONT)
         TSK_FS_BLOCK_FLAG_BAD = 0x0010, ///< Block has been marked as bad by the file system
         TSK_FS_BLOCK_FLAG_RAW = 0x0020, ///< The data has been read raw from the disk (and not COMP or SPARSE)
-        TSK_FS_BLOCK_FLAG_SPARSE = 0x0040,      ///< The data passed in the file_walk calback was stored as sparse (all zeros) (and not RAW or COMP)
+        TSK_FS_BLOCK_FLAG_SPARSE = 0x0040,      ///< The data passed in the file_walk callback was stored as sparse (all zeros) (and not RAW or COMP)
         TSK_FS_BLOCK_FLAG_COMP = 0x0080,        ///< The data passed in the file_walk callback was stored in a compressed form (and not RAW or SPARSE)
         TSK_FS_BLOCK_FLAG_RES = 0x0100, ///< The data passed in the file_walk callback is from an NTFS resident file
         TSK_FS_BLOCK_FLAG_AONLY = 0x0200        /// < The buffer in TSK_FS_BLOCK has no content (it could be non-empty, but should be ignored), but the flags and such are accurate
@@ -518,7 +518,7 @@ extern "C" {
 
     /**
     * inode walk callback function definition.  This is called for every file
-    * that meets the critera specified when inode_walk was called.
+    * that meets the criteria specified when inode_walk was called.
     * @param a_fs_file Pointer to the current file
     * @param a_ptr Pointer that was specified by caller to inode_walk
     * @returns Value that tells inode walk to continue or stop
@@ -576,7 +576,7 @@ extern "C" {
 #define  TSK_FS_NAME_TAG 0x23147869
     /**
     * Generic structure to store the file name information that is stored in
-    * a directory. Most file systems seperate the file name from the metadata, but
+    * a directory. Most file systems separate the file name from the metadata, but
     * some do not (such as FAT). This structure contains the name and address of the
     * metadata.
     */
@@ -1011,7 +1011,7 @@ extern "C" {
            before and after the actual user sector. For example, a raw cd
            image may have 16 bytes before the start of each sector.
          */
-        unsigned int block_pre_size;    ///< Number of bytes that preceed each block (currently only used for RAW CDs)
+        unsigned int block_pre_size;    ///< Number of bytes that precede each block (currently only used for RAW CDs)
         unsigned int block_post_size;   ///< Number of bytes that follow each block (currently only used for RAW CDs)
 
         /* Journal */
@@ -1315,7 +1315,7 @@ class TskFsAttrRun {
 /**
 * \ingroup fslib_cpp
 * Stores the file name information that is stored in
-* a directory. Most file systems seperate the file name from the metadata, but
+* a directory. Most file systems separate the file name from the metadata, but
 * some do not (such as FAT). This structure contains the file name and the
 * address of the  metadata. See TSK_FS_NAME for more details.
 */
@@ -1743,7 +1743,7 @@ extern TSK_WALK_RET_ENUM tsk_fs_jentry_walk_cpp_c_cb(TSK_FS_INFO *
     a_fsInfo, TSK_FS_JENTRY * a_jentry, int a_num, void *a_ptr);
 /**
 * inode walk callback function definition.  This is called for every file
-* that meets the critera specified when inode_walk was called.
+* that meets the criteria specified when inode_walk was called.
 * @param a_fs_file Pointer to the current file
 * @param a_ptr Pointer that was specified by caller to inode_walk
 * @returns Value that tells inode walk to continue or stop
@@ -2276,7 +2276,7 @@ class TskFsInfo {
 * \ingroup fslib_cpp
 * Stores information about a file system block.  Must be created by either
 * allocating an empty block and opening one or by passing in a TSK_FS_BLOCK struct.
-* If NULL is passed to the contstructor and open() is not called, the other methods
+* If NULL is passed to the constructor and open() is not called, the other methods
 * return undefined data. See TSK_FS_BLOCK for more details.
 */
 class TskFsBlock {
@@ -2289,7 +2289,7 @@ class TskFsBlock {
 
   public:
     /**
-    * constuct a TskFsBlock using a TSK_FS_BLOCK structure
+    * construct a TskFsBlock using a TSK_FS_BLOCK structure
     * @param a_fsBlock a pointer of TSK_FS_BLOCK.  If NULL, the getX() methods return undefined data.
     */
      TskFsBlock(const TSK_FS_BLOCK * a_fsBlock) {
@@ -2298,7 +2298,7 @@ class TskFsBlock {
     };
 
     /**
-    * default constructor to constuct a TskFsBlock.  Must call open() before using other methods.
+    * default constructor to construct a TskFsBlock.  Must call open() before using other methods.
     */
     TskFsBlock() {
         m_fsBlock = NULL;
@@ -2821,7 +2821,7 @@ class TskFsFile {
     * that the returned class will not have the file name set because
     * it was not used to load the file and this function does not search the
     * directory structure to find the name that points to the address.   In general,
-    * if you know the metadata address of a file, this function is more effecient
+    * if you know the metadata address of a file, this function is more efficient
     * then tsk_fs_file_open, which first maps a file name to the metadata address
     * and then open the file using this function.
     * See tsk_fs_file_open_meta() for details
@@ -2846,7 +2846,7 @@ class TskFsFile {
     /**
         * Return the handle structure for a specific file, given its full path. Note that
     * if you have the metadata address fo the file, then tsk_fs_file_open_meta() is a
-    * more effecient approach.
+    * more efficient approach.
     * See tsk_fs_file_open() for details
     * @param a_fs File system to analyze
     * @param a_fs_file Structure to store file data in or NULL to have one allocated.

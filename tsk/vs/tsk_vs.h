@@ -65,6 +65,7 @@ extern "C" {
         int tag;                ///< \internal Will be set to TSK_VS_INFO_TAG if structure is still allocated, 0 if not
         TSK_IMG_INFO *img_info; ///< Pointer to disk image that VS is in
         TSK_VS_TYPE_ENUM vstype;        ///< Type of volume system / media management
+        int is_backup;          ///< 1 if the partition table found was a backup
         TSK_DADDR_T offset;     ///< Byte offset where VS starts in disk image
         unsigned int block_size;        ///< Size of blocks in bytes
 

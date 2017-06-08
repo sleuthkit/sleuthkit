@@ -137,7 +137,7 @@ tsk_error_get_info()
     TSK_ERROR_INFO *ptr = NULL;
     (void) pthread_once(&pt_tls_key_once, make_pt_tls_key);
     if ((ptr = (TSK_ERROR_INFO *) pthread_getspecific(pt_tls_key)) == 0) {
-        // Under high memory presure malloc will return NULL.
+        // Under high memory pressure malloc will return NULL.
         ptr = (TSK_ERROR_INFO *) malloc(sizeof(TSK_ERROR_INFO));
 
         if( ptr != NULL ) {

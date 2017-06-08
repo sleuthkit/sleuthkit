@@ -317,7 +317,7 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
     /* if there is still data left, read the indirect */
     if (length > 0) {
         int level;
-        char **buf;
+        char *buf[4] = {NULL};
         size_t fs_bufsize0;
         size_t fs_bufsize1;
         size_t ptrsperblock;
@@ -356,18 +356,9 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
          * equal to one block size.  The others will store TSK_DADDR_T structures
          * and will have a size depending on the FS type. 
          */
-        if ((buf = (char **) tsk_malloc(sizeof(char *) * 4)) == NULL)
-            return 1;
-
-        if ((buf[0] = (char *) tsk_malloc(fs_bufsize0)) == NULL) {
-            free(buf);
-            return 1;
-        }
-
         if ((fs_attr_indir =
                 tsk_fs_attrlist_getnew(fs_meta->attr,
                     TSK_FS_ATTR_NONRES)) == NULL) {
-            free(buf);
             return 1;
         }
 
@@ -399,7 +390,10 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
                     numTripIndirect),
                 fs_bufsize0 * (numSingIndirect + numDblIndirect +
                     numTripIndirect), 0, 0)) {
-            free(buf);
+            return 1;
+        }
+
+        if ((buf[0] = (char *) tsk_malloc(fs_bufsize0)) == NULL) {
             return 1;
         }
 
@@ -408,9 +402,9 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
 
             if ((buf[level] = (char *) tsk_malloc(fs_bufsize1)) == NULL) {
                 int f;
-                for (f = 0; f < level; f++)
+                for (f = 0; f < level; f++) {
                     free(buf[f]);
-                free(buf);
+                }
                 return 1;
             }
 
@@ -427,9 +421,10 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
         /*
          * Cleanup.
          */
-        for (level = 0; level < 4; level++) {
-            if (buf[level])
+        for (level = 0; level < 4; ++level) {
+            if (buf[level]) {
                 free(buf[level]);
+            }
         }
     }
 

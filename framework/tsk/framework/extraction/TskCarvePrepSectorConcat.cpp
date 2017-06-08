@@ -257,7 +257,7 @@ void TskCarvePrepSectorConcat::createUnallocSectorsImgFiles(const std::string &o
                     throw TskException(msg.str());
                 }
 
-                // Update the output file and sector run offsets to reflect the sucessful read.
+                // Update the output file and sector run offsets to reflect the successful read.
                 currentFileOffset += sectorsRead * 512;
                 sectorRunOffset += sectorsRead;
 

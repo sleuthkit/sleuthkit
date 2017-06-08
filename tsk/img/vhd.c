@@ -20,7 +20,7 @@
 #define TSK_VHDI_ERROR_STRING_SIZE 512
 
 /**
- * Get error string from libvhdi and make buffer emtpy if that didn't work. 
+ * Get error string from libvhdi and make buffer empty if that didn't work. 
  * @returns 1 if error message was not set
 */
 static uint8_t
@@ -132,10 +132,10 @@ static void
         tsk_error_set_errstr("vhdi_image_close: unable to free handle - %s", errmsg);
     }
 
-    for (i = 0; i < vhdi_info->num_imgs; i++) {
-        free(vhdi_info->images[i]);
+    for (i = 0; i < vhdi_info->img_info.num_img; i++) {
+        free(vhdi_info->img_info.images[i]);
     }
-    free(vhdi_info->images);
+    free(vhdi_info->img_info.images);
 
     tsk_deinit_lock(&(vhdi_info->read_lock));
     tsk_img_free(img_info);
@@ -166,21 +166,21 @@ vhdi_open(int a_num_img,
     vhdi_info->handle = NULL;
     img_info = (TSK_IMG_INFO *) vhdi_info;
  
-    vhdi_info->num_imgs = a_num_img;
-    if ((vhdi_info->images =
+    vhdi_info->img_info.num_img = a_num_img;
+    if ((vhdi_info->img_info.images =
         (TSK_TCHAR **) tsk_malloc(a_num_img *
         sizeof(TSK_TCHAR *))) == NULL) {
             tsk_img_free(vhdi_info);
             return NULL;
     }
     for (i = 0; i < a_num_img; i++) {
-        if ((vhdi_info->images[i] =
+        if ((vhdi_info->img_info.images[i] =
             (TSK_TCHAR *) tsk_malloc((TSTRLEN(a_images[i]) +
             1) * sizeof(TSK_TCHAR))) == NULL) {
                 tsk_img_free(vhdi_info);
                 return NULL;
         }
-        TSTRNCPY(vhdi_info->images[i], a_images[i],
+        TSTRNCPY(vhdi_info->img_info.images[i], a_images[i],
             TSTRLEN(a_images[i]) + 1);
     }
 
@@ -202,7 +202,7 @@ vhdi_open(int a_num_img,
     }
     // Check the file signature before we call the library open
 #if defined( TSK_WIN32 )
-    if( libvhdi_check_file_signature_wide((const wchar_t *) vhdi_info->images[0], &vhdi_error ) != 1 )
+    if( libvhdi_check_file_signature_wide((const wchar_t *) vhdi_info->img_info.images[0], &vhdi_error ) != 1 )
 #else
     if( libvhdi_check_file_signature((const char *) vhdi_info->images[0], &vhdi_error) != 1)
 #endif
@@ -225,7 +225,7 @@ vhdi_open(int a_num_img,
     }
 #if defined( TSK_WIN32 )
     if (libvhdi_file_open_wide(vhdi_info->handle,
-            (const wchar_t *) vhdi_info->images[0],
+            (const wchar_t *) vhdi_info->img_info.images[0],
             LIBVHDI_OPEN_READ, &vhdi_error) != 1)
 #else
     if (libvhdi_file_open(vhdi_info->handle,

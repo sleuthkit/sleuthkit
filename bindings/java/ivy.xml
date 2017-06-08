@@ -6,7 +6,7 @@
 		<dependency org="org.xerial" name="sqlite-jdbc" rev="3.8.11">
 			<artifact name="sqlite-jdbc" type="jar" />
 		</dependency>
-		<dependency org="org.postgresql" name="postgresql" rev="9.4-1201-jdbc41" >
+		<dependency org="org.postgresql" name="postgresql" rev="9.4.1211.jre7" >
 			<artifact name="postgresql" type="jar" />
 		</dependency>
 		<dependency org="com.mchange" name="c3p0" rev="0.9.5" />

@@ -323,7 +323,7 @@ uint8_t
 
     memset(pname, '0', TSK_HDB_MAXLEN);
 
-    /* Loop so that we can find multiple occurances of the same hash */
+    /* Loop so that we can find multiple occurrences of the same hash */
     while (1) {
         size_t len;
 

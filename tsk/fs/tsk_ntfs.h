@@ -47,11 +47,13 @@ extern "C" {
 /* (64 * 1024) = 65536 */
 #define NTFS_MAX_UNCOMPRESSION_BUFFER_SIZE 65536
 
+#define NTFS_UPDATE_SEQ_STRIDE  512
+
 
 
 /************************************************************************
  * Update sequence structure.  This is located at upd_off from the
- * begining of the original structure
+ * beginning of the original structure
  */
     typedef struct {
         uint8_t upd_val[2];     // what they should be

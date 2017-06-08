@@ -239,6 +239,8 @@ extern "C" {
      tsk_guess_end_u16(&(fs->endian), (x), (mag))
 #define tsk_fs_guessu32(fs, x, mag)   \
      tsk_guess_end_u32(&(fs->endian), (x), (mag))
+#define tsk_fs_guessu64(fs, x, mag)   \
+     tsk_guess_end_u64(&(fs->endian), (x), (mag))
 #ifdef __cplusplus
 }
 #endif                          /*  */

@@ -325,7 +325,7 @@ tsk_fs_attr_set_run(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
     }
 
     /*
-     * If this is not in the begining, then we need to make a filler 
+     * If this is not in the beginning, then we need to make a filler 
      * to account for the cluster numbers we haven't seen yet
      *
      * This commonly happens when we process an MFT entry that
@@ -472,7 +472,7 @@ tsk_fs_attr_add_run(TSK_FS_INFO * a_fs, TSK_FS_ATTR * a_fs_attr,
                         a_fs_attr->nrd.run = a_data_run_new;
                 }
 
-                /* The new run does not start at the begining of
+                /* The new run does not start at the beginning of
                  * the filler, so make a new start filler
                  */
                 else {
@@ -779,7 +779,6 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
         }
     }
 
-
     /* cycle through the number of runs we have */
     retval = TSK_WALK_CONT;
     for (fs_attr_run = fs_attr->nrd.run; fs_attr_run;
@@ -803,6 +802,7 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
                 tsk_error_set_errstr
                     ("Invalid address in run (too large): %" PRIuDADDR "",
                     addr + len_idx);
+                free(buf);
                 return 1;
             }
 
@@ -843,6 +843,7 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
                         tsk_error_set_errstr2
                             ("tsk_fs_file_walk: Error reading block at %"
                             PRIuDADDR, addr + len_idx);
+                        free(buf);
                         return 1;
                     }
                     if ((off + fs->block_size > fs_attr->nrd.initsize)
@@ -1153,7 +1154,7 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
                 TSK_OFF_T fs_offset_b;
                 ssize_t cnt;
 
-                // calcuate the byte offset in the file system
+                // calculate the byte offset in the file system
                 fs_offset_b =
                     (data_run_cur->addr +
                     blkoffset_inrun) * fs->block_size;

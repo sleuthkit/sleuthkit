@@ -255,28 +255,28 @@ void content::write_record()
 	for(seglist::const_iterator i = this->segs.begin();i!=this->segs.end();i++){
 	    char buf[1024];
 	    if(i->flags & TSK_FS_BLOCK_FLAG_SPARSE){
-		sprintf(buf,"       <byte_run file_offset='%"PRIu64"' fill='0' len='%"PRIu64"'", i->file_offset,i->len);
+		sprintf(buf,"       <byte_run file_offset='%" PRIu64 "' fill='0' len='%" PRIu64 "'", i->file_offset,i->len);
 	    } else if (i->flags & TSK_FS_BLOCK_FLAG_RAW){
 		sprintf(buf,
-			"       <byte_run file_offset='%"PRIu64"' fs_offset='%"PRIu64"' " "img_offset='%"PRIu64"' len='%"PRIu64"'",
+			"       <byte_run file_offset='%" PRIu64 "' fs_offset='%" PRIu64 "' " "img_offset='%" PRIu64 "' len='%" PRIu64 "'",
 			i->file_offset,i->fs_offset,i->img_offset,i->len);
 	    } else if (i->flags & TSK_FS_BLOCK_FLAG_COMP){
 		if(i->fs_offset){
 		    sprintf(buf,
-			    "       <byte_run file_offset='%"PRIu64"' fs_offset='%"PRIu64"' "
-			    "img_offset='%"PRIu64"' uncompressed_len='%"PRIu64"'",
+			    "       <byte_run file_offset='%" PRIu64 "' fs_offset='%" PRIu64 "' "
+			    "img_offset='%" PRIu64 "' uncompressed_len='%" PRIu64 "'",
 			    i->file_offset,i->fs_offset,i->img_offset,i->len);
 		} else {
 		    sprintf(buf,
-			    "       <byte_run file_offset='%"PRIu64"' uncompressed_len='%"PRIu64"'", i->file_offset,i->len);
+			    "       <byte_run file_offset='%" PRIu64 "' uncompressed_len='%" PRIu64 "'", i->file_offset,i->len);
 		}
 	    } else if (i->flags & TSK_FS_BLOCK_FLAG_RES){
 		sprintf(buf,
-			"       <byte_run file_offset='%"PRIu64"' fs_offset='%"PRIu64"' "
-                        "img_offset='%"PRIu64"' len='%"PRIu64"' type='resident'",
+			"       <byte_run file_offset='%" PRIu64 "' fs_offset='%" PRIu64 "' "
+                        "img_offset='%" PRIu64 "' len='%" PRIu64 "' type='resident'",
 			i->file_offset,i->fs_offset,i->img_offset,i->len);
 	    } else{
-		sprintf(buf,"       <byte_run file_offset='%"PRIu64"' unknown_flags='%d'",i->file_offset,i->flags);
+		sprintf(buf,"       <byte_run file_offset='%" PRIu64 "' unknown_flags='%d'",i->file_offset,i->flags);
 	    }
 	    runs += buf;
 
@@ -335,7 +335,7 @@ void content::add_seg(int64_t img_offset,int64_t fs_offset,
 
 
 /** Called when new bytes are encountered.
- * An important bug: currently we assume that the bytes added are contigious.
+ * An important bug: currently we assume that the bytes added are contiguous.
  */
 void content::add_bytes(const u_char *buf,uint64_t file_offset,ssize_t size)
 {
@@ -352,7 +352,7 @@ void content::add_bytes(const u_char *buf,uint64_t file_offset,ssize_t size)
 	if(fd_save){
 	    ssize_t res = write(fd_save,buf,size);
 	    if(res!=size){
-		warn("write(%d,%p,%"PRId64")=%"PRId64,
+		warn("write(%d,%p,%" PRId64 ")=%" PRId64,
 		     fd_save,buf,(int64_t)size,(int64_t)res);
 		close(fd_save);
 		fd_save=0;
@@ -368,7 +368,7 @@ void content::add_bytes(const u_char *buf,uint64_t file_offset,ssize_t size)
 	if(fd_temp){
 	    ssize_t res = write(fd_temp,buf,size);
 	    if(res!=size){
-		warn("write(%d,%p,%"PRId64")=%"PRId64,
+		warn("write(%d,%p,%" PRId64 ")=%" PRId64,
 		     fd_temp,buf,(int64_t)size,(int64_t)res);
 		close(fd_temp);
 		fd_temp=0;
@@ -402,7 +402,7 @@ content::file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr, char
 	 size_t size, TSK_FS_BLOCK_FLAG_ENUM flags)
 {
     if(opt_debug>1){
-	printf("file_act(fs_file=%p,addr=%"PRIuDADDR" buf=%p size=%d)\n",
+	printf("file_act(fs_file=%p,addr=%" PRIuDADDR " buf=%p size=%d)\n",
 	       fs_file,addr,buf,(int)size);
 	if(opt_debug>1 && segs.size()==0){
 	    if(fwrite(buf,size,1,stdout)!=1) err(1,"fwrite");

@@ -1157,7 +1157,7 @@ hfs_cat_get_record_offset_cb(HFS_INFO * hfs, int8_t level_type,
  * @param hfs File System being analyzed
  * @param needle Key to search for
  * @returns Byte offset or 0 on error. 0 is also returned if catalog
- * record was not found. Check tsk_errno to determine if error occured.
+ * record was not found. Check tsk_errno to determine if error occurred.
  */
 static TSK_OFF_T
 hfs_cat_get_record_offset(HFS_INFO * hfs, const hfs_btree_key_cat * needle)
@@ -1385,7 +1385,7 @@ hfs_lookup_hard_link(HFS_INFO * hfs, TSK_INUM_T linknum,
  *
  * If the error is serious, then is_error is set to 2 or 3, depending on the kind of error, and
  * the TSK error code is set, and the function returns zero.  is_error==2 means that an error
- * occured in looking up the target file in the Catalog.  is_error==3 means that the given
+ * occurred in looking up the target file in the Catalog.  is_error==3 means that the given
  * entry appears to be a hard link, but the target file does not exist in the Catalog.
  *
  * @param hfs The file system
@@ -2793,7 +2793,7 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
     }
 
     // Allocate two buffers for the raw and uncompressed data
-    /* Raw data can be COMPRESSSION_UNIT_SIZE+1 if the data is not
+    /* Raw data can be COMPRESSION_UNIT_SIZE+1 if the data is not
      * compressed and there is a 1-byte flag that indicates that 
      * the data is not compressed. */
     rawBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE + 1);
@@ -3172,7 +3172,7 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
     bytesCopied = 0;
 
     // Allocate buffers for the raw and uncompressed data
-    /* Raw data can be COMPRESSSION_UNIT_SIZE+1 if the data is not
+    /* Raw data can be COMPRESSION_UNIT_SIZE+1 if the data is not
      * compressed and there is a 1-byte flag that indicates that 
      * the data is not compressed. */
     rawBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE + 1);
@@ -3492,7 +3492,9 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
     uint16_t attribute_counter = 2;     // The ID of the next attribute to be loaded.
     HFS_INFO *hfs;
     char *buffer = NULL;   // buffer to hold the attribute
-
+#ifdef HAVE_LIBZ
+    char *uncBuf = NULL;   // buffer to hold uncompressed attribute
+#endif
 
     tsk_error_reset();
 
@@ -3779,6 +3781,14 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 // This is the length of the useful data, not including the record header
                 attributeLength = tsk_getu32(endian, attrData->attr_size);
 
+                // Check the attribute fits in the node
+                //if (recordType != HFS_ATTR_RECORD_INLINE_DATA) {
+                if (recOffset + keyLength + 2 + attributeLength > attrFile.nodeSize) {
+                  error_detected(TSK_ERR_FS_READ,
+                      "hfs_load_extended_attrs: Unable to process attribute");
+                  goto on_error;
+                }
+
                 buffer = malloc(attributeLength);
                 if (buffer == NULL) {
                     error_detected(TSK_ERR_AUX_MALLOC,
@@ -3875,7 +3885,6 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                             else {      // Leading byte is not 0x0F
 
 #ifdef HAVE_LIBZ
-                                char *uncBuf;
                                 uint64_t uLen;
                                 unsigned long bytesConsumed;
                                 int infResult;
@@ -3924,6 +3933,8 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                                         (" - hfs_load_extended_attrs");
                                     goto on_error;
                                 }
+
+                                free(uncBuf);
 #else
                                 // ZLIB compression library is not available, so we will load a zero-length
                                 // default DATA attribute.  Without this, icat may misbehave.
@@ -3944,7 +3955,6 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                                         (" - hfs_load_extended_attrs");
                                     goto on_error;
                                 }
-
 #endif
 
                             }   // END if leading byte is 0x0F  ELSE clause
@@ -3978,13 +3988,13 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
                 // set the details in the fs_attr structure
                 if (tsk_fs_attr_set_str(fs_file, fs_attr, nameBuff,
-                        attrType, attribute_counter, (void *) buffer,
+                        attrType, attribute_counter, buffer,
                         attributeLength)) {
                     error_returned(" - hfs_load_extended_attrs");
                     goto on_error;
                 }
-                // TODO: does the previous function take ownership of buffer?
-                // or does it need to be freed here?
+
+                free(buffer);
                 buffer = NULL;
 
                 attribute_counter++;
@@ -4070,11 +4080,18 @@ on_exit:
     return 0;
 
 on_error:
-    if( buffer != NULL ) {
-        free( buffer );
+    if (buffer != NULL) {
+        free(buffer);
     }
-    if( nodeData != NULL ) {
-        free( nodeData );
+
+#ifdef HAVE_LIBZ
+    if (uncBuf != NULL) {
+        free(uncBuf);
+    }
+#endif
+
+    if (nodeData != NULL) {
+        free(nodeData);
     }
     close_attr_file(&attrFile);
     return 1;

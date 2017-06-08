@@ -660,6 +660,7 @@ public class TskData {
 		UNALLOC_BLOCKS(4, "Unallocated Blocks"), ///< Set of blocks not allocated by file system.  Parent should be image, volume, or file system.  Many columns in tsk_files will be NULL. Set layout in tsk_file_layout. 
 		UNUSED_BLOCKS(5, "Unused Blocks"), ///< Set of blocks that are unallocated AND not used by a carved or other file type.  Parent should be UNALLOC_BLOCKS, many columns in tsk_files will be NULL, set layout in tsk_file_layout. 
 		VIRTUAL_DIR(6, "Virtual Directory"), ///< Virtual directory (not on fs) with no meta-data entry that can be used to group files of types other than TSK_DB_FILES_TYPE_FS. Its parent is either another TSK_DB_FILES_TYPE_FS or a root directory or type TSK_DB_FILES_TYPE_FS.
+		SLACK(7, "Slack"), ///< Slack space for a single file
 		;
 
 		private final short fileType;
@@ -771,6 +772,39 @@ public class TskData {
 
 		public int getValue() {
 			return this.value;
+		}
+	}
+	
+	/**
+	 * Encoding type records whether locally stored files have been encoded
+	 * or not, and the method used to do so. This is the encoding_type column
+	 * in the tsk_files_path table.
+	 * Files are encoded using EncodedFileOutputStream and are saved to the
+	 * database as derived files with the appropriate encoding type argument.
+	 */
+	public enum EncodingType{
+		// Update EncodedFileUtil.java to handle any new types
+		NONE(0),
+		XOR1(1);
+		
+		private final int type;
+		
+		private EncodingType(int type){
+			this.type = type;
+		}
+		
+		public int getType(){
+			return type;
+		}
+		
+		public static EncodingType valueOf(int type) {
+			for (EncodingType v : EncodingType.values()) {
+				if (v.type == type) {
+					return v;
+				}
+			}
+			throw new IllegalArgumentException(
+					MessageFormat.format(bundle.getString("TskData.encodingType.exception.msg1.text"), type));
 		}
 	}
 }

@@ -59,6 +59,7 @@ public abstract class AbstractFile extends AbstractContent {
 	private String localAbsPath; ///< absolute path representation of the local path
 	private volatile RandomAccessFile localFileHandle;
 	private volatile java.io.File localFile;
+	private TskData.EncodingType encodingType;
 	//range support
 	private List<TskFileRange> ranges;
 	/*
@@ -155,6 +156,7 @@ public abstract class AbstractFile extends AbstractContent {
 		}
 		this.parentPath = parentPath;
 		this.mimeType = mimeType;
+		this.encodingType = TskData.EncodingType.NONE;
 	}
 
 	/**
@@ -573,7 +575,7 @@ public abstract class AbstractFile extends AbstractContent {
 		long imgOffset = -1;
 		for (TskFileRange byteRange : getRanges()) {
 
-			// if fileOffset is within the current byteRange, calcuate the image
+			// if fileOffset is within the current byteRange, calculate the image
 			// offset and break
 			long rangeLength = byteRange.getByteLen();
 			if (fileOffset < rangeLength) {
@@ -589,7 +591,8 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * is this a virtual file or directory
+	 * is this a virtual file or directory that was created by The Sleuth 
+     * Kit or Autopsy for general structure and organization. 
 	 *
 	 * @return true if it's virtual, false otherwise
 	 */
@@ -600,17 +603,22 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Is this object a file
+	 * Is this object a file.  Should return true for all types of files, 
+     * including file system, logical, derived, layout, and slack space 
+     * for files.
 	 *
 	 * @return true if a file, false otherwise
 	 */
 	public boolean isFile() {
-		return metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG);
+		return metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG) 
+				||(metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF) 
+				&& dirType.equals(TSK_FS_NAME_TYPE_ENUM.REG));
 
 	}
 
 	/**
-	 * Is this object a directory
+	 * Is this object a directory.  Should return true for file system
+     * folders and virtual folders. 
 	 *
 	 * @return true if directory, false otherwise
 	 */
@@ -823,22 +831,38 @@ public abstract class AbstractFile extends AbstractContent {
 		}
 
 		try {
-			//move to the user request offset in the stream
-			long curOffset = localFileHandle.getFilePointer();
-			if (curOffset != offset) {
-				localFileHandle.seek(offset);
+			if( ! encodingType.equals(TskData.EncodingType.NONE)){
+				// The file is encoded, so we need to alter the offset to read (since there's
+				// a header on the encoded file) and then decode each byte
+				long encodedOffset = offset + EncodedFileUtil.getHeaderLength();
+				
+				//move to the user request offset in the stream
+				long curOffset = localFileHandle.getFilePointer();
+				if (curOffset != encodedOffset) {
+					localFileHandle.seek(encodedOffset);
+				}
+				bytesRead = localFileHandle.read(buf, 0, (int) len);	
+				for(int i = 0;i < bytesRead;i++){
+					buf[i] = EncodedFileUtil.decodeByte(buf[i], encodingType);
+				}
+				return bytesRead;
+			} else {
+				//move to the user request offset in the stream
+				long curOffset = localFileHandle.getFilePointer();
+				if (curOffset != offset) {
+					localFileHandle.seek(offset);
+				}
+				//note, we are always writing at 0 offset of user buffer
+				return localFileHandle.read(buf, 0, (int) len);	
 			}
-			//note, we are always writing at 0 offset of user buffer
-			bytesRead = localFileHandle.read(buf, 0, (int) len);
 		} catch (IOException ex) {
 			final String msg = MessageFormat.format(bundle.getString("AbstractFile.readLocal.exception.msg5.text"), localAbsPath);
 			logger.log(Level.SEVERE, msg, ex);
 			//local file could have been deleted / moved
 			throw new TskCoreException(msg, ex);
 		}
-
-		return bytesRead;
 	}
+
 
 	/**
 	 * Set local path for the file, as stored in db tsk_files_path, relative to
@@ -849,7 +873,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param isAbsolute true if the path is absolute, false if relative to the
 	 *                   case db
 	 */
-	protected void setLocalPath(String localPath, boolean isAbsolute) {
+	void setLocalFilePath(String localPath, boolean isAbsolute) {
 
 		if (localPath == null || localPath.equals("")) {
 			this.localPath = "";
@@ -882,6 +906,14 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	public String getLocalAbsPath() {
 		return localAbsPath;
+	}
+	
+	/**
+	 * Set the type of encoding used on the file (for local/derived files only)
+	 * @param encodingType 
+	 */
+	final void setEncodingType(TskData.EncodingType encodingType){
+		this.encodingType = encodingType;
 	}
 
 	/**
@@ -1161,12 +1193,28 @@ public abstract class AbstractFile extends AbstractContent {
 		/*
 		 * NOTE: previously attrId used to be stored in AbstractFile as (signed)
 		 * short even though it is stored as uint16 in TSK. In extremely rare
-		 * occurances attrId can be larger than what a signed short can hold
+		 * occurrences attrId can be larger than what a signed short can hold
 		 * (2^15). Changes were made to AbstractFile to store attrId as integer.
 		 * Therefore this method has been deprecated. For backwards
 		 * compatibility, attribute ids that are larger than 32K are converted
 		 * to a negative number.
 		 */
 		return (short) attrId;	// casting to signed short converts values over 32K to negative values
+	}
+	
+	/**
+	 * Set local path for the file, as stored in db tsk_files_path, relative to
+	 * the case db path or an absolute path. When set, subsequent invocations of
+	 * read() will read the file in the local path.
+	 *
+	 * @param localPath  local path to be set
+	 * @param isAbsolute true if the path is absolute, false if relative to the
+	 *                   case db
+	 * 
+	 * @deprecated Do not make subclasses outside of this package.
+	 */
+	@Deprecated
+	protected void setLocalPath(String localPath, boolean isAbsolute) {
+		setLocalFilePath(localPath, isAbsolute);
 	}
 }

@@ -67,6 +67,9 @@ extern "C" {
         uint16_t);
     extern uint8_t tsk_guess_end_u32(TSK_ENDIAN_ENUM *, uint8_t *,
         uint32_t);
+    extern uint8_t tsk_guess_end_u64(TSK_ENDIAN_ENUM *, uint8_t *,
+        uint64_t);
+
 
 /** \internal
 * Read a 16-bit unsigned value.
@@ -228,7 +231,7 @@ extern "C" {
 
     Conversions between UTF32, UTF-16, and UTF-8.  Header file.
 
-    Several funtions are included here, forming a complete set of
+    Several functions are included here, forming a complete set of
     conversions between the three formats.  UTF-7 is not included
     here, but is handled in a separate source file.
 

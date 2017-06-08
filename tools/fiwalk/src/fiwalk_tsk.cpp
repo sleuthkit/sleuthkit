@@ -152,7 +152,7 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
     if(opt_body_file && (fs_file->meta != NULL)){
 	char ls[64];
 	tsk_fs_meta_make_ls(fs_file->meta,ls,sizeof(ls));
-	fprintf(t,"%s|%s|%"PRId64"|%s|%d|%d|%"PRId64"|%d|%d|%d|%d\n",
+	fprintf(t,"%s|%s|%" PRId64 "|%s|%d|%d|%" PRId64 "|%d|%d|%d|%d\n",
 		ci.h_md5.final().hexdigest().c_str(),ci.filename().c_str(),fs_file->meta->addr,
 		ls,fs_file->meta->uid,fs_file->meta->gid,
 		fs_file->meta->size,
@@ -227,20 +227,19 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
     	}
         }
     }
-    if(fs_file->meta == NULL)
-    {
-        if(fs_file->name->flags & TSK_FS_META_FLAG_ALLOC)   file_info("alloc",1);
-        if(fs_file->name->flags & TSK_FS_META_FLAG_UNALLOC) file_info("unalloc",1);
-        if(fs_file->name->flags & TSK_FS_META_FLAG_USED)    file_info("used",1);
-        if(fs_file->name->flags & TSK_FS_META_FLAG_UNUSED)  file_info("unused",1);
-        if(fs_file->name->flags & TSK_FS_META_FLAG_ORPHAN)  file_info("orphan",1);
-        if(fs_file->name->flags & TSK_FS_META_FLAG_COMP)    file_info("compressed",1);
+    // fs_file->meta == NULL)
+    else {
+        if(fs_file->name->flags & TSK_FS_NAME_FLAG_ALLOC)   file_info("alloc",1);
+        if(fs_file->name->flags & TSK_FS_NAME_FLAG_UNALLOC) file_info("unalloc",1);
     
+        // @@@ BC: This is a bit confusing.  It seems to be cramming NAME-level info 
+        // into places that typically has META-level info. 
         if (fs_file->name->meta_addr!=0)file_info("inode",fs_file->name->meta_addr);
         file_info("meta_type",fs_file->name->type);
         
         if(fs_file->name->meta_seq!=0) file_info("seq",fs_file->name->meta_seq);
     }
+
     /* Special processing for NTFS */
     if ((TSK_FS_TYPE_ISNTFS(fs_file->fs_info->ftype))){
 	/* Should we cycle through the attributes the way print_dent_act() does? */
@@ -322,7 +321,7 @@ int proc_fs(TSK_IMG_INFO * img_info, TSK_OFF_T start)
     /* Try it as a file system */
     fs_info = tsk_fs_open_img(img_info, start, TSK_FS_TYPE_DETECT);
     if (fs_info == NULL) {
-	comment("TSK_Error '%s' at sector %"PRIuDADDR" offset %"PRIuDADDR" sector_size=%u",
+	comment("TSK_Error '%s' at sector %" PRIuDADDR " offset %" PRIuDADDR " sector_size=%u",
 		tsk_error_get(),start/sector_size,start,sector_size);
 
 	/* We could do some carving on the volume data at this point */
@@ -332,7 +331,7 @@ int proc_fs(TSK_IMG_INFO * img_info, TSK_OFF_T start)
     comment("fs start: %" PRIuDADDR, start);
     if(x){
 	char buf[1024];
-	snprintf(buf,sizeof(buf),"offset='%"PRIuDADDR"'",start);
+	snprintf(buf,sizeof(buf),"offset='%" PRIuDADDR "'",start);
 	x->push("volume",buf);
     }
 

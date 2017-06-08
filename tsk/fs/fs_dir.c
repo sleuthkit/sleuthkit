@@ -185,7 +185,7 @@ tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir, const TSK_FS_NAME * a_fs_name)
     /* see if we already have it in the buffer / queue
      * We skip this check for FAT because it will always fail because two entries
      * never have the same meta address. */
-    // @@@ We could do something more effecient here too with orphan files because we do not 
+    // @@@ We could do something more efficient here too with orphan files because we do not 
     // need to check the contents of that directory either and this takes a lot of time on those
     // large images.
     if (TSK_FS_TYPE_ISFAT(a_fs_dir->fs_info->ftype) == 0) {
@@ -208,7 +208,7 @@ tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir, const TSK_FS_NAME * a_fs_name)
                     && (a_fs_name->flags & TSK_FS_NAME_FLAG_ALLOC)) {
                     fs_name_dest = &a_fs_dir->names[i];
 
-                    // free the memory - not the most effecient, but prevents
+                    // free the memory - not the most efficient, but prevents
                     // duplicate code.
                     if (fs_name_dest->name) {
                         free(fs_name_dest->name);
@@ -945,7 +945,7 @@ tsk_fs_dir_load_inum_named(TSK_FS_INFO * a_fs)
 
     /* Do a dir_walk.  There is internal caching code that will populate
      * the structure.  The callback is really a dummy call.  This could
-     * be made more effecient in the future (not do callbacks...).  We
+     * be made more efficient in the future (not do callbacks...).  We
      * specify UNALLOC only as a flag on the assumption that there will
      * be fewer callbacks for UNALLOC than ALLOC.
      */
@@ -1192,6 +1192,10 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
             TSK_FS_META_FLAG_UNALLOC | TSK_FS_META_FLAG_USED,
             find_orphan_meta_walk_cb, &data)) {
         tsk_fs_name_free(data.fs_name);
+        if (data.orphan_subdir_list) {
+            tsk_list_free(data.orphan_subdir_list);
+            data.orphan_subdir_list = NULL;
+        }
         tsk_release_lock(&a_fs->orphan_dir_lock);
         return TSK_ERR;
     }
@@ -1216,6 +1220,15 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
                     &a_fs_dir->names[a_fs_dir->names_used - 1]);
             }
             a_fs_dir->names_used--;
+            TSK_FS_NAME *fs_name = &a_fs_dir->names[a_fs_dir->names_used];
+            if (fs_name->name) {
+                free(fs_name->name);
+                fs_name->name = NULL;
+            }
+            if (fs_name->shrt_name) {
+                free(fs_name->shrt_name);
+                fs_name->shrt_name = NULL;
+            }
         }
     }
 
