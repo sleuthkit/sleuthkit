@@ -12,6 +12,8 @@
 #include "tsk_hashdb_i.h"
 #include "tsk_hash_info.h"
 
+#include <sqlite3.h>
+
 /**
 * \file sqlite_hdb.cpp
 * Contains hash database functions for SQLite hash databases.
@@ -22,6 +24,21 @@ static const char *SCHEMA_VERSION_NO = "1";
 static const char *SQLITE_FILE_HEADER = "SQLite format 3";
 static const size_t MD5_BLOB_LEN = ((TSK_HDB_HTYPE_MD5_LEN) / 2);
 static const char hex_digits[] = "0123456789abcdef";
+
+/**
+ * Represents a TSK SQLite hash database (it doesn't need an external index).
+ */
+typedef struct TSK_SQLITE_HDB_INFO {
+    TSK_HDB_INFO base;
+    sqlite3 *db;
+
+    sqlite3_stmt *insert_md5_into_hashes; ///< Once initialized, prepared statements are tied to a specific database
+    sqlite3_stmt *insert_into_file_names;
+    sqlite3_stmt *insert_into_comments;
+    sqlite3_stmt *select_from_hashes_by_md5;
+    sqlite3_stmt *select_from_file_names;
+    sqlite3_stmt *select_from_comments;
+} TSK_SQLITE_HDB_INFO;
 
 static uint8_t 
     sqlite_hdb_attempt(int resultCode, int expectedResultCode, const char *errfmt, 

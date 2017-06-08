@@ -177,9 +177,6 @@
     <ClCompile Include="..\..\tsk\auto\db_sqlite.cpp">
       <Filter>auto</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\auto\sqlite3.c">
-      <Filter>auto</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\tsk\base\md5c.c">
       <Filter>base</Filter>
     </ClCompile>
@@ -370,9 +367,6 @@
     </ClInclude>
     <ClInclude Include="..\..\tsk\fs\tsk_ntfs.h">
       <Filter>fs</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\tsk\auto\sqlite3.h">
-      <Filter>auto</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tsk\auto\tsk_auto.h">
       <Filter>auto</Filter>

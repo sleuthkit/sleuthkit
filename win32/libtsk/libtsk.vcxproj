@@ -543,7 +543,6 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClCompile Include="..\..\tsk\auto\auto_db.cpp" />
     <ClCompile Include="..\..\tsk\auto\case_db.cpp" />
     <ClCompile Include="..\..\tsk\auto\db_sqlite.cpp" />
-    <ClCompile Include="..\..\tsk\auto\sqlite3.c" />
     <ClCompile Include="..\..\tsk\base\md5c.c" />
     <ClCompile Include="..\..\tsk\base\mymalloc.c" />
     <ClCompile Include="..\..\tsk\base\sha1c.c" />
@@ -601,7 +600,6 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClInclude Include="..\..\tsk\fs\tsk_iso9660.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_ntfs.h" />
     <ClInclude Include="..\..\tsk\fs\tsk_yaffs.h" />
-    <ClInclude Include="..\..\tsk\auto\sqlite3.h" />
     <ClInclude Include="..\..\tsk\auto\tsk_auto.h" />
     <ClInclude Include="..\..\tsk\auto\tsk_auto_i.h" />
     <ClInclude Include="..\..\tsk\auto\tsk_case_db.h" />
