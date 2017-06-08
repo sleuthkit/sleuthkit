@@ -100,7 +100,7 @@ public class SleuthkitJNI {
 		 * @param fileHandle The new file handle.
 		 * @param fsHandle   The file system handle in which the file lives.
 		 */
-		static void addFileHandle(long fileHandle, long fsHandle) {
+		private static void addFileHandle(long fileHandle, long fsHandle) {
 			synchronized (cacheLock) {
 				// Add to collection of open file handles.
 				fileHandleCache.add(fileHandle);
@@ -114,20 +114,20 @@ public class SleuthkitJNI {
 			}
 		}
 
-		static void removeFileHandle(long fileHandle) {
+		private static void removeFileHandle(long fileHandle) {
 			synchronized (cacheLock) {
 				// Remove from collection of open file handles.
 				fileHandleCache.remove(fileHandle);
 			}
 		}
 
-		static boolean isValidFileHandle(long fileHandle) {
+		private static boolean isValidFileHandle(long fileHandle) {
 			synchronized (cacheLock) {
 				return fileHandleCache.contains(fileHandle);
 			}
 		}
 
-		static void closeHandlesAndClearCache() throws TskCoreException {
+		private static void closeHandlesAndClearCache() throws TskCoreException {
 			synchronized (cacheLock) {
 				/*
 				 * Close any cached file system handles.
