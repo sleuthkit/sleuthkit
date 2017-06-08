@@ -171,6 +171,27 @@ tsk_fs_dir_contains(TSK_FS_DIR * a_fs_dir, TSK_INUM_T meta_addr, uint32_t hash)
 }
 
 /** \internal
+ * Frees the allocated memory in a name structure when we are reshuffling
+ * things around. Does not free the outer TSK_FS_NAME structure.  Just the names
+ * inside of it.
+ */
+static void 
+tsk_fs_dir_free_name_internal(TSK_FS_NAME *fs_name) 
+{
+    if (fs_name->name) {
+	    free(fs_name->name);
+	    fs_name->name = NULL;
+	    fs_name->name_size = 0;
+    }
+    if (fs_name->shrt_name) {
+        free(fs_name->shrt_name);
+        fs_name->shrt_name = NULL;
+        fs_name->shrt_name_size = 0;
+    }
+}
+
+
+/** \internal
  * Add a FS_DENT structure to a FS_DIR structure by copying its
  * contents into the internal buffer. Checks for
  * duplicates and expands buffer as needed.
@@ -212,16 +233,7 @@ tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir, const TSK_FS_NAME * a_fs_name)
 
                     // free the memory - not the most efficient, but prevents
                     // duplicate code.
-                    if (fs_name_dest->name) {
-                        free(fs_name_dest->name);
-                        fs_name_dest->name = NULL;
-                        fs_name_dest->name_size = 0;
-                    }
-                    if (fs_name_dest->shrt_name) {
-                        free(fs_name_dest->shrt_name);
-                        fs_name_dest->shrt_name = NULL;
-                        fs_name_dest->shrt_name_size = 0;
-                    }
+                    tsk_fs_dir_free_name_internal(fs_name_dest);
                     break;
                 }
                 else {
@@ -346,16 +358,7 @@ tsk_fs_dir_close(TSK_FS_DIR * a_fs_dir)
     }
 
     for (i = 0; i < a_fs_dir->names_used; i++) {
-        if (a_fs_dir->names[i].name) {
-            free(a_fs_dir->names[i].name);
-            a_fs_dir->names[i].name = NULL;
-            a_fs_dir->names[i].name_size = 0;
-        }
-        if (a_fs_dir->names[i].shrt_name) {
-            free(a_fs_dir->names[i].shrt_name);
-            a_fs_dir->names[i].shrt_name = NULL;
-            a_fs_dir->names[i].shrt_name_size = 0;
-        }
+        tsk_fs_dir_free_name_internal(&a_fs_dir->names[i]);
     }
     free(a_fs_dir->names);
 
@@ -1117,6 +1120,7 @@ find_orphan_meta_walk_cb(TSK_FS_FILE * a_fs_file, void *a_ptr)
 }
 
 
+
 /** \internal
  * Adds the fake metadata entry in the FS_DIR->fs_file struct for the orphan files directory
  *
@@ -1230,16 +1234,8 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
                 tsk_fs_name_copy(&a_fs_dir->names[i],
                     &a_fs_dir->names[a_fs_dir->names_used - 1]);
             }
+            tsk_fs_dir_free_name_internal(&a_fs_dir->names[a_fs_dir->names_used-1]);
             a_fs_dir->names_used--;
-            TSK_FS_NAME *fs_name = &a_fs_dir->names[a_fs_dir->names_used];
-            if (fs_name->name) {
-                free(fs_name->name);
-                fs_name->name = NULL;
-            }
-            if (fs_name->shrt_name) {
-                free(fs_name->shrt_name);
-                fs_name->shrt_name = NULL;
-            }
         }
     }
 
