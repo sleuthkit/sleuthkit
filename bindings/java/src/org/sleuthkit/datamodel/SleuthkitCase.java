@@ -5745,7 +5745,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws SQLException
 	 */
-	DerivedFile derivedFile(ResultSet rs, CaseDbConnection connection, long parentId) throws SQLException {
+	private DerivedFile derivedFile(ResultSet rs, CaseDbConnection connection, long parentId) throws SQLException {
 		boolean hasLocalPath = rs.getBoolean("has_path"); //NON-NLS
 		long objId = rs.getLong("obj_id"); //NON-NLS
 		String localPath = null;
@@ -5795,7 +5795,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws SQLException if there is an error querying the case database.
 	 */
-	LocalFile localFile(ResultSet rs, CaseDbConnection connection, long parentId) throws SQLException {
+	private LocalFile localFile(ResultSet rs, CaseDbConnection connection, long parentId) throws SQLException {
 		long objId = rs.getLong("obj_id"); //NON-NLS
 		String localPath = null;
 		TskData.EncodingType encodingType = TskData.EncodingType.NONE;
