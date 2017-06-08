@@ -5969,22 +5969,8 @@ public class SleuthkitCase {
 	/**
 	 * Call to free resources when done with instance.
 	 */
-	public void close() {
+	public synchronized void close() {
 		acquireExclusiveLock();
-
-		/*
-		 * This is an undocumented, legacy hack. Empirically, it seems to be
-		 * necessary due to problems with finalizers in the SleuthKit Java
-		 * bindings data model calling native methods that read garbage from
-		 * freed memory, leading to access violations otherwise. Why the garbage
-		 * collector is called twice is not known, but it appears to be intended
-		 * to try to force the garbage collection to occur.
-		 *
-		 * TODO (JIRA-2611): Make JNI code more robust when handling file
-		 * closure
-		 */
-		System.gc();
-		System.gc();
 
 		try {
 			connections.close();
