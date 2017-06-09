@@ -119,32 +119,6 @@ public class SlackFile extends FsContent {
 		return SleuthkitJNI.readFileSlack(fileHandle, buf, offset, len);
 	}
 
-	/**
-	 * Gets the derived files, if any, that are children of this file.
-	 *
-	 * @return A list of the children.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
-	 */
-	@Override
-	public List<Content> getChildren() throws TskCoreException {
-		return getSleuthkitCase().getAbstractFileChildren(this, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED);
-	}
-
-	/**
-	 * Gets the object ids of the derived files, if any, that are children of
-	 * this file.
-	 *
-	 * @return A list of the children.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
-	 */
-	@Override
-	public List<Long> getChildrenIds() throws TskCoreException {
-		return getSleuthkitCase().getAbstractFileChildrenIds(this, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED);
-	}
 
 	/**
 	 * Accepts a content visitor (Visitor design pattern).
