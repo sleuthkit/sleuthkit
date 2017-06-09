@@ -533,6 +533,32 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
+	 * Gets the files, if any, that are children of this abstract file.
+	 *
+	 * @return A list of the children.
+	 *
+	 * @throws TskCoreException if there was an error querying the case
+	 *                          database.
+	 */
+	@Override
+	public List<Content> getChildren() throws TskCoreException {
+		return getSleuthkitCase().getAbstractFileChildren(this);
+	}
+
+	/**
+	 * Gets the object ids of objects, if any, that are children of this abstract file
+	 *
+	 * @return A list of the object ids.
+	 *
+	 * @throws TskCoreException if there was an error querying the case
+	 *                          database.
+	 */
+	@Override
+	public List<Long> getChildrenIds() throws TskCoreException {
+		return getSleuthkitCase().getAbstractFileChildrenIds(this);
+	}
+	
+	/**
 	 * Gets the object id of the data source for this file.
 	 *
 	 * @return The object id of the data source.

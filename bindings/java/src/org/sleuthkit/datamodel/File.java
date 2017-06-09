@@ -92,32 +92,6 @@ public class File extends FsContent {
 		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, mimeType);
 	}
 
-	/**
-	 * Gets the derived files, if any, that are children of this file.
-	 *
-	 * @return A list of the children.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
-	 */
-	@Override
-	public List<Content> getChildren() throws TskCoreException {
-		return getSleuthkitCase().getAbstractFileChildren(this, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED);
-	}
-
-	/**
-	 * Gets the object ids of the derived files, if any, that are children of
-	 * this file.
-	 *
-	 * @return A list of the children.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
-	 */
-	@Override
-	public List<Long> getChildrenIds() throws TskCoreException {
-		return getSleuthkitCase().getAbstractFileChildrenIds(this, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED);
-	}
 
 	/**
 	 * Accepts a content visitor (Visitor design pattern).

@@ -118,32 +118,6 @@ public class LayoutFile extends AbstractFile {
 		return false;
 	}
 
-	/**
-	 * Gets the derived files, if any, that are children of this file.
-	 *
-	 * @return A list of the children.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
-	 */
-	@Override
-	public List<Content> getChildren() throws TskCoreException {
-		return getSleuthkitCase().getAbstractFileChildren(this, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED);
-	}
-
-	/**
-	 * Gets the object ids of the derived files, if any, that are children of
-	 * this file.
-	 *
-	 * @return A list of the children.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
-	 */
-	@Override
-	public List<Long> getChildrenIds() throws TskCoreException {
-		return getSleuthkitCase().getAbstractFileChildrenIds(this, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED);
-	}
 
 	/**
 	 * Does nothing, a layout file cannot be directly opened, read, or closed.
