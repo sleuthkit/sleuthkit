@@ -233,15 +233,15 @@ public class SleuthkitJNI {
 		 *                         unallocated space.
 		 * @param skipFatFsOrphans Pass true to skip processing of orphan files
 		 *                         for FAT file systems.
-		 * @param imageWriterPath  Path that a copy of the image should be
-		 *                         written to. Use empty string to disable image
-		 *                         writing
+		 * @param imageCopyPath    Path to which a copy of the image should be
+		 *                         written. Use the empty string to disable
+		 *                         image writing.
 		 *
 		 * @return An object that can be used to exercise fine-grained control
 		 *         of the process of adding the image to the case database.
 		 */
-		AddImageProcess initAddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans, String imageWriterPath) {
-			return new AddImageProcess(timeZone, addUnallocSpace, skipFatFsOrphans, imageWriterPath);
+		AddImageProcess initAddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans, String imageCopyPath) {
+			return new AddImageProcess(timeZone, addUnallocSpace, skipFatFsOrphans, imageCopyPath);
 		}
 
 		/**
