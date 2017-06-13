@@ -14,7 +14,6 @@
  * Contains the TSK Update Sequence Number journal walking code.
  */
 
-
 #include "tsk_fs_i.h"
 #include "tsk_ntfs.h"
 
@@ -22,6 +21,7 @@
 /*
  * Search the next record in the buffer skipping null bytes.
  * Records are alway aligned at 8 bytes.
+ * Returns the offset of the next record.
  */
 static TSK_OFF_T
 search_record(const unsigned char *buf, TSK_OFF_T offset, ssize_t bufsize)
@@ -36,6 +36,7 @@ search_record(const unsigned char *buf, TSK_OFF_T offset, ssize_t bufsize)
 
 /*
  * Convert the record file name from UTF16 to UTF8.
+ * Returns 0 on success, 1 otherwise
  */
 static uint8_t
 parse_fname(const unsigned char *buf, uint16_t nlen,
@@ -43,25 +44,28 @@ parse_fname(const unsigned char *buf, uint16_t nlen,
 {
     int ret = 0;
     UTF8 *temp_name = NULL;
+    size_t src_len = (size_t) nlen, dst_len = (size_t) nlen * 2;
 
-    record->fname = tsk_malloc(nlen + 1);
+    record->fname = tsk_malloc(dst_len + 1);
     if (record->fname == NULL)
         return 1;
 
     temp_name = (UTF8*)record->fname;
 
     ret = tsk_UTF16toUTF8(endian,
-                          (const UTF16**)&buf, (UTF16*)&buf[nlen],
-                          (UTF8**)&temp_name, (UTF8*)&temp_name[nlen],
+                          (const UTF16**)&buf, (UTF16*)&buf[src_len],
+                          (UTF8**)&temp_name, (UTF8*)&temp_name[dst_len],
                           TSKlenientConversion);
 
     if (ret != TSKconversionOK) {
         if (tsk_verbose)
-            tsk_fprintf(stderr,
-                        "parse_v2_record: USN name to UTF8 conversion error.");
+            tsk_fprintf(
+                stderr, "parse_v2_record: USN name to UTF8 conversion error.");
 
         record->fname = '\0';
     }
+    else
+        record->fname[dst_len] = '\0';
 
     return 0;
 }
@@ -79,6 +83,7 @@ parse_record_header(const unsigned char *buf, TSK_USN_RECORD_HEADER *header,
 
 /*
  * Parse a V 2.0 USN record.
+ * Returns 0 on success, 1 otherwise
  */
 static uint8_t
 parse_v2_record(const unsigned char *buf, TSK_USN_RECORD_HEADER *header,
@@ -114,6 +119,7 @@ parse_v2_record(const unsigned char *buf, TSK_USN_RECORD_HEADER *header,
 /*
  * Parse the UsnJrnl record.
  * Calls the action callback.
+ * Returns TSK_WALK_CONT on success, TSK_WALK_ERROR on error.
  */
 static TSK_WALK_RET_ENUM
 parse_record(const unsigned char *buf, TSK_USN_RECORD_HEADER *header,
@@ -198,6 +204,7 @@ parse_buffer(const unsigned char *buf, ssize_t bufsize,
 /*
  * Parse the UsnJrnl file.
  * Iterates through the file in blocks.
+ * Returns 0 on success, 1 otherwise
  */
 static uint8_t
 parse_file(NTFS_INFO * ntfs, unsigned char *buf,
@@ -229,7 +236,7 @@ parse_file(NTFS_INFO * ntfs, unsigned char *buf,
  *
  * @param ntfs File system where the journal is stored
  * @param inum file reference number where the USN journal is located
- * @returns Error code
+ * @returns 0 on success, 1 otherwise
  */
 uint8_t
 tsk_ntfs_usnjopen(TSK_FS_INFO *fs, TSK_INUM_T inum)
@@ -245,7 +252,7 @@ tsk_ntfs_usnjopen(TSK_FS_INFO *fs, TSK_INUM_T inum)
     }
 
     /* Initialize usnjinfo support structure */
-    ntfs->usnjinfo = tsk_malloc(sizeof ntfs->usnjinfo);
+    ntfs->usnjinfo = tsk_malloc(sizeof *ntfs->usnjinfo);
     if (ntfs->usnjinfo == NULL)
         return 1;
 
@@ -279,7 +286,7 @@ tsk_ntfs_usnjopen(TSK_FS_INFO *fs, TSK_INUM_T inum)
  * @param ntfs File system where the journal is stored
  * @param action action to be called per each USN entry
  * @param ptr pointer to data passed to the action callback
- * @returns Error code
+ * @returns 0 on success, 1 otherwise
  */
 uint8_t
 tsk_ntfs_usnjentry_walk(TSK_FS_INFO *fs, TSK_FS_USNJENTRY_WALK_CB action,
@@ -309,8 +316,9 @@ tsk_ntfs_usnjentry_walk(TSK_FS_INFO *fs, TSK_FS_USNJENTRY_WALK_CB action,
 
     ret = parse_file(ntfs, buf, action, ptr);
 
-    free(buf);
+    tsk_fs_file_close(ntfs->usnjinfo->fs_file);
     free(ntfs->usnjinfo);
+    free(buf);
 
     return ret;
 }

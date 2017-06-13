@@ -17,6 +17,7 @@
 
 
 static TSK_TCHAR *progname;
+static const TSK_TCHAR *usnjrnl_path = "$Extend/$UsnJrnl";
 
 
 /* usage - explain and terminate */
@@ -26,7 +27,7 @@ usage()
     TFPRINTF(stderr,
              _TSK_T
              ("usage: %s [-f fstype] [-i imgtype] [-b dev_sector_size]"
-              " [-o imgoffset] [-lmvV] image inode\n"),
+              " [-o imgoffset] [-lmvV] image [inode]\n"),
              progname);
     tsk_fprintf(stderr,
                 "\t-i imgtype: The format of the image file "
@@ -179,16 +180,18 @@ main(int argc, char **argv1)
             exit(1);
         }
 
-        jrnl_file = tsk_fs_file_open(fs, NULL, "$Extend/$UsnJrnl");
+        jrnl_file = tsk_fs_file_open(fs, NULL, usnjrnl_path);
         if (jrnl_file == NULL) {
-            tsk_fprintf(stderr,
-                        "Unable to open USN Journal file $Extend/$UsnJrnl\n");
+            tsk_fprintf(
+                stderr,
+                "Unable to open Journal %s, is this a NTFS filesystem?\n",
+                usnjrnl_path);
 
             exit(1);
         }
 
         inum = jrnl_file->name->meta_addr;
-        free(jrnl_file);
+        tsk_fs_file_close(jrnl_file);
     } else {
         img = tsk_img_open(argc - OPTIND - 1, &argv[OPTIND], imgtype, ssize);
         if (img == NULL) {

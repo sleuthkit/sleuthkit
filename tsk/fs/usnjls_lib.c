@@ -26,7 +26,7 @@ print_date(time_t secs, time_t subsecs)
     char buf[128];
 
     tsk_fs_time_to_str_subsecs(secs, subsecs, buf);
-    tsk_fprintf(stdout, "Time: %s\n", buf);
+    tsk_fprintf(stdout, "%s", buf);
 }
 
 
@@ -37,7 +37,6 @@ static void
 print_usn_reason(TSK_FS_USN_REASON reason)
 {
     uint32_t flag = 1;
-    tsk_fprintf(stdout, "Reason: %");
 
     for (flag = 1; flag > 0 && flag <= reason; flag *= 2)
         if (reason & flag)
@@ -109,7 +108,6 @@ print_usn_reason(TSK_FS_USN_REASON reason)
                 tsk_fprintf(stdout, "UNKNOWN ");
                 break;
             }
-    tsk_fprintf(stdout, "\n");
 }
 
 
@@ -120,7 +118,6 @@ static void
 print_usn_source_info(TSK_FS_USN_SOURCE_INFO sinfo)
 {
     uint32_t flag = 1;
-    tsk_fprintf(stdout, "Source Info: %");
 
     for (flag = 1; flag > 0 && flag <= sinfo; flag *= 2)
         if (sinfo & flag)
@@ -141,7 +138,6 @@ print_usn_source_info(TSK_FS_USN_SOURCE_INFO sinfo)
                 tsk_fprintf(stdout, "UNKNOWN ");
                 break;
             }
-    tsk_fprintf(stdout, "\n");
 }
 
 
@@ -152,7 +148,6 @@ static void
 print_usn_attributes(TSK_FS_NTFS_FILE_ATTRIBUTES attributes)
 {
     uint32_t flag = 1;
-    tsk_fprintf(stdout, "Attributes: %");
 
     for (flag = 1; flag > 0 && flag <= attributes; flag *= 2)
         if (attributes & flag)
@@ -212,23 +207,18 @@ print_usn_attributes(TSK_FS_NTFS_FILE_ATTRIBUTES attributes)
                 tsk_fprintf(stdout, "UNKNOWN ");
                 break;
             }
-    tsk_fprintf(stdout, "\n");
 }
 
 
 static TSK_WALK_RET_ENUM
 print_v2_record(TSK_USN_RECORD_HEADER *header, TSK_USN_RECORD_V2 *record)
 {
-    tsk_fprintf(stdout, "%" PRIu32 ".%" PRIu32 " " "%" PRIu32 " "
-                "%" PRIu64 "-%" PRIu32 " " "%" PRIu64 "-%" PRIu32 " "
-                "%" PRIu32 " " "%" PRIu32 ".%" PRIu32 " " "%" PRIu32 " "
-                "%" PRIu32 " " "%" PRIu32 " " "%" PRIu32 " ",
-                header->major_version, header->minor_version,
-                header->length, record->refnum, record->refnum_seq,
-                record->parent_refnum, record->parent_refnum_seq,
-                record->usn, record->time_sec, record->time_nsec,
-                record->reason, record->source_info, record->security,
-                record->attributes);
+    tsk_fprintf(stdout, "%" PRIu64 "-%" PRIu32 "\t" "%" PRIu64 "-%" PRIu32 "\t"
+                "%" PRIu32 ".%" PRIu32 "\t",
+                record->refnum, record->refnum_seq, record->parent_refnum,
+                record->parent_refnum_seq, record->time_sec, record->time_nsec);
+    print_usn_reason(record->reason);
+    tsk_fprintf(stdout, "\t");
     if (tsk_print_sanitized(stdout, record->fname) == 1)
         return TSK_WALK_ERROR;
     tsk_fprintf(stdout, "\n");
@@ -248,11 +238,19 @@ print_v2_record_long(TSK_USN_RECORD_HEADER *header, TSK_USN_RECORD_V2 *record)
                 header->major_version, header->minor_version,
                 header->length, record->refnum, record->refnum_seq,
                 record->parent_refnum, record->parent_refnum_seq, record->usn);
+    tsk_fprintf(stdout, "Time: ");
     print_date(record->time_sec, record->time_nsec);
+    tsk_fprintf(stdout, "\n");
+    tsk_fprintf(stdout, "Reason: ");
     print_usn_reason(record->reason);
+    tsk_fprintf(stdout, "\n");
+    tsk_fprintf(stdout, "Source Info: ");
     print_usn_source_info(record->source_info);
+    tsk_fprintf(stdout, "\n");
     tsk_fprintf(stdout, "Security Id: %" PRIu32 "\n", record->security);
+    tsk_fprintf(stdout, "Attributes: ");
     print_usn_attributes(record->attributes);
+    tsk_fprintf(stdout, "\n");
     tsk_fprintf(stdout, "Name: ");
     if (tsk_print_sanitized(stdout, record->fname) == 1)
         return TSK_WALK_ERROR;
@@ -316,6 +314,12 @@ tsk_fs_usnjls(TSK_FS_INFO * fs, TSK_INUM_T inode, TSK_FS_USNJLS_FLAG_ENUM flags)
     uint8_t ret = 0;
 
     tsk_error_reset();
+
+    if (fs == NULL || fs->ftype != TSK_FS_TYPE_NTFS) {
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("Invalid FS type, valid types: NTFS");
+        return 1;
+    }
 
     ret = tsk_ntfs_usnjopen(fs, inode);
     if (ret == 1)
