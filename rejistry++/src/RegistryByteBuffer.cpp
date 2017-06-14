@@ -105,9 +105,17 @@ namespace Rejistry {
             }
         }
 
+		// empty string
         if (nullPos == 0) {
             return L"";
         }
+		// NULL Pointer not found
+		else if (nullPos == data.size()) {
+			// @@@ BC: I'm not sure if this is correct.  But, we got exceptions if
+			// we kept it past the buffer.  
+			// Are these always supposed to be NULL terminated, in which case this is an error?
+			nullPos = data.size() - 1;
+		}
 
         std::wstring result;
 
