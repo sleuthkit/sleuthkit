@@ -140,7 +140,8 @@ extern "C" {
     extern uint8_t tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir,
         const TSK_FS_NAME * a_fs_dent);
     extern void tsk_fs_dir_reset(TSK_FS_DIR * a_fs_dir);
-    extern uint8_t tsk_fs_dir_contains(TSK_FS_DIR * a_fs_dir, TSK_INUM_T meta_addr);
+    extern uint8_t tsk_fs_dir_contains(TSK_FS_DIR * a_fs_dir, TSK_INUM_T meta_addr, uint32_t hash);
+    extern uint32_t tsk_fs_dir_hash(const char *str);
 
     /* Orphan Directory Support */
     TSK_RETVAL_ENUM tsk_fs_dir_load_inum_named(TSK_FS_INFO * a_fs);
@@ -187,7 +188,7 @@ extern "C" {
     extern TSK_FS_INFO *fatfs_open(TSK_IMG_INFO *, TSK_OFF_T,
         TSK_FS_TYPE_ENUM, uint8_t);
     extern TSK_FS_INFO *ffs_open(TSK_IMG_INFO *, TSK_OFF_T,
-        TSK_FS_TYPE_ENUM);
+        TSK_FS_TYPE_ENUM, uint8_t);
     extern TSK_FS_INFO *ntfs_open(TSK_IMG_INFO *, TSK_OFF_T,
         TSK_FS_TYPE_ENUM, uint8_t);
     extern TSK_FS_INFO *rawfs_open(TSK_IMG_INFO *, TSK_OFF_T);

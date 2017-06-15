@@ -1305,23 +1305,24 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Start process of adding a image to the case. Adding an image is a
-	 * multi-step process and this returns an object that allows it to happen.
+	 * Starts the multi-step process of adding an image data source to the case
+	 * by creating an object that can be used to control the process and get
+	 * progress messages from it.
 	 *
-	 * @param timezone        TZ time zone string to use for ingest of image.
+	 * @param timeZone        The time zone of the image.
 	 * @param addUnallocSpace Set to true to create virtual files for
 	 *                        unallocated space in the image.
 	 * @param noFatFsOrphans  Set to true to skip processing orphan files of FAT
 	 *                        file systems.
-	 * @param imageWriterPath Path for image writer from the local disk panel.
-	 *                        Use an empty string to disable image writing
+	 * @param imageCopyPath   Path to which a copy of the image should be
+	 *                        written. Use the empty string to disable image
+	 *                        writing.
 	 *
-	 * @return Object that encapsulates control of adding an image via the
+	 * @return An object that encapsulates control of adding an image via the
 	 *         SleuthKit native code layer.
 	 */
-	public AddImageProcess makeAddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans,
-			String imageWriterPath) {
-		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, imageWriterPath);
+	public AddImageProcess makeAddImageProcess(String timeZone, boolean addUnallocSpace, boolean noFatFsOrphans, String imageCopyPath) {
+		return this.caseHandle.initAddImageProcess(timeZone, addUnallocSpace, noFatFsOrphans, imageCopyPath);
 	}
 
 	/**
@@ -5745,7 +5746,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws SQLException
 	 */
-	DerivedFile derivedFile(ResultSet rs, CaseDbConnection connection, long parentId) throws SQLException {
+	private DerivedFile derivedFile(ResultSet rs, CaseDbConnection connection, long parentId) throws SQLException {
 		boolean hasLocalPath = rs.getBoolean("has_path"); //NON-NLS
 		long objId = rs.getLong("obj_id"); //NON-NLS
 		String localPath = null;
@@ -5795,7 +5796,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws SQLException if there is an error querying the case database.
 	 */
-	LocalFile localFile(ResultSet rs, CaseDbConnection connection, long parentId) throws SQLException {
+	private LocalFile localFile(ResultSet rs, CaseDbConnection connection, long parentId) throws SQLException {
 		long objId = rs.getLong("obj_id"); //NON-NLS
 		String localPath = null;
 		TskData.EncodingType encodingType = TskData.EncodingType.NONE;
@@ -5969,22 +5970,8 @@ public class SleuthkitCase {
 	/**
 	 * Call to free resources when done with instance.
 	 */
-	public void close() {
+	public synchronized void close() {
 		acquireExclusiveLock();
-
-		/*
-		 * This is an undocumented, legacy hack. Empirically, it seems to be
-		 * necessary due to problems with finalizers in the SleuthKit Java
-		 * bindings data model calling native methods that read garbage from
-		 * freed memory, leading to access violations otherwise. Why the garbage
-		 * collector is called twice is not known, but it appears to be intended
-		 * to try to force the garbage collection to occur.
-		 *
-		 * TODO (JIRA-2611): Make JNI code more robust when handling file
-		 * closure
-		 */
-		System.gc();
-		System.gc();
 
 		try {
 			connections.close();
@@ -8122,7 +8109,7 @@ public class SleuthkitCase {
 			}
 		}
 	}
-	
+
 	/**
 	 * Notifies observers of errors in the SleuthkitCase.
 	 *

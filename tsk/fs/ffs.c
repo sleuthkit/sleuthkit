@@ -2005,7 +2005,7 @@ ffs_close(TSK_FS_INFO * fs)
  * @returns NULL on error or if data is not a FFS file system
  */
 TSK_FS_INFO *
-ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype)
+ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype, uint8_t test)
 {
     char *myname = "ffs_open";
     FFS_INFO *ffs;

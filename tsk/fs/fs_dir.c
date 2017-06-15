@@ -150,23 +150,46 @@ tsk_fs_dir_copy(const TSK_FS_DIR * a_src_dir, TSK_FS_DIR * a_dst_dir)
  * @returns TSK_FS_NAME_FLAG_ALLOC, TSK_FS_NAME_FLAG_UNALLOC, or 0 if not found.
  */
 uint8_t
-tsk_fs_dir_contains(TSK_FS_DIR * a_fs_dir, TSK_INUM_T meta_addr)
+tsk_fs_dir_contains(TSK_FS_DIR * a_fs_dir, TSK_INUM_T meta_addr, uint32_t hash)
 {
     size_t i;
     uint8_t bestFound = 0;
 
     for (i = 0; i < a_fs_dir->names_used; i++) {
         if (meta_addr == a_fs_dir->names[i].meta_addr) {
-            bestFound = a_fs_dir->names[i].flags;
-            // stop as soon as we get an alloc. 
-            // if we get unalloc, keep going in case there
-            // is alloc later.
-            if (bestFound == TSK_FS_NAME_FLAG_ALLOC) 
-                break;
+            if (hash == tsk_fs_dir_hash(a_fs_dir->names[i].name)) {
+                bestFound = a_fs_dir->names[i].flags;
+                // stop as soon as we get an alloc. 
+                // if we get unalloc, keep going in case there
+                // is alloc later.
+                if (bestFound == TSK_FS_NAME_FLAG_ALLOC)
+                    break;
+            }
         }
     }
     return bestFound;
 }
+
+/** \internal
+ * Frees the allocated memory in a name structure when we are reshuffling
+ * things around. Does not free the outer TSK_FS_NAME structure.  Just the names
+ * inside of it.
+ */
+static void 
+tsk_fs_dir_free_name_internal(TSK_FS_NAME *fs_name) 
+{
+    if (fs_name->name) {
+	    free(fs_name->name);
+	    fs_name->name = NULL;
+	    fs_name->name_size = 0;
+    }
+    if (fs_name->shrt_name) {
+        free(fs_name->shrt_name);
+        fs_name->shrt_name = NULL;
+        fs_name->shrt_name_size = 0;
+    }
+}
+
 
 /** \internal
  * Add a FS_DENT structure to a FS_DIR structure by copying its
@@ -210,16 +233,7 @@ tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir, const TSK_FS_NAME * a_fs_name)
 
                     // free the memory - not the most efficient, but prevents
                     // duplicate code.
-                    if (fs_name_dest->name) {
-                        free(fs_name_dest->name);
-                        fs_name_dest->name = NULL;
-                        fs_name_dest->name_size = 0;
-                    }
-                    if (fs_name_dest->shrt_name) {
-                        free(fs_name_dest->shrt_name);
-                        fs_name_dest->shrt_name = NULL;
-                        fs_name_dest->shrt_name_size = 0;
-                    }
+                    tsk_fs_dir_free_name_internal(fs_name_dest);
                     break;
                 }
                 else {
@@ -344,16 +358,7 @@ tsk_fs_dir_close(TSK_FS_DIR * a_fs_dir)
     }
 
     for (i = 0; i < a_fs_dir->names_used; i++) {
-        if (a_fs_dir->names[i].name) {
-            free(a_fs_dir->names[i].name);
-            a_fs_dir->names[i].name = NULL;
-            a_fs_dir->names[i].name_size = 0;
-        }
-        if (a_fs_dir->names[i].shrt_name) {
-            free(a_fs_dir->names[i].shrt_name);
-            a_fs_dir->names[i].shrt_name = NULL;
-            a_fs_dir->names[i].shrt_name_size = 0;
-        }
+        tsk_fs_dir_free_name_internal(&a_fs_dir->names[i]);
     }
     free(a_fs_dir->names);
 
@@ -672,18 +677,27 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
                     return TSK_WALK_ERROR;
                 }
 
-                if ((a_dinfo->depth < MAX_DEPTH) &&
-                    (DIR_STRSZ >
+                /* If we've exceeded the max depth or max length, don't
+                 * recurse any further into this directory */
+                if ((a_dinfo->depth >= MAX_DEPTH) ||
+                    (DIR_STRSZ <=
                         strlen(a_dinfo->dirs) +
-                        strlen(fs_file->name->name))) {
-                    a_dinfo->didx[a_dinfo->depth] =
-                        &a_dinfo->dirs[strlen(a_dinfo->dirs)];
-                    strncpy(a_dinfo->didx[a_dinfo->depth],
-                        fs_file->name->name,
-                        DIR_STRSZ - strlen(a_dinfo->dirs));
-                    strncat(a_dinfo->dirs, "/", DIR_STRSZ);
-                    depth_added = 1;
+                        strlen(fs_file->name->name))) {   
+                    if (tsk_verbose) {
+                        tsk_fprintf(stdout,
+                            "tsk_fs_dir_walk_lcl: directory : %"
+                            PRIuINUM " exceeded max length / depth\n", fs_file->name->meta_addr);
+                    }
+                    return TSK_WALK_ERROR;
                 }
+
+                a_dinfo->didx[a_dinfo->depth] =
+                    &a_dinfo->dirs[strlen(a_dinfo->dirs)];
+                strncpy(a_dinfo->didx[a_dinfo->depth],
+                    fs_file->name->name,
+                    DIR_STRSZ - strlen(a_dinfo->dirs));
+                strncat(a_dinfo->dirs, "/", DIR_STRSZ);
+                depth_added = 1;
                 a_dinfo->depth++;
 
                 /* We do not want to save info about named unalloc files
@@ -1106,6 +1120,7 @@ find_orphan_meta_walk_cb(TSK_FS_FILE * a_fs_file, void *a_ptr)
 }
 
 
+
 /** \internal
  * Adds the fake metadata entry in the FS_DIR->fs_file struct for the orphan files directory
  *
@@ -1192,6 +1207,10 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
             TSK_FS_META_FLAG_UNALLOC | TSK_FS_META_FLAG_USED,
             find_orphan_meta_walk_cb, &data)) {
         tsk_fs_name_free(data.fs_name);
+        if (data.orphan_subdir_list) {
+            tsk_list_free(data.orphan_subdir_list);
+            data.orphan_subdir_list = NULL;
+        }
         tsk_release_lock(&a_fs->orphan_dir_lock);
         return TSK_ERR;
     }
@@ -1215,6 +1234,7 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
                 tsk_fs_name_copy(&a_fs_dir->names[i],
                     &a_fs_dir->names[a_fs_dir->names_used - 1]);
             }
+            tsk_fs_dir_free_name_internal(&a_fs_dir->names[a_fs_dir->names_used-1]);
             a_fs_dir->names_used--;
         }
     }
@@ -1246,4 +1266,24 @@ tsk_fs_dir_find_orphans(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir)
 
     tsk_release_lock(&a_fs->orphan_dir_lock);
     return TSK_OK;
+}
+
+/** \internal
+* return a hash of the passed in string. We use this
+* for full paths.
+* From: http://www.cse.yorku.ca/~oz/hash.html
+* @param str  The path to hash
+*/
+uint32_t tsk_fs_dir_hash(const char *str) {
+    uint32_t hash = 5381;
+    int c;
+
+    while ((c = *str++)) {
+        // skip slashes -> normalizes leading/ending/double slashes
+        if (c == '/')
+            continue;
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+    }
+
+    return hash;
 }
