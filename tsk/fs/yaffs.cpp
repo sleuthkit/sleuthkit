@@ -74,6 +74,8 @@ static const int TWELVE_BITS_MASK = 0xFFF; // Only keep 12 bits
 
 static uint8_t 
     yaffsfs_read_header(YAFFSFS_INFO *yfs, YaffsHeader ** header, TSK_OFF_T offset);
+static uint8_t
+    yaffsfs_load_attrs(TSK_FS_FILE *file);
 
 /**
  * Generate an inode number based on the file's object and version numbers
@@ -2408,7 +2410,7 @@ static TSK_WALK_RET_ENUM
 * @returns 1 on error and 0 on success
 */
 static uint8_t
-    yaffsfs_istat(TSK_FS_INFO *fs, FILE * hFile, TSK_INUM_T inum,
+    yaffsfs_istat(TSK_FS_INFO *fs, TSK_FS_ISTAT_FLAG_ENUM flags, FILE * hFile, TSK_INUM_T inum,
     TSK_DADDR_T numblock, int32_t sec_skew)
 {
     TSK_FS_META *fs_meta;
@@ -2492,17 +2494,28 @@ static uint8_t
     }
     tsk_fprintf(hFile, "\nData Chunks:\n");
 
-    print.idx = 0;
-    print.hFile = hFile;
 
-    if (tsk_fs_file_walk(fs_file, TSK_FS_FILE_WALK_FLAG_AONLY,
-        (TSK_FS_FILE_WALK_CB) print_addr_act, (void *) &print)) {
+    if (flags & TSK_FS_ISTAT_RUNLIST){
+        const TSK_FS_ATTR *fs_attr_default =
+            tsk_fs_file_attr_get_type(fs_file,
+                TSK_FS_ATTR_TYPE_DEFAULT, 0, 0);
+        if (fs_attr_default && (fs_attr_default->flags & TSK_FS_ATTR_NONRES)) {
+            tsk_fs_attr_print(fs_attr_default, hFile);
+        }
+    }
+    else {
+        print.idx = 0;
+        print.hFile = hFile;
+
+        if (tsk_fs_file_walk(fs_file, TSK_FS_FILE_WALK_FLAG_AONLY,
+            (TSK_FS_FILE_WALK_CB)print_addr_act, (void *)&print)) {
             tsk_fprintf(hFile, "\nError reading file:  ");
             tsk_error_print(hFile);
             tsk_error_reset();
-    }
-    else if (print.idx != 0) {
-        tsk_fprintf(hFile, "\n");
+        }
+        else if (print.idx != 0) {
+            tsk_fprintf(hFile, "\n");
+        }
     }
 
     tsk_fs_file_close(fs_file);

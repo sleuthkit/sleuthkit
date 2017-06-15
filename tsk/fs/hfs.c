@@ -5468,7 +5468,7 @@ print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
  * @returns 1 on error and 0 on success
  */
 static uint8_t
-hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
+hfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TSK_INUM_T inum,
     TSK_DADDR_T numblock, int32_t sec_skew)
 {
     HFS_INFO *hfs = (HFS_INFO *) fs;

@@ -4241,7 +4241,7 @@ print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
  * @returns 1 on error and 0 on success
  */
 static uint8_t
-ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
+ntfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
     TSK_INUM_T inum, TSK_DADDR_T numblock, int32_t sec_skew)
 {
     TSK_FS_FILE *fs_file;
@@ -4671,17 +4671,21 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
                     "",
                     (fs_attr->flags & TSK_FS_ATTR_SPARSE) ? ", Sparse" :
                     "", fs_attr->size, fs_attr->nrd.initsize);
-
-                print_addr.idx = 0;
-                print_addr.hFile = hFile;
-                if (tsk_fs_file_walk_type(fs_file, fs_attr->type,
+                if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
+                    tsk_fs_attr_print(fs_attr, hFile);
+                }
+                else {
+                    print_addr.idx = 0;
+                    print_addr.hFile = hFile;
+                    if (tsk_fs_file_walk_type(fs_file, fs_attr->type,
                         fs_attr->id,
                         (TSK_FS_FILE_WALK_FLAG_AONLY |
                             TSK_FS_FILE_WALK_FLAG_SLACK),
-                        print_addr_act, (void *) &print_addr)) {
-                    tsk_fprintf(hFile, "\nError walking file\n");
-                    tsk_error_print(hFile);
-                    tsk_error_reset();
+                        print_addr_act, (void *)&print_addr)) {
+                        tsk_fprintf(hFile, "\nError walking file\n");
+                        tsk_error_print(hFile);
+                        tsk_error_reset();
+                    }
                 }
                 if (print_addr.idx != 0)
                     tsk_fprintf(hFile, "\n");

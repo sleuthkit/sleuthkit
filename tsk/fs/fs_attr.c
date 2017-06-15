@@ -355,6 +355,7 @@ tsk_fs_attr_set_run(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
     return 0;
 }
 
+
 static void
 dump_attr(TSK_FS_ATTR * a_fs_attr)
 {
@@ -366,6 +367,23 @@ dump_attr(TSK_FS_ATTR * a_fs_attr)
         fprintf(stderr, "  %" PRIuDADDR " to %" PRIuDADDR " %sFiller\n",
             cur_run->offset, cur_run->offset + cur_run->len - 1,
             (cur_run->flags & TSK_FS_ATTR_RUN_FLAG_FILLER) ? "" : "Not");
+    }
+}
+
+void
+tsk_fs_attr_print(const TSK_FS_ATTR * a_fs_attr, FILE* hFile) {
+    TSK_FS_ATTR_RUN *cur_run;
+    cur_run = a_fs_attr->nrd.run;
+
+    for (cur_run = a_fs_attr->nrd.run; cur_run; cur_run = cur_run->next) {
+        tsk_fprintf(hFile, "Staring address: %lld, length: %lld", cur_run->addr, cur_run->len);
+        if (cur_run->flags & TSK_FS_ATTR_RUN_FLAG_FILLER) {
+            tsk_fprintf(hFile, " FILLER");
+        }
+        if (cur_run->flags & TSK_FS_ATTR_RUN_FLAG_SPARSE) {
+            tsk_fprintf(hFile, " SPARSE");
+        }
+        tsk_fprintf(hFile, "\n");
     }
 }
 

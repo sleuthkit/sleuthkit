@@ -100,6 +100,7 @@ extern "C" {
         TSK_FS_ATTR * a_fs_attr, TSK_FS_ATTR_RUN * data_run_new);
     extern void tsk_fs_attr_append_run(TSK_FS_INFO * fs,
         TSK_FS_ATTR * a_fs_attr, TSK_FS_ATTR_RUN * a_data_run);
+    extern void tsk_fs_attr_print(const TSK_FS_ATTR * a_fs_attr, FILE * hFile);
 
     /* FS_DATALIST */
     extern TSK_FS_ATTRLIST *tsk_fs_attrlist_alloc();

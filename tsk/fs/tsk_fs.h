@@ -870,6 +870,12 @@ extern "C" {
     };
     typedef enum TSK_FS_INFO_FLAG_ENUM TSK_FS_INFO_FLAG_ENUM;
 
+    enum TSK_FS_ISTAT_FLAG_ENUM {
+        TSK_FS_ISTAT_NONE = 0x00,
+        TSK_FS_ISTAT_RUNLIST = 0x01
+    };
+    typedef enum TSK_FS_ISTAT_FLAG_ENUM TSK_FS_ISTAT_FLAG_ENUM;
+
 #define TSK_FS_INFO_TAG  0x10101010
 #define TSK_FS_INFO_FS_ID_LEN   32      // set based on largest file system / volume ID supported
 
@@ -956,7 +962,7 @@ extern "C" {
         * 
         * @returns 1 on error and 0 on success
         */
-         uint8_t(*istat) (TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
+         uint8_t(*istat) (TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM flags, FILE * hFile, TSK_INUM_T inum,
             TSK_DADDR_T numblock, int32_t sec_skew);
 
          TSK_RETVAL_ENUM(*dir_open_meta) (TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir, TSK_INUM_T inode);  ///< \internal Call tsk_fs_dir_open_meta() instead. 

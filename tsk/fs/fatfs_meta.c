@@ -885,17 +885,17 @@ print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
  * @returns 1 on error and 0 on success.
  */
 uint8_t
-fatfs_istat(TSK_FS_INFO *a_fs, FILE *a_hFile, TSK_INUM_T a_inum,
+fatfs_istat(TSK_FS_INFO *a_fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE *a_hFile, TSK_INUM_T a_inum,
     TSK_DADDR_T a_numblock, int32_t a_sec_skew)
 {
     const char* func_name = "fatfs_istat";
     FATFS_INFO *fatfs = (FATFS_INFO*)a_fs;
-    TSK_FS_META *fs_meta = NULL; 
-    TSK_FS_FILE *fs_file =  NULL;
+    TSK_FS_META *fs_meta = NULL;
+    TSK_FS_FILE *fs_file = NULL;
     TSK_FS_META_NAME_LIST *fs_name_list = NULL;
     FATFS_PRINT_ADDR print;
     char timeBuf[128];
- 
+
     tsk_error_reset();
     if (fatfs_ptr_arg_is_null(a_fs, "a_fs", func_name) ||
         fatfs_ptr_arg_is_null(a_hFile, "a_hFile", func_name) ||
@@ -975,7 +975,7 @@ fatfs_istat(TSK_FS_INFO *a_fs, FILE *a_hFile, TSK_INUM_T a_inum,
     }
 
     tsk_fprintf(a_hFile, "Written:\t%s\n", tsk_fs_time_to_str(fs_meta->mtime,
-            timeBuf));
+        timeBuf));
     tsk_fprintf(a_hFile, "Accessed:\t%s\n",
         tsk_fs_time_to_str(fs_meta->atime, timeBuf));
     tsk_fprintf(a_hFile, "Created:\t%s\n",
@@ -983,23 +983,41 @@ fatfs_istat(TSK_FS_INFO *a_fs, FILE *a_hFile, TSK_INUM_T a_inum,
 
     /* Print the specified number of sector addresses. */
     tsk_fprintf(a_hFile, "\nSectors:\n");
-    if (a_numblock > 0) {
-        /* A bad hack to force a specified number of blocks */
-        fs_meta->size = a_numblock * a_fs->block_size;
+    if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
+        const TSK_FS_ATTR *fs_attr_default =
+            tsk_fs_file_attr_get_type(fs_file,
+                TSK_FS_ATTR_TYPE_DEFAULT, 0, 0);
+        if (fs_attr_default && (fs_attr_default->flags & TSK_FS_ATTR_NONRES)) {
+            tsk_fs_attr_print(fs_attr_default, a_hFile);
+        }
+        /*
+        fatfs_make_data_runs(fs_file);
+        if (fs_file->meta->attr) {
+            
+            tsk_fs_attr_print(fs_file->meta->attr->head, a_hFile);
+        }*/
     }
-    print.istat_seen = 0;
-    print.idx = 0;
-    print.hFile = a_hFile;
-    if (tsk_fs_file_walk(fs_file,
+    else {
+
+        if (a_numblock > 0) {
+            /* A bad hack to force a specified number of blocks */
+            fs_meta->size = a_numblock * a_fs->block_size;
+        }
+        print.istat_seen = 0;
+        print.idx = 0;
+        print.hFile = a_hFile;
+        if (tsk_fs_file_walk(fs_file,
             (TSK_FS_FILE_WALK_FLAG_ENUM)(TSK_FS_FILE_WALK_FLAG_AONLY | TSK_FS_FILE_WALK_FLAG_SLACK),
-            print_addr_act, (void *) &print)) {
-        tsk_fprintf(a_hFile, "\nError reading file\n");
-        tsk_error_print(a_hFile);
-        tsk_error_reset();
+            print_addr_act, (void *)&print)) {
+            tsk_fprintf(a_hFile, "\nError reading file\n");
+            tsk_error_print(a_hFile);
+            tsk_error_reset();
+        }
+        else if (print.idx != 0) {
+            tsk_fprintf(a_hFile, "\n");
+        }
     }
-    else if (print.idx != 0) {
-        tsk_fprintf(a_hFile, "\n");
-    }
+
 
     tsk_fs_file_close(fs_file);
     return 0;

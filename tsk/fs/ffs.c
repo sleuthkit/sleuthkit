@@ -1682,7 +1682,7 @@ print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
  * @returns 1 on error and 0 on success
  */
 static uint8_t
-ffs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
+ffs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TSK_INUM_T inum,
     TSK_DADDR_T numblock, int32_t sec_skew)
 {
     FFS_INFO *ffs = (FFS_INFO *) fs;
@@ -1879,6 +1879,31 @@ ffs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     /* A bad hack to force a specified number of blocks */
     if (numblock > 0)
         fs_meta->size = numblock * ffs->ffsbsize_b;
+
+    if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
+        fs_file->fs_info->load_attrs(fs_file);
+        if (fs_file->meta->attr == NULL) {
+            printf("  meta->attr is null\n");
+        }
+        else if (fs_file->meta->attr->head == NULL) {
+            printf("  meta->attr->head is null\n");
+        }
+        else {
+            TSK_FS_ATTR * attr = fs_file->meta->attr->head;
+            while (attr) {
+                printf("  attr : 0x%02x\n", attr->type);
+                if (attr->flags & TSK_FS_ATTR_NONRES) {
+                    printf("    non-resident\n");
+                    tsk_fs_attr_print(attr, hFile);
+                }
+                else {
+                    printf("    resident\n");
+                }
+
+                attr = attr->next;
+            }
+        }
+    }
 
     tsk_fprintf(hFile, "\nDirect Blocks:\n");
 
