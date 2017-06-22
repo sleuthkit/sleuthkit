@@ -1932,7 +1932,7 @@ class TskFsInfo {
         TSK_INUM_T * a_result, TskFsName * a_fs_name) {
         if (m_fsInfo != NULL)
             return tsk_fs_path2inum(m_fsInfo, a_path, a_result,
-                a_fs_name->m_fsName);
+                (a_fs_name)? a_fs_name->m_fsName : NULL); /* Avoid derreference of NULL pointer */
         else
             return -1;
     };
