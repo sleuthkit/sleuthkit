@@ -321,12 +321,11 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 	/**
 	 * Accepts a visitor SleuthkitItemVisitor that will perform an operation on
-	 * this artifact and return some object as the result of the operation.
+	 * this artifact type and return some object as the result of the operation.
 	 *
-	 * @param <T>     The type parameter of the visitor, i.e., the type of the
-	 *                object that will be returned as the result of the visit
-	 *                operation.
-	 * @param visitor The visitor.
+	 * @param visitor The visitor, where the type parameter of the visitor is
+	 *                the type of the object that will be returned as the result
+	 *                of the visit operation.
 	 *
 	 * @return An object of type T.
 	 */
