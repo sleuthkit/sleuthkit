@@ -5736,51 +5736,71 @@ hfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
         //   do the wrong thing!
         if (!(entry.cat.std.perm.o_flags & HFS_PERM_OFLAG_COMPRESSED)) {
             tsk_fprintf(hFile, "\nData Fork Blocks:\n");
-            print.idx = 0;
-            print.hFile = hFile;
-            print.accumulating = FALSE;
-            print.startBlock = 0;
-            print.blockCount = 0;
+            if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
+                const TSK_FS_ATTR *fs_attr_default =
+                    tsk_fs_file_attr_get_type(fs_file,
+                        HFS_FS_ATTR_ID_DATA, 0, 0);
+                if (fs_attr_default && (fs_attr_default->flags & TSK_FS_ATTR_NONRES)) {
+                    tsk_fs_attr_print(fs_attr_default, hFile);
+                }
+            }
+            else {
+                print.idx = 0;
+                print.hFile = hFile;
+                print.accumulating = FALSE;
+                print.startBlock = 0;
+                print.blockCount = 0;
 
-            if (tsk_fs_file_walk_type(fs_file,
+                if (tsk_fs_file_walk_type(fs_file,
                     TSK_FS_ATTR_TYPE_HFS_DATA, HFS_FS_ATTR_ID_DATA,
                     (TSK_FS_FILE_WALK_FLAG_AONLY |
                         TSK_FS_FILE_WALK_FLAG_SLACK), print_addr_act,
-                    (void *) &print)) {
-                tsk_fprintf(hFile, "\nError reading file data fork\n");
-                tsk_error_print(hFile);
-                tsk_error_reset();
-            }
-            else {
-                output_print_addr(&print);
-                if (print.idx != 0)
-                    tsk_fprintf(hFile, "\n");
+                        (void *)&print)) {
+                    tsk_fprintf(hFile, "\nError reading file data fork\n");
+                    tsk_error_print(hFile);
+                    tsk_error_reset();
+                }
+                else {
+                    output_print_addr(&print);
+                    if (print.idx != 0)
+                        tsk_fprintf(hFile, "\n");
+                }
             }
         }
 
         // Only print out the blocks of the Resource fork if it has nonzero size
         if (tsk_getu64(fs->endian, entry.cat.resource.logic_sz) > 0) {
             tsk_fprintf(hFile, "\nResource Fork Blocks:\n");
+            if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
+                const TSK_FS_ATTR *fs_attr_default =
+                    tsk_fs_file_attr_get_type(fs_file,
+                        HFS_FS_ATTR_ID_RSRC, 0, 0);
+                if (fs_attr_default && (fs_attr_default->flags & TSK_FS_ATTR_NONRES)) {
+                    tsk_fs_attr_print(fs_attr_default, hFile);
+                }
+            }
+            else {
 
-            print.idx = 0;
-            print.hFile = hFile;
-            print.accumulating = FALSE;
-            print.startBlock = 0;
-            print.blockCount = 0;
+                print.idx = 0;
+                print.hFile = hFile;
+                print.accumulating = FALSE;
+                print.startBlock = 0;
+                print.blockCount = 0;
 
-            if (tsk_fs_file_walk_type(fs_file,
+                if (tsk_fs_file_walk_type(fs_file,
                     TSK_FS_ATTR_TYPE_HFS_RSRC, HFS_FS_ATTR_ID_RSRC,
                     (TSK_FS_FILE_WALK_FLAG_AONLY |
                         TSK_FS_FILE_WALK_FLAG_SLACK), print_addr_act,
-                    (void *) &print)) {
-                tsk_fprintf(hFile, "\nError reading file resource fork\n");
-                tsk_error_print(hFile);
-                tsk_error_reset();
-            }
-            else {
-                output_print_addr(&print);
-                if (print.idx != 0)
-                    tsk_fprintf(hFile, "\n");
+                        (void *)&print)) {
+                    tsk_fprintf(hFile, "\nError reading file resource fork\n");
+                    tsk_error_print(hFile);
+                    tsk_error_reset();
+                }
+                else {
+                    output_print_addr(&print);
+                    if (print.idx != 0)
+                        tsk_fprintf(hFile, "\n");
+                }
             }
         }
 
