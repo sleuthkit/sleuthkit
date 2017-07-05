@@ -27,7 +27,12 @@ using namespace std;
 #include "TskBlackboardAttribute.h"
 
 #include "tsk/libtsk.h"
-#include "tsk/auto/sqlite3.h"
+
+#ifdef HAVE_LIBSQLITE3
+  #include <sqlite3.h>
+#else
+  #include "tsk/auto/sqlite3.h"
+#endif
 
 /** 
  * Implementation of TskImgDB that uses SQLite to store the data.
