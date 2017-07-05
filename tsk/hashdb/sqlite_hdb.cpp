@@ -114,15 +114,15 @@ static uint8_t
 static uint8_t 
     prepare_statements(TSK_SQLITE_HDB_INFO *hdb_info)
 {
-    if (sqlite_hdb_prepare_stmt("INSERT INTO hashes (md5) VALUES (?)", &(hdb_info->insert_md5_into_hashes), hdb_info->db)) {
+    if (sqlite_hdb_prepare_stmt("INSERT OR IGNORE INTO hashes (md5) VALUES (?)", &(hdb_info->insert_md5_into_hashes), hdb_info->db)) {
         return 1;
     }
 
-    if (sqlite_hdb_prepare_stmt("INSERT INTO file_names (name, hash_id) VALUES (?, ?)", &(hdb_info->insert_into_file_names), hdb_info->db)) {
+    if (sqlite_hdb_prepare_stmt("INSERT OR IGNORE INTO file_names (name, hash_id) VALUES (?, ?)", &(hdb_info->insert_into_file_names), hdb_info->db)) {
         return 1;
     }
 
-    if (sqlite_hdb_prepare_stmt("INSERT INTO comments (comment, hash_id) VALUES (?, ?)", &(hdb_info->insert_into_comments), hdb_info->db)) {
+    if (sqlite_hdb_prepare_stmt("INSERT OR IGNORE INTO comments (comment, hash_id) VALUES (?, ?)", &(hdb_info->insert_into_comments), hdb_info->db)) {
         return 1;
     }
 
