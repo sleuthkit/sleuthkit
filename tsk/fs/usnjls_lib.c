@@ -18,6 +18,7 @@
 
 
 #include "tsk_fs_i.h"
+#include "tsk_ntfs.h"
 
 
 static void
