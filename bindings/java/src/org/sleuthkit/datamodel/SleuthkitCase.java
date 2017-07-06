@@ -7326,7 +7326,7 @@ public class SleuthkitCase {
 				+ "FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
 				+ "ON tsk_objects.obj_id=tsk_files.obj_id " //NON-NLS
 				+ "WHERE (tsk_objects.par_obj_id = ? ) " //NON-NLS
-				+ "ORDER BY tsk_files.dir_type, LOWER(tsk_files.name)"), //NON-NLS
+				+ "ORDER BY tsk_files.meta_type DESC, LOWER(tsk_files.name)"), //NON-NLS
 		SELECT_FILES_BY_PARENT_AND_TYPE("SELECT tsk_files.* " //NON-NLS
 				+ "FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
 				+ "ON tsk_objects.obj_id=tsk_files.obj_id " //NON-NLS
