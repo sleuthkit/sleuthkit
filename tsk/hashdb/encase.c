@@ -221,7 +221,7 @@ uint8_t
 
     memset(buf, 0, sizeof(buf));
 
-    /* Loop so that we can find multiple occurances of the same hash */
+    /* Loop so that we can find multiple occurrences of the same hash */
     fseeko(hdb_binsrch_info->hDb, offset, SEEK_SET);
     while (1) {
         int retval;

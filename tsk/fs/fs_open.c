@@ -94,151 +94,65 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
      * We need to try all of them in case more than one matches
      */
     if (a_ftype == TSK_FS_TYPE_DETECT) {
-        TSK_FS_INFO *fs_info, *fs_set = NULL;
-        char *set = NULL;
+        TSK_FS_INFO *fs_info, *fs_first = NULL;
+        const char *name_first;
+        int i;
 
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "fsopen: Auto detection mode at offset %" PRIuOFF "\n",
                 a_offset);
 
-        if ((fs_info =
-                ntfs_open(a_img_info, a_offset, TSK_FS_TYPE_NTFS_DETECT,
-                    1)) != NULL) {
-            set = "NTFS";
-            fs_set = fs_info;
-        }
-        else {
-            tsk_error_reset();
-        }
-
-        if ((fs_info =
-                fatfs_open(a_img_info, a_offset, TSK_FS_TYPE_FAT_DETECT,
-                    1)) != NULL) {
-            if (set == NULL) {
-                set = "FAT";
-                fs_set = fs_info;
-            }
-            else {
-                fs_set->close(fs_set);
-                fs_info->close(fs_info);
-                tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
-                tsk_error_set_errstr("FAT or %s", set);
-                return NULL;
-            }
-        }
-        else {
-            tsk_error_reset();
-        }
-
-        if ((fs_info =
-                ext2fs_open(a_img_info, a_offset, TSK_FS_TYPE_EXT_DETECT,
-                    1)) != NULL) {
-            if (set == NULL) {
-                set = "EXT2/3";
-                fs_set = fs_info;
-            }
-            else {
-                fs_set->close(fs_set);
-                fs_info->close(fs_info);
-                tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
-                tsk_error_set_errstr("EXT2/3 or %s", set);
-                return NULL;
-            }
-        }
-        else {
-            tsk_error_reset();
-        }
-
-        if ((fs_info =
-                ffs_open(a_img_info, a_offset,
-                    TSK_FS_TYPE_FFS_DETECT)) != NULL) {
-            if (set == NULL) {
-                set = "UFS";
-                fs_set = fs_info;
-            }
-            else {
-                fs_set->close(fs_set);
-                fs_info->close(fs_info);
-                tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
-                tsk_error_set_errstr("UFS or %s", set);
-                return NULL;
-            }
-        }
-        else {
-            tsk_error_reset();
-        }
-
-        if ((fs_info =
-                yaffs2_open(a_img_info, a_offset,
-                    TSK_FS_TYPE_YAFFS2_DETECT, 1)) != NULL) {
-            if (set == NULL) {
-                set = "YAFFS2";
-                fs_set = fs_info;
-            }
-            else {
-                fs_set->close(fs_set);
-                fs_info->close(fs_info);
-                tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
-                tsk_error_set_errstr("YAFFS2 or %s", set);
-                return NULL;
-            }
-        }
-        else {
-            tsk_error_reset();
-        }
-
-
+        const struct {
+            char* name;
+            TSK_FS_INFO* (*open)(TSK_IMG_INFO*, TSK_OFF_T,
+                                 TSK_FS_TYPE_ENUM, uint8_t);
+            TSK_FS_TYPE_ENUM type;
+        } FS_OPENERS[] = {
+            { "NTFS",     ntfs_open,    TSK_FS_TYPE_NTFS_DETECT    },
+            { "FAT",      fatfs_open,   TSK_FS_TYPE_FAT_DETECT     },
+            { "EXT2/3/4", ext2fs_open,  TSK_FS_TYPE_EXT_DETECT     },
+            { "UFS",      ffs_open,     TSK_FS_TYPE_FFS_DETECT     },
+            { "YAFFS2",   yaffs2_open,  TSK_FS_TYPE_YAFFS2_DETECT  },
 #if TSK_USE_HFS
-        if ((fs_info =
-                hfs_open(a_img_info, a_offset, TSK_FS_TYPE_HFS_DETECT,
-                    1)) != NULL) {
-            if (set == NULL) {
-                set = "HFS";
-                fs_set = fs_info;
+            { "HFS",      hfs_open,     TSK_FS_TYPE_HFS_DETECT     },
+#endif
+            { "ISO9660",  iso9660_open, TSK_FS_TYPE_ISO9660_DETECT }
+        };
+
+        for (i = 0; i < sizeof(FS_OPENERS)/sizeof(FS_OPENERS[0]); ++i) {
+            if ((fs_info = FS_OPENERS[i].open(
+                    a_img_info, a_offset, FS_OPENERS[i].type, 1)) != NULL) {
+                // fs opens as type i
+                if (fs_first == NULL) {
+                    // first success opening fs
+                    name_first = FS_OPENERS[i].name;
+                    fs_first = fs_info;
+                }
+                else {
+                    // second success opening fs, which means we
+                    // cannot autodetect the fs type and must give up
+                    fs_first->close(fs_first);
+                    fs_info->close(fs_info);
+                    tsk_error_reset();
+                    tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
+                    tsk_error_set_errstr(
+                        "%s or %s", FS_OPENERS[i].name, name_first);
+                    return NULL;
+                }
             }
             else {
-                fs_set->close(fs_set);
-                fs_info->close(fs_info);
+                // fs does not open as type i
                 tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
-                tsk_error_set_errstr("HFS or %s", set);
-                return NULL;
             }
         }
-        else {
-            tsk_error_reset();
-        }
-#endif
 
-        if ((fs_info =
-                iso9660_open(a_img_info, a_offset,
-                    TSK_FS_TYPE_ISO9660_DETECT, 1)) != NULL) {
-            if (set != NULL) {
-                fs_set->close(fs_set);
-                fs_info->close(fs_info);
-                tsk_error_reset();
-                tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
-                tsk_error_set_errstr("ISO9660 or %s", set);
-                return NULL;
-            }
-            fs_set = fs_info;
-        }
-        else {
-            tsk_error_reset();
-        }
-
-
-        if (fs_set == NULL) {
+        if (fs_first == NULL) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
-            return NULL;
         }
-        return fs_set;
+
+        return fs_first;
     }
     else {
         if (TSK_FS_TYPE_ISNTFS(a_ftype))
@@ -246,7 +160,7 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
         else if (TSK_FS_TYPE_ISFAT(a_ftype))
             return fatfs_open(a_img_info, a_offset, a_ftype, 0);
         else if (TSK_FS_TYPE_ISFFS(a_ftype))
-            return ffs_open(a_img_info, a_offset, a_ftype);
+            return ffs_open(a_img_info, a_offset, a_ftype, 0);
         else if (TSK_FS_TYPE_ISEXT(a_ftype))
             return ext2fs_open(a_img_info, a_offset, a_ftype, 0);
         else if (TSK_FS_TYPE_ISHFS(a_ftype))

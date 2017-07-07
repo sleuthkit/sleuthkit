@@ -11,7 +11,7 @@
 /**
  * \file tsk_db.h
  * Contains TSK interface to abstract database handling class. The intent of this class
- * is so that different databases can be seamlesly used by TSK. 
+ * is so that different databases can be seamlessly used by TSK. 
  */
 
 #ifndef _TSK_DB_H

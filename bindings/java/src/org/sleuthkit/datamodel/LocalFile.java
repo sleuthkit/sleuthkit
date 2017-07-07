@@ -123,39 +123,6 @@ public class LocalFile extends AbstractFile {
 		return false;
 	}
 
-	/**
-	 * Gets the derived or local files, if any, that are children of this local
-	 * file.
-	 *
-	 * @return A list of the children.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
-	 */
-	@Override
-	public List<Content> getChildren() throws TskCoreException {
-		final SleuthkitCase tskCase = getSleuthkitCase();
-		final List<Content> children = tskCase.getAbstractFileChildren(this, TSK_DB_FILES_TYPE_ENUM.DERIVED);
-		children.addAll(tskCase.getAbstractFileChildren(this, TSK_DB_FILES_TYPE_ENUM.LOCAL));
-		return children;
-	}
-
-	/**
-	 * Gets the object ids of the derived or local files, if any, that are
-	 * children of this local file.
-	 *
-	 * @return A list of the children.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
-	 */
-	@Override
-	public List<Long> getChildrenIds() throws TskCoreException {
-		final SleuthkitCase tskCase = getSleuthkitCase();
-		final List<Long> childIds = tskCase.getAbstractFileChildrenIds(this, TSK_DB_FILES_TYPE_ENUM.DERIVED);
-		childIds.addAll(tskCase.getAbstractFileChildrenIds(this, TSK_DB_FILES_TYPE_ENUM.LOCAL));
-		return childIds;
-	}
 
 	/**
 	 * Accepts a content visitor (Visitor design pattern).

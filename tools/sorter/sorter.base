@@ -1126,7 +1126,7 @@ sub read_config {
             print "Adding Category: $cat   File Keywords: $kw\n" if ($VERBOSE);
         }
 
-        # extention defn
+        # extension defn
         # ext ext1,ext2, key_words
         elsif (/^\s*ext\s+([\w\d\,]+)\s+(.*?)\s*$/) {
             my $ext = $1;

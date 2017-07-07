@@ -1,3 +1,7 @@
+[![Build Status](https://travis-ci.org/sleuthkit/sleuthkit.svg?branch=develop)](https://travis-ci.org/sleuthkit/sleuthkit)
+
+[![Build status](https://ci.appveyor.com/api/projects/status/8f7ljj8s2lh5sqfv?svg=true)](https://ci.appveyor.com/project/bcarrier/sleuthkit)
+
 # [The Sleuth Kit](http://www.sleuthkit.org/sleuthkit)
 README File
 

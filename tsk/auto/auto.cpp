@@ -18,7 +18,7 @@
 #include "tsk/img/img_writer.h"
 
 
-// @@@ Follow through some error paths for sanity check and update docs somewhere to relfect the new scheme
+// @@@ Follow through some error paths for sanity check and update docs somewhere to reflect the new scheme
 
 TskAuto::TskAuto()
 {
@@ -211,7 +211,7 @@ TskAuto::filterFs(TSK_FS_INFO * fs_info) {
  * Starts in sector 0 of the opened disk images and looks for a
  * volume or file system. Will call processFile() on each file
  * that is found.
- * @return 1 if an error occured (message will have been registered) and 0 on success
+ * @return 1 if an error occurred (message will have been registered) and 0 on success
  */
 uint8_t
 TskAuto::findFilesInImg()
@@ -255,9 +255,8 @@ TSK_WALK_RET_ENUM
         return TSK_WALK_STOP;    
 
     // process it
-    TSK_RETVAL_ENUM retval2 =
-        tsk->findFilesInFsRet(a_vs_part->start *
-        a_vs_part->vs->block_size, TSK_FS_TYPE_DETECT);
+    TSK_RETVAL_ENUM retval2 = tsk->findFilesInFsRet(
+        a_vs_part->start * a_vs_part->vs->block_size, TSK_FS_TYPE_DETECT);
     if ((retval2 == TSK_STOP) || (tsk->getStopProcessing())) {
         return TSK_WALK_STOP;
     }
@@ -274,7 +273,7 @@ TSK_WALK_RET_ENUM
  * that is found.
  * @param a_start Byte offset to start analyzing from.
  * @param a_vtype Volume system type to analyze
- * @return 1 if an error occured (messages will have been registered) and 0 on success
+ * @return 1 if an error occurred (messages will have been registered) and 0 on success
  */
 uint8_t
 TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
@@ -324,7 +323,7 @@ TskAuto::findFilesInVs(TSK_OFF_T a_start, TSK_VS_TYPE_ENUM a_vtype)
  * volume system or file system. Will call processFile() on each file
  * that is found.
  * @param a_start Byte offset to start analyzing from.
- * @return 1 if an error occured (message will have been registered), 0 on success
+ * @return 1 if an error occurred (message will have been registered), 0 on success
  */
 uint8_t
 TskAuto::findFilesInVs(TSK_OFF_T a_start)
@@ -360,8 +359,10 @@ TSK_RETVAL_ENUM
             return TSK_ERR;
         }
         else if (getCurVsPartFlag() & TSK_VS_PART_FLAG_ALLOC) {
-            tsk_error_set_errstr2 ("Sector offset: %" PRIuOFF ", Partition Type: %s",
-                a_start/512, getCurVsPartDescr().c_str() );
+            tsk_error_set_errstr2 (
+                "Sector offset: %" PRIuOFF ", Partition Type: %s",
+                a_start/512, getCurVsPartDescr().c_str()
+            );
             registerError();
             return TSK_ERR;
         }
@@ -387,7 +388,7 @@ TSK_RETVAL_ENUM
  *
  * @param a_start Byte offset of file system starting location.
  *
- * @returns 1 if an error occured (messages will have been registered) and 0 on success
+ * @returns 1 if an error occurred (messages will have been registered) and 0 on success
  */
 uint8_t
 TskAuto::findFilesInFs(TSK_OFF_T a_start)
@@ -404,7 +405,7 @@ TskAuto::findFilesInFs(TSK_OFF_T a_start)
  * @param a_start Byte offset of file system starting location.
  * @param a_ftype Type of file system that is located at the offset.
  *
- * @returns 1 if an error occured (messages will have been registered) and 0 on success
+ * @returns 1 if an error occurred (messages will have been registered) and 0 on success
  */
 uint8_t
 TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype)
@@ -423,7 +424,7 @@ TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype)
  * @param a_ftype Type of file system that will be analyzed.
  * @param a_inum inum to start walking files system at.
  *
- * @returns 1 if an error occured (messages will have been registered) and 0 on success
+ * @returns 1 if an error occurred (messages will have been registered) and 0 on success
  */
 uint8_t
     TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_FS_TYPE_ENUM a_ftype,
@@ -472,7 +473,7 @@ uint8_t
  * @param a_start Byte offset of file system starting location.
  * @param a_inum inum to start walking files system at.
  *
- * @returns 1 if an error occured (messages will have been registered) and 0 on success
+ * @returns 1 if an error occurred (messages will have been registered) and 0 on success
  */
 uint8_t
 TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_INUM_T a_inum)
@@ -486,7 +487,7 @@ TskAuto::findFilesInFs(TSK_OFF_T a_start, TSK_INUM_T a_inum)
  *
  * @param a_fs_info Pointer to a previously opened file system.
  *
- * @returns 1 if an error occured (messages will have been registered) and 0 on success
+ * @returns 1 if an error occurred (messages will have been registered) and 0 on success
  */
 uint8_t
 TskAuto::findFilesInFs(TSK_FS_INFO * a_fs_info)

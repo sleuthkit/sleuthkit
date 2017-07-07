@@ -859,7 +859,7 @@ static uint8_t
 #endif
 
     // Allocate an array to hold the starting offsets in the index file for each 
-    // set of hashes with identical intitial (3) nibbles.
+    // set of hashes with identical initial (3) nibbles.
     hdb_binsrch_info->idx_offsets = (uint64_t*)tsk_malloc(IDX_IDX_SIZE);
     if (NULL == hdb_binsrch_info->idx_offsets) {
         return 1;
@@ -1240,7 +1240,7 @@ int8_t
                 return -1;
         }
 
-        /* Set the delimter to NULL so we can treat the hash as a string */
+        /* Set the delimiter to NULL so we can treat the hash as a string */
         hdb_binsrch_info->idx_lbuf[hdb_binsrch_info->hash_len] = '\0';
         cmp = strcasecmp(hdb_binsrch_info->idx_lbuf, ucHash);
 

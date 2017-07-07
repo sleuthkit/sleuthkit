@@ -462,7 +462,7 @@ tsk_img_open_external(
 /* This interface needs some more thought because the size of wchar is not standard.
  * If the goal i to provide a constant wchar interface, then we need to incorporate
  * UTF-32 to UTF-8 support as well.  If the goal is to provide a standard UTF-16
- * interface, we should use another type besiddes wchar_t.
+ * interface, we should use another type besides wchar_t.
  */
 TSK_IMG_INFO *
 tsk_img_open_utf16(int num_img,
@@ -478,7 +478,7 @@ tsk_img_open_utf16(int num_img,
         TSK_ENDIAN_ENUM endian;
         uint16_t tmp1;
 
-        /* The unicode conversio routines are primarily to convert Unicode
+        /* The unicode conversion routines are primarily to convert Unicode
          * in file and volume system images, which means they could be in
          * an endian ordering different from the local one.  We need to figure
          * out our local ordering so we can give it the right flag */

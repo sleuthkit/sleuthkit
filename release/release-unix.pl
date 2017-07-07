@@ -170,7 +170,7 @@ sub update_configver {
     close (CONF_OUT);
 
     if ($found != 1) {
-        die "$found (instead of 1) occurances of AC_INIT found in configure.ac";
+        die "$found (instead of 1) occurrences of AC_INIT found in configure.ac";
     }
 
     unlink ("configure.ac") or die "Error deleting configure.ac";
@@ -229,7 +229,7 @@ sub update_hver {
     close (CONF_OUT);
 
     if ($found != 2) {
-        die "$found (instead of 2) occurances of VERSION in tsk_base.h";
+        die "$found (instead of 2) occurrences of VERSION in tsk_base.h";
     }
 
     unlink ("tsk/base/tsk_base.h") or die "Error deleting tsk/base/tsk_base.h";
@@ -263,7 +263,7 @@ sub update_pkgver {
     close (CONF_OUT);
 
     if ($found != 1) {
-        die "Error: Found $found (instead of 1) occurances of Version: in RPM spec file";
+        die "Error: Found $found (instead of 1) occurrences of Version: in RPM spec file";
     }
 
     unlink ($IFILE) or die "Error deleting $IFILE";
@@ -274,11 +274,20 @@ sub update_pkgver {
 # note that this version is independent from the
 # release version.
 sub update_libver {
-    print "Updating library version\n";
+    print "Updating Unix API version\n";
+
+    print "\nGit History for tsk/Makefile.am:\n";
+    exec_pipe(*OUT, "git log -- --pretty=short tsk/Makefile.am | head -12");
+    my $foo = read_pipe_line(*OUT);
+    while ($foo ne "") {
+        print "$foo";
+        $foo = read_pipe_line(*OUT);
+    }
+    close(OUT);
 
     my $a;
     while (1) {
-        $a = prompt_user("Update the library version (no if this is a restart) [y/n]");
+        $a = prompt_user("Update this version (no if this is a restart or you already did it) [y/n]");
         last if (($a eq "n") || ($a eq  "y"));
         print "Invalid response: $a\n";
     }
@@ -287,6 +296,7 @@ sub update_libver {
     exec_pipe(*OUT, "cat tsk/Makefile.am | grep version\-info");
     print "Current Makefile Contents: " . read_pipe_line(*OUT) . "\n";
     close (OUT);
+
 
     my $cur;
     my $rev;
@@ -362,7 +372,7 @@ sub update_libver {
     close (CONF_OUT);
 
     if ($found != 1) {
-        die "Error: Found only $found (instead of 1) occurances of version-info lib makefile";
+        die "Error: Found only $found (instead of 1) occurrences of version-info lib makefile";
     }
 
     unlink ($IFILE) or die "Error deleting $IFILE";
@@ -552,6 +562,15 @@ update_pkgver();
 bootstrap();
 
 checkin_vers();
+
+my $a;
+while (1) {
+    $a = prompt_user("Tag and release? (or stop if only updating version in branch) [y/n]");
+    last if (($a eq "n") || ($a eq "y"));
+    print "Invalid response: $a\n";
+}
+exit if ($a eq "n");
+
 
 # Create a tag 
 tag_dir();

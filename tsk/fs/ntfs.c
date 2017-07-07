@@ -58,7 +58,7 @@
  *
  * So, the way this is solved is that generic mft_lookup is used to get
  * any MFT entry, even $MFT.  If $MFT is not cached then we calculate
- * the address of where to read based on mutliplication and guessing.
+ * the address of where to read based on multiplication and guessing.
  * When we are loading the $MFT, we set 'loading_the_MFT' to 1 so
  * that we can update things as we go along.  When we read $MFT we
  * read all the attributes and save info about the $Data one.  If
@@ -728,7 +728,7 @@ ntfs_make_data_run(NTFS_INFO * ntfs, TSK_OFF_T start_vcn,
  * NTFS Breaks compressed data into compression units, which are
  * typically 16 clusters in size. If the data in the comp  unit
  * compresses to something smaller than 16 clusters then the
- * compresed data is stored and the rest of the compression unit
+ * compressed data is stored and the rest of the compression unit
  * is filled with sparse clusters. The entire compression unit
  * can also be sparse.
  *
@@ -904,7 +904,7 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
 
                     /* Determine token type and parse appropriately. *
                      * Symbol tokens are the symbol themselves, so copy it
-                     * into the umcompressed buffer
+                     * into the uncompressed buffer
                      */
                     if ((header & NTFS_TOKEN_MASK) == NTFS_SYMBOL_TOKEN) {
                         if (tsk_verbose)
@@ -1881,7 +1881,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
              *
              * When we are processing a non-base entry, we may
              * find an attribute with an id of 0 and it is an
-             * extention of a previous run (i.e. non-zero start VCN)
+             * extension of a previous run (i.e. non-zero start VCN)
              *
              * We will lookup if we already have such an attribute
              * and get its ID
@@ -2338,16 +2338,19 @@ ntfs_proc_attrlist(NTFS_INFO * ntfs,
         return TSK_ERR;
     }
 
-    /* The TSK design requres that each attribute have its own ID.
+    /* The TSK design requires that each attribute have its own ID.
      * Therefore, we need to identify all of the unique attributes
      * so that we can assign a unique ID to them. 
      * In this process, we will also identify the unique MFT entries to
      * process. */
     nextid = fs_attr_attrlist->id;      // we won't see this entry in the list
     for (list = (ntfs_attrlist *) buf;
-        (list) && ((uintptr_t) list < endaddr)
-        && ((uintptr_t)list + sizeof(ntfs_attrlist) < endaddr)
-        && (tsk_getu16(fs->endian, list->len) > 0);
+        (list)
+        // ntfs_attrlist contains the first byte of the name, which might actually be 0-length
+        && (uintptr_t) list + sizeof(ntfs_attrlist) - 1 <= endaddr
+        && tsk_getu16(fs->endian, list->len) > 0
+        && (uintptr_t) list + tsk_getu16(fs->endian, list->len) <= endaddr
+        && (uintptr_t) list + sizeof(ntfs_attrlist) - 1 + 2 * list->nlen <= endaddr;
         list =
         (ntfs_attrlist *) ((uintptr_t) list + tsk_getu16(fs->endian,
                 list->len))) {
@@ -2740,7 +2743,7 @@ ntfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
     }
 
     /* Check if the metadata is the same sequence as the name - if it was already set.
-     * Note that this is not as effecient and elegant as desired, but works for now. 
+     * Note that this is not as efficient and elegant as desired, but works for now. 
      * Better design would be to pass sequence into dinode_lookup and have a more 
      * obvious way to pass the desired sequence in.  fs_dir_walk_lcl sets the name
      * before calling this, which motivated this quick fix. */

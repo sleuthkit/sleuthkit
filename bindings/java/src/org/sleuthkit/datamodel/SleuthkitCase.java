@@ -1305,23 +1305,24 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Start process of adding a image to the case. Adding an image is a
-	 * multi-step process and this returns an object that allows it to happen.
+	 * Starts the multi-step process of adding an image data source to the case
+	 * by creating an object that can be used to control the process and get
+	 * progress messages from it.
 	 *
-	 * @param timezone        TZ time zone string to use for ingest of image.
+	 * @param timeZone        The time zone of the image.
 	 * @param addUnallocSpace Set to true to create virtual files for
 	 *                        unallocated space in the image.
 	 * @param noFatFsOrphans  Set to true to skip processing orphan files of FAT
 	 *                        file systems.
-	 * @param imageWriterPath Path for image writer from the local disk panel.
-	 *                        Use an empty string to disable image writing
+	 * @param imageCopyPath   Path to which a copy of the image should be
+	 *                        written. Use the empty string to disable image
+	 *                        writing.
 	 *
-	 * @return Object that encapsulates control of adding an image via the
+	 * @return An object that encapsulates control of adding an image via the
 	 *         SleuthKit native code layer.
 	 */
-	public AddImageProcess makeAddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans,
-			String imageWriterPath) {
-		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, imageWriterPath);
+	public AddImageProcess makeAddImageProcess(String timeZone, boolean addUnallocSpace, boolean noFatFsOrphans, String imageCopyPath) {
+		return this.caseHandle.initAddImageProcess(timeZone, addUnallocSpace, noFatFsOrphans, imageCopyPath);
 	}
 
 	/**
@@ -4676,11 +4677,12 @@ public class SleuthkitCase {
 	 * Add a path (such as a local path) for a content object to tsk_file_paths
 	 *
 	 * @param connection A case database connection.
-	 * @param objId      object id of the file to add the path for
-	 * @param path       the path to add
+	 * @param objId      The object id of the file for which to add the path.
+	 * @param path       The path to add.
+	 * @param type       The TSK encoding type of the file.
 	 *
-	 * @throws SQLException exception thrown when database error occurred and
-	 *                      path was not added
+	 * @throws SQLException Thrown if database error occurred and path was not
+	 *                      added.
 	 */
 	private void addFilePath(CaseDbConnection connection, long objId, String path, TskData.EncodingType type) throws SQLException {
 		PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_LOCAL_PATH);
@@ -5587,6 +5589,19 @@ public class SleuthkitCase {
 	 *
 	 * @throws SQLException if the query fails
 	 */
+	/**
+	 * Creates AbstractFile objects for the result set of a tsk_files table
+	 * query of the form "SELECT * FROM tsk_files WHERE XYZ".
+	 *
+	 * @param rs         A result set from a query of the tsk_files table of the
+	 *                   form "SELECT * FROM tsk_files WHERE XYZ".
+	 * @param connection A case database connection.
+	 *
+	 * @return A list of AbstractFile objects.
+	 *
+	 * @throws SQLException Thrown if there is a problem iterating through the
+	 *                      record set.
+	 */
 	private List<AbstractFile> resultSetToAbstractFiles(ResultSet rs, CaseDbConnection connection) throws SQLException {
 		ArrayList<AbstractFile> results = new ArrayList<AbstractFile>();
 		try {
@@ -5722,16 +5737,19 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Creates an derived file given result set and parent id (optional)
+	 * Creates a DerivedFile object using the values of a given result set.
 	 *
-	 * @param rs       existing active result set
-	 * @param parentId parent id or AbstractContent.UNKNOWN_ID
+	 * @param rs         The result set.
+	 * @param connection The case database connection.
+	 * @param parentId   The parent id for the derived file or
+	 *                   AbstractContent.UNKNOWN_ID.
 	 *
-	 * @return derived file object created
+	 * @return The DerivedFile object.
 	 *
-	 * @throws SQLException
+	 * @throws SQLException if there is an error reading from the result set or
+	 *                      doing additional queries.
 	 */
-	DerivedFile derivedFile(ResultSet rs, CaseDbConnection connection, long parentId) throws SQLException {
+	private DerivedFile derivedFile(ResultSet rs, CaseDbConnection connection, long parentId) throws SQLException {
 		boolean hasLocalPath = rs.getBoolean("has_path"); //NON-NLS
 		long objId = rs.getLong("obj_id"); //NON-NLS
 		String localPath = null;
@@ -5771,17 +5789,18 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Creates a LocalFile file object from a SELECT * FROM tsk_files table
-	 * result set.
-	 *
-	 * @param rs       The result set.
-	 * @param parentId The parent id of the file or AbstractContent.UNKNOWN_ID.
+	 * Creates a LocalFile object using the data from a given result set.
+	 * @param rs         The result set.
+	 * @param connection The case database connection.
+	 * @param parentId   The parent id for the derived file or
+	 *                   AbstractContent.UNKNOWN_ID.
 	 *
 	 * @return The LocalFile object.
 	 *
-	 * @throws SQLException if there is an error querying the case database.
+	 * @throws SQLException if there is an error reading from the result set or
+	 *                      doing additional queries.
 	 */
-	LocalFile localFile(ResultSet rs, CaseDbConnection connection, long parentId) throws SQLException {
+	private LocalFile localFile(ResultSet rs, CaseDbConnection connection, long parentId) throws SQLException {
 		long objId = rs.getLong("obj_id"); //NON-NLS
 		String localPath = null;
 		TskData.EncodingType encodingType = TskData.EncodingType.NONE;
@@ -5955,15 +5974,17 @@ public class SleuthkitCase {
 	/**
 	 * Call to free resources when done with instance.
 	 */
-	public void close() {
+	public synchronized void close() {
 		acquireExclusiveLock();
-		fileSystemIdMap.clear();
 
 		try {
 			connections.close();
 		} catch (TskCoreException ex) {
 			logger.log(Level.SEVERE, "Error closing database connection pool.", ex); //NON-NLS
 		}
+
+		fileSystemIdMap.clear();
+
 		try {
 			if (this.caseHandle != null) {
 				this.caseHandle.free();
@@ -6264,45 +6285,6 @@ public class SleuthkitCase {
 		}
 		return count;
 
-	}
-
-	/**
-	 * Add an observer for SleuthkitCase errors.
-	 *
-	 * @param observer The observer to add.
-	 */
-	public void addErrorObserver(ErrorObserver observer) {
-		sleuthkitCaseErrorObservers.add(observer);
-	}
-
-	/**
-	 * Remove an observer for SleuthkitCase errors.
-	 *
-	 * @param observer The observer to remove.
-	 */
-	public void removeErrorObserver(ErrorObserver observer) {
-		int i = sleuthkitCaseErrorObservers.indexOf(observer);
-		if (i >= 0) {
-			sleuthkitCaseErrorObservers.remove(i);
-		}
-	}
-
-	/**
-	 * Submit an error to all clients that are listening.
-	 *
-	 * @param context      The context in which the error occurred.
-	 * @param errorMessage A description of the error that occurred.
-	 */
-	public void submitError(String context, String errorMessage) {
-		for (ErrorObserver observer : sleuthkitCaseErrorObservers) {
-			if (observer != null) {
-				try {
-					observer.receiveError(context, errorMessage);
-				} catch (Exception ex) {
-					logger.log(Level.SEVERE, "Observer client unable to receive message: {0}, {1}", new Object[]{context, errorMessage, ex});
-				}
-			}
-		}
 	}
 
 	/**
@@ -7307,42 +7289,6 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Notifies observers of errors in the SleuthkitCase.
-	 */
-	public interface ErrorObserver {
-
-		/**
-		 * List of arguments for the context string parameters. This does not
-		 * preclude the use of arbitrary context strings by client code, but it
-		 * does provide a place to define standard context strings to allow
-		 * filtering of notifications by implementations of ErrorObserver.
-		 */
-		public enum Context {
-
-			/**
-			 * Error occurred while reading image content.
-			 */
-			IMAGE_READ_ERROR("Image File Read Error"),
-			/**
-			 * Error occurred while reading database content.
-			 */
-			DATABASE_READ_ERROR("Database Read Error");
-
-			private final String contextString;
-
-			private Context(String context) {
-				this.contextString = context;
-			}
-
-			public String getContextString() {
-				return contextString;
-			}
-		};
-
-		void receiveError(String context, String errorMessage);
-	}
-
-	/**
 	 * Stores a pair of object ID and its type
 	 */
 	static class ObjectInfo {
@@ -7930,7 +7876,6 @@ public class SleuthkitCase {
 							Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Unexpectedly unable to wait for database.", exp);
 						}
 					} else {
-						submitError(ErrorObserver.Context.DATABASE_READ_ERROR.getContextString(), ex.getMessage());
 						throw ex;
 					}
 				}
@@ -7980,7 +7925,6 @@ public class SleuthkitCase {
 							Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Unexpectedly unable to wait for database.", exp);
 						}
 					} else {
-						submitError(ErrorObserver.Context.DATABASE_READ_ERROR.getContextString(), ex.getMessage());
 						throw ex;
 					}
 				}
@@ -8120,6 +8064,93 @@ public class SleuthkitCase {
 				SleuthkitCase.this.releaseSharedLock();
 			}
 		}
+	}
+
+	/**
+	 * Add an observer for SleuthkitCase errors.
+	 *
+	 * @param observer The observer to add.
+	 *
+	 * @deprecated Catch exceptions instead.
+	 */
+	@Deprecated
+	public void addErrorObserver(ErrorObserver observer) {
+		sleuthkitCaseErrorObservers.add(observer);
+	}
+
+	/**
+	 * Remove an observer for SleuthkitCase errors.
+	 *
+	 * @param observer The observer to remove.
+	 *
+	 * @deprecated Catch exceptions instead.
+	 */
+	@Deprecated
+	public void removeErrorObserver(ErrorObserver observer) {
+		int i = sleuthkitCaseErrorObservers.indexOf(observer);
+		if (i >= 0) {
+			sleuthkitCaseErrorObservers.remove(i);
+		}
+	}
+
+	/**
+	 * Submit an error to all clients that are listening.
+	 *
+	 * @param context      The context in which the error occurred.
+	 * @param errorMessage A description of the error that occurred.
+	 *
+	 * @deprecated Catch exceptions instead.
+	 */
+	@Deprecated
+	public void submitError(String context, String errorMessage) {
+		for (ErrorObserver observer : sleuthkitCaseErrorObservers) {
+			if (observer != null) {
+				try {
+					observer.receiveError(context, errorMessage);
+				} catch (Exception ex) {
+					logger.log(Level.SEVERE, "Observer client unable to receive message: {0}, {1}", new Object[]{context, errorMessage, ex});
+				}
+			}
+		}
+	}
+
+	/**
+	 * Notifies observers of errors in the SleuthkitCase.
+	 *
+	 * @deprecated Catch exceptions instead.
+	 */
+	@Deprecated
+	public interface ErrorObserver {
+
+		/**
+		 * List of arguments for the context string parameters. This does not
+		 * preclude the use of arbitrary context strings by client code, but it
+		 * does provide a place to define standard context strings to allow
+		 * filtering of notifications by implementations of ErrorObserver.
+		 */
+		public enum Context {
+
+			/**
+			 * Error occurred while reading image content.
+			 */
+			IMAGE_READ_ERROR("Image File Read Error"),
+			/**
+			 * Error occurred while reading database content.
+			 */
+			DATABASE_READ_ERROR("Database Read Error");
+
+			private final String contextString;
+
+			private Context(String context) {
+				this.contextString = context;
+			}
+
+			public String getContextString() {
+				return contextString;
+			}
+		};
+
+		void receiveError(String context, String errorMessage);
 	}
 
 	/**
@@ -8580,7 +8611,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException exception thrown if the object creation failed
 	 *                          due to a critical system error
-	 * @Deprecated Use the newer version with explicit encoding type parameter
+	 * @deprecated Use the newer version with explicit encoding type parameter
 	 */
 	@Deprecated
 	public DerivedFile addDerivedFile(String fileName, String localPath,
@@ -8614,7 +8645,7 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException if there is an error completing a case database
 	 *                          operation.
-	 * @Deprecated Use the newer version with explicit encoding type parameter
+	 * @deprecated Use the newer version with explicit encoding type parameter
 	 */
 	@Deprecated
 	public LocalFile addLocalFile(String fileName, String localPath,
@@ -8642,7 +8673,7 @@ public class SleuthkitCase {
 	 * @return
 	 *
 	 * @throws TskCoreException
-	 * @Deprecated Use the newer version with explicit encoding type parameter
+	 * @deprecated Use the newer version with explicit encoding type parameter
 	 */
 	@Deprecated
 	public LocalFile addLocalFile(String fileName, String localPath,
@@ -8666,7 +8697,7 @@ public class SleuthkitCase {
 	 * @return Object that encapsulates control of adding an image via the
 	 *         SleuthKit native code layer
 	 *
-	 * @Deprecated Use the newer version with explicit image writer path
+	 * @deprecated Use the newer version with explicit image writer path
 	 * parameter
 	 */
 	@Deprecated

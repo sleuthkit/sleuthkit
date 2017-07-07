@@ -1157,7 +1157,7 @@ hfs_cat_get_record_offset_cb(HFS_INFO * hfs, int8_t level_type,
  * @param hfs File System being analyzed
  * @param needle Key to search for
  * @returns Byte offset or 0 on error. 0 is also returned if catalog
- * record was not found. Check tsk_errno to determine if error occured.
+ * record was not found. Check tsk_errno to determine if error occurred.
  */
 static TSK_OFF_T
 hfs_cat_get_record_offset(HFS_INFO * hfs, const hfs_btree_key_cat * needle)
@@ -1385,7 +1385,7 @@ hfs_lookup_hard_link(HFS_INFO * hfs, TSK_INUM_T linknum,
  *
  * If the error is serious, then is_error is set to 2 or 3, depending on the kind of error, and
  * the TSK error code is set, and the function returns zero.  is_error==2 means that an error
- * occured in looking up the target file in the Catalog.  is_error==3 means that the given
+ * occurred in looking up the target file in the Catalog.  is_error==3 means that the given
  * entry appears to be a hard link, but the target file does not exist in the Catalog.
  *
  * @param hfs The file system
@@ -1730,6 +1730,18 @@ hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry,
 }
 
 
+static uint8_t
+hfs_find_highest_inum_cb(HFS_INFO * hfs, int8_t level_type,
+    const hfs_btree_key_cat * cur_key,
+    TSK_OFF_T key_off, void *ptr)
+{
+    // NOTE: This assumes that the biggest inum is the last one that we
+    // see.  the traverse method does not currently promise that as part of
+    // its callback "contract". 
+    *((TSK_INUM_T*) ptr) = tsk_getu32(hfs->fs_info.endian, cur_key->parent_cnid);
+    return HFS_BTREE_CB_IDX_LT;
+}
+
 /** \internal
 * Returns the largest inode number in file system
 * @param hfs File system being analyzed
@@ -1739,19 +1751,21 @@ static TSK_INUM_T
 hfs_find_highest_inum(HFS_INFO * hfs)
 {
     // @@@ get actual number from Catalog file (go to far right) (we can't always trust the vol header)
-    /* I haven't gotten looking at the end of the Catalog B-Tree to work
-       properly. A fast method: if HFS_VH_ATTR_CNIDS_REUSED is set, then
-       the maximum CNID is 2^32-1; if it's not set, then nextCatalogId is
-       supposed to be larger than all CNIDs on disk.
-     */
-
-    TSK_FS_INFO *fs = (TSK_FS_INFO *) & (hfs->fs_info);
-
-    if (tsk_getu32(fs->endian, hfs->fs->attr) & HFS_VH_ATTR_CNIDS_REUSED)
-        return (TSK_INUM_T) 0xffffffff;
-    else
-        return (TSK_INUM_T) tsk_getu32(fs->endian,
-            hfs->fs->next_cat_id) - 1;
+    TSK_INUM_T inum;
+    if (hfs_cat_traverse(hfs, hfs_find_highest_inum_cb, &inum)) {
+      /* Catalog traversal failed, fallback on legacy method :
+         if HFS_VH_ATTR_CNIDS_REUSED is set, then
+         the maximum CNID is 2^32-1; if it's not set, then nextCatalogId is
+         supposed to be larger than all CNIDs on disk.
+       */
+        TSK_FS_INFO *fs = (TSK_FS_INFO *) & (hfs->fs_info);
+        if (tsk_getu32(fs->endian, hfs->fs->attr) & HFS_VH_ATTR_CNIDS_REUSED)
+            return (TSK_INUM_T) 0xffffffff;
+        else
+            return (TSK_INUM_T) tsk_getu32(fs->endian,
+                hfs->fs->next_cat_id) - 1;
+    }
+    return inum;
 }
 
 
@@ -2793,7 +2807,7 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
     }
 
     // Allocate two buffers for the raw and uncompressed data
-    /* Raw data can be COMPRESSSION_UNIT_SIZE+1 if the data is not
+    /* Raw data can be COMPRESSION_UNIT_SIZE+1 if the data is not
      * compressed and there is a 1-byte flag that indicates that 
      * the data is not compressed. */
     rawBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE + 1);
@@ -3172,7 +3186,7 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
     bytesCopied = 0;
 
     // Allocate buffers for the raw and uncompressed data
-    /* Raw data can be COMPRESSSION_UNIT_SIZE+1 if the data is not
+    /* Raw data can be COMPRESSION_UNIT_SIZE+1 if the data is not
      * compressed and there is a 1-byte flag that indicates that 
      * the data is not compressed. */
     rawBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE + 1);
@@ -3781,6 +3795,14 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 // This is the length of the useful data, not including the record header
                 attributeLength = tsk_getu32(endian, attrData->attr_size);
 
+                // Check the attribute fits in the node
+                //if (recordType != HFS_ATTR_RECORD_INLINE_DATA) {
+                if (recOffset + keyLength + 2 + attributeLength > attrFile.nodeSize) {
+                  error_detected(TSK_ERR_FS_READ,
+                      "hfs_load_extended_attrs: Unable to process attribute");
+                  goto on_error;
+                }
+
                 buffer = malloc(attributeLength);
                 if (buffer == NULL) {
                     error_detected(TSK_ERR_AUX_MALLOC,
@@ -3987,6 +4009,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 }
 
                 free(buffer);
+                buffer = NULL;
 
                 attribute_counter++;
             }                   // END if comp == 0

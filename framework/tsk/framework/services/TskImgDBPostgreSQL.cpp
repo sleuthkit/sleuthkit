@@ -968,7 +968,7 @@ SectorRuns * TskImgDBPostgreSQL::getFreeSectors() const
             if (flags & TSK_FS_META_FLAG_UNALLOC)
                 continue;
 
-            // @@@ We can probably find a more effecient storage method than this...
+            // @@@ We can probably find a more efficient storage method than this...
             int error = 0;
             for (int64_t i = 0; i < len; i++) {
                 if (tsk_list_add(&seen[fs_id], addr+i)) {
