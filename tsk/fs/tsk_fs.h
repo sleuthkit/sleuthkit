@@ -753,37 +753,6 @@ extern "C" {
 
     //@}
 
-    /****************** NTFS USN Journal Structures ******************/
-
-    /** \name NTFS Update Sequence Number Journal Data Structures */
-    //@{
-
-
-    typedef struct {
-        uint32_t length;
-        uint16_t major_version;
-        uint16_t minor_version;
-
-    } TSK_USN_RECORD_HEADER;
-
-
-    /**
-    * Function definition used for callback to ntfs_usnjentry_walk().
-    *
-    * @param a_header Pointer to USN header structure.
-    * @param a_record Pointer USN record structure, its type can be deduced
-    *    from the major version number in the header.
-    * @param a_ptr Pointer that was supplied by the caller who called
-    *    ntfs_usnjentry_walk.
-    * @returns Value to identify if walk should continue, stop, or stop because of error
-    */
-    typedef TSK_WALK_RET_ENUM(*TSK_FS_USNJENTRY_WALK_CB) (
-        TSK_USN_RECORD_HEADER *a_header, void *a_record, void *a_ptr);
-
-    extern uint8_t tsk_ntfs_usnjopen(TSK_FS_INFO * fs, TSK_INUM_T inum);
-    extern uint8_t tsk_ntfs_usnjentry_walk(TSK_FS_INFO * fs,
-        TSK_FS_USNJENTRY_WALK_CB action, void *ptr);
-
     //@}
 
     /******************************* TSK_FS_INFO ******************/
@@ -1093,15 +1062,6 @@ extern "C" {
     extern uint8_t tsk_fs_fls(TSK_FS_INFO * fs,
         TSK_FS_FLS_FLAG_ENUM lclflags, TSK_INUM_T inode,
         TSK_FS_DIR_WALK_FLAG_ENUM flags, TSK_TCHAR * pre, int32_t skew);
-
-    enum TSK_FS_USNJLS_FLAG_ENUM {
-        TSK_FS_USNJLS_NONE = 0x00,
-        TSK_FS_USNJLS_LONG = 0x01,
-        TSK_FS_USNJLS_MAC = 0x02
-    };
-    typedef enum TSK_FS_USNJLS_FLAG_ENUM TSK_FS_USNJLS_FLAG_ENUM;
-    extern uint8_t tsk_fs_usnjls(TSK_FS_INFO * fs, TSK_INUM_T inode,
-        TSK_FS_USNJLS_FLAG_ENUM flags);
 
     extern uint8_t tsk_fs_icat(TSK_FS_INFO * fs,
         TSK_INUM_T inum,

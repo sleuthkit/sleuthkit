@@ -13,7 +13,7 @@
 
 
 #include <locale.h>
-#include "tsk/tsk_tools_i.h"
+#include "tsk/fs/tsk_fs_i.h"
 
 
 static TSK_TCHAR *progname;
