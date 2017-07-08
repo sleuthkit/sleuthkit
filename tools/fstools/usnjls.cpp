@@ -63,9 +63,9 @@ main(int argc, char **argv1)
 
     int ch;
     TSK_INUM_T inum;
+    TSK_TCHAR **argv;
     TSK_TCHAR *cp = NULL;
     unsigned int ssize = 0;
-    TSK_TCHAR **argv = NULL;
     TSK_FS_USNJLS_FLAG_ENUM flag = TSK_FS_USNJLS_NONE;
 
 #ifdef TSK_WIN32
@@ -173,8 +173,9 @@ main(int argc, char **argv1)
         if (fs == NULL) {
             tsk_error_print(stderr);
 
-            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE) {
                 tsk_fs_type_print(stderr);
+            }
 
             img->close(img);
             exit(1);
@@ -210,8 +211,9 @@ main(int argc, char **argv1)
         if (fs == NULL) {
             tsk_error_print(stderr);
 
-            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE)
+            if (tsk_error_get_errno() == TSK_ERR_FS_UNSUPTYPE) {
                 tsk_fs_type_print(stderr);
+            }
 
             img->close(img);
             exit(1);
