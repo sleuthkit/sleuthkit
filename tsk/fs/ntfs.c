@@ -4675,7 +4675,11 @@ ntfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
                     (fs_attr->flags & TSK_FS_ATTR_SPARSE) ? ", Sparse" :
                     "", fs_attr->size, fs_attr->nrd.initsize);
                 if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
-                    tsk_fs_attr_print(fs_attr, hFile);
+                    if (tsk_fs_attr_print(fs_attr, hFile)) {
+                        tsk_fprintf(hFile, "\nError creating run lists\n");
+                        tsk_error_print(hFile);
+                        tsk_error_reset();
+                    }
                 }
                 else {
                     print_addr.idx = 0;

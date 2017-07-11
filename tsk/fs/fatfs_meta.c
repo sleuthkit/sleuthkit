@@ -988,14 +988,12 @@ fatfs_istat(TSK_FS_INFO *a_fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE *a_hFile
             tsk_fs_file_attr_get_type(fs_file,
                 TSK_FS_ATTR_TYPE_DEFAULT, 0, 0);
         if (fs_attr_default && (fs_attr_default->flags & TSK_FS_ATTR_NONRES)) {
-            tsk_fs_attr_print(fs_attr_default, a_hFile);
+            if (tsk_fs_attr_print(fs_attr_default, a_hFile)) {
+                tsk_fprintf(a_hFile, "\nError creating run lists\n");
+                tsk_error_print(a_hFile);
+                tsk_error_reset();
+            }
         }
-        /*
-        fatfs_make_data_runs(fs_file);
-        if (fs_file->meta->attr) {
-            
-            tsk_fs_attr_print(fs_file->meta->attr->head, a_hFile);
-        }*/
     }
     else {
 

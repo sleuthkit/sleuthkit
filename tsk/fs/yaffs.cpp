@@ -2500,7 +2500,11 @@ static uint8_t
             tsk_fs_file_attr_get_type(fs_file,
                 TSK_FS_ATTR_TYPE_DEFAULT, 0, 0);
         if (fs_attr_default && (fs_attr_default->flags & TSK_FS_ATTR_NONRES)) {
-            tsk_fs_attr_print(fs_attr_default, hFile);
+            if (tsk_fs_attr_print(fs_attr_default, hFile)) {
+                tsk_fprintf(hFile, "\nError creating run lists  ");
+                tsk_error_print(hFile);
+                tsk_error_reset();
+            }
         }
     }
     else {

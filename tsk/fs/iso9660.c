@@ -2187,7 +2187,11 @@ iso9660_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile
             tsk_fs_file_attr_get_type(fs_file,
                 TSK_FS_ATTR_TYPE_DEFAULT, 0, 0);
         if (fs_attr_default && (fs_attr_default->flags & TSK_FS_ATTR_NONRES)) {
-            tsk_fs_attr_print(fs_attr_default, hFile);
+            if (tsk_fs_attr_print(fs_attr_default, hFile)) {
+                tsk_fprintf(hFile, "\nError creating run lists\n");
+                tsk_error_print(hFile);
+                tsk_error_reset();
+            }
         }
     }
     else {

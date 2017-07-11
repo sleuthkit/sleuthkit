@@ -1147,6 +1147,9 @@ ffs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
     TSK_DADDR_T cache_addr;     // base address in local cache
     int cache_len_f;            // amount of data read into cache (in fragments)
 
+    printf("ffs_block_walk\n");
+    fflush(stdout);
+
     // clean up any error messages that are lying around
     tsk_error_reset();
 
@@ -1891,51 +1894,51 @@ ffs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
         else {
             TSK_FS_ATTR * attr = fs_file->meta->attr->head;
             while (attr) {
-                printf("  attr : 0x%02x\n", attr->type);
                 if (attr->flags & TSK_FS_ATTR_NONRES) {
-                    printf("    non-resident\n");
-                    tsk_fs_attr_print(attr, hFile);
-                }
-                else {
-                    printf("    resident\n");
+                    if (tsk_fs_attr_print(attr, hFile)) {
+                        tsk_fprintf(hFile, "\nError creating run lists\n");
+                        tsk_error_print(hFile);
+                        tsk_error_reset();
+                    }
                 }
 
                 attr = attr->next;
             }
         }
     }
-
-    tsk_fprintf(hFile, "\nDirect Blocks:\n");
-
-    print.idx = 0;
-    print.hFile = hFile;
-
-    if (tsk_fs_file_walk(fs_file, TSK_FS_FILE_WALK_FLAG_AONLY,
-            print_addr_act, (void *) &print)) {
-        tsk_fprintf(hFile, "\nError reading blocks in file\n");
-        tsk_error_print(hFile);
-        tsk_fs_file_close(fs_file);
-        return 1;
-    }
-
-    if (print.idx != 0)
-        tsk_fprintf(hFile, "\n");
-
-    fs_attr_indir = tsk_fs_file_attr_get_type(fs_file,
-        TSK_FS_ATTR_TYPE_UNIX_INDIR, 0, 0);
-    if (fs_attr_indir) {
-        tsk_fprintf(hFile, "\nIndirect Blocks:\n");
+    else {
+        tsk_fprintf(hFile, "\nDirect Blocks:\n");
 
         print.idx = 0;
+        print.hFile = hFile;
 
-        if (tsk_fs_attr_walk(fs_attr_indir, TSK_FS_FILE_WALK_FLAG_AONLY,
-                print_addr_act, (void *) &print)) {
-            tsk_fprintf(hFile, "\nError reading indirect attribute:  ");
+        if (tsk_fs_file_walk(fs_file, TSK_FS_FILE_WALK_FLAG_AONLY,
+            print_addr_act, (void *)&print)) {
+            tsk_fprintf(hFile, "\nError reading blocks in file\n");
             tsk_error_print(hFile);
-            tsk_error_reset();
+            tsk_fs_file_close(fs_file);
+            return 1;
         }
-        else if (print.idx != 0) {
+
+        if (print.idx != 0)
             tsk_fprintf(hFile, "\n");
+
+        fs_attr_indir = tsk_fs_file_attr_get_type(fs_file,
+            TSK_FS_ATTR_TYPE_UNIX_INDIR, 0, 0);
+        if (fs_attr_indir) {
+            tsk_fprintf(hFile, "\nIndirect Blocks:\n");
+
+            print.idx = 0;
+
+            if (tsk_fs_attr_walk(fs_attr_indir, TSK_FS_FILE_WALK_FLAG_AONLY,
+                print_addr_act, (void *)&print)) {
+                tsk_fprintf(hFile, "\nError reading indirect attribute:  ");
+                tsk_error_print(hFile);
+                tsk_error_reset();
+            }
+            else if (print.idx != 0) {
+                tsk_fprintf(hFile, "\n");
+            }
         }
     }
 
