@@ -444,13 +444,13 @@ tsk_fs_attr_print(const TSK_FS_ATTR * a_fs_attr, FILE* hFile) {
         if (cur_run->flags & TSK_FS_ATTR_RUN_FLAG_SPARSE) {
             tsk_fprintf(hFile, "Staring address: X, length: %lld  Sparse", run_len);
         }
+        else if (cur_run->flags & TSK_FS_ATTR_RUN_FLAG_FILLER) {
+            tsk_fprintf(hFile, "Staring address: X, length: %lld  Filler", run_len);
+        }
         else {
             tsk_fprintf(hFile, "Staring address: %lld, length: %lld", run_start_addr, run_len);
             if (a_fs_attr->type == TSK_FS_ATTR_TYPE_UNIX_INDIR) {
                 tsk_fprintf(hFile, "  Indirect");
-            }
-            if (cur_run->flags & TSK_FS_ATTR_RUN_FLAG_FILLER) {
-                tsk_fprintf(hFile, "  Filler");
             }
             tsk_fprintf(hFile, "\n");
         }
