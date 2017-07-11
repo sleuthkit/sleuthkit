@@ -5737,14 +5737,17 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Creates an derived file given result set and parent id (optional)
+	 * Creates a DerivedFile object using the values of a given result set.
 	 *
-	 * @param rs       existing active result set
-	 * @param parentId parent id or AbstractContent.UNKNOWN_ID
+	 * @param rs         The result set.
+	 * @param connection The case database connection.
+	 * @param parentId   The parent id for the derived file or
+	 *                   AbstractContent.UNKNOWN_ID.
 	 *
-	 * @return derived file object created
+	 * @return The DerivedFile object.
 	 *
-	 * @throws SQLException
+	 * @throws SQLException if there is an error reading from the result set or
+	 *                      doing additional queries.
 	 */
 	private DerivedFile derivedFile(ResultSet rs, CaseDbConnection connection, long parentId) throws SQLException {
 		boolean hasLocalPath = rs.getBoolean("has_path"); //NON-NLS
@@ -5786,15 +5789,16 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Creates a LocalFile file object from a SELECT * FROM tsk_files table
-	 * result set.
-	 *
-	 * @param rs       The result set.
-	 * @param parentId The parent id of the file or AbstractContent.UNKNOWN_ID.
+	 * Creates a LocalFile object using the data from a given result set.
+	 * @param rs         The result set.
+	 * @param connection The case database connection.
+	 * @param parentId   The parent id for the derived file or
+	 *                   AbstractContent.UNKNOWN_ID.
 	 *
 	 * @return The LocalFile object.
 	 *
-	 * @throws SQLException if there is an error querying the case database.
+	 * @throws SQLException if there is an error reading from the result set or
+	 *                      doing additional queries.
 	 */
 	private LocalFile localFile(ResultSet rs, CaseDbConnection connection, long parentId) throws SQLException {
 		long objId = rs.getLong("obj_id"); //NON-NLS
@@ -7322,7 +7326,7 @@ public class SleuthkitCase {
 				+ "FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
 				+ "ON tsk_objects.obj_id=tsk_files.obj_id " //NON-NLS
 				+ "WHERE (tsk_objects.par_obj_id = ? ) " //NON-NLS
-				+ "ORDER BY tsk_files.dir_type, LOWER(tsk_files.name)"), //NON-NLS
+				+ "ORDER BY tsk_files.meta_type DESC, LOWER(tsk_files.name)"), //NON-NLS
 		SELECT_FILES_BY_PARENT_AND_TYPE("SELECT tsk_files.* " //NON-NLS
 				+ "FROM tsk_objects INNER JOIN tsk_files " //NON-NLS
 				+ "ON tsk_objects.obj_id=tsk_files.obj_id " //NON-NLS
