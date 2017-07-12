@@ -19,8 +19,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.util.Collections;
-import java.util.List;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -31,7 +29,7 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
  * A local directory that can be used as a parent for local files.
  * Not a file system
  */
-public class LocalDirectory extends AbstractFile {
+public class LocalDirectory extends SpecialDirectory {
 
 	/**
 	 * Constructs a local directory that can be used as a parent for
@@ -69,87 +67,6 @@ public class LocalDirectory extends AbstractFile {
 	}
 
 	/**
-	 * Indicates whether or not this local directory is a data source.
-	 *
-	 * @return True or false.
-	 */
-	public boolean isDataSource() {
-		return (this.getDataSourceObjectId() == this.getId());
-	}
-
-	/**
-	 * Gets the data source (e.g., image, virtual directory, etc.) for this
-	 * local directory.
-	 *
-	 * @return The data source.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
-	 */
-	@Override
-	public Content getDataSource() throws TskCoreException {
-		return super.getDataSource();
-	}
-
-	/**
-	 * Gets the children of this local directory.
-	 *
-	 * @return List of children.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
-	 */
-	@Override
-	public List<Content> getChildren() throws TskCoreException {
-		return getSleuthkitCase().getAbstractFileChildren(this);
-	}
-
-	/**
-	 * Gets the object ids of the children of this local directory.
-	 *
-	 * @return List of child object ids.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
-	 */
-	@Override
-	public List<Long> getChildrenIds() throws TskCoreException {
-		return getSleuthkitCase().getAbstractFileChildrenIds(this);
-	}
-
-	/**
-	 * Gets the extents in terms of byte addresses of this local directory
-	 * within its data source, always an empty list.
-	 *
-	 * @return An empty list.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
-	 */
-	@Override
-	public List<TskFileRange> getRanges() throws TskCoreException {
-		return Collections.<TskFileRange>emptyList();
-	}
-
-	/**
-	 * Does nothing, a local directory cannot be opened, read, or closed.
-	 */
-	@Override
-	public void close() {
-	}
-
-	/**
-	 * Indicates whether or not this local directory is the root of a file
-	 * system, always returns false.
-	 *
-	 * @return False.
-	 */
-	@Override
-	public boolean isRoot() {
-		return false;
-	}
-
-	/**
 	 * Accepts a content visitor (Visitor design pattern).
 	 *
 	 * @param visitor A ContentVisitor supplying an algorithm to run using this
@@ -181,6 +98,7 @@ public class LocalDirectory extends AbstractFile {
 	 * @param preserveState True if state should be included in the string
 	 *                      representation of this object.
 	 *
+	 * @return string representation of this local directory
 	 * @throws TskCoreException if there was an error querying the case
 	 *                          database.
 	 */

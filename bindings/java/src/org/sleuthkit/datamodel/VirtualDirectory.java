@@ -18,8 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.util.Collections;
-import java.util.List;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -32,7 +30,7 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
  * source, with local/logical files as its children. Not a file system
  * directory.
  */
-public class VirtualDirectory extends AbstractFile {
+public class VirtualDirectory extends SpecialDirectory {
 
 	/**
 	 * The name given to a virtual directory that contains unallocated space
@@ -84,20 +82,20 @@ public class VirtualDirectory extends AbstractFile {
 				TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR, 0L, 0, dirType, metaType, dirFlag,
 				metaFlags, 0L, 0L, 0L, 0L, 0L, (short) 0, 0, 0, md5Hash, knownState, parentPath, null);
 	}
-
-	/**
-	 * Indicates whether or not this virtual directory is a data source.
+	   	
+    /**
+	 * Indicates whether or not this is a data source.
 	 *
 	 * @return True or false.
 	 */
 	public boolean isDataSource() {
 		return (this.getDataSourceObjectId() == this.getId());
 	}
-
+	
 	/**
 	 * Gets the data source (e.g., image, virtual directory, etc.) for this
-	 * virtual directory. If the virtual directory is itself a data source,
-	 * returns the virtual directory.
+	 * directory. If the directory is itself a data source,
+	 * returns the directory.
 	 *
 	 * @return The data source.
 	 *
@@ -112,64 +110,6 @@ public class VirtualDirectory extends AbstractFile {
 		} else {
 			return super.getDataSource();
 		}
-	}
-
-	/**
-	 * Gets the children of this virtual directory.
-	 *
-	 * @return List of children.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
-	 */
-	@Override
-	public List<Content> getChildren() throws TskCoreException {
-		return getSleuthkitCase().getAbstractFileChildren(this);
-	}
-
-	/**
-	 * Gets the object ids of the children of this virtual directory.
-	 *
-	 * @return List of child object ids.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
-	 */
-	@Override
-	public List<Long> getChildrenIds() throws TskCoreException {
-		return getSleuthkitCase().getAbstractFileChildrenIds(this);
-	}
-
-	/**
-	 * Gets the extents in terms of byte addresses of this virtual directory
-	 * within its data source, always an empty list.
-	 *
-	 * @return An empty list.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
-	 */
-	@Override
-	public List<TskFileRange> getRanges() throws TskCoreException {
-		return Collections.<TskFileRange>emptyList();
-	}
-
-	/**
-	 * Does nothing, a virtual directory cannot be opened, read, or closed.
-	 */
-	@Override
-	public void close() {
-	}
-
-	/**
-	 * Indicates whether or not this virtual directory is the root of a file
-	 * system, always returns false.
-	 *
-	 * @return False.
-	 */
-	@Override
-	public boolean isRoot() {
-		return false;
 	}
 
 	/**
