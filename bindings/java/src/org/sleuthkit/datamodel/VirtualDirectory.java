@@ -82,15 +82,6 @@ public class VirtualDirectory extends SpecialDirectory {
 				TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR, 0L, 0, dirType, metaType, dirFlag,
 				metaFlags, 0L, 0L, 0L, 0L, 0L, (short) 0, 0, 0, md5Hash, knownState, parentPath, null);
 	}
-	   	
-    /**
-	 * Indicates whether or not this is a data source.
-	 *
-	 * @return True or false.
-	 */
-	public boolean isDataSource() {
-		return (this.getDataSourceObjectId() == this.getId());
-	}
 	
 	/**
 	 * Gets the data source (e.g., image, virtual directory, etc.) for this

@@ -65,6 +65,15 @@ public class LocalDirectory extends SpecialDirectory {
 				TskData.TSK_DB_FILES_TYPE_ENUM.LOCAL_DIR, 0L, 0, dirType, metaType, dirFlag,
 				metaFlags, 0L, 0L, 0L, 0L, 0L, (short) 0, 0, 0, md5Hash, knownState, parentPath, null);
 	}
+	
+	/**
+	 * Check whether this LocalDirectory is a data source.
+	 * Will always be false.
+	 * @return false
+	 */
+	public boolean isDataSource() {
+		return false;
+	}
 
 	/**
 	 * Accepts a content visitor (Visitor design pattern).

@@ -64,6 +64,15 @@ public abstract class SpecialDirectory extends AbstractFile {
 	public List<TskFileRange> getRanges() throws TskCoreException {
 		return Collections.<TskFileRange>emptyList();
 	}
+	
+	/**
+	 * Indicates whether or not this is a data source.
+	 *
+	 * @return True or false.
+	 */
+	public boolean isDataSource() {
+		return (this.getDataSourceObjectId() == this.getId());
+	}
 
 	/**
 	 * Does nothing, a special directory cannot be opened, read, or closed.
