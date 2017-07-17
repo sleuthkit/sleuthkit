@@ -170,24 +170,25 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 */
 	public String getShortDescription() throws TskCoreException {
 		BlackboardAttribute attr = null;
-		if (artifactTypeId == ARTIFACT_TYPE.TSK_WEB_BOOKMARK.getTypeID()) {
-			attr = getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN));
-		} else if (artifactTypeId == ARTIFACT_TYPE.TSK_WEB_COOKIE.getTypeID()) {
-			attr = getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN));
-		} else if (artifactTypeId == ARTIFACT_TYPE.TSK_WEB_DOWNLOAD.getTypeID()) {
-			attr = getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN));
-		} else if (artifactTypeId == ARTIFACT_TYPE.TSK_WEB_HISTORY.getTypeID()) {
+		if (artifactTypeId == ARTIFACT_TYPE.TSK_WEB_BOOKMARK.getTypeID()
+				|| artifactTypeId == ARTIFACT_TYPE.TSK_WEB_COOKIE.getTypeID()
+				|| artifactTypeId == ARTIFACT_TYPE.TSK_WEB_DOWNLOAD.getTypeID()
+				|| artifactTypeId == ARTIFACT_TYPE.TSK_WEB_HISTORY.getTypeID()) {
 			attr = getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN));
 		} else if (artifactTypeId == ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID()) {
 			attr = getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_KEYWORD_PREVIEW));
 		} else if (artifactTypeId == ARTIFACT_TYPE.TSK_DEVICE_ATTACHED.getTypeID()) {
 			attr = getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DEVICE_ID));
-		} else if (artifactTypeId == ARTIFACT_TYPE.TSK_CONTACT.getTypeID()) {
-			attr = getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO));
-		} else if (artifactTypeId == ARTIFACT_TYPE.TSK_MESSAGE.getTypeID()) {
-			attr = getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO));
-		} else if (artifactTypeId == ARTIFACT_TYPE.TSK_CALLLOG.getTypeID()) {
-			attr = getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO));
+		} else if (artifactTypeId == ARTIFACT_TYPE.TSK_CONTACT.getTypeID()
+				|| artifactTypeId == ARTIFACT_TYPE.TSK_MESSAGE.getTypeID()
+				|| artifactTypeId == ARTIFACT_TYPE.TSK_CALLLOG.getTypeID()) {
+			if (null != getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER))) {
+				attr = getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER));
+			} else if (null != getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM))) {
+				attr = getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM));
+			} else if (null != getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO))) {
+				attr = getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO));
+			}
 		}
 		if (attr != null && attr.getDisplayString() != null && !attr.getDisplayString().isEmpty()) {
 			return attr.getDisplayString();
