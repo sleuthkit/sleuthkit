@@ -533,7 +533,7 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Gets the files, if any, that are children of this abstract file.
+	 * Gets all children of this abstract file, if any
 	 *
 	 * @return A list of the children.
 	 *
@@ -542,7 +542,13 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
-		return getSleuthkitCase().getAbstractFileChildren(this);
+		List<Content> children = new ArrayList<Content>();
+		
+		children.addAll(getSleuthkitCase().getAbstractFileChildren(this));
+		children.addAll(getSleuthkitCase().getBlackboardArtifactChildren(this));
+		
+		return children;
+		
 	}
 
 	/**
@@ -555,7 +561,13 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	@Override
 	public List<Long> getChildrenIds() throws TskCoreException {
-		return getSleuthkitCase().getAbstractFileChildrenIds(this);
+		
+		List<Long> childrenIDs = new ArrayList<Long>();
+		
+		childrenIDs.addAll(getSleuthkitCase().getAbstractFileChildrenIds(this));
+		childrenIDs.addAll(getSleuthkitCase().getBlackboardArtifactChildrenIds(this));
+		
+		return childrenIDs;
 	}
 	
 	/**

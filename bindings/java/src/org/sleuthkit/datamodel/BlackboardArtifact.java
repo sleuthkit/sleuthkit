@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel;
 
 import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -26,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.ResourceBundle;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * An artifact that has been posted to the blackboard. An artifact is a typed
@@ -36,18 +39,20 @@ import java.util.ResourceBundle;
  * IMPORTANT NOTE: No more than one attribute of a given type should be added to
  * an artifact.
  */
-public class BlackboardArtifact implements SleuthkitVisitableItem {
+public class BlackboardArtifact extends AbstractContent {
 
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private final long artifactId;
-	private final long objId;
+	private final long objId;				// refers to objID of parent/source object
+	private final long artifactObjId;		// objId of the artifact in tsk_objects. TBD: replace artifactID with this
 	private final int artifactTypeId;
 	private final String artifactTypeName;
 	private final String displayName;
 	private final ReviewStatus reviewStatus;
-	private final SleuthkitCase sleuthkitCase;
 	private final List<BlackboardAttribute> attrsCache = new ArrayList<BlackboardAttribute>();
 	private boolean loadedCacheFromDb = false;
+	
+	byte[] contentBytes = null;
 
 	/**
 	 * Constructs an artifact that has been posted to the blackboard. An
@@ -58,18 +63,21 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 *
 	 * @param sleuthkitCase    The SleuthKit case (case database) that contains
 	 *                         the artifact data.
-	 * @param artifactID       The unique id for this artifact.
+	 * @param artifactID       The unique id for this artifact
 	 * @param objID            The unique id of the content with which this
 	 *                         artifact is associated.
+	 * @param artifactObjID    The unique id this artifact, in tsk_objects
 	 * @param artifactTypeID   The type id of this artifact.
 	 * @param artifactTypeName The type name of this artifact.
 	 * @param displayName      The display name of this artifact.
 	 * @param reviewStatus     The review status of this artifact.
 	 */
-	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long objID, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus) {
-		this.sleuthkitCase = sleuthkitCase;
+	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long objID, long artifactObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus) {		
+		super(sleuthkitCase, artifactObjId, displayName);
+		
 		this.artifactId = artifactID;
 		this.objId = objID;
+		this.artifactObjId = artifactObjId;
 		this.artifactTypeId = artifactTypeID;
 		this.artifactTypeName = artifactTypeName;
 		this.displayName = displayName;
@@ -88,13 +96,14 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * @param artifactID       The unique id for this artifact.
 	 * @param objID            The unique id of the content with which this
 	 *                         artifact is associated.
+	 * @param artifactObjID    The unique id this artifact. in tsk_objects
 	 * @param artifactTypeID   The type id of this artifact.
 	 * @param artifactTypeName The type name of this artifact.
 	 * @param displayName      The display name of this artifact.
 	 * @param reviewStatus     The review status of this artifact.
 	 */
-	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long objID, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, boolean isNew) {
-		this(sleuthkitCase, artifactID, objID, artifactTypeID, artifactTypeName, displayName, reviewStatus);
+	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long objID, long artifactObjID, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, boolean isNew) {
+		this(sleuthkitCase, artifactID, objID, artifactObjID, artifactTypeID, artifactTypeName, displayName, reviewStatus);
 		if (isNew) {
 			/*
 			 * If this object represents a newly created artifact, then its
@@ -103,16 +112,6 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 			 */
 			this.loadedCacheFromDb = true;
 		}
-	}
-
-	/**
-	 * Gets the SleuthKit case (case database) that contains the data for this
-	 * artifact.
-	 *
-	 * @return The SleuthKit case (case database) object.
-	 */
-	public SleuthkitCase getSleuthkitCase() {
-		return sleuthkitCase;
 	}
 
 	/**
@@ -207,8 +206,8 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 */
 	public void addAttribute(BlackboardAttribute attribute) throws TskCoreException {
 		attribute.setArtifactId(artifactId);
-		attribute.setCaseDatabase(sleuthkitCase);
-		sleuthkitCase.addBlackboardAttribute(attribute, this.artifactTypeId);
+		attribute.setCaseDatabase(getSleuthkitCase());
+		getSleuthkitCase().addBlackboardAttribute(attribute, this.artifactTypeId);
 		attrsCache.add(attribute);
 	}
 
@@ -223,7 +222,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	public List<BlackboardAttribute> getAttributes() throws TskCoreException {
 		ArrayList<BlackboardAttribute> attributes;
 		if (false == loadedCacheFromDb) {
-			attributes = sleuthkitCase.getBlackboardAttributes(this);
+			attributes = getSleuthkitCase().getBlackboardAttributes(this);
 			attrsCache.clear();
 			attrsCache.addAll(attributes);
 			loadedCacheFromDb = true;
@@ -272,12 +271,258 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		}
 		for (BlackboardAttribute attribute : attributes) {
 			attribute.setArtifactId(artifactId);
-			attribute.setCaseDatabase(sleuthkitCase);
+			attribute.setCaseDatabase(getSleuthkitCase());
 		}
-		sleuthkitCase.addBlackboardAttributes(attributes, artifactTypeId);
+		getSleuthkitCase().addBlackboardAttributes(attributes, artifactTypeId);
 		attrsCache.addAll(attributes);
 	}
 
+	
+	/*
+	 * This overiding implementation returns the unique path of the parent.
+	 * It does not include the Artifact name in the unique path.
+	 */
+	@Override
+	public synchronized String getUniquePath() throws TskCoreException {
+		// Return the path of the parrent file
+		if (uniquePath == null) {
+			Content myParent = getParent();
+			if (myParent != null) {
+				uniquePath = myParent.getUniquePath();
+			}
+		}
+		return uniquePath;
+	}
+	
+	/**
+	 * Get all artifacts associated with this content
+	 *
+	 * @return a list of blackboard artifacts
+	 *
+	 * @throws TskCoreException if critical error occurred within tsk core
+	 */
+	@Override
+	public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskCoreException {
+		// Currently we don't have any artifacts derived from an artifact.
+		return new ArrayList<BlackboardArtifact>();
+	}
+	
+	/**
+	 * Get all artifacts associated with this content that have the given type
+	 * name
+	 *
+	 * @param artifactTypeName name of the type to look up
+	 *
+	 * @return a list of blackboard artifacts matching the type
+	 *
+	 * @throws TskCoreException if critical error occurred within tsk core
+	 */
+	@Override
+	public ArrayList<BlackboardArtifact> getArtifacts(String artifactTypeName) throws TskCoreException {
+		// Currently we don't have any artifacts derived from an artifact.
+		return new ArrayList<BlackboardArtifact>();
+	}
+	
+	/**
+	 * Get all artifacts associated with this content that have the given type
+	 * id
+	 *
+	 * @param artifactTypeID type id to look up
+	 *
+	 * @return a list of blackboard artifacts matching the type
+	 *
+	 * @throws TskCoreException if critical error occurred within tsk core
+	 */
+	@Override
+	public ArrayList<BlackboardArtifact> getArtifacts(int artifactTypeID) throws TskCoreException {
+		// Currently we don't have any artifacts derived from an artifact.
+		return new ArrayList<BlackboardArtifact>();
+	}
+	
+	/**
+	 * Get all artifacts associated with this content that have the given type
+	 *
+	 * @param type type to look up
+	 *
+	 * @return a list of blackboard artifacts matching the type
+	 *
+	 * @throws TskCoreException if critical error occurred within tsk core
+	 */
+	@Override
+	public ArrayList<BlackboardArtifact> getArtifacts(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
+		// Currently we don't have any artifacts derived from an artifact.
+		return new ArrayList<BlackboardArtifact>();
+	}
+	
+	/**
+	 * Get count of all artifacts associated with this content
+	 *
+	 * @return count of all blackboard artifacts for this content
+	 *
+	 * @throws TskCoreException if critical error occurred within tsk core
+	 */
+	@Override
+	public long getAllArtifactsCount() throws TskCoreException {
+		// Currently we don't have any artifacts derived from an artifact.
+		return 0;
+	}
+	
+	/**
+	 * Get count of all artifacts associated with this content that have the
+	 * given type name
+	 *
+	 * @param artifactTypeName name of the type to look up
+	 *
+	 * @return count of blackboard artifacts matching the type
+	 *
+	 * @throws TskCoreException if critical error occurred within tsk core
+	 */
+	@Override
+	public long getArtifactsCount(String artifactTypeName) throws TskCoreException {
+		// Currently we don't have any artifacts derived from an artifact.
+		return 0;
+	}
+
+	/**
+	 * Get count of all artifacts associated with this content that have the
+	 * given type id
+	 *
+	 * @param artifactTypeID type id to look up
+	 *
+	 * @return count of blackboard artifacts matching the type
+	 *
+	 * @throws TskCoreException if critical error occurred within tsk core
+	 */
+	@Override
+	public long getArtifactsCount(int artifactTypeID) throws TskCoreException {
+		// Currently we don't have any artifacts derived from an artifact.
+		return 0;
+	}
+
+	/**
+	 * Get count of all artifacts associated with this content that have the
+	 * given type
+	 *
+	 * @param type type to look up
+	 *
+	 * @return count of blackboard artifacts matching the type
+	 *
+	 * @throws TskCoreException if critical error occurred within tsk core
+	 */
+	@Override
+	public long getArtifactsCount(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
+		// Currently we don't have any artifacts derived from an artifact.
+		return 0;
+	}
+	
+	/**
+	 * Return the TSK_GEN_INFO artifact for the file so that individual
+	 * attributes can be added to it. Creates one if it does not already exist.
+	 *
+	 * @return Instance of the TSK_GEN_INFO artifact
+	 *
+	 * @throws TskCoreException
+	 */
+	@Override
+	public BlackboardArtifact getGenInfoArtifact() throws TskCoreException {
+		// Currently we don't have any artifacts derived from an artifact.
+		return null;
+	}
+
+	/**
+	 * Return the TSK_GEN_INFO artifact for the file so that individual
+	 * attributes can be added to it. If one does not create, behavior depends
+	 * on the create argument.
+	 *
+	 * @param create If true, an artifact will be created if it does not already
+	 *               exist.
+	 *
+	 * @return Instance of the TSK_GEN_INFO artifact or null if artifact does
+	 *         not already exist and create was set to false
+	 *
+	 * @throws TskCoreException
+	 */
+	@Override
+	public BlackboardArtifact getGenInfoArtifact(boolean create) throws TskCoreException {
+		// Currently we don't have any artifacts derived from an artifact.
+		if (create) {
+			throw new TskCoreException("Artifacts of artifacts are not supported.");
+		}
+		
+		return null;
+	}
+	
+	/**
+	 * Return attributes of a given type from TSK_GEN_INFO.
+	 *
+	 * @param attr_type Attribute type to find inside of the TSK_GEN_INFO
+	 *                  artifact.
+	 *
+	 * @return Attributes
+	 */
+	@Override
+	public ArrayList<BlackboardAttribute> getGenInfoAttributes(BlackboardAttribute.ATTRIBUTE_TYPE attr_type) throws TskCoreException {
+		// Currently we don't have any artifacts derived from an artifact.
+		return new ArrayList<BlackboardAttribute>();
+	}
+	
+	/**
+	 * Get the names of all the hashsets that this content is in.
+	 *
+	 * @return the names of the hashsets that this content is in
+	 *
+	 * @throws TskCoreException if critical error occurred within tsk core
+	 */
+	@Override
+	public Set<String> getHashSetNames() throws TskCoreException {
+		// Currently we don't have any artifacts derived from an artifact.
+		return new HashSet<String>();
+	}
+	
+	/**
+	 * Create and add an artifact associated with this content to the blackboard
+	 *
+	 * @param artifactTypeID id of the artifact type (if the id doesn't already
+	 *                       exist an exception will be thrown)
+	 *
+	 * @return the blackboard artifact created (the artifact type id can be
+	 *         looked up from this)
+	 *
+	 * @throws TskCoreException if critical error occurred within tsk core
+	 */
+	@Override
+	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException {
+		throw new TskCoreException("Cannot create artifact of an artifact. Not supported.");
+	}
+
+	/**
+	 * Create and add an artifact associated with this content to the blackboard
+	 *
+	 * @param type artifact enum type
+	 *
+	 * @return the blackboard artifact created (the artifact type id can be
+	 *         looked up from this)
+	 *
+	 * @throws TskCoreException if critical error occurred within tsk core
+	 */
+	@Override
+	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
+		throw new TskCoreException("Cannot create artifact of an artifact. Not supported.");
+	}
+
+	/**
+	 * Accepts a Sleuthkit item visitor (Visitor design pattern).
+	 *
+	 * @param visitor A SleuthkitItemVisitor supplying an algorithm to run using
+	 *                this derived file as input.
+	 *
+	 * @return The output of the algorithm.
+	 */
+	@Override
+	public <T> T accept(ContentVisitor<T> v) {
+		return v.visit(this);
+	}
+	
 	/**
 	 * Tests this artifact for equality with another object.
 	 *
@@ -316,7 +561,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 */
 	@Override
 	public String toString() {
-		return "BlackboardArtifact{" + "artifactID=" + artifactId + ", objID=" + objId + ", artifactTypeID=" + artifactTypeId + ", artifactTypeName=" + artifactTypeName + ", displayName=" + displayName + ", Case=" + sleuthkitCase + '}'; //NON-NLS
+		return "BlackboardArtifact{" + "artifactID=" + artifactId + ", objID=" + getObjectID() + ", artifactObjID=" + artifactObjId + ", artifactTypeID=" + artifactTypeId + ", artifactTypeName=" + artifactTypeName + ", displayName=" + displayName + ", Case=" + getSleuthkitCase() + '}'; //NON-NLS
 	}
 
 	/**
@@ -334,6 +579,113 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		return visitor.visit(this);
 	}
 
+	
+	/**
+	 * Get the (reported) size of the content object.
+	 * Artifact content is a string dump of all its attributes.
+	 *
+	 * @return size of the content in bytes
+	 */
+	@Override
+	public long getSize() {
+		
+		if (contentBytes == null) {
+			try {
+				loadArtifactContent();
+			}
+			catch (TskCoreException ex) {
+				return 0;
+			}
+		}
+
+		return contentBytes.length;
+	}
+	
+	/**
+	 * Close the Content object. 
+	 */
+	@Override
+	public void close() {
+		contentBytes = null;
+		return;
+	}
+	
+	/**
+	 * Reads content data for this artifact
+	 * Artifact content is a string dump of all its attributes.
+	 * 
+	 * @param buf    a character array of data (in bytes) to copy read data to
+	 * @param offset byte offset in the content to start reading from
+	 * @param len    number of bytes to read into buf.
+	 *
+	 * @return num of bytes read, or -1 on error
+	 *
+	 * @throws TskCoreException if critical error occurred during read in the
+	 *                          tsk core
+	 */
+	@Override
+	public final int read(byte[] buf, long offset, long len) throws TskCoreException {
+		
+		if (contentBytes == null) {
+			loadArtifactContent();
+		}
+		
+		if (0 == contentBytes.length) {
+			return 0;
+		}
+		
+		// Copy bytes
+		long readLen = Math.min(contentBytes.length - offset, len);
+		System.arraycopy(contentBytes, 0, buf, 0, (int)readLen);
+		
+		return (int)readLen;
+	}
+	
+	@Override
+	public String getName() {
+		return super.getName() + getArtifactID();
+	}
+	
+	
+	/**
+	 * Load and save the content for the artifact.
+	 * Artifact content is a string dump of all its attributes.
+	 * 
+	 * @throws TskCoreException if critical error occurred during read
+	 */
+	private void loadArtifactContent() throws TskCoreException{
+		StringBuilder artifactContents = new StringBuilder();
+
+		Content dataSource = null;
+		try {
+            dataSource = getDataSource();
+        } catch (TskCoreException ex) {
+            throw new TskCoreException("Unable to get datasource for artifact: " + this.toString(), ex);
+        }
+        if (dataSource == null) {
+            throw new TskCoreException("Datasource was null for artifact: " + this.toString());
+        }
+
+        try {
+            for (BlackboardAttribute attribute : getAttributes()) {
+                artifactContents.append(attribute.getAttributeType().getDisplayName());
+                artifactContents.append(" : ");
+                artifactContents.append(attribute.getDisplayString());
+                artifactContents.append(System.lineSeparator());
+            }
+        } catch (TskCoreException ex) {
+            throw new TskCoreException("Unable to get attributes for artifact: " + this.toString(), ex);
+        }
+
+		try {
+			contentBytes = artifactContents.toString().getBytes("UTF-8");
+		}
+		catch (UnsupportedEncodingException ex) {
+			throw new TskCoreException("Failed to convert artifact string to bytes for artifact: " + this.toString(), ex);
+		}
+		
+	}
+	
 	/**
 	 * An artifact type.
 	 */
@@ -836,6 +1188,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * @param artifactID       The unique id for this artifact.
 	 * @param objID            The unique id of the content with which this
 	 *                         artifact is associated.
+	 * @param artifactObjID		The unique id of the artifact, in tsk_objects 
 	 * @param artifactTypeID   The type id of this artifact.
 	 * @param artifactTypeName The type name of this artifact.
 	 * @param displayName      The display name of this artifact.
@@ -844,8 +1197,8 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * String, String, ReviewStatus) instead.
 	 */
 	@Deprecated
-	protected BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long objID, int artifactTypeID, String artifactTypeName, String displayName) {
-		this(sleuthkitCase, artifactID, objID, artifactTypeID, artifactTypeName, displayName, ReviewStatus.UNDECIDED);
+	protected BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long objID, long artifactObjID, int artifactTypeID, String artifactTypeName, String displayName) {
+		this(sleuthkitCase, artifactID, objID, artifactObjID, artifactTypeID, artifactTypeName, displayName, ReviewStatus.UNDECIDED);
 	}
 
 	/**
@@ -865,7 +1218,7 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	@Deprecated
 	public List<BlackboardAttribute> getAttributes(final BlackboardAttribute.ATTRIBUTE_TYPE attributeType) throws TskCoreException {
 		if (loadedCacheFromDb == false) {
-			List<BlackboardAttribute> attrs = sleuthkitCase.getBlackboardAttributes(this);
+			List<BlackboardAttribute> attrs = getSleuthkitCase().getBlackboardAttributes(this);
 			attrsCache.clear();
 			attrsCache.addAll(attrs);
 			loadedCacheFromDb = true;
@@ -879,4 +1232,42 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 		return filteredAttributes;
 	}
 
+	@Override
+	public long getId() {
+		return this.artifactObjId;
+	}
+	
+	/**
+	 * Gets the object ids of children of this artifact, if any
+	 *
+	 * @return A list of the object ids of children.
+	 *
+	 * @throws TskCoreException if there was an error querying the case
+	 *                          database.
+	 */
+	@Override
+	public List<Long> getChildrenIds() throws TskCoreException {
+		List<Long> childrenIDs = new ArrayList<Long>();
+		childrenIDs.addAll(getSleuthkitCase().getAbstractFileChildrenIds(this));
+		childrenIDs.addAll(getSleuthkitCase().getBlackboardArtifactChildrenIds(this));
+			
+		return childrenIDs;
+	}
+	
+	/**
+	 * Get all children of this artifact, if any.
+	 *
+	 * @return A list of the children.
+	 *
+	 * @throws TskCoreException if there was an error querying the case
+	 *                          database.
+	 */
+	@Override
+	public List<Content> getChildren() throws TskCoreException {
+		List<Content> children = new ArrayList<Content>();
+		children.addAll(getSleuthkitCase().getAbstractFileChildren(this));
+		children.addAll(getSleuthkitCase().getBlackboardArtifactChildren(this));
+		
+		return children;
+	}
 }

@@ -39,7 +39,7 @@ public abstract class AbstractContent implements Content {
 	private final long objId;
 	private final String name;
 	private Content parent;
-	private String uniquePath;
+	protected String uniquePath;
 	protected long parentId;
 	private volatile boolean hasChildren;
 	private volatile boolean checkedHasChildren;
