@@ -4693,9 +4693,10 @@ ntfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
                         tsk_error_print(hFile);
                         tsk_error_reset();
                     }
+                    if (print_addr.idx != 0)
+                        tsk_fprintf(hFile, "\n");
                 }
-                if (print_addr.idx != 0)
-                    tsk_fprintf(hFile, "\n");
+                
             }
             else {
                 tsk_fprintf(hFile,
