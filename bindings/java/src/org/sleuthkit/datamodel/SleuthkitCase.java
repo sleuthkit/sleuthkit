@@ -3254,7 +3254,7 @@ public class SleuthkitCase {
 	List<Content> getBlackboardArtifactChildren(Content parent) throws TskCoreException {
 
 		long parentId = parent.getId();
-		ArrayList<BlackboardArtifact> artsArray =  getArtifactsHelper("blackboard_artifacts.obj_id = " + parentId + "';");
+		ArrayList<BlackboardArtifact> artsArray =  getArtifactsHelper("blackboard_artifacts.obj_id = " + parentId + ";");
 		
 		List<Content> lc = new ArrayList<Content>();
 		lc.addAll(artsArray);
