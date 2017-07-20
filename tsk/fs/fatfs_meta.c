@@ -1022,7 +1022,8 @@ inode_walk_dent_act(TSK_FS_FILE * fs_file, const char *a_path, void *a_ptr)
     unsigned int flags = TSK_FS_FILE_WALK_FLAG_SLACK | TSK_FS_FILE_WALK_FLAG_AONLY;
 
     if ((fs_file->meta == NULL)
-        || (fs_file->meta->type != TSK_FS_META_TYPE_DIR))
+        || ((fs_file->meta->type != TSK_FS_META_TYPE_DIR) &&
+            (fs_file->meta->type != TSK_FS_META_TYPE_VIRT_DIR)))
         return TSK_WALK_CONT;
 
     /* Get the sector addresses & ignore any errors */

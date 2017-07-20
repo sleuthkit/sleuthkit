@@ -393,6 +393,7 @@ extern "C" {
         TSK_FS_META_TYPE_SOCK = 0x08,   ///< UNIX domain socket
         TSK_FS_META_TYPE_WHT = 0x09,    ///< Whiteout
         TSK_FS_META_TYPE_VIRT = 0x0a,   ///< "Virtual File" created by TSK for file system areas
+        TSK_FS_META_TYPE_VIRT_DIR = 0x0b,   ///< "Virtual Directory" created by TSK to hold data like orphan files
     };
     typedef enum TSK_FS_META_TYPE_ENUM TSK_FS_META_TYPE_ENUM;
 
@@ -566,6 +567,7 @@ extern "C" {
         TSK_FS_NAME_TYPE_SHAD = 8,      ///< Shadow inode (solaris) 
         TSK_FS_NAME_TYPE_WHT = 9,       ///< Whiteout (openbsd)
         TSK_FS_NAME_TYPE_VIRT = 10,     ///< Special (TSK added "Virtual" files)
+        TSK_FS_NAME_TYPE_VIRT_DIR = 11, ///< Special (TSK added "Virtual" directories)
     } TSK_FS_NAME_TYPE_ENUM;
 
 #define TSK_FS_NAME_TYPE_STR_MAX 11     ///< Number of types that have a short string name

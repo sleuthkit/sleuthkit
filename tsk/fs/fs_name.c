@@ -416,7 +416,7 @@ tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
          * printed as a directory
          */
         if ((fs_attr) && (fs_attr->type == TSK_FS_ATTR_TYPE_NTFS_DATA) &&
-            (fs_file->meta->type == TSK_FS_META_TYPE_DIR)) {
+            ((fs_file->meta->type == TSK_FS_META_TYPE_DIR) || (fs_file->meta->type == TSK_FS_META_TYPE_VIRT_DIR))) {
             tsk_fprintf(hFile, "r ");
         }
         else {

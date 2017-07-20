@@ -5183,7 +5183,8 @@ public class SleuthkitCase {
 			if (rs.next()) {
 				final short type = rs.getShort("type"); //NON-NLS
 				if (type == TSK_DB_FILES_TYPE_ENUM.FS.getFileType()) {
-					if (rs.getShort("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue()) { //NON-NLS
+					if (rs.getShort("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue()
+							|| rs.getShort("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_VIRT_DIR.getValue()) { //NON-NLS
 						temp = directory(rs, parentFs);
 					}
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType()) {
@@ -5607,7 +5608,8 @@ public class SleuthkitCase {
 		try {
 			while (rs.next()) {
 				final short type = rs.getShort("type"); //NON-NLS
-				if (type == TSK_DB_FILES_TYPE_ENUM.FS.getFileType()) {
+				if (type == TSK_DB_FILES_TYPE_ENUM.FS.getFileType() && 
+						(rs.getShort("meta_type") != TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_VIRT_DIR.getValue())) {
 					FsContent result;
 					if (rs.getShort("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue()) { //NON-NLS
 						result = directory(rs, null);
@@ -5615,7 +5617,8 @@ public class SleuthkitCase {
 						result = file(rs, null);
 					}
 					results.add(result);
-				} else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType()) {
+				} else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType() ||
+						(rs.getShort("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_VIRT_DIR.getValue())) { //NON-NLS
 					final VirtualDirectory virtDir = virtualDirectory(rs);
 					results.add(virtDir);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS.getFileType()
@@ -5886,13 +5889,18 @@ public class SleuthkitCase {
 			if (null != type) {
 				switch (type) {
 					case FS:
-						FsContent result;
-						if (rs.getShort("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue()) {
-							result = directory(rs, null);
+						if(rs.getShort("meta_type") != TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_VIRT_DIR.getValue()){
+							FsContent result;
+							if (rs.getShort("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR.getValue()) {
+								result = directory(rs, null);
+							}else {
+								result = file(rs, null);
+							}
+							children.add(result);
 						} else {
-							result = file(rs, null);
+							VirtualDirectory virtDir = virtualDirectory(rs);
+							children.add(virtDir);
 						}
-						children.add(result);
 						break;
 					case VIRTUAL_DIR:
 						VirtualDirectory virtDir = virtualDirectory(rs);

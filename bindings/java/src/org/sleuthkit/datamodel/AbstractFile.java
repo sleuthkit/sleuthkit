@@ -649,7 +649,8 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return true if directory, false otherwise
 	 */
 	public boolean isDir() {
-		return metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR);
+		return (metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR) ||
+				metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_VIRT_DIR));
 	}
 
 	/**
