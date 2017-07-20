@@ -607,7 +607,6 @@ public class BlackboardArtifact extends AbstractContent {
 	@Override
 	public void close() {
 		contentBytes = null;
-		return;
 	}
 	
 	/**

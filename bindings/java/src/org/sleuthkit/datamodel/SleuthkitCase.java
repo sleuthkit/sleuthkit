@@ -3687,7 +3687,7 @@ public class SleuthkitCase {
 			statement.clearParameters();
 			statement.setLong(1, id);
 			rs = connection.executeQuery(statement);
-			List<BlackboardArtifact> artifacts = resultSetToArtifacts(rs, connection);
+			List<BlackboardArtifact> artifacts = resultSetToArtifacts(rs);
 			if (artifacts.size() > 0) {
 				return artifacts.get(0);
 			} else {
@@ -6047,22 +6047,19 @@ public class SleuthkitCase {
 	 *
 	 * @param rs         A result set from a query of the blackboard_artifacts table of the
 	 *                   form "SELECT * FROM blackboard_artifacts WHERE XYZ".
-	 * @param connection A case database connection.
 	 *
 	 * @return A list of AbstractFile objects.
 	 *
 	 * @throws SQLException Thrown if there is a problem iterating through the
 	 *                      record set.
 	 */
-	private List<BlackboardArtifact> resultSetToArtifacts(ResultSet rs, CaseDbConnection connection) throws SQLException {
+	private List<BlackboardArtifact> resultSetToArtifacts(ResultSet rs) throws SQLException {
 		ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
 		try {
 			while (rs.next()) {
 				artifacts.add(new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
 						rs.getInt("artifact_type_id"), BlackboardArtifact.ARTIFACT_TYPE.fromID(rs.getInt("artifact_type_id")).getLabel(), BlackboardArtifact.ARTIFACT_TYPE.fromID(rs.getInt("artifact_type_id")).getDisplayName(),
 						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
-				
-				// ?????? RAMAN TBD: dont we need to read and attach Atrributes ???????
 			} //end for each resultSet
 		} catch (SQLException e) {
 			logger.log(Level.SEVERE, "Error getting artifacts from result set", e); //NON-NLS
