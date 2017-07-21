@@ -449,9 +449,6 @@ tsk_fs_attr_print(const TSK_FS_ATTR * a_fs_attr, FILE* hFile) {
         }
         else {
             tsk_fprintf(hFile, "  Staring address: %lld, length: %lld", run_start_addr, run_len);
-            if (a_fs_attr->type == TSK_FS_ATTR_TYPE_UNIX_INDIR) {
-                tsk_fprintf(hFile, "  Indirect");
-            }
         }
         tsk_fprintf(hFile, "\n");
         if (stop_loop) {

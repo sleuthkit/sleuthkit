@@ -1883,32 +1883,18 @@ ffs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
     if (numblock > 0)
         fs_meta->size = numblock * ffs->ffsbsize_b;
 
-    if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
-        fs_file->fs_info->load_attrs(fs_file);
-        if (fs_file->meta->attr == NULL) {
-            printf("  meta->attr is null\n");
-        }
-        else if (fs_file->meta->attr->head == NULL) {
-            printf("  meta->attr->head is null\n");
-        }
-        else {
-            TSK_FS_ATTR * attr = fs_file->meta->attr->head;
-            while (attr) {
-                if (attr->flags & TSK_FS_ATTR_NONRES) {
-                    if (tsk_fs_attr_print(attr, hFile)) {
-                        tsk_fprintf(hFile, "\nError creating run lists\n");
-                        tsk_error_print(hFile);
-                        tsk_error_reset();
-                    }
-                }
+    tsk_fprintf(hFile, "\nDirect Blocks:\n");
 
-                attr = attr->next;
-            }
+    if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
+        TSK_FS_ATTR * fs_attr_direct = tsk_fs_file_attr_get_type(fs_file,
+            TSK_FS_ATTR_TYPE_DEFAULT, 0, 0);
+        if (tsk_fs_attr_print(fs_attr_direct, hFile)) {
+            tsk_fprintf(hFile, "\nError creating run lists\n");
+            tsk_error_print(hFile);
+            tsk_error_reset();
         }
     }
     else {
-        tsk_fprintf(hFile, "\nDirect Blocks:\n");
-
         print.idx = 0;
         print.hFile = hFile;
 
@@ -1922,12 +1908,20 @@ ffs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
 
         if (print.idx != 0)
             tsk_fprintf(hFile, "\n");
+    }
 
-        fs_attr_indir = tsk_fs_file_attr_get_type(fs_file,
-            TSK_FS_ATTR_TYPE_UNIX_INDIR, 0, 0);
-        if (fs_attr_indir) {
-            tsk_fprintf(hFile, "\nIndirect Blocks:\n");
-
+    fs_attr_indir = tsk_fs_file_attr_get_type(fs_file,
+        TSK_FS_ATTR_TYPE_UNIX_INDIR, 0, 0);
+    if (fs_attr_indir) {
+        tsk_fprintf(hFile, "\nIndirect Blocks:\n");
+        if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
+            if (tsk_fs_attr_print(fs_attr_indir, hFile)) {
+                tsk_fprintf(hFile, "\nError creating run lists\n");
+                tsk_error_print(hFile);
+                tsk_error_reset();
+            }
+        }
+        else {
             print.idx = 0;
 
             if (tsk_fs_attr_walk(fs_attr_indir, TSK_FS_FILE_WALK_FLAG_AONLY,
