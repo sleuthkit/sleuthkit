@@ -156,8 +156,7 @@ procDir(TskFsInfo * fs_info, TSK_STACK * stack,
             }
 
             // recurse into another directory (unless it is a '.' or '..')
-            else if ((fs_file->getMeta()->getType() == TSK_FS_META_TYPE_DIR) ||
-                    (fs_file->getMeta()->getType() == TSK_FS_META_TYPE_VIRT_DIR)) {
+            else if (TSK_FS_IS_DIR_META(fs_file->getMeta()->getType())){
                 if (TSK_FS_ISDOT(fs_file->getName()->getName()) == 0) {
 
                     // only go in if it is not on our stack

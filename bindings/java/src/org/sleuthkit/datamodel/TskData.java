@@ -48,7 +48,7 @@ public class TskData {
 		SHAD(8, "h"), ///< Shadow inode (solaris) NON-NLS
 		WHT(9, "w"), ///< Whiteout (openbsd) NON-NLS
 		VIRT(10, "v"),     ///< Special (TSK added "Virtual" files) NON-NLS
-		VIRT_DIR(11, "v");     ///< Special (TSK added "Virtual" directories) NON-NLS
+		VIRT_DIR(11, "V");     ///< Special (TSK added "Virtual" directories) NON-NLS
 
 		private short dirType;
 		String label;

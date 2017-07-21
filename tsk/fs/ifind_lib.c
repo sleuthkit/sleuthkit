@@ -243,8 +243,7 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
          * problem where a file was a disk image and opening it as
          * a directory found the directory entries inside of the file
          * and this caused problems... */
-        if ((fs_dir->fs_file->meta->type != TSK_FS_META_TYPE_DIR) && 
-            (fs_dir->fs_file->meta->type != TSK_FS_META_TYPE_VIRT_DIR)) {
+        if ( !TSK_FS_IS_DIR_META(fs_dir->fs_file->meta->type)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_GENFS);
             tsk_error_set_errstr("Address %" PRIuINUM

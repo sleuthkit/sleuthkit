@@ -1812,7 +1812,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             }
 
             // set the meta size if we find the relevant attribute
-            if (((fs_file->meta->type == TSK_FS_META_TYPE_DIR) || (fs_file->meta->type == TSK_FS_META_TYPE_VIRT_DIR))
+            if (TSK_FS_IS_DIR_META(fs_file->meta->type)
                 && (type == NTFS_ATYPE_IDXROOT)) {
                 fs_file->meta->size =
                     tsk_getu32(fs->endian, attr->c.r.ssize);
@@ -4287,7 +4287,7 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
     tsk_fprintf(hFile, "%sAllocated %s\n",
         (fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC) ? "" :
         "Not ",
-        ((fs_file->meta->type == TSK_FS_META_TYPE_DIR) || (fs_file->meta->type == TSK_FS_META_TYPE_VIRT_DIR)) ? "Directory" : "File");
+        TSK_FS_IS_DIR_META(fs_file->meta->type) ? "Directory" : "File");
     tsk_fprintf(hFile, "Links: %u\n", fs_file->meta->nlink);
 
     /* STANDARD_INFORMATION info */
@@ -4753,7 +4753,7 @@ ntfs_get_default_attr_type(const TSK_FS_FILE * a_file)
         return TSK_FS_ATTR_TYPE_DEFAULT;
 
     /* Use DATA for files and IDXROOT for dirs */
-    if ((a_file->meta->type == TSK_FS_META_TYPE_DIR) || (a_file->meta->type == TSK_FS_META_TYPE_VIRT_DIR))
+    if (TSK_FS_IS_DIR_META(a_file->meta->type))
         return TSK_FS_ATTR_TYPE_NTFS_IDXROOT;
     else
         return TSK_FS_ATTR_TYPE_NTFS_DATA;

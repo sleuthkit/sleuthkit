@@ -990,7 +990,7 @@ int
     }
 
     //if dir, update parent id cache (do this before objId may be changed creating the slack file)
-    if ((meta_type == TSK_FS_META_TYPE_DIR) || (meta_type == TSK_FS_META_TYPE_VIRT_DIR)) {
+    if (TSK_FS_IS_DIR_META(meta_type)){
         std::string fullPath = std::string(path) + fs_file->name->name;
         storeObjId(fsObjId, fs_file, fullPath.c_str(), objId);
     }

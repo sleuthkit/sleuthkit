@@ -119,9 +119,9 @@ print_dent_act(TSK_FS_FILE * fs_file, const char *a_path, void *ptr)
      */
     if (((fls_data->flags & TSK_FS_FLS_DIR) &&
             ((fs_file->meta) &&
-                ((fs_file->meta->type == TSK_FS_META_TYPE_DIR) || (fs_file->meta->type == TSK_FS_META_TYPE_VIRT_DIR))))
+                (TSK_FS_IS_DIR_META(fs_file->meta->type))))
         || ((fls_data->flags & TSK_FS_FLS_FILE) && (((fs_file->meta)
-                    && ((fs_file->meta->type != TSK_FS_META_TYPE_DIR) && (fs_file->meta->type != TSK_FS_META_TYPE_VIRT_DIR)))
+                    && ( ! TSK_FS_IS_DIR_META(fs_file->meta->type)))
                 || (!fs_file->meta)))) {
 
 
