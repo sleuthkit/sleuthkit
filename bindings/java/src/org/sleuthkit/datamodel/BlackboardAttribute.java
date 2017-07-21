@@ -19,13 +19,13 @@
 package org.sleuthkit.datamodel;
 
 import java.io.Serializable;
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.TimeZone;
+import static org.sleuthkit.datamodel.AbstractFile.epochToTime;
 
 /**
  * Represents an attribute of an artifact posted to the blackboard. Instances
@@ -44,7 +44,7 @@ import java.util.TimeZone;
 public class BlackboardAttribute {
 
 	private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
-	private static final SimpleDateFormat DATE_FORMATTER = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
+	
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private BlackboardAttribute.Type attributeType;
 	private final int valueInt;
@@ -523,29 +523,20 @@ public class BlackboardAttribute {
 				return bytesToHexString(getValueBytes());
 				
 			case DATETIME: {
-				
-				// return the date/time string in the timezone associated with the datasource,
-				TimeZone tzone = TimeZone.getDefault();
-				
 				try {
 					final Content dataSource = getParentArtifact().getDataSource();
 					if ((dataSource != null) && (dataSource instanceof Image )) {
+						// return the date/time string in the timezone associated with the datasource,
 						Image  image = (Image) dataSource;
-						tzone = TimeZone.getTimeZone(image.getTimeZone());
+						TimeZone tzone = TimeZone.getTimeZone(image.getTimeZone());
+						return epochToTime(getValueLong(), tzone);
 					} 
 				} catch (TskException ex) {
-					// contnue with TimeZone.getDefault();
+					// contnue with TimeZone.getDefault();	
 				}
+				// return time string in default timezone
+				return epochToTime(getValueLong());
 				
-				String timeString = "0000-00-00 00:00:00";
-				long epochSeconds = getValueLong();
-				if (epochSeconds != 0) {
-					synchronized (DATE_FORMATTER) {
-						DATE_FORMATTER.setTimeZone(tzone);
-						timeString = DATE_FORMATTER.format(new java.util.Date(epochSeconds * 1000));
-					}
-				}
-				return timeString;
 			}
 		}
 		return "";
