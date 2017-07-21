@@ -355,7 +355,6 @@ tsk_fs_attr_set_run(TSK_FS_FILE * a_fs_file, TSK_FS_ATTR * a_fs_attr,
     return 0;
 }
 
-
 static void
 dump_attr(TSK_FS_ATTR * a_fs_attr)
 {
@@ -370,9 +369,12 @@ dump_attr(TSK_FS_ATTR * a_fs_attr)
     }
 }
 
+/*
+ * Prints the data runs for a non-resident attribute
+ */
 uint8_t
 tsk_fs_attr_print(const TSK_FS_ATTR * a_fs_attr, FILE* hFile) {
-    TSK_FS_ATTR_RUN *cur_run = a_fs_attr->nrd.run;
+    TSK_FS_ATTR_RUN *cur_run;
     TSK_FS_ATTR_RUN *fs_attr_run;
     uint32_t skip_remain;
     TSK_OFF_T tot_size;
@@ -380,7 +382,12 @@ tsk_fs_attr_print(const TSK_FS_ATTR * a_fs_attr, FILE* hFile) {
     TSK_OFF_T off = 0;
     uint8_t stop_loop = 0;
 
+    if ( ! (a_fs_attr->flags & TSK_FS_ATTR_NONRES)) {
+        tsk_error_set_errstr("tsk_fs_attr_print called on non-resident attribute");
+        return TSK_ERR;
+    }
 
+    cur_run = a_fs_attr->nrd.run;
     tot_size = a_fs_attr->size;
     skip_remain = a_fs_attr->nrd.skiplen;
 
@@ -404,7 +411,7 @@ tsk_fs_attr_print(const TSK_FS_ATTR * a_fs_attr, FILE* hFile) {
                 else
                     tsk_error_set_errno(TSK_ERR_FS_BLK_NUM);
                 tsk_error_set_errstr
-                ("Invalid address in run (too large): %" PRIuDADDR "",
+                    ("Invalid address in run (too large): %" PRIuDADDR "",
                     addr + len_idx);
                 return TSK_ERR;
             }

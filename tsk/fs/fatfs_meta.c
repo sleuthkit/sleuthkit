@@ -1016,7 +1016,6 @@ fatfs_istat(TSK_FS_INFO *a_fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE *a_hFile
         }
     }
 
-
     tsk_fs_file_close(fs_file);
     return 0;
 }

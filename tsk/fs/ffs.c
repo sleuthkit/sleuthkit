@@ -1147,9 +1147,6 @@ ffs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
     TSK_DADDR_T cache_addr;     // base address in local cache
     int cache_len_f;            // amount of data read into cache (in fragments)
 
-    printf("ffs_block_walk\n");
-    fflush(stdout);
-
     // clean up any error messages that are lying around
     tsk_error_reset();
 
@@ -1888,10 +1885,12 @@ ffs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
     if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
         TSK_FS_ATTR * fs_attr_direct = tsk_fs_file_attr_get_type(fs_file,
             TSK_FS_ATTR_TYPE_DEFAULT, 0, 0);
-        if (tsk_fs_attr_print(fs_attr_direct, hFile)) {
-            tsk_fprintf(hFile, "\nError creating run lists\n");
-            tsk_error_print(hFile);
-            tsk_error_reset();
+        if (fs_attr_direct && (fs_attr_direct->flags & TSK_FS_ATTR_NONRES)) {
+            if (tsk_fs_attr_print(fs_attr_direct, hFile)) {
+                tsk_fprintf(hFile, "\nError creating run lists\n");
+                tsk_error_print(hFile);
+                tsk_error_reset();
+            }
         }
     }
     else {
