@@ -24,6 +24,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.ResourceBundle;
+import java.util.TimeZone;
+import static org.sleuthkit.datamodel.AbstractFile.epochToTime;
 
 /**
  * Represents an attribute of an artifact posted to the blackboard. Instances
@@ -42,6 +44,7 @@ import java.util.ResourceBundle;
 public class BlackboardAttribute {
 
 	private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
+	
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private BlackboardAttribute.Type attributeType;
 	private final int valueInt;
@@ -518,8 +521,23 @@ public class BlackboardAttribute {
 				return Double.toString(getValueDouble());
 			case BYTE:
 				return bytesToHexString(getValueBytes());
-			case DATETIME:
-				return FsContent.epochToTime(getValueLong());
+				
+			case DATETIME: {
+				try {
+					final Content dataSource = getParentArtifact().getDataSource();
+					if ((dataSource != null) && (dataSource instanceof Image )) {
+						// return the date/time string in the timezone associated with the datasource,
+						Image  image = (Image) dataSource;
+						TimeZone tzone = TimeZone.getTimeZone(image.getTimeZone());
+						return epochToTime(getValueLong(), tzone);
+					} 
+				} catch (TskException ex) {
+					// contnue with TimeZone.getDefault();	
+				}
+				// return time string in default timezone
+				return epochToTime(getValueLong());
+				
+			}
 		}
 		return "";
 	}
