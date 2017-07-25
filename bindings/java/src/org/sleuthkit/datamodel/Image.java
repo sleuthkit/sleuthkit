@@ -53,7 +53,10 @@ public class Image extends AbstractContent {
 	 * @param paths
 	 * @param timezone
 	 * @param md5
+	 *
+	 * @deprecated Use the constructor that takes a size.
 	 */
+	@Deprecated
 	protected Image(SleuthkitCase db, long obj_id, long type, long ssize, String name, String[] paths, String timezone, String md5) throws TskCoreException {
 		super(db, obj_id, name);
 		this.type = type;
@@ -61,6 +64,29 @@ public class Image extends AbstractContent {
 		this.paths = paths;
 		this.timezone = timezone;
 		this.size = 0;
+		this.md5 = md5;
+	}
+
+	/**
+	 * constructor most inputs are from the database
+	 *
+	 * @param db       database object
+	 * @param obj_id
+	 * @param type
+	 * @param ssize    Sector Size
+	 * @param name     Display Name
+	 * @param paths
+	 * @param timezone
+	 * @param md5
+	 * @param size
+	 */
+	Image(SleuthkitCase db, long obj_id, long type, long ssize, String name, String[] paths, String timezone, String md5, long size) throws TskCoreException {
+		super(db, obj_id, name);
+		this.type = type;
+		this.ssize = ssize;
+		this.paths = paths;
+		this.timezone = timezone;
+		this.size = size;
 		this.md5 = md5;
 	}
 
