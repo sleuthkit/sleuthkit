@@ -59,7 +59,7 @@ TSK_WALK_RET_ENUM
     TSK_INUM_T par_inum = *(TSK_INUM_T *) ptr;
 
     if ((fs_file->meta == NULL)
-        || (fs_file->meta->type != TSK_FS_META_TYPE_DIR))
+        || ( ! TSK_FS_IS_DIR_META(fs_file->meta->type)))
         return TSK_WALK_CONT;
 
     if (fs_file->meta->addr == par_inum)
