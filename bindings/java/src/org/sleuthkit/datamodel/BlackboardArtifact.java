@@ -39,6 +39,7 @@ import java.util.ResourceBundle;
 public class BlackboardArtifact implements SleuthkitVisitableItem {
 
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
+	private static final int SHORT_DESCRIPTION_MAX_LENGTH = 50;
 	private final long artifactId;
 	private final long objId;
 	private final int artifactTypeId;
@@ -169,32 +170,55 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * @throws TskCoreException if there is a problem creating the description.
 	 */
 	public String getShortDescription() throws TskCoreException {
-		BlackboardAttribute attr = null;
+		List<BlackboardAttribute> attrs;
+		attrs = new ArrayList<BlackboardAttribute>();
 		if (artifactTypeId == ARTIFACT_TYPE.TSK_WEB_BOOKMARK.getTypeID()
 				|| artifactTypeId == ARTIFACT_TYPE.TSK_WEB_COOKIE.getTypeID()
 				|| artifactTypeId == ARTIFACT_TYPE.TSK_WEB_DOWNLOAD.getTypeID()
 				|| artifactTypeId == ARTIFACT_TYPE.TSK_WEB_HISTORY.getTypeID()) {
-			attr = getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN));
+			attrs.add(getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN)));
 		} else if (artifactTypeId == ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID()) {
-			attr = getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_KEYWORD_PREVIEW));
+			attrs.add(getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_KEYWORD_PREVIEW)));
 		} else if (artifactTypeId == ARTIFACT_TYPE.TSK_DEVICE_ATTACHED.getTypeID()) {
-			attr = getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DEVICE_ID));
+			attrs.add(getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DEVICE_ID)));
 		} else if (artifactTypeId == ARTIFACT_TYPE.TSK_CONTACT.getTypeID()
 				|| artifactTypeId == ARTIFACT_TYPE.TSK_MESSAGE.getTypeID()
 				|| artifactTypeId == ARTIFACT_TYPE.TSK_CALLLOG.getTypeID()) {
+			BlackboardAttribute name = getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME));
+			if (name != null && !name.getDisplayString().isEmpty()) {
+				attrs.add(name);
+			}
 			if (null != getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER))) {
-				attr = getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER));
+				attrs.add(getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER)));
 			} else if (null != getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM))) {
-				attr = getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM));
+				attrs.add(getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM)));
 			} else if (null != getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO))) {
-				attr = getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO));
+				attrs.add(getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO)));
+			} else if (null != getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL))) {
+				attrs.add(getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL)));
+			} else if (null != getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL_FROM))) {
+				attrs.add(getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL_FROM)));
+			} else if (null != getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL_TO))) {
+				attrs.add(getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL_TO)));
 			}
 		}
-		if (attr != null && attr.getDisplayString() != null && !attr.getDisplayString().isEmpty()) {
-			return attr.getDisplayString();
-		} else {
-			return "";
+		StringBuilder shortDescription = new StringBuilder("");
+		for (int i = 0; i < attrs.size(); i++) {
+			BlackboardAttribute attr = attrs.get(i);
+			String valueToDisplay = attr.getDisplayString();
+			if (valueToDisplay != null && !valueToDisplay.isEmpty()) {
+				shortDescription.append(attr.getAttributeType().getDisplayName());
+				shortDescription.append(": "); //NON-NLS
+				shortDescription.append(valueToDisplay);
+				if (attrs.size() != i + 1) { //add seperator before next attribute.
+					shortDescription.append("; ");
+				}
+			}
 		}
+		if (shortDescription.length() > SHORT_DESCRIPTION_MAX_LENGTH) {
+			shortDescription.setLength(SHORT_DESCRIPTION_MAX_LENGTH);
+		}
+		return shortDescription.toString();
 	}
 
 	/**
