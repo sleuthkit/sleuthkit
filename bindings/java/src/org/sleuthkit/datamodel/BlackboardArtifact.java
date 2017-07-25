@@ -194,25 +194,33 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 				attrs.add(getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM)));
 			} else if (null != getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO))) {
 				attrs.add(getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO)));
+			} else if (null != getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_HOME))) {
+				attrs.add(getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_HOME)));
+			} else if (null != getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_MOBILE))) {
+				attrs.add(getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_MOBILE)));
+			} else if (null != getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_OFFICE))) {
+				attrs.add(getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_OFFICE)));
 			} else if (null != getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL))) {
 				attrs.add(getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL)));
 			} else if (null != getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL_FROM))) {
 				attrs.add(getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL_FROM)));
 			} else if (null != getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL_TO))) {
 				attrs.add(getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL_TO)));
+			} else if (null != getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL_HOME))) {
+				attrs.add(getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL_HOME)));
+			} else if (null != getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL_OFFICE))) {
+				attrs.add(getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL_OFFICE)));
 			}
 		}
 		StringBuilder shortDescription = new StringBuilder("");
 		for (int i = 0; i < attrs.size(); i++) {
 			BlackboardAttribute attr = attrs.get(i);
 			String valueToDisplay = attr.getDisplayString();
-			if (valueToDisplay != null && !valueToDisplay.isEmpty()) {
-				shortDescription.append(attr.getAttributeType().getDisplayName());
-				shortDescription.append(": "); //NON-NLS
-				shortDescription.append(valueToDisplay);
-				if (attrs.size() != i + 1) { //add seperator before next attribute.
-					shortDescription.append("; ");
-				}
+			shortDescription.append(attr.getAttributeType().getDisplayName());
+			shortDescription.append(": "); //NON-NLS
+			shortDescription.append(valueToDisplay);
+			if (attrs.size() != i + 1) { //add seperator before next attribute.
+				shortDescription.append("; ");
 			}
 		}
 		if (shortDescription.length() > SHORT_DESCRIPTION_MAX_LENGTH) {
