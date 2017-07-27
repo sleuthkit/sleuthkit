@@ -979,6 +979,9 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
 	if ((ext) && (strlen(ext) > 1) && (name != ext)) {  //started with "."
 		extension = (char *)tsk_malloc(len);
 		strcpy(extension, ext + 1);
+		for (int i = 0; extension[i]; i++) {
+			extension[i] = tolower(extension[i]);
+		}
 	}
 
     // Add the attribute name
