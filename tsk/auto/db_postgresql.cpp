@@ -976,7 +976,9 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
 
 	char * ext = strrchr(name, '.');
 	char * extension = NULL;
-	if ((ext) && (strlen(ext) > 1) && (name != ext)) {  //started with "."
+
+	//if ext is null or only contains the '.' or is the entire filename, file has no extension.
+	if ((ext) && (strlen(ext) > 1) && (name != ext)) { 
 		extension = (char *)tsk_malloc(len);
 		strcpy(extension, ext + 1);
 		for (int i = 0; extension[i]; i++) {
@@ -1027,17 +1029,22 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
     // replace all non-UTF8 characters
     tsk_cleanupUTF8(name, '^');
     tsk_cleanupUTF8(escaped_path, '^');
+	tsk_cleanupUTF8(extension, '^');
 
     // escape strings for use within an SQL command
     char *name_sql = PQescapeLiteral(conn, name, strlen(name));
     char *escaped_path_sql = PQescapeLiteral(conn, escaped_path, strlen(escaped_path));
+	char *extension_sql = PQescapeLiteral(conn, extension, strlen(extension));
     if (!isEscapedStringValid(name_sql, name, "TskDbPostgreSQL::addFile: Unable to escape file name string: %s\n") 
-        || !isEscapedStringValid(escaped_path_sql, escaped_path, "TskDbPostgreSQL::addFile: Unable to escape path string: %s\n")) {
+        || !isEscapedStringValid(escaped_path_sql, escaped_path, "TskDbPostgreSQL::addFile: Unable to escape path string: %s\n")
+		|| !isEscapedStringValid(extension_sql, extension, "TskDbPostgreSQL::addFile: Unable to escape extension string: %s\n")
+		) {
 			free(extension);
 			free(name);
             free(escaped_path);
             PQfreemem(name_sql);
             PQfreemem(escaped_path_sql);
+			PQfreemem(extension_sql);
             return 1;
     }
 
@@ -1059,13 +1066,14 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
             free(escaped_path);
             PQfreemem(escaped_path_sql);
             PQfreemem(name_sql);
+			PQfreemem(extension_sql);
             return 1;
         }
         zSQL_dynamic[bufLen - 1] = '\0';
         zSQL = zSQL_dynamic;
     }
 
-    if (0 > snprintf(zSQL, bufLen - 1, "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension) "
+    if (0 > snprintf(zSQL, bufLen - 1, "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path,extension) "
         "VALUES ("
         "%" PRId64 ",%" PRId64 ","
         "%" PRId64 ","
@@ -1076,7 +1084,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         "%" PRIuOFF ","
         "%llu,%llu,%llu,%llu,"
         "%d,%d,%d,%s,%d,"
-        "%s, %s)",
+        "%s,%s)",
         fsObjId, objId,
         dataSourceObjId,
         TSK_DB_FILES_TYPE_FS,
@@ -1086,7 +1094,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         size,
         (unsigned long long)crtime, (unsigned long long)ctime, (unsigned long long) atime, (unsigned long long) mtime,
         meta_mode, gid, uid, NULL, known,
-        escaped_path_sql, extension)) {
+        escaped_path_sql, extension_sql)) {
 
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
@@ -1099,6 +1107,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
             free(escaped_path);
             PQfreemem(name_sql);
             PQfreemem(escaped_path_sql);
+			PQfreemem(extension_sql);
             return 1;
     }
 
@@ -1108,6 +1117,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         free(escaped_path);
         PQfreemem(name_sql);
         PQfreemem(escaped_path_sql);
+		PQfreemem(extension_sql);
         if (zSQL_dynamic != NULL) {
             free(zSQL_dynamic);
         }
@@ -1174,6 +1184,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
                 free(escaped_path);
                 PQfreemem(name_sql);
                 PQfreemem(escaped_path_sql);
+				PQfreemem(extension_sql);
                 if (zSQL_dynamic != NULL) {
                     free(zSQL_dynamic);
                 }
@@ -1185,7 +1196,8 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
 			free(name);
             free(escaped_path);
             PQfreemem(name_sql);
-            PQfreemem(escaped_path_sql);
+            PQfreemem(escaped_path_sql);	
+			PQfreemem(extension_sql);
             if (zSQL_dynamic != NULL) {
                 free(zSQL_dynamic);
             }
@@ -1203,6 +1215,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
     free(escaped_path);
     PQfreemem(name_sql);
     PQfreemem(escaped_path_sql);
+	PQfreemem(extension_sql);
     return 0;
 }
 

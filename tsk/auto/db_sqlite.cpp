@@ -912,7 +912,8 @@ int
 
 	char * ext = strrchr(name, '.');
 	char * extension = NULL;
-	if ((ext) && (strlen(ext) > 1) && (name != ext)) {  //started with "."
+	//if ext is null or only contains the '.' or is the entire filename, file has no extension.
+	if ((ext) && (strlen(ext) > 1) && (name != ext)) { 
 		extension = (char *)tsk_malloc(len);
 		strcpy(extension, ext + 1);
 		for (int i = 0; extension[i]; i++) {
