@@ -4925,8 +4925,9 @@ public class SleuthkitCase {
 						name = "";
 					}
 				}
+				long size = rs1.getLong("size"); //NON-NLS
 				return new Image(this, obj_id, type, ssize, name,
-						imagePaths.toArray(new String[imagePaths.size()]), tzone, md5);
+						imagePaths.toArray(new String[imagePaths.size()]), tzone, md5, size);
 			} else {
 				throw new TskCoreException("No image found for id: " + id);
 			}

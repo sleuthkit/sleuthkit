@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.ResourceBundle;
+import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
+import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 
 /**
  * An artifact that has been posted to the blackboard. An artifact is a typed
@@ -169,19 +171,67 @@ public class BlackboardArtifact implements SleuthkitVisitableItem {
 	 * @throws TskCoreException if there is a problem creating the description.
 	 */
 	public String getShortDescription() throws TskCoreException {
-		BlackboardAttribute attr = null;
-		if (artifactTypeId == ARTIFACT_TYPE.TSK_WEB_BOOKMARK.getTypeID()) {
-			attr = getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL));
-		} else if (artifactTypeId == ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID()) {
-			attr = getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_KEYWORD_PREVIEW));
-		} else if (artifactTypeId == ARTIFACT_TYPE.TSK_CALLLOG.getTypeID()) {
-			attr = getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM));
+		List<BlackboardAttribute> attrs;
+		attrs = new ArrayList<BlackboardAttribute>();  //only allow the adding of one or two items to keep descirption short
+		switch (ARTIFACT_TYPE.fromID(artifactTypeId)) {
+			case TSK_WEB_BOOKMARK:  //web_bookmark, web_cookie, web_download, and web_history are the same attribute for now
+			case TSK_WEB_COOKIE:
+			case TSK_WEB_DOWNLOAD:
+			case TSK_WEB_HISTORY:
+				attrs.add(getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DOMAIN)));
+				break;
+			case TSK_KEYWORD_HIT:
+				attrs.add(getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_KEYWORD_PREVIEW)));
+				break;
+			case TSK_DEVICE_ATTACHED:
+				attrs.add(getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DEVICE_ID)));
+				break;
+			case TSK_CONTACT: //contact, message, and calllog are the same attributes for now
+			case TSK_MESSAGE:
+			case TSK_CALLLOG:
+				BlackboardAttribute name;
+				if (((name = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_NAME))) != null) && !name.getDisplayString().isEmpty()) {
+					attrs.add(name);
+				}
+				BlackboardAttribute attr;
+				if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER))) != null) {
+					attrs.add(attr);
+				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM))) != null) {
+					attrs.add(attr);
+				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO))) != null) {
+					attrs.add(attr);
+				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_HOME))) != null) {
+					attrs.add(attr);
+				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_MOBILE))) != null) {
+					attrs.add(attr);
+				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_OFFICE))) != null) {
+					attrs.add(attr);
+				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_EMAIL))) != null) {
+					attrs.add(attr);
+				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_EMAIL_FROM))) != null) {
+					attrs.add(attr);
+				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_EMAIL_TO))) != null) {
+					attrs.add(attr);
+				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_EMAIL_HOME))) != null) {
+					attrs.add(attr);
+				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_EMAIL_OFFICE))) != null) {
+					attrs.add(attr);
+				}
+				break;
+			default:  //no description by default
 		}
-		if (attr != null && attr.getDisplayString() != null && !attr.getDisplayString().isEmpty()) {
-			return attr.getDisplayString();
-		} else {
-			return "";
+		StringBuilder shortDescription = new StringBuilder("");
+		for (int i = 0; i < attrs.size(); i++) {
+			BlackboardAttribute attr = attrs.get(i);
+			String valueToDisplay = attr.getDisplayString();
+			shortDescription.append(attr.getAttributeType().getDisplayName());
+			shortDescription.append(": "); //NON-NLS
+			shortDescription.append(valueToDisplay);
+			if (attrs.size() != i + 1) { //add seperator before next attribute.
+				shortDescription.append("; ");
+			}
 		}
+		return shortDescription.toString();
 	}
 
 	/**
