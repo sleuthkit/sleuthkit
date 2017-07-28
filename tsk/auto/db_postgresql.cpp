@@ -524,7 +524,7 @@ int TskDbPostgreSQL::initialize() {
         "Error creating tsk_fs_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_files (obj_id BIGSERIAL PRIMARY KEY, fs_obj_id BIGINT, data_source_obj_id BIGINT NOT NULL, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr BIGINT, meta_seq BIGINT, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size BIGINT, ctime BIGINT, crtime BIGINT, atime BIGINT, mtime BIGINT, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, parent_path TEXT, mime_type TEXT, "
+        ("CREATE TABLE tsk_files (obj_id BIGSERIAL PRIMARY KEY, fs_obj_id BIGINT, data_source_obj_id BIGINT NOT NULL, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr BIGINT, meta_seq BIGINT, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size BIGINT, ctime BIGINT, crtime BIGINT, atime BIGINT, mtime BIGINT, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, parent_path TEXT, mime_type TEXT, extension TEXT, "
         "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id), FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id));",
         "Error creating tsk_files table: %s\n")
         ||
@@ -627,27 +627,26 @@ int TskDbPostgreSQL::initialize() {
 * Create indexes for the columns that are not primary keys and that we query on. 
 * @returns 1 on error, 0 on success
 */
-int TskDbPostgreSQL::createIndexes()
-{
-    return
-        // tsk_objects index
-        attempt_exec("CREATE INDEX parObjId ON tsk_objects(par_obj_id);",
-        "Error creating tsk_objects index on par_obj_id: %s\n") ||
-        // file layout index
-        attempt_exec("CREATE INDEX layout_objID ON tsk_file_layout(obj_id);",
-        "Error creating layout_objID index on tsk_file_layout: %s\n") ||
-        // blackboard indexes
-        attempt_exec("CREATE INDEX artifact_objID ON blackboard_artifacts(obj_id);",
-        "Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
-        attempt_exec("CREATE INDEX artifact_typeID ON blackboard_artifacts(artifact_type_id);",
-        "Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
-        attempt_exec("CREATE INDEX attrsArtifactID ON blackboard_attributes(artifact_id);",
-        "Error creating artifact_id index on blackboard_attributes: %s\n") ||
-		attempt_exec("CREATE INDEX mime_type ON tsk_files(dir_type,mime_type,type);",
-		"Error creating mime_type index on tsk_files: %s\n");
-    /*attempt_exec("CREATE INDEX attribute_artifactTypeId ON blackboard_attributes(artifact_type_id);",
-    "Error creating artifact_type_id index on blackboard_attributes: %s\n");
-    */
+int TskDbPostgreSQL::createIndexes() {
+	return
+		// tsk_objects index
+		attempt_exec("CREATE INDEX parObjId ON tsk_objects(par_obj_id);",
+			"Error creating tsk_objects index on par_obj_id: %s\n") ||
+		// file layout index
+		attempt_exec("CREATE INDEX layout_objID ON tsk_file_layout(obj_id);",
+			"Error creating layout_objID index on tsk_file_layout: %s\n") ||
+		// blackboard indexes
+		attempt_exec("CREATE INDEX artifact_objID ON blackboard_artifacts(obj_id);",
+			"Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
+		attempt_exec("CREATE INDEX artifact_typeID ON blackboard_artifacts(artifact_type_id);",
+			"Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
+		attempt_exec("CREATE INDEX attrsArtifactID ON blackboard_attributes(artifact_id);",
+			"Error creating artifact_id index on blackboard_attributes: %s\n") ||
+		//file type indexes
+		attempt_exec("CREATE INDEX mime_type ON tsk_files(dir_type,mime_type,type);", //mime type
+			"Error creating mime_type index on tsk_files: %s\n") ||
+		attempt_exec("CREATE INDEX file_extension ON tsk_files(extension);",  //file extenssion
+			"Error creating file_extension index on tsk_files: %s\n");
 }
 
 
@@ -974,6 +973,18 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
 
     strncpy(name, fs_file->name->name, nlen);
 
+	char * ext = strrchr(name, '.');
+	char * extension = NULL;
+
+	//if ext is null or only contains the '.' or is the entire filename, file has no extension.
+	if ((ext) && (strlen(ext) > 1) && (name != ext)) { 
+		extension = (char *)tsk_malloc(len);
+		strcpy(extension, ext + 1);
+		for (int i = 0; extension[i]; i++) {
+			extension[i] = tolower(extension[i]);
+		}
+	}
+
     // Add the attribute name
     if (attr_nlen > 0) {
         strncat(name, ":", nlen-strlen(name));
@@ -985,7 +996,8 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
     size_t path_len = strlen(path) + 2;
     char *escaped_path;
     if ((escaped_path = (char *) tsk_malloc(path_len)) == NULL) { 
-        free(name);
+		free(extension);
+		free(name);
         return 1;
     }
 
@@ -1007,6 +1019,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
 
 
     if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId)) {
+		free(extension);
         free(name);
         free(escaped_path);
         return 1;
@@ -1015,16 +1028,22 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
     // replace all non-UTF8 characters
     tsk_cleanupUTF8(name, '^');
     tsk_cleanupUTF8(escaped_path, '^');
+	tsk_cleanupUTF8(extension, '^');
 
     // escape strings for use within an SQL command
     char *name_sql = PQescapeLiteral(conn, name, strlen(name));
     char *escaped_path_sql = PQescapeLiteral(conn, escaped_path, strlen(escaped_path));
+	//char *extension_sql = PQescapeLiteral(conn, extension, strlen(extension));
     if (!isEscapedStringValid(name_sql, name, "TskDbPostgreSQL::addFile: Unable to escape file name string: %s\n") 
-        || !isEscapedStringValid(escaped_path_sql, escaped_path, "TskDbPostgreSQL::addFile: Unable to escape path string: %s\n")) {
-            free(name);
+        || !isEscapedStringValid(escaped_path_sql, escaped_path, "TskDbPostgreSQL::addFile: Unable to escape path string: %s\n")
+		//|| !isEscapedStringValid(extension_sql, extension, "TskDbPostgreSQL::addFile: Unable to escape extension string: %s\n")
+		) {
+			free(extension);
+			free(name);
             free(escaped_path);
             PQfreemem(name_sql);
             PQfreemem(escaped_path_sql);
+			//PQfreemem(extension_sql);
             return 1;
     }
 
@@ -1041,17 +1060,19 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         // The same buffer will be used for the slack file entry.
         bufLen = strlen(escaped_path_sql) + strlen(name_sql) + 500;
         if ((zSQL_dynamic = (char *)tsk_malloc(bufLen)) == NULL) {
-            free(name);
+			free(extension);
+			free(name);
             free(escaped_path);
             PQfreemem(escaped_path_sql);
             PQfreemem(name_sql);
+			//PQfreemem(extension_sql);
             return 1;
         }
         zSQL_dynamic[bufLen - 1] = '\0';
         zSQL = zSQL_dynamic;
     }
 
-    if (0 > snprintf(zSQL, bufLen - 1, "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
+    if (0 > snprintf(zSQL, bufLen - 1, "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path,extension) "
         "VALUES ("
         "%" PRId64 ",%" PRId64 ","
         "%" PRId64 ","
@@ -1062,7 +1083,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         "%" PRIuOFF ","
         "%llu,%llu,%llu,%llu,"
         "%d,%d,%d,%s,%d,"
-        "%s)",
+        "%s,'%s')",
         fsObjId, objId,
         dataSourceObjId,
         TSK_DB_FILES_TYPE_FS,
@@ -1072,7 +1093,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         size,
         (unsigned long long)crtime, (unsigned long long)ctime, (unsigned long long) atime, (unsigned long long) mtime,
         meta_mode, gid, uid, NULL, known,
-        escaped_path_sql)) {
+        escaped_path_sql, extension)) {
 
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
@@ -1080,18 +1101,22 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
             if (zSQL_dynamic != NULL) {
                 free(zSQL_dynamic);
             }
+			free(extension);
             free(name);
             free(escaped_path);
             PQfreemem(name_sql);
             PQfreemem(escaped_path_sql);
+			//PQfreemem(extension_sql);
             return 1;
     }
 
     if (attempt_exec(zSQL, "TskDbPostgreSQL::addFile: Error adding data to tsk_files table: %s\n")) {
-        free(name);
+		free(extension);
+		free(name);
         free(escaped_path);
         PQfreemem(name_sql);
         PQfreemem(escaped_path_sql);
+		//PQfreemem(extension_sql);
         if (zSQL_dynamic != NULL) {
             free(zSQL_dynamic);
         }
@@ -1121,7 +1146,8 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         TSK_OFF_T slackSize = fs_attr->nrd.allocsize - fs_attr->nrd.initsize;
 
         if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId)) {
-            free(name);
+			free(extension);
+			free(name);
             free(escaped_path);
             return 1;
         }
@@ -1152,10 +1178,12 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_AUTO_DB);
                 tsk_error_set_errstr("Error inserting slack file with object ID for: %" PRId64, objId);
-                free(name);
+				free(extension);
+				free(name);
                 free(escaped_path);
                 PQfreemem(name_sql);
                 PQfreemem(escaped_path_sql);
+				//PQfreemem(extension_sql);
                 if (zSQL_dynamic != NULL) {
                     free(zSQL_dynamic);
                 }
@@ -1163,10 +1191,12 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         }
 
         if (attempt_exec(zSQL, "TskDbPostgreSQL::addFile: Error adding data to tsk_files table: %s\n")) {
-            free(name);
+			free(extension);
+			free(name);
             free(escaped_path);
             PQfreemem(name_sql);
-            PQfreemem(escaped_path_sql);
+            PQfreemem(escaped_path_sql);	
+			//PQfreemem(extension_sql);
             if (zSQL_dynamic != NULL) {
                 free(zSQL_dynamic);
             }
@@ -1179,10 +1209,12 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
     }
 
     // cleanup
+	free(extension);
     free(name);
     free(escaped_path);
     PQfreemem(name_sql);
     PQfreemem(escaped_path_sql);
+	//PQfreemem(extension_sql);
     return 0;
 }
 

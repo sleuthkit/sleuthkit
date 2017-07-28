@@ -271,11 +271,11 @@ int
         ("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, device_id TEXT NOT NULL,  time_zone TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating data_source_info table: %s\n")
         ||
-        attempt_exec
-        ("CREATE TABLE tsk_files (obj_id INTEGER PRIMARY KEY, fs_obj_id INTEGER, data_source_obj_id INTEGER NOT NULL, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr INTEGER, meta_seq INTEGER, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size INTEGER, ctime INTEGER, crtime INTEGER, atime INTEGER, mtime INTEGER, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, parent_path TEXT, mime_type TEXT, "
-         "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id), FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id));",
-        "Error creating tsk_files table: %s\n")
-        ||
+		attempt_exec
+		("CREATE TABLE tsk_files (obj_id INTEGER PRIMARY KEY, fs_obj_id INTEGER, data_source_obj_id INTEGER NOT NULL, attr_type INTEGER, attr_id INTEGER, name TEXT NOT NULL, meta_addr INTEGER, meta_seq INTEGER, type INTEGER, has_layout INTEGER, has_path INTEGER, dir_type INTEGER, meta_type INTEGER, dir_flags INTEGER, meta_flags INTEGER, size INTEGER, ctime INTEGER, crtime INTEGER, atime INTEGER, mtime INTEGER, mode INTEGER, uid INTEGER, gid INTEGER, md5 TEXT, known INTEGER, parent_path TEXT, mime_type TEXT, extension TEXT , "
+			"FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(fs_obj_id) REFERENCES tsk_fs_info(obj_id), FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id));",
+			"Error creating tsk_files table: %s\n")
+		||
         attempt_exec
         ("CREATE TABLE file_encoding_types (encoding_type INTEGER PRIMARY KEY, name TEXT NOT NULL);",
         "Error creating file_encoding_types table: %s\n")
@@ -378,28 +378,26 @@ int
 * Create indexes for the columns that are not primary keys and that we query on. 
 * @returns 1 on error, 0 on success
 */
-int
-    TskDbSqlite::createIndexes()
-{
-    return
-        // tsk_objects index
-        attempt_exec("CREATE INDEX parObjId ON tsk_objects(par_obj_id);",
-        "Error creating tsk_objects index on par_obj_id: %s\n") ||
-        // file layout index
-        attempt_exec("CREATE INDEX layout_objID ON tsk_file_layout(obj_id);",
-        "Error creating layout_objID index on tsk_file_layout: %s\n") ||
-        // blackboard indexes
-        attempt_exec("CREATE INDEX artifact_objID ON blackboard_artifacts(obj_id);",
-        "Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
-        attempt_exec("CREATE INDEX artifact_typeID ON blackboard_artifacts(artifact_type_id);",
-        "Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
-        attempt_exec("CREATE INDEX attrsArtifactID ON blackboard_attributes(artifact_id);",
-        "Error creating artifact_id index on blackboard_attributes: %s\n") ||
-		attempt_exec("CREATE INDEX mime_type ON tsk_files(dir_type,mime_type,type);",
-		"Error creating mime_type index on tsk_files: %s\n");
-        /*attempt_exec("CREATE INDEX attribute_artifactTypeId ON blackboard_attributes(artifact_type_id);",
-        "Error creating artifact_type_id index on blackboard_attributes: %s\n");
-        */
+int TskDbSqlite::createIndexes() {
+	return
+		// tsk_objects index
+		attempt_exec("CREATE INDEX parObjId ON tsk_objects(par_obj_id);",
+			"Error creating tsk_objects index on par_obj_id: %s\n") ||
+		// file layout index
+		attempt_exec("CREATE INDEX layout_objID ON tsk_file_layout(obj_id);",
+			"Error creating layout_objID index on tsk_file_layout: %s\n") ||
+		// blackboard indexes
+		attempt_exec("CREATE INDEX artifact_objID ON blackboard_artifacts(obj_id);",
+			"Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
+		attempt_exec("CREATE INDEX artifact_typeID ON blackboard_artifacts(artifact_type_id);",
+			"Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
+		attempt_exec("CREATE INDEX attrsArtifactID ON blackboard_attributes(artifact_id);",
+			"Error creating artifact_id index on blackboard_attributes: %s\n") ||
+		//file type indexes
+		attempt_exec("CREATE INDEX mime_type ON tsk_files(dir_type,mime_type,type);", //mime type
+			"Error creating mime_type index on tsk_files: %s\n") ||
+		attempt_exec("CREATE INDEX file_extension ON tsk_files(extension);",  //file extenssion
+			"Error creating file_extension index on tsk_files: %s\n");
 }
 
 
@@ -858,205 +856,209 @@ int
 {
 
 
-    time_t
-        mtime = 0;
-    time_t
-        crtime = 0;
-    time_t
-        ctime = 0;
-    time_t
-        atime = 0;
-    TSK_OFF_T size = 0;
-    int
-        meta_type = 0;
-    int
-        meta_flags = 0;
-    int
-        meta_mode = 0;
-    int
-        gid = 0;
-    int
-        uid = 0;
-    int
-        type = TSK_FS_ATTR_TYPE_NOT_FOUND;
-    int
-        idx = 0;
-    char *zSQL;
+	time_t        mtime = 0;
+	time_t        crtime = 0;
+	time_t        ctime = 0;
+	time_t        atime = 0;
+	TSK_OFF_T size = 0;
+	int        meta_type = 0;
+	int        meta_flags = 0;
+	int        meta_mode = 0;
+	int        gid = 0;
+	int        uid = 0;
+	int        type = TSK_FS_ATTR_TYPE_NOT_FOUND;
+	int        idx = 0;
+	char *zSQL;
 
-    if (fs_file->name == NULL)
-        return 0;
+	if (fs_file->name == NULL)
+		return 0;
 
-    if (fs_file->meta) {
-        mtime = fs_file->meta->mtime;
-        atime = fs_file->meta->atime;
-        ctime = fs_file->meta->ctime;
-        crtime = fs_file->meta->crtime;
-        meta_type = fs_file->meta->type;
-        meta_flags = fs_file->meta->flags;
-        meta_mode = fs_file->meta->mode;
-        gid = fs_file->meta->gid;
-        uid = fs_file->meta->uid;
-    }
+	if (fs_file->meta) {
+		mtime = fs_file->meta->mtime;
+		atime = fs_file->meta->atime;
+		ctime = fs_file->meta->ctime;
+		crtime = fs_file->meta->crtime;
+		meta_type = fs_file->meta->type;
+		meta_flags = fs_file->meta->flags;
+		meta_mode = fs_file->meta->mode;
+		gid = fs_file->meta->gid;
+		uid = fs_file->meta->uid;
+	}
 
-    size_t attr_nlen = 0;
-    if (fs_attr) {
-        type = fs_attr->type;
-        idx = fs_attr->id;
-        size = fs_attr->size;
-        if (fs_attr->name) {
-            if ((fs_attr->type != TSK_FS_ATTR_TYPE_NTFS_IDXROOT) ||
-                (strcmp(fs_attr->name, "$I30") != 0)) {
-                    attr_nlen = strlen(fs_attr->name);
-            }
-        }
-    }
+	size_t attr_nlen = 0;
+	if (fs_attr) {
+		type = fs_attr->type;
+		idx = fs_attr->id;
+		size = fs_attr->size;
+		if (fs_attr->name) {
+			if ((fs_attr->type != TSK_FS_ATTR_TYPE_NTFS_IDXROOT) ||
+				(strcmp(fs_attr->name, "$I30") != 0)) {
+				attr_nlen = strlen(fs_attr->name);
+			}
+		}
+	}
 
-    // combine name and attribute name
-    size_t len = strlen(fs_file->name->name);
-    char *
-        name;
-    size_t nlen = len + attr_nlen + 11; // Extra space for possible colon and '-slack'
-    if ((name = (char *) tsk_malloc(nlen)) == NULL) {
-        return 1;
-    }
+	// combine name and attribute name
+	size_t len = strlen(fs_file->name->name);
+	char * name;
+	size_t nlen = len + attr_nlen + 11; // Extra space for possible colon and '-slack'
+	if ((name = (char *)tsk_malloc(nlen)) == NULL) {
+		return 1;
+	}
 
-    strncpy(name, fs_file->name->name, nlen);
+	strncpy(name, fs_file->name->name, nlen);
 
-    // Add the attribute name
-    if (attr_nlen > 0) {
+	char * ext = strrchr(name, '.');
+	char * extension = NULL;
+	//if ext is null or only contains the '.' or is the entire filename, file has no extension.
+	if ((ext) && (strlen(ext) > 1) && (name != ext)) { 
+		extension = (char *)tsk_malloc(len);
+		strcpy(extension, ext + 1);
+		for (int i = 0; extension[i]; i++) {
+			extension[i] = tolower(extension[i]);
+		}
+	}
+
+	// Add the attribute name
+	if (attr_nlen > 0) {
         strncat(name, ":", nlen-strlen(name));
         strncat(name, fs_attr->name, nlen-strlen(name));
-    }
+	}
 
-    // clean up path
-    // +2 = space for leading slash and terminating null
-    size_t path_len = strlen(path) + 2;
-    char *escaped_path;
+	// clean up path
+	// +2 = space for leading slash and terminating null
+	size_t path_len = strlen(path) + 2;
+	char *escaped_path;
     if ((escaped_path = (char *) tsk_malloc(path_len)) == NULL) { 
-        free(name);
-        return 1;
-    }
+		free(name);
+		return 1;
+	}
 
-    strncpy(escaped_path, "/", path_len);
-    strncat(escaped_path, path, path_len - strlen(escaped_path));
+	strncpy(escaped_path, "/", path_len);
+	strncat(escaped_path, path, path_len - strlen(escaped_path));
 
-    char *md5TextPtr = NULL;
-    char md5Text[48];
+	char *md5TextPtr = NULL;
+	char md5Text[48];
 
-    // if md5 hashes are being used
-    if (md5 != NULL) {
-        // copy the hash as hexidecimal into the buffer
-        for (int i = 0; i < 16; i++) {
+	// if md5 hashes are being used
+	if (md5 != NULL) {
+		// copy the hash as hexidecimal into the buffer
+		for (int i = 0; i < 16; i++) {
             sprintf(&(md5Text[i*2]), "%x%x", (md5[i] >> 4) & 0xf,
-                md5[i] & 0xf);
-        }
-        md5TextPtr = md5Text;
-    }
+				md5[i] & 0xf);
+		}
+		md5TextPtr = md5Text;
+	}
 
 
-    if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId)) {
-        free(name);
-        free(escaped_path);
-        return 1;
-    }
+	if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId)) {
+		free(extension);
+		free(name);
+		free(escaped_path);
+		return 1;
+	}
 
-    zSQL = sqlite3_mprintf(
-        "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
-        "VALUES ("
-        "%" PRId64 ",%" PRId64 ","
-        "%" PRId64 "," 
-        "%d,"
-        "%d,%d,'%q',"
-        "%" PRIuINUM ",%d,"
-        "%d,%d,%d,%d,"
-        "%" PRIuOFF ","
-        "%llu,%llu,%llu,%llu,"
-        "%d,%d,%d,%Q,%d,"
-        "'%q')",
-        fsObjId, objId,
-        dataSourceObjId,
-        TSK_DB_FILES_TYPE_FS,
-        type, idx, name,
-        fs_file->name->meta_addr, fs_file->name->meta_seq, 
-        fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
-        size, 
-        (unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime, 
-        meta_mode, gid, uid, md5TextPtr, known,
-        escaped_path);
+	zSQL = sqlite3_mprintf(
+		"INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension) "
+		"VALUES ("
+		"%" PRId64 ",%" PRId64 ","
+		"%" PRId64 ","
+		"%d,"
+		"%d,%d,'%q',"
+		"%" PRIuINUM ",%d,"
+		"%d,%d,%d,%d,"
+		"%" PRIuOFF ","
+		"%llu,%llu,%llu,%llu,"
+		"%d,%d,%d,%Q,%d,"
+		"'%q','%q')",
+		fsObjId, objId,
+		dataSourceObjId,
+		TSK_DB_FILES_TYPE_FS,
+		type, idx, name,
+		fs_file->name->meta_addr, fs_file->name->meta_seq,
+		fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
+		size,
+		(unsigned long long)crtime, (unsigned long long)ctime, (unsigned long long) atime, (unsigned long long) mtime,
+		meta_mode, gid, uid, md5TextPtr, known,
+		escaped_path, extension);
 
-    if (attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
-        free(name);
-        free(escaped_path);
-        sqlite3_free(zSQL);
-        return 1;
-    }
+	if (attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
+		free(extension);
+		free(name);
+		free(escaped_path);
+		sqlite3_free(zSQL);
+		return 1;
+	}
 
-    //if dir, update parent id cache (do this before objId may be changed creating the slack file)
+	//if dir, update parent id cache (do this before objId may be changed creating the slack file)
     if (TSK_FS_IS_DIR_META(meta_type)){
-        std::string fullPath = std::string(path) + fs_file->name->name;
-        storeObjId(fsObjId, fs_file, fullPath.c_str(), objId);
-    }
+		std::string fullPath = std::string(path) + fs_file->name->name;
+		storeObjId(fsObjId, fs_file, fullPath.c_str(), objId);
+	}
 
-    // Add entry for the slack space.
+	// Add entry for the slack space.
 	// Current conditions for creating a slack file:
-    //   - File name is not empty, "." or ".."
+	//   - File name is not empty, "." or ".."
 	//   - Data is non-resident
 	//   - The allocated size is greater than the initialized file size
-    //     See github issue #756 on why initsize and not size.
+	//     See github issue #756 on why initsize and not size.
 	//   - The data is not compressed
     if((fs_attr != NULL)
            && ((strlen(name) > 0 ) && (! TSK_FS_ISDOT(name)))
-           && (!(fs_file->meta->flags & TSK_FS_META_FLAG_COMP))
-           && (fs_attr->flags & TSK_FS_ATTR_NONRES) 
+		&& (!(fs_file->meta->flags & TSK_FS_META_FLAG_COMP))
+		&& (fs_attr->flags & TSK_FS_ATTR_NONRES)
            && (fs_attr->nrd.allocsize >  fs_attr->nrd.initsize)){
-        strncat(name, "-slack", 6);
-        TSK_OFF_T slackSize = fs_attr->nrd.allocsize - fs_attr->nrd.initsize;
+		strncat(name, "-slack", 6);
+		TSK_OFF_T slackSize = fs_attr->nrd.allocsize - fs_attr->nrd.initsize;
 
-        if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId)) {
-            free(name);
-            free(escaped_path);
-            return 1;
-        }
+		if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId)) {
+			free(extension);
+			free(name);
+			free(escaped_path);
+			return 1;
+		}
 
-        // Run the same insert with the new name, size, and type
-        zSQL = sqlite3_mprintf(
-        "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
-        "VALUES ("
-        "%" PRId64 ",%" PRId64 ","
-        "%" PRId64 "," 
-        "%d,"
-        "%d,%d,'%q',"
-        "%" PRIuINUM ",%d,"
-        "%d,%d,%d,%d,"
-        "%" PRIuOFF ","
-        "%llu,%llu,%llu,%llu,"
-        "%d,%d,%d,%Q,%d,"
-        "'%q')",
-        fsObjId, objId,
-        dataSourceObjId,
-        TSK_DB_FILES_TYPE_SLACK,
-        type, idx, name,
-        fs_file->name->meta_addr, fs_file->name->meta_seq, 
-        TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG, fs_file->name->flags, meta_flags,
-        slackSize, 
+		// Run the same insert with the new name, size, and type
+		zSQL = sqlite3_mprintf(
+			"INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
+			"VALUES ("
+			"%" PRId64 ",%" PRId64 ","
+			"%" PRId64 ","
+			"%d,"
+			"%d,%d,'%q',"
+			"%" PRIuINUM ",%d,"
+			"%d,%d,%d,%d,"
+			"%" PRIuOFF ","
+			"%llu,%llu,%llu,%llu,"
+			"%d,%d,%d,%Q,%d,"
+			"'%q')",
+			fsObjId, objId,
+			dataSourceObjId,
+			TSK_DB_FILES_TYPE_SLACK,
+			type, idx, name,
+			fs_file->name->meta_addr, fs_file->name->meta_seq,
+			TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG, fs_file->name->flags, meta_flags,
+			slackSize,
         (unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime, 
-        meta_mode, gid, uid, md5TextPtr, known,
-        escaped_path);
+			meta_mode, gid, uid, md5TextPtr, known,
+			escaped_path);
 
-        if (attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
-            free(name);
-            free(escaped_path);
-            sqlite3_free(zSQL);
-            return 1;
-        }
-    }
+		if (attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
+			free(extension);
+			free(name);
+			free(escaped_path);
+			sqlite3_free(zSQL);
+			return 1;
+		}
+	}
 
-    sqlite3_free(zSQL);
+	sqlite3_free(zSQL);
 
-    free(name);
-    free(escaped_path);
+	free(extension);
+	free(name);
+	free(escaped_path);
 
-    return 0;
+	return 0;
 }
 
 
