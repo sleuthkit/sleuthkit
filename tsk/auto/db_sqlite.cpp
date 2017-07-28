@@ -378,10 +378,8 @@ int
 * Create indexes for the columns that are not primary keys and that we query on. 
 * @returns 1 on error, 0 on success
 */
-int
-    TskDbSqlite::createIndexes()
-{
-    return
+int TskDbSqlite::createIndexes() {
+	return
 		// tsk_objects index
 		attempt_exec("CREATE INDEX parObjId ON tsk_objects(par_obj_id);",
 			"Error creating tsk_objects index on par_obj_id: %s\n") ||

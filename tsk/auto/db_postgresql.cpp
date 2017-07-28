@@ -627,8 +627,7 @@ int TskDbPostgreSQL::initialize() {
 * Create indexes for the columns that are not primary keys and that we query on. 
 * @returns 1 on error, 0 on success
 */
-int TskDbPostgreSQL::createIndexes()
-{
+int TskDbPostgreSQL::createIndexes() {
 	return
 		// tsk_objects index
 		attempt_exec("CREATE INDEX parObjId ON tsk_objects(par_obj_id);",
