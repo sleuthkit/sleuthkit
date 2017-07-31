@@ -22,7 +22,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.text.MessageFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -43,8 +42,6 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
  */
 public abstract class AbstractFile extends AbstractContent {
 
-	private static final SimpleDateFormat DATE_FORMATTER = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
-	
 	protected final TskData.TSK_DB_FILES_TYPE_ENUM fileType;
 	protected final TSK_FS_NAME_TYPE_ENUM dirType;
 	protected final TSK_FS_META_TYPE_ENUM metaType;
@@ -1070,62 +1067,8 @@ public abstract class AbstractFile extends AbstractContent {
 				+ "]\t";
 	}
 
-	/*
-	 * -------------------------------------------------------------------------
-	 * Util methods to convert / map the data
-	 * -------------------------------------------------------------------------
-	 */
-	/**
-	 * Return the epoch into string in ISO 8601 dateTime format
-	 *
-	 * @param epoch time in seconds
-	 *
-	 * @return formatted date time string as "yyyy-MM-dd HH:mm:ss"
-	 */
-	public static String epochToTime(long epoch) {
-		String time = "0000-00-00 00:00:00";
-		if (epoch != 0) {
-			time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss z").format(new java.util.Date(epoch * 1000));
-		}
-		return time;
-	}
-
-	/**
-	 * Return the epoch into string in ISO 8601 dateTime format, 
-	 * in the given timezone
-	 *
-	 * @param epoch time in seconds
-	 * @param tzone time zone
-	 *
-	 * @return formatted date time string as "yyyy-MM-dd HH:mm:ss"
-	 */
-	public static String epochToTime(long epoch, TimeZone tzone) {
-		String time = "0000-00-00 00:00:00";
-		if (epoch != 0) {
-			synchronized (DATE_FORMATTER) {
-				DATE_FORMATTER.setTimeZone(tzone);
-				time = DATE_FORMATTER.format(new java.util.Date(epoch * 1000));
-			}
-		}
-		return time;
-	}
 	
-	/**
-	 * Convert from ISO 8601 formatted date time string to epoch time in seconds
-	 *
-	 * @param time formatted date time string as "yyyy-MM-dd HH:mm:ss"
-	 *
-	 * @return epoch time in seconds
-	 */
-	public static long timeToEpoch(String time) {
-		long epoch = 0;
-		try {
-			epoch = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(time).getTime() / 1000;
-		} catch (Exception e) {
-		}
-
-		return epoch;
-	}
+	
 
 	/**
 	 * Possible return values for comparing a file to a list of mime types
@@ -1278,5 +1221,53 @@ public abstract class AbstractFile extends AbstractContent {
 	@Deprecated
 	protected void setLocalPath(String localPath, boolean isAbsolute) {
 		setLocalFilePath(localPath, isAbsolute);
+	}
+	
+	/*
+	 * -------------------------------------------------------------------------
+	 * Util methods to convert / map the data
+	 * -------------------------------------------------------------------------
+	 */
+	
+	/**
+	 * Return the epoch into string in ISO 8601 dateTime format
+	 *
+	 * @param epoch time in seconds
+	 *
+	 * @return formatted date time string as "yyyy-MM-dd HH:mm:ss"
+	 * 
+	 * @Deprecated
+	 */
+	 @Deprecated
+	public static String epochToTime(long epoch) {
+		return TimeUtilities.epochToTime(epoch);
+	}
+
+	/**
+	 * Return the epoch into string in ISO 8601 dateTime format, 
+	 * in the given timezone
+	 *
+	 * @param epoch time in seconds
+	 * @param tzone time zone
+	 *
+	 * @return formatted date time string as "yyyy-MM-dd HH:mm:ss"
+	 * 
+	 * @Deprecated
+	 */
+	@Deprecated
+	public static String epochToTime(long epoch, TimeZone tzone) {
+		return TimeUtilities.epochToTime(epoch, tzone);
+	}
+	
+	/**
+	 * Convert from ISO 8601 formatted date time string to epoch time in seconds
+	 *
+	 * @param time formatted date time string as "yyyy-MM-dd HH:mm:ss"
+	 *
+	 * @return epoch time in seconds
+	 */
+	@Deprecated
+	public static long timeToEpoch(String time) {
+		return TimeUtilities.timeToEpoch(time);
 	}
 }

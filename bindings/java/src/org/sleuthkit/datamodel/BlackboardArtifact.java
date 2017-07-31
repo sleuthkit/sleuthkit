@@ -29,6 +29,7 @@ import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.HashSet;
 import java.util.Set;
+import org.sleuthkit.datamodel.SleuthkitCase.ObjectInfo;
 
 /**
  * An artifact that has been posted to the blackboard. An artifact is a typed
@@ -39,20 +40,27 @@ import java.util.Set;
  * IMPORTANT NOTE: No more than one attribute of a given type should be added to
  * an artifact.
  */
-public class BlackboardArtifact extends AbstractContent {
+public class BlackboardArtifact implements Content {
 
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private final long artifactId;
-	private final long objId;				// refers to objID of parent/source object
+	private final long sourceObjId;				// refers to objID of parent/source object
 	private final long artifactObjId;		// objId of the artifact in tsk_objects. TBD: replace artifactID with this
 	private final int artifactTypeId;
 	private final String artifactTypeName;
 	private final String displayName;
 	private final ReviewStatus reviewStatus;
+	private final SleuthkitCase sleuthkitCase;
 	private final List<BlackboardAttribute> attrsCache = new ArrayList<BlackboardAttribute>();
 	private boolean loadedCacheFromDb = false;
+	private Content parent;
+	private String uniquePath;
 	
-	byte[] contentBytes = null;
+	private byte[] contentBytes = null;
+	
+	private volatile boolean checkedHasChildren;
+	private volatile boolean hasChildren;
+	private volatile int childrenCount;
 
 	/**
 	 * Constructs an artifact that has been posted to the blackboard. An
@@ -64,7 +72,7 @@ public class BlackboardArtifact extends AbstractContent {
 	 * @param sleuthkitCase    The SleuthKit case (case database) that contains
 	 *                         the artifact data.
 	 * @param artifactID       The unique id for this artifact
-	 * @param objID            The unique id of the content with which this
+	 * @param sourceObjId      The unique id of the content with which this
 	 *                         artifact is associated.
 	 * @param artifactObjID    The unique id this artifact, in tsk_objects
 	 * @param artifactTypeID   The type id of this artifact.
@@ -72,16 +80,21 @@ public class BlackboardArtifact extends AbstractContent {
 	 * @param displayName      The display name of this artifact.
 	 * @param reviewStatus     The review status of this artifact.
 	 */
-	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long objID, long artifactObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus) {		
-		super(sleuthkitCase, artifactObjId, displayName);
+	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus) {	
 		
+		this.sleuthkitCase = sleuthkitCase;
 		this.artifactId = artifactID;
-		this.objId = objID;
+		this.sourceObjId = sourceObjId;
 		this.artifactObjId = artifactObjId;
 		this.artifactTypeId = artifactTypeID;
 		this.artifactTypeName = artifactTypeName;
 		this.displayName = displayName;
 		this.reviewStatus = reviewStatus;
+		
+		this.checkedHasChildren = false;
+		this.hasChildren = false;
+		this.childrenCount = -1;
+		
 	}
 
 	/**
@@ -94,7 +107,7 @@ public class BlackboardArtifact extends AbstractContent {
 	 * @param sleuthkitCase    The SleuthKit case (case database) that contains
 	 *                         the artifact data.
 	 * @param artifactID       The unique id for this artifact.
-	 * @param objID            The unique id of the content with which this
+	 * @param sourceObjId      The unique id of the content with which this
 	 *                         artifact is associated.
 	 * @param artifactObjID    The unique id this artifact. in tsk_objects
 	 * @param artifactTypeID   The type id of this artifact.
@@ -102,8 +115,8 @@ public class BlackboardArtifact extends AbstractContent {
 	 * @param displayName      The display name of this artifact.
 	 * @param reviewStatus     The review status of this artifact.
 	 */
-	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long objID, long artifactObjID, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, boolean isNew) {
-		this(sleuthkitCase, artifactID, objID, artifactObjID, artifactTypeID, artifactTypeName, displayName, reviewStatus);
+	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjID, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, boolean isNew) {
+		this(sleuthkitCase, artifactID, sourceObjId, artifactObjID, artifactTypeID, artifactTypeName, displayName, reviewStatus);
 		if (isNew) {
 			/*
 			 * If this object represents a newly created artifact, then its
@@ -114,6 +127,16 @@ public class BlackboardArtifact extends AbstractContent {
 		}
 	}
 
+	/**
+	 * Gets the SleuthKit case (case database) that contains the data for this
+	 * artifact.
+	 *
+	 * @return The SleuthKit case (case database) object.
+	 */
+	public SleuthkitCase getSleuthkitCase() {
+		return sleuthkitCase;
+	}
+	
 	/**
 	 * Gets the unique id for this artifact.
 	 *
@@ -130,7 +153,7 @@ public class BlackboardArtifact extends AbstractContent {
 	 * @return The object id.
 	 */
 	public long getObjectID() {
-		return this.objId;
+		return this.sourceObjId;
 	}
 
 	/**
@@ -278,20 +301,37 @@ public class BlackboardArtifact extends AbstractContent {
 	}
 
 	
-	/*
+	/**
 	 * This overiding implementation returns the unique path of the parent.
 	 * It does not include the Artifact name in the unique path.
 	 */
 	@Override
 	public synchronized String getUniquePath() throws TskCoreException {
+		
 		// Return the path of the parrent file
 		if (uniquePath == null) {
+			uniquePath = "";
 			Content myParent = getParent();
 			if (myParent != null) {
 				uniquePath = myParent.getUniquePath();
 			}
 		}
 		return uniquePath;
+	}
+	
+	@Override
+	public synchronized Content getParent() throws TskCoreException {
+		if (parent == null) {
+			ObjectInfo parentInfo;
+			try {
+				parentInfo = getSleuthkitCase().getParentInfo(this);
+			} catch (TskCoreException ex) {
+				// there is not parent; not an error if we've got a data source
+				return null;
+			}
+			parent = getSleuthkitCase().getContentById(parentInfo.getId());
+		}
+		return parent;
 	}
 	
 	/**
@@ -642,9 +682,18 @@ public class BlackboardArtifact extends AbstractContent {
 	
 	@Override
 	public String getName() {
-		return super.getName() + getArtifactID();
+		return this.displayName + getArtifactID();
 	}
 	
+	@Override
+	public Content getDataSource() throws TskCoreException {
+		Content myParent = getParent();
+		if (myParent == null) {
+			return null;
+		}
+
+		return myParent.getDataSource();
+	}
 	
 	/**
 	 * Load and save the content for the artifact.
@@ -1251,6 +1300,35 @@ public class BlackboardArtifact extends AbstractContent {
 		childrenIDs.addAll(getSleuthkitCase().getBlackboardArtifactChildrenIds(this));
 			
 		return childrenIDs;
+	}
+	
+	
+	@Override
+	public int getChildrenCount() throws TskCoreException {
+		if (childrenCount != -1) {
+			return childrenCount;
+		}
+
+		childrenCount = this.getSleuthkitCase().getContentChildrenCount(this);
+		checkedHasChildren = true;
+
+		return childrenCount;
+	}
+	
+	@Override
+	public boolean hasChildren() throws TskCoreException {
+		if (checkedHasChildren == true) {
+			return hasChildren;
+		}
+
+		hasChildren = this.getSleuthkitCase().getContentHasChildren(this);
+		checkedHasChildren = true;
+
+		if (!hasChildren) {
+			childrenCount = 0;
+		}
+
+		return hasChildren;
 	}
 	
 	/**

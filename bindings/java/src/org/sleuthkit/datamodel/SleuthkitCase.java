@@ -3422,7 +3422,7 @@ public class SleuthkitCase {
 				return null;
 			}
 
-			AbstractContent content = null;
+			Content content = null;
 			long parentId = rs.getLong("par_obj_id"); //NON-NLS
 			final TskData.ObjectType type = TskData.ObjectType.valueOf(rs.getShort("type")); //NON-NLS
 			switch (type) {
