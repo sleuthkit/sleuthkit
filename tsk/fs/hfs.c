@@ -5532,7 +5532,7 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     tsk_fprintf(hFile, "Type:\t");
     if (fs_file->meta->type == TSK_FS_META_TYPE_REG)
         tsk_fprintf(hFile, "File\n");
-    else if (fs_file->meta->type == TSK_FS_META_TYPE_DIR)
+    else if (TSK_FS_IS_DIR_META(fs_file->meta->type))
         tsk_fprintf(hFile, "Folder\n");
     else
         tsk_fprintf(hFile, "\n");
@@ -5638,7 +5638,7 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
             tsk_fprintf(hFile, "Has security data (ACLs)\n");
 
         // File_type and file_cr are not relevant for Folders
-        if (fs_file->meta->type != TSK_FS_META_TYPE_DIR) {
+        if ( !TSK_FS_IS_DIR_META(fs_file->meta->type)){
             int windx;          // loop index
             tsk_fprintf(hFile,
                 "File type:\t%04" PRIx32 "  ",
