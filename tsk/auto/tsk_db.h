@@ -209,6 +209,21 @@ class TskDb {
     virtual TSK_RETVAL_ENUM getObjectInfo(int64_t objId, TSK_DB_OBJECT & objectInfo) = 0;
     virtual TSK_RETVAL_ENUM getParentImageId (const int64_t objId, int64_t & imageId) = 0;
     virtual TSK_RETVAL_ENUM getFsRootDirObjectInfo(const int64_t fsObjId, TSK_DB_OBJECT & rootDirObjInfo) = 0;
+
+  protected:
+	   void extractExtension(char *name, char *extension ) {
+		   char * ext = strrchr(name, '.');
+		   size_t extLen = strlen(ext);
+		   //if ext is null or only contains the '.' or is the entire filename, file has no extension.
+		   if ((ext) && (1 < extLen) && (extLen < 15) && (name != ext)) {
+			   strcpy(extension, ext + 1);
+
+			   //normalize to lower case, only works for ascii
+			   for (int i = 0; extension[i]; i++) {
+				   extension[i] = tolower(extension[i]);
+			   }
+		   }
+	  }
 };
 
 #endif

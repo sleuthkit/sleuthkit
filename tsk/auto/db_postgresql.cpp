@@ -973,17 +973,8 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
 
     strncpy(name, fs_file->name->name, nlen);
 
-	char * ext = strrchr(name, '.');
-	char * extension = NULL;
-
-	//if ext is null or only contains the '.' or is the entire filename, file has no extension.
-	if ((ext) && (strlen(ext) > 1) && (name != ext)) { 
-		extension = (char *)tsk_malloc(len);
-		strcpy(extension, ext + 1);
-		for (int i = 0; extension[i]; i++) {
-			extension[i] = tolower(extension[i]);
-		}
-	}
+	char extension[16] = "";
+	extractExtension(name, extension);
 
     // Add the attribute name
     if (attr_nlen > 0) {
@@ -1028,7 +1019,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
     // replace all non-UTF8 characters
     tsk_cleanupUTF8(name, '^');
     tsk_cleanupUTF8(escaped_path, '^');
-	tsk_cleanupUTF8(extension, '^');
+	//tsk_cleanupUTF8(extension, '^');
 
     // escape strings for use within an SQL command
     char *name_sql = PQescapeLiteral(conn, name, strlen(name));
