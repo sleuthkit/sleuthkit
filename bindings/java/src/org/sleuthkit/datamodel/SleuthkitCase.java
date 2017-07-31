@@ -3958,7 +3958,7 @@ public class SleuthkitCase {
 				parentPath = parentPath + parentName + "/"; //NON-NLS
 			}
 
-			// Insert a row for the virtual directory into the tsk_objects table.
+			// Insert a row for the local directory into the tsk_objects table.
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
 			statement.clearParameters();
@@ -3973,7 +3973,7 @@ public class SleuthkitCase {
 			resultSet.next();
 			long newObjId = resultSet.getLong(1); //last_insert_rowid()
 
-			// Insert a row for the virtual directory into the tsk_files table.
+			// Insert a row for the local directory into the tsk_files table.
 			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type,
 			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, data_source_obj_id)
 			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -3981,17 +3981,8 @@ public class SleuthkitCase {
 			statement.clearParameters();
 			statement.setLong(1, newObjId);
 
-			// If the parent is part of a file system, grab its file system ID
-			if (0 != parentId) {
-				long parentFs = this.getFileSystemId(parentId, connection);
-				if (parentFs != -1) {
-					statement.setLong(2, parentFs);
-				} else {
-					statement.setNull(2, java.sql.Types.BIGINT);
-				}
-			} else {
-				statement.setNull(2, java.sql.Types.BIGINT);
-			}
+			// The parent of a local directory will never be a file system
+			statement.setNull(2, java.sql.Types.BIGINT);
 
 			// name
 			statement.setString(3, directoryName);
@@ -4025,13 +4016,8 @@ public class SleuthkitCase {
 			// parent path
 			statement.setString(15, parentPath);
 
-			// data source object id (same as object id if this is a data source)
-			long dataSourceObjectId;
-			if (0 == parentId) {
-				dataSourceObjectId = newObjId;
-			} else {
-				dataSourceObjectId = getDataSourceObjectId(connection, parentId);
-			}
+			// data source object id
+			long dataSourceObjectId = getDataSourceObjectId(connection, parentId);
 			statement.setLong(16, dataSourceObjectId);
 
 			connection.executeUpdate(statement);
