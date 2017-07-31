@@ -649,10 +649,10 @@ tsk_fs_dir_walk_lcl(TSK_FS_INFO * a_fs, DENT_DINFO * a_dinfo,
          * - not one of the '.' or '..' entries
          * - A Non-Orphan Dir or the Orphan Dir with the NOORPHAN flag not set.
          */
-        if (((fs_file->name->type == TSK_FS_NAME_TYPE_DIR)
+        if ((TSK_FS_IS_DIR_NAME(fs_file->name->type)
                 || (fs_file->name->type == TSK_FS_NAME_TYPE_UNDEF))
             && (fs_file->meta)
-            && (fs_file->meta->type == TSK_FS_META_TYPE_DIR)
+            && (TSK_FS_IS_DIR_META(fs_file->meta->type))
             && (a_flags & TSK_FS_DIR_WALK_FLAG_RECURSE)
             && ((fs_file->name->flags & TSK_FS_NAME_FLAG_ALLOC)
                 || ((fs_file->name->flags & TSK_FS_NAME_FLAG_UNALLOC)
@@ -856,7 +856,7 @@ tsk_fs_dir_make_orphan_dir_name(TSK_FS_INFO * a_fs,
         a_fs_name->shrt_name[0] = '\0';
     a_fs_name->meta_addr = TSK_FS_ORPHANDIR_INUM(a_fs);
     a_fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
-    a_fs_name->type = TSK_FS_NAME_TYPE_DIR;
+    a_fs_name->type = TSK_FS_NAME_TYPE_VIRT_DIR;
     return 0;
 }
 
@@ -870,7 +870,7 @@ uint8_t
 tsk_fs_dir_make_orphan_dir_meta(TSK_FS_INFO * a_fs,
     TSK_FS_META * a_fs_meta)
 {
-    a_fs_meta->type = TSK_FS_META_TYPE_DIR;
+    a_fs_meta->type = TSK_FS_META_TYPE_VIRT_DIR;
     a_fs_meta->mode = 0;
     a_fs_meta->nlink = 1;
 
@@ -1029,7 +1029,7 @@ load_orphan_dir_walk_cb(TSK_FS_FILE * a_fs_file, const char *a_path,
         /* FAT file systems spend a lot of time hunting for parent
          * directory addresses, so we put this code in here to save
          * the info when we have it. */
-        if ((a_fs_file->meta->type == TSK_FS_META_TYPE_DIR)
+        if ((TSK_FS_IS_DIR_META(a_fs_file->meta->type))
             && (TSK_FS_TYPE_ISFAT(a_fs_file->fs_info->ftype))) {
             // Make sure a_fs_file->name->par_addr is not accessed when
             // a_fs_file->name is NULL

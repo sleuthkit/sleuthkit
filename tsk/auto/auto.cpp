@@ -769,12 +769,12 @@ uint8_t
 TskAuto::isDir(TSK_FS_FILE * a_fs_file)
 {
     if ((a_fs_file) && (a_fs_file->name)) {
-        if (a_fs_file->name->type == TSK_FS_NAME_TYPE_DIR) {
+        if (TSK_FS_IS_DIR_NAME(a_fs_file->name->type)){
             return 1;
         }
         else if (a_fs_file->name->type == TSK_FS_NAME_TYPE_UNDEF) {
             if ((a_fs_file->meta)
-                && (a_fs_file->meta->type == TSK_FS_META_TYPE_DIR)) {
+                && (TSK_FS_IS_DIR_META(a_fs_file->meta->type))){
                 return 1;
             }
         }

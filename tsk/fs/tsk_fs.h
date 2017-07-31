@@ -393,13 +393,15 @@ extern "C" {
         TSK_FS_META_TYPE_SOCK = 0x08,   ///< UNIX domain socket
         TSK_FS_META_TYPE_WHT = 0x09,    ///< Whiteout
         TSK_FS_META_TYPE_VIRT = 0x0a,   ///< "Virtual File" created by TSK for file system areas
+        TSK_FS_META_TYPE_VIRT_DIR = 0x0b,   ///< "Virtual Directory" created by TSK to hold data like orphan files
     };
     typedef enum TSK_FS_META_TYPE_ENUM TSK_FS_META_TYPE_ENUM;
 
-#define TSK_FS_META_TYPE_STR_MAX 0x0b   ///< Number of file types in shortname array
+#define TSK_FS_META_TYPE_STR_MAX 0x0c   ///< Number of file types in shortname array
     extern char tsk_fs_meta_type_str[TSK_FS_META_TYPE_STR_MAX][2];
 
-
+#define TSK_FS_IS_DIR_META(x) ((x == TSK_FS_META_TYPE_DIR) || (x == TSK_FS_META_TYPE_VIRT_DIR))
+    
     enum TSK_FS_META_MODE_ENUM {
         /* The following describe the file permissions */
         TSK_FS_META_MODE_UNSPECIFIED = 0000000,       ///< unspecified  
@@ -566,12 +568,16 @@ extern "C" {
         TSK_FS_NAME_TYPE_SHAD = 8,      ///< Shadow inode (solaris) 
         TSK_FS_NAME_TYPE_WHT = 9,       ///< Whiteout (openbsd)
         TSK_FS_NAME_TYPE_VIRT = 10,     ///< Special (TSK added "Virtual" files)
+        TSK_FS_NAME_TYPE_VIRT_DIR = 11, ///< Special (TSK added "Virtual" directories)
     } TSK_FS_NAME_TYPE_ENUM;
 
-#define TSK_FS_NAME_TYPE_STR_MAX 11     ///< Number of types that have a short string name
+#define TSK_FS_NAME_TYPE_STR_MAX 12     ///< Number of types that have a short string name
 
     /* ascii representation of above types */
     extern char tsk_fs_name_type_str[TSK_FS_NAME_TYPE_STR_MAX][2];
+
+#define TSK_FS_IS_DIR_NAME(x) \
+    ((x == TSK_FS_NAME_TYPE_DIR) || (x == TSK_FS_NAME_TYPE_VIRT_DIR))
 
 #define  TSK_FS_NAME_TAG 0x23147869
     /**

@@ -47,7 +47,8 @@ public class TskData {
 		SOCK(7, "s"), ///< Socket NON-NLS
 		SHAD(8, "h"), ///< Shadow inode (solaris) NON-NLS
 		WHT(9, "w"), ///< Whiteout (openbsd) NON-NLS
-		VIRT(10, "v");     ///< Special (TSK added "Virtual" files) NON-NLS
+		VIRT(10, "v"),     ///< Special (TSK added "Virtual" files) NON-NLS
+		VIRT_DIR(11, "V");     ///< Special (TSK added "Virtual" directories) NON-NLS
 
 		private short dirType;
 		String label;
@@ -109,7 +110,8 @@ public class TskData {
 		TSK_FS_META_TYPE_SHAD(7, "s"), ///< SOLARIS ONLY NON-NLS
 		TSK_FS_META_TYPE_SOCK(8, "h"), ///< UNIX domain socket NON-NLS
 		TSK_FS_META_TYPE_WHT(9, "w"), ///< Whiteout NON-NLS
-		TSK_FS_META_TYPE_VIRT(10, "v");      ///< "Virtual File" created by TSK for file system areas NON-NLS
+		TSK_FS_META_TYPE_VIRT(10, "v"),      ///< "Virtual File" created by TSK for file system areas NON-NLS
+		TSK_FS_META_TYPE_VIRT_DIR(11, "v");      ///< "Virtual Directory" created by TSK for Orphan Files NON-NLS
 
 		private short metaType;
 		private String metaTypeStr;

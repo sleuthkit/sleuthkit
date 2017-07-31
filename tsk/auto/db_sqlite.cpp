@@ -394,7 +394,9 @@ int
         attempt_exec("CREATE INDEX artifact_typeID ON blackboard_artifacts(artifact_type_id);",
         "Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
         attempt_exec("CREATE INDEX attrsArtifactID ON blackboard_attributes(artifact_id);",
-        "Error creating artifact_id index on blackboard_attributes: %s\n") ;
+        "Error creating artifact_id index on blackboard_attributes: %s\n") ||
+		attempt_exec("CREATE INDEX mime_type ON tsk_files(dir_type,mime_type,type);",
+		"Error creating mime_type index on tsk_files: %s\n");
         /*attempt_exec("CREATE INDEX attribute_artifactTypeId ON blackboard_attributes(artifact_type_id);",
         "Error creating artifact_type_id index on blackboard_attributes: %s\n");
         */
@@ -990,7 +992,7 @@ int
     }
 
     //if dir, update parent id cache (do this before objId may be changed creating the slack file)
-    if (meta_type == TSK_FS_META_TYPE_DIR) {
+    if (TSK_FS_IS_DIR_META(meta_type)){
         std::string fullPath = std::string(path) + fs_file->name->name;
         storeObjId(fsObjId, fs_file, fullPath.c_str(), objId);
     }

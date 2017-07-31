@@ -23,7 +23,7 @@
  * Contains the short (1 character) name of the file type
  */
 char tsk_fs_meta_type_str[TSK_FS_META_TYPE_STR_MAX][2] =
-    { "-", "r", "d", "p", "c", "b", "l", "s", "h", "w", "v"
+    { "-", "r", "d", "p", "c", "b", "l", "s", "h", "w", "v", "V"
 };
 
 /**
