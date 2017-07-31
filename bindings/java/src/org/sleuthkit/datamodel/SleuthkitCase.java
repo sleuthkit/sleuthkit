@@ -4474,7 +4474,7 @@ public class SleuthkitCase {
 	 * @param atime
 	 * @param mtime
 	 * @param isFile          whether a file or directory, true if a file
-	 * @param parentFile      parent file object (derived or local file)
+	 * @param parentObj		  parent content object
 	 * @param rederiveDetails details needed to re-derive file (will be specific
 	 *                        to the derivation method), currently unused
 	 * @param toolName        name of derivation method/tool, currently unused
@@ -4492,7 +4492,7 @@ public class SleuthkitCase {
 	 */
 	public DerivedFile addDerivedFile(String fileName, String localPath,
 			long size, long ctime, long crtime, long atime, long mtime,
-			boolean isFile, AbstractFile parentFile,
+			boolean isFile, Content parentObj,
 			String rederiveDetails, String toolName, String toolVersion,
 			String otherDetails, TskData.EncodingType encodingType) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
@@ -4501,8 +4501,8 @@ public class SleuthkitCase {
 		try {
 			connection.beginTransaction();
 
-			final long parentId = parentFile.getId();
-			final String parentPath = parentFile.getParentPath() + parentFile.getName() + '/'; //NON-NLS
+			final long parentId = parentObj.getId();
+			final String parentPath = parentObj.getParent().getUniquePath();
 
 			// Insert a row for the derived file into the tsk_objects table.
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
