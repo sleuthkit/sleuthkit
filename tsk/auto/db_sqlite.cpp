@@ -908,7 +908,7 @@ int
 
 	strncpy(name, fs_file->name->name, nlen);
 
-	char extension[16] ="";
+	char extension[24] ="";
 	extractExtension(name, extension);
 
 	// Add the attribute name
@@ -944,7 +944,6 @@ int
 
 
 	if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId)) {
-		free(extension);
 		free(name);
 		free(escaped_path);
 		return 1;
@@ -975,7 +974,6 @@ int
 		escaped_path, extension);
 
 	if (attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
-		free(extension);
 		free(name);
 		free(escaped_path);
 		sqlite3_free(zSQL);
@@ -1001,10 +999,12 @@ int
 		&& (fs_attr->flags & TSK_FS_ATTR_NONRES)
            && (fs_attr->nrd.allocsize >  fs_attr->nrd.initsize)){
 		strncat(name, "-slack", 6);
+		if (strlen(extension) > 0) {
+			strncat(extension, "-slack", 6);
+		}
 		TSK_OFF_T slackSize = fs_attr->nrd.allocsize - fs_attr->nrd.initsize;
 
 		if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId)) {
-			free(extension);
 			free(name);
 			free(escaped_path);
 			return 1;
@@ -1012,7 +1012,7 @@ int
 
 		// Run the same insert with the new name, size, and type
 		zSQL = sqlite3_mprintf(
-			"INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
+			"INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path,extension) "
 			"VALUES ("
 			"%" PRId64 ",%" PRId64 ","
 			"%" PRId64 ","
@@ -1023,7 +1023,7 @@ int
 			"%" PRIuOFF ","
 			"%llu,%llu,%llu,%llu,"
 			"%d,%d,%d,%Q,%d,"
-			"'%q')",
+			"'%q','%q')",
 			fsObjId, objId,
 			dataSourceObjId,
 			TSK_DB_FILES_TYPE_SLACK,
@@ -1033,10 +1033,9 @@ int
 			slackSize,
         (unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime, 
 			meta_mode, gid, uid, md5TextPtr, known,
-			escaped_path);
+			escaped_path,extension);
 
 		if (attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
-			free(extension);
 			free(name);
 			free(escaped_path);
 			sqlite3_free(zSQL);
@@ -1046,7 +1045,6 @@ int
 
 	sqlite3_free(zSQL);
 
-	free(extension);
 	free(name);
 	free(escaped_path);
 

@@ -211,16 +211,25 @@ class TskDb {
     virtual TSK_RETVAL_ENUM getFsRootDirObjectInfo(const int64_t fsObjId, TSK_DB_OBJECT & rootDirObjInfo) = 0;
 
   protected:
-	   void extractExtension(char *name, char *extension ) {
-		   char * ext = strrchr(name, '.');
-		   size_t extLen = strlen(ext);
-		   //if ext is null or only contains the '.' or is the entire filename, file has no extension.
-		   if ((ext) && (1 < extLen) && (extLen < 15) && (name != ext)) {
-			   strcpy(extension, ext + 1);
+	
+	  /**
+	  Extract the extension from the given file name and store it in the supplied string.
 
-			   //normalize to lower case, only works for ascii
-			   for (int i = 0; extension[i]; i++) {
-				   extension[i] = tolower(extension[i]);
+	  @param name A file name
+	  @param extension The file name extension will be extracted to extension.
+	  */void extractExtension(char *name, char *extension ) {
+		   char *ext = strrchr(name, '.');
+
+		   //if ext is not null and is not the entire filename...
+		   if (ext && (name != ext)) {
+			   size_t extLen = strlen(ext);
+			   //... and doesn't only contain the '.' and isn't too long to be a real extension.
+			   if ((1 < extLen) && (extLen < 15) ) {
+				   strncpy(extension, ext + 1, extLen -1);
+					//normalize to lower case, only works for ascii
+				   for (int i = 0; extension[i]; i++) {
+					   extension[i] = tolower(extension[i]);
+				   }
 			   }
 		   }
 	  }

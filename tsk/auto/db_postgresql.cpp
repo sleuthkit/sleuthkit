@@ -973,7 +973,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
 
     strncpy(name, fs_file->name->name, nlen);
 
-	char extension[16] = "";
+	char extension[24] = "";
 	extractExtension(name, extension);
 
     // Add the attribute name
@@ -987,7 +987,6 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
     size_t path_len = strlen(path) + 2;
     char *escaped_path;
     if ((escaped_path = (char *) tsk_malloc(path_len)) == NULL) { 
-		free(extension);
 		free(name);
         return 1;
     }
@@ -1010,7 +1009,6 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
 
 
     if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId)) {
-		free(extension);
         free(name);
         free(escaped_path);
         return 1;
@@ -1019,22 +1017,21 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
     // replace all non-UTF8 characters
     tsk_cleanupUTF8(name, '^');
     tsk_cleanupUTF8(escaped_path, '^');
-	//tsk_cleanupUTF8(extension, '^');
+	tsk_cleanupUTF8(extension, '^');
 
     // escape strings for use within an SQL command
     char *name_sql = PQescapeLiteral(conn, name, strlen(name));
     char *escaped_path_sql = PQescapeLiteral(conn, escaped_path, strlen(escaped_path));
-	//char *extension_sql = PQescapeLiteral(conn, extension, strlen(extension));
+	char *extension_sql = PQescapeLiteral(conn, extension, strlen(extension));
     if (!isEscapedStringValid(name_sql, name, "TskDbPostgreSQL::addFile: Unable to escape file name string: %s\n") 
         || !isEscapedStringValid(escaped_path_sql, escaped_path, "TskDbPostgreSQL::addFile: Unable to escape path string: %s\n")
-		//|| !isEscapedStringValid(extension_sql, extension, "TskDbPostgreSQL::addFile: Unable to escape extension string: %s\n")
+		|| !isEscapedStringValid(extension_sql, extension, "TskDbPostgreSQL::addFile: Unable to escape extension string: %s\n")
 		) {
-			free(extension);
 			free(name);
             free(escaped_path);
             PQfreemem(name_sql);
             PQfreemem(escaped_path_sql);
-			//PQfreemem(extension_sql);
+			PQfreemem(extension_sql);
             return 1;
     }
 
@@ -1051,12 +1048,11 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         // The same buffer will be used for the slack file entry.
         bufLen = strlen(escaped_path_sql) + strlen(name_sql) + 500;
         if ((zSQL_dynamic = (char *)tsk_malloc(bufLen)) == NULL) {
-			free(extension);
 			free(name);
             free(escaped_path);
             PQfreemem(escaped_path_sql);
             PQfreemem(name_sql);
-			//PQfreemem(extension_sql);
+			PQfreemem(extension_sql);
             return 1;
         }
         zSQL_dynamic[bufLen - 1] = '\0';
@@ -1074,7 +1070,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         "%" PRIuOFF ","
         "%llu,%llu,%llu,%llu,"
         "%d,%d,%d,%s,%d,"
-        "%s,'%s')",
+        "%s,%s)",
         fsObjId, objId,
         dataSourceObjId,
         TSK_DB_FILES_TYPE_FS,
@@ -1084,7 +1080,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         size,
         (unsigned long long)crtime, (unsigned long long)ctime, (unsigned long long) atime, (unsigned long long) mtime,
         meta_mode, gid, uid, NULL, known,
-        escaped_path_sql, extension)) {
+        escaped_path_sql, extension_sql)) {
 
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
@@ -1092,22 +1088,20 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
             if (zSQL_dynamic != NULL) {
                 free(zSQL_dynamic);
             }
-			free(extension);
             free(name);
             free(escaped_path);
             PQfreemem(name_sql);
             PQfreemem(escaped_path_sql);
-			//PQfreemem(extension_sql);
+			PQfreemem(extension_sql);
             return 1;
     }
 
     if (attempt_exec(zSQL, "TskDbPostgreSQL::addFile: Error adding data to tsk_files table: %s\n")) {
-		free(extension);
 		free(name);
         free(escaped_path);
         PQfreemem(name_sql);
         PQfreemem(escaped_path_sql);
-		//PQfreemem(extension_sql);
+		PQfreemem(extension_sql);
         if (zSQL_dynamic != NULL) {
             free(zSQL_dynamic);
         }
@@ -1133,17 +1127,28 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
            && (fs_attr->flags & TSK_FS_ATTR_NONRES) 
            && (fs_attr->nrd.allocsize >  fs_attr->nrd.initsize)){
         strncat(name, "-slack", 6);
-        name_sql = PQescapeLiteral(conn, name, strlen(name));
+		//JMTODO: Do I need to free the old name_sql first?
+		name_sql = PQescapeLiteral(conn, name, strlen(name));
+		if (strlen(extension) > 0) {
+			strncat(extension, "-slack", 6);
+			//JMTODO: Do I need to free the old extension_sql first?
+			PQfreemem(extension_sql);
+			extension_sql = PQescapeLiteral(conn, extension, strlen(extension));
+		}
+  
+	
         TSK_OFF_T slackSize = fs_attr->nrd.allocsize - fs_attr->nrd.initsize;
 
         if (addObject(TSK_DB_OBJECT_TYPE_FILE, parObjId, objId)) {
-			free(extension);
 			free(name);
             free(escaped_path);
+			PQfreemem(name_sql);
+			PQfreemem(escaped_path_sql);
+			PQfreemem(extension_sql);
             return 1;
         }
 
-        if (0 > snprintf(zSQL, bufLen - 1, "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path) "
+        if (0 > snprintf(zSQL, bufLen - 1, "INSERT INTO tsk_files (fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid, md5, known, parent_path, extension) "
             "VALUES ("
             "%" PRId64 ",%" PRId64 ","
             "%" PRId64 ","
@@ -1154,7 +1159,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
             "%" PRIuOFF ","
             "%llu,%llu,%llu,%llu,"
             "%d,%d,%d,%s,%d,"
-            "%s)",
+            "%s, %s)",
             fsObjId, objId,
             dataSourceObjId,
             TSK_DB_FILES_TYPE_SLACK,
@@ -1164,17 +1169,16 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
             slackSize, 
             (unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime, 
             meta_mode, gid, uid, NULL, known,
-            escaped_path_sql)) {
+            escaped_path_sql,extension_sql)) {
 
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_AUTO_DB);
                 tsk_error_set_errstr("Error inserting slack file with object ID for: %" PRId64, objId);
-				free(extension);
 				free(name);
                 free(escaped_path);
                 PQfreemem(name_sql);
                 PQfreemem(escaped_path_sql);
-				//PQfreemem(extension_sql);
+				PQfreemem(extension_sql);
                 if (zSQL_dynamic != NULL) {
                     free(zSQL_dynamic);
                 }
@@ -1182,12 +1186,11 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         }
 
         if (attempt_exec(zSQL, "TskDbPostgreSQL::addFile: Error adding data to tsk_files table: %s\n")) {
-			free(extension);
 			free(name);
             free(escaped_path);
             PQfreemem(name_sql);
             PQfreemem(escaped_path_sql);	
-			//PQfreemem(extension_sql);
+			PQfreemem(extension_sql);
             if (zSQL_dynamic != NULL) {
                 free(zSQL_dynamic);
             }
@@ -1200,12 +1203,11 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
     }
 
     // cleanup
-	free(extension);
     free(name);
     free(escaped_path);
     PQfreemem(name_sql);
     PQfreemem(escaped_path_sql);
-	//PQfreemem(extension_sql);
+	PQfreemem(extension_sql);
     return 0;
 }
 
