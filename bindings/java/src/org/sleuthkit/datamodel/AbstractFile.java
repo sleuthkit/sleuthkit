@@ -1,15 +1,15 @@
 /*
  * SleuthKit Java Bindings
- * 
+ *
  * Copyright 2011-2016 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -36,8 +36,8 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 
 /**
- * An abstract base class for classes that represent of files that have been
- * added to the case.
+ * An abstract base class for classes that represent files that have been added
+ * to the case.
  */
 public abstract class AbstractFile extends AbstractContent {
 
@@ -481,23 +481,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 *         empty string if there is no extension
 	 */
 	public String getNameExtension() {
-		String ext;
-		int i = getName().lastIndexOf(".");
-		// > 0 because we assume it's not an extension if period is the first character
-		if ((i > 0) && ((i + 1) < getName().length())) {
-			ext = getName().substring(i + 1);
-		} else {
-			return "";
-		}
-
-		// we added this at one point to deal with files that had crazy names based on URLs
-		// it's too hard though to clean those up and not mess up basic extensions though.
-		// We need to add '-' to the below if we use it again
-//		String[] findNonAlphanumeric = ext.split("[^a-zA-Z0-9_]");
-//		if (findNonAlphanumeric.length > 1) {
-//			ext = findNonAlphanumeric[0];
-//		}		
-		return ext.toLowerCase();
+		return SleuthkitCase.extractExtension(getName());
 	}
 
 	/**
@@ -557,7 +541,7 @@ public abstract class AbstractFile extends AbstractContent {
 	public List<Long> getChildrenIds() throws TskCoreException {
 		return getSleuthkitCase().getAbstractFileChildrenIds(this);
 	}
-	
+
 	/**
 	 * Gets the object id of the data source for this file.
 	 *
@@ -629,14 +613,14 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Is this object a file.  Should return true for all types of files, 
+	 * Is this object a file. Should return true for all types of files,
      * including file system, logical, derived, layout, and slack space 
      * for files.
 	 *
 	 * @return true if a file, false otherwise
 	 */
 	public boolean isFile() {
-		return metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG) 
+		return metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG)
 				||(metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF) 
 				&& dirType.equals(TSK_FS_NAME_TYPE_ENUM.REG));
 
@@ -862,13 +846,13 @@ public abstract class AbstractFile extends AbstractContent {
 				// The file is encoded, so we need to alter the offset to read (since there's
 				// a header on the encoded file) and then decode each byte
 				long encodedOffset = offset + EncodedFileUtil.getHeaderLength();
-				
+
 				//move to the user request offset in the stream
 				long curOffset = localFileHandle.getFilePointer();
 				if (curOffset != encodedOffset) {
 					localFileHandle.seek(encodedOffset);
 				}
-				bytesRead = localFileHandle.read(buf, 0, (int) len);	
+				bytesRead = localFileHandle.read(buf, 0, (int) len);
 				for(int i = 0;i < bytesRead;i++){
 					buf[i] = EncodedFileUtil.decodeByte(buf[i], encodingType);
 				}
@@ -880,7 +864,7 @@ public abstract class AbstractFile extends AbstractContent {
 					localFileHandle.seek(offset);
 				}
 				//note, we are always writing at 0 offset of user buffer
-				return localFileHandle.read(buf, 0, (int) len);	
+				return localFileHandle.read(buf, 0, (int) len);
 			}
 		} catch (IOException ex) {
 			final String msg = MessageFormat.format(bundle.getString("AbstractFile.readLocal.exception.msg5.text"), localAbsPath);
@@ -934,10 +918,10 @@ public abstract class AbstractFile extends AbstractContent {
 	public String getLocalAbsPath() {
 		return localAbsPath;
 	}
-	
+
 	/**
 	 * Set the type of encoding used on the file (for local/derived files only)
-	 * @param encodingType 
+	 * @param encodingType
 	 */
 	final void setEncodingType(TskData.EncodingType encodingType){
 		this.encodingType = encodingType;
@@ -1160,7 +1144,7 @@ public abstract class AbstractFile extends AbstractContent {
 			String parentPath) {
 		this(db, objId, db.getDataSourceObjectId(objId), attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null);
 	}
-	
+
 	
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
@@ -1195,7 +1179,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 *                           unknown (default)
 	 * @param parentPath
 	 * @param mimeType           The MIME type of the file, can be null
-	 * 
+	 *
 	 * @deprecated Do not make subclasses outside of this package.
 	 */
 	@Deprecated
@@ -1216,7 +1200,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	@Deprecated
 	@SuppressWarnings("deprecation")
-	public short getAttrId() {	
+	public short getAttrId() {
 		/*
 		 * NOTE: previously attrId used to be stored in AbstractFile as (signed)
 		 * short even though it is stored as uint16 in TSK. In extremely rare
@@ -1228,7 +1212,7 @@ public abstract class AbstractFile extends AbstractContent {
 		 */
 		return (short) attrId;	// casting to signed short converts values over 32K to negative values
 	}
-	
+
 	/**
 	 * Set local path for the file, as stored in db tsk_files_path, relative to
 	 * the case db path or an absolute path. When set, subsequent invocations of
@@ -1237,7 +1221,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param localPath  local path to be set
 	 * @param isAbsolute true if the path is absolute, false if relative to the
 	 *                   case db
-	 * 
+	 *
 	 * @deprecated Do not make subclasses outside of this package.
 	 */
 	@Deprecated
