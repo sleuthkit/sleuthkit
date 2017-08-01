@@ -20,7 +20,6 @@ package org.sleuthkit.datamodel;
 
 import java.text.MessageFormat;
 import java.util.ResourceBundle;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
@@ -94,12 +93,13 @@ public class DerivedFile extends AbstractFile {
 			String localPath,
 			long parentId,
 			String mimeType,
-			TskData.EncodingType encodingType) {
+			TskData.EncodingType encodingType,
+			String extension) {
 		// TODO (AUT-1904): The parent id should be passed to AbstractContent 
 		// through the class hierarchy contructors.
 		super(db, objId, dataSourceObjectId, TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0,
 				name, TSK_DB_FILES_TYPE_ENUM.LOCAL, 0L, 0, dirType, metaType, dirFlag,
-				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath, mimeType);
+				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath, mimeType,extension);
 		setLocalFilePath(localPath, false);
 		setEncodingType(encodingType);
 	}
@@ -306,7 +306,7 @@ public class DerivedFile extends AbstractFile {
 		this(db, objId, db.getDataSourceObjectId(objId), name, dirType, metaType, dirFlag, metaFlags, size,
 				ctime, crtime, atime, mtime,
 				md5Hash, knownState,
-				parentPath, localPath, parentId, null, TskData.EncodingType.NONE);
+				parentPath, localPath, parentId, null, TskData.EncodingType.NONE,null);
 	}
 
 }
