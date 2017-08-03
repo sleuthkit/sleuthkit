@@ -572,6 +572,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClCompile Include="..\..\tsk\img\img_types.c" />
     <ClCompile Include="..\..\tsk\img\mult_files.c" />
     <ClCompile Include="..\..\tsk\img\raw.c" />
+    <ClCompile Include="..\..\tsk\img\qcow2.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\tsk\auto\db_connection_info.h" />
@@ -614,6 +615,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClInclude Include="..\..\tsk\img\aff.h" />
     <ClInclude Include="..\..\tsk\img\ewf.h" />
     <ClInclude Include="..\..\tsk\img\raw.h" />
+    <ClInclude Include="..\..\tsk\img\qcow2.h" />
     <ClInclude Include="..\..\tsk\img\tsk_img.h" />
     <ClInclude Include="..\..\tsk\img\tsk_img_i.h" />
   </ItemGroup>
