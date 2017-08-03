@@ -243,6 +243,9 @@
     <ClCompile Include="..\..\tsk\img\raw.c">
       <Filter>img</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tsk\img\qcow2.c">
+      <Filter>img</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\tsk\fs\fatfs_dent.cpp">
       <Filter>fs</Filter>
     </ClCompile>
@@ -447,6 +450,9 @@
       <Filter>img</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tsk\img\raw.h">
+      <Filter>img</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\img\qcow2.h">
       <Filter>img</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tsk\img\tsk_img.h">
