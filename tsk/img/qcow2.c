@@ -178,7 +178,7 @@ static int QCOW_READ_FILE(QCOW_FILE_T h, void *buf, size_t len, ssize_t *nread)
     {
         *nread = _nread;
     }
-    return nread >= 0;
+    return _nread >= 0;
 }
 int QCOW2_NORMALIZE_PATH(const TSK_TCHAR * path, IMG_QCOW2_INFO * q)
 {
@@ -379,7 +379,7 @@ qcow2_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
                         QCOW_SET_ERROR(TSK_ERR_IMG_READ, "Inflated cluster does not contain read region.");
                         return -1;
                     }
-                    memcpy(buf, qcow_info->meta.ucmp_buffer + cluster_offset, len - remainder);
+                    memcpy(buf, (uint8_t*)qcow_info->meta.ucmp_buffer + cluster_offset, len - remainder);
 
                     nread = len - remainder;
 #endif
