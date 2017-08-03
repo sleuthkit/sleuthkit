@@ -67,6 +67,7 @@ extern "C" {
         TSK_IMG_TYPE_EWF_EWF = 0x0040,   ///< EWF version
         TSK_IMG_TYPE_VMDK_VMDK = 0x0080, ///< VMDK version
         TSK_IMG_TYPE_VHD_VHD = 0x0100,   ///< VHD version
+        TSK_IMG_TYPE_QCOW2 = 0x0200,     ///< QCOW2 disk image
         TSK_IMG_TYPE_EXTERNAL = 0x1000,  ///< external defined format which at least implements TSK_IMG_INFO, used by pytsk
         TSK_IMG_TYPE_POOL = 0x4000,      ///< Pool
 
