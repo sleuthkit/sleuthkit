@@ -3890,6 +3890,148 @@ public class SleuthkitCase {
 			releaseExclusiveLock();
 		}
 	}
+	
+	/**
+	 * Adds a local directory to the database and returns a LocalDirectory
+	 * object representing it.
+	 *
+	 * @param parentId      the ID of the parent, or 0 if NULL
+	 * @param directoryName the name of the local directory to create
+	 *
+	 * @return a LocalDirectory object representing the one added to the
+	 *         database.
+	 *
+	 * @throws TskCoreException
+	 */
+	public LocalDirectory addLocalDirectory(long parentId, String directoryName) throws TskCoreException {
+		acquireExclusiveLock();
+		CaseDbTransaction localTrans = beginTransaction();
+		try {
+			LocalDirectory newLD = addLocalDirectory(parentId, directoryName, localTrans);
+			localTrans.commit();
+			return newLD;
+		} catch (TskCoreException ex) {
+			try {
+				localTrans.rollback();
+			} catch (TskCoreException ex2) {
+				logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
+			}
+			throw ex;
+		} finally {
+			releaseExclusiveLock();
+		}
+	}
+
+	/**
+	 * Adds a local directory to the database and returns a LocalDirectory
+	 * object representing it.
+	 *
+	 * Make sure the connection in transaction is used for all database
+	 * interactions called by this method
+	 *
+	 * @param parentId      the ID of the parent, or 0 if NULL
+	 * @param directoryName the name of the local directory to create
+	 * @param transaction   the transaction in the scope of which the operation
+	 *                      is to be performed, managed by the caller
+	 *
+	 * @return a LocalDirectory object representing the one added to the
+	 *         database.
+	 *
+	 * @throws TskCoreException
+	 */
+	public LocalDirectory addLocalDirectory(long parentId, String directoryName, CaseDbTransaction transaction) throws TskCoreException {
+		if (transaction == null) {
+			throw new TskCoreException("Passed null CaseDbTransaction");
+		}
+
+		acquireExclusiveLock();
+		ResultSet resultSet = null;
+		try {
+			// Get the parent path.
+			CaseDbConnection connection = transaction.getConnection();
+			String parentPath = getFileParentPath(parentId, connection);
+			if (parentPath == null) {
+				parentPath = "/"; //NON-NLS
+			}
+			String parentName = getFileName(parentId, connection);
+			if (parentName != null && !parentName.isEmpty()) {
+				parentPath = parentPath + parentName + "/"; //NON-NLS
+			}
+
+			// Insert a row for the local directory into the tsk_objects table.
+			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
+			statement.clearParameters();
+			if (parentId != 0) {
+				statement.setLong(1, parentId);
+			} else {
+				statement.setNull(1, java.sql.Types.BIGINT);
+			}
+			statement.setInt(2, TskData.ObjectType.ABSTRACTFILE.getObjectType());
+			connection.executeUpdate(statement);
+			resultSet = statement.getGeneratedKeys();
+			resultSet.next();
+			long newObjId = resultSet.getLong(1); //last_insert_rowid()
+
+			// Insert a row for the local directory into the tsk_files table.
+			// INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type,
+			// dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, data_source_obj_id)
+			// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_FILE);
+			statement.clearParameters();
+			statement.setLong(1, newObjId);
+
+			// The parent of a local directory will never be a file system
+			statement.setNull(2, java.sql.Types.BIGINT);
+
+			// name
+			statement.setString(3, directoryName);
+
+			//type
+			statement.setShort(4, TskData.TSK_DB_FILES_TYPE_ENUM.LOCAL_DIR.getFileType());
+			statement.setShort(5, (short) 1);
+
+			//flags
+			final TSK_FS_NAME_TYPE_ENUM dirType = TSK_FS_NAME_TYPE_ENUM.DIR;
+			statement.setShort(6, dirType.getValue());
+			final TSK_FS_META_TYPE_ENUM metaType = TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
+			statement.setShort(7, metaType.getValue());
+
+			//allocated
+			final TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.ALLOC;
+			statement.setShort(8, dirFlag.getValue());
+			final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue()
+					| TSK_FS_META_FLAG_ENUM.USED.getValue());
+			statement.setShort(9, metaFlags);
+
+			//size
+			statement.setLong(10, 0);
+
+			//  nulls for params 11-14
+			statement.setNull(11, java.sql.Types.BIGINT);
+			statement.setNull(12, java.sql.Types.BIGINT);
+			statement.setNull(13, java.sql.Types.BIGINT);
+			statement.setNull(14, java.sql.Types.BIGINT);
+
+			// parent path
+			statement.setString(15, parentPath);
+
+			// data source object id
+			long dataSourceObjectId = getDataSourceObjectId(connection, parentId);
+			statement.setLong(16, dataSourceObjectId);
+
+			connection.executeUpdate(statement);
+
+			return new LocalDirectory(this, newObjId, dataSourceObjectId, directoryName, dirType,
+					metaType, dirFlag, metaFlags, null, FileKnown.UNKNOWN,
+					parentPath);
+		} catch (SQLException e) {
+			throw new TskCoreException("Error creating local directory '" + directoryName + "'", e);
+		} finally {
+			closeResultSet(resultSet);
+			releaseExclusiveLock();
+		}
+	}
 
 	/**
 	 * Adds a local/logical files and/or directories data source.
@@ -5622,6 +5764,9 @@ public class SleuthkitCase {
 						(rs.getShort("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_VIRT_DIR.getValue())) { //NON-NLS
 					final VirtualDirectory virtDir = virtualDirectory(rs);
 					results.add(virtDir);
+				} else if (type == TSK_DB_FILES_TYPE_ENUM.LOCAL_DIR.getFileType()) {
+					final LocalDirectory localDir = localDirectory(rs);
+					results.add(localDir);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.UNALLOC_BLOCKS.getFileType()
 						|| type == TSK_DB_FILES_TYPE_ENUM.UNUSED_BLOCKS.getFileType()
 						|| type == TSK_DB_FILES_TYPE_ENUM.CARVED.getFileType()) {
@@ -5740,6 +5885,30 @@ public class SleuthkitCase {
 		return vd;
 	}
 
+	/**
+	 * Create a virtual directory object from a result set
+	 *
+	 * @param rs the result set
+	 *
+	 * @return newly created VirtualDirectory object
+	 *
+	 * @throws SQLException
+	 */
+	LocalDirectory localDirectory(ResultSet rs) throws SQLException {
+		String parentPath = rs.getString("parent_path"); //NON-NLS
+		if (parentPath == null) {
+			parentPath = "";
+		}
+		final LocalDirectory ld = new LocalDirectory(this, rs.getLong("obj_id"), //NON-NLS
+				rs.getLong("data_source_obj_id"), rs.getString("name"), //NON-NLS
+				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
+				TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
+				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), //NON-NLS
+				rs.getShort("meta_flags"), rs.getString("md5"), //NON-NLS
+				FileKnown.valueOf(rs.getByte("known")), parentPath); //NON-NLS
+		return ld;
+	}	
+	
 	/**
 	 * Creates a DerivedFile object using the values of a given result set.
 	 *
@@ -5906,6 +6075,10 @@ public class SleuthkitCase {
 					case VIRTUAL_DIR:
 						VirtualDirectory virtDir = virtualDirectory(rs);
 						children.add(virtDir);
+						break;
+					case LOCAL_DIR:
+						LocalDirectory localDir = localDirectory(rs);
+						children.add(localDir);
 						break;
 					case UNALLOC_BLOCKS:
 					case UNUSED_BLOCKS:

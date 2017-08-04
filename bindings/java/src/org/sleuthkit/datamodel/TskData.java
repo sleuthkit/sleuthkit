@@ -663,6 +663,7 @@ public class TskData {
 		UNUSED_BLOCKS(5, "Unused Blocks"), ///< Set of blocks that are unallocated AND not used by a carved or other file type.  Parent should be UNALLOC_BLOCKS, many columns in tsk_files will be NULL, set layout in tsk_file_layout. 
 		VIRTUAL_DIR(6, "Virtual Directory"), ///< Virtual directory (not on fs) with no meta-data entry that can be used to group files of types other than TSK_DB_FILES_TYPE_FS. Its parent is either another TSK_DB_FILES_TYPE_FS or a root directory or type TSK_DB_FILES_TYPE_FS.
 		SLACK(7, "Slack"), ///< Slack space for a single file
+		LOCAL_DIR(8, "Local Directory"), ///< Local directory that was added (not from a disk image)
 		;
 
 		private final short fileType;
