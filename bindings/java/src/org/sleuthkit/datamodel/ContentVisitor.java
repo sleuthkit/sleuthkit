@@ -140,6 +140,15 @@ public interface ContentVisitor<T> {
 	T visit(SlackFile sf);	
 
 	/**
+	 * Act on (visit) a blackboard artifact object
+	 *
+	 * @param ba blackboard artifact object to visit / act on
+	 *
+	 * @return result of the visit
+	 */
+	T visit(BlackboardArtifact ba);	
+	
+	/**
 	 * The default content visitor - quickest method for implementing a custom
 	 * visitor. Every visit method delegates to the defaultVisit method, the
 	 * only required method to be implemented. Then, implement the specific
@@ -211,6 +220,11 @@ public interface ContentVisitor<T> {
 		@Override
 		public T visit(SlackFile sf) {
 			return defaultVisit(sf);
+		}
+		
+		@Override
+		public T visit(BlackboardArtifact ba) {
+			return defaultVisit(ba);
 		}
 	}
 }

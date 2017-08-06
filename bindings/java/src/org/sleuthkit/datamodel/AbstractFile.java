@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
@@ -206,7 +207,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return change time as Date
 	 */
 	public String getCtimeAsDate() {
-		return FsContent.epochToTime(ctime);
+		return epochToTime(ctime);
 	}
 
 	/**
@@ -224,7 +225,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return creation time as Date
 	 */
 	public String getCrtimeAsDate() {
-		return FsContent.epochToTime(crtime);
+		return epochToTime(crtime);
 	}
 
 	/**
@@ -242,7 +243,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return access time as Date
 	 */
 	public String getAtimeAsDate() {
-		return FsContent.epochToTime(atime);
+		return epochToTime(atime);
 	}
 
 	/**
@@ -260,7 +261,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return modified time as Date
 	 */
 	public String getMtimeAsDate() {
-		return FsContent.epochToTime(mtime);
+		return epochToTime(mtime);
 	}
 
 	/**
@@ -524,7 +525,7 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Gets the files, if any, that are children of this abstract file.
+	 * Gets all children of this abstract file, if any
 	 *
 	 * @return A list of the children.
 	 *
@@ -533,7 +534,13 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
-		return getSleuthkitCase().getAbstractFileChildren(this);
+		List<Content> children = new ArrayList<Content>();
+		
+		children.addAll(getSleuthkitCase().getAbstractFileChildren(this));
+		children.addAll(getSleuthkitCase().getBlackboardArtifactChildren(this));
+		
+		return children;
+		
 	}
 
 	/**
@@ -547,7 +554,13 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	@Override
 	public List<Long> getChildrenIds() throws TskCoreException {
-		return getSleuthkitCase().getAbstractFileChildrenIds(this);
+		
+		List<Long> childrenIDs = new ArrayList<Long>();
+		
+		childrenIDs.addAll(getSleuthkitCase().getAbstractFileChildrenIds(this));
+		childrenIDs.addAll(getSleuthkitCase().getBlackboardArtifactChildrenIds(this));
+		
+		return childrenIDs;
 	}
 
 	/**
@@ -1049,42 +1062,8 @@ public abstract class AbstractFile extends AbstractContent {
 				+ "]\t";
 	}
 
-	/*
-	 * -------------------------------------------------------------------------
-	 * Util methods to convert / map the data
-	 * -------------------------------------------------------------------------
-	 */
-	/**
-	 * Return the epoch into string in ISO 8601 dateTime format
-	 *
-	 * @param epoch time in seconds
-	 *
-	 * @return formatted date time string as "yyyy-MM-dd HH:mm:ss"
-	 */
-	public static String epochToTime(long epoch) {
-		String time = "0000-00-00 00:00:00";
-		if (epoch != 0) {
-			time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss z").format(new java.util.Date(epoch * 1000));
-		}
-		return time;
-	}
-
-	/**
-	 * Convert from ISO 8601 formatted date time string to epoch time in seconds
-	 *
-	 * @param time formatted date time string as "yyyy-MM-dd HH:mm:ss"
-	 *
-	 * @return epoch time in seconds
-	 */
-	public static long timeToEpoch(String time) {
-		long epoch = 0;
-		try {
-			epoch = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(time).getTime() / 1000;
-		} catch (Exception e) {
-		}
-
-		return epoch;
-	}
+	
+	
 
 	/**
 	 * Possible return values for comparing a file to a list of mime types
@@ -1237,5 +1216,53 @@ public abstract class AbstractFile extends AbstractContent {
 	@Deprecated
 	protected void setLocalPath(String localPath, boolean isAbsolute) {
 		setLocalFilePath(localPath, isAbsolute);
+	}
+	
+	/*
+	 * -------------------------------------------------------------------------
+	 * Util methods to convert / map the data
+	 * -------------------------------------------------------------------------
+	 */
+	
+	/**
+	 * Return the epoch into string in ISO 8601 dateTime format
+	 *
+	 * @param epoch time in seconds
+	 *
+	 * @return formatted date time string as "yyyy-MM-dd HH:mm:ss"
+	 * 
+	 * @Deprecated
+	 */
+	 @Deprecated
+	public static String epochToTime(long epoch) {
+		return TimeUtilities.epochToTime(epoch);
+	}
+
+	/**
+	 * Return the epoch into string in ISO 8601 dateTime format, 
+	 * in the given timezone
+	 *
+	 * @param epoch time in seconds
+	 * @param tzone time zone
+	 *
+	 * @return formatted date time string as "yyyy-MM-dd HH:mm:ss"
+	 * 
+	 * @Deprecated
+	 */
+	@Deprecated
+	public static String epochToTime(long epoch, TimeZone tzone) {
+		return TimeUtilities.epochToTime(epoch, tzone);
+	}
+	
+	/**
+	 * Convert from ISO 8601 formatted date time string to epoch time in seconds
+	 *
+	 * @param time formatted date time string as "yyyy-MM-dd HH:mm:ss"
+	 *
+	 * @return epoch time in seconds
+	 */
+	@Deprecated
+	public static long timeToEpoch(String time) {
+		return TimeUtilities.timeToEpoch(time);
 	}
 }
