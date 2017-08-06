@@ -1,7 +1,7 @@
 /*
  * SleuthKit Java Bindings
  *
- * Copyright 2011-2016 Basis Technology Corp.
+ * Copyright 2011-2017 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -111,7 +111,9 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param knownState         knownState status of the file, or null if
 	 *                           unknown (default)
 	 * @param parentPath
-	 * @param mimeType           The MIME type of the file, can be null
+	 * @param mimeType           The MIME type of the file, can be null.
+	 * @param extension		        The extension part of the file name (not
+	 *                           including the '.'), can be null.
 	 */
 	AbstractFile(SleuthkitCase db,
 			long objId,
@@ -426,6 +428,8 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * Sets the MIME type for this file.
+	 *
+	 * @param mimeType The mimeType to set for this file.
 	 */
 	void setMIMEType(String mimeType) {
 		this.mimeType = mimeType;
@@ -460,7 +464,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * updated. Currently only SleuthkiCase calls it to update the object while
 	 * updating tsk_files entry
 	 *
-	 * @param knownState
+	 * @param known
 	 */
 	void setKnown(TskData.FileKnown known) {
 		this.knownState = known;
@@ -477,10 +481,10 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Get the extension from the filename, if there is one. We assume
-	 * that extensions only have ASCII alphanumeric chars
+	 * Get the extension part of the filename, if there is one. We assume that
+	 * extensions only have ASCII alphanumeric chars
 	 *
-	 * @return filename extension in lowercase (not including the period) or
+	 * @return The filename extension in lowercase (not including the period) or
 	 *         empty string if there is no extension
 	 */
 	public String getNameExtension() {
@@ -533,7 +537,8 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Gets the object ids of objects, if any, that are children of this abstract file
+	 * Gets the object ids of objects, if any, that are children of this
+	 * abstract file
 	 *
 	 * @return A list of the object ids.
 	 *
@@ -604,8 +609,8 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * is this a virtual file or directory that was created by The Sleuth 
-     * Kit or Autopsy for general structure and organization. 
+	 * is this a virtual file or directory that was created by The Sleuth Kit or
+	 * Autopsy for general structure and organization.
 	 *
 	 * @return true if it's virtual, false otherwise
 	 */
@@ -617,27 +622,27 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * Is this object a file. Should return true for all types of files,
-     * including file system, logical, derived, layout, and slack space 
-     * for files.
+	 * including file system, logical, derived, layout, and slack space for
+	 * files.
 	 *
 	 * @return true if a file, false otherwise
 	 */
 	public boolean isFile() {
 		return metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG)
-				||(metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF) 
+				|| (metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF)
 				&& dirType.equals(TSK_FS_NAME_TYPE_ENUM.REG));
 
 	}
 
 	/**
-	 * Is this object a directory.  Should return true for file system
-     * folders and virtual folders. 
+	 * Is this object a directory. Should return true for file system folders
+	 * and virtual folders.
 	 *
 	 * @return true if directory, false otherwise
 	 */
 	public boolean isDir() {
-		return (metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR) ||
-				metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_VIRT_DIR));
+		return (metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR)
+				|| metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_VIRT_DIR));
 	}
 
 	/**
@@ -845,7 +850,7 @@ public abstract class AbstractFile extends AbstractContent {
 		}
 
 		try {
-			if( ! encodingType.equals(TskData.EncodingType.NONE)){
+			if (!encodingType.equals(TskData.EncodingType.NONE)) {
 				// The file is encoded, so we need to alter the offset to read (since there's
 				// a header on the encoded file) and then decode each byte
 				long encodedOffset = offset + EncodedFileUtil.getHeaderLength();
@@ -856,7 +861,7 @@ public abstract class AbstractFile extends AbstractContent {
 					localFileHandle.seek(encodedOffset);
 				}
 				bytesRead = localFileHandle.read(buf, 0, (int) len);
-				for(int i = 0;i < bytesRead;i++){
+				for (int i = 0; i < bytesRead; i++) {
 					buf[i] = EncodedFileUtil.decodeByte(buf[i], encodingType);
 				}
 				return bytesRead;
@@ -876,7 +881,6 @@ public abstract class AbstractFile extends AbstractContent {
 			throw new TskCoreException(msg, ex);
 		}
 	}
-
 
 	/**
 	 * Set local path for the file, as stored in db tsk_files_path, relative to
@@ -924,9 +928,10 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * Set the type of encoding used on the file (for local/derived files only)
+	 *
 	 * @param encodingType
 	 */
-	final void setEncodingType(TskData.EncodingType encodingType){
+	final void setEncodingType(TskData.EncodingType encodingType) {
 		this.encodingType = encodingType;
 	}
 
@@ -974,6 +979,8 @@ public abstract class AbstractFile extends AbstractContent {
 	/**
 	 * Lazy load local file handle
 	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException If the local path is not
+	 *                                                  set.
 	 */
 	private void loadLocalFile() throws TskCoreException {
 		if (!localPathSet) {
@@ -1145,14 +1152,13 @@ public abstract class AbstractFile extends AbstractContent {
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
 			String parentPath) {
-		this(db, objId, db.getDataSourceObjectId(objId), attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null,null);
+		this(db, objId, db.getDataSourceObjectId(objId), attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null, null);
 	}
 
-	
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
-	 * tsk_files table). This deprecated version has attrId filed defined as a short
-	 * which has since been changed to an int.
+	 * tsk_files table). This deprecated version has attrId filed defined as a
+	 * short which has since been changed to an int.
 	 *
 	 * @param db                 case / db handle where this file belongs to
 	 * @param objId              object id in tsk_objects table
@@ -1191,7 +1197,7 @@ public abstract class AbstractFile extends AbstractContent {
 			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime, short modes,
 			int uid, int gid, String md5Hash, FileKnown knownState, String parentPath, String mimeType) {
-		this(db, objId, dataSourceObjectId, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null,null);
+		this(db, objId, dataSourceObjectId, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null, null);
 	}
 
 	/**
@@ -1199,7 +1205,8 @@ public abstract class AbstractFile extends AbstractContent {
 	 *
 	 * @return attribute id
 	 *
-	 * @deprecated Use getAttributeId() method instead as it returns integer instead of short.
+	 * @deprecated Use getAttributeId() method instead as it returns integer
+	 * instead of short.
 	 */
 	@Deprecated
 	@SuppressWarnings("deprecation")

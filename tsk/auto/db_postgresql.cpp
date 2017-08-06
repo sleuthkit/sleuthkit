@@ -1126,12 +1126,11 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
            && (! (fs_file->meta->flags & TSK_FS_META_FLAG_COMP))
            && (fs_attr->flags & TSK_FS_ATTR_NONRES) 
            && (fs_attr->nrd.allocsize >  fs_attr->nrd.initsize)){
-        strncat(name, "-slack", 6);
-		//JMTODO: Do I need to free the old name_sql first?
+		strncat(name, "-slack", 6);
+		PQfreemem(name_sql);
 		name_sql = PQescapeLiteral(conn, name, strlen(name));
-		if (strlen(extension) > 0) {
+		if (strlen(extension) > 0) { //if there was an extension, add "-slack" and escape it again.
 			strncat(extension, "-slack", 6);
-			//JMTODO: Do I need to free the old extension_sql first?
 			PQfreemem(extension_sql);
 			extension_sql = PQescapeLiteral(conn, extension, strlen(extension));
 		}

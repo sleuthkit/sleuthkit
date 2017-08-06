@@ -1,15 +1,15 @@
 /*
  * SleuthKit Java Bindings
- * 
- * Copyright 2011-2016 Basis Technology Corp.
+ *
+ * Copyright 2011-2017 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -74,6 +74,8 @@ public class File extends FsContent {
 	 * @param parentPath         The path of the parent of the file.
 	 * @param mimeType           The MIME type of the file, null if it has not
 	 *                           yet been determined.
+	 * @param extension	         The extension part of the file name (not
+	 *                           including the '.'), can be null.
 	 */
 	File(SleuthkitCase db,
 			long objId,
@@ -89,9 +91,8 @@ public class File extends FsContent {
 			short modes, int uid, int gid,
 			String md5Hash, FileKnown knownState, String parentPath, String mimeType,
 			String extension) {
-		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, mimeType,extension);
+		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, mimeType, extension);
 	}
-
 
 	/**
 	 * Accepts a content visitor (Visitor design pattern).
@@ -102,8 +103,8 @@ public class File extends FsContent {
 	 * @return The output of the algorithm.
 	 */
 	@Override
-	public <T> T accept(SleuthkitItemVisitor<T> v) {
-		return v.visit(this);
+	public <T> T accept(SleuthkitItemVisitor<T> visitor) {
+		return visitor.visit(this);
 	}
 
 	/**
@@ -235,6 +236,7 @@ public class File extends FsContent {
 	 * @param parentPath         The path of the parent of the file.
 	 * @param mimeType           The MIME type of the file, null if it has not
 	 *                           yet been determined.
+	 *
 	 * @deprecated Do not make subclasses outside of this package.
 	 */
 	@Deprecated
@@ -243,6 +245,6 @@ public class File extends FsContent {
 			String name, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime,
 			short modes, int uid, int gid, String md5Hash, FileKnown knownState, String parentPath, String mimeType) {
-		this(db, objId, dataSourceObjectId, fsObjId, attrType, (int) attrId, name, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, mimeType,null);
+		this(db, objId, dataSourceObjectId, fsObjId, attrType, (int) attrId, name, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, mimeType, null);
 	}
 }
