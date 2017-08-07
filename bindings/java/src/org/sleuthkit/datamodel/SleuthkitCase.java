@@ -1089,6 +1089,9 @@ public class SleuthkitCase {
 
 			statement.execute("CREATE INDEX file_extension ON tsk_files ( extension )");
 
+			// Add artifact_obj_id column to blackboard_artifacts table, data conversion for old versions isn't necesarry.
+			statement.execute("ALTER TABLE blackboard_artifacts ADD COLUMN artifact_obj_id INTEGER NOT NULL DEFAULT -1");
+			
 			return 7;
 
 		} finally {
