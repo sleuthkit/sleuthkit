@@ -1,5 +1,5 @@
 /*
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2003-2012 Brian Carrier.  All rights reserved
@@ -11,14 +11,14 @@
 **
 ** TASK
 ** Copyright (c) 2002 @stake Inc.  All rights reserved
-** 
-** Copyright (c) 1997,1998,1999, International Business Machines          
+**
+** Copyright (c) 1997,1998,1999, International Business Machines
 ** Corporation and others. All Rights Reserved.
 */
 
 /** \file tsk_fs.h
 * External header file for file system support.
-* Note that this file is not meant to be directly included.  
+* Note that this file is not meant to be directly included.
 * It is included by both libtsk.h and tsk_fs_i.h.
 */
 
@@ -58,10 +58,10 @@ extern "C" {
     /** \name Generic File System Block Data Structure */
     //@{
 
-    /** Flags that are used in TSK_FS_BLOCK and in callback of file_walk. 
+    /** Flags that are used in TSK_FS_BLOCK and in callback of file_walk.
     * Note that some of these are dependent. A block can be either TSK_FS_BLOCK_FLAG_ALLOC
     * or TSK_FS_BLOCK_FLAG_UNALLOC.  It can be one of TSK_FS_BLOCK_FLAG_RAW, TSK_FS_BLOCK_FLAG_BAD,
-    * TSK_FS_BLOCK_FLAG_RES, TSK_FS_BLOCK_FLAG_SPARSE, or TSK_FS_BLOCK_FLAG_COMP.  Note that some of 
+    * TSK_FS_BLOCK_FLAG_RES, TSK_FS_BLOCK_FLAG_SPARSE, or TSK_FS_BLOCK_FLAG_COMP.  Note that some of
     * these are set only by file_walk because they are file-level details, such as compression and sparse.
     */
     enum TSK_FS_BLOCK_FLAG_ENUM {
@@ -95,11 +95,11 @@ extern "C" {
 
 
 #define TSK_FS_BLOCK_TAG 0x1b7c3f4a
-    /** 
+    /**
     * Generic data structure to hold block data with metadata
     */
     typedef struct {
-        int tag;                ///< \internal Will be set to TSK_FS_BLOCK_TAG if structure is valid / allocated 
+        int tag;                ///< \internal Will be set to TSK_FS_BLOCK_TAG if structure is valid / allocated
         TSK_FS_INFO *fs_info;   ///< Pointer to file system that block is from
         char *buf;              ///< Buffer with block data (of size TSK_FS_INFO::block_size)
         TSK_DADDR_T addr;       ///< Address of block
@@ -108,7 +108,7 @@ extern "C" {
 
 
     /**
-    * Function definition used for callback to tsk_fs_block_walk(). 
+    * Function definition used for callback to tsk_fs_block_walk().
     *
     * @param a_block Pointer to block structure that holds block content and flags
     * @param a_ptr Pointer that was supplied by the caller who called tsk_fs_block_walk
@@ -122,8 +122,8 @@ extern "C" {
     extern void tsk_fs_block_free(TSK_FS_BLOCK * a_fs_block);
     extern TSK_FS_BLOCK *tsk_fs_block_get(TSK_FS_INFO * fs,
         TSK_FS_BLOCK * fs_block, TSK_DADDR_T addr);
-    extern TSK_FS_BLOCK *tsk_fs_block_get_flag(TSK_FS_INFO * a_fs, 
-        TSK_FS_BLOCK * a_fs_block, TSK_DADDR_T a_addr, 
+    extern TSK_FS_BLOCK *tsk_fs_block_get_flag(TSK_FS_INFO * a_fs,
+        TSK_FS_BLOCK * a_fs_block, TSK_DADDR_T a_addr,
         TSK_FS_BLOCK_FLAG_ENUM a_flags);
     extern uint8_t tsk_fs_block_walk(TSK_FS_INFO * a_fs,
         TSK_DADDR_T a_start_blk, TSK_DADDR_T a_end_blk,
@@ -137,12 +137,12 @@ extern "C" {
     /** \name Generic File System File Content Data Structures */
     //@{
 
-    /* The location of "most" file content is stored in the generic TSK 
-     * data structures as runs (starting address and length). 
+    /* The location of "most" file content is stored in the generic TSK
+     * data structures as runs (starting address and length).
      */
 
-    /** 
-    * Flags used for a TSK_FS_ATTR_RUN entry. 
+    /**
+    * Flags used for a TSK_FS_ATTR_RUN entry.
     */
     typedef enum {
         TSK_FS_ATTR_RUN_FLAG_NONE = 0x00,       ///< No Flag
@@ -155,7 +155,7 @@ extern "C" {
 
     /**
     * Holds information about a single data run, which has a starting address and length.
-    * A run describes a consecutive list of blocks that have been allocated to a file. 
+    * A run describes a consecutive list of blocks that have been allocated to a file.
     * A file may have many such runs and they are stringed together in a linked list.
     * The entries in the list must be stored in sequential order (based on offset in file).
     */
@@ -168,8 +168,8 @@ extern "C" {
     };
 
     /**
-    * Flags used for the TSK_FS_ATTR structure, which is used to 
-    * store file content metadata. 
+    * Flags used for the TSK_FS_ATTR structure, which is used to
+    * store file content metadata.
     */
     typedef enum {
         TSK_FS_ATTR_FLAG_NONE = 0x00,   ///< No Flag
@@ -182,9 +182,9 @@ extern "C" {
         TSK_FS_ATTR_RECOVERY = 0x80,    ///< Data was determined in file recovery mode
     } TSK_FS_ATTR_FLAG_ENUM;
 
-    /** 
-    * File walk callback function definition.  This is called for 
-    * chunks of content in the file being processed.  
+    /**
+    * File walk callback function definition.  This is called for
+    * chunks of content in the file being processed.
     * @param a_fs_file Pointer to file being processed
     * @param a_off Byte offset in file that this data is for
     * @param a_addr Address of data being passed (valid only if a_flags have RAW set)
@@ -211,7 +211,7 @@ extern "C" {
 
 
     /**
-    * These are based on the NTFS type values. 
+    * These are based on the NTFS type values.
     * Added types for HFS+.
     * NOTE: Update bindings/java/src/org/sleuthkit/datamodel/TskData.java
     * with any changes.
@@ -253,16 +253,16 @@ extern "C" {
     typedef struct TSK_FS_ATTR TSK_FS_ATTR;
     /**
     * Holds information about the location of file content (or a file attribute). For most file systems, a file
-    * has only a single attribute that stores the file content. 
+    * has only a single attribute that stores the file content.
     * Other file systems, such as NTFS, have multiple
     * attributes.  If multiple attributes exist, they are stored in a linked list.
     * Attributes can be "resident", which means the data is stored
     * in a small buffer instead of being stored in a full file system block.
-    * "Non-resident" attributes store data in blocks and they are stored in 
-    * the data structure as a series of runs.  
+    * "Non-resident" attributes store data in blocks and they are stored in
+    * the data structure as a series of runs.
     * This structure is used to represent both of these cases.
     *
-    * The non-resident data has several size values. 
+    * The non-resident data has several size values.
     * \verbatim
     * |--------------------------------------------------------------------|
     * |skiplen|---------------allocsize------------------------------------|
@@ -274,7 +274,7 @@ extern "C" {
         TSK_FS_ATTR *next;      ///< Pointer to next attribute in list
         TSK_FS_FILE *fs_file;   ///< Pointer to the file that this is from
         TSK_FS_ATTR_FLAG_ENUM flags;    ///< Flags for attribute
-        char *name;             ///< Name of attribute (in UTF-8).  Will be NULL if attribute doesn't have a name. 
+        char *name;             ///< Name of attribute (in UTF-8).  Will be NULL if attribute doesn't have a name.
         size_t name_size;       ///< Number of bytes allocated to name
         TSK_FS_ATTR_TYPE_ENUM type;     ///< Type of attribute
         uint16_t id;            ///< Id of attribute
@@ -282,21 +282,21 @@ extern "C" {
         TSK_OFF_T size;         ///< Size in bytes of the attribute resident and non-resident content (does not include skiplen for non-resident attributes)
 
         /**
-        * Data associated with a non-resident file / attribute. 
-        * The data is stored in one or more data runs. 
+        * Data associated with a non-resident file / attribute.
+        * The data is stored in one or more data runs.
         */
         struct {
             TSK_FS_ATTR_RUN *run;       ///< Linked list of runs for non-resident attributes
             TSK_FS_ATTR_RUN *run_end;   ///< Pointer to final run in the list
-            uint32_t skiplen;   ///< Number of initial bytes in run to skip before content begins. The size field does not include this length. 
+            uint32_t skiplen;   ///< Number of initial bytes in run to skip before content begins. The size field does not include this length.
             TSK_OFF_T allocsize;        ///< Number of bytes that are allocated in all clusters of non-resident run (will be larger than size - does not include skiplen).  This is defined when the attribute is created and used to determine slack space.
-            TSK_OFF_T initsize; ///< Number of bytes (starting from offset 0) that have data (including FILLER) saved for them (smaller then or equal to size).  This is defined when the attribute is created.   
+            TSK_OFF_T initsize; ///< Number of bytes (starting from offset 0) that have data (including FILLER) saved for them (smaller then or equal to size).  This is defined when the attribute is created.
             uint32_t compsize;  ///< Size of compression units (needed only if NTFS file is compressed)
         } nrd;
 
         /**
-        * Data associated with a resident attribute / file.  
-        * The data is stored in a buffer. 
+        * Data associated with a resident attribute / file.
+        * The data is stored in a buffer.
         */
         struct {
             uint8_t *buf;       ///< Buffer for resident data
@@ -313,7 +313,7 @@ extern "C" {
 
 
     /**
-    * Structure used as the head of an attribute list.  
+    * Structure used as the head of an attribute list.
     */
     typedef struct {
         TSK_FS_ATTR *head;
@@ -341,7 +341,7 @@ extern "C" {
     /**
     * Relatively generic structure to hold file names that are stored with
     * the file metadata.  Note that this is different from the
-    * file name stored in the directory heirarchy, which is 
+    * file name stored in the directory heirarchy, which is
     * part of the tsk_fs_name_... code.  This is currently
     * used for NTFS and FAT file systems only.
     */
@@ -363,8 +363,8 @@ extern "C" {
         TSK_FS_META_FLAG_ALLOC = 0x01,   ///< Metadata structure is currently in an allocated state
         TSK_FS_META_FLAG_UNALLOC = 0x02, ///< Metadata structure is currently in an unallocated state
         TSK_FS_META_FLAG_USED = 0x04,    ///< Metadata structure has been allocated at least once
-        TSK_FS_META_FLAG_UNUSED = 0x08,  ///< Metadata structure has never been allocated. 
-        TSK_FS_META_FLAG_COMP = 0x10,    ///< The file contents are compressed. 
+        TSK_FS_META_FLAG_UNUSED = 0x08,  ///< Metadata structure has never been allocated.
+        TSK_FS_META_FLAG_COMP = 0x10,    ///< The file contents are compressed.
         TSK_FS_META_FLAG_ORPHAN = 0x20,  ///< Return only metadata structures that have no file name pointing to the (inode_walk flag only)
     };
     typedef enum TSK_FS_META_FLAG_ENUM TSK_FS_META_FLAG_ENUM;
@@ -378,18 +378,18 @@ extern "C" {
 
 
     /**
-    * Values for the mode field -- which identifies the file type 
+    * Values for the mode field -- which identifies the file type
     * and permissions.
     */
     enum TSK_FS_META_TYPE_ENUM {
         TSK_FS_META_TYPE_UNDEF = 0x00,
         TSK_FS_META_TYPE_REG = 0x01,    ///< Regular file
         TSK_FS_META_TYPE_DIR = 0x02,    ///< Directory file
-        TSK_FS_META_TYPE_FIFO = 0x03,   ///< Named pipe (fifo) 
-        TSK_FS_META_TYPE_CHR = 0x04,    ///< Character device 
-        TSK_FS_META_TYPE_BLK = 0x05,    ///< Block device 
+        TSK_FS_META_TYPE_FIFO = 0x03,   ///< Named pipe (fifo)
+        TSK_FS_META_TYPE_CHR = 0x04,    ///< Character device
+        TSK_FS_META_TYPE_BLK = 0x05,    ///< Block device
         TSK_FS_META_TYPE_LNK = 0x06,    ///< Symbolic link
-        TSK_FS_META_TYPE_SHAD = 0x07,   ///< SOLARIS ONLY 
+        TSK_FS_META_TYPE_SHAD = 0x07,   ///< SOLARIS ONLY
         TSK_FS_META_TYPE_SOCK = 0x08,   ///< UNIX domain socket
         TSK_FS_META_TYPE_WHT = 0x09,    ///< Whiteout
         TSK_FS_META_TYPE_VIRT = 0x0a,   ///< "Virtual File" created by TSK for file system areas
@@ -404,23 +404,23 @@ extern "C" {
     
     enum TSK_FS_META_MODE_ENUM {
         /* The following describe the file permissions */
-        TSK_FS_META_MODE_UNSPECIFIED = 0000000,       ///< unspecified  
+        TSK_FS_META_MODE_UNSPECIFIED = 0000000,       ///< unspecified
 
-        TSK_FS_META_MODE_ISUID = 0004000,       ///< set user id on execution 
-        TSK_FS_META_MODE_ISGID = 0002000,       ///< set group id on execution 
-        TSK_FS_META_MODE_ISVTX = 0001000,       ///< sticky bit 
+        TSK_FS_META_MODE_ISUID = 0004000,       ///< set user id on execution
+        TSK_FS_META_MODE_ISGID = 0002000,       ///< set group id on execution
+        TSK_FS_META_MODE_ISVTX = 0001000,       ///< sticky bit
 
-        TSK_FS_META_MODE_IRUSR = 0000400,       ///< R for owner 
-        TSK_FS_META_MODE_IWUSR = 0000200,       ///< W for owner 
-        TSK_FS_META_MODE_IXUSR = 0000100,       ///< X for owner 
+        TSK_FS_META_MODE_IRUSR = 0000400,       ///< R for owner
+        TSK_FS_META_MODE_IWUSR = 0000200,       ///< W for owner
+        TSK_FS_META_MODE_IXUSR = 0000100,       ///< X for owner
 
-        TSK_FS_META_MODE_IRGRP = 0000040,       ///< R for group 
-        TSK_FS_META_MODE_IWGRP = 0000020,       ///< W for group 
-        TSK_FS_META_MODE_IXGRP = 0000010,       ///< X for group 
+        TSK_FS_META_MODE_IRGRP = 0000040,       ///< R for group
+        TSK_FS_META_MODE_IWGRP = 0000020,       ///< W for group
+        TSK_FS_META_MODE_IXGRP = 0000010,       ///< X for group
 
-        TSK_FS_META_MODE_IROTH = 0000004,       ///< R for other 
-        TSK_FS_META_MODE_IWOTH = 0000002,       ///< W for other 
-        TSK_FS_META_MODE_IXOTH = 0000001        ///< X for other 
+        TSK_FS_META_MODE_IROTH = 0000004,       ///< R for other
+        TSK_FS_META_MODE_IWOTH = 0000002,       ///< W for other
+        TSK_FS_META_MODE_IXOTH = 0000001        ///< X for other
     };
     typedef enum TSK_FS_META_MODE_ENUM TSK_FS_META_MODE_ENUM;
 
@@ -431,15 +431,15 @@ extern "C" {
 
 
 #define TSK_FS_META_TAG 0x13524635
-    /** 
-    * TSK data structure to store general file and directory metadata. 
+    /**
+    * TSK data structure to store general file and directory metadata.
     * Note that the file in the file
-    * system may have more metadata than is stored here.  
+    * system may have more metadata than is stored here.
     * For performance reasons, the run list of the file content is not always known
-    * when the file is loaded.  It may be loaded only when needed by the internal code. 
+    * when the file is loaded.  It may be loaded only when needed by the internal code.
     * The TSK_FS_META::content_ptr pointer contains file system-specific data that will be
     * used to determine the full run. After it has been loaded, the TSK_FS_META::attr field
-    * will contain that info.  
+    * will contain that info.
     */
     typedef struct {
         int tag;                ///< \internal Will be set to TSK_FS_META_TAG if structure is allocated
@@ -483,18 +483,18 @@ extern "C" {
                 time_t fn_atime_nano;   ///< NTFS access time stored in FILE_NAME in nano-second resolution
                 time_t fn_ctime;   ///< NTFS change (MFT Entry) time stored in FILE_NAME
                 time_t fn_ctime_nano;   ///< NTFS change (MFT Entry) time stored in FILE_NAME in nano-second resolution
-                uint16_t fn_id; ///< Attribute ID used to populate FN times. 
+                uint16_t fn_id; ///< Attribute ID used to populate FN times.
             } ntfs;
         } time2;
 
         void *content_ptr;      ///< Pointer to file system specific data that is used to store references to file content
         size_t content_len;     ///< size of content  buffer
-        TSK_FS_META_CONTENT_TYPE_ENUM content_type;     ///< File system-specific and describes type of data in content_ptr in case file systems have multiple ways of storing things. 
+        TSK_FS_META_CONTENT_TYPE_ENUM content_type;     ///< File system-specific and describes type of data in content_ptr in case file systems have multiple ways of storing things.
 
-        uint32_t seq;           ///< Sequence number for file (NTFS only, is incremented when entry is reallocated) 
+        uint32_t seq;           ///< Sequence number for file (NTFS only, is incremented when entry is reallocated)
 
-        /** Contains run data on the file content (specific locations where content is stored).  
-        * Check attr_state to determine if data in here is valid because not all file systems 
+        /** Contains run data on the file content (specific locations where content is stored).
+        * Check attr_state to determine if data in here is valid because not all file systems
         * load this data when a file is loaded.  It may not be loaded until needed by one
         * of the APIs. Most file systems will have only one attribute, but NTFS will have several. */
         TSK_FS_ATTRLIST *attr;
@@ -518,9 +518,9 @@ extern "C" {
     (fs_info->last_inum)
 
 
-    /** 
+    /**
     * inode walk callback function definition.  This is called for every file
-    * that meets the criteria specified when inode_walk was called. 
+    * that meets the criteria specified when inode_walk was called.
     * @param a_fs_file Pointer to the current file
     * @param a_ptr Pointer that was specified by caller to inode_walk
     * @returns Value that tells inode walk to continue or stop
@@ -558,14 +558,14 @@ extern "C" {
     */
     typedef enum {
         TSK_FS_NAME_TYPE_UNDEF = 0,     ///< Unknown type
-        TSK_FS_NAME_TYPE_FIFO = 1,      ///< Named pipe 
+        TSK_FS_NAME_TYPE_FIFO = 1,      ///< Named pipe
         TSK_FS_NAME_TYPE_CHR = 2,       ///< Character device
-        TSK_FS_NAME_TYPE_DIR = 3,       ///< Directory 
+        TSK_FS_NAME_TYPE_DIR = 3,       ///< Directory
         TSK_FS_NAME_TYPE_BLK = 4,       ///< Block device
-        TSK_FS_NAME_TYPE_REG = 5,       ///< Regular file 
-        TSK_FS_NAME_TYPE_LNK = 6,       ///< Symbolic link 
-        TSK_FS_NAME_TYPE_SOCK = 7,      ///< Socket 
-        TSK_FS_NAME_TYPE_SHAD = 8,      ///< Shadow inode (solaris) 
+        TSK_FS_NAME_TYPE_REG = 5,       ///< Regular file
+        TSK_FS_NAME_TYPE_LNK = 6,       ///< Symbolic link
+        TSK_FS_NAME_TYPE_SOCK = 7,      ///< Socket
+        TSK_FS_NAME_TYPE_SHAD = 8,      ///< Shadow inode (solaris)
         TSK_FS_NAME_TYPE_WHT = 9,       ///< Whiteout (openbsd)
         TSK_FS_NAME_TYPE_VIRT = 10,     ///< Special (TSK added "Virtual" files)
         TSK_FS_NAME_TYPE_VIRT_DIR = 11, ///< Special (TSK added "Virtual" directories)
@@ -583,7 +583,7 @@ extern "C" {
     /**
     * Generic structure to store the file name information that is stored in
     * a directory. Most file systems separate the file name from the metadata, but
-    * some do not (such as FAT). This structure contains the name and address of the 
+    * some do not (such as FAT). This structure contains the name and address of the
     * metadata.
     */
     typedef struct {
@@ -595,23 +595,23 @@ extern "C" {
         char *shrt_name;        ///< The short name of the file or null (in UTF-8)
         size_t shrt_name_size;  ///< The number of bytes allocated to shrt_name
 
-        TSK_INUM_T meta_addr;   ///< Address of the metadata structure that the name points to. 
-        uint32_t meta_seq;      ///< Sequence number for metadata structure (NTFS only) 
-        TSK_INUM_T par_addr;    ///< Metadata address of parent directory (equal to meta_addr if this entry is for root directory). 
+        TSK_INUM_T meta_addr;   ///< Address of the metadata structure that the name points to.
+        uint32_t meta_seq;      ///< Sequence number for metadata structure (NTFS only)
+        TSK_INUM_T par_addr;    ///< Metadata address of parent directory (equal to meta_addr if this entry is for root directory).
         uint32_t par_seq;       ///< Sequence number for parent directory (NTFS only)
 
         TSK_FS_NAME_TYPE_ENUM type;     ///< File type information (directory, file, etc.)
-        TSK_FS_NAME_FLAG_ENUM flags;    ///< Flags that describe allocation status etc. 
+        TSK_FS_NAME_FLAG_ENUM flags;    ///< Flags that describe allocation status etc.
     } TSK_FS_NAME;
 
 
     /**
     * Definition of callback function that is used by tsk_fs_dir_walk().  This is
-    * is called for each file in a directory. 
+    * is called for each file in a directory.
     * @param a_fs_file Pointer to the current file in the directory
     * @param a_path Path of the file
     * @param a_ptr Pointer that was originally passed by caller to tsk_fs_dir_walk.
-    * @returns Value to signal if tsk_fs_dir_walk should stop or continue. 
+    * @returns Value to signal if tsk_fs_dir_walk should stop or continue.
     */
     typedef TSK_WALK_RET_ENUM(*TSK_FS_DIR_WALK_CB) (TSK_FS_FILE *
         a_fs_file, const char *a_path, void *a_ptr);
@@ -626,11 +626,11 @@ extern "C" {
 
         TSK_FS_FILE *fs_file;   ///< Pointer to the file structure for the directory.
 
-        TSK_FS_NAME *names;     ///< Pointer to list of names in directory. 
+        TSK_FS_NAME *names;     ///< Pointer to list of names in directory.
         size_t names_used;      ///< Number of name structures in queue being used
         size_t names_alloc;     ///< Number of name structures that were allocated
 
-        TSK_INUM_T addr;        ///< Metadata address of this directory 
+        TSK_INUM_T addr;        ///< Metadata address of this directory
         uint32_t seq;           ///< Metadata address sequence (NTFS Only)
 
         TSK_FS_INFO *fs_info;   ///< Pointer to file system the directory is located in
@@ -638,13 +638,13 @@ extern "C" {
 
     /**
     * Flags that are used when walking names in directories.  These are used to identify
-    * which files to call the callback function on. 
+    * which files to call the callback function on.
     */
     typedef enum {
         TSK_FS_DIR_WALK_FLAG_NONE = 0x00,       ///< No Flags
         TSK_FS_DIR_WALK_FLAG_ALLOC = 0x01,      ///< Return allocated names in callback
         TSK_FS_DIR_WALK_FLAG_UNALLOC = 0x02,    ///< Return unallocated names in callback
-        TSK_FS_DIR_WALK_FLAG_RECURSE = 0x04,    ///< Recurse into sub-directories 
+        TSK_FS_DIR_WALK_FLAG_RECURSE = 0x04,    ///< Recurse into sub-directories
         TSK_FS_DIR_WALK_FLAG_NOORPHAN = 0x08,   ///< Do not return (or recurse into) the special Orphan directory
     } TSK_FS_DIR_WALK_FLAG_ENUM;
 
@@ -677,7 +677,7 @@ extern "C" {
     * typically have a name and metadata.  This structure holds that type of information.
     * When deleted files are being processed, this structure may have the name defined
     * but not metadata because it no longer exists. Or, if you are calling meta_walk
-    * and are not processing at the name level, then the name will not be defined.  
+    * and are not processing at the name level, then the name will not be defined.
     * always check these to make sure they are not null before they are read. */
     struct TSK_FS_FILE {
         int tag;                ///< \internal Will be set to TSK_FS_FILE_TAG if structure is allocated
@@ -759,15 +759,16 @@ extern "C" {
 
     //@}
 
+    //@}
 
     /******************************* TSK_FS_INFO ******************/
 
     /** \name Generic File System Handle Data Structure */
     //@{
 
-    /** 
-    * Values for the file system type.  Each bit corresponds to a file 
-    * system.  
+    /**
+    * Values for the file system type.  Each bit corresponds to a file
+    * system.
     */
     enum TSK_FS_TYPE_ENUM {
         TSK_FS_TYPE_DETECT = 0x00000000,        ///< Use autodetection methods
@@ -780,7 +781,7 @@ extern "C" {
         TSK_FS_TYPE_FAT_DETECT = 0x0000000e,    ///< FAT auto detection
         TSK_FS_TYPE_FFS1 = 0x00000010,  ///< UFS1 (FreeBSD, OpenBSD, BSDI ...)
         TSK_FS_TYPE_FFS1B = 0x00000020, ///< UFS1b (Solaris - has no type)
-        TSK_FS_TYPE_FFS2 = 0x00000040,  ///< UFS2 - FreeBSD, NetBSD 
+        TSK_FS_TYPE_FFS2 = 0x00000040,  ///< UFS2 - FreeBSD, NetBSD
         TSK_FS_TYPE_FFS_DETECT = 0x00000070,    ///< UFS auto detection
         TSK_FS_TYPE_EXT2 = 0x00000080,  ///< Ext2 file system
         TSK_FS_TYPE_EXT3 = 0x00000100,  ///< Ext3 file system
@@ -867,7 +868,7 @@ extern "C" {
 
 
     /**
-    * Flags for the FS_INFO structure 
+    * Flags for the FS_INFO structure
     */
     enum TSK_FS_INFO_FLAG_ENUM {
         TSK_FS_INFO_FLAG_NONE = 0x00,   ///< No Flags
@@ -880,7 +881,7 @@ extern "C" {
 #define TSK_FS_INFO_FS_ID_LEN   32      // set based on largest file system / volume ID supported
 
     /**
-    * Stores state information for an open file system. 
+    * Stores state information for an open file system.
     * One of these are generated for each open files system and it contains
     * file system-type specific data.  These values are all filled in by
     * the file system code and not the caller functions.  This struct
@@ -891,11 +892,11 @@ extern "C" {
     struct TSK_FS_INFO {
         int tag;                ///< \internal Will be set to TSK_FS_INFO_TAG if structure is still allocated, 0 if not
         TSK_IMG_INFO *img_info; ///< Pointer to the image layer state
-        TSK_OFF_T offset;       ///< Byte offset into img_info that fs starts 
+        TSK_OFF_T offset;       ///< Byte offset into img_info that fs starts
 
         /* meta data */
-        TSK_INUM_T inum_count;  ///< Number of metadata addresses 
-        TSK_INUM_T root_inum;   ///< Metadata address of root directory  
+        TSK_INUM_T inum_count;  ///< Number of metadata addresses
+        TSK_INUM_T root_inum;   ///< Metadata address of root directory
         TSK_INUM_T first_inum;  ///< First valid metadata address
         TSK_INUM_T last_inum;   ///< Last valid metadata address
 
@@ -917,8 +918,8 @@ extern "C" {
         /* Journal */
         TSK_INUM_T journ_inum;  ///< Address of journal inode
 
-        TSK_FS_TYPE_ENUM ftype; ///< type of file system 
-        const char *duname;     ///< string "name" of data unit type 
+        TSK_FS_TYPE_ENUM ftype; ///< type of file system
+        const char *duname;     ///< string "name" of data unit type
         TSK_FS_INFO_FLAG_ENUM flags;    ///< flags for file system
         uint8_t fs_id[TSK_FS_INFO_FS_ID_LEN];   ///< File system id (as reported in boot sector)
         size_t fs_id_used;      ///< Number of bytes in fs_id that are being used
@@ -928,21 +929,21 @@ extern "C" {
         /* list_inum_named_lock protects list_inum_named */
         tsk_lock_t list_inum_named_lock;        // taken when r/w the list_inum_named list
         TSK_LIST *list_inum_named;      /**< List of unallocated inodes that
-                                        * are pointed to by a file name -- 
-                                        * Used to find orphan files.  Is filled 
+                                        * are pointed to by a file name --
+                                        * Used to find orphan files.  Is filled
                                         * after looking for orphans
                                         * or afer a full name_walk is performed.
                                         * (r/w shared - lock) */
 
         /* orphan_hunt_lock protects orphan_dir */
         tsk_lock_t orphan_dir_lock;     // taken for the duration of orphan hunting (not just when updating orphan_dir)
-        TSK_FS_DIR *orphan_dir; ///< Files and dirs in the top level of the $OrphanFiles directory.  NULL if orphans have not been hunted for yet. (r/w shared - lock) 
+        TSK_FS_DIR *orphan_dir; ///< Files and dirs in the top level of the $OrphanFiles directory.  NULL if orphans have not been hunted for yet. (r/w shared - lock)
 
-         uint8_t(*block_walk) (TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end, TSK_FS_BLOCK_WALK_FLAG_ENUM flags, TSK_FS_BLOCK_WALK_CB cb, void *ptr);    ///< FS-specific function: Call tsk_fs_block_walk() instead. 
+         uint8_t(*block_walk) (TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end, TSK_FS_BLOCK_WALK_FLAG_ENUM flags, TSK_FS_BLOCK_WALK_CB cb, void *ptr);    ///< FS-specific function: Call tsk_fs_block_walk() instead.
 
          TSK_FS_BLOCK_FLAG_ENUM(*block_getflags) (TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr);      ///< \internal
 
-         uint8_t(*inode_walk) (TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T end, TSK_FS_META_FLAG_ENUM flags, TSK_FS_META_WALK_CB cb, void *ptr);     ///< FS-specific function: Call tsk_fs_meta_walk() instead. 
+         uint8_t(*inode_walk) (TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T end, TSK_FS_META_FLAG_ENUM flags, TSK_FS_META_WALK_CB cb, void *ptr);     ///< FS-specific function: Call tsk_fs_meta_walk() instead.
 
          uint8_t(*file_add_meta) (TSK_FS_INFO * fs, TSK_FS_FILE * fs_file, TSK_INUM_T addr);    ///< \internal
 
@@ -952,20 +953,20 @@ extern "C" {
 
 
         /**
-        * Pointer to file system specific function that prints details on a specific file to a file handle. 
+        * Pointer to file system specific function that prints details on a specific file to a file handle.
         *
         * @param fs File system file is located in
         * @param hFile File handle to print text to
         * @param inum Address of file in file system
         * @param numblock The number of blocks in file to force print (can go beyond file size)
         * @param sec_skew Clock skew in seconds to also print times in
-        * 
+        *
         * @returns 1 on error and 0 on success
         */
          uint8_t(*istat) (TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
             TSK_DADDR_T numblock, int32_t sec_skew);
 
-         TSK_RETVAL_ENUM(*dir_open_meta) (TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir, TSK_INUM_T inode);  ///< \internal Call tsk_fs_dir_open_meta() instead. 
+         TSK_RETVAL_ENUM(*dir_open_meta) (TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir, TSK_INUM_T inode);  ///< \internal Call tsk_fs_dir_open_meta() instead.
 
          uint8_t(*jopen) (TSK_FS_INFO *, TSK_INUM_T);   ///< \internal
 
@@ -979,7 +980,7 @@ extern "C" {
 
          uint8_t(*fscheck) (TSK_FS_INFO *, FILE *);     ///< \internal
 
-        void (*close) (TSK_FS_INFO * fs);       ///< FS-specific function: Call tsk_fs_close() instead. 
+        void (*close) (TSK_FS_INFO * fs);       ///< FS-specific function: Call tsk_fs_close() instead.
 
          uint8_t(*fread_owner_sid) (TSK_FS_FILE *, char **);    // FS-specific function. Call tsk_fs_file_get_owner_sid() instead.
     };
@@ -1134,7 +1135,7 @@ extern "C" {
 /**
 * \ingroup fslib_cpp
 * Contains information about a single data run, which has a starting address and length.
-* A run describes a consecutive list of blocks that have been allocated to a file. 
+* A run describes a consecutive list of blocks that have been allocated to a file.
 * A file may have many such runs and they are stringed together in a linked list.
 * The entries in the list must be stored in sequential order (based on offset in file).
 * See TSK_FS_ATTR_RUN for more details.
@@ -1148,8 +1149,8 @@ class TskFsAttrRun {
   public:
     /**
         * construct a TskFsAttrRun object.
-    * @param a_fsAttrRun pointer of TSK_FS_ATTR_RUN. If NULL, then the 
-    * getX() method return values are undefined. 
+    * @param a_fsAttrRun pointer of TSK_FS_ATTR_RUN. If NULL, then the
+    * getX() method return values are undefined.
     */
      TskFsAttrRun(TSK_FS_ATTR_RUN * a_fsAttrRun) {
         m_fsAttrRun = a_fsAttrRun;
@@ -1207,7 +1208,7 @@ class TskFsAttrRun {
 * \ingroup fslib_cpp
 * Stores the file name information that is stored in
 * a directory. Most file systems separate the file name from the metadata, but
-* some do not (such as FAT). This structure contains the file name and the 
+* some do not (such as FAT). This structure contains the file name and the
 * address of the  metadata. See TSK_FS_NAME for more details.
 */
 class TskFsName {
@@ -1221,7 +1222,7 @@ class TskFsName {
   public:
     /**
     * construct a TskFsName object
-    * @param a_fsName a pointer of TSK_FS_NAME. If NULL, the getX() return values are undefined. 
+    * @param a_fsName a pointer of TSK_FS_NAME. If NULL, the getX() return values are undefined.
     */
      TskFsName(TSK_FS_NAME * a_fsName) {
         m_fsName = a_fsName;
@@ -1252,8 +1253,8 @@ class TskFsName {
     };
 
     /**
-        * Return the address of the metadata structure that the name points to. 
-    * @return address of the metadata structure that the name points to 
+        * Return the address of the metadata structure that the name points to.
+    * @return address of the metadata structure that the name points to
     */
     TSK_INUM_T getMetaAddr() const {
         if (m_fsName != NULL)
@@ -1263,7 +1264,7 @@ class TskFsName {
     };
 
     /**
-        * Return the sequence number for metadata structure (NTFS only) 
+        * Return the sequence number for metadata structure (NTFS only)
     * @return sequence number for metadata structure
     */
     uint32_t getMetaSeq() const {
@@ -1274,8 +1275,8 @@ class TskFsName {
     };
 
     /**
-        * Return the metadata address of the parent directory (equal to meta_addr if this entry is for root directory). 
-    * @return metadata address of parent directory 
+        * Return the metadata address of the parent directory (equal to meta_addr if this entry is for root directory).
+    * @return metadata address of parent directory
     */
     TSK_INUM_T getParentAddr() const {
         if (m_fsName != NULL)
@@ -1285,8 +1286,8 @@ class TskFsName {
     };
 
     /**
-        * Return the file type information (directory, file, etc.) 
-    * @return file type information 
+        * Return the file type information (directory, file, etc.)
+    * @return file type information
     */
     TSK_FS_NAME_TYPE_ENUM getType() const {
         if (m_fsName != NULL)
@@ -1296,8 +1297,8 @@ class TskFsName {
     };
 
     /**
-        * Return flags that describe allocation status etc. 
-    * @return flags that describe allocation status 
+        * Return flags that describe allocation status etc.
+    * @return flags that describe allocation status
     */
     TSK_FS_NAME_FLAG_ENUM getFlags() const {
         if (m_fsName != NULL)
@@ -1308,9 +1309,9 @@ class TskFsName {
 };
 
 class TskFsFile;
-/** 
-* File walk callback function definition.  This is called for 
-* chunks of content in the file being processed.  
+/**
+* File walk callback function definition.  This is called for
+* chunks of content in the file being processed.
 * @param a_fs_file Pointer to file being processed
 * @param a_off Byte offset in file that this data is for
 * @param a_addr Address of data being passed (valid only if a_flags have RAW set)
@@ -1341,8 +1342,8 @@ extern TSK_WALK_RET_ENUM tsk_fs_file_cpp_c_cb(TSK_FS_FILE * a_file,
 /**
 * \ingroup fslib_cpp
 * Stores information about a file attribute.  File attributes store data for a file.
-* Most files have at least one attribute that stores the file content.  See TSK_FS_ATTR for 
-* details on attributes. 
+* Most files have at least one attribute that stores the file content.  See TSK_FS_ATTR for
+* details on attributes.
 */
 class TskFsAttribute {
   private:
@@ -1364,7 +1365,7 @@ class TskFsAttribute {
     };
 
     /**
-        * Process an attribute and call a callback function with its contents. The callback will be 
+        * Process an attribute and call a callback function with its contents. The callback will be
     * called with chunks of data that are fs->block_size or less.  The address given in the callback
     * will be correct only for raw files (when the raw file contents were stored in the block).  For
     * compressed and sparse attributes, the address may be zero.
@@ -1389,8 +1390,8 @@ class TskFsAttribute {
 
     /**
         * Read the contents of this attribute using a typical read() type interface.
-    * 0s are returned for missing runs. 
-    * 
+    * 0s are returned for missing runs.
+    *
     * See tsk_fs_attr_read() for details
     * @param a_offset The byte offset to start reading from.
     * @param a_buf The buffer to read the data into.
@@ -1408,7 +1409,7 @@ class TskFsAttribute {
     };
 
     /**
-        * get the attribute's flags 
+        * get the attribute's flags
     * @return flags for attribute
     */
     TSK_FS_ATTR_FLAG_ENUM getFlags() const {
@@ -1418,7 +1419,7 @@ class TskFsAttribute {
             return (TSK_FS_ATTR_FLAG_ENUM) 0;
     };
     /**
-        * get the attributes's name (in UTF-8).  
+        * get the attributes's name (in UTF-8).
     * @return name of attribute (or NULL if attribute doesn't have one)
     */
     const char *getName() const {
@@ -1462,7 +1463,7 @@ class TskFsAttribute {
     };
 
     /**
-        * get a run for a non-resident attribute. 
+        * get a run for a non-resident attribute.
     * It's caller's responsibility to free memory of TskFsAttrRun
     * @param a_idx The index of the run to return.
     * @return A run in the attribute.
@@ -1480,7 +1481,7 @@ class TskFsAttribute {
     };
 
     /**
-          * gets the number of runs in a non-resident attribute. 
+          * gets the number of runs in a non-resident attribute.
      * @return number of runs.
      */
     int getRunCount() const {
@@ -1494,8 +1495,8 @@ class TskFsAttribute {
     }
 
     /**
-        * get number of initial bytes in run to skip before content begins. 
-    * The size field does not include this length. 
+        * get number of initial bytes in run to skip before content begins.
+    * The size field does not include this length.
     * @return number of initial bytes in run to skip before content begins
     */
     uint32_t getSkipLen() const {
@@ -1506,9 +1507,9 @@ class TskFsAttribute {
     };
 
     /**
-        * get number of bytes that are allocated in all clusters of non-resident run 
-    * (will be larger than size - does not include skiplen).  
-    * This is defined when the attribute is created and used to determine slack space. 
+        * get number of bytes that are allocated in all clusters of non-resident run
+    * (will be larger than size - does not include skiplen).
+    * This is defined when the attribute is created and used to determine slack space.
     * @return number of bytes that are allocated in all clusters of non-resident run
     */
     TSK_OFF_T getAllocSize() const {
@@ -1519,10 +1520,10 @@ class TskFsAttribute {
     };
 
     /**
-        * get number of bytes (starting from offset 0) that have data 
-    * (including FILLER) saved for them (smaller then or equal to size).  
-    * This is defined when the attribute is created. 
-    * @return number of bytes (starting from offset 0) that have data 
+        * get number of bytes (starting from offset 0) that have data
+    * (including FILLER) saved for them (smaller then or equal to size).
+    * This is defined when the attribute is created.
+    * @return number of bytes (starting from offset 0) that have data
     */
     TSK_OFF_T getInitSize() const {
         if (m_fsAttr != NULL)
@@ -1558,7 +1559,7 @@ class TskFsAttribute {
 class TskFsBlock;
 class TskFsInfo;
 /**
-* Function definition used for callback to blockWalk(). 
+* Function definition used for callback to blockWalk().
 *
 * @param a_block Pointer to TskFsBlock object that holds block content and flags
 * @param a_ptr Pointer that was supplied by the caller who called tsk_fs_block_walk
@@ -1582,12 +1583,12 @@ typedef struct {
 extern TSK_WALK_RET_ENUM tsk_fs_block_cpp_c_cb(const TSK_FS_BLOCK *
     a_block, void *a_ptr);
 /**
-* Function definition for callback in TskFsInfo.jblkWalk(). 
+* Function definition for callback in TskFsInfo.jblkWalk().
 *
-* @param a_fsInfo File system being analyzed 
-* @param a_string 
-* @param a_num 
-* @param a_ptr Pointer that was supplied by the caller 
+* @param a_fsInfo File system being analyzed
+* @param a_string
+* @param a_num
+* @param a_ptr Pointer that was supplied by the caller
 * @returns Value to identify if walk should continue, stop, or stop because of error
 */
 typedef TSK_WALK_RET_ENUM(*TSK_FS_JBLK_WALK_CPP_CB) (TskFsInfo * a_fsInfo,
@@ -1612,8 +1613,8 @@ extern TSK_WALK_RET_ENUM tsk_fs_jblk_walk_cpp_c_cb(TSK_FS_INFO * a_fsInfo,
 *
 * @param a_fsInfo File system being analyzed
 * @param a_jentry journal entry
-* @param a_num 
-* @param a_ptr Pointer that was supplied by the caller. 
+* @param a_num
+* @param a_ptr Pointer that was supplied by the caller.
 * @returns Value to identify if walk should continue, stop, or stop because of error
 */
 typedef TSK_WALK_RET_ENUM(*TSK_FS_JENTRY_WALK_CPP_CB) (TskFsInfo *
@@ -1632,9 +1633,9 @@ typedef struct {
 */
 extern TSK_WALK_RET_ENUM tsk_fs_jentry_walk_cpp_c_cb(TSK_FS_INFO *
     a_fsInfo, TSK_FS_JENTRY * a_jentry, int a_num, void *a_ptr);
-/** 
+/**
 * inode walk callback function definition.  This is called for every file
-* that meets the criteria specified when inode_walk was called. 
+* that meets the criteria specified when inode_walk was called.
 * @param a_fs_file Pointer to the current file
 * @param a_ptr Pointer that was specified by caller to inode_walk
 * @returns Value that tells inode walk to continue or stop
@@ -1656,11 +1657,11 @@ extern TSK_WALK_RET_ENUM tsk_fs_meta_walk_cpp_c_cb(TSK_FS_FILE * a_file,
     void *a_ptr);
 /**
 * Definition of callback function that is used by tsk_fs_dir_walk().  This is
-* is called for each file in a directory. 
+* is called for each file in a directory.
 * @param a_fs_file Pointer to the current file in the directory
 * @param a_path Path of the file
 * @param a_ptr Pointer that was originally passed by caller to tsk_fs_dir_walk.
-* @returns Value to signal if tsk_fs_dir_walk should stop or continue. 
+* @returns Value to signal if tsk_fs_dir_walk should stop or continue.
 */
 typedef TSK_WALK_RET_ENUM(*TSK_FS_DIR_WALK_CPP_CB) (TskFsFile *
     a_fs_file, const char *a_path, void *a_ptr);
@@ -1681,7 +1682,7 @@ extern TSK_WALK_RET_ENUM tsk_fs_dir_walk_cpp_c_cb(TSK_FS_FILE * a_file,
 
 /**
 * \ingroup fslib_cpp
-* Stores information about an open file system.  One of the open() 
+* Stores information about an open file system.  One of the open()
 * commands needs to be used before any of the getX() or read() methods will return
 * valid data.  See TSK_FS_INFO for more details.
 */
@@ -1709,12 +1710,12 @@ class TskFsInfo {
     }
 
     /**
-    * Read arbitrary data from inside of the file system. 
+    * Read arbitrary data from inside of the file system.
     * See tsk_fs_block_free() for details
     * @param a_off The byte offset to start reading from (relative to start of file system)
     * @param a_buf The buffer to store the block in.
     * @param a_len The number of bytes to read
-    * @return The number of bytes read or -1 on error. 
+    * @return The number of bytes read or -1 on error.
     */
     ssize_t read(TSK_OFF_T a_off, char *a_buf, size_t a_len) {
         if (m_fsInfo)
@@ -1726,10 +1727,10 @@ class TskFsInfo {
     /**
     * Read a file system block.
     * See tsk_fs_read_block() for details
-    * @param a_addr The starting block file system address. 
+    * @param a_addr The starting block file system address.
     * @param a_buf The char * buffer to store the block data in.
     * @param a_len The number of bytes to read (must be a multiple of the block size)
-    * @return The number of bytes read or -1 on error. 
+    * @return The number of bytes read or -1 on error.
     */
     ssize_t readBlock(TSK_DADDR_T a_addr, char *a_buf, size_t a_len) {
         if (m_fsInfo)
@@ -1741,7 +1742,7 @@ class TskFsInfo {
     /**
     * Walk a range of metadata structures and call a callback for each
     * structure that matches the flags supplied.   For example, it can
-    * call the callback on only allocated or unallocated entries. 
+    * call the callback on only allocated or unallocated entries.
     * See tsk_fs_meta_walk() for details
     * @param a_start Metadata address to start walking from
     * @param a_end Metadata address to walk to
@@ -1763,7 +1764,7 @@ class TskFsInfo {
             return 1;
     };
 
-    /*    * Walk the file names in a directory and obtain the details of the files via a callback. 
+    /*    * Walk the file names in a directory and obtain the details of the files via a callback.
      * See tsk_fs_dir_walk() for details
      * @param a_addr Metadata address of the directory to analyze
      * @param a_flags Flags used during analysis
@@ -1784,7 +1785,7 @@ class TskFsInfo {
             return 1;
     };
 
-    /** 
+    /**
         *
     * Walk a range of file system blocks and call the callback function
     * with the contents and allocation status of each.
@@ -1810,7 +1811,7 @@ class TskFsInfo {
 
     /**
         * Opens a file system that is inside of a Volume.
-    * Returns a structure that can be used for analysis and reporting. 
+    * Returns a structure that can be used for analysis and reporting.
     * See tsk_fs_open_vol() for details
     * @param a_part_info Open volume to read from and analyze
     * @param a_ftype Type of file system (or autodetect)
@@ -1828,7 +1829,7 @@ class TskFsInfo {
 
     /**
         * Opens a file system at a given offset in a disk image.
-    * Returns a structure that can be used for analysis and reporting. 
+    * Returns a structure that can be used for analysis and reporting.
     * See tsk_fs_open_img() for details
     * @param a_img_info Disk image to analyze
     * @param a_offset Byte offset to start analyzing from
@@ -1858,7 +1859,7 @@ class TskFsInfo {
     }
 
     /**
-    * \internal 
+    * \internal
     */
     uint8_t jblkWalk(TSK_DADDR_T a_addr1, TSK_DADDR_T a_addr2, int a_num,
         TSK_FS_JBLK_WALK_CPP_CB a_action, void *a_ptr) {
@@ -1907,7 +1908,7 @@ class TskFsInfo {
     };
 
     /**
-        * Return the supported file system types. 
+        * Return the supported file system types.
     * See tsk_fs_type_supported() for details
     * @returns The bit in the return value is 1 if the type is supported.
     */
@@ -1925,7 +1926,7 @@ class TskFsInfo {
     };
 
     /**
-        * 
+        *
     * Find the meta data address for a given file name (UTF-8).
     * See tsk_fs_path2inum() for details
 
@@ -1938,7 +1939,7 @@ class TskFsInfo {
         TSK_INUM_T * a_result, TskFsName * a_fs_name) {
         if (m_fsInfo != NULL)
             return tsk_fs_path2inum(m_fsInfo, a_path, a_result,
-                a_fs_name->m_fsName);
+                (a_fs_name)? a_fs_name->m_fsName : NULL); /* Avoid derreference of NULL pointer */
         else
             return -1;
     };
@@ -1946,7 +1947,7 @@ class TskFsInfo {
     /**
         * Parse a TSK_TCHAR string of an inode, type, and id pair (not all parts
     * need to be there).  This assumes the string is either:
-    * INUM, INUM-TYPE, or INUM-TYPE-ID.  Return the values in integer form. 
+    * INUM, INUM-TYPE, or INUM-TYPE-ID.  Return the values in integer form.
     * See tsk_fs_parse_inum() for details
     * @param [in] a_str Input string to parse
     * @param [out] a_inum Pointer to location where inode can be stored.
@@ -1967,7 +1968,7 @@ class TskFsInfo {
     };
 
     /**
-        * return byte offset in image that fs starts 
+        * return byte offset in image that fs starts
     * @return offset in bytes.
     */
     TSK_OFF_T getOffset() const {
@@ -1979,7 +1980,7 @@ class TskFsInfo {
 
     /**
         * return number of metadata addresses in FS
-    * @return number of metatdata addresses 
+    * @return number of metatdata addresses
     */
     TSK_INUM_T getINumCount() const {
         if (m_fsInfo != NULL)
@@ -1989,8 +1990,8 @@ class TskFsInfo {
     };
 
     /**
-        * return metadata address of root directory 
-    * @return metadata address of root directory  
+        * return metadata address of root directory
+    * @return metadata address of root directory
     */
     TSK_INUM_T getRootINum() const {
         if (m_fsInfo != NULL)
@@ -2000,7 +2001,7 @@ class TskFsInfo {
     };
     /**
         * return first valid metadata address
-    * @return first valid metadata address 
+    * @return first valid metadata address
     */
     TSK_INUM_T getFirstINum() const {
         if (m_fsInfo != NULL)
@@ -2010,7 +2011,7 @@ class TskFsInfo {
     };
     /**
         * return last valid metadata address
-    * @return last valid metadata address 
+    * @return last valid metadata address
     */
     TSK_INUM_T getLastINum() const {
         if (m_fsInfo != NULL)
@@ -2020,7 +2021,7 @@ class TskFsInfo {
     };
     /**
         * return address of journal inode
-    * @return address of journal inode 
+    * @return address of journal inode
     */
     TSK_INUM_T getJournalINum() const {
         if (m_fsInfo != NULL)
@@ -2031,7 +2032,7 @@ class TskFsInfo {
 
     /**
         * return number of blocks in fs
-    * @return number of blocks in fs 
+    * @return number of blocks in fs
     */
     TSK_DADDR_T getBlockCount() const {
         if (m_fsInfo != NULL)
@@ -2041,7 +2042,7 @@ class TskFsInfo {
     };
     /**
         * return address of first block
-    * @return address of first block 
+    * @return address of first block
     */
     TSK_DADDR_T getFirstBlock() const {
         if (m_fsInfo != NULL)
@@ -2052,7 +2053,7 @@ class TskFsInfo {
     /**
         * return address of last block as reported by file system
     * (it is equal to the last block in the image or volume (if image is not complete)
-    * @return address of last block 
+    * @return address of last block
     */
     TSK_DADDR_T getLastBlockAct() const {
         if (m_fsInfo != NULL)
@@ -2061,9 +2062,9 @@ class TskFsInfo {
             return 0;
     };
     /**
-        * return address of last block that is adjusted so that 
+        * return address of last block that is adjusted so that
     * (could be larger than last_block in image if end of image does not exist)
-    * @return address of last block 
+    * @return address of last block
     */
     TSK_DADDR_T getLastBlock() const {
         if (m_fsInfo != NULL)
@@ -2073,7 +2074,7 @@ class TskFsInfo {
     };
     /**
         * return size of each file system block (in bytes)
-    * @return size of each block 
+    * @return size of each block
     */
     unsigned int getBlockSize() const {
         if (m_fsInfo != NULL)
@@ -2083,7 +2084,7 @@ class TskFsInfo {
     };
     /**
         * return size of device block (typically always 512)
-    * @return size of device block 
+    * @return size of device block
     */
     unsigned int getDeviceSize() const {
         if (m_fsInfo != NULL)
@@ -2093,8 +2094,8 @@ class TskFsInfo {
     };
 
     /**
-        * return type of file system 
-    * @return type of file system 
+        * return type of file system
+    * @return type of file system
     */
     TSK_FS_TYPE_ENUM getFsType() const {
         if (m_fsInfo != NULL)
@@ -2104,7 +2105,7 @@ class TskFsInfo {
     };
     /**
         * return the "name" of data unit type  as a string ("Cluster", for example)
-    * @return string "name" of data unit type 
+    * @return string "name" of data unit type
     */
     const char *getDataUnitName() const {
         if (m_fsInfo != NULL)
@@ -2115,7 +2116,7 @@ class TskFsInfo {
 
     /**
         * return flags for file system
-    * @return flags for file system 
+    * @return flags for file system
     */
     TSK_FS_INFO_FLAG_ENUM getFlags() const {
         if (m_fsInfo != NULL)
@@ -2124,8 +2125,8 @@ class TskFsInfo {
             return (TSK_FS_INFO_FLAG_ENUM) 0;
     };
     /**
-        * return file system id (as reported in boot sector).  Use getFsIdLen() to determine how many byts in buffer are used. 
-    * @return Buffer with file system id 
+        * return file system id (as reported in boot sector).  Use getFsIdLen() to determine how many byts in buffer are used.
+    * @return Buffer with file system id
     */
     const uint8_t *getFsId() const {
         if (m_fsInfo != NULL)
@@ -2181,7 +2182,7 @@ class TskFsBlock {
   public:
     /**
     * construct a TskFsBlock using a TSK_FS_BLOCK structure
-    * @param a_fsBlock a pointer of TSK_FS_BLOCK.  If NULL, the getX() methods return undefined data. 
+    * @param a_fsBlock a pointer of TSK_FS_BLOCK.  If NULL, the getX() methods return undefined data.
     */
      TskFsBlock(const TSK_FS_BLOCK * a_fsBlock) {
         m_fsBlock = const_cast < TSK_FS_BLOCK * >(a_fsBlock);
@@ -2196,7 +2197,7 @@ class TskFsBlock {
     };
 
     /**
-        * Free the memory associated with the TSK_FS_BLOCK structure. 
+        * Free the memory associated with the TSK_FS_BLOCK structure.
     * See tsk_fs_block_free() for details
     */
     ~TskFsBlock() {
@@ -2252,7 +2253,7 @@ class TskFsBlock {
 
     /**
         * Get flags for block (alloc or unalloc)
-    * @return flags for block 
+    * @return flags for block
     */
     TSK_FS_BLOCK_FLAG_ENUM getFlags() const {
         if (m_fsBlock != NULL)
@@ -2318,7 +2319,7 @@ class TskFsMetaName {
             return 0;
     };
 
-    /** 
+    /**
      * get the parent sequence (NTFS Only)
      * @return Sequence of parent directory.
      */
@@ -2366,7 +2367,7 @@ class TskFsMeta {
     };
 
     /**
-          * Makes the "ls -l" permissions string for a file. 
+          * Makes the "ls -l" permissions string for a file.
      * See tsk_fs_meta_make_ls() for details
      * @param a_buf [out] Buffer to write results to (must be 12 bytes or longer)
      * @param a_len Length of buffer
@@ -2591,7 +2592,7 @@ class TskFsMeta {
     };
 
     /**
-          * get sequence number for file (NTFS only, is incremented when entry is reallocated) 
+          * get sequence number for file (NTFS only, is incremented when entry is reallocated)
      * @return sequence number for file, or 0xFFFF on error.
      */
     uint32_t getSeq() const {
@@ -2626,7 +2627,7 @@ class TskFsMeta {
     };
 
     /**
-     * Return a name that is stored in the metadata.  
+     * Return a name that is stored in the metadata.
      * @param a_idx Index of the name to return
      * @returns NULL on error.  Caller must free this memory.
      */
@@ -2660,7 +2661,7 @@ class TskFsMeta {
  * \ingroup fslib_cpp
 * Class that represents an allocated or deleted file. The non-default constructor or
 * open method must be called first.  otherwise, the results of the getX() methods are
-* undefined. See TSK_FS_FILE for more details. 
+* undefined. See TSK_FS_FILE for more details.
 */
 class TskFsFile {
   friend class TskFsDir;
@@ -2705,19 +2706,19 @@ class TskFsFile {
         m_fsFile = NULL;
     };
 
-    /** 
+    /**
         *
     * Open a file given its metadata address. This function loads the metadata
     * and returns a handle that can be used to read and process the file.   Note
     * that the returned class will not have the file name set because
-    * it was not used to load the file and this function does not search the 
+    * it was not used to load the file and this function does not search the
     * directory structure to find the name that points to the address.   In general,
-    * if you know the metadata address of a file, this function is more efficient 
-    * then tsk_fs_file_open, which first maps a file name to the metadata address 
-    * and then open the file using this function. 
+    * if you know the metadata address of a file, this function is more efficient
+    * then tsk_fs_file_open, which first maps a file name to the metadata address
+    * and then open the file using this function.
     * See tsk_fs_file_open_meta() for details
     * @param a_fs File system to analyze
-    * @param a_fs_file object to store file data in or NULL to have one allocated. 
+    * @param a_fs_file object to store file data in or NULL to have one allocated.
     * @param a_addr Metadata address of file to lookup
     * @returns 1 on error and 0 on success.
     */
@@ -2734,13 +2735,13 @@ class TskFsFile {
         }
     };
 
-    /** 
+    /**
         * Return the handle structure for a specific file, given its full path. Note that
     * if you have the metadata address fo the file, then tsk_fs_file_open_meta() is a
-    * more efficient approach. 
+    * more efficient approach.
     * See tsk_fs_file_open() for details
     * @param a_fs File system to analyze
-    * @param a_fs_file Structure to store file data in or NULL to have one allocated. 
+    * @param a_fs_file Structure to store file data in or NULL to have one allocated.
     * @param a_path Path of file to open
     * @returns 1 on error and 0 on success.
     */
@@ -2758,7 +2759,7 @@ class TskFsFile {
         }
     };
 
-    /*    * Return the number of attributes in the file. 
+    /*    * Return the number of attributes in the file.
      * See tsk_fs_file_attr_getsize() for details
      * @returns number of attributes in file
      */
@@ -2791,7 +2792,7 @@ class TskFsFile {
      * It's caller's responsibility to free TskFsAttribute*
      * See tsk_fs_file_attr_get_type() for details
      * @param a_type Type of attribute to load
-     * @param a_id Id of attribute to load 
+     * @param a_id Id of attribute to load
      * @param a_id_used Set to 1 if ID is actually set or 0 to use default
      * @returns Pointer to attribute or NULL on error
      */
@@ -2803,10 +2804,10 @@ class TskFsFile {
     };
 
     /**
-        * Process a specific attribute in a file and call a callback function with the file contents. 
+        * Process a specific attribute in a file and call a callback function with the file contents.
     * See tsk_fs_file_walk_type() for details
     * @param a_type Attribute type to process
-    * @param a_id Id if attribute to process 
+    * @param a_id Id if attribute to process
     * @param a_flags Flags to use while processing file
     * @param a_action Callback action to call with content
     * @param a_ptr Pointer that will passed to callback
@@ -2822,7 +2823,7 @@ class TskFsFile {
     };
 
     /**
-     * Process the default attribute for the file and call a callback function with the file contents. 
+     * Process the default attribute for the file and call a callback function with the file contents.
     * See tsk_fs_file_walk_type() for details
     * @param a_flags Flags to use while processing file
     * @param a_action Callback action to call with content
@@ -2839,7 +2840,7 @@ class TskFsFile {
 
     /**
      * Read the contents of a specific attribute of a file using a typical read() type interface.
-    * 0s are returned for missing runs of files. 
+    * 0s are returned for missing runs of files.
     * See tsk_fs_file_read_type() for details
     * @param a_type The type of attribute to load
     * @param a_id The id of attribute to load (use 0 and set a_flags if you do not care)
@@ -2856,7 +2857,7 @@ class TskFsFile {
     };
     /**
      * Read the contents of the default attribute of a file using a typical read() type interface.
-    * 0s are returned for missing runs of files. 
+    * 0s are returned for missing runs of files.
     * See tsk_fs_file_read() for details
     * @param a_offset The byte offset to start reading from.
     * @param a_buf The buffer to read the data into.
@@ -2919,14 +2920,14 @@ class TskFsDir {
      TskFsDir() {
         m_fsDir = NULL;
     };
-    /*    
+    /*
      * Close the directory that was opened with tsk_fs_dir_open()
      */
     ~TskFsDir() {
         close();
     }
 
-    /*    
+    /*
      * Open a directory (using its metadata addr) so that each of the files in it can be accessed.
      * See for tsk_fs_dir_open_meta() details.
      * @param a_fs File system to analyze
@@ -2941,7 +2942,7 @@ class TskFsDir {
             return 1;
     };
 
-    /*    
+    /*
      * Open a directory (using its path) so that each of the files in it can be accessed.
      * See for tsk_fs_dir_open() details.
      * @param a_fs File system to analyze
@@ -2955,7 +2956,7 @@ class TskFsDir {
             return 1;
     };
 
-    /*    
+    /*
      * Close the directory that was opened with tsk_fs_dir_open()
      * See tsk_fs_dir_close() for details
      */
@@ -2963,7 +2964,7 @@ class TskFsDir {
         tsk_fs_dir_close(m_fsDir);
     };
 
-    /*    
+    /*
      * Returns the number of files and subdirectories in a directory.
      * See tsk_fs_dir_getsize() for details
      * @returns Number of files and subdirectories (or 0 on error)
@@ -2972,8 +2973,8 @@ class TskFsDir {
         return tsk_fs_dir_getsize(m_fsDir);     //m_fsDir is checked by this C function
     };
 
-    /*    
-     * Return a specific file or subdirectory from an open directory. 
+    /*
+     * Return a specific file or subdirectory from an open directory.
      * It's caller's responsibility to free TskFsFile*
      * See tsk_fs_dir_getsize() for details
      * @param a_idx Index of file in directory to open (0-based)
@@ -2989,9 +2990,9 @@ class TskFsDir {
              return NULL;
     };
 
-    /*    
-     * Return metadata address of this directory 
-     * @returns metadata address of this directory 
+    /*
+     * Return metadata address of this directory
+     * @returns metadata address of this directory
      */
     TSK_INUM_T getMetaAddr() const {
         if (m_fsDir != NULL)
@@ -3000,7 +3001,7 @@ class TskFsDir {
             return 0;
     };
 
-    /*    
+    /*
      * Return pointer to the file structure for the directory.
      * @returns NULL on error. it is the caller's responsibility to free this object.
      */
@@ -3013,7 +3014,7 @@ class TskFsDir {
 
   private:
 
-    /*    
+    /*
      * Return pointer to file system the directory is located in
      * @returns NULL on error
      */

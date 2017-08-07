@@ -1,0 +1,47 @@
+.TH USNJLS 1
+.SH NAME
+usnjls \- List the contents of a NTFS Update Sequence Number journal
+.SH SYNOPSIS
+.B usnjls [-f
+.I fstype
+.B ] [-vV]  [-i imgtype] [-o imgoffset] [-b dev_sector_size]
+.I image [images] [inode]
+
+.SH DESCRIPTION
+.B usnjls
+lists the records in a NTFS Update Sequence Number Journal.
+If inode is given, then it will look there for a journal.
+Otherwise, it will use the default location.
+The output lists the USN journal records.
+
+.SH ARGUMENTS
+.IP "-f fstype"
+Specify the file system type.
+Use '\-f list' to list the supported file system types. If not given, autodetection methods are used.
+.IP "-i imgtype"
+Identify the type of image file, such as raw or split.  Use '\-i list' to list the supported types. If not given, autodetection methods are used.
+.IP "-o imgoffset"
+The sector offset where the file system starts in the image.
+.IP "-b dev_sector_size"
+The size, in bytes, of the underlying device sectors.  If not given, the value in the image format is used (if it exists) or 512-bytes is assumed.
+.IP -l
+Print the output in long format describing the field values and unpacking the data into human readable strings.
+.IP -m
+Print the output in mactime format.
+.IP -V
+Display version
+.IP -v
+verbose output
+.IP "image [images]"
+One (or more if split) disk or partition images whose format is given with '\-i'.
+.IP [inode]
+The inode where the Update Sequence Number Journal can be found.
+
+.SH "EXAMPLES"
+
+usnjls \-f ntfs img.dd
+
+.SH AUTHOR
+Brian Carrier <carrier at sleuthkit dot org>
+
+Send documentation updates to <doc-updates at sleuthkit dot org>
