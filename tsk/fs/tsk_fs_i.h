@@ -1,13 +1,13 @@
 /*
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 @stake Inc.  All rights reserved
-** 
-** Copyright (c) 1997,1998,1999, International Business Machines          
+**
+** Copyright (c) 1997,1998,1999, International Business Machines
 ** Corporation and others. All Rights Reserved.
 */
 
@@ -36,7 +36,7 @@
 #include "tsk/img/tsk_img_i.h"
 #include "tsk/vs/tsk_vs_i.h"
 
-// Include the external file 
+// Include the external file
 #include "tsk_fs.h"
 
 #include <time.h>
@@ -233,6 +233,47 @@ extern "C" {
     /* malloc/free with lock init/deinit */
     extern TSK_FS_INFO *tsk_fs_malloc(size_t);
     extern void tsk_fs_free(TSK_FS_INFO *);
+
+
+    /****************** NTFS USN Journal Structures ******************/
+
+    /** \name NTFS Update Sequence Number Journal Data Structures */
+    //@{
+
+
+    typedef struct {
+        uint32_t length;
+        uint16_t major_version;
+        uint16_t minor_version;
+
+    } TSK_USN_RECORD_HEADER;
+
+    /**
+    * Function definition used for callback to ntfs_usnjentry_walk().
+    *
+    * @param a_header Pointer to USN header structure.
+    * @param a_record Pointer USN record structure, its type can be deduced
+    *    from the major version number in the header.
+    * @param a_ptr Pointer that was supplied by the caller who called
+    *    ntfs_usnjentry_walk.
+    * @returns Value to identify if walk should continue, stop, or stop because of error
+    */
+    typedef TSK_WALK_RET_ENUM(*TSK_FS_USNJENTRY_WALK_CB) (
+        TSK_USN_RECORD_HEADER *a_header, void *a_record, void *a_ptr);
+
+    extern uint8_t tsk_ntfs_usnjopen(TSK_FS_INFO * fs, TSK_INUM_T inum);
+    extern uint8_t tsk_ntfs_usnjentry_walk(TSK_FS_INFO * fs,
+        TSK_FS_USNJENTRY_WALK_CB action, void *ptr);
+
+    enum TSK_FS_USNJLS_FLAG_ENUM {
+        TSK_FS_USNJLS_NONE = 0x00,
+        TSK_FS_USNJLS_LONG = 0x01,
+        TSK_FS_USNJLS_MAC = 0x02
+    };
+    typedef enum TSK_FS_USNJLS_FLAG_ENUM TSK_FS_USNJLS_FLAG_ENUM;
+    extern uint8_t tsk_fs_usnjls(TSK_FS_INFO * fs, TSK_INUM_T inode,
+        TSK_FS_USNJLS_FLAG_ENUM flags);
+
 
 // Endian macros - actual functions in misc/
 
