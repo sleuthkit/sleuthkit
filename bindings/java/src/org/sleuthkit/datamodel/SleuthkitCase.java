@@ -1081,10 +1081,10 @@ public class SleuthkitCase {
 
 			resultSet = connection.executeQuery(statement, "SELECT obj_id,name FROM tsk_files"); //NON-NLS
 			while (resultSet.next()) {
-				int objID = resultSet.getInt("obj_id");
+				long objID = resultSet.getLong("obj_id");
 				String name = resultSet.getString("name");
 				updstatement.executeUpdate("UPDATE tsk_files SET extension = '" + extractExtension(name) + "' "
-						+ "WHERE obj_id == " + objID);
+						+ "WHERE obj_id = " + objID);
 			}
 
 			statement.execute("CREATE INDEX file_extension ON tsk_files ( extension )");
