@@ -1,15 +1,15 @@
 /*
  * SleuthKit Java Bindings
- * 
- * Copyright 2011-2016 Basis Technology Corp.
+ *
+ * Copyright 2011-2017 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -62,8 +62,6 @@ public class VirtualDirectory extends SpecialDirectory {
 	 * @param dirFlag            The TSK_FS_META_TYPE_ENUM for the virtual
 	 *                           directory.
 	 * @param metaFlags          The meta flags for the virtual directory.
-	 * @param size               The size of the virtual directory, should be
-	 *                           zero.
 	 * @param md5Hash            The MD5 hash for the virtual directory.
 	 * @param knownState         The known state for the virtual directory
 	 * @param parentPath         The parent path for the virtual directory,
@@ -82,11 +80,11 @@ public class VirtualDirectory extends SpecialDirectory {
 				TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR, 0L, 0, dirType, metaType, dirFlag,
 				metaFlags, 0L, 0L, 0L, 0L, 0L, (short) 0, 0, 0, md5Hash, knownState, parentPath, null);
 	}
-	
+
 	/**
 	 * Gets the data source (e.g., image, virtual directory, etc.) for this
-	 * directory. If the directory is itself a data source,
-	 * returns the directory.
+	 * directory. If the directory is itself a data source, returns the
+	 * directory.
 	 *
 	 * @return The data source.
 	 *
@@ -106,6 +104,7 @@ public class VirtualDirectory extends SpecialDirectory {
 	/**
 	 * Accepts a content visitor (Visitor design pattern).
 	 *
+	 * @param <T>     The type returned by the visitor.
 	 * @param visitor A ContentVisitor supplying an algorithm to run using this
 	 *                virtual directory as input.
 	 *
@@ -119,6 +118,7 @@ public class VirtualDirectory extends SpecialDirectory {
 	/**
 	 * Accepts a Sleuthkit item visitor (Visitor design pattern).
 	 *
+	 * @param <T>     The type returned by the visitor.
 	 * @param visitor A SleuthkitItemVisitor supplying an algorithm to run using
 	 *                this virtual directory as input.
 	 *
@@ -134,9 +134,6 @@ public class VirtualDirectory extends SpecialDirectory {
 	 *
 	 * @param preserveState True if state should be included in the string
 	 *                      representation of this object.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
 	 */
 	@Override
 	public String toString(boolean preserveState) {
@@ -149,25 +146,18 @@ public class VirtualDirectory extends SpecialDirectory {
 	 * directory can also be a data source, with local/logical files as its
 	 * children. Not a file system directory.
 	 *
-	 * @param db                 The case database.
-	 * @param objId              The object id of the virtual directory.
-	 * @param dataSourceObjectId The object id of the data source for the
-	 *                           virtual directory; same as objId if the virtual
-	 *                           directory is a data source.
-	 * @param name               The name of the virtual directory.
-	 * @param dirType            The TSK_FS_NAME_TYPE_ENUM for the virtual
-	 *                           directory.
-	 * @param metaType           The TSK_FS_META_TYPE_ENUM for the virtual
-	 *                           directory.
-	 * @param dirFlag            The TSK_FS_META_TYPE_ENUM for the virtual
-	 *                           directory.
-	 * @param metaFlags          The meta flags for the virtual directory.
-	 * @param size               The size value for the virtual directory
-	 * @param md5Hash            The MD5 hash for the virtual directory.
-	 * @param knownState         The known state for the virtual directory
-	 * @param parentPath         The parent path for the virtual directory,
-	 *                           should be "/" if the virtual directory is a
-	 *                           data source.
+	 * @param db         The case database.
+	 * @param objId      The object id of the virtual directory.
+	 * @param name       The name of the virtual directory.
+	 * @param dirType    The TSK_FS_NAME_TYPE_ENUM for the virtual directory.
+	 * @param metaType   The TSK_FS_META_TYPE_ENUM for the virtual directory.
+	 * @param dirFlag    The TSK_FS_META_TYPE_ENUM for the virtual directory.
+	 * @param metaFlags  The meta flags for the virtual directory.
+	 * @param size       The size value for the virtual directory
+	 * @param md5Hash    The MD5 hash for the virtual directory.
+	 * @param knownState The known state for the virtual directory
+	 * @param parentPath The parent path for the virtual directory, should be
+	 *                   "/" if the virtual directory is a data source.
 	 *
 	 * @deprecated Do not make subclasses outside of this package.
 	 */
