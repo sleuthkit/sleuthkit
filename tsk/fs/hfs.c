@@ -5482,7 +5482,7 @@ print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
  * @returns 1 on error and 0 on success
  */
 static uint8_t
-hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
+hfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TSK_INUM_T inum,
     TSK_DADDR_T numblock, int32_t sec_skew)
 {
     HFS_INFO *hfs = (HFS_INFO *) fs;
@@ -5749,52 +5749,58 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         // N.B., a compressed file has no data fork, and tsk_fs_file_walk() will
         //   do the wrong thing!
         if (!(entry.cat.std.perm.o_flags & HFS_PERM_OFLAG_COMPRESSED)) {
-            tsk_fprintf(hFile, "\nData Fork Blocks:\n");
-            print.idx = 0;
-            print.hFile = hFile;
-            print.accumulating = FALSE;
-            print.startBlock = 0;
-            print.blockCount = 0;
 
-            if (tsk_fs_file_walk_type(fs_file,
+            if (!(istat_flags & TSK_FS_ISTAT_RUNLIST)) {
+                tsk_fprintf(hFile, "\nData Fork Blocks:\n");
+                print.idx = 0;
+                print.hFile = hFile;
+                print.accumulating = FALSE;
+                print.startBlock = 0;
+                print.blockCount = 0;
+
+                if (tsk_fs_file_walk_type(fs_file,
                     TSK_FS_ATTR_TYPE_HFS_DATA, HFS_FS_ATTR_ID_DATA,
                     (TSK_FS_FILE_WALK_FLAG_AONLY |
                         TSK_FS_FILE_WALK_FLAG_SLACK), print_addr_act,
-                    (void *) &print)) {
-                tsk_fprintf(hFile, "\nError reading file data fork\n");
-                tsk_error_print(hFile);
-                tsk_error_reset();
-            }
-            else {
-                output_print_addr(&print);
-                if (print.idx != 0)
-                    tsk_fprintf(hFile, "\n");
+                        (void *)&print)) {
+                    tsk_fprintf(hFile, "\nError reading file data fork\n");
+                    tsk_error_print(hFile);
+                    tsk_error_reset();
+                }
+                else {
+                    output_print_addr(&print);
+                    if (print.idx != 0)
+                        tsk_fprintf(hFile, "\n");
+                }
             }
         }
 
         // Only print out the blocks of the Resource fork if it has nonzero size
         if (tsk_getu64(fs->endian, entry.cat.resource.logic_sz) > 0) {
-            tsk_fprintf(hFile, "\nResource Fork Blocks:\n");
 
-            print.idx = 0;
-            print.hFile = hFile;
-            print.accumulating = FALSE;
-            print.startBlock = 0;
-            print.blockCount = 0;
+            if (! (istat_flags & TSK_FS_ISTAT_RUNLIST)) {
+                tsk_fprintf(hFile, "\nResource Fork Blocks:\n");
 
-            if (tsk_fs_file_walk_type(fs_file,
+                print.idx = 0;
+                print.hFile = hFile;
+                print.accumulating = FALSE;
+                print.startBlock = 0;
+                print.blockCount = 0;
+
+                if (tsk_fs_file_walk_type(fs_file,
                     TSK_FS_ATTR_TYPE_HFS_RSRC, HFS_FS_ATTR_ID_RSRC,
                     (TSK_FS_FILE_WALK_FLAG_AONLY |
                         TSK_FS_FILE_WALK_FLAG_SLACK), print_addr_act,
-                    (void *) &print)) {
-                tsk_fprintf(hFile, "\nError reading file resource fork\n");
-                tsk_error_print(hFile);
-                tsk_error_reset();
-            }
-            else {
-                output_print_addr(&print);
-                if (print.idx != 0)
-                    tsk_fprintf(hFile, "\n");
+                        (void *)&print)) {
+                    tsk_fprintf(hFile, "\nError reading file resource fork\n");
+                    tsk_error_print(hFile);
+                    tsk_error_reset();
+                }
+                else {
+                    output_print_addr(&print);
+                    if (print.idx != 0)
+                        tsk_fprintf(hFile, "\n");
+                }
             }
         }
 
@@ -5839,6 +5845,14 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
                     "",
                     (fs_attr->flags & TSK_FS_ATTR_SPARSE) ? ", Sparse" :
                     "", fs_attr->size, fs_attr->nrd.initsize);
+
+                if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
+                    if (tsk_fs_attr_print(fs_attr, hFile)) {
+                        tsk_fprintf(hFile, "\nError creating run lists\n");
+                        tsk_error_print(hFile);
+                        tsk_error_reset();
+                    }
+                }
             }                   // END:  non-resident attribute case
             else {
                 tsk_fprintf(hFile,

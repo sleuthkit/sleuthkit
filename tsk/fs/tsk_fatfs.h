@@ -331,7 +331,7 @@ extern "C" {
     fatfs_find_parent_act(TSK_FS_FILE * fs_file, const char *a_path, void *ptr);
 
     extern uint8_t
-    fatfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
+    fatfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TSK_INUM_T inum,
         TSK_DADDR_T numblock, int32_t sec_skew);
 
     extern uint8_t fatfs_inode_walk(TSK_FS_INFO * fs,
