@@ -2888,10 +2888,22 @@ public class SleuthkitCase {
 					+ " AND attrs.attribute_type_id = types.attribute_type_id");
 			ArrayList<BlackboardAttribute> attributes = new ArrayList<BlackboardAttribute>();
 			while (rs.next()) {
+				int attributeTypeId = rs.getInt("attribute_type_id");
+				String attributeTypeName = rs.getString("type_name");
+				BlackboardAttribute.Type attributeType;
+				if (this.typeIdToAttributeTypeMap.containsKey(attributeTypeId)) {
+					attributeType = this.typeIdToAttributeTypeMap.get(attributeTypeId);
+				} else {
+					attributeType = new BlackboardAttribute.Type(attributeTypeId, attributeTypeName,
+							rs.getString("display_name"), 
+							BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getInt("value_type")));
+					this.typeIdToAttributeTypeMap.put(attributeTypeId, attributeType);
+					this.typeNameToAttributeTypeMap.put(attributeTypeName, attributeType);
+				}
+
 				final BlackboardAttribute attr = new BlackboardAttribute(
 						rs.getLong("artifact_id"),
-						new BlackboardAttribute.Type(rs.getInt("attribute_type_id"), rs.getString("type_name"),
-								rs.getString("display_name"), BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getInt("value_type"))),
+						attributeType,
 						rs.getString("source"),
 						rs.getString("context"),
 						rs.getInt("value_int32"),
