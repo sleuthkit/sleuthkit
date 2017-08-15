@@ -556,11 +556,11 @@ int TskDbPostgreSQL::initialize() {
         ||
         attempt_exec("CREATE TABLE blackboard_artifacts (artifact_id BIGSERIAL PRIMARY KEY, "
 		"par_obj_id BIGINT NOT NULL, "
-		"temporary_obj_id BIGINT NOT NULL, "
+		"obj_id BIGINT NOT NULL, "
 		"artifact_type_id BIGINT NOT NULL, "
 		"review_status_id INTEGER NOT NULL, "
         "FOREIGN KEY(par_obj_id) REFERENCES tsk_objects(obj_id), "
-		"FOREIGN KEY(temporary_obj_id) REFERENCES tsk_objects(obj_id), "
+		"FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), "
 		"FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id), "
 		"FOREIGN KEY(review_status_id) REFERENCES review_statuses(review_status_id))",
         "Error creating blackboard_artifact table: %s\n")
