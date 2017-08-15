@@ -34,7 +34,7 @@ Refer to http://wiki.sleuthkit.org/index.php?title=Artifact_Examples for artifac
 
 The first thing you need to do is create the artifact.  All artifacts must be associated with a Content object.  You can do this by creating an instance of org.sleuthkit.datamodel.BlackboardArtifact by calling either:
 - org.sleuthkit.datamodel.Content.newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) on the Content object you are adding the artifact to
-- org.sleuthkit.datamodel.SleuthkitCase.newBlackboardArtifact(ARTIFACT_TYPE artifactType, long obj_id) or a variation.  This approach is usually taken if you don’t have a Content object already and don’t want to create one just to make an artifact. 
+- org.sleuthkit.datamodel.SleuthkitCase.newBlackboardArtifact(ARTIFACT_TYPE artifactType, long par_obj_id) or a variation.  This approach is usually taken if you don’t have a Content object already and don’t want to create one just to make an artifact. 
 With either of these approaches, the artifact is created in the database immediately. 
 
 If you want to create an attribute in the TSK_GEN_INFO artifact, use org.sleuthkit.datamodel.Content.getGenInfoArtifact() to ensure that you do not create a second TSK_GEN_INFO artifact for the file and to ensure that you used the cached version (which will be faster for you). 
