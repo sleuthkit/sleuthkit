@@ -881,6 +881,8 @@ TskAutoDb::md5HashAttr(unsigned char md5Hash[16], const TSK_FS_ATTR * fs_attr)
 TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, void *a_ptr) {
     UNALLOC_BLOCK_WLK_TRACK * unallocBlockWlkTrack = (UNALLOC_BLOCK_WLK_TRACK *) a_ptr;
 
+	int MAX_CHUNK_SIZE = 2.5*1024*1024*1024; //2.5GB
+
     if (unallocBlockWlkTrack->tskAutoDb.m_stopAllProcessing)
         return TSK_WALK_STOP;
 
@@ -895,8 +897,9 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
     }
 
     // if this block is consecutive with the previous one, update prevBlock and return
-    if (a_block->addr == unallocBlockWlkTrack->prevBlock + 1) {
+    if ((a_block->addr == unallocBlockWlkTrack->prevBlock + 1) && (unallocBlockWlkTrack->size < MAX_CHUNK_SIZE)) {
         unallocBlockWlkTrack->prevBlock = a_block->addr;
+		unallocBlockWlkTrack->size += unallocBlockWlkTrack->fsInfo.block_size;
         return TSK_WALK_CONT;
     }
 
@@ -908,7 +911,7 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
     unallocBlockWlkTrack->ranges.push_back(TSK_DB_FILE_LAYOUT_RANGE(rangeStartOffset, rangeSizeBytes, unallocBlockWlkTrack->nextSequenceNo++));
     
     // bookkeeping for the next range object
-    unallocBlockWlkTrack->size += rangeSizeBytes;
+	//unallocBlockWlkTrack->size += rangeSizeBytes;
     unallocBlockWlkTrack->curRangeStart = a_block->addr;
     unallocBlockWlkTrack->prevBlock = a_block->addr;
 
@@ -918,6 +921,7 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
     if ((unallocBlockWlkTrack->chunkSize == 0) ||
         ((unallocBlockWlkTrack->chunkSize > 0) &&
         (unallocBlockWlkTrack->size < unallocBlockWlkTrack->chunkSize))) {
+		unallocBlockWlkTrack->size += unallocBlockWlkTrack->fsInfo.block_size;
         return TSK_WALK_CONT;
     }
     
