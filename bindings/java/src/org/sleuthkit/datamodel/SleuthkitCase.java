@@ -3174,8 +3174,8 @@ public class SleuthkitCase {
 	}
 	
 	/**
-	 * Counts if the content object children that will be shown in the tree. 
-	 * The children may include both abstract files and blackboard artifacts.
+	 * Counts of the content object children that are either files/directories
+	 * or artifacts that could contain attachments (email messages and phone messages).
 	 * Note: this is generally more
 	 * efficient then preloading all children and counting, and facilities lazy
 	 * loading.
@@ -7879,9 +7879,10 @@ public class SleuthkitCase {
 				+ "ON tsk_objects.obj_id=blackboard_artifacts.obj_id " //NON-NLS
 				+ "WHERE (tsk_objects.par_obj_id = ?)"),
 		COUNT_VISIBLE_CONTENT_CHILDREN("SELECT COUNT(obj_id) AS count FROM "
-				+ " ( SELECT obj_id FROM tsk_objects WHERE par_obj_id = ? AND type = 5 " 
-			    + "   INTERSECT SELECT artifact_obj_id FROM blackboard_artifacts WHERE obj_id = ? AND (artifact_type_id = 13 OR artifact_type_id = 24) "
-			    + "   UNION SELECT obj_id FROM tsk_objects WHERE par_obj_id = ? AND type = 4)"); //NON-NLS;
+				+ " ( SELECT obj_id FROM tsk_objects WHERE par_obj_id = ? AND type = " + TskData.ObjectType.ARTIFACT.getObjectType()
+			    + "   INTERSECT SELECT artifact_obj_id FROM blackboard_artifacts WHERE obj_id = ? " 
+			    + "   AND (artifact_type_id = " + ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID() + " OR artifact_type_id = " + ARTIFACT_TYPE.TSK_MESSAGE.getTypeID() + ") "
+			    + "   UNION SELECT obj_id FROM tsk_objects WHERE par_obj_id = ? AND type = " + TskData.ObjectType.ABSTRACTFILE.getObjectType() + ")"); //NON-NLS;
 		private final String sql;
 
 		private PREPARED_STATEMENT(String sql) {
