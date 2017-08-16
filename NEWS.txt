@@ -2,6 +2,19 @@ Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
 
+---------------- VERSION 4.4.2 --------------
+New Features:
+- usnjls tool for NTFS USN log (from noxdafox)
+- Added index to mime type column in DB
+- Use local SQLite3 if it exists (from uckelman-sf)
+- Blackboard Artifacts have a shortDescription metho
+
+Bug Fixes:
+- Fix for highest HFS+ inum lookup (from uckelman-sf)
+- Fix ISO9660 crash
+- various performance fixes and added thread safety checks
+
+
 ---------------- VERSION 4.4.1 --------------
 - New Features:
 -- Can create a sparse VHD file when reading a local drive with new

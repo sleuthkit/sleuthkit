@@ -197,7 +197,7 @@ tsk_fs_nofs_file_add_meta(TSK_FS_INFO * a_fs, TSK_FS_FILE * a_fs_file,
 /** \internal
  */
 uint8_t
-tsk_fs_nofs_istat(TSK_FS_INFO * a_fs, FILE * hFile, TSK_INUM_T inum,
+tsk_fs_nofs_istat(TSK_FS_INFO * a_fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TSK_INUM_T inum,
     TSK_DADDR_T numblock, int32_t sec_skew)
 {
     tsk_error_reset();
