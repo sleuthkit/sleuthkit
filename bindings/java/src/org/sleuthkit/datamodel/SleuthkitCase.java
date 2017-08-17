@@ -670,7 +670,7 @@ public class SleuthkitCase {
 		try {
 			SleuthkitCase.logger.info(String.format("sqlite-jdbc version %s loaded in %s mode", //NON-NLS
 					SQLiteJDBCLoader.getVersion(), SQLiteJDBCLoader.isNativeMode()
-					? "native" : "pure-java")); //NON-NLS
+							? "native" : "pure-java")); //NON-NLS
 		} catch (Exception ex) {
 			SleuthkitCase.logger.log(Level.SEVERE, "Error querying case database mode", ex);
 		}
@@ -1077,37 +1077,38 @@ public class SleuthkitCase {
 		try {
 			statement = connection.createStatement();
 			updstatement = connection.createStatement();
-			statement.execute("ALTER TABLE tsk_files ADD COLUMN extension TEXT");
+			statement.execute("ALTER TABLE tsk_files ADD COLUMN extension TEXT;");
 
-			resultSet = connection.executeQuery(statement, "SELECT obj_id,name FROM tsk_files"); //NON-NLS
+			resultSet = connection.executeQuery(statement, "SELECT obj_id,name FROM tsk_files;"); //NON-NLS
 			while (resultSet.next()) {
 				long objID = resultSet.getLong("obj_id");
 				String name = resultSet.getString("name");
-				updstatement.executeUpdate("UPDATE tsk_files SET extension = '" +escapeSingleQuotes(extractExtension(name)) + "' "
-						+ "WHERE obj_id = " + objID);
+				updstatement.executeUpdate("UPDATE tsk_files SET extension = '" + escapeSingleQuotes(extractExtension(name)) + "' "
+						+ "WHERE obj_id = " + objID + ";");
 			}
 
-			statement.execute("CREATE INDEX file_extension ON tsk_files ( extension )");
-
-			// Add artifact_obj_id column to blackboard_artifacts table
+			statement.execute("CREATE INDEX file_extension ON tsk_files ( extension );");
+			//upgrade for artifacts having object ids
+			statement.execute("DROP INDEX artifact_objID;");
 			if (this.dbType.equals(DbType.SQLITE)) {
-				statement.execute("ALTER TABLE blackboard_artifacts RENAME TO blackboard_artifacts_schema6"); //rename the old table
-				statement.execute("CREATE TABLE blackboard_artifacts (artifact_id INTEGER PRIMARY KEY, "     //create a new blackboard_artifacts table with the renamed column name
-						+ "par_obj_id INTEGER NOT NULL, "
-						+ "artifact_type_id INTEGER NOT NULL, " 
-						+ "review_status_id INTEGER NOT NULL, " 
-						+ "FOREIGN KEY(par_obj_id) REFERENCES tsk_objects(obj_id), " 
-						+ "FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id), " 
-						+ "FOREIGN KEY(review_status_id) REFERENCES review_statuses(review_status_id))");
-				statement.execute("INSERT INTO blackboard_artifacts(artifact_id, par_obj_id, artifact_type_id, review_status_id) " 
-						+ "SELECT artifact_id, obj_id, artifact_type_id, review_status_id from blackboard_artifacts_schema6"); //copy contents of old table into new table
-				statement.execute("DROP TABLE blackboard_artifacts_schema6"); //drop the old table
-			}		
-			else {
-				statement.execute("ALTER TABLE blackboard_artifacts RENAME COLUMN obj_id TO par_obj_id");  //simply rename column for postgres 
+				statement.execute("ALTER TABLE blackboard_artifacts ADD COLUMN par_obj_id INTEGER;");
+			} else {
+				statement.execute("ALTER TABLE blackboard_artifacts ADD COLUMN par_obj_id BIGINT;");
 			}
-			statement.execute("ALTER TABLE blackboard_artifacts ADD COLUMN obj_id INTEGER NOT NULL DEFAULT -1");  //add new column
-			
+			statement.execute("UPDATE blackboard_artifacts set par_obj_id = obj_id;"); //copy contents of old table into new table
+			statement.execute("CREATE INDEX artifact_objID ON blackboard_artifacts(par_obj_id);"); //recreate the index we dropped
+			Statement s = null;
+			s = connection.createStatement();
+			ResultSet blackboardArtifactsResults = connection.executeQuery(s, "SELECT artifact_id, par_obj_id FROM blackboard_artifacts;");	 //NON-NLS
+			while (blackboardArtifactsResults.next()) {
+				PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
+				prepStmt.setLong(1, blackboardArtifactsResults.getLong("par_obj_id")); // par_obj_id
+				prepStmt.setLong(2, TskData.ObjectType.ARTIFACT.getObjectType()); // type
+				connection.executeUpdate(prepStmt);
+				resultSet = prepStmt.getGeneratedKeys();
+				resultSet.next();
+				statement.execute("UPDATE blackboard_artifacts SET obj_id = " + resultSet.getLong(1) + " WHERE " + blackboardArtifactsResults.getLong("artifact_id") + "=artifact_id;");
+			}
 			return 7;
 
 		} finally {
@@ -2157,7 +2158,7 @@ public class SleuthkitCase {
 	 * object id. Does not included rejected artifacts.
 	 *
 	 * @param artifactTypeID artifact type id
-	 * @param par_obj_id         associated object id
+	 * @param par_obj_id     associated object id
 	 *
 	 * @return count of matching blackboard artifacts
 	 *
@@ -2194,7 +2195,7 @@ public class SleuthkitCase {
 	 * Does	not included rejected artifacts.
 	 *
 	 * @param artifactTypeName artifact type name
-	 * @param par_obj_id           object id of parent object
+	 * @param par_obj_id       object id of parent object
 	 *
 	 * @return list of blackboard artifacts
 	 *
@@ -2210,7 +2211,7 @@ public class SleuthkitCase {
 	 * Does not included rejected artifacts.
 	 *
 	 * @param artifactTypeID artifact type id (must exist in database)
-	 * @param par_obj_id         object id of parent object
+	 * @param par_obj_id     object id of parent object
 	 *
 	 * @return list of blackboard artifacts
 	 *
@@ -2226,7 +2227,7 @@ public class SleuthkitCase {
 	 * Does not included rejected artifacts.
 	 *
 	 * @param artifactType artifact type enum
-	 * @param par_obj_id       object id of parent object
+	 * @param par_obj_id   object id of parent object
 	 *
 	 * @return list of blackboard artifacts
 	 *
@@ -2242,7 +2243,7 @@ public class SleuthkitCase {
 	 * object id. Does not include rejected artifacts.
 	 *
 	 * @param artifactTypeName artifact type name
-	 * @param par_obj_id           object id of parent object
+	 * @param par_obj_id       object id of parent object
 	 *
 	 * @return count of blackboard artifacts
 	 *
@@ -2262,7 +2263,7 @@ public class SleuthkitCase {
 	 * object id. Does not include rejected artifacts.
 	 *
 	 * @param artifactTypeID artifact type id (must exist in database)
-	 * @param par_obj_id         object id of parent object
+	 * @param par_obj_id     object id of parent object
 	 *
 	 * @return count of blackboard artifacts
 	 *
@@ -2278,7 +2279,7 @@ public class SleuthkitCase {
 	 * object id. Does not include rejected artifacts.
 	 *
 	 * @param artifactType artifact type enum
-	 * @param par_obj_id       object id of parent object
+	 * @param par_obj_id   object id of parent object
 	 *
 	 * @return count of blackboard artifacts
 	 *
@@ -2911,7 +2912,7 @@ public class SleuthkitCase {
 					attributeType = this.typeIdToAttributeTypeMap.get(attributeTypeId);
 				} else {
 					attributeType = new BlackboardAttribute.Type(attributeTypeId, attributeTypeName,
-							rs.getString("display_name"), 
+							rs.getString("display_name"),
 							BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getInt("value_type")));
 					this.typeIdToAttributeTypeMap.put(attributeTypeId, attributeType);
 					this.typeNameToAttributeTypeMap.put(attributeTypeName, attributeType);
@@ -3022,7 +3023,7 @@ public class SleuthkitCase {
 				BlackboardArtifact.Type type;
 				// artifact type is cached, so this does not necessarily call to the db
 				type = this.getArtifactType(rs.getInt("artifact_type_id"));
-				BlackboardArtifact artifact = new BlackboardArtifact(this, rs.getLong("artifact_id"),  rs.getLong("par_obj_id"), rs.getLong("obj_id"),
+				BlackboardArtifact artifact = new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("par_obj_id"), rs.getLong("obj_id"),
 						type.getTypeID(), type.getTypeName(), type.getDisplayName(),
 						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id")));
 				matches.add(artifact);
@@ -3044,7 +3045,8 @@ public class SleuthkitCase {
 	 * looked up in the returned blackboard artifact.
 	 *
 	 * @param artifactTypeID the type the given artifact should have
-	 * @param par_obj_id         the content object id associated with this artifact's parent object
+	 * @param par_obj_id     the content object id associated with this
+	 *                       artifact's parent object
 	 *
 	 * @return a new blackboard artifact
 	 *
@@ -3060,7 +3062,8 @@ public class SleuthkitCase {
 	 * Add a new blackboard artifact with the given type.
 	 *
 	 * @param artifactType the type the given artifact should have
-	 * @param par_obj_id       the content object id associated with this artifact's parent object
+	 * @param par_obj_id   the content object id associated with this artifact's
+	 *                     parent object
 	 *
 	 * @return a new blackboard artifact
 	 *
@@ -3076,7 +3079,7 @@ public class SleuthkitCase {
 		acquireExclusiveLock();
 		ResultSet resultSet = null;
 		try {
-			
+
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
 			statement.clearParameters();
 			statement.setLong(1, par_obj_id);
@@ -3085,14 +3088,14 @@ public class SleuthkitCase {
 			resultSet = statement.getGeneratedKeys();
 			resultSet.next();
 			long obj_id = resultSet.getLong(1); //last_insert_rowid()
-			
+
 			if (dbType == DbType.POSTGRESQL) {
 				statement = connection.getPreparedStatement(PREPARED_STATEMENT.POSTGRESQL_INSERT_ARTIFACT, Statement.RETURN_GENERATED_KEYS);
 				statement.clearParameters();
-				statement.setLong(1, par_obj_id); 
+				statement.setLong(1, par_obj_id);
 				statement.setLong(2, obj_id);
 				statement.setInt(3, artifact_type_id);
-				
+
 			} else {
 				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_ARTIFACT, Statement.RETURN_GENERATED_KEYS);
 				statement.clearParameters();
@@ -3101,7 +3104,7 @@ public class SleuthkitCase {
 				statement.setLong(2, par_obj_id);
 				statement.setLong(3, obj_id);
 				statement.setInt(4, artifact_type_id);
-				
+
 			}
 			connection.executeUpdate(statement);
 			resultSet = statement.getGeneratedKeys();
@@ -3318,7 +3321,8 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get list of object IDs for artifacts that are children of a given content.
+	 * Get list of object IDs for artifacts that are children of a given
+	 * content.
 	 *
 	 * @param parent Object to find children for
 	 *
@@ -3348,7 +3352,6 @@ public class SleuthkitCase {
 			releaseSharedLock();
 		}
 	}
-	
 
 	/**
 	 * Get list of artifacts that are children of a given content.
@@ -3362,13 +3365,13 @@ public class SleuthkitCase {
 	List<Content> getBlackboardArtifactChildren(Content parent) throws TskCoreException {
 
 		long parentId = parent.getId();
-		ArrayList<BlackboardArtifact> artsArray =  getArtifactsHelper("blackboard_artifacts.par_obj_id = " + parentId + ";");
-		
+		ArrayList<BlackboardArtifact> artsArray = getArtifactsHelper("blackboard_artifacts.par_obj_id = " + parentId + ";");
+
 		List<Content> lc = new ArrayList<Content>();
 		lc.addAll(artsArray);
 		return lc;
 	}
-	
+
 	/**
 	 * Get info about children of a given Content from the database.
 	 *
@@ -4103,7 +4106,7 @@ public class SleuthkitCase {
 			releaseExclusiveLock();
 		}
 	}
-	
+
 	/**
 	 * Adds a local directory to the database and returns a LocalDirectory
 	 * object representing it.
@@ -4734,7 +4737,7 @@ public class SleuthkitCase {
 	 * @param atime
 	 * @param mtime
 	 * @param isFile          whether a file or directory, true if a file
-	 * @param parentObj		  parent content object
+	 * @param parentObj		     parent content object
 	 * @param rederiveDetails details needed to re-derive file (will be specific
 	 *                        to the derivation method), currently unused
 	 * @param toolName        name of derivation method/tool, currently unused
@@ -4766,9 +4769,9 @@ public class SleuthkitCase {
 			if (parentObj instanceof BlackboardArtifact) {
 				parentPath = parentObj.getUniquePath() + '/' + parentObj.getName() + '/';
 			} else if (parentObj instanceof AbstractFile) {
-				parentPath = ((AbstractFile)parentObj).getParentPath() + parentObj.getName() + '/'; //NON-NLS
+				parentPath = ((AbstractFile) parentObj).getParentPath() + parentObj.getName() + '/'; //NON-NLS
 			}
-				
+
 			// Insert a row for the derived file into the tsk_objects table.
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
@@ -4845,7 +4848,7 @@ public class SleuthkitCase {
 
 			//TODO add derived method to tsk_files_derived and tsk_files_derived_method
 			return new DerivedFile(this, newObjId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
-					size, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId, null, encodingType,extension);
+					size, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId, null, encodingType, extension);
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
 			throw new TskCoreException("Failed to add derived file to case database", ex);
@@ -4994,7 +4997,7 @@ public class SleuthkitCase {
 					parent.getId(), parentPath,
 					dataSourceObjId,
 					localPath,
-					encodingType,extension);
+					encodingType, extension);
 
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Failed to INSERT local file %s (%s) with parent id %d in tsk_files table", fileName, localPath, parent.getId()), ex);
@@ -6061,7 +6064,7 @@ public class SleuthkitCase {
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 				(short) rs.getInt("mode"), rs.getInt("uid"), rs.getInt("gid"), //NON-NLS
 				rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
-				rs.getString("parent_path"), rs.getString("mime_type"),rs.getString("extension")); //NON-NLS
+				rs.getString("parent_path"), rs.getString("mime_type"), rs.getString("extension")); //NON-NLS
 		f.setFileSystem(fs);
 		return f;
 	}
@@ -6139,8 +6142,8 @@ public class SleuthkitCase {
 				rs.getShort("meta_flags"), rs.getString("md5"), //NON-NLS
 				FileKnown.valueOf(rs.getByte("known")), parentPath); //NON-NLS
 		return ld;
-	}	
-	
+	}
+
 	/**
 	 * Creates a DerivedFile object using the values of a given result set.
 	 *
@@ -6189,7 +6192,7 @@ public class SleuthkitCase {
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 				rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
 				parentPath, localPath, parentId, rs.getString("mime_type"),
-				encodingType,rs.getString("extension"));
+				encodingType, rs.getString("extension"));
 		return df;
 	}
 
@@ -6240,7 +6243,7 @@ public class SleuthkitCase {
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 				rs.getString("mime_type"), rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
 				parentId, parentPath, rs.getLong("data_source_obj_id"),
-				localPath, encodingType,rs.getString("extension"));
+				localPath, encodingType, rs.getString("extension"));
 		return file;
 	}
 
@@ -6267,7 +6270,7 @@ public class SleuthkitCase {
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 				(short) rs.getInt("mode"), rs.getInt("uid"), rs.getInt("gid"), //NON-NLS
 				rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
-				rs.getString("parent_path"), rs.getString("mime_type"),rs.getString("extension")); //NON-NLS
+				rs.getString("parent_path"), rs.getString("mime_type"), rs.getString("extension")); //NON-NLS
 		f.setFileSystem(fs);
 		return f;
 	}
@@ -6352,13 +6355,13 @@ public class SleuthkitCase {
 		return children;
 	}
 
-
 	/**
-	 * Creates BlackboardArtifact objects for the result set of a blackboard_artifacts table
-	 * query of the form "SELECT * FROM blackboard_artifacts WHERE XYZ".
+	 * Creates BlackboardArtifact objects for the result set of a
+	 * blackboard_artifacts table query of the form "SELECT * FROM
+	 * blackboard_artifacts WHERE XYZ".
 	 *
-	 * @param rs         A result set from a query of the blackboard_artifacts table of the
-	 *                   form "SELECT * FROM blackboard_artifacts WHERE XYZ".
+	 * @param rs A result set from a query of the blackboard_artifacts table of
+	 *           the form "SELECT * FROM blackboard_artifacts WHERE XYZ".
 	 *
 	 * @return A list of AbstractFile objects.
 	 *
