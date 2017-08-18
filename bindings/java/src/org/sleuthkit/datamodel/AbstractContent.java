@@ -296,7 +296,7 @@ public abstract class AbstractContent implements Content {
 
 	@Override
 	public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskCoreException {
-		return db.getMatchingArtifacts("WHERE obj_id = " + objId); //NON-NLS
+		return db.getMatchingArtifacts("WHERE par_obj_id = " + objId); //NON-NLS
 	}
 
 	@Override
