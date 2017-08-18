@@ -312,12 +312,12 @@ int
         ||
         attempt_exec
         ("CREATE TABLE blackboard_artifacts (artifact_id INTEGER PRIMARY KEY, "
+		"par_obj_id INTEGER NOT NULL, "
 		"obj_id INTEGER NOT NULL, "
-		"artifact_obj_id INTEGER NOT NULL, "
 		"artifact_type_id INTEGER NOT NULL, "
 		"review_status_id INTEGER NOT NULL, "
-        "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), "
-		"FOREIGN KEY(artifact_obj_id) REFERENCES tsk_objects(obj_id), "
+        "FOREIGN KEY(par_obj_id) REFERENCES tsk_objects(obj_id), "
+		"FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), "
 		"FOREIGN KEY(artifact_type_id) REFERENCES blackboard_artifact_types(artifact_type_id), "
 		"FOREIGN KEY(review_status_id) REFERENCES review_statuses(review_status_id))",
         "Error creating blackboard_artifact table: %s\n")
@@ -389,7 +389,7 @@ int TskDbSqlite::createIndexes() {
 		attempt_exec("CREATE INDEX layout_objID ON tsk_file_layout(obj_id);",
 			"Error creating layout_objID index on tsk_file_layout: %s\n") ||
 		// blackboard indexes
-		attempt_exec("CREATE INDEX artifact_objID ON blackboard_artifacts(obj_id);",
+		attempt_exec("CREATE INDEX artifact_objID ON blackboard_artifacts(par_obj_id);",
 			"Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
 		attempt_exec("CREATE INDEX artifact_typeID ON blackboard_artifacts(artifact_type_id);",
 			"Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
