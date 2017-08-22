@@ -58,6 +58,8 @@ TskAutoDb::TskAutoDb(TskDb * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_kno
     m_noFatFsOrphans = false;
     m_addUnallocSpace = false;
     m_chunkSize = -1;
+    m_imageWriterEnabled = false;
+    m_imageWriterPath = NULL;
     tsk_init_lock(&m_curDirPathLock);
 }
 
