@@ -607,8 +607,16 @@ int TskDbPostgreSQL::initialize() {
         "Error creating ingest_job_modules table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE reports (report_id BIGSERIAL PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL)","Error creating reports table: %s\n")) {
-            return 1;
+        ("CREATE TABLE reports (report_id BIGSERIAL PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL)","Error creating reports table: %s\n")
+		||
+		attempt_exec
+		("CREATE TABLE account_types (account_type_id INTEGER PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL)", 
+		"Error creating reports table: %s\n")
+		||
+		attempt_exec
+		("CREATE TABLE relationships  (relationship_id BIGSERIAL PRIMARY KEY, account1_id INTEGER NOT NULL, account2_id INTEGER NOT NULL, communication_artifact_id INTEGER NOT NULL, FOREIGN KEY(account1_id) REFERENCES blackboard_artifacts(artifact_obj_id), FOREIGN KEY(account2_id) REFERENCES blackboard_artifacts(artifact_obj_id), FOREIGN KEY(communication_artifact_id) REFERENCES blackboard_artifacts(artifact_obj_id))", 
+		"Error creating relationships table: %s\n")) {
+			return 1;
     }
 
     if (m_blkMapFlag) {
@@ -649,6 +657,10 @@ int TskDbPostgreSQL::createIndexes() {
 			"Error creating mime_type index on tsk_files: %s\n") ||
 		attempt_exec("CREATE INDEX file_extension ON tsk_files(extension);",  //file extenssion
 			"Error creating file_extension index on tsk_files: %s\n");
+		attempt_exec("CREATE INDEX relationships_account1  ON relationships(account1_id);",
+			"Error creating relationships_account1 index on relationships: %s\n");
+		attempt_exec("CREATE INDEX relationships_account2  ON relationships(account2_id);",
+			"Error creating relationships_account2 index on relationships: %s\n");
 }
 
 
