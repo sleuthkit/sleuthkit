@@ -910,7 +910,7 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
     // We want to keep consecutive blocks in the same run, so simply update prevBlock and the size
     // if this one is consecutive with the last call. But, if we have hit the max chunk
     // size, then break up this set of consecutive blocks.
-    if ((a_block->addr == unallocBlockWlkTrack->prevBlock + 1) && ((unallocBlockWlkTrack->maxChunkSize == 0) || 
+    if ((a_block->addr == unallocBlockWlkTrack->prevBlock + 1) && ((unallocBlockWlkTrack->minChunkSize <= 0) || 
             (unallocBlockWlkTrack->size < unallocBlockWlkTrack->maxChunkSize))) {
         unallocBlockWlkTrack->prevBlock = a_block->addr;
 		unallocBlockWlkTrack->size += unallocBlockWlkTrack->fsInfo.block_size;
