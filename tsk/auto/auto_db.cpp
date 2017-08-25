@@ -58,7 +58,7 @@ TskAutoDb::TskAutoDb(TskDb * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_kno
     m_noFatFsOrphans = false;
     m_addUnallocSpace = false;
     m_minChunkSize = -1;
-    m_maxChunkSize = 2684354560LL; //2.5GB
+    m_maxChunkSize = -1;
     tsk_init_lock(&m_curDirPathLock);
 }
 
@@ -108,22 +108,16 @@ void TskAutoDb::setAddUnallocSpace(bool addUnallocSpace)
     setAddUnallocSpace(addUnallocSpace, -1);
 }
 
-void TskAutoDb::setAddUnallocSpace(bool addUnallocSpace, int64_t chunkSize)
+void TskAutoDb::setAddUnallocSpace(bool addUnallocSpace, int64_t minChunkSize)
+{
+    setAddUnallocSpace(addUnallocSpace, minChunkSize, -1);
+}
+
+void TskAutoDb::setAddUnallocSpace(bool addUnallocSpace, int64_t minChunkSize, int64_t maxChunkSize)
 {
     m_addUnallocSpace = addUnallocSpace;
-    m_minChunkSize = chunkSize;
-    if (m_minChunkSize > 0) {
-        // Set the max to 500 MB over the minimum if the user specified it
-        m_maxChunkSize = m_minChunkSize + 500 * 1024 * 1024; 
-    }
-    else if (m_minChunkSize == 0) {
-        // If the user wants all unalloc space in one file, set max chunk size to zero
-        m_maxChunkSize = 0;
-    }
-    else {
-        // Set max chunk size to the default
-        m_maxChunkSize = 2684354560LL; //2.5GB
-    }
+    m_minChunkSize = minChunkSize;
+    m_maxChunkSize = maxChunkSize;
 }
 
 /**

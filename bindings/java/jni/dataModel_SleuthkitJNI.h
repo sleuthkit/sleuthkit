@@ -225,6 +225,14 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddI
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
+ * Method:    initializeAddImgUnallocChunkNat
+ * Signature: (JLjava/lang/String;ZZJJZ)J
+ */
+JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgUnallocChunkNat
+  (JNIEnv *, jclass, jlong, jstring, jboolean, jboolean, jlong, jlong, jboolean);
+
+/*
+ * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    runOpenAndAddImgNat
  * Signature: (JLjava/lang/String;[Ljava/lang/String;ILjava/lang/String;)V
  */
@@ -461,6 +469,17 @@ extern "C" {
 
 #ifndef _Included_org_sleuthkit_datamodel_SleuthkitJNI_CaseDbHandle_AddImageProcess
 #define _Included_org_sleuthkit_datamodel_SleuthkitJNI_CaseDbHandle_AddImageProcess
+#ifdef __cplusplus
+extern "C" {
+#endif
+#ifdef __cplusplus
+}
+#endif
+#endif
+/* Header for class org_sleuthkit_datamodel_SleuthkitJNI_HandleCache */
+
+#ifndef _Included_org_sleuthkit_datamodel_SleuthkitJNI_HandleCache
+#define _Included_org_sleuthkit_datamodel_SleuthkitJNI_HandleCache
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -1195,6 +1195,8 @@ public class SleuthkitJNI {
 	private static native long initAddImgNat(long db, String timezone, boolean addUnallocSpace, boolean skipFatFsOrphans) throws TskCoreException;
 
 	private static native long initializeAddImgNat(long db, String timezone, boolean addFileSystems, boolean addUnallocSpace, boolean skipFatFsOrphans) throws TskCoreException;
+	
+	private static native long initializeAddImgUnallocChunkNat(long db, String timezone, boolean addFileSystems, boolean addUnallocSpace, long minChunkSize, long maxChunkSize, boolean skipFatFsOrphans) throws TskCoreException;	
 
 	private static native void runOpenAndAddImgNat(long process, String deviceId, String[] imgPath, int splits, String timezone) throws TskCoreException, TskDataException;
 
