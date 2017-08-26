@@ -742,7 +742,6 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
          */
         if ((fs_meta->type == TSK_FS_META_TYPE_LNK)
             && (fs_meta->size < EXT2FS_MAXPATHLEN) && (fs_meta->size >= 0)) {
-            unsigned int count = 0;
             int i;
 
             if ((fs_meta->link =
@@ -752,6 +751,7 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
             /* it is located directly in the pointers */
             if (fs_meta->size < 4 * (EXT2FS_NDADDR + EXT2FS_NIADDR)) {
                 unsigned int j;
+                unsigned int count = 0;
 
                 for (i = 0; i < (EXT2FS_NDADDR + EXT2FS_NIADDR) &&
                     count < fs_meta->size; i++) {
@@ -771,6 +771,7 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
                 TSK_FS_INFO *fs = (TSK_FS_INFO *) & ext2fs->fs_info;
                 char *data_buf = NULL;
                 char *a_ptr = fs_meta->link;
+                unsigned int total_read = 0;
                 TSK_DADDR_T *addr_ptr = fs_meta->content_ptr;;
 
                 if ((data_buf = tsk_malloc(fs->block_size)) == NULL) {
@@ -779,14 +780,9 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
 
                 /* we only need to do the direct blocks due to the limit
                  * on path length */
-                for (i = 0; i < EXT2FS_NDADDR && count < fs_meta->size;
+                for (i = 0; i < EXT2FS_NDADDR && total_read < fs_meta->size;
                     i++) {
                     ssize_t cnt;
-
-                    int read_count =
-                        (fs_meta->size - count <
-                        fs->block_size) ? (int) (fs_meta->size -
-                        count) : (int) (fs->block_size);
 
                     cnt = tsk_fs_read_block(fs,
                         addr_ptr[i], data_buf, fs->block_size);
@@ -803,9 +799,14 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
                         return 1;
                     }
 
-                    memcpy(a_ptr, data_buf, read_count);
-                    count += read_count;
-                    a_ptr = (char *) ((uintptr_t) a_ptr + count);
+                    int copy_len =
+                        (fs_meta->size - total_read <
+                        fs->block_size) ? (int) (fs_meta->size -
+                        total_read) : (int) (fs->block_size);
+
+                    memcpy(a_ptr, data_buf, copy_len);
+                    total_read += copy_len;
+                    a_ptr = (char *) ((uintptr_t) a_ptr + copy_len);
                 }
 
                 /* terminate the string */
