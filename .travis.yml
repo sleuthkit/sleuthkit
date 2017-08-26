@@ -1,2 +1,23 @@
 language: cpp
-script: ./bootstrap && ./configure && make
+matrix:
+  include:
+  - compiler: clang
+    os: linux
+    dist: trusty
+    sudo: required
+    group: edge
+  - compiler: gcc
+    os: linux
+    dist: trusty
+    sudo: required
+    group: edge
+  - compiler: clang
+    os: osx
+    osx_image: xcode8.1
+  - compiler: gcc
+    os: osx
+    osx_image: xcode8.1
+install:
+  - ./bootstrap
+script:
+  - ./configure && make && make check
