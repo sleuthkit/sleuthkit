@@ -25,6 +25,12 @@
  */
 #include "tsk_fs_i.h"
 
+#include <time.h>
+
+#ifndef TZNAME
+#define TZNAME __tzname
+#endif
+
 char tsk_fs_name_type_str[TSK_FS_NAME_TYPE_STR_MAX][2] =
     { "-", "p", "c", "d", "b", "r",
     "l", "s", "h", "w", "v", "V"
