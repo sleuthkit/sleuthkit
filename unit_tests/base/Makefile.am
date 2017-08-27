@@ -2,7 +2,7 @@ AM_CPPFLAGS = -I../.. -Wall $(CPPUNIT_CFLAGS)
 LDADD = ../../tsk/libtsk.la $(CPPUNIT_LIBS)
 LDFLAGS = -static 
 
-check_SCRIPTS = test_base
+TESTS = test_base
 
 check_PROGRAMS = test_base
 
