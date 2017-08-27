@@ -1999,7 +1999,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                         tsk_getu64(fs->endian, attr->c.nr.initsize),
                         alen, data_flag, compsize)) {
                     tsk_error_errstr2_concat("- proc_attrseq: set run");
-                    return TSK_ERR;
+                    return TSK_COR;
                 }
                 // set the special functions
                 if (fs_file->meta->flags & TSK_FS_META_FLAG_COMP) {
@@ -2011,7 +2011,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             else {
                 if (tsk_fs_attr_add_run(fs, fs_attr, fs_attr_run)) {
                     tsk_error_errstr2_concat(" - proc_attrseq: put run");
-                    return TSK_ERR;
+                    return TSK_COR;
                 }
             }
         }
