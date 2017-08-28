@@ -3172,6 +3172,50 @@ public class SleuthkitCase {
 			releaseSharedLock();
 		}
 	}
+	
+	/**
+	 * Counts of the content object children that are either files/directories
+	 * or artifacts that could contain attachments (email messages and phone messages).
+	 * Note: this is generally more
+	 * efficient then preloading all children and counting, and facilities lazy
+	 * loading.
+	 *
+	 * @param content content object to check for children count
+	 *
+	 * @return children count
+	 *
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 *                          within tsk core
+	 */
+	public int getVisibleContentChildrenCount(Content content) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSharedLock();
+		ResultSet rs = null;
+		try {
+			// SELECT COUNT(obj_id) AS count FROM 
+			//  ( SELECT obj_id FROM tsk_objects WHERE par_obj_id = ? AND type = 5 
+			//    INTERSECT SELECT artifact_obj_id FROM blackboard_artifacts WHERE obj_id = ? AND (artifact_type_id = 13 OR artifact_type_id = 24) 
+			//    UNION SELECT obj_id FROM tsk_objects WHERE par_obj_id = ? AND type = 4)
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.COUNT_VISIBLE_CONTENT_CHILDREN);
+
+			statement.clearParameters();
+			statement.setLong(1, content.getId());
+			statement.setLong(2, content.getId());
+			statement.setLong(3, content.getId());
+			rs = connection.executeQuery(statement);
+			int countChildren = -1;
+			if (rs.next()) {
+				countChildren = rs.getInt("count");
+			}
+			return countChildren;
+		} catch (SQLException e) {
+			throw new TskCoreException("Error checking for children of parent " + content, e);
+		} finally {
+			closeResultSet(rs);
+			connection.close();
+			releaseSharedLock();
+		}
+	}	
 
 	/**
 	 * Returns the list of AbstractFile Children of a given type for a given
@@ -7840,7 +7884,12 @@ public class SleuthkitCase {
 		SELECT_ARTIFACT_OBJECTIDS_BY_PARENT("SELECT blackboard_artifacts.artifact_obj_id AS artifact_obj_id " //NON-NLS
 				+ "FROM tsk_objects INNER JOIN blackboard_artifacts " //NON-NLS
 				+ "ON tsk_objects.obj_id=blackboard_artifacts.obj_id " //NON-NLS
-				+ "WHERE (tsk_objects.par_obj_id = ?)"); //NON-NLS;
+				+ "WHERE (tsk_objects.par_obj_id = ?)"),
+		COUNT_VISIBLE_CONTENT_CHILDREN("SELECT COUNT(obj_id) AS count FROM "
+				+ " ( SELECT obj_id FROM tsk_objects WHERE par_obj_id = ? AND type = " + TskData.ObjectType.ARTIFACT.getObjectType()
+			    + "   INTERSECT SELECT artifact_obj_id FROM blackboard_artifacts WHERE obj_id = ? " 
+			    + "   AND (artifact_type_id = " + ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID() + " OR artifact_type_id = " + ARTIFACT_TYPE.TSK_MESSAGE.getTypeID() + ") "
+			    + "   UNION SELECT obj_id FROM tsk_objects WHERE par_obj_id = ? AND type = " + TskData.ObjectType.ABSTRACTFILE.getObjectType() + ")"); //NON-NLS;
 		private final String sql;
 
 		private PREPARED_STATEMENT(String sql) {
