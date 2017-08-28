@@ -994,9 +994,25 @@ public class SleuthkitCase {
 
 			statement.execute("CREATE INDEX file_extension ON tsk_files ( extension )");
 
-			// Add artifact_obj_id column to blackboard_artifacts table, data conversion for old versions isn't necesarry.
-			statement.execute("ALTER TABLE blackboard_artifacts ADD COLUMN artifact_obj_id INTEGER NOT NULL DEFAULT -1");
-			
+			 // Add artifact_obj_id column to blackboard_artifacts table,
+                       if (this.dbType.equals(DbType.SQLITE)) {
+                               statement.execute("ALTER TABLE blackboard_artifacts ADD COLUMN artifact_obj_id INTEGER;");
+                       } else {
+                               statement.execute("ALTER TABLE blackboard_artifacts ADD COLUMN artifact_obj_id BIGINT;");
+                       }
+					   
+                       Statement s = null;
+                       s = connection.createStatement();
+                       ResultSet blackboardArtifactsResults = connection.executeQuery(s, "SELECT artifact_id, obj_id FROM blackboard_artifacts;");  //NON-NLS
+                       while (blackboardArtifactsResults.next()) {
+                               PreparedStatement prepStmt = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
+                               prepStmt.setLong(1, blackboardArtifactsResults.getLong("obj_id")); // par_obj_id
+                               prepStmt.setLong(2, TskData.ObjectType.ARTIFACT.getObjectType()); // type
+                               connection.executeUpdate(prepStmt);
+                               resultSet = prepStmt.getGeneratedKeys();
+                               resultSet.next();
+                               statement.execute("UPDATE blackboard_artifacts SET artifact_obj_id = " + resultSet.getLong(1) + " WHERE " + blackboardArtifactsResults.getLong("artifact_id") + "=artifact_id;");
+                       }
 			return 7;
 
 		} finally {
