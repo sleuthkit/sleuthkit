@@ -20,7 +20,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-ahkvV] [-i imgtype] [-b dev_sector_size] [-d database] image [image]\n"),
+        ("usage: %s [-ahkvV] [-i imgtype] [-b dev_sector_size] [-d database] [-z ZONE] image [image]\n"),
         progname);
     tsk_fprintf(stderr, "\t-a: Add image to existing database, instead of creating a new one (requires -d to specify database)\n");
     tsk_fprintf(stderr, "\t-k: Don't create block data table\n");
@@ -32,6 +32,7 @@ usage()
     tsk_fprintf(stderr, "\t-d database: Path for the database (default is the same directory as the image, with name derived from image name)\n");
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: Print version\n");
+    tsk_fprintf(stderr, "\t-z: Time zone of original machine (i.e. EST5EDT or GMT)\n");
     
     exit(1);
 }
@@ -67,7 +68,7 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("ab:d:hi:kvV"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("ab:d:hi:kvVz:"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
@@ -122,6 +123,16 @@ main(int argc, char **argv1)
         case _TSK_T('V'):
             tsk_version_print(stdout);
             exit(0);
+
+        case _TSK_T('z'):
+            TSK_TCHAR envstr[32];
+            TSNPRINTF(envstr, 32, _TSK_T("TZ=%s"), OPTARG);
+            if (0 != TPUTENV(envstr)) {
+                tsk_fprintf(stderr, "error setting environment");
+                exit(1);
+            }
+            TZSET();
+            break;
         }
     }
 
