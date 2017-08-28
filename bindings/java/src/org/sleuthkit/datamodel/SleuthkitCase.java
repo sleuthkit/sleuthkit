@@ -2698,21 +2698,23 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT artifacts.artifact_id AS artifact_id,"
-												+ " artifacts.obj_id AS obj_id,"
-												+ " artifacts.artifact_obj_id AS artifact_obj_id,"
-												+ " artifacts.artifact_type_id AS artifact_type_id,"
-												+ " artifacts.review_status_id AS review_status_id,  " 
-										+ " FROM blackboard_artifacts AS artifacts"
-										+ "	JOIN blackboard_attributes AS attr_account_type"
-										+ "		ON artifacts.artifact_id = attr_account_type.artifact_id"
-										+ " JOIN blackboard_attributes AS attr_account_id"
-										+ "		ON artifacts.artifact_id = attr_account_id.artifact_id"
-										+ "		AND attr_account_id.attribute_type_id = " + ATTRIBUTE_TYPE.TSK_ID 
-										+ "	    AND attr_account_id.value_text = '" + accountID + "'"
-										+ " WHERE artifacts.artifact_type_id = " + artifactType.getTypeID()
-											+ " AND attr_account_type.attribute_type_id = " + ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE
-											+ " AND attr_account_type.value_text = '" + accountType.getTypeName() + "'"); //NON-NLS
+			String queryStr = "SELECT artifacts.artifact_id AS artifact_id,"
+									+ " artifacts.obj_id AS obj_id,"
+									+ " artifacts.artifact_obj_id AS artifact_obj_id,"
+									+ " artifacts.artifact_type_id AS artifact_type_id,"
+									+ " artifacts.review_status_id AS review_status_id" 
+							+ " FROM blackboard_artifacts AS artifacts"
+							+ "	JOIN blackboard_attributes AS attr_account_type"
+							+ "		ON artifacts.artifact_id = attr_account_type.artifact_id"
+							+ " JOIN blackboard_attributes AS attr_account_id"
+							+ "		ON artifacts.artifact_id = attr_account_id.artifact_id"
+							+ "		AND attr_account_id.attribute_type_id = " + ATTRIBUTE_TYPE.TSK_ID.getTypeID()
+							+ "	    AND attr_account_id.value_text = '" + accountID + "'"
+							+ " WHERE artifacts.artifact_type_id = " + artifactType.getTypeID()
+								+ " AND attr_account_type.attribute_type_id = " + ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE.getTypeID()
+								+ " AND attr_account_type.value_text = '" + accountType.getTypeName() + "'"; //NON-NLS
+			
+			rs = connection.executeQuery(s, queryStr); //NON-NLS
 			if (rs.next()) {
 				BlackboardArtifact.Type bbartType = this.getArtifactType(rs.getInt("artifact_type_id"));
 				
@@ -2745,7 +2747,7 @@ public class SleuthkitCase {
 	ArrayList<Account.Type> getAccountTypesInUse() throws TskCoreException {
 		
 		String query = "SELECT DISTINCT value_text FROM blackboard_attributes "
-						+ "WHERE atrribute_type_id = " + ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE ;
+						+ "WHERE atrribute_type_id = " + ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE.getTypeID() ;
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
 		Statement s = null;
@@ -2791,12 +2793,12 @@ public class SleuthkitCase {
 												+ " artifacts.obj_id AS obj_id,"
 												+ " artifacts.artifact_obj_id AS artifact_obj_id,"
 												+ " artifacts.artifact_type_id AS artifact_type_id,"
-												+ " artifacts.review_status_id AS review_status_id,  " 
+												+ " artifacts.review_status_id AS review_status_id" 
 										+ " FROM blackboard_artifacts AS artifacts"
 										+ "	JOIN blackboard_attributes AS attr_account_type"
 										+ "		ON artifacts.artifact_id = attr_account_type.artifact_id"
 										+ " WHERE artifacts.artifact_type_id = " + ARTIFACT_TYPE.TSK_ACCOUNT
-											+ " AND attr_account_type.attribute_type_id = " + ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE
+											+ " AND attr_account_type.attribute_type_id = " + ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE.getTypeID()
 											+ " AND attr_account_type.value_text = '" + accountType.getTypeName() + "'"); //NON-NLS
 			
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();

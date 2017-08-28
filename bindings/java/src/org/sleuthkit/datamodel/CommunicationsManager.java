@@ -51,7 +51,7 @@ public class CommunicationsManager {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
 	 */
-	Account getOrCreateAccountArtifact(Account.Type accountType, String accountID, String moduleName, Content sourceObj) throws TskCoreException {
+	public Account getOrCreateAccount(Account.Type accountType, String accountID, String moduleName, Content sourceObj) throws TskCoreException {
 		Account account = null;
 		
 		BlackboardArtifact accountArtifact = db.getOrCreateAccountArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT, accountType, accountID, moduleName, sourceObj);
@@ -74,7 +74,7 @@ public class CommunicationsManager {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
 	 */
-	Account getAccount(Account.Type accountType, String accountID) throws TskCoreException {
+	public Account getAccount(Account.Type accountType, String accountID) throws TskCoreException {
 		
 		Account account = null;
 		
@@ -94,7 +94,7 @@ public class CommunicationsManager {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
 	 */
-	List <Account.Type> getAccountTypesInUse() throws TskCoreException {
+	public List <Account.Type> getAccountTypesInUse() throws TskCoreException {
 		return db.getAccountTypesInUse();
 	}
 
@@ -108,7 +108,7 @@ public class CommunicationsManager {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
 	 */
-	List<Account> getAccounts(Account.Type accountType) throws TskCoreException {
+	public List<Account> getAccounts(Account.Type accountType) throws TskCoreException {
 		
 		List<Account> accounts =  new ArrayList<Account>();
 		
@@ -129,7 +129,7 @@ public class CommunicationsManager {
  * @throws TskCoreException exception thrown if a critical error occurs
  *                          within TSK core
  */
-void rejectAccount(Account account) throws TskCoreException {
+public void rejectAccount(Account account) throws TskCoreException {
 	db.setReviewStatus(db.getBlackboardArtifact(account.getArtifactId()), BlackboardArtifact.ReviewStatus.REJECTED);
 }
 
@@ -144,7 +144,7 @@ void rejectAccount(Account account) throws TskCoreException {
  * @throws TskCoreException exception thrown if a critical error occurs
  *                          within TSK core
  */
-	List<Account> getAccountsWithRelationship(Account account) throws TskCoreException {
+	public List<Account> getAccountsWithRelationship(Account account) throws TskCoreException {
 		
 		List<Account> accounts =  new ArrayList<Account>();
 		
@@ -166,7 +166,7 @@ void rejectAccount(Account account) throws TskCoreException {
  * @throws TskCoreException exception thrown if a critical error occurs
  *                          within TSK core
  */
-void addRelationships(Account sender, List<Account> recipients, BlackboardArtifact communicationArtifact) {
+public void addRelationships(Account sender, List<Account> recipients, BlackboardArtifact communicationArtifact) {
 	
 	// Currently we do not save the direction of communication
 	List<Long> accountIDs = new ArrayList<Long>();
@@ -206,7 +206,7 @@ void addRelationships(Account sender, List<Account> recipients, BlackboardArtifa
  * @throws TskCoreException exception thrown if a critical error occurs
  *                          within TSK core
  */
-List <BlackboardArtifact.Type> getRelationshipTypes(Account account1, Account account2) throws TskCoreException {
+public List <BlackboardArtifact.Type> getRelationshipTypes(Account account1, Account account2) throws TskCoreException {
 	
 	return db.getRelationshipTypes(account1.getArtifactId(), account2.getArtifactId());
 }
@@ -220,7 +220,7 @@ List <BlackboardArtifact.Type> getRelationshipTypes(Account account1, Account ac
  * @throws TskCoreException exception thrown if a critical error occurs
  *                          within TSK core
  */
-List <BlackboardArtifact> getRelationships(Account account1, Account account2) throws TskCoreException {
+public List <BlackboardArtifact> getRelationships(Account account1, Account account2) throws TskCoreException {
 	
 	return db.getRelationships(account1.getArtifactId(), account2.getArtifactId());
 }
@@ -234,7 +234,7 @@ List <BlackboardArtifact> getRelationships(Account account1, Account account2) t
  * @throws TskCoreException exception thrown if a critical error occurs
  *                          within TSK core
  */
-List <BlackboardArtifact> getRelationshipsOfType(Account account1, Account account2, BlackboardArtifact.Type artifactType ) throws TskCoreException {
+public List <BlackboardArtifact> getRelationshipsOfType(Account account1, Account account2, BlackboardArtifact.Type artifactType ) throws TskCoreException {
 	
 	return db.getRelationshipsOfType(account1.getArtifactId(), account2.getArtifactId(), artifactType);
 }
@@ -247,7 +247,7 @@ List <BlackboardArtifact> getRelationshipsOfType(Account account1, Account accou
  * @throws TskCoreException exception thrown if a critical error occurs
  *                          within TSK core
  */
-List <MessageFolder> getMessageFolders(long srcObjID ) throws TskCoreException {
+public List <MessageFolder> getMessageFolders(long srcObjID ) throws TskCoreException {
 	return db.getMessageFolders(srcObjID);
 }
 
@@ -260,7 +260,7 @@ List <MessageFolder> getMessageFolders(long srcObjID ) throws TskCoreException {
  * @throws TskCoreException exception thrown if a critical error occurs
  *                          within TSK core
  */
-List <MessageFolder> getMessageFolders(long srcObjID, MessageFolder  parentfolder ) throws TskCoreException {
+public List <MessageFolder> getMessageFolders(long srcObjID, MessageFolder  parentfolder ) throws TskCoreException {
 	return db.getMessageFolders(srcObjID, parentfolder);
 }
 
@@ -272,7 +272,7 @@ List <MessageFolder> getMessageFolders(long srcObjID, MessageFolder  parentfolde
  * @throws TskCoreException exception thrown if a critical error occurs
  *                          within TSK core
  */
-List <BlackboardArtifact> getMessages(MessageFolder  parentfolder ) throws TskCoreException {
+public List <BlackboardArtifact> getMessages(MessageFolder  parentfolder ) throws TskCoreException {
 	return db.getMessages(parentfolder);
 }
 
