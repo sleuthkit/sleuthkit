@@ -25,8 +25,14 @@ import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 
 public class Account {
 
+	// TBD: use the the artifactID or the artifactObjId here ????
+	private long artifactId;	// ArtifactID of the underlying TSK_ACCOUNT artifact
 	
-
+	private final Account.Type accountType;
+	private final String accountID;
+	private final SleuthkitCase sleuthkitCase;
+	private  BlackboardArtifact artifact = null;
+	
 	public static final class Type implements Serializable {
 		
 		public static final Account.Type CREDIT_CARD = new Type("CREDIT_CARD", "Credit Card");
@@ -140,15 +146,6 @@ public class Account {
 		}
 	}
 
-	// TBD: use the the artifactID or the artifactObjId here ????
-	private long artifactId;	// ArtifactID of the underlying TSK_ACCOUNT artifact
-	
-	private final Account.Type accountType;
-	private final String accountID;
-	private final SleuthkitCase sleuthkitCase;
-	
-	private  BlackboardArtifact artifact = null;
-		
 	public Account(SleuthkitCase sleuthkitCase, long artifactId) throws TskCoreException {
 		
 		this.sleuthkitCase = sleuthkitCase;

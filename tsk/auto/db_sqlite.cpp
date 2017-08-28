@@ -407,9 +407,9 @@ int TskDbSqlite::createIndexes() {
 		attempt_exec("CREATE INDEX mime_type ON tsk_files(dir_type,mime_type,type);", //mime type
 			"Error creating mime_type index on tsk_files: %s\n") ||
 		attempt_exec("CREATE INDEX file_extension ON tsk_files(extension);",  //file extenssion
-			"Error creating file_extension index on tsk_files: %s\n");
+			"Error creating file_extension index on tsk_files: %s\n") ||
 		attempt_exec("CREATE INDEX relationships_account1  ON relationships(account1_id);", 
-			"Error creating relationships_account1 index on relationships: %s\n");
+			"Error creating relationships_account1 index on relationships: %s\n") ||
 		attempt_exec("CREATE INDEX relationships_account2  ON relationships(account2_id);",
 			"Error creating relationships_account2 index on relationships: %s\n");
 }
