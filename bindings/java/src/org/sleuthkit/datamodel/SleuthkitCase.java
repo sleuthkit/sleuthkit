@@ -4216,6 +4216,9 @@ public class SleuthkitCase {
 			// data source object id
 			long dataSourceObjectId = getDataSourceObjectId(connection, parentId);
 			statement.setLong(16, dataSourceObjectId);
+			
+			//extension, since this is a directory we just set it to null
+			statement.setString(17, null);
 
 			connection.executeUpdate(statement);
 
