@@ -100,33 +100,6 @@ public class SleuthkitCase {
 	private static final String SQL_ERROR_LIMIT_GROUP = "54";
 	private static final String SQL_ERROR_INTERNAL_GROUP = "xx";
 	private static final int MIN_USER_DEFINED_TYPE_ID = 10000;
-
-	/**
-	 * Extract the extension from a file name.
-	 *
-	 * @param fileName the file name to extract the extension from.
-	 *
-	 * @return The extension extracted from fileName. Will not be null.
-	 */
-	static String extractExtension(final String fileName) {
-		String ext;
-		int i = fileName.lastIndexOf(".");
-		// > 0 because we assume it's not an extension if period is the first character
-		if ((i > 0) && ((i + 1) < fileName.length())) {
-			ext = fileName.substring(i + 1);
-		} else {
-			return "";
-		}
-		// we added this at one point to deal with files that had crazy names based on URLs
-		// it's too hard though to clean those up and not mess up basic extensions though.
-		// We need to add '-' to the below if we use it again
-		//		String[] findNonAlphanumeric = ext.split("[^a-zA-Z0-9_]");
-		//		if (findNonAlphanumeric.length > 1) {
-		//			ext = findNonAlphanumeric[0];
-		//		}
-		return ext.toLowerCase();
-	}
-
 	private final ConnectionPool connections;
 	private final Map<Long, VirtualDirectory> rootIdsToCarvedFileDirs = new HashMap<Long, VirtualDirectory>();
 	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system files.
@@ -178,49 +151,6 @@ public class SleuthkitCase {
 		} else if (info.getPassword() == null || info.getPassword().isEmpty()) {
 			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingPassword")); //NON-NLS
 		}
-
-		try {
-			Class.forName("org.postgresql.Driver"); //NON-NLS
-			Connection conn = DriverManager.getConnection("jdbc:postgresql://" + info.getHost() + ":" + info.getPort() + "/postgres", info.getUserName(), info.getPassword()); //NON-NLS
-			if (conn != null) {
-				conn.close();
-			}
-		} catch (SQLException ex) {
-			String result;
-			String sqlState = ex.getSQLState().toLowerCase();
-			if (sqlState.startsWith(SQL_ERROR_CONNECTION_GROUP)) {
-				try {
-					if (InetAddress.getByName(info.getHost()).isReachable(IS_REACHABLE_TIMEOUT_MS)) {
-						// if we can reach the host, then it's probably port problem
-						result = bundle.getString("DatabaseConnectionCheck.Port"); //NON-NLS
-					} else {
-						result = bundle.getString("DatabaseConnectionCheck.HostnameOrPort"); //NON-NLS
-					}
-				} catch (IOException any) {
-					// it may be anything
-					result = bundle.getString("DatabaseConnectionCheck.Everything"); //NON-NLS
-				} catch (MissingResourceException any) {
-					// it may be anything
-					result = bundle.getString("DatabaseConnectionCheck.Everything"); //NON-NLS
-				}
-			} else if (sqlState.startsWith(SQL_ERROR_AUTHENTICATION_GROUP)) {
-				result = bundle.getString("DatabaseConnectionCheck.Authentication"); //NON-NLS
-			} else if (sqlState.startsWith(SQL_ERROR_PRIVILEGE_GROUP)) {
-				result = bundle.getString("DatabaseConnectionCheck.Access"); //NON-NLS
-			} else if (sqlState.startsWith(SQL_ERROR_RESOURCE_GROUP)) {
-				result = bundle.getString("DatabaseConnectionCheck.ServerDiskSpace"); //NON-NLS
-			} else if (sqlState.startsWith(SQL_ERROR_LIMIT_GROUP)) {
-				result = bundle.getString("DatabaseConnectionCheck.ServerRestart"); //NON-NLS
-			} else if (sqlState.startsWith(SQL_ERROR_INTERNAL_GROUP)) {
-				result = bundle.getString("DatabaseConnectionCheck.InternalServerIssue"); //NON-NLS
-			} else {
-				result = bundle.getString("DatabaseConnectionCheck.Connection"); //NON-NLS
-			}
-			throw new TskCoreException(result);
-		} catch (ClassNotFoundException ex) {
-			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.Installation")); //NON-NLS
-		}
-	}
 
 	/**
 	 * Private constructor, clients must use newCase() or openCase() method to
@@ -1215,6 +1145,101 @@ public class SleuthkitCase {
 			closeResultSet(resultSet);
 			closeStatement(statement);
 			closeStatement(updstatement);
+		}
+	}
+
+	/**
+	 * Extract the extension from a file name.
+	 *
+	 * @param fileName the file name to extract the extension from.
+	 *
+	 * @return The extension extracted from fileName. Will not be null.
+	 */
+	static String extractExtension(final String fileName) {
+		String ext;
+		int i = fileName.lastIndexOf(".");
+		// > 0 because we assume it's not an extension if period is the first character
+		if ((i > 0) && ((i + 1) < fileName.length())) {
+			ext = fileName.substring(i + 1);
+		} else {
+			return "";
+		}
+		// we added this at one point to deal with files that had crazy names based on URLs
+		// it's too hard though to clean those up and not mess up basic extensions though.
+		// We need to add '-' to the below if we use it again
+		//		String[] findNonAlphanumeric = ext.split("[^a-zA-Z0-9_]");
+		//		if (findNonAlphanumeric.length > 1) {
+		//			ext = findNonAlphanumeric[0];
+		//		}
+		return ext.toLowerCase();
+	}
+
+	/**
+	 * Attempts to connect to the database with the passed in settings, throws
+	 * if the settings are not sufficient to connect to the database type
+	 * indicated. Only attempts to connect to remote databases.
+	 *
+	 * When issues occur, it attempts to diagnose them by looking at the
+	 * exception messages, returning the appropriate user-facing text for the
+	 * exception received. This method expects the Exceptions messages to be in
+	 * English and compares against English text.
+	 *
+	 * @param info The connection information
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	public static void tryConnect(CaseDbConnectionInfo info) throws TskCoreException {
+		// Check if we can talk to the database.
+		if (info.getHost() == null || info.getHost().isEmpty()) {
+			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingHostname")); //NON-NLS
+		} else if (info.getPort() == null || info.getPort().isEmpty()) {
+			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingPort")); //NON-NLS
+		} else if (info.getUserName() == null || info.getUserName().isEmpty()) {
+			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingUsername")); //NON-NLS
+		} else if (info.getPassword() == null || info.getPassword().isEmpty()) {
+			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.MissingPassword")); //NON-NLS
+		}
+
+		try {
+			Class.forName("org.postgresql.Driver"); //NON-NLS
+			Connection conn = DriverManager.getConnection("jdbc:postgresql://" + info.getHost() + ":" + info.getPort() + "/postgres", info.getUserName(), info.getPassword()); //NON-NLS
+			if (conn != null) {
+				conn.close();
+			}
+		} catch (SQLException ex) {
+			String result;
+			String sqlState = ex.getSQLState().toLowerCase();
+			if (sqlState.startsWith(SQL_ERROR_CONNECTION_GROUP)) {
+				try {
+					if (InetAddress.getByName(info.getHost()).isReachable(IS_REACHABLE_TIMEOUT_MS)) {
+						// if we can reach the host, then it's probably port problem
+						result = bundle.getString("DatabaseConnectionCheck.Port"); //NON-NLS
+					} else {
+						result = bundle.getString("DatabaseConnectionCheck.HostnameOrPort"); //NON-NLS
+					}
+				} catch (IOException any) {
+					// it may be anything
+					result = bundle.getString("DatabaseConnectionCheck.Everything"); //NON-NLS
+				} catch (MissingResourceException any) {
+					// it may be anything
+					result = bundle.getString("DatabaseConnectionCheck.Everything"); //NON-NLS
+				}
+			} else if (sqlState.startsWith(SQL_ERROR_AUTHENTICATION_GROUP)) {
+				result = bundle.getString("DatabaseConnectionCheck.Authentication"); //NON-NLS
+			} else if (sqlState.startsWith(SQL_ERROR_PRIVILEGE_GROUP)) {
+				result = bundle.getString("DatabaseConnectionCheck.Access"); //NON-NLS
+			} else if (sqlState.startsWith(SQL_ERROR_RESOURCE_GROUP)) {
+				result = bundle.getString("DatabaseConnectionCheck.ServerDiskSpace"); //NON-NLS
+			} else if (sqlState.startsWith(SQL_ERROR_LIMIT_GROUP)) {
+				result = bundle.getString("DatabaseConnectionCheck.ServerRestart"); //NON-NLS
+			} else if (sqlState.startsWith(SQL_ERROR_INTERNAL_GROUP)) {
+				result = bundle.getString("DatabaseConnectionCheck.InternalServerIssue"); //NON-NLS
+			} else {
+				result = bundle.getString("DatabaseConnectionCheck.Connection"); //NON-NLS
+			}
+			throw new TskCoreException(result);
+		} catch (ClassNotFoundException ex) {
+			throw new TskCoreException(bundle.getString("DatabaseConnectionCheck.Installation")); //NON-NLS
 		}
 	}
 
