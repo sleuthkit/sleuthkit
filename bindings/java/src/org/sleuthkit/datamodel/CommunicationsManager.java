@@ -170,8 +170,10 @@ public void addRelationships(Account sender, List<Account> recipients, Blackboar
 	
 	// Currently we do not save the direction of communication
 	List<Long> accountIDs = new ArrayList<Long>();
+	if (null != sender) {
+		accountIDs.add(sender.getArtifactId());
+	}
 	
-	accountIDs.add(sender.getArtifactId());
 	for (Account recipient: recipients) {
 		accountIDs.add(recipient.getArtifactId());
 	}
@@ -184,7 +186,9 @@ public void addRelationships(Account sender, List<Account> recipients, Blackboar
 		
 		try {
 			UnorderedPair<Long> accountPair = iter.next();
-			db.addAccountsRelationship(accountPair.first, accountPair.second, communicationArtifact.getArtifactID());
+			if (accountPair.first.longValue() != accountPair.second.longValue()) {// dont add a relationship with self
+				db.addAccountsRelationship(accountPair.first, accountPair.second, communicationArtifact.getArtifactID());
+			}
 		}
 		catch (TskCoreException ex) {
 			LOGGER.log(Level.WARNING, "Could not get timezone for image", ex); //NON-NLS

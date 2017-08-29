@@ -2773,7 +2773,7 @@ public class SleuthkitCase {
 										+ " FROM blackboard_artifacts AS artifacts"
 										+ "	JOIN blackboard_attributes AS attr_account_type"
 										+ "		ON artifacts.artifact_id = attr_account_type.artifact_id"
-										+ " WHERE artifacts.artifact_type_id = " + ARTIFACT_TYPE.TSK_ACCOUNT
+										+ " WHERE artifacts.artifact_type_id = " + ARTIFACT_TYPE.TSK_ACCOUNT.getTypeID()
 											+ " AND attr_account_type.attribute_type_id = " + ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE.getTypeID()
 											+ " AND attr_account_type.value_text = '" + accountType.getTypeName() + "'"); //NON-NLS
 			
@@ -2818,13 +2818,13 @@ public class SleuthkitCase {
 												+ " artifacts.obj_id AS obj_id,"
 												+ " artifacts.artifact_obj_id AS artifact_obj_id,"
 												+ " artifacts.artifact_type_id AS artifact_type_id,"
-												+ " artifacts.review_status_id AS review_status_id,  " 
+												+ " artifacts.review_status_id AS review_status_id" 
 										+ " FROM blackboard_artifacts AS artifacts"
 										+ "	JOIN relationships AS relationships1"
 										+ "		ON artifacts.artifact_id = relationships1.account1_id"
 										+ "	JOIN relationships AS relationships2"
 										+ "		ON artifacts.artifact_id = relationships2.account2_id"
-										+ " WHERE artifacts.artifact_type_id = " + ARTIFACT_TYPE.TSK_ACCOUNT
+										+ " WHERE artifacts.artifact_type_id = " + ARTIFACT_TYPE.TSK_ACCOUNT.getTypeID()
 											+ " AND ( " 
 													 + "    (artifacts.artifact_id = relationships1.account1_id AND relationships1.account2_id = " + accountID + ") "
 											         + " OR (artifacts.artifact_id = relationships2.account2_id AND relationships2.account1_id = " + accountID + ") "
@@ -2906,7 +2906,7 @@ public class SleuthkitCase {
 												+ " artifacts.obj_id AS obj_id,"
 												+ " artifacts.artifact_obj_id AS artifact_obj_id,"
 												+ " artifacts.artifact_type_id AS artifact_type_id,"
-												+ " artifacts.review_status_id AS review_status_id,  " 
+												+ " artifacts.review_status_id AS review_status_id" 
 										+ " FROM blackboard_artifacts AS artifacts"
 										+ "	JOIN relationships AS relationships"
 										+ "		ON artifacts.artifact_id = relationships.communication_artifact_id"
@@ -2953,7 +2953,7 @@ public class SleuthkitCase {
 												+ " artifacts.obj_id AS obj_id,"
 												+ " artifacts.artifact_obj_id AS artifact_obj_id,"
 												+ " artifacts.artifact_type_id AS artifact_type_id,"
-												+ " artifacts.review_status_id AS review_status_id,  " 
+												+ " artifacts.review_status_id AS review_status_id" 
 										+ " FROM blackboard_artifacts AS artifacts"
 										+ "	JOIN relationships AS relationships"
 										+ "		ON artifacts.artifact_id = relationships.communication_artifact_id"
@@ -3003,7 +3003,7 @@ public class SleuthkitCase {
 												+ " artifacts.obj_id AS obj_id,"
 												+ " artifacts.artifact_obj_id AS artifact_obj_id,"
 												+ " artifacts.artifact_type_id AS artifact_type_id,"
-												+ " artifacts.review_status_id AS review_status_id,  " 
+												+ " artifacts.review_status_id AS review_status_id" 
 										+ " FROM blackboard_artifacts AS artifacts"
 										+ "	JOIN relationships AS relationships"
 										+ "		ON artifacts.artifact_id = relationships.communication_artifact_id" 
