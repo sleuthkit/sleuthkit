@@ -37,7 +37,7 @@ int main(int argc,char **argv)
 	}
 
 	bool before = true;
-	for(char *cc=linebuf;*cc;*cc++){ // change ' '->'_" and '\t'->':' until we find the \t
+	for(char *cc=linebuf;*cc;cc++){ // change ' '->'_" and '\t'->':' until we find the \t
 	    if(before){
 		switch(*cc){
 		case ' ': putchar('-');break;

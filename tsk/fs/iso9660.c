@@ -2018,7 +2018,7 @@ iso9660_print_rockridge(FILE * hFile, rockridge_ext * rr)
  * @returns 1 on error and 0 on success
  */
 static uint8_t
-iso9660_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
+iso9660_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TSK_INUM_T inum,
     TSK_DADDR_T numblock, int32_t sec_skew)
 {
     ISO_INFO *iso = (ISO_INFO *) fs;
@@ -2182,8 +2182,21 @@ iso9660_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         tsk_fs_time_to_str(fs_file->meta->atime, timeBuf));
 
     tsk_fprintf(hFile, "\nSectors:\n");
-    /* since blocks are all contiguous, print them here to simplify file_walk */
-    {
+    if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
+        const TSK_FS_ATTR *fs_attr_default =
+            tsk_fs_file_attr_get_type(fs_file,
+                TSK_FS_ATTR_TYPE_DEFAULT, 0, 0);
+        if (fs_attr_default && (fs_attr_default->flags & TSK_FS_ATTR_NONRES)) {
+            if (tsk_fs_attr_print(fs_attr_default, hFile)) {
+                tsk_fprintf(hFile, "\nError creating run lists\n");
+                tsk_error_print(hFile);
+                tsk_error_reset();
+            }
+        }
+    }
+    else {
+        /* since blocks are all contiguous, print them here to simplify file_walk */
+   
         int block = tsk_getu32(fs->endian, dinode->dr.ext_loc_m);
         TSK_OFF_T size = fs_file->meta->size;
         int rowcount = 0;

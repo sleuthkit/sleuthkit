@@ -369,6 +369,13 @@ uint8_t
         return 1;
     }
 
+    if (hdb_info->make_index == NULL) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("tsk_hdb_make_index: can not create index file");
+        return 1;
+    }
+
     return hdb_info->make_index(hdb_info, type);
 }
 

@@ -393,13 +393,15 @@ extern "C" {
         TSK_FS_META_TYPE_SOCK = 0x08,   ///< UNIX domain socket
         TSK_FS_META_TYPE_WHT = 0x09,    ///< Whiteout
         TSK_FS_META_TYPE_VIRT = 0x0a,   ///< "Virtual File" created by TSK for file system areas
+        TSK_FS_META_TYPE_VIRT_DIR = 0x0b,   ///< "Virtual Directory" created by TSK to hold data like orphan files
     };
     typedef enum TSK_FS_META_TYPE_ENUM TSK_FS_META_TYPE_ENUM;
 
-#define TSK_FS_META_TYPE_STR_MAX 0x0b   ///< Number of file types in shortname array
+#define TSK_FS_META_TYPE_STR_MAX 0x0c   ///< Number of file types in shortname array
     extern char tsk_fs_meta_type_str[TSK_FS_META_TYPE_STR_MAX][2];
 
-
+#define TSK_FS_IS_DIR_META(x) ((x == TSK_FS_META_TYPE_DIR) || (x == TSK_FS_META_TYPE_VIRT_DIR))
+    
     enum TSK_FS_META_MODE_ENUM {
         /* The following describe the file permissions */
         TSK_FS_META_MODE_UNSPECIFIED = 0000000,       ///< unspecified
@@ -566,12 +568,16 @@ extern "C" {
         TSK_FS_NAME_TYPE_SHAD = 8,      ///< Shadow inode (solaris)
         TSK_FS_NAME_TYPE_WHT = 9,       ///< Whiteout (openbsd)
         TSK_FS_NAME_TYPE_VIRT = 10,     ///< Special (TSK added "Virtual" files)
+        TSK_FS_NAME_TYPE_VIRT_DIR = 11, ///< Special (TSK added "Virtual" directories)
     } TSK_FS_NAME_TYPE_ENUM;
 
-#define TSK_FS_NAME_TYPE_STR_MAX 11     ///< Number of types that have a short string name
+#define TSK_FS_NAME_TYPE_STR_MAX 12     ///< Number of types that have a short string name
 
     /* ascii representation of above types */
     extern char tsk_fs_name_type_str[TSK_FS_NAME_TYPE_STR_MAX][2];
+
+#define TSK_FS_IS_DIR_NAME(x) \
+    ((x == TSK_FS_NAME_TYPE_DIR) || (x == TSK_FS_NAME_TYPE_VIRT_DIR))
 
 #define  TSK_FS_NAME_TAG 0x23147869
     /**
@@ -871,6 +877,12 @@ extern "C" {
     };
     typedef enum TSK_FS_INFO_FLAG_ENUM TSK_FS_INFO_FLAG_ENUM;
 
+    enum TSK_FS_ISTAT_FLAG_ENUM {
+        TSK_FS_ISTAT_NONE = 0x00,
+        TSK_FS_ISTAT_RUNLIST = 0x01
+    };
+    typedef enum TSK_FS_ISTAT_FLAG_ENUM TSK_FS_ISTAT_FLAG_ENUM;
+
 #define TSK_FS_INFO_TAG  0x10101010
 #define TSK_FS_INFO_FS_ID_LEN   32      // set based on largest file system / volume ID supported
 
@@ -957,7 +969,7 @@ extern "C" {
         *
         * @returns 1 on error and 0 on success
         */
-         uint8_t(*istat) (TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
+         uint8_t(*istat) (TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM flags, FILE * hFile, TSK_INUM_T inum,
             TSK_DADDR_T numblock, int32_t sec_skew);
 
          TSK_RETVAL_ENUM(*dir_open_meta) (TSK_FS_INFO * fs, TSK_FS_DIR ** a_fs_dir, TSK_INUM_T inode);  ///< \internal Call tsk_fs_dir_open_meta() instead.

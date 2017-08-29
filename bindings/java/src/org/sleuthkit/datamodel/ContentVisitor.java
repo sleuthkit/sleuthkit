@@ -95,13 +95,22 @@ public interface ContentVisitor<T> {
 	T visit(LayoutFile lf);
 
 	/**
-	 * Act on (visit) a LayoutDirectory content object
+	 * Act on (visit) a VirtualDirectory content object
 	 *
-	 * @param ld layout dir to visit / act on
+	 * @param vd virtual dir to visit / act on
 	 *
 	 * @return result of the visit
 	 */
-	T visit(VirtualDirectory ld);
+	T visit(VirtualDirectory vd);
+	
+	/**
+	 * Act on (visit) a LocalDirectory content object
+	 *
+	 * @param ld local dir to visit / act on
+	 *
+	 * @return result of the visit
+	 */
+	T visit(LocalDirectory ld);	
 
 	/**
 	 * Act on (visit) a DerivedFile content object
@@ -130,6 +139,15 @@ public interface ContentVisitor<T> {
 	 */
 	T visit(SlackFile sf);	
 
+	/**
+	 * Act on (visit) a blackboard artifact object
+	 *
+	 * @param ba blackboard artifact object to visit / act on
+	 *
+	 * @return result of the visit
+	 */
+	T visit(BlackboardArtifact ba);	
+	
 	/**
 	 * The default content visitor - quickest method for implementing a custom
 	 * visitor. Every visit method delegates to the defaultVisit method, the
@@ -183,6 +201,11 @@ public interface ContentVisitor<T> {
 		public T visit(VirtualDirectory ld) {
 			return defaultVisit(ld);
 		}
+		
+		@Override
+		public T visit(LocalDirectory ld) {
+			return defaultVisit(ld);
+		}
 
 		@Override
 		public T visit(DerivedFile df) {
@@ -197,6 +220,11 @@ public interface ContentVisitor<T> {
 		@Override
 		public T visit(SlackFile sf) {
 			return defaultVisit(sf);
+		}
+		
+		@Override
+		public T visit(BlackboardArtifact ba) {
+			return defaultVisit(ba);
 		}
 	}
 }
