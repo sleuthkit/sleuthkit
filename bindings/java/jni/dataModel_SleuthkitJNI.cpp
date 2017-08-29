@@ -166,8 +166,23 @@ castFsInfo(JNIEnv * env, jlong ptr)
 }
 
 
-static TSK_JNI_FILEHANDLE *
+static TSK_FS_FILE *
 castFsFile(JNIEnv * env, jlong ptr)
+{
+	TSK_FS_FILE *lcl = (TSK_FS_FILE *)ptr;
+	if (!lcl || lcl->tag != TSK_FS_FILE_TAG) {
+		setThrowTskCoreError(env, "Invalid FS_FILE object");
+		return 0;
+	}
+	// verify that file system handle is still open
+	if (!castFsInfo(env, (jlong)lcl->fs_info)) {
+		return 0;
+	}
+	return lcl;
+}
+
+static TSK_JNI_FILEHANDLE *
+castJniFileHandle(JNIEnv * env, jlong ptr)
 {
     TSK_JNI_FILEHANDLE *lcl = (TSK_JNI_FILEHANDLE *) ptr;
     if (!lcl || lcl->tag != TSK_JNI_FILEHANDLE_TAG) {
@@ -175,7 +190,7 @@ castFsFile(JNIEnv * env, jlong ptr)
         return 0;
     }
     // verify that all handles are still open
-    if (!lcl->fs_file || !castFsInfo(env, (jlong) lcl->fs_file->fs_info)) {
+    if (!castFsFile(env, (jlong) lcl->fs_file)) {
         return 0;
     }
     return lcl;
@@ -1086,7 +1101,7 @@ JNIEXPORT void JNICALL
     if ( (ret = tskAuto->startAddImage((int) numImgs, imagepaths8,
         TSK_IMG_TYPE_DETECT, 0, device_id)) != 0) {
         stringstream msgss;
-        msgss << "Errors occured while ingesting image " << std::endl;
+        msgss << "Errors occurred while ingesting image " << std::endl;
         vector<TskAuto::error_record> errors = tskAuto->getErrorList();
         for (size_t i = 0; i < errors.size(); i++) {
             msgss << (i+1) << ". ";
@@ -1190,7 +1205,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_runAddImgNat(JNIEnv * env,
     uint8_t ret = 0;
     if ((ret = tskAuto->startAddImage(img_info, device_id)) != 0) {
         stringstream msgss;
-        msgss << "Errors occured while ingesting image " << std::endl;
+        msgss << "Errors occurred while ingesting image " << std::endl;
         vector<TskAuto::error_record> errors = tskAuto->getErrorList();
         for (size_t i = 0; i < errors.size(); i++) {
             msgss << (i + 1) << ". ";
@@ -1807,7 +1822,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat(JNIEnv * env,
         }
     }
 
-    const TSK_JNI_FILEHANDLE *file_handle = castFsFile(env, a_file_handle);
+    const TSK_JNI_FILEHANDLE *file_handle = castJniFileHandle(env, a_file_handle);
     if (file_handle == 0) {
         if (dynBuf) {
             free(buf);
@@ -1862,7 +1877,7 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_readFileNat(JNIEnv * env,
 JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_saveFileMetaDataTextNat
   (JNIEnv *env, jclass obj, jlong a_file_handle, jstring a_tmp_path)
 {
-    const TSK_JNI_FILEHANDLE *file_handle = castFsFile(env, a_file_handle);
+    const TSK_JNI_FILEHANDLE *file_handle = castJniFileHandle(env, a_file_handle);
     if (file_handle == 0) {
         //exception already set
         return -1;
@@ -1886,7 +1901,7 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_saveFileMetaDat
     }
     env->ReleaseStringUTFChars(a_tmp_path, str8);
     
-    if (fs_info->istat(fs_info, hFile, file_handle->fs_file->meta->addr, 0, 0) != 0) {
+    if (fs_info->istat(fs_info, TSK_FS_ISTAT_RUNLIST, hFile, file_handle->fs_file->meta->addr, 0, 0) != 0) {
         fclose(hFile);
         setThrowTskCoreError(env);
         return -1;
@@ -1956,7 +1971,7 @@ JNIEXPORT void JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_closeFileNat(JNIEnv * env,
     jclass obj, jlong a_file_info)
 {
-    TSK_JNI_FILEHANDLE *file_handle = castFsFile(env, a_file_info);
+    TSK_JNI_FILEHANDLE *file_handle = castJniFileHandle(env, a_file_info);
     if (file_handle == 0) {
         //exception already set
         return;

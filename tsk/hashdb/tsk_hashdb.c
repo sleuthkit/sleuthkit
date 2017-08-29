@@ -369,6 +369,13 @@ uint8_t
         return 1;
     }
 
+    if (hdb_info->make_index == NULL) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("tsk_hdb_make_index: can not create index file");
+        return 1;
+    }
+
     return hdb_info->make_index(hdb_info, type);
 }
 
@@ -491,7 +498,7 @@ uint8_t
 * @param md5 Text representation of MD5 hash (can be NULL)
 * @param sha1 Text representation of SHA1 hash (can be NULL)
 * @param sha256 Text representation of SHA256 hash (can be NULL)
-* @param comment A comment to asociate with the hash (can be NULL)
+* @param comment A comment to associate with the hash (can be NULL)
 * @return 1 on error, 0 on success
 */
 uint8_t

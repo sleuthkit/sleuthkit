@@ -39,8 +39,14 @@
         <property environment="env"/>
         <available file="./jni/.libs/libtsk_jni.dylib" property="tsk_dylib.present"/>
         <available file="./jni/.libs/libtsk_jni.so" property="tsk_so.present"/>
-		<available file="./jni/.libs/libtsk_jni.a" property="present"/>
-		<fail unless="present" message="JNI native library not built."/>
+	<fail message="JNI native library not built.">
+		<condition>
+			<not><or>
+				<isset property="tsk_dylib.present"/>
+				<isset property="tsk_so.present"/>
+			</or></not>
+		</condition>
+	</fail>
    	<!-- Default location to find zlib and libewf. Overwritten by properties in makefile -->	
 	<property name="lib.z.path" value="/usr/lib"/>
 	<property name="lib.ewf.path" value="/usr/local/lib"/>

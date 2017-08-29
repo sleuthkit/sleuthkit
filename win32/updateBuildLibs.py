@@ -12,6 +12,9 @@ import time
 import traceback
 
 MSBUILD_PATH = os.path.normpath("c:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild.exe")
+CURRENT_PATH = os.getcwd()
+# save the build log in the output directory
+LOG_PATH = os.path.join(CURRENT_PATH, 'output', time.strftime("%Y.%m.%d-%H.%M.%S"))
 
 def pullAndBuildAllDependencies(branch):
     '''
@@ -93,14 +96,8 @@ def gitPull(libHome, repo, branch):
 
     global SYS
     global passed
-    oldPath = os.getcwd()
 
-    # save the build log in the output directory
-    logPath = os.path.join(oldPath, "output")
-    if not os.path.exists(logPath):
-        os.makedirs(logPath)
-
-    gppth = os.path.join(logPath, "GitPullOutput" + repo + ".txt")
+    gppth = os.path.join(LOG_PATH, "GitPullOutput" + repo + ".txt")
     gpout = open(gppth, 'a')
 
 
@@ -147,12 +144,6 @@ def buildDependentLibs(libHome, wPlatform, targetDll):
     sys.stdout.flush()
 
     target = "Release"
-    oldPath = os.getcwd()
-
-    # save the build log in the output directory
-    logPath = os.path.join(oldPath, "output")
-    if not os.path.exists(logPath):
-        os.makedirs(logPath)
 
     if wPlatform == 64:
         dllFile = os.path.join(libHome, "msvscpp", "x64", target, targetDll +".dll")
@@ -180,7 +171,7 @@ def buildDependentLibs(libHome, wPlatform, targetDll):
     vs.append("/t:clean")
     vs.append("/t:build")
 
-    outputFile = os.path.join(logPath, targetDll + "Output.txt")
+    outputFile = os.path.join(LOG_PATH, targetDll + "Output.txt")
     VSout = open(outputFile, 'w')
     ret = subprocess.call(vs, stdout=VSout)
     errorCode = ret
@@ -195,12 +186,12 @@ def buildDependentLibs(libHome, wPlatform, targetDll):
         print("return code: " + str(ret) + "\tdll file: " + dllFile + "\tcreated time: " + str(os.path.getctime(dllFile))) 
         sys.stdout.flush()
         passed = False
-        os.chdir(oldPath)
+        os.chdir(CURRENT_PATH)
         return
     else:
         print("Build " + str(wPlatform) + "-bit " + targetDll + " successfully")
  
-    os.chdir(oldPath)
+    os.chdir(CURRENT_PATH)
  
 def buildTSK(wPlatform, target):
     '''
@@ -227,12 +218,7 @@ def buildTSK(wPlatform, target):
     vs.append("/t:clean")
     vs.append("/t:build")
 
-    # save the build log in the output directory
-    logPath = os.path.join(os.getcwd(), "output")
-    if not os.path.exists(logPath):
-        os.makedirs(logPath)
-
-    outputFile = os.path.join(logPath, "TSKOutput.txt")
+    outputFile = os.path.join(LOG_PATH, "TSKOutput.txt")
     VSout = open(outputFile, 'w')
     ret = subprocess.call(vs, stdout=VSout)
     VSout.close()
@@ -249,17 +235,24 @@ def usage():
     '''
     Print out how to use this script.
     '''
-    print('Usage: python3 updataBuildlibs.py branch product')
-    print('branch is which branch to build. Must exist libewf, libvhdi and libvmdk.')
+    print('Usage: python3 updataBuildlibs.py [branch]')
+    print('branch is which branch to build and is optional. Currently only works for master')
     sys.stdout.flush()
     sys.exit(1)
 
 def main():
-    if len(sys.argv) < 2:
-        print('Missing arguments.')
+    #by default we use master branch to update the source
+    branch = 'master'
+
+    if len(sys.argv) == 2:    #keep this parameter here for the future we may let user use different branch to update source
+        branch = sys.argv[1]
+    elif len(sys.argv) > 2:
+        print('Wrong arguments.')
         usage()
 
-    branch = sys.argv[1]
+    print('Updating source by %s branch.' % branch)
+    if not os.path.exists(LOG_PATH):
+        os.makedirs(LOG_PATH)
 
     pullAndBuildAllDependencies(branch)
     buildTSKAll()

@@ -7,7 +7,7 @@
  */
 
 /** \file mymalloc.c
- * These functions allocate and realocate memory and set the error handling functions
+ * These functions allocate and reallocate memory and set the error handling functions
  * when an error occurs.
  */
 

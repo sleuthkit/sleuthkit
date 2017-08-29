@@ -52,7 +52,7 @@ v** Copyright (c) 2002-2003 Brian Carrier, @stake Inc.  All rights reserved
 *    - Since inodes are composed using the object id in the least 
 *      significant bits and the version up higher, requesting the
 *      inode that matches the object id you are looking for will
-*      retreive the latest version of this object.
+*      retrieve the latest version of this object.
 *
 *    - Files always exist in the latest version of their parent directory 
 *      only.
@@ -74,6 +74,8 @@ static const int TWELVE_BITS_MASK = 0xFFF; // Only keep 12 bits
 
 static uint8_t 
     yaffsfs_read_header(YAFFSFS_INFO *yfs, YaffsHeader ** header, TSK_OFF_T offset);
+static uint8_t
+    yaffsfs_load_attrs(TSK_FS_FILE *file);
 
 /**
  * Generate an inode number based on the file's object and version numbers
@@ -928,7 +930,7 @@ yaffs_validate_config_file(std::map<std::string, std::string> & paramMap){
 * Results of the analysis (if the format could be determined) will be stored
 * in yfs variables. 
 *
-* @param yfs File system being anlayzed
+* @param yfs File system being analyzed
 * @param maxBlocksToTest Number of block groups to scan to detect spare area or 0 if there is no limit.
 * @returns TSK_ERR if format could not be detected and TSK_OK if it could be.
 */
@@ -1043,7 +1045,7 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
             continue;
         }
 
-        // If this block is potentially valid (i.e., the spare contains something besides 0x00 and 0xff), copy all the spares into
+        // If this block is potentialy valid (i.e., the spare contains something besides 0x00 and 0xff), copy all the spares into
         // the big array of extracted spare areas
 
         // Copy this spare area
@@ -1123,7 +1125,7 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
                     (0xff == allSpares[thisChunkBase + currentOffset + 3])){
                         if(tsk_verbose && (! yfs->autoDetect)){
                             tsk_fprintf(stderr,
-                                "yaffs_initialize_spare_format: Elimimating offset %d - invalid sequence number 0xffffffff\n", 
+                                "yaffs_initialize_spare_format: Eliminating offset %d - invalid sequence number 0xffffffff\n", 
                                 currentOffset);
                         }
                         goodOffset = 0;
@@ -1137,7 +1139,7 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
                     (0 == allSpares[thisChunkBase + currentOffset + 3])){
                         if(tsk_verbose && (! yfs->autoDetect)){
                             tsk_fprintf(stderr,
-                                "yaffs_initialize_spare_format: Elimimating offset %d - invalid sequence number 0\n", 
+                                "yaffs_initialize_spare_format: Eliminating offset %d - invalid sequence number 0\n", 
                                 currentOffset);
                         }
                         goodOffset = 0;
@@ -1151,7 +1153,7 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
                     (allSpares[lastChunkBase + currentOffset + 3] != allSpares[thisChunkBase + currentOffset + 3])){
                         if(tsk_verbose && (! yfs->autoDetect)){
                             tsk_fprintf(stderr,
-                                "yaffs_initialize_spare_format: Elimimating offset %d - did not match previous chunk sequence number\n", 
+                                "yaffs_initialize_spare_format: Eliminating offset %d - did not match previous chunk sequence number\n", 
                                 currentOffset);
                         }
                         goodOffset = 0;
@@ -1165,7 +1167,7 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
                     (0 == allSpares[thisChunkBase + currentOffset + 7])){
                         if(tsk_verbose && (! yfs->autoDetect)){
                             tsk_fprintf(stderr,
-                                "yaffs_initialize_spare_format: Elimimating offset %d - invalid object id 0\n", 
+                                "yaffs_initialize_spare_format: Eliminating offset %d - invalid object id 0\n", 
                                 currentOffset);
                         }
                         goodOffset = 0;
@@ -1184,7 +1186,7 @@ yaffs_initialize_spare_format(YAFFSFS_INFO * yfs, TSK_OFF_T maxBlocksToTest){
                 if(allSameByte){
                     if(tsk_verbose && (! yfs->autoDetect)){
                         tsk_fprintf(stderr,
-                            "yaffs_initialize_spare_format: Elimimating offset %d - all repeated bytes\n", 
+                            "yaffs_initialize_spare_format: Eliminating offset %d - all repeated bytes\n", 
                             currentOffset);
                     }
                     goodOffset = 0;
@@ -1553,7 +1555,7 @@ static uint8_t
     fflush(stderr);
 
 
-    // Having multiple inodes point to the same object seems to cause trouble in TSK, especally in orphan file detection,
+    // Having multiple inodes point to the same object seems to cause trouble in TSK, especially in orphan file detection,
     //  so set the version number of the final one to zero.
     // While we're at it, find the highest obj_id and the highest version (before resetting to zero)
     TSK_INUM_T orphanParentID = yfs->fs_info.last_inum;
@@ -2408,7 +2410,7 @@ static TSK_WALK_RET_ENUM
 * @returns 1 on error and 0 on success
 */
 static uint8_t
-    yaffsfs_istat(TSK_FS_INFO *fs, FILE * hFile, TSK_INUM_T inum,
+    yaffsfs_istat(TSK_FS_INFO *fs, TSK_FS_ISTAT_FLAG_ENUM flags, FILE * hFile, TSK_INUM_T inum,
     TSK_DADDR_T numblock, int32_t sec_skew)
 {
     TSK_FS_META *fs_meta;
@@ -2492,17 +2494,32 @@ static uint8_t
     }
     tsk_fprintf(hFile, "\nData Chunks:\n");
 
-    print.idx = 0;
-    print.hFile = hFile;
 
-    if (tsk_fs_file_walk(fs_file, TSK_FS_FILE_WALK_FLAG_AONLY,
-        (TSK_FS_FILE_WALK_CB) print_addr_act, (void *) &print)) {
+    if (flags & TSK_FS_ISTAT_RUNLIST){
+        const TSK_FS_ATTR *fs_attr_default =
+            tsk_fs_file_attr_get_type(fs_file,
+                TSK_FS_ATTR_TYPE_DEFAULT, 0, 0);
+        if (fs_attr_default && (fs_attr_default->flags & TSK_FS_ATTR_NONRES)) {
+            if (tsk_fs_attr_print(fs_attr_default, hFile)) {
+                tsk_fprintf(hFile, "\nError creating run lists  ");
+                tsk_error_print(hFile);
+                tsk_error_reset();
+            }
+        }
+    }
+    else {
+        print.idx = 0;
+        print.hFile = hFile;
+
+        if (tsk_fs_file_walk(fs_file, TSK_FS_FILE_WALK_FLAG_AONLY,
+            (TSK_FS_FILE_WALK_CB)print_addr_act, (void *)&print)) {
             tsk_fprintf(hFile, "\nError reading file:  ");
             tsk_error_print(hFile);
             tsk_error_reset();
-    }
-    else if (print.idx != 0) {
-        tsk_fprintf(hFile, "\n");
+        }
+        else if (print.idx != 0) {
+            tsk_fprintf(hFile, "\n");
+        }
     }
 
     tsk_fs_file_close(fs_file);

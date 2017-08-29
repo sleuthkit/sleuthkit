@@ -339,10 +339,10 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
 
 /** \internal
 * Process a directory and load up FS_DIR with the entries. If a pointer to
-* an already allocated FS_DIR struture is given, it will be cleared.  If no existing
+* an already allocated FS_DIR structure is given, it will be cleared.  If no existing
 * FS_DIR structure is passed (i.e. NULL), then a new one will be created. If the return
 * value is error or corruption, then the FS_DIR structure could
-* have entries (depending on when the error occured).
+* have entries (depending on when the error occurred).
 *
 * @param a_fs File system to analyze
 * @param a_fs_dir Pointer to FS_DIR pointer. Can contain an already allocated

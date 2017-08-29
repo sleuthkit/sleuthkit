@@ -24,6 +24,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.ResourceBundle;
+import java.util.TimeZone;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Represents an attribute of an artifact posted to the blackboard. Instances
@@ -42,6 +45,8 @@ import java.util.ResourceBundle;
 public class BlackboardAttribute {
 
 	private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
+	private static final Logger LOGGER = Logger.getLogger(BlackboardAttribute.class.getName());
+	
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private BlackboardAttribute.Type attributeType;
 	private final int valueInt;
@@ -53,6 +58,592 @@ public class BlackboardAttribute {
 	private long artifactID;
 	private SleuthkitCase sleuthkitCase;
 	private String sources;
+
+	/**
+	 * Constructs a standard attribute with an integer value. The attribute
+	 * should be added to an appropriate artifact.
+	 *
+	 * @param attributeType The standard attribute type.
+	 * @param source        The source of this attribute.
+	 * @param valueInt      The attribute value.
+	 *
+	 * @throws IllegalArgumentException If the value type of the specified
+	 *                                  standard attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER.
+	 */
+	public BlackboardAttribute(ATTRIBUTE_TYPE attributeType, String source, int valueInt) throws IllegalArgumentException {
+		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER) {
+			throw new IllegalArgumentException("Value types do not match");
+		}
+		this.artifactID = 0;
+		this.attributeType = new BlackboardAttribute.Type(attributeType);
+		this.sources = replaceNulls(source);
+		this.valueInt = valueInt;
+		this.valueLong = 0;
+		this.valueDouble = 0;
+		this.valueString = "";
+		this.valueBytes = new byte[0];
+		this.context = "";
+	}
+
+	/**
+	 * Constructs an attribute with an integer value. The attribute should be
+	 * added to an appropriate artifact.
+	 *
+	 * @param attributeType The attribute type.
+	 * @param source        The source of this attribute.
+	 * @param valueInt      The attribute value.
+	 *
+	 * @throws IllegalArgumentException If the value type of the specified
+	 *                                  attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER.
+	 */
+	public BlackboardAttribute(Type attributeType, String source, int valueInt) throws IllegalArgumentException {
+		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER) {
+			throw new IllegalArgumentException("Type mismatched with value type");
+		}
+		this.artifactID = 0;
+		this.attributeType = attributeType;
+		this.sources = replaceNulls(source);
+		this.valueInt = valueInt;
+		this.valueLong = 0;
+		this.valueDouble = 0;
+		this.valueString = "";
+		this.valueBytes = new byte[0];
+		this.context = "";
+	}
+
+	/**
+	 * Constructs a standard attribute with a long/datetime value. If the value
+	 * is a datetime, it should be seconds from January 1, 1970. The attribute
+	 * should be added to an appropriate artifact.
+	 *
+	 * @param attributeType The standard attribute type.
+	 * @param source        The source of this attribute.
+	 * @param valueLong     The attribute value.
+	 *
+	 * @throws IllegalArgumentException If the value type of the specified
+	 *                                  standard attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG
+	 *                                  or
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME.
+	 */
+	public BlackboardAttribute(ATTRIBUTE_TYPE attributeType, String source, long valueLong) throws IllegalArgumentException {
+		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG
+				&& attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME) {
+			throw new IllegalArgumentException("Value types do not match");
+		}
+		this.artifactID = 0;
+		this.attributeType = new BlackboardAttribute.Type(attributeType);
+		this.sources = replaceNulls(source);
+		this.valueInt = 0;
+		this.valueLong = valueLong;
+		this.valueDouble = 0;
+		this.valueString = "";
+		this.valueBytes = new byte[0];
+		this.context = "";
+	}
+
+	/**
+	 * Constructs an attribute with a long/datetime value. The attribute should
+	 * be added to an appropriate artifact.
+	 *
+	 * @param attributeType The attribute type.
+	 * @param source        The source of this attribute.
+	 * @param valueLong     The attribute value.
+	 *
+	 * @throws IllegalArgumentException If the value type of the specified
+	 *                                  standard attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG
+	 *                                  or
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME.
+	 */
+	public BlackboardAttribute(Type attributeType, String source, long valueLong) throws IllegalArgumentException {
+		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG
+				&& attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME) {
+			throw new IllegalArgumentException("Type mismatched with value type");
+		}
+		this.artifactID = 0;
+		this.attributeType = attributeType;
+		this.sources = replaceNulls(source);
+		this.valueInt = 0;
+		this.valueLong = valueLong;
+		this.valueDouble = 0;
+		this.valueString = "";
+		this.valueBytes = new byte[0];
+		this.context = "";
+	}
+
+	/**
+	 * Constructs a standard attribute with a double value. The attribute should
+	 * be added to an appropriate artifact.
+	 *
+	 * @param attributeType The standard attribute type.
+	 * @param source        The source of this attribute.
+	 * @param valueDouble   The attribute value.
+	 *
+	 * @throws IllegalArgumentException If the value type of the specified
+	 *                                  standard attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE.
+	 */
+	public BlackboardAttribute(ATTRIBUTE_TYPE attributeType, String source, double valueDouble) throws IllegalArgumentException {
+		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE) {
+			throw new IllegalArgumentException("Value types do not match");
+		}
+		this.artifactID = 0;
+		this.attributeType = new BlackboardAttribute.Type(attributeType);
+		this.sources = replaceNulls(source);
+		this.valueInt = 0;
+		this.valueLong = 0;
+		this.valueDouble = valueDouble;
+		this.valueString = "";
+		this.valueBytes = new byte[0];
+		this.context = "";
+
+	}
+
+	/**
+	 * Constructs an attribute with a double value. The attribute should be
+	 * added to an appropriate artifact.
+	 *
+	 * @param attributeType The attribute type.
+	 * @param source        The source of this attribute.
+	 * @param valueDouble   The attribute value.
+	 *
+	 * @throws IllegalArgumentException If the value type of the specified
+	 *                                  attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE.
+	 */
+	public BlackboardAttribute(Type attributeType, String source, double valueDouble) throws IllegalArgumentException {
+		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE) {
+			throw new IllegalArgumentException("Type mismatched with value type");
+		}
+		this.artifactID = 0;
+		this.attributeType = attributeType;
+		this.sources = replaceNulls(source);
+		this.valueInt = 0;
+		this.valueLong = 0;
+		this.valueDouble = valueDouble;
+		this.valueString = "";
+		this.valueBytes = new byte[0];
+		this.context = "";
+	}
+
+	/**
+	 * Constructs a standard attribute with an string value. The attribute
+	 * should be added to an appropriate artifact.
+	 *
+	 * @param attributeType The standard attribute type.
+	 * @param source        The source of this attribute.
+	 * @param valueString   The attribute value.
+	 *
+	 * @throws IllegalArgumentException If the value type of the specified
+	 *                                  standard attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING.
+	 */
+	public BlackboardAttribute(ATTRIBUTE_TYPE attributeType, String source, String valueString) throws IllegalArgumentException {
+		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING) {
+			throw new IllegalArgumentException("Value types do not match");
+		}
+		this.artifactID = 0;
+		this.attributeType = new BlackboardAttribute.Type(attributeType);
+		this.sources = replaceNulls(source);
+		this.valueInt = 0;
+		this.valueLong = 0;
+		this.valueDouble = 0;
+		if (valueString == null) {
+			this.valueString = "";
+		} else {
+			this.valueString = replaceNulls(valueString);
+		}
+		this.valueBytes = new byte[0];
+		this.context = "";
+	}
+
+	/**
+	 * Constructs an attribute with a string value. The attribute should be
+	 * added to an appropriate artifact.
+	 *
+	 * @param attributeType The attribute type.
+	 * @param source        The source of this attribute.
+	 * @param valueString   The attribute value.
+	 *
+	 * @throws IllegalArgumentException If the value type of the specified
+	 *                                  attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING.
+	 */
+	public BlackboardAttribute(Type attributeType, String source, String valueString) throws IllegalArgumentException {
+		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING) {
+			throw new IllegalArgumentException("Type mismatched with value type");
+		}
+		this.artifactID = 0;
+		this.attributeType = attributeType;
+		this.sources = replaceNulls(source);
+		this.valueInt = 0;
+		this.valueLong = 0;
+		this.valueDouble = 0;
+		if (valueString == null) {
+			this.valueString = "";
+		} else {
+			this.valueString = replaceNulls(valueString);
+		}
+		this.valueBytes = new byte[0];
+		this.context = "";
+	}
+
+	/**
+	 * Constructs a standard attribute with a byte array value. The attribute
+	 * should be added to an appropriate artifact.
+	 *
+	 * @param attributeType The standard attribute type.
+	 * @param source        The source of this attribute.
+	 * @param valueBytes    The attribute value.
+	 *
+	 * @throws IllegalArgumentException If the value type of the specified
+	 *                                  standard attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE.
+	 */
+	public BlackboardAttribute(ATTRIBUTE_TYPE attributeType, String source, byte[] valueBytes) throws IllegalArgumentException {
+		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE) {
+			throw new IllegalArgumentException("Value types do not match");
+		}
+		this.artifactID = 0;
+		this.attributeType = new BlackboardAttribute.Type(attributeType);
+		this.sources = replaceNulls(source);
+		this.context = "";
+		this.valueInt = 0;
+		this.valueLong = 0;
+		this.valueDouble = 0;
+		this.valueString = "";
+		if (valueBytes == null) {
+			this.valueBytes = new byte[0];
+		} else {
+			this.valueBytes = valueBytes;
+		}
+	}
+
+	/**
+	 * Constructs an attribute with a byte array value. The attribute should be
+	 * added to an appropriate artifact.
+	 *
+	 * @param attributeType The attribute type.
+	 * @param source        The source of this attribute.
+	 * @param valueBytes    The attribute value.
+	 *
+	 * @throws IllegalArgumentException If the value type of the specified
+	 *                                  attribute type is not
+	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE.
+	 */
+	public BlackboardAttribute(Type attributeType, String source, byte[] valueBytes) throws IllegalArgumentException {
+		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE) {
+			throw new IllegalArgumentException("Type mismatched with value type");
+		}
+		this.artifactID = 0;
+		this.attributeType = attributeType;
+		this.sources = replaceNulls(source);
+		this.context = "";
+		this.valueInt = 0;
+		this.valueLong = 0;
+		this.valueDouble = 0;
+		this.valueString = "";
+		if (valueBytes == null) {
+			this.valueBytes = new byte[0];
+		} else {
+			this.valueBytes = valueBytes;
+		}
+	}
+
+	/**
+	 * Gets the id of the artifact associated with this attribute, if the
+	 * attribute was added to an artifact. Attributes should always be added to
+	 * artifacts after they are constructed.
+	 *
+	 * @return The artifact id or zero if the artifact id has not been set.
+	 */
+	public long getArtifactID() {
+		return artifactID;
+	}
+
+	/**
+	 * Gets the type of this attribute.
+	 *
+	 * @return The attribute type.
+	 */
+	public BlackboardAttribute.Type getAttributeType() {
+		return this.attributeType;
+	}
+
+	/**
+	 * Gets the value type.
+	 *
+	 * @return The value type
+	 */
+	public TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE getValueType() {
+		return attributeType.getValueType();
+	}
+
+	/**
+	 * Gets the value of this attribute. The value is only valid if the
+	 * attribute value type is TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER.
+	 *
+	 * @return The attribute value.
+	 */
+	public int getValueInt() {
+		return valueInt;
+	}
+
+	/**
+	 * Gets the value of this attribute. The value is only valid if the
+	 * attribute value type is TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG.
+	 *
+	 * @return The attribute value.
+	 */
+	public long getValueLong() {
+		return valueLong;
+	}
+
+	/**
+	 * Gets the value of this attribute. The value is only valid if the
+	 * attribute value type is TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE.
+	 *
+	 * @return The attribute value.
+	 */
+	public double getValueDouble() {
+		return valueDouble;
+	}
+
+	/**
+	 * Gets the value of this attribute. The value is only valid if the
+	 * attribute value type is TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING.
+	 *
+	 * @return The attribute value.
+	 */
+	public String getValueString() {
+		return valueString;
+	}
+
+	/**
+	 * Gets the value of this attribute. The value is only valid if the
+	 * attribute value type is TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE.
+	 *
+	 * @return The attribute value.
+	 */
+	public byte[] getValueBytes() {
+		return Arrays.copyOf(valueBytes, valueBytes.length);
+	}
+
+	/**
+	 * Gets the sources of this attribute.
+	 *
+	 * @return A list of sources, may be empty.
+	 */
+	public List<String> getSources() {
+		if (null != sources && !this.sources.isEmpty()) {
+			List<String> modules = Arrays.asList(sources.split(","));
+			return modules;
+		} else {
+			return Collections.emptyList();
+		}
+	}
+
+	/**
+	 * Adds a source to the sources of this attribute.
+	 *
+	 * @param source The source name.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	public void addSource(String source) throws TskCoreException {
+		this.sources = sleuthkitCase.addSourceToArtifactAttribute(this, source);
+	}
+
+	/**
+	 * Gets the artifact associated with this attribute. The artifact can be
+	 * used to get the source content for the artifact as well as any other
+	 * attributes associated with the artifact.
+	 *
+	 * @return The artifact.
+	 *
+	 * @throws TskCoreException If there is no artifact associated with this
+	 *                          attribute or there is an error reading from the
+	 *                          case database.
+	 */
+	public BlackboardArtifact getParentArtifact() throws TskCoreException {
+		return sleuthkitCase.getBlackboardArtifact(artifactID);
+	}
+
+	@Override
+	public int hashCode() {
+		int hash = 5;
+		hash = 97 * hash + (int) (this.artifactID ^ (this.artifactID >>> 32));
+		return hash;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		final BlackboardAttribute other = (BlackboardAttribute) obj;
+		return this.artifactID == other.getArtifactID();
+	}
+
+	@Override
+	public String toString() {
+		return "BlackboardAttribute{" + "artifactID=" + artifactID + ", attributeType=" + attributeType.toString() + ", moduleName=" + sources + ", context=" + context + ", valueInt=" + valueInt + ", valueLong=" + valueLong + ", valueDouble=" + valueDouble + ", valueString=" + valueString + ", valueBytes=" + Arrays.toString(valueBytes) + ", Case=" + sleuthkitCase + '}'; //NON-NLS
+	}
+
+	/**
+	 * Gets the attribute value as a string, formatted as required.
+	 *
+	 * @return The value as a string.
+	 */
+	public String getDisplayString() {
+		switch (attributeType.getValueType()) {
+			case STRING:
+				return getValueString();
+			case INTEGER:
+				if (attributeType.getTypeID() == ATTRIBUTE_TYPE.TSK_READ_STATUS.getTypeID()) {
+					if (getValueInt() == 0) {
+						return "Unread";
+					} else {
+						return "Read";
+					}
+				}
+				return Integer.toString(getValueInt());
+			case LONG:
+				// SHOULD at some point figure out how to convert times in here 
+				// based on preferred formats and such.  Perhaps provide another 
+				// method that takes a formatter argument. 
+				return Long.toString(getValueLong());
+			case DOUBLE:
+				return Double.toString(getValueDouble());
+			case BYTE:
+				return bytesToHexString(getValueBytes());
+				
+			case DATETIME: {
+				try {
+					final Content dataSource = getParentArtifact().getDataSource();
+					if ((dataSource != null) && (dataSource instanceof Image )) {
+						// return the date/time string in the timezone associated with the datasource,
+						Image  image = (Image) dataSource;
+						TimeZone tzone = TimeZone.getTimeZone(image.getTimeZone());
+						return TimeUtilities.epochToTime(getValueLong(), tzone);
+					} 
+				} catch (TskException ex) {
+					LOGGER.log(Level.WARNING, "Could not get timezone for image", ex); //NON-NLS
+					// return time string in default timezone
+					return TimeUtilities.epochToTime(getValueLong());
+				}
+			}
+		}
+		return "";
+	}
+
+	/**
+	 * Constructs an artifact attribute. To be used when creating an attribute
+	 * based on a query of the blackboard _attributes table in the case
+	 * database.
+	 *
+	 * @param artifactID      The artifact id for this attribute
+	 * @param attributeTypeID The attribute type id.
+	 * @param source          The source of this attribute.
+	 * @param context         Contextual information about this attribute.
+	 * @param valueType       The attribute value type.
+	 * @param valueInt        The value from the the value_int32 column.
+	 * @param valueLong       The value from the the value_int64 column.
+	 * @param valueDouble     The value from the the value_double column.
+	 * @param valueString     The value from the the value_text column.
+	 * @param valueBytes      The value from the the value_byte column.
+	 * @param sleuthkitCase   A reference to the SleuthkitCase object
+	 *                        representing the case database.
+	 */
+	BlackboardAttribute(long artifactID, BlackboardAttribute.Type attributeType, String source, String context,
+			int valueInt, long valueLong, double valueDouble, String valueString, byte[] valueBytes,
+			SleuthkitCase sleuthkitCase) {
+
+		this.artifactID = artifactID;
+		this.attributeType = attributeType;
+		this.sources = replaceNulls(source);
+		this.context = replaceNulls(context);
+		this.valueInt = valueInt;
+		this.valueLong = valueLong;
+		this.valueDouble = valueDouble;
+		if (valueString == null) {
+			this.valueString = "";
+		} else {
+			this.valueString = replaceNulls(valueString);
+		}
+		if (valueBytes == null) {
+			this.valueBytes = new byte[0];
+		} else {
+			this.valueBytes = valueBytes;
+		}
+		this.sleuthkitCase = sleuthkitCase;
+	}
+
+	/**
+	 * Sets the reference to the SleuthkitCase object that represents the case
+	 * database.
+	 *
+	 * @param sleuthkitCase A reference to a SleuthkitCase object.
+	 */
+	void setCaseDatabase(SleuthkitCase sleuthkitCase) {
+		this.sleuthkitCase = sleuthkitCase;
+	}
+
+	/**
+	 * Sets the artifact id.
+	 *
+	 * @param artifactID The artifact id.
+	 */
+	void setArtifactId(long artifactID) {
+		this.artifactID = artifactID;
+	}
+
+	/**
+	 * Gets the sources of this attribute.
+	 *
+	 * @return A comma-separated-values list of sources, may be empty. The CSV
+	 *         is due to a deliberate denormalization of the source field in the
+	 *         case database and this method is a helper method for the
+	 *         SleuthkitCase class.
+	 */
+	String getSourcesCSV() {
+		return sources;
+	}
+
+	/**
+	 * Converts a byte array to a string.
+	 *
+	 * @param bytes The byte array.
+	 *
+	 * @return The string.
+	 */
+	static String bytesToHexString(byte[] bytes) {
+		// from http://stackoverflow.com/questions/9655181/convert-from-byte-array-to-hex-string-in-java
+		char[] hexChars = new char[bytes.length * 2];
+		for (int j = 0; j < bytes.length; j++) {
+			int v = bytes[j] & 0xFF;
+			hexChars[j * 2] = HEX_ARRAY[v >>> 4];
+			hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
+		}
+		return new String(hexChars);
+	}
+
+	/**
+	 * Replace all NUL characters in the string with the SUB character
+	 *
+	 * @param text The input string.
+	 *
+	 * @return The output string.
+	 */
+	private String replaceNulls(String text) {
+		return text.replace((char) 0x00, (char) 0x1A);
+	}
 
 	/**
 	 * Represents the type of an attribute.
@@ -692,9 +1283,15 @@ public class BlackboardAttribute {
 		TSK_ACCOUNT_TYPE(121, "TSK_ACCOUNT_TYPE",
 				bundle.getString("BlackboardAttribute.tskAccountType.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
-		TSK_KEYWORD_SEARCH_TYPE(122, "TSK_KEYWORD_SEARCH_TYPE", // Keyword search type, exact match, sub-string or regex //NON-NLS
+		/**
+		 * Keyword search type: exact match, sub-string, or regex.
+		 */
+		TSK_KEYWORD_SEARCH_TYPE(122, "TSK_KEYWORD_SEARCH_TYPE", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskKeywordSearchType.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER);
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER),
+		TSK_HEADERS(123, "TSK_HEADERS", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskHeaders.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
 
 		private final int typeID;
 		private final String typeName;
@@ -802,578 +1399,6 @@ public class BlackboardAttribute {
 	}
 
 	/**
-	 * Constructs a standard attribute with an integer value. The attribute
-	 * should be added to an appropriate artifact.
-	 *
-	 * @param attributeType The standard attribute type.
-	 * @param source        The source of this attribute.
-	 * @param valueInt      The attribute value.
-	 *
-	 * @throws IllegalArgumentException If the value type of the specified
-	 *                                  standard attribute type is not
-	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER.
-	 */
-	public BlackboardAttribute(ATTRIBUTE_TYPE attributeType, String source, int valueInt) throws IllegalArgumentException {
-		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER) {
-			throw new IllegalArgumentException("Value types do not match");
-		}
-		this.artifactID = 0;
-		this.attributeType = new BlackboardAttribute.Type(attributeType);
-		this.sources = replaceNulls(source);
-		this.valueInt = valueInt;
-		this.valueLong = 0;
-		this.valueDouble = 0;
-		this.valueString = "";
-		this.valueBytes = new byte[0];
-		this.context = "";
-	}
-
-	/**
-	 * Constructs an attribute with an integer value. The attribute should be
-	 * added to an appropriate artifact.
-	 *
-	 * @param attributeType The attribute type.
-	 * @param source        The source of this attribute.
-	 * @param valueInt      The attribute value.
-	 *
-	 * @throws IllegalArgumentException If the value type of the specified
-	 *                                  attribute type is not
-	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER.
-	 */
-	public BlackboardAttribute(Type attributeType, String source, int valueInt) throws IllegalArgumentException {
-		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER) {
-			throw new IllegalArgumentException("Type mismatched with value type");
-		}
-		this.artifactID = 0;
-		this.attributeType = attributeType;
-		this.sources = replaceNulls(source);
-		this.valueInt = valueInt;
-		this.valueLong = 0;
-		this.valueDouble = 0;
-		this.valueString = "";
-		this.valueBytes = new byte[0];
-		this.context = "";
-	}
-
-	/**
-	 * Constructs a standard attribute with a long/datetime value. If the value
-	 * is a datetime, it should be seconds from January 1, 1970. The attribute
-	 * should be added to an appropriate artifact.
-	 *
-	 * @param attributeType The standard attribute type.
-	 * @param source        The source of this attribute.
-	 * @param valueLong     The attribute value.
-	 *
-	 * @throws IllegalArgumentException If the value type of the specified
-	 *                                  standard attribute type is not
-	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG
-	 *                                  or
-	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME.
-	 */
-	public BlackboardAttribute(ATTRIBUTE_TYPE attributeType, String source, long valueLong) throws IllegalArgumentException {
-		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG
-				&& attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME) {
-			throw new IllegalArgumentException("Value types do not match");
-		}
-		this.artifactID = 0;
-		this.attributeType = new BlackboardAttribute.Type(attributeType);
-		this.sources = replaceNulls(source);
-		this.valueInt = 0;
-		this.valueLong = valueLong;
-		this.valueDouble = 0;
-		this.valueString = "";
-		this.valueBytes = new byte[0];
-		this.context = "";
-	}
-
-	/**
-	 * Constructs an attribute with a long/datetime value. The attribute should
-	 * be added to an appropriate artifact.
-	 *
-	 * @param attributeType The attribute type.
-	 * @param source        The source of this attribute.
-	 * @param valueLong     The attribute value.
-	 *
-	 * @throws IllegalArgumentException If the value type of the specified
-	 *                                  standard attribute type is not
-	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG
-	 *                                  or
-	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME.
-	 */
-	public BlackboardAttribute(Type attributeType, String source, long valueLong) throws IllegalArgumentException {
-		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG
-				&& attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME) {
-			throw new IllegalArgumentException("Type mismatched with value type");
-		}
-		this.artifactID = 0;
-		this.attributeType = attributeType;
-		this.sources = replaceNulls(source);
-		this.valueInt = 0;
-		this.valueLong = valueLong;
-		this.valueDouble = 0;
-		this.valueString = "";
-		this.valueBytes = new byte[0];
-		this.context = "";
-	}
-
-	/**
-	 * Constructs a standard attribute with a double value. The attribute should
-	 * be added to an appropriate artifact.
-	 *
-	 * @param attributeType The standard attribute type.
-	 * @param source        The source of this attribute.
-	 * @param valueDouble   The attribute value.
-	 *
-	 * @throws IllegalArgumentException If the value type of the specified
-	 *                                  standard attribute type is not
-	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE.
-	 */
-	public BlackboardAttribute(ATTRIBUTE_TYPE attributeType, String source, double valueDouble) throws IllegalArgumentException {
-		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE) {
-			throw new IllegalArgumentException("Value types do not match");
-		}
-		this.artifactID = 0;
-		this.attributeType = new BlackboardAttribute.Type(attributeType);
-		this.sources = replaceNulls(source);
-		this.valueInt = 0;
-		this.valueLong = 0;
-		this.valueDouble = valueDouble;
-		this.valueString = "";
-		this.valueBytes = new byte[0];
-		this.context = "";
-
-	}
-
-	/**
-	 * Constructs an attribute with a double value. The attribute should be
-	 * added to an appropriate artifact.
-	 *
-	 * @param attributeType The attribute type.
-	 * @param source        The source of this attribute.
-	 * @param valueDouble   The attribute value.
-	 *
-	 * @throws IllegalArgumentException If the value type of the specified
-	 *                                  attribute type is not
-	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE.
-	 */
-	public BlackboardAttribute(Type attributeType, String source, double valueDouble) throws IllegalArgumentException {
-		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE) {
-			throw new IllegalArgumentException("Type mismatched with value type");
-		}
-		this.artifactID = 0;
-		this.attributeType = attributeType;
-		this.sources = replaceNulls(source);
-		this.valueInt = 0;
-		this.valueLong = 0;
-		this.valueDouble = valueDouble;
-		this.valueString = "";
-		this.valueBytes = new byte[0];
-		this.context = "";
-	}
-
-	/**
-	 * Constructs a standard attribute with an string value. The attribute
-	 * should be added to an appropriate artifact.
-	 *
-	 * @param attributeType The standard attribute type.
-	 * @param source        The source of this attribute.
-	 * @param valueString   The attribute value.
-	 *
-	 * @throws IllegalArgumentException If the value type of the specified
-	 *                                  standard attribute type is not
-	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING.
-	 */
-	public BlackboardAttribute(ATTRIBUTE_TYPE attributeType, String source, String valueString) throws IllegalArgumentException {
-		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING) {
-			throw new IllegalArgumentException("Value types do not match");
-		}
-		this.artifactID = 0;
-		this.attributeType = new BlackboardAttribute.Type(attributeType);
-		this.sources = replaceNulls(source);
-		this.valueInt = 0;
-		this.valueLong = 0;
-		this.valueDouble = 0;
-		if (valueString == null) {
-			this.valueString = "";
-		} else {
-			this.valueString = replaceNulls(valueString);
-		}
-		this.valueBytes = new byte[0];
-		this.context = "";
-	}
-
-	/**
-	 * Constructs an attribute with a string value. The attribute should be
-	 * added to an appropriate artifact.
-	 *
-	 * @param attributeType The attribute type.
-	 * @param source        The source of this attribute.
-	 * @param valueString   The attribute value.
-	 *
-	 * @throws IllegalArgumentException If the value type of the specified
-	 *                                  attribute type is not
-	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING.
-	 */
-	public BlackboardAttribute(Type attributeType, String source, String valueString) throws IllegalArgumentException {
-		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING) {
-			throw new IllegalArgumentException("Type mismatched with value type");
-		}
-		this.artifactID = 0;
-		this.attributeType = attributeType;
-		this.sources = replaceNulls(source);
-		this.valueInt = 0;
-		this.valueLong = 0;
-		this.valueDouble = 0;
-		if (valueString == null) {
-			this.valueString = "";
-		} else {
-			this.valueString = replaceNulls(valueString);
-		}
-		this.valueBytes = new byte[0];
-		this.context = "";
-	}
-
-	/**
-	 * Constructs a standard attribute with a byte array value. The attribute
-	 * should be added to an appropriate artifact.
-	 *
-	 * @param attributeType The standard attribute type.
-	 * @param source        The source of this attribute.
-	 * @param valueBytes    The attribute value.
-	 *
-	 * @throws IllegalArgumentException If the value type of the specified
-	 *                                  standard attribute type is not
-	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE.
-	 */
-	public BlackboardAttribute(ATTRIBUTE_TYPE attributeType, String source, byte[] valueBytes) throws IllegalArgumentException {
-		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE) {
-			throw new IllegalArgumentException("Value types do not match");
-		}
-		this.artifactID = 0;
-		this.attributeType = new BlackboardAttribute.Type(attributeType);
-		this.sources = replaceNulls(source);
-		this.context = "";
-		this.valueInt = 0;
-		this.valueLong = 0;
-		this.valueDouble = 0;
-		this.valueString = "";
-		if (valueBytes == null) {
-			this.valueBytes = new byte[0];
-		} else {
-			this.valueBytes = valueBytes;
-		}
-	}
-
-	/**
-	 * Constructs an attribute with a byte array value. The attribute should be
-	 * added to an appropriate artifact.
-	 *
-	 * @param attributeType The attribute type.
-	 * @param source        The source of this attribute.
-	 * @param valueBytes    The attribute value.
-	 *
-	 * @throws IllegalArgumentException If the value type of the specified
-	 *                                  attribute type is not
-	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE.
-	 */
-	public BlackboardAttribute(Type attributeType, String source, byte[] valueBytes) throws IllegalArgumentException {
-		if (attributeType.getValueType() != TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE) {
-			throw new IllegalArgumentException("Type mismatched with value type");
-		}
-		this.artifactID = 0;
-		this.attributeType = attributeType;
-		this.sources = replaceNulls(source);
-		this.context = "";
-		this.valueInt = 0;
-		this.valueLong = 0;
-		this.valueDouble = 0;
-		this.valueString = "";
-		if (valueBytes == null) {
-			this.valueBytes = new byte[0];
-		} else {
-			this.valueBytes = valueBytes;
-		}
-	}
-
-	/**
-	 * Gets the id of the artifact associated with this attribute, if the
-	 * attribute was added to an artifact. Attributes should always be added to
-	 * artifacts after they are constructed.
-	 *
-	 * @return The artifact id or zero if the artifact id has not been set.
-	 */
-	public long getArtifactID() {
-		return artifactID;
-	}
-
-	/**
-	 * Gets the type of this attribute.
-	 *
-	 * @return The attribute type.
-	 */
-	public BlackboardAttribute.Type getAttributeType() {
-		return this.attributeType;
-	}
-
-	/**
-	 * Gets the value type.
-	 *
-	 * @return The value type
-	 */
-	public TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE getValueType() {
-		return attributeType.getValueType();
-	}
-
-	/**
-	 * Gets the value of this attribute. The value is only valid if the
-	 * attribute value type is TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.INTEGER.
-	 *
-	 * @return The attribute value.
-	 */
-	public int getValueInt() {
-		return valueInt;
-	}
-
-	/**
-	 * Gets the value of this attribute. The value is only valid if the
-	 * attribute value type is TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG.
-	 *
-	 * @return The attribute value.
-	 */
-	public long getValueLong() {
-		return valueLong;
-	}
-
-	/**
-	 * Gets the value of this attribute. The value is only valid if the
-	 * attribute value type is TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DOUBLE.
-	 *
-	 * @return The attribute value.
-	 */
-	public double getValueDouble() {
-		return valueDouble;
-	}
-
-	/**
-	 * Gets the value of this attribute. The value is only valid if the
-	 * attribute value type is TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING.
-	 *
-	 * @return The attribute value.
-	 */
-	public String getValueString() {
-		return valueString;
-	}
-
-	/**
-	 * Gets the value of this attribute. The value is only valid if the
-	 * attribute value type is TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.BYTE.
-	 *
-	 * @return The attribute value.
-	 */
-	public byte[] getValueBytes() {
-		return Arrays.copyOf(valueBytes, valueBytes.length);
-	}
-
-	/**
-	 * Gets the sources of this attribute.
-	 *
-	 * @return A list of sources, may be empty.
-	 */
-	public List<String> getSources() {
-		if (null != sources && !this.sources.isEmpty()) {
-			List<String> modules = Arrays.asList(sources.split(","));
-			return modules;
-		} else {
-			return Collections.emptyList();
-		}
-	}
-
-	/**
-	 * Adds a source to the sources of this attribute.
-	 *
-	 * @param source The source name.
-	 *
-	 * @throws org.sleuthkit.datamodel.TskCoreException
-	 */
-	public void addSource(String source) throws TskCoreException {
-		this.sources = sleuthkitCase.addSourceToArtifactAttribute(this, source);
-	}
-
-	/**
-	 * Gets the artifact associated with this attribute. The artifact can be
-	 * used to get the source content for the artifact as well as any other
-	 * attributes associated with the artifact.
-	 *
-	 * @return The artifact.
-	 *
-	 * @throws TskCoreException If there is no artifact associated with this
-	 *                          attribute or there is an error reading from the
-	 *                          case database.
-	 */
-	public BlackboardArtifact getParentArtifact() throws TskCoreException {
-		return sleuthkitCase.getBlackboardArtifact(artifactID);
-	}
-
-	@Override
-	public int hashCode() {
-		int hash = 5;
-		hash = 97 * hash + (int) (this.artifactID ^ (this.artifactID >>> 32));
-		return hash;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (obj == null) {
-			return false;
-		}
-		if (getClass() != obj.getClass()) {
-			return false;
-		}
-		final BlackboardAttribute other = (BlackboardAttribute) obj;
-		return this.artifactID == other.getArtifactID();
-	}
-
-	@Override
-	public String toString() {
-		return "BlackboardAttribute{" + "artifactID=" + artifactID + ", attributeType=" + attributeType.toString() + ", moduleName=" + sources + ", context=" + context + ", valueInt=" + valueInt + ", valueLong=" + valueLong + ", valueDouble=" + valueDouble + ", valueString=" + valueString + ", valueBytes=" + Arrays.toString(valueBytes) + ", Case=" + sleuthkitCase + '}'; //NON-NLS
-	}
-
-	/**
-	 * Gets the attribute value as a string, formatted as required.
-	 *
-	 * @return The value as a string.
-	 */
-	public String getDisplayString() {
-		switch (attributeType.getValueType()) {
-			case STRING:
-				return getValueString();
-			case INTEGER:
-				if (attributeType.getTypeID() == ATTRIBUTE_TYPE.TSK_READ_STATUS.getTypeID()) {
-					if (getValueInt() == 0) {
-						return "Unread";
-					} else {
-						return "Read";
-					}
-				}
-				return Integer.toString(getValueInt());
-			case LONG:
-				// SHOULD at some point figure out how to convert times in here 
-				// based on preferred formats and such.  Perhaps provide another 
-				// method that takes a formatter argument. 
-				return Long.toString(getValueLong());
-			case DOUBLE:
-				return Double.toString(getValueDouble());
-			case BYTE:
-				return bytesToHexString(getValueBytes());
-			case DATETIME:
-				return FsContent.epochToTime(getValueLong());
-		}
-		return "";
-	}
-
-	/**
-	 * Constructs an artifact attribute. To be used when creating an attribute
-	 * based on a query of the blackboard _attributes table in the case
-	 * database.
-	 *
-	 * @param artifactID      The artifact id for this attribute
-	 * @param attributeTypeID The attribute type id.
-	 * @param source          The source of this attribute.
-	 * @param context         Contextual information about this attribute.
-	 * @param valueType       The attribute value type.
-	 * @param valueInt        The value from the the value_int32 column.
-	 * @param valueLong       The value from the the value_int64 column.
-	 * @param valueDouble     The value from the the value_double column.
-	 * @param valueString     The value from the the value_text column.
-	 * @param valueBytes      The value from the the value_byte column.
-	 * @param sleuthkitCase   A reference to the SleuthkitCase object
-	 *                        representing the case database.
-	 */
-	BlackboardAttribute(long artifactID, BlackboardAttribute.Type attributeType, String source, String context,
-			int valueInt, long valueLong, double valueDouble, String valueString, byte[] valueBytes,
-			SleuthkitCase sleuthkitCase) {
-
-		this.artifactID = artifactID;
-		this.attributeType = attributeType;
-		this.sources = replaceNulls(source);
-		this.context = replaceNulls(context);
-		this.valueInt = valueInt;
-		this.valueLong = valueLong;
-		this.valueDouble = valueDouble;
-		if (valueString == null) {
-			this.valueString = "";
-		} else {
-			this.valueString = replaceNulls(valueString);
-		}
-		if (valueBytes == null) {
-			this.valueBytes = new byte[0];
-		} else {
-			this.valueBytes = valueBytes;
-		}
-		this.sleuthkitCase = sleuthkitCase;
-	}
-
-	/**
-	 * Sets the reference to the SleuthkitCase object that represents the case
-	 * database.
-	 *
-	 * @param sleuthkitCase A reference to a SleuthkitCase object.
-	 */
-	void setCaseDatabase(SleuthkitCase sleuthkitCase) {
-		this.sleuthkitCase = sleuthkitCase;
-	}
-
-	/**
-	 * Sets the artifact id.
-	 *
-	 * @param artifactID The artifact id.
-	 */
-	void setArtifactId(long artifactID) {
-		this.artifactID = artifactID;
-	}
-
-	/**
-	 * Gets the sources of this attribute.
-	 *
-	 * @return A comma-separated-values list of sources, may be empty. The CSV
-	 *         is due to a deliberate denormalization of the source field in the
-	 *         case database and this method is a helper method for the
-	 *         SleuthkitCase class.
-	 */
-	String getSourcesCSV() {
-		return sources;
-	}
-
-	/**
-	 * Converts a byte array to a string.
-	 *
-	 * @param bytes The byte array.
-	 *
-	 * @return The string.
-	 */
-	static String bytesToHexString(byte[] bytes) {
-		// from http://stackoverflow.com/questions/9655181/convert-from-byte-array-to-hex-string-in-java
-		char[] hexChars = new char[bytes.length * 2];
-		for (int j = 0; j < bytes.length; j++) {
-			int v = bytes[j] & 0xFF;
-			hexChars[j * 2] = HEX_ARRAY[v >>> 4];
-			hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
-		}
-		return new String(hexChars);
-	}
-
-	/**
-	 * Replace all NUL characters in the string with the SUB character
-	 *
-	 * @param text The input string.
-	 *
-	 * @return The output string.
-	 */
-	private String replaceNulls(String text) {
-		return text.replace((char) 0x00, (char) 0x1A);
-	}
-
-	/**
 	 * Creates a standard attribute with an integer value. The attribute should
 	 * be added to an appropriate artifact.
 	 *
@@ -1434,6 +1459,7 @@ public class BlackboardAttribute {
 	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME
 	 *                                  or the type id is not for a standard
 	 *                                  type.
+	 * @deprecated
 	 */
 	@Deprecated
 	public BlackboardAttribute(int attributeTypeID, String moduleName,
@@ -1458,6 +1484,7 @@ public class BlackboardAttribute {
 	 *                                  TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.DATETIME
 	 *                                  or the type id is not for a standard
 	 *                                  type.
+	 * @deprecated
 	 */
 	@Deprecated
 	public BlackboardAttribute(int attributeTypeID, String moduleName, String context,

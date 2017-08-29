@@ -1682,7 +1682,7 @@ print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
  * @returns 1 on error and 0 on success
  */
 static uint8_t
-ffs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
+ffs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TSK_INUM_T inum,
     TSK_DADDR_T numblock, int32_t sec_skew)
 {
     FFS_INFO *ffs = (FFS_INFO *) fs;
@@ -1882,35 +1882,56 @@ ffs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
 
     tsk_fprintf(hFile, "\nDirect Blocks:\n");
 
-    print.idx = 0;
-    print.hFile = hFile;
-
-    if (tsk_fs_file_walk(fs_file, TSK_FS_FILE_WALK_FLAG_AONLY,
-            print_addr_act, (void *) &print)) {
-        tsk_fprintf(hFile, "\nError reading blocks in file\n");
-        tsk_error_print(hFile);
-        tsk_fs_file_close(fs_file);
-        return 1;
+    if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
+        TSK_FS_ATTR * fs_attr_direct = tsk_fs_file_attr_get_type(fs_file,
+            TSK_FS_ATTR_TYPE_DEFAULT, 0, 0);
+        if (fs_attr_direct && (fs_attr_direct->flags & TSK_FS_ATTR_NONRES)) {
+            if (tsk_fs_attr_print(fs_attr_direct, hFile)) {
+                tsk_fprintf(hFile, "\nError creating run lists\n");
+                tsk_error_print(hFile);
+                tsk_error_reset();
+            }
+        }
     }
+    else {
+        print.idx = 0;
+        print.hFile = hFile;
 
-    if (print.idx != 0)
-        tsk_fprintf(hFile, "\n");
+        if (tsk_fs_file_walk(fs_file, TSK_FS_FILE_WALK_FLAG_AONLY,
+            print_addr_act, (void *)&print)) {
+            tsk_fprintf(hFile, "\nError reading blocks in file\n");
+            tsk_error_print(hFile);
+            tsk_fs_file_close(fs_file);
+            return 1;
+        }
+
+        if (print.idx != 0)
+            tsk_fprintf(hFile, "\n");
+    }
 
     fs_attr_indir = tsk_fs_file_attr_get_type(fs_file,
         TSK_FS_ATTR_TYPE_UNIX_INDIR, 0, 0);
     if (fs_attr_indir) {
         tsk_fprintf(hFile, "\nIndirect Blocks:\n");
-
-        print.idx = 0;
-
-        if (tsk_fs_attr_walk(fs_attr_indir, TSK_FS_FILE_WALK_FLAG_AONLY,
-                print_addr_act, (void *) &print)) {
-            tsk_fprintf(hFile, "\nError reading indirect attribute:  ");
-            tsk_error_print(hFile);
-            tsk_error_reset();
+        if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
+            if (tsk_fs_attr_print(fs_attr_indir, hFile)) {
+                tsk_fprintf(hFile, "\nError creating run lists\n");
+                tsk_error_print(hFile);
+                tsk_error_reset();
+            }
         }
-        else if (print.idx != 0) {
-            tsk_fprintf(hFile, "\n");
+        else {
+            print.idx = 0;
+
+            if (tsk_fs_attr_walk(fs_attr_indir, TSK_FS_FILE_WALK_FLAG_AONLY,
+                print_addr_act, (void *)&print)) {
+                tsk_fprintf(hFile, "\nError reading indirect attribute:  ");
+                tsk_error_print(hFile);
+                tsk_error_reset();
+            }
+            else if (print.idx != 0) {
+                tsk_fprintf(hFile, "\n");
+            }
         }
     }
 
@@ -1980,7 +2001,7 @@ ffs_close(TSK_FS_INFO * fs)
  * @returns NULL on error or if data is not a FFS file system
  */
 TSK_FS_INFO *
-ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype)
+ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype, uint8_t test)
 {
     char *myname = "ffs_open";
     FFS_INFO *ffs;

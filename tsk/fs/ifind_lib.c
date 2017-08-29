@@ -210,7 +210,7 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
         return 0;
     }
 
-    /* If this is NTFS, seperate out the attribute of the current directory */
+    /* If this is NTFS, separate out the attribute of the current directory */
     if (TSK_FS_TYPE_ISNTFS(a_fs->ftype)
         && ((cur_attr = strchr(cur_dir, ':')) != NULL)) {
         *(cur_attr) = '\0';
@@ -243,7 +243,7 @@ tsk_fs_path2inum(TSK_FS_INFO * a_fs, const char *a_path,
          * problem where a file was a disk image and opening it as
          * a directory found the directory entries inside of the file
          * and this caused problems... */
-        if (fs_dir->fs_file->meta->type != TSK_FS_META_TYPE_DIR) {
+        if ( !TSK_FS_IS_DIR_META(fs_dir->fs_file->meta->type)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_GENFS);
             tsk_error_set_errstr("Address %" PRIuINUM
@@ -516,7 +516,7 @@ ifind_data_act(TSK_FS_FILE * fs_file, void *ptr)
 
     data->curinode = fs_file->meta->addr;
 
-    /* Search all attrributes */
+    /* Search all attributes */
     cnt = tsk_fs_file_attr_getsize(fs_file);
     for (i = 0; i < cnt; i++) {
         const TSK_FS_ATTR *fs_attr = tsk_fs_file_attr_get_idx(fs_file, i);

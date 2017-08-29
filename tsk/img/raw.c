@@ -24,6 +24,19 @@
 
 #ifdef TSK_WIN32
 #include <winioctl.h>
+#else
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
+#endif
+
+#ifndef S_IFMT
+#define S_IFMT __S_IFMT
+#endif
+
+#ifndef S_IFDIR
+#define S_IFDIR __S_IFDIR
 #endif
 
 
@@ -355,6 +368,7 @@ static void
 raw_close(TSK_IMG_INFO * img_info)
 {
     IMG_RAW_INFO *raw_info = (IMG_RAW_INFO *) img_info;
+    int i;
 
 #ifdef TSK_WIN32
     if (raw_info->img_writer != NULL) {
@@ -364,7 +378,6 @@ raw_close(TSK_IMG_INFO * img_info)
     }
 #endif
 
-    int i;
     for (i = 0; i < SPLIT_CACHE; i++) {
         if (raw_info->cache[i].fd != 0)
 #ifdef TSK_WIN32
@@ -703,7 +716,7 @@ raw_open(int a_num_img, const TSK_TCHAR * const a_images[],
     }
 
     /* get size info for each file - we do not open each one because that
-     * could cause us to run out of file decsriptors when we only need a few.
+     * could cause us to run out of file descriptors when we only need a few.
      * The descriptors are opened as needed */
     for (i = 1; i < raw_info->img_info.num_img; i++) {
         TSK_OFF_T size;

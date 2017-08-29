@@ -1,15 +1,15 @@
 /*
  * SleuthKit Java Bindings
- * 
- * Copyright 2011-2016 Basis Technology Corp.
+ *
+ * Copyright 2011-2017 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +20,6 @@ package org.sleuthkit.datamodel;
 
 import java.text.MessageFormat;
 import java.util.ResourceBundle;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
@@ -80,6 +79,9 @@ public class DerivedFile extends AbstractFile {
 	 * @param parentId           The object id of parent of the file.
 	 * @param mimeType           The MIME type of the file, null if it has not
 	 *                           yet been determined.
+	 * @param encodingType		     The encoding type of the file.
+	 * @param extension          The extension part of the file name (not
+	 *                           including the '.'), can be null.
 	 */
 	DerivedFile(SleuthkitCase db,
 			long objId,
@@ -94,12 +96,13 @@ public class DerivedFile extends AbstractFile {
 			String localPath,
 			long parentId,
 			String mimeType,
-			TskData.EncodingType encodingType) {
+			TskData.EncodingType encodingType,
+			String extension) {
 		// TODO (AUT-1904): The parent id should be passed to AbstractContent 
 		// through the class hierarchy contructors.
 		super(db, objId, dataSourceObjectId, TskData.TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0,
 				name, TSK_DB_FILES_TYPE_ENUM.LOCAL, 0L, 0, dirType, metaType, dirFlag,
-				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath, mimeType);
+				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath, mimeType, extension);
 		setLocalFilePath(localPath, false);
 		setEncodingType(encodingType);
 	}
@@ -115,33 +118,6 @@ public class DerivedFile extends AbstractFile {
 		return false;
 	}
 
-	/**
-	 * Gets the derived files, if any, that are children of this derived file.
-	 *
-	 * @return A list of the children.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
-	 */
-	@Override
-	public List<Content> getChildren() throws TskCoreException {
-		return getSleuthkitCase().getAbstractFileChildren(this, TSK_DB_FILES_TYPE_ENUM.DERIVED);
-	}
-
-	/**
-	 * Gets the object ids of the derived files, if any, that are children of
-	 * this derived file.
-	 *
-	 * @return A list of the children.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
-	 */
-	@Override
-	public List<Long> getChildrenIds() throws TskCoreException {
-		return getSleuthkitCase().getAbstractFileChildrenIds(this, TSK_DB_FILES_TYPE_ENUM.DERIVED);
-	}
-	
 	/**
 	 * Gets the method used to derive this file, if it has been recorded.
 	 *
@@ -212,8 +188,6 @@ public class DerivedFile extends AbstractFile {
 	 * @param preserveState True if state should be included in the string
 	 *                      representation of this object.
 	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
 	 */
 	@Override
 	public String toString(boolean preserveState) {
@@ -333,7 +307,7 @@ public class DerivedFile extends AbstractFile {
 		this(db, objId, db.getDataSourceObjectId(objId), name, dirType, metaType, dirFlag, metaFlags, size,
 				ctime, crtime, atime, mtime,
 				md5Hash, knownState,
-				parentPath, localPath, parentId, null, TskData.EncodingType.NONE);
+				parentPath, localPath, parentId, null, TskData.EncodingType.NONE, null);
 	}
 
 }

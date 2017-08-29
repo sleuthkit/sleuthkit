@@ -4,7 +4,7 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
 
-AC_INIT(sleuthkit, 4.4.0)
+AC_INIT(sleuthkit, 4.4.2)
 m4_include([m4/ax_pthread.m4])
 dnl include the version from 1.12.1. This will work for 
 m4_include([m4/cppunit.m4])
@@ -122,12 +122,17 @@ AC_CHECK_HEADERS(streambuf, , , AC_MSG_ERROR([missing STL streambuf class header
 AC_CHECK_HEADERS(string, , , AC_MSG_ERROR([missing STL string class header])) 
 AC_CHECK_HEADERS(vector, , , AC_MSG_ERROR([missing STL vector class header])) 
 
-
-dnl needed for sqllite
-AC_CHECK_LIB(dl, dlopen) 
-dnl sqlite requires pthread libraries - this was copied from its configure.ac
-dnl AC_SEARCH_LIBS(pthread_create, pthread)
-dnl AC_SEARCH_LIBS(dlopen, dl)
+dnl Check for sqlite and its dependencies
+AC_CHECK_HEADERS([sqlite3.h],
+                 [AC_CHECK_LIB(dl, dlopen)
+                  AC_CHECK_LIB(sqlite3, sqlite3_open)])
+dnl Compile the bundled sqlite if there is no system one installed
+AC_MSG_CHECKING(which sqlite3 to use)
+AS_IF([test "x$ac_cv_lib_sqlite3_sqlite3_open" = "xyes"],
+      [AC_MSG_RESULT([system])],
+      [AC_MSG_RESULT([bundled])])
+AM_CONDITIONAL([HAVE_LIBSQLITE3],
+               [test "x$ac_cv_lib_sqlite3_sqlite3_open" = "xyes"])
 
 # Check if we should link afflib.
 AC_ARG_WITH([afflib],

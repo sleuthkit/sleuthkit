@@ -1,13 +1,13 @@
 /*
-** The Sleuth Kit 
+** The Sleuth Kit
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2003-2011 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 @stake Inc.  All rights reserved
-** 
-** Copyright (c) 1997,1998,1999, International Business Machines          
+**
+** Copyright (c) 1997,1998,1999, International Business Machines
 ** Corporation and others. All Rights Reserved.
 */
 
@@ -36,7 +36,7 @@
 #include "tsk/img/tsk_img_i.h"
 #include "tsk/vs/tsk_vs_i.h"
 
-// Include the external file 
+// Include the external file
 #include "tsk_fs.h"
 
 #include <time.h>
@@ -100,6 +100,7 @@ extern "C" {
         TSK_FS_ATTR * a_fs_attr, TSK_FS_ATTR_RUN * data_run_new);
     extern void tsk_fs_attr_append_run(TSK_FS_INFO * fs,
         TSK_FS_ATTR * a_fs_attr, TSK_FS_ATTR_RUN * a_data_run);
+    extern uint8_t tsk_fs_attr_print(const TSK_FS_ATTR * a_fs_attr, FILE * hFile);
 
     /* FS_DATALIST */
     extern TSK_FS_ATTRLIST *tsk_fs_attrlist_alloc();
@@ -139,7 +140,8 @@ extern "C" {
     extern uint8_t tsk_fs_dir_add(TSK_FS_DIR * a_fs_dir,
         const TSK_FS_NAME * a_fs_dent);
     extern void tsk_fs_dir_reset(TSK_FS_DIR * a_fs_dir);
-    extern uint8_t tsk_fs_dir_contains(TSK_FS_DIR * a_fs_dir, TSK_INUM_T meta_addr);
+    extern uint8_t tsk_fs_dir_contains(TSK_FS_DIR * a_fs_dir, TSK_INUM_T meta_addr, uint32_t hash);
+    extern uint32_t tsk_fs_dir_hash(const char *str);
 
     /* Orphan Directory Support */
     TSK_RETVAL_ENUM tsk_fs_dir_load_inum_named(TSK_FS_INFO * a_fs);
@@ -186,7 +188,7 @@ extern "C" {
     extern TSK_FS_INFO *fatfs_open(TSK_IMG_INFO *, TSK_OFF_T,
         TSK_FS_TYPE_ENUM, uint8_t);
     extern TSK_FS_INFO *ffs_open(TSK_IMG_INFO *, TSK_OFF_T,
-        TSK_FS_TYPE_ENUM);
+        TSK_FS_TYPE_ENUM, uint8_t);
     extern TSK_FS_INFO *ntfs_open(TSK_IMG_INFO *, TSK_OFF_T,
         TSK_FS_TYPE_ENUM, uint8_t);
     extern TSK_FS_INFO *rawfs_open(TSK_IMG_INFO *, TSK_OFF_T);
@@ -218,7 +220,7 @@ extern "C" {
         TSK_INUM_T a_start_inum, TSK_INUM_T a_end_inum,
         TSK_FS_META_FLAG_ENUM a_flags, TSK_FS_META_WALK_CB a_action,
         void *a_ptr);
-    extern uint8_t tsk_fs_nofs_istat(TSK_FS_INFO * a_fs, FILE * hFile,
+    extern uint8_t tsk_fs_nofs_istat(TSK_FS_INFO * a_fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
         TSK_INUM_T inum, TSK_DADDR_T numblock, int32_t sec_skew);
     extern TSK_RETVAL_ENUM tsk_fs_nofs_dir_open_meta(TSK_FS_INFO * a_fs,
         TSK_FS_DIR ** a_fs_dir, TSK_INUM_T a_addr);
@@ -232,6 +234,47 @@ extern "C" {
     /* malloc/free with lock init/deinit */
     extern TSK_FS_INFO *tsk_fs_malloc(size_t);
     extern void tsk_fs_free(TSK_FS_INFO *);
+
+
+    /****************** NTFS USN Journal Structures ******************/
+
+    /** \name NTFS Update Sequence Number Journal Data Structures */
+    //@{
+
+
+    typedef struct {
+        uint32_t length;
+        uint16_t major_version;
+        uint16_t minor_version;
+
+    } TSK_USN_RECORD_HEADER;
+
+    /**
+    * Function definition used for callback to ntfs_usnjentry_walk().
+    *
+    * @param a_header Pointer to USN header structure.
+    * @param a_record Pointer USN record structure, its type can be deduced
+    *    from the major version number in the header.
+    * @param a_ptr Pointer that was supplied by the caller who called
+    *    ntfs_usnjentry_walk.
+    * @returns Value to identify if walk should continue, stop, or stop because of error
+    */
+    typedef TSK_WALK_RET_ENUM(*TSK_FS_USNJENTRY_WALK_CB) (
+        TSK_USN_RECORD_HEADER *a_header, void *a_record, void *a_ptr);
+
+    extern uint8_t tsk_ntfs_usnjopen(TSK_FS_INFO * fs, TSK_INUM_T inum);
+    extern uint8_t tsk_ntfs_usnjentry_walk(TSK_FS_INFO * fs,
+        TSK_FS_USNJENTRY_WALK_CB action, void *ptr);
+
+    enum TSK_FS_USNJLS_FLAG_ENUM {
+        TSK_FS_USNJLS_NONE = 0x00,
+        TSK_FS_USNJLS_LONG = 0x01,
+        TSK_FS_USNJLS_MAC = 0x02
+    };
+    typedef enum TSK_FS_USNJLS_FLAG_ENUM TSK_FS_USNJLS_FLAG_ENUM;
+    extern uint8_t tsk_fs_usnjls(TSK_FS_INFO * fs, TSK_INUM_T inode,
+        TSK_FS_USNJLS_FLAG_ENUM flags);
+
 
 // Endian macros - actual functions in misc/
 

@@ -34,7 +34,7 @@
  * @param a_off Byte offset into file system (i.e. not offset into image)
  * @param a_buf Buffer to write data into
  * @param a_len Number of bytes to read
- * @retuns Number of bytes read or -1 on error
+ * @returns Number of bytes read or -1 on error
  */
 static ssize_t
 fs_prepost_read(TSK_FS_INFO * a_fs, TSK_OFF_T a_off, char *a_buf,

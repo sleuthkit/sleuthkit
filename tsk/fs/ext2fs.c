@@ -742,7 +742,6 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
          */
         if ((fs_meta->type == TSK_FS_META_TYPE_LNK)
             && (fs_meta->size < EXT2FS_MAXPATHLEN) && (fs_meta->size >= 0)) {
-            unsigned int count = 0;
             int i;
 
             if ((fs_meta->link =
@@ -752,6 +751,7 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
             /* it is located directly in the pointers */
             if (fs_meta->size < 4 * (EXT2FS_NDADDR + EXT2FS_NIADDR)) {
                 unsigned int j;
+                unsigned int count = 0;
 
                 for (i = 0; i < (EXT2FS_NDADDR + EXT2FS_NIADDR) &&
                     count < fs_meta->size; i++) {
@@ -771,6 +771,7 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
                 TSK_FS_INFO *fs = (TSK_FS_INFO *) & ext2fs->fs_info;
                 char *data_buf = NULL;
                 char *a_ptr = fs_meta->link;
+                unsigned int total_read = 0;
                 TSK_DADDR_T *addr_ptr = fs_meta->content_ptr;;
 
                 if ((data_buf = tsk_malloc(fs->block_size)) == NULL) {
@@ -779,14 +780,9 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
 
                 /* we only need to do the direct blocks due to the limit
                  * on path length */
-                for (i = 0; i < EXT2FS_NDADDR && count < fs_meta->size;
+                for (i = 0; i < EXT2FS_NDADDR && total_read < fs_meta->size;
                     i++) {
                     ssize_t cnt;
-
-                    int read_count =
-                        (fs_meta->size - count <
-                        fs->block_size) ? (int) (fs_meta->size -
-                        count) : (int) (fs->block_size);
 
                     cnt = tsk_fs_read_block(fs,
                         addr_ptr[i], data_buf, fs->block_size);
@@ -803,9 +799,14 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
                         return 1;
                     }
 
-                    memcpy(a_ptr, data_buf, read_count);
-                    count += read_count;
-                    a_ptr = (char *) ((uintptr_t) a_ptr + count);
+                    int copy_len =
+                        (fs_meta->size - total_read <
+                        fs->block_size) ? (int) (fs_meta->size -
+                        total_read) : (int) (fs->block_size);
+
+                    memcpy(a_ptr, data_buf, copy_len);
+                    total_read += copy_len;
+                    a_ptr = (char *) ((uintptr_t) a_ptr + copy_len);
                 }
 
                 /* terminate the string */
@@ -1431,6 +1432,7 @@ ext2fs_make_data_run_extent_index(TSK_FS_INFO * fs_info,
         }
         tsk_error_set_errstr("ext2fs_make_data_run_extent_index: Block %"
             PRIuDADDR, idx_block);
+        free(buf);
         return 1;
     }
     header = (ext2fs_extent_header *) buf;
@@ -1440,17 +1442,21 @@ ext2fs_make_data_run_extent_index(TSK_FS_INFO * fs_info,
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
         tsk_error_set_errstr
             ("ext2fs_make_data_run_extent_index: extent header magic valid incorrect!");
+        free(buf);
         return 1;
     }
 
     data_run = tsk_fs_attr_run_alloc();
     if (data_run == NULL) {
+        free(buf);
         return 1;
     }
     data_run->addr = idx_block;
     data_run->len = fs_blocksize;
 
     if (tsk_fs_attr_add_run(fs_info, fs_attr_extent, data_run)) {
+        tsk_fs_attr_run_free(data_run);
+        free(buf);
         return 1;
     }
 
@@ -1461,6 +1467,7 @@ ext2fs_make_data_run_extent_index(TSK_FS_INFO * fs_info,
             i++) {
             ext2fs_extent extent = extents[i];
             if (ext2fs_make_data_run_extent(fs_info, fs_attr, &extent)) {
+                free(buf);
                 return 1;
             }
         }
@@ -1477,6 +1484,7 @@ ext2fs_make_data_run_extent_index(TSK_FS_INFO * fs_info,
                 endian, index->ei_leaf_lo);
             if (ext2fs_make_data_run_extent_index(fs_info, fs_attr,
                     fs_attr_extent, child_block)) {
+                free(buf);
                 return 1;
             }
         }
@@ -2566,7 +2574,7 @@ print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
  * @returns 1 on error and 0 on success
  */
 static uint8_t
-ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
+ext2fs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TSK_INUM_T inum,
     TSK_DADDR_T numblock, int32_t sec_skew)
 {
     EXT2FS_INFO *ext2fs = (EXT2FS_INFO *) fs;
@@ -3030,17 +3038,31 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
 
     tsk_fprintf(hFile, "\nDirect Blocks:\n");
 
-    print.idx = 0;
-    print.hFile = hFile;
-
-    if (tsk_fs_file_walk(fs_file, TSK_FS_FILE_WALK_FLAG_AONLY,
-            print_addr_act, (void *) &print)) {
-        tsk_fprintf(hFile, "\nError reading file:  ");
-        tsk_error_print(hFile);
-        tsk_error_reset();
+    if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
+        const TSK_FS_ATTR *fs_attr_default =
+            tsk_fs_file_attr_get_type(fs_file,
+                TSK_FS_ATTR_TYPE_DEFAULT, 0, 0);
+        if (fs_attr_default && (fs_attr_default->flags & TSK_FS_ATTR_NONRES)) {
+            if (tsk_fs_attr_print(fs_attr_default, hFile)) {
+                tsk_fprintf(hFile, "\nError creating run lists\n");
+                tsk_error_print(hFile);
+                tsk_error_reset();
+            }
+        }
     }
-    else if (print.idx != 0) {
-        tsk_fprintf(hFile, "\n");
+    else {
+        print.idx = 0;
+        print.hFile = hFile;
+
+        if (tsk_fs_file_walk(fs_file, TSK_FS_FILE_WALK_FLAG_AONLY,
+            print_addr_act, (void *)&print)) {
+            tsk_fprintf(hFile, "\nError reading file:  ");
+            tsk_error_print(hFile);
+            tsk_error_reset();
+        }
+        else if (print.idx != 0) {
+            tsk_fprintf(hFile, "\n");
+        }
     }
 
     if (fs_meta->content_type == TSK_FS_META_CONTENT_TYPE_EXT4_EXTENTS) {
@@ -3050,18 +3072,27 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         if (fs_attr_extent) {
             tsk_fprintf(hFile, "\nExtent Blocks:\n");
 
-            print.idx = 0;
-
-            if (tsk_fs_attr_walk(fs_attr_extent,
-                    TSK_FS_FILE_WALK_FLAG_AONLY, print_addr_act,
-                    (void *) &print)) {
-                tsk_fprintf(hFile,
-                    "\nError reading indirect attribute:  ");
-                tsk_error_print(hFile);
-                tsk_error_reset();
+            if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
+                if (tsk_fs_attr_print(fs_attr_extent, hFile)) {
+                    tsk_fprintf(hFile, "\nError creating run lists\n");
+                    tsk_error_print(hFile);
+                    tsk_error_reset();
+                }
             }
-            else if (print.idx != 0) {
-                tsk_fprintf(hFile, "\n");
+            else {
+                print.idx = 0;
+
+                if (tsk_fs_attr_walk(fs_attr_extent,
+                    TSK_FS_FILE_WALK_FLAG_AONLY, print_addr_act,
+                    (void *)&print)) {
+                    tsk_fprintf(hFile,
+                        "\nError reading indirect attribute:  ");
+                    tsk_error_print(hFile);
+                    tsk_error_reset();
+                }
+                else if (print.idx != 0) {
+                    tsk_fprintf(hFile, "\n");
+                }
             }
         }
     }
@@ -3070,19 +3101,23 @@ ext2fs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
             TSK_FS_ATTR_TYPE_UNIX_INDIR, 0, 0);
         if (fs_attr_indir) {
             tsk_fprintf(hFile, "\nIndirect Blocks:\n");
-
-            print.idx = 0;
-
-            if (tsk_fs_attr_walk(fs_attr_indir,
-                    TSK_FS_FILE_WALK_FLAG_AONLY, print_addr_act,
-                    (void *) &print)) {
-                tsk_fprintf(hFile,
-                    "\nError reading indirect attribute:  ");
-                tsk_error_print(hFile);
-                tsk_error_reset();
+            if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
+                tsk_fs_attr_print(fs_attr_indir, hFile);
             }
-            else if (print.idx != 0) {
-                tsk_fprintf(hFile, "\n");
+            else {
+                print.idx = 0;
+
+                if (tsk_fs_attr_walk(fs_attr_indir,
+                    TSK_FS_FILE_WALK_FLAG_AONLY, print_addr_act,
+                    (void *)&print)) {
+                    tsk_fprintf(hFile,
+                        "\nError reading indirect attribute:  ");
+                    tsk_error_print(hFile);
+                    tsk_error_reset();
+                }
+                else if (print.idx != 0) {
+                    tsk_fprintf(hFile, "\n");
+                }
             }
         }
     }

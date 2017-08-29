@@ -23,7 +23,7 @@
 
 #if defined( HAVE_LIBEWF_V2_API )
 /**
- * Get error string from libewf and make buffer emtpy if that didn't work. 
+ * Get error string from libewf and make buffer empty if that didn't work. 
  * @returns 1 if error message was not set
  */
 static uint8_t

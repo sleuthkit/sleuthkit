@@ -36,7 +36,11 @@ extern "C" {
         int cancelFinish;
 
         TSK_TCHAR* fileName;
+#ifdef TSK_WIN32
         HANDLE outputFileHandle;
+#else
+        int outputFileHandle;
+#endif
 
         unsigned char* footer;
 
