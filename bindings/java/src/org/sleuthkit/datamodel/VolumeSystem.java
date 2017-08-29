@@ -131,7 +131,42 @@ public class VolumeSystem extends AbstractContent {
 			super.finalize();
 		}
 	}
+	
+	/**
+	 * Not currently supported.
+	 *
+	 * Create and add an artifact associated with this content to the blackboard
+	 *
+	 * @param artifactTypeID id of the artifact type (if the id doesn't already
+	 *                       exist an exception will be thrown)
+	 *
+	 * @return the blackboard artifact created (the artifact type id can be
+	 *         looked up from this)
+	 *
+	 * @throws TskCoreException if critical error occurred within tsk core
+	 */
+	@Override
+	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException {
+		throw new TskCoreException("Cannot create artifact of a volume system. Not supported.");
+	}
 
+	/**
+	 * Not currently supported.
+	 *
+	 * Create and add an artifact associated with this content to the blackboard
+	 *
+	 * @param type artifact enum type
+	 *
+	 * @return the blackboard artifact created (the artifact type id can be
+	 *         looked up from this)
+	 *
+	 * @throws TskCoreException if critical error occurred within tsk core
+	 */
+	@Override
+	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
+		throw new TskCoreException("Cannot create artifact of a volume system. Not supported.");
+	}
+	
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
