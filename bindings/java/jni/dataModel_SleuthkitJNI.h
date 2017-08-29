@@ -225,14 +225,6 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddI
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
- * Method:    initializeAddImgUnallocChunkNat
- * Signature: (JLjava/lang/String;ZZJJZ)J
- */
-JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgUnallocChunkNat
-  (JNIEnv *, jclass, jlong, jstring, jboolean, jboolean, jlong, jlong, jboolean);
-
-/*
- * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    runOpenAndAddImgNat
  * Signature: (JLjava/lang/String;[Ljava/lang/String;ILjava/lang/String;)V
  */

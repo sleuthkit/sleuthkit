@@ -970,29 +970,6 @@ JNIEXPORT jlong JNICALL
 JNIEXPORT jlong JNICALL
 Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNat(JNIEnv * env, jclass obj,
     jlong caseHandle, jstring timeZone, jboolean addFileSystems, jboolean addUnallocSpace, jboolean skipFatFsOrphans) {
-
-    return Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgUnallocChunkNat(env, obj, caseHandle, timeZone, addFileSystems, addUnallocSpace, 500 * 1024 * 1024, -1, skipFatFsOrphans);
-}
-
-/*
-* Initialize a process for adding an image to a case database.
-*
-* @param env Pointer to java environment.
-* @param obj Pointer the Java class object.
-* @partam caseHandle Pointer to a TskCaseDb object.
-* @param timeZone The time zone for the image.
-* @param addFileSystems Pass true to attempt to add file systems within the image to the case database.
-* @param addUnallocSpace Pass true to create virtual files for unallocated space. Ignored if addFileSystems is false.
-* @param unallocMinChunk Minimum size for unallocated chunks. -1 to only chunk on natural breaks, 0 to not chunk at all. Ignored if addUnallocSpace is false.
-* @param unallocMaxChunk Maximum size for unallocated chunks even if no natural break occurs. -1 for no maximum. Ignored if addUnallocSpace is false.
-* @param skipFatFsOrphans Pass true to skip processing of orphan files for FAT file systems. Ignored if addFileSystems is false.
-*
-* @return A pointer to the process (TskAutoDb object) or NULL on error.
-*/
-JNIEXPORT jlong JNICALL
-Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgUnallocChunkNat(JNIEnv * env, jclass obj,
-    jlong caseHandle, jstring timeZone, jboolean addFileSystems, jboolean addUnallocSpace, 
-    jlong unallocMinChunk, jlong unallocMaxChunk, jboolean skipFatFsOrphans) {
     jboolean isCopy;
 
     TskCaseDb *tskCase = castCaseDb(env, caseHandle);
@@ -1038,7 +1015,8 @@ Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgUnallocChunkNat(JNIEnv
     tskAuto->setAddFileSystems(addFileSystems?true:false);
     if (addFileSystems) {
         if (addUnallocSpace) {
-            tskAuto->setAddUnallocSpace(true, unallocMinChunk, unallocMaxChunk);
+            // Minimum size of unalloc files: 500 MB, maximum size: 1 GB
+            tskAuto->setAddUnallocSpace(true, 500 * 1024 * 1024, 1024 * 1024 * 1024);
         }
         else {
             tskAuto->setAddUnallocSpace(false);
