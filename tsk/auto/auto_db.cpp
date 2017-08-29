@@ -904,7 +904,7 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
     // We want to keep consecutive blocks in the same run, so simply update prevBlock and the size
     // if this one is consecutive with the last call. But, if we have hit the max chunk
     // size, then break up this set of consecutive blocks.
-    if ((a_block->addr == unallocBlockWlkTrack->prevBlock + 1) && ((unallocBlockWlkTrack->minChunkSize <= 0) || 
+    if ((a_block->addr == unallocBlockWlkTrack->prevBlock + 1) && ((unallocBlockWlkTrack->maxChunkSize <= 0) ||
             (unallocBlockWlkTrack->size < unallocBlockWlkTrack->maxChunkSize))) {
         unallocBlockWlkTrack->prevBlock = a_block->addr;
 		unallocBlockWlkTrack->size += unallocBlockWlkTrack->fsInfo.block_size;
@@ -919,10 +919,10 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
     unallocBlockWlkTrack->ranges.push_back(TSK_DB_FILE_LAYOUT_RANGE(rangeStartOffset, rangeSizeBytes, unallocBlockWlkTrack->nextSequenceNo++));
 
     // Return (instead of adding this run) if we are going to:
-    // a) Make one big file with all unallocated space (chunkSize == 0)
+    // a) Make one big file with all unallocated space (minChunkSize == 0)
     // or
     // b) Only make an unallocated file once we have at least chunkSize bytes
-    // of data in our current run (chunkSize > 0)
+    // of data in our current run (minChunkSize > 0)
     // In either case, reset the range pointers and add this block to the size
     if ((unallocBlockWlkTrack->minChunkSize == 0) ||
         ((unallocBlockWlkTrack->minChunkSize > 0) &&
