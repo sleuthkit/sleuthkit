@@ -85,7 +85,7 @@ aff4_open(int a_num_img,
     const TSK_TCHAR * const a_images[], unsigned int a_ssize)
 {
     int is_error;
-
+	char* filename;
     IMG_AFF4_INFO *aff4_info = NULL;
     TSK_IMG_INFO *img_info = NULL;
 
@@ -97,7 +97,6 @@ aff4_open(int a_num_img,
     img_info = (TSK_IMG_INFO *) aff4_info;
 
     // libaff4 only deals with UTF-8... if Win32 convert wchar_t to utf-8.
-    char* filename = NULL;
 #if defined ( TSK_WIN32)
     size_t newsize = (wcslen(a_images[0]) + 1) * 2;
     filename = tsk_malloc(newsize);
