@@ -17,7 +17,7 @@
 
 
 static TSK_TCHAR *progname;
-static const TSK_TCHAR *usnjrnl_path = "$Extend/$UsnJrnl";
+static const char *usnjrnl_path = "$Extend/$UsnJrnl";
 
 
 /* usage - explain and terminate */

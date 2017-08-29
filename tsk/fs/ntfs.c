@@ -1812,7 +1812,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             }
 
             // set the meta size if we find the relevant attribute
-            if ((fs_file->meta->type == TSK_FS_META_TYPE_DIR)
+            if (TSK_FS_IS_DIR_META(fs_file->meta->type)
                 && (type == NTFS_ATYPE_IDXROOT)) {
                 fs_file->meta->size =
                     tsk_getu32(fs->endian, attr->c.r.ssize);
@@ -4244,7 +4244,7 @@ print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
  * @returns 1 on error and 0 on success
  */
 static uint8_t
-ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
+ntfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
     TSK_INUM_T inum, TSK_DADDR_T numblock, int32_t sec_skew)
 {
     TSK_FS_FILE *fs_file;
@@ -4287,8 +4287,7 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
     tsk_fprintf(hFile, "%sAllocated %s\n",
         (fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC) ? "" :
         "Not ",
-        (fs_file->meta->type ==
-            TSK_FS_META_TYPE_DIR) ? "Directory" : "File");
+        TSK_FS_IS_DIR_META(fs_file->meta->type) ? "Directory" : "File");
     tsk_fprintf(hFile, "Links: %u\n", fs_file->meta->nlink);
 
     /* STANDARD_INFORMATION info */
@@ -4674,20 +4673,29 @@ ntfs_istat(TSK_FS_INFO * fs, FILE * hFile,
                     "",
                     (fs_attr->flags & TSK_FS_ATTR_SPARSE) ? ", Sparse" :
                     "", fs_attr->size, fs_attr->nrd.initsize);
-
-                print_addr.idx = 0;
-                print_addr.hFile = hFile;
-                if (tsk_fs_file_walk_type(fs_file, fs_attr->type,
+                if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
+                    if (tsk_fs_attr_print(fs_attr, hFile)) {
+                        tsk_fprintf(hFile, "\nError creating run lists\n");
+                        tsk_error_print(hFile);
+                        tsk_error_reset();
+                    }
+                }
+                else {
+                    print_addr.idx = 0;
+                    print_addr.hFile = hFile;
+                    if (tsk_fs_file_walk_type(fs_file, fs_attr->type,
                         fs_attr->id,
                         (TSK_FS_FILE_WALK_FLAG_AONLY |
                             TSK_FS_FILE_WALK_FLAG_SLACK),
-                        print_addr_act, (void *) &print_addr)) {
-                    tsk_fprintf(hFile, "\nError walking file\n");
-                    tsk_error_print(hFile);
-                    tsk_error_reset();
+                        print_addr_act, (void *)&print_addr)) {
+                        tsk_fprintf(hFile, "\nError walking file\n");
+                        tsk_error_print(hFile);
+                        tsk_error_reset();
+                    }
+                    if (print_addr.idx != 0)
+                        tsk_fprintf(hFile, "\n");
                 }
-                if (print_addr.idx != 0)
-                    tsk_fprintf(hFile, "\n");
+                
             }
             else {
                 tsk_fprintf(hFile,
@@ -4754,7 +4762,7 @@ ntfs_get_default_attr_type(const TSK_FS_FILE * a_file)
         return TSK_FS_ATTR_TYPE_DEFAULT;
 
     /* Use DATA for files and IDXROOT for dirs */
-    if (a_file->meta->type == TSK_FS_META_TYPE_DIR)
+    if (TSK_FS_IS_DIR_META(a_file->meta->type))
         return TSK_FS_ATTR_TYPE_NTFS_IDXROOT;
     else
         return TSK_FS_ATTR_TYPE_NTFS_DATA;

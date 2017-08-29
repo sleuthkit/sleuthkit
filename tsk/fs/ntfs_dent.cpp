@@ -1413,7 +1413,7 @@ ntfs_find_file_rec(TSK_FS_INFO * fs, NTFS_DINFO * dinfo,
      * - The parent is no longer a directory
      * - The sequence number of the parent is no longer correct
      */
-    if ((fs_file_par->meta->type != TSK_FS_META_TYPE_DIR)
+    if (( ! TSK_FS_IS_DIR_META(fs_file_par->meta->type))
         || (fs_file_par->meta->seq != fs_name_list->par_seq)) {
         const char *str = TSK_FS_ORPHAN_STR;
         len = strlen(str);

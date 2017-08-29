@@ -968,7 +968,7 @@ JNIEXPORT jlong JNICALL
  * @return A pointer to the process (TskAutoDb object) or NULL on error.
  */
 JNIEXPORT jlong JNICALL
-    Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNat(JNIEnv * env, jclass obj, 
+Java_org_sleuthkit_datamodel_SleuthkitJNI_initializeAddImgNat(JNIEnv * env, jclass obj,
     jlong caseHandle, jstring timeZone, jboolean addFileSystems, jboolean addUnallocSpace, jboolean skipFatFsOrphans) {
     jboolean isCopy;
 
@@ -1015,7 +1015,8 @@ JNIEXPORT jlong JNICALL
     tskAuto->setAddFileSystems(addFileSystems?true:false);
     if (addFileSystems) {
         if (addUnallocSpace) {
-            tskAuto->setAddUnallocSpace(true, 500*1024*1024);
+            // Minimum size of unalloc files: 500 MB, maximum size: 1 GB
+            tskAuto->setAddUnallocSpace(true, 500 * 1024 * 1024, 1024 * 1024 * 1024);
         }
         else {
             tskAuto->setAddUnallocSpace(false);
@@ -1901,7 +1902,7 @@ JNIEXPORT jint JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_saveFileMetaDat
     }
     env->ReleaseStringUTFChars(a_tmp_path, str8);
     
-    if (fs_info->istat(fs_info, hFile, file_handle->fs_file->meta->addr, 0, 0) != 0) {
+    if (fs_info->istat(fs_info, TSK_FS_ISTAT_RUNLIST, hFile, file_handle->fs_file->meta->addr, 0, 0) != 0) {
         fclose(hFile);
         setThrowTskCoreError(env);
         return -1;

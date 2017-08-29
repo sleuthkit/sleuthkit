@@ -30,10 +30,11 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-B num] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-z zone] [-s seconds] [-vV] image inum\n"),
+        ("usage: %s [-B num] [-f fstype] [-i imgtype] [-b dev_sector_size] [-o imgoffset] [-z zone] [-s seconds] [-rvV] image inum\n"),
         progname);
     tsk_fprintf(stderr,
         "\t-B num: force the display of NUM address of block pointers\n");
+    tsk_fprintf(stderr, "\t-r: display run list instead of list of block addresses\n");
     tsk_fprintf(stderr,
         "\t-z zone: time zone of original machine (i.e. EST5EDT or GMT)\n");
     tsk_fprintf(stderr,
@@ -45,7 +46,7 @@ usage()
     tsk_fprintf(stderr,
         "\t-f fstype: File system type (use '-f list' for supported types)\n");
     tsk_fprintf(stderr,
-        "\t-o imgoffset: The offset of the file system in the image (in sectors)\n");
+        "\t-o imgoffset: The offset of the file system in the image (in sectors)\n");    
     tsk_fprintf(stderr, "\t-v: verbose output to stderr\n");
     tsk_fprintf(stderr, "\t-V: print version\n");
     exit(1);
@@ -66,6 +67,7 @@ main(int argc, char **argv1)
     int ch;
     TSK_TCHAR *cp;
     int32_t sec_skew = 0;
+    int istat_flags = 0;
 
     /* When > 0 this is the number of blocks to print, used for -B arg */
     TSK_DADDR_T numblock = 0;
@@ -86,7 +88,7 @@ main(int argc, char **argv1)
     progname = argv[0];
     setlocale(LC_ALL, "");
 
-    while ((ch = GETOPT(argc, argv, _TSK_T("b:B:f:i:o:s:vVz:"))) > 0) {
+    while ((ch = GETOPT(argc, argv, _TSK_T("b:B:f:i:o:rs:vVz:"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
@@ -145,6 +147,9 @@ main(int argc, char **argv1)
             break;
         case _TSK_T('s'):
             sec_skew = TATOI(OPTARG);
+            break;
+        case _TSK_T('r'):
+            istat_flags |= TSK_FS_ISTAT_RUNLIST;
             break;
         case _TSK_T('v'):
             tsk_verbose++;
@@ -225,7 +230,7 @@ main(int argc, char **argv1)
         exit(1);
     }
 
-    if (fs->istat(fs, stdout, inum, numblock, sec_skew)) {
+    if (fs->istat(fs, (TSK_FS_ISTAT_FLAG_ENUM) istat_flags, stdout, inum, numblock, sec_skew)) {
         tsk_error_print(stderr);
         fs->close(fs);
         img->close(img);

@@ -158,7 +158,7 @@ proc_dir(TSK_FS_INFO * fs_info, TSK_STACK * stack,
             }
 
             // recurse into another directory (unless it is a '.' or '..')
-            else if (fs_file->meta->type == TSK_FS_META_TYPE_DIR) {
+            else if (TSK_FS_IS_DIR_META(fs_file->meta->type)){
                 if (TSK_FS_ISDOT(fs_file->name->name) == 0) {
 
                     // only go in if it is not on our stack
