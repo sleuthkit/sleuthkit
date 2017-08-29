@@ -4986,6 +4986,9 @@ public class SleuthkitCase {
 			// data source object id
 			long dataSourceObjectId = getDataSourceObjectId(connection, parentId);
 			statement.setLong(16, dataSourceObjectId);
+			
+			//extension, since this is a directory we just set it to null
+			statement.setString(17, null);
 
 			connection.executeUpdate(statement);
 
@@ -6435,6 +6438,8 @@ public class SleuthkitCase {
 				if (f != null) {
 					children.add(f);
 				}
+			} else if(info.type == ObjectType.ARTIFACT){
+				// For now, do nothing. See JIRA-2943
 			} else {
 				throw new TskCoreException("Image has child of invalid type: " + info.type);
 			}
@@ -6460,6 +6465,8 @@ public class SleuthkitCase {
 					|| info.type == ObjectType.FS
 					|| info.type == ObjectType.ABSTRACTFILE) {
 				children.add(info.id);
+			} else if(info.type == ObjectType.ARTIFACT){
+				// For now, do nothing. See JIRA-2943
 			} else {
 				throw new TskCoreException("Image has child of invalid type: " + info.type);
 			}
