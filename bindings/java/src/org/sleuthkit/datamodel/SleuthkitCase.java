@@ -5669,7 +5669,10 @@ public class SleuthkitCase {
 					children.add(f);
 				}
 			} else if(info.type == ObjectType.ARTIFACT){
-				// For now, do nothing. See JIRA-2943
+				BlackboardArtifact art = getArtifactById(info.id);
+				if (art != null) {
+					children.add(art);
+				}
 			} else {
 				throw new TskCoreException("Image has child of invalid type: " + info.type);
 			}
@@ -5693,7 +5696,8 @@ public class SleuthkitCase {
 		for (ObjectInfo info : childInfos) {
 			if (info.type == ObjectType.VS
 					|| info.type == ObjectType.FS
-					|| info.type == ObjectType.ABSTRACTFILE) {
+					|| info.type == ObjectType.ABSTRACTFILE
+					|| info.type == ObjectType.ARTIFACT) {
 				children.add(info.id);
 			} else if(info.type == ObjectType.ARTIFACT){
 				// For now, do nothing. See JIRA-2943
