@@ -18,7 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.util.List;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -90,68 +89,6 @@ public class Directory extends FsContent {
 		super(db, objId, dataSourceObjectId, fsObjId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null, null);
 	}
 
-	/**
-	 * Gets the files, if any, that are children of this directory.
-	 *
-	 * @return A list of the children.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
-	 */
-	@Override
-	public List<Content> getChildren() throws TskCoreException {
-		return getSleuthkitCase().getAbstractFileChildren(this);
-	}
-
-	/**
-	 * Gets the object ids of the files, if any, that are children of this
-	 * directory.
-	 *
-	 * @return A list of the children.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
-	 */
-	@Override
-	public List<Long> getChildrenIds() throws TskCoreException {
-		return getSleuthkitCase().getAbstractFileChildrenIds(this);
-	}
-	
-	/**
-	 * Not currently supported.
-	 * 
-	 * Create and add an artifact associated with this content to the blackboard
-	 *
-	 * @param artifactTypeID id of the artifact type (if the id doesn't already
-	 *                       exist an exception will be thrown)
-	 *
-	 * @return the blackboard artifact created (the artifact type id can be
-	 *         looked up from this)
-	 *
-	 * @throws TskCoreException if critical error occurred within tsk core
-	 */
-	@Override
-	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException {
-		throw new TskCoreException("Cannot create artifact of an directory. Not supported.");
-	}
-
-	/**
-	 * Not currently supported.
-	 * 
-	 * Create and add an artifact associated with this content to the blackboard
-	 *
-	 * @param type artifact enum type
-	 *
-	 * @return the blackboard artifact created (the artifact type id can be
-	 *         looked up from this)
-	 *
-	 * @throws TskCoreException if critical error occurred within tsk core
-	 */
-	@Override
-	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
-		throw new TskCoreException("Cannot create artifact of an directory. Not supported.");
-	}
-	
 	/**
 	 * Accepts a content visitor (Visitor design pattern).
 	 *

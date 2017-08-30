@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  * 
- * Copyright 2011 Basis Technology Corp.
+ * Copyright 2011-2017 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -244,41 +244,7 @@ public class Volume extends AbstractContent {
 
 		return result;
 	}
-	/**
-	 * Not currently supported.
-	 *
-	 * Create and add an artifact associated with this content to the blackboard
-	 *
-	 * @param artifactTypeID id of the artifact type (if the id doesn't already
-	 *                       exist an exception will be thrown)
-	 *
-	 * @return the blackboard artifact created (the artifact type id can be
-	 *         looked up from this)
-	 *
-	 * @throws TskCoreException if critical error occurred within tsk core
-	 */
-	@Override
-	public BlackboardArtifact newArtifact(int artifactTypeID) throws TskCoreException {
-		throw new TskCoreException("Cannot create artifact of a volume. Not supported.");
-	}
 
-	/**
-	 * Not currently supported.
-	 *
-	 * Create and add an artifact associated with this content to the blackboard
-	 *
-	 * @param type artifact enum type
-	 *
-	 * @return the blackboard artifact created (the artifact type id can be
-	 *         looked up from this)
-	 *
-	 * @throws TskCoreException if critical error occurred within tsk core
-	 */
-	@Override
-	public BlackboardArtifact newArtifact(BlackboardArtifact.ARTIFACT_TYPE type) throws TskCoreException {
-		throw new TskCoreException("Cannot create artifact of a volume. Not supported.");
-	}
-	
 	@Override
 	public <T> T accept(SleuthkitItemVisitor<T> v) {
 		return v.visit(this);
