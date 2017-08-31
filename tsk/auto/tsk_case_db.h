@@ -95,15 +95,15 @@ class TskAutoDb:public TskAuto {
     virtual void setAddUnallocSpace(bool addUnallocSpace, int64_t minChunkSize);
 
     /**
-    * When enabled, records for unallocated file system space will be added to the database. Default value is false.
-    * @param addUnallocSpace If true, create records for contiguous unallocated file system sectors.
+    * When enabled, records for unallocated file system space will be added to the database with the given parameters.
+    * Automatically sets the flag to create records for contiguous unallocated file system sectors.
     * @param minChunkSize the number of bytes to group unallocated data into. A value of 0 will create
     * one large chunk and group only on volume boundaries. A value of -1 will group each consecutive
     * chunk.
     * @param maxChunkSize the maximum number of bytes in one record of unallocated data. A value of -1 will not
     * split the records based on size
     */
-    virtual void setAddUnallocSpace(bool addUnallocSpace, int64_t minChunkSize, int64_t maxChunkSize);
+    virtual void setAddUnallocSpace(int64_t minChunkSize, int64_t maxChunkSize);
 
     uint8_t addFilesInImgToDb();
 

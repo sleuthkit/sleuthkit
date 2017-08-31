@@ -110,12 +110,14 @@ void TskAutoDb::setAddUnallocSpace(bool addUnallocSpace)
 
 void TskAutoDb::setAddUnallocSpace(bool addUnallocSpace, int64_t minChunkSize)
 {
-    setAddUnallocSpace(addUnallocSpace, minChunkSize, -1);
+    m_addUnallocSpace = addUnallocSpace;
+    m_minChunkSize = minChunkSize;
+    m_maxChunkSize = -1;
 }
 
-void TskAutoDb::setAddUnallocSpace(bool addUnallocSpace, int64_t minChunkSize, int64_t maxChunkSize)
+void TskAutoDb::setAddUnallocSpace(int64_t minChunkSize, int64_t maxChunkSize)
 {
-    m_addUnallocSpace = addUnallocSpace;
+    m_addUnallocSpace = true;
     m_minChunkSize = minChunkSize;
     m_maxChunkSize = maxChunkSize;
 }
