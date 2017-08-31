@@ -3818,9 +3818,17 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 // be because UTF8 is a variable length encoding. However, the longest
                 // it will be is 3 * the max number of UTF16 code units.  Add one for null
                 // termination.   (thanks Judson!)
+             
+                uint16_t nameLen = tsk_getu16(endian, keyB->attr_name_len);
+             
+                if (nameLen > sizeof(keyB->attr_name) {
+                    error_detected(TSK_ERR_FS_READ,
+                        " hfs_load_extended_attrs, invalid attribute name size");
+                    goto on_error;
+                }
 
                 conversionResult = hfs_UTF16toUTF8(fs, keyB->attr_name,
-                    tsk_getu16(endian, keyB->attr_name_len),
+                    nameLen,
                     nameBuff, MAX_ATTR_NAME_LENGTH, 0);
                 if (conversionResult != 0) {
                     error_returned
