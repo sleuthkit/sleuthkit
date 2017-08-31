@@ -115,7 +115,7 @@ static uint8_t
     /*
     * Sanity check
     */
-    if (grp_num < 0 || grp_num >= ext2fs->groups_count) {
+    if (grp_num >= ext2fs->groups_count) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr
@@ -239,39 +239,11 @@ static uint8_t
  * @gdp:           pointer to group descriptor to calculate checksum for
  * returns the checksum value
  */
-
-//Temporarily removing CRC16 code until non-GPL version implemented
-//static uint16_t
-//ext4_group_desc_csum(ext2fs_sb *ext4_sb, uint32_t block_group,
-//                          struct ext4fs_gd *gdp)
-//{
-//      uint16_t crc = 0;
-//      if (*ext4_sb->s_feature_ro_compat & EXT2FS_FEATURE_RO_COMPAT_GDT_CSUM)
-//      {
-//              int offset = offsetof(struct ext4fs_gd, bg_checksum);
-//              uint32_t le_group = tsk_getu32(TSK_LIT_ENDIAN, &block_group);
-//              crc = crc16(~0, ext4_sb->s_uuid, sizeof(ext4_sb->s_uuid));
-//              crc = crc16(crc, (uint8_t *)&le_group, sizeof(le_group));
-//              crc = crc16(crc, (uint8_t *)gdp, offset);
-//              offset += sizeof(gdp->bg_checksum); /* skip checksum */
-//              /* for checksum of struct ext4_group_desc do the rest...*/
-//              if ((*ext4_sb->s_feature_incompat &
-//                   EXT2FS_FEATURE_INCOMPAT_64BIT) &&
-//                  offset < *ext4_sb->s_desc_size)
-//        {
-//                      crc = crc16(crc, (uint8_t *)gdp + offset, *ext4_sb->s_desc_size - offset);
-//        }
-//      }
-//
-//      return crc;
-//}
-
-static cm_t CRC16_CTX;
-
 static uint16_t
 ext4_group_desc_csum(ext2fs_sb * ext4_sb, uint32_t block_group,
     struct ext4fs_gd *gdp)
 {
+    cm_t CRC16_CTX;
     CRC16_CTX.cm_width = 16;
     CRC16_CTX.cm_poly = 0x8005L;
     CRC16_CTX.cm_init = 0xFFFFL;
@@ -702,8 +674,8 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
             tsk_getu32(fs->endian, dino_buf->i_crtime_extra) >> 2;
     }
     else {
-        fs_meta->mtime_nano = fs_meta->atime_nano = fs_meta->ctime_nano =
-            fs_meta->crtime = 0;
+        fs_meta->mtime_nano = fs_meta->atime_nano = fs_meta->ctime_nano = 0;
+        fs_meta->crtime = 0;
     }
     fs_meta->time2.ext2.dtime_nano = 0;
     fs_meta->seq = 0;
@@ -1914,7 +1886,7 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     else
         tsk_fprintf(hFile, "Unmounted Improperly\n");
 
-    if (sb->s_last_mounted != '\0')
+    if (sb->s_last_mounted[0] != '\0')
         tsk_fprintf(hFile, "Last mounted on: %s\n", sb->s_last_mounted);
 
     tsk_fprintf(hFile, "\nSource OS: ");
