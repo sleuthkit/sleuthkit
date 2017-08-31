@@ -3819,9 +3819,9 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 // it will be is 3 * the max number of UTF16 code units.  Add one for null
                 // termination.   (thanks Judson!)
              
-                uint16_t nameLen = tsk_getu16(endian, keyB->attr_name_len));
+                uint16_t nameLen = tsk_getu16(endian, keyB->attr_name_len);
              
-                if (nameLen > sizeof(keyB->attr_name) {
+                if (nameLen > sizeof(keyB->attr_name)) {
                     error_detected(TSK_ERR_FS_READ,
                         " hfs_load_extended_attrs, invalid attribute name size");
                     goto on_error;
