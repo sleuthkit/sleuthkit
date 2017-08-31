@@ -674,8 +674,8 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
             tsk_getu32(fs->endian, dino_buf->i_crtime_extra) >> 2;
     }
     else {
-        fs_meta->mtime_nano = fs_meta->atime_nano = fs_meta->ctime_nano =
-            fs_meta->crtime = 0;
+        fs_meta->mtime_nano = fs_meta->atime_nano = fs_meta->ctime_nano = 0;
+        fs_meta->crtime = 0;
     }
     fs_meta->time2.ext2.dtime_nano = 0;
     fs_meta->seq = 0;
