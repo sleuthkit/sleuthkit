@@ -314,10 +314,12 @@ main(int argc, char **argv)
     }
     s_root = argv[1];
 
-    if (test_fat12())
+    if (test_fat12()) {
         return 1;
-    if (test_ntfs_fe())
+    }
+    else if (test_ntfs_fe()) {
         return 1;
+    }
 
     printf("Tests Passed\n");
     return 0;

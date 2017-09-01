@@ -273,11 +273,11 @@ raw_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
 
             /* read from the next image segment(s) if needed */
             if (((TSK_OFF_T) cnt == read_len) && (read_len != len)) {
-                ssize_t cnt2;
 
                 len -= read_len;
 
                 while (len > 0) {
+                    ssize_t cnt2;
                     /* go to the next image segment */
                     i++;
 
@@ -333,7 +333,6 @@ static void
 raw_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
 {
     IMG_RAW_INFO *raw_info = (IMG_RAW_INFO *) img_info;
-    int i;
 
     tsk_fprintf(hFile, "IMAGE FILE INFORMATION\n");
     tsk_fprintf(hFile, "--------------------------------------------\n");
@@ -341,6 +340,8 @@ raw_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
     tsk_fprintf(hFile, "\nSize in bytes: %" PRIuOFF "\n", img_info->size);
 
     if (raw_info->img_info.num_img > 1) {
+        int i;
+
         tsk_fprintf(hFile,
             "\n--------------------------------------------\n");
         tsk_fprintf(hFile, "Split Information:\n");

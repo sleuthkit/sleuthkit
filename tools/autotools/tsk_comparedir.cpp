@@ -283,8 +283,9 @@ uint8_t
     if (processLclDir(_TSK_T("")))
         return 1;
 
-    if (!m_missDirFile)
+    if (!m_missDirFile) {
         printf("All files in directory found in image\n");
+    }
 
     if (m_filesInImg.begin() == m_filesInImg.end()) {
         printf("All files in image found in directory\n");

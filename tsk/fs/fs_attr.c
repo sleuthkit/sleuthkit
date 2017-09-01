@@ -61,9 +61,8 @@ tsk_fs_attr_run_alloc()
 void
 tsk_fs_attr_run_free(TSK_FS_ATTR_RUN * fs_attr_run)
 {
-    TSK_FS_ATTR_RUN *fs_attr_run_prev;
     while (fs_attr_run) {
-        fs_attr_run_prev = fs_attr_run;
+        TSK_FS_ATTR_RUN *fs_attr_run_prev = fs_attr_run;
         fs_attr_run = fs_attr_run->next;
         fs_attr_run_prev->next = NULL;
         free(fs_attr_run_prev);

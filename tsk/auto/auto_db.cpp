@@ -50,10 +50,12 @@ TskAutoDb::TskAutoDb(TskDb * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_kno
     m_imgTransactionOpen = false;
     m_NSRLDb = a_NSRLDb;
     m_knownBadDb = a_knownBadDb;
-    if ((m_NSRLDb) || (m_knownBadDb))
+    if ((m_NSRLDb) || (m_knownBadDb)) {
         m_fileHashFlag = true;
-    else
+    }
+    else {
         m_fileHashFlag = false;
+    }
     m_addFileSystems = true;
     m_noFatFsOrphans = false;
     m_addUnallocSpace = false;
@@ -64,8 +66,9 @@ TskAutoDb::TskAutoDb(TskDb * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_kno
 TskAutoDb::~TskAutoDb()
 {
     // if they didn't commit / revert, then revert
-    if (m_imgTransactionOpen)
+    if (m_imgTransactionOpen) {
         revertAddImage();
+    }
 
     closeImage();
     tsk_deinit_lock(&m_curDirPathLock);
@@ -373,7 +376,7 @@ TSK_RETVAL_ENUM
  */
 uint8_t TskAutoDb::addFilesInImgToDb()
 {
-    if (m_db == NULL || !m_db->isDbOpen()) {
+    if (m_db == NULL || m_db->isDbOpen() == false) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         tsk_error_set_errstr("addFilesInImgToDb: m_db not open");

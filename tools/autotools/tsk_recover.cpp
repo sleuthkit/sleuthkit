@@ -172,7 +172,7 @@ uint8_t TskRecover::writeFile(TSK_FS_FILE * a_fs_file, const char *a_path)
             }
             BOOL
                 result = CreateDirectoryW((LPCTSTR) path16full, NULL);
-            if (!result) {
+            if (result == FALSE) {
                 if (GetLastError() == ERROR_PATH_NOT_FOUND) {
                     fprintf(stderr, "Error Creating Directory (%S)", path16full);
                     return 1;
@@ -328,7 +328,7 @@ TSK_RETVAL_ENUM TskRecover::processFile(TSK_FS_FILE * fs_file, const char *path)
         return TSK_OK;
     else if ((isNtfsSystemFiles(fs_file, path)) || (isFATSystemFiles(fs_file)))
         return TSK_OK;
-    else if ((!fs_file->meta) || (fs_file->meta->size == 0))
+    else if ((fs_file->meta == NULL) || (fs_file->meta->size == 0))
         return TSK_OK;
 
     writeFile(fs_file, path);

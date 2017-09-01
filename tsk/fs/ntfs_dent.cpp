@@ -228,8 +228,9 @@ ntfs_parent_act(TSK_FS_FILE * fs_file, void *ptr)
     fs_name_list = fs_file->meta->name2;
     while (fs_name_list) {
         if (ntfs_parent_map_add(ntfs, fs_name_list,
-                fs_file->meta))
+                fs_file->meta)) {
             return TSK_WALK_ERROR;
+        }
         fs_name_list = fs_name_list->next;
     }
     return TSK_WALK_CONT;
