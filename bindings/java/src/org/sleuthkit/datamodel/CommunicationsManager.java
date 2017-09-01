@@ -186,9 +186,7 @@ public void addRelationships(Account sender, List<Account> recipients, Blackboar
 		
 		try {
 			UnorderedPair<Long> accountPair = iter.next();
-			if (accountPair.first.longValue() != accountPair.second.longValue()) {// dont add a relationship with self
-				db.addAccountsRelationship(accountPair.first, accountPair.second, communicationArtifact.getArtifactID());
-			}
+			db.addAccountsRelationship(accountPair.first, accountPair.second, communicationArtifact.getArtifactID());
 		}
 		catch (TskCoreException ex) {
 			LOGGER.log(Level.WARNING, "Could not get timezone for image", ex); //NON-NLS
@@ -299,7 +297,7 @@ private Set<UnorderedPair<Long>> listToUnorderedPairs(List<Long> accountIDs) {
 	return relationships;
 }
 
-public final class UnorderedPair<T> {
+private final class UnorderedPair<T> {
     private final T first;
     private final T second;
 

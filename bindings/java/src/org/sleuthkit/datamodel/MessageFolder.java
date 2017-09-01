@@ -48,7 +48,7 @@ public class MessageFolder {
 		return this.hasSubfolders;
 	}
 	
-	public void setHasSubfolders(boolean hasSubFolders) {
+	public synchronized void setHasSubfolders(boolean hasSubFolders) {
 		this.hasSubfolders = hasSubFolders;
 	}
 }

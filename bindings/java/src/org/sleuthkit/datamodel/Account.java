@@ -21,11 +21,11 @@ package org.sleuthkit.datamodel;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 
 public class Account {
 
-	// TBD: use the the artifactID or the artifactObjId here ????
 	private long artifactId;	// ArtifactID of the underlying TSK_ACCOUNT artifact
 	
 	private final Account.Type accountType;
@@ -35,6 +35,8 @@ public class Account {
 	
 	public static final class Type implements Serializable {
 		
+		private static final long serialVersionUID = 1L;
+		 
 		public static final Account.Type CREDIT_CARD = new Type("CREDIT_CARD", "Credit Card");
 		public static final Account.Type DEVICE = new Type("DEVICE", "Device");
 		public static final Account.Type PHONE = new Type("PHONE", "Phone");
@@ -124,6 +126,17 @@ public class Account {
 		}
 		
 		@Override
+		public int hashCode() {
+        int hash = 11;
+		
+        hash = 83 * hash + (this.typeName != null ? this.typeName.hashCode() : 0);
+		hash = 83 * hash + (this.displayName != null ? this.displayName.hashCode() : 0);
+        hash = 83 * hash + Objects.hashCode(this.typeID);
+        
+        return hash;
+    }
+	
+		@Override
 		public String toString() {
 			return "(typeID= " + this.typeID
 					+ ", displayName=" + this.displayName
@@ -151,21 +164,11 @@ public class Account {
 		this.sleuthkitCase = sleuthkitCase;
 		this.artifactId = artifactId;
 		
-		getArtifact();
+		this.artifact = this.sleuthkitCase.getBlackboardArtifact(artifactId);
 		
 		this.accountType =  sleuthkitCase.getAccountType(artifact.getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE)).getValueString());
 		this.accountID = artifact.getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_ID)).getValueString();
 	
-	}
-	
-	public Account(SleuthkitCase sleuthkitCase, long artifactId, Account.Type accountType, String accountID) throws TskCoreException{
-		this.sleuthkitCase = sleuthkitCase;
-		this.artifactId = artifactId;
-		
-		getArtifact();
-		
-		this.accountType = accountType;
-		this.accountID = accountID;
 	}
 	
 	public String getAccountID() {
@@ -177,23 +180,15 @@ public class Account {
 	}
 	
 	public BlackboardAttribute  getAttribute(BlackboardAttribute.ATTRIBUTE_TYPE attrType) throws TskCoreException {
-		return getArtifact().getAttribute(new BlackboardAttribute.Type(attrType));
+		return this.artifact.getAttribute(new BlackboardAttribute.Type(attrType));
 	}
 	
 	public void addAttribute(BlackboardAttribute bbatr) throws TskCoreException {
-		getArtifact().addAttribute(bbatr);
+		this.artifact.addAttribute(bbatr);
 	}
 	
 	public long getArtifactId() {
 		return this.artifactId;
 	}
-	
-	private BlackboardArtifact getArtifact() throws TskCoreException {
-		if (null == this.artifact) {
-			this.artifact = this.sleuthkitCase.getBlackboardArtifact(artifactId);
-		}
 		
-		return this.artifact;
-	}
-	
 }

@@ -280,7 +280,7 @@ public class SleuthkitCase {
 	 *
 	 * @return CommunicationsManager 
 	 */
-	public CommunicationsManager getCommunicationsManager() {
+	public synchronized CommunicationsManager getCommunicationsManager() {
         if (null == communicationsMgrInstance) {
             communicationsMgrInstance = new CommunicationsManager(this);
         }
@@ -2648,7 +2648,6 @@ public class SleuthkitCase {
 		attributes.add(new BlackboardAttribute(ATTRIBUTE_TYPE.TSK_ID, moduleName, accountID));
 		accountArtifact.addAttributes(attributes);
 		
-		accountArtifact = getAccountArtifact(artifactType, accountType, accountID );
 		return accountArtifact;
 	}
 	
