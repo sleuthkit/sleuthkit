@@ -504,13 +504,15 @@ copy_literal_and_match:
     //  byte-by-byte copy of the literal. This is slow, but it can only ever
     //  happen near the very end of a buffer, so it is not an important case to
     //  optimize.
-    for (size_t i = 0; i < L; ++i)
+    size_t i;
+    for (i = 0; i < L; ++i)
       dst_ptr[i] = src_ptr[i];
   } else {
     // Destination truncated: fill DST, and store partial match
 
     // Copy partial literal
-    for (size_t i = 0; i < dst_len; ++i)
+    size_t i;
+    for (i = 0; i < dst_len; ++i)
       dst_ptr[i] = src_ptr[i];
     // Save state
     state->src = src_ptr + dst_len;
@@ -547,19 +549,22 @@ copy_match:
     //  copies. The last of these may slop over the intended end of
     //  the match, but this is OK because we know we have a safety bound
     //  away from the end of the destination buffer.
-    for (size_t i = 0; i < M; i += 8)
+    size_t i;
+    for (i = 0; i < M; i += 8)
       store8(&dst_ptr[i], load8(&dst_ptr[i - D]));
   } else if (M <= dst_len) {
     //  Either the match distance is too small, or we are too close to
     //  the end of the buffer to safely use eight byte copies. Fall back
     //  on a simple byte-by-byte implementation.
-    for (size_t i = 0; i < M; ++i)
+    size_t i;
+    for (i = 0; i < M; ++i)
       dst_ptr[i] = dst_ptr[i - D];
   } else {
     // Destination truncated: fill DST, and store partial match
 
     // Copy partial match
-    for (size_t i = 0; i < dst_len; ++i)
+    size_t i;
+    for (i = 0; i < dst_len; ++i)
       dst_ptr[i] = dst_ptr[i - D];
     // Save state
     state->src = src_ptr;
@@ -692,19 +697,22 @@ copy_literal:
     //  We are not near the end of the source or destination buffers; thus
     //  we can safely copy the literal using wide copies, without worrying
     //  about reading or writing past the end of either buffer.
-    for (size_t i = 0; i < L; i += 8)
+    size_t i;
+    for (i = 0; i < L; i += 8)
       store8(&dst_ptr[i], load8(&src_ptr[i]));
   } else if (L <= dst_len) {
     //  We are too close to the end of either the input or output stream
     //  to be able to safely use an eight-byte copy. Instead we copy the
     //  literal byte-by-byte.
-    for (size_t i = 0; i < L; ++i)
+    size_t i;
+    for (i = 0; i < L; ++i)
       dst_ptr[i] = src_ptr[i];
   } else {
     // Destination truncated: fill DST, and store partial match
 
     // Copy partial literal
-    for (size_t i = 0; i < dst_len; ++i)
+    size_t i;
+    for (i = 0; i < dst_len; ++i)
       dst_ptr[i] = src_ptr[i];
     // Save state
     state->src = src_ptr + dst_len;
