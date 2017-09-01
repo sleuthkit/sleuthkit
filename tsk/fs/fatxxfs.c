@@ -58,7 +58,6 @@ static uint8_t
 fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 {
     unsigned int i;
-    int a;
     TSK_DADDR_T next, snext, sstart, send;
     FATFS_INFO *fatfs = (FATFS_INFO *) fs;
     FATXXFS_SB *sb = (FATXXFS_SB*)fatfs->boot_sector_buffer;
@@ -136,7 +135,7 @@ fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
             sb->a.f16.vol_lab[8], sb->a.f16.vol_lab[9],
             sb->a.f16.vol_lab[10]);
 
-        if ((vol_label_dentry) && (vol_label_dentry->name)) {
+        if ((vol_label_dentry) && (vol_label_dentry->name[0])) {
             tsk_fprintf(hFile,
                 "Volume Label (Root Directory): %c%c%c%c%c%c%c%c%c%c%c\n",
                 vol_label_dentry->name[0], vol_label_dentry->name[1], vol_label_dentry->name[2], vol_label_dentry->name[3],
@@ -176,7 +175,7 @@ fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
             sb->a.f32.vol_lab[8], sb->a.f32.vol_lab[9],
             sb->a.f32.vol_lab[10]);
 
-        if ((vol_label_dentry) && (vol_label_dentry->name)) {
+        if ((vol_label_dentry) && (vol_label_dentry->name[0])) {
             tsk_fprintf(hFile,
                 "Volume Label (Root Directory): %c%c%c%c%c%c%c%c%c%c%c\n",
                 vol_label_dentry->name[0], vol_label_dentry->name[1], vol_label_dentry->name[2], vol_label_dentry->name[3],
@@ -358,6 +357,7 @@ fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     for (i = 2; i <= fatfs->lastclust; i++) {
         TSK_DADDR_T entry;
         TSK_DADDR_T sect;
+        unsigned int a;
 
         /* Get the FAT table entry */
         if (fatfs_getFAT(fatfs, i, &entry))
