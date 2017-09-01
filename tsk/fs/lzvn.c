@@ -815,11 +815,11 @@ size_t lzvn_decode_buffer(void *dst, size_t dst_size,
   lzvn_decoder_state dstate;
   memset(&dstate, 0x00, sizeof(dstate));
   dstate.src = src;
-  dstate.src_end = src + src_size;
+  dstate.src_end = (const unsigned char*) src + src_size;
 
   dstate.dst_begin = dst;
   dstate.dst = dst;
-  dstate.dst_end = dst + dst_size;
+  dstate.dst_end = (unsigned char*) dst + dst_size;
 
   dstate.d_prev = 0;
   dstate.end_of_stream = 0;
