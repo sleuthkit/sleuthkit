@@ -50,7 +50,7 @@ usage()
 
 class TskRecover:public TskAuto {
 public:
-    TskRecover(TSK_TCHAR * a_base_dir);
+    explicit TskRecover(TSK_TCHAR * a_base_dir);
     virtual TSK_RETVAL_ENUM processFile(TSK_FS_FILE * fs_file, const char *path);
     virtual TSK_FILTER_ENUM filterVol(const TSK_VS_PART_INFO * vs_part);
     virtual TSK_FILTER_ENUM filterFs(TSK_FS_INFO * fs_info);

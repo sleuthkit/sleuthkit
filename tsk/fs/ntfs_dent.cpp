@@ -752,7 +752,6 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     ntfs_idxroot *idxroot;
     ntfs_idxelist *idxelist;
     ntfs_idxrec *idxrec_p, *idxrec;
-    int off;
     TSK_OFF_T idxalloc_len;
     TSK_FS_LOAD_FILE load_file;
 
@@ -996,6 +995,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         }
     }
     else {
+        int off;
 
         if (fs_attr_idx->flags & TSK_FS_ATTR_RES) {
             tsk_error_reset();
@@ -1390,7 +1390,6 @@ ntfs_find_file_rec(TSK_FS_INFO * fs, NTFS_DINFO * dinfo,
     uint8_t decrem = 0;
     size_t len = 0, i;
     char *begin = NULL;
-    int retval;
 
 
     if (fs_name_list->par_inode < fs->first_inum ||
@@ -1417,6 +1416,7 @@ ntfs_find_file_rec(TSK_FS_INFO * fs, NTFS_DINFO * dinfo,
     if (( ! TSK_FS_IS_DIR_META(fs_file_par->meta->type))
         || (fs_file_par->meta->seq != fs_name_list->par_seq)) {
         const char *str = TSK_FS_ORPHAN_STR;
+        int retval;
         len = strlen(str);
 
         /* @@@ There should be a sanity check here to verify that the

@@ -1707,7 +1707,6 @@ ext4_fsstat_datablock_helper(TSK_FS_INFO * fs, FILE * hFile,
     uint64_t last_block;
     ext4fs_gd *ext4_gd = ext2fs->ext4_grp_buf;
     uint64_t db_offset = 0;
-    unsigned int left_over = 0;
 
     if (ext4_gd == NULL) {
         return;
@@ -1752,6 +1751,7 @@ ext4_fsstat_datablock_helper(TSK_FS_INFO * fs, FILE * hFile,
     if (i % gpfbg == 0) {
         if (curr_flex_bg == (num_flex_bg - 1)) {
             unsigned int num_groups = 0;
+            unsigned int left_over = 0;
 
             num_groups = (unsigned int)
                 (fs->last_block / tsk_getu32(fs->endian,

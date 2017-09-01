@@ -48,6 +48,7 @@ TskAutoDb::TskAutoDb(TskDb * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_kno
     m_stopped = false;
     m_foundStructure = false;
     m_imgTransactionOpen = false;
+    m_attributeAdded = false;
     m_NSRLDb = a_NSRLDb;
     m_knownBadDb = a_knownBadDb;
     if ((m_NSRLDb) || (m_knownBadDb)) {
@@ -254,8 +255,7 @@ TskAutoDb::addImageDetails(const char* deviceId)
 
     // Add the image names
     for (int i = 0; i < m_img_info->num_img; i++) {
-        const char *img_ptr = NULL;
-        img_ptr = img_ptrs[i];
+        const char *img_ptr = img_ptrs[i];
 
         if (m_db->addImageName(m_curImgId, img_ptr, i)) {
             registerError();
