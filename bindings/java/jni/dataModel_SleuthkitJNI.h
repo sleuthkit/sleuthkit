@@ -468,3 +468,14 @@ extern "C" {
 }
 #endif
 #endif
+/* Header for class org_sleuthkit_datamodel_SleuthkitJNI_HandleCache */
+
+#ifndef _Included_org_sleuthkit_datamodel_SleuthkitJNI_HandleCache
+#define _Included_org_sleuthkit_datamodel_SleuthkitJNI_HandleCache
+#ifdef __cplusplus
+extern "C" {
+#endif
+#ifdef __cplusplus
+}
+#endif
+#endif
