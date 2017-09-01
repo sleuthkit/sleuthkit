@@ -39,10 +39,12 @@
 
 /**
  * \internal
- * An exFAT volume name directory entry includes from 0 to 15 UTF-16 
- * characters.
+ * An exFAT volume label should have 11 UTF-16 characters, but in practice
+ * the name can extend into the reserved bytes and have a length up to 15
+ * characters. 
  */
-#define EXFATFS_MAX_VOLUME_LABEL_LEN 15
+#define EXFATFS_MAX_VOLUME_LABEL_LEN_CHAR 15
+#define EXFATFS_MAX_VOLUME_LABEL_LEN_BYTE 30
 
 /**
  * \internal
@@ -63,8 +65,16 @@
 /**
  * \internal
  * An exFAT file name directory entry includes from 1 to 15 UTF-16 characters.
+ * Each character is stored in UTF-16, so the buffer is actually 30-bytes.
  */
-#define EXFATFS_MAX_FILE_NAME_SEGMENT_LENGTH 15
+#define EXFATFS_MAX_FILE_NAME_SEGMENT_LENGTH_UTF16_CHARS 15
+#define EXFATFS_MAX_FILE_NAME_SEGMENT_LENGTH_UTF16_BYTES 30
+
+/**
+ * \internal
+ * An exFAT file name can be a maximum of 255 UTF-16 characters.
+ */
+#define EXFATFS_MAX_FILE_NAME_LENGTH_UTF16_CHARS 255
 
 /**
  * \internal
@@ -182,8 +192,8 @@ extern "C" {
      */
     typedef struct {
         uint8_t entry_type;        ///< 0x83 normally, 0x03 if the media was formatted without a volume label
-        uint8_t utf16_char_count;  ///< Number of characters in the volume label (max 11)
-        uint8_t volume_label[30];  ///< Volume label in UTF16
+        uint8_t volume_label_length_chars;  ///< Number of characters in the volume label
+        uint8_t volume_label[EXFATFS_MAX_VOLUME_LABEL_LEN_BYTE];  ///< Volume label in UTF16
     } EXFATFS_VOL_LABEL_DIR_ENTRY;
 
     /**
@@ -284,7 +294,7 @@ extern "C" {
         uint8_t entry_type; ///< 0xC0 if allocated, 0x40 if deleted
         uint8_t flags;      ///< Flags: Allocation possible, no FAT chain, custom
         uint8_t reserved1;  ///< Reserved
-        uint8_t file_name_length;   ///< Length of UTF16 name contained in following file name directory entries
+        uint8_t file_name_length_UTF16_chars;   ///< Number of characters in UTF16 name contained in following file name directory entries
         uint8_t file_name_hash[2];  ///< Hash of up-cased file name
         uint8_t reserved2[2];       ///< Reserved
         uint8_t valid_data_length[8];  ///< How much actual data has been written to the file. Must be less than data_length

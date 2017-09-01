@@ -176,7 +176,7 @@ TSK_HDB_INFO *
             if (TSK_HDB_DBTYPE_INVALID_ID == db_type) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
-                tsk_error_set_errstr("%s: error determining hash database type of %"PRIttocTSK, func_name, db_path);
+                tsk_error_set_errstr("%s: error determining hash database type of %" PRIttocTSK, func_name, db_path);
                 free(db_path);
                 return NULL;
             }
@@ -188,7 +188,7 @@ TSK_HDB_INFO *
             else {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_HDB_OPEN);
-                tsk_error_set_errstr("%s: failed to open %"PRIttocTSK, func_name, db_path);
+                tsk_error_set_errstr("%s: failed to open %" PRIttocTSK, func_name, db_path);
                 free(db_path);
                 return NULL;
             }
@@ -216,7 +216,7 @@ TSK_HDB_INFO *
         if (NULL == hIdx) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_OPEN);
-            tsk_error_set_errstr("%s: database is index only, failed to open index %"PRIttocTSK, func_name, db_path);
+            tsk_error_set_errstr("%s: database is index only, failed to open index %" PRIttocTSK, func_name, db_path);
             free(db_path);
             return NULL;
         } 
@@ -369,6 +369,13 @@ uint8_t
         return 1;
     }
 
+    if (hdb_info->make_index == NULL) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_ARG);
+        tsk_error_set_errstr("tsk_hdb_make_index: can not create index file");
+        return 1;
+    }
+
     return hdb_info->make_index(hdb_info, type);
 }
 
@@ -491,7 +498,7 @@ uint8_t
 * @param md5 Text representation of MD5 hash (can be NULL)
 * @param sha1 Text representation of SHA1 hash (can be NULL)
 * @param sha256 Text representation of SHA256 hash (can be NULL)
-* @param comment A comment to asociate with the hash (can be NULL)
+* @param comment A comment to associate with the hash (can be NULL)
 * @return 1 on error, 0 on success
 */
 uint8_t

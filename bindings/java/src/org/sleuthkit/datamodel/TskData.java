@@ -47,7 +47,8 @@ public class TskData {
 		SOCK(7, "s"), ///< Socket NON-NLS
 		SHAD(8, "h"), ///< Shadow inode (solaris) NON-NLS
 		WHT(9, "w"), ///< Whiteout (openbsd) NON-NLS
-		VIRT(10, "v");     ///< Special (TSK added "Virtual" files) NON-NLS
+		VIRT(10, "v"),     ///< Special (TSK added "Virtual" files) NON-NLS
+		VIRT_DIR(11, "V");     ///< Special (TSK added "Virtual" directories) NON-NLS
 
 		private short dirType;
 		String label;
@@ -109,7 +110,8 @@ public class TskData {
 		TSK_FS_META_TYPE_SHAD(7, "s"), ///< SOLARIS ONLY NON-NLS
 		TSK_FS_META_TYPE_SOCK(8, "h"), ///< UNIX domain socket NON-NLS
 		TSK_FS_META_TYPE_WHT(9, "w"), ///< Whiteout NON-NLS
-		TSK_FS_META_TYPE_VIRT(10, "v");      ///< "Virtual File" created by TSK for file system areas NON-NLS
+		TSK_FS_META_TYPE_VIRT(10, "v"),      ///< "Virtual File" created by TSK for file system areas NON-NLS
+		TSK_FS_META_TYPE_VIRT_DIR(11, "v");      ///< "Virtual Directory" created by TSK for Orphan Files NON-NLS
 
 		private short metaType;
 		private String metaTypeStr;
@@ -612,8 +614,9 @@ public class TskData {
 		VS(1), ///< Volume System - see tsk_vs_info for more details
 		VOL(2), ///< Volume - see tsk_vs_parts for more details
 		FS(3), ///< File System - see tsk_fs_info for more details
-		ABSTRACTFILE(4); ///< File - see tsk_files for more details
-
+		ABSTRACTFILE(4), ///< File - see tsk_files for more details
+		ARTIFACT(5)	/// Artifact - see blackboard_artifacts for more details
+		; 
 		private short objectType;
 
 		private ObjectType(int objectType) {
@@ -660,6 +663,8 @@ public class TskData {
 		UNALLOC_BLOCKS(4, "Unallocated Blocks"), ///< Set of blocks not allocated by file system.  Parent should be image, volume, or file system.  Many columns in tsk_files will be NULL. Set layout in tsk_file_layout. 
 		UNUSED_BLOCKS(5, "Unused Blocks"), ///< Set of blocks that are unallocated AND not used by a carved or other file type.  Parent should be UNALLOC_BLOCKS, many columns in tsk_files will be NULL, set layout in tsk_file_layout. 
 		VIRTUAL_DIR(6, "Virtual Directory"), ///< Virtual directory (not on fs) with no meta-data entry that can be used to group files of types other than TSK_DB_FILES_TYPE_FS. Its parent is either another TSK_DB_FILES_TYPE_FS or a root directory or type TSK_DB_FILES_TYPE_FS.
+		SLACK(7, "Slack"), ///< Slack space for a single file
+		LOCAL_DIR(8, "Local Directory"), ///< Local directory that was added (not from a disk image)
 		;
 
 		private final short fileType;

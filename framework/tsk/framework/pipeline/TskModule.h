@@ -39,7 +39,7 @@ public:
     /// Standard values that module methods can return.
     enum Status
     {
-        OK = 0, ///< Indicates that the module sucessfully analyzed the data or was able to decide that it should not analyze the data.
+        OK = 0, ///< Indicates that the module successfully analyzed the data or was able to decide that it should not analyze the data.
         FAIL, ///< Indicates that the module wanted to perform analysis on the data, but was unable to because of an error.  
         STOP  ///< Indicates that the module wants the pipeline to stop processing. 
     };

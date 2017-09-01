@@ -14,6 +14,7 @@
  */
 
 #include "tsk_case_db.h"
+#include "tsk/img/img_writer.h"
 #if HAVE_LIBEWF
 #include "tsk/img/ewf.h"
 #endif
@@ -53,6 +54,7 @@ TskAutoDb::TskAutoDb(TskDb * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_kno
         m_fileHashFlag = true;
     else
         m_fileHashFlag = false;
+    m_addFileSystems = true;
     m_noFatFsOrphans = false;
     m_addUnallocSpace = false;
     m_chunkSize = -1;
@@ -88,6 +90,11 @@ void
  TskAutoDb::hashFiles(bool flag)
 {
     m_fileHashFlag = flag;
+}
+
+void TskAutoDb::setAddFileSystems(bool addFileSystems)
+{
+    m_addFileSystems = addFileSystems;
 }
 
 void TskAutoDb::setNoFatFsOrphans(bool noFatFsOrphans)
@@ -126,7 +133,7 @@ uint8_t
         return retval;
     }
 
-    if (addImageDetails(a_images, a_num, a_deviceId)) {
+    if (addImageDetails(a_deviceId)) {
         return 1;
     }
     return 0;
@@ -156,64 +163,36 @@ uint8_t
         return retval;
     }
 
-    // convert image paths to UTF-8
-    char **img_ptrs = (char **) tsk_malloc(a_num * sizeof(char *));
-    if (img_ptrs == NULL) {
-        return 1;
-    }
-
-    for (int i = 0; i < a_num; i++) {
-        char * img2 = (char*) tsk_malloc(1024 * sizeof(char));
-        UTF8 *ptr8;
-        UTF16 *ptr16;
-
-        ptr8 = (UTF8 *) img2;
-        ptr16 = (UTF16 *) a_images[i];
-
-        retval =
-            tsk_UTF16toUTF8_lclorder((const UTF16 **) &ptr16, (UTF16 *)
-            & ptr16[TSTRLEN(a_images[i]) + 1], &ptr8,
-            (UTF8 *) ((uintptr_t) ptr8 + 1024), TSKlenientConversion);
-        if (retval != TSKconversionOK) {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_AUTO_UNICODE);
-            tsk_error_set_errstr("Error converting image to UTF-8\n");
-            return 1;
-        }
-        img_ptrs[i] = img2;
-    }
-
-    if (addImageDetails(img_ptrs, a_num, a_deviceId)) {
-        //cleanup
-        for (int i = 0; i < a_num; ++i) {
-            free(img_ptrs[i]);
-        }
-        free(img_ptrs);
-        return 1;
-    }
-
-    //cleanup
-    for (int i = 0; i < a_num; ++i) {
-        free(img_ptrs[i]);
-    }
-    free(img_ptrs);
-    
-    return 0;
+    return (addImageDetails(a_deviceId));
 #else
     return openImageUtf8(a_num, a_images, a_type, a_ssize, a_deviceId);
 #endif
 }
 
 /**
+* Adds an image to the database. Requires that m_img_info is already initialized
+*
+* @param a_deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID).
+* @return 0 for success, 1 for failure
+*/
+uint8_t
+TskAutoDb::openImage(const char* a_deviceId)
+{
+    if (m_img_info == NULL) {
+        return 1;
+    }
+
+    return(addImageDetails(a_deviceId));
+}
+
+/**
  * Adds image details to the existing database tables.
  *
- * @param imgPaths The paths to the image splits
- * @param numPaths The number of paths
  * @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID).
  * @return Returns 0 for success, 1 for failure
  */
 uint8_t
-TskAutoDb::addImageDetails(const char *const imgPaths[], int numPaths, const char* deviceId)
+TskAutoDb::addImageDetails(const char* deviceId)
 {
    string md5 = "";
 #if HAVE_LIBEWF 
@@ -238,16 +217,56 @@ TskAutoDb::addImageDetails(const char *const imgPaths[], int numPaths, const cha
         return 1;
     }
 
+    char **img_ptrs;
+#ifdef TSK_WIN32
+    // convert image paths to UTF-8
+    img_ptrs = (char **)tsk_malloc(m_img_info->num_img * sizeof(char *));
+    if (img_ptrs == NULL) {
+        return 1;
+    }
+
+    for (int i = 0; i < m_img_info->num_img; i++) {
+        char * img2 = (char*)tsk_malloc(1024 * sizeof(char));
+        UTF8 *ptr8;
+        UTF16 *ptr16;
+
+        ptr8 = (UTF8 *)img2;
+        ptr16 = (UTF16 *)m_img_info->images[i];
+
+        uint8_t retval =
+            tsk_UTF16toUTF8_lclorder((const UTF16 **)&ptr16, (UTF16 *)
+                & ptr16[TSTRLEN(m_img_info->images[i]) + 1], &ptr8,
+                (UTF8 *)((uintptr_t)ptr8 + 1024), TSKlenientConversion);
+        if (retval != TSKconversionOK) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_AUTO_UNICODE);
+            tsk_error_set_errstr("Error converting image to UTF-8\n");
+            return 1;
+        }
+        img_ptrs[i] = img2;
+    }
+#else 
+    img_ptrs = m_img_info->images;
+#endif
+
     // Add the image names
-    for (int i = 0; i < numPaths; i++) {
+    for (int i = 0; i < m_img_info->num_img; i++) {
         const char *img_ptr = NULL;
-        img_ptr = imgPaths[i];
+        img_ptr = img_ptrs[i];
 
         if (m_db->addImageName(m_curImgId, img_ptr, i)) {
             registerError();
             return 1;
         }
     }
+
+#ifdef TSK_WIN32
+    //cleanup
+    for (int i = 0; i < m_img_info->num_img; ++i) {
+        free(img_ptrs[i]);
+    }
+    free(img_ptrs);
+#endif
 
     return 0;
 }
@@ -336,6 +355,7 @@ TSK_RETVAL_ENUM
     const unsigned char *const md5,
     const TSK_DB_FILES_KNOWN_ENUM known)
 {
+
     if (m_db->addFsFile(fs_file, fs_attr, path, md5, known, m_curFsId, m_curFileId,
             m_curImgId)) {
         registerError();
@@ -349,7 +369,7 @@ TSK_RETVAL_ENUM
  * Analyzes the open image and adds image info to a database.
  * Does not deal with transactions and such.  Refer to startAddImage()
  * for more control. 
- * @returns 1 if a critical error occured (DB doesn't exist, no file system, etc.), 2 if errors occured at some point adding files to the DB (corrupt file, etc.), and 0 otherwise.  Errors will have been registered.
+ * @returns 1 if a critical error occurred (DB doesn't exist, no file system, etc.), 2 if errors occurred at some point adding files to the DB (corrupt file, etc.), and 0 otherwise.  Errors will have been registered.
  */
 uint8_t TskAutoDb::addFilesInImgToDb()
 {
@@ -363,7 +383,7 @@ uint8_t TskAutoDb::addFilesInImgToDb()
 
     // @@@ This seems bad because we are overriding what the user may
     // have set. We should remove the public API if we are going to 
-    // override it -- presumabably this was added so that we always have
+    // override it -- presumably this was added so that we always have
     // unallocated volume space...
     setVolFilterFlags((TSK_VS_PART_FLAG_ENUM) (TSK_VS_PART_FLAG_ALLOC |
             TSK_VS_PART_FLAG_UNALLOC));
@@ -428,7 +448,7 @@ uint8_t
     if (m_db->inTransaction()) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskAutoDb::startAddImage(): Already in a transaction, image might not be commited");
+        tsk_error_set_errstr("TskAutoDb::startAddImage(): Already in a transaction, image might not be committed");
         registerError();
         return 1;
     }
@@ -446,8 +466,83 @@ uint8_t
             registerError();
         return 1;
     }
+
+    if (m_imageWriterEnabled) {
+        tsk_img_writer_create(m_img_info, m_imageWriterPath);
+    }
     
-    return addFilesInImgToDb();
+    if (m_addFileSystems) {
+        return addFilesInImgToDb();
+    } else {
+        return 0;
+    }
+}
+
+/**
+* Start the process to add image/file metadata to database inside of a transaction.
+* User must call either commitAddImage() to commit the changes,
+* or revertAddImage() to revert them.
+*
+* @param img_info Previously initialized TSK_IMG_INFO object
+* @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID)
+* @return 0 for success, 1 for failure
+*/
+uint8_t
+TskAutoDb::startAddImage(TSK_IMG_INFO * img_info, const char* deviceId)
+{
+    openImageHandle(img_info);
+
+    if (m_img_info == NULL) {
+        return 1;
+    }
+
+    if (tsk_verbose)
+        tsk_fprintf(stderr, "TskAutoDb::startAddImage: Starting add image process\n");
+
+    if (m_db->releaseSavepoint(TSK_ADD_IMAGE_SAVEPOINT) == 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("TskAutoDb::startAddImage(): An add-image savepoint already exists");
+        registerError();
+        return 1;
+    }
+
+    // @@@ This check is a bit paranoid, and may need to be removed in the future
+    if (m_db->inTransaction()) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_AUTO_DB);
+        tsk_error_set_errstr("TskAutoDb::startAddImage(): Already in a transaction, image might not be committed");
+        registerError();
+        return 1;
+    }
+
+    if (m_db->createSavepoint(TSK_ADD_IMAGE_SAVEPOINT)) {
+        registerError();
+        return 1;
+    }
+
+    m_imgTransactionOpen = true;
+    if (openImage(deviceId)) {
+        tsk_error_set_errstr2("TskAutoDb::startAddImage");
+        registerError();
+        if (revertAddImage())
+            registerError();
+        return 1;
+    }
+
+    if (m_imageWriterEnabled) {
+        if (tsk_img_writer_create(m_img_info, m_imageWriterPath)) {
+            registerError();
+            return 1;
+        }
+    }
+
+    if (m_addFileSystems) {
+        return addFilesInImgToDb();
+    }
+    else {
+        return 0;
+    }
 }
 
 
@@ -485,7 +580,7 @@ uint8_t
     if (m_db->inTransaction()) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskAutoDb::startAddImage(): Already in a transaction, image might not be commited");
+        tsk_error_set_errstr("TskAutoDb::startAddImage(): Already in a transaction, image might not be committed");
         registerError();
         return 1;
     }
@@ -505,8 +600,15 @@ uint8_t
             registerError();
         return 1;
     }
+    if (m_imageWriterEnabled) {
+        tsk_img_writer_create(m_img_info, m_imageWriterPath);
+    }
 
-    return addFilesInImgToDb();
+    if (m_addFileSystems) {
+        return addFilesInImgToDb();
+    } else {
+        return 0;
+    }
 }
 #endif
 
@@ -526,7 +628,7 @@ void
 }
 
 /**
- * Revert all changes after the startAddImage() process has run sucessfully.
+ * Revert all changes after the startAddImage() process has run successfully.
  * @returns 1 on error (error was NOT registered in list), 0 on success
  */
 int
@@ -563,7 +665,7 @@ int64_t
 TskAutoDb::commitAddImage()
 {
     if (tsk_verbose)
-        tsk_fprintf(stderr, "TskAutoDb::commitAddImage: Commiting add image process\n");
+        tsk_fprintf(stderr, "TskAutoDb::commitAddImage: Committing add image process\n");
 
     if (m_imgTransactionOpen == false) {
         tsk_error_reset();
@@ -608,7 +710,7 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
         return TSK_STOP;
     }
 
-     /* If no longe processing the same directroy as the last file, 
+     /* If no longer processing the same directory as the last file, 
       * then update the class-level setting. */
     int64_t cur = fs_file->name->par_addr;
     if (m_curDirId != cur) {
@@ -712,7 +814,7 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
                 if (run->flags & TSK_FS_ATTR_RUN_FLAG_SPARSE)
                     continue;
 
-                // @@@ We probaly want to keep on going here
+                // @@@ We probably want to keep on going here
                 if (m_db->addFileLayoutRange(m_curFileId,
                     run->addr * block_size, run->len * block_size, sequence++)) {
                     registerError();
@@ -850,7 +952,7 @@ TSK_RETVAL_ENUM TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
     //open the fs we have from database
     TSK_FS_INFO * fsInfo = tsk_fs_open_img(m_img_info, dbFsInfo.imgOffset, dbFsInfo.fType);
     if (fsInfo == NULL) {
-        tsk_error_set_errstr2("TskAutoDb::addFsInfoUnalloc: error opening fs at offset %"PRIuOFF, dbFsInfo.imgOffset);
+        tsk_error_set_errstr2("TskAutoDb::addFsInfoUnalloc: error opening fs at offset %" PRIuOFF, dbFsInfo.imgOffset);
         registerError();
         return TSK_ERR;
     }

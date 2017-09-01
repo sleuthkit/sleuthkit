@@ -78,7 +78,7 @@ Status  : Copyright (C) Ross Williams, 1993. However, permission is
 /******************************************************************************/
 
 /* The following #ifndef encloses this entire */
-/* header file, rendering it indempotent.     */
+/* header file, rendering it idempotent.      */
 #ifndef CM_DONE
 #define CM_DONE
 

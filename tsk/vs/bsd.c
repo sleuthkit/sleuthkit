@@ -230,7 +230,7 @@ tsk_vs_bsd_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset)
     /* use the offset provided */
     vs->offset = offset;
 
-    /* inititialize settings */
+    /* initialize settings */
     vs->part_list = NULL;
     vs->part_count = 0;
     vs->endian = 0;

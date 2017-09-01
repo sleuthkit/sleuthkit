@@ -11,7 +11,7 @@
 /**
  * \file tsk_db.h
  * Contains TSK interface to abstract database handling class. The intent of this class
- * is so that different databases can be seamlesly used by TSK. 
+ * is so that different databases can be seamlessly used by TSK. 
  */
 
 #ifndef _TSK_DB_H
@@ -28,7 +28,7 @@ using std::ostream;
 using std::vector;
 using std::string;
 
-#define TSK_SCHEMA_VER 5
+#define TSK_SCHEMA_VER 7
 
 /**
  * Values for the type column in the tsk_objects table. 
@@ -52,6 +52,7 @@ typedef enum {
     TSK_DB_FILES_TYPE_UNALLOC_BLOCKS,   ///< Set of blocks not allocated by file system.  Parent should be image, volume, or file system.  Many columns in tsk_files will be NULL. Set layout in tsk_file_layout. 
     TSK_DB_FILES_TYPE_UNUSED_BLOCKS, ///< Set of blocks that are unallocated AND not used by a carved or other file type.  Parent should be UNALLOC_BLOCKS, many columns in tsk_files will be NULL, set layout in tsk_file_layout. 
     TSK_DB_FILES_TYPE_VIRTUAL_DIR, ///< Virtual directory (not on fs) with no meta-data entry that can be used to group files of types other than TSK_DB_FILES_TYPE_FS. Its parent is either another TSK_DB_FILES_TYPE_FS or a root directory or type TSK_DB_FILES_TYPE_FS.
+    TSK_DB_FILES_TYPE_SLACK   ///< Slack space for a single file
 } TSK_DB_FILES_TYPE_ENUM;
 
 
@@ -208,6 +209,30 @@ class TskDb {
     virtual TSK_RETVAL_ENUM getObjectInfo(int64_t objId, TSK_DB_OBJECT & objectInfo) = 0;
     virtual TSK_RETVAL_ENUM getParentImageId (const int64_t objId, int64_t & imageId) = 0;
     virtual TSK_RETVAL_ENUM getFsRootDirObjectInfo(const int64_t fsObjId, TSK_DB_OBJECT & rootDirObjInfo) = 0;
+
+  protected:
+	
+	  /**
+	  Extract the extension from the given file name and store it in the supplied string.
+
+	  @param name A file name
+	  @param extension The file name extension will be extracted to extension.
+	  */void extractExtension(char *name, char *extension ) {
+		   char *ext = strrchr(name, '.');
+
+		   //if ext is not null and is not the entire filename...
+		   if (ext && (name != ext)) {
+			   size_t extLen = strlen(ext);
+			   //... and doesn't only contain the '.' and isn't too long to be a real extension.
+			   if ((1 < extLen) && (extLen < 15) ) {
+				   strncpy(extension, ext + 1, extLen -1);
+					//normalize to lower case, only works for ascii
+				   for (int i = 0; extension[i]; i++) {
+					   extension[i] = tolower(extension[i]);
+				   }
+			   }
+		   }
+	  }
 };
 
 #endif

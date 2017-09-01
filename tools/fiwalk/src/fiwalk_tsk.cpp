@@ -227,20 +227,19 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
     	}
         }
     }
-    if(fs_file->meta == NULL)
-    {
-        if(fs_file->name->flags & TSK_FS_META_FLAG_ALLOC)   file_info("alloc",1);
-        if(fs_file->name->flags & TSK_FS_META_FLAG_UNALLOC) file_info("unalloc",1);
-        if(fs_file->name->flags & TSK_FS_META_FLAG_USED)    file_info("used",1);
-        if(fs_file->name->flags & TSK_FS_META_FLAG_UNUSED)  file_info("unused",1);
-        if(fs_file->name->flags & TSK_FS_META_FLAG_ORPHAN)  file_info("orphan",1);
-        if(fs_file->name->flags & TSK_FS_META_FLAG_COMP)    file_info("compressed",1);
+    // fs_file->meta == NULL)
+    else {
+        if(fs_file->name->flags & TSK_FS_NAME_FLAG_ALLOC)   file_info("alloc",1);
+        if(fs_file->name->flags & TSK_FS_NAME_FLAG_UNALLOC) file_info("unalloc",1);
     
+        // @@@ BC: This is a bit confusing.  It seems to be cramming NAME-level info 
+        // into places that typically has META-level info. 
         if (fs_file->name->meta_addr!=0)file_info("inode",fs_file->name->meta_addr);
         file_info("meta_type",fs_file->name->type);
         
         if(fs_file->name->meta_seq!=0) file_info("seq",fs_file->name->meta_seq);
     }
+
     /* Special processing for NTFS */
     if ((TSK_FS_TYPE_ISNTFS(fs_file->fs_info->ftype))){
 	/* Should we cycle through the attributes the way print_dent_act() does? */

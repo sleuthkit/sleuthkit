@@ -30,7 +30,7 @@ usage()
 {
     TFPRINTF(stderr,
         _TSK_T
-        ("usage: %s [-adDFlpruvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-m dir/] [-o imgoffset] [-z ZONE] [-s seconds] image [images] [inode]\n"),
+        ("usage: %s [-adDFlhpruvV] [-f fstype] [-i imgtype] [-b dev_sector_size] [-m dir/] [-o imgoffset] [-z ZONE] [-s seconds] image [images] [inode]\n"),
         progname);
     tsk_fprintf(stderr,
         "\tIf [inode] is not given, the root directory is used\n");
@@ -49,6 +49,7 @@ usage()
         "\t-m: Display output in mactime input format with\n");
     tsk_fprintf(stderr,
         "\t      dir/ as the actual mount point of the image\n");
+    tsk_fprintf(stderr, "\t-h: Include MD5 checksum hash in mactime output\n");
     tsk_fprintf(stderr,
         "\t-o imgoffset: Offset into image file (in sectors)\n");
     tsk_fprintf(stderr, "\t-p: Display full path for each file\n");
@@ -102,7 +103,7 @@ main(int argc, char **argv1)
     fls_flags = TSK_FS_FLS_DIR | TSK_FS_FLS_FILE;
 
     while ((ch =
-            GETOPT(argc, argv, _TSK_T("ab:dDf:Fi:m:lo:prs:uvVz:"))) > 0) {
+            GETOPT(argc, argv, _TSK_T("ab:dDf:Fi:m:hlo:prs:uvVz:"))) > 0) {
         switch (ch) {
         case _TSK_T('?'):
         default:
@@ -163,6 +164,9 @@ main(int argc, char **argv1)
         case _TSK_T('m'):
             fls_flags |= TSK_FS_FLS_MAC;
             macpre = OPTARG;
+            break;
+        case _TSK_T('h'):
+            fls_flags |= TSK_FS_FLS_HASH;
             break;
         case _TSK_T('o'):
             if ((imgaddr = tsk_parse_offset(OPTARG)) == -1) {

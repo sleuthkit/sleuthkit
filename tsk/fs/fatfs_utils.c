@@ -238,16 +238,19 @@ fatfs_cleanup_ascii(char *str)
 
 /**
  * \internal
- * Converts a UTF-16 string from an inode into a UTF-8 string. If the 
+ * Converts a UTF-16 string from an inode into a null-terminated UTF-8 string. If the 
  * conversion fails, sets a TSK_ERR_FS_UNICODE error with an error message 
  * that includes the inode address and a description of the UTF-16 string
  * supplied by the caller.
  *
+ * Unlike tsk_UTF16toUTF8, a_src and a_dest will not be updated to point 
+ * to where the conversion stopped reading/writing.
+ *
  * @param a_fatfs Generic FAT file system info structure.
- * @param a_src The UTF-16 string.
- * @param a_src_len The length of the UTF-16 string.
+ * @param a_src The UTF-16 string to convert.
+ * @param a_src_len The number of UTF16 items in a_src.
  * @param a_dest The buffer for the UTF-8 string.
- * @param a_dest_len The length of the UTF-8 string buffer.
+ * @param a_dest_len The number of bytes in a_dest.
  * @param a_inum The address of the source inode, used if an error message is
  * generated.
  * @param a_desc A description of the source string, used if an error message 
@@ -261,6 +264,8 @@ fatfs_utf16_inode_str_2_utf8(FATFS_INFO *a_fatfs, UTF16 *a_src, size_t a_src_len
     TSK_FS_INFO *fs = &(a_fatfs->fs_info);
     TSKConversionResult conv_result = TSKconversionOK;
     uint32_t i = 0;
+    UTF8* dest_start;
+    UTF8* dest_end;
     
     assert(a_fatfs != NULL);
     assert(a_src != NULL);
@@ -293,36 +298,25 @@ fatfs_utf16_inode_str_2_utf8(FATFS_INFO *a_fatfs, UTF16 *a_src, size_t a_src_len
         return TSKsourceIllegal; 
     }
 
-    conv_result = tsk_UTF16toUTF8(fs->endian, (const UTF16**)&a_src, (UTF16*)&a_src[a_src_len], &a_dest, (UTF8*)&a_dest[a_dest_len], TSKlenientConversion);
-    if (conv_result == TSKconversionOK) {
-        /* Make sure the result is NULL-terminated. */
-        if ((uintptr_t) a_dest > (uintptr_t)a_dest + sizeof(a_dest)) {
-            a_dest[sizeof(a_dest) - 1] = '\0';
-        }
-        else {
-            *a_dest = '\0';
-        }
-    }
-    else {
+    /* Do the conversion. Note that a_dest and a_src will point to where the conversion
+     * stopped reading/writing. */
+    dest_start = a_dest;
+    dest_end = (UTF8*)&a_dest[a_dest_len];
+    conv_result = tsk_UTF16toUTF8(fs->endian, (const UTF16**)&a_src, (UTF16*)&a_src[a_src_len], &a_dest, dest_end, TSKlenientConversion);
+
+    if (conv_result != TSKconversionOK) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_UNICODE);
         tsk_error_set_errstr("%s: Error converting %s for inum %"PRIuINUM" from UTF16 to UTF8: %d", func_name, a_desc, a_inum, conv_result);
         *a_dest = '\0';
+        return conv_result;
     }
 
-    /* Clean up non-ASCII characters since the destination buffer is supposed 
-     * to be UTF-8 and the encoding of the source is essentially unknown and 
-     * may be junk. */
-    fatfs_cleanup_ascii((char*)a_dest);
-
-    /* Remove control characters. */
-    i = 0;
-    while (a_dest[i] != '\0') {
-        if (TSK_IS_CNTRL(a_dest[i])) {
-            a_dest[i] = '^';
-        }
-        ++i;
-    }
+    /* Make sure the result is NULL-terminated. */
+    if((uintptr_t)a_dest >= (uintptr_t)dest_end)
+        dest_start[a_dest_len - 1] = '\0';
+    else
+        *a_dest = '\0';
 
     return conv_result;
 }

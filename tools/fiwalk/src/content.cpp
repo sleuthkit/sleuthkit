@@ -335,7 +335,7 @@ void content::add_seg(int64_t img_offset,int64_t fs_offset,
 
 
 /** Called when new bytes are encountered.
- * An important bug: currently we assume that the bytes added are contigious.
+ * An important bug: currently we assume that the bytes added are contiguous.
  */
 void content::add_bytes(const u_char *buf,uint64_t file_offset,ssize_t size)
 {

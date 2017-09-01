@@ -1,15 +1,15 @@
 /*
  * SleuthKit Java Bindings
- * 
- * Copyright 2011-2016 Basis Technology Corp.
+ *
+ * Copyright 2011-2017 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,10 +20,10 @@ package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
+import org.sleuthkit.datamodel.TskData.TSK_DB_FILES_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
@@ -38,9 +38,7 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 public abstract class FsContent extends AbstractFile {
 
 	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
-	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private String uniquePath;
-	private final SleuthkitCase tskCase;
 	private List<String> metaDataText = null;
 	private volatile FileSystem parentFileSystem;
 
@@ -74,6 +72,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @param attrId             The type id given to the file by the file
 	 *                           system.
 	 * @param name               The name of the file.
+	 * @param fileType           The type of file
 	 * @param metaAddr           The meta address of the file.
 	 * @param metaSeq            The meta sequence number of the file.
 	 * @param dirType            The type of the file, usually as reported in
@@ -104,6 +103,8 @@ public abstract class FsContent extends AbstractFile {
 	 * @param parentPath         The path of the parent of the file.
 	 * @param mimeType           The MIME type of the file, null if it has not
 	 *                           yet been determined.
+	 * @param extension          The extension part of the file name (not
+	 *                           including the '.'), can be null.
 	 */
 	@SuppressWarnings("deprecation")
 	FsContent(SleuthkitCase db,
@@ -112,6 +113,7 @@ public abstract class FsContent extends AbstractFile {
 			long fsObjId,
 			TSK_FS_ATTR_TYPE_ENUM attrType, int attrId,
 			String name,
+			TSK_DB_FILES_TYPE_ENUM fileType,
 			long metaAddr, int metaSeq,
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
@@ -120,9 +122,9 @@ public abstract class FsContent extends AbstractFile {
 			short modes, int uid, int gid,
 			String md5Hash, FileKnown knownState,
 			String parentPath,
-			String mimeType) {
-		super(db, objId, dataSourceObjectId, attrType, attrId, name, TskData.TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, mimeType);
-		this.tskCase = db;
+			String mimeType,
+			String extension) {
+		super(db, objId, dataSourceObjectId, attrType, attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, mimeType, extension);
 		this.fsObjId = fsObjId;
 	}
 
@@ -170,7 +172,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @throws TskCoreException if there is a problem opening the handle.
 	 */
 	@SuppressWarnings("deprecation")
-	private void loadFileHandle() throws TskCoreException {
+	void loadFileHandle() throws TskCoreException {
 		if (fileHandle == 0) {
 			synchronized (this) {
 				if (fileHandle == 0) {
@@ -205,24 +207,12 @@ public abstract class FsContent extends AbstractFile {
 	@Override
 	@SuppressWarnings("deprecation")
 	protected int readInt(byte[] buf, long offset, long len) throws TskCoreException {
-		try {
-			if (offset == 0 && size == 0) {
-				//special case for 0-size file
-				return 0;
-			}
-			loadFileHandle();
-			return SleuthkitJNI.readFile(fileHandle, buf, offset, len);
-		} catch (TskCoreException ex) {
-			Content dataSource = getDataSource();
-			if ((dataSource != null) && (dataSource instanceof Image)) {
-				Image image = (Image) dataSource;
-				if (!image.imageFileExists()) {
-					tskCase.submitError(SleuthkitCase.ErrorObserver.Context.IMAGE_READ_ERROR.getContextString(),
-							bundle.getString("FsContent.readInt.err.msg.text"));
-				}
-			}
-			throw ex;
+		if (offset == 0 && size == 0) {
+			//special case for 0-size file
+			return 0;
 		}
+		loadFileHandle();
+		return SleuthkitJNI.readFile(fileHandle, buf, offset, len);
 	}
 
 	@Override
@@ -263,6 +253,8 @@ public abstract class FsContent extends AbstractFile {
 	/**
 	 * Get the full path to this file or directory, starting with a "/" and the
 	 * image name and then all the other segments in the path.
+	 *
+	 * @return A unique path for this object.
 	 *
 	 * @throws TskCoreException if there is an error querying the case database.
 	 */
@@ -339,9 +331,6 @@ public abstract class FsContent extends AbstractFile {
 	 *
 	 * @param preserveState True if state should be included in the string
 	 *                      representation of this object.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
 	 */
 	@Override
 	@SuppressWarnings("deprecation")
@@ -399,7 +388,7 @@ public abstract class FsContent extends AbstractFile {
 			String name, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime,
 			short modes, int uid, int gid, String md5Hash, FileKnown knownState, String parentPath) {
-		this(db, objId, db.getDataSourceObjectId(objId), fsObjId, attrType, (int) attrId, name, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null);
+		this(db, objId, db.getDataSourceObjectId(objId), fsObjId, attrType, (int) attrId, name, TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null, null);
 	}
 
 	/**
@@ -449,6 +438,7 @@ public abstract class FsContent extends AbstractFile {
 	 * @param parentPath         The path of the parent of the file.
 	 * @param mimeType           The MIME type of the file, null if it has not
 	 *                           yet been determined.
+	 *
 	 * @deprecated Do not make subclasses outside of this package.
 	 */
 	@Deprecated
@@ -457,6 +447,6 @@ public abstract class FsContent extends AbstractFile {
 			String name, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime,
 			short modes, int uid, int gid, String md5Hash, FileKnown knownState, String parentPath, String mimeType) {
-		this(db, objId, dataSourceObjectId, fsObjId, attrType, (int) attrId, name, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, mimeType);
+		this(db, objId, dataSourceObjectId, fsObjId, attrType, (int) attrId, name, TSK_DB_FILES_TYPE_ENUM.FS, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, mimeType, null);
 	}
 }

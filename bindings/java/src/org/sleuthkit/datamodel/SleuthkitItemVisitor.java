@@ -116,13 +116,22 @@ public interface SleuthkitItemVisitor<T> {
 	T visit(LayoutFile lf);
 
 	/**
-	 * Act on (visit) a LayoutDirectory content object
+	 * Act on (visit) a VirtualDirectory content object
 	 *
 	 * @param ld layout dir to visit / act on
 	 *
 	 * @return result of the visit
 	 */
 	T visit(VirtualDirectory ld);
+
+	/**
+	 * Act on (visit) a LocalDirectory content object
+	 *
+	 * @param ld layout dir to visit / act on
+	 *
+	 * @return result of the visit
+	 */
+	T visit(LocalDirectory ld);
 
 	/**
 	 * Act on (visit) a DerivedFile content object
@@ -141,6 +150,15 @@ public interface SleuthkitItemVisitor<T> {
 	 * @return result of the visit
 	 */
 	T visit(LocalFile lf);
+	
+	/**
+	 * Act on (visit) a SlackFile content object
+	 *
+	 * @param sf slack file to visit / act on
+	 *
+	 * @return result of the visit
+	 */
+	T visit(SlackFile sf);	
 
 	/**
 	 * The default visitor - quickest method for implementing a custom visitor.
@@ -206,6 +224,11 @@ public interface SleuthkitItemVisitor<T> {
 		}
 
 		@Override
+		public T visit(LocalDirectory ld) {
+			return defaultVisit(ld);
+		}
+
+		@Override
 		public T visit(DerivedFile df) {
 			return defaultVisit(df);
 		}
@@ -213,6 +236,11 @@ public interface SleuthkitItemVisitor<T> {
 		@Override
 		public T visit(LocalFile lf) {
 			return defaultVisit(lf);
+		}
+
+		@Override
+		public T visit(SlackFile sf) {
+			return defaultVisit(sf);
 		}
 	}
 }

@@ -1,10 +1,10 @@
-AM_CPPFLAGS = -I../.. -I$(srcdir)/../.. -Wall 
+AM_CPPFLAGS = -I../.. -I$(srcdir)/../.. -Wall
 LDADD = ../../tsk/libtsk.la
 LDFLAGS += -static
 EXTRA_DIST = .indent.pro fscheck.cpp
 
 bin_PROGRAMS = blkcalc blkcat blkls blkstat ffind fls fcat fsstat icat ifind ils \
-    istat jcat jls
+    istat jcat jls usnjls
 blkcalc_SOURCES = blkcalc.cpp
 blkcat_SOURCES = blkcat.cpp
 blkls_SOURCES = blkls.cpp
@@ -19,9 +19,10 @@ ils_SOURCES = ils.cpp
 istat_SOURCES = istat.cpp
 jcat_SOURCES = jcat.cpp
 jls_SOURCES = jls.cpp
+usnjls_SOURCES = usnjls.cpp
 
 indent:
-	indent *.cpp 
+	indent *.cpp
 
 clean-local:
-	-rm -f *.cpp~ 
+	-rm -f *.cpp~

@@ -74,3 +74,29 @@ tsk_guess_end_u32(TSK_ENDIAN_ENUM * flag, uint8_t * x, uint32_t val)
 
     return 1;
 }
+
+/** \internal
+ * same idea as tsk_guess_end_u16 except that val is a 64-bit value
+ *
+* @param flag Pointer to location where proper endian flag should be stored.
+* @param x Pointer to array of bytes to analyze.
+* @param val Target value to compare to
+* @returns 1 if match cannot be made, 0 if it can. 
+ */
+uint8_t
+tsk_guess_end_u64(TSK_ENDIAN_ENUM * flag, uint8_t * x, uint64_t val)
+{
+    /* try little */
+    if (tsk_getu64(TSK_LIT_ENDIAN, x) == val) {
+        *flag = TSK_LIT_ENDIAN;
+        return 0;
+    }
+
+    /* ok, big now */
+    if (tsk_getu64(TSK_BIG_ENDIAN, x) == val) {
+        *flag = TSK_BIG_ENDIAN;
+        return 0;
+    }
+
+    return 1;
+}

@@ -25,9 +25,15 @@
  */
 #include "tsk_fs_i.h"
 
+#include <time.h>
+
+#ifndef TZNAME
+#define TZNAME __tzname
+#endif
+
 char tsk_fs_name_type_str[TSK_FS_NAME_TYPE_STR_MAX][2] =
     { "-", "p", "c", "d", "b", "r",
-    "l", "s", "h", "w", "v"
+    "l", "s", "h", "w", "v", "V"
 };
 
 /**
@@ -305,7 +311,7 @@ tsk_fs_time_to_str(time_t time, char buf[128])
             (int) tmTime->tm_mon + 1, (int) tmTime->tm_mday,
             tmTime->tm_hour,
             (int) tmTime->tm_min, (int) tmTime->tm_sec,
-            tzname[(tmTime->tm_isdst == 0) ? 0 : 1]);
+            TZNAME[(tmTime->tm_isdst == 0) ? 0 : 1]);
     }
     return buf;
 }
@@ -334,7 +340,7 @@ tsk_fs_time_to_str_subsecs(time_t time, unsigned int subsecs,
             (int) tmTime->tm_mon + 1, (int) tmTime->tm_mday,
             tmTime->tm_hour,
             (int) tmTime->tm_min, (int) tmTime->tm_sec,
-            subsecs, tzname[(tmTime->tm_isdst == 0) ? 0 : 1]);
+            subsecs, TZNAME[(tmTime->tm_isdst == 0) ? 0 : 1]);
     }
     return buf;
 }
@@ -373,7 +379,7 @@ tsk_fs_print_day(FILE * hFile, time_t time)
         tsk_fprintf(hFile, "%.4d-%.2d-%.2d 00:00:00 (%s)",
             (int) tmTime->tm_year + 1900,
             (int) tmTime->tm_mon + 1, (int) tmTime->tm_mday,
-            tzname[(tmTime->tm_isdst == 0) ? 0 : 1]);
+            TZNAME[(tmTime->tm_isdst == 0) ? 0 : 1]);
     }
 }
 
@@ -396,9 +402,6 @@ tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
     const char *a_path, TSK_FS_INFO * fs, const TSK_FS_ATTR * fs_attr,
     uint8_t print_path)
 {
-    size_t i;
-    char *buf;
-
     /* type of file - based on dentry type */
     if (fs_file->name->type < TSK_FS_NAME_TYPE_STR_MAX)
         tsk_fprintf(hFile, "%s/",
@@ -419,7 +422,7 @@ tsk_fs_name_print(FILE * hFile, const TSK_FS_FILE * fs_file,
          * printed as a directory
          */
         if ((fs_attr) && (fs_attr->type == TSK_FS_ATTR_TYPE_NTFS_DATA) &&
-            (fs_file->meta->type == TSK_FS_META_TYPE_DIR)) {
+            (TSK_FS_IS_DIR_META(fs_file->meta->type))){
             tsk_fprintf(hFile, "r ");
         }
         else {
@@ -603,7 +606,6 @@ tsk_fs_name_print_mac_md5(FILE * hFile, const TSK_FS_FILE * fs_file,
     char ls[12];
     size_t i;
     uint8_t isADS = 0;
-    char *buf;
 
     if ((!hFile) || (!fs_file))
         return;

@@ -128,7 +128,7 @@ exfatfs_is_vol_label_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS
 
     if(exfatfs_get_alloc_status_from_type(dentry->entry_type) == 1){
         /* There is supposed to be a label, check its length. */
-        if ((dentry->utf16_char_count < 1) || (dentry->utf16_char_count > EXFATFS_MAX_VOLUME_LABEL_LEN)) {
+        if ((dentry->volume_label_length_chars < 1) || (dentry->volume_label_length_chars > EXFATFS_MAX_VOLUME_LABEL_LEN_CHAR)) {
             if (tsk_verbose) {
                 fprintf(stderr, "%s: incorrect volume label length\n", func_name);
             }
@@ -138,7 +138,7 @@ exfatfs_is_vol_label_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS
     else {
         /* There is supposed to be no label, check for a zero in the length
          * field. */
-        if (dentry->utf16_char_count != 0x00) {
+        if (dentry->volume_label_length_chars != 0x00) {
             if (tsk_verbose) {
                 fprintf(stderr, "%s: volume label length non-zero for no label entry\n", func_name);
             }
@@ -146,7 +146,7 @@ exfatfs_is_vol_label_dentry(FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS
         }
 
         /* Every byte of the UTF-16 volume label string should be 0. */
-        for (i = 0; i < EXFATFS_MAX_VOLUME_LABEL_LEN * 2; ++i) {
+        for (i = 0; i < EXFATFS_MAX_VOLUME_LABEL_LEN_BYTE; ++i) {
             if (dentry->volume_label[i] != 0x00) {
                 if (tsk_verbose) {
                     fprintf(stderr, "%s: non-zero byte in label for no label entry\n", func_name);
@@ -668,7 +668,7 @@ exfatfs_is_file_name_dentry(FATFS_DENTRY *a_dentry)
  * @param [in] a_cluster_is_alloc The allocation status, possibly unknown, of the 
  * cluster from which the buffer was filled. 
  * @param [in] a_do_basic_tests_only Whether to do basic or in-depth testing. 
- * @return 1 if the buffer likely contains a direcotry entry, 0 otherwise
+ * @return 1 if the buffer likely contains a directory entry, 0 otherwise
  */
 uint8_t
 exfatfs_is_dentry(FATFS_INFO *a_fatfs, FATFS_DENTRY *a_dentry, FATFS_DATA_UNIT_ALLOC_STATUS_ENUM a_cluster_is_alloc, uint8_t a_do_basic_tests_only)
@@ -835,7 +835,7 @@ exfatfs_copy_vol_label_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum, FATFS_DENTR
     /* If there is a volume label, copy it to the name field of the 
      * TSK_FS_META structure. */
     if (exfatfs_get_alloc_status_from_type(dentry->entry_type) == 1) {
-        if (fatfs_utf16_inode_str_2_utf8(a_fatfs, (UTF16*)dentry->volume_label, (size_t)dentry->utf16_char_count + 1, 
+        if (fatfs_utf16_inode_str_2_utf8(a_fatfs, (UTF16*)dentry->volume_label, (size_t)dentry->volume_label_length_chars,
             (UTF8*)a_fs_file->meta->name2->name, sizeof(a_fs_file->meta->name2->name), a_inum, "volume label") != TSKconversionOK) {
             return TSK_COR;
         }
@@ -1119,9 +1119,9 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
 	TSK_INUM_T stream_inum;
 	TSK_INUM_T name_inum;
 	TSK_INUM_T prev_inum;
-	uint8_t name_chars_written;
+    uint8_t name_bytes_written;
 	int name_index;
-	uint8_t chars_to_copy;
+	uint8_t bytes_to_copy;
 	FATFS_DENTRY temp_dentry;
 	char utf16_name[512];
 
@@ -1223,7 +1223,7 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
     if ((a_is_alloc) &&
         (exfatfs_get_alloc_status_from_type(file_dentry->entry_type) == 1) &&
         (exfatfs_get_alloc_status_from_type(stream_dentry.entry_type) == 1)) {
-        a_fs_file->meta->flags = TSK_FS_META_FLAG_ALLOC;
+        a_fs_file->meta->flags = TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED;
 
         /* If the FAT chain bit of the secondary flags of the stream entry is set,
          * the file is not fragmented and there is no FAT chain to walk. If the 
@@ -1242,13 +1242,13 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
 	 * First copy all UTF16 data into a single buffer
 	 * If not successful, return what we have to this point with no error */
 	memset(utf16_name, 0, sizeof(utf16_name));
-	name_chars_written = 0;
+    name_bytes_written = 0;
 	prev_inum = stream_inum;
 	for(name_index = 1; name_index < file_dentry->secondary_entries_count;name_index++){
 		if(exfatfs_next_dentry_inum(a_fatfs, prev_inum, file_dentry, EXFATFS_DIR_ENTRY_TYPE_FILE_NAME, &name_inum)){
 			/* Try to save what we've got (if we found at least one file name dentry) */
 			if(name_index > 1){
-				if(fatfs_utf16_inode_str_2_utf8(a_fatfs, (UTF16 *)utf16_name, sizeof(utf16_name), 
+				if(fatfs_utf16_inode_str_2_utf8(a_fatfs, (UTF16 *)utf16_name, name_bytes_written / 2,
 					(UTF8*)a_fs_file->meta->name2->name, sizeof(a_fs_file->meta->name2->name), a_inum, "file name (partial)") != TSKconversionOK){
 						return TSK_OK; /* Don't want to disregard valid data read earlier */
 				}
@@ -1256,20 +1256,20 @@ exfatfs_copy_file_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
 			return TSK_OK;
 		}
 		fatfs_dentry_load(a_fatfs, &temp_dentry, name_inum);
-		if(stream_dentry.file_name_length * 2 - name_chars_written > 30){
-			chars_to_copy = 30;
+		if(stream_dentry.file_name_length_UTF16_chars * 2 - name_bytes_written > EXFATFS_MAX_FILE_NAME_SEGMENT_LENGTH_UTF16_BYTES){
+            bytes_to_copy = EXFATFS_MAX_FILE_NAME_SEGMENT_LENGTH_UTF16_BYTES;
 		}
 		else{
-			chars_to_copy = stream_dentry.file_name_length * 2 - name_chars_written;
+            bytes_to_copy = stream_dentry.file_name_length_UTF16_chars * 2 - name_bytes_written;
 		}
-		memcpy(utf16_name + name_chars_written, &(temp_dentry.data[2]), chars_to_copy);
+        memcpy(utf16_name + name_bytes_written, &(temp_dentry.data[2]), bytes_to_copy);
 
 		prev_inum = name_inum;
-		name_chars_written += chars_to_copy;
+        name_bytes_written += bytes_to_copy;
 	}
 
 	/* Copy the file name segment. */
-	if(fatfs_utf16_inode_str_2_utf8(a_fatfs, (UTF16 *)utf16_name, sizeof(utf16_name), 
+	if(fatfs_utf16_inode_str_2_utf8(a_fatfs, (UTF16 *)utf16_name, name_bytes_written / 2,
 		(UTF8*)a_fs_file->meta->name2->name, sizeof(a_fs_file->meta->name2->name), a_inum, "file name") != TSKconversionOK){
 			return TSK_OK; /* Don't want to disregard valid data read earlier */
 	}
@@ -1310,25 +1310,24 @@ exfatfs_copy_file_name_inode(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
      * settings - essentially a "belt and suspenders" check. */
     if ((a_is_alloc) &&
         (exfatfs_get_alloc_status_from_type(dentry->entry_type) == 1)) {
-        a_fs_file->meta->flags = TSK_FS_META_FLAG_ALLOC;
+        a_fs_file->meta->flags = TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED;
     }
     else {
         a_fs_file->meta->flags = TSK_FS_META_FLAG_UNALLOC;
     }
 
     /* Copy the file name segment. */
-    if (fatfs_utf16_inode_str_2_utf8(a_fatfs, (UTF16*)dentry->utf16_name_chars, EXFATFS_MAX_FILE_NAME_SEGMENT_LENGTH, 
+    if (fatfs_utf16_inode_str_2_utf8(a_fatfs, (UTF16*)dentry->utf16_name_chars, EXFATFS_MAX_FILE_NAME_SEGMENT_LENGTH_UTF16_CHARS, 
         (UTF8*)a_fs_file->meta->name2->name, sizeof(a_fs_file->meta->name2->name), a_inum, "file name segment") != TSKconversionOK) {
         return TSK_COR;
     }
-
     return TSK_OK;
 }
 
 /**
  * \internal
  * Initialize the members of a TSK_FS_META object before copying the contents
- * of an an inode consisting of one or more raw exFAT directry entries into it. 
+ * of an an inode consisting of one or more raw exFAT directory entries into it.
  *
  * @param [in] a_fatfs Source file system for the directory entries.
  * @param [in] a_inum Address of the inode.
@@ -1354,7 +1353,7 @@ exfatfs_inode_copy_init(FATFS_INFO *a_fatfs, TSK_INUM_T a_inum,
 
     /* Set the allocation status based on the cluster allocation status. File 
      * entry set entries may change this. */
-    a_fs_file->meta->flags = a_is_alloc ? TSK_FS_META_FLAG_ALLOC : TSK_FS_META_FLAG_UNALLOC;
+    a_fs_file->meta->flags = a_is_alloc ? TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED : TSK_FS_META_FLAG_UNALLOC;
 
     /* As for FATXX, make regular file the default type. */
     fs_meta->type = TSK_FS_META_TYPE_REG;
@@ -1643,7 +1642,7 @@ exfatfs_inode_lookup(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file,
     /* Check the allocation status of the sector. This status will be used
      * not only as meta data to be reported, but also as a way to choose
      * between the basic or in-depth version of the tests (below) that 
-     * determine whether or not the bytes corrresponding to the inode are 
+     * determine whether or not the bytes corresponding to the inode are 
      * likely to be a directory entry. Note that in other places in the code 
      * information about whether or not the sector that contains the inode is
      * part of a folder is used to select the test. Here, that information is 
