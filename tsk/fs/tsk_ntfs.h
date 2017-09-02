@@ -609,6 +609,10 @@ extern "C" {
 /************************************************************************
 */
 
+    /****************** NTFS USN Journal Structures ******************/
+
+    /** \name NTFS Update Sequence Number Journal Data Structures */
+    //@{
 
     enum TSK_FS_USN_REASON {
         TSK_FS_USN_REASON_DATA_OVERWRITE = 0x00000001,
@@ -635,7 +639,6 @@ extern "C" {
     };
     typedef enum TSK_FS_USN_REASON TSK_FS_USN_REASON;
 
-
     enum TSK_FS_USN_SOURCE_INFO {
         TSK_FS_USN_SOURCE_INFO_DATA_MANAGEMENT = 0x01,
         TSK_FS_USN_SOURCE_INFO_AUXILIARY_DATA = 0x02,
@@ -643,7 +646,6 @@ extern "C" {
         TSK_FS_USN_SOURCE_INFO_CLIENT_REPLICATION_MANAGEMENT = 0x08
     };
     typedef enum TSK_FS_USN_SOURCE_INFO TSK_FS_USN_SOURCE_INFO;
-
 
     enum TSK_FS_NTFS_FILE_ATTRIBUTES {
         TSK_FS_NTFS_FILE_ATTRIBUTE_READONLY = 0x000001,
@@ -666,31 +668,64 @@ extern "C" {
     };
     typedef enum TSK_FS_NTFS_FILE_ATTRIBUTES TSK_FS_NTFS_FILE_ATTRIBUTES;
 
-
+    /* V2/V3 Record specific data */
     typedef struct {
-        uint64_t refnum;
-        uint16_t refnum_seq;
-        uint64_t parent_refnum;
-        uint16_t parent_refnum_seq;
-        uint64_t usn;
         uint32_t time_sec;
         uint32_t time_nsec;
-        TSK_FS_USN_REASON reason;
-        TSK_FS_USN_SOURCE_INFO source_info;
         uint32_t security;
         TSK_FS_NTFS_FILE_ATTRIBUTES attributes;
         char *fname;
-
-    } TSK_USN_RECORD_V2;
-
+    } TSK_USN_V3_DATA;
 
     typedef struct {
+        /* Record header */
+        uint32_t length;
+        uint16_t major_version;
+        uint16_t minor_version;
+        /* Record common content */
+        uint64_t refnum;
+        uint32_t refnum_seq;
+        uint64_t parent_refnum;
+        uint32_t parent_refnum_seq;
+        uint64_t usn;
+        TSK_FS_USN_REASON reason;
+        TSK_FS_USN_SOURCE_INFO source_info;
+        /* Version specific fields */
+        union {
+            TSK_USN_V3_DATA v2;
+            TSK_USN_V3_DATA v3;
+        };
+    } TSK_USN_RECORD;
 
+    typedef struct {
         TSK_FS_FILE *fs_file;
         TSK_INUM_T usnj_inum;
         uint32_t bsize;
-
     } NTFS_USNJINFO;
+
+    /**
+    * Function definition used for callback to ntfs_usnjentry_walk().
+    *
+    * @param a_record Pointer USN record structure.
+    * @param a_ptr Pointer that was supplied by the caller who called
+    *    ntfs_usnjentry_walk.
+    * @returns Value to identify if walk should continue, stop, or stop because of error
+    */
+    typedef TSK_WALK_RET_ENUM(*TSK_FS_USNJENTRY_WALK_CB) (
+        TSK_USN_RECORD *a_record, void *a_ptr);
+
+    extern uint8_t tsk_ntfs_usnjopen(TSK_FS_INFO * fs, TSK_INUM_T inum);
+    extern uint8_t tsk_ntfs_usnjentry_walk(TSK_FS_INFO * fs,
+        TSK_FS_USNJENTRY_WALK_CB action, void *ptr);
+
+    enum TSK_FS_USNJLS_FLAG_ENUM {
+        TSK_FS_USNJLS_NONE = 0x00,
+        TSK_FS_USNJLS_LONG = 0x01,
+        TSK_FS_USNJLS_MAC = 0x02
+    };
+    typedef enum TSK_FS_USNJLS_FLAG_ENUM TSK_FS_USNJLS_FLAG_ENUM;
+    extern uint8_t tsk_fs_usnjls(TSK_FS_INFO * fs, TSK_INUM_T inode,
+        TSK_FS_USNJLS_FLAG_ENUM flags);
 
 
 /************************************************************************

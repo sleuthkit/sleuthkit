@@ -18,6 +18,13 @@
 #include "tsk_ntfs.h"
 
 
+typedef struct {
+    uint32_t length;
+    uint16_t major_version;
+    uint16_t minor_version;
+} TSK_USN_RECORD_HEADER;
+
+
 /*
  * Search the next record in the buffer skipping null bytes.
  * Records are alway aligned at 8 bytes.
@@ -35,22 +42,21 @@ search_record(const unsigned char *buf, TSK_OFF_T offset, ssize_t bufsize)
 
 
 /*
- * Convert the record file name from UTF16 to UTF8.
+ * Convert the file name from UTF16 to UTF8.
  * Returns 0 on success, 1 otherwise
  */
-static uint8_t
-parse_fname(const unsigned char *buf, uint16_t nlen,
-            TSK_USN_RECORD_V2 *record, TSK_ENDIAN_ENUM endian)
+static char *
+parse_fname(const unsigned char *buf, uint16_t nlen, TSK_ENDIAN_ENUM endian)
 {
     int ret = 0;
     UTF8 *temp_name = NULL;
     size_t src_len = (size_t) nlen, dst_len = (size_t) nlen * 2;
 
-    record->fname = tsk_malloc(dst_len + 1);
-    if (record->fname == NULL)
-        return 1;
+    char *fname = tsk_malloc(dst_len + 1);
+    if (fname == NULL)
+        return NULL;
 
-    temp_name = (UTF8*)record->fname;
+    temp_name = (UTF8*)fname;
 
     ret = tsk_UTF16toUTF8(endian,
                           (const UTF16**)&buf, (UTF16*)&buf[src_len],
@@ -60,14 +66,14 @@ parse_fname(const unsigned char *buf, uint16_t nlen,
     if (ret != TSKconversionOK) {
         if (tsk_verbose)
             tsk_fprintf(
-                stderr, "parse_v2_record: USN name to UTF8 conversion error.");
+                stderr, "parse_fname: USN name to UTF8 conversion error.");
 
-        record->fname = '\0';
+        fname = '\0';
     }
     else
-        record->fname[dst_len] = '\0';
+        fname[dst_len] = '\0';
 
-    return 0;
+    return fname;
 }
 
 
@@ -87,7 +93,7 @@ parse_record_header(const unsigned char *buf, TSK_USN_RECORD_HEADER *header,
  */
 static uint8_t
 parse_v2_record(const unsigned char *buf, TSK_USN_RECORD_HEADER *header,
-                TSK_USN_RECORD_V2 *record, TSK_ENDIAN_ENUM endian)
+                TSK_USN_RECORD *record, TSK_ENDIAN_ENUM endian)
 {
     uint64_t timestamp = 0;
     uint16_t name_offset = 0, name_length = 0;
@@ -100,19 +106,20 @@ parse_v2_record(const unsigned char *buf, TSK_USN_RECORD_HEADER *header,
 
     /* Convert NT timestamp into Unix */
     timestamp = tsk_getu64(endian, &buf[32]);
-    record->time_sec = nt2unixtime(timestamp);
-    record->time_nsec = nt2nano(timestamp);
+    record->v2.time_sec = nt2unixtime(timestamp);
+    record->v2.time_nsec = nt2nano(timestamp);
 
     record->reason = tsk_getu32(endian, &buf[40]);
     record->source_info = tsk_getu32(endian, &buf[44]);
-    record->security = tsk_getu32(endian, &buf[48]);
-    record->attributes = tsk_getu32(endian, &buf[52]);
+    record->v2.security = tsk_getu32(endian, &buf[48]);
+    record->v2.attributes = tsk_getu32(endian, &buf[52]);
 
     /* Extract file name */
     name_length = tsk_getu16(endian, &buf[56]);
     name_offset = tsk_getu16(endian, &buf[58]);
+    record->v2.fname = parse_fname(&buf[name_offset], name_length, endian);
 
-    return parse_fname(&buf[name_offset], name_length, record, endian);
+    return (record->v2.fname == NULL) ? 1 : 0;
 }
 
 
@@ -125,19 +132,22 @@ static TSK_WALK_RET_ENUM
 parse_record(const unsigned char *buf, TSK_USN_RECORD_HEADER *header,
              TSK_ENDIAN_ENUM endian, TSK_FS_USNJENTRY_WALK_CB action, void *ptr)
 {
+    TSK_USN_RECORD record;
     TSK_WALK_RET_ENUM ret;
+
+    record.length = header->length;
+    record.major_version = header->major_version;
+    record.minor_version = header->minor_version;
 
     switch (header->major_version) {
     case 2: {
-        TSK_USN_RECORD_V2 record;
-
         ret = parse_v2_record(buf, header, &record, endian);
         if (ret == 1)
             return TSK_WALK_ERROR;
 
-        ret = (*action)(header, &record, ptr);
+        ret = (*action)(&record, ptr);
 
-        free(record.fname);
+        free(record.v2.fname);
 
         return ret;
     }
