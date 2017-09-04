@@ -16,6 +16,12 @@
  * not subject to copyright.
  */
 
+#if !defined( _WIN32 ) && !defined( _GNU_SOURCE )
+// for vasprintf()
+#define _GNU_SOURCE
+#endif
+
+#include <stdio.h>
 
 #include "tsk/tsk_tools_i.h"
 

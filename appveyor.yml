@@ -1,0 +1,73 @@
+environment:
+  matrix:
+  - TARGET: vs2015
+    APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+    VisualStudioVersion: 14.0
+    platform: Win32
+    configuration: Release
+    LIBEWF_HOME: C:\projects\libewf_64bit
+    LIBVHDI_HOME: C:\projects\libvhdi_64bit
+    LIBVMDK_HOME: C:\projects\libvmdk_64bit
+  - TARGET: vs2015
+    APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+    VisualStudioVersion: 14.0
+    platform: x64
+    configuration: Release
+    LIBEWF_HOME: C:\projects\libewf_64bit
+    LIBVHDI_HOME: C:\projects\libvhdi_64bit
+    LIBVMDK_HOME: C:\projects\libvmdk_64bit
+  - TARGET: vs2015
+    APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+    VisualStudioVersion: 14.0
+    platform: x64
+    configuration: Debug
+    LIBEWF_HOME: C:\projects\libewf_64bit
+    LIBVHDI_HOME: C:\projects\libvhdi_64bit
+    LIBVMDK_HOME: C:\projects\libvmdk_64bit
+  - TARGET: cygwin
+  - TARGET: cygwin64
+  - TARGET: mingw
+  - TARGET: mingw-w64
+
+matrix:
+  allow_failures:
+  - TARGET: mingw
+
+install:
+- cmd: if [%TARGET%]==[vs2015] (
+    C:\Python27\python.exe win32\updateBuildLibs.py --platform=%PLATFORM% --use-vstools prepare )
+- cmd: if [%TARGET%]==[cygwin] (
+    C:\cygwin\setup-x86.exe -qgnNdO -l C:\cygwin\var\cache\setup -R c:\cygwin -s http://cygwin.mirror.constant.com )
+- cmd: if [%TARGET%]==[cygwin64] (
+    C:\cygwin64\setup-x86_64.exe -qgnNdO -l C:\cygwin64\var\cache\setup -R c:\cygwin64 -s http://cygwin.mirror.constant.com )
+- cmd: if [%TARGET%]==[mingw] (
+    C:\MinGW\bin\mingw-get install msys-libregex )
+
+build_script:
+- cmd: echo "Building Sleuthkit"
+- cmd: if [%TARGET%]==[vs2015] (
+    msbuild win32\tsk-win.sln /verbosity:minimal /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" )
+- cmd: if [%TARGET%]==[cygwin] (
+    xcopy /i /q /s C:\projects\sleuthkit C:\cygwin\home\appveyor\sleuthkit &&
+    C:\cygwin\bin\bash -e -l -c "cd sleuthkit && ./bootstrap && ./configure && make" )
+- cmd: if [%TARGET%]==[cygwin64] (
+    xcopy /i /q /s C:\projects\sleuthkit C:\cygwin64\home\appveyor\sleuthkit &&
+    C:\cygwin64\bin\bash -e -l -c "cd sleuthkit && ./bootstrap && ./configure && make" )
+- cmd: if [%TARGET%]==[mingw] (
+    xcopy /i /q /s C:\projects\sleuthkit C:\MinGW\msys\1.0\home\appveyor\sleuthkit &&
+    C:\MinGW\msys\1.0\bin\bash -e -l -c "cd sleuthkit && sed 's/@VERSION@/0.29/g' m4/pkg.m4.in > m4/pkg.m4 && autoreconf -fiv && ./configure CFLAGS=-I/include LDFLAGS=-L/lib && make" )
+- cmd: if [%TARGET%]==[mingw-w64] (
+    xcopy /i /q /s C:\projects\sleuthkit C:\msys64\home\appveyor\sleuthkit &&
+    C:\msys64\usr\bin\bash -e -l -c "cd sleuthkit && ./bootstrap && ./configure && make" )
+
+test_script:
+- cmd: rem Run tests
+- cmd: if [%TARGET%]==[cygwin] (
+    C:\cygwin\bin\bash -e -l -c "cd sleuthkit && make check" )
+- cmd: if [%TARGET%]==[cygwin64] (
+    C:\cygwin64\bin\bash -e -l -c "cd sleuthkit && make check" )
+- cmd: if [%TARGET%]==[mingw] (
+    C:\MinGW\msys\1.0\bin\bash -e -l -c "cd sleuthkit && make check" )
+- cmd: if [%TARGET%]==[mingw-w64] (
+    C:\msys64\usr\bin\bash -e -l -c "cd sleuthkit && make check" )
+
