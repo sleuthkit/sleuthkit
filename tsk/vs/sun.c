@@ -78,16 +78,20 @@ static uint8_t
 sun_load_table_i386(TSK_VS_INFO * vs, sun_dlabel_i386 * dlabel_x86)
 {
     uint32_t idx = 0;
+    uint16_t num_parts;
     TSK_DADDR_T max_addr = (vs->img_info->size - vs->offset) / vs->block_size;  // max sector
 
     if (tsk_verbose)
         tsk_fprintf(stderr, "load_table_i386: Number of partitions: %d\n",
             tsk_getu16(vs->endian, dlabel_x86->num_parts));
 
-    /* Cycle through the partitions, there are either 8 or 16 */
-    for (idx = 0; idx < tsk_getu16(vs->endian, dlabel_x86->num_parts);
-        idx++) {
+    num_parts = tsk_getu16(vs->endian, dlabel_x86->num_parts);
+    if (num_parts > 16) {
+        num_parts = 16;
+    }
 
+    /* Cycle through the partitions, there are 16 for i386 */
+    for (idx = 0; idx < num_parts; idx++) {
         TSK_VS_PART_FLAG_ENUM ptype = TSK_VS_PART_FLAG_ALLOC;
 
         if (tsk_verbose)
@@ -142,6 +146,7 @@ sun_load_table_sparc(TSK_VS_INFO * vs, sun_dlabel_sparc * dlabel_sp)
 {
     uint32_t idx = 0;
     uint32_t cyl_conv;
+    uint16_t num_parts;
     TSK_DADDR_T max_addr = (vs->img_info->size - vs->offset) / vs->block_size;  // max sector
 
     /* The value to convert cylinders to sectors */
@@ -152,9 +157,13 @@ sun_load_table_sparc(TSK_VS_INFO * vs, sun_dlabel_sparc * dlabel_sp)
         tsk_fprintf(stderr, "load_table_sparc: Number of partitions: %d\n",
             tsk_getu16(vs->endian, dlabel_sp->num_parts));
 
-    /* Cycle through the partitions, there are either 8 or 16 */
-    for (idx = 0; idx < tsk_getu16(vs->endian, dlabel_sp->num_parts);
-        idx++) {
+    num_parts = tsk_getu16(vs->endian, dlabel_sp->num_parts);
+    if (num_parts > 8) {
+        num_parts = 8;
+    }
+
+    /* Cycle through the partitions, there are 8 for sparc */
+    for (idx = 0; idx < num_parts; idx++) {
         TSK_VS_PART_FLAG_ENUM ptype = TSK_VS_PART_FLAG_ALLOC;
         uint32_t part_start = cyl_conv * tsk_getu32(vs->endian,
             dlabel_sp->part_layout[idx].start_cyl);
