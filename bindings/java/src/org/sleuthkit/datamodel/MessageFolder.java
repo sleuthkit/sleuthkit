@@ -44,7 +44,7 @@ public class MessageFolder {
 		return this.srcObjID;
 	}
 	
-	public boolean hasSubfolders() {
+	public synchronized boolean hasSubfolders() {
 		return this.hasSubfolders;
 	}
 	

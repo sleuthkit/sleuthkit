@@ -611,7 +611,7 @@ int TskDbPostgreSQL::initialize() {
 		||
 		attempt_exec
 		("CREATE TABLE account_types (account_type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT NOT NULL)", 
-		"Error creating reports table: %s\n")     
+		"Error creating account_types table: %s\n")     
 		||
 		attempt_exec
 		("CREATE TABLE relationships  (relationship_id BIGSERIAL PRIMARY KEY, account1_id INTEGER NOT NULL, account2_id INTEGER NOT NULL, communication_artifact_id INTEGER NOT NULL, FOREIGN KEY(account1_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(account2_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(communication_artifact_id) REFERENCES blackboard_artifacts(artifact_id))", 
