@@ -39,6 +39,21 @@ public class CommunicationsManager {
 	}
 	
 	/**
+	 * Add an account type
+	 *
+	 * @param accountTypeName account type name
+	 * @param displayName account type display name
+	 * 
+	 * @return Account.Type
+	 *
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 *                          within TSK core
+	 */
+	public Account.Type addAccountType(String accountTypeName, String displayName) throws TskCoreException {
+		return db.addAccountType(accountTypeName, displayName);
+	}
+	
+	/**
 	 * Get the Account with the given account type and account ID.
 	 * Create one if it doesn't exist
 	 *
@@ -53,12 +68,10 @@ public class CommunicationsManager {
 	 */
 	public Account getOrCreateAccount(Account.Type accountType, String accountID, String moduleName, Content sourceObj) throws TskCoreException {
 		Account account = null;
-		
-		BlackboardArtifact accountArtifact = db.getOrCreateAccountArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT, accountType, accountID, moduleName, sourceObj);
+		BlackboardArtifact accountArtifact = db.getOrCreateAccountArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT, accountType, normalizeAccountID(accountType, accountID), moduleName, sourceObj);
 		if (null != accountArtifact) {
 			account = new Account(this.db, accountArtifact.getArtifactID() );
 		}
-		
 		return account;
 	}
 	
@@ -78,7 +91,7 @@ public class CommunicationsManager {
 		
 		Account account = null;
 		
-		BlackboardArtifact accountArtifact = db.getAccountArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT, accountType, accountID);
+		BlackboardArtifact accountArtifact = db.getAccountArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT, accountType, normalizeAccountID(accountType, accountID));
 		if (null != accountArtifact) {
 			account = new Account(this.db, accountArtifact.getArtifactID() );
 		}
@@ -297,7 +310,27 @@ private Set<UnorderedPair<Long>> listToUnorderedPairs(List<Long> accountIDs) {
 	return relationships;
 }
 
-private final class UnorderedPair<T> {
+private String normalizeAccountID(Account.Type accountType, String accountID) {
+	String normailzeAccountID = accountID;
+	
+	if (accountType == Account.Type.PHONE) {
+		normailzeAccountID = normalizePhoneNum(accountID);
+	}
+	
+	return normailzeAccountID;
+}
+
+private String normalizePhoneNum(String phoneNum) {
+
+	String normailzedPhoneNum = phoneNum.replaceAll("\\D", "");
+	if (phoneNum.startsWith("+")) {
+		normailzedPhoneNum = "+" + normailzedPhoneNum;
+	}
+					
+	return normailzedPhoneNum;
+}
+
+public final class UnorderedPair<T> {
     private final T first;
     private final T second;
 
