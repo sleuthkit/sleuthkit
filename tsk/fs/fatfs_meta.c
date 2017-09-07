@@ -421,10 +421,11 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
     else if (fs_meta->attr_state == TSK_FS_META_ATTR_ERROR) {
         return 1;
     }
-    else if (fs_meta->attr != NULL) {
+
+    if (fs_meta->attr != NULL) {
         tsk_fs_attrlist_markunused(fs_meta->attr);
     }
-    else if (fs_meta->attr == NULL) {
+    else  {
         fs_meta->attr = tsk_fs_attrlist_alloc();
     }
 
@@ -547,7 +548,6 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
         TSK_DADDR_T sbase;
         TSK_DADDR_T startclust = clust;
         TSK_OFF_T recoversize = fs_meta->size;
-        int retval;
         TSK_FS_ATTR_RUN *data_run = NULL;
         TSK_FS_ATTR_RUN *data_run_tmp = NULL;
         TSK_FS_ATTR_RUN *data_run_head = NULL;
@@ -604,6 +604,7 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
             return 1;
         }
         else {
+            int retval;
 
             /* If the starting cluster is already allocated then we can't
              * recover it */

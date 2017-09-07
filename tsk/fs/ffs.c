@@ -47,7 +47,7 @@ ffs_group_load(FFS_INFO * ffs, FFS_GRPNUM_T grp_num)
     /*
      * Sanity check
      */
-    if (grp_num < 0 || grp_num >= ffs->groups_count) {
+    if (grp_num >= ffs->groups_count) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr
@@ -172,11 +172,11 @@ ffs_dinode_load(FFS_INFO * ffs, TSK_INUM_T inum, ffs_inode * dino_buf)
         }
 
         else {
-            ssize_t cnt;
             /* Get the base and offset addr for the inode in the tbl */
             addr = itod_lcl(fs, ffs->fs.sb1, inum);
 
             if (ffs->itbl_addr != addr) {
+                ssize_t cnt;
                 cnt = tsk_fs_read_block
                     (fs, addr, ffs->itbl_buf, ffs->ffsbsize_b);
                 if (cnt != ffs->ffsbsize_b) {
@@ -846,7 +846,6 @@ ffs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 {
     char *myname = "ffs_inode_walk";
     FFS_INFO *ffs = (FFS_INFO *) fs;
-    FFS_GRPNUM_T grp_num;
     ffs_cgd *cg = NULL;
     TSK_INUM_T inum;
     unsigned char *inosused = NULL;
@@ -936,6 +935,7 @@ ffs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
      */
     for (inum = start_inum; inum <= end_inum_tmp; inum++) {
         int retval;
+        FFS_GRPNUM_T grp_num;
 
         /*
          * Be sure to use the proper cylinder group data.
@@ -1883,7 +1883,7 @@ ffs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
     tsk_fprintf(hFile, "\nDirect Blocks:\n");
 
     if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
-        TSK_FS_ATTR * fs_attr_direct = tsk_fs_file_attr_get_type(fs_file,
+        const TSK_FS_ATTR * fs_attr_direct = tsk_fs_file_attr_get_type(fs_file,
             TSK_FS_ATTR_TYPE_DEFAULT, 0, 0);
         if (fs_attr_direct && (fs_attr_direct->flags & TSK_FS_ATTR_NONRES)) {
             if (tsk_fs_attr_print(fs_attr_direct, hFile)) {

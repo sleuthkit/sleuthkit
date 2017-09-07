@@ -908,7 +908,6 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 {
     char *myname = "extXfs_inode_walk";
     EXT2FS_INFO *ext2fs = (EXT2FS_INFO *) fs;
-    EXT2_GRPNUM_T grp_num;
     TSK_INUM_T inum;
     TSK_INUM_T end_inum_tmp;
     TSK_INUM_T ibase = 0;
@@ -1002,6 +1001,7 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 
     for (inum = start_inum; inum <= end_inum_tmp; inum++) {
         int retval;
+        EXT2_GRPNUM_T grp_num;
 
         /*
          * Be sure to use the proper group descriptor data. XXX Linux inodes
@@ -1567,10 +1567,11 @@ ext4_load_attrs_extents(TSK_FS_FILE *fs_file)
     else if (fs_meta->attr_state == TSK_FS_META_ATTR_ERROR) {
         return 1;
     }
-    else if (fs_meta->attr != NULL) {
+
+    if (fs_meta->attr != NULL) {
         tsk_fs_attrlist_markunused(fs_meta->attr);
     }
-    else if (fs_meta->attr == NULL) {
+    else {
         fs_meta->attr = tsk_fs_attrlist_alloc();
     }
     
@@ -1706,7 +1707,6 @@ ext4_fsstat_datablock_helper(TSK_FS_INFO * fs, FILE * hFile,
     uint64_t last_block;
     ext4fs_gd *ext4_gd = ext2fs->ext4_grp_buf;
     uint64_t db_offset = 0;
-    unsigned int num_groups = 0, left_over = 0;
 
     if (ext4_gd == NULL) {
         return;
@@ -1750,6 +1750,9 @@ ext4_fsstat_datablock_helper(TSK_FS_INFO * fs, FILE * hFile,
     //{
     if (i % gpfbg == 0) {
         if (curr_flex_bg == (num_flex_bg - 1)) {
+            unsigned int num_groups = 0;
+            unsigned int left_over = 0;
+
             num_groups = (unsigned int)
                 (fs->last_block / tsk_getu32(fs->endian,
                 sb->s_blocks_per_group));
