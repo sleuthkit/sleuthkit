@@ -283,15 +283,16 @@ uint8_t
     if (processLclDir(_TSK_T("")))
         return 1;
 
-    if (!m_missDirFile)
+    if (m_missDirFile == false) {
         printf("All files in directory found in image\n");
+    }
 
     if (m_filesInImg.begin() == m_filesInImg.end()) {
         printf("All files in image found in directory\n");
     }
     else {
         std::set < char *, ltstr >::iterator it;
-        for (it = m_filesInImg.begin(); it != m_filesInImg.end(); it++)
+        for (it = m_filesInImg.begin(); it != m_filesInImg.end(); ++it)
             printf("file: %s not found in directory\n",
                 (TSK_TCHAR *) * it);
     }

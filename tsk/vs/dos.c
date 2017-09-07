@@ -743,7 +743,8 @@ dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
                 PRIu32 "  Type: %d\n", table, i, part_start, part_size,
                 part->ptype);
 
-        if (part_size == 0)
+        /* part_start == 0 would cause infinite recursion */
+        if (part_size == 0 || part_start == 0)
             continue;
 
         /* partitions are addressed differently
