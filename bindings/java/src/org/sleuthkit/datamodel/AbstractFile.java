@@ -525,45 +525,6 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Gets all children of this abstract file, if any
-	 *
-	 * @return A list of the children.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
-	 */
-	@Override
-	public List<Content> getChildren() throws TskCoreException {
-		List<Content> children = new ArrayList<Content>();
-		
-		children.addAll(getSleuthkitCase().getAbstractFileChildren(this));
-		children.addAll(getSleuthkitCase().getBlackboardArtifactChildren(this));
-		
-		return children;
-		
-	}
-
-	/**
-	 * Gets the object ids of objects, if any, that are children of this
-	 * abstract file
-	 *
-	 * @return A list of the object ids.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
-	 */
-	@Override
-	public List<Long> getChildrenIds() throws TskCoreException {
-		
-		List<Long> childrenIDs = new ArrayList<Long>();
-		
-		childrenIDs.addAll(getSleuthkitCase().getAbstractFileChildrenIds(this));
-		childrenIDs.addAll(getSleuthkitCase().getBlackboardArtifactChildrenIds(this));
-		
-		return childrenIDs;
-	}
-
-	/**
 	 * Gets the object id of the data source for this file.
 	 *
 	 * @return The object id of the data source.
