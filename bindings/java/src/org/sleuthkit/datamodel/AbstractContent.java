@@ -148,7 +148,7 @@ public abstract class AbstractContent implements Content {
 	}
 
 	/**
-	 * Gets all children of this abstract content, if any
+	 * Gets all children of this abstract content, if any.
 	 *
 	 * @return A list of the children.
 	 *
@@ -168,7 +168,7 @@ public abstract class AbstractContent implements Content {
 
 	/**
 	 * Gets the object ids of objects, if any, that are children of this
-	 * abstract content
+	 * abstract content.
 	 *
 	 * @return A list of the object ids.
 	 *
