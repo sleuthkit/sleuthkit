@@ -303,7 +303,7 @@ int TskDbPostgreSQL::attempt_exec(const char *sql, const char *errfmt)
 */
 int TskDbPostgreSQL::isEscapedStringValid(const char *sql_str, const char *orig_str, const char *errfmt){
 
-    if (!sql_str){
+    if (sql_str == NULL){
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         char * str = PQerrorMessage(conn);
@@ -904,8 +904,9 @@ int TskDbPostgreSQL::addFsFile(TSK_FS_FILE * fs_file,
 {
     int64_t parObjId = 0;
 
-    if (fs_file->name == NULL)
+    if (fs_file->name == NULL) {
         return 0;
+    }
 
     // Find the object id for the parent folder.
 

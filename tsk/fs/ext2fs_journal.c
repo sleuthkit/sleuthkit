@@ -406,7 +406,6 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
         /* The descriptor describes the FS blocks that follow it */
         else if (big_tsk_getu32(head->entry_type) == EXT2_J_ETYPE_DESC) {
             ext2fs_journ_dentry *dentry;
-            ext2fs_journ_head *head2;
             int unalloc = 0;
 
             b_desc_seen = 1;
@@ -429,6 +428,7 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
             while ((uintptr_t) dentry <=
                 ((uintptr_t) head + jinfo->bsize -
                     sizeof(ext2fs_journ_head))) {
+                ext2fs_journ_head *head2;
 
 
                 /* Our counter is over the end of the journ */

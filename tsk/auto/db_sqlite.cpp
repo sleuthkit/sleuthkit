@@ -107,8 +107,9 @@ int
     char *
         errmsg;
 
-    if (!m_db)
+    if (m_db == NULL) {
         return 1;
+    }
 
     if (sqlite3_exec(m_db, sql, callback, callback_arg,
         &errmsg) != SQLITE_OK) {

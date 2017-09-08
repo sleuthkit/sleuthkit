@@ -279,10 +279,11 @@ TSK_RETVAL_ENUM
     size = fs_dir->fs_file->meta->size;
     len = roundup(size, fatfs->ssize);
 
-    if (tsk_verbose)
+    if (tsk_verbose) {
         tsk_fprintf(stderr,
         "%s: Processing directory %" PRIuINUM "\n",
         func_name, a_addr);
+    }
 
     if (size == 0) {
         if (tsk_verbose)

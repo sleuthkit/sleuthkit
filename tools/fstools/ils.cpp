@@ -335,11 +335,13 @@ main(int argc, char **argv1)
         ilast = fs->last_inum;
     }
     else {
-        if (istart < fs->first_inum)
+        if (istart < fs->first_inum) {
             istart = fs->first_inum;
+        }
 
-        if (ilast > fs->last_inum)
+        if (ilast > fs->last_inum) {
             ilast = fs->last_inum;
+        }
     }
 
     /* NTFS uses alloc and link different than UNIX so change

@@ -529,8 +529,9 @@ static TSK_RETVAL_ENUM
         YaffsCacheVersion *version;
         for (version = obj->yco_latest; version != NULL; version = version->ycv_prior) {
             /* Is this an incomplete version? */
-            if (version->ycv_header_chunk == NULL)
+            if (version->ycv_header_chunk == NULL) {
                 continue;
+            }
 
             if (version->ycv_header_chunk->ycc_parent_id == parent_id) {
                 TSK_RETVAL_ENUM result = cb(obj, version, args);
@@ -848,7 +849,7 @@ yaffs_validate_integer_field(std::string numStr){
 
     // Test each character
     for(i = 0;i < numStr.length();i++){
-        if(! isdigit(numStr[i])){
+        if(isdigit(numStr[i]) == 0){
             return 1;
         }
     }
@@ -1655,8 +1656,9 @@ static uint8_t
 
     if (fs_file->meta->name2 == NULL) {
         if ((fs_file->meta->name2 = (TSK_FS_META_NAME_LIST *)
-            tsk_malloc(sizeof(TSK_FS_META_NAME_LIST))) == NULL)
+            tsk_malloc(sizeof(TSK_FS_META_NAME_LIST))) == NULL) {
             return 1;
+        }
         fs_file->meta->name2->next = NULL;
     }
 
