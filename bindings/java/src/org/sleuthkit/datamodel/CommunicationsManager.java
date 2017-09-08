@@ -146,7 +146,30 @@ public void rejectAccount(Account account) throws TskCoreException {
 	db.setReviewStatus(db.getBlackboardArtifact(account.getArtifactId()), BlackboardArtifact.ReviewStatus.REJECTED);
 }
 
-		
+/**
+ * Approve a given account
+ * 
+ * @param account account to approve
+ * 
+ * @throws TskCoreException exception thrown if a critical error occurs
+ *                          within TSK core
+ */
+public void approveAccount(Account account) throws TskCoreException {
+	db.setReviewStatus(db.getBlackboardArtifact(account.getArtifactId()), BlackboardArtifact.ReviewStatus.APPROVED);
+}
+
+/**
+ * Set review status for a given account
+ * 
+ * @param account account to review
+ * @param reviewStatus review status
+ * @throws TskCoreException exception thrown if a critical error occurs
+ *                          within TSK core
+ */
+public void setReviewStatus(Account account, BlackboardArtifact.ReviewStatus reviewStatus) throws TskCoreException {
+	db.setReviewStatus(db.getBlackboardArtifact(account.getArtifactId()), reviewStatus);
+}
+
 /**
  * Get all accounts that have any kind of relationship with the given account
  * 
