@@ -20,6 +20,7 @@ package org.sleuthkit.datamodel;
 
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -193,107 +194,61 @@ public class BlackboardArtifact implements Content {
 	 * @throws TskCoreException if there is a problem creating the description.
 	 */
 	public String getShortDescription() throws TskCoreException {
-		List<BlackboardAttribute> attrs;
-		List<String> transitionText = new ArrayList<String>();
-		attrs = new ArrayList<BlackboardAttribute>();  //only allow the adding of one or two items to keep descirption short
+		BlackboardAttribute attr;
+		StringBuilder shortDescription = new StringBuilder("");
 		switch (ARTIFACT_TYPE.fromID(artifactTypeId)) {
 			case TSK_WEB_BOOKMARK:  //web_bookmark, web_cookie, web_download, and web_history are the same attribute for now
 			case TSK_WEB_COOKIE:
 			case TSK_WEB_DOWNLOAD:
 			case TSK_WEB_HISTORY:
-				attrs.add(getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DOMAIN)));
-				transitionText.add("");
+				attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DOMAIN));
+				shortDescription.append(attr.getAttributeType().getDisplayName()).append(": ").append(attr.getDisplayString());
 				break;
 			case TSK_KEYWORD_HIT:
-				attrs.add(getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_KEYWORD_PREVIEW)));
-				transitionText.add("Keyword preview:");
+				attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_KEYWORD_PREVIEW));
+				shortDescription.append(attr.getAttributeType().getDisplayName()).append(": ").append(attr.getDisplayString());
 				break;
 			case TSK_DEVICE_ATTACHED:
-				attrs.add(getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DEVICE_ID)));
-				transitionText.add("Device ID");
+				attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DEVICE_ID));
+				shortDescription.append(attr.getAttributeType().getDisplayName()).append(": ").append(attr.getDisplayString());
 				break;
 			case TSK_CONTACT: //contact, message, and calllog are the same attributes for now
 			case TSK_MESSAGE:
 			case TSK_CALLLOG:
-				BlackboardAttribute name;
-				if (((name = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_NAME))) != null) && !name.getDisplayString().isEmpty()) {
-					attrs.add(name);
-					transitionText.add("");
-				}
-				BlackboardAttribute attr;
-				if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER))) != null) {
-					attrs.add(attr);
-					transitionText.add("");
+				//get the first of these attributes which exists and is non null
+				if (((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_NAME))) != null) && !attr.getDisplayString().isEmpty()) {
+				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER))) != null) {
 				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM))) != null) {
-					attrs.add(attr);
-					transitionText.add(0, "From");  //the from should go before the name if it was added
 				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO))) != null) {
-					attrs.add(attr);
-					transitionText.add(0, "To"); //the to should go before the name if it was added
 				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_HOME))) != null) {
-					attrs.add(attr);
-					transitionText.add("");
 				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_MOBILE))) != null) {
-					attrs.add(attr);
-					transitionText.add("");
 				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_OFFICE))) != null) {
-					attrs.add(attr);
-					transitionText.add("");
 				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_EMAIL))) != null) {
-					attrs.add(attr);
-					transitionText.add("");
 				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_EMAIL_FROM))) != null) {
-					attrs.add(attr);
-					transitionText.add(0, "From"); //the from should go before the name if it was added
 				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_EMAIL_TO))) != null) {
-					attrs.add(attr);
-					transitionText.add(0, "To"); //the to should go before the name if it was added
 				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_EMAIL_HOME))) != null) {
-					attrs.add(attr);
-					transitionText.add("");
 				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_EMAIL_OFFICE))) != null) {
-					attrs.add(attr);
-					transitionText.add("");
 				}
+				shortDescription.append(attr.getAttributeType().getDisplayName()).append(": ").append(attr.getDisplayString());
 				break;
-			default:  //no description by default
+			default:
+				shortDescription.append(getDisplayName());
+				break;
 		}
 		BlackboardAttribute date;
+		//get the first of these date attributes which exists and is non null
 		if ((date = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME))) != null) {
-			attrs.add(date);
-			transitionText.add("On");
-		} else if ((date = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME_RCVD))) != null) {
-			attrs.add(date);
-			transitionText.add("Received on");
 		} else if ((date = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME_SENT))) != null) {
-			attrs.add(date);
-			transitionText.add("Sent on");
+		} else if ((date = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME_RCVD))) != null) {
 		} else if ((date = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME_CREATED))) != null) {
-			attrs.add(date);
-			transitionText.add("Created on");
 		} else if ((date = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME_MODIFIED))) != null) {
-			attrs.add(date);
-			transitionText.add("Modified on");
 		} else if ((date = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED))) != null) {
-			attrs.add(date);
-			transitionText.add("Accessed on");
 		} else if ((date = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME_START))) != null) {
-			attrs.add(date);
-			transitionText.add("Started on");
 		} else if ((date = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME_END))) != null) {
-			attrs.add(date);
-			transitionText.add("Ended on");
 		}
-		StringBuilder shortDescription = new StringBuilder("");
-		for (int i = 0; i < attrs.size(); i++) {
-			BlackboardAttribute attr = attrs.get(i);
-			String valueToDisplay = attr.getDisplayString();
-			shortDescription.append(transitionText.get(i));
-			shortDescription.append(" "); //NON-NLS
-			shortDescription.append(valueToDisplay);
-			if (attrs.size() != i + 1) { //add seperator before next attribute.
-				shortDescription.append(" ");
-			}
+		if (date != null) {
+			shortDescription.append(" ");
+			shortDescription.append(MessageFormat.format(bundle.getString("BlackboardArtifact.shortDescriptionDate.text"), date.getDisplayString()));  //NON-NLS 
 		}
 		return shortDescription.toString();
 	}
@@ -395,6 +350,7 @@ public class BlackboardArtifact implements Content {
 	/**
 	 * This overiding implementation returns the unique path of the parent. It
 	 * does not include the Artifact name in the unique path.
+	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	@Override
@@ -591,6 +547,7 @@ public class BlackboardArtifact implements Content {
 	 *                  artifact.
 	 *
 	 * @return Attributes
+	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	@Override
@@ -1397,7 +1354,6 @@ public class BlackboardArtifact implements Content {
 		if (childrenCount != -1) {
 			return childrenCount;
 		}
-
 
 		childrenCount = this.getSleuthkitCase().getContentChildrenCount(this);
 
