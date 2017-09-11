@@ -155,7 +155,6 @@ fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     else {
 
         char *fat_fsinfo_buf;
-        FATXXFS_FSINFO *fat_info;
 
         if ((fat_fsinfo_buf = (char *)
                 tsk_malloc(sizeof(FATXXFS_FSINFO))) == NULL) {
@@ -195,6 +194,7 @@ fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 
         /* Process the FS info */
         if (tsk_getu16(fs->endian, sb->a.f32.fsinfo)) {
+            FATXXFS_FSINFO *fat_info;
             cnt =
                 tsk_fs_read(fs, 
                     (TSK_DADDR_T) tsk_getu16(fs->endian, sb->a.f32.fsinfo) * fs->block_size, 
@@ -439,10 +439,8 @@ fatxxfs_open(FATFS_INFO *fatfs)
 	TSK_FS_INFO *fs = &(fatfs->fs_info);
 	FATXXFS_SB *fatsb = (FATXXFS_SB*)(&fatfs->boot_sector_buffer);
 	int i = 0;
-	ssize_t cnt = 0;
     TSK_DADDR_T sectors = 0;
 	TSK_FS_DIR * test_dir1; // Directories used to try opening the root directory
-	TSK_FS_DIR * test_dir2; //  to see if it's the Android FAT version
 
     // clean up any error messages that are lying around
     tsk_error_reset();
@@ -650,6 +648,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
             uint8_t buf2[512];
             int i2;
             int numDiffs;
+	        ssize_t cnt = 0;
 
             cnt =
                 tsk_fs_read(fs, fatfs->firstfatsect * fatfs->ssize,
@@ -831,6 +830,8 @@ fatxxfs_open(FATFS_INFO *fatfs)
 	test_dir1 = tsk_fs_dir_open_meta(fs, fs->root_inum);
 
 	if (test_dir1 != NULL && test_dir1->names_used <= 4){ // At most four automatic directories ($MBR, $FAT1, $FAT1, $OrphanFiles)
+	    TSK_FS_DIR * test_dir2; //  to see if it's the Android FAT version
+
 		fatfs->subtype = TSK_FATFS_SUBTYPE_ANDROID_1;
 		test_dir2 = tsk_fs_dir_open_meta(fs, fs->root_inum);
 

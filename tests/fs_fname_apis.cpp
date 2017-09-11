@@ -29,22 +29,25 @@ compare_names(const TSK_FS_NAME * fs_name1, const TSK_FS_NAME * fs_name2,
     uint8_t a_print)
 {
     if (fs_name1->type != fs_name2->type) {
-        if (a_print)
+        if (a_print) {
             fprintf(stderr, "ent type mismatch: %x %x\n",
                 fs_name1->type, fs_name2->type);
+        }
         return 1;
     }
     if (fs_name1->flags != fs_name2->flags) {
-        if (a_print)
+        if (a_print) {
             fprintf(stderr, "flags mismatch: %x %x\n",
                 fs_name1->flags, fs_name2->flags);
+        }
         return 1;
     }
     if (fs_name1->meta_addr != fs_name2->meta_addr) {
-        if (a_print)
+        if (a_print) {
             fprintf(stderr,
                 "inode address mismatch: %" PRIuINUM " %" PRIuINUM "\n",
                 fs_name1->meta_addr, fs_name2->meta_addr);
+        }
         return 1;
     }
 

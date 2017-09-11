@@ -1398,7 +1398,10 @@ public class BlackboardArtifact implements Content {
 			return childrenCount;
 		}
 
+
 		childrenCount = this.getSleuthkitCase().getContentChildrenCount(this);
+
+		hasChildren = childrenCount > 0;
 		checkedHasChildren = true;
 
 		return childrenCount;
@@ -1410,12 +1413,10 @@ public class BlackboardArtifact implements Content {
 			return hasChildren;
 		}
 
-		hasChildren = this.getSleuthkitCase().getContentHasChildren(this);
-		checkedHasChildren = true;
+		childrenCount = this.getSleuthkitCase().getContentChildrenCount(this);
 
-		if (!hasChildren) {
-			childrenCount = 0;
-		}
+		hasChildren = childrenCount > 0;
+		checkedHasChildren = true;
 
 		return hasChildren;
 	}

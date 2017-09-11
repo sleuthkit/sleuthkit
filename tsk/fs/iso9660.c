@@ -72,10 +72,9 @@ static void
 iso9660_inode_list_free(TSK_FS_INFO * fs)
 {
     ISO_INFO *iso = (ISO_INFO *) fs;
-    iso9660_inode_node *tmp;
 
     while (iso->in_list) {
-        tmp = iso->in_list;
+        iso9660_inode_node *tmp = iso->in_list;
         iso->in_list = iso->in_list->next;
         free(tmp);
     }
@@ -142,7 +141,6 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile)
             // read the continued buffer and parse it
             if ((tsk_getu32(fs->endian, ce->blk_m) < fs->last_block) &&
                 (tsk_getu32(fs->endian, ce->offset_m) < fs->block_size)) {
-                ssize_t cnt;
                 TSK_OFF_T off;
                 char *buf2;
 
@@ -155,7 +153,7 @@ parse_susp(TSK_FS_INFO * fs, char *buf, int count, FILE * hFile)
                         ce->celen_m));
 
                 if (buf2 != NULL) {
-                    cnt =
+                    ssize_t cnt =
                         tsk_fs_read(fs, off, buf2,
                         tsk_getu32(fs->endian, ce->celen_m));
                     if (cnt == tsk_getu32(fs->endian, ce->celen_m)) {
@@ -888,7 +886,6 @@ iso9660_load_inodes_pt(ISO_INFO * iso)
     char fn[ISO9660_MAXNAMLEN_STD + 1]; /* store current directory name */
     path_table_rec dir;
     TSK_OFF_T pt_offs;          /* offset of where we are in path table */
-    size_t pt_len;              /* bytes left in path table */
     TSK_OFF_T extent;           /* offset of extent for current directory */
     ssize_t cnt;
     uint8_t is_first = 1;
@@ -922,6 +919,7 @@ iso9660_load_inodes_pt(ISO_INFO * iso)
 
     /* Now look for unique files in the primary descriptors */
     for (p = iso->pvd; p != NULL; p = p->next) {
+        size_t pt_len;              /* bytes left in path table */
 
         pt_offs =
             (TSK_OFF_T) (tsk_getu32(fs->endian,
@@ -1128,18 +1126,17 @@ static void
 iso9660_close(TSK_FS_INFO * fs)
 {
     ISO_INFO *iso = (ISO_INFO *) fs;
-    iso9660_pvd_node *p;
-    iso9660_svd_node *s;
 
     fs->tag = 0;
+
     while (iso->pvd != NULL) {
-        p = iso->pvd;
+        iso9660_pvd_node *p = iso->pvd;
         iso->pvd = iso->pvd->next;
         free(p);
     }
 
     while (iso->svd != NULL) {
-        s = iso->svd;
+        iso9660_svd_node *s = iso->svd;
         iso->svd = iso->svd->next;
         free(s);
     }
@@ -1547,11 +1544,12 @@ iso9660_make_data_run(TSK_FS_FILE * a_fs_file)
     else if (a_fs_file->meta->attr_state == TSK_FS_META_ATTR_ERROR) {
         return 1;
     }
+
     // not sure why this would ever happen, but...
-    else if (a_fs_file->meta->attr != NULL) {
+    if (a_fs_file->meta->attr != NULL) {
         tsk_fs_attrlist_markunused(a_fs_file->meta->attr);
     }
-    else if (a_fs_file->meta->attr == NULL) {
+    else  {
         a_fs_file->meta->attr = tsk_fs_attrlist_alloc();
     }
 

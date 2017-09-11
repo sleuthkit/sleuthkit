@@ -1,15 +1,15 @@
 /*
  * Sleuth Kit Data Model
- * 
+ *
  * Copyright 2011-2016 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *  http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,7 @@ package org.sleuthkit.datamodel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -89,12 +90,10 @@ public abstract class AbstractContent implements Content {
 			return hasChildren;
 		}
 
-		hasChildren = this.getSleuthkitCase().getContentHasChildren(this);
-		checkedHasChildren = true;
+		childrenCount = this.getSleuthkitCase().getContentChildrenCount(this);
 
-		if (!hasChildren) {
-			childrenCount = 0;
-		}
+		hasChildren = childrenCount > 0;
+		checkedHasChildren = true;
 
 		return hasChildren;
 	}
@@ -146,6 +145,45 @@ public abstract class AbstractContent implements Content {
 	@Override
 	public long getId() {
 		return this.objId;
+	}
+
+	/**
+	 * Gets all children of this abstract content, if any.
+	 *
+	 * @return A list of the children.
+	 *
+	 * @throws TskCoreException if there was an error querying the case
+	 *                          database.
+	 */
+	@Override
+	public List<Content> getChildren() throws TskCoreException {
+		List<Content> children = new ArrayList<Content>();
+
+		children.addAll(getSleuthkitCase().getAbstractFileChildren(this));
+		children.addAll(getSleuthkitCase().getBlackboardArtifactChildren(this));
+
+		return children;
+
+	}
+
+	/**
+	 * Gets the object ids of objects, if any, that are children of this
+	 * abstract content.
+	 *
+	 * @return A list of the object ids.
+	 *
+	 * @throws TskCoreException if there was an error querying the case
+	 *                          database.
+	 */
+	@Override
+	public List<Long> getChildrenIds() throws TskCoreException {
+
+		List<Long> childrenIDs = new ArrayList<Long>();
+
+		childrenIDs.addAll(getSleuthkitCase().getAbstractFileChildrenIds(this));
+		childrenIDs.addAll(getSleuthkitCase().getBlackboardArtifactChildrenIds(this));
+
+		return childrenIDs;
 	}
 
 	// classes should override this if they can be a data source 
