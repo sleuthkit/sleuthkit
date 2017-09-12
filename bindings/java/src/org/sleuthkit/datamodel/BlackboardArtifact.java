@@ -202,15 +202,21 @@ public class BlackboardArtifact implements Content {
 			case TSK_WEB_DOWNLOAD:
 			case TSK_WEB_HISTORY:
 				attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DOMAIN));
-				shortDescription.append(attr.getAttributeType().getDisplayName()).append(": ").append(attr.getDisplayString());
+				if (attr != null) {
+					shortDescription.append(attr.getAttributeType().getDisplayName()).append(": ").append(attr.getDisplayString());
+				}
 				break;
 			case TSK_KEYWORD_HIT:
 				attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_KEYWORD_PREVIEW));
-				shortDescription.append(attr.getAttributeType().getDisplayName()).append(": ").append(attr.getDisplayString());
+				if (attr != null) {
+					shortDescription.append(attr.getAttributeType().getDisplayName()).append(": ").append(attr.getDisplayString());
+				}
 				break;
 			case TSK_DEVICE_ATTACHED:
 				attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DEVICE_ID));
-				shortDescription.append(attr.getAttributeType().getDisplayName()).append(": ").append(attr.getDisplayString());
+				if (attr != null) {
+					shortDescription.append(attr.getAttributeType().getDisplayName()).append(": ").append(attr.getDisplayString());
+				}
 				break;
 			case TSK_CONTACT: //contact, message, and calllog are the same attributes for now
 			case TSK_MESSAGE:
