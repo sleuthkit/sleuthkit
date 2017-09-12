@@ -88,7 +88,9 @@ import org.sqlite.SQLiteJDBCLoader;
 public class SleuthkitCase {
 
 	private static final int MAX_DB_NAME_LEN_BEFORE_TIMESTAMP = 47;
-	private static final int SCHEMA_VERSION_NUMBER = 7; // This must be the same as TSK_SCHEMA_VER in tsk/auto/tsk_db.h.
+	private static final int SCHEMA_MAJOR_VERSION_NUMBER = 7; // This must be the same as TSK_SCHEMA_VER in tsk/auto/tsk_db.h.
+	private static final int SCHEMA_MINOR_VERSION_NUMBER = 1; // This must be the same as TSK_SCHEMA_MINOR_VER in tsk/auto/tsk_db.h.
+
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
@@ -121,7 +123,6 @@ public class SleuthkitCase {
 	// locking protocol improves performance for reasons that are not currently
 	// understood. Note that the lock is contructed to use a fairness policy.
 	private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true);
-
 
 	/**
 	 * Private constructor, clients must use newCase() or openCase() method to
@@ -174,7 +175,7 @@ public class SleuthkitCase {
 		init();
 	}
 
-	private void init() throws Exception {
+	private void init() throws Exception  {
 		typeIdToArtifactTypeMap = new ConcurrentHashMap<Integer, BlackboardArtifact.Type>();
 		typeIdToAttributeTypeMap = new ConcurrentHashMap<Integer, BlackboardAttribute.Type>();
 		typeNameToArtifactTypeMap = new ConcurrentHashMap<String, BlackboardArtifact.Type>();
@@ -466,6 +467,9 @@ public class SleuthkitCase {
 	 * Modify the case database to bring it up-to-date with the current version
 	 * of the database schema.
 	 *
+	 * @param dbPath Path to the db file. If dbPath is null, no backup will be
+	 *               made..
+	 *
 	 * @throws Exception
 	 */
 	private void updateDatabaseSchema(String dbPath) throws Exception {
@@ -476,23 +480,45 @@ public class SleuthkitCase {
 			connection.beginTransaction();
 
 			// Get the schema version number of the case database from the tsk_db_info table.
-			int schemaVersionNumber = SCHEMA_VERSION_NUMBER;
-			statement = connection.createStatement();
-			resultSet = connection.executeQuery(statement, "SELECT schema_ver FROM tsk_db_info"); //NON-NLS
-			if (resultSet.next()) {
-				schemaVersionNumber = resultSet.getInt("schema_ver"); //NON-NLS
+			int dbSchemaVersion = SCHEMA_MAJOR_VERSION_NUMBER;
+			int dbSchemaMinorVersion = 0;
+			boolean hasMinorVersion = false;
+			ResultSet columns = connection.getConnection().getMetaData().getColumns(null, null, "tsk_db_info", "schema%");
+			while (columns.next()) {
+				if (columns.getString("COLUMN_NAME").equals("schema_minor_version")) {
+					hasMinorVersion = true;
+				}
 			}
+
+			statement = connection.createStatement();
+			resultSet = connection.executeQuery(statement, "SELECT schema_ver"
+					+ (hasMinorVersion ? ", schema_minor_ver" : "")
+					+ " FROM tsk_db_info"); //NON-NLS
+			if (resultSet.next()) {
+				dbSchemaVersion = resultSet.getInt("schema_ver"); //NON-NLS
+				if (hasMinorVersion) {
+					dbSchemaMinorVersion = resultSet.getInt("schema_minor_ver"); //NON-NLS
+				}
+			} else {
+				throw new TskCoreException();
+			}
+
 			resultSet.close();
 			resultSet = null;
 			statement.close();
 			statement = null;
 
+			if (dbSchemaVersion > SCHEMA_MAJOR_VERSION_NUMBER) {
+				throw new TskSchemaVersionException("DB schema version " + dbSchemaVersion + " greater than " + SCHEMA_MAJOR_VERSION_NUMBER + " can not be opened.");
+			}
+
 			// Do the schema update(s), if needed.
-			if (SCHEMA_VERSION_NUMBER != schemaVersionNumber) {
+			if (dbSchemaVersion < SCHEMA_MAJOR_VERSION_NUMBER
+					|| hasMinorVersion == false || dbSchemaMinorVersion < SCHEMA_MINOR_VERSION_NUMBER) {
 				if (null != dbPath) {
 					// Make a backup copy of the database. Client code can get the path of the backup
 					// using the getBackupDatabasePath() method.
-					String backupFilePath = dbPath + ".schemaVer" + schemaVersionNumber + ".backup"; //NON-NLS
+					String backupFilePath = dbPath + ".schemaVer" + dbSchemaVersion + "." + dbSchemaMinorVersion + ".backup"; //NON-NLS
 					copyCaseDB(backupFilePath);
 					dbBackupPath = backupFilePath;
 				}
@@ -501,19 +527,23 @@ public class SleuthkitCase {
 				// Each method should examine the schema number passed to it and either:
 				//    a. do nothing and return the schema version number unchanged, or
 				//    b. upgrade the database and then increment and return the schema version number.
-				schemaVersionNumber = updateFromSchema2toSchema3(schemaVersionNumber, connection);
-				schemaVersionNumber = updateFromSchema3toSchema4(schemaVersionNumber, connection);
-				schemaVersionNumber = updateFromSchema4toSchema5(schemaVersionNumber, connection);
-				schemaVersionNumber = updateFromSchema5toSchema6(schemaVersionNumber, connection);
-				schemaVersionNumber = updateFromSchema6toSchema7(schemaVersionNumber, connection);
+				dbSchemaVersion = updateFromSchema2toSchema3(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema3toSchema4(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema4toSchema5(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema5toSchema6(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema6toSchema7(dbSchemaVersion, connection);
+				//
+				dbSchemaMinorVersion = updateSchemaFrom7_1to7_2(dbSchemaVersion, dbSchemaMinorVersion, connection);
 
 				// Write the updated schema version number to the the tsk_db_info table.
 				statement = connection.createStatement();
-				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + schemaVersionNumber); //NON-NLS
+				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + dbSchemaVersion + ", schema_minor_ver = " + dbSchemaMinorVersion); //NON-NLS
 				statement.close();
 				statement = null;
 			}
-			versionNumber = schemaVersionNumber;
+
+			//JMTODO: do we need this
+			versionNumber = dbSchemaVersion;
 
 			connection.commitTransaction();
 		} catch (Exception ex) { // Cannot do exception multi-catch in Java 6, so use catch-all.
@@ -988,7 +1018,7 @@ public class SleuthkitCase {
 			while (resultSet.next()) {
 				long objID = resultSet.getLong("obj_id");
 				String name = resultSet.getString("name");
-				updstatement.executeUpdate("UPDATE tsk_files SET extension = '" +escapeSingleQuotes(extractExtension(name)) + "' "
+				updstatement.executeUpdate("UPDATE tsk_files SET extension = '" + escapeSingleQuotes(extractExtension(name)) + "' "
 						+ "WHERE obj_id = " + objID);
 			}
 
@@ -996,7 +1026,10 @@ public class SleuthkitCase {
 
 			// Add artifact_obj_id column to blackboard_artifacts table, data conversion for old versions isn't necesarry.
 			statement.execute("ALTER TABLE blackboard_artifacts ADD COLUMN artifact_obj_id INTEGER NOT NULL DEFAULT -1");
-			
+
+			//add the schema minor version number column.
+			statement.execute("ALTER TABLE tsk_db_info ADD COLUMN schema_minor_ver INTEGER DEFAULT 1");
+
 			return 7;
 
 		} finally {
@@ -1004,6 +1037,15 @@ public class SleuthkitCase {
 			closeStatement(statement);
 			closeStatement(updstatement);
 		}
+	}
+
+	private int updateSchemaFrom7_1to7_2(int majorVerion, int minorVersion, CaseDbConnection connection) throws TskSchemaVersionException {
+		if (majorVerion != 7 && minorVersion != 1) {
+			throw new TskSchemaVersionException("Can't upgrade schema vesrion " + majorVerion + "." + minorVersion + "to 7.2");
+		}
+
+		//do some stuff
+		return 2;
 	}
 
 	/**
@@ -1107,6 +1149,7 @@ public class SleuthkitCase {
 	 * @return The schema version number as an integer.
 	 */
 	public int getSchemaVersion() {
+		//JMTODO: do we need this?
 		return this.versionNumber;
 	}
 
@@ -2895,7 +2938,7 @@ public class SleuthkitCase {
 					attributeType = this.typeIdToAttributeTypeMap.get(attributeTypeId);
 				} else {
 					attributeType = new BlackboardAttribute.Type(attributeTypeId, attributeTypeName,
-							rs.getString("display_name"), 
+							rs.getString("display_name"),
 							BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.fromType(rs.getInt("value_type")));
 					this.typeIdToAttributeTypeMap.put(attributeTypeId, attributeType);
 					this.typeNameToAttributeTypeMap.put(attributeTypeName, attributeType);
@@ -3006,7 +3049,7 @@ public class SleuthkitCase {
 				BlackboardArtifact.Type type;
 				// artifact type is cached, so this does not necessarily call to the db
 				type = this.getArtifactType(rs.getInt("artifact_type_id"));
-				BlackboardArtifact artifact = new BlackboardArtifact(this, rs.getLong("artifact_id"),  rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
+				BlackboardArtifact artifact = new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
 						type.getTypeID(), type.getTypeName(), type.getDisplayName(),
 						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id")));
 				matches.add(artifact);
@@ -3060,7 +3103,7 @@ public class SleuthkitCase {
 		acquireExclusiveLock();
 		ResultSet resultSet = null;
 		try {
-			
+
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
 			statement.clearParameters();
 			statement.setLong(1, obj_id);
@@ -3069,14 +3112,14 @@ public class SleuthkitCase {
 			resultSet = statement.getGeneratedKeys();
 			resultSet.next();
 			long artifact_obj_id = resultSet.getLong(1); //last_insert_rowid()
-			
+
 			if (dbType == DbType.POSTGRESQL) {
 				statement = connection.getPreparedStatement(PREPARED_STATEMENT.POSTGRESQL_INSERT_ARTIFACT, Statement.RETURN_GENERATED_KEYS);
 				statement.clearParameters();
-				statement.setLong(1, obj_id); 
+				statement.setLong(1, obj_id);
 				statement.setLong(2, artifact_obj_id);
 				statement.setInt(3, artifact_type_id);
-				
+
 			} else {
 				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_ARTIFACT, Statement.RETURN_GENERATED_KEYS);
 				statement.clearParameters();
@@ -3085,7 +3128,7 @@ public class SleuthkitCase {
 				statement.setLong(2, obj_id);
 				statement.setLong(3, artifact_obj_id);
 				statement.setInt(4, artifact_type_id);
-				
+
 			}
 			connection.executeUpdate(statement);
 			resultSet = statement.getGeneratedKeys();
@@ -3302,7 +3345,8 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get list of object IDs for artifacts that are children of a given content.
+	 * Get list of object IDs for artifacts that are children of a given
+	 * content.
 	 *
 	 * @param parent Object to find children for
 	 *
@@ -3332,7 +3376,6 @@ public class SleuthkitCase {
 			releaseSharedLock();
 		}
 	}
-	
 
 	/**
 	 * Get list of artifacts that are children of a given content.
@@ -3346,13 +3389,13 @@ public class SleuthkitCase {
 	List<Content> getBlackboardArtifactChildren(Content parent) throws TskCoreException {
 
 		long parentId = parent.getId();
-		ArrayList<BlackboardArtifact> artsArray =  getArtifactsHelper("blackboard_artifacts.obj_id = " + parentId + ";");
-		
+		ArrayList<BlackboardArtifact> artsArray = getArtifactsHelper("blackboard_artifacts.obj_id = " + parentId + ";");
+
 		List<Content> lc = new ArrayList<Content>();
 		lc.addAll(artsArray);
 		return lc;
 	}
-	
+
 	/**
 	 * Get info about children of a given Content from the database.
 	 *
@@ -4087,7 +4130,7 @@ public class SleuthkitCase {
 			releaseExclusiveLock();
 		}
 	}
-	
+
 	/**
 	 * Adds a local directory to the database and returns a LocalDirectory
 	 * object representing it.
@@ -4216,7 +4259,7 @@ public class SleuthkitCase {
 			// data source object id
 			long dataSourceObjectId = getDataSourceObjectId(connection, parentId);
 			statement.setLong(16, dataSourceObjectId);
-			
+
 			//extension, since this is a directory we just set it to null
 			statement.setString(17, null);
 
@@ -4721,7 +4764,7 @@ public class SleuthkitCase {
 	 * @param atime
 	 * @param mtime
 	 * @param isFile          whether a file or directory, true if a file
-	 * @param parentObj		  parent content object
+	 * @param parentObj		     parent content object
 	 * @param rederiveDetails details needed to re-derive file (will be specific
 	 *                        to the derivation method), currently unused
 	 * @param toolName        name of derivation method/tool, currently unused
@@ -4753,9 +4796,9 @@ public class SleuthkitCase {
 			if (parentObj instanceof BlackboardArtifact) {
 				parentPath = parentObj.getUniquePath() + '/' + parentObj.getName() + '/';
 			} else if (parentObj instanceof AbstractFile) {
-				parentPath = ((AbstractFile)parentObj).getParentPath() + parentObj.getName() + '/'; //NON-NLS
+				parentPath = ((AbstractFile) parentObj).getParentPath() + parentObj.getName() + '/'; //NON-NLS
 			}
-				
+
 			// Insert a row for the derived file into the tsk_objects table.
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
@@ -4832,7 +4875,7 @@ public class SleuthkitCase {
 
 			//TODO add derived method to tsk_files_derived and tsk_files_derived_method
 			return new DerivedFile(this, newObjId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
-					size, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId, null, encodingType,extension);
+					size, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId, null, encodingType, extension);
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
 			throw new TskCoreException("Failed to add derived file to case database", ex);
@@ -4981,7 +5024,7 @@ public class SleuthkitCase {
 					parent.getId(), parentPath,
 					dataSourceObjId,
 					localPath,
-					encodingType,extension);
+					encodingType, extension);
 
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Failed to INSERT local file %s (%s) with parent id %d in tsk_files table", fileName, localPath, parent.getId()), ex);
@@ -5668,7 +5711,7 @@ public class SleuthkitCase {
 				if (f != null) {
 					children.add(f);
 				}
-			} else if(info.type == ObjectType.ARTIFACT){
+			} else if (info.type == ObjectType.ARTIFACT) {
 				BlackboardArtifact art = getArtifactById(info.id);
 				if (art != null) {
 					children.add(art);
@@ -6066,7 +6109,7 @@ public class SleuthkitCase {
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 				(short) rs.getInt("mode"), rs.getInt("uid"), rs.getInt("gid"), //NON-NLS
 				rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
-				rs.getString("parent_path"), rs.getString("mime_type"),rs.getString("extension")); //NON-NLS
+				rs.getString("parent_path"), rs.getString("mime_type"), rs.getString("extension")); //NON-NLS
 		f.setFileSystem(fs);
 		return f;
 	}
@@ -6144,8 +6187,8 @@ public class SleuthkitCase {
 				rs.getShort("meta_flags"), rs.getString("md5"), //NON-NLS
 				FileKnown.valueOf(rs.getByte("known")), parentPath); //NON-NLS
 		return ld;
-	}	
-	
+	}
+
 	/**
 	 * Creates a DerivedFile object using the values of a given result set.
 	 *
@@ -6194,7 +6237,7 @@ public class SleuthkitCase {
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 				rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
 				parentPath, localPath, parentId, rs.getString("mime_type"),
-				encodingType,rs.getString("extension"));
+				encodingType, rs.getString("extension"));
 		return df;
 	}
 
@@ -6245,7 +6288,7 @@ public class SleuthkitCase {
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 				rs.getString("mime_type"), rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
 				parentId, parentPath, rs.getLong("data_source_obj_id"),
-				localPath, encodingType,rs.getString("extension"));
+				localPath, encodingType, rs.getString("extension"));
 		return file;
 	}
 
@@ -6272,7 +6315,7 @@ public class SleuthkitCase {
 				rs.getLong("ctime"), rs.getLong("crtime"), rs.getLong("atime"), rs.getLong("mtime"), //NON-NLS
 				(short) rs.getInt("mode"), rs.getInt("uid"), rs.getInt("gid"), //NON-NLS
 				rs.getString("md5"), FileKnown.valueOf(rs.getByte("known")), //NON-NLS
-				rs.getString("parent_path"), rs.getString("mime_type"),rs.getString("extension")); //NON-NLS
+				rs.getString("parent_path"), rs.getString("mime_type"), rs.getString("extension")); //NON-NLS
 		f.setFileSystem(fs);
 		return f;
 	}
@@ -6357,13 +6400,13 @@ public class SleuthkitCase {
 		return children;
 	}
 
-
 	/**
-	 * Creates BlackboardArtifact objects for the result set of a blackboard_artifacts table
-	 * query of the form "SELECT * FROM blackboard_artifacts WHERE XYZ".
+	 * Creates BlackboardArtifact objects for the result set of a
+	 * blackboard_artifacts table query of the form "SELECT * FROM
+	 * blackboard_artifacts WHERE XYZ".
 	 *
-	 * @param rs         A result set from a query of the blackboard_artifacts table of the
-	 *                   form "SELECT * FROM blackboard_artifacts WHERE XYZ".
+	 * @param rs A result set from a query of the blackboard_artifacts table of
+	 *           the form "SELECT * FROM blackboard_artifacts WHERE XYZ".
 	 *
 	 * @return A list of AbstractFile objects.
 	 *
