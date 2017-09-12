@@ -194,7 +194,7 @@ public class BlackboardArtifact implements Content {
 	 * @throws TskCoreException if there is a problem creating the description.
 	 */
 	public String getShortDescription() throws TskCoreException {
-		BlackboardAttribute attr;
+		BlackboardAttribute attr = null;
 		StringBuilder shortDescription = new StringBuilder("");
 		switch (ARTIFACT_TYPE.fromID(artifactTypeId)) {
 			case TSK_WEB_BOOKMARK:  //web_bookmark, web_cookie, web_download, and web_history are the same attribute for now
@@ -202,21 +202,12 @@ public class BlackboardArtifact implements Content {
 			case TSK_WEB_DOWNLOAD:
 			case TSK_WEB_HISTORY:
 				attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DOMAIN));
-				if (attr != null) {
-					shortDescription.append(attr.getAttributeType().getDisplayName()).append(": ").append(attr.getDisplayString());
-				}
 				break;
 			case TSK_KEYWORD_HIT:
 				attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_KEYWORD_PREVIEW));
-				if (attr != null) {
-					shortDescription.append(attr.getAttributeType().getDisplayName()).append(": ").append(attr.getDisplayString());
-				}
 				break;
 			case TSK_DEVICE_ATTACHED:
 				attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DEVICE_ID));
-				if (attr != null) {
-					shortDescription.append(attr.getAttributeType().getDisplayName()).append(": ").append(attr.getDisplayString());
-				}
 				break;
 			case TSK_CONTACT: //contact, message, and calllog are the same attributes for now
 			case TSK_MESSAGE:
@@ -235,11 +226,14 @@ public class BlackboardArtifact implements Content {
 				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_EMAIL_HOME))) != null) {
 				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_EMAIL_OFFICE))) != null) {
 				}
-				shortDescription.append(attr.getAttributeType().getDisplayName()).append(": ").append(attr.getDisplayString());
 				break;
 			default:
-				shortDescription.append(getDisplayName());
 				break;
+		}
+		if (attr != null) {
+			shortDescription.append(attr.getAttributeType().getDisplayName()).append(": ").append(attr.getDisplayString());
+		} else {
+			shortDescription.append(getDisplayName());
 		}
 		BlackboardAttribute date;
 		//get the first of these date attributes which exists and is non null
