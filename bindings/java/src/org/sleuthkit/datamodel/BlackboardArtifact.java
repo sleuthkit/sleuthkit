@@ -20,6 +20,7 @@ package org.sleuthkit.datamodel;
 
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -57,9 +58,9 @@ public class BlackboardArtifact implements Content {
 	private boolean loadedCacheFromDb = false;
 	private Content parent;
 	private String uniquePath;
-	
+
 	private byte[] contentBytes = null;
-	
+
 	private volatile boolean checkedHasChildren;
 	private volatile boolean hasChildren;
 	private volatile int childrenCount;
@@ -82,8 +83,8 @@ public class BlackboardArtifact implements Content {
 	 * @param displayName      The display name of this artifact.
 	 * @param reviewStatus     The review status of this artifact.
 	 */
-	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus) {	
-		
+	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus) {
+
 		this.sleuthkitCase = sleuthkitCase;
 		this.artifactId = artifactID;
 		this.sourceObjId = sourceObjId;
@@ -92,11 +93,11 @@ public class BlackboardArtifact implements Content {
 		this.artifactTypeName = artifactTypeName;
 		this.displayName = displayName;
 		this.reviewStatus = reviewStatus;
-		
+
 		this.checkedHasChildren = false;
 		this.hasChildren = false;
 		this.childrenCount = -1;
-		
+
 	}
 
 	/**
@@ -138,7 +139,7 @@ public class BlackboardArtifact implements Content {
 	public SleuthkitCase getSleuthkitCase() {
 		return sleuthkitCase;
 	}
-	
+
 	/**
 	 * Gets the unique id for this artifact.
 	 *
@@ -193,65 +194,61 @@ public class BlackboardArtifact implements Content {
 	 * @throws TskCoreException if there is a problem creating the description.
 	 */
 	public String getShortDescription() throws TskCoreException {
-		List<BlackboardAttribute> attrs;
-		attrs = new ArrayList<BlackboardAttribute>();  //only allow the adding of one or two items to keep descirption short
+		BlackboardAttribute attr = null;
+		StringBuilder shortDescription = new StringBuilder("");
 		switch (ARTIFACT_TYPE.fromID(artifactTypeId)) {
 			case TSK_WEB_BOOKMARK:  //web_bookmark, web_cookie, web_download, and web_history are the same attribute for now
 			case TSK_WEB_COOKIE:
 			case TSK_WEB_DOWNLOAD:
 			case TSK_WEB_HISTORY:
-				attrs.add(getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DOMAIN)));
+				attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DOMAIN));
 				break;
 			case TSK_KEYWORD_HIT:
-				attrs.add(getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_KEYWORD_PREVIEW)));
+				attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_KEYWORD_PREVIEW));
 				break;
 			case TSK_DEVICE_ATTACHED:
-				attrs.add(getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DEVICE_ID)));
+				attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DEVICE_ID));
 				break;
 			case TSK_CONTACT: //contact, message, and calllog are the same attributes for now
 			case TSK_MESSAGE:
 			case TSK_CALLLOG:
-				BlackboardAttribute name;
-				if (((name = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_NAME))) != null) && !name.getDisplayString().isEmpty()) {
-					attrs.add(name);
-				}
-				BlackboardAttribute attr;
-				if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER))) != null) {
-					attrs.add(attr);
+				//get the first of these attributes which exists and is non null
+				if (((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_NAME))) != null) && !attr.getDisplayString().isEmpty()) {
+				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER))) != null) {
 				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM))) != null) {
-					attrs.add(attr);
 				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO))) != null) {
-					attrs.add(attr);
 				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_HOME))) != null) {
-					attrs.add(attr);
 				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_MOBILE))) != null) {
-					attrs.add(attr);
 				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_OFFICE))) != null) {
-					attrs.add(attr);
 				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_EMAIL))) != null) {
-					attrs.add(attr);
 				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_EMAIL_FROM))) != null) {
-					attrs.add(attr);
 				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_EMAIL_TO))) != null) {
-					attrs.add(attr);
 				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_EMAIL_HOME))) != null) {
-					attrs.add(attr);
 				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_EMAIL_OFFICE))) != null) {
-					attrs.add(attr);
 				}
 				break;
-			default:  //no description by default
+			default:
+				break;
 		}
-		StringBuilder shortDescription = new StringBuilder("");
-		for (int i = 0; i < attrs.size(); i++) {
-			BlackboardAttribute attr = attrs.get(i);
-			String valueToDisplay = attr.getDisplayString();
-			shortDescription.append(attr.getAttributeType().getDisplayName());
-			shortDescription.append(": "); //NON-NLS
-			shortDescription.append(valueToDisplay);
-			if (attrs.size() != i + 1) { //add seperator before next attribute.
-				shortDescription.append("; ");
-			}
+		if (attr != null) {
+			shortDescription.append(attr.getAttributeType().getDisplayName()).append(": ").append(attr.getDisplayString());
+		} else {
+			shortDescription.append(getDisplayName());
+		}
+		BlackboardAttribute date;
+		//get the first of these date attributes which exists and is non null
+		if ((date = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME))) != null) {
+		} else if ((date = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME_SENT))) != null) {
+		} else if ((date = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME_RCVD))) != null) {
+		} else if ((date = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME_CREATED))) != null) {
+		} else if ((date = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME_MODIFIED))) != null) {
+		} else if ((date = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED))) != null) {
+		} else if ((date = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME_START))) != null) {
+		} else if ((date = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME_END))) != null) {
+		}
+		if (date != null) {
+			shortDescription.append(" ");
+			shortDescription.append(MessageFormat.format(bundle.getString("BlackboardArtifact.shortDescriptionDate.text"), date.getDisplayString()));  //NON-NLS 
 		}
 		return shortDescription.toString();
 	}
@@ -350,14 +347,15 @@ public class BlackboardArtifact implements Content {
 		attrsCache.addAll(attributes);
 	}
 
-	
 	/**
-	 * This overiding implementation returns the unique path of the parent.
-	 * It does not include the Artifact name in the unique path.
+	 * This overiding implementation returns the unique path of the parent. It
+	 * does not include the Artifact name in the unique path.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	@Override
 	public synchronized String getUniquePath() throws TskCoreException {
-		
+
 		// Return the path of the parrent file
 		if (uniquePath == null) {
 			uniquePath = "";
@@ -368,7 +366,7 @@ public class BlackboardArtifact implements Content {
 		}
 		return uniquePath;
 	}
-	
+
 	@Override
 	public synchronized Content getParent() throws TskCoreException {
 		if (parent == null) {
@@ -383,7 +381,7 @@ public class BlackboardArtifact implements Content {
 		}
 		return parent;
 	}
-	
+
 	/**
 	 * Get all artifacts associated with this content
 	 *
@@ -396,7 +394,7 @@ public class BlackboardArtifact implements Content {
 		// Currently we don't have any artifacts derived from an artifact.
 		return new ArrayList<BlackboardArtifact>();
 	}
-	
+
 	/**
 	 * Get all artifacts associated with this content that have the given type
 	 * name
@@ -412,7 +410,7 @@ public class BlackboardArtifact implements Content {
 		// Currently we don't have any artifacts derived from an artifact.
 		return new ArrayList<BlackboardArtifact>();
 	}
-	
+
 	/**
 	 * Get all artifacts associated with this content that have the given type
 	 * id
@@ -428,7 +426,7 @@ public class BlackboardArtifact implements Content {
 		// Currently we don't have any artifacts derived from an artifact.
 		return new ArrayList<BlackboardArtifact>();
 	}
-	
+
 	/**
 	 * Get all artifacts associated with this content that have the given type
 	 *
@@ -443,7 +441,7 @@ public class BlackboardArtifact implements Content {
 		// Currently we don't have any artifacts derived from an artifact.
 		return new ArrayList<BlackboardArtifact>();
 	}
-	
+
 	/**
 	 * Get count of all artifacts associated with this content
 	 *
@@ -456,7 +454,7 @@ public class BlackboardArtifact implements Content {
 		// Currently we don't have any artifacts derived from an artifact.
 		return 0;
 	}
-	
+
 	/**
 	 * Get count of all artifacts associated with this content that have the
 	 * given type name
@@ -504,7 +502,7 @@ public class BlackboardArtifact implements Content {
 		// Currently we don't have any artifacts derived from an artifact.
 		return 0;
 	}
-	
+
 	/**
 	 * Return the TSK_GEN_INFO artifact for the file so that individual
 	 * attributes can be added to it. Creates one if it does not already exist.
@@ -538,10 +536,10 @@ public class BlackboardArtifact implements Content {
 		if (create) {
 			throw new TskCoreException("Artifacts of artifacts are not supported.");
 		}
-		
+
 		return null;
 	}
-	
+
 	/**
 	 * Return attributes of a given type from TSK_GEN_INFO.
 	 *
@@ -549,13 +547,15 @@ public class BlackboardArtifact implements Content {
 	 *                  artifact.
 	 *
 	 * @return Attributes
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	@Override
 	public ArrayList<BlackboardAttribute> getGenInfoAttributes(BlackboardAttribute.ATTRIBUTE_TYPE attr_type) throws TskCoreException {
 		// Currently we don't have any artifacts derived from an artifact.
 		return new ArrayList<BlackboardAttribute>();
 	}
-	
+
 	/**
 	 * Get the names of all the hashsets that this content is in.
 	 *
@@ -568,7 +568,7 @@ public class BlackboardArtifact implements Content {
 		// Currently we don't have any artifacts derived from an artifact.
 		return new HashSet<String>();
 	}
-	
+
 	/**
 	 * Create and add an artifact associated with this content to the blackboard
 	 *
@@ -612,7 +612,7 @@ public class BlackboardArtifact implements Content {
 	public <T> T accept(ContentVisitor<T> v) {
 		return v.visit(this);
 	}
-	
+
 	/**
 	 * Tests this artifact for equality with another object.
 	 *
@@ -669,40 +669,38 @@ public class BlackboardArtifact implements Content {
 		return visitor.visit(this);
 	}
 
-	
 	/**
-	 * Get the (reported) size of the content object.
-	 * Artifact content is a string dump of all its attributes.
+	 * Get the (reported) size of the content object. Artifact content is a
+	 * string dump of all its attributes.
 	 *
 	 * @return size of the content in bytes
 	 */
 	@Override
 	public long getSize() {
-		
+
 		if (contentBytes == null) {
 			try {
 				loadArtifactContent();
-			}
-			catch (TskCoreException ex) {
+			} catch (TskCoreException ex) {
 				return 0;
 			}
 		}
 
 		return contentBytes.length;
 	}
-	
+
 	/**
-	 * Close the Content object. 
+	 * Close the Content object.
 	 */
 	@Override
 	public void close() {
 		contentBytes = null;
 	}
-	
+
 	/**
-	 * Reads content data for this artifact
-	 * Artifact content is a string dump of all its attributes.
-	 * 
+	 * Reads content data for this artifact Artifact content is a string dump of
+	 * all its attributes.
+	 *
 	 * @param buf    a character array of data (in bytes) to copy read data to
 	 * @param offset byte offset in the content to start reading from
 	 * @param len    number of bytes to read into buf.
@@ -714,27 +712,27 @@ public class BlackboardArtifact implements Content {
 	 */
 	@Override
 	public final int read(byte[] buf, long offset, long len) throws TskCoreException {
-		
+
 		if (contentBytes == null) {
 			loadArtifactContent();
 		}
-		
+
 		if (0 == contentBytes.length) {
 			return 0;
 		}
-		
+
 		// Copy bytes
 		long readLen = Math.min(contentBytes.length - offset, len);
-		System.arraycopy(contentBytes, 0, buf, 0, (int)readLen);
-		
-		return (int)readLen;
+		System.arraycopy(contentBytes, 0, buf, 0, (int) readLen);
+
+		return (int) readLen;
 	}
-	
+
 	@Override
 	public String getName() {
 		return this.displayName + getArtifactID();
 	}
-	
+
 	@Override
 	public Content getDataSource() throws TskCoreException {
 		Content myParent = getParent();
@@ -744,46 +742,45 @@ public class BlackboardArtifact implements Content {
 
 		return myParent.getDataSource();
 	}
-	
+
 	/**
-	 * Load and save the content for the artifact.
-	 * Artifact content is a string dump of all its attributes.
-	 * 
+	 * Load and save the content for the artifact. Artifact content is a string
+	 * dump of all its attributes.
+	 *
 	 * @throws TskCoreException if critical error occurred during read
 	 */
-	private void loadArtifactContent() throws TskCoreException{
+	private void loadArtifactContent() throws TskCoreException {
 		StringBuilder artifactContents = new StringBuilder();
 
 		Content dataSource = null;
 		try {
-            dataSource = getDataSource();
-        } catch (TskCoreException ex) {
-            throw new TskCoreException("Unable to get datasource for artifact: " + this.toString(), ex);
-        }
-        if (dataSource == null) {
-            throw new TskCoreException("Datasource was null for artifact: " + this.toString());
-        }
+			dataSource = getDataSource();
+		} catch (TskCoreException ex) {
+			throw new TskCoreException("Unable to get datasource for artifact: " + this.toString(), ex);
+		}
+		if (dataSource == null) {
+			throw new TskCoreException("Datasource was null for artifact: " + this.toString());
+		}
 
-        try {
-            for (BlackboardAttribute attribute : getAttributes()) {
-                artifactContents.append(attribute.getAttributeType().getDisplayName());
-                artifactContents.append(" : ");
-                artifactContents.append(attribute.getDisplayString());
-                artifactContents.append(System.lineSeparator());
-            }
-        } catch (TskCoreException ex) {
-            throw new TskCoreException("Unable to get attributes for artifact: " + this.toString(), ex);
-        }
+		try {
+			for (BlackboardAttribute attribute : getAttributes()) {
+				artifactContents.append(attribute.getAttributeType().getDisplayName());
+				artifactContents.append(" : ");
+				artifactContents.append(attribute.getDisplayString());
+				artifactContents.append(System.lineSeparator());
+			}
+		} catch (TskCoreException ex) {
+			throw new TskCoreException("Unable to get attributes for artifact: " + this.toString(), ex);
+		}
 
 		try {
 			contentBytes = artifactContents.toString().getBytes("UTF-8");
-		}
-		catch (UnsupportedEncodingException ex) {
+		} catch (UnsupportedEncodingException ex) {
 			throw new TskCoreException("Failed to convert artifact string to bytes for artifact: " + this.toString(), ex);
 		}
-		
+
 	}
-	
+
 	/**
 	 * An artifact type.
 	 */
@@ -1286,7 +1283,7 @@ public class BlackboardArtifact implements Content {
 	 * @param artifactID       The unique id for this artifact.
 	 * @param objID            The unique id of the content with which this
 	 *                         artifact is associated.
-	 * @param artifactObjID		The unique id of the artifact, in tsk_objects 
+	 * @param artifactObjID		  The unique id of the artifact, in tsk_objects
 	 * @param artifactTypeID   The type id of this artifact.
 	 * @param artifactTypeName The type name of this artifact.
 	 * @param displayName      The display name of this artifact.
@@ -1334,7 +1331,7 @@ public class BlackboardArtifact implements Content {
 	public long getId() {
 		return this.artifactObjId;
 	}
-	
+
 	/**
 	 * Gets the object ids of children of this artifact, if any
 	 *
@@ -1348,17 +1345,15 @@ public class BlackboardArtifact implements Content {
 		List<Long> childrenIDs = new ArrayList<Long>();
 		childrenIDs.addAll(getSleuthkitCase().getAbstractFileChildrenIds(this));
 		childrenIDs.addAll(getSleuthkitCase().getBlackboardArtifactChildrenIds(this));
-			
+
 		return childrenIDs;
 	}
-	
-	
+
 	@Override
 	public int getChildrenCount() throws TskCoreException {
 		if (childrenCount != -1) {
 			return childrenCount;
 		}
-
 
 		childrenCount = this.getSleuthkitCase().getContentChildrenCount(this);
 
@@ -1367,7 +1362,7 @@ public class BlackboardArtifact implements Content {
 
 		return childrenCount;
 	}
-	
+
 	@Override
 	public boolean hasChildren() throws TskCoreException {
 		if (checkedHasChildren == true) {
@@ -1381,7 +1376,7 @@ public class BlackboardArtifact implements Content {
 
 		return hasChildren;
 	}
-	
+
 	/**
 	 * Get all children of this artifact, if any.
 	 *
@@ -1395,7 +1390,7 @@ public class BlackboardArtifact implements Content {
 		List<Content> children = new ArrayList<Content>();
 		children.addAll(getSleuthkitCase().getAbstractFileChildren(this));
 		children.addAll(getSleuthkitCase().getBlackboardArtifactChildren(this));
-		
+
 		return children;
 	}
 }
