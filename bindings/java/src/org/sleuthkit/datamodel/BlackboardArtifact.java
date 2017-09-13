@@ -213,18 +213,23 @@ public class BlackboardArtifact implements Content {
 			case TSK_MESSAGE:
 			case TSK_CALLLOG:
 				//get the first of these attributes which exists and is non null
-				if (((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_NAME))) != null) && !attr.getDisplayString().isEmpty()) {
-				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER))) != null) {
-				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM))) != null) {
-				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO))) != null) {
-				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_HOME))) != null) {
-				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_MOBILE))) != null) {
-				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_OFFICE))) != null) {
-				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_EMAIL))) != null) {
-				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_EMAIL_FROM))) != null) {
-				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_EMAIL_TO))) != null) {
-				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_EMAIL_HOME))) != null) {
-				} else if ((attr = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_EMAIL_OFFICE))) != null) {
+				final ATTRIBUTE_TYPE[] typesThatCanHaveName = {ATTRIBUTE_TYPE.TSK_NAME,
+					ATTRIBUTE_TYPE.TSK_PHONE_NUMBER,
+					ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_FROM,
+					ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO,
+					ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_HOME,
+					ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_MOBILE,
+					ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_OFFICE,
+					ATTRIBUTE_TYPE.TSK_EMAIL,
+					ATTRIBUTE_TYPE.TSK_EMAIL_FROM,
+					ATTRIBUTE_TYPE.TSK_EMAIL_TO,
+					ATTRIBUTE_TYPE.TSK_EMAIL_HOME,
+					ATTRIBUTE_TYPE.TSK_EMAIL_OFFICE}; //in the order we want to use them 
+				for (ATTRIBUTE_TYPE t : typesThatCanHaveName) {
+					attr = getAttribute(new BlackboardAttribute.Type(t));
+					if (attr != null && !attr.getDisplayString().isEmpty()) {
+						break;
+					}
 				}
 				break;
 			default:
@@ -235,20 +240,23 @@ public class BlackboardArtifact implements Content {
 		} else {
 			shortDescription.append(getDisplayName());
 		}
-		BlackboardAttribute date;
 		//get the first of these date attributes which exists and is non null
-		if ((date = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME))) != null) {
-		} else if ((date = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME_SENT))) != null) {
-		} else if ((date = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME_RCVD))) != null) {
-		} else if ((date = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME_CREATED))) != null) {
-		} else if ((date = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME_MODIFIED))) != null) {
-		} else if ((date = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED))) != null) {
-		} else if ((date = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME_START))) != null) {
-		} else if ((date = getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME_END))) != null) {
-		}
-		if (date != null) {
-			shortDescription.append(" ");
-			shortDescription.append(MessageFormat.format(bundle.getString("BlackboardArtifact.shortDescriptionDate.text"), date.getDisplayString()));  //NON-NLS 
+		final ATTRIBUTE_TYPE[] typesThatCanHaveDate = {ATTRIBUTE_TYPE.TSK_DATETIME,
+			ATTRIBUTE_TYPE.TSK_DATETIME_SENT,
+			ATTRIBUTE_TYPE.TSK_DATETIME_RCVD,
+			ATTRIBUTE_TYPE.TSK_DATETIME_CREATED,
+			ATTRIBUTE_TYPE.TSK_DATETIME_MODIFIED,
+			ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED,
+			ATTRIBUTE_TYPE.TSK_DATETIME_START,
+			ATTRIBUTE_TYPE.TSK_DATETIME_END};  //in the order we want to use them 
+		BlackboardAttribute date;
+		for (ATTRIBUTE_TYPE t : typesThatCanHaveDate) {
+			date = getAttribute(new BlackboardAttribute.Type(t));
+			if (date != null && !date.getDisplayString().isEmpty()) {
+				shortDescription.append(" ");
+				shortDescription.append(MessageFormat.format(bundle.getString("BlackboardArtifact.shortDescriptionDate.text"), date.getDisplayString()));  //NON-NLS
+				break;
+			}
 		}
 		return shortDescription.toString();
 	}
