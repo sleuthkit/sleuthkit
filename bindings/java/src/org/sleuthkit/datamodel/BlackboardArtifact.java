@@ -240,7 +240,6 @@ public class BlackboardArtifact implements Content {
 		} else {
 			shortDescription.append(getDisplayName());
 		}
-
 		//get the first of these date attributes which exists and is non null
 		final ATTRIBUTE_TYPE[] typesThatCanHaveDate = {ATTRIBUTE_TYPE.TSK_DATETIME,
 			ATTRIBUTE_TYPE.TSK_DATETIME_SENT,
