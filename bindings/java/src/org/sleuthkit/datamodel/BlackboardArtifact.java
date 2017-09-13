@@ -240,7 +240,7 @@ public class BlackboardArtifact implements Content {
 		} else {
 			shortDescription.append(getDisplayName());
 		}
-		
+
 		//get the first of these date attributes which exists and is non null
 		final ATTRIBUTE_TYPE[] typesThatCanHaveDate = {ATTRIBUTE_TYPE.TSK_DATETIME,
 			ATTRIBUTE_TYPE.TSK_DATETIME_SENT,
@@ -786,7 +786,6 @@ public class BlackboardArtifact implements Content {
 			contentBytes = artifactContents.toString().getBytes("UTF-8");
 		} catch (UnsupportedEncodingException ex) {
 			throw new TskCoreException("Failed to convert artifact string to bytes for artifact: " + this.toString(), ex);
-
 		}
 
 	}
