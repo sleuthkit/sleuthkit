@@ -86,8 +86,6 @@ vhdi_image_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
 static void
 vhdi_image_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
 {
-    IMG_VHDI_INFO *vhdi_info = (IMG_VHDI_INFO *) img_info;
-
     tsk_fprintf(hFile, "IMAGE FILE INFORMATION\n");
     tsk_fprintf(hFile, "--------------------------------------------\n");
     tsk_fprintf(hFile, "Image Type:\t\tvhdi\n");
@@ -148,7 +146,6 @@ vhdi_open(int a_num_img,
 {
     char error_string[TSK_VHDI_ERROR_STRING_SIZE];
     libvhdi_error_t *vhdi_error = NULL;
-    int result = 0;
     int i;
 
     IMG_VHDI_INFO *vhdi_info = NULL;

@@ -86,8 +86,6 @@ vmdk_image_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
 static void
 vmdk_image_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
 {
-    IMG_VMDK_INFO *vmdk_info = (IMG_VMDK_INFO *) img_info;
-
     tsk_fprintf(hFile, "IMAGE FILE INFORMATION\n");
     tsk_fprintf(hFile, "--------------------------------------------\n");
     tsk_fprintf(hFile, "Image Type:\t\tvmdk\n");
@@ -148,7 +146,6 @@ vmdk_open(int a_num_img,
 {
     char error_string[TSK_VMDK_ERROR_STRING_SIZE];
     libvmdk_error_t *vmdk_error = NULL;
-    int result = 0;
     int i;
 
     IMG_VMDK_INFO *vmdk_info = NULL;

@@ -117,7 +117,6 @@ ewf_image_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
 static void
 ewf_image_close(TSK_IMG_INFO * img_info)
 {
-    int i;
     IMG_EWF_INFO *ewf_info = (IMG_EWF_INFO *) img_info;
 
 #if defined ( HAVE_LIBEWF_V2_API)
@@ -132,6 +131,7 @@ ewf_image_close(TSK_IMG_INFO * img_info)
     // not clear from the docs what we should do in v1...
     // @@@ Probably a memory leak in v1 unless libewf_close deals with it
     if (ewf_info->used_ewf_glob == 0) {
+        int i;
         for (i = 0; i < ewf_info->img_info.num_img; i++) {
             free(ewf_info->img_info.images[i]);
         }
@@ -508,11 +508,26 @@ ewf_open(int a_num_img,
         // see if the size is stored in the E01 file
         if (-1 == libewf_handle_get_bytes_per_sector(ewf_info->handle,
             &bytes_per_sector, &ewf_error)) {
+            if (tsk_verbose)
+                tsk_fprintf(stderr,
+                    "ewf_image_read: error getting sector size from E01\n");
             img_info->sector_size = 512;
         }
         else {
-            if (bytes_per_sector == 0)
+            // if E01 had size of 0 or non-512 then consider it junk and ignore
+            if ((bytes_per_sector == 0) || (bytes_per_sector % 512)) {
+                if (tsk_verbose)
+                    tsk_fprintf(stderr,
+                        "ewf_image_read: Ignoring sector size in E01 (%d)\n",
+                        bytes_per_sector);
                 bytes_per_sector = 512;
+            }
+            else {
+                if (tsk_verbose)
+                    tsk_fprintf(stderr,
+                        "ewf_image_read: Using E01 sector size (%d)\n",
+                        bytes_per_sector);
+            }
             img_info->sector_size = bytes_per_sector;
         }
     }
