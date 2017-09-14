@@ -497,11 +497,23 @@ ewf_open(int a_num_img,
     }
 #endif                          /* defined( LIBEWF_STRING_DIGEST_HASH_LENGTH_MD5 ) */
 #endif                          /* defined( HAVE_LIBEWF_V2_API ) */
+
+    // use what they gave us
     if (a_ssize != 0) {
         img_info->sector_size = a_ssize;
     }
     else {
-        img_info->sector_size = 512;
+        uint32_t bytes_per_sector = 512;
+        // see if the size is stored in the E01 file
+        if (-1 == libewf_handle_set_bytes_per_sector(ewf_info->handle,
+            &bytes_per_sector, &ewf_error)) {
+            img_info->sector_size = 512;
+        }
+        else {
+            if (bytes_per_sector == 0)
+                bytes_per_sector = 512;
+            img_info->sector_size = bytes_per_sector;
+        }
     }
     img_info->itype = TSK_IMG_TYPE_EWF_EWF;
     img_info->read = &ewf_image_read;
