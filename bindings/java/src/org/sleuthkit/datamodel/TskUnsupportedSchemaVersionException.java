@@ -21,11 +21,36 @@ package org.sleuthkit.datamodel;
 /**
  *
  */
-public class TskSchemaVersionException extends TskCoreException {
+public class TskUnsupportedSchemaVersionException extends TskCoreException {
 
 	private static final long serialVersionUID = 1L;
+	private final int majorVersion;
 
-	TskSchemaVersionException(String msg) {
+	private final int minorVersion;
+	private final int currentMajorVer;
+	private final int currentMinorVer;
+
+	TskUnsupportedSchemaVersionException(int unsupportedMajorVer, int unsupportedMinorVer, int currentMajorVer, int currentMinorVer, String msg) {
 		super(msg);
+		this.majorVersion = unsupportedMajorVer;
+		this.minorVersion = unsupportedMinorVer;
+		this.currentMajorVer = currentMajorVer;
+		this.currentMinorVer = currentMinorVer;
+	}
+
+	public int getUnsupportedMajorVersion() {
+		return majorVersion;
+	}
+
+	public int getUnsupportedMinorVersion() {
+		return minorVersion;
+	}
+
+	public int getCurrentMajorVer() {
+		return currentMajorVer;
+	}
+
+	public int getCurrentMinorVer() {
+		return currentMinorVer;
 	}
 }

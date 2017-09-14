@@ -175,7 +175,7 @@ public class SleuthkitCase {
 		init();
 	}
 
-	private void init() throws Exception  {
+	private void init() throws Exception {
 		typeIdToArtifactTypeMap = new ConcurrentHashMap<Integer, BlackboardArtifact.Type>();
 		typeIdToAttributeTypeMap = new ConcurrentHashMap<Integer, BlackboardAttribute.Type>();
 		typeNameToArtifactTypeMap = new ConcurrentHashMap<String, BlackboardArtifact.Type>();
@@ -485,7 +485,7 @@ public class SleuthkitCase {
 			boolean hasMinorVersion = false;
 			ResultSet columns = connection.getConnection().getMetaData().getColumns(null, null, "tsk_db_info", "schema%");
 			while (columns.next()) {
-				if (columns.getString("COLUMN_NAME").equals("schema_minor_version")) {
+				if (columns.getString("COLUMN_NAME").equals("schema_minor_ver")) {
 					hasMinorVersion = true;
 				}
 			}
@@ -509,7 +509,7 @@ public class SleuthkitCase {
 			statement = null;
 
 			if (dbSchemaVersion > SCHEMA_MAJOR_VERSION_NUMBER) {
-				throw new TskSchemaVersionException("DB schema version " + dbSchemaVersion + " greater than " + SCHEMA_MAJOR_VERSION_NUMBER + " can not be opened.");
+				throw new TskUnsupportedSchemaVersionException(dbSchemaVersion, dbSchemaMinorVersion, SCHEMA_MAJOR_VERSION_NUMBER, SCHEMA_MINOR_VERSION_NUMBER, "Unsupported DB schema version.");
 			}
 
 			// Do the schema update(s), if needed.
@@ -531,7 +531,8 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema3toSchema4(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema4toSchema5(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema5toSchema6(dbSchemaVersion, connection);
-				dbSchemaVersion = updateFromSchema6toSchema7(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema6toSchema7(dbSchemaVersion, hasMinorVersion, connection);
+				dbSchemaMinorVersion = 1;
 				//
 				dbSchemaMinorVersion = updateSchemaFrom7_1to7_2(dbSchemaVersion, dbSchemaMinorVersion, connection);
 
@@ -998,7 +999,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException If there is an error completing a database
 	 *                          operation via another SleuthkitCase method.
 	 */
-	private int updateFromSchema6toSchema7(int schemaVersionNumber, CaseDbConnection connection) throws SQLException, TskCoreException {
+	private int updateFromSchema6toSchema7(int schemaVersionNumber, boolean hasMinorVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
 		if (schemaVersionNumber != 6) {
 			return schemaVersionNumber;
 		}
@@ -1028,8 +1029,9 @@ public class SleuthkitCase {
 			statement.execute("ALTER TABLE blackboard_artifacts ADD COLUMN artifact_obj_id INTEGER NOT NULL DEFAULT -1");
 
 			//add the schema minor version number column.
-			statement.execute("ALTER TABLE tsk_db_info ADD COLUMN schema_minor_ver INTEGER DEFAULT 1");
-
+			if (hasMinorVersion == false) {
+				statement.execute("ALTER TABLE tsk_db_info ADD COLUMN schema_minor_ver INTEGER DEFAULT 1");
+			}
 			return 7;
 
 		} finally {
@@ -1039,9 +1041,9 @@ public class SleuthkitCase {
 		}
 	}
 
-	private int updateSchemaFrom7_1to7_2(int majorVerion, int minorVersion, CaseDbConnection connection) throws TskSchemaVersionException {
-		if (majorVerion != 7 && minorVersion != 1) {
-			throw new TskSchemaVersionException("Can't upgrade schema vesrion " + majorVerion + "." + minorVersion + "to 7.2");
+	private int updateSchemaFrom7_1to7_2(int majorVersion, int minorVersion, CaseDbConnection connection) throws TskUnsupportedSchemaVersionException {
+		if (majorVersion != 7 || minorVersion != 1) {
+			return minorVersion;
 		}
 
 		//do some stuff
@@ -1262,6 +1264,8 @@ public class SleuthkitCase {
 		try {
 			final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
 			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE);
+		}catch (TskUnsupportedSchemaVersionException ex){
+			throw ex;
 		} catch (Exception ex) {
 			throw new TskCoreException("Failed to open case database at " + dbPath, ex);
 		}
