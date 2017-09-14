@@ -543,7 +543,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
         }
 
         // read the current node
-        cur_off = cur_node * nodesize;
+        cur_off = (TSK_OFF_T)cur_node * nodesize;
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "hfs_ext_find_extent_record: reading node %" PRIu32
