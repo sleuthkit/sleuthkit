@@ -338,6 +338,7 @@ raw_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
     tsk_fprintf(hFile, "--------------------------------------------\n");
     tsk_fprintf(hFile, "Image Type: raw\n");
     tsk_fprintf(hFile, "\nSize in bytes: %" PRIuOFF "\n", img_info->size);
+    tsk_fprintf(hFile, "Sector size:\t%d\n", img_info->sector_size);
 
     if (raw_info->img_info.num_img > 1) {
         int i;
