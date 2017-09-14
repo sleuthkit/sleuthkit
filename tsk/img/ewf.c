@@ -106,6 +106,7 @@ ewf_image_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
     tsk_fprintf(hFile, "Image Type:\t\tewf\n");
     tsk_fprintf(hFile, "\nSize of data in bytes:\t%" PRIuOFF "\n",
         img_info->size);
+    tsk_fprintf(hFile, "Sector size:\t%d\n", img_info->sector_size);
 
     if (ewf_info->md5hash_isset == 1) {
         tsk_fprintf(hFile, "MD5 hash of data:\t%s\n", ewf_info->md5hash);
@@ -505,7 +506,7 @@ ewf_open(int a_num_img,
     else {
         uint32_t bytes_per_sector = 512;
         // see if the size is stored in the E01 file
-        if (-1 == libewf_handle_set_bytes_per_sector(ewf_info->handle,
+        if (-1 == libewf_handle_get_bytes_per_sector(ewf_info->handle,
             &bytes_per_sector, &ewf_error)) {
             img_info->sector_size = 512;
         }

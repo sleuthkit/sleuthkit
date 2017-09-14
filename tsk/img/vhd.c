@@ -93,6 +93,7 @@ vhdi_image_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
     tsk_fprintf(hFile, "Image Type:\t\tvhdi\n");
     tsk_fprintf(hFile, "\nSize of data in bytes:\t%" PRIuOFF "\n",
         img_info->size);
+    tsk_fprintf(hFile, "Sector size:\t%d\n", img_info->sector_size);
 
     return;
 }
