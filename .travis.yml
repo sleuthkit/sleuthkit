@@ -18,6 +18,7 @@ matrix:
     os: osx
     osx_image: xcode8.1
 install:
+  - if test ${TRAVIS_OS_NAME} = "linux"; then sudo apt-get install -y libcppunit-dev; fi
   - ./bootstrap
 script:
   - ./configure && make && make check
