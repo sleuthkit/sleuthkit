@@ -651,7 +651,7 @@ tsk_fs_file_hash_calc(TSK_FS_FILE * a_fs_file,
         TSK_MD5_Final(a_hash_results->md5_digest,
             &(hash_data.md5_context));
     }
-    if (a_flags & TSK_BASE_HASH_MD5) {
+    if (a_flags & TSK_BASE_HASH_SHA1) {
         TSK_SHA_Final(a_hash_results->sha1_digest,
             &(hash_data.sha1_context));
     }
