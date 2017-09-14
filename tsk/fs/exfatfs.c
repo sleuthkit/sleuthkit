@@ -251,9 +251,8 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
         return FATFS_FAIL;
     }
 
-    current_sector = a_fatfs->rootsect;
     last_sector_of_data_area = a_fatfs->firstdatasect + (a_fatfs->clustcnt * a_fatfs->csize) - 1;
-    while (current_sector < last_sector_of_data_area) {
+    for (current_sector = a_fatfs->rootsect; current_sector < last_sector_of_data_area; current_sector++) {
         ssize_t bytes_read = 0;
 
         /* Read in a sector from the root directory. The allocation bitmap
