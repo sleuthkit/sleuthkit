@@ -533,8 +533,6 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema5toSchema6(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema6toSchema7(dbSchemaVersion, hasMinorVersion, connection);
 				dbSchemaMinorVersion = 1;
-				//
-				dbSchemaMinorVersion = updateSchemaFrom7_1to7_2(dbSchemaVersion, dbSchemaMinorVersion, connection);
 
 				// Write the updated schema version number to the the tsk_db_info table.
 				statement = connection.createStatement();
@@ -1041,15 +1039,6 @@ public class SleuthkitCase {
 		}
 	}
 
-	private int updateSchemaFrom7_1to7_2(int majorVersion, int minorVersion, CaseDbConnection connection) throws TskUnsupportedSchemaVersionException {
-		if (majorVersion != 7 || minorVersion != 1) {
-			return minorVersion;
-		}
-
-		//do some stuff
-		return 2;
-	}
-
 	/**
 	 * Extract the extension from a file name.
 	 *
@@ -1264,7 +1253,8 @@ public class SleuthkitCase {
 		try {
 			final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
 			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE);
-		}catch (TskUnsupportedSchemaVersionException ex){
+		} catch (TskUnsupportedSchemaVersionException ex) {
+			//donn't wrap in tew TskCoreException
 			throw ex;
 		} catch (Exception ex) {
 			throw new TskCoreException("Failed to open case database at " + dbPath, ex);
@@ -1301,6 +1291,9 @@ public class SleuthkitCase {
 		} catch (PropertyVetoException exp) {
 			// In this case, the JDBC driver doesn't support PostgreSQL. Use the generic message here.
 			throw new TskCoreException(exp.getMessage(), exp);
+		} catch (TskUnsupportedSchemaVersionException ex) {
+			//don't wrap in new TskCoreException
+			throw ex;
 		} catch (Exception exp) {
 			tryConnect(info); // attempt to connect, throw with user-friendly message if unable
 			throw new TskCoreException(exp.getMessage(), exp); // throw with generic message if tryConnect() was successful
