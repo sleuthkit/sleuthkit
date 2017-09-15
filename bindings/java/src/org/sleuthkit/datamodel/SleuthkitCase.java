@@ -1263,7 +1263,7 @@ public class SleuthkitCase {
 			final SleuthkitJNI.CaseDbHandle caseHandle = SleuthkitJNI.openCaseDb(dbPath);
 			return new SleuthkitCase(dbPath, caseHandle, DbType.SQLITE);
 		} catch (TskUnsupportedSchemaVersionException ex) {
-			//donn't wrap in tew TskCoreException
+			//don't wrap in new TskCoreException
 			throw ex;
 		} catch (Exception ex) {
 			throw new TskCoreException("Failed to open case database at " + dbPath, ex);
