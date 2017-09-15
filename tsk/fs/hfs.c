@@ -3777,7 +3777,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 int diff;       // Difference in bytes between the start of the record and the start of data.
 
                 int conversionResult;
-                char nameBuff[MAX_ATTR_NAME_LENGTH];
+                char nameBuff[HFS_MAX_ATTR_NAME_LEN_UTF8_B+1];
 
                 TSK_FS_ATTR_TYPE_ENUM attrType;
 
@@ -3805,7 +3805,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                   goto on_error;
                 }
 
-                buffer = malloc(attributeLength);
+                buffer = tsk_malloc(attributeLength);
                 if (buffer == NULL) {
                     error_detected(TSK_ERR_AUX_MALLOC,
                         "hfs_load_extended_attrs: Could not malloc space for the attribute.");
@@ -3820,10 +3820,15 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 // be because UTF8 is a variable length encoding. However, the longest
                 // it will be is 3 * the max number of UTF16 code units.  Add one for null
                 // termination.   (thanks Judson!)
+                if (tsk_getu16(endian, keyB->attr_name_len) * 2 > HFS_MAX_ATTR_NAME_LEN_UTF16_B) {
+                    error_detected(TSK_ERR_FS_CORRUPT,
+                        "hfs_load_extended_attrs: Name length is too long.");
+                    goto on_error;
+                }
 
                 conversionResult = hfs_UTF16toUTF8(fs, keyB->attr_name,
                     tsk_getu16(endian, keyB->attr_name_len),
-                    nameBuff, MAX_ATTR_NAME_LENGTH, 0);
+                    nameBuff, HFS_MAX_ATTR_NAME_LEN_UTF8_B+1, 0);
                 if (conversionResult != 0) {
                     error_returned
                         ("-- hfs_load_extended_attrs could not convert the attr_name in the btree key into a UTF8 attribute name");
