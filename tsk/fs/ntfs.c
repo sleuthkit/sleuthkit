@@ -4840,7 +4840,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     if (img_info->sector_size == 0) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_str("ntfs_open: sector size is 0");
+        tsk_error_set_errstr("ntfs_open: sector size is 0");
         return NULL;
     }
 
