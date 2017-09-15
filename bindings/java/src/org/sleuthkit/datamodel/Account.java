@@ -30,8 +30,7 @@ public class Account {
 	
 	private final Account.Type accountType;
 	private final String accountID;
-	private final SleuthkitCase sleuthkitCase;
-	private  BlackboardArtifact artifact = null;
+	private final BlackboardArtifact artifact;
 	
 	public static final class Type implements Serializable {
 		
@@ -160,12 +159,10 @@ public class Account {
 	}
 
 	public Account(SleuthkitCase sleuthkitCase, long artifactId) throws TskCoreException {
-		
-		this.sleuthkitCase = sleuthkitCase;
+	
 		this.artifactId = artifactId;
 		
-		this.artifact = this.sleuthkitCase.getBlackboardArtifact(artifactId);
-		
+		this.artifact = sleuthkitCase.getBlackboardArtifact(artifactId);
 		this.accountType =  sleuthkitCase.getAccountType(artifact.getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE)).getValueString());
 		this.accountID = artifact.getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_ID)).getValueString();
 	

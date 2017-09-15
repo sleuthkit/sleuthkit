@@ -37,6 +37,12 @@ TskDbPostgreSQL::TskDbPostgreSQL(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFl
     conn = NULL;
     wcsncpy(m_dBName, a_dbFilePath, MAX_CONN_INFO_FIELD_LENGTH - 1);
     m_blkMapFlag = a_blkMapFlag;
+
+	strcpy(userName, "");
+	strcpy(password, "");
+	strcpy(hostNameOrIpAddr, "");
+	strcpy(hostPort, "");
+
 }
 
 TskDbPostgreSQL::~TskDbPostgreSQL()
@@ -1599,7 +1605,7 @@ typedef struct _checkFileLayoutRangeOverlap{
     const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges;
     bool hasOverlap;
 
-    _checkFileLayoutRangeOverlap(const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges)
+    explicit _checkFileLayoutRangeOverlap(const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges)
         : ranges(ranges),hasOverlap(false) {}
 
     bool getHasOverlap() const { return hasOverlap; }
