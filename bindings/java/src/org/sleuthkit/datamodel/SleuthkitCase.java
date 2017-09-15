@@ -535,7 +535,7 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema3toSchema4(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema4toSchema5(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema5toSchema6(dbSchemaVersion, connection);
-				dbSchemaVersion = updateFromSchema6toSchema7_1(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema6toSchema7dot1(dbSchemaVersion, connection);
 
 				// Write the updated schema version number to the the tsk_db_info table.
 				statement = connection.createStatement();
@@ -992,7 +992,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException If there is an error completing a database
 	 *                          operation via another SleuthkitCase method.
 	 */
-	private DBSchemaVersion updateFromSchema6toSchema7_1(DBSchemaVersion schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+	private DBSchemaVersion updateFromSchema6toSchema7dot1(DBSchemaVersion schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
 		if (schemaVersion.getMajor() != 6) {
 			return schemaVersion;
 		}
