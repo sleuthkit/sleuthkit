@@ -3010,6 +3010,15 @@ TSK_FS_INFO *
         return NULL;
     }
 
+    if (img_info->sector_size == 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("yaffs2_open: sector size is 0");
+        return NULL;
+    }
+
+    
+
     if ((yaffsfs = (YAFFSFS_INFO *) tsk_fs_malloc(sizeof(YAFFSFS_INFO))) == NULL)
         return NULL;
     yaffsfs->cache_objects = NULL;

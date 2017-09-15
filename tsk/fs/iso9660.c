@@ -639,7 +639,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
             in_node->offset =
                 tsk_getu32(fs->endian, dentry->ext_loc_m) * fs->block_size;
             
-            if (tsk_getu32(fs->endian, in_node->inode.dr.data_len_m) + in_node->offset > fs->block_count * fs->block_size) {
+            if (tsk_getu32(fs->endian, in_node->inode.dr.data_len_m) + in_node->offset > (TSK_OFF_T)(fs->block_count * fs->block_size)) {
                 if (tsk_verbose)
                     tsk_fprintf(stderr,
                                 "iso9660_load_inodes_dir: file ends past end of image (%"PRIu32" bytes). bailing\n",
@@ -2502,6 +2502,13 @@ iso9660_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr("Invalid FS type in iso9660_open");
+        return NULL;
+    }
+
+    if (img_info->sector_size == 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("iso9660_open: sector size is 0");
         return NULL;
     }
 

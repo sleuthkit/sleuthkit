@@ -2019,6 +2019,13 @@ ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype, uint
         return NULL;
     }
 
+    if (img_info->sector_size == 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("ffs_open: sector size is 0");
+        return NULL;
+    }
+
     if ((ffs = (FFS_INFO *) tsk_fs_malloc(sizeof(*ffs))) == NULL)
         return NULL;
 
