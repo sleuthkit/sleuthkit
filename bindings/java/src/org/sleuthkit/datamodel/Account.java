@@ -170,7 +170,6 @@ public class Account {
 	
 	public Account(SleuthkitCase sleuthkitCase, BlackboardArtifact artifact) throws TskCoreException {
 		
-		this.sleuthkitCase = sleuthkitCase;
 		this.artifactId = artifact.getArtifactID();
 		
 		this.artifact = artifact;
