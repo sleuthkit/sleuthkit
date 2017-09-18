@@ -25,8 +25,9 @@ import java.util.Objects;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 
 /**
- * Defines an Account, an entity usually representing a person.
- * An account could be a Bank Account, Credit Card, Email, Phone number, Application or Web-site login
+ * An entity that has a type and a unique identifier. 
+ * Example types include a Bank Account, Credit Card, Email address, Phone number, 
+ *   phone, Application,  Web-site login, etc.
  */
 public class Account {
 
