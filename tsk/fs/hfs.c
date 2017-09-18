@@ -543,7 +543,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
         }
 
         // read the current node
-        cur_off = cur_node * nodesize;
+        cur_off = (TSK_OFF_T)cur_node * nodesize;
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "hfs_ext_find_extent_record: reading node %" PRIu32
@@ -1469,9 +1469,10 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat,
             uint32_t linkNum =
                 tsk_getu32(fs->endian, cat->std.perm.special.inum);
 
-            TSK_INUM_T target_cnid;     //  This is the real CNID of the file.
-
-            target_cnid = hfs_lookup_hard_link(hfs, linkNum, FALSE);
+            // It seems like the linkNum is always the same as the CNID
+            // returned by hfs_lookup_hard_link, which is very inefficient when a 
+            // datasource contains large numbers of linked files.
+            TSK_INUM_T target_cnid = linkNum;
 
             if (target_cnid != 0) {
                 // Succeeded in finding that target_cnid in the Catalog file
@@ -1532,9 +1533,10 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat,
             uint32_t linkNum =
                 tsk_getu32(fs->endian, cat->std.perm.special.inum);
 
-            TSK_INUM_T target_cnid;     //  This is the real CNID of the file.
-
-            target_cnid = hfs_lookup_hard_link(hfs, linkNum, TRUE);
+            // It seems like the linkNum is always the same as the CNID
+            // returned by hfs_lookup_hard_link, which is very inefficient when a 
+            // datasource contains large numbers of linked files.
+            TSK_INUM_T target_cnid = linkNum;
 
             if (target_cnid != 0) {
                 // Succeeded in finding that target_cnid in the Catalog file
