@@ -25,29 +25,29 @@ import java.util.Comparator;
  * versioning schema is based on semantic versioning, but without using the
  * patch number.
  *
- * The major part is incremented for incompatible changes, ie, it will not be
- * usable by older version of TSK. For example, the major number should be
+ * The major part is incremented for incompatible changes, i.e., it will not be
+ * usable by an older version. For example, the major number should be
  * incremented if tables and/or columns are removed,the meanings of values
  * changes, or new records are added to lookup tables that will not be
- * convertible to Java Enums.
+ * convertible to older versions of the corresponding Java enums.
  *
- * The minor version is incremented for compatible changes that are use-able by
+ * The minor version is incremented for compatible changes that are useable by
  * older versions of TSK, although the new schema may not be fully taken
- * advantage. For example, adding an index should be backwards compatible: the
- * old version will still be able to open and use the db, but query performance
+ * advantage. For example, adding an index should be backwards compatible: an
+ * older version of the software will still be able to open and use the db, but query performance
  * may or may not be affected. Also, adding a column to a table should be
- * backwards compatible as old versions should simply ignore it.
+ * backwards compatible as older versions of the software should simply ignore it.
  */
-public class DBSchemaVersion implements Comparable<DBSchemaVersion> {
+public class SchemaVersionNumber implements Comparable<SchemaVersionNumber> {
 
 	/**
 	 * Comparator that compares DBSchemaVersions, first by major number, and
 	 * then by minor number in case of equal major numbers.
 	 */
-	private static final Comparator<DBSchemaVersion> VERSION_COMPARATOR = new Comparator<DBSchemaVersion>() {
+	private static final Comparator<SchemaVersionNumber> VERSION_COMPARATOR = new Comparator<SchemaVersionNumber>() {
 
 		@Override
-		public int compare(DBSchemaVersion o1, DBSchemaVersion o2) {
+		public int compare(SchemaVersionNumber o1, SchemaVersionNumber o2) {
 			int majorComp = Integer.compare(o1.getMajor(), o2.getMajor());
 			if (majorComp != 0) {
 				return majorComp;
@@ -60,7 +60,7 @@ public class DBSchemaVersion implements Comparable<DBSchemaVersion> {
 	private final int major;
 	private final int minor;
 
-	public DBSchemaVersion(int majorVersion, int minorVersion) {
+	public SchemaVersionNumber(int majorVersion, int minorVersion) {
 		major = majorVersion;
 		minor = minorVersion;
 	}
@@ -79,9 +79,17 @@ public class DBSchemaVersion implements Comparable<DBSchemaVersion> {
 	}
 
 	@Override
-	public int compareTo(DBSchemaVersion vs) {
+	public int compareTo(SchemaVersionNumber vs) {
 		return VERSION_COMPARATOR.compare(this, vs);
 	}
+	
+	public boolean isCompatibleWith( SchemaVersionNumber other){
+		return this.compareTo(other) <
+	}
+	
+	static public boolean compatibleVersions(SchemaVersionNumber dbVersion, SchemaVersionNumber currentVersion) {
+        return dbVersion.getMajor() <= currentVersion.getMajor();
+    }
 
 	@Override
 	public int hashCode() {
@@ -99,7 +107,7 @@ public class DBSchemaVersion implements Comparable<DBSchemaVersion> {
 		if (getClass() != obj.getClass()) {
 			return false;
 		}
-		final DBSchemaVersion other = (DBSchemaVersion) obj;
+		final SchemaVersionNumber other = (SchemaVersionNumber) obj;
 		return this.compareTo(other) == 0;
 	}
 }
