@@ -49,6 +49,9 @@ TskDbSqlite::TskDbSqlite(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFlag)
     m_db = NULL;
     m_selectFilePreparedStmt = NULL;
     m_insertObjectPreparedStmt = NULL;
+
+	strcpy(m_dbFilePathUtf8, "");
+
 }
 #endif
 
@@ -1303,7 +1306,7 @@ typedef struct _checkFileLayoutRangeOverlap{
     const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges;
     bool hasOverlap;
 
-    _checkFileLayoutRangeOverlap(const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges)
+    explicit _checkFileLayoutRangeOverlap(const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges)
         : ranges(ranges),hasOverlap(false) {}
 
     bool getHasOverlap() const { return hasOverlap; }

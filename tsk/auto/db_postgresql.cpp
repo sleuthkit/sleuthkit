@@ -37,6 +37,12 @@ TskDbPostgreSQL::TskDbPostgreSQL(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFl
     conn = NULL;
     wcsncpy(m_dBName, a_dbFilePath, MAX_CONN_INFO_FIELD_LENGTH - 1);
     m_blkMapFlag = a_blkMapFlag;
+
+	strcpy(userName, "");
+	strcpy(password, "");
+	strcpy(hostNameOrIpAddr, "");
+	strcpy(hostPort, "");
+
 }
 
 TskDbPostgreSQL::~TskDbPostgreSQL()
@@ -611,7 +617,7 @@ int TskDbPostgreSQL::initialize() {
 		||
 		attempt_exec
 		("CREATE TABLE account_types (account_type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT NOT NULL)", 
-		"Error creating reports table: %s\n")     
+		"Error creating account_types table: %s\n")     
 		||
 		attempt_exec
 		("CREATE TABLE relationships  (relationship_id BIGSERIAL PRIMARY KEY, account1_id INTEGER NOT NULL, account2_id INTEGER NOT NULL, communication_artifact_id INTEGER NOT NULL, UNIQUE(account1_id, account1_id, communication_artifact_id) ON CONFLICT IGNORE, FOREIGN KEY(account1_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(account2_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(communication_artifact_id) REFERENCES blackboard_artifacts(artifact_id))", 
@@ -1600,7 +1606,7 @@ typedef struct _checkFileLayoutRangeOverlap{
     const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges;
     bool hasOverlap;
 
-    _checkFileLayoutRangeOverlap(const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges)
+    explicit _checkFileLayoutRangeOverlap(const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges)
         : ranges(ranges),hasOverlap(false) {}
 
     bool getHasOverlap() const { return hasOverlap; }
