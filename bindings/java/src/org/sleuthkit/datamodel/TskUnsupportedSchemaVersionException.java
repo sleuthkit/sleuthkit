@@ -25,39 +25,17 @@ package org.sleuthkit.datamodel;
 public class TskUnsupportedSchemaVersionException extends TskCoreException {
 
 	private static final long serialVersionUID = 1L;
-	private final SchemaVersionNumber unsupportedVersion;
-	private final SchemaVersionNumber currentVersion;
 
-	/**
-	 * Constructor.
-	 *
-	 * @param unsupportedVer The schema version of the db that couldn't be
-	 *                       opened.
-	 * @param currentVer     The current schema version in the code.
-	 * @param msg            A message with details.
-	 */
-	TskUnsupportedSchemaVersionException(SchemaVersionNumber unsupportedVer, SchemaVersionNumber currentVer, String msg) {
+	public TskUnsupportedSchemaVersionException() {
+	}
+
+	public TskUnsupportedSchemaVersionException(String msg) {
 		super(msg);
-		this.unsupportedVersion = unsupportedVer;
-		this.currentVersion = currentVer;
 	}
 
-	/**
-	 * Get the version of the schema used by the db that we attempted to open.
-	 *
-	 * @return The version of the schema used by the db that we attempted to
-	 *         open.
-	 */
-	public SchemaVersionNumber getUnsupportedVersion() {
-		return unsupportedVersion;
+	public TskUnsupportedSchemaVersionException(String msg, Exception ex) {
+		super(msg, ex);
 	}
+	
 
-	/**
-	 * The current version of the schema that the code uses.
-	 *
-	 * @return The current version of the schema that the code uses.
-	 */
-	public SchemaVersionNumber getCurrentVersion() {
-		return currentVersion;
-	}
 }

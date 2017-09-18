@@ -88,10 +88,13 @@ import org.sqlite.SQLiteJDBCLoader;
 public class SleuthkitCase {
 
 	private static final int MAX_DB_NAME_LEN_BEFORE_TIMESTAMP = 47;
-	private static final int CURRENT_SCHEMA_MAJOR_VERSION = 7; // This must be the same as TSK_SCHEMA_VER in tsk/auto/tsk_db.h.
-	private static final int SCHEMA_MINOR_VERSION_NUMBER = 1; // This must be the same as TSK_SCHEMA_MINOR_VER in tsk/auto/tsk_db.h.
-
-	private static final SchemaVersionNumber CURRENT_DB_SCHEMA_VERSION = new SchemaVersionNumber(CURRENT_SCHEMA_MAJOR_VERSION, SCHEMA_MINOR_VERSION_NUMBER);
+	
+	/**
+	 * This must be the same as TSK_SCHEMA_VER and TSK_SCHEMA_MINOR_VER in
+	 * tsk/auto/tsk_db.h.
+	 */
+	private static final CaseDBSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
+			= new CaseDBSchemaVersionNumber(7, 1);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -505,7 +508,7 @@ public class SleuthkitCase {
 			} else {
 				throw new TskCoreException();
 			}
-			SchemaVersionNumber dbSchemaVersion = new SchemaVersionNumber(dbSchemaMajorVersion, dbSchemaMinorVersion);
+			CaseDBSchemaVersionNumber dbSchemaVersion = new CaseDBSchemaVersionNumber(dbSchemaMajorVersion, dbSchemaMinorVersion);
 
 			resultSet.close();
 			resultSet = null;
@@ -513,9 +516,10 @@ public class SleuthkitCase {
 			statement = null;
 
 			//check schema compatibility
-			if (dbSchemaMajorVersion > CURRENT_SCHEMA_MAJOR_VERSION) {
+			if (false == CURRENT_DB_SCHEMA_VERSION.isCompatible(dbSchemaVersion)) {
 				//we cannot open a db with a major schema version higher than the current one.
-				throw new TskUnsupportedSchemaVersionException(dbSchemaVersion, CURRENT_DB_SCHEMA_VERSION, "Unsupported DB schema version.");
+				throw new TskUnsupportedSchemaVersionException(
+						"Unsupported DB schema version " + dbSchemaVersion + ", the highest supported schema version is " + CURRENT_DB_SCHEMA_VERSION.getMajor() + ".X");
 			} else if (dbSchemaVersion.compareTo(CURRENT_DB_SCHEMA_VERSION) < 0) {
 				//The schema version is compatible,possibly after upgrades.
 
@@ -624,7 +628,7 @@ public class SleuthkitCase {
 	 *                          operation via another SleuthkitCase method.
 	 */
 	@SuppressWarnings("deprecation")
-	private SchemaVersionNumber updateFromSchema2toSchema3(SchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+	private CaseDBSchemaVersionNumber updateFromSchema2toSchema3(CaseDBSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
 		if (schemaVersion.getMajor() != 2) {
 			return schemaVersion;
 		}
@@ -742,7 +746,7 @@ public class SleuthkitCase {
 					+ ARTIFACT_TYPE.TSK_TAG_FILE.getTypeID()
 					+ " OR artifact_type_id = " + ARTIFACT_TYPE.TSK_TAG_ARTIFACT.getTypeID() + ";"); //NON-NLS
 
-			return new SchemaVersionNumber(3, 0);
+			return new CaseDBSchemaVersionNumber(3, 0);
 		} finally {
 			closeStatement(updateStatement);
 			closeResultSet(resultSet);
@@ -764,7 +768,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException If there is an error completing a database
 	 *                          operation via another SleuthkitCase method.
 	 */
-	private SchemaVersionNumber updateFromSchema3toSchema4(SchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+	private CaseDBSchemaVersionNumber updateFromSchema3toSchema4(CaseDBSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
 		if (schemaVersion.getMajor() != 3) {
 			return schemaVersion;
 		}
@@ -858,7 +862,7 @@ public class SleuthkitCase {
 			initIngestModuleTypes(connection);
 			initIngestStatusTypes(connection);
 
-			return new SchemaVersionNumber(4, 0);
+			return new CaseDBSchemaVersionNumber(4, 0);
 
 		} finally {
 			closeResultSet(queryResultSet);
@@ -882,7 +886,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException If there is an error completing a database
 	 *                          operation via another SleuthkitCase method.
 	 */
-	private SchemaVersionNumber updateFromSchema4toSchema5(SchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+	private CaseDBSchemaVersionNumber updateFromSchema4toSchema5(CaseDBSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
 		if (schemaVersion.getMajor() != 4) {
 			return schemaVersion;
 		}
@@ -919,7 +923,7 @@ public class SleuthkitCase {
 			// getting that to work, so we don't add it on this upgrade path.
 			statement.execute("ALTER TABLE tsk_files_path ADD COLUMN encoding_type INTEGER NOT NULL DEFAULT 0;");
 
-			return new SchemaVersionNumber(5, 0);
+			return new CaseDBSchemaVersionNumber(5, 0);
 
 		} finally {
 			closeStatement(statement);
@@ -939,7 +943,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException If there is an error completing a database
 	 *                          operation via another SleuthkitCase method.
 	 */
-	private SchemaVersionNumber updateFromSchema5toSchema6(SchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+	private CaseDBSchemaVersionNumber updateFromSchema5toSchema6(CaseDBSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
 		if (schemaVersion.getMajor() != 5) {
 			return schemaVersion;
 		}
@@ -971,7 +975,7 @@ public class SleuthkitCase {
 				statement.execute("ALTER TABLE blackboard_artifacts ADD COLUMN review_status_id INTEGER NOT NULL DEFAULT " + BlackboardArtifact.ReviewStatus.UNDECIDED.getID());
 			}
 
-			return new SchemaVersionNumber(6, 0);
+			return new CaseDBSchemaVersionNumber(6, 0);
 
 		} finally {
 			closeResultSet(resultSet);
@@ -992,7 +996,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException If there is an error completing a database
 	 *                          operation via another SleuthkitCase method.
 	 */
-	private SchemaVersionNumber updateFromSchema6toSchema7dot1(SchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+	private CaseDBSchemaVersionNumber updateFromSchema6toSchema7dot1(CaseDBSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
 		if (schemaVersion.getMajor() != 6) {
 			return schemaVersion;
 		}
@@ -1025,7 +1029,7 @@ public class SleuthkitCase {
 			if (schemaVersion.getMinor() == 0) {
 				statement.execute("ALTER TABLE tsk_db_info ADD COLUMN schema_minor_ver INTEGER DEFAULT 1");
 			}
-			return new SchemaVersionNumber(7, 1);
+			return new CaseDBSchemaVersionNumber(7, 1);
 
 		} finally {
 			closeResultSet(resultSet);
@@ -1141,15 +1145,15 @@ public class SleuthkitCase {
 	 */
 	@Deprecated
 	public int getSchemaVersion() {
-		return CURRENT_SCHEMA_MAJOR_VERSION;
+		return getDBSchemaVersion().getMajor();
 	}
 
 	/**
 	 * Gets the database schema version in use.
-	 * 
+	 *
 	 * @return the database schema version in use.
 	 */
-	public SchemaVersionNumber getDBSchemaVersion() {
+	public VersionNumber getDBSchemaVersion() {
 		return CURRENT_DB_SCHEMA_VERSION;
 	}
 
