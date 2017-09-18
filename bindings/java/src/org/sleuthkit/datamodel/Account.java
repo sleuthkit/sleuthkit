@@ -24,6 +24,10 @@ import java.util.List;
 import java.util.Objects;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 
+/**
+ * Defines an Account, an entity usually representing a person.
+ * An account could be a Bank Account, Credit Card, Email, Phone number, Application or Web-site login
+ */
 public class Account {
 
 	private long artifactId;	// ArtifactID of the underlying TSK_ACCOUNT artifact
@@ -74,7 +78,7 @@ public class Account {
 		 * @param typeName    The type name.
 		 * @param displayName The display name for the type.
 		 */
-		public Type(int typeID, String typeName, String displayName) {
+		Type(int typeID, String typeName, String displayName) {
 			this.typeID = typeID;
 			this.typeName = typeName;
 			this.displayName = displayName;
@@ -85,7 +89,7 @@ public class Account {
 		 * @param typeName    The type name.
 		 * @param displayName The display name for the type.
 		 */
-		public Type(String typeName, String displayName) {
+		Type(String typeName, String displayName) {
 			this(0, typeName, displayName );
 		}
 		

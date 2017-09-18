@@ -28,6 +28,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
+/**
+ * Provides an API to create Accounts and 
+ * communications/relationships between accounts
+ */
 public class CommunicationsManager {
 	private static final Logger LOGGER = Logger.getLogger(CommunicationsManager.class.getName());
 	
@@ -58,8 +62,10 @@ public class CommunicationsManager {
 	 * Create one if it doesn't exist
 	 *
 	 * 
-	 * @param type account type
+	 * @param accountType account type
 	 * @param accountID accountID
+	 * @param moduleName module creating the account
+	 * @param sourceObj source content 
 	 * 
 	 * @return Account, returns NULL is no matching account found
 	 *
@@ -78,8 +84,7 @@ public class CommunicationsManager {
 	/**
 	 * Get the Account with the given account type and account ID. 
 	 *
-	 * 
-	 * @param type account type
+	 * @param accountType account type
 	 * @param accountID accountID
 	 * 
 	 * @return Account, returns NULL is no matching account found
@@ -114,7 +119,7 @@ public class CommunicationsManager {
 	/**
 	 * Get all accounts of given type
 	 * 
-	 * @param type account type
+	 * @param accountType account type
 	 * 
 	 * @return List <Account.Type>, list of accounts
 	 *
@@ -173,9 +178,9 @@ public void setReviewStatus(Account account, BlackboardArtifact.ReviewStatus rev
 /**
  * Get all accounts that have any kind of relationship with the given account
  * 
- * @param sender sender account
- * @paraman recipients list of recipients
- * @param communicationArtifact communication item
+ * @param account account for which to search relationships
+ * 
+ * @return list of accounts with relationship to given account
  * 
  * @throws TskCoreException exception thrown if a critical error occurs
  *                          within TSK core
@@ -196,11 +201,8 @@ public void setReviewStatus(Account account, BlackboardArtifact.ReviewStatus rev
  * Add a relationship between the given sender and recipient accounts.
  * 
  * @param sender sender account
- * @paraman recipients list of recipients
+ * @param recipients list of recipients
  * @param communicationArtifact communication item
- * 
- * @throws TskCoreException exception thrown if a critical error occurs
- *                          within TSK core
  */
 public void addRelationships(Account sender, List<Account> recipients, BlackboardArtifact communicationArtifact) {
 	
@@ -241,19 +243,22 @@ public void addRelationships(Account sender, List<Account> recipients, Blackboar
  * @param account1 account 
  * @param account2 account
  * 
+ * @return list of unique relationship types between two accounts
+ * 
  * @throws TskCoreException exception thrown if a critical error occurs
  *                          within TSK core
  */
 public List <BlackboardArtifact.Type> getRelationshipTypes(Account account1, Account account2) throws TskCoreException {
-	
 	return db.getRelationshipTypes(account1.getArtifactId(), account2.getArtifactId());
 }
 
 /**
- * Returns unique relation types between two accounts
+ * Returns relationships between two accounts
  * 
  * @param account1 account 
  * @param account2 account
+ * 
+ * @return relationships between two accounts
  * 
  * @throws TskCoreException exception thrown if a critical error occurs
  *                          within TSK core
@@ -264,10 +269,13 @@ public List <BlackboardArtifact> getRelationships(Account account1, Account acco
 }
 
 /**
- * Returns unique relation types between two accounts
+ * Returns relationships of specified type between two accounts
  * 
- * @param account1 account 
- * @param account2 account
+ * @param account1 one account in relationship
+ * @param account2 other account in relationship
+ * @param artifactType relationship type 
+ * 
+ * @return  list of relationships
  * 
  * @throws TskCoreException exception thrown if a critical error occurs
  *                          within TSK core
@@ -282,6 +290,8 @@ public List <BlackboardArtifact> getRelationshipsOfType(Account account1, Accoun
  * 
  * @param srcObjID pbjectID of the email PST/Mbox source file  
  * 
+ * @return  list of message folders
+ * 
  * @throws TskCoreException exception thrown if a critical error occurs
  *                          within TSK core
  */
@@ -295,6 +305,8 @@ public List <MessageFolder> getMessageFolders(long srcObjID ) throws TskCoreExce
  * @param srcObjID objectID of the email PST/Mbox source file  
  * @param parentfolder parent folder  of messages to return
  * 
+ * @return list of message sub-folders
+ * 
  * @throws TskCoreException exception thrown if a critical error occurs
  *                          within TSK core
  */
@@ -306,6 +318,8 @@ public List <MessageFolder> getMessageFolders(long srcObjID, MessageFolder  pare
  * Return email messages under given folder
  * 
  * @param parentfolder parent folder  of messages to return
+ * 
+ * @return list of messages
  * 
  * @throws TskCoreException exception thrown if a critical error occurs
  *                          within TSK core
