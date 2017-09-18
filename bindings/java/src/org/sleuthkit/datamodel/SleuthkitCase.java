@@ -2524,10 +2524,8 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within tsk core
-	 * @throws TskDataException exception thrown if the account type was already
-	 *                          in the system
 	 */
-	Account.Type addAccountType(String accountTypeName, String displayName) throws TskCoreException, TskDataException {
+	Account.Type addAccountType(String accountTypeName, String displayName) throws TskCoreException {
 		
 	
 		if (this.typeNameToAccountTypeMap.containsKey(accountTypeName)) {
@@ -2839,7 +2837,7 @@ public class SleuthkitCase {
 			}
 			return artifacts;
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting blackboard accounts by type. " + ex.getMessage(), ex);
+			throw new TskCoreException("Error getting relationships by account by ID. " + ex.getMessage(), ex);
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
@@ -2875,7 +2873,7 @@ public class SleuthkitCase {
 			
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
-			throw new TskCoreException("Error adding account type", ex);
+			throw new TskCoreException("Error adding accounts relationship", ex);
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
