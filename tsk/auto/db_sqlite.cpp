@@ -49,6 +49,9 @@ TskDbSqlite::TskDbSqlite(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFlag)
     m_db = NULL;
     m_selectFilePreparedStmt = NULL;
     m_insertObjectPreparedStmt = NULL;
+
+	strcpy(m_dbFilePathUtf8, "");
+
 }
 #endif
 
@@ -359,7 +362,15 @@ int
         ||
         attempt_exec
         ("CREATE TABLE reports (report_id INTEGER PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL)",
-            "Error creating reports table: %s\n")) {
+            "Error creating reports table: %s\n")
+		||
+		attempt_exec
+		("CREATE TABLE account_types (account_type_id INTEGER PRIMARY KEY, type_name TEXT UNIQUE NOT NULL, display_name TEXT NOT NULL)",
+			"Error creating account_types table: %s\n")
+		||
+		attempt_exec
+		("CREATE TABLE relationships (relationship_id INTEGER PRIMARY KEY, account1_id INTEGER NOT NULL, account2_id INTEGER NOT NULL, communication_artifact_id INTEGER NOT NULL, FOREIGN KEY(account1_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(account2_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(communication_artifact_id) REFERENCES blackboard_artifacts(artifact_id))",
+			"Error creating relationships table: %s\n")) {
         return 1;
     }
 
@@ -400,7 +411,11 @@ int TskDbSqlite::createIndexes() {
 		attempt_exec("CREATE INDEX mime_type ON tsk_files(dir_type,mime_type,type);", //mime type
 			"Error creating mime_type index on tsk_files: %s\n") ||
 		attempt_exec("CREATE INDEX file_extension ON tsk_files(extension);",  //file extenssion
-			"Error creating file_extension index on tsk_files: %s\n");
+			"Error creating file_extension index on tsk_files: %s\n") ||
+		attempt_exec("CREATE INDEX relationships_account1  ON relationships(account1_id);", 
+			"Error creating relationships_account1 index on relationships: %s\n") ||
+		attempt_exec("CREATE INDEX relationships_account2  ON relationships(account2_id);",
+			"Error creating relationships_account2 index on relationships: %s\n");
 }
 
 
@@ -1291,7 +1306,7 @@ typedef struct _checkFileLayoutRangeOverlap{
     const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges;
     bool hasOverlap;
 
-    _checkFileLayoutRangeOverlap(const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges)
+    explicit _checkFileLayoutRangeOverlap(const vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges)
         : ranges(ranges),hasOverlap(false) {}
 
     bool getHasOverlap() const { return hasOverlap; }
