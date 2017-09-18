@@ -21,6 +21,16 @@ package org.sleuthkit.datamodel;
 /**
  * Subtype of TskCoreException that is thrown when attempting to open a database
  * with an unsupported schema version.
+ *
+ * For example, as of TSK 4.5.0 database schema versions are two part:
+ * Major.minor. This versioning schema is based on semantic versioning, but
+ * without using the patch number (in practice it is always the default value of
+ * zero. The major part is incremented for incompatible changes such as removing
+ * a table or column, i.e., it will not be usable by an older version. A
+ * TskUnsupportedSchemaVersionException should be thrown from an attempt to open a
+ * db with an incompatible db schema.
+ *
+ * @see CaseDBSchemaVersionNumber for more details on db schema compatibility.
  */
 public class TskUnsupportedSchemaVersionException extends TskCoreException {
 
@@ -36,6 +46,5 @@ public class TskUnsupportedSchemaVersionException extends TskCoreException {
 	public TskUnsupportedSchemaVersionException(String msg, Exception ex) {
 		super(msg, ex);
 	}
-	
 
 }
