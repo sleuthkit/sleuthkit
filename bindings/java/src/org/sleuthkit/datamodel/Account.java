@@ -168,6 +168,18 @@ public class Account {
 	
 	}
 	
+	public Account(SleuthkitCase sleuthkitCase, BlackboardArtifact artifact) throws TskCoreException {
+		
+		this.sleuthkitCase = sleuthkitCase;
+		this.artifactId = artifact.getArtifactID();
+		
+		this.artifact = artifact;
+		
+		this.accountType =  sleuthkitCase.getAccountType(artifact.getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE)).getValueString());
+		this.accountID = artifact.getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_ID)).getValueString();
+	
+	}
+	
 	public String getAccountID() {
 		return this.accountID;
 	}
