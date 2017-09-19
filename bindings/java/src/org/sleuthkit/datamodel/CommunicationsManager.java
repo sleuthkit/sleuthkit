@@ -105,6 +105,25 @@ public class CommunicationsManager {
 	}
 
 	/**
+	 * returns an account for the given account artifact 
+	 *
+	 * @param artifact
+	 * 
+	 * @return Account, returns NULL is no matching account found
+	 * 
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 *
+	 */
+	public Account getAccount(BlackboardArtifact artifact) throws TskCoreException {
+		Account account = null;
+		if (artifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT.getTypeID()) {
+			account = new Account(this.db, artifact.getArtifactID());
+		}
+		
+		return account;
+	}
+	
+	/**
 	 * Get all account types in use
 	 * 
 	 * @return List <Account.Type>, list of account types in use
