@@ -19,9 +19,9 @@
 package org.sleuthkit.datamodel;
 
 /**
- * A version number consisting of three parts: Major.minor.patch. compareTo()
- * implementts numerical order with decreasing presedence from left to right
- * 1.0.0 < 2.0.0 < 2.1.0 < 2.1.1.
+ * A version number consisting of three parts: Major.Minor.Patch. The compareTo
+ * method implements numerical ordering with decreasing precedence from left to 
+ * right, e.g., 1.0.0 < 2.0.0 < 2.1.0 < 2.1.1.
  */
 public class VersionNumber implements Comparable<VersionNumber> {
 
