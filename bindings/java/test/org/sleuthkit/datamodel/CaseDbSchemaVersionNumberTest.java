@@ -25,9 +25,9 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class CaseDBSchemaVersionNumberTest {
+public class CaseDbSchemaVersionNumberTest {
 
-	public CaseDBSchemaVersionNumberTest() {
+	public CaseDbSchemaVersionNumberTest() {
 	}
 
 	@BeforeClass
@@ -47,30 +47,30 @@ public class CaseDBSchemaVersionNumberTest {
 	}
 
 	/**
-	 * Test of isCompatible method, of class CaseDBSchemaVersionNumber.
+	 * Test of isCompatible method, of class CaseDbSchemaVersionNumber.
 	 */
 	@Test
 	public void testIsCompatible() {
 		System.out.println("isCompatible");
-		CaseDBSchemaVersionNumber instance = new CaseDBSchemaVersionNumber(7, 2);
-		assertEquals(true, instance.isCompatible(new CaseDBSchemaVersionNumber(6, 1)));
-		assertEquals(true, instance.isCompatible(new CaseDBSchemaVersionNumber(7, 16)));
-		assertEquals(true, instance.isCompatible(new CaseDBSchemaVersionNumber(7, 1)));
-		assertEquals(true, instance.isCompatible(new CaseDBSchemaVersionNumber(7, 2)));
-		assertEquals(false, instance.isCompatible(new CaseDBSchemaVersionNumber(8, 1)));
-		assertEquals(false, instance.isCompatible(new CaseDBSchemaVersionNumber(1, 1)));
+		CaseDbSchemaVersionNumber instance = new CaseDbSchemaVersionNumber(7, 2);
+		assertEquals(true, instance.isCompatible(new CaseDbSchemaVersionNumber(6, 1)));
+		assertEquals(true, instance.isCompatible(new CaseDbSchemaVersionNumber(7, 16)));
+		assertEquals(true, instance.isCompatible(new CaseDbSchemaVersionNumber(7, 1)));
+		assertEquals(true, instance.isCompatible(new CaseDbSchemaVersionNumber(7, 2)));
+		assertEquals(false, instance.isCompatible(new CaseDbSchemaVersionNumber(8, 1)));
+		assertEquals(false, instance.isCompatible(new CaseDbSchemaVersionNumber(1, 1)));
 
 	}
 
 	/**
-	 * Test of toString method, of class CaseDBSchemaVersionNumber.
+	 * Test of toString method, of class CaseDbSchemaVersionNumber.
 	 */
 	@Test
 	public void testToString() {
 		System.out.println("toString");
-		assertEquals("7.1", new CaseDBSchemaVersionNumber(7, 1).toString());
-		assertEquals("0.1", new CaseDBSchemaVersionNumber(0, 1).toString());
-		assertEquals("7.0", new CaseDBSchemaVersionNumber(7, 0).toString());
-		assertEquals("7000213.132130", new CaseDBSchemaVersionNumber(7000213, 132130).toString());
+		assertEquals("7.1", new CaseDbSchemaVersionNumber(7, 1).toString());
+		assertEquals("0.1", new CaseDbSchemaVersionNumber(0, 1).toString());
+		assertEquals("7.0", new CaseDbSchemaVersionNumber(7, 0).toString());
+		assertEquals("7000213.132130", new CaseDbSchemaVersionNumber(7000213, 132130).toString());
 	}
 }

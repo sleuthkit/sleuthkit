@@ -38,7 +38,7 @@ package org.sleuthkit.datamodel;
  * table should be backwards compatible as older versions of the software should
  * simply ignore it.
  */
-public final class CaseDBSchemaVersionNumber extends VersionNumber {
+public final class CaseDbSchemaVersionNumber extends VersionNumber {
 
 	/**
 	 * Constructor for CaseDBSchemaVersionNumber. The patch version is unused
@@ -47,7 +47,7 @@ public final class CaseDBSchemaVersionNumber extends VersionNumber {
 	 * @param majorVersion The major version part.
 	 * @param minorVersion The minor version part.
 	 */
-	public CaseDBSchemaVersionNumber(int majorVersion, int minorVersion) {
+	public CaseDbSchemaVersionNumber(int majorVersion, int minorVersion) {
 		super(majorVersion, minorVersion, 0);
 	}
 
@@ -60,7 +60,7 @@ public final class CaseDBSchemaVersionNumber extends VersionNumber {
 	 *
 	 * @return true if the db schema version is compatible with this version.
 	 */
-	public boolean isCompatible(CaseDBSchemaVersionNumber dbSchemaVersion) {
+	public boolean isCompatible(CaseDbSchemaVersionNumber dbSchemaVersion) {
 		/*
 		 * Since we provide upgrade paths for schema versions greater than 1, this
 	         * amounts to checking if the major version part is greater than 1 and less
