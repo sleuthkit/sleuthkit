@@ -55,18 +55,17 @@ public final class CaseDBSchemaVersionNumber extends VersionNumber {
 	 * Is a database with the given schema version openable by this version
 	 * number?
 	 *
-	 * Since we provide upgrade paths for schema versions greater than 1, this
-	 * amounts to checking if the major version part is greater than 1 and less
-	 * than this version's major number.
-	 *
 	 * @param dbSchemaVersion The schema version of the db want to check for
 	 *                        compatibility.
 	 *
 	 * @return true if the db schema version is compatible with this version.
-	 *         Given the current upgrade paths this is true for 1< db Major<=
-	 *         this Major.
 	 */
 	public boolean isCompatible(CaseDBSchemaVersionNumber dbSchemaVersion) {
+		/*
+		 * Since we provide upgrade paths for schema versions greater than 1, this
+	         * amounts to checking if the major version part is greater than 1 and less
+	         * than this version's major number.
+	         */
 		final int dbMajor = dbSchemaVersion.getMajor();
 		return 1 < dbMajor && dbMajor <= getMajor();
 	}
