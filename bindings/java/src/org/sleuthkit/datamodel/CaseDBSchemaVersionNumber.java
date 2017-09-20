@@ -19,20 +19,21 @@
 package org.sleuthkit.datamodel;
 
 /**
- * As of TSK 4.5.0 database schema versions are two part: Major.minor. This
- * versioning schema is based on semantic versioning, but without using the
- * patch number (in practice it is always the default value of zero.
+ * As of SleuthKit 4.5.0 database schema versions are two part: Major.Minor. 
+ * This versioning schema is based on semantic versioning, but without using the
+ * patch number (in practice it is always the default value of zero for case database versions).
  *
- * The major part is incremented for incompatible changes, i.e., it will not be
- * usable by an older version. For example, the major number should be
- * incremented if tables and/or columns are removed,the meanings of values
- * changes, or new records are added to lookup tables that will not be
- * convertible to older versions of the corresponding Java enums.
+ * The major part is incremented for incompatible changes, i.e., the case 
+ * database will not be usable by an older version. For example, the major 
+ * number should be incremented if tables and/or columns are removed, the 
+ * meanings of values changes, or new records are added to lookup tables 
+ * that will not be convertible to older versions of the corresponding Java 
+ * enums.
  *
- * The minor version is incremented for compatible changes that are useable by
- * older versions of TSK, although the new schema may not be fully taken
- * advantage. For example, adding an index should be backwards compatible: an
- * older version of the software will still be able to open and use the db, but
+ * The minor version is incremented for compatible changes that are usaable by
+ * older versions of the SleuthKit, although the new schema may not be fully taken
+ * advantage of. For example, adding an index should be backwards compatible: 
+ * an older version of the software will still be able to open and use the case database, but
  * query performance may or may not be affected. Also, adding a column to a
  * table should be backwards compatible as older versions of the software should
  * simply ignore it.
