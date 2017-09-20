@@ -30,7 +30,7 @@ package org.sleuthkit.datamodel;
  * that will not be convertible to older versions of the corresponding Java 
  * enums.
  *
- * The minor version is incremented for compatible changes that are usaable by
+ * The minor version is incremented for compatible changes that are usable by
  * older versions of the SleuthKit, although the new schema may not be fully taken
  * advantage of. For example, adding an index should be backwards compatible: 
  * an older version of the software will still be able to open and use the case database, but
