@@ -472,7 +472,7 @@ public class SleuthkitCase {
 	 * of the database schema.
 	 *
 	 * @param dbPath Path to the db file. If dbPath is null, no backup will be
-	 *               made..
+	 *               made.
 	 *
 	 * @throws Exception
 	 */
