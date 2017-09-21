@@ -163,7 +163,7 @@ public class Account {
 		}
 	}
 
-	public Account(SleuthkitCase sleuthkitCase, long artifactId) throws TskCoreException {
+	Account(SleuthkitCase sleuthkitCase, long artifactId) throws TskCoreException {
 	
 		this.artifactId = artifactId;
 		
@@ -173,7 +173,7 @@ public class Account {
 	
 	}
 	
-	public Account(SleuthkitCase sleuthkitCase, BlackboardArtifact artifact) throws TskCoreException {
+	Account(SleuthkitCase sleuthkitCase, BlackboardArtifact artifact) throws TskCoreException {
 		
 		this.artifactId = artifact.getArtifactID();
 		
