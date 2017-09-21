@@ -271,13 +271,14 @@ print_v2_record_mac(TSK_USN_RECORD *record)
 {
     tsk_fprintf(stdout, "%" PRIu32 ".%" PRIu32 "|" "%" PRIu32 "|"
                 "%" PRIu64 "-%" PRIu32 "|" "%" PRIu64 "-%" PRIu32 "|"
-                "%" PRIu32 "|" "%" PRIu32 ".%" PRIu32 "|" "%" PRIu32 "|"
-                "%" PRIu32 "|" "%" PRIu32 "|" "%" PRIu32 "|",
+                "%" PRIu32 "|" "%" PRIu32 ".%" PRIu32 "|",
                 record->major_version, record->minor_version,
                 record->length, record->refnum, record->refnum_seq,
                 record->parent_refnum, record->parent_refnum_seq,
-                record->usn, record->v2.time_sec, record->v2.time_nsec,
-                record->reason, record->source_info, record->v2.security,
+                record->usn, record->v2.time_sec, record->v2.time_nsec);
+    print_usn_reason(record->reason);
+    tsk_fprintf(stdout, "|" "%" PRIu32 "|" "%" PRIu32 "|" "%" PRIu32 "|",
+                record->source_info, record->v2.security,
                 record->v2.attributes);
     if (tsk_print_sanitized(stdout, record->v2.fname) == 1)
         return TSK_WALK_ERROR;
