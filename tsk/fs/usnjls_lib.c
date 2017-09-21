@@ -36,78 +36,83 @@ print_date(time_t secs, time_t subsecs)
 static void
 print_usn_reason(TSK_FS_USN_REASON reason)
 {
-    uint32_t flag = 1;
+    uint32_t flag;
 
     for (flag = 1; flag > 0 && flag <= reason; flag *= 2)
-        if (reason & flag)
+        if (reason & flag) {
             switch (flag) {
             case TSK_FS_USN_REASON_DATA_OVERWRITE:
-                tsk_fprintf(stdout, "DATA_OVERWRITE ");
+                tsk_fprintf(stdout, "DATA_OVERWRITE");
                 break;
             case TSK_FS_USN_REASON_DATA_EXTEND:
-                tsk_fprintf(stdout, "DATA_EXTEND ");
+                tsk_fprintf(stdout, "DATA_EXTEND");
                 break;
             case TSK_FS_USN_REASON_DATA_TRUNCATION:
-                tsk_fprintf(stdout, "DATA_TRUNCATION ");
+                tsk_fprintf(stdout, "DATA_TRUNCATION");
                 break;
             case TSK_FS_USN_REASON_NAMED_DATA_OVERWRITE:
-                tsk_fprintf(stdout, "NAMED_DATA_OVERWRITE ");
+                tsk_fprintf(stdout, "NAMED_DATA_OVERWRITE");
                 break;
             case TSK_FS_USN_REASON_NAMED_DATA_EXTEND:
-                tsk_fprintf(stdout, "NAMED_DATA_EXTEND ");
+                tsk_fprintf(stdout, "NAMED_DATA_EXTEND");
                 break;
             case TSK_FS_USN_REASON_NAMED_DATA_TRUNCATION:
-                tsk_fprintf(stdout, "NAMED_DATA_TRUNCATION ");
+                tsk_fprintf(stdout, "NAMED_DATA_TRUNCATION");
                 break;
             case TSK_FS_USN_REASON_FILE_CREATE:
-                tsk_fprintf(stdout, "FILE_CREATE ");
+                tsk_fprintf(stdout, "FILE_CREATE");
                 break;
             case TSK_FS_USN_REASON_FILE_DELETE:
-                tsk_fprintf(stdout, "FILE_DELETE ");
+                tsk_fprintf(stdout, "FILE_DELETE");
                 break;
             case TSK_FS_USN_REASON_EA_CHANGE:
-                tsk_fprintf(stdout, "EA_CHANGE ");
+                tsk_fprintf(stdout, "EA_CHANGE");
                 break;
             case TSK_FS_USN_REASON_SECURITY_CHANGE:
-                tsk_fprintf(stdout, "SECURITY_CHANGE ");
+                tsk_fprintf(stdout, "SECURITY_CHANGE");
                 break;
             case TSK_FS_USN_REASON_RENAME_OLD_NAME:
-                tsk_fprintf(stdout, "RENAME_OLD_NAME ");
+                tsk_fprintf(stdout, "RENAME_OLD_NAME");
                 break;
             case TSK_FS_USN_REASON_RENAME_NEW_NAME:
-                tsk_fprintf(stdout, "RENAME_NEW_NAME ");
+                tsk_fprintf(stdout, "RENAME_NEW_NAME");
                 break;
             case TSK_FS_USN_REASON_INDEXABLE_CHANGE:
-                tsk_fprintf(stdout, "INDEXABLE_CHANGE ");
+                tsk_fprintf(stdout, "INDEXABLE_CHANGE");
                 break;
             case TSK_FS_USN_REASON_BASIC_INFO_CHANGE:
-                tsk_fprintf(stdout, "BASIC_INFO_CHANGE ");
+                tsk_fprintf(stdout, "BASIC_INFO_CHANGE");
                 break;
             case TSK_FS_USN_REASON_HARD_LINK_CHANGE:
-                tsk_fprintf(stdout, "HARD_LINK_CHANGE ");
+                tsk_fprintf(stdout, "HARD_LINK_CHANGE");
                 break;
             case TSK_FS_USN_REASON_COMPRESSION_CHANGE:
-                tsk_fprintf(stdout, "COMPRESSION_CHANGE ");
+                tsk_fprintf(stdout, "COMPRESSION_CHANGE");
                 break;
             case TSK_FS_USN_REASON_ENCRYPTION_CHANGE:
-                tsk_fprintf(stdout, "ENCRYPTION_CHANGE ");
+                tsk_fprintf(stdout, "ENCRYPTION_CHANGE");
                 break;
             case TSK_FS_USN_REASON_OBJECT_ID_CHANGE:
-                tsk_fprintf(stdout, "OBJECT_ID_CHANGE ");
+                tsk_fprintf(stdout, "OBJECT_ID_CHANGE");
                 break;
             case TSK_FS_USN_REASON_REPARSE_POINT_CHANGE:
-                tsk_fprintf(stdout, "REPARSE_POINT_CHANGE ");
+                tsk_fprintf(stdout, "REPARSE_POINT_CHANGE");
                 break;
             case TSK_FS_USN_REASON_STREAM_CHANGE:
-                tsk_fprintf(stdout, "STREAM_CHANGE ");
+                tsk_fprintf(stdout, "STREAM_CHANGE");
                 break;
             case TSK_FS_USN_REASON_CLOSE:
-                tsk_fprintf(stdout, "CLOSE ");
+                tsk_fprintf(stdout, "CLOSE");
                 break;
             default:
-                tsk_fprintf(stdout, "UNKNOWN ");
+                tsk_fprintf(stdout, "UNKNOWN");
                 break;
             }
+
+            /* Blank space between each reason */
+            if (flag * 2 > 0 && flag * 2 < reason)
+                tsk_fprintf(stdout, " ");
+        }
 }
 
 
