@@ -5052,7 +5052,7 @@ public class SleuthkitCase {
 			statement.setLong(14, mtime);
 			String parentPath = parent.getParentPath() + parent.getName() + "/"; //NON-NLS
 			statement.setString(15, parentPath);
-			long dataSourceObjId = getDataSourceObjectId(connection, parent.getId()); // RJCTODO: Let this be passed in or make a story
+			long dataSourceObjId = getDataSourceObjectId(connection, parent.getId());
 			statement.setLong(16, dataSourceObjId);
 			final String extension = extractExtension(fileName);
 			statement.setString(17, extension);
