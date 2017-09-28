@@ -4952,11 +4952,14 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         fs->last_block_act =
             (img_info->size - offset) / fs->block_size - 1;
 
-    if (ntfs->fs->mft_rsize_c > 0)
+    ntfs->mft_rsize_b = 0;
+    if (ntfs->fs->mft_rsize_c > 0) {
         ntfs->mft_rsize_b = ntfs->fs->mft_rsize_c * ntfs->csize_b;
-    else
+    }
+    else if (ntfs->fs->mft_rsize_c > -32) {
         /* if the mft_rsize_c is not > 0, then it is -log2(rsize_b) */
         ntfs->mft_rsize_b = 1 << -ntfs->fs->mft_rsize_c;
+    }
 
     if ((ntfs->mft_rsize_b == 0) || (ntfs->mft_rsize_b % 512)) {
         tsk_error_reset();
@@ -4968,11 +4971,14 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         goto on_error;
     }
 
-    if (ntfs->fs->idx_rsize_c > 0)
+    ntfs->idx_rsize_b = 0;
+    if (ntfs->fs->idx_rsize_c > 0) {
         ntfs->idx_rsize_b = ntfs->fs->idx_rsize_c * ntfs->csize_b;
-    else
+    }
+    else if (ntfs->fs->idx_rsize_c > -32) {
         /* if the idx_rsize_c is not > 0, then it is -log2(rsize_b) */
         ntfs->idx_rsize_b = 1 << -ntfs->fs->idx_rsize_c;
+    }
 
     if ((ntfs->idx_rsize_b == 0) || (ntfs->idx_rsize_b % 512)) {
         tsk_error_reset();
