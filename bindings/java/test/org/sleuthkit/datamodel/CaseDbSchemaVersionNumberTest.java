@@ -60,7 +60,6 @@ public class CaseDbSchemaVersionNumberTest {
 		assertEquals(true, instance.isCompatible(new CaseDbSchemaVersionNumber(7, 2)));
 		assertEquals(false, instance.isCompatible(new CaseDbSchemaVersionNumber(8, 1)));
 		assertEquals(false, instance.isCompatible(new CaseDbSchemaVersionNumber(1, 1)));
-
 	}
 
 	/**
@@ -73,7 +72,6 @@ public class CaseDbSchemaVersionNumberTest {
 		assertEquals("0.1", new CaseDbSchemaVersionNumber(0, 1).toString());
 		assertEquals("7.0", new CaseDbSchemaVersionNumber(7, 0).toString());
 		assertEquals("7000213.132130", new CaseDbSchemaVersionNumber(7000213, 132130).toString());
-		fail("Please email me this is failed!");
 	}
 	
 }
