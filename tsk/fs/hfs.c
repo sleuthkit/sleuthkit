@@ -2626,7 +2626,7 @@ typedef struct {
 } CMP_OFFSET_ENTRY;
 
 
-int
+static int
 hfs_read_zlib_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTableOut, uint32_t* tableSizeOut, uint32_t* tableOffsetOut) {
     int attrReadResult;
     hfs_resource_fork_header rfHeader;
@@ -2715,7 +2715,7 @@ on_error:
 }
 
 
-int
+static int
 hfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTableOut, uint32_t* tableSizeOut, uint32_t* tableOffsetOut) {
     int attrReadResult;
     char fourBytes[4];
@@ -2792,7 +2792,7 @@ on_error:
 }
 
 
-int hfs_decompress_noncompressed_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t* uncLen) {
+static int hfs_decompress_noncompressed_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t* uncLen) {
     // actually an uncompressed block of data; just copy
     if (tsk_verbose)
         tsk_fprintf(stderr,
@@ -2812,7 +2812,7 @@ int hfs_decompress_noncompressed_block(char* rawBuf, uint32_t len, char* uncBuf,
 
 
 #ifdef HAVE_LIBZ
-int hfs_decompress_zlib_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t* uncLen)
+static int hfs_decompress_zlib_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t* uncLen)
 {
     // see if this block is compressed
     if (len > 0 && (rawBuf[0] & 0x0F) != 0x0F) {
@@ -2849,7 +2849,7 @@ int hfs_decompress_zlib_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t
 #endif
 
 
-int hfs_decompress_lzvn_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t* uncLen)
+static int hfs_decompress_lzvn_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t* uncLen)
 {
     // see if this block is compressed
     if (len > 0 && rawBuf[0] != 0x06) {
@@ -2863,7 +2863,7 @@ int hfs_decompress_lzvn_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t
 }
 
 
-ssize_t read_and_decompress_block(
+static ssize_t read_and_decompress_block(
   const TSK_FS_ATTR* rAttr,
   char* rawBuf,
   char* uncBuf,
@@ -2938,11 +2938,11 @@ ssize_t read_and_decompress_block(
 
     // There are now uncLen bytes of uncompressed data available from
     // this comp unit.
-    return uncLen;
+    return (ssize_t)uncLen;
 }
 
 
-uint8_t
+static uint8_t
 hfs_attr_walk_compressed_rsrc(const TSK_FS_ATTR * fs_attr,
     int flags, TSK_FS_FILE_WALK_CB a_action, void *ptr,
     int (*read_block_table)(const TSK_FS_ATTR *rAttr,
@@ -3114,7 +3114,7 @@ on_error:
 
 
 #ifdef HAVE_LIBZ
-uint8_t
+static uint8_t
 hfs_attr_walk_zlib_rsrc(const TSK_FS_ATTR * fs_attr,
     int flags, TSK_FS_FILE_WALK_CB a_action, void *ptr)
 {
@@ -3127,7 +3127,7 @@ hfs_attr_walk_zlib_rsrc(const TSK_FS_ATTR * fs_attr,
 #endif
 
 
-uint8_t
+static uint8_t
 hfs_attr_walk_lzvn_rsrc(const TSK_FS_ATTR * fs_attr,
     int flags, TSK_FS_FILE_WALK_CB a_action, void *ptr)
 {
@@ -3143,7 +3143,7 @@ hfs_attr_walk_lzvn_rsrc(const TSK_FS_ATTR * fs_attr,
  *
  * @returns number of bytes read or -1 on error (incl if offset is past EOF)
  */
-ssize_t
+static ssize_t
 hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
     TSK_OFF_T a_offset, char *a_buf, size_t a_len,
     int (*read_block_table)(const TSK_FS_ATTR *rAttr,
@@ -3341,7 +3341,7 @@ on_error:
 
 
 #ifdef HAVE_LIBZ
-ssize_t
+static ssize_t
 hfs_file_read_zlib_rsrc(const TSK_FS_ATTR * a_fs_attr,
     TSK_OFF_T a_offset, char *a_buf, size_t a_len)
 {
@@ -3354,7 +3354,7 @@ hfs_file_read_zlib_rsrc(const TSK_FS_ATTR * a_fs_attr,
 #endif
 
 
-ssize_t
+static ssize_t
 hfs_file_read_lzvn_rsrc(const TSK_FS_ATTR * a_fs_attr,
     TSK_OFF_T a_offset, char *a_buf, size_t a_len)
 {
@@ -3366,7 +3366,7 @@ hfs_file_read_lzvn_rsrc(const TSK_FS_ATTR * a_fs_attr,
 }
 
 
-int hfs_decompress_noncompressed_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize, int* dstBufFree) {
+static int hfs_decompress_noncompressed_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize, int* dstBufFree) {
     if (tsk_verbose)
         tsk_fprintf(stderr,
             "%s: Leading byte, 0x%02x, indicates that the data is not really compressed.\n"
@@ -3379,7 +3379,7 @@ int hfs_decompress_noncompressed_attr(char* rawBuf, uint32_t rawSize, uint64_t u
 }
 
 
-int hfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize, int* dstBufFree)
+static int hfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize, int* dstBufFree)
 {
     if ((rawBuf[0] & 0x0F) == 0x0F) {
         return hfs_decompress_noncompressed_attr(
@@ -3449,7 +3449,7 @@ int hfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, c
 }
 
 
-int hfs_decompress_lzvn_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize, int* dstBufFree)
+static int hfs_decompress_lzvn_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize, int* dstBufFree)
 {
     if (rawBuf[0] == 0x06) {
         return hfs_decompress_noncompressed_attr(
@@ -3465,7 +3465,7 @@ int hfs_decompress_lzvn_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, c
 }
 
 
-int
+static int
 hfs_file_read_compressed_attr(TSK_FS_FILE* fs_file,
                               uint8_t cmpType,
                               char* buffer,
@@ -3551,7 +3551,7 @@ on_error:
 }
 
 
-int hfs_file_read_zlib_attr(TSK_FS_FILE* fs_file,
+static int hfs_file_read_zlib_attr(TSK_FS_FILE* fs_file,
                             char* buffer,
                             uint32_t attributeLength,
                             uint64_t uncSize)
@@ -3564,7 +3564,7 @@ int hfs_file_read_zlib_attr(TSK_FS_FILE* fs_file,
 }
 
 
-int hfs_file_read_lzvn_attr(TSK_FS_FILE* fs_file,
+static int hfs_file_read_lzvn_attr(TSK_FS_FILE* fs_file,
                             char* buffer,
                             uint32_t attributeLength,
                             uint64_t uncSize)
