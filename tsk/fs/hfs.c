@@ -3932,7 +3932,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
             // Data must start on an even offset from the beginning of the record.
             // So, correct this if needed.
-            if ((recData - record) % 2) {
+            if ((recData - recordBytes) % 2) {
                 recData += 1;
             }
 
@@ -4042,7 +4042,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
                 // Data must start on an even offset from the beginning of the record.
                 // So, correct this if needed.
-                if ((recData - record) % 2) {
+                if ((recData - recordBytes) % 2) {
                     recData += 1;
                 }
 
