@@ -1,15 +1,15 @@
 /*
  * SleuthKit Java Bindings
- * 
- * Copyright 2011-2016 Basis Technology Corp.
+ *
+ * Copyright 2011-2017 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,7 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
@@ -89,7 +88,7 @@ public class LayoutFile extends AbstractFile {
 			long size,
 			String md5Hash, FileKnown knownState,
 			String parentPath, String mimeType) {
-		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, name, fileType, 0L, 0, dirType, metaType, dirFlag, metaFlags, size, 0L, 0L, 0L, 0L, (short) 0, 0, 0, md5Hash, knownState, parentPath, mimeType);
+		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, name, fileType, 0L, 0, dirType, metaType, dirFlag, metaFlags, size, 0L, 0L, 0L, 0L, (short) 0, 0, 0, md5Hash, knownState, parentPath, mimeType, null);
 	}
 
 	/**
@@ -116,33 +115,6 @@ public class LayoutFile extends AbstractFile {
 	@Override
 	public boolean isRoot() {
 		return false;
-	}
-
-	/**
-	 * Gets the derived files, if any, that are children of this file.
-	 *
-	 * @return A list of the children.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
-	 */
-	@Override
-	public List<Content> getChildren() throws TskCoreException {
-		return getSleuthkitCase().getAbstractFileChildren(this, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED);
-	}
-
-	/**
-	 * Gets the object ids of the derived files, if any, that are children of
-	 * this file.
-	 *
-	 * @return A list of the children.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
-	 */
-	@Override
-	public List<Long> getChildrenIds() throws TskCoreException {
-		return getSleuthkitCase().getAbstractFileChildrenIds(this, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED);
 	}
 
 	/**
@@ -211,6 +183,12 @@ public class LayoutFile extends AbstractFile {
 	 * @param offsetInBuf	  Where to start in the array.
 	 * @param offsetInImage	Where to start in the image.
 	 * @param lenToRead	    How far to read in the image.
+	 *
+	 * @return the number of characters read, or -1 if the end of the stream has
+	 *         been reached
+	 *
+	 * @throws TskCoreException exception thrown if critical error occurs within
+	 *                          TSK
 	 */
 	private int readImgToOffset(long imgHandle, byte[] buf, int offsetInBuf, long offsetInImage, int lenToRead) throws TskCoreException {
 		byte[] currentBuffer = new byte[lenToRead]; // the buffer for the current range object
@@ -228,8 +206,8 @@ public class LayoutFile extends AbstractFile {
 	 * @return The output of the algorithm.
 	 */
 	@Override
-	public <T> T accept(ContentVisitor<T> v) {
-		return v.visit(this);
+	public <T> T accept(ContentVisitor<T> visitor) {
+		return visitor.visit(this);
 	}
 
 	/**
@@ -241,8 +219,8 @@ public class LayoutFile extends AbstractFile {
 	 * @return The output of the algorithm.
 	 */
 	@Override
-	public <T> T accept(SleuthkitItemVisitor<T> v) {
-		return v.visit(this);
+	public <T> T accept(SleuthkitItemVisitor<T> visitor) {
+		return visitor.visit(this);
 	}
 
 	/**
@@ -250,9 +228,6 @@ public class LayoutFile extends AbstractFile {
 	 *
 	 * @param preserveState True if state should be included in the string
 	 *                      representation of this object.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
 	 */
 	@Override
 	public String toString(boolean preserveState) {
@@ -296,5 +271,4 @@ public class LayoutFile extends AbstractFile {
 			long size, String md5Hash, FileKnown knownState, String parentPath) {
 		this(db, objId, db.getDataSourceObjectId(objId), name, fileType, dirType, metaType, dirFlag, metaFlags, size, md5Hash, knownState, parentPath, null);
 	}
-
 }

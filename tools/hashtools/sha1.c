@@ -76,13 +76,13 @@ main(argc, argv)
 {
     char *myname = argv[0];
     char *crunch();
-    FILE *fp;
 
     if (argc < 2) {
         printf("%s\n", crunch(stdin));
     }
     else {
         while (--argc && *++argv) {
+            FILE *fp;
             if ((fp = fopen(*argv, "r")) == 0) {
                 fprintf(stderr, "%s: ", myname);
                 perror(*argv);

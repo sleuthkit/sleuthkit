@@ -47,7 +47,8 @@ public class TskData {
 		SOCK(7, "s"), ///< Socket NON-NLS
 		SHAD(8, "h"), ///< Shadow inode (solaris) NON-NLS
 		WHT(9, "w"), ///< Whiteout (openbsd) NON-NLS
-		VIRT(10, "v");     ///< Special (TSK added "Virtual" files) NON-NLS
+		VIRT(10, "v"),     ///< Special (TSK added "Virtual" files) NON-NLS
+		VIRT_DIR(11, "V");     ///< Special (TSK added "Virtual" directories) NON-NLS
 
 		private short dirType;
 		String label;
@@ -109,7 +110,8 @@ public class TskData {
 		TSK_FS_META_TYPE_SHAD(7, "s"), ///< SOLARIS ONLY NON-NLS
 		TSK_FS_META_TYPE_SOCK(8, "h"), ///< UNIX domain socket NON-NLS
 		TSK_FS_META_TYPE_WHT(9, "w"), ///< Whiteout NON-NLS
-		TSK_FS_META_TYPE_VIRT(10, "v");      ///< "Virtual File" created by TSK for file system areas NON-NLS
+		TSK_FS_META_TYPE_VIRT(10, "v"),      ///< "Virtual File" created by TSK for file system areas NON-NLS
+		TSK_FS_META_TYPE_VIRT_DIR(11, "v");      ///< "Virtual Directory" created by TSK for Orphan Files NON-NLS
 
 		private short metaType;
 		private String metaTypeStr;
@@ -432,38 +434,40 @@ public class TskData {
 	 */
 	public enum TSK_FS_TYPE_ENUM {
 
-		TSK_FS_TYPE_DETECT(0x00000000), ///< Use autodetection methods
-		TSK_FS_TYPE_NTFS(0x00000001), ///< NTFS file system
-		TSK_FS_TYPE_NTFS_DETECT(0x00000001), ///< NTFS auto detection
-		TSK_FS_TYPE_FAT12(0x00000002), ///< FAT12 file system
-		TSK_FS_TYPE_FAT16(0x00000004), ///< FAT16 file system
-		TSK_FS_TYPE_FAT32(0x00000008), ///< FAT32 file system
-		TSK_FS_TYPE_EXFAT(0x0000000A), ///< ExFAT file system
-		TSK_FS_TYPE_FAT_DETECT(0x0000000e), ///< FAT auto detection
-		TSK_FS_TYPE_FFS1(0x00000010), ///< UFS1 (FreeBSD, OpenBSD, BSDI ...)
-		TSK_FS_TYPE_FFS1B(0x00000020), ///< UFS1b (Solaris - has no type)
-		TSK_FS_TYPE_FFS2(0x00000040), ///< UFS2 - FreeBSD, NetBSD 
-		TSK_FS_TYPE_FFS_DETECT(0x00000070), ///< UFS auto detection
-		TSK_FS_TYPE_EXT2(0x00000080), ///< Ext2 file system
-		TSK_FS_TYPE_EXT3(0x00000100), ///< Ext3 file system
-		TSK_FS_TYPE_EXT_DETECT(0x00000180), ///< ExtX auto detection
-		TSK_FS_TYPE_SWAP(0x00000200), ///< SWAP file system
-		TSK_FS_TYPE_SWAP_DETECT(0x00000200), ///< SWAP auto detection
-		TSK_FS_TYPE_RAW(0x00000400), ///< RAW file system
-		TSK_FS_TYPE_RAW_DETECT(0x00000400), ///< RAW auto detection
-		TSK_FS_TYPE_ISO9660(0x00000800), ///< ISO9660 file system
-		TSK_FS_TYPE_ISO9660_DETECT(0x00000800), ///< ISO9660 auto detection
-		TSK_FS_TYPE_HFS(0x00001000), ///< HFS file system
-		TSK_FS_TYPE_HFS_DETECT(0x00001000), ///< HFS auto detection
-		TSK_FS_TYPE_EXT4(0x00002000), ///< Ext4 file system
-		TSK_FS_TYPE_YAFFS2(0x00004000), ///< YAFFS2 file system
-		TSK_FS_TYPE_YAFFS2_DETECT(0x00004000), ///< YAFFS2 auto detection
-		TSK_FS_TYPE_UNSUPP(0xffffffff);        ///< Unsupported file system
+		TSK_FS_TYPE_DETECT(0x00000000, bundle.getString("TskData.tskFsTypeEnum.autoDetect")), ///< Use autodetection methods
+		TSK_FS_TYPE_NTFS(0x00000001, "NTFS"), ///< NTFS file system
+		TSK_FS_TYPE_NTFS_DETECT(0x00000001, bundle.getString("TskData.tskFsTypeEnum.NTFSautoDetect")), ///< NTFS auto detection
+		TSK_FS_TYPE_FAT12(0x00000002, "FAT12"), ///< FAT12 file system
+		TSK_FS_TYPE_FAT16(0x00000004, "FAT16"), ///< FAT16 file system
+		TSK_FS_TYPE_FAT32(0x00000008, "FAT32"), ///< FAT32 file system
+		TSK_FS_TYPE_EXFAT(0x0000000A, "ExFAT"), ///< ExFAT file system
+		TSK_FS_TYPE_FAT_DETECT(0x0000000e, bundle.getString("TskData.tskFsTypeEnum.FATautoDetect")), ///< FAT auto detection
+		TSK_FS_TYPE_FFS1(0x00000010, "UFS1"), ///< UFS1 (FreeBSD, OpenBSD, BSDI ...)
+		TSK_FS_TYPE_FFS1B(0x00000020, "UFS1b"), ///< UFS1b (Solaris - has no type)
+		TSK_FS_TYPE_FFS2(0x00000040, "UFS2"), ///< UFS2 - FreeBSD, NetBSD 
+		TSK_FS_TYPE_FFS_DETECT(0x00000070, "UFS"), ///< UFS auto detection
+		TSK_FS_TYPE_EXT2(0x00000080, "Ext2"), ///< Ext2 file system
+		TSK_FS_TYPE_EXT3(0x00000100, "Ext3"), ///< Ext3 file system
+		TSK_FS_TYPE_EXT_DETECT(0x00000180, bundle.getString("TskData.tskFsTypeEnum.ExtXautoDetect")), ///< ExtX auto detection
+		TSK_FS_TYPE_SWAP(0x00000200, "SWAP"), ///< SWAP file system
+		TSK_FS_TYPE_SWAP_DETECT(0x00000200, bundle.getString("TskData.tskFsTypeEnum.SWAPautoDetect")), ///< SWAP auto detection
+		TSK_FS_TYPE_RAW(0x00000400, "RAW"), ///< RAW file system
+		TSK_FS_TYPE_RAW_DETECT(0x00000400, bundle.getString("TskData.tskFsTypeEnum.RAWautoDetect")), ///< RAW auto detection
+		TSK_FS_TYPE_ISO9660(0x00000800, "ISO9660"), ///< ISO9660 file system
+		TSK_FS_TYPE_ISO9660_DETECT(0x00000800, bundle.getString("TskData.tskFsTypeEnum.ISO9660autoDetect")), ///< ISO9660 auto detection
+		TSK_FS_TYPE_HFS(0x00001000, "HFS"), ///< HFS file system
+		TSK_FS_TYPE_HFS_DETECT(0x00001000, bundle.getString("TskData.tskFsTypeEnum.HFSautoDetect")), ///< HFS auto detection
+		TSK_FS_TYPE_EXT4(0x00002000, "Ext4"), ///< Ext4 file system
+		TSK_FS_TYPE_YAFFS2(0x00004000, "YAFFS2"), ///< YAFFS2 file system
+		TSK_FS_TYPE_YAFFS2_DETECT(0x00004000, bundle.getString("TskData.tskFsTypeEnum.YAFFS2autoDetect")), ///< YAFFS2 auto detection
+		TSK_FS_TYPE_UNSUPP(0xffffffff, bundle.getString("TskData.tskFsTypeEnum.unsupported"));        ///< Unsupported file system
 
 		private int value;
+		private String displayName;
 
-		private TSK_FS_TYPE_ENUM(int value) {
+		private TSK_FS_TYPE_ENUM(int value, String displayName) {
 			this.value = value;
+			this.displayName = displayName;
 		}
 
 		/**
@@ -473,6 +477,15 @@ public class TskData {
 		 */
 		public int getValue() {
 			return value;
+		}
+		
+		/**
+		 * Get display name of the enum
+		 * 
+		 * @return the displayName
+		 */
+		public String getDisplayName() {
+			return displayName;
 		}
 
 		/**
@@ -612,8 +625,9 @@ public class TskData {
 		VS(1), ///< Volume System - see tsk_vs_info for more details
 		VOL(2), ///< Volume - see tsk_vs_parts for more details
 		FS(3), ///< File System - see tsk_fs_info for more details
-		ABSTRACTFILE(4); ///< File - see tsk_files for more details
-
+		ABSTRACTFILE(4), ///< File - see tsk_files for more details
+		ARTIFACT(5)	/// Artifact - see blackboard_artifacts for more details
+		; 
 		private short objectType;
 
 		private ObjectType(int objectType) {
@@ -661,6 +675,7 @@ public class TskData {
 		UNUSED_BLOCKS(5, "Unused Blocks"), ///< Set of blocks that are unallocated AND not used by a carved or other file type.  Parent should be UNALLOC_BLOCKS, many columns in tsk_files will be NULL, set layout in tsk_file_layout. 
 		VIRTUAL_DIR(6, "Virtual Directory"), ///< Virtual directory (not on fs) with no meta-data entry that can be used to group files of types other than TSK_DB_FILES_TYPE_FS. Its parent is either another TSK_DB_FILES_TYPE_FS or a root directory or type TSK_DB_FILES_TYPE_FS.
 		SLACK(7, "Slack"), ///< Slack space for a single file
+		LOCAL_DIR(8, "Local Directory"), ///< Local directory that was added (not from a disk image)
 		;
 
 		private final short fileType;

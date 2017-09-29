@@ -51,11 +51,11 @@ printit(TSK_FS_FILE * fs_file, const char *a_path,
     const TSK_FS_ATTR * fs_attr, const FLS_DATA * fls_data)
 {
     TSK_FS_HASH_RESULTS hash_results;
-	unsigned char null_buf[16];
-    unsigned int i;
 
     if ((!(fls_data->flags & TSK_FS_FLS_FULL)) && (a_path)) {
         uint8_t printed = 0;
+        unsigned int i;
+
         // lazy way to find out how many dirs there could be
         for (i = 0; a_path[i] != '\0'; i++) {
             if ((a_path[i] == '/') && (i != 0)) {
@@ -77,7 +77,8 @@ printit(TSK_FS_FILE * fs_file, const char *a_path,
 					hash_results.md5_digest);
                                 tsk_printf("\n");
 			}
-			else{
+			else {
+	            unsigned char null_buf[16];
 				// If the hash calculation had errors, pass in a buffer of nulls
 				memset(null_buf, 0, 16);
 				tsk_fs_name_print_mac_md5(stdout, fs_file, a_path, fs_attr,
@@ -119,9 +120,9 @@ print_dent_act(TSK_FS_FILE * fs_file, const char *a_path, void *ptr)
      */
     if (((fls_data->flags & TSK_FS_FLS_DIR) &&
             ((fs_file->meta) &&
-                (fs_file->meta->type == TSK_FS_META_TYPE_DIR)))
+                (TSK_FS_IS_DIR_META(fs_file->meta->type))))
         || ((fls_data->flags & TSK_FS_FLS_FILE) && (((fs_file->meta)
-                    && (fs_file->meta->type != TSK_FS_META_TYPE_DIR))
+                    && ( ! TSK_FS_IS_DIR_META(fs_file->meta->type)))
                 || (!fs_file->meta)))) {
 
 
@@ -216,13 +217,12 @@ tsk_fs_fls(TSK_FS_INFO * fs, TSK_FS_FLS_FLAG_ENUM lclflags,
 
 #ifdef TSK_WIN32
     {
-        size_t clen;
         UTF8 *ptr8;
         UTF16 *ptr16;
         int retval;
 
         if ((tpre != NULL) && (TSTRLEN(tpre) > 0)) {
-            clen = TSTRLEN(tpre) * 4;
+            size_t clen = TSTRLEN(tpre) * 4;
             data.macpre = (char *) tsk_malloc(clen);
             if (data.macpre == NULL) {
                 return 1;

@@ -47,7 +47,7 @@ typedef struct {
     uint8_t expected_name_length_utf16_chars;     /* Name length (in characters) as reported by the file stream dentry */
     uint8_t current_file_name_length_utf16_chars; /* Number of UTF16 name characters read in so far */
     uint8_t file_name_utf16[(EXFATFS_MAX_FILE_NAME_LENGTH_UTF16_CHARS + 1) * 2];  /* The UTF16 characters read in so far*/
-    uint8_t actual_name_length_utf8_bytes;  /* Length of the UTF8 version of the name (stored in fs_name) */
+    size_t actual_name_length_utf8_bytes;  /* Length of the UTF8 version of the name (stored in fs_name) */
     TSK_FS_NAME *fs_name;
     TSK_FS_DIR *fs_dir;
 } EXFATFS_FS_NAME_INFO;
@@ -257,7 +257,7 @@ static void
 exfats_parse_file_name_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a_dentry, TSK_INUM_T a_inum)
 {
     EXFATFS_FILE_NAME_DIR_ENTRY *dentry = (EXFATFS_FILE_NAME_DIR_ENTRY*)a_dentry;
-    size_t num_utf16_chars_to_copy = 0;
+    uint8_t num_utf16_chars_to_copy = 0;
 
     assert(a_name_info != NULL);
     assert(a_name_info->fatfs != NULL);
@@ -373,7 +373,7 @@ exfats_parse_vol_label_dentry(EXFATFS_FS_NAME_INFO *a_name_info, FATFS_DENTRY *a
     a_name_info->actual_name_length_utf8_bytes = strlen(a_name_info->fs_name->name);
 
     tag_length = strlen(tag);
-    if ((size_t)a_name_info->actual_name_length_utf8_bytes + tag_length <
+    if (a_name_info->actual_name_length_utf8_bytes + tag_length <
         FATFS_MAXNAMLEN_UTF8) {
         strcat(a_name_info->fs_name->name, tag);
     }

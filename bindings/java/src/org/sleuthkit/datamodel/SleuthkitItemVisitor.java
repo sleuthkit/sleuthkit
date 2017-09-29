@@ -116,13 +116,22 @@ public interface SleuthkitItemVisitor<T> {
 	T visit(LayoutFile lf);
 
 	/**
-	 * Act on (visit) a LayoutDirectory content object
+	 * Act on (visit) a VirtualDirectory content object
 	 *
 	 * @param ld layout dir to visit / act on
 	 *
 	 * @return result of the visit
 	 */
 	T visit(VirtualDirectory ld);
+
+	/**
+	 * Act on (visit) a LocalDirectory content object
+	 *
+	 * @param ld layout dir to visit / act on
+	 *
+	 * @return result of the visit
+	 */
+	T visit(LocalDirectory ld);
 
 	/**
 	 * Act on (visit) a DerivedFile content object
@@ -212,6 +221,11 @@ public interface SleuthkitItemVisitor<T> {
 		@Override
 		public T visit(VirtualDirectory vd) {
 			return defaultVisit(vd);
+		}
+
+		@Override
+		public T visit(LocalDirectory ld) {
+			return defaultVisit(ld);
 		}
 
 		@Override

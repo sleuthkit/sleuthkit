@@ -19,8 +19,13 @@
 
 #include <map>
 
-#include "sqlite3.h"
 #include "tsk_db.h"
+
+#ifdef HAVE_LIBSQLITE3
+  #include <sqlite3.h>
+#else
+  #include "sqlite3.h"
+#endif
 
 using std::map;
 using std::vector;

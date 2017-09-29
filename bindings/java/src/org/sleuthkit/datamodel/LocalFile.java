@@ -1,15 +1,15 @@
 /*
  * SleuthKit Java Bindings
- * 
- * Copyright 2011-2016 Basis Technology Corp.
+ *
+ * Copyright 2011-2017 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -71,6 +71,9 @@ public class LocalFile extends AbstractFile {
 	 * @param dataSourceObjectId The object id of the data source for the file.
 	 * @param localPath          The absolute path of the file in secondary
 	 *                           storage.
+	 * @param encodingType		     The encoding type of the file.
+	 * @param extension          The extension part of the file name (not
+	 *                           including the '.'), can be null.
 	 */
 	LocalFile(SleuthkitCase db,
 			long objId,
@@ -84,10 +87,11 @@ public class LocalFile extends AbstractFile {
 			long parentId, String parentPath,
 			long dataSourceObjectId,
 			String localPath,
-			TskData.EncodingType encodingType) {
+			TskData.EncodingType encodingType,
+			String extension) {
 		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0,
 				name, fileType, 0L, 0, dirType, metaType, dirFlag,
-				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath, mimeType);
+				metaFlags, size, ctime, crtime, atime, mtime, (short) 0, 0, 0, md5Hash, knownState, parentPath, mimeType, extension);
 		// TODO (AUT-1904): The parent id should be passed to AbstractContent 
 		// through the class hierarchy contructors, using 
 		// AbstractContent.UNKNOWN_ID as needed.
@@ -124,63 +128,31 @@ public class LocalFile extends AbstractFile {
 	}
 
 	/**
-	 * Gets the derived or local files, if any, that are children of this local
-	 * file.
-	 *
-	 * @return A list of the children.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
-	 */
-	@Override
-	public List<Content> getChildren() throws TskCoreException {
-		final SleuthkitCase tskCase = getSleuthkitCase();
-		final List<Content> children = tskCase.getAbstractFileChildren(this, TSK_DB_FILES_TYPE_ENUM.DERIVED);
-		children.addAll(tskCase.getAbstractFileChildren(this, TSK_DB_FILES_TYPE_ENUM.LOCAL));
-		return children;
-	}
-
-	/**
-	 * Gets the object ids of the derived or local files, if any, that are
-	 * children of this local file.
-	 *
-	 * @return A list of the children.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
-	 */
-	@Override
-	public List<Long> getChildrenIds() throws TskCoreException {
-		final SleuthkitCase tskCase = getSleuthkitCase();
-		final List<Long> childIds = tskCase.getAbstractFileChildrenIds(this, TSK_DB_FILES_TYPE_ENUM.DERIVED);
-		childIds.addAll(tskCase.getAbstractFileChildrenIds(this, TSK_DB_FILES_TYPE_ENUM.LOCAL));
-		return childIds;
-	}
-
-	/**
 	 * Accepts a content visitor (Visitor design pattern).
 	 *
+	 * @param <T>     The type returned by the visitor.
 	 * @param visitor A ContentVisitor supplying an algorithm to run using this
 	 *                local file as input.
 	 *
 	 * @return The output of the algorithm.
 	 */
 	@Override
-	public <T> T accept(ContentVisitor<T> v) {
-		return v.visit(this);
+	public <T> T accept(ContentVisitor<T> visitor) {
+		return visitor.visit(this);
 	}
 
 	/**
 	 * Accepts a Sleuthkit item visitor (Visitor design pattern).
 	 *
+	 * @param <T>     The type returned by the visitor.
 	 * @param visitor A SleuthkitItemVisitor supplying an algorithm to run using
 	 *                this local file as input.
 	 *
 	 * @return The output of the algorithm.
 	 */
 	@Override
-	public <T> T accept(SleuthkitItemVisitor<T> v) {
-		return v.visit(this);
+	public <T> T accept(SleuthkitItemVisitor<T> visitor) {
+		return visitor.visit(this);
 	}
 
 	/**
@@ -188,9 +160,6 @@ public class LocalFile extends AbstractFile {
 	 *
 	 * @param preserveState True if state should be included in the string
 	 *                      representation of this object.
-	 *
-	 * @throws TskCoreException if there was an error querying the case
-	 *                          database.
 	 */
 	@Override
 	public String toString(boolean preserveState) {
@@ -253,7 +222,7 @@ public class LocalFile extends AbstractFile {
 				AbstractContent.UNKNOWN_ID, parentPath,
 				db.getDataSourceObjectId(objId),
 				localPath,
-				TskData.EncodingType.NONE);
+				TskData.EncodingType.NONE, null);
 	}
 
 	/**

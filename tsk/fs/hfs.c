@@ -541,7 +541,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
         }
 
         // read the current node
-        cur_off = cur_node * nodesize;
+        cur_off = (TSK_OFF_T)cur_node * nodesize;
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "hfs_ext_find_extent_record: reading node %" PRIu32
@@ -1466,9 +1466,10 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat,
             uint32_t linkNum =
                 tsk_getu32(fs->endian, cat->std.perm.special.inum);
 
-            TSK_INUM_T target_cnid;     //  This is the real CNID of the file.
-
-            target_cnid = hfs_lookup_hard_link(hfs, linkNum, FALSE);
+            // It seems like the linkNum is always the same as the CNID
+            // returned by hfs_lookup_hard_link, which is very inefficient when a 
+            // datasource contains large numbers of linked files.
+            TSK_INUM_T target_cnid = linkNum;
 
             if (target_cnid != 0) {
                 // Succeeded in finding that target_cnid in the Catalog file
@@ -1528,9 +1529,10 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat,
             uint32_t linkNum =
                 tsk_getu32(fs->endian, cat->std.perm.special.inum);
 
-            TSK_INUM_T target_cnid;     //  This is the real CNID of the file.
-
-            target_cnid = hfs_lookup_hard_link(hfs, linkNum, TRUE);
+            // It seems like the linkNum is always the same as the CNID
+            // returned by hfs_lookup_hard_link, which is very inefficient when a 
+            // datasource contains large numbers of linked files.
+            TSK_INUM_T target_cnid = linkNum;
 
             if (target_cnid != 0) {
                 // Succeeded in finding that target_cnid in the Catalog file
@@ -1726,6 +1728,18 @@ hfs_cat_file_lookup(HFS_INFO * hfs, TSK_INUM_T inum, HFS_ENTRY * entry,
 }
 
 
+static uint8_t
+hfs_find_highest_inum_cb(HFS_INFO * hfs, int8_t level_type,
+    const hfs_btree_key_cat * cur_key,
+    TSK_OFF_T key_off, void *ptr)
+{
+    // NOTE: This assumes that the biggest inum is the last one that we
+    // see.  the traverse method does not currently promise that as part of
+    // its callback "contract". 
+    *((TSK_INUM_T*) ptr) = tsk_getu32(hfs->fs_info.endian, cur_key->parent_cnid);
+    return HFS_BTREE_CB_IDX_LT;
+}
+
 /** \internal
 * Returns the largest inode number in file system
 * @param hfs File system being analyzed
@@ -1735,19 +1749,21 @@ static TSK_INUM_T
 hfs_find_highest_inum(HFS_INFO * hfs)
 {
     // @@@ get actual number from Catalog file (go to far right) (we can't always trust the vol header)
-    /* I haven't gotten looking at the end of the Catalog B-Tree to work
-       properly. A fast method: if HFS_VH_ATTR_CNIDS_REUSED is set, then
-       the maximum CNID is 2^32-1; if it's not set, then nextCatalogId is
-       supposed to be larger than all CNIDs on disk.
-     */
-
-    TSK_FS_INFO *fs = (TSK_FS_INFO *) & (hfs->fs_info);
-
-    if (tsk_getu32(fs->endian, hfs->fs->attr) & HFS_VH_ATTR_CNIDS_REUSED)
-        return (TSK_INUM_T) 0xffffffff;
-    else
-        return (TSK_INUM_T) tsk_getu32(fs->endian,
-            hfs->fs->next_cat_id) - 1;
+    TSK_INUM_T inum;
+    if (hfs_cat_traverse(hfs, hfs_find_highest_inum_cb, &inum)) {
+      /* Catalog traversal failed, fallback on legacy method :
+         if HFS_VH_ATTR_CNIDS_REUSED is set, then
+         the maximum CNID is 2^32-1; if it's not set, then nextCatalogId is
+         supposed to be larger than all CNIDs on disk.
+       */
+        TSK_FS_INFO *fs = (TSK_FS_INFO *) & (hfs->fs_info);
+        if (tsk_getu32(fs->endian, hfs->fs->attr) & HFS_VH_ATTR_CNIDS_REUSED)
+            return (TSK_INUM_T) 0xffffffff;
+        else
+            return (TSK_INUM_T) tsk_getu32(fs->endian,
+                hfs->fs->next_cat_id) - 1;
+    }
+    return inum;
 }
 
 
@@ -3792,6 +3808,8 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 PRIu32 "\n", nodeID);
         }
 
+
+        /* Read the node */
         cnt = tsk_fs_file_read(attrFile.file,
             nodeID * attrFile.nodeSize,
             (char *) nodeData,
@@ -3802,6 +3820,11 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
             goto on_error;
         }
 
+        /** Node has a:
+         * Descriptor
+         * Set of records
+         * Table at the end with pointers to the records
+         */
         // Parse the Node header
         nodeDescriptor = (hfs_btree_node *) nodeData;
 
@@ -3811,7 +3834,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
         }
 
         // This had better be an INDEX node, if not its an error
-        if (nodeDescriptor->type != HFS_ATTR_NODE_INDEX) {
+        else if (nodeDescriptor->type != HFS_ATTR_NODE_INDEX) {
             error_detected(TSK_ERR_FS_READ,
                 "hfs_load_extended_attrs: Reached a non-INDEX and non-LEAF node in searching the Attributes File");
             goto on_error;
@@ -3821,7 +3844,6 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
         // smaller than or equal to the desired key
 
         numRec = tsk_getu16(endian, nodeDescriptor->num_rec);
-
         if (numRec == 0) {
             // This is wrong, there must always be at least 1 record in an INDEX node.
             error_detected(TSK_ERR_FS_READ,
@@ -3837,18 +3859,24 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
             uint8_t *recData;   // pointer to the data part of the record
             uint32_t keyFileID;
 
-            // Offset of the record
-            uint8_t *recOffsetData = &nodeData[attrFile.nodeSize - 2 * (recIndx + 1)];  // data describing where this record is
-            uint16_t recOffset = tsk_getu16(endian, recOffsetData);
+            // The offset to the record is stored in table at end of node
+            uint8_t *recOffsetTblEntry = &nodeData[attrFile.nodeSize - (2 * (recIndx + 1))];  // data describing where this record is
+            uint16_t recOffset = tsk_getu16(endian, recOffsetTblEntry);
             //uint8_t * nextRecOffsetData = &nodeData[attrFile.nodeSize - 2* (recIndx+2)];
 
+            // make sure the record and first fields are in the buffer
+            if (recOffset + 14 > attrFile.nodeSize) {
+                error_detected(TSK_ERR_FS_READ,
+                    "hfs_load_extended_attrs: Unable to process attribute (offset too big)");
+                goto on_error;
+            }
+
             // Pointer to first byte of record
-            uint8_t *record = &nodeData[recOffset];
+            uint8_t *recordBytes = &nodeData[recOffset];
 
 
             // Cast that to the Attributes file key (n.b., the key is the first thing in the record)
-            keyB = (hfs_btree_key_attr *) record;
-            keyLength = tsk_getu16(endian, keyB->key_len);
+            keyB = (hfs_btree_key_attr *) recordBytes;
 
             // Is this key less than what we are seeking?
             //int comp = comp_attr_key(endian, keyB, fileID, attrName, startBlock);
@@ -3889,9 +3917,18 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 break;
             }
 
-            // Extract the child node ID from the data of the record
-            recData = &record[keyLength + 2];   // This is +2 because key_len does not include the
-            // length of the key_len field itself.
+            // Extract the child node ID from the record data (stored after the key)
+            keyLength = tsk_getu16(endian, keyB->key_len);
+            // make sure the fields we care about are still in the buffer
+            // +2 is because key_len doesn't include its own length
+            // +4 is because of the amount of data we read from the data
+            if (recOffset + keyLength + 2 + 4 > attrFile.nodeSize) {
+                error_detected(TSK_ERR_FS_READ,
+                    "hfs_load_extended_attrs: Unable to process attribute");
+                goto on_error;
+            }
+
+            recData = &recordBytes[keyLength + 2];   
 
             // Data must start on an even offset from the beginning of the record.
             // So, correct this if needed.
@@ -3922,7 +3959,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
     done = FALSE;
     while (!done) {
         uint16_t numRec;        // number of records
-        int recIndx;            // index for looping over records
+        unsigned int recIndx;            // index for looping over records
 
         if (tsk_verbose)
             tsk_fprintf(stderr,
@@ -3933,22 +3970,29 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
         // Loop over the records in this node
         for (recIndx = 0; recIndx < numRec; ++recIndx) {
-            // Offset of the record
-            uint8_t *recOffsetData = &nodeData[attrFile.nodeSize - 2 * (recIndx + 1)];  // data describing where this record is
-            uint16_t recOffset = tsk_getu16(endian, recOffsetData);
-            uint16_t keyLength;
+            
+            // The offset to the record is stored in table at end of node
+            uint8_t *recOffsetTblEntry = &nodeData[attrFile.nodeSize - (2 * (recIndx + 1))];  // data describing where this record is
+            uint16_t recOffset = tsk_getu16(endian, recOffsetTblEntry);
+            
             int comp;           // comparison result
             char *compStr;      // comparison result as a string
             uint32_t keyFileID;
 
+            // make sure the record and first fields are in the buffer
+            if (recOffset + 14 > attrFile.nodeSize) {
+                error_detected(TSK_ERR_FS_READ,
+                    "hfs_load_extended_attrs: Unable to process attribute (offset too big)");
+                goto on_error;
+            }
+
             // Pointer to first byte of record
-            uint8_t *record = &nodeData[recOffset];
+            uint8_t *recordBytes = &nodeData[recOffset];
 
             // Cast that to the Attributes file key
-            keyB = (hfs_btree_key_attr *) record;
-            keyLength = tsk_getu16(endian, keyB->key_len);
-
-            // Compare record key to the key that we are seeking
+            keyB = (hfs_btree_key_attr *) recordBytes;
+            
+            // Compare recordBytes key to the key that we are seeking
             keyFileID = tsk_getu32(endian, keyB->file_id);
 
             //fprintf(stdout, " Key file ID = %lu\n", keyFileID);
@@ -3974,19 +4018,27 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
             if (comp == 0) {
                 // Yes, so load this attribute
 
-                uint8_t *recData;       // pointer to the data part of the record
+                uint8_t *recData;       // pointer to the data part of the recordBytes
                 hfs_attr_data *attrData;
                 uint32_t attributeLength;
                 uint32_t recordType;
-
+                uint16_t keyLength;
                 int conversionResult;
-                char nameBuff[MAX_ATTR_NAME_LENGTH];
-
+                char nameBuff[HFS_MAX_ATTR_NAME_LEN_UTF8_B+1];
                 TSK_FS_ATTR_TYPE_ENUM attrType;
-
                 TSK_FS_ATTR *fs_attr;   // Points to the attribute to be loaded.
 
-                recData = &record[keyLength + 2];
+                keyLength = tsk_getu16(endian, keyB->key_len);
+                // make sure the fields we care about are still in the buffer
+                // +2 because key_len doesn't include its own length
+                // +16 for the amount of data we'll read from data
+                if (recOffset + keyLength + 2 + 16 > attrFile.nodeSize) {
+                    error_detected(TSK_ERR_FS_READ,
+                        "hfs_load_extended_attrs: Unable to process attribute");
+                    goto on_error;
+                }
+
+                recData = &recordBytes[keyLength + 2];
 
                 // Data must start on an even offset from the beginning of the record.
                 // So, correct this if needed.
@@ -4011,12 +4063,19 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 // Check the attribute fits in the node
                 //if (recordType != HFS_ATTR_RECORD_INLINE_DATA) {
                 if (recOffset + keyLength + 2 + attributeLength > attrFile.nodeSize) {
-                  error_detected(TSK_ERR_FS_READ,
-                      "hfs_load_extended_attrs: Unable to process attribute");
-                  goto on_error;
+                    error_detected(TSK_ERR_FS_READ,
+                        "hfs_load_extended_attrs: Unable to process attribute");
+                    goto on_error;
                 }
 
-                buffer = malloc(attributeLength);
+                // name_len is in UTF_16 chars
+                if ((uint32_t)2 * tsk_getu16(endian, keyB->attr_name_len)  > attributeLength) {
+                    error_detected(TSK_ERR_FS_CORRUPT,
+                        "hfs_load_extended_attrs: Name length is too long.");
+                    goto on_error;
+                }
+
+                buffer = tsk_malloc(attributeLength);
                 if (buffer == NULL) {
                     error_detected(TSK_ERR_AUX_MALLOC,
                         "hfs_load_extended_attrs: Could not malloc space for the attribute.");
@@ -4031,10 +4090,11 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 // be because UTF8 is a variable length encoding. However, the longest
                 // it will be is 3 * the max number of UTF16 code units.  Add one for null
                 // termination.   (thanks Judson!)
+                
 
                 conversionResult = hfs_UTF16toUTF8(fs, keyB->attr_name,
                     tsk_getu16(endian, keyB->attr_name_len),
-                    nameBuff, MAX_ATTR_NAME_LENGTH, 0);
+                    nameBuff, HFS_MAX_ATTR_NAME_LEN_UTF8_B+1, 0);
                 if (conversionResult != 0) {
                     error_returned
                         ("-- hfs_load_extended_attrs could not convert the attr_name in the btree key into a UTF8 attribute name");
@@ -5592,7 +5652,7 @@ print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
  * @returns 1 on error and 0 on success
  */
 static uint8_t
-hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
+hfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TSK_INUM_T inum,
     TSK_DADDR_T numblock, int32_t sec_skew)
 {
     HFS_INFO *hfs = (HFS_INFO *) fs;
@@ -5642,7 +5702,7 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
     tsk_fprintf(hFile, "Type:\t");
     if (fs_file->meta->type == TSK_FS_META_TYPE_REG)
         tsk_fprintf(hFile, "File\n");
-    else if (fs_file->meta->type == TSK_FS_META_TYPE_DIR)
+    else if (TSK_FS_IS_DIR_META(fs_file->meta->type))
         tsk_fprintf(hFile, "Folder\n");
     else
         tsk_fprintf(hFile, "\n");
@@ -5748,7 +5808,7 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
             tsk_fprintf(hFile, "Has security data (ACLs)\n");
 
         // File_type and file_cr are not relevant for Folders
-        if (fs_file->meta->type != TSK_FS_META_TYPE_DIR) {
+        if ( !TSK_FS_IS_DIR_META(fs_file->meta->type)){
             int windx;          // loop index
             tsk_fprintf(hFile,
                 "File type:\t%04" PRIx32 "  ",
@@ -5859,52 +5919,58 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
         // N.B., a compressed file has no data fork, and tsk_fs_file_walk() will
         //   do the wrong thing!
         if (!(entry.cat.std.perm.o_flags & HFS_PERM_OFLAG_COMPRESSED)) {
-            tsk_fprintf(hFile, "\nData Fork Blocks:\n");
-            print.idx = 0;
-            print.hFile = hFile;
-            print.accumulating = FALSE;
-            print.startBlock = 0;
-            print.blockCount = 0;
 
-            if (tsk_fs_file_walk_type(fs_file,
+            if (!(istat_flags & TSK_FS_ISTAT_RUNLIST)) {
+                tsk_fprintf(hFile, "\nData Fork Blocks:\n");
+                print.idx = 0;
+                print.hFile = hFile;
+                print.accumulating = FALSE;
+                print.startBlock = 0;
+                print.blockCount = 0;
+
+                if (tsk_fs_file_walk_type(fs_file,
                     TSK_FS_ATTR_TYPE_HFS_DATA, HFS_FS_ATTR_ID_DATA,
                     (TSK_FS_FILE_WALK_FLAG_AONLY |
                         TSK_FS_FILE_WALK_FLAG_SLACK), print_addr_act,
-                    (void *) &print)) {
-                tsk_fprintf(hFile, "\nError reading file data fork\n");
-                tsk_error_print(hFile);
-                tsk_error_reset();
-            }
-            else {
-                output_print_addr(&print);
-                if (print.idx != 0)
-                    tsk_fprintf(hFile, "\n");
+                        (void *)&print)) {
+                    tsk_fprintf(hFile, "\nError reading file data fork\n");
+                    tsk_error_print(hFile);
+                    tsk_error_reset();
+                }
+                else {
+                    output_print_addr(&print);
+                    if (print.idx != 0)
+                        tsk_fprintf(hFile, "\n");
+                }
             }
         }
 
         // Only print out the blocks of the Resource fork if it has nonzero size
         if (tsk_getu64(fs->endian, entry.cat.resource.logic_sz) > 0) {
-            tsk_fprintf(hFile, "\nResource Fork Blocks:\n");
 
-            print.idx = 0;
-            print.hFile = hFile;
-            print.accumulating = FALSE;
-            print.startBlock = 0;
-            print.blockCount = 0;
+            if (! (istat_flags & TSK_FS_ISTAT_RUNLIST)) {
+                tsk_fprintf(hFile, "\nResource Fork Blocks:\n");
 
-            if (tsk_fs_file_walk_type(fs_file,
+                print.idx = 0;
+                print.hFile = hFile;
+                print.accumulating = FALSE;
+                print.startBlock = 0;
+                print.blockCount = 0;
+
+                if (tsk_fs_file_walk_type(fs_file,
                     TSK_FS_ATTR_TYPE_HFS_RSRC, HFS_FS_ATTR_ID_RSRC,
                     (TSK_FS_FILE_WALK_FLAG_AONLY |
                         TSK_FS_FILE_WALK_FLAG_SLACK), print_addr_act,
-                    (void *) &print)) {
-                tsk_fprintf(hFile, "\nError reading file resource fork\n");
-                tsk_error_print(hFile);
-                tsk_error_reset();
-            }
-            else {
-                output_print_addr(&print);
-                if (print.idx != 0)
-                    tsk_fprintf(hFile, "\n");
+                        (void *)&print)) {
+                    tsk_fprintf(hFile, "\nError reading file resource fork\n");
+                    tsk_error_print(hFile);
+                    tsk_error_reset();
+                }
+                else {
+                    output_print_addr(&print);
+                    if (print.idx != 0)
+                        tsk_fprintf(hFile, "\n");
+                }
             }
         }
     }
@@ -5947,6 +6013,14 @@ hfs_istat(TSK_FS_INFO * fs, FILE * hFile, TSK_INUM_T inum,
                     "",
                     (fs_attr->flags & TSK_FS_ATTR_SPARSE) ? ", Sparse" :
                     "", fs_attr->size, fs_attr->nrd.initsize);
+
+                if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
+                    if (tsk_fs_attr_print(fs_attr, hFile)) {
+                        tsk_fprintf(hFile, "\nError creating run lists\n");
+                        tsk_error_print(hFile);
+                        tsk_error_reset();
+                    }
+                }
             }                   // END:  non-resident attribute case
             else {
                 tsk_fprintf(hFile,

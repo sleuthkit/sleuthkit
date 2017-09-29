@@ -18,8 +18,6 @@ AC_CONFIG_SRCDIR([tsk/base/tsk_base.h])
 AC_CONFIG_HEADERS([tsk/tsk_config.h])
 AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE([foreign])
-AM_PATH_CPPUNIT(1.12.1)
-AM_CONDITIONAL([CPPUNIT],[test "x$no_cppunit" = x])
 AM_PROG_LIBTOOL
 AM_MAINTAINER_MODE
 AC_CONFIG_MACRO_DIR([m4])
@@ -31,8 +29,8 @@ AC_PROG_CPP
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
+AC_PATH_PROG(PKGCONFIG,[pkg-config])
 AC_PATH_PROG(PERL, perl)
-
 
 dnl Checks for header files.
 AC_HEADER_STDC
@@ -84,6 +82,9 @@ AX_PTHREAD([
     LDFLAGS="$LDFLAGS $PTHREAD_CFLAGS"
     CC="$PTHREAD_CC"],[])
 
+PKG_CHECK_MODULES([CPPUNIT],[cppunit >= 1.12.1],[ac_cv_cppunit=yes],[ac_cv_cppunit=no])
+AM_CONDITIONAL([CPPUNIT],[test "x$ac_cv_cppunit" = xyes])
+
 dnl Permit single-threaded builds
 AC_ARG_ENABLE([multithreading],
     [AS_HELP_STRING([--disable-multithreading], [Build without multithreading support])])
@@ -122,12 +123,17 @@ AC_CHECK_HEADERS(streambuf, , , AC_MSG_ERROR([missing STL streambuf class header
 AC_CHECK_HEADERS(string, , , AC_MSG_ERROR([missing STL string class header])) 
 AC_CHECK_HEADERS(vector, , , AC_MSG_ERROR([missing STL vector class header])) 
 
-
-dnl needed for sqllite
-AC_CHECK_LIB(dl, dlopen) 
-dnl sqlite requires pthread libraries - this was copied from its configure.ac
-dnl AC_SEARCH_LIBS(pthread_create, pthread)
-dnl AC_SEARCH_LIBS(dlopen, dl)
+dnl Check for sqlite and its dependencies
+AC_CHECK_HEADERS([sqlite3.h],
+                 [AC_CHECK_LIB(dl, dlopen)
+                  AC_CHECK_LIB(sqlite3, sqlite3_open)])
+dnl Compile the bundled sqlite if there is no system one installed
+AC_MSG_CHECKING(which sqlite3 to use)
+AS_IF([test "x$ac_cv_lib_sqlite3_sqlite3_open" = "xyes"],
+      [AC_MSG_RESULT([system])],
+      [AC_MSG_RESULT([bundled])])
+AM_CONDITIONAL([HAVE_LIBSQLITE3],
+               [test "x$ac_cv_lib_sqlite3_sqlite3_open" = "xyes"])
 
 # Check if we should link afflib.
 AC_ARG_WITH([afflib],
@@ -230,10 +236,6 @@ AS_IF([test "x$with_libewf" != "xno"],
     )]
 )
 AS_IF([test "x$ac_cv_lib_ewf_libewf_get_version" = "xyes"], [ax_libewf=yes], [ax_libewf=no])
-
-dnl sqlite requires pthread libraries - this was copied from its configure.ac
-dnl AC_SEARCH_LIBS(pthread_create, pthread)
-AC_SEARCH_LIBS(dlopen, dl)
 
 dnl Test for the various java things that we need for bindings
 AS_IF([test "x$enable_java" != "xno"], [
@@ -351,6 +353,7 @@ Building:
    zlib support:                          $ax_zlib
 
 Features:
+   cppunit support:                       $ac_cv_cppunit
    Java/JNI support:                      $ax_java_support
    Multithreading:                        $ax_multithread
 ]);

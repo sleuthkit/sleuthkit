@@ -98,6 +98,12 @@ iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, char *buf,
     iso9660_inode_node *in;
     TSK_OFF_T dir_offs = a_dir_addr * a_fs->block_size;
 
+    // had an issue once where dir was too small
+    // many later calculations assume we can fit at least one entry
+    if (a_length < sizeof(iso9660_dentry)) {      
+        return TSK_OK;
+    }
+
     if ((fs_name = tsk_fs_name_alloc(ISO9660_MAXNAMLEN + 1, 0)) == NULL)
         return TSK_ERR;
 

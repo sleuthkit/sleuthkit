@@ -228,8 +228,9 @@ ntfs_parent_act(TSK_FS_FILE * fs_file, void *ptr)
     fs_name_list = fs_file->meta->name2;
     while (fs_name_list) {
         if (ntfs_parent_map_add(ntfs, fs_name_list,
-                fs_file->meta))
+                fs_file->meta)) {
             return TSK_WALK_ERROR;
+        }
         fs_name_list = fs_name_list->next;
     }
     return TSK_WALK_CONT;
@@ -751,7 +752,6 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     ntfs_idxroot *idxroot;
     ntfs_idxelist *idxelist;
     ntfs_idxrec *idxrec_p, *idxrec;
-    int off;
     TSK_OFF_T idxalloc_len;
     TSK_FS_LOAD_FILE load_file;
 
@@ -995,6 +995,7 @@ ntfs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         }
     }
     else {
+        int off;
 
         if (fs_attr_idx->flags & TSK_FS_ATTR_RES) {
             tsk_error_reset();
@@ -1389,7 +1390,6 @@ ntfs_find_file_rec(TSK_FS_INFO * fs, NTFS_DINFO * dinfo,
     uint8_t decrem = 0;
     size_t len = 0, i;
     char *begin = NULL;
-    int retval;
 
 
     if (fs_name_list->par_inode < fs->first_inum ||
@@ -1413,9 +1413,10 @@ ntfs_find_file_rec(TSK_FS_INFO * fs, NTFS_DINFO * dinfo,
      * - The parent is no longer a directory
      * - The sequence number of the parent is no longer correct
      */
-    if ((fs_file_par->meta->type != TSK_FS_META_TYPE_DIR)
+    if (( ! TSK_FS_IS_DIR_META(fs_file_par->meta->type))
         || (fs_file_par->meta->seq != fs_name_list->par_seq)) {
         const char *str = TSK_FS_ORPHAN_STR;
+        int retval;
         len = strlen(str);
 
         /* @@@ There should be a sanity check here to verify that the

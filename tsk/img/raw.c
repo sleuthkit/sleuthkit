@@ -24,6 +24,19 @@
 
 #ifdef TSK_WIN32
 #include <winioctl.h>
+#else
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
+#endif
+
+#ifndef S_IFMT
+#define S_IFMT __S_IFMT
+#endif
+
+#ifndef S_IFDIR
+#define S_IFDIR __S_IFDIR
 #endif
 
 
@@ -260,11 +273,11 @@ raw_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
 
             /* read from the next image segment(s) if needed */
             if (((TSK_OFF_T) cnt == read_len) && (read_len != len)) {
-                ssize_t cnt2;
 
                 len -= read_len;
 
                 while (len > 0) {
+                    ssize_t cnt2;
                     /* go to the next image segment */
                     i++;
 
@@ -320,14 +333,16 @@ static void
 raw_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
 {
     IMG_RAW_INFO *raw_info = (IMG_RAW_INFO *) img_info;
-    int i;
 
     tsk_fprintf(hFile, "IMAGE FILE INFORMATION\n");
     tsk_fprintf(hFile, "--------------------------------------------\n");
     tsk_fprintf(hFile, "Image Type: raw\n");
     tsk_fprintf(hFile, "\nSize in bytes: %" PRIuOFF "\n", img_info->size);
+    tsk_fprintf(hFile, "Sector size:\t%d\n", img_info->sector_size);
 
     if (raw_info->img_info.num_img > 1) {
+        int i;
+
         tsk_fprintf(hFile,
             "\n--------------------------------------------\n");
         tsk_fprintf(hFile, "Split Information:\n");
@@ -355,6 +370,7 @@ static void
 raw_close(TSK_IMG_INFO * img_info)
 {
     IMG_RAW_INFO *raw_info = (IMG_RAW_INFO *) img_info;
+    int i;
 
 #ifdef TSK_WIN32
     if (raw_info->img_writer != NULL) {
@@ -364,7 +380,6 @@ raw_close(TSK_IMG_INFO * img_info)
     }
 #endif
 
-    int i;
     for (i = 0; i < SPLIT_CACHE; i++) {
         if (raw_info->cache[i].fd != 0)
 #ifdef TSK_WIN32

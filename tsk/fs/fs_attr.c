@@ -61,9 +61,8 @@ tsk_fs_attr_run_alloc()
 void
 tsk_fs_attr_run_free(TSK_FS_ATTR_RUN * fs_attr_run)
 {
-    TSK_FS_ATTR_RUN *fs_attr_run_prev;
     while (fs_attr_run) {
-        fs_attr_run_prev = fs_attr_run;
+        TSK_FS_ATTR_RUN *fs_attr_run_prev = fs_attr_run;
         fs_attr_run = fs_attr_run->next;
         fs_attr_run_prev->next = NULL;
         free(fs_attr_run_prev);
@@ -367,6 +366,102 @@ dump_attr(TSK_FS_ATTR * a_fs_attr)
             cur_run->offset, cur_run->offset + cur_run->len - 1,
             (cur_run->flags & TSK_FS_ATTR_RUN_FLAG_FILLER) ? "" : "Not");
     }
+}
+
+/*
+ * Prints the data runs for a non-resident attribute
+ */
+uint8_t
+tsk_fs_attr_print(const TSK_FS_ATTR * a_fs_attr, FILE* hFile) {
+    TSK_FS_ATTR_RUN *cur_run;
+    TSK_FS_ATTR_RUN *fs_attr_run;
+    uint32_t skip_remain;
+    TSK_OFF_T tot_size;
+    TSK_FS_INFO *fs = a_fs_attr->fs_file->fs_info;
+    TSK_OFF_T off = 0;
+    uint8_t stop_loop = 0;
+
+    if ( ! (a_fs_attr->flags & TSK_FS_ATTR_NONRES)) {
+        tsk_error_set_errstr("tsk_fs_attr_print called on non-resident attribute");
+        return TSK_ERR;
+    }
+
+    cur_run = a_fs_attr->nrd.run;
+    tot_size = a_fs_attr->size;
+    skip_remain = a_fs_attr->nrd.skiplen;
+
+    for (fs_attr_run = a_fs_attr->nrd.run; fs_attr_run;
+        fs_attr_run = fs_attr_run->next) {
+        TSK_DADDR_T addr, len_idx, run_len, run_start_addr;
+
+        addr = fs_attr_run->addr;
+        run_len = 0;
+        run_start_addr = addr;
+
+        /* cycle through each block in the run */
+        for (len_idx = 0; len_idx < fs_attr_run->len; len_idx++) {
+
+
+            /* If the address is too large then give an error */
+            if (addr + len_idx > fs->last_block) {
+                if (a_fs_attr->fs_file->
+                    meta->flags & TSK_FS_META_FLAG_UNALLOC)
+                    tsk_error_set_errno(TSK_ERR_FS_RECOVER);
+                else
+                    tsk_error_set_errno(TSK_ERR_FS_BLK_NUM);
+                tsk_error_set_errstr
+                    ("Invalid address in run (too large): %" PRIuDADDR "",
+                    addr + len_idx);
+                return TSK_ERR;
+            }
+
+
+            /* Need to account for the skip length, which is the number of bytes
+            * in the start of the attribute that are skipped and that are not
+            * included in the overall length.  We will seek past those and not
+            * return those in the action.  We just read a block size so check
+            * if there is data to be returned in this buffer. */
+
+            if (skip_remain >= fs->block_size) {
+                skip_remain -= fs->block_size;
+                run_start_addr++;
+            }
+            else {
+                size_t ret_len;
+
+                /* Do we want to return a full block, or just the end? */
+                if ((TSK_OFF_T)fs->block_size - skip_remain <
+                    tot_size - off)
+                    ret_len = fs->block_size - skip_remain;
+                else
+                    ret_len = (size_t)(tot_size - off);
+
+                off += ret_len;
+                run_len++;
+                skip_remain = 0;
+
+                if (off >= tot_size) {
+                    stop_loop = 1;
+                    break;
+                }
+            }
+        }    
+
+        if (cur_run->flags & TSK_FS_ATTR_RUN_FLAG_SPARSE) {
+            tsk_fprintf(hFile, "  Staring address: X, length: %lld  Sparse", run_len);
+        }
+        else if (cur_run->flags & TSK_FS_ATTR_RUN_FLAG_FILLER) {
+            tsk_fprintf(hFile, "  Staring address: X, length: %lld  Filler", run_len);
+        }
+        else {
+            tsk_fprintf(hFile, "  Staring address: %lld, length: %lld", run_start_addr, run_len);
+        }
+        tsk_fprintf(hFile, "\n");
+        if (stop_loop) {
+            break;
+        }
+    }
+    return TSK_OK;
 }
 
 /**

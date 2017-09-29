@@ -17,8 +17,6 @@
 * \defgroup hashdblib_cpp C++ Hash Database Classes
 */
 
-#include "tsk/auto/sqlite3.h"
-
 #ifndef _TSK_HDB_H
 #define _TSK_HDB_H
 
@@ -156,22 +154,6 @@ extern "C" {
         TSK_TCHAR *idx_idx_fname;     ///< Name of index of index file, may be NULL
         uint64_t *idx_offsets;        ///< Maps the first three bytes of a hash value to an offset in the index file
     } TSK_HDB_BINSRCH_INFO;    
-
-    /** 
-    * Represents a TSK SQLite hash database (it doesn't need an external index).
-    */
-    typedef struct TSK_SQLITE_HDB_INFO {
-        TSK_HDB_INFO base;
-        sqlite3 *db;
-
-        sqlite3_stmt *insert_md5_into_hashes; ///< Once initialized, prepared statements are tied to a specific database 
-        sqlite3_stmt *insert_into_file_names; 
-        sqlite3_stmt *insert_into_comments; 
-        sqlite3_stmt *select_from_hashes_by_md5;
-        sqlite3_stmt *select_from_file_names;
-        sqlite3_stmt *select_from_comments;
-
-    } TSK_SQLITE_HDB_INFO;    
 
     /**
     * Options for opening a hash database

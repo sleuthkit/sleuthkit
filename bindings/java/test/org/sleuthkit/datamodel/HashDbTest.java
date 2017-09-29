@@ -18,8 +18,8 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.io.File;
 import java.io.BufferedOutputStream;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -100,7 +100,7 @@ public class HashDbTest extends ImgTraverser {
 			String retIndexDbpath = SleuthkitJNI.getHashDatabaseIndexPath(handle);
 			assertFalse(retIndexDbpath.equals("None"));
 
-			String dbName = SleuthkitJNI.getHashDatabaseName(handle);
+			String dbName = SleuthkitJNI.getHashDatabaseDisplayName(handle);
 			assertTrue(dbName.equals(hashfn));
 
 			// Make a little hash set to test with
@@ -152,7 +152,7 @@ public class HashDbTest extends ImgTraverser {
 			boolean isUpdateable = SleuthkitJNI.isUpdateableHashDatabase(handle);
 			assertTrue(isUpdateable);
 
-			boolean hlio = SleuthkitJNI.hashDatabaseHasIndexOnly(handle);
+			boolean hlio = SleuthkitJNI.hashDatabaseIsIndexOnly(handle);
 			assertFalse(hlio);
 
 			// Close it out
@@ -183,7 +183,7 @@ public class HashDbTest extends ImgTraverser {
 
 			// Re-indexing
 			boolean overwrite = false;
-			SleuthkitJNI.createLookupIndexForHashDatabase(handleLegacy, overwrite);
+			SleuthkitJNI.createLookupIndexForHashDatabase(handleLegacy);
 			java.io.File f2 = new File(pathLegacyKdb);
 			assertTrue(f2.exists());
 

@@ -59,7 +59,7 @@ TSK_WALK_RET_ENUM
     TSK_INUM_T par_inum = *(TSK_INUM_T *) ptr;
 
     if ((fs_file->meta == NULL)
-        || (fs_file->meta->type != TSK_FS_META_TYPE_DIR))
+        || ( ! TSK_FS_IS_DIR_META(fs_file->meta->type)))
         return TSK_WALK_CONT;
 
     if (fs_file->meta->addr == par_inum)
@@ -279,10 +279,11 @@ TSK_RETVAL_ENUM
     size = fs_dir->fs_file->meta->size;
     len = roundup(size, fatfs->ssize);
 
-    if (tsk_verbose)
+    if (tsk_verbose) {
         tsk_fprintf(stderr,
         "%s: Processing directory %" PRIuINUM "\n",
         func_name, a_addr);
+    }
 
     if (size == 0) {
         if (tsk_verbose)

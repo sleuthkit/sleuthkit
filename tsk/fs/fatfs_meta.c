@@ -421,10 +421,11 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
     else if (fs_meta->attr_state == TSK_FS_META_ATTR_ERROR) {
         return 1;
     }
-    else if (fs_meta->attr != NULL) {
+
+    if (fs_meta->attr != NULL) {
         tsk_fs_attrlist_markunused(fs_meta->attr);
     }
-    else if (fs_meta->attr == NULL) {
+    else  {
         fs_meta->attr = tsk_fs_attrlist_alloc();
     }
 
@@ -547,7 +548,6 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
         TSK_DADDR_T sbase;
         TSK_DADDR_T startclust = clust;
         TSK_OFF_T recoversize = fs_meta->size;
-        int retval;
         TSK_FS_ATTR_RUN *data_run = NULL;
         TSK_FS_ATTR_RUN *data_run_tmp = NULL;
         TSK_FS_ATTR_RUN *data_run_head = NULL;
@@ -604,6 +604,7 @@ fatfs_make_data_runs(TSK_FS_FILE * a_fs_file)
             return 1;
         }
         else {
+            int retval;
 
             /* If the starting cluster is already allocated then we can't
              * recover it */
@@ -885,17 +886,17 @@ print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
  * @returns 1 on error and 0 on success.
  */
 uint8_t
-fatfs_istat(TSK_FS_INFO *a_fs, FILE *a_hFile, TSK_INUM_T a_inum,
+fatfs_istat(TSK_FS_INFO *a_fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE *a_hFile, TSK_INUM_T a_inum,
     TSK_DADDR_T a_numblock, int32_t a_sec_skew)
 {
     const char* func_name = "fatfs_istat";
     FATFS_INFO *fatfs = (FATFS_INFO*)a_fs;
-    TSK_FS_META *fs_meta = NULL; 
-    TSK_FS_FILE *fs_file =  NULL;
+    TSK_FS_META *fs_meta = NULL;
+    TSK_FS_FILE *fs_file = NULL;
     TSK_FS_META_NAME_LIST *fs_name_list = NULL;
     FATFS_PRINT_ADDR print;
     char timeBuf[128];
- 
+
     tsk_error_reset();
     if (fatfs_ptr_arg_is_null(a_fs, "a_fs", func_name) ||
         fatfs_ptr_arg_is_null(a_hFile, "a_hFile", func_name) ||
@@ -975,7 +976,7 @@ fatfs_istat(TSK_FS_INFO *a_fs, FILE *a_hFile, TSK_INUM_T a_inum,
     }
 
     tsk_fprintf(a_hFile, "Written:\t%s\n", tsk_fs_time_to_str(fs_meta->mtime,
-            timeBuf));
+        timeBuf));
     tsk_fprintf(a_hFile, "Accessed:\t%s\n",
         tsk_fs_time_to_str(fs_meta->atime, timeBuf));
     tsk_fprintf(a_hFile, "Created:\t%s\n",
@@ -983,22 +984,37 @@ fatfs_istat(TSK_FS_INFO *a_fs, FILE *a_hFile, TSK_INUM_T a_inum,
 
     /* Print the specified number of sector addresses. */
     tsk_fprintf(a_hFile, "\nSectors:\n");
-    if (a_numblock > 0) {
-        /* A bad hack to force a specified number of blocks */
-        fs_meta->size = a_numblock * a_fs->block_size;
+    if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
+        const TSK_FS_ATTR *fs_attr_default =
+            tsk_fs_file_attr_get_type(fs_file,
+                TSK_FS_ATTR_TYPE_DEFAULT, 0, 0);
+        if (fs_attr_default && (fs_attr_default->flags & TSK_FS_ATTR_NONRES)) {
+            if (tsk_fs_attr_print(fs_attr_default, a_hFile)) {
+                tsk_fprintf(a_hFile, "\nError creating run lists\n");
+                tsk_error_print(a_hFile);
+                tsk_error_reset();
+            }
+        }
     }
-    print.istat_seen = 0;
-    print.idx = 0;
-    print.hFile = a_hFile;
-    if (tsk_fs_file_walk(fs_file,
+    else {
+
+        if (a_numblock > 0) {
+            /* A bad hack to force a specified number of blocks */
+            fs_meta->size = a_numblock * a_fs->block_size;
+        }
+        print.istat_seen = 0;
+        print.idx = 0;
+        print.hFile = a_hFile;
+        if (tsk_fs_file_walk(fs_file,
             (TSK_FS_FILE_WALK_FLAG_ENUM)(TSK_FS_FILE_WALK_FLAG_AONLY | TSK_FS_FILE_WALK_FLAG_SLACK),
-            print_addr_act, (void *) &print)) {
-        tsk_fprintf(a_hFile, "\nError reading file\n");
-        tsk_error_print(a_hFile);
-        tsk_error_reset();
-    }
-    else if (print.idx != 0) {
-        tsk_fprintf(a_hFile, "\n");
+            print_addr_act, (void *)&print)) {
+            tsk_fprintf(a_hFile, "\nError reading file\n");
+            tsk_error_print(a_hFile);
+            tsk_error_reset();
+        }
+        else if (print.idx != 0) {
+            tsk_fprintf(a_hFile, "\n");
+        }
     }
 
     tsk_fs_file_close(fs_file);
@@ -1022,7 +1038,7 @@ inode_walk_dent_act(TSK_FS_FILE * fs_file, const char *a_path, void *a_ptr)
     unsigned int flags = TSK_FS_FILE_WALK_FLAG_SLACK | TSK_FS_FILE_WALK_FLAG_AONLY;
 
     if ((fs_file->meta == NULL)
-        || (fs_file->meta->type != TSK_FS_META_TYPE_DIR))
+        || ( ! TSK_FS_IS_DIR_META(fs_file->meta->type)))
         return TSK_WALK_CONT;
 
     /* Get the sector addresses & ignore any errors */

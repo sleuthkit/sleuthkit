@@ -1,15 +1,15 @@
 /*
  * SleuthKit Java Bindings
- * 
- * Copyright 2011-2016 Basis Technology Corp.
+ *
+ * Copyright 2011-2017 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.TskData.FileKnown;
@@ -36,8 +37,8 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
 
 /**
- * An abstract base class for classes that represent of files that have been
- * added to the case.
+ * An abstract base class for classes that represent files that have been added
+ * to the case.
  */
 public abstract class AbstractFile extends AbstractContent {
 
@@ -78,6 +79,7 @@ public abstract class AbstractFile extends AbstractContent {
 	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private long dataSourceObjectId;
+	private final String extension;
 
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
@@ -110,7 +112,9 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param knownState         knownState status of the file, or null if
 	 *                           unknown (default)
 	 * @param parentPath
-	 * @param mimeType           The MIME type of the file, can be null
+	 * @param mimeType           The MIME type of the file, can be null.
+	 * @param extension		        The extension part of the file name (not
+	 *                           including the '.'), can be null.
 	 */
 	AbstractFile(SleuthkitCase db,
 			long objId,
@@ -127,7 +131,8 @@ public abstract class AbstractFile extends AbstractContent {
 			int uid, int gid,
 			String md5Hash, FileKnown knownState,
 			String parentPath,
-			String mimeType) {
+			String mimeType,
+			String extension) {
 		super(db, objId, name);
 		this.dataSourceObjectId = dataSourceObjectId;
 		this.attrType = attrType;
@@ -156,6 +161,7 @@ public abstract class AbstractFile extends AbstractContent {
 		}
 		this.parentPath = parentPath;
 		this.mimeType = mimeType;
+		this.extension = extension == null?"":extension;
 		this.encodingType = TskData.EncodingType.NONE;
 	}
 
@@ -201,7 +207,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return change time as Date
 	 */
 	public String getCtimeAsDate() {
-		return FsContent.epochToTime(ctime);
+		return epochToTime(ctime);
 	}
 
 	/**
@@ -219,7 +225,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return creation time as Date
 	 */
 	public String getCrtimeAsDate() {
-		return FsContent.epochToTime(crtime);
+		return epochToTime(crtime);
 	}
 
 	/**
@@ -237,7 +243,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return access time as Date
 	 */
 	public String getAtimeAsDate() {
-		return FsContent.epochToTime(atime);
+		return epochToTime(atime);
 	}
 
 	/**
@@ -255,7 +261,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @return modified time as Date
 	 */
 	public String getMtimeAsDate() {
-		return FsContent.epochToTime(mtime);
+		return epochToTime(mtime);
 	}
 
 	/**
@@ -423,6 +429,8 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * Sets the MIME type for this file.
+	 *
+	 * @param mimeType The mimeType to set for this file.
 	 */
 	void setMIMEType(String mimeType) {
 		this.mimeType = mimeType;
@@ -457,7 +465,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * updated. Currently only SleuthkiCase calls it to update the object while
 	 * updating tsk_files entry
 	 *
-	 * @param knownState
+	 * @param known
 	 */
 	void setKnown(TskData.FileKnown known) {
 		this.knownState = known;
@@ -474,30 +482,14 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Figures out the extension from the filename, if there is one. We assume
-	 * that extensions only have ASCII alphanumeric chars
+	 * Get the extension part of the filename, if there is one. We assume that
+	 * extensions only have ASCII alphanumeric chars
 	 *
-	 * @return filename extension in lowercase (not including the period) or
+	 * @return The filename extension in lowercase (not including the period) or
 	 *         empty string if there is no extension
 	 */
 	public String getNameExtension() {
-		String ext;
-		int i = getName().lastIndexOf(".");
-		// > 0 because we assume it's not an extension if period is the first character
-		if ((i > 0) && ((i + 1) < getName().length())) {
-			ext = getName().substring(i + 1);
-		} else {
-			return "";
-		}
-
-		// we added this at one point to deal with files that had crazy names based on URLs
-		// it's too hard though to clean those up and not mess up basic extensions though.
-		// We need to add '-' to the below if we use it again
-//		String[] findNonAlphanumeric = ext.split("[^a-zA-Z0-9_]");
-//		if (findNonAlphanumeric.length > 1) {
-//			ext = findNonAlphanumeric[0];
-//		}		
-		return ext.toLowerCase();
+		return extension;
 	}
 
 	/**
@@ -591,8 +583,8 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * is this a virtual file or directory that was created by The Sleuth 
-     * Kit or Autopsy for general structure and organization. 
+	 * is this a virtual file or directory that was created by The Sleuth Kit or
+	 * Autopsy for general structure and organization.
 	 *
 	 * @return true if it's virtual, false otherwise
 	 */
@@ -603,27 +595,28 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Is this object a file.  Should return true for all types of files, 
-     * including file system, logical, derived, layout, and slack space 
-     * for files.
+	 * Is this object a file. Should return true for all types of files,
+	 * including file system, logical, derived, layout, and slack space for
+	 * files.
 	 *
 	 * @return true if a file, false otherwise
 	 */
 	public boolean isFile() {
-		return metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG) 
-				||(metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF) 
+		return metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG)
+				|| (metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_UNDEF)
 				&& dirType.equals(TSK_FS_NAME_TYPE_ENUM.REG));
 
 	}
 
 	/**
-	 * Is this object a directory.  Should return true for file system
-     * folders and virtual folders. 
+	 * Is this object a directory. Should return true for file system folders
+	 * and virtual folders.
 	 *
 	 * @return true if directory, false otherwise
 	 */
 	public boolean isDir() {
-		return metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR);
+		return (metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR)
+				|| metaType.equals(TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_VIRT_DIR));
 	}
 
 	/**
@@ -831,18 +824,18 @@ public abstract class AbstractFile extends AbstractContent {
 		}
 
 		try {
-			if( ! encodingType.equals(TskData.EncodingType.NONE)){
+			if (!encodingType.equals(TskData.EncodingType.NONE)) {
 				// The file is encoded, so we need to alter the offset to read (since there's
 				// a header on the encoded file) and then decode each byte
 				long encodedOffset = offset + EncodedFileUtil.getHeaderLength();
-				
+
 				//move to the user request offset in the stream
 				long curOffset = localFileHandle.getFilePointer();
 				if (curOffset != encodedOffset) {
 					localFileHandle.seek(encodedOffset);
 				}
-				bytesRead = localFileHandle.read(buf, 0, (int) len);	
-				for(int i = 0;i < bytesRead;i++){
+				bytesRead = localFileHandle.read(buf, 0, (int) len);
+				for (int i = 0; i < bytesRead; i++) {
 					buf[i] = EncodedFileUtil.decodeByte(buf[i], encodingType);
 				}
 				return bytesRead;
@@ -853,7 +846,7 @@ public abstract class AbstractFile extends AbstractContent {
 					localFileHandle.seek(offset);
 				}
 				//note, we are always writing at 0 offset of user buffer
-				return localFileHandle.read(buf, 0, (int) len);	
+				return localFileHandle.read(buf, 0, (int) len);
 			}
 		} catch (IOException ex) {
 			final String msg = MessageFormat.format(bundle.getString("AbstractFile.readLocal.exception.msg5.text"), localAbsPath);
@@ -862,7 +855,6 @@ public abstract class AbstractFile extends AbstractContent {
 			throw new TskCoreException(msg, ex);
 		}
 	}
-
 
 	/**
 	 * Set local path for the file, as stored in db tsk_files_path, relative to
@@ -907,12 +899,13 @@ public abstract class AbstractFile extends AbstractContent {
 	public String getLocalAbsPath() {
 		return localAbsPath;
 	}
-	
+
 	/**
 	 * Set the type of encoding used on the file (for local/derived files only)
-	 * @param encodingType 
+	 *
+	 * @param encodingType
 	 */
-	final void setEncodingType(TskData.EncodingType encodingType){
+	final void setEncodingType(TskData.EncodingType encodingType) {
 		this.encodingType = encodingType;
 	}
 
@@ -960,6 +953,8 @@ public abstract class AbstractFile extends AbstractContent {
 	/**
 	 * Lazy load local file handle
 	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException If the local path is not
+	 *                                                  set.
 	 */
 	private void loadLocalFile() throws TskCoreException {
 		if (!localPathSet) {
@@ -1028,42 +1023,8 @@ public abstract class AbstractFile extends AbstractContent {
 				+ "]\t";
 	}
 
-	/*
-	 * -------------------------------------------------------------------------
-	 * Util methods to convert / map the data
-	 * -------------------------------------------------------------------------
-	 */
-	/**
-	 * Return the epoch into string in ISO 8601 dateTime format
-	 *
-	 * @param epoch time in seconds
-	 *
-	 * @return formatted date time string as "yyyy-MM-dd HH:mm:ss"
-	 */
-	public static String epochToTime(long epoch) {
-		String time = "0000-00-00 00:00:00";
-		if (epoch != 0) {
-			time = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss z").format(new java.util.Date(epoch * 1000));
-		}
-		return time;
-	}
-
-	/**
-	 * Convert from ISO 8601 formatted date time string to epoch time in seconds
-	 *
-	 * @param time formatted date time string as "yyyy-MM-dd HH:mm:ss"
-	 *
-	 * @return epoch time in seconds
-	 */
-	public static long timeToEpoch(String time) {
-		long epoch = 0;
-		try {
-			epoch = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(time).getTime() / 1000;
-		} catch (Exception e) {
-		}
-
-		return epoch;
-	}
+	
+	
 
 	/**
 	 * Possible return values for comparing a file to a list of mime types
@@ -1131,14 +1092,13 @@ public abstract class AbstractFile extends AbstractContent {
 			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType, TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
 			long size, long ctime, long crtime, long atime, long mtime, short modes, int uid, int gid, String md5Hash, FileKnown knownState,
 			String parentPath) {
-		this(db, objId, db.getDataSourceObjectId(objId), attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null);
+		this(db, objId, db.getDataSourceObjectId(objId), attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null, null);
 	}
-	
-	
+
 	/**
 	 * Initializes common fields used by AbstactFile implementations (objects in
-	 * tsk_files table). This deprecated version has attrId filed defined as a short
-	 * which has since been changed to an int.
+	 * tsk_files table). This deprecated version has attrId filed defined as a
+	 * short which has since been changed to an int.
 	 *
 	 * @param db                 case / db handle where this file belongs to
 	 * @param objId              object id in tsk_objects table
@@ -1168,7 +1128,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 *                           unknown (default)
 	 * @param parentPath
 	 * @param mimeType           The MIME type of the file, can be null
-	 * 
+	 *
 	 * @deprecated Do not make subclasses outside of this package.
 	 */
 	@Deprecated
@@ -1177,7 +1137,7 @@ public abstract class AbstractFile extends AbstractContent {
 			String name, TskData.TSK_DB_FILES_TYPE_ENUM fileType, long metaAddr, int metaSeq, TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
 			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags, long size, long ctime, long crtime, long atime, long mtime, short modes,
 			int uid, int gid, String md5Hash, FileKnown knownState, String parentPath, String mimeType) {
-		this(db, objId, dataSourceObjectId, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null);
+		this(db, objId, dataSourceObjectId, attrType, (int) attrId, name, fileType, metaAddr, metaSeq, dirType, metaType, dirFlag, metaFlags, size, ctime, crtime, atime, mtime, modes, uid, gid, md5Hash, knownState, parentPath, null, null);
 	}
 
 	/**
@@ -1185,11 +1145,12 @@ public abstract class AbstractFile extends AbstractContent {
 	 *
 	 * @return attribute id
 	 *
-	 * @deprecated Use getAttributeId() method instead as it returns integer instead of short.
+	 * @deprecated Use getAttributeId() method instead as it returns integer
+	 * instead of short.
 	 */
 	@Deprecated
 	@SuppressWarnings("deprecation")
-	public short getAttrId() {	
+	public short getAttrId() {
 		/*
 		 * NOTE: previously attrId used to be stored in AbstractFile as (signed)
 		 * short even though it is stored as uint16 in TSK. In extremely rare
@@ -1201,7 +1162,7 @@ public abstract class AbstractFile extends AbstractContent {
 		 */
 		return (short) attrId;	// casting to signed short converts values over 32K to negative values
 	}
-	
+
 	/**
 	 * Set local path for the file, as stored in db tsk_files_path, relative to
 	 * the case db path or an absolute path. When set, subsequent invocations of
@@ -1210,11 +1171,59 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param localPath  local path to be set
 	 * @param isAbsolute true if the path is absolute, false if relative to the
 	 *                   case db
-	 * 
+	 *
 	 * @deprecated Do not make subclasses outside of this package.
 	 */
 	@Deprecated
 	protected void setLocalPath(String localPath, boolean isAbsolute) {
 		setLocalFilePath(localPath, isAbsolute);
+	}
+	
+	/*
+	 * -------------------------------------------------------------------------
+	 * Util methods to convert / map the data
+	 * -------------------------------------------------------------------------
+	 */
+	
+	/**
+	 * Return the epoch into string in ISO 8601 dateTime format
+	 *
+	 * @param epoch time in seconds
+	 *
+	 * @return formatted date time string as "yyyy-MM-dd HH:mm:ss"
+	 * 
+	 * @Deprecated
+	 */
+	 @Deprecated
+	public static String epochToTime(long epoch) {
+		return TimeUtilities.epochToTime(epoch);
+	}
+
+	/**
+	 * Return the epoch into string in ISO 8601 dateTime format, 
+	 * in the given timezone
+	 *
+	 * @param epoch time in seconds
+	 * @param tzone time zone
+	 *
+	 * @return formatted date time string as "yyyy-MM-dd HH:mm:ss"
+	 * 
+	 * @Deprecated
+	 */
+	@Deprecated
+	public static String epochToTime(long epoch, TimeZone tzone) {
+		return TimeUtilities.epochToTime(epoch, tzone);
+	}
+	
+	/**
+	 * Convert from ISO 8601 formatted date time string to epoch time in seconds
+	 *
+	 * @param time formatted date time string as "yyyy-MM-dd HH:mm:ss"
+	 *
+	 * @return epoch time in seconds
+	 */
+	@Deprecated
+	public static long timeToEpoch(String time) {
+		return TimeUtilities.timeToEpoch(time);
 	}
 }

@@ -239,7 +239,6 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
     TSK_DADDR_T current_sector = 0;
     TSK_DADDR_T last_sector_of_data_area = 0;
     char *sector_buf = NULL;
-    ssize_t bytes_read = 0;
     EXFATFS_ALLOC_BITMAP_DIR_ENTRY *dentry = NULL;
     uint64_t i = 0;
     uint64_t first_sector_of_alloc_bitmap = 0;
@@ -252,9 +251,10 @@ exfatfs_get_alloc_bitmap(FATFS_INFO *a_fatfs)
         return FATFS_FAIL;
     }
 
-    current_sector = a_fatfs->rootsect;
     last_sector_of_data_area = a_fatfs->firstdatasect + (a_fatfs->clustcnt * a_fatfs->csize) - 1;
-    while (current_sector < last_sector_of_data_area) {
+    for (current_sector = a_fatfs->rootsect; current_sector < last_sector_of_data_area; current_sector++) {
+        ssize_t bytes_read = 0;
+
         /* Read in a sector from the root directory. The allocation bitmap
          * directory entries will probably be near the beginning of the 
          * directory, probably in the first sector. */
@@ -558,7 +558,6 @@ exfatfs_find_volume_label_dentry(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file)
     TSK_FS_INFO *fs = (TSK_FS_INFO *)a_fatfs;
     TSK_DADDR_T current_sector = 0;
     TSK_DADDR_T last_sector_of_data_area = 0;
-    int8_t sector_is_alloc = 0;
     char *sector_buf = NULL;
     ssize_t bytes_read = 0;
     TSK_INUM_T current_inum = 0;
@@ -593,6 +592,8 @@ exfatfs_find_volume_label_dentry(FATFS_INFO *a_fatfs, TSK_FS_FILE *a_fs_file)
     current_sector = a_fatfs->rootsect;
     last_sector_of_data_area = a_fatfs->firstdatasect + (a_fatfs->clustcnt * a_fatfs->csize) - 1;
     while (current_sector < last_sector_of_data_area) {
+        int8_t sector_is_alloc = 0;
+
         /* Read in a sector from the root directory. The volume label
          * directory entry will probably be near the beginning of the 
          * directory, probably in the first sector. */
@@ -915,6 +916,7 @@ exfatfs_fsstat_fs_content_info(TSK_FS_INFO *a_fs, FILE *a_hFile)
  * @param [in] a_fs Generic file system info structure for the file system.
  * @param [in] a_hFile The file handle.
  */
+#if 0
 static void
 exfatfs_fsstat_fs_fat_chains_info(TSK_FS_INFO *a_fs, FILE *a_hFile)
 {
@@ -973,6 +975,7 @@ exfatfs_fsstat_fs_fat_chains_info(TSK_FS_INFO *a_fs, FILE *a_hFile)
         sect_run_start = sect_run_end + 1;
     }
 }
+#endif
 
 /**
  * \internal

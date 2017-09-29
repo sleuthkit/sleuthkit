@@ -74,6 +74,8 @@ static const int TWELVE_BITS_MASK = 0xFFF; // Only keep 12 bits
 
 static uint8_t 
     yaffsfs_read_header(YAFFSFS_INFO *yfs, YaffsHeader ** header, TSK_OFF_T offset);
+static uint8_t
+    yaffsfs_load_attrs(TSK_FS_FILE *file);
 
 /**
  * Generate an inode number based on the file's object and version numbers
@@ -527,8 +529,9 @@ static TSK_RETVAL_ENUM
         YaffsCacheVersion *version;
         for (version = obj->yco_latest; version != NULL; version = version->ycv_prior) {
             /* Is this an incomplete version? */
-            if (version->ycv_header_chunk == NULL)
+            if (version->ycv_header_chunk == NULL) {
                 continue;
+            }
 
             if (version->ycv_header_chunk->ycc_parent_id == parent_id) {
                 TSK_RETVAL_ENUM result = cb(obj, version, args);
@@ -846,7 +849,7 @@ yaffs_validate_integer_field(std::string numStr){
 
     // Test each character
     for(i = 0;i < numStr.length();i++){
-        if(! isdigit(numStr[i])){
+        if(isdigit(numStr[i]) == 0){
             return 1;
         }
     }
@@ -1653,8 +1656,9 @@ static uint8_t
 
     if (fs_file->meta->name2 == NULL) {
         if ((fs_file->meta->name2 = (TSK_FS_META_NAME_LIST *)
-            tsk_malloc(sizeof(TSK_FS_META_NAME_LIST))) == NULL)
+            tsk_malloc(sizeof(TSK_FS_META_NAME_LIST))) == NULL) {
             return 1;
+        }
         fs_file->meta->name2->next = NULL;
     }
 
@@ -2408,7 +2412,7 @@ static TSK_WALK_RET_ENUM
 * @returns 1 on error and 0 on success
 */
 static uint8_t
-    yaffsfs_istat(TSK_FS_INFO *fs, FILE * hFile, TSK_INUM_T inum,
+    yaffsfs_istat(TSK_FS_INFO *fs, TSK_FS_ISTAT_FLAG_ENUM flags, FILE * hFile, TSK_INUM_T inum,
     TSK_DADDR_T numblock, int32_t sec_skew)
 {
     TSK_FS_META *fs_meta;
@@ -2492,17 +2496,32 @@ static uint8_t
     }
     tsk_fprintf(hFile, "\nData Chunks:\n");
 
-    print.idx = 0;
-    print.hFile = hFile;
 
-    if (tsk_fs_file_walk(fs_file, TSK_FS_FILE_WALK_FLAG_AONLY,
-        (TSK_FS_FILE_WALK_CB) print_addr_act, (void *) &print)) {
+    if (flags & TSK_FS_ISTAT_RUNLIST){
+        const TSK_FS_ATTR *fs_attr_default =
+            tsk_fs_file_attr_get_type(fs_file,
+                TSK_FS_ATTR_TYPE_DEFAULT, 0, 0);
+        if (fs_attr_default && (fs_attr_default->flags & TSK_FS_ATTR_NONRES)) {
+            if (tsk_fs_attr_print(fs_attr_default, hFile)) {
+                tsk_fprintf(hFile, "\nError creating run lists  ");
+                tsk_error_print(hFile);
+                tsk_error_reset();
+            }
+        }
+    }
+    else {
+        print.idx = 0;
+        print.hFile = hFile;
+
+        if (tsk_fs_file_walk(fs_file, TSK_FS_FILE_WALK_FLAG_AONLY,
+            (TSK_FS_FILE_WALK_CB)print_addr_act, (void *)&print)) {
             tsk_fprintf(hFile, "\nError reading file:  ");
             tsk_error_print(hFile);
             tsk_error_reset();
-    }
-    else if (print.idx != 0) {
-        tsk_fprintf(hFile, "\n");
+        }
+        else if (print.idx != 0) {
+            tsk_fprintf(hFile, "\n");
+        }
     }
 
     tsk_fs_file_close(fs_file);
@@ -2990,6 +3009,15 @@ TSK_FS_INFO *
         tsk_error_set_errstr("Invalid FS Type in yaffsfs_open");
         return NULL;
     }
+
+    if (img_info->sector_size == 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("yaffs2_open: sector size is 0");
+        return NULL;
+    }
+
+    
 
     if ((yaffsfs = (YAFFSFS_INFO *) tsk_fs_malloc(sizeof(YAFFSFS_INFO))) == NULL)
         return NULL;
