@@ -595,7 +595,7 @@ TskAuto::processAttribute(TSK_FS_FILE * fs_file,
                                          const TSK_FS_ATTR * fs_attr, const char *path) 
 {
     return TSK_OK;
-};
+}
 
 
 void TskAuto::setStopProcessing() {
@@ -695,7 +695,7 @@ std::string TskAuto::errorRecordToString(error_record &rec) {
 uint8_t 
 TskAuto::handleError() {
     return 0;
-};
+}
 
 
 /**
