@@ -183,20 +183,19 @@ public class CommunicationsManager {
 		try {
 			connection.beginTransaction();
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT account_type_id FROM account_types WHERE type_name = '" + accountTypeName + "'"); //NON-NLS
+			rs = connection.executeQuery(s, "SELECT * FROM account_types WHERE type_name = '" + accountTypeName + "'"); //NON-NLS
 			if (!rs.next()) {
 				rs.close();
 
 				s.execute("INSERT INTO account_types (type_name, display_name) VALUES ( '" + accountTypeName + "', '" + displayName + "')"); //NON-NLS
 
 				// Read back the typeID
-				rs = connection.executeQuery(s, "SELECT account_type_id FROM account_types WHERE type_name = '" + accountTypeName + "'"); //NON-NLS
+				rs = connection.executeQuery(s, "SELECT * FROM account_types WHERE type_name = '" + accountTypeName + "'"); //NON-NLS
 				rs.next();
 
 				int typeID = rs.getInt("account_type_id");
-				rs.close();
-
 				accountType = new Account.Type(rs.getString("type_name"), rs.getString("display_name"));
+				
 				this.accountTypeToTypeIdMap.put(accountType, typeID);
 				this.typeNameToAccountTypeMap.put(accountTypeName, accountType);
 
