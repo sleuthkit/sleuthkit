@@ -529,7 +529,7 @@ copy_literal_and_match:
   //  Check if the match distance is valid; matches must not reference
   //  bytes that preceed the start of the output buffer, nor can the match
   //  distance be zero.
-  if (D > dst_ptr - state->dst_begin || D == 0)
+  if (D > (size_t)(dst_ptr - state->dst_begin) || D == 0)
     goto invalid_match_distance;
 copy_match:
   //  Now we copy the match from dst_ptr - D to dst_ptr. It is important to keep

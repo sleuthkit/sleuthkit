@@ -239,7 +239,7 @@ hfs_checked_read_random(TSK_FS_INFO * fs, char *buf, size_t len,
     ssize_t r;
 
     r = tsk_fs_read(fs, offs, buf, len);
-    if (r != len) {
+    if (r != (ssize_t) len) {
         if (r >= 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -2679,7 +2679,7 @@ hfs_read_zlib_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTab
 
     attrReadResult = tsk_fs_attr_read(rAttr, offsetTableOffset + 4,
         offsetTableData, tableSize * 8, TSK_FS_FILE_READ_FLAG_NONE);
-    if (attrReadResult != tableSize * 8) {
+    if (attrReadResult != (ssize_t) tableSize * 8) {
         error_returned
             (" %s: reading in the compression offset table, "
             "return value %u should have been %u", __func__, attrReadResult,
@@ -2752,7 +2752,7 @@ hfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTab
 
     attrReadResult = tsk_fs_attr_read(rAttr, 0,
         offsetTableData, tableDataSize, TSK_FS_FILE_READ_FLAG_NONE);
-    if (attrReadResult != tableDataSize) {
+    if (attrReadResult != (ssize_t) tableDataSize) {
         error_returned
             (" %s: reading in the compression offset table, "
             "return value %u should have been %u", __func__, attrReadResult,
@@ -2898,7 +2898,7 @@ static ssize_t read_and_decompress_block(
     // Read in the block of compressed data
     attrReadResult = tsk_fs_attr_read(rAttr, offset,
         rawBuf, len, TSK_FS_FILE_READ_FLAG_NONE);
-    if (attrReadResult != len) {
+    if (attrReadResult != (ssize_t) len) {
         char msg[] =
             "%s%s: reading in the compression offset table, "
             "return value %u should have been %u";
@@ -4437,7 +4437,7 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
         tsk_fs_attr_read(rAttr, (uint64_t) mapOffset, map,
         (size_t) mapLength, TSK_FS_FILE_READ_FLAG_NONE);
 
-    if (attrReadResult < 0 || attrReadResult != mapLength) {
+    if (attrReadResult < 0 || attrReadResult != (ssize_t) mapLength) {
         error_returned
             ("- hfs_parse_resource_fork: could not read the map");
         free(map);
@@ -4976,7 +4976,7 @@ hfs_block_is_alloc(HFS_INFO * hfs, TSK_DADDR_T a_addr)
     // see if it is in the cache
     if ((hfs->blockmap_cache_start == -1)
         || (hfs->blockmap_cache_start > b)
-        || (hfs->blockmap_cache_start + hfs->blockmap_cache_len <= b)) {
+        || (hfs->blockmap_cache_start + hfs->blockmap_cache_len <= (size_t) b)) {
         size_t cnt = tsk_fs_attr_read(hfs->blockmap_attr, b,
             hfs->blockmap_cache,
             sizeof(hfs->blockmap_cache), 0);
