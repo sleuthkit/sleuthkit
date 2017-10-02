@@ -1,7 +1,6 @@
 bin_PROGRAMS = fiwalk 
 
-AM_CFLAGS = -Wall
-AM_CPPFLAGS = -I../../.. -Wall
+AM_CPPFLAGS = -I../../..
 LDADD = ../../../tsk/libtsk.la
 
 EXTRA_DIST = README_PLUGINS.txt ficonfig.txt \

@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I../../.. -I$(srcdir)/../../.. -Wall $(JNI_CPPFLAGS)
+AM_CPPFLAGS = -I../../.. -I$(srcdir)/../../.. $(JNI_CPPFLAGS)
 EXTRA_DIST = .indent.pro 
 
 lib_LTLIBRARIES = libtsk_jni.la
