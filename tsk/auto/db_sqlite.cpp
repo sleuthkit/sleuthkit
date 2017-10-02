@@ -235,14 +235,14 @@ int
     }
 
     if (attempt_exec
-        ("CREATE TABLE tsk_db_info (schema_ver INTEGER, tsk_ver INTEGER);",
+        ("CREATE TABLE tsk_db_info (schema_ver INTEGER, tsk_ver INTEGER, schema_minor_ver INTEGER);",
         "Error creating tsk_db_info table: %s\n")) {
             return 1;
     }
 
     snprintf(foo, 1024,
-        "INSERT INTO tsk_db_info (schema_ver, tsk_ver) VALUES (%d, %d);",
-        TSK_SCHEMA_VER, TSK_VERSION_NUM);
+        "INSERT INTO tsk_db_info (schema_ver, tsk_ver, schema_minor_Ver) VALUES (%d, %d, %d);",
+        TSK_SCHEMA_VER, TSK_VERSION_NUM, TSK_SCHEMA_MINOR_VER);
     if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
         return 1;
     }
