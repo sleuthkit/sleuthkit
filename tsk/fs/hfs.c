@@ -3171,7 +3171,7 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
 
     if (a_offset < 0) {
         error_detected(TSK_ERR_FS_ARG,
-            "%s: reading from file at a negative offset, or negative length",
+            "%s: reading from file at a negative offset",
              __func__);
         return -1;
     }
