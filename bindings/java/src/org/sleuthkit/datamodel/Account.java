@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2016 Basis Technology Corp.
+ * Copyright 2011-2017 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,26 +21,23 @@ package org.sleuthkit.datamodel;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 
 /**
- * An entity that has a type and a unique identifier. 
- * Example types include a Bank Account, Credit Card, Email address, Phone number, 
- *   phone, Application,  Web-site login, etc.
+ * An entity that has a type and a unique identifier. Example types include a
+ * Bank Account, Credit Card, Email address, Phone number, phone, Application,
+ * Web-site login, etc.
  */
 public class Account {
 
-	private long artifactId;	// ArtifactID of the underlying TSK_ACCOUNT artifact
-	
+	private final long account_id;	// primary key in the Accounts table 
+
 	private final Account.Type accountType;
-	private final String accountID;
-	private final BlackboardArtifact artifact;
-	
+	private final String accountUniqueID;
+
 	public static final class Type implements Serializable {
-		
+
 		private static final long serialVersionUID = 1L;
-		 
+
 		public static final Account.Type CREDIT_CARD = new Type("CREDIT_CARD", "Credit Card");
 		public static final Account.Type DEVICE = new Type("DEVICE", "Device");
 		public static final Account.Type PHONE = new Type("PHONE", "Phone");
@@ -51,9 +48,9 @@ public class Account {
 		public static final Account.Type WHATSAPP = new Type("WHATSAPP", "Facebook");
 		public static final Account.Type MESSAGING_APP = new Type("MESSAGING_APP", "MessagingApp");
 		public static final Account.Type WEBSITE = new Type("WEBSITE", "Website");
-		
+
 		public static final List<Account.Type> PREDEFINED_ACCOUNT_TYPES = new ArrayList<Account.Type>();
-		
+
 		static {
 			PREDEFINED_ACCOUNT_TYPES.add(CREDIT_CARD);
 			PREDEFINED_ACCOUNT_TYPES.add(DEVICE);
@@ -67,33 +64,20 @@ public class Account {
 			PREDEFINED_ACCOUNT_TYPES.add(WEBSITE);
 		}
 
-		private final int typeID;
 		private final String typeName;
 		private final String displayName;
-		
-		
+
 		/**
 		 * Constructs an Account type.
 		 *
-		 * @param typeID      The type id.
-		 * @param typeName    The type name.
-		 * @param displayName The display name for the type.
-		 */
-		Type(int typeID, String typeName, String displayName) {
-			this.typeID = typeID;
-			this.typeName = typeName;
-			this.displayName = displayName;
-		}
-		
-		/**
-		 * Constructs an Account type.
 		 * @param typeName    The type name.
 		 * @param displayName The display name for the type.
 		 */
 		Type(String typeName, String displayName) {
-			this(0, typeName, displayName );
+			this.typeName = typeName;
+			this.displayName = displayName;
 		}
-		
+
 		/**
 		 * Gets the type name
 		 *
@@ -102,21 +86,10 @@ public class Account {
 		public String getTypeName() {
 			return this.typeName;
 		}
-		
+
 		public String getDisplayName() {
 			return displayName;
 		}
-		
-		/**
-		 * Gets the type id of this account type.
-		 *
-		 * @return The type id.
-		 */
-		public int getTypeID() {
-			return this.typeID;
-		}
-
-		
 
 		@Override
 		public boolean equals(Object that) {
@@ -128,26 +101,24 @@ public class Account {
 				return ((Account.Type) that).sameType(this);
 			}
 		}
-		
+
 		@Override
 		public int hashCode() {
-        int hash = 11;
-		
-        hash = 83 * hash + (this.typeName != null ? this.typeName.hashCode() : 0);
-		hash = 83 * hash + (this.displayName != null ? this.displayName.hashCode() : 0);
-        hash = 83 * hash + Objects.hashCode(this.typeID);
-        
-        return hash;
-    }
-	
+			int hash = 11;
+
+			hash = 83 * hash + (this.typeName != null ? this.typeName.hashCode() : 0);
+			hash = 83 * hash + (this.displayName != null ? this.displayName.hashCode() : 0);
+			
+			return hash;
+		}
+
 		@Override
 		public String toString() {
-			return "(typeID= " + this.typeID
-					+ ", displayName=" + this.displayName
+			return " displayName=" + this.displayName
 					+ ", typeName=" + this.typeName + ")";
-					
+
 		}
-		
+
 		/**
 		 * Determines if this account type object is equivalent to another
 		 * account type object.
@@ -158,50 +129,29 @@ public class Account {
 		 */
 		private boolean sameType(Account.Type that) {
 			return this.typeName.equals(that.getTypeName())
-					&& this.displayName.equals(that.getDisplayName())
-					&& this.typeID == that.getTypeID();
+					&& this.displayName.equals(that.getDisplayName());
 		}
 	}
 
-	Account(SleuthkitCase sleuthkitCase, long artifactId) throws TskCoreException {
-	
-		this.artifactId = artifactId;
-		
-		this.artifact = sleuthkitCase.getBlackboardArtifact(artifactId);
-		this.accountType =  sleuthkitCase.getAccountType(artifact.getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE)).getValueString());
-		this.accountID = artifact.getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_ID)).getValueString();
-	
+	Account(long account_id, Account.Type accountType, String accountUniqueID) throws TskCoreException {
+
+		this.account_id = account_id;
+
+		this.accountType = accountType;
+		this.accountUniqueID = accountUniqueID;
+
 	}
-	
-	Account(SleuthkitCase sleuthkitCase, BlackboardArtifact artifact) throws TskCoreException {
-		
-		this.artifactId = artifact.getArtifactID();
-		
-		this.artifact = artifact;
-		
-		this.accountType =  sleuthkitCase.getAccountType(artifact.getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE)).getValueString());
-		this.accountID = artifact.getAttribute(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_ID)).getValueString();
-	
+
+	public String getAccountUniqueID() {
+		return this.accountUniqueID;
 	}
-	
-	public String getAccountID() {
-		return this.accountID;
-	}
-	
+
 	public Account.Type getAccountType() {
 		return this.accountType;
 	}
-	
-	public BlackboardAttribute  getAttribute(BlackboardAttribute.ATTRIBUTE_TYPE attrType) throws TskCoreException {
-		return this.artifact.getAttribute(new BlackboardAttribute.Type(attrType));
+
+	public long getAccountId() {
+		return this.account_id;
 	}
-	
-	public void addAttribute(BlackboardAttribute bbatr) throws TskCoreException {
-		this.artifact.addAttribute(bbatr);
-	}
-	
-	public long getArtifactId() {
-		return this.artifactId;
-	}
-		
+
 }
