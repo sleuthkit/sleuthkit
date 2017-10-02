@@ -1469,20 +1469,7 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat,
             // It seems like the linkNum is always the same as the CNID
             // returned by hfs_lookup_hard_link, which is very inefficient when a 
             // datasource contains large numbers of linked files.
-            TSK_INUM_T target_cnid = linkNum;
-
-            if (target_cnid != 0) {
-                // Succeeded in finding that target_cnid in the Catalog file
-                return target_cnid;
-            }
-            else {
-                // This should be a hard link, BUT...
-                // Did not find the target_cnid in the Catalog file.
-                error_returned
-                    ("hfs_follow_hard_link: got an error looking up the target of a file link");
-                *is_error = 2;
-                return 0;
-            }
+            return linkNum;
         }
     }
     else if (file_type == HFS_LINKDIR_FILE_TYPE
@@ -1532,20 +1519,7 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat,
             // It seems like the linkNum is always the same as the CNID
             // returned by hfs_lookup_hard_link, which is very inefficient when a 
             // datasource contains large numbers of linked files.
-            TSK_INUM_T target_cnid = linkNum;
-
-            if (target_cnid != 0) {
-                // Succeeded in finding that target_cnid in the Catalog file
-                return target_cnid;
-            }
-            else {
-                // This should be a hard link, BUT...
-                // Did not find the target_cnid in the Catalog file.
-                error_returned
-                    ("hfs_follow_hard_link: got an error looking up the target of a dir link");
-                *is_error = 2;
-                return 0;
-            }
+            return linkNum;
         }
     }
 
