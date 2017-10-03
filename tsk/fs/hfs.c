@@ -823,12 +823,12 @@ hfs_cat_compare_keys(HFS_INFO * hfs, const hfs_btree_key_cat * key1,
 
 
 /** \internal
- * 
+ *
  * Traverse the HFS catalog file.  Call the callback for each
- * record. 
+ * record.
  *
  * @param hfs File system
- * @param a_cb callback 
+ * @param a_cb callback
  * @param ptr Pointer to pass to callback
  * @returns 1 on error
  */
@@ -1155,7 +1155,7 @@ hfs_cat_get_record_offset_cb(HFS_INFO * hfs, int8_t level_type,
             return HFS_BTREE_CB_LEAF_GO;
         }
         else if (diff == 0) {
-            offset_data->off = 
+            offset_data->off =
                 key_off + 2 + tsk_getu16(hfs->fs_info.endian,
                 cur_key->key_len);
         }
@@ -1728,7 +1728,7 @@ hfs_find_highest_inum_cb(HFS_INFO * hfs, int8_t level_type,
 {
     // NOTE: This assumes that the biggest inum is the last one that we
     // see.  the traverse method does not currently promise that as part of
-    // its callback "contract". 
+    // its callback "contract".
     *((TSK_INUM_T*) ptr) = tsk_getu32(hfs->fs_info.endian, cur_key->parent_cnid);
     return HFS_BTREE_CB_IDX_LT;
 }
@@ -3936,7 +3936,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 goto on_error;
             }
 
-            recData = &recordBytes[keyLength + 2];   
+            recData = &recordBytes[keyLength + 2];
 
             // Data must start on an even offset from the beginning of the record.
             // So, correct this if needed.
@@ -3977,11 +3977,11 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
         // Loop over the records in this node
         for (recIndx = 0; recIndx < numRec; ++recIndx) {
-            
+
             // The offset to the record is stored in table at end of node
             uint8_t *recOffsetTblEntry = &nodeData[attrFile.nodeSize - (2 * (recIndx + 1))];  // data describing where this record is
             uint16_t recOffset = tsk_getu16(endian, recOffsetTblEntry);
-            
+
             int comp;           // comparison result
             char *compStr;      // comparison result as a string
             uint32_t keyFileID;
@@ -3998,7 +3998,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
             // Cast that to the Attributes file key
             keyB = (hfs_btree_key_attr *) recordBytes;
-            
+
             // Compare recordBytes key to the key that we are seeking
             keyFileID = tsk_getu32(endian, keyB->file_id);
 
@@ -4100,7 +4100,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 // be because UTF8 is a variable length encoding. However, the longest
                 // it will be is 3 * the max number of UTF16 code units.  Add one for null
                 // termination.   (thanks Judson!)
-                
+
 
                 conversionResult = hfs_UTF16toUTF8(fs, keyB->attr_name,
                     nameLength, nameBuff, HFS_MAX_ATTR_NAME_LEN_UTF8_B+1, 0);
