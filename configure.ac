@@ -385,6 +385,8 @@ AC_CHECK_FUNCS([getline])
 AC_SEARCH_LIBS(regexec, [regex], , AC_MSG_ERROR([missing regex]))
 
 dnl Enable compliation warnings
+dnl TODO: Maybe turn on -Wpedantic after fixing all the other warnings?
+dnl WARNINGS='-Wall -Wextra -Wpedantic'
 WARNINGS='-Wall -Wextra -Wpedantic'
 
 AC_SUBST(AM_CFLAGS, $WARNINGS)
