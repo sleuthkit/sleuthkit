@@ -3006,7 +3006,7 @@ static ssize_t read_and_decompress_block(
  * @param ptr context for the action callback
  * @param read_block_table pointer to block table read function
  * @param decompress_block pointer to decompression function
- * @return
+ * @return 0 on success, 1 on error
  */
 static uint8_t
 hfs_attr_walk_compressed_rsrc(const TSK_FS_ATTR * fs_attr,
@@ -3175,7 +3175,7 @@ on_error:
     free(offsetTable);
     free(rawBuf);
     free(uncBuf);
-    return 0;
+    return 1;
 }
 
 
@@ -3188,7 +3188,7 @@ on_error:
  * @param flags
  * @param a_action action callback
  * @param ptr context for the action callback
- * @return
+ * @return 0 on success, 1 on error
  */
 static uint8_t
 hfs_attr_walk_zlib_rsrc(const TSK_FS_ATTR * fs_attr,
@@ -3210,7 +3210,7 @@ hfs_attr_walk_zlib_rsrc(const TSK_FS_ATTR * fs_attr,
  * @param flags
  * @param a_action action callback
  * @param ptr context for the action callback
- * @return
+ * @return 0 on success, 1 on error
  */
 static uint8_t
 hfs_attr_walk_lzvn_rsrc(const TSK_FS_ATTR * fs_attr,
