@@ -1,3 +1,7 @@
+# Copyright (c) 2017 Basis Technology. 
+#
+# This software is distributed under the Common Public License 1.0
+
 import codecs
 import datetime
 import logging

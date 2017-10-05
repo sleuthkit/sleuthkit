@@ -77,6 +77,13 @@ TSK_HDB_INFO *idxonly_open(const TSK_TCHAR *db_path)
     hdb_binsrch_info->base.get_db_path = idxonly_get_db_path;
     hdb_binsrch_info->get_entry = idxonly_getentry;
 
+    // Before returning, do one final check that we'll be able to open
+    // the index file
+    if (hdb_binsrch_open_idx(hdb_binsrch_info, hdb_binsrch_info->hash_type)) {
+        hdb_binsrch_close(hdb_binsrch_info);
+        return NULL;
+    }
+
     return (TSK_HDB_INFO*)hdb_binsrch_info;    
 }
 

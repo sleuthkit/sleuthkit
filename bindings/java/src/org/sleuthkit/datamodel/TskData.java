@@ -434,38 +434,40 @@ public class TskData {
 	 */
 	public enum TSK_FS_TYPE_ENUM {
 
-		TSK_FS_TYPE_DETECT(0x00000000), ///< Use autodetection methods
-		TSK_FS_TYPE_NTFS(0x00000001), ///< NTFS file system
-		TSK_FS_TYPE_NTFS_DETECT(0x00000001), ///< NTFS auto detection
-		TSK_FS_TYPE_FAT12(0x00000002), ///< FAT12 file system
-		TSK_FS_TYPE_FAT16(0x00000004), ///< FAT16 file system
-		TSK_FS_TYPE_FAT32(0x00000008), ///< FAT32 file system
-		TSK_FS_TYPE_EXFAT(0x0000000A), ///< ExFAT file system
-		TSK_FS_TYPE_FAT_DETECT(0x0000000e), ///< FAT auto detection
-		TSK_FS_TYPE_FFS1(0x00000010), ///< UFS1 (FreeBSD, OpenBSD, BSDI ...)
-		TSK_FS_TYPE_FFS1B(0x00000020), ///< UFS1b (Solaris - has no type)
-		TSK_FS_TYPE_FFS2(0x00000040), ///< UFS2 - FreeBSD, NetBSD 
-		TSK_FS_TYPE_FFS_DETECT(0x00000070), ///< UFS auto detection
-		TSK_FS_TYPE_EXT2(0x00000080), ///< Ext2 file system
-		TSK_FS_TYPE_EXT3(0x00000100), ///< Ext3 file system
-		TSK_FS_TYPE_EXT_DETECT(0x00000180), ///< ExtX auto detection
-		TSK_FS_TYPE_SWAP(0x00000200), ///< SWAP file system
-		TSK_FS_TYPE_SWAP_DETECT(0x00000200), ///< SWAP auto detection
-		TSK_FS_TYPE_RAW(0x00000400), ///< RAW file system
-		TSK_FS_TYPE_RAW_DETECT(0x00000400), ///< RAW auto detection
-		TSK_FS_TYPE_ISO9660(0x00000800), ///< ISO9660 file system
-		TSK_FS_TYPE_ISO9660_DETECT(0x00000800), ///< ISO9660 auto detection
-		TSK_FS_TYPE_HFS(0x00001000), ///< HFS file system
-		TSK_FS_TYPE_HFS_DETECT(0x00001000), ///< HFS auto detection
-		TSK_FS_TYPE_EXT4(0x00002000), ///< Ext4 file system
-		TSK_FS_TYPE_YAFFS2(0x00004000), ///< YAFFS2 file system
-		TSK_FS_TYPE_YAFFS2_DETECT(0x00004000), ///< YAFFS2 auto detection
-		TSK_FS_TYPE_UNSUPP(0xffffffff);        ///< Unsupported file system
+		TSK_FS_TYPE_DETECT(0x00000000, bundle.getString("TskData.tskFsTypeEnum.autoDetect")), ///< Use autodetection methods
+		TSK_FS_TYPE_NTFS(0x00000001, "NTFS"), ///< NTFS file system
+		TSK_FS_TYPE_NTFS_DETECT(0x00000001, bundle.getString("TskData.tskFsTypeEnum.NTFSautoDetect")), ///< NTFS auto detection
+		TSK_FS_TYPE_FAT12(0x00000002, "FAT12"), ///< FAT12 file system
+		TSK_FS_TYPE_FAT16(0x00000004, "FAT16"), ///< FAT16 file system
+		TSK_FS_TYPE_FAT32(0x00000008, "FAT32"), ///< FAT32 file system
+		TSK_FS_TYPE_EXFAT(0x0000000A, "ExFAT"), ///< ExFAT file system
+		TSK_FS_TYPE_FAT_DETECT(0x0000000e, bundle.getString("TskData.tskFsTypeEnum.FATautoDetect")), ///< FAT auto detection
+		TSK_FS_TYPE_FFS1(0x00000010, "UFS1"), ///< UFS1 (FreeBSD, OpenBSD, BSDI ...)
+		TSK_FS_TYPE_FFS1B(0x00000020, "UFS1b"), ///< UFS1b (Solaris - has no type)
+		TSK_FS_TYPE_FFS2(0x00000040, "UFS2"), ///< UFS2 - FreeBSD, NetBSD 
+		TSK_FS_TYPE_FFS_DETECT(0x00000070, "UFS"), ///< UFS auto detection
+		TSK_FS_TYPE_EXT2(0x00000080, "Ext2"), ///< Ext2 file system
+		TSK_FS_TYPE_EXT3(0x00000100, "Ext3"), ///< Ext3 file system
+		TSK_FS_TYPE_EXT_DETECT(0x00000180, bundle.getString("TskData.tskFsTypeEnum.ExtXautoDetect")), ///< ExtX auto detection
+		TSK_FS_TYPE_SWAP(0x00000200, "SWAP"), ///< SWAP file system
+		TSK_FS_TYPE_SWAP_DETECT(0x00000200, bundle.getString("TskData.tskFsTypeEnum.SWAPautoDetect")), ///< SWAP auto detection
+		TSK_FS_TYPE_RAW(0x00000400, "RAW"), ///< RAW file system
+		TSK_FS_TYPE_RAW_DETECT(0x00000400, bundle.getString("TskData.tskFsTypeEnum.RAWautoDetect")), ///< RAW auto detection
+		TSK_FS_TYPE_ISO9660(0x00000800, "ISO9660"), ///< ISO9660 file system
+		TSK_FS_TYPE_ISO9660_DETECT(0x00000800, bundle.getString("TskData.tskFsTypeEnum.ISO9660autoDetect")), ///< ISO9660 auto detection
+		TSK_FS_TYPE_HFS(0x00001000, "HFS"), ///< HFS file system
+		TSK_FS_TYPE_HFS_DETECT(0x00001000, bundle.getString("TskData.tskFsTypeEnum.HFSautoDetect")), ///< HFS auto detection
+		TSK_FS_TYPE_EXT4(0x00002000, "Ext4"), ///< Ext4 file system
+		TSK_FS_TYPE_YAFFS2(0x00004000, "YAFFS2"), ///< YAFFS2 file system
+		TSK_FS_TYPE_YAFFS2_DETECT(0x00004000, bundle.getString("TskData.tskFsTypeEnum.YAFFS2autoDetect")), ///< YAFFS2 auto detection
+		TSK_FS_TYPE_UNSUPP(0xffffffff, bundle.getString("TskData.tskFsTypeEnum.unsupported"));        ///< Unsupported file system
 
 		private int value;
+		private String displayName;
 
-		private TSK_FS_TYPE_ENUM(int value) {
+		private TSK_FS_TYPE_ENUM(int value, String displayName) {
 			this.value = value;
+			this.displayName = displayName;
 		}
 
 		/**
@@ -475,6 +477,15 @@ public class TskData {
 		 */
 		public int getValue() {
 			return value;
+		}
+		
+		/**
+		 * Get display name of the enum
+		 * 
+		 * @return the displayName
+		 */
+		public String getDisplayName() {
+			return displayName;
 		}
 
 		/**

@@ -58,7 +58,6 @@ static uint8_t
 fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 {
     unsigned int i;
-    int a;
     TSK_DADDR_T next, snext, sstart, send;
     FATFS_INFO *fatfs = (FATFS_INFO *) fs;
     FATXXFS_SB *sb = (FATXXFS_SB*)fatfs->boot_sector_buffer;
@@ -136,7 +135,7 @@ fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
             sb->a.f16.vol_lab[8], sb->a.f16.vol_lab[9],
             sb->a.f16.vol_lab[10]);
 
-        if ((vol_label_dentry) && (vol_label_dentry->name)) {
+        if ((vol_label_dentry) && (vol_label_dentry->name[0])) {
             tsk_fprintf(hFile,
                 "Volume Label (Root Directory): %c%c%c%c%c%c%c%c%c%c%c\n",
                 vol_label_dentry->name[0], vol_label_dentry->name[1], vol_label_dentry->name[2], vol_label_dentry->name[3],
@@ -156,7 +155,6 @@ fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     else {
 
         char *fat_fsinfo_buf;
-        FATXXFS_FSINFO *fat_info;
 
         if ((fat_fsinfo_buf = (char *)
                 tsk_malloc(sizeof(FATXXFS_FSINFO))) == NULL) {
@@ -176,7 +174,7 @@ fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
             sb->a.f32.vol_lab[8], sb->a.f32.vol_lab[9],
             sb->a.f32.vol_lab[10]);
 
-        if ((vol_label_dentry) && (vol_label_dentry->name)) {
+        if ((vol_label_dentry) && (vol_label_dentry->name[0])) {
             tsk_fprintf(hFile,
                 "Volume Label (Root Directory): %c%c%c%c%c%c%c%c%c%c%c\n",
                 vol_label_dentry->name[0], vol_label_dentry->name[1], vol_label_dentry->name[2], vol_label_dentry->name[3],
@@ -196,6 +194,7 @@ fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 
         /* Process the FS info */
         if (tsk_getu16(fs->endian, sb->a.f32.fsinfo)) {
+            FATXXFS_FSINFO *fat_info;
             cnt =
                 tsk_fs_read(fs, 
                     (TSK_DADDR_T) tsk_getu16(fs->endian, sb->a.f32.fsinfo) * fs->block_size, 
@@ -358,6 +357,7 @@ fatxxfs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     for (i = 2; i <= fatfs->lastclust; i++) {
         TSK_DADDR_T entry;
         TSK_DADDR_T sect;
+        unsigned int a;
 
         /* Get the FAT table entry */
         if (fatfs_getFAT(fatfs, i, &entry))
@@ -439,10 +439,8 @@ fatxxfs_open(FATFS_INFO *fatfs)
 	TSK_FS_INFO *fs = &(fatfs->fs_info);
 	FATXXFS_SB *fatsb = (FATXXFS_SB*)(&fatfs->boot_sector_buffer);
 	int i = 0;
-	ssize_t cnt = 0;
     TSK_DADDR_T sectors = 0;
 	TSK_FS_DIR * test_dir1; // Directories used to try opening the root directory
-	TSK_FS_DIR * test_dir2; //  to see if it's the Android FAT version
 
     // clean up any error messages that are lying around
     tsk_error_reset();
@@ -650,6 +648,7 @@ fatxxfs_open(FATFS_INFO *fatfs)
             uint8_t buf2[512];
             int i2;
             int numDiffs;
+	        ssize_t cnt = 0;
 
             cnt =
                 tsk_fs_read(fs, fatfs->firstfatsect * fatfs->ssize,
@@ -831,6 +830,8 @@ fatxxfs_open(FATFS_INFO *fatfs)
 	test_dir1 = tsk_fs_dir_open_meta(fs, fs->root_inum);
 
 	if (test_dir1 != NULL && test_dir1->names_used <= 4){ // At most four automatic directories ($MBR, $FAT1, $FAT1, $OrphanFiles)
+	    TSK_FS_DIR * test_dir2; //  to see if it's the Android FAT version
+
 		fatfs->subtype = TSK_FATFS_SUBTYPE_ANDROID_1;
 		test_dir2 = tsk_fs_dir_open_meta(fs, fs->root_inum);
 

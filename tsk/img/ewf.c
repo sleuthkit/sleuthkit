@@ -106,6 +106,7 @@ ewf_image_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
     tsk_fprintf(hFile, "Image Type:\t\tewf\n");
     tsk_fprintf(hFile, "\nSize of data in bytes:\t%" PRIuOFF "\n",
         img_info->size);
+    tsk_fprintf(hFile, "Sector size:\t%d\n", img_info->sector_size);
 
     if (ewf_info->md5hash_isset == 1) {
         tsk_fprintf(hFile, "MD5 hash of data:\t%s\n", ewf_info->md5hash);
@@ -116,7 +117,6 @@ ewf_image_imgstat(TSK_IMG_INFO * img_info, FILE * hFile)
 static void
 ewf_image_close(TSK_IMG_INFO * img_info)
 {
-    int i;
     IMG_EWF_INFO *ewf_info = (IMG_EWF_INFO *) img_info;
 
 #if defined ( HAVE_LIBEWF_V2_API)
@@ -131,6 +131,7 @@ ewf_image_close(TSK_IMG_INFO * img_info)
     // not clear from the docs what we should do in v1...
     // @@@ Probably a memory leak in v1 unless libewf_close deals with it
     if (ewf_info->used_ewf_glob == 0) {
+        int i;
         for (i = 0; i < ewf_info->img_info.num_img; i++) {
             free(ewf_info->img_info.images[i]);
         }
@@ -497,11 +498,38 @@ ewf_open(int a_num_img,
     }
 #endif                          /* defined( LIBEWF_STRING_DIGEST_HASH_LENGTH_MD5 ) */
 #endif                          /* defined( HAVE_LIBEWF_V2_API ) */
+
+    // use what they gave us
     if (a_ssize != 0) {
         img_info->sector_size = a_ssize;
     }
     else {
-        img_info->sector_size = 512;
+        uint32_t bytes_per_sector = 512;
+        // see if the size is stored in the E01 file
+        if (-1 == libewf_handle_get_bytes_per_sector(ewf_info->handle,
+            &bytes_per_sector, &ewf_error)) {
+            if (tsk_verbose)
+                tsk_fprintf(stderr,
+                    "ewf_image_read: error getting sector size from E01\n");
+            img_info->sector_size = 512;
+        }
+        else {
+            // if E01 had size of 0 or non-512 then consider it junk and ignore
+            if ((bytes_per_sector == 0) || (bytes_per_sector % 512)) {
+                if (tsk_verbose)
+                    tsk_fprintf(stderr,
+                        "ewf_image_read: Ignoring sector size in E01 (%d)\n",
+                        bytes_per_sector);
+                bytes_per_sector = 512;
+            }
+            else {
+                if (tsk_verbose)
+                    tsk_fprintf(stderr,
+                        "ewf_image_read: Using E01 sector size (%d)\n",
+                        bytes_per_sector);
+            }
+            img_info->sector_size = bytes_per_sector;
+        }
     }
     img_info->itype = TSK_IMG_TYPE_EWF_EWF;
     img_info->read = &ewf_image_read;

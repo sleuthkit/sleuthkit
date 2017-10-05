@@ -123,11 +123,13 @@ samples/callback_style
 samples/posix_cpp_style
 samples/posix_style
 samples/*.exe
+tests/*.exe
+tests/*.log
+tests/*.trs
 tests/fs_attrlist_apis
 tests/fs_fname_apis
 tests/fs_thread_test
 tests/read_apis
-tests/*.exe
 tools/autotools/tsk_comparedir
 tools/autotools/tsk_gettimes
 tools/autotools/tsk_loaddb
@@ -149,6 +151,7 @@ tools/fstools/ils
 tools/fstools/istat
 tools/fstools/jcat
 tools/fstools/jls
+tools/fstools/usnjls
 tools/hashtools/hfind
 tools/imgtools/img_cat
 tools/imgtools/img_stat
@@ -161,6 +164,9 @@ tools/vstools/mmls
 tools/vstools/mmstat
 tools/*/*.exe
 tools/*/*/*.exe
+unit_tests/base/*.log
+unit_tests/base/*.trs
+unit_tests/base/test_base
 # EMACS backup files
 *~
 

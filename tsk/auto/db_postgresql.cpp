@@ -303,7 +303,7 @@ int TskDbPostgreSQL::attempt_exec(const char *sql, const char *errfmt)
 */
 int TskDbPostgreSQL::isEscapedStringValid(const char *sql_str, const char *orig_str, const char *errfmt){
 
-    if (!sql_str){
+    if (sql_str == NULL){
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         char * str = PQerrorMessage(conn);
@@ -491,11 +491,11 @@ void TskDbPostgreSQL::removeNonUtf8(char* newStr, int newStrMaxSize, const char*
 int TskDbPostgreSQL::initialize() { 
 
     char foo[1024];
-    if (attempt_exec("CREATE TABLE tsk_db_info (schema_ver INTEGER, tsk_ver INTEGER);","Error creating tsk_db_info table: %s\n")) {
+    if (attempt_exec("CREATE TABLE tsk_db_info (schema_ver INTEGER, tsk_ver INTEGER, schema_minor_ver INTEGER);","Error creating tsk_db_info table: %s\n")) {
         return 1;
     }
 
-    snprintf(foo, 1024, "INSERT INTO tsk_db_info (schema_ver, tsk_ver) VALUES (%d, %d);", TSK_SCHEMA_VER, TSK_VERSION_NUM);
+    snprintf(foo, 1024, "INSERT INTO tsk_db_info (schema_ver, tsk_ver, schema_minor_ver) VALUES (%d, %d,%d);", TSK_SCHEMA_VER, TSK_VERSION_NUM, TSK_SCHEMA_MINOR_VER);
     if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
         return 1;
     }
@@ -892,8 +892,9 @@ int TskDbPostgreSQL::addFsFile(TSK_FS_FILE * fs_file,
 {
     int64_t parObjId = 0;
 
-    if (fs_file->name == NULL)
+    if (fs_file->name == NULL) {
         return 0;
+    }
 
     // Find the object id for the parent folder.
 

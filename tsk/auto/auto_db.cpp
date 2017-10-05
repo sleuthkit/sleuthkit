@@ -48,24 +48,29 @@ TskAutoDb::TskAutoDb(TskDb * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_kno
     m_stopped = false;
     m_foundStructure = false;
     m_imgTransactionOpen = false;
+    m_attributeAdded = false;
     m_NSRLDb = a_NSRLDb;
     m_knownBadDb = a_knownBadDb;
-    if ((m_NSRLDb) || (m_knownBadDb))
+    if ((m_NSRLDb) || (m_knownBadDb)) {
         m_fileHashFlag = true;
-    else
+    }
+    else {
         m_fileHashFlag = false;
+    }
     m_addFileSystems = true;
     m_noFatFsOrphans = false;
     m_addUnallocSpace = false;
-    m_chunkSize = -1;
+    m_minChunkSize = -1;
+    m_maxChunkSize = -1;
     tsk_init_lock(&m_curDirPathLock);
 }
 
 TskAutoDb::~TskAutoDb()
 {
     // if they didn't commit / revert, then revert
-    if (m_imgTransactionOpen)
+    if (m_imgTransactionOpen) {
         revertAddImage();
+    }
 
     closeImage();
     tsk_deinit_lock(&m_curDirPathLock);
@@ -107,10 +112,18 @@ void TskAutoDb::setAddUnallocSpace(bool addUnallocSpace)
     setAddUnallocSpace(addUnallocSpace, -1);
 }
 
-void TskAutoDb::setAddUnallocSpace(bool addUnallocSpace, int64_t chunkSize)
+void TskAutoDb::setAddUnallocSpace(bool addUnallocSpace, int64_t minChunkSize)
 {
     m_addUnallocSpace = addUnallocSpace;
-    m_chunkSize = chunkSize;
+    m_minChunkSize = minChunkSize;
+    m_maxChunkSize = -1;
+}
+
+void TskAutoDb::setAddUnallocSpace(int64_t minChunkSize, int64_t maxChunkSize)
+{
+    m_addUnallocSpace = true;
+    m_minChunkSize = minChunkSize;
+    m_maxChunkSize = maxChunkSize;
 }
 
 /**
@@ -251,8 +264,7 @@ TskAutoDb::addImageDetails(const char* deviceId)
 
     // Add the image names
     for (int i = 0; i < m_img_info->num_img; i++) {
-        const char *img_ptr = NULL;
-        img_ptr = img_ptrs[i];
+        const char *img_ptr = img_ptrs[i];
 
         if (m_db->addImageName(m_curImgId, img_ptr, i)) {
             registerError();
@@ -373,7 +385,7 @@ TSK_RETVAL_ENUM
  */
 uint8_t TskAutoDb::addFilesInImgToDb()
 {
-    if (m_db == NULL || !m_db->isDbOpen()) {
+    if (m_db == NULL || m_db->isDbOpen() == false) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
         tsk_error_set_errstr("addFilesInImgToDb: m_db not open");
@@ -889,35 +901,41 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
         unallocBlockWlkTrack->isStart = false;
         unallocBlockWlkTrack->curRangeStart = a_block->addr;
         unallocBlockWlkTrack->prevBlock = a_block->addr;
-        unallocBlockWlkTrack->size = 0;
+        unallocBlockWlkTrack->size = unallocBlockWlkTrack->fsInfo.block_size;
         unallocBlockWlkTrack->nextSequenceNo = 0;
         return TSK_WALK_CONT;
     }
 
-    // if this block is consecutive with the previous one, update prevBlock and return
-    if (a_block->addr == unallocBlockWlkTrack->prevBlock + 1) {
+    // We want to keep consecutive blocks in the same run, so simply update prevBlock and the size
+    // if this one is consecutive with the last call. But, if we have hit the max chunk
+    // size, then break up this set of consecutive blocks.
+    if ((a_block->addr == unallocBlockWlkTrack->prevBlock + 1) && ((unallocBlockWlkTrack->maxChunkSize <= 0) ||
+            (unallocBlockWlkTrack->size < unallocBlockWlkTrack->maxChunkSize))) {
         unallocBlockWlkTrack->prevBlock = a_block->addr;
+		unallocBlockWlkTrack->size += unallocBlockWlkTrack->fsInfo.block_size;
         return TSK_WALK_CONT;
     }
 
-    // this block is not contiguous with the previous one; create and add a range object
+    // this block is not contiguous with the previous one or we've hit the maximum size; create and add a range object
     const uint64_t rangeStartOffset = unallocBlockWlkTrack->curRangeStart * unallocBlockWlkTrack->fsInfo.block_size 
         + unallocBlockWlkTrack->fsInfo.offset;
     const uint64_t rangeSizeBytes = (1 + unallocBlockWlkTrack->prevBlock - unallocBlockWlkTrack->curRangeStart) 
         * unallocBlockWlkTrack->fsInfo.block_size;
     unallocBlockWlkTrack->ranges.push_back(TSK_DB_FILE_LAYOUT_RANGE(rangeStartOffset, rangeSizeBytes, unallocBlockWlkTrack->nextSequenceNo++));
-    
-    // bookkeeping for the next range object
-    unallocBlockWlkTrack->size += rangeSizeBytes;
-    unallocBlockWlkTrack->curRangeStart = a_block->addr;
-    unallocBlockWlkTrack->prevBlock = a_block->addr;
 
-    // Here we just return if we are a) collecting all unallocated data
-    // for the given volumen (chunkSize == 0) or b) collecting all unallocated
-    // data whose total size is at least chunkSize (chunkSize > 0)
-    if ((unallocBlockWlkTrack->chunkSize == 0) ||
-        ((unallocBlockWlkTrack->chunkSize > 0) &&
-        (unallocBlockWlkTrack->size < unallocBlockWlkTrack->chunkSize))) {
+    // Return (instead of adding this run) if we are going to:
+    // a) Make one big file with all unallocated space (minChunkSize == 0)
+    // or
+    // b) Only make an unallocated file once we have at least chunkSize bytes
+    // of data in our current run (minChunkSize > 0)
+    // In either case, reset the range pointers and add this block to the size
+    if ((unallocBlockWlkTrack->minChunkSize == 0) ||
+        ((unallocBlockWlkTrack->minChunkSize > 0) &&
+        (unallocBlockWlkTrack->size < unallocBlockWlkTrack->minChunkSize))) {
+
+        unallocBlockWlkTrack->size += unallocBlockWlkTrack->fsInfo.block_size;
+        unallocBlockWlkTrack->curRangeStart = a_block->addr;
+        unallocBlockWlkTrack->prevBlock = a_block->addr;
         return TSK_WALK_CONT;
     }
     
@@ -931,7 +949,8 @@ TSK_WALK_RET_ENUM TskAutoDb::fsWalkUnallocBlocksCb(const TSK_FS_BLOCK *a_block, 
 
     // reset
     unallocBlockWlkTrack->curRangeStart = a_block->addr;
-    unallocBlockWlkTrack->size = 0;
+    unallocBlockWlkTrack->prevBlock = a_block->addr;
+    unallocBlockWlkTrack->size = unallocBlockWlkTrack->fsInfo.block_size; // The current block is part of the new range
     unallocBlockWlkTrack->ranges.clear();
     unallocBlockWlkTrack->nextSequenceNo = 0;
 
@@ -966,7 +985,7 @@ TSK_RETVAL_ENUM TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
 
     //walk unalloc blocks on the fs and process them
     //initialize the unalloc block walk tracking 
-    UNALLOC_BLOCK_WLK_TRACK unallocBlockWlkTrack(*this, *fsInfo, dbFsInfo.objId, m_chunkSize);
+    UNALLOC_BLOCK_WLK_TRACK unallocBlockWlkTrack(*this, *fsInfo, dbFsInfo.objId, m_minChunkSize, m_maxChunkSize);
     uint8_t block_walk_ret = tsk_fs_block_walk(fsInfo, fsInfo->first_block, fsInfo->last_block, (TSK_FS_BLOCK_WALK_FLAG_ENUM)(TSK_FS_BLOCK_WALK_FLAG_UNALLOC | TSK_FS_BLOCK_WALK_FLAG_AONLY), 
         fsWalkUnallocBlocksCb, &unallocBlockWlkTrack);
 
@@ -990,7 +1009,6 @@ TSK_RETVAL_ENUM TskAutoDb::addFsInfoUnalloc(const TSK_DB_FS_INFO & dbFsInfo) {
     const uint64_t byteStart = unallocBlockWlkTrack.curRangeStart * fsInfo->block_size + fsInfo->offset;
     const uint64_t byteLen = (1 + unallocBlockWlkTrack.prevBlock - unallocBlockWlkTrack.curRangeStart) * fsInfo->block_size;
     unallocBlockWlkTrack.ranges.push_back(TSK_DB_FILE_LAYOUT_RANGE(byteStart, byteLen, unallocBlockWlkTrack.nextSequenceNo++));
-    unallocBlockWlkTrack.size += byteLen;
     int64_t fileObjId = 0;
 
     if (m_db->addUnallocBlockFile(m_curUnallocDirId, dbFsInfo.objId, unallocBlockWlkTrack.size, unallocBlockWlkTrack.ranges, fileObjId, m_curImgId) == TSK_ERR) {

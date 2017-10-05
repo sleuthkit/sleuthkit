@@ -30,6 +30,8 @@ TskAuto::TskAuto()
     m_internalOpen = false;
     m_curVsPartValid = false;
     m_curVsPartDescr = "";
+    m_imageWriterEnabled = false;
+    m_imageWriterPath = NULL;
 }
 
 

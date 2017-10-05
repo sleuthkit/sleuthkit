@@ -406,7 +406,6 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
         /* The descriptor describes the FS blocks that follow it */
         else if (big_tsk_getu32(head->entry_type) == EXT2_J_ETYPE_DESC) {
             ext2fs_journ_dentry *dentry;
-            ext2fs_journ_head *head2;
             int unalloc = 0;
 
             b_desc_seen = 1;
@@ -429,6 +428,7 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
             while ((uintptr_t) dentry <=
                 ((uintptr_t) head + jinfo->bsize -
                     sizeof(ext2fs_journ_head))) {
+                ext2fs_journ_head *head2;
 
 
                 /* Our counter is over the end of the journ */
@@ -491,7 +491,6 @@ ext2fs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
     EXT2FS_JINFO *jinfo = ext2fs->jinfo;
     char *journ;
     TSK_FS_LOAD_FILE buf1;
-    TSK_DADDR_T i;
     ext2fs_journ_head *head;
 
     // clean up any error messages that are lying around
@@ -563,9 +562,10 @@ ext2fs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
      * escaped
      */
     if (big_tsk_getu32(head->magic) != EXT2_JMAGIC) {
+        TSK_DADDR_T i;
 
         /* cycle backwards until we find a desc block */
-        for (i = end - 1; i >= 0; i--) {
+        for (i = end - 1; i > 0; i--) {
             ext2fs_journ_dentry *dentry;
             TSK_DADDR_T diff;
 

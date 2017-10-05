@@ -263,7 +263,6 @@ fatfs_utf16_inode_str_2_utf8(FATFS_INFO *a_fatfs, UTF16 *a_src, size_t a_src_len
     const char *func_name = "fatfs_copy_utf16_str";
     TSK_FS_INFO *fs = &(a_fatfs->fs_info);
     TSKConversionResult conv_result = TSKconversionOK;
-    uint32_t i = 0;
     UTF8* dest_start;
     UTF8* dest_end;
     

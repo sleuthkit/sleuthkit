@@ -1999,7 +1999,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                         tsk_getu64(fs->endian, attr->c.nr.initsize),
                         alen, data_flag, compsize)) {
                     tsk_error_errstr2_concat("- proc_attrseq: set run");
-                    return TSK_ERR;
+                    return TSK_COR;
                 }
                 // set the special functions
                 if (fs_file->meta->flags & TSK_FS_META_FLAG_COMP) {
@@ -2011,7 +2011,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             else {
                 if (tsk_fs_attr_add_run(fs, fs_attr, fs_attr_run)) {
                     tsk_error_errstr2_concat(" - proc_attrseq: put run");
-                    return TSK_ERR;
+                    return TSK_COR;
                 }
             }
         }
@@ -4837,6 +4837,13 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         return NULL;
     }
 
+    if (img_info->sector_size == 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("ntfs_open: sector size is 0");
+        return NULL;
+    }
+
     if ((ntfs = (NTFS_INFO *) tsk_fs_malloc(sizeof(*ntfs))) == NULL) {
         goto on_error;
     }
@@ -4945,11 +4952,14 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         fs->last_block_act =
             (img_info->size - offset) / fs->block_size - 1;
 
-    if (ntfs->fs->mft_rsize_c > 0)
+    ntfs->mft_rsize_b = 0;
+    if (ntfs->fs->mft_rsize_c > 0) {
         ntfs->mft_rsize_b = ntfs->fs->mft_rsize_c * ntfs->csize_b;
-    else
+    }
+    else if (ntfs->fs->mft_rsize_c > -32) {
         /* if the mft_rsize_c is not > 0, then it is -log2(rsize_b) */
         ntfs->mft_rsize_b = 1 << -ntfs->fs->mft_rsize_c;
+    }
 
     if ((ntfs->mft_rsize_b == 0) || (ntfs->mft_rsize_b % 512)) {
         tsk_error_reset();
@@ -4961,11 +4971,14 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         goto on_error;
     }
 
-    if (ntfs->fs->idx_rsize_c > 0)
+    ntfs->idx_rsize_b = 0;
+    if (ntfs->fs->idx_rsize_c > 0) {
         ntfs->idx_rsize_b = ntfs->fs->idx_rsize_c * ntfs->csize_b;
-    else
+    }
+    else if (ntfs->fs->idx_rsize_c > -32) {
         /* if the idx_rsize_c is not > 0, then it is -log2(rsize_b) */
         ntfs->idx_rsize_b = 1 << -ntfs->fs->idx_rsize_c;
+    }
 
     if ((ntfs->idx_rsize_b == 0) || (ntfs->idx_rsize_b % 512)) {
         tsk_error_reset();

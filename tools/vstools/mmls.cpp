@@ -118,8 +118,9 @@ part_act(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void *ptr)
 
     if ((recurse) && (vs->vstype == TSK_VS_TYPE_DOS)
         && (part->flags == TSK_VS_PART_FLAG_ALLOC)) {
-        if (recurse_cnt < 64)
+        if (recurse_cnt < 64) {
             recurse_list[recurse_cnt++] = part->start * part->vs->block_size;
+        }
     }
 
     return TSK_WALK_CONT;

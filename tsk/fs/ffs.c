@@ -47,7 +47,7 @@ ffs_group_load(FFS_INFO * ffs, FFS_GRPNUM_T grp_num)
     /*
      * Sanity check
      */
-    if (grp_num < 0 || grp_num >= ffs->groups_count) {
+    if (grp_num >= ffs->groups_count) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
         tsk_error_set_errstr
@@ -172,11 +172,11 @@ ffs_dinode_load(FFS_INFO * ffs, TSK_INUM_T inum, ffs_inode * dino_buf)
         }
 
         else {
-            ssize_t cnt;
             /* Get the base and offset addr for the inode in the tbl */
             addr = itod_lcl(fs, ffs->fs.sb1, inum);
 
             if (ffs->itbl_addr != addr) {
+                ssize_t cnt;
                 cnt = tsk_fs_read_block
                     (fs, addr, ffs->itbl_buf, ffs->ffsbsize_b);
                 if (cnt != ffs->ffsbsize_b) {
@@ -846,7 +846,6 @@ ffs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
 {
     char *myname = "ffs_inode_walk";
     FFS_INFO *ffs = (FFS_INFO *) fs;
-    FFS_GRPNUM_T grp_num;
     ffs_cgd *cg = NULL;
     TSK_INUM_T inum;
     unsigned char *inosused = NULL;
@@ -936,6 +935,7 @@ ffs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
      */
     for (inum = start_inum; inum <= end_inum_tmp; inum++) {
         int retval;
+        FFS_GRPNUM_T grp_num;
 
         /*
          * Be sure to use the proper cylinder group data.
@@ -1883,7 +1883,7 @@ ffs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
     tsk_fprintf(hFile, "\nDirect Blocks:\n");
 
     if (istat_flags & TSK_FS_ISTAT_RUNLIST) {
-        TSK_FS_ATTR * fs_attr_direct = tsk_fs_file_attr_get_type(fs_file,
+        const TSK_FS_ATTR * fs_attr_direct = tsk_fs_file_attr_get_type(fs_file,
             TSK_FS_ATTR_TYPE_DEFAULT, 0, 0);
         if (fs_attr_direct && (fs_attr_direct->flags & TSK_FS_ATTR_NONRES)) {
             if (tsk_fs_attr_print(fs_attr_direct, hFile)) {
@@ -2019,6 +2019,13 @@ ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype, uint
         return NULL;
     }
 
+    if (img_info->sector_size == 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("ffs_open: sector size is 0");
+        return NULL;
+    }
+
     if ((ffs = (FFS_INFO *) tsk_fs_malloc(sizeof(*ffs))) == NULL)
         return NULL;
 
@@ -2146,25 +2153,13 @@ ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype, uint
         ffs->groups_count = tsk_gets32(fs->endian, ffs->fs.sb1->cg_num);
     }
 
-
-    /*
-     * Block calculations
-     */
-    fs->first_block = 0;
-    fs->last_block = fs->last_block_act = fs->block_count - 1;
-    fs->dev_bsize = img_info->sector_size;
-
-    // determine the last block we have in this image
-    if ((TSK_DADDR_T) ((img_info->size - offset) / fs->block_size) <
-        fs->block_count)
-        fs->last_block_act =
-            (img_info->size - offset) / fs->block_size - 1;
-
-    if ((fs->block_size % 512) || (ffs->ffsbsize_b % 512)) {
+    // apply some sanity checks before we start using these numbers
+    if ((fs->block_size == 0) || (ffs->ffsbsize_b == 0) || (ffs->ffsbsize_f == 0) 
+        || (fs->block_size % 512) || (ffs->ffsbsize_b % 512)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_MAGIC);
         tsk_error_set_errstr
-            ("Not a UFS FS (invalid fragment or block size)");
+        ("Not a UFS FS (invalid fragment or block size)");
         if (tsk_verbose)
             fprintf(stderr, "ufs_open: invalid fragment or block size\n");
         fs->tag = 0;
@@ -2184,6 +2179,21 @@ ffs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset, TSK_FS_TYPE_ENUM ftype, uint
         tsk_fs_free((TSK_FS_INFO *)ffs);
         return NULL;
     }
+
+    /*
+     * Block calculations
+     */
+    fs->first_block = 0;
+    fs->last_block = fs->last_block_act = fs->block_count - 1;
+    fs->dev_bsize = img_info->sector_size;
+
+    // determine the last block we have in this image
+    if ((TSK_DADDR_T) ((img_info->size - offset) / fs->block_size) <
+        fs->block_count)
+        fs->last_block_act =
+            (img_info->size - offset) / fs->block_size - 1;
+
+    
 
     // Inode / meta data calculations
     if (fs->ftype == TSK_FS_TYPE_FFS2) {
