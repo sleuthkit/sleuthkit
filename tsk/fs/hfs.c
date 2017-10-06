@@ -1308,67 +1308,71 @@ hfs_cat_read_file_folder_record(HFS_INFO * hfs, TSK_OFF_T off,
 }
 
 
-static TSK_INUM_T
-hfs_lookup_hard_link(HFS_INFO * hfs, TSK_INUM_T linknum,
-    unsigned char is_directory)
-{
-    char fBuff[30];
-    TSK_FS_DIR *mdir;
-    size_t indx;
-    TSK_FS_INFO *fs = (TSK_FS_INFO *) hfs;
-
-    memset(fBuff, 0, 30);
-
-    if (is_directory) {
-
-        tsk_take_lock(&(hfs->metadata_dir_cache_lock));
-        if (hfs->dir_meta_dir == NULL) {
-            hfs->dir_meta_dir =
-                tsk_fs_dir_open_meta(fs, hfs->meta_dir_inum);
-        }
-        tsk_release_lock(&(hfs->metadata_dir_cache_lock));
-
-        if (hfs->dir_meta_dir == NULL) {
-            error_returned
-                ("hfs_lookup_hard_link: could not open the dir metadata directory");
-            return 0;
-        }
-        else {
-            mdir = hfs->dir_meta_dir;
-        }
-        snprintf(fBuff, 30, "dir_%" PRIuINUM, linknum);
-
-    }
-    else {
-
-        tsk_take_lock(&(hfs->metadata_dir_cache_lock));
-        if (hfs->meta_dir == NULL) {
-            hfs->meta_dir = tsk_fs_dir_open_meta(fs, hfs->meta_inum);
-        }
-        tsk_release_lock(&(hfs->metadata_dir_cache_lock));
-
-        if (hfs->meta_dir == NULL) {
-            error_returned
-                ("hfs_lookup_hard_link: could not open file metadata directory");
-            return 0;
-        }
-        else {
-            mdir = hfs->meta_dir;
-        }
-        snprintf(fBuff, 30, "iNode%" PRIuINUM, linknum);
-    }
-
-    for (indx = 0; indx < tsk_fs_dir_getsize(mdir); ++indx) {
-        if ((mdir->names != NULL) && mdir->names[indx].name &&
-            (fs->name_cmp(fs, mdir->names[indx].name, fBuff) == 0)) {
-            // OK this is the one
-            return mdir->names[indx].meta_addr;
-        }
-    }
-
-    // OK, we did not find that linknum
-    return 0;
-}
+// hfs_lookup_hard_link appears to be unnecessary - it looks up the cnid
+// by seeing if there's a file/dir with the standard hard link name plus
+// linknum and returns the meta_addr. But this should always be the same as linknum,
+// and is very slow when there are many hard links, so it shouldn't be used.
+//static TSK_INUM_T
+//hfs_lookup_hard_link(HFS_INFO * hfs, TSK_INUM_T linknum,
+//    unsigned char is_directory)
+//{
+//    char fBuff[30];
+//    TSK_FS_DIR *mdir;
+//    size_t indx;
+//    TSK_FS_INFO *fs = (TSK_FS_INFO *) hfs;
+//
+//    memset(fBuff, 0, 30);
+//
+//    if (is_directory) {
+//
+//        tsk_take_lock(&(hfs->metadata_dir_cache_lock));
+//        if (hfs->dir_meta_dir == NULL) {
+//            hfs->dir_meta_dir =
+//                tsk_fs_dir_open_meta(fs, hfs->meta_dir_inum);
+//        }
+//        tsk_release_lock(&(hfs->metadata_dir_cache_lock));
+//
+//        if (hfs->dir_meta_dir == NULL) {
+//            error_returned
+//                ("hfs_lookup_hard_link: could not open the dir metadata directory");
+//            return 0;
+//        }
+//        else {
+//            mdir = hfs->dir_meta_dir;
+//        }
+//        snprintf(fBuff, 30, "dir_%" PRIuINUM, linknum);
+//
+//    }
+//    else {
+//
+//        tsk_take_lock(&(hfs->metadata_dir_cache_lock));
+//        if (hfs->meta_dir == NULL) {
+//            hfs->meta_dir = tsk_fs_dir_open_meta(fs, hfs->meta_inum);
+//        }
+//        tsk_release_lock(&(hfs->metadata_dir_cache_lock));
+//
+//        if (hfs->meta_dir == NULL) {
+//            error_returned
+//                ("hfs_lookup_hard_link: could not open file metadata directory");
+//            return 0;
+//        }
+//        else {
+//            mdir = hfs->meta_dir;
+//        }
+//        snprintf(fBuff, 30, "iNode%" PRIuINUM, linknum);
+//    }
+//
+//    for (indx = 0; indx < tsk_fs_dir_getsize(mdir); ++indx) {
+//        if ((mdir->names != NULL) && mdir->names[indx].name &&
+//            (fs->name_cmp(fs, mdir->names[indx].name, fBuff) == 0)) {
+//            // OK this is the one
+//            return mdir->names[indx].meta_addr;
+//        }
+//    }
+//
+//    // OK, we did not find that linknum
+//    return 0;
+//}
 
 /*
  * Given a catalog entry, will test that entry to see if it is a hard link.
@@ -1466,23 +1470,10 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat,
             uint32_t linkNum =
                 tsk_getu32(fs->endian, cat->std.perm.special.inum);
 
-            // It seems like the linkNum is always the same as the CNID
-            // returned by hfs_lookup_hard_link, which is very inefficient when a 
-            // datasource contains large numbers of linked files.
-            TSK_INUM_T target_cnid = linkNum;
-
-            if (target_cnid != 0) {
-                // Succeeded in finding that target_cnid in the Catalog file
-                return target_cnid;
-            }
-            else {
-                // This should be a hard link, BUT...
-                // Did not find the target_cnid in the Catalog file.
-                error_returned
-                    ("hfs_follow_hard_link: got an error looking up the target of a file link");
-                *is_error = 2;
-                return 0;
-            }
+            // We used to resolve this ID to a file in X folder using hfs_lookup_hard_link, but found 
+            // that it was very ineffecient and always resulted in the same linkNum value. 
+            // We now just use linkNum
+            return linkNum;
         }
     }
     else if (file_type == HFS_LINKDIR_FILE_TYPE
@@ -1529,23 +1520,10 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat,
             uint32_t linkNum =
                 tsk_getu32(fs->endian, cat->std.perm.special.inum);
 
-            // It seems like the linkNum is always the same as the CNID
-            // returned by hfs_lookup_hard_link, which is very inefficient when a 
-            // datasource contains large numbers of linked files.
-            TSK_INUM_T target_cnid = linkNum;
-
-            if (target_cnid != 0) {
-                // Succeeded in finding that target_cnid in the Catalog file
-                return target_cnid;
-            }
-            else {
-                // This should be a hard link, BUT...
-                // Did not find the target_cnid in the Catalog file.
-                error_returned
-                    ("hfs_follow_hard_link: got an error looking up the target of a dir link");
-                *is_error = 2;
-                return 0;
-            }
+            // We used to resolve this ID to a file in X folder using hfs_lookup_hard_link, but found 
+            // that it was very ineffecient and always resulted in the same linkNum value. 
+            // We now just use linkNum
+            return linkNum;
         }
     }
 
