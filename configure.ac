@@ -197,6 +197,16 @@ AC_ARG_ENABLE([offline],
 
 AM_CONDITIONAL([OFFLINE], [test "x$offline" = xtrue])
 
+AC_CHECK_PROG([PKGCONFIG], [pkg-config], [yes], [no])
+if test "x$PKGCONFIG" = "xyes"; then
+  AX_PKG_CHECK_MODULES([CPPUNIT], [], [cppunit >= 1.12.1], [ac_cv_cppunit=yes], [ac_cv_cppunit=no])
+else
+  AM_PATH_CPPUNIT(1.12.1)
+  AS_IF([test "x$no_cppunit" = x], [ac_cv_cppunit=yes], [ac_cv_cppunit=no])
+fi
+
+AM_CONDITIONAL([HAVE_CPPUNIT],[test "x$no_cppunit" = x])
+
 dnl Test for the various java things that we need for bindings
 AS_IF([test "x$enable_java" != "xno"], [
     dnl javac is needed to compile the JAR file
@@ -324,7 +334,8 @@ AC_CONFIG_FILES([
     bindings/java/jni/Makefile
     case-uco/java/Makefile
     unit_tests/Makefile
-    unit_tests/base/Makefile])
+    unit_tests/base/Makefile
+    unit_tests/img/Makefile])
 
 AC_OUTPUT
 
@@ -340,6 +351,7 @@ Building:
    zlib support:                          $ax_zlib
 
 Features:
+   cppunit support:                       $ac_cv_cppunit
    Java/JNI support:                      $ax_java_support
    Multithreading:                        $ax_multithread
 ])
