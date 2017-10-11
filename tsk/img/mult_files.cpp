@@ -33,7 +33,8 @@ std::function<TSK_STRING(size_t, TSK_OSTRINGSTREAM&)> getSegmentPattern(const TS
       // NB: digit overflow is ok; FTK apparently adds a fourth digit
       // when there are > 999 segments.
       return [base, width, zero_based](size_t i, TSK_OSTRINGSTREAM& os) {
-        os << base << std::setfill('0') << std::setw(width) << (i+1-zero_based);
+        os << base << std::setfill(_TSK_T('0')) << std::setw(width)
+           << (i+1-zero_based);
         return os.str();
       };
     }
@@ -67,7 +68,8 @@ std::function<TSK_STRING(size_t, TSK_OSTRINGSTREAM&)> getSegmentPattern(const TS
     const TSK_STRING base(first, first + flen - 3);
 
     return [base](size_t i, TSK_OSTRINGSTREAM& os) {
-      os << base << std::setfill('0') << std::setw(3) << (i+1) << ".dmgpart";
+      os << base << std::setfill(_TSK_T('0')) << std::setw(3) << (i+1)
+         << ".dmgpart";
       return os.str();
     };
   }
