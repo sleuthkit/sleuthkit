@@ -15,7 +15,7 @@ libtskimg_la_SOURCES = \
 	img_writer.h \
 	logical_img.c \
 	logical_img.h \
-	mult_files.c \
+	mult_files.cpp \
 	raw.c \
   raw.h \
 	tsk_img_i.h \
