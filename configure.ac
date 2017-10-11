@@ -8,7 +8,7 @@ AC_INIT(sleuthkit, 4.8.0)
 AC_CONFIG_SRCDIR([tsk/base/tsk_base.h])
 AC_CONFIG_HEADERS([tsk/tsk_config.h])
 AC_CONFIG_AUX_DIR([config])
-AM_INIT_AUTOMAKE([foreign tar-ustar])
+AM_INIT_AUTOMAKE([foreign subdir-objects tar-ustar])
 AC_CONFIG_MACRO_DIR([m4])
 AM_PROG_LIBTOOL
 AM_MAINTAINER_MODE
