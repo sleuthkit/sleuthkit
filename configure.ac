@@ -5,23 +5,13 @@ dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.59)
 
 AC_INIT(sleuthkit, 4.8.0)
-m4_include([m4/ax_pthread.m4])
-dnl include the version from 1.12.1. This will work for
-m4_include([m4/cppunit.m4])
-m4_include([m4/ax_jni_include_dir.m4])
-m4_include([m4/ac_prog_javac_works.m4])
-m4_include([m4/ac_prog_javac.m4])
-m4_include([m4/ac_prog_java_works.m4])
-m4_include([m4/ac_prog_java.m4])
-m4_include([m4/ax_cxx_compile_stdcxx.m4])
-
 AC_CONFIG_SRCDIR([tsk/base/tsk_base.h])
 AC_CONFIG_HEADERS([tsk/tsk_config.h])
-AC_CONFIG_AUX_DIR(config)
+AC_CONFIG_AUX_DIR([config])
 AM_INIT_AUTOMAKE([foreign tar-ustar])
+AC_CONFIG_MACRO_DIR([m4])
 AM_PROG_LIBTOOL
 AM_MAINTAINER_MODE
-AC_CONFIG_MACRO_DIR([m4])
 
 dnl Checks for programs.
 AC_PROG_CXX
