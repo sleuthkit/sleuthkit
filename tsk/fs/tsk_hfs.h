@@ -475,16 +475,22 @@ typedef struct {
 
 /***************** ATTRIBUTES FILE ******************************/
 
+// Maximum UTF8 size of an attribute name = 127 * 4 
+#define HFS_MAX_ATTR_NAME_LEN_UTF8_B 508
+#define HFS_MAX_ATTR_NAME_LEN_UTF16_B 254
+
+
+/* A record is made up of a hfs_btree_key_attr followed by a
+ * hfs_attr_data.  Total length of the record is:
+ * key_len + 2 + attr_size */
 typedef struct {
     uint8_t key_len[2];
     uint8_t pad[2];
     uint8_t file_id[4];
     uint8_t start_block[4];
     uint8_t attr_name_len[2];
-    uint8_t attr_name[254];
+    uint8_t attr_name[HFS_MAX_ATTR_NAME_LEN_UTF16_B]; // @@@ Seems like this is variable length because the key_len is specified. This seems to be max size.
 } hfs_btree_key_attr;
-
-
 
 typedef struct {
     uint8_t record_type[4];     // HFS_ATTRIBUTE_RECORD_INLINE_DATA
@@ -503,8 +509,6 @@ typedef struct {
 #define HFS_ATTR_RECORD_FORK_DATA 0x20
 #define HFS_ATTR_RECORD_EXTENTS 0x30
 
-// Maximum UTF8 size of an attribute name = 127 * 3 + 1; // 382
-#define MAX_ATTR_NAME_LENGTH 382
 
 /*
  * If a file is compressed, then it will have an extended attribute

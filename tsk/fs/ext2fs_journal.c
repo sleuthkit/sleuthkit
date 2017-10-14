@@ -491,7 +491,6 @@ ext2fs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
     EXT2FS_JINFO *jinfo = ext2fs->jinfo;
     char *journ;
     TSK_FS_LOAD_FILE buf1;
-    TSK_DADDR_T i;
     ext2fs_journ_head *head;
 
     // clean up any error messages that are lying around
@@ -563,9 +562,10 @@ ext2fs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
      * escaped
      */
     if (big_tsk_getu32(head->magic) != EXT2_JMAGIC) {
+        TSK_DADDR_T i;
 
         /* cycle backwards until we find a desc block */
-        for (i = end - 1; i >= 0; i--) {
+        for (i = end - 1; i > 0; i--) {
             ext2fs_journ_dentry *dentry;
             TSK_DADDR_T diff;
 

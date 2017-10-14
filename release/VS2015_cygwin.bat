@@ -5,5 +5,5 @@ REM Used to run the automated build / release scripts that are written in Perl/P
 CALL "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat"
 
 C:
-chdir C:\cygwin\bin
+chdir C:\cygwin64\bin
 bash --login -i

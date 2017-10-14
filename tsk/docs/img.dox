@@ -8,7 +8,7 @@ This section describes the general disk image analysis concepts and correspondin
 
     The tsk_img_open() function returns a TSK_IMG_INFO structure.  This structure has fields that contain the type and size (uncompressed, if applicable) of the disk image.  When you are done analyzing the disk image, it can be closed with tsk_img_close(). 
 
-    Note that the tsk_img_open() and tsk_img_open_sing() functions use the TSK_TCHAR type to store the disk image paths. This type is system dependent and is a wchar_t on Windows and char on other sytems.  See \ref basic_enc_t for more details. If you are in an environment where you will have UTF-8 text even in Windows, then you can use the tsk_img_open_utf8() and tsk_img_open_utf8_sing() functions. 
+    Note that the tsk_img_open() and tsk_img_open_sing() functions use the TSK_TCHAR type to store the disk image paths. This type is system dependent and is a wchar_t on Windows and char on other systems.  See \ref basic_enc_t for more details. If you are in an environment where you will have UTF-8 text even in Windows, then you can use the tsk_img_open_utf8() and tsk_img_open_utf8_sing() functions. 
 
     To use the C++ wrappers, create a TskImgInfo object and call one of the TskImgInfo::open() methods. 
     

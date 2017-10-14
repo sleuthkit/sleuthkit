@@ -497,11 +497,11 @@ void TskDbPostgreSQL::removeNonUtf8(char* newStr, int newStrMaxSize, const char*
 int TskDbPostgreSQL::initialize() { 
 
     char foo[1024];
-    if (attempt_exec("CREATE TABLE tsk_db_info (schema_ver INTEGER, tsk_ver INTEGER);","Error creating tsk_db_info table: %s\n")) {
+    if (attempt_exec("CREATE TABLE tsk_db_info (schema_ver INTEGER, tsk_ver INTEGER, schema_minor_ver INTEGER);","Error creating tsk_db_info table: %s\n")) {
         return 1;
     }
 
-    snprintf(foo, 1024, "INSERT INTO tsk_db_info (schema_ver, tsk_ver) VALUES (%d, %d);", TSK_SCHEMA_VER, TSK_VERSION_NUM);
+    snprintf(foo, 1024, "INSERT INTO tsk_db_info (schema_ver, tsk_ver, schema_minor_ver) VALUES (%d, %d,%d);", TSK_SCHEMA_VER, TSK_VERSION_NUM, TSK_SCHEMA_MINOR_VER);
     if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
         return 1;
     }
@@ -620,8 +620,16 @@ int TskDbPostgreSQL::initialize() {
 		"Error creating account_types table: %s\n")     
 		||
 		attempt_exec
-		("CREATE TABLE relationships  (relationship_id BIGSERIAL PRIMARY KEY, account1_id INTEGER NOT NULL, account2_id INTEGER NOT NULL, communication_artifact_id INTEGER NOT NULL, UNIQUE(account1_id, account1_id, communication_artifact_id) ON CONFLICT IGNORE, FOREIGN KEY(account1_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(account2_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(communication_artifact_id) REFERENCES blackboard_artifacts(artifact_id))", 
-		"Error creating relationships table: %s\n")) {
+		("CREATE TABLE relationships  (relationship_id BIGSERIAL PRIMARY KEY, account1_id INTEGER NOT NULL, account2_id INTEGER NOT NULL, communication_artifact_id INTEGER NOT NULL, UNIQUE(account1_id, account1_id, communication_artifact_id) ON CONFLICT IGNORE, FOREIGN KEY(account1_id) REFERENCES accounts(account_id), FOREIGN KEY(account2_id) REFERENCES accounts(account_id), FOREIGN KEY(communication_artifact_id) REFERENCES blackboard_artifacts(artifact_id))", 
+		"Error creating relationships table: %s\n")
+		||
+		attempt_exec
+		("CREATE TABLE accounts (account_id INTEGER PRIMARY KEY, account_type_id INTEGER NOT NULL, account_unique_identifier TEXT NOT NULL,  UNIQUE(account_type_id, account_unique_identifier) ON CONFLICT IGNORE, FOREIGN KEY(account_type_id) REFERENCES account_types(account_type_id))",
+			"Error creating accounts table: %s\n")	
+		||
+		attempt_exec
+		("CREATE TABLE account_to_instances_map (account_id INTEGER NOT NULL, account_instance_id INTEGER NOT NULL, UNIQUE(account_id, account_instance_id) ON CONFLICT IGNORE, FOREIGN KEY(account_id) REFERENCES accounts(account_id), FOREIGN KEY(account_instance_id) REFERENCES blackboard_artifacts(artifact_id) )",
+				"Error creating account_to_instances_map table: %s\n")	)	 {
 			return 1;
     }
 
@@ -666,7 +674,11 @@ int TskDbPostgreSQL::createIndexes() {
 		attempt_exec("CREATE INDEX relationships_account1  ON relationships(account1_id);",
 			"Error creating relationships_account1 index on relationships: %s\n") ||
 		attempt_exec("CREATE INDEX relationships_account2  ON relationships(account2_id);",
-			"Error creating relationships_account2 index on relationships: %s\n");
+			"Error creating relationships_account2 index on relationships: %s\n") ||
+		attempt_exec("CREATE INDEX accounts_map_account_id  ON account_to_instances_map(account_id);",
+			"Error creating accounts_map_account_id index on account_to_instances_map: %s\n") ||
+		attempt_exec("CREATE INDEX accounts_map_account_instance_id  ON account_to_instances_map(account_instance_id);",
+			"Error creating accounts_map_account_instance_id index on account_to_instances_map: %s\n");
 }
 
 
