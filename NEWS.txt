@@ -2,6 +2,21 @@ Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
 
+---------------- VERSION 4.5.0 --------------
+New Features:
+- Support for LZVN compressed HFS files (from Joel Uckelman)
+- Use sector size from E01 (helps with 4k sector sizes)
+- More specific version number of DB schema
+- New Local Directory type in DB to differentiate with Virtual Directories
+- All blackboard artifacts in DB are now 'content'.  Attachments can now
+  be children of their parent message.
+- Added extension as a column in tsk_files table. 
+
+Bug Fixes:
+- Faster resolving of HFS hard links
+- Lots of fixes from Google Fuzzing efforts.
+
+
 ---------------- VERSION 4.4.2 --------------
 New Features:
 - usnjls tool for NTFS USN log (from noxdafox)
