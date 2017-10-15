@@ -18,6 +18,8 @@ AC_CONFIG_SRCDIR([tsk/base/tsk_base.h])
 AC_CONFIG_HEADERS([tsk/tsk_config.h])
 AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE([foreign])
+AM_PATH_CPPUNIT(1.12.1)
+AM_CONDITIONAL([CPPUNIT],[test "x$no_cppunit" = x])
 AM_PROG_LIBTOOL
 AM_MAINTAINER_MODE
 AC_CONFIG_MACRO_DIR([m4])
@@ -29,8 +31,8 @@ AC_PROG_CPP
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
-AC_PATH_PROG(PKGCONFIG,[pkg-config])
 AC_PATH_PROG(PERL, perl)
+
 
 dnl Checks for header files.
 AC_HEADER_STDC
@@ -81,9 +83,6 @@ AX_PTHREAD([
     CPPFLAGS="$CPPFLAGS $PTHREAD_CFLAGS"
     LDFLAGS="$LDFLAGS $PTHREAD_CFLAGS"
     CC="$PTHREAD_CC"],[])
-
-PKG_CHECK_MODULES([CPPUNIT],[cppunit >= 1.12.1],[ac_cv_cppunit=yes],[ac_cv_cppunit=no])
-AM_CONDITIONAL([CPPUNIT],[test "x$ac_cv_cppunit" = xyes])
 
 dnl Permit single-threaded builds
 AC_ARG_ENABLE([multithreading],
@@ -353,7 +352,6 @@ Building:
    zlib support:                          $ax_zlib
 
 Features:
-   cppunit support:                       $ac_cv_cppunit
    Java/JNI support:                      $ax_java_support
    Multithreading:                        $ax_multithread
 ]);
