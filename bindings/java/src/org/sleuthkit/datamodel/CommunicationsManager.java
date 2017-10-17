@@ -195,7 +195,7 @@ public class CommunicationsManager {
 
 				int typeID = rs.getInt("account_type_id");
 				accountType = new Account.Type(rs.getString("type_name"), rs.getString("display_name"));
-				
+
 				this.accountTypeToTypeIdMap.put(accountType, typeID);
 				this.typeNameToAccountTypeMap.put(accountTypeName, accountType);
 
@@ -631,7 +631,8 @@ public class CommunicationsManager {
 			rs = connection.executeQuery(s, "SELECT artifacts.artifact_id AS artifact_id,"
 					+ " artifacts.obj_id AS obj_id,"
 					+ " artifacts.artifact_obj_id AS artifact_obj_id,"
-					+ " artifacts.artifact_type_id AS artifact_type_id,"
+					+ " artifacts.data_source_obj_id AS data_source_obj_id, "
+					+ " artifacts.artifact_type_id AS artifact_type_id, "
 					+ " artifacts.review_status_id AS review_status_id,  "
 					+ " FROM blackboard_artifacts AS artifacts"
 					+ "	JOIN blackboard_attributes AS attributes"
@@ -645,7 +646,7 @@ public class CommunicationsManager {
 			while (rs.next()) {
 
 				BlackboardArtifact.Type bbartType = db.getArtifactType(rs.getInt("artifact_type_id"));
-				artifacts.add(new BlackboardArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
+				artifacts.add(new BlackboardArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"), rs.getLong("data_source_obj_id"),
 						bbartType.getTypeID(), bbartType.getTypeName(), bbartType.getDisplayName(),
 						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
 			}
@@ -763,6 +764,7 @@ public class CommunicationsManager {
 			String queryStr = "SELECT artifacts.artifact_id AS artifact_id,"
 					+ " artifacts.obj_id AS obj_id,"
 					+ " artifacts.artifact_obj_id AS artifact_obj_id,"
+					+ " artifacts.data_source_obj_id AS data_source_obj_id,"
 					+ " artifacts.artifact_type_id AS artifact_type_id,"
 					+ " artifacts.review_status_id AS review_status_id"
 					+ " FROM blackboard_artifacts AS artifacts"
@@ -781,7 +783,7 @@ public class CommunicationsManager {
 			if (rs.next()) {
 				BlackboardArtifact.Type bbartType = db.getArtifactType(rs.getInt("artifact_type_id"));
 
-				accountArtifact = new BlackboardArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
+				accountArtifact = new BlackboardArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"), rs.getLong("data_source_obj_id"),
 						bbartType.getTypeID(), bbartType.getTypeName(), bbartType.getDisplayName(),
 						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id")));
 
@@ -1088,6 +1090,7 @@ public class CommunicationsManager {
 			rs = connection.executeQuery(s, "SELECT artifacts.artifact_id AS artifact_id,"
 					+ " artifacts.obj_id AS obj_id,"
 					+ " artifacts.artifact_obj_id AS artifact_obj_id,"
+					+ " artifacts.data_source_obj_id AS data_source_obj_id,"
 					+ " artifacts.artifact_type_id AS artifact_type_id,"
 					+ " artifacts.review_status_id AS review_status_id"
 					+ " FROM blackboard_artifacts AS artifacts"
@@ -1101,7 +1104,7 @@ public class CommunicationsManager {
 			while (rs.next()) {
 
 				BlackboardArtifact.Type bbartType = db.getArtifactType(rs.getInt("artifact_type_id"));
-				artifacts.add(new BlackboardArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
+				artifacts.add(new BlackboardArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"), rs.getLong("data_source_obj_id"),
 						bbartType.getTypeID(), bbartType.getTypeName(), bbartType.getDisplayName(),
 						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
 			}
@@ -1138,6 +1141,7 @@ public class CommunicationsManager {
 			rs = connection.executeQuery(s, "SELECT artifacts.artifact_id AS artifact_id,"
 					+ " artifacts.obj_id AS obj_id,"
 					+ " artifacts.artifact_obj_id AS artifact_obj_id,"
+					+ " artifacts.data_source_obj_id AS data_source_obj_id,"
 					+ " artifacts.artifact_type_id AS artifact_type_id,"
 					+ " artifacts.review_status_id AS review_status_id"
 					+ " FROM blackboard_artifacts AS artifacts"
@@ -1152,7 +1156,7 @@ public class CommunicationsManager {
 			while (rs.next()) {
 
 				BlackboardArtifact.Type bbartType = db.getArtifactType(rs.getInt("artifact_type_id"));
-				artifacts.add(new BlackboardArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
+				artifacts.add(new BlackboardArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"), rs.getLong("data_source_obj_id"),
 						bbartType.getTypeID(), bbartType.getTypeName(), bbartType.getDisplayName(),
 						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
 			}
