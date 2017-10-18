@@ -911,11 +911,8 @@ uint8_t
     hdb_binsrch_info->idx_size = 0;
     hdb_binsrch_info->idx_off = 0;
     hdb_binsrch_info->idx_llen = 0;
-    if (hdb_binsrch_info->idx_lbuf != NULL)
-    {
-        free(hdb_binsrch_info->idx_lbuf);
-        hdb_binsrch_info->idx_lbuf = NULL;
-    }
+    free(hdb_binsrch_info->idx_lbuf);
+    hdb_binsrch_info->idx_lbuf = NULL;
 
     if (tsk_verbose)
         tsk_fprintf(stderr, "hdb_idxfinalize: Sorting index\n");
@@ -1528,10 +1525,8 @@ void
         hdb_info->hDb = NULL;
     }
 
-    if (hdb_info->idx_fname) {
-        free(hdb_info->idx_fname);
-        hdb_info->idx_fname = NULL;
-    }
+    free(hdb_info->idx_fname);
+    hdb_info->idx_fname = NULL;
 
     if (hdb_info->hIdx) {
         fclose(hdb_info->hIdx);
@@ -1543,20 +1538,14 @@ void
         hdb_info->hIdxTmp = NULL;
     }
 
-    if (hdb_info->uns_fname) {
-        free(hdb_info->uns_fname);
-        hdb_info->uns_fname = NULL;
-    }
+    free(hdb_info->uns_fname);
+    hdb_info->uns_fname = NULL;
 
-    if (hdb_info->idx_lbuf) {
-        free(hdb_info->idx_lbuf);
-        hdb_info->idx_lbuf = NULL;
-    }
+    free(hdb_info->idx_lbuf);
+    hdb_info->idx_lbuf = NULL;
 
-    if (hdb_info->idx_offsets) {
-        free(hdb_info->idx_offsets);
-        hdb_info->idx_offsets = NULL;
-    }
+    free(hdb_info->idx_offsets);
+    hdb_info->idx_offsets = NULL;
 
     hdb_info_base_close(hdb_info_base);
 

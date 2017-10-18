@@ -3663,10 +3663,10 @@ close_attr_file(ATTR_FILE_T * attr_file)
         tsk_fs_file_close(attr_file->file);
         attr_file->file = NULL;
     }
-    if (attr_file->header != NULL) {
-        free(attr_file->header);
-        attr_file->header = NULL;
-    }
+
+    free(attr_file->header);
+    attr_file->header = NULL;
+
     attr_file->rootNode = 0;
     attr_file->nodeSize = 0;
     // Note that we leave the fs component alone.
@@ -4239,13 +4239,8 @@ on_exit:
     return 0;
 
 on_error:
-    if (buffer != NULL) {
-        free(buffer);
-    }
-
-    if (nodeData != NULL) {
-        free(nodeData);
-    }
+    free(buffer);
+    free(nodeData);
     close_attr_file(&attrFile);
     return 1;
 }
@@ -4267,8 +4262,7 @@ free_res_descriptor(RES_DESCRIPTOR * rd)
     if (rd == NULL)
         return;
     nxt = rd->next;
-    if (rd->name != NULL)
-        free(rd->name);
+    free(rd->name);
     free(rd);
     free_res_descriptor(nxt);   // tail recursive
 }

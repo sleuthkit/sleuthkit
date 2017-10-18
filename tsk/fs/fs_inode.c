@@ -100,8 +100,7 @@ tsk_fs_meta_close(TSK_FS_META * fs_meta)
     // clear the tag so we know the structure isn't alloc
     fs_meta->tag = 0;
 
-    if (fs_meta->content_ptr)
-        free((char *) fs_meta->content_ptr);
+    free(fs_meta->content_ptr);
     fs_meta->content_ptr = NULL;
     fs_meta->content_len = 0;
 
@@ -109,8 +108,7 @@ tsk_fs_meta_close(TSK_FS_META * fs_meta)
         tsk_fs_attrlist_free(fs_meta->attr);
     fs_meta->attr = NULL;
 
-    if (fs_meta->link)
-        free(fs_meta->link);
+    free(fs_meta->link);
     fs_meta->link = NULL;
 
     fs_name = fs_meta->name2;
@@ -121,7 +119,7 @@ tsk_fs_meta_close(TSK_FS_META * fs_meta)
         fs_name = fs_name2;
     }
 
-    free((char *) fs_meta);
+    free(fs_meta);
 }
 
 /** \internal

@@ -179,8 +179,7 @@ tsk_vs_part_free(TSK_VS_INFO * a_vs)
     TSK_VS_PART_INFO *part2;
 
     while (part) {
-        if (part->desc)
-            free(part->desc);
+        free(part->desc);
         part->tag = 0;
         part2 = part->next;
         free(part);

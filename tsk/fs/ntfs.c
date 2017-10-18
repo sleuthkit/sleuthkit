@@ -814,11 +814,9 @@ ntfs_uncompress_setup(TSK_FS_INFO * fs, NTFS_COMP_INFO * comp,
 static void
 ntfs_uncompress_done(NTFS_COMP_INFO * comp)
 {
-    if (comp->uncomp_buf)
-        free(comp->uncomp_buf);
+    free(comp->uncomp_buf);
     comp->uncomp_buf = NULL;
-    if (comp->comp_buf)
-        free(comp->comp_buf);
+    free(comp->comp_buf);
     comp->comp_buf = NULL;
     comp->buf_size_b = 0;
 }
@@ -2770,7 +2768,7 @@ ntfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
         }
     }
 
-    free((char *) mft);
+    free(mft);
     return 0;
 }
 
@@ -4007,7 +4005,7 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     }
 
     tsk_fs_file_close(fs_file);
-    free((char *) mft);
+    free(mft);
     return 0;
 }
 
@@ -4779,18 +4777,16 @@ ntfs_close(TSK_FS_INFO * fs)
         return;
 
 #if TSK_USE_SID
-    if (ntfs->sii_data.buffer)
-        free(ntfs->sii_data.buffer);
+    free(ntfs->sii_data.buffer);
     ntfs->sii_data.buffer = NULL;
 
-    if (ntfs->sds_data.buffer)
-        free(ntfs->sds_data.buffer);
+    free(ntfs->sds_data.buffer);
     ntfs->sds_data.buffer = NULL;
 
 #endif
 
     fs->tag = 0;
-    free((char *) ntfs->fs);
+    free(ntfs->fs);
     tsk_fs_attr_run_free(ntfs->bmap);
     free(ntfs->bmap_buf);
     tsk_fs_file_close(ntfs->mft_file);
@@ -5147,10 +5143,8 @@ on_error:
         fs->tag = 0;
     }
     if( ntfs != NULL ) {
-        if( ntfs->fs != NULL ) {
-            free( ntfs->fs );
-        }
-        free( ntfs );
+        free(ntfs->fs);
+        free(ntfs);
     }
     return NULL;
 }

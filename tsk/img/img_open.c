@@ -355,8 +355,7 @@ tsk_img_open_utf8(int num_img,
         // free up the memory
       tsk_utf8_cleanup:
         for (i = 0; i < num_img; i++) {
-            if (images16[i])
-                free(images16[i]);
+            free(images16[i]);
         }
         free(images16);
 

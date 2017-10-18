@@ -422,9 +422,7 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
          * Cleanup.
          */
         for (level = 0; level < 4; ++level) {
-            if (buf[level]) {
-                free(buf[level]);
-            }
+            free(buf[level]);
         }
     }
 
