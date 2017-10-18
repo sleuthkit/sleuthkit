@@ -1191,9 +1191,6 @@ public class SleuthkitCase {
 			return schemaVersion;
 		}
 
-		/*
-		 * This upgrade adds a minor version number column.
-		 */
 		Statement statement = null;
 		Statement updstatement = null;
 		ResultSet resultSet = null;
@@ -1204,6 +1201,7 @@ public class SleuthkitCase {
 			//add the data_source_obj_id column to blackboard_artifacts.
 			statement.execute("ALTER TABLE blackboard_artifacts ADD COLUMN data_source_obj_id INTEGER NOT NULL DEFAULT -1");
 
+			// populate data_source_obj_id for each artifact
 			resultSet = connection.executeQuery(statement, "SELECT artifact_id, obj_id FROM blackboard_artifacts"); //NON-NLS
 			while (resultSet.next()) {
 				long artifact_id = resultSet.getLong("artifact_id");
