@@ -73,7 +73,7 @@ public class AccountInstance {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 */
 	public void rejectAccount() throws TskCoreException {
-		this.sleuthkitCase.setReviewStatus(this.sleuthkitCase.getBlackboardArtifact(this.getArtifactId()), BlackboardArtifact.ReviewStatus.REJECTED);
+		this.sleuthkitCase.setReviewStatus(this.artifact, BlackboardArtifact.ReviewStatus.REJECTED);
 	}
 
 	/**
@@ -82,7 +82,7 @@ public class AccountInstance {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 */
 	public void approveAccount() throws TskCoreException {
-		this.sleuthkitCase.setReviewStatus(this.sleuthkitCase.getBlackboardArtifact(this.getArtifactId()), BlackboardArtifact.ReviewStatus.APPROVED);
+		this.sleuthkitCase.setReviewStatus(this.artifact, BlackboardArtifact.ReviewStatus.APPROVED);
 	}
 
 	/**
@@ -93,7 +93,7 @@ public class AccountInstance {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 */
 	public void setReviewStatus(BlackboardArtifact.ReviewStatus reviewStatus) throws TskCoreException {
-		this.sleuthkitCase.setReviewStatus(this.sleuthkitCase.getBlackboardArtifact(this.getArtifactId()), reviewStatus);
+		this.sleuthkitCase.setReviewStatus(this.artifact, reviewStatus);
 	}
 
 }
