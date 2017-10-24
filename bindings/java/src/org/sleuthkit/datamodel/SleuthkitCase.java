@@ -131,7 +131,7 @@ public class SleuthkitCase {
 
 	private CommunicationsManager communicationsMgrInstance = null;
 
-	private final Map<String, Set<Long>> deviceIdToDatasourceObjId = new HashMap<String, Set<Long>>();
+	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<String, Set<Long>>();
 
 	/**
 	 * Attempts to connect to the database with the passed in settings, throws
@@ -1640,8 +1640,10 @@ public class SleuthkitCase {
 	public List<Long> getDataSourceObjIds(String deviceId) throws TskCoreException {
 
 		// check cached map first
-		if (deviceIdToDatasourceObjId.containsKey(deviceId)) {
-			return new ArrayList<Long>(deviceIdToDatasourceObjId.get(deviceId));
+		synchronized (deviceIdToDatasourceObjIdMap) {
+			if (deviceIdToDatasourceObjIdMap.containsKey(deviceId)) {
+				return new ArrayList<Long>(deviceIdToDatasourceObjIdMap.get(deviceId));
+			}
 		}
 
 		CaseDbConnection connection = connections.getConnection();
@@ -1657,10 +1659,12 @@ public class SleuthkitCase {
 
 				// Add to map of deviceID to data_source_obj_id.
 				long ds_obj_id = rs.getLong("obj_id");
-				if (deviceIdToDatasourceObjId.containsKey(deviceId)) {
-					deviceIdToDatasourceObjId.get(deviceId).add(ds_obj_id);
-				} else {
-					deviceIdToDatasourceObjId.put(deviceId, new HashSet<Long>(Arrays.asList(ds_obj_id)));
+				synchronized (deviceIdToDatasourceObjIdMap) {
+					if (deviceIdToDatasourceObjIdMap.containsKey(deviceId)) {
+						deviceIdToDatasourceObjIdMap.get(deviceId).add(ds_obj_id);
+					} else {
+						deviceIdToDatasourceObjIdMap.put(deviceId, new HashSet<Long>(Arrays.asList(ds_obj_id)));
+					}
 				}
 			}
 			return dataSourceObjIds;

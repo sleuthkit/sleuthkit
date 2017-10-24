@@ -239,13 +239,13 @@ public class CommunicationsManager {
 	 */
 	public AccountInstance createAccountInstance(Account.Type accountType, String accountUniqueID, String moduleName, Content sourceObj) throws TskCoreException {
 		AccountInstance accountInstance = null;
-		long accountId = getOrCreateAccount(accountType, normalizeAccountID(accountType, accountUniqueID)).getAccountId();
+		Account account = getOrCreateAccount(accountType, normalizeAccountID(accountType, accountUniqueID));
 
 		BlackboardArtifact accountArtifact = getOrCreateAccountInstanceArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT, accountType, normalizeAccountID(accountType, accountUniqueID), moduleName, sourceObj);
-		accountInstance = new AccountInstance(this.db, accountArtifact.getArtifactID(), accountId);
+		accountInstance = new AccountInstance(this.db, accountArtifact, account);
 
 		// add a row to Accounts to Instances mapping table
-		addAccountInstanceMapping(accountId, accountArtifact.getArtifactID());
+		addAccountInstanceMapping(account.getAccountId(), accountArtifact.getArtifactID());
 
 		return accountInstance;
 	}
@@ -408,7 +408,7 @@ public class CommunicationsManager {
 			List<Long> accountInstanceIds = getAccountInstanceIds(account.getAccountId());
 
 			for (long artifact_id : accountInstanceIds) {
-				accountInstances.add(new AccountInstance(db, artifact_id, account.getAccountId()));
+				accountInstances.add(new AccountInstance(db, db.getBlackboardArtifact(artifact_id), account));
 			}
 		}
 		return accountInstances;
@@ -444,16 +444,16 @@ public class CommunicationsManager {
 	 * @param recipients            list of recipients
 	 * @param communicationArtifact communication item
 	 */
-	public void addRelationships(AccountInstance sender, List<AccountInstance> recipients, BlackboardArtifact communicationArtifact) {
+	public void addRelationships(AccountInstance sender, List<AccountInstance> recipients, BlackboardArtifact communicationArtifact) throws TskCoreException {
 
 		// Currently we do not save the direction of communication
 		List<Long> accountIDs = new ArrayList<Long>();
 		if (null != sender) {
-			accountIDs.add(sender.getAccountId());
+			accountIDs.add(sender.getAccount().getAccountId());
 		}
 
 		for (AccountInstance recipient : recipients) {
-			accountIDs.add(recipient.getAccountId());
+			accountIDs.add(recipient.getAccount().getAccountId());
 		}
 
 		Set<UnorderedAccountPair> relationships = listToUnorderedPairs(accountIDs);

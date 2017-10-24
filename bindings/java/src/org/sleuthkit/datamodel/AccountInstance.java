@@ -18,54 +18,74 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.Collection;
+
 /**
  * Instance of an account. A account may be extracted from multiple sources, one
  * per Content, each represents an instance of the account. There is a 1:N
- * relationships between Account & AccountInstance
+ * relationship between Account & AccountInstance
  *
  * Account instances are stored as Artifacts for type TSK_ACCOUNT
  */
 public class AccountInstance {
 
 	private final SleuthkitCase sleuthkitCase;
-	private final long artifactId;	// ArtifactID of the underlying TSK_ACCOUNT artifact - that represents an instance 
-	private final BlackboardArtifact artifact;
-	private final long account_id;	// id f corresponding account.
+	private final BlackboardArtifact artifact;  // Underlying TSK_ACCOUNT artifact - that represents an instance 
+	private final Account account;				// id of corresponding account.
 
-	AccountInstance(SleuthkitCase sleuthkitCase, long artifactId, long account_id) throws TskCoreException {
-
-		this.sleuthkitCase = sleuthkitCase;
-		this.artifactId = artifactId;
-		this.account_id = account_id;
-		this.artifact = sleuthkitCase.getBlackboardArtifact(artifactId);
-	}
 
 	AccountInstance(SleuthkitCase sleuthkitCase, BlackboardArtifact artifact, Account account) throws TskCoreException {
 		this.sleuthkitCase = sleuthkitCase;
 		this.artifact = artifact;
-		this.artifactId = artifact.getArtifactID();
-		this.account_id = account.getAccountId();
+		this.account = account;
 	}
 
+	/**
+	 * Get an attribute of the account
+	 *
+	 * @param attrType attribute to get
+	 * 
+	 * @return BlackboardAttribute 
+	 * 
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 */
 	public BlackboardAttribute getAttribute(BlackboardAttribute.ATTRIBUTE_TYPE attrType) throws TskCoreException {
 		return this.artifact.getAttribute(new BlackboardAttribute.Type(attrType));
 	}
 
+	/**
+	 * An add attribute to the account
+	 *
+	 * @param bbatr attribute to add
+	 * 
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 */
 	public void addAttribute(BlackboardAttribute bbatr) throws TskCoreException {
 		this.artifact.addAttribute(bbatr);
 	}
 
-	public long getArtifactId() {
-		return this.artifactId;
+	/**
+	 * Adds a collection of attributes to the account
+	 *
+	 * @param bbatrs collection of attributes to add
+	 * 
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 */
+	public void addAttributes(Collection<BlackboardAttribute> bbatrs) throws TskCoreException {
+		this.artifact.addAttributes(bbatrs);
+	}
+	
+	/**
+	 * Returns the underlying Account object
+	 *
+	 * @return account object
+	 * 
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 */
+	public Account getAccount() throws TskCoreException {
+		return this.account;
 	}
 
-	public Account getAccount() throws TskCoreException, Exception {
-		return this.sleuthkitCase.getCommunicationsManager().getAccount(account_id);
-	}
-
-	public long getAccountId() {
-		return this.account_id;
-	}
 
 	/**
 	 * Reject the account instance
@@ -85,15 +105,5 @@ public class AccountInstance {
 		this.sleuthkitCase.setReviewStatus(this.artifact, BlackboardArtifact.ReviewStatus.APPROVED);
 	}
 
-	/**
-	 * Set review status for the account instance
-	 *
-	 * @param reviewStatus
-	 *
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 */
-	public void setReviewStatus(BlackboardArtifact.ReviewStatus reviewStatus) throws TskCoreException {
-		this.sleuthkitCase.setReviewStatus(this.artifact, reviewStatus);
-	}
 
 }
