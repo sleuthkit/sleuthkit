@@ -325,7 +325,7 @@ public class CommunicationsManager {
 	 */
 	public List<Account.Type> getAccountTypesInUse() throws TskCoreException {
 		String query = "SELECT DISTINCT value_text FROM blackboard_attributes "
-				+ "WHERE atrribute_type_id = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE.getTypeID();
+				+ "WHERE attribute_type_id = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE.getTypeID();
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSharedLock();
 		Statement s = null;
