@@ -21,18 +21,17 @@ package org.sleuthkit.datamodel;
 import java.util.Collection;
 
 /**
- * Instance of an account. A account may be extracted from multiple sources, one
- * per Content, each represents an instance of the account. There is a 1:N
- * relationship between Account & AccountInstance
- *
- * Account instances are stored as Artifacts for type TSK_ACCOUNT
+ * An instance of an account. An account may be found in multiple content
+ * objects, so there can be up to one account instance per content object, 
+ * and there is a 1:N relationship between Account objects and AccountInstance
+ * objects. Currently, there is an underlying TSK_ACCOUNT artifact for every 
+ * account instance. This may change in the future.
  */
 public class AccountInstance {
 
 	private final SleuthkitCase sleuthkitCase;
-	private final BlackboardArtifact artifact;  // Underlying TSK_ACCOUNT artifact - that represents an instance 
-	private final Account account;				// id of corresponding account.
-
+	private final BlackboardArtifact artifact; 
+	private final Account account;
 
 	AccountInstance(SleuthkitCase sleuthkitCase, BlackboardArtifact artifact, Account account) throws TskCoreException {
 		this.sleuthkitCase = sleuthkitCase;
@@ -41,46 +40,47 @@ public class AccountInstance {
 	}
 
 	/**
-	 * Get an attribute of the account
+	 * Gets the first occurrence of an attribute of the account instance
+	 * of a given type. 
 	 *
-	 * @param attrType attribute to get
+	 * @param attrType The attribute type. 
 	 * 
-	 * @return BlackboardAttribute 
+	 * @return The atrribute, or null if no attribute of the given type exists.
 	 * 
-	 * @throws TskCoreException exception thrown if a critical error occurs
+	 * @throws TskCoreException if an there is an error getting the attribute.
 	 */
 	public BlackboardAttribute getAttribute(BlackboardAttribute.ATTRIBUTE_TYPE attrType) throws TskCoreException {
 		return this.artifact.getAttribute(new BlackboardAttribute.Type(attrType));
 	}
 
 	/**
-	 * An add attribute to the account
+	 * Adds an attribute to the account instance.
 	 *
-	 * @param bbatr attribute to add
+	 * @param bbatr The attribute to add.
 	 * 
-	 * @throws TskCoreException exception thrown if a critical error occurs
+	 * @throws TskCoreException if an there is an error adding the attribute.
 	 */
 	public void addAttribute(BlackboardAttribute bbatr) throws TskCoreException {
 		this.artifact.addAttribute(bbatr);
 	}
 
 	/**
-	 * Adds a collection of attributes to the account
+	 * Adds a collection of attributes to the account instance
 	 *
-	 * @param bbatrs collection of attributes to add
+	 * @param bbatrs The collection of attributes to add.
 	 * 
-	 * @throws TskCoreException exception thrown if a critical error occurs
+	 * @throws TskCoreException if an there is an error adding the attributes.
 	 */
 	public void addAttributes(Collection<BlackboardAttribute> bbatrs) throws TskCoreException {
 		this.artifact.addAttributes(bbatrs);
 	}
 	
 	/**
-	 * Returns the underlying Account object
+	 * Gets the account of which this object is an instance.
 	 *
-	 * @return account object
+	 * @return The account.
 	 * 
-	 * @throws TskCoreException exception thrown if a critical error occurs
+	 * @throws TskCoreException if an there is an error getting the account.
 	 */
 	public Account getAccount() throws TskCoreException {
 		return this.account;
@@ -88,18 +88,18 @@ public class AccountInstance {
 
 
 	/**
-	 * Reject the account instance
+	 * Marks this account instance as invalid.
 	 *
-	 * @throws TskCoreException exception thrown if a critical error occurs
+	 * @throws TskCoreException if an there is an error marking the account instance.
 	 */
 	public void rejectAccount() throws TskCoreException {
 		this.sleuthkitCase.setReviewStatus(this.artifact, BlackboardArtifact.ReviewStatus.REJECTED);
 	}
 
 	/**
-	 * Reject the account instance
+	 * Marks this account instance as valid.
 	 *
-	 * @throws TskCoreException exception thrown if a critical error occurs
+	 * @throws TskCoreException if an there is an error marking the account instance.
 	 */
 	public void approveAccount() throws TskCoreException {
 		this.sleuthkitCase.setReviewStatus(this.artifact, BlackboardArtifact.ReviewStatus.APPROVED);
