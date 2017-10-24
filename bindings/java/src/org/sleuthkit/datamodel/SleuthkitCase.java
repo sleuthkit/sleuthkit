@@ -1644,37 +1644,35 @@ public class SleuthkitCase {
 			if (deviceIdToDatasourceObjIdMap.containsKey(deviceId)) {
 				return new ArrayList<Long>(deviceIdToDatasourceObjIdMap.get(deviceId));
 			}
-		}
 
-		CaseDbConnection connection = connections.getConnection();
-		acquireSharedLock();
-		Statement s = null;
-		ResultSet rs = null;
-		try {
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT obj_id FROM data_source_info WHERE device_id = '" + deviceId + "'"); //NON-NLS
-			List<Long> dataSourceObjIds = new ArrayList<Long>();
-			while (rs.next()) {
-				dataSourceObjIds.add(rs.getLong("obj_id"));
+			CaseDbConnection connection = connections.getConnection();
+			acquireSharedLock();
+			Statement s = null;
+			ResultSet rs = null;
+			try {
+				s = connection.createStatement();
+				rs = connection.executeQuery(s, "SELECT obj_id FROM data_source_info WHERE device_id = '" + deviceId + "'"); //NON-NLS
+				List<Long> dataSourceObjIds = new ArrayList<Long>();
+				while (rs.next()) {
+					dataSourceObjIds.add(rs.getLong("obj_id"));
 
-				// Add to map of deviceID to data_source_obj_id.
-				long ds_obj_id = rs.getLong("obj_id");
-				synchronized (deviceIdToDatasourceObjIdMap) {
+					// Add to map of deviceID to data_source_obj_id.
+					long ds_obj_id = rs.getLong("obj_id");
 					if (deviceIdToDatasourceObjIdMap.containsKey(deviceId)) {
 						deviceIdToDatasourceObjIdMap.get(deviceId).add(ds_obj_id);
 					} else {
 						deviceIdToDatasourceObjIdMap.put(deviceId, new HashSet<Long>(Arrays.asList(ds_obj_id)));
 					}
 				}
+				return dataSourceObjIds;
+			} catch (SQLException ex) {
+				throw new TskCoreException("Error getting data sources", ex);
+			} finally {
+				closeResultSet(rs);
+				closeStatement(s);
+				connection.close();
+				releaseSharedLock();
 			}
-			return dataSourceObjIds;
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting data sources", ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			connection.close();
-			releaseSharedLock();
 		}
 	}
 
