@@ -531,6 +531,7 @@ xcopy /E /Y "$(VCInstallDir)\redist\$(PlatformTarget)\Microsoft.VC140.CRT" "$(Ou
     <ClCompile Include="..\..\tsk\fs\ils_lib.c" />
     <ClCompile Include="..\..\tsk\fs\iso9660.c" />
     <ClCompile Include="..\..\tsk\fs\iso9660_dent.c" />
+    <ClCompile Include="..\..\tsk\fs\lzvn.c" />
     <ClCompile Include="..\..\tsk\fs\nofs_misc.c" />
     <ClCompile Include="..\..\tsk\fs\ntfs.c" />
     <ClCompile Include="..\..\tsk\fs\ntfs_dent.cpp" />

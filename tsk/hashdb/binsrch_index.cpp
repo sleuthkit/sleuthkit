@@ -871,6 +871,7 @@ static uint8_t
     // corresponding set.
     TSK_OFF_T idx_off = hdb_binsrch_info->idx_off;
     char digits[4];
+    digits[3] = '\0';
     long int offsets_idx = 0;
     while (fgets(hdb_binsrch_info->idx_lbuf, (int)hdb_binsrch_info->idx_llen + 1, hdb_binsrch_info->hIdx)) {
         strncpy(digits, hdb_binsrch_info->idx_lbuf, 3);		
