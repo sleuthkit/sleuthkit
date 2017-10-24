@@ -324,6 +324,9 @@
     <ClCompile Include="..\..\tsk\img\img_writer.cpp">
       <Filter>img</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\lzvn.c">
+      <Filter>fs</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\tsk\vs\tsk_bsd.h">

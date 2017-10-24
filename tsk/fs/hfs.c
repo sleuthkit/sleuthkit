@@ -17,7 +17,7 @@
 ** Copyright (c) 2008, 2012 ATC-NY.  All rights reserved.
 ** This file contains data developed with support from the National
 ** Institute of Justice, Office of Justice Programs, U.S. Department of Justice.
-** 
+**
 ** Wyatt Banks [wbanks@crucialsecurity.com]
 ** Copyright (c) 2005 Crucial Security Inc.  All rights reserved.
 **
@@ -81,24 +81,23 @@
 #include <strings.h>
 #endif
 
+#define XSWAP(a,b) { a ^= b; b ^= a; a ^= b; }
+
 // Compression Stuff
 
 #ifdef HAVE_LIBZ
 #include <zlib.h>
 #endif
 
-#define XSWAP(a,b) { a ^= b; b ^= a; a ^= b; }
+#include "lzvn.h"
 
 // Forward declarations:
 static uint8_t hfs_load_attrs(TSK_FS_FILE * fs_file);
 static uint8_t hfs_load_extended_attrs(TSK_FS_FILE * file,
-    unsigned char *isCompressed, unsigned char *compDataInRSRC,
+    unsigned char *isCompressed, unsigned char *cmpType,
     uint64_t * uncSize);
 void error_detected(uint32_t errnum, char *errstr, ...);
 void error_returned(char *errstr, ...);
-
-
-
 
 #ifdef HAVE_LIBZ
 
@@ -330,7 +329,7 @@ hfs_ext_compare_keys(HFS_INFO * hfs, uint32_t cnid,
 /** \internal
  * Returns the length of an HFS+ B-tree INDEX key based on the tree header
  * structure and the length claimed in the record.  With some trees,
- * the length given in the record is not used. 
+ * the length given in the record is not used.
  * Note that this neither detects nor correctly handles 8-bit keys
  * (which should not be present in HFS+).
  *
@@ -386,7 +385,7 @@ hfs_extents_to_attr(TSK_FS_INFO * a_fs, const hfs_ext_desc * a_extents,
             "hfs_extents_to_attr: Converting extents from offset %" PRIuOFF
             " to runlist\n", a_start_off);
 
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < 8; ++i) {
         TSK_FS_ATTR_RUN *cur_run;
 
         uint32_t addr = tsk_getu32(a_fs->endian, a_extents[i].start_blk);
@@ -407,7 +406,6 @@ hfs_extents_to_attr(TSK_FS_INFO * a_fs, const hfs_ext_desc * a_extents,
             return NULL;
         }
 
-
         cur_run->addr = addr;
         cur_run->len = len;
         cur_run->offset = cur_off;
@@ -426,11 +424,11 @@ hfs_extents_to_attr(TSK_FS_INFO * a_fs, const hfs_ext_desc * a_extents,
 
 /**
  * Look in the extents catalog for entries for a given file. Add the runs
- * to the passed attribute structure. 
+ * to the passed attribute structure.
  *
  * @param hfs File system being analyzed
  * @param cnid file id of file to search for
- * @param a_attr Attribute to add extents runs to 
+ * @param a_attr Attribute to add extents runs to
  * @param dataForkQ  if true, then find extents for the data fork.  If false, then find extents for the Resource fork.
  * @returns 1 on error and 0 on success
  */
@@ -497,7 +495,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
         }
     }
 
-    // allocate a node buffer 
+    // allocate a node buffer
     nodesize = tsk_getu16(fs->endian, hfs->extents_header.nodesize);
     if ((node = (char *) tsk_malloc(nodesize)) == NULL) {
         return 1;
@@ -531,7 +529,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
         ssize_t cnt;
         hfs_btree_node *node_desc;
 
-        // sanity check 
+        // sanity check
         if (cur_node > tsk_getu32(fs->endian,
                 hfs->extents_header.totalNodes)) {
             tsk_error_set_errno(TSK_ERR_FS_GENFS);
@@ -589,12 +587,12 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                     " @ %" PRIu64 " has %" PRIu16 " records\n", cur_node,
                     cur_off, num_rec);
 
-            for (rec = 0; rec < num_rec; rec++) {
+            for (rec = 0; rec < num_rec; ++rec) {
                 int cmp;
                 size_t rec_off;
                 hfs_btree_key_ext *key;
 
-                // get the record offset in the node 
+                // get the record offset in the node
                 rec_off =
                     tsk_getu16(fs->endian,
                     &node[nodesize - (rec + 1) * 2]);
@@ -670,7 +668,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                     PRIu64 " has %" PRIu16 " records\n", cur_node, cur_off,
                     num_rec);
 
-            for (rec = 0; rec < num_rec; rec++) {
+            for (rec = 0; rec < num_rec; ++rec) {
                 size_t rec_off;
                 hfs_btree_key_ext *key;
                 uint32_t rec_cnid;
@@ -871,7 +869,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
         ssize_t cnt;
         hfs_btree_node *node_desc;
 
-        // sanity check 
+        // sanity check
         if (cur_node > tsk_getu32(fs->endian,
                 hfs->catalog_header.totalNodes)) {
             tsk_error_set_errno(TSK_ERR_FS_GENFS);
@@ -920,7 +918,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
             uint32_t next_node = 0;
             int rec;
 
-            for (rec = 0; rec < num_rec; rec++) {
+            for (rec = 0; rec < num_rec; ++rec) {
                 size_t rec_off;
                 hfs_btree_key_cat *key;
                 uint8_t retval;
@@ -1025,7 +1023,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
         else if (node_desc->type == HFS_BT_NODE_TYPE_LEAF) {
             int rec;
 
-            for (rec = 0; rec < num_rec; rec++) {
+            for (rec = 0; rec < num_rec; ++rec) {
                 size_t rec_off;
                 hfs_btree_key_cat *key;
                 uint8_t retval;
@@ -1153,7 +1151,7 @@ hfs_cat_get_record_offset_cb(HFS_INFO * hfs, int8_t level_type,
 
 /** \internal
  * Find the byte offset (from the start of the catalog file) to a record
- * in the catalog file.  
+ * in the catalog file.
  * @param hfs File System being analyzed
  * @param needle Key to search for
  * @returns Byte offset or 0 on error. 0 is also returned if catalog
@@ -1176,7 +1174,7 @@ hfs_cat_get_record_offset(HFS_INFO * hfs, const hfs_btree_key_cat * needle)
 /** \internal
  * Given a byte offset to a leaf record in teh catalog file, read the data as
  * a thread record. This will zero the buffer and read in the size of the thread
- * data. 
+ * data.
  * @param hfs File System
  * @param off Byte offset of record in catalog file (not including key)
  * @param thread [out] Buffer to write thread data into.
@@ -1240,7 +1238,7 @@ hfs_cat_read_thread_record(HFS_INFO * hfs, TSK_OFF_T off,
 
 /** \internal
  * Read a catalog record into a local data structure.  This reads the
- * correct amount, depending on if it is a file or folder. 
+ * correct amount, depending on if it is a file or folder.
  * @param hfs File system being analyzed
  * @param off Byte offset (in catalog file) of record (not including key)
  * @param record [out] Structure to read data into
@@ -1310,68 +1308,71 @@ hfs_cat_read_file_folder_record(HFS_INFO * hfs, TSK_OFF_T off,
 }
 
 
-static TSK_INUM_T
-hfs_lookup_hard_link(HFS_INFO * hfs, TSK_INUM_T linknum,
-    unsigned char is_directory)
-{
-    char fBuff[30];
-    TSK_FS_DIR *mdir;
-    size_t indx;
-    TSK_FS_INFO *fs = (TSK_FS_INFO *) hfs;
-
-    memset(fBuff, 0, 30);
-
-    if (is_directory) {
-
-        tsk_take_lock(&(hfs->metadata_dir_cache_lock));
-        if (hfs->dir_meta_dir == NULL) {
-            hfs->dir_meta_dir =
-                tsk_fs_dir_open_meta(fs, hfs->meta_dir_inum);
-        }
-        tsk_release_lock(&(hfs->metadata_dir_cache_lock));
-
-        if (hfs->dir_meta_dir == NULL) {
-            error_returned
-                ("hfs_lookup_hard_link: could not open the dir metadata directory");
-            return 0;
-        }
-        else {
-            mdir = hfs->dir_meta_dir;
-        }
-        snprintf(fBuff, 30, "dir_%" PRIuINUM, linknum);
-
-    }
-    else {
-
-        tsk_take_lock(&(hfs->metadata_dir_cache_lock));
-        if (hfs->meta_dir == NULL) {
-            hfs->meta_dir = tsk_fs_dir_open_meta(fs, hfs->meta_inum);
-        }
-        tsk_release_lock(&(hfs->metadata_dir_cache_lock));
-
-        if (hfs->meta_dir == NULL) {
-            error_returned
-                ("hfs_lookup_hard_link: could not open file metadata directory");
-            return 0;
-        }
-        else {
-            mdir = hfs->meta_dir;
-        }
-        snprintf(fBuff, 30, "iNode%" PRIuINUM, linknum);
-    }
-
-    for (indx = 0; indx < tsk_fs_dir_getsize(mdir); indx++) {
-
-        if ((mdir->names != NULL) && mdir->names[indx].name &&
-            (fs->name_cmp(fs, mdir->names[indx].name, fBuff) == 0)) {
-            // OK this is the one
-            return mdir->names[indx].meta_addr;
-        }
-    }
-
-    // OK, we did not find that linknum
-    return 0;
-}
+// hfs_lookup_hard_link appears to be unnecessary - it looks up the cnid
+// by seeing if there's a file/dir with the standard hard link name plus
+// linknum and returns the meta_addr. But this should always be the same as linknum,
+// and is very slow when there are many hard links, so it shouldn't be used.
+//static TSK_INUM_T
+//hfs_lookup_hard_link(HFS_INFO * hfs, TSK_INUM_T linknum,
+//    unsigned char is_directory)
+//{
+//    char fBuff[30];
+//    TSK_FS_DIR *mdir;
+//    size_t indx;
+//    TSK_FS_INFO *fs = (TSK_FS_INFO *) hfs;
+//
+//    memset(fBuff, 0, 30);
+//
+//    if (is_directory) {
+//
+//        tsk_take_lock(&(hfs->metadata_dir_cache_lock));
+//        if (hfs->dir_meta_dir == NULL) {
+//            hfs->dir_meta_dir =
+//                tsk_fs_dir_open_meta(fs, hfs->meta_dir_inum);
+//        }
+//        tsk_release_lock(&(hfs->metadata_dir_cache_lock));
+//
+//        if (hfs->dir_meta_dir == NULL) {
+//            error_returned
+//                ("hfs_lookup_hard_link: could not open the dir metadata directory");
+//            return 0;
+//        }
+//        else {
+//            mdir = hfs->dir_meta_dir;
+//        }
+//        snprintf(fBuff, 30, "dir_%" PRIuINUM, linknum);
+//
+//    }
+//    else {
+//
+//        tsk_take_lock(&(hfs->metadata_dir_cache_lock));
+//        if (hfs->meta_dir == NULL) {
+//            hfs->meta_dir = tsk_fs_dir_open_meta(fs, hfs->meta_inum);
+//        }
+//        tsk_release_lock(&(hfs->metadata_dir_cache_lock));
+//
+//        if (hfs->meta_dir == NULL) {
+//            error_returned
+//                ("hfs_lookup_hard_link: could not open file metadata directory");
+//            return 0;
+//        }
+//        else {
+//            mdir = hfs->meta_dir;
+//        }
+//        snprintf(fBuff, 30, "iNode%" PRIuINUM, linknum);
+//    }
+//
+//    for (indx = 0; indx < tsk_fs_dir_getsize(mdir); ++indx) {
+//        if ((mdir->names != NULL) && mdir->names[indx].name &&
+//            (fs->name_cmp(fs, mdir->names[indx].name, fBuff) == 0)) {
+//            // OK this is the one
+//            return mdir->names[indx].meta_addr;
+//        }
+//    }
+//
+//    // OK, we did not find that linknum
+//    return 0;
+//}
 
 /*
  * Given a catalog entry, will test that entry to see if it is a hard link.
@@ -1469,25 +1470,11 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat,
             uint32_t linkNum =
                 tsk_getu32(fs->endian, cat->std.perm.special.inum);
 
-            // It seems like the linkNum is always the same as the CNID
-            // returned by hfs_lookup_hard_link, which is very inefficient when a 
-            // datasource contains large numbers of linked files.
-            TSK_INUM_T target_cnid = linkNum;
-
-            if (target_cnid != 0) {
-                // Succeeded in finding that target_cnid in the Catalog file
-                return target_cnid;
-            }
-            else {
-                // This should be a hard link, BUT...
-                // Did not find the target_cnid in the Catalog file.
-                error_returned
-                    ("hfs_follow_hard_link: got an error looking up the target of a file link");
-                *is_error = 2;
-                return 0;
-            }
+            // We used to resolve this ID to a file in X folder using hfs_lookup_hard_link, but found 
+            // that it was very ineffecient and always resulted in the same linkNum value. 
+            // We now just use linkNum
+            return linkNum;
         }
-
     }
     else if (file_type == HFS_LINKDIR_FILE_TYPE
         && file_creator == HFS_LINKDIR_FILE_CREATOR) {
@@ -1533,23 +1520,10 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat,
             uint32_t linkNum =
                 tsk_getu32(fs->endian, cat->std.perm.special.inum);
 
-            // It seems like the linkNum is always the same as the CNID
-            // returned by hfs_lookup_hard_link, which is very inefficient when a 
-            // datasource contains large numbers of linked files.
-            TSK_INUM_T target_cnid = linkNum;
-
-            if (target_cnid != 0) {
-                // Succeeded in finding that target_cnid in the Catalog file
-                return target_cnid;
-            }
-            else {
-                // This should be a hard link, BUT...
-                // Did not find the target_cnid in the Catalog file.
-                error_returned
-                    ("hfs_follow_hard_link: got an error looking up the target of a dir link");
-                *is_error = 2;
-                return 0;
-            }
+            // We used to resolve this ID to a file in X folder using hfs_lookup_hard_link, but found 
+            // that it was very ineffecient and always resulted in the same linkNum value. 
+            // We now just use linkNum
+            return linkNum;
         }
     }
 
@@ -1560,7 +1534,7 @@ hfs_follow_hard_link(HFS_INFO * hfs, hfs_file * cat,
 
 /** \internal
  * Lookup an entry in the catalog file and save it into the entry.  Do not
- * call this for the special files that do not have an entry in the catalog. 
+ * call this for the special files that do not have an entry in the catalog.
  * data structure.
  * @param hfs File system being analyzed
  * @param inum Address (cnid) of file to open
@@ -1871,7 +1845,7 @@ hfs_make_specialbase(TSK_FS_FILE * fs_file)
 
 /**
  * \internal
- * Create an FS_INODE structure for the catalog file. 
+ * Create an FS_INODE structure for the catalog file.
  *
  * @param hfs File system to analyze
  * @param fs_file Structure to copy file information into.
@@ -1904,7 +1878,7 @@ hfs_make_catalog(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
         tsk_getu64(fs->endian, hfs->fs->cat_file.logic_sz);
 
 
-    // convert the  runs in the volume header to attribute runs 
+    // convert the  runs in the volume header to attribute runs
     if (((attr_run =
                 hfs_extents_to_attr(fs, hfs->fs->cat_file.extents,
                     0)) == NULL) && (tsk_error_get_errno() != 0)) {
@@ -2020,7 +1994,7 @@ hfs_make_extents(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
 
 /**
  * \internal
- * Create an FS_INODE structure for the blockmap / allocation file. 
+ * Create an FS_INODE structure for the blockmap / allocation file.
  *
  * @param hfs File system to analyze
  * @param fs_file Structure to copy file information into.
@@ -2101,7 +2075,7 @@ hfs_make_blockmap(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
 
 /**
 * \internal
- * Create an FS_INODE structure for the startup / boot file. 
+ * Create an FS_INODE structure for the startup / boot file.
  *
  * @param hfs File system to analyze
  * @param fs_file Structure to copy file information into.
@@ -2182,7 +2156,7 @@ hfs_make_startfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
 
 /**
  * \internal
- * Create an FS_INODE structure for the attributes file. 
+ * Create an FS_INODE structure for the attributes file.
  *
  * @param hfs File system to analyze
  * @param fs_file Structure to copy file information into.
@@ -2255,7 +2229,7 @@ hfs_make_attrfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
 
 /**
  * \internal
- * Create an FS_FILE structure for the BadBlocks file. 
+ * Create an FS_FILE structure for the BadBlocks file.
  *
  * @param hfs File system to analyze
  * @param fs_file Structure to copy file information into.
@@ -2308,7 +2282,7 @@ hfs_make_badblockfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
         return 1;
     }
 
-    /* @@@ We have a chicken and egg problem here...  The current design of 
+    /* @@@ We have a chicken and egg problem here...  The current design of
      * fs_attr_set() requires the size to be set, but we dont' know the size
      * until we look into the extents file (which adds to an attribute...).
      * This does not seem to be the best design...  neeed a way to test this. */
@@ -2330,7 +2304,7 @@ hfs_make_badblockfile(HFS_INFO * hfs, TSK_FS_FILE * fs_file)
 
 
 /** \internal
- * Copy the catalog file or folder record entry into a TSK data structure. 
+ * Copy the catalog file or folder record entry into a TSK data structure.
  * @param a_hfs File system being analyzed
  * @param a_hfs_entry Catalog record entry (HFS_ENTRY *)
  * @param a_fs_file Structure to copy data into (TSK_FS_FILE *)
@@ -2397,8 +2371,8 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const HFS_ENTRY * a_hfs_entry,
     }
 
 
-    /* 
-     * Copy the file type specific stuff first 
+    /*
+     * Copy the file type specific stuff first
      */
     hfsmode = tsk_getu16(fs->endian, std->perm.mode);
 
@@ -2430,7 +2404,7 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const HFS_ENTRY * a_hfs_entry,
     }
 
     /*
-     * Copy the standard stuff.  
+     * Copy the standard stuff.
      * Use default values (as defined in spec) if mode is not defined.
      */
     if ((hfsmode & HFS_IN_IFMT) == 0) {
@@ -2465,10 +2439,9 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const HFS_ENTRY * a_hfs_entry,
         a_fs_meta->crtime_nano = 0;
     a_fs_meta->time2.hfs.bkup_time_nano = 0;
 
-
     a_fs_meta->addr = tsk_getu32(fs->endian, std->cnid);
 
-    // All entries here are used.  
+    // All entries here are used.
     a_fs_meta->flags = TSK_FS_META_FLAG_ALLOC | TSK_FS_META_FLAG_USED;
 
     if (std->perm.o_flags & HFS_PERM_OFLAG_COMPRESSED)
@@ -2520,12 +2493,12 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const HFS_ENTRY * a_hfs_entry,
 
 
 /** \internal
- * Load a catalog file entry and save it in the TSK_FS_FILE structure. 
- * 
+ * Load a catalog file entry and save it in the TSK_FS_FILE structure.
+ *
  * @param fs File system to read from.
- * @param a_fs_file Structure to read into. 
+ * @param a_fs_file Structure to read into.
  * @param inum File address to load
- * @returns 1 on error 
+ * @returns 1 on error
  */
 static uint8_t
 hfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
@@ -2543,6 +2516,7 @@ hfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
     if (a_fs_file->meta == NULL) {
         a_fs_file->meta = tsk_fs_meta_alloc(HFS_FILE_CONTENT_LEN);
     }
+
     if (a_fs_file->meta == NULL) {
         return 1;
     }
@@ -2564,20 +2538,11 @@ hfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
                 "Extents File not present");
             return 1;
         }
-        if (hfs_make_extents(hfs, a_fs_file)) {
-            return 1;
-        }
-        else {
-            return 0;
-        }
+
+        return hfs_make_extents(hfs, a_fs_file);
     }
     else if (inum == HFS_CATALOG_FILE_ID) {
-        if (hfs_make_catalog(hfs, a_fs_file)) {
-            return 1;
-        }
-        else {
-            return 0;
-        }
+        return hfs_make_catalog(hfs, a_fs_file);
     }
     else if (inum == HFS_BAD_BLOCK_FILE_ID) {
         // Note: the Extents file and the BadBlocks file are really the same.
@@ -2586,20 +2551,10 @@ hfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
                 "BadBlocks File not present");
             return 1;
         }
-        if (hfs_make_badblockfile(hfs, a_fs_file)) {
-            return 1;
-        }
-        else {
-            return 0;
-        }
+        return hfs_make_badblockfile(hfs, a_fs_file);
     }
     else if (inum == HFS_ALLOCATION_FILE_ID) {
-        if (hfs_make_blockmap(hfs, a_fs_file)) {
-            return 1;
-        }
-        else {
-            return 0;
-        }
+        return hfs_make_blockmap(hfs, a_fs_file);
     }
     else if (inum == HFS_STARTUP_FILE_ID) {
         if (!hfs->has_startup_file) {
@@ -2607,12 +2562,7 @@ hfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
                 "Startup File not present");
             return 1;
         }
-        if (hfs_make_startfile(hfs, a_fs_file)) {
-            return 1;
-        }
-        else {
-            return 0;
-        }
+        return hfs_make_startfile(hfs, a_fs_file);
     }
     else if (inum == HFS_ATTRIBUTES_FILE_ID) {
         if (!hfs->has_attributes_file) {
@@ -2620,12 +2570,7 @@ hfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
                 "Attributes File not present");
             return 1;
         }
-        if (hfs_make_attrfile(hfs, a_fs_file)) {
-            return 1;
-        }
-        else {
-            return 0;
-        }
+        return hfs_make_attrfile(hfs, a_fs_file);
     }
 
     /* Lookup inode and store it in the HFS structure */
@@ -2652,7 +2597,6 @@ hfs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
     return 0;
 }
 
-#ifdef HAVE_LIBZ
 
 typedef struct {
     uint32_t offset;
@@ -2660,100 +2604,29 @@ typedef struct {
 } CMP_OFFSET_ENTRY;
 
 
-uint8_t
-hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
-    int flags, TSK_FS_FILE_WALK_CB a_action, void *ptr)
-{
-    TSK_FS_INFO *fs;
-    TSK_ENDIAN_ENUM endian;
-    TSK_FS_FILE *fs_file;
-    const TSK_FS_ATTR *rAttr;   // resource fork attribute
-    char *rawBuf = NULL;               // compressed data
-    char *uncBuf = NULL;               // uncompressed data
-    hfs_resource_fork_header rfHeader;
+static int
+hfs_read_zlib_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTableOut, uint32_t* tableSizeOut, uint32_t* tableOffsetOut) {
     int attrReadResult;
-    uint32_t offsetTableOffset;
-    char fourBytes[4];          // Will hold the number of table entries, little endian
-    uint32_t tableSize;         // The number of table entries
-    hfs_resource_fork_header *resHead;
+    hfs_resource_fork_header rfHeader;
     uint32_t dataOffset;
-    char *offsetTableData;
-    CMP_OFFSET_ENTRY *offsetTable;
-    size_t indx;                // index for looping over the offset table
-    TSK_OFF_T off = 0;          // the offset in the uncompressed data stream consumed thus far
-
-    if (tsk_verbose)
-        tsk_fprintf(stderr,
-            "hfs_attr_walk_special:  Entered, because this is a compressed file with compressed data in the resource fork\n");
-
-    // clean up any error messages that are lying around
-    tsk_error_reset();
-    if ((fs_attr == NULL) || (fs_attr->fs_file == NULL)
-        || (fs_attr->fs_file->meta == NULL)
-        || (fs_attr->fs_file->fs_info == NULL)) {
-        tsk_error_set_errno(TSK_ERR_FS_ARG);
-        tsk_error_set_errstr
-            ("ntfs_attr_walk_special: Null arguments given\n");
-        return 1;
-    }
-
-    // Check that the ATTR being read is the main DATA resource, 128-0, because this is the
-    // only one that can be compressed in HFS+
-    if ((fs_attr->id != HFS_FS_ATTR_ID_DATA) ||
-        (fs_attr->type != TSK_FS_ATTR_TYPE_HFS_DATA)) {
-        error_detected(TSK_ERR_FS_ARG,
-            "hfs_attr_walk_special: arg specified an attribute %u-%u that is not the data fork, "
-            "Only the data fork can be compressed.", fs_attr->type,
-            fs_attr->id);
-        return 1;
-    }
-
-    fs = fs_attr->fs_file->fs_info;
-    //hfs = (HFS_INFO *) fs;
-    endian = fs->endian;
-
-    /* This MUST be a compressed attribute     */
-    if (!(fs_attr->flags & TSK_FS_ATTR_COMP)) {
-        error_detected(TSK_ERR_FS_FWALK,
-            "hfs_attr_walk_special: called with non-special attribute: %x",
-            fs_attr->flags);
-        return 1;
-    }
-
-    /********  Open the Resource Fork ***********/
-    // The file
-    fs_file = fs_attr->fs_file;
-
-    // find the attribute for the resource fork
-    rAttr =
-        tsk_fs_file_attr_get_type(fs_file, TSK_FS_ATTR_TYPE_HFS_RSRC,
-        HFS_FS_ATTR_ID_RSRC, TRUE);
-    if (rAttr == NULL) {
-        error_returned
-            (" hfs_attr_walk_special: could not get the attribute for the resource fork of the file");
-        return 1;
-    }
-
+    uint32_t offsetTableOffset;
+    char fourBytes[4];          // Size of the offset table, little endian
+    uint32_t tableSize;         // Size of the offset table
+    char *offsetTableData = NULL;
+    CMP_OFFSET_ENTRY *offsetTable = NULL;
+    size_t indx;
 
     // Read the resource fork header
     attrReadResult = tsk_fs_attr_read(rAttr, 0, (char *) &rfHeader,
         sizeof(hfs_resource_fork_header), TSK_FS_FILE_READ_FLAG_NONE);
     if (attrReadResult != sizeof(hfs_resource_fork_header)) {
         error_returned
-            (" hfs_attr_walk_special: trying to read the resource fork header");
-        return 1;
+            (" %s: trying to read the resource fork header", __func__);
+        return 0;
     }
 
-    // Begin to parse the resource fork.  For now, we just need the data offset.  But
-    // eventually we'll want the other quantities as well.
-    // We are assuming that there is exactly one resource, and that this contains the compressed
-    // data.  This assumption is true in all examples we have seen.  More general code would
-    // parse the Resource Fork map, and find the appropriate entry, then jump to THAT data offset.
-    resHead = &rfHeader;
-    dataOffset = tsk_getu32(endian, resHead->dataOffset);
-    //uint32_t mapOffset = tsk_getu32(endian, resHead->mapOffset);
-    //uint32_t dataLength = tsk_getu32(endian, resHead->dataLength);
-    //uint32_t mapLength = tsk_getu32(endian, resHead->mapLength);
+    // Begin to parse the resource fork. For now, we just need the data offset.
+    dataOffset = tsk_getu32(TSK_BIG_ENDIAN, rfHeader.dataOffset);
 
     // The resource's data begins with an offset table, which defines blocks
     // of (optionally) zlib-compressed data (so that the OS can do file seeks
@@ -2766,208 +2639,436 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
         TSK_FS_FILE_READ_FLAG_NONE);
     if (attrReadResult != 4) {
         error_returned
-            (" hfs_attr_walk_special: trying to read the offset table size, "
-            "return value of %u should have been 4", attrReadResult);
-        return 1;
+            (" %s: trying to read the offset table size, "
+            "return value of %u should have been 4", __func__, attrReadResult);
+        return 0;
     }
     tableSize = tsk_getu32(TSK_LIT_ENDIAN, fourBytes);
 
     // Each table entry is 8 bytes long
-    offsetTableData = (char *) tsk_malloc(tableSize * 8);
+    offsetTableData = tsk_malloc(tableSize * 8);
     if (offsetTableData == NULL) {
         error_returned
-            (" hfs_attr_walk_special: space for the offset table raw data");
-        return 1;
+            (" %s: space for the offset table raw data", __func__);
+        return 0;
     }
+
     offsetTable =
         (CMP_OFFSET_ENTRY *) tsk_malloc(tableSize *
         sizeof(CMP_OFFSET_ENTRY));
     if (offsetTable == NULL) {
         error_returned
-            (" hfs_attr_walk_special: space for the offset table");
-        free(offsetTableData);
-        return 1;
+            (" %s: space for the offset table", __func__);
+        goto on_error;
     }
 
     attrReadResult = tsk_fs_attr_read(rAttr, offsetTableOffset + 4,
         offsetTableData, tableSize * 8, TSK_FS_FILE_READ_FLAG_NONE);
     if (attrReadResult != tableSize * 8) {
         error_returned
-            (" hfs_attr_walk_special: reading in the compression offset table, "
-            "return value %u should have been %u", attrReadResult,
+            (" %s: reading in the compression offset table, "
+            "return value %u should have been %u", __func__, attrReadResult,
             tableSize * 8);
-        free(offsetTableData);
-        free(offsetTable);
-        return 1;
+        goto on_error;
     }
 
-    for (indx = 0; indx < tableSize; indx++) {
+    for (indx = 0; indx < tableSize; ++indx) {
         offsetTable[indx].offset =
             tsk_getu32(TSK_LIT_ENDIAN, offsetTableData + indx * 8);
         offsetTable[indx].length =
             tsk_getu32(TSK_LIT_ENDIAN, offsetTableData + indx * 8 + 4);
     }
 
+    free(offsetTableData);
+
+    *offsetTableOut = offsetTable;
+    *tableSizeOut = tableSize;
+    *tableOffsetOut = offsetTableOffset;
+    return 1;
+
+on_error:
+    free(offsetTable);
+    free(offsetTableData);
+    return 0;
+}
+
+
+static int
+hfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTableOut, uint32_t* tableSizeOut, uint32_t* tableOffsetOut) {
+    int attrReadResult;
+    char fourBytes[4];
+    uint32_t tableDataSize;
+    uint32_t tableSize;         // Size of the offset table
+    char *offsetTableData = NULL;
+    CMP_OFFSET_ENTRY *offsetTable = NULL;
+
+    // The offset table is a sequence of 4-byte offsets of compressed
+    // blocks. The first 4 bytes is thus the offset of the first block,
+    // but also 4 times the number of entries in the table.
+    attrReadResult = tsk_fs_attr_read(rAttr, 0, fourBytes, 4,
+                                      TSK_FS_FILE_READ_FLAG_NONE);
+    if (attrReadResult != 4) {
+        error_returned
+            (" %s: trying to read the offset table size, "
+            "return value of %u should have been 4", __func__, attrReadResult);
+        return 0;
+    }
+
+    tableDataSize = tsk_getu32(TSK_LIT_ENDIAN, fourBytes);
+
+    offsetTableData = tsk_malloc(tableDataSize);
+    if (offsetTableData == NULL) {
+        error_returned
+            (" %s: space for the offset table raw data", __func__);
+        return 0;
+    }
+
+    // table entries are 4 bytes, last entry is end of data
+    tableSize = tableDataSize / 4 - 1;
+
+    offsetTable =
+        (CMP_OFFSET_ENTRY *) tsk_malloc(tableSize *
+        sizeof(CMP_OFFSET_ENTRY));
+    if (offsetTable == NULL) {
+        error_returned
+            (" %s: space for the offset table", __func__);
+        goto on_error;
+    }
+
+    attrReadResult = tsk_fs_attr_read(rAttr, 0,
+        offsetTableData, tableDataSize, TSK_FS_FILE_READ_FLAG_NONE);
+    if (attrReadResult != tableDataSize) {
+        error_returned
+            (" %s: reading in the compression offset table, "
+            "return value %u should have been %u", __func__, attrReadResult,
+            tableDataSize);
+        goto on_error;
+    }
+
+    uint32_t a = tableDataSize;
+    uint32_t b;
+    size_t i;
+
+    for (i = 0; i < tableSize; ++i) {
+        b = tsk_getu32(TSK_LIT_ENDIAN, offsetTableData + 4*(i+1));
+        offsetTable[i].offset = a;
+        offsetTable[i].length = b - a;
+        a = b;
+    }
+
+    free(offsetTableData);
+
+    *offsetTableOut = offsetTable;
+    *tableSizeOut = tableSize;
+    *tableOffsetOut = 0;
+    return 1;
+
+on_error:
+    free(offsetTable);
+    free(offsetTableData);
+    return 0;
+}
+
+
+static int hfs_decompress_noncompressed_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t* uncLen) {
+    // actually an uncompressed block of data; just copy
+    if (tsk_verbose)
+        tsk_fprintf(stderr,
+           "%s: Copying an uncompressed compression unit\n", __func__);
+
+    if ((len - 1) > COMPRESSION_UNIT_SIZE) {
+        error_detected(TSK_ERR_FS_READ,
+            "%s: uncompressed block length %u is longer "
+            "than compression unit size %u", __func__, len - 1,
+            COMPRESSION_UNIT_SIZE);
+        return 0;
+    }
+    memcpy(uncBuf, rawBuf + 1, len - 1);
+    *uncLen = len - 1;
+    return 1;
+}
+
+
+#ifdef HAVE_LIBZ
+static int hfs_decompress_zlib_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t* uncLen)
+{
+    // see if this block is compressed
+    if (len > 0 && (rawBuf[0] & 0x0F) != 0x0F) {
+        // Uncompress the chunk of data
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                        "%s: Inflating the compression unit\n", __func__);
+
+        unsigned long bytesConsumed;
+        int infResult = zlib_inflate(rawBuf, (uint64_t) len,
+            uncBuf, (uint64_t) COMPRESSION_UNIT_SIZE,
+            uncLen, &bytesConsumed);
+        if (infResult != 0) {
+            error_returned
+                  (" %s: zlib inflation (uncompression) failed",
+                  __func__, infResult);
+            return 0;
+        }
+
+        if (bytesConsumed != len) {
+            error_detected(TSK_ERR_FS_READ,
+                " %s, decompressor did not consume the whole compressed data",
+                __func__);
+            return 0;
+        }
+
+        return 1;
+    }
+    else {
+        // actually an uncompressed block of data; just copy
+        return hfs_decompress_noncompressed_block(rawBuf, len, uncBuf, uncLen);
+    }
+}
+#endif
+
+
+static int hfs_decompress_lzvn_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t* uncLen)
+{
+    // see if this block is compressed
+    if (len > 0 && rawBuf[0] != 0x06) {
+        *uncLen = lzvn_decode_buffer(uncBuf, COMPRESSION_UNIT_SIZE, rawBuf, len);
+        return 1;  // apparently this can't fail
+    }
+    else {
+        // actually an uncompressed block of data; just copy
+        return hfs_decompress_noncompressed_block(rawBuf, len, uncBuf, uncLen);
+    }
+}
+
+
+static ssize_t read_and_decompress_block(
+  const TSK_FS_ATTR* rAttr,
+  char* rawBuf,
+  char* uncBuf,
+  const CMP_OFFSET_ENTRY* offsetTable,
+  uint32_t offsetTableSize,
+  uint32_t offsetTableOffset,
+  size_t indx,
+  int (*decompress_block)(char* rawBuf,
+                          uint32_t len,
+                          char* uncBuf,
+                          uint64_t* uncLen)
+)
+{
+    int attrReadResult;
+    uint32_t offset = offsetTableOffset + offsetTable[indx].offset;
+    uint32_t len = offsetTable[indx].length;
+    uint64_t uncLen;
+
+    if (tsk_verbose)
+        tsk_fprintf(stderr,
+            "%s: Reading compression unit %d, length %d\n",
+            __func__, indx, len);
+
+    /* Github #383 referenced that if len is 0, then the below code causes
+     * problems. Added this check, but I don't have data to verify this on.
+     * it looks like it should at least not crash, but it isn't clear if it
+     * will also do the right thing and if should actually break here
+     * instead. */
+    if (len == 0) {
+      return 0;
+    }
+
+    if (len > COMPRESSION_UNIT_SIZE + 1) {
+      error_detected(TSK_ERR_FS_READ,
+          "%s: block size is too large: %u", __func__, len);
+      return -1;
+    }
+
+    // Read in the block of compressed data
+    attrReadResult = tsk_fs_attr_read(rAttr, offset,
+        rawBuf, len, TSK_FS_FILE_READ_FLAG_NONE);
+    if (attrReadResult != len) {
+        char msg[] =
+            "%s%s: reading in the compression offset table, "
+            "return value %u should have been %u";
+
+        if (attrReadResult < 0 ) {
+            error_returned(msg, " ", __func__, attrReadResult, len);
+        }
+        else {
+            error_detected(TSK_ERR_FS_READ, "", __func__, attrReadResult, len);
+        }
+        return -1;
+    }
+
+    if (!decompress_block(rawBuf, len, uncBuf, &uncLen)) {
+        return -1;
+    }
+
+    // If size is a multiple of COMPRESSION_UNIT_SIZE,
+    // expected uncompressed length is COMPRESSION_UNIT_SIZE
+    const uint32_t expUncLen = indx == offsetTableSize - 1 ?
+        ((rAttr->fs_file->meta->size - 1) % COMPRESSION_UNIT_SIZE) + 1 :
+        COMPRESSION_UNIT_SIZE;
+
+    if (uncLen != expUncLen) {
+        error_detected(TSK_ERR_FS_READ,
+            "%s: compressed block decompressed to %u bytes, "
+            "should have been %u bytes", __func__, uncLen, expUncLen);
+        return -1;
+    }
+
+    // There are now uncLen bytes of uncompressed data available from
+    // this comp unit.
+    return (ssize_t)uncLen;
+}
+
+
+static uint8_t
+hfs_attr_walk_compressed_rsrc(const TSK_FS_ATTR * fs_attr,
+    int flags, TSK_FS_FILE_WALK_CB a_action, void *ptr,
+    int (*read_block_table)(const TSK_FS_ATTR *rAttr,
+                            CMP_OFFSET_ENTRY** offsetTableOut,
+                            uint32_t* tableSizeOut,
+                            uint32_t* tableOffsetOut),
+    int (*decompress_block)(char* rawBuf,
+                            uint32_t len,
+                            char* uncBuf,
+                            uint64_t* uncLen))
+{
+    TSK_FS_INFO *fs;
+    TSK_FS_FILE *fs_file;
+    const TSK_FS_ATTR *rAttr;   // resource fork attribute
+    char *rawBuf = NULL;               // compressed data
+    char *uncBuf = NULL;               // uncompressed data
+    uint32_t offsetTableOffset;
+    uint32_t offsetTableSize;         // The number of table entries
+    CMP_OFFSET_ENTRY *offsetTable = NULL;
+    size_t indx;                // index for looping over the offset table
+    TSK_OFF_T off = 0;          // the offset in the uncompressed data stream consumed thus far
+
+    if (tsk_verbose)
+        tsk_fprintf(stderr,
+            "%s:  Entered, because this is a compressed file with compressed data in the resource fork\n", __func__);
+
+    // clean up any error messages that are lying around
+    tsk_error_reset();
+    if ((fs_attr == NULL) || (fs_attr->fs_file == NULL)
+        || (fs_attr->fs_file->meta == NULL)
+        || (fs_attr->fs_file->fs_info == NULL)) {
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("%s: Null arguments given\n", __func__);
+        return 1;
+    }
+
+    // Check that the ATTR being read is the main DATA resource, 128-0,
+    // because this is the only one that can be compressed in HFS+
+    if ((fs_attr->id != HFS_FS_ATTR_ID_DATA) ||
+        (fs_attr->type != TSK_FS_ATTR_TYPE_HFS_DATA)) {
+        error_detected(TSK_ERR_FS_ARG,
+            "%s: arg specified an attribute %u-%u that is not the data fork, "
+            "Only the data fork can be compressed.", __func__, fs_attr->type,
+            fs_attr->id);
+        return 1;
+    }
+
+    /* This MUST be a compressed attribute     */
+    if (!(fs_attr->flags & TSK_FS_ATTR_COMP)) {
+        error_detected(TSK_ERR_FS_FWALK,
+            "%s: called with non-special attribute: %x",
+            __func__, fs_attr->flags);
+        return 1;
+    }
+
+    fs = fs_attr->fs_file->fs_info;
+    fs_file = fs_attr->fs_file;
+
+    /********  Open the Resource Fork ***********/
+
+    // find the attribute for the resource fork
+    rAttr =
+        tsk_fs_file_attr_get_type(fs_file, TSK_FS_ATTR_TYPE_HFS_RSRC,
+        HFS_FS_ATTR_ID_RSRC, TRUE);
+    if (rAttr == NULL) {
+        error_returned
+            (" %s: could not get the attribute for the resource fork of the file", __func__);
+        return 1;
+    }
+
+    // read the offset table from the fork header
+    if (!read_block_table(rAttr, &offsetTable, &offsetTableSize, &offsetTableOffset)) {
+      return 1;
+    }
+
     // Allocate two buffers for the raw and uncompressed data
     /* Raw data can be COMPRESSION_UNIT_SIZE+1 if the data is not
-     * compressed and there is a 1-byte flag that indicates that 
+     * compressed and there is a 1-byte flag that indicates that
      * the data is not compressed. */
     rawBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE + 1);
     if (rawBuf == NULL) {
         error_returned
-            (" hfs_attr_walk_special: buffers for reading and uncompressing");
-        return 1;
+            (" %s: buffers for reading and uncompressing", __func__);
+        goto on_error;
     }
+
     uncBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE);
     if (uncBuf == NULL) {
         error_returned
-            (" hfs_attr_walk_special: buffers for reading and uncompressing");
-        free(rawBuf);
-        return 1;
+            (" %s: buffers for reading and uncompressing", __func__);
+        goto on_error;
     }
 
     // FOR entry in the table DO
-    for (indx = 0; indx < tableSize; indx++) {
-        uint32_t offset = offsetTableOffset + offsetTable[indx].offset;
-        uint32_t len = offsetTable[indx].length;
-        uint64_t uncLen;        // uncompressed length
+    for (indx = 0; indx < offsetTableSize; ++indx) {
+        ssize_t uncLen;        // uncompressed length
         unsigned int blockSize;
         uint64_t lumpSize;
         uint64_t remaining;
         char *lumpStart;
 
-        if (tsk_verbose)
-            tsk_fprintf(stderr,
-                "hfs_attr_walk_special: reading one compression unit, number %d, length %d\n",
-                indx, len);
-
-        /* Github #383 referenced that if len is 0, then the below code causes
-         * problems. Added this check, but I don't have data to verify this on.
-         * it looks like it should at least not crash, but it isn't clear if it
-         * will also do the right thing and if should actually break here instead. */
-        if (len == 0) {
+        switch ((uncLen = read_and_decompress_block(
+                    rAttr, rawBuf, uncBuf,
+                    offsetTable, offsetTableSize, offsetTableOffset, indx,
+                    decompress_block)))
+        {
+        case -1:
+            goto on_error;
+        case  0:
             continue;
+        default:
+            break;
         }
 
-        if (len > COMPRESSION_UNIT_SIZE + 1) {
-          error_detected(TSK_ERR_FS_READ,
-              "hfs_attr_walk_special: block size is too large: %u", len);
-          free(offsetTableData);
-          free(offsetTable);
-          free(rawBuf);
-          free(uncBuf);
-          return 1;
-        }
-        // Read in the chunk of (potentially) compressed data
-        attrReadResult = tsk_fs_attr_read(rAttr, offset,
-            rawBuf, len, TSK_FS_FILE_READ_FLAG_NONE);
-        if (attrReadResult != len) {
-            if (attrReadResult < 0)
-                error_returned
-                    (" hfs_attr_walk_special: reading in the compression offset table, "
-                    "return value %u should have been %u", attrReadResult,
-                    len);
-            else
-                error_detected(TSK_ERR_FS_READ,
-                    "hfs_attr_walk_special: reading in the compression offset table, "
-                    "return value %u should have been %u", attrReadResult,
-                    len);
-            free(offsetTableData);
-            free(offsetTable);
-            free(rawBuf);
-            free(uncBuf);
-            return 1;
-        }
-
-        // see if this block is compressed
-        if ((len > 0) && ((rawBuf[0] & 0x0F) != 0x0F)) {
-
-            unsigned long bytesConsumed;
-            int infResult;
-
-            // Uncompress the chunk of data
-            if (tsk_verbose)
-                tsk_fprintf(stderr,
-                    "hfs_attr_walk_special: Inflating the compression unit\n");
-
-            infResult = zlib_inflate(rawBuf, (uint64_t) len,
-                uncBuf, (uint64_t) COMPRESSION_UNIT_SIZE,
-                &uncLen, &bytesConsumed);
-            if (infResult != 0) {
-                error_returned
-                    (" hfs_attr_walk_special: zlib inflation (uncompression) failed",
-                    infResult);
-                free(offsetTableData);
-                free(offsetTable);
-                free(rawBuf);
-                free(uncBuf);
-                return 1;
-            }
-
-        }
-        else {
-
-            // actually an uncompressed block of data; just copy
-            if (tsk_verbose)
-                tsk_fprintf(stderr,
-                    "hfs_attr_walk_special: Copying an uncompressed compression unit\n");
-
-            if ((len - 1) > COMPRESSION_UNIT_SIZE) {
-                error_detected(TSK_ERR_FS_READ,
-                    "hfs_attr_walk_special: uncompressed block length %u is longer "
-                    "than compression unit size %u", len - 1,
-                    COMPRESSION_UNIT_SIZE);
-                free(offsetTableData);
-                free(offsetTable);
-                free(rawBuf);
-                free(uncBuf);
-                return 1;
-            }
-            memcpy(uncBuf, rawBuf + 1, len - 1);
-            uncLen = len - 1;
-        }
-
-        // Call the a_action callback with "Lumps" that are at most the block size.
+        // Call the a_action callback with "Lumps"
+        // that are at most the block size.
         blockSize = fs->block_size;
         remaining = uncLen;
         lumpStart = uncBuf;
 
         while (remaining > 0) {
             int retval;         // action return value
-            if (remaining <= blockSize)
-                lumpSize = remaining;
-            else
-                lumpSize = blockSize;
+            lumpSize = remaining <= blockSize ? remaining : blockSize;
 
             // Apply the callback function
             if (tsk_verbose)
                 tsk_fprintf(stderr,
-                    "hfs_attr_walk_special: Calling action on lump of size %"
+                    "%s: Calling action on lump of size %"
                     PRIu64 " offset %" PRIu64 " in the compression unit\n",
-                    lumpSize, uncLen - remaining);
+                    __func__, lumpSize, uncLen - remaining);
             if (lumpSize > SIZE_MAX) {
                 error_detected(TSK_ERR_FS_FWALK,
-                    " hfs_attr_walk_special: lumpSize is too large for the action");
-                free(offsetTableData);
-                free(offsetTable);
-                free(rawBuf);
-                free(uncBuf);
-                return 1;
+                    " %s: lumpSize is too large for the action", __func__);
+                goto on_error;
             }
-            retval = a_action(fs_attr->fs_file, off, 0, lumpStart, (size_t) lumpSize,   // cast OK because of above test
+
+            retval = a_action(fs_attr->fs_file, off, 0, lumpStart,
+                (size_t) lumpSize,   // cast OK because of above test
                 TSK_FS_BLOCK_FLAG_COMP, ptr);
 
             if (retval == TSK_WALK_ERROR) {
                 error_detected(TSK_ERR_FS | 201,
-                    "hfs_attr_walk_special: callback returned an error");
-                free(offsetTableData);
-                free(offsetTable);
-                free(rawBuf);
-                free(uncBuf);
-                return 1;
+                    "%s: callback returned an error", __func__);
+                goto on_error;
             }
-            if (retval == TSK_WALK_STOP)
+            else if (retval == TSK_WALK_STOP) {
                 break;
+            }
 
             // Find the next lump
             off += lumpSize;
@@ -2977,7 +3078,12 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
     }
 
     // Done, so free up the allocated resources.
-    free(offsetTableData);
+    free(offsetTable);
+    free(rawBuf);
+    free(uncBuf);
+    return 0;
+
+on_error:
     free(offsetTable);
     free(rawBuf);
     free(uncBuf);
@@ -2985,32 +3091,56 @@ hfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
 }
 
 
+#ifdef HAVE_LIBZ
+static uint8_t
+hfs_attr_walk_zlib_rsrc(const TSK_FS_ATTR * fs_attr,
+    int flags, TSK_FS_FILE_WALK_CB a_action, void *ptr)
+{
+    return hfs_attr_walk_compressed_rsrc(
+      fs_attr, flags, a_action, ptr,
+      hfs_read_zlib_block_table,
+      hfs_decompress_zlib_block
+    );
+}
+#endif
+
+
+static uint8_t
+hfs_attr_walk_lzvn_rsrc(const TSK_FS_ATTR * fs_attr,
+    int flags, TSK_FS_FILE_WALK_CB a_action, void *ptr)
+{
+    return hfs_attr_walk_compressed_rsrc(
+      fs_attr, flags, a_action, ptr,
+      hfs_read_lzvn_block_table,
+      hfs_decompress_lzvn_block
+    );
+}
+
+
 /** \internal
  *
  * @returns number of bytes read or -1 on error (incl if offset is past EOF)
  */
-ssize_t
-hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
-    TSK_OFF_T a_offset, char *a_buf, size_t a_len)
+static ssize_t
+hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
+    TSK_OFF_T a_offset, char *a_buf, size_t a_len,
+    int (*read_block_table)(const TSK_FS_ATTR *rAttr,
+                            CMP_OFFSET_ENTRY** offsetTableOut,
+                            uint32_t* tableSizeOut,
+                            uint32_t* tableOffsetOut),
+    int (*decompress_block)(char* rawBuf,
+                            uint32_t len,
+                            char* uncBuf,
+                            uint64_t* uncLen))
 {
-    TSK_FS_INFO *fs = NULL;
-    TSK_ENDIAN_ENUM endian;
     TSK_FS_FILE *fs_file;
     const TSK_FS_ATTR *rAttr;
     char *rawBuf = NULL;
     char *uncBuf = NULL;
-    hfs_resource_fork_header rfHeader;
-    int attrReadResult;
-    hfs_resource_fork_header *resHead;
-    uint32_t dataOffset;
     uint32_t offsetTableOffset;
-    char fourBytes[4];          // Size of the offset table, little endian
-    uint32_t tableSize;         // Size of the offset table
-    char *offsetTableData;
-    CMP_OFFSET_ENTRY *offsetTable;
+    uint32_t offsetTableSize;         // Size of the offset table
+    CMP_OFFSET_ENTRY *offsetTable = NULL;
     size_t indx;                // index for looping over the offset table
-    uint64_t sizeUpperBound;
-    uint64_t cummulativeSize = 0;
     uint32_t startUnit = 0;
     uint32_t startUnitOffset = 0;
     uint32_t endUnit = 0;
@@ -3018,7 +3148,7 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
 
     if (tsk_verbose)
         tsk_fprintf(stderr,
-            "hfs_file_read_special: called because this file is compressed, with data in the resource fork\n");
+            "%s: called because this file is compressed, with data in the resource fork\n", __func__);
 
     // Reading zero bytes?  OK at any offset, I say!
     if (a_len == 0)
@@ -3026,13 +3156,15 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
 
     if (a_offset < 0 || a_len < 0) {
         error_detected(TSK_ERR_FS_ARG,
-            "hfs_file_read_special: reading from file at a negative offset, or negative length");
+            "%s: reading from file at a negative offset, or negative length",
+             __func__);
         return -1;
     }
 
     if (a_len > SIZE_MAX / 2) {
         error_detected(TSK_ERR_FS_ARG,
-            "hfs_file_read_special: trying to read more than SIZE_MAX/2 is not supported.");
+            "%s: trying to read more than SIZE_MAX/2 is not supported.",
+            __func__);
         return -1;
     }
 
@@ -3040,30 +3172,26 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
         || (a_fs_attr->fs_file->meta == NULL)
         || (a_fs_attr->fs_file->fs_info == NULL)) {
         error_detected(TSK_ERR_FS_ARG,
-            "hfs_file_read_special: NULL parameters passed");
+            "%s: NULL parameters passed", __func__);
         return -1;
     }
-
-    fs = a_fs_attr->fs_file->fs_info;
-    //hfs = (HFS_INFO *) fs;
-    endian = fs->endian;
 
     // This should be a compressed file.  If not, that's an error!
     if (!(a_fs_attr->flags & TSK_FS_ATTR_COMP)) {
         error_detected(TSK_ERR_FS_ARG,
-            "hfs_file_read_special: called with non-special attribute: %x",
-            a_fs_attr->flags);
+            "%s: called with non-special attribute: %x",
+            __func__, a_fs_attr->flags);
         return -1;
     }
 
-    // Check that the ATTR being read is the main DATA resource, 4352-0, because this is the
-    // only one that can be compressed in HFS+
+    // Check that the ATTR being read is the main DATA resource, 4352-0,
+    // because this is the only one that can be compressed in HFS+
     if ((a_fs_attr->id != HFS_FS_ATTR_ID_DATA) ||
         (a_fs_attr->type != TSK_FS_ATTR_TYPE_HFS_DATA)) {
         error_detected(TSK_ERR_FS_ARG,
-            "hfs_file_read_special: arg specified an attribute %u-%u that is not the data fork, "
-            "Only the data fork can be compressed.", a_fs_attr->type,
-            a_fs_attr->id);
+            "%s: arg specified an attribute %u-%u that is not the data fork, "
+            "Only the data fork can be compressed.", __func__,
+            a_fs_attr->type, a_fs_attr->id);
         return -1;
     }
 
@@ -3077,236 +3205,75 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
         HFS_FS_ATTR_ID_RSRC, TRUE);
     if (rAttr == NULL) {
         error_returned
-            (" hfs_file_read_special: could not get the attribute for the resource fork of the file");
+            (" %s: could not get the attribute for the resource fork of the file", __func__);
         return -1;
     }
 
-    // Read the resource fork header
-    attrReadResult = tsk_fs_attr_read(rAttr, 0, (char *) &rfHeader,
-        sizeof(hfs_resource_fork_header), TSK_FS_FILE_READ_FLAG_NONE);
-    if (attrReadResult != sizeof(hfs_resource_fork_header)) {
-        error_returned
-            (" hfs_file_read_special: trying to read the resource fork header");
-        return -1;
-    }
-
-    // Begin to parse the resource fork.  For now, we just need the data offset.  But
-    // eventually we'll want the other quantities as well.
-    resHead = &rfHeader;
-    dataOffset = tsk_getu32(endian, resHead->dataOffset);
-    //uint32_t mapOffset = tsk_getu32(endian, resHead->mapOffset);
-    //uint32_t dataLength = tsk_getu32(endian, resHead->dataLength);
-    //uint32_t mapLength = tsk_getu32(endian, resHead->mapLength);
-
-    // The resource's data begins with an offset table, which defines blocks
-    // of (optionally) zlib-compressed data (so that the OS can do file seeks
-    // efficiently; each uncompressed block is 64KB).
-    offsetTableOffset = dataOffset + 4;
-
-    // read 4 bytes, the number of table entries, little endian
-    attrReadResult =
-        tsk_fs_attr_read(rAttr, offsetTableOffset, fourBytes, 4,
-        TSK_FS_FILE_READ_FLAG_NONE);
-    if (attrReadResult != 4) {
-        error_returned
-            (" hfs_file_read_special: trying to read the offset table size, "
-            "return value of %u should have been 4", attrReadResult);
-        return -1;
-    }
-    tableSize = tsk_getu32(TSK_LIT_ENDIAN, fourBytes);
-
-    // Each table entry is 8 bytes long
-    offsetTableData = tsk_malloc(tableSize * 8);
-    if (offsetTableData == NULL) {
-        error_returned
-            (" hfs_file_read_special: space for the offset table raw data");
-        return -1;
-    }
-    offsetTable =
-        (CMP_OFFSET_ENTRY *) tsk_malloc(tableSize *
-        sizeof(CMP_OFFSET_ENTRY));
-    if (offsetTable == NULL) {
-        error_returned
-            (" hfs_file_read_special: space for the offset table");
-        free(offsetTableData);
-        return -1;
-    }
-
-    attrReadResult = tsk_fs_attr_read(rAttr, offsetTableOffset + 4,
-        offsetTableData, tableSize * 8, TSK_FS_FILE_READ_FLAG_NONE);
-    if (attrReadResult != tableSize * 8) {
-        error_returned
-            (" hfs_file_read_special: reading in the compression offset table, "
-            "return value %u should have been %u", attrReadResult,
-            tableSize * 8);
-        free(offsetTableData);
-        free(offsetTable);
-        return -1;
-    }
-
-    for (indx = 0; indx < tableSize; indx++) {
-        offsetTable[indx].offset =
-            tsk_getu32(TSK_LIT_ENDIAN, offsetTableData + indx * 8);
-        offsetTable[indx].length =
-            tsk_getu32(TSK_LIT_ENDIAN, offsetTableData + indx * 8 + 4);
-    }
-
-    sizeUpperBound = tableSize * COMPRESSION_UNIT_SIZE;
-
-    // cast is OK because both a_offset and a_len are >= 0
-    if ((uint64_t) (a_offset + a_len) > sizeUpperBound) {
-        error_detected(TSK_ERR_FS_ARG,
-            "hfs_file_read_special: range of bytes requested %lld - %lld falls outside of the length upper bound of the uncompressed stream %llu\n",
-            a_offset, a_offset + a_len, sizeUpperBound);
-        free(offsetTableData);
-        free(offsetTable);
-        return -1;
+    // read the offset table from the fork header
+    if (!read_block_table(rAttr, &offsetTable, &offsetTableSize, &offsetTableOffset)) {
+      return -1;
     }
 
     // Compute the range of compression units needed for the request
-    for (indx = 0; indx < tableSize; indx++) {
-        if (cummulativeSize <= (uint64_t) a_offset &&   // casts OK because a_offset >= 0
-            (cummulativeSize + COMPRESSION_UNIT_SIZE >
-                (uint64_t) a_offset)) {
-            startUnit = indx;
-            startUnitOffset = (uint32_t) (a_offset - cummulativeSize);  // This cast is OK, result can't be too large,
-            // due to enclosing test.
-        }
+    startUnit = a_offset / COMPRESSION_UNIT_SIZE;
+    startUnitOffset = a_offset % COMPRESSION_UNIT_SIZE;
+    endUnit = (a_offset + a_len - 1) / COMPRESSION_UNIT_SIZE;
 
-        if ((cummulativeSize < (uint64_t) (a_offset + a_len)) &&        // casts OK because a_offset and a_len > 0
-            (cummulativeSize + COMPRESSION_UNIT_SIZE >=
-                (uint64_t) (a_offset + a_len))) {
-            endUnit = indx;
-        }
-        cummulativeSize += COMPRESSION_UNIT_SIZE;
+    if (startUnit >= offsetTableSize || endUnit >= offsetTableSize) {
+        error_detected(TSK_ERR_FS_ARG,
+            "%s: range of bytes requested %lld - %lld falls past the "
+            "end of the uncompressed stream %llu\n",
+            __func__, a_offset, a_offset + a_len,
+            offsetTable[offsetTableSize-1].offset +
+            offsetTable[offsetTableSize-1].length);
+        goto on_error;
     }
 
     if (tsk_verbose)
         tsk_fprintf(stderr,
-            "hfs_file_read_special: reading compression units: %" PRIu32
-            " to %" PRIu32 "\n", startUnit, endUnit);
+            "%s: reading compression units: %" PRIu32
+            " to %" PRIu32 "\n", __func__, startUnit, endUnit);
     bytesCopied = 0;
 
     // Allocate buffers for the raw and uncompressed data
-    /* Raw data can be COMPRESSION_UNIT_SIZE+1 if the data is not
-     * compressed and there is a 1-byte flag that indicates that 
+    /* Raw data can be COMPRESSION_UNIT_SIZE+1 if the zlib data is not
+     * compressed and there is a 1-byte flag that indicates that
      * the data is not compressed. */
     rawBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE + 1);
     if (rawBuf == NULL) {
         error_returned
-            (" hfs_file_read_special: buffers for reading and uncompressing");
-        return -1;
+            (" %s: buffers for reading and uncompressing", __func__);
+        goto on_error;
     }
+
     uncBuf = (char *) tsk_malloc(COMPRESSION_UNIT_SIZE);
     if (uncBuf == NULL) {
         error_returned
-            (" hfs_file_read_special: buffers for reading and uncompressing");
-        free(rawBuf);
-        return -1;
+            (" %s: buffers for reading and uncompressing", __func__);
+        goto on_error;
     }
 
     // Read from the indicated comp units
-    for (indx = startUnit; indx <= endUnit; indx++) {
-        uint32_t offset = offsetTableOffset + offsetTable[indx].offset;
-        uint32_t len = offsetTable[indx].length;
+    for (indx = startUnit; indx <= endUnit; ++indx) {
         uint64_t uncLen;
         char *uncBufPtr = uncBuf;
         size_t bytesToCopy;
 
-        if (tsk_verbose)
-            tsk_fprintf(stderr,
-                "hfs_file_read_special: Reading compression unit %" PRIu32
-                "\n", indx);
-
-        /* Github #383 referenced that if len is 0, then the below code causes
-         * problems. Added this check, but I don't have data to verify this on.
-         * it looks like it should at least not crash, but it isn't clear if it
-         * will also do the right thing and if should actually break here instead. */
-        if (len == 0) {
+        switch ((uncLen = read_and_decompress_block(
+                    rAttr, rawBuf, uncBuf,
+                    offsetTable, offsetTableSize, offsetTableOffset, indx,
+                    decompress_block)))
+        {
+        case -1:
+            goto on_error;
+        case  0:
             continue;
+        default:
+            break;
         }
 
-        if (len > COMPRESSION_UNIT_SIZE + 1) {
-          error_detected(TSK_ERR_FS_READ,
-              "hfs_file_read_special: block size is too large: %u", len);
-          free(offsetTableData);
-          free(offsetTable);
-          free(rawBuf);
-          free(uncBuf);
-          return -1;
-        }
-        // Read in the chunk of compressed data
-        attrReadResult = tsk_fs_attr_read(rAttr, offset,
-            rawBuf, len, TSK_FS_FILE_READ_FLAG_NONE);
-        if (attrReadResult != len) {
-            if (attrReadResult < 0)
-                error_returned
-                    (" hfs_file_read_special: reading in the compression offset table, "
-                    "return value %u should have been %u", attrReadResult,
-                    len);
-            else
-                error_detected(TSK_ERR_FS_READ,
-                    "hfs_file_read_special: reading in the compression offset table, "
-                    "return value %u should have been %u", attrReadResult,
-                    len);
-            free(offsetTableData);
-            free(offsetTable);
-            free(rawBuf);
-            free(uncBuf);
-            return -1;
-        }
-
-        // see if this block is compressed
-        if ((len > 0) && ((rawBuf[0] & 0x0F) != 0x0F)) {
-
-            unsigned long bytesConsumed;
-            int infResult;
-
-            // Uncompress the chunk of data
-            if (tsk_verbose)
-                tsk_fprintf(stderr,
-                    "hfs_attr_read_special: Inflating the compression unit\n");
-
-            infResult = zlib_inflate(rawBuf, (uint64_t) len,
-                uncBuf, (uint64_t) COMPRESSION_UNIT_SIZE,
-                &uncLen, &bytesConsumed);
-            if (infResult != 0) {
-                error_returned
-                    (" hfs_attr_walk_special: zlib inflation (uncompression) failed",
-                    infResult);
-                free(offsetTableData);
-                free(offsetTable);
-                free(rawBuf);
-                free(uncBuf);
-                return -1;
-            }
-
-        }
-        else {
-
-            // actually an uncompressed block of data; just copy
-            if (tsk_verbose)
-                tsk_fprintf(stderr,
-                    "hfs_attr_read_special: Copying an uncompressed compression unit\n");
-
-            if ((len - 1) > COMPRESSION_UNIT_SIZE) {
-                error_detected(TSK_ERR_FS_READ,
-                    "hfs_attr_read_special: uncompressed block length %u is longer "
-                    "than compression unit size %u", len - 1,
-                    COMPRESSION_UNIT_SIZE);
-                free(offsetTableData);
-                free(offsetTable);
-                free(rawBuf);
-                free(uncBuf);
-                return -1;
-            }
-            memcpy(uncBuf, rawBuf + 1, len - 1);
-            uncLen = len - 1;
-        }
-
-        // There are now uncLen bytes of uncompressed data available from this comp unit.
-
-        // If this is the first comp unit, then we must skip over the startUnitOffset bytes.
+        // If this is the first comp unit, then we must skip over the
+        // startUnitOffset bytes.
         if (indx == startUnit) {
             uncLen -= startUnitOffset;
             uncBufPtr += startUnitOffset;
@@ -3337,16 +3304,255 @@ hfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
         memset(a_buf + bytesCopied, 0, a_len - (size_t) bytesCopied);   // cast OK because diff must be < compression unit size
     }
 
-    free(offsetTableData);
     free(offsetTable);
     free(rawBuf);
     free(uncBuf);
 
-    return (ssize_t) bytesCopied;       // cast OK, cannot be greater than a_len which cannot be
-    // greater than SIZE_MAX/2 (rounded down).
+    return (ssize_t) bytesCopied;       // cast OK, cannot be greater than a_len which cannot be greater than SIZE_MAX/2 (rounded down).
+
+on_error:
+    free(offsetTable);
+    free(rawBuf);
+    free(uncBuf);
+    return -1;
 }
 
+
+#ifdef HAVE_LIBZ
+static ssize_t
+hfs_file_read_zlib_rsrc(const TSK_FS_ATTR * a_fs_attr,
+    TSK_OFF_T a_offset, char *a_buf, size_t a_len)
+{
+    return hfs_file_read_compressed_rsrc(
+        a_fs_attr, a_offset, a_buf, a_len,
+        hfs_read_zlib_block_table,
+        hfs_decompress_zlib_block
+    );
+}
 #endif
+
+
+static ssize_t
+hfs_file_read_lzvn_rsrc(const TSK_FS_ATTR * a_fs_attr,
+    TSK_OFF_T a_offset, char *a_buf, size_t a_len)
+{
+    return hfs_file_read_compressed_rsrc(
+        a_fs_attr, a_offset, a_buf, a_len,
+        hfs_read_lzvn_block_table,
+        hfs_decompress_lzvn_block
+    );
+}
+
+
+static int hfs_decompress_noncompressed_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize, int* dstBufFree) {
+    if (tsk_verbose)
+        tsk_fprintf(stderr,
+            "%s: Leading byte, 0x%02x, indicates that the data is not really compressed.\n"
+            "%s:  Loading the default DATA attribute.", __func__, rawBuf[0], __func__);
+
+    *dstBuf = rawBuf + 1;  // + 1 indicator byte
+    *dstSize = uncSize;
+    *dstBufFree = FALSE;
+    return 1;
+}
+
+
+static int hfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize, int* dstBufFree)
+{
+    if ((rawBuf[0] & 0x0F) == 0x0F) {
+        return hfs_decompress_noncompressed_attr(
+            rawBuf, rawSize, uncSize, dstBuf, dstSize, dstBufFree);
+    }
+    else {
+#ifdef HAVE_LIBZ
+        char* uncBuf = NULL;
+        uint64_t uLen;
+        unsigned long bytesConsumed;
+        int infResult;
+
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                        "%s: Uncompressing (inflating) data.", __func__);
+        // Uncompress the remainder of the attribute, and load as 128-0
+        // Note: cast is OK because uncSize will be quite modest, < 4000.
+
+        uncBuf = (char *) tsk_malloc((size_t) uncSize + 100); // add some extra space
+        if (uncBuf == NULL) {
+            error_returned
+                (" - %s, space for the uncompressed attr", __func__);
+            return 0;
+        }
+
+        infResult = zlib_inflate(rawBuf, (uint64_t) rawSize,
+                                 uncBuf, (uint64_t) (uncSize + 100),
+                                 &uLen, &bytesConsumed);
+        if (infResult != 0) {
+            error_returned
+                (" %s, zlib could not uncompress attr", __func__);
+            free(uncBuf);
+            return 0;
+        }
+
+        if (bytesConsumed != rawSize) {
+            error_detected(TSK_ERR_FS_READ,
+                " %s, decompressor did not consume the whole compressed data",
+                __func__);
+            free(uncBuf);
+            return 0;
+        }
+
+        *dstBuf = uncBuf;
+        *dstSize = uncSize;
+        *dstBufFree = TRUE;
+#else
+        // ZLIB compression library is not available, so we will load a
+        // zero-length default DATA attribute. Without this, icat may
+        // misbehave.
+
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                        "%s: ZLIB not available, so loading an empty default DATA attribute.\n", __func__);
+
+        // Dummy is one byte long, so the ptr is not null, but we set the
+        // length to zero bytes, so it is never read.
+        static uint8_t dummy[1];
+
+        *dstBuf = dummy;
+        *dstSize = 0;
+        *dstBufFree = FALSE;
+#endif
+    }
+
+    return 1;
+}
+
+
+static int hfs_decompress_lzvn_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize, int* dstBufFree)
+{
+    if (rawBuf[0] == 0x06) {
+        return hfs_decompress_noncompressed_attr(
+            rawBuf, rawSize, uncSize, dstBuf, dstSize, dstBufFree);
+    }
+    
+    char* uncBuf = (char *) tsk_malloc((size_t) uncSize);
+    *dstSize = lzvn_decode_buffer(uncBuf, uncSize, rawBuf, rawSize);
+    *dstBuf = uncBuf;
+    *dstBufFree = TRUE;
+
+    return 1;
+}
+
+
+static int
+hfs_file_read_compressed_attr(TSK_FS_FILE* fs_file,
+                              uint8_t cmpType,
+                              char* buffer,
+                              uint32_t attributeLength,
+                              uint64_t uncSize,
+                              int (*decompress_attr)(char* rawBuf,
+                                                     uint32_t rawSize,
+                                                     uint64_t uncSize,
+                                                     char** dstBuf,
+                                                     uint64_t* dstSize,
+                                                     int* dstBufFree))
+{
+    // Data is inline. We will load the uncompressed data as a
+    // resident attribute.
+    if (tsk_verbose)
+        tsk_fprintf(stderr,
+            "%s: Compressed data is inline in the attribute, will load this as the default DATA attribute.\n", __func__);
+
+    if (attributeLength <= 16) {
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "%s: WARNING, Compression Record of type %u is not followed by"
+                " compressed data. No data will be loaded into the DATA"
+                " attribute.\n", __func__, cmpType);
+
+        // oddly, this is not actually considered an error
+        return 1;
+    }
+
+    TSK_FS_ATTR *fs_attr_unc;
+
+    // There is data following the compression record, as there should be.
+    if ((fs_attr_unc = tsk_fs_attrlist_getnew(
+          fs_file->meta->attr, TSK_FS_ATTR_RES)) == NULL)
+    {
+        error_returned(" - %s, FS_ATTR for uncompressed data", __func__);
+        return 0;
+    }
+
+    char* dstBuf;
+    uint64_t dstSize;
+    int dstBufFree = FALSE;
+
+    if (!decompress_attr(buffer + 16, attributeLength - 16, uncSize,
+                         &dstBuf, &dstSize, &dstBufFree)) {
+        return 0;
+    }
+
+    if (dstSize != uncSize) {
+        error_detected(TSK_ERR_FS_READ,
+            " %s, actual uncompressed size not equal to the size in the compression record", __func__);
+        goto on_error;
+    }
+
+    if (tsk_verbose)
+       tsk_fprintf(stderr,
+                   "%s: Loading decompressed data as default DATA attribute.",
+                   __func__);
+
+    // Load the remainder of the attribute as 128-0
+    // set the details in the fs_attr structure.
+    // Note, we are loading this as a RESIDENT attribute.
+    if (tsk_fs_attr_set_str(fs_file,
+                            fs_attr_unc, "DATA",
+                            TSK_FS_ATTR_TYPE_HFS_DATA,
+                            HFS_FS_ATTR_ID_DATA, dstBuf,
+                            dstSize))
+    {
+        error_returned(" - %s", __func__);
+        goto on_error;
+    }
+
+    if (dstBufFree) {
+        free(dstBuf);
+    }
+    return 1;
+
+on_error:
+    if (dstBufFree) {
+        free(dstBuf);
+    }
+    return 0;
+}
+
+
+static int hfs_file_read_zlib_attr(TSK_FS_FILE* fs_file,
+                            char* buffer,
+                            uint32_t attributeLength,
+                            uint64_t uncSize)
+{
+    return hfs_file_read_compressed_attr(
+        fs_file, DECMPFS_TYPE_ZLIB_ATTR,
+        buffer, attributeLength, uncSize,
+        hfs_decompress_zlib_attr
+    );
+}
+
+
+static int hfs_file_read_lzvn_attr(TSK_FS_FILE* fs_file,
+                            char* buffer,
+                            uint32_t attributeLength,
+                            uint64_t uncSize)
+{
+    return hfs_file_read_compressed_attr(
+        fs_file, DECMPFS_TYPE_LZVN_ATTR,
+        buffer, attributeLength, uncSize,
+        hfs_decompress_lzvn_attr
+    );
+}
 
 
 typedef struct {
@@ -3492,8 +3698,8 @@ hfs_attrTypeName(uint32_t typeNum)
 // in which circumstances.
 static uint8_t
 hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
-    unsigned char *isCompressed, unsigned char *compDataInRSRC,
-    uint64_t * uncompressedSize)
+    unsigned char *isCompressed, unsigned char *cmpType,
+    uint64_t *uncompressedSize)
 {
     TSK_FS_INFO *fs = fs_file->fs_info;
     uint64_t fileID;
@@ -3508,9 +3714,6 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
     uint16_t attribute_counter = 2;     // The ID of the next attribute to be loaded.
     HFS_INFO *hfs;
     char *buffer = NULL;   // buffer to hold the attribute
-#ifdef HAVE_LIBZ
-    char *uncBuf = NULL;   // buffer to hold uncompressed attribute
-#endif
 
     tsk_error_reset();
 
@@ -3551,7 +3754,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 "hfs_load_extended_attrs: Attributes file is empty\n");
         close_attr_file(&attrFile);
         *isCompressed = FALSE;
-        *compDataInRSRC = FALSE;
+        *cmpType = 0;
         return 0;
     }
 
@@ -3565,12 +3768,9 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
     // Initialize these
     *isCompressed = FALSE;
-    *compDataInRSRC = FALSE;
+    *cmpType = 0;
 
     endian = attrFile.fs->endian;
-
-
-
 
     // Start with the root node
     nodeID = attrFile.rootNode;
@@ -3630,13 +3830,12 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
             goto on_error;
         }
 
-        for (recIndx = 0; recIndx < numRec; recIndx++) {
+        for (recIndx = 0; recIndx < numRec; ++recIndx) {
             uint16_t keyLength;
             int comp;           // comparison result
             char *compStr;      // comparison result, as a string
             uint8_t *recData;   // pointer to the data part of the record
             uint32_t keyFileID;
-            int diff;           // difference in bytes between the record start and the record data
 
             // The offset to the record is stored in table at end of node
             uint8_t *recOffsetTblEntry = &nodeData[attrFile.nodeSize - (2 * (recIndx + 1))];  // data describing where this record is
@@ -3696,7 +3895,6 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 break;
             }
 
-
             // Extract the child node ID from the record data (stored after the key)
             keyLength = tsk_getu16(endian, keyB->key_len);
             // make sure the fields we care about are still in the buffer
@@ -3712,8 +3910,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
             // Data must start on an even offset from the beginning of the record.
             // So, correct this if needed.
-            diff = recData - recordBytes;
-            if (2 * (diff / 2) != diff) {
+            if ((recData - recordBytes) % 2) {
                 recData += 1;
             }
 
@@ -3750,7 +3947,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
         // Note, leaf node could have one (or maybe zero) records
 
         // Loop over the records in this node
-        for (recIndx = 0; recIndx < numRec; recIndx++) {
+        for (recIndx = 0; recIndx < numRec; ++recIndx) {
             
             // The offset to the record is stored in table at end of node
             uint8_t *recOffsetTblEntry = &nodeData[attrFile.nodeSize - (2 * (recIndx + 1))];  // data describing where this record is
@@ -3802,7 +3999,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 uint8_t *recData;       // pointer to the data part of the recordBytes
                 hfs_attr_data *attrData;
                 uint32_t attributeLength;
-                int diff;       // Difference in bytes between the start of the recordBytes and the start of data.
+                uint32_t recordType;
                 uint16_t keyLength;
                 int conversionResult;
                 char nameBuff[HFS_MAX_ATTR_NAME_LEN_UTF8_B+1];
@@ -3823,13 +4020,21 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
                 // Data must start on an even offset from the beginning of the record.
                 // So, correct this if needed.
-                diff = recData - recordBytes;
-                if (2 * (diff / 2) != diff) {
+                if ((recData - recordBytes) % 2) {
                     recData += 1;
                 }
 
                 attrData = (hfs_attr_data *) recData;
-                
+
+                // Check we can process the record type before allocating memory
+                recordType = tsk_getu32(endian, attrData->record_type);
+                if (recordType != HFS_ATTR_RECORD_INLINE_DATA) {
+                  error_detected(TSK_ERR_FS_UNSUPTYPE,
+                      "hfs_load_extended_attrs: Unsupported record type: (%d)",
+                      recordType);
+                  goto on_error;
+                }
+
                 // This is the length of the useful data, not including the record header
                 attributeLength = tsk_getu32(endian, attrData->attr_size);
 
@@ -3880,9 +4085,8 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 if (strcmp(nameBuff, "com.apple.decmpfs") == 0 &&
                     tsk_getu32(endian, attrData->record_type) == HFS_ATTR_RECORD_INLINE_DATA) {
                     // Now, look at the compression record
-                    DECMPFS_DISK_HEADER *cmph =
-                        (DECMPFS_DISK_HEADER *) buffer;
-                    uint32_t cmpType =
+                    DECMPFS_DISK_HEADER *cmph = (DECMPFS_DISK_HEADER *) buffer;
+                    *cmpType =
                         tsk_getu32(TSK_LIT_ENDIAN, cmph->compression_type);
                     uint64_t uncSize = tsk_getu64(TSK_LIT_ENDIAN,
                         cmph->uncompressed_size);
@@ -3895,137 +4099,32 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                     *isCompressed = TRUE;       // The data is governed by a compression record (but might not be compressed)
                     *uncompressedSize = uncSize;
 
-                    if (cmpType == 3) {
-                        // Data is inline.  We will load the uncompressed data as a resident attribute.
-
-                        TSK_FS_ATTR *fs_attr_unc;
-
-                        if (tsk_verbose)
-                            tsk_fprintf(stderr,
-                                "hfs_load_extended_attrs: Compressed data is inline in the attribute, will load this as the default DATA attribute.\n");
-
-                        if (attributeLength <= 16) {
-                            if (tsk_verbose)
-                                tsk_fprintf(stderr,
-                                    "hfs_load_extended_attrs: WARNING, Compression Record of type 3 is not followed by"
-                                    " compressed data. No data will be loaded into the DATA attribute.\n");
+                    switch (*cmpType) {
+                    // Data is inline. We will load the uncompressed
+                    // data as a resident attribute.
+                    case DECMPFS_TYPE_ZLIB_ATTR:
+                        if (!hfs_file_read_zlib_attr(
+                                fs_file, buffer, attributeLength, uncSize))
+                        {
+                            goto on_error;
                         }
-                        else {
-                            // There is data following the compression record, as there should be.
-                            if ((fs_attr_unc =
-                                    tsk_fs_attrlist_getnew(fs_file->meta->
-                                        attr, TSK_FS_ATTR_RES)) == NULL) {
-                                error_returned
-                                    (" - hfs_load_extended_attrs, FS_ATTR for uncompressed data");
-                                goto on_error;
-                            }
+                        break;
 
-                            if ((cmph->attr_bytes[0] & 0x0F) == 0x0F) {
-                                if (tsk_verbose)
-                                    tsk_fprintf(stderr,
-                                        "hfs_load_extended_attrs: Leading byte, 0x0F, indicates that the data is not really compressed.\n"
-                                        "hfs_load_extended_attrs:  Loading the default DATA attribute.");
-                                //cmpSize = attributeLength - 17; // subtr. size of header + 1 indicator byte
+                    case DECMPFS_TYPE_LZVN_ATTR:
+                        if (!hfs_file_read_lzvn_attr(
+                                fs_file, buffer, attributeLength, uncSize))
+                        {
+                            goto on_error;
+                        }
+                        break;
 
-                                // Load the remainder of the attribute as 128-0
-                                // set the details in the fs_attr structure.  Note, we are loading this
-                                // as a RESIDENT attribute.
-                                if (tsk_fs_attr_set_str(fs_file,
-                                        fs_attr_unc, "DATA",
-                                        TSK_FS_ATTR_TYPE_HFS_DATA,
-                                        HFS_FS_ATTR_ID_DATA,
-                                        (void *) (buffer + 17),
-                                        (size_t) uncSize)) {
-                                    error_returned
-                                        (" - hfs_load_extended_attrs");
-                                    goto on_error;
-                                }
-
-                            }
-                            else {      // Leading byte is not 0x0F
-
-#ifdef HAVE_LIBZ
-                                uint64_t uLen;
-                                unsigned long bytesConsumed;
-                                int infResult;
-
-                                if (tsk_verbose)
-                                    tsk_fprintf(stderr,
-                                        "hfs_load_extended_attrs: Uncompressing (inflating) data.");
-                                // Uncompress the remainder of the attribute, and load as 128-0
-                                // Note: cast is OK because uncSize will be quite modest, less than 4000.
-                                uncBuf = (char *) tsk_malloc((size_t) uncSize + 100);   // add some extra space
-                                if (uncBuf == NULL) {
-                                    error_returned
-                                        (" - hfs_load_extended_attrs, space for the uncompressed attr");
-                                    goto on_error;
-                                }
-
-                                infResult = zlib_inflate(buffer + 16, (uint64_t) (attributeLength - 16),        // source, srcLen
-                                    uncBuf, (uint64_t) (uncSize + 100), // dest, destLen
-                                    &uLen, &bytesConsumed);     // returned by the function
-                                if (infResult != 0) {
-                                    error_returned
-                                        (" hfs_load_extended_attrs, zlib could not uncompress attr");
-                                    goto on_error;
-                                }
-                                if (bytesConsumed != attributeLength - 16) {
-                                    error_detected(TSK_ERR_FS_READ,
-                                        " hfs_load_extended_attrs, zlib did not consumed the whole compressed data");
-                                    goto on_error;
-                                }
-                                if (uLen != uncSize) {
-                                    error_detected(TSK_ERR_FS_READ,
-                                        " hfs_load_extended_attrs, actual uncompressed size not equal to the size in the compression record");
-                                    goto on_error;
-                                }
-                                if (tsk_verbose)
-                                    tsk_fprintf(stderr,
-                                        "hfs_load_extended_attrs: Loading inflated data as default DATA attribute.");
-                                // set the details in the fs_attr structure.  Note, we are loading this
-                                // as a RESIDENT attribute.
-                                if (tsk_fs_attr_set_str(fs_file,
-                                        fs_attr_unc, "DATA",
-                                        TSK_FS_ATTR_TYPE_HFS_DATA,
-                                        HFS_FS_ATTR_ID_DATA, uncBuf,
-                                        (size_t) uncSize)) {
-                                    error_returned
-                                        (" - hfs_load_extended_attrs");
-                                    goto on_error;
-                                }
-
-                                free(uncBuf);
-#else
-                                // ZLIB compression library is not available, so we will load a zero-length
-                                // default DATA attribute.  Without this, icat may misbehave.
-
-                                // This is one byte long, so the ptr is not null, but only loading zero bytes.
-                                uint8_t uncBuf[1];
-
-                                if (tsk_verbose)
-                                    tsk_fprintf(stderr,
-                                        "hfs_load_extended_attrs: ZLIB not available, so loading an empty default DATA attribute.\n");
-
-                                if (tsk_fs_attr_set_str(fs_file,
-                                        fs_attr_unc, "DATA",
-                                        TSK_FS_ATTR_TYPE_HFS_DATA,
-                                        HFS_FS_ATTR_ID_DATA, uncBuf,
-                                        (size_t) 0)) {
-                                    error_returned
-                                        (" - hfs_load_extended_attrs");
-                                    goto on_error;
-                                }
-#endif
-
-                            }   // END if leading byte is 0x0F  ELSE clause
-                        }       // END if attributeLength <= 16  ELSE clause
-                    }
-                    else if (cmpType == 4) {
-                        // Data is compressed in the resource fork
-                        *compDataInRSRC = TRUE; // The compressed data is in the RSRC fork
+                    // Data is compressed in the resource fork
+                    case DECMPFS_TYPE_ZLIB_RSRC:
+                    case DECMPFS_TYPE_LZVN_RSRC:
                         if (tsk_verbose)
                             tsk_fprintf(stderr,
-                                "hfs_load_extended_attrs: Compressed data is in the file Resource Fork.\n");
+                                "%s: Compressed data is in the file Resource Fork.\n", __func__);
+                        break;
                     }
                 }
                 else {          // Attrbute name is NOT com.apple.decmpfs
@@ -4057,7 +4156,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 free(buffer);
                 buffer = NULL;
 
-                attribute_counter++;
+                ++attribute_counter;
             }                   // END if comp == 0
             if (comp == 1) {
                 // since this record key is greater than our search key, all
@@ -4143,12 +4242,6 @@ on_error:
     if (buffer != NULL) {
         free(buffer);
     }
-
-#ifdef HAVE_LIBZ
-    if (uncBuf != NULL) {
-        free(uncBuf);
-    }
-#endif
 
     if (nodeData != NULL) {
         free(nodeData);
@@ -4249,8 +4342,6 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
         return NULL;
     }
 
-
-
     // Try to look at the Resource Fork for an HFS+ file
     // Should be able to cast this to hfs_fork *
     fork_info = (hfs_fork *) fs_file->meta->content_ptr;        // The data fork
@@ -4336,7 +4427,7 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
     typeList = (hfs_resource_type_list *) (map + typeListOffset);
     numTypes = tsk_getu16(fs_info->endian, typeList->typeCount) + 1;
 
-    for (mindx = 0; mindx < numTypes; mindx++) {
+    for (mindx = 0; mindx < numTypes; ++mindx) {
         uint16_t numRes;
         uint16_t refOff;
         int pindx;              // index for looping over resources
@@ -4348,7 +4439,7 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
         refOff = tsk_getu16(fs_info->endian, tlItem->offset);
 
 
-        for (pindx = 0; pindx < numRes; pindx++) {
+        for (pindx = 0; pindx < numRes; ++pindx) {
             int16_t nameOffset;
             char *nameBuffer;
             RES_DESCRIPTOR *rsrc;
@@ -4447,6 +4538,7 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
     unsigned char compression_flag = FALSE;
     unsigned char isCompressed = FALSE;
     unsigned char compDataInRSRCFork = FALSE;
+    unsigned char cmpType = 0;
     uint64_t uncompressedSize;
     uint64_t logicalSize;       // of a fork
 
@@ -4460,10 +4552,8 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
         return 1;
     }
 
-
     fs = (TSK_FS_INFO *) fs_file->fs_info;
     hfs = (HFS_INFO *) fs;
-
 
     if (tsk_verbose)
         tsk_fprintf(stderr,
@@ -4502,10 +4592,21 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
             "hfs_load_attrs: loading the HFS+ extended attributes\n");
 
     if (hfs_load_extended_attrs(fs_file, &isCompressed,
-            &compDataInRSRCFork, &uncompressedSize)) {
+            &cmpType, &uncompressedSize)) {
         error_returned(" - hfs_load_attrs A");
         fs_file->meta->attr_state = TSK_FS_META_ATTR_ERROR;
         return 1;
+    }
+
+// TODO: What about DECMPFS_TYPE_RAW_RSRC?
+    switch (cmpType) {
+    case DECMPFS_TYPE_ZLIB_RSRC:
+    case DECMPFS_TYPE_LZVN_RSRC:
+        compDataInRSRCFork = TRUE;
+        break;
+    default:
+        compDataInRSRCFork = FALSE;
+        break;
     }
 
     if (isCompressed) {
@@ -4546,8 +4647,6 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
         if (!isCompressed) {
             // We only load this attribute if this fork has non-zero length
             // or if this is a REG or LNK file.  Otherwise, we skip
-
-
             logicalSize = tsk_getu64(fs->endian, forkx->logic_sz);
 
             if (logicalSize > 0 ||
@@ -4682,9 +4781,7 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
                 return 1;
             }
 
-
             if (isCompressed && compDataInRSRCFork) {
-
                 // OK, we are going to load those same resource fork blocks as the "DATA"
                 // attribute, but will mark it as compressed.
                 // get an attribute structure to store the resource fork data in.  We will
@@ -4704,7 +4801,35 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
                  * that means that we do not need to free it if we abort in the
                  * following code (and doing so will cause double free errors). */
 
+                switch (cmpType) {
+                case DECMPFS_TYPE_ZLIB_RSRC:
 #ifdef HAVE_LIBZ
+                    fs_attr->w = hfs_attr_walk_zlib_rsrc;
+                    fs_attr->r = hfs_file_read_zlib_rsrc;
+#else
+                    // We don't have zlib, so the uncompressed data is not
+                    // available to us; however, we must have a default DATA
+                    // attribute, or icat will misbehave.
+                    if (tsk_verbose)
+                        tsk_fprintf(stderr,
+                            "hfs_load_attrs: No zlib compression library, so setting a zero-length default DATA attribute.\n");
+
+                    if (tsk_fs_attr_set_run(fs_file, fs_attr, NULL, "DATA",
+                            TSK_FS_ATTR_TYPE_HFS_DATA, HFS_FS_ATTR_ID_DATA, 0,
+                            0, 0, 0, 0)) {
+                        error_returned(" - hfs_load_attrs (non-file)");
+                        return 1;
+                    }
+#endif
+                    break;
+
+                case DECMPFS_TYPE_LZVN_RSRC:
+
+                    fs_attr->w = hfs_attr_walk_lzvn_rsrc;
+                    fs_attr->r = hfs_file_read_lzvn_rsrc;
+
+                    break;
+                }
 
                 // convert the resource fork to the TSK format
                 if (((attr_run =
@@ -4746,25 +4871,6 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
                 if (tsk_verbose)
                     tsk_fprintf(stderr,
                         "hfs_load_attrs: setting the \"special\" function pointers to inflate compressed data.\n");
-
-                fs_attr->w = hfs_attr_walk_special;
-                fs_attr->r = hfs_file_read_special;
-
-#else
-                // We don't have zlib, so the uncompressed data is not available to us,
-                // however, we must have a default DATA attribute, or icat will misbehave.
-                if (tsk_verbose)
-                    tsk_fprintf(stderr,
-                        "hfs_load_attrs: No zlib compression library, so setting a zero-length default DATA attribute.\n");
-
-                if (tsk_fs_attr_set_run(fs_file, fs_attr, NULL, "DATA",
-                        TSK_FS_ATTR_TYPE_HFS_DATA, HFS_FS_ATTR_ID_DATA, 0,
-                        0, 0, 0, 0)) {
-                    error_returned(" - hfs_load_attrs (non-file)");
-                    return 1;
-                }
-
-#endif
             }
 
         }                       // END resource fork size > 0
@@ -4785,17 +4891,13 @@ hfs_load_attrs(TSK_FS_FILE * fs_file)
 }
 
 
-
-
-
-
 /** \internal
 * Get allocation status of file system block.
 * adapted from IsAllocationBlockUsed from:
 * http://developer.apple.com/technotes/tn/tn1150.html
 *
 * @param hfs File system being analyzed
-* @param b Block address 
+* @param b Block address
 * @returns 1 if allocated, 0 if not, -1 on error
 */
 static int8_t
@@ -4924,7 +5026,7 @@ hfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T start_blk,
     /*
      * Iterate
      */
-    for (addr = start_blk; addr <= end_blk; addr++) {
+    for (addr = start_blk; addr <= end_blk; ++addr) {
         int retval;
         int myflags;
 
@@ -5028,7 +5130,7 @@ hfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     if (start_inum > end_inum)
         XSWAP(start_inum, end_inum);
 
-    for (inum = start_inum; inum <= end_inum; inum++) {
+    for (inum = start_inum; inum <= end_inum; ++inum) {
         int retval;
 
         if (hfs_inode_lookup(fs, fs_file, inum)) {
@@ -5498,7 +5600,7 @@ print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
 
     if (print->accumulating) {
         if (addr == print->startBlock + print->blockCount) {
-            print->blockCount++;
+            ++print->blockCount;
         }
         else {
             output_print_addr(print);
@@ -5517,14 +5619,14 @@ print_addr_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
 }
 
 /**
- * Print details on a specific file to a file handle. 
+ * Print details on a specific file to a file handle.
  *
  * @param fs File system file is located in
  * @param hFile File name to print text to
  * @param inum Address of file in file system
  * @param numblock The number of blocks in file to force print (can go beyond file size)
  * @param sec_skew Clock skew in seconds to also print times in
- * 
+ *
  * @returns 1 on error and 0 on success
  */
 static uint8_t
@@ -5690,7 +5792,7 @@ hfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
                 "File type:\t%04" PRIx32 "  ",
                 tsk_getu32(fs->endian, entry.cat.std.u_info.file_type));
 
-            for (windx = 0; windx < 4; windx++) {
+            for (windx = 0; windx < 4; ++windx) {
                 uint8_t cu = entry.cat.std.u_info.file_type[windx];
                 if (cu >= 32 && cu <= 126)
                     tsk_fprintf(hFile, "%c", (char) cu);
@@ -5701,7 +5803,7 @@ hfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
             tsk_fprintf(hFile,
                 "File creator:\t%04" PRIx32 "  ",
                 tsk_getu32(fs->endian, entry.cat.std.u_info.file_cr));
-            for (windx = 0; windx < 4; windx++) {
+            for (windx = 0; windx < 4; ++windx) {
                 uint8_t cu = entry.cat.std.u_info.file_cr[windx];
                 if (cu >= 32 && cu <= 126)
                     tsk_fprintf(hFile, "%c", (char) cu);
@@ -5849,7 +5951,6 @@ hfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
                 }
             }
         }
-
     }
 
     // Force the loading of all attributes.
@@ -5862,7 +5963,7 @@ hfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
 
         // cycle through the attributes
         cnt = tsk_fs_file_attr_getsize(fs_file);
-        for (i = 0; i < cnt; i++) {
+        for (i = 0; i < cnt; ++i) {
             const char *type;   // type of the attribute as a string
             const TSK_FS_ATTR *fs_attr =
                 tsk_fs_file_attr_get_idx(fs_file, i);
@@ -5870,7 +5971,6 @@ hfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
                 continue;
 
             type = hfs_attrTypeName((uint32_t) fs_attr->type);
-
 
             // We will need to do something better than this, in the end.
             //type = "Data";
@@ -5948,7 +6048,6 @@ hfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
         DECMPFS_DISK_HEADER *cmph;
         uint32_t cmpType;
         uint64_t uncSize;
-        unsigned char reallyCompressed = FALSE;
         uint64_t cmpSize = 0;
 
         // Read the attribute.  It cannot be too large because it is stored in
@@ -5977,42 +6076,59 @@ hfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
         cmpType = tsk_getu32(TSK_LIT_ENDIAN, cmph->compression_type);
         uncSize = tsk_getu64(TSK_LIT_ENDIAN, cmph->uncompressed_size);
 
-        if (cmpType == 3) {
-            // Data is inline
-            if ((cmph->attr_bytes[0] & 0x0F) == 0x0F) {
-                reallyCompressed = FALSE;
-                cmpSize = fs_attr->size - 17;   // subtr. size of header + 1 indicator byte
-            }
-            else {
-                reallyCompressed = TRUE;
-                cmpSize = fs_attr->size - 16;   // subt size of header
-            }
-        }
-        else if (cmpType == 4) {
-            // Data is compressed in the resource fork
-            reallyCompressed = TRUE;
-        }
         tsk_fprintf(hFile, "\nCompressed File:\n");
         tsk_fprintf(hFile, "    Uncompressed size: %llu\n", uncSize);
-        if (cmpType == 4) {
+
+        switch (cmpType) {
+        case DECMPFS_TYPE_ZLIB_ATTR:
+            // Data is inline
+            {
+                // size of header, with indicator byte if uncompressed
+                uint32_t off = (cmph->attr_bytes[0] & 0x0F) == 0x0F ? 17 : 16;
+                cmpSize = fs_attr->size - off;
+
+                tsk_fprintf(hFile,
+                    "    Data follows compression record in the CMPF attribute\n"
+                    "    %" PRIu64 " bytes of data at offset %u, %s compressed\n",
+                    cmpSize, off, off == 16 ? "zlib" : "not");
+            }
+            break;
+
+        case DECMPFS_TYPE_LZVN_ATTR:
+            // Data is inline
+            {
+                // size of header, with indicator byte if uncompressed
+                uint32_t off = cmph->attr_bytes[0] == 0x06 ? 17 : 16;
+                cmpSize = fs_attr->size - off;
+
+                tsk_fprintf(hFile,
+                    "    Data follows compression record in the CMPF attribute\n"
+                    "    %" PRIu64 " bytes of data at offset %u, %s compressed\n",
+                    cmpSize, off, off == 16 ? "lzvn" : "not");
+            }
+            break;
+
+        case DECMPFS_TYPE_ZLIB_RSRC:
+            // Data is zlib compressed in the resource fork
             tsk_fprintf(hFile,
                 "    Data is zlib compressed in the resource fork\n");
-        }
-        else if (cmpType == 3) {
+            break;
+
+        case DECMPFS_TYPE_LZVN_RSRC:
+            // Data is lzvn compressed in the resource fork
             tsk_fprintf(hFile,
-                "    Data follows compression record in the CMPF attribute\n");
-            tsk_fprintf(hFile, "    %" PRIu64 " bytes of data at offset ",
-                cmpSize);
-            if (reallyCompressed)
-                tsk_fprintf(hFile, "16, zlib compressed\n");
-            else
-                tsk_fprintf(hFile, "17, not compressed\n");
+                "    Data is lzvn compressed in the resource fork\n");
+            break;
+
+        default:
+            tsk_fprintf(hFile, "    Compression type is %u: UNKNOWN\n",
+                cmpType);
         }
-        else {
-            tsk_fprintf(hFile, "    Compression type is UNKNOWN\n");
-        }
+
         free(aBuf);
-        if (cmpType == 4
+
+        if ((cmpType == DECMPFS_TYPE_ZLIB_RSRC ||
+             cmpType == DECMPFS_TYPE_LZVN_RSRC)
             && (tsk_getu64(fs->endian, entry.cat.resource.logic_sz) == 0))
             tsk_fprintf(hFile,
                 "WARNING: Compression record indicates compressed data"
@@ -6177,7 +6293,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     /*
      * Handle an HFS-wrapped HFS+ image, which is a HFS volume that contains
-     * the HFS+ volume inside of it. 
+     * the HFS+ volume inside of it.
      */
     if (tsk_getu16(fs->endian, hfs->fs->signature) == HFS_VH_SIG_HFS) {
 
@@ -6198,7 +6314,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             uint32_t drAlBlkSiz =
                 tsk_getu32(fs->endian, wrapper_sb->drAlBlkSiz);
 
-            // start of embedded FS 
+            // start of embedded FS
             uint16_t startBlock = tsk_getu16(fs->endian,
                 wrapper_sb->drEmbedExtent_startBlock);
 

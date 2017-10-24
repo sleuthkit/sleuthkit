@@ -722,11 +722,20 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
         return TSK_STOP;
     }
 
-     /* If no longer processing the same directory as the last file, 
-      * then update the class-level setting. */
-    int64_t cur = fs_file->name->par_addr;
-    if (m_curDirId != cur) {
-        m_curDirId = cur;
+    /* Update the current directory, which can be used to show
+     * progress.  If we get a directory, then use its name.  We
+     * do this so that when we are searching for orphan files, then
+     * we at least show $OrphanFiles as status.  The secondary check
+     * is to grab the parent folder from files once we return back 
+     * into a folder when we are doing our depth-first recursion. */
+    if (isDir(fs_file)) {
+        m_curDirId = fs_file->name->meta_addr;
+        tsk_take_lock(&m_curDirPathLock);
+        m_curDirPath = string(path) + fs_file->name->name;
+        tsk_release_lock(&m_curDirPathLock);
+    }
+    else if (m_curDirId != fs_file->name->par_addr) {
+        m_curDirId = fs_file->name->par_addr;
         tsk_take_lock(&m_curDirPathLock);
         m_curDirPath = path;
         tsk_release_lock(&m_curDirPathLock);
