@@ -631,7 +631,7 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema5toSchema6(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema6toSchema7(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema7toSchema7dot1(dbSchemaVersion, connection);
-				dbSchemaVersion = updateFromSchema7dot1toSchema7dot2(dbSchemaVersion, connection);
+				//dbSchemaVersion = updateFromSchema7dot1toSchema7dot2(dbSchemaVersion, connection);
 
 				// Write the updated schema version number to the the tsk_db_info table.
 				statement = connection.createStatement();
