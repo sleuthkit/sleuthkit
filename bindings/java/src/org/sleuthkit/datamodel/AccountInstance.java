@@ -45,7 +45,7 @@ public class AccountInstance {
 	 *
 	 * @param attrType The attribute type. 
 	 * 
-	 * @return The atrribute, or null if no attribute of the given type exists.
+	 * @return The attribute, or null if no attribute of the given type exists.
 	 * 
 	 * @throws TskCoreException if an there is an error getting the attribute.
 	 */
