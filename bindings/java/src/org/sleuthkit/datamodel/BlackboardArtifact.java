@@ -48,7 +48,8 @@ public class BlackboardArtifact implements Content {
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private final long artifactId;
 	private final long sourceObjId;				// refers to objID of parent/source object
-	private final long artifactObjId;		// objId of the artifact in tsk_objects. TBD: replace artifactID with this
+	private final long artifactObjId;			// objId of the artifact in tsk_objects. TBD: replace artifactID with this
+	private final long dataSourceObjId;			// objId of the data source in tsk_objects.
 	private final int artifactTypeId;
 	private final String artifactTypeName;
 	private final String displayName;
@@ -83,13 +84,14 @@ public class BlackboardArtifact implements Content {
 	 * @param displayName      The display name of this artifact.
 	 * @param reviewStatus     The review status of this artifact.
 	 */
-	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus) {
+	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjId, long dataSourceObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus) {
 
 		this.sleuthkitCase = sleuthkitCase;
 		this.artifactId = artifactID;
 		this.sourceObjId = sourceObjId;
 		this.artifactObjId = artifactObjId;
 		this.artifactTypeId = artifactTypeID;
+		this.dataSourceObjId = dataSourceObjId;
 		this.artifactTypeName = artifactTypeName;
 		this.displayName = displayName;
 		this.reviewStatus = reviewStatus;
@@ -113,13 +115,14 @@ public class BlackboardArtifact implements Content {
 	 * @param sourceObjId      The unique id of the content with which this
 	 *                         artifact is associated.
 	 * @param artifactObjID    The unique id this artifact. in tsk_objects
+	 * @param dataSourceObjID  Unique id of the data source.
 	 * @param artifactTypeID   The type id of this artifact.
 	 * @param artifactTypeName The type name of this artifact.
 	 * @param displayName      The display name of this artifact.
 	 * @param reviewStatus     The review status of this artifact.
 	 */
-	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjID, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, boolean isNew) {
-		this(sleuthkitCase, artifactID, sourceObjId, artifactObjID, artifactTypeID, artifactTypeName, displayName, reviewStatus);
+	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjID, long dataSourceObjID, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, boolean isNew) {
+		this(sleuthkitCase, artifactID, sourceObjId, artifactObjID, dataSourceObjID, artifactTypeID, artifactTypeName, displayName, reviewStatus);
 		if (isNew) {
 			/*
 			 * If this object represents a newly created artifact, then its
@@ -1300,8 +1303,8 @@ public class BlackboardArtifact implements Content {
 	 * String, String, ReviewStatus) instead.
 	 */
 	@Deprecated
-	protected BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long objID, long artifactObjID, int artifactTypeID, String artifactTypeName, String displayName) {
-		this(sleuthkitCase, artifactID, objID, artifactObjID, artifactTypeID, artifactTypeName, displayName, ReviewStatus.UNDECIDED);
+	protected BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long objID, long artifactObjID, long dataSourceObjId, int artifactTypeID, String artifactTypeName, String displayName) {
+		this(sleuthkitCase, artifactID, objID, artifactObjID, dataSourceObjId, artifactTypeID, artifactTypeName, displayName, ReviewStatus.UNDECIDED);
 	}
 
 	/**
