@@ -1637,7 +1637,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException if there is a problem getting the data source
 	 *                          obj ids.
 	 */
-	public List<Long> getDataSourceObjIds(String deviceId) throws TskCoreException {
+	List<Long> getDataSourceObjIds(String deviceId) throws TskCoreException {
 
 		// check cached map first
 		synchronized (deviceIdToDatasourceObjIdMap) {
@@ -1652,7 +1652,7 @@ public class SleuthkitCase {
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT obj_id FROM data_source_info WHERE device_id = " + deviceId); //NON-NLS
+			rs = connection.executeQuery(s, "SELECT obj_id FROM data_source_info WHERE device_id = '" + deviceId + "'"); //NON-NLS
 			List<Long> dataSourceObjIds = new ArrayList<Long>();
 			while (rs.next()) {
 				dataSourceObjIds.add(rs.getLong("obj_id"));
