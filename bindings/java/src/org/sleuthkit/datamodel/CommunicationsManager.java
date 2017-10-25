@@ -22,6 +22,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -48,6 +49,15 @@ public class CommunicationsManager {
 	private Map<Account.Type, Integer> accountTypeToTypeIdMap;
 	private Map<String, Account.Type> typeNameToAccountTypeMap;
 
+	// Artifact types that represent a relationship between accounts 
+	private final List<Integer> RELATIONSHIP_ARTIFACT_TYPE_IDS = Arrays.asList(
+			BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE.getTypeID(),
+			BlackboardArtifact.ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID(),
+			BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT.getTypeID(),
+			BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG.getTypeID()
+		);
+	private String RELATIONSHIP_ARTIFACT_TYPE_IDS_CSV_STR;
+	
 	CommunicationsManager(SleuthkitCase db) throws TskCoreException {
 		this.db = db;
 
@@ -57,7 +67,7 @@ public class CommunicationsManager {
 	private void init() throws TskCoreException {
 		accountTypeToTypeIdMap = new ConcurrentHashMap<Account.Type, Integer>();
 		typeNameToAccountTypeMap = new ConcurrentHashMap<String, Account.Type>();
-
+		RELATIONSHIP_ARTIFACT_TYPE_IDS_CSV_STR = buildCSVString(RELATIONSHIP_ARTIFACT_TYPE_IDS);
 		initAccountTypes();
 	}
 
@@ -488,7 +498,7 @@ public class CommunicationsManager {
 	/**
 	 * Returns relationships between two accounts
 	 *
-	 * @param account1 account
+	 * @aram account1 account
 	 * @param account2 account
 	 *
 	 * @return relationships between two accounts
@@ -882,12 +892,12 @@ public class CommunicationsManager {
 		ResultSet rs = null;
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT account_types.type_name as type_name"
-					+ " account_types.display_name as display_name"
-					+ " accounts.account_id as account_id"
+			rs = connection.executeQuery(s, "SELECT account_types.type_name as type_name,"
+					+ " account_types.display_name as display_name,"
+					+ " accounts.account_id as account_id,"
 					+ " accounts.account_unique_identifier as account_unique_identifier"
-					+ " FROM accounts"
-					+ " JOIN account_types"
+					+ " FROM accounts as accounts"
+					+ " JOIN account_types as account_types"
 					+ " ON accounts.account_type_id = account_types.account_type_id"
 					+ " WHERE accounts.account_id = " + account_id); //NON-NLS
 
@@ -1172,6 +1182,175 @@ public class CommunicationsManager {
 	}
 
 	/**
+	 * Returns a list of AccountDeviceInstances that have relationships
+	 *
+	 * @param filter  filters to apply
+	 * 
+	 * @return list of  AccountDeviceInstances
+	 *
+	 *
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 *                          within TSK core
+	 */
+	public List<AccountDeviceInstance> getAccountDeviceInstancesWithRelationships(CommunicationsFilter filter) throws TskCoreException {
+		
+		CaseDbConnection connection = db.getConnection();
+		db.acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			
+			String queryStr = "SELECT DISTINCT accounts.account_id as account_id,"
+					+ " dsi.device_id as device_id"
+					+ " FROM accounts AS accounts"
+					+ "	JOIN account_to_instances_map AS aim"
+					+ "		ON accounts.account_id = aim.account_id"
+					+ "	JOIN blackboard_artifacts AS arts"
+					+ "		ON aim.account_instance_id = arts.artifact_id"
+					+ " JOIN data_source_info as dsi"
+					+ "		ON arts.data_source_obj_id = dsi.obj_id"
+					+ " WHERE accounts.account_id IN"
+					+ "		( SELECT DISTINCT account1_id from relationships"
+					+ "		  UNION "
+					+ "		  SELECT DISTINCT account2_id from relationships )";
+			
+			// RAMAN TBD: Use filters
+					
+			System.out.println("RAMAN QueryStr = " + queryStr );
+			
+			
+			rs = connection.executeQuery(s, queryStr); //NON-NLS
+
+			ArrayList<AccountDeviceInstance> accountDeviceInstances = new ArrayList<AccountDeviceInstance>();
+			while (rs.next()) {
+
+				long account_id = rs.getLong("account_id");
+				String deviceID = rs.getString("device_id");
+				Account account = this.getAccount(account_id);
+				
+				accountDeviceInstances.add(new AccountDeviceInstance(account, deviceID));
+			}
+			return accountDeviceInstances;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting account device instances. " + ex.getMessage(), ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			db.releaseSharedLock();
+		}
+		
+	}
+
+	/**
+	 * Get the number of relationships found on the given device
+	 *
+	 * @param deviceId device to look up
+	 * 
+	 * RAMAN TBD: add filter param
+	 *
+	 * @return number of account relationships found on this device
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	public long getRelationshipsCountByDevice(String deviceId) throws TskCoreException {
+		
+		System.out.println("RAMAN getRelationshipsCountByDevice deviceId = " + deviceId );
+			
+		// Get the list of Data source objects IDs correpsonding to this DeviceID.
+		// Convert to a CSV string list that can be usein the SQL IN caluse.
+		List<Long> ds_ids =  db.getDataSourceObjIds( deviceId);
+		String datasource_obj_ids_list = buildCSVString(ds_ids);
+		
+		CaseDbConnection connection = db.getConnection();
+		db.acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			
+			String queryStr = "SELECT COUNT(*) AS count "
+					+ " FROM blackboard_artifacts as artifacts"
+				    + "	JOIN relationships AS relationships"
+					+ "		ON artifacts.artifact_id = relationships.communication_artifact_id"
+					+ " WHERE artifacts.data_source_obj_id IN ( " + datasource_obj_ids_list + " )"
+					+ " AND   artifacts.artifact_type_id IN ( " + RELATIONSHIP_ARTIFACT_TYPE_IDS_CSV_STR + " )";
+			
+			System.out.println("RAMAN QueryStr = " + queryStr );
+			
+			// RAMAN TBD: add SQL from filters
+			rs = connection.executeQuery(s, queryStr); //NON-NLS
+
+			rs.next();
+			return (rs.getLong("count"));
+			
+			
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting relationships bteween accounts. " + ex.getMessage(), ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			db.releaseSharedLock();
+		}
+		
+	}
+	
+	/**
+	 * Get the number of relationships found on the given account device instance
+	 *
+	 * @param filter
+	 * @param accountDeviceInstance
+	 *
+	 * @return number of account relationships found on this account device instance
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	public long getRelationshipsCount(CommunicationsFilter filter, AccountDeviceInstance accountDeviceInstance) throws TskCoreException {
+	
+		long account_id = accountDeviceInstance.getAccount().getAccountId();
+		
+		// Get the list of Data source objects IDs correpsonding to this DeviceID.
+		// Convert to a CSV string list that can be usein the SQL IN caluse.
+		List<Long> ds_ids =  db.getDataSourceObjIds( accountDeviceInstance.getDeviceId());
+		String datasource_obj_ids_list = buildCSVString(ds_ids);
+		 
+		CaseDbConnection connection = db.getConnection();
+		db.acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+		try {
+			s = connection.createStatement();
+			
+			String queryStr = "SELECT COUNT(*) AS count "
+					+ " FROM blackboard_artifacts as artifacts"
+				    + "	JOIN relationships AS relationships"
+					+ "		ON artifacts.artifact_id = relationships.communication_artifact_id"
+					+ " WHERE artifacts.data_source_obj_id IN ( " + datasource_obj_ids_list + " )"
+					+ " AND artifacts.artifact_type_id IN ( " + RELATIONSHIP_ARTIFACT_TYPE_IDS_CSV_STR + " )"
+					+ " AND ( relationships.account1_id = " + account_id + " OR  relationships.account2_id = " + account_id + " )";
+			
+			System.out.println("RAMAN QueryStr = " + queryStr );
+			
+			// RAMAN TBD: add SQL from filters
+			
+			rs = connection.executeQuery(s, queryStr); //NON-NLS
+
+			rs.next();
+			return (rs.getLong("count"));
+			
+			
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting relationships count for account device instance. " + ex.getMessage(), ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			db.releaseSharedLock();
+		}
+		
+	}
+	
+	/**
 	 * Get account_type_if for the given account type
 	 *
 	 * @param accountType account type to lookup
@@ -1226,6 +1405,19 @@ public class CommunicationsManager {
 		return normailzedPhoneNum;
 	}
 
+	/**
+	 * Utility method to convert a list to an CSV string
+	 */
+	private static <T> String buildCSVString(Collection<T> values) {
+		if (values==null || values.isEmpty()) return "";
+		StringBuilder result = new StringBuilder();
+		for (T val : values) {
+			result.append(val);
+			result.append(",");
+		}
+		return result.substring(0, result.length() - 1);
+	}
+	
 	/*
 	 * Class representing an unordered pair of account ids. <a,b> is same as
 	 * <b,a>

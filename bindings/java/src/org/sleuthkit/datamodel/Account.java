@@ -142,14 +142,28 @@ public class Account {
 
 	}
 
+	/**
+	 * Gets unique string identifier for the account
+	 *
+	 * @return unique account id.
+	 */
 	public String getAccountUniqueID() {
 		return this.accountUniqueID;
 	}
-
+	/**
+	 * Gets the account type
+	 *
+	 * @return account type
+	 */
 	public Account.Type getAccountType() {
 		return this.accountType;
 	}
 
+	/**
+	 * Gets row id in the Accounts table
+	 *
+	 * @return unique row id.
+	 */
 	public long getAccountId() {
 		return this.account_id;
 	}
