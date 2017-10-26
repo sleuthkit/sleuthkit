@@ -28,7 +28,7 @@ public class DeviceFilter implements SubFilter {
 	
 	private final List<String> deviceIds;
 	
-	DeviceFilter(List<String> deviceIds) {
+	public DeviceFilter(List<String> deviceIds) {
 		this.deviceIds = deviceIds;
 	}
 
