@@ -18,7 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.util.List;
+import java.util.Set;
 
 /**
  * Filter by device ids.
@@ -26,9 +26,9 @@ import java.util.List;
  */
 public class DeviceFilter implements SubFilter {
 	
-	private final List<String> deviceIds;
+	private final Set<String> deviceIds;
 	
-	public DeviceFilter(List<String> deviceIds) {
+	public DeviceFilter(Set<String> deviceIds) {
 		this.deviceIds = deviceIds;
 	}
 
@@ -37,7 +37,7 @@ public class DeviceFilter implements SubFilter {
 	 * 
 	 * @return list of device Ids 
 	 */
-	public List<String> getdeviceIds() {
+	public Set<String> getdeviceIds() {
 		return deviceIds;
 	}
 	

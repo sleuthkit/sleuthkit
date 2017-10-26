@@ -18,16 +18,16 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.util.List;
+import java.util.Set;
 
 /**
  * Filter communications by account type.
  * 
  */
 public class AccountTypeFilter implements SubFilter {
-	private final List<Account.Type> accountTypes;
+	private final Set<Account.Type> accountTypes;
 	
-	public AccountTypeFilter(List<Account.Type> accountTypes) {
+	public AccountTypeFilter(Set<Account.Type> accountTypes) {
 		this.accountTypes = accountTypes;
 	}
 
@@ -36,7 +36,7 @@ public class AccountTypeFilter implements SubFilter {
 	 * 
 	 * @return list of account types
 	 */
-	public List<Account.Type> getAccountTypes() {
+	public Set<Account.Type> getAccountTypes() {
 		return accountTypes;
 	}
 	
