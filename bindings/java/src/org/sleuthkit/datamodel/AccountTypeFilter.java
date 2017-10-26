@@ -18,14 +18,30 @@
  */
 package org.sleuthkit.datamodel;
 
+import java.util.List;
 
-/** 
- * Unit level filter.
+/**
+ * Filter communications by account type.
+ * 
  */
-public interface SubFilter {
+public class AccountTypeFilter implements SubFilter {
+	private final List<Account.Type> accountTypes;
 	
-	/*
-	 * Returns a string description of the filter.
+	public AccountTypeFilter(List<Account.Type> accountTypes) {
+		this.accountTypes = accountTypes;
+	}
+
+	/**
+	 * Get the list of account types.
+	 * 
+	 * @return list of account types
 	 */
-	public String getDescription();
+	public List<Account.Type> getAccountTypes() {
+		return accountTypes;
+	}
+	
+	@Override
+	public String getDescription() {
+		return "Filters accounts and relationships by account type.";
+	}
 }

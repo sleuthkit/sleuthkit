@@ -21,19 +21,19 @@ package org.sleuthkit.datamodel;
 import java.util.List;
 
 /**
- * Filter by device ids
+ * Filter by device ids.
  * 
  */
 public class DeviceFilter implements SubFilter {
 	
 	private final List<String> deviceIds;
 	
-	DeviceFilter(List<String> deviceIds) {
+	public DeviceFilter(List<String> deviceIds) {
 		this.deviceIds = deviceIds;
 	}
 
 	/**
-	 * Get the list of device id
+	 * Get the list of device id.
 	 * 
 	 * @return list of device Ids 
 	 */
@@ -43,7 +43,7 @@ public class DeviceFilter implements SubFilter {
 	
 	@Override
 	public String getDescription() {
-		return "Filters accounts and relationships by device id";
+		return "Filters accounts and relationships by device id.";
 	}
 	
 }
