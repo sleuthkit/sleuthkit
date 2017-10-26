@@ -22,34 +22,32 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Defines an aggregate of filters to apply to a CommunicationsManager query
+ * Defines an aggregate of filters to apply to a CommunicationsManager query.
  * 
  */
 public class CommunicationsFilter {
 	
 	private final List<SubFilter> andFilters;
-	// RAMAN TBD: figure our OR filters, I don't think we need any
+	// RAMAN TBD: figure out OR filters, I don't think we need any
 	//private final List<SubFilter> orFilters;
 	
+	public CommunicationsFilter() {
+		this.andFilters = new ArrayList<SubFilter>();
+		//this.orFilters = new ArrayList<SubFilter>;
+	}
+	
 	/*
-	 * Returns the AND list of filters
+	 * Returns the AND list of filters.
 	 */
 	public List<SubFilter> getAndFilters() {
 		return andFilters;
 	}
 	
 	/*
-	 * Adds a filter to AND list
+	 * Adds a filter to AND list.
 	 */
 	public void addAndFilter(SubFilter subFilter) {
 		andFilters.add(subFilter);
 	}
 	
-	CommunicationsFilter()
-	{
-		this.andFilters = new ArrayList<SubFilter>();
-		//this.orFilters = new ArrayList<SubFilter>;
-	
-	}
-
 }

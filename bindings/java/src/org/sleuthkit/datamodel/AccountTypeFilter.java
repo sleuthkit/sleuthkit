@@ -21,29 +21,27 @@ package org.sleuthkit.datamodel;
 import java.util.List;
 
 /**
- * Filter by device ids.
+ * Filter communications by account type.
  * 
  */
-public class DeviceFilter implements SubFilter {
+public class AccountTypeFilter implements SubFilter {
+	private final List<Account.Type> accountTypes;
 	
-	private final List<String> deviceIds;
-	
-	DeviceFilter(List<String> deviceIds) {
-		this.deviceIds = deviceIds;
+	public AccountTypeFilter(List<Account.Type> accountTypes) {
+		this.accountTypes = accountTypes;
 	}
 
 	/**
-	 * Get the list of device id.
+	 * Get the list of account types.
 	 * 
-	 * @return list of device Ids 
+	 * @return list of account types
 	 */
-	public List<String> getdeviceIds() {
-		return deviceIds;
+	public List<Account.Type> getAccountTypes() {
+		return accountTypes;
 	}
 	
 	@Override
 	public String getDescription() {
-		return "Filters accounts and relationships by device id.";
+		return "Filters accounts and relationships by account type.";
 	}
-	
 }

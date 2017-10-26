@@ -20,12 +20,12 @@ package org.sleuthkit.datamodel;
 
 
 /** 
- * Unit level filter 
+ * Unit level filter.
  */
 public interface SubFilter {
 	
 	/*
-	 * Returns a string description of the filter
+	 * Returns a string description of the filter.
 	 */
 	public String getDescription();
 }
