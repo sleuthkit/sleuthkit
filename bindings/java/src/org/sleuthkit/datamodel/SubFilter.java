@@ -18,14 +18,24 @@
  */
 package org.sleuthkit.datamodel;
 
-
-/** 
+/**
  * Unit level filter.
  */
 public interface SubFilter {
-	
-	/*
+
+	/**
 	 * Returns a string description of the filter.
+	 *
+	 * @return	A string description of the filter.
 	 */
 	public String getDescription();
+
+	/**
+	 * Get the SQL string for the filter.
+	 *
+	 * @param commsManager Communications manager.
+	 *
+	 * @return SQL String for the filter.
+	 */
+	public String getSQL(CommunicationsManager commsManager);
 }
