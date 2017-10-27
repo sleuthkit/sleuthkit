@@ -1202,8 +1202,13 @@ public class CommunicationsManager {
 					+ "		  UNION "
 					+ "		  SELECT DISTINCT account2_id from relationships )";
 
+			// set up applicable filters
+			Set<String> applicableFilters = new HashSet<String>();
+			applicableFilters.add(DeviceFilter.class.getName());
+			applicableFilters.add(AccountTypeFilter.class.getName());
+
 			// append SQL for filters
-			String filterSQL = getCommunicationsFilterSQL(filter);
+			String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
 			if (!filterSQL.isEmpty()) {
 				queryStr += " AND " + filterSQL;
 			}
@@ -1311,8 +1316,12 @@ public class CommunicationsManager {
 					+ " AND artifacts.artifact_type_id IN ( " + RELATIONSHIP_ARTIFACT_TYPE_IDS_CSV_STR + " )"
 					+ " AND ( relationships.account1_id = " + account_id + " OR  relationships.account2_id = " + account_id + " )";
 
+			// set up applicable filters
+			Set<String> applicableFilters = new HashSet<String>();
+			applicableFilters.add(DeviceFilter.class.getName());
+
 			// append SQL for filters
-			String filterSQL = getCommunicationsFilterSQL(filter);
+			String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
 			if (!filterSQL.isEmpty()) {
 				queryStr += " AND " + filterSQL;
 			}
@@ -1408,9 +1417,9 @@ public class CommunicationsManager {
 	/**
 	 * Builds the SQL for the given CommunicationsFilter.
 	 *
-	 * Gets the SQL for each subfilter and combines using AND
+	 * Gets the SQL for each subfilter and combines using AND.
 	 */
-	private String getCommunicationsFilterSQL(CommunicationsFilter commFilter) {
+	private String getCommunicationsFilterSQL(CommunicationsFilter commFilter, Set<String> applicableFilters) {
 		if (null == commFilter || commFilter.getAndFilters().isEmpty()) {
 			return "";
 		}
@@ -1418,14 +1427,20 @@ public class CommunicationsManager {
 		StringBuilder sqlSB = new StringBuilder();
 		boolean first = true;
 		for (SubFilter subFilter : commFilter.getAndFilters()) {
-			if (first) {
-				first = false;
+
+			// If the filter is applicable
+			if (applicableFilters.contains(subFilter.getClass().getName())) {
+				if (first) {
+					first = false;
+				} else {
+					sqlSB.append(" AND ");
+				}
+				sqlSB.append("( ");
+				sqlSB.append(subFilter.getSQL(this));
+				sqlSB.append(" )");
 			} else {
-				sqlSB.append(" AND ");
+				System.out.println("RAMAN Found INAPPLICABLE filter of type = " + subFilter.getClass().getName());
 			}
-			sqlSB.append("( ");
-			sqlSB.append(subFilter.getSQL(this));
-			sqlSB.append(" )");
 		}
 
 		return "( " + sqlSB.toString() + " )";
