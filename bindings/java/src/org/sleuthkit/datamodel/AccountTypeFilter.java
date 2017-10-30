@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -39,8 +40,8 @@ public class AccountTypeFilter implements SubFilter {
 	 *
 	 * @return list of account types.
 	 */
-	public List<Account.Type> getAccountTypes() {
-		return new ArrayList<Account.Type>(accountTypes);
+	Set<Account.Type> getAccountTypes() {
+		return new HashSet<Account.Type>(accountTypes);
 	}
 
 	/**

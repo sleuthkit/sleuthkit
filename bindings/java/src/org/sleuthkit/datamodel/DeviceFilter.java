@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
@@ -41,8 +42,8 @@ public class DeviceFilter implements SubFilter {
 	 *
 	 * @return list of device Ids.
 	 */
-	public List<String> getdeviceIds() {
-		return new ArrayList<String>(deviceIds);
+	Set<String> getdeviceIds() {
+		return new HashSet<String>(deviceIds);
 	}
 
 	/**
