@@ -55,9 +55,9 @@ public class CommunicationsManager {
 			BlackboardArtifact.ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID(),
 			BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT.getTypeID(),
 			BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG.getTypeID()
-		);
+	);
 	private String RELATIONSHIP_ARTIFACT_TYPE_IDS_CSV_STR;
-	
+
 	CommunicationsManager(SleuthkitCase db) throws TskCoreException {
 		this.db = db;
 
@@ -134,8 +134,8 @@ public class CommunicationsManager {
 		CaseDbConnection connection = db.getConnection();
 		Statement statement = null;
 		ResultSet resultSet = null;
-
 		int count = 0;
+
 		try {
 			statement = connection.createStatement();
 
@@ -145,7 +145,6 @@ public class CommunicationsManager {
 			if (resultSet.getLong("count") > 0) {
 
 				resultSet.close();
-
 				resultSet = connection.executeQuery(statement, "SELECT * FROM account_types");
 				while (resultSet.next()) {
 					Account.Type accountType = new Account.Type(resultSet.getString("type_name"), resultSet.getString("display_name"));
@@ -167,7 +166,16 @@ public class CommunicationsManager {
 	}
 
 	/**
-	 * Add an account type
+	 * Gets the SleuthKit case.
+	 *
+	 * @return The SleuthKit case (case database) object.
+	 */
+	SleuthkitCase getSleuthkitCase() {
+		return this.db;
+	}
+
+	/**
+	 * Add an account type.
 	 *
 	 * @param accountTypeName account type name
 	 * @param displayName     account type display name
@@ -178,7 +186,6 @@ public class CommunicationsManager {
 	 *                          within TSK core
 	 */
 	public Account.Type addAccountType(String accountTypeName, String displayName) throws TskCoreException {
-
 		Account.Type accountType = new Account.Type(accountTypeName, displayName);
 
 		// check if already in map
@@ -220,7 +227,6 @@ public class CommunicationsManager {
 
 				return accountType;
 			}
-
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
 			throw new TskCoreException("Error adding account type", ex);
@@ -234,7 +240,7 @@ public class CommunicationsManager {
 
 	/**
 	 * Create an AccountInstance with the given account type and account ID, and
-	 * sourceObj. if it doesn't exist already
+	 * sourceObj. if it doesn't exist already.
 	 *
 	 *
 	 * @param accountType     account type
@@ -272,9 +278,7 @@ public class CommunicationsManager {
 	 *                          within TSK core
 	 */
 	public Account getAccount(Account.Type accountType, String accountUniqueID) throws TskCoreException {
-
 		Account account = null;
-
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSharedLock();
 		Statement s = null;
@@ -288,7 +292,6 @@ public class CommunicationsManager {
 				account = new Account(rs.getInt("account_id"), accountType,
 						rs.getString("account_unique_identifier"));
 			}
-
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting account type id", ex);
 		} finally {
@@ -340,6 +343,7 @@ public class CommunicationsManager {
 		db.acquireSharedLock();
 		Statement s = null;
 		ResultSet rs = null;
+
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, query);
@@ -348,6 +352,7 @@ public class CommunicationsManager {
 				String accountTypeString = rs.getString("value_text");
 				usedAccountTypes.add(getAccountType(accountTypeString));
 			}
+
 			return usedAccountTypes;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting account types in use", ex);
@@ -371,20 +376,20 @@ public class CommunicationsManager {
 	 */
 	public List<Account> getAccounts(Account.Type accountType) throws TskCoreException {
 		ArrayList<Account> accounts = new ArrayList<Account>();
-
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSharedLock();
 		Statement s = null;
 		ResultSet rs = null;
+
 		try {
 			s = connection.createStatement();
-
 			rs = connection.executeQuery(s, "SELECT * FROM accounts WHERE account_type_id = " + getAccountTypeId(accountType)); //NON-NLS
 			while (rs.next()) {
 				accounts.add(new Account(rs.getInt("account_id"), accountType,
 						rs.getString("account_unique_identifier")));
 
 			}
+
 			return accounts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting accounts by type. " + ex.getMessage(), ex);
@@ -407,10 +412,9 @@ public class CommunicationsManager {
 	 *                          within TSK core
 	 */
 	public List<AccountInstance> getAccountInstances(Account.Type accountType) throws TskCoreException {
-
 		List<AccountInstance> accountInstances = new ArrayList<AccountInstance>();
 
-		// First get all account of the type
+		// First get all accounts of the type
 		List<Account> accounts = getAccounts(accountType);
 
 		// get all instances for each account
@@ -421,17 +425,10 @@ public class CommunicationsManager {
 				accountInstances.add(new AccountInstance(db, db.getBlackboardArtifact(artifact_id), account));
 			}
 		}
+
 		return accountInstances;
 	}
 
-	/**
-	 * Reject the given account instance
-	 *
-	 * @param accountInstance account instance to reject
-	 *
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 *                          within TSK core
-	 */
 	/**
 	 * Get all accounts that have a relationship with the given account
 	 *
@@ -498,7 +495,7 @@ public class CommunicationsManager {
 	/**
 	 * Returns relationships between two accounts
 	 *
-	 * @aram account1 account
+	 * @param account1 account
 	 * @param account2 account
 	 *
 	 * @return relationships between two accounts
@@ -507,7 +504,6 @@ public class CommunicationsManager {
 	 *                          within TSK core
 	 */
 	public List<BlackboardArtifact> getRelationships(Account account1, Account account2) throws TskCoreException {
-
 		return getRelationships(account1.getAccountId(), account2.getAccountId());
 	}
 
@@ -524,7 +520,6 @@ public class CommunicationsManager {
 	 *                          within TSK core
 	 */
 	public List<BlackboardArtifact> getRelationshipsOfType(Account account1, Account account2, BlackboardArtifact.Type artifactType) throws TskCoreException {
-
 		return getRelationshipsOfType(account1.getAccountId(), account2.getAccountId(), artifactType);
 	}
 
@@ -543,6 +538,7 @@ public class CommunicationsManager {
 		db.acquireSharedLock();
 		Statement s = null;
 		ResultSet rs = null;
+
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT DISTINCT attributes.value_text AS folder_path"
@@ -556,12 +552,12 @@ public class CommunicationsManager {
 
 			ArrayList<MessageFolder> messageFolders = new ArrayList<MessageFolder>();
 			while (rs.next()) {
-
 				String folder = rs.getString("folder_path");
 
 				// TBD: check if this folder has subfolders and set hasSubFolders accordingly.
 				messageFolders.add(new MessageFolder(folder, srcObjID));
 			}
+
 			return messageFolders;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting message folders. " + ex.getMessage(), ex);
@@ -591,6 +587,7 @@ public class CommunicationsManager {
 		db.acquireSharedLock();
 		Statement s = null;
 		ResultSet rs = null;
+
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT DISTINCT attributes.value_text AS folder_path"
@@ -605,10 +602,10 @@ public class CommunicationsManager {
 
 			ArrayList<MessageFolder> messageFolders = new ArrayList<MessageFolder>();
 			while (rs.next()) {
-
 				String folder = rs.getString("folder_path");
 				messageFolders.add(new MessageFolder(folder, srcObjID));
 			}
+
 			return messageFolders;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting message folders. " + ex.getMessage(), ex);
@@ -636,6 +633,7 @@ public class CommunicationsManager {
 		db.acquireSharedLock();
 		Statement s = null;
 		ResultSet rs = null;
+
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT artifacts.artifact_id AS artifact_id,"
@@ -654,12 +652,12 @@ public class CommunicationsManager {
 
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
 			while (rs.next()) {
-
 				BlackboardArtifact.Type bbartType = db.getArtifactType(rs.getInt("artifact_type_id"));
 				artifacts.add(new BlackboardArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"), rs.getLong("data_source_obj_id"),
 						bbartType.getTypeID(), bbartType.getTypeName(), bbartType.getDisplayName(),
 						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
 			}
+
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting messages. " + ex.getMessage(), ex);
@@ -698,13 +696,10 @@ public class CommunicationsManager {
 			try {
 				connection.beginTransaction();
 				s = connection.createStatement();
-
 				s.execute("INSERT INTO accounts (account_type_id, account_unique_identifier) VALUES ( " + getAccountTypeId(accountType) + ", '" + accountUniqueID + "'" + ")"); //NON-NLS
 
 				connection.commitTransaction();
-
 				account = getAccount(accountType, accountUniqueID);
-
 			} catch (SQLException ex) {
 				connection.rollbackTransaction();
 				throw new TskCoreException("Error adding an account", ex);
@@ -764,11 +759,11 @@ public class CommunicationsManager {
 	 */
 	BlackboardArtifact getAccountInstanceArtifact(BlackboardArtifact.ARTIFACT_TYPE artifactType, Account.Type accountType, String accountUniqueID, Content sourceObj) throws TskCoreException {
 		BlackboardArtifact accountArtifact = null;
-
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSharedLock();
 		Statement s = null;
 		ResultSet rs = null;
+
 		try {
 			s = connection.createStatement();
 			String queryStr = "SELECT artifacts.artifact_id AS artifact_id,"
@@ -796,9 +791,7 @@ public class CommunicationsManager {
 				accountArtifact = new BlackboardArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"), rs.getLong("data_source_obj_id"),
 						bbartType.getTypeID(), bbartType.getTypeName(), bbartType.getDisplayName(),
 						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id")));
-
 			}
-
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting account", ex);
 		} finally {
@@ -812,11 +805,11 @@ public class CommunicationsManager {
 	}
 
 	void addAccountInstanceMapping(long accountId, long accountInstanceId) throws TskCoreException {
-
 		CaseDbConnection connection = db.getConnection();
 		db.acquireExclusiveLock();
 		Statement s = null;
 		ResultSet rs = null;
+
 		try {
 			connection.beginTransaction();
 			s = connection.createStatement();
@@ -852,6 +845,7 @@ public class CommunicationsManager {
 		db.acquireSharedLock();
 		Statement s = null;
 		ResultSet rs = null;
+
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT account_type_id, type_name, display_name, value_type FROM account_types WHERE type_name = '" + accountTypeName + "'"); //NON-NLS
@@ -885,11 +879,11 @@ public class CommunicationsManager {
 	 */
 	Account getAccount(long account_id) throws TskCoreException {
 		Account account = null;
-
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSharedLock();
 		Statement s = null;
 		ResultSet rs = null;
+
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT account_types.type_name as type_name,"
@@ -905,7 +899,6 @@ public class CommunicationsManager {
 				Account.Type accountType = new Account.Type(rs.getString("type_name"), rs.getString("display_name"));
 				account = new Account(rs.getInt("account_id"), accountType, rs.getString("account_unique_identifier"));
 			}
-
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting account from account_id", ex);
 		} finally {
@@ -929,16 +922,14 @@ public class CommunicationsManager {
 	 *                          within TSK core
 	 */
 	List<Long> getAccountInstanceIds(long account_id) throws TskCoreException {
-
 		ArrayList<Long> accountInstanceIDs = new ArrayList<Long>();
-
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSharedLock();
 		Statement s = null;
 		ResultSet rs = null;
+
 		try {
 			s = connection.createStatement();
-
 			rs = connection.executeQuery(s, "SELECT * FROM account_to_instances_map WHERE account_id = " + account_id); //NON-NLS
 			while (rs.next()) {
 				accountInstanceIDs.add(rs.getLong("account_instance_id"));
@@ -965,11 +956,11 @@ public class CommunicationsManager {
 	 *                          within TSK core
 	 */
 	List<Account> getAccountsWithRelationship(long accountID) throws TskCoreException {
-
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSharedLock();
 		Statement s = null;
 		ResultSet rs = null;
+
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT account1_id, account2_id "
@@ -979,14 +970,13 @@ public class CommunicationsManager {
 
 			ArrayList<Account> accounts = new ArrayList<Account>();
 			while (rs.next()) {
-
 				long otherAccountID = (accountID == rs.getLong("account1_id")) ? rs.getLong("account2_id") : rs.getLong("account1_id");
 				Account account = getAccount(otherAccountID);
 				if (null != account) {
 					accounts.add(account);
 				}
-
 			}
+
 			return accounts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting relationships by account by ID. " + ex.getMessage(), ex);
@@ -1009,19 +999,17 @@ public class CommunicationsManager {
 	 *                          within TSK core
 	 */
 	void addAccountsRelationship(long account1_id, long account2_id, long artifactID) throws TskCoreException {
-
 		CaseDbConnection connection = db.getConnection();
 		db.acquireExclusiveLock();
 		Statement s = null;
 		ResultSet rs = null;
+
 		try {
 			connection.beginTransaction();
 			s = connection.createStatement();
 
 			s.execute("INSERT INTO relationships (account1_id, account2_id, communication_artifact_id) VALUES ( " + account1_id + ", " + account2_id + ", " + artifactID + ")"); //NON-NLS
-
 			connection.commitTransaction();
-
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
 			throw new TskCoreException("Error adding accounts relationship", ex);
@@ -1031,7 +1019,6 @@ public class CommunicationsManager {
 			connection.close();
 			db.releaseExclusiveLock();
 		}
-
 	}
 
 	/**
@@ -1044,11 +1031,11 @@ public class CommunicationsManager {
 	 *                          within TSK core
 	 */
 	List<BlackboardArtifact.Type> getRelationshipTypes(long account1_id, long account2_id) throws TskCoreException {
-
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSharedLock();
 		Statement s = null;
 		ResultSet rs = null;
+
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT DISTINCT artifacts.artifact_id AS artifact_id,"
@@ -1065,10 +1052,10 @@ public class CommunicationsManager {
 
 			ArrayList<BlackboardArtifact.Type> artifactTypes = new ArrayList<BlackboardArtifact.Type>();
 			while (rs.next()) {
-
 				BlackboardArtifact.Type bbartType = db.getArtifactType(rs.getInt("artifact_type_id"));
 				artifactTypes.add(bbartType);
 			}
+
 			return artifactTypes;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting relationship types." + ex.getMessage(), ex);
@@ -1090,11 +1077,11 @@ public class CommunicationsManager {
 	 *                          within TSK core
 	 */
 	List<BlackboardArtifact> getRelationships(long account1_id, long account2_id) throws TskCoreException {
-
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSharedLock();
 		Statement s = null;
 		ResultSet rs = null;
+
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT artifacts.artifact_id AS artifact_id,"
@@ -1112,12 +1099,12 @@ public class CommunicationsManager {
 
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
 			while (rs.next()) {
-
 				BlackboardArtifact.Type bbartType = db.getArtifactType(rs.getInt("artifact_type_id"));
 				artifacts.add(new BlackboardArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"), rs.getLong("data_source_obj_id"),
 						bbartType.getTypeID(), bbartType.getTypeName(), bbartType.getDisplayName(),
 						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
 			}
+
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting relationships bteween accounts. " + ex.getMessage(), ex);
@@ -1141,11 +1128,11 @@ public class CommunicationsManager {
 	 *                          within TSK core
 	 */
 	List<BlackboardArtifact> getRelationshipsOfType(long account1_id, long account2_id, BlackboardArtifact.Type artifactType) throws TskCoreException {
-
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSharedLock();
 		Statement s = null;
 		ResultSet rs = null;
+
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT artifacts.artifact_id AS artifact_id,"
@@ -1164,12 +1151,12 @@ public class CommunicationsManager {
 
 			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
 			while (rs.next()) {
-
 				BlackboardArtifact.Type bbartType = db.getArtifactType(rs.getInt("artifact_type_id"));
 				artifacts.add(new BlackboardArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"), rs.getLong("data_source_obj_id"),
 						bbartType.getTypeID(), bbartType.getTypeName(), bbartType.getDisplayName(),
 						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
 			}
+
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting relationships bteween accounts. " + ex.getMessage(), ex);
@@ -1182,55 +1169,63 @@ public class CommunicationsManager {
 	}
 
 	/**
-	 * Returns a list of AccountDeviceInstances that have relationships
+	 * Returns a list of AccountDeviceInstances that have relationships.
 	 *
-	 * @param filter  filters to apply
-	 * 
-	 * @return list of  AccountDeviceInstances
+	 * @param filter filters to apply
 	 *
+	 * @return list of AccountDeviceInstances
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
 	 */
 	public List<AccountDeviceInstance> getAccountDeviceInstancesWithRelationships(CommunicationsFilter filter) throws TskCoreException {
-		
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSharedLock();
 		Statement s = null;
 		ResultSet rs = null;
+
 		try {
 			s = connection.createStatement();
-			
 			String queryStr = "SELECT DISTINCT accounts.account_id as account_id,"
-					+ " dsi.device_id as device_id"
+					+ " data_source_info.device_id as device_id"
 					+ " FROM accounts AS accounts"
-					+ "	JOIN account_to_instances_map AS aim"
-					+ "		ON accounts.account_id = aim.account_id"
-					+ "	JOIN blackboard_artifacts AS arts"
-					+ "		ON aim.account_instance_id = arts.artifact_id"
-					+ " JOIN data_source_info as dsi"
-					+ "		ON arts.data_source_obj_id = dsi.obj_id"
+					+ " JOIN account_types as account_types"
+					+ "		ON accounts.account_type_id = account_types.account_type_id"
+					+ "	JOIN account_to_instances_map AS account_to_instances_map"
+					+ "		ON accounts.account_id = account_to_instances_map.account_id"
+					+ "	JOIN blackboard_artifacts AS artifacts"
+					+ "		ON account_to_instances_map.account_instance_id = artifacts.artifact_id"
+					+ " JOIN data_source_info as data_source_info"
+					+ "		ON artifacts.data_source_obj_id = data_source_info.obj_id"
 					+ " WHERE accounts.account_id IN"
 					+ "		( SELECT DISTINCT account1_id from relationships"
 					+ "		  UNION "
 					+ "		  SELECT DISTINCT account2_id from relationships )";
-			
-			// RAMAN TBD: Use filters
-					
-			System.out.println("RAMAN QueryStr = " + queryStr );
-			
-			
-			rs = connection.executeQuery(s, queryStr); //NON-NLS
 
+			// set up applicable filters
+			Set<String> applicableFilters = new HashSet<String>();
+			applicableFilters.add(DeviceFilter.class.getName());
+			applicableFilters.add(AccountTypeFilter.class.getName());
+
+			// append SQL for filters
+			String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
+			if (!filterSQL.isEmpty()) {
+				queryStr += " AND " + filterSQL;
+			}
+
+			System.out.println("RAMAN FilterSQL = " + filterSQL);
+			System.out.println("RAMAN QueryStr = " + queryStr);
+
+			rs = connection.executeQuery(s, queryStr); //NON-NLS
 			ArrayList<AccountDeviceInstance> accountDeviceInstances = new ArrayList<AccountDeviceInstance>();
 			while (rs.next()) {
-
 				long account_id = rs.getLong("account_id");
 				String deviceID = rs.getString("device_id");
 				Account account = this.getAccount(account_id);
-				
+
 				accountDeviceInstances.add(new AccountDeviceInstance(account, deviceID));
 			}
+
 			return accountDeviceInstances;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting account device instances. " + ex.getMessage(), ex);
@@ -1240,51 +1235,43 @@ public class CommunicationsManager {
 			connection.close();
 			db.releaseSharedLock();
 		}
-		
 	}
 
 	/**
 	 * Get the number of relationships found on the given device
 	 *
 	 * @param deviceId device to look up
-	 * 
+	 *
 	 * RAMAN TBD: add filter param
 	 *
 	 * @return number of account relationships found on this device
+	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public long getRelationshipsCountByDevice(String deviceId) throws TskCoreException {
-		
-		System.out.println("RAMAN getRelationshipsCountByDevice deviceId = " + deviceId );
-			
-		// Get the list of Data source objects IDs correpsonding to this DeviceID.
-		// Convert to a CSV string list that can be usein the SQL IN caluse.
-		List<Long> ds_ids =  db.getDataSourceObjIds( deviceId);
+		List<Long> ds_ids = db.getDataSourceObjIds(deviceId);
 		String datasource_obj_ids_list = buildCSVString(ds_ids);
-		
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSharedLock();
 		Statement s = null;
 		ResultSet rs = null;
+
 		try {
 			s = connection.createStatement();
-			
 			String queryStr = "SELECT COUNT(*) AS count "
 					+ " FROM blackboard_artifacts as artifacts"
-				    + "	JOIN relationships AS relationships"
+					+ "	JOIN relationships AS relationships"
 					+ "		ON artifacts.artifact_id = relationships.communication_artifact_id"
 					+ " WHERE artifacts.data_source_obj_id IN ( " + datasource_obj_ids_list + " )"
 					+ " AND   artifacts.artifact_type_id IN ( " + RELATIONSHIP_ARTIFACT_TYPE_IDS_CSV_STR + " )";
-			
-			System.out.println("RAMAN QueryStr = " + queryStr );
-			
+
+			System.out.println("RAMAN QueryStr = " + queryStr);
+
 			// RAMAN TBD: add SQL from filters
 			rs = connection.executeQuery(s, queryStr); //NON-NLS
-
 			rs.next();
+
 			return (rs.getLong("count"));
-			
-			
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting relationships bteween accounts. " + ex.getMessage(), ex);
 		} finally {
@@ -1293,52 +1280,59 @@ public class CommunicationsManager {
 			connection.close();
 			db.releaseSharedLock();
 		}
-		
 	}
-	
+
 	/**
-	 * Get the number of relationships found on the given account device instance
+	 * Get the number of relationships found for the given account device
+	 * instance.
 	 *
 	 * @param filter
 	 * @param accountDeviceInstance
 	 *
-	 * @return number of account relationships found on this account device instance
+	 * @return number of account relationships found on this account device
+	 *         instance
+	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public long getRelationshipsCount(CommunicationsFilter filter, AccountDeviceInstance accountDeviceInstance) throws TskCoreException {
-	
 		long account_id = accountDeviceInstance.getAccount().getAccountId();
-		
+
 		// Get the list of Data source objects IDs correpsonding to this DeviceID.
 		// Convert to a CSV string list that can be usein the SQL IN caluse.
-		List<Long> ds_ids =  db.getDataSourceObjIds( accountDeviceInstance.getDeviceId());
+		List<Long> ds_ids = db.getDataSourceObjIds(accountDeviceInstance.getDeviceId());
 		String datasource_obj_ids_list = buildCSVString(ds_ids);
-		 
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSharedLock();
 		Statement s = null;
 		ResultSet rs = null;
+
 		try {
 			s = connection.createStatement();
-			
 			String queryStr = "SELECT COUNT(*) AS count "
 					+ " FROM blackboard_artifacts as artifacts"
-				    + "	JOIN relationships AS relationships"
+					+ "	JOIN relationships AS relationships"
 					+ "		ON artifacts.artifact_id = relationships.communication_artifact_id"
 					+ " WHERE artifacts.data_source_obj_id IN ( " + datasource_obj_ids_list + " )"
 					+ " AND artifacts.artifact_type_id IN ( " + RELATIONSHIP_ARTIFACT_TYPE_IDS_CSV_STR + " )"
 					+ " AND ( relationships.account1_id = " + account_id + " OR  relationships.account2_id = " + account_id + " )";
-			
-			System.out.println("RAMAN QueryStr = " + queryStr );
-			
-			// RAMAN TBD: add SQL from filters
-			
-			rs = connection.executeQuery(s, queryStr); //NON-NLS
 
+			// set up applicable filters
+			Set<String> applicableFilters = new HashSet<String>();
+			applicableFilters.add(DeviceFilter.class.getName());
+
+			// append SQL for filters
+			String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
+			if (!filterSQL.isEmpty()) {
+				queryStr += " AND " + filterSQL;
+			}
+
+			System.out.println("RAMAN FilterSQL = " + filterSQL);
+			System.out.println("RAMAN QueryStr = " + queryStr);
+
+			rs = connection.executeQuery(s, queryStr); //NON-NLS
 			rs.next();
+
 			return (rs.getLong("count"));
-			
-			
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting relationships count for account device instance. " + ex.getMessage(), ex);
 		} finally {
@@ -1347,9 +1341,8 @@ public class CommunicationsManager {
 			connection.close();
 			db.releaseSharedLock();
 		}
-		
 	}
-	
+
 	/**
 	 * Get account_type_if for the given account type
 	 *
@@ -1357,8 +1350,7 @@ public class CommunicationsManager {
 	 *
 	 * @return account_type_id for the given account type. 0 if not known.
 	 */
-	private int getAccountTypeId(Account.Type accountType) {
-
+	int getAccountTypeId(Account.Type accountType) {
 		if (accountTypeToTypeIdMap.containsKey(accountType)) {
 			return accountTypeToTypeIdMap.get(accountType);
 		}
@@ -1396,8 +1388,8 @@ public class CommunicationsManager {
 	}
 
 	private String normalizePhoneNum(String phoneNum) {
-
 		String normailzedPhoneNum = phoneNum.replaceAll("\\D", "");
+
 		if (phoneNum.startsWith("+")) {
 			normailzedPhoneNum = "+" + normailzedPhoneNum;
 		}
@@ -1408,17 +1400,53 @@ public class CommunicationsManager {
 	/**
 	 * Utility method to convert a list to an CSV string
 	 */
-	private static <T> String buildCSVString(Collection<T> values) {
-		if (values==null || values.isEmpty()) return "";
+	static <T> String buildCSVString(Collection<T> values) {
+		if (values == null || values.isEmpty()) {
+			return "";
+		}
+
 		StringBuilder result = new StringBuilder();
 		for (T val : values) {
 			result.append(val);
 			result.append(",");
 		}
+
 		return result.substring(0, result.length() - 1);
 	}
-	
-	/*
+
+	/**
+	 * Builds the SQL for the given CommunicationsFilter.
+	 *
+	 * Gets the SQL for each subfilter and combines using AND.
+	 */
+	private String getCommunicationsFilterSQL(CommunicationsFilter commFilter, Set<String> applicableFilters) {
+		if (null == commFilter || commFilter.getAndFilters().isEmpty()) {
+			return "";
+		}
+
+		StringBuilder sqlSB = new StringBuilder();
+		boolean first = true;
+		for (SubFilter subFilter : commFilter.getAndFilters()) {
+
+			// If the filter is applicable
+			if (applicableFilters.contains(subFilter.getClass().getName())) {
+				if (first) {
+					first = false;
+				} else {
+					sqlSB.append(" AND ");
+				}
+				sqlSB.append("( ");
+				sqlSB.append(subFilter.getSQL(this));
+				sqlSB.append(" )");
+			} else {
+				System.out.println("RAMAN Found INAPPLICABLE filter of type = " + subFilter.getClass().getName());
+			}
+		}
+
+		return "( " + sqlSB.toString() + " )";
+	}
+
+	/**
 	 * Class representing an unordered pair of account ids. <a,b> is same as
 	 * <b,a>
 	 */
