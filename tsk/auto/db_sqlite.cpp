@@ -371,7 +371,7 @@ int
 			"Error creating account_types table: %s\n")
 		||
 		attempt_exec
-		("CREATE TABLE relationships (relationship_id INTEGER PRIMARY KEY, account1_id INTEGER NOT NULL, account2_id INTEGER NOT NULL, communication_artifact_id INTEGER NOT NULL,  UNIQUE(account1_id, account1_id, communication_artifact_id) ON CONFLICT IGNORE, FOREIGN KEY(account1_id) REFERENCES accounts(account_id), FOREIGN KEY(account2_id) REFERENCES accounts(account_id), FOREIGN KEY(communication_artifact_id) REFERENCES blackboard_artifacts(artifact_id))",
+		("CREATE TABLE relationships (relationship_id INTEGER PRIMARY KEY, account1_id INTEGER NOT NULL, account2_id INTEGER NOT NULL, communication_artifact_id INTEGER NOT NULL,  UNIQUE(account1_id, account2_id, communication_artifact_id) ON CONFLICT IGNORE, FOREIGN KEY(account1_id) REFERENCES accounts(account_id), FOREIGN KEY(account2_id) REFERENCES accounts(account_id), FOREIGN KEY(communication_artifact_id) REFERENCES blackboard_artifacts(artifact_id))",
 			"Error creating relationships table: %s\n")
 		||
 		attempt_exec

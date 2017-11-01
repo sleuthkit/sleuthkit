@@ -286,7 +286,7 @@ public class CommunicationsManager {
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT * FROM accounts WHERE account_type_id = " + getAccountTypeId(accountType)
-					+ " AND account_unique_identifier = '" + accountUniqueID + "'"); //NON-NLS
+					+ " AND account_unique_identifier = '" + normalizeAccountID(accountType, accountUniqueID) + "'"); //NON-NLS
 
 			if (rs.next()) {
 				account = new Account(rs.getInt("account_id"), accountType,
@@ -696,7 +696,7 @@ public class CommunicationsManager {
 			try {
 				connection.beginTransaction();
 				s = connection.createStatement();
-				s.execute("INSERT INTO accounts (account_type_id, account_unique_identifier) VALUES ( " + getAccountTypeId(accountType) + ", '" + accountUniqueID + "'" + ")"); //NON-NLS
+				s.execute("INSERT INTO accounts (account_type_id, account_unique_identifier) VALUES ( " + getAccountTypeId(accountType) + ", '" + normalizeAccountID(accountType, accountUniqueID) + "'" + ")"); //NON-NLS
 
 				connection.commitTransaction();
 				account = getAccount(accountType, accountUniqueID);
@@ -1380,8 +1380,11 @@ public class CommunicationsManager {
 	private String normalizeAccountID(Account.Type accountType, String accountUniqueID) {
 		String normailzeAccountID = accountUniqueID;
 
-		if (accountType == Account.Type.PHONE) {
+		if (accountType.equals(Account.Type.PHONE)) {
 			normailzeAccountID = normalizePhoneNum(accountUniqueID);
+		}
+		else if (accountType.equals(Account.Type.EMAIL)) {
+			normailzeAccountID = normalizeEmailAddress(accountUniqueID);
 		}
 
 		return normailzeAccountID;
@@ -1397,6 +1400,12 @@ public class CommunicationsManager {
 		return normailzedPhoneNum;
 	}
 
+	private String normalizeEmailAddress(String emailAddress) {
+		String normailzedEmailAddr = emailAddress.toLowerCase();
+
+		return normailzedEmailAddr;
+	}
+	
 	/**
 	 * Utility method to convert a list to an CSV string
 	 */
@@ -1424,26 +1433,32 @@ public class CommunicationsManager {
 			return "";
 		}
 
+		String sqlStr = "";
+		
 		StringBuilder sqlSB = new StringBuilder();
 		boolean first = true;
 		for (SubFilter subFilter : commFilter.getAndFilters()) {
 
 			// If the filter is applicable
 			if (applicableFilters.contains(subFilter.getClass().getName())) {
-				if (first) {
-					first = false;
-				} else {
-					sqlSB.append(" AND ");
+				String subfilterSQL = subFilter.getSQL(this);
+				if (!subfilterSQL.isEmpty()) {
+					if (first) {
+						first = false;
+					} else {
+						sqlSB.append(" AND ");
+					}
+					sqlSB.append("( ");
+					sqlSB.append(subfilterSQL);
+					sqlSB.append(" )");
 				}
-				sqlSB.append("( ");
-				sqlSB.append(subFilter.getSQL(this));
-				sqlSB.append(" )");
-			} else {
-				System.out.println("RAMAN Found INAPPLICABLE filter of type = " + subFilter.getClass().getName());
-			}
+			} 
 		}
 
-		return "( " + sqlSB.toString() + " )";
+		if (!sqlSB.toString().isEmpty()) {
+			sqlStr = "( " + sqlSB.toString() + " )";
+		}
+		return sqlStr;
 	}
 
 	/**
