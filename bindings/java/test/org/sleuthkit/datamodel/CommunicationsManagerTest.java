@@ -36,9 +36,9 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 /**
- * Tests the CommunicationsManager API along with filters
+ * Tests the CommunicationsManager API along with filters.
  *
- * Setup: - Make a SleuthkitCase SQLite databse in a temp folder
+ * Setup: - Make a SleuthkitCase SQLite database in a temp folder
  * - Add three Virtual Directories as data sources (DS1, DS2, DS3). We should specify the
  * device IDs for consistency.
  * - We want to have at least two account types and 3 accounts per type with different forms of relationships. 
@@ -53,6 +53,8 @@ import static org.junit.Assert.*;
  * --- Msg from DEVICE to 2 (PHONE_ACCT_TYPE) on Jan 1, 2017
  * --- Msg from 2 (PHONE_ACCT_TYPE) to DEVICE on Mar 1, 2017
  * --- Msg from 3 (PHONE_ACCT_TYPE) to DEVICE on July 1, 2017 
+ * --- Contact for Phone 2
+*  --- Contact for Phone 5
  * -- DS2 : Has no email messages
  * --- CallLog from DEVICE to 1 (PHONE_ACCT_TYPE) on Jan 1, 2017
  * --- CallLog from 2 (PHONE_ACCT_TYPE) to DEVICE on Mar 1, 2017
@@ -60,6 +62,9 @@ import static org.junit.Assert.*;
  * --- Msg from DEVICE to 2 (PHONE_ACCT_TYPE) on Jan 1, 2017
  * --- Msg from 2 (PHONE_ACCT_TYPE) to DEVICE on Mar 1, 2017
  * --- Msg from 4 (PHONE_ACCT_TYPE) to DEVICE on July 1, 2017
+ * --- Contact for Phone 2
+ * --- Contact for Phone 3
+ * --- Contact for Phone 4
  * -- DS3: Has no communications / accounts, etc.
  *
  * Tests:
@@ -131,11 +136,13 @@ public class CommunicationsManagerTest {
 	private static final String PHONENUM_2 = "222 333 7777";
 	private static final String PHONENUM_3 = "333 123 4567";
 	private static final String PHONENUM_4 = "4444 4444";
+	private static final String PHONENUM_5 = "555 111 5555";
 
 	private static final String NAME_1 = "James Bond";
 	private static final String NAME_2 = "Sherlock Holmes";
 	private static final String NAME_3 = "Captain America";
 	private static final String NAME_4 = "Iron Man";
+	private static final String NAME_5 = "Wonder Woman";
 
 	private static final long JAN_1_2107 = 1483272732;
 	private static final long MAR_1_2107 = 1488370332;
@@ -148,12 +155,12 @@ public class CommunicationsManagerTest {
 
 	@BeforeClass
 	public static void setUpClass() {
-		
+
 		String tempDirPath = System.getProperty("java.io.tmpdir");
 		tempDirPath = tempDirPath.substring(0, tempDirPath.length() - 1);
 		try {
 			dbPath = tempDirPath + java.io.File.separator + TEST_DB;
-			
+
 			// Delete the DB file, in case 
 			java.io.File dbFile = new java.io.File(dbPath);
 			dbFile.delete();
@@ -211,6 +218,10 @@ public class CommunicationsManagerTest {
 				addMessageArtifact(deviceAccount_1, PHONENUM_2, JAN_1_2107, "Outgoing", "Hey there", "This is a SMS", sourceContent_1);
 				addMessageArtifact(deviceAccount_1, PHONENUM_2, MAR_1_2107, "Incoming", "", "Im going to be home late :(", sourceContent_1);
 				addMessageArtifact(deviceAccount_1, PHONENUM_3, JUL_1_2107, "Incoming", "New Year", "We wish you a Happy New Year", sourceContent_1);
+
+				// Add some contacts
+				addContactArtifact(deviceAccount_1, NAME_2, PHONENUM_2, "", sourceContent_1);
+				addContactArtifact(deviceAccount_1, NAME_5, PHONENUM_5, "", sourceContent_1);
 			}
 
 			// Create some commmunication artiacts from DS2
@@ -230,6 +241,11 @@ public class CommunicationsManagerTest {
 				addMessageArtifact(deviceAccount_2, PHONENUM_2, JAN_1_2107, "Outgoing", "Ashley", "I must have the wrong number. Is this not Ashton?", sourceContent_2);
 				addMessageArtifact(deviceAccount_2, PHONENUM_2, MAR_1_2107, "Incoming", "", "The darned train arrived almost an hour late", sourceContent_2);
 				addMessageArtifact(deviceAccount_2, PHONENUM_4, JUL_1_2107, "Incoming", "List", "Milk, tomatoes, mustard, toohthpaste.", sourceContent_2);
+
+				// Add some contacts
+				addContactArtifact(deviceAccount_2, NAME_2, PHONENUM_2, "", sourceContent_2);
+				addContactArtifact(deviceAccount_2, NAME_3, PHONENUM_3, "", sourceContent_2);
+				addContactArtifact(deviceAccount_2, NAME_4, PHONENUM_4, "", sourceContent_2);
 			}
 		} catch (TskCoreException ex) {
 			LOGGER.log(Level.SEVERE, "Failed to create new case", ex);
@@ -256,7 +272,7 @@ public class CommunicationsManagerTest {
 		// Test no filters - pass null for CommunicationsFilter
 		{
 			List<AccountDeviceInstance> accountDeviceInstances2 = commsMgr.getAccountDeviceInstancesWithRelationships(null);
-			assertEquals(10, accountDeviceInstances2.size());
+			assertEquals(12, accountDeviceInstances2.size());
 		}
 
 		// Test no filters - empty DeviceFilter
@@ -264,9 +280,9 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					new HashSet<String>(),
 					null);
-			
+
 			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
-			assertEquals(10, accountDeviceInstances.size());
+			assertEquals(12, accountDeviceInstances.size());
 		}
 
 		// Test filter - filter for DS1 and DS2
@@ -274,9 +290,9 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					new HashSet<String>(Arrays.asList(DS1_DEVICEID, DS2_DEVICEID)),
 					null);
-			
+
 			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
-			assertEquals(10, accountDeviceInstances.size());
+			assertEquals(12, accountDeviceInstances.size());
 		}
 
 		// Test filter - filter for DS3 - it has no accounts
@@ -284,7 +300,7 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					new HashSet<String>(Arrays.asList(DS3_DEVICEID)),
 					null);
-			
+
 			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
 			assertEquals(0, accountDeviceInstances.size());
 		}
@@ -301,9 +317,9 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					null,
 					new HashSet<Account.Type>());
-			
+
 			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
-			assertEquals(10, accountDeviceInstances.size());
+			assertEquals(12, accountDeviceInstances.size());
 		}
 
 		// Test AccountTypeFilter - Email
@@ -311,7 +327,7 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					null,
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.EMAIL)));
-			
+
 			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
 			assertEquals(3, accountDeviceInstances.size());
 		}
@@ -321,9 +337,9 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					null,
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.PHONE)));
-			
+
 			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
-			assertEquals(5, accountDeviceInstances.size());
+			assertEquals(7, accountDeviceInstances.size());
 		}
 
 		// Test AccountTypeFilter - Email & Phone
@@ -331,9 +347,9 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					null,
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.PHONE, Account.Type.EMAIL)));
-			
+
 			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
-			assertEquals(8, accountDeviceInstances.size());
+			assertEquals(10, accountDeviceInstances.size());
 		}
 
 		// Test AccountTypeFilter - CreditCard
@@ -341,7 +357,7 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					null,
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.CREDIT_CARD)));
-			
+
 			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
 			assertEquals(0, accountDeviceInstances.size());
 		}
@@ -369,7 +385,7 @@ public class CommunicationsManagerTest {
 					new HashSet<String>(Arrays.asList(DS1_DEVICEID)),
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.PHONE)));
 			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
-			assertEquals(2, accountDeviceInstances.size());
+			assertEquals(3, accountDeviceInstances.size());
 		}
 
 		// Test AccountTypeFilter - DS2 & EMAIL
@@ -389,7 +405,7 @@ public class CommunicationsManagerTest {
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.PHONE, Account.Type.EMAIL)));
 
 			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
-			assertEquals(5, accountDeviceInstances.size());
+			assertEquals(6, accountDeviceInstances.size());
 		}
 
 		// Test Device & AccountType filter - DS2 & PHONE or EMAIL
@@ -399,7 +415,7 @@ public class CommunicationsManagerTest {
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.PHONE, Account.Type.EMAIL)));
 
 			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
-			assertEquals(3, accountDeviceInstances.size());
+			assertEquals(4, accountDeviceInstances.size());
 		}
 
 		// Test Device & AccountType filter - DS2 or DS1 & EMAIL
@@ -419,7 +435,7 @@ public class CommunicationsManagerTest {
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.PHONE)));
 
 			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
-			assertEquals(5, accountDeviceInstances.size());
+			assertEquals(7, accountDeviceInstances.size());
 		}
 
 		// Test Device & AccountType filter - DS2 or DS1 & Phone or Email
@@ -429,7 +445,7 @@ public class CommunicationsManagerTest {
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.PHONE, Account.Type.EMAIL)));
 
 			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
-			assertEquals(8, accountDeviceInstances.size());
+			assertEquals(10, accountDeviceInstances.size());
 		}
 
 		// Test Device & AccountType filter - DS1 or DS2 & Phone or Email
@@ -439,7 +455,7 @@ public class CommunicationsManagerTest {
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.PHONE, Account.Type.EMAIL)));
 
 			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
-			assertEquals(8, accountDeviceInstances.size());
+			assertEquals(10, accountDeviceInstances.size());
 		}
 
 		// Test Device & AccountType filter - DS1 or DS2 or DS3 & Phone or Email
@@ -449,7 +465,7 @@ public class CommunicationsManagerTest {
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.PHONE, Account.Type.EMAIL)));
 
 			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
-			assertEquals(8, accountDeviceInstances.size());
+			assertEquals(10, accountDeviceInstances.size());
 		}
 
 	}
@@ -531,7 +547,7 @@ public class CommunicationsManagerTest {
 					null);
 
 			long count = commsMgr.getRelationshipsCount(account_phone2, commsFilter);
-			assertEquals(4, count);
+			assertEquals(5, count);
 		}
 
 		// Relationships count for Phone2, Filter on DS2 - expect 0 
@@ -542,7 +558,7 @@ public class CommunicationsManagerTest {
 					null);
 
 			long count = commsMgr.getRelationshipsCount(account_phone2, commsFilter);
-			assertEquals(3, count);
+			assertEquals(4, count);
 		}
 
 		// Relationships count for Phone2, Filter on DS1, DS2
@@ -553,7 +569,7 @@ public class CommunicationsManagerTest {
 					null);
 
 			long count = commsMgr.getRelationshipsCount(account_phone2, commsFilter);
-			assertEquals(7, count);
+			assertEquals(9, count);
 		}
 
 		// Relationships count for Phone3, Filter on DS1
@@ -575,7 +591,7 @@ public class CommunicationsManagerTest {
 					null);
 
 			long count = commsMgr.getRelationshipsCount(account_phone3, commsFilter);
-			assertEquals(2, count);
+			assertEquals(3, count);
 		}
 
 		// Relationships count for Phone1, Filter on DS1, expect 0
@@ -630,7 +646,7 @@ public class CommunicationsManagerTest {
 					null);
 
 			long count = commsMgr.getRelationshipsCount(account_phone4, commsFilter);
-			assertEquals(2, count);
+			assertEquals(3, count);
 		}
 
 		// Relationships count for Phone4, Filter on DS1 & DS2
@@ -641,16 +657,18 @@ public class CommunicationsManagerTest {
 					null);
 
 			long count = commsMgr.getRelationshipsCount(account_phone4, commsFilter);
-			assertEquals(2, count);
+			assertEquals(3, count);
 		}
 
 	}
 
 	/**
 	 * Builds CommunicationsFilter, with the given subfilters.
+	 *
 	 * @param deviceSet
 	 * @param accountTypeSet
-	 * @return 
+	 *
+	 * @return
 	 */
 	private static CommunicationsFilter buildCommsFilter(Set<String> deviceSet, Set<Account.Type> accountTypeSet) {
 
@@ -842,4 +860,28 @@ public class CommunicationsManagerTest {
 			LOGGER.log(Level.SEVERE, "Unable to add TSK_MESSAGE artifact ", ex); //NON-NLS
 		}
 	}
+
+	private static void addContactArtifact(AccountInstance deviceAccount, String name, String phoneNumber, String emailAddr, AbstractFile abstractFile) {
+
+		try {
+			BlackboardArtifact bbart = abstractFile.newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT); // create a CONTACT artifact
+
+			bbart.addAttribute(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, MODULE_NAME, name));
+
+			bbart.addAttribute(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER, MODULE_NAME, phoneNumber));
+			bbart.addAttribute(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL, MODULE_NAME, emailAddr));
+
+			// Create a phone number account for the phone number
+			AccountInstance phoneNumAccount = commsMgr.createAccountInstance(Account.Type.PHONE, phoneNumber, MODULE_NAME, abstractFile);
+			List<AccountInstance> accountInstanceList = new ArrayList<AccountInstance>();
+			accountInstanceList.add(phoneNumAccount);
+
+			//  Create a CONTACT relationship
+			commsMgr.addRelationships(deviceAccount, accountInstanceList, bbart);
+
+		} catch (TskCoreException ex) {
+			LOGGER.log(Level.SEVERE, "Unable to add Contact artifact ", ex); //NON-NLS
+		}
+	}
+
 }
