@@ -92,22 +92,18 @@ import static org.junit.Assert.*;
  * -- Email Account B: DS1. verify count
  * -- Email Account B: DS1 & DS2. verify count (same as previous)
  * -- Email Account C: DS1 & DS2. verify count (same as previous)
- * -- Phone2/DS1: DS1. verify count
- * -- Phone2/DS1: DS2. verify count
- * -- Phone2/DS1: DS1 & DS2. verify count
- * -- Phone2/DS2: DS1. verify count
- * -- Phone2/DS2: DS2. verify count
- * -- Phone2/DS2: DS1 & DS2. verify count
- * -- Phone3/DS1: DS1. verify count
- * -- Phone3/DS1: DS1 & DS2. verify count
- * -- Phone3/DS2: DS1. verify count
- * -- Phone3/DS2: DS1 & DS2. verify count
- * -- Phone1/DS2: DS1. verify count
- * -- Phone1/DS2: DS2. verify count
- * -- Phone1/DS2: DS1 & DS2. verify count
- * -- Phone4/DS2: DS1. verify count
- * -- Phone4/DS2: DS2. verify count
- * -- Phone4/DS2: DS1 & DS2. verify count
+ * -- Phone2: DS1. verify count
+ * -- Phone2: DS2. verify count
+ * -- Phone2: DS1 & DS2. verify count
+ * -- Phone3: DS1. verify count
+ * -- Phone3: DS1 & DS2. verify count
+ * -- Phone3: DS1. verify count
+ * -- Phone1: DS1. verify count
+ * -- Phone1: DS2. verify count
+ * -- Phone1: DS1 & DS2. verify count
+ * -- Phone4: DS1. verify count
+ * -- Phone4: DS2. verify count
+ * -- Phone4: DS1 & DS2. verify count
  */
 public class CommunicationsManagerTest {
 
@@ -466,61 +462,51 @@ public class CommunicationsManagerTest {
 		// Relationships count for Email Account A: No Filters
 		{
 			Account account_email_A = commsMgr.getAccount(Account.Type.EMAIL, EMAIL_A);
-			AccountDeviceInstance adi_emailA_ds1 = new AccountDeviceInstance(account_email_A, DS1_DEVICEID);
-
-			long count = commsMgr.getRelationshipsCount(null, adi_emailA_ds1);
+			long count = commsMgr.getRelationshipsCount(account_email_A, null);
 			assertEquals(4, count);
 		}
 
 		// Relationships count for Email Account A, Filter on DS1
 		{
 			Account account_email_A = commsMgr.getAccount(Account.Type.EMAIL, EMAIL_A);
-			AccountDeviceInstance adi_emailA_ds1 = new AccountDeviceInstance(account_email_A, DS1_DEVICEID);
-
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					new HashSet<String>(Arrays.asList(DS1_DEVICEID)),
 					null);
 
-			long count = commsMgr.getRelationshipsCount(commsFilter, adi_emailA_ds1);
+			long count = commsMgr.getRelationshipsCount(account_email_A, commsFilter);
 			assertEquals(4, count);
 		}
 
 		// Relationships count for Email Account A: Filter on DS1 & EMAIL
 		{
 			Account account_email_A = commsMgr.getAccount(Account.Type.EMAIL, EMAIL_A);
-			AccountDeviceInstance adi_emailA_ds1 = new AccountDeviceInstance(account_email_A, DS1_DEVICEID);
-
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					new HashSet<String>(Arrays.asList(DS1_DEVICEID)),
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.EMAIL)));
 
-			long count = commsMgr.getRelationshipsCount(commsFilter, adi_emailA_ds1);
+			long count = commsMgr.getRelationshipsCount(account_email_A, commsFilter);
 			assertEquals(4, count);
 		}
 
 		// Relationships count for Email Account B, Filter on DS1
 		{
 			Account account_email_B = commsMgr.getAccount(Account.Type.EMAIL, EMAIL_B);
-			AccountDeviceInstance adi_emailB_ds1 = new AccountDeviceInstance(account_email_B, DS1_DEVICEID);
-
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					new HashSet<String>(Arrays.asList(DS1_DEVICEID)),
 					null);
 
-			long count = commsMgr.getRelationshipsCount(commsFilter, adi_emailB_ds1);
+			long count = commsMgr.getRelationshipsCount(account_email_B, commsFilter);
 			assertEquals(3, count);
 		}
 
 		// Relationships count for Email Account B, Filter on DS1 & DS2
 		{
 			Account account_email_B = commsMgr.getAccount(Account.Type.EMAIL, EMAIL_B);
-			AccountDeviceInstance adi_emailB_ds1 = new AccountDeviceInstance(account_email_B, DS1_DEVICEID);
-
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					new HashSet<String>(Arrays.asList(DS1_DEVICEID, DS2_DEVICEID)),
 					null);
 
-			long count = commsMgr.getRelationshipsCount(commsFilter, adi_emailB_ds1);
+			long count = commsMgr.getRelationshipsCount(account_email_B, commsFilter);
 			assertEquals(3, count);
 		}
 
@@ -533,228 +519,128 @@ public class CommunicationsManagerTest {
 					new HashSet<String>(Arrays.asList(DS1_DEVICEID, DS2_DEVICEID)),
 					null);
 
-			long count = commsMgr.getRelationshipsCount(commsFilter, adi_emailC_ds1);
+			long count = commsMgr.getRelationshipsCount(account_email_C, commsFilter);
 			assertEquals(3, count);
 		}
 
-		// Relationships count for Phone2/DS1, Filter on DS1
+		// Relationships count for Phone2, Filter on DS1
 		{
 			Account account_phone2 = commsMgr.getAccount(Account.Type.PHONE, PHONENUM_2);
-			AccountDeviceInstance adi_phone2_ds1 = new AccountDeviceInstance(account_phone2, DS1_DEVICEID);
-
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					new HashSet<String>(Arrays.asList(DS1_DEVICEID)),
 					null);
 
-			long count = commsMgr.getRelationshipsCount(commsFilter, adi_phone2_ds1);
+			long count = commsMgr.getRelationshipsCount(account_phone2, commsFilter);
 			assertEquals(4, count);
 		}
 
-		// Relationships count for Phone2/DS1, Filter on DS2 - expect 0 
+		// Relationships count for Phone2, Filter on DS2 - expect 0 
 		{
 			Account account_phone2 = commsMgr.getAccount(Account.Type.PHONE, PHONENUM_2);
-			AccountDeviceInstance adi_phone2_ds1 = new AccountDeviceInstance(account_phone2, DS1_DEVICEID);
-
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					new HashSet<String>(Arrays.asList(DS2_DEVICEID)),
 					null);
 
-			long count = commsMgr.getRelationshipsCount(commsFilter, adi_phone2_ds1);
-			assertEquals(0, count);
+			long count = commsMgr.getRelationshipsCount(account_phone2, commsFilter);
+			assertEquals(3, count);
 		}
 
-		// Relationships count for Phone2/DS1, Filter on DS1, DS2
+		// Relationships count for Phone2, Filter on DS1, DS2
 		{
 			Account account_phone2 = commsMgr.getAccount(Account.Type.PHONE, PHONENUM_2);
-			AccountDeviceInstance adi_phone2_ds1 = new AccountDeviceInstance(account_phone2, DS1_DEVICEID);
-
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					new HashSet<String>(Arrays.asList(DS1_DEVICEID, DS2_DEVICEID)),
 					null);
 
-			long count = commsMgr.getRelationshipsCount(commsFilter, adi_phone2_ds1);
-			assertEquals(4, count);
+			long count = commsMgr.getRelationshipsCount(account_phone2, commsFilter);
+			assertEquals(7, count);
 		}
 
-		// Relationships count for Phone2/DS2, Filter on DS1, expect 0
-		{
-			Account account_phone2 = commsMgr.getAccount(Account.Type.PHONE, PHONENUM_2);
-			AccountDeviceInstance adi_phone2_ds2 = new AccountDeviceInstance(account_phone2, DS2_DEVICEID);
-
-			CommunicationsFilter commsFilter = buildCommsFilter(
-					new HashSet<String>(Arrays.asList(DS1_DEVICEID)),
-					null);
-
-			long count = commsMgr.getRelationshipsCount(commsFilter, adi_phone2_ds2);
-			assertEquals(0, count);
-		}
-
-		// Relationships count for Phone2/DS2, Filter on DS2
-		{
-			Account account_phone2 = commsMgr.getAccount(Account.Type.PHONE, PHONENUM_2);
-			AccountDeviceInstance adi_phone2_ds2 = new AccountDeviceInstance(account_phone2, DS2_DEVICEID);
-
-			CommunicationsFilter commsFilter = buildCommsFilter(
-					new HashSet<String>(Arrays.asList(DS2_DEVICEID)),
-					null);
-
-			long count = commsMgr.getRelationshipsCount(commsFilter, adi_phone2_ds2);
-			assertEquals(3, count);
-		}
-
-		// Relationships count for Phone2/DS2, Filter on DS2
-		{
-			Account account_phone2 = commsMgr.getAccount(Account.Type.PHONE, PHONENUM_2);
-			AccountDeviceInstance adi_phone2_ds2 = new AccountDeviceInstance(account_phone2, DS2_DEVICEID);
-
-			CommunicationsFilter commsFilter = buildCommsFilter(
-					new HashSet<String>(Arrays.asList(DS2_DEVICEID)),
-					null);
-
-			long count = commsMgr.getRelationshipsCount(commsFilter, adi_phone2_ds2);
-			assertEquals(3, count);
-		}
-
-		// Relationships count for Phone2/DS2, Filter on DS1 & DS2
-		{
-			Account account_phone2 = commsMgr.getAccount(Account.Type.PHONE, PHONENUM_2);
-			AccountDeviceInstance adi_phone2_ds2 = new AccountDeviceInstance(account_phone2, DS2_DEVICEID);
-
-			CommunicationsFilter commsFilter = buildCommsFilter(
-					new HashSet<String>(Arrays.asList(DS1_DEVICEID, DS2_DEVICEID)),
-					null);
-
-			long count = commsMgr.getRelationshipsCount(commsFilter, adi_phone2_ds2);
-			assertEquals(3, count);
-		}
-
-		// Relationships count for Phone3/DS1, Filter on DS1
+		// Relationships count for Phone3, Filter on DS1
 		{
 			Account account_phone3 = commsMgr.getAccount(Account.Type.PHONE, PHONENUM_3);
-			AccountDeviceInstance adi_phone3 = new AccountDeviceInstance(account_phone3, DS1_DEVICEID);
-
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					new HashSet<String>(Arrays.asList(DS1_DEVICEID)),
 					null);
 
-			long count = commsMgr.getRelationshipsCount(commsFilter, adi_phone3);
+			long count = commsMgr.getRelationshipsCount(account_phone3, commsFilter);
 			assertEquals(2, count);
 		}
 
-		// Relationships count for Phone3/DS1, Filter on DS1 & DS2
+		// Relationships count for Phone3, Filter on DS1 & DS2
 		{
 			Account account_phone3 = commsMgr.getAccount(Account.Type.PHONE, PHONENUM_3);
-			AccountDeviceInstance adi_phone3 = new AccountDeviceInstance(account_phone3, DS1_DEVICEID);
-
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					new HashSet<String>(Arrays.asList(DS1_DEVICEID, DS2_DEVICEID)),
 					null);
 
-			long count = commsMgr.getRelationshipsCount(commsFilter, adi_phone3);
+			long count = commsMgr.getRelationshipsCount(account_phone3, commsFilter);
 			assertEquals(2, count);
 		}
 
-		// Relationships count for Phone3/DS2, Filter on DS1, expect 0
+		// Relationships count for Phone1, Filter on DS1, expect 0
 		{
-			Account account_phone3 = commsMgr.getAccount(Account.Type.PHONE, PHONENUM_3);
-			AccountDeviceInstance adi_phone3 = new AccountDeviceInstance(account_phone3, DS2_DEVICEID);
-
+			Account account_phone1 = commsMgr.getAccount(Account.Type.PHONE, PHONENUM_1);
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					new HashSet<String>(Arrays.asList(DS1_DEVICEID)),
 					null);
 
-			long count = commsMgr.getRelationshipsCount(commsFilter, adi_phone3);
+			long count = commsMgr.getRelationshipsCount(account_phone1, commsFilter);
 			assertEquals(0, count);
 		}
 
-		// Relationships count for Phone3/DS2, Filter on DS1 & DS2
-		{
-			Account account_phone3 = commsMgr.getAccount(Account.Type.PHONE, PHONENUM_3);
-			AccountDeviceInstance adi_phone3 = new AccountDeviceInstance(account_phone3, DS2_DEVICEID);
-
-			CommunicationsFilter commsFilter = buildCommsFilter(
-					new HashSet<String>(Arrays.asList(DS1_DEVICEID, DS2_DEVICEID)),
-					null);
-
-			long count = commsMgr.getRelationshipsCount(commsFilter, adi_phone3);
-			assertEquals(0, count);
-		}
-
-		// Relationships count for Phone1/DS2, Filter on DS1, expect 0
+		// Relationships count for Phone1, Filter on DS2
 		{
 			Account account_phone1 = commsMgr.getAccount(Account.Type.PHONE, PHONENUM_1);
-			AccountDeviceInstance adi_phone1 = new AccountDeviceInstance(account_phone1, DS2_DEVICEID);
-
-			CommunicationsFilter commsFilter = buildCommsFilter(
-					new HashSet<String>(Arrays.asList(DS1_DEVICEID)),
-					null);
-
-			long count = commsMgr.getRelationshipsCount(commsFilter, adi_phone1);
-			assertEquals(0, count);
-		}
-
-		// Relationships count for Phone1/DS2, Filter on DS2
-		{
-			Account account_phone1 = commsMgr.getAccount(Account.Type.PHONE, PHONENUM_1);
-			AccountDeviceInstance adi_phone1 = new AccountDeviceInstance(account_phone1, DS2_DEVICEID);
-
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					new HashSet<String>(Arrays.asList(DS2_DEVICEID)),
 					null);
 
-			long count = commsMgr.getRelationshipsCount(commsFilter, adi_phone1);
+			long count = commsMgr.getRelationshipsCount(account_phone1, commsFilter);
 			assertEquals(1, count);
 		}
 
-		// Relationships count for Phone1/DS2, Filter on DS1 & DS2
+		// Relationships count for Phone1, Filter on DS1 & DS2
 		{
 			Account account_phone1 = commsMgr.getAccount(Account.Type.PHONE, PHONENUM_1);
-			AccountDeviceInstance adi_phone1 = new AccountDeviceInstance(account_phone1, DS2_DEVICEID);
-
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					new HashSet<String>(Arrays.asList(DS2_DEVICEID, DS2_DEVICEID)),
 					null);
 
-			long count = commsMgr.getRelationshipsCount(commsFilter, adi_phone1);
+			long count = commsMgr.getRelationshipsCount(account_phone1, commsFilter);
 			assertEquals(1, count);
 		}
 
-		// Relationships count for Phone4/DS2, Filter on DS1, expect 0
+		// Relationships count for Phone4, Filter on DS1, expect 0
 		{
 			Account account_phone4 = commsMgr.getAccount(Account.Type.PHONE, PHONENUM_4);
-			AccountDeviceInstance adi_phone4 = new AccountDeviceInstance(account_phone4, DS2_DEVICEID);
-
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					new HashSet<String>(Arrays.asList(DS1_DEVICEID)),
 					null);
 
-			long count = commsMgr.getRelationshipsCount(commsFilter, adi_phone4);
+			long count = commsMgr.getRelationshipsCount(account_phone4, commsFilter);
 			assertEquals(0, count);
 		}
 
-		// Relationships count for Phone4/DS2, Filter on DS2
+		// Relationships count for Phone4, Filter on DS2
 		{
 			Account account_phone4 = commsMgr.getAccount(Account.Type.PHONE, PHONENUM_4);
-			AccountDeviceInstance adi_phone4 = new AccountDeviceInstance(account_phone4, DS2_DEVICEID);
-
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					new HashSet<String>(Arrays.asList(DS2_DEVICEID)),
 					null);
 
-			long count = commsMgr.getRelationshipsCount(commsFilter, adi_phone4);
+			long count = commsMgr.getRelationshipsCount(account_phone4, commsFilter);
 			assertEquals(2, count);
 		}
 
-		// Relationships count for Phone4/DS2, Filter on DS1 & DS2
+		// Relationships count for Phone4, Filter on DS1 & DS2
 		{
 			Account account_phone4 = commsMgr.getAccount(Account.Type.PHONE, PHONENUM_4);
-			AccountDeviceInstance adi_phone4 = new AccountDeviceInstance(account_phone4, DS2_DEVICEID);
-
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					new HashSet<String>(Arrays.asList(DS1_DEVICEID, DS2_DEVICEID)),
 					null);
 
-			long count = commsMgr.getRelationshipsCount(commsFilter, adi_phone4);
+			long count = commsMgr.getRelationshipsCount(account_phone4, commsFilter);
 			assertEquals(2, count);
 		}
 

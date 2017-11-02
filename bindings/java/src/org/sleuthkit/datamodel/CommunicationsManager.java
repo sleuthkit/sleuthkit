@@ -1286,21 +1286,19 @@ public class CommunicationsManager {
 	 * Get the number of relationships found for the given account device
 	 * instance.
 	 *
-	 * @param filter
-	 * @param accountDeviceInstance
+	 * @param account Account for which to get relationships.
+	 * @param filter Filters to apply.
 	 *
 	 * @return number of account relationships found on this account device
-	 *         instance
+	 *         instance.
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public long getRelationshipsCount(CommunicationsFilter filter, AccountDeviceInstance accountDeviceInstance) throws TskCoreException {
-		long account_id = accountDeviceInstance.getAccount().getAccountId();
+	public long getRelationshipsCount(Account account, CommunicationsFilter filter) throws TskCoreException {
+		long account_id = account.getAccountId();
 
 		// Get the list of Data source objects IDs correpsonding to this DeviceID.
 		// Convert to a CSV string list that can be usein the SQL IN caluse.
-		List<Long> ds_ids = db.getDataSourceObjIds(accountDeviceInstance.getDeviceId());
-		String datasource_obj_ids_list = buildCSVString(ds_ids);
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSharedLock();
 		Statement s = null;
@@ -1312,8 +1310,7 @@ public class CommunicationsManager {
 					+ " FROM blackboard_artifacts as artifacts"
 					+ "	JOIN relationships AS relationships"
 					+ "		ON artifacts.artifact_id = relationships.communication_artifact_id"
-					+ " WHERE artifacts.data_source_obj_id IN ( " + datasource_obj_ids_list + " )"
-					+ " AND artifacts.artifact_type_id IN ( " + RELATIONSHIP_ARTIFACT_TYPE_IDS_CSV_STR + " )"
+					+ " WHERE artifacts.artifact_type_id IN ( " + RELATIONSHIP_ARTIFACT_TYPE_IDS_CSV_STR + " )"
 					+ " AND ( relationships.account1_id = " + account_id + " OR  relationships.account2_id = " + account_id + " )";
 
 			// set up applicable filters
