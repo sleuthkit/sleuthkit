@@ -109,6 +109,27 @@ import static org.junit.Assert.*;
  * -- Phone4: DS1. verify count
  * -- Phone4: DS2. verify count
  * -- Phone4: DS1 & DS2. verify count
+ * 
+ * - getRelationships:
+ * -- Email Account A: no filters.
+ * -- Email Account B: no filters.
+ * -- Email Accounts A & C: no filters.
+ * -- Email Accounts A B & C: no filters
+ * -- Phone 1: No filters
+ * -- Phone 1: filter on CallLogs
+ * -- Phone 1: filter on Contacts
+ * -- Phone 1: filter on messages
+ * -- Phone 2: filter on CallLogs
+ * -- Phone 2: filter on Contacts
+ * -- Phone 2: filter on CallLogs & Contacts
+ * -- Phone 1 & Phone2: filter on Messages & CallLogs
+ * -- Phone 2 3 4 & 5: filter on DS1
+ * -- Phone 2 3 4 & 5: filter on DS1, filter on Messages
+ * -- Phone 1, 2, 3, 4 5: filter on DS2
+ * -- Phone 2 & 4: filter on DS2, filter on CallLogs & Messages
+ * -- Phone 1 2 3 4 5, filter on DS2, filter on Contacts
+ * -- 
+ *
  */
 public class CommunicationsManagerTest {
 
@@ -662,6 +683,298 @@ public class CommunicationsManagerTest {
 
 	}
 
+	@Test
+	public void relationshipsWithFilterTests() throws TskCoreException {
+
+		System.out.println("CommsMgr API - Relationship counts test");
+
+		// Relationships for Email Account A: No Filters
+		{
+			List<Account> accountList = new ArrayList<Account>(Arrays.asList(
+										commsMgr.getAccount(Account.Type.EMAIL, EMAIL_A)
+										));
+		
+			List<BlackboardArtifact> relationsShips = commsMgr.getRelationships(accountList, null);
+			assertEquals(4, relationsShips.size());
+		}
+
+		// Relationships for Email Account B: No Filters
+		{
+			List<Account> accountList = new ArrayList<Account>(Arrays.asList(
+										commsMgr.getAccount(Account.Type.EMAIL, EMAIL_B)
+										));
+		
+			List<BlackboardArtifact> relationsShips = commsMgr.getRelationships(accountList, null);
+			assertEquals(3, relationsShips.size());
+		}
+		
+		// Relationships for Email Account A & C: No Filters
+		{
+			List<Account> accountList = new ArrayList<Account>(Arrays.asList(
+										commsMgr.getAccount(Account.Type.EMAIL, EMAIL_A),
+										commsMgr.getAccount(Account.Type.EMAIL, EMAIL_C)
+										));
+		
+			List<BlackboardArtifact> relationsShips = commsMgr.getRelationships(accountList, null);
+			assertEquals(5, relationsShips.size());
+		}
+		
+		// Relationships for Email Account A & C: No Filters
+		{
+			List<Account> accountList = new ArrayList<Account>(Arrays.asList(
+										commsMgr.getAccount(Account.Type.EMAIL, EMAIL_A),
+										commsMgr.getAccount(Account.Type.EMAIL, EMAIL_C)
+										));
+		
+			List<BlackboardArtifact> relationsShips = commsMgr.getRelationships(accountList, null);
+			assertEquals(5, relationsShips.size());
+		}
+		
+		// Relationships for Email Account A B & C: No Filters
+		{
+			List<Account> accountList = new ArrayList<Account>(Arrays.asList(
+										commsMgr.getAccount(Account.Type.EMAIL, EMAIL_A),
+										commsMgr.getAccount(Account.Type.EMAIL, EMAIL_B),
+										commsMgr.getAccount(Account.Type.EMAIL, EMAIL_C)
+										));
+		
+			List<BlackboardArtifact> relationsShips = commsMgr.getRelationships(accountList, null);
+			assertEquals(5, relationsShips.size());
+		}
+		
+		// Relationships for Email Account A B & C: Filter on DS2
+		{
+			List<Account> accountList = new ArrayList<Account>(Arrays.asList(
+										commsMgr.getAccount(Account.Type.EMAIL, EMAIL_A),
+										commsMgr.getAccount(Account.Type.EMAIL, EMAIL_B),
+										commsMgr.getAccount(Account.Type.EMAIL, EMAIL_C)
+										));
+		
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					new HashSet<String>(Arrays.asList(DS2_DEVICEID)),
+					null);
+			
+			List<BlackboardArtifact> relationsShips = commsMgr.getRelationships(accountList, commsFilter);
+			assertEquals(0, relationsShips.size());
+		}
+		
+		// Relationships for Phone 1: No Filters
+		{
+			List<Account> accountList = new ArrayList<Account>(Arrays.asList(
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_1)
+										));
+		
+			List<BlackboardArtifact> relationsShips = commsMgr.getRelationships(accountList, null);
+			assertEquals(1, relationsShips.size());
+		}
+		
+		// Relationships for Phone 1: Filter on CallLogs
+		{
+			List<Account> accountList = new ArrayList<Account>(Arrays.asList(
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_1)
+										));
+		
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					null,
+					null,
+					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG)));
+			
+			List<BlackboardArtifact> relationsShips = commsMgr.getRelationships(accountList, commsFilter);
+			assertEquals(1, relationsShips.size());
+		}
+		
+		// Relationships for Phone 1: Filter on Contacts
+		{
+			List<Account> accountList = new ArrayList<Account>(Arrays.asList(
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_1)
+										));
+		
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					null,
+					null,
+					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT)));
+			
+			List<BlackboardArtifact> relationsShips = commsMgr.getRelationships(accountList, commsFilter);
+			assertEquals(0, relationsShips.size());
+		}
+		
+		// Relationships for Phone 1: Filter on Contacts
+		{
+			List<Account> accountList = new ArrayList<Account>(Arrays.asList(
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_1)
+										));
+		
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					null,
+					null,
+					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE)));
+			
+			List<BlackboardArtifact> relationsShips = commsMgr.getRelationships(accountList, commsFilter);
+			assertEquals(0, relationsShips.size());
+		}
+		
+		// Relationships for Phone 2: Filter on Calllogs
+		{
+			List<Account> accountList = new ArrayList<Account>(Arrays.asList(
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_2)
+										));
+		
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					null,
+					null,
+					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG)));
+			
+			List<BlackboardArtifact> relationsShips = commsMgr.getRelationships(accountList, commsFilter);
+			assertEquals(3, relationsShips.size());
+		}
+		
+		// Relationships for Phone 2: Filter on Contacts
+		{
+			List<Account> accountList = new ArrayList<Account>(Arrays.asList(
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_2)
+										));
+		
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					null,
+					null,
+					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT)));
+			
+			List<BlackboardArtifact> relationsShips = commsMgr.getRelationships(accountList, commsFilter);
+			assertEquals(2, relationsShips.size());
+		}
+		
+		// Relationships for Phone 2: Filter on Calllogs Contacts
+		{
+			List<Account> accountList = new ArrayList<Account>(Arrays.asList(
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_2)
+										));
+		
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					null,
+					null,
+					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT, BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG )));
+			
+			List<BlackboardArtifact> relationsShips = commsMgr.getRelationships(accountList, commsFilter);
+			assertEquals(5, relationsShips.size());
+		}
+		
+		// Relationships for Phone 1 & 2: Filter on Messages, Calllogs
+		{
+			List<Account> accountList = new ArrayList<Account>(Arrays.asList(
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_1),
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_2)
+										));
+		
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					null,
+					null,
+					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE, BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG )));
+			
+			List<BlackboardArtifact> relationsShips = commsMgr.getRelationships(accountList, commsFilter);
+			assertEquals(8, relationsShips.size());
+		}
+		
+		// Relationships for Phone 2 3 4 & 5: Filter on DS1 
+		{
+			List<Account> accountList = new ArrayList<Account>(Arrays.asList(
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_2),
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_3),
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_4),
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_5)
+										));
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					new HashSet<String>(Arrays.asList(DS1_DEVICEID)),
+					null,
+					null);
+			
+			List<BlackboardArtifact> relationsShips = commsMgr.getRelationships(accountList, commsFilter);
+			assertEquals(8, relationsShips.size());
+		}
+		
+		// Relationships for Phone 2 3 4 & 5: Filter on DS1, Filter on Message
+		{
+			List<Account> accountList = new ArrayList<Account>(Arrays.asList(
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_2),
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_3),
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_4),
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_5)
+										));
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					new HashSet<String>(Arrays.asList(DS1_DEVICEID)),
+					null,
+					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE)));
+			
+			List<BlackboardArtifact> relationsShips = commsMgr.getRelationships(accountList, commsFilter);
+			assertEquals(3, relationsShips.size());
+		}
+		
+		// Relationships for Phone 1 2 3 4 & 5: Filter on DS2
+		{
+			List<Account> accountList = new ArrayList<Account>(Arrays.asList(
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_1),
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_2),
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_3),
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_4),
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_5)
+										));
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					new HashSet<String>(Arrays.asList(DS2_DEVICEID)),
+					null,
+					null);
+			
+			List<BlackboardArtifact> relationsShips = commsMgr.getRelationships(accountList, commsFilter);
+			assertEquals(9, relationsShips.size());
+		}
+		
+		// Relationships for Phone 1 2 3 4 & 5: Filter on DS2, Filter on Calllogs, Messages
+		{
+			List<Account> accountList = new ArrayList<Account>(Arrays.asList(
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_1),
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_2),
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_3),
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_4),
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_5)
+										));
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					new HashSet<String>(Arrays.asList(DS2_DEVICEID)),
+					null,
+					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG, BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE)));
+			
+			List<BlackboardArtifact> relationsShips = commsMgr.getRelationships(accountList, commsFilter);
+			assertEquals(6, relationsShips.size());
+		}
+		
+		// Relationships for Phone 1 2 3 4 & 5: Filter on DS2, Filter on Contacts
+		{
+			List<Account> accountList = new ArrayList<Account>(Arrays.asList(
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_1),
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_2),
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_3),
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_4),
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_5)
+										));
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					new HashSet<String>(Arrays.asList(DS2_DEVICEID)),
+					null,
+					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT)));
+			
+			List<BlackboardArtifact> relationsShips = commsMgr.getRelationships(accountList, commsFilter);
+			assertEquals(3, relationsShips.size());
+		}
+		
+		// Relationships for Email A, Phone 1 2: No Filters
+		{
+			List<Account> accountList = new ArrayList<Account>(Arrays.asList(
+										commsMgr.getAccount(Account.Type.EMAIL, EMAIL_A),
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_1),
+										commsMgr.getAccount(Account.Type.PHONE, PHONENUM_2)
+										));
+			
+			List<BlackboardArtifact> relationsShips = commsMgr.getRelationships(accountList, null);
+			assertEquals(14, relationsShips.size());
+		}
+		
+	}
 	/**
 	 * Builds CommunicationsFilter, with the given subfilters.
 	 *
@@ -672,7 +985,12 @@ public class CommunicationsManagerTest {
 	 */
 	private static CommunicationsFilter buildCommsFilter(Set<String> deviceSet, Set<Account.Type> accountTypeSet) {
 
-		if ((null == deviceSet) && (null == accountTypeSet)) {
+		return buildCommsFilter(deviceSet, accountTypeSet, null);
+	}
+
+	private static CommunicationsFilter buildCommsFilter(Set<String> deviceSet, Set<Account.Type> accountTypeSet, Set<BlackboardArtifact.ARTIFACT_TYPE> relationshipTypeSet) {
+
+		if ((null == deviceSet) && (null == accountTypeSet) && (null == relationshipTypeSet) ) {
 			return null;
 		}
 
@@ -683,10 +1001,13 @@ public class CommunicationsManagerTest {
 		if (null != accountTypeSet) {
 			commsFilter.addAndFilter(new AccountTypeFilter(accountTypeSet));
 		}
+		if (null != relationshipTypeSet) {
+			commsFilter.addAndFilter(new RelationshipTypeFilter(relationshipTypeSet));
+		}
 
 		return commsFilter;
 	}
-
+	
 	/*
 	 * Adds an Email msg artifact. Also creates Email AccountInstances, if
 	 * needed, and adds relationships between the accounts.
@@ -784,16 +1105,14 @@ public class CommunicationsManagerTest {
 	 * @param Set<String>: set of email addresses found in the input string.
 	 */
 	private static Set<String> findEmailAddresess(String input) {
-		System.out.println("findEmailAddresess: input string = " + input);
+		
 		Pattern p = Pattern.compile("\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,4}\\b",
 				Pattern.CASE_INSENSITIVE);
 		Matcher m = p.matcher(input);
 		Set<String> emailAddresses = new HashSet<String>();
 		while (m.find()) {
-			System.out.println("findEmailAddresess: founf addr = " + m.group());
 			emailAddresses.add(m.group());
 		}
-		System.out.println("findEmailAddresess: returning addresses = " + emailAddresses.toString());
 		return emailAddresses;
 	}
 
