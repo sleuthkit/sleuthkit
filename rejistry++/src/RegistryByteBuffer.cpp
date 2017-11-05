@@ -39,7 +39,10 @@
 namespace Rejistry {
 
     std::wstring_convert<std::codecvt_utf16<wchar_t, 0x10ffff, std::little_endian>, wchar_t> conv;
-
+    
+    /**
+    * Does NOT make a copy of the passed in buffer, but will free the memory when deleted 
+    */
     RegistryByteBuffer::RegistryByteBuffer(ByteBuffer * buffer) {
         if (buffer == NULL) {
             throw std::invalid_argument("Buffer must not be null.");

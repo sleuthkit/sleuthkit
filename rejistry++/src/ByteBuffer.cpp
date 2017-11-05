@@ -36,10 +36,18 @@ namespace Rejistry {
             _buffer.resize(capacity);
         }
 
+        /**
+         * Makes a copy of the passed in buffer.
+         * @throws RegistryParseException if memory can't be allocated
+         */
         ByteBuffer::ByteBuffer(const uint8_t * buf, const uint32_t length) : Buffer(length) {
             initializeBuffer(buf, length);
         }
 
+        /**
+        * Makes a copy of the passed in buffer.
+        * @throws RegistryParseException if memory can't be allocated
+        */
         ByteBuffer::ByteBuffer(const ByteArray& buf, const uint32_t length) : Buffer(length) {
             if (buf.size() > 0) {
                 initializeBuffer(&buf[0], length);
@@ -47,7 +55,14 @@ namespace Rejistry {
         }
 
         void ByteBuffer::initializeBuffer(const uint8_t * buf, const uint32_t length) {
-            _buffer.resize(length);
+            try {
+                _buffer.resize(length);
+            } 
+            catch (std::bad_alloc &e)
+            {
+                throw RegistryParseException("Cannot allocate memory for registry byte buffer.");
+            }
+
             if (buf != NULL) {
                 memcpy(&_buffer[0], buf, length);
             }
