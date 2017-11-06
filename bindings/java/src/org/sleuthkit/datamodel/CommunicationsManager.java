@@ -286,7 +286,7 @@ public class CommunicationsManager {
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT * FROM accounts WHERE account_type_id = " + getAccountTypeId(accountType)
-					+ " AND account_unique_identifier = '" + accountUniqueID + "'"); //NON-NLS
+					+ " AND account_unique_identifier = '" + normalizeAccountID(accountType, accountUniqueID) + "'"); //NON-NLS
 
 			if (rs.next()) {
 				account = new Account(rs.getInt("account_id"), accountType,
@@ -696,7 +696,7 @@ public class CommunicationsManager {
 			try {
 				connection.beginTransaction();
 				s = connection.createStatement();
-				s.execute("INSERT INTO accounts (account_type_id, account_unique_identifier) VALUES ( " + getAccountTypeId(accountType) + ", '" + accountUniqueID + "'" + ")"); //NON-NLS
+				s.execute("INSERT INTO accounts (account_type_id, account_unique_identifier) VALUES ( " + getAccountTypeId(accountType) + ", '" + normalizeAccountID(accountType, accountUniqueID) + "'" + ")"); //NON-NLS
 
 				connection.commitTransaction();
 				account = getAccount(accountType, accountUniqueID);
@@ -1283,24 +1283,17 @@ public class CommunicationsManager {
 	}
 
 	/**
-	 * Get the number of relationships found for the given account device
-	 * instance.
+	 * Get the number of relationships found for the given account.
 	 *
-	 * @param filter
-	 * @param accountDeviceInstance
+	 * @param account Account for which to get relationships.
+	 * @param filter Filters to apply.
 	 *
-	 * @return number of account relationships found on this account device
-	 *         instance
+	 * @return number of account relationships found for this account.
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public long getRelationshipsCount(CommunicationsFilter filter, AccountDeviceInstance accountDeviceInstance) throws TskCoreException {
-		long account_id = accountDeviceInstance.getAccount().getAccountId();
-
-		// Get the list of Data source objects IDs correpsonding to this DeviceID.
-		// Convert to a CSV string list that can be usein the SQL IN caluse.
-		List<Long> ds_ids = db.getDataSourceObjIds(accountDeviceInstance.getDeviceId());
-		String datasource_obj_ids_list = buildCSVString(ds_ids);
+	public long getRelationshipsCount(Account account, CommunicationsFilter filter) throws TskCoreException {
+		long account_id = account.getAccountId();
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSharedLock();
 		Statement s = null;
@@ -1312,8 +1305,7 @@ public class CommunicationsManager {
 					+ " FROM blackboard_artifacts as artifacts"
 					+ "	JOIN relationships AS relationships"
 					+ "		ON artifacts.artifact_id = relationships.communication_artifact_id"
-					+ " WHERE artifacts.data_source_obj_id IN ( " + datasource_obj_ids_list + " )"
-					+ " AND artifacts.artifact_type_id IN ( " + RELATIONSHIP_ARTIFACT_TYPE_IDS_CSV_STR + " )"
+					+ " WHERE artifacts.artifact_type_id IN ( " + RELATIONSHIP_ARTIFACT_TYPE_IDS_CSV_STR + " )"
 					+ " AND ( relationships.account1_id = " + account_id + " OR  relationships.account2_id = " + account_id + " )";
 
 			// set up applicable filters
@@ -1343,6 +1335,79 @@ public class CommunicationsManager {
 		}
 	}
 
+	/**
+	 * Get the relationships found for the given account(s).
+	 *
+	 * @param accountsList Account(s) for which to get relationships.
+	 * @param filter Filters to apply.
+	 *
+	 * @return number of account relationships found for given account(s).
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	public List<BlackboardArtifact> getRelationships(List<Account> accountsList, CommunicationsFilter filter) throws TskCoreException {
+		
+		List<Long> account_ids = new ArrayList<Long> ();
+		for (Account acct: accountsList) {
+			account_ids.add(acct.getAccountId());
+		}
+		String account_ids_list = buildCSVString(account_ids);
+		
+		CaseDbConnection connection = db.getConnection();
+		db.acquireSharedLock();
+		Statement s = null;
+		ResultSet rs = null;
+
+		try {
+			s = connection.createStatement();
+			String queryStr = 
+					"SELECT artifacts.artifact_id AS artifact_id,"
+					+ " artifacts.obj_id AS obj_id,"
+					+ " artifacts.artifact_obj_id AS artifact_obj_id,"
+					+ " artifacts.data_source_obj_id AS data_source_obj_id, "
+					+ " artifacts.artifact_type_id AS artifact_type_id, "
+					+ " artifacts.review_status_id AS review_status_id  "
+					+ " FROM blackboard_artifacts as artifacts"
+					+ "	JOIN relationships AS relationships"
+					+ "		ON artifacts.artifact_id = relationships.communication_artifact_id"
+					+ " WHERE artifacts.artifact_type_id IN ( " + RELATIONSHIP_ARTIFACT_TYPE_IDS_CSV_STR + " )"
+					+ " AND ( relationships.account1_id IN ( " + account_ids_list + " ) " + " OR  relationships.account2_id IN ( " + account_ids_list + " )" + " )";
+
+			// set up applicable filters
+			Set<String> applicableFilters = new HashSet<String>();
+			applicableFilters.add(DeviceFilter.class.getName());
+			applicableFilters.add(RelationshipTypeFilter.class.getName());
+
+			// append SQL for filters
+			String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
+			if (!filterSQL.isEmpty()) {
+				queryStr += " AND " + filterSQL;
+			}
+
+			System.out.println("RAMAN FilterSQL = " + filterSQL);
+			System.out.println("RAMAN QueryStr = " + queryStr);
+
+			rs = connection.executeQuery(s, queryStr); //NON-NLS
+			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
+			
+			while (rs.next()) {
+				BlackboardArtifact.Type bbartType = db.getArtifactType(rs.getInt("artifact_type_id"));
+				artifacts.add(new BlackboardArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"), rs.getLong("data_source_obj_id"),
+						bbartType.getTypeID(), bbartType.getTypeName(), bbartType.getDisplayName(),
+						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
+			}
+
+			return artifacts;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting relationships for account. " + ex.getMessage(), ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			db.releaseSharedLock();
+		}
+	}
+	
 	/**
 	 * Get account_type_if for the given account type
 	 *
@@ -1380,8 +1445,11 @@ public class CommunicationsManager {
 	private String normalizeAccountID(Account.Type accountType, String accountUniqueID) {
 		String normailzeAccountID = accountUniqueID;
 
-		if (accountType == Account.Type.PHONE) {
+		if (accountType.equals(Account.Type.PHONE)) {
 			normailzeAccountID = normalizePhoneNum(accountUniqueID);
+		}
+		else if (accountType.equals(Account.Type.EMAIL)) {
+			normailzeAccountID = normalizeEmailAddress(accountUniqueID);
 		}
 
 		return normailzeAccountID;
@@ -1397,6 +1465,12 @@ public class CommunicationsManager {
 		return normailzedPhoneNum;
 	}
 
+	private String normalizeEmailAddress(String emailAddress) {
+		String normailzedEmailAddr = emailAddress.toLowerCase();
+
+		return normailzedEmailAddr;
+	}
+	
 	/**
 	 * Utility method to convert a list to an CSV string
 	 */
@@ -1424,26 +1498,32 @@ public class CommunicationsManager {
 			return "";
 		}
 
+		String sqlStr = "";
+		
 		StringBuilder sqlSB = new StringBuilder();
 		boolean first = true;
 		for (SubFilter subFilter : commFilter.getAndFilters()) {
 
 			// If the filter is applicable
 			if (applicableFilters.contains(subFilter.getClass().getName())) {
-				if (first) {
-					first = false;
-				} else {
-					sqlSB.append(" AND ");
+				String subfilterSQL = subFilter.getSQL(this);
+				if (!subfilterSQL.isEmpty()) {
+					if (first) {
+						first = false;
+					} else {
+						sqlSB.append(" AND ");
+					}
+					sqlSB.append("( ");
+					sqlSB.append(subfilterSQL);
+					sqlSB.append(" )");
 				}
-				sqlSB.append("( ");
-				sqlSB.append(subFilter.getSQL(this));
-				sqlSB.append(" )");
-			} else {
-				System.out.println("RAMAN Found INAPPLICABLE filter of type = " + subFilter.getClass().getName());
-			}
+			} 
 		}
 
-		return "( " + sqlSB.toString() + " )";
+		if (!sqlSB.toString().isEmpty()) {
+			sqlStr = "( " + sqlSB.toString() + " )";
+		}
+		return sqlStr;
 	}
 
 	/**
