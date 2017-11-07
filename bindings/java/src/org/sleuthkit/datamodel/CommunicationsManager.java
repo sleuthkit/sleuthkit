@@ -1390,27 +1390,21 @@ public class CommunicationsManager {
 	 */
 	public Set<BlackboardArtifact> getCommunications(Set<AccountDeviceInstance> accountDeviceInstanceList, CommunicationsFilter filter) throws TskCoreException {
 		
-		Set<Long> account_ids = new HashSet<Long> ();
-		Set<Long> ds_ids = new HashSet<Long>();
-			
 		Map<Long, Set<Long>> accountIdToDatasourceObjIdMap = new HashMap<Long, Set<Long>>();
 		 
 		for (AccountDeviceInstance accountDeviceInstance: accountDeviceInstanceList) {
 			accountIdToDatasourceObjIdMap.put(accountDeviceInstance.getAccount().getAccountId(), 
 												new HashSet<Long>(db.getDataSourceObjIds(accountDeviceInstance.getDeviceId())) );
-			account_ids.add(accountDeviceInstance.getAccount().getAccountId());
-			ds_ids.addAll(db.getDataSourceObjIds(accountDeviceInstance.getDeviceId()));
 		}
 		
 		String adiSQLClause = "";
 		boolean firstEntry = true;
 		for (Map.Entry<Long, Set<Long>> entry : accountIdToDatasourceObjIdMap.entrySet()) {
 			long account_id = entry.getKey();
-			Set<Long> account_ids2 = new HashSet<Long> (Arrays.asList(account_id));
-
-			Set<Long> ds_ids2 = entry.getValue();
-			String account_ids_list = buildCSVString(account_ids2);
-			String datasource_obj_ids_list = buildCSVString(ds_ids2);
+			Set<Long> account_ids = new HashSet<Long> (Arrays.asList(account_id));
+			Set<Long> ds_ids = entry.getValue();
+			String account_ids_list = buildCSVString(account_ids);
+			String datasource_obj_ids_list = buildCSVString(ds_ids);
 
 			String accountClause = "( relationships.account1_id IN ( " + account_ids_list + " ) " + " OR  relationships.account2_id IN ( " + account_ids_list + " )" + " )";
 			String ds_oid_clause = "artifacts.data_source_obj_id IN ( " + datasource_obj_ids_list + " )";
