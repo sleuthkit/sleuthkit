@@ -31,6 +31,11 @@ public class AccountTypeFilter implements SubFilter {
 
 	private final Set<Account.Type> accountTypes;
 
+	/**
+	 * Constructs a AccountTypeFilter.
+	 *
+	 * @param accountTypes set of account types to filter on.
+	 */
 	public AccountTypeFilter(Set<Account.Type> accountTypes) {
 		this.accountTypes = accountTypes;
 	}
