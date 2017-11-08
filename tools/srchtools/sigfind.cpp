@@ -50,7 +50,7 @@ main(int argc, char **argv)
     TSK_OFF_T cur_offset;
     int sig_offset = 0, rel_offset = 0;
     int read_size, bs = 512;
-    daddr_t i, prev_hit;
+    TSK_OFF_T i, prev_hit;
     int sig_size = 0;
     uint8_t lit_end = 0;
     int sig_print = 0;
@@ -302,8 +302,7 @@ main(int argc, char **argv)
             break;
         }
         else if (retval == -1) {
-            fprintf(stderr, "error reading bytes %lu\n",
-                    (unsigned long) i);
+            fprintf(stderr, "error reading bytes %"PRIuOFF"\n", i);
             exit(1);
         }
 
@@ -313,10 +312,10 @@ main(int argc, char **argv)
             ((sig_size < 3) || (block[rel_offset + 2] == sig[2])) &&
             ((sig_size < 4) || (block[rel_offset + 3] == sig[3]))) {
             if (prev_hit == -1)
-                printf("Block: %lu (-)\n", (unsigned long) i);
+                printf("Block: %"PRIuOFF" (-)\n",  i);
             else
-                printf("Block: %lu (+%lu)\n", (unsigned long) i,
-                       (unsigned long) (i - prev_hit));
+                printf("Block: %"PRIuOFF" (+%"PRIuOFF")\n", i,
+                       (i - prev_hit));
 
             prev_hit = i;
         }
