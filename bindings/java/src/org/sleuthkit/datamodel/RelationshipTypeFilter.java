@@ -31,6 +31,11 @@ public class RelationshipTypeFilter implements SubFilter {
 
 	private final Set<BlackboardArtifact.ARTIFACT_TYPE> relationshipTypes;
 
+	/**
+	 * Constructs a RelationshipTypeFilter.
+	 *
+	 * @param relationshipTypes set of  artifacts types
+	 */
 	public RelationshipTypeFilter(Set<BlackboardArtifact.ARTIFACT_TYPE> relationshipTypes) {
 		this.relationshipTypes = relationshipTypes;
 	}

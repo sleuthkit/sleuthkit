@@ -33,6 +33,11 @@ public class DeviceFilter implements SubFilter {
 
 	private final Set<String> deviceIds;
 
+	/**
+	 * Constructs a device filter.
+	 *
+	 * @param deviceIds set of device Ids to filter on.
+	 */
 	public DeviceFilter(Set<String> deviceIds) {
 		this.deviceIds = deviceIds;
 	}
