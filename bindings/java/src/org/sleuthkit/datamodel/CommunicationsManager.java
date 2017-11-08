@@ -842,12 +842,12 @@ public class CommunicationsManager {
 	 *
 	 * @param accountTypeName An attribute type name.
 	 *
-	 * @return An attribute type or null if the attribute type does not exist.
+	 * @return An account type or null if the account type does not exist.
 	 *
 	 * @throws TskCoreException If an error occurs accessing the case database.
 	 *
 	 */
-	Account.Type getAccountType(String accountTypeName) throws TskCoreException {
+	public Account.Type getAccountType(String accountTypeName) throws TskCoreException {
 		if (this.typeNameToAccountTypeMap.containsKey(accountTypeName)) {
 			return this.typeNameToAccountTypeMap.get(accountTypeName);
 		}
