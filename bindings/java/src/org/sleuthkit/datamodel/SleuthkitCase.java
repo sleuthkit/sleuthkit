@@ -2457,7 +2457,7 @@ public class SleuthkitCase {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
 		ResultSet rs = null;
-		Statement s = null;
+		Statement s;
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT arts.artifact_id AS artifact_id, "
@@ -4404,11 +4404,7 @@ public class SleuthkitCase {
 			preparedStatement.setString(17, null); //extension, just set it to null
 			connection.executeUpdate(preparedStatement);
 
-			VirtualDirectory rootDirectory = new VirtualDirectory(this,
-					newObjId, newObjId, rootDirectoryName,
-					dirType, metaType, dirFlag, metaFlags, null,
-					FileKnown.UNKNOWN, parentPath);
-			return new LocalFilesDataSource(deviceId, rootDirectory, timeZone);
+			return new LocalFilesDataSource(this, newObjId, newObjId, deviceId, rootDirectoryName, dirType, metaType, dirFlag, metaFlags, timeZone, null, FileKnown.UNKNOWN, parentPath);
 
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error creating local files data source with device id %s and directory name %s", deviceId, rootDirectoryName), ex);
@@ -5351,6 +5347,8 @@ public class SleuthkitCase {
 		ResultSet rs1 = null;
 		Statement s2 = null;
 		ResultSet rs2 = null;
+		Statement s3 = null;
+		ResultSet rs3 = null;
 		try {
 			s1 = connection.createStatement();
 			rs1 = connection.executeQuery(s1, "SELECT * FROM tsk_image_info WHERE obj_id = " + id); //NON-NLS
@@ -5376,7 +5374,12 @@ public class SleuthkitCase {
 					}
 				}
 				long size = rs1.getLong("size"); //NON-NLS
-				return new Image(this, obj_id, type, ssize, name,
+				
+				s3 = connection.createStatement();
+				rs3 = connection.executeQuery(s3, "SELECT * FROM data_source_info WHERE obj_id = " + rs1.getLong("obj_id")); //NON-NLS
+				String device_id = rs3.next() ? rs3.getString("device_id") : null;
+				
+				return new Image(this, obj_id, type, device_id, ssize, name,
 						imagePaths.toArray(new String[imagePaths.size()]), tzone, md5, size);
 			} else {
 				throw new TskCoreException("No image found for id: " + id);
@@ -5384,6 +5387,8 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting Image by id, id = " + id, ex);
 		} finally {
+			closeResultSet(rs3);
+			closeStatement(s3);
 			closeResultSet(rs2);
 			closeStatement(s2);
 			closeResultSet(rs1);
@@ -6498,6 +6503,17 @@ public class SleuthkitCase {
 	public CaseDbQuery executeQuery(String query) throws TskCoreException {
 		return new CaseDbQuery(query);
 	}
+	
+	/**
+	 * Get a case database connection.
+	 * 
+	 * @return The case database connection.
+	 * 
+	 * @throws TskCoreException 
+	 */
+	CaseDbConnection getConnection() throws TskCoreException {
+		return connections.getConnection();
+	}
 
 	@Override
 	protected void finalize() throws Throwable {
@@ -7060,6 +7076,8 @@ public class SleuthkitCase {
 	 * specified tag id.
 	 *
 	 * @param contentTagID the tag id of the ContentTag to retrieve.
+	 * 
+	 * @return The content tag.
 	 *
 	 * @throws TskCoreException
 	 */
@@ -7664,7 +7682,7 @@ public class SleuthkitCase {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSharedLock();
 		ResultSet resultSet = null;
-		Statement statement = null;
+		Statement statement;
 		try {
 			connection.beginTransaction();
 			statement = connection.createStatement();
@@ -8064,11 +8082,11 @@ public class SleuthkitCase {
 	/**
 	 * An abstract base class for case database connection objects.
 	 */
-	private abstract class CaseDbConnection {
+	abstract class CaseDbConnection {
 
 		static final int SLEEP_LENGTH_IN_MILLISECONDS = 5000;
 
-		final class CreateStatement implements DbCommand {
+		private class CreateStatement implements DbCommand {
 
 			private final Connection connection;
 			private Statement statement = null;
@@ -8087,7 +8105,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		final class SetAutoCommit implements DbCommand {
+		private class SetAutoCommit implements DbCommand {
 
 			private final Connection connection;
 			private final boolean mode;
@@ -8103,7 +8121,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		final class Commit implements DbCommand {
+		private class Commit implements DbCommand {
 
 			private final Connection connection;
 
@@ -8117,7 +8135,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		final class ExecuteQuery implements DbCommand {
+		private class ExecuteQuery implements DbCommand {
 
 			private final Statement statement;
 			private final String query;
@@ -8138,7 +8156,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		final class ExecutePreparedStatementQuery implements DbCommand {
+		private class ExecutePreparedStatementQuery implements DbCommand {
 
 			private final PreparedStatement preparedStatement;
 			private ResultSet resultSet;
@@ -8157,7 +8175,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		final class ExecutePreparedStatementUpdate implements DbCommand {
+		private class ExecutePreparedStatementUpdate implements DbCommand {
 
 			private final PreparedStatement preparedStatement;
 
@@ -8171,7 +8189,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		final class ExecuteStatementUpdate implements DbCommand {
+		private class ExecuteStatementUpdate implements DbCommand {
 
 			private final Statement statement;
 			private final String updateCommand;
@@ -8187,7 +8205,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		final class ExecuteStatementUpdateGenerateKeys implements DbCommand {
+		private class ExecuteStatementUpdateGenerateKeys implements DbCommand {
 
 			private final Statement statement;
 			private final int generateKeys;
@@ -8205,7 +8223,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		final class PrepareStatement implements DbCommand {
+		private class PrepareStatement implements DbCommand {
 
 			private final Connection connection;
 			private final String input;
@@ -8226,7 +8244,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		final class PrepareStatementGenerateKeys implements DbCommand {
+		private class PrepareStatementGenerateKeys implements DbCommand {
 
 			private final Connection connection;
 			private final String input;
@@ -8440,13 +8458,13 @@ public class SleuthkitCase {
 
 		@Override
 		void executeUpdate(Statement statement, String update, int generateKeys) throws SQLException {
-			ExecuteStatementUpdateGenerateKeys executeStatementUpdateGenerateKeys = new ExecuteStatementUpdateGenerateKeys(statement, update, generateKeys);
+			CaseDbConnection.ExecuteStatementUpdateGenerateKeys executeStatementUpdateGenerateKeys = new CaseDbConnection.ExecuteStatementUpdateGenerateKeys(statement, update, generateKeys);
 			executeCommand(executeStatementUpdateGenerateKeys);
 		}
 
 		@Override
 		PreparedStatement prepareStatement(String sqlStatement, int generateKeys) throws SQLException {
-			PrepareStatementGenerateKeys prepareStatementGenerateKeys = new PrepareStatementGenerateKeys(this.getConnection(), sqlStatement, generateKeys);
+			CaseDbConnection.PrepareStatementGenerateKeys prepareStatementGenerateKeys = new CaseDbConnection.PrepareStatementGenerateKeys(this.getConnection(), sqlStatement, generateKeys);
 			executeCommand(prepareStatementGenerateKeys);
 			return prepareStatementGenerateKeys.getPreparedStatement();
 		}

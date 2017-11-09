@@ -134,44 +134,12 @@ public class VirtualDirectory extends SpecialDirectory {
 	 *
 	 * @param preserveState True if state should be included in the string
 	 *                      representation of this object.
+	 * 
+	 * @return The string representation of the virtual directory.
 	 */
 	@Override
 	public String toString(boolean preserveState) {
 		return super.toString(preserveState) + "VirtualDirectory [\t" + "]\t"; //NON-NLS
-	}
-
-	/**
-	 * Constructs a virtual directory that can be used as a parent for
-	 * unallocated space files, carved files, or derived files. A virtual
-	 * directory can also be a data source, with local/logical files as its
-	 * children. Not a file system directory.
-	 *
-	 * @param db         The case database.
-	 * @param objId      The object id of the virtual directory.
-	 * @param name       The name of the virtual directory.
-	 * @param dirType    The TSK_FS_NAME_TYPE_ENUM for the virtual directory.
-	 * @param metaType   The TSK_FS_META_TYPE_ENUM for the virtual directory.
-	 * @param dirFlag    The TSK_FS_META_TYPE_ENUM for the virtual directory.
-	 * @param metaFlags  The meta flags for the virtual directory.
-	 * @param size       The size value for the virtual directory
-	 * @param md5Hash    The MD5 hash for the virtual directory.
-	 * @param knownState The known state for the virtual directory
-	 * @param parentPath The parent path for the virtual directory, should be
-	 *                   "/" if the virtual directory is a data source.
-	 *
-	 * @deprecated Do not make subclasses outside of this package.
-	 */
-	@Deprecated
-	@SuppressWarnings("deprecation")
-	VirtualDirectory(SleuthkitCase db,
-			long objId,
-			String name,
-			TSK_FS_NAME_TYPE_ENUM dirType, TSK_FS_META_TYPE_ENUM metaType,
-			TSK_FS_NAME_FLAG_ENUM dirFlag, short metaFlags,
-			long size,
-			String md5Hash, FileKnown knownState,
-			String parentPath) {
-		this(db, objId, db.getDataSourceObjectId(objId), name, dirType, metaType, dirFlag, metaFlags, md5Hash, knownState, parentPath);
 	}
 
 }
