@@ -26,6 +26,26 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
 #include <assert.h>
 #include <string.h>
 
+// define the sized int types
+#if !defined( _MSC_VER) || ( _MSC_VER >= 1600 )
+#include <stdint.h>
+#else
+typedef unsigned __int16 uint16_t;
+typedef __int16 int16_t;
+typedef unsigned __int32 uint32_t;
+typedef __int32 int32_t;
+typedef unsigned __int64 uint64_t;
+typedef __int64 int64_t;
+
+#if defined( _WIN64 )
+typedef __int64 intmax_t;
+typedef unsigned __int64 uintmax_t;
+#else
+typedef __int32 intmax_t;
+typedef unsigned __int32 uintmax_t;
+#endif
+#endif
+
 #if defined(_MSC_VER) && !defined(__clang__)
 #  define LZFSE_INLINE __forceinline
 #  define __builtin_expect(X, Y) (X)
@@ -182,15 +202,23 @@ void lzvn_decode(lzvn_decoder_state *state) {
 #endif
   size_t src_len = state->src_end - state->src;
   size_t dst_len = state->dst_end - state->dst;
-  if (src_len == 0 || dst_len == 0)
-    return; // empty buffer
 
-  const unsigned char *src_ptr = state->src;
-  unsigned char *dst_ptr = state->dst;
-  size_t D = state->d_prev;
+  const unsigned char *src_ptr = NULL;
+  unsigned char *dst_ptr = NULL;
+  size_t D = NULL;
   size_t M;
   size_t L;
   size_t opc_len;
+  unsigned char opc = 0;
+  uint16_t opc23 = 0;
+  size_t i;
+
+  if (src_len == 0 || dst_len == 0)
+    return; // empty buffer
+
+  src_ptr = state->src;
+  dst_ptr = state->dst;
+  D = state->d_prev;
 
   // Do we have a partially expanded match saved in state?
   if (state->L != 0 || state->M != 0) {
@@ -206,7 +234,7 @@ void lzvn_decode(lzvn_decoder_state *state) {
     goto copy_literal_and_match;
   }
 
-  unsigned char opc = src_ptr[0];
+  opc = src_ptr[0];
 
 #if HAVE_LABELS_AS_VALUES
   goto *opc_tbl[opc];
@@ -413,7 +441,7 @@ med_d:
   L = (size_t)extract(opc, 3, 2);
   if (src_len <= opc_len + L)
     return; // source truncated
-  uint16_t opc23 = load2(&src_ptr[1]);
+  opc23 = load2(&src_ptr[1]);
   M = (size_t)((extract(opc, 0, 3) << 2 | extract(opc23, 0, 2)) + 3);
   D = (size_t)extract(opc23, 2, 14);
   goto copy_literal_and_match;
@@ -504,14 +532,12 @@ copy_literal_and_match:
     //  byte-by-byte copy of the literal. This is slow, but it can only ever
     //  happen near the very end of a buffer, so it is not an important case to
     //  optimize.
-    size_t i;
     for (i = 0; i < L; ++i)
       dst_ptr[i] = src_ptr[i];
   } else {
     // Destination truncated: fill DST, and store partial match
 
     // Copy partial literal
-    size_t i;
     for (i = 0; i < dst_len; ++i)
       dst_ptr[i] = src_ptr[i];
     // Save state
@@ -549,21 +575,18 @@ copy_match:
     //  copies. The last of these may slop over the intended end of
     //  the match, but this is OK because we know we have a safety bound
     //  away from the end of the destination buffer.
-    size_t i;
     for (i = 0; i < M; i += 8)
       store8(&dst_ptr[i], load8(&dst_ptr[i - D]));
   } else if (M <= dst_len) {
     //  Either the match distance is too small, or we are too close to
     //  the end of the buffer to safely use eight byte copies. Fall back
     //  on a simple byte-by-byte implementation.
-    size_t i;
     for (i = 0; i < M; ++i)
       dst_ptr[i] = dst_ptr[i - D];
   } else {
     // Destination truncated: fill DST, and store partial match
 
     // Copy partial match
-    size_t i;
     for (i = 0; i < dst_len; ++i)
       dst_ptr[i] = dst_ptr[i - D];
     // Save state
@@ -697,21 +720,18 @@ copy_literal:
     //  We are not near the end of the source or destination buffers; thus
     //  we can safely copy the literal using wide copies, without worrying
     //  about reading or writing past the end of either buffer.
-    size_t i;
     for (i = 0; i < L; i += 8)
       store8(&dst_ptr[i], load8(&src_ptr[i]));
   } else if (L <= dst_len) {
     //  We are too close to the end of either the input or output stream
     //  to be able to safely use an eight-byte copy. Instead we copy the
     //  literal byte-by-byte.
-    size_t i;
     for (i = 0; i < L; ++i)
       dst_ptr[i] = src_ptr[i];
   } else {
     // Destination truncated: fill DST, and store partial match
 
     // Copy partial literal
-    size_t i;
     for (i = 0; i < dst_len; ++i)
       dst_ptr[i] = src_ptr[i];
     // Save state

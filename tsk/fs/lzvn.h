@@ -2,7 +2,10 @@
 #define LZVN_H
 
 #include <stddef.h>
+
+#ifndef _MSC_VER
 #include <stdint.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
