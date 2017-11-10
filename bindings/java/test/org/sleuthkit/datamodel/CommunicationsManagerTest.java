@@ -94,6 +94,7 @@ import static org.junit.Assert.*;
  * -- Email Account B/DS1: DS1. verify count
  * -- Email Account B/DS1: DS1 & DS2. verify count (same as previous)
  * -- Email Account C/DS1: DS1 & DS2. verify count (same as previous)
+ *
  * -- Phone2/DS1: verify count
  * -- Phone2/DS2. verify count, should be 0
  * -- Phone2/DS1: DS1 & DS2. verify count
@@ -111,6 +112,14 @@ import static org.junit.Assert.*;
  * -- Email Account B/DS1: no filters.
  * -- Email Accounts A/DS1 & C/DS1: no filters.
  * -- Email Accounts A/DS1 B/DS1 & C/DS1: no filters
+ * 
+ * -- Email Accounts A/DS1 B/DS1 & C/DS1: Filter on messages before Jan 01, 2017
+ * -- Email Accounts A/DS1 B/DS1 & C/DS1: Filter on messages after Jan 01, 2017
+ * -- Email Accounts A/DS1 B/DS1 & C/DS1: Filter on messages before Mar 01, 2017
+ * -- Email Accounts A/DS1 B/DS1 & C/DS1: Filter on messages before Jul 01, 2017
+ * -- Email Accounts A/DS1 B/DS1 & C/DS1: Filter on messages between Feb 01, 2017 & Aug 01, 2017
+ * -- Email Accounts A/DS1 B/DS1 & C/DS1: Filter on messages after Jul 01, 2017
+ * 
  * -- Phone 1/DS2: No filters
  * -- Phone 1/DS2: filter on CallLogs
  * -- Phone 1/DS2: filter on Contacts
@@ -120,8 +129,17 @@ import static org.junit.Assert.*;
  * -- Phone 1/DS2 & Phone2/DS1: filter on Messages & CallLogs
  * -- Phone 2/DS1 3/DS1 4/DS1 & 5/DS1:
  * -- Phone 2/DS1 3/DS1 4/DS1 & 5/DS1: filter on Messages
+ * 
  * -- Phone 1/DS2, 2/DS2, 3/DS2, 4/DS2, 5/DS2
  * -- Phone 1/DS2, 2/DS2, 3/DS2, 4/DS2, 5/DS2:  filter on CallLogs & Messages
+ * -- Phone 1/DS2, 2/DS2, 3/DS2, 4/DS2, 5/DS2:  filter on CallLogs & Messages before Jan 01 2017
+ * -- Phone 1/DS2, 2/DS2, 3/DS2, 4/DS2, 5/DS2:  filter on CallLogs & Messages After Jan 01 2017
+ * -- Phone 1/DS2, 2/DS2, 3/DS2, 4/DS2, 5/DS2:  filter on CallLogs & Messages before Mar 01 2017
+ * -- Phone 1/DS2, 2/DS2, 3/DS2, 4/DS2, 5/DS2:  filter on CallLogs & Messages After Mar 01 2017
+ * -- Phone 1/DS2, 2/DS2, 3/DS2, 4/DS2, 5/DS2:  filter on CallLogs & Messages before Jul 01 2017
+ * -- Phone 1/DS2, 2/DS2, 3/DS2, 4/DS2, 5/DS2:  filter on CallLogs & Messages after Jul 01 2017
+ * -- Phone 1/DS2, 2/DS2, 3/DS2, 4/DS2, 5/DS2:  filter on CallLogs & Messages between Feb 01 2017 & Aug 01, 2017
+ * 
  * -- Email Account A/DS1, Phone 1/DS2, Phone 2/DS1: No filters
  * -- 
  *
@@ -160,12 +178,19 @@ public class CommunicationsManagerTest {
 	private static final String NAME_4 = "Iron Man";
 	private static final String NAME_5 = "Wonder Woman";
 
-	private static final long JAN_1_2107 = 1483272732;
-	private static final long MAR_1_2107 = 1488370332;
-	private static final long JUL_1_2107 = 1498922115;
+	private static final long JAN_1_2017 = 1483228800;  // Jan 01 2017, 12:00:00 AM GMT
+	private static final long MAR_1_2017 = 1488326400;
+	private static final long JUL_1_2017 = 1498867200;
 
+	private static final long FEB_1_2017 = 1485907200;
+	private static final long AUG_1_2017 = 1501545600;
+	private static final long DEC_31_2017 = 1514678400;
+	private static final long DEC_31_2016 = 1483142400;
+	
 	private static String dbPath = null;
 
+	private static List<BlackboardArtifact> emailMessages = new ArrayList<BlackboardArtifact>();
+	
 	public CommunicationsManagerTest() {
 	}
 
@@ -204,36 +229,40 @@ public class CommunicationsManagerTest {
 				AccountInstance deviceAccount_1 = caseDB.getCommunicationsManager().createAccountInstance(Account.Type.DEVICE, DS1_DEVICEID, MODULE_NAME, rootDirectory_1);
 
 				// Create some email message artifacts
-				addEmailMsgArtifact(EMAIL_A, EMAIL_B, "", "",
-						JAN_1_2107, "",
+				BlackboardArtifact emailMsg = addEmailMsgArtifact(EMAIL_A, EMAIL_B, "", "",
+						JAN_1_2017, "",
 						"Text Body", "HTML Body", "RTF Body",
 						"Hey There",
 						1001,
 						sourceContent_1);
+				emailMessages.add(emailMsg);
 
-				addEmailMsgArtifact(EMAIL_A, EMAIL_B + "; " + EMAIL_C, "", "",
-						MAR_1_2107, "",
+				emailMsg = addEmailMsgArtifact(EMAIL_A, EMAIL_B + "; " + EMAIL_C, "", "",
+						MAR_1_2017, "",
 						"Message2 Message2 Message2", "", "",
 						"You've won a million dollars",
 						1002,
 						sourceContent_1);
+				emailMessages.add(emailMsg);
 
-				addEmailMsgArtifact(EMAIL_C, EMAIL_A, "", "",
-						JUL_1_2107, "",
+				
+				emailMsg = addEmailMsgArtifact(EMAIL_C, EMAIL_A, "", "",
+						JUL_1_2017, "",
 						"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua", "", "",
 						"Faux Latin",
 						1003,
 						sourceContent_1);
+				emailMessages.add(emailMsg);
 
 				// Add some Call logs
-				addCalllogArtifact(deviceAccount_1, NAME_2, PHONENUM_2, JAN_1_2107, 100, "Outgoing", sourceContent_1);
-				addCalllogArtifact(deviceAccount_1, NAME_2, PHONENUM_2, MAR_1_2107, 57, "Incoming", sourceContent_1);
-				addCalllogArtifact(deviceAccount_1, NAME_3, PHONENUM_3, JUL_1_2107, 57, "Incoming", sourceContent_1);
+				addCalllogArtifact(deviceAccount_1, NAME_2, PHONENUM_2, JAN_1_2017, 100, "Outgoing", sourceContent_1);
+				addCalllogArtifact(deviceAccount_1, NAME_2, PHONENUM_2, MAR_1_2017, 57, "Incoming", sourceContent_1);
+				addCalllogArtifact(deviceAccount_1, NAME_3, PHONENUM_3, JUL_1_2017, 57, "Incoming", sourceContent_1);
 
 				// Add some Messages 
-				addMessageArtifact(deviceAccount_1, PHONENUM_2, JAN_1_2107, "Outgoing", "Hey there", "This is a SMS", sourceContent_1);
-				addMessageArtifact(deviceAccount_1, PHONENUM_2, MAR_1_2107, "Incoming", "", "Im going to be home late :(", sourceContent_1);
-				addMessageArtifact(deviceAccount_1, PHONENUM_3, JUL_1_2107, "Incoming", "New Year", "We wish you a Happy New Year", sourceContent_1);
+				addMessageArtifact(deviceAccount_1, PHONENUM_2, JAN_1_2017, "Outgoing", "Hey there", "This is a SMS", sourceContent_1);
+				addMessageArtifact(deviceAccount_1, PHONENUM_2, MAR_1_2017, "Incoming", "", "Im going to be home late :(", sourceContent_1);
+				addMessageArtifact(deviceAccount_1, PHONENUM_3, JUL_1_2017, "Incoming", "New Year", "We wish you a Happy New Year", sourceContent_1);
 
 				// Add some contacts
 				addContactArtifact(deviceAccount_1, NAME_2, PHONENUM_2, "", sourceContent_1);
@@ -254,9 +283,9 @@ public class CommunicationsManagerTest {
 				addCalllogArtifact(deviceAccount_2, NAME_4, PHONENUM_4, 1498922115, 57, "Incoming", sourceContent_2);
 
 				// Add some Messages 
-				addMessageArtifact(deviceAccount_2, PHONENUM_2, JAN_1_2107, "Outgoing", "Ashley", "I must have the wrong number. Is this not Ashton?", sourceContent_2);
-				addMessageArtifact(deviceAccount_2, PHONENUM_2, MAR_1_2107, "Incoming", "", "The darned train arrived almost an hour late", sourceContent_2);
-				addMessageArtifact(deviceAccount_2, PHONENUM_4, JUL_1_2107, "Incoming", "List", "Milk, tomatoes, mustard, toohthpaste.", sourceContent_2);
+				addMessageArtifact(deviceAccount_2, PHONENUM_2, JAN_1_2017, "Outgoing", "Ashley", "I must have the wrong number. Is this not Ashton?", sourceContent_2);
+				addMessageArtifact(deviceAccount_2, PHONENUM_2, MAR_1_2017, "Incoming", "", "The darned train arrived almost an hour late", sourceContent_2);
+				addMessageArtifact(deviceAccount_2, PHONENUM_4, JUL_1_2017, "Incoming", "List", "Milk, tomatoes, mustard, toohthpaste.", sourceContent_2);
 
 				// Add some contacts
 				addContactArtifact(deviceAccount_2, NAME_2, PHONENUM_2, "", sourceContent_2);
@@ -386,9 +415,9 @@ public class CommunicationsManagerTest {
 	}
 
 	@Test
-	public void deviceAndAccounttypeFilterTests() throws TskCoreException {
+	public void getAccountDeviceInstanceWithFilterTests() throws TskCoreException {
 
-		System.out.println("CommsMgr API - Device & AccountType filters test");
+		System.out.println("CommsMgr API - getAccountDeviceInstance With Filters tests");
 
 		// Test Device & AccountType filter - DS1 & EMAIL
 		{
@@ -479,6 +508,34 @@ public class CommunicationsManagerTest {
 			assertEquals(9, accountDeviceInstances.size());
 		}
 
+		// Test Device & AccountType filter - DS1 or DS2 or DS3 & Phone or Email, Date Range: communications on or BEFORE Dec 31, 2016
+		{
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					new HashSet<String>(Arrays.asList(DS1_DEVICEID, DS2_DEVICEID, DS3_DEVICEID)),
+					new HashSet<Account.Type>(Arrays.asList(Account.Type.PHONE, Account.Type.EMAIL)),
+					null,
+					0, DEC_31_2016);
+
+			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
+			assertEquals(0, accountDeviceInstances.size());
+		}
+
+		
+		// Test Device & AccountType filter - DS1 or DS2 or DS3 & Phone or Email, Date Range: communications on or After Jul 1, 2017
+		{
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					new HashSet<String>(Arrays.asList(DS1_DEVICEID, DS2_DEVICEID, DS3_DEVICEID)),
+					new HashSet<Account.Type>(Arrays.asList(Account.Type.PHONE, Account.Type.EMAIL)),
+					null,
+					JUL_1_2017, 0);
+
+			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
+			
+			// TBD EUR-884: we expect 4 account device instances here but get 5. Phone 3/DS2 is returned even though it has a Contact entry and no coummincations,
+			assertEquals(5, accountDeviceInstances.size());
+		}
+		
+		
 		// Test Device & AccountType filter - DS1 or DS2 or DS3 & Phone or Email
 		{
 			CommunicationsFilter commsFilter = buildCommsFilter(
@@ -488,7 +545,8 @@ public class CommunicationsManagerTest {
 			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
 			assertEquals(9, accountDeviceInstances.size());
 		}
-
+		
+		
 	}
 
 	@Test
@@ -749,6 +807,117 @@ public class CommunicationsManagerTest {
 			assertEquals(3, communications.size());
 		}
 
+		
+		// Communications for Email Account A/DS1 B/DS1 & C/DS1: Filter on messages  on or before Jan 1, 2017
+		{
+			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.EMAIL, EMAIL_A), DS1_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.EMAIL, EMAIL_B), DS1_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.EMAIL, EMAIL_C), DS1_DEVICEID)
+			));
+
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					null,
+					null, 
+					null,
+					0, JAN_1_2017 );
+
+			
+			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
+			assertEquals(1, communications.size());
+		}
+		
+		// Communications for Email Account A/DS1 B/DS1 & C/DS1: Filter on messages on or after Jan 1, 2017
+		{
+			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.EMAIL, EMAIL_A), DS1_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.EMAIL, EMAIL_B), DS1_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.EMAIL, EMAIL_C), DS1_DEVICEID)
+			));
+
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					null,
+					null, 
+					null,
+					JAN_1_2017, 0);
+
+			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
+			assertEquals(3, communications.size());
+		}
+		
+		// Communications for Email Account A/DS1 B/DS1 & C/DS1: Filter on messages on or before Mar 1, 2017
+		{
+			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.EMAIL, EMAIL_A), DS1_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.EMAIL, EMAIL_B), DS1_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.EMAIL, EMAIL_C), DS1_DEVICEID)
+			));
+
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					null,
+					null, 
+					null,
+					0, MAR_1_2017);
+
+			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
+			assertEquals(2, communications.size());
+		}
+		
+		// Communications for Email Account A/DS1 B/DS1 & C/DS1: Filter on messages on or before Jul 1, 2017
+		{
+			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.EMAIL, EMAIL_A), DS1_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.EMAIL, EMAIL_B), DS1_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.EMAIL, EMAIL_C), DS1_DEVICEID)
+			));
+
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					null,
+					null, 
+					null,
+					0, JUL_1_2017);
+
+			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
+			assertEquals(3, communications.size());
+		}
+		
+		// Communications for Email Account A/DS1 B/DS1 & C/DS1: Filter on messages between  Feb 1, 2017 & Aug 01 2017
+		{
+			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.EMAIL, EMAIL_A), DS1_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.EMAIL, EMAIL_B), DS1_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.EMAIL, EMAIL_C), DS1_DEVICEID)
+			));
+
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					null,
+					null, 
+					null,
+					FEB_1_2017, AUG_1_2017);
+
+			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
+			assertEquals(2, communications.size());
+		}
+		
+		// Communications for Email Account A/DS1 B/DS1 & C/DS1: Filter on messages on or After  Jul 1, 2017 
+		{
+			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.EMAIL, EMAIL_A), DS1_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.EMAIL, EMAIL_B), DS1_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.EMAIL, EMAIL_C), DS1_DEVICEID)
+			));
+
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					null,
+					null, 
+					null,
+					JUL_1_2017, 0);
+
+			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
+			assertEquals(1, communications.size());
+		}
+		
+		
 		// Communications for Phone 1/DS2: No Filters
 		{
 			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
@@ -923,6 +1092,167 @@ public class CommunicationsManagerTest {
 			assertEquals(6, communications.size());
 		}
 
+		// Communications for Phone 1/DS2 2/DS2 3/DS2 4/DS2 & 5/DS2: Filter on Calllogs, Messages, on or before Jan 01, 2017
+		{
+			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_1), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_2), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_3), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_4), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_5), DS2_DEVICEID)
+			));
+
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					null,
+					null,
+					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG, BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE)),
+					0, JAN_1_2017);
+
+			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
+			assertEquals(2, communications.size());
+		}
+		
+		// Communications for Phone 1/DS2 2/DS2 3/DS2 4/DS2 & 5/DS2: Filter on Calllogs, Messages, on or after Jan 01, 2017
+		{
+			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_1), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_2), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_3), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_4), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_5), DS2_DEVICEID)
+			));
+
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					null,
+					null,
+					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG, BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE)),
+					JAN_1_2017, 0);
+
+			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
+			assertEquals(6, communications.size());
+		}
+		
+		// Communications for Phone 1/DS2 2/DS2 3/DS2 4/DS2 & 5/DS2: Filter on Calllogs, Messages, on or before Mar 01, 2017
+		{
+			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_1), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_2), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_3), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_4), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_5), DS2_DEVICEID)
+			));
+
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					null,
+					null,
+					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG, BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE)),
+					0, MAR_1_2017);
+
+			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
+			assertEquals(4, communications.size());
+		}
+		
+		// Communications for Phone 1/DS2 2/DS2 3/DS2 4/DS2 & 5/DS2: Filter on Calllogs, Messages, on or after Mar 01, 2017
+		{
+			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_1), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_2), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_3), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_4), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_5), DS2_DEVICEID)
+			));
+
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					null,
+					null,
+					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG, BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE)),
+					MAR_1_2017, 0);
+
+			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
+			assertEquals(4, communications.size());
+		}
+
+		
+		// Communications for Phone 1/DS2 2/DS2 3/DS2 4/DS2 & 5/DS2: Filter on Calllogs, Messages, on or after Mar 01, 2017
+		{
+			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_1), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_2), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_3), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_4), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_5), DS2_DEVICEID)
+			));
+
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					null,
+					null,
+					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG, BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE)),
+					MAR_1_2017, 0);
+
+			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
+			assertEquals(4, communications.size());
+		}
+		
+		// Communications for Phone 1/DS2 2/DS2 3/DS2 4/DS2 & 5/DS2: Filter on Calllogs, Messages, on or before Jul 01, 2017
+		{
+			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_1), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_2), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_3), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_4), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_5), DS2_DEVICEID)
+			));
+
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					null,
+					null,
+					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG, BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE)),
+					0, JUL_1_2017);
+
+			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
+			assertEquals(6, communications.size());
+		}
+		
+		// Communications for Phone 1/DS2 2/DS2 3/DS2 4/DS2 & 5/DS2: Filter on Calllogs, Messages, on or after Jul 01, 2017
+		{
+			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_1), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_2), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_3), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_4), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_5), DS2_DEVICEID)
+			));
+
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					null,
+					null,
+					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG, BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE)),
+					JUL_1_2017, 0);
+
+			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
+			assertEquals(2, communications.size());
+		}
+		
+		// Communications for Phone 1/DS2 2/DS2 3/DS2 4/DS2 & 5/DS2: Filter on Calllogs, Messages, between Feb 01 2017, and Aug 01, 2017
+		{
+			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_1), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_2), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_3), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_4), DS2_DEVICEID),
+					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_5), DS2_DEVICEID)
+			));
+
+			CommunicationsFilter commsFilter = buildCommsFilter(
+					null,
+					null,
+					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG, BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE)),
+					FEB_1_2017, AUG_1_2017);
+
+			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
+			assertEquals(4, communications.size());
+		}
+		
 		// Communications for Email A/DS1, Phone 1/DS2  2/DS1: No Filters
 		{
 			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
@@ -931,25 +1261,17 @@ public class CommunicationsManagerTest {
 					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_2), DS1_DEVICEID)
 			));
 
-			List<Account> accountList = new ArrayList<Account>(Arrays.asList(
-					commsMgr.getAccount(Account.Type.EMAIL, EMAIL_A),
-					commsMgr.getAccount(Account.Type.PHONE, PHONENUM_1),
-					commsMgr.getAccount(Account.Type.PHONE, PHONENUM_2)
-			));
-
 			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, null);
-
-			// RAMAN TBD: Expecting 8 here - the API is counting accounts accross all DataSources
 			assertEquals(8, communications.size());
 		}
 
 	}
 
 	/**
-	 * Builds CommunicationsFilter, with the given subfilters.
+	 * Builds CommunicationsFilter
 	 *
-	 * @param deviceSet
-	 * @param accountTypeSet
+	 * @param deviceSet - set of device ids for DeviceFilter
+	 * @param accountTypeSet - set of account types for AccountTypefilter
 	 *
 	 * @return
 	 */
@@ -958,9 +1280,34 @@ public class CommunicationsManagerTest {
 		return buildCommsFilter(deviceSet, accountTypeSet, null);
 	}
 
+	/**
+	 * Builds CommunicationsFilter.
+	 *
+	 * @param deviceSet - set of device ids for DeviceFilter
+	 * @param accountTypeSet - set of account types for AccountTypefilter
+	 * @param relationshipTypeSet - set of blackboard artifact types for relationship filters
+	 *
+	 * @return
+	 */
+	
 	private static CommunicationsFilter buildCommsFilter(Set<String> deviceSet, Set<Account.Type> accountTypeSet, Set<BlackboardArtifact.ARTIFACT_TYPE> relationshipTypeSet) {
+		return buildCommsFilter(deviceSet, accountTypeSet, relationshipTypeSet, 0, 0);
+	}
+	
+	/**
+	 * Builds CommunicationsFilter.
+	 *
+	 * @param deviceSet - set of device ids for DeviceFilter
+	 * @param accountTypeSet - set of account types for AccountTypefilter
+	 * @param relationshipTypeSet - set of blackboard artifact types for relationship filters
+	 * @param startDate - start date for DateRangeFilter
+	 * @param endDate - end date for DateRangeFilter
+	 *
+	 * @return
+	 */
+	private static CommunicationsFilter buildCommsFilter(Set<String> deviceSet, Set<Account.Type> accountTypeSet, Set<BlackboardArtifact.ARTIFACT_TYPE> relationshipTypeSet, long startDate, long endDate) {
 
-		if ((null == deviceSet) && (null == accountTypeSet) && (null == relationshipTypeSet)) {
+		if ((null == deviceSet) && (null == accountTypeSet) && (null == relationshipTypeSet) && (0 == startDate) && (0 == endDate)) {
 			return null;
 		}
 
@@ -974,7 +1321,10 @@ public class CommunicationsManagerTest {
 		if (null != relationshipTypeSet) {
 			commsFilter.addAndFilter(new RelationshipTypeFilter(relationshipTypeSet));
 		}
-
+		if ( (0 != startDate) || (0 != endDate) ) {
+			commsFilter.addAndFilter(new DateRangeFilter(startDate, endDate));
+		}
+		
 		return commsFilter;
 	}
 
@@ -1044,7 +1394,7 @@ public class CommunicationsManagerTest {
 			bbart.addAttributes(bbattributes);
 
 			// Add account relationships
-			commsMgr.addRelationships(senderAccountInstance, recipientAccountInstances, bbart);
+			commsMgr.addRelationships(senderAccountInstance, recipientAccountInstances, bbart, dateSent);
 
 		} catch (TskCoreException ex) {
 			LOGGER.log(Level.SEVERE, "Failed to add Email artifact", ex);
@@ -1112,7 +1462,7 @@ public class CommunicationsManagerTest {
 			accountInstanceList.add(phoneNumAccount);
 
 			//  Create a Call Log relationship
-			commsMgr.addRelationships(deviceAccount, accountInstanceList, bbart);
+			commsMgr.addRelationships(deviceAccount, accountInstanceList, bbart, date);
 
 		} catch (TskCoreException ex) {
 			LOGGER.log(Level.SEVERE, "Unable to add CallLog artifact ", ex); //NON-NLS
@@ -1143,7 +1493,7 @@ public class CommunicationsManagerTest {
 			accountInstanceList.add(phoneNumAccount);
 
 			//  Create a Message relationship
-			commsMgr.addRelationships(deviceAccount, accountInstanceList, bbart);
+			commsMgr.addRelationships(deviceAccount, accountInstanceList, bbart, date);
 
 		} catch (TskCoreException ex) {
 			LOGGER.log(Level.SEVERE, "Unable to add TSK_MESSAGE artifact ", ex); //NON-NLS
@@ -1166,7 +1516,7 @@ public class CommunicationsManagerTest {
 			accountInstanceList.add(phoneNumAccount);
 
 			//  Create a CONTACT relationship
-			commsMgr.addRelationships(deviceAccount, accountInstanceList, bbart);
+			commsMgr.addRelationships(deviceAccount, accountInstanceList, bbart, 0);
 
 		} catch (TskCoreException ex) {
 			LOGGER.log(Level.SEVERE, "Unable to add Contact artifact ", ex); //NON-NLS
