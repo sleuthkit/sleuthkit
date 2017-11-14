@@ -78,7 +78,7 @@ public class AccountTypeFilter implements SubFilter {
 			type_ids.add(commsManager.getAccountTypeId(accountType));
 		}
 
-		String account_type_ids_list = CommunicationsManager.buildCSVString(type_ids);
+		String account_type_ids_list = StringUtils.buildCSVString(type_ids);
 		if (!account_type_ids_list.isEmpty()) {
 			sql = " account_types.account_type_id IN ( " + account_type_ids_list + " )";
 		}

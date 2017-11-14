@@ -22,18 +22,18 @@ import java.util.Collection;
 
 /**
  * An instance of an account. An account may be found in multiple content
- * objects, so there can be up to one account instance per content object, 
- * and there is a 1:N relationship between Account objects and AccountInstance
- * objects. Currently, there is an underlying TSK_ACCOUNT artifact for every 
- * account instance. This may change in the future.
+ objects, so there can be up to one account instance per content object, 
+ and there is a 1:N relationship between Account objects and AccountFileInstance
+ objects. Currently, there is an underlying TSK_ACCOUNT artifact for every 
+ account instance. This may change in the future.
  */
-public class AccountInstance {
+public class AccountFileInstance {
 
 	private final SleuthkitCase sleuthkitCase;
 	private final BlackboardArtifact artifact; 
 	private final Account account;
 
-	AccountInstance(SleuthkitCase sleuthkitCase, BlackboardArtifact artifact, Account account) throws TskCoreException {
+	AccountFileInstance(SleuthkitCase sleuthkitCase, BlackboardArtifact artifact, Account account) throws TskCoreException {
 		this.sleuthkitCase = sleuthkitCase;
 		this.artifact = artifact;
 		this.account = account;

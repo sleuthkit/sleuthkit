@@ -78,7 +78,7 @@ public class RelationshipTypeFilter implements SubFilter {
 			type_ids.add(artType.getTypeID());
 		}
 
-		String artifact_type_ids_list = CommunicationsManager.buildCSVString(type_ids);
+		String artifact_type_ids_list = StringUtils.buildCSVString(type_ids);
 		if (!artifact_type_ids_list.isEmpty()) {
 			sql = " artifacts.artifact_type_id IN ( " + artifact_type_ids_list + " )";
 		}
