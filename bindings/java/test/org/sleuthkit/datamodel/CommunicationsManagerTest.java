@@ -225,8 +225,8 @@ public class CommunicationsManagerTest {
 				VirtualDirectory rootDirectory_1 = dataSource_1.getRootDirectory();
 				AbstractFile sourceContent_1 = rootDirectory_1;	// Let the root dorectory be the source for all artifacts
 
-				// Create a Device accocunt for Device1
-				AccountInstance deviceAccount_1 = caseDB.getCommunicationsManager().createAccountInstance(Account.Type.DEVICE, DS1_DEVICEID, MODULE_NAME, rootDirectory_1);
+				// Create a Device account for Device1
+				AccountFileInstance deviceAccount_1 = caseDB.getCommunicationsManager().createAccountFileInstance(Account.Type.DEVICE, DS1_DEVICEID, MODULE_NAME, rootDirectory_1);
 
 				// Create some email message artifacts
 				BlackboardArtifact emailMsg = addEmailMsgArtifact(EMAIL_A, EMAIL_B, "", "",
@@ -275,7 +275,7 @@ public class CommunicationsManagerTest {
 				AbstractFile sourceContent_2 = rootDirectory_2;	// Let the root directory be the source for all artifacts
 
 				// Create a Device accocunt for Device1
-				AccountInstance deviceAccount_2 = caseDB.getCommunicationsManager().createAccountInstance(Account.Type.DEVICE, DS2_DEVICEID, MODULE_NAME, sourceContent_2);
+				AccountFileInstance deviceAccount_2 = caseDB.getCommunicationsManager().createAccountFileInstance(Account.Type.DEVICE, DS2_DEVICEID, MODULE_NAME, sourceContent_2);
 
 				// Add some Call logs
 				addCalllogArtifact(deviceAccount_2, NAME_1, PHONENUM_1, 1483272732, 100, "Outgoing", sourceContent_2);
@@ -1344,11 +1344,11 @@ public class CommunicationsManagerTest {
 		String senderAddress;
 		senderAddressList.addAll(findEmailAddresess(fromAddr));
 
-		AccountInstance senderAccountInstance = null;
+		AccountFileInstance senderAccountInstance = null;
 		if (senderAddressList.size() == 1) {
 			senderAddress = senderAddressList.get(0);
 			try {
-				senderAccountInstance = commsMgr.createAccountInstance(Account.Type.EMAIL, senderAddress, MODULE_NAME, abstractFile);
+				senderAccountInstance = commsMgr.createAccountFileInstance(Account.Type.EMAIL, senderAddress, MODULE_NAME, abstractFile);
 			} catch (TskCoreException ex) {
 				LOGGER.log(Level.WARNING, "Failed to create account for email address  " + senderAddress, ex); //NON-NLS
 			}
@@ -1361,11 +1361,11 @@ public class CommunicationsManagerTest {
 		recipientAddresses.addAll(findEmailAddresess(ccList));
 		recipientAddresses.addAll(findEmailAddresess(bccList));
 
-		List<AccountInstance> recipientAccountInstances = new ArrayList<AccountInstance>();
+		List<AccountFileInstance> recipientAccountInstances = new ArrayList<AccountFileInstance>();
 		for (String addr : recipientAddresses) {
 			try {
-				AccountInstance recipientAccountInstance
-						= commsMgr.createAccountInstance(Account.Type.EMAIL, addr,
+				AccountFileInstance recipientAccountInstance
+						= commsMgr.createAccountFileInstance(Account.Type.EMAIL, addr,
 								MODULE_NAME, abstractFile);
 				recipientAccountInstances.add(recipientAccountInstance);
 			} catch (TskCoreException ex) {
@@ -1442,7 +1442,7 @@ public class CommunicationsManagerTest {
 	 * Phone account AccountInstances, if needed, and adds relationships between
 	 * the accounts.
 	 */
-	private static void addCalllogArtifact(AccountInstance deviceAccount, String name, String phoneNumber, long date, long duration, String direction, AbstractFile abstractFile) {
+	private static void addCalllogArtifact(AccountFileInstance deviceAccount, String name, String phoneNumber, long date, long duration, String direction, AbstractFile abstractFile) {
 
 		try {
 			BlackboardArtifact bbart = abstractFile.newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG); //create a call log and then add attributes from result set.
@@ -1457,8 +1457,8 @@ public class CommunicationsManagerTest {
 			bbart.addAttribute(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME, MODULE_NAME, name));
 
 			// Create a phone number account for the phone number
-			AccountInstance phoneNumAccount = commsMgr.createAccountInstance(Account.Type.PHONE, phoneNumber, MODULE_NAME, abstractFile);
-			List<AccountInstance> accountInstanceList = new ArrayList<AccountInstance>();
+			AccountFileInstance phoneNumAccount = commsMgr.createAccountFileInstance(Account.Type.PHONE, phoneNumber, MODULE_NAME, abstractFile);
+			List<AccountFileInstance> accountInstanceList = new ArrayList<AccountFileInstance>();
 			accountInstanceList.add(phoneNumAccount);
 
 			//  Create a Call Log relationship
@@ -1469,7 +1469,7 @@ public class CommunicationsManagerTest {
 		}
 	}
 
-	private static void addMessageArtifact(AccountInstance deviceAccount, String phoneNumber, long date, String direction, String subject, String message, AbstractFile abstractFile) {
+	private static void addMessageArtifact(AccountFileInstance deviceAccount, String phoneNumber, long date, String direction, String subject, String message, AbstractFile abstractFile) {
 
 		try {
 			BlackboardArtifact bbart = abstractFile.newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE); //create Message artifact and then add attributes from result set.
@@ -1488,8 +1488,8 @@ public class CommunicationsManagerTest {
 			bbart.addAttribute(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_MESSAGE_TYPE, MODULE_NAME, "SMS"));
 
 			// Create a phone number account for the phone number
-			AccountInstance phoneNumAccount = commsMgr.createAccountInstance(Account.Type.PHONE, phoneNumber, MODULE_NAME, abstractFile);
-			List<AccountInstance> accountInstanceList = new ArrayList<AccountInstance>();
+			AccountFileInstance phoneNumAccount = commsMgr.createAccountFileInstance(Account.Type.PHONE, phoneNumber, MODULE_NAME, abstractFile);
+			List<AccountFileInstance> accountInstanceList = new ArrayList<AccountFileInstance>();
 			accountInstanceList.add(phoneNumAccount);
 
 			//  Create a Message relationship
@@ -1500,7 +1500,7 @@ public class CommunicationsManagerTest {
 		}
 	}
 
-	private static void addContactArtifact(AccountInstance deviceAccount, String name, String phoneNumber, String emailAddr, AbstractFile abstractFile) {
+	private static void addContactArtifact(AccountFileInstance deviceAccount, String name, String phoneNumber, String emailAddr, AbstractFile abstractFile) {
 
 		try {
 			BlackboardArtifact bbart = abstractFile.newArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT); // create a CONTACT artifact
@@ -1511,8 +1511,8 @@ public class CommunicationsManagerTest {
 			bbart.addAttribute(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EMAIL, MODULE_NAME, emailAddr));
 
 			// Create a phone number account for the phone number
-			AccountInstance phoneNumAccount = commsMgr.createAccountInstance(Account.Type.PHONE, phoneNumber, MODULE_NAME, abstractFile);
-			List<AccountInstance> accountInstanceList = new ArrayList<AccountInstance>();
+			AccountFileInstance phoneNumAccount = commsMgr.createAccountFileInstance(Account.Type.PHONE, phoneNumber, MODULE_NAME, abstractFile);
+			List<AccountFileInstance> accountInstanceList = new ArrayList<AccountFileInstance>();
 			accountInstanceList.add(phoneNumAccount);
 
 			//  Create a CONTACT relationship

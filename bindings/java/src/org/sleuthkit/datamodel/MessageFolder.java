@@ -19,15 +19,19 @@
 package org.sleuthkit.datamodel;
 
 
-public class MessageFolder {
+/**
+ * This class is used to abstract a message folder in an email container, 
+ * like an mbox or pst file
+ */
+class MessageFolder {
 	
 	private final long srcObjID;
 	private final String pathName;
 	private boolean hasSubfolders;
 	
+	
 	public MessageFolder(String pathName, long objID) {
 		this(pathName, objID, false);
-		
 	}
 	
 	public MessageFolder(String pathName, long objID, boolean hasSubfolders) {
