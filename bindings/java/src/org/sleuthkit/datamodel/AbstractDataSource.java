@@ -132,7 +132,9 @@ class AbstractDataSource implements DataSource {
 			try {
 				statement = connection.createStatement();
 				resultSet = connection.executeQuery(statement, "SELECT SUM (size) FROM tsk_files WHERE tsk_files.data_source_obj_id = " + dataSourceObjId);
-				contentSize = resultSet.getLong("SUM (size)");
+				if (resultSet.next()) {
+					contentSize = resultSet.getLong("sum");
+				}
 			} catch (SQLException ex) {
 				LOGGER.log(Level.SEVERE, String.format("There was a problem while querying the database for size data for object ID %d.", dataSourceObjId), ex); //NON-NLS
 			} finally {

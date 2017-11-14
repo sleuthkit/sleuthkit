@@ -5347,17 +5347,22 @@ public class SleuthkitCase {
 		ResultSet rs1 = null;
 		Statement s2 = null;
 		ResultSet rs2 = null;
-		Statement s3 = null;
-		ResultSet rs3 = null;
 		try {
 			s1 = connection.createStatement();
 			rs1 = connection.executeQuery(s1, "SELECT * FROM tsk_image_info WHERE obj_id = " + id); //NON-NLS
 			if (rs1.next()) {
 				s2 = connection.createStatement();
-				rs2 = connection.executeQuery(s2, "SELECT * FROM tsk_image_names WHERE obj_id = " + rs1.getLong("obj_id")); //NON-NLS
+				rs2 = connection.executeQuery(s2, "SELECT * "
+						+ "FROM tsk_image_names, data_source_info "
+						+ "WHERE tsk_image_names.obj_id = data_source_info.obj_id "
+						+ "AND tsk_image_names.obj_id = " + rs1.getLong("obj_id")); //NON-NLS
 				List<String> imagePaths = new ArrayList<String>();
-				while (rs2.next()) {
-					imagePaths.add(rs2.getString("name"));
+				String device_id = null;
+				if (rs2.next()) {
+					device_id = rs2.getString("device_id");
+					do {
+						imagePaths.add(rs2.getString("name"));
+					} while (rs2.next());
 				}
 				long obj_id = rs1.getLong("obj_id"); //NON-NLS
 				long type = rs1.getLong("type"); //NON-NLS
@@ -5375,10 +5380,6 @@ public class SleuthkitCase {
 				}
 				long size = rs1.getLong("size"); //NON-NLS
 				
-				s3 = connection.createStatement();
-				rs3 = connection.executeQuery(s3, "SELECT * FROM data_source_info WHERE obj_id = " + rs1.getLong("obj_id")); //NON-NLS
-				String device_id = rs3.next() ? rs3.getString("device_id") : null;
-				
 				return new Image(this, obj_id, type, device_id, ssize, name,
 						imagePaths.toArray(new String[imagePaths.size()]), tzone, md5, size);
 			} else {
@@ -5387,8 +5388,6 @@ public class SleuthkitCase {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting Image by id, id = " + id, ex);
 		} finally {
-			closeResultSet(rs3);
-			closeStatement(s3);
 			closeResultSet(rs2);
 			closeStatement(s2);
 			closeResultSet(rs1);
