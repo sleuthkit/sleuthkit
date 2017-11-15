@@ -1,15 +1,15 @@
 /*
  * Sleuth Kit Data Model
- * 
- * Copyright 2011-2016 Basis Technology Corp.
+ *
+ * Copyright 2011-2017 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *  http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -79,13 +79,15 @@ public class TagName implements Comparable<TagName>, Serializable {
 	private final String displayName;
 	private final String description;
 	private final HTML_COLOR color;
+	private final TskData.FileKnown knownStatus;
 
 	// Clients of the org.sleuthkit.datamodel package should not directly create these objects.		
-	TagName(long id, String displayName, String description, HTML_COLOR color) {
+	TagName(long id, String displayName, String description, HTML_COLOR color, TskData.FileKnown knownStatus) {
 		this.id = id;
 		this.displayName = displayName;
 		this.description = description;
 		this.color = color;
+		this.knownStatus = knownStatus;
 	}
 
 	public long getId() {
@@ -102,6 +104,10 @@ public class TagName implements Comparable<TagName>, Serializable {
 
 	public HTML_COLOR getColor() {
 		return color;
+	}
+
+	public TskData.FileKnown getKnownStatus() {
+		return knownStatus;
 	}
 
 	/**
@@ -123,6 +129,7 @@ public class TagName implements Comparable<TagName>, Serializable {
 		hash = 89 * hash + (this.displayName != null ? this.displayName.hashCode() : 0);
 		hash = 89 * hash + (this.description != null ? this.description.hashCode() : 0);
 		hash = 89 * hash + (this.color != null ? this.color.hashCode() : 0);
+		hash = 89 * hash + (this.knownStatus != null ? this.knownStatus.hashCode() : 0);
 		return hash;
 	}
 
@@ -135,9 +142,10 @@ public class TagName implements Comparable<TagName>, Serializable {
 			return false;
 		}
 		final TagName other = (TagName) obj;
-		return (this.id == other.id 
+		return (this.id == other.id
 				&& Objects.equals(this.displayName, other.displayName)
 				&& Objects.equals(this.description, other.description)
-				&& Objects.equals(this.color, other.color));
+				&& Objects.equals(this.color, other.color)
+				&& Objects.equals(this.knownStatus, other.knownStatus));
 	}
 }

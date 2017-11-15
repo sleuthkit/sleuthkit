@@ -88,7 +88,7 @@ import org.sqlite.SQLiteJDBCLoader;
 public class SleuthkitCase {
 
 	private static final int MAX_DB_NAME_LEN_BEFORE_TIMESTAMP = 47;
-	
+
 	/**
 	 * This must be the same as TSK_SCHEMA_VER and TSK_SCHEMA_MINOR_VER in
 	 * tsk/auto/tsk_db.h.
@@ -195,8 +195,7 @@ public class SleuthkitCase {
 
 		updateDatabaseSchema(null);
 
-		initStandardTagNames();
-
+		//initStandardTagNames();
 		CaseDbConnection connection = connections.getConnection();
 		initIngestModuleTypes(connection);
 		initIngestStatusTypes(connection);
@@ -302,39 +301,6 @@ public class SleuthkitCase {
 			this.nextArtifactId = resultSet.getLong("max_artifact_id") + 1;
 			if (this.nextArtifactId == 1) {
 				this.nextArtifactId = BASE_ARTIFACT_ID;
-			}
-		} finally {
-			closeResultSet(resultSet);
-			closeStatement(statement);
-			connection.close();
-		}
-	}
-
-	/**
-	 * Initialize standard tag names by adding them into the tag_names database.
-	 *
-	 * @throws SQLException     if there is an error executing an SQL statement.
-	 * @throws TskCoreException if there is a problem getting a database
-	 *                          connection.
-	 */
-	private void initStandardTagNames() throws SQLException, TskCoreException {
-		String bookmarkDisplayName = bundle.getString("SleuthkitCase.initStandardTagNames.bookmark.text");
-		CaseDbConnection connection = connections.getConnection();
-		Statement statement = null;
-		ResultSet resultSet = null;
-		try {
-			statement = connection.createStatement();
-			statement.execute("INSERT INTO tag_names (display_name, description, color) VALUES ('" + bookmarkDisplayName + "', '', '" + TagName.HTML_COLOR.NONE.getName() + "');"); //NON-NLS
-		} catch (SQLException ex) {
-			/*
-			 * If the exception is a violation of the tag names uniqueness
-			 * constraint, it can be ignored because another user has added the
-			 * tag name. Otherwise, propagate the exception.
-			 */
-			resultSet = connection.executeQuery(statement, "SELECT COUNT(*) AS count FROM tag_names WHERE display_name = '" + bookmarkDisplayName + "'"); //NON-NLS
-			resultSet.next();
-			if (resultSet.getLong("count") == 0) {
-				throw ex;
 			}
 		} finally {
 			closeResultSet(resultSet);
@@ -640,7 +606,7 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 
 			// Add new tables for tags.
-			statement.execute("CREATE TABLE tag_names (tag_name_id INTEGER PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL)"); //NON-NLS
+			statement.execute("CREATE TABLE tag_names (tag_name_id INTEGER PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL, knownStatus INTEGER NOT NULL)"); //NON-NLS
 			statement.execute("CREATE TABLE content_tags (tag_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL, begin_byte_offset INTEGER NOT NULL, end_byte_offset INTEGER NOT NULL)"); //NON-NLS
 			statement.execute("CREATE TABLE blackboard_artifact_tags (tag_id INTEGER PRIMARY KEY, artifact_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL)"); //NON-NLS
 
@@ -983,8 +949,8 @@ public class SleuthkitCase {
 			closeStatement(statement);
 		}
 	}
-	
-/**
+
+	/**
 	 * Updates a schema version 6 database to a schema version 7 database.
 	 *
 	 * @param schemaVersion The current schema version of the database.
@@ -1052,8 +1018,8 @@ public class SleuthkitCase {
 		if (schemaVersion.getMajor() != 7) {
 			return schemaVersion;
 		}
-		
-		if(schemaVersion.getMinor() != 0){
+
+		if (schemaVersion.getMinor() != 0) {
 			return schemaVersion;
 		}
 
@@ -6842,7 +6808,9 @@ public class SleuthkitCase {
 			resultSet = connection.executeQuery(statement);
 			ArrayList<TagName> tagNames = new ArrayList<TagName>();
 			while (resultSet.next()) {
-				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")))); //NON-NLS
+				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"), 
+						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")), 
+						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")))); //NON-NLS
 			}
 			return tagNames;
 		} catch (SQLException ex) {
@@ -6874,7 +6842,9 @@ public class SleuthkitCase {
 			resultSet = connection.executeQuery(statement);
 			ArrayList<TagName> tagNames = new ArrayList<TagName>();
 			while (resultSet.next()) {
-				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"), resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")))); //NON-NLS
+				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"), 
+						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")), 
+						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")))); //NON-NLS
 			}
 			return tagNames;
 		} catch (SQLException ex) {
@@ -6898,21 +6868,37 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	public TagName addTagName(String displayName, String description, TagName.HTML_COLOR color) throws TskCoreException {
+		return addTagName(displayName, description, color, TskData.FileKnown.UNKNOWN);
+	}
+	/**
+	 * Inserts row into the tags_names table in the case database.
+	 *
+	 * @param displayName The display name for the new tag name.
+	 * @param description The description for the new tag name.
+	 * @param color       The HTML color to associate with the new tag name.
+	 * @param knownStatus The TskData.FileKnown value to associate with the new tag name.
+	 *
+	 * @return A TagName data transfer object (DTO) for the new row.
+	 *
+	 * @throws TskCoreException
+	 */
+	public TagName addTagName(String displayName, String description, TagName.HTML_COLOR color, TskData.FileKnown knownStatus) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireExclusiveLock();
 		ResultSet resultSet = null;
 		try {
-			// INSERT INTO tag_names (display_name, description, color) VALUES (?, ?, ?)
+			// INSERT INTO tag_names (display_name, description, color, knownStatus) VALUES (?, ?, ?, ?)
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_TAG_NAME, Statement.RETURN_GENERATED_KEYS);
 			statement.clearParameters();
 			statement.setString(1, displayName);
 			statement.setString(2, description);
 			statement.setString(3, color.getName());
+			statement.setByte(4, knownStatus.getFileKnownValue());
 			connection.executeUpdate(statement);
 			resultSet = statement.getGeneratedKeys();
 			resultSet.next();
 			return new TagName(resultSet.getLong(1), //last_insert_rowid()
-					displayName, description, color);
+					displayName, description, color, knownStatus);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding row for " + displayName + " tag name to tag_names table", ex);
 		} finally {
@@ -6920,6 +6906,7 @@ public class SleuthkitCase {
 			connection.close();
 			releaseExclusiveLock();
 		}
+
 	}
 
 	/**
@@ -7003,7 +6990,8 @@ public class SleuthkitCase {
 			ArrayList<ContentTag> tags = new ArrayList<ContentTag>();
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
-						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")));  //NON-NLS
+						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")), 
+						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")));  //NON-NLS
 				Content content = getContentById(resultSet.getLong("obj_id")); //NON-NLS
 				tags.add(new ContentTag(resultSet.getLong("tag_id"), content, tagName, resultSet.getString("comment"),
 						resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset")));  //NON-NLS
@@ -7078,7 +7066,8 @@ public class SleuthkitCase {
 
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
-						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")));
+						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")), 
+						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")));
 				tag = new ContentTag(resultSet.getLong("tag_id"), getContentById(resultSet.getLong("obj_id")), tagName,
 						resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset"));
 			}
@@ -7159,7 +7148,8 @@ public class SleuthkitCase {
 			ArrayList<ContentTag> tags = new ArrayList<ContentTag>();
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
-						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")));  //NON-NLS
+						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
+						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")));  //NON-NLS
 				ContentTag tag = new ContentTag(resultSet.getLong("tag_id"), content, tagName,
 						resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset"));  //NON-NLS
 				tags.add(tag);
@@ -7254,7 +7244,8 @@ public class SleuthkitCase {
 			ArrayList<BlackboardArtifactTag> tags = new ArrayList<BlackboardArtifactTag>();
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
-						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")));  //NON-NLS
+						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
+						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")));  //NON-NLS
 				BlackboardArtifact artifact = getBlackboardArtifact(resultSet.getLong("artifact_id")); //NON-NLS
 				Content content = getContentById(artifact.getObjectID());
 				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"),
@@ -7376,7 +7367,8 @@ public class SleuthkitCase {
 
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
-						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")));
+						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
+						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")));
 				BlackboardArtifact artifact = getBlackboardArtifact(resultSet.getLong("artifact_id")); //NON-NLS
 				Content content = getContentById(artifact.getObjectID());
 				tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"),
@@ -7419,7 +7411,8 @@ public class SleuthkitCase {
 			ArrayList<BlackboardArtifactTag> tags = new ArrayList<BlackboardArtifactTag>();
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
-						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")));  //NON-NLS
+						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
+						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")));  //NON-NLS
 				Content content = getContentById(artifact.getObjectID());
 				BlackboardArtifactTag tag = new BlackboardArtifactTag(resultSet.getLong("tag_id"),
 						artifact, content, tagName, resultSet.getString("comment"));  //NON-NLS
@@ -7917,7 +7910,7 @@ public class SleuthkitCase {
 		SELECT_TAG_NAMES_IN_USE("SELECT * FROM tag_names " //NON-NLS
 				+ "WHERE tag_name_id IN " //NON-NLS
 				+ "(SELECT tag_name_id from content_tags UNION SELECT tag_name_id FROM blackboard_artifact_tags)"), //NON-NLS
-		INSERT_TAG_NAME("INSERT INTO tag_names (display_name, description, color) VALUES (?, ?, ?)"), //NON-NLS
+		INSERT_TAG_NAME("INSERT INTO tag_names (display_name, description, color, knownStatus) VALUES (?, ?, ?, ?)"), //NON-NLS
 		INSERT_CONTENT_TAG("INSERT INTO content_tags (obj_id, tag_name_id, comment, begin_byte_offset, end_byte_offset) VALUES (?, ?, ?, ?, ?)"), //NON-NLS
 		DELETE_CONTENT_TAG("DELETE FROM content_tags WHERE tag_id = ?"), //NON-NLS
 		COUNT_CONTENT_TAGS_BY_TAG_NAME("SELECT COUNT(*) AS count FROM content_tags WHERE tag_name_id = ?"), //NON-NLS
