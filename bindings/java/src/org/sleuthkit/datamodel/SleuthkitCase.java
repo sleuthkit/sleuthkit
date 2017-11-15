@@ -507,6 +507,7 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema5toSchema6(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema6toSchema7(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema7toSchema7dot1(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema7dot1toSchema7dot2(dbSchemaVersion, connection);
 
 				// Write the updated schema version number to the the tsk_db_info table.
 				statement = connection.createStatement();
@@ -1033,9 +1034,35 @@ public class SleuthkitCase {
 
 			//add the schema minor version number column.
 			if (schemaVersion.getMinor() == 0) {
-				statement.execute("ALTER TABLE tsk_db_info ADD COLUMN schema_minor_ver INTEGER DEFAULT 1");
+				statement.execute("ALTER TABLE blackboard_artifacts ADD COLUMN review_status_id INTEGER NOT NULL DEFAULT " + TskData.FileKnown.UNKNOWN.getFileKnownValue());
 			}
 			return new CaseDbSchemaVersionNumber(7, 1);
+
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+		}
+	}
+
+	private CaseDbSchemaVersionNumber updateFromSchema7dot1toSchema7dot2(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersion.getMajor() != 7) {
+			return schemaVersion;
+		}
+
+		if (schemaVersion.getMinor() != 1) {
+			return schemaVersion;
+		}
+		/*
+		 * This upgrade adds a knownStatus column to the tag_names table.
+		 */
+		Statement statement = null;
+		ResultSet resultSet = null;
+		try {
+			statement = connection.createStatement();
+
+			//add the schema minor version number column.
+				statement.execute("ALTER TABLE tsk_db_info ADD COLUMN schema_minor_ver INTEGER DEFAULT 1");
+			return new CaseDbSchemaVersionNumber(7, 2);
 
 		} finally {
 			closeResultSet(resultSet);
@@ -6808,8 +6835,8 @@ public class SleuthkitCase {
 			resultSet = connection.executeQuery(statement);
 			ArrayList<TagName> tagNames = new ArrayList<TagName>();
 			while (resultSet.next()) {
-				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"), 
-						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")), 
+				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
+						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
 						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")))); //NON-NLS
 			}
 			return tagNames;
@@ -6842,8 +6869,8 @@ public class SleuthkitCase {
 			resultSet = connection.executeQuery(statement);
 			ArrayList<TagName> tagNames = new ArrayList<TagName>();
 			while (resultSet.next()) {
-				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"), 
-						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")), 
+				tagNames.add(new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
+						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
 						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")))); //NON-NLS
 			}
 			return tagNames;
@@ -6870,13 +6897,15 @@ public class SleuthkitCase {
 	public TagName addTagName(String displayName, String description, TagName.HTML_COLOR color) throws TskCoreException {
 		return addTagName(displayName, description, color, TskData.FileKnown.UNKNOWN);
 	}
+
 	/**
 	 * Inserts row into the tags_names table in the case database.
 	 *
 	 * @param displayName The display name for the new tag name.
 	 * @param description The description for the new tag name.
 	 * @param color       The HTML color to associate with the new tag name.
-	 * @param knownStatus The TskData.FileKnown value to associate with the new tag name.
+	 * @param knownStatus The TskData.FileKnown value to associate with the new
+	 *                    tag name.
 	 *
 	 * @return A TagName data transfer object (DTO) for the new row.
 	 *
@@ -6990,7 +7019,7 @@ public class SleuthkitCase {
 			ArrayList<ContentTag> tags = new ArrayList<ContentTag>();
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
-						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")), 
+						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
 						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")));  //NON-NLS
 				Content content = getContentById(resultSet.getLong("obj_id")); //NON-NLS
 				tags.add(new ContentTag(resultSet.getLong("tag_id"), content, tagName, resultSet.getString("comment"),
@@ -7066,7 +7095,7 @@ public class SleuthkitCase {
 
 			while (resultSet.next()) {
 				TagName tagName = new TagName(resultSet.getLong("tag_name_id"), resultSet.getString("display_name"),
-						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")), 
+						resultSet.getString("description"), TagName.HTML_COLOR.getColorByName(resultSet.getString("color")),
 						TskData.FileKnown.valueOf(resultSet.getByte("knownStatus")));
 				tag = new ContentTag(resultSet.getLong("tag_id"), getContentById(resultSet.getLong("obj_id")), tagName,
 						resultSet.getString("comment"), resultSet.getLong("begin_byte_offset"), resultSet.getLong("end_byte_offset"));
