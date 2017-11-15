@@ -432,7 +432,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 *
 	 * @param mimeType The mimeType to set for this file.
 	 */
-	void setMIMEType(String mimeType) {
+	public void setMIMEType(String mimeType) {
 		this.mimeType = mimeType;
 	}
 
@@ -447,7 +447,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 *
 	 * @param md5Hash
 	 */
-	void setMd5Hash(String md5Hash) {
+	public void setMd5Hash(String md5Hash) {
 		this.md5Hash = md5Hash;
 	}
 
@@ -467,7 +467,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 *
 	 * @param known
 	 */
-	void setKnown(TskData.FileKnown known) {
+	public void setKnown(TskData.FileKnown known) {
 		this.knownState = known;
 	}
 

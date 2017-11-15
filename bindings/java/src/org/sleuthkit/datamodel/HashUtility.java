@@ -60,11 +60,12 @@ public class HashUtility {
 			while (hashText.length() < 32) {
 				hashText = "0" + hashText;
 			}
-			file.getSleuthkitCase().setMd5Hash(file, hashText);
+			file.setMd5Hash(hashText);
+			//file.getSleuthkitCase().setMd5Hash(file, hashText);
 		} catch (NoSuchAlgorithmException ex) {
 			logger.log(Level.WARNING, "No algorithm known as 'md5'", ex); //NON-NLS
-		} catch (TskCoreException ex) {
-			logger.log(Level.WARNING, "Error updating content's md5 in database", ex); //NON-NLS
+		//} catch (TskCoreException ex) {
+		//	logger.log(Level.WARNING, "Error updating content's md5 in database", ex); //NON-NLS
 		} finally {
 			in.close();
 		}
