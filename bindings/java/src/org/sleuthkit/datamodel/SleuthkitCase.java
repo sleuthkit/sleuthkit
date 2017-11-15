@@ -1034,7 +1034,8 @@ public class SleuthkitCase {
 
 			//add the schema minor version number column.
 			if (schemaVersion.getMinor() == 0) {
-				statement.execute("ALTER TABLE blackboard_artifacts ADD COLUMN review_status_id INTEGER NOT NULL DEFAULT " + TskData.FileKnown.UNKNOWN.getFileKnownValue());
+				//add the schema minor version number column.
+				statement.execute("ALTER TABLE tsk_db_info ADD COLUMN schema_minor_ver INTEGER DEFAULT 1");
 			}
 			return new CaseDbSchemaVersionNumber(7, 1);
 
@@ -1059,11 +1060,8 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		try {
 			statement = connection.createStatement();
-
-			//add the schema minor version number column.
-				statement.execute("ALTER TABLE tsk_db_info ADD COLUMN schema_minor_ver INTEGER DEFAULT 1");
+			statement.execute("ALTER TABLE tag_names ADD COLUMN knownStatus INTEGER NOT NULL DEFAULT " + TskData.FileKnown.UNKNOWN.getFileKnownValue());
 			return new CaseDbSchemaVersionNumber(7, 2);
-
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
