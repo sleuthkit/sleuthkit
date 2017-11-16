@@ -677,6 +677,10 @@ int TskDbPostgreSQL::createIndexes() {
 			"Error creating relationships_account1 index on relationships: %s\n") ||
 		attempt_exec("CREATE INDEX relationships_account2  ON relationships(account2_id);",
 			"Error creating relationships_account2 index on relationships: %s\n") ||
+		attempt_exec("CREATE INDEX relationships_communication_artifact_id  ON relationships(communication_artifact_id);",
+			"Error creating relationships_communication_artifact_id index on relationships: %s\n") ||
+		attempt_exec("CREATE INDEX relationships_date_time  ON relationships(date_time);",
+			"Error creating relationships_date_time index on relationships: %s\n") ||
 		attempt_exec("CREATE INDEX accounts_map_account_id  ON account_to_instances_map(account_id);",
 			"Error creating accounts_map_account_id index on account_to_instances_map: %s\n") ||
 		attempt_exec("CREATE INDEX accounts_map_account_instance_id  ON account_to_instances_map(account_instance_id);",

@@ -743,8 +743,9 @@ public class CommunicationsManager {
 
 			System.out.println("RAMAN FilterSQL = " + filterSQL);
 			System.out.println("RAMAN QueryStr = " + queryStr);
-			System.out.println("");
+			
 
+			long startTime = System.nanoTime();
 			rs = connection.executeQuery(s, queryStr); //NON-NLS
 			ArrayList<AccountDeviceInstance> accountDeviceInstances = new ArrayList<AccountDeviceInstance>();
 			while (rs.next()) {
@@ -755,6 +756,11 @@ public class CommunicationsManager {
 				accountDeviceInstances.add(new AccountDeviceInstance(account, deviceID));
 			}
 
+			long endTime = System.nanoTime();
+			System.out.println("RAMAN getAccountDeviceInstancesWithCommunications() Time taken = " + (endTime - startTime)/1000000L);
+			System.out.println("RAMAN getAccountDeviceInstancesWithCommunications() Num of AccountDeviceInstances = " + accountDeviceInstances.size());
+			System.out.println("");
+			
 			return accountDeviceInstances;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting account device instances. " + ex.getMessage(), ex);
@@ -826,14 +832,19 @@ public class CommunicationsManager {
 			String countQuery = "SELECT COUNT(*) AS COUNT FROM ( "
 					+ internalQueryStr
 					+ " )  AS internalQuery";
-
+			
+			long startTime = System.nanoTime();
 			rs = connection.executeQuery(s, countQuery); //NON-NLS
 			rs.next();
 
-			System.out.println("RAMAN FilterSQL = " + filterSQL);
-			System.out.println("RAMAN QueryStr = " + countQuery);
-			System.out.println("");
+			System.out.println("RAMAN getCommunicationsCount() FilterSQL = " + filterSQL);
+			System.out.println("RAMAN getCommunicationsCount() QueryStr = " + countQuery);
+			
 
+			long endTime = System.nanoTime();
+			System.out.println("RAMAN getCommunicationsCount() Time taken = " + (endTime - startTime)/1000000L);
+			System.out.println("");
+			
 			return (rs.getLong("count"));
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting relationships count for account device instance. " + ex.getMessage(), ex);
@@ -860,24 +871,29 @@ public class CommunicationsManager {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public Set<BlackboardArtifact> getCommunications(Set<AccountDeviceInstance> accountDeviceInstanceList, CommunicationsFilter filter) throws TskCoreException {
-
+		
+		System.out.println("RAMAN getCommunications() Num AccountDeviceInstancees = " + accountDeviceInstanceList.size());
+			
 		Map<Long, Set<Long>> accountIdToDatasourceObjIdMap = new HashMap<Long, Set<Long>>();
-
 		for (AccountDeviceInstance accountDeviceInstance : accountDeviceInstanceList) {
-			accountIdToDatasourceObjIdMap.put(accountDeviceInstance.getAccount().getAccountId(),
+			long accountID = accountDeviceInstance.getAccount().getAccountId();
+			if (false == accountIdToDatasourceObjIdMap.containsKey(accountID)) {
+				accountIdToDatasourceObjIdMap.put(accountDeviceInstance.getAccount().getAccountId(),
 					new HashSet<Long>(db.getDataSourceObjIds(accountDeviceInstance.getDeviceId())));
+			}
+			else {
+				accountIdToDatasourceObjIdMap.get(accountID).addAll(db.getDataSourceObjIds(accountDeviceInstance.getDeviceId()));
+			}
 		}
 
 		String adiSQLClause = "";
 		boolean firstEntry = true;
 		for (Map.Entry<Long, Set<Long>> entry : accountIdToDatasourceObjIdMap.entrySet()) {
 			long account_id = entry.getKey();
-			Set<Long> account_ids = new HashSet<Long>(Arrays.asList(account_id));
 			Set<Long> ds_ids = entry.getValue();
-			String account_ids_list = StringUtils.buildCSVString(account_ids);
 			String datasource_obj_ids_list = StringUtils.buildCSVString(ds_ids);
 
-			String accountClause = "( relationships.account1_id IN ( " + account_ids_list + " ) " + " OR  relationships.account2_id IN ( " + account_ids_list + " )" + " )";
+			String accountClause = "( relationships.account1_id = " + account_id  + " OR  relationships.account2_id = " + account_id + " )";
 			String ds_oid_clause = "artifacts.data_source_obj_id IN ( " + datasource_obj_ids_list + " )";
 
 			if (!firstEntry) {
@@ -924,11 +940,12 @@ public class CommunicationsManager {
 				queryStr += " AND " + filterSQL;
 			}
 
-			System.out.println("RAMAN adiSQLClause = " + adiSQLClause);
-			System.out.println("RAMAN FilterSQL = " + filterSQL);
-			System.out.println("RAMAN QueryStr = " + queryStr);
-			System.out.println("");
+			System.out.println("RAMAN getCommunications() adiSQLClause = " + adiSQLClause);
+			System.out.println("RAMAN getCommunications() FilterSQL = " + filterSQL);
+			System.out.println("RAMAN getCommunications() QueryStr = " + queryStr);
+			
 
+			long startTime = System.nanoTime();
 			rs = connection.executeQuery(s, queryStr); //NON-NLS
 			Set<BlackboardArtifact> artifacts = new HashSet<BlackboardArtifact>();
 			while (rs.next()) {
@@ -938,6 +955,10 @@ public class CommunicationsManager {
 						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
 			}
 
+			long endTime = System.nanoTime();
+			System.out.println("RAMAN getCommunications() Time taken = " + (endTime - startTime)/1000000L);
+			System.out.println("");
+			
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting relationships for account. " + ex.getMessage(), ex);
