@@ -371,7 +371,7 @@ int
 			"Error creating account_types table: %s\n")
 		||
 		attempt_exec
-		("CREATE TABLE relationships (relationship_id INTEGER PRIMARY KEY, account1_id INTEGER NOT NULL, account2_id INTEGER NOT NULL, communication_artifact_id INTEGER NOT NULL,  date_time INTEGER NOT NULL, UNIQUE(account1_id, account2_id, communication_artifact_id) ON CONFLICT IGNORE, FOREIGN KEY(account1_id) REFERENCES accounts(account_id), FOREIGN KEY(account2_id) REFERENCES accounts(account_id), FOREIGN KEY(communication_artifact_id) REFERENCES blackboard_artifacts(artifact_id))",
+		("CREATE TABLE relationships (relationship_id INTEGER PRIMARY KEY, account1_id INTEGER NOT NULL, account2_id INTEGER NOT NULL, relationship_source_obj_id INTEGER NOT NULL,  date_time INTEGER NOT NULL, relationship_type INTEGER NOT NULL, data_source_obj_id INTEGER NOT NULL, UNIQUE(account1_id, account2_id, relationship_source_obj_id) ON CONFLICT IGNORE, FOREIGN KEY(account1_id) REFERENCES accounts(account_id), FOREIGN KEY(account2_id) REFERENCES accounts(account_id), FOREIGN KEY(relationship_source_obj_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id))",
 			"Error creating relationships table: %s\n")
 		||
 		attempt_exec
@@ -427,10 +427,14 @@ int TskDbSqlite::createIndexes() {
 			"Error creating relationships_account1 index on relationships: %s\n") ||
 		attempt_exec("CREATE INDEX relationships_account2  ON relationships(account2_id);",
 			"Error creating relationships_account2 index on relationships: %s\n") ||
-		attempt_exec("CREATE INDEX relationships_communication_artifact_id  ON relationships(communication_artifact_id);",
-			"Error creating relationships_communication_artifact_id index on relationships: %s\n") ||
+		attempt_exec("CREATE INDEX relationships_relationship_source_obj_id  ON relationships(relationship_source_obj_id);",
+			"Error creating relationships_relationship_source_obj_id index on relationships: %s\n") ||
 		attempt_exec("CREATE INDEX relationships_date_time  ON relationships(date_time);",
 			"Error creating relationships_date_time index on relationships: %s\n") ||
+		attempt_exec("CREATE INDEX relationships_relationship_type  ON relationships(relationship_type);",
+			"Error creating relationships_relationship_type index on relationships: %s\n") ||
+		attempt_exec("CREATE INDEX relationships_data_source_obj_id  ON relationships(data_source_obj_id);",
+			"Error creating relationships_data_source_obj_id index on relationships: %s\n") ||
 		attempt_exec("CREATE INDEX accounts_map_account_id  ON account_to_instances_map(account_id);",
 			"Error creating accounts_map_account_id index on account_to_instances_map: %s\n") ||
 		attempt_exec("CREATE INDEX accounts_map_account_instance_id  ON account_to_instances_map(account_instance_id);",

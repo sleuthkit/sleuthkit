@@ -80,7 +80,7 @@ public class RelationshipTypeFilter implements SubFilter {
 
 		String artifact_type_ids_list = StringUtils.buildCSVString(type_ids);
 		if (!artifact_type_ids_list.isEmpty()) {
-			sql = " artifacts.artifact_type_id IN ( " + artifact_type_ids_list + " )";
+			sql = " relationships.relationship_type IN ( " + artifact_type_ids_list + " )";
 		}
 
 		return sql;

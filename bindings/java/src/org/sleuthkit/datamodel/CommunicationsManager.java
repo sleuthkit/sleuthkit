@@ -51,7 +51,7 @@ public class CommunicationsManager {
 	private Map<String, Account.Type> typeNameToAccountTypeMap;
 
 	// Artifact types that represent a relationship between accounts 
-	private final Set<Integer> RELATIONSHIP_ARTIFACT_TYPE_IDS =  new HashSet<Integer>( Arrays.asList(
+	private final Set<Integer> RELATIONSHIP_ARTIFACT_TYPE_IDS = new HashSet<Integer>(Arrays.asList(
 			BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE.getTypeID(),
 			BlackboardArtifact.ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID(),
 			BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT.getTypeID(),
@@ -249,8 +249,8 @@ public class CommunicationsManager {
 	}
 
 	/**
-	 * Create an AccountFileInstance with the given account type and account ID, and
- sourceObj. if it doesn't exist already.
+	 * Create an AccountFileInstance with the given account type and account ID,
+	 * and sourceObj. if it doesn't exist already.
 	 *
 	 *
 	 * @param accountType     account type
@@ -344,21 +344,21 @@ public class CommunicationsManager {
 	 * Add a relationship between the given sender and recipient account
 	 * instances.
 	 *
-	 * @param sender                sender account
-	 * @param recipients            list of recipients
-	 * @param communicationArtifact communication item
-	 * @param dateTime				date of communications/relationship, as
-	 *								epoch seconds
+	 * @param sender               sender account
+	 * @param recipients           list of recipients
+	 * @param relationshipArtifact relationship artifact
+	 * @param dateTime				         date of communications/relationship, as epoch
+	 *                             seconds
 	 *
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public void addRelationships(AccountFileInstance sender, List<AccountFileInstance> recipients, BlackboardArtifact communicationArtifact, long dateTime) throws TskCoreException {
+	public void addRelationships(AccountFileInstance sender, List<AccountFileInstance> recipients, BlackboardArtifact relationshipArtifact, long dateTime) throws TskCoreException {
 
-		if (false == RELATIONSHIP_ARTIFACT_TYPE_IDS.contains(communicationArtifact.getArtifactTypeID())) {
-			throw new TskCoreException("Unexpected Artifact type = " + communicationArtifact.getArtifactTypeID());
+		if (false == RELATIONSHIP_ARTIFACT_TYPE_IDS.contains(relationshipArtifact.getArtifactTypeID())) {
+			throw new TskCoreException("Unexpected Artifact type = " + relationshipArtifact.getArtifactTypeID());
 		}
-		
+
 		// Currently we do not save the direction of communication
 		List<Long> accountIDs = new ArrayList<Long>();
 		if (null != sender) {
@@ -375,19 +375,13 @@ public class CommunicationsManager {
 		while (iter.hasNext()) {
 			try {
 				UnorderedAccountPair accountPair = iter.next();
-				addAccountsRelationship(accountPair.getFirst(), accountPair.getSecond(), communicationArtifact.getArtifactID(), dateTime);
+				addAccountsRelationship(accountPair.getFirst(), accountPair.getSecond(), relationshipArtifact.getArtifactID(), dateTime, relationshipArtifact.getArtifactTypeID(), relationshipArtifact.getDataSourceObjectID());
 			} catch (TskCoreException ex) {
 				LOGGER.log(Level.WARNING, "Could not get timezone for image", ex); //NON-NLS
 			}
 		}
 
 	}
-
-	
-
-	
-	
-	
 
 	/**
 	 * Get the Account for the given account type and account ID. Create an a
@@ -633,15 +627,19 @@ public class CommunicationsManager {
 	/**
 	 * Adds a row in relationships table
 	 *
-	 * @param account1_id account_id for account1
-	 * @param account2_id account_id for account2
-	 * @param artifactID  artifact id for communication item
-	 * @param dateTime    datetime of communication/relationship
+	 * @param account1_id                account_id for account1
+	 * @param account2_id                account_id for account2
+	 * @param relationship_source_obj_id obj_id of the relationship source
+	 *                                   object
+	 * @param dateTime                   datetime of communication/relationship
+	 * @param relationship_type          relationship type
+	 * @param data_source_obj_id         datasource object id from where
+	 *                                   relationship is extracted
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
 	 */
-	private void addAccountsRelationship(long account1_id, long account2_id, long artifactID, long dateTime) throws TskCoreException {
+	private void addAccountsRelationship(long account1_id, long account2_id, long relationship_source_obj_id, long dateTime, int relationship_type, long data_source_obj_id) throws TskCoreException {
 		CaseDbConnection connection = db.getConnection();
 		db.acquireExclusiveLock();
 		Statement s = null;
@@ -651,7 +649,7 @@ public class CommunicationsManager {
 			connection.beginTransaction();
 			s = connection.createStatement();
 
-			s.execute("INSERT INTO relationships (account1_id, account2_id, communication_artifact_id, date_time) VALUES ( " + account1_id + ", " + account2_id + ", " + artifactID + ", " + dateTime + ")"); //NON-NLS
+			s.execute("INSERT INTO relationships (account1_id, account2_id, relationship_source_obj_id, date_time, relationship_type, data_source_obj_id  ) VALUES ( " + account1_id + ", " + account2_id + ", " + relationship_source_obj_id + ", " + dateTime + ", " + relationship_type + ", " + data_source_obj_id + ")"); //NON-NLS
 			connection.commitTransaction();
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
@@ -690,25 +688,21 @@ public class CommunicationsManager {
 			applicableFilters1.add(DateRangeFilter.class.getName());
 
 			String innerQuery1 = "		SELECT DISTINCT account1_id FROM relationships  AS relationships"
-					+ "       JOIN blackboard_artifacts AS artifacts1"
-					+ "		  ON artifacts1.artifact_id = relationships.communication_artifact_id"
-					+ "		  WHERE artifacts1.artifact_type_id IN ( " + COMMUNICATION_ARTIFACT_TYPE_IDS_CSV_STR + " )";
+					+ "		  WHERE relationships.relationship_type IN ( " + COMMUNICATION_ARTIFACT_TYPE_IDS_CSV_STR + " )";
 
-			String innerQuery2 = "		  SELECT DISTINCT account2_id FROM relationships AS relationships"
-					+ "       JOIN blackboard_artifacts AS artifacts2"
-					+ "		  ON artifacts2.artifact_id = relationships.communication_artifact_id"
-					+ "		  WHERE artifacts2.artifact_type_id IN ( " + COMMUNICATION_ARTIFACT_TYPE_IDS_CSV_STR + " )";
+			String innerQuery2 = "		SELECT DISTINCT account2_id FROM relationships AS relationships"
+					+ "		  WHERE relationships.relationship_type IN ( " + COMMUNICATION_ARTIFACT_TYPE_IDS_CSV_STR + " )";
 
 			// Date range filters are applied to the two inner queries
-			String datefilterSQL = getCommunicationsFilterSQL(filter, applicableFilters1);
-			if (!datefilterSQL.isEmpty()) {
-				innerQuery1 += " AND " + datefilterSQL;
+			String innerQueryfilterSQL = getCommunicationsFilterSQL(filter, applicableFilters1);
+			if (!innerQueryfilterSQL.isEmpty()) {
+				innerQuery1 += " AND " + innerQueryfilterSQL;
 			}
-			if (!datefilterSQL.isEmpty()) {
-				innerQuery2 += " AND " + datefilterSQL;
+			if (!innerQueryfilterSQL.isEmpty()) {
+				innerQuery2 += " AND " + innerQueryfilterSQL;
 			}
 
-			System.out.println("RAMAN datefilterSQL = " + datefilterSQL);
+			System.out.println("RAMAN innerQueryfilterSQL = " + innerQueryfilterSQL);
 			System.out.println("RAMAN innerQuery1 = " + innerQuery1);
 			System.out.println("RAMAN innerQuery2 = " + innerQuery2);
 			System.out.println("");
@@ -743,7 +737,6 @@ public class CommunicationsManager {
 
 			System.out.println("RAMAN FilterSQL = " + filterSQL);
 			System.out.println("RAMAN QueryStr = " + queryStr);
-			
 
 			long startTime = System.nanoTime();
 			rs = connection.executeQuery(s, queryStr); //NON-NLS
@@ -757,10 +750,10 @@ public class CommunicationsManager {
 			}
 
 			long endTime = System.nanoTime();
-			System.out.println("RAMAN getAccountDeviceInstancesWithCommunications() Time taken = " + (endTime - startTime)/1000000L);
+			System.out.println("RAMAN getAccountDeviceInstancesWithCommunications() Time taken = " + (endTime - startTime) / 1000000L);
 			System.out.println("RAMAN getAccountDeviceInstancesWithCommunications() Num of AccountDeviceInstances = " + accountDeviceInstances.size());
 			System.out.println("");
-			
+
 			return accountDeviceInstances;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting account device instances. " + ex.getMessage(), ex);
@@ -771,8 +764,6 @@ public class CommunicationsManager {
 			db.releaseSharedLock();
 		}
 	}
-
-	
 
 	/**
 	 * Get the number of unique communications found for the given account
@@ -803,18 +794,12 @@ public class CommunicationsManager {
 
 		try {
 			s = connection.createStatement();
+
 			String internalQueryStr = "SELECT DISTINCT "
-					+ "	artifacts.artifact_id AS artifact_id,"
-					+ "	artifacts.obj_id AS obj_id,"
-					+ "	artifacts.artifact_obj_id AS artifact_obj_id,"
-					+ "	artifacts.data_source_obj_id AS data_source_obj_id, "
-					+ "	artifacts.artifact_type_id AS artifact_type_id, "
-					+ "	artifacts.review_status_id AS review_status_id  "
-					+ " FROM blackboard_artifacts as artifacts"
-					+ "	JOIN relationships AS relationships"
-					+ "		ON artifacts.artifact_id = relationships.communication_artifact_id"
-					+ " WHERE artifacts.data_source_obj_id IN ( " + datasource_obj_ids_list + " )"
-					+ " AND artifacts.artifact_type_id IN ( " + COMMUNICATION_ARTIFACT_TYPE_IDS_CSV_STR + " )"
+					+ "	relationships.relationship_source_obj_id AS relationship_source_obj_id"
+					+ "	FROM relationships AS relationships"
+					+ " WHERE relationships.data_source_obj_id IN ( " + datasource_obj_ids_list + " )"
+					+ " AND relationships.relationship_type IN ( " + COMMUNICATION_ARTIFACT_TYPE_IDS_CSV_STR + " )"
 					+ " AND ( relationships.account1_id = " + account_id + " OR  relationships.account2_id = " + account_id + " )";
 
 			// set up applicable filters
@@ -832,19 +817,18 @@ public class CommunicationsManager {
 			String countQuery = "SELECT COUNT(*) AS COUNT FROM ( "
 					+ internalQueryStr
 					+ " )  AS internalQuery";
-			
+
 			long startTime = System.nanoTime();
 			rs = connection.executeQuery(s, countQuery); //NON-NLS
 			rs.next();
 
 			System.out.println("RAMAN getCommunicationsCount() FilterSQL = " + filterSQL);
 			System.out.println("RAMAN getCommunicationsCount() QueryStr = " + countQuery);
-			
 
 			long endTime = System.nanoTime();
-			System.out.println("RAMAN getCommunicationsCount() Time taken = " + (endTime - startTime)/1000000L);
+			System.out.println("RAMAN getCommunicationsCount() Time taken = " + (endTime - startTime) / 1000000L);
 			System.out.println("");
-			
+
 			return (rs.getLong("count"));
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting relationships count for account device instance. " + ex.getMessage(), ex);
@@ -871,17 +855,16 @@ public class CommunicationsManager {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public Set<BlackboardArtifact> getCommunications(Set<AccountDeviceInstance> accountDeviceInstanceList, CommunicationsFilter filter) throws TskCoreException {
-		
+
 		System.out.println("RAMAN getCommunications() Num AccountDeviceInstancees = " + accountDeviceInstanceList.size());
-			
+
 		Map<Long, Set<Long>> accountIdToDatasourceObjIdMap = new HashMap<Long, Set<Long>>();
 		for (AccountDeviceInstance accountDeviceInstance : accountDeviceInstanceList) {
 			long accountID = accountDeviceInstance.getAccount().getAccountId();
 			if (false == accountIdToDatasourceObjIdMap.containsKey(accountID)) {
 				accountIdToDatasourceObjIdMap.put(accountDeviceInstance.getAccount().getAccountId(),
-					new HashSet<Long>(db.getDataSourceObjIds(accountDeviceInstance.getDeviceId())));
-			}
-			else {
+						new HashSet<Long>(db.getDataSourceObjIds(accountDeviceInstance.getDeviceId())));
+			} else {
 				accountIdToDatasourceObjIdMap.get(accountID).addAll(db.getDataSourceObjIds(accountDeviceInstance.getDeviceId()));
 			}
 		}
@@ -893,7 +876,7 @@ public class CommunicationsManager {
 			Set<Long> ds_ids = entry.getValue();
 			String datasource_obj_ids_list = StringUtils.buildCSVString(ds_ids);
 
-			String accountClause = "( relationships.account1_id = " + account_id  + " OR  relationships.account2_id = " + account_id + " )";
+			String accountClause = "( relationships.account1_id = " + account_id + " OR  relationships.account2_id = " + account_id + " )";
 			String ds_oid_clause = "artifacts.data_source_obj_id IN ( " + datasource_obj_ids_list + " )";
 
 			if (!firstEntry) {
@@ -921,7 +904,7 @@ public class CommunicationsManager {
 					+ " artifacts.review_status_id AS review_status_id  "
 					+ " FROM blackboard_artifacts as artifacts"
 					+ "	JOIN relationships AS relationships"
-					+ "		ON artifacts.artifact_id = relationships.communication_artifact_id"
+					+ "		ON artifacts.artifact_id = relationships.relationship_source_obj_id"
 					+ " WHERE artifacts.artifact_type_id IN ( " + COMMUNICATION_ARTIFACT_TYPE_IDS_CSV_STR + " )";
 
 			// append sql to restrict search to specified account device instances 
@@ -943,7 +926,6 @@ public class CommunicationsManager {
 			System.out.println("RAMAN getCommunications() adiSQLClause = " + adiSQLClause);
 			System.out.println("RAMAN getCommunications() FilterSQL = " + filterSQL);
 			System.out.println("RAMAN getCommunications() QueryStr = " + queryStr);
-			
 
 			long startTime = System.nanoTime();
 			rs = connection.executeQuery(s, queryStr); //NON-NLS
@@ -956,9 +938,9 @@ public class CommunicationsManager {
 			}
 
 			long endTime = System.nanoTime();
-			System.out.println("RAMAN getCommunications() Time taken = " + (endTime - startTime)/1000000L);
+			System.out.println("RAMAN getCommunications() Time taken = " + (endTime - startTime) / 1000000L);
 			System.out.println("");
-			
+
 			return artifacts;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting relationships for account. " + ex.getMessage(), ex);
@@ -1031,8 +1013,6 @@ public class CommunicationsManager {
 
 		return normailzedEmailAddr;
 	}
-
-	
 
 	/**
 	 * Builds the SQL for the given CommunicationsFilter.
@@ -1113,7 +1093,6 @@ public class CommunicationsManager {
 		}
 	}
 
-	 
 //	 /**
 //	 * Get all account instances of a given type
 //	 *
@@ -1141,9 +1120,6 @@ public class CommunicationsManager {
 //
 //		return accountInstances;
 //	}
-
-	
-	
 //	/**
 //	 * Given an account ID, returns the ids of all instances of the account
 //	 *
@@ -1177,10 +1153,6 @@ public class CommunicationsManager {
 //			db.releaseSharedLock();
 //		}
 //	}
-	
-	
-	
-	
 //	/**
 //	 * Get all account types in use
 //	 *
@@ -1216,9 +1188,6 @@ public class CommunicationsManager {
 //			db.releaseSharedLock();
 //		}
 //	}
-	
-	
-	
 //	/**
 //	 * Get all accounts of given type
 //	 *
@@ -1255,8 +1224,6 @@ public class CommunicationsManager {
 //			db.releaseSharedLock();
 //		}
 //	}
-	
-	
 //	/**
 //	 * Get all accounts that have a relationship with the given account
 //	 *
@@ -1270,9 +1237,6 @@ public class CommunicationsManager {
 //	public List<Account> getAccountsWithRelationship(Account account) throws TskCoreException {
 //		return getAccountsWithRelationship(account.getAccountId());
 //	}
-	
-	
-	
 //	/**
 //	 * Get all account that have a relationship with a given account
 //	 *
@@ -1315,7 +1279,6 @@ public class CommunicationsManager {
 //			db.releaseSharedLock();
 //		}
 //	}
-	
 //	/**
 //	 * Return folders found in the email source file
 //	 *
@@ -1363,8 +1326,6 @@ public class CommunicationsManager {
 //
 //	}
 //
-
-	
 //	/**
 //	 * Return subfolders found in the email source file under the specified
 //	 * folder
@@ -1412,7 +1373,6 @@ public class CommunicationsManager {
 //		}
 //
 //	}
-
 //	/**
 //	 * Return email messages under given folder
 //	 *
@@ -1464,8 +1424,6 @@ public class CommunicationsManager {
 //		}
 //
 //	}
-	
-	
 //	/**
 //	 * Returns unique relation types between two accounts
 //	 *
@@ -1480,8 +1438,6 @@ public class CommunicationsManager {
 //	public List<BlackboardArtifact.Type> getRelationshipTypes(Account account1, Account account2) throws TskCoreException {
 //		return getRelationshipTypes(account1.getAccountId(), account2.getAccountId());
 //	}
-	
-	
 //	/**
 //	 * Returns unique relation types between two accounts
 //	 *
@@ -1506,7 +1462,7 @@ public class CommunicationsManager {
 //					+ " artifacts.review_status_id AS review_status_id"
 //					+ " FROM blackboard_artifacts AS artifacts"
 //					+ "	JOIN relationships AS relationships"
-//					+ "		ON artifacts.artifact_id = relationships.communication_artifact_id"
+//					+ "		ON artifacts.artifact_id = relationships.relationship_source_obj_id"
 //					+ " WHERE relationships.account1_id IN ( " + account1_id + ", " + account2_id + " )"
 //					+ " AND relationships.account2_id IN ( " + account1_id + ", " + account2_id + " )"
 //			); //NON-NLS
@@ -1527,7 +1483,6 @@ public class CommunicationsManager {
 //			db.releaseSharedLock();
 //		}
 //	}
-	
 //	/**
 //	 * Returns relationships between two accounts
 //	 *
@@ -1553,7 +1508,7 @@ public class CommunicationsManager {
 //					+ " artifacts.review_status_id AS review_status_id"
 //					+ " FROM blackboard_artifacts AS artifacts"
 //					+ "	JOIN relationships AS relationships"
-//					+ "		ON artifacts.artifact_id = relationships.communication_artifact_id"
+//					+ "		ON artifacts.artifact_id = relationships.relationship_source_obj_id"
 //					+ " WHERE relationships.account1_id IN ( " + account1_id + ", " + account2_id + " )"
 //					+ " AND relationships.account2_id IN ( " + account1_id + ", " + account2_id + " )"
 //			); //NON-NLS
@@ -1576,7 +1531,6 @@ public class CommunicationsManager {
 //			db.releaseSharedLock();
 //		}
 //	}
-
 //	/**
 //	 * Returns relationships, of given type, between two accounts
 //	 *
@@ -1604,7 +1558,7 @@ public class CommunicationsManager {
 //					+ " artifacts.review_status_id AS review_status_id"
 //					+ " FROM blackboard_artifacts AS artifacts"
 //					+ "	JOIN relationships AS relationships"
-//					+ "		ON artifacts.artifact_id = relationships.communication_artifact_id"
+//					+ "		ON artifacts.artifact_id = relationships.relationship_source_obj_id"
 //					+ "     WHERE artifacts.artifact_type_id = " + artifactType.getTypeID()
 //					+ " WHERE relationships.account1_id IN ( " + account1_id + ", " + account2_id + " )"
 //					+ " AND relationships.account2_id IN ( " + account1_id + ", " + account2_id + " )"
@@ -1628,7 +1582,6 @@ public class CommunicationsManager {
 //			db.releaseSharedLock();
 //		}
 //	}
-
 //	/**
 //	 * Get the number of relationships found on the given device
 //	 *
@@ -1653,7 +1606,7 @@ public class CommunicationsManager {
 //			String queryStr = "SELECT COUNT(*) AS count "
 //					+ " FROM blackboard_artifacts as artifacts"
 //					+ "	JOIN relationships AS relationships"
-//					+ "		ON artifacts.artifact_id = relationships.communication_artifact_id"
+//					+ "		ON artifacts.artifact_id = relationships.relationship_source_obj_id"
 //					+ " WHERE artifacts.data_source_obj_id IN ( " + datasource_obj_ids_list + " )"
 //					+ " AND   artifacts.artifact_type_id IN ( " + RELATIONSHIP_ARTIFACT_TYPE_IDS_CSV_STR + " )";
 //
@@ -1674,10 +1627,4 @@ public class CommunicationsManager {
 //			db.releaseSharedLock();
 //		}
 //	}
-	
 }
-
-
-
-
-
