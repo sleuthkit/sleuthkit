@@ -195,7 +195,6 @@ public class SleuthkitCase {
 
 		updateDatabaseSchema(null);
 
-		//initStandardTagNames();
 		CaseDbConnection connection = connections.getConnection();
 		initIngestModuleTypes(connection);
 		initIngestStatusTypes(connection);
@@ -607,7 +606,7 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 
 			// Add new tables for tags.
-			statement.execute("CREATE TABLE tag_names (tag_name_id INTEGER PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL, knownStatus INTEGER NOT NULL)"); //NON-NLS
+			statement.execute("CREATE TABLE tag_names (tag_name_id INTEGER PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL)"); //NON-NLS
 			statement.execute("CREATE TABLE content_tags (tag_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL, begin_byte_offset INTEGER NOT NULL, end_byte_offset INTEGER NOT NULL)"); //NON-NLS
 			statement.execute("CREATE TABLE blackboard_artifact_tags (tag_id INTEGER PRIMARY KEY, artifact_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL)"); //NON-NLS
 
@@ -6891,13 +6890,15 @@ public class SleuthkitCase {
 	 * @return A TagName data transfer object (DTO) for the new row.
 	 *
 	 * @throws TskCoreException
+	 * @Deprecated addOrUpdateTagName should be used this method calls addOrUpdateTagName with a default knownStatus value
 	 */
+	@Deprecated
 	public TagName addTagName(String displayName, String description, TagName.HTML_COLOR color) throws TskCoreException {
 		return addOrUpdateTagName(displayName, description, color, TskData.FileKnown.UNKNOWN);
 	}
 
 	/**
-	 * Inserts row into the tags_names table, or Updates the existing row if the 
+	 * Inserts row into the tags_names table, or updates the existing row if the
 	 * displayName already exists in the tag_names table in the case database.
 	 *
 	 * @param displayName The display name for the new tag name.
@@ -6941,7 +6942,6 @@ public class SleuthkitCase {
 			resultSet.next();
 			return new TagName(resultSet.getLong(1), //last_insert_rowid()
 					displayName, description, color, knownStatus);
-
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding row for " + displayName + " tag name to tag_names table", ex);
 		} finally {
@@ -6949,7 +6949,6 @@ public class SleuthkitCase {
 			connection.close();
 			releaseExclusiveLock();
 		}
-
 	}
 
 	/**
@@ -7858,7 +7857,6 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
-
 		}
 	}
 
@@ -7951,7 +7949,7 @@ public class SleuthkitCase {
 		COUNT_CHILD_OBJECTS_BY_PARENT("SELECT COUNT(obj_id) AS count FROM tsk_objects WHERE par_obj_id = ?"), //NON-NLS
 		SELECT_FILE_SYSTEM_BY_OBJECT("SELECT fs_obj_id from tsk_files WHERE obj_id=?"), //NON-NLS
 		SELECT_TAG_NAMES("SELECT * FROM tag_names"), //NON-NLS
-		SELECT_TAG_NAMES_IN_USE("SELECT * FROM tag_names " //NON-NLSE
+		SELECT_TAG_NAMES_IN_USE("SELECT * FROM tag_names " //NON-NLS
 				+ "WHERE tag_name_id IN " //NON-NLS
 				+ "(SELECT tag_name_id from content_tags UNION SELECT tag_name_id FROM blackboard_artifact_tags)"), //NON-NLS
 		INSERT_TAG_NAME("INSERT INTO tag_names (display_name, description, color, knownStatus) VALUES (?, ?, ?, ?)"), //NON-NLS
