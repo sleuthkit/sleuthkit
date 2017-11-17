@@ -6893,11 +6893,12 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	public TagName addTagName(String displayName, String description, TagName.HTML_COLOR color) throws TskCoreException {
-		return addTagName(displayName, description, color, TskData.FileKnown.UNKNOWN);
+		return addOrUpdateTagName(displayName, description, color, TskData.FileKnown.UNKNOWN);
 	}
 
 	/**
-	 * Inserts row into the tags_names table in the case database.
+	 * Inserts row into the tags_names table, or Updates the existing row if the 
+	 * displayName already exists in the tag_names table in the case database.
 	 *
 	 * @param displayName The display name for the new tag name.
 	 * @param description The description for the new tag name.
@@ -6909,14 +6910,28 @@ public class SleuthkitCase {
 	 *
 	 * @throws TskCoreException
 	 */
-	public TagName addTagName(String displayName, String description, TagName.HTML_COLOR color, TskData.FileKnown knownStatus) throws TskCoreException {
+	public TagName addOrUpdateTagName(String displayName, String description, TagName.HTML_COLOR color, TskData.FileKnown knownStatus) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireExclusiveLock();
 		ResultSet resultSet = null;
 		try {
-			// INSERT INTO tag_names (display_name, description, color, knownStatus) VALUES (?, ?, ?, ?)
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_TAG_NAME, Statement.RETURN_GENERATED_KEYS);
-			statement.clearParameters();
+			PreparedStatement statement;
+			if (dbType == DbType.POSTGRESQL) {
+				// INSERT INTO tag_names (display_name, description, color, knownStatus) VALUES (?, ?, ?, ?) ON CONFLICT (display_name) DO UPDATE SET description = ?, color = ?, knownStatus = ?
+				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OR_UPDATE_TAG_NAME_POSTGRES, Statement.RETURN_GENERATED_KEYS);
+				statement.clearParameters();
+				statement.setString(5, description);
+				statement.setString(6, color.getName());
+				statement.setByte(7, knownStatus.getFileKnownValue());
+			} else {
+				// WITH new (display_name, description, color, knownStatus) 
+				// AS ( VALUES(?, ?, ?, ?)) INSERT OR REPLACE INTO tag_names 
+				// (tag_name_id, display_name, description, color, knownStatus) 
+				// SELECT old.tag_name_id, new.display_name, new.description, new.color, new.knownStatus 
+				// FROM new LEFT JOIN tag_names AS old ON new.display_name = old.display_name
+				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OR_UPDATE_TAG_NAME_SQLITE, Statement.RETURN_GENERATED_KEYS);
+				statement.clearParameters();
+			}
 			statement.setString(1, displayName);
 			statement.setString(2, description);
 			statement.setString(3, color.getName());
@@ -6926,6 +6941,7 @@ public class SleuthkitCase {
 			resultSet.next();
 			return new TagName(resultSet.getLong(1), //last_insert_rowid()
 					displayName, description, color, knownStatus);
+
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding row for " + displayName + " tag name to tag_names table", ex);
 		} finally {
@@ -7842,6 +7858,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
+
 		}
 	}
 
@@ -7934,7 +7951,7 @@ public class SleuthkitCase {
 		COUNT_CHILD_OBJECTS_BY_PARENT("SELECT COUNT(obj_id) AS count FROM tsk_objects WHERE par_obj_id = ?"), //NON-NLS
 		SELECT_FILE_SYSTEM_BY_OBJECT("SELECT fs_obj_id from tsk_files WHERE obj_id=?"), //NON-NLS
 		SELECT_TAG_NAMES("SELECT * FROM tag_names"), //NON-NLS
-		SELECT_TAG_NAMES_IN_USE("SELECT * FROM tag_names " //NON-NLS
+		SELECT_TAG_NAMES_IN_USE("SELECT * FROM tag_names " //NON-NLSE
 				+ "WHERE tag_name_id IN " //NON-NLS
 				+ "(SELECT tag_name_id from content_tags UNION SELECT tag_name_id FROM blackboard_artifact_tags)"), //NON-NLS
 		INSERT_TAG_NAME("INSERT INTO tag_names (display_name, description, color, knownStatus) VALUES (?, ?, ?, ?)"), //NON-NLS
@@ -7963,7 +7980,13 @@ public class SleuthkitCase {
 		SELECT_ARTIFACT_OBJECTIDS_BY_PARENT("SELECT blackboard_artifacts.artifact_obj_id AS artifact_obj_id " //NON-NLS
 				+ "FROM tsk_objects INNER JOIN blackboard_artifacts " //NON-NLS
 				+ "ON tsk_objects.obj_id=blackboard_artifacts.obj_id " //NON-NLS
-				+ "WHERE (tsk_objects.par_obj_id = ?)"); //NON-NLS;
+				+ "WHERE (tsk_objects.par_obj_id = ?)"),
+		INSERT_OR_UPDATE_TAG_NAME_POSTGRES("INSERT INTO tag_names (display_name, description, color, knownStatus) VALUES (?, ?, ?, ?) ON CONFLICT (display_name) DO UPDATE SET description = ?, color = ?, knownStatus = ?"),
+		INSERT_OR_UPDATE_TAG_NAME_SQLITE("WITH new (display_name, description, color, knownStatus) "
+				+ "AS ( VALUES(?, ?, ?, ?)) INSERT OR REPLACE INTO tag_names "
+				+ "(tag_name_id, display_name, description, color, knownStatus) "
+				+ "SELECT old.tag_name_id, new.display_name, new.description, new.color, new.knownStatus "
+				+ "FROM new LEFT JOIN tag_names AS old ON new.display_name = old.display_name");
 		private final String sql;
 
 		private PREPARED_STATEMENT(String sql) {
@@ -8670,6 +8693,7 @@ public class SleuthkitCase {
 					observer.receiveError(context, errorMessage);
 				} catch (Exception ex) {
 					logger.log(Level.SEVERE, "Observer client unable to receive message: {0}, {1}", new Object[]{context, errorMessage, ex});
+
 				}
 			}
 		}
