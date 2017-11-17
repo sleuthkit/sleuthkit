@@ -375,7 +375,7 @@ public class CommunicationsManager {
 		while (iter.hasNext()) {
 			try {
 				UnorderedAccountPair accountPair = iter.next();
-				addAccountsRelationship(accountPair.getFirst(), accountPair.getSecond(), relationshipArtifact.getArtifactID(), dateTime, relationshipArtifact.getArtifactTypeID(), relationshipArtifact.getDataSourceObjectID());
+				addAccountsRelationship(accountPair.getFirst(), accountPair.getSecond(), relationshipArtifact.getId(), dateTime, relationshipArtifact.getArtifactTypeID(), relationshipArtifact.getDataSourceObjectID());
 			} catch (TskCoreException ex) {
 				LOGGER.log(Level.WARNING, "Could not get timezone for image", ex); //NON-NLS
 			}
@@ -904,7 +904,7 @@ public class CommunicationsManager {
 					+ " artifacts.review_status_id AS review_status_id  "
 					+ " FROM blackboard_artifacts as artifacts"
 					+ "	JOIN relationships AS relationships"
-					+ "		ON artifacts.artifact_id = relationships.relationship_source_obj_id"
+					+ "		ON artifacts.artifact_obj_id = relationships.relationship_source_obj_id"
 					+ " WHERE artifacts.artifact_type_id IN ( " + COMMUNICATION_ARTIFACT_TYPE_IDS_CSV_STR + " )";
 
 			// append sql to restrict search to specified account device instances 
@@ -1462,7 +1462,7 @@ public class CommunicationsManager {
 //					+ " artifacts.review_status_id AS review_status_id"
 //					+ " FROM blackboard_artifacts AS artifacts"
 //					+ "	JOIN relationships AS relationships"
-//					+ "		ON artifacts.artifact_id = relationships.relationship_source_obj_id"
+//					+ "		ON artifacts.artifact_obj_id = relationships.relationship_source_obj_id"
 //					+ " WHERE relationships.account1_id IN ( " + account1_id + ", " + account2_id + " )"
 //					+ " AND relationships.account2_id IN ( " + account1_id + ", " + account2_id + " )"
 //			); //NON-NLS
@@ -1508,7 +1508,7 @@ public class CommunicationsManager {
 //					+ " artifacts.review_status_id AS review_status_id"
 //					+ " FROM blackboard_artifacts AS artifacts"
 //					+ "	JOIN relationships AS relationships"
-//					+ "		ON artifacts.artifact_id = relationships.relationship_source_obj_id"
+//					+ "		ON artifacts.artifact_obj_id = relationships.relationship_source_obj_id"
 //					+ " WHERE relationships.account1_id IN ( " + account1_id + ", " + account2_id + " )"
 //					+ " AND relationships.account2_id IN ( " + account1_id + ", " + account2_id + " )"
 //			); //NON-NLS
@@ -1556,12 +1556,10 @@ public class CommunicationsManager {
 //					+ " artifacts.data_source_obj_id AS data_source_obj_id,"
 //					+ " artifacts.artifact_type_id AS artifact_type_id,"
 //					+ " artifacts.review_status_id AS review_status_id"
-//					+ " FROM blackboard_artifacts AS artifacts"
-//					+ "	JOIN relationships AS relationships"
-//					+ "		ON artifacts.artifact_id = relationships.relationship_source_obj_id"
-//					+ "     WHERE artifacts.artifact_type_id = " + artifactType.getTypeID()
-//					+ " WHERE relationships.account1_id IN ( " + account1_id + ", " + account2_id + " )"
-//					+ " AND relationships.account2_id IN ( " + account1_id + ", " + account2_id + " )"
+//					+ "	FROM relationships AS relationships"
+//					+ " WHERE artifacts.artifact_type_id = " + artifactType.getTypeID()
+//					+ "     AND relationships.account1_id IN ( " + account1_id + ", " + account2_id + " )"
+//					+ "     AND relationships.account2_id IN ( " + account1_id + ", " + account2_id + " )"
 //			); //NON-NLS
 //
 //			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
