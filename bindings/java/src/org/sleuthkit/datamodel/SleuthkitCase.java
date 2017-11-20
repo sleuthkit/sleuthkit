@@ -5349,25 +5349,22 @@ public class SleuthkitCase {
 		ResultSet rs2 = null;
 		try {
 			s1 = connection.createStatement();
-			rs1 = connection.executeQuery(s1, "SELECT * FROM tsk_image_info WHERE obj_id = " + id); //NON-NLS
+			rs1 = connection.executeQuery(s1, "SELECT tsk_image_info.*, data_source_info.device_id"
+							+ "FROM tsk_image_info"
+							+ "INNER JOIN data_source_info ON tsk_image_info.obj_id = data_source_info.obj_id"
+							+ "WHERE tsk_image_info.obj_id = " + id); //NON-NLS
 			if (rs1.next()) {
 				s2 = connection.createStatement();
-				rs2 = connection.executeQuery(s2, "SELECT * "
-						+ "FROM tsk_image_names, data_source_info "
-						+ "WHERE tsk_image_names.obj_id = data_source_info.obj_id "
-						+ "AND tsk_image_names.obj_id = " + rs1.getLong("obj_id")); //NON-NLS
+				rs2 = connection.executeQuery(s2, "SELECT name FROM tsk_image_names WHERE tsk_image_names.obj_id = " + id); //NON-NLS
 				List<String> imagePaths = new ArrayList<String>();
-				String device_id = null;
-				if (rs2.next()) {
-					device_id = rs2.getString("device_id");
-					do {
-						imagePaths.add(rs2.getString("name"));
-					} while (rs2.next());
+				while (rs2.next()) {
+					imagePaths.add(rs2.getString("name"));
 				}
 				long obj_id = rs1.getLong("obj_id"); //NON-NLS
 				long type = rs1.getLong("type"); //NON-NLS
 				long ssize = rs1.getLong("ssize"); //NON-NLS
 				String tzone = rs1.getString("tzone"); //NON-NLS
+				long size = rs1.getLong("size"); //NON-NLS
 				String md5 = rs1.getString("md5"); //NON-NLS
 				String name = rs1.getString("display_name");
 				if (name == null) {
@@ -5378,7 +5375,7 @@ public class SleuthkitCase {
 						name = "";
 					}
 				}
-				long size = rs1.getLong("size"); //NON-NLS
+				String device_id = rs1.getString("device_id");
 				
 				return new Image(this, obj_id, type, device_id, ssize, name,
 						imagePaths.toArray(new String[imagePaths.size()]), tzone, md5, size);
