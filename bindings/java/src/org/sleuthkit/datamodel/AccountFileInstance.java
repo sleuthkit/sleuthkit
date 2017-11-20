@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2017 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,20 +21,18 @@ package org.sleuthkit.datamodel;
 import java.util.Collection;
 
 /**
- * An instance of an account. An account may be found in multiple content
- objects, so there can be up to one account instance per content object, 
- and there is a 1:N relationship between Account objects and AccountFileInstance
- objects. Currently, there is an underlying TSK_ACCOUNT artifact for every 
- account instance. This may change in the future.
+ * An instance of an Account in a specific file. 
+ * An account may be found in multiple content
+ * objects, so there can be up to one account instance per content object, 
+ * and there is a 1:N relationship between Account objects and AccountFileInstance
+ * objects. Currently, there is an underlying TSK_ACCOUNT artifact for every 
+ * account instance. This may change in the future.
  */
 public class AccountFileInstance {
-
-	private final SleuthkitCase sleuthkitCase;
 	private final BlackboardArtifact artifact; 
 	private final Account account;
 
-	AccountFileInstance(SleuthkitCase sleuthkitCase, BlackboardArtifact artifact, Account account) throws TskCoreException {
-		this.sleuthkitCase = sleuthkitCase;
+	AccountFileInstance(BlackboardArtifact artifact, Account account) throws TskCoreException {
 		this.artifact = artifact;
 		this.account = account;
 	}
@@ -54,7 +52,8 @@ public class AccountFileInstance {
 	}
 
 	/**
-	 * Adds an attribute to the account instance.
+	 * Adds an attribute to the account instance.  It is faster to 
+	 * add them as part of a list.
 	 *
 	 * @param bbatr The attribute to add.
 	 * 
@@ -85,25 +84,4 @@ public class AccountFileInstance {
 	public Account getAccount() throws TskCoreException {
 		return this.account;
 	}
-
-
-	/**
-	 * Marks this account instance as invalid.
-	 *
-	 * @throws TskCoreException if an there is an error marking the account instance.
-	 */
-	public void rejectAccount() throws TskCoreException {
-		this.sleuthkitCase.setReviewStatus(this.artifact, BlackboardArtifact.ReviewStatus.REJECTED);
-	}
-
-	/**
-	 * Marks this account instance as valid.
-	 *
-	 * @throws TskCoreException if an there is an error marking the account instance.
-	 */
-	public void approveAccount() throws TskCoreException {
-		this.sleuthkitCase.setReviewStatus(this.artifact, BlackboardArtifact.ReviewStatus.APPROVED);
-	}
-
-
 }

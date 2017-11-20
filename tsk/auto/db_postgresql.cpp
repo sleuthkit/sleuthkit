@@ -618,7 +618,7 @@ int TskDbPostgreSQL::initialize() {
         ("CREATE TABLE reports (report_id BIGSERIAL PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL)","Error creating reports table: %s\n")
 		||
 		attempt_exec
-		("CREATE TABLE account_types (account_type_id INTEGER PRIMARY KEY, type_name TEXT NOT NULL, display_name TEXT NOT NULL)", 
+		("CREATE TABLE account_types (account_type_id INTEGER PRIMARY KEY, type_name TEXT UNIQUE NOT NULL, display_name TEXT NOT NULL)", 
 		"Error creating account_types table: %s\n")     
 		||
 		attempt_exec
