@@ -204,7 +204,7 @@ public class CommunicationsManager {
 		}
 
 		CaseDbConnection connection = db.getConnection();
-		db.acquireExclusiveLock();
+		db.acquireSingleUserCaseWriteLock();
 		Statement s = null;
 		ResultSet rs = null;
 		try {
@@ -244,7 +244,7 @@ public class CommunicationsManager {
 			closeResultSet(rs);
 			closeStatement(s);
 			connection.close();
-			db.releaseExclusiveLock();
+			db.releaseSingleUserCaseWriteLock();
 		}
 	}
 
@@ -297,7 +297,7 @@ public class CommunicationsManager {
 	public Account getAccount(Account.Type accountType, String accountUniqueID) throws TskCoreException {
 		Account account = null;
 		CaseDbConnection connection = db.getConnection();
-		db.acquireSharedLock();
+		db.acquireSingleUserCaseReadLock();
 		Statement s = null;
 		ResultSet rs = null;
 		try {
@@ -315,7 +315,7 @@ public class CommunicationsManager {
 			closeResultSet(rs);
 			closeStatement(s);
 			connection.close();
-			db.releaseSharedLock();
+			db.releaseSingleUserCaseReadLock();
 		}
 
 		return account;
@@ -414,7 +414,7 @@ public class CommunicationsManager {
 		if (null == account) {
 
 			CaseDbConnection connection = db.getConnection();
-			db.acquireExclusiveLock();
+			db.acquireSingleUserCaseWriteLock();
 			Statement s = null;
 			ResultSet rs = null;
 			try {
@@ -431,7 +431,7 @@ public class CommunicationsManager {
 				closeResultSet(rs);
 				closeStatement(s);
 				connection.close();
-				db.releaseExclusiveLock();
+				db.releaseSingleUserCaseWriteLock();
 			}
 		}
 
@@ -485,7 +485,7 @@ public class CommunicationsManager {
 	private BlackboardArtifact getAccountFileInstanceArtifact(Account.Type accountType, String accountUniqueID, Content sourceFile) throws TskCoreException {
 		BlackboardArtifact accountArtifact = null;
 		CaseDbConnection connection = db.getConnection();
-		db.acquireSharedLock();
+		db.acquireSingleUserCaseReadLock();
 		Statement s = null;
 		ResultSet rs = null;
 
@@ -523,7 +523,7 @@ public class CommunicationsManager {
 			closeResultSet(rs);
 			closeStatement(s);
 			connection.close();
-			db.releaseSharedLock();
+			db.releaseSingleUserCaseReadLock();
 		}
 
 		return accountArtifact;
@@ -537,7 +537,7 @@ public class CommunicationsManager {
 	 */
 	private void addAccountFileInstanceMapping(long accountId, long accountInstanceId) throws TskCoreException {
 		CaseDbConnection connection = db.getConnection();
-		db.acquireExclusiveLock();
+		db.acquireSingleUserCaseWriteLock();
 		Statement s = null;
 		ResultSet rs = null;
 
@@ -554,7 +554,7 @@ public class CommunicationsManager {
 			closeResultSet(rs);
 			closeStatement(s);
 			connection.close();
-			db.releaseExclusiveLock();
+			db.releaseSingleUserCaseWriteLock();
 		}
 	}
 
@@ -573,7 +573,7 @@ public class CommunicationsManager {
 			return this.typeNameToAccountTypeMap.get(accountTypeName);
 		}
 		CaseDbConnection connection = db.getConnection();
-		db.acquireSharedLock();
+		db.acquireSingleUserCaseReadLock();
 		Statement s = null;
 		ResultSet rs = null;
 
@@ -593,7 +593,7 @@ public class CommunicationsManager {
 			closeResultSet(rs);
 			closeStatement(s);
 			connection.close();
-			db.releaseSharedLock();
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 
@@ -611,7 +611,7 @@ public class CommunicationsManager {
 	private Account getAccount(long account_id) throws TskCoreException {
 		Account account = null;
 		CaseDbConnection connection = db.getConnection();
-		db.acquireSharedLock();
+		db.acquireSingleUserCaseReadLock();
 		Statement s = null;
 		ResultSet rs = null;
 
@@ -636,7 +636,7 @@ public class CommunicationsManager {
 			closeResultSet(rs);
 			closeStatement(s);
 			connection.close();
-			db.releaseSharedLock();
+			db.releaseSingleUserCaseReadLock();
 		}
 
 		return account;
@@ -659,7 +659,7 @@ public class CommunicationsManager {
 	 */
 	private void addAccountsRelationship(long account1_id, long account2_id, long relationship_source_obj_id, long dateTime, int relationship_type, long data_source_obj_id) throws TskCoreException {
 		CaseDbConnection connection = db.getConnection();
-		db.acquireExclusiveLock();
+		db.acquireSingleUserCaseWriteLock();
 		Statement s = null;
 		ResultSet rs = null;
 
@@ -676,7 +676,7 @@ public class CommunicationsManager {
 			closeResultSet(rs);
 			closeStatement(s);
 			connection.close();
-			db.releaseExclusiveLock();
+			db.releaseSingleUserCaseWriteLock();
 		}
 	}
 
@@ -694,7 +694,7 @@ public class CommunicationsManager {
 	 */
 	public List<AccountDeviceInstance> getAccountDeviceInstancesWithCommunications(CommunicationsFilter filter) throws TskCoreException {
 		CaseDbConnection connection = db.getConnection();
-		db.acquireSharedLock();
+		db.acquireSingleUserCaseReadLock();
 		Statement s = null;
 		ResultSet rs = null;
 
@@ -779,7 +779,7 @@ public class CommunicationsManager {
 			closeResultSet(rs);
 			closeStatement(s);
 			connection.close();
-			db.releaseSharedLock();
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 
@@ -806,7 +806,7 @@ public class CommunicationsManager {
 		String datasource_obj_ids_list = StringUtils.buildCSVString(ds_ids);
 
 		CaseDbConnection connection = db.getConnection();
-		db.acquireSharedLock();
+		db.acquireSingleUserCaseReadLock();
 		Statement s = null;
 		ResultSet rs = null;
 
@@ -854,7 +854,7 @@ public class CommunicationsManager {
 			closeResultSet(rs);
 			closeStatement(s);
 			connection.close();
-			db.releaseSharedLock();
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 
@@ -907,7 +907,7 @@ public class CommunicationsManager {
 		}
 
 		CaseDbConnection connection = db.getConnection();
-		db.acquireSharedLock();
+		db.acquireSingleUserCaseReadLock();
 		Statement s = null;
 		ResultSet rs = null;
 
@@ -966,7 +966,7 @@ public class CommunicationsManager {
 			closeResultSet(rs);
 			closeStatement(s);
 			connection.close();
-			db.releaseSharedLock();
+			db.releaseSingleUserCaseReadLock();
 		}
 	}
 
@@ -1151,7 +1151,7 @@ public class CommunicationsManager {
 //	List<Long> getAccountInstanceIds(long account_id) throws TskCoreException {
 //		ArrayList<Long> accountInstanceIDs = new ArrayList<Long>();
 //		CaseDbConnection connection = db.getConnection();
-//		db.acquireSharedLock();
+//		db.acquireSingleUserCaseReadLock();
 //		Statement s = null;
 //		ResultSet rs = null;
 //
@@ -1168,7 +1168,7 @@ public class CommunicationsManager {
 //			closeResultSet(rs);
 //			closeStatement(s);
 //			connection.close();
-//			db.releaseSharedLock();
+//			db.releaseSingleUserCaseReadLock();
 //		}
 //	}
 //	/**
@@ -1183,7 +1183,7 @@ public class CommunicationsManager {
 //		String query = "SELECT DISTINCT value_text FROM blackboard_attributes "
 //				+ "WHERE attribute_type_id = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE.getTypeID();
 //		CaseDbConnection connection = db.getConnection();
-//		db.acquireSharedLock();
+//		db.acquireSingleUserCaseReadLock();
 //		Statement s = null;
 //		ResultSet rs = null;
 //
@@ -1203,7 +1203,7 @@ public class CommunicationsManager {
 //			closeResultSet(rs);
 //			closeStatement(s);
 //			connection.close();
-//			db.releaseSharedLock();
+//			db.releaseSingleUserCaseReadLock();
 //		}
 //	}
 //	/**
@@ -1219,7 +1219,7 @@ public class CommunicationsManager {
 //	public List<Account> getAccounts(Account.Type accountType) throws TskCoreException {
 //		ArrayList<Account> accounts = new ArrayList<Account>();
 //		CaseDbConnection connection = db.getConnection();
-//		db.acquireSharedLock();
+//		db.acquireSingleUserCaseReadLock();
 //		Statement s = null;
 //		ResultSet rs = null;
 //
@@ -1239,7 +1239,7 @@ public class CommunicationsManager {
 //			closeResultSet(rs);
 //			closeStatement(s);
 //			connection.close();
-//			db.releaseSharedLock();
+//			db.releaseSingleUserCaseReadLock();
 //		}
 //	}
 //	/**
@@ -1267,7 +1267,7 @@ public class CommunicationsManager {
 //	 */
 //	List<Account> getAccountsWithRelationship(long accountID) throws TskCoreException {
 //		CaseDbConnection connection = db.getConnection();
-//		db.acquireSharedLock();
+//		db.acquireSingleUserCaseReadLock();
 //		Statement s = null;
 //		ResultSet rs = null;
 //
@@ -1294,7 +1294,7 @@ public class CommunicationsManager {
 //			closeResultSet(rs);
 //			closeStatement(s);
 //			connection.close();
-//			db.releaseSharedLock();
+//			db.releaseSingleUserCaseReadLock();
 //		}
 //	}
 //	/**
@@ -1309,7 +1309,7 @@ public class CommunicationsManager {
 //	 */
 //	public List<MessageFolder> getMessageFolders(long srcObjID) throws TskCoreException {
 //		CaseDbConnection connection = db.getConnection();
-//		db.acquireSharedLock();
+//		db.acquireSingleUserCaseReadLock();
 //		Statement s = null;
 //		ResultSet rs = null;
 //
@@ -1339,7 +1339,7 @@ public class CommunicationsManager {
 //			closeResultSet(rs);
 //			closeStatement(s);
 //			connection.close();
-//			db.releaseSharedLock();
+//			db.releaseSingleUserCaseReadLock();
 //		}
 //
 //	}
@@ -1358,7 +1358,7 @@ public class CommunicationsManager {
 //	 */
 //	public List<MessageFolder> getMessageFolders(long srcObjID, MessageFolder parentfolder) throws TskCoreException {
 //		CaseDbConnection connection = db.getConnection();
-//		db.acquireSharedLock();
+//		db.acquireSingleUserCaseReadLock();
 //		Statement s = null;
 //		ResultSet rs = null;
 //
@@ -1387,7 +1387,7 @@ public class CommunicationsManager {
 //			closeResultSet(rs);
 //			closeStatement(s);
 //			connection.close();
-//			db.releaseSharedLock();
+//			db.releaseSingleUserCaseReadLock();
 //		}
 //
 //	}
@@ -1403,7 +1403,7 @@ public class CommunicationsManager {
 //	 */
 //	public List<BlackboardArtifact> getMessages(MessageFolder parentfolder) throws TskCoreException {
 //		CaseDbConnection connection = db.getConnection();
-//		db.acquireSharedLock();
+//		db.acquireSingleUserCaseReadLock();
 //		Statement s = null;
 //		ResultSet rs = null;
 //
@@ -1438,7 +1438,7 @@ public class CommunicationsManager {
 //			closeResultSet(rs);
 //			closeStatement(s);
 //			connection.close();
-//			db.releaseSharedLock();
+//			db.releaseSingleUserCaseReadLock();
 //		}
 //
 //	}
@@ -1467,7 +1467,7 @@ public class CommunicationsManager {
 //	 */
 //	List<BlackboardArtifact.Type> getRelationshipTypes(long account1_id, long account2_id) throws TskCoreException {
 //		CaseDbConnection connection = db.getConnection();
-//		db.acquireSharedLock();
+//		db.acquireSingleUserCaseReadLock();
 //		Statement s = null;
 //		ResultSet rs = null;
 //
@@ -1498,7 +1498,7 @@ public class CommunicationsManager {
 //			closeResultSet(rs);
 //			closeStatement(s);
 //			connection.close();
-//			db.releaseSharedLock();
+//			db.releaseSingleUserCaseReadLock();
 //		}
 //	}
 //	/**
@@ -1512,7 +1512,7 @@ public class CommunicationsManager {
 //	 */
 //	public List<BlackboardArtifact> getRelationships(long account1_id, long account2_id) throws TskCoreException {
 //		CaseDbConnection connection = db.getConnection();
-//		db.acquireSharedLock();
+//		db.acquireSingleUserCaseReadLock();
 //		Statement s = null;
 //		ResultSet rs = null;
 //
@@ -1546,7 +1546,7 @@ public class CommunicationsManager {
 //			closeResultSet(rs);
 //			closeStatement(s);
 //			connection.close();
-//			db.releaseSharedLock();
+//			db.releaseSingleUserCaseReadLock();
 //		}
 //	}
 //	/**
@@ -1562,7 +1562,7 @@ public class CommunicationsManager {
 //	 */
 //	public List<BlackboardArtifact> getRelationshipsOfType(long account1_id, long account2_id, BlackboardArtifact.Type artifactType) throws TskCoreException {
 //		CaseDbConnection connection = db.getConnection();
-//		db.acquireSharedLock();
+//		db.acquireSingleUserCaseReadLock();
 //		Statement s = null;
 //		ResultSet rs = null;
 //
@@ -1595,7 +1595,7 @@ public class CommunicationsManager {
 //			closeResultSet(rs);
 //			closeStatement(s);
 //			connection.close();
-//			db.releaseSharedLock();
+//			db.releaseSingleUserCaseReadLock();
 //		}
 //	}
 //	/**
@@ -1613,7 +1613,7 @@ public class CommunicationsManager {
 //		List<Long> ds_ids = db.getDataSourceObjIds(deviceId);
 //		String datasource_obj_ids_list = buildCSVString(ds_ids);
 //		CaseDbConnection connection = db.getConnection();
-//		db.acquireSharedLock();
+//		db.acquireSingleUserCaseReadLock();
 //		Statement s = null;
 //		ResultSet rs = null;
 //
@@ -1640,7 +1640,7 @@ public class CommunicationsManager {
 //			closeResultSet(rs);
 //			closeStatement(s);
 //			connection.close();
-//			db.releaseSharedLock();
+//			db.releaseSingleUserCaseReadLock();
 //		}
 //	}
 }
