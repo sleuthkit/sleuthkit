@@ -79,6 +79,7 @@ public class BlackboardArtifact implements Content {
 	 * @param sourceObjId      The unique id of the content with which this
 	 *                         artifact is associated.
 	 * @param artifactObjID    The unique id this artifact, in tsk_objects
+	 * @param dataSourceObjId  Object ID of the datasource where the artifact was found.
 	 * @param artifactTypeID   The type id of this artifact.
 	 * @param artifactTypeName The type name of this artifact.
 	 * @param displayName      The display name of this artifact.
@@ -162,6 +163,15 @@ public class BlackboardArtifact implements Content {
 		return this.sourceObjId;
 	}
 
+	/**
+	 * Gets the object id of the data source for this artifact.
+	 *
+	 * @return The data source object id.
+	 */
+	public long getDataSourceObjectID() {
+		return this.dataSourceObjId;
+	}
+	
 	/**
 	 * Gets the artifact type id for this artifact.
 	 *
