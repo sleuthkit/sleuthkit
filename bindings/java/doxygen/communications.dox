@@ -1,0 +1,19 @@
+/*! \page mod_compage Communications 
+
+\section jni_com_overview Overview
+
+Work in progress
+
+Things to cover:
+- What to do when you encounter an Account.
+-- How often should you create an 'instance'
+--- Once per file so that we have traceability. 
+
+-- When do you create a relationship
+--- How many are stored between who
+--- What should be passed in etc.
+
+http://wiki.sleuthkit.org/index.php?title=Database_v7.2_Schema#Communications_.2F_Accounts
+
+
+*/
