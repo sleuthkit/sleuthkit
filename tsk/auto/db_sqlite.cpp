@@ -293,7 +293,7 @@ int
         "Error creating tsk_files_derived_method table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tag_names (tag_name_id INTEGER PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL)",
+        ("CREATE TABLE tag_names (tag_name_id INTEGER PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL, knownStatus INTEGER NOT NULL)",
         "Error creating tag_names table: %s\n")
         ||
         attempt_exec
