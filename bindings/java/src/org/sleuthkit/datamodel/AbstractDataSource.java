@@ -35,7 +35,7 @@ import java.util.logging.Logger;
  * will extend the Content interface and this class will become an abstract
  * superclass.
  */
-class AbstractDataSource implements DataSource {
+final class AbstractDataSource implements DataSource {
 
 	private final long objectId;
 	private final String deviceId;
