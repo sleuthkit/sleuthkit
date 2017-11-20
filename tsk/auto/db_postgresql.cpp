@@ -545,7 +545,7 @@ int TskDbPostgreSQL::initialize() {
         ||
         attempt_exec("CREATE TABLE tsk_files_derived_method (derived_id BIGSERIAL PRIMARY KEY, tool_name TEXT NOT NULL, tool_version TEXT NOT NULL, other TEXT)","Error creating tsk_files_derived_method table: %s\n")
         ||
-        attempt_exec("CREATE TABLE tag_names (tag_name_id BIGSERIAL PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL)","Error creating tag_names table: %s\n")
+        attempt_exec("CREATE TABLE tag_names (tag_name_id BIGSERIAL PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL, knownStatus INTEGER NOT NULL)","Error creating tag_names table: %s\n")
         ||
         attempt_exec("CREATE TABLE content_tags (tag_id BIGSERIAL PRIMARY KEY, obj_id BIGINT NOT NULL, tag_name_id BIGINT NOT NULL, comment TEXT NOT NULL, begin_byte_offset BIGINT NOT NULL, end_byte_offset BIGINT NOT NULL, "
         "FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id))",
