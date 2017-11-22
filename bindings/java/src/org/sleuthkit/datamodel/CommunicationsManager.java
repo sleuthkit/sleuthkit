@@ -47,44 +47,41 @@ public class CommunicationsManager {
 
 	private final SleuthkitCase db;
 
-	private Map<Account.Type, Integer> accountTypeToTypeIdMap;
-	private Map<String, Account.Type> typeNameToAccountTypeMap;
+	private final Map<Account.Type, Integer> accountTypeToTypeIdMap
+			= new ConcurrentHashMap<Account.Type, Integer>();
+	private final Map<String, Account.Type> typeNameToAccountTypeMap
+			= new ConcurrentHashMap<String, Account.Type>();
 
 	// Artifact types that represent a relationship between accounts 
-	private final Set<Integer> RELATIONSHIP_ARTIFACT_TYPE_IDS = new HashSet<Integer>(Arrays.asList(
-			BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE.getTypeID(),
-			BlackboardArtifact.ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID(),
-			BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT.getTypeID(),
-			BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG.getTypeID()
-	));
-	private String RELATIONSHIP_ARTIFACT_TYPE_IDS_CSV_STR;
+	private final static Set<Integer> RELATIONSHIP_ARTIFACT_TYPE_IDS
+			= new HashSet<Integer>(Arrays.asList(
+					BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE.getTypeID(),
+					BlackboardArtifact.ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID(),
+					BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT.getTypeID(),
+					BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG.getTypeID()
+			));
+	private static final String RELATIONSHIP_ARTIFACT_TYPE_IDS_CSV_STR
+			= StringUtils.buildCSVString(RELATIONSHIP_ARTIFACT_TYPE_IDS);
 
 	// Artifact types that represent communications between accounts 
-	private final Set<Integer> COMMUNICATION_ARTIFACT_TYPE_IDS = new HashSet<Integer>(Arrays.asList(
-			BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE.getTypeID(),
-			BlackboardArtifact.ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID(),
-			BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG.getTypeID()
-	));
-	private String COMMUNICATION_ARTIFACT_TYPE_IDS_CSV_STR;
+	private static final Set<Integer> COMMUNICATION_ARTIFACT_TYPE_IDS
+			= new HashSet<Integer>(Arrays.asList(
+					BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE.getTypeID(),
+					BlackboardArtifact.ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID(),
+					BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG.getTypeID()
+			));
+	private static final String COMMUNICATION_ARTIFACT_TYPE_IDS_CSV_STR
+			= StringUtils.buildCSVString(COMMUNICATION_ARTIFACT_TYPE_IDS);
 
 	CommunicationsManager(SleuthkitCase db) throws TskCoreException {
 		this.db = db;
 
-		init();
-	}
-
-	private void init() throws TskCoreException {
-		accountTypeToTypeIdMap = new ConcurrentHashMap<Account.Type, Integer>();
-		typeNameToAccountTypeMap = new ConcurrentHashMap<String, Account.Type>();
-		RELATIONSHIP_ARTIFACT_TYPE_IDS_CSV_STR = StringUtils.buildCSVString(RELATIONSHIP_ARTIFACT_TYPE_IDS);
-		COMMUNICATION_ARTIFACT_TYPE_IDS_CSV_STR = StringUtils.buildCSVString(COMMUNICATION_ARTIFACT_TYPE_IDS);
 		initAccountTypes();
 	}
 
 	/**
 	 * Make sure the predefined account types are in the account types table.
 	 *
-	 * @throws SQLException
 	 * @throws TskCoreException
 	 */
 	private void initAccountTypes() throws TskCoreException {
@@ -111,12 +108,10 @@ public class CommunicationsManager {
 						resultSet = null;
 					}
 
-					ResultSet rs2 = null;
-					rs2 = connection.executeQuery(statement, "SELECT account_type_id FROM account_types WHERE type_name = '" + type.getTypeName() + "'"); //NON-NLS
+					ResultSet rs2 = connection.executeQuery(statement, "SELECT account_type_id FROM account_types WHERE type_name = '" + type.getTypeName() + "'"); //NON-NLS
 					rs2.next();
 					int typeID = rs2.getInt("account_type_id");
 					rs2.close();
-					rs2 = null;
 
 					Account.Type accountType = new Account.Type(type.getTypeName(), type.getDisplayName());
 					this.accountTypeToTypeIdMap.put(accountType, typeID);
@@ -136,6 +131,8 @@ public class CommunicationsManager {
 	 * Reads in in the account types table.
 	 *
 	 * Returns the number of account types read in
+	 *
+	 * @return The number of account types read.
 	 *
 	 * @throws SQLException
 	 * @throws TskCoreException
@@ -704,12 +701,17 @@ public class CommunicationsManager {
 			// set up applicable filters
 			Set<String> applicableFilters1 = new HashSet<String>();
 			applicableFilters1.add(DateRangeFilter.class.getName());
+			applicableFilters1.add(DeviceFilter.class.getName());
+			String innerQueryTemplate
+					= "SELECT "
+					+ "				%1$1s as account_ID,"
+					+ "				data_source_obj_id"
+					+ " FROM relationships AS relationships"
+					+ "	WHERE relationships.relationship_type IN "
+					+ "		( " + COMMUNICATION_ARTIFACT_TYPE_IDS_CSV_STR + " )";
 
-			String innerQuery1 = "		SELECT DISTINCT account1_id FROM relationships  AS relationships"
-					+ "		  WHERE relationships.relationship_type IN ( " + COMMUNICATION_ARTIFACT_TYPE_IDS_CSV_STR + " )";
-
-			String innerQuery2 = "		SELECT DISTINCT account2_id FROM relationships AS relationships"
-					+ "		  WHERE relationships.relationship_type IN ( " + COMMUNICATION_ARTIFACT_TYPE_IDS_CSV_STR + " )";
+			String innerQuery1 = String.format(innerQueryTemplate, "account1_id");
+			String innerQuery2 = String.format(innerQueryTemplate, "account2_id");
 
 			// Date range filters are applied to the two inner queries
 			String innerQueryfilterSQL = getCommunicationsFilterSQL(filter, applicableFilters1);
@@ -720,27 +722,29 @@ public class CommunicationsManager {
 				innerQuery2 += " AND " + innerQueryfilterSQL;
 			}
 
+			String combinedInnerQuery
+					= "SELECT count(*) as count, account_id, data_source_obj_id "
+					+ " FROM ( " + innerQuery1 + " UNION " + innerQuery2 + " ) "
+					+ " GROUP BY account_id, data_source_obj_id";
+
 			System.out.println("RAMAN innerQueryfilterSQL = " + innerQueryfilterSQL);
 			System.out.println("RAMAN innerQuery1 = " + innerQuery1);
 			System.out.println("RAMAN innerQuery2 = " + innerQuery2);
 			System.out.println("");
 
-			String queryStr = "SELECT DISTINCT accounts.account_id AS account_id,"
+			String queryStr = "SELECT count,"
+					+ " accounts.account_id AS account_id,"
+					+ " account_types.type_name as type_name,"
+					+ " account_types.display_name as display_name,"
+					+ " accounts.account_unique_identifier as account_unique_identifier,"
 					+ " data_source_info.device_id AS device_id"
 					+ " FROM accounts AS accounts"
 					+ " JOIN account_types as account_types"
 					+ "		ON accounts.account_type_id = account_types.account_type_id"
-					+ "	JOIN account_to_instances_map AS account_to_instances_map"
-					+ "		ON accounts.account_id = account_to_instances_map.account_id"
-					+ "	JOIN blackboard_artifacts AS artifacts"
-					+ "		ON account_to_instances_map.account_instance_id = artifacts.artifact_id"
 					+ " JOIN data_source_info as data_source_info"
-					+ "		ON artifacts.data_source_obj_id = data_source_info.obj_id"
-					+ " WHERE accounts.account_id IN ("
-					+ innerQuery1
-					+ "		UNION "
-					+ innerQuery2
-					+ "  )";
+					+ "		ON account_device_instances.data_source_obj_id = data_source_info.obj_id"
+					+ " JOIN ( " + combinedInnerQuery + " ) as account_device_instances "
+					+ "		ON accounts.account_id = account_device_instances.account_id";
 
 			// set up applicable filters
 			Set<String> applicableFilters = new HashSet<String>();
@@ -750,7 +754,8 @@ public class CommunicationsManager {
 			// append SQL for filters
 			String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
 			if (!filterSQL.isEmpty()) {
-				queryStr += " AND " + filterSQL;
+				queryStr += " where " + filterSQL
+						+ " GRoup BY accounts.account_id, data_source_info.device_id";
 			}
 
 			System.out.println("RAMAN FilterSQL = " + filterSQL);
@@ -762,7 +767,13 @@ public class CommunicationsManager {
 			while (rs.next()) {
 				long account_id = rs.getLong("account_id");
 				String deviceID = rs.getString("device_id");
-				Account account = this.getAccount(account_id);
+				final String type_name = rs.getString("type_name");
+				final String display_name = rs.getString("display_name");
+				final String account_unique_identifier = rs.getString("account_unique_identifier");
+
+				Account account = new Account(account_id,
+						new Account.Type(type_name, display_name),
+						account_unique_identifier);
 
 				accountDeviceInstances.add(new AccountDeviceInstance(account, deviceID));
 			}
@@ -988,7 +999,7 @@ public class CommunicationsManager {
 	/**
 	 * Converts a list of accountIDs into a set of possible unordered pairs.
 	 *
-	 * @param accountIDs - list of accountID.
+	 * @param account_ids - list of accountID.
 	 *
 	 * @return Set<UnorderedPair<Long>>
 	 */
@@ -1036,6 +1047,13 @@ public class CommunicationsManager {
 	 * Builds the SQL for the given CommunicationsFilter.
 	 *
 	 * Gets the SQL for each subfilter and combines using AND.
+	 *
+	 * @param commFilter        The CommunicationsFilter to get the SQL for.
+	 * @param applicableFilters A Set of names of classes of subfilters that are
+	 *                          applicable. SubFilters not in this list will be
+	 *                          ignored.
+	 *
+	 * @return return SQL suitible for use IN a where clause.
 	 */
 	private String getCommunicationsFilterSQL(CommunicationsFilter commFilter, Set<String> applicableFilters) {
 		if (null == commFilter || commFilter.getAndFilters().isEmpty()) {
@@ -1078,7 +1096,7 @@ public class CommunicationsManager {
 		private final long account1_id;
 		private final long account2_id;
 
-		public UnorderedAccountPair(long account1_id, long account2_id) {
+		UnorderedAccountPair(long account1_id, long account2_id) {
 			this.account1_id = account1_id;
 			this.account2_id = account2_id;
 		}
