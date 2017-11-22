@@ -698,32 +698,29 @@ public class CommunicationsManager {
 		try {
 			s = connection.createStatement();
 
-			// set up applicable filters
-			Set<String> applicableFilters1 = new HashSet<String>();
-			applicableFilters1.add(DateRangeFilter.class.getName());
-			applicableFilters1.add(DeviceFilter.class.getName());
+			//TODO: this could be static 
+			//set up applicable filters 
+			Set<String> applicableInnerQueryFilters = new HashSet<String>(Arrays.asList(
+					DateRangeFilter.class.getName(),
+					DeviceFilter.class.getName()
+			));
+			String innerQueryfilterSQL = getCommunicationsFilterSQL(filter, applicableInnerQueryFilters);
+
+			//TODO: make (some of) this static?
 			String innerQueryTemplate
-					= "SELECT "
-					+ "				%1$1s as account_ID,"
-					+ "				data_source_obj_id"
-					+ " FROM relationships AS relationships"
-					+ "	WHERE relationships.relationship_type IN "
-					+ "		( " + COMMUNICATION_ARTIFACT_TYPE_IDS_CSV_STR + " )";
+					= " SELECT %1$1s as account_id,"
+					+ "		  data_source_obj_id"
+					+ " FROM relationships "
+					+ "	WHERE relationship_type IN "
+					+ "		( " + COMMUNICATION_ARTIFACT_TYPE_IDS_CSV_STR + " ) "
+					+ (innerQueryfilterSQL.isEmpty() ? "" : " AND " + innerQueryfilterSQL);
 
 			String innerQuery1 = String.format(innerQueryTemplate, "account1_id");
 			String innerQuery2 = String.format(innerQueryTemplate, "account2_id");
 
-			// Date range filters are applied to the two inner queries
-			String innerQueryfilterSQL = getCommunicationsFilterSQL(filter, applicableFilters1);
-			if (!innerQueryfilterSQL.isEmpty()) {
-				innerQuery1 += " AND " + innerQueryfilterSQL;
-			}
-			if (!innerQueryfilterSQL.isEmpty()) {
-				innerQuery2 += " AND " + innerQueryfilterSQL;
-			}
-
+			//this query groups by account_id and data_source_obj_id across both innerQueries
 			String combinedInnerQuery
-					= "SELECT count(*) as count, account_id, data_source_obj_id "
+					= "SELECT count(*) as relationship_count, account_id, data_source_obj_id "
 					+ " FROM ( " + innerQuery1 + " UNION " + innerQuery2 + " ) "
 					+ " GROUP BY account_id, data_source_obj_id";
 
@@ -732,31 +729,31 @@ public class CommunicationsManager {
 			System.out.println("RAMAN innerQuery2 = " + innerQuery2);
 			System.out.println("");
 
-			String queryStr = "SELECT count,"
-					+ " accounts.account_id AS account_id,"
-					+ " account_types.type_name as type_name,"
-					+ " account_types.display_name as display_name,"
-					+ " accounts.account_unique_identifier as account_unique_identifier,"
-					+ " data_source_info.device_id AS device_id"
-					+ " FROM accounts AS accounts"
-					+ " JOIN account_types as account_types"
-					+ "		ON accounts.account_type_id = account_types.account_type_id"
-					+ " JOIN data_source_info as data_source_info"
-					+ "		ON account_device_instances.data_source_obj_id = data_source_info.obj_id"
-					+ " JOIN ( " + combinedInnerQuery + " ) as account_device_instances "
-					+ "		ON accounts.account_id = account_device_instances.account_id";
-
 			// set up applicable filters
-			Set<String> applicableFilters = new HashSet<String>();
-			applicableFilters.add(DeviceFilter.class.getName());
-			applicableFilters.add(AccountTypeFilter.class.getName());
-
-			// append SQL for filters
+			Set<String> applicableFilters = new HashSet<String>(Arrays.asList(
+					//					DeviceFilter.class.getName(),
+					AccountTypeFilter.class.getName()
+			));
 			String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
-			if (!filterSQL.isEmpty()) {
-				queryStr += " where " + filterSQL
-						+ " GRoup BY accounts.account_id, data_source_info.device_id";
-			}
+
+			String queryStr = "SELECT "
+					//account info
+					+ " accounts.account_id AS account_id,"
+					+ " accounts.account_unique_identifier AS account_unique_identifier,"
+					//account type info
+					+ " account_types.type_name AS type_name,"
+					//Account device instance info
+					+ " relationship_count,"
+					+ " data_source_info.device_id AS device_id"
+					+ " FROM ( " + combinedInnerQuery + " ) AS account_device_instances"
+					+ " JOIN accounts AS accounts"
+					+ "		ON accounts.account_id = account_device_instances.account_id"
+					+ " JOIN account_types AS account_types"
+					+ "		ON accounts.account_type_id = account_types.account_type_id"
+					+ " JOIN data_source_info AS data_source_info"
+					+ "		ON account_device_instances.data_source_obj_id = data_source_info.obj_id"
+					+ (filterSQL.isEmpty() ? "" : " WHERE " + filterSQL)
+					+ " GRoup BY accounts.account_id, data_source_info.device_id";
 
 			System.out.println("RAMAN FilterSQL = " + filterSQL);
 			System.out.println("RAMAN QueryStr = " + queryStr);
@@ -768,13 +765,10 @@ public class CommunicationsManager {
 				long account_id = rs.getLong("account_id");
 				String deviceID = rs.getString("device_id");
 				final String type_name = rs.getString("type_name");
-				final String display_name = rs.getString("display_name");
 				final String account_unique_identifier = rs.getString("account_unique_identifier");
 
-				Account account = new Account(account_id,
-						new Account.Type(type_name, display_name),
-						account_unique_identifier);
-
+				Account.Type accountType = typeNameToAccountTypeMap.get(type_name);
+				Account account = new Account(account_id, accountType, account_unique_identifier);
 				accountDeviceInstances.add(new AccountDeviceInstance(account, deviceID));
 			}
 
