@@ -34,11 +34,11 @@ public class Account {
 	private final Account.Type accountType;
 	private final String accountUniqueID;
 
-	//Why does this implement Serializable?
+	//JIRA-901 Why does this implement Serializable?
 	public static final class Type implements Serializable {
 
 		private static final long serialVersionUID = 1L;
-		//Should the  display names of predefined types be internationalized?
+		//JIRA-900:Should the display names of predefined types be internationalized?
 		public static final Account.Type CREDIT_CARD = new Type("CREDIT_CARD", "Credit Card");
 		public static final Account.Type DEVICE = new Type("DEVICE", "Device");
 		public static final Account.Type PHONE = new Type("PHONE", "Phone");
