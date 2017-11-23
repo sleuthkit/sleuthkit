@@ -185,7 +185,7 @@ public class CommunicationsManager {
 	}
 
 	/**
-	 * Add an account type.
+	 * Add an account type. Returns the type if it is already defined. 
 	 *
 	 * @param accountTypeName account type name
 	 * @param displayName     account type display name
@@ -249,38 +249,45 @@ public class CommunicationsManager {
 	}
 
 	/**
-	 * Create an AccountFileInstance with the given account type and account ID,
-	 * and sourceObj. if it doesn't exist already.
-	 *
+	 * Records that an account was used in a specific file. 
+	 * Behind the scenes, it will create a case-specific Account object if 
+	 * it does not already exist and create the needed database entries
+	 * (which currently include making a BlackboardArtifact.
 	 *
 	 * @param accountType     account type
-	 * @param accountUniqueID unique account identifier
+	 * @param accountUniqueID unique account identifier (such as email address)
 	 * @param moduleName      module creating the account
-	 * @param sourceObj       source content
+	 * @param sourceFile       source file the account was found in (for the blackboard)
 	 *
 	 * @return AccountFileInstance
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
 	 */
-	public AccountFileInstance createAccountFileInstance(Account.Type accountType, String accountUniqueID, String moduleName, Content sourceObj) throws TskCoreException {
-		AccountFileInstance accountInstance = null;
+	public AccountFileInstance createAccountFileInstance(Account.Type accountType, String accountUniqueID, String moduleName, Content sourceFile) throws TskCoreException {
+		
+		// make or get the Account (unique at the case-level)
 		Account account = getOrCreateAccount(accountType, normalizeAccountID(accountType, accountUniqueID));
 
-		BlackboardArtifact accountArtifact = getOrCreateAccountFileInstanceArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT, accountType, normalizeAccountID(accountType, accountUniqueID), moduleName, sourceObj);
-		accountInstance = new AccountFileInstance(this.db, accountArtifact, account);
+		/* make or get the artifact. Will not create one if it already exists for the sourceFile.
+		 * Such as an email PST that has the same email address multiple times.  Only one artifact is 
+		 * created for each email message in that PST.
+		 */
+		BlackboardArtifact accountArtifact = getOrCreateAccountFileInstanceArtifact(accountType, normalizeAccountID(accountType, accountUniqueID), moduleName, sourceFile);
 
 		// add a row to Accounts to Instances mapping table
+		// @@@ BC: Seems like we should only do this if we had to create the artifact. 
+		// But, it will probably fail to create a new one based on unique constraints. 
 		addAccountFileInstanceMapping(account.getAccountId(), accountArtifact.getArtifactID());
 
-		return accountInstance;
+		return new AccountFileInstance(accountArtifact, account);
 	}
 
 	/**
 	 * Get the Account with the given account type and account ID.
 	 *
 	 * @param accountType     account type
-	 * @param accountUniqueID unique account identifier
+	 * @param accountUniqueID unique account identifier (such as an email address)
 	 *
 	 * @return Account, returns NULL is no matching account found
 	 *
@@ -324,24 +331,24 @@ public class CommunicationsManager {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 *
 	 */
-	public AccountFileInstance getAccountFileInstance(BlackboardArtifact artifact) throws TskCoreException {
-		AccountFileInstance accountInstance = null;
-		if (artifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT.getTypeID()) {
-			String accountTypeStr = artifact.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE)).getValueString();
-			String accountID = artifact.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ID)).getValueString();
-			Account.Type accountType = getAccountType(accountTypeStr);
-
-			Account account = getAccount(accountType, accountID);
-			accountInstance = new AccountFileInstance(this.db, artifact, account);
-		} else {
-			throw new TskCoreException("Unexpected Artifact type = " + artifact.getArtifactTypeID());
-		}
-
-		return accountInstance;
-	}
+//	public AccountFileInstance getAccountFileInstance(BlackboardArtifact artifact) throws TskCoreException {
+//		AccountFileInstance accountInstance = null;
+//		if (artifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT.getTypeID()) {
+//			String accountTypeStr = artifact.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE)).getValueString();
+//			String accountID = artifact.getAttribute(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ID)).getValueString();
+//			Account.Type accountType = getAccountType(accountTypeStr);
+//
+//			Account account = getAccount(accountType, accountID);
+//			accountInstance = new AccountFileInstance(artifact, account);
+//		} else {
+//			throw new TskCoreException("Unexpected Artifact type = " + artifact.getArtifactTypeID());
+//		}
+//
+//		return accountInstance;
+//	}
 
 	/**
-	 * Add a relationship between the given sender and recipient account
+	 * Add relationships between the sender and recipient account
 	 * instances.
 	 *
 	 * @param sender               sender account
@@ -359,6 +366,10 @@ public class CommunicationsManager {
 			throw new TskCoreException("Unexpected Artifact type = " + relationshipArtifact.getArtifactTypeID());
 		}
 
+		// @@@ BC: We later make some assumptions in the queries about the relationship and the account instances being for the same 'source'. 
+		// we should add some logic here to ensure that all AccountFileInstance.artifact.source_obj_id are equal and equal relationshipArtifact.source_obj_id. 
+		
+		
 		// Currently we do not save the direction of communication
 		List<Long> accountIDs = new ArrayList<Long>();
 		if (null != sender) {
@@ -428,27 +439,28 @@ public class CommunicationsManager {
 	}
 
 	/**
-	 * Get the blackboard artifact for the given account type and account ID.
+	 * Get the blackboard artifact for the given account type, account ID, and source file.
 	 * Create an artifact and return that, of a matching doesn't exists
 	 *
-	 * @param artifactType    artifact type - will be TSK_ACCOUNT
 	 * @param accountType     account type
 	 * @param accountUniqueID accountID
+	 * @param sourceFile		  Source file (for the artifact)
 	 *
 	 * @return blackboard artifact, returns NULL is no matching account found
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
 	 */
-	BlackboardArtifact getOrCreateAccountFileInstanceArtifact(BlackboardArtifact.ARTIFACT_TYPE artifactType, Account.Type accountType, String accountUniqueID, String moduleName, Content sourceObj) throws TskCoreException {
-		BlackboardArtifact accountArtifact = getAccountFileInstanceArtifact(artifactType, accountType, accountUniqueID, sourceObj);
-
+	BlackboardArtifact getOrCreateAccountFileInstanceArtifact(Account.Type accountType, String accountUniqueID, String moduleName, Content sourceFile) throws TskCoreException {
+		
+		// see if it already exists
+		BlackboardArtifact accountArtifact = getAccountFileInstanceArtifact(accountType, accountUniqueID, sourceFile);
 		if (null != accountArtifact) {
 			return accountArtifact;
 		}
 
 		// Create a new artifact.
-		accountArtifact = db.newBlackboardArtifact(artifactType.getTypeID(), sourceObj.getId());
+		accountArtifact = db.newBlackboardArtifact(BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT, sourceFile.getId());
 
 		Collection<BlackboardAttribute> attributes = new ArrayList<BlackboardAttribute>();
 		attributes.add(new BlackboardAttribute(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE, moduleName, accountType.getTypeName()));
@@ -459,18 +471,18 @@ public class CommunicationsManager {
 	}
 
 	/**
-	 * Get the blackboard artifact for the given account type and account ID
+	 * Get the blackboard artifact for the given account type, account ID, and source file
 	 *
-	 * @param artifactType    artifact type - will be TSK_ACCOUNT
 	 * @param accountType     account type
 	 * @param accountUniqueID accountID
+	 * @param sourceFile		  Source file (for the artifact)
 	 *
 	 * @return blackboard artifact, returns NULL is no matching account found
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
 	 */
-	private BlackboardArtifact getAccountFileInstanceArtifact(BlackboardArtifact.ARTIFACT_TYPE artifactType, Account.Type accountType, String accountUniqueID, Content sourceObj) throws TskCoreException {
+	private BlackboardArtifact getAccountFileInstanceArtifact(Account.Type accountType, String accountUniqueID, Content sourceFile) throws TskCoreException {
 		BlackboardArtifact accountArtifact = null;
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSingleUserCaseReadLock();
@@ -492,10 +504,10 @@ public class CommunicationsManager {
 					+ "		ON artifacts.artifact_id = attr_account_id.artifact_id"
 					+ "		AND attr_account_id.attribute_type_id = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ID.getTypeID()
 					+ "	    AND attr_account_id.value_text = '" + accountUniqueID + "'"
-					+ " WHERE artifacts.artifact_type_id = " + artifactType.getTypeID()
+					+ " WHERE artifacts.artifact_type_id = " + BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT.getTypeID()
 					+ " AND attr_account_type.attribute_type_id = " + BlackboardAttribute.ATTRIBUTE_TYPE.TSK_ACCOUNT_TYPE.getTypeID()
 					+ " AND attr_account_type.value_text = '" + accountType.getTypeName() + "'"
-					+ " AND artifacts.obj_id = " + sourceObj.getId(); //NON-NLS
+					+ " AND artifacts.obj_id = " + sourceFile.getId(); //NON-NLS
 
 			rs = connection.executeQuery(s, queryStr); //NON-NLS
 			if (rs.next()) {
@@ -517,6 +529,12 @@ public class CommunicationsManager {
 		return accountArtifact;
 	}
 
+	/**
+	 * 
+	 * @param accountId - database row id
+	 * @param accountInstanceId  - Artifact ID of instance
+	 * @throws TskCoreException 
+	 */
 	private void addAccountFileInstanceMapping(long accountId, long accountInstanceId) throws TskCoreException {
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSingleUserCaseWriteLock();

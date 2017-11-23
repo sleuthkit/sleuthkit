@@ -25,11 +25,11 @@ import java.util.List;
 /**
  * An entity that has a type and a unique identifier. Example types include a
  * Bank Account, Credit Card, Email address, Phone number, phone, Application,
- * Web-site login, etc.
+ * Web-site login, etc.  Accounts are unique to the case. 
  */
 public class Account {
 
-	private final long account_id;	// primary key in the Accounts table 
+	private final long account_id;	// primary key in the Accounts table, unique at the case-level 
 
 	private final Account.Type accountType;
 	private final String accountUniqueID;
@@ -97,9 +97,11 @@ public class Account {
 				return true;
 			} else if (!(that instanceof Account.Type)) {
 				return false;
-			} else {
-				return ((Account.Type) that).sameType(this);
-			}
+			} 
+			
+			Account.Type thatType = (Account.Type) that;
+			// DB table enforces uniqueness for type name
+			return this.typeName.equals(thatType.getTypeName());
 		}
 
 		@Override
@@ -116,40 +118,25 @@ public class Account {
 		public String toString() {
 			return " displayName=" + this.displayName
 					+ ", typeName=" + this.typeName + ")";
-
-		}
-
-		/**
-		 * Determines if this account type object is equivalent to another
-		 * account type object.
-		 *
-		 * @param that the other type
-		 *
-		 * @return true if it is the same type
-		 */
-		private boolean sameType(Account.Type that) {
-			return this.typeName.equals(that.getTypeName())
-					&& this.displayName.equals(that.getDisplayName());
 		}
 	}
 
 	Account(long account_id, Account.Type accountType, String accountUniqueID) throws TskCoreException {
-
 		this.account_id = account_id;
-
 		this.accountType = accountType;
 		this.accountUniqueID = accountUniqueID;
-
 	}
 
 	/**
-	 * Gets unique string identifier for the account
+	 * Gets unique identifier (assigned by a provider) for the account.
+	 * Example includes an email address.
 	 *
 	 * @return unique account id.
 	 */
 	public String getAccountUniqueID() {
 		return this.accountUniqueID;
 	}
+	
 	/**
 	 * Gets the account type
 	 *
@@ -160,12 +147,11 @@ public class Account {
 	}
 
 	/**
-	 * Gets row id in the Accounts table
+	 * Gets a case-specific unique identifier for this account (from the database)
 	 *
 	 * @return unique row id.
 	 */
 	public long getAccountId() {
 		return this.account_id;
 	}
-
 }
