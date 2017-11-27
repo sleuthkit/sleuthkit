@@ -699,6 +699,7 @@ public class CommunicationsManager {
 		try {
 			s = connection.createStatement();
 
+
 			//TODO: this could be static 
 			//set up applicable filters 
 			Set<String> applicableInnerQueryFilters = new HashSet<String>(Arrays.asList(
@@ -725,6 +726,7 @@ public class CommunicationsManager {
 					+ " FROM ( " + innerQuery1 + " UNION " + innerQuery2 + " ) "
 					+ " GROUP BY account_id, data_source_obj_id";
 
+
 			System.out.println("RAMAN innerQueryfilterSQL = " + innerQueryfilterSQL);
 			System.out.println("RAMAN innerQuery1 = " + innerQuery1);
 			System.out.println("RAMAN innerQuery2 = " + innerQuery2);
@@ -732,9 +734,12 @@ public class CommunicationsManager {
 
 			// set up applicable filters
 			Set<String> applicableFilters = new HashSet<String>(Arrays.asList(
-					//					DeviceFilter.class.getName(),
-					AccountTypeFilter.class.getName()
+									CommunicationsFilter.DeviceFilter.class.getName(),
+					CommunicationsFilter.AccountTypeFilter.class.getName()
 			));
+		
+		
+		
 			String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
 
 			String queryStr = "SELECT "
@@ -828,8 +833,8 @@ public class CommunicationsManager {
 
 			// set up applicable filters
 			Set<String> applicableFilters = new HashSet<String>();
-			applicableFilters.add(RelationshipTypeFilter.class.getName());
-			applicableFilters.add(DateRangeFilter.class.getName());
+			applicableFilters.add(CommunicationsFilter.RelationshipTypeFilter.class.getName());
+			applicableFilters.add(CommunicationsFilter.DateRangeFilter.class.getName());
 
 			// append SQL for filters
 			String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
@@ -938,8 +943,8 @@ public class CommunicationsManager {
 
 			// set up applicable filters
 			Set<String> applicableFilters = new HashSet<String>();
-			applicableFilters.add(RelationshipTypeFilter.class.getName());
-			applicableFilters.add(DateRangeFilter.class.getName());
+			applicableFilters.add(CommunicationsFilter.RelationshipTypeFilter.class.getName());
+			applicableFilters.add(CommunicationsFilter.DateRangeFilter.class.getName());
 
 			// append SQL for filters
 			String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
@@ -1058,7 +1063,7 @@ public class CommunicationsManager {
 		String sqlStr = "";
 		StringBuilder sqlSB = new StringBuilder();
 		boolean first = true;
-		for (SubFilter subFilter : commFilter.getAndFilters()) {
+		for (CommunicationsFilter.SubFilter subFilter : commFilter.getAndFilters()) {
 
 			// If the filter is applicable
 			if (applicableFilters.contains(subFilter.getClass().getName())) {
