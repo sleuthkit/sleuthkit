@@ -40,15 +40,24 @@ public class CommunicationsFilter {
 		//this.orFilters = new ArrayList<SubFilter>;
 	}
 
-	/*
-	 * Returns the AND list of filters.
+	/**
+	 * Returns the list of filters that will be ANDed together when applied to a
+	 * query.
+	 *
+	 * NOTE: The returned list is unmodifiable, new filters should be added via
+	 * addAndFilter.
+	 *
+	 * @return An unmodifiable list of the filter.
 	 */
-	public List<SubFilter> getAndFilters() {
-		return andFilters;
+	List<SubFilter> getAndFilters() {
+		return Collections.unmodifiableList(andFilters);
 	}
 
-	/*
-	 * Adds a filter to AND list.
+	/**
+	 * Adds a filter to list of filters that will be ANDed together when applied
+	 * to a query.
+	 *
+	 * @param subFilter The SubFilter to add.
 	 */
 	public void addAndFilter(SubFilter subFilter) {
 		andFilters.add(subFilter);
@@ -80,7 +89,7 @@ public class CommunicationsFilter {
 	 * Filters communications by relationship type.
 	 *
 	 */
-	public static class RelationshipTypeFilter extends CommunicationsFilter.SubFilter {
+	public static class RelationshipTypeFilter extends SubFilter {
 
 		private final Set<BlackboardArtifact.ARTIFACT_TYPE> relationshipTypes;
 
@@ -99,7 +108,7 @@ public class CommunicationsFilter {
 		 * @return list of relationship types.
 		 */
 		Set<BlackboardArtifact.ARTIFACT_TYPE> getRelationshipTypes() {
-			return  Collections.unmodifiableSet(relationshipTypes);
+			return Collections.unmodifiableSet(relationshipTypes);
 		}
 
 		/**
@@ -137,7 +146,7 @@ public class CommunicationsFilter {
 		}
 	}
 
-	public static class DateRangeFilter extends CommunicationsFilter.SubFilter {
+	public static class DateRangeFilter extends SubFilter {
 
 		private final long startDate;
 		private final long endDate;
@@ -199,7 +208,7 @@ public class CommunicationsFilter {
 	 * Filter communications by account type.
 	 *
 	 */
-	public static class AccountTypeFilter extends CommunicationsFilter.SubFilter {
+	public static class AccountTypeFilter extends SubFilter {
 
 		private final Set<Account.Type> accountTypes;
 
@@ -261,7 +270,7 @@ public class CommunicationsFilter {
 	 * Filter by device ids.
 	 *
 	 */
-	public static class DeviceFilter extends CommunicationsFilter.SubFilter {
+	public static class DeviceFilter extends SubFilter {
 
 		private final Set<String> deviceIds;
 
