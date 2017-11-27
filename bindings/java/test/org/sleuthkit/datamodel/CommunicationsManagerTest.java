@@ -1394,6 +1394,8 @@ public class CommunicationsManagerTest {
 
 		} catch (TskCoreException ex) {
 			LOGGER.log(Level.SEVERE, "Failed to add Email artifact", ex);
+		} catch (TskDataException ex) {
+			LOGGER.log(Level.SEVERE, "Failed to add Email artifact", ex);
 		}
 
 		return bbart;
@@ -1462,6 +1464,8 @@ public class CommunicationsManagerTest {
 
 		} catch (TskCoreException ex) {
 			LOGGER.log(Level.SEVERE, "Unable to add CallLog artifact ", ex); //NON-NLS
+		} catch (TskDataException ex) {
+			LOGGER.log(Level.SEVERE, "Unable to add CallLog artifact ", ex); //NON-NLS
 		}
 	}
 
@@ -1493,6 +1497,8 @@ public class CommunicationsManagerTest {
 
 		} catch (TskCoreException ex) {
 			LOGGER.log(Level.SEVERE, "Unable to add TSK_MESSAGE artifact ", ex); //NON-NLS
+		} catch (TskDataException ex) {
+			LOGGER.log(Level.SEVERE, "Unable to add TSK_MESSAGE artifact ", ex); //NON-NLS
 		}
 	}
 
@@ -1515,6 +1521,8 @@ public class CommunicationsManagerTest {
 			commsMgr.addRelationships(deviceAccount, accountInstanceList, bbart, 0);
 
 		} catch (TskCoreException ex) {
+			LOGGER.log(Level.SEVERE, "Unable to add Contact artifact ", ex); //NON-NLS
+		} catch (TskDataException ex) {
 			LOGGER.log(Level.SEVERE, "Unable to add Contact artifact ", ex); //NON-NLS
 		}
 	}

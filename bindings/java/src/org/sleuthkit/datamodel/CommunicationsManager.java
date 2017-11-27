@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2017 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -182,7 +182,7 @@ public class CommunicationsManager {
 	}
 
 	/**
-	 * Add an account type. Returns the type if it is already defined. 
+	 * Add an account type. Returns the type if it is already defined.
 	 *
 	 * @param accountTypeName account type name
 	 * @param displayName     account type display name
@@ -246,15 +246,16 @@ public class CommunicationsManager {
 	}
 
 	/**
-	 * Records that an account was used in a specific file. 
-	 * Behind the scenes, it will create a case-specific Account object if 
-	 * it does not already exist and create the needed database entries
-	 * (which currently include making a BlackboardArtifact.
+	 * Records that an account was used in a specific file. Behind the scenes,
+	 * it will create a case-specific Account object if it does not already
+	 * exist and create the needed database entries (which currently include
+	 * making a BlackboardArtifact.
 	 *
 	 * @param accountType     account type
 	 * @param accountUniqueID unique account identifier (such as email address)
 	 * @param moduleName      module creating the account
-	 * @param sourceFile       source file the account was found in (for the blackboard)
+	 * @param sourceFile      source file the account was found in (for the
+	 *                        blackboard)
 	 *
 	 * @return AccountFileInstance
 	 *
@@ -262,13 +263,15 @@ public class CommunicationsManager {
 	 *                          within TSK core
 	 */
 	public AccountFileInstance createAccountFileInstance(Account.Type accountType, String accountUniqueID, String moduleName, Content sourceFile) throws TskCoreException {
-		
+
 		// make or get the Account (unique at the case-level)
 		Account account = getOrCreateAccount(accountType, normalizeAccountID(accountType, accountUniqueID));
 
-		/* make or get the artifact. Will not create one if it already exists for the sourceFile.
-		 * Such as an email PST that has the same email address multiple times.  Only one artifact is 
-		 * created for each email message in that PST.
+		/*
+		 * make or get the artifact. Will not create one if it already exists
+		 * for the sourceFile. Such as an email PST that has the same email
+		 * address multiple times. Only one artifact is created for each email
+		 * message in that PST.
 		 */
 		BlackboardArtifact accountArtifact = getOrCreateAccountFileInstanceArtifact(accountType, normalizeAccountID(accountType, accountUniqueID), moduleName, sourceFile);
 
@@ -284,7 +287,8 @@ public class CommunicationsManager {
 	 * Get the Account with the given account type and account ID.
 	 *
 	 * @param accountType     account type
-	 * @param accountUniqueID unique account identifier (such as an email address)
+	 * @param accountUniqueID unique account identifier (such as an email
+	 *                        address)
 	 *
 	 * @return Account, returns NULL is no matching account found
 	 *
@@ -343,10 +347,9 @@ public class CommunicationsManager {
 //
 //		return accountInstance;
 //	}
-
 	/**
-	 * Add relationships between the sender and recipient account
-	 * instances.
+	 * Add relationships between the sender and recipient account instances. All
+	 * accounts the relationship must be from the same data source.
 	 *
 	 * @param sender               sender account
 	 * @param recipients           list of recipients
@@ -356,25 +359,40 @@ public class CommunicationsManager {
 	 *
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 * @throws org.sleuthkit.datamodel.TskDataException If the all the accounts
+	 *                                                  and the relationship are
+	 *                                                  not from the same data
+	 *                                                  source.
 	 */
-	public void addRelationships(AccountFileInstance sender, List<AccountFileInstance> recipients, BlackboardArtifact relationshipArtifact, long dateTime) throws TskCoreException {
+	public void addRelationships(AccountFileInstance sender, List<AccountFileInstance> recipients,
+			BlackboardArtifact relationshipArtifact, long dateTime) throws TskCoreException, TskDataException {
 
 		if (false == RELATIONSHIP_ARTIFACT_TYPE_IDS.contains(relationshipArtifact.getArtifactTypeID())) {
 			throw new TskCoreException("Unexpected Artifact type = " + relationshipArtifact.getArtifactTypeID());
 		}
 
-		// @@@ BC: We later make some assumptions in the queries about the relationship and the account instances being for the same 'source'. 
-		// we should add some logic here to ensure that all AccountFileInstance.artifact.source_obj_id are equal and equal relationshipArtifact.source_obj_id. 
-		
-		
+		/*
+		 * Enforce that all accounts and the relationship between them on from
+		 * the same 'source'. This is required for the queries to work
+		 * correctly.
+		 */
 		// Currently we do not save the direction of communication
 		List<Long> accountIDs = new ArrayList<Long>();
+
 		if (null != sender) {
 			accountIDs.add(sender.getAccount().getAccountId());
+			if (sender.getDataSourceObjectID() != relationshipArtifact.getDataSourceObjectID()) {
+				throw new TskDataException("Sender and relationship are from different data sources :"
+						+ "Sender source ID" + sender.getDataSourceObjectID() + " != relationship source ID" + relationshipArtifact.getDataSourceObjectID());
+			}
 		}
 
 		for (AccountFileInstance recipient : recipients) {
 			accountIDs.add(recipient.getAccount().getAccountId());
+			if (recipient.getDataSourceObjectID() != relationshipArtifact.getDataSourceObjectID()) {
+				throw new TskDataException("Recipient and relationship are from different data sources :"
+						+ "Recipient source ID" + recipient.getDataSourceObjectID() + " != relationship source ID" + relationshipArtifact.getDataSourceObjectID());
+			}
 		}
 
 		Set<UnorderedAccountPair> relationships = listToUnorderedPairs(accountIDs);
@@ -395,7 +413,6 @@ public class CommunicationsManager {
 	 * Get the Account for the given account type and account ID. Create an a
 	 * new account if one doesn't exist
 	 *
-	 * @param artifactType    artifact type - will be TSK_ACCOUNT
 	 * @param accountType     account type
 	 * @param accountUniqueID unique account identifier
 	 *
@@ -436,12 +453,13 @@ public class CommunicationsManager {
 	}
 
 	/**
-	 * Get the blackboard artifact for the given account type, account ID, and source file.
-	 * Create an artifact and return that, of a matching doesn't exists
+	 * Get the blackboard artifact for the given account type, account ID, and
+	 * source file. Create an artifact and return that, of a matching doesn't
+	 * exists
 	 *
 	 * @param accountType     account type
 	 * @param accountUniqueID accountID
-	 * @param sourceFile		  Source file (for the artifact)
+	 * @param sourceFile		    Source file (for the artifact)
 	 *
 	 * @return blackboard artifact, returns NULL is no matching account found
 	 *
@@ -449,7 +467,7 @@ public class CommunicationsManager {
 	 *                          within TSK core
 	 */
 	BlackboardArtifact getOrCreateAccountFileInstanceArtifact(Account.Type accountType, String accountUniqueID, String moduleName, Content sourceFile) throws TskCoreException {
-		
+
 		// see if it already exists
 		BlackboardArtifact accountArtifact = getAccountFileInstanceArtifact(accountType, accountUniqueID, sourceFile);
 		if (null != accountArtifact) {
@@ -468,11 +486,12 @@ public class CommunicationsManager {
 	}
 
 	/**
-	 * Get the blackboard artifact for the given account type, account ID, and source file
+	 * Get the blackboard artifact for the given account type, account ID, and
+	 * source file
 	 *
 	 * @param accountType     account type
 	 * @param accountUniqueID accountID
-	 * @param sourceFile		  Source file (for the artifact)
+	 * @param sourceFile		    Source file (for the artifact)
 	 *
 	 * @return blackboard artifact, returns NULL is no matching account found
 	 *
@@ -527,10 +546,11 @@ public class CommunicationsManager {
 	}
 
 	/**
-	 * 
-	 * @param accountId - database row id
-	 * @param accountInstanceId  - Artifact ID of instance
-	 * @throws TskCoreException 
+	 *
+	 * @param accountId         - database row id
+	 * @param accountInstanceId - Artifact ID of instance
+	 *
+	 * @throws TskCoreException
 	 */
 	private void addAccountFileInstanceMapping(long accountId, long accountInstanceId) throws TskCoreException {
 		CaseDbConnection connection = db.getConnection();
@@ -703,8 +723,8 @@ public class CommunicationsManager {
 			//TODO: this could be static 
 			//set up applicable filters 
 			Set<String> applicableInnerQueryFilters = new HashSet<String>(Arrays.asList(
-					DateRangeFilter.class.getName(),
-					DeviceFilter.class.getName()
+					CommunicationsFilter.DateRangeFilter.class.getName(),
+					CommunicationsFilter.DeviceFilter.class.getName()
 			));
 			String innerQueryfilterSQL = getCommunicationsFilterSQL(filter, applicableInnerQueryFilters);
 
@@ -734,7 +754,6 @@ public class CommunicationsManager {
 
 			// set up applicable filters
 			Set<String> applicableFilters = new HashSet<String>(Arrays.asList(
-									CommunicationsFilter.DeviceFilter.class.getName(),
 					CommunicationsFilter.AccountTypeFilter.class.getName()
 			));
 		
