@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2013 Basis Technology Corp.
+ * Copyright 2017 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,6 +21,7 @@ package org.sleuthkit.datamodel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -30,10 +31,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.After;
 import org.junit.AfterClass;
+import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 /**
  * Tests the CommunicationsManager API along with filters.
@@ -186,11 +187,11 @@ public class CommunicationsManagerTest {
 	private static final long AUG_1_2017 = 1501545600;
 	private static final long DEC_31_2017 = 1514678400;
 	private static final long DEC_31_2016 = 1483142400;
-	
+
 	private static String dbPath = null;
 
-	private static List<BlackboardArtifact> emailMessages = new ArrayList<BlackboardArtifact>();
-	
+	private static final List<BlackboardArtifact> emailMessages = new ArrayList<BlackboardArtifact>();
+
 	public CommunicationsManagerTest() {
 	}
 
@@ -245,7 +246,6 @@ public class CommunicationsManagerTest {
 						sourceContent_1);
 				emailMessages.add(emailMsg);
 
-				
 				emailMsg = addEmailMsgArtifact(EMAIL_C, EMAIL_A, "", "",
 						JUL_1_2017, "",
 						"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua", "", "",
@@ -317,7 +317,7 @@ public class CommunicationsManagerTest {
 		// Test no filters - pass null for CommunicationsFilter
 		{
 			List<AccountDeviceInstance> accountDeviceInstances2 = commsMgr.getAccountDeviceInstancesWithCommunications(null);
-			assertEquals(11, accountDeviceInstances2.size());
+			assertEquals(10, accountDeviceInstances2.size());
 		}
 
 		// Test no filters - empty DeviceFilter
@@ -327,7 +327,7 @@ public class CommunicationsManagerTest {
 					null);
 
 			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
-			assertEquals(11, accountDeviceInstances.size());
+			assertEquals(10, accountDeviceInstances.size());
 		}
 
 		// Test filter - filter for DS1 and DS2
@@ -337,7 +337,7 @@ public class CommunicationsManagerTest {
 					null);
 
 			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
-			assertEquals(11, accountDeviceInstances.size());
+			assertEquals(10, accountDeviceInstances.size());
 		}
 
 		// Test filter - filter for DS3 - it has no accounts
@@ -364,7 +364,7 @@ public class CommunicationsManagerTest {
 					new HashSet<Account.Type>());
 
 			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
-			assertEquals(11, accountDeviceInstances.size());
+			assertEquals(10, accountDeviceInstances.size());
 		}
 
 		// Test AccountTypeFilter - Email
@@ -387,7 +387,7 @@ public class CommunicationsManagerTest {
 
 			// @TODO EUR-884: RAMAN dont know why this returns 6, expect 5 here
 			// The above call returns PHONE_NUM3/DS2 extra - it has no communication on DS2
-			//assertEquals(5, accountDeviceInstances.size());
+			assertEquals(5, accountDeviceInstances.size());
 		}
 
 		// Test AccountTypeFilter - Email & Phone
@@ -399,7 +399,7 @@ public class CommunicationsManagerTest {
 			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
 
 			// @TODO EUR-884: RAMAN dont know why this returns 9, expect 8 here
-			//assertEquals(8, accountDeviceInstances.size());
+			assertEquals(8, accountDeviceInstances.size());
 		}
 
 		// Test AccountTypeFilter - CreditCard
@@ -465,7 +465,7 @@ public class CommunicationsManagerTest {
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.PHONE, Account.Type.EMAIL)));
 
 			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
-			assertEquals(4, accountDeviceInstances.size());
+			assertEquals(3, accountDeviceInstances.size());
 		}
 
 		// Test Device & AccountType filter - DS2 or DS1 & EMAIL
@@ -485,7 +485,7 @@ public class CommunicationsManagerTest {
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.PHONE)));
 
 			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
-			assertEquals(6, accountDeviceInstances.size());
+			assertEquals(5, accountDeviceInstances.size());
 		}
 
 		// Test Device & AccountType filter - DS2 or DS1 & Phone or Email
@@ -495,18 +495,10 @@ public class CommunicationsManagerTest {
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.PHONE, Account.Type.EMAIL)));
 
 			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
-			assertEquals(9, accountDeviceInstances.size());
+			assertEquals(8, accountDeviceInstances.size());
 		}
 
-		// Test Device & AccountType filter - DS1 or DS2 & Phone or Email
-		{
-			CommunicationsFilter commsFilter = buildCommsFilter(
-					new HashSet<String>(Arrays.asList(DS1_DEVICEID, DS2_DEVICEID)),
-					new HashSet<Account.Type>(Arrays.asList(Account.Type.PHONE, Account.Type.EMAIL)));
-
-			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
-			assertEquals(9, accountDeviceInstances.size());
-		}
+		
 
 		// Test Device & AccountType filter - DS1 or DS2 or DS3 & Phone or Email, Date Range: communications on or BEFORE Dec 31, 2016
 		{
@@ -520,7 +512,6 @@ public class CommunicationsManagerTest {
 			assertEquals(0, accountDeviceInstances.size());
 		}
 
-		
 		// Test Device & AccountType filter - DS1 or DS2 or DS3 & Phone or Email, Date Range: communications on or After Jul 1, 2017
 		{
 			CommunicationsFilter commsFilter = buildCommsFilter(
@@ -530,12 +521,11 @@ public class CommunicationsManagerTest {
 					JUL_1_2017, 0);
 
 			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
-			
+
 			// TBD EUR-884: we expect 4 account device instances here but get 5. Phone 3/DS2 is returned even though it has a Contact entry and no coummincations,
-			assertEquals(5, accountDeviceInstances.size());
+			assertEquals(4, accountDeviceInstances.size());
 		}
-		
-		
+
 		// Test Device & AccountType filter - DS1 or DS2 or DS3 & Phone or Email
 		{
 			CommunicationsFilter commsFilter = buildCommsFilter(
@@ -543,10 +533,9 @@ public class CommunicationsManagerTest {
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.PHONE, Account.Type.EMAIL)));
 
 			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
-			assertEquals(9, accountDeviceInstances.size());
+			assertEquals(8, accountDeviceInstances.size());
 		}
-		
-		
+
 	}
 
 	@Test
@@ -807,7 +796,6 @@ public class CommunicationsManagerTest {
 			assertEquals(3, communications.size());
 		}
 
-		
 		// Communications for Email Account A/DS1 B/DS1 & C/DS1: Filter on messages  on or before Jan 1, 2017
 		{
 			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
@@ -818,15 +806,14 @@ public class CommunicationsManagerTest {
 
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					null,
-					null, 
 					null,
-					0, JAN_1_2017 );
+					null,
+					0, JAN_1_2017);
 
-			
 			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
 			assertEquals(1, communications.size());
 		}
-		
+
 		// Communications for Email Account A/DS1 B/DS1 & C/DS1: Filter on messages on or after Jan 1, 2017
 		{
 			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
@@ -837,14 +824,14 @@ public class CommunicationsManagerTest {
 
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					null,
-					null, 
+					null,
 					null,
 					JAN_1_2017, 0);
 
 			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
 			assertEquals(3, communications.size());
 		}
-		
+
 		// Communications for Email Account A/DS1 B/DS1 & C/DS1: Filter on messages on or before Mar 1, 2017
 		{
 			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
@@ -855,14 +842,14 @@ public class CommunicationsManagerTest {
 
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					null,
-					null, 
+					null,
 					null,
 					0, MAR_1_2017);
 
 			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
 			assertEquals(2, communications.size());
 		}
-		
+
 		// Communications for Email Account A/DS1 B/DS1 & C/DS1: Filter on messages on or before Jul 1, 2017
 		{
 			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
@@ -873,14 +860,14 @@ public class CommunicationsManagerTest {
 
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					null,
-					null, 
+					null,
 					null,
 					0, JUL_1_2017);
 
 			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
 			assertEquals(3, communications.size());
 		}
-		
+
 		// Communications for Email Account A/DS1 B/DS1 & C/DS1: Filter on messages between  Feb 1, 2017 & Aug 01 2017
 		{
 			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
@@ -891,14 +878,14 @@ public class CommunicationsManagerTest {
 
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					null,
-					null, 
+					null,
 					null,
 					FEB_1_2017, AUG_1_2017);
 
 			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
 			assertEquals(2, communications.size());
 		}
-		
+
 		// Communications for Email Account A/DS1 B/DS1 & C/DS1: Filter on messages on or After  Jul 1, 2017 
 		{
 			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
@@ -909,15 +896,14 @@ public class CommunicationsManagerTest {
 
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					null,
-					null, 
+					null,
 					null,
 					JUL_1_2017, 0);
 
 			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
 			assertEquals(1, communications.size());
 		}
-		
-		
+
 		// Communications for Phone 1/DS2: No Filters
 		{
 			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
@@ -937,7 +923,7 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					null,
 					null,
-					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG)));
+					EnumSet.of(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG));
 
 			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
 			assertEquals(1, communications.size());
@@ -952,7 +938,7 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					null,
 					null,
-					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT)));
+					EnumSet.of(BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT));
 
 			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
 			assertEquals(0, communications.size());
@@ -967,7 +953,7 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					null,
 					null,
-					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE)));
+					EnumSet.of(BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE));
 
 			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
 			assertEquals(0, communications.size());
@@ -982,7 +968,7 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					null,
 					null,
-					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG)));
+					EnumSet.of(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG));
 
 			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
 			assertEquals(2, communications.size());
@@ -997,7 +983,7 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					null,
 					null,
-					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE, BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG)));
+					EnumSet.of(BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE, BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG));
 
 			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
 			assertEquals(3, communications.size());
@@ -1013,7 +999,7 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					null,
 					null,
-					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE, BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG)));
+					EnumSet.of(BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE, BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG));
 
 			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
 			assertEquals(5, communications.size());
@@ -1048,7 +1034,7 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					null,
 					null,
-					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE)));
+					EnumSet.of(BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE));
 
 			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
 			assertEquals(3, communications.size());
@@ -1086,7 +1072,8 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					null,
 					null,
-					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG, BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE)));
+					EnumSet.of(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG,
+							BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE));
 
 			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
 			assertEquals(6, communications.size());
@@ -1105,13 +1092,14 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					null,
 					null,
-					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG, BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE)),
+					EnumSet.of(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG,
+							BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE),
 					0, JAN_1_2017);
 
 			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
 			assertEquals(2, communications.size());
 		}
-		
+
 		// Communications for Phone 1/DS2 2/DS2 3/DS2 4/DS2 & 5/DS2: Filter on Calllogs, Messages, on or after Jan 01, 2017
 		{
 			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
@@ -1125,13 +1113,14 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					null,
 					null,
-					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG, BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE)),
+					EnumSet.of(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG,
+							BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE),
 					JAN_1_2017, 0);
 
 			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
 			assertEquals(6, communications.size());
 		}
-		
+
 		// Communications for Phone 1/DS2 2/DS2 3/DS2 4/DS2 & 5/DS2: Filter on Calllogs, Messages, on or before Mar 01, 2017
 		{
 			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
@@ -1145,13 +1134,14 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					null,
 					null,
-					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG, BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE)),
+					EnumSet.of(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG,
+							BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE),
 					0, MAR_1_2017);
 
 			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
 			assertEquals(4, communications.size());
 		}
-		
+
 		// Communications for Phone 1/DS2 2/DS2 3/DS2 4/DS2 & 5/DS2: Filter on Calllogs, Messages, on or after Mar 01, 2017
 		{
 			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
@@ -1165,14 +1155,14 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					null,
 					null,
-					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG, BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE)),
+					EnumSet.of(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG,
+							BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE),
 					MAR_1_2017, 0);
 
 			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
 			assertEquals(4, communications.size());
 		}
 
-		
 		// Communications for Phone 1/DS2 2/DS2 3/DS2 4/DS2 & 5/DS2: Filter on Calllogs, Messages, on or after Mar 01, 2017
 		{
 			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
@@ -1186,13 +1176,14 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					null,
 					null,
-					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG, BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE)),
+					EnumSet.of(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG,
+							BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE),
 					MAR_1_2017, 0);
 
 			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
 			assertEquals(4, communications.size());
 		}
-		
+
 		// Communications for Phone 1/DS2 2/DS2 3/DS2 4/DS2 & 5/DS2: Filter on Calllogs, Messages, on or before Jul 01, 2017
 		{
 			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
@@ -1206,13 +1197,14 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					null,
 					null,
-					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG, BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE)),
+					EnumSet.of(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG,
+							BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE),
 					0, JUL_1_2017);
 
 			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
 			assertEquals(6, communications.size());
 		}
-		
+
 		// Communications for Phone 1/DS2 2/DS2 3/DS2 4/DS2 & 5/DS2: Filter on Calllogs, Messages, on or after Jul 01, 2017
 		{
 			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
@@ -1226,13 +1218,14 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					null,
 					null,
-					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG, BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE)),
+					EnumSet.of(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG,
+							BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE),
 					JUL_1_2017, 0);
 
 			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
 			assertEquals(2, communications.size());
 		}
-		
+
 		// Communications for Phone 1/DS2 2/DS2 3/DS2 4/DS2 & 5/DS2: Filter on Calllogs, Messages, between Feb 01 2017, and Aug 01, 2017
 		{
 			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
@@ -1246,13 +1239,14 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					null,
 					null,
-					new HashSet<BlackboardArtifact.ARTIFACT_TYPE>(Arrays.asList(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG, BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE)),
+					EnumSet.of(BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG,
+							BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE),
 					FEB_1_2017, AUG_1_2017);
 
 			Set<BlackboardArtifact> communications = commsMgr.getCommunications(accountDeviceInstanceList, commsFilter);
 			assertEquals(4, communications.size());
 		}
-		
+
 		// Communications for Email A/DS1, Phone 1/DS2  2/DS1: No Filters
 		{
 			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
@@ -1270,7 +1264,7 @@ public class CommunicationsManagerTest {
 	/**
 	 * Builds CommunicationsFilter
 	 *
-	 * @param deviceSet - set of device ids for DeviceFilter
+	 * @param deviceSet      - set of device ids for DeviceFilter
 	 * @param accountTypeSet - set of account types for AccountTypefilter
 	 *
 	 * @return
@@ -1283,25 +1277,26 @@ public class CommunicationsManagerTest {
 	/**
 	 * Builds CommunicationsFilter.
 	 *
-	 * @param deviceSet - set of device ids for DeviceFilter
-	 * @param accountTypeSet - set of account types for AccountTypefilter
-	 * @param relationshipTypeSet - set of blackboard artifact types for relationship filters
+	 * @param deviceSet           - set of device ids for DeviceFilter
+	 * @param accountTypeSet      - set of account types for AccountTypefilter
+	 * @param relationshipTypeSet - set of blackboard artifact types for
+	 *                            relationship filters
 	 *
 	 * @return
 	 */
-	
 	private static CommunicationsFilter buildCommsFilter(Set<String> deviceSet, Set<Account.Type> accountTypeSet, Set<BlackboardArtifact.ARTIFACT_TYPE> relationshipTypeSet) {
 		return buildCommsFilter(deviceSet, accountTypeSet, relationshipTypeSet, 0, 0);
 	}
-	
+
 	/**
 	 * Builds CommunicationsFilter.
 	 *
-	 * @param deviceSet - set of device ids for DeviceFilter
-	 * @param accountTypeSet - set of account types for AccountTypefilter
-	 * @param relationshipTypeSet - set of blackboard artifact types for relationship filters
-	 * @param startDate - start date for DateRangeFilter
-	 * @param endDate - end date for DateRangeFilter
+	 * @param deviceSet           - set of device ids for DeviceFilter
+	 * @param accountTypeSet      - set of account types for AccountTypefilter
+	 * @param relationshipTypeSet - set of blackboard artifact types for
+	 *                            relationship filters
+	 * @param startDate           - start date for DateRangeFilter
+	 * @param endDate             - end date for DateRangeFilter
 	 *
 	 * @return
 	 */
@@ -1321,10 +1316,10 @@ public class CommunicationsManagerTest {
 		if (null != relationshipTypeSet) {
 			commsFilter.addAndFilter(new RelationshipTypeFilter(relationshipTypeSet));
 		}
-		if ( (0 != startDate) || (0 != endDate) ) {
+		if ((0 != startDate) || (0 != endDate)) {
 			commsFilter.addAndFilter(new DateRangeFilter(startDate, endDate));
 		}
-		
+
 		return commsFilter;
 	}
 

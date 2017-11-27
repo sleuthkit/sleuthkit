@@ -622,7 +622,7 @@ int TskDbPostgreSQL::initialize() {
 		"Error creating account_types table: %s\n")     
 		||
 		attempt_exec
-		("CREATE TABLE relationships  (relationship_id BIGSERIAL PRIMARY KEY, account1_id INTEGER NOT NULL, account2_id INTEGER NOT NULL, relationship_source_obj_id INTEGER NOT NULL, date_time BIGINT NOT NULL, relationship_type INTEGER NOT NULL, data_source_obj_id INTEGER NOT NULL, UNIQUE(account1_id, account2_id, relationship_source_obj_id) ON CONFLICT IGNORE, FOREIGN KEY(account1_id) REFERENCES accounts(account_id), FOREIGN KEY(account2_id) REFERENCES accounts(account_id), FOREIGN KEY(relationship_source_obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id))",
+		("CREATE TABLE account_relationships  (relationship_id BIGSERIAL PRIMARY KEY, account1_id INTEGER NOT NULL, account2_id INTEGER NOT NULL, relationship_source_obj_id INTEGER NOT NULL, date_time BIGINT NOT NULL, relationship_type INTEGER NOT NULL, data_source_obj_id INTEGER NOT NULL, UNIQUE(account1_id, account2_id, relationship_source_obj_id) ON CONFLICT IGNORE, FOREIGN KEY(account1_id) REFERENCES accounts(account_id), FOREIGN KEY(account2_id) REFERENCES accounts(account_id), FOREIGN KEY(relationship_source_obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id))",
 			"Error creating relationships table: %s\n")
 		||
 		attempt_exec
@@ -673,18 +673,18 @@ int TskDbPostgreSQL::createIndexes() {
 			"Error creating mime_type index on tsk_files: %s\n") ||
 		attempt_exec("CREATE INDEX file_extension ON tsk_files(extension);",  //file extenssion
 			"Error creating file_extension index on tsk_files: %s\n") ||
-		attempt_exec("CREATE INDEX relationships_account1  ON relationships(account1_id);",
-			"Error creating relationships_account1 index on relationships: %s\n") ||
-		attempt_exec("CREATE INDEX relationships_account2  ON relationships(account2_id);",
-			"Error creating relationships_account2 index on relationships: %s\n") ||
-		attempt_exec("CREATE INDEX relationships_relationship_source_obj_id  ON relationships(relationship_source_obj_id);",
-			"Error creating relationships_relationship_source_obj_id index on relationships: %s\n") ||
-		attempt_exec("CREATE INDEX relationships_date_time  ON relationships(date_time);",
-			"Error creating relationships_date_time index on relationships: %s\n") ||
-		attempt_exec("CREATE INDEX relationships_relationship_type ON relationships(relationship_type);",
-			"Error creating relationships_relationship_type index on relationships: %s\n") ||
-		attempt_exec("CREATE INDEX relationships_data_source_obj_id  ON relationships(data_source_obj_id);",
-			"Error creating relationships_data_source_obj_id index on relationships: %s\n") ||
+		attempt_exec("CREATE INDEX relationships_account1  ON account_relationships(account1_id);",
+			"Error creating relationships_account1 index on account_relationships: %s\n") ||
+		attempt_exec("CREATE INDEX relationships_account2  ON account_relationships(account2_id);",
+			"Error creating relationships_account2 index on account_relationships: %s\n") ||
+		attempt_exec("CREATE INDEX relationships_relationship_source_obj_id  ON account_relationships(relationship_source_obj_id);",
+			"Error creating relationships_relationship_source_obj_id index on account_relationships: %s\n") ||
+		attempt_exec("CREATE INDEX relationships_date_time  ON account_relationships(date_time);",
+			"Error creating relationships_date_time index on account_relationships: %s\n") ||
+		attempt_exec("CREATE INDEX relationships_relationship_type ON account_relationships(relationship_type);",
+			"Error creating relationships_relationship_type index on account_relationships: %s\n") ||
+		attempt_exec("CREATE INDEX relationships_data_source_obj_id  ON account_relationships(data_source_obj_id);",
+			"Error creating relationships_data_source_obj_id index on account_relationships: %s\n") ||
 		attempt_exec("CREATE INDEX accounts_map_account_id  ON account_to_instances_map(account_id);",
 			"Error creating accounts_map_account_id index on account_to_instances_map: %s\n") ||
 		attempt_exec("CREATE INDEX accounts_map_account_instance_id  ON account_to_instances_map(account_instance_id);",

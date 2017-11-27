@@ -86,7 +86,7 @@ public class DeviceFilter implements SubFilter {
 
 		String datasource_obj_ids_list = StringUtils.buildCSVString(ds_ids);
 		if (!datasource_obj_ids_list.isEmpty()) {
-			sql = " artifacts.data_source_obj_id IN ( " + datasource_obj_ids_list + " )";
+			sql = " data_source_obj_id IN ( " + datasource_obj_ids_list + " )";
 		}
 
 		return sql;
