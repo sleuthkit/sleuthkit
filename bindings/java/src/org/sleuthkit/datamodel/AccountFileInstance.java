@@ -84,4 +84,8 @@ public class AccountFileInstance {
 	public Account getAccount() throws TskCoreException {
 		return this.account;
 	}
+	
+	long getDataSourceObjectID(){
+		return artifact.getDataSourceObjectID();
+	}
 }
