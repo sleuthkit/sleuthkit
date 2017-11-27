@@ -19,7 +19,7 @@
 package org.sleuthkit.datamodel;
 
 import java.io.Serializable;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -34,10 +34,11 @@ public class Account {
 	private final Account.Type accountType;
 	private final String accountUniqueID;
 
+	//JIRA-901 Why does this implement Serializable?
 	public static final class Type implements Serializable {
 
 		private static final long serialVersionUID = 1L;
-
+		//JIRA-900:Should the display names of predefined types be internationalized?
 		public static final Account.Type CREDIT_CARD = new Type("CREDIT_CARD", "Credit Card");
 		public static final Account.Type DEVICE = new Type("DEVICE", "Device");
 		public static final Account.Type PHONE = new Type("PHONE", "Phone");
@@ -49,20 +50,18 @@ public class Account {
 		public static final Account.Type MESSAGING_APP = new Type("MESSAGING_APP", "MessagingApp");
 		public static final Account.Type WEBSITE = new Type("WEBSITE", "Website");
 
-		public static final List<Account.Type> PREDEFINED_ACCOUNT_TYPES = new ArrayList<Account.Type>();
-
-		static {
-			PREDEFINED_ACCOUNT_TYPES.add(CREDIT_CARD);
-			PREDEFINED_ACCOUNT_TYPES.add(DEVICE);
-			PREDEFINED_ACCOUNT_TYPES.add(PHONE);
-			PREDEFINED_ACCOUNT_TYPES.add(EMAIL);
-			PREDEFINED_ACCOUNT_TYPES.add(FACEBOOK);
-			PREDEFINED_ACCOUNT_TYPES.add(TWITTER);
-			PREDEFINED_ACCOUNT_TYPES.add(INSTAGRAM);
-			PREDEFINED_ACCOUNT_TYPES.add(WHATSAPP);
-			PREDEFINED_ACCOUNT_TYPES.add(MESSAGING_APP);
-			PREDEFINED_ACCOUNT_TYPES.add(WEBSITE);
-		}
+		public static final List<Account.Type> PREDEFINED_ACCOUNT_TYPES = Arrays.asList(
+				CREDIT_CARD,
+				DEVICE,
+				PHONE,
+				EMAIL,
+				FACEBOOK,
+				TWITTER,
+				INSTAGRAM,
+				WHATSAPP,
+				MESSAGING_APP,
+				WEBSITE
+		);
 
 		private final String typeName;
 		private final String displayName;
@@ -110,7 +109,7 @@ public class Account {
 
 			hash = 83 * hash + (this.typeName != null ? this.typeName.hashCode() : 0);
 			hash = 83 * hash + (this.displayName != null ? this.displayName.hashCode() : 0);
-			
+
 			return hash;
 		}
 
@@ -136,7 +135,7 @@ public class Account {
 	public String getAccountUniqueID() {
 		return this.accountUniqueID;
 	}
-	
+
 	/**
 	 * Gets the account type
 	 *
