@@ -640,7 +640,7 @@ public class CommunicationsManager {
 	}
 
 	/**
-	 * Adds a row in relationships table
+	 * Adds a row in account relationships table
 	 *
 	 * @param account1_id                account_id for account1
 	 * @param account2_id                account_id for account2
@@ -664,7 +664,8 @@ public class CommunicationsManager {
 			connection.beginTransaction();
 			s = connection.createStatement();
 
-			s.execute("INSERT INTO relationships (account1_id, account2_id, relationship_source_obj_id, date_time, relationship_type, data_source_obj_id  ) VALUES ( " + account1_id + ", " + account2_id + ", " + relationship_source_obj_id + ", " + dateTime + ", " + relationship_type + ", " + data_source_obj_id + ")"); //NON-NLS
+			s.execute("INSERT INTO account_relationships (account1_id, account2_id, relationship_source_obj_id, date_time, relationship_type, data_source_obj_id  ) "
+					+ "VALUES ( " + account1_id + ", " + account2_id + ", " + relationship_source_obj_id + ", " + dateTime + ", " + relationship_type + ", " + data_source_obj_id + ")"); //NON-NLS
 			connection.commitTransaction();
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
@@ -710,7 +711,7 @@ public class CommunicationsManager {
 			String innerQueryTemplate
 					= " SELECT %1$1s as account_id,"
 					+ "		  data_source_obj_id"
-					+ " FROM relationships "
+					+ " FROM account_relationships as relationships"
 					+ "	WHERE relationship_type IN "
 					+ "		( " + COMMUNICATION_ARTIFACT_TYPE_IDS_CSV_STR + " ) "
 					+ (innerQueryfilterSQL.isEmpty() ? "" : " AND " + innerQueryfilterSQL);
@@ -820,7 +821,7 @@ public class CommunicationsManager {
 
 			String internalQueryStr = "SELECT DISTINCT "
 					+ "	relationships.relationship_source_obj_id AS relationship_source_obj_id"
-					+ "	FROM relationships AS relationships"
+					+ "	FROM account_relationships AS relationships"
 					+ " WHERE relationships.data_source_obj_id IN ( " + datasource_obj_ids_list + " )"
 					+ " AND relationships.relationship_type IN ( " + COMMUNICATION_ARTIFACT_TYPE_IDS_CSV_STR + " )"
 					+ " AND ( relationships.account1_id = " + account_id + " OR  relationships.account2_id = " + account_id + " )";
@@ -926,7 +927,7 @@ public class CommunicationsManager {
 					+ " artifacts.artifact_type_id AS artifact_type_id, "
 					+ " artifacts.review_status_id AS review_status_id  "
 					+ " FROM blackboard_artifacts as artifacts"
-					+ "	JOIN relationships AS relationships"
+					+ "	JOIN account_relationships AS relationships"
 					+ "		ON artifacts.artifact_obj_id = relationships.relationship_source_obj_id"
 					+ " WHERE artifacts.artifact_type_id IN ( " + COMMUNICATION_ARTIFACT_TYPE_IDS_CSV_STR + " )";
 
