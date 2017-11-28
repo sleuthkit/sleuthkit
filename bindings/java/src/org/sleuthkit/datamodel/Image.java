@@ -1,15 +1,15 @@
 /*
  * Autopsy Forensic Browser
- * 
- * Copyright 2011-2013 Basis Technology Corp.
+ *
+ * Copyright 2011-2017 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,32 +33,38 @@ import java.io.File;
  *
  * Caches internal tsk image handle and reuses it for reads
  */
-public class Image extends AbstractContent {
+public class Image extends AbstractContent implements DataSource {
 	//data about image
 
-	private long type, ssize, size;
-	private String[] paths;
+	private final long type, ssize;
+	private long size;
+	private final String[] paths;
 	private volatile long imageHandle = 0;
-	private String timezone, md5;
+	private final String deviceId, timezone, md5;
 	private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	/**
-	 * constructor most inputs are from the database
+	 * Create a disk image.
 	 *
-	 * @param db       database object
-	 * @param obj_id
-	 * @param type
-	 * @param ssize    Sector Size
-	 * @param name     Display Name
-	 * @param paths
-	 * @param timezone
-	 * @param md5
+	 * Note: Most inputs originate from the database.
 	 *
-	 * @deprecated Use the constructor that takes a size.
+	 * @param db       Case database.
+	 * @param obj_id   Object ID.
+	 * @param type     Image type.
+	 * @param ssize    Sector size.
+	 * @param name     Display name.
+	 * @param paths    Image paths.
+	 * @param timezone Timezone.
+	 * @param md5      MD5 hash.
+	 *
+	 * @throws TskCoreException
+	 *
+	 * @deprecated Use the constructor that takes a device ID and size.
 	 */
 	@Deprecated
 	protected Image(SleuthkitCase db, long obj_id, long type, long ssize, String name, String[] paths, String timezone, String md5) throws TskCoreException {
 		super(db, obj_id, name);
+		this.deviceId = "";
 		this.type = type;
 		this.ssize = ssize;
 		this.paths = paths;
@@ -68,20 +74,24 @@ public class Image extends AbstractContent {
 	}
 
 	/**
-	 * constructor most inputs are from the database
+	 * Create a disk image.
 	 *
-	 * @param db       database object
-	 * @param obj_id
-	 * @param type
-	 * @param ssize    Sector Size
-	 * @param name     Display Name
-	 * @param paths
-	 * @param timezone
-	 * @param md5
-	 * @param size
+	 * Note: Most inputs originate from the database.
+	 *
+	 * @param db       Case database.
+	 * @param obj_id   Object ID.
+	 * @param type     Image type.
+	 * @param deviceId Device ID.
+	 * @param ssize    Sector size.
+	 * @param name     Display name.
+	 * @param paths    Image paths.
+	 * @param timezone Timezone.
+	 * @param md5      MD5 hash.
+	 * @param size     Size.
 	 */
-	Image(SleuthkitCase db, long obj_id, long type, long ssize, String name, String[] paths, String timezone, String md5, long size) throws TskCoreException {
+	Image(SleuthkitCase db, long obj_id, long type, String deviceId, long ssize, String name, String[] paths, String timezone, String md5, long size) throws TskCoreException {
 		super(db, obj_id, name);
+		this.deviceId = deviceId;
 		this.type = type;
 		this.ssize = ssize;
 		this.paths = paths;
@@ -94,6 +104,8 @@ public class Image extends AbstractContent {
 	 * Get the handle to the sleuthkit image info object
 	 *
 	 * @return the object pointer
+	 *
+	 * @throws TskCoreException
 	 */
 	public synchronized long getImageHandle() throws TskCoreException {
 		if (imageHandle == 0) {
@@ -233,6 +245,7 @@ public class Image extends AbstractContent {
 	 *
 	 * @return timezone string representation
 	 */
+	@Override
 	public String getTimeZone() {
 		return timezone;
 	}
@@ -263,8 +276,8 @@ public class Image extends AbstractContent {
 	}
 
 	/**
-	 * Test if the file that created this image exists on disk.
-	 * Does not work on local disks - will always return false
+	 * Test if the file that created this image exists on disk. Does not work on
+	 * local disks - will always return false
 	 *
 	 * @return True if the file still exists
 	 */
@@ -281,8 +294,8 @@ public class Image extends AbstractContent {
 	 * Perform some sanity checks on the bounds of the image contents to
 	 * determine if we could be missing some pieces of the image.
 	 *
-	 * @returns String of error messages to display to user or empty string if
-	 * there are no errors
+	 * @return String of error messages to display to user or empty string if
+	 *         there are no errors
 	 */
 	public String verifyImageSize() {
 		Logger logger1 = Logger.getLogger("verifyImageSizes"); //NON-NLS
@@ -332,9 +345,38 @@ public class Image extends AbstractContent {
 	/**
 	 * gets the md5 hash value
 	 *
-	 * @returns md5 hash if attained(from database). returns null if not set.
+	 * @return md5 hash if attained(from database). returns null if not set.
 	 */
 	public String getMd5() {
 		return md5;
+	}
+
+	/**
+	 * Gets the ASCII-printable identifier for the device associated with the
+	 * data source. This identifier is intended to be unique across multiple
+	 * cases (e.g., a UUID).
+	 *
+	 * @return The device id.
+	 */
+	@Override
+	public String getDeviceId() {
+		return deviceId;
+	}
+
+	/**
+	 * Gets the size of the contents of the data source in bytes. This size can
+	 * change as archive files within the data source are expanded, files are
+	 * carved, etc., and is different from the size of the data source as
+	 * returned by Content.getSize, which is the size of the data source as a
+	 * file.
+	 *
+	 * @param sleuthkitCase The sleuthkit case instance from which to make calls
+	 *                      to the database.
+	 *
+	 * @return The size in bytes.
+	 */
+	@Override
+	public long getContentSize(SleuthkitCase sleuthkitCase) {
+		return AbstractDataSource.getContentSize(sleuthkitCase, getId());
 	}
 }
