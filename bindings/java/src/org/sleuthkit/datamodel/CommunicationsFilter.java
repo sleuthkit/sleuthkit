@@ -24,6 +24,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG;
+import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT;
+import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_EMAIL_MSG;
+import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE;
+import static org.sleuthkit.datamodel.Relationship.Type.CALL_LOG;
+import static org.sleuthkit.datamodel.Relationship.Type.CONTACT;
 
 /**
  * Defines an aggregate of filters to apply to a CommunicationsManager query.
@@ -91,31 +97,17 @@ public class CommunicationsFilter {
 	 */
 	public static class RelationshipTypeFilter extends SubFilter {
 
-		private final Set<BlackboardArtifact.ARTIFACT_TYPE> relationshipTypes;
+		private final Set<Relationship.Type> relationshipTypes;
 
 		/**
 		 * Constructs a RelationshipTypeFilter.
 		 *
-		 * @param relationshipTypes set of artifacts types
+		 * @param relationshipTypes set of relationship types
 		 */
-		public RelationshipTypeFilter(Set<BlackboardArtifact.ARTIFACT_TYPE> relationshipTypes) {
+		public RelationshipTypeFilter(Set<Relationship.Type> relationshipTypes) {
 			this.relationshipTypes = relationshipTypes;
 		}
 
-		/**
-		 * Get the list of relationship types.
-		 *
-		 * @return list of relationship types.
-		 */
-		Set<BlackboardArtifact.ARTIFACT_TYPE> getRelationshipTypes() {
-			return Collections.unmodifiableSet(relationshipTypes);
-		}
-
-		/**
-		 * Returns a string description of the filter.
-		 *
-		 * @return	A string description of the filter.
-		 */
 		@Override
 		public String getDescription() {
 			return "Filters relationships by relationship type.";
@@ -134,13 +126,20 @@ public class CommunicationsFilter {
 				return "";
 			}
 			String sql = "";
-			List<Integer> type_ids = new ArrayList<Integer>();
-			for (BlackboardArtifact.ARTIFACT_TYPE artType : relationshipTypes) {
-				type_ids.add(artType.getTypeID());
+			List<Integer> artifactTypeIds = new ArrayList<Integer>();
+			for (Relationship.Type relType : relationshipTypes) {
+				if (relType.equals(CALL_LOG)) {
+					artifactTypeIds.add(TSK_CALLLOG.getTypeID());
+				} else if (relType.equals(CONTACT)) {
+					artifactTypeIds.add(TSK_CONTACT.getTypeID());
+				} else if (relType.equals(CALL_LOG)) {
+					artifactTypeIds.add(TSK_EMAIL_MSG.getTypeID());
+					artifactTypeIds.add(TSK_MESSAGE.getTypeID());
+				}
 			}
-			String artifact_type_ids_list = StringUtils.buildCSVString(type_ids);
-			if (!artifact_type_ids_list.isEmpty()) {
-				sql = " relationships.relationship_type IN ( " + artifact_type_ids_list + " )";
+			String artifactTypeIdsCSV = StringUtils.buildCSVString(artifactTypeIds);
+			if (!artifactTypeIdsCSV.isEmpty()) {
+				sql = " relationships.relationship_type IN ( " + artifactTypeIdsCSV + " )";
 			}
 			return sql;
 		}
@@ -168,11 +167,6 @@ public class CommunicationsFilter {
 			}
 		}
 
-		/**
-		 * Returns a string description of the filter.
-		 *
-		 * @return	A string description of the filter.
-		 */
 		@Override
 		public String getDescription() {
 			return "Filters communications by date range.";
@@ -222,20 +216,6 @@ public class CommunicationsFilter {
 			this.accountTypes = accountTypes;
 		}
 
-		/**
-		 * Get the list of account types.
-		 *
-		 * @return list of account types.
-		 */
-		Set<Account.Type> getAccountTypes() {
-			return Collections.unmodifiableSet(accountTypes);
-		}
-
-		/**
-		 * Returns a string description of the filter.
-		 *
-		 * @return	A string description of the filter.
-		 */
 		@Override
 		public String getDescription() {
 			return "Filters accounts and relationships by account type.";
@@ -284,20 +264,6 @@ public class CommunicationsFilter {
 			this.deviceIds = deviceIds;
 		}
 
-		/**
-		 * Get the list of device id.
-		 *
-		 * @return list of device Ids.
-		 */
-		Set<String> getdeviceIds() {
-			return Collections.unmodifiableSet(deviceIds);
-		}
-
-		/**
-		 * Returns a string description of the filter.
-		 *
-		 * @return	A string description of the filter.
-		 */
 		@Override
 		public String getDescription() {
 			return "Filters accounts and relationships by device id.";

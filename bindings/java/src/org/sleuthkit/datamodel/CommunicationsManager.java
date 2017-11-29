@@ -546,7 +546,6 @@ public class CommunicationsManager {
 		return accountArtifact;
 	}
 
-
 	/**
 	 * Get the Account.Type for the give type name.
 	 *
@@ -691,12 +690,12 @@ public class CommunicationsManager {
 		try {
 			s = connection.createStatement();
 
-
 			//TODO: this could be static 
 			//set up applicable filters 
 			Set<String> applicableInnerQueryFilters = new HashSet<String>(Arrays.asList(
 					CommunicationsFilter.DateRangeFilter.class.getName(),
-					CommunicationsFilter.DeviceFilter.class.getName()
+					CommunicationsFilter.DeviceFilter.class.getName(),
+					CommunicationsFilter.RelationshipTypeFilter.class.getName()
 			));
 			String innerQueryfilterSQL = getCommunicationsFilterSQL(filter, applicableInnerQueryFilters);
 
@@ -705,9 +704,7 @@ public class CommunicationsManager {
 					= " SELECT %1$1s as account_id,"
 					+ "		  data_source_obj_id"
 					+ " FROM account_relationships as relationships"
-					+ "	WHERE relationship_type IN "
-					+ "		( " + COMMUNICATION_ARTIFACT_TYPE_IDS_CSV_STR + " ) "
-					+ (innerQueryfilterSQL.isEmpty() ? "" : " AND " + innerQueryfilterSQL);
+					+ (innerQueryfilterSQL.isEmpty() ? "" : " WHERE " + innerQueryfilterSQL);
 
 			String innerQuery1 = String.format(innerQueryTemplate, "account1_id");
 			String innerQuery2 = String.format(innerQueryTemplate, "account2_id");
@@ -718,7 +715,6 @@ public class CommunicationsManager {
 					+ " FROM ( " + innerQuery1 + " UNION " + innerQuery2 + " ) "
 					+ " GROUP BY account_id, data_source_obj_id";
 
-
 			System.out.println("RAMAN innerQueryfilterSQL = " + innerQueryfilterSQL);
 			System.out.println("RAMAN innerQuery1 = " + innerQuery1);
 			System.out.println("RAMAN innerQuery2 = " + innerQuery2);
@@ -728,9 +724,7 @@ public class CommunicationsManager {
 			Set<String> applicableFilters = new HashSet<String>(Arrays.asList(
 					CommunicationsFilter.AccountTypeFilter.class.getName()
 			));
-		
-		
-		
+
 			String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
 
 			String queryStr = "SELECT "
@@ -799,13 +793,21 @@ public class CommunicationsManager {
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 *
 	 */
-	public long getCommunicationsCount(AccountDeviceInstance accountDeviceInstance, CommunicationsFilter filter) throws TskCoreException {
+	public long getRelationshipSourcesCount(AccountDeviceInstance accountDeviceInstance, CommunicationsFilter filter) throws TskCoreException {
+
+		long account_id = accountDeviceInstance.getAccount().getAccountID();
 
 		// Get the list of Data source objects IDs correpsonding to this DeviceID.
-		// Convert to a CSV string list that can be usein the SQL IN caluse.
-		long account_id = accountDeviceInstance.getAccount().getAccountID();
-		List<Long> ds_ids = db.getDataSourceObjIds(accountDeviceInstance.getDeviceId());
-		String datasource_obj_ids_list = StringUtils.buildCSVString(ds_ids);
+		String datasourceObjIdsCSV = StringUtils.buildCSVString( 
+				db.getDataSourceObjIds(accountDeviceInstance.getDeviceId()));
+
+
+		// set up applicable filters
+		Set<String> applicableFilters = new HashSet<String>(Arrays.asList(
+				CommunicationsFilter.RelationshipTypeFilter.class.getName(),
+				CommunicationsFilter.DateRangeFilter.class.getName()
+		));
+		String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
 
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSingleUserCaseReadLock();
@@ -815,35 +817,19 @@ public class CommunicationsManager {
 		try {
 			s = connection.createStatement();
 
-			String internalQueryStr = "SELECT DISTINCT "
-					+ "	relationships.relationship_source_obj_id AS relationship_source_obj_id"
+			String queryStr = "SELECT count(relationships.relationship_source_obj_id)as count "
 					+ "	FROM account_relationships AS relationships"
-					+ " WHERE relationships.data_source_obj_id IN ( " + datasource_obj_ids_list + " )"
-					+ " AND relationships.relationship_type IN ( " + COMMUNICATION_ARTIFACT_TYPE_IDS_CSV_STR + " )"
-					+ " AND ( relationships.account1_id = " + account_id + " OR  relationships.account2_id = " + account_id + " )";
-
-			// set up applicable filters
-			Set<String> applicableFilters = new HashSet<String>();
-			applicableFilters.add(CommunicationsFilter.RelationshipTypeFilter.class.getName());
-			applicableFilters.add(CommunicationsFilter.DateRangeFilter.class.getName());
-
-			// append SQL for filters
-			String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
-			if (!filterSQL.isEmpty()) {
-				internalQueryStr += " AND " + filterSQL;
-			}
-
-			// Now build a COUNT Query
-			String countQuery = "SELECT COUNT(*) AS COUNT FROM ( "
-					+ internalQueryStr
-					+ " )  AS internalQuery";
+					+ " WHERE relationships.data_source_obj_id IN ( " + datasourceObjIdsCSV + " )"
+					+ " AND ( relationships.account1_id = " + account_id
+					+ " OR  relationships.account2_id = " + account_id + " )"
+					+ (filterSQL.isEmpty() ? "" : " AND " + filterSQL);
 
 			long startTime = System.nanoTime();
-			rs = connection.executeQuery(s, countQuery); //NON-NLS
+			rs = connection.executeQuery(s, queryStr); //NON-NLS
 			rs.next();
 
 			System.out.println("RAMAN getCommunicationsCount() FilterSQL = " + filterSQL);
-			System.out.println("RAMAN getCommunicationsCount() QueryStr = " + countQuery);
+			System.out.println("RAMAN getCommunicationsCount() QueryStr = " + queryStr);
 
 			long endTime = System.nanoTime();
 			System.out.println("RAMAN getCommunicationsCount() Time taken = " + (endTime - startTime) / 1000000L);
@@ -861,26 +847,27 @@ public class CommunicationsManager {
 	}
 
 	/**
-	 * Get the unique communications found for the given account device
+	 * Get the unique relationship sources found for the given account device
 	 * instances.
 	 *
 	 * Applicable filters: RelationshipTypeFilter, DateRangeFilter
 	 *
 	 * @param accountDeviceInstanceList set of account device instances for
-	 *                                  which to get the communications.
+	 *                                  which to get the relationship sources.
 	 * @param filter                    Filters to apply.
 	 *
-	 * @return number of account relationships found for given account(s).
+	 * @return number of relationship sources found for given account(s).
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public Set<BlackboardArtifact> getCommunications(Set<AccountDeviceInstance> accountDeviceInstanceList, CommunicationsFilter filter) throws TskCoreException {
+	public Set<BlackboardArtifact> getRelationshipSources(Set<AccountDeviceInstance> accountDeviceInstanceList, CommunicationsFilter filter) throws TskCoreException {
 
 		System.out.println("RAMAN getCommunications() Num AccountDeviceInstancees = " + accountDeviceInstanceList.size());
 
 		Map<Long, Set<Long>> accountIdToDatasourceObjIdMap = new HashMap<Long, Set<Long>>();
 		for (AccountDeviceInstance accountDeviceInstance : accountDeviceInstanceList) {
 			long accountID = accountDeviceInstance.getAccount().getAccountID();
+			//JMTODO: use computeIfAbsent
 			if (false == accountIdToDatasourceObjIdMap.containsKey(accountID)) {
 				accountIdToDatasourceObjIdMap.put(accountDeviceInstance.getAccount().getAccountID(),
 						new HashSet<Long>(db.getDataSourceObjIds(accountDeviceInstance.getDeviceId())));
@@ -1652,7 +1639,6 @@ public class CommunicationsManager {
 //			db.releaseSingleUserCaseReadLock();
 //		}
 //	}
-
 //	/**
 //	 *
 //	 * @param accountId         - database row id
