@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2016 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,16 +23,24 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * An entity that has a type and a unique identifier. Example types include a
- * Bank Account, Credit Card, Email address, Phone number, phone, Application,
- * Web-site login, etc.  Accounts are unique to the case. 
+ * An entity that has a type and a unique (within that type) identifier .
+ * Example types include a Bank Account, Credit Card, Email address, Phone
+ * number, phone, Application, Web-site login, etc. Accounts are unique to the
+ * case.
  */
 public class Account {
 
-	private final long account_id;	// primary key in the Accounts table, unique at the case-level 
+	/**
+	 * primary key in the Accounts table, unique at the case-level
+	 */
+	private final long account_id;
 
 	private final Account.Type accountType;
-	private final String accountUniqueID;
+	/**
+	 * id of the account, specific to the accounts type. For example: email address,
+	 * phone number, or website user name.
+	 */
+	private final String typeSpecificID;
 
 	//JIRA-901 Why does this implement Serializable?
 	public static final class Type implements Serializable {
@@ -96,8 +104,8 @@ public class Account {
 				return true;
 			} else if (!(that instanceof Account.Type)) {
 				return false;
-			} 
-			
+			}
+
 			Account.Type thatType = (Account.Type) that;
 			// DB table enforces uniqueness for type name
 			return this.typeName.equals(thatType.getTypeName());
@@ -120,20 +128,20 @@ public class Account {
 		}
 	}
 
-	Account(long account_id, Account.Type accountType, String accountUniqueID) throws TskCoreException {
+	Account(long account_id, Account.Type accountType, String typeSpecificId) throws TskCoreException {
 		this.account_id = account_id;
 		this.accountType = accountType;
-		this.accountUniqueID = accountUniqueID;
+		this.typeSpecificID = typeSpecificId;
 	}
 
 	/**
-	 * Gets unique identifier (assigned by a provider) for the account.
-	 * Example includes an email address.
+	 * Gets unique identifier (assigned by a provider) for the account. Example
+	 * includes an email address, a phone number, or a website username.
 	 *
-	 * @return unique account id.
+	 * @return type specific account id.
 	 */
-	public String getAccountUniqueID() {
-		return this.accountUniqueID;
+	public String getTypeSpecificID() {
+		return this.typeSpecificID;
 	}
 
 	/**
@@ -146,11 +154,12 @@ public class Account {
 	}
 
 	/**
-	 * Gets a case-specific unique identifier for this account (from the database)
+	 * Gets a case-specific unique identifier for this account (from the
+	 * database)
 	 *
 	 * @return unique row id.
 	 */
-	public long getAccountId() {
+	public long getAccountID() {
 		return this.account_id;
 	}
 }

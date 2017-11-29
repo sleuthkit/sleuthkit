@@ -627,11 +627,7 @@ int TskDbPostgreSQL::initialize() {
 		||
 		attempt_exec
 		("CREATE TABLE accounts (account_id INTEGER PRIMARY KEY, account_type_id INTEGER NOT NULL, account_unique_identifier TEXT NOT NULL,  UNIQUE(account_type_id, account_unique_identifier) ON CONFLICT IGNORE, FOREIGN KEY(account_type_id) REFERENCES account_types(account_type_id))",
-			"Error creating accounts table: %s\n")	
-		||
-		attempt_exec
-		("CREATE TABLE account_to_instances_map (account_id INTEGER NOT NULL, account_instance_id INTEGER NOT NULL, UNIQUE(account_id, account_instance_id) ON CONFLICT IGNORE, FOREIGN KEY(account_id) REFERENCES accounts(account_id), FOREIGN KEY(account_instance_id) REFERENCES blackboard_artifacts(artifact_id) )",
-				"Error creating account_to_instances_map table: %s\n")	)	 {
+			"Error creating accounts table: %s\n") ){
 			return 1;
     }
 
@@ -684,11 +680,7 @@ int TskDbPostgreSQL::createIndexes() {
 		attempt_exec("CREATE INDEX relationships_relationship_type ON account_relationships(relationship_type);",
 			"Error creating relationships_relationship_type index on account_relationships: %s\n") ||
 		attempt_exec("CREATE INDEX relationships_data_source_obj_id  ON account_relationships(data_source_obj_id);",
-			"Error creating relationships_data_source_obj_id index on account_relationships: %s\n") ||
-		attempt_exec("CREATE INDEX accounts_map_account_id  ON account_to_instances_map(account_id);",
-			"Error creating accounts_map_account_id index on account_to_instances_map: %s\n") ||
-		attempt_exec("CREATE INDEX accounts_map_account_instance_id  ON account_to_instances_map(account_instance_id);",
-			"Error creating accounts_map_account_instance_id index on account_to_instances_map: %s\n");
+			"Error creating relationships_data_source_obj_id index on account_relationships: %s\n");
 }
 
 

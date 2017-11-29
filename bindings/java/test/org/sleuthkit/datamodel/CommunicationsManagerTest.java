@@ -1300,7 +1300,8 @@ public class CommunicationsManagerTest {
 	 *
 	 * @return
 	 */
-	private static CommunicationsFilter buildCommsFilter(Set<String> deviceSet, Set<Account.Type> accountTypeSet, Set<BlackboardArtifact.ARTIFACT_TYPE> relationshipTypeSet, long startDate, long endDate) {
+	private static CommunicationsFilter buildCommsFilter(Set<String> deviceSet, Set<Account.Type> accountTypeSet, 
+			Set<BlackboardArtifact.ARTIFACT_TYPE> relationshipTypeSet, long startDate, long endDate) {
 
 		if ((null == deviceSet) && (null == accountTypeSet) && (null == relationshipTypeSet) && (0 == startDate) && (0 == endDate)) {
 			return null;
@@ -1308,16 +1309,16 @@ public class CommunicationsManagerTest {
 
 		CommunicationsFilter commsFilter = new CommunicationsFilter();
 		if (null != deviceSet) {
-			commsFilter.addAndFilter(new DeviceFilter(deviceSet));
+			commsFilter.addAndFilter(new org.sleuthkit.datamodel.CommunicationsFilter.DeviceFilter(deviceSet));
 		}
 		if (null != accountTypeSet) {
-			commsFilter.addAndFilter(new AccountTypeFilter(accountTypeSet));
+			commsFilter.addAndFilter(new org.sleuthkit.datamodel.CommunicationsFilter.AccountTypeFilter(accountTypeSet));
 		}
 		if (null != relationshipTypeSet) {
-			commsFilter.addAndFilter(new RelationshipTypeFilter(relationshipTypeSet));
+			commsFilter.addAndFilter(new org.sleuthkit.datamodel.CommunicationsFilter.RelationshipTypeFilter(relationshipTypeSet));
 		}
 		if ((0 != startDate) || (0 != endDate)) {
-			commsFilter.addAndFilter(new DateRangeFilter(startDate, endDate));
+			commsFilter.addAndFilter(new org.sleuthkit.datamodel.CommunicationsFilter.DateRangeFilter(startDate, endDate));
 		}
 
 		return commsFilter;
@@ -1393,6 +1394,8 @@ public class CommunicationsManagerTest {
 
 		} catch (TskCoreException ex) {
 			LOGGER.log(Level.SEVERE, "Failed to add Email artifact", ex);
+		} catch (TskDataException ex) {
+			LOGGER.log(Level.SEVERE, "Failed to add Email artifact", ex);
 		}
 
 		return bbart;
@@ -1461,6 +1464,8 @@ public class CommunicationsManagerTest {
 
 		} catch (TskCoreException ex) {
 			LOGGER.log(Level.SEVERE, "Unable to add CallLog artifact ", ex); //NON-NLS
+		} catch (TskDataException ex) {
+			LOGGER.log(Level.SEVERE, "Unable to add CallLog artifact ", ex); //NON-NLS
 		}
 	}
 
@@ -1492,6 +1497,8 @@ public class CommunicationsManagerTest {
 
 		} catch (TskCoreException ex) {
 			LOGGER.log(Level.SEVERE, "Unable to add TSK_MESSAGE artifact ", ex); //NON-NLS
+		} catch (TskDataException ex) {
+			LOGGER.log(Level.SEVERE, "Unable to add TSK_MESSAGE artifact ", ex); //NON-NLS
 		}
 	}
 
@@ -1514,6 +1521,8 @@ public class CommunicationsManagerTest {
 			commsMgr.addRelationships(deviceAccount, accountInstanceList, bbart, 0);
 
 		} catch (TskCoreException ex) {
+			LOGGER.log(Level.SEVERE, "Unable to add Contact artifact ", ex); //NON-NLS
+		} catch (TskDataException ex) {
 			LOGGER.log(Level.SEVERE, "Unable to add Contact artifact ", ex); //NON-NLS
 		}
 	}
