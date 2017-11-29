@@ -1780,7 +1780,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             if (((tsk_getu16(fs->endian,
                             attr->c.r.soff) + (uintptr_t) attr) >
                     ((uintptr_t) a_attrseq + len))
-                || ((tsk_getu16(fs->endian,
+                || (((size_t)tsk_getu16(fs->endian,
                             attr->c.r.soff) + tsk_getu32(fs->endian,
                             attr->c.r.ssize) + (uintptr_t) attr) >
                     ((uintptr_t) a_attrseq + len))) {
