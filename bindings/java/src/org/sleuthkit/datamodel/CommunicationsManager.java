@@ -275,11 +275,12 @@ public class CommunicationsManager {
 		 */
 		BlackboardArtifact accountArtifact = getOrCreateAccountFileInstanceArtifact(accountType, normalizeAccountID(accountType, accountUniqueID), moduleName, sourceFile);
 
+		// The account instance map was unused so we have removed it from the database, 
+		// but we expect we may need it so I am preserving this method comment and usage here.
 		// add a row to Accounts to Instances mapping table
 		// @@@ BC: Seems like we should only do this if we had to create the artifact. 
 		// But, it will probably fail to create a new one based on unique constraints. 
-		addAccountFileInstanceMapping(account.getAccountId(), accountArtifact.getArtifactID());
-
+		// addAccountFileInstanceMapping(account.getAccountId(), accountArtifact.getArtifactID());
 		return new AccountFileInstance(accountArtifact, account);
 	}
 
@@ -545,35 +546,6 @@ public class CommunicationsManager {
 		return accountArtifact;
 	}
 
-	/**
-	 *
-	 * @param accountId         - database row id
-	 * @param accountInstanceId - Artifact ID of instance
-	 *
-	 * @throws TskCoreException
-	 */
-	private void addAccountFileInstanceMapping(long accountId, long accountInstanceId) throws TskCoreException {
-		CaseDbConnection connection = db.getConnection();
-		db.acquireSingleUserCaseWriteLock();
-		Statement s = null;
-		ResultSet rs = null;
-
-		try {
-			connection.beginTransaction();
-			s = connection.createStatement();
-
-			s.execute("INSERT INTO account_to_instances_map (account_id, account_instance_id) VALUES ( " + accountId + ", " + accountInstanceId + " )"); //NON-NLS
-			connection.commitTransaction();
-		} catch (SQLException ex) {
-			connection.rollbackTransaction();
-			throw new TskCoreException("Error adding an account to instance mapping", ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			connection.close();
-			db.releaseSingleUserCaseWriteLock();
-		}
-	}
 
 	/**
 	 * Get the Account.Type for the give type name.
@@ -1678,6 +1650,36 @@ public class CommunicationsManager {
 //			closeStatement(s);
 //			connection.close();
 //			db.releaseSingleUserCaseReadLock();
+//		}
+//	}
+
+//	/**
+//	 *
+//	 * @param accountId         - database row id
+//	 * @param accountInstanceId - Artifact ID of instance
+//	 *
+//	 * @throws TskCoreException
+//	 */
+//	private void addAccountFileInstanceMapping(long accountId, long accountInstanceId) throws TskCoreException {
+//		CaseDbConnection connection = db.getConnection();
+//		db.acquireSingleUserCaseWriteLock();
+//		Statement s = null;
+//		ResultSet rs = null;
+//
+//		try {
+//			connection.beginTransaction();
+//			s = connection.createStatement();
+//
+//			s.execute("INSERT INTO account_to_instances_map (account_id, account_instance_id) VALUES ( " + accountId + ", " + accountInstanceId + " )"); //NON-NLS
+//			connection.commitTransaction();
+//		} catch (SQLException ex) {
+//			connection.rollbackTransaction();
+//			throw new TskCoreException("Error adding an account to instance mapping", ex);
+//		} finally {
+//			closeResultSet(rs);
+//			closeStatement(s);
+//			connection.close();
+//			db.releaseSingleUserCaseWriteLock();
 //		}
 //	}
 }
