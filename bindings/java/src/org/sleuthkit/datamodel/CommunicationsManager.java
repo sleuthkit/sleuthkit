@@ -280,7 +280,7 @@ public class CommunicationsManager {
 		// add a row to Accounts to Instances mapping table
 		// @@@ BC: Seems like we should only do this if we had to create the artifact. 
 		// But, it will probably fail to create a new one based on unique constraints. 
-		// addAccountFileInstanceMapping(account.getAccountId(), accountArtifact.getArtifactID());
+		// addAccountFileInstanceMapping(account.getAccountID(), accountArtifact.getArtifactID());
 		return new AccountFileInstance(accountArtifact, account);
 	}
 
@@ -381,7 +381,7 @@ public class CommunicationsManager {
 		List<Long> accountIDs = new ArrayList<Long>();
 
 		if (null != sender) {
-			accountIDs.add(sender.getAccount().getAccountId());
+			accountIDs.add(sender.getAccount().getAccountID());
 			if (sender.getDataSourceObjectID() != relationshipArtifact.getDataSourceObjectID()) {
 				throw new TskDataException("Sender and relationship are from different data sources :"
 						+ "Sender source ID" + sender.getDataSourceObjectID() + " != relationship source ID" + relationshipArtifact.getDataSourceObjectID());
@@ -389,7 +389,7 @@ public class CommunicationsManager {
 		}
 
 		for (AccountFileInstance recipient : recipients) {
-			accountIDs.add(recipient.getAccount().getAccountId());
+			accountIDs.add(recipient.getAccount().getAccountID());
 			if (recipient.getDataSourceObjectID() != relationshipArtifact.getDataSourceObjectID()) {
 				throw new TskDataException("Recipient and relationship are from different data sources :"
 						+ "Recipient source ID" + recipient.getDataSourceObjectID() + " != relationship source ID" + relationshipArtifact.getDataSourceObjectID());
@@ -803,7 +803,7 @@ public class CommunicationsManager {
 
 		// Get the list of Data source objects IDs correpsonding to this DeviceID.
 		// Convert to a CSV string list that can be usein the SQL IN caluse.
-		long account_id = accountDeviceInstance.getAccount().getAccountId();
+		long account_id = accountDeviceInstance.getAccount().getAccountID();
 		List<Long> ds_ids = db.getDataSourceObjIds(accountDeviceInstance.getDeviceId());
 		String datasource_obj_ids_list = StringUtils.buildCSVString(ds_ids);
 
@@ -880,9 +880,9 @@ public class CommunicationsManager {
 
 		Map<Long, Set<Long>> accountIdToDatasourceObjIdMap = new HashMap<Long, Set<Long>>();
 		for (AccountDeviceInstance accountDeviceInstance : accountDeviceInstanceList) {
-			long accountID = accountDeviceInstance.getAccount().getAccountId();
+			long accountID = accountDeviceInstance.getAccount().getAccountID();
 			if (false == accountIdToDatasourceObjIdMap.containsKey(accountID)) {
-				accountIdToDatasourceObjIdMap.put(accountDeviceInstance.getAccount().getAccountId(),
+				accountIdToDatasourceObjIdMap.put(accountDeviceInstance.getAccount().getAccountID(),
 						new HashSet<Long>(db.getDataSourceObjIds(accountDeviceInstance.getDeviceId())));
 			} else {
 				accountIdToDatasourceObjIdMap.get(accountID).addAll(db.getDataSourceObjIds(accountDeviceInstance.getDeviceId()));
@@ -1138,7 +1138,7 @@ public class CommunicationsManager {
 //
 //		// get all instances for each account
 //		for (Account account : accounts) {
-//			List<Long> accountInstanceIds = getAccountInstanceIds(account.getAccountId());
+//			List<Long> accountInstanceIds = getAccountInstanceIds(account.getAccountID());
 //
 //			for (long artifact_id : accountInstanceIds) {
 //				accountInstances.add(new AccountFileInstance(db, db.getBlackboardArtifact(artifact_id), account));
@@ -1262,7 +1262,7 @@ public class CommunicationsManager {
 //	 *                          within TSK core
 //	 */
 //	public List<Account> getAccountsWithRelationship(Account account) throws TskCoreException {
-//		return getAccountsWithRelationship(account.getAccountId());
+//		return getAccountsWithRelationship(account.getAccountID());
 //	}
 //	/**
 //	 * Get all account that have a relationship with a given account
@@ -1463,7 +1463,7 @@ public class CommunicationsManager {
 //	 *                          within TSK core
 //	 */
 //	public List<BlackboardArtifact.Type> getRelationshipTypes(Account account1, Account account2) throws TskCoreException {
-//		return getRelationshipTypes(account1.getAccountId(), account2.getAccountId());
+//		return getRelationshipTypes(account1.getAccountID(), account2.getAccountID());
 //	}
 //	/**
 //	 * Returns unique relation types between two accounts
