@@ -829,7 +829,7 @@ public class CommunicationsManagerTest {
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					new DeviceFilter(Arrays.asList(DS1_DEVICEID, DS2_DEVICEID))
-			));;
+			));
 			long count = commsMgr.getRelationshipSourcesCount(PHONE_4_DS2, commsFilter);
 			assertEquals(3, count);
 
@@ -1207,7 +1207,7 @@ public class CommunicationsManagerTest {
 		if (senderAddressList.size() == 1) {
 			senderAddress = senderAddressList.get(0);
 			try {
-				senderAccountInstance = commsMgr.createAccountFileInstance(Account.Type.EMAIL, senderAddress, MODULE_NAME, abstractFile);
+				senderAccountInstance = commsMgr.createAccountFileInstance(EMAIL, senderAddress, MODULE_NAME, abstractFile);
 			} catch (TskCoreException ex) {
 				LOGGER.log(Level.WARNING, "Failed to create account for email address  " + senderAddress, ex); //NON-NLS
 			}

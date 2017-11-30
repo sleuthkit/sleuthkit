@@ -31,6 +31,9 @@ public class Relationship {
 
 	public static final class Type {
 
+		private final String displayName;
+		private final String typeName;
+
 		public static final Type MESSAGE = new Type("MESSAGE", "Message");
 		public static final Type CALL_LOG = new Type("CALL_LOG", "Call Log");
 		public static final Type CONTACT = new Type("CONTACT", "Contact");
@@ -50,9 +53,6 @@ public class Relationship {
 		static Set<Relationship.Type> getPredefinedCommunicationTypes() {
 			return PREDEFINED_COMMUNICATION_TYPES;
 		}
-
-		private final String displayName;
-		private final String typeName;
 
 		private Type(String name, String displayName) {
 			this.typeName = name;

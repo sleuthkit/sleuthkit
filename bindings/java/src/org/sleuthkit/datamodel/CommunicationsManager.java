@@ -64,16 +64,7 @@ public class CommunicationsManager {
 	private static final String RELATIONSHIP_ARTIFACT_TYPE_IDS_CSV_STR
 			= StringUtils.buildCSVString(RELATIONSHIP_ARTIFACT_TYPE_IDS);
 
-	// Artifact types that represent communications between accounts 
-	private static final Set<Integer> COMMUNICATION_ARTIFACT_TYPE_IDS
-			= new HashSet<Integer>(Arrays.asList(
-					BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE.getTypeID(),
-					BlackboardArtifact.ARTIFACT_TYPE.TSK_EMAIL_MSG.getTypeID(),
-					BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG.getTypeID()
-			));
-	private static final String COMMUNICATION_ARTIFACT_TYPE_IDS_CSV_STR
-			= StringUtils.buildCSVString(COMMUNICATION_ARTIFACT_TYPE_IDS);
-
+	
 	CommunicationsManager(SleuthkitCase db) throws TskCoreException {
 		this.db = db;
 
