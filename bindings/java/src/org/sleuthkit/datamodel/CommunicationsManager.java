@@ -808,7 +808,6 @@ public class CommunicationsManager {
 					+ "      OR  relationships.account2_id = " + account_id + " )"
 					+ (filterSQL.isEmpty() ? "" : " AND " + filterSQL);
 
-			System.out.println("JONATHAN: " + queryStr);
 			rs = connection.executeQuery(s, queryStr); //NON-NLS
 			rs.next();
 			return (rs.getLong("count"));
