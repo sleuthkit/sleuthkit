@@ -220,6 +220,13 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
 
             /* The length of this specific run */
             TSK_OFF_T run_len = data_run->len * a_ntfs->csize_b;
+            if (run_len < 0) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+                tsk_error_set_errstr
+                ("ntfs_dinode_lookup: Overflow when calculating run length");
+                return TSK_COR;
+            }
 
             /* Is our MFT entry is in this run somewhere ? */
             if (offset < run_len) {
