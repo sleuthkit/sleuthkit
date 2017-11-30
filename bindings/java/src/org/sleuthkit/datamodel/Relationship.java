@@ -23,6 +23,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * A relationship between Accounts, such as a communication ( email, sms, phone
+ * call (log) ) or presence in a contact book.
+ */
 public class Relationship {
 
 	public static final class Type {
@@ -33,12 +37,11 @@ public class Relationship {
 
 		private static final Set<Type> PREDEFINED_RELATIONSHIP_TYPES
 				= Collections.unmodifiableSet(new HashSet<Relationship.Type>(Arrays.asList(
-						MESSAGE, CALL_LOG, CONTACT
-				)));
+						MESSAGE, CALL_LOG, CONTACT)));
+
 		private static final Set<Type> PREDEFINED_COMMUNICATION_TYPES
 				= Collections.unmodifiableSet(new HashSet<Relationship.Type>(Arrays.asList(
-						MESSAGE, CALL_LOG
-				)));
+						MESSAGE, CALL_LOG)));
 
 		static Set<Relationship.Type> getPredefinedRelationshipTypes() {
 			return PREDEFINED_RELATIONSHIP_TYPES;
@@ -64,7 +67,6 @@ public class Relationship {
 				return false;
 			}
 			Type thatType = (Type) that;
-			// DB table will enforce uniqueness for type name
 			return this.typeName.equals(thatType.getTypeName());
 		}
 
