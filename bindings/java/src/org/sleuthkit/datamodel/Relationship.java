@@ -19,7 +19,9 @@
 package org.sleuthkit.datamodel;
 
 import java.util.Arrays;
-import java.util.List;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 public class Relationship {
 
@@ -29,13 +31,23 @@ public class Relationship {
 		public static final Type CALL_LOG = new Type("CALL_LOG", "Call Log");
 		public static final Type CONTACT = new Type("CONTACT", "Contact");
 
-		private static final List<Relationship.Type> PREDEFINED_RELATIONSHIP_TYPES = Arrays.asList(
-				MESSAGE, CALL_LOG, CONTACT
-		);
+		private static final Set<Type> PREDEFINED_RELATIONSHIP_TYPES
+				= Collections.unmodifiableSet(new HashSet<Relationship.Type>(Arrays.asList(
+						MESSAGE, CALL_LOG, CONTACT
+				)));
+		private static final Set<Type> PREDEFINED_COMMUNICATION_TYPES
+				= Collections.unmodifiableSet(new HashSet<Relationship.Type>(Arrays.asList(
+						MESSAGE, CALL_LOG
+				)));
 
-		static List<Relationship.Type> getPredefinedRelationShipTypes() {
+		static Set<Relationship.Type> getPredefinedRelationshipTypes() {
 			return PREDEFINED_RELATIONSHIP_TYPES;
 		}
+
+		static Set<Relationship.Type> getPredefinedCommunicationTypes() {
+			return PREDEFINED_COMMUNICATION_TYPES;
+		}
+
 		private final String displayName;
 		private final String typeName;
 

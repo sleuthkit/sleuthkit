@@ -692,7 +692,6 @@ public class CommunicationsManager {
 		try {
 			s = connection.createStatement();
 
-			//TODO: this could be static 
 			//set up applicable filters 
 			Set<String> applicableInnerQueryFilters = new HashSet<String>(Arrays.asList(
 					CommunicationsFilter.DateRangeFilter.class.getName(),
@@ -701,7 +700,6 @@ public class CommunicationsManager {
 			));
 			String innerQueryfilterSQL = getCommunicationsFilterSQL(filter, applicableInnerQueryFilters);
 
-			//TODO: make (some of) this static?
 			String innerQueryTemplate
 					= " SELECT %1$1s as account_id,"
 					+ "		  data_source_obj_id"
@@ -717,16 +715,10 @@ public class CommunicationsManager {
 					+ " FROM ( " + innerQuery1 + " UNION " + innerQuery2 + " ) "
 					+ " GROUP BY account_id, data_source_obj_id";
 
-			System.out.println("RAMAN innerQueryfilterSQL = " + innerQueryfilterSQL);
-			System.out.println("RAMAN innerQuery1 = " + innerQuery1);
-			System.out.println("RAMAN innerQuery2 = " + innerQuery2);
-			System.out.println("");
-
 			// set up applicable filters
 			Set<String> applicableFilters = new HashSet<String>(Arrays.asList(
 					CommunicationsFilter.AccountTypeFilter.class.getName()
 			));
-
 			String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
 
 			String queryStr = "SELECT "
@@ -748,10 +740,6 @@ public class CommunicationsManager {
 					+ (filterSQL.isEmpty() ? "" : " WHERE " + filterSQL)
 					+ " GROUP BY accounts.account_id, data_source_info.device_id";
 
-			System.out.println("RAMAN FilterSQL = " + filterSQL);
-			System.out.println("RAMAN QueryStr = " + queryStr);
-
-			long startTime = System.nanoTime();
 			rs = connection.executeQuery(s, queryStr); //NON-NLS
 			ArrayList<AccountDeviceInstance> accountDeviceInstances = new ArrayList<AccountDeviceInstance>();
 			while (rs.next()) {
@@ -764,12 +752,6 @@ public class CommunicationsManager {
 				Account account = new Account(account_id, accountType, account_unique_identifier);
 				accountDeviceInstances.add(new AccountDeviceInstance(account, deviceID));
 			}
-
-			long endTime = System.nanoTime();
-			System.out.println("RAMAN getAccountDeviceInstancesWithCommunications() Time taken = " + (endTime - startTime) / 1000000L);
-			System.out.println("RAMAN getAccountDeviceInstancesWithCommunications() Num of AccountDeviceInstances = " + accountDeviceInstances.size());
-			System.out.println("");
-
 			return accountDeviceInstances;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting account device instances. " + ex.getMessage(), ex);
@@ -818,25 +800,17 @@ public class CommunicationsManager {
 		try {
 			s = connection.createStatement();
 
-			String queryStr = "SELECT count(*) as count "
+			String queryStr
+					= "SELECT count(DISTINCT relationships.relationship_source_obj_id) as count "
 					+ "	FROM account_relationships AS relationships"
 					+ " WHERE relationships.data_source_obj_id IN ( " + datasourceObjIdsCSV + " )"
 					+ " AND ( relationships.account1_id = " + account_id
-					+ " OR  relationships.account2_id = " + account_id + " )"
-					+ (filterSQL.isEmpty() ? "" : " AND " + filterSQL)
-					;//+ " GROUP BY relationships.relationship_source_obj_id";
+					+ "      OR  relationships.account2_id = " + account_id + " )"
+					+ (filterSQL.isEmpty() ? "" : " AND " + filterSQL);
 
-			long startTime = System.nanoTime();
+			System.out.println("JONATHAN: " + queryStr);
 			rs = connection.executeQuery(s, queryStr); //NON-NLS
 			rs.next();
-
-			System.out.println("RAMAN getCommunicationsCount() FilterSQL = " + filterSQL);
-			System.out.println("RAMAN getCommunicationsCount() QueryStr = " + queryStr);
-
-			long endTime = System.nanoTime();
-			System.out.println("RAMAN getCommunicationsCount() Time taken = " + (endTime - startTime) / 1000000L);
-			System.out.println("");
-
 			return (rs.getLong("count"));
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting relationships count for account device instance. " + ex.getMessage(), ex);
