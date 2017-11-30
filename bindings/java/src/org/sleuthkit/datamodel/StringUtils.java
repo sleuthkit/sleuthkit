@@ -22,18 +22,22 @@ import java.util.Collection;
 
 /**
  * Collection of string utility methods.
- * 
+ *
  */
 class StringUtils {
-	
+
 	/**
 	 * Utility method to convert a list to an CSV string.
-	 * 
+	 *
 	 * @param values - collection of objects .
-	 * 
+	 *
 	 * @return a CSV string.
 	 */
 	static <T> String buildCSVString(Collection<T> values) {
+		return joinAsStrings(values, ",");
+	}
+
+	static <T> String joinAsStrings(Collection<T> values, String seperator) {
 		if (values == null || values.isEmpty()) {
 			return "";
 		}
@@ -41,9 +45,9 @@ class StringUtils {
 		StringBuilder result = new StringBuilder();
 		for (T val : values) {
 			result.append(val);
-			result.append(",");
+			result.append(seperator);
 		}
 
-		return result.substring(0, result.length() - 1);
+		return result.substring(0, result.lastIndexOf(seperator));
 	}
 }

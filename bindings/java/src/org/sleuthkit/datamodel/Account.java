@@ -37,8 +37,8 @@ public class Account {
 
 	private final Account.Type accountType;
 	/**
-	 * id of the account, specific to the accounts type. For example: email
-	 * address, phone number, or website user name.
+	 * id of the account, specific to the accounts type. For example: email address,
+	 * phone number, or website user name.
 	 */
 	private final String typeSpecificID;
 
@@ -70,12 +70,32 @@ public class Account {
 				MESSAGING_APP,
 				WEBSITE
 		);
-		private final String displayName;
-		private final String typeName;
 
-		Type(String name, String displayName) {
-			this.typeName = name;
-			this.displayName = name;
+		private final String typeName;
+		private final String displayName;
+
+		/**
+		 * Constructs an Account type.
+		 *
+		 * @param typeName    The type name.
+		 * @param displayName The display name for the type.
+		 */
+		Type(String typeName, String displayName) {
+			this.typeName = typeName;
+			this.displayName = displayName;
+		}
+
+		/**
+		 * Gets the type name
+		 *
+		 * @return The type name.
+		 */
+		public String getTypeName() {
+			return this.typeName;
+		}
+
+		public String getDisplayName() {
+			return displayName;
 		}
 
 		@Override
@@ -91,25 +111,20 @@ public class Account {
 			return this.typeName.equals(thatType.getTypeName());
 		}
 
-		public String getDisplayName() {
-			return displayName;
-		}
-
-		public String getTypeName() {
-			return typeName;
-		}
-
 		@Override
 		public int hashCode() {
 			int hash = 11;
+
 			hash = 83 * hash + (this.typeName != null ? this.typeName.hashCode() : 0);
 			hash = 83 * hash + (this.displayName != null ? this.displayName.hashCode() : 0);
+
 			return hash;
 		}
 
 		@Override
 		public String toString() {
-			return "{" + this.getClass().getName() + ": displayName=" + this.displayName + ", typeName=" + this.typeName + "}";
+			return " displayName=" + this.displayName
+					+ ", typeName=" + this.typeName + ")";
 		}
 	}
 

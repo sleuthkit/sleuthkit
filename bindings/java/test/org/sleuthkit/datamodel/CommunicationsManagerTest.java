@@ -191,17 +191,16 @@ public class CommunicationsManagerTest {
 
 	private static final List<BlackboardArtifact> emailMessages = new ArrayList<BlackboardArtifact>();
 
-	
 	private static final HashSet<Relationship.Type> CALL_LOG_TYPE_SET = new HashSet<Relationship.Type>(Arrays.asList(
 			Relationship.Type.CALL_LOG));
 
 	private static final HashSet<Relationship.Type> MESSAGE_TYPE_SET = new HashSet<Relationship.Type>(Arrays.asList(
 			Relationship.Type.MESSAGE));
-	
+
 	private static final HashSet<Relationship.Type> COMMUNICATION_TYPES = new HashSet<Relationship.Type>(Arrays.asList(
 			Relationship.Type.CALL_LOG,
 			Relationship.Type.MESSAGE));
-	
+
 	public CommunicationsManagerTest() {
 	}
 
@@ -326,17 +325,17 @@ public class CommunicationsManagerTest {
 
 		// Test no filters - pass null for CommunicationsFilter
 		{
-			List<AccountDeviceInstance> accountDeviceInstances2 = commsMgr.getAccountDeviceInstancesWithCommunications(null);
-			assertEquals(10, accountDeviceInstances2.size());
+			List<AccountDeviceInstance> accountDeviceInstances2 = commsMgr.getAccountDeviceInstancesWithRelationships(null);
+			assertEquals(12, accountDeviceInstances2.size());
 		}
 
 		// Test no filters - empty DeviceFilter
 		{
 			CommunicationsFilter commsFilter = buildCommsFilter(
-					new HashSet<String>(),null,
+					new HashSet<String>(), null,
 					COMMUNICATION_TYPES);
 
-			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
+			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
 			assertEquals(10, accountDeviceInstances.size());
 		}
 
@@ -346,7 +345,7 @@ public class CommunicationsManagerTest {
 					new HashSet<String>(Arrays.asList(DS1_DEVICEID, DS2_DEVICEID)),
 					null);
 
-			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
+			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
 			assertEquals(10, accountDeviceInstances.size());
 		}
 
@@ -356,7 +355,7 @@ public class CommunicationsManagerTest {
 					new HashSet<String>(Arrays.asList(DS3_DEVICEID)),
 					null);
 
-			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
+			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
 			assertEquals(0, accountDeviceInstances.size());
 		}
 
@@ -374,7 +373,7 @@ public class CommunicationsManagerTest {
 					new HashSet<Account.Type>(),
 					COMMUNICATION_TYPES);
 
-			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
+			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
 			assertEquals(10, accountDeviceInstances.size());
 		}
 
@@ -384,7 +383,7 @@ public class CommunicationsManagerTest {
 					null,
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.EMAIL)));
 
-			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
+			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
 			assertEquals(3, accountDeviceInstances.size());
 		}
 
@@ -394,7 +393,7 @@ public class CommunicationsManagerTest {
 					null,
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.PHONE)));
 
-			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
+			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
 
 			// The above call returns PHONE_NUM3/DS2 extra - it has no communication on DS2
 			assertEquals(5, accountDeviceInstances.size());
@@ -406,7 +405,7 @@ public class CommunicationsManagerTest {
 					null,
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.PHONE, Account.Type.EMAIL)));
 
-			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
+			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
 
 			// @TODO EUR-884: RAMAN dont know why this returns 9, expect 8 here
 			assertEquals(8, accountDeviceInstances.size());
@@ -418,7 +417,7 @@ public class CommunicationsManagerTest {
 					null,
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.CREDIT_CARD)));
 
-			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
+			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
 			assertEquals(0, accountDeviceInstances.size());
 		}
 
@@ -435,7 +434,8 @@ public class CommunicationsManagerTest {
 					new HashSet<String>(Arrays.asList(DS1_DEVICEID)),
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.EMAIL)));
 
-			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
+			List<AccountDeviceInstance> accountDeviceInstances
+					= commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
 			assertEquals(3, accountDeviceInstances.size());
 		}
 
@@ -444,8 +444,8 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = buildCommsFilter(
 					new HashSet<String>(Arrays.asList(DS1_DEVICEID)),
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.PHONE)));
-			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
-			assertEquals(2, accountDeviceInstances.size());
+			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
+			assertEquals(3, accountDeviceInstances.size());
 		}
 
 		// Test AccountTypeFilter - DS2 & EMAIL
@@ -454,7 +454,7 @@ public class CommunicationsManagerTest {
 					new HashSet<String>(Arrays.asList(DS2_DEVICEID)),
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.EMAIL)));
 
-			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
+			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
 			assertEquals(0, accountDeviceInstances.size());
 		}
 
@@ -464,8 +464,8 @@ public class CommunicationsManagerTest {
 					new HashSet<String>(Arrays.asList(DS1_DEVICEID)),
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.PHONE, Account.Type.EMAIL)));
 
-			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
-			assertEquals(5, accountDeviceInstances.size());
+			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
+			assertEquals(6, accountDeviceInstances.size());
 		}
 
 		// Test Device & AccountType filter - DS2 & PHONE or EMAIL
@@ -474,8 +474,8 @@ public class CommunicationsManagerTest {
 					new HashSet<String>(Arrays.asList(DS2_DEVICEID)),
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.PHONE, Account.Type.EMAIL)));
 
-			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
-			assertEquals(3, accountDeviceInstances.size());
+			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
+			assertEquals(4, accountDeviceInstances.size());
 		}
 
 		// Test Device & AccountType filter - DS2 or DS1 & EMAIL
@@ -484,7 +484,7 @@ public class CommunicationsManagerTest {
 					new HashSet<String>(Arrays.asList(DS1_DEVICEID, DS2_DEVICEID)),
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.EMAIL)));
 
-			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
+			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
 			assertEquals(3, accountDeviceInstances.size());
 		}
 
@@ -494,8 +494,8 @@ public class CommunicationsManagerTest {
 					new HashSet<String>(Arrays.asList(DS1_DEVICEID, DS2_DEVICEID)),
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.PHONE)));
 
-			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
-			assertEquals(5, accountDeviceInstances.size());
+			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
+			assertEquals(7, accountDeviceInstances.size());
 		}
 
 		// Test Device & AccountType filter - DS2 or DS1 & Phone or Email
@@ -504,8 +504,8 @@ public class CommunicationsManagerTest {
 					new HashSet<String>(Arrays.asList(DS1_DEVICEID, DS2_DEVICEID)),
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.PHONE, Account.Type.EMAIL)));
 
-			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
-			assertEquals(8, accountDeviceInstances.size());
+			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
+			assertEquals(10, accountDeviceInstances.size());
 		}
 
 		// Test Device & AccountType filter - DS1 or DS2 or DS3 & Phone or Email, Date Range: communications on or BEFORE Dec 31, 2016
@@ -516,7 +516,7 @@ public class CommunicationsManagerTest {
 					null,
 					0, DEC_31_2016);
 
-			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
+			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
 			assertEquals(0, accountDeviceInstances.size());
 		}
 
@@ -528,7 +528,7 @@ public class CommunicationsManagerTest {
 					null,
 					JUL_1_2017, 0);
 
-			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
+			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
 
 			// TBD EUR-884: we expect 4 account device instances here but get 5. Phone 3/DS2 is returned even though it has a Contact entry and no coummincations,
 			assertEquals(4, accountDeviceInstances.size());
@@ -540,7 +540,7 @@ public class CommunicationsManagerTest {
 					new HashSet<String>(Arrays.asList(DS1_DEVICEID, DS2_DEVICEID, DS3_DEVICEID)),
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.PHONE, Account.Type.EMAIL)));
 
-			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithCommunications(commsFilter);
+			List<AccountDeviceInstance> accountDeviceInstances = commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
 			assertEquals(8, accountDeviceInstances.size());
 		}
 
@@ -555,7 +555,7 @@ public class CommunicationsManagerTest {
 		{
 			Account account_email_A = commsMgr.getAccount(Account.Type.EMAIL, EMAIL_A);
 			long count = commsMgr.getRelationshipSourcesCount(new AccountDeviceInstance(account_email_A, DS1_DEVICEID), null);
-			assertEquals(3, count);
+			assertEquals(4, count);
 		}
 
 		// Communications count for Email Account A/DS1: filter on DS1 (filter doesnt apply)
@@ -566,7 +566,7 @@ public class CommunicationsManagerTest {
 					null);
 
 			long count = commsMgr.getRelationshipSourcesCount(new AccountDeviceInstance(account_email_A, DS1_DEVICEID), commsFilter);
-			assertEquals(3, count);
+			assertEquals(4, count);
 		}
 
 		// Communications count for Email Account A/DS1: Filter on DS1 & EMAIL
@@ -577,7 +577,7 @@ public class CommunicationsManagerTest {
 					new HashSet<Account.Type>(Arrays.asList(Account.Type.EMAIL)));
 
 			long count = commsMgr.getRelationshipSourcesCount(new AccountDeviceInstance(account_email_A, DS1_DEVICEID), commsFilter);
-			assertEquals(3, count);
+			assertEquals(4, count);
 		}
 
 		// Communications count for Email Account B/DS1, Filter on DS1
@@ -588,7 +588,7 @@ public class CommunicationsManagerTest {
 					null);
 
 			long count = commsMgr.getRelationshipSourcesCount(new AccountDeviceInstance(account_email_B, DS1_DEVICEID), commsFilter);
-			assertEquals(2, count);
+			assertEquals(3, count);
 		}
 
 		// Communications count for Email Account B/DS1, Filter on DS1 & DS2 Device filter is NA
@@ -599,7 +599,7 @@ public class CommunicationsManagerTest {
 					null);
 
 			long count = commsMgr.getRelationshipSourcesCount(new AccountDeviceInstance(account_email_B, DS1_DEVICEID), commsFilter);
-			assertEquals(2, count);
+			assertEquals(3, count);
 		}
 
 		// Communications count for Email Account C/DS1, Filter on DS1 & DS2
@@ -611,7 +611,7 @@ public class CommunicationsManagerTest {
 					null);
 
 			long count = commsMgr.getRelationshipSourcesCount(new AccountDeviceInstance(account_email_C, DS1_DEVICEID), commsFilter);
-			assertEquals(2, count);
+			assertEquals(3, count);
 		}
 
 		// Communications count for Phone2/DS1
@@ -622,7 +622,7 @@ public class CommunicationsManagerTest {
 					null);
 
 			long count = commsMgr.getRelationshipSourcesCount(new AccountDeviceInstance(account_phone2, DS1_DEVICEID), commsFilter);
-			assertEquals(4, count);
+			assertEquals(5, count);
 		}
 
 		// Communications count for Phone2/DS2
@@ -633,7 +633,7 @@ public class CommunicationsManagerTest {
 					null);
 
 			long count = commsMgr.getRelationshipSourcesCount(new AccountDeviceInstance(account_phone2, DS2_DEVICEID), commsFilter);
-			assertEquals(3, count);
+			assertEquals(4, count);
 		}
 
 		// Communications count for Phone2/DS1, Filter on DS1, DS2, device filter is N/A
@@ -644,7 +644,7 @@ public class CommunicationsManagerTest {
 					null);
 
 			long count = commsMgr.getRelationshipSourcesCount(new AccountDeviceInstance(account_phone2, DS1_DEVICEID), commsFilter);
-			assertEquals(4, count);
+			assertEquals(5, count);
 		}
 
 		// Communications count for Phone3/DS1
@@ -721,7 +721,7 @@ public class CommunicationsManagerTest {
 					null);
 
 			long count = commsMgr.getRelationshipSourcesCount(new AccountDeviceInstance(account_phone4, DS2_DEVICEID), commsFilter);
-			assertEquals(2, count);
+			assertEquals(3, count);
 		}
 
 		// Communications count for Phone4/DS2, Filter on DS1 & DS2, filter is NA
@@ -732,7 +732,7 @@ public class CommunicationsManagerTest {
 					null);
 
 			long count = commsMgr.getRelationshipSourcesCount(new AccountDeviceInstance(account_phone4, DS2_DEVICEID), commsFilter);
-			assertEquals(2, count);
+			assertEquals(3, count);
 		}
 
 	}
@@ -744,15 +744,16 @@ public class CommunicationsManagerTest {
 
 		// Communications for Email Account A/DS1: No Filters
 		{
-			Set<AccountDeviceInstance> accountDeviceInstanceList = new HashSet<AccountDeviceInstance>(Arrays.asList(
-					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.EMAIL, EMAIL_A), DS1_DEVICEID)
-			));
+			Set<AccountDeviceInstance> accountDeviceInstanceList
+					= new HashSet<AccountDeviceInstance>(Arrays.asList(
+							new AccountDeviceInstance(commsMgr.getAccount(Account.Type.EMAIL, EMAIL_A), DS1_DEVICEID)
+					));
 
 			Set<BlackboardArtifact> communications = commsMgr.getRelationshipSources(accountDeviceInstanceList, null);
 			assertEquals(3, communications.size());
 
 			long count = commsMgr.getRelationshipSourcesCount(accountDeviceInstanceList.iterator().next(), null);
-			assertEquals(count, communications.size());
+			assertEquals(4, count);
 		}
 
 		// Communications for Email Account B/DS1: No Filters
@@ -928,7 +929,7 @@ public class CommunicationsManagerTest {
 					new AccountDeviceInstance(commsMgr.getAccount(Account.Type.PHONE, PHONENUM_1), DS2_DEVICEID)
 			));
 
-			CommunicationsFilter commsFilter = buildCommsFilter(null,					null, CALL_LOG_TYPE_SET);
+			CommunicationsFilter commsFilter = buildCommsFilter(null, null, CALL_LOG_TYPE_SET);
 
 			Set<BlackboardArtifact> communications = commsMgr.getRelationshipSources(accountDeviceInstanceList, commsFilter);
 			assertEquals(1, communications.size());

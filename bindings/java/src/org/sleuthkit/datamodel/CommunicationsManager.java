@@ -24,6 +24,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -670,9 +671,10 @@ public class CommunicationsManager {
 	}
 
 	/**
-	 * Returns a list of AccountDeviceInstances that have any communications.
+	 * Returns a list of AccountDeviceInstances that have any relationships.
 	 *
-	 * Applicable filters: DeviceFilter, AccountTypeFilter, DateRangeFilter
+	 * Applicable filters: DeviceFilter, AccountTypeFilter, DateRangeFilter,
+	 * RelationshipTypeFilter
 	 *
 	 * @param filter filters to apply
 	 *
@@ -681,7 +683,7 @@ public class CommunicationsManager {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
 	 */
-	public List<AccountDeviceInstance> getAccountDeviceInstancesWithCommunications(CommunicationsFilter filter) throws TskCoreException {
+	public List<AccountDeviceInstance> getAccountDeviceInstancesWithRelationships(CommunicationsFilter filter) throws TskCoreException {
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSingleUserCaseReadLock();
 		Statement s = null;
@@ -744,7 +746,7 @@ public class CommunicationsManager {
 					+ " JOIN data_source_info AS data_source_info"
 					+ "		ON account_device_instances.data_source_obj_id = data_source_info.obj_id"
 					+ (filterSQL.isEmpty() ? "" : " WHERE " + filterSQL)
-					+ " GRoup BY accounts.account_id, data_source_info.device_id";
+					+ " GROUP BY accounts.account_id, data_source_info.device_id";
 
 			System.out.println("RAMAN FilterSQL = " + filterSQL);
 			System.out.println("RAMAN QueryStr = " + queryStr);
@@ -780,7 +782,7 @@ public class CommunicationsManager {
 	}
 
 	/**
-	 * Get the number of unique communications found for the given account
+	 * Get the number of unique relationship sources found for the given account
 	 * device instance.
 	 *
 	 * Applicable filters: RelationshipTypeFilter, DateRangeFilter
@@ -798,9 +800,8 @@ public class CommunicationsManager {
 		long account_id = accountDeviceInstance.getAccount().getAccountID();
 
 		// Get the list of Data source objects IDs correpsonding to this DeviceID.
-		String datasourceObjIdsCSV = StringUtils.buildCSVString( 
+		String datasourceObjIdsCSV = StringUtils.buildCSVString(
 				db.getDataSourceObjIds(accountDeviceInstance.getDeviceId()));
-
 
 		// set up applicable filters
 		Set<String> applicableFilters = new HashSet<String>(Arrays.asList(
@@ -817,12 +818,13 @@ public class CommunicationsManager {
 		try {
 			s = connection.createStatement();
 
-			String queryStr = "SELECT count(relationships.relationship_source_obj_id)as count "
+			String queryStr = "SELECT count(*) as count "
 					+ "	FROM account_relationships AS relationships"
 					+ " WHERE relationships.data_source_obj_id IN ( " + datasourceObjIdsCSV + " )"
 					+ " AND ( relationships.account1_id = " + account_id
 					+ " OR  relationships.account2_id = " + account_id + " )"
-					+ (filterSQL.isEmpty() ? "" : " AND " + filterSQL);
+					+ (filterSQL.isEmpty() ? "" : " AND " + filterSQL)
+					;//+ " GROUP BY relationships.relationship_source_obj_id";
 
 			long startTime = System.nanoTime();
 			rs = connection.executeQuery(s, queryStr); //NON-NLS
@@ -862,38 +864,43 @@ public class CommunicationsManager {
 	 */
 	public Set<BlackboardArtifact> getRelationshipSources(Set<AccountDeviceInstance> accountDeviceInstanceList, CommunicationsFilter filter) throws TskCoreException {
 
+		if (accountDeviceInstanceList.isEmpty()) {
+			//log this?
+			return Collections.emptySet();
+		}
 		System.out.println("RAMAN getCommunications() Num AccountDeviceInstancees = " + accountDeviceInstanceList.size());
 
 		Map<Long, Set<Long>> accountIdToDatasourceObjIdMap = new HashMap<Long, Set<Long>>();
 		for (AccountDeviceInstance accountDeviceInstance : accountDeviceInstanceList) {
 			long accountID = accountDeviceInstance.getAccount().getAccountID();
-			//JMTODO: use computeIfAbsent
-			if (false == accountIdToDatasourceObjIdMap.containsKey(accountID)) {
-				accountIdToDatasourceObjIdMap.put(accountDeviceInstance.getAccount().getAccountID(),
-						new HashSet<Long>(db.getDataSourceObjIds(accountDeviceInstance.getDeviceId())));
+			List<Long> dataSourceObjIds = db.getDataSourceObjIds(accountDeviceInstance.getDeviceId());
+
+			if (accountIdToDatasourceObjIdMap.containsKey(accountID)) {
+				accountIdToDatasourceObjIdMap.get(accountID).addAll(dataSourceObjIds);
 			} else {
-				accountIdToDatasourceObjIdMap.get(accountID).addAll(db.getDataSourceObjIds(accountDeviceInstance.getDeviceId()));
+				accountIdToDatasourceObjIdMap.put(accountID, new HashSet<Long>(dataSourceObjIds));
 			}
 		}
 
-		String adiSQLClause = "";
-		boolean firstEntry = true;
+		List<String> adiSQLClauses = new ArrayList<String>();
 		for (Map.Entry<Long, Set<Long>> entry : accountIdToDatasourceObjIdMap.entrySet()) {
-			long account_id = entry.getKey();
-			Set<Long> ds_ids = entry.getValue();
-			String datasource_obj_ids_list = StringUtils.buildCSVString(ds_ids);
+			final Long accountID = entry.getKey();
+			String datasourceObjIdsCSV = StringUtils.buildCSVString(entry.getValue());
 
-			String accountClause = "( relationships.account1_id = " + account_id + " OR  relationships.account2_id = " + account_id + " )";
-			String ds_oid_clause = "artifacts.data_source_obj_id IN ( " + datasource_obj_ids_list + " )";
-
-			if (!firstEntry) {
-				adiSQLClause += " OR ";
-			} else {
-				firstEntry = false;
-			}
-
-			adiSQLClause += " ( ( " + accountClause + " ) AND ( " + ds_oid_clause + " ) ) ";
+			adiSQLClauses.add(
+					"( relationships.data_source_obj_id IN ( " + datasourceObjIdsCSV + " ) )"
+					+ " AND ( relationships.account1_id = " + accountID
+					+ " OR relationships.account2_id = " + accountID + " )"
+			);
 		}
+		String adiSQLClause = StringUtils.joinAsStrings(adiSQLClauses, " OR ");
+
+		// set up applicable filters
+		Set<String> applicableFilters = new HashSet<String>(Arrays.asList(
+				CommunicationsFilter.RelationshipTypeFilter.class.getName(),
+				CommunicationsFilter.DateRangeFilter.class.getName()
+		));
+		String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
 
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSingleUserCaseReadLock();
@@ -903,7 +910,8 @@ public class CommunicationsManager {
 		try {
 			s = connection.createStatement();
 			String queryStr
-					= "SELECT DISTINCT artifacts.artifact_id AS artifact_id,"
+					= "SELECT DISTINCT "
+					+ " artifacts.artifact_id AS artifact_id,"
 					+ " artifacts.obj_id AS obj_id,"
 					+ " artifacts.artifact_obj_id AS artifact_obj_id,"
 					+ " artifacts.data_source_obj_id AS data_source_obj_id, "
@@ -912,23 +920,10 @@ public class CommunicationsManager {
 					+ " FROM blackboard_artifacts as artifacts"
 					+ "	JOIN account_relationships AS relationships"
 					+ "		ON artifacts.artifact_obj_id = relationships.relationship_source_obj_id"
-					+ " WHERE artifacts.artifact_type_id IN ( " + COMMUNICATION_ARTIFACT_TYPE_IDS_CSV_STR + " )";
-
-			// append sql to restrict search to specified account device instances 
-			if (!adiSQLClause.isEmpty()) {
-				queryStr += " AND  ( " + adiSQLClause + " ) ";
-			}
-
-			// set up applicable filters
-			Set<String> applicableFilters = new HashSet<String>();
-			applicableFilters.add(CommunicationsFilter.RelationshipTypeFilter.class.getName());
-			applicableFilters.add(CommunicationsFilter.DateRangeFilter.class.getName());
-
-			// append SQL for filters
-			String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
-			if (!filterSQL.isEmpty()) {
-				queryStr += " AND " + filterSQL;
-			}
+					// append sql to restrict search to specified account device instances 
+					+ " WHERE (" + adiSQLClause + " )"
+					// plus other filters
+					+ (filterSQL.isEmpty() ? "" : " AND (" + filterSQL + " )");
 
 			System.out.println("RAMAN getCommunications() adiSQLClause = " + adiSQLClause);
 			System.out.println("RAMAN getCommunications() FilterSQL = " + filterSQL);
@@ -939,8 +934,10 @@ public class CommunicationsManager {
 			Set<BlackboardArtifact> artifacts = new HashSet<BlackboardArtifact>();
 			while (rs.next()) {
 				BlackboardArtifact.Type bbartType = db.getArtifactType(rs.getInt("artifact_type_id"));
-				artifacts.add(new BlackboardArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"), rs.getLong("data_source_obj_id"),
-						bbartType.getTypeID(), bbartType.getTypeName(), bbartType.getDisplayName(),
+				artifacts.add(new BlackboardArtifact(db, rs.getLong("artifact_id"),
+						rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
+						rs.getLong("data_source_obj_id"), bbartType.getTypeID(),
+						bbartType.getTypeName(), bbartType.getDisplayName(),
 						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
 			}
 
