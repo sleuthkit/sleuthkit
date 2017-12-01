@@ -42,9 +42,9 @@ public class Relationship {
 		private final String typeName;
 		private final int typeID;
 
-		public static final Type MESSAGE = new Type("MESSAGE", "Message", 1);
-		public static final Type CALL_LOG = new Type("CALL_LOG", "Call Log", 2);
-		public static final Type CONTACT = new Type("CONTACT", "Contact", 3);
+		public static final Relationship.Type MESSAGE = new Type("MESSAGE", "Message", 1);
+		public static final Relationship.Type CALL_LOG = new Type("CALL_LOG", "Call Log", 2);
+		public static final Relationship.Type CONTACT = new Type("CONTACT", "Contact", 3);
 
 		private final static HashMap<Type, Set<Integer>> typesToArtifactTypeIDs = new HashMap<Type, Set<Integer>>();
 
