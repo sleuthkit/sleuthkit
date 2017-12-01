@@ -214,9 +214,6 @@ main(int argc, char **argv1)
         tsk_fprintf(stderr, "Missing image name\n");
         usage();
     }
-    
-    printf("\n#### THIS IS MY BRANCH 2 ####\n\n");
-    fflush(stdout);
 
     /* Set the full flag to print the full path name if recursion is
      ** set and we are only displaying files or deleted files
