@@ -24,15 +24,15 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.ResourceBundle;
-import java.util.HashSet;
 import java.util.Set;
-import org.sleuthkit.datamodel.SleuthkitCase.ObjectInfo;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
+import org.sleuthkit.datamodel.SleuthkitCase.ObjectInfo;
 
 /**
  * An artifact that has been posted to the blackboard. An artifact is a typed
@@ -78,7 +78,7 @@ public class BlackboardArtifact implements Content {
 	 * @param artifactID       The unique id for this artifact
 	 * @param sourceObjId      The unique id of the content with which this
 	 *                         artifact is associated.
-	 * @param artifactObjID    The unique id this artifact, in tsk_objects
+	 * @param artifactObjId    The unique id this artifact, in tsk_objects
 	 * @param dataSourceObjId  Object ID of the datasource where the artifact
 	 *                         was found.
 	 * @param artifactTypeID   The type id of this artifact.

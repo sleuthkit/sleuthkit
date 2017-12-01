@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2017 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,18 +22,32 @@ import java.util.Collection;
 
 /**
  * Collection of string utility methods.
- * 
  */
 class StringUtils {
-	
+
 	/**
 	 * Utility method to convert a list to an CSV string.
-	 * 
+	 *
 	 * @param values - collection of objects .
-	 * 
+	 *
 	 * @return a CSV string.
 	 */
 	static <T> String buildCSVString(Collection<T> values) {
+		return joinAsStrings(values, ",");
+	}
+
+	/**
+	 * Utility method to join a collection into a string using a supplied
+	 * separator.
+	 *
+	 * @param <T>       The type of the values in the collection to be joined
+	 * @param values    The collection to be joined
+	 * @param separator The separator to insert between each value in the result
+	 *                  string
+	 *
+	 * @return a string with the elements of values separated by separator
+	 */
+	static <T> String joinAsStrings(Collection<T> values, String separator) {
 		if (values == null || values.isEmpty()) {
 			return "";
 		}
@@ -41,9 +55,9 @@ class StringUtils {
 		StringBuilder result = new StringBuilder();
 		for (T val : values) {
 			result.append(val);
-			result.append(",");
+			result.append(separator);
 		}
 
-		return result.substring(0, result.length() - 1);
+		return result.substring(0, result.lastIndexOf(separator));
 	}
 }

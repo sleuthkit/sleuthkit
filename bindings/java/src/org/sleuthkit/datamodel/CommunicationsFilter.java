@@ -19,7 +19,9 @@
 package org.sleuthkit.datamodel;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
@@ -36,7 +38,11 @@ public class CommunicationsFilter {
 	//private final List<SubFilter> orFilters;
 
 	public CommunicationsFilter() {
-		this.andFilters = new ArrayList<SubFilter>();
+		this(Collections.<SubFilter>emptyList());
+	}
+
+	CommunicationsFilter(List<? extends SubFilter> andSubFilters) {
+		this.andFilters = new ArrayList<SubFilter>(andSubFilters);
 		//this.orFilters = new ArrayList<SubFilter>;
 	}
 
@@ -91,31 +97,17 @@ public class CommunicationsFilter {
 	 */
 	public static class RelationshipTypeFilter extends SubFilter {
 
-		private final Set<BlackboardArtifact.ARTIFACT_TYPE> relationshipTypes;
+		private final Set<Relationship.Type> relationshipTypes;
 
 		/**
 		 * Constructs a RelationshipTypeFilter.
 		 *
-		 * @param relationshipTypes set of artifacts types
+		 * @param relationshipTypes set of relationship types
 		 */
-		public RelationshipTypeFilter(Set<BlackboardArtifact.ARTIFACT_TYPE> relationshipTypes) {
-			this.relationshipTypes = relationshipTypes;
+		public RelationshipTypeFilter(Collection<Relationship.Type> relationshipTypes) {
+			this.relationshipTypes = new HashSet<Relationship.Type>(relationshipTypes);
 		}
 
-		/**
-		 * Get the list of relationship types.
-		 *
-		 * @return list of relationship types.
-		 */
-		Set<BlackboardArtifact.ARTIFACT_TYPE> getRelationshipTypes() {
-			return Collections.unmodifiableSet(relationshipTypes);
-		}
-
-		/**
-		 * Returns a string description of the filter.
-		 *
-		 * @return	A string description of the filter.
-		 */
 		@Override
 		public String getDescription() {
 			return "Filters relationships by relationship type.";
@@ -133,16 +125,13 @@ public class CommunicationsFilter {
 			if (relationshipTypes.isEmpty()) {
 				return "";
 			}
-			String sql = "";
-			List<Integer> type_ids = new ArrayList<Integer>();
-			for (BlackboardArtifact.ARTIFACT_TYPE artType : relationshipTypes) {
-				type_ids.add(artType.getTypeID());
+
+			List<Integer> relationShipTypeIds = new ArrayList<Integer>();
+			for (Relationship.Type relType : relationshipTypes) {
+				relationShipTypeIds.add(relType.getTypeID());
 			}
-			String artifact_type_ids_list = StringUtils.buildCSVString(type_ids);
-			if (!artifact_type_ids_list.isEmpty()) {
-				sql = " relationships.relationship_type IN ( " + artifact_type_ids_list + " )";
-			}
-			return sql;
+			return " relationships.relationship_type IN ( "
+					+ StringUtils.buildCSVString(relationShipTypeIds) + " )";
 		}
 	}
 
@@ -168,11 +157,6 @@ public class CommunicationsFilter {
 			}
 		}
 
-		/**
-		 * Returns a string description of the filter.
-		 *
-		 * @return	A string description of the filter.
-		 */
 		@Override
 		public String getDescription() {
 			return "Filters communications by date range.";
@@ -217,25 +201,11 @@ public class CommunicationsFilter {
 		 *
 		 * @param accountTypes set of account types to filter on.
 		 */
-		public AccountTypeFilter(Set<Account.Type> accountTypes) {
+		public AccountTypeFilter(Collection<Account.Type> accountTypes) {
 			super();
-			this.accountTypes = accountTypes;
+			this.accountTypes = new HashSet<Account.Type>(accountTypes);
 		}
 
-		/**
-		 * Get the list of account types.
-		 *
-		 * @return list of account types.
-		 */
-		Set<Account.Type> getAccountTypes() {
-			return Collections.unmodifiableSet(accountTypes);
-		}
-
-		/**
-		 * Returns a string description of the filter.
-		 *
-		 * @return	A string description of the filter.
-		 */
 		@Override
 		public String getDescription() {
 			return "Filters accounts and relationships by account type.";
@@ -253,16 +223,13 @@ public class CommunicationsFilter {
 			if (accountTypes.isEmpty()) {
 				return "";
 			}
-			String sql = "";
+
 			List<Integer> type_ids = new ArrayList<Integer>();
 			for (Account.Type accountType : accountTypes) {
 				type_ids.add(commsManager.getAccountTypeId(accountType));
 			}
 			String account_type_ids_list = StringUtils.buildCSVString(type_ids);
-			if (!account_type_ids_list.isEmpty()) {
-				sql = " account_types.account_type_id IN ( " + account_type_ids_list + " )";
-			}
-			return sql;
+			return " account_types.account_type_id IN ( " + account_type_ids_list + " )";
 		}
 	}
 
@@ -279,25 +246,11 @@ public class CommunicationsFilter {
 		 *
 		 * @param deviceIds set of device Ids to filter on.
 		 */
-		public DeviceFilter(Set<String> deviceIds) {
+		public DeviceFilter(Collection<String> deviceIds) {
 			super();
-			this.deviceIds = deviceIds;
+			this.deviceIds = new HashSet<String>(deviceIds);
 		}
 
-		/**
-		 * Get the list of device id.
-		 *
-		 * @return list of device Ids.
-		 */
-		Set<String> getdeviceIds() {
-			return Collections.unmodifiableSet(deviceIds);
-		}
-
-		/**
-		 * Returns a string description of the filter.
-		 *
-		 * @return	A string description of the filter.
-		 */
 		@Override
 		public String getDescription() {
 			return "Filters accounts and relationships by device id.";
