@@ -1102,7 +1102,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         "%d,%d,%d,%d,"
         "%" PRIuOFF ","
         "%llu,%llu,%llu,%llu,"
-        "%d,%d,%d,NULL,%d,"
+        "%d,%d,%d,%s,%d,"
         "%s,%s)",
         fsObjId, objId,
         dataSourceObjId,
@@ -1112,7 +1112,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
         size,
         (unsigned long long)crtime, (unsigned long long)ctime, (unsigned long long) atime, (unsigned long long) mtime,
-        meta_mode, gid, uid, known,
+        meta_mode, gid, uid, md5TextPtr, known,
         escaped_path_sql, extension_sql)) {
 
             tsk_error_reset();

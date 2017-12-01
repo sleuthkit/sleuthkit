@@ -1054,7 +1054,7 @@ int
 			"%d,%d,%d,%d,"
 			"%" PRIuOFF ","
 			"%llu,%llu,%llu,%llu,"
-			"%d,%d,%d,%Q,%d,"
+			"%d,%d,%d,NULL,%d,"
 			"'%q','%q')",
 			fsObjId, objId,
 			dataSourceObjId,
@@ -1064,7 +1064,7 @@ int
 			TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG, fs_file->name->flags, meta_flags,
 			slackSize,
         (unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime, 
-			meta_mode, gid, uid, md5TextPtr, known,
+			meta_mode, gid, uid, known,
 			escaped_path,extension);
 
 		if (attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding data to tsk_files table: %s\n")) {
