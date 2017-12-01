@@ -66,6 +66,7 @@ import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHO
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PHONE_NUMBER_TO;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SUBJECT;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TEXT;
+import static org.sleuthkit.datamodel.CollectionUtils.hashSetOf;
 import org.sleuthkit.datamodel.CommunicationsFilter.AccountTypeFilter;
 import org.sleuthkit.datamodel.CommunicationsFilter.DateRangeFilter;
 import org.sleuthkit.datamodel.CommunicationsFilter.DeviceFilter;
@@ -330,9 +331,7 @@ public class CommunicationsManagerTest {
 			EMAIL_B_DS1 = new AccountDeviceInstance(commsMgr.getAccount(EMAIL, EMAIL_B), DS1_DEVICEID);
 			EMAIL_C_DS1 = new AccountDeviceInstance(commsMgr.getAccount(EMAIL, EMAIL_C), DS1_DEVICEID);
 
-			EMAILS_ABC_DS1 = new HashSet<AccountDeviceInstance>(Arrays.asList(
-					EMAIL_A_DS1, EMAIL_B_DS1, EMAIL_C_DS1
-			));
+			EMAILS_ABC_DS1 = hashSetOf(EMAIL_A_DS1, EMAIL_B_DS1, EMAIL_C_DS1);
 
 			PHONE_1_DS1 = new AccountDeviceInstance(commsMgr.getAccount(PHONE, PHONENUM_1), DS1_DEVICEID);
 			PHONE_1_DS2 = new AccountDeviceInstance(commsMgr.getAccount(PHONE, PHONENUM_1), DS2_DEVICEID);
@@ -345,10 +344,8 @@ public class CommunicationsManagerTest {
 			PHONE_5_DS1 = new AccountDeviceInstance(commsMgr.getAccount(PHONE, PHONENUM_5), DS1_DEVICEID);
 			PHONE_5_DS2 = new AccountDeviceInstance(commsMgr.getAccount(PHONE, PHONENUM_5), DS2_DEVICEID);
 
-			PHONES_2345_DS1 = new HashSet<AccountDeviceInstance>(Arrays.asList(
-					PHONE_2_DS1, PHONE_3_DS1, PHONE_4_DS1, PHONE_5_DS1));
-			PHONES_12345_DS2 = new HashSet<AccountDeviceInstance>(Arrays.asList(
-					PHONE_1_DS2, PHONE_2_DS2, PHONE_3_DS2, PHONE_4_DS2, PHONE_5_DS2));
+			PHONES_2345_DS1 = hashSetOf(PHONE_2_DS1, PHONE_3_DS1, PHONE_4_DS1, PHONE_5_DS1);
+			PHONES_12345_DS2 = hashSetOf(PHONE_1_DS2, PHONE_2_DS2, PHONE_3_DS2, PHONE_4_DS2, PHONE_5_DS2);
 
 		} catch (TskCoreException ex) {
 			LOGGER.log(Level.SEVERE, "Failed to create new case", ex);
@@ -847,15 +844,14 @@ public class CommunicationsManagerTest {
 
 		// Communications for Email Account A/DS1: No Filters
 		{
-			Set<AccountDeviceInstance> accountDeviceInstanceList
-					= new HashSet<AccountDeviceInstance>(Arrays.asList(EMAIL_A_DS1));
+			Set<AccountDeviceInstance> accountDeviceInstances = singleton(EMAIL_A_DS1);
 
 			Set<BlackboardArtifact> communications
-					= commsMgr.getRelationshipSources(accountDeviceInstanceList, null);
+					= commsMgr.getRelationshipSources(accountDeviceInstances, null);
 			assertEquals(3, communications.size());
 
-			for (AccountDeviceInstance adi : accountDeviceInstanceList) {
-				long count = commsMgr.getRelationshipSourcesCount(accountDeviceInstanceList.iterator().next(), null);
+			for (AccountDeviceInstance adi : accountDeviceInstances) {
+				long count = commsMgr.getRelationshipSourcesCount(accountDeviceInstances.iterator().next(), null);
 				final String typeSpecificID = adi.getAccount().getTypeSpecificID();
 
 				if (EMAIL_A.equals(typeSpecificID)) {
@@ -870,21 +866,18 @@ public class CommunicationsManagerTest {
 
 		// Communications for Email Account B/DS1: No Filters
 		{
-			Set<AccountDeviceInstance> accountDeviceInstanceList
-					= new HashSet<AccountDeviceInstance>(Arrays.asList(EMAIL_B_DS1));
-			Set<BlackboardArtifact> communications = commsMgr.getRelationshipSources(accountDeviceInstanceList, null);
+			Set<AccountDeviceInstance> accountDeviceInstances = hashSetOf(EMAIL_B_DS1);
+			Set<BlackboardArtifact> communications = commsMgr.getRelationshipSources(accountDeviceInstances, null);
 			assertEquals(2, communications.size());
 		}
 
 		// Communications for Email Account A/DS1 & C/DS1: No Filters
 		{
-			Set<AccountDeviceInstance> accountDeviceInstanceList
-					= new HashSet<AccountDeviceInstance>(Arrays.asList(
-							EMAIL_A_DS1, EMAIL_C_DS1
-					));
+			Set<AccountDeviceInstance> accountDeviceInstances
+					= hashSetOf(EMAIL_A_DS1, EMAIL_C_DS1);
 
 			Set<BlackboardArtifact> communications
-					= commsMgr.getRelationshipSources(accountDeviceInstanceList, null);
+					= commsMgr.getRelationshipSources(accountDeviceInstances, null);
 			assertEquals(3, communications.size());
 		}
 
@@ -963,77 +956,71 @@ public class CommunicationsManagerTest {
 
 		// Communications for Phone 1/DS2: No Filters
 		{
-			Set<AccountDeviceInstance> accountDeviceInstanceList
-					= new HashSet<AccountDeviceInstance>(Arrays.asList(PHONE_1_DS2));
+			Set<AccountDeviceInstance> accountDeviceInstances
+					= hashSetOf(PHONE_1_DS2);
 			Set<BlackboardArtifact> communications
-					= commsMgr.getRelationshipSources(accountDeviceInstanceList, null);
+					= commsMgr.getRelationshipSources(accountDeviceInstances, null);
 			assertEquals(1, communications.size());
 		}
 
 		// Communications for Phone 1/DS2: Filter on CallLogs
 		{
-			Set<AccountDeviceInstance> accountDeviceInstanceList
-					= new HashSet<AccountDeviceInstance>(Arrays.asList(PHONE_1_DS2));
+			Set<AccountDeviceInstance> accountDeviceInstances = hashSetOf(PHONE_1_DS2);
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					new RelationshipTypeFilter(singleton(CALL_LOG))));
 			Set<BlackboardArtifact> communications
-					= commsMgr.getRelationshipSources(accountDeviceInstanceList, commsFilter);
+					= commsMgr.getRelationshipSources(accountDeviceInstances, commsFilter);
 			assertEquals(1, communications.size());
 		}
 
 		// Communications for Phone 1/DS2: Filter on Contacts
 		{
-			Set<AccountDeviceInstance> accountDeviceInstanceList
-					= new HashSet<AccountDeviceInstance>(Arrays.asList(PHONE_1_DS2));
+			Set<AccountDeviceInstance> accountDeviceInstances = hashSetOf(PHONE_1_DS2);
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					new RelationshipTypeFilter(singleton(CONTACT))));
 			Set<BlackboardArtifact> communications
-					= commsMgr.getRelationshipSources(accountDeviceInstanceList, commsFilter);
+					= commsMgr.getRelationshipSources(accountDeviceInstances, commsFilter);
 			assertEquals(0, communications.size());
 		}
 
 		// Communications for Phone 1/DS2: Filter on Message
 		{
-			Set<AccountDeviceInstance> accountDeviceInstanceList
-					= new HashSet<AccountDeviceInstance>(Arrays.asList(PHONE_1_DS2));
+			Set<AccountDeviceInstance> accountDeviceInstances = hashSetOf(PHONE_1_DS2);
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					new RelationshipTypeFilter(singleton(MESSAGE))
 			));
 			Set<BlackboardArtifact> communications
-					= commsMgr.getRelationshipSources(accountDeviceInstanceList, commsFilter);
+					= commsMgr.getRelationshipSources(accountDeviceInstances, commsFilter);
 			assertEquals(0, communications.size());
 		}
 
 		// Communications for Phone 2/DS1: Filter on Calllogs
 		{
-			Set<AccountDeviceInstance> accountDeviceInstanceList
-					= new HashSet<AccountDeviceInstance>(Arrays.asList(PHONE_2_DS1));
+			Set<AccountDeviceInstance> accountDeviceInstances = hashSetOf(PHONE_2_DS1);
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					new RelationshipTypeFilter(singleton(CALL_LOG))));
 			Set<BlackboardArtifact> communications
-					= commsMgr.getRelationshipSources(accountDeviceInstanceList, commsFilter);
+					= commsMgr.getRelationshipSources(accountDeviceInstances, commsFilter);
 			assertEquals(2, communications.size());
 		}
 
 		// Communications for Phone 2/DS2: Filter on Calllogs & Messages
 		{
-			Set<AccountDeviceInstance> accountDeviceInstanceList
-					= new HashSet<AccountDeviceInstance>(Arrays.asList(PHONE_2_DS2));
+			Set<AccountDeviceInstance> accountDeviceInstances = hashSetOf(PHONE_2_DS2);
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					COMMUNICATIONS_RELATIONSHIP_TYPE_FILTER));
 			Set<BlackboardArtifact> communications
-					= commsMgr.getRelationshipSources(accountDeviceInstanceList, commsFilter);
+					= commsMgr.getRelationshipSources(accountDeviceInstances, commsFilter);
 			assertEquals(3, communications.size());
 		}
 
 		// Communications for Phone 1/DS2 & 2/DS1: Filter on Messages, Calllogs
 		{
-			Set<AccountDeviceInstance> accountDeviceInstanceList
-					= new HashSet<AccountDeviceInstance>(Arrays.asList(PHONE_1_DS2, PHONE_2_DS1));
+			Set<AccountDeviceInstance> accountDeviceInstances = hashSetOf(PHONE_1_DS2, PHONE_2_DS1);
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					COMMUNICATIONS_RELATIONSHIP_TYPE_FILTER));
 			Set<BlackboardArtifact> communications
-					= commsMgr.getRelationshipSources(accountDeviceInstanceList, commsFilter);
+					= commsMgr.getRelationshipSources(accountDeviceInstances, commsFilter);
 			assertEquals(5, communications.size());
 		}
 
@@ -1172,16 +1159,15 @@ public class CommunicationsManagerTest {
 
 		// relationships for Email A/DS1, Phone 1/DS2  2/DS1: No Filters
 		{
-			Set<AccountDeviceInstance> accountDeviceInstanceList
-					= new HashSet<AccountDeviceInstance>(Arrays.asList(
-							EMAIL_A_DS1, PHONE_1_DS2, PHONE_2_DS1));
+			Set<AccountDeviceInstance> accountDeviceInstances
+					= hashSetOf(EMAIL_A_DS1, PHONE_1_DS2, PHONE_2_DS1);
 			Set<BlackboardArtifact> communications
-					= commsMgr.getRelationshipSources(accountDeviceInstanceList, null);
+					= commsMgr.getRelationshipSources(accountDeviceInstances, null);
 			assertEquals(9, communications.size());
 
 			// Communications for Email A/DS1, Phone 1/DS2  2/DS1: No Filters
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(COMMUNICATIONS_RELATIONSHIP_TYPE_FILTER));
-			communications = commsMgr.getRelationshipSources(accountDeviceInstanceList, commsFilter);
+			communications = commsMgr.getRelationshipSources(accountDeviceInstances, commsFilter);
 			assertEquals(8, communications.size());
 		}
 	}
@@ -1253,7 +1239,7 @@ public class CommunicationsManagerTest {
 			bbart.addAttributes(bbattributes);
 
 			// Add account relationships
-			commsMgr.addRelationships(senderAccountInstance, recipientAccountInstances, bbart, dateSent);
+			commsMgr.addRelationships(senderAccountInstance, recipientAccountInstances, bbart, MESSAGE, dateSent);
 
 		} catch (TskCoreException ex) {
 			LOGGER.log(Level.SEVERE, "Failed to add Email artifact", ex);
@@ -1321,7 +1307,7 @@ public class CommunicationsManagerTest {
 			accountInstanceList.add(phoneNumAccount);
 
 			//  Create a Call Log relationship
-			commsMgr.addRelationships(deviceAccount, accountInstanceList, bbart, date);
+			commsMgr.addRelationships(deviceAccount, accountInstanceList, bbart, CALL_LOG, date);
 
 		} catch (TskCoreException ex) {
 			LOGGER.log(Level.SEVERE, "Unable to add CallLog artifact ", ex); //NON-NLS
@@ -1353,7 +1339,7 @@ public class CommunicationsManagerTest {
 			accountInstanceList.add(phoneNumAccount);
 
 			//  Create a Message relationship
-			commsMgr.addRelationships(deviceAccount, accountInstanceList, bbart, date);
+			commsMgr.addRelationships(deviceAccount, accountInstanceList, bbart, MESSAGE, date);
 
 		} catch (TskCoreException ex) {
 			LOGGER.log(Level.SEVERE, "Unable to add TSK_MESSAGE artifact ", ex); //NON-NLS
@@ -1378,7 +1364,7 @@ public class CommunicationsManagerTest {
 			accountInstanceList.add(phoneNumAccount);
 
 			//  Create a CONTACT relationship
-			commsMgr.addRelationships(deviceAccount, accountInstanceList, bbart, 0);
+			commsMgr.addRelationships(deviceAccount, accountInstanceList, bbart, CONTACT, 0);
 
 		} catch (TskCoreException ex) {
 			LOGGER.log(Level.SEVERE, "Unable to add Contact artifact ", ex); //NON-NLS

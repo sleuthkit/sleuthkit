@@ -3034,7 +3034,7 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Get the artifact type associated with an artifact type name.
+	 * Get the artifact type associated with an artifact type id.
 	 *
 	 * @param artTypeId An artifact type id.
 	 *

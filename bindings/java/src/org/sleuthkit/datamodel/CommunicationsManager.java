@@ -64,7 +64,6 @@ public class CommunicationsManager {
 	private static final String RELATIONSHIP_ARTIFACT_TYPE_IDS_CSV_STR
 			= StringUtils.buildCSVString(RELATIONSHIP_ARTIFACT_TYPE_IDS);
 
-	
 	CommunicationsManager(SleuthkitCase db) throws TskCoreException {
 		this.db = db;
 
@@ -347,7 +346,8 @@ public class CommunicationsManager {
 	 * @param sender               sender account
 	 * @param recipients           list of recipients
 	 * @param relationshipArtifact relationship artifact
-	 * @param dateTime				         date of communications/relationship, as epoch
+	 * @param relationshipType     The type of relationship to be created
+	 * @param dateTime             Date of communications/relationship, as epoch
 	 *                             seconds
 	 *
 	 *
@@ -355,13 +355,17 @@ public class CommunicationsManager {
 	 * @throws org.sleuthkit.datamodel.TskDataException If the all the accounts
 	 *                                                  and the relationship are
 	 *                                                  not from the same data
-	 *                                                  source.
+	 *                                                  source, or if the
+	 *                                                  relationshipArtifact and
+	 *                                                  relationshipType are not
+	 *                                                  compatible.
 	 */
 	public void addRelationships(AccountFileInstance sender, List<AccountFileInstance> recipients,
-			BlackboardArtifact relationshipArtifact, long dateTime) throws TskCoreException, TskDataException {
+			BlackboardArtifact relationshipArtifact, Relationship.Type relationshipType, long dateTime) throws TskCoreException, TskDataException {
 
-		if (false == RELATIONSHIP_ARTIFACT_TYPE_IDS.contains(relationshipArtifact.getArtifactTypeID())) {
-			throw new TskCoreException("Unexpected Artifact type = " + relationshipArtifact.getArtifactTypeID());
+		if (relationshipType.isCreatableFrom(relationshipArtifact) == false) {
+			throw new TskDataException("Can not make a " + relationshipType.getDisplayName()
+					+ " relationship from a" + relationshipArtifact.getDisplayName());
 		}
 
 		/*
@@ -394,7 +398,8 @@ public class CommunicationsManager {
 		while (iter.hasNext()) {
 			try {
 				UnorderedAccountPair accountPair = iter.next();
-				addAccountsRelationship(accountPair.getFirst(), accountPair.getSecond(), relationshipArtifact.getId(), dateTime, relationshipArtifact.getArtifactTypeID(), relationshipArtifact.getDataSourceObjectID());
+				addAccountsRelationship(accountPair.getFirst(), accountPair.getSecond(),
+						relationshipArtifact, relationshipType, dateTime);
 			} catch (TskCoreException ex) {
 				LOGGER.log(Level.WARNING, "Could not get timezone for image", ex); //NON-NLS
 			}
@@ -625,19 +630,17 @@ public class CommunicationsManager {
 	/**
 	 * Adds a row in account relationships table
 	 *
-	 * @param account1_id                account_id for account1
-	 * @param account2_id                account_id for account2
-	 * @param relationship_source_obj_id obj_id of the relationship source
-	 *                                   object
-	 * @param dateTime                   datetime of communication/relationship
-	 * @param relationship_type          relationship type
-	 * @param data_source_obj_id         datasource object id from where
-	 *                                   relationship is extracted
+	 * @param account1_id           account_id for account1
+	 * @param account2_id           account_id for account2
+	 * @param relationshipaArtifact relationship artifact
+	 * @param relationshipType      The type of relationship to be created
+	 * @param dateTime              datetime of communication/relationship as
+	 *                              epoch seconds
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
 	 */
-	private void addAccountsRelationship(long account1_id, long account2_id, long relationship_source_obj_id, long dateTime, int relationship_type, long data_source_obj_id) throws TskCoreException {
+	private void addAccountsRelationship(long account1_id, long account2_id, BlackboardArtifact relationshipaArtifact, Relationship.Type relationshipType, long dateTime) throws TskCoreException {
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSingleUserCaseWriteLock();
 		Statement s = null;
@@ -648,7 +651,7 @@ public class CommunicationsManager {
 			s = connection.createStatement();
 
 			s.execute("INSERT INTO account_relationships (account1_id, account2_id, relationship_source_obj_id, date_time, relationship_type, data_source_obj_id  ) "
-					+ "VALUES ( " + account1_id + ", " + account2_id + ", " + relationship_source_obj_id + ", " + dateTime + ", " + relationship_type + ", " + data_source_obj_id + ")"); //NON-NLS
+					+ "VALUES ( " + account1_id + ", " + account2_id + ", " + relationshipaArtifact.getId() + ", " + dateTime + ", " + relationshipType.getTypeID() + ", " + relationshipaArtifact.getDataSourceObjectID() + ")"); //NON-NLS
 			connection.commitTransaction();
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
@@ -832,7 +835,6 @@ public class CommunicationsManager {
 			//log this?
 			return Collections.emptySet();
 		}
-		System.out.println("RAMAN getCommunications() Num AccountDeviceInstancees = " + accountDeviceInstanceList.size());
 
 		Map<Long, Set<Long>> accountIdToDatasourceObjIdMap = new HashMap<Long, Set<Long>>();
 		for (AccountDeviceInstance accountDeviceInstance : accountDeviceInstanceList) {
@@ -874,26 +876,20 @@ public class CommunicationsManager {
 		try {
 			s = connection.createStatement();
 			String queryStr
-					= "SELECT DISTINCT "
-					+ " artifacts.artifact_id AS artifact_id,"
+					= "SELECT DISTINCT artifacts.artifact_id AS artifact_id,"
 					+ " artifacts.obj_id AS obj_id,"
 					+ " artifacts.artifact_obj_id AS artifact_obj_id,"
 					+ " artifacts.data_source_obj_id AS data_source_obj_id, "
 					+ " artifacts.artifact_type_id AS artifact_type_id, "
 					+ " artifacts.review_status_id AS review_status_id  "
 					+ " FROM blackboard_artifacts as artifacts"
-					+ "	JOIN account_relationships AS relationships"
-					+ "		ON artifacts.artifact_obj_id = relationships.relationship_source_obj_id"
+					+ " JOIN account_relationships AS relationships"
+					+ "	ON artifacts.artifact_obj_id = relationships.relationship_source_obj_id"
 					// append sql to restrict search to specified account device instances 
 					+ " WHERE (" + adiSQLClause + " )"
 					// plus other filters
 					+ (filterSQL.isEmpty() ? "" : " AND (" + filterSQL + " )");
 
-			System.out.println("RAMAN getCommunications() adiSQLClause = " + adiSQLClause);
-			System.out.println("RAMAN getCommunications() FilterSQL = " + filterSQL);
-			System.out.println("RAMAN getCommunications() QueryStr = " + queryStr);
-
-			long startTime = System.nanoTime();
 			rs = connection.executeQuery(s, queryStr); //NON-NLS
 			Set<BlackboardArtifact> artifacts = new HashSet<BlackboardArtifact>();
 			while (rs.next()) {
@@ -904,10 +900,6 @@ public class CommunicationsManager {
 						bbartType.getTypeName(), bbartType.getDisplayName(),
 						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
 			}
-
-			long endTime = System.nanoTime();
-			System.out.println("RAMAN getCommunications() Time taken = " + (endTime - startTime) / 1000000L);
-			System.out.println("");
 
 			return artifacts;
 		} catch (SQLException ex) {

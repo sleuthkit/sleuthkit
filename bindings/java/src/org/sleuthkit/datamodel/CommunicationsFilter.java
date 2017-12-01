@@ -26,13 +26,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_CALLLOG;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_CONTACT;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_EMAIL_MSG;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE;
-import static org.sleuthkit.datamodel.Relationship.Type.CALL_LOG;
-import static org.sleuthkit.datamodel.Relationship.Type.CONTACT;
-import static org.sleuthkit.datamodel.Relationship.Type.MESSAGE;
 
 /**
  * Defines an aggregate of filters to apply to a CommunicationsManager query.
@@ -133,19 +126,12 @@ public class CommunicationsFilter {
 				return "";
 			}
 
-			List<Integer> artifactTypeIds = new ArrayList<Integer>();
+			List<Integer> relationShipTypeIds = new ArrayList<Integer>();
 			for (Relationship.Type relType : relationshipTypes) {
-				if (relType.equals(CALL_LOG)) {
-					artifactTypeIds.add(TSK_CALLLOG.getTypeID());
-				} else if (relType.equals(CONTACT)) {
-					artifactTypeIds.add(TSK_CONTACT.getTypeID());
-				} else if (relType.equals(MESSAGE)) {
-					artifactTypeIds.add(TSK_EMAIL_MSG.getTypeID());
-					artifactTypeIds.add(TSK_MESSAGE.getTypeID());
-				}
+				relationShipTypeIds.add(relType.getTypeID());
 			}
 			return " relationships.relationship_type IN ( "
-					+ StringUtils.buildCSVString(artifactTypeIds) + " )";
+					+ StringUtils.buildCSVString(relationShipTypeIds) + " )";
 		}
 	}
 
