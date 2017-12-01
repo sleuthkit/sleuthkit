@@ -210,9 +210,7 @@ int TskDbPostgreSQL::open(bool createDbFlag)
     if (createDbFlag) {
         // initialize TSK tables
         if (initialize()) {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_AUTO_DB);
-            tsk_error_set_errstr("TskDbPostgreSQL::open: Couldn't initialize database %S", m_dBName);
+            tsk_error_set_errstr2("TskDbPostgreSQL::open: Couldn't initialize database %S", m_dBName);
             close();    // close connection to database
             return -1;
         }
