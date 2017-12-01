@@ -1072,7 +1072,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
     zSQL_fixed[2047] = '\0';
     char *zSQL_dynamic = NULL; // Only used if the query does not fit in the fixed length buffer
     char *zSQL = zSQL_fixed;
-    int bufLen = 2048;
+    size_t bufLen = 2048;
 
     // Check if the path may be too long. The rest of the query should take up far less than 500 bytes.
     if (strlen(name_sql) + strlen(escaped_path_sql) + 500 > bufLen) {
@@ -1112,7 +1112,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         fs_file->name->type, meta_type, fs_file->name->flags, meta_flags,
         size,
         (unsigned long long)crtime, (unsigned long long)ctime, (unsigned long long) atime, (unsigned long long) mtime,
-        meta_mode, gid, uid, NULL, known,
+        meta_mode, gid, uid, md5TextPtr, known,
         escaped_path_sql, extension_sql)) {
 
             tsk_error_reset();
@@ -1190,7 +1190,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
             "%d,%d,%d,%d,"
             "%" PRIuOFF ","
             "%llu,%llu,%llu,%llu,"
-            "%d,%d,%d,%s,%d,"
+            "%d,%d,%d,NULL,%d,"
             "%s, %s)",
             fsObjId, objId,
             dataSourceObjId,
@@ -1200,7 +1200,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
             TSK_FS_NAME_TYPE_REG, TSK_FS_META_TYPE_REG, fs_file->name->flags, meta_flags,
             slackSize, 
             (unsigned long long)crtime, (unsigned long long)ctime,(unsigned long long) atime,(unsigned long long) mtime, 
-            meta_mode, gid, uid, NULL, known,
+            meta_mode, gid, uid, known,
             escaped_path_sql,extension_sql)) {
 
                 tsk_error_reset();
@@ -1304,7 +1304,7 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
     zSQL_fixed[1023] = '\0';
     char *zSQL_dynamic = NULL; // Only used if the query does not fit in the fixed length buffer
     char *zSQL = zSQL_fixed;
-    int bufLen = 1024;
+    size_t bufLen = 1024;
 
     // Check if the path may be too long
     if (strlen(escaped_parent_name_sql) + strlen(escaped_path_sql) + 200 > bufLen) {
