@@ -215,7 +215,7 @@ main(int argc, char **argv1)
         usage();
     }
     
-    printf("\n#### THIS IS MY BRANCH ####\n\n");
+    printf("\n#### THIS IS MY BRANCH 2 ####\n\n");
     fflush(stdout);
 
     /* Set the full flag to print the full path name if recursion is
