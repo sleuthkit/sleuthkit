@@ -215,6 +215,7 @@ main(int argc, char **argv1)
         usage();
     }
 
+
     /* Set the full flag to print the full path name if recursion is
      ** set and we are only displaying files or deleted files
      */
