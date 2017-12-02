@@ -661,9 +661,19 @@ public class CommunicationsManager {
 		try {
 			connection.beginTransaction();
 			s = connection.createStatement();
-
-			s.execute("INSERT INTO account_relationships (account1_id, account2_id, relationship_source_obj_id, date_time, relationship_type, data_source_obj_id  ) "
-					+ "VALUES ( " + account1_id + ", " + account2_id + ", " + relationshipaArtifact.getId() + ", " + dateTime + ", " + relationshipType.getTypeID() + ", " + relationshipaArtifact.getDataSourceObjectID() + ")"); //NON-NLS
+			String query = "INTO account_relationships (account1_id, account2_id, relationship_source_obj_id, date_time, relationship_type, data_source_obj_id  ) "
+					+ "VALUES ( " + account1_id + ", " + account2_id + ", " + relationshipaArtifact.getId() + ", " + dateTime + ", " + relationshipType.getTypeID() + ", " + relationshipaArtifact.getDataSourceObjectID() + ")";
+			switch (db.getDatabaseType()) {
+				case POSTGRESQL:
+					query = "INSERT " + query + " ON CONFLICT DO NOTHING";
+					break;
+				case SQLITE:
+					query = "INSERT OR IGNORE "  +query;
+					break;
+				default:
+					throw new TskCoreException("Unknown DB Type: " + db.getDatabaseType().name());
+			}
+			s.execute(query); //NON-NLS
 			connection.commitTransaction();
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
