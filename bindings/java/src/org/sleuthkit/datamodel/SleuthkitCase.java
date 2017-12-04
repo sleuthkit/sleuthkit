@@ -4538,7 +4538,7 @@ public class SleuthkitCase {
 	 * database.
 	 *
 	 * @param parent     The parent Content.
-	 * @param fileRanges File range objects for the file(statement).
+	 * @param fileRanges File range objects for the file(s).
 	 *
 	 * @return A list of LayoutFile objects.
 	 *
@@ -5350,9 +5350,9 @@ public class SleuthkitCase {
 	/**
 	 * @param dataSource the data source (Image, VirtualDirectory for file-sets,
 	 *                   etc) to search for the given file name
-	 * @param filePath   The full path to the file(statement) of interest. This
-	 *                   can optionally include the image and volume names.
-	 *                   Treated in a case- insensitive manner.
+	 * @param filePath   The full path to the file(s) of interest. This can
+	 *                   optionally include the image and volume names. Treated
+	 *                   in a case- insensitive manner.
 	 *
 	 * @return a list of AbstractFile that have the given file path.
 	 *
