@@ -1077,14 +1077,14 @@ public class SleuthkitCase {
 	static String extractExtension(final String fileName) {
 		String ext;
 		int i = fileName.lastIndexOf(".");
-		// > 0 because we assume it'statement not an extension if period is the first character
+		// > 0 because we assume it's not an extension if period is the first character
 		if ((i > 0) && ((i + 1) < fileName.length())) {
 			ext = fileName.substring(i + 1);
 		} else {
 			return "";
 		}
 		// we added this at one point to deal with files that had crazy names based on URLs
-		// it'statement too hard though to clean those up and not mess up basic extensions though.
+		// it's too hard though to clean those up and not mess up basic extensions though.
 		// We need to add '-' to the below if we use it again
 		//		String[] findNonAlphanumeric = ext.split("[^a-zA-Z0-9_]");
 		//		if (findNonAlphanumeric.length > 1) {
@@ -1131,7 +1131,7 @@ public class SleuthkitCase {
 			if (sqlState.startsWith(SQL_ERROR_CONNECTION_GROUP)) {
 				try {
 					if (InetAddress.getByName(info.getHost()).isReachable(IS_REACHABLE_TIMEOUT_MS)) {
-						// if we can reach the host, then it'statement probably port problem
+						// if we can reach the host, then it's probably port problem
 						result = bundle.getString("DatabaseConnectionCheck.Port"); //NON-NLS
 					} else {
 						result = bundle.getString("DatabaseConnectionCheck.HostnameOrPort"); //NON-NLS
@@ -1633,11 +1633,11 @@ public class SleuthkitCase {
 	 * will be instantiated. Otherwise, a LocalFilesDataSource will be
 	 * instantiated.
 	 *
-	 * NOTE: The DataSource class is an emerging feature and at present
-	 * is only useful for obtaining the object id and the data source
-	 * identifier, an ASCII-printable identifier for the data source that is
-	 * intended to be unique across multiple cases (e.g., a UUID). In the
-	 * future, this method will be a replacement for the getRootObjects method.
+	 * NOTE: The DataSource class is an emerging feature and at present is only
+	 * useful for obtaining the object id and the data source identifier, an
+	 * ASCII-printable identifier for the data source that is intended to be
+	 * unique across multiple cases (e.g., a UUID). In the future, this method
+	 * will be a replacement for the getRootObjects method.
 	 *
 	 * @param objectId The object id of the data source.
 	 *
@@ -2668,8 +2668,7 @@ public class SleuthkitCase {
 	/**
 	 * Adds a source name to the source column of one or more rows in the
 	 * blackboard attributes table. The source name will be added to a CSV list
-	 * in any rows that exactly match the attribute'statement artifact_id and
-	 * value.
+	 * in any rows that exactly match the attribute's artifact_id and value.
 	 *
 	 * @param attr   The artifact attribute
 	 * @param source The source name.
@@ -5520,7 +5519,7 @@ public class SleuthkitCase {
 
 	/**
 	 * @param id       ID of the desired VolumeSystem
-	 * @param parentId ID of the VolumeSystem'statement parent
+	 * @param parentId ID of the VolumeSystem's parent
 	 *
 	 * @return the VolumeSystem with the given ID
 	 *
@@ -5549,7 +5548,7 @@ public class SleuthkitCase {
 
 	/**
 	 * @param id       ID of the desired FileSystem
-	 * @param parentId ID of the FileSystem'statement parent
+	 * @param parentId ID of the FileSystem's parent
 	 *
 	 * @return the desired FileSystem
 	 *
@@ -5683,7 +5682,7 @@ public class SleuthkitCase {
 
 	/**
 	 * @param id       ID of the desired Volume
-	 * @param parentId ID of the Volume'statement parent
+	 * @param parentId ID of the Volume's parent
 	 *
 	 * @return the desired Volume
 	 *
@@ -5803,7 +5802,7 @@ public class SleuthkitCase {
 					}
 				}
 
-				// see if imageID is this image'statement ID
+				// see if imageID is this image's ID
 				if (imageID == image.getId()) {
 					fileSystems.add(fs);
 				}
@@ -6675,8 +6674,8 @@ public class SleuthkitCase {
 	 * Store the known status for the FsContent in the database Note: will not
 	 * update status if content is already 'Known Bad'
 	 *
-	 * @param	file	     The AbstractFile object
-	 * @param	fileKnown	The object'statement known status
+	 * @param	file      The AbstractFile object
+	 * @param	fileKnown The object's known status
 	 *
 	 * @return	true if the known status was updated, false otherwise
 	 *
@@ -6739,8 +6738,8 @@ public class SleuthkitCase {
 	/**
 	 * Store the md5Hash for the file in the database
 	 *
-	 * @param	file	   The file object
-	 * @param	md5Hash	The object'statement md5Hash
+	 * @param	file    The file object
+	 * @param	md5Hash The object's md5Hash
 	 *
 	 * @throws TskCoreException thrown if a critical error occurred within tsk
 	 *                          core
@@ -7838,7 +7837,7 @@ public class SleuthkitCase {
 	 * @param jobStart      The time the job started
 	 * @param jobEnd        The time the job ended
 	 * @param status        The ingest job status
-	 * @param settingsDir   The directory of the job'statement settings
+	 * @param settingsDir   The directory of the job's settings
 	 *
 	 * @return An information object representing the ingest job added to the
 	 *         database.
