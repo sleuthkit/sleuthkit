@@ -1077,14 +1077,14 @@ public class SleuthkitCase {
 	static String extractExtension(final String fileName) {
 		String ext;
 		int i = fileName.lastIndexOf(".");
-		// > 0 because we assume it's not an extension if period is the first character
+		// > 0 because we assume it'statement not an extension if period is the first character
 		if ((i > 0) && ((i + 1) < fileName.length())) {
 			ext = fileName.substring(i + 1);
 		} else {
 			return "";
 		}
 		// we added this at one point to deal with files that had crazy names based on URLs
-		// it's too hard though to clean those up and not mess up basic extensions though.
+		// it'statement too hard though to clean those up and not mess up basic extensions though.
 		// We need to add '-' to the below if we use it again
 		//		String[] findNonAlphanumeric = ext.split("[^a-zA-Z0-9_]");
 		//		if (findNonAlphanumeric.length > 1) {
@@ -1131,7 +1131,7 @@ public class SleuthkitCase {
 			if (sqlState.startsWith(SQL_ERROR_CONNECTION_GROUP)) {
 				try {
 					if (InetAddress.getByName(info.getHost()).isReachable(IS_REACHABLE_TIMEOUT_MS)) {
-						// if we can reach the host, then it's probably port problem
+						// if we can reach the host, then it'statement probably port problem
 						result = bundle.getString("DatabaseConnectionCheck.Port"); //NON-NLS
 					} else {
 						result = bundle.getString("DatabaseConnectionCheck.HostnameOrPort"); //NON-NLS
@@ -1542,8 +1542,9 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Gets the data sources for the case (e.g., images, local disks, virtual
-	 * directories of local/logical files and/or directories, etc.)
+	 * Gets the data sources for the case. For each data source, if it is an
+	 * image, an Image will be instantiated. Otherwise, a LocalFilesDataSource
+	 * will be instantiated.
 	 *
 	 * NOTE: The DataSource interface is an emerging feature and at present is
 	 * only useful for obtaining the object id and the device id, an
@@ -1559,31 +1560,80 @@ public class SleuthkitCase {
 	public List<DataSource> getDataSources() throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
-		Statement s = null;
-		ResultSet rs = null;
+		Statement statement = null;
+		ResultSet resultSet = null;
 		try {
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT obj_id, device_id, time_zone FROM data_source_info"); //NON-NLS
-			List<DataSource> dataSources = new ArrayList<DataSource>();
-			while (rs.next()) {
-				dataSources.add(new AbstractDataSource(rs.getLong("obj_id"), rs.getString("device_id"), rs.getString("time_zone")));
+			statement = connection.createStatement();
+			resultSet = connection.executeQuery(statement,
+					"SELECT ds.obj_id, ds.device_id, ds.time_zone, img.type, img.ssize, img.size, img.md5, img.display_name "
+					+ "FROM data_source_info AS ds "
+					+ "LEFT JOIN tsk_image_info AS img "
+					+ "ON ds.obj_id = img.obj_id"); //NON-NLS
+			List<DataSource> dataSourceList = new ArrayList<DataSource>();
+			Map<Long, List<String>> imagePathsMap = getImagePaths();
+
+			while (resultSet.next()) {
+				DataSource dataSource;
+				Long objectId = resultSet.getLong("obj_id");
+				String deviceId = resultSet.getString("device_id");
+				String timezone = resultSet.getString("time_zone");
+				String type = resultSet.getString("type");
+
+				if (type == null) {
+					/*
+					 * No data found in 'tsk_image_info', so we build a
+					 * LocalFilesDataSource.
+					 */
+					TSK_FS_NAME_TYPE_ENUM dirType = TSK_FS_NAME_TYPE_ENUM.DIR;
+					TSK_FS_META_TYPE_ENUM metaType = TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
+					TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.ALLOC;
+					final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue()
+							| TSK_FS_META_FLAG_ENUM.USED.getValue());
+					String parentPath = "/"; //NON-NLS
+					dataSource = new LocalFilesDataSource(this, objectId, objectId, deviceId, deviceId, dirType, metaType, dirFlag, metaFlags, timezone, null, FileKnown.UNKNOWN, parentPath);
+				} else {
+					/*
+					 * Data found in 'tsk_image_info', so we build an Image.
+					 */
+					Long ssize = resultSet.getLong("ssize");
+					Long size = resultSet.getLong("size");
+					String md5 = resultSet.getString("md5");
+					String name = resultSet.getString("display_name");
+
+					List<String> imagePaths = imagePathsMap.get(objectId);
+					if (name == null) {
+						if (imagePaths.size() > 0) {
+							String path = imagePaths.get(0);
+							name = (new java.io.File(path)).getName();
+						} else {
+							name = "";
+						}
+					}
+
+					dataSource = new Image(this, objectId, Long.valueOf(type), deviceId, ssize, name, imagePaths.toArray(new String[imagePaths.size()]), timezone, md5, size);
+				}
+
+				dataSourceList.add(dataSource);
 			}
-			return dataSources;
+
+			return dataSourceList;
+
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting data sources", ex);
 		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
+			closeResultSet(resultSet);
+			closeStatement(statement);
 			connection.close();
 			releaseSingleUserCaseReadLock();
 		}
 	}
 
 	/**
-	 * Gets a specific data source for the case (e.g., an image, local disk,
-	 * virtual directory of local/logical files and/or directories, etc.).
+	 * Gets a specific data source for the case. If it is an image, an Image
+	 * will be instantiated. Otherwise, a LocalFilesDataSource will be
+	 * instantiated.
 	 *
-	 * NOTE: The AbstractDataSource class is an emerging feature and at present
+	 * NOTE: The DataSource class is an emerging feature and at present
 	 * is only useful for obtaining the object id and the data source
 	 * identifier, an ASCII-printable identifier for the data source that is
 	 * intended to be unique across multiple cases (e.g., a UUID). In the
@@ -1593,31 +1643,75 @@ public class SleuthkitCase {
 	 *
 	 * @return The data source.
 	 *
-	 * @throws TskDataException if there is no data source for the given object
+	 * @throws TskDataException If there is no data source for the given object
 	 *                          id.
-	 * @throws TskCoreException if there is a problem getting the data source.
+	 * @throws TskCoreException If there is a problem getting the data source.
 	 */
 	public DataSource getDataSource(long objectId) throws TskDataException, TskCoreException {
+		DataSource dataSource = null;
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
-		Statement s = null;
-		ResultSet rs = null;
+		Statement statement = null;
+		ResultSet resultSet = null;
 		try {
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT device_id, time_zone FROM data_source_info WHERE obj_id = " + objectId); //NON-NLS
-			if (rs.next()) {
-				return new AbstractDataSource(objectId, rs.getString("device_id"), rs.getString("time_zone"));
+			statement = connection.createStatement();
+			resultSet = connection.executeQuery(statement,
+					"SELECT ds.device_id, ds.time_zone, img.type, img.ssize, img.size, img.md5, img.display_name "
+					+ "FROM data_source_info AS ds "
+					+ "LEFT JOIN tsk_image_info AS img "
+					+ "ON ds.obj_id = img.obj_id "
+					+ "WHERE ds.obj_id = " + objectId); //NON-NLS
+			if (resultSet.next()) {
+				String deviceId = resultSet.getString("device_id");
+				String timezone = resultSet.getString("time_zone");
+				String type = resultSet.getString("type");
+
+				if (type == null) {
+					/*
+					 * No data found in 'tsk_image_info', so we build an
+					 * LocalFilesDataSource.
+					 */
+					TSK_FS_NAME_TYPE_ENUM dirType = TSK_FS_NAME_TYPE_ENUM.DIR;
+					TSK_FS_META_TYPE_ENUM metaType = TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
+					TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.ALLOC;
+					final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue()
+							| TSK_FS_META_FLAG_ENUM.USED.getValue());
+					String parentPath = "/"; //NON-NLS
+					dataSource = new LocalFilesDataSource(this, objectId, objectId, deviceId, deviceId, dirType, metaType, dirFlag, metaFlags, timezone, null, FileKnown.UNKNOWN, parentPath);
+				} else {
+					/*
+					 * Data found in 'tsk_image_info', so we build an Image.
+					 */
+					Long ssize = resultSet.getLong("ssize");
+					Long size = resultSet.getLong("size");
+					String md5 = resultSet.getString("md5");
+					String name = resultSet.getString("display_name");
+
+					List<String> imagePaths = getImagePathsById(objectId);
+					if (name == null) {
+						if (imagePaths.size() > 0) {
+							String path = imagePaths.get(0);
+							name = (new java.io.File(path)).getName();
+						} else {
+							name = "";
+						}
+					}
+
+					dataSource = new Image(this, objectId, Long.valueOf(type), deviceId, ssize, name, imagePaths.toArray(new String[imagePaths.size()]), timezone, md5, size);
+				}
 			} else {
 				throw new TskDataException(String.format("There is no data source with obj_id = %d", objectId));
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error getting data source with obj_id = %d", objectId), ex);
 		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
+			closeResultSet(resultSet);
+			closeStatement(statement);
 			connection.close();
 			releaseSingleUserCaseReadLock();
 		}
+
+		return dataSource;
 	}
 
 	/**
@@ -2574,7 +2668,8 @@ public class SleuthkitCase {
 	/**
 	 * Adds a source name to the source column of one or more rows in the
 	 * blackboard attributes table. The source name will be added to a CSV list
-	 * in any rows that exactly match the attribute's artifact_id and value.
+	 * in any rows that exactly match the attribute'statement artifact_id and
+	 * value.
 	 *
 	 * @param attr   The artifact attribute
 	 * @param source The source name.
@@ -4444,7 +4539,7 @@ public class SleuthkitCase {
 	 * database.
 	 *
 	 * @param parent     The parent Content.
-	 * @param fileRanges File range objects for the file(s).
+	 * @param fileRanges File range objects for the file(statement).
 	 *
 	 * @return A list of LayoutFile objects.
 	 *
@@ -5977,6 +6072,40 @@ public class SleuthkitCase {
 			connection.close();
 			releaseSingleUserCaseReadLock();
 		}
+	}
+
+	/**
+	 * Returns a list of fully qualified file paths based on an image object ID.
+	 *
+	 * @param objectId The object id of the data source.
+	 *
+	 * @return List of file paths.
+	 *
+	 * @throws TskCoreException Thrown if a critical error occurred within tsk
+	 *                          core
+	 */
+	private List<String> getImagePathsById(long objectId) throws TskCoreException {
+		List<String> imagePaths = new ArrayList<String>();
+		CaseDbConnection connection = connections.getConnection();
+		acquireSingleUserCaseReadLock();
+		Statement statement = null;
+		ResultSet resultSet = null;
+		try {
+			statement = connection.createStatement();
+			resultSet = connection.executeQuery(statement, "SELECT name FROM tsk_image_names WHERE tsk_image_names.obj_id = " + objectId); //NON-NLS
+			while (resultSet.next()) {
+				imagePaths.add(resultSet.getString("name"));
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error getting image names with obj_id = %d", objectId), ex);
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+			connection.close();
+			releaseSingleUserCaseReadLock();
+		}
+
+		return imagePaths;
 	}
 
 	/**
@@ -7709,7 +7838,7 @@ public class SleuthkitCase {
 	 * @param jobStart      The time the job started
 	 * @param jobEnd        The time the job ended
 	 * @param status        The ingest job status
-	 * @param settingsDir   The directory of the job's settings
+	 * @param settingsDir   The directory of the job'statement settings
 	 *
 	 * @return An information object representing the ingest job added to the
 	 *         database.
