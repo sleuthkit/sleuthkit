@@ -8671,15 +8671,14 @@ public class SleuthkitCase {
 			} catch (TskCoreException ex) {
 				throw new TskCoreException("Error getting connection for query: ", ex);
 			}
-			
+
 			try {
-				acquireSingleUserCaseReadLock();
+				SleuthkitCase.this.acquireSingleUserCaseReadLock();
 				resultSet = connection.executeQuery(connection.createStatement(), query);
 			} catch (SQLException ex) {
-				releaseSingleUserCaseReadLock();
+				SleuthkitCase.this.releaseSingleUserCaseReadLock();
 				throw new TskCoreException("Error executing query: ", ex);
 			}
-
 		}
 
 		/**
