@@ -87,16 +87,6 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 	}
 
 	/**
-	 * Gets the object id of this data source.
-	 *
-	 * @return The object id.
-	 */
-	@Override
-	public long getId() {
-		return objectId;
-	}
-
-	/**
 	 * Gets the ASCII-printable identifier for the device associated with the
 	 * data source. This identifier is intended to be unique across multiple
 	 * cases (e.g., a UUID).
