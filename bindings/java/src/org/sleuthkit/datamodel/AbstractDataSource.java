@@ -128,7 +128,7 @@ final class AbstractDataSource implements DataSource {
 
 		try {
 			connection = sleuthkitCase.getConnection();
-
+			sleuthkitCase.acquireSingleUserCaseReadLock();
 			try {
 				statement = connection.createStatement();
 				resultSet = connection.executeQuery(statement, "SELECT SUM (size) FROM tsk_files WHERE tsk_files.data_source_obj_id = " + dataSourceObjId);
@@ -141,6 +141,7 @@ final class AbstractDataSource implements DataSource {
 				closeResultSet(resultSet);
 				closeStatement(statement);
 				connection.close();
+				sleuthkitCase.acquireSingleUserCaseReadLock();
 			}
 		} catch (TskCoreException ex) {
 			LOGGER.log(Level.SEVERE, "An error occurred attempting to establish a database connection.", ex); //NON-NLS
