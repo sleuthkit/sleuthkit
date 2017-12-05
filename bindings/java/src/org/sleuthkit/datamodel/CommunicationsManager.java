@@ -420,10 +420,21 @@ public class CommunicationsManager {
 	 *                          within TSK core
 	 */
 	private Account getOrCreateAccount(Account.Type accountType, String accountUniqueID) throws TskCoreException {
-		Account account = null;
-
-		account = getAccount(accountType, accountUniqueID);
+		Account account = getAccount(accountType, accountUniqueID);
 		if (null == account) {
+			String query = " INTO accounts (account_type_id, account_unique_identifier) "
+					+ "VALUES ( " + getAccountTypeId(accountType) + ", '"
+					+ normalizeAccountID(accountType, accountUniqueID) + "'" + ")";
+			switch (db.getDatabaseType()) {
+				case POSTGRESQL:
+					query = "INSERT " + query + " ON CONFLICT DO NOTHING"; //NON-NLS
+					break;
+				case SQLITE:
+					query = "INSERT OR IGNORE " + query;
+					break;
+				default:
+					throw new TskCoreException("Unknown DB Type: " + db.getDatabaseType().name());
+			}
 
 			CaseDbConnection connection = db.getConnection();
 			db.acquireSingleUserCaseWriteLock();
@@ -432,7 +443,8 @@ public class CommunicationsManager {
 			try {
 				connection.beginTransaction();
 				s = connection.createStatement();
-				s.execute("INSERT INTO accounts (account_type_id, account_unique_identifier) VALUES ( " + getAccountTypeId(accountType) + ", '" + normalizeAccountID(accountType, accountUniqueID) + "'" + ")"); //NON-NLS
+
+				s.execute(query);
 
 				connection.commitTransaction();
 				account = getAccount(accountType, accountUniqueID);
@@ -649,9 +661,19 @@ public class CommunicationsManager {
 		try {
 			connection.beginTransaction();
 			s = connection.createStatement();
-
-			s.execute("INSERT INTO account_relationships (account1_id, account2_id, relationship_source_obj_id, date_time, relationship_type, data_source_obj_id  ) "
-					+ "VALUES ( " + account1_id + ", " + account2_id + ", " + relationshipaArtifact.getId() + ", " + dateTime + ", " + relationshipType.getTypeID() + ", " + relationshipaArtifact.getDataSourceObjectID() + ")"); //NON-NLS
+			String query = "INTO account_relationships (account1_id, account2_id, relationship_source_obj_id, date_time, relationship_type, data_source_obj_id  ) "
+					+ "VALUES ( " + account1_id + ", " + account2_id + ", " + relationshipaArtifact.getId() + ", " + dateTime + ", " + relationshipType.getTypeID() + ", " + relationshipaArtifact.getDataSourceObjectID() + ")";
+			switch (db.getDatabaseType()) {
+				case POSTGRESQL:
+					query = "INSERT " + query + " ON CONFLICT DO NOTHING";
+					break;
+				case SQLITE:
+					query = "INSERT OR IGNORE "  +query;
+					break;
+				default:
+					throw new TskCoreException("Unknown DB Type: " + db.getDatabaseType().name());
+			}
+			s.execute(query); //NON-NLS
 			connection.commitTransaction();
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
@@ -706,18 +728,19 @@ public class CommunicationsManager {
 			//this query groups by account_id and data_source_obj_id across both innerQueries
 			String combinedInnerQuery
 					= "SELECT count(*) as relationship_count, account_id, data_source_obj_id "
-					+ " FROM ( " + innerQuery1 + " UNION " + innerQuery2 + " ) "
+					+ " FROM ( " + innerQuery1 + " UNION " + innerQuery2 + " ) AS  inner_union"
 					+ " GROUP BY account_id, data_source_obj_id";
 
 			// set up applicable filters
 			Set<String> applicableFilters = new HashSet<String>(Arrays.asList(
 					CommunicationsFilter.AccountTypeFilter.class.getName()
 			));
+
 			String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
 
-			String queryStr = "SELECT "
-					//account info
-					+ " accounts.account_id AS account_id,"
+			String queryStr
+					= //account info
+					" accounts.account_id AS account_id,"
 					+ " accounts.account_unique_identifier AS account_unique_identifier,"
 					//account type info
 					+ " account_types.type_name AS type_name,"
@@ -731,8 +754,18 @@ public class CommunicationsManager {
 					+ "		ON accounts.account_type_id = account_types.account_type_id"
 					+ " JOIN data_source_info AS data_source_info"
 					+ "		ON account_device_instances.data_source_obj_id = data_source_info.obj_id"
-					+ (filterSQL.isEmpty() ? "" : " WHERE " + filterSQL)
-					+ " GROUP BY accounts.account_id, data_source_info.device_id";
+					+ (filterSQL.isEmpty() ? "" : " WHERE " + filterSQL);
+
+			switch (db.getDatabaseType()) {
+				case POSTGRESQL:
+					queryStr = "SELECT DISTINCT ON ( accounts.account_id, data_source_info.device_id) " + queryStr;
+					break;
+				case SQLITE:
+					queryStr = "SELECT " + queryStr + " GRoup BY accounts.account_id, data_source_info.device_id";
+					break;
+				default:
+					throw new TskCoreException("Unknown DB Type: " + db.getDatabaseType().name());
+			}
 
 			rs = connection.executeQuery(s, queryStr); //NON-NLS
 			ArrayList<AccountDeviceInstance> accountDeviceInstances = new ArrayList<AccountDeviceInstance>();
@@ -746,6 +779,7 @@ public class CommunicationsManager {
 				Account account = new Account(account_id, accountType, account_unique_identifier);
 				accountDeviceInstances.add(new AccountDeviceInstance(account, deviceID));
 			}
+
 			return accountDeviceInstances;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting account device instances. " + ex.getMessage(), ex);
