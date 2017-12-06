@@ -888,9 +888,9 @@ public class CommunicationsManager {
 			String datasourceObjIdsCSV = StringUtils.buildCSVString(entry.getValue());
 
 			adiSQLClauses.add(
-					"( relationships.data_source_obj_id IN ( " + datasourceObjIdsCSV + " ) )"
+					"( ( relationships.data_source_obj_id IN ( " + datasourceObjIdsCSV + " ) )"
 					+ " AND ( relationships.account1_id = " + accountID
-					+ " OR relationships.account2_id = " + accountID + " )"
+					+ " OR relationships.account2_id = " + accountID + " ) )"
 			);
 		}
 		String adiSQLClause = StringUtils.joinAsStrings(adiSQLClauses, " OR ");

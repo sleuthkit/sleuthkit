@@ -408,6 +408,8 @@ int TskDbSqlite::createIndexes() {
 		// blackboard indexes
 		attempt_exec("CREATE INDEX artifact_objID ON blackboard_artifacts(obj_id);",
 			"Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
+		attempt_exec("CREATE INDEX artifact_artifact_objID ON blackboard_artifacts(artifact_obj_id);",
+			"Error creating artifact_artifact_objID index on blackboard_artifacts: %s\n") ||
 		attempt_exec("CREATE INDEX artifact_typeID ON blackboard_artifacts(artifact_type_id);",
 			"Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
 		attempt_exec("CREATE INDEX attrsArtifactID ON blackboard_attributes(artifact_id);",
