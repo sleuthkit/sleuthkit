@@ -339,6 +339,7 @@ tsk_vs_gpt_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset)
 
     /* Load the partitions into the sorted list */
     if (gpt_load_table(vs, PRIMARY_TABLE)) {
+        tsk_vs_part_free(vs);
         int found = 0;
         if (tsk_verbose)
             tsk_fprintf(stderr, "gpt_open: Trying other sector sizes\n");
@@ -351,6 +352,7 @@ tsk_vs_gpt_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset)
                     vs->block_size);
 
             if (gpt_load_table(vs, PRIMARY_TABLE)) {
+                tsk_vs_part_free(vs);
                 vs->block_size *= 2;
                 continue;
             }
@@ -367,6 +369,7 @@ tsk_vs_gpt_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset)
             if(gpt_load_table(vs, SECONDARY_TABLE)){
 
                 /* Try other sector sizes again */
+                tsk_vs_part_free(vs);
                 vs->block_size = 512;
                 while (vs->block_size <= 8192) {
                     if (tsk_verbose)
@@ -374,6 +377,7 @@ tsk_vs_gpt_open(TSK_IMG_INFO * img_info, TSK_DADDR_T offset)
                             vs->block_size);
 
                     if (gpt_load_table(vs, SECONDARY_TABLE)) {
+                        tsk_vs_part_free(vs);
                         vs->block_size *= 2;
                         continue;
                     }
