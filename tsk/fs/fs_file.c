@@ -127,7 +127,7 @@ tsk_fs_file_open_meta(TSK_FS_INFO * a_fs,
 
     if (a_fs->file_add_meta(a_fs, fs_file, a_addr)) {
         if (a_fs_file == NULL)
-            free(fs_file);
+            tsk_fs_file_close(fs_file);
         return NULL;
     }
 
