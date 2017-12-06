@@ -289,10 +289,6 @@ public class SleuthkitCase {
 		return communicationsMgrInstance;
 	}
 
-	CaseDbConnection getConnection() throws TskCoreException {
-		return connections.getConnection();
-	}
-
 	/**
 	 * Make sure the predefined artifact types are in the artifact types table.
 	 *
@@ -663,7 +659,7 @@ public class SleuthkitCase {
 		try {
 			SleuthkitCase.logger.info(String.format("sqlite-jdbc version %s loaded in %s mode", //NON-NLS
 					SQLiteJDBCLoader.getVersion(), SQLiteJDBCLoader.isNativeMode()
-					? "native" : "pure-java")); //NON-NLS
+							? "native" : "pure-java")); //NON-NLS
 		} catch (Exception ex) {
 			SleuthkitCase.logger.log(Level.SEVERE, "Error querying case database mode", ex);
 		}
@@ -1184,7 +1180,6 @@ public class SleuthkitCase {
 			statement.execute("ALTER TABLE tag_names ADD COLUMN knownStatus INTEGER NOT NULL DEFAULT " + TskData.FileKnown.UNKNOWN.getFileKnownValue());
 
 			return new CaseDbSchemaVersionNumber(7, 2);
-
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
@@ -2554,7 +2549,7 @@ public class SleuthkitCase {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
 		ResultSet rs = null;
-		Statement s = null;
+		Statement s;
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, "SELECT arts.artifact_id AS artifact_id, "
@@ -4568,11 +4563,7 @@ public class SleuthkitCase {
 			preparedStatement.setString(17, null); //extension, just set it to null
 			connection.executeUpdate(preparedStatement);
 
-			VirtualDirectory rootDirectory = new VirtualDirectory(this,
-					newObjId, newObjId, rootDirectoryName,
-					dirType, metaType, dirFlag, metaFlags, null,
-					FileKnown.UNKNOWN, parentPath);
-			return new LocalFilesDataSource(deviceId, rootDirectory, timeZone);
+			return new LocalFilesDataSource(this, newObjId, newObjId, deviceId, rootDirectoryName, dirType, metaType, dirFlag, metaFlags, timeZone, null, FileKnown.UNKNOWN, parentPath);
 
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error creating local files data source with device id %s and directory name %s", deviceId, rootDirectoryName), ex);
@@ -5517,18 +5508,21 @@ public class SleuthkitCase {
 		ResultSet rs2 = null;
 		try {
 			s1 = connection.createStatement();
-			rs1 = connection.executeQuery(s1, "SELECT * FROM tsk_image_info WHERE obj_id = " + id); //NON-NLS
+			rs1 = connection.executeQuery(s1, "SELECT tsk_image_info.type, tsk_image_info.ssize, tsk_image_info.tzone, tsk_image_info.size, tsk_image_info.md5, tsk_image_info.display_name, data_source_info.device_id "
+					+ "FROM tsk_image_info "
+					+ "INNER JOIN data_source_info ON tsk_image_info.obj_id = data_source_info.obj_id "
+					+ "WHERE tsk_image_info.obj_id = " + id); //NON-NLS
 			if (rs1.next()) {
 				s2 = connection.createStatement();
-				rs2 = connection.executeQuery(s2, "SELECT * FROM tsk_image_names WHERE obj_id = " + rs1.getLong("obj_id")); //NON-NLS
+				rs2 = connection.executeQuery(s2, "SELECT name FROM tsk_image_names WHERE tsk_image_names.obj_id = " + id); //NON-NLS
 				List<String> imagePaths = new ArrayList<String>();
 				while (rs2.next()) {
 					imagePaths.add(rs2.getString("name"));
 				}
-				long obj_id = rs1.getLong("obj_id"); //NON-NLS
 				long type = rs1.getLong("type"); //NON-NLS
 				long ssize = rs1.getLong("ssize"); //NON-NLS
 				String tzone = rs1.getString("tzone"); //NON-NLS
+				long size = rs1.getLong("size"); //NON-NLS
 				String md5 = rs1.getString("md5"); //NON-NLS
 				String name = rs1.getString("display_name");
 				if (name == null) {
@@ -5539,8 +5533,9 @@ public class SleuthkitCase {
 						name = "";
 					}
 				}
-				long size = rs1.getLong("size"); //NON-NLS
-				return new Image(this, obj_id, type, ssize, name,
+				String device_id = rs1.getString("device_id");
+
+				return new Image(this, id, type, device_id, ssize, name,
 						imagePaths.toArray(new String[imagePaths.size()]), tzone, md5, size);
 			} else {
 				throw new TskCoreException("No image found for id: " + id);
@@ -5912,22 +5907,29 @@ public class SleuthkitCase {
 		Collection<ObjectInfo> childInfos = getChildrenInfo(img);
 		List<Content> children = new ArrayList<Content>();
 		for (ObjectInfo info : childInfos) {
-			if (info.type == ObjectType.VS) {
-				children.add(getVolumeSystemById(info.id, img));
-			} else if (info.type == ObjectType.FS) {
-				children.add(getFileSystemById(info.id, img));
-			} else if (info.type == ObjectType.ABSTRACTFILE) {
-				AbstractFile f = getAbstractFileById(info.id);
-				if (f != null) {
-					children.add(f);
+			if (null != info.type) {
+				switch (info.type) {
+					case VS:
+						children.add(getVolumeSystemById(info.id, img));
+						break;
+					case FS:
+						children.add(getFileSystemById(info.id, img));
+						break;
+					case ABSTRACTFILE:
+						AbstractFile f = getAbstractFileById(info.id);
+						if (f != null) {
+							children.add(f);
+						}
+						break;
+					case ARTIFACT:
+						BlackboardArtifact art = getArtifactById(info.id);
+						if (art != null) {
+							children.add(art);
+						}
+						break;
+					default:
+						throw new TskCoreException("Image has child of invalid type: " + info.type);
 				}
-			} else if (info.type == ObjectType.ARTIFACT) {
-				BlackboardArtifact art = getArtifactById(info.id);
-				if (art != null) {
-					children.add(art);
-				}
-			} else {
-				throw new TskCoreException("Image has child of invalid type: " + info.type);
 			}
 		}
 		return children;
@@ -6688,6 +6690,17 @@ public class SleuthkitCase {
 		return new CaseDbQuery(query, true);
 	}
 
+	/**
+	 * Get a case database connection.
+	 *
+	 * @return The case database connection.
+	 *
+	 * @throws TskCoreException
+	 */
+	CaseDbConnection getConnection() throws TskCoreException {
+		return connections.getConnection();
+	}
+
 	@Override
 	protected void finalize() throws Throwable {
 		try {
@@ -7290,6 +7303,8 @@ public class SleuthkitCase {
 	 * specified tag id.
 	 *
 	 * @param contentTagID the tag id of the ContentTag to retrieve.
+	 *
+	 * @return The content tag.
 	 *
 	 * @throws TskCoreException
 	 */
@@ -7899,7 +7914,7 @@ public class SleuthkitCase {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
 		ResultSet resultSet = null;
-		Statement statement = null;
+		Statement statement;
 		try {
 			connection.beginTransaction();
 			statement = connection.createStatement();
@@ -8309,7 +8324,7 @@ public class SleuthkitCase {
 
 		static final int SLEEP_LENGTH_IN_MILLISECONDS = 5000;
 
-		final class CreateStatement implements DbCommand {
+		private class CreateStatement implements DbCommand {
 
 			private final Connection connection;
 			private Statement statement = null;
@@ -8328,7 +8343,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		final class SetAutoCommit implements DbCommand {
+		private class SetAutoCommit implements DbCommand {
 
 			private final Connection connection;
 			private final boolean mode;
@@ -8344,7 +8359,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		final class Commit implements DbCommand {
+		private class Commit implements DbCommand {
 
 			private final Connection connection;
 
@@ -8358,7 +8373,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		final class ExecuteQuery implements DbCommand {
+		private class ExecuteQuery implements DbCommand {
 
 			private final Statement statement;
 			private final String query;
@@ -8379,7 +8394,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		final class ExecutePreparedStatementQuery implements DbCommand {
+		private class ExecutePreparedStatementQuery implements DbCommand {
 
 			private final PreparedStatement preparedStatement;
 			private ResultSet resultSet;
@@ -8398,7 +8413,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		final class ExecutePreparedStatementUpdate implements DbCommand {
+		private class ExecutePreparedStatementUpdate implements DbCommand {
 
 			private final PreparedStatement preparedStatement;
 
@@ -8412,7 +8427,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		final class ExecuteStatementUpdate implements DbCommand {
+		private class ExecuteStatementUpdate implements DbCommand {
 
 			private final Statement statement;
 			private final String updateCommand;
@@ -8428,7 +8443,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		final class ExecuteStatementUpdateGenerateKeys implements DbCommand {
+		private class ExecuteStatementUpdateGenerateKeys implements DbCommand {
 
 			private final Statement statement;
 			private final int generateKeys;
@@ -8446,7 +8461,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		final class PrepareStatement implements DbCommand {
+		private class PrepareStatement implements DbCommand {
 
 			private final Connection connection;
 			private final String input;
@@ -8467,7 +8482,7 @@ public class SleuthkitCase {
 			}
 		}
 
-		final class PrepareStatementGenerateKeys implements DbCommand {
+		private class PrepareStatementGenerateKeys implements DbCommand {
 
 			private final Connection connection;
 			private final String input;
@@ -8681,13 +8696,13 @@ public class SleuthkitCase {
 
 		@Override
 		void executeUpdate(Statement statement, String update, int generateKeys) throws SQLException {
-			ExecuteStatementUpdateGenerateKeys executeStatementUpdateGenerateKeys = new ExecuteStatementUpdateGenerateKeys(statement, update, generateKeys);
+			CaseDbConnection.ExecuteStatementUpdateGenerateKeys executeStatementUpdateGenerateKeys = new CaseDbConnection.ExecuteStatementUpdateGenerateKeys(statement, update, generateKeys);
 			executeCommand(executeStatementUpdateGenerateKeys);
 		}
 
 		@Override
 		PreparedStatement prepareStatement(String sqlStatement, int generateKeys) throws SQLException {
-			PrepareStatementGenerateKeys prepareStatementGenerateKeys = new PrepareStatementGenerateKeys(this.getConnection(), sqlStatement, generateKeys);
+			CaseDbConnection.PrepareStatementGenerateKeys prepareStatementGenerateKeys = new CaseDbConnection.PrepareStatementGenerateKeys(this.getConnection(), sqlStatement, generateKeys);
 			executeCommand(prepareStatementGenerateKeys);
 			return prepareStatementGenerateKeys.getPreparedStatement();
 		}
