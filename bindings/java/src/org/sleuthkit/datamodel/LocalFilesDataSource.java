@@ -119,9 +119,12 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 	 *                      to the database.
 	 *
 	 * @return The size in bytes.
+	 *
+	 * @throws TskCoreException Thrown when there is an issue trying to retrieve
+	 *                          data from the database.
 	 */
 	@Override
-	public long getContentSize(SleuthkitCase sleuthkitCase) {
+	public long getContentSize(SleuthkitCase sleuthkitCase) throws TskCoreException {
 		return getContentSize(sleuthkitCase, objectId);
 	}
 
@@ -136,31 +139,30 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 	 *                      to the database.
 	 *
 	 * @return The size in bytes.
+	 *
+	 * @throws TskCoreException Thrown when there is an issue trying to retrieve
+	 *                          data from the database.
 	 */
-	static long getContentSize(SleuthkitCase sleuthkitCase, long dataSourceObjId) {
+	static long getContentSize(SleuthkitCase sleuthkitCase, long dataSourceObjId) throws TskCoreException {
 		SleuthkitCase.CaseDbConnection connection;
 		Statement statement = null;
 		ResultSet resultSet = null;
 		long contentSize = 0;
 
-		try {
-			connection = sleuthkitCase.getConnection();
+		connection = sleuthkitCase.getConnection();
 
-			try {
-				statement = connection.createStatement();
-				resultSet = connection.executeQuery(statement, "SELECT SUM (size) FROM tsk_files WHERE tsk_files.data_source_obj_id = " + dataSourceObjId);
-				if (resultSet.next()) {
-					contentSize = resultSet.getLong("sum");
-				}
-			} catch (SQLException ex) {
-				LOGGER.log(Level.SEVERE, String.format("There was a problem while querying the database for size data for object ID %d.", dataSourceObjId), ex); //NON-NLS
-			} finally {
-				closeResultSet(resultSet);
-				closeStatement(statement);
-				connection.close();
+		try {
+			statement = connection.createStatement();
+			resultSet = connection.executeQuery(statement, "SELECT SUM (size) FROM tsk_files WHERE tsk_files.data_source_obj_id = " + dataSourceObjId);
+			if (resultSet.next()) {
+				contentSize = resultSet.getLong("sum");
 			}
-		} catch (TskCoreException ex) {
-			LOGGER.log(Level.SEVERE, "An error occurred attempting to establish a database connection.", ex); //NON-NLS
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("There was a problem while querying the database for size data for object ID %d.", dataSourceObjId), ex);
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+			connection.close();
 		}
 
 		return contentSize;
