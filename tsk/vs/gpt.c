@@ -130,12 +130,11 @@ gpt_load_table(TSK_VS_INFO * vs, GPT_LOCATION_ENUM gpt_type)
     }
 
     // now that we checked the sig, lets make the meta  entries
-    if ((safe_str = tsk_malloc(16)) == NULL) {
-        free(sect_buf);
-        return 1;
-    }
-
-    if(gpt_type == PRIMARY_TABLE){
+    if (gpt_type == PRIMARY_TABLE) {
+        if ((safe_str = tsk_malloc(16)) == NULL) {
+            free(sect_buf);
+            return 1;
+        }
         snprintf(safe_str, 16, "Safety Table");
         if (NULL == tsk_vs_part_add(vs, (TSK_DADDR_T) 0, (TSK_DADDR_T) 1,
                 TSK_VS_PART_FLAG_META, safe_str, -1, -1)) {
