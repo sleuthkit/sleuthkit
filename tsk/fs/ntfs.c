@@ -366,11 +366,11 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
             ("dinode_lookup: More Update Sequence Entries than MFT size");
         return TSK_COR;
     }
-    if (tsk_getu16(fs->endian, mft->upd_off) > a_ntfs->mft_rsize_b) {
+    if (tsk_getu16(fs->endian, mft->upd_off) + sizeof(ntfs_upd) > a_ntfs->mft_rsize_b) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
         tsk_error_set_errstr
-            ("dinode_lookup: Update sequence offset larger than MFT size");
+            ("dinode_lookup: Update sequence would read past MFT size");
         return TSK_COR;
     }
 
@@ -385,6 +385,16 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
         uint8_t *new_val, *old_val;
         /* The offset into the buffer of the value to analyze */
         size_t offset = i * NTFS_UPDATE_SEQ_STRIDE - 2;
+
+        /* Check that there is room in the buffer to read the current sequence value */
+        if (offset + 2 > a_ntfs->mft_rsize_b) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+            tsk_error_set_errstr
+            ("dinode_lookup: Ran out of data while parsing update sequence values");
+            return TSK_COR;
+        }
+
         /* get the current sequence value */
         uint16_t cur_seq =
             tsk_getu16(fs->endian, (uintptr_t) a_buf + offset);
