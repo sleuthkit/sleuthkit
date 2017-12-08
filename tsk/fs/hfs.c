@@ -896,6 +896,13 @@ hfs_cat_traverse(HFS_INFO * hfs,
         }
 
         // process the header / descriptor
+        if (nodesize < sizeof(hfs_btree_node)) {
+            tsk_error_set_errno(TSK_ERR_FS_GENFS);
+            tsk_error_set_errstr
+            ("hfs_cat_traverse: Node size %d is too small to be valid", nodesize);
+            free(node);
+            return 1;
+        }
         node_desc = (hfs_btree_node *) node;
         num_rec = tsk_getu16(fs->endian, node_desc->num_rec);
 
