@@ -6204,8 +6204,11 @@ hfs_close(TSK_FS_INFO * fs)
     fs->tag = 0;
 
     free(hfs->fs);
-    tsk_fs_file_close(hfs->catalog_file);
-    hfs->catalog_attr = NULL;
+
+    if (hfs->catalog_file) {
+        tsk_fs_file_close(hfs->catalog_file);
+        hfs->catalog_attr = NULL;
+    }
 
     if (hfs->blockmap_file) {
         tsk_fs_file_close(hfs->blockmap_file);
@@ -6474,9 +6477,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     if ((hfs->catalog_file =
             tsk_fs_file_open_meta(fs, NULL,
                 HFS_CATALOG_FILE_ID)) == NULL) {
-        fs->tag = 0;
-        free(hfs->fs);
-        tsk_fs_free((TSK_FS_INFO *)hfs);
+        hfs_close(hfs);
         return NULL;
     }
 
@@ -6485,10 +6486,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_fs_attrlist_get(hfs->catalog_file->meta->attr,
         TSK_FS_ATTR_TYPE_DEFAULT);
     if (!hfs->catalog_attr) {
-        fs->tag = 0;
-        tsk_fs_file_close(hfs->catalog_file);
-        free(hfs->fs);
-        tsk_fs_free((TSK_FS_INFO *)hfs);
+        hfs_close(hfs);
         tsk_error_errstr2_concat
             (" - Data Attribute not found in Catalog File");
         return NULL;
@@ -6503,10 +6501,8 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ);
         }
+        hfs_close(hfs);
         tsk_error_set_errstr2("hfs_open: Error reading catalog header");
-        fs->tag = 0;
-        free(hfs->fs);
-        tsk_fs_free((TSK_FS_INFO *)hfs);
         return NULL;
     }
 
