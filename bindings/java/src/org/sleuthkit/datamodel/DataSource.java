@@ -58,7 +58,10 @@ public interface DataSource {
 	 *                      to the database.
 	 *
 	 * @return The size in bytes.
+	 *
+	 * @throws TskCoreException Thrown when there is an issue trying to retrieve
+	 *                          data from the database.
 	 */
-	long getContentSize(SleuthkitCase sleuthkitCase);
+	long getContentSize(SleuthkitCase sleuthkitCase) throws TskCoreException;
 
 }

@@ -26,6 +26,9 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.io.File;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 /**
  * Represents a disk image file, stored in tsk_image_info. Populated based on
@@ -42,6 +45,8 @@ public class Image extends AbstractContent implements DataSource {
 	private volatile long imageHandle = 0;
 	private final String deviceId, timezone, md5;
 	private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
+
+	private static final Logger LOGGER = Logger.getLogger(Image.class.getName());
 
 	/**
 	 * Create a disk image.
@@ -310,11 +315,11 @@ public class Image extends AbstractContent implements DataSource {
 					try {
 						int readBytes = read(buf, endOffset, 512);
 						if (readBytes < 0) {
-							logger1.warning("Possible Incomplete Image: Error reading volume at offset " + endOffset); //NON-NLS
+							logger1.log(Level.WARNING, "Possible Incomplete Image: Error reading volume at offset {0}", endOffset); //NON-NLS
 							errorString = MessageFormat.format(bundle.getString("Image.verifyImageSize.errStr1.text"), endOffset);
 						}
 					} catch (TskCoreException ex) {
-						logger1.warning("Possible Incomplete Image: Error reading volume at offset " + endOffset + ": " + ex.getLocalizedMessage()); //NON-NLS
+						logger1.log(Level.WARNING, "Possible Incomplete Image: Error reading volume at offset {0}: {1}", new Object[]{endOffset, ex.getLocalizedMessage()}); //NON-NLS
 						errorString = MessageFormat.format(bundle.getString("Image.verifyImageSize.errStr2.text"), endOffset);
 					}
 				}
@@ -328,11 +333,11 @@ public class Image extends AbstractContent implements DataSource {
 					byte[] buf = new byte[(int) block_size];
 					int readBytes = read(buf, endOffset, block_size);
 					if (readBytes < 0) {
-						logger1.warning("Possible Incomplete Image: Error reading file system at offset " + endOffset); //NON-NLS
+						logger1.log(Level.WARNING, "Possible Incomplete Image: Error reading file system at offset {0}", endOffset); //NON-NLS
 						errorString = MessageFormat.format(bundle.getString("Image.verifyImageSize.errStr3.text"), endOffset);
 					}
 				} catch (TskCoreException ex) {
-					logger1.warning("Possible Incomplete Image: Error reading file system at offset " + endOffset + ": " + ex.getLocalizedMessage()); //NON-NLS
+					logger1.log(Level.WARNING, "Possible Incomplete Image: Error reading file system at offset {0}: {1}", new Object[]{endOffset, ex.getLocalizedMessage()}); //NON-NLS
 					errorString = MessageFormat.format(bundle.getString("Image.verifyImageSize.errStr4.text"), endOffset);
 				}
 			}
@@ -374,9 +379,63 @@ public class Image extends AbstractContent implements DataSource {
 	 *                      to the database.
 	 *
 	 * @return The size in bytes.
+	 *
+	 * @throws TskCoreException Thrown when there is an issue trying to retrieve
+	 *                          data from the database.
 	 */
 	@Override
-	public long getContentSize(SleuthkitCase sleuthkitCase) {
-		return AbstractDataSource.getContentSize(sleuthkitCase, getId());
+	public long getContentSize(SleuthkitCase sleuthkitCase) throws TskCoreException {
+		SleuthkitCase.CaseDbConnection connection;
+		Statement statement = null;
+		ResultSet resultSet = null;
+		long contentSize = 0;
+
+		connection = sleuthkitCase.getConnection();
+
+		try {
+			statement = connection.createStatement();
+			resultSet = connection.executeQuery(statement, "SELECT SUM (size) FROM tsk_image_info WHERE tsk_image_info.obj_id = " + getId());
+			if (resultSet.next()) {
+				contentSize = resultSet.getLong("sum");
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("There was a problem while querying the database for size data for object ID %d.", getId()), ex);
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+			connection.close();
+		}
+
+		return contentSize;
+	}
+
+	/**
+	 * Close a ResultSet.
+	 *
+	 * @param resultSet The ResultSet to be closed.
+	 */
+	private static void closeResultSet(ResultSet resultSet) {
+		if (resultSet != null) {
+			try {
+				resultSet.close();
+			} catch (SQLException ex) {
+				LOGGER.log(Level.SEVERE, "Error closing ResultSet", ex); //NON-NLS
+			}
+		}
+	}
+
+	/**
+	 * Close a Statement.
+	 *
+	 * @param statement The Statement to be closed.
+	 */
+	private static void closeStatement(Statement statement) {
+		if (statement != null) {
+			try {
+				statement.close();
+			} catch (SQLException ex) {
+				LOGGER.log(Level.SEVERE, "Error closing Statement", ex); //NON-NLS
+			}
+		}
 	}
 }
