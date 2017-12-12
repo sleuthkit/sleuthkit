@@ -4094,7 +4094,7 @@ public class SleuthkitCase {
 	/**
 	 * Get artifact from blackboard_artifacts table by its artifact_obj_id
 	 *
-	 * @param id id of the artifact object in blackboard_artifacts table
+	 * @param id id of the artifact in blackboard_artifacts table
 	 *
 	 * @return Artifact object populated, or null if not found.
 	 *
@@ -4117,7 +4117,41 @@ public class SleuthkitCase {
 				return null;
 			}
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting artifacts by id, id = " + id, ex);
+			throw new TskCoreException("Error getting artifacts by artifact_obj_id, artifact_obj_id = " + id, ex);
+		} finally {
+			closeResultSet(rs);
+			connection.close();
+			releaseSingleUserCaseReadLock();
+		}
+	}
+	
+	/**
+	 * Get artifact from blackboard_artifacts table by its artifact_id
+	 *
+	 * @param id Artifact ID of the artifact in blackboard_artifacts table
+	 *
+	 * @return Artifact object populated, or null if not found.
+	 *
+	 * @throws TskCoreException thrown if critical error occurred within tsk
+	 *                          core and file could not be queried
+	 */
+	public BlackboardArtifact getArtifactByArtifactId(long id) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSingleUserCaseReadLock();
+		ResultSet rs = null;
+		try {
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ARTIFACT_BY_ARTIFACT_ID);
+			statement.clearParameters();
+			statement.setLong(1, id);
+			rs = connection.executeQuery(statement);
+			List<BlackboardArtifact> artifacts = resultSetToArtifacts(rs);
+			if (artifacts.size() > 0) {
+				return artifacts.get(0);
+			} else {
+				return null;
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting artifacts by artifact id, artifact id = " + id, ex);
 		} finally {
 			closeResultSet(rs);
 			connection.close();
@@ -6738,10 +6772,10 @@ public class SleuthkitCase {
 	 * @param rs A result set from a query of the blackboard_artifacts table of
 	 *           the form "SELECT * FROM blackboard_artifacts WHERE XYZ".
 	 *
-	 * @return A list of AbstractFile objects.
+	 * @return A list of BlackboardArtifact objects.
 	 *
 	 * @throws SQLException Thrown if there is a problem iterating through the
-	 *                      record set.
+	 *                      result set.
 	 */
 	private List<BlackboardArtifact> resultSetToArtifacts(ResultSet rs) throws SQLException {
 		ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
@@ -8254,6 +8288,7 @@ public class SleuthkitCase {
 				+ "AND tsk_files.type = ? )"), //NON-NLS
 		SELECT_FILE_BY_ID("SELECT * FROM tsk_files WHERE obj_id = ? LIMIT 1"), //NON-NLS
 		SELECT_ARTIFACT_BY_ARTIFACT_OBJ_ID("SELECT * FROM blackboard_artifacts WHERE artifact_obj_id = ? LIMIT 1"),
+		SELECT_ARTIFACT_BY_ARTIFACT_ID("SELECT * FROM blackboard_artifacts WHERE artifact_id = ? LIMIT 1"),
 		INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_obj_id, data_source_obj_id, artifact_type_id, review_status_id) " //NON-NLS
 				+ "VALUES (?, ?, ?, ?, ?," + BlackboardArtifact.ReviewStatus.UNDECIDED.getID() + ")"), //NON-NLS
 		POSTGRESQL_INSERT_ARTIFACT("INSERT INTO blackboard_artifacts (artifact_id, obj_id, artifact_obj_id, data_source_obj_id, artifact_type_id, review_status_id) " //NON-NLS
