@@ -659,10 +659,12 @@ public class CommunicationsManager {
 		ResultSet rs = null;
 
 		try {
+			String dateTimeValStr = (dateTime > 0) ? Long.toString(dateTime) : "NULL";
+			
 			connection.beginTransaction();
 			s = connection.createStatement();
 			String query = "INTO account_relationships (account1_id, account2_id, relationship_source_obj_id, date_time, relationship_type, data_source_obj_id  ) "
-					+ "VALUES ( " + account1_id + ", " + account2_id + ", " + relationshipaArtifact.getId() + ", " + dateTime + ", " + relationshipType.getTypeID() + ", " + relationshipaArtifact.getDataSourceObjectID() + ")";
+					+ "VALUES ( " + account1_id + ", " + account2_id + ", " + relationshipaArtifact.getId() + ", " + dateTimeValStr + ", " + relationshipType.getTypeID() + ", " + relationshipaArtifact.getDataSourceObjectID() + ")";
 			switch (db.getDatabaseType()) {
 				case POSTGRESQL:
 					query = "INSERT " + query + " ON CONFLICT DO NOTHING";
@@ -761,7 +763,7 @@ public class CommunicationsManager {
 					queryStr = "SELECT DISTINCT ON ( accounts.account_id, data_source_info.device_id) " + queryStr;
 					break;
 				case SQLITE:
-					queryStr = "SELECT " + queryStr + " GRoup BY accounts.account_id, data_source_info.device_id";
+					queryStr = "SELECT " + queryStr + " GROUP BY accounts.account_id, data_source_info.device_id";
 					break;
 				default:
 					throw new TskCoreException("Unknown DB Type: " + db.getDatabaseType().name());

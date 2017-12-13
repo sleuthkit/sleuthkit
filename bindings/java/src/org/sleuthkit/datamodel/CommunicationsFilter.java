@@ -176,13 +176,13 @@ public class CommunicationsFilter {
 			}
 			String sql = "";
 			if (startDate > 0) {
-				sql = " relationships.date_time >= " + startDate;
+				sql = "(" + " relationships.date_time IS NULL OR relationships.date_time >= " + startDate + ")";
 			}
 			if (endDate > 0) {
 				if (!sql.isEmpty()) {
 					sql += " AND ";
 				}
-				sql += " relationships.date_time < " + endDate;
+				sql += "(" + " relationships.date_time IS NULL OR relationships.date_time < " + endDate + ")";
 			}
 			return sql;
 		}
