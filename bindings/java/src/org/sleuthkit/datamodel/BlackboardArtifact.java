@@ -1122,7 +1122,12 @@ public class BlackboardArtifact implements Content {
 		 * An account.
 		 */
 		TSK_ACCOUNT(39, "TSK_ACCOUNT", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskAccount.text"));
+				bundle.getString("BlackboardArtifact.tskAccount.text")),
+		/**
+		 * An encrypted file.
+		 */
+		TSK_ENCRYPTION_SUSPECTED(40, "TSK_ENCRYPTION_SUSPECTED", //NON-NLS
+				bundle.getString("BlackboardArtifact.tskEncryptionSuspected.text"));
 
 		private final String label;
 		private final int typeId;
