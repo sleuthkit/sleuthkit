@@ -670,7 +670,7 @@ public class CommunicationsManager {
 					query = "INSERT " + query + " ON CONFLICT DO NOTHING";
 					break;
 				case SQLITE:
-					query = "INSERT OR IGNORE "  +query;
+					query = "INSERT OR IGNORE " + query;
 					break;
 				default:
 					throw new TskCoreException("Unknown DB Type: " + db.getDatabaseType().name());
@@ -865,7 +865,7 @@ public class CommunicationsManager {
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public Set<BlackboardArtifact> getRelationshipSources(Set<AccountDeviceInstance> accountDeviceInstanceList, CommunicationsFilter filter) throws TskCoreException {
+	public Set<Content> getRelationshipSources(Set<AccountDeviceInstance> accountDeviceInstanceList, CommunicationsFilter filter) throws TskCoreException {
 
 		if (accountDeviceInstanceList.isEmpty()) {
 			//log this?
@@ -927,17 +927,17 @@ public class CommunicationsManager {
 					+ (filterSQL.isEmpty() ? "" : " AND (" + filterSQL + " )");
 
 			rs = connection.executeQuery(s, queryStr); //NON-NLS
-			Set<BlackboardArtifact> artifacts = new HashSet<BlackboardArtifact>();
+			Set<Content> relationshipSources = new HashSet<Content>();
 			while (rs.next()) {
 				BlackboardArtifact.Type bbartType = db.getArtifactType(rs.getInt("artifact_type_id"));
-				artifacts.add(new BlackboardArtifact(db, rs.getLong("artifact_id"),
+				relationshipSources.add(new BlackboardArtifact(db, rs.getLong("artifact_id"),
 						rs.getLong("obj_id"), rs.getLong("artifact_obj_id"),
 						rs.getLong("data_source_obj_id"), bbartType.getTypeID(),
 						bbartType.getTypeName(), bbartType.getDisplayName(),
 						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
 			}
 
-			return artifacts;
+			return relationshipSources;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting relationships for account. " + ex.getMessage(), ex);
 		} finally {
