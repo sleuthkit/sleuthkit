@@ -1687,7 +1687,7 @@ public class SleuthkitCase {
 				closeResultSet(rs);
 				closeStatement(s);
 				connection.close();
-				acquireSingleUserCaseReadLock();
+				releaseSingleUserCaseReadLock();
 			}
 		}
 	}
