@@ -18,7 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 
@@ -42,8 +41,7 @@ public class Account {
 	 */
 	private final String typeSpecificID;
 
-	//JIRA-901 Why does this implement Serializable?
-	public static final class Type implements Serializable {
+	public static final class Type {
 
 		private static final long serialVersionUID = 1L;
 		//JIRA-900:Should the display names of predefined types be internationalized?
