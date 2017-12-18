@@ -644,7 +644,7 @@ public class CommunicationsManagerTest {
 			));
 			List<AccountDeviceInstance> accountDeviceInstances
 					= commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
-			assertEquals(4, accountDeviceInstances.size());
+			assertEquals(8, accountDeviceInstances.size());
 		}
 
 		// Test Device & AccountType filter - DS1 or DS2 or DS3 & Phone or Email
