@@ -846,7 +846,7 @@ public class CommunicationsManagerTest {
 		{
 			Set<AccountDeviceInstance> accountDeviceInstances = singleton(EMAIL_A_DS1);
 
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(accountDeviceInstances, null);
 			assertEquals(3, communications.size());
 
@@ -867,7 +867,7 @@ public class CommunicationsManagerTest {
 		// Communications for Email Account B/DS1: No Filters
 		{
 			Set<AccountDeviceInstance> accountDeviceInstances = hashSetOf(EMAIL_B_DS1);
-			Set<BlackboardArtifact> communications = commsMgr.getRelationshipSources(accountDeviceInstances, null);
+			Set<Content> communications = commsMgr.getRelationshipSources(accountDeviceInstances, null);
 			assertEquals(2, communications.size());
 		}
 
@@ -876,7 +876,7 @@ public class CommunicationsManagerTest {
 			Set<AccountDeviceInstance> accountDeviceInstances
 					= hashSetOf(EMAIL_A_DS1, EMAIL_C_DS1);
 
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(accountDeviceInstances, null);
 			assertEquals(3, communications.size());
 		}
@@ -884,7 +884,7 @@ public class CommunicationsManagerTest {
 		// Communications for Email Account A/DS1 B/DS1 & C/DS1: No Filters
 		{
 
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(EMAILS_ABC_DS1, null);
 			assertEquals(3, communications.size());
 		}
@@ -894,7 +894,7 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					new DeviceFilter(singleton(DS2_DEVICEID))
 			));
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(EMAILS_ABC_DS1, commsFilter);
 			assertEquals(3, communications.size());
 		}
@@ -903,7 +903,7 @@ public class CommunicationsManagerTest {
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					new DateRangeFilter(0, JAN_1_2017)));
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(EMAILS_ABC_DS1, commsFilter);
 			assertEquals(1, communications.size());
 		}
@@ -912,7 +912,7 @@ public class CommunicationsManagerTest {
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					new DateRangeFilter(JAN_1_2017, 0)));
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(EMAILS_ABC_DS1, commsFilter);
 			assertEquals(3, communications.size());
 		}
@@ -922,7 +922,7 @@ public class CommunicationsManagerTest {
 
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					new DateRangeFilter(0, MAR_1_2017)));
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(EMAILS_ABC_DS1, commsFilter);
 			assertEquals(2, communications.size());
 		}
@@ -931,7 +931,7 @@ public class CommunicationsManagerTest {
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					new DateRangeFilter(0, JUL_1_2017)));
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(EMAILS_ABC_DS1, commsFilter);
 			assertEquals(3, communications.size());
 		}
@@ -940,7 +940,7 @@ public class CommunicationsManagerTest {
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					new DateRangeFilter(FEB_1_2017, AUG_1_2017)));
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(EMAILS_ABC_DS1, commsFilter);
 			assertEquals(2, communications.size());
 		}
@@ -949,7 +949,7 @@ public class CommunicationsManagerTest {
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					new DateRangeFilter(JUL_1_2017, 0)));
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(EMAILS_ABC_DS1, commsFilter);
 			assertEquals(1, communications.size());
 		}
@@ -958,7 +958,7 @@ public class CommunicationsManagerTest {
 		{
 			Set<AccountDeviceInstance> accountDeviceInstances
 					= hashSetOf(PHONE_1_DS2);
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(accountDeviceInstances, null);
 			assertEquals(1, communications.size());
 		}
@@ -968,7 +968,7 @@ public class CommunicationsManagerTest {
 			Set<AccountDeviceInstance> accountDeviceInstances = hashSetOf(PHONE_1_DS2);
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					new RelationshipTypeFilter(singleton(CALL_LOG))));
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(accountDeviceInstances, commsFilter);
 			assertEquals(1, communications.size());
 		}
@@ -978,7 +978,7 @@ public class CommunicationsManagerTest {
 			Set<AccountDeviceInstance> accountDeviceInstances = hashSetOf(PHONE_1_DS2);
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					new RelationshipTypeFilter(singleton(CONTACT))));
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(accountDeviceInstances, commsFilter);
 			assertEquals(0, communications.size());
 		}
@@ -989,7 +989,7 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					new RelationshipTypeFilter(singleton(MESSAGE))
 			));
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(accountDeviceInstances, commsFilter);
 			assertEquals(0, communications.size());
 		}
@@ -999,7 +999,7 @@ public class CommunicationsManagerTest {
 			Set<AccountDeviceInstance> accountDeviceInstances = hashSetOf(PHONE_2_DS1);
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					new RelationshipTypeFilter(singleton(CALL_LOG))));
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(accountDeviceInstances, commsFilter);
 			assertEquals(2, communications.size());
 		}
@@ -1009,7 +1009,7 @@ public class CommunicationsManagerTest {
 			Set<AccountDeviceInstance> accountDeviceInstances = hashSetOf(PHONE_2_DS2);
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					COMMUNICATIONS_RELATIONSHIP_TYPE_FILTER));
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(accountDeviceInstances, commsFilter);
 			assertEquals(3, communications.size());
 		}
@@ -1019,7 +1019,7 @@ public class CommunicationsManagerTest {
 			Set<AccountDeviceInstance> accountDeviceInstances = hashSetOf(PHONE_1_DS2, PHONE_2_DS1);
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					COMMUNICATIONS_RELATIONSHIP_TYPE_FILTER));
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(accountDeviceInstances, commsFilter);
 			assertEquals(5, communications.size());
 		}
@@ -1027,7 +1027,7 @@ public class CommunicationsManagerTest {
 		// Communications for Phone 2/DS1 3/DS1 4/DS1 & 5/DS1
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter();
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(PHONES_2345_DS1, commsFilter);
 			assertEquals(8, communications.size());
 
@@ -1041,7 +1041,7 @@ public class CommunicationsManagerTest {
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					new RelationshipTypeFilter(singleton(MESSAGE))));
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(PHONES_2345_DS1, commsFilter);
 			assertEquals(3, communications.size());
 		}
@@ -1049,7 +1049,7 @@ public class CommunicationsManagerTest {
 		// relationships for Phone 1/DS2 2/DS2 3/DS2 4/DS2 & 5/DS2
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter();
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(PHONES_12345_DS2, commsFilter);
 			assertEquals(9, communications.size());
 
@@ -1064,7 +1064,7 @@ public class CommunicationsManagerTest {
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					COMMUNICATIONS_RELATIONSHIP_TYPE_FILTER));
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(PHONES_12345_DS2, commsFilter);
 			assertEquals(6, communications.size());
 		}
@@ -1075,7 +1075,7 @@ public class CommunicationsManagerTest {
 					COMMUNICATIONS_RELATIONSHIP_TYPE_FILTER,
 					new CommunicationsFilter.DateRangeFilter(0, JAN_1_2017)
 			));
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(PHONES_12345_DS2, commsFilter);
 			assertEquals(2, communications.size());
 		}
@@ -1086,7 +1086,7 @@ public class CommunicationsManagerTest {
 					COMMUNICATIONS_RELATIONSHIP_TYPE_FILTER,
 					new CommunicationsFilter.DateRangeFilter(JAN_1_2017, 0)
 			));
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(PHONES_12345_DS2, commsFilter);
 			assertEquals(6, communications.size());
 		}
@@ -1097,7 +1097,7 @@ public class CommunicationsManagerTest {
 					COMMUNICATIONS_RELATIONSHIP_TYPE_FILTER,
 					new CommunicationsFilter.DateRangeFilter(0, MAR_1_2017)
 			));
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(PHONES_12345_DS2, commsFilter);
 			assertEquals(4, communications.size());
 		}
@@ -1108,7 +1108,7 @@ public class CommunicationsManagerTest {
 					COMMUNICATIONS_RELATIONSHIP_TYPE_FILTER,
 					new CommunicationsFilter.DateRangeFilter(MAR_1_2017, 0)
 			));
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(PHONES_12345_DS2, commsFilter);
 			assertEquals(4, communications.size());
 		}
@@ -1119,7 +1119,7 @@ public class CommunicationsManagerTest {
 					COMMUNICATIONS_RELATIONSHIP_TYPE_FILTER,
 					new CommunicationsFilter.DateRangeFilter(MAR_1_2017, 0)
 			));
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(PHONES_12345_DS2, commsFilter);
 			assertEquals(4, communications.size());
 		}
@@ -1130,7 +1130,7 @@ public class CommunicationsManagerTest {
 					COMMUNICATIONS_RELATIONSHIP_TYPE_FILTER,
 					new CommunicationsFilter.DateRangeFilter(0, JUL_1_2017)
 			));
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(PHONES_12345_DS2, commsFilter);
 			assertEquals(6, communications.size());
 		}
@@ -1141,7 +1141,7 @@ public class CommunicationsManagerTest {
 					COMMUNICATIONS_RELATIONSHIP_TYPE_FILTER,
 					new CommunicationsFilter.DateRangeFilter(JUL_1_2017, 0)
 			));
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(PHONES_12345_DS2, commsFilter);
 			assertEquals(2, communications.size());
 		}
@@ -1152,7 +1152,7 @@ public class CommunicationsManagerTest {
 					COMMUNICATIONS_RELATIONSHIP_TYPE_FILTER,
 					new CommunicationsFilter.DateRangeFilter(FEB_1_2017, AUG_1_2017)
 			));
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(PHONES_12345_DS2, commsFilter);
 			assertEquals(4, communications.size());
 		}
@@ -1161,7 +1161,7 @@ public class CommunicationsManagerTest {
 		{
 			Set<AccountDeviceInstance> accountDeviceInstances
 					= hashSetOf(EMAIL_A_DS1, PHONE_1_DS2, PHONE_2_DS1);
-			Set<BlackboardArtifact> communications
+			Set<Content> communications
 					= commsMgr.getRelationshipSources(accountDeviceInstances, null);
 			assertEquals(9, communications.size());
 
