@@ -1,5 +1,5 @@
 # ===========================================================================
-#   http://www.gnu.org/software/autoconf-archive/ax_pkg_check_modules.html
+#   https://www.gnu.org/software/autoconf-archive/ax_pkg_check_modules.html
 # ===========================================================================
 #
 # SYNOPSIS
@@ -50,7 +50,7 @@
 #   and this notice are preserved.  This file is offered as-is, without any
 #   warranty.
 
-#serial 2
+#serial 3
 
 AC_DEFUN([AX_PKG_CHECK_MODULES],[
     m4_define([ax_package_requires],
