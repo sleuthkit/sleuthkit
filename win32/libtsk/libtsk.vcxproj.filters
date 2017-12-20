@@ -237,7 +237,7 @@
     <ClCompile Include="..\..\tsk\img\img_types.c">
       <Filter>img</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\tsk\img\mult_files.c">
+    <ClCompile Include="..\..\tsk\img\mult_files.cpp">
       <Filter>img</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tsk\img\raw.c">
@@ -459,6 +459,9 @@
       <Filter>img</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tsk\img\ewf.h">
+      <Filter>img</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\img\mult_files.h">
       <Filter>img</Filter>
     </ClInclude>
     <ClInclude Include="..\..\tsk\img\raw.h">
