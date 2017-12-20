@@ -7254,7 +7254,7 @@ public class SleuthkitCase {
 	 * @return A TagName data transfer object (DTO) for the new row.
 	 *
 	 * @throws TskCoreException
-	 * @Deprecated addOrUpdateTagName should be used this method calls
+	 * @deprecated addOrUpdateTagName should be used this method calls
 	 * addOrUpdateTagName with a default knownStatus value
 	 */
 	@Deprecated

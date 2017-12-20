@@ -1310,7 +1310,8 @@ public class BlackboardArtifact implements Content {
 	 * @param artifactID       The unique id for this artifact.
 	 * @param objID            The unique id of the content with which this
 	 *                         artifact is associated.
-	 * @param artifactObjID		  The unique id of the artifact, in tsk_objects
+	 * @param artifactObjID	   The unique id of the artifact, in tsk_objects
+	 * @param dataSourceObjId  The id of the data source
 	 * @param artifactTypeID   The type id of this artifact.
 	 * @param artifactTypeName The type name of this artifact.
 	 * @param displayName      The display name of this artifact.
