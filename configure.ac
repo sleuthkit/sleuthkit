@@ -216,7 +216,7 @@ else
   AS_IF([test "x$no_cppunit" = x], [ac_cv_cppunit=yes], [ac_cv_cppunit=no])
 fi
 
-AM_CONDITIONAL([HAVE_CPPUNIT],[test "x$no_cppunit" = x])
+AM_CONDITIONAL([HAVE_CPPUNIT], [test "x$ac_cv_cppunit" = xyes])
 
 dnl Test for the various java things that we need for bindings
 AS_IF([test "x$enable_java" != "xno"], [
