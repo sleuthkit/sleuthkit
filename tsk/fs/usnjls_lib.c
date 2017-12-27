@@ -16,7 +16,6 @@
  * to list changes within a NTFS File System.
  */
 
-
 #include "tsk_fs_i.h"
 #include "tsk_ntfs.h"
 
@@ -37,78 +36,83 @@ print_date(time_t secs, time_t subsecs)
 static void
 print_usn_reason(TSK_FS_USN_REASON reason)
 {
-    uint32_t flag = 1;
+    uint32_t flag;
 
     for (flag = 1; flag > 0 && flag <= reason; flag *= 2)
-        if (reason & flag)
+        if (reason & flag) {
             switch (flag) {
             case TSK_FS_USN_REASON_DATA_OVERWRITE:
-                tsk_fprintf(stdout, "DATA_OVERWRITE ");
+                tsk_fprintf(stdout, "DATA_OVERWRITE");
                 break;
             case TSK_FS_USN_REASON_DATA_EXTEND:
-                tsk_fprintf(stdout, "DATA_EXTEND ");
+                tsk_fprintf(stdout, "DATA_EXTEND");
                 break;
             case TSK_FS_USN_REASON_DATA_TRUNCATION:
-                tsk_fprintf(stdout, "DATA_TRUNCATION ");
+                tsk_fprintf(stdout, "DATA_TRUNCATION");
                 break;
             case TSK_FS_USN_REASON_NAMED_DATA_OVERWRITE:
-                tsk_fprintf(stdout, "NAMED_DATA_OVERWRITE ");
+                tsk_fprintf(stdout, "NAMED_DATA_OVERWRITE");
                 break;
             case TSK_FS_USN_REASON_NAMED_DATA_EXTEND:
-                tsk_fprintf(stdout, "NAMED_DATA_EXTEND ");
+                tsk_fprintf(stdout, "NAMED_DATA_EXTEND");
                 break;
             case TSK_FS_USN_REASON_NAMED_DATA_TRUNCATION:
-                tsk_fprintf(stdout, "NAMED_DATA_TRUNCATION ");
+                tsk_fprintf(stdout, "NAMED_DATA_TRUNCATION");
                 break;
             case TSK_FS_USN_REASON_FILE_CREATE:
-                tsk_fprintf(stdout, "FILE_CREATE ");
+                tsk_fprintf(stdout, "FILE_CREATE");
                 break;
             case TSK_FS_USN_REASON_FILE_DELETE:
-                tsk_fprintf(stdout, "FILE_DELETE ");
+                tsk_fprintf(stdout, "FILE_DELETE");
                 break;
             case TSK_FS_USN_REASON_EA_CHANGE:
-                tsk_fprintf(stdout, "EA_CHANGE ");
+                tsk_fprintf(stdout, "EA_CHANGE");
                 break;
             case TSK_FS_USN_REASON_SECURITY_CHANGE:
-                tsk_fprintf(stdout, "SECURITY_CHANGE ");
+                tsk_fprintf(stdout, "SECURITY_CHANGE");
                 break;
             case TSK_FS_USN_REASON_RENAME_OLD_NAME:
-                tsk_fprintf(stdout, "RENAME_OLD_NAME ");
+                tsk_fprintf(stdout, "RENAME_OLD_NAME");
                 break;
             case TSK_FS_USN_REASON_RENAME_NEW_NAME:
-                tsk_fprintf(stdout, "RENAME_NEW_NAME ");
+                tsk_fprintf(stdout, "RENAME_NEW_NAME");
                 break;
             case TSK_FS_USN_REASON_INDEXABLE_CHANGE:
-                tsk_fprintf(stdout, "INDEXABLE_CHANGE ");
+                tsk_fprintf(stdout, "INDEXABLE_CHANGE");
                 break;
             case TSK_FS_USN_REASON_BASIC_INFO_CHANGE:
-                tsk_fprintf(stdout, "BASIC_INFO_CHANGE ");
+                tsk_fprintf(stdout, "BASIC_INFO_CHANGE");
                 break;
             case TSK_FS_USN_REASON_HARD_LINK_CHANGE:
-                tsk_fprintf(stdout, "HARD_LINK_CHANGE ");
+                tsk_fprintf(stdout, "HARD_LINK_CHANGE");
                 break;
             case TSK_FS_USN_REASON_COMPRESSION_CHANGE:
-                tsk_fprintf(stdout, "COMPRESSION_CHANGE ");
+                tsk_fprintf(stdout, "COMPRESSION_CHANGE");
                 break;
             case TSK_FS_USN_REASON_ENCRYPTION_CHANGE:
-                tsk_fprintf(stdout, "ENCRYPTION_CHANGE ");
+                tsk_fprintf(stdout, "ENCRYPTION_CHANGE");
                 break;
             case TSK_FS_USN_REASON_OBJECT_ID_CHANGE:
-                tsk_fprintf(stdout, "OBJECT_ID_CHANGE ");
+                tsk_fprintf(stdout, "OBJECT_ID_CHANGE");
                 break;
             case TSK_FS_USN_REASON_REPARSE_POINT_CHANGE:
-                tsk_fprintf(stdout, "REPARSE_POINT_CHANGE ");
+                tsk_fprintf(stdout, "REPARSE_POINT_CHANGE");
                 break;
             case TSK_FS_USN_REASON_STREAM_CHANGE:
-                tsk_fprintf(stdout, "STREAM_CHANGE ");
+                tsk_fprintf(stdout, "STREAM_CHANGE");
                 break;
             case TSK_FS_USN_REASON_CLOSE:
-                tsk_fprintf(stdout, "CLOSE ");
+                tsk_fprintf(stdout, "CLOSE");
                 break;
             default:
-                tsk_fprintf(stdout, "UNKNOWN ");
+                tsk_fprintf(stdout, "UNKNOWN");
                 break;
             }
+
+            /* Blank space between each reason */
+            if (flag * 2 > 0 && flag * 2 < reason)
+                tsk_fprintf(stdout, " ");
+        }
 }
 
 
@@ -212,15 +216,16 @@ print_usn_attributes(TSK_FS_NTFS_FILE_ATTRIBUTES attributes)
 
 
 static TSK_WALK_RET_ENUM
-print_v2_record(TSK_USN_RECORD_HEADER *header, TSK_USN_RECORD_V2 *record)
+print_v2_record(TSK_USN_RECORD *record)
 {
     tsk_fprintf(stdout, "%" PRIu64 "-%" PRIu32 "\t" "%" PRIu64 "-%" PRIu32 "\t"
                 "%" PRIu32 ".%" PRIu32 "\t",
                 record->refnum, record->refnum_seq, record->parent_refnum,
-                record->parent_refnum_seq, record->time_sec, record->time_nsec);
+                record->parent_refnum_seq,
+                record->v2.time_sec, record->v2.time_nsec);
     print_usn_reason(record->reason);
     tsk_fprintf(stdout, "\t");
-    if (tsk_print_sanitized(stdout, record->fname) == 1)
+    if (tsk_print_sanitized(stdout, record->v2.fname) == 1)
         return TSK_WALK_ERROR;
     tsk_fprintf(stdout, "\n");
 
@@ -229,18 +234,18 @@ print_v2_record(TSK_USN_RECORD_HEADER *header, TSK_USN_RECORD_V2 *record)
 
 
 static TSK_WALK_RET_ENUM
-print_v2_record_long(TSK_USN_RECORD_HEADER *header, TSK_USN_RECORD_V2 *record)
+print_v2_record_long(TSK_USN_RECORD *record)
 {
     tsk_fprintf(stdout,
                 "Version: %" PRIu32 ".%" PRIu32 " Length: %" PRIu32 "\n"
                 "Reference Number: %" PRIu64 "-%" PRIu32 "\n"
                 "Parent Reference Number: %" PRIu64 "-%" PRIu32 "\n"
                 "Update Sequence Number: %" PRIu32 "\n",
-                header->major_version, header->minor_version,
-                header->length, record->refnum, record->refnum_seq,
+                record->major_version, record->minor_version,
+                record->length, record->refnum, record->refnum_seq,
                 record->parent_refnum, record->parent_refnum_seq, record->usn);
     tsk_fprintf(stdout, "Time: ");
-    print_date(record->time_sec, record->time_nsec);
+    print_date(record->v2.time_sec, record->v2.time_nsec);
     tsk_fprintf(stdout, "\n");
     tsk_fprintf(stdout, "Reason: ");
     print_usn_reason(record->reason);
@@ -248,12 +253,12 @@ print_v2_record_long(TSK_USN_RECORD_HEADER *header, TSK_USN_RECORD_V2 *record)
     tsk_fprintf(stdout, "Source Info: ");
     print_usn_source_info(record->source_info);
     tsk_fprintf(stdout, "\n");
-    tsk_fprintf(stdout, "Security Id: %" PRIu32 "\n", record->security);
+    tsk_fprintf(stdout, "Security Id: %" PRIu32 "\n", record->v2.security);
     tsk_fprintf(stdout, "Attributes: ");
-    print_usn_attributes(record->attributes);
+    print_usn_attributes(record->v2.attributes);
     tsk_fprintf(stdout, "\n");
     tsk_fprintf(stdout, "Name: ");
-    if (tsk_print_sanitized(stdout, record->fname) == 1)
+    if (tsk_print_sanitized(stdout, record->v2.fname) == 1)
         return TSK_WALK_ERROR;
     tsk_fprintf(stdout, "\n\n");
 
@@ -262,19 +267,20 @@ print_v2_record_long(TSK_USN_RECORD_HEADER *header, TSK_USN_RECORD_V2 *record)
 
 
 static TSK_WALK_RET_ENUM
-print_v2_record_mac(TSK_USN_RECORD_HEADER *header, TSK_USN_RECORD_V2 *record)
+print_v2_record_mac(TSK_USN_RECORD *record)
 {
     tsk_fprintf(stdout, "%" PRIu32 ".%" PRIu32 "|" "%" PRIu32 "|"
                 "%" PRIu64 "-%" PRIu32 "|" "%" PRIu64 "-%" PRIu32 "|"
-                "%" PRIu32 "|" "%" PRIu32 ".%" PRIu32 "|" "%" PRIu32 "|"
-                "%" PRIu32 "|" "%" PRIu32 "|" "%" PRIu32 "|",
-                header->major_version, header->minor_version,
-                header->length, record->refnum, record->refnum_seq,
+                "%" PRIu32 "|" "%" PRIu32 ".%" PRIu32 "|",
+                record->major_version, record->minor_version,
+                record->length, record->refnum, record->refnum_seq,
                 record->parent_refnum, record->parent_refnum_seq,
-                record->usn, record->time_sec, record->time_nsec,
-                record->reason, record->source_info, record->security,
-                record->attributes);
-    if (tsk_print_sanitized(stdout, record->fname) == 1)
+                record->usn, record->v2.time_sec, record->v2.time_nsec);
+    print_usn_reason(record->reason);
+    tsk_fprintf(stdout, "|" "%" PRIu32 "|" "%" PRIu32 "|" "%" PRIu32 "|",
+                record->source_info, record->v2.security,
+                record->v2.attributes);
+    if (tsk_print_sanitized(stdout, record->v2.fname) == 1)
         return TSK_WALK_ERROR;
     tsk_fprintf(stdout, "\n");
 
@@ -286,21 +292,19 @@ print_v2_record_mac(TSK_USN_RECORD_HEADER *header, TSK_USN_RECORD_V2 *record)
  * call back action function for usnjentry_walk
  */
 static TSK_WALK_RET_ENUM
-print_usnjent_act(TSK_USN_RECORD_HEADER *a_header, void *a_record, void *a_ptr)
+print_usnjent_act(TSK_USN_RECORD *a_record, void *a_ptr)
 {
     TSK_FS_USNJLS_FLAG_ENUM *flag = (TSK_FS_USNJLS_FLAG_ENUM*) a_ptr;
 
-    switch(a_header->major_version) {
+    switch(a_record->major_version) {
     case 2: {
-        TSK_USN_RECORD_V2 *record = (TSK_USN_RECORD_V2 *) a_record;
-
         switch(*flag) {
         case TSK_FS_USNJLS_NONE:
-            return print_v2_record(a_header, record);
+            return print_v2_record(a_record);
         case TSK_FS_USNJLS_LONG:
-            return print_v2_record_long(a_header, record);
+            return print_v2_record_long(a_record);
         case TSK_FS_USNJLS_MAC:
-            return print_v2_record_mac(a_header, record);
+            return print_v2_record_mac(a_record);
         }
     }
     default: return TSK_WALK_ERROR;
