@@ -41,7 +41,20 @@ public class HashUtility {
 	 *
 	 * @return md5 of the given FsContent object
 	 */
-	static public String calculateMd5(AbstractFile file) throws IOException {
+	//static public String calculateMd5(AbstractFile file) throws IOException {
+	//	return calculateMd5(file, true);
+	//}
+	
+	/**
+	 * Calculate the MD5 hash for the given FsContent and optionally store it in the
+	 * database. The hash will always be written to the AbstractFile object.
+	 *
+	 * @param file file object whose md5 hash we want to calculate
+	 * @param saveToDatabase true to save the hash to the database immediately
+	 *
+	 * @return md5 of the given FsContent object
+	 */
+	static public String calculateMd5(AbstractFile file, boolean saveToDatabase) throws IOException {
 		String hashText = "";
 		InputStream in = new ReadContentInputStream(file);
 		Logger logger = Logger.getLogger(HashUtility.class.getName());
@@ -61,11 +74,13 @@ public class HashUtility {
 				hashText = "0" + hashText;
 			}
 			file.setMd5Hash(hashText);
-			//file.getSleuthkitCase().setMd5Hash(file, hashText);
+			if(saveToDatabase){
+				file.getSleuthkitCase().setMd5Hash(file, hashText);
+			}
 		} catch (NoSuchAlgorithmException ex) {
 			logger.log(Level.WARNING, "No algorithm known as 'md5'", ex); //NON-NLS
-		//} catch (TskCoreException ex) {
-		//	logger.log(Level.WARNING, "Error updating content's md5 in database", ex); //NON-NLS
+		} catch (TskCoreException ex) {
+			logger.log(Level.WARNING, "Error updating content's md5 in database", ex); //NON-NLS
 		} finally {
 			in.close();
 		}

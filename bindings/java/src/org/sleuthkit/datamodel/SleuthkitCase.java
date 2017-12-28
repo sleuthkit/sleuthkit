@@ -6887,34 +6887,13 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
-	
-	/**
-	 * Testing method. Fields should already be set in the file object
-	 * @param file 
-	 */
-	public void setKnownAndFileTypeAndMD5(AbstractFile file) throws TskCoreException{
-		CaseDbConnection connection = connections.getConnection();
-		Statement statement = null;
-		//ResultSet rs = null;
-		acquireExclusiveLock();
-		try {
-			statement = connection.createStatement();
-			connection.executeUpdate(statement, String.format("UPDATE tsk_files SET mime_type = '%s', md5 = '%s', known = '%s' WHERE obj_id = %d",
-					file.getMIMEType(), file.getMd5Hash(), file.getKnown().getFileKnownValue(), file.getId()));
-			//file.setMIMEType(mimeType);
-		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error setting MIME type for file (obj_id = %s)", file.getId()), ex);
-		} finally {
-			//closeResultSet(rs);
-			closeStatement(statement);
-			connection.close();
-			releaseExclusiveLock();
-		}
-	}
 
 	/**
 	 * Store the known status for the FsContent in the database Note: will not
 	 * update status if content is already 'Known Bad'
+	 * 
+	 * This method is no longer called during normal ingest, as we save writing
+	 * the known status until the end.
 	 *
 	 * @param	file      The AbstractFile object
 	 * @param	fileKnown The object's known status
@@ -6924,7 +6903,6 @@ public class SleuthkitCase {
 	 * @throws TskCoreException thrown if a critical error occurred within tsk
 	 *                          core
 	 */
-	/*
 	public boolean setKnown(AbstractFile file, FileKnown fileKnown) throws TskCoreException {
 		long id = file.getId();
 		FileKnown currentKnown = file.getKnown();
@@ -6948,18 +6926,21 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 		return true;
-	}*/
+	}
 
 	/**
 	 * Stores the MIME type of a file in the case database and updates the MIME
 	 * type of the given file object.
+	 * 
+	 * This method is no longer called during normal ingest, as we save writing
+	 * the MIME type until the end.
 	 *
 	 * @param file     A file.
 	 * @param mimeType The MIME type.
 	 *
 	 * @throws TskCoreException If there is an error updating the case database.
 	 */
-	/*public void setFileMIMEType(AbstractFile file, String mimeType) throws TskCoreException {
+	public void setFileMIMEType(AbstractFile file, String mimeType) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		Statement statement = null;
 		ResultSet rs = null;
@@ -6976,10 +6957,13 @@ public class SleuthkitCase {
 			connection.close();
 			releaseSingleUserCaseWriteLock();
 		}
-	}*/
+	}
 
 	/**
 	 * Store the md5Hash for the file in the database
+	 * 
+	 * This method is no longer called during normal ingest, as we save writing
+	 * the hash until the end.
 	 *
 	 * @param	file    The file object
 	 * @param	md5Hash The object's md5Hash
@@ -6987,7 +6971,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException thrown if a critical error occurred within tsk
 	 *                          core
 	 */
-	/*void setMd5Hash(AbstractFile file, String md5Hash) throws TskCoreException {
+	void setMd5Hash(AbstractFile file, String md5Hash) throws TskCoreException {
 		if (md5Hash == null) {
 			return;
 		}
@@ -7007,7 +6991,7 @@ public class SleuthkitCase {
 			connection.close();
 			releaseSingleUserCaseWriteLock();
 		}
-	}*/
+	}
 
 	/**
 	 * Set the review status of the given artifact to newStatus
