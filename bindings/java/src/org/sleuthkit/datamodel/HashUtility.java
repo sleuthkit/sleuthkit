@@ -41,9 +41,9 @@ public class HashUtility {
 	 *
 	 * @return md5 of the given FsContent object
 	 */
-	//static public String calculateMd5(AbstractFile file) throws IOException {
-	//	return calculateMd5(file, true);
-	//}
+	static public String calculateMd5(AbstractFile file) throws IOException {
+		return calculateMd5(file, true);
+	}
 	
 	/**
 	 * Calculate the MD5 hash for the given FsContent and optionally store it in the
