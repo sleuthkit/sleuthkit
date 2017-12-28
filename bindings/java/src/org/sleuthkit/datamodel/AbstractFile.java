@@ -1192,7 +1192,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 *
 	 * @return formatted date time string as "yyyy-MM-dd HH:mm:ss"
 	 * 
-	 * @Deprecated
+	 * @deprecated
 	 */
 	 @Deprecated
 	public static String epochToTime(long epoch) {
@@ -1208,7 +1208,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 *
 	 * @return formatted date time string as "yyyy-MM-dd HH:mm:ss"
 	 * 
-	 * @Deprecated
+	 * @deprecated
 	 */
 	@Deprecated
 	public static String epochToTime(long epoch, TimeZone tzone) {
