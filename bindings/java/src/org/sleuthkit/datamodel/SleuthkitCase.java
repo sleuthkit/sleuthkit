@@ -6891,9 +6891,6 @@ public class SleuthkitCase {
 	/**
 	 * Store the known status for the FsContent in the database Note: will not
 	 * update status if content is already 'Known Bad'
-	 * 
-	 * This method is no longer called during normal ingest, as we save writing
-	 * the known status until the end.
 	 *
 	 * @param	file      The AbstractFile object
 	 * @param	fileKnown The object's known status
@@ -6931,9 +6928,6 @@ public class SleuthkitCase {
 	/**
 	 * Stores the MIME type of a file in the case database and updates the MIME
 	 * type of the given file object.
-	 * 
-	 * This method is no longer called during normal ingest, as we save writing
-	 * the MIME type until the end.
 	 *
 	 * @param file     A file.
 	 * @param mimeType The MIME type.
@@ -6961,9 +6955,6 @@ public class SleuthkitCase {
 
 	/**
 	 * Store the md5Hash for the file in the database
-	 * 
-	 * This method is no longer called during normal ingest, as we save writing
-	 * the hash until the end.
 	 *
 	 * @param	file    The file object
 	 * @param	md5Hash The object's md5Hash

@@ -1073,7 +1073,7 @@ public abstract class AbstractFile extends AbstractContent {
 			connection.executeUpdate(statement, String.format("UPDATE tsk_files SET mime_type = '%s', md5 = '%s', known = '%s' WHERE obj_id = %d",
 					this.getMIMEType(), this.getMd5Hash(), this.getKnown().getFileKnownValue(), this.getId()));
 		} catch (SQLException ex) {
-			throw new TskCoreException(String.format("Error setting MIME type for file (obj_id = %s)", this.getId()), ex);
+			throw new TskCoreException(String.format("Error saving properties for file (obj_id = %s)", this.getId()), ex);
 		} finally {
 			closeStatement(statement);
 			connection.close();

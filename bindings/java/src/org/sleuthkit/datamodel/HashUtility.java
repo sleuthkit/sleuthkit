@@ -32,22 +32,10 @@ import java.io.InputStream;
 public class HashUtility {
 
 	private final static int BUFFER_SIZE = 16 * 1024;
-
-	/**
-	 * Calculate the MD5 hash for the given FsContent and store it in the
-	 * database
-	 *
-	 * @param file file object whose md5 hash we want to calculate
-	 *
-	 * @return md5 of the given FsContent object
-	 */
-	static public String calculateMd5(AbstractFile file) throws IOException {
-		return calculateMd5(file, true);
-	}
 	
 	/**
 	 * Calculate the MD5 hash for the given FsContent and optionally store it in the
-	 * database. The hash will always be written to the AbstractFile object.
+	 * database.
 	 *
 	 * @param file file object whose md5 hash we want to calculate
 	 * @param saveToDatabase true to save the hash to the database immediately
@@ -73,7 +61,7 @@ public class HashUtility {
 			while (hashText.length() < 32) {
 				hashText = "0" + hashText;
 			}
-			file.setMd5Hash(hashText);
+			
 			if(saveToDatabase){
 				file.getSleuthkitCase().setMd5Hash(file, hashText);
 			}
@@ -98,5 +86,22 @@ public class HashUtility {
 	 */
 	public static boolean isNoDataMd5(String md5) {
 		return md5.toLowerCase().equals("d41d8cd98f00b204e9800998ecf8427e"); //NON-NLS
+	}
+	
+	/**
+	 * Calculate the MD5 hash for the given FsContent and store it in the
+	 * database
+	 *
+	 * @param file file object whose md5 hash we want to calculate
+	 *
+	 * @return md5 of the given FsContent object
+	 * 
+	 * @deprecated
+	 */
+	@Deprecated
+	static public String calculateMd5(AbstractFile file) throws IOException {
+		String md5Hash = calculateMd5(file, true);
+		file.setMd5Hash(md5Hash);
+		return md5Hash;
 	}
 }
