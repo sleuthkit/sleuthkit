@@ -21,6 +21,8 @@ package org.sleuthkit.datamodel;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +32,7 @@ import java.util.SortedSet;
 import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import static org.sleuthkit.datamodel.SleuthkitCase.closeStatement;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -432,7 +435,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 *
 	 * @param mimeType The mimeType to set for this file.
 	 */
-	void setMIMEType(String mimeType) {
+	public void setMIMEType(String mimeType) {
 		this.mimeType = mimeType;
 	}
 
@@ -447,7 +450,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 *
 	 * @param md5Hash
 	 */
-	void setMd5Hash(String md5Hash) {
+	public void setMd5Hash(String md5Hash) {
 		this.md5Hash = md5Hash;
 	}
 
@@ -467,7 +470,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 *
 	 * @param known
 	 */
-	void setKnown(TskData.FileKnown known) {
+	public void setKnown(TskData.FileKnown known) {
 		this.knownState = known;
 	}
 
@@ -1052,6 +1055,29 @@ public abstract class AbstractFile extends AbstractContent {
 			return MimeMatchEnum.TRUE;
 		}
 		return MimeMatchEnum.FALSE;
+	}
+	
+	/**
+	 * Save file properties to the database.
+	 * Currently, this saves md5, file known status, and file type.
+	 * 
+	 * @param caseDb
+	 * @throws TskCoreException 
+	 */
+	public void save(SleuthkitCase caseDb) throws TskCoreException {
+		SleuthkitCase.CaseDbConnection connection = caseDb.getConnection();
+		Statement statement = null;
+
+		try {
+			statement = connection.createStatement();
+			connection.executeUpdate(statement, String.format("UPDATE tsk_files SET mime_type = '%s', md5 = '%s', known = '%s' WHERE obj_id = %d",
+					this.getMIMEType(), this.getMd5Hash(), this.getKnown().getFileKnownValue(), this.getId()));
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error saving properties for file (obj_id = %s)", this.getId()), ex);
+		} finally {
+			closeStatement(statement);
+			connection.close();
+		}
 	}
 
 	/**
