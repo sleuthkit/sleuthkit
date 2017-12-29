@@ -34,17 +34,16 @@ public class HashUtility {
 	private final static int BUFFER_SIZE = 16 * 1024;
 	
 	/**
-	 * Calculate the MD5 hash for the given FsContent and optionally store it in the
-	 * database.
+	 * Calculate the MD5 hash for the given FsContent
 	 *
-	 * @param file file object whose md5 hash we want to calculate
-	 * @param saveToDatabase true to save the hash to the database immediately
+	 * @param content content object whose md5 hash we want to calculate
 	 *
 	 * @return md5 of the given FsContent object
+	 * @throws java.io.IOException
 	 */
-	static public String calculateMd5(AbstractFile file, boolean saveToDatabase) throws IOException {
+	static public String calculateMd5Hash(Content content) throws IOException {
 		String hashText = "";
-		InputStream in = new ReadContentInputStream(file);
+		InputStream in = new ReadContentInputStream(content);
 		Logger logger = Logger.getLogger(HashUtility.class.getName());
 		try {
 			byte[] buffer = new byte[BUFFER_SIZE];
@@ -61,14 +60,8 @@ public class HashUtility {
 			while (hashText.length() < 32) {
 				hashText = "0" + hashText;
 			}
-			
-			if(saveToDatabase){
-				file.getSleuthkitCase().setMd5Hash(file, hashText);
-			}
 		} catch (NoSuchAlgorithmException ex) {
 			logger.log(Level.WARNING, "No algorithm known as 'md5'", ex); //NON-NLS
-		} catch (TskCoreException ex) {
-			logger.log(Level.WARNING, "Error updating content's md5 in database", ex); //NON-NLS
 		} finally {
 			in.close();
 		}
@@ -95,13 +88,19 @@ public class HashUtility {
 	 * @param file file object whose md5 hash we want to calculate
 	 *
 	 * @return md5 of the given FsContent object
+	 * @throws java.io.IOException
 	 * 
 	 * @deprecated
 	 */
 	@Deprecated
 	static public String calculateMd5(AbstractFile file) throws IOException {
-		String md5Hash = calculateMd5(file, true);
-		file.setMd5Hash(md5Hash);
+		Logger logger = Logger.getLogger(HashUtility.class.getName());
+		String md5Hash = calculateMd5Hash(file);
+		try{
+			file.getSleuthkitCase().setMd5Hash(file, md5Hash);
+		} catch (TskCoreException ex) {
+			logger.log(Level.WARNING, "Error updating content's md5 in database", ex); //NON-NLS
+		}
 		return md5Hash;
 	}
 }
