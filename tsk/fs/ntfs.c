@@ -1878,7 +1878,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
 
             /* Check that there is room for the data.
              * Non-resident data needs 64 bytes total */
-            if (((uintptr_t)attr + 24) > ((uintptr_t)a_attrseq + len)) {
+            if (((uintptr_t)attr + 64) > ((uintptr_t)a_attrseq + len)) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_CORRUPT);
                 tsk_error_set_errstr("ntfs_attr_walk: Non-Resident attribute %"
