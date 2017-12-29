@@ -1695,9 +1695,11 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
     }
 
 
-    /* Cycle through the list of attributes */
+    /* Cycle through the list of attributes 
+     * There are 16 bytes in the non-union part of 
+     * an ntfs_attr, so make sure there is at least room for that */
     for (attr = a_attrseq; ((uintptr_t) attr >= (uintptr_t) a_attrseq)
-        && ((uintptr_t) attr <= ((uintptr_t) a_attrseq + len))
+        && ((uintptr_t) attr + 16 <= ((uintptr_t) a_attrseq + len))
         && (tsk_getu32(fs->endian, attr->len) > 0
             && (tsk_getu32(fs->endian, attr->type) !=
                 0xffffffff));
@@ -1795,6 +1797,18 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                     PRIu32 " Id: %" PRIu16 " IdNew: %" PRIu16
                     " Name: %s\n", type, id, id_new, name);
 
+            /* Check that there is room for the data.
+             * Resident data needs 24 bytes total */
+            if (((uintptr_t)attr + 24) > ((uintptr_t)a_attrseq + len)) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_CORRUPT);
+                tsk_error_set_errstr("ntfs_attr_walk: Resident attribute %"
+                    PRIuINUM "-%" PRIu32
+                    " starting offset and length too large",
+                    fs_file->meta->addr, type);
+                return TSK_COR;
+            }
+
             /* Validate the offset lengths */
             if (((tsk_getu16(fs->endian,
                             attr->c.r.soff) + (uintptr_t) attr) >
@@ -1861,6 +1875,18 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                     " Name: %s  Start VCN: %" PRIu64 "\n", type, id,
                     id_new, name, tsk_getu64(fs->endian,
                         attr->c.nr.start_vcn));
+
+            /* Check that there is room for the data.
+             * Non-resident data needs 64 bytes total */
+            if (((uintptr_t)attr + 24) > ((uintptr_t)a_attrseq + len)) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_CORRUPT);
+                tsk_error_set_errstr("ntfs_attr_walk: Non-Resident attribute %"
+                    PRIuINUM "-%" PRIu32
+                    " starting offset and length too large",
+                    fs_file->meta->addr, type);
+                return TSK_COR;
+            }
 
             // sanity check
             if (tsk_getu16(fs->endian, attr->c.nr.run_off) > tsk_getu32(fs->endian, attr->len)) {
