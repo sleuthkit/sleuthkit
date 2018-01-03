@@ -74,11 +74,14 @@ public abstract class AbstractFile extends AbstractContent {
 	 * knownState status in database
 	 */
 	protected TskData.FileKnown knownState;
+	private boolean knownStateDirty = false;
 	/*
 	 * md5 hash
 	 */
 	protected String md5Hash;
+	private boolean md5HashDirty = false;
 	private String mimeType;
+	private boolean mimeTypeDirty = false;
 	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private long dataSourceObjectId;
@@ -437,6 +440,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	public void setMIMEType(String mimeType) {
 		this.mimeType = mimeType;
+		this.mimeTypeDirty = true;
 	}
 
 	public boolean isModeSet(TskData.TSK_FS_META_MODE_ENUM mode) {
@@ -452,6 +456,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	public void setMd5Hash(String md5Hash) {
 		this.md5Hash = md5Hash;
+		this.md5HashDirty = true;
 	}
 
 	/**
@@ -472,6 +477,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	public void setKnown(TskData.FileKnown known) {
 		this.knownState = known;
+		this.knownStateDirty = true;
 	}
 
 	/**
@@ -1065,13 +1071,41 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @throws TskCoreException 
 	 */
 	public void save(SleuthkitCase caseDb) throws TskCoreException {
+		
+		// No fields have been updated
+		if( ! (md5HashDirty || mimeTypeDirty || knownStateDirty)) {
+			return;
+		}
+		
+		String queryStr = "";
+		if(mimeTypeDirty) {
+			queryStr = "mime_type = '" + this.getMIMEType() + "'";
+		}
+		if(md5HashDirty) {
+			if(! queryStr.isEmpty()) {
+				queryStr += ", ";
+			}
+			queryStr += "md5 = '" + this.getMd5Hash() + "'";
+		}
+		if(knownStateDirty) {
+			if(! queryStr.isEmpty()) {
+				queryStr += ", ";
+			}
+			queryStr += "known = '" + this.getKnown().getFileKnownValue() + "'";
+		}
+		
+		queryStr = "UPDATE tsk_files SET " + queryStr + " WHERE obj_id = " + this.getId();
+		
 		SleuthkitCase.CaseDbConnection connection = caseDb.getConnection();
 		Statement statement = null;
 
 		try {
 			statement = connection.createStatement();
-			connection.executeUpdate(statement, String.format("UPDATE tsk_files SET mime_type = '%s', md5 = '%s', known = '%s' WHERE obj_id = %d",
-					this.getMIMEType(), this.getMd5Hash(), this.getKnown().getFileKnownValue(), this.getId()));
+			connection.executeUpdate(statement, queryStr);
+			
+			md5HashDirty = false;
+			mimeTypeDirty = false;
+			knownStateDirty = false;
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error saving properties for file (obj_id = %s)", this.getId()), ex);
 		} finally {
