@@ -439,7 +439,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * IMPORTANT: The MIME type is set for this AbstractFile object, but it is
 	 * not saved to the case database until AbstractFile.save is called.
 	 *
-	 * @param mimeType The mimeType to set for this file.
+	 * @param mimeType The MIME type of this file.
 	 */
 	public void setMIMEType(String mimeType) {
 		this.mimeType = mimeType;
@@ -456,7 +456,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * IMPORTANT: The MD5 hash is set for this AbstractFile object, but it is
 	 * not saved to the case database until AbstractFile.save is called.
 	 *
-	 * @param md5Hash
+	 * @param md5Hash The MD5 hash of the file.
 	 */
 	public void setMd5Hash(String md5Hash) {
 		this.md5Hash = md5Hash;
@@ -473,15 +473,15 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Sets the known status for this file.
+	 * Sets the known state for this file.
 	 *
-	 * IMPORTANT: The known status is set for this AbstractFile object, but it
-	 * is not saved to the case database until AbstractFile.save is called.
+	 * IMPORTANT: The known state is set for this AbstractFile object, but it is
+	 * not saved to the case database until AbstractFile.save is called.
 	 *
-	 * @param known
+	 * @param knownState The known state of the file
 	 */
-	public void setKnown(TskData.FileKnown known) {
-		this.knownState = known;
+	public void setKnown(TskData.FileKnown knownState) {
+		this.knownState = knownState;
 		this.knownStateDirty = true;
 	}
 
@@ -1066,12 +1066,13 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Save file properties to the database. Currently, this saves md5, file
-	 * known status, and file type.
+	 * Saves the editable file properties of this file to the case database,
+	 * e.g., the MIME type, MD5 hash, and known state.
 	 *
 	 * @param caseDb
 	 *
-	 * @throws TskCoreException
+	 * @throws TskCoreException if there is an error saving the editable file
+	 *                          properties to the case database.
 	 */
 	public void save(SleuthkitCase caseDb) throws TskCoreException {
 
