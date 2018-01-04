@@ -167,7 +167,7 @@ public abstract class AbstractFile extends AbstractContent {
 		}
 		this.parentPath = parentPath;
 		this.mimeType = mimeType;
-		this.extension = extension == null?"":extension;
+		this.extension = extension == null ? "" : extension;
 		this.encodingType = TskData.EncodingType.NONE;
 	}
 
@@ -436,7 +436,10 @@ public abstract class AbstractFile extends AbstractContent {
 	/**
 	 * Sets the MIME type for this file.
 	 *
-	 * @param mimeType The mimeType to set for this file.
+	 * IMPORTANT: The MIME type is set for this AbstractFile object, but it is
+	 * not saved to the case database until AbstractFile.save is called.
+	 *
+	 * @param mimeType The MIME type of this file.
 	 */
 	public void setMIMEType(String mimeType) {
 		this.mimeType = mimeType;
@@ -448,11 +451,12 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Sets md5 hash string Note: database or other FsContent objects are not
-	 * updated. Currently only SleuthkiCase calls it to update the object while
-	 * updating tsk_files entry
+	 * Sets the MD5 hash for this file.
 	 *
-	 * @param md5Hash
+	 * IMPORTANT: The MD5 hash is set for this AbstractFile object, but it is
+	 * not saved to the case database until AbstractFile.save is called.
+	 *
+	 * @param md5Hash The MD5 hash of the file.
 	 */
 	public void setMd5Hash(String md5Hash) {
 		this.md5Hash = md5Hash;
@@ -469,14 +473,15 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Sets knownState status Note: database or other file objects are not
-	 * updated. Currently only SleuthkiCase calls it to update the object while
-	 * updating tsk_files entry
+	 * Sets the known state for this file.
 	 *
-	 * @param known
+	 * IMPORTANT: The known state is set for this AbstractFile object, but it is
+	 * not saved to the case database until AbstractFile.save is called.
+	 *
+	 * @param knownState The known state of the file.
 	 */
-	public void setKnown(TskData.FileKnown known) {
-		this.knownState = known;
+	public void setKnown(TskData.FileKnown knownState) {
+		this.knownState = knownState;
 		this.knownStateDirty = true;
 	}
 
@@ -1032,9 +1037,6 @@ public abstract class AbstractFile extends AbstractContent {
 				+ "]\t";
 	}
 
-	
-	
-
 	/**
 	 * Possible return values for comparing a file to a list of mime types
 	 */
@@ -1062,47 +1064,49 @@ public abstract class AbstractFile extends AbstractContent {
 		}
 		return MimeMatchEnum.FALSE;
 	}
-	
+
 	/**
-	 * Save file properties to the database.
-	 * Currently, this saves md5, file known status, and file type.
-	 * 
+	 * Saves the editable file properties of this file to the case database,
+	 * e.g., the MIME type, MD5 hash, and known state.
+	 *
 	 * @param caseDb
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException if there is an error saving the editable file
+	 *                          properties to the case database.
 	 */
 	public void save(SleuthkitCase caseDb) throws TskCoreException {
-		
+
 		// No fields have been updated
-		if( ! (md5HashDirty || mimeTypeDirty || knownStateDirty)) {
+		if (!(md5HashDirty || mimeTypeDirty || knownStateDirty)) {
 			return;
 		}
-		
+
 		String queryStr = "";
-		if(mimeTypeDirty) {
+		if (mimeTypeDirty) {
 			queryStr = "mime_type = '" + this.getMIMEType() + "'";
 		}
-		if(md5HashDirty) {
-			if(! queryStr.isEmpty()) {
+		if (md5HashDirty) {
+			if (!queryStr.isEmpty()) {
 				queryStr += ", ";
 			}
 			queryStr += "md5 = '" + this.getMd5Hash() + "'";
 		}
-		if(knownStateDirty) {
-			if(! queryStr.isEmpty()) {
+		if (knownStateDirty) {
+			if (!queryStr.isEmpty()) {
 				queryStr += ", ";
 			}
 			queryStr += "known = '" + this.getKnown().getFileKnownValue() + "'";
 		}
-		
+
 		queryStr = "UPDATE tsk_files SET " + queryStr + " WHERE obj_id = " + this.getId();
-		
+
 		SleuthkitCase.CaseDbConnection connection = caseDb.getConnection();
 		Statement statement = null;
 
 		try {
 			statement = connection.createStatement();
 			connection.executeUpdate(statement, queryStr);
-			
+
 			md5HashDirty = false;
 			mimeTypeDirty = false;
 			knownStateDirty = false;
@@ -1238,43 +1242,42 @@ public abstract class AbstractFile extends AbstractContent {
 	protected void setLocalPath(String localPath, boolean isAbsolute) {
 		setLocalFilePath(localPath, isAbsolute);
 	}
-	
+
 	/*
 	 * -------------------------------------------------------------------------
 	 * Util methods to convert / map the data
 	 * -------------------------------------------------------------------------
 	 */
-	
 	/**
 	 * Return the epoch into string in ISO 8601 dateTime format
 	 *
 	 * @param epoch time in seconds
 	 *
 	 * @return formatted date time string as "yyyy-MM-dd HH:mm:ss"
-	 * 
+	 *
 	 * @deprecated
 	 */
-	 @Deprecated
+	@Deprecated
 	public static String epochToTime(long epoch) {
 		return TimeUtilities.epochToTime(epoch);
 	}
 
 	/**
-	 * Return the epoch into string in ISO 8601 dateTime format, 
-	 * in the given timezone
+	 * Return the epoch into string in ISO 8601 dateTime format, in the given
+	 * timezone
 	 *
 	 * @param epoch time in seconds
 	 * @param tzone time zone
 	 *
 	 * @return formatted date time string as "yyyy-MM-dd HH:mm:ss"
-	 * 
+	 *
 	 * @deprecated
 	 */
 	@Deprecated
 	public static String epochToTime(long epoch, TimeZone tzone) {
 		return TimeUtilities.epochToTime(epoch, tzone);
 	}
-	
+
 	/**
 	 * Convert from ISO 8601 formatted date time string to epoch time in seconds
 	 *
