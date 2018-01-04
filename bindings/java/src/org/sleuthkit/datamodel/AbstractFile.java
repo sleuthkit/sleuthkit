@@ -478,7 +478,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 * IMPORTANT: The known state is set for this AbstractFile object, but it is
 	 * not saved to the case database until AbstractFile.save is called.
 	 *
-	 * @param knownState The known state of the file
+	 * @param knownState The known state of the file.
 	 */
 	public void setKnown(TskData.FileKnown knownState) {
 		this.knownState = knownState;
