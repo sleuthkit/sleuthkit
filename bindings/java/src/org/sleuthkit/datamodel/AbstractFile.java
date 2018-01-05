@@ -1069,12 +1069,10 @@ public abstract class AbstractFile extends AbstractContent {
 	 * Saves the editable file properties of this file to the case database,
 	 * e.g., the MIME type, MD5 hash, and known state.
 	 *
-	 * @param caseDb
-	 *
 	 * @throws TskCoreException if there is an error saving the editable file
 	 *                          properties to the case database.
 	 */
-	public void save(SleuthkitCase caseDb) throws TskCoreException {
+	public void save() throws TskCoreException {
 
 		// No fields have been updated
 		if (!(md5HashDirty || mimeTypeDirty || knownStateDirty)) {
@@ -1100,7 +1098,7 @@ public abstract class AbstractFile extends AbstractContent {
 
 		queryStr = "UPDATE tsk_files SET " + queryStr + " WHERE obj_id = " + this.getId();
 
-		SleuthkitCase.CaseDbConnection connection = caseDb.getConnection();
+		SleuthkitCase.CaseDbConnection connection = getSleuthkitCase().getConnection();
 		Statement statement = null;
 
 		try {
