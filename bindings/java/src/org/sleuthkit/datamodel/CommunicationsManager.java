@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2017 Basis Technology Corp.
+ * Copyright 2017-18 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -660,7 +660,7 @@ public class CommunicationsManager {
 
 		try {
 			String dateTimeValStr = (dateTime > 0) ? Long.toString(dateTime) : "NULL";
-			
+
 			connection.beginTransaction();
 			s = connection.createStatement();
 			String query = "INTO account_relationships (account1_id, account2_id, relationship_source_obj_id, date_time, relationship_type, data_source_obj_id  ) "
@@ -940,6 +940,98 @@ public class CommunicationsManager {
 			return relationshipSources;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting relationships for account. " + ex.getMessage(), ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			db.releaseSingleUserCaseReadLock();
+		}
+	}
+
+	public List<AccountDeviceInstance> getRelatedAccountDeviceInstances(AccountDeviceInstance accountDeviceInstance, CommunicationsFilter filter) throws TskCoreException {
+		CaseDbConnection connection = db.getConnection();
+		db.acquireSingleUserCaseReadLock();
+		Statement s = null;
+		ResultSet rs = null;
+
+		try {
+			s = connection.createStatement();
+
+			//set up applicable filters 
+			Set<String> applicableInnerQueryFilters = new HashSet<String>(Arrays.asList(
+					CommunicationsFilter.DateRangeFilter.class.getName(),
+					CommunicationsFilter.DeviceFilter.class.getName(),
+					CommunicationsFilter.RelationshipTypeFilter.class.getName()
+			));
+			String innerQueryfilterSQL = getCommunicationsFilterSQL(filter, applicableInnerQueryFilters);
+
+			String innerQueryTemplate
+					= " SELECT %1$1s as account_id,"
+					+ "		  data_source_obj_id"
+					+ " FROM account_relationships as relationships"
+					+ " WHERE %2$1s = " + accountDeviceInstance.getAccount().getAccountID()
+					+ (innerQueryfilterSQL.isEmpty() ? "" : " AND " + innerQueryfilterSQL);
+
+			String innerQuery1 = String.format(innerQueryTemplate, "account1_id", "account2_id");
+			String innerQuery2 = String.format(innerQueryTemplate, "account2_id", "account1_id");
+
+			//this query groups by account_id and data_source_obj_id across both innerQueries
+			String combinedInnerQuery
+					= "SELECT account_id, data_source_obj_id "
+					+ " FROM ( " + innerQuery1 + " UNION " + innerQuery2 + " ) AS  inner_union"
+					+ " GROUP BY account_id, data_source_obj_id";
+
+			// set up applicable filters
+			Set<String> applicableFilters = new HashSet<String>(Arrays.asList(
+					CommunicationsFilter.AccountTypeFilter.class.getName()
+			));
+
+			String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
+
+			String queryStr
+					= //account info
+					" accounts.account_id AS account_id,"
+					+ " accounts.account_unique_identifier AS account_unique_identifier,"
+					//account type info
+					+ " account_types.type_name AS type_name,"
+					//Account device instance info
+					+ " data_source_info.device_id AS device_id"
+					+ " FROM ( " + combinedInnerQuery + " ) AS account_device_instances"
+					+ " JOIN accounts AS accounts"
+					+ "		ON accounts.account_id = account_device_instances.account_id"
+					+ " JOIN account_types AS account_types"
+					+ "		ON accounts.account_type_id = account_types.account_type_id"
+					+ " JOIN data_source_info AS data_source_info"
+					+ "		ON account_device_instances.data_source_obj_id = data_source_info.obj_id"
+					+ (filterSQL.isEmpty() ? "" : " WHERE " + filterSQL);
+
+			switch (db.getDatabaseType()) {
+				case POSTGRESQL:
+					queryStr = "SELECT DISTINCT ON ( accounts.account_id, data_source_info.device_id) " + queryStr;
+					break;
+				case SQLITE:
+					queryStr = "SELECT " + queryStr + " GROUP BY accounts.account_id, data_source_info.device_id";
+					break;
+				default:
+					throw new TskCoreException("Unknown DB Type: " + db.getDatabaseType().name());
+			}
+
+			rs = connection.executeQuery(s, queryStr); //NON-NLS
+			ArrayList<AccountDeviceInstance> accountDeviceInstances = new ArrayList<AccountDeviceInstance>();
+			while (rs.next()) {
+				long account_id = rs.getLong("account_id");
+				String deviceID = rs.getString("device_id");
+				final String type_name = rs.getString("type_name");
+				final String account_unique_identifier = rs.getString("account_unique_identifier");
+
+				Account.Type accountType = typeNameToAccountTypeMap.get(type_name);
+				Account account = new Account(account_id, accountType, account_unique_identifier);
+				accountDeviceInstances.add(new AccountDeviceInstance(account, deviceID));
+			}
+
+			return accountDeviceInstances;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting account device instances. " + ex.getMessage(), ex);
 		} finally {
 			closeResultSet(rs);
 			closeStatement(s);
