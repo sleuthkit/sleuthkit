@@ -4822,9 +4822,11 @@ ntfs_close(TSK_FS_INFO * fs)
 #endif
 
     fs->tag = 0;
-    free((char *) ntfs->fs);
+    if(ntfs->fs)
+        free((char *) ntfs->fs);
     tsk_fs_attr_run_free(ntfs->bmap);
-    free(ntfs->bmap_buf);
+    if(ntfs->bmap_buf)
+        free(ntfs->bmap_buf);
     tsk_fs_file_close(ntfs->mft_file);
 
     if (ntfs->orphan_map)
@@ -5096,7 +5098,6 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     ntfs->mft_data =
         tsk_fs_attrlist_get(ntfs->mft_file->meta->attr, NTFS_ATYPE_DATA);
     if (!ntfs->mft_data) {
-        tsk_fs_file_close(ntfs->mft_file);
         tsk_error_errstr2_concat(" - Data Attribute not found in $MFT");
         if (tsk_verbose)
             fprintf(stderr,
@@ -5119,7 +5120,6 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     /* load the version of the file system */
     if (ntfs_load_ver(ntfs)) {
-        tsk_fs_file_close(ntfs->mft_file);
         if (tsk_verbose)
             fprintf(stderr,
                 "ntfs_open: Error loading file system version ((%s)\n",
@@ -5129,7 +5129,6 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     /* load the data block bitmap data run into ntfs_info */
     if (ntfs_load_bmap(ntfs)) {
-        tsk_fs_file_close(ntfs->mft_file);
         if (tsk_verbose)
             fprintf(stderr, "ntfs_open: Error loading block bitmap (%s)\n",
                 tsk_error_get());
@@ -5141,7 +5140,6 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
 #if TSK_USE_SID
     if (ntfs_load_secure(ntfs)) {
-        tsk_fs_file_close(ntfs->mft_file);
         if (tsk_verbose)
             fprintf(stderr, "ntfs_open: Error loading Secure Info (%s)\n",
                 tsk_error_get());
@@ -5173,16 +5171,6 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     return fs;
 
 on_error:
-    if( fs != NULL ) {
-        // Since fs->tag is ntfs->fs_info.tag why is this value set to 0
-        // and the memory is freed directly afterwards?
-        fs->tag = 0;
-    }
-    if( ntfs != NULL ) {
-        if( ntfs->fs != NULL ) {
-            free( ntfs->fs );
-        }
-        free( ntfs );
-    }
+    ntfs_close(fs);
     return NULL;
 }
