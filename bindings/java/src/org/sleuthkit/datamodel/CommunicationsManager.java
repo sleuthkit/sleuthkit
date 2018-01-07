@@ -948,7 +948,84 @@ public class CommunicationsManager {
 		}
 	}
 
+	/**
+	 * Get a set of AccountDeviceInstances that have relationships with the
+	 * given AccountDeviceInstance and meet the criteria of the given filter.
+	 *
+	 * @param accountDeviceInstance The account device instance.
+	 * @param filter                The filters to apply.
+	 *
+	 * @return A set of AccountDeviceInstances that have relationships with the
+	 *         given AccountDeviceInstance and meet the criteria of the given
+	 *         filter.
+	 *
+	 * @throws TskCoreException if there is a serious error executing he query.
+	 */
 	public List<AccountDeviceInstance> getRelatedAccountDeviceInstances(AccountDeviceInstance accountDeviceInstance, CommunicationsFilter filter) throws TskCoreException {
+		final List<Long> dataSourceObjIds
+				= getSleuthkitCase().getDataSourceObjIds(accountDeviceInstance.getDeviceId());
+
+		//set up applicable filters 
+		Set<String> applicableInnerQueryFilters = new HashSet<String>(Arrays.asList(
+				CommunicationsFilter.DateRangeFilter.class.getName(),
+				CommunicationsFilter.DeviceFilter.class.getName(),
+				CommunicationsFilter.RelationshipTypeFilter.class.getName()
+		));
+
+		String innerQueryfilterSQL = getCommunicationsFilterSQL(filter, applicableInnerQueryFilters);
+
+		String innerQueryTemplate
+				= " SELECT %1$1s as account_id,"
+				+ "		  data_source_obj_id"
+				+ " FROM account_relationships as relationships"
+				+ " WHERE %2$1s = " + accountDeviceInstance.getAccount().getAccountID() + ""
+				+ " AND data_source_obj_id IN (" + StringUtils.buildCSVString(dataSourceObjIds) + ")"
+				+ (innerQueryfilterSQL.isEmpty() ? "" : " AND " + innerQueryfilterSQL);
+
+		String innerQuery1 = String.format(innerQueryTemplate, "account1_id", "account2_id");
+		String innerQuery2 = String.format(innerQueryTemplate, "account2_id", "account1_id");
+
+		//this query groups by account_id and data_source_obj_id across both innerQueries
+		String combinedInnerQuery
+				= "SELECT account_id, data_source_obj_id "
+				+ " FROM ( " + innerQuery1 + " UNION " + innerQuery2 + " ) AS  inner_union"
+				+ " GROUP BY account_id, data_source_obj_id";
+
+		// set up applicable filters
+		Set<String> applicableFilters = new HashSet<String>(Arrays.asList(
+				CommunicationsFilter.AccountTypeFilter.class.getName()
+		));
+
+		String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
+
+		String queryStr
+				= //account info
+				" accounts.account_id AS account_id,"
+				+ " accounts.account_unique_identifier AS account_unique_identifier,"
+				//account type info
+				+ " account_types.type_name AS type_name,"
+				//Account device instance info
+				+ " data_source_info.device_id AS device_id"
+				+ " FROM ( " + combinedInnerQuery + " ) AS account_device_instances"
+				+ " JOIN accounts AS accounts"
+				+ "		ON accounts.account_id = account_device_instances.account_id"
+				+ " JOIN account_types AS account_types"
+				+ "		ON accounts.account_type_id = account_types.account_type_id"
+				+ " JOIN data_source_info AS data_source_info"
+				+ "		ON account_device_instances.data_source_obj_id = data_source_info.obj_id"
+				+ (filterSQL.isEmpty() ? "" : " WHERE " + filterSQL);
+
+		switch (db.getDatabaseType()) {
+			case POSTGRESQL:
+				queryStr = "SELECT DISTINCT ON ( accounts.account_id, data_source_info.device_id) " + queryStr;
+				break;
+			case SQLITE:
+				queryStr = "SELECT " + queryStr + " GROUP BY accounts.account_id, data_source_info.device_id";
+				break;
+			default:
+				throw new TskCoreException("Unknown DB Type: " + db.getDatabaseType().name());
+		}
+
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSingleUserCaseReadLock();
 		Statement s = null;
@@ -956,65 +1033,6 @@ public class CommunicationsManager {
 
 		try {
 			s = connection.createStatement();
-
-			//set up applicable filters 
-			Set<String> applicableInnerQueryFilters = new HashSet<String>(Arrays.asList(
-					CommunicationsFilter.DateRangeFilter.class.getName(),
-					CommunicationsFilter.DeviceFilter.class.getName(),
-					CommunicationsFilter.RelationshipTypeFilter.class.getName()
-			));
-			String innerQueryfilterSQL = getCommunicationsFilterSQL(filter, applicableInnerQueryFilters);
-
-			String innerQueryTemplate
-					= " SELECT %1$1s as account_id,"
-					+ "		  data_source_obj_id"
-					+ " FROM account_relationships as relationships"
-					+ " WHERE %2$1s = " + accountDeviceInstance.getAccount().getAccountID()
-					+ (innerQueryfilterSQL.isEmpty() ? "" : " AND " + innerQueryfilterSQL);
-
-			String innerQuery1 = String.format(innerQueryTemplate, "account1_id", "account2_id");
-			String innerQuery2 = String.format(innerQueryTemplate, "account2_id", "account1_id");
-
-			//this query groups by account_id and data_source_obj_id across both innerQueries
-			String combinedInnerQuery
-					= "SELECT account_id, data_source_obj_id "
-					+ " FROM ( " + innerQuery1 + " UNION " + innerQuery2 + " ) AS  inner_union"
-					+ " GROUP BY account_id, data_source_obj_id";
-
-			// set up applicable filters
-			Set<String> applicableFilters = new HashSet<String>(Arrays.asList(
-					CommunicationsFilter.AccountTypeFilter.class.getName()
-			));
-
-			String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
-
-			String queryStr
-					= //account info
-					" accounts.account_id AS account_id,"
-					+ " accounts.account_unique_identifier AS account_unique_identifier,"
-					//account type info
-					+ " account_types.type_name AS type_name,"
-					//Account device instance info
-					+ " data_source_info.device_id AS device_id"
-					+ " FROM ( " + combinedInnerQuery + " ) AS account_device_instances"
-					+ " JOIN accounts AS accounts"
-					+ "		ON accounts.account_id = account_device_instances.account_id"
-					+ " JOIN account_types AS account_types"
-					+ "		ON accounts.account_type_id = account_types.account_type_id"
-					+ " JOIN data_source_info AS data_source_info"
-					+ "		ON account_device_instances.data_source_obj_id = data_source_info.obj_id"
-					+ (filterSQL.isEmpty() ? "" : " WHERE " + filterSQL);
-
-			switch (db.getDatabaseType()) {
-				case POSTGRESQL:
-					queryStr = "SELECT DISTINCT ON ( accounts.account_id, data_source_info.device_id) " + queryStr;
-					break;
-				case SQLITE:
-					queryStr = "SELECT " + queryStr + " GROUP BY accounts.account_id, data_source_info.device_id";
-					break;
-				default:
-					throw new TskCoreException("Unknown DB Type: " + db.getDatabaseType().name());
-			}
 
 			rs = connection.executeQuery(s, queryStr); //NON-NLS
 			ArrayList<AccountDeviceInstance> accountDeviceInstances = new ArrayList<AccountDeviceInstance>();
