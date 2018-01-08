@@ -532,7 +532,7 @@ public class CommunicationsManagerTest {
 		// Test DS1: Phone 2  , call logs
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
-					new RelationshipTypeFilter(Arrays.asList(Relationship.Type.CALL_LOG))
+					new RelationshipTypeFilter(Arrays.asList(CALL_LOG))
 			));
 			List<AccountDeviceInstance> accountDeviceInstances
 					= commsMgr.getRelatedAccountDeviceInstances(PHONE_2_DS1, commsFilter);
@@ -543,7 +543,7 @@ public class CommunicationsManagerTest {
 		// Test DS2: Phone 1  , msgs + call logs
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
-					new RelationshipTypeFilter(Arrays.asList(Relationship.Type.CALL_LOG, Relationship.Type.MESSAGE))
+					new RelationshipTypeFilter(Arrays.asList(CALL_LOG, MESSAGE))
 			));
 			List<AccountDeviceInstance> accountDeviceInstances
 					= commsMgr.getRelatedAccountDeviceInstances(PHONE_2_DS2, commsFilter);
