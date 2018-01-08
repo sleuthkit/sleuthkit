@@ -263,7 +263,13 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
             info->fs_name->type = TSK_FS_NAME_TYPE_DIR;
             info->fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
 
-
+            // Make sure there is enough space in cur_key for the name 
+            // (name is unicode so each characters is two bytes; 6 bytes of non-name characters)
+            if ((uint32_t)(tsk_getu16(hfs->fs_info.endian, cur_key->name.length)) * 2 > tsk_getu16(hfs->fs_info.endian, cur_key->key_len) - 6) {
+                error_returned
+                ("hfs_dir_open_meta_cb: name length is too long");
+                return HFS_BTREE_CB_ERR;
+            }
             if (hfs_UTF16toUTF8(fs, (uint8_t *) cur_key->name.unicode,
                     tsk_getu16(hfs->fs_info.endian, cur_key->name.length),
                     info->fs_name->name, HFS_MAXNAMLEN + 1,
@@ -314,6 +320,14 @@ hfs_dir_open_meta_cb(HFS_INFO * hfs, int8_t level_type,
                         file->std.perm.mode));
             }
             info->fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
+
+            // Make sure there is enough space in cur_key for the name 
+            // (name is unicode so each characters is two bytes; 6 bytes of non-name characters)
+            if ((uint32_t)(tsk_getu16(hfs->fs_info.endian, cur_key->name.length)) * 2 > tsk_getu16(hfs->fs_info.endian, cur_key->key_len) - 6) {
+                error_returned
+                ("hfs_dir_open_meta_cb: name length is too long");
+                return HFS_BTREE_CB_ERR;
+            }
             if (hfs_UTF16toUTF8(fs, (uint8_t *) cur_key->name.unicode,
                     tsk_getu16(hfs->fs_info.endian, cur_key->name.length),
                     info->fs_name->name, HFS_MAXNAMLEN + 1,

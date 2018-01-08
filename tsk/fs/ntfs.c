@@ -609,9 +609,22 @@ ntfs_make_data_run(NTFS_INFO * ntfs, TSK_OFF_T start_vcn,
          * these for loops are the equivalent of the getuX macros
          */
         idx = 0;
-        /* Get the length of this run */
+
+        /* Get the length of this run. 
+         * A length of more than eight bytes will not fit in the
+         * 64-bit length field (and is likely corrupt)
+         */
+        if (NTFS_RUNL_LENSZ(run) > 8) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+            tsk_error_set_errstr
+            ("ntfs_make_run: Run length is too large to process");
+            tsk_fs_attr_run_free(*a_data_run_head);
+            *a_data_run_head = NULL;
+            return TSK_COR;
+        }
         for (i = 0, data_run->len = 0; i < NTFS_RUNL_LENSZ(run); i++) {
-            data_run->len |= (run->buf[idx++] << (i * 8));
+            data_run->len |= ((uint64_t)(run->buf[idx++]) << (i * 8));
             if (tsk_verbose)
                 tsk_fprintf(stderr,
                     "ntfs_make_data_run: Len idx: %i cur: %"
@@ -4809,9 +4822,11 @@ ntfs_close(TSK_FS_INFO * fs)
 #endif
 
     fs->tag = 0;
-    free((char *) ntfs->fs);
+    if(ntfs->fs)
+        free((char *) ntfs->fs);
     tsk_fs_attr_run_free(ntfs->bmap);
-    free(ntfs->bmap_buf);
+    if(ntfs->bmap_buf)
+        free(ntfs->bmap_buf);
     tsk_fs_file_close(ntfs->mft_file);
 
     if (ntfs->orphan_map)
@@ -5083,7 +5098,6 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     ntfs->mft_data =
         tsk_fs_attrlist_get(ntfs->mft_file->meta->attr, NTFS_ATYPE_DATA);
     if (!ntfs->mft_data) {
-        tsk_fs_file_close(ntfs->mft_file);
         tsk_error_errstr2_concat(" - Data Attribute not found in $MFT");
         if (tsk_verbose)
             fprintf(stderr,
@@ -5106,7 +5120,6 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     /* load the version of the file system */
     if (ntfs_load_ver(ntfs)) {
-        tsk_fs_file_close(ntfs->mft_file);
         if (tsk_verbose)
             fprintf(stderr,
                 "ntfs_open: Error loading file system version ((%s)\n",
@@ -5116,7 +5129,6 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     /* load the data block bitmap data run into ntfs_info */
     if (ntfs_load_bmap(ntfs)) {
-        tsk_fs_file_close(ntfs->mft_file);
         if (tsk_verbose)
             fprintf(stderr, "ntfs_open: Error loading block bitmap (%s)\n",
                 tsk_error_get());
@@ -5128,7 +5140,6 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
 #if TSK_USE_SID
     if (ntfs_load_secure(ntfs)) {
-        tsk_fs_file_close(ntfs->mft_file);
         if (tsk_verbose)
             fprintf(stderr, "ntfs_open: Error loading Secure Info (%s)\n",
                 tsk_error_get());
@@ -5160,16 +5171,6 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     return fs;
 
 on_error:
-    if( fs != NULL ) {
-        // Since fs->tag is ntfs->fs_info.tag why is this value set to 0
-        // and the memory is freed directly afterwards?
-        fs->tag = 0;
-    }
-    if( ntfs != NULL ) {
-        if( ntfs->fs != NULL ) {
-            free( ntfs->fs );
-        }
-        free( ntfs );
-    }
+    ntfs_close(fs);
     return NULL;
 }

@@ -135,7 +135,7 @@ static uint8_t
             TSK_OFF_T offs;
             ssize_t cnt;
 
-            if (!gd_size)
+            if (gd_size < sizeof(ext4fs_gd))
                 gd_size = sizeof(ext4fs_gd);
 
             if (ext2fs->ext4_grp_buf == NULL) {
@@ -180,7 +180,7 @@ static uint8_t
     else {
         TSK_OFF_T offs;
         ssize_t cnt;
-        if (!gd_size)
+        if (gd_size < sizeof(ext2fs_gd))
             gd_size = sizeof(ext2fs_gd);
 
         if (ext2fs->grp_buf == NULL) {
