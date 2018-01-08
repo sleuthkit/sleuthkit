@@ -1,7 +1,7 @@
 /*
  * SleuthKit Java Bindings
  *
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2011-2018 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -82,8 +82,8 @@ public abstract class AbstractFile extends AbstractContent {
 	private boolean md5HashDirty = false;
 	private String mimeType;
 	private boolean mimeTypeDirty = false;
-	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
-	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
+	private static final Logger LOGGER = Logger.getLogger(AbstractFile.class.getName());
+	private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private long dataSourceObjectId;
 	private final String extension;
 
@@ -354,12 +354,10 @@ public abstract class AbstractFile extends AbstractContent {
 			} else {
 				result += "S"; //NON-NLS
 			}
+		} else if ((mode & ixusr) == ixusr) {
+			result += "x"; //NON-NLS
 		} else {
-			if ((mode & ixusr) == ixusr) {
-				result += "x"; //NON-NLS
-			} else {
-				result += "-"; //NON-NLS
-			}
+			result += "-"; //NON-NLS
 		}
 
 		// fifth and sixth characters = group permissions
@@ -381,12 +379,10 @@ public abstract class AbstractFile extends AbstractContent {
 			} else {
 				result += "S"; //NON-NLS
 			}
+		} else if ((mode & ixgrp) == ixgrp) {
+			result += "x"; //NON-NLS
 		} else {
-			if ((mode & ixgrp) == ixgrp) {
-				result += "x"; //NON-NLS
-			} else {
-				result += "-"; //NON-NLS
-			}
+			result += "-"; //NON-NLS
 		}
 
 		// eighth and ninth character = other permissions
@@ -408,12 +404,10 @@ public abstract class AbstractFile extends AbstractContent {
 			} else {
 				result += "T"; //NON-NLS
 			}
+		} else if ((mode & ixoth) == ixoth) {
+			result += "x"; //NON-NLS
 		} else {
-			if ((mode & ixoth) == ixoth) {
-				result += "x"; //NON-NLS
-			} else {
-				result += "-"; //NON-NLS
-			}
+			result += "-"; //NON-NLS
 		}
 
 		// check the result
@@ -801,7 +795,7 @@ public abstract class AbstractFile extends AbstractContent {
 	protected final int readLocal(byte[] buf, long offset, long len) throws TskCoreException {
 		if (!localPathSet) {
 			throw new TskCoreException(
-					bundle.getString("AbstractFile.readLocal.exception.msg1.text"));
+					BUNDLE.getString("AbstractFile.readLocal.exception.msg1.text"));
 		}
 
 		if (isDir()) {
@@ -811,14 +805,12 @@ public abstract class AbstractFile extends AbstractContent {
 		loadLocalFile();
 		if (!localFile.exists()) {
 			throw new TskCoreException(
-					MessageFormat.format(bundle.getString("AbstractFile.readLocal.exception.msg2.text"), localAbsPath));
+					MessageFormat.format(BUNDLE.getString("AbstractFile.readLocal.exception.msg2.text"), localAbsPath));
 		}
 		if (!localFile.canRead()) {
 			throw new TskCoreException(
-					MessageFormat.format(bundle.getString("AbstractFile.readLocal.exception.msg3.text"), localAbsPath));
+					MessageFormat.format(BUNDLE.getString("AbstractFile.readLocal.exception.msg3.text"), localAbsPath));
 		}
-
-		int bytesRead = 0;
 
 		if (localFileHandle == null) {
 			synchronized (this) {
@@ -826,10 +818,10 @@ public abstract class AbstractFile extends AbstractContent {
 					try {
 						localFileHandle = new RandomAccessFile(localFile, "r");
 					} catch (FileNotFoundException ex) {
-						final String msg = MessageFormat.format(bundle.getString(
+						final String msg = MessageFormat.format(BUNDLE.getString(
 								"AbstractFile.readLocal.exception.msg4.text"),
 								localAbsPath);
-						logger.log(Level.SEVERE, msg, ex);
+						LOGGER.log(Level.SEVERE, msg, ex);
 						//file could have been deleted or moved
 						throw new TskCoreException(msg, ex);
 					}
@@ -848,7 +840,7 @@ public abstract class AbstractFile extends AbstractContent {
 				if (curOffset != encodedOffset) {
 					localFileHandle.seek(encodedOffset);
 				}
-				bytesRead = localFileHandle.read(buf, 0, (int) len);
+				int bytesRead = localFileHandle.read(buf, 0, (int) len);
 				for (int i = 0; i < bytesRead; i++) {
 					buf[i] = EncodedFileUtil.decodeByte(buf[i], encodingType);
 				}
@@ -863,8 +855,8 @@ public abstract class AbstractFile extends AbstractContent {
 				return localFileHandle.read(buf, 0, (int) len);
 			}
 		} catch (IOException ex) {
-			final String msg = MessageFormat.format(bundle.getString("AbstractFile.readLocal.exception.msg5.text"), localAbsPath);
-			logger.log(Level.SEVERE, msg, ex);
+			final String msg = MessageFormat.format(BUNDLE.getString("AbstractFile.readLocal.exception.msg5.text"), localAbsPath);
+			LOGGER.log(Level.SEVERE, msg, ex);
 			//local file could have been deleted / moved
 			throw new TskCoreException(msg, ex);
 		}
@@ -937,7 +929,7 @@ public abstract class AbstractFile extends AbstractContent {
 				loadLocalFile();
 				return localFile.exists();
 			} catch (TskCoreException ex) {
-				logger.log(Level.SEVERE, ex.getMessage());
+				LOGGER.log(Level.SEVERE, ex.getMessage());
 				return false;
 			}
 		}
@@ -958,7 +950,7 @@ public abstract class AbstractFile extends AbstractContent {
 				loadLocalFile();
 				return localFile.canRead();
 			} catch (TskCoreException ex) {
-				logger.log(Level.SEVERE, ex.getMessage());
+				LOGGER.log(Level.SEVERE, ex.getMessage());
 				return false;
 			}
 		}
@@ -973,7 +965,7 @@ public abstract class AbstractFile extends AbstractContent {
 	private void loadLocalFile() throws TskCoreException {
 		if (!localPathSet) {
 			throw new TskCoreException(
-					bundle.getString("AbstractFile.readLocal.exception.msg1.text"));
+					BUNDLE.getString("AbstractFile.readLocal.exception.msg1.text"));
 		}
 
 		// already been set
@@ -998,7 +990,7 @@ public abstract class AbstractFile extends AbstractContent {
 					try {
 						localFileHandle.close();
 					} catch (IOException ex) {
-						logger.log(Level.SEVERE, "Could not close file handle for file: " + getParentPath() + "/" + getName(), ex); //NON-NLS
+						LOGGER.log(Level.SEVERE, "Could not close file handle for file: " + getParentPath() + getName(), ex); //NON-NLS
 					}
 					localFileHandle = null;
 				}
