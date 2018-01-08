@@ -818,6 +818,8 @@ public abstract class AbstractFile extends AbstractContent {
 					MessageFormat.format(BUNDLE.getString("AbstractFile.readLocal.exception.msg3.text"), localAbsPath));
 		}
 
+		int bytesRead = 0;
+
 		if (localFileHandle == null) {
 			synchronized (this) {
 				if (localFileHandle == null) {
@@ -846,7 +848,7 @@ public abstract class AbstractFile extends AbstractContent {
 				if (curOffset != encodedOffset) {
 					localFileHandle.seek(encodedOffset);
 				}
-				int bytesRead = localFileHandle.read(buf, 0, (int) len);
+				bytesRead = localFileHandle.read(buf, 0, (int) len);
 				for (int i = 0; i < bytesRead; i++) {
 					buf[i] = EncodedFileUtil.decodeByte(buf[i], encodingType);
 				}
