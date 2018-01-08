@@ -354,10 +354,12 @@ public abstract class AbstractFile extends AbstractContent {
 			} else {
 				result += "S"; //NON-NLS
 			}
-		} else if ((mode & ixusr) == ixusr) {
-			result += "x"; //NON-NLS
 		} else {
-			result += "-"; //NON-NLS
+			if ((mode & ixusr) == ixusr) {
+				result += "x"; //NON-NLS
+			} else {
+				result += "-"; //NON-NLS
+			}
 		}
 
 		// fifth and sixth characters = group permissions
@@ -379,10 +381,12 @@ public abstract class AbstractFile extends AbstractContent {
 			} else {
 				result += "S"; //NON-NLS
 			}
-		} else if ((mode & ixgrp) == ixgrp) {
-			result += "x"; //NON-NLS
 		} else {
-			result += "-"; //NON-NLS
+			if ((mode & ixgrp) == ixgrp) {
+				result += "x"; //NON-NLS
+			} else {
+				result += "-"; //NON-NLS
+			}
 		}
 
 		// eighth and ninth character = other permissions
@@ -404,10 +408,12 @@ public abstract class AbstractFile extends AbstractContent {
 			} else {
 				result += "T"; //NON-NLS
 			}
-		} else if ((mode & ixoth) == ixoth) {
-			result += "x"; //NON-NLS
 		} else {
-			result += "-"; //NON-NLS
+			if ((mode & ixoth) == ixoth) {
+				result += "x"; //NON-NLS
+			} else {
+				result += "-"; //NON-NLS
+			}
 		}
 
 		// check the result
