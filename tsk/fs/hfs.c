@@ -603,7 +603,7 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 rec_off =
                     tsk_getu16(fs->endian,
                     &node[nodesize - (rec + 1) * 2]);
-                if (rec_off > nodesize) {
+                if (rec_off + sizeof(hfs_btree_key_ext) > nodesize) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
                         ("hfs_ext_find_extent_record_attr: offset of record %d in index node %d too large (%d vs %"
