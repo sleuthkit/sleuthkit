@@ -1101,6 +1101,7 @@ public abstract class AbstractFile extends AbstractContent {
 		SleuthkitCase.CaseDbConnection connection = getSleuthkitCase().getConnection();
 		Statement statement = null;
 
+		getSleuthkitCase().acquireSingleUserCaseWriteLock();
 		try {
 			statement = connection.createStatement();
 			connection.executeUpdate(statement, queryStr);
@@ -1113,6 +1114,7 @@ public abstract class AbstractFile extends AbstractContent {
 		} finally {
 			closeStatement(statement);
 			connection.close();
+			getSleuthkitCase().releaseSingleUserCaseWriteLock();
 		}
 	}
 
