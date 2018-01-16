@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="windows-1252"?>
 <project name="TSKTestTargets">
 		
-    <property name="dlls" value="../../win32/Release"/>
-
+    <property name="dlls" value="../../win32/x64/Release_PostgreSQL"/>
+    <property environment="env"/>
+	
 	<target name="test" 
 			description="Runs the regression tests."
 			depends="compile-test" >
 		<junit fork="on" haltonfailure="yes" dir=".">
-			<sysproperty key="java.library.path" value="${dlls}"/>	
+			<env key="path" value="${env.Path};${dlls}"/>
 			<sysproperty key="rslt" value="${test-results}"/>
 			<sysproperty key="gold" value="${test-standards}"/>
 			<sysproperty key="inpt" value="${test-input}"/>
