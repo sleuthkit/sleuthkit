@@ -861,7 +861,7 @@ public class CommunicationsManager {
 	 *                                  which to get the relationship sources.
 	 * @param filter                    Filters to apply.
 	 *
-	 * @return number of relationship sources found for given account(s).
+	 * @return relationship sources found for given account(s).
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
@@ -1059,18 +1059,21 @@ public class CommunicationsManager {
 	}
 
 	/**
-	 * Returns relationships between two accounts
+	 * Get the relationship sources of relationships between the given account
+	 * device instances.
 	 *
-	 * @param account1
-	 * @param account2
-	 * @param filter
+	 * Applicable filters: RelationshipTypeFilter, DateRangeFilter
 	 *
-	 * @return
+	 * @param account1 First AccountDeviceInstance
+	 * @param account2 Second AccountDeviceInstance
+	 * @param filter   Filters to apply.
 	 *
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 *                          within TSK core
+	 * @return relationship sources for relationships between account1 and
+	 *         account2.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public List<BlackboardArtifact> getRelationships(AccountDeviceInstance account1, AccountDeviceInstance account2, CommunicationsFilter filter) throws TskCoreException {
+	public List<Content> getRelationshipSources(AccountDeviceInstance account1, AccountDeviceInstance account2, CommunicationsFilter filter) throws TskCoreException {
 
 		//set up applicable filters 
 		Set<String> applicableFilters = new HashSet<String>(Arrays.asList(
@@ -1106,7 +1109,7 @@ public class CommunicationsManager {
 					+ (filterSQL.isEmpty() ? "" : " AND " + filterSQL)
 			); //NON-NLS
 
-			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
+			ArrayList<Content> artifacts = new ArrayList<Content>();
 			while (rs.next()) {
 				BlackboardArtifact.Type bbartType = db.getArtifactType(rs.getInt("artifact_type_id"));
 				artifacts.add(new BlackboardArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"), rs.getLong("data_source_obj_id"),
