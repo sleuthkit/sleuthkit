@@ -1059,6 +1059,73 @@ public class CommunicationsManager {
 	}
 
 	/**
+	 * Returns relationships between two accounts
+	 *
+	 * @param account1
+	 * @param account2
+	 * @param filter
+	 *
+	 * @return
+	 *
+	 * @throws TskCoreException exception thrown if a critical error occurs
+	 *                          within TSK core
+	 */
+	public List<BlackboardArtifact> getRelationships(AccountDeviceInstance account1, AccountDeviceInstance account2, CommunicationsFilter filter) throws TskCoreException {
+
+		//set up applicable filters 
+		Set<String> applicableFilters = new HashSet<String>(Arrays.asList(
+				CommunicationsFilter.DateRangeFilter.class.getName(),
+				CommunicationsFilter.DeviceFilter.class.getName(),
+				CommunicationsFilter.RelationshipTypeFilter.class.getName()
+		));
+		String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
+
+		CaseDbConnection connection = db.getConnection();
+		db.acquireSingleUserCaseReadLock();
+		Statement s = null;
+		ResultSet rs = null;
+
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s,
+					"SELECT artifacts.artifact_id AS artifact_id,"
+					+ "		artifacts.obj_id AS obj_id,"
+					+ "		artifacts.artifact_obj_id AS artifact_obj_id,"
+					+ "		artifacts.data_source_obj_id AS data_source_obj_id,"
+					+ "		artifacts.artifact_type_id AS artifact_type_id,"
+					+ "		artifacts.review_status_id AS review_status_id"
+					+ " FROM blackboard_artifacts AS artifacts"
+					+ "	JOIN account_relationships AS relationships"
+					+ "		ON artifacts.artifact_obj_id = relationships.relationship_source_obj_id"
+					+ " WHERE relationships.account1_id IN ( "
+					+ account1.getAccount().getAccountID() + ", "
+					+ account2.getAccount().getAccountID()
+					+ " ) AND	  relationships.account2_id IN ( "
+					+ account1.getAccount().getAccountID() + ", "
+					+ account2.getAccount().getAccountID() + " )"
+					+ (filterSQL.isEmpty() ? "" : " AND " + filterSQL)
+			); //NON-NLS
+
+			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
+			while (rs.next()) {
+				BlackboardArtifact.Type bbartType = db.getArtifactType(rs.getInt("artifact_type_id"));
+				artifacts.add(new BlackboardArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"), rs.getLong("data_source_obj_id"),
+						bbartType.getTypeID(), bbartType.getTypeName(), bbartType.getDisplayName(),
+						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
+			}
+
+			return artifacts;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting relationships between accounts. " + ex.getMessage(), ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			db.releaseSingleUserCaseReadLock();
+		}
+	}
+
+	/**
 	 * Get account_type_if for the given account type.
 	 *
 	 * @param accountType account type to lookup.
@@ -1589,54 +1656,6 @@ public class CommunicationsManager {
 //			return artifactTypes;
 //		} catch (SQLException ex) {
 //			throw new TskCoreException("Error getting relationship types." + ex.getMessage(), ex);
-//		} finally {
-//			closeResultSet(rs);
-//			closeStatement(s);
-//			connection.close();
-//			db.releaseSingleUserCaseReadLock();
-//		}
-//	}
-//	/**
-//	 * Returns relationships between two accounts
-//	 *
-//	 * @param account1_id account_id for account1
-//	 * @param account2_id account_id for account2
-//	 *
-//	 * @throws TskCoreException exception thrown if a critical error occurs
-//	 *                          within TSK core
-//	 */
-//	public List<BlackboardArtifact> getRelationships(long account1_id, long account2_id) throws TskCoreException {
-//		CaseDbConnection connection = db.getConnection();
-//		db.acquireSingleUserCaseReadLock();
-//		Statement s = null;
-//		ResultSet rs = null;
-//
-//		try {
-//			s = connection.createStatement();
-//			rs = connection.executeQuery(s, "SELECT artifacts.artifact_id AS artifact_id,"
-//					+ " artifacts.obj_id AS obj_id,"
-//					+ " artifacts.artifact_obj_id AS artifact_obj_id,"
-//					+ " artifacts.data_source_obj_id AS data_source_obj_id,"
-//					+ " artifacts.artifact_type_id AS artifact_type_id,"
-//					+ " artifacts.review_status_id AS review_status_id"
-//					+ " FROM blackboard_artifacts AS artifacts"
-//					+ "	JOIN relationships AS relationships"
-//					+ "		ON artifacts.artifact_obj_id = relationships.relationship_source_obj_id"
-//					+ " WHERE relationships.account1_id IN ( " + account1_id + ", " + account2_id + " )"
-//					+ " AND relationships.account2_id IN ( " + account1_id + ", " + account2_id + " )"
-//			); //NON-NLS
-//
-//			ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
-//			while (rs.next()) {
-//				BlackboardArtifact.Type bbartType = db.getArtifactType(rs.getInt("artifact_type_id"));
-//				artifacts.add(new BlackboardArtifact(db, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"), rs.getLong("data_source_obj_id"),
-//						bbartType.getTypeID(), bbartType.getTypeName(), bbartType.getDisplayName(),
-//						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
-//			}
-//
-//			return artifacts;
-//		} catch (SQLException ex) {
-//			throw new TskCoreException("Error getting relationships bteween accounts. " + ex.getMessage(), ex);
 //		} finally {
 //			closeResultSet(rs);
 //			closeStatement(s);

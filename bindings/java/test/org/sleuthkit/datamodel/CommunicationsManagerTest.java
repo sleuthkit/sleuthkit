@@ -493,18 +493,57 @@ public class CommunicationsManagerTest {
 	}
 
 	@Test
-	public void getRelatedAccountDeviceInstancesWithFilterTests() throws TskCoreException{
-		
+	public void getRelationshipsTests() throws TskCoreException {
+
+		System.out.println("CommsMgr API - getRelationships With Filters tests");
+
+		// Test  DS1: EMAIL A <-> EMAIL B, no filters
+		{
+
+			List<BlackboardArtifact> accountDeviceInstances
+					= commsMgr.getRelationships(EMAIL_A_DS1, EMAIL_B_DS1, null);
+			assertEquals(2, accountDeviceInstances.size());
+		}
+
+		// Test  DS1: EMAIL A <-> EMAIL c, no filters
+		{
+
+			List<BlackboardArtifact> accountDeviceInstances
+					= commsMgr.getRelationships(EMAIL_A_DS1, EMAIL_C_DS1, null);
+			assertEquals(2, accountDeviceInstances.size());
+		}
+
+		// Test  DS1: EMAIL B <-> EMAIL C, no filters
+		{
+
+			List<BlackboardArtifact> accountDeviceInstances
+					= commsMgr.getRelationships(EMAIL_B_DS1, EMAIL_C_DS1, null);
+			assertEquals(1, accountDeviceInstances.size());
+		}
+
+		// Test  DS1: EMAIL B <-> EMAIL C, contacts
+		{
+			CommunicationsFilter communicationsFilter = new CommunicationsFilter(Arrays.asList(
+					new RelationshipTypeFilter(singleton(Relationship.Type.CONTACT))));
+			List<BlackboardArtifact> accountDeviceInstances
+					= commsMgr.getRelationships(EMAIL_B_DS1, EMAIL_C_DS1, communicationsFilter);
+			assertEquals(0, accountDeviceInstances.size());
+		}
+	}
+
+	@Test
+	public void getRelatedAccountDeviceInstancesWithFilterTests() throws TskCoreException {
+
 		System.out.println("CommsMgr API - getRelatedAccountDeviceInstances With Filters tests");
-		
+
 		// Test  DS1: EMAIL A, no filters
 		{
 			List<AccountDeviceInstance> accountDeviceInstances
 					= commsMgr.getRelatedAccountDeviceInstances(EMAIL_A_DS1, null);
 			assertEquals(2, accountDeviceInstances.size());
-			
+
 		}
-		
+
 		// Test  DS1: EMAIL A, filter on device and email accounts
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
@@ -514,9 +553,9 @@ public class CommunicationsManagerTest {
 			List<AccountDeviceInstance> accountDeviceInstances
 					= commsMgr.getRelatedAccountDeviceInstances(EMAIL_A_DS1, commsFilter);
 			assertEquals(2, accountDeviceInstances.size());
-			
+
 		}
-		
+
 		// Test  DS1: EMAIL A, filter - DS2 & EMAIL
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
@@ -526,9 +565,9 @@ public class CommunicationsManagerTest {
 			List<AccountDeviceInstance> accountDeviceInstances
 					= commsMgr.getRelatedAccountDeviceInstances(EMAIL_A_DS1, commsFilter);
 			assertEquals(0, accountDeviceInstances.size());
-			
+
 		}
-		
+
 		// Test DS1: Phone 2  , call logs
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
@@ -539,7 +578,7 @@ public class CommunicationsManagerTest {
 			System.out.println(accountDeviceInstances);
 			assertEquals(1, accountDeviceInstances.size());
 		}
-		
+
 		// Test DS2: Phone 1  , msgs + call logs
 		{
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
@@ -551,7 +590,7 @@ public class CommunicationsManagerTest {
 			assertEquals(1, accountDeviceInstances.size());
 		}
 	}
-	
+
 	@Test
 	public void getAccountDeviceInstanceWithFilterTests() throws TskCoreException {
 
