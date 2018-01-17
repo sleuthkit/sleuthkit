@@ -1082,7 +1082,20 @@ public class CommunicationsManager {
 				CommunicationsFilter.RelationshipTypeFilter.class.getName()
 		));
 		String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
-
+		final String queryString = "SELECT artifacts.artifact_id AS artifact_id,"
+				+ "		artifacts.obj_id AS obj_id,"
+				+ "		artifacts.artifact_obj_id AS artifact_obj_id,"
+				+ "		artifacts.data_source_obj_id AS data_source_obj_id,"
+				+ "		artifacts.artifact_type_id AS artifact_type_id,"
+				+ "		artifacts.review_status_id AS review_status_id"
+				+ " FROM blackboard_artifacts AS artifacts"
+				+ "	JOIN account_relationships AS relationships"
+				+ "		ON artifacts.artifact_obj_id = relationships.relationship_source_obj_id"
+				+ " WHERE (( relationships.account1_id = " + account1.getAccount().getAccountID()
+				+ " AND relationships.account2_id  = " + account2.getAccount().getAccountID()
+				+ " ) OR (	  relationships.account2_id = " + account1.getAccount().getAccountID()
+				+ " AND relationships.account1_id =" + account2.getAccount().getAccountID() + " ))"
+				+ (filterSQL.isEmpty() ? "" : " AND " + filterSQL);
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSingleUserCaseReadLock();
 		Statement s = null;
@@ -1090,24 +1103,7 @@ public class CommunicationsManager {
 
 		try {
 			s = connection.createStatement();
-			rs = connection.executeQuery(s,
-					"SELECT artifacts.artifact_id AS artifact_id,"
-					+ "		artifacts.obj_id AS obj_id,"
-					+ "		artifacts.artifact_obj_id AS artifact_obj_id,"
-					+ "		artifacts.data_source_obj_id AS data_source_obj_id,"
-					+ "		artifacts.artifact_type_id AS artifact_type_id,"
-					+ "		artifacts.review_status_id AS review_status_id"
-					+ " FROM blackboard_artifacts AS artifacts"
-					+ "	JOIN account_relationships AS relationships"
-					+ "		ON artifacts.artifact_obj_id = relationships.relationship_source_obj_id"
-					+ " WHERE relationships.account1_id IN ( "
-					+ account1.getAccount().getAccountID() + ", "
-					+ account2.getAccount().getAccountID()
-					+ " ) AND	  relationships.account2_id IN ( "
-					+ account1.getAccount().getAccountID() + ", "
-					+ account2.getAccount().getAccountID() + " )"
-					+ (filterSQL.isEmpty() ? "" : " AND " + filterSQL)
-			); //NON-NLS
+			rs = connection.executeQuery(s, queryString); //NON-NLS
 
 			ArrayList<Content> artifacts = new ArrayList<Content>();
 			while (rs.next()) {
