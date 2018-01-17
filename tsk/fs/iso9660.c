@@ -2354,8 +2354,10 @@ load_vol_desc(TSK_FS_INFO * fs)
         magic_seen = 1;
 
         // see if we are done
-        if (vd->type == ISO9660_VOL_DESC_SET_TERM)
+        if (vd->type == ISO9660_VOL_DESC_SET_TERM) {
+            free(vd);
             break;
+        }
 
         switch (vd->type) {
 
@@ -2427,6 +2429,7 @@ load_vol_desc(TSK_FS_INFO * fs)
 
             /* boot records are just read and discarded for now... */
         case ISO9660_BOOT_RECORD:
+            free(vd);
 #if 0
             cnt = tsk_fs_read(fs, offs, (char *) b, sizeof(iso_bootrec));
             if (cnt != sizeof(iso_bootrec)) {
@@ -2439,6 +2442,10 @@ load_vol_desc(TSK_FS_INFO * fs)
             }
             offs += sizeof(iso_bootrec);
 #endif
+            break;
+
+        default:
+            free(vd);
             break;
         }
     }
@@ -2609,7 +2616,7 @@ iso9660_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     fs->first_block = 0;
     fs->last_block = fs->last_block_act = fs->block_count - 1;
-
+    
     // determine the last block we have in this image
     if ((TSK_DADDR_T) ((img_info->size - offset) / fs->block_size) <
         fs->block_count)
