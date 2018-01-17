@@ -95,7 +95,7 @@
 				 uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
 	</target>
 
-	<target name="retrieve-deps" description="retrieve dependencies using ivy" depends="init-ivy">
+	<target name="retrieve-deps" description="retrieve dependencies using ivy" depends="init-ivy" unless="offline">
 		<ivy:settings file="ivysettings.xml" />
 		<ivy:resolve/>
 		<ivy:retrieve sync="true"
