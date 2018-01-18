@@ -87,7 +87,10 @@ nobase_include_HEADERS = tsk/libtsk.h tsk/tsk_incs.h \
 nobase_dist_data_DATA = tsk/sorter/default.sort tsk/sorter/freebsd.sort \
     tsk/sorter/images.sort tsk/sorter/linux.sort tsk/sorter/openbsd.sort \
     tsk/sorter/solaris.sort tsk/sorter/windows.sort 
-
+install-exec-hook:
+	$(LN_S) $(prefix)/share/java/sleuthkit-${PACKAGE_VERSION}.jar $(prefix)/share/java/sleuthkit.jar
+uninstall-hook:
+	cd $(prefix)/share/java && rm sleuthkit.jar
 api-docs:
 	doxygen tsk/docs/Doxyfile
 # doxygen framework/docs/Doxyfile
