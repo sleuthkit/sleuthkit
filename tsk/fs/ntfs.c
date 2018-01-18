@@ -1981,6 +1981,15 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             /* the compression unit size is stored in the header
              * it is stored as the power of 2 (if it is not 0)
              */
+            if (tsk_getu16(fs->endian, attr->c.nr.compusize) > 16) {
+                /* 64k is the maximum compression unit size */
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_CORRUPT);
+                tsk_error_set_errstr("ntfs_proc_attrseq: Compression unit size 2^%d too large",
+                    tsk_getu16(fs->endian, attr->c.nr.compusize));
+                return TSK_COR;
+            }
+
             if (tsk_getu16(fs->endian, attr->c.nr.compusize) > 0) {
                 compsize =
                     1 << (tsk_getu16(fs->endian, attr->c.nr.compusize));
