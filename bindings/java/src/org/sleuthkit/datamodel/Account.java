@@ -160,4 +160,37 @@ public class Account {
 	public long getAccountID() {
 		return this.account_id;
 	}
+
+	@Override
+	public int hashCode() {
+		int hash = 5;
+		hash = 43 * hash + (int) (this.account_id ^ (this.account_id >>> 32));
+		hash = 43 * hash + (this.accountType != null ? this.accountType.hashCode() : 0);
+		hash = 43 * hash + (this.typeSpecificID != null ? this.typeSpecificID.hashCode() : 0);
+		return hash;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		final Account other = (Account) obj;
+		if (this.account_id != other.account_id) {
+			return false;
+		}
+		if ((this.typeSpecificID == null) ? (other.typeSpecificID != null) : !this.typeSpecificID.equals(other.typeSpecificID)) {
+			return false;
+		}
+		if (this.accountType != other.accountType && (this.accountType == null || !this.accountType.equals(other.accountType))) {
+			return false;
+		}
+		return true;
+	}
 }

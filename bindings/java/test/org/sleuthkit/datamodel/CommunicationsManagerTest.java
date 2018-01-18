@@ -500,24 +500,24 @@ public class CommunicationsManagerTest {
 		// Test  DS1: EMAIL A <-> EMAIL B, no filters
 		{
 
-			List<BlackboardArtifact> accountDeviceInstances
-					= commsMgr.getRelationships(EMAIL_A_DS1, EMAIL_B_DS1, null);
+			List<Content> accountDeviceInstances
+					= commsMgr.getRelationshipSources(EMAIL_A_DS1, EMAIL_B_DS1, null);
 			assertEquals(2, accountDeviceInstances.size());
 		}
 
 		// Test  DS1: EMAIL A <-> EMAIL c, no filters
 		{
 
-			List<BlackboardArtifact> accountDeviceInstances
-					= commsMgr.getRelationships(EMAIL_A_DS1, EMAIL_C_DS1, null);
+			List<Content> accountDeviceInstances
+					= commsMgr.getRelationshipSources(EMAIL_A_DS1, EMAIL_C_DS1, null);
 			assertEquals(2, accountDeviceInstances.size());
 		}
 
 		// Test  DS1: EMAIL B <-> EMAIL C, no filters
 		{
 
-			List<BlackboardArtifact> accountDeviceInstances
-					= commsMgr.getRelationships(EMAIL_B_DS1, EMAIL_C_DS1, null);
+			List<Content> accountDeviceInstances
+					= commsMgr.getRelationshipSources(EMAIL_B_DS1, EMAIL_C_DS1, null);
 			assertEquals(1, accountDeviceInstances.size());
 		}
 
@@ -525,8 +525,8 @@ public class CommunicationsManagerTest {
 		{
 			CommunicationsFilter communicationsFilter = new CommunicationsFilter(Arrays.asList(
 					new RelationshipTypeFilter(singleton(Relationship.Type.CONTACT))));
-			List<BlackboardArtifact> accountDeviceInstances
-					= commsMgr.getRelationships(EMAIL_B_DS1, EMAIL_C_DS1, communicationsFilter);
+			List<Content> accountDeviceInstances
+					= commsMgr.getRelationshipSources(EMAIL_B_DS1, EMAIL_C_DS1, communicationsFilter);
 			assertEquals(0, accountDeviceInstances.size());
 		}
 	}
