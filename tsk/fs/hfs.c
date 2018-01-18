@@ -742,8 +742,9 @@ hfs_ext_find_extent_record_attr(HFS_INFO * hfs, uint32_t cnid,
                 }
 
                 // OK, this is one of the extents records that we are seeking, so save it.
+                // Make sure there is room for the hfs_extents struct
                 keylen = 2 + tsk_getu16(fs->endian, key->key_len);
-                if (rec_off + keylen > nodesize) {
+                if (rec_off + keylen + sizeof(hfs_extents) > nodesize) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
                         ("hfs_ext_find_extent_record_attr: offset and keylenth of record %d in leaf node %d too large (%d vs %"
