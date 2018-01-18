@@ -77,6 +77,7 @@ public class CommunicationsManager {
 	 */
 	private void initAccountTypes() throws TskCoreException {
 		CaseDbConnection connection = db.getConnection();
+		db.acquireSingleUserCaseWriteLock();
 		Statement statement = null;
 		ResultSet resultSet = null;
 
@@ -115,6 +116,7 @@ public class CommunicationsManager {
 			closeResultSet(resultSet);
 			closeStatement(statement);
 			connection.close();
+			db.releaseSingleUserCaseWriteLock();
 		}
 	}
 
@@ -130,6 +132,7 @@ public class CommunicationsManager {
 	 */
 	private int readAccountTypes() throws SQLException, TskCoreException {
 		CaseDbConnection connection = db.getConnection();
+		db.acquireSingleUserCaseReadLock();
 		Statement statement = null;
 		ResultSet resultSet = null;
 		int count = 0;
@@ -158,6 +161,7 @@ public class CommunicationsManager {
 			closeResultSet(resultSet);
 			closeStatement(statement);
 			connection.close();
+			db.releaseSingleUserCaseReadLock();
 		}
 
 		return count;
