@@ -1987,6 +1987,8 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                 tsk_error_set_errno(TSK_ERR_FS_CORRUPT);
                 tsk_error_set_errstr("ntfs_proc_attrseq: Compression unit size 2^%d too large",
                     tsk_getu16(fs->endian, attr->c.nr.compusize));
+                if (fs_attr_run)
+                    tsk_fs_attr_run_free(fs_attr_run);
                 return TSK_COR;
             }
 
@@ -2066,6 +2068,10 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                         tsk_getu64(fs->endian, attr->c.nr.initsize),
                         alen, data_flag, compsize)) {
                     tsk_error_errstr2_concat("- proc_attrseq: set run");
+                    
+                    // If the run wasn't saved to the attribute, free it now
+                    if (fs_attr_run && (fs_attr->nrd.run == NULL))
+                        tsk_fs_attr_run_free(fs_attr_run);
                     return TSK_COR;
                 }
                 // set the special functions
@@ -2082,7 +2088,6 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                 }
             }
         }
-
 
         /*
          * Special Cases, where we grab additional information
