@@ -4,9 +4,9 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
 
-AC_INIT(sleuthkit, 4.5.0)
+AC_INIT(sleuthkit, 4.6.0)
 m4_include([m4/ax_pthread.m4])
-dnl include the version from 1.12.1. This will work for 
+dnl include the version from 1.12.1. This will work for
 m4_include([m4/cppunit.m4])
 m4_include([m4/ax_jni_include_dir.m4])
 m4_include([m4/ac_prog_javac_works.m4])
@@ -107,20 +107,20 @@ esac
 dnl Add enable/disable option
 AC_ARG_ENABLE([java],
     [AS_HELP_STRING([--disable-java], [Do not build the java bindings or jar file])])
- 
+
 dnl Checks for libraries.
 
 
 dnl Some platforms will complain about missing included functions if libstdc++ is not included.
-AC_CHECK_LIB(stdc++, main, , AC_MSG_ERROR([missing libstdc++])) 
-AC_CHECK_HEADERS(list, , , AC_MSG_ERROR([missing STL list class header])) 
-AC_CHECK_HEADERS(map, , , AC_MSG_ERROR([missing STL map class header])) 
-AC_CHECK_HEADERS(queue, , , AC_MSG_ERROR([missing STL queue class header])) 
-AC_CHECK_HEADERS(set, , , AC_MSG_ERROR([missing STL set class header])) 
-AC_CHECK_HEADERS(stack, , , AC_MSG_ERROR([missing STL stack class header])) 
-AC_CHECK_HEADERS(streambuf, , , AC_MSG_ERROR([missing STL streambuf class header])) 
-AC_CHECK_HEADERS(string, , , AC_MSG_ERROR([missing STL string class header])) 
-AC_CHECK_HEADERS(vector, , , AC_MSG_ERROR([missing STL vector class header])) 
+AC_CHECK_LIB(stdc++, main, , AC_MSG_ERROR([missing libstdc++]))
+AC_CHECK_HEADERS(list, , , AC_MSG_ERROR([missing STL list class header]))
+AC_CHECK_HEADERS(map, , , AC_MSG_ERROR([missing STL map class header]))
+AC_CHECK_HEADERS(queue, , , AC_MSG_ERROR([missing STL queue class header]))
+AC_CHECK_HEADERS(set, , , AC_MSG_ERROR([missing STL set class header]))
+AC_CHECK_HEADERS(stack, , , AC_MSG_ERROR([missing STL stack class header]))
+AC_CHECK_HEADERS(streambuf, , , AC_MSG_ERROR([missing STL streambuf class header]))
+AC_CHECK_HEADERS(string, , , AC_MSG_ERROR([missing STL string class header]))
+AC_CHECK_HEADERS(vector, , , AC_MSG_ERROR([missing STL vector class header]))
 
 dnl Check for sqlite and its dependencies
 AC_CHECK_HEADERS([sqlite3.h],
@@ -223,7 +223,7 @@ AS_IF([test "x$with_libewf" != "xno"],
     dnl Test the dir if they specified something beyond yes/no
     [AS_IF([test "x$with_libewf" != "xyes"],
         [AS_IF([test -d ${with_libewf}/include],
-            [CPPFLAGS="$CPPFLAGS -I${with_libewf}/include"  
+            [CPPFLAGS="$CPPFLAGS -I${with_libewf}/include"
                 LDFLAGS="$LDFLAGS -L${with_libewf}/lib"],
             dnl Dir given was not correct
             [AC_MSG_FAILURE([libewf directory not found at ${with_libewf}])])
@@ -337,7 +337,7 @@ AC_CONFIG_FILES([
     tests/Makefile
     samples/Makefile
     man/Makefile
-    bindings/java/Makefile 
+    bindings/java/Makefile
     bindings/java/jni/Makefile
     unit_tests/Makefile
     unit_tests/base/Makefile])
@@ -355,4 +355,3 @@ Features:
    Java/JNI support:                      $ax_java_support
    Multithreading:                        $ax_multithread
 ]);
-
