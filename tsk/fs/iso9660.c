@@ -1146,6 +1146,15 @@ iso9660_close(TSK_FS_INFO * fs)
         free(s);
     }
 
+    while (iso->in_list != NULL) {
+        iso9660_inode_node *in = iso->in_list;
+        iso->in_list = iso->in_list->next;
+        if (in->inode.rr != NULL) {
+            free(in->inode.rr);
+        }
+        free(in);
+    }
+
     tsk_fs_free(fs);
 }
 
