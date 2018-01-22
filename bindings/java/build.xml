@@ -12,6 +12,7 @@
 
 	<!-- set global properties for this build -->
 	<property name="src" location="src/org/sleuthkit/datamodel"/>
+	<property name="VERSION" value="4.6.0"/>
 	<property name="sample" location="src/org/sleuthkit/datamodel/Examples"/>
 	<property name="build" location="build/"/>
 	<property name="build-datamodel" location="build/org/sleuthkit/datamodel"/>
@@ -129,17 +130,17 @@
 	<target name="dist-SQLite" depends="check-build, init-ivy, compile, copyLibs-SQLite"
 			unless="up-to-date" description="generate the distribution" >
 		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
-		<jar jarfile="${dist}/Tsk_DataModel.jar" basedir="${build}"/>
+		<jar jarfile="${dist}/sleuthkit-${VERSION}.jar" basedir="${build}"/>
 	</target>
 
 	<target name="dist-PostgreSQL" depends="check-build, init-ivy, compile, copyLibs-PostgreSQL" 
 			unless="up-to-date" description="generate the PostgreSQL distribution" >
 		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
-		<jar jarfile="${dist}/Tsk_DataModel_PostgreSQL.jar" basedir="${build}"/>
+		<jar jarfile="${dist}/sleuthkit-postgresql-${VERSION}.jar" basedir="${build}"/>
 	</target>
 
 	<target name="check-build" depends="check-native-build">
-		<uptodate property="java-up-to-date" targetfile="${dist}/Tsk_DataModel.jar" >
+		<uptodate property="java-up-to-date" targetfile="${dist}/sleuthkit-${VERSION}.jar" >
 			<srcfiles dir="${src}" includes="**/*.java"/>
 		</uptodate>
 		<condition property="up-to-date">
@@ -161,13 +162,13 @@
 	<target name="Debug-SQLite" depends="check-build, init-ivy, compile, copyLibs-SQLiteDebug" 
 			unless="up-to-date" description="generate the debug distribution" >
 		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
-		<jar jarfile="${dist}/Tsk_DataModel.jar" basedir="${build}"/>
+		<jar jarfile="${dist}/sleuthkit-${VERSION}.jar" basedir="${build}"/>
 	</target>
   
 	<target name="Debug-PostgreSQL" depends="init-ivy, compile, copyLibs-PostgreSQLDebug" 
 			description="generate the PostgreSQL debug distribution" >
 		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
-		<jar jarfile="${dist}/Tsk_DataModel_PostgreSQL.jar" basedir="${build}"/>
+		<jar jarfile="${dist}/sleuthkit-postgresql-${VERSION}.jar" basedir="${build}"/>
 	</target>
 
 	<target name="jni" depends="compile" description="make the jni.h file">
