@@ -507,6 +507,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                     tsk_error_set_errno(TSK_ERR_FS_ARG);
                     tsk_error_set_errstr
                         ("iso9660_load_inodes_dir: Name argument specified is too long");
+                    free(in_node);
                     return -1;
                 }
                 strncpy(in_node->inode.fn, a_fn, ISO9660_MAXNAMLEN_STD + 1);
@@ -616,6 +617,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                     if (tsk_verbose)
                         tsk_fprintf(stderr,
                                     "iso9660_load_inodes_dir: length of name after processing is 0. bailing\n");
+                    free(in_node);
                     break;
                     
                 }
@@ -634,6 +636,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                     tsk_fprintf(stderr,
                                 "iso9660_load_inodes_dir: file starts past end of image (%"PRIu32"). bailing\n",
                                 tsk_getu32(fs->endian, dentry->ext_loc_m));
+                free(in_node);
                 break;
             }
             in_node->offset =
@@ -644,6 +647,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                     tsk_fprintf(stderr,
                                 "iso9660_load_inodes_dir: file ends past end of image (%"PRIu32" bytes). bailing\n",
                                 tsk_getu32(fs->endian, in_node->inode.dr.data_len_m) + in_node->offset);
+                free(in_node);
                 break;
             }
             /* record size to make sure fifos show up as unique files */
@@ -676,6 +680,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                     if (tsk_verbose)
                         tsk_fprintf(stderr,
                                     "iso9660_load_inodes_dir: parse_susp returned error (%s). bailing\n", tsk_error_get());
+                    free(in_node);
                     break;
                 }
                 
