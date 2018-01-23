@@ -22,11 +22,12 @@ import java.util.Collection;
 
 /**
  * An instance of an Account in a specific file. 
- * An account may be found in multiple content
- * objects, so there can be up to one account instance per content object, 
- * and there is a 1:N relationship between Account objects and AccountFileInstance
- * objects. Currently, there is an underlying TSK_ACCOUNT artifact for every 
- * account instance. This may change in the future.
+ * An Account may be found in multiple Content
+ * objects (such as different databases) on a single device.
+ * There is a 1:N relationship between Account objects and AccountFileInstance
+ * objects. A TSK_ACCOUNT artifact is created for every account file instance.
+ *
+ * AccountFileInstances can optionally have BlackboardAttributes to store more details.
  */
 public class AccountFileInstance {
 	private final BlackboardArtifact artifact; 
@@ -38,8 +39,7 @@ public class AccountFileInstance {
 	}
 
 	/**
-	 * Gets the first occurrence of an attribute of the account instance
-	 * of a given type. 
+	 * Gets the first occurrence of an attribute by type.
 	 *
 	 * @param attrType The attribute type. 
 	 * 
@@ -52,8 +52,7 @@ public class AccountFileInstance {
 	}
 
 	/**
-	 * Adds an attribute to the account instance.  It is faster to 
-	 * add them as part of a list.
+	 * Adds an attribute.  It is faster to add them as part of a list.
 	 *
 	 * @param bbatr The attribute to add.
 	 * 
@@ -64,7 +63,7 @@ public class AccountFileInstance {
 	}
 
 	/**
-	 * Adds a collection of attributes to the account instance
+	 * Adds a collection of attributes
 	 *
 	 * @param bbatrs The collection of attributes to add.
 	 * 
@@ -75,7 +74,7 @@ public class AccountFileInstance {
 	}
 	
 	/**
-	 * Gets the account of which this object is an instance.
+	 * Gets the underlying Account for this instance.
 	 *
 	 * @return The account.
 	 * 

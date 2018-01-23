@@ -6393,6 +6393,9 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     // determine the last block we have in this image
     if (fs->block_size <= 1) {
+        fs->tag = 0;
+        free(hfs->fs);
+        tsk_fs_free((TSK_FS_INFO *)hfs);
         tsk_error_set_errno(TSK_ERR_FS_CORRUPT);
         tsk_error_set_errstr("HFS+ allocation block size too small");
         return NULL;
