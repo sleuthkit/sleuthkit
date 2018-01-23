@@ -189,7 +189,8 @@ public class CommunicationsManager {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
 	 */
-	public Account.Type addAccountType(String accountTypeName, String displayName) throws TskCoreException {
+    // NOTE: Full name given for Type for doxygen linking
+	public org.sleuthkit.datamodel.Account.Type addAccountType(String accountTypeName, String displayName) throws TskCoreException {
 		Account.Type accountType = new Account.Type(accountTypeName, displayName);
 
 		// check if already in map
@@ -259,7 +260,8 @@ public class CommunicationsManager {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
 	 */
-	public AccountFileInstance createAccountFileInstance(Account.Type accountType, String accountUniqueID, String moduleName, Content sourceFile) throws TskCoreException {
+    // NOTE: Full name given for Type for doxygen linking
+	public AccountFileInstance createAccountFileInstance(org.sleuthkit.datamodel.Account.Type accountType, String accountUniqueID, String moduleName, Content sourceFile) throws TskCoreException {
 
 		// make or get the Account (unique at the case-level)
 		Account account = getOrCreateAccount(accountType, normalizeAccountID(accountType, accountUniqueID));
@@ -293,7 +295,8 @@ public class CommunicationsManager {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
 	 */
-	public Account getAccount(Account.Type accountType, String accountUniqueID) throws TskCoreException {
+    // NOTE: Full name given for Type for doxygen linking
+	public Account getAccount(org.sleuthkit.datamodel.Account.Type accountType, String accountUniqueID) throws TskCoreException {
 		Account account = null;
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSingleUserCaseReadLock();
@@ -366,8 +369,9 @@ public class CommunicationsManager {
 	 *                                                  relationshipType are not
 	 *                                                  compatible.
 	 */
+    // NOTE: Full name given for Type for doxygen linking
 	public void addRelationships(AccountFileInstance sender, List<AccountFileInstance> recipients,
-			BlackboardArtifact sourceArtifact, Relationship.Type relationshipType, long dateTime) throws TskCoreException, TskDataException {
+			BlackboardArtifact sourceArtifact, org.sleuthkit.datamodel.Relationship.Type relationshipType, long dateTime) throws TskCoreException, TskDataException {
 
 		if (relationshipType.isCreatableFrom(sourceArtifact) == false) {
 			throw new TskDataException("Can not make a " + relationshipType.getDisplayName()
@@ -571,7 +575,8 @@ public class CommunicationsManager {
 	 * @throws TskCoreException If an error occurs accessing the case database.
 	 *
 	 */
-	public Account.Type getAccountType(String accountTypeName) throws TskCoreException {
+    // NOTE: Full name given for Type for doxygen linking
+	public org.sleuthkit.datamodel.Account.Type getAccountType(String accountTypeName) throws TskCoreException {
 		if (this.typeNameToAccountTypeMap.containsKey(accountTypeName)) {
 			return this.typeNameToAccountTypeMap.get(accountTypeName);
 		}

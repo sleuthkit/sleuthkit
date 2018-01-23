@@ -37,24 +37,29 @@ A <b>relationship source</b> is where we learned about the relationship.  This t
 
 Now lets cover what you should do when you are parsing some communications data and want to store it in the TSK database.  Let's assume we are parsing a smart phone app that has messages. 
 
-When you encounter a message, the first thing to do is store information about the accounts.  TSK wants to know about each <i>file</i> that had a reference of the account.   You should call X…..
+\subsection jni_com_add_acct Adding Account Instances
+
+When you encounter a message, the first thing to do is store information about the accounts.  TSK wants to know about each <i>file</i> that had a reference of the account.   You should call org.sleuthkit.datamodel.CommunicationsManager.createAccountFileInstance() for each file that you encounter a given account.   
+
+Behind the scenes, createAccountFileInstance will make an entry in the accounts table for each unique account on a given device and will make a org.sleuthkit.datamodel.BlackboardArtifact for each unique account in a given file. 
+
+If you want to create a custom account type, call org.sleuthkit.datamodel.CommunicationsManager.addAccountType(). 
+
+\subsection jni_com_add_msg Adding The Message (Source)
+
+You also need to make sure that you store the org.sleuthkit.datamodel.BlackboardArtifact that used the accounts.  You can do this before or after calling createAccountFileInstance(). The order does not matter.
+
+For a messaging app, you would make org.sleuthkit.datamodel.BlackboardArtifact objects with a type of org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE.  That artifact would store various name and value pairs using org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE values. 
 
 
+\subsection jni_com_add_relationship Adding the Relationship
+
+The final step is to create store the relationships between the accounts.  You can do this via org.sleuthkit.datamodel.CommunicationsManager.addRelationships().  This method will require you to pass in the org.sleuthkit.datamodel.AccountInstance objects that you created and the org.sleuthkit.datamodel.BlackboardArtifact that you created for the message or other source.
 
 
-\section OTHER ……
+\section jni_com_schema Database Schema
 
-
-Things to cover:
-- What to do when you encounter an Account.
--- How often should you create an 'instance'
---- Once per file so that we have traceability. 
-
--- When do you create a relationship
---- How many are stored between who
---- What should be passed in etc.
-
-http://wiki.sleuthkit.org/index.php?title=Database_v7.2_Schema#Communications_.2F_Accounts
-
+For details of how this is stored in the database, refer to the 
+<a href="http://wiki.sleuthkit.org/index.php?title=Database_v7.2_Schema#Communications_.2F_Accounts]">wiki</a>.
 
 */
