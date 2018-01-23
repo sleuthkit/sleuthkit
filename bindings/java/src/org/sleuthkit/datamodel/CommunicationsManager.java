@@ -323,16 +323,6 @@ public class CommunicationsManager {
 		return account;
 	}
 
-	/**
-	 * Returns an account instance for the given account instance artifact
-	 *
-	 * @param artifact
-	 *
-	 * @return Account
-	 *
-	 * @throws org.sleuthkit.datamodel.TskCoreException
-	 *
-	 */
 //	public AccountFileInstance getAccountFileInstance(BlackboardArtifact artifact) throws TskCoreException {
 //		AccountFileInstance accountInstance = null;
 //		if (artifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT.getTypeID()) {
@@ -348,6 +338,7 @@ public class CommunicationsManager {
 //
 //		return accountInstance;
 //	}
+	
 	/**
 	 * Add one or more relationships between the sender and recipient account instances. All
 	 * account instances must be from the same data source.
