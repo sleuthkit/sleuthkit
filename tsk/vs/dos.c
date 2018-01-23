@@ -765,6 +765,10 @@ dos_load_ext_table(TSK_VS_INFO * vs, TSK_DADDR_T sect_cur,
                             "Starting sector %" PRIuDADDR
                             " of extended partition has already been used\n",
                             (TSK_DADDR_T)(sect_ext_base + part_start));
+                    tsk_error_reset();
+                    tsk_error_set_errno(TSK_ERR_VS_BLK_NUM);
+                    tsk_error_set_errstr
+                        ("dos_load_ext_table: Loop in partition table detected");
                     return 1;
                 }
                 part_info = part_info->next;
