@@ -94,7 +94,7 @@ public class SleuthkitCase {
 	 * tsk/auto/tsk_db.h.
 	 */
 	private static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
-			= new CaseDbSchemaVersionNumber(7, 2);
+			= new CaseDbSchemaVersionNumber(7, 3);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -1238,6 +1238,43 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Updates a schema version 7.2 database to a schema version 7.3 database.
+	 *
+	 * @param schemaVersion The current schema version of the database.
+	 * @param connection    A connection to the case database.
+	 *
+	 * @return The new database schema version.
+	 *
+	 * @throws SQLException     If there is an error completing a database
+	 *                          operation.
+	 * @throws TskCoreException If there is an error completing a database
+	 *                          operation via another SleuthkitCase method.
+	 */
+	private CaseDbSchemaVersionNumber updateFromSchema7dot2toSchema7dot3(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersion.getMajor() != 7) {
+			return schemaVersion;
+		}
+
+		if (schemaVersion.getMinor() != 2) {
+			return schemaVersion;
+		}
+
+		Statement statement = null;
+		Statement updstatement = null;
+		ResultSet resultSet = null;
+		acquireSingleUserCaseWriteLock();
+		try {
+			// TODO
+			return new CaseDbSchemaVersionNumber(7, 3);
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);	
+			closeStatement(updstatement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+
+	/**
 	 * Extract the extension from a file name.
 	 *
 	 * @param fileName the file name to extract the extension from.
@@ -1625,6 +1662,8 @@ public class SleuthkitCase {
 							} else {
 								throw new TskCoreException("Parentless object has wrong type to be a root (ABSTRACTFILE, but not VIRTUAL_DIRECTORY: " + i.type);
 							}
+							break;
+						case REPORT:
 							break;
 						default:
 							throw new TskCoreException("Parentless object has wrong type to be a root: " + i.type);
@@ -7912,18 +7951,29 @@ public class SleuthkitCase {
 		acquireSingleUserCaseWriteLock();
 		ResultSet resultSet = null;
 		try {
-			// INSERT INTO reports (path, crtime, src_module_name, display_name) VALUES (?, ?, ?, ?)
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_REPORT, Statement.RETURN_GENERATED_KEYS);
+			// Insert a row for the report into the tsk_objects table.
+			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
 			statement.clearParameters();
-			statement.setString(1, relativePath);
-			statement.setLong(2, createTime);
-			statement.setString(3, sourceModuleName);
-			statement.setString(4, reportName);
+			statement.setNull(1, java.sql.Types.BIGINT);
+			statement.setLong(2, TskData.ObjectType.REPORT.getObjectType());
 			connection.executeUpdate(statement);
 			resultSet = statement.getGeneratedKeys();
-			resultSet.next();
-			return new Report(resultSet.getLong(1), //last_insert_rowid()
-					localPath, createTime, sourceModuleName, reportName);
+			if (!resultSet.next()) {
+				throw new TskCoreException(String.format("Failed to INSERT report %s (%s) in tsk_objects table", reportName, localPath));
+			}
+			long objectId = resultSet.getLong(1); //last_insert_rowid()
+
+			// INSERT INTO reports (report_id, path, crtime, src_module_name, display_name) VALUES (?, ?, ?, ?, ?)
+			statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_REPORT);
+			statement.clearParameters();
+			statement.setLong(1, objectId);
+			statement.setString(2, relativePath);
+			statement.setLong(3, createTime);
+			statement.setString(4, sourceModuleName);
+			statement.setString(5, reportName);
+			connection.executeUpdate(statement);
+			return new Report(objectId,	localPath, createTime, sourceModuleName, reportName);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding report " + localPath + " to reports table", ex);
 		} finally {
@@ -8342,7 +8392,7 @@ public class SleuthkitCase {
 		SELECT_ARTIFACT_TAG_BY_ID("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id  WHERE blackboard_artifact_tags.tag_id = ?"), //NON-NLS
 		SELECT_ARTIFACT_TAGS_BY_ARTIFACT("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id WHERE blackboard_artifact_tags.artifact_id = ?"), //NON-NLS
 		SELECT_REPORTS("SELECT * FROM reports"), //NON-NLS
-		INSERT_REPORT("INSERT INTO reports (path, crtime, src_module_name, report_name) VALUES (?, ?, ?, ?)"), //NON-NLS
+		INSERT_REPORT("INSERT INTO reports (report_id, path, crtime, src_module_name, report_name) VALUES (?, ?, ?, ?, ?)"), //NON-NLS
 		DELETE_REPORT("DELETE FROM reports WHERE reports.report_id = ?"), //NON-NLS
 		INSERT_INGEST_JOB("INSERT INTO ingest_jobs (obj_id, host_name, start_date_time, end_date_time, status_id, settings_dir) VALUES (?, ?, ?, ?, ?, ?)"), //NON-NLS
 		INSERT_INGEST_MODULE("INSERT INTO ingest_modules (display_name, unique_name, type_id, version) VALUES(?, ?, ?, ?)"), //NON-NLS
