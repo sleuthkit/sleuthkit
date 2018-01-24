@@ -2,7 +2,7 @@
 <project name="TSKTestTargets">
 	<property name="dlls" value="../../win32/x64/Release_PostgreSQL"/>
     <property environment="env"/>
-
+    <property name="default-jar-install" location="/usr/share/java"/>
 	<target name="test" 
 			description="Performs regression tests."
 			depends="compile-test, copyTSKLibs">
@@ -26,6 +26,42 @@
 			<sysproperty key="types" value="${test-types}"/>
 		</java>
 	</target>
+
+	<condition property="online">
+		<http url="https://www.google.com/"/>
+	</condition>
+
+	<target name="set-library-path"  description="sets the path of the libraries" depends="set-library-path-online,set-library-path-offline">
+
+	</target>
+
+	<target name="set-library-path-online" description="set this library path when the user is online" if="online">
+		<path id="libraries">
+		<fileset dir="${lib}">
+			<include name="*.jar"/>
+		</fileset>
+		<pathelement path="${build}"/>
+		</path>
+		<echo message="${online}"/>
+	</target>
+
+
+	
+	<target name="set-library-path-offline" description="set the library path when the user is offline" unless="online">
+		<path id="libraries">
+	 		<fileset dir="${default-jar-install}">
+	            <include name="c3p0*.jar"/>
+	            <include name="sqlite*.jar"/>
+	            <include name="postgresql-*.jar"/>
+        	</fileset>
+
+			<fileset dir="${lib}">
+				<include name="*.jar"/>
+			</fileset>
+			<pathelement path="${build}"/>
+		</path>
+    </target>
+
 
 	<target name="check-native-build" depends="check-native-build-mac,check-native-build-unix"/>
 

@@ -30,6 +30,14 @@
 	</target>
 
 	<target name="check-native-build" depends="check-build-32,check-build-64"/>
+	<target name="set-library-path" description="set-library-path">
+	<path id="libraries">
+		<fileset dir="${lib}">
+			<include name="*.jar"/>
+		</fileset>
+		<pathelement path="${build}"/>
+	</path>
+	</target>
 
 	<target name="check-build-32" if="win32.TskLib.exists">
 		<uptodate property="native-up-to-date" srcfile="${basedir}/../../win32/Release/libtsk_jni.dll"

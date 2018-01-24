@@ -31,12 +31,12 @@
 	<property name="i586" location="build/NATIVELIBS/i586" />
 	<property name="i686" location="build/NATIVELIBS/i686"/>
   
-	<path id="libraries">
-		<fileset dir="${lib}">
-			<include name="*.jar"/>
-		</fileset>
-		<pathelement path="${build}"/>
-	</path>
+
+
+
+	
+
+
 
 	<!-- Only added win folders for now -->
 	<target name="init">
@@ -77,7 +77,7 @@
 	<property name="ivy.jar.dir" value="${ivy.home}/lib" />
 	<property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar" />
 
-	<target name="download-ivy" unless="offline">
+	<target name="download-ivy" if="online">
 		<available file="${ivy.jar.file}" property="ivy.available"/>
 		<antcall target="-download-ivy" />
 	</target>
@@ -88,7 +88,7 @@
 			 dest="${ivy.jar.file}" usetimestamp="true"/>
 	</target>
 
-	<target name="init-ivy" depends="download-ivy" unless="ivy.lib.path">
+	<target name="init-ivy" depends="download-ivy" unless="ivy.lib.path" if="online">
 		<path id="ivy.lib.path">
 			<fileset dir="${ivy.jar.dir}" includes="*.jar"/>
 		</path>
@@ -96,7 +96,7 @@
 				 uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
 	</target>
 
-	<target name="retrieve-deps" description="retrieve dependencies using ivy" depends="init-ivy" unless="offline">
+	<target name="retrieve-deps" description="retrieve dependencies using ivy" depends="init-ivy" if="online">
 		<ivy:settings file="ivysettings.xml" />
 		<ivy:resolve/>
 		<ivy:retrieve sync="true"
@@ -127,13 +127,13 @@
 		</javac>
 	</target>
 
-	<target name="dist-SQLite" depends="check-build, init-ivy, compile, copyLibs-SQLite"
+	<target name="dist-SQLite" depends="check-build, init-ivy,set-library-path, compile, copyLibs-SQLite"
 			unless="up-to-date" description="generate the distribution" >
 		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
 		<jar jarfile="${dist}/sleuthkit-${VERSION}.jar" basedir="${build}"/>
 	</target>
 
-	<target name="dist-PostgreSQL" depends="check-build, init-ivy, compile, copyLibs-PostgreSQL" 
+	<target name="dist-PostgreSQL" depends="check-build, init-ivy,set-library-path, compile, copyLibs-PostgreSQL" 
 			unless="up-to-date" description="generate the PostgreSQL distribution" >
 		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
 		<jar jarfile="${dist}/sleuthkit-postgresql-${VERSION}.jar" basedir="${build}"/>
@@ -165,7 +165,7 @@
 		<jar jarfile="${dist}/sleuthkit-${VERSION}.jar" basedir="${build}"/>
 	</target>
   
-	<target name="Debug-PostgreSQL" depends="init-ivy, compile, copyLibs-PostgreSQLDebug" 
+	<target name="Debug-PostgreSQL" depends="init-ivy,  compile, copyLibs-PostgreSQLDebug" 
 			description="generate the PostgreSQL debug distribution" >
 		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
 		<jar jarfile="${dist}/sleuthkit-postgresql-${VERSION}.jar" basedir="${build}"/>
