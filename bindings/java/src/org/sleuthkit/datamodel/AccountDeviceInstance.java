@@ -19,7 +19,7 @@
 package org.sleuthkit.datamodel;
 
 /**
- * Encapsulates an Account existing on a given device. 
+ * Encapsulates an Account existing on a specific device.
  * 
  * There is a 1:M:N relationship between 
  * Account, AccountDeviceInstance &  AccountFileInstance
@@ -34,7 +34,7 @@ public class AccountDeviceInstance {
 	}
 
 	/**
-	 *  Returns the underlying account
+	 *  Returns the underlying Account
 	 * 
 	 * @return account
 	 */
@@ -43,7 +43,7 @@ public class AccountDeviceInstance {
 	}
 	
 	/**
-	 *  Returns the device Id
+	 *  Returns the device Id the Account existed on
 	 * 
 	 * @return device id
 	 */

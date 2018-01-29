@@ -177,9 +177,11 @@ public class CommunicationsManager {
 	}
 
 	/**
-	 * Add an account type. Returns the type if it is already defined.
+	 * Add a custom account type that is not already defined in Account.Type.
+     * Will not allow duplicates and will return existing type if the name is
+     * already defined.
 	 *
-	 * @param accountTypeName account type name
+	 * @param accountTypeName account type that must be unique
 	 * @param displayName     account type display name
 	 *
 	 * @return Account.Type
@@ -187,7 +189,8 @@ public class CommunicationsManager {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
 	 */
-	public Account.Type addAccountType(String accountTypeName, String displayName) throws TskCoreException {
+    // NOTE: Full name given for Type for doxygen linking
+	public org.sleuthkit.datamodel.Account.Type addAccountType(String accountTypeName, String displayName) throws TskCoreException {
 		Account.Type accountType = new Account.Type(accountTypeName, displayName);
 
 		// check if already in map
@@ -257,7 +260,8 @@ public class CommunicationsManager {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
 	 */
-	public AccountFileInstance createAccountFileInstance(Account.Type accountType, String accountUniqueID, String moduleName, Content sourceFile) throws TskCoreException {
+    // NOTE: Full name given for Type for doxygen linking
+	public AccountFileInstance createAccountFileInstance(org.sleuthkit.datamodel.Account.Type accountType, String accountUniqueID, String moduleName, Content sourceFile) throws TskCoreException {
 
 		// make or get the Account (unique at the case-level)
 		Account account = getOrCreateAccount(accountType, normalizeAccountID(accountType, accountUniqueID));
@@ -291,7 +295,8 @@ public class CommunicationsManager {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
 	 */
-	public Account getAccount(Account.Type accountType, String accountUniqueID) throws TskCoreException {
+    // NOTE: Full name given for Type for doxygen linking
+	public Account getAccount(org.sleuthkit.datamodel.Account.Type accountType, String accountUniqueID) throws TskCoreException {
 		Account account = null;
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSingleUserCaseReadLock();
@@ -318,16 +323,6 @@ public class CommunicationsManager {
 		return account;
 	}
 
-	/**
-	 * Returns an account instance for the given account instance artifact
-	 *
-	 * @param artifact
-	 *
-	 * @return Account
-	 *
-	 * @throws org.sleuthkit.datamodel.TskCoreException
-	 *
-	 */
 //	public AccountFileInstance getAccountFileInstance(BlackboardArtifact artifact) throws TskCoreException {
 //		AccountFileInstance accountInstance = null;
 //		if (artifact.getArtifactTypeID() == BlackboardArtifact.ARTIFACT_TYPE.TSK_ACCOUNT.getTypeID()) {
@@ -343,14 +338,15 @@ public class CommunicationsManager {
 //
 //		return accountInstance;
 //	}
+	
 	/**
-	 * Add relationships between the sender and recipient account instances. All
-	 * accounts the relationship must be from the same data source.
+	 * Add one or more relationships between the sender and recipient account instances. All
+	 * account instances must be from the same data source.
 	 *
 	 * @param sender               sender account
 	 * @param recipients           list of recipients
-	 * @param relationshipArtifact relationship artifact
-	 * @param relationshipType     The type of relationship to be created
+	 * @param sourceArtifact       Artifact that relationships were derived from
+	 * @param relationshipType     The type of relationships to be created
 	 * @param dateTime             Date of communications/relationship, as epoch
 	 *                             seconds
 	 *
@@ -360,20 +356,21 @@ public class CommunicationsManager {
 	 *                                                  and the relationship are
 	 *                                                  not from the same data
 	 *                                                  source, or if the
-	 *                                                  relationshipArtifact and
+	 *                                                  sourceArtifact and
 	 *                                                  relationshipType are not
 	 *                                                  compatible.
 	 */
+    // NOTE: Full name given for Type for doxygen linking
 	public void addRelationships(AccountFileInstance sender, List<AccountFileInstance> recipients,
-			BlackboardArtifact relationshipArtifact, Relationship.Type relationshipType, long dateTime) throws TskCoreException, TskDataException {
+			BlackboardArtifact sourceArtifact, org.sleuthkit.datamodel.Relationship.Type relationshipType, long dateTime) throws TskCoreException, TskDataException {
 
-		if (relationshipType.isCreatableFrom(relationshipArtifact) == false) {
+		if (relationshipType.isCreatableFrom(sourceArtifact) == false) {
 			throw new TskDataException("Can not make a " + relationshipType.getDisplayName()
-					+ " relationship from a" + relationshipArtifact.getDisplayName());
+					+ " relationship from a" + sourceArtifact.getDisplayName());
 		}
 
 		/*
-		 * Enforce that all accounts and the relationship between them on from
+		 * Enforce that all accounts and the relationship between them are from
 		 * the same 'source'. This is required for the queries to work
 		 * correctly.
 		 */
@@ -382,17 +379,17 @@ public class CommunicationsManager {
 
 		if (null != sender) {
 			accountIDs.add(sender.getAccount().getAccountID());
-			if (sender.getDataSourceObjectID() != relationshipArtifact.getDataSourceObjectID()) {
+			if (sender.getDataSourceObjectID() != sourceArtifact.getDataSourceObjectID()) {
 				throw new TskDataException("Sender and relationship are from different data sources :"
-						+ "Sender source ID" + sender.getDataSourceObjectID() + " != relationship source ID" + relationshipArtifact.getDataSourceObjectID());
+						+ "Sender source ID" + sender.getDataSourceObjectID() + " != relationship source ID" + sourceArtifact.getDataSourceObjectID());
 			}
 		}
 
 		for (AccountFileInstance recipient : recipients) {
 			accountIDs.add(recipient.getAccount().getAccountID());
-			if (recipient.getDataSourceObjectID() != relationshipArtifact.getDataSourceObjectID()) {
+			if (recipient.getDataSourceObjectID() != sourceArtifact.getDataSourceObjectID()) {
 				throw new TskDataException("Recipient and relationship are from different data sources :"
-						+ "Recipient source ID" + recipient.getDataSourceObjectID() + " != relationship source ID" + relationshipArtifact.getDataSourceObjectID());
+						+ "Recipient source ID" + recipient.getDataSourceObjectID() + " != relationship source ID" + sourceArtifact.getDataSourceObjectID());
 			}
 		}
 
@@ -403,12 +400,12 @@ public class CommunicationsManager {
 			try {
 				UnorderedAccountPair accountPair = iter.next();
 				addAccountsRelationship(accountPair.getFirst(), accountPair.getSecond(),
-						relationshipArtifact, relationshipType, dateTime);
+						sourceArtifact, relationshipType, dateTime);
 			} catch (TskCoreException ex) {
-				LOGGER.log(Level.WARNING, "Could not get timezone for image", ex); //NON-NLS
+                // @@@ This should probably not be caught and instead we stop adding
+				LOGGER.log(Level.WARNING, "Error adding relationship", ex); //NON-NLS
 			}
 		}
-
 	}
 
 	/**
@@ -468,14 +465,14 @@ public class CommunicationsManager {
 
 	/**
 	 * Get the blackboard artifact for the given account type, account ID, and
-	 * source file. Create an artifact and return that, of a matching doesn't
-	 * exists
+	 * source file. Create an artifact if it doesn't already exist.
 	 *
 	 * @param accountType     account type
-	 * @param accountUniqueID accountID
+	 * @param accountUniqueID Unique account ID (such as email address)
+     * @param moduleName        module name that found this instance (for the artifact)
 	 * @param sourceFile		    Source file (for the artifact)
 	 *
-	 * @return blackboard artifact, returns NULL is no matching account found
+	 * @return blackboard artifact for the instance
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
@@ -569,10 +566,12 @@ public class CommunicationsManager {
 	 * @throws TskCoreException If an error occurs accessing the case database.
 	 *
 	 */
-	public Account.Type getAccountType(String accountTypeName) throws TskCoreException {
+    // NOTE: Full name given for Type for doxygen linking
+	public org.sleuthkit.datamodel.Account.Type getAccountType(String accountTypeName) throws TskCoreException {
 		if (this.typeNameToAccountTypeMap.containsKey(accountTypeName)) {
 			return this.typeNameToAccountTypeMap.get(accountTypeName);
 		}
+        
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSingleUserCaseReadLock();
 		Statement s = null;
@@ -693,7 +692,8 @@ public class CommunicationsManager {
 	}
 
 	/**
-	 * Returns a list of AccountDeviceInstances that have any relationships.
+	 * Returns a list of AccountDeviceInstances that at least one relationship that meets
+     * the criteria listed in the filters.
 	 *
 	 * Applicable filters: DeviceFilter, AccountTypeFilter, DateRangeFilter,
 	 * RelationshipTypeFilter
@@ -798,12 +798,12 @@ public class CommunicationsManager {
 	}
 
 	/**
-	 * Get the number of unique relationship sources found for the given account
-	 * device instance.
-	 *
+	 * Get the number of unique relationship sources (such as EMAIL artifacts) associated with
+     * an account on a given device (AccountDeviceInstance) that meet the filter criteria.
+     *
 	 * Applicable filters: RelationshipTypeFilter, DateRangeFilter
 	 *
-	 * @param accountDeviceInstance Account Device.
+	 * @param accountDeviceInstance Account of interest
 	 * @param filter                Filters to apply.
 	 *
 	 * @return number of account relationships found for this account.
@@ -856,8 +856,8 @@ public class CommunicationsManager {
 	}
 
 	/**
-	 * Get the unique relationship sources found for the given account device
-	 * instances.
+     * Get the unique relationship sources (such as EMAIL artifacts) associated with an
+     * account on a given device (AccountDeviceInstance) that meet the filter criteria.
 	 *
 	 * Applicable filters: RelationshipTypeFilter, DateRangeFilter
 	 *

@@ -488,7 +488,7 @@ typedef struct {
     uint8_t pad[2];
     uint8_t file_id[4];
     uint8_t start_block[4];
-    uint8_t attr_name_len[2];
+    uint8_t attr_name_len[2]; // number of UTF-16 characters in name
     uint8_t attr_name[HFS_MAX_ATTR_NAME_LEN_UTF16_B]; // @@@ Seems like this is variable length because the key_len is specified. This seems to be max size.
 } hfs_btree_key_attr;
 
