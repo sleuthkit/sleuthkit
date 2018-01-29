@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2011-2018 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -7916,6 +7916,24 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	public Report addReport(String localPath, String sourceModuleName, String reportName) throws TskCoreException {
+		return addReport(localPath, sourceModuleName, reportName, null);
+	}
+
+	/**
+	 * Inserts a row into the reports table in the case database.
+	 *
+	 * @param localPath        The path of the report file, must be in the
+	 *                         database directory (case directory in Autopsy) or
+	 *                         one of its subdirectories.
+	 * @param sourceModuleName The name of the module that created the report.
+	 * @param reportName       The report name, may be empty.
+	 * @param source		   The Content from which the report was created, if available.
+	 *
+	 * @return A Report data transfer object (DTO) for the new row.
+	 *
+	 * @throws TskCoreException
+	 */
+	public Report addReport(String localPath, String sourceModuleName, String reportName, Content source) throws TskCoreException {
 		// Make sure the local path of the report is in the database directory
 		// or one of its subdirectories.
 		String relativePath = ""; //NON-NLS
@@ -7973,7 +7991,7 @@ public class SleuthkitCase {
 			statement.setString(4, sourceModuleName);
 			statement.setString(5, reportName);
 			connection.executeUpdate(statement);
-			return new Report(objectId,	localPath, createTime, sourceModuleName, reportName);
+			return new Report(this, objectId,	localPath, createTime, sourceModuleName, reportName, source);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding report " + localPath + " to reports table", ex);
 		} finally {
@@ -8001,11 +8019,11 @@ public class SleuthkitCase {
 			resultSet = connection.executeQuery(statement);
 			ArrayList<Report> reports = new ArrayList<Report>();
 			while (resultSet.next()) {
-				reports.add(new Report(resultSet.getLong("report_id"), //NON-NLS
+				reports.add(new Report(this, resultSet.getLong("report_id"), //NON-NLS
 						Paths.get(getDbDirPath(), resultSet.getString("path")).normalize().toString(), //NON-NLS
 						resultSet.getLong("crtime"), //NON-NLS
 						resultSet.getString("src_module_name"), //NON-NLS
-						resultSet.getString("report_name")));  //NON-NLS
+						resultSet.getString("report_name"), null));  //NON-NLS
 			}
 			return reports;
 		} catch (SQLException ex) {
