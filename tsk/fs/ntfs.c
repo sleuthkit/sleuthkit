@@ -1249,6 +1249,7 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
         TSK_OFF_T off = 0;
         int retval;
         uint8_t stop_loop = 0;
+        uint8_t init_size_reached = 0;
 
         if (fs_attr->nrd.compsize <= 0) {
             tsk_error_set_errno(TSK_ERR_FS_FWALK);
@@ -1364,18 +1365,29 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                     size_t i;
 
                     // decompress the unit
-                    if (ntfs_proc_compunit(ntfs, &comp, comp_unit,
+                    uint8_t reset_uncompress_for_init_size = 0;
+                    if (!init_size_reached) {
+                        if (ntfs_proc_compunit(ntfs, &comp, comp_unit,
                             comp_unit_idx)) {
-                        tsk_error_set_errstr2("%" PRIuINUM " - type: %"
-                            PRIu32 "  id: %d Status: %s",
-                            fs_attr->fs_file->meta->addr, fs_attr->type,
-                            fs_attr->id,
-                            (fs_attr->fs_file->meta->
-                                flags & TSK_FS_META_FLAG_ALLOC) ?
-                            "Allocated" : "Deleted");
-                        free(comp_unit);
-                        ntfs_uncompress_done(&comp);
-                        return 1;
+                            tsk_error_set_errstr2("%" PRIuINUM " - type: %"
+                                PRIu32 "  id: %d Status: %s",
+                                fs_attr->fs_file->meta->addr, fs_attr->type,
+                                fs_attr->id,
+                                (fs_attr->fs_file->meta->
+                                    flags & TSK_FS_META_FLAG_ALLOC) ?
+                                "Allocated" : "Deleted");
+                            free(comp_unit);
+                            ntfs_uncompress_done(&comp);
+                            return 1;
+                        }
+
+                        // handle the initialized size
+                        int64_t remanining_init_size = fs_attr->nrd.initsize - off;
+                        if (remanining_init_size < comp.buf_size_b) {
+                            memset(comp.uncomp_buf + remanining_init_size, 0, comp.buf_size_b - remanining_init_size);
+                            init_size_reached = 1;
+                            reset_uncompress_for_init_size = 1;
+                        }               
                     }
 
                     // now call the callback with the uncompressed data
@@ -1443,6 +1455,11 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                         }
                     }
                     comp_unit_idx = 0;
+
+                    if (reset_uncompress_for_init_size) { // clear out stale data in the buffers for further callbacks and set up for reading 0's
+                        ntfs_uncompress_reset(&comp);
+                        comp.uncomp_idx = comp.buf_size_b;
+                    }
                 }
 
                 if (stop_loop)
