@@ -869,6 +869,7 @@ static uint8_t
 ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
 {
     size_t cl_index;
+    uint8_t recover_data = 0;
 
     tsk_error_reset();
 
@@ -895,11 +896,13 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
 
         blk_end = cl_index + blk_size;
         if (blk_end > comp->comp_len) {
-            tsk_error_set_errno(TSK_ERR_FS_FWALK);
-            tsk_error_set_errstr
-                ("ntfs_uncompress_compunit: Block length longer than buffer length: %"
-                PRIuSIZE "", blk_end);
-            return 1;
+            blk_end = comp->comp_len - 1;
+            if (tsk_verbose)
+                tsk_fprintf(stderr,
+                    "WARNING: ntfs_uncompress_compunit: Block length longer than buffer length. Attempting to continue.\n");
+            recover_data = 1;
+           // return 0; // zero out the entire block
+           // if we don't return 0, let the function continue to display as much decompressed data as possible
         }
 
         if (tsk_verbose)
@@ -1083,7 +1086,10 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
             }
         }
     }                           // end of loop inside of compression unit
-
+    // if we are attempting to recover, we may not have decompressed an entire CU. Set uncomp_idx to the expected size.
+    if (recover_data) {
+        comp->uncomp_idx = comp->buf_size_b;
+    }
     return 0;
 }
 
