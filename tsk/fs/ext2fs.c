@@ -554,12 +554,20 @@ static uint8_t
 ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
     TSK_INUM_T inum, const ext2fs_inode * dino_buf)
 {
-    int i;
+    int copy_len = 0;
+    ssize_t cnt = 0;
+    char *a_ptr = NULL;
+    char *data_buf = NULL;
+    uint32_t *addr_ptr = NULL;
+    TSK_DADDR_T *tsk_addr_ptr = NULL;
+    int i = 0;
+    unsigned int j = 0;
+    unsigned int count = 0;
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & ext2fs->fs_info;
     ext2fs_sb *sb = ext2fs->fs;
     EXT2_GRPNUM_T grp_num;
     TSK_INUM_T ibase = 0;
-
+    unsigned int total_read = 0;
 
     if (dino_buf == NULL) {
         tsk_error_reset();
@@ -694,7 +702,6 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
     }
 
     if (tsk_getu32(fs->endian, dino_buf->i_flags) & EXT2_IN_EXTENTS) {
-        uint32_t *addr_ptr;
         fs_meta->content_type = TSK_FS_META_CONTENT_TYPE_EXT4_EXTENTS;
         /* NOTE TSK_DADDR_T != uint32_t, so lets make sure we use uint32_t */
         addr_ptr = (uint32_t *) fs_meta->content_ptr;
@@ -703,10 +710,9 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
         }
     }
     else {
-        TSK_DADDR_T *addr_ptr;
-        addr_ptr = (TSK_DADDR_T *) fs_meta->content_ptr;
+        tsk_addr_ptr = (TSK_DADDR_T *) fs_meta->content_ptr;
         for (i = 0; i < EXT2FS_NDADDR + EXT2FS_NIADDR; i++)
-            addr_ptr[i] = tsk_gets32(fs->endian, dino_buf->i_block[i]);
+            tsk_addr_ptr[i] = tsk_gets32(fs->endian, dino_buf->i_block[i]);
 
         /* set the link string
          * the size check prevents us from trying to allocate a huge amount of
@@ -714,20 +720,17 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
          */
         if ((fs_meta->type == TSK_FS_META_TYPE_LNK)
             && (fs_meta->size < EXT2FS_MAXPATHLEN) && (fs_meta->size >= 0)) {
-            int i;
-
             if ((fs_meta->link =
                     tsk_malloc((size_t) (fs_meta->size + 1))) == NULL)
                 return 1;
 
             /* it is located directly in the pointers */
             if (fs_meta->size < 4 * (EXT2FS_NDADDR + EXT2FS_NIADDR)) {
-                unsigned int j;
-                unsigned int count = 0;
+                count = 0;
 
                 for (i = 0; i < (EXT2FS_NDADDR + EXT2FS_NIADDR) &&
                     count < fs_meta->size; i++) {
-                    char *a_ptr = (char *) &dino_buf->i_block[i];
+                    a_ptr = (char *) &dino_buf->i_block[i];
                     for (j = 0; j < 4 && count < fs_meta->size; j++) {
                         fs_meta->link[count++] = a_ptr[j];
                     }
@@ -740,11 +743,11 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
 
             /* it is in blocks */
             else {
-                TSK_FS_INFO *fs = (TSK_FS_INFO *) & ext2fs->fs_info;
-                char *data_buf = NULL;
-                char *a_ptr = fs_meta->link;
-                unsigned int total_read = 0;
-                TSK_DADDR_T *addr_ptr = fs_meta->content_ptr;;
+                fs = (TSK_FS_INFO *) & ext2fs->fs_info;
+                data_buf = NULL;
+                a_ptr = fs_meta->link;
+                total_read = 0;
+                tsk_addr_ptr = fs_meta->content_ptr;;
 
                 if ((data_buf = tsk_malloc(fs->block_size)) == NULL) {
                     return 1;
@@ -754,10 +757,8 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
                  * on path length */
                 for (i = 0; i < EXT2FS_NDADDR && total_read < fs_meta->size;
                     i++) {
-                    ssize_t cnt;
-
                     cnt = tsk_fs_read_block(fs,
-                        addr_ptr[i], data_buf, fs->block_size);
+                        tsk_addr_ptr[i], data_buf, fs->block_size);
 
                     if (cnt != fs->block_size) {
                         if (cnt >= 0) {
@@ -766,12 +767,12 @@ ext2fs_dinode_copy(EXT2FS_INFO * ext2fs, TSK_FS_META * fs_meta,
                         }
                         tsk_error_set_errstr2
                             ("ext2fs_dinode_copy: symlink destination from %"
-                            PRIuDADDR, addr_ptr[i]);
+                            PRIuDADDR, tsk_addr_ptr[i]);
                         free(data_buf);
                         return 1;
                     }
 
-                    int copy_len =
+                    copy_len =
                         (fs_meta->size - total_read <
                         fs->block_size) ? (int) (fs_meta->size -
                         total_read) : (int) (fs->block_size);
