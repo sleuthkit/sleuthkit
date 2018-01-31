@@ -38,7 +38,7 @@ import java.util.logging.Logger;
 public class Report implements Content {
 
 	static long ID_NOT_SET = -1;
-	private long id = ID_NOT_SET;
+	private long objectId = ID_NOT_SET;
 	private final Path path;
 	private final long createdTime;
 	private final String sourceModuleName;
@@ -61,7 +61,7 @@ public class Report implements Content {
 	 */
 	Report(SleuthkitCase db, long id, String path, long createdTime, String sourceModuleName, String reportName, Content source) {
 		this.db = db;
-		this.id = id;
+		this.objectId = id;
 		this.path = Paths.get(path);
 		this.createdTime = createdTime;
 		this.sourceModuleName = sourceModuleName;
@@ -69,14 +69,9 @@ public class Report implements Content {
 		this.source = source;
 	}
 
-	/**
-	 * Get the object id associated with the report.
-	 *
-	 * @return The primary key value.
-	 */
 	@Override
 	public long getId() {
-		return id;
+		return objectId;
 	}
 
 	/**
@@ -164,7 +159,7 @@ public class Report implements Content {
 
 	@Override
 	public <T> T accept(ContentVisitor<T> v) {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		return v.visit(this);
 	}
 
 	@Override
@@ -216,7 +211,7 @@ public class Report implements Content {
 		if (artifactTypeID != BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID()) {
 			throw new TskCoreException("Reports can only have keyword hit artifacts.");
 		}
-		return db.newBlackboardArtifact(artifactTypeID, id);
+		return db.newBlackboardArtifact(artifactTypeID, objectId);
 	}
 
 	@Override
@@ -252,7 +247,7 @@ public class Report implements Content {
 		if (artifactTypeID != BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID()) {
 			throw new TskCoreException("Reports can only have keyword hit artifacts.");
 		}
-		return db.getBlackboardArtifacts(artifactTypeID, id);
+		return db.getBlackboardArtifacts(artifactTypeID, objectId);
 	}
 
 	@Override
@@ -262,7 +257,7 @@ public class Report implements Content {
 
 	@Override
 	public ArrayList<BlackboardArtifact> getAllArtifacts() throws TskCoreException {
-		return db.getMatchingArtifacts("WHERE obj_id = " + id); //NON-NLS
+		return db.getMatchingArtifacts("WHERE obj_id = " + objectId); //NON-NLS
 	}
 
 	@Override
@@ -272,7 +267,7 @@ public class Report implements Content {
 
 	@Override
 	public long getArtifactsCount(String artifactTypeName) throws TskCoreException {
-		return db.getBlackboardArtifactsCount(artifactTypeName, id);
+		return getArtifactsCount(db.getArtifactType(artifactTypeName).getTypeID());
 	}
 
 	@Override
@@ -280,7 +275,7 @@ public class Report implements Content {
 		if (artifactTypeID != BlackboardArtifact.ARTIFACT_TYPE.TSK_KEYWORD_HIT.getTypeID()) {
 			throw new TskCoreException("Reports can only have keyword hit artifacts.");
 		}
-		return db.getBlackboardArtifactsCount(artifactTypeID, id);
+		return db.getBlackboardArtifactsCount(artifactTypeID, objectId);
 	}
 
 	@Override
@@ -290,7 +285,7 @@ public class Report implements Content {
 
 	@Override
 	public long getAllArtifactsCount() throws TskCoreException {
-		return db.getBlackboardArtifactsCount(id);
+		return db.getBlackboardArtifactsCount(objectId);
 	}
 
 	@Override
