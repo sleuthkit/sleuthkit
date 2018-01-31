@@ -626,8 +626,7 @@ public class TskData {
 		VOL(2), ///< Volume - see tsk_vs_parts for more details
 		FS(3), ///< File System - see tsk_fs_info for more details
 		ABSTRACTFILE(4), ///< File - see tsk_files for more details
-		ARTIFACT(5),	/// Artifact - see blackboard_artifacts for more details
-		REPORT(6)	///< Report - see reports for more details
+		ARTIFACT(5)	/// Artifact - see blackboard_artifacts for more details
 		; 
 		private short objectType;
 
