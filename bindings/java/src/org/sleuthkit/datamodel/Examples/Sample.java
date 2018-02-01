@@ -47,7 +47,7 @@ public class Sample {
 			ArrayList<String> paths = new ArrayList<String>();
 			paths.add(imagePath);
 			try {
-				process.run(UUID.randomUUID().toString(), paths.toArray(new String[paths.size()]));
+				process.run(UUID.randomUUID().toString(), paths.toArray(new String[paths.size()]), 0);
 			} catch (TskDataException ex) {
 				Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, ex);
 			}

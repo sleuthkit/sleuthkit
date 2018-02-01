@@ -114,7 +114,7 @@ public class Image extends AbstractContent implements DataSource {
 	 */
 	public synchronized long getImageHandle() throws TskCoreException {
 		if (imageHandle == 0) {
-			imageHandle = SleuthkitJNI.openImage(paths);
+			imageHandle = SleuthkitJNI.openImage(paths, (int)ssize);
 		}
 
 		return imageHandle;

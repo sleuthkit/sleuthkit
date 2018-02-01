@@ -289,6 +289,7 @@ public class SleuthkitJNI {
 			 *                       should be unique across multiple cases
 			 *                       (e.g., a UUID).
 			 * @param imageFilePaths Full path(s) to the image file(s).
+			 * @param sectorSize     The sector size (use '0' for autodetect).
 			 *
 			 * @throws TskCoreException if a critical error occurs within the
 			 *                          SleuthKit.
@@ -296,14 +297,14 @@ public class SleuthkitJNI {
 			 *                          the SleuthKit (should be OK to continue
 			 *                          the process)
 			 */
-			public void run(String deviceId, String[] imageFilePaths) throws TskCoreException, TskDataException {
+			public void run(String deviceId, String[] imageFilePaths, int sectorSize) throws TskCoreException, TskDataException {
 				long imageHandle = 0;
 				synchronized (this) {
 					if (0 != tskAutoDbPointer) {
 						throw new TskCoreException("Add image process already started");
 					}
 					if (!isCanceled) { //with isCanceled being guarded by this it will have the same value everywhere in this synchronized block
-						imageHandle = openImage(imageFilePaths, false);
+						imageHandle = openImage(imageFilePaths, sectorSize, false);
 						tskAutoDbPointer = initAddImgNat(caseDbPointer, timezoneLongToShort(timeZone), addUnallocSpace, skipFatFsOrphans);
 					}
 					if (0 == tskAutoDbPointer) {
@@ -395,7 +396,29 @@ public class SleuthkitJNI {
 			 */
 			@Deprecated
 			public void run(String[] imageFilePaths) throws TskCoreException, TskDataException {
-				run(null, imageFilePaths);
+				run(null, imageFilePaths, 0);
+			}
+			
+			/**
+			 * Starts the process of adding an image to the case database.
+			 * Either AddImageProcess.commit or AddImageProcess.revert MUST be
+			 * called after calling AddImageProcess.run.
+			 *
+			 * @param deviceId       An ASCII-printable identifier for the
+			 *                       device associated with the image that
+			 *                       should be unique across multiple cases
+			 *                       (e.g., a UUID).
+			 * @param imageFilePaths Full path(s) to the image file(s).
+			 *
+			 * @throws TskCoreException if a critical error occurs within the
+			 *                          SleuthKit.
+			 * @throws TskDataException if a non-critical error occurs within
+			 *                          the SleuthKit (should be OK to continue
+			 *                          the process)
+			 */
+			@Deprecated
+			public void run(String deviceId, String[] imageFilePaths) throws TskCoreException, TskDataException {
+				run(deviceId, imageFilePaths, 0);
 			}
 		}
 
@@ -480,7 +503,7 @@ public class SleuthkitJNI {
 	}
 
 	/**
-	 * open the image and return the image info pointer
+	 * Open the image and return the image info pointer.
 	 *
 	 * @param imageFiles the paths to the images
 	 *
@@ -490,16 +513,49 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	public static long openImage(String[] imageFiles) throws TskCoreException {
-		return openImage(imageFiles, true);
+		return openImage(imageFiles, 0, true);
+	}
+	
+	/**
+	 * Open the image with a specified sector size and return the image info
+	 * pointer.
+	 * 
+	 * @param imageFiles the paths to the images
+	 * @param sSize      the sector size (use '0' for autodetect)
+	 * 
+	 * @return the image info pointer
+	 * 
+	 * @throws TskCoreException exception thrown if critical error occurs within
+	 *                          TSK
+	 */
+	public static long openImage(String[] imageFiles, int sSize) throws TskCoreException {
+		return openImage(imageFiles, sSize, true);
+	}
+	
+	/**
+	 * Open the image and return the image info pointer.
+	 * 
+	 * @param imageFiles the paths to the images
+	 * @param useCache   true if the image handle cache should be used, false to
+	 *                   always go to TSK to open a fresh copy
+	 * 
+	 * @return the image info pointer
+	 * 
+	 * @throws TskCoreException exception thrown if critical error occurs within
+	 *                          TSK
+	 */
+	public static long openImage(String[] imageFiles, boolean useCache) throws TskCoreException {
+		return openImage(imageFiles, 0, useCache);
 	}
 
 	/**
-	 * open the image and return the image info pointer This is a temporary
+	 * Open the image and return the image info pointer. This is a temporary
 	 * measure to allow ingest of multiple local disks on the same drive letter.
 	 * We need to clear the cache to make sure cached data from the first drive
 	 * is not used.
 	 *
 	 * @param imageFiles the paths to the images
+	 * @param sSize      the sector size (use '0' for autodetect)
 	 * @param useCache   true if the image handle cache should be used, false to
 	 *                   always go to TSK to open a fresh copy
 	 *
@@ -508,7 +564,7 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException exception thrown if critical error occurs within
 	 *                          TSK
 	 */
-	private static long openImage(String[] imageFiles, boolean useCache) throws TskCoreException {
+	private static long openImage(String[] imageFiles, int sSize, boolean useCache) throws TskCoreException {
 
 		long imageHandle;
 
@@ -531,7 +587,7 @@ public class SleuthkitJNI {
 				imageHandle = HandleCache.imageHandleCache.get(imageKey);
 			} else {
 				//open new handle and cache it
-				imageHandle = openImgNat(imageFiles, imageFiles.length);
+				imageHandle = openImgNat(imageFiles, imageFiles.length, sSize);
 				HandleCache.fsHandleCache.put(imageHandle, new HashMap<Long, Long>());
 				HandleCache.imageHandleCache.put(imageKey, imageHandle);
 			}
@@ -1206,7 +1262,7 @@ public class SleuthkitJNI {
 
 	private static native long commitAddImgNat(long process) throws TskCoreException;
 
-	private static native long openImgNat(String[] imgPath, int splits) throws TskCoreException;
+	private static native long openImgNat(String[] imgPath, int splits, int sSize) throws TskCoreException;
 
 	private static native long openVsNat(long imgHandle, long vsOffset) throws TskCoreException;
 
