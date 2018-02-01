@@ -2,13 +2,13 @@ Source: sleuthkit
 Section: contrib
 Priority: optional
 Maintainer: Rishwanth Senthilkumar <rishwanth@basistech.com>
-Build-Depends: debhelper (>=9),autotools-dev, libewf-dev (>= 20130416), libsqlite3-dev, libafflib-dev (>= 3.6.6)  
+Build-Depends: debhelper (>=9),autotools-dev, libewf-dev (>= 20130416), libsqlite3-dev, libafflib-dev (>= 3.6.6), libc3p0-java, libpostgresql-jdbc-java  
 Standards-Version: 4.0.0
 Homepage: http://www.sleuthkit.org/sleuthkit
 
 Package: sleuthkit
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, libewf-dev (>= 20130416), libafflib-dev (>= 3.6.6), libsqlite3-dev
+Depends: ${shlibs:Depends}, ${misc:Depends}, libewf-dev (>= 20130416), libafflib-dev (>= 3.6.6), libsqlite3-dev, libc3p0-java, libpostgresql-jdbc-java
 Description: tools for forensics analysis on volume and filesystem data
  The Sleuth Kit, also known as TSK, is a collection of UNIX-based command
  line file and volume system forensic analysis tools. The filesystem tools
