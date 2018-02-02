@@ -22,8 +22,12 @@ export DEB_LDFLAGS_MAINT_APPEND = -lsqlite3 -lsupc++ -Wl,--as-needed
 # This is example for Cmake (See https://bugs.debian.org/641051 )
 #override_dh_auto_configure:
 #	dh_auto_configure -- #	-DCMAKE_LIBRARY_PATH=$(DEB_HOST_MULTIARCH)
-	
+
 
 override_dh_auto_install:
-	/bin/bash ./libtool   --mode=install /usr/bin/install -c   /home/rishwanth07/Documents/sleuthkit/tsk/libtsk.la '/home/rishwanth07/Documents/sleuthkit/bindings/java/'
+	cd tsk/
+	sudo make install
+	cd ..
+	cd bindings/java/
+	sudo make install
 	dh_install

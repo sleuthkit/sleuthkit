@@ -11,6 +11,7 @@
 	<import file="build-${os.family}.xml"/>
 
 	<!-- set global properties for this build -->
+	<property name="default-jar-location" location="/usr/share/java"/>
 	<property name="src" location="src/org/sleuthkit/datamodel"/>
 	<property name="VERSION" value="4.6.0"/>
 	<property name="sample" location="src/org/sleuthkit/datamodel/Examples"/>
@@ -63,35 +64,29 @@
 	</target>
 
 	<!-- set classpath for dependencies-->
-	<condition property="online">
-		<http url="https://www.google.com/"/>
-	</condition>
 
 	<target name="set-library-path" description="sets the path of the libraries" depends="set-library-path-online,set-library-path-offline"></target>
 
-	<target name="set-library-path-online" description="set this library path when the user is online" if="online">
+	<target name="set-library-path-online" description="set this library path when the user is online" unless="offline">
 		<path id="libraries">
 			<fileset dir="${lib}">
 				<include name="*.jar"/>
 			</fileset>
 			<pathelement path="${build}"/>
 		</path>
+		<echo message="hey"/>
 	</target>
 
-	<target name="set-library-path-offline" description="set the library path when the user is offline" unless="online">
+	<target name="set-library-path-offline" description="set the library path when the user is offline" if="offline">
 		<path id="libraries">
-			<if>
-				<equals arg1="${os.family}" arg2="unix"/>
-				<then>
-					<pathelement path="${default-jar-location}"/>
-				</then>
-			</if>
+			<fileset dir="${default-jar-location}">
+				<include name="*.jar"/>
+			</fileset>
 			<fileset dir="${lib}">
 				<include name="*.jar"/>
 			</fileset>
 			<pathelement path="${build}"/>
 		</path>
-		<echo message="${online}"/>
 	</target>
 
 	<property name="ivy.install.version" value="2.3.0-rc2"/>
@@ -102,7 +97,7 @@
 	<property name="ivy.jar.dir" value="${ivy.home}/lib"/>
 	<property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar"/>
 
-	<target name="download-ivy" if="online">
+	<target name="download-ivy" unless="offline">
 		<available file="${ivy.jar.file}" property="ivy.available"/>
 		<antcall target="-download-ivy"/>
 	</target>
@@ -112,14 +107,14 @@
 		<get src="http://repo2.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar" dest="${ivy.jar.file}" usetimestamp="true"/>
 	</target>
 
-	<target name="init-ivy" depends="download-ivy" unless="ivy.lib.path" if="online">
+	<target name="init-ivy" depends="download-ivy" unless="ivy.lib.path">
 		<path id="ivy.lib.path">
 			<fileset dir="${ivy.jar.dir}" includes="*.jar"/>
 		</path>
 		<taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
 	</target>
 
-	<target name="retrieve-deps" description="retrieve dependencies using ivy" depends="init-ivy" if="online">
+	<target name="retrieve-deps" description="retrieve dependencies using ivy" depends="init-ivy" unless="offline">
 		<ivy:settings file="ivysettings.xml"/>
 		<ivy:resolve/>
 		<ivy:retrieve sync="true" pattern="lib/[artifact]-[revision](-[classifier]).[ext]"/>
