@@ -70,27 +70,27 @@ public class SleuthkitJNI {
 		/*
 		 * A monitor used to guard access to cached Sleuthkit JNI handles.
 		 */
-		private static final Object CACHE_LOCK = new Object();
+		private static final Object cacheLock = new Object();
 
 		/*
 		 * A SleuthKit image handle cache implemented as a mappng of
 		 * concatenated image file paths to image handles.
 		 */
-		private static final Map<String, Long> IMAGE_HANDLE_CACHE = new HashMap<String, Long>();
+		private static final Map<String, Long> imageHandleCache = new HashMap<String, Long>();
 
 		/*
 		 * A SleuthKit file system handles cache implemented as a mapping of
 		 * image handles to image offset and file system handle pairs.
 		 */
-		private static final Map<Long, Map<Long, Long>> FS_HANDLE_CACHE = new HashMap<Long, Map<Long, Long>>();
+		private static final Map<Long, Map<Long, Long>> fsHandleCache = new HashMap<Long, Map<Long, Long>>();
 
 		/*
 		 * The collection of open file handles. We will only allow requests
 		 * through to the C code if the file handle exists in this collection.
 		 */
-		private static final Set<Long> FILE_HANDLE_CACHE = new HashSet<Long>();
+		private static final Set<Long> fileHandleCache = new HashSet<Long>();
 
-		private static final Map<Long, List<Long>> FILE_SYSTEM_TO_FILE_HANDLES = new HashMap<Long, List<Long>>();
+		private static final Map<Long, List<Long>> fileSystemToFileHandles = new HashMap<Long, List<Long>>();
 
 		private static final String INVALID_FILE_HANDLE = "Invalid file handle."; //NON-NLS
 
@@ -101,41 +101,41 @@ public class SleuthkitJNI {
 		 * @param fsHandle   The file system handle in which the file lives.
 		 */
 		private static void addFileHandle(long fileHandle, long fsHandle) {
-			synchronized (CACHE_LOCK) {
+			synchronized (cacheLock) {
 				// Add to collection of open file handles.
-				FILE_HANDLE_CACHE.add(fileHandle);
+				fileHandleCache.add(fileHandle);
 
 				// Add to map of file system to file handles.
-				if (FILE_SYSTEM_TO_FILE_HANDLES.containsKey(fsHandle)) {
-					FILE_SYSTEM_TO_FILE_HANDLES.get(fsHandle).add(fileHandle);
+				if (fileSystemToFileHandles.containsKey(fsHandle)) {
+					fileSystemToFileHandles.get(fsHandle).add(fileHandle);
 				} else {
-					FILE_SYSTEM_TO_FILE_HANDLES.put(fsHandle, new ArrayList<Long>(Arrays.asList(fileHandle)));
+					fileSystemToFileHandles.put(fsHandle, new ArrayList<Long>(Arrays.asList(fileHandle)));
 				}
 			}
 		}
 
 		private static void removeFileHandle(long fileHandle) {
-			synchronized (CACHE_LOCK) {
+			synchronized (cacheLock) {
 				// Remove from collection of open file handles.
-				FILE_HANDLE_CACHE.remove(fileHandle);
+				fileHandleCache.remove(fileHandle);
 			}
 		}
 
 		private static boolean isValidFileHandle(long fileHandle) {
-			synchronized (CACHE_LOCK) {
-				return FILE_HANDLE_CACHE.contains(fileHandle);
+			synchronized (cacheLock) {
+				return fileHandleCache.contains(fileHandle);
 			}
 		}
 
 		private static void closeHandlesAndClearCache() throws TskCoreException {
-			synchronized (CACHE_LOCK) {
+			synchronized (cacheLock) {
 				/*
 				 * Close any cached file system handles.
 				 */
-				for (Map<Long, Long> imageToFsMap : FS_HANDLE_CACHE.values()) {
+				for (Map<Long, Long> imageToFsMap : fsHandleCache.values()) {
 					for (Long fsHandle : imageToFsMap.values()) {
 						// First close all open file handles for the file system.
-						for (Long fileHandle : FILE_SYSTEM_TO_FILE_HANDLES.get(fsHandle)) {
+						for (Long fileHandle : fileSystemToFileHandles.get(fsHandle)) {
 							closeFile(fileHandle);
 						}
 						// Then close the file system handle.
@@ -146,14 +146,14 @@ public class SleuthkitJNI {
 				/*
 				 * Close any cached image handles.
 				 */
-				for (Long imageHandle : IMAGE_HANDLE_CACHE.values()) {
+				for (Long imageHandle : imageHandleCache.values()) {
 					closeImgNat(imageHandle);
 				}
 
-				FS_HANDLE_CACHE.clear();
-				IMAGE_HANDLE_CACHE.clear();
-				FILE_HANDLE_CACHE.clear();
-				FILE_SYSTEM_TO_FILE_HANDLES.clear();
+				fsHandleCache.clear();
+				imageHandleCache.clear();
+				fileHandleCache.clear();
+				fileSystemToFileHandles.clear();
 			}
 
 		}
@@ -576,22 +576,22 @@ public class SleuthkitJNI {
 		}
 		final String imageKey = keyBuilder.toString();
 
-		synchronized (HandleCache.CACHE_LOCK) {
+		synchronized (HandleCache.cacheLock) {
 			// If we're getting a fresh copy, remove any existing cache references
-			if (!useCache && HandleCache.IMAGE_HANDLE_CACHE.containsKey(imageKey)) {
-				long tempImageHandle = HandleCache.IMAGE_HANDLE_CACHE.get(imageKey);
-				HandleCache.FS_HANDLE_CACHE.remove(tempImageHandle);
-				HandleCache.IMAGE_HANDLE_CACHE.remove(imageKey);
+			if (!useCache && HandleCache.imageHandleCache.containsKey(imageKey)) {
+				long tempImageHandle = HandleCache.imageHandleCache.get(imageKey);
+				HandleCache.fsHandleCache.remove(tempImageHandle);
+				HandleCache.imageHandleCache.remove(imageKey);
 			}
 
-			if (useCache && HandleCache.IMAGE_HANDLE_CACHE.containsKey(imageKey)) //get from cache
+			if (useCache && HandleCache.imageHandleCache.containsKey(imageKey)) //get from cache
 			{
-				imageHandle = HandleCache.IMAGE_HANDLE_CACHE.get(imageKey);
+				imageHandle = HandleCache.imageHandleCache.get(imageKey);
 			} else {
 				//open new handle and cache it
 				imageHandle = openImgNat(imageFiles, imageFiles.length, sSize);
-				HandleCache.FS_HANDLE_CACHE.put(imageHandle, new HashMap<Long, Long>());
-				HandleCache.IMAGE_HANDLE_CACHE.put(imageKey, imageHandle);
+				HandleCache.fsHandleCache.put(imageHandle, new HashMap<Long, Long>());
+				HandleCache.imageHandleCache.put(imageKey, imageHandle);
 			}
 		}
 		return imageHandle;
@@ -644,8 +644,8 @@ public class SleuthkitJNI {
 	 */
 	public static long openFs(long imgHandle, long fsOffset) throws TskCoreException {
 		long fsHandle;
-		synchronized (HandleCache.CACHE_LOCK) {
-			final Map<Long, Long> imgOffSetToFsHandle = HandleCache.FS_HANDLE_CACHE.get(imgHandle);
+		synchronized (HandleCache.cacheLock) {
+			final Map<Long, Long> imgOffSetToFsHandle = HandleCache.fsHandleCache.get(imgHandle);
 			if (imgOffSetToFsHandle.containsKey(fsOffset)) {
 				//return cached
 				fsHandle = imgOffSetToFsHandle.get(fsOffset);
