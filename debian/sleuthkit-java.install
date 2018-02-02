@@ -1,0 +1,5 @@
+bindings/java/thirdpartyjars/sqlite-jdbc-3.21.0.1.jar /usr/share/java
+bindings/java/dist/sleuthkit-4.6.0.jar /usr/share/java
+bindings/java/libtsk.so* /usr/lib/
+
+

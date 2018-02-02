@@ -1,6 +1,8 @@
 sleuthkit for Debian
 -------------------
 
+These debian files are not for the official debian packaging and it does not meet all of the debian rules. We are using these files for our own distribution
+
 
  -- Rishwanth Senthilkumar <rishwanth@basistech.com>  Tue, 30 Jan 2018 15:34:02 -0500
 

@@ -8,7 +8,7 @@ jar_DATA = $(tsk_jar)
 $(tsk_jar):
 
 all-local:
-	ant dist
+	ant dist -Donline=false
 
 CLEANFILES = $(tsk_jar)
 
