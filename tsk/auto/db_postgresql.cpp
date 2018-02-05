@@ -613,7 +613,7 @@ attempt_exec
 		"Error creating ingest_job_modules table: %s\n")
 	||
 	attempt_exec
-	("CREATE TABLE reports (report_id BIGSERIAL PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL, FOREIGN KEY(report_id) REFERENCES tsk_objects(obj_id));", "Error creating reports table: %s\n")
+	("CREATE TABLE reports (obj_id BIGSERIAL PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));", "Error creating reports table: %s\n")
 		||
 		attempt_exec
 		("CREATE TABLE account_types (account_type_id BIGSERIAL PRIMARY KEY, type_name TEXT UNIQUE NOT NULL, display_name TEXT NOT NULL)", 
