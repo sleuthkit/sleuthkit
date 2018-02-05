@@ -30,6 +30,7 @@ using std::string;
 
 #define TSK_SCHEMA_VER 8
 #define TSK_SCHEMA_MINOR_VER 0
+
 /**
  * Values for the type column in the tsk_objects table. 
  */
