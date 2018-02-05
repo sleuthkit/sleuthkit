@@ -6,16 +6,16 @@ jardir = $(prefix)/share/java
 jar_DATA = $(tsk_jar)
 
 if OFFLINE
- ant_command=ant dist -Doffline=true
+ ant_args=-Doffline=yes
 else
- ant_command=ant dist
+
 endif
 
 
 $(tsk_jar):
 
 all-local:
-	$(ant_command)
+	ant dist $(ant_args)
 
 CLEANFILES = $(tsk_jar)
 
