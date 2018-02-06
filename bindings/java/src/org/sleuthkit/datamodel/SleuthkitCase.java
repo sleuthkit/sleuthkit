@@ -3906,6 +3906,9 @@ public class SleuthkitCase {
 				case ARTIFACT:
 					content = getArtifactById(id);
 					break;
+				case REPORT:
+					content = getReportById(id);
+					break;
 				default:
 					throw new TskCoreException("Could not obtain Content object with ID: " + id);
 			}
@@ -7909,9 +7912,9 @@ public class SleuthkitCase {
 	 *                         database directory (case directory in Autopsy) or
 	 *                         one of its subdirectories.
 	 * @param sourceModuleName The name of the module that created the report.
-	 * @param reportName       The report name, may be empty.
+	 * @param reportName       The report name.
 	 *
-	 * @return A Report data transfer object (DTO) for the new row.
+	 * @return A Report object for the new row.
 	 *
 	 * @throws TskCoreException
 	 */
@@ -7926,10 +7929,10 @@ public class SleuthkitCase {
 	 *                         database directory (case directory in Autopsy) or
 	 *                         one of its subdirectories.
 	 * @param sourceModuleName The name of the module that created the report.
-	 * @param reportName       The report name, may be empty.
+	 * @param reportName       The report name.
 	 * @param source		   The Content from which the report was created, if available.
 	 *
-	 * @return A Report data transfer object (DTO) for the new row.
+	 * @return A Report object for the new row.
 	 *
 	 * @throws TskCoreException
 	 */
@@ -8033,6 +8036,47 @@ public class SleuthkitCase {
 			connection.close();
 			releaseSingleUserCaseReadLock();
 		}
+	}
+
+	/**
+	 * Get a Report object for the given id.
+	 *
+	 * @param id
+	 *
+	 * @return A new Report object for the given id.
+	 *
+	 * @throws TskCoreException
+	 */
+	public Report getReportById(long id) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSingleUserCaseReadLock();
+		ResultSet resultSet = null;
+		Report report = null;
+		try {
+			// SELECT * FROM reports WHERE report_id = ?
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_REPORT_BY_ID);
+			statement.clearParameters();
+			statement.setLong(1, id);
+			resultSet = connection.executeQuery(statement);
+
+			if (resultSet.next()) {
+				report = new Report(this, resultSet.getLong("report_id"), //NON-NLS
+						Paths.get(getDbDirPath(), resultSet.getString("path")).normalize().toString(), //NON-NLS
+						resultSet.getLong("crtime"), //NON-NLS
+						resultSet.getString("src_module_name"), //NON-NLS
+						resultSet.getString("report_name"), null);  //NON-NLS
+			} else {
+				throw new TskCoreException("No report found for id: " + id);
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error querying reports table for id: " + id, ex);
+		} finally {
+			closeResultSet(resultSet);
+			connection.close();
+			releaseSingleUserCaseReadLock();
+		}
+
+		return report;
 	}
 
 	/**
@@ -8410,6 +8454,7 @@ public class SleuthkitCase {
 		SELECT_ARTIFACT_TAG_BY_ID("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id  WHERE blackboard_artifact_tags.tag_id = ?"), //NON-NLS
 		SELECT_ARTIFACT_TAGS_BY_ARTIFACT("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id WHERE blackboard_artifact_tags.artifact_id = ?"), //NON-NLS
 		SELECT_REPORTS("SELECT * FROM reports"), //NON-NLS
+		SELECT_REPORT_BY_ID("SELECT * FROM reports WHERE report_id = ?"), //NON-NLS
 		INSERT_REPORT("INSERT INTO reports (report_id, path, crtime, src_module_name, report_name) VALUES (?, ?, ?, ?, ?)"), //NON-NLS
 		DELETE_REPORT("DELETE FROM reports WHERE reports.report_id = ?"), //NON-NLS
 		INSERT_INGEST_JOB("INSERT INTO ingest_jobs (obj_id, host_name, start_date_time, end_date_time, status_id, settings_dir) VALUES (?, ?, ?, ?, ?, ?)"), //NON-NLS
