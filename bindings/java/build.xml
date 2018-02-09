@@ -1,42 +1,36 @@
 <project xmlns:ivy="antlib:org.apache.ivy.ant" name="DataModel" default="dist" basedir=".">
 	<description>
-		Sleuthkit Java DataModel 
+		Sleuthkit Java DataModel
 	</description>
-	<condition property="os.family" value="unix">  
-		<os family="unix"/>  
-	</condition>  
-	<condition property="os.family" value="windows">  
-		<os family="windows"/>  
-	</condition>  
-	<import file="build-${os.family}.xml"/> 
+	<condition property="os.family" value="unix">
+		<os family="unix"/>
+	</condition>
+	<condition property="os.family" value="windows">
+		<os family="windows"/>
+	</condition>
+	<import file="build-${os.family}.xml"/>
 
 	<!-- set global properties for this build -->
+	<property name="default-jar-location" location="/usr/share/java"/>
 	<property name="src" location="src/org/sleuthkit/datamodel"/>
 	<property name="VERSION" value="4.6.0"/>
 	<property name="sample" location="src/org/sleuthkit/datamodel/Examples"/>
 	<property name="build" location="build/"/>
 	<property name="build-datamodel" location="build/org/sleuthkit/datamodel"/>
-	<property name="dist"  location="dist"/>
+	<property name="dist" location="dist"/>
 	<property name="lib" location="lib"/>
 	<property name="test" location="test"/>
 	<property name="test-standards" location="test/output/gold"/>
 	<property name="test-results" location="test/output/results"/>
 	<property name="test-input" location="test/input"/>
 	<property name="test-types" location="test/org/sleuthkit/datamodel"/>
-	<property name="native-libs" location="build/NATIVELIBS" />
-	<property name="amd64" location="build/NATIVELIBS/amd64" />
-	<property name="x86" location="build/NATIVELIBS/x86" />
-	<property name="x86_64" location="build/NATIVELIBS/x86_64" />
-	<property name="i386" location="build/NATIVELIBS/i386" />
-	<property name="i586" location="build/NATIVELIBS/i586" />
+	<property name="native-libs" location="build/NATIVELIBS"/>
+	<property name="amd64" location="build/NATIVELIBS/amd64"/>
+	<property name="x86" location="build/NATIVELIBS/x86"/>
+	<property name="x86_64" location="build/NATIVELIBS/x86_64"/>
+	<property name="i386" location="build/NATIVELIBS/i386"/>
+	<property name="i586" location="build/NATIVELIBS/i586"/>
 	<property name="i686" location="build/NATIVELIBS/i686"/>
-  
-	<path id="libraries">
-		<fileset dir="${lib}">
-			<include name="*.jar"/>
-		</fileset>
-		<pathelement path="${build}"/>
-	</path>
 
 	<!-- Only added win folders for now -->
 	<target name="init">
@@ -46,72 +40,93 @@
 		<mkdir dir="${test-input}"/>
 		<mkdir dir="${test-standards}"/>
 		<mkdir dir="${test-results}"/>
-		<mkdir dir="${native-libs}" />
-		<mkdir dir="${amd64}" />
-		<mkdir dir="${amd64}/win" />
-		<mkdir dir="${amd64}/mac" />
-		<mkdir dir="${amd64}/linux" />
-		<mkdir dir="${x86}" />
-		<mkdir dir="${x86}/win" />
-		<mkdir dir="${x86}/linux" />
-		<mkdir dir="${x86_64}" />
-		<mkdir dir="${x86_64}/win" />
-		<mkdir dir="${x86_64}/mac" />
+		<mkdir dir="${native-libs}"/>
+		<mkdir dir="${amd64}"/>
+		<mkdir dir="${amd64}/win"/>
+		<mkdir dir="${amd64}/mac"/>
+		<mkdir dir="${amd64}/linux"/>
+		<mkdir dir="${x86}"/>
+		<mkdir dir="${x86}/win"/>
+		<mkdir dir="${x86}/linux"/>
+		<mkdir dir="${x86_64}"/>
+		<mkdir dir="${x86_64}/win"/>
+		<mkdir dir="${x86_64}/mac"/>
 		<mkdir dir="${x86_64}/linux"/>
-		<mkdir dir="${i386}" />
-		<mkdir dir="${i386}/win" />
+		<mkdir dir="${i386}"/>
+		<mkdir dir="${i386}/win"/>
 		<mkdir dir="${i386}/linux"/>
-		<mkdir dir="${i586}" />
-		<mkdir dir="${i586}/win" />
-		<mkdir dir="${i586}/linux" />
+		<mkdir dir="${i586}"/>
+		<mkdir dir="${i586}/win"/>
+		<mkdir dir="${i586}/linux"/>
 		<mkdir dir="${i686}"/>
 		<mkdir dir="${i686}/win"/>
 		<mkdir dir="${i686}/linux"/>
 	</target>
-  
-	<property name="ivy.install.version" value="2.3.0-rc2" />
+
+	<!-- set classpath for dependencies-->
+
+	<target name="set-library-path" description="sets the path of the libraries" depends="set-library-path-online,set-library-path-offline"></target>
+
+	<target name="set-library-path-online" description="set this library path when the user is online" unless="offline">
+		<path id="libraries">
+			<fileset dir="${lib}">
+				<include name="*.jar"/>
+			</fileset>
+			<pathelement path="${build}"/>
+		</path>
+		<echo message="hey"/>
+	</target>
+
+	<target name="set-library-path-offline" description="set the library path when the user is offline" if="offline">
+		<path id="libraries">
+			<fileset dir="${default-jar-location}">
+				<include name="*.jar"/>
+			</fileset>
+			<fileset dir="${lib}">
+				<include name="*.jar"/>
+			</fileset>
+			<pathelement path="${build}"/>
+		</path>
+	</target>
+
+	<property name="ivy.install.version" value="2.3.0-rc2"/>
 	<condition property="ivy.home" value="${env.IVY_HOME}">
-		<isset property="env.IVY_HOME" />
+		<isset property="env.IVY_HOME"/>
 	</condition>
-	<property name="ivy.home" value="${user.home}/.ant" />
-	<property name="ivy.jar.dir" value="${ivy.home}/lib" />
-	<property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar" />
+	<property name="ivy.home" value="${user.home}/.ant"/>
+	<property name="ivy.jar.dir" value="${ivy.home}/lib"/>
+	<property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar"/>
 
 	<target name="download-ivy" unless="offline">
 		<available file="${ivy.jar.file}" property="ivy.available"/>
-		<antcall target="-download-ivy" />
+		<antcall target="-download-ivy"/>
 	</target>
 
 	<target name="-download-ivy" unless="ivy.available">
 		<mkdir dir="${ivy.jar.dir}"/>
-		<get src="http://repo2.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar"
-			 dest="${ivy.jar.file}" usetimestamp="true"/>
+		<get src="http://repo2.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar" dest="${ivy.jar.file}" usetimestamp="true"/>
 	</target>
 
 	<target name="init-ivy" depends="download-ivy" unless="ivy.lib.path">
 		<path id="ivy.lib.path">
 			<fileset dir="${ivy.jar.dir}" includes="*.jar"/>
 		</path>
-		<taskdef resource="org/apache/ivy/ant/antlib.xml"
-				 uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
+		<taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
 	</target>
 
 	<target name="retrieve-deps" description="retrieve dependencies using ivy" depends="init-ivy" unless="offline">
-		<ivy:settings file="ivysettings.xml" />
+		<ivy:settings file="ivysettings.xml"/>
 		<ivy:resolve/>
-		<ivy:retrieve sync="true"
-					  pattern="lib/[artifact]-[revision](-[classifier]).[ext]" />
+		<ivy:retrieve sync="true" pattern="lib/[artifact]-[revision](-[classifier]).[ext]"/>
 	</target>
-  
-	<target name="compile-test" depends="compile"
-			description="compile the tests" >
+
+	<target name="compile-test" depends="compile" description="compile the tests">
 		<javac debug="on" srcdir="${test}" destdir="${build}" includeantruntime="false">
 			<classpath refid="libraries"/>
 		</javac>
 	</target>
-  
-	<target name="compile" depends="init, retrieve-deps"
-			description="compile the source" >
+
+	<target name="compile" depends="init, retrieve-deps" description="compile the source">
 		<!-- Compile the java code from ${src} into ${build} -->
 		<javac debug="on" srcdir="${src}" destdir="${build}" classpathref="libraries" includeantruntime="false">
 			<compilerarg value="-Xlint"/>
@@ -127,20 +142,18 @@
 		</javac>
 	</target>
 
-	<target name="dist-SQLite" depends="check-build, init-ivy, compile, copyLibs-SQLite"
-			unless="up-to-date" description="generate the distribution" >
+	<target name="dist-SQLite" depends="check-build, init-ivy,set-library-path, compile, copyLibs-SQLite" unless="up-to-date" description="generate the distribution">
 		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
 		<jar jarfile="${dist}/sleuthkit-${VERSION}.jar" basedir="${build}"/>
 	</target>
 
-	<target name="dist-PostgreSQL" depends="check-build, init-ivy, compile, copyLibs-PostgreSQL" 
-			unless="up-to-date" description="generate the PostgreSQL distribution" >
+	<target name="dist-PostgreSQL" depends="check-build, init-ivy,set-library-path, compile, copyLibs-PostgreSQL" unless="up-to-date" description="generate the PostgreSQL distribution">
 		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
 		<jar jarfile="${dist}/sleuthkit-postgresql-${VERSION}.jar" basedir="${build}"/>
 	</target>
 
 	<target name="check-build" depends="check-native-build">
-		<uptodate property="java-up-to-date" targetfile="${dist}/sleuthkit-${VERSION}.jar" >
+		<uptodate property="java-up-to-date" targetfile="${dist}/sleuthkit-${VERSION}.jar">
 			<srcfiles dir="${src}" includes="**/*.java"/>
 		</uptodate>
 		<condition property="up-to-date">
@@ -151,69 +164,62 @@
 		</condition>
 	</target>
 
-	 <target name="dist" depends="check-build" unless="up-to-date">
+	<target name="dist" depends="check-build" unless="up-to-date">
 		<antcall target="dist-SQLite"/>
-	 </target>
-	
+	</target>
+
 	<target name="Debug" depends="check-build" unless="up-to-date">
 		<antcall target="Debug-SQLite"/>
-	 </target>
-	
-	<target name="Debug-SQLite" depends="check-build, init-ivy, compile, copyLibs-SQLiteDebug" 
-			unless="up-to-date" description="generate the debug distribution" >
+	</target>
+
+	<target name="Debug-SQLite" depends="check-build, init-ivy, compile, copyLibs-SQLiteDebug" unless="up-to-date" description="generate the debug distribution">
 		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
 		<jar jarfile="${dist}/sleuthkit-${VERSION}.jar" basedir="${build}"/>
 	</target>
-  
-	<target name="Debug-PostgreSQL" depends="init-ivy, compile, copyLibs-PostgreSQLDebug" 
-			description="generate the PostgreSQL debug distribution" >
+
+	<target name="Debug-PostgreSQL" depends="init-ivy,  compile, copyLibs-PostgreSQLDebug" description="generate the PostgreSQL debug distribution">
 		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
 		<jar jarfile="${dist}/sleuthkit-postgresql-${VERSION}.jar" basedir="${build}"/>
 	</target>
 
 	<target name="jni" depends="compile" description="make the jni.h file">
-		<javah classpath = "${build}" outputFile="jni/dataModel_SleuthkitJNI.h" force="yes">
+		<javah classpath="${build}" outputFile="jni/dataModel_SleuthkitJNI.h" force="yes">
 			<class name="org.sleuthkit.datamodel.SleuthkitJNI"/>
 		</javah>
 	</target>
-  
-	<target name="clean"
-			description="clean up" >
+
+	<target name="clean" description="clean up">
 		<delete dir="${build}"/>
 		<delete dir="${dist}"/>
 		<delete dir="${lib}"/>
 	</target>
 
-	<target name ="javadoc" description="Make the API docs">
+	<target name="javadoc" description="Make the API docs">
 		<mkdir dir="javadoc"/>
-		<javadoc sourcepath="src" destdir="javadoc" overview="src/overview.html" />
+		<javadoc sourcepath="src" destdir="javadoc" overview="src/overview.html"/>
 	</target>
 
 	<target name="test-download" description="download test images.">
-		<mkdir dir="${test-input}" />
+		<mkdir dir="${test-input}"/>
 		<get src="http://digitalcorpora.org/corp/nps/drives/nps-2009-canon2/nps-2009-canon2-gen6.E01" dest="${test-input}"/>
 		<get src="http://digitalcorpora.org/corp/nps/drives/nps-2009-ntfs1/ntfs1-gen2.E01" dest="${test-input}"/>
-		<!--<get src="http://www.cfreds.nist.gov/dfr-images/dfr-16-ext.dd.bz2" dest="${test-input}"/>
-		<bunzip2 src="${test-input}/dfr-16-ext.dd.bz2" /> -->
+		<!--<get src="http://www.cfreds.nist.gov/dfr-images/dfr-16-ext.dd.bz2" dest="${test-input}"/> <bunzip2 src="${test-input}/dfr-16-ext.dd.bz2" /> -->
 	</target>
 
 	<!-- NOTE: test and test-rebuild targets are in the OS-specific files -->
 
-	<target name="run-sample" depends="compile"
-			description="run the sample">
-		<java classname="org.sleuthkit.datamodel.Examples.Sample"
-			  fork="true"
-			  failonerror="true">
+	<target name="run-sample" depends="compile" description="run the sample">
+		<java classname="org.sleuthkit.datamodel.Examples.Sample" fork="true" failonerror="true">
 			<env key="PATH" path="${env.TEMP}:${env.Path}:${env.TSK_HOME}/win32/x64/Release"/>
 			<arg value="${image}"/>
 			<classpath refid="libraries"/>
 		</java>
-		
+
 	</target>
 	<target name="doxygen" description="build doxygen docs, requires doxygen in PATH">
 		<exec executable="doxygen" dir="${basedir}/doxygen">
 			<arg value="Doxyfile"/>
 		</exec>
 	</target>
-	
+
 </project>
