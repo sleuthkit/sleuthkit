@@ -1,0 +1,13 @@
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: The Sleuth Kit (TSK)
+Upstream-Contact: Brian Carrier <carrier@sleuthkit.org>
+Source: https://github.com/sleuthkit/sleuthkit
+
+Files: *
+Copyright: 2001-2016 Brian Carrier <carrier@sleuthkit.org>
+           2002      @stake Inc.
+           2005      Naysawn Naderi <ndn@xiphos.ca>
+           2006-2011 Joachim Metz <jbmetz@users.sourceforge.net>
+           2006-2014 Basis Technology <carrier@sleuthkit.org>
+License: CPL-1.0
+

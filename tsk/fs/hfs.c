@@ -4014,6 +4014,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 uint8_t *recData;       // pointer to the data part of the recordBytes
                 hfs_attr_data *attrData;
                 uint32_t attributeLength;
+                uint32_t nameLength;
                 uint32_t recordType;
                 uint16_t keyLength;
                 int conversionResult;
@@ -4061,10 +4062,12 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                     goto on_error;
                 }
 
-                // name_len is in UTF_16 chars
-                if ((uint32_t)2 * tsk_getu16(endian, keyB->attr_name_len)  > attributeLength) {
+                // attr_name_len is in UTF_16 chars
+                nameLength = tsk_getu16(endian, keyB->attr_name_len);
+                if (2*nameLength > HFS_MAX_ATTR_NAME_LEN_UTF16_B) {
                     error_detected(TSK_ERR_FS_CORRUPT,
-                        "hfs_load_extended_attrs: Name length is too long.");
+                        "hfs_load_extended_attrs: Name length (%d) is too long.",
+                        nameLength);
                     goto on_error;
                 }
 
@@ -4086,8 +4089,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 
 
                 conversionResult = hfs_UTF16toUTF8(fs, keyB->attr_name,
-                    tsk_getu16(endian, keyB->attr_name_len),
-                    nameBuff, HFS_MAX_ATTR_NAME_LEN_UTF8_B+1, 0);
+                    nameLength, nameBuff, HFS_MAX_ATTR_NAME_LEN_UTF8_B+1, 0);
                 if (conversionResult != 0) {
                     error_returned
                         ("-- hfs_load_extended_attrs could not convert the attr_name in the btree key into a UTF8 attribute name");

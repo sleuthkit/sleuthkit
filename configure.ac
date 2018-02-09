@@ -33,7 +33,6 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_PATH_PROG(PERL, perl)
 
-
 dnl Checks for header files.
 AC_HEADER_STDC
 dnl AC_HEADER_MAJOR
@@ -208,6 +207,19 @@ AC_SUBST(Z_PATH, $Z_PATH)
 
 dnl needed for sqllite
 AC_CHECK_LIB(dl, dlopen)
+
+dnl check for user online input
+
+AC_ARG_ENABLE([offline],
+    [ AS_HELP_STRING([--enable-offline],[Turn on offline mode])],
+    [case "${enableval}" in
+	yes) offline=true ;;
+	no) offline=false ;;
+	*) AC_MSG_ERROR([bad value ${enableval} for --enable-online]) ;;
+     esac],[offline=false])
+
+AM_CONDITIONAL([OFFLINE], [test "x$offline" = xtrue])
+
 
 dnl Check if we should link libewf.
 AC_ARG_WITH([libewf],
