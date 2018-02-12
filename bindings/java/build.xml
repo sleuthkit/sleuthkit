@@ -74,7 +74,6 @@
 			</fileset>
 			<pathelement path="${build}"/>
 		</path>
-		<echo message="hey"/>
 	</target>
 
 	<target name="set-library-path-offline" description="set the library path when the user is offline" if="offline">
