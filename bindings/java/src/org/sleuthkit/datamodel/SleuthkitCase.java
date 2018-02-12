@@ -94,7 +94,7 @@ public class SleuthkitCase {
 	 * tsk/auto/tsk_db.h.
 	 */
 	private static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
-			= new CaseDbSchemaVersionNumber(7, 3);
+			= new CaseDbSchemaVersionNumber(8, 0);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -608,6 +608,7 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema6toSchema7(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema7toSchema7dot1(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema7dot1toSchema7dot2(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema7dot2toSchema8dot0(dbSchemaVersion, connection);
 				statement = connection.createStatement();
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + dbSchemaVersion.getMajor() + ", schema_minor_ver = " + dbSchemaVersion.getMinor()); //NON-NLS
 				statement.close();
@@ -675,7 +676,7 @@ public class SleuthkitCase {
 		try {
 			SleuthkitCase.logger.info(String.format("sqlite-jdbc version %s loaded in %s mode", //NON-NLS
 					SQLiteJDBCLoader.getVersion(), SQLiteJDBCLoader.isNativeMode()
-							? "native" : "pure-java")); //NON-NLS
+					? "native" : "pure-java")); //NON-NLS
 		} catch (Exception ex) {
 			SleuthkitCase.logger.log(Level.SEVERE, "Error querying case database mode", ex);
 		}
@@ -1212,13 +1213,12 @@ public class SleuthkitCase {
 				statement.execute("CREATE TABLE account_types (account_type_id INTEGER PRIMARY KEY, type_name TEXT UNIQUE NOT NULL, display_name TEXT NOT NULL)");
 				statement.execute("CREATE TABLE accounts (account_id INTEGER PRIMARY KEY, account_type_id INTEGER NOT NULL, account_unique_identifier TEXT NOT NULL,  UNIQUE(account_type_id, account_unique_identifier) , FOREIGN KEY(account_type_id) REFERENCES account_types(account_type_id))");
 				statement.execute("CREATE TABLE account_relationships (relationship_id INTEGER PRIMARY KEY, account1_id INTEGER NOT NULL, account2_id INTEGER NOT NULL, relationship_source_obj_id INTEGER NOT NULL,  date_time INTEGER, relationship_type INTEGER NOT NULL, data_source_obj_id INTEGER NOT NULL, UNIQUE(account1_id, account2_id, relationship_source_obj_id), FOREIGN KEY(account1_id) REFERENCES accounts(account_id), FOREIGN KEY(account2_id) REFERENCES accounts(account_id), FOREIGN KEY(relationship_source_obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id))");
-			}
-			else {
+			} else {
 				statement.execute("CREATE TABLE account_types (account_type_id BIGSERIAL PRIMARY KEY, type_name TEXT UNIQUE NOT NULL, display_name TEXT NOT NULL)");
 				statement.execute("CREATE TABLE accounts (account_id BIGSERIAL PRIMARY KEY, account_type_id INTEGER NOT NULL, account_unique_identifier TEXT NOT NULL,  UNIQUE(account_type_id, account_unique_identifier) , FOREIGN KEY(account_type_id) REFERENCES account_types(account_type_id))");
 				statement.execute("CREATE TABLE account_relationships  (relationship_id BIGSERIAL PRIMARY KEY, account1_id INTEGER NOT NULL, account2_id INTEGER NOT NULL, relationship_source_obj_id INTEGER NOT NULL, date_time BIGINT, relationship_type INTEGER NOT NULL, data_source_obj_id INTEGER NOT NULL, UNIQUE(account1_id, account2_id, relationship_source_obj_id), FOREIGN KEY(account1_id) REFERENCES accounts(account_id), FOREIGN KEY(account2_id) REFERENCES accounts(account_id), FOREIGN KEY(relationship_source_obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(data_source_obj_id) REFERENCES tsk_objects(obj_id))");
 			}
-			
+
 			// Create indexes
 			statement.execute("CREATE INDEX artifact_artifact_objID ON blackboard_artifacts(artifact_obj_id)");
 			statement.execute("CREATE INDEX relationships_account1  ON account_relationships(account1_id)");
@@ -1227,11 +1227,11 @@ public class SleuthkitCase {
 			statement.execute("CREATE INDEX relationships_date_time  ON account_relationships(date_time)");
 			statement.execute("CREATE INDEX relationships_relationship_type  ON account_relationships(relationship_type)");
 			statement.execute("CREATE INDEX relationships_data_source_obj_id  ON account_relationships(data_source_obj_id)");
-			
+
 			return new CaseDbSchemaVersionNumber(7, 2);
 		} finally {
 			closeResultSet(resultSet);
-			closeStatement(statement);	
+			closeStatement(statement);
 			closeStatement(updstatement);
 			releaseSingleUserCaseWriteLock();
 		}
@@ -1250,7 +1250,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException If there is an error completing a database
 	 *                          operation via another SleuthkitCase method.
 	 */
-	private CaseDbSchemaVersionNumber updateFromSchema7dot2toSchema7dot3(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+	private CaseDbSchemaVersionNumber updateFromSchema7dot2toSchema8dot0(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
 		if (schemaVersion.getMajor() != 7) {
 			return schemaVersion;
 		}
@@ -1259,17 +1259,63 @@ public class SleuthkitCase {
 			return schemaVersion;
 		}
 
-		Statement statement = null;
-		Statement updstatement = null;
+		Statement updateSchemaStatement = connection.createStatement();
+		Statement getExistingReportsStatement = connection.createStatement();
 		ResultSet resultSet = null;
+		ResultSet existingReports = null;
+
 		acquireSingleUserCaseWriteLock();
 		try {
-			// TODO
-			return new CaseDbSchemaVersionNumber(7, 3);
+			// Update the schema to turn report_id into an object id.
+			// Note that we have decided not to rename the column to allow
+			// old versions of Autopsy to be able to open updated cases.
+
+			// Unfortunately, SQLite doesn't support adding a constraint
+			// to an existing table so we have to rename the old...
+			updateSchemaStatement.execute("ALTER TABLE reports RENAME TO old_reports");
+
+			// ...create the new...
+			updateSchemaStatement.execute("CREATE TABLE reports (obj_id BIGSERIAL PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id))");
+
+			// ...add the existing report records back...
+			existingReports = getExistingReportsStatement.executeQuery("SELECT * FROM old_reports");
+			while (existingReports.next()) {
+				String path = existingReports.getString(2);
+				long crtime = existingReports.getInt(3);
+				String sourceModule = existingReports.getString(4);
+				String reportName = existingReports.getString(5);
+
+				PreparedStatement insertObjectStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
+				insertObjectStatement.clearParameters();
+				insertObjectStatement.setNull(1, java.sql.Types.BIGINT);
+				insertObjectStatement.setLong(2, TskData.ObjectType.REPORT.getObjectType());
+				connection.executeUpdate(insertObjectStatement);
+				resultSet = insertObjectStatement.getGeneratedKeys();
+				if (!resultSet.next()) {
+					throw new TskCoreException(String.format("Failed to INSERT report %s (%s) in tsk_objects table", reportName, path));
+				}
+				long objectId = resultSet.getLong(1); //last_insert_rowid()
+
+				// INSERT INTO reports (obj_id, path, crtime, src_module_name, display_name) VALUES (?, ?, ?, ?, ?)
+				PreparedStatement insertReportStatement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_REPORT);
+				insertReportStatement.clearParameters();
+				insertReportStatement.setLong(1, objectId);
+				insertReportStatement.setString(2, path);
+				insertReportStatement.setLong(3, crtime);
+				insertReportStatement.setString(4, sourceModule);
+				insertReportStatement.setString(5, reportName);
+				connection.executeUpdate(insertReportStatement);
+			}
+
+			// ...and drop the old table.
+			updateSchemaStatement.execute("DROP TABLE old_reports");
+
+			return new CaseDbSchemaVersionNumber(8, 0);
 		} finally {
 			closeResultSet(resultSet);
-			closeStatement(statement);	
-			closeStatement(updstatement);
+			closeResultSet(existingReports);
+			closeStatement(updateSchemaStatement);
+			closeStatement(getExistingReportsStatement);
 			releaseSingleUserCaseWriteLock();
 		}
 	}
@@ -4166,7 +4212,7 @@ public class SleuthkitCase {
 			releaseSingleUserCaseReadLock();
 		}
 	}
-	
+
 	/**
 	 * Get artifact from blackboard_artifacts table by its artifact_id
 	 *
@@ -7930,7 +7976,8 @@ public class SleuthkitCase {
 	 *                         one of its subdirectories.
 	 * @param sourceModuleName The name of the module that created the report.
 	 * @param reportName       The report name.
-	 * @param source		   The Content from which the report was created, if available.
+	 * @param source		         The Content from which the report was created, if
+	 *                         available.
 	 *
 	 * @return A Report object for the new row.
 	 *
@@ -7985,7 +8032,7 @@ public class SleuthkitCase {
 			}
 			long objectId = resultSet.getLong(1); //last_insert_rowid()
 
-			// INSERT INTO reports (report_id, path, crtime, src_module_name, display_name) VALUES (?, ?, ?, ?, ?)
+			// INSERT INTO reports (obj_id, path, crtime, src_module_name, display_name) VALUES (?, ?, ?, ?, ?)
 			statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_REPORT);
 			statement.clearParameters();
 			statement.setLong(1, objectId);
@@ -7994,7 +8041,7 @@ public class SleuthkitCase {
 			statement.setString(4, sourceModuleName);
 			statement.setString(5, reportName);
 			connection.executeUpdate(statement);
-			return new Report(this, objectId,	localPath, createTime, sourceModuleName, reportName, source);
+			return new Report(this, objectId, localPath, createTime, sourceModuleName, reportName, source);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding report " + localPath + " to reports table", ex);
 		} finally {
@@ -8022,7 +8069,7 @@ public class SleuthkitCase {
 			resultSet = connection.executeQuery(statement);
 			ArrayList<Report> reports = new ArrayList<Report>();
 			while (resultSet.next()) {
-				reports.add(new Report(this, resultSet.getLong("report_id"), //NON-NLS
+				reports.add(new Report(this, resultSet.getLong("obj_id"), //NON-NLS
 						Paths.get(getDbDirPath(), resultSet.getString("path")).normalize().toString(), //NON-NLS
 						resultSet.getLong("crtime"), //NON-NLS
 						resultSet.getString("src_module_name"), //NON-NLS
@@ -8053,14 +8100,14 @@ public class SleuthkitCase {
 		ResultSet resultSet = null;
 		Report report = null;
 		try {
-			// SELECT * FROM reports WHERE report_id = ?
+			// SELECT * FROM reports WHERE obj_id = ?
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_REPORT_BY_ID);
 			statement.clearParameters();
 			statement.setLong(1, id);
 			resultSet = connection.executeQuery(statement);
 
 			if (resultSet.next()) {
-				report = new Report(this, resultSet.getLong("report_id"), //NON-NLS
+				report = new Report(this, resultSet.getLong("obj_id"), //NON-NLS
 						Paths.get(getDbDirPath(), resultSet.getString("path")).normalize().toString(), //NON-NLS
 						resultSet.getLong("crtime"), //NON-NLS
 						resultSet.getString("src_module_name"), //NON-NLS
@@ -8090,7 +8137,7 @@ public class SleuthkitCase {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseWriteLock();
 		try {
-			// DELETE FROM reports WHERE reports.report_id = ?
+			// DELETE FROM reports WHERE reports.obj_id = ?
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.DELETE_REPORT);
 			statement.setLong(1, report.getId());
 			connection.executeUpdate(statement);
@@ -8454,9 +8501,9 @@ public class SleuthkitCase {
 		SELECT_ARTIFACT_TAG_BY_ID("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id  WHERE blackboard_artifact_tags.tag_id = ?"), //NON-NLS
 		SELECT_ARTIFACT_TAGS_BY_ARTIFACT("SELECT * FROM blackboard_artifact_tags INNER JOIN tag_names ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id WHERE blackboard_artifact_tags.artifact_id = ?"), //NON-NLS
 		SELECT_REPORTS("SELECT * FROM reports"), //NON-NLS
-		SELECT_REPORT_BY_ID("SELECT * FROM reports WHERE report_id = ?"), //NON-NLS
-		INSERT_REPORT("INSERT INTO reports (report_id, path, crtime, src_module_name, report_name) VALUES (?, ?, ?, ?, ?)"), //NON-NLS
-		DELETE_REPORT("DELETE FROM reports WHERE reports.report_id = ?"), //NON-NLS
+		SELECT_REPORT_BY_ID("SELECT * FROM reports WHERE obj_id = ?"), //NON-NLS
+		INSERT_REPORT("INSERT INTO reports (obj_id, path, crtime, src_module_name, report_name) VALUES (?, ?, ?, ?, ?)"), //NON-NLS
+		DELETE_REPORT("DELETE FROM reports WHERE reports.obj_id = ?"), //NON-NLS
 		INSERT_INGEST_JOB("INSERT INTO ingest_jobs (obj_id, host_name, start_date_time, end_date_time, status_id, settings_dir) VALUES (?, ?, ?, ?, ?, ?)"), //NON-NLS
 		INSERT_INGEST_MODULE("INSERT INTO ingest_modules (display_name, unique_name, type_id, version) VALUES(?, ?, ?, ?)"), //NON-NLS
 		SELECT_ATTR_BY_VALUE_BYTE("SELECT source FROM blackboard_attributes WHERE artifact_id = ? AND attribute_type_id = ? AND value_type = 4 AND value_byte = ?"), //NON-NLS
