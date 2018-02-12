@@ -1267,8 +1267,6 @@ public class SleuthkitCase {
 		acquireSingleUserCaseWriteLock();
 		try {
 			// Update the schema to turn report_id into an object id.
-			// Note that we have decided not to rename the column to allow
-			// old versions of Autopsy to be able to open updated cases.
 
 			// Unfortunately, SQLite doesn't support adding a constraint
 			// to an existing table so we have to rename the old...
@@ -7976,14 +7974,14 @@ public class SleuthkitCase {
 	 *                         one of its subdirectories.
 	 * @param sourceModuleName The name of the module that created the report.
 	 * @param reportName       The report name.
-	 * @param source		         The Content from which the report was created, if
+	 * @param parent           The Content from which the report was created, if
 	 *                         available.
 	 *
 	 * @return A Report object for the new row.
 	 *
 	 * @throws TskCoreException
 	 */
-	public Report addReport(String localPath, String sourceModuleName, String reportName, Content source) throws TskCoreException {
+	public Report addReport(String localPath, String sourceModuleName, String reportName, Content parent) throws TskCoreException {
 		// Make sure the local path of the report is in the database directory
 		// or one of its subdirectories.
 		String relativePath = ""; //NON-NLS
@@ -8023,7 +8021,12 @@ public class SleuthkitCase {
 			// INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_OBJECT, Statement.RETURN_GENERATED_KEYS);
 			statement.clearParameters();
-			statement.setNull(1, java.sql.Types.BIGINT);
+			if (parent == null) {
+				statement.setNull(1, java.sql.Types.BIGINT);
+			} else {
+				statement.setLong(1, parent.getId());
+			}
+
 			statement.setLong(2, TskData.ObjectType.REPORT.getObjectType());
 			connection.executeUpdate(statement);
 			resultSet = statement.getGeneratedKeys();
@@ -8041,7 +8044,7 @@ public class SleuthkitCase {
 			statement.setString(4, sourceModuleName);
 			statement.setString(5, reportName);
 			connection.executeUpdate(statement);
-			return new Report(this, objectId, localPath, createTime, sourceModuleName, reportName, source);
+			return new Report(this, objectId, localPath, createTime, sourceModuleName, reportName, parent);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error adding report " + localPath + " to reports table", ex);
 		} finally {

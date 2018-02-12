@@ -1,15 +1,15 @@
 /*
  * Sleuth Kit Data Model
- * 
+ *
  * Copyright 2014-2018 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *  http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,7 +43,9 @@ public class Report implements Content {
 	private final long createdTime;
 	private final String sourceModuleName;
 	private final String reportName;
-	private final Content source; // The source file used to produce the report, if available
+
+	private Content parent; // The object from which the report was generated. 
+
 	private final SleuthkitCase db; // A reference to the database instance.
 	private FileChannel fileChannel; // Used to read report content.
 
@@ -56,17 +58,16 @@ public class Report implements Content {
 	 * @param path        Absolute path to report.
 	 * @param createdTime Created time of report (in UNIX epoch time).
 	 * @param reportName  May be empty
-	 * @param source	  The source from which the Report was created, if
-	 *                    available.
+	 * @param parent	  The parent/source of the Report.
 	 */
-	Report(SleuthkitCase db, long id, String path, long createdTime, String sourceModuleName, String reportName, Content source) {
+	Report(SleuthkitCase db, long id, String path, long createdTime, String sourceModuleName, String reportName, Content parent) {
 		this.db = db;
 		this.objectId = id;
 		this.path = Paths.get(path);
 		this.createdTime = createdTime;
 		this.sourceModuleName = sourceModuleName;
 		this.reportName = reportName;
-		this.source = source;
+		this.parent = parent;
 	}
 
 	@Override
@@ -174,10 +175,10 @@ public class Report implements Content {
 
 	@Override
 	public Content getDataSource() throws TskCoreException {
-		if (null == source) {
+		if (null == parent) {
 			return null;
 		} else {
-			return source.getDataSource();
+			return parent.getDataSource();
 		}
 	}
 
@@ -198,7 +199,16 @@ public class Report implements Content {
 
 	@Override
 	public Content getParent() throws TskCoreException {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		if (parent == null) {
+			SleuthkitCase.ObjectInfo parentInfo;
+			try {
+				parentInfo = db.getParentInfo(this);
+			} catch (TskCoreException ex) {
+				return null;
+			}
+			parent = db.getContentById(parentInfo.getId());
+		}
+		return parent;
 	}
 
 	@Override
