@@ -1267,8 +1267,6 @@ public class SleuthkitCase {
 		acquireSingleUserCaseWriteLock();
 		try {
 			// Update the schema to turn report_id into an object id.
-			// Note that we have decided not to rename the column to allow
-			// old versions of Autopsy to be able to open updated cases.
 
 			// Unfortunately, SQLite doesn't support adding a constraint
 			// to an existing table so we have to rename the old...
