@@ -533,22 +533,6 @@ public class SleuthkitJNI {
 	public static long openImage(String[] imageFiles, int sSize) throws TskCoreException {
 		return openImage(imageFiles, sSize, true);
 	}
-	
-	/**
-	 * Open the image and return the image info pointer.
-	 * 
-	 * @param imageFiles the paths to the images
-	 * @param useCache   true if the image handle cache should be used, false to
-	 *                   always go to TSK to open a fresh copy
-	 * 
-	 * @return the image info pointer
-	 * 
-	 * @throws TskCoreException exception thrown if critical error occurs within
-	 *                          TSK
-	 */
-	public static long openImage(String[] imageFiles, boolean useCache) throws TskCoreException {
-		return openImage(imageFiles, 0, useCache);
-	}
 
 	/**
 	 * Open the image and return the image info pointer. This is a temporary
