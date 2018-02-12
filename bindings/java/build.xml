@@ -74,7 +74,6 @@
 			</fileset>
 			<pathelement path="${build}"/>
 		</path>
-		<echo message="hey"/>
 	</target>
 
 	<target name="set-library-path-offline" description="set the library path when the user is offline" if="offline">
@@ -126,7 +125,7 @@
 		</javac>
 	</target>
 
-	<target name="compile" depends="init, retrieve-deps" description="compile the source">
+	<target name="compile" depends="init, set-library-path, retrieve-deps" description="compile the source">
 		<!-- Compile the java code from ${src} into ${build} -->
 		<javac debug="on" srcdir="${src}" destdir="${build}" classpathref="libraries" includeantruntime="false">
 			<compilerarg value="-Xlint"/>
@@ -142,12 +141,12 @@
 		</javac>
 	</target>
 
-	<target name="dist-SQLite" depends="check-build, init-ivy,set-library-path, compile, copyLibs-SQLite" unless="up-to-date" description="generate the distribution">
+	<target name="dist-SQLite" depends="check-build, init-ivy, compile, copyLibs-SQLite" unless="up-to-date" description="generate the distribution">
 		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
 		<jar jarfile="${dist}/sleuthkit-${VERSION}.jar" basedir="${build}"/>
 	</target>
 
-	<target name="dist-PostgreSQL" depends="check-build, init-ivy,set-library-path, compile, copyLibs-PostgreSQL" unless="up-to-date" description="generate the PostgreSQL distribution">
+	<target name="dist-PostgreSQL" depends="check-build, init-ivy, compile, copyLibs-PostgreSQL" unless="up-to-date" description="generate the PostgreSQL distribution">
 		<!-- Put everything in ${build} into the MyProject-${DSTAMP}.jar file -->
 		<jar jarfile="${dist}/sleuthkit-postgresql-${VERSION}.jar" basedir="${build}"/>
 	</target>
