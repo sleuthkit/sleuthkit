@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2011-2013 Basis Technology Corp.
+ * Copyright 2011-2018 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,8 +20,6 @@ package org.sleuthkit.datamodel;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * InputStream to read bytes from a Content object's data
@@ -29,9 +27,8 @@ import java.util.logging.Logger;
 public class ReadContentInputStream extends InputStream {
 
 	private long currentOffset;
-	private long contentSize;
-	private Content content;
-	private static final Logger logger = Logger.getLogger(ReadContentInputStream.class.getName());
+	private final long contentSize;
+	private final Content content;
 
 	public ReadContentInputStream(Content content) {
 		this.content = content;
@@ -80,7 +77,7 @@ public class ReadContentInputStream extends InputStream {
 		// is the buffer big enough?
 		lenToRead = Math.min(lenToRead, buffLen - off);
 
-		byte[] retBuf = null;
+		byte[] retBuf;
 		if (off == 0) {
 			//write directly to user buffer
 			retBuf = b;
@@ -105,9 +102,6 @@ public class ReadContentInputStream extends InputStream {
 				return lenRead;
 			}
 		} catch (TskCoreException ex) {
-			logger.log(Level.WARNING, ("Error reading content into stream: " //NON-NLS
-					+ content.getId()) + ": " + content.getName()
-					+ ", at offset " + currentOffset + ", length to read: " + lenToRead, ex); //NON-NLS
 			throw new IOException(ex);
 		}
 
