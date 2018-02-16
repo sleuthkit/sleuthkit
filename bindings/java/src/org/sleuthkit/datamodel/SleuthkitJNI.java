@@ -416,7 +416,6 @@ public class SleuthkitJNI {
 			 *                          the SleuthKit (should be OK to continue
 			 *                          the process)
 			 */
-			@Deprecated
 			public void run(String deviceId, String[] imageFilePaths) throws TskCoreException, TskDataException {
 				run(deviceId, imageFilePaths, 0);
 			}
