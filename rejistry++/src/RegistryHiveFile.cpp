@@ -31,29 +31,30 @@
 
 // Local includes
 #include "RegistryHiveFile.h"
+#include "RejistryException.h"
 
 namespace Rejistry {
 
     RegistryHiveFile::RegistryHiveFile(const std::wstring& filePath) {
         HANDLE fileHandle = CreateFile(filePath.c_str(), GENERIC_READ, FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
         if (fileHandle == INVALID_HANDLE_VALUE) {
-            throw std::exception(getErrorMessage().c_str());
+            throw RegistryParseException(getErrorMessage().c_str());
         }
 
         LARGE_INTEGER fileSize;
         if (!GetFileSizeEx(fileHandle, &fileSize)) {
-            throw std::exception("Failed to get file size.");
+            throw RegistryParseException("Failed to get file size.");
         }
 
         if (fileSize.QuadPart == 0L || fileSize.QuadPart > INT_MAX) {
             CloseHandle(fileHandle);
-            throw std::exception("File is either too large to process or is empty.");
+            throw RegistryParseException("File is either too large to process or is empty.");
         }
 
         HANDLE fileMappingHandle = CreateFileMapping(fileHandle, NULL, PAGE_READONLY, 0, 0, NULL);
         if (fileMappingHandle == NULL) {
             CloseHandle(fileHandle);
-            throw std::exception(getErrorMessage().c_str());
+            throw RegistryParseException(getErrorMessage().c_str());
         }
 
         void * mappedFile = MapViewOfFile(fileMappingHandle, FILE_MAP_READ, 0, 0, 0);
@@ -61,7 +62,7 @@ namespace Rejistry {
         if (mappedFile == NULL) {
             CloseHandle(fileMappingHandle);
             CloseHandle(fileHandle);
-            throw std::exception(getErrorMessage().c_str());
+            throw RegistryParseException(getErrorMessage().c_str());
         }
 
         _buffer = new RegistryByteBuffer(new ByteBuffer((const uint8_t*)mappedFile, (const uint32_t)fileSize.LowPart));
