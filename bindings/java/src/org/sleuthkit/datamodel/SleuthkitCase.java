@@ -7891,7 +7891,11 @@ public class SleuthkitCase {
 			String casePathLower = getDbDirPath().toLowerCase();
 			String localPathLower = localPath.toLowerCase();
 			int length = new File(casePathLower).toURI().relativize(new File(localPathLower).toURI()).getPath().length();
-			relativePath = new File(localPath.substring(localPathLower.length() - length)).getPath();
+            if (localPathLower.contains("http:")) {
+				relativePath = localPath;
+			} else {
+			    relativePath = new File(localPath.substring(localPathLower.length() - length)).getPath();
+			}
 		} catch (IllegalArgumentException ex) {
 			String errorMessage = String.format("Local path %s not in the database directory or one of its subdirectories", localPath);
 			throw new TskCoreException(errorMessage, ex);
@@ -7900,9 +7904,13 @@ public class SleuthkitCase {
 		// Figure out the create time of the report.
 		long createTime = 0;
 		try {
-			java.io.File tempFile = new java.io.File(localPath);
-			// Convert to UNIX epoch (seconds, not milliseconds).
-			createTime = tempFile.lastModified() / 1000;
+			if (localPath.toLowerCase().contains("http:")) {
+				createTime = System.currentTimeMillis() / 1000;
+			} else {
+                java.io.File tempFile = new java.io.File(localPath);
+			    // Convert to UNIX epoch (seconds, not milliseconds).
+			    createTime = tempFile.lastModified() / 1000;
+            }
 		} catch (Exception ex) {
 			throw new TskCoreException("Could not get create time for report at " + localPath, ex);
 		}
@@ -7950,9 +7958,15 @@ public class SleuthkitCase {
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_REPORTS);
 			resultSet = connection.executeQuery(statement);
 			ArrayList<Report> reports = new ArrayList<Report>();
+			String localpath;
 			while (resultSet.next()) {
-				reports.add(new Report(resultSet.getLong("report_id"), //NON-NLS
-						Paths.get(getDbDirPath(), resultSet.getString("path")).normalize().toString(), //NON-NLS
+                if (resultSet.getString("path").toLowerCase().contains("http")) {
+					localpath = resultSet.getString("path");
+				} else {
+					localpath = Paths.get(getDbDirPath(), resultSet.getString("path")).normalize().toString(); //NON-NLS
+				}
+                reports.add(new Report(resultSet.getLong("report_id"), //NON-NLS
+						localpath, //NON-NLS
 						resultSet.getLong("crtime"), //NON-NLS
 						resultSet.getString("src_module_name"), //NON-NLS
 						resultSet.getString("report_name")));  //NON-NLS
