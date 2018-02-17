@@ -28,20 +28,24 @@
 #include <stdexcept>
 
 #include "Buffer.h"
+#include "RejistryException.h"
 
 namespace Rejistry {
 
         Buffer&  Buffer::limit(const uint32_t newLimit) {
             if (newLimit > _capacity) {
-                throw std::invalid_argument("Buffer limit greater than capacity");
+                throw RegistryParseException("Buffer limit greater than capacity");
             }
             _limit = newLimit;
             return *this;
         }
 
+        /**
+         * Throws exception if position is too large. 
+         */
         Buffer& Buffer::position(const uint32_t newPosition) {
             if (newPosition > _limit) {
-                throw std::invalid_argument("Buffer position greater than limit");
+                throw RegistryParseException("Buffer position greater than limit");
             }
             _position = newPosition;
             return *this;

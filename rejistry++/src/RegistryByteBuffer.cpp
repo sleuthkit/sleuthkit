@@ -45,7 +45,7 @@ namespace Rejistry {
     */
     RegistryByteBuffer::RegistryByteBuffer(ByteBuffer * buffer) {
         if (buffer == NULL) {
-            throw std::invalid_argument("Buffer must not be null.");
+            throw RegistryParseException("Buffer must not be null.");
         }
         _byteBuffer = buffer;
     }
@@ -57,22 +57,37 @@ namespace Rejistry {
         }
     }
 
+    /**
+    * @returns 0 if offset is too large.
+    */
     uint16_t RegistryByteBuffer::getWord(const uint32_t offset) const {
         return _byteBuffer->getShort(offset) & 0xFFFF;
     }
 
+    /**
+    * @returns 0 if offset is too large.
+    */
     uint32_t RegistryByteBuffer::getDWord(const uint32_t offset) const {
         return _byteBuffer->getInt(offset) & 0xFFFFFFFF;
     }
 
+    /**
+    * @returns 0 if offset is too large.
+    */
     uint64_t RegistryByteBuffer::getQWord(const uint32_t offset) const {
         return _byteBuffer->getLong(offset) & 0xFFFFFFFFFFFFFFFF;
     }
 
+    /**
+    * Throws exception if offset or length is too large.
+    */
     std::string RegistryByteBuffer::getASCIIString() const {
         return getASCIIString(0, _byteBuffer->limit());
     }
 
+    /**
+    * Throws exception if offset or length is too large.
+    */
     std::string RegistryByteBuffer::getASCIIString(const uint32_t offset, const uint32_t length) const {
         if (length == 0) {
             return "";
@@ -137,6 +152,9 @@ namespace Rejistry {
         return getData(0, _byteBuffer->limit());
     }
 
+    /**
+     * Throws exception if offset and length are too large.
+     */
     ByteBuffer::ByteArray RegistryByteBuffer::getData(const uint32_t offset, const uint32_t length) const {
         uint32_t savedPosition = _byteBuffer->position();
         _byteBuffer->position(offset);
