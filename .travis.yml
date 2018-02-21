@@ -24,3 +24,4 @@ install:
   - ./bootstrap
 script:
   - ./configure && make && make check
+  - cd release; ./release-unix.pl ci
