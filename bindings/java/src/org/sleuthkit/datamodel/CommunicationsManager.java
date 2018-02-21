@@ -178,8 +178,8 @@ public class CommunicationsManager {
 
 	/**
 	 * Add a custom account type that is not already defined in Account.Type.
-     * Will not allow duplicates and will return existing type if the name is
-     * already defined.
+	 * Will not allow duplicates and will return existing type if the name is
+	 * already defined.
 	 *
 	 * @param accountTypeName account type that must be unique
 	 * @param displayName     account type display name
@@ -189,7 +189,7 @@ public class CommunicationsManager {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
 	 */
-    // NOTE: Full name given for Type for doxygen linking
+	// NOTE: Full name given for Type for doxygen linking
 	public org.sleuthkit.datamodel.Account.Type addAccountType(String accountTypeName, String displayName) throws TskCoreException {
 		Account.Type accountType = new Account.Type(accountTypeName, displayName);
 
@@ -260,7 +260,7 @@ public class CommunicationsManager {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
 	 */
-    // NOTE: Full name given for Type for doxygen linking
+	// NOTE: Full name given for Type for doxygen linking
 	public AccountFileInstance createAccountFileInstance(org.sleuthkit.datamodel.Account.Type accountType, String accountUniqueID, String moduleName, Content sourceFile) throws TskCoreException {
 
 		// make or get the Account (unique at the case-level)
@@ -295,7 +295,7 @@ public class CommunicationsManager {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
 	 */
-    // NOTE: Full name given for Type for doxygen linking
+	// NOTE: Full name given for Type for doxygen linking
 	public Account getAccount(org.sleuthkit.datamodel.Account.Type accountType, String accountUniqueID) throws TskCoreException {
 		Account account = null;
 		CaseDbConnection connection = db.getConnection();
@@ -338,17 +338,16 @@ public class CommunicationsManager {
 //
 //		return accountInstance;
 //	}
-	
 	/**
-	 * Add one or more relationships between the sender and recipient account instances. All
-	 * account instances must be from the same data source.
+	 * Add one or more relationships between the sender and recipient account
+	 * instances. All account instances must be from the same data source.
 	 *
-	 * @param sender               sender account
-	 * @param recipients           list of recipients
-	 * @param sourceArtifact       Artifact that relationships were derived from
-	 * @param relationshipType     The type of relationships to be created
-	 * @param dateTime             Date of communications/relationship, as epoch
-	 *                             seconds
+	 * @param sender           sender account
+	 * @param recipients       list of recipients
+	 * @param sourceArtifact   Artifact that relationships were derived from
+	 * @param relationshipType The type of relationships to be created
+	 * @param dateTime         Date of communications/relationship, as epoch
+	 *                         seconds
 	 *
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
@@ -360,7 +359,7 @@ public class CommunicationsManager {
 	 *                                                  relationshipType are not
 	 *                                                  compatible.
 	 */
-    // NOTE: Full name given for Type for doxygen linking
+	// NOTE: Full name given for Type for doxygen linking
 	public void addRelationships(AccountFileInstance sender, List<AccountFileInstance> recipients,
 			BlackboardArtifact sourceArtifact, org.sleuthkit.datamodel.Relationship.Type relationshipType, long dateTime) throws TskCoreException, TskDataException {
 
@@ -402,7 +401,7 @@ public class CommunicationsManager {
 				addAccountsRelationship(accountPair.getFirst(), accountPair.getSecond(),
 						sourceArtifact, relationshipType, dateTime);
 			} catch (TskCoreException ex) {
-                // @@@ This should probably not be caught and instead we stop adding
+				// @@@ This should probably not be caught and instead we stop adding
 				LOGGER.log(Level.WARNING, "Error adding relationship", ex); //NON-NLS
 			}
 		}
@@ -469,7 +468,8 @@ public class CommunicationsManager {
 	 *
 	 * @param accountType     account type
 	 * @param accountUniqueID Unique account ID (such as email address)
-     * @param moduleName        module name that found this instance (for the artifact)
+	 * @param moduleName      module name that found this instance (for the
+	 *                        artifact)
 	 * @param sourceFile		    Source file (for the artifact)
 	 *
 	 * @return blackboard artifact for the instance
@@ -566,12 +566,12 @@ public class CommunicationsManager {
 	 * @throws TskCoreException If an error occurs accessing the case database.
 	 *
 	 */
-    // NOTE: Full name given for Type for doxygen linking
+	// NOTE: Full name given for Type for doxygen linking
 	public org.sleuthkit.datamodel.Account.Type getAccountType(String accountTypeName) throws TskCoreException {
 		if (this.typeNameToAccountTypeMap.containsKey(accountTypeName)) {
 			return this.typeNameToAccountTypeMap.get(accountTypeName);
 		}
-        
+
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSingleUserCaseReadLock();
 		Statement s = null;
@@ -692,8 +692,8 @@ public class CommunicationsManager {
 	}
 
 	/**
-	 * Returns a list of AccountDeviceInstances that at least one relationship that meets
-     * the criteria listed in the filters.
+	 * Returns a list of AccountDeviceInstances that at least one relationship
+	 * that meets the criteria listed in the filters.
 	 *
 	 * Applicable filters: DeviceFilter, AccountTypeFilter, DateRangeFilter,
 	 * RelationshipTypeFilter
@@ -798,9 +798,119 @@ public class CommunicationsManager {
 	}
 
 	/**
-	 * Get the number of unique relationship sources (such as EMAIL artifacts) associated with
-     * an account on a given device (AccountDeviceInstance) that meet the filter criteria.
-     *
+	 *
+	 * Get the number of relationships between all pairs of accounts with ids in
+	 * the given set.
+	 *
+	 * @param accountIDs
+	 * @param filter
+	 *
+	 * @return
+	 *
+	 * @throws TskCoreException
+	 */
+	public Map<Relationship.RelationshipKey, Long> getRelationshipCounts(Set<Long> accountIDs, CommunicationsFilter filter) throws TskCoreException {
+
+		//set up applicable filters 
+		Set<String> applicableFilters = new HashSet<String>(Arrays.asList(
+				CommunicationsFilter.DateRangeFilter.class.getName(),
+				CommunicationsFilter.DeviceFilter.class.getName(),
+				CommunicationsFilter.RelationshipTypeFilter.class.getName()
+		));
+
+		String buildCSVString = StringUtils.buildCSVString(accountIDs);
+		String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
+		final String queryString = "SELECT count(relationship_id) , relationships.account1_id, relationships.account2_id "
+				+ " FROM  account_relationships AS relationships "
+				+ " WHERE (( relationships.account1_id IN (" + buildCSVString + ")) "
+				+ "    and ( relationships.account2_id in( " + buildCSVString + " ))) "
+				+ (filterSQL.isEmpty() ? "" : " AND " + filterSQL)
+				+ "group by relationships.account1_id , relationships.account2_id  ";
+		CaseDbConnection connection = db.getConnection();
+		db.acquireSingleUserCaseReadLock();
+		Statement s = null;
+		ResultSet rs = null;
+
+		Map<Relationship.RelationshipKey, Long> results = new HashMap<Relationship.RelationshipKey, Long>();
+
+		System.out.println("count: " + queryString);
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, queryString); //NON-NLS
+
+			while (rs.next()) {
+				Relationship.RelationshipKey relationshipKey = new Relationship.RelationshipKey(
+						rs.getLong("account1_id"),
+						rs.getLong("account2_id"));
+				long count = rs.getLong("count(relationship_id)");
+				Long oldCount = results.get(relationshipKey);
+				if (oldCount != null) {
+					count += oldCount;
+				}
+				results.put(relationshipKey, count);
+
+			}
+			return results;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting relationships between accounts. " + ex.getMessage(), ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			db.releaseSingleUserCaseReadLock();
+		}
+
+	}
+
+	public long getRelationshipSourcesCount(AccountDeviceInstance account1, AccountDeviceInstance account2, CommunicationsFilter filter) throws TskCoreException {
+
+		//set up applicable filters 
+		Set<String> applicableFilters = new HashSet<String>(Arrays.asList(
+				CommunicationsFilter.DateRangeFilter.class.getName(),
+				CommunicationsFilter.DeviceFilter.class.getName(),
+				CommunicationsFilter.RelationshipTypeFilter.class.getName()
+		));
+		String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
+		final String queryString = "SELECT count(distinct artifact_id) as count "
+				+ " FROM blackboard_artifacts AS artifacts"
+				+ "	JOIN account_relationships AS relationships"
+				+ "		ON artifacts.artifact_obj_id = relationships.relationship_source_obj_id"
+				+ " WHERE (( relationships.account1_id = " + account1.getAccount().getAccountID()
+				+ " AND relationships.account2_id  = " + account2.getAccount().getAccountID()
+				+ " ) OR ( relationships.account2_id = " + account1.getAccount().getAccountID()
+				+ "			AND relationships.account1_id =" + account2.getAccount().getAccountID() + " ))"
+				+ (filterSQL.isEmpty() ? "" : " AND " + filterSQL)
+				+ " ";
+		CaseDbConnection connection = db.getConnection();
+		db.acquireSingleUserCaseReadLock();
+		Statement s = null;
+		ResultSet rs = null;
+
+		System.out.println("count: " + queryString);
+		try {
+			s = connection.createStatement();
+			rs = connection.executeQuery(s, queryString); //NON-NLS
+
+			while (rs.next()) {
+				return rs.getLong("count");
+			}
+
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting relationships between accounts. " + ex.getMessage(), ex);
+		} finally {
+			closeResultSet(rs);
+			closeStatement(s);
+			connection.close();
+			db.releaseSingleUserCaseReadLock();
+		}
+		return 0;
+	}
+
+	/**
+	 * Get the number of unique relationship sources (such as EMAIL artifacts)
+	 * associated with an account on a given device (AccountDeviceInstance) that
+	 * meet the filter criteria.
+	 *
 	 * Applicable filters: RelationshipTypeFilter, DateRangeFilter
 	 *
 	 * @param accountDeviceInstance Account of interest
@@ -856,8 +966,9 @@ public class CommunicationsManager {
 	}
 
 	/**
-     * Get the unique relationship sources (such as EMAIL artifacts) associated with an
-     * account on a given device (AccountDeviceInstance) that meet the filter criteria.
+	 * Get the unique relationship sources (such as EMAIL artifacts) associated
+	 * with an account on a given device (AccountDeviceInstance) that meet the
+	 * filter criteria.
 	 *
 	 * Applicable filters: RelationshipTypeFilter, DateRangeFilter
 	 *
@@ -903,8 +1014,10 @@ public class CommunicationsManager {
 
 		// set up applicable filters
 		Set<String> applicableFilters = new HashSet<String>(Arrays.asList(
-				CommunicationsFilter.RelationshipTypeFilter.class.getName(),
-				CommunicationsFilter.DateRangeFilter.class.getName()
+				CommunicationsFilter.RelationshipTypeFilter.class
+						.getName(),
+				CommunicationsFilter.DateRangeFilter.class
+						.getName()
 		));
 		String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
 
@@ -971,9 +1084,12 @@ public class CommunicationsManager {
 
 		//set up applicable filters 
 		Set<String> applicableInnerQueryFilters = new HashSet<String>(Arrays.asList(
-				CommunicationsFilter.DateRangeFilter.class.getName(),
-				CommunicationsFilter.DeviceFilter.class.getName(),
-				CommunicationsFilter.RelationshipTypeFilter.class.getName()
+				CommunicationsFilter.DateRangeFilter.class
+						.getName(),
+				CommunicationsFilter.DeviceFilter.class
+						.getName(),
+				CommunicationsFilter.RelationshipTypeFilter.class
+						.getName()
 		));
 
 		String innerQueryfilterSQL = getCommunicationsFilterSQL(filter, applicableInnerQueryFilters);
@@ -997,7 +1113,8 @@ public class CommunicationsManager {
 
 		// set up applicable filters
 		Set<String> applicableFilters = new HashSet<String>(Arrays.asList(
-				CommunicationsFilter.AccountTypeFilter.class.getName()
+				CommunicationsFilter.AccountTypeFilter.class
+						.getName()
 		));
 
 		String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
@@ -1104,7 +1221,7 @@ public class CommunicationsManager {
 		db.acquireSingleUserCaseReadLock();
 		Statement s = null;
 		ResultSet rs = null;
-
+		System.out.println("list: " + queryString);
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, queryString); //NON-NLS
@@ -1232,6 +1349,7 @@ public class CommunicationsManager {
 			sqlStr = "( " + sqlSB.toString() + " )";
 		}
 		return sqlStr;
+
 	}
 
 	/**
