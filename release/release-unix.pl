@@ -23,6 +23,8 @@ my $BRANCH;
 my $TESTING = 0;
 print "TESTING MODE (no commits)\n" if ($TESTING);
 
+my $CI = 0;   # Continous Integration Run
+
 ######################################################
 # Utility functions
 
@@ -79,7 +81,11 @@ sub prompt_user {
 sub clone_repo() {
     del_clone();
 
-    system ("git clone git\@github.com:sleuthkit/sleuthkit.git ${CLONEDIR}");
+    if ($CI) {
+        system ("git clone https://github.com/sleuthkit/sleuthkit.git ${CLONEDIR}");
+    } else {
+        system ("git clone git\@github.com:sleuthkit/sleuthkit.git ${CLONEDIR}");
+    }
     chdir "${CLONEDIR}" or die "Error changing into $CLONEDIR";
 
     system ("git checkout ${BRANCH}");
@@ -274,6 +280,8 @@ sub update_pkgver {
 # note that this version is independent from the
 # release version.
 sub update_libver {
+    return if ($CI);
+
     print "Updating Unix API version\n";
 
     print "\nGit History for tsk/Makefile.am:\n";
@@ -446,10 +454,14 @@ sub verify_tar {
             $foo = read_pipe_line(*OUT);
         } while ($foo ne "");
         print "The above files are diffs between the source dir and opened tar file\n";
-        while (1) {
-            $a = prompt_user ("Continue? [y/n]");
-            last if (($a eq "y") || ($a eq "n"));
-            print "Invalid answer\n";
+        if ($CI) {
+            die "Files were missing from tar file";
+        } else {
+            while (1) {
+                $a = prompt_user ("Continue? [y/n]");
+                last if (($a eq "y") || ($a eq "n"));
+                print "Invalid answer\n";
+            }
         }
     }
     close (OUT);
@@ -477,7 +489,7 @@ sub verify_tar {
     print "Building Java JAR\n";
     chdir "bindings/java" or die "Error changing directories to java";
     system ("ant");
-    die "Error making jar file" unless (glob("dist/sleuthkit-*.jar");
+    die "Error making jar file" unless (glob("dist/sleuthkit-*.jar"));
     chdir "../..";
 
     # Compile the framework
@@ -509,11 +521,18 @@ sub copy_tar() {
 if (scalar (@ARGV) != 1) {
     print stderr "Missing release version argument (i.e.  3.0.1)\n";
     print stderr "Makes a release of the current branch\n";
+    print stderr "  Or: ci as argument\n";
     exit;
 }
 
 $VER = $ARGV[0];
-unless ($VER =~ /^\d+\.\d+\.\d+(b\d+)?$/) {
+if ($VER eq "ci") {
+  $VER = "0.0.0";
+  $CI = 1;
+  $TESTING = 1;
+} elsif  ($VER =~ /^\d+\.\d+\.\d+(b\d+)?$/) {
+   # Nothing to do
+} else {
     die "Invalid version number: $VER (1.2.3 or 1.2.3b1 expected)";
 }
 
@@ -538,24 +557,26 @@ else {
 }
 close(OUT);
 
-# Verify the tag doesn't already exist
-exec_pipe(*OUT, "git tag | grep \"${TSK_RELNAME}\$\"");
-my $foo = read_pipe_line(*OUT);
-if ($foo ne "") {
-    print "Tag ${TSK_RELNAME} already exists\n";
-    print "Remove with 'git tag -d ${TSK_RELNAME}'\n";
-    die "stopping";
+unless ($CI) {
+    # Verify the tag doesn't already exist
+    exec_pipe(*OUT, "git tag | grep \"${TSK_RELNAME}\$\"");
+    my $foo = read_pipe_line(*OUT);
+    if ($foo ne "") {
+        print "Tag ${TSK_RELNAME} already exists\n";
+        print "Remove with 'git tag -d ${TSK_RELNAME}'\n";
+        die "stopping";
+    }
+    close(OUT);
+
+
+    # All of these die of they need to abort
+    # We no longer do this because we make a clean clone. 
+    # clean_src();
+
+    chdir ".." or die "Error changing directories to root";
+    verify_precheckin();
+    chdir "$RELDIR" or die "error changing back into release";
 }
-close(OUT);
-
-
-# All of these die of they need to abort
-# We no longer do this because we make a clean clone. 
-# clean_src();
-
-chdir ".." or die "Error changing directories to root";
-verify_precheckin();
-chdir "$RELDIR" or die "error changing back into release";
 
 # Make a new clone of the repo
 clone_repo();
@@ -565,25 +586,29 @@ update_configver();
 update_hver();
 update_libver();
 update_pkgver();
-bootstrap();
 
+bootstrap();
 checkin_vers();
 
-my $a;
-while (1) {
-    $a = prompt_user("Tag and release? (or stop if only updating version in branch) [y/n]");
-    last if (($a eq "n") || ($a eq "y"));
-    print "Invalid response: $a\n";
+unless ($CI) {
+    my $a;
+    while (1) {
+        $a = prompt_user("Tag and release? (or stop if only updating version in branch) [y/n]");
+        last if (($a eq "n") || ($a eq "y"));
+        print "Invalid response: $a\n";
+    }
+    exit if ($a eq "n");
+
+    # Create a tag 
+    tag_dir();
 }
-exit if ($a eq "n");
-
-
-# Create a tag 
-tag_dir();
 
 make_tar();
 verify_tar();
-copy_tar();
 
-#del_clone();
-print "You still need to merge into master and develop from the clone\n";
+unless ($CI) {
+    copy_tar();
+
+    #del_clone();
+    print "You still need to merge into master and develop from the clone\n";
+}
