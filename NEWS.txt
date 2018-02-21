@@ -1,6 +1,15 @@
 Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
+---------------- VERSION 4.6.0 --------------
+New Features
+- New Communications related Java classes and database tables.
+- Java build updates for Autopsy Linux build
+- Blackboard artifacts are now Content objects in Java and part of tsk_objects table in database.
+- Increased cache sizes.
+- Lots of bounds checking fixes from Google's fuzzing tests.  Thanks Google.
+- HFS fix from uckelman-sf.
+
 
 ---------------- VERSION 4.5.0 --------------
 New Features:
