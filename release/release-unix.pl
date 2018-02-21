@@ -6,7 +6,6 @@
 # 
 # It must be run from a Unix-like system.  It is currently being used
 # on OS X, but other systems should work. 
-#
 
 use strict;
 use File::Copy;
@@ -81,6 +80,7 @@ sub prompt_user {
 sub clone_repo() {
     del_clone();
 
+    # CI makes not changes, so use http version
     if ($CI) {
         system ("git clone https://github.com/sleuthkit/sleuthkit.git ${CLONEDIR}");
     } else {
@@ -98,12 +98,6 @@ sub del_clone() {
     }
 }
 
-
-# Get rid of the extra files in current source directory
-sub clean_src() {
-    print "Cleaning source code\n";
-    system ("make clean > /dev/null");
-}
 
 # Verify that all files in the current source directory
 # are checked in.  dies if any are modified.
@@ -567,16 +561,12 @@ unless ($CI) {
         die "stopping";
     }
     close(OUT);
-
-
-    # All of these die of they need to abort
-    # We no longer do this because we make a clean clone. 
-    # clean_src();
-
-    chdir ".." or die "Error changing directories to root";
-    verify_precheckin();
-    chdir "$RELDIR" or die "error changing back into release";
 }
+
+chdir ".." or die "Error changing directories to root";
+verify_precheckin();
+chdir "$RELDIR" or die "error changing back into release";
+
 
 # Make a new clone of the repo
 clone_repo();
@@ -606,9 +596,8 @@ unless ($CI) {
 make_tar();
 verify_tar();
 
+copy_tar();
 unless ($CI) {
-    copy_tar();
-
-    #del_clone();
     print "You still need to merge into master and develop from the clone\n";
 }
+
