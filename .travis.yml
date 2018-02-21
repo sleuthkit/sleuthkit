@@ -18,18 +18,15 @@ matrix:
     os: osx
     osx_image: xcode8.1
 
-addons:
-  apt:
-    packages:
-    - openjdk-8-jdk
-    - ant
-jdk: openjdk8
-
 before_install:
+  - if test ${TRAVIS_OS_NAME} = "osx"; then sudo brew install ant; fi
   - if test ${TRAVIS_OS_NAME} = "linux"; then sudo apt-get install -y libewf-dev; fi
+
+
 install:
   - if test ${TRAVIS_OS_NAME} = "linux"; then sudo apt-get install -y libcppunit-dev; fi
   - ./bootstrap
+
 script:
   - ./configure && make && make check
   - cd release; ./release-unix.pl ci
