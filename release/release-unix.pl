@@ -435,7 +435,7 @@ sub verify_tar {
 
     # open new one
     system ("tar xfz ${TARBALL}");
-    die "Missing dist dir in release" unless (-d "${TSK_RELNAME}");
+    die "Error opening .tgz file.  Directory does not exist." unless (-d "${TSK_RELNAME}");
 
     exec_pipe(*OUT, 
     "diff -r ${CLONEDIR} ${TSK_RELNAME} | grep -v \.git | grep -v Makefile | grep -v \.deps | grep -v gdb_history | grep -v bootstrap | grep -v libtool | grep -v DS_Store | grep -v config.h | grep -v build-html | grep -v autom4te.cache | grep -v config.log | grep -v config.status | grep -v stamp-h1 | grep -v xcode | grep -v win32\/doc | grep -v release | grep -v \"\\.\\#\"");
@@ -472,18 +472,18 @@ sub verify_tar {
 
     print "Running make\n";
     system ("make > /dev/null");
-    die "Error compiling tar file" unless (-x "tools/fstools/fls");
+    die "Error compiling tar file (tools/fstools/fls not found)" unless (-x "tools/fstools/fls");
 
     print "Testing Test\n";
     chdir "tests" or die "Error changing directories to test";
     system ("make check > /dev/null");
-    die "Error compiling tests" unless (-x "read_apis");
+    die "Error compiling tests (tests/read_apis not found)" unless (-x "read_apis");
     chdir "..";
 
     print "Building Java JAR\n";
     chdir "bindings/java" or die "Error changing directories to java";
     system ("ant");
-    die "Error making jar file" unless (glob("dist/sleuthkit-*.jar"));
+    die "Error making jar file (bindings/java/dist/sleuthkit-*.jar not found)" unless (glob("dist/sleuthkit-*.jar"));
     chdir "../..";
 
     # Compile the framework
