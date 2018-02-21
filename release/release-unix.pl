@@ -466,7 +466,13 @@ sub verify_tar {
 
     print "Running make\n";
     system ("make > /dev/null");
-    die "Error compiling tar file" unless ((-x "tools/fstools/fls") && (-x "tests/read_apis"));
+    die "Error compiling tar file" unless (-x "tools/fstools/fls");
+
+    print "Testing Test\n";
+    chdir "tests" or die "Error changing directories to test";
+    system ("make check > /dev/null");
+    die "Error compiling tests" unless (-x "read_apis");
+    chdir "..";
 
     print "Building Java JAR\n";
     chdir "bindings/java" or die "Error changing directories to java";
