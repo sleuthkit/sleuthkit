@@ -477,7 +477,7 @@ sub verify_tar {
     print "Building Java JAR\n";
     chdir "bindings/java" or die "Error changing directories to java";
     system ("ant");
-    die "Error making jar file" unless (-e "dist/Tsk_DataModel.jar");
+    die "Error making jar file" unless (glob("dist/sleuthkit-*.jar");
     chdir "../..";
 
     # Compile the framework
