@@ -454,7 +454,9 @@ sub verify_tar {
             $foo = read_pipe_line(*OUT);
         } while ($foo ne "");
         print "The above files are diffs between the source dir and opened tar file\n";
-        unless ($CI) {
+        if ($CI) {
+            die "Files were missing from tar file";
+        } else {
             while (1) {
                 $a = prompt_user ("Continue? [y/n]");
                 last if (($a eq "y") || ($a eq "n"));
@@ -596,7 +598,6 @@ unless ($CI) {
         print "Invalid response: $a\n";
     }
     exit if ($a eq "n");
-
 
     # Create a tag 
     tag_dir();
