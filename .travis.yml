@@ -25,6 +25,6 @@ install:
 
 script:
   - ./configure && make && make check
-  - if test ${TRAVIS_OS_NAME} = "linux"; cd release; ./release-unix.pl ci; fi
+  - if test ${TRAVIS_OS_NAME} = "linux"; then cd release; ./release-unix.pl ci; fi
 
 # NOTE: OS X doesn't have ant, so CI fails
