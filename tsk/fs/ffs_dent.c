@@ -232,7 +232,6 @@ ffs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     FFS_INFO *ffs = (FFS_INFO *) a_fs;
     char *dirbuf;
     int nchnk, cidx;
-    TSK_FS_LOAD_FILE load_file;
     TSK_FS_DIR *fs_dir;
 
     /* If we get corruption in one of the blocks, then continue processing.
