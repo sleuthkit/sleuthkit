@@ -37,18 +37,18 @@ public class ReadContentInputStream extends InputStream {
 	}
 
 	@Override
-	public int read() throws IOException {
+	public int read() throws ReadContentInputStreamException {
 		byte[] buff = new byte[1];
 		return (read(buff) != -1) ? buff[0] : -1;
 	}
 
 	@Override
-	public int read(byte[] b) throws IOException {
+	public int read(byte[] b) throws ReadContentInputStreamException {
 		return read(b, 0, b.length);
 	}
 
 	@Override
-	public int read(byte[] b, int off, int len) throws IOException {
+	public int read(byte[] b, int off, int len) throws ReadContentInputStreamException {
 
 		final int buffLen = b.length;
 		//must return 0 for zero-length arrays
@@ -102,7 +102,7 @@ public class ReadContentInputStream extends InputStream {
 				return lenRead;
 			}
 		} catch (TskCoreException ex) {
-			throw new IOException(ex);
+			throw new ReadContentInputStreamException(String.format("Error reading file '%s' (id=%d) at offset %d.", content.getName(), content.getId(), currentOffset), ex);
 		}
 
 	}
@@ -172,5 +172,22 @@ public class ReadContentInputStream extends InputStream {
 		currentOffset = Math.min(newPosition, contentSize);
 		return currentOffset;
 
+	}
+
+	/**
+	 * Exception thrown when there's an error reading from the
+	 * ReadContentInputStream.
+	 */
+	public final static class ReadContentInputStreamException extends IOException {
+
+		private static final long serialVersionUID = 1L;
+
+		private ReadContentInputStreamException(String message) {
+			super(message);
+		}
+
+		private ReadContentInputStreamException(String message, Throwable cause) {
+			super(message, cause);
+		}
 	}
 }
