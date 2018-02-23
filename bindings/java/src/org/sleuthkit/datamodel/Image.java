@@ -1,7 +1,7 @@
 /*
  * Autopsy Forensic Browser
  *
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2011-2018 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -114,7 +114,7 @@ public class Image extends AbstractContent implements DataSource {
 	 */
 	public synchronized long getImageHandle() throws TskCoreException {
 		if (imageHandle == 0) {
-			imageHandle = SleuthkitJNI.openImage(paths);
+			imageHandle = SleuthkitJNI.openImage(paths, (int)ssize);
 		}
 
 		return imageHandle;
