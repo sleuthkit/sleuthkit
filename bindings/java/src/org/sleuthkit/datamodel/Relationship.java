@@ -1,7 +1,7 @@
 /*
  * SleuthKit Java Bindings
  *
- * Copyright 2017 Basis Technology Corp.
+ * Copyright 2017-18 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,6 +35,54 @@ import static org.sleuthkit.datamodel.CollectionUtils.hashSetOf;
  * call (call log) ) or presence in a contact book.
  */
 public class Relationship {
+
+	public static class RelationshipKey {
+
+		private final Long account1ID;
+
+		private final Long account2ID;
+
+		public RelationshipKey(long account1ID, long account2ID) {
+			this.account1ID = account1ID;
+			this.account2ID = account2ID;
+		}
+
+		public Long getAccount1ID() {
+			return account1ID;
+		}
+
+		public Long getAccount2ID() {
+			return account2ID;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) {
+				return true;
+			}
+			if (obj == null) {
+				return false;
+			}
+			if (getClass() != obj.getClass()) {
+				return false;
+			}
+			final RelationshipKey other = (RelationshipKey) obj;
+			if (this.account1ID.equals(other.account1ID) && this.account2ID.equals(other.account2ID)) {
+				return true;
+			} else {
+				return (this.account1ID.equals(other.account2ID) && this.account2ID.equals(other.account1ID));
+			}
+		}
+
+		@Override
+		public int hashCode() {
+			int hash = 5;
+			hash = 47 * hash + (this.account1ID != null ? this.account1ID.hashCode() : 0);
+			hash = 47 * hash + (this.account2ID != null ? this.account2ID.hashCode() : 0);
+			return hash;
+		}
+
+	}
 
 	public static final class Type {
 
