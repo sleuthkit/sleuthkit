@@ -1,15 +1,15 @@
 /*
  * Autopsy Forensic Browser
- * 
- * Copyright 2011 Basis Technology Corp.
+ *
+ * Copyright 2011-2018 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -150,7 +150,7 @@ public interface SleuthkitItemVisitor<T> {
 	 * @return result of the visit
 	 */
 	T visit(LocalFile lf);
-	
+
 	/**
 	 * Act on (visit) a SlackFile content object
 	 *
@@ -158,7 +158,16 @@ public interface SleuthkitItemVisitor<T> {
 	 *
 	 * @return result of the visit
 	 */
-	T visit(SlackFile sf);	
+	T visit(SlackFile sf);
+
+	/**
+	 * Act on (visit) a Report content object
+	 *
+	 * @param report report to visit / act on
+	 *
+	 * @return result of the visit
+	 */
+	T visit(Report report);
 
 	/**
 	 * The default visitor - quickest method for implementing a custom visitor.
@@ -241,6 +250,11 @@ public interface SleuthkitItemVisitor<T> {
 		@Override
 		public T visit(SlackFile sf) {
 			return defaultVisit(sf);
+		}
+
+		@Override
+		public T visit(Report report) {
+			return defaultVisit(report);
 		}
 	}
 }
