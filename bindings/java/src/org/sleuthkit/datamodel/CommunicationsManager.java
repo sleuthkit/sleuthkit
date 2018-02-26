@@ -805,11 +805,11 @@ public class CommunicationsManager {
 	 * @param accountIDs
 	 * @param filter
 	 *
-	 * @return
+	 * @return 
 	 *
 	 * @throws TskCoreException
 	 */
-	public Map<Relationship.RelationshipKey, Long> getRelationshipCounts(Set<Long> accountIDs, CommunicationsFilter filter) throws TskCoreException {
+	public Map<Relationship.RelationshipKey, Long> getRelationshipCountsBetween(Set<Long> accountIDs, CommunicationsFilter filter) throws TskCoreException {
 
 		//set up applicable filters 
 		Set<String> applicableFilters = new HashSet<String>(Arrays.asList(
@@ -820,7 +820,10 @@ public class CommunicationsManager {
 
 		String buildCSVString = StringUtils.buildCSVString(accountIDs);
 		String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
-		final String queryString = "SELECT count(relationship_id) , relationships.account1_id, relationships.account2_id "
+		
+		final String queryString = "SELECT data_source_obj_id, count(distinct relationship_id) ,"
+				+ " relationships.account1_id, "
+				+ " relationships.account2_id "
 				+ " FROM  account_relationships AS relationships "
 				+ " WHERE (( relationships.account1_id IN (" + buildCSVString + ")) "
 				+ "    and ( relationships.account2_id in( " + buildCSVString + " ))) "
