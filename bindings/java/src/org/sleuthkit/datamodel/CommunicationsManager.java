@@ -821,7 +821,7 @@ public class CommunicationsManager {
 		String buildCSVString = StringUtils.buildCSVString(accountIDs);
 		String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
 		
-		final String queryString = "SELECT data_source_obj_id, count(distinct relationship_id) ,"
+		final String queryString = "SELECT data_source_obj_id, count(distinct relationship_id) as count,"
 				+ " relationships.account1_id, "
 				+ " relationships.account2_id "
 				+ " FROM  account_relationships AS relationships "
@@ -845,7 +845,7 @@ public class CommunicationsManager {
 				Relationship.RelationshipKey relationshipKey = new Relationship.RelationshipKey(
 						rs.getLong("account1_id"),
 						rs.getLong("account2_id"));
-				long count = rs.getLong("count(relationship_id)");
+				long count = rs.getLong("count");
 				Long oldCount = results.get(relationshipKey);
 				if (oldCount != null) {
 					count += oldCount;
