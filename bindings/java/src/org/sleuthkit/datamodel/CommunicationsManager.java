@@ -805,11 +805,11 @@ public class CommunicationsManager {
 	 * @param accountIDs
 	 * @param filter
 	 *
-	 * @return 
+	 * @return
 	 *
 	 * @throws TskCoreException
 	 */
-	public Map<Relationship.RelationshipKey, Long> getRelationshipCountsBetween(Set<Long> accountIDs, CommunicationsFilter filter) throws TskCoreException {
+		public Map<Relationship.RelationshipKey, Long> getRelationshipCountsBetween(Set<Long> accountIDs, CommunicationsFilter filter) throws TskCoreException {
 
 		//set up applicable filters 
 		Set<String> applicableFilters = new HashSet<String>(Arrays.asList(
@@ -820,8 +820,8 @@ public class CommunicationsManager {
 
 		String buildCSVString = StringUtils.buildCSVString(accountIDs);
 		String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
-		
-		final String queryString = "SELECT data_source_obj_id, count(distinct relationship_id) as count,"
+
+		final String queryString = "SELECT count(distinct relationship_id) as count,"
 				+ " relationships.account1_id, "
 				+ " relationships.account2_id "
 				+ " FROM  account_relationships AS relationships "
@@ -836,7 +836,6 @@ public class CommunicationsManager {
 
 		Map<Relationship.RelationshipKey, Long> results = new HashMap<Relationship.RelationshipKey, Long>();
 
-		System.out.println("count: " + queryString);
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, queryString); //NON-NLS
@@ -846,12 +845,13 @@ public class CommunicationsManager {
 						rs.getLong("account1_id"),
 						rs.getLong("account2_id"));
 				long count = rs.getLong("count");
+
+				//merge counts for relationships that have the accounts flipped.
 				Long oldCount = results.get(relationshipKey);
 				if (oldCount != null) {
 					count += oldCount;
 				}
 				results.put(relationshipKey, count);
-
 			}
 			return results;
 		} catch (SQLException ex) {
@@ -862,7 +862,6 @@ public class CommunicationsManager {
 			connection.close();
 			db.releaseSingleUserCaseReadLock();
 		}
-
 	}
 
 	public long getRelationshipSourcesCount(AccountDeviceInstance account1, AccountDeviceInstance account2, CommunicationsFilter filter) throws TskCoreException {
@@ -1224,7 +1223,6 @@ public class CommunicationsManager {
 		db.acquireSingleUserCaseReadLock();
 		Statement s = null;
 		ResultSet rs = null;
-		System.out.println("list: " + queryString);
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, queryString); //NON-NLS
