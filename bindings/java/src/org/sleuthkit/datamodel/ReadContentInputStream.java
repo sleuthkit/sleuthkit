@@ -24,7 +24,7 @@ import java.io.InputStream;
 /**
  * InputStream to read bytes from a Content object's data
  */
-public class ReadContentInputStream extends InputStream {
+public final class ReadContentInputStream extends InputStream {
 
 	private long currentOffset;
 	private final long contentSize;
