@@ -31,18 +31,30 @@
 
 namespace Rejistry {
 
+    /**
+    * @returns 0 if offset is too large.
+    */
     uint16_t BinaryBlock::getWord(uint32_t offset) const {
         return _buf->getWord(_offset + offset);
     }
 
+    /**
+    * @returns 0 if offset is too large.
+    */
     uint32_t BinaryBlock::getDWord(uint32_t offset) const {
         return _buf->getDWord(_offset + offset);
     }
 
+    /**
+    * @returns 0 if offset is too large.
+    */
     uint64_t BinaryBlock::getQWord(uint32_t offset) const {
         return _buf->getQWord(_offset + offset);
     }
 
+    /**
+     * Throws exception if offset or length is too large.
+     */
     std::string BinaryBlock::getASCIIString(uint32_t offset, uint32_t length) const {
         return _buf->getASCIIString(_offset + offset, length);
     }

@@ -62,7 +62,7 @@ parse_fname(const unsigned char *buf, uint16_t nlen,
             tsk_fprintf(
                 stderr, "parse_v2_record: USN name to UTF8 conversion error.");
 
-        record->fname = '\0';
+        record->fname[0] = '\0';
     }
     else
         record->fname[dst_len] = '\0';

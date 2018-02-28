@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2012-2013 Basis Technology Corp.
+ * Copyright 2012-2018 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,7 +18,6 @@
  */
 package org.sleuthkit.datamodel.Examples;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -47,7 +46,7 @@ public class Sample {
 			ArrayList<String> paths = new ArrayList<String>();
 			paths.add(imagePath);
 			try {
-				process.run(UUID.randomUUID().toString(), paths.toArray(new String[paths.size()]));
+				process.run(UUID.randomUUID().toString(), paths.toArray(new String[paths.size()]), 0);
 			} catch (TskDataException ex) {
 				Logger.getLogger(Sample.class.getName()).log(Level.SEVERE, null, ex);
 			}
