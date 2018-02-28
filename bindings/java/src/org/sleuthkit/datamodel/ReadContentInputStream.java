@@ -182,11 +182,11 @@ public final class ReadContentInputStream extends InputStream {
 
 		private static final long serialVersionUID = 1L;
 
-		private ReadContentInputStreamException(String message) {
+		public ReadContentInputStreamException(String message) {
 			super(message);
 		}
 
-		private ReadContentInputStreamException(String message, Throwable cause) {
+		public ReadContentInputStreamException(String message, Throwable cause) {
 			super(message, cause);
 		}
 	}
