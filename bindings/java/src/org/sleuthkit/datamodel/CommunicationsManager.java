@@ -27,7 +27,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -392,17 +391,15 @@ public class CommunicationsManager {
 			}
 		}
 
-		Set<UnorderedAccountPair> relationships = listToUnorderedPairs(accountIDs);
-		Iterator<UnorderedAccountPair> iter = relationships.iterator();
-
-		while (iter.hasNext()) {
-			try {
-				UnorderedAccountPair accountPair = iter.next();
-				addAccountsRelationship(accountPair.getFirst(), accountPair.getSecond(),
-						sourceArtifact, relationshipType, dateTime);
-			} catch (TskCoreException ex) {
-				// @@@ This should probably not be caught and instead we stop adding
-				LOGGER.log(Level.WARNING, "Error adding relationship", ex); //NON-NLS
+		for (int i = 0; i < accountIDs.size(); i++) {
+			for (int j = i + 1; j < accountIDs.size(); j++) {
+				try {
+					addAccountsRelationship(accountIDs.get(i), accountIDs.get(j),
+							sourceArtifact, relationshipType, dateTime);
+				} catch (TskCoreException ex) {
+					// @@@ This should probably not be caught and instead we stop adding
+					LOGGER.log(Level.WARNING, "Error adding relationship", ex); //NON-NLS
+				}
 			}
 		}
 	}
@@ -798,18 +795,28 @@ public class CommunicationsManager {
 	}
 
 	/**
+	 * Get the number of relationships between all pairs of accounts in the
+	 * given set. For each pair of accounts <a2,a1> == <a1,a2>, find the number
+	 * of relationships that pass the given filter, between those two accounts.
 	 *
-	 * Get the number of relationships between all pairs of accounts with ids in
-	 * the given set.
+	 * @param accounts The set of accounts to count the relationships (pairwise)
+	 *                 between.
+	 * @param filter   The filter that relationships must pass to be included in
+	 *                 the count.
 	 *
-	 * @param accountIDs
-	 * @param filter
+	 * @return The number of relationships (that pass the filter) between each
+	 *         pair of accounts, organized in a map where the key is an
+	 *         unordered pair of account ids, and the value is the number of
+	 *         relationships.
 	 *
-	 * @return
-	 *
-	 * @throws TskCoreException
+	 * @throws TskCoreException if there is a problem querying the DB.
 	 */
-		public Map<Relationship.RelationshipKey, Long> getRelationshipCountsBetween(Set<Long> accountIDs, CommunicationsFilter filter) throws TskCoreException {
+	public Map<AccountPair, Long> getRelationshipCountsPairwise(Set<AccountDeviceInstance> accounts, CommunicationsFilter filter) throws TskCoreException {
+
+		Set<Long> accountIDs = new HashSet<Long>();
+		for (AccountDeviceInstance adi : accounts) {
+			accountIDs.add(adi.getAccount().getAccountID());
+		}
 
 		//set up applicable filters 
 		Set<String> applicableFilters = new HashSet<String>(Arrays.asList(
@@ -821,29 +828,61 @@ public class CommunicationsManager {
 		String buildCSVString = StringUtils.buildCSVString(accountIDs);
 		String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
 
-		final String queryString = "SELECT count(distinct relationship_id) as count,"
-				+ " relationships.account1_id, "
-				+ " relationships.account2_id "
-				+ " FROM  account_relationships AS relationships "
+		final String queryString
+				= " SELECT  count(DISTINCT relationships.relationship_source_obj_id) AS count," //realtionship count
+				+ "		data_source_info.device_id AS device_id,"
+				//account 1 info
+				+ "		accounts1.account_id AS account1_id,"
+				+ "		accounts1.account_unique_identifier AS account1_unique_identifier,"
+				+ "		account_types1.type_name AS type_name1,"
+				+ "		account_types1.display_name AS display_name1,"
+				//account 2 info
+				+ "		accounts2.account_id AS account2_id,"
+				+ "		accounts2.account_unique_identifier AS account2_unique_identifier,"
+				+ "		account_types2.type_name AS type_name2,"
+				+ "		account_types2.display_name AS display_name2"
+				+ " FROM account_relationships AS relationships"
+				+ "	JOIN data_source_info AS data_source_info"
+				+ "		ON relationships.data_source_obj_id = data_source_info.obj_id "
+				//account1 aliases
+				+ "	JOIN accounts AS accounts1	 "
+				+ "		ON accounts1.account_id = relationships.account1_id"
+				+ "	JOIN account_types AS account_types1"
+				+ "		ON accounts1.account_type_id = account_types1.account_type_id"
+				//account2 aliases
+				+ "	JOIN accounts AS accounts2	 "
+				+ "		ON accounts2.account_id = relationships.account2_id"
+				+ "	JOIN account_types AS account_types2"
+				+ "		ON accounts2.account_type_id = account_types2.account_type_id"
 				+ " WHERE (( relationships.account1_id IN (" + buildCSVString + ")) "
 				+ "    and ( relationships.account2_id in( " + buildCSVString + " ))) "
 				+ (filterSQL.isEmpty() ? "" : " AND " + filterSQL)
-				+ "group by relationships.account1_id , relationships.account2_id  ";
+				+ " group by relationships.account1_id , relationships.account2_id  ";
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSingleUserCaseReadLock();
 		Statement s = null;
 		ResultSet rs = null;
 
-		Map<Relationship.RelationshipKey, Long> results = new HashMap<Relationship.RelationshipKey, Long>();
+		Map<AccountPair, Long> results = new HashMap<AccountPair, Long>();
 
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, queryString); //NON-NLS
 
 			while (rs.next()) {
-				Relationship.RelationshipKey relationshipKey = new Relationship.RelationshipKey(
-						rs.getLong("account1_id"),
-						rs.getLong("account2_id"));
+				//make account 1
+				Account.Type type1 = new Account.Type(rs.getString("type_name1"), rs.getString("display_name1"));
+				AccountDeviceInstance adi1 = new AccountDeviceInstance(new Account(rs.getLong("account1_id"), type1,
+						rs.getString("account1_unique_identifier")),
+						rs.getString("device_id"));
+
+				//make account 2
+				Account.Type type2 = new Account.Type(rs.getString("type_name2"), rs.getString("display_name2"));
+				AccountDeviceInstance adi2 = new AccountDeviceInstance(new Account(rs.getLong("account2_id"), type2,
+						rs.getString("account2_unique_identifier")),
+						rs.getString("device_id"));
+
+				AccountPair relationshipKey = new AccountPair(adi1, adi2);
 				long count = rs.getLong("count");
 
 				//merge counts for relationships that have the accounts flipped.
@@ -864,6 +903,19 @@ public class CommunicationsManager {
 		}
 	}
 
+	/**
+	 * Get the number of relationship sources for the relationships between
+	 * account1 and account2, that pass the given filter.
+	 *
+	 * @param account1 The first account.
+	 * @param account2 The second account.
+	 * @param filter   The filter that relationships must pass to be counted.
+	 *
+	 * @return The number of relationship sources for the relationships between
+	 *         account1 and account2, that pass the given filter.
+	 *
+	 * @throws TskCoreException
+	 */
 	public long getRelationshipSourcesCount(AccountDeviceInstance account1, AccountDeviceInstance account2, CommunicationsFilter filter) throws TskCoreException {
 
 		//set up applicable filters 
@@ -888,7 +940,6 @@ public class CommunicationsManager {
 		Statement s = null;
 		ResultSet rs = null;
 
-		System.out.println("count: " + queryString);
 		try {
 			s = connection.createStatement();
 			rs = connection.executeQuery(s, queryString); //NON-NLS
@@ -1268,18 +1319,6 @@ public class CommunicationsManager {
 	 *
 	 * @return Set<UnorderedPair<Long>>
 	 */
-	private Set<UnorderedAccountPair> listToUnorderedPairs(List<Long> account_ids) {
-		Set<UnorderedAccountPair> relationships = new HashSet<UnorderedAccountPair>();
-
-		for (int i = 0; i < account_ids.size(); i++) {
-			for (int j = i + 1; j < account_ids.size(); j++) {
-				relationships.add(new UnorderedAccountPair(account_ids.get(i), account_ids.get(j)));
-			}
-		}
-
-		return relationships;
-	}
-
 	private String normalizeAccountID(Account.Type accountType, String accountUniqueID) {
 		String normailzeAccountID = accountUniqueID;
 
@@ -1352,48 +1391,7 @@ public class CommunicationsManager {
 		return sqlStr;
 
 	}
-
-	/**
-	 * Class representing an unordered pair of account ids. <a,b> is same as
-	 * <b,a>
-	 */
-	private final class UnorderedAccountPair {
-
-		private final long account1_id;
-		private final long account2_id;
-
-		UnorderedAccountPair(long account1_id, long account2_id) {
-			this.account1_id = account1_id;
-			this.account2_id = account2_id;
-		}
-
-		@Override
-		public int hashCode() {
-			return new Long(account1_id).hashCode() + new Long(account2_id).hashCode();
-		}
-
-		@Override
-		public boolean equals(Object other) {
-			if (other == this) {
-				return true;
-			}
-			if (!(other instanceof UnorderedAccountPair)) {
-				return false;
-			}
-
-			UnorderedAccountPair otherPair = (UnorderedAccountPair) other;
-			return ((account1_id == otherPair.account1_id && account2_id == otherPair.account2_id)
-					|| (account1_id == otherPair.account2_id && account2_id == otherPair.account1_id));
-		}
-
-		public long getFirst() {
-			return account1_id;
-		}
-
-		public long getSecond() {
-			return account2_id;
-		}
-	}
+}
 
 //	 /**
 //	 * Get all account instances of a given type
@@ -1908,4 +1906,3 @@ public class CommunicationsManager {
 //			db.releaseSingleUserCaseWriteLock();
 //		}
 //	}
-}

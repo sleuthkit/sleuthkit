@@ -27,7 +27,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -230,6 +229,8 @@ public class CommunicationsManagerTest {
 	private static HashSet<AccountDeviceInstance> PHONES_12345_DS2;
 	private static AccountFileInstance deviceAccount_1;
 	private static AccountFileInstance deviceAccount_2;
+	private static AccountDeviceInstance ds1DeviceAccount;
+	private static AccountDeviceInstance ds2DeviceAccount;
 
 	public CommunicationsManagerTest() {
 	}
@@ -266,6 +267,7 @@ public class CommunicationsManagerTest {
 
 				// Create a Device account for Device1
 				deviceAccount_1 = caseDB.getCommunicationsManager().createAccountFileInstance(Account.Type.DEVICE, DS1_DEVICEID, MODULE_NAME, rootDirectory_1);
+				ds1DeviceAccount = new AccountDeviceInstance(deviceAccount_1.getAccount(), DS1_DEVICEID);
 
 				// Create some email message artifacts
 				BlackboardArtifact emailMsg = addEmailMsgArtifact(EMAIL_A, EMAIL_B, "", "",
@@ -314,6 +316,7 @@ public class CommunicationsManagerTest {
 
 				// Create a Device accocunt for Device1
 				deviceAccount_2 = caseDB.getCommunicationsManager().createAccountFileInstance(Account.Type.DEVICE, DS2_DEVICEID, MODULE_NAME, sourceContent_2);
+				ds2DeviceAccount = new AccountDeviceInstance(deviceAccount_2.getAccount(), DS2_DEVICEID);
 
 				// Add some Call logs
 				addCalllogArtifact(deviceAccount_2, NAME_1, PHONENUM_1, 1483272732, 100, "Outgoing", sourceContent_2);
@@ -1276,93 +1279,66 @@ public class CommunicationsManagerTest {
 	}
 
 	@Test
-	public void getRelationshipCountsBetweenTests() throws TskCoreException {
+	public void getRelationshipCountsPairwiseTests() throws TskCoreException {
 		System.out.println("CommsMgr API - Get RelationshipCountsBetween test");
 
 		// Counts  for DS1 and PHONES 2,3,4,5, no Filter 
 		{
-			final Set<Long> accountIDs = new HashSet<Long>();
-			accountIDs.add(deviceAccount_1.getAccount().getAccountID());
-			PHONES_2345_DS1.forEach(new Consumer<AccountDeviceInstance>() {
-				@Override
-				public void accept(AccountDeviceInstance t) {
-					accountIDs.add(t.getAccount().getAccountID());
-				}
-			});
+			final Set<AccountDeviceInstance> accounts = new HashSet<AccountDeviceInstance>();
+			accounts.add(ds1DeviceAccount);
+			accounts.addAll(PHONES_2345_DS1);
 
-			Map<Relationship.RelationshipKey, Long> counts
-					= commsMgr.getRelationshipCountsBetween(accountIDs, null);
+			Map<AccountPair, Long> counts = commsMgr.getRelationshipCountsPairwise(accounts, null);
+
 			assertEquals(3, counts.size());
-			assertEquals(Long.valueOf(5),
-					counts.get(new Relationship.RelationshipKey(deviceAccount_1.getAccount().getAccountID(), PHONE_2_DS1.getAccount().getAccountID())));
-			assertEquals(Long.valueOf(2),
-					counts.get(new Relationship.RelationshipKey(deviceAccount_1.getAccount().getAccountID(), PHONE_3_DS1.getAccount().getAccountID())));
-			assertEquals(Long.valueOf(1),
-					counts.get(new Relationship.RelationshipKey(deviceAccount_1.getAccount().getAccountID(), PHONE_5_DS1.getAccount().getAccountID())));
-			assertNull(counts.get(new Relationship.RelationshipKey(deviceAccount_1.getAccount().getAccountID(), PHONE_4_DS1.getAccount().getAccountID())));
+			assertEquals(Long.valueOf(5), counts.get(new AccountPair(ds1DeviceAccount, PHONE_2_DS1)));
+			assertEquals(Long.valueOf(2), counts.get(new AccountPair(ds1DeviceAccount, PHONE_3_DS1)));
+			assertEquals(Long.valueOf(1), counts.get(new AccountPair(ds1DeviceAccount, PHONE_5_DS1)));
+			assertNull(counts.get(new AccountPair(ds1DeviceAccount, PHONE_4_DS1)));
 
 		}
 
 		// Counts  for DS1 Email A and B and PHONES 2,3,4,5, no Filter 
 		{
-			final Set<Long> accountIDs = new HashSet<Long>();
-			accountIDs.add(deviceAccount_1.getAccount().getAccountID());
-			accountIDs.add(EMAIL_A_DS1.getAccount().getAccountID());
-			accountIDs.add(EMAIL_B_DS1.getAccount().getAccountID());
-			PHONES_2345_DS1.forEach(new Consumer<AccountDeviceInstance>() {
-				@Override
-				public void accept(AccountDeviceInstance t) {
-					accountIDs.add(t.getAccount().getAccountID());
-				}
-			});
+			final Set<AccountDeviceInstance> accounts = new HashSet<AccountDeviceInstance>();
+			accounts.add(ds1DeviceAccount);
+			accounts.add(EMAIL_A_DS1);
+			accounts.add(EMAIL_B_DS1);
+			accounts.addAll(PHONES_2345_DS1);
 
-			Map<Relationship.RelationshipKey, Long> counts
-					= commsMgr.getRelationshipCountsBetween(accountIDs, null);
+			Map<AccountPair, Long> counts
+					= commsMgr.getRelationshipCountsPairwise(accounts, null);
 			assertEquals(4, counts.size());
-			assertEquals(Long.valueOf(5),
-					counts.get(new Relationship.RelationshipKey(deviceAccount_1.getAccount().getAccountID(), PHONE_2_DS1.getAccount().getAccountID())));
-			assertEquals(Long.valueOf(2),
-					counts.get(new Relationship.RelationshipKey(deviceAccount_1.getAccount().getAccountID(), PHONE_3_DS1.getAccount().getAccountID())));
-			assertEquals(Long.valueOf(1),
-					counts.get(new Relationship.RelationshipKey(deviceAccount_1.getAccount().getAccountID(), PHONE_5_DS1.getAccount().getAccountID())));
-			assertEquals(Long.valueOf(2),
-					counts.get(new Relationship.RelationshipKey(EMAIL_A_DS1.getAccount().getAccountID(), EMAIL_B_DS1.getAccount().getAccountID())));
-			assertNull(counts.get(new Relationship.RelationshipKey(deviceAccount_1.getAccount().getAccountID(), PHONE_4_DS1.getAccount().getAccountID())));
+			assertEquals(Long.valueOf(5), counts.get(new AccountPair(ds1DeviceAccount, PHONE_2_DS1)));
+			assertEquals(Long.valueOf(2), counts.get(new AccountPair(ds1DeviceAccount, PHONE_3_DS1)));
+			assertEquals(Long.valueOf(1), counts.get(new AccountPair(ds1DeviceAccount, PHONE_5_DS1)));
+			assertEquals(Long.valueOf(2), counts.get(new AccountPair(EMAIL_A_DS1, EMAIL_B_DS1)));
+			assertNull(counts.get(new AccountPair(ds1DeviceAccount, PHONE_4_DS1)));
 		}
 
 		// Counts  for DS1, DS2,  PHONES 1, 2,3,4,5;  Filter on DS2 
 		{
-			final Set<Long> accountIDs = new HashSet<Long>();
-			accountIDs.add(deviceAccount_1.getAccount().getAccountID());
-			accountIDs.add(deviceAccount_2.getAccount().getAccountID());
-
-			PHONES_12345_DS2.forEach(new Consumer<AccountDeviceInstance>() {
-				@Override
-				public void accept(AccountDeviceInstance t) {
-					accountIDs.add(t.getAccount().getAccountID());
-				}
-			});
+			final Set<AccountDeviceInstance> accounts = new HashSet<AccountDeviceInstance>();
+			accounts.add(ds1DeviceAccount);
+			accounts.add(ds2DeviceAccount);
+			accounts.addAll(PHONES_12345_DS2);
 
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
 					new DeviceFilter(singleton(DS2_DEVICEID))
 			));
-			Map<Relationship.RelationshipKey, Long> counts
-					= commsMgr.getRelationshipCountsBetween(accountIDs, commsFilter);
+			Map<AccountPair, Long> counts
+					= commsMgr.getRelationshipCountsPairwise(accounts, commsFilter);
 			assertEquals(4, counts.size());
-			assertNull(counts.get(new Relationship.RelationshipKey(deviceAccount_1.getAccount().getAccountID(), PHONE_2_DS1.getAccount().getAccountID())));
-			assertNull(counts.get(new Relationship.RelationshipKey(deviceAccount_1.getAccount().getAccountID(), PHONE_3_DS1.getAccount().getAccountID())));
-			assertNull(counts.get(new Relationship.RelationshipKey(deviceAccount_1.getAccount().getAccountID(), PHONE_5_DS1.getAccount().getAccountID())));
-			assertNull(counts.get(new Relationship.RelationshipKey(EMAIL_A_DS1.getAccount().getAccountID(), EMAIL_B_DS1.getAccount().getAccountID())));
-			assertNull(counts.get(new Relationship.RelationshipKey(deviceAccount_1.getAccount().getAccountID(), PHONE_4_DS1.getAccount().getAccountID())));
+			assertNull(counts.get(new AccountPair(ds1DeviceAccount, PHONE_2_DS1)));
+			assertNull(counts.get(new AccountPair(ds1DeviceAccount, PHONE_3_DS1)));
+			assertNull(counts.get(new AccountPair(ds1DeviceAccount, PHONE_5_DS1)));
+			assertNull(counts.get(new AccountPair(EMAIL_A_DS1, EMAIL_B_DS1)));
+			assertNull(counts.get(new AccountPair(ds1DeviceAccount, PHONE_4_DS1)));
 
-			assertEquals(Long.valueOf(1),
-					counts.get(new Relationship.RelationshipKey(deviceAccount_2.getAccount().getAccountID(), PHONE_1_DS2.getAccount().getAccountID())));
-			assertEquals(Long.valueOf(4),
-					counts.get(new Relationship.RelationshipKey(deviceAccount_2.getAccount().getAccountID(), PHONE_2_DS2.getAccount().getAccountID())));
-			assertEquals(Long.valueOf(1),
-					counts.get(new Relationship.RelationshipKey(deviceAccount_2.getAccount().getAccountID(), PHONE_3_DS2.getAccount().getAccountID())));
-			assertEquals(Long.valueOf(3),
-					counts.get(new Relationship.RelationshipKey(deviceAccount_2.getAccount().getAccountID(), PHONE_4_DS2.getAccount().getAccountID())));
+			assertEquals(Long.valueOf(1), counts.get(new AccountPair(ds2DeviceAccount, PHONE_1_DS2)));
+			assertEquals(Long.valueOf(4), counts.get(new AccountPair(ds2DeviceAccount, PHONE_2_DS2)));
+			assertEquals(Long.valueOf(1), counts.get(new AccountPair(ds2DeviceAccount, PHONE_3_DS2)));
+			assertEquals(Long.valueOf(3), counts.get(new AccountPair(ds2DeviceAccount, PHONE_4_DS2)));
 		}
 	}
 
