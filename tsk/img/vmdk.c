@@ -204,7 +204,7 @@ vmdk_open(int a_num_img,
             LIBVMDK_OPEN_READ, &vmdk_error) != 1)
 #else
     if (libvmdk_handle_open(vmdk_info->handle,
-            (const char *) vmdk_info->images,
+            (const char *) vmdk_info->img_info.images[0],
             LIBVMDK_OPEN_READ, &vmdk_error) != 1)
 #endif
     {
