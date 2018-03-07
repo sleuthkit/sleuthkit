@@ -13,15 +13,18 @@ matrix:
     group: edge
   - compiler: clang
     os: osx
-    osx_image: xcode8.1
   - compiler: gcc
     os: osx
-    osx_image: xcode8.1
+
 before_install:
   - if test ${TRAVIS_OS_NAME} = "linux"; then sudo apt-get install -y libewf-dev; fi
+
 install:
   - if test ${TRAVIS_OS_NAME} = "linux"; then sudo apt-get install -y libcppunit-dev; fi
   - ./bootstrap
+
 script:
   - ./configure && make && make check
-  - cd release; ./release-unix.pl ci
+  - if test ${TRAVIS_OS_NAME} = "linux"; then cd release; ./release-unix.pl ci; fi
+
+# NOTE: OS X doesn't have ant, so CI fails
