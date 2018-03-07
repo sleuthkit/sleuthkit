@@ -7880,40 +7880,35 @@ public class SleuthkitCase {
 		// Make sure the local path of the report is in the database directory
 		// or one of its subdirectories.
 		String relativePath = ""; //NON-NLS
+        long createTime = 0;
         try {
-			/*
-			 * Note: The following call to .relativize() may be dangerous in
-			 * case-sensitive operating systems and should be looked at. For
-			 * now, we are simply relativizing the paths as all lower case, then
-			 * using the length of the result to pull out the appropriate number
-			 * of characters from the localPath String.
-			 */
-            String casePathLower = getDbDirPath().toLowerCase();
-            String localPathLower = localPath.toLowerCase();
-            int length = new File(casePathLower).toURI().relativize(new File(localPathLower).toURI()).getPath().length();
             if (localPathLower.startsWith("http")) {
                 relativePath = localPath;
+                createTime = System.currentTimeMillis() / 1000;
             } else {
+                /*
+                 * Note: The following call to .relativize() may be dangerous in
+                 * case-sensitive operating systems and should be looked at. For
+                 * now, we are simply relativizing the paths as all lower case, then
+                 * using the length of the result to pull out the appropriate number
+                 * of characters from the localPath String.
+                 */
+                String casePathLower = getDbDirPath().toLowerCase();
+                String localPathLower = localPath.toLowerCase();
+                int length = new File(casePathLower).toURI().relativize(new File(localPathLower).toURI()).getPath().length();
                 relativePath = new File(localPath.substring(localPathLower.length() - length)).getPath();
+                
+                // get its file time
+                java.io.File tempFile = new java.io.File(localPath);
+                // Convert to UNIX epoch (seconds, not milliseconds).
+                createTime = tempFile.lastModified() / 1000;
             }
         } catch (IllegalArgumentException ex) {
             String errorMessage = String.format("Local path %s not in the database directory or one of its subdirectories", localPath);
             throw new TskCoreException(errorMessage, ex);
+        } catch (Exception ex) {
+            throw new TskCoreException("Could not get create time for report at " + localPath, ex);
         }
-
-        // Figure out the create time of the report.
-        long createTime = 0;
-        try {
-            if (localPath.toLowerCase().contains("http")) {
-                createTime = System.currentTimeMillis() / 1000;
-            } else {
-                java.io.File tempFile = new java.io.File(localPath);
-			    // Convert to UNIX epoch (seconds, not milliseconds).
-			    createTime = tempFile.lastModified() / 1000;
-            }
-		} catch (Exception ex) {
-			throw new TskCoreException("Could not get create time for report at " + localPath, ex);
-		}
 
 		// Write the report data to the database.
 		CaseDbConnection connection = connections.getConnection();
@@ -7958,13 +7953,12 @@ public class SleuthkitCase {
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_REPORTS);
 			resultSet = connection.executeQuery(statement);
 			ArrayList<Report> reports = new ArrayList<Report>();
-			String localpath;
 			while (resultSet.next()) {
-                if (resultSet.getString("path").toLowerCase().startsWith("http")) {
-					localpath = resultSet.getString("path");
-				} else {
-					localpath = Paths.get(getDbDirPath(), resultSet.getString("path")).normalize().toString(); //NON-NLS
-				}
+                Sring localpath = resultSet.getString("path");
+                if (localpath.toLowerCase().startsWith("http") == false) {
+                    // make path absolute
+                    localpath = Paths.get(getDbDirPath(), localpath).normalize().toString(); //NON-NLS
+                }
                 reports.add(new Report(resultSet.getLong("report_id"), //NON-NLS
 						localpath, //NON-NLS
 						resultSet.getLong("crtime"), //NON-NLS
