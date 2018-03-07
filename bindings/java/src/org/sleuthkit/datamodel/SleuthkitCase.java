@@ -7880,7 +7880,7 @@ public class SleuthkitCase {
 		// Make sure the local path of the report is in the database directory
 		// or one of its subdirectories.
 		String relativePath = ""; //NON-NLS
-		try {
+        try {
 			/*
 			 * Note: The following call to .relativize() may be dangerous in
 			 * case-sensitive operating systems and should be looked at. For
@@ -7888,25 +7888,25 @@ public class SleuthkitCase {
 			 * using the length of the result to pull out the appropriate number
 			 * of characters from the localPath String.
 			 */
-			String casePathLower = getDbDirPath().toLowerCase();
-			String localPathLower = localPath.toLowerCase();
-			int length = new File(casePathLower).toURI().relativize(new File(localPathLower).toURI()).getPath().length();
-            if (localPathLower.contains("http:")) {
-				relativePath = localPath;
-			} else {
-			    relativePath = new File(localPath.substring(localPathLower.length() - length)).getPath();
-			}
-		} catch (IllegalArgumentException ex) {
-			String errorMessage = String.format("Local path %s not in the database directory or one of its subdirectories", localPath);
-			throw new TskCoreException(errorMessage, ex);
-		}
+            String casePathLower = getDbDirPath().toLowerCase();
+            String localPathLower = localPath.toLowerCase();
+            int length = new File(casePathLower).toURI().relativize(new File(localPathLower).toURI()).getPath().length();
+            if (localPathLower.startsWith("http")) {
+                relativePath = localPath;
+            } else {
+                relativePath = new File(localPath.substring(localPathLower.length() - length)).getPath();
+            }
+        } catch (IllegalArgumentException ex) {
+            String errorMessage = String.format("Local path %s not in the database directory or one of its subdirectories", localPath);
+            throw new TskCoreException(errorMessage, ex);
+        }
 
-		// Figure out the create time of the report.
-		long createTime = 0;
-		try {
-			if (localPath.toLowerCase().contains("http:")) {
-				createTime = System.currentTimeMillis() / 1000;
-			} else {
+        // Figure out the create time of the report.
+        long createTime = 0;
+        try {
+            if (localPath.toLowerCase().contains("http")) {
+                createTime = System.currentTimeMillis() / 1000;
+            } else {
                 java.io.File tempFile = new java.io.File(localPath);
 			    // Convert to UNIX epoch (seconds, not milliseconds).
 			    createTime = tempFile.lastModified() / 1000;
@@ -7960,7 +7960,7 @@ public class SleuthkitCase {
 			ArrayList<Report> reports = new ArrayList<Report>();
 			String localpath;
 			while (resultSet.next()) {
-                if (resultSet.getString("path").toLowerCase().contains("http")) {
+                if (resultSet.getString("path").toLowerCase().startsWith("http")) {
 					localpath = resultSet.getString("path");
 				} else {
 					localpath = Paths.get(getDbDirPath(), resultSet.getString("path")).normalize().toString(); //NON-NLS
