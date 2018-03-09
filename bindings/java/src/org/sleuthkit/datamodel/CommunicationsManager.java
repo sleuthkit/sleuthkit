@@ -857,7 +857,13 @@ public class CommunicationsManager {
 				+ " WHERE (( relationships.account1_id IN (" + buildCSVString + ")) "
 				+ "    and ( relationships.account2_id in( " + buildCSVString + " ))) "
 				+ (filterSQL.isEmpty() ? "" : " AND " + filterSQL)
-				+ " group by relationships.account1_id , relationships.account2_id  ";
+				+ "  GROUP BY data_source_info.device_id, "
+				+ "		accounts1.account_id, "
+				+ "		account_types1.type_name, "
+				+ "		account_types1.display_name, "
+				+ "		accounts2.account_id, "
+				+ "		account_types2.type_name, "
+				+ "		account_types2.display_name";
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSingleUserCaseReadLock();
 		Statement s = null;
