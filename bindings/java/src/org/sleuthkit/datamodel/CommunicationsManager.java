@@ -814,10 +814,11 @@ public class CommunicationsManager {
 	public Map<AccountPair, Long> getRelationshipCountsPairwise(Set<AccountDeviceInstance> accounts, CommunicationsFilter filter) throws TskCoreException {
 
 		Set<Long> accountIDs = new HashSet<Long>();
+		Set<String> accountDeviceIDs = new HashSet<String>();
 		for (AccountDeviceInstance adi : accounts) {
 			accountIDs.add(adi.getAccount().getAccountID());
+			accountDeviceIDs.add("'"+adi.getDeviceId()+"'");
 		}
-
 		//set up applicable filters 
 		Set<String> applicableFilters = new HashSet<String>(Arrays.asList(
 				CommunicationsFilter.DateRangeFilter.class.getName(),
@@ -825,7 +826,8 @@ public class CommunicationsManager {
 				CommunicationsFilter.RelationshipTypeFilter.class.getName()
 		));
 
-		String buildCSVString = StringUtils.buildCSVString(accountIDs);
+		String accountIDsCSL = StringUtils.buildCSVString(accountIDs);
+		String accountDeviceIDsCSL = StringUtils.buildCSVString(accountDeviceIDs);
 		String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
 
 		final String queryString
@@ -854,10 +856,17 @@ public class CommunicationsManager {
 				+ "		ON accounts2.account_id = relationships.account2_id"
 				+ "	JOIN account_types AS account_types2"
 				+ "		ON accounts2.account_type_id = account_types2.account_type_id"
-				+ " WHERE (( relationships.account1_id IN (" + buildCSVString + ")) "
-				+ "    and ( relationships.account2_id in( " + buildCSVString + " ))) "
+				+ " WHERE (( relationships.account1_id IN (" + accountIDsCSL + ")) "
+				+ "		AND ( relationships.account2_id IN ( " + accountIDsCSL + " ))"
+				+ "		AND ( data_source_info.device_id IN (" + accountDeviceIDsCSL + "))) "
 				+ (filterSQL.isEmpty() ? "" : " AND " + filterSQL)
-				+ " group by relationships.account1_id , relationships.account2_id  ";
+				+ "  GROUP BY data_source_info.device_id, "
+				+ "		accounts1.account_id, "
+				+ "		account_types1.type_name, "
+				+ "		account_types1.display_name, "
+				+ "		accounts2.account_id, "
+				+ "		account_types2.type_name, "
+				+ "		account_types2.display_name";
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSingleUserCaseReadLock();
 		Statement s = null;
