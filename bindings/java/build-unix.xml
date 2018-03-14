@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="windows-1252"?>
 <project name="TSKTestTargets">
-	<target name="test" 
-			description="Performs regression tests."
-			depends="compile-test, copyTSKLibs">
+	<property name="dlls" value="../../win32/x64/Release_PostgreSQL"/>
+	<property environment="env"/>
+
+	<target name="test" description="Performs regression tests." depends="compile-test, copyTSKLibs">
 		<junit fork="on" haltonfailure="yes" dir=".">
+			<env key="path" value="${env.Path}:${dlls}"/>
 			<sysproperty key="rslt" value="${test-results}"/>
 			<sysproperty key="gold" value="${test-standards}"/>
 			<sysproperty key="inpt" value="${test-input}"/>
-			<classpath refid="libraries" />
-			<formatter type="plain" usefile="false" />
-			<test name="org.sleuthkit.datamodel.DataModelTestSuite" />
+			<classpath refid="libraries"/>
+			<formatter type="plain" usefile="false"/>
+			<test name="org.sleuthkit.datamodel.DataModelTestSuite"/>
 		</junit>
 	</target>
 
-	<target name="test-rebuild"
-			description="Rebuilds regression tests."
-			depends="compile-test, copyTSKLibs">
-		<java classname="org.sleuthkit.datamodel.DataModelTestSuite" classpathref="libraries"	fork="true" failonerror="true">
+	<target name="test-rebuild" description="Rebuilds regression tests." depends="compile-test, copyTSKLibs">
+		<java classname="org.sleuthkit.datamodel.DataModelTestSuite" classpathref="libraries" fork="true" failonerror="true">
 			<sysproperty key="gold" value="${test-standards}"/>
 			<sysproperty key="inpt" value="${test-input}"/>
 			<sysproperty key="types" value="${test-types}"/>
@@ -26,57 +26,57 @@
 	<target name="check-native-build" depends="check-native-build-mac,check-native-build-unix"/>
 
 	<target name="check-native-build-mac" depends="testTSKLibs" if="tsk_dylib.present">
-		<uptodate property="native-up-to-date" srcfile="./jni/.libs/libtsk_jni.dylib"
-		targetfile="${amd64}/mac/libtsk_jni.jnilib" />
+		<uptodate property="native-up-to-date" srcfile="./jni/.libs/libtsk_jni.dylib" targetfile="${amd64}/mac/libtsk_jni.jnilib"/>
 	</target>
 
 	<target name="check-native-build-unix" depends="testTSKLibs" if="tsk_so.present">
-		<uptodate property="native-up-to-date" srcfile="./jni/.libs/libtsk_jni.so"
-		targetfile="${amd64}/linux/libtsk_jni.so"/>
+		<uptodate property="native-up-to-date" srcfile="./jni/.libs/libtsk_jni.so" targetfile="${amd64}/linux/libtsk_jni.so"/>
 	</target>
 
-    <target name="testTSKLibs">
-        <property environment="env"/>
-        <available file="./jni/.libs/libtsk_jni.dylib" property="tsk_dylib.present"/>
-        <available file="./jni/.libs/libtsk_jni.so" property="tsk_so.present"/>
-	<fail message="JNI native library not built.">
-		<condition>
-			<not><or>
-				<isset property="tsk_dylib.present"/>
-				<isset property="tsk_so.present"/>
-			</or></not>
-		</condition>
-	</fail>
-   	<!-- Default location to find zlib and libewf. Overwritten by properties in makefile -->	
-	<property name="lib.z.path" value="/usr/lib"/>
-	<property name="lib.ewf.path" value="/usr/local/lib"/>
-    </target>
+	<target name="testTSKLibs">
+		<property environment="env"/>
+		<available file="./jni/.libs/libtsk_jni.dylib" property="tsk_dylib.present"/>
+		<available file="./jni/.libs/libtsk_jni.so" property="tsk_so.present"/>
+		<fail message="JNI native library not built.">
+			<condition>
+				<not>
+					<or>
+						<isset property="tsk_dylib.present"/>
+						<isset property="tsk_so.present"/>
+					</or>
+				</not>
+			</condition>
+		</fail>
+		<!-- Default location to find zlib and libewf. Overwritten by properties in makefile -->
+		<property name="lib.z.path" value="/usr/lib"/>
+		<property name="lib.ewf.path" value="/usr/local/lib"/>
+	</target>
 
-    <!-- OS X -->
-    <target name="copyTskLibs_dylib" depends="testTSKLibs" if="tsk_dylib.present">
-        <property environment="env"/>
-        <copy file="./jni/.libs/libtsk_jni.dylib" tofile="./libtsk_jni.jnilib" overwrite="true"/>
-    </target>
-	
+	<!-- OS X -->
+	<target name="copyTskLibs_dylib" depends="testTSKLibs" if="tsk_dylib.present">
+		<property environment="env"/>
+		<copy file="./jni/.libs/libtsk_jni.dylib" tofile="./libtsk_jni.jnilib" overwrite="true"/>
+	</target>
+
 	<target name="copyMacLibs" depends="testTSKLibs" if="tsk_dylib.present">
-        <property environment="env"/>
-		<property name="jni.dylib" location="${basedir}/jni/.libs/libtsk_jni.dylib" />
-		<property name="jni.jnilib" value="libtsk_jni.jnilib" />
+		<property environment="env"/>
+		<property name="jni.dylib" location="${basedir}/jni/.libs/libtsk_jni.dylib"/>
+		<property name="jni.jnilib" value="libtsk_jni.jnilib"/>
 		<!-- x86_64 -->
-        <copy file="${jni.dylib}" tofile="${x86_64}/mac/${jni.jnilib}" overwrite="true"/>
+		<copy file="${jni.dylib}" tofile="${x86_64}/mac/${jni.jnilib}" overwrite="true"/>
 		<!-- amd64 -->
 		<copy file="${jni.dylib}" tofile="${amd64}/mac/${jni.jnilib}" overwrite="true"/>
-    </target>
+	</target>
 
-    <!-- Non-OS X -->
-    <target name="copyTskLibs_so" depends="testTSKLibs" if="tsk_so.present">
-        <property environment="env"/>
-        <copy file="./jni/.libs/libtsk_jni.so" tofile="./libtsk_jni.so" overwrite="true"/>
-    </target>
-	
+	<!-- Non-OS X -->
+	<target name="copyTskLibs_so" depends="testTSKLibs" if="tsk_so.present">
+		<property environment="env"/>
+		<copy file="./jni/.libs/libtsk_jni.so" tofile="./libtsk_jni.so" overwrite="true"/>
+	</target>
+
 	<target name="copyLinuxLibs" depends="testTSKLibs" if="tsk_so.present">
 		<property environment="env"/>
-		<property name="jni.so" location="${basedir}/jni/.libs/libtsk_jni.so" />
+		<property name="jni.so" location="${basedir}/jni/.libs/libtsk_jni.so"/>
 		<property name="zlib.so" location="${lib.z.path}/libz.so"/>
 		<property name="libewf.so" location="${lib.ewf.path}/libewf.so"/>
 		<!-- x86_64 -->
@@ -93,13 +93,13 @@
 		<copy file="${jni.so}" tofile="${i686}/linux/libtsk_jni.so" overwrite="true"/>
 	</target>
 
-	<target name="copyLibs-SQLite" depends="copyLinuxLibs,copyMacLibs" />
-	<target name="copyLibs-PostgreSQL" depends="copyLinuxLibs,copyMacLibs" />
-	<target name="copyLibs-SQLiteDebug" depends="copyLinuxLibs,copyMacLibs" />
-	<target name="copyLibs-PostgreSQLDebug" depends="copyLinuxLibs,copyMacLibs" />
-	
-    <target name="copyTSKLibs" depends="copyTskLibs_so,copyTskLibs_dylib">
-        <!-- depends targets take care of the actual copying since the file differs on OS X and Linux -->
-        <!-- This assumes that TSK, libewf, and zlib have been installed on the system and those libraries will be with normal loading approaches -->
-    </target>
+	<target name="copyLibs-SQLite" depends="copyLinuxLibs,copyMacLibs"/>
+	<target name="copyLibs-PostgreSQL" depends="copyLinuxLibs,copyMacLibs"/>
+	<target name="copyLibs-SQLiteDebug" depends="copyLinuxLibs,copyMacLibs"/>
+	<target name="copyLibs-PostgreSQLDebug" depends="copyLinuxLibs,copyMacLibs"/>
+
+	<target name="copyTSKLibs" depends="copyTskLibs_so,copyTskLibs_dylib">
+		<!-- depends targets take care of the actual copying since the file differs on OS X and Linux -->
+		<!-- This assumes that TSK, libewf, and zlib have been installed on the system and those libraries will be with normal loading approaches -->
+	</target>
 </project>

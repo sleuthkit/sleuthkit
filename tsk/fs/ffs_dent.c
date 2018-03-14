@@ -232,7 +232,6 @@ ffs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     FFS_INFO *ffs = (FFS_INFO *) a_fs;
     char *dirbuf;
     int nchnk, cidx;
-    TSK_FS_LOAD_FILE load_file;
     TSK_FS_DIR *fs_dir;
 
     /* If we get corruption in one of the blocks, then continue processing.
@@ -286,33 +285,10 @@ ffs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         return TSK_COR;
     }
 
-    /* make a copy of the directory contents that we can process */
-    /* round up cause we want the slack space too */
+    /* dirbuf will only be used to process one block at a time */
     size = roundup(fs_dir->fs_file->meta->size, FFS_DIRBLKSIZ);
-    if ((dirbuf = tsk_malloc((size_t) size)) == NULL) {
+    if ((dirbuf = tsk_malloc((size_t)FFS_DIRBLKSIZ)) == NULL) {
         return TSK_ERR;
-    }
-
-    load_file.total = load_file.left = (size_t) size;
-    load_file.base = load_file.cur = dirbuf;
-
-    if (tsk_fs_file_walk(fs_dir->fs_file,
-            TSK_FS_FILE_WALK_FLAG_SLACK,
-            tsk_fs_load_file_action, (void *) &load_file)) {
-        tsk_error_reset();
-        tsk_error_errstr2_concat("- ffs_dir_open_meta");
-        free(dirbuf);
-        return TSK_COR;
-    }
-
-    /* Not all of the directory was copied, so we return */
-    if (load_file.left > 0) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_FS_FWALK);
-        tsk_error_set_errstr("ffs_dir_open_meta: Error reading directory %"
-            PRIuINUM, a_addr);
-        free(dirbuf);
-        return TSK_COR;
     }
 
     /* Directory entries are written in chunks of DIRBLKSIZ
@@ -323,14 +299,27 @@ ffs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
      */
     nchnk = (int) (size) / (FFS_DIRBLKSIZ) + 1;
 
+    TSK_OFF_T offset = 0;
     for (cidx = 0; cidx < nchnk && (int64_t) size > 0; cidx++) {
         int len = (FFS_DIRBLKSIZ < size) ? FFS_DIRBLKSIZ : (int) size;
+
+        int cnt = tsk_fs_file_read(fs_dir->fs_file, offset, dirbuf, len, (TSK_FS_FILE_READ_FLAG_ENUM)0);
+        if (cnt != len) {
+            printf("  Failed - read 0x%x bytes\n", cnt);
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_FWALK);
+            tsk_error_set_errstr
+            ("ffs_dir_open_meta: Error reading directory contents: %"
+                PRIuINUM "\n", a_addr);
+            free(dirbuf);
+            return TSK_COR;
+        }
 
         retval_tmp =
             ffs_dent_parse_block(ffs, fs_dir,
             (fs_dir->fs_file->meta->
                 flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0,
-            dirbuf + cidx * FFS_DIRBLKSIZ, len);
+            dirbuf, len);
 
         if (retval_tmp == TSK_ERR) {
             retval_final = TSK_ERR;
@@ -340,6 +329,7 @@ ffs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
             retval_final = TSK_COR;
         }
         size -= len;
+        offset += len;
     }
     free(dirbuf);
 

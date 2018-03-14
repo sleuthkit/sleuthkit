@@ -6,7 +6,6 @@
 # 
 # It must be run from a Unix-like system.  It is currently being used
 # on OS X, but other systems should work. 
-#
 
 use strict;
 use File::Copy;
@@ -22,6 +21,8 @@ my $BRANCH;
 
 my $TESTING = 0;
 print "TESTING MODE (no commits)\n" if ($TESTING);
+
+my $CI = 0;   # Continous Integration Run
 
 ######################################################
 # Utility functions
@@ -79,7 +80,12 @@ sub prompt_user {
 sub clone_repo() {
     del_clone();
 
-    system ("git clone git\@github.com:sleuthkit/sleuthkit.git ${CLONEDIR}");
+    # CI makes not changes, so use http version
+    if ($CI) {
+        system ("git clone https://github.com/sleuthkit/sleuthkit.git ${CLONEDIR}");
+    } else {
+        system ("git clone git\@github.com:sleuthkit/sleuthkit.git ${CLONEDIR}");
+    }
     chdir "${CLONEDIR}" or die "Error changing into $CLONEDIR";
 
     system ("git checkout ${BRANCH}");
@@ -92,12 +98,6 @@ sub del_clone() {
     }
 }
 
-
-# Get rid of the extra files in current source directory
-sub clean_src() {
-    print "Cleaning source code\n";
-    system ("make clean > /dev/null");
-}
 
 # Verify that all files in the current source directory
 # are checked in.  dies if any are modified.
@@ -274,6 +274,8 @@ sub update_pkgver {
 # note that this version is independent from the
 # release version.
 sub update_libver {
+    return if ($CI);
+
     print "Updating Unix API version\n";
 
     print "\nGit History for tsk/Makefile.am:\n";
@@ -433,7 +435,7 @@ sub verify_tar {
 
     # open new one
     system ("tar xfz ${TARBALL}");
-    die "Missing dist dir in release" unless (-d "${TSK_RELNAME}");
+    die "Error opening .tgz file.  Directory does not exist." unless (-d "${TSK_RELNAME}");
 
     exec_pipe(*OUT, 
     "diff -r ${CLONEDIR} ${TSK_RELNAME} | grep -v \.git | grep -v Makefile | grep -v \.deps | grep -v gdb_history | grep -v bootstrap | grep -v libtool | grep -v DS_Store | grep -v config.h | grep -v build-html | grep -v autom4te.cache | grep -v config.log | grep -v config.status | grep -v stamp-h1 | grep -v xcode | grep -v win32\/doc | grep -v release | grep -v \"\\.\\#\"");
@@ -446,10 +448,14 @@ sub verify_tar {
             $foo = read_pipe_line(*OUT);
         } while ($foo ne "");
         print "The above files are diffs between the source dir and opened tar file\n";
-        while (1) {
-            $a = prompt_user ("Continue? [y/n]");
-            last if (($a eq "y") || ($a eq "n"));
-            print "Invalid answer\n";
+        if ($CI) {
+            die "Files were missing from tar file";
+        } else {
+            while (1) {
+                $a = prompt_user ("Continue? [y/n]");
+                last if (($a eq "y") || ($a eq "n"));
+                print "Invalid answer\n";
+            }
         }
     }
     close (OUT);
@@ -466,12 +472,18 @@ sub verify_tar {
 
     print "Running make\n";
     system ("make > /dev/null");
-    die "Error compiling tar file" unless ((-x "tools/fstools/fls") && (-x "tests/read_apis"));
+    die "Error compiling tar file (tools/fstools/fls not found)" unless (-x "tools/fstools/fls");
+
+    print "Testing Test\n";
+    chdir "tests" or die "Error changing directories to test";
+    system ("make check > /dev/null");
+    die "Error compiling tests (tests/read_apis not found)" unless (-x "read_apis");
+    chdir "..";
 
     print "Building Java JAR\n";
     chdir "bindings/java" or die "Error changing directories to java";
     system ("ant");
-    die "Error making jar file" unless (-e "dist/Tsk_DataModel.jar");
+    die "Error making jar file (bindings/java/dist/sleuthkit-*.jar not found)" unless (glob("dist/sleuthkit-*.jar"));
     chdir "../..";
 
     # Compile the framework
@@ -503,11 +515,18 @@ sub copy_tar() {
 if (scalar (@ARGV) != 1) {
     print stderr "Missing release version argument (i.e.  3.0.1)\n";
     print stderr "Makes a release of the current branch\n";
+    print stderr "  Or: ci as argument\n";
     exit;
 }
 
 $VER = $ARGV[0];
-unless ($VER =~ /^\d+\.\d+\.\d+(b\d+)?$/) {
+if ($VER eq "ci") {
+  $VER = "0.0.0";
+  $CI = 1;
+  $TESTING = 1;
+} elsif  ($VER =~ /^\d+\.\d+\.\d+(b\d+)?$/) {
+   # Nothing to do
+} else {
     die "Invalid version number: $VER (1.2.3 or 1.2.3b1 expected)";
 }
 
@@ -532,24 +551,22 @@ else {
 }
 close(OUT);
 
-# Verify the tag doesn't already exist
-exec_pipe(*OUT, "git tag | grep \"${TSK_RELNAME}\$\"");
-my $foo = read_pipe_line(*OUT);
-if ($foo ne "") {
-    print "Tag ${TSK_RELNAME} already exists\n";
-    print "Remove with 'git tag -d ${TSK_RELNAME}'\n";
-    die "stopping";
+unless ($CI) {
+    # Verify the tag doesn't already exist
+    exec_pipe(*OUT, "git tag | grep \"${TSK_RELNAME}\$\"");
+    my $foo = read_pipe_line(*OUT);
+    if ($foo ne "") {
+        print "Tag ${TSK_RELNAME} already exists\n";
+        print "Remove with 'git tag -d ${TSK_RELNAME}'\n";
+        die "stopping";
+    }
+    close(OUT);
 }
-close(OUT);
-
-
-# All of these die of they need to abort
-# We no longer do this because we make a clean clone. 
-# clean_src();
 
 chdir ".." or die "Error changing directories to root";
 verify_precheckin();
 chdir "$RELDIR" or die "error changing back into release";
+
 
 # Make a new clone of the repo
 clone_repo();
@@ -559,25 +576,28 @@ update_configver();
 update_hver();
 update_libver();
 update_pkgver();
-bootstrap();
 
+bootstrap();
 checkin_vers();
 
-my $a;
-while (1) {
-    $a = prompt_user("Tag and release? (or stop if only updating version in branch) [y/n]");
-    last if (($a eq "n") || ($a eq "y"));
-    print "Invalid response: $a\n";
+unless ($CI) {
+    my $a;
+    while (1) {
+        $a = prompt_user("Tag and release? (or stop if only updating version in branch) [y/n]");
+        last if (($a eq "n") || ($a eq "y"));
+        print "Invalid response: $a\n";
+    }
+    exit if ($a eq "n");
+
+    # Create a tag 
+    tag_dir();
 }
-exit if ($a eq "n");
-
-
-# Create a tag 
-tag_dir();
 
 make_tar();
 verify_tar();
-copy_tar();
 
-#del_clone();
-print "You still need to merge into master and develop from the clone\n";
+copy_tar();
+unless ($CI) {
+    print "You still need to merge into master and develop from the clone\n";
+}
+

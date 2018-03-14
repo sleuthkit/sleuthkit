@@ -13,10 +13,19 @@ To use the Java bindings, you must have the Sleuth Kit datamodel
 JAR file compiled and have compiled the associated dynamic library
 from the C/C++ code.
 
+
 Requirements:
 * Java JDK
 * Ant
 * Jar files as listed in ivy.xml (which will get downloaded automatically)
+
+The following jar files must be on the classpath for building and
+running.  Version details can be found in ivy.xml.  They will be 
+automatically downloaded if you do not compile in offline mode. 
+* sqlite-jdbc
+* postgresql-jdbc
+* c3p0
+
 
 
 Building the Dynamic Library (for JNI)

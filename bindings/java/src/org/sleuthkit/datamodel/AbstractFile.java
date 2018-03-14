@@ -1,7 +1,7 @@
 /*
  * SleuthKit Java Bindings
  *
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2011-2018 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,6 +21,8 @@ package org.sleuthkit.datamodel;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +32,7 @@ import java.util.SortedSet;
 import java.util.TimeZone;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import static org.sleuthkit.datamodel.SleuthkitCase.closeStatement;
 import org.sleuthkit.datamodel.TskData.FileKnown;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
@@ -71,13 +74,16 @@ public abstract class AbstractFile extends AbstractContent {
 	 * knownState status in database
 	 */
 	protected TskData.FileKnown knownState;
+	private boolean knownStateDirty = false;
 	/*
 	 * md5 hash
 	 */
 	protected String md5Hash;
+	private boolean md5HashDirty = false;
 	private String mimeType;
-	private static final Logger logger = Logger.getLogger(AbstractFile.class.getName());
-	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
+	private boolean mimeTypeDirty = false;
+	private static final Logger LOGGER = Logger.getLogger(AbstractFile.class.getName());
+	private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private long dataSourceObjectId;
 	private final String extension;
 
@@ -161,7 +167,7 @@ public abstract class AbstractFile extends AbstractContent {
 		}
 		this.parentPath = parentPath;
 		this.mimeType = mimeType;
-		this.extension = extension == null?"":extension;
+		this.extension = extension == null ? "" : extension;
 		this.encodingType = TskData.EncodingType.NONE;
 	}
 
@@ -430,10 +436,14 @@ public abstract class AbstractFile extends AbstractContent {
 	/**
 	 * Sets the MIME type for this file.
 	 *
-	 * @param mimeType The mimeType to set for this file.
+	 * IMPORTANT: The MIME type is set for this AbstractFile object, but it is
+	 * not saved to the case database until AbstractFile.save is called.
+	 *
+	 * @param mimeType The MIME type of this file.
 	 */
-	void setMIMEType(String mimeType) {
+	public void setMIMEType(String mimeType) {
 		this.mimeType = mimeType;
+		this.mimeTypeDirty = true;
 	}
 
 	public boolean isModeSet(TskData.TSK_FS_META_MODE_ENUM mode) {
@@ -441,14 +451,16 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Sets md5 hash string Note: database or other FsContent objects are not
-	 * updated. Currently only SleuthkiCase calls it to update the object while
-	 * updating tsk_files entry
+	 * Sets the MD5 hash for this file.
 	 *
-	 * @param md5Hash
+	 * IMPORTANT: The MD5 hash is set for this AbstractFile object, but it is
+	 * not saved to the case database until AbstractFile.save is called.
+	 *
+	 * @param md5Hash The MD5 hash of the file.
 	 */
-	void setMd5Hash(String md5Hash) {
+	public void setMd5Hash(String md5Hash) {
 		this.md5Hash = md5Hash;
+		this.md5HashDirty = true;
 	}
 
 	/**
@@ -461,14 +473,16 @@ public abstract class AbstractFile extends AbstractContent {
 	}
 
 	/**
-	 * Sets knownState status Note: database or other file objects are not
-	 * updated. Currently only SleuthkiCase calls it to update the object while
-	 * updating tsk_files entry
+	 * Sets the known state for this file.
 	 *
-	 * @param known
+	 * IMPORTANT: The known state is set for this AbstractFile object, but it is
+	 * not saved to the case database until AbstractFile.save is called.
+	 *
+	 * @param knownState The known state of the file.
 	 */
-	void setKnown(TskData.FileKnown known) {
-		this.knownState = known;
+	public void setKnown(TskData.FileKnown knownState) {
+		this.knownState = knownState;
+		this.knownStateDirty = true;
 	}
 
 	/**
@@ -787,7 +801,7 @@ public abstract class AbstractFile extends AbstractContent {
 	protected final int readLocal(byte[] buf, long offset, long len) throws TskCoreException {
 		if (!localPathSet) {
 			throw new TskCoreException(
-					bundle.getString("AbstractFile.readLocal.exception.msg1.text"));
+					BUNDLE.getString("AbstractFile.readLocal.exception.msg1.text"));
 		}
 
 		if (isDir()) {
@@ -797,11 +811,11 @@ public abstract class AbstractFile extends AbstractContent {
 		loadLocalFile();
 		if (!localFile.exists()) {
 			throw new TskCoreException(
-					MessageFormat.format(bundle.getString("AbstractFile.readLocal.exception.msg2.text"), localAbsPath));
+					MessageFormat.format(BUNDLE.getString("AbstractFile.readLocal.exception.msg2.text"), localAbsPath));
 		}
 		if (!localFile.canRead()) {
 			throw new TskCoreException(
-					MessageFormat.format(bundle.getString("AbstractFile.readLocal.exception.msg3.text"), localAbsPath));
+					MessageFormat.format(BUNDLE.getString("AbstractFile.readLocal.exception.msg3.text"), localAbsPath));
 		}
 
 		int bytesRead = 0;
@@ -812,10 +826,10 @@ public abstract class AbstractFile extends AbstractContent {
 					try {
 						localFileHandle = new RandomAccessFile(localFile, "r");
 					} catch (FileNotFoundException ex) {
-						final String msg = MessageFormat.format(bundle.getString(
+						final String msg = MessageFormat.format(BUNDLE.getString(
 								"AbstractFile.readLocal.exception.msg4.text"),
 								localAbsPath);
-						logger.log(Level.SEVERE, msg, ex);
+						LOGGER.log(Level.SEVERE, msg, ex);
 						//file could have been deleted or moved
 						throw new TskCoreException(msg, ex);
 					}
@@ -849,8 +863,8 @@ public abstract class AbstractFile extends AbstractContent {
 				return localFileHandle.read(buf, 0, (int) len);
 			}
 		} catch (IOException ex) {
-			final String msg = MessageFormat.format(bundle.getString("AbstractFile.readLocal.exception.msg5.text"), localAbsPath);
-			logger.log(Level.SEVERE, msg, ex);
+			final String msg = MessageFormat.format(BUNDLE.getString("AbstractFile.readLocal.exception.msg5.text"), localAbsPath);
+			LOGGER.log(Level.SEVERE, msg, ex);
 			//local file could have been deleted / moved
 			throw new TskCoreException(msg, ex);
 		}
@@ -923,7 +937,7 @@ public abstract class AbstractFile extends AbstractContent {
 				loadLocalFile();
 				return localFile.exists();
 			} catch (TskCoreException ex) {
-				logger.log(Level.SEVERE, ex.getMessage());
+				LOGGER.log(Level.SEVERE, ex.getMessage());
 				return false;
 			}
 		}
@@ -944,7 +958,7 @@ public abstract class AbstractFile extends AbstractContent {
 				loadLocalFile();
 				return localFile.canRead();
 			} catch (TskCoreException ex) {
-				logger.log(Level.SEVERE, ex.getMessage());
+				LOGGER.log(Level.SEVERE, ex.getMessage());
 				return false;
 			}
 		}
@@ -959,7 +973,7 @@ public abstract class AbstractFile extends AbstractContent {
 	private void loadLocalFile() throws TskCoreException {
 		if (!localPathSet) {
 			throw new TskCoreException(
-					bundle.getString("AbstractFile.readLocal.exception.msg1.text"));
+					BUNDLE.getString("AbstractFile.readLocal.exception.msg1.text"));
 		}
 
 		// already been set
@@ -984,7 +998,7 @@ public abstract class AbstractFile extends AbstractContent {
 					try {
 						localFileHandle.close();
 					} catch (IOException ex) {
-						logger.log(Level.SEVERE, "Could not close file handle for file: " + getParentPath() + "/" + getName(), ex); //NON-NLS
+						LOGGER.log(Level.SEVERE, "Could not close file handle for file: " + getParentPath() + getName(), ex); //NON-NLS
 					}
 					localFileHandle = null;
 				}
@@ -1023,9 +1037,6 @@ public abstract class AbstractFile extends AbstractContent {
 				+ "]\t";
 	}
 
-	
-	
-
 	/**
 	 * Possible return values for comparing a file to a list of mime types
 	 */
@@ -1052,6 +1063,59 @@ public abstract class AbstractFile extends AbstractContent {
 			return MimeMatchEnum.TRUE;
 		}
 		return MimeMatchEnum.FALSE;
+	}
+
+	/**
+	 * Saves the editable file properties of this file to the case database,
+	 * e.g., the MIME type, MD5 hash, and known state.
+	 *
+	 * @throws TskCoreException if there is an error saving the editable file
+	 *                          properties to the case database.
+	 */
+	public void save() throws TskCoreException {
+
+		// No fields have been updated
+		if (!(md5HashDirty || mimeTypeDirty || knownStateDirty)) {
+			return;
+		}
+
+		String queryStr = "";
+		if (mimeTypeDirty) {
+			queryStr = "mime_type = '" + this.getMIMEType() + "'";
+		}
+		if (md5HashDirty) {
+			if (!queryStr.isEmpty()) {
+				queryStr += ", ";
+			}
+			queryStr += "md5 = '" + this.getMd5Hash() + "'";
+		}
+		if (knownStateDirty) {
+			if (!queryStr.isEmpty()) {
+				queryStr += ", ";
+			}
+			queryStr += "known = '" + this.getKnown().getFileKnownValue() + "'";
+		}
+
+		queryStr = "UPDATE tsk_files SET " + queryStr + " WHERE obj_id = " + this.getId();
+
+		SleuthkitCase.CaseDbConnection connection = getSleuthkitCase().getConnection();
+		Statement statement = null;
+
+		getSleuthkitCase().acquireSingleUserCaseWriteLock();
+		try {
+			statement = connection.createStatement();
+			connection.executeUpdate(statement, queryStr);
+
+			md5HashDirty = false;
+			mimeTypeDirty = false;
+			knownStateDirty = false;
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error saving properties for file (obj_id = %s)", this.getId()), ex);
+		} finally {
+			closeStatement(statement);
+			connection.close();
+			getSleuthkitCase().releaseSingleUserCaseWriteLock();
+		}
 	}
 
 	/**
@@ -1178,43 +1242,42 @@ public abstract class AbstractFile extends AbstractContent {
 	protected void setLocalPath(String localPath, boolean isAbsolute) {
 		setLocalFilePath(localPath, isAbsolute);
 	}
-	
+
 	/*
 	 * -------------------------------------------------------------------------
 	 * Util methods to convert / map the data
 	 * -------------------------------------------------------------------------
 	 */
-	
 	/**
 	 * Return the epoch into string in ISO 8601 dateTime format
 	 *
 	 * @param epoch time in seconds
 	 *
 	 * @return formatted date time string as "yyyy-MM-dd HH:mm:ss"
-	 * 
-	 * @Deprecated
+	 *
+	 * @deprecated
 	 */
-	 @Deprecated
+	@Deprecated
 	public static String epochToTime(long epoch) {
 		return TimeUtilities.epochToTime(epoch);
 	}
 
 	/**
-	 * Return the epoch into string in ISO 8601 dateTime format, 
-	 * in the given timezone
+	 * Return the epoch into string in ISO 8601 dateTime format, in the given
+	 * timezone
 	 *
 	 * @param epoch time in seconds
 	 * @param tzone time zone
 	 *
 	 * @return formatted date time string as "yyyy-MM-dd HH:mm:ss"
-	 * 
-	 * @Deprecated
+	 *
+	 * @deprecated
 	 */
 	@Deprecated
 	public static String epochToTime(long epoch, TimeZone tzone) {
 		return TimeUtilities.epochToTime(epoch, tzone);
 	}
-	
+
 	/**
 	 * Convert from ISO 8601 formatted date time string to epoch time in seconds
 	 *

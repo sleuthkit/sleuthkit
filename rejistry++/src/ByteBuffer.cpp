@@ -36,10 +36,18 @@ namespace Rejistry {
             _buffer.resize(capacity);
         }
 
+        /**
+         * Makes a copy of the passed in buffer.
+         * @throws RegistryParseException if memory can't be allocated
+         */
         ByteBuffer::ByteBuffer(const uint8_t * buf, const uint32_t length) : Buffer(length) {
             initializeBuffer(buf, length);
         }
 
+        /**
+        * Makes a copy of the passed in buffer.
+        * @throws RegistryParseException if memory can't be allocated
+        */
         ByteBuffer::ByteBuffer(const ByteArray& buf, const uint32_t length) : Buffer(length) {
             if (buf.size() > 0) {
                 initializeBuffer(&buf[0], length);
@@ -47,7 +55,14 @@ namespace Rejistry {
         }
 
         void ByteBuffer::initializeBuffer(const uint8_t * buf, const uint32_t length) {
-            _buffer.resize(length);
+            try {
+                _buffer.resize(length);
+            } 
+            catch (std::bad_alloc &e)
+            {
+                throw RegistryParseException("Cannot allocate memory for registry byte buffer.");
+            }
+
             if (buf != NULL) {
                 memcpy(&_buffer[0], buf, length);
             }
@@ -57,6 +72,8 @@ namespace Rejistry {
             return read<uint8_t>(offset);
         }
 
+        /**
+         * Throws exception if offset or length are too large. */
         void ByteBuffer::get(ByteArray& dst, const uint32_t offset, const uint32_t length) {
             if (length == 0) {
                 // No data requested.
@@ -83,16 +100,24 @@ namespace Rejistry {
             _position += offset;
         }
 
+        /**
+         * @returns 0 if offset is too large.
+         */
         uint16_t ByteBuffer::getShort(uint32_t offset) const {
             return read<uint16_t>(offset);
         }
 
+        /**
+        * @returns 0 if offset is too large.
+        */
         uint32_t ByteBuffer::getInt(uint32_t offset) const {
             return read<uint32_t>(offset);
         }
 
+        /**
+        * @returns 0 if offset is too large.
+        */
         uint64_t ByteBuffer::getLong(uint32_t offset) const {
             return read<uint64_t>(offset);
         }
-
 };

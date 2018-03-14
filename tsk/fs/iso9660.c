@@ -507,6 +507,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                     tsk_error_set_errno(TSK_ERR_FS_ARG);
                     tsk_error_set_errstr
                         ("iso9660_load_inodes_dir: Name argument specified is too long");
+                    free(in_node);
                     return -1;
                 }
                 strncpy(in_node->inode.fn, a_fn, ISO9660_MAXNAMLEN_STD + 1);
@@ -616,6 +617,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                     if (tsk_verbose)
                         tsk_fprintf(stderr,
                                     "iso9660_load_inodes_dir: length of name after processing is 0. bailing\n");
+                    free(in_node);
                     break;
                     
                 }
@@ -634,6 +636,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                     tsk_fprintf(stderr,
                                 "iso9660_load_inodes_dir: file starts past end of image (%"PRIu32"). bailing\n",
                                 tsk_getu32(fs->endian, dentry->ext_loc_m));
+                free(in_node);
                 break;
             }
             in_node->offset =
@@ -644,6 +647,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                     tsk_fprintf(stderr,
                                 "iso9660_load_inodes_dir: file ends past end of image (%"PRIu32" bytes). bailing\n",
                                 tsk_getu32(fs->endian, in_node->inode.dr.data_len_m) + in_node->offset);
+                free(in_node);
                 break;
             }
             /* record size to make sure fifos show up as unique files */
@@ -676,6 +680,7 @@ iso9660_load_inodes_dir(TSK_FS_INFO * fs, TSK_OFF_T a_offs, int count,
                     if (tsk_verbose)
                         tsk_fprintf(stderr,
                                     "iso9660_load_inodes_dir: parse_susp returned error (%s). bailing\n", tsk_error_get());
+                    free(in_node);
                     break;
                 }
                 
@@ -1139,6 +1144,15 @@ iso9660_close(TSK_FS_INFO * fs)
         iso9660_svd_node *s = iso->svd;
         iso->svd = iso->svd->next;
         free(s);
+    }
+
+    while (iso->in_list != NULL) {
+        iso9660_inode_node *in = iso->in_list;
+        iso->in_list = iso->in_list->next;
+        if (in->inode.rr != NULL) {
+            free(in->inode.rr);
+        }
+        free(in);
     }
 
     tsk_fs_free(fs);
@@ -2352,8 +2366,10 @@ load_vol_desc(TSK_FS_INFO * fs)
         magic_seen = 1;
 
         // see if we are done
-        if (vd->type == ISO9660_VOL_DESC_SET_TERM)
+        if (vd->type == ISO9660_VOL_DESC_SET_TERM) {
+            free(vd);
             break;
+        }
 
         switch (vd->type) {
 
@@ -2425,6 +2441,7 @@ load_vol_desc(TSK_FS_INFO * fs)
 
             /* boot records are just read and discarded for now... */
         case ISO9660_BOOT_RECORD:
+            free(vd);
 #if 0
             cnt = tsk_fs_read(fs, offs, (char *) b, sizeof(iso_bootrec));
             if (cnt != sizeof(iso_bootrec)) {
@@ -2437,6 +2454,10 @@ load_vol_desc(TSK_FS_INFO * fs)
             }
             offs += sizeof(iso_bootrec);
 #endif
+            break;
+
+        default:
+            free(vd);
             break;
         }
     }
@@ -2607,7 +2628,7 @@ iso9660_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     fs->first_block = 0;
     fs->last_block = fs->last_block_act = fs->block_count - 1;
-
+    
     // determine the last block we have in this image
     if ((TSK_DADDR_T) ((img_info->size - offset) / fs->block_size) <
         fs->block_count)

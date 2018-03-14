@@ -202,7 +202,7 @@ vhdi_open(int a_num_img,
 #if defined( TSK_WIN32 )
     if( libvhdi_check_file_signature_wide((const wchar_t *) vhdi_info->img_info.images[0], &vhdi_error ) != 1 )
 #else
-    if( libvhdi_check_file_signature((const char *) vhdi_info->images[0], &vhdi_error) != 1)
+    if( libvhdi_check_file_signature((const char *) vhdi_info->img_info.images[0], &vhdi_error) != 1)
 #endif
 	{
         tsk_error_reset();
@@ -227,7 +227,7 @@ vhdi_open(int a_num_img,
             LIBVHDI_OPEN_READ, &vhdi_error) != 1)
 #else
     if (libvhdi_file_open(vhdi_info->handle,
-            (const char *) vhdi_info->images[0],
+            (const char *) vhdi_info->img_info.images[0],
             LIBVHDI_OPEN_READ, &vhdi_error) != 1)
 #endif
     {

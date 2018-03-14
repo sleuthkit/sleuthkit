@@ -218,6 +218,15 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
         for (data_run = a_ntfs->mft_data->nrd.run;
             data_run != NULL; data_run = data_run->next) {
 
+            /* Test for possible overflows / error conditions */
+            if ((offset < 0) || (data_run->len >= LLONG_MAX / a_ntfs->csize_b)){
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+                tsk_error_set_errstr
+                ("ntfs_dinode_lookup: Overflow when calculating run length");
+                return TSK_COR;
+            }
+
             /* The length of this specific run */
             TSK_OFF_T run_len = data_run->len * a_ntfs->csize_b;
 
@@ -366,11 +375,11 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
             ("dinode_lookup: More Update Sequence Entries than MFT size");
         return TSK_COR;
     }
-    if (tsk_getu16(fs->endian, mft->upd_off) > a_ntfs->mft_rsize_b) {
+    if (tsk_getu16(fs->endian, mft->upd_off) + sizeof(ntfs_upd) > a_ntfs->mft_rsize_b) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
         tsk_error_set_errstr
-            ("dinode_lookup: Update sequence offset larger than MFT size");
+            ("dinode_lookup: Update sequence would read past MFT size");
         return TSK_COR;
     }
 
@@ -385,6 +394,16 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
         uint8_t *new_val, *old_val;
         /* The offset into the buffer of the value to analyze */
         size_t offset = i * NTFS_UPDATE_SEQ_STRIDE - 2;
+
+        /* Check that there is room in the buffer to read the current sequence value */
+        if (offset + 2 > a_ntfs->mft_rsize_b) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+            tsk_error_set_errstr
+            ("dinode_lookup: Ran out of data while parsing update sequence values");
+            return TSK_COR;
+        }
+
         /* get the current sequence value */
         uint16_t cur_seq =
             tsk_getu16(fs->endian, (uintptr_t) a_buf + offset);
@@ -590,9 +609,22 @@ ntfs_make_data_run(NTFS_INFO * ntfs, TSK_OFF_T start_vcn,
          * these for loops are the equivalent of the getuX macros
          */
         idx = 0;
-        /* Get the length of this run */
+
+        /* Get the length of this run. 
+         * A length of more than eight bytes will not fit in the
+         * 64-bit length field (and is likely corrupt)
+         */
+        if (NTFS_RUNL_LENSZ(run) > 8) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
+            tsk_error_set_errstr
+            ("ntfs_make_run: Run length is too large to process");
+            tsk_fs_attr_run_free(*a_data_run_head);
+            *a_data_run_head = NULL;
+            return TSK_COR;
+        }
         for (i = 0, data_run->len = 0; i < NTFS_RUNL_LENSZ(run); i++) {
-            data_run->len |= (run->buf[idx++] << (i * 8));
+            data_run->len |= ((uint64_t)(run->buf[idx++]) << (i * 8));
             if (tsk_verbose)
                 tsk_fprintf(stderr,
                     "ntfs_make_data_run: Len idx: %i cur: %"
@@ -1674,9 +1706,11 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
     }
 
 
-    /* Cycle through the list of attributes */
+    /* Cycle through the list of attributes 
+     * There are 16 bytes in the non-union part of 
+     * an ntfs_attr, so make sure there is at least room for that */
     for (attr = a_attrseq; ((uintptr_t) attr >= (uintptr_t) a_attrseq)
-        && ((uintptr_t) attr <= ((uintptr_t) a_attrseq + len))
+        && ((uintptr_t) attr + 16 <= ((uintptr_t) a_attrseq + len))
         && (tsk_getu32(fs->endian, attr->len) > 0
             && (tsk_getu32(fs->endian, attr->type) !=
                 0xffffffff));
@@ -1774,11 +1808,23 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                     PRIu32 " Id: %" PRIu16 " IdNew: %" PRIu16
                     " Name: %s\n", type, id, id_new, name);
 
+            /* Check that there is room for the data.
+             * Resident data needs 24 bytes total */
+            if (((uintptr_t)attr + 24) > ((uintptr_t)a_attrseq + len)) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_CORRUPT);
+                tsk_error_set_errstr("ntfs_attr_walk: Resident attribute %"
+                    PRIuINUM "-%" PRIu32
+                    " starting offset and length too large",
+                    fs_file->meta->addr, type);
+                return TSK_COR;
+            }
+
             /* Validate the offset lengths */
             if (((tsk_getu16(fs->endian,
                             attr->c.r.soff) + (uintptr_t) attr) >
                     ((uintptr_t) a_attrseq + len))
-                || ((tsk_getu16(fs->endian,
+                || (((size_t)tsk_getu16(fs->endian,
                             attr->c.r.soff) + tsk_getu32(fs->endian,
                             attr->c.r.ssize) + (uintptr_t) attr) >
                     ((uintptr_t) a_attrseq + len))) {
@@ -1840,6 +1886,18 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                     " Name: %s  Start VCN: %" PRIu64 "\n", type, id,
                     id_new, name, tsk_getu64(fs->endian,
                         attr->c.nr.start_vcn));
+
+            /* Check that there is room for the data.
+             * Non-resident data needs 64 bytes total */
+            if (((uintptr_t)attr + 64) > ((uintptr_t)a_attrseq + len)) {
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_CORRUPT);
+                tsk_error_set_errstr("ntfs_attr_walk: Non-Resident attribute %"
+                    PRIuINUM "-%" PRIu32
+                    " starting offset and length too large",
+                    fs_file->meta->addr, type);
+                return TSK_COR;
+            }
 
             // sanity check
             if (tsk_getu16(fs->endian, attr->c.nr.run_off) > tsk_getu32(fs->endian, attr->len)) {
@@ -1921,6 +1979,17 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
             /* the compression unit size is stored in the header
              * it is stored as the power of 2 (if it is not 0)
              */
+            if (tsk_getu16(fs->endian, attr->c.nr.compusize) > 16) {
+                /* 64k is the maximum compression unit size */
+                tsk_error_reset();
+                tsk_error_set_errno(TSK_ERR_FS_CORRUPT);
+                tsk_error_set_errstr("ntfs_proc_attrseq: Compression unit size 2^%d too large",
+                    tsk_getu16(fs->endian, attr->c.nr.compusize));
+                if (fs_attr_run)
+                    tsk_fs_attr_run_free(fs_attr_run);
+                return TSK_COR;
+            }
+
             if (tsk_getu16(fs->endian, attr->c.nr.compusize) > 0) {
                 compsize =
                     1 << (tsk_getu16(fs->endian, attr->c.nr.compusize));
@@ -1997,6 +2066,10 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                         tsk_getu64(fs->endian, attr->c.nr.initsize),
                         alen, data_flag, compsize)) {
                     tsk_error_errstr2_concat("- proc_attrseq: set run");
+                    
+                    // If the run wasn't saved to the attribute, free it now
+                    if (fs_attr_run && (fs_attr->nrd.run == NULL))
+                        tsk_fs_attr_run_free(fs_attr_run);
                     return TSK_COR;
                 }
                 // set the special functions
@@ -2013,7 +2086,6 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
                 }
             }
         }
-
 
         /*
          * Special Cases, where we grab additional information
@@ -5060,7 +5132,6 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     ntfs->mft_data =
         tsk_fs_attrlist_get(ntfs->mft_file->meta->attr, NTFS_ATYPE_DATA);
     if (!ntfs->mft_data) {
-        tsk_fs_file_close(ntfs->mft_file);
         tsk_error_errstr2_concat(" - Data Attribute not found in $MFT");
         if (tsk_verbose)
             fprintf(stderr,
@@ -5083,7 +5154,6 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     /* load the version of the file system */
     if (ntfs_load_ver(ntfs)) {
-        tsk_fs_file_close(ntfs->mft_file);
         if (tsk_verbose)
             fprintf(stderr,
                 "ntfs_open: Error loading file system version ((%s)\n",
@@ -5093,7 +5163,6 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
     /* load the data block bitmap data run into ntfs_info */
     if (ntfs_load_bmap(ntfs)) {
-        tsk_fs_file_close(ntfs->mft_file);
         if (tsk_verbose)
             fprintf(stderr, "ntfs_open: Error loading block bitmap (%s)\n",
                 tsk_error_get());
@@ -5105,7 +5174,6 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
 
 #if TSK_USE_SID
     if (ntfs_load_secure(ntfs)) {
-        tsk_fs_file_close(ntfs->mft_file);
         if (tsk_verbose)
             fprintf(stderr, "ntfs_open: Error loading Secure Info (%s)\n",
                 tsk_error_get());
@@ -5137,14 +5205,6 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     return fs;
 
 on_error:
-    if( fs != NULL ) {
-        // Since fs->tag is ntfs->fs_info.tag why is this value set to 0
-        // and the memory is freed directly afterwards?
-        fs->tag = 0;
-    }
-    if( ntfs != NULL ) {
-        free(ntfs->fs);
-        free(ntfs);
-    }
+    ntfs_close(fs);
     return NULL;
 }

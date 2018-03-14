@@ -24,15 +24,15 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.ResourceBundle;
-import java.util.HashSet;
 import java.util.Set;
-import org.sleuthkit.datamodel.SleuthkitCase.ObjectInfo;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
+import org.sleuthkit.datamodel.SleuthkitCase.ObjectInfo;
 
 /**
  * An artifact that has been posted to the blackboard. An artifact is a typed
@@ -48,11 +48,12 @@ public class BlackboardArtifact implements Content {
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private final long artifactId;
 	private final long sourceObjId;				// refers to objID of parent/source object
-	private final long artifactObjId;		// objId of the artifact in tsk_objects. TBD: replace artifactID with this
+	private final long artifactObjId;			// objId of the artifact in tsk_objects. TBD: replace artifactID with this
+	private final long dataSourceObjId;			// objId of the data source in tsk_objects.
 	private final int artifactTypeId;
 	private final String artifactTypeName;
 	private final String displayName;
-	private final ReviewStatus reviewStatus;
+	private ReviewStatus reviewStatus;
 	private final SleuthkitCase sleuthkitCase;
 	private final List<BlackboardAttribute> attrsCache = new ArrayList<BlackboardAttribute>();
 	private boolean loadedCacheFromDb = false;
@@ -77,19 +78,22 @@ public class BlackboardArtifact implements Content {
 	 * @param artifactID       The unique id for this artifact
 	 * @param sourceObjId      The unique id of the content with which this
 	 *                         artifact is associated.
-	 * @param artifactObjID    The unique id this artifact, in tsk_objects
+	 * @param artifactObjId    The unique id this artifact, in tsk_objects
+	 * @param dataSourceObjId  Object ID of the datasource where the artifact
+	 *                         was found.
 	 * @param artifactTypeID   The type id of this artifact.
 	 * @param artifactTypeName The type name of this artifact.
 	 * @param displayName      The display name of this artifact.
 	 * @param reviewStatus     The review status of this artifact.
 	 */
-	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus) {
+	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjId, long dataSourceObjId, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus) {
 
 		this.sleuthkitCase = sleuthkitCase;
 		this.artifactId = artifactID;
 		this.sourceObjId = sourceObjId;
 		this.artifactObjId = artifactObjId;
 		this.artifactTypeId = artifactTypeID;
+		this.dataSourceObjId = dataSourceObjId;
 		this.artifactTypeName = artifactTypeName;
 		this.displayName = displayName;
 		this.reviewStatus = reviewStatus;
@@ -113,13 +117,14 @@ public class BlackboardArtifact implements Content {
 	 * @param sourceObjId      The unique id of the content with which this
 	 *                         artifact is associated.
 	 * @param artifactObjID    The unique id this artifact. in tsk_objects
+	 * @param dataSourceObjID  Unique id of the data source.
 	 * @param artifactTypeID   The type id of this artifact.
 	 * @param artifactTypeName The type name of this artifact.
 	 * @param displayName      The display name of this artifact.
 	 * @param reviewStatus     The review status of this artifact.
 	 */
-	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjID, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, boolean isNew) {
-		this(sleuthkitCase, artifactID, sourceObjId, artifactObjID, artifactTypeID, artifactTypeName, displayName, reviewStatus);
+	BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long sourceObjId, long artifactObjID, long dataSourceObjID, int artifactTypeID, String artifactTypeName, String displayName, ReviewStatus reviewStatus, boolean isNew) {
+		this(sleuthkitCase, artifactID, sourceObjId, artifactObjID, dataSourceObjID, artifactTypeID, artifactTypeName, displayName, reviewStatus);
 		if (isNew) {
 			/*
 			 * If this object represents a newly created artifact, then its
@@ -157,6 +162,15 @@ public class BlackboardArtifact implements Content {
 	 */
 	public long getObjectID() {
 		return this.sourceObjId;
+	}
+
+	/**
+	 * Gets the object id of the data source for this artifact.
+	 *
+	 * @return The data source object id.
+	 */
+	long getDataSourceObjectID() {
+		return this.dataSourceObjId;
 	}
 
 	/**
@@ -271,6 +285,19 @@ public class BlackboardArtifact implements Content {
 		return reviewStatus;
 	}
 
+	/**
+	 * Sets the review status of this artifact, i.e., whether it has been
+	 * approved, rejected, or is still waiting for a decision from the user.
+	 *
+	 * @param newStatus new status of the artifact
+	 *
+	 * @throws TskCoreException If an error occurs
+	 */
+	public void setReviewStatus(ReviewStatus newStatus) throws TskCoreException {
+		getSleuthkitCase().setReviewStatus(this, newStatus);
+		reviewStatus = newStatus;
+	}
+	
 	/**
 	 * Adds an attribute to this artifact.
 	 *
@@ -1108,7 +1135,12 @@ public class BlackboardArtifact implements Content {
 		 * An account.
 		 */
 		TSK_ACCOUNT(39, "TSK_ACCOUNT", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskAccount.text"));
+				bundle.getString("BlackboardArtifact.tskAccount.text")),
+		/**
+		 * An encrypted file.
+		 */
+		TSK_ENCRYPTION_SUSPECTED(40, "TSK_ENCRYPTION_SUSPECTED", //NON-NLS
+				bundle.getString("BlackboardArtifact.tskEncryptionSuspected.text"));
 
 		private final String label;
 		private final int typeId;
@@ -1291,7 +1323,8 @@ public class BlackboardArtifact implements Content {
 	 * @param artifactID       The unique id for this artifact.
 	 * @param objID            The unique id of the content with which this
 	 *                         artifact is associated.
-	 * @param artifactObjID		  The unique id of the artifact, in tsk_objects
+	 * @param artifactObjID	   The unique id of the artifact, in tsk_objects
+	 * @param dataSourceObjId  The id of the data source
 	 * @param artifactTypeID   The type id of this artifact.
 	 * @param artifactTypeName The type name of this artifact.
 	 * @param displayName      The display name of this artifact.
@@ -1300,8 +1333,8 @@ public class BlackboardArtifact implements Content {
 	 * String, String, ReviewStatus) instead.
 	 */
 	@Deprecated
-	protected BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long objID, long artifactObjID, int artifactTypeID, String artifactTypeName, String displayName) {
-		this(sleuthkitCase, artifactID, objID, artifactObjID, artifactTypeID, artifactTypeName, displayName, ReviewStatus.UNDECIDED);
+	protected BlackboardArtifact(SleuthkitCase sleuthkitCase, long artifactID, long objID, long artifactObjID, long dataSourceObjId, int artifactTypeID, String artifactTypeName, String displayName) {
+		this(sleuthkitCase, artifactID, objID, artifactObjID, dataSourceObjId, artifactTypeID, artifactTypeName, displayName, ReviewStatus.UNDECIDED);
 	}
 
 	/**

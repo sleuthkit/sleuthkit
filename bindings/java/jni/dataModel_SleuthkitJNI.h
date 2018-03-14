@@ -266,10 +266,10 @@ JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_commitAddImgNa
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI
  * Method:    openImgNat
- * Signature: ([Ljava/lang/String;I)J
+ * Signature: ([Ljava/lang/String;II)J
  */
 JNIEXPORT jlong JNICALL Java_org_sleuthkit_datamodel_SleuthkitJNI_openImgNat
-  (JNIEnv *, jclass, jobjectArray, jint);
+  (JNIEnv *, jclass, jobjectArray, jint, jint);
 
 /*
  * Class:     org_sleuthkit_datamodel_SleuthkitJNI

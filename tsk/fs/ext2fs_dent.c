@@ -240,9 +240,8 @@ ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     TSK_INUM_T a_addr)
 {
     EXT2FS_INFO *ext2fs = (EXT2FS_INFO *) a_fs;
-    char *dirbuf, *dirptr;
+    char *dirbuf;
     TSK_OFF_T size;
-    TSK_FS_LOAD_FILE load_file;
     TSK_FS_DIR *fs_dir;
     TSK_LIST *list_seen = NULL;
 
@@ -313,45 +312,35 @@ ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         return TSK_COR;
     }
 
-    size = roundup(fs_dir->fs_file->meta->size, a_fs->block_size);
-    if ((dirbuf = tsk_malloc((size_t) size)) == NULL) {
+    // We only read in and process a single block at a time
+    if ((dirbuf = tsk_malloc((size_t)a_fs->block_size)) == NULL) {
         return TSK_ERR;
     }
 
-    /* make a copy of the directory contents that we can process */
-    load_file.left = load_file.total = (size_t) size;
-    load_file.base = load_file.cur = dirbuf;
-
-    if (tsk_fs_file_walk(fs_dir->fs_file,
-            TSK_FS_FILE_WALK_FLAG_SLACK,
-            tsk_fs_load_file_action, (void *) &load_file)) {
-        tsk_error_reset();
-        tsk_error_errstr2_concat("- ext2fs_dir_open_meta");
-        free(dirbuf);
-        return TSK_COR;
-    }
-
-    /* Not all of the directory was copied, so we exit */
-    if (load_file.left > 0) {
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_FS_FWALK);
-        tsk_error_set_errstr
-            ("ext2fs_dir_open_meta: Error reading directory contents: %"
-            PRIuINUM "\n", a_addr);
-        free(dirbuf);
-        return TSK_COR;
-    }
-    dirptr = dirbuf;
+    size = roundup(fs_dir->fs_file->meta->size, a_fs->block_size);
+    TSK_OFF_T offset = 0;
 
     while ((int64_t) size > 0) {
         int len =
             (a_fs->block_size < size) ? a_fs->block_size : (int) size;
 
+        int cnt = tsk_fs_file_read(fs_dir->fs_file, offset, dirbuf, len, (TSK_FS_FILE_READ_FLAG_ENUM)0);
+        if (cnt != len) {
+            printf("  Failed - read 0x%x bytes\n", cnt);
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_FWALK);
+            tsk_error_set_errstr
+            ("ext2fs_dir_open_meta: Error reading directory contents: %"
+                PRIuINUM "\n", a_addr);
+            free(dirbuf);
+            return TSK_COR;
+        }
+
         retval_tmp =
             ext2fs_dent_parse_block(ext2fs, fs_dir,
             (fs_dir->fs_file->meta->
                 flags & TSK_FS_META_FLAG_UNALLOC) ? 1 : 0, &list_seen,
-            dirptr, len);
+            dirbuf, len);
 
         if (retval_tmp == TSK_ERR) {
             retval_final = TSK_ERR;
@@ -362,7 +351,7 @@ ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         }
 
         size -= len;
-        dirptr = (char *) ((uintptr_t) dirptr + len);
+        offset += len;
     }
     free(dirbuf);
 

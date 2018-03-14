@@ -87,6 +87,9 @@ namespace Rejistry {
         return new HBIN(this, _buf, getAbsoluteOffset(FIRST_HBIN_OFFSET));
     }
 
+    /**
+     * @throws RegistryParseException in case of error.
+     */
     NKRecord::NKRecordPtr REGFHeader::getRootNKRecord() const {
         int32_t firstCellOffset = (int32_t)(getDWord(FIRST_KEY_OFFSET_OFFSET));
         std::auto_ptr< HBIN > firstHBIN(getFirstHBIN());

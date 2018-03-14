@@ -1,0 +1,65 @@
+/*! \page mod_compage Communications 
+
+
+
+NOTE: This is a work in progress
+
+
+\section jni_com_overview Overview
+
+The Java code and database in Sleuth Kit contain special classes and tables to deal with communications between two parties. This page outlines what a developer should do when they are parsing communications data so that it can be properly displayed and used by other code (such as the Autopsy Communications UI). 
+
+\section jni_com_types Terminology
+
+First, lets cover the terminology that we use. 
+
+
+An <b>Account</b> is an entity with a type and an identifier that is unique to the type.  Common examples of types include:
+- Credit Card (and the unique identifier is the credit card number)
+- Email (and the unique identifier is the email address)
+- Phone (and the unique identifier is the phone number)
+- Twitter (with a unique identifier of the login)
+- ...
+
+Accounts are found in forensics when parsing structured data (such as email messages) or keyword searching.
+
+
+Two accounts have a <b>relationship</b> if they are believed to have communicated in some way.  Examples of interactions that cause a relationship are:
+- Being part of the same email message
+- Being in a call log
+- Being in an address book
+
+When there are multiple people involved with an email message, a relationship is made between each of them.  For example, if A sends a message to B and CC:s C, then there will be relationships between A <-> B, A <-> C, and B <-> C.  Relationships in The Sleuth Kit are not directional. 
+
+A <b>relationship source</b> is where we learned about the relationship.  This typically comes from Blackboard Artifacts, but may come from generic files in the future. 
+
+\section jni_com_add Adding Communication Information to Database
+
+Now lets cover what you should do when you are parsing some communications data and want to store it in the TSK database.  Let's assume we are parsing a smart phone app that has messages. 
+
+\subsection jni_com_add_acct Adding Account Instances
+
+When you encounter a message, the first thing to do is store information about the accounts.  TSK wants to know about each <i>file</i> that had a reference of the account.   You should call org.sleuthkit.datamodel.CommunicationsManager.createAccountFileInstance() for each file that you encounter a given account.   
+
+Behind the scenes, createAccountFileInstance will make an entry in the accounts table for each unique account on a given device and will make a org.sleuthkit.datamodel.BlackboardArtifact for each unique account in a given file. 
+
+If you want to create a custom account type, call org.sleuthkit.datamodel.CommunicationsManager.addAccountType(). 
+
+\subsection jni_com_add_msg Adding The Message (Source)
+
+You also need to make sure that you store the org.sleuthkit.datamodel.BlackboardArtifact that used the accounts.  You can do this before or after calling createAccountFileInstance(). The order does not matter.
+
+For a messaging app, you would make org.sleuthkit.datamodel.BlackboardArtifact objects with a type of org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_MESSAGE.  That artifact would store various name and value pairs using org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE values. 
+
+
+\subsection jni_com_add_relationship Adding the Relationship
+
+The final step is to create store the relationships between the accounts.  You can do this via org.sleuthkit.datamodel.CommunicationsManager.addRelationships().  This method will require you to pass in the org.sleuthkit.datamodel.AccountInstance objects that you created and the org.sleuthkit.datamodel.BlackboardArtifact that you created for the message or other source.
+
+
+\section jni_com_schema Database Schema
+
+For details of how this is stored in the database, refer to the 
+<a href="http://wiki.sleuthkit.org/index.php?title=Database_v7.2_Schema#Communications_.2F_Accounts]">wiki</a>.
+
+*/
