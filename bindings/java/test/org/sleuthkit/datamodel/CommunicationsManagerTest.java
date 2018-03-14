@@ -25,6 +25,7 @@ import java.util.Collections;
 import static java.util.Collections.singleton;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -226,6 +227,10 @@ public class CommunicationsManagerTest {
 	private static HashSet<AccountDeviceInstance> EMAILS_ABC_DS1;
 	private static HashSet<AccountDeviceInstance> PHONES_2345_DS1;
 	private static HashSet<AccountDeviceInstance> PHONES_12345_DS2;
+	private static AccountFileInstance deviceAccount_1;
+	private static AccountFileInstance deviceAccount_2;
+	private static AccountDeviceInstance ds1DeviceAccount;
+	private static AccountDeviceInstance ds2DeviceAccount;
 
 	public CommunicationsManagerTest() {
 	}
@@ -257,11 +262,12 @@ public class CommunicationsManagerTest {
 
 			// Create some commmunication artiacts from DS1
 			{
-				VirtualDirectory rootDirectory_1 = dataSource_1.getRootDirectory();
+				VirtualDirectory rootDirectory_1 = dataSource_1;
 				AbstractFile sourceContent_1 = rootDirectory_1;	// Let the root dorectory be the source for all artifacts
 
 				// Create a Device account for Device1
-				AccountFileInstance deviceAccount_1 = caseDB.getCommunicationsManager().createAccountFileInstance(Account.Type.DEVICE, DS1_DEVICEID, MODULE_NAME, rootDirectory_1);
+				deviceAccount_1 = caseDB.getCommunicationsManager().createAccountFileInstance(Account.Type.DEVICE, DS1_DEVICEID, MODULE_NAME, rootDirectory_1);
+				ds1DeviceAccount = new AccountDeviceInstance(deviceAccount_1.getAccount(), DS1_DEVICEID);
 
 				// Create some email message artifacts
 				BlackboardArtifact emailMsg = addEmailMsgArtifact(EMAIL_A, EMAIL_B, "", "",
@@ -305,11 +311,12 @@ public class CommunicationsManagerTest {
 
 			// Create some commmunication artiacts from DS2
 			{
-				VirtualDirectory rootDirectory_2 = dataSource_2.getRootDirectory();
+				VirtualDirectory rootDirectory_2 = dataSource_2;
 				AbstractFile sourceContent_2 = rootDirectory_2;	// Let the root directory be the source for all artifacts
 
 				// Create a Device accocunt for Device1
-				AccountFileInstance deviceAccount_2 = caseDB.getCommunicationsManager().createAccountFileInstance(Account.Type.DEVICE, DS2_DEVICEID, MODULE_NAME, sourceContent_2);
+				deviceAccount_2 = caseDB.getCommunicationsManager().createAccountFileInstance(Account.Type.DEVICE, DS2_DEVICEID, MODULE_NAME, sourceContent_2);
+				ds2DeviceAccount = new AccountDeviceInstance(deviceAccount_2.getAccount(), DS2_DEVICEID);
 
 				// Add some Call logs
 				addCalllogArtifact(deviceAccount_2, NAME_1, PHONENUM_1, 1483272732, 100, "Outgoing", sourceContent_2);
@@ -489,6 +496,105 @@ public class CommunicationsManagerTest {
 			List<AccountDeviceInstance> accountDeviceInstances
 					= commsMgr.getAccountDeviceInstancesWithRelationships(commsFilter);
 			assertEquals(0, accountDeviceInstances.size());
+		}
+	}
+
+	@Test
+	public void getRelationshipsTests() throws TskCoreException {
+
+		System.out.println("CommsMgr API - getRelationships With Filters tests");
+
+		// Test  DS1: EMAIL A <-> EMAIL B, no filters
+		{
+
+			List<Content> accountDeviceInstances
+					= commsMgr.getRelationshipSources(EMAIL_A_DS1, EMAIL_B_DS1, null);
+			assertEquals(2, accountDeviceInstances.size());
+		}
+
+		// Test  DS1: EMAIL A <-> EMAIL c, no filters
+		{
+
+			List<Content> accountDeviceInstances
+					= commsMgr.getRelationshipSources(EMAIL_A_DS1, EMAIL_C_DS1, null);
+			assertEquals(2, accountDeviceInstances.size());
+		}
+
+		// Test  DS1: EMAIL B <-> EMAIL C, no filters
+		{
+
+			List<Content> accountDeviceInstances
+					= commsMgr.getRelationshipSources(EMAIL_B_DS1, EMAIL_C_DS1, null);
+			assertEquals(1, accountDeviceInstances.size());
+		}
+
+		// Test  DS1: EMAIL B <-> EMAIL C, contacts
+		{
+			CommunicationsFilter communicationsFilter = new CommunicationsFilter(Arrays.asList(
+					new RelationshipTypeFilter(singleton(Relationship.Type.CONTACT))));
+			List<Content> accountDeviceInstances
+					= commsMgr.getRelationshipSources(EMAIL_B_DS1, EMAIL_C_DS1, communicationsFilter);
+			assertEquals(0, accountDeviceInstances.size());
+		}
+	}
+
+	@Test
+	public void getRelatedAccountDeviceInstancesWithFilterTests() throws TskCoreException {
+
+		System.out.println("CommsMgr API - getRelatedAccountDeviceInstances With Filters tests");
+
+		// Test  DS1: EMAIL A, no filters
+		{
+			List<AccountDeviceInstance> accountDeviceInstances
+					= commsMgr.getRelatedAccountDeviceInstances(EMAIL_A_DS1, null);
+			assertEquals(2, accountDeviceInstances.size());
+
+		}
+
+		// Test  DS1: EMAIL A, filter on device and email accounts
+		{
+			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
+					new DeviceFilter(singleton(DS1_DEVICEID)),
+					new AccountTypeFilter(singleton(EMAIL))
+			));
+			List<AccountDeviceInstance> accountDeviceInstances
+					= commsMgr.getRelatedAccountDeviceInstances(EMAIL_A_DS1, commsFilter);
+			assertEquals(2, accountDeviceInstances.size());
+
+		}
+
+		// Test  DS1: EMAIL A, filter - DS2 & EMAIL
+		{
+			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
+					new DeviceFilter(singleton(DS2_DEVICEID)),
+					new AccountTypeFilter(singleton(EMAIL))
+			));
+			List<AccountDeviceInstance> accountDeviceInstances
+					= commsMgr.getRelatedAccountDeviceInstances(EMAIL_A_DS1, commsFilter);
+			assertEquals(0, accountDeviceInstances.size());
+
+		}
+
+		// Test DS1: Phone 2  , call logs
+		{
+			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
+					new RelationshipTypeFilter(Arrays.asList(CALL_LOG))
+			));
+			List<AccountDeviceInstance> accountDeviceInstances
+					= commsMgr.getRelatedAccountDeviceInstances(PHONE_2_DS1, commsFilter);
+			System.out.println(accountDeviceInstances);
+			assertEquals(1, accountDeviceInstances.size());
+		}
+
+		// Test DS2: Phone 1  , msgs + call logs
+		{
+			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
+					new RelationshipTypeFilter(Arrays.asList(CALL_LOG, MESSAGE))
+			));
+			List<AccountDeviceInstance> accountDeviceInstances
+					= commsMgr.getRelatedAccountDeviceInstances(PHONE_2_DS2, commsFilter);
+			System.out.println(accountDeviceInstances);
+			assertEquals(1, accountDeviceInstances.size());
 		}
 	}
 
@@ -1169,6 +1275,70 @@ public class CommunicationsManagerTest {
 			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(COMMUNICATIONS_RELATIONSHIP_TYPE_FILTER));
 			communications = commsMgr.getRelationshipSources(accountDeviceInstances, commsFilter);
 			assertEquals(8, communications.size());
+		}
+	}
+
+	@Test
+	public void getRelationshipCountsPairwiseTests() throws TskCoreException {
+		System.out.println("CommsMgr API - Get RelationshipCountsBetween test");
+
+		// Counts  for DS1 and PHONES 2,3,4,5, no Filter 
+		{
+			final Set<AccountDeviceInstance> accounts = new HashSet<AccountDeviceInstance>();
+			accounts.add(ds1DeviceAccount);
+			accounts.addAll(PHONES_2345_DS1);
+
+			Map<AccountPair, Long> counts = commsMgr.getRelationshipCountsPairwise(accounts, null);
+
+			assertEquals(3, counts.size());
+			assertEquals(Long.valueOf(5), counts.get(new AccountPair(ds1DeviceAccount, PHONE_2_DS1)));
+			assertEquals(Long.valueOf(2), counts.get(new AccountPair(ds1DeviceAccount, PHONE_3_DS1)));
+			assertEquals(Long.valueOf(1), counts.get(new AccountPair(ds1DeviceAccount, PHONE_5_DS1)));
+			assertNull(counts.get(new AccountPair(ds1DeviceAccount, PHONE_4_DS1)));
+
+		}
+
+		// Counts  for DS1 Email A and B and PHONES 2,3,4,5, no Filter 
+		{
+			final Set<AccountDeviceInstance> accounts = new HashSet<AccountDeviceInstance>();
+			accounts.add(ds1DeviceAccount);
+			accounts.add(EMAIL_A_DS1);
+			accounts.add(EMAIL_B_DS1);
+			accounts.addAll(PHONES_2345_DS1);
+
+			Map<AccountPair, Long> counts
+					= commsMgr.getRelationshipCountsPairwise(accounts, null);
+			assertEquals(4, counts.size());
+			assertEquals(Long.valueOf(5), counts.get(new AccountPair(ds1DeviceAccount, PHONE_2_DS1)));
+			assertEquals(Long.valueOf(2), counts.get(new AccountPair(ds1DeviceAccount, PHONE_3_DS1)));
+			assertEquals(Long.valueOf(1), counts.get(new AccountPair(ds1DeviceAccount, PHONE_5_DS1)));
+			assertEquals(Long.valueOf(2), counts.get(new AccountPair(EMAIL_A_DS1, EMAIL_B_DS1)));
+			assertNull(counts.get(new AccountPair(ds1DeviceAccount, PHONE_4_DS1)));
+		}
+
+		// Counts  for DS1, DS2,  PHONES 1, 2,3,4,5;  Filter on DS2 
+		{
+			final Set<AccountDeviceInstance> accounts = new HashSet<AccountDeviceInstance>();
+			accounts.add(ds1DeviceAccount);
+			accounts.add(ds2DeviceAccount);
+			accounts.addAll(PHONES_12345_DS2);
+
+			CommunicationsFilter commsFilter = new CommunicationsFilter(Arrays.asList(
+					new DeviceFilter(singleton(DS2_DEVICEID))
+			));
+			Map<AccountPair, Long> counts
+					= commsMgr.getRelationshipCountsPairwise(accounts, commsFilter);
+			assertEquals(4, counts.size());
+			assertNull(counts.get(new AccountPair(ds1DeviceAccount, PHONE_2_DS1)));
+			assertNull(counts.get(new AccountPair(ds1DeviceAccount, PHONE_3_DS1)));
+			assertNull(counts.get(new AccountPair(ds1DeviceAccount, PHONE_5_DS1)));
+			assertNull(counts.get(new AccountPair(EMAIL_A_DS1, EMAIL_B_DS1)));
+			assertNull(counts.get(new AccountPair(ds1DeviceAccount, PHONE_4_DS1)));
+
+			assertEquals(Long.valueOf(1), counts.get(new AccountPair(ds2DeviceAccount, PHONE_1_DS2)));
+			assertEquals(Long.valueOf(4), counts.get(new AccountPair(ds2DeviceAccount, PHONE_2_DS2)));
+			assertEquals(Long.valueOf(1), counts.get(new AccountPair(ds2DeviceAccount, PHONE_3_DS2)));
+			assertEquals(Long.valueOf(3), counts.get(new AccountPair(ds2DeviceAccount, PHONE_4_DS2)));
 		}
 	}
 

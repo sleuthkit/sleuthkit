@@ -1,7 +1,7 @@
 /*
  * SleuthKit Java Bindings
  *
- * Copyright 2017 Basis Technology Corp.
+ * Copyright 2017-18 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,6 +35,7 @@ import static org.sleuthkit.datamodel.CollectionUtils.hashSetOf;
  * call (call log) ) or presence in a contact book.
  */
 public class Relationship {
+
 
 	public static final class Type {
 
