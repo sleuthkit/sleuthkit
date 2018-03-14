@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011 Basis Technology Corp.
+ * Copyright 2011-2018 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -149,6 +149,15 @@ public interface ContentVisitor<T> {
 	T visit(BlackboardArtifact ba);	
 	
 	/**
+	 * Act on (visit) a Report object
+	 *
+	 * @param r report object to visit / act on
+	 *
+	 * @return result of the visit
+	 */
+	T visit(Report r);
+
+	/**
 	 * The default content visitor - quickest method for implementing a custom
 	 * visitor. Every visit method delegates to the defaultVisit method, the
 	 * only required method to be implemented. Then, implement the specific
@@ -225,6 +234,11 @@ public interface ContentVisitor<T> {
 		@Override
 		public T visit(BlackboardArtifact ba) {
 			return defaultVisit(ba);
+		}
+
+		@Override
+		public T visit(Report r) {
+			return defaultVisit(r);
 		}
 	}
 }

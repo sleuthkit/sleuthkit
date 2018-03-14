@@ -72,6 +72,8 @@ namespace Rejistry {
             return read<uint8_t>(offset);
         }
 
+        /**
+         * Throws exception if offset or length are too large. */
         void ByteBuffer::get(ByteArray& dst, const uint32_t offset, const uint32_t length) {
             if (length == 0) {
                 // No data requested.
@@ -98,16 +100,24 @@ namespace Rejistry {
             _position += offset;
         }
 
+        /**
+         * @returns 0 if offset is too large.
+         */
         uint16_t ByteBuffer::getShort(uint32_t offset) const {
             return read<uint16_t>(offset);
         }
 
+        /**
+        * @returns 0 if offset is too large.
+        */
         uint32_t ByteBuffer::getInt(uint32_t offset) const {
             return read<uint32_t>(offset);
         }
 
+        /**
+        * @returns 0 if offset is too large.
+        */
         uint64_t ByteBuffer::getLong(uint32_t offset) const {
             return read<uint64_t>(offset);
         }
-
 };

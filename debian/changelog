@@ -1,0 +1,5 @@
+sleuthkit-java (4.6.0-1) unstable; urgency=medium
+
+  * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>
+
+ -- Rishwanth Senthilkumar <rishwanth@basistech.com>  Tue, 30 Jan 2018 15:34:02 -0500

@@ -1200,7 +1200,7 @@ hfs_cat_read_thread_record(HFS_INFO * hfs, TSK_OFF_T off,
 {
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & (hfs->fs_info);
     uint16_t uni_len;
-    size_t cnt;
+    ssize_t cnt;
 
     memset(thread, 0, sizeof(hfs_thread));
     cnt = tsk_fs_attr_read(hfs->catalog_attr, off, (char *) thread, 10, 0);
@@ -1264,7 +1264,7 @@ hfs_cat_read_file_folder_record(HFS_INFO * hfs, TSK_OFF_T off,
     hfs_file_folder * record)
 {
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & (hfs->fs_info);
-    size_t cnt;
+    ssize_t cnt;
     char rec_type[2];
 
     memset(record, 0, sizeof(hfs_file_folder));
@@ -3169,7 +3169,7 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
     if (a_len == 0)
         return 0;
 
-    if (a_offset < 0 || a_len < 0) {
+    if (a_offset < 0) {
         error_detected(TSK_ERR_FS_ARG,
             "%s: reading from file at a negative offset, or negative length",
              __func__);
@@ -4014,6 +4014,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 uint8_t *recData;       // pointer to the data part of the recordBytes
                 hfs_attr_data *attrData;
                 uint32_t attributeLength;
+                uint32_t nameLength;
                 uint32_t recordType;
                 uint16_t keyLength;
                 int conversionResult;
@@ -4061,10 +4062,12 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                     goto on_error;
                 }
 
-                // name_len is in UTF_16 chars
-                if ((uint32_t)2 * tsk_getu16(endian, keyB->attr_name_len)  > attributeLength) {
+                // attr_name_len is in UTF_16 chars
+                nameLength = tsk_getu16(endian, keyB->attr_name_len);
+                if (2*nameLength > HFS_MAX_ATTR_NAME_LEN_UTF16_B) {
                     error_detected(TSK_ERR_FS_CORRUPT,
-                        "hfs_load_extended_attrs: Name length is too long.");
+                        "hfs_load_extended_attrs: Name length (%d) is too long.",
+                        nameLength);
                     goto on_error;
                 }
 
@@ -4086,8 +4089,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 
 
                 conversionResult = hfs_UTF16toUTF8(fs, keyB->attr_name,
-                    tsk_getu16(endian, keyB->attr_name_len),
-                    nameBuff, HFS_MAX_ATTR_NAME_LEN_UTF8_B+1, 0);
+                    nameLength, nameBuff, HFS_MAX_ATTR_NAME_LEN_UTF8_B+1, 0);
                 if (conversionResult != 0) {
                     error_returned
                         ("-- hfs_load_extended_attrs could not convert the attr_name in the btree key into a UTF8 attribute name");
@@ -6481,7 +6483,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     if ((hfs->catalog_file =
             tsk_fs_file_open_meta(fs, NULL,
                 HFS_CATALOG_FILE_ID)) == NULL) {
-        hfs_close(hfs);
+        hfs_close(fs);
         return NULL;
     }
 
@@ -6490,7 +6492,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
         tsk_fs_attrlist_get(hfs->catalog_file->meta->attr,
         TSK_FS_ATTR_TYPE_DEFAULT);
     if (!hfs->catalog_attr) {
-        hfs_close(hfs);
+        hfs_close(fs);
         tsk_error_errstr2_concat
             (" - Data Attribute not found in Catalog File");
         return NULL;
@@ -6505,7 +6507,7 @@ hfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ);
         }
-        hfs_close(hfs);
+        hfs_close(fs);
         tsk_error_set_errstr2("hfs_open: Error reading catalog header");
         return NULL;
     }

@@ -1,7 +1,7 @@
 AM_CPPFLAGS = -I.. -I$(srcdir)/.. -Wall $(PTHREAD_CFLAGS)
 LDADD = ../tsk/libtsk.la
 LDFLAGS += -static $(PTHREAD_LIBS)
-EXTRA_DIST = .indent.pro 
+EXTRA_DIST = .indent.pro runtests.sh
 
 check_SCRIPTS = runtests.sh
 
