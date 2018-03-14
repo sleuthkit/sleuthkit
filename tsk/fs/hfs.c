@@ -4066,8 +4066,15 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 nameLength = tsk_getu16(endian, keyB->attr_name_len);
                 if (2*nameLength > HFS_MAX_ATTR_NAME_LEN_UTF16_B) {
                     error_detected(TSK_ERR_FS_CORRUPT,
-                        "hfs_load_extended_attrs: Name length (%d) is too long.",
-                        nameLength);
+                        "hfs_load_extended_attrs: Name length in bytes (%d) > max name length in bytes (%d).",
+                        2*nameLength, HFS_MAX_ATTR_NAME_LEN_UTF16_B);
+                    goto on_error;
+                }
+
+                if (2*nameLength > keyLength - 12) {
+                    error_detected(TSK_ERR_FS_CORRUPT,
+                        "hfs_load_extended_attrs: Name length in bytes (%d) > remaining struct length (%d).",
+                        2*nameLength, keyLength - 12);
                     goto on_error;
                 }
 
