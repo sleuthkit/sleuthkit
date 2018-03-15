@@ -1293,7 +1293,13 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                     return 1;
                 }
                 else {
-                    if (ULLONG_MAX / fs_attr_run->len > fs->block_size) {
+                    if ((fs_attr_run->len > LLONG_MAX)
+                        || (LLONG_MAX / fs_attr_run->len < fs->block_size)) {
+                        if (fs_attr->fs_file->meta->
+                            flags & TSK_FS_META_FLAG_UNALLOC)
+                            tsk_error_set_errno(TSK_ERR_FS_RECOVER);
+                        else
+                            tsk_error_set_errno(TSK_ERR_FS_GENFS);
                         tsk_error_set_errstr
                             ("ntfs_attr_walk_special: Attribute run length is too large %"
                             PRIuDADDR "@%" PRIuDADDR " - type: %" PRIu32
