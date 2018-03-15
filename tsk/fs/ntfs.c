@@ -1293,11 +1293,24 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                     return 1;
                 }
                 else {
+                    if (ULLONG_MAX / fs_attr_run->len > fs->block_size) {
+                        tsk_error_set_errstr
+                            ("ntfs_attr_walk_special: Attribute run length is too large %"
+                            PRIuDADDR "@%" PRIuDADDR " - type: %" PRIu32
+                            "  id: %d Meta: %" PRIuINUM " Status: %s",
+                            fs_attr_run->len, fs_attr_run->addr, fs_attr->type,
+                            fs_attr->id, fs_attr->fs_file->meta->addr,
+                            (fs_attr->fs_file->meta->
+                                flags & TSK_FS_META_FLAG_ALLOC) ? "Allocated" :
+                            "Deleted");
+                        free(comp_unit);
+                        ntfs_uncompress_done(&comp);
+                        return 1;
+                    }
                     off += (fs_attr_run->len * fs->block_size);
                     continue;
                 }
             }
-
             addr = fs_attr_run->addr;
 
             /* cycle through each cluster in the run */
