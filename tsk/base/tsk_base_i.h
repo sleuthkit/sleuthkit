@@ -316,12 +316,6 @@ extern "C" {
         const UTF8 * sourceEnd,
         UTF16 ** targetStart, UTF16 * targetEnd, TSKConversionFlags flags);
 
-    extern TSKConversionResult tsk_UTF8toUTF16W(const UTF8 ** sourceStart,
-                                                const UTF8 * sourceEnd, 
-                                                wchar_t ** targetStart,
-                                                wchar_t * targetEnd, 
-                                                TSKConversionFlags flags);
-
     extern TSKConversionResult tsk_UTF16toUTF8(TSK_ENDIAN_ENUM,
         const UTF16 ** sourceStart, const UTF16 * sourceEnd,
         UTF8 ** targetStart, UTF8 * targetEnd, TSKConversionFlags flags);
