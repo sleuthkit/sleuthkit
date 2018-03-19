@@ -5291,6 +5291,107 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Updates an existing derived file in the database and returns a new
+	 * derived file object with the updated contents
+	 *
+	 * @param fileName        file name the derived file
+	 * @param id			           the obj_id for the derived file which is being
+	 *                        updated
+	 * @param localPath       local path of the derived file, including the file
+	 *                        name. The path is relative to the database path.
+	 * @param size            size of the derived file in bytes
+	 * @param ctime
+	 * @param crtime
+	 * @param atime
+	 * @param mtime
+	 * @param isFile          whether a file or directory, true if a file
+	 * @param parentObj		     parent content object
+	 * @param rederiveDetails details needed to re-derive file (will be specific
+	 *                        to the derivation method), currently unused
+	 * @param toolName        name of derivation method/tool, currently unused
+	 * @param toolVersion     version of derivation method/tool, currently
+	 *                        unused
+	 * @param otherDetails    details of derivation method/tool, currently
+	 *                        unused
+	 * @param encodingType    Type of encoding used on the file (or NONE if no
+	 *                        encoding)
+	 *
+	 * @return newly created derived file object which contains the updated data
+	 *
+	 * @throws TskCoreException exception thrown if the object creation failed
+	 *                          due to a critical system error
+	 */
+	public DerivedFile updateDerivedFile(String fileName, long id, String localPath,
+			long size, long ctime, long crtime, long atime, long mtime,
+			boolean isFile, Content parentObj,
+			String rederiveDetails, String toolName, String toolVersion,
+			String otherDetails, TskData.EncodingType encodingType) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSingleUserCaseWriteLock();
+		ResultSet rs = null;
+		try {
+			connection.beginTransaction();
+			final long parentId = parentObj.getId();
+			String parentPath = "";
+			if (parentObj instanceof BlackboardArtifact) {
+				parentPath = parentObj.getUniquePath() + '/' + parentObj.getName() + '/';
+			} else if (parentObj instanceof AbstractFile) {
+				parentPath = ((AbstractFile) parentObj).getParentPath() + parentObj.getName() + '/'; //NON-NLS
+			}
+			// UPDATE tsk_files SET type = ?, dir_type = ?, meta_type = ?, dir_flags = ?,  meta_flags = ?, "
+			// + "size= ?, ctime= ?, crtime= ?, atime= ?, mtime= ? WHERE obj_id = ?"), //NON-NLS
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.UPDATE_DERIVED_FILE);
+			statement.clearParameters();
+
+			//type
+			statement.setShort(1, TskData.TSK_DB_FILES_TYPE_ENUM.DERIVED.getFileType());
+
+			//flags
+			final TSK_FS_NAME_TYPE_ENUM dirType = isFile ? TSK_FS_NAME_TYPE_ENUM.REG : TSK_FS_NAME_TYPE_ENUM.DIR;
+			statement.setShort(2, dirType.getValue());
+			final TSK_FS_META_TYPE_ENUM metaType = isFile ? TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_REG : TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
+			statement.setShort(3, metaType.getValue());
+
+			//note: using alloc under assumption that derived files derive from alloc files
+			final TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.ALLOC;
+			statement.setShort(4, dirFlag.getValue());
+			final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue()
+					| TSK_FS_META_FLAG_ENUM.USED.getValue());
+			statement.setShort(5, metaFlags);
+
+			//size
+			statement.setLong(6, size);
+
+			//mactimes
+			//long ctime, long crtime, long atime, long mtime,
+			statement.setLong(7, ctime);
+			statement.setLong(8, crtime);
+			statement.setLong(9, atime);
+			statement.setLong(10, mtime);
+
+			statement.setString(11, String.valueOf(id));
+			connection.executeUpdate(statement);
+
+			//add localPath
+			updateFilePath(connection, id, localPath, encodingType);
+
+			connection.commitTransaction();
+
+			long dataSourceObjId = getDataSourceObjectId(connection, parentId);
+			final String extension = extractExtension(fileName);
+			return new DerivedFile(this, id, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
+					size, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId, null, encodingType, extension);
+		} catch (SQLException ex) {
+			connection.rollbackTransaction();
+			throw new TskCoreException("Failed to add derived file to case database", ex);
+		} finally {
+			closeResultSet(rs);
+			connection.close();
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+
+	/**
 	 * Wraps the version of addLocalFile that takes a Transaction in a
 	 * transaction local to this method.
 	 *
@@ -5498,6 +5599,26 @@ public class SleuthkitCase {
 		statement.setLong(1, objId);
 		statement.setString(2, path);
 		statement.setInt(3, type.getType());
+		connection.executeUpdate(statement);
+	}
+
+	/**
+	 * Update the path for a content object in the tsk_file_paths table
+	 *
+	 * @param connection A case database connection.
+	 * @param objId      The object id of the file for which to update the path.
+	 * @param path       The path to update.
+	 * @param type       The TSK encoding type of the file.
+	 *
+	 * @throws SQLException Thrown if database error occurred and path was not
+	 *                      updated.
+	 */
+	private void updateFilePath(CaseDbConnection connection, long objId, String path, TskData.EncodingType type) throws SQLException {
+		PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.UPDATE_LOCAL_PATH);
+		statement.clearParameters();
+		statement.setString(1, path);
+		statement.setInt(2, type.getType());
+		statement.setLong(3, objId);
 		connection.executeUpdate(statement);
 	}
 
@@ -8392,6 +8513,7 @@ public class SleuthkitCase {
 			closeResultSet(resultSet);
 			closeStatement(statement);
 			releaseSingleUserCaseReadLock();
+
 		}
 	}
 
@@ -8479,9 +8601,12 @@ public class SleuthkitCase {
 		INSERT_OBJECT("INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)"), //NON-NLS
 		INSERT_FILE("INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, data_source_obj_id,extension) " //NON-NLS
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)"), //NON-NLS
+		UPDATE_DERIVED_FILE("UPDATE tsk_files SET type = ?, dir_type = ?, meta_type = ?, dir_flags = ?,  meta_flags = ?, size= ?, ctime= ?, crtime= ?, atime= ?, mtime= ? "
+				+ "WHERE obj_id = ?"), //NON-NLS
 		INSERT_LAYOUT_FILE("INSERT INTO tsk_file_layout (obj_id, byte_start, byte_len, sequence) " //NON-NLS
 				+ "VALUES (?, ?, ?, ?)"), //NON-NLS
 		INSERT_LOCAL_PATH("INSERT INTO tsk_files_path (obj_id, path, encoding_type) VALUES (?, ?, ?)"), //NON-NLS
+		UPDATE_LOCAL_PATH("UPDATE tsk_files_path SET path = ?, encoding_type = ? WHERE obj_id = ?"), //NON-NLS
 		COUNT_CHILD_OBJECTS_BY_PARENT("SELECT COUNT(obj_id) AS count FROM tsk_objects WHERE par_obj_id = ?"), //NON-NLS
 		SELECT_FILE_SYSTEM_BY_OBJECT("SELECT fs_obj_id from tsk_files WHERE obj_id=?"), //NON-NLS
 		SELECT_TAG_NAMES("SELECT * FROM tag_names"), //NON-NLS
