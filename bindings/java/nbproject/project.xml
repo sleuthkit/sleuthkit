@@ -30,14 +30,14 @@
             </folders>
             <ide-actions>
                 <action name="build">
-                    <target>dist</target>
+                    <target>dist-PostgreSQL</target>
                 </action>
                 <action name="clean">
                     <target>clean</target>
                 </action>
                 <action name="rebuild">
                     <target>clean</target>
-                    <target>dist</target>
+                    <target>dist-PostgreSQL</target>
                 </action>
                 <action name="run.single">
                     <script>nbproject/ide-file-targets.xml</script>
@@ -75,17 +75,17 @@
             <export>
                 <type>folder</type>
                 <location>build</location>
-                <build-target>dist</build-target>
+                <build-target>dist-PostgreSQL</build-target>
             </export>
             <export>
                 <type>folder</type>
                 <location>build</location>
-                <build-target>dist</build-target>
+                <build-target>dist-PostgreSQL</build-target>
             </export>
             <export>
                 <type>folder</type>
                 <location>test</location>
-                <build-target>dist</build-target>
+                <build-target>dist-PostgreSQL</build-target>
             </export>
             <view>
                 <items>
@@ -111,12 +111,12 @@
             </view>
             <subprojects/>
         </general-data>
-        <java-data xmlns="http://www.netbeans.org/ns/freeform-project-java/3">
+        <java-data xmlns="http://www.netbeans.org/ns/freeform-project-java/4">
             <compilation-unit>
                 <package-root>src</package-root>
-                <classpath mode="compile">lib;lib/diffutils-1.2.1.jar;lib/junit-4.8.2.jar;lib/postgresql-9.4-1201.jdbc41.jar;lib/c3p0-0.9.5.jar;lib/mchange-commons-java-0.2.9.jar;lib/c3p0-0.9.5-sources.jar;lib/c3p0-0.9.5-javadoc.jar</classpath>
+                <classpath mode="compile">lib;lib/diffutils-1.2.1.jar;lib/junit-4.8.2.jar;lib/postgresql-9.4-1201.jdbc41.jar;lib/c3p0-0.9.5.jar;lib/mchange-commons-java-0.2.9.jar;lib/c3p0-0.9.5-sources.jar;lib/c3p0-0.9.5-javadoc.jar;lib/joda-time-2.4.jar;lib/commons-lang3-3.0.jar;lib/guava-19.0.jar</classpath>
                 <built-to>build</built-to>
-                <source-level>1.6</source-level>
+                <source-level>1.8</source-level>
             </compilation-unit>
             <compilation-unit>
                 <package-root>test</package-root>
@@ -124,7 +124,7 @@
                 <classpath mode="compile">build;lib/diffutils-1.2.1.jar;lib/diffutils-1.2.1-javadoc.jar;lib/diffutils-1.2.1-sources.jar;lib/junit-4.8.2.jar</classpath>
                 <built-to>build</built-to>
                 <built-to>test</built-to>
-                <source-level>1.6</source-level>
+                <source-level>1.8</source-level>
             </compilation-unit>
         </java-data>
         <preferences xmlns="http://www.netbeans.org/ns/auxiliary-configuration-preferences/1">
