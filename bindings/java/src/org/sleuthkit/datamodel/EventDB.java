@@ -118,6 +118,14 @@ public class EventDB {
 
 	}
 
+	private String getFalseLiteral() {
+		return sleuthkitCase.getDatabaseType() == TskData.DbType.POSTGRESQL ? "FALSE" : "0";
+	}
+
+	private String getTrueLiteral() {
+		return sleuthkitCase.getDatabaseType() == TskData.DbType.POSTGRESQL ? "TRUE" : "1";
+	}
+
 	private volatile SleuthkitCase.CaseDbConnection con;
 
 	private PreparedStatement getEventByIDStmt;
@@ -284,11 +292,11 @@ public class EventDB {
 	public void reInitializeDB() throws TskCoreException {
 		DBLock.lock();
 		try {
-			dropEventsTableStmt.executeUpdate();
+			dropDBInfoTableStmt.executeUpdate();
+			dropTagsTableStmt.executeUpdate();
 			dropHashSetHitsTableStmt.executeUpdate();
 			dropHashSetsTableStmt.executeUpdate();
-			dropTagsTableStmt.executeUpdate();
-			dropDBInfoTableStmt.executeUpdate();
+			dropEventsTableStmt.executeUpdate();
 			initializeDB();
 		} catch (SQLException ex) {
 			LOGGER.log(Level.SEVERE, "could not drop old tables", ex); // NON-NLS
@@ -521,7 +529,7 @@ public class EventDB {
 		try {
 			createStatement = con.createStatement();
 
-			boolean b = createStatement.execute("analyze; analyze sqlite_master;"); //NON-NLS
+//			boolean b = createStatement.execute("analyze; analyze sqlite_master;"); //NON-NLS
 		} catch (SQLException ex) {
 			LOGGER.log(Level.SEVERE, "Failed to analyze events db.", ex); // NON-NLS
 		} finally {
@@ -605,11 +613,12 @@ public class EventDB {
 			}
 
 			try {
+
 				String sql = "CREATE TABLE if not exists events " // NON-NLS
-						+ " (event_id INTEGER PRIMARY KEY, " // NON-NLS
-						+ " datasource_id INTEGER, " // NON-NLS
-						+ " file_id INTEGER, " // NON-NLS
-						+ " artifact_id INTEGER, " // NON-NLS
+						+ " (event_id " + getPrimaryKeyType() + " PRIMARY KEY, " // NON-NLS
+						+ " datasource_id BIGINT, " // NON-NLS
+						+ " file_id BIGINT, " // NON-NLS
+						+ " artifact_id BIGINT, " // NON-NLS
 						+ " time INTEGER, " // NON-NLS
 						+ " sub_type INTEGER, " // NON-NLS
 						+ " base_type INTEGER, " // NON-NLS
@@ -652,7 +661,7 @@ public class EventDB {
 
 			try {
 				String sql = "CREATE TABLE  if not exists hash_sets " //NON-NLS
-						+ "( hash_set_id INTEGER primary key," //NON-NLS
+						+ "( hash_set_id " + getPrimaryKeyType() + " primary key," //NON-NLS
 						+ " hash_set_name VARCHAR(255) UNIQUE NOT NULL)"; //NON-NLS
 				stmt.execute(sql);
 			} catch (SQLException ex) {
@@ -718,6 +727,10 @@ public class EventDB {
 		} finally {
 			DBLock.unlock();
 		}
+	}
+
+	private String getPrimaryKeyType() {
+		return sleuthkitCase.getDatabaseType() == TskData.DbType.POSTGRESQL ? "BIGSERIAL" : "INTEGER";
 	}
 
 	/**
@@ -1129,19 +1142,19 @@ public class EventDB {
 		DBLock.lock();
 		//this should match Sleuthkit db setup
 		try (Statement statement = con.createStatement()) {
-			//reduce i/o operations, we have no OS crash recovery anyway
-			statement.execute("PRAGMA synchronous = OFF;"); // NON-NLS
-			//we don't use this feature, so turn it off for minimal speed up on queries
-			//this is deprecated and not recomended
-			statement.execute("PRAGMA count_changes = OFF;"); // NON-NLS
-			//this made a big difference to query speed
-			statement.execute("PRAGMA temp_store = MEMORY"); // NON-NLS
-			//this made a modest improvement in query speeds
-			statement.execute("PRAGMA cache_size = 50000"); // NON-NLS
-			//we never delete anything so...
-			statement.execute("PRAGMA auto_vacuum = 0"); // NON-NLS
-			//allow to query while in transaction - no need read locks
-			statement.execute("PRAGMA read_uncommitted = True;"); // NON-NLS
+//			//reduce i/o operations, we have no OS crash recovery anyway
+//			statement.execute("PRAGMA synchronous = OFF;"); // NON-NLS
+//			//we don't use this feature, so turn it off for minimal speed up on queries
+//			//this is deprecated and not recomended
+//			statement.execute("PRAGMA count_changes = OFF;"); // NON-NLS
+//			//this made a big difference to query speed
+//			statement.execute("PRAGMA temp_store = MEMORY"); // NON-NLS
+//			//this made a modest improvement in query speeds
+//			statement.execute("PRAGMA cache_size = 50000"); // NON-NLS
+//			//we never delete anything so...
+//			statement.execute("PRAGMA auto_vacuum = 0"); // NON-NLS
+//			//allow to query while in transaction - no need read locks
+//			statement.execute("PRAGMA read_uncommitted = True;"); // NON-NLS
 		} finally {
 			DBLock.unlock();
 		}
@@ -1211,6 +1224,7 @@ public class EventDB {
 			}
 
 		} catch (Exception ex) {
+			LOGGER.log(Level.SEVERE, queryString);
 			LOGGER.log(Level.SEVERE, "Error getting count of events from db.", ex); // NON-NLS
 		} finally {
 			DBLock.unlock();
@@ -1382,6 +1396,7 @@ public class EventDB {
 		return prepareStatement;
 	}
 
+	
 	/**
 	 * inner class that can reference access database connection
 	 */
@@ -1493,12 +1508,12 @@ public class EventDB {
 	 * @return an SQL where clause (without the "where") corresponding to the
 	 *         filter
 	 */
-	private static String getSQLWhere(IntersectionFilter<?> filter) {
+	private  String getSQLWhere(IntersectionFilter<?> filter) {
 		String join = String.join(" and ", filter.getSubFilters().stream()
 				.filter(Filter::isActive)
-				.map(EventDB::getSQLWhere)
+				.map(this::getSQLWhere)
 				.collect(Collectors.toList()));
-		return "(" + org.apache.commons.lang3.StringUtils.defaultIfBlank(join, "1") + ")";
+		return "(" + org.apache.commons.lang3.StringUtils.defaultIfBlank(join, getTrueLiteral()) + ")";
 	}
 
 	/**
@@ -1510,15 +1525,15 @@ public class EventDB {
 	 * @return an SQL where clause (without the "where") corresponding to the
 	 *         filter
 	 */
-	private static String getSQLWhere(UnionFilter<?> filter) {
+	private  String getSQLWhere(UnionFilter<?> filter) {
 		String join = String.join(" or ", filter.getSubFilters().stream()
 				.filter(Filter::isActive)
-				.map(EventDB::getSQLWhere)
+				.map(this::getSQLWhere)
 				.collect(Collectors.toList()));
-		return "(" + org.apache.commons.lang3.StringUtils.defaultIfBlank(join, "1") + ")";
+		return "(" + org.apache.commons.lang3.StringUtils.defaultIfBlank(join, getTrueLiteral()) + ")";
 	}
 
-	public static String getSQLWhere(RootFilter filter) {
+	public  String getSQLWhere(RootFilter filter) {
 		return getSQLWhere((Filter) filter);
 	}
 
@@ -1534,10 +1549,10 @@ public class EventDB {
 	 * @return an SQL where clause (without the "where") corresponding to the
 	 *         filter
 	 */
-	private static String getSQLWhere(Filter filter) {
+	private  String getSQLWhere(Filter filter) {
 		String result = "";
 		if (filter == null) {
-			return "1";
+			return getTrueLiteral();
 		} else if (filter instanceof DescriptionFilter) {
 			result = getSQLWhere((DescriptionFilter) filter);
 		} else if (filter instanceof TagsFilter) {
@@ -1563,29 +1578,29 @@ public class EventDB {
 		} else {
 			throw new IllegalArgumentException("getSQLWhere not defined for " + filter.getClass().getCanonicalName());
 		}
-		result = org.apache.commons.lang3.StringUtils.deleteWhitespace(result).equals("(1and1and1)") ? "1" : result; //NON-NLS
-		result = org.apache.commons.lang3.StringUtils.deleteWhitespace(result).equals("()") ? "1" : result;
+		result = org.apache.commons.lang3.StringUtils.deleteWhitespace(result).equals("(1and1and1)") ? getTrueLiteral() : result; //NON-NLS
+		result = org.apache.commons.lang3.StringUtils.deleteWhitespace(result).equals("()") ? getTrueLiteral() : result;
 		return result;
 	}
 
-	private static String getSQLWhere(HideKnownFilter filter) {
+	private  String getSQLWhere(HideKnownFilter filter) {
 		if (filter.isActive()) {
 			return "(known_state IS NOT '" + TskData.FileKnown.KNOWN.getFileKnownValue() + "')"; // NON-NLS
 		} else {
-			return "1";
+			return getTrueLiteral();
 		}
 	}
 
-	private static String getSQLWhere(DescriptionFilter filter) {
+	private  String getSQLWhere(DescriptionFilter filter) {
 		if (filter.isActive()) {
 			String likeOrNotLike = (filter.getFilterMode() == DescriptionFilter.FilterMode.INCLUDE ? "" : " NOT") + " LIKE '"; //NON-NLS
 			return "(" + getDescriptionColumn(filter.getDescriptionLoD()) + likeOrNotLike + filter.getDescription() + "'  )"; // NON-NLS
 		} else {
-			return "1";
+			return getTrueLiteral();
 		}
 	}
 
-	private static String getSQLWhere(TagsFilter filter) {
+	private  String getSQLWhere(TagsFilter filter) {
 		if (filter.isActive()
 				&& (filter.getSubFilters().isEmpty() == false)) {
 			String tagNameIDs = filter.getSubFilters().stream()
@@ -1595,12 +1610,12 @@ public class EventDB {
 			return "(events.event_id == tags.event_id AND " //NON-NLS
 					+ "tags.tag_name_id IN " + tagNameIDs + ") "; //NON-NLS
 		} else {
-			return "1";
+			return getTrueLiteral();
 		}
 
 	}
 
-	private static String getSQLWhere(HashHitsFilter filter) {
+	private  String getSQLWhere(HashHitsFilter filter) {
 		if (filter.isActive()
 				&& (filter.getSubFilters().isEmpty() == false)) {
 			String hashSetIDs = filter.getSubFilters().stream()
@@ -1609,37 +1624,37 @@ public class EventDB {
 					.collect(Collectors.joining(", ", "(", ")"));
 			return "(hash_set_hits.hash_set_id IN " + hashSetIDs + " AND hash_set_hits.event_id == events.event_id)"; //NON-NLS
 		} else {
-			return "1";
+			return getTrueLiteral();
 		}
 	}
 
-	private static String getSQLWhere(DataSourceFilter filter) {
+	private  String getSQLWhere(DataSourceFilter filter) {
 		if (filter.isActive()) {
 			return "(datasource_id = '" + filter.getDataSourceID() + "')"; //NON-NLS
 		} else {
-			return "1";
+			return getTrueLiteral();
 		}
 	}
 
-	private static String getSQLWhere(DataSourcesFilter filter) {
+	private  String getSQLWhere(DataSourcesFilter filter) {
 		return (filter.isActive()) ? "(datasource_id in (" //NON-NLS
 				+ filter.getSubFilters().stream()
 						.filter(AbstractFilter::isActive)
 						.map((dataSourceFilter) -> String.valueOf(dataSourceFilter.getDataSourceID()))
-						.collect(Collectors.joining(", ")) + "))" : "1";
+						.collect(Collectors.joining(", ")) + "))" : getTrueLiteral();
 	}
 
-	private static String getSQLWhere(TextFilter filter) {
+	private  String getSQLWhere(TextFilter filter) {
 		if (filter.isActive()) {
 			if (org.apache.commons.lang3.StringUtils.isBlank(filter.getText())) {
-				return "1";
+				return getTrueLiteral();
 			}
 			String strippedFilterText = org.apache.commons.lang3.StringUtils.strip(filter.getText());
 			return "((med_description like '%" + strippedFilterText + "%')" //NON-NLS
 					+ " or (full_description like '%" + strippedFilterText + "%')" //NON-NLS
 					+ " or (short_description like '%" + strippedFilterText + "%'))"; //NON-NLS
 		} else {
-			return "1";
+			return getTrueLiteral();
 		}
 	}
 
@@ -1651,13 +1666,13 @@ public class EventDB {
 	 *
 	 * @return
 	 */
-	private static String getSQLWhere(TypeFilter typeFilter) {
+	private  String getSQLWhere(TypeFilter typeFilter) {
 		if (typeFilter.isSelected() == false) {
-			return "0";
+			return getFalseLiteral();
 		} else if (typeFilter.getEventType() instanceof RootEventType) {
 			if (typeFilter.getSubFilters().stream()
 					.allMatch(subFilter -> subFilter.isActive() && subFilter.getSubFilters().stream().allMatch(Filter::isActive))) {
-				return "1"; //then collapse clause to true
+				return getTrueLiteral(); //then collapse clause to true
 			}
 		}
 		return "(sub_type IN (" + org.apache.commons.lang3.StringUtils.join(getActiveSubTypes(typeFilter), ",") + "))"; //NON-NLS
