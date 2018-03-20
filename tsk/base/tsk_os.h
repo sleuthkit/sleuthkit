@@ -146,7 +146,7 @@ typedef WCHAR TSK_TCHAR;        ///< Character data type that is UTF-16 (wchar_t
 #define TPUTENV	_wputenv
 #define TZSET	_tzset
 #define TZNAME _tzname
-
+#define TEXT(x) L##x
 #if defined(_MSC_VER)
 #define TSTRTOULL _wcstoui64
 #define STAT_STR    __stat64
@@ -155,6 +155,7 @@ typedef WCHAR TSK_TCHAR;        ///< Character data type that is UTF-16 (wchar_t
 #define TSTRTOULL wcstoull
 #define STAT_STR    _stat
 #define TSTAT _wstat
+#define atoll(S) _atoi64(S)
 #endif
 
 
@@ -195,7 +196,7 @@ typedef char TSK_TCHAR;         ///< Character data type that is UTF-16 (wchar_t
 #define TATOI	atoi
 #define TFPRINTF fprintf
 #define TSNPRINTF snprintf
-
+#define TEXT(x) x
 #define TPUTENV	putenv
 #define TZSET	tzset
 #define TZNAME	tzname

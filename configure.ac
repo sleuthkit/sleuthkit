@@ -132,7 +132,12 @@ AS_IF([test "x$ac_cv_lib_sqlite3_sqlite3_open" = "xyes"],
       [AC_MSG_RESULT([bundled])])
 AM_CONDITIONAL([HAVE_LIBSQLITE3],
                [test "x$ac_cv_lib_sqlite3_sqlite3_open" = "xyes"])
+dnl check for postgresql
+AC_CHECK_HEADERS([postgresql/libpq-fe.h],
+                  [AC_CHECK_LIB([pq] , [PQlibVersion])])
 
+AM_CONDITIONAL([HAVE_POSTGRESQL],
+               [test "x$ac_cv_lib_pq_PQlibVersion" = "xyes"])
 # Check if we should link afflib.
 AC_ARG_WITH([afflib],
     [AS_HELP_STRING([--without-afflib],[Do not use AFFLIB even if it is installed])]
