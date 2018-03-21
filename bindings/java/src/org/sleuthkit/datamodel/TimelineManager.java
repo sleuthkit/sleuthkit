@@ -371,7 +371,7 @@ public class TimelineManager {
 			}
 
 		} catch (SQLException sqlEx) {
-			throw new TskCoreException("failed to execute query for combined events", sqlEx); // NON-NLS
+			throw new TskCoreException("Failed to execute query for combined events: \n" + query, sqlEx); // NON-NLS
 		} finally {
 			sleuthkitCase.releaseSingleUserCaseReadLock();
 		}
@@ -784,7 +784,7 @@ public class TimelineManager {
 
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
-				PreparedStatement insertRowStmt = con.prepareStatement(PREPARED_STATEMENT.INSERT_ROW.getSQL(), 1);) {
+				PreparedStatement insertRowStmt = con.prepareStatement(PREPARED_STATEMENT.INSERT_ROW.getSQL(), PreparedStatement.RETURN_GENERATED_KEYS);) {
 			//"INSERT INTO events (datasource_id,file_id ,artifact_id, time, sub_type, base_type, full_description, med_description, short_description, known_state, hashHit, tagged) " 
 			insertRowStmt.clearParameters();
 			insertRowStmt.setLong(1, datasourceID);
@@ -819,7 +819,8 @@ public class TimelineManager {
 					PreparedStatement selectHashSetStmt = con.prepareStatement(PREPARED_STATEMENT.GET_HASH_SET_NAME_BY_ID.getSQL(), 0);) {
 
 				while (generatedKeys.next()) {
-					long eventID = generatedKeys.getLong("last_insert_rowid()"); //NON-NLS
+					//TODO: Why doesn't last_insert_rowid() work?
+					long eventID = generatedKeys.getLong(1);//"last_insert_rowid()"); //NON-NLS
 					for (String name : hashSetNames) {
 
 						// "insert or ignore into hash_sets (hash_set_name)  values (?)"
@@ -850,7 +851,7 @@ public class TimelineManager {
 				}
 			}
 		} catch (SQLException ex) {
-			throw new TskCoreException("failed to insert event", ex); // NON-NLS
+			throw new TskCoreException("Failed to insert event.", ex); // NON-NLS
 		} finally {
 			sleuthkitCase.releaseSingleUserCaseWriteLock();
 		}
@@ -1579,10 +1580,24 @@ public class TimelineManager {
 	}
 
 	private String getFalseLiteral() {
-		return sleuthkitCase.getDatabaseType() == TskData.DbType.POSTGRESQL ? "FALSE" : "0";
+		switch (sleuthkitCase.getDatabaseType()) {
+			case POSTGRESQL:
+				return "FALSE";
+			case SQLITE:
+				return "0";
+			default:
+				throw new UnsupportedOperationException("Unsupported database type: " + sleuthkitCase.getDatabaseType());
+		}
 	}
 
 	private String getTrueLiteral() {
-		return sleuthkitCase.getDatabaseType() == TskData.DbType.POSTGRESQL ? "TRUE" : "1";
+		switch (sleuthkitCase.getDatabaseType()) {
+			case POSTGRESQL:
+				return "TRUE";
+			case SQLITE:
+				return "1";
+			default:
+				throw new UnsupportedOperationException("Unsupported database type: " + sleuthkitCase.getDatabaseType());
+		}
 	}
 }
