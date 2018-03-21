@@ -1638,7 +1638,7 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
                             return -1;
                         }
                         // handle the initialized size
-                        int64_t remanining_init_size = a_fs_attr->nrd.initsize - buf_idx;
+                        int64_t remanining_init_size = a_fs_attr->nrd.initsize - buf_idx - a_offset;
                         if (remanining_init_size < comp.buf_size_b) {
                             memset(comp.uncomp_buf + remanining_init_size, 0, comp.buf_size_b - remanining_init_size);
                             init_size_reached = 1;
