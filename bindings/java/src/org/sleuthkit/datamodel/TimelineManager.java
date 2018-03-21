@@ -89,7 +89,11 @@ public class TimelineManager {
 	private final String csvFunction;
 
 	public String csvAggFunction(String args) {
-		return csvFunction + "(" + args + ")";
+		return csvAggFunction(args, ",");
+	}
+
+	public String csvAggFunction(String args, String seperator) {
+		return csvFunction + "(" + args + ", '" + seperator + "')";
 	}
 
 	TimelineManager(SleuthkitCase tskCase) throws TskCoreException {
@@ -343,11 +347,11 @@ public class TimelineManager {
 
 		ArrayList<CombinedEvent> results = new ArrayList<>();
 		final String query = "SELECT full_description, time, file_id, "
-				+ csvAggFunction("events.event_id::character varying, ','") + "as eventIDs, "
-				+ csvFunction + "(sub_type::character varying, ',') as eventTypes"
+				+ csvAggFunction("CAST(events.event_id AS VARCHAR)") + " AS eventIDs, "
+				+ csvAggFunction("CAST(sub_type AS VARCHAR)") + " AS eventTypes"
 				+ " FROM events " + useHashHitTablesHelper(filter) + useTagTablesHelper(filter)
 				+ " WHERE time >= " + startTime + " AND time <" + endTime + " AND " + getSQLWhere(filter)
-				+ " GROUP BY time,full_description, file_id ORDER BY time ASC, full_description";
+				+ " GROUP BY time, full_description, file_id ORDER BY time ASC, full_description";
 
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
@@ -738,20 +742,21 @@ public class TimelineManager {
 	private boolean hasDBColumn(final String dbColumn) throws TskCoreException {
 
 		String query = sleuthkitCase.getDatabaseType() == TskData.DbType.POSTGRESQL
-				? "	SELECT column_name as name  FROM information_schema.columns  WHERE  table_name='events';" //NON-NLS  //Postgres
+				? "SELECT column_name as name  FROM information_schema.columns  WHERE  table_name='events';" //NON-NLS  //Postgres
 				: "PRAGMA table_info(events)";	//NON-NLS //SQLite
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
-				Statement stmt = con.createStatement();
-				ResultSet executeQuery = stmt.executeQuery(query);) {
-
-			while (executeQuery.next()) {
-				if (dbColumn.equals(executeQuery.getString("name"))) {	//NON-NLS
-					return true;
+				Statement statement = con.createStatement();) {
+			statement.execute(query);
+			try (ResultSet results = statement.getResultSet();) {
+				while (results.next()) {
+					if (dbColumn.equals(results.getString("name"))) {	//NON-NLS
+						return true;
+					}
 				}
 			}
 		} catch (SQLException ex) {
-			throw new TskCoreException("problem querying for events table column names", ex); // NON-NLS
+			throw new TskCoreException("Error querying for events table column names", ex); // NON-NLS
 		} finally {
 			sleuthkitCase.releaseSingleUserCaseReadLock();
 		}
