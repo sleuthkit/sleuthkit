@@ -82,26 +82,6 @@ public class TimelineManager {
 
 	private static final java.util.logging.Logger LOGGER = Logger.getLogger(TimelineManager.class.getName());
 
-	private PreparedStatement getEventByIDStmt;
-	private PreparedStatement getMaxTimeStmt;
-	private PreparedStatement getMinTimeStmt;
-	private PreparedStatement getDataSourceIDsStmt;
-	private PreparedStatement getHashSetNamesStmt;
-	private PreparedStatement insertRowStmt;
-	private PreparedStatement insertHashSetStmt;
-	private PreparedStatement insertHashHitStmt;
-	private PreparedStatement insertTagStmt;
-	private PreparedStatement deleteTagStmt;
-	private PreparedStatement selectHashSetStmt;
-	private PreparedStatement countAllEventsStmt;
-	private PreparedStatement dropEventsTableStmt;
-	private PreparedStatement dropHashSetHitsTableStmt;
-	private PreparedStatement dropHashSetsTableStmt;
-	private PreparedStatement dropTagsTableStmt;
-	private PreparedStatement dropDBInfoTableStmt;
-	private PreparedStatement selectNonArtifactEventIDsByObjectIDStmt;
-	private PreparedStatement selectEventIDsBYObjectAndArtifactIDStmt;
-
 	private final Set<PreparedStatement> preparedStatements = new HashSet<>();
 
 	private final SleuthkitCase sleuthkitCase;
@@ -112,20 +92,21 @@ public class TimelineManager {
 	}
 
 	public Interval getSpanningInterval(Collection<Long> eventIDs) throws TskCoreException {
+		final String query = "SELECT Min(time), Max(time) FROM events WHERE event_id IN (" + StringUtils.joinAsStrings(eventIDs, ", ") + ")";
 		sleuthkitCase.acquireSingleUserCaseReadLock();
-
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement stmt = con.createStatement();
-				ResultSet rs = stmt.executeQuery("SELECT Min(time), Max(time) FROM events WHERE event_id IN (" + StringUtils.joinAsStrings(eventIDs, ", ") + ")");) {
+				ResultSet rs = stmt.executeQuery(query);) {
 			while (rs.next()) {
 				return new Interval(rs.getLong("Min(time)") * 1000, (rs.getLong("Max(time)") + 1) * 1000, DateTimeZone.UTC); // NON-NLS
 			}
-			return null;
+
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error executing get spanning interval query.", ex); // NON-NLS
+			throw new TskCoreException("Error executing get spanning interval query: " + query, ex); // NON-NLS
 		} finally {
 			sleuthkitCase.releaseSingleUserCaseReadLock();
 		}
+		return null;
 	}
 
 	public SleuthkitCase.CaseDbTransaction beginTransaction() throws TskCoreException {
@@ -140,14 +121,16 @@ public class TimelineManager {
 	 * @return the total number of events in the database or, -1 if there is an
 	 *         error.
 	 */
-	public int countAllEvents() {
+	public int countAllEvents() throws TskCoreException {
 		sleuthkitCase.acquireSingleUserCaseReadLock();
-		try (ResultSet rs = countAllEventsStmt.executeQuery();) {
+		try (CaseDbConnection con = sleuthkitCase.getConnection();
+				Statement statement = con.createStatement();
+				ResultSet rs = statement.executeQuery(PREPARED_STATEMENT.COUNT_ALL_EVENTS.getSQL());) {
 			while (rs.next()) {
 				return rs.getInt("count"); // NON-NLS
 			}
 		} catch (SQLException ex) {
-			LOGGER.log(Level.SEVERE, "Error counting all events", ex); //NON-NLS
+			throw new TskCoreException("Error counting all events", ex); //NON-NLS
 		} finally {
 			sleuthkitCase.releaseSingleUserCaseReadLock();
 		}
@@ -204,18 +187,22 @@ public class TimelineManager {
 	/**
 	 * drop the tables from this database and recreate them in order to start
 	 * over.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public void reInitializeDB() throws TskCoreException {
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
-		try {
-			dropDBInfoTableStmt.executeUpdate();
-			dropTagsTableStmt.executeUpdate();
-			dropHashSetHitsTableStmt.executeUpdate();
-			dropHashSetsTableStmt.executeUpdate();
-			dropEventsTableStmt.executeUpdate();
+		try (CaseDbConnection con = sleuthkitCase.getConnection();
+				Statement statement = con.createStatement();) {
+			statement.execute(PREPARED_STATEMENT.DROP_DB_INFO_TABLE.getSQL());
+			statement.execute(PREPARED_STATEMENT.DROP_TAGS_TABLE.getSQL());
+			statement.execute(PREPARED_STATEMENT.DROP_HASH_SET_HITS_TABLE.getSQL());
+			statement.execute(PREPARED_STATEMENT.DROP_HASH_SETS_TABLE.getSQL());
+			statement.execute(PREPARED_STATEMENT.DROP_EVENTS_TABLE.getSQL());
+
 			initializeDB();
 		} catch (SQLException ex) {
-			LOGGER.log(Level.SEVERE, "could not drop old tables", ex); // NON-NLS
+			throw new TskCoreException("Error dropping old tables", ex); // NON-NLS
 		} finally {
 			sleuthkitCase.releaseSingleUserCaseWriteLock();
 		}
@@ -227,8 +214,9 @@ public class TimelineManager {
 	 */
 	public void reInitializeTags() throws TskCoreException {
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
-		try {
-			dropTagsTableStmt.executeUpdate();
+		try (CaseDbConnection con = sleuthkitCase.getConnection();
+				Statement statement = con.createStatement();) {
+			statement.execute(PREPARED_STATEMENT.DROP_TAGS_TABLE.getSQL());
 			initializeTagsTable();
 		} catch (SQLException ex) {
 			throw new TskCoreException("could not drop old tags table", ex); // NON-NLS
@@ -267,18 +255,18 @@ public class TimelineManager {
 
 	public SingleEvent getEventById(Long eventID) throws TskCoreException {
 		sleuthkitCase.acquireSingleUserCaseReadLock();
-		try {
-			getEventByIDStmt.clearParameters();
-			getEventByIDStmt.setLong(1, eventID);
-			try (ResultSet rs = getEventByIDStmt.executeQuery();) {
+		try (CaseDbConnection con = sleuthkitCase.getConnection();
+				PreparedStatement stmt = con.prepareStatement(PREPARED_STATEMENT.GET_EVENT_BY_ID.getSQL(), 0);) {
+			stmt.setLong(1, eventID);
+			try (ResultSet rs = stmt.executeQuery();) {
 				while (rs.next()) {
 					return constructTimeLineEvent(rs);
 				}
-			} finally {
-				sleuthkitCase.releaseSingleUserCaseReadLock();
 			}
 		} catch (SQLException sqlEx) {
 			throw new TskCoreException("exception while querying for event with id = " + eventID, sqlEx); // NON-NLS
+		} finally {
+			sleuthkitCase.releaseSingleUserCaseReadLock();
 		}
 		return null;
 	}
@@ -384,7 +372,9 @@ public class TimelineManager {
 
 	public Set<Long> getDataSourceIDs() throws TskCoreException {
 		sleuthkitCase.acquireSingleUserCaseReadLock();
-		try (ResultSet rs = getDataSourceIDsStmt.executeQuery();) {
+		try (CaseDbConnection con = sleuthkitCase.getConnection();
+				Statement stmt = con.createStatement();
+				ResultSet rs = stmt.executeQuery(PREPARED_STATEMENT.GET_DATASOURCE_IDS.getSQL());) {
 			HashSet<Long> hashSet = new HashSet<>();
 			while (rs.next()) {
 				long datasourceID = rs.getLong("datasource_id"); //NON-NLS
@@ -402,7 +392,9 @@ public class TimelineManager {
 		//TODO: get from main tables
 		Map<Long, String> hashSets = new HashMap<>();
 		sleuthkitCase.acquireSingleUserCaseReadLock();
-		try (ResultSet rs = getHashSetNamesStmt.executeQuery();) {
+		try (CaseDbConnection con = sleuthkitCase.getConnection();
+				Statement stms = con.createStatement();
+				ResultSet rs = stms.executeQuery(PREPARED_STATEMENT.GET_HASH_SET_NAMES.getSQL());) {
 			while (rs.next()) {
 				long hashSetID = rs.getLong("hash_set_id"); //NON-NLS
 				String hashSetName = rs.getString("hash_set_name"); //NON-NLS
@@ -438,7 +430,9 @@ public class TimelineManager {
 	public Long getMaxTime() throws TskCoreException {
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 
-		try (ResultSet rs = getMaxTimeStmt.executeQuery();) {
+		try (CaseDbConnection con = sleuthkitCase.getConnection();
+				Statement stms = con.createStatement();
+				ResultSet rs = stms.executeQuery(PREPARED_STATEMENT.GET_MAX_TIME.getSQL());) {
 			while (rs.next()) {
 				return rs.getLong("max"); // NON-NLS
 			}
@@ -456,7 +450,9 @@ public class TimelineManager {
 	public Long getMinTime() throws TskCoreException {
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 
-		try (ResultSet rs = getMinTimeStmt.executeQuery();) {
+		try (CaseDbConnection con = sleuthkitCase.getConnection();
+				Statement stms = con.createStatement();
+				ResultSet rs = stms.executeQuery(PREPARED_STATEMENT.GET_MIN_TIME.getSQL());) {
 			while (rs.next()) {
 				return rs.getLong("min"); // NON-NLS
 			}
@@ -557,43 +553,61 @@ public class TimelineManager {
 			createIndex("events", Arrays.asList("base_type", "short_description", "time")); //NON-NLS
 			createIndex("events", Arrays.asList("time")); //NON-NLS
 			createIndex("events", Arrays.asList("known_state")); //NON-NLS
-
-			try {
-				insertRowStmt = prepareStatement(con,
-						"INSERT INTO events (datasource_id,file_id ,artifact_id, time, sub_type, base_type, full_description, med_description, short_description, known_state, hash_hit, tagged) " // NON-NLS
-						+ "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"); // NON-NLS
-				getHashSetNamesStmt = prepareStatement(con, "SELECT hash_set_id, hash_set_name FROM hash_sets"); // NON-NLS
-				getDataSourceIDsStmt = prepareStatement(con, "SELECT DISTINCT datasource_id FROM events WHERE datasource_id != 0"); // NON-NLS
-				getMaxTimeStmt = prepareStatement(con, "SELECT Max(time) AS max FROM events"); // NON-NLS
-				getMinTimeStmt = prepareStatement(con, "SELECT Min(time) AS min FROM events"); // NON-NLS
-				getEventByIDStmt = prepareStatement(con, "SELECT * FROM events WHERE event_id =  ?"); // NON-NLS
-				insertHashSetStmt = prepareStatement(con, "INSERT OR IGNORE INTO hash_sets (hash_set_name)  values (?)"); //NON-NLS
-				selectHashSetStmt = prepareStatement(con, "SELECT hash_set_id FROM hash_sets WHERE hash_set_name = ?"); //NON-NLS
-				insertHashHitStmt = prepareStatement(con, "INSERT OR IGNORE INTO hash_set_hits (hash_set_id, event_id) values (?,?)"); //NON-NLS
-				insertTagStmt = prepareStatement(con, "INSERT OR IGNORE INTO tags (tag_id, tag_name_id,tag_name_display_name, event_id) values (?,?,?,?)"); //NON-NLS
-				deleteTagStmt = prepareStatement(con, "DELETE FROM tags WHERE tag_id = ?"); //NON-NLS
-
-				/*
-				 * This SQL query is really just a select count(*), but that has
-				 * performance problems on very large tables unless you include
-				 * a where clause see http://stackoverflow.com/a/9338276/4004683
-				 * for more.
-				 */
-				countAllEventsStmt = prepareStatement(con, "SELECT count(event_id) AS count FROM events WHERE event_id IS NOT null"); //NON-NLS
-				dropEventsTableStmt = prepareStatement(con, "DROP TABLE IF EXISTS events"); //NON-NLS
-				dropHashSetHitsTableStmt = prepareStatement(con, "DROP TABLE IF EXISTS hash_set_hits"); //NON-NLS
-				dropHashSetsTableStmt = prepareStatement(con, "DROP TABLE IF EXISTS hash_sets"); //NON-NLS
-				dropTagsTableStmt = prepareStatement(con, "DROP TABLE IF EXISTS tags"); //NON-NLS
-				dropDBInfoTableStmt = prepareStatement(con, "DROP TABLE IF EXISTS db_ino"); //NON-NLS
-				selectNonArtifactEventIDsByObjectIDStmt = prepareStatement(con, "SELECT event_id FROM events WHERE file_id == ? AND artifact_id IS NULL"); //NON-NLS
-				selectEventIDsBYObjectAndArtifactIDStmt = prepareStatement(con, "SELECT event_id FROM events WHERE file_id == ? AND artifact_id = ?"); //NON-NLS
-			} catch (SQLException sQLException) {
-				LOGGER.log(Level.SEVERE, "failed to prepareStatment", sQLException); // NON-NLS
-			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error initializing event tables", ex);
 		} finally {
 			sleuthkitCase.releaseSingleUserCaseWriteLock();
+		}
+	}
+
+	private enum PREPARED_STATEMENT {
+		INSERT_ROW("INSERT INTO events ("
+				+ "datasource_id,"
+				+ "file_id ,"
+				+ "artifact_id, "
+				+ "time, "
+				+ "sub_type,"
+				+ " base_type,"
+				+ " full_description,"
+				+ " med_description, "
+				+ "short_description, "
+				+ "known_state,"
+				+ " hash_hit,"
+				+ " tagged) " // NON-NLS
+				+ "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"), // NON-NLS
+		GET_HASH_SET_NAMES("SELECT hash_set_id, hash_set_name FROM hash_sets"), // NON-NLS
+		GET_DATASOURCE_IDS("SELECT DISTINCT datasource_id FROM events WHERE datasource_id != 0"),// NON-NLS
+		GET_MAX_TIME("SELECT Max(time) AS max FROM events"), // NON-NLS
+		GET_MIN_TIME("SELECT Min(time) AS min FROM events"), // NON-NLS
+		GET_EVENT_BY_ID("SELECT * FROM events WHERE event_id =  ?"), // NON-NLS
+		INSERT_HASH_SET("INSERT OR IGNORE INTO hash_sets (hash_set_name)  values (?)"), //NON-NLS
+		GET_HASH_SET_NAME_BY_ID("SELECT hash_set_id FROM hash_sets WHERE hash_set_name = ?"), //NON-NLS
+		INSERT_HASH_HIT("INSERT OR IGNORE INTO hash_set_hits (hash_set_id, event_id) values (?,?)"), //NON-NLS
+		INSERT_TAG("INSERT OR IGNORE INTO tags (tag_id, tag_name_id,tag_name_display_name, event_id) values (?,?,?,?)"), //NON-NLS
+		DELETE_TAG("DELETE FROM tags WHERE tag_id = ?"), //NON-NLS
+
+		/*
+		 * This SQL query is really just a select count(*), but that has
+		 * performance problems on very large tables unless you include a where
+		 * clause see http://stackoverflow.com/a/9338276/4004683 for more.
+		 */
+		COUNT_ALL_EVENTS("SELECT count(event_id) AS count FROM events WHERE event_id IS NOT null"), //NON-NLS
+		DROP_EVENTS_TABLE("DROP TABLE IF EXISTS events"), //NON-NLS
+		DROP_HASH_SET_HITS_TABLE("DROP TABLE IF EXISTS hash_set_hits"), //NON-NLS
+		DROP_HASH_SETS_TABLE("DROP TABLE IF EXISTS hash_sets"), //NON-NLS
+		DROP_TAGS_TABLE("DROP TABLE IF EXISTS tags"), //NON-NLS
+		DROP_DB_INFO_TABLE("DROP TABLE IF EXISTS db_ino"), //NON-NLS
+		SELECT_NON_ARTIFACT_EVENT_IDS_BY_OBJECT_ID("SELECT event_id FROM events WHERE file_id == ? AND artifact_id IS NULL"), //NON-NLS
+		SELECT_EVENT_IDS_BY_OBJECT_ID_AND_ARTIFACT_ID("SELECT event_id FROM events WHERE file_id == ? AND artifact_id = ?"); //NON-NLS
+
+		private final String sql;
+
+		private PREPARED_STATEMENT(String sql) {
+			this.sql = sql;
+		}
+
+		String getSQL() {
+			return sql;
 		}
 	}
 
@@ -708,16 +722,24 @@ public class TimelineManager {
 	 * @return the boolean
 	 */
 	private boolean hasDBColumn(final String dbColumn) throws TskCoreException {
+
+		String query = sleuthkitCase.getDatabaseType() == TskData.DbType.POSTGRESQL
+				? "	SELECT column_name as name  FROM information_schema.columns  WHERE  table_name='events';" //NON-NLS  //Postgres
+				: "PRAGMA table_info(events)";	//NON-NLS //SQLite
+		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
-				Statement stmt = con.createStatement();) {
-			ResultSet executeQuery = stmt.executeQuery("PRAGMA table_info(events)"); //NON-NLS
+				Statement stmt = con.createStatement();
+				ResultSet executeQuery = stmt.executeQuery(query);) {
+
 			while (executeQuery.next()) {
-				if (dbColumn.equals(executeQuery.getString("name"))) {
+				if (dbColumn.equals(executeQuery.getString("name"))) {	//NON-NLS
 					return true;
 				}
 			}
 		} catch (SQLException ex) {
-			throw new TskCoreException("problem executing pragma", ex); // NON-NLS
+			throw new TskCoreException("problem querying for events table column names", ex); // NON-NLS
+		} finally {
+			sleuthkitCase.releaseSingleUserCaseReadLock();
 		}
 		return false;
 	}
@@ -742,8 +764,8 @@ public class TimelineManager {
 		int superTypeNum = type.getSuperType().ordinal();
 
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
-		try {
-
+		try (CaseDbConnection con = sleuthkitCase.getConnection();
+				PreparedStatement insertRowStmt = con.prepareStatement(PREPARED_STATEMENT.INSERT_ROW.getSQL(), 1);) {
 			//"INSERT INTO events (datasource_id,file_id ,artifact_id, time, sub_type, base_type, full_description, med_description, short_description, known_state, hashHit, tagged) " 
 			insertRowStmt.clearParameters();
 			insertRowStmt.setLong(1, datasourceID);
@@ -773,7 +795,9 @@ public class TimelineManager {
 
 			insertRowStmt.executeUpdate();
 
-			try (ResultSet generatedKeys = insertRowStmt.getGeneratedKeys();) {
+			try (ResultSet generatedKeys = insertRowStmt.getGeneratedKeys();
+					PreparedStatement insertHashSetStmt = con.prepareStatement(PREPARED_STATEMENT.INSERT_HASH_SET.getSQL(), 0);
+					PreparedStatement selectHashSetStmt = con.prepareStatement(PREPARED_STATEMENT.GET_HASH_SET_NAME_BY_ID.getSQL(), 0);) {
 
 				while (generatedKeys.next()) {
 					long eventID = generatedKeys.getLong("last_insert_rowid()"); //NON-NLS
@@ -787,7 +811,8 @@ public class TimelineManager {
 						//"select hash_set_id from hash_sets where hash_set_name = ?"
 						selectHashSetStmt.setString(1, name);
 
-						try (ResultSet rs = selectHashSetStmt.executeQuery();) {
+						try (PreparedStatement insertHashHitStmt = con.prepareStatement(PREPARED_STATEMENT.INSERT_HASH_HIT.getSQL(), 0);
+								ResultSet rs = selectHashSetStmt.executeQuery();) {
 							while (rs.next()) {
 								int hashsetID = rs.getInt("hash_set_id"); //NON-NLS
 								//"insert or ignore into hash_set_hits (hash_set_id, obj_id) values (?,?)";
@@ -844,25 +869,26 @@ public class TimelineManager {
 	}
 
 	/**
-	 * insert this tag into the db
-	 * <p>
-	 * NOTE: does not lock the db, must be called form inside a
-	 * DBLock.lock/unlock pair
+	 * insert the given tag into the db * @param tag the tag to insert
 	 *
-	 * @param tag     the tag to insert
 	 * @param eventID the event id that this tag is applied to.
 	 *
-	 * @throws SQLException if there was a problem executing insert
 	 */
-	private void insertTag(Tag tag, long eventID) throws SQLException {
-
-		//"INSERT OR IGNORE INTO tags (tag_id, tag_name_id,tag_name_display_name, event_id) values (?,?,?,?)"
-		insertTagStmt.clearParameters();
-		insertTagStmt.setLong(1, tag.getId());
-		insertTagStmt.setLong(2, tag.getName().getId());
-		insertTagStmt.setString(3, tag.getName().getDisplayName());
-		insertTagStmt.setLong(4, eventID);
-		insertTagStmt.executeUpdate();
+	private void insertTag(Tag tag, long eventID) throws TskCoreException {
+		sleuthkitCase.acquireSingleUserCaseWriteLock();
+		try (CaseDbConnection con = sleuthkitCase.getConnection();
+				PreparedStatement insertTagStmt = con.prepareStatement(PREPARED_STATEMENT.INSERT_TAG.getSQL(), 0);) {
+			//"INSERT OR IGNORE INTO tags (tag_id, tag_name_id,tag_name_display_name, event_id) values (?,?,?,?)"
+			insertTagStmt.setLong(1, tag.getId());
+			insertTagStmt.setLong(2, tag.getName().getId());
+			insertTagStmt.setString(3, tag.getName().getDisplayName());
+			insertTagStmt.setLong(4, eventID);
+			insertTagStmt.executeUpdate();
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error inserting tag into events db.", ex);
+		} finally {
+			sleuthkitCase.releaseSingleUserCaseWriteLock();
+		}
 	}
 
 	/**
@@ -879,21 +905,62 @@ public class TimelineManager {
 	 *                    event in autopsy
 	 *
 	 * @return the event ids that match the object/artifact pair
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public Set<Long> deleteTag(long objectID, Long artifactID, long tagID, boolean stillTagged) throws TskCoreException {
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
-		try {
+		try (CaseDbConnection con = sleuthkitCase.getConnection();
+				PreparedStatement deleteTagStmt = con.prepareStatement(PREPARED_STATEMENT.DELETE_TAG.getSQL(), 0);) {
 			//"DELETE FROM tags WHERE tag_id = ?
-			deleteTagStmt.clearParameters();
 			deleteTagStmt.setLong(1, tagID);
 			deleteTagStmt.executeUpdate();
 
 			return markEventsTagged(objectID, artifactID, stillTagged);
 		} catch (SQLException ex) {
-			throw new TskCoreException("failed to add tag to event", ex); // NON-NLS
+			throw new TskCoreException("failed to delete tag from event", ex); // NON-NLS
 		} finally {
 			sleuthkitCase.releaseSingleUserCaseWriteLock();
 		}
+	}
+
+	private HashSet<Long> getEventIDs(long objectID) throws TskCoreException {
+//TODO: inline this
+		HashSet<Long> eventIDs = new HashSet<>();
+		try (CaseDbConnection con = sleuthkitCase.getConnection();
+				PreparedStatement selectStmt = con.prepareStatement(PREPARED_STATEMENT.SELECT_NON_ARTIFACT_EVENT_IDS_BY_OBJECT_ID.getSQL(), 0);) {
+			//"SELECT event_id FROM events WHERE file_id == ? AND artifact_id IS NULL"
+			selectStmt.setLong(1, objectID);
+			try (ResultSet executeQuery = selectStmt.executeQuery();) {
+
+				while (executeQuery.next()) {
+					eventIDs.add(executeQuery.getLong("event_id")); //NON-NLS
+				}
+			}
+		} catch (SQLException ex) {
+			Logger.getLogger(TimelineManager.class.getName()).log(Level.SEVERE, null, ex);
+		}
+		return eventIDs;
+	}
+
+	private HashSet<Long> getEventIDs(long objectID, Long artifactID) throws TskCoreException {
+		//TODO: inline this
+		HashSet<Long> eventIDs = new HashSet<>();
+		try (CaseDbConnection con = sleuthkitCase.getConnection();
+				PreparedStatement selectStmt = con.prepareStatement(PREPARED_STATEMENT.SELECT_EVENT_IDS_BY_OBJECT_ID_AND_ARTIFACT_ID.getSQL(), 0);) {
+			//"SELECT event_id FROM events WHERE file_id == ? AND artifact_id = ?"
+			selectStmt.setLong(1, objectID);
+			selectStmt.setLong(2, artifactID);
+			try (ResultSet executeQuery = selectStmt.executeQuery();) {
+
+				while (executeQuery.next()) {
+					eventIDs.add(executeQuery.getLong("event_id")); //NON-NLS
+				}
+			}
+		} catch (SQLException ex) {
+			Logger.getLogger(TimelineManager.class.getName()).log(Level.SEVERE, null, ex);
+		}
+		return eventIDs;
 	}
 
 	/**
@@ -917,29 +984,17 @@ public class TimelineManager {
 	 *                      (un)taggedS
 	 */
 	private Set<Long> markEventsTagged(long objectID, Long artifactID, boolean tagged) throws SQLException, TskCoreException {
-
-		PreparedStatement selectStmt;
+		HashSet<Long> eventIDs = new HashSet<>();;
 		if (Objects.isNull(artifactID)) {
-			//"SELECT event_id FROM events WHERE file_id == ? AND artifact_id IS NULL"
-			selectNonArtifactEventIDsByObjectIDStmt.clearParameters();
-			selectNonArtifactEventIDsByObjectIDStmt.setLong(1, objectID);
-			selectStmt = selectNonArtifactEventIDsByObjectIDStmt;
+
+			eventIDs = getEventIDs(objectID);
+
 		} else {
-			//"SELECT event_id FROM events WHERE file_id == ? AND artifact_id = ?"
-			selectEventIDsBYObjectAndArtifactIDStmt.clearParameters();
-			selectEventIDsBYObjectAndArtifactIDStmt.setLong(1, objectID);
-			selectEventIDsBYObjectAndArtifactIDStmt.setLong(2, artifactID);
-			selectStmt = selectEventIDsBYObjectAndArtifactIDStmt;
+			eventIDs = getEventIDs(objectID, artifactID);
+
 		}
 
-		HashSet<Long> eventIDs = new HashSet<>();
-		try (ResultSet executeQuery = selectStmt.executeQuery();) {
-			while (executeQuery.next()) {
-				eventIDs.add(executeQuery.getLong("event_id")); //NON-NLS
-			}
-		}
-
-		//update tagged state for all event with selected ids
+//update tagged state for all event with selected ids
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement updateStatement = con.createStatement();) {
 			updateStatement.executeUpdate("UPDATE events SET tagged = " + (tagged ? 1 : 0) //NON-NLS
@@ -953,7 +1008,8 @@ public class TimelineManager {
 		trans.rollback();
 	}
 
-	protected void finalizse() throws Throwable {
+	@Override
+	protected void finalize() throws Throwable {
 		try {
 			closeStatements();
 		} finally {
