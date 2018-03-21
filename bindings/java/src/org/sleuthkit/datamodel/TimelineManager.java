@@ -85,13 +85,25 @@ public class TimelineManager {
 	private final Set<PreparedStatement> preparedStatements = new HashSet<>();
 
 	private final SleuthkitCase sleuthkitCase;
+	private final String primaryKeyType;
+	private final String csvFunction;
+
+	public String csvAggFunction(String args) {
+		return csvFunction + "(" + args + ")";
+	}
 
 	TimelineManager(SleuthkitCase tskCase) throws TskCoreException {
 		sleuthkitCase = tskCase;
+		primaryKeyType = sleuthkitCase.getDatabaseType() == TskData.DbType.POSTGRESQL ? "BIGSERIAL" : "INTEGER";
+		csvFunction = sleuthkitCase.getDatabaseType() == TskData.DbType.POSTGRESQL ? "string_agg" : "group_concat";
+
 		initializeDB();
 	}
 
 	public Interval getSpanningInterval(Collection<Long> eventIDs) throws TskCoreException {
+		if (eventIDs.isEmpty()) {
+			return null;
+		}
 		final String query = "SELECT Min(time), Max(time) FROM events WHERE event_id IN (" + StringUtils.joinAsStrings(eventIDs, ", ") + ")";
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
@@ -330,7 +342,9 @@ public class TimelineManager {
 		}
 
 		ArrayList<CombinedEvent> results = new ArrayList<>();
-		final String query = "SELECT full_description, time, file_id, GROUP_CONCAT(events.event_id), GROUP_CONCAT(sub_type)"
+		final String query = "SELECT full_description, time, file_id, "
+				+ csvAggFunction("events.event_id::character varying, ','") + "as eventIDs, "
+				+ csvFunction + "(sub_type::character varying, ',') as eventTypes"
 				+ " FROM events " + useHashHitTablesHelper(filter) + useTagTablesHelper(filter)
 				+ " WHERE time >= " + startTime + " AND time <" + endTime + " AND " + getSQLWhere(filter)
 				+ " GROUP BY time,full_description, file_id ORDER BY time ASC, full_description";
@@ -343,8 +357,8 @@ public class TimelineManager {
 			while (rs.next()) {
 
 				//make a map from event type to event ID
-				List<Long> eventIDs = unGroupConcat(rs.getString("GROUP_CONCAT(events.event_id)"), Long::valueOf);
-				List<EventType> eventTypes = unGroupConcat(rs.getString("GROUP_CONCAT(sub_type)"), (String s) -> RootEventType.allTypes.get(Integer.valueOf(s)));
+				List<Long> eventIDs = unGroupConcat(rs.getString("eventIDs"), Long::valueOf);
+				List<EventType> eventTypes = unGroupConcat(rs.getString("eventTypes"), (String s) -> RootEventType.allTypes.get(Integer.valueOf(s)));
 				Map<EventType, Long> eventMap = new HashMap<>();
 				for (int i = 0; i < eventIDs.size(); i++) {
 					eventMap.put(eventTypes.get(i), eventIDs.get(i));
@@ -484,7 +498,7 @@ public class TimelineManager {
 
 			try {
 				stmt.execute("CREATE TABLE if not exists events " // NON-NLS
-						+ " (event_id " + getPrimaryKeyType() + " PRIMARY KEY, " // NON-NLS
+						+ " (event_id " + primaryKeyType + " PRIMARY KEY, " // NON-NLS
 						+ " datasource_id BIGINT, " // NON-NLS
 						+ " file_id BIGINT, " // NON-NLS
 						+ " artifact_id BIGINT, " // NON-NLS
@@ -527,7 +541,7 @@ public class TimelineManager {
 
 			try {
 				stmt.execute("CREATE TABLE IF NOT EXISTS hash_sets " //NON-NLS
-						+ "( hash_set_id " + getPrimaryKeyType() + " primary key," //NON-NLS
+						+ "( hash_set_id " + primaryKeyType + " primary key," //NON-NLS
 						+ " hash_set_name VARCHAR(255) UNIQUE NOT NULL)");	//NON-NLS
 			} catch (SQLException ex) {
 				throw new TskCoreException("problem creating hash_sets table", ex); //NON-NLS
@@ -1124,15 +1138,15 @@ public class TimelineManager {
 		String typeColumn = typeColumnHelper(useSubTypes);
 
 		//compose query string, the new-lines are only for nicer formatting if printing the entire query
-		String query = "SELECT strftime('" + strfTimeFormat + "',time , 'unixepoch'" + timeZone + ") AS interval," // NON-NLS
-				+ "\n group_concat(events.event_id) as event_ids," //NON-NLS
-				+ "\n group_concat(CASE WHEN hash_hit = 1 THEN events.event_id ELSE NULL END) as hash_hits," //NON-NLS
-				+ "\n group_concat(CASE WHEN tagged = 1 THEN events.event_id ELSE NULL END) as taggeds," //NON-NLS
-				+ "\n min(time), max(time),  " + typeColumn + ", " + descriptionColumn // NON-NLS
-				+ "\n FROM events" + useHashHitTablesHelper(filter) + useTagTablesHelper(filter) // NON-NLS
-				+ "\n WHERE time >= " + start + " AND time < " + end + " AND " + getSQLWhere(filter) // NON-NLS
-				+ "\n GROUP BY interval, " + typeColumn + " , " + descriptionColumn // NON-NLS
-				+ "\n ORDER BY min(time)"; // NON-NLS
+		String query = "SELECT strftime('" + strfTimeFormat + "',time , 'unixepoch'" + timeZone + ") AS interval, " // NON-NLS
+				+ csvFunction + "(events.event_id) as event_ids, " //NON-NLS
+				+ csvFunction + "(CASE WHEN hash_hit = 1 THEN events.event_id ELSE NULL END) as hash_hits, " //NON-NLS
+				+ csvFunction + "(CASE WHEN tagged = 1 THEN events.event_id ELSE NULL END) as taggeds, " //NON-NLS
+				+ " min(time), max(time),  " + typeColumn + ", " + descriptionColumn // NON-NLS
+				+ " FROM events" + useHashHitTablesHelper(filter) + useTagTablesHelper(filter) // NON-NLS
+				+ " WHERE time >= " + start + " AND time < " + end + " AND " + getSQLWhere(filter) // NON-NLS
+				+ " GROUP BY interval, " + typeColumn + " , " + descriptionColumn // NON-NLS
+				+ " ORDER BY min(time)"; // NON-NLS
 
 		// perform query and map results to AggregateEvent objects
 		List<EventCluster> events = new ArrayList<>();
@@ -1252,10 +1266,6 @@ public class TimelineManager {
 
 	private static String typeColumnHelper(final boolean useSubTypes) {
 		return useSubTypes ? "sub_type" : "base_type"; //NON-NLS
-	}
-
-	private String getPrimaryKeyType() {
-		return sleuthkitCase.getDatabaseType() == TskData.DbType.POSTGRESQL ? "BIGSERIAL" : "INTEGER";
 	}
 
 	/**
