@@ -93,7 +93,7 @@ public class TimelineManager {
 	}
 
 	public String csvAggFunction(String args, String seperator) {
-		return csvFunction + "(" + args + ", '" + seperator + "')";
+		return csvFunction + "(Cast (" + args + " AS VARCHAR) , '" + seperator + "')";
 	}
 
 	TimelineManager(SleuthkitCase tskCase) throws TskCoreException {
@@ -108,13 +108,13 @@ public class TimelineManager {
 		if (eventIDs.isEmpty()) {
 			return null;
 		}
-		final String query = "SELECT Min(time), Max(time) FROM events WHERE event_id IN (" + StringUtils.joinAsStrings(eventIDs, ", ") + ")";
+		final String query = "SELECT Min(time) as minTime, Max(time) as maxTime FROM events WHERE event_id IN (" + StringUtils.joinAsStrings(eventIDs, ", ") + ")";
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement stmt = con.createStatement();
 				ResultSet rs = stmt.executeQuery(query);) {
 			while (rs.next()) {
-				return new Interval(rs.getLong("Min(time)") * 1000, (rs.getLong("Max(time)") + 1) * 1000, DateTimeZone.UTC); // NON-NLS
+				return new Interval(rs.getLong("minTime") * 1000, (rs.getLong("maxTime") + 1) * 1000, DateTimeZone.UTC); // NON-NLS
 			}
 
 		} catch (SQLException ex) {
@@ -1136,18 +1136,17 @@ public class TimelineManager {
 		RangeDivisionInfo rangeInfo = RangeDivisionInfo.getRangeDivisionInfo(timeRange, tz);
 
 		//build dynamic parts of query
-		String strfTimeFormat = getStrfTimeFormat(rangeInfo.getPeriodSize());
 		String descriptionColumn = getDescriptionColumn(descriptionLOD);
 		final boolean useSubTypes = typeZoomLevel.equals(EventTypeZoomLevel.SUB_TYPE);
 		String timeZone = tz.equals(DateTimeZone.getDefault()) ? ", 'localtime'" : "";  // NON-NLS
 		String typeColumn = typeColumnHelper(useSubTypes);
 
 		//compose query string, the new-lines are only for nicer formatting if printing the entire query
-		String query = "SELECT strftime('" + strfTimeFormat + "',time , 'unixepoch'" + timeZone + ") AS interval, " // NON-NLS
-				+ csvFunction + "(events.event_id) as event_ids, " //NON-NLS
-				+ csvFunction + "(CASE WHEN hash_hit = 1 THEN events.event_id ELSE NULL END) as hash_hits, " //NON-NLS
-				+ csvFunction + "(CASE WHEN tagged = 1 THEN events.event_id ELSE NULL END) as taggeds, " //NON-NLS
-				+ " min(time), max(time),  " + typeColumn + ", " + descriptionColumn // NON-NLS
+		String query = "SELECT " + formatTimeFunction(rangeInfo.getPeriodSize(), tz) + " AS interval, " // NON-NLS
+				+ csvAggFunction("events.event_id") + " as event_ids, " //NON-NLS
+				+ csvAggFunction("CASE WHEN hash_hit = 1 THEN events.event_id ELSE NULL END") + " as hash_hits, " //NON-NLS
+				+ csvAggFunction("CASE WHEN tagged = 1 THEN events.event_id ELSE NULL END") + " as taggeds, " //NON-NLS
+				+ " min(time) AS minTime, max(time) AS maxTime,  " + typeColumn + ", " + descriptionColumn // NON-NLS
 				+ " FROM events" + useHashHitTablesHelper(filter) + useTagTablesHelper(filter) // NON-NLS
 				+ " WHERE time >= " + start + " AND time < " + end + " AND " + getSQLWhere(filter) // NON-NLS
 				+ " GROUP BY interval, " + typeColumn + " , " + descriptionColumn // NON-NLS
@@ -1172,6 +1171,21 @@ public class TimelineManager {
 		return mergeClustersToStripes(rangeInfo.getPeriodSize().getPeriod(), events);
 	}
 
+	String formatTimeFunction(TimeUnits periodSize, DateTimeZone tz) {
+
+		switch (sleuthkitCase.getDatabaseType()) {
+			case SQLITE:
+				String strfTimeFormat = getStrfTimeFormat(periodSize);
+				String timeZone = tz.equals(DateTimeZone.getDefault()) ? ", 'localtime'" : ""; // NON-NLS
+				return "strftime('" + strfTimeFormat + "', time , 'unixepoch'" + timeZone + ")";
+			case POSTGRESQL:
+				String formatString = getPostgresTimeFormat(periodSize);
+				return "to_char(to_timestamp(time) AT TIME ZONE '" + tz.getID() + "', '" + formatString + "')";
+			default:
+				throw new UnsupportedOperationException("DbType " + sleuthkitCase.getDatabaseType() + " is not supported.");
+		}
+	}
+
 	/**
 	 * map a single row in a ResultSet to an EventCluster
 	 *
@@ -1187,7 +1201,7 @@ public class TimelineManager {
 	 * @throws SQLException
 	 */
 	private EventCluster eventClusterHelper(ResultSet rs, boolean useSubTypes, DescriptionLoD descriptionLOD, TagsFilter filter, DateTimeZone tz) throws SQLException {
-		Interval interval = new Interval(rs.getLong("min(time)") * 1000, rs.getLong("max(time)") * 1000, tz);// NON-NLS
+		Interval interval = new Interval(rs.getLong("minTime") * 1000, rs.getLong("maxTime") * 1000, tz);// NON-NLS
 		String eventIDsString = rs.getString("event_ids");// NON-NLS
 		List<Long> eventIDs = unGroupConcat(eventIDsString, Long::valueOf);
 		String description = rs.getString(getDescriptionColumn(descriptionLOD));
@@ -1289,7 +1303,8 @@ public class TimelineManager {
 
 	/**
 	 * take the result of a group_concat SQLite operation and split it into a
-	 * set of X using the mapper to to convert from string to X
+	 * set of X using the mapper to to convert from string to X If groupConcat
+	 * is empty, null, or all whitespace, returns an empty list.
 	 *
 	 * @param <X>         the type of elements to return
 	 * @param groupConcat a string containing the group_concat result ( a comma
@@ -1300,7 +1315,11 @@ public class TimelineManager {
 	 *         comma delimited string
 	 */
 	<X> List<X> unGroupConcat(String groupConcat, Function<String, X> mapper) {
-		List<X> result = new ArrayList<X>();
+		if (org.apache.commons.lang3.StringUtils.isBlank(groupConcat)) {
+			return Collections.emptyList();
+		}
+
+		List<X> result = new ArrayList<>();
 		String[] split = groupConcat.split(",");
 		for (String s : split) {
 			result.add(mapper.apply(s));
@@ -1526,6 +1545,24 @@ public class TimelineManager {
 			case SECONDS:
 			default:    //seconds - should never happen
 				return "%Y-%m-%dT%H:%M:%S"; // NON-NLS  
+			}
+	}
+
+	String getPostgresTimeFormat(TimeUnits timeUnit) {
+		switch (timeUnit) {
+			case YEARS:
+				return "YYYY-01-01T00:00:00"; // NON-NLS
+			case MONTHS:
+				return "YYYY-MM-01T00:00:00"; // NON-NLS
+			case DAYS:
+				return "YYYY-MM-DDT00:00:00"; // NON-NLS
+			case HOURS:
+				return "YYYY-MM-DDTHH24:00:00"; // NON-NLS
+			case MINUTES:
+				return "YYYY-MM-DDTHH24:MI:00"; // NON-NLS
+			case SECONDS:
+			default:    //seconds - should never happen
+				return "YYYY-MM-DDTHH24:MI:SS"; // NON-NLS  
 			}
 	}
 
