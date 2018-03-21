@@ -30,14 +30,14 @@
             </folders>
             <ide-actions>
                 <action name="build">
-                    <target>dist-PostgreSQL</target>
+                    <target>dist</target>
                 </action>
                 <action name="clean">
                     <target>clean</target>
                 </action>
                 <action name="rebuild">
                     <target>clean</target>
-                    <target>dist-PostgreSQL</target>
+                    <target>dist</target>
                 </action>
                 <action name="run.single">
                     <script>nbproject/ide-file-targets.xml</script>
@@ -75,17 +75,17 @@
             <export>
                 <type>folder</type>
                 <location>build</location>
-                <build-target>dist-PostgreSQL</build-target>
+                <build-target>dist</build-target>
             </export>
             <export>
                 <type>folder</type>
                 <location>build</location>
-                <build-target>dist-PostgreSQL</build-target>
+                <build-target>dist</build-target>
             </export>
             <export>
                 <type>folder</type>
                 <location>test</location>
-                <build-target>dist-PostgreSQL</build-target>
+                <build-target>dist</build-target>
             </export>
             <view>
                 <items>
