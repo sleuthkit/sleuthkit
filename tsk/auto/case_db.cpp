@@ -85,7 +85,7 @@ TskCaseDb::newDb(const TSK_TCHAR * const path)
 TskCaseDb *
 TskCaseDb::newDb(const TSK_TCHAR * const path, CaseDbConnectionInfo * info)
 {
-//#if defined(HAVE_POSTGRESQL) && defined(TSK_WIN32)
+#ifdef HAVE_LIBPQ_
     TskDb *db = new TskDbPostgreSQL(path, true);
 
     // Store connection info for the multi-user database
@@ -111,9 +111,9 @@ TskCaseDb::newDb(const TSK_TCHAR * const path, CaseDbConnectionInfo * info)
     }
 
     return new TskCaseDb(db);
-//#else
-//    return NULL;
-//#endif // HAVE_POSTGRESQL && TSK_WIN32
+#else
+    return NULL;
+#endif 
 }
 
 /**
@@ -156,7 +156,7 @@ TskCaseDb::openDb(const TSK_TCHAR * path)
 TskCaseDb *
 TskCaseDb::openDb(const TSK_TCHAR * path, CaseDbConnectionInfo * info)
 {
-//#if defined(HAVE_POSTGRESQL) && defined(TSK_WIN32)
+#ifdef HAVE_LIBPQ_
 
     TskDb *db = new TskDbPostgreSQL(path, true);
 
@@ -183,9 +183,9 @@ TskCaseDb::openDb(const TSK_TCHAR * path, CaseDbConnectionInfo * info)
     }
 
     return new TskCaseDb(db);
-//#else
-//    return NULL;
-//#endif // HAVE_POSTGRESQL && TSK_WIN32
+#else
+    return NULL;
+#endif // HAVE_POSTGRESQL && TSK_WIN32
 }
 
 /**

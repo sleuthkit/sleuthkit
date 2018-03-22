@@ -12,6 +12,8 @@
 * \file db_postgresql.cpp
 * Contains code to perform operations against PostgreSQL database.
 */
+#include "tsk_db.h"
+#ifdef HAVE_LIBPQ_
 #include "tsk_db_postgresql.h"
 #include <string.h>
 #include <sstream>
@@ -2246,5 +2248,5 @@ hton_any(T &input)
     return output;
 }*/
 
-
+#endif // HAVE_LIBPQ_
 
