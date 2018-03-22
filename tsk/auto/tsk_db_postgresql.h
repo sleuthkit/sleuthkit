@@ -19,7 +19,7 @@
 #define _TSK_DB_POSTGRESQL_H
 
 #include "tsk_db.h"
-#if defined (HAVE_LIBPQ_)
+#ifdef HAVE_LIBPQ_
 #ifdef TSK_WIN32
     #include "libpq-fe.h"
 #else
