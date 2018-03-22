@@ -17,11 +17,11 @@
 #include <string.h>
 #include <sstream>
 #include <algorithm>
-#ifdef TSK_WIN32
-    #include <cstdint>
-#else
-    #include <stdint.h>
-#endif
+//#ifdef TSK_WIN32
+    //#include <cstdint>
+//#else
+    //#include <stdint.h>
+//#endif
 #include "guid.h"
 
 using std::stringstream;
