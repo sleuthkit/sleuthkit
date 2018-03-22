@@ -1,5 +1,5 @@
 /*
- * Autopsy Forensic Browser
+ * Sleuth Kit Data Model
  *
  * Copyright 2011-2016 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
@@ -27,7 +27,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedSet;
 import org.joda.time.Interval;
-import org.sleuthkit.datamodel.timeline.DescriptionLoD;
 
 /**
  * Represents a set of other events clustered together. All the sub events
@@ -244,9 +243,6 @@ public class EventCluster implements MultiEvent<EventStripe> {
         if (this.lod != other.lod) {
             return false;
         }
-        if (!Objects.equals(this.eventIDs, other.eventIDs)) {
-            return false;
-        }
-        return true;
+        return Objects.equals(this.eventIDs, other.eventIDs);
     }
 }

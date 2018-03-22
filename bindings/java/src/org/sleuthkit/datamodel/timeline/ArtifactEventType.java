@@ -1,14 +1,14 @@
 /*
- * Autopsy Forensic Browser
+ * Sleuth Kit Data Model
  *
- * Copyright 2014-16 Basis Technology Corp.
+ * Copyright 2014-2018 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *	 http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -33,177 +33,177 @@ import org.sleuthkit.datamodel.TskCoreException;
  */
 public interface ArtifactEventType extends EventType {
 
-    static final Logger LOGGER = Logger.getLogger(ArtifactEventType.class.getName());
+	static final Logger LOGGER = Logger.getLogger(ArtifactEventType.class.getName());
 
-    /**
-     * Get the artifact type this event type is derived from.
-     *
-     * @return The artifact type this event type is derived from.
-     */
-    public BlackboardArtifact.Type getArtifactType();
+	/**
+	 * Get the artifact type this event type is derived from.
+	 *
+	 * @return The artifact type this event type is derived from.
+	 */
+	BlackboardArtifact.Type getArtifactType();
 
-    /**
-     * The attribute type this event type is derived from.
-     *
-     * @return The attribute type this event type is derived from.
-     */
-    public BlackboardAttribute.Type getDateTimeAttributeType();
+	/**
+	 * The attribute type this event type is derived from.
+	 *
+	 * @return The attribute type this event type is derived from.
+	 */
+	BlackboardAttribute.Type getDateTimeAttributeType();
 
-    /**
-     * Get the ID of the the artifact type that this EventType is derived from.
-     *
-     * @return the ID of the the artifact type that this EventType is derived
-     * from.
-     */
-    public default int getArtifactTypeID() {
-        return getArtifactType().getTypeID();
-    }
+	/**
+	 * Get the ID of the the artifact type that this EventType is derived from.
+	 *
+	 * @return the ID of the the artifact type that this EventType is derived
+	 *         from.
+	 */
+	default int getArtifactTypeID() {
+		return getArtifactType().getTypeID();
+	}
 
-    /**
-     * given an artifact, pull out the time stamp, and compose the descriptions.
-     * Each implementation of ArtifactEventType needs to implement
-     * parseAttributesHelper() as hook for
-     * buildEventDescription(org.sleuthkit.datamodel.BlackboardArtifact) to
-     * invoke. Most subtypes can use this default implementation.
-     *
-     * @param artf
-     *
-     * @return an AttributeEventDescription containing the timestamp and
-     * description information
-     *
-     * @throws TskCoreException
-     */
-    default AttributeEventDescription parseAttributesHelper(BlackboardArtifact artf) throws TskCoreException {
-        final BlackboardAttribute dateTimeAttr = artf.getAttribute(getDateTimeAttributeType());
+	/**
+	 * given an artifact, pull out the time stamp, and compose the descriptions.
+	 * Each implementation of ArtifactEventType needs to implement
+	 * parseAttributesHelper() as hook for
+	 * buildEventDescription(org.sleuthkit.datamodel.BlackboardArtifact) to
+	 * invoke. Most subtypes can use this default implementation.
+	 *
+	 * @param artf
+	 *
+	 * @return an AttributeEventDescription containing the timestamp and
+	 *         description information
+	 *
+	 * @throws TskCoreException
+	 */
+	default AttributeEventDescription parseAttributesHelper(BlackboardArtifact artf) throws TskCoreException {
+		final BlackboardAttribute dateTimeAttr = artf.getAttribute(getDateTimeAttributeType());
 
-        long time = dateTimeAttr.getValueLong();
-        String shortDescription = getShortExtractor().apply(artf);
-        String medDescription = shortDescription + " : " + getMedExtractor().apply(artf);
-        String fullDescription = medDescription + " : " + getFullExtractor().apply(artf);
-        return new AttributeEventDescription(time, shortDescription, medDescription, fullDescription);
-    }
+		long time = dateTimeAttr.getValueLong();
+		String shortDescription = getShortExtractor().apply(artf);
+		String medDescription = shortDescription + " : " + getMedExtractor().apply(artf);
+		String fullDescription = medDescription + " : " + getFullExtractor().apply(artf);
+		return new AttributeEventDescription(time, shortDescription, medDescription, fullDescription);
+	}
 
-    /**
-     * @return a function from an artifact to a String to use as part of the
-     * full event description
-     */
-    Function<BlackboardArtifact, String> getFullExtractor();
+	/**
+	 * @return a function from an artifact to a String to use as part of the
+	 *         full event description
+	 */
+	Function<BlackboardArtifact, String> getFullExtractor();
 
-    /**
-     * @return a function from an artifact to a String to use as part of the
-     * medium event description
-     */
-    Function<BlackboardArtifact, String> getMedExtractor();
+	/**
+	 * @return a function from an artifact to a String to use as part of the
+	 *         medium event description
+	 */
+	Function<BlackboardArtifact, String> getMedExtractor();
 
-    /**
-     * @return a function from an artifact to a String to use as part of the
-     * short event description
-     */
-    Function<BlackboardArtifact, String> getShortExtractor();
+	/**
+	 * @return a function from an artifact to a String to use as part of the
+	 *         short event description
+	 */
+	Function<BlackboardArtifact, String> getShortExtractor();
 
-    /**
-     * bundles the per event information derived from a BlackBoard Artifact into
-     * one object. Primarily used to have a single return value for
-     * ArtifactEventType#buildEventDescription(ArtifactEventType,
-     * BlackboardArtifact).
-     */
-    static class AttributeEventDescription {
+	/**
+	 * bundles the per event information derived from a BlackBoard Artifact into
+	 * one object. Primarily used to have a single return value for
+	 * ArtifactEventType#buildEventDescription(ArtifactEventType,
+	 * BlackboardArtifact).
+	 */
+	class AttributeEventDescription {
 
-        final private long time;
+		final private long time;
 
-        public long getTime() {
-            return time;
-        }
+		public long getTime() {
+			return time;
+		}
 
-        public String getShortDescription() {
-            return shortDescription;
-        }
+		public String getShortDescription() {
+			return shortDescription;
+		}
 
-        public String getMedDescription() {
-            return medDescription;
-        }
+		public String getMedDescription() {
+			return medDescription;
+		}
 
-        public String getFullDescription() {
-            return fullDescription;
-        }
+		public String getFullDescription() {
+			return fullDescription;
+		}
 
-        final private String shortDescription;
+		final private String shortDescription;
 
-        final private String medDescription;
+		final private String medDescription;
 
-        final private String fullDescription;
+		final private String fullDescription;
 
-        public AttributeEventDescription(long time, String shortDescription,
-                String medDescription,
-                String fullDescription) {
-            this.time = time;
-            this.shortDescription = shortDescription;
-            this.medDescription = medDescription;
-            this.fullDescription = fullDescription;
-        }
-    }
+		public AttributeEventDescription(long time, String shortDescription,
+				String medDescription,
+				String fullDescription) {
+			this.time = time;
+			this.shortDescription = shortDescription;
+			this.medDescription = medDescription;
+			this.fullDescription = fullDescription;
+		}
+	}
 
-    /**
-     * Build a AttributeEventDescription derived from a BlackboardArtifact. This
-     * is a template method that relies on each ArtifactEventType's
-     * implementation of ArtifactEventType#parseAttributesHelper() to know how
-     * to go from BlackboardAttributes to the event description.
-     *
-     * @param type
-     * @param artf the BlackboardArtifact to derive the event description from
-     *
-     * @return an AttributeEventDescription derived from the given artifact, if
-     * the given artifact has no timestamp
-     *
-     * @throws TskCoreException is there is a problem accessing the blackboard
-     * data
-     */
-    static public AttributeEventDescription buildEventDescription(ArtifactEventType type, BlackboardArtifact artf) throws TskCoreException {
-        //if we got passed an artifact that doesn't correspond to the type of the event, 
-        //something went very wrong. throw an exception.
-        if (type.getArtifactTypeID() != artf.getArtifactTypeID()) {
-            throw new IllegalArgumentException();
-        }
-        if (artf.getAttribute(type.getDateTimeAttributeType()) == null) {
-            LOGGER.log(Level.WARNING, "Artifact {0} has no date/time attribute, skipping it.", artf.getArtifactID()); // NON-NLS
-            return null;
-        }
-        //use the hook provided by this subtype implementation
-        return type.parseAttributesHelper(artf);
-    }
+	/**
+	 * Build a AttributeEventDescription derived from a BlackboardArtifact. This
+	 * is a template method that relies on each ArtifactEventType's
+	 * implementation of ArtifactEventType#parseAttributesHelper() to know how
+	 * to go from BlackboardAttributes to the event description.
+	 *
+	 * @param type
+	 * @param artf the BlackboardArtifact to derive the event description from
+	 *
+	 * @return an AttributeEventDescription derived from the given artifact, if
+	 *         the given artifact has no timestamp
+	 *
+	 * @throws TskCoreException is there is a problem accessing the blackboard
+	 *                          data
+	 */
+	static AttributeEventDescription buildEventDescription(ArtifactEventType type, BlackboardArtifact artf) throws TskCoreException {
+		//if we got passed an artifact that doesn't correspond to the type of the event, 
+		//something went very wrong. throw an exception.
+		if (type.getArtifactTypeID() != artf.getArtifactTypeID()) {
+			throw new IllegalArgumentException();
+		}
+		if (artf.getAttribute(type.getDateTimeAttributeType()) == null) {
+			LOGGER.log(Level.WARNING, "Artifact {0} has no date/time attribute, skipping it.", artf.getArtifactID()); // NON-NLS
+			return null;
+		}
+		//use the hook provided by this subtype implementation
+		return type.parseAttributesHelper(artf);
+	}
 
-    static class AttributeExtractor implements Function<BlackboardArtifact, String> {
+	class AttributeExtractor implements Function<BlackboardArtifact, String> {
 
-        public String apply(BlackboardArtifact artf) {
-            return Optional.ofNullable(getAttributeSafe(artf, attributeType))
-                    .map(BlackboardAttribute::getDisplayString)
-                    .map(StringUtils::defaultString)
-                    .orElse("");
-        }
+		public String apply(BlackboardArtifact artf) {
+			return Optional.ofNullable(getAttributeSafe(artf, attributeType))
+					.map(BlackboardAttribute::getDisplayString)
+					.map(StringUtils::defaultString)
+					.orElse("");
+		}
 
-        private final BlackboardAttribute.Type attributeType;
+		private final BlackboardAttribute.Type attributeType;
 
-        public AttributeExtractor(BlackboardAttribute.Type attribute) {
-            this.attributeType = attribute;
-        }
+		public AttributeExtractor(BlackboardAttribute.Type attribute) {
+			this.attributeType = attribute;
+		}
 
-    }
+	}
 
-    static class EmptyExtractor implements Function<BlackboardArtifact, String> {
+	class EmptyExtractor implements Function<BlackboardArtifact, String> {
 
-        @Override
-        public String apply(BlackboardArtifact t) {
-            return "";
-        }
-    }
+		@Override
+		public String apply(BlackboardArtifact ignored) {
+			return "";
+		}
+	}
 
-    static BlackboardAttribute getAttributeSafe(BlackboardArtifact artf, BlackboardAttribute.Type attrType) {
-        try {
-            return artf.getAttribute(attrType);
-        } catch (TskCoreException ex) {
-            LOGGER.log(Level.SEVERE, MessageFormat.format("Error getting attribute from artifact {0}.", artf.getArtifactID()), ex); // NON-NLS
-            return null;
-        }
-    }
+	static BlackboardAttribute getAttributeSafe(BlackboardArtifact artf, BlackboardAttribute.Type attrType) {
+		try {
+			return artf.getAttribute(attrType);
+		} catch (TskCoreException ex) {
+			LOGGER.log(Level.SEVERE, MessageFormat.format("Error getting attribute from artifact {0}.", artf.getArtifactID()), ex); // NON-NLS
+			return null;
+		}
+	}
 
 }

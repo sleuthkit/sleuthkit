@@ -1,5 +1,5 @@
 /*
- * Autopsy Forensic Browser
+ * Sleuth Kit Data Model
  *
  * Copyright 2015-16 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
@@ -25,7 +25,6 @@ import java.util.Comparator;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedSet;
-import org.sleuthkit.datamodel.timeline.DescriptionLoD;
 
 /**
  * A 'collection' of {@link EventCluster}s, all having the same type,
@@ -33,7 +32,7 @@ import org.sleuthkit.datamodel.timeline.DescriptionLoD;
  */
 public final class EventStripe implements MultiEvent<EventCluster> {
 
-    public static EventStripe merge(EventStripe u, EventStripe v) {
+    public static EventStripe merge(EventStripe u, EventStripe v) { //NOPMD
         Preconditions.checkNotNull(u);
         Preconditions.checkNotNull(v);
         Preconditions.checkArgument(Objects.equals(u.description, v.description));
@@ -79,7 +78,7 @@ public final class EventStripe implements MultiEvent<EventCluster> {
     private final ImmutableSet<Long> hashHits;
 
     public EventStripe withParent(EventCluster parent) {
-        if (java.util.Objects.nonNull(this.parent)) {
+        if (Objects.nonNull(this.parent)) {
             throw new IllegalStateException("Event Stripe already has a parent!");
         }
         return new EventStripe(parent, this.type, this.description, this.lod, clusters, eventIDs, tagged, hashHits);
@@ -111,7 +110,7 @@ public final class EventStripe implements MultiEvent<EventCluster> {
         this.parent = null;
     }
 
-    private EventStripe(EventStripe u, EventStripe v) {
+    private EventStripe(EventStripe u, EventStripe v) { //NOPMD
         clusters = ImmutableSortedSet.orderedBy(Comparator.comparing(EventCluster::getStartMillis))
                 .addAll(u.getClusters())
                 .addAll(v.getClusters())
@@ -233,9 +232,6 @@ public final class EventStripe implements MultiEvent<EventCluster> {
         if (this.lod != other.lod) {
             return false;
         }
-        if (!Objects.equals(this.eventIDs, other.eventIDs)) {
-            return false;
-        }
-        return true;
+        return Objects.equals(this.eventIDs, other.eventIDs);
     }
 }

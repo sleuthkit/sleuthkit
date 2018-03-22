@@ -1,5 +1,5 @@
 /*
- * Autopsy Forensic Browser
+ *  Sleuth Kit Data Model
  *
  * Copyright 2011-2016 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
@@ -144,9 +144,6 @@ public class CombinedEvent {
         if (!Objects.equals(this.description, other.description)) {
             return false;
         }
-        if (!Objects.equals(this.eventTypeMap, other.eventTypeMap)) {
-            return false;
-        }
-        return true;
+        return Objects.equals(this.eventTypeMap, other.eventTypeMap);
     }
 }
