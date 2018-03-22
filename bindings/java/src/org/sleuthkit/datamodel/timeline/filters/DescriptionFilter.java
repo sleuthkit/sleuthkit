@@ -27,14 +27,14 @@ public class DescriptionFilter extends AbstractFilter {
 	private final String description;
 	private final FilterMode filterMode;
 
-	public FilterMode getFilterMode() {
-		return filterMode;
-	}
-
 	public DescriptionFilter(DescriptionLoD descriptionLoD, String description, FilterMode filterMode) {
 		this.descriptionLoD = descriptionLoD;
 		this.description = description;
 		this.filterMode = filterMode;
+	}
+
+	public FilterMode getFilterMode() {
+		return filterMode;
 	}
 
 	@Override
@@ -104,9 +104,6 @@ public class DescriptionFilter extends AbstractFilter {
 		if (!Objects.equals(this.description, other.description)) {
 			return false;
 		}
-		if (this.filterMode != other.filterMode) {
-			return false;
-		}
-		return true;
+		return this.filterMode == other.filterMode;
 	}
 }

@@ -27,60 +27,60 @@ import javafx.beans.property.SimpleStringProperty;
  */
 public class TextFilter extends AbstractFilter {
 
-    public TextFilter() {
-    }
+	private final SimpleStringProperty text = new SimpleStringProperty();
 
-    public TextFilter(String text) {
-        this.text.set(text);
-    }
+	public TextFilter() {
+	}
 
-    private final SimpleStringProperty text = new SimpleStringProperty();
+	public TextFilter(String text) {
+		this.text.set(text);
+	}
 
-    synchronized public void setText(String text) {
-        this.text.set(text);
-    }
+	synchronized public void setText(String text) {
+		this.text.set(text);
+	}
 
-    @Override
-    public String getDisplayName() {
+	@Override
+	public String getDisplayName() {
 		return BundleUtils.getBundle().getString("TextFilter.displayName.text");
-    }
+	}
 
-    synchronized public String getText() {
-        return text.getValue();
-    }
+	synchronized public String getText() {
+		return text.getValue();
+	}
 
-    public Property<String> textProperty() {
-        return text;
-    }
+	public Property<String> textProperty() {
+		return text;
+	}
 
-    @Override
-    synchronized public TextFilter copyOf() {
-        TextFilter textFilter = new TextFilter(getText());
-        textFilter.setSelected(isSelected());
-        textFilter.setDisabled(isDisabled());
-        return textFilter;
-    }
+	@Override
+	synchronized public TextFilter copyOf() {
+		TextFilter textFilter = new TextFilter(getText());
+		textFilter.setSelected(isSelected());
+		textFilter.setDisabled(isDisabled());
+		return textFilter;
+	}
 
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final TextFilter other = (TextFilter) obj;
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		final TextFilter other = (TextFilter) obj;
 
-        if (isSelected() != other.isSelected()) {
-            return false;
-        }
-        return Objects.equals(text.get(), other.text.get());
-    }
+		if (isSelected() != other.isSelected()) {
+			return false;
+		}
+		return Objects.equals(text.get(), other.text.get());
+	}
 
-    @Override
-    public int hashCode() {
-        int hash = 5;
-        hash = 29 * hash + Objects.hashCode(this.text.get());
-        return hash;
-    }
+	@Override
+	public int hashCode() {
+		int hash = 5;
+		hash = 29 * hash + Objects.hashCode(this.text.get());
+		return hash;
+	}
 }

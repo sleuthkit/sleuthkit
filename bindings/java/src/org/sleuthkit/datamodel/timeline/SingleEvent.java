@@ -277,10 +277,7 @@ public class SingleEvent implements TimeLineEvent {
             return false;
         }
         final SingleEvent other = (SingleEvent) obj;
-        if (this.eventID != other.eventID) {
-            return false;
-        }
-        return true;
+        return this.eventID == other.eventID;
     }
 
     @Override

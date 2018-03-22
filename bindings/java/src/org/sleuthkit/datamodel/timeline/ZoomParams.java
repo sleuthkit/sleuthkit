@@ -132,5 +132,4 @@ public class ZoomParams {
     public String toString() {
         return "ZoomParams{" + "timeRange=" + timeRange + ", typeZoomLevel=" + typeZoomLevel + ", filter=" + filter + ", descrLOD=" + descrLOD + '}'; //NON-NLS
     }
-
 }

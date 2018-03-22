@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2014-2018 Basis Technology Corp.
+ * Copyright 2018 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -33,7 +33,7 @@ import org.sleuthkit.datamodel.TskCoreException;
  */
 public interface ArtifactEventType extends EventType {
 
-	static final Logger LOGGER = Logger.getLogger(ArtifactEventType.class.getName());
+	Logger LOGGER = Logger.getLogger(ArtifactEventType.class.getName());
 
 	/**
 	 * Get the artifact type this event type is derived from.
@@ -110,6 +110,9 @@ public interface ArtifactEventType extends EventType {
 	class AttributeEventDescription {
 
 		final private long time;
+		final private String shortDescription;
+		final private String medDescription;
+		final private String fullDescription;
 
 		public long getTime() {
 			return time;
@@ -126,12 +129,6 @@ public interface ArtifactEventType extends EventType {
 		public String getFullDescription() {
 			return fullDescription;
 		}
-
-		final private String shortDescription;
-
-		final private String medDescription;
-
-		final private String fullDescription;
 
 		public AttributeEventDescription(long time, String shortDescription,
 				String medDescription,
@@ -174,19 +171,18 @@ public interface ArtifactEventType extends EventType {
 
 	class AttributeExtractor implements Function<BlackboardArtifact, String> {
 
-		public String apply(BlackboardArtifact artf) {
-			return Optional.ofNullable(getAttributeSafe(artf, attributeType))
-					.map(BlackboardAttribute::getDisplayString)
-					.map(StringUtils::defaultString)
-					.orElse("");
-		}
-
 		private final BlackboardAttribute.Type attributeType;
 
 		public AttributeExtractor(BlackboardAttribute.Type attribute) {
 			this.attributeType = attribute;
 		}
 
+		public String apply(BlackboardArtifact artf) {
+			return Optional.ofNullable(getAttributeSafe(artf, attributeType))
+					.map(BlackboardAttribute::getDisplayString)
+					.map(StringUtils::defaultString)
+					.orElse("");
+		}
 	}
 
 	class EmptyExtractor implements Function<BlackboardArtifact, String> {

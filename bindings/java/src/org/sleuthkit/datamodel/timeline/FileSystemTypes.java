@@ -27,55 +27,55 @@ import javafx.scene.image.Image;
  */
 public enum FileSystemTypes implements EventType {
 
-    FILE_MODIFIED(BundleUtils.getBundle().getString("FileSystemTypes.fileModified.name"), "blue-document-attribute-m.png"), // NON-NLS
-    FILE_ACCESSED(BundleUtils.getBundle().getString("FileSystemTypes.fileAccessed.name"), "blue-document-attribute-a.png"), // NON-NLS
-    FILE_CREATED(BundleUtils.getBundle().getString("FileSystemTypes.fileCreated.name"), "blue-document-attribute-b.png"), // NON-NLS
-    FILE_CHANGED(BundleUtils.getBundle().getString("FileSystemTypes.fileChanged.name"), "blue-document-attribute-c.png"); // NON-NLS
+	FILE_MODIFIED(BundleUtils.getBundle().getString("FileSystemTypes.fileModified.name"), "blue-document-attribute-m.png"), // NON-NLS
+	FILE_ACCESSED(BundleUtils.getBundle().getString("FileSystemTypes.fileAccessed.name"), "blue-document-attribute-a.png"), // NON-NLS
+	FILE_CREATED(BundleUtils.getBundle().getString("FileSystemTypes.fileCreated.name"), "blue-document-attribute-b.png"), // NON-NLS
+	FILE_CHANGED(BundleUtils.getBundle().getString("FileSystemTypes.fileChanged.name"), "blue-document-attribute-c.png"); // NON-NLS
 
-    private final String iconBase;
+	private final String iconBase;
 
-    private final Image image;
+	private final Image image;
 
-    @Override
-    public Image getFXImage() {
-        return image;
-    }
+	private final String displayName;
 
-    @Override
-    public String getIconBase() {
-        return iconBase;
-    }
+	@Override
+	public Image getFXImage() {
+		return image;
+	}
 
-    @Override
-    public EventTypeZoomLevel getZoomLevel() {
-        return EventTypeZoomLevel.SUB_TYPE;
-    }
+	@Override
+	public String getIconBase() {
+		return iconBase;
+	}
 
-    private final String displayName;
+	@Override
+	public EventTypeZoomLevel getZoomLevel() {
+		return EventTypeZoomLevel.SUB_TYPE;
+	}
 
-    @Override
-    public EventType getSubType(String string) {
-        return FileSystemTypes.valueOf(string);
-    }
+	@Override
+	public EventType getSubType(String string) {
+		return FileSystemTypes.valueOf(string);
+	}
 
-    @Override
-    public EventType getSuperType() {
-        return BaseTypes.FILE_SYSTEM;
-    }
+	@Override
+	public EventType getSuperType() {
+		return BaseTypes.FILE_SYSTEM;
+	}
 
-    @Override
-    public List<? extends EventType> getSubTypes() {
-        return Collections.emptyList();
-    }
+	@Override
+	public List<? extends EventType> getSubTypes() {
+		return Collections.emptyList();
+	}
 
-    private FileSystemTypes(String displayName, String iconBase) {
-        this.displayName = displayName;
-        this.iconBase = iconBase;
-        this.image = new Image("org/sleuthkit/autopsy/timeline/images/" + iconBase, true); // NON-NLS
-    }
+	private FileSystemTypes(String displayName, String iconBase) {
+		this.displayName = displayName;
+		this.iconBase = iconBase;
+		this.image = new Image("org/sleuthkit/autopsy/timeline/images/" + iconBase, true); // NON-NLS
+	}
 
-    @Override
-    public String getDisplayName() {
-        return displayName;
-    }
+	@Override
+	public String getDisplayName() {
+		return displayName;
+	}
 }
