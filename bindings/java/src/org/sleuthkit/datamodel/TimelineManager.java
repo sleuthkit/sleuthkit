@@ -603,8 +603,8 @@ public final class TimelineManager {
 		DROP_HASH_SETS_TABLE("DROP TABLE IF EXISTS hash_sets"), //NON-NLS
 		DROP_TAGS_TABLE("DROP TABLE IF EXISTS tags"), //NON-NLS
 		DROP_DB_INFO_TABLE("DROP TABLE IF EXISTS db_ino"), //NON-NLS
-		SELECT_NON_ARTIFACT_EVENT_IDS_BY_OBJECT_ID("SELECT event_id FROM events WHERE file_id == ? AND artifact_id IS NULL"), //NON-NLS
-		SELECT_EVENT_IDS_BY_OBJECT_ID_AND_ARTIFACT_ID("SELECT event_id FROM events WHERE file_id == ? AND artifact_id = ?"); //NON-NLS
+		SELECT_NON_ARTIFACT_EVENT_IDS_BY_OBJECT_ID("SELECT event_id FROM events WHERE file_id = ? AND artifact_id IS NULL"), //NON-NLS
+		SELECT_EVENT_IDS_BY_OBJECT_ID_AND_ARTIFACT_ID("SELECT event_id FROM events WHERE file_id = ? AND artifact_id = ?"); //NON-NLS
 
 		private final String sql;
 
@@ -629,7 +629,7 @@ public final class TimelineManager {
 	public List<Long> getEventIDsForArtifact(BlackboardArtifact artifact) throws TskCoreException {
 		ArrayList<Long> eventIDs = new ArrayList<Long>();
 
-		String query = "SELECT event_id FROM events WHERE artifact_id == " + artifact.getArtifactID();
+		String query = "SELECT event_id FROM events WHERE artifact_id = " + artifact.getArtifactID();
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement stmt = con.createStatement();
@@ -663,7 +663,7 @@ public final class TimelineManager {
 	public List<Long> getEventIDsForFile(AbstractFile file, boolean includeDerivedArtifacts) throws TskCoreException {
 		ArrayList<Long> eventIDs = new ArrayList<>();
 
-		String query = "SELECT event_id FROM events WHERE file_id == " + file.getId()
+		String query = "SELECT event_id FROM events WHERE file_id = " + file.getId()
 				+ (includeDerivedArtifacts ? "" : " AND artifact_id IS NULL");
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
@@ -730,7 +730,7 @@ public final class TimelineManager {
 	private boolean hasDBColumn(final String dbColumn) throws TskCoreException {
 
 		String query = sleuthkitCase.getDatabaseType() == TskData.DbType.POSTGRESQL
-				? "SELECT column_name as name  FROM information_schema.columns  WHERE  table_name='events';" //NON-NLS  //Postgres
+				? "SELECT column_name as name FROM information_schema.columns WHERE table_name = 'events';" //NON-NLS  //Postgres
 				: "PRAGMA table_info(events)";	//NON-NLS //SQLite
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
@@ -937,7 +937,7 @@ public final class TimelineManager {
 		HashSet<Long> eventIDs = new HashSet<>();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				PreparedStatement selectStmt = con.prepareStatement(STATEMENTS.SELECT_NON_ARTIFACT_EVENT_IDS_BY_OBJECT_ID.getSQL(), 0);) {
-			//"SELECT event_id FROM events WHERE file_id == ? AND artifact_id IS NULL"
+			//"SELECT event_id FROM events WHERE file_id = ? AND artifact_id IS NULL"
 			selectStmt.setLong(1, objectID);
 			try (ResultSet executeQuery = selectStmt.executeQuery();) {
 
@@ -956,7 +956,7 @@ public final class TimelineManager {
 		HashSet<Long> eventIDs = new HashSet<>();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				PreparedStatement selectStmt = con.prepareStatement(STATEMENTS.SELECT_EVENT_IDS_BY_OBJECT_ID_AND_ARTIFACT_ID.getSQL(), 0);) {
-			//"SELECT event_id FROM events WHERE file_id == ? AND artifact_id = ?"
+			//"SELECT event_id FROM events WHERE file_id = ? AND artifact_id = ?"
 			selectStmt.setLong(1, objectID);
 			selectStmt.setLong(2, artifactID);
 			try (ResultSet executeQuery = selectStmt.executeQuery();) {
@@ -1421,7 +1421,7 @@ public final class TimelineManager {
 					.filter(tagFilter -> tagFilter.isSelected() && !tagFilter.isDisabled())
 					.map(tagNameFilter -> String.valueOf(tagNameFilter.getTagName().getId()))
 					.collect(Collectors.joining(", ", "(", ")"));
-			return "(events.event_id == tags.event_id AND " //NON-NLS
+			return "(events.event_id = tags.event_id AND " //NON-NLS
 					+ "tags.tag_name_id IN " + tagNameIDs + ") "; //NON-NLS
 		}
 
@@ -1436,7 +1436,7 @@ public final class TimelineManager {
 					.filter(hashFilter -> hashFilter.isSelected() && !hashFilter.isDisabled())
 					.map(hashFilter -> String.valueOf(hashFilter.getHashSetID()))
 					.collect(Collectors.joining(", ", "(", ")"));
-			return "(hash_set_hits.hash_set_id IN " + hashSetIDs + " AND hash_set_hits.event_id == events.event_id)"; //NON-NLS
+			return "(hash_set_hits.hash_set_id IN " + hashSetIDs + " AND hash_set_hits.event_id = events.event_id)"; //NON-NLS
 		}
 	}
 
