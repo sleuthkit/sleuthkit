@@ -134,10 +134,12 @@ AM_CONDITIONAL([HAVE_LIBSQLITE3],
                [test "x$ac_cv_lib_sqlite3_sqlite3_open" = "xyes"])
 dnl check for postgresql
 AC_CHECK_HEADERS([postgresql/libpq-fe.h],
-                  [AC_CHECK_LIB([pq] , [PQlibVersion])])
+                  [AC_CHECK_LIB([pq] , [PQlibVersion], [HAVE_POSTGRESQL=1], [HAVE_POSTGRESQL=0])])
 
-AM_CONDITIONAL([HAVE_POSTGRESQL],
-               [test "x$ac_cv_lib_pq_PQlibVersion" = "xyes"])
+AM_CONDITIONAL([USE_POSTGRESQL],
+               [test "$HAVE_POSTGRESQL" -eq 1])
+AS_IF([test "$HAVE_POSTGRESQL" -eq 1], [ax_libpq=yes], [ax_libpq=no])
+
 # Check if we should link afflib.
 AC_ARG_WITH([afflib],
     [AS_HELP_STRING([--without-afflib],[Do not use AFFLIB even if it is installed])]
@@ -423,7 +425,7 @@ Building:
    zlib support:                          $ax_zlib
    libvhdi support:                       $ax_libvhdi
    libvmdk support:                       $ax_libvmdk
-
+   postgresql support:                    $ax_libpq
 Features:
    Java/JNI support:                      $ax_java_support
    Multithreading:                        $ax_multithread

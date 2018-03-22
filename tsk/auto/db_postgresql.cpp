@@ -118,13 +118,7 @@ PGconn* TskDbPostgreSQL::connectToDatabase(TSK_TCHAR *dbName) {
     PQescapeString(&userName_sql[0], userName, strlen(userName));
     PQescapeString(&password_sql[0], password, strlen(password));
     PQescapeString(&hostName_sql[0], hostNameOrIpAddr, strlen(hostNameOrIpAddr));
-#ifdef TSK_WIN32
-	snprintf(connectionString, 1024, "user=%s password=%s dbname=%S host=%s port=%s", userName_sql, password_sql, dbName, hostName_sql, hostPort);
-#else
-	snprintf(connectionString, 1024, "user=%s password=%s dbname=%s host=%s port=%s", userName_sql, password_sql, dbName, hostName_sql, hostPort);
-#endif // TSK_WIN32
-
-    
+    snprintf(connectionString, 1024, "user=%s password=%s dbname=%" PRIttocTSK " host=%s port=%s", userName_sql, password_sql, dbName, hostName_sql, hostPort);	
     PGconn *dbConn = PQconnectdb(connectionString);
 
     // Check to see that the backend connection was successfully made
@@ -162,11 +156,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::createDatabase(){
     // If you use single quotes, PostgreSQL will convert db name to lower case. If database was created using double quotes
     // you now need to always use double quotes when referring to it (e.dg when deleting database).
     char createDbString[1024];
-#ifdef TSK_WIN32
-    snprintf(createDbString, 1024, "CREATE DATABASE \"%S\" WITH ENCODING='UTF8';", m_dBName);
-#else
-	snprintf(createDbString, 1024, "CREATE DATABASE \"%s\" WITH ENCODING='UTF8';", m_dBName);
-#endif
+    snprintf(createDbString, 1024, "CREATE DATABASE \"%" PRIttocTSK "\" WITH ENCODING='UTF8';", m_dBName);    
     PGresult *res = PQexec(serverConn, createDbString);
     if (!res || PQresultStatus(res) != PGRES_COMMAND_OK) {
         tsk_error_reset();
@@ -204,23 +194,14 @@ int TskDbPostgreSQL::open(bool createDbFlag)
     if (!conn){
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-#ifdef TSK_WIN32
-		tsk_error_set_errstr("TskDbPostgreSQL::open: Couldn't connect to database %S", m_dBName);
-#else
-		tsk_error_set_errstr("TskDbPostgreSQL::open: Couldn't connect to database %s", m_dBName);
-#endif // TSK_WIN32
-
+       	tsk_error_set_errstr("TskDbPostgreSQL::open: Couldn't connect to database %" PRIttocTSK "", m_dBName);
         return -1;
     }
 
     if (createDbFlag) {
         // initialize TSK tables
         if (initialize()) {
-#ifdef TSK_WIN32
-			tsk_error_set_errstr2("TskDbPostgreSQL::open: Couldn't initialize database %S", m_dBName);
-#else
-			tsk_error_set_errstr2("TskDbPostgreSQL::open: Couldn't initialize database %s", m_dBName);
-#endif // TSK_WIN32
+            tsk_error_set_errstr2("TskDbPostgreSQL::open: Couldn't initialize database %" PRIttocTSK "", m_dBName);
             close();    // close connection to database
             return -1;
         }
@@ -255,12 +236,8 @@ bool TskDbPostgreSQL::dbExists() {
 
     // Poll PostreSQL server for existing databases.
     char selectString[1024];
-#ifdef TSK_WIN32
-	snprintf(selectString, 1024, "SELECT datname FROM pg_catalog.pg_database WHERE datname = '%S';", m_dBName);
-#else
-	snprintf(selectString, 1024, "SELECT datname FROM pg_catalog.pg_database WHERE datname = '%s';", m_dBName);
-#endif // TSK_WIN32
-
+    snprintf(selectString, 1024, "SELECT datname FROM pg_catalog.pg_database WHERE datname = '%" PRIttocTSK "';", m_dBName);
+    
     PGresult *res = PQexec(serverConn, selectString);
     if (!res || PQresultStatus(res) != PGRES_TUPLES_OK)
     {
