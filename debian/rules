@@ -23,7 +23,12 @@ export DEB_LDFLAGS_MAINT_APPEND = -lsqlite3 -lsupc++ -Wl,--as-needed
 #override_dh_auto_configure:
 #	dh_auto_configure -- #	-DCMAKE_LIBRARY_PATH=$(DEB_HOST_MULTIARCH)
 
-overide_dh_auto_install:
+override_dh_auto_install:
+	cd $(CURDIR)/tsk; \
+	$(MAKE) install DESTDIR=$(CURDIR)/debian/sleuthkit-java AM_UPDATE_INFO_DIR=no; \
+	cd $(CURDIR)/bindings/java; \
+	$(MAKE) install DESTDIR=$(CURDIR)/debian/sleuthkit-java AM_UPDATE_INFO_DIR=no; \
+	cd $(CURDIR); \
 	dh_install
 
 
