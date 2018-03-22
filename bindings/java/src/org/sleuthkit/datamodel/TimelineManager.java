@@ -589,7 +589,6 @@ public final class TimelineManager {
 		INSERT_HASH_SET("INSERT OR IGNORE INTO hash_sets (hash_set_name)  values (?)"), //NON-NLS
 		GET_HASH_SET_NAME_BY_ID("SELECT hash_set_id FROM hash_sets WHERE hash_set_name = ?"), //NON-NLS
 		INSERT_HASH_HIT("INSERT OR IGNORE INTO hash_set_hits (hash_set_id, event_id) values (?,?)"), //NON-NLS
-		INSERT_TAG("INSERT OR IGNORE INTO tags (tag_id, tag_name_id,tag_name_display_name, event_id) values (?,?,?,?)"), //NON-NLS
 		DELETE_TAG("DELETE FROM tags WHERE tag_id = ?"), //NON-NLS
 
 		/*
@@ -884,9 +883,10 @@ public final class TimelineManager {
 	 */
 	private void insertTag(Tag tag, long eventID) throws TskCoreException {
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
+
+		String query = insertOrIgnore("INTO tags (tag_id, tag_name_id,tag_name_display_name, event_id) values (?,?,?,?)");
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
-				PreparedStatement insertTagStmt = con.prepareStatement(STATEMENTS.INSERT_TAG.getSQL(), 0);) {
-			//"INSERT OR IGNORE INTO tags (tag_id, tag_name_id,tag_name_display_name, event_id) values (?,?,?,?)"
+				PreparedStatement insertTagStmt = con.prepareStatement(query, 0);) {
 			insertTagStmt.setLong(1, tag.getId());
 			insertTagStmt.setLong(2, tag.getName().getId());
 			insertTagStmt.setString(3, tag.getName().getDisplayName());
@@ -897,6 +897,21 @@ public final class TimelineManager {
 		} finally {
 			sleuthkitCase.releaseSingleUserCaseWriteLock();
 		}
+	}
+
+	private String insertOrIgnore(String query) {
+		switch (sleuthkitCase.getDatabaseType()) {
+			case POSTGRESQL:
+				return "INSERT " + query + " ON CONFLICT DO NOTHING";
+			case SQLITE:
+				return "INSERT OR IGNORE" + query;
+			default:
+				throw getUnsupportedDBTypeException();
+		}
+	}
+
+	private UnsupportedOperationException getUnsupportedDBTypeException() {
+		return new UnsupportedOperationException("Unsupported DB type: " + sleuthkitCase.getDatabaseType().name());
 	}
 
 	/**
@@ -1071,7 +1086,8 @@ public final class TimelineManager {
 
 		//get some info about the range of dates requested
 		final String queryString = "SELECT count(DISTINCT events.event_id) AS count, " + typeColumnHelper(useSubTypes) //NON-NLS
-				+ " FROM events" + useHashHitTablesHelper(filter) + useTagTablesHelper(filter) + " WHERE time >= " + startTime + " AND time < " + endTime + " AND " + getSQLWhere(filter) // NON-NLS
+				+ " FROM events" + useHashHitTablesHelper(filter) + useTagTablesHelper(filter) + 
+				" WHERE time >= " + startTime + " AND time < " + endTime + " AND " + getSQLWhere(filter) // NON-NLS
 				+ " GROUP BY " + typeColumnHelper(useSubTypes); // NON-NLS
 
 		sleuthkitCase.acquireSingleUserCaseReadLock();
@@ -1095,15 +1111,19 @@ public final class TimelineManager {
 	}
 
 	/**
-	 * get a list of {@link EventStripe}s, clustered according to the given zoom
+	 * Get a list of EventStripes, clustered according to the given zoom
 	 * paramaters.
 	 *
-	 * @param params the {@link ZoomParams} that determine the zooming,
-	 *               filtering and clustering.
+	 * @param params   The ZoomParams that determine the zooming, filtering and
+	 *                 clustering.
+	 * @param timeZone The time zone to use.
 	 *
 	 * @return a list of aggregate events within the given timerange, that pass
 	 *         the supplied filter, aggregated according to the given event type
 	 *         and description zoom levels
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException If there is an error
+	 *                                                  querying the db.
 	 */
 	public List<EventStripe> getEventStripes(ZoomParams params, DateTimeZone timeZone) throws TskCoreException {
 		//unpack params
@@ -1156,7 +1176,6 @@ public final class TimelineManager {
 	}
 
 	String formatTimeFunction(TimeUnits periodSize, DateTimeZone timeZone) {
-
 		switch (sleuthkitCase.getDatabaseType()) {
 			case SQLITE:
 				String strfTimeFormat = getStrfTimeFormat(periodSize);
@@ -1166,7 +1185,7 @@ public final class TimelineManager {
 				String formatString = getPostgresTimeFormat(periodSize);
 				return "to_char(to_timestamp(time) AT TIME ZONE '" + timeZone.getID() + "', '" + formatString + "')";
 			default:
-				throw new UnsupportedOperationException("DbType " + sleuthkitCase.getDatabaseType() + " is not supported.");
+				throw getUnsupportedDBTypeException();
 		}
 	}
 
@@ -1261,12 +1280,6 @@ public final class TimelineManager {
 		return stripeDescMap.values().stream().sorted(Comparator.comparing(EventStripe::getStartMillis)).collect(Collectors.toList());
 	}
 
-	private PreparedStatement prepareStatement(CaseDbConnection con, String queryString) throws SQLException {
-		PreparedStatement prepareStatement = con.prepareStatement(queryString, 0);
-		preparedStatements.add(prepareStatement);
-		return prepareStatement;
-	}
-
 	private static String typeColumnHelper(final boolean useSubTypes) {
 		return useSubTypes ? "sub_type" : "base_type"; //NON-NLS
 	}
@@ -1277,12 +1290,12 @@ public final class TimelineManager {
 	 */
 	String useHashHitTablesHelper(RootFilter filter) {
 		HashHitsFilter hashHitFilter = filter.getHashHitsFilter();
-		return hashHitFilter.isActive() ? " LEFT JOIN hash_set_hits " : " "; //NON-NLS
+		return hashHitFilter.isActive() ? " LEFT OUTER JOIN hash_set_hits ON (hash_set_hits.event_id = events.event_id)" : " "; //NON-NLS
 	}
 
 	String useTagTablesHelper(RootFilter filter) {
 		TagsFilter tagsFilter = filter.getTagsFilter();
-		return tagsFilter.isActive() ? " LEFT JOIN tags " : " "; //NON-NLS
+		return tagsFilter.isActive() ? " LEFT OUTER JOIN tags ON ( tags.event_id = events.event_id) " : " "; //NON-NLS
 	}
 
 	/**
@@ -1421,8 +1434,7 @@ public final class TimelineManager {
 					.filter(tagFilter -> tagFilter.isSelected() && !tagFilter.isDisabled())
 					.map(tagNameFilter -> String.valueOf(tagNameFilter.getTagName().getId()))
 					.collect(Collectors.joining(", ", "(", ")"));
-			return "(events.event_id = tags.event_id AND " //NON-NLS
-					+ "tags.tag_name_id IN " + tagNameIDs + ") "; //NON-NLS
+			return "(tags.tag_name_id IN " + tagNameIDs + ") "; //NON-NLS
 		}
 
 	}
@@ -1436,7 +1448,7 @@ public final class TimelineManager {
 					.filter(hashFilter -> hashFilter.isSelected() && !hashFilter.isDisabled())
 					.map(hashFilter -> String.valueOf(hashFilter.getHashSetID()))
 					.collect(Collectors.joining(", ", "(", ")"));
-			return "(hash_set_hits.hash_set_id IN " + hashSetIDs + " AND hash_set_hits.event_id = events.event_id)"; //NON-NLS
+			return "(hash_set_hits.hash_set_id IN " + hashSetIDs + " )"; //NON-NLS
 		}
 	}
 
@@ -1571,7 +1583,7 @@ public final class TimelineManager {
 			case SQLITE:
 				return "0";
 			default:
-				throw new UnsupportedOperationException("Unsupported database type: " + sleuthkitCase.getDatabaseType());
+				throw getUnsupportedDBTypeException();
 		}
 	}
 
@@ -1582,7 +1594,7 @@ public final class TimelineManager {
 			case SQLITE:
 				return "1";
 			default:
-				throw new UnsupportedOperationException("Unsupported database type: " + sleuthkitCase.getDatabaseType());
+				throw getUnsupportedDBTypeException();
 		}
 	}
 
