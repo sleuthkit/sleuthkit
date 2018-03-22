@@ -5294,18 +5294,17 @@ public class SleuthkitCase {
 	 * Updates an existing derived file in the database and returns a new
 	 * derived file object with the updated contents
 	 *
-	 * @param fileName        file name the derived file
-	 * @param id			           the obj_id for the derived file which is being
-	 *                        updated
+	 * @param derivedFile	  The derived file you wish to update
 	 * @param localPath       local path of the derived file, including the file
 	 *                        name. The path is relative to the database path.
 	 * @param size            size of the derived file in bytes
 	 * @param ctime
 	 * @param crtime
+	 * @param mimeType		  The MIME type the updated file should have, null
+	 *                        to unset it
 	 * @param atime
 	 * @param mtime
 	 * @param isFile          whether a file or directory, true if a file
-	 * @param parentObj		     parent content object
 	 * @param rederiveDetails details needed to re-derive file (will be specific
 	 *                        to the derivation method), currently unused
 	 * @param toolName        name of derivation method/tool, currently unused
@@ -5321,15 +5320,16 @@ public class SleuthkitCase {
 	 * @throws TskCoreException exception thrown if the object creation failed
 	 *                          due to a critical system error
 	 */
-	public DerivedFile updateDerivedFile(String fileName, long id, String localPath,
+	public DerivedFile updateDerivedFile(DerivedFile derivedFile, String localPath,
 			long size, long ctime, long crtime, long atime, long mtime,
-			boolean isFile, Content parentObj,
+			boolean isFile, String mimeType,
 			String rederiveDetails, String toolName, String toolVersion,
 			String otherDetails, TskData.EncodingType encodingType) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseWriteLock();
 		ResultSet rs = null;
 		try {
+			Content parentObj = derivedFile.getParent();
 			connection.beginTransaction();
 			final long parentId = parentObj.getId();
 			String parentPath = "";
@@ -5339,7 +5339,7 @@ public class SleuthkitCase {
 				parentPath = ((AbstractFile) parentObj).getParentPath() + parentObj.getName() + '/'; //NON-NLS
 			}
 			// UPDATE tsk_files SET type = ?, dir_type = ?, meta_type = ?, dir_flags = ?,  meta_flags = ?, "
-			// + "size= ?, ctime= ?, crtime= ?, atime= ?, mtime= ? WHERE obj_id = ?"), //NON-NLS
+			// + "size= ?, ctime= ?, crtime= ?, atime= ?, mtime= ?, mime_type = ? WHERE obj_id = ?"), //NON-NLS
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.UPDATE_DERIVED_FILE);
 			statement.clearParameters();
 
@@ -5368,18 +5368,18 @@ public class SleuthkitCase {
 			statement.setLong(8, crtime);
 			statement.setLong(9, atime);
 			statement.setLong(10, mtime);
-
-			statement.setString(11, String.valueOf(id));
+			statement.setString(11, mimeType);
+			statement.setString(12, String.valueOf(derivedFile.getId()));
 			connection.executeUpdate(statement);
 
 			//add localPath
-			updateFilePath(connection, id, localPath, encodingType);
+			updateFilePath(connection, derivedFile.getId(), localPath, encodingType);
 
 			connection.commitTransaction();
 
 			long dataSourceObjId = getDataSourceObjectId(connection, parentId);
-			final String extension = extractExtension(fileName);
-			return new DerivedFile(this, id, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
+			final String extension = extractExtension(derivedFile.getName());
+			return new DerivedFile(this, derivedFile.getId(), dataSourceObjId, derivedFile.getName(), dirType, metaType, dirFlag, metaFlags,
 					size, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId, null, encodingType, extension);
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
@@ -8601,7 +8601,7 @@ public class SleuthkitCase {
 		INSERT_OBJECT("INSERT INTO tsk_objects (par_obj_id, type) VALUES (?, ?)"), //NON-NLS
 		INSERT_FILE("INSERT INTO tsk_files (obj_id, fs_obj_id, name, type, has_path, dir_type, meta_type, dir_flags, meta_flags, size, ctime, crtime, atime, mtime, parent_path, data_source_obj_id,extension) " //NON-NLS
 				+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)"), //NON-NLS
-		UPDATE_DERIVED_FILE("UPDATE tsk_files SET type = ?, dir_type = ?, meta_type = ?, dir_flags = ?,  meta_flags = ?, size= ?, ctime= ?, crtime= ?, atime= ?, mtime= ? "
+		UPDATE_DERIVED_FILE("UPDATE tsk_files SET type = ?, dir_type = ?, meta_type = ?, dir_flags = ?,  meta_flags = ?, size= ?, ctime= ?, crtime= ?, atime= ?, mtime= ?, mime_type = ?  "
 				+ "WHERE obj_id = ?"), //NON-NLS
 		INSERT_LAYOUT_FILE("INSERT INTO tsk_file_layout (obj_id, byte_start, byte_len, sequence) " //NON-NLS
 				+ "VALUES (?, ?, ?, ?)"), //NON-NLS
