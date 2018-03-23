@@ -24,11 +24,11 @@ using std::stringstream;
 using std::sort;
 using std::for_each;
 
-TskDbPostgreSQL::TskDbPostgreSQL(const char * a_dbFilePath, bool a_blkMapFlag)
+TskDbPostgreSQL::TskDbPostgreSQL(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFlag)
     : TskDb(a_dbFilePath, a_blkMapFlag)
 {
     conn = NULL;
-    strncpy(m_dBName, a_dbFilePath, MAX_CONN_INFO_FIELD_LENGTH - 1);
+	snprintf(m_dBName, MAX_CONN_INFO_FIELD_LENGTH - 1, "%" PRIttocTSK "", a_dbFilePath);
     m_blkMapFlag = a_blkMapFlag;
 
 	strcpy(userName, "");

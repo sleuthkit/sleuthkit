@@ -40,7 +40,8 @@ using std::map;
  */
 class TskDbPostgreSQL : public TskDb {
   public:
-    TskDbPostgreSQL(const char * a_dbFilePath, bool a_blkMapFlag);
+
+    TskDbPostgreSQL(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFlag);
     ~TskDbPostgreSQL();
     int open(bool);
     int close();
