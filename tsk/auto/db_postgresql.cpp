@@ -135,7 +135,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::createDatabase(){
     TSK_RETVAL_ENUM result = TSK_OK;
 
     // Connect to PostgreSQL server first
-    char defaultPostgresDb[32] = TEXT("postgres");
+    char defaultPostgresDb[32] = "postgres";
     PGconn *serverConn = connectToDatabase(&defaultPostgresDb[0]);
     if (!serverConn)
         return TSK_ERR;
@@ -229,7 +229,7 @@ bool TskDbPostgreSQL::dbExists() {
     int numDb = 0;
 
     // Connect to PostgreSQL server first
-    char defaultPostgresDb[32] = TEXT("postgres");
+    char defaultPostgresDb[32] = "postgres";
     PGconn *serverConn = connectToDatabase(&defaultPostgresDb[0]);
     if (!serverConn)
         return false;
