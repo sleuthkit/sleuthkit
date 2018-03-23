@@ -40,7 +40,7 @@ using std::map;
  */
 class TskDbPostgreSQL : public TskDb {
   public:
-    TskDbPostgreSQL(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFlag);
+    TskDbPostgreSQL(const cha * a_dbFilePath, bool a_blkMapFlag);
     ~TskDbPostgreSQL();
     int open(bool);
     int close();
@@ -95,14 +95,14 @@ private:
 
     PGconn *conn;
     bool m_blkMapFlag;
-    TSK_TCHAR m_dBName[MAX_CONN_INFO_FIELD_LENGTH];
+    char m_dBName[MAX_CONN_INFO_FIELD_LENGTH];
     char userName[MAX_CONN_INFO_FIELD_LENGTH];
     char password[MAX_CONN_INFO_FIELD_LENGTH];
     char hostNameOrIpAddr[MAX_CONN_INFO_FIELD_LENGTH];
     char hostPort[16];
     TSK_RETVAL_ENUM verifyConnectionInfoStringLengths(size_t userNameStrLen, size_t pwdStrLen, size_t hostNameStrLen, size_t portStrLen);
 
-    PGconn* connectToDatabase(TSK_TCHAR *dbName);
+    PGconn* connectToDatabase(char *dbName);
     TSK_RETVAL_ENUM createDatabase();
     int initialize();
     int attempt_exec(const char *sql, const char *errfmt);

@@ -60,9 +60,6 @@
 /* Define to 1 if you have the <libewf.h> header file. */
 #undef HAVE_LIBEWF_H
 
-/* Define to 1 if you have the `pq ' library (-lpq ). */
-#undef HAVE_LIBPQ_
-
 /* Define to 1 if you have the `sqlite3' library (-lsqlite3). */
 #undef HAVE_LIBSQLITE3
 

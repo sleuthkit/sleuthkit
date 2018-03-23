@@ -195,7 +195,6 @@ typedef char TSK_TCHAR;         ///< Character data type that is UTF-16 (wchar_t
 #define TATOI	atoi
 #define TFPRINTF fprintf
 #define TSNPRINTF snprintf
-#define TEXT(x) x
 #define TPUTENV	putenv
 #define TZSET	tzset
 #define TZNAME	tzname

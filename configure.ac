@@ -138,7 +138,7 @@ AC_CHECK_HEADERS([postgresql/libpq-fe.h],
 
 AM_CONDITIONAL([USE_POSTGRESQL],
                [test "$HAVE_POSTGRESQL" -eq 1])
-AS_IF([test "$HAVE_POSTGRESQL" -eq 1], [ax_libpq=yes], [ax_libpq=no])
+AS_IF([test "$USE_POSTGRESQL" -eq 1], [ax_libpq=yes], [ax_libpq=no])
 
 # Check if we should link afflib.
 AC_ARG_WITH([afflib],
