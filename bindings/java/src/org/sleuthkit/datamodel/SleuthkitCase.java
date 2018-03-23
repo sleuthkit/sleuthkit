@@ -4332,7 +4332,7 @@ public class SleuthkitCase {
 		try {
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_DATA_SOURCE_AND_NAME);
 			statement.clearParameters();
-			statement.setString(1, fileName.toLowerCase());
+			statement.setString(1,  "%" + fileName.toLowerCase() + "%");
 			statement.setLong(2, dataSource.getId());
 			resultSet = connection.executeQuery(statement);
 			files.addAll(resultSetToAbstractFiles(resultSet, connection));
@@ -4367,7 +4367,7 @@ public class SleuthkitCase {
 		try {
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_DATA_SOURCE_AND_PARENT_PATH_AND_NAME);
 			statement.clearParameters();
-			statement.setString(1, fileName.toLowerCase());
+			statement.setString(1, "%" + fileName.toLowerCase() + "%");
 			statement.setString(2, "%" + dirName.toLowerCase() + "%"); //NON-NLS
 			statement.setLong(3, dataSource.getId());
 			resultSet = connection.executeQuery(statement);
