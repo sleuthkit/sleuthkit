@@ -133,12 +133,10 @@ AS_IF([test "x$ac_cv_lib_sqlite3_sqlite3_open" = "xyes"],
 AM_CONDITIONAL([HAVE_LIBSQLITE3],
                [test "x$ac_cv_lib_sqlite3_sqlite3_open" = "xyes"])
 dnl check for postgresql
-AC_CHECK_HEADERS([postgresql/libpq-fe.h],
-                  [AC_CHECK_LIB([pq] , [PQlibVersion], [HAVE_POSTGRESQL=1], [HAVE_POSTGRESQL=0])])
-
-AM_CONDITIONAL([USE_POSTGRESQL],
-               [test "$HAVE_POSTGRESQL" -eq 1])
-AS_IF([test "$USE_POSTGRESQL" -eq 1], [ax_libpq=yes], [ax_libpq=no])
+AC_CHECK_HEADERS([postgresql/libpq-fe.h],AC_CHECK_LIB([pq],[PQlibVersion]))
+AM_CONDITIONAL([HAVE_POSTGRESQL],[test "x$ac_cv_lib_pq_PQlibVersion" = "xyes"])
+AM_COND_IF([HAVE_POSTGRESQL],[ax_libpq=yes],[ax_libpq=no])
+AM_COND_IF([HAVE_POSTGRESQL], [AC_DEFINE([HAVE_LIBPQ_], [1], [Define if using libpq.])])
 
 # Check if we should link afflib.
 AC_ARG_WITH([afflib],
