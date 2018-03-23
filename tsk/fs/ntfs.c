@@ -994,6 +994,13 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
                             blk_st_uncomp - 1; i >= 0x10; i >>= 1) {
                             shift++;
                         }
+                        if (shift > 12) {
+                            tsk_error_reset();
+                            tsk_error_set_errno(TSK_ERR_FS_FWALK);
+                            tsk_error_set_errstr
+                            ("ntfs_uncompress_compunit: Shift is too large: %d", shift);
+                            return 1;
+                        }
 
                         //tsk_fprintf(stderr, "Start: %X  Shift: %d  UnComp_IDX %d  BlkStart: %lu  BlkIdx: %d  BlkSize: %d\n", (int)(comp->uncomp_idx - comp->blk_st - 1), shift, comp->uncomp_idx, comp->blk_st, comp->blk_idx, comp->blk_size);
 
@@ -1293,11 +1300,30 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                     return 1;
                 }
                 else {
+                    if ((fs_attr_run->len > LLONG_MAX)
+                        || (LLONG_MAX / fs_attr_run->len < fs->block_size)) {
+                        if (fs_attr->fs_file->meta->
+                            flags & TSK_FS_META_FLAG_UNALLOC)
+                            tsk_error_set_errno(TSK_ERR_FS_RECOVER);
+                        else
+                            tsk_error_set_errno(TSK_ERR_FS_GENFS);
+                        tsk_error_set_errstr
+                            ("ntfs_attr_walk_special: Attribute run length is too large %"
+                            PRIuDADDR "@%" PRIuDADDR " - type: %" PRIu32
+                            "  id: %d Meta: %" PRIuINUM " Status: %s",
+                            fs_attr_run->len, fs_attr_run->addr, fs_attr->type,
+                            fs_attr->id, fs_attr->fs_file->meta->addr,
+                            (fs_attr->fs_file->meta->
+                                flags & TSK_FS_META_FLAG_ALLOC) ? "Allocated" :
+                            "Deleted");
+                        free(comp_unit);
+                        ntfs_uncompress_done(&comp);
+                        return 1;
+                    }
                     off += (fs_attr_run->len * fs->block_size);
                     continue;
                 }
             }
-
             addr = fs_attr_run->addr;
 
             /* cycle through each cluster in the run */

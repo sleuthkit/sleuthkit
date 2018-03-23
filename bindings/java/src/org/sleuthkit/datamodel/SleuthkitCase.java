@@ -7999,7 +7999,13 @@ public class SleuthkitCase {
 		// Make sure the local path of the report is in the database directory
 		// or one of its subdirectories.
 		String relativePath = ""; //NON-NLS
-		try {
+		long createTime = 0;
+		String localPathLower = localPath.toLowerCase();
+
+		if (localPathLower.startsWith("http")) {
+			relativePath = localPathLower;
+			createTime = System.currentTimeMillis() / 1000;
+		} else {
 			/*
 			 * Note: The following call to .relativize() may be dangerous in
 			 * case-sensitive operating systems and should be looked at. For
@@ -8007,23 +8013,22 @@ public class SleuthkitCase {
 			 * using the length of the result to pull out the appropriate number
 			 * of characters from the localPath String.
 			 */
-			String casePathLower = getDbDirPath().toLowerCase();
-			String localPathLower = localPath.toLowerCase();
-			int length = new File(casePathLower).toURI().relativize(new File(localPathLower).toURI()).getPath().length();
-			relativePath = new File(localPath.substring(localPathLower.length() - length)).getPath();
-		} catch (IllegalArgumentException ex) {
-			String errorMessage = String.format("Local path %s not in the database directory or one of its subdirectories", localPath);
-			throw new TskCoreException(errorMessage, ex);
-		}
-
-		// Figure out the create time of the report.
-		long createTime = 0;
-		try {
-			java.io.File tempFile = new java.io.File(localPath);
-			// Convert to UNIX epoch (seconds, not milliseconds).
-			createTime = tempFile.lastModified() / 1000;
-		} catch (Exception ex) {
-			throw new TskCoreException("Could not get create time for report at " + localPath, ex);
+			try {
+				String casePathLower = getDbDirPath().toLowerCase();
+				int length = new File(casePathLower).toURI().relativize(new File(localPathLower).toURI()).getPath().length();
+				relativePath = new File(localPath.substring(localPathLower.length() - length)).getPath();
+			} catch (IllegalArgumentException ex) {
+				String errorMessage = String.format("Local path %s not in the database directory or one of its subdirectories", localPath);
+				throw new TskCoreException(errorMessage, ex);
+			}
+			try {
+				// get its file time
+				java.io.File tempFile = new java.io.File(localPath);
+				// Convert to UNIX epoch (seconds, not milliseconds).
+				createTime = tempFile.lastModified() / 1000;
+			} catch (Exception ex) {
+				throw new TskCoreException("Could not get create time for report at " + localPath, ex);
+			}
 		}
 
 		// Write the report data to the database.
@@ -8086,9 +8091,14 @@ public class SleuthkitCase {
 			resultSet = connection.executeQuery(statement);
 			ArrayList<Report> reports = new ArrayList<Report>();
 			while (resultSet.next()) {
-				reports.add(new Report(this, resultSet.getLong("obj_id"), //NON-NLS
-						Paths.get(getDbDirPath(), resultSet.getString("path")).normalize().toString(), //NON-NLS
-						resultSet.getLong("crtime"), //NON-NLS
+                String localpath = resultSet.getString("path");
+                if (localpath.toLowerCase().startsWith("http") == false) {
+                    // make path absolute
+                    localpath = Paths.get(getDbDirPath(), localpath).normalize().toString(); //NON-NLS
+                }
+                reports.add(new Report(this, resultSet.getLong("obj_id"), //NON-NLS
+						localpath, //NON-NLS
+                        resultSet.getLong("crtime"), //NON-NLS
 						resultSet.getString("src_module_name"), //NON-NLS
 						resultSet.getString("report_name"), null));  //NON-NLS
 			}
