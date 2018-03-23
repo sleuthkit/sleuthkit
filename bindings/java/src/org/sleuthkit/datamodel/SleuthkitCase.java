@@ -129,7 +129,8 @@ public class SleuthkitCase {
 	// understood. Note that the lock is contructed to use a fairness policy.
 	private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true);
 
-	private CommunicationsManager communicationsMgrInstance = null;
+	private CommunicationsManager communicationsMgrInstance;
+	private TimelineManager timelineMgrInstance;
 
 	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<String, Set<Long>>();
 
@@ -275,6 +276,19 @@ public class SleuthkitCase {
 		initReviewStatuses(connection);
 		initEncodingTypes(connection);
 		connection.close();
+
+	}
+
+	/**
+	 * Returns an instance of TimelineManager for this case;
+	 *
+	 * @return a TimelineManager
+	 */
+	public synchronized TimelineManager getTimelineManager() throws TskCoreException {
+		if (null == timelineMgrInstance) {
+			timelineMgrInstance = new TimelineManager(this);
+		}
+		return timelineMgrInstance;
 	}
 
 	/**
@@ -8642,7 +8656,7 @@ public class SleuthkitCase {
 	/**
 	 * An abstract base class for case database connection objects.
 	 */
-	abstract class CaseDbConnection {
+	abstract class CaseDbConnection implements AutoCloseable {
 
 		static final int SLEEP_LENGTH_IN_MILLISECONDS = 5000;
 
@@ -8953,7 +8967,8 @@ public class SleuthkitCase {
 		/**
 		 * Close the connection to the database.
 		 */
-		void close() {
+		@Override
+		public void close() {
 			try {
 				connection.close();
 			} catch (SQLException ex) {
