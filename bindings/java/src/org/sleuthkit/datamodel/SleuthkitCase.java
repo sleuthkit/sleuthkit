@@ -4351,15 +4351,15 @@ public class SleuthkitCase {
 	 *                   search for the given file name
 	 * @param fileName   Pattern of the name of the file or directory to match
 	 *                   (case insensitive, used in LIKE SQL statement).
-	 * @param dirName    Pattern of the name of a parent directory of fileName
-	 *                   (case insensitive, used in LIKE SQL statement)
+	 * @param dirSubString Substring that must exist in parent path.  
+	 *                     Will be surrounded by % in LIKE query
 	 *
 	 * @return a list of AbstractFile for files/directories whose name matches
 	 *         fileName and whose parent directory contains dirName.
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public List<AbstractFile> findFiles(Content dataSource, String fileName, String dirName) throws TskCoreException {
+	public List<AbstractFile> findFiles(Content dataSource, String fileName, String dirSubString) throws TskCoreException {
 		List<AbstractFile> files = new ArrayList<AbstractFile>();
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
@@ -4368,7 +4368,7 @@ public class SleuthkitCase {
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILES_BY_DATA_SOURCE_AND_PARENT_PATH_AND_NAME);
 			statement.clearParameters();
 			statement.setString(1, fileName.toLowerCase());
-			statement.setString(2, "%" + dirName.toLowerCase() + "%"); //NON-NLS
+			statement.setString(2, "%" + dirSubString.toLowerCase() + "%"); //NON-NLS
 			statement.setLong(3, dataSource.getId());
 			resultSet = connection.executeQuery(statement);
 			files.addAll(resultSetToAbstractFiles(resultSet, connection));
