@@ -60,11 +60,29 @@
 /* Define to 1 if you have the <libewf.h> header file. */
 #undef HAVE_LIBEWF_H
 
+/* Define to 1 if you have the `pq' library (-lpq). */
+#undef HAVE_LIBPQ
+
+/* Define if using libpq. */
+#undef HAVE_LIBPQ_
+
 /* Define to 1 if you have the `sqlite3' library (-lsqlite3). */
 #undef HAVE_LIBSQLITE3
 
 /* Define to 1 if you have the `stdc++' library (-lstdc++). */
 #undef HAVE_LIBSTDC__
+
+/* Define to 1 if you have the `vhdi' library (-lvhdi). */
+#undef HAVE_LIBVHDI
+
+/* Define to 1 if you have the <libvhdi.h> header file. */
+#undef HAVE_LIBVHDI_H
+
+/* Define to 1 if you have the `vmdk' library (-lvmdk). */
+#undef HAVE_LIBVMDK
+
+/* Define to 1 if you have the <libvmdk.h> header file. */
+#undef HAVE_LIBVMDK_H
 
 /* Define to 1 if you have the `z' library (-lz). */
 #undef HAVE_LIBZ
@@ -81,6 +99,9 @@
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
+
+/* Define to 1 if you have the <postgresql/libpq-fe.h> header file. */
+#undef HAVE_POSTGRESQL_LIBPQ_FE_H
 
 /* Define if you have POSIX threads libraries and header files. */
 #undef HAVE_PTHREAD
