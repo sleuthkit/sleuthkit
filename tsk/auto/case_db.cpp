@@ -46,7 +46,7 @@ TskCaseDb::~TskCaseDb()
 
 /**
 * Creates a new single-user case with a new database and initializes its tables.
-* Fails if there's already a file at the given path. 
+* Fails if there's already a file at the given path.
 *
 * @param path Full path to create new database at.
 * @returns Pointer to a new TskCaseDb object, NULL on error
@@ -77,7 +77,7 @@ TskCaseDb::newDb(const TSK_TCHAR * const path)
 
 /**
 * Creates a new multi-user case with a new database and initializes its tables.
-* Fails if multi-user database with requested name already exists. 
+* Fails if multi-user database with requested name already exists.
 *
 * @param path Full path to create new database at.
 * @returns Pointer to a new TskCaseDb object, NULL on error
@@ -85,7 +85,7 @@ TskCaseDb::newDb(const TSK_TCHAR * const path)
 TskCaseDb *
 TskCaseDb::newDb(const TSK_TCHAR * const path, CaseDbConnectionInfo * info)
 {
-#if defined(HAVE_POSTGRESQL) && defined(TSK_WIN32)
+#ifdef HAVE_LIBPQ_
     TskDb *db = new TskDbPostgreSQL(path, true);
 
     // Store connection info for the multi-user database
@@ -113,7 +113,7 @@ TskCaseDb::newDb(const TSK_TCHAR * const path, CaseDbConnectionInfo * info)
     return new TskCaseDb(db);
 #else
     return NULL;
-#endif // HAVE_POSTGRESQL && TSK_WIN32
+#endif 
 }
 
 /**
@@ -149,14 +149,14 @@ TskCaseDb::openDb(const TSK_TCHAR * path)
 /**
 * Opens a multi-user case from an existing database.
 *
-* @param path 
+* @param path
 * @param info CaseDbConnectionInfo object containing datbase connection info.
 * @returns Pointer to a new TskCaseDb object, NULL on error
 */
 TskCaseDb *
 TskCaseDb::openDb(const TSK_TCHAR * path, CaseDbConnectionInfo * info)
 {
-#if defined(HAVE_POSTGRESQL) && defined(TSK_WIN32)
+#ifdef HAVE_LIBPQ_
 
     TskDb *db = new TskDbPostgreSQL(path, true);
 
@@ -216,7 +216,7 @@ uint8_t
     TSK_IMG_TYPE_ENUM imgType, unsigned int sSize)
 {
     TskAutoDb autoDb(m_db, m_NSRLDb, m_knownBadDb);
-    
+
     if (autoDb.startAddImage(numImg, imagePaths, imgType, sSize)) {
         autoDb.revertAddImage();
         return 1;
@@ -225,7 +225,7 @@ uint8_t
     if (autoDb.commitAddImage()) {
         return 1;
     }
-    
+
     return 0;
 }
 

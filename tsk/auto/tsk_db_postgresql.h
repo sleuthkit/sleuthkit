@@ -1,5 +1,5 @@
 /*
- ** The Sleuth Kit 
+ ** The Sleuth Kit
  **
  ** Brian Carrier [carrier <at> sleuthkit [dot] org]
  ** Copyright (c) 2011-2012 Brian Carrier.  All Rights reserved
@@ -11,19 +11,20 @@
 /**
  * \file tsk_db_postgresql.h
  * Contains the PostgreSQL code for maintaining the case-level database.
- * The class is an extension of TSK abstract database handling class. 
+ * The class is an extension of TSK abstract database handling class.
  */
 
-#ifdef HAVE_POSTGRESQL
 
 #ifndef _TSK_DB_POSTGRESQL_H
 #define _TSK_DB_POSTGRESQL_H
 
 #include "tsk_db.h"
-
+#ifdef HAVE_LIBPQ_
 #ifdef TSK_WIN32
-
-#include "libpq-fe.h"
+    #include "libpq-fe.h"
+#else
+    #include <postgresql/libpq-fe.h>
+#endif
 #include <string.h>
 
 
@@ -31,14 +32,15 @@
 using std::map;
 
 #define MAX_CONN_INFO_FIELD_LENGTH  256
-#define MAX_CONN_PORT_FIELD_LENGTH  5   // max number of ports on windows is 65535 
+#define MAX_CONN_PORT_FIELD_LENGTH  5   // max number of ports on windows is 65535
 #define MAX_DB_STRING_LENGTH        512
 
 /** \internal
- * C++ class that wraps PostgreSQL database internals. 
+ * C++ class that wraps PostgreSQL database internals.
  */
 class TskDbPostgreSQL : public TskDb {
   public:
+
     TskDbPostgreSQL(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFlag);
     ~TskDbPostgreSQL();
     int open(bool);
@@ -63,16 +65,16 @@ class TskDbPostgreSQL : public TskDb {
 
     TSK_RETVAL_ENUM addVirtualDir(const int64_t fsObjId, const int64_t parentDirId, const char * const name, int64_t & objId, int64_t dataSourceObjId);
     TSK_RETVAL_ENUM addUnallocFsBlockFilesParent(const int64_t fsObjId, int64_t & objId, int64_t dataSourceObjId);
-    TSK_RETVAL_ENUM addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
+    TSK_RETVAL_ENUM addUnallocBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size,
         vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId, int64_t dataSourceObjId);
-    TSK_RETVAL_ENUM addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
+    TSK_RETVAL_ENUM addUnusedBlockFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size,
         vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId, int64_t dataSourceObjId);
-    TSK_RETVAL_ENUM addCarvedFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size, 
+    TSK_RETVAL_ENUM addCarvedFile(const int64_t parentObjId, const int64_t fsObjId, const uint64_t size,
         vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId, int64_t dataSourceObjId);
-    
+
     int addFileLayoutRange(const TSK_DB_FILE_LAYOUT_RANGE & fileLayoutRange);
     int addFileLayoutRange(int64_t a_fileObjId, uint64_t a_byteStart, uint64_t a_byteLen, int a_sequence);
-    
+
     bool isDbOpen();
     int createSavepoint(const char *name);
     int revertSavepoint(const char *name);
@@ -94,14 +96,14 @@ private:
 
     PGconn *conn;
     bool m_blkMapFlag;
-    TSK_TCHAR m_dBName[MAX_CONN_INFO_FIELD_LENGTH];
+    char m_dBName[MAX_CONN_INFO_FIELD_LENGTH];
     char userName[MAX_CONN_INFO_FIELD_LENGTH];
     char password[MAX_CONN_INFO_FIELD_LENGTH];
     char hostNameOrIpAddr[MAX_CONN_INFO_FIELD_LENGTH];
     char hostPort[16];
     TSK_RETVAL_ENUM verifyConnectionInfoStringLengths(size_t userNameStrLen, size_t pwdStrLen, size_t hostNameStrLen, size_t portStrLen);
 
-    PGconn* connectToDatabase(TSK_TCHAR *dbName);
+    PGconn* connectToDatabase(char *dbName);
     TSK_RETVAL_ENUM createDatabase();
     int initialize();
     int attempt_exec(const char *sql, const char *errfmt);
@@ -117,7 +119,7 @@ private:
     void removeNonUtf8(char* newStr, int newStrMaxSize, const char* origStr);
 
     uint8_t addObject(TSK_DB_OBJECT_TYPE_ENUM type, int64_t parObjId, int64_t & objId);
-    int addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr, const char *path, const unsigned char *const md5, 
+    int addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr, const char *path, const unsigned char *const md5,
         const TSK_DB_FILES_KNOWN_ENUM known, int64_t fsObjId, int64_t parObjId, int64_t & objId, int64_t dataSourceObjId);
 
     void storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_file, const char *path, const int64_t & objId);
@@ -130,6 +132,5 @@ private:
     TSK_RETVAL_ENUM addLayoutFileInfo(const int64_t parObjId, const int64_t fsObjId, const TSK_DB_FILES_TYPE_ENUM dbFileType, const char *fileName, const uint64_t size, int64_t & objId, int64_t dataSourceObjId);
 };
 
-#endif // TSK_WIN32
+#endif //HAVE_LIBPQ_
 #endif // _TSK_DB_POSTGRESQL_H
-#endif // HAVE_POSTGRESQL
