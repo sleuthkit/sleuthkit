@@ -472,7 +472,7 @@ void TskDbPostgreSQL::removeNonUtf8(char* newStr, int newStrMaxSize, const char*
         tsk_error_set_errstr("TskDbPostgreSQL::removeNonUtf8: Output string has not been allocated");
         return;
     }
-#undef min;
+#undef min
     int strSize = std::min((int) strlen(origStr), newStrMaxSize);
     strncpy(newStr, origStr, strSize);
     newStr[strSize] = '\0';
