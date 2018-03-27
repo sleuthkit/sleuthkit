@@ -6248,6 +6248,9 @@ public class SleuthkitCase {
 							children.add(art);
 						}
 						break;
+					case REPORT:
+						// Do nothing for now - see JIRA-3673
+						break;
 					default:
 						throw new TskCoreException("Image has child of invalid type: " + info.type);
 				}
@@ -6275,6 +6278,8 @@ public class SleuthkitCase {
 					|| info.type == ObjectType.ABSTRACTFILE
 					|| info.type == ObjectType.ARTIFACT) {
 				children.add(info.id);
+			} else if (info.type == ObjectType.REPORT) {
+				// Do nothing for now - see JIRA-3673
 			} else {
 				throw new TskCoreException("Image has child of invalid type: " + info.type);
 			}
