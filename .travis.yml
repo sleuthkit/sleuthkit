@@ -16,15 +16,11 @@ matrix:
   - compiler: gcc
     os: osx
 
-before_install:
-  - if test ${TRAVIS_OS_NAME} = "linux"; then sudo apt-get install -y libewf-dev; fi
-
 install:
-  - if test ${TRAVIS_OS_NAME} = "linux"; then sudo apt-get install -y libcppunit-dev; fi
-  - ./bootstrap
+  - ./install-sleuthkit.sh
 
 script:
-  - ./configure && make && make check
+  - make check
   - if test ${TRAVIS_OS_NAME} = "linux"; then cd release; ./release-unix.pl ci; fi
 
 # NOTE: OS X doesn't have ant, so CI fails
