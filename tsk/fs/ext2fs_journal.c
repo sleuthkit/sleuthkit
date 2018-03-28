@@ -138,7 +138,7 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
     char *journ;
     TSK_FS_LOAD_FILE buf1;
     TSK_DADDR_T i;
-    int b_desc_seen = 0;
+//    int b_desc_seen = 0;
     ext2fs_journ_sb *journ_sb = NULL;
     ext4fs_journ_commit_head *commit_head;
 
@@ -408,7 +408,7 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
             ext2fs_journ_dentry *dentry;
             int unalloc = 0;
 
-            b_desc_seen = 1;
+//            b_desc_seen = 1;
 
 
             /* Is this an unallocated journ block or sequence */
