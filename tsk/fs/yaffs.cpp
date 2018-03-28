@@ -1623,7 +1623,7 @@ static uint8_t yaffs_is_version_allocated(YAFFSFS_INFO * yfs, TSK_INUM_T inode){
 
 static uint8_t
     yaffs_make_directory(YAFFSFS_INFO *yaffsfs, TSK_FS_FILE *a_fs_file, 
-    TSK_INUM_T inode, char *name)
+    TSK_INUM_T inode, const char *name)
 {
     TSK_FS_FILE *fs_file = a_fs_file;
 
