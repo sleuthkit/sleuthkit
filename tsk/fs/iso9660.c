@@ -1419,7 +1419,7 @@ iso9660_is_block_alloc(TSK_FS_INFO * fs, TSK_DADDR_T blk_num)
 }
 
 
-TSK_FS_BLOCK_FLAG_ENUM static
+static TSK_FS_BLOCK_FLAG_ENUM
 iso9660_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
 {
     return (iso9660_is_block_alloc(a_fs, a_addr)) ?
