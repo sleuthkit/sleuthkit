@@ -1559,7 +1559,6 @@ static uint8_t
     // Having multiple inodes point to the same object seems to cause trouble in TSK, especially in orphan file detection,
     //  so set the version number of the final one to zero.
     // While we're at it, find the highest obj_id and the highest version (before resetting to zero)
-    TSK_INUM_T orphanParentID = yfs->fs_info.last_inum;
     YaffsCacheObject * currObj = yfs->cache_objects;
     YaffsCacheVersion * currVer;
     while(currObj != NULL){
