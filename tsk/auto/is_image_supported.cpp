@@ -41,14 +41,15 @@ uint8_t TskIsImageSupported::handleError()
 }
 
 
-TSK_RETVAL_ENUM TskIsImageSupported::processFile(TSK_FS_FILE * fs_file, const char *path)
+TSK_RETVAL_ENUM TskIsImageSupported::processFile(TSK_FS_FILE * /*fs_file*/,
+                                                 const char * /*path*/)
 {
     return TSK_OK;
 }
 
 
 TSK_FILTER_ENUM
-TskIsImageSupported::filterFs(TSK_FS_INFO * fs_info)
+TskIsImageSupported::filterFs(TSK_FS_INFO * /*fs_info*/)
 {
     m_wasDataFound = true;
     return TSK_FILTER_SKIP;
@@ -56,7 +57,7 @@ TskIsImageSupported::filterFs(TSK_FS_INFO * fs_info)
 
 
 TSK_FILTER_ENUM
-TskIsImageSupported::filterVol(const TSK_VS_PART_INFO * vs_part)
+TskIsImageSupported::filterVol(const TSK_VS_PART_INFO * /*vs_part*/)
 {
     m_wasDataFound = true;
     return TSK_FILTER_SKIP;

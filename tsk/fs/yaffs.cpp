@@ -1436,7 +1436,7 @@ static uint8_t
 }
 
 static uint8_t 
-    yaffsfs_is_spare_valid(YAFFSFS_INFO *yfs, YaffsSpare *spare)
+    yaffsfs_is_spare_valid(YAFFSFS_INFO * /*yfs*/, YaffsSpare *spare)
 {
     if (spare == NULL) {
         return 1;
@@ -2320,7 +2320,7 @@ static uint8_t
 }
 
 static uint8_t
-    yaffsfs_fscheck(TSK_FS_INFO * fs, FILE * hFile)
+    yaffsfs_fscheck(TSK_FS_INFO * /*fs*/, FILE * /*hFile*/)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -2383,8 +2383,9 @@ typedef struct {
 
 /* Callback for istat to print the block addresses */
 static TSK_WALK_RET_ENUM
-    print_addr_act(YAFFSFS_INFO * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
-    char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM flags, void *a_ptr)
+    print_addr_act(YAFFSFS_INFO * /*fs_file*/, TSK_OFF_T /*a_off*/,
+    TSK_DADDR_T addr, char * /*buf*/, size_t /*size*/,
+    TSK_FS_BLOCK_FLAG_ENUM flags, void *a_ptr)
 {
     YAFFSFS_PRINT_ADDR *print = (YAFFSFS_PRINT_ADDR *) a_ptr;
 
@@ -2554,7 +2555,7 @@ typedef struct _dir_open_cb_args {
 } dir_open_cb_args;
 
 static TSK_RETVAL_ENUM
-    yaffs_dir_open_meta_cb(YaffsCacheObject *obj, YaffsCacheVersion *version, void *args) {
+    yaffs_dir_open_meta_cb(YaffsCacheObject * /*obj*/, YaffsCacheVersion *version, void *args) {
         dir_open_cb_args *cb_args = (dir_open_cb_args *) args;
         YaffsCacheChunk *chunk = version->ycv_header_chunk;
         TSK_INUM_T curr_inode = 0;
@@ -2789,7 +2790,7 @@ static TSK_RETVAL_ENUM
 }
 
 static TSK_FS_ATTR_TYPE_ENUM
-    yaffsfs_get_default_attr_type(const TSK_FS_FILE * a_file)
+    yaffsfs_get_default_attr_type(const TSK_FS_FILE * /*a_file*/)
 {
     return TSK_FS_ATTR_TYPE_DEFAULT;
 }
@@ -2949,8 +2950,8 @@ static uint8_t
 }
 
 static uint8_t 
-    yaffsfs_jentry_walk(TSK_FS_INFO *info, int entry,
-    TSK_FS_JENTRY_WALK_CB cb, void *fn)
+    yaffsfs_jentry_walk(TSK_FS_INFO * /*info*/, int /*entry*/,
+    TSK_FS_JENTRY_WALK_CB /*cb*/, void * /*fn*/)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -2959,8 +2960,9 @@ static uint8_t
 }
 
 static uint8_t 
-    yaffsfs_jblk_walk(TSK_FS_INFO *info, TSK_DADDR_T daddr,
-    TSK_DADDR_T daddrt, int entry, TSK_FS_JBLK_WALK_CB cb, void *fn)
+    yaffsfs_jblk_walk(TSK_FS_INFO * /*info*/, TSK_DADDR_T /*daddr*/,
+    TSK_DADDR_T /*daddrt*/, int /*entry*/, TSK_FS_JBLK_WALK_CB /*cb*/,
+    void * /*fn*/)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -2969,7 +2971,7 @@ static uint8_t
 }
 
 static uint8_t 
-    yaffsfs_jopen(TSK_FS_INFO *info, TSK_INUM_T inum)
+    yaffsfs_jopen(TSK_FS_INFO * /*info*/, TSK_INUM_T /*inum*/)
 {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);

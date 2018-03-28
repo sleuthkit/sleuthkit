@@ -19,14 +19,14 @@
 * Set the locations and logging object.  Must call
 * open() before the object can be used.
 */
-TskDb::TskDb(const char *a_dbFilePathUtf8, bool a_blkMapFlag)
+TskDb::TskDb(const char * /*a_dbFilePathUtf8*/, bool /*a_blkMapFlag*/)
 {
 
 }
 
 #ifdef TSK_WIN32
 //@@@@
-TskDb::TskDb(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFlag)
+TskDb::TskDb(const TSK_TCHAR * /*a_dbFilePath*/, bool /*a_blkMapFlag*/)
 {
 
 }
@@ -36,7 +36,7 @@ TskDb::TskDb(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFlag)
 * Store database connection info. NO-OP for single-user database. Multi-user database class
 * needs to derive and implement this method.
 */
-TSK_RETVAL_ENUM TskDb::setConnectionInfo(CaseDbConnectionInfo * info){
+TSK_RETVAL_ENUM TskDb::setConnectionInfo(CaseDbConnectionInfo * /*info*/){
     return TSK_OK;
 }
 

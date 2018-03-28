@@ -211,7 +211,7 @@ ntfs_orphan_map_free(NTFS_INFO * a_ntfs)
 /* inode_walk callback that is used to populate the orphan_map
  * structure in NTFS_INFO */
 static TSK_WALK_RET_ENUM
-ntfs_parent_act(TSK_FS_FILE * fs_file, void *ptr)
+ntfs_parent_act(TSK_FS_FILE * fs_file, void * /*ptr*/)
 {
     NTFS_INFO *ntfs = (NTFS_INFO *) fs_file->fs_info;
     TSK_FS_META_NAME_LIST *fs_name_list;
@@ -1682,7 +1682,7 @@ ntfs_find_file(TSK_FS_INFO * fs, TSK_INUM_T inode_toid, uint32_t type_toid,
 
 
 int
-ntfs_name_cmp(TSK_FS_INFO * a_fs_info, const char *s1, const char *s2)
+ntfs_name_cmp(TSK_FS_INFO * /*a_fs_info*/, const char *s1, const char *s2)
 {
     return strcasecmp(s1, s2);
 }
