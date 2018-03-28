@@ -206,7 +206,7 @@ TSK_FILTER_ENUM
 TskAuto::filterFs(TSK_FS_INFO * /*fs_info*/)
 {
     return TSK_FILTER_CONT;
-};
+}
 
 
 

@@ -10,7 +10,7 @@
 
 /* Structure for keeping track of file segments */
 class seg {
-public:;
+public:
     uint64_t fs_offset;		    // byte offset from start of file system
     uint64_t img_offset;	    // offset from beginning of image
     uint64_t file_offset;           // logical number of bytes from beginning of file
