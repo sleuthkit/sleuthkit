@@ -404,7 +404,7 @@ bool has_unprintable(const u_char *buf,int buflen)
 void sig_info(int /*arg*/)
 {
     if(a){
-	printf("a=%p\n",a);
+	printf("a=%p\n", (void*)a);
 	printf("\n");
     }
 }

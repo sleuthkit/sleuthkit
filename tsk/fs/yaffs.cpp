@@ -611,14 +611,14 @@ static void
             chunk == next_version->ycv_last_chunk) {
                 fprintf(fp, "  @%d: %p %p %p\n", 
                     next_version->ycv_version, 
-                    next_version->ycv_header_chunk, 
-                    next_version->ycv_first_chunk,
-                    next_version->ycv_last_chunk);
+                    (void*) next_version->ycv_header_chunk,
+                    (void*) next_version->ycv_first_chunk,
+                    (void*)next_version->ycv_last_chunk);
                 next_version = next_version->ycv_prior;
         }
 
         fprintf(fp, "    + %p %08x %08x %08llx\n",
-            chunk,
+            (void*) chunk,
             chunk->ycc_chunk_id,
             chunk->ycc_seq_number,
             chunk->ycc_offset);
