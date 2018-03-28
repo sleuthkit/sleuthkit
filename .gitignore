@@ -172,3 +172,8 @@ unit_tests/base/test_base
 
 # Mac Junk
 .DS_Store
+
+# Test images
+*.img
+*.vhd
+*.E01
