@@ -47,7 +47,7 @@ TSK_RETVAL_ENUM TskDb::setConnectionInfo(CaseDbConnectionInfo * /*info*/){
 * @param ret_name pointer to final folder/file name
 * @returns 0 on success, 1 on error
 */
-bool TskDb::getParentPathAndName(const char *path, char **ret_parent_path, char **ret_name){
+bool TskDb::getParentPathAndName(const char *path, const char **ret_parent_path, const char **ret_name){
     // Need to break up 'path' in to the parent folder to match in 'parent_path' and the folder 
     // name to match with the 'name' column in tsk_files table
 

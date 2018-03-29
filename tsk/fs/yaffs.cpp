@@ -1681,7 +1681,7 @@ static uint8_t
 
 static uint8_t
     yaffs_make_regularfile( YAFFSFS_INFO * yaffsfs, TSK_FS_FILE * a_fs_file, 
-    TSK_INUM_T inode, char * name )
+    TSK_INUM_T inode, const char * name )
 {
     TSK_FS_FILE *fs_file = a_fs_file;
 
@@ -1821,7 +1821,7 @@ static uint8_t
     YaffsSpare *spare = NULL;
     TSK_RETVAL_ENUM result;
     uint8_t type;
-    char *real_name;
+    const char *real_name;
 
     if (a_fs_file == NULL) {
         tsk_error_set_errno(TSK_ERR_FS_ARG);
