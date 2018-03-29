@@ -627,6 +627,7 @@ static void
     }
 }
 
+/*
 static void
     yaffscache_objects_dump(FILE *fp, YAFFSFS_INFO *yfs)
 {
@@ -635,6 +636,7 @@ static void
     for(obj = yfs->cache_objects; obj != NULL; obj = obj->yco_next)
         yaffscache_object_dump(fp, obj);
 }
+*/
 
 static void
     yaffscache_objects_stats(YAFFSFS_INFO *yfs, 
