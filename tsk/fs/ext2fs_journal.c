@@ -489,7 +489,7 @@ ext2fs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
 {
     EXT2FS_INFO *ext2fs = (EXT2FS_INFO *) fs;
     EXT2FS_JINFO *jinfo = ext2fs->jinfo;
-    char *journ;
+    uint8_t *journ;
     TSK_FS_LOAD_FILE buf1;
     ext2fs_journ_head *head;
 
@@ -533,7 +533,8 @@ ext2fs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
      * Only get the minimum needed
      */
     buf1.left = buf1.total = (size_t) ((end + 1) * jinfo->bsize);
-    journ = buf1.cur = buf1.base = tsk_malloc(buf1.left);
+    buf1.cur = buf1.base = tsk_malloc(buf1.left);
+    journ = (uint8_t*) buf1.cur;
     if (journ == NULL) {
         return 1;
     }
