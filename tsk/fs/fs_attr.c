@@ -797,7 +797,7 @@ tsk_fs_attr_walk_res(const TSK_FS_ATTR * fs_attr,
     retval = TSK_WALK_CONT;
     for (off = 0; off < fs_attr->size; off += read_len) {
 
-        if (fs_attr->size - off > buf_len)
+        if ((size_t) (fs_attr->size - off) > buf_len)
             read_len = buf_len;
         else
             read_len = (size_t) (fs_attr->size - off);
@@ -1259,7 +1259,7 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
                 cnt =
                     tsk_fs_read(fs, fs_offset_b,
                     &a_buf[len_toread - len_remain], len_inrun);
-                if (cnt != len_inrun) {
+                if (cnt != (ssize_t) len_inrun) {
                     if (cnt >= 0) {
                         tsk_error_reset();
                         tsk_error_set_errno(TSK_ERR_FS_READ);

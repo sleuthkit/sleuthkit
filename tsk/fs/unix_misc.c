@@ -174,7 +174,7 @@ unix_make_data_run_indirect(TSK_FS_INFO * fs, TSK_FS_ATTR * fs_attr,
         ssize_t cnt;
         // read the data into the scratch buffer
         cnt = tsk_fs_read_block(fs, addr, buf[0], fs_bufsize);
-        if (cnt != fs_bufsize) {
+        if (cnt != (ssize_t) fs_bufsize) {
             if (cnt >= 0) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);

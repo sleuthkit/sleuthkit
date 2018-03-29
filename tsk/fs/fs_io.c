@@ -51,7 +51,7 @@ fs_prepost_read(TSK_FS_INFO * a_fs, TSK_OFF_T a_off, char *a_buf,
         TSK_DADDR_T blk = cur_off / a_fs->block_size;
         size_t read_len = a_fs->block_size - cur_off % a_fs->block_size;
 
-        if (read_len + cur_off > end_off)
+        if ((TSK_OFF_T) read_len + cur_off > end_off)
             read_len = (size_t) (end_off - cur_off);
 
         read_off =
