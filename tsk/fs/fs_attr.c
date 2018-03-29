@@ -797,7 +797,7 @@ tsk_fs_attr_walk_res(const TSK_FS_ATTR * fs_attr,
     retval = TSK_WALK_CONT;
     for (off = 0; off < fs_attr->size; off += read_len) {
 
-        if (fs_attr->size - off > (TSK_OFF_T)buf_len)
+        if ((size_t) (fs_attr->size - off) > buf_len)
             read_len = buf_len;
         else
             read_len = (size_t) (fs_attr->size - off);

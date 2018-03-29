@@ -110,7 +110,7 @@ static uint8_t
     ext2fs_group_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
 {
     TSK_FS_INFO *fs = (TSK_FS_INFO *) ext2fs;
-    int gd_size = tsk_getu16(fs->endian, ext2fs->fs->s_desc_size);
+    size_t gd_size = tsk_getu16(fs->endian, ext2fs->fs->s_desc_size);
 
     /*
     * Sanity check
@@ -149,7 +149,7 @@ static uint8_t
 #ifdef Ext4_DBG
             debug_print_buf((char *) ext2fs->ext4_grp_buf, gd_size);
 #endif
-            if (cnt != gd_size) {
+            if (cnt != (ssize_t) gd_size) {
                 if (cnt >= 0) {
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_FS_READ);
