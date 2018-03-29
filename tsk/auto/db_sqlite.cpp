@@ -619,9 +619,7 @@ int
         return 1;
 
     snprintf(stmt, 1024,
-        "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%lld, %d,%"
-        PRIuOFF ",%d)", objId, vs_info->vstype, vs_info->offset,
-        vs_info->block_size);
+        "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%" PRId64 ", %d,%" PRIuOFF ",%d)", objId, vs_info->vstype, vs_info->offset, vs_info->block_size);
 
     return attempt_exec(stmt,
         "Error adding data to tsk_vs_info table: %s\n");
@@ -674,7 +672,7 @@ int
         "INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, "
         "root_inum, first_inum, last_inum) "
         "VALUES ("
-        "%lld,%" PRIuOFF ",%d,%u,%" PRIuDADDR ","
+        "%" PRId64 ",%" PRIuOFF ",%d,%u,%" PRIuDADDR ","
         "%" PRIuINUM ",%" PRIuINUM ",%" PRIuINUM ")",
         objId, fs_info->offset, (int) fs_info->ftype, fs_info->block_size,
         fs_info->block_count, fs_info->root_inum, fs_info->first_inum,
@@ -1157,7 +1155,7 @@ int
         foo[1024];
 
     snprintf(foo, 1024,
-        "INSERT INTO tsk_file_layout(obj_id, byte_start, byte_len, sequence) VALUES (%lld, %llu, %llu, %d)",
+        "INSERT INTO tsk_file_layout(obj_id, byte_start, byte_len, sequence) VALUES (%" PRId64 ", %" PRIu64 ", %" PRIu64 ", %d)",
         a_fileObjId, a_byteStart, a_byteLen, a_sequence);
 
     return attempt_exec(foo,

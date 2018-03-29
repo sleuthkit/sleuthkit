@@ -617,7 +617,7 @@ static void
                 next_version = next_version->ycv_prior;
         }
 
-        fprintf(fp, "    + %p %08x %08x %08llx\n",
+        fprintf(fp, "    + %p %08x %08x %0" PRIxOFF "\n",
             (void*) chunk,
             chunk->ycc_chunk_id,
             chunk->ycc_seq_number,
@@ -1523,7 +1523,7 @@ static uint8_t
                 }
                 else{
                     // Really shouldn't happen
-                    fprintf(stderr, "Error reading header to get parent id at offset %x\n", offset);
+                    fprintf(stderr, "Error reading header to get parent id at offset %" PRIxOFF "\n", offset);
                     yaffscache_chunk_add(yfs,
                         offset, 
                         spare->seq_number, 
