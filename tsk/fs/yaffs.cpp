@@ -1578,7 +1578,7 @@ static uint8_t
     }
 
     // Use the max object id and version number to construct an upper bound on the inode
-    TSK_INUM_T max_inum;
+    TSK_INUM_T max_inum = 0;
     yaffscache_obj_id_and_version_to_inode(yfs->max_obj_id, yfs->max_version, &max_inum);
     yfs->fs_info.last_inum = max_inum + 1; // One more for the orphan dir
 
