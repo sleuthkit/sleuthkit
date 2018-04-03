@@ -1133,7 +1133,7 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
         }
 
         len_toread = a_len;
-        if (a_offset + a_len > a_fs_attr->size) {
+        if ((TSK_OFF_T)(a_offset + a_len) > a_fs_attr->size) {
             len_toread = (size_t) (a_fs_attr->size - a_offset);
             memset(&a_buf[len_toread], 0, a_len - len_toread);
         }
@@ -1167,12 +1167,12 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
         // determine how many bytes we can copy
         len_toread = a_len;
         if (a_flags & TSK_FS_FILE_READ_FLAG_SLACK) {
-            if (a_offset + a_len > a_fs_attr->nrd.allocsize)
+            if ((TSK_OFF_T)(a_offset + a_len) > a_fs_attr->nrd.allocsize)
                 len_toread =
                     (size_t) (a_fs_attr->nrd.allocsize - a_offset);
         }
         else {
-            if (a_offset + a_len > a_fs_attr->size)
+            if ((TSK_OFF_T)(a_offset + a_len) > a_fs_attr->size)
                 len_toread = (size_t) (a_fs_attr->size - a_offset);
         }
         // wipe the buffer we won't read into
