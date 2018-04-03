@@ -191,7 +191,7 @@ static uint8_t
 
         cnt = tsk_fs_read(&ext2fs->fs_info, offs, (char *) ext2fs->grp_buf, gd_size);
 
-        if (cnt != gd_size) {
+        if (cnt != (ssize_t) gd_size) {
             if (cnt >= 0) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
