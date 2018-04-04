@@ -320,13 +320,11 @@ ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
     size = roundup(fs_dir->fs_file->meta->size, a_fs->block_size);
     TSK_OFF_T offset = 0;
 
-    while ((int64_t) size > 0) {
-        int len =
-            (a_fs->block_size < size) ? a_fs->block_size : (int) size;
-
-        int cnt = tsk_fs_file_read(fs_dir->fs_file, offset, dirbuf, len, (TSK_FS_FILE_READ_FLAG_ENUM)0);
+    while (size > 0) {
+        ssize_t len = (a_fs->block_size < size) ? a_fs->block_size : size;
+        ssize_t cnt = tsk_fs_file_read(fs_dir->fs_file, offset, dirbuf, len, (TSK_FS_FILE_READ_FLAG_ENUM)0);
         if (cnt != len) {
-            printf("  Failed - read 0x%x bytes\n", cnt);
+            printf("  Failed - read 0x%" PRIxOFF " bytes\n", cnt >= 0 ? cnt : 0);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_FWALK);
             tsk_error_set_errstr
@@ -354,7 +352,6 @@ ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         offset += len;
     }
     free(dirbuf);
-
 
     // if we are listing the root directory, add the Orphan directory entry
     if (a_addr == a_fs->root_inum) {
