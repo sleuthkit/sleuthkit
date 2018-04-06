@@ -7,11 +7,8 @@ def setupLibrary(path):
     ''' sets up the library path variable '''
     git_repository_url = "https://github.com/sleuthkit/"
     libraries = ["libvhdi_64bit", "libvmdk_64bit", "libewf_64bit"]
-
     for library in libraries:
-        library_path = os.path.join(path, library)
-        print(library_path)
-        sys.stdout.flush()
+        library_path = os.path.normpath(path + "\\" + library)
         if not os.path.exists(library_path):
             gitClone(git_repository_url, library, path)
 

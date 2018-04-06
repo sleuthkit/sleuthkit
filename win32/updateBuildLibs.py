@@ -1,4 +1,4 @@
-# Copyright (c) 2017 Basis Technology. 
+# Copyright (c) 2017 Basis Technology.
 #
 # This software is distributed under the Common Public License 1.0
 
@@ -48,21 +48,21 @@ def pullAndBuildAllDependencies(branch):
     if(passed):
         gitPull(vmdkHome, "libvmdk_64bit", branch)
 
-    # build 32-bit of libewf, libvhdi, libvmdk and TSK 
-    if(passed): 
+    # build 32-bit of libewf, libvhdi, libvmdk and TSK
+    if(passed):
         buildDependentLibs(ewfHome, 32, "libewf")
-    if(passed): 
+    if(passed):
         buildDependentLibs(vhdiHome, 32, "libvhdi")
-    if(passed): 
+    if(passed):
         buildDependentLibs(vmdkHome, 32, "libvmdk")
 
 
-    # build 64-bit of libewf, libvhdi, libvmdk and TSK 
-    if(passed): 
+    # build 64-bit of libewf, libvhdi, libvmdk and TSK
+    if(passed):
         buildDependentLibs(ewfHome, 64, "libewf")
-    if(passed): 
+    if(passed):
         buildDependentLibs(vhdiHome, 64, "libvhdi")
-    if(passed): 
+    if(passed):
         buildDependentLibs(vmdkHome, 64, "libvmdk")
 
 
@@ -143,7 +143,7 @@ def buildDependentLibs(libHome, wPlatform, targetDll):
     '''
     global passed
     passed = True
- 
+
     print("Building " + str(wPlatform) + "-bit " + targetDll)
     sys.stdout.flush()
 
@@ -151,7 +151,7 @@ def buildDependentLibs(libHome, wPlatform, targetDll):
 
     if wPlatform == 64:
         dllFile = os.path.join(libHome, "msvscpp", "x64", target, targetDll +".dll")
-    elif wPlatform == 32: 
+    elif wPlatform == 32:
         dllFile = os.path.join(libHome, "msvscpp", target, targetDll +".dll")
     else:
         print("Invalid platform")
@@ -187,16 +187,16 @@ def buildDependentLibs(libHome, wPlatform, targetDll):
             errorCode = 0
     if errorCode != 0 or not os.path.exists(dllFile) or os.path.getctime(dllFile) < (time.time() - 2 * 60): # the new dll should not be 2 mins old
         print(targetDll + " " + str(wPlatform) + "-bit C++ failed to build.\n")
-        print("return code: " + str(ret) + "\tdll file: " + dllFile + "\tcreated time: " + str(os.path.getctime(dllFile))) 
+        print("return code: " + str(ret) + "\tdll file: " + dllFile + "\tcreated time: " + str(os.path.getctime(dllFile)))
         sys.stdout.flush()
         passed = False
         os.chdir(CURRENT_PATH)
         return
     else:
         print("Build " + str(wPlatform) + "-bit " + targetDll + " successfully")
- 
+
     os.chdir(CURRENT_PATH)
- 
+
 def buildTSK(wPlatform, target):
     '''
         Build C++ sleuthkit library
