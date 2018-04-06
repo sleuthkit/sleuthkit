@@ -13,10 +13,11 @@ def setupLibrary(path):
             gitClone(git_repository_url, library, path)
 
 def gitClone(URL, repo, path):
-    path = os.path.normpath(path)
+    
     cmd = ["git", "clone", URL + repo + ".git" ]
-    ret = subprocess.call(cmd, stdout=sys.stdout, cwd=path)
-    if ret != 0:
+    process = subprocess.Popen(cmd, stdout=sys.stdout, cwd="C:")
+    ()
+    if :
         sys.exit(1)
 
 
