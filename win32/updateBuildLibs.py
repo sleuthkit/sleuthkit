@@ -257,7 +257,9 @@ def main():
     print('Updating source by %s branch.' % branch)
     if not os.path.exists(LOG_PATH):
         os.makedirs(LOG_PATH)
-
+    if not os.path.exists(MSBUILD_PATH):
+        print("MS_BUILD Does not exist")
+        sys.stdout.flush()
     pullAndBuildAllDependencies(branch)
     buildTSKAll()
 
