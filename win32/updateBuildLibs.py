@@ -177,7 +177,7 @@ def buildDependentLibs(libHome, wPlatform, targetDll):
 
     outputFile = os.path.join(LOG_PATH, targetDll + "Output.txt")
     VSout = open(outputFile, 'w')
-    ret = subprocess.call(vs, stdout=VSout)
+    ret = subprocess.call(vs, stdout=sys.stdout)
     errorCode = ret
     VSout.close()
     if ret > 0:
