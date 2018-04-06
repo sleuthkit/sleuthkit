@@ -11,7 +11,7 @@ def setupLibrary(path):
     for library in libraries:
         library_path = os.path.join(path, library)
         if not os.path.exists(library_path):
-            gitClone(git_repository_url, library)
+            gitClone(git_repository_url, library, path)
 
 def gitClone(URL, repo, path):
 
