@@ -21,7 +21,7 @@ def gitClone(URL, repo, path):
         sys.exit(1)
 
 
-def usage:
+def usage():
     ''' Print out how to use the script '''
 
     print('Usage: python3 setupLibs.py [library directory]')
