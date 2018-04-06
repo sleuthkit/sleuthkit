@@ -10,6 +10,8 @@ def setupLibrary(path):
 
     for library in libraries:
         library_path = os.path.join(path, library)
+        print(library_path)
+        sys.stdout.flush()
         if not os.path.exists(library_path):
             gitClone(git_repository_url, library, path)
 
