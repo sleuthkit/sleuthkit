@@ -21,7 +21,7 @@ services:
       - postgresql
 
 build_script:
-      - python3 setupLibs.py "C:"
-      - python3 %APPVEYOR_BUILD_FOLDER%\win32\updataBuildLibs.py
+      - python setupLibs.py "C:"
+      - python %APPVEYOR_BUILD_FOLDER%\win32\updataBuildLibs.py
 
 test: off
