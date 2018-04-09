@@ -13,7 +13,7 @@ init:
 environment:
     global:
       LIBVHDI_HOME: "C:\\libvhdi_64bit"
-      LIBVMDK_HOME: "C:\\libvmdk_64bit"
+      LIBVMDK_HOME: "C:\\libvmdk_64bit\\libvmdk"
       LIBEWF_HOME: "C:\\libewf_64bit"
       POSTGRESQL_HOME_64: "C:\\Program Files\\PostgreSQL\\9.5"
       PYTHON: "C:\\Python36-x64"

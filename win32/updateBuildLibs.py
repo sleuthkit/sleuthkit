@@ -34,7 +34,7 @@ def pullAndBuildAllDependencies(branch):
     # get the LIBEWF_HOME, LIBVHDI_HOME, LIBVMDH_HOME
     ewfHome = os.getenv("LIBEWF_HOME", "C:\\libewf_64bit")
     vhdiHome = os.getenv("LIBVHDI_HOME", "C:\\libvhdi_64bit")
-    vmdkHome = os.getenv("LIBVMDK_HOME", "C:\\libvmdk_64bit")
+    vmdkHome = os.getenv("LIBVMDK_HOME", "C:\\libvmdk_64bit\\libvmdk")
 
     # check if ewfHome, vhdiHome or vmdhHome exits
     checkPathExist(ewfHome)
@@ -150,15 +150,9 @@ def buildDependentLibs(libHome, wPlatform, targetDll):
     target = "Release"
 
     if wPlatform == 64:
-        if targetDll == "libvmdk":
-            dllFile = os.path.join(libHome, "libvmdk" ,"msvscpp", "x64", target, targetDll +".dll")
-        else:
-            dllFile = os.path.join(libHome, "msvscpp", "x64", target, targetDll +".dll")
+        dllFile = os.path.join(libHome, "msvscpp", "x64", target, targetDll +".dll")
     elif wPlatform == 32:
-        if targetDll == "libvmdk":
-            dllFile = os.path.join(libHome,"libvmdk","msvscpp", target, targetDll +".dll")
-        else:
-            dllFile = os.path.join(libHome,"msvscpp",target,targetDll + ".dll")
+        dllFile = os.path.join(libHome,"msvscpp",target,targetDll + ".dll")
     else:
         print("Invalid platform")
         sys.stdout.flush()
@@ -167,10 +161,7 @@ def buildDependentLibs(libHome, wPlatform, targetDll):
 
     if (os.path.isfile(dllFile)):
         os.remove(dllFile)
-    if targetDll == "libvmdk":
-        os.chdir(os.path.join(libHome,"libvmdk","msvscpp"))
-    else:
-        os.chdir(os.path.join(libHome,"msvscpp"))
+    os.chdir(os.path.join(libHome,"msvscpp"))
 
     vs = []
     vs.append(MSBUILD_PATH)
@@ -213,8 +204,7 @@ def buildTSK(wPlatform, target):
 
     print ("Building TSK " + str(wPlatform) + "-bit " + target + " build.")
     sys.stdout.flush()
-    TSK_HOME = os.getenv("APPVEYOR_BUILD_FOLDER")
-    os.chdir(os.path.join(TSK_HOME,"win32"))
+
     vs = []
     vs.append(MSBUILD_PATH)
     vs.append(os.path.join("tsk-win.sln"))
