@@ -389,15 +389,11 @@ raw_close(TSK_IMG_INFO * img_info)
 #endif
     }
     for (i = 0; i < raw_info->img_info.num_img; i++) {
-        if (raw_info->img_info.images[i])
-            free(raw_info->img_info.images[i]);
+        free(raw_info->img_info.images[i]);
     }
-    if (raw_info->max_off)
-        free(raw_info->max_off);
-    if (raw_info->img_info.images)
-        free(raw_info->img_info.images);
-    if (raw_info->cptr)
-        free(raw_info->cptr);
+    free(raw_info->max_off);
+    free(raw_info->img_info.images);
+    free(raw_info->cptr);
 
     tsk_img_free(raw_info);
 }

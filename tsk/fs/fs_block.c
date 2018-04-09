@@ -50,8 +50,7 @@ tsk_fs_block_alloc(TSK_FS_INFO * a_fs)
 void
 tsk_fs_block_free(TSK_FS_BLOCK * a_fs_block)
 {
-    if (a_fs_block->buf)
-        free(a_fs_block->buf);
+    free(a_fs_block->buf);
     a_fs_block->tag = 0;
     free(a_fs_block);
 }

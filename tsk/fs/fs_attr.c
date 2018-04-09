@@ -133,12 +133,10 @@ tsk_fs_attr_free(TSK_FS_ATTR * a_fs_attr)
         tsk_fs_attr_run_free(a_fs_attr->nrd.run);
     a_fs_attr->nrd.run = NULL;
 
-    if (a_fs_attr->rd.buf)
-        free(a_fs_attr->rd.buf);
+    free(a_fs_attr->rd.buf);
     a_fs_attr->rd.buf = NULL;
 
-    if (a_fs_attr->name)
-        free(a_fs_attr->name);
+    free(a_fs_attr->name);
     a_fs_attr->name = NULL;
 
     free(a_fs_attr);
@@ -819,8 +817,7 @@ tsk_fs_attr_walk_res(const TSK_FS_ATTR * fs_attr,
             break;
     }
 
-    if (buf)
-        free(buf);
+    free(buf);
 
     if (retval == TSK_WALK_ERROR)
         return 1;
@@ -1006,8 +1003,7 @@ tsk_fs_attr_walk_nonres(const TSK_FS_ATTR * fs_attr,
             break;
     }
 
-    if (buf)
-        free(buf);
+    free(buf);
 
     if (retval == TSK_WALK_ERROR)
         return 1;

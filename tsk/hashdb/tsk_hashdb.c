@@ -237,9 +237,7 @@ TSK_HDB_INFO *
         break;
     }
 
-    if (NULL != db_path) {
-        free(db_path);
-    }
+    free(db_path);
 
     return hdb_info;
 }

@@ -1940,10 +1940,8 @@ static uint8_t
     /* Who owns this? I'm following the way FATFS does it by freeing + NULLing 
     * this and mallocing if used. 
     */
-    if (a_fs_file->meta->link != NULL) {
-        free(a_fs_file->meta->link);
-        a_fs_file->meta->link = NULL;
-    }
+    free(a_fs_file->meta->link);
+    a_fs_file->meta->link = NULL;
 
     if (type != YAFFS_TYPE_HARDLINK) {
         a_fs_file->meta->mode = (TSK_FS_META_MODE_ENUM)(header->file_mode & TWELVE_BITS_MASK); // chop at 12 bits;

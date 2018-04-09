@@ -898,8 +898,7 @@ ext2fs_inode_lookup(TSK_FS_INFO * fs, TSK_FS_FILE * a_fs_file,
         return 1;
     }
 
-    if (dino_buf != NULL)
-        free((char *) dino_buf);
+    free(dino_buf);
     return 0;
 }
 
@@ -1124,8 +1123,7 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
      * Cleanup.
      */
     tsk_fs_file_close(fs_file);
-    if (dino_buf != NULL)
-        free((char *) dino_buf);
+    free(dino_buf);
 
     return 0;
 }
@@ -3110,8 +3108,7 @@ ext2fs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
     }
 
     tsk_fs_file_close(fs_file);
-    if (dino_buf != NULL)
-        free((char *) dino_buf);
+    free(dino_buf);
     return 0;
 }
 
@@ -3124,19 +3121,11 @@ ext2fs_close(TSK_FS_INFO * fs)
     EXT2FS_INFO *ext2fs = (EXT2FS_INFO *) fs;
 
     fs->tag = 0;
-    free((char *) ext2fs->fs);
-
-    if (ext2fs->grp_buf != NULL)
-        free((char *) ext2fs->grp_buf);
-
-    if (ext2fs->ext4_grp_buf != NULL)
-        free((char *) ext2fs->ext4_grp_buf);
-
-    if (ext2fs->bmap_buf != NULL)
-        free((char *) ext2fs->bmap_buf);
-
-    if (ext2fs->imap_buf != NULL)
-        free((char *) ext2fs->imap_buf);
+    free(ext2fs->fs);
+    free(ext2fs->grp_buf);
+    free(ext2fs->ext4_grp_buf);
+    free(ext2fs->bmap_buf);
+    free(ext2fs->imap_buf);
 
     tsk_deinit_lock(&ext2fs->lock);
 
