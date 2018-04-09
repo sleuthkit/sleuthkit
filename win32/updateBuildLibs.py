@@ -19,7 +19,7 @@ MSBUILD_PATH = os.path.normpath("c:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild
 CURRENT_PATH = os.getcwd()
 # save the build log in the output directory
 LOG_PATH = os.path.join(CURRENT_PATH, 'output', time.strftime("%Y.%m.%d-%H.%M.%S"))
-
+APPVEYOR = os.getenv("APPVEYOR",False)
 def pullAndBuildAllDependencies(branch):
     '''
         Compile libewf, libvhdi, libvmdk.
@@ -34,8 +34,10 @@ def pullAndBuildAllDependencies(branch):
     # get the LIBEWF_HOME, LIBVHDI_HOME, LIBVMDH_HOME
     ewfHome = os.getenv("LIBEWF_HOME", "C:\\libewf_64bit")
     vhdiHome = os.getenv("LIBVHDI_HOME", "C:\\libvhdi_64bit")
-    vmdkHome = os.getenv("LIBVMDK_HOME", "C:\\libvmdk_64bit\\libvmdk")
-
+    if(APPVEYOR):
+        vmdkHome = os.getenv("LIBVMDK_HOME", "C:\\libvmdk_64bit\\libvmdk")
+    else:
+        vmdkHome = os.getenv("LIBVMDK_HOME", "C:\\libvmdk_64bit")
     # check if ewfHome, vhdiHome or vmdhHome exits
     checkPathExist(ewfHome)
     checkPathExist(vhdiHome)
@@ -47,15 +49,16 @@ def pullAndBuildAllDependencies(branch):
         gitPull(vhdiHome, "libvhdi_64bit", branch)
     if(passed):
         gitPull(vmdkHome, "libvmdk_64bit", branch)
-    '''
-    # build 32-bit of libewf, libvhdi, libvmdk and TSK
-    if(passed):
-        buildDependentLibs(ewfHome, 32, "libewf")
-    if(passed):
-        buildDependentLibs(vhdiHome, 32, "libvhdi")
-    if(passed):
-        buildDependentLibs(vmdkHome, 32, "libvmdk")
-    '''
+
+    if (!APPVEYOR):
+        # build 32-bit of libewf, libvhdi, libvmdk and TSK
+        if(passed):
+            buildDependentLibs(ewfHome, 32, "libewf")
+        if(passed):
+            buildDependentLibs(vhdiHome, 32, "libvhdi")
+        if(passed):
+            buildDependentLibs(vmdkHome, 32, "libvmdk")
+
 
     # build 64-bit of libewf, libvhdi, libvmdk and TSK
     if(passed):
@@ -67,21 +70,20 @@ def pullAndBuildAllDependencies(branch):
 
 
 def buildTSKAll():
-    '''
-    if(passed):
-        buildTSK(32, "Release")
-    if(passed):
-        buildTSK(32, "Release_NoLibs")
-#    if(passed):
-#        buildTSK(32, "Release_PostgreSQL")
 
-    if(passed):
-        buildTSK(64, "Release")
-    if(passed):
-        buildTSK(64, "Release_NoLibs")
-    '''
+    if(!APPVEYOR):
+        if(passed):
+            buildTSK(32, "Release")
+        if(passed):
+            buildTSK(32, "Release_NoLibs")
+        if(passed):
+            buildTSK(32, "Release_PostgreSQL")
 
-    
+        if(passed):
+            buildTSK(64, "Release")
+        if(passed):
+            buildTSK(64, "Release_NoLibs")
+
     if(passed):
         buildTSK(64, "Release_PostgreSQL")
 
@@ -208,9 +210,9 @@ def buildTSK(wPlatform, target):
 
     print ("Building TSK " + str(wPlatform) + "-bit " + target + " build.")
     sys.stdout.flush()
-
-    TSK_HOME = os.getenv("APPVEYOR_BUILD_FOLDER")
-    os.chdir(os.path.join(TSK_HOME,"win32"))
+    if(APPVEYOR):
+        TSK_HOME = os.getenv("APPVEYOR_BUILD_FOLDER")
+        os.chdir(os.path.join(TSK_HOME,"win32"))
 
     vs = []
     vs.append(MSBUILD_PATH)
