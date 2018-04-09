@@ -50,7 +50,7 @@ def pullAndBuildAllDependencies(branch):
     if(passed):
         gitPull(vmdkHome, "libvmdk_64bit", branch)
 
-    if (!APPVEYOR):
+    if not APPVEYOR:
         # build 32-bit of libewf, libvhdi, libvmdk and TSK
         if(passed):
             buildDependentLibs(ewfHome, 32, "libewf")
@@ -71,7 +71,7 @@ def pullAndBuildAllDependencies(branch):
 
 def buildTSKAll():
 
-    if(!APPVEYOR):
+    if not APPVEYOR:
         if(passed):
             buildTSK(32, "Release")
         if(passed):
