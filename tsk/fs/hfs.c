@@ -3729,6 +3729,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
     uint16_t attribute_counter = 2;     // The ID of the next attribute to be loaded.
     HFS_INFO *hfs;
     char *buffer = NULL;   // buffer to hold the attribute
+    TSK_LIST *nodeIDs_processed = NULL; // Keep track of node IDs to prevent an infinite loop
 
     tsk_error_reset();
 
@@ -3801,15 +3802,29 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 PRIu32 "\n", nodeID);
         }
 
+        /* Make sure we do not get into an infinite loop */
+        if (tsk_list_find(nodeIDs_processed, nodeID)) {
+            error_detected(TSK_ERR_FS_READ,
+                "hfs_load_extended_attrs: Infinite loop detected - trying to read node %" PRIu32 " which has already been processed", nodeID);
+            goto on_error;
+        }
+
 
         /* Read the node */
         cnt = tsk_fs_file_read(attrFile.file,
-            nodeID * attrFile.nodeSize,
+            (TSK_OFF_T)nodeID * attrFile.nodeSize,
             (char *) nodeData,
             attrFile.nodeSize, (TSK_FS_FILE_READ_FLAG_ENUM) 0);
         if (cnt != attrFile.nodeSize) {
             error_returned
                 ("hfs_load_extended_attrs: Could not read in a node from the Attributes File");
+            goto on_error;
+        }
+
+        /* Save this node ID to the list of processed nodes */
+        if (tsk_list_add(&nodeIDs_processed, nodeID)) {
+            error_detected(TSK_ERR_FS_READ,
+                "hfs_load_extended_attrs: Could not save nodeID to the list of processed nodes");
             goto on_error;
         }
 
@@ -3940,7 +3955,6 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
             // CASE: key in this record is less than key we seek.  comp < 0
             // So, continue looping over records in this node.
-
         }                       // END loop over records
 
     }                           // END while loop over Nodes in path from root to LEAF node
@@ -4252,12 +4266,14 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
 on_exit:
     free(nodeData);
+    tsk_list_free(nodeIDs_processed);
     close_attr_file(&attrFile);
     return 0;
 
 on_error:
     free(buffer);
     free(nodeData);
+    tsk_list_free(nodeIDs_processed);
     close_attr_file(&attrFile);
     return 1;
 }

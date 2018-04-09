@@ -50,4 +50,35 @@ public class AccountDeviceInstance {
 	public String getDeviceId(){
 		return this.deviceID;
 	}
+
+	@Override
+	public int hashCode() {
+		int hash = 5;
+		hash = 11 * hash + (this.account != null ? this.account.hashCode() : 0);
+		hash = 11 * hash + (this.deviceID != null ? this.deviceID.hashCode() : 0);
+		return hash;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		final AccountDeviceInstance other = (AccountDeviceInstance) obj;
+		if ((this.deviceID == null) ? (other.deviceID != null) : !this.deviceID.equals(other.deviceID)) {
+			return false;
+		}
+		if (this.account != other.account && (this.account == null || !this.account.equals(other.account))) {
+			return false;
+		}
+		return true;
+	}
+	
+	
 }

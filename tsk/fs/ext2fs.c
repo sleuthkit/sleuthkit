@@ -493,6 +493,18 @@ ext2fs_dinode_load(EXT2FS_INFO * ext2fs, TSK_INUM_T dino_inum,
         printf("DEBUG: d_inode_load 64bit gd_size=%d\n",
             tsk_getu16(fs->endian, ext2fs->fs->s_desc_size));
 #endif
+        /* Test for possible overflow */
+        if ((TSK_OFF_T)ext4_getu64(fs->endian, ext2fs->ext4_grp_buf->bg_inode_table_hi, ext2fs->ext4_grp_buf->bg_inode_table_lo) 
+                >= LLONG_MAX / fs->block_size) {
+            tsk_release_lock(&ext2fs->lock);
+
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_READ);
+            tsk_error_set_errstr
+            ("ext2fs_dinode_load: Overflow when calculating address");
+            return 1;
+        }
+
         addr =
             (TSK_OFF_T) ext4_getu64(fs->endian,
             ext2fs->ext4_grp_buf->bg_inode_table_hi,

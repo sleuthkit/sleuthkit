@@ -88,7 +88,7 @@ public class LayoutFile extends AbstractFile {
 			long size,
 			String md5Hash, FileKnown knownState,
 			String parentPath, String mimeType) {
-		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, name, fileType, 0L, 0, dirType, metaType, dirFlag, metaFlags, size, 0L, 0L, 0L, 0L, (short) 0, 0, 0, md5Hash, knownState, parentPath, mimeType, null);
+		super(db, objId, dataSourceObjectId, TSK_FS_ATTR_TYPE_ENUM.TSK_FS_ATTR_TYPE_DEFAULT, 0, name, fileType, 0L, 0, dirType, metaType, dirFlag, metaFlags, size, 0L, 0L, 0L, 0L, (short) 0, 0, 0, md5Hash, knownState, parentPath, mimeType, SleuthkitCase.extractExtension(name));
 	}
 
 	/**

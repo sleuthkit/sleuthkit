@@ -31,7 +31,7 @@ import java.util.logging.Logger;
  * Defines an aggregate of filters to apply to a CommunicationsManager query.
  *
  */
-public class CommunicationsFilter {
+final public class CommunicationsFilter {
 
 	private final List<SubFilter> andFilters;
 	// RAMAN TBD: figure out OR filters, I don't think we need any
@@ -72,7 +72,7 @@ public class CommunicationsFilter {
 	/**
 	 * Unit level filter.
 	 */
-	public static abstract class SubFilter {
+	static abstract class SubFilter {
 
 		/**
 		 * Returns a string description of the filter.
@@ -95,7 +95,7 @@ public class CommunicationsFilter {
 	 * Filters communications by relationship type.
 	 *
 	 */
-	public static class RelationshipTypeFilter extends SubFilter {
+	final public static class RelationshipTypeFilter extends SubFilter {
 
 		private final Set<Relationship.Type> relationshipTypes;
 
@@ -135,7 +135,7 @@ public class CommunicationsFilter {
 		}
 	}
 
-	public static class DateRangeFilter extends SubFilter {
+	final public static class DateRangeFilter extends SubFilter {
 
 		private final long startDate;
 		private final long endDate;
@@ -192,7 +192,7 @@ public class CommunicationsFilter {
 	 * Filter communications by account type.
 	 *
 	 */
-	public static class AccountTypeFilter extends SubFilter {
+	final public static class AccountTypeFilter extends SubFilter {
 
 		private final Set<Account.Type> accountTypes;
 
@@ -237,7 +237,7 @@ public class CommunicationsFilter {
 	 * Filter by device ids.
 	 *
 	 */
-	public static class DeviceFilter extends SubFilter {
+	final public static class DeviceFilter extends SubFilter {
 
 		private final Set<String> deviceIds;
 
