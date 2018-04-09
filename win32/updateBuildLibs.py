@@ -47,7 +47,7 @@ def pullAndBuildAllDependencies(branch):
         gitPull(vhdiHome, "libvhdi_64bit", branch)
     if(passed):
         gitPull(vmdkHome, "libvmdk_64bit", branch)
-
+    '''
     # build 32-bit of libewf, libvhdi, libvmdk and TSK
     if(passed):
         buildDependentLibs(ewfHome, 32, "libewf")
@@ -55,7 +55,7 @@ def pullAndBuildAllDependencies(branch):
         buildDependentLibs(vhdiHome, 32, "libvhdi")
     if(passed):
         buildDependentLibs(vmdkHome, 32, "libvmdk")
-
+    '''
 
     # build 64-bit of libewf, libvhdi, libvmdk and TSK
     if(passed):
@@ -67,6 +67,7 @@ def pullAndBuildAllDependencies(branch):
 
 
 def buildTSKAll():
+    '''
     if(passed):
         buildTSK(32, "Release")
     if(passed):
@@ -78,6 +79,7 @@ def buildTSKAll():
         buildTSK(64, "Release")
     if(passed):
         buildTSK(64, "Release_NoLibs")
+    '''
     if(passed):
         buildTSK(64, "Release_PostgreSQL")
 
