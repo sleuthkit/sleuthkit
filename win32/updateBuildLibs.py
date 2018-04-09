@@ -233,7 +233,7 @@ def buildTSK(wPlatform, target):
 
     outputFile = os.path.join(LOG_PATH, "TSKOutput.txt")
     VSout = open(outputFile, 'w')
-    ret = subprocess.call(vs, stdout=VSout)
+    ret = subprocess.call(vs, stdout=sys.stdout)
     VSout.close()
     if ret != 0:
         print("ret = " + str(ret))
