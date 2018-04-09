@@ -150,9 +150,15 @@ def buildDependentLibs(libHome, wPlatform, targetDll):
     target = "Release"
 
     if wPlatform == 64:
-        dllFile = os.path.join(libHome, "msvscpp", "x64", target, targetDll +".dll")
+        if targetDll == "libvmdk":
+            dllFile = os.path.join(libHome, "libvmdk" ,"msvscpp", "x64", target, targetDll +".dll")
+        else:
+            dllFile = os.path.join(libHome, "msvscpp", "x64", target, targetDll +".dll")
     elif wPlatform == 32:
-        dllFile = os.path.join(libHome, "msvscpp", target, targetDll +".dll")
+        if targetDll == "libvmdk":
+            dllFile = os.path.join(libHome,"libvmdk","msvscpp", target, targetDll +".dll")
+        else:
+            dllFile = os.path.join(libHome,"msvscpp",target,targetDll,".dll")
     else:
         print("Invalid platform")
         sys.stdout.flush()
