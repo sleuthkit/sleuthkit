@@ -213,7 +213,8 @@ def buildTSK(wPlatform, target):
 
     print ("Building TSK " + str(wPlatform) + "-bit " + target + " build.")
     sys.stdout.flush()
-
+    TSK_HOME = os.getenv("APPVEYOR_BUILD_FOLDER")
+    os.chdir(os.path.join(TSK_HOME,"win32"))
     vs = []
     vs.append(MSBUILD_PATH)
     vs.append(os.path.join("tsk-win.sln"))
