@@ -1,5 +1,10 @@
 version: 4.6.0.{build}
 
+cache:
+  - C:\Users\appveyor\.ant -> appveyor.yml
+  - C:\Users\appveyor\.ivy2 -> appveyor.yml
+  - C:\ProgramData\chocolatey\bin -> appveyor.yml
+  - C:\ProgramData\chocolatey\lib -> appveyor.yml
 
 branches:
     only:
@@ -9,6 +14,8 @@ image: Visual Studio 2015
 
 
 init:
+  - ps: choco install ant --ignore-dependencies
+  - ps: $env:Path=C:\Program Files\Java\jdk1.8.0\bin;$($env:Path);C:\ProgramData\chocolatey\lib\ant"
   - set PATH=C:\Python36-x64\';%PATH%
 environment:
     global:
@@ -23,5 +30,9 @@ services:
 build_script:
       - python setupLibs.py "C:\\"
       - python %APPVEYOR_BUILD_FOLDER%\win32\updateBuildLibs.py
+      - ps: ant -version
+      - ps: pushd bindings/java
+      - cmd: ant dist-PostgreSQL
+      - ps: popd
 
 test: off
