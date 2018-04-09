@@ -6,6 +6,8 @@ import sys
 def setupLibrary(path):
     ''' sets up the library path variable '''
     git_repository_url = "https://github.com/sleuthkit/"
+    git_zlib_repository_url="https://github.com/madler/"
+    gitClone(git_zlib_repository_url,"zlib",path)
     libraries = ["libvhdi_64bit", "libvmdk_64bit", "libewf_64bit"]
     for library in libraries:
         library_path = os.path.normpath(path + "\\" + library)
