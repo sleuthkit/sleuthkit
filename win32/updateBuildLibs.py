@@ -1,4 +1,4 @@
-# Copyright (c) 2017 Basis Technology. 
+# Copyright (c) 2017 Basis Technology.
 #
 # This software is distributed under the Common Public License 1.0
 
@@ -19,7 +19,7 @@ MSBUILD_PATH = os.path.normpath("c:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild
 CURRENT_PATH = os.getcwd()
 # save the build log in the output directory
 LOG_PATH = os.path.join(CURRENT_PATH, 'output', time.strftime("%Y.%m.%d-%H.%M.%S"))
-
+APPVEYOR = os.getenv("APPVEYOR",False)
 def pullAndBuildAllDependencies(branch):
     '''
         Compile libewf, libvhdi, libvmdk.
@@ -34,8 +34,10 @@ def pullAndBuildAllDependencies(branch):
     # get the LIBEWF_HOME, LIBVHDI_HOME, LIBVMDH_HOME
     ewfHome = os.getenv("LIBEWF_HOME", "C:\\libewf_64bit")
     vhdiHome = os.getenv("LIBVHDI_HOME", "C:\\libvhdi_64bit")
-    vmdkHome = os.getenv("LIBVMDK_HOME", "C:\\libvmdk_64bit")
-
+    if(APPVEYOR):
+        vmdkHome = os.getenv("LIBVMDK_HOME", "C:\\libvmdk_64bit\\libvmdk")
+    else:
+        vmdkHome = os.getenv("LIBVMDK_HOME", "C:\\libvmdk_64bit")
     # check if ewfHome, vhdiHome or vmdhHome exits
     checkPathExist(ewfHome)
     checkPathExist(vhdiHome)
@@ -48,36 +50,40 @@ def pullAndBuildAllDependencies(branch):
     if(passed):
         gitPull(vmdkHome, "libvmdk_64bit", branch)
 
-    # build 32-bit of libewf, libvhdi, libvmdk and TSK 
-    if(passed): 
-        buildDependentLibs(ewfHome, 32, "libewf")
-    if(passed): 
-        buildDependentLibs(vhdiHome, 32, "libvhdi")
-    if(passed): 
-        buildDependentLibs(vmdkHome, 32, "libvmdk")
+    if not APPVEYOR:
+        # build 32-bit of libewf, libvhdi, libvmdk and TSK
+        if(passed):
+            buildDependentLibs(ewfHome, 32, "libewf")
+        if(passed):
+            buildDependentLibs(vhdiHome, 32, "libvhdi")
+        if(passed):
+            buildDependentLibs(vmdkHome, 32, "libvmdk")
 
 
-    # build 64-bit of libewf, libvhdi, libvmdk and TSK 
-    if(passed): 
+    # build 64-bit of libewf, libvhdi, libvmdk and TSK
+    if(passed):
         buildDependentLibs(ewfHome, 64, "libewf")
-    if(passed): 
+    if(passed):
         buildDependentLibs(vhdiHome, 64, "libvhdi")
-    if(passed): 
+    if(passed):
         buildDependentLibs(vmdkHome, 64, "libvmdk")
 
 
 def buildTSKAll():
-    if(passed):
-        buildTSK(32, "Release")
-    if(passed):
-        buildTSK(32, "Release_NoLibs")
-    if(passed):
-        buildTSK(32, "Release_PostgreSQL")
 
-    if(passed):
-        buildTSK(64, "Release")
-    if(passed):
-        buildTSK(64, "Release_NoLibs")
+    if not APPVEYOR:
+        if(passed):
+            buildTSK(32, "Release")
+        if(passed):
+            buildTSK(32, "Release_NoLibs")
+        if(passed):
+            buildTSK(32, "Release_PostgreSQL")
+
+        if(passed):
+            buildTSK(64, "Release")
+        if(passed):
+            buildTSK(64, "Release_NoLibs")
+
     if(passed):
         buildTSK(64, "Release_PostgreSQL")
 
@@ -143,7 +149,7 @@ def buildDependentLibs(libHome, wPlatform, targetDll):
     '''
     global passed
     passed = True
- 
+
     print("Building " + str(wPlatform) + "-bit " + targetDll)
     sys.stdout.flush()
 
@@ -151,8 +157,8 @@ def buildDependentLibs(libHome, wPlatform, targetDll):
 
     if wPlatform == 64:
         dllFile = os.path.join(libHome, "msvscpp", "x64", target, targetDll +".dll")
-    elif wPlatform == 32: 
-        dllFile = os.path.join(libHome, "msvscpp", target, targetDll +".dll")
+    elif wPlatform == 32:
+        dllFile = os.path.join(libHome,"msvscpp",target,targetDll + ".dll")
     else:
         print("Invalid platform")
         sys.stdout.flush()
@@ -161,8 +167,7 @@ def buildDependentLibs(libHome, wPlatform, targetDll):
 
     if (os.path.isfile(dllFile)):
         os.remove(dllFile)
-
-    os.chdir(os.path.join(libHome, "msvscpp"))
+    os.chdir(os.path.join(libHome,"msvscpp"))
 
     vs = []
     vs.append(MSBUILD_PATH)
@@ -177,7 +182,7 @@ def buildDependentLibs(libHome, wPlatform, targetDll):
 
     outputFile = os.path.join(LOG_PATH, targetDll + "Output.txt")
     VSout = open(outputFile, 'w')
-    ret = subprocess.call(vs, stdout=VSout)
+    ret = subprocess.call(vs, stdout=sys.stdout)
     errorCode = ret
     VSout.close()
     if ret > 0:
@@ -187,16 +192,16 @@ def buildDependentLibs(libHome, wPlatform, targetDll):
             errorCode = 0
     if errorCode != 0 or not os.path.exists(dllFile) or os.path.getctime(dllFile) < (time.time() - 2 * 60): # the new dll should not be 2 mins old
         print(targetDll + " " + str(wPlatform) + "-bit C++ failed to build.\n")
-        print("return code: " + str(ret) + "\tdll file: " + dllFile + "\tcreated time: " + str(os.path.getctime(dllFile))) 
+        print("return code: " + str(ret) + "\tdll file: " + dllFile + "\tcreated time: " + str(os.path.getctime(dllFile)))
         sys.stdout.flush()
         passed = False
         os.chdir(CURRENT_PATH)
         return
     else:
         print("Build " + str(wPlatform) + "-bit " + targetDll + " successfully")
- 
+
     os.chdir(CURRENT_PATH)
- 
+
 def buildTSK(wPlatform, target):
     '''
         Build C++ sleuthkit library
@@ -205,6 +210,9 @@ def buildTSK(wPlatform, target):
 
     print ("Building TSK " + str(wPlatform) + "-bit " + target + " build.")
     sys.stdout.flush()
+    if(APPVEYOR):
+        TSK_HOME = os.getenv("APPVEYOR_BUILD_FOLDER")
+        os.chdir(os.path.join(TSK_HOME,"win32"))
 
     vs = []
     vs.append(MSBUILD_PATH)
@@ -224,7 +232,7 @@ def buildTSK(wPlatform, target):
 
     outputFile = os.path.join(LOG_PATH, "TSKOutput.txt")
     VSout = open(outputFile, 'w')
-    ret = subprocess.call(vs, stdout=VSout)
+    ret = subprocess.call(vs, stdout=sys.stdout)
     VSout.close()
     if ret != 0:
         print("ret = " + str(ret))
@@ -257,7 +265,9 @@ def main():
     print('Updating source by %s branch.' % branch)
     if not os.path.exists(LOG_PATH):
         os.makedirs(LOG_PATH)
-
+    if not os.path.exists(MSBUILD_PATH):
+        print("MS_BUILD Does not exist")
+        sys.stdout.flush()
     pullAndBuildAllDependencies(branch)
     buildTSKAll()
 

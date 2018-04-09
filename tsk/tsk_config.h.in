@@ -66,6 +66,9 @@
 /* Define if using libpq. */
 #undef HAVE_LIBPQ_
 
+/* Define to 1 if you have the <libpq-fe.h> header file. */
+#undef HAVE_LIBPQ_FE_H
+
 /* Define to 1 if you have the `sqlite3' library (-lsqlite3). */
 #undef HAVE_LIBSQLITE3
 
