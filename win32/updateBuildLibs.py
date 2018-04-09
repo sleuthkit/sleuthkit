@@ -80,6 +80,7 @@ def buildTSKAll():
     if(passed):
         buildTSK(64, "Release_NoLibs")
     '''
+
     
     if(passed):
         buildTSK(64, "Release_PostgreSQL")
