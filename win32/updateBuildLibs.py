@@ -167,8 +167,10 @@ def buildDependentLibs(libHome, wPlatform, targetDll):
 
     if (os.path.isfile(dllFile)):
         os.remove(dllFile)
-
-    os.chdir(os.path.join(libHome,"libvmdk","msvscpp"))
+    if targetDll == "libvmdk":
+        os.chdir(os.path.join(libHome,"libvmdk","msvscpp"))
+    else:
+        os.chdir(os.path.join(libHome,"msvscpp"))
 
     vs = []
     vs.append(MSBUILD_PATH)
