@@ -3678,10 +3678,10 @@ close_attr_file(ATTR_FILE_T * attr_file)
         tsk_fs_file_close(attr_file->file);
         attr_file->file = NULL;
     }
-    if (attr_file->header != NULL) {
-        free(attr_file->header);
-        attr_file->header = NULL;
-    }
+
+    free(attr_file->header);
+    attr_file->header = NULL;
+
     attr_file->rootNode = 0;
     attr_file->nodeSize = 0;
     // Note that we leave the fs component alone.
@@ -4080,8 +4080,15 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 nameLength = tsk_getu16(endian, keyB->attr_name_len);
                 if (2*nameLength > HFS_MAX_ATTR_NAME_LEN_UTF16_B) {
                     error_detected(TSK_ERR_FS_CORRUPT,
-                        "hfs_load_extended_attrs: Name length (%d) is too long.",
-                        nameLength);
+                        "hfs_load_extended_attrs: Name length in bytes (%d) > max name length in bytes (%d).",
+                        2*nameLength, HFS_MAX_ATTR_NAME_LEN_UTF16_B);
+                    goto on_error;
+                }
+
+                if (2*nameLength > keyLength - 12) {
+                    error_detected(TSK_ERR_FS_CORRUPT,
+                        "hfs_load_extended_attrs: Name length in bytes (%d) > remaining struct length (%d).",
+                        2*nameLength, keyLength - 12);
                     goto on_error;
                 }
 
@@ -4271,14 +4278,8 @@ on_exit:
     return 0;
 
 on_error:
-    if (buffer != NULL) {
-        free(buffer);
-    }
-
-    if (nodeData != NULL) {
-        free(nodeData);
-    }
-
+    free(buffer);
+    free(nodeData);
     tsk_list_free(nodeIDs_processed);
     close_attr_file(&attrFile);
     return 1;
@@ -4301,8 +4302,7 @@ free_res_descriptor(RES_DESCRIPTOR * rd)
     if (rd == NULL)
         return;
     nxt = rd->next;
-    if (rd->name != NULL)
-        free(rd->name);
+    free(rd->name);
     free(rd);
     free_res_descriptor(nxt);   // tail recursive
 }

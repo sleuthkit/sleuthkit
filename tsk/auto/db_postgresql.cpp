@@ -1110,9 +1110,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
             tsk_error_set_errstr("Error inserting file with object ID for: %" PRId64 , objId);
-            if (zSQL_dynamic != NULL) {
-                free(zSQL_dynamic);
-            }
+            free(zSQL_dynamic);
             free(name);
             free(escaped_path);
             PQfreemem(name_sql);
@@ -1122,14 +1120,12 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
     }
 
     if (attempt_exec(zSQL, "TskDbPostgreSQL::addFile: Error adding data to tsk_files table: %s\n")) {
-		free(name);
+		    free(name);
         free(escaped_path);
         PQfreemem(name_sql);
         PQfreemem(escaped_path_sql);
-		PQfreemem(extension_sql);
-        if (zSQL_dynamic != NULL) {
-            free(zSQL_dynamic);
-        }
+		    PQfreemem(extension_sql);
+        free(zSQL_dynamic);
         return 1;
     }
 
@@ -1202,33 +1198,26 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
                 free(escaped_path);
                 PQfreemem(name_sql);
                 PQfreemem(escaped_path_sql);
-				PQfreemem(extension_sql);
-                if (zSQL_dynamic != NULL) {
-                    free(zSQL_dynamic);
-                }
+                PQfreemem(extension_sql);
+                free(zSQL_dynamic);
                 return 1;
         }
 
         if (attempt_exec(zSQL, "TskDbPostgreSQL::addFile: Error adding data to tsk_files table: %s\n")) {
-			free(name);
+            free(name);
             free(escaped_path);
             PQfreemem(name_sql);
-            PQfreemem(escaped_path_sql);
-			PQfreemem(extension_sql);
-            if (zSQL_dynamic != NULL) {
-                free(zSQL_dynamic);
-            }
+            PQfreemem(escaped_path_sql);	
+            PQfreemem(extension_sql);
+            free(zSQL_dynamic);
             return 1;
         }
-
-    }
-    if (zSQL_dynamic != NULL) {
-        free(zSQL_dynamic);
     }
 
     // cleanup
     free(name);
     free(escaped_path);
+    free(zSQL_dynamic);
     PQfreemem(name_sql);
     PQfreemem(escaped_path_sql);
 	PQfreemem(extension_sql);
@@ -1319,9 +1308,7 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_AUTO_DB);
             tsk_error_set_errstr("Error creating query for parent object ID for: %s", parentPath);
-            if (zSQL_dynamic != NULL) {
-                free(zSQL_dynamic);
-            }
+            free(zSQL_dynamic);
             PQfreemem(escaped_path_sql);
             PQfreemem(escaped_parent_name_sql);
             return -1;
@@ -1330,16 +1317,12 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
 
     // check if a valid result set was returned
     if (verifyNonEmptyResultSetSize(zSQL, res, expectedNumFileds, "TskDbPostgreSQL::findParObjId: Unexpected number of columns in result set: Expected %d, Received %d\n")) {
-        if (zSQL_dynamic != NULL) {
-            free(zSQL_dynamic);
-        }
+        free(zSQL_dynamic);
         return -1;
     }
 
     int64_t parObjId = atoll(PQgetvalue(res, 0, 0));
-    if (zSQL_dynamic != NULL) {
-        free(zSQL_dynamic);
-    }
+    free(zSQL_dynamic);
     PQclear(res);
     PQfreemem(escaped_path_sql);
     PQfreemem(escaped_parent_name_sql);

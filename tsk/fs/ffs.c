@@ -1979,15 +1979,12 @@ ffs_close(TSK_FS_INFO * fs)
 
     fs->tag = 0;
 
-    if (ffs->grp_buf)
-        free(ffs->grp_buf);
-
-    if (ffs->itbl_buf)
-        free(ffs->itbl_buf);
+    free(ffs->grp_buf);
+    free(ffs->itbl_buf);
 
     tsk_deinit_lock(&ffs->lock);
 
-    free((char *) ffs->fs.sb1);
+    free(ffs->fs.sb1);
     tsk_fs_free(fs);
 }
 

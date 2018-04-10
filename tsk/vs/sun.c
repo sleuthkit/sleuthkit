@@ -335,9 +335,7 @@ sun_load_table(TSK_VS_INFO * vs)
     return result;
 
 on_error:
-    if( buf != NULL ) {
-        free( buf );
-    }
+    free(buf);
     return 1;
 }
 

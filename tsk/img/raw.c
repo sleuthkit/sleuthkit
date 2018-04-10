@@ -162,6 +162,13 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
                 lastError);
             return -1;
         }
+        // When the read operation reaches the end of a file,
+        // ReadFile returns TRUE and sets nread to zero.
+        // We need to check if we've reached the end of a file and set nread to
+        // the number of bytes read.
+        if ((raw_info->is_winobj) && (nread == 0) && (rel_offset + len == raw_info->img_info.size)) {
+          nread = len;
+        }
         cnt = (ssize_t) nread;
 
         if (raw_info->img_writer != NULL) {
@@ -389,15 +396,11 @@ raw_close(TSK_IMG_INFO * img_info)
 #endif
     }
     for (i = 0; i < raw_info->img_info.num_img; i++) {
-        if (raw_info->img_info.images[i])
-            free(raw_info->img_info.images[i]);
+        free(raw_info->img_info.images[i]);
     }
-    if (raw_info->max_off)
-        free(raw_info->max_off);
-    if (raw_info->img_info.images)
-        free(raw_info->img_info.images);
-    if (raw_info->cptr)
-        free(raw_info->cptr);
+    free(raw_info->max_off);
+    free(raw_info->img_info.images);
+    free(raw_info->cptr);
 
     tsk_img_free(raw_info);
 }

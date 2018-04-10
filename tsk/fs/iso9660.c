@@ -1385,8 +1385,7 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
      * Cleanup.
      */
     tsk_fs_file_close(fs_file);
-    if (dinode != NULL)
-        free((char *) dinode);
+    free(dinode);
     return 0;
 }
 
@@ -2226,8 +2225,7 @@ iso9660_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile
     }
 
     tsk_fs_file_close(fs_file);
-    if (dinode != NULL)
-        free((char *) dinode);
+    free(dinode);
     return 0;
 }
 
