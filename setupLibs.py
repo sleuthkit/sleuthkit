@@ -1,6 +1,7 @@
 # Copyright (c) 2017 Basis Technology.
 #
 # This software is distributed under the Common Public License 1.0
+#This script makes the repositories needed to compile The Sleuth Kit and its dependencies."
 
 import os
 import subprocess
@@ -35,7 +36,9 @@ def usage():
 
 def main():
 
-    base_Library_path = os.getcwd() #setting the base directory as current directory if no argument is passed
+    libhome = os.getenv("LIBEWF_HOME"); #setting the base directory as current directory if no argument is passed
+    if(libhome == None):
+        base_Library_path = os.path.dirname(libHome);
 
     if len(sys.argv) == 2:
         base_Library_path = sys.argv[1]

@@ -25,11 +25,11 @@ environment:
       POSTGRESQL_HOME_64: "C:\\Program Files\\PostgreSQL\\9.5"
       PYTHON: "C:\\Python36-x64"
 services:
-      - postgresql95
+      - postgresql95;
 
 build_script:
       - python setupLibs.py "C:\\"
-      - python %APPVEYOR_BUILD_FOLDER%\win32\updateBuildLibs.py
+      - python %APPVEYOR_BUILD_FOLDER%\win32\updateBuildLibs.py --postgres -p 64
       - ps: ant -version
       - ps: pushd bindings/java
       - cmd: ant dist-PostgreSQL

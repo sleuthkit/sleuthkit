@@ -10,6 +10,7 @@ import re
 import shutil
 import subprocess
 import sys
+import getopt
 from sys import platform as _platform
 
 import time
@@ -19,7 +20,10 @@ MSBUILD_PATH = os.path.normpath("c:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild
 CURRENT_PATH = os.getcwd()
 # save the build log in the output directory
 LOG_PATH = os.path.join(CURRENT_PATH, 'output', time.strftime("%Y.%m.%d-%H.%M.%S"))
-APPVEYOR = os.getenv("APPVEYOR",False)
+POSTGRES = False
+Build_64 = True
+Build_32 = True
+
 def pullAndBuildAllDependencies(branch):
     '''
         Compile libewf, libvhdi, libvmdk.
@@ -34,10 +38,7 @@ def pullAndBuildAllDependencies(branch):
     # get the LIBEWF_HOME, LIBVHDI_HOME, LIBVMDH_HOME
     ewfHome = os.getenv("LIBEWF_HOME", "C:\\libewf_64bit")
     vhdiHome = os.getenv("LIBVHDI_HOME", "C:\\libvhdi_64bit")
-    if(APPVEYOR):
-        vmdkHome = os.getenv("LIBVMDK_HOME", "C:\\libvmdk_64bit\\libvmdk")
-    else:
-        vmdkHome = os.getenv("LIBVMDK_HOME", "C:\\libvmdk_64bit")
+    vmdkHome = os.getenv("LIBVMDK_HOME", "C:\\libvmdk_64bit\\libvmdk")
     # check if ewfHome, vhdiHome or vmdhHome exits
     checkPathExist(ewfHome)
     checkPathExist(vhdiHome)
@@ -50,7 +51,7 @@ def pullAndBuildAllDependencies(branch):
     if(passed):
         gitPull(vmdkHome, "libvmdk_64bit", branch)
 
-    if not APPVEYOR:
+    if not Build_64:
         # build 32-bit of libewf, libvhdi, libvmdk and TSK
         if(passed):
             buildDependentLibs(ewfHome, 32, "libewf")
@@ -61,31 +62,35 @@ def pullAndBuildAllDependencies(branch):
 
 
     # build 64-bit of libewf, libvhdi, libvmdk and TSK
-    if(passed):
-        buildDependentLibs(ewfHome, 64, "libewf")
-    if(passed):
-        buildDependentLibs(vhdiHome, 64, "libvhdi")
-    if(passed):
-        buildDependentLibs(vmdkHome, 64, "libvmdk")
+    if not Build_32:
+        if(passed):
+            buildDependentLibs(ewfHome, 64, "libewf")
+        if(passed):
+            buildDependentLibs(vhdiHome, 64, "libvhdi")
+        if(passed):
+            buildDependentLibs(vmdkHome, 64, "libvmdk")
 
 
 def buildTSKAll():
-
-    if not APPVEYOR:
+    if(POSTGRES):
+        if(passed):
+            buildTSK(64, "Release_PostgreSQL")
+            return
+            
+    if not Build_64:
         if(passed):
             buildTSK(32, "Release")
         if(passed):
             buildTSK(32, "Release_NoLibs")
         if(passed):
             buildTSK(32, "Release_PostgreSQL")
-
+    if not BUILD_32:
         if(passed):
             buildTSK(64, "Release")
         if(passed):
             buildTSK(64, "Release_NoLibs")
-
-    if(passed):
-        buildTSK(64, "Release_PostgreSQL")
+        if(passed):
+            buildTSK(64, "Release_PostgreSQL")
 
 def checkPathExist(path):
     global passed
@@ -177,6 +182,7 @@ def buildDependentLibs(libHome, wPlatform, targetDll):
         vs.append("/p:platform=x64")
     elif wPlatform == 32:
         vs.append("/p:platform=Win32")
+    vs.append("/v:minimal")
     vs.append("/t:clean")
     vs.append("/t:build")
 
@@ -250,21 +256,50 @@ def usage():
     '''
     Print out how to use this script.
     '''
-    print('Usage: python3 updataBuildlibs.py [branch]')
+    print('Usage: python3 updataBuildlibs.py [-h | --help, -b <branch> | --branch=<branch>, -d | --postgres, --platform=<[64|32]> |  -p <64|32>')
+    print('-h,--help show help')
+    print('-b,--branch enter the branch name')
+    print('-d,--postgres use this option for postgres build')
+    print('-p,--platform enter the platform to be build for 64 or 32')
     print('branch is which branch to build and is optional. Currently only works for master')
+    print('Note: all the arguments above are optional')
     sys.stdout.flush()
     sys.exit(1)
 
 def main():
+
     #by default we use master branch to update the source
     branch = 'master'
 
+    try:
+        opts, args = getopt.getopt(sys.argv[1:],"pbdh",['help','platform=','branch=','postgres'])
+    except getopt.GetoptError as err:
+        print(err)
+        usage()
+        sys.exit(2)
+
+    for o,a in opts:
+        if o in ("-p","--platform"):
+            if a == '64':
+                Build_32 = False
+            elif a == '32':
+                Build_32 = False
+        elif o in ("-b","--branch"):
+             branch == a
+        elif o in ("-d","--postgres"):
+             POSTGRES = True
+             Build_64 = True
+             Build_32 = False
+        elif o in ("-h","--help"):
+            usage()
+            sys.exit()
+        '''
     if len(sys.argv) == 2:    #keep this parameter here for the future we may let user use different branch to update source
         branch = sys.argv[1]
     elif len(sys.argv) > 2:
         print('Wrong arguments.')
         usage()
-
+        '''
     print('Updating source by %s branch.' % branch)
     if not os.path.exists(LOG_PATH):
         os.makedirs(LOG_PATH)
