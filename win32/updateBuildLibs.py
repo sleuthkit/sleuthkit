@@ -304,13 +304,13 @@ def main():
     print(Build_32)
     print(Both)
     print(POSTGRES)
-        '''
+    '''
     if len(sys.argv) == 2:    #keep this parameter here for the future we may let user use different branch to update source
         branch = sys.argv[1]
     elif len(sys.argv) > 2:
         print('Wrong arguments.')
         usage()
-        '''
+    '''
     print('Updating source by %s branch.' % branch)
     if not os.path.exists(LOG_PATH):
         os.makedirs(LOG_PATH)
