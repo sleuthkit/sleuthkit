@@ -76,7 +76,7 @@ def buildTSKAll():
         if(passed):
             buildTSK(64, "Release_PostgreSQL")
             return
-            
+
     if not Build_64:
         if(passed):
             buildTSK(32, "Release")
@@ -84,7 +84,7 @@ def buildTSKAll():
             buildTSK(32, "Release_NoLibs")
         if(passed):
             buildTSK(32, "Release_PostgreSQL")
-    if not BUILD_32:
+    if not Build_32:
         if(passed):
             buildTSK(64, "Release")
         if(passed):
