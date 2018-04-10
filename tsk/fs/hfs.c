@@ -937,7 +937,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
                 size_t rec_off;
                 hfs_btree_key_cat *key;
                 uint8_t retval;
-                uint16_t keylen;
+                int keylen;
 
                 // get the record offset in the node
                 rec_off =
@@ -1042,7 +1042,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
                 size_t rec_off;
                 hfs_btree_key_cat *key;
                 uint8_t retval;
-                uint16_t keylen;
+                int keylen;
 
                 // get the record offset in the node
                 rec_off =
