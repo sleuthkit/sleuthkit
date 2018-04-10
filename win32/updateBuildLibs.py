@@ -287,7 +287,7 @@ def main():
             elif a == '32':
                 Build_32 = False
                 Both = False
-            else a == '':
+            elif a == '':
                 Both = True
         elif o in ("-b","--branch"):
              branch == a
