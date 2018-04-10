@@ -269,7 +269,10 @@ def main():
 
     #by default we use master branch to update the source
     branch = 'master'
-
+    global Build_32
+    global Build_64
+    global Both
+    global POSTGRES
     try:
         opts, args = getopt.getopt(sys.argv[1:],"p:b:dh",['help','platform=','branch=','postgres'])
     except getopt.GetoptError as err:
@@ -297,6 +300,10 @@ def main():
         elif o in ("-h","--help"):
             usage()
             sys.exit()
+    print(Build_64)
+    print(Build_32)
+    print(Both)
+    print(POSTGRES)
         '''
     if len(sys.argv) == 2:    #keep this parameter here for the future we may let user use different branch to update source
         branch = sys.argv[1]
