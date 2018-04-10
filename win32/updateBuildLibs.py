@@ -234,15 +234,13 @@ def buildTSK(wPlatform, target):
         sys.stdout.flush()
         passed = False
         return
+    vs.append("/v:minimal")
     vs.append("/t:clean")
     vs.append("/t:build")
 
     outputFile = os.path.join(LOG_PATH, "TSKOutput.txt")
     VSout = open(outputFile, 'w')
-    if(APPVEYOR):
-        ret = subprocess.call(vs, stdout=sys.stdout)
-    else:
-        ret = subprocess.call(vs, stdout=VSout)
+    ret = subprocess.call(vs, stdout=sys.stdout)
     VSout.close()
     if ret != 0:
         print("ret = " + str(ret))
@@ -273,7 +271,7 @@ def main():
     branch = 'master'
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:],"pbdh",['help','platform=','branch=','postgres'])
+        opts, args = getopt.getopt(sys.argv[1:],"p:b:dh",['help','platform=','branch=','postgres'])
     except getopt.GetoptError as err:
         print(err)
         usage()
@@ -285,7 +283,7 @@ def main():
                 Build_32 = False
                 Both =False
             elif a == '32':
-                Build_32 = False
+                Build_64 = False
                 Both = False
             elif a == '':
                 Both = True
@@ -295,6 +293,7 @@ def main():
              POSTGRES = True
              Build_64 = True
              Build_32 = False
+             Both = False
         elif o in ("-h","--help"):
             usage()
             sys.exit()
