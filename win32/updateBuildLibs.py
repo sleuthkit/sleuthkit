@@ -23,6 +23,7 @@ LOG_PATH = os.path.join(CURRENT_PATH, 'output', time.strftime("%Y.%m.%d-%H.%M.%S
 POSTGRES = False
 Build_64 = True
 Build_32 = True
+Both = True
 
 def pullAndBuildAllDependencies(branch):
     '''
@@ -51,7 +52,7 @@ def pullAndBuildAllDependencies(branch):
     if(passed):
         gitPull(vmdkHome, "libvmdk_64bit", branch)
 
-    if not Build_64:
+    if not Build_64 or Both:
         # build 32-bit of libewf, libvhdi, libvmdk and TSK
         if(passed):
             buildDependentLibs(ewfHome, 32, "libewf")
@@ -62,7 +63,7 @@ def pullAndBuildAllDependencies(branch):
 
 
     # build 64-bit of libewf, libvhdi, libvmdk and TSK
-    if not Build_32:
+    if not Build_32 or Both:
         if(passed):
             buildDependentLibs(ewfHome, 64, "libewf")
         if(passed):
@@ -77,14 +78,14 @@ def buildTSKAll():
             buildTSK(64, "Release_PostgreSQL")
             return
 
-    if not Build_64:
+    if not Build_64 or Both:
         if(passed):
             buildTSK(32, "Release")
         if(passed):
             buildTSK(32, "Release_NoLibs")
         if(passed):
             buildTSK(32, "Release_PostgreSQL")
-    if not Build_32:
+    if not Build_32 or Both:
         if(passed):
             buildTSK(64, "Release")
         if(passed):
@@ -260,7 +261,7 @@ def usage():
     print('-h,--help show help')
     print('-b,--branch enter the branch name')
     print('-d,--postgres use this option for postgres build')
-    print('-p,--platform enter the platform to be build for 64 or 32')
+    print('-p,--platform enter the platform to be build for 64 or 32 or both')
     print('branch is which branch to build and is optional. Currently only works for master')
     print('Note: all the arguments above are optional')
     sys.stdout.flush()
@@ -282,8 +283,12 @@ def main():
         if o in ("-p","--platform"):
             if a == '64':
                 Build_32 = False
+                Both =False
             elif a == '32':
                 Build_32 = False
+                Both = False
+            else a == '':
+                Both = True
         elif o in ("-b","--branch"):
              branch == a
         elif o in ("-d","--postgres"):
