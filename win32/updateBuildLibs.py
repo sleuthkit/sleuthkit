@@ -24,7 +24,7 @@ POSTGRES = False
 Build_64 = True
 Build_32 = True
 Both = True
-
+APPVEYOR = os.getenv("APPVEYOR_BUILD_FOLDER",False);
 def pullAndBuildAllDependencies(branch):
     '''
         Compile libewf, libvhdi, libvmdk.
@@ -52,7 +52,7 @@ def pullAndBuildAllDependencies(branch):
     if(passed):
         gitPull(vmdkHome, "libvmdk_64bit", branch)
 
-    if not Build_64 or Both:
+    if Build_32 or Both:
         # build 32-bit of libewf, libvhdi, libvmdk and TSK
         if(passed):
             buildDependentLibs(ewfHome, 32, "libewf")
@@ -63,7 +63,7 @@ def pullAndBuildAllDependencies(branch):
 
 
     # build 64-bit of libewf, libvhdi, libvmdk and TSK
-    if not Build_32 or Both:
+    if Build_64 or Both:
         if(passed):
             buildDependentLibs(ewfHome, 64, "libewf")
         if(passed):
@@ -78,14 +78,14 @@ def buildTSKAll():
             buildTSK(64, "Release_PostgreSQL")
             return
 
-    if not Build_64 or Both:
+    if Build_32 or Both:
         if(passed):
             buildTSK(32, "Release")
         if(passed):
             buildTSK(32, "Release_NoLibs")
         if(passed):
             buildTSK(32, "Release_PostgreSQL")
-    if not Build_32 or Both:
+    if Build_64 or Both:
         if(passed):
             buildTSK(64, "Release")
         if(passed):
