@@ -158,7 +158,7 @@ def buildDependentLibs(libHome, wPlatform, targetDll):
     if wPlatform == 64:
         dllFile = os.path.join(libHome, "msvscpp", "x64", target, targetDll +".dll")
     elif wPlatform == 32:
-        dllFile = os.path.join(libHome,"msvscpp",target,targetDll + ".dll")
+        dllFile = os.path.join(libHome, "msvscpp", target, targetDll + ".dll")
     else:
         print("Invalid platform")
         sys.stdout.flush()
@@ -232,7 +232,10 @@ def buildTSK(wPlatform, target):
 
     outputFile = os.path.join(LOG_PATH, "TSKOutput.txt")
     VSout = open(outputFile, 'w')
-    ret = subprocess.call(vs, stdout=sys.stdout)
+    if(APPVEYOR):
+        ret = subprocess.call(vs, stdout=sys.stdout)
+    else:
+        ret = subprocess.call(vs, stdout=VSout)
     VSout.close()
     if ret != 0:
         print("ret = " + str(ret))
