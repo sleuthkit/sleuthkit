@@ -1,7 +1,10 @@
 # Copyright (c) 2017 Basis Technology.
 #
 # This software is distributed under the Common Public License 1.0
-#This script makes the repositories needed to compile The Sleuth Kit and its dependencies."
+#
+# This script makes the repositories needed to compile The Sleuth Kit and its dependencies.
+# To use it, first define the needed environment variables (such as LIBEWF_HOME).  This script 
+# will then clone the git repositories into those locations. 
 
 import os
 import subprocess
