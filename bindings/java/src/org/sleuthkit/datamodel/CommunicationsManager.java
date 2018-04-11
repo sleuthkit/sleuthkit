@@ -63,16 +63,24 @@ public final class CommunicationsManager {
 	private static final String RELATIONSHIP_ARTIFACT_TYPE_IDS_CSV_STR
 			= StringUtils.buildCSVString(RELATIONSHIP_ARTIFACT_TYPE_IDS);
 
-	CommunicationsManager(SleuthkitCase db) throws TskCoreException {
-		this.db = db;
-
+	/**
+	 * Construct a CommunicationsManager for the given SleuthkitCase.
+	 *
+	 * @param skCase The SleuthkitCase
+	 *
+	 * @throws TskCoreException if there is in error initializing the account
+	 *                          types.
+	 */
+	CommunicationsManager(SleuthkitCase skCase) throws TskCoreException {
+		this.db = skCase;
 		initAccountTypes();
 	}
 
 	/**
 	 * Make sure the predefined account types are in the account types table.
 	 *
-	 * @throws TskCoreException
+	 * @throws TskCoreException if there is an error reading the pre-existing
+	 *                          account types from the db.
 	 */
 	private void initAccountTypes() throws TskCoreException {
 		CaseDbConnection connection = db.getConnection();
@@ -96,7 +104,6 @@ public final class CommunicationsManager {
 							throw ex;
 						}
 						resultSet.close();
-						resultSet = null;
 					}
 
 					ResultSet rs2 = connection.executeQuery(statement, "SELECT account_type_id FROM account_types WHERE type_name = '" + type.getTypeName() + "'"); //NON-NLS
@@ -120,16 +127,14 @@ public final class CommunicationsManager {
 	}
 
 	/**
-	 * Reads in in the account types table.
-	 *
-	 * Returns the number of account types read in
+	 * Reads in in the account types table and returns the number of account
+	 * types read in.
 	 *
 	 * @return The number of account types read.
 	 *
-	 * @throws SQLException
-	 * @throws TskCoreException
+	 * @throws TskCoreException if there is a problem reading the account types.
 	 */
-	private int readAccountTypes() throws SQLException, TskCoreException {
+	private int readAccountTypes() throws TskCoreException {
 		CaseDbConnection connection = db.getConnection();
 		db.acquireSingleUserCaseReadLock();
 		Statement statement = null;
@@ -155,7 +160,7 @@ public final class CommunicationsManager {
 			}
 
 		} catch (SQLException ex) {
-			LOGGER.log(Level.SEVERE, "Failed to read account_types", ex);
+			throw new TskCoreException("Failed to read account_types", ex);
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
@@ -185,8 +190,7 @@ public final class CommunicationsManager {
 	 *
 	 * @return Account.Type
 	 *
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 *                          within TSK core
+	 * @throws TskCoreException if a critical error occurs within TSK core
 	 */
 	// NOTE: Full name given for Type for doxygen linking
 	public org.sleuthkit.datamodel.Account.Type addAccountType(String accountTypeName, String displayName) throws TskCoreException {
@@ -246,7 +250,7 @@ public final class CommunicationsManager {
 	 * Records that an account was used in a specific file. Behind the scenes,
 	 * it will create a case-specific Account object if it does not already
 	 * exist and create the needed database entries (which currently include
-	 * making a BlackboardArtifact.
+	 * making a BlackboardArtifact).
 	 *
 	 * @param accountType     account type
 	 * @param accountUniqueID unique account identifier (such as email address)
@@ -323,7 +327,7 @@ public final class CommunicationsManager {
 	}
 
 	/**
-	 * Add one or more relationships between the sender and recipient account
+	 * Add a relationship between the sender and each of the recipient account
 	 * instances. All account instances must be from the same data source.
 	 *
 	 * @param sender           sender account
@@ -396,7 +400,7 @@ public final class CommunicationsManager {
 	 * @param accountType     account type
 	 * @param accountUniqueID unique account identifier
 	 *
-	 * @return blackboard artifact, returns NULL is no matching account found
+	 * @return A matching account, either existing or newly created.
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
@@ -454,7 +458,7 @@ public final class CommunicationsManager {
 	 *                        artifact)
 	 * @param sourceFile		    Source file (for the artifact)
 	 *
-	 * @return blackboard artifact for the instance
+	 * @return blackboard artifact for the account file instance
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
@@ -483,7 +487,7 @@ public final class CommunicationsManager {
 	 * source file
 	 *
 	 * @param accountType     account type
-	 * @param accountUniqueID accountID
+	 * @param accountUniqueID Unique account ID (such as email address)
 	 * @param sourceFile		    Source file (for the artifact)
 	 *
 	 * @return blackboard artifact, returns NULL is no matching account found
@@ -541,12 +545,11 @@ public final class CommunicationsManager {
 	/**
 	 * Get the Account.Type for the give type name.
 	 *
-	 * @param accountTypeName An attribute type name.
+	 * @param accountTypeName An account type name.
 	 *
-	 * @return An account type or null if the account type does not exist.
+	 * @return An Account.Type or null if the account type does not exist.
 	 *
 	 * @throws TskCoreException If an error occurs accessing the case database.
-	 *
 	 */
 	// NOTE: Full name given for Type for doxygen linking
 	public org.sleuthkit.datamodel.Account.Type getAccountType(String accountTypeName) throws TskCoreException {
@@ -580,52 +583,7 @@ public final class CommunicationsManager {
 	}
 
 	/**
-	 * Get the Account object for the given account_id returns null, if does not
-	 * exist
-	 *
-	 * @param account_id account_id
-	 *
-	 * @return Account, returns NULL is no matching account found
-	 *
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 *                          within TSK core
-	 */
-	private Account getAccount(long account_id) throws TskCoreException {
-		Account account = null;
-		CaseDbConnection connection = db.getConnection();
-		db.acquireSingleUserCaseReadLock();
-		Statement s = null;
-		ResultSet rs = null;
-
-		try {
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT account_types.type_name as type_name,"
-					+ " account_types.display_name as display_name,"
-					+ " accounts.account_id as account_id,"
-					+ " accounts.account_unique_identifier as account_unique_identifier"
-					+ " FROM accounts as accounts"
-					+ " JOIN account_types as account_types"
-					+ " ON accounts.account_type_id = account_types.account_type_id"
-					+ " WHERE accounts.account_id = " + account_id); //NON-NLS
-
-			if (rs.next()) {
-				Account.Type accountType = new Account.Type(rs.getString("type_name"), rs.getString("display_name"));
-				account = new Account(rs.getInt("account_id"), accountType, rs.getString("account_unique_identifier"));
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting account from account_id", ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			connection.close();
-			db.releaseSingleUserCaseReadLock();
-		}
-
-		return account;
-	}
-
-	/**
-	 * Adds a row in account relationships table
+	 * Add a row in account relationships table.
 	 *
 	 * @param account1_id           account_id for account1
 	 * @param account2_id           account_id for account2
@@ -674,8 +632,8 @@ public final class CommunicationsManager {
 	}
 
 	/**
-	 * Returns a list of AccountDeviceInstances that at least one relationship
-	 * that meets the criteria listed in the filters.
+	 * Returns a list of AccountDeviceInstances that have at least one
+	 * relationship that meets the criteria listed in the filters.
 	 *
 	 * Applicable filters: DeviceFilter, AccountTypeFilter, DateRangeFilter,
 	 * RelationshipTypeFilter
@@ -782,7 +740,9 @@ public final class CommunicationsManager {
 	/**
 	 * Get the number of relationships between all pairs of accounts in the
 	 * given set. For each pair of accounts <a2,a1> == <a1,a2>, find the number
-	 * of relationships that pass the given filter, between those two accounts.
+	 * of relationships between those two accounts that pass the given filter,.
+	 *
+	 * Applicable filters: DeviceFilter, DateRangeFilter, RelationshipTypeFilter
 	 *
 	 * @param accounts The set of accounts to count the relationships (pairwise)
 	 *                 between.
@@ -958,7 +918,7 @@ public final class CommunicationsManager {
 
 	/**
 	 * Get the unique relationship sources (such as EMAIL artifacts) associated
-	 * with an account on a given device (AccountDeviceInstance) that meet the
+	 * with accounts on specific devices (AccountDeviceInstance) that meet the
 	 * filter criteria.
 	 *
 	 * Applicable filters: RelationshipTypeFilter, DateRangeFilter
@@ -1060,6 +1020,8 @@ public final class CommunicationsManager {
 	 * Get a set of AccountDeviceInstances that have relationships with the
 	 * given AccountDeviceInstance and meet the criteria of the given filter.
 	 *
+	 * Applicable filters: DeviceFilter, DateRangeFilter, RelationshipTypeFilter
+	 *
 	 * @param accountDeviceInstance The account device instance.
 	 * @param filter                The filters to apply.
 	 *
@@ -1075,12 +1037,9 @@ public final class CommunicationsManager {
 
 		//set up applicable filters 
 		Set<String> applicableInnerQueryFilters = new HashSet<String>(Arrays.asList(
-				CommunicationsFilter.DateRangeFilter.class
-						.getName(),
-				CommunicationsFilter.DeviceFilter.class
-						.getName(),
-				CommunicationsFilter.RelationshipTypeFilter.class
-						.getName()
+				CommunicationsFilter.DateRangeFilter.class.getName(),
+				CommunicationsFilter.DeviceFilter.class.getName(),
+				CommunicationsFilter.RelationshipTypeFilter.class.getName()
 		));
 
 		String innerQueryfilterSQL = getCommunicationsFilterSQL(filter, applicableInnerQueryFilters);
@@ -1104,8 +1063,7 @@ public final class CommunicationsManager {
 
 		// set up applicable filters
 		Set<String> applicableFilters = new HashSet<String>(Arrays.asList(
-				CommunicationsFilter.AccountTypeFilter.class
-						.getName()
+				CommunicationsFilter.AccountTypeFilter.class.getName()
 		));
 
 		String filterSQL = getCommunicationsFilterSQL(filter, applicableFilters);
@@ -1171,10 +1129,10 @@ public final class CommunicationsManager {
 	}
 
 	/**
-	 * Get the relationship sources of relationships between the given account
-	 * device instances.
+	 * Get the sources (artifacts, content) of relationships between the given
+	 * account device instances.
 	 *
-	 * Applicable filters: RelationshipTypeFilter, DateRangeFilter
+	 * Applicable filters: DeviceFilter, DateRangeFilter, RelationshipTypeFilter
 	 *
 	 * @param account1 First AccountDeviceInstance
 	 * @param account2 Second AccountDeviceInstance
@@ -1236,7 +1194,7 @@ public final class CommunicationsManager {
 	}
 
 	/**
-	 * Get account_type_if for the given account type.
+	 * Get account_type_id for the given account type.
 	 *
 	 * @param accountType account type to lookup.
 	 *
@@ -1251,11 +1209,13 @@ public final class CommunicationsManager {
 	}
 
 	/**
-	 * Converts a list of accountIDs into a set of possible unordered pairs.
+	 * Normalize the given account ID according to the rules of the given
+	 * Account.Type.
 	 *
-	 * @param account_ids - list of accountID.
+	 * @param accountType     The type of account to normalize for
+	 * @param accountUniqueID The account id to normalize
 	 *
-	 * @return Set<UnorderedPair<Long>>
+	 * @return The normalized account id.
 	 */
 	private String normalizeAccountID(Account.Type accountType, String accountUniqueID) {
 		String normailzeAccountID = accountUniqueID;
@@ -1269,6 +1229,14 @@ public final class CommunicationsManager {
 		return normailzeAccountID;
 	}
 
+	/**
+	 * Normalize the phone number by removing all non numeric characters, except
+	 * for leading +.
+	 *
+	 * @param phoneNum The phone number to normalize
+	 *
+	 * @return The normalized phone number.
+	 */
 	private String normalizePhoneNum(String phoneNum) {
 		String normailzedPhoneNum = phoneNum.replaceAll("\\D", "");
 
@@ -1279,6 +1247,13 @@ public final class CommunicationsManager {
 		return normailzedPhoneNum;
 	}
 
+	/**
+	 * Normalize the given email address by converting it to lowercase.
+	 *
+	 * @param emailAddress The email address tot normalize
+	 *
+	 * @return The normalized email address.
+	 */
 	private String normalizeEmailAddress(String emailAddress) {
 		String normailzedEmailAddr = emailAddress.toLowerCase();
 
