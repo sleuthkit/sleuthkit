@@ -1410,7 +1410,7 @@ public final class TimelineManager {
 
 	private String getSQLWhere(HideKnownFilter filter) {
 		if (filter.isActive()) {
-			return "(known_state IS NOT '" + TskData.FileKnown.KNOWN.getFileKnownValue() + "')"; // NON-NLS
+			return "(known_state != " + TskData.FileKnown.KNOWN.getFileKnownValue() + ")"; // NON-NLS
 		} else {
 			return getTrueLiteral();
 		}
