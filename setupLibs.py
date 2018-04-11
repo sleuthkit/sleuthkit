@@ -12,12 +12,11 @@ def setupLibrary(path):
     ''' sets up the library path variable '''
     git_repository_url = "https://github.com/sleuthkit/"
     git_zlib_repository_url="https://github.com/madler/"
-    gitClone(git_zlib_repository_url,"zlib",path)
-    libraries = ["libvhdi_64bit", "libvmdk_64bit", "libewf_64bit"]
-    for library in libraries:
-        library_path = os.path.normpath(path + library)
+    gitClone(git_zlib_repository_url,"zlib",path["libewf_64bit"])
+    for library,base_library_path in path.items():
+        library_path = os.path.normpath(os.path.join(base_library_path , library))
         if not os.path.exists(library_path):
-            gitClone(git_repository_url, library, path)
+            gitClone(git_repository_url, library, base_library_path)
 
 def gitClone(URL, repo, path):
 
@@ -27,28 +26,27 @@ def gitClone(URL, repo, path):
         sys.exit(1)
 
 
-def usage():
-    ''' Print out how to use the script '''
-
-    print('Usage: python3 setupLibs.py [library directory]')
-    sys.stdout.flush()
-    sys.exit(1)
-
 def main():
+    #setting the base directory with the help of library env variables.
+    libewf_home = os.getenv("LIBEWF_HOME")
+    libvhdi_home = os.getenv("LIBVHDI_HOME")
+    libvmdk_home = os.getenv("LIBVMDK_HOME")
+    base_Library_path = {}
+    if(libewf_home != None):
+        base_Library_path["libewf_64bit"] = os.path.dirname(libewf_home)
+    else:
+        print('Please set the env variable LIBEWF_HOME')
 
-    libhome = os.getenv("LIBEWF_HOME"); #setting the base directory as current directory if no argument is passed
-    if(libhome == None):
-        base_Library_path = os.path.dirname(libHome);
+    if(libvhdi_home != None):
+        base_Library_path["libvhdi_64bit"] = os.path.dirname(libvhdi_home)
+    else:
+        print('Please set the env variable LIBVHDI_HOME')
 
-    if len(sys.argv) == 2:
-        base_Library_path = sys.argv[1]
-    elif len(sys.argv) > 2:
-        print('Wrong arguments.')
-        usage()
-    if not os.path.exists(base_Library_path):
-        print("Please give a valid path")
-        sys.stdout.flush()
-        sys.exit(1)
+    if(libvmdk_home != None):
+        base_Library_path["libvmdk_64bit"] = os.path.dirname(os.path.dirname(libvmdk_home))
+    else:
+        print('Please set the env variable LIBVMDK_HOME')
+
 
     setupLibrary(base_Library_path);
 

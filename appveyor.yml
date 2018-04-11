@@ -29,7 +29,7 @@ services:
 
 build_script:
       - python setupLibs.py "C:\\"
-      - python %APPVEYOR_BUILD_FOLDER%\win32\updateBuildLibs.py --postgres -p 64
+      - python %APPVEYOR_BUILD_FOLDER%\win32\updateBuildLibs.py -m
       - ps: ant -version
       - ps: pushd bindings/java
       - cmd: ant dist-PostgreSQL

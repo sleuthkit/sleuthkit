@@ -10,7 +10,6 @@ import re
 import shutil
 import subprocess
 import sys
-import getopt
 from sys import platform as _platform
 
 import time
@@ -20,11 +19,8 @@ MSBUILD_PATH = os.path.normpath("c:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild
 CURRENT_PATH = os.getcwd()
 # save the build log in the output directory
 LOG_PATH = os.path.join(CURRENT_PATH, 'output', time.strftime("%Y.%m.%d-%H.%M.%S"))
-POSTGRES = False
-Build_64 = True
-Build_32 = True
-Both = True
-APPVEYOR = os.getenv("APPVEYOR_BUILD_FOLDER",False);
+APPVEYOR = os.getenv("APPVEYOR",False)
+MINIMAL = False
 def pullAndBuildAllDependencies(branch):
     '''
         Compile libewf, libvhdi, libvmdk.
@@ -52,7 +48,7 @@ def pullAndBuildAllDependencies(branch):
     if(passed):
         gitPull(vmdkHome, "libvmdk_64bit", branch)
 
-    if Build_32 or Both:
+    if not MINIMAL:
         # build 32-bit of libewf, libvhdi, libvmdk and TSK
         if(passed):
             buildDependentLibs(ewfHome, 32, "libewf")
@@ -63,35 +59,31 @@ def pullAndBuildAllDependencies(branch):
 
 
     # build 64-bit of libewf, libvhdi, libvmdk and TSK
-    if Build_64 or Both:
-        if(passed):
-            buildDependentLibs(ewfHome, 64, "libewf")
-        if(passed):
-            buildDependentLibs(vhdiHome, 64, "libvhdi")
-        if(passed):
-            buildDependentLibs(vmdkHome, 64, "libvmdk")
+    if(passed):
+        buildDependentLibs(ewfHome, 64, "libewf")
+    if(passed):
+        buildDependentLibs(vhdiHome, 64, "libvhdi")
+    if(passed):
+        buildDependentLibs(vmdkHome, 64, "libvmdk")
 
 
 def buildTSKAll():
-    if(POSTGRES):
-        if(passed):
-            buildTSK(64, "Release_PostgreSQL")
-            return
 
-    if Build_32 or Both:
+    if not MINIMAL:
         if(passed):
             buildTSK(32, "Release")
         if(passed):
             buildTSK(32, "Release_NoLibs")
         if(passed):
             buildTSK(32, "Release_PostgreSQL")
-    if Build_64 or Both:
+
         if(passed):
             buildTSK(64, "Release")
         if(passed):
             buildTSK(64, "Release_NoLibs")
-        if(passed):
-            buildTSK(64, "Release_PostgreSQL")
+
+    if(passed):
+        buildTSK(64, "Release_PostgreSQL")
 
 def checkPathExist(path):
     global passed
@@ -164,7 +156,7 @@ def buildDependentLibs(libHome, wPlatform, targetDll):
     if wPlatform == 64:
         dllFile = os.path.join(libHome, "msvscpp", "x64", target, targetDll +".dll")
     elif wPlatform == 32:
-        dllFile = os.path.join(libHome, "msvscpp", target, targetDll + ".dll")
+        dllFile = os.path.join(libHome,"msvscpp",target,targetDll + ".dll")
     else:
         print("Invalid platform")
         sys.stdout.flush()
@@ -183,7 +175,6 @@ def buildDependentLibs(libHome, wPlatform, targetDll):
         vs.append("/p:platform=x64")
     elif wPlatform == 32:
         vs.append("/p:platform=Win32")
-    vs.append("/v:minimal")
     vs.append("/t:clean")
     vs.append("/t:build")
 
@@ -234,7 +225,6 @@ def buildTSK(wPlatform, target):
         sys.stdout.flush()
         passed = False
         return
-    vs.append("/v:minimal")
     vs.append("/t:clean")
     vs.append("/t:build")
 
@@ -255,51 +245,31 @@ def usage():
     '''
     Print out how to use this script.
     '''
-    print('Usage: python3 updataBuildlibs.py [-h | --help, -b <branch> | --branch=<branch>, -d | --postgres, --platform=<[64|32]> |  -p <64|32>')
-    print('-h,--help show help')
-    print('-b,--branch enter the branch name')
-    print('-d,--postgres use this option for postgres build')
-    print('-p,--platform enter the platform to be build for 64 or 32 or both')
+    print('Usage: python3 updataBuildlibs.py [[-h | --help, -b <branch> | --branch=<branch>, -m | --minimal]')
     print('branch is which branch to build and is optional. Currently only works for master')
-    print('Note: all the arguments above are optional')
+    print('-m,--minimal use this option for postgres build')
     sys.stdout.flush()
     sys.exit(1)
 
 def main():
-
     #by default we use master branch to update the source
     branch = 'master'
-    global Build_32
-    global Build_64
-    global Both
-    global POSTGRES
+    global MINIMAL
     try:
-        opts, args = getopt.getopt(sys.argv[1:],"p:b:dh",['help','platform=','branch=','postgres'])
+        opts, args = getopt.getopt(sys.argv[1:],"mhb:",['help','minimal','branch='])
     except getopt.GetoptError as err:
         print(err)
         usage()
         sys.exit(2)
 
     for o,a in opts:
-        if o in ("-p","--platform"):
-            if a == '64':
-                Build_32 = False
-                Both =False
-            elif a == '32':
-                Build_64 = False
-                Both = False
-            elif a == '':
-                Both = True
+        if o in ("-m","--minimal"):
+            MINIMAL = True
         elif o in ("-b","--branch"):
-             branch == a
-        elif o in ("-d","--postgres"):
-             POSTGRES = True
-             Build_64 = True
-             Build_32 = False
-             Both = False
+            branch = a
         elif o in ("-h","--help"):
             usage()
-            sys.exit()
+            system.exit(2)
 
     print('Updating source by %s branch.' % branch)
     if not os.path.exists(LOG_PATH):
