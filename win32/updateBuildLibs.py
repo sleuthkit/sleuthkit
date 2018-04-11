@@ -10,6 +10,7 @@ import re
 import shutil
 import subprocess
 import sys
+import getopt
 from sys import platform as _platform
 
 import time
