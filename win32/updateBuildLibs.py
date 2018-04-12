@@ -212,7 +212,7 @@ def buildTSK(wPlatform, target):
     TSK_HOME = os.getenv("TSK_HOME",False)
 
     if not TSK_HOME:
-        print("Please set the TSK_HOME env variable")
+        print("Please set the TSK_HOME environment variable")
     else:
         os.chdir(os.path.join(os.getenv("TSK_HOME"),"win32"))
 
