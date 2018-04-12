@@ -168,18 +168,32 @@ public final class TimelineManager {
 	 * @param eventIDsWithTags the event ids to get the tag counts map for
 	 *
 	 * @return a map from tagname displayname to count of applications
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public Map<String, Long> getTagCountsByTagName(Set<Long> eventIDsWithTags) throws TskCoreException {
 		sleuthkitCase.acquireSingleUserCaseReadLock();
+		final String query = "select summed_counts.display_name as display_name, SUM(summed_counts.count) as count from "
+				+ "(SELECT tag_names.display_name as display_name, COUNT(DISTINCT blackboard_artifact_tags.tag_id) AS count "
+				+ "	FROM tag_names "
+				+ "	INNER JOIN blackboard_artifact_tags ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id "
+				+ "	INNER JOIN events ON events.artifact_id = blackboard_artifact_tags.artifact_id "
+				+ "	WHERE events.event_id IN (" + StringUtils.joinAsStrings(eventIDsWithTags, ", ") + ") "
+				+ "	GROUP BY tag_names.tag_name_id "
+				+ " UNION ALL "
+				+ "SELECT tag_names.display_name as display_name, COUNT(DISTINCT content_tags.tag_id) AS count "
+				+ "	FROM tag_names "
+				+ "	INNER JOIN content_tags ON content_tags.tag_name_id = tag_names.tag_name_id "
+				+ "	INNER JOIN events ON events.file_id = content_tags.obj_id "
+				+ "	WHERE events.event_id IN (" + StringUtils.joinAsStrings(eventIDsWithTags, ", ") + ") "
+				+ "	GROUP BY tag_names.tag_name_id	) as summed_counts "
+				+ "GROUP BY summed_counts.display_name";
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement statement = con.createStatement();
-				ResultSet resultSet = statement.executeQuery("SELECT tag_name_display_name, COUNT(DISTINCT tag_id) AS count FROM tags" //NON-NLS
-						+ " WHERE event_id IN (" + StringUtils.joinAsStrings(eventIDsWithTags, ", ") + ")" //NON-NLS
-						+ " GROUP BY tag_name_id" //NON-NLS
-						+ " ORDER BY tag_name_display_name");) {
+				ResultSet resultSet = statement.executeQuery(query);) {
 			HashMap<String, Long> counts = new HashMap<>();
 			while (resultSet.next()) {
-				counts.put(resultSet.getString("tag_name_display_name"), resultSet.getLong("count")); //NON-NLS
+				counts.put(resultSet.getString("display_name"), resultSet.getLong("count")); //NON-NLS
 			}
 			return counts;
 		} catch (SQLException ex) {
@@ -200,7 +214,7 @@ public final class TimelineManager {
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement statement = con.createStatement();) {
 			statement.execute(STATEMENTS.DROP_DB_INFO_TABLE.getSQL());
-			statement.execute(STATEMENTS.DROP_TAGS_TABLE.getSQL());
+//			statement.execute(STATEMENTS.DROP_TAGS_TABLE.getSQL());
 			statement.execute(STATEMENTS.DROP_HASH_SET_HITS_TABLE.getSQL());
 			statement.execute(STATEMENTS.DROP_HASH_SETS_TABLE.getSQL());
 			statement.execute(STATEMENTS.DROP_EVENTS_TABLE.getSQL());
@@ -213,22 +227,22 @@ public final class TimelineManager {
 		}
 	}
 
-	/**
-	 * drop only the tags table and rebuild it incase the tags have changed
-	 * while TL was not listening,
-	 */
-	public void reInitializeTags() throws TskCoreException {
-		sleuthkitCase.acquireSingleUserCaseWriteLock();
-		try (CaseDbConnection con = sleuthkitCase.getConnection();
-				Statement statement = con.createStatement();) {
-			statement.execute(STATEMENTS.DROP_TAGS_TABLE.getSQL());
-			initializeTagsTable();
-		} catch (SQLException ex) {
-			throw new TskCoreException("could not drop old tags table", ex); // NON-NLS
-		} finally {
-			sleuthkitCase.releaseSingleUserCaseWriteLock();
-		}
-	}
+//	/**
+//	 * drop only the tags table and rebuild it incase the tags have changed
+//	 * while TL was not listening,
+//	 */
+//	public void reInitializeTags() throws TskCoreException {
+//		sleuthkitCase.acquireSingleUserCaseWriteLock();
+//		try (CaseDbConnection con = sleuthkitCase.getConnection();
+//				Statement statement = con.createStatement();) {
+//			statement.execute(STATEMENTS.DROP_TAGS_TABLE.getSQL());
+//			initializeTagsTable();
+//		} catch (SQLException ex) {
+//			throw new TskCoreException("could not drop old tags table", ex); // NON-NLS
+//		} finally {
+//			sleuthkitCase.releaseSingleUserCaseWriteLock();
+//		}
+//	}
 
 	public Interval getBoundingEventsInterval(Interval timeRange, RootFilter filter, DateTimeZone timeZone) throws TskCoreException {
 		long start = timeRange.getStartMillis() / 1000;
@@ -432,6 +446,8 @@ public final class TimelineManager {
 
 	/**
 	 * @return maximum time in seconds from unix epoch
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public Long getMaxTime() throws TskCoreException {
 		sleuthkitCase.acquireSingleUserCaseReadLock();
@@ -1012,7 +1028,6 @@ public final class TimelineManager {
 			eventIDs = getEventIDs(objectID);
 		} else {
 			eventIDs = getEventIDs(objectID, artifactID);
-
 		}
 
 //update tagged state for all event with selected ids
@@ -1086,8 +1101,8 @@ public final class TimelineManager {
 
 		//get some info about the range of dates requested
 		final String queryString = "SELECT count(DISTINCT events.event_id) AS count, " + typeColumnHelper(useSubTypes) //NON-NLS
-				+ " FROM events" + useHashHitTablesHelper(filter) + useTagTablesHelper(filter) + 
-				" WHERE time >= " + startTime + " AND time < " + endTime + " AND " + getSQLWhere(filter) // NON-NLS
+				+ " FROM events" + useHashHitTablesHelper(filter) + useTagTablesHelper(filter)
+				+ " WHERE time >= " + startTime + " AND time < " + endTime + " AND " + getSQLWhere(filter) // NON-NLS
 				+ " GROUP BY " + typeColumnHelper(useSubTypes); // NON-NLS
 
 		sleuthkitCase.acquireSingleUserCaseReadLock();
