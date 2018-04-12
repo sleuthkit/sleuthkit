@@ -20,7 +20,6 @@ MSBUILD_PATH = os.path.normpath("c:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild
 CURRENT_PATH = os.getcwd()
 # save the build log in the output directory
 LOG_PATH = os.path.join(CURRENT_PATH, 'output', time.strftime("%Y.%m.%d-%H.%M.%S"))
-APPVEYOR = os.getenv("APPVEYOR",False)
 MINIMAL = False
 def pullAndBuildAllDependencies(branch):
     '''
@@ -210,7 +209,11 @@ def buildTSK(wPlatform, target):
 
     print ("Building TSK " + str(wPlatform) + "-bit " + target + " build.")
     sys.stdout.flush()
-    if(APPVEYOR):
+    TSK_HOME = os.getenv("TSK_HOME",False)
+
+    if not TSK_HOME:
+        print("Please set the TSK_HOME env variable")
+    else:
         os.chdir(os.path.join(os.getenv("TSK_HOME"),"win32"))
 
     vs = []
