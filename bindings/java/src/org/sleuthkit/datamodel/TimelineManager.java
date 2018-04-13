@@ -88,12 +88,12 @@ public final class TimelineManager {
 	private final static String EVENTS_TAGS_TABLE = "("
 			+ " SELECT  event_id, datasource_id, events.file_id, events.artifact_id,"
 			+ "			time, sub_type, base_type, full_description, med_description, "
-			+ "			short_description, known_state, hash_hit, tagged, tag_name_id "
+			+ "			short_description, known_state, hash_hit, tagged, tag_name_id, tag_id "
 			+ "		from events LEFT OUTER JOIN content_tags ON (content_tags.obj_id = events.file_id) "
 			+ "	UNION ALL "
 			+ "	SELECT  event_id, datasource_id, events.file_id, events.artifact_id,"
 			+ "			time, sub_type, base_type, full_description, med_description, "
-			+ "			short_description, known_state, hash_hit, tagged, tag_name_id "
+			+ "			short_description, known_state, hash_hit, tagged, tag_name_id, tag_id "
 			+ "		FROM events LEFT OUTER JOIN blackboard_artifact_tags ON (blackboard_artifact_tags.artifact_id = events.artifact_id)"
 			+ " ) AS events";
 
@@ -184,21 +184,12 @@ public final class TimelineManager {
 	 */
 	public Map<String, Long> getTagCountsByTagName(Set<Long> eventIDsWithTags) throws TskCoreException {
 		sleuthkitCase.acquireSingleUserCaseReadLock();
-		final String query = "select summed_counts.display_name as display_name, SUM(summed_counts.count) as count from "
-				+ "(SELECT tag_names.display_name as display_name, COUNT(DISTINCT blackboard_artifact_tags.tag_id) AS count "
-				+ "	FROM tag_names "
-				+ "	INNER JOIN blackboard_artifact_tags ON blackboard_artifact_tags.tag_name_id = tag_names.tag_name_id "
-				+ "	INNER JOIN events ON events.artifact_id = blackboard_artifact_tags.artifact_id "
-				+ "	WHERE events.event_id IN (" + StringUtils.joinAsStrings(eventIDsWithTags, ", ") + ") "
-				+ "	GROUP BY tag_names.tag_name_id "
-				+ " UNION ALL "
-				+ "SELECT tag_names.display_name as display_name, COUNT(DISTINCT content_tags.tag_id) AS count "
-				+ "	FROM tag_names "
-				+ "	INNER JOIN content_tags ON content_tags.tag_name_id = tag_names.tag_name_id "
-				+ "	INNER JOIN events ON events.file_id = content_tags.obj_id "
-				+ "	WHERE events.event_id IN (" + StringUtils.joinAsStrings(eventIDsWithTags, ", ") + ") "
-				+ "	GROUP BY tag_names.tag_name_id	) as summed_counts "
-				+ "GROUP BY summed_counts.display_name";
+		String query
+				= "SELECT tag_names.display_name AS display_name, COUNT(distinct tag_id) AS count FROM "
+				+ getAugmentedEventsTablesSQL(true)
+				+ " JOIN tag_names ON (events.tag_name_id = tag_names.tag_name_id ) "
+				+ " WHERE event_id IN (" + StringUtils.buildCSVString(eventIDsWithTags) + ") "
+				+ " GROUP BY tag_names.tag_name_id";
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement statement = con.createStatement();
 				ResultSet resultSet = statement.executeQuery(query);) {
@@ -208,7 +199,7 @@ public final class TimelineManager {
 			}
 			return counts;
 		} catch (SQLException ex) {
-			throw new TskCoreException("Failed to get tag counts by tag name.", ex); //NON-NLS
+			throw new TskCoreException("Failed to get tag counts by tag name with query: " + query, ex); //NON-NLS
 		} finally {
 			sleuthkitCase.releaseSingleUserCaseReadLock();
 		}
@@ -259,11 +250,11 @@ public final class TimelineManager {
 		long end = timeRange.getEndMillis() / 1000;
 		final String sqlWhere = getSQLWhere(filter);
 		sleuthkitCase.acquireSingleUserCaseReadLock();
+		final boolean needsTags = filter.getTagsFilter().isActive();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement stmt = con.createStatement(); //can't use prepared statement because of complex where clause
-				ResultSet results = stmt.executeQuery(
-						" SELECT (SELECT Max(time) FROM " + getEventsJoinedTagsTables(filter) + useHashHitTablesHelper(filter) + " WHERE time <=" + start + " AND " + sqlWhere + ") AS start,"
-						+ "(SELECT Min(time)  FROM " + getEventsJoinedTagsTables(filter) + useHashHitTablesHelper(filter) + " WHERE time >= " + end + " AND " + sqlWhere + ") AS end");) {
+				ResultSet results = stmt.executeQuery(" SELECT (SELECT Max(time) FROM " + getAugmentedEventsTablesSQL(needsTags) + useHashHitTablesHelper(filter) + " WHERE time <=" + start + " AND " + sqlWhere + ") AS start,"
+						+ "(SELECT Min(time)  FROM " + getAugmentedEventsTablesSQL(needsTags) + useHashHitTablesHelper(filter) + " WHERE time >= " + end + " AND " + sqlWhere + ") AS end");) {
 
 			if (results.next()) {
 				long start2 = results.getLong("start"); // NON-NLS
@@ -321,7 +312,8 @@ public final class TimelineManager {
 		ArrayList<Long> resultIDs = new ArrayList<Long>();
 
 		sleuthkitCase.acquireSingleUserCaseReadLock();
-		final String query = "SELECT events.event_id AS event_id FROM" + getEventsJoinedTagsTables(filter) + useHashHitTablesHelper(filter)
+		final boolean needsTags = filter.getTagsFilter().isActive();
+		final String query = "SELECT events.event_id AS event_id FROM" + getAugmentedEventsTablesSQL(needsTags) + useHashHitTablesHelper(filter)
 				+ " WHERE time >=  " + startTime + " AND time <" + endTime + " AND " + getSQLWhere(filter) + " ORDER BY time ASC"; // NON-NLS
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement stmt = con.createStatement();
@@ -359,10 +351,11 @@ public final class TimelineManager {
 		}
 
 		ArrayList<CombinedEvent> combinedEvents = new ArrayList<>();
+		final boolean needsTags = filter.getTagsFilter().isActive();
 		final String query = "SELECT full_description, time, file_id, "
 				+ csvAggFunction("CAST(events.event_id AS VARCHAR)") + " AS eventIDs, "
 				+ csvAggFunction("CAST(sub_type AS VARCHAR)") + " AS eventTypes"
-				+ " FROM " + getEventsJoinedTagsTables(filter) + useHashHitTablesHelper(filter)
+				+ " FROM " + getAugmentedEventsTablesSQL(needsTags) + useHashHitTablesHelper(filter)
 				+ " WHERE time >= " + startTime + " AND time <" + endTime + " AND " + getSQLWhere(filter)
 				+ " GROUP BY time, full_description, file_id ORDER BY time ASC, full_description";
 
@@ -988,10 +981,11 @@ public final class TimelineManager {
 
 		//do we want the root or subtype column of the databse
 		final boolean useSubTypes = EventTypeZoomLevel.SUB_TYPE.equals(zoomLevel);
+		final boolean needsTags = filter.getTagsFilter().isActive();
 
 		//get some info about the range of dates requested
 		final String queryString = "SELECT count(DISTINCT events.event_id) AS count, " + typeColumnHelper(useSubTypes) //NON-NLS
-				+ " FROM " + getEventsJoinedTagsTables(filter) + useHashHitTablesHelper(filter)
+				+ " FROM " + getAugmentedEventsTablesSQL(needsTags) + useHashHitTablesHelper(filter)
 				+ " WHERE time >= " + startTime + " AND time < " + endTime + " AND " + getSQLWhere(filter) // NON-NLS
 				+ " GROUP BY " + typeColumnHelper(useSubTypes); // NON-NLS
 
@@ -1023,14 +1017,14 @@ public final class TimelineManager {
 	 * Omitting details it is: SELECT <all relevant columns> FROM events JOIN
 	 * content_tags UNION ALL events JOIN blackboard_artifact_tags
 	 *
-	 * @param filter The root filter. If the tags filter is active, the sql for
-	 *               the joined tables is returned.
+	 * @param filter   The root filter. If the tags filter is active, the sql
+	 *                 for the joined tables is returned.
+	 * @param needTags the value of needTags
 	 *
-	 * @return Either "events" or the SQL expresion for events joined to the
-	 *         tags tables.
+	 * @return the java.lang.String
 	 */
-	private String getEventsJoinedTagsTables(RootFilter filter) {
-		return filter.getTagsFilter().isActive() ? EVENTS_TAGS_TABLE : "events";
+	private String getAugmentedEventsTablesSQL(boolean needTags) {
+		return needTags ? EVENTS_TAGS_TABLE : " events ";
 	}
 
 	/**
@@ -1068,13 +1062,14 @@ public final class TimelineManager {
 		String descriptionColumn = getDescriptionColumn(descriptionLOD);
 		final boolean useSubTypes = typeZoomLevel.equals(EventTypeZoomLevel.SUB_TYPE);
 		String typeColumn = typeColumnHelper(useSubTypes);
+		final boolean needsTags = filter.getTagsFilter().isActive();
 		//compose query string, the new-lines are only for nicer formatting if printing the entire query
 		String query = "SELECT " + formatTimeFunction(rangeInfo.getPeriodSize(), timeZone) + " AS interval, " // NON-NLS
 				+ csvAggFunction("events.event_id") + " as event_ids, " //NON-NLS
 				+ csvAggFunction("CASE WHEN hash_hit = 1 THEN events.event_id ELSE NULL END") + " as hash_hits, " //NON-NLS
 				+ csvAggFunction("CASE WHEN tagged = 1 THEN events.event_id ELSE NULL END") + " as taggeds, " //NON-NLS
 				+ " min(time) AS minTime, max(time) AS maxTime,  " + typeColumn + ", " + descriptionColumn // NON-NLS
-				+ " FROM " + getEventsJoinedTagsTables(filter) + useHashHitTablesHelper(filter) // NON-NLS
+				+ " FROM " + getAugmentedEventsTablesSQL(needsTags) + useHashHitTablesHelper(filter) // NON-NLS
 				+ " WHERE time >= " + start + " AND time < " + end + " AND " + getSQLWhere(filter) // NON-NLS
 				+ " GROUP BY interval, " + typeColumn + " , " + descriptionColumn // NON-NLS
 				+ " ORDER BY min(time)"; // NON-NLS
@@ -1087,7 +1082,7 @@ public final class TimelineManager {
 				Statement createStatement = con.createStatement();
 				ResultSet resultSet = createStatement.executeQuery(query)) {
 			while (resultSet.next()) {
-				events.add(eventClusterHelper(resultSet, useSubTypes, descriptionLOD,  timeZone));
+				events.add(eventClusterHelper(resultSet, useSubTypes, descriptionLOD, timeZone));
 			}
 		} catch (SQLException ex) {
 			LOGGER.log(Level.SEVERE, "Failed to get events with query: " + query, ex); // NON-NLS
