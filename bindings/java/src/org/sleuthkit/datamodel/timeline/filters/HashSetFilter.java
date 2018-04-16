@@ -23,60 +23,51 @@ import java.util.Objects;
 /**
  * Filter for an individual hash set
  */
-public class HashSetFilter extends AbstractFilter {
+final public class HashSetFilter extends AbstractFilter {
 
-    private final String hashSetName;
-    private final long hashSetID;
+	private final String hashSetName;
 
-    public long getHashSetID() {
-        return hashSetID;
-    }
+	public String getHashSetName() {
+		return hashSetName;
+	}
 
-    public String getHashSetName() {
-        return hashSetName;
-    }
+	public HashSetFilter(String hashSetName) {
+		this.hashSetName = hashSetName;
+	}
 
-    public HashSetFilter(String hashSetName, long hashSetID) {
-        this.hashSetName = hashSetName;
-        this.hashSetID = hashSetID;
-    }
+	@Override
+	synchronized public HashSetFilter copyOf() {
+		HashSetFilter filterCopy = new HashSetFilter(getHashSetName());
+		filterCopy.setSelected(isSelected());
+		filterCopy.setDisabled(isDisabled());
+		return filterCopy;
+	}
 
-    @Override
-    synchronized public HashSetFilter copyOf() {
-        HashSetFilter filterCopy = new HashSetFilter(getHashSetName(), getHashSetID());
-        filterCopy.setSelected(isSelected());
-        filterCopy.setDisabled(isDisabled());
-        return filterCopy;
-    }
+	@Override
+	public String getDisplayName() {
+		return hashSetName;
+	}
 
-    @Override
-    public String getDisplayName() {
-        return hashSetName;
-    }
+	@Override
+	public int hashCode() {
+		int hash = 7;
+		hash = 79 * hash + Objects.hashCode(this.hashSetName);
+		return hash;
+	}
 
-    @Override
-    public int hashCode() {
-        int hash = 7;
-        hash = 37 * hash + Objects.hashCode(this.hashSetName);
-        hash = 37 * hash + (int) (this.hashSetID ^ (this.hashSetID >>> 32));
-        return hash;
-    }
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		final HashSetFilter other = (HashSetFilter) obj;
+		if (!Objects.equals(this.hashSetName, other.hashSetName)) {
+			return false;
+		}
 
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final HashSetFilter other = (HashSetFilter) obj;
-        if (!Objects.equals(this.hashSetName, other.hashSetName)) {
-            return false;
-        }
-        if (this.hashSetID != other.hashSetID) {
-            return false;
-        }
-        return isSelected() == other.isSelected();
-    }
+		return isSelected() == other.isSelected();
+	}
 }
