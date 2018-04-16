@@ -231,7 +231,7 @@ public final class TimelineManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	public Interval getBoundingEventsInterval(Interval timeRange, RootFilter filter, DateTimeZone timeZone) throws TskCoreException {
+	public Interval getSpanningInterval(Interval timeRange, RootFilter filter, DateTimeZone timeZone) throws TskCoreException {
 		long start = timeRange.getStartMillis() / 1000;
 		long end = timeRange.getEndMillis() / 1000;
 		String sqlWhere = getSQLWhere(filter);
@@ -559,7 +559,6 @@ public final class TimelineManager {
 				}
 			}
 
-
 			createIndex("events", Arrays.asList("datasource_id")); //NON-NLS
 			createIndex("events", Arrays.asList("event_id", "hash_hit")); //NON-NLS
 			createIndex("events", Arrays.asList("event_id", "tagged")); //NON-NLS
@@ -595,7 +594,7 @@ public final class TimelineManager {
 		GET_MAX_TIME("SELECT Max(time) AS max FROM events"), // NON-NLS
 		GET_MIN_TIME("SELECT Min(time) AS min FROM events"), // NON-NLS
 		GET_EVENT_BY_ID("SELECT * FROM events WHERE event_id =  ?"), // NON-NLS
-		
+
 		/*
 		 * This SQL query is really just a select count(*), but that has
 		 * performance problems on very large tables unless you include a where
@@ -855,7 +854,7 @@ public final class TimelineManager {
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public Set<Long> markEventsTagged(long objectID, Long artifactID, boolean tagged) throws TskCoreException {
+	public Set<Long> setEventsTagged(long objectID, Long artifactID, boolean tagged) throws TskCoreException {
 
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
 		Set<Long> eventIDs = Collections.emptySet();

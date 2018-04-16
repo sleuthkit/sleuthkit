@@ -20,10 +20,8 @@ package org.sleuthkit.datamodel.timeline.filters;
 
 import java.util.Objects;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import javafx.beans.binding.Bindings;
 import javafx.beans.value.ObservableBooleanValue;
-import org.sleuthkit.datamodel.TimelineManager;
 
 /**
  *
