@@ -39,17 +39,18 @@ def main():
         base_Library_path["libewf_64bit"] = os.path.dirname(libewf_home)
     else:
         print('Please set the env variable LIBEWF_HOME')
+        sys.exit(1)
 
     if(libvhdi_home != None):
         base_Library_path["libvhdi_64bit"] = os.path.dirname(libvhdi_home)
     else:
         print('Please set the env variable LIBVHDI_HOME')
-
+        sys.exit(1)
     if(libvmdk_home != None):
         base_Library_path["libvmdk_64bit"] = os.path.dirname(os.path.dirname(libvmdk_home))
     else:
         print('Please set the env variable LIBVMDK_HOME')
-
+        sys.exit(1)
 
     setupLibrary(base_Library_path);
 
