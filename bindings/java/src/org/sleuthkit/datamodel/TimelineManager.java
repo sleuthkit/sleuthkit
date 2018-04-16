@@ -559,22 +559,6 @@ public final class TimelineManager {
 				}
 			}
 
-			try {
-				stmt.execute("CREATE TABLE IF NOT EXISTS hash_sets " //NON-NLS
-						+ "( hash_set_id " + primaryKeyType + " primary key," //NON-NLS
-						+ " hash_set_name VARCHAR(255) UNIQUE NOT NULL)");	//NON-NLS
-			} catch (SQLException ex) {
-				throw new TskCoreException("problem creating hash_sets table", ex); //NON-NLS
-			}
-
-			try {
-				stmt.execute("CREATE TABLE  if not exists hash_set_hits " //NON-NLS
-						+ "(hash_set_id INTEGER REFERENCES hash_sets(hash_set_id) not null, " //NON-NLS
-						+ " event_id INTEGER REFERENCES events(event_id) not null, " //NON-NLS
-						+ " PRIMARY KEY (hash_set_id, event_id))");			//NON-NLS
-			} catch (SQLException ex) {
-				throw new TskCoreException("problem creating hash_set_hits table", ex); //NON-NLS
-			}
 
 			createIndex("events", Arrays.asList("datasource_id")); //NON-NLS
 			createIndex("events", Arrays.asList("event_id", "hash_hit")); //NON-NLS
@@ -594,26 +578,24 @@ public final class TimelineManager {
 
 	private enum STATEMENTS {
 		INSERT_ROW("INSERT INTO events ("
-				+ "datasource_id,"
-				+ "file_id ,"
-				+ "artifact_id, "
-				+ "time, "
-				+ "sub_type,"
+				+ " datasource_id,"
+				+ " file_id ,"
+				+ " artifact_id, "
+				+ " time, "
+				+ " sub_type,"
 				+ " base_type,"
 				+ " full_description,"
 				+ " med_description, "
-				+ "short_description, "
-				+ "known_state,"
+				+ " short_description, "
+				+ " known_state,"
 				+ " hash_hit,"
 				+ " tagged) " // NON-NLS
-				+ "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"), // NON-NLS
+				+ " VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"), // NON-NLS
 		GET_DATASOURCE_IDS("SELECT DISTINCT datasource_id FROM events WHERE datasource_id != 0"),// NON-NLS
 		GET_MAX_TIME("SELECT Max(time) AS max FROM events"), // NON-NLS
 		GET_MIN_TIME("SELECT Min(time) AS min FROM events"), // NON-NLS
 		GET_EVENT_BY_ID("SELECT * FROM events WHERE event_id =  ?"), // NON-NLS
-		INSERT_HASH_SET("INSERT OR IGNORE INTO hash_sets (hash_set_name)  values (?)"), //NON-NLS
-		INSERT_HASH_HIT("INSERT OR IGNORE INTO hash_set_hits (hash_set_id, event_id) values (?,?)"), //NON-NLS
-
+		
 		/*
 		 * This SQL query is really just a select count(*), but that has
 		 * performance problems on very large tables unless you include a where
