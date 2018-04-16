@@ -127,6 +127,8 @@ public final class TimelineManager {
 	/**
 	 * @return the total number of events in the database or, -1 if there is an
 	 *         error.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public int countAllEvents() throws TskCoreException {
 		sleuthkitCase.acquireSingleUserCaseReadLock();
@@ -217,14 +219,26 @@ public final class TimelineManager {
 		}
 	}
 
+	/**
+	 * Get the minimal interval that bounds all the vents that pass the given
+	 * filter.
+	 *
+	 * @param timeRange The timerange that the events must be within.
+	 * @param filter    The filter that the events must pass.
+	 * @param timeZone  The timeZone to return the interval in.
+	 *
+	 * @return The minimal interval that bounds the events.
+	 *
+	 * @throws TskCoreException
+	 */
 	public Interval getBoundingEventsInterval(Interval timeRange, RootFilter filter, DateTimeZone timeZone) throws TskCoreException {
 		long start = timeRange.getStartMillis() / 1000;
 		long end = timeRange.getEndMillis() / 1000;
-		final String sqlWhere = getSQLWhere(filter);
+		String sqlWhere = getSQLWhere(filter);
 		sleuthkitCase.acquireSingleUserCaseReadLock();
-		final boolean needsTags = filter.getTagsFilter().isActive();
-		final boolean needsHashSets = filter.getHashHitsFilter().isActive();
-		final String augmentedEventsTablesSQL = getAugmentedEventsTablesSQL(needsTags, needsHashSets);
+		boolean needsTags = filter.getTagsFilter().isActive();
+		boolean needsHashSets = filter.getHashHitsFilter().isActive();
+		String augmentedEventsTablesSQL = getAugmentedEventsTablesSQL(needsTags, needsHashSets);
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement stmt = con.createStatement(); //can't use prepared statement because of complex where clause
 				ResultSet results = stmt.executeQuery(
@@ -286,12 +300,12 @@ public final class TimelineManager {
 			endTime++; //make sure end is at least 1 millisecond after start
 		}
 
-		ArrayList<Long> resultIDs = new ArrayList<Long>();
+		ArrayList<Long> resultIDs = new ArrayList<>();
 
 		sleuthkitCase.acquireSingleUserCaseReadLock();
-		final boolean needsTags = filter.getTagsFilter().isActive();
-		final boolean needsHashSets = filter.getHashHitsFilter().isActive();
-		final String query = "SELECT events.event_id AS event_id FROM" + getAugmentedEventsTablesSQL(needsTags, needsHashSets)
+		boolean needsTags = filter.getTagsFilter().isActive();
+		boolean needsHashSets = filter.getHashHitsFilter().isActive();
+		String query = "SELECT events.event_id AS event_id FROM" + getAugmentedEventsTablesSQL(needsTags, needsHashSets)
 				+ " WHERE time >=  " + startTime + " AND time <" + endTime + " AND " + getSQLWhere(filter) + " ORDER BY time ASC"; // NON-NLS
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement stmt = con.createStatement();
