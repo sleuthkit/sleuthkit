@@ -5,6 +5,9 @@ cache:
   - C:\Users\appveyor\.ivy2 -> appveyor.yml
   - C:\ProgramData\chocolatey\bin -> appveyor.yml
   - C:\ProgramData\chocolatey\lib -> appveyor.yml
+  - C:\libvhdi_64bit
+  - C:\libvmdk_64bit
+  - C:\libewf_64bit
 
 branches:
     only:
