@@ -5,7 +5,7 @@ cache:
   - C:\ProgramData\chocolatey\bin
   - C:\ProgramData\chocolatey\lib
   - C:\libvhdi_64bit
-  - C:\libvmdk_64bit\libvmdk
+  - C:\libvmdk_64bit
   - C:\libewf_64bit
   - C:\zlib
 branches:
