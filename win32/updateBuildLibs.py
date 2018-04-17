@@ -231,7 +231,6 @@ def buildTSK(wPlatform, target):
         passed = False
         return
     vs.append("/v:quiet")
-    vs.append("/t:clean")
     vs.append("/t:build")
 
     outputFile = os.path.join(LOG_PATH, "TSKOutput.txt")
