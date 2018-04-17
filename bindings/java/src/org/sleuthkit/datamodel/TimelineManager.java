@@ -785,17 +785,6 @@ public final class TimelineManager {
 		}
 	}
 
-	private String insertOrIgnore(String query) {
-		switch (sleuthkitCase.getDatabaseType()) {
-			case POSTGRESQL:
-				return "INSERT " + query + " ON CONFLICT DO NOTHING";
-			case SQLITE:
-				return "INSERT OR IGNORE" + query;
-			default:
-				throw getUnsupportedDBTypeException();
-		}
-	}
-
 	private UnsupportedOperationException getUnsupportedDBTypeException() {
 		return new UnsupportedOperationException("Unsupported DB type: " + sleuthkitCase.getDatabaseType().name());
 	}
@@ -997,8 +986,8 @@ public final class TimelineManager {
 					+ "		JOIN blackboard_attributes ON (blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id)"
 					+ "		JOIN blackboard_artifact_types ON( blackboard_artifacts.artifact_type_id = blackboard_artifact_types.artifact_type_id)"
 					+ "		WHERE  blackboard_artifact_types.artifact_type_id = " + TSK_HASHSET_HIT.getTypeID()
-					+ "		AND blackboard_attributes.attribute_type_id = " + TSK_SET_NAME.getTypeID() + ") "
-					+ "	ON ( events.file_id = obj_id)) AS events";
+					+ "		AND blackboard_attributes.attribute_type_id = " + TSK_SET_NAME.getTypeID() + ") AS hash_set_hits"
+					+ "	ON ( events.file_id = hash_set_hits.obj_id)) AS events";
 		} else {
 			return joinedWithTags;
 		}
@@ -1489,5 +1478,4 @@ public final class TimelineManager {
 	String csvAggFunction(String args, String seperator) {
 		return csvFunction + "(Cast (" + args + " AS VARCHAR) , '" + seperator + "')";
 	}
-
 }
