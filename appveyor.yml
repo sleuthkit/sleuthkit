@@ -25,12 +25,13 @@ environment:
       LIBEWF_HOME: "C:\\libewf_64bit"
       POSTGRESQL_HOME_64: "C:\\Program Files\\PostgreSQL\\9.5"
       PYTHON: "C:\\Python36-x64"
+      JDK_HOME: C:\Program Files\Java\jdk1.8.0
 services:
       - postgresql95;
 
 build_script:
       - python setupLibs.py
-      - python %TSK_HOME%\win32\updateBuildLibs.py -m
+      - python win32\updateBuildLibs.py -m
       - ps: ant -version
       - ps: pushd bindings/java
       - cmd: ant dist-PostgreSQL
