@@ -15,7 +15,7 @@ branches:
 image: Visual Studio 2015
 
 
-init:
+install:  
   - ps: choco install ant --ignore-dependencies
   - ps: $env:Path="C:\Program Files\Java\jdk1.8.0\bin;$($env:Path);C:\ProgramData\chocolatey\lib\ant"
   - set PATH=C:\Python36-x64\';%PATH%
