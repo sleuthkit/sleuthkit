@@ -505,11 +505,10 @@ public final class TimelineManager {
 	 *         existing table
 	 */
 	synchronized void initializeDB() throws TskCoreException {
-		///TODO: Move to SleuthkitCase?
+		///TODO: Move to SleuthkitCase? - Move to c++ layer of tsk!! -jm
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement stmt = con.createStatement();) {
-
 			try {
 				stmt.execute("CREATE TABLE if not exists db_info ( key TEXT,  value INTEGER, PRIMARY KEY (key))");// NON-NLS
 			} catch (SQLException ex) {
@@ -517,20 +516,20 @@ public final class TimelineManager {
 			}
 
 			try {
-				stmt.execute("CREATE TABLE if not exists events " // NON-NLS
-						+ " (event_id " + primaryKeyType + " PRIMARY KEY, " // NON-NLS
+				stmt.execute("CREATE TABLE if not exists events ("// NON-NLS
+						+ " event_id " + primaryKeyType + " PRIMARY KEY, " // NON-NLS
 						+ " datasource_id BIGINT, " // NON-NLS
-						+ " file_id BIGINT, " // NON-NLS
-						+ " artifact_id BIGINT, " // NON-NLS
+						+ " file_id BIGINT REFERENCES tsk_files, " // NON-NLS
+						+ " artifact_id BIGINT REFERENCES blackboard_artifacts, " // NON-NLS
 						+ " time INTEGER, " // NON-NLS
 						+ " sub_type INTEGER, " // NON-NLS
 						+ " base_type INTEGER, " // NON-NLS
 						+ " full_description TEXT, " // NON-NLS
 						+ " med_description TEXT, " // NON-NLS
 						+ " short_description TEXT, " // NON-NLS
-						+ " known_state INTEGER," //boolean // NON-NLS
-						+ " hash_hit INTEGER," //boolean // NON-NLS
-						+ " tagged INTEGER)");//boolean // NON-NLS
+						+ " known_state INTEGER, " //boolean // NON-NLS
+						+ " hash_hit INTEGER, " //boolean // NON-NLS
+						+ " tagged INTEGER )");//boolean // NON-NLS
 			} catch (SQLException ex) {
 				throw new TskCoreException("problem creating  database table", ex); // NON-NLS
 			}
