@@ -953,20 +953,26 @@ public final class TimelineManager {
 	}
 
 	/**
-	 * Get an SQL expression that returns the union of the events table joined
-	 * to the content and blackboard artifacts tags tables, if necessary. Other
-	 * wise just return "events"
+	 * Get an SQL expression that produces an events table augmented with the
+	 * columsn required by the filters. The union of the events table joined to
+	 * the content and blackboard artifacts tags tables, if necessary, then
+	 * joined to a query that selects hash set hits, if necessary. Other wise
+	 * just return "events".
 	 *
-	 * Omitting details it is: SELECT <all relevant columns> FROM events JOIN
-	 * content_tags UNION ALL events JOIN blackboard_artifact_tags
+	 * Omitting details it is: SELECT <all relevant columns> FROM events LEFT
+	 * JOIN (events JOIN content_tags UNION ALL events JOIN
+	 * blackboard_artifact_tags) left join SELECT <HASH_SET_HITS> from
+	 * <Blackboard artifacts and attributes>
 	 *
-	 * @param filter   The root filter. If the tags filter is active, the sql
-	 *                 for the joined tables is returned.
-	 * @param needTags the value of needTags
+	 * @param needTags     True if the filters require joining to the tags
+	 *                     tables.
+	 * @param needHashSets True if the filters require joining to the hash set
+	 *                     sub query.
 	 *
-	 * @return the java.lang.String
+	 * @return An SQL expresion that produces an events table augmented with the
+	 *         columns required by the filters.
 	 */
-	private String getAugmentedEventsTablesSQL(boolean needTags, boolean needHashSets) {
+	static private String getAugmentedEventsTablesSQL(boolean needTags, boolean needHashSets) {
 		String coreColumns = "event_id, datasource_id, events.file_id, events.artifact_id,"
 				+ "			time, sub_type, base_type, full_description, med_description, "
 				+ "			short_description, known_state, hash_hit, tagged ";
