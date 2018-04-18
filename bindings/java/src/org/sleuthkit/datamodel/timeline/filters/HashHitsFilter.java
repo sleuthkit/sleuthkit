@@ -24,7 +24,7 @@ import javafx.beans.binding.Bindings;
 import javafx.beans.value.ObservableBooleanValue;
 
 /**
- *
+ * Union Filter that ands together the individual HashSetFilters.
  */
 final public class HashHitsFilter extends UnionFilter<HashSetFilter> {
 
