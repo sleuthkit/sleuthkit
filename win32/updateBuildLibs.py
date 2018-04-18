@@ -176,7 +176,6 @@ def buildDependentLibs(libHome, wPlatform, targetDll):
     elif wPlatform == 32:
         vs.append("/p:platform=Win32")
     vs.append("/v:quiet")
-    vs.append("/t:clean")
     vs.append("/t:build")
 
     outputFile = os.path.join(LOG_PATH, targetDll + "Output.txt")

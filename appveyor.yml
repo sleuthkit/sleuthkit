@@ -1,11 +1,13 @@
 version: 4.6.0.{build}
 
 cache:
-  - C:\Users\appveyor\.ant -> appveyor.yml
-  - C:\Users\appveyor\.ivy2 -> appveyor.yml
-  - C:\ProgramData\chocolatey\bin -> appveyor.yml
-  - C:\ProgramData\chocolatey\lib -> appveyor.yml
-
+  - C:\Users\appveyor\.ant
+  - C:\ProgramData\chocolatey\bin
+  - C:\ProgramData\chocolatey\lib
+  - C:\libvhdi_64bit
+  - C:\libvmdk_64bit
+  - C:\libewf_64bit
+  - C:\zlib
 branches:
     only:
       - develop
@@ -13,7 +15,7 @@ branches:
 image: Visual Studio 2015
 
 
-init:
+install:  
   - ps: choco install ant --ignore-dependencies
   - ps: $env:Path="C:\Program Files\Java\jdk1.8.0\bin;$($env:Path);C:\ProgramData\chocolatey\lib\ant"
   - set PATH=C:\Python36-x64\';%PATH%
