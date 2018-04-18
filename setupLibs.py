@@ -15,14 +15,16 @@ def setupLibrary(path):
     ''' sets up the library path variable '''
     git_repository_url = "https://github.com/sleuthkit/"
     git_zlib_repository_url="https://github.com/madler/"
-    gitClone(git_zlib_repository_url,"zlib",path["libewf_64bit"])
+    zlib_path = os.path.normpath(os.path.join(path["libewf_64bit"],"zlib"))
+    if not os.path.exists(zlib_path):
+        gitClone(git_zlib_repository_url,"zlib",path["libewf_64bit"])
     for library,base_library_path in path.items():
         library_path = os.path.normpath(os.path.join(base_library_path , library))
         if not os.path.exists(library_path):
             gitClone(git_repository_url, library, base_library_path)
 
 def gitClone(URL, repo, path):
-
+    # This method will clone the library if it does not exist
     cmd = ["git", "clone", URL + repo + ".git" ]
     ret = subprocess.call(cmd, stdout=sys.stdout, cwd=path)
     if ret != 0:
