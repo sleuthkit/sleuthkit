@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel.timeline;
 
+import org.sleuthkit.datamodel.timeline.eventtype.EventType;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;

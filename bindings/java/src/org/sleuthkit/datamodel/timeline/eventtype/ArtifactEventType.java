@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel.timeline;
+package org.sleuthkit.datamodel.timeline.eventtype;
 
 import java.text.MessageFormat;
 import java.util.Optional;
@@ -202,4 +202,8 @@ public interface ArtifactEventType extends EventType {
 		}
 	}
 
+	interface CheckedFunction<I, O> {
+
+		O apply(I i) throws TskCoreException;
+	}
 }

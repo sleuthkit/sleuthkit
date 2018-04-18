@@ -16,18 +16,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel.timeline;
+package org.sleuthkit.datamodel.timeline.eventtype;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
+import org.sleuthkit.datamodel.timeline.EventTypeZoomLevel;
 
 /**
  * A singleton EventType to represent the root type of all event types.
  */
-public class RootEventType implements EventType {
+public class RootEventType extends AbstractEventType {
 
 	@Override
 	public List<RootEventType> getSiblingTypes() {
@@ -40,6 +41,7 @@ public class RootEventType implements EventType {
 	}
 
 	private RootEventType() {
+		super("Root", EventTypeZoomLevel.ROOT_TYPE, null, BaseType.values());
 	}
 
 	public static RootEventType getInstance() {
@@ -48,11 +50,11 @@ public class RootEventType implements EventType {
 
 	@Override
 	public EventType getSubType(String string) {
-		return BaseTypes.valueOf(string);
+		return BaseType.valueOf(string);
 	}
 
 	@Override
-	public int ordinal() {
+	public int getTypeID() {
 		return 0;
 	}
 
@@ -75,8 +77,8 @@ public class RootEventType implements EventType {
 	}
 
 	@Override
-	public List<BaseTypes> getSubTypes() {
-		return Arrays.asList(BaseTypes.values());
+	public List<BaseType> getSubTypes() {
+		return Arrays.asList(BaseType.values());
 	}
 
 	@Override

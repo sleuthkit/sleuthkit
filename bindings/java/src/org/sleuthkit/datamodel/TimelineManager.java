@@ -50,15 +50,15 @@ import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHS
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import static org.sleuthkit.datamodel.StringUtils.joinAsStrings;
-import org.sleuthkit.datamodel.timeline.BaseTypes;
+import org.sleuthkit.datamodel.timeline.eventtype.BaseType;
 import org.sleuthkit.datamodel.timeline.CombinedEvent;
 import org.sleuthkit.datamodel.timeline.DescriptionLoD;
 import org.sleuthkit.datamodel.timeline.EventCluster;
 import org.sleuthkit.datamodel.timeline.EventStripe;
-import org.sleuthkit.datamodel.timeline.EventType;
+import org.sleuthkit.datamodel.timeline.eventtype.EventType;
 import org.sleuthkit.datamodel.timeline.EventTypeZoomLevel;
 import org.sleuthkit.datamodel.timeline.RangeDivisionInfo;
-import org.sleuthkit.datamodel.timeline.RootEventType;
+import org.sleuthkit.datamodel.timeline.eventtype.RootEventType;
 import org.sleuthkit.datamodel.timeline.SingleEvent;
 import org.sleuthkit.datamodel.timeline.TimeUnits;
 import org.sleuthkit.datamodel.timeline.ZoomParams;
@@ -197,26 +197,7 @@ public final class TimelineManager {
 		}
 	}
 
-//	/**
-//	 * drop the tables from this database and recreate them in order to start
-//	 * over.
-//	 *
-//	 * @throws org.sleuthkit.datamodel.TskCoreException
-//	 */
-//	public void reInitializeDB() throws TskCoreException {
-//		sleuthkitCase.acquireSingleUserCaseWriteLock();
-//		try (CaseDbConnection con = sleuthkitCase.getConnection();
-//				Statement statement = con.createStatement();) {
-//			statement.execute(STATEMENTS.DROP_DB_INFO_TABLE.getSQL());
-//			statement.execute(STATEMENTS.DROP_EVENTS_TABLE.getSQL());
-//
-//			initializeDB();
-//		} catch (SQLException ex) {
-//			throw new TskCoreException("Error dropping old tables", ex); // NON-NLS
-//		} finally {
-//			sleuthkitCase.releaseSingleUserCaseWriteLock();
-//		}
-//	}
+
 
 	/**
 	 * Get the minimal interval that bounds all the vents that pass the given
@@ -508,7 +489,7 @@ public final class TimelineManager {
 	}
 
 	private enum STATEMENTS {
-		INSERT_ROW("INSERT INTO events ("
+		INSERT_EVENT("INSERT INTO events ("
 				+ " datasource_id,"
 				+ " file_id ,"
 				+ " artifact_id, "
@@ -677,11 +658,11 @@ public final class TimelineManager {
 			String shortDescription, TskData.FileKnown known, Set<String> hashSetNames, List<? extends Tag> tags) throws TskCoreException {
 
 		int typeNum = RootEventType.allTypes.indexOf(type);
-		int superTypeNum = type.getSuperType().ordinal();
+		int superTypeNum = type.getSuperType().getTypeID();
 
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
-				PreparedStatement insertRowStmt = con.prepareStatement(STATEMENTS.INSERT_ROW.getSQL(), PreparedStatement.NO_GENERATED_KEYS);) {
+				PreparedStatement insertRowStmt = con.prepareStatement(STATEMENTS.INSERT_EVENT.getSQL(), PreparedStatement.NO_GENERATED_KEYS);) {
 			//"INSERT INTO events (datasource_id,file_id ,artifact_id, time, sub_type, base_type, full_description, med_description, short_description, known_state, hashHit, tagged) " 
 			insertRowStmt.clearParameters();
 			insertRowStmt.setLong(1, datasourceID);
@@ -871,7 +852,7 @@ public final class TimelineManager {
 			while (results.next()) {
 				EventType type = useSubTypes
 						? RootEventType.allTypes.get(results.getInt("sub_type")) //NON-NLS
-						: BaseTypes.values()[results.getInt("base_type")]; //NON-NLS
+						: BaseType.values()[results.getInt("base_type")]; //NON-NLS
 
 				typeMap.put(type, results.getLong("count")); // NON-NLS
 			}
@@ -1031,7 +1012,7 @@ public final class TimelineManager {
 		String eventIDsString = resultSet.getString("event_ids");// NON-NLS
 		List<Long> eventIDs = unGroupConcat(eventIDsString, Long::valueOf);
 		String description = resultSet.getString(getDescriptionColumn(descriptionLOD));
-		EventType type = useSubTypes ? RootEventType.allTypes.get(resultSet.getInt("sub_type")) : BaseTypes.values()[resultSet.getInt("base_type")];// NON-NLS
+		EventType type = useSubTypes ? RootEventType.allTypes.get(resultSet.getInt("sub_type")) : BaseType.values()[resultSet.getInt("base_type")];// NON-NLS
 
 		List<Long> hashHits = unGroupConcat(resultSet.getString("hash_hits"), Long::valueOf); //NON-NLS
 		List<Long> tagged = unGroupConcat(resultSet.getString("taggeds"), Long::valueOf); //NON-NLS
