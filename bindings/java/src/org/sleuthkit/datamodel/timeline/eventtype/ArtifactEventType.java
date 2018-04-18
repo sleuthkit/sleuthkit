@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel.timeline.eventtype;
 
 import java.text.MessageFormat;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -27,27 +28,91 @@ import org.apache.commons.lang3.StringUtils;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.TskCoreException;
+import org.sleuthkit.datamodel.timeline.EventTypeZoomLevel;
 
 /**
  *
  */
-public interface ArtifactEventType extends EventType {
+abstract class ArtifactEventType extends AbstractEventType {
 
-	Logger LOGGER = Logger.getLogger(ArtifactEventType.class.getName());
+	private static final Logger logger = Logger.getLogger(ArtifactEventType.class.getName());
 
-	/**
-	 * Get the artifact type this event type is derived from.
-	 *
-	 * @return The artifact type this event type is derived from.
-	 */
-	BlackboardArtifact.Type getArtifactType();
+	private final BlackboardArtifact.Type artifactType;
+	private final BlackboardAttribute.Type dateTimeAttributeType;
+	private final Function<BlackboardArtifact, String> longExtractor;
+	private final Function<BlackboardArtifact, String> medExtractor;
+	private final Function<BlackboardArtifact, String> shortExtractor;
+	private final CheckedFunction<BlackboardArtifact, AttributeEventDescription> parseAttributesHelper;
+
+	ArtifactEventType(int id, String displayName,
+			EventType superType,
+			BlackboardArtifact.Type artifactType,
+			BlackboardAttribute.Type dateTimeAttributeType,
+			Function<BlackboardArtifact, String> shortExtractor,
+			Function<BlackboardArtifact, String> medExtractor,
+			Function<BlackboardArtifact, String> longExtractor) {
+		this(id, displayName, superType, artifactType, dateTimeAttributeType, shortExtractor, medExtractor, longExtractor, null);
+	}
+
+	ArtifactEventType(int id, String displayName,
+			EventType superType,
+			BlackboardArtifact.Type artifactType,
+			BlackboardAttribute.Type dateTimeAttributeType,
+			Function<BlackboardArtifact, String> shortExtractor,
+			Function<BlackboardArtifact, String> medExtractor,
+			Function<BlackboardArtifact, String> longExtractor,
+			CheckedFunction<BlackboardArtifact, AttributeEventDescription> parseAttributesHelper) {
+
+		super(id, displayName, EventTypeZoomLevel.SUB_TYPE, superType, Collections.emptySortedSet());
+		this.artifactType = artifactType;
+		this.dateTimeAttributeType = dateTimeAttributeType;
+		this.shortExtractor = shortExtractor;
+		this.medExtractor = medExtractor;
+		this.longExtractor = longExtractor;
+		this.parseAttributesHelper = parseAttributesHelper;
+	}
 
 	/**
 	 * The attribute type this event type is derived from.
 	 *
 	 * @return The attribute type this event type is derived from.
 	 */
-	BlackboardAttribute.Type getDateTimeAttributeType();
+	public BlackboardAttribute.Type getDateTimeAttributeType() {
+		return dateTimeAttributeType;
+	}
+
+	/**
+	 * @return a function from an artifact to a String to use as part of the
+	 *         full event description
+	 */
+	public Function<BlackboardArtifact, String> getFullExtractor() {
+		return longExtractor;
+	}
+
+	/**
+	 * @return a function from an artifact to a String to use as part of the
+	 *         medium event description
+	 */
+	public Function<BlackboardArtifact, String> getMedExtractor() {
+		return medExtractor;
+	}
+
+	/**
+	 * @return a function from an artifact to a String to use as part of the
+	 *         short event description
+	 */
+	public Function<BlackboardArtifact, String> getShortExtractor() {
+		return shortExtractor;
+	}
+
+	/**
+	 * Get the artifact type this event type is derived from.
+	 *
+	 * @return The artifact type this event type is derived from.
+	 */
+	public BlackboardArtifact.Type getArtifactType() {
+		return artifactType;
+	}
 
 	/**
 	 * Get the ID of the the artifact type that this EventType is derived from.
@@ -55,7 +120,7 @@ public interface ArtifactEventType extends EventType {
 	 * @return the ID of the the artifact type that this EventType is derived
 	 *         from.
 	 */
-	default int getArtifactTypeID() {
+	int getArtifactTypeID() {
 		return getArtifactType().getTypeID();
 	}
 
@@ -73,7 +138,10 @@ public interface ArtifactEventType extends EventType {
 	 *
 	 * @throws TskCoreException
 	 */
-	default AttributeEventDescription parseAttributesHelper(BlackboardArtifact artf) throws TskCoreException {
+	AttributeEventDescription parseAttributesHelper(BlackboardArtifact artf) throws TskCoreException {
+		if (this.parseAttributesHelper == null) {
+			return this.parseAttributesHelper(artf);
+		}
 		final BlackboardAttribute dateTimeAttr = artf.getAttribute(getDateTimeAttributeType());
 
 		long time = dateTimeAttr.getValueLong();
@@ -84,30 +152,12 @@ public interface ArtifactEventType extends EventType {
 	}
 
 	/**
-	 * @return a function from an artifact to a String to use as part of the
-	 *         full event description
-	 */
-	Function<BlackboardArtifact, String> getFullExtractor();
-
-	/**
-	 * @return a function from an artifact to a String to use as part of the
-	 *         medium event description
-	 */
-	Function<BlackboardArtifact, String> getMedExtractor();
-
-	/**
-	 * @return a function from an artifact to a String to use as part of the
-	 *         short event description
-	 */
-	Function<BlackboardArtifact, String> getShortExtractor();
-
-	/**
 	 * bundles the per event information derived from a BlackBoard Artifact into
 	 * one object. Primarily used to have a single return value for
 	 * ArtifactEventType#buildEventDescription(ArtifactEventType,
 	 * BlackboardArtifact).
 	 */
-	class AttributeEventDescription {
+	static class AttributeEventDescription {
 
 		final private long time;
 		final private String shortDescription;
@@ -130,7 +180,7 @@ public interface ArtifactEventType extends EventType {
 			return fullDescription;
 		}
 
-		public AttributeEventDescription(long time, String shortDescription,
+		AttributeEventDescription(long time, String shortDescription,
 				String medDescription,
 				String fullDescription) {
 			this.time = time;
@@ -162,18 +212,18 @@ public interface ArtifactEventType extends EventType {
 			throw new IllegalArgumentException();
 		}
 		if (artf.getAttribute(type.getDateTimeAttributeType()) == null) {
-			LOGGER.log(Level.WARNING, "Artifact {0} has no date/time attribute, skipping it.", artf.getArtifactID()); // NON-NLS
+			logger.log(Level.WARNING, "Artifact {0} has no date/time attribute, skipping it.", artf.getArtifactID()); // NON-NLS
 			return null;
 		}
 		//use the hook provided by this subtype implementation
 		return type.parseAttributesHelper(artf);
 	}
 
-	class AttributeExtractor implements Function<BlackboardArtifact, String> {
+	static class AttributeExtractor implements Function<BlackboardArtifact, String> {
 
 		private final BlackboardAttribute.Type attributeType;
 
-		public AttributeExtractor(BlackboardAttribute.Type attribute) {
+		AttributeExtractor(BlackboardAttribute.Type attribute) {
 			this.attributeType = attribute;
 		}
 
@@ -185,7 +235,7 @@ public interface ArtifactEventType extends EventType {
 		}
 	}
 
-	class EmptyExtractor implements Function<BlackboardArtifact, String> {
+	static class EmptyExtractor implements Function<BlackboardArtifact, String> {
 
 		@Override
 		public String apply(BlackboardArtifact ignored) {
@@ -197,13 +247,13 @@ public interface ArtifactEventType extends EventType {
 		try {
 			return artf.getAttribute(attrType);
 		} catch (TskCoreException ex) {
-			LOGGER.log(Level.SEVERE, MessageFormat.format("Error getting attribute from artifact {0}.", artf.getArtifactID()), ex); // NON-NLS
+			logger.log(Level.SEVERE, MessageFormat.format("Error getting attribute from artifact {0}.", artf.getArtifactID()), ex); // NON-NLS
 			return null;
 		}
 	}
 
 	interface CheckedFunction<I, O> {
 
-		O apply(I i) throws TskCoreException;
+		O apply(I input) throws TskCoreException;
 	}
 }

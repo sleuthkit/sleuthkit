@@ -31,7 +31,7 @@ import org.sleuthkit.datamodel.timeline.eventtype.RootEventType;
  */
 public class TypeFilter extends UnionFilter<TypeFilter> {
 
-	static private final Comparator<TypeFilter> comparator = Comparator.comparing(TypeFilter::getEventType, EventType.getComparator());
+	static private final Comparator<TypeFilter> comparator = Comparator.comparing(TypeFilter::getEventType);
 
 	/**
 	 * the event type this filter passes

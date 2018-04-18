@@ -18,8 +18,7 @@
  */
 package org.sleuthkit.datamodel.timeline.eventtype;
 
-import com.google.common.collect.ImmutableList;
-import java.util.Collections;
+import com.google.common.collect.ImmutableSortedSet;
 import java.util.ResourceBundle;
 import org.sleuthkit.datamodel.timeline.EventTypeZoomLevel;
 
@@ -31,27 +30,24 @@ public final class FileSystemType extends AbstractEventType {
 	private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("org.sleuthkit.datamodel.timeline.eventtype.Bundle");  // NON-NLS
 
 	public static final FileSystemType FILE_MODIFIED
-			= new FileSystemType(BUNDLE.getString("FileSystemTypes.fileModified.name")); // NON-NLS
+			= new FileSystemType(4, BUNDLE.getString("FileSystemTypes.fileModified.name")); // NON-NLS
 	public static final FileSystemType FILE_ACCESSED
-			= new FileSystemType(BUNDLE.getString("FileSystemTypes.fileAccessed.name")); // NON-NLS
+			= new FileSystemType(5, BUNDLE.getString("FileSystemTypes.fileAccessed.name")); // NON-NLS
 	public static final FileSystemType FILE_CREATED
-			= new FileSystemType(BUNDLE.getString("FileSystemTypes.fileCreated.name")); // NON-NLS
+			= new FileSystemType(6, BUNDLE.getString("FileSystemTypes.fileCreated.name")); // NON-NLS
 	public static final FileSystemType FILE_CHANGED
-			= new FileSystemType(BUNDLE.getString("FileSystemTypes.fileChanged.name")); // NON-NLS
+			= new FileSystemType(7, BUNDLE.getString("FileSystemTypes.fileChanged.name")); // NON-NLS
 
-	private static final ImmutableList<FileSystemType> VALUES
-			= ImmutableList.of(FILE_MODIFIED, FILE_ACCESSED, FILE_CREATED, FILE_CHANGED);
+	@SuppressWarnings("deprecation")
+	private static final ImmutableSortedSet<FileSystemType> VALUES
+			= ImmutableSortedSet.of(FILE_MODIFIED, FILE_ACCESSED, FILE_CREATED, FILE_CHANGED);
 
-	static ImmutableList<FileSystemType> values() {
+	static ImmutableSortedSet<FileSystemType> values() {
 		return VALUES;
 	}
 
-	private FileSystemType(String displayName) {
-		super(displayName, EventTypeZoomLevel.SUB_TYPE, BaseType.FILE_SYSTEM, Collections.emptySet());
+	private FileSystemType(int id, String displayName) {
+		super(id, displayName, EventTypeZoomLevel.SUB_TYPE, BaseType.FILE_SYSTEM, ImmutableSortedSet.of());
 	}
 
-	@Override
-	public int getTypeID() {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-	}
 }

@@ -18,10 +18,9 @@
  */
 package org.sleuthkit.datamodel.timeline.eventtype;
 
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Optional;
+import java.util.SortedSet;
 import org.sleuthkit.datamodel.timeline.EventTypeZoomLevel;
 
 /**
@@ -29,14 +28,7 @@ import org.sleuthkit.datamodel.timeline.EventTypeZoomLevel;
  * activity. An EventType may have an optional super-type and 0 or more
  * subtypes, allowing events to be organized in a type hierarchy.
  */
-public interface EventType {
-
-	final List<? extends EventType> allTypes = RootEventType.getInstance().getSubTypesRecusive();
-
-	static Comparator<EventType> getComparator() {
-		return Comparator.comparing(EventType.allTypes::indexOf);
-
-	}
+public interface EventType extends Comparable<EventType> {
 
 	default BaseType getBaseType() {
 		if (this instanceof BaseType) {
@@ -46,17 +38,7 @@ public interface EventType {
 		}
 	}
 
-	default List<? extends EventType> getSubTypesRecusive() {
-		ArrayList<EventType> flatList = new ArrayList<>();
-
-		for (EventType et : getSubTypes()) {
-			flatList.add(et);
-			flatList.addAll(et.getSubTypesRecusive());
-		}
-		return flatList;
-	}
-
-	default List<? extends EventType> getSiblingTypes() {
+	default SortedSet<? extends EventType> getSiblingTypes() {
 		return this.getSuperType().getSubTypes();
 	}
 
@@ -71,7 +53,7 @@ public interface EventType {
 	 * @return a list of event types, one for each subtype of this eventype, or
 	 *         an empty list if this event type has no subtypes
 	 */
-	List<EventType> getSubTypes();
+	SortedSet<? extends EventType> getSubTypes();
 
 	String getDisplayName();
 
@@ -79,4 +61,8 @@ public interface EventType {
 
 	int getTypeID();
 
+	@Override
+	public default int compareTo(EventType o) {
+		return Comparator.comparing(EventType::getTypeID).compare(this, o);
+	}
 }

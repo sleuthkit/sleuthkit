@@ -5,9 +5,9 @@
  */
 package org.sleuthkit.datamodel.timeline.eventtype;
 
-import java.util.Collections;
-import java.util.List;
+import com.google.common.collect.ImmutableSortedSet;
 import java.util.Optional;
+import java.util.SortedSet;
 import org.sleuthkit.datamodel.timeline.EventTypeZoomLevel;
 
 /**
@@ -15,14 +15,16 @@ import org.sleuthkit.datamodel.timeline.EventTypeZoomLevel;
  */
 abstract class AbstractEventType implements EventType {
 
+	private final int id;
 	private final String displayName;
 
 	private final EventType superType;
 	private final EventTypeZoomLevel eventTypeZoomLevel;
-	private final List<? extends EventType> subTypes;
+	private final SortedSet<? extends EventType> subTypes;
 
-	AbstractEventType(String displayName, EventTypeZoomLevel eventTypeZoomLevel, EventType superType, List<? extends EventType> subTypes) {
+	AbstractEventType(int id, String displayName, EventTypeZoomLevel eventTypeZoomLevel, EventType superType, SortedSet<? extends EventType> subTypes) {
 		this.superType = superType;
+		this.id = id;
 		this.displayName = displayName;
 		this.eventTypeZoomLevel = eventTypeZoomLevel;
 		this.subTypes = subTypes;
@@ -39,8 +41,8 @@ abstract class AbstractEventType implements EventType {
 	}
 
 	@Override
-	public List< EventType> getSubTypes() {
-		return Collections.unmodifiableList(subTypes);
+	public ImmutableSortedSet< EventType> getSubTypes() {
+		return ImmutableSortedSet.copyOf(subTypes);
 	}
 
 	@Override
@@ -52,5 +54,10 @@ abstract class AbstractEventType implements EventType {
 	public Optional<? extends EventType> getSubType(String string) {
 		return subTypes.stream().filter(type -> type.getDisplayName().equalsIgnoreCase(string))
 				.findFirst();
+	}
+
+	@Override
+	public int getTypeID() {
+		return id;
 	}
 }

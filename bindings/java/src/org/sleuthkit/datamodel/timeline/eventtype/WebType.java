@@ -18,36 +18,32 @@
  */
 package org.sleuthkit.datamodel.timeline.eventtype;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.net.InternetDomainName;
-import java.util.Collections;
 import java.util.ResourceBundle;
 import java.util.function.Function;
 import org.apache.commons.lang3.StringUtils;
 import org.sleuthkit.datamodel.BlackboardArtifact;
+import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.*;
 import org.sleuthkit.datamodel.BlackboardAttribute;
+import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.*;
 import org.sleuthkit.datamodel.TskCoreException;
-import org.sleuthkit.datamodel.timeline.EventTypeZoomLevel;
 import org.sleuthkit.datamodel.timeline.eventtype.ArtifactEventType.AttributeEventDescription;
 import org.sleuthkit.datamodel.timeline.eventtype.ArtifactEventType.AttributeExtractor;
-import static org.sleuthkit.datamodel.timeline.eventtype.FileSystemType.FILE_ACCESSED;
-import static org.sleuthkit.datamodel.timeline.eventtype.FileSystemType.FILE_CHANGED;
-import static org.sleuthkit.datamodel.timeline.eventtype.FileSystemType.FILE_CREATED;
-import static org.sleuthkit.datamodel.timeline.eventtype.FileSystemType.FILE_MODIFIED;
 
 /**
  *
  */
-public final class WebType extends AbstractEventType implements ArtifactEventType {
+public final class WebType extends ArtifactEventType {
 
 	private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("org.sleuthkit.datamodel.timeline.eventtype.Bundle");  // NON-NLS
 
-	public final static WebType WEB_DOWNLOADS = new WebType(BUNDLE.getString("WebTypes.webDownloads.name"),
-			new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_DOWNLOAD),
-			new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED),
+	public final static WebType WEB_DOWNLOADS = new WebType(8, BUNDLE.getString("WebTypes.webDownloads.name"),
+			new BlackboardArtifact.Type(TSK_WEB_DOWNLOAD),
+			new BlackboardAttribute.Type(TSK_DATETIME_ACCESSED),
 			TopPrivateDomainExtractor.getInstance(),
-			new AttributeExtractor(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PATH)),
-			new AttributeExtractor(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL)),
+			new AttributeExtractor(new BlackboardAttribute.Type(TSK_PATH)),
+			new AttributeExtractor(new BlackboardAttribute.Type(TSK_URL)),
 			new CheckedFunction<BlackboardArtifact, AttributeEventDescription>() {
 		@Override
 		public AttributeEventDescription apply(BlackboardArtifact artf) throws TskCoreException {
@@ -64,107 +60,61 @@ public final class WebType extends AbstractEventType implements ArtifactEventTyp
 			return new AttributeEventDescription(time, shortDescription, medDescription, fullDescription);
 		}
 	});
-	public final static WebType WEB_COOKIE = new WebType(BUNDLE.getString("WebTypes.webCookies.name"),
-			new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_COOKIE),
-			new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME),
+	public final static WebType WEB_COOKIE = new WebType(9, BUNDLE.getString("WebTypes.webCookies.name"),
+			new BlackboardArtifact.Type(TSK_WEB_COOKIE),
+			new BlackboardAttribute.Type(TSK_DATETIME),
 			TopPrivateDomainExtractor.getInstance(),
-			new AttributeExtractor(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME)),
-			new AttributeExtractor(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_VALUE)));
-	public final static WebType WEB_BOOKMARK = new WebType(BUNDLE.getString("WebTypes.webBookmarks.name"),
-			new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_BOOKMARK),
-			new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_CREATED),
+			new AttributeExtractor(new BlackboardAttribute.Type(TSK_NAME)),
+			new AttributeExtractor(new BlackboardAttribute.Type(TSK_VALUE)));
+	public final static WebType WEB_BOOKMARK = new WebType(10, BUNDLE.getString("WebTypes.webBookmarks.name"),
+			new BlackboardArtifact.Type(TSK_WEB_BOOKMARK),
+			new BlackboardAttribute.Type(TSK_DATETIME_CREATED),
 			TopPrivateDomainExtractor.getInstance(),
-			new AttributeExtractor(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL)),
-			new AttributeExtractor(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TITLE)));
-	public final static WebType WEB_HISTORY = new WebType(BUNDLE.getString("WebTypes.webHistory.name"),
-			new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_HISTORY),
-			new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED),
+			new AttributeExtractor(new BlackboardAttribute.Type(TSK_URL)),
+			new AttributeExtractor(new BlackboardAttribute.Type(TSK_TITLE)));
+	public final static WebType WEB_HISTORY = new WebType(11, BUNDLE.getString("WebTypes.webHistory.name"),
+			new BlackboardArtifact.Type(TSK_WEB_HISTORY),
+			new BlackboardAttribute.Type(TSK_DATETIME_ACCESSED),
 			TopPrivateDomainExtractor.getInstance(),
-			new AttributeExtractor(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL)),
-			new AttributeExtractor(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TITLE)));
-	public final static WebType WEB_SEARCH = new WebType(BUNDLE.getString("WebTypes.webSearch.name"),
-			new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_SEARCH_QUERY),
-			new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED),
-			new AttributeExtractor(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TEXT)),
+			new AttributeExtractor(new BlackboardAttribute.Type(TSK_URL)),
+			new AttributeExtractor(new BlackboardAttribute.Type(TSK_TITLE)));
+	public final static WebType WEB_SEARCH = new WebType(12, BUNDLE.getString("WebTypes.webSearch.name"),
+			new BlackboardArtifact.Type(TSK_WEB_SEARCH_QUERY),
+			new BlackboardAttribute.Type(TSK_DATETIME_ACCESSED),
+			new AttributeExtractor(new BlackboardAttribute.Type(TSK_TEXT)),
 			TopPrivateDomainExtractor.getInstance(),
-			new AttributeExtractor(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_PROG_NAME)));
+			new AttributeExtractor(new BlackboardAttribute.Type(TSK_PROG_NAME)));
 
-	private static final ImmutableList<WebType> VALUES
-			= ImmutableList.of(WEB_DOWNLOADS, WEB_COOKIE, WEB_BOOKMARK, WEB_HISTORY, WEB_SEARCH);
+	@SuppressWarnings("deprecation")
+	private static final ImmutableSortedSet<? extends WebType> VALUES
+			= ImmutableSortedSet.of(WEB_DOWNLOADS, WEB_COOKIE, WEB_BOOKMARK, WEB_HISTORY, WEB_SEARCH);
 
-	static ImmutableList<WebType> values() {
+	static ImmutableSortedSet<? extends WebType> values() {
 		return VALUES;
 	}
 
-	private final BlackboardArtifact.Type artifactType;
-	private final BlackboardAttribute.Type dateTimeAttributeType;
-	private final Function<BlackboardArtifact, String> longExtractor;
-	private final Function<BlackboardArtifact, String> medExtractor;
-	private final Function<BlackboardArtifact, String> shortExtractor;
-	private final CheckedFunction<BlackboardArtifact, AttributeEventDescription> parseAttributesHelper;
-
-	@Override
-	public BlackboardAttribute.Type getDateTimeAttributeType() {
-		return dateTimeAttributeType;
-	}
-
-	@Override
-	public Function<BlackboardArtifact, String> getFullExtractor() {
-		return longExtractor;
-	}
-
-	@Override
-	public Function<BlackboardArtifact, String> getMedExtractor() {
-		return medExtractor;
-	}
-
-	@Override
-	public Function<BlackboardArtifact, String> getShortExtractor() {
-		return shortExtractor;
-	}
-
-	@Override
-	public BlackboardArtifact.Type getArtifactType() {
-		return artifactType;
-	}
-
-	private WebType(String displayName, BlackboardArtifact.Type artifactType,
+	private WebType(int id,
+			String displayName,
+			BlackboardArtifact.Type artifactType,
 			BlackboardAttribute.Type dateTimeAttributeType,
 			Function<BlackboardArtifact, String> shortExtractor,
 			Function<BlackboardArtifact, String> medExtractor,
 			Function<BlackboardArtifact, String> longExtractor) {
-		this(displayName, artifactType, dateTimeAttributeType, shortExtractor, medExtractor, longExtractor, null);
+		this(id, displayName, artifactType, dateTimeAttributeType, shortExtractor, medExtractor, longExtractor, null);
 	}
 
-	private WebType(String displayName, BlackboardArtifact.Type artifactType,
+	private WebType(
+			int id,
+			String displayName,
+			BlackboardArtifact.Type artifactType,
 			BlackboardAttribute.Type dateTimeAttributeType,
 			Function<BlackboardArtifact, String> shortExtractor,
 			Function<BlackboardArtifact, String> medExtractor,
 			Function<BlackboardArtifact, String> longExtractor,
-			CheckedFunction<BlackboardArtifact, AttributeEventDescription> parseAttributesHelper) {
-
-		super(displayName, EventTypeZoomLevel.SUB_TYPE, BaseType.WEB_ACTIVITY, Collections.emptySet());
-		this.artifactType = artifactType;
-		this.dateTimeAttributeType = dateTimeAttributeType;
-		this.shortExtractor = shortExtractor;
-		this.medExtractor = medExtractor;
-		this.longExtractor = longExtractor;
-		this.parseAttributesHelper = parseAttributesHelper;
-	}
-
-	@Override
-	public AttributeEventDescription parseAttributesHelper(BlackboardArtifact artf) throws TskCoreException {
-		if (this.parseAttributesHelper == null) {
-			return this.parseAttributesHelper(artf);
-		} else {
-			return this.parseAttributesHelper.apply(artf);
-		}
-	}
-
-	@Override
-	public int getTypeID() {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-
+			ArtifactEventType.CheckedFunction<BlackboardArtifact, AttributeEventDescription> parseAttributesHelper) {
+		super(id, displayName, BaseType.WEB_ACTIVITY, artifactType,
+				dateTimeAttributeType, shortExtractor, medExtractor,
+				longExtractor, parseAttributesHelper);
 	}
 
 	private static class TopPrivateDomainExtractor extends AttributeExtractor {
@@ -189,8 +139,7 @@ public final class WebType extends AbstractEventType implements ArtifactEventTyp
 		}
 
 		TopPrivateDomainExtractor() {
-			super(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN));
+			super(new BlackboardAttribute.Type(TSK_DOMAIN));
 		}
 	}
-
 }

@@ -18,9 +18,7 @@
  */
 package org.sleuthkit.datamodel.timeline.eventtype;
 
-import com.google.common.collect.ImmutableList;
-import java.util.Arrays;
-import java.util.List;
+import com.google.common.collect.ImmutableSortedSet;
 import java.util.ResourceBundle;
 import org.sleuthkit.datamodel.timeline.EventTypeZoomLevel;
 
@@ -31,26 +29,23 @@ public final class BaseType extends AbstractEventType {
 
 	private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("org.sleuthkit.datamodel.timeline.eventtype.Bundle");
 
-	public static final BaseType FILE_SYSTEM = new BaseType(BUNDLE.getString("BaseTypes.fileSystem.name"),
-			Arrays.asList(FileSystemType.values()));
-	public static final BaseType WEB_ACTIVITY = new BaseType(BUNDLE.getString("BaseTypes.webActivity.name"),
-			Arrays.asList(WebType.values()));
-	public static final BaseType MISC_TYPES = new BaseType(BUNDLE.getString("BaseTypes.miscTypes.name"),
-			Arrays.asList(MiscType.values()));
+	public static final BaseType FILE_SYSTEM = new BaseType(1, BUNDLE.getString("BaseTypes.fileSystem.name"),
+			FileSystemType.values());
+	public static final BaseType WEB_ACTIVITY = new BaseType(2, BUNDLE.getString("BaseTypes.webActivity.name"),
+			WebType.values());
+	public static final BaseType MISC_TYPES = new BaseType(3, BUNDLE.getString("BaseTypes.miscTypes.name"),
+			MiscType.values());
 
-	private static final ImmutableList<BaseType> VALUES
-			= ImmutableList.of(FILE_SYSTEM, WEB_ACTIVITY, MISC_TYPES);
+	@SuppressWarnings("deprecation")
+	private static final ImmutableSortedSet<BaseType> VALUES
+			= ImmutableSortedSet.of(FILE_SYSTEM, WEB_ACTIVITY, MISC_TYPES);
 
-	static ImmutableList<BaseType> values() {
+	static ImmutableSortedSet< BaseType> values() {
 		return VALUES;
 	}
 
-	private BaseType(String displayName, List<EventType> subTypes) {
-		super(displayName, EventTypeZoomLevel.BASE_TYPE, RootEventType.getInstance(), subTypes);
+	private BaseType(int id, String displayName, ImmutableSortedSet<? extends EventType> subTypes) {
+		super(id, displayName, EventTypeZoomLevel.BASE_TYPE, RootEventType.getInstance(), subTypes);
 	}
 
-	@Override
-	public int getTypeID() {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-	}
 }
