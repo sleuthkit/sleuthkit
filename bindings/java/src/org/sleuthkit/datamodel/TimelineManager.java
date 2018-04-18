@@ -521,11 +521,10 @@ public final class TimelineManager {
 	 *         existing table
 	 */
 	synchronized void initializeDB() throws TskCoreException {
-		///TODO: Move to SleuthkitCase?
+		///TODO: Move to SleuthkitCase? - Move to c++ layer of tsk!! -jm
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement stmt = con.createStatement();) {
-
 			try {
 				stmt.execute("CREATE TABLE if not exists db_info ( key TEXT,  value INTEGER, PRIMARY KEY (key))");// NON-NLS
 			} catch (SQLException ex) {
@@ -533,20 +532,20 @@ public final class TimelineManager {
 			}
 
 			try {
-				stmt.execute("CREATE TABLE if not exists events " // NON-NLS
-						+ " (event_id " + primaryKeyType + " PRIMARY KEY, " // NON-NLS
+				stmt.execute("CREATE TABLE if not exists events ("// NON-NLS
+						+ " event_id " + primaryKeyType + " PRIMARY KEY, " // NON-NLS
 						+ " datasource_id BIGINT, " // NON-NLS
-						+ " file_id BIGINT, " // NON-NLS
-						+ " artifact_id BIGINT, " // NON-NLS
+						+ " file_id BIGINT REFERENCES tsk_files, " // NON-NLS
+						+ " artifact_id BIGINT REFERENCES blackboard_artifacts, " // NON-NLS
 						+ " time INTEGER, " // NON-NLS
 						+ " sub_type INTEGER, " // NON-NLS
 						+ " base_type INTEGER, " // NON-NLS
 						+ " full_description TEXT, " // NON-NLS
 						+ " med_description TEXT, " // NON-NLS
 						+ " short_description TEXT, " // NON-NLS
-						+ " known_state INTEGER," //boolean // NON-NLS
-						+ " hash_hit INTEGER," //boolean // NON-NLS
-						+ " tagged INTEGER)");//boolean // NON-NLS
+						+ " known_state INTEGER, " //boolean // NON-NLS
+						+ " hash_hit INTEGER, " //boolean // NON-NLS
+						+ " tagged INTEGER )");//boolean // NON-NLS
 			} catch (SQLException ex) {
 				throw new TskCoreException("problem creating  database table", ex); // NON-NLS
 			}
@@ -575,23 +574,6 @@ public final class TimelineManager {
 				}
 			}
 
-			try {
-				stmt.execute("CREATE TABLE IF NOT EXISTS hash_sets " //NON-NLS
-						+ "( hash_set_id " + primaryKeyType + " primary key," //NON-NLS
-						+ " hash_set_name VARCHAR(255) UNIQUE NOT NULL)");	//NON-NLS
-			} catch (SQLException ex) {
-				throw new TskCoreException("problem creating hash_sets table", ex); //NON-NLS
-			}
-
-			try {
-				stmt.execute("CREATE TABLE  if not exists hash_set_hits " //NON-NLS
-						+ "(hash_set_id INTEGER REFERENCES hash_sets(hash_set_id) not null, " //NON-NLS
-						+ " event_id INTEGER REFERENCES events(event_id) not null, " //NON-NLS
-						+ " PRIMARY KEY (hash_set_id, event_id))");			//NON-NLS
-			} catch (SQLException ex) {
-				throw new TskCoreException("problem creating hash_set_hits table", ex); //NON-NLS
-			}
-
 			createIndex("events", Arrays.asList("datasource_id")); //NON-NLS
 			createIndex("events", Arrays.asList("event_id", "hash_hit")); //NON-NLS
 			createIndex("events", Arrays.asList("event_id", "tagged")); //NON-NLS
@@ -610,25 +592,23 @@ public final class TimelineManager {
 
 	private enum STATEMENTS {
 		INSERT_ROW("INSERT INTO events ("
-				+ "datasource_id,"
-				+ "file_id ,"
-				+ "artifact_id, "
-				+ "time, "
-				+ "sub_type,"
+				+ " datasource_id,"
+				+ " file_id ,"
+				+ " artifact_id, "
+				+ " time, "
+				+ " sub_type,"
 				+ " base_type,"
 				+ " full_description,"
 				+ " med_description, "
-				+ "short_description, "
-				+ "known_state,"
+				+ " short_description, "
+				+ " known_state,"
 				+ " hash_hit,"
 				+ " tagged) " // NON-NLS
-				+ "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"), // NON-NLS
+				+ " VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"), // NON-NLS
 		GET_DATASOURCE_IDS("SELECT DISTINCT datasource_id FROM events WHERE datasource_id != 0"),// NON-NLS
 		GET_MAX_TIME("SELECT Max(time) AS max FROM events"), // NON-NLS
 		GET_MIN_TIME("SELECT Min(time) AS min FROM events"), // NON-NLS
 		GET_EVENT_BY_ID("SELECT * FROM events WHERE event_id =  ?"), // NON-NLS
-		INSERT_HASH_SET("INSERT OR IGNORE INTO hash_sets (hash_set_name)  values (?)"), //NON-NLS
-		INSERT_HASH_HIT("INSERT OR IGNORE INTO hash_set_hits (hash_set_id, event_id) values (?,?)"), //NON-NLS
 
 		/*
 		 * This SQL query is really just a select count(*), but that has
@@ -1027,7 +1007,7 @@ public final class TimelineManager {
 	 * @return An SQL expresion that produces an events table augmented with the
 	 *         columns required by the filters.
 	 */
-	private String getAugmentedEventsTablesSQL(boolean needTags, boolean needHashSets) {
+	static private String getAugmentedEventsTablesSQL(boolean needTags, boolean needHashSets) {
 		//columns from events table
 		String coreColumns = "event_id, datasource_id, events.file_id, events.artifact_id,"
 				+ "			time, sub_type, base_type, full_description, med_description, "
@@ -1058,8 +1038,8 @@ public final class TimelineManager {
 					+ "		JOIN blackboard_attributes ON (blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id)"
 					+ "		JOIN blackboard_artifact_types ON( blackboard_artifacts.artifact_type_id = blackboard_artifact_types.artifact_type_id)"
 					+ "		WHERE  blackboard_artifact_types.artifact_type_id = " + TSK_HASHSET_HIT.getTypeID()
-					+ "		AND blackboard_attributes.attribute_type_id = " + TSK_SET_NAME.getTypeID() + ") "
-					+ "	ON ( events.file_id = obj_id)) AS events";
+					+ "		AND blackboard_attributes.attribute_type_id = " + TSK_SET_NAME.getTypeID() + ") AS hash_set_hits"
+					+ "	ON ( events.file_id = hash_set_hits.obj_id)) AS events";
 		} else {
 			return joinedWithTags;
 		}
