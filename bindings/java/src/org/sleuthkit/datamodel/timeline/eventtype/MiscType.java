@@ -35,15 +35,15 @@ import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.*;
 import org.sleuthkit.datamodel.TskCoreException;
+import org.sleuthkit.datamodel.timeline.eventtype.AbstractArtifactEventType.AttributeExtractor;
+import org.sleuthkit.datamodel.timeline.eventtype.AbstractArtifactEventType.EmptyExtractor;
+import static org.sleuthkit.datamodel.timeline.eventtype.AbstractArtifactEventType.getAttributeSafe;
 import org.sleuthkit.datamodel.timeline.eventtype.ArtifactEventType.AttributeEventDescription;
-import org.sleuthkit.datamodel.timeline.eventtype.ArtifactEventType.AttributeExtractor;
-import org.sleuthkit.datamodel.timeline.eventtype.ArtifactEventType.EmptyExtractor;
-import static org.sleuthkit.datamodel.timeline.eventtype.ArtifactEventType.getAttributeSafe;
 
 /**
  *
  */
-public final class MiscType extends ArtifactEventType {
+public final class MiscType extends AbstractArtifactEventType {
 
 	private static final Logger logger = Logger.getLogger(MiscType.class.getName());
 	private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("org.sleuthkit.datamodel.timeline.eventtype.Bundle");  // NON-NLS
@@ -167,7 +167,7 @@ public final class MiscType extends ArtifactEventType {
 					MESSAGE,
 					RECENT_DOCUMENTS);
 
-	static ImmutableSortedSet<MiscType> values() {
+	public static ImmutableSortedSet<MiscType> values() {
 		return VALUES;
 	}
 

@@ -28,13 +28,13 @@ import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.*;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.*;
 import org.sleuthkit.datamodel.TskCoreException;
+import org.sleuthkit.datamodel.timeline.eventtype.AbstractArtifactEventType.AttributeExtractor;
 import org.sleuthkit.datamodel.timeline.eventtype.ArtifactEventType.AttributeEventDescription;
-import org.sleuthkit.datamodel.timeline.eventtype.ArtifactEventType.AttributeExtractor;
 
 /**
  *
  */
-public final class WebType extends ArtifactEventType {
+public final class WebType extends AbstractArtifactEventType {
 
 	private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("org.sleuthkit.datamodel.timeline.eventtype.Bundle");  // NON-NLS
 
@@ -89,7 +89,7 @@ public final class WebType extends ArtifactEventType {
 	private static final ImmutableSortedSet<? extends WebType> VALUES
 			= ImmutableSortedSet.of(WEB_DOWNLOADS, WEB_COOKIE, WEB_BOOKMARK, WEB_HISTORY, WEB_SEARCH);
 
-	static ImmutableSortedSet<? extends WebType> values() {
+public	static ImmutableSortedSet<? extends WebType> values() {
 		return VALUES;
 	}
 
@@ -111,7 +111,7 @@ public final class WebType extends ArtifactEventType {
 			Function<BlackboardArtifact, String> shortExtractor,
 			Function<BlackboardArtifact, String> medExtractor,
 			Function<BlackboardArtifact, String> longExtractor,
-			ArtifactEventType.CheckedFunction<BlackboardArtifact, AttributeEventDescription> parseAttributesHelper) {
+			AbstractArtifactEventType.CheckedFunction<BlackboardArtifact, AttributeEventDescription> parseAttributesHelper) {
 		super(id, displayName, BaseType.WEB_ACTIVITY, artifactType,
 				dateTimeAttributeType, shortExtractor, medExtractor,
 				longExtractor, parseAttributesHelper);
