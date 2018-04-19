@@ -106,4 +106,5 @@ public interface EventType {
 
 	int ordinal();
 
+	int getTypeID();
 }

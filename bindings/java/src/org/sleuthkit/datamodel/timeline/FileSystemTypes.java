@@ -27,14 +27,15 @@ import javafx.scene.image.Image;
  */
 public enum FileSystemTypes implements EventType {
 
-	FILE_MODIFIED(BundleUtils.getBundle().getString("FileSystemTypes.fileModified.name"), "blue-document-attribute-m.png"), // NON-NLS
-	FILE_ACCESSED(BundleUtils.getBundle().getString("FileSystemTypes.fileAccessed.name"), "blue-document-attribute-a.png"), // NON-NLS
-	FILE_CREATED(BundleUtils.getBundle().getString("FileSystemTypes.fileCreated.name"), "blue-document-attribute-b.png"), // NON-NLS
-	FILE_CHANGED(BundleUtils.getBundle().getString("FileSystemTypes.fileChanged.name"), "blue-document-attribute-c.png"); // NON-NLS
+	FILE_MODIFIED(4,BundleUtils.getBundle().getString("FileSystemTypes.fileModified.name"), "blue-document-attribute-m.png"), // NON-NLS
+	FILE_ACCESSED(5,BundleUtils.getBundle().getString("FileSystemTypes.fileAccessed.name"), "blue-document-attribute-a.png"), // NON-NLS
+	FILE_CREATED(6,BundleUtils.getBundle().getString("FileSystemTypes.fileCreated.name"), "blue-document-attribute-b.png"), // NON-NLS
+	FILE_CHANGED(7,BundleUtils.getBundle().getString("FileSystemTypes.fileChanged.name"), "blue-document-attribute-c.png"); // NON-NLS
 
 	private final String iconBase;
 
 	private final Image image;
+	private final int id;
 
 	private final String displayName;
 
@@ -68,7 +69,8 @@ public enum FileSystemTypes implements EventType {
 		return Collections.emptyList();
 	}
 
-	private FileSystemTypes(String displayName, String iconBase) {
+	private FileSystemTypes(int id, String displayName, String iconBase) {
+		this.id = id;
 		this.displayName = displayName;
 		this.iconBase = iconBase;
 		this.image = new Image("org/sleuthkit/autopsy/timeline/images/" + iconBase, true); // NON-NLS
@@ -77,5 +79,10 @@ public enum FileSystemTypes implements EventType {
 	@Override
 	public String getDisplayName() {
 		return displayName;
+	}
+
+	@Override
+	public int getTypeID() {
+		return id;
 	}
 }

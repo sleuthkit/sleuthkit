@@ -56,6 +56,11 @@ public class RootEventType implements EventType {
 		return 0;
 	}
 
+	@Override
+	public int getTypeID() {
+		return 0;
+	}
+
 	private static class RootEventTypeHolder {
 
 		private static final RootEventType INSTANCE = new RootEventType();

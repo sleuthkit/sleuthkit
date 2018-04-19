@@ -35,7 +35,7 @@ import org.sleuthkit.datamodel.timeline.ArtifactEventType.AttributeExtractor;
  */
 public enum WebTypes implements EventType, ArtifactEventType {
 
-	WEB_DOWNLOADS(BundleUtils.getBundle().getString("WebTypes.webDownloads.name"),
+	WEB_DOWNLOADS(8, BundleUtils.getBundle().getString("WebTypes.webDownloads.name"),
 			"downloads.png", // NON-NLS
 			new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_DOWNLOAD),
 			new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED),
@@ -59,7 +59,7 @@ public enum WebTypes implements EventType, ArtifactEventType {
 		}
 	},
 	//TODO: review description separators
-	WEB_COOKIE(BundleUtils.getBundle().getString("WebTypes.webCookies.name"),
+	WEB_COOKIE(9, BundleUtils.getBundle().getString("WebTypes.webCookies.name"),
 			"cookies.png", // NON-NLS
 			new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_COOKIE),
 			new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME),
@@ -67,7 +67,7 @@ public enum WebTypes implements EventType, ArtifactEventType {
 			new AttributeExtractor(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_NAME)),
 			new AttributeExtractor(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_VALUE))),
 	//TODO: review description separators
-	WEB_BOOKMARK(BundleUtils.getBundle().getString("WebTypes.webBookmarks.name"),
+	WEB_BOOKMARK(10, BundleUtils.getBundle().getString("WebTypes.webBookmarks.name"),
 			"bookmarks.png", // NON-NLS
 			new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_BOOKMARK),
 			new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_CREATED),
@@ -75,7 +75,7 @@ public enum WebTypes implements EventType, ArtifactEventType {
 			new AttributeExtractor(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL)),
 			new AttributeExtractor(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TITLE))),
 	//TODO: review description separators
-	WEB_HISTORY(BundleUtils.getBundle().getString("WebTypes.webHistory.name"),
+	WEB_HISTORY(11, BundleUtils.getBundle().getString("WebTypes.webHistory.name"),
 			"history.png", // NON-NLS
 			new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_HISTORY),
 			new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED),
@@ -83,7 +83,7 @@ public enum WebTypes implements EventType, ArtifactEventType {
 			new AttributeExtractor(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL)),
 			new AttributeExtractor(new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TITLE))),
 	//TODO: review description separators
-	WEB_SEARCH(BundleUtils.getBundle().getString("WebTypes.webSearch.name"),
+	WEB_SEARCH(12, BundleUtils.getBundle().getString("WebTypes.webSearch.name"),
 			"searchquery.png", // NON-NLS
 			new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_WEB_SEARCH_QUERY),
 			new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME_ACCESSED),
@@ -97,9 +97,15 @@ public enum WebTypes implements EventType, ArtifactEventType {
 	private final Function<BlackboardArtifact, String> longExtractor;
 	private final Function<BlackboardArtifact, String> medExtractor;
 	private final Function<BlackboardArtifact, String> shortExtractor;
+	private final int id;
 	private final String displayName;
 
 	private final BlackboardArtifact.Type artifactType;
+
+	@Override
+	public int getTypeID() {
+		return id;
+	}
 
 	@Override
 	public Image getFXImage() {
@@ -141,11 +147,12 @@ public enum WebTypes implements EventType, ArtifactEventType {
 		return artifactType;
 	}
 
-	private WebTypes(String displayName, String iconBase, BlackboardArtifact.Type artifactType,
+	private WebTypes(int id, String displayName, String iconBase, BlackboardArtifact.Type artifactType,
 			BlackboardAttribute.Type dateTimeAttributeType,
 			Function<BlackboardArtifact, String> shortExtractor,
 			Function<BlackboardArtifact, String> medExtractor,
 			Function<BlackboardArtifact, String> longExtractor) {
+		this.id = id;
 		this.displayName = displayName;
 		this.iconBase = iconBase;
 		this.artifactType = artifactType;

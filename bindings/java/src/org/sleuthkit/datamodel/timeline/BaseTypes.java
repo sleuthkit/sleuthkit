@@ -27,7 +27,7 @@ import static org.sleuthkit.datamodel.timeline.BundleUtils.getBundle;
  * RootTypes are event types that have no super type.
  */
 public enum BaseTypes implements EventType {
-	FILE_SYSTEM(getBundle().getString("BaseTypes.fileSystem.name"), "blue-document.png") { // NON-NLS
+	FILE_SYSTEM(1,getBundle().getString("BaseTypes.fileSystem.name"), "blue-document.png") { // NON-NLS
 
 		@Override
 		public List<? extends EventType> getSubTypes() {
@@ -39,7 +39,7 @@ public enum BaseTypes implements EventType {
 			return FileSystemTypes.valueOf(string);
 		}
 	},
-	WEB_ACTIVITY(getBundle().getString("BaseTypes.webActivity.name"), "web-file.png") { // NON-NLS
+	WEB_ACTIVITY(2,getBundle().getString("BaseTypes.webActivity.name"), "web-file.png") { // NON-NLS
 
 		@Override
 		public List<? extends EventType> getSubTypes() {
@@ -51,7 +51,7 @@ public enum BaseTypes implements EventType {
 			return WebTypes.valueOf(string);
 		}
 	},
-	MISC_TYPES(getBundle().getString("BaseTypes.miscTypes.name"), "block.png") { // NON-NLS
+	MISC_TYPES(3,getBundle().getString("BaseTypes.miscTypes.name"), "block.png") { // NON-NLS
 
 		@Override
 		public List<? extends EventType> getSubTypes() {
@@ -63,6 +63,11 @@ public enum BaseTypes implements EventType {
 			return MiscTypes.valueOf(string);
 		}
 	};
+	private final int id;
+
+	public int getTypeID() {
+		return id;
+	}
 
 	private final String displayName;
 
@@ -90,7 +95,8 @@ public enum BaseTypes implements EventType {
 		return displayName;
 	}
 
-	private BaseTypes(String displayName, String iconBase) {
+	private BaseTypes(int id, String displayName, String iconBase) {
+		this.id = id;
 		this.displayName = displayName;
 		this.iconBase = iconBase;
 		this.image = new Image("org/sleuthkit/autopsy/timeline/images/" + iconBase, true); // NON-NLS

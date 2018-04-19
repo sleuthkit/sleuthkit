@@ -44,7 +44,7 @@ import static org.sleuthkit.datamodel.timeline.ArtifactEventType.getAttributeSaf
  */
 public enum MiscTypes implements EventType, ArtifactEventType {
 
-	MESSAGE(BundleUtils.getBundle().getString("MiscTypes.message.name"), "message.png", // NON-NLS
+	MESSAGE(13, BundleUtils.getBundle().getString("MiscTypes.message.name"), "message.png", // NON-NLS
 			new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_MESSAGE),
 			new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME),
 			new AttributeExtractor(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_MESSAGE_TYPE)),
@@ -63,7 +63,7 @@ public enum MiscTypes implements EventType, ArtifactEventType {
 				return StringUtils.join(asList, " ");
 			},
 			new AttributeExtractor(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_TEXT))),
-	GPS_ROUTE(BundleUtils.getBundle().getString("MiscTypes.GPSRoutes.name"), "gps-search.png", // NON-NLS
+	GPS_ROUTE(14, BundleUtils.getBundle().getString("MiscTypes.GPSRoutes.name"), "gps-search.png", // NON-NLS
 			new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_GPS_ROUTE),
 			new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME),
 			new AttributeExtractor(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PROG_NAME)),
@@ -75,7 +75,7 @@ public enum MiscTypes implements EventType, ArtifactEventType {
 				final BlackboardAttribute longEnd = getAttributeSafe(artf, new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_GEO_LONGITUDE_END));
 				return String.format("from %1$s %2$s to %3$s %4$s", stringValueOf(latStart), stringValueOf(longStart), stringValueOf(latEnd), stringValueOf(longEnd)); // NON-NLS
 			}),
-	GPS_TRACKPOINT(BundleUtils.getBundle().getString("MiscTypes.GPSTrackpoint.name"), "gps-trackpoint.png", // NON-NLS
+	GPS_TRACKPOINT(15, BundleUtils.getBundle().getString("MiscTypes.GPSTrackpoint.name"), "gps-trackpoint.png", // NON-NLS
 			new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_GPS_TRACKPOINT),
 			new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME),
 			new AttributeExtractor(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PROG_NAME)),
@@ -85,13 +85,13 @@ public enum MiscTypes implements EventType, ArtifactEventType {
 				return stringValueOf(latitude) + " " + stringValueOf(longitude); // NON-NLS
 			},
 			new EmptyExtractor()),
-	CALL_LOG(BundleUtils.getBundle().getString("MiscTypes.Calls.name"), "calllog.png", // NON-NLS
+	CALL_LOG(16, BundleUtils.getBundle().getString("MiscTypes.Calls.name"), "calllog.png", // NON-NLS
 			new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_CALLLOG),
 			new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME_START),
 			new AttributeExtractor(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_NAME)),
 			new AttributeExtractor(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PHONE_NUMBER)),
 			new AttributeExtractor(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DIRECTION))),
-	EMAIL(BundleUtils.getBundle().getString("MiscTypes.Email.name"), "mail-icon-16.png", // NON-NLS
+	EMAIL(17, BundleUtils.getBundle().getString("MiscTypes.Email.name"), "mail-icon-16.png", // NON-NLS
 			new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_EMAIL_MSG),
 			new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME_SENT),
 			artf -> {
@@ -101,7 +101,7 @@ public enum MiscTypes implements EventType, ArtifactEventType {
 			},
 			new AttributeExtractor(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_SUBJECT)),
 			new AttributeExtractor(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_EMAIL_CONTENT_PLAIN))),
-	RECENT_DOCUMENTS(BundleUtils.getBundle().getString("MiscTypes.recentDocuments.name"), "recent_docs.png", // NON-NLS
+	RECENT_DOCUMENTS(18, BundleUtils.getBundle().getString("MiscTypes.recentDocuments.name"), "recent_docs.png", // NON-NLS
 			new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_RECENT_OBJECT),
 			new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME),
 			new AttributeExtractor(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PATH)).andThen(
@@ -124,13 +124,13 @@ public enum MiscTypes implements EventType, ArtifactEventType {
 			return new AttributeEventDescription(time, shortDescription, medDescription, fullDescription);
 		}
 	},
-	INSTALLED_PROGRAM(BundleUtils.getBundle().getString("MiscTypes.installedPrograms.name"), "programs.png", // NON-NLS
+	INSTALLED_PROGRAM(19, BundleUtils.getBundle().getString("MiscTypes.installedPrograms.name"), "programs.png", // NON-NLS
 			new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_INSTALLED_PROG),
 			new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME),
 			new AttributeExtractor(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_PROG_NAME)),
 			new EmptyExtractor(),
 			new EmptyExtractor()),
-	EXIF(BundleUtils.getBundle().getString("MiscTypes.exif.name"), "camera-icon-16.png", // NON-NLS
+	EXIF(20, BundleUtils.getBundle().getString("MiscTypes.exif.name"), "camera-icon-16.png", // NON-NLS
 			new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_METADATA_EXIF),
 			new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME_CREATED),
 			new AttributeExtractor(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DEVICE_MAKE)),
@@ -146,7 +146,7 @@ public enum MiscTypes implements EventType, ArtifactEventType {
 				}
 				return "error loading file name";
 			}),
-	DEVICES_ATTACHED(BundleUtils.getBundle().getString("MiscTypes.devicesAttached.name"), "usb_devices.png", // NON-NLS
+	DEVICES_ATTACHED(21, BundleUtils.getBundle().getString("MiscTypes.devicesAttached.name"), "usb_devices.png", // NON-NLS
 			new BlackboardArtifact.Type(ARTIFACT_TYPE.TSK_DEVICE_ATTACHED),
 			new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DATETIME),
 			new AttributeExtractor(new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_DEVICE_MAKE)),
@@ -159,6 +159,7 @@ public enum MiscTypes implements EventType, ArtifactEventType {
 	private final Function<BlackboardArtifact, String> longExtractor;
 	private final Function<BlackboardArtifact, String> medExtractor;
 	private final Function<BlackboardArtifact, String> shortExtractor;
+	private final int id;
 	private final String displayName;
 	private final BlackboardArtifact.Type artifactType;
 
@@ -228,11 +229,12 @@ public enum MiscTypes implements EventType, ArtifactEventType {
 		return MiscTypes.valueOf(string);
 	}
 
-	private MiscTypes(String displayName, String iconBase, BlackboardArtifact.Type artifactType,
+	private MiscTypes(int id, String displayName, String iconBase, BlackboardArtifact.Type artifactType,
 			BlackboardAttribute.Type dateTimeAttributeType,
 			Function<BlackboardArtifact, String> shortExtractor,
 			Function<BlackboardArtifact, String> medExtractor,
 			Function<BlackboardArtifact, String> longExtractor) {
+		this.id = id;
 		this.displayName = displayName;
 		this.iconBase = iconBase;
 		this.artifactType = artifactType;
@@ -241,6 +243,11 @@ public enum MiscTypes implements EventType, ArtifactEventType {
 		this.medExtractor = medExtractor;
 		this.longExtractor = longExtractor;
 		this.image = new Image("org/sleuthkit/autopsy/timeline/images/" + iconBase, true); // NON-NLS
+	}
+
+	@Override
+	public int getTypeID() {
+		return id;
 	}
 
 	@Override
