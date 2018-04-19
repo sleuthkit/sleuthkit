@@ -977,6 +977,49 @@ int TskDbPostgreSQL::addFsFile(TSK_FS_FILE * fs_file,
     return addFile(fs_file, fs_attr, path, md5, known, fsObjId, parObjId, objId, dataSourceObjId);
 }
 
+
+int TskDbPostgreSQL::addMACTimeEvent(char*& zSQL, const int64_t data_source_obj_id, const int64_t obj_id, time_t time,
+                                     const int64_t sub_type, const char* full_desc, const char* med_desc,
+                                     const char* short_desc)
+{
+	if (time == 0)
+	{
+		//we skip any MAC time events with time == 0 since 0 is usually a bogus time and not helpfull 
+		return 0;
+	}
+
+	//insert MAC time events
+	if (0 > snprintf(zSQL, 2048 - 1,
+	                 "INSERT INTO events ( datasource_id, file_id , artifact_id, time, sub_type, base_type, full_description, med_description, short_description, known_state, hash_hit, tagged) "
+	                 // NON-NLS
+	                 " VALUES ("
+	                 "%" PRId64 "," // datasource_id
+	                 "%" PRId64 "," // file_id
+	                 "NULL," // fixed artifact_id
+	                 "%" PRIu64 "," // time
+					 "%" PRId64 "," // sub_type
+	                 "1," // fixed base_type
+	                 "%s," // full_description
+	                 "%s," // med_description
+	                 "%s," // short_description
+	                 "0," // fixed known_state
+	                 "0," // fixed hash_hit
+	                 "0" // fixed tagged
+	                 ")",
+	                 data_source_obj_id,
+	                 obj_id,
+	                 (unsigned long long)time, // this one changes
+	                 sub_type,
+	                 full_desc,
+	                 med_desc,
+	                 short_desc))
+	{
+		return 1;
+	}
+
+	return attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding event to events table: %s\n");
+}
+
 /**
 * Add file data to the file table
 * @param md5 binary value of MD5 (i.e. 16 bytes) or NULL
@@ -1164,10 +1207,41 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         free(escaped_path);
         PQfreemem(name_sql);
         PQfreemem(escaped_path_sql);
-		    PQfreemem(extension_sql);
-        free(zSQL_dynamic);
-        return 1;
-    }
+		PQfreemem(extension_sql);
+		free(zSQL_dynamic);
+		return 1;
+	}
+
+
+	std::string escaped_path_str = std::string(escaped_path);
+	const char* full_description = (escaped_path_str + name).c_str();
+	const size_t firstslash = escaped_path_str.find('/', 1);
+	const char* root_folder = (firstslash == string::npos)
+		                          ? escaped_path
+		                          : escaped_path_str.substr(0, firstslash+1).c_str();
+	char* full_desc_sql = PQescapeLiteral(conn, full_description, strlen(full_description));
+	char* med_desc_sql = PQescapeLiteral(conn, escaped_path, strlen(escaped_path));
+	char* short_desc_sql = PQescapeLiteral(conn, root_folder, strlen(root_folder));
+	if (addMACTimeEvent(zSQL, dataSourceObjId, objId, mtime, 4, full_desc_sql, med_desc_sql, short_desc_sql)
+		|| addMACTimeEvent(zSQL, dataSourceObjId, objId, atime, 5, full_desc_sql, med_desc_sql, short_desc_sql)
+		|| addMACTimeEvent(zSQL, dataSourceObjId, objId, crtime, 6, full_desc_sql, med_desc_sql, short_desc_sql)
+		|| addMACTimeEvent(zSQL, dataSourceObjId, objId, ctime, 7, full_desc_sql, med_desc_sql, short_desc_sql))
+	{
+		free(escaped_path);
+		PQfreemem(name_sql);
+		PQfreemem(escaped_path_sql);
+		PQfreemem(extension_sql);
+		free(zSQL_dynamic);
+		PQfreemem(full_desc_sql);
+		PQfreemem(med_desc_sql);
+		PQfreemem(short_desc_sql);
+		return 1;
+	}
+
+	PQfreemem(full_desc_sql);
+	PQfreemem(med_desc_sql);
+	PQfreemem(short_desc_sql);
+
 
     //if dir, update parent id cache (do this before objId may be changed creating the slack file)
     if (TSK_FS_IS_DIR_META(meta_type)){

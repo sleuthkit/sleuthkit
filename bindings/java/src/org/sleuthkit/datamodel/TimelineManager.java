@@ -197,26 +197,6 @@ public final class TimelineManager {
 		}
 	}
 
-//	/**
-//	 * drop the tables from this database and recreate them in order to start
-//	 * over.
-//	 *
-//	 * @throws org.sleuthkit.datamodel.TskCoreException
-//	 */
-//	public void reInitializeDB() throws TskCoreException {
-//		sleuthkitCase.acquireSingleUserCaseWriteLock();
-//		try (CaseDbConnection con = sleuthkitCase.getConnection();
-//				Statement statement = con.createStatement();) {
-//			statement.execute(STATEMENTS.DROP_DB_INFO_TABLE.getSQL());
-//			statement.execute(STATEMENTS.DROP_EVENTS_TABLE.getSQL());
-//
-//			initializeDB();
-//		} catch (SQLException ex) {
-//			throw new TskCoreException("Error dropping old tables", ex); // NON-NLS
-//		} finally {
-//			sleuthkitCase.releaseSingleUserCaseWriteLock();
-//		}
-//	}
 
 	/**
 	 * Get the minimal interval that bounds all the vents that pass the given
