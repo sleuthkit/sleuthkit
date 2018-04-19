@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel.timeline;
 
+import org.sleuthkit.datamodel.timeline.eventtype.EventType;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
 import java.util.Collections;

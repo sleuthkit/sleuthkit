@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel.timeline;
 
+import org.sleuthkit.datamodel.timeline.eventtype.EventType;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;

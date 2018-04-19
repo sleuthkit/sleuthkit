@@ -16,22 +16,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel.timeline;
+package org.sleuthkit.datamodel.timeline.eventtype;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import javafx.scene.image.Image;
-import javafx.scene.paint.Color;
+import com.google.common.collect.ImmutableSortedSet;
+import java.util.ResourceBundle;
+import org.sleuthkit.datamodel.timeline.EventTypeZoomLevel;
 
 /**
  * A singleton EventType to represent the root type of all event types.
  */
-public class RootEventType implements EventType {
+public final class RootEventType extends AbstractEventType {
+
+	private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("org.sleuthkit.datamodel.timeline.eventtype.Bundle");  // NON-NLS
 
 	@Override
-	public List<RootEventType> getSiblingTypes() {
-		return Collections.singletonList(this);
+	@SuppressWarnings("deprecation")
+	public ImmutableSortedSet<? extends EventType> getSiblingTypes() {
+		return ImmutableSortedSet.of(this);
 	}
 
 	@Override
@@ -40,20 +41,11 @@ public class RootEventType implements EventType {
 	}
 
 	private RootEventType() {
+		super(0, BUNDLE.getString("RootEventType.eventTypes.name"), EventTypeZoomLevel.ROOT_TYPE, null, BaseType.values());
 	}
 
 	public static RootEventType getInstance() {
 		return RootEventTypeHolder.INSTANCE;
-	}
-
-	@Override
-	public EventType getSubType(String string) {
-		return BaseTypes.valueOf(string);
-	}
-
-	@Override
-	public int ordinal() {
-		return 0;
 	}
 
 	@Override
@@ -70,32 +62,7 @@ public class RootEventType implements EventType {
 	}
 
 	@Override
-	public Color getColor() {
-		return Color.hsb(359, .9, .9, 0);
-	}
-
-	@Override
 	public RootEventType getSuperType() {
 		return this;
-	}
-
-	@Override
-	public List<BaseTypes> getSubTypes() {
-		return Arrays.asList(BaseTypes.values());
-	}
-
-	@Override
-	public String getIconBase() {
-		throw new UnsupportedOperationException("Not supported yet."); // NON-NLS //To change body of generated methods, choose Tools | Templates.
-	}
-
-	@Override
-	public String getDisplayName() {
-		return BundleUtils.getBundle().getString("RootEventType.eventTypes.name");
-	}
-
-	@Override
-	public Image getFXImage() {
-		return null;
 	}
 }
