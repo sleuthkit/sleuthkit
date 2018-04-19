@@ -28,7 +28,6 @@
 // most of the local files need this, so we include it here
 #include <string.h>
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -294,10 +293,10 @@ extern "C" {
     bit mask & shift operations.
 ------------------------------------------------------------------------ */
 
-
-    typedef unsigned short UTF16;       /* at least 16 bits */
-    typedef unsigned char UTF8; /* typically 8 bits */
-    typedef unsigned char Boolean;      /* 0 or 1 */
+	typedef uint32_t UTF32;       /* typically 32 bits */
+    typedef uint16_t UTF16;       /* typically 16 bits */
+    typedef uint8_t UTF8; /* typically 8 bits */
+    typedef uint8_t Boolean;      /* 0 or 1 */
 
 
     typedef enum {
@@ -311,7 +310,11 @@ extern "C" {
         TSKstrictConversion = 0,        ///< Error if invalid surrogate pairs are found
         TSKlenientConversion    ///< Ignore invalid surrogate pairs
     } TSKConversionFlags;
-
+	
+    extern TSKConversionResult tsk_UTF8toUTF32 (
+        const UTF8** sourceStart, const UTF8* sourceEnd,
+        UTF32** targetStart, UTF32* targetEnd, TSKConversionFlags flags);
+		
     extern TSKConversionResult tsk_UTF8toUTF16(const UTF8 ** sourceStart,
         const UTF8 * sourceEnd,
         UTF16 ** targetStart, UTF16 * targetEnd, TSKConversionFlags flags);
