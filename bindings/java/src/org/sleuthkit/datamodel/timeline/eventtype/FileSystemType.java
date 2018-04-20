@@ -42,7 +42,7 @@ public final class FileSystemType extends AbstractEventType {
 	private static final ImmutableSortedSet<FileSystemType> VALUES
 			= ImmutableSortedSet.of(FILE_MODIFIED, FILE_ACCESSED, FILE_CREATED, FILE_CHANGED);
 
-	static ImmutableSortedSet<FileSystemType> values() {
+	public static ImmutableSortedSet<FileSystemType> values() {
 		return VALUES;
 	}
 

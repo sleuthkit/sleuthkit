@@ -18,11 +18,11 @@
  */
 package org.sleuthkit.datamodel;
 
-import com.google.common.base.Joiner;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.SetMultimap;
-import com.mchange.v1.util.ListUtils;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -63,9 +63,7 @@ import org.sleuthkit.datamodel.timeline.TimeUnits;
 import org.sleuthkit.datamodel.timeline.ZoomParams;
 import org.sleuthkit.datamodel.timeline.eventtype.ArtifactEventType;
 import org.sleuthkit.datamodel.timeline.eventtype.EventType;
-import org.sleuthkit.datamodel.timeline.eventtype.MiscType;
 import org.sleuthkit.datamodel.timeline.eventtype.RootEventType;
-import org.sleuthkit.datamodel.timeline.eventtype.WebType;
 import org.sleuthkit.datamodel.timeline.filters.AbstractFilter;
 import org.sleuthkit.datamodel.timeline.filters.DataSourceFilter;
 import org.sleuthkit.datamodel.timeline.filters.DataSourcesFilter;
@@ -877,7 +875,7 @@ public final class TimelineManager {
 		return typeMap;
 	}
 
-	final private Map<Integer, EventType> eventTypeIDMap = new HashMap<>();
+	final private BiMap<Integer, EventType> eventTypeIDMap = HashBiMap.create();
 
 	/**
 	 * Get an EventType object given it's id
@@ -886,11 +884,16 @@ public final class TimelineManager {
 		return Optional.ofNullable(eventTypeIDMap.get(eventTypeID));
 	}
 
-	public ImmutableSet<ArtifactEventType> getArtifactEventTypes() {
-		HashSet<ArtifactEventType> eventTypes = new HashSet<>();
-		eventTypes.addAll(WebType.values());
-		eventTypes.addAll(MiscType.values());
-		return ImmutableSet.copyOf(eventTypes);
+	public ImmutableList<EventType> getEventTypes() {
+		return ImmutableList.copyOf(eventTypeIDMap.values());
+	}
+
+	public ImmutableList<ArtifactEventType> getArtifactEventTypes() {
+		return ImmutableList.copyOf(eventTypeIDMap.values().stream()
+				.filter(ArtifactEventType.class::isInstance)
+				.map(ArtifactEventType.class::cast)
+				.collect(Collectors.toSet())
+		);
 	}
 
 	/**

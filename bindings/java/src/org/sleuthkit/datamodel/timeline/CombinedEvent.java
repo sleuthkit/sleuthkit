@@ -18,13 +18,13 @@
  */
 package org.sleuthkit.datamodel.timeline;
 
-import org.sleuthkit.datamodel.timeline.eventtype.EventType;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import org.sleuthkit.datamodel.timeline.eventtype.EventType;
 
 /**
  * A container for several events that have the same timestamp and description
@@ -40,7 +40,7 @@ public class CombinedEvent {
     /**
      * A map from EventType to event ID.
      */
-    private final Map<EventType, Long> eventTypeMap = new HashMap<EventType, Long>();
+    private final Map<EventType, Long> eventTypeMap = new HashMap<>();
 
     /**
      * Constructor
@@ -100,7 +100,7 @@ public class CombinedEvent {
      * @return The event IDs of the combined events.
      */
     public Set<Long> getEventIDs() {
-        return Collections.unmodifiableSet(new HashSet<Long>(eventTypeMap.values()));
+        return Collections.unmodifiableSet(new HashSet<>(eventTypeMap.values()));
     }
 
     /**
