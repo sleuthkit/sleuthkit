@@ -68,7 +68,7 @@ public final class MiscType extends AbstractArtifactEventType {
 			},
 			new AttributeExtractor(
 					new BlackboardAttribute.Type(ATTRIBUTE_TYPE.TSK_TEXT)));
-	public static final MiscType GPS_ROUTE = new MiscType(13, BUNDLE.getString("MiscTypes.GPSRoutes.name"), // NON-NLS
+	public static final MiscType GPS_ROUTE = new MiscType(14, BUNDLE.getString("MiscTypes.GPSRoutes.name"), // NON-NLS
 			new BlackboardArtifact.Type(TSK_GPS_ROUTE),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new AttributeExtractor(new BlackboardAttribute.Type(TSK_PROG_NAME)),
@@ -80,7 +80,7 @@ public final class MiscType extends AbstractArtifactEventType {
 				final BlackboardAttribute longEnd = getAttributeSafe(artf, new BlackboardAttribute.Type(TSK_GEO_LONGITUDE_END));
 				return String.format("from %1$s %2$s to %3$s %4$s", stringValueOf(latStart), stringValueOf(longStart), stringValueOf(latEnd), stringValueOf(longEnd)); // NON-NLS
 			});
-	public static final MiscType GPS_TRACKPOINT = new MiscType(14, BUNDLE.getString("MiscTypes.GPSTrackpoint.name"), // NON-NLS
+	public static final MiscType GPS_TRACKPOINT = new MiscType(15, BUNDLE.getString("MiscTypes.GPSTrackpoint.name"), // NON-NLS
 			new BlackboardArtifact.Type(TSK_GPS_TRACKPOINT),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new AttributeExtractor(new BlackboardAttribute.Type(TSK_PROG_NAME)),
@@ -90,13 +90,13 @@ public final class MiscType extends AbstractArtifactEventType {
 				return stringValueOf(latitude) + " " + stringValueOf(longitude); // NON-NLS
 			},
 			new EmptyExtractor());
-	public static final MiscType CALL_LOG = new MiscType(15, BUNDLE.getString("MiscTypes.Calls.name"), // NON-NLS
+	public static final MiscType CALL_LOG = new MiscType(16, BUNDLE.getString("MiscTypes.Calls.name"), // NON-NLS
 			new BlackboardArtifact.Type(TSK_CALLLOG),
 			new BlackboardAttribute.Type(TSK_DATETIME_START),
 			new AttributeExtractor(new BlackboardAttribute.Type(TSK_NAME)),
 			new AttributeExtractor(new BlackboardAttribute.Type(TSK_PHONE_NUMBER)),
 			new AttributeExtractor(new BlackboardAttribute.Type(TSK_DIRECTION)));
-	public static final MiscType EMAIL = new MiscType(16, BUNDLE.getString("MiscTypes.Email.name"), // NON-NLS
+	public static final MiscType EMAIL = new MiscType(17, BUNDLE.getString("MiscTypes.Email.name"), // NON-NLS
 			new BlackboardArtifact.Type(TSK_EMAIL_MSG),
 			new BlackboardAttribute.Type(TSK_DATETIME_SENT),
 			(BlackboardArtifact artf) -> {
@@ -106,7 +106,7 @@ public final class MiscType extends AbstractArtifactEventType {
 			},
 			new AttributeExtractor(new BlackboardAttribute.Type(TSK_SUBJECT)),
 			new AttributeExtractor(new BlackboardAttribute.Type(TSK_EMAIL_CONTENT_PLAIN)));
-	public static final MiscType RECENT_DOCUMENTS = new MiscType(17, BUNDLE.getString("MiscTypes.recentDocuments.name"), // NON-NLS
+	public static final MiscType RECENT_DOCUMENTS = new MiscType(18, BUNDLE.getString("MiscTypes.recentDocuments.name"), // NON-NLS
 			new BlackboardArtifact.Type(TSK_RECENT_OBJECT),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new AttributeExtractor(new BlackboardAttribute.Type(TSK_PATH)).andThen(
@@ -126,13 +126,13 @@ public final class MiscType extends AbstractArtifactEventType {
 			return new AttributeEventDescription(time, shortDescription, medDescription, fullDescription);
 		}
 	});
-	public static final MiscType INSTALLED_PROGRAM = new MiscType(18, BUNDLE.getString("MiscTypes.installedPrograms.name"), // NON-NLS
+	public static final MiscType INSTALLED_PROGRAM = new MiscType(19, BUNDLE.getString("MiscTypes.installedPrograms.name"), // NON-NLS
 			new BlackboardArtifact.Type(TSK_INSTALLED_PROG),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new AttributeExtractor(new BlackboardAttribute.Type(TSK_PROG_NAME)),
 			new EmptyExtractor(),
 			new EmptyExtractor());
-	public static final MiscType EXIF = new MiscType(19, BUNDLE.getString("MiscTypes.exif.name"), // NON-NLS
+	public static final MiscType EXIF = new MiscType(20, BUNDLE.getString("MiscTypes.exif.name"), // NON-NLS
 			new BlackboardArtifact.Type(TSK_METADATA_EXIF),
 			new BlackboardAttribute.Type(TSK_DATETIME_CREATED),
 			new AttributeExtractor(new BlackboardAttribute.Type(TSK_DEVICE_MAKE)),
@@ -148,7 +148,7 @@ public final class MiscType extends AbstractArtifactEventType {
 				}
 				return "error loading file name";
 			});
-	public static final MiscType DEVICES_ATTACHED = new MiscType(20, BUNDLE.getString("MiscTypes.devicesAttached.name"), // NON-NLS
+	public static final MiscType DEVICES_ATTACHED = new MiscType(21, BUNDLE.getString("MiscTypes.devicesAttached.name"), // NON-NLS
 			new BlackboardArtifact.Type(TSK_DEVICE_ATTACHED),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new AttributeExtractor(new BlackboardAttribute.Type(TSK_DEVICE_MAKE)),
