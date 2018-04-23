@@ -22,8 +22,7 @@ import java.util.Comparator;
 import java.util.Objects;
 import java.util.function.Predicate;
 import javafx.collections.FXCollections;
-import org.sleuthkit.datamodel.timeline.eventtype.EventType;
-import org.sleuthkit.datamodel.timeline.eventtype.RootEventType;
+import org.sleuthkit.datamodel.timeline.EventType;
 
 /**
  * Event Type Filter. An instance of TypeFilter is usually a tree that parallels
@@ -73,7 +72,7 @@ public class TypeFilter extends UnionFilter<TypeFilter> {
 
 	@Override
 	public String getDisplayName() {
-		return (eventType == RootEventType.getInstance())
+		return (EventType.ROOT_EVEN_TYPE.equals(eventType))
 				? BundleUtils.getBundle().getString("TypeFilter.displayName.text")
 				: eventType.getDisplayName();
 	}

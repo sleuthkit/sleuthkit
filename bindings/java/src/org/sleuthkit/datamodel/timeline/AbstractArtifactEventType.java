@@ -16,19 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel.timeline.eventtype;
+package org.sleuthkit.datamodel.timeline;
 
 import java.text.MessageFormat;
-import java.util.Collections;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.lang3.StringUtils;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.TskCoreException;
-import org.sleuthkit.datamodel.timeline.EventTypeZoomLevel;
 
 /**
  *
@@ -39,18 +36,18 @@ abstract class AbstractArtifactEventType extends AbstractEventType implements Ar
 
 	private final BlackboardArtifact.Type artifactType;
 	private final BlackboardAttribute.Type dateTimeAttributeType;
-	private final Function<BlackboardArtifact, String> longExtractor;
-	private final Function<BlackboardArtifact, String> medExtractor;
-	private final Function<BlackboardArtifact, String> shortExtractor;
+	private final StringExtractor<BlackboardArtifact> longExtractor;
+	private final StringExtractor<BlackboardArtifact> medExtractor;
+	private final StringExtractor<BlackboardArtifact> shortExtractor;
 	private final CheckedFunction<BlackboardArtifact, AttributeEventDescription> parseAttributesHelper;
 
 	AbstractArtifactEventType(int id, String displayName,
 			EventType superType,
 			BlackboardArtifact.Type artifactType,
 			BlackboardAttribute.Type dateTimeAttributeType,
-			Function<BlackboardArtifact, String> shortExtractor,
-			Function<BlackboardArtifact, String> medExtractor,
-			Function<BlackboardArtifact, String> longExtractor) {
+			StringExtractor<BlackboardArtifact> shortExtractor,
+			StringExtractor<BlackboardArtifact> medExtractor,
+			StringExtractor<BlackboardArtifact> longExtractor) {
 		this(id, displayName, superType, artifactType, dateTimeAttributeType, shortExtractor, medExtractor, longExtractor, null);
 	}
 
@@ -58,18 +55,23 @@ abstract class AbstractArtifactEventType extends AbstractEventType implements Ar
 			EventType superType,
 			BlackboardArtifact.Type artifactType,
 			BlackboardAttribute.Type dateTimeAttributeType,
-			Function<BlackboardArtifact, String> shortExtractor,
-			Function<BlackboardArtifact, String> medExtractor,
-			Function<BlackboardArtifact, String> longExtractor,
+			StringExtractor<BlackboardArtifact> shortExtractor,
+			StringExtractor<BlackboardArtifact> medExtractor,
+			StringExtractor<BlackboardArtifact> longExtractor,
 			CheckedFunction<BlackboardArtifact, AttributeEventDescription> parseAttributesHelper) {
 
-		super(id, displayName, EventTypeZoomLevel.SUB_TYPE, superType, Collections.emptySortedSet());
+		super(id, displayName, EventTypeZoomLevel.SUB_TYPE, superType);
 		this.artifactType = artifactType;
 		this.dateTimeAttributeType = dateTimeAttributeType;
 		this.shortExtractor = shortExtractor;
 		this.medExtractor = medExtractor;
 		this.longExtractor = longExtractor;
 		this.parseAttributesHelper = parseAttributesHelper;
+	}
+
+	@Override
+	public int getArtifactTypeID() {
+		return getArtifactType().getTypeID();
 	}
 
 	/**
@@ -87,8 +89,8 @@ abstract class AbstractArtifactEventType extends AbstractEventType implements Ar
 	 *         full event description
 	 */
 	@Override
-	public Function<BlackboardArtifact, String> getFullExtractor() {
-		return longExtractor;
+	public String extractFullDescription(BlackboardArtifact artf) throws TskCoreException {
+		return longExtractor.extract(artf);
 	}
 
 	/**
@@ -96,8 +98,8 @@ abstract class AbstractArtifactEventType extends AbstractEventType implements Ar
 	 *         medium event description
 	 */
 	@Override
-	public Function<BlackboardArtifact, String> getMedExtractor() {
-		return medExtractor;
+	public String extractMedDescription(BlackboardArtifact artf) throws TskCoreException {
+		return medExtractor.extract(artf);
 	}
 
 	/**
@@ -105,8 +107,8 @@ abstract class AbstractArtifactEventType extends AbstractEventType implements Ar
 	 *         short event description
 	 */
 	@Override
-	public Function<BlackboardArtifact, String> getShortExtractor() {
-		return shortExtractor;
+	public String extractShortDescription(BlackboardArtifact artf) throws TskCoreException {
+		return shortExtractor.extract(artf);
 	}
 
 	/**
@@ -152,22 +154,27 @@ abstract class AbstractArtifactEventType extends AbstractEventType implements Ar
 		final BlackboardAttribute dateTimeAttr = artf.getAttribute(getDateTimeAttributeType());
 
 		long time = dateTimeAttr.getValueLong();
-		String shortDescription = getShortExtractor().apply(artf);
-		String medDescription = shortDescription + " : " + getMedExtractor().apply(artf);
-		String fullDescription = medDescription + " : " + getFullExtractor().apply(artf);
+		String shortDescription = extractShortDescription(artf);
+		String medDescription = shortDescription + " : " + extractMedDescription(artf);
+		String fullDescription = medDescription + " : " + extractFullDescription(artf);
 		return new AttributeEventDescription(time, shortDescription, medDescription, fullDescription);
 	}
 
-	static class AttributeExtractor implements Function<BlackboardArtifact, String> {
+	interface StringExtractor<X> {
+
+		String extract(X artf) throws TskCoreException;
+	}
+
+	static class DefaultAttributeExtractor implements AbstractArtifactEventType.StringExtractor<BlackboardArtifact> {
 
 		private final BlackboardAttribute.Type attributeType;
 
-		AttributeExtractor(BlackboardAttribute.Type attribute) {
+		DefaultAttributeExtractor(BlackboardAttribute.Type attribute) {
 			this.attributeType = attribute;
 		}
 
 		@Override
-		public String apply(BlackboardArtifact artf) {
+		public String extract(BlackboardArtifact artf) throws TskCoreException {
 			return Optional.ofNullable(getAttributeSafe(artf, attributeType))
 					.map(BlackboardAttribute::getDisplayString)
 					.map(StringUtils::defaultString)
@@ -175,10 +182,10 @@ abstract class AbstractArtifactEventType extends AbstractEventType implements Ar
 		}
 	}
 
-	static class EmptyExtractor implements Function<BlackboardArtifact, String> {
+	final static class EmptyExtractor implements StringExtractor<Object> {
 
 		@Override
-		public String apply(BlackboardArtifact ignored) {
+		public String extract(Object ignored) throws TskCoreException {
 			return "";
 		}
 	}
@@ -192,8 +199,4 @@ abstract class AbstractArtifactEventType extends AbstractEventType implements Ar
 		}
 	}
 
-	interface CheckedFunction<I, O> {
-
-		O apply(I input) throws TskCoreException;
-	}
 }

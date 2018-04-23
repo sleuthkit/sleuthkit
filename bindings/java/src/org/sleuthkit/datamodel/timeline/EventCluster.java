@@ -18,7 +18,6 @@
  */
 package org.sleuthkit.datamodel.timeline;
 
-import org.sleuthkit.datamodel.timeline.eventtype.EventType;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Sets;

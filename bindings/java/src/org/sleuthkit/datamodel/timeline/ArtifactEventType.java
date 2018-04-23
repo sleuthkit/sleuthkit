@@ -16,9 +16,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel.timeline.eventtype;
+package org.sleuthkit.datamodel.timeline;
 
-import java.util.function.Function;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.TskCoreException;
@@ -46,19 +45,19 @@ public interface ArtifactEventType extends EventType {
 	 * @return a function from an artifact to a String to use as part of the
 	 *         full event description
 	 */
-	Function<BlackboardArtifact, String> getFullExtractor();
+	String extractFullDescription(BlackboardArtifact artf) throws TskCoreException;
 
 	/**
 	 * @return a function from an artifact to a String to use as part of the
 	 *         medium event description
 	 */
-	Function<BlackboardArtifact, String> getMedExtractor();
+	String extractMedDescription(BlackboardArtifact artf) throws TskCoreException;
 
 	/**
 	 * @return a function from an artifact to a String to use as part of the
 	 *         short event description
 	 */
-	Function<BlackboardArtifact, String> getShortExtractor();
+	String extractShortDescription(BlackboardArtifact artf) throws TskCoreException;
 
 	/**
 	 * Get the ID of the the artifact type that this EventType is derived from.
