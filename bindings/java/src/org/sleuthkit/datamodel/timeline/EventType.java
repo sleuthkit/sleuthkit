@@ -347,4 +347,6 @@ public interface EventType extends Comparable<EventType> {
 
 		O apply(I input) throws TskCoreException;
 	}
+
+	
 }

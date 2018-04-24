@@ -23,7 +23,7 @@ import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.TskCoreException;
 
 /**
- *
+ * Interface for EventTypes that are derived from Artifacts.
  */
 public interface ArtifactEventType extends EventType {
 

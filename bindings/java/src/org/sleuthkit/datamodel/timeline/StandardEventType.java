@@ -28,7 +28,7 @@ import static org.sleuthkit.datamodel.timeline.EventType.WEB_ACTIVITY;
 /**
  *
  */
- class StandardEventType implements EventType {
+class StandardEventType implements EventType {
 
 	static final ImmutableSortedSet<EventType> BASE_TYPES
 			= ImmutableSortedSet.of(FILE_SYSTEM, WEB_ACTIVITY, MISC_TYPES);
@@ -99,5 +99,32 @@ import static org.sleuthkit.datamodel.timeline.EventType.WEB_ACTIVITY;
 	@Override
 	public int getTypeID() {
 		return id;
+	}
+
+	@Override
+	public int hashCode() {
+		int hash = 5;
+		hash = 79 * hash + this.getTypeID();
+		return hash;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		final EventType other = (EventType) obj;
+		return this.getTypeID() == other.getTypeID();
+	}
+
+	@Override
+	public String toString() {
+		return "StandardEventType{" + "id=" + getTypeID() + ", displayName=" + getDisplayName() + '}';
 	}
 }
