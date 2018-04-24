@@ -18,22 +18,48 @@
  */
 package org.sleuthkit.datamodel.timeline;
 
+import com.google.common.collect.ImmutableSortedSet;
 import java.util.Optional;
 import java.util.SortedSet;
+import static org.sleuthkit.datamodel.timeline.EventType.FILE_SYSTEM;
+import static org.sleuthkit.datamodel.timeline.EventType.MISC_TYPES;
+import static org.sleuthkit.datamodel.timeline.EventType.WEB_ACTIVITY;
 
 /**
  *
  */
 abstract class AbstractEventType implements EventType {
 
+	static final ImmutableSortedSet<EventType> BASE_TYPES
+			= ImmutableSortedSet.of(FILE_SYSTEM, WEB_ACTIVITY, MISC_TYPES);
+
+	static final ImmutableSortedSet<EventType> FILE_SYSTEM_TYPES
+			= ImmutableSortedSet.of(FILE_MODIFIED, FILE_ACCESSED, FILE_CREATED, FILE_CHANGED);
+
+	static final ImmutableSortedSet<? extends ArtifactEventType> WEB_ACTIVITY_TYPES
+			= ImmutableSortedSet.of(WEB_DOWNLOADS, WEB_COOKIE, WEB_BOOKMARK, WEB_HISTORY, WEB_SEARCH);
+
+	static final ImmutableSortedSet<ArtifactEventType> MISC_EVENTS
+			= ImmutableSortedSet.of(CALL_LOG,
+					DEVICES_ATTACHED,
+					EMAIL,
+					EXIF,
+					GPS_ROUTE,
+					GPS_TRACKPOINT,
+					INSTALLED_PROGRAM,
+					MESSAGE,
+					RECENT_DOCUMENTS);
+
 	@Override
 	public SortedSet<? extends EventType> getSubTypes() {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		return subtypes;
 	}
 
 	@Override
 	public Optional<? extends EventType> getSubType(String string) {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		return subtypes.stream()
+				.filter(type -> type.getDisplayName().equalsIgnoreCase(displayName))
+				.findFirst();
 	}
 
 	private final int id;
@@ -41,12 +67,18 @@ abstract class AbstractEventType implements EventType {
 
 	private final EventType superType;
 	private final EventTypeZoomLevel eventTypeZoomLevel;
+	private final SortedSet<? extends EventType> subtypes;
 
 	AbstractEventType(int id, String displayName, EventTypeZoomLevel eventTypeZoomLevel, EventType superType) {
+		this(id, displayName, eventTypeZoomLevel, superType, ImmutableSortedSet.of());
+	}
+
+	AbstractEventType(int id, String displayName, EventTypeZoomLevel eventTypeZoomLevel, EventType superType, SortedSet<? extends EventType> subtypes) {
 		this.superType = superType;
 		this.id = id;
 		this.displayName = displayName;
 		this.eventTypeZoomLevel = eventTypeZoomLevel;
+		this.subtypes = subtypes;
 	}
 
 	@Override
@@ -58,7 +90,6 @@ abstract class AbstractEventType implements EventType {
 	public EventType getSuperType() {
 		return superType;
 	}
-
 
 	@Override
 	public EventTypeZoomLevel getZoomLevel() {

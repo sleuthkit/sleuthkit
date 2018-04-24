@@ -182,10 +182,10 @@ abstract class AbstractArtifactEventType extends AbstractEventType implements Ar
 		}
 	}
 
-	final static class EmptyExtractor implements StringExtractor<Object> {
+	final static class EmptyExtractor<X> implements StringExtractor<X> {
 
 		@Override
-		public String extract(Object ignored) throws TskCoreException {
+		public String extract(X ignored) throws TskCoreException {
 			return "";
 		}
 	}

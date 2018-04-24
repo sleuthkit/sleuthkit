@@ -76,11 +76,12 @@ import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TIT
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_URL;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_VALUE;
 import org.sleuthkit.datamodel.TskCoreException;
-import org.sleuthkit.datamodel.timeline.AbstractArtifactEventType.CheckedFunction;
 import org.sleuthkit.datamodel.timeline.AbstractArtifactEventType.DefaultAttributeExtractor;
 import static org.sleuthkit.datamodel.timeline.AbstractArtifactEventType.getAttributeSafe;
+import static org.sleuthkit.datamodel.timeline.AbstractEventType.BASE_TYPES;
 import org.sleuthkit.datamodel.timeline.ArtifactEventType.AttributeEventDescription;
 import static org.sleuthkit.datamodel.timeline.BundleUtils.getBundle;
+import org.sleuthkit.datamodel.timeline.EventType.CheckedFunction;
 
 /**
  * An Event Type represents a distinct kind of event ie file system or web
@@ -131,21 +132,18 @@ public interface EventType extends Comparable<EventType> {
 	 * A singleton EventType to represent the root type of all event types.
 	 */
 	public static EventType ROOT_EVEN_TYPE
-			= new AbstractEventType(0, getBundle().getString("RootEventType.eventTypes.name"), EventTypeZoomLevel.ROOT_TYPE, null) {
+			= new AbstractEventType(0, getBundle().getString("RootEventType.eventTypes.name"), EventTypeZoomLevel.ROOT_TYPE, null, getBaseTypes()) {
 	};
 
 	public static EventType FILE_SYSTEM
-			= new AbstractEventType(1, getBundle().getString("BaseTypes.fileSystem.name"), EventTypeZoomLevel.BASE_TYPE, ROOT_EVEN_TYPE) {
+			= new AbstractEventType(1, getBundle().getString("BaseTypes.fileSystem.name"), EventTypeZoomLevel.BASE_TYPE, ROOT_EVEN_TYPE, getFileSystemTypes()) {
 	};
 	public static EventType WEB_ACTIVITY
-			= new AbstractEventType(2, getBundle().getString("BaseTypes.webActivity.name"), EventTypeZoomLevel.BASE_TYPE, ROOT_EVEN_TYPE) {
+			= new AbstractEventType(2, getBundle().getString("BaseTypes.webActivity.name"), EventTypeZoomLevel.BASE_TYPE, ROOT_EVEN_TYPE, getWebActivityTypes()) {
 	};
 	public static EventType MISC_TYPES
-			= new AbstractEventType(3, getBundle().getString("BaseTypes.miscTypes.name"), EventTypeZoomLevel.BASE_TYPE, ROOT_EVEN_TYPE) {
+			= new AbstractEventType(3, getBundle().getString("BaseTypes.miscTypes.name"), EventTypeZoomLevel.BASE_TYPE, ROOT_EVEN_TYPE, getMiscTypes()) {
 	};
-
-	static final ImmutableSortedSet<EventType> BASE_TYPES
-			= ImmutableSortedSet.of(FILE_SYSTEM, WEB_ACTIVITY, MISC_TYPES);
 
 	public static EventType FILE_MODIFIED
 			= new AbstractEventType(4, getBundle().getString("FileSystemTypes.fileModified.name"), EventTypeZoomLevel.SUB_TYPE, FILE_SYSTEM) {
@@ -159,9 +157,6 @@ public interface EventType extends Comparable<EventType> {
 	public static EventType FILE_CHANGED
 			= new AbstractEventType(7, getBundle().getString("FileSystemTypes.fileChanged.name"), EventTypeZoomLevel.SUB_TYPE, FILE_SYSTEM) {
 	}; // NON-NLS
-
-	static final ImmutableSortedSet<EventType> FILE_SYSTEM_TYPES
-			= ImmutableSortedSet.of(FILE_MODIFIED, FILE_ACCESSED, FILE_CREATED, FILE_CHANGED);
 
 	public static ArtifactEventType WEB_DOWNLOADS = new AbstractArtifactEventType(8, getBundle().getString("WebTypes.webDownloads.name"), WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_DOWNLOAD),
@@ -214,9 +209,6 @@ public interface EventType extends Comparable<EventType> {
 			TopPrivateDomainExtractor.getInstance(),
 			new DefaultAttributeExtractor(new BlackboardAttribute.Type(TSK_PROG_NAME))) {
 	};
-
-	static final ImmutableSortedSet<? extends ArtifactEventType> WEB_ACTIVITY_TYPES
-			= ImmutableSortedSet.of(WEB_DOWNLOADS, WEB_COOKIE, WEB_BOOKMARK, WEB_HISTORY, WEB_SEARCH);
 
 	final static class TopPrivateDomainExtractor extends DefaultAttributeExtractor {
 
@@ -289,7 +281,7 @@ public interface EventType extends Comparable<EventType> {
 				final BlackboardAttribute latitude = getAttributeSafe(artf, new BlackboardAttribute.Type(TSK_GEO_LATITUDE));
 				return stringValueOf(latitude) + " " + stringValueOf(longitude); // NON-NLS
 			},
-			new AbstractArtifactEventType.EmptyExtractor()) {
+			new AbstractArtifactEventType.EmptyExtractor<>()) {
 	};
 	public static ArtifactEventType CALL_LOG = new AbstractArtifactEventType(16, getBundle().getString("MiscTypes.Calls.name"), // NON-NLS
 			MISC_TYPES,
@@ -329,8 +321,7 @@ public interface EventType extends Comparable<EventType> {
 			return StringUtils.substringBeforeLast(super.extract(artf), "\\");
 
 		}
-	},
-			new DefaultAttributeExtractor(new BlackboardAttribute.Type(TSK_PATH)),
+	}, new DefaultAttributeExtractor(new BlackboardAttribute.Type(TSK_PATH)),
 			new CheckedFunction<BlackboardArtifact, AttributeEventDescription>() {
 		@Override
 		public AttributeEventDescription apply(BlackboardArtifact artf) throws TskCoreException {
@@ -350,8 +341,8 @@ public interface EventType extends Comparable<EventType> {
 			new BlackboardArtifact.Type(TSK_INSTALLED_PROG),
 			new BlackboardAttribute.Type(TSK_DATETIME),
 			new DefaultAttributeExtractor(new BlackboardAttribute.Type(TSK_PROG_NAME)),
-			new AbstractArtifactEventType.EmptyExtractor(),
-			new AbstractArtifactEventType.EmptyExtractor()) {
+			new AbstractArtifactEventType.EmptyExtractor<>(),
+			new AbstractArtifactEventType.EmptyExtractor<>()) {
 	};
 	public static ArtifactEventType EXIF = new AbstractArtifactEventType(20, getBundle().getString("MiscTypes.exif.name"), // NON-NLS
 			MISC_TYPES,
@@ -376,16 +367,21 @@ public interface EventType extends Comparable<EventType> {
 			new DefaultAttributeExtractor(new BlackboardAttribute.Type(TSK_DEVICE_ID))) {
 	};
 
-	static final ImmutableSortedSet<ArtifactEventType> MISC_EVENTS
-			= ImmutableSortedSet.of(CALL_LOG,
-					DEVICES_ATTACHED,
-					EMAIL,
-					EXIF,
-					GPS_ROUTE,
-					GPS_TRACKPOINT,
-					INSTALLED_PROGRAM,
-					MESSAGE,
-					RECENT_DOCUMENTS);
+	public static ImmutableSortedSet<EventType> getBaseTypes() {
+		return AbstractEventType.BASE_TYPES;
+	}
+
+	public static ImmutableSortedSet<EventType> getFileSystemTypes() {
+		return AbstractEventType.FILE_SYSTEM_TYPES;
+	}
+
+	public static ImmutableSortedSet<? extends ArtifactEventType> getWebActivityTypes() {
+		return AbstractEventType.WEB_ACTIVITY_TYPES;
+	}
+
+	public static ImmutableSortedSet<ArtifactEventType> getMiscTypes() {
+		return AbstractEventType.MISC_EVENTS;
+	}
 
 	static public String stringValueOf(BlackboardAttribute attr) {
 		return Optional.ofNullable(attr)
@@ -409,6 +405,7 @@ public interface EventType extends Comparable<EventType> {
 	}
 
 	interface CheckedFunction<I, O> {
+
 		O apply(I input) throws TskCoreException;
 	}
 }
