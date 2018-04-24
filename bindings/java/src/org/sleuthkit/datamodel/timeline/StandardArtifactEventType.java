@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel.timeline;
 
+import com.google.common.net.InternetDomainName;
 import java.text.MessageFormat;
 import java.util.Optional;
 import java.util.logging.Level;
@@ -25,39 +26,40 @@ import java.util.logging.Logger;
 import org.apache.commons.lang3.StringUtils;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
+import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOMAIN;
 import org.sleuthkit.datamodel.TskCoreException;
 
 /**
  *
  */
-abstract class AbstractArtifactEventType extends AbstractEventType implements ArtifactEventType {
+class StandardArtifactEventType extends StandardEventType implements ArtifactEventType {
 
-	private static final Logger logger = Logger.getLogger(AbstractArtifactEventType.class.getName());
+	private static final Logger logger = Logger.getLogger(StandardArtifactEventType.class.getName());
 
 	private final BlackboardArtifact.Type artifactType;
 	private final BlackboardAttribute.Type dateTimeAttributeType;
-	private final StringExtractor<BlackboardArtifact> longExtractor;
-	private final StringExtractor<BlackboardArtifact> medExtractor;
-	private final StringExtractor<BlackboardArtifact> shortExtractor;
+	private final CheckedFunction<BlackboardArtifact, String> longExtractor;
+	private final CheckedFunction<BlackboardArtifact, String> medExtractor;
+	private final CheckedFunction<BlackboardArtifact, String> shortExtractor;
 	private final CheckedFunction<BlackboardArtifact, AttributeEventDescription> parseAttributesHelper;
 
-	AbstractArtifactEventType(int id, String displayName,
+	StandardArtifactEventType(int id, String displayName,
 			EventType superType,
 			BlackboardArtifact.Type artifactType,
 			BlackboardAttribute.Type dateTimeAttributeType,
-			StringExtractor<BlackboardArtifact> shortExtractor,
-			StringExtractor<BlackboardArtifact> medExtractor,
-			StringExtractor<BlackboardArtifact> longExtractor) {
+			CheckedFunction<BlackboardArtifact, String> shortExtractor,
+			CheckedFunction<BlackboardArtifact, String> medExtractor,
+			CheckedFunction<BlackboardArtifact, String> longExtractor) {
 		this(id, displayName, superType, artifactType, dateTimeAttributeType, shortExtractor, medExtractor, longExtractor, null);
 	}
 
-	AbstractArtifactEventType(int id, String displayName,
+	StandardArtifactEventType(int id, String displayName,
 			EventType superType,
 			BlackboardArtifact.Type artifactType,
 			BlackboardAttribute.Type dateTimeAttributeType,
-			StringExtractor<BlackboardArtifact> shortExtractor,
-			StringExtractor<BlackboardArtifact> medExtractor,
-			StringExtractor<BlackboardArtifact> longExtractor,
+			CheckedFunction<BlackboardArtifact, String> shortExtractor,
+			CheckedFunction<BlackboardArtifact, String> medExtractor,
+			CheckedFunction<BlackboardArtifact, String> longExtractor,
 			CheckedFunction<BlackboardArtifact, AttributeEventDescription> parseAttributesHelper) {
 
 		super(id, displayName, EventTypeZoomLevel.SUB_TYPE, superType);
@@ -90,7 +92,7 @@ abstract class AbstractArtifactEventType extends AbstractEventType implements Ar
 	 */
 	@Override
 	public String extractFullDescription(BlackboardArtifact artf) throws TskCoreException {
-		return longExtractor.extract(artf);
+		return longExtractor.apply(artf);
 	}
 
 	/**
@@ -99,7 +101,7 @@ abstract class AbstractArtifactEventType extends AbstractEventType implements Ar
 	 */
 	@Override
 	public String extractMedDescription(BlackboardArtifact artf) throws TskCoreException {
-		return medExtractor.extract(artf);
+		return medExtractor.apply(artf);
 	}
 
 	/**
@@ -108,7 +110,7 @@ abstract class AbstractArtifactEventType extends AbstractEventType implements Ar
 	 */
 	@Override
 	public String extractShortDescription(BlackboardArtifact artf) throws TskCoreException {
-		return shortExtractor.extract(artf);
+		return shortExtractor.apply(artf);
 	}
 
 	/**
@@ -160,36 +162,6 @@ abstract class AbstractArtifactEventType extends AbstractEventType implements Ar
 		return new AttributeEventDescription(time, shortDescription, medDescription, fullDescription);
 	}
 
-	interface StringExtractor<X> {
-
-		String extract(X artf) throws TskCoreException;
-	}
-
-	static class DefaultAttributeExtractor implements AbstractArtifactEventType.StringExtractor<BlackboardArtifact> {
-
-		private final BlackboardAttribute.Type attributeType;
-
-		DefaultAttributeExtractor(BlackboardAttribute.Type attribute) {
-			this.attributeType = attribute;
-		}
-
-		@Override
-		public String extract(BlackboardArtifact artf) throws TskCoreException {
-			return Optional.ofNullable(getAttributeSafe(artf, attributeType))
-					.map(BlackboardAttribute::getDisplayString)
-					.map(StringUtils::defaultString)
-					.orElse("");
-		}
-	}
-
-	final static class EmptyExtractor<X> implements StringExtractor<X> {
-
-		@Override
-		public String extract(X ignored) throws TskCoreException {
-			return "";
-		}
-	}
-
 	static BlackboardAttribute getAttributeSafe(BlackboardArtifact artf, BlackboardAttribute.Type attrType) {
 		try {
 			return artf.getAttribute(attrType);
@@ -199,4 +171,53 @@ abstract class AbstractArtifactEventType extends AbstractEventType implements Ar
 		}
 	}
 
+	static class AttributeExtractor implements CheckedFunction<BlackboardArtifact, String> {
+
+		private final BlackboardAttribute.Type attributeType;
+
+		AttributeExtractor(BlackboardAttribute.Type attribute) {
+			this.attributeType = attribute;
+		}
+
+		@Override
+		public String apply(BlackboardArtifact artf) throws TskCoreException {
+			return Optional.ofNullable(getAttributeSafe(artf, attributeType))
+					.map(BlackboardAttribute::getDisplayString)
+					.orElse("");
+		}
+	}
+
+	final static class EmptyExtractor<X> implements CheckedFunction<X, String> {
+
+		@Override
+		public String apply(X ignored) throws TskCoreException {
+			return "";
+		}
+	}
+
+	final static class TopPrivateDomainExtractor extends AttributeExtractor {
+
+		final private static TopPrivateDomainExtractor instance = new TopPrivateDomainExtractor();
+
+		static TopPrivateDomainExtractor getInstance() {
+			return instance;
+		}
+
+		@Override
+		public String apply(BlackboardArtifact artf) throws TskCoreException {
+			String domainString = StringUtils.substringBefore(super.apply(artf), "/");
+			if (InternetDomainName.isValid(domainString)) {
+				InternetDomainName domain = InternetDomainName.from(domainString);
+				return (domain.isUnderPublicSuffix())
+						? domain.topPrivateDomain().toString()
+						: domain.toString();
+			} else {
+				return domainString;
+			}
+		}
+
+		TopPrivateDomainExtractor() {
+			super(new BlackboardAttribute.Type(TSK_DOMAIN));
+		}
+	}
 }

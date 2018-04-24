@@ -28,7 +28,7 @@ import static org.sleuthkit.datamodel.timeline.EventType.WEB_ACTIVITY;
 /**
  *
  */
-abstract class AbstractEventType implements EventType {
+ class StandardEventType implements EventType {
 
 	static final ImmutableSortedSet<EventType> BASE_TYPES
 			= ImmutableSortedSet.of(FILE_SYSTEM, WEB_ACTIVITY, MISC_TYPES);
@@ -69,11 +69,11 @@ abstract class AbstractEventType implements EventType {
 	private final EventTypeZoomLevel eventTypeZoomLevel;
 	private final SortedSet<? extends EventType> subtypes;
 
-	AbstractEventType(int id, String displayName, EventTypeZoomLevel eventTypeZoomLevel, EventType superType) {
+	StandardEventType(int id, String displayName, EventTypeZoomLevel eventTypeZoomLevel, EventType superType) {
 		this(id, displayName, eventTypeZoomLevel, superType, ImmutableSortedSet.of());
 	}
 
-	AbstractEventType(int id, String displayName, EventTypeZoomLevel eventTypeZoomLevel, EventType superType, SortedSet<? extends EventType> subtypes) {
+	StandardEventType(int id, String displayName, EventTypeZoomLevel eventTypeZoomLevel, EventType superType, SortedSet<? extends EventType> subtypes) {
 		this.superType = superType;
 		this.id = id;
 		this.displayName = displayName;
