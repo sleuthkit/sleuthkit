@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2016 Basis Technology Corp.
+ * Copyright 2018 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -45,17 +45,24 @@ public final class Blackboard implements Closeable {
 	}
 
 	/**
-	 * Indexes the text associated with the an artifact.
+	 * Publish the artifact. This includes making any events that may be derived
+	 * from it, and broadcasting a notification that the artifact is ready for
+	 * further analysis.
 	 *
-	 * @param artifact The artifact to be indexed.
+	 * @param artifact The artifact to be published.
 	 *
-	 * @throws BlackboardException If there is a problem indexing the artifact.
+	 * @throws BlackboardException If there is a problem publishing the
+	 *                             artifact.
 	 */
-	public synchronized void indexArtifact(BlackboardArtifact artifact) throws BlackboardException {
+	public synchronized void publishArtifact(BlackboardArtifact artifact) throws BlackboardException {
 		if (null == caseDb) {
 			throw new BlackboardException("Blackboard has been closed");
 		}
-		//TODO: fire event for this instead
+
+		try {
+			caseDb.getTimelineManager().addArtifactEvents(artifact);
+
+			//TODO: fire event for this instead
 //		KeywordSearchService searchService = Lookup.getDefault().lookup(KeywordSearchService.class);
 //		if (null == searchService) {
 //			throw new BlackboardException("Keyword search service not found");
@@ -65,6 +72,9 @@ public final class Blackboard implements Closeable {
 //		} catch (TskCoreException ex) {
 //			throw new BlackboardException("Error indexing artifact", ex);
 //		}
+		} catch (TskCoreException ex) {
+			throw new BlackboardException("Error creating events for artifact.", ex);
+		}
 	}
 
 	/**

@@ -40,9 +40,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.BooleanUtils;
 import static org.apache.commons.lang3.StringUtils.defaultString;
 import static org.apache.commons.lang3.StringUtils.substringAfter;
 import static org.apache.commons.lang3.StringUtils.substringBefore;
@@ -690,7 +693,7 @@ public final class TimelineManager {
 		return hasDBColumn("hash_hit"); //NON-NLS
 	}
 
-	void insertEventsForFile(AbstractFile f) throws TskCoreException {
+	public void addFileSystemEvents(AbstractFile f) throws TskCoreException {
 		//gather time stamps into map
 		HashMap<EventType, Long> timeMap = new HashMap<>();
 		timeMap.put(EventType.FILE_CREATED, f.getCrtime());
@@ -707,7 +710,6 @@ public final class TimelineManager {
 		if (Collections.max(timeMap.values()) > 0) {
 			final String uniquePath = f.getUniquePath();
 			final String parentPath = f.getParentPath();
-			long datasourceID = f.getDataSource().getId();
 			String datasourceName = substringBeforeLast(uniquePath, parentPath);
 
 			String rootFolder = substringBefore(substringAfter(parentPath, "/"), "/");
@@ -715,20 +717,54 @@ public final class TimelineManager {
 			shortDesc = shortDesc.endsWith("/") ? shortDesc : shortDesc + "/";
 			String medDesc = datasourceName + parentPath;
 
-			final TskData.FileKnown known = f.getKnown();
-
 			for (Map.Entry<EventType, Long> timeEntry : timeMap.entrySet()) {
 				if (timeEntry.getValue() > 0) {
 					// if the time is legitimate ( greater than zero ) insert it
-					insertEvent(timeEntry.getValue(), timeEntry.getKey(),
-							datasourceID, f.getId(), null, uniquePath, medDesc,
-							shortDesc, known, f.getHashSetNames().isEmpty() == false, false);
+					addEvent(timeEntry.getValue(),
+							timeEntry.getKey(),
+							f.getDataSource().getId(),
+							f.getId(),
+							null,
+							uniquePath,
+							medDesc,
+							shortDesc,
+							f.getKnown(),
+							f.getHashSetNames().isEmpty() == false,
+							false);
 				}
 			}
 		}
 	}
 
-	public void insertEvent(long time, EventType type, long datasourceID, long objID,
+	public void addArtifactEvents(BlackboardArtifact bbart) throws TskCoreException {
+		Set<ArtifactEventType> eventTypesForArtifact = getEventTypesForArtifactType(bbart.getArtifactTypeID());
+		for (ArtifactEventType eventType : eventTypesForArtifact) {
+			addArtifactEvent(eventType, bbart);
+		}
+	}
+
+	public  void addArtifactEvent(ArtifactEventType eventType, BlackboardArtifact bbart) throws TskCoreException {
+		ArtifactEventType.AttributeEventDescription eventDescription = eventType.buildEventDescription(bbart);
+
+		// if the time is legitimate ( greater than zero ) insert it into the db
+		if (eventDescription != null && eventDescription.getTime() > 0) {
+			long objectID = bbart.getObjectID();
+			AbstractFile f = sleuthkitCase.getAbstractFileById(objectID);
+			addEvent(eventDescription.getTime(),
+					eventType,
+					f.getDataSource().getId(),
+					objectID,
+					bbart.getArtifactID(),
+					eventDescription.getFullDescription(),
+					eventDescription.getMedDescription(),
+					eventDescription.getShortDescription(),
+					f.getKnown(),
+					f.getHashSetNames().isEmpty() == false,
+					sleuthkitCase.getBlackboardArtifactTagsByArtifact(bbart).isEmpty() == false);
+		}
+	}
+
+	public SingleEvent addEvent(long time, EventType type, long datasourceID, long objID,
 			Long artifactID, String fullDescription, String medDescription,
 			String shortDescription, TskData.FileKnown known, boolean hashHit, boolean tagged) throws TskCoreException {
 
@@ -737,7 +773,7 @@ public final class TimelineManager {
 
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
-				PreparedStatement insertRowStmt = con.prepareStatement(STATEMENTS.INSERT_EVENT.getSQL(), PreparedStatement.NO_GENERATED_KEYS);) {
+				PreparedStatement insertRowStmt = con.prepareStatement(STATEMENTS.INSERT_EVENT.getSQL(), PreparedStatement.RETURN_GENERATED_KEYS);) {
 			//"INSERT INTO events (datasource_id,file_id ,artifact_id, time, sub_type, base_type, full_description, med_description, short_description, known_state, hashHit, tagged) " 
 			insertRowStmt.clearParameters();
 			insertRowStmt.setLong(1, datasourceID);
@@ -751,7 +787,7 @@ public final class TimelineManager {
 
 			//subtype
 			if (typeNum == -1) {
-				insertRowStmt.setNull(5, Types.INTEGER);
+				insertRowStmt.setNull(5, Types.NULL);
 			} else {
 				insertRowStmt.setInt(5, typeNum);
 			}
@@ -762,12 +798,20 @@ public final class TimelineManager {
 			insertRowStmt.setString(8, medDescription);
 			insertRowStmt.setString(9, shortDescription);
 
-			insertRowStmt.setByte(10, known == null ? TskData.FileKnown.UNKNOWN.getFileKnownValue() : known.getFileKnownValue());
+			insertRowStmt.setByte(10, known.getFileKnownValue());
 
 			insertRowStmt.setInt(11, hashHit ? 0 : 1);
 			insertRowStmt.setInt(12, tagged ? 0 : 1);
 
 			insertRowStmt.executeUpdate();
+			try (ResultSet generatedKeys = insertRowStmt.getGeneratedKeys();) {
+				long eventID = generatedKeys.getLong(1);
+				return new SingleEvent(eventID, datasourceID, objID, artifactID,
+						time, type, fullDescription, medDescription, shortDescription,
+						known, hashHit, tagged);
+
+			}
+
 		} catch (SQLException ex) {
 			throw new TskCoreException("Failed to insert event.", ex); // NON-NLS
 		} finally {
@@ -966,6 +1010,12 @@ public final class TimelineManager {
 				.map(ArtifactEventType.class::cast)
 				.collect(Collectors.toSet())
 		);
+	}
+
+	private Set<ArtifactEventType> getEventTypesForArtifactType(int artfTypeID) {
+		return getArtifactEventTypes().stream()
+				.filter(eventType -> eventType.getArtifactTypeID() == artfTypeID)
+				.collect(Collectors.toSet());
 	}
 
 	/**
