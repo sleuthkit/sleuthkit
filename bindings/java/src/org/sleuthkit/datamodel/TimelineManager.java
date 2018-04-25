@@ -708,14 +708,13 @@ public final class TimelineManager {
 		 * legitimate time stamps.
 		 */
 		if (Collections.max(timeMap.values()) > 0) {
-			final String uniquePath = f.getUniquePath();
 			final String parentPath = f.getParentPath();
-			String datasourceName = substringBeforeLast(uniquePath, parentPath);
 
 			String rootFolder = substringBefore(substringAfter(parentPath, "/"), "/");
-			String shortDesc = datasourceName + "/" + defaultString(rootFolder);
+			String shortDesc = defaultString(rootFolder);
 			shortDesc = shortDesc.endsWith("/") ? shortDesc : shortDesc + "/";
-			String medDesc = datasourceName + parentPath;
+			String medDesc = parentPath;
+			String fullDescription = medDesc + f.getName();
 
 			for (Map.Entry<EventType, Long> timeEntry : timeMap.entrySet()) {
 				if (timeEntry.getValue() > 0) {
@@ -725,7 +724,7 @@ public final class TimelineManager {
 							f.getDataSource().getId(),
 							f.getId(),
 							null,
-							uniquePath,
+							fullDescription,
 							medDesc,
 							shortDesc,
 							f.getKnown(),
