@@ -25,6 +25,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.SortedSet;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import static org.apache.commons.lang3.StringUtils.substringBeforeLast;
 import org.sleuthkit.datamodel.AbstractFile;
@@ -68,13 +70,14 @@ public interface EventType extends Comparable<EventType> {
 	EventType getSuperType();
 
 	default EventType getBaseType() {
-
 		EventType superType = getSuperType();
+
 		if (superType == ROOT_EVEN_TYPE) {
-			return this;
+			return EventType.this;
 		} else {
 			return superType.getBaseType();
 		}
+
 	}
 
 	default SortedSet<? extends EventType> getSiblingTypes() {
@@ -92,17 +95,41 @@ public interface EventType extends Comparable<EventType> {
 	 */
 	public static EventType ROOT_EVEN_TYPE = new StandardEventType(0,
 			getBundle().getString("RootEventType.eventTypes.name"), // NON-NLS
-			ROOT_TYPE, null, getBaseTypes());
+			ROOT_TYPE, null) {
+		@Override
+		public SortedSet< EventType> getSubTypes() {
+			return ImmutableSortedSet.of(FILE_SYSTEM, WEB_ACTIVITY, MISC_TYPES);
+		}
+	};
 
 	public static EventType FILE_SYSTEM = new StandardEventType(1,
 			getBundle().getString("BaseTypes.fileSystem.name"),// NON-NLS
-			BASE_TYPE, ROOT_EVEN_TYPE, getFileSystemTypes());
+			BASE_TYPE, ROOT_EVEN_TYPE) {
+		@Override
+		public SortedSet< EventType> getSubTypes() {
+			return ImmutableSortedSet.of(FILE_MODIFIED, FILE_ACCESSED,
+					FILE_CREATED, FILE_CHANGED);
+		}
+	};
 	public static EventType WEB_ACTIVITY = new StandardEventType(2,
 			getBundle().getString("BaseTypes.webActivity.name"), // NON-NLS
-			BASE_TYPE, ROOT_EVEN_TYPE, getWebActivityTypes());
+			BASE_TYPE, ROOT_EVEN_TYPE) {
+		@Override
+		public SortedSet< ArtifactEventType> getSubTypes() {
+			return ImmutableSortedSet.of(WEB_DOWNLOADS, WEB_COOKIE, WEB_BOOKMARK,
+					WEB_HISTORY, WEB_SEARCH);
+		}
+	};
 	public static EventType MISC_TYPES = new StandardEventType(3,
 			getBundle().getString("BaseTypes.miscTypes.name"), // NON-NLS
-			BASE_TYPE, ROOT_EVEN_TYPE, getMiscTypes());
+			BASE_TYPE, ROOT_EVEN_TYPE) {
+		@Override
+		public SortedSet< ArtifactEventType> getSubTypes() {
+			return ImmutableSortedSet.of(CALL_LOG, DEVICES_ATTACHED, EMAIL,
+					EXIF, GPS_ROUTE, GPS_TRACKPOINT, INSTALLED_PROGRAM, MESSAGE,
+					RECENT_DOCUMENTS);
+		}
+	};
 
 	public static EventType FILE_MODIFIED = new StandardEventType(4,
 			getBundle().getString("FileSystemTypes.fileModified.name"), // NON-NLS
@@ -306,20 +333,20 @@ public interface EventType extends Comparable<EventType> {
 			new AttributeExtractor(new Type(TSK_DEVICE_MODEL)),
 			new AttributeExtractor(new Type(TSK_DEVICE_ID)));
 
-	public static ImmutableSortedSet<EventType> getBaseTypes() {
-		return StandardEventType.BASE_TYPES;
+	public static SortedSet<? extends EventType> getBaseTypes() {
+		return ROOT_EVEN_TYPE.getSubTypes();
 	}
 
-	public static ImmutableSortedSet<EventType> getFileSystemTypes() {
-		return StandardEventType.FILE_SYSTEM_TYPES;
+	public static SortedSet<? extends EventType> getFileSystemTypes() {
+		return FILE_SYSTEM.getSubTypes();
 	}
 
-	public static ImmutableSortedSet<? extends ArtifactEventType> getWebActivityTypes() {
-		return StandardEventType.WEB_ACTIVITY_TYPES;
+	public static SortedSet<? extends EventType> getWebActivityTypes() {
+		return WEB_ACTIVITY.getSubTypes();
 	}
 
-	public static ImmutableSortedSet<ArtifactEventType> getMiscTypes() {
-		return StandardEventType.MISC_EVENTS;
+	public static SortedSet<? extends EventType> getMiscTypes() {
+		return MISC_TYPES.getSubTypes();
 	}
 
 	static String stringValueOf(BlackboardAttribute attr) {
@@ -339,7 +366,8 @@ public interface EventType extends Comparable<EventType> {
 					return "to"; // NON-NLS
 				default:
 					return " "; // NON-NLS
-				}
+
+			}
 		}
 	}
 
@@ -348,5 +376,4 @@ public interface EventType extends Comparable<EventType> {
 		O apply(I input) throws TskCoreException;
 	}
 
-	
 }

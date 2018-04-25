@@ -77,6 +77,7 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
+import org.sleuthkit.datamodel.timeline.EventType;
 import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteDataSource;
 import org.sqlite.SQLiteJDBCLoader;
@@ -255,10 +256,10 @@ public class SleuthkitCase {
 	}
 
 	private void init() throws Exception {
-		typeIdToArtifactTypeMap = new ConcurrentHashMap<Integer, BlackboardArtifact.Type>();
-		typeIdToAttributeTypeMap = new ConcurrentHashMap<Integer, BlackboardAttribute.Type>();
-		typeNameToArtifactTypeMap = new ConcurrentHashMap<String, BlackboardArtifact.Type>();
-		typeNameToAttributeTypeMap = new ConcurrentHashMap<String, BlackboardAttribute.Type>();
+		typeIdToArtifactTypeMap = new ConcurrentHashMap<>();
+		typeIdToAttributeTypeMap = new ConcurrentHashMap<>();
+		typeNameToArtifactTypeMap = new ConcurrentHashMap<>();
+		typeNameToAttributeTypeMap = new ConcurrentHashMap<>();
 
 		/*
 		 * The following methods need to be called before updateDatabaseSchema
@@ -270,19 +271,21 @@ public class SleuthkitCase {
 
 		updateDatabaseSchema(null);
 
-		CaseDbConnection connection = connections.getConnection();
-		initIngestModuleTypes(connection);
-		initIngestStatusTypes(connection);
-		initReviewStatuses(connection);
-		initEncodingTypes(connection);
-		connection.close();
-
+		try (CaseDbConnection connection = connections.getConnection()) {
+			initIngestModuleTypes(connection);
+			initIngestStatusTypes(connection);
+			initReviewStatuses(connection);
+			initEncodingTypes(connection);
+			timelineMgrInstance = getTimelineManager();
+		}
 	}
 
 	/**
 	 * Returns an instance of TimelineManager for this case;
 	 *
 	 * @return a TimelineManager
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public synchronized TimelineManager getTimelineManager() throws TskCoreException {
 		if (null == timelineMgrInstance) {
@@ -4361,12 +4364,12 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * @param dataSource the dataSource (Image, parent-less VirtualDirectory) to
-	 *                   search for the given file name
-	 * @param fileName   Pattern of the name of the file or directory to match
-	 *                   (case insensitive, used in LIKE SQL statement).
-	 * @param dirSubString Substring that must exist in parent path.  
-	 *                     Will be surrounded by % in LIKE query
+	 * @param dataSource   the dataSource (Image, parent-less VirtualDirectory)
+	 *                     to search for the given file name
+	 * @param fileName     Pattern of the name of the file or directory to match
+	 *                     (case insensitive, used in LIKE SQL statement).
+	 * @param dirSubString Substring that must exist in parent path. Will be
+	 *                     surrounded by % in LIKE query
 	 *
 	 * @return a list of AbstractFile for files/directories whose name matches
 	 *         fileName and whose parent directory contains dirName.
@@ -5289,11 +5292,12 @@ public class SleuthkitCase {
 			//add localPath
 			addFilePath(connection, newObjId, localPath, encodingType);
 
-			connection.commitTransaction();
-
-			//TODO add derived method to tsk_files_derived and tsk_files_derived_method
-			return new DerivedFile(this, newObjId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
+			DerivedFile derivedFile = new DerivedFile(this, newObjId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
 					size, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId, null, encodingType, extension);
+			getTimelineManager().insertEventsForFile(derivedFile);
+			connection.commitTransaction();
+			//TODO add derived method to tsk_files_derived and tsk_files_derived_method
+			return derivedFile;
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
 			throw new TskCoreException("Failed to add derived file to case database", ex);
@@ -5308,13 +5312,13 @@ public class SleuthkitCase {
 	 * Updates an existing derived file in the database and returns a new
 	 * derived file object with the updated contents
 	 *
-	 * @param derivedFile	  The derived file you wish to update
+	 * @param derivedFile	    The derived file you wish to update
 	 * @param localPath       local path of the derived file, including the file
 	 *                        name. The path is relative to the database path.
 	 * @param size            size of the derived file in bytes
 	 * @param ctime
 	 * @param crtime
-	 * @param mimeType		  The MIME type the updated file should have, null
+	 * @param mimeType		      The MIME type the updated file should have, null
 	 *                        to unset it
 	 * @param atime
 	 * @param mtime
@@ -5529,7 +5533,7 @@ public class SleuthkitCase {
 
 			connection.executeUpdate(statement);
 			addFilePath(connection, objectId, localPath, encodingType);
-			return new LocalFile(this,
+			LocalFile localFile = new LocalFile(this,
 					objectId,
 					fileName,
 					TSK_DB_FILES_TYPE_ENUM.LOCAL,
@@ -5544,6 +5548,8 @@ public class SleuthkitCase {
 					dataSourceObjId,
 					localPath,
 					encodingType, extension);
+			getTimelineManager().insertEventsForFile(localFile);
+			return localFile;
 
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Failed to INSERT local file %s (%s) with parent id %d in tsk_files table", fileName, localPath, parent.getId()), ex);
@@ -8217,14 +8223,14 @@ public class SleuthkitCase {
 			resultSet = connection.executeQuery(statement);
 			ArrayList<Report> reports = new ArrayList<Report>();
 			while (resultSet.next()) {
-                String localpath = resultSet.getString("path");
-                if (localpath.toLowerCase().startsWith("http") == false) {
-                    // make path absolute
-                    localpath = Paths.get(getDbDirPath(), localpath).normalize().toString(); //NON-NLS
-                }
-                reports.add(new Report(this, resultSet.getLong("obj_id"), //NON-NLS
+				String localpath = resultSet.getString("path");
+				if (localpath.toLowerCase().startsWith("http") == false) {
+					// make path absolute
+					localpath = Paths.get(getDbDirPath(), localpath).normalize().toString(); //NON-NLS
+				}
+				reports.add(new Report(this, resultSet.getLong("obj_id"), //NON-NLS
 						localpath, //NON-NLS
-                        resultSet.getLong("crtime"), //NON-NLS
+						resultSet.getLong("crtime"), //NON-NLS
 						resultSet.getString("src_module_name"), //NON-NLS
 						resultSet.getString("report_name"), null));  //NON-NLS
 			}
