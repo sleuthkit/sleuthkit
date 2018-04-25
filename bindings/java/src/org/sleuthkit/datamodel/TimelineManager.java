@@ -736,21 +736,26 @@ public final class TimelineManager {
 		}
 	}
 
-	public void addArtifactEvents(BlackboardArtifact bbart) throws TskCoreException {
+	public Set<SingleEvent> addArtifactEvents(BlackboardArtifact bbart) throws TskCoreException {
+		Set<SingleEvent> newEvents = new HashSet<>();
+
 		Set<ArtifactEventType> eventTypesForArtifact = getEventTypesForArtifactType(bbart.getArtifactTypeID());
 		for (ArtifactEventType eventType : eventTypesForArtifact) {
-			addArtifactEvent(eventType, bbart);
+			Optional<SingleEvent> newEvent = addArtifactEvent(eventType, bbart);
+			newEvent.ifPresent(newEvents::add);
 		}
+
+		return newEvents;
 	}
 
-	public  void addArtifactEvent(ArtifactEventType eventType, BlackboardArtifact bbart) throws TskCoreException {
+	public Optional<SingleEvent> addArtifactEvent(ArtifactEventType eventType, BlackboardArtifact bbart) throws TskCoreException {
 		ArtifactEventType.AttributeEventDescription eventDescription = eventType.buildEventDescription(bbart);
 
 		// if the time is legitimate ( greater than zero ) insert it into the db
 		if (eventDescription != null && eventDescription.getTime() > 0) {
 			long objectID = bbart.getObjectID();
 			AbstractFile f = sleuthkitCase.getAbstractFileById(objectID);
-			addEvent(eventDescription.getTime(),
+			return Optional.of(addEvent(eventDescription.getTime(),
 					eventType,
 					f.getDataSource().getId(),
 					objectID,
@@ -760,8 +765,9 @@ public final class TimelineManager {
 					eventDescription.getShortDescription(),
 					f.getKnown(),
 					f.getHashSetNames().isEmpty() == false,
-					sleuthkitCase.getBlackboardArtifactTagsByArtifact(bbart).isEmpty() == false);
+					sleuthkitCase.getBlackboardArtifactTagsByArtifact(bbart).isEmpty() == false));
 		}
+		return Optional.empty();
 	}
 
 	public SingleEvent addEvent(long time, EventType type, long datasourceID, long objID,
@@ -806,10 +812,11 @@ public final class TimelineManager {
 			insertRowStmt.executeUpdate();
 			try (ResultSet generatedKeys = insertRowStmt.getGeneratedKeys();) {
 				long eventID = generatedKeys.getLong(1);
-				return new SingleEvent(eventID, datasourceID, objID, artifactID,
+				SingleEvent singleEvent = new SingleEvent(eventID, datasourceID, objID, artifactID,
 						time, type, fullDescription, medDescription, shortDescription,
 						known, hashHit, tagged);
-
+				sleuthkitCase.postTSKEvent(new TimelineEventCreated(singleEvent));
+				return singleEvent;
 			}
 
 		} catch (SQLException ex) {
@@ -1561,5 +1568,22 @@ public final class TimelineManager {
 	interface CheckedFunction<I, O> {
 
 		O apply(I i) throws TskCoreException;
+	}
+
+	/**
+	 * Event fired by SleuthkitCase to indicate that a Timeline event has been
+	 * created.
+	 */
+	final public class TimelineEventCreated {
+
+		private final SingleEvent singleEvent;
+
+		public SingleEvent getEvent() {
+			return singleEvent;
+		}
+
+		TimelineEventCreated(SingleEvent singleEvent) {
+			this.singleEvent = singleEvent;
+		}
 	}
 }

@@ -24,7 +24,6 @@ import java.io.Closeable;
  * A representation of the blackboard, a place where artifacts and their
  * attributes are posted.
  *
- * NOTE: This API of this class is under development.
  */
 public final class Blackboard implements Closeable {
 
@@ -61,17 +60,7 @@ public final class Blackboard implements Closeable {
 
 		try {
 			caseDb.getTimelineManager().addArtifactEvents(artifact);
-
-			//TODO: fire event for this instead
-//		KeywordSearchService searchService = Lookup.getDefault().lookup(KeywordSearchService.class);
-//		if (null == searchService) {
-//			throw new BlackboardException("Keyword search service not found");
-//		}
-//		try {
-//			searchService.indexArtifact(artifact);
-//		} catch (TskCoreException ex) {
-//			throw new BlackboardException("Error indexing artifact", ex);
-//		}
+			caseDb.postTSKEvent(new ArtifactPublished(artifact));
 		} catch (TskCoreException ex) {
 			throw new BlackboardException("Error creating events for artifact.", ex);
 		}
@@ -157,7 +146,7 @@ public final class Blackboard implements Closeable {
 		 *
 		 * @param message The message.
 		 */
-		public BlackboardException(String message) {
+		BlackboardException(String message) {
 			super(message);
 		}
 
@@ -168,8 +157,25 @@ public final class Blackboard implements Closeable {
 		 * @param message The message.
 		 * @param cause   The cause.
 		 */
-		public BlackboardException(String message, Throwable cause) {
+		BlackboardException(String message, Throwable cause) {
 			super(message, cause);
+		}
+	}
+
+	/**
+	 * Event posted by SleuthkitCase when an artifact is published. A published
+	 * artifact is complete and ready for further processing.
+	 */
+	final public static class ArtifactPublished {
+
+		private final BlackboardArtifact artifact;
+
+		public BlackboardArtifact getArtifact() {
+			return artifact;
+		}
+
+		ArtifactPublished(BlackboardArtifact artifact) {
+			this.artifact = artifact;
 		}
 	}
 }

@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.common.eventbus.EventBus;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import com.mchange.v2.c3p0.DataSources;
 import com.mchange.v2.c3p0.PooledDataSource;
@@ -77,7 +78,6 @@ import org.sleuthkit.datamodel.TskData.TSK_FS_META_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_META_TYPE_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_FLAG_ENUM;
 import org.sleuthkit.datamodel.TskData.TSK_FS_NAME_TYPE_ENUM;
-import org.sleuthkit.datamodel.timeline.EventType;
 import org.sqlite.SQLiteConfig;
 import org.sqlite.SQLiteDataSource;
 import org.sqlite.SQLiteJDBCLoader;
@@ -109,9 +109,9 @@ public class SleuthkitCase {
 	private static final String SQL_ERROR_INTERNAL_GROUP = "xx";
 	private static final int MIN_USER_DEFINED_TYPE_ID = 10000;
 	private final ConnectionPool connections;
-	private final Map<Long, VirtualDirectory> rootIdsToCarvedFileDirs = new HashMap<Long, VirtualDirectory>();
-	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system files.
-	private final ArrayList<ErrorObserver> sleuthkitCaseErrorObservers = new ArrayList<ErrorObserver>();
+	private final Map<Long, VirtualDirectory> rootIdsToCarvedFileDirs = new HashMap<>();
+	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<>(); // Cache for file system files.
+	private final ArrayList<ErrorObserver> sleuthkitCaseErrorObservers = new ArrayList<>();
 	private final String databaseName;
 	private final String dbPath;
 	private final DbType dbType;
@@ -135,6 +135,20 @@ public class SleuthkitCase {
 	private Blackboard blackboardInstance;
 
 	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<>();
+
+	private final EventBus eventBus = new EventBus("SleuthkitCase-EventBus");
+
+	public void registerForEvents(Object listener) {
+		eventBus.register(listener);
+	}
+
+	public void unregisterForEvents(Object listener) {
+		eventBus.unregister(listener);
+	}
+
+	void postTSKEvent(Object event) {
+		eventBus.post(event);
+	}
 
 	/**
 	 * Attempts to connect to the database with the passed in settings, throws
@@ -179,10 +193,7 @@ public class SleuthkitCase {
 					} else {
 						result = bundle.getString("DatabaseConnectionCheck.HostnameOrPort"); //NON-NLS
 					}
-				} catch (IOException any) {
-					// it may be anything
-					result = bundle.getString("DatabaseConnectionCheck.Everything"); //NON-NLS
-				} catch (MissingResourceException any) {
+				} catch (IOException | MissingResourceException any) {
 					// it may be anything
 					result = bundle.getString("DatabaseConnectionCheck.Everything"); //NON-NLS
 				}
