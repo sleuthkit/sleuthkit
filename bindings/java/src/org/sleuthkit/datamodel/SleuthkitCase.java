@@ -132,8 +132,9 @@ public class SleuthkitCase {
 
 	private CommunicationsManager communicationsMgrInstance;
 	private TimelineManager timelineMgrInstance;
+	private Blackboard blackboardInstance;
 
-	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<String, Set<Long>>();
+	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<>();
 
 	/**
 	 * Attempts to connect to the database with the passed in settings, throws
@@ -304,6 +305,19 @@ public class SleuthkitCase {
 			communicationsMgrInstance = new CommunicationsManager(this);
 		}
 		return communicationsMgrInstance;
+	}
+
+	/**
+	 * Returns an instance of Blackboard
+	 *
+	 * @return Blackboard
+	 *
+	 */
+	public synchronized Blackboard getBlackboard() {
+		if (null == blackboardInstance) {
+			blackboardInstance = new Blackboard(this);
+		}
+		return blackboardInstance;
 	}
 
 	/**
@@ -7107,6 +7121,7 @@ public class SleuthkitCase {
 		}
 
 		fileSystemIdMap.clear();
+		blackboardInstance.close();
 
 		try {
 			if (this.caseHandle != null) {
