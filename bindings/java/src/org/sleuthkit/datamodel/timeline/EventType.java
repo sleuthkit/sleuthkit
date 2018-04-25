@@ -72,16 +72,17 @@ public interface EventType extends Comparable<EventType> {
 	default EventType getBaseType() {
 		EventType superType = getSuperType();
 
-		if (superType == ROOT_EVEN_TYPE) {
-			return EventType.this;
-		} else {
-			return superType.getBaseType();
-		}
+		return superType.equals(ROOT_EVEN_TYPE)
+				? EventType.this
+				: superType.getBaseType();
 
 	}
 
 	default SortedSet<? extends EventType> getSiblingTypes() {
-		return this.getSuperType().getSubTypes();
+		return this.equals(ROOT_EVEN_TYPE)
+				? ImmutableSortedSet.of( ROOT_EVEN_TYPE)
+				: this.getSuperType().getSubTypes();
+
 	}
 
 	@Override
