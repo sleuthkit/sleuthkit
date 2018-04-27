@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2017 Basis Technology Corp.
+ * Copyright 2017-18 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,16 +21,17 @@ package org.sleuthkit.datamodel;
 import java.util.Collection;
 
 /**
- * An instance of an Account in a specific file. 
- * An Account may be found in multiple Content
- * objects (such as different databases) on a single device.
+ * An instance of an Account in a specific file. An Account may be found in
+ * multiple Content objects (such as different databases) on a single device.
  * There is a 1:N relationship between Account objects and AccountFileInstance
  * objects. A TSK_ACCOUNT artifact is created for every account file instance.
  *
- * AccountFileInstances can optionally have BlackboardAttributes to store more details.
+ * AccountFileInstances can optionally have BlackboardAttributes to store more
+ * details.
  */
-public class AccountFileInstance {
-	private final BlackboardArtifact artifact; 
+public final class AccountFileInstance {
+
+	private final BlackboardArtifact artifact;
 	private final Account account;
 
 	AccountFileInstance(BlackboardArtifact artifact, Account account) throws TskCoreException {
@@ -41,10 +42,10 @@ public class AccountFileInstance {
 	/**
 	 * Gets the first occurrence of an attribute by type.
 	 *
-	 * @param attrType The attribute type. 
-	 * 
+	 * @param attrType The attribute type.
+	 *
 	 * @return The attribute, or null if no attribute of the given type exists.
-	 * 
+	 *
 	 * @throws TskCoreException if an there is an error getting the attribute.
 	 */
 	public BlackboardAttribute getAttribute(BlackboardAttribute.ATTRIBUTE_TYPE attrType) throws TskCoreException {
@@ -52,10 +53,11 @@ public class AccountFileInstance {
 	}
 
 	/**
-	 * Adds an attribute.  It is faster to add them as part of a list.
+	 * Adds an attribute. It is faster to add multiple attributes as a
+	 * collection using addAttributes().
 	 *
 	 * @param bbatr The attribute to add.
-	 * 
+	 *
 	 * @throws TskCoreException if an there is an error adding the attribute.
 	 */
 	public void addAttribute(BlackboardAttribute bbatr) throws TskCoreException {
@@ -66,25 +68,30 @@ public class AccountFileInstance {
 	 * Adds a collection of attributes
 	 *
 	 * @param bbatrs The collection of attributes to add.
-	 * 
+	 *
 	 * @throws TskCoreException if an there is an error adding the attributes.
 	 */
 	public void addAttributes(Collection<BlackboardAttribute> bbatrs) throws TskCoreException {
 		this.artifact.addAttributes(bbatrs);
 	}
-	
+
 	/**
 	 * Gets the underlying Account for this instance.
 	 *
 	 * @return The account.
-	 * 
+	 *
 	 * @throws TskCoreException if an there is an error getting the account.
 	 */
 	public Account getAccount() throws TskCoreException {
 		return this.account;
 	}
-	
-	long getDataSourceObjectID(){
+
+	/**
+	 * Get the object ID of the artifact this account file instance maps to.
+	 *
+	 * @return A Data Source Object ID
+	 */
+	long getDataSourceObjectID() {
 		return artifact.getDataSourceObjectID();
 	}
 }

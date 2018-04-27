@@ -34,8 +34,7 @@ import static org.sleuthkit.datamodel.CollectionUtils.hashSetOf;
  * A relationship between Accounts, such as a communication ( email, sms, phone
  * call (call log) ) or presence in a contact book.
  */
-public class Relationship {
-
+public final class Relationship {
 
 	public static final class Type {
 
@@ -79,14 +78,29 @@ public class Relationship {
 			this.typeID = id;
 		}
 
+		/**
+		 * Get the display name.
+		 *
+		 * @return The display name.
+		 */
 		public String getDisplayName() {
 			return displayName;
 		}
 
+		/**
+		 * Get the unique type name
+		 *
+		 * @return The unique type name.
+		 */
 		public String getTypeName() {
 			return typeName;
 		}
 
+		/**
+		 * Get the id of this type.
+		 *
+		 * @return The type ID.
+		 */
 		public int getTypeID() {
 			return typeID;
 		}
@@ -122,7 +136,7 @@ public class Relationship {
 
 		@Override
 		public String toString() {
-			return "{" + this.getClass().getName() + ": typeID=" + typeName + " displayName=" + this.displayName + ", typeName=" + this.typeName + "}";
+			return "{" + this.getClass().getName() + ": typeID=" + typeName + ", displayName=" + this.displayName + ", typeName=" + this.typeName + "}";
 		}
 
 		/**

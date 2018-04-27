@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2011-2018 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,14 +22,7 @@ package org.sleuthkit.datamodel;
  * A data source (e.g., an image, a local disk, a virtual directory of logical
  * files, etc.).
  */
-public interface DataSource {
-
-	/**
-	 * Gets the object id of this data source.
-	 *
-	 * @return The object id.
-	 */
-	long getId();
+public interface DataSource extends Content {
 
 	/**
 	 * Gets the ASCII-printable identifier for the device associated with the

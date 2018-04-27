@@ -20,7 +20,7 @@
 
 #include "tsk_db.h"
 #ifdef HAVE_LIBPQ_
-#ifdef TSK_WIN32
+#if defined(TSK_WIN32) || defined(HAVE_LIBPQ_FE_H)
     #include "libpq-fe.h"
 #else
     #include <postgresql/libpq-fe.h>
