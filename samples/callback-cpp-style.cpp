@@ -50,8 +50,8 @@ static TskHdbInfo *hdb_info;
  * dent_walk callback function 
  */
 static TSK_WALK_RET_ENUM
-fileAct(TskFsFile * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
-    char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM flags, void *ptr)
+fileAct(TskFsFile * /*fs_file*/, TSK_OFF_T /*a_off*/, TSK_DADDR_T /*addr*/,
+    char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM /*flags*/, void *ptr)
 {
     TSK_MD5_CTX *md = (TSK_MD5_CTX *) ptr;
     if (md == NULL)
@@ -141,7 +141,7 @@ procFile(TskFsFile * fs_file, const char *path)
  * that is found.
  */
 static TSK_WALK_RET_ENUM
-dirAct(TskFsFile * fs_file, const char *path, void *ptr)
+dirAct(TskFsFile * fs_file, const char *path, void * /*ptr*/)
 {
 	fprintf(stdout,
                "file systems file name: %s\n", fs_file->getName()->getName());
@@ -209,7 +209,7 @@ procFs(TskImgInfo * img_info, TSK_OFF_T start)
  * each volume to find a file system.
  */
 static TSK_WALK_RET_ENUM
-vsAct(TskVsInfo * vs_info, const TskVsPartInfo * vs_part, void *ptr)
+vsAct(TskVsInfo * vs_info, const TskVsPartInfo * vs_part, void * /*ptr*/)
 {
     if (procFs(const_cast<TskImgInfo *>(vs_info->getImgInfo()), const_cast<TskVsPartInfo *>(vs_part)->getStart() * vs_info->getBlockSize())) {
         // if we return ERROR here, then the walk will stop.  But, the 

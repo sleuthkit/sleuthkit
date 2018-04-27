@@ -1,6 +1,6 @@
 bin_PROGRAMS = srch_strings sigfind
 EXTRA_DIST = .indent.pro
-AM_CPPFLAGS = -I../.. -I$(srcdir)/../.. -Wall
+AM_CPPFLAGS = -I../.. -I$(srcdir)/../..
 
 srch_strings_SOURCES = srch_strings.c
 

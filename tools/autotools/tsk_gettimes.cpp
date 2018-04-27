@@ -78,7 +78,7 @@ uint8_t TskGetTimes::handleError()
 }
 
 
-TSK_RETVAL_ENUM TskGetTimes::processFile(TSK_FS_FILE * fs_file, const char *path)
+TSK_RETVAL_ENUM TskGetTimes::processFile(TSK_FS_FILE * /*fs_file*/, const char * /*path*/)
 {
     return TSK_OK;
 }

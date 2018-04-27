@@ -853,9 +853,9 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
  * Helper for md5HashAttr
  */
 TSK_WALK_RET_ENUM
-TskAutoDb::md5HashCallback(TSK_FS_FILE * file, TSK_OFF_T offset,
-    TSK_DADDR_T addr, char *buf, size_t size,
-    TSK_FS_BLOCK_FLAG_ENUM a_flags, void *ptr)
+TskAutoDb::md5HashCallback(TSK_FS_FILE * /*file*/, TSK_OFF_T /*offset*/,
+    TSK_DADDR_T /*addr*/, char *buf, size_t size,
+    TSK_FS_BLOCK_FLAG_ENUM /*a_flags*/, void *ptr)
 {
     TSK_MD5_CTX *md = (TSK_MD5_CTX *) ptr;
     if (md == NULL)

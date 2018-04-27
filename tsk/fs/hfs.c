@@ -239,7 +239,7 @@ hfs_checked_read_random(TSK_FS_INFO * fs, char *buf, size_t len,
     ssize_t r;
 
     r = tsk_fs_read(fs, offs, buf, len);
-    if (r != len) {
+    if (r != (ssize_t) len) {
         if (r >= 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -823,12 +823,12 @@ hfs_cat_compare_keys(HFS_INFO * hfs, const hfs_btree_key_cat * key1,
 
 
 /** \internal
- * 
+ *
  * Traverse the HFS catalog file.  Call the callback for each
- * record. 
+ * record.
  *
  * @param hfs File system
- * @param a_cb callback 
+ * @param a_cb callback
  * @param ptr Pointer to pass to callback
  * @returns 1 on error
  */
@@ -937,7 +937,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
                 size_t rec_off;
                 hfs_btree_key_cat *key;
                 uint8_t retval;
-                uint16_t keylen;
+                int keylen;
 
                 // get the record offset in the node
                 rec_off =
@@ -1042,7 +1042,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
                 size_t rec_off;
                 hfs_btree_key_cat *key;
                 uint8_t retval;
-                uint16_t keylen;
+                int keylen;
 
                 // get the record offset in the node
                 rec_off =
@@ -1155,7 +1155,7 @@ hfs_cat_get_record_offset_cb(HFS_INFO * hfs, int8_t level_type,
             return HFS_BTREE_CB_LEAF_GO;
         }
         else if (diff == 0) {
-            offset_data->off = 
+            offset_data->off =
                 key_off + 2 + tsk_getu16(hfs->fs_info.endian,
                 cur_key->key_len);
         }
@@ -1728,7 +1728,7 @@ hfs_find_highest_inum_cb(HFS_INFO * hfs, int8_t level_type,
 {
     // NOTE: This assumes that the biggest inum is the last one that we
     // see.  the traverse method does not currently promise that as part of
-    // its callback "contract". 
+    // its callback "contract".
     *((TSK_INUM_T*) ptr) = tsk_getu32(hfs->fs_info.endian, cur_key->parent_cnid);
     return HFS_BTREE_CB_IDX_LT;
 }
@@ -2619,6 +2619,16 @@ typedef struct {
 } CMP_OFFSET_ENTRY;
 
 
+/**
+ * \internal
+ * Reads the ZLIB compression block table from the attribute.
+ *
+ * @param rAtttr the attribute to read
+ * @param offsetTableOut block table
+ * @param tableSizeOut size of block table
+ * @param tableOffsetOut the offset of the block table in the resource fork
+ * @return 1 on success, 0 on error
+ */
 static int
 hfs_read_zlib_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTableOut, uint32_t* tableSizeOut, uint32_t* tableOffsetOut) {
     int attrReadResult;
@@ -2679,7 +2689,7 @@ hfs_read_zlib_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTab
 
     attrReadResult = tsk_fs_attr_read(rAttr, offsetTableOffset + 4,
         offsetTableData, tableSize * 8, TSK_FS_FILE_READ_FLAG_NONE);
-    if (attrReadResult != tableSize * 8) {
+    if (attrReadResult != (ssize_t) tableSize * 8) {
         error_returned
             (" %s: reading in the compression offset table, "
             "return value %u should have been %u", __func__, attrReadResult,
@@ -2708,6 +2718,16 @@ on_error:
 }
 
 
+/**
+ * \internal
+ * Reads the LZVN compression block table from the attribute.
+ *
+ * @param rAtttr the attribute to read
+ * @param offsetTableOut block table
+ * @param tableSizeOut size of block table
+ * @param tableOffsetOut the offset of the block table in the resource fork
+ * @return 1 on success, 0 on error
+ */
 static int
 hfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTableOut, uint32_t* tableSizeOut, uint32_t* tableOffsetOut) {
     int attrReadResult;
@@ -2752,7 +2772,7 @@ hfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTab
 
     attrReadResult = tsk_fs_attr_read(rAttr, 0,
         offsetTableData, tableDataSize, TSK_FS_FILE_READ_FLAG_NONE);
-    if (attrReadResult != tableDataSize) {
+    if (attrReadResult != (ssize_t) tableDataSize) {
         error_returned
             (" %s: reading in the compression offset table, "
             "return value %u should have been %u", __func__, attrReadResult,
@@ -2784,7 +2804,16 @@ on_error:
     return 0;
 }
 
-
+/**
+ * \internal
+ * "Decompress" a block which was stored uncompressed.
+ *
+ * @param rawBuf the compressed data
+ * @param len length of the compressed data
+ * @param uncBuf the decompressed data
+ * @param uncLen length of the decompressed data
+ * @return 1 on success, 0 on error
+ */
 static int hfs_decompress_noncompressed_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t* uncLen) {
     // actually an uncompressed block of data; just copy
     if (tsk_verbose)
@@ -2805,6 +2834,16 @@ static int hfs_decompress_noncompressed_block(char* rawBuf, uint32_t len, char* 
 
 
 #ifdef HAVE_LIBZ
+/**
+ * \internal
+ * Decompress a block which was stored with ZLIB.
+ *
+ * @param rawBuf the compressed data
+ * @param len length of the compressed data
+ * @param uncBuf the decompressed data
+ * @param uncLen length of the decompressed data
+ * @return 1 on success, 0 on error
+ */
 static int hfs_decompress_zlib_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t* uncLen)
 {
     // see if this block is compressed
@@ -2842,6 +2881,16 @@ static int hfs_decompress_zlib_block(char* rawBuf, uint32_t len, char* uncBuf, u
 #endif
 
 
+/**
+ * \internal
+ * Decompress a block which was stored with LZVN.
+ *
+ * @param rawBuf the compressed data
+ * @param len length of the compressed data
+ * @param uncBuf the decompressed data
+ * @param uncLen length of the decompressed data
+ * @return 1 on success, 0 on error
+ */
 static int hfs_decompress_lzvn_block(char* rawBuf, uint32_t len, char* uncBuf, uint64_t* uncLen)
 {
     // see if this block is compressed
@@ -2855,7 +2904,20 @@ static int hfs_decompress_lzvn_block(char* rawBuf, uint32_t len, char* uncBuf, u
     }
 }
 
-
+/**
+ * \internal
+ * Decompress a block.
+ *
+ * @param rAttr the attribute to read
+ * @param rawBuf the compressed data
+ * @param uncBuf the decompressed data
+ * @param offsetTable table of compressed block offsets
+ * @param offsetTableSize size of table of compressed block offsets
+ * @param offsetTableOffset offset of table of compressed block offsets
+ * @param indx index of block to read
+ * @param decompress_block pointer to decompression function
+ * @return decompressed size on success, -1 on error
+ */
 static ssize_t read_and_decompress_block(
   const TSK_FS_ATTR* rAttr,
   char* rawBuf,
@@ -2898,7 +2960,7 @@ static ssize_t read_and_decompress_block(
     // Read in the block of compressed data
     attrReadResult = tsk_fs_attr_read(rAttr, offset,
         rawBuf, len, TSK_FS_FILE_READ_FLAG_NONE);
-    if (attrReadResult != len) {
+    if (attrReadResult != (ssize_t) len) {
         char msg[] =
             "%s%s: reading in the compression offset table, "
             "return value %u should have been %u";
@@ -2934,7 +2996,18 @@ static ssize_t read_and_decompress_block(
     return (ssize_t)uncLen;
 }
 
-
+/**
+ * \internal
+ * Attr walk callback function for compressed resources
+ *
+ * @param fs_attr the attribute to read
+ * @param flags
+ * @param a_action action callback
+ * @param ptr context for the action callback
+ * @param read_block_table pointer to block table read function
+ * @param decompress_block pointer to decompression function
+ * @return 0 on success, 1 on error
+ */
 static uint8_t
 hfs_attr_walk_compressed_rsrc(const TSK_FS_ATTR * fs_attr,
     int flags, TSK_FS_FILE_WALK_CB a_action, void *ptr,
@@ -3102,11 +3175,21 @@ on_error:
     free(offsetTable);
     free(rawBuf);
     free(uncBuf);
-    return 0;
+    return 1;
 }
 
 
 #ifdef HAVE_LIBZ
+/**
+ * \internal
+ * Attr walk callback function for ZLIB compressed resources
+ *
+ * @param fs_attr the attribute to read
+ * @param flags
+ * @param a_action action callback
+ * @param ptr context for the action callback
+ * @return 0 on success, 1 on error
+ */
 static uint8_t
 hfs_attr_walk_zlib_rsrc(const TSK_FS_ATTR * fs_attr,
     int flags, TSK_FS_FILE_WALK_CB a_action, void *ptr)
@@ -3119,7 +3202,16 @@ hfs_attr_walk_zlib_rsrc(const TSK_FS_ATTR * fs_attr,
 }
 #endif
 
-
+/**
+ * \internal
+ * Attr walk callback function for LZVN compressed resources
+ *
+ * @param fs_attr the attribute to read
+ * @param flags
+ * @param a_action action callback
+ * @param ptr context for the action callback
+ * @return 0 on success, 1 on error
+ */
 static uint8_t
 hfs_attr_walk_lzvn_rsrc(const TSK_FS_ATTR * fs_attr,
     int flags, TSK_FS_FILE_WALK_CB a_action, void *ptr)
@@ -3132,9 +3224,17 @@ hfs_attr_walk_lzvn_rsrc(const TSK_FS_ATTR * fs_attr,
 }
 
 
-/** \internal
+/**
+ * \internal
+ * Read a compressed resource
  *
- * @returns number of bytes read or -1 on error (incl if offset is past EOF)
+ * @param fs_attr the attribute to read
+ * @param a_offset the offset from which to read
+ * @param a_buf the buffer into which to read
+ * @param a_len the length of the buffer
+ * @param read_block_table pointer to block table read function
+ * @param decompress_block pointer to decompression function
+ * @return number of bytes read or -1 on error (incl if offset is past EOF)
  */
 static ssize_t
 hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
@@ -3171,7 +3271,7 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
 
     if (a_offset < 0) {
         error_detected(TSK_ERR_FS_ARG,
-            "%s: reading from file at a negative offset, or negative length",
+            "%s: reading from file at a negative offset",
              __func__);
         return -1;
     }
@@ -3334,6 +3434,16 @@ on_error:
 
 
 #ifdef HAVE_LIBZ
+/**
+ * \internal
+ * Read a ZLIB compressed resource
+ *
+ * @param fs_attr the attribute to read
+ * @param a_offset the offset from which to read
+ * @param a_buf the buffer into which to read
+ * @param a_len the length of the buffer
+ * @return number of bytes read or -1 on error (incl if offset is past EOF)
+ */
 static ssize_t
 hfs_file_read_zlib_rsrc(const TSK_FS_ATTR * a_fs_attr,
     TSK_OFF_T a_offset, char *a_buf, size_t a_len)
@@ -3347,6 +3457,16 @@ hfs_file_read_zlib_rsrc(const TSK_FS_ATTR * a_fs_attr,
 #endif
 
 
+/**
+ * \internal
+ * Read an LZVN compressed resource
+ *
+ * @param fs_attr the attribute to read
+ * @param a_offset the offset from which to read
+ * @param a_buf the buffer into which to read
+ * @param a_len the length of the buffer
+ * @return number of bytes read or -1 on error (incl if offset is past EOF)
+ */
 static ssize_t
 hfs_file_read_lzvn_rsrc(const TSK_FS_ATTR * a_fs_attr,
     TSK_OFF_T a_offset, char *a_buf, size_t a_len)
@@ -3359,6 +3479,20 @@ hfs_file_read_lzvn_rsrc(const TSK_FS_ATTR * a_fs_attr,
 }
 
 
+/**
+ * \internal
+ * "Decompress" an uncompressed attr
+ *
+ * HFS+ compression schemes allow for some blocks to be stored uncompressed.
+ *
+ * @param rawBuf source buffer
+ * @param rawSize size of source buffer
+ * @param uncSize expected uncompressed size
+ * @param dstBuf destination buffer
+ * @param dstSize size of destination buffer
+ * @param dstBufFree true iff the caller must free the destination buffer
+ * @return 1
+ */
 static int hfs_decompress_noncompressed_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize, int* dstBufFree) {
     if (tsk_verbose)
         tsk_fprintf(stderr,
@@ -3372,8 +3506,22 @@ static int hfs_decompress_noncompressed_attr(char* rawBuf, uint32_t rawSize, uin
 }
 
 
+/**
+ * \internal
+ * Decompress a ZLIB compressed attr
+ *
+ * @param rawBuf source buffer
+ * @param rawSize size of source buffer
+ * @param uncSize expected uncompressed size
+ * @param dstBuf destination buffer
+ * @param dstSize size of destination buffer
+ * @param dstBufFree true iff the caller must free the destination buffer
+ * @return 1 on success, 0 on error
+ */
 static int hfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize, int* dstBufFree)
 {
+    // ZLIB blocks cannot start with 0xF as the low nibble, so that's used
+    // as the flag for noncompressed blocks
     if ((rawBuf[0] & 0x0F) == 0x0F) {
         return hfs_decompress_noncompressed_attr(
             rawBuf, rawSize, uncSize, dstBuf, dstSize, dstBufFree);
@@ -3442,13 +3590,27 @@ static int hfs_decompress_zlib_attr(char* rawBuf, uint32_t rawSize, uint64_t unc
 }
 
 
+/**
+ * \internal
+ * Decompress an LZVN compressed attr
+ *
+ * @param rawBuf source buffer
+ * @param rawSize size of source buffer
+ * @param uncSize expected uncompressed size
+ * @param dstBuf destination buffer
+ * @param dstSize size of destination buffer
+ * @param dstBufFree true iff the caller must free the destination buffer
+ * @return 1 on success, 0 on error
+ */
 static int hfs_decompress_lzvn_attr(char* rawBuf, uint32_t rawSize, uint64_t uncSize, char** dstBuf, uint64_t* dstSize, int* dstBufFree)
 {
+    // LZVN blocks cannot start with 0x06, so that's used as the flag for
+    // noncompressed blocks
     if (rawBuf[0] == 0x06) {
         return hfs_decompress_noncompressed_attr(
             rawBuf, rawSize, uncSize, dstBuf, dstSize, dstBufFree);
     }
-    
+
     char* uncBuf = (char *) tsk_malloc((size_t) uncSize);
     *dstSize = lzvn_decode_buffer(uncBuf, uncSize, rawBuf, rawSize);
     *dstBuf = uncBuf;
@@ -3458,6 +3620,18 @@ static int hfs_decompress_lzvn_attr(char* rawBuf, uint32_t rawSize, uint64_t unc
 }
 
 
+/**
+ * \internal
+ * Read a compressed attr
+ *
+ * @param fs_file the file
+ * @param cmpType compression type
+ * @param buffer destination buffer
+ * @param attributeLength length of the attribute
+ * @param uncSize uncompressed size
+ * @param decompress_attr pointer to the decompression function
+ * @return 1 on success, 0 on error
+ */
 static int
 hfs_file_read_compressed_attr(TSK_FS_FILE* fs_file,
                               uint8_t cmpType,
@@ -3544,6 +3718,16 @@ on_error:
 }
 
 
+/**
+ * \internal
+ * Read a ZLIB compressed attr
+ *
+ * @param fs_file the file
+ * @param buffer destination buffer
+ * @param attributeLength length of the attribute
+ * @param uncSize uncompressed size
+ * @return 1 on success, 0 on error
+ */
 static int hfs_file_read_zlib_attr(TSK_FS_FILE* fs_file,
                             char* buffer,
                             uint32_t attributeLength,
@@ -3557,6 +3741,16 @@ static int hfs_file_read_zlib_attr(TSK_FS_FILE* fs_file,
 }
 
 
+/**
+ * \internal
+ * Read an LZVN compressed attr
+ *
+ * @param fs_file the file
+ * @param buffer destination buffer
+ * @param attributeLength length of the attribute
+ * @param uncSize uncompressed size
+ * @return 1 on success, 0 on error
+ */
 static int hfs_file_read_lzvn_attr(TSK_FS_FILE* fs_file,
                             char* buffer,
                             uint32_t attributeLength,
@@ -3936,7 +4130,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 goto on_error;
             }
 
-            recData = &recordBytes[keyLength + 2];   
+            recData = &recordBytes[keyLength + 2];
 
             // Data must start on an even offset from the beginning of the record.
             // So, correct this if needed.
@@ -3977,11 +4171,11 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
         // Loop over the records in this node
         for (recIndx = 0; recIndx < numRec; ++recIndx) {
-            
+
             // The offset to the record is stored in table at end of node
             uint8_t *recOffsetTblEntry = &nodeData[attrFile.nodeSize - (2 * (recIndx + 1))];  // data describing where this record is
             uint16_t recOffset = tsk_getu16(endian, recOffsetTblEntry);
-            
+
             int comp;           // comparison result
             char *compStr;      // comparison result as a string
             uint32_t keyFileID;
@@ -3998,7 +4192,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
 
             // Cast that to the Attributes file key
             keyB = (hfs_btree_key_attr *) recordBytes;
-            
+
             // Compare recordBytes key to the key that we are seeking
             keyFileID = tsk_getu32(endian, keyB->file_id);
 
@@ -4107,7 +4301,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 // be because UTF8 is a variable length encoding. However, the longest
                 // it will be is 3 * the max number of UTF16 code units.  Add one for null
                 // termination.   (thanks Judson!)
-                
+
 
                 conversionResult = hfs_UTF16toUTF8(fs, keyB->attr_name,
                     nameLength, nameBuff, HFS_MAX_ATTR_NAME_LEN_UTF8_B+1, 0);
@@ -4437,7 +4631,7 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
         tsk_fs_attr_read(rAttr, (uint64_t) mapOffset, map,
         (size_t) mapLength, TSK_FS_FILE_READ_FLAG_NONE);
 
-    if (attrReadResult < 0 || attrReadResult != mapLength) {
+    if (attrReadResult < 0 || attrReadResult != (ssize_t) mapLength) {
         error_returned
             ("- hfs_parse_resource_fork: could not read the map");
         free(map);
@@ -4976,7 +5170,7 @@ hfs_block_is_alloc(HFS_INFO * hfs, TSK_DADDR_T a_addr)
     // see if it is in the cache
     if ((hfs->blockmap_cache_start == -1)
         || (hfs->blockmap_cache_start > b)
-        || (hfs->blockmap_cache_start + hfs->blockmap_cache_len <= b)) {
+        || (hfs->blockmap_cache_start + hfs->blockmap_cache_len <= (size_t) b)) {
         size_t cnt = tsk_fs_attr_read(hfs->blockmap_attr, b,
             hfs->blockmap_cache,
             sizeof(hfs->blockmap_cache), 0);

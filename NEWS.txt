@@ -1,6 +1,22 @@
 Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
+---------------- VERSION 4.6.1 --------------
+C/C++ Code:
+- Lots of bounds checking fixes from Google's fuzzing tests.  Thanks Google.
+- Cleanup and fixes from uckelman-sf and others
+- PostgreSQL, libvhdi, & libvmdk are supported for Linux / OS X
+
+Java:
+- Reports can be URLs
+- Reports are Content
+- Added APIs for graph view of communications
+- JNI library is extracted to name with user name in it to avoid conflicts
+
+Database:
+- Version upgraded from to 8.0 because Reports are now Content
+
+
 ---------------- VERSION 4.6.0 --------------
 New Features
 - New Communications related Java classes and database tables.

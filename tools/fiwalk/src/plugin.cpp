@@ -132,7 +132,7 @@ public:
 
 /** describes each plugin */
 class plugins {
-public:;
+public:
     myglob *glob;
     string pattern;		// what we want
     string method;

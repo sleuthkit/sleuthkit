@@ -424,7 +424,8 @@ static uint8_t
 */
 uint8_t
     sqlite_hdb_add_entry(TSK_HDB_INFO *hdb_info_base, const char *filename, 
-    const char *md5, const char *sha1, const char *sha256, const char *comment)
+    const char *md5, const char * /*sha1*/, const char * /*sha256*/,
+    const char *comment)
 {
     // Currently only supporting md5.
     const size_t md5_str_len = strlen(md5);

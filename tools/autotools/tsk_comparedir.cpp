@@ -246,7 +246,7 @@ TskCompareDir::processFile(TSK_FS_FILE * a_fs_file, const char *a_path)
 }
 
 TSK_FILTER_ENUM
-TskCompareDir::filterVol(const TSK_VS_PART_INFO * a_vs_part)
+TskCompareDir::filterVol(const TSK_VS_PART_INFO * /*a_vs_part*/)
 {
     fprintf(stderr, "Error: volume system detected.  You must specify a specific file system using '-o'\n");
     return TSK_FILTER_STOP;

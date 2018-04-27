@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I../.. -Wall $(CPPUNIT_CFLAGS) 
+AM_CPPFLAGS = -I../.. $(CPPUNIT_CFLAGS)
 LDADD = ../../tsk/libtsk.la $(CPPUNIT_LIBS)
 LDFLAGS = -static 
 
