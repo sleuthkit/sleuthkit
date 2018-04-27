@@ -291,7 +291,7 @@ process_tsk_file(TSK_FS_FILE * fs_file, const char *path)
  * that is found.
  */
 static TSK_WALK_RET_ENUM
-dir_act(TSK_FS_FILE * fs_file, const char *path, void *ptr)
+dir_act(TSK_FS_FILE * fs_file, const char *path, void * /*ptr*/)
 {
     /* Ignore NTFS System files */
     if (opt_ignore_ntfs_system_files

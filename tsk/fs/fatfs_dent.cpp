@@ -54,7 +54,7 @@
 * the walk and this function is used to stop that building process.
 */
 TSK_WALK_RET_ENUM
-    fatfs_find_parent_act(TSK_FS_FILE * fs_file, const char *a_path, void *ptr)
+    fatfs_find_parent_act(TSK_FS_FILE * fs_file, const char * /*a_path*/, void *ptr)
 {
     TSK_INUM_T par_inum = *(TSK_INUM_T *) ptr;
 
@@ -172,8 +172,9 @@ typedef struct {
 * into a buffer
 */
 static TSK_WALK_RET_ENUM
-    fatfs_dent_action(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
-    char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM flags, void *ptr)
+    fatfs_dent_action(TSK_FS_FILE * /*fs_file*/, TSK_OFF_T /*a_off*/,
+    TSK_DADDR_T addr, char *buf, size_t size, TSK_FS_BLOCK_FLAG_ENUM /*flags*/,
+    void *ptr)
 {
     FATFS_LOAD_DIR *load = (FATFS_LOAD_DIR *) ptr;
 
@@ -402,7 +403,7 @@ TSK_RETVAL_ENUM
 }
 
 int
-fatfs_name_cmp(TSK_FS_INFO * a_fs_info, const char *s1, const char *s2)
+fatfs_name_cmp(TSK_FS_INFO * /*a_fs_info*/, const char *s1, const char *s2)
 {
     return strcasecmp(s1, s2);
 }

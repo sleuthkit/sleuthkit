@@ -1842,8 +1842,8 @@ static uint8_t
 ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
 {
     unsigned int i;
-    unsigned int gpfbg;
-    unsigned int gd_blocks;
+//    unsigned int gpfbg;
+//    unsigned int gd_blocks;
     EXT2FS_INFO *ext2fs = (EXT2FS_INFO *) fs;
     ext2fs_sb *sb = ext2fs->fs;
     int ibpg;
@@ -2095,7 +2095,7 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
     if (fs->ftype == TSK_FS_TYPE_EXT4) {
         tsk_fprintf(hFile, "Block Groups Per Flex Group: %" PRIu32 "\n",
             (1 << sb->s_log_groups_per_flex));
-        gpfbg = (1 << sb->s_log_groups_per_flex);
+//        gpfbg = (1 << sb->s_log_groups_per_flex);
     }
 
     tsk_fprintf(hFile, "Block Range: %" PRIuDADDR " - %" PRIuDADDR "\n",
@@ -2134,9 +2134,9 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
             sb->s_inodes_per_group) * ext2fs->inode_size + fs->block_size -
         1) / fs->block_size;
     /* number of blocks group descriptors consume */
-    gd_blocks =
-        (unsigned int)((gd_size * ext2fs->groups_count + fs->block_size -
-        1) / fs->block_size);
+//    gd_blocks =
+//        (unsigned int)((gd_size * ext2fs->groups_count + fs->block_size -
+//        1) / fs->block_size);
 
 #ifdef Ext4_DBG
     tsk_fprintf(hFile, "\n\tDEBUG: Group Descriptor Size: %d\n", gd_size);      //DEBUG

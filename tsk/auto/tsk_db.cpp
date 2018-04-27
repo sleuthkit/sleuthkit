@@ -19,14 +19,14 @@
 * Set the locations and logging object.  Must call
 * open() before the object can be used.
 */
-TskDb::TskDb(const char *a_dbFilePathUtf8, bool a_blkMapFlag)
+TskDb::TskDb(const char * /*a_dbFilePathUtf8*/, bool /*a_blkMapFlag*/)
 {
 
 }
 
 #ifdef TSK_WIN32
 //@@@@
-TskDb::TskDb(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFlag)
+TskDb::TskDb(const TSK_TCHAR * /*a_dbFilePath*/, bool /*a_blkMapFlag*/)
 {
 
 }
@@ -36,7 +36,7 @@ TskDb::TskDb(const TSK_TCHAR * a_dbFilePath, bool a_blkMapFlag)
 * Store database connection info. NO-OP for single-user database. Multi-user database class
 * needs to derive and implement this method.
 */
-TSK_RETVAL_ENUM TskDb::setConnectionInfo(CaseDbConnectionInfo * info){
+TSK_RETVAL_ENUM TskDb::setConnectionInfo(CaseDbConnectionInfo * /*info*/){
     return TSK_OK;
 }
 
@@ -47,7 +47,7 @@ TSK_RETVAL_ENUM TskDb::setConnectionInfo(CaseDbConnectionInfo * info){
 * @param ret_name pointer to final folder/file name
 * @returns 0 on success, 1 on error
 */
-bool TskDb::getParentPathAndName(const char *path, char **ret_parent_path, char **ret_name){
+bool TskDb::getParentPathAndName(const char *path, const char **ret_parent_path, const char **ret_name){
     // Need to break up 'path' in to the parent folder to match in 'parent_path' and the folder 
     // name to match with the 'name' column in tsk_files table
 
@@ -59,7 +59,7 @@ bool TskDb::getParentPathAndName(const char *path, char **ret_parent_path, char 
     if (path_len >= MAX_PATH_LENGTH) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskDb::getParentPathAndName: Path is too long. Length = %d, Max length = %d", path_len, MAX_PATH_LENGTH);
+        tsk_error_set_errstr("TskDb::getParentPathAndName: Path is too long. Length = %zd, Max length = %d", path_len, MAX_PATH_LENGTH);
         // assign return values to pointers
         *ret_parent_path = "";
         *ret_name = "";

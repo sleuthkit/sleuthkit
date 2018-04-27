@@ -1263,8 +1263,8 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
 
     // Need to break up 'path' in to the parent folder to match in 'parent_path' and the folder
     // name to match with the 'name' column in tsk_files table
-    char *parent_name = "";
-    char *parent_path = "";
+    const char *parent_name = "";
+    const char *parent_path = "";
     if (TskDb::getParentPathAndName(parentPath, &parent_path, &parent_name)){
         return -1;
     }

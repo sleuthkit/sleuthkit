@@ -1089,7 +1089,7 @@ fatfs_inode_walk(TSK_FS_INFO *a_fs, TSK_INUM_T a_start_inum,
 
     tsk_error_reset();
     if (fatfs_ptr_arg_is_null(a_fs, "a_fs", func_name) ||
-        fatfs_ptr_arg_is_null(a_action, "a_action", func_name)) {
+        fatfs_ptr_arg_is_null(*(void **) &a_action, "a_action", func_name)) {
         return 1;
     }
 

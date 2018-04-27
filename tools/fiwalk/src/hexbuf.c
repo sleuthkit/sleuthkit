@@ -19,7 +19,7 @@ const char *hexbuf(char *dst,int dst_len,const unsigned char *bin,int bytes,int 
 
     *dst = 0;				// begin with null termination
     while(bytes>0 && dst_len > 3){
-	int add_spaces = 0;
+//	int add_spaces = 0;
 
 	sprintf(dst,fmt,*bin); // convert the next byte
 	dst += 2;
@@ -28,7 +28,7 @@ const char *hexbuf(char *dst,int dst_len,const unsigned char *bin,int bytes,int 
 	bytes--;
 	charcount++;			// how many characters
 	
-	if(flag & HEXBUF_SPACE2) add_spaces = 1;
+//	if(flag & HEXBUF_SPACE2) add_spaces = 1;
 	if((flag & HEXBUF_SPACE4) && charcount%2==0){
 	    *dst++ = ' ';
 	    *dst   = '\000';
