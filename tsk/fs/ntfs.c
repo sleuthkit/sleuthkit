@@ -869,7 +869,7 @@ static uint8_t
 ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
 {
     size_t cl_index;
-    uint8_t recover_data = 0;
+    uint8_t recover_data = 0; // set to 1 when we proceed even with potentially corrupt data
 
     tsk_error_reset();
 
