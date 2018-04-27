@@ -1,5 +1,5 @@
 ACLOCAL_AMFLAGS = -I m4
-AM_CXXFLAGS = $(FW_INCLUDE) $(TSK_INCLUDE) -Wall
+AM_CPPFLAGS = $(FW_INCLUDE) $(TSK_INCLUDE)
 LDFLAGS="-lexif"
 
 # this will be true if libexif was found by configure. 
