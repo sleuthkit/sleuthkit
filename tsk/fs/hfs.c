@@ -3255,10 +3255,10 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
     uint32_t offsetTableOffset;
     uint32_t offsetTableSize;         // Size of the offset table
     CMP_OFFSET_ENTRY *offsetTable = NULL;
-    size_t indx;                // index for looping over the offset table
-    uint32_t startUnit = 0;
+    TSK_OFF_T indx;                // index for looping over the offset table
+    TSK_OFF_T startUnit = 0;
     uint32_t startUnitOffset = 0;
-    uint32_t endUnit = 0;
+    TSK_OFF_T endUnit = 0;
     uint64_t bytesCopied;
 
     if (tsk_verbose)
@@ -3346,8 +3346,8 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
 
     if (tsk_verbose)
         tsk_fprintf(stderr,
-            "%s: reading compression units: %" PRIu32
-            " to %" PRIu32 "\n", __func__, startUnit, endUnit);
+            "%s: reading compression units: %" PRIuOFF
+            " to %" PRIuOFF "\n", __func__, startUnit, endUnit);
     bytesCopied = 0;
 
     // Allocate buffers for the raw and uncompressed data
@@ -3376,7 +3376,7 @@ hfs_file_read_compressed_rsrc(const TSK_FS_ATTR * a_fs_attr,
 
         switch ((uncLen = read_and_decompress_block(
                     rAttr, rawBuf, uncBuf,
-                    offsetTable, offsetTableSize, offsetTableOffset, indx,
+                    offsetTable, offsetTableSize, offsetTableOffset, (size_t)indx,
                     decompress_block)))
         {
         case -1:
@@ -3788,7 +3788,7 @@ static uint8_t
 open_attr_file(TSK_FS_INFO * fs, ATTR_FILE_T * attr_file)
 {
 
-    int cnt;                    // will hold bytes read
+    ssize_t cnt;                    // will hold bytes read
 
     hfs_btree_header_record *hrec;
 
@@ -3835,7 +3835,7 @@ open_attr_file(TSK_FS_INFO * fs, ATTR_FILE_T * attr_file)
         14,
         (char *) hrec,
         sizeof(hfs_btree_header_record), (TSK_FS_FILE_READ_FLAG_ENUM) 0);
-    if (cnt != sizeof(hfs_btree_header_record)) {
+    if (cnt != (ssize_t)sizeof(hfs_btree_header_record)) {
         tsk_error_set_errno(TSK_ERR_FS_READ);
         tsk_error_set_errstr
             ("open_attr_file: could not open the Attributes file");
@@ -3913,7 +3913,6 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
     TSK_FS_INFO *fs = fs_file->fs_info;
     uint64_t fileID;
     ATTR_FILE_T attrFile;
-    int cnt;                    // count of chars read from file.
     uint8_t *nodeData;
     TSK_ENDIAN_ENUM endian;
     hfs_btree_node *nodeDescriptor;     // The node descriptor
@@ -3924,6 +3923,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
     HFS_INFO *hfs;
     char *buffer = NULL;   // buffer to hold the attribute
     TSK_LIST *nodeIDs_processed = NULL; // Keep track of node IDs to prevent an infinite loop
+    ssize_t cnt;                    // count of chars read from file.
 
     tsk_error_reset();
 
@@ -4009,7 +4009,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
             (TSK_OFF_T)nodeID * attrFile.nodeSize,
             (char *) nodeData,
             attrFile.nodeSize, (TSK_FS_FILE_READ_FLAG_ENUM) 0);
-        if (cnt != attrFile.nodeSize) {
+        if (cnt != (ssize_t)attrFile.nodeSize) {
             error_returned
                 ("hfs_load_extended_attrs: Could not read in a node from the Attributes File");
             goto on_error;
@@ -4444,7 +4444,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                 nodeID * attrFile.nodeSize,
                 (char *) nodeData,
                 attrFile.nodeSize, (TSK_FS_FILE_READ_FLAG_ENUM) 0);
-            if (cnt != attrFile.nodeSize) {
+            if (cnt != (ssize_t)attrFile.nodeSize) {
                 error_returned
                     ("hfs_load_extended_attrs: Could not read in the next LEAF node from the Attributes File btree");
                 goto on_error;
@@ -5171,7 +5171,7 @@ hfs_block_is_alloc(HFS_INFO * hfs, TSK_DADDR_T a_addr)
     if ((hfs->blockmap_cache_start == -1)
         || (hfs->blockmap_cache_start > b)
         || (hfs->blockmap_cache_start + hfs->blockmap_cache_len <= (size_t) b)) {
-        size_t cnt = tsk_fs_attr_read(hfs->blockmap_attr, b,
+        ssize_t cnt = tsk_fs_attr_read(hfs->blockmap_attr, b,
             hfs->blockmap_cache,
             sizeof(hfs->blockmap_cache), 0);
         if (cnt < 1) {
