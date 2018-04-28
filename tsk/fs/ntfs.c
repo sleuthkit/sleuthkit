@@ -219,7 +219,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
             data_run != NULL; data_run = data_run->next) {
 
             /* Test for possible overflows / error conditions */
-            if ((offset < 0) || (data_run->len >= LLONG_MAX / a_ntfs->csize_b)){
+            if ((offset < 0) || (data_run->len >= (TSK_DADDR_T)(LLONG_MAX / a_ntfs->csize_b))){
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
                 tsk_error_set_errstr
@@ -1777,7 +1777,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
         }
 
         /* Copy the name and convert it to UTF8 */
-        if ((attr->nlen) && (tsk_getu16(fs->endian, attr->name_off) + attr->nlen * 2 < tsk_getu32(fs->endian, attr->len))) {
+        if ((attr->nlen) && (tsk_getu16(fs->endian, attr->name_off) + attr->nlen * (unsigned int)2 < tsk_getu32(fs->endian, attr->len))) {
             int i;
             UTF8 *name8;
             UTF16 *name16;

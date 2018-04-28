@@ -4279,7 +4279,7 @@ hfs_load_extended_attrs(TSK_FS_FILE * fs_file,
                     goto on_error;
                 }
 
-                if (nameLength * (unsigned int)2 > keyLength - 12) {
+                if (nameLength * (unsigned int)2 > keyLength - (unsigned int)12) {
                     error_detected(TSK_ERR_FS_CORRUPT,
                         "hfs_load_extended_attrs: Name length in bytes (%d) > remaining struct length (%d).",
                         2*nameLength, keyLength - 12);
