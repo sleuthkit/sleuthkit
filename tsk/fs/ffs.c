@@ -850,7 +850,7 @@ ffs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     TSK_INUM_T inum;
     unsigned char *inosused = NULL;
     TSK_FS_FILE *fs_file;
-    int myflags;
+    unsigned int myflags;
     TSK_INUM_T ibase = 0;
     TSK_INUM_T end_inum_tmp;
     ffs_inode *dino_buf;

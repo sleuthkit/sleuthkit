@@ -923,7 +923,7 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     TSK_INUM_T end_inum_tmp;
     TSK_INUM_T ibase = 0;
     TSK_FS_FILE *fs_file;
-    int myflags;
+    unsigned int myflags;
     ext2fs_inode *dino_buf = NULL;
     unsigned int size = 0;
 

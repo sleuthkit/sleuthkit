@@ -3898,7 +3898,7 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     TSK_FS_META_WALK_CB a_action, void *ptr)
 {
     NTFS_INFO *ntfs = (NTFS_INFO *) fs;
-    int myflags;
+    unsigned int myflags;
     TSK_INUM_T mftnum;
     TSK_FS_FILE *fs_file;
     TSK_INUM_T end_inum_tmp;
