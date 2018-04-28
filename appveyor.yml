@@ -32,8 +32,8 @@ services:
       - postgresql95;
 
 build_script:
-      - python setupLibs.py
-      - python win32\updateBuildLibs.py -m
+      - python setupDevRepos.py
+      - python win32\updateAndBuildAll.py -m 
       - ps: ant -version
       - ps: pushd bindings/java
       - cmd: ant dist-PostgreSQL
