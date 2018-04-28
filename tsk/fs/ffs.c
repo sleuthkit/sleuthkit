@@ -85,8 +85,8 @@ ffs_group_load(FFS_INFO * ffs, FFS_GRPNUM_T grp_num)
 
         /* Perform a sanity check on the data to make sure offsets are in range */
         cg = (ffs_cgd *) ffs->grp_buf;
-        if ((tsk_gets32(fs->endian, cg->cg_iusedoff) > ffs->ffsbsize_b)
-            || (tsk_gets32(fs->endian, cg->cg_freeoff) > ffs->ffsbsize_b)) {
+        if ((tsk_gets32(fs->endian, cg->cg_iusedoff) > (int)ffs->ffsbsize_b)
+            || (tsk_gets32(fs->endian, cg->cg_freeoff) > (int)ffs->ffsbsize_b)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_CORRUPT);
             tsk_error_set_errstr2("ffs_group_load: Group %" PRI_FFSGRP

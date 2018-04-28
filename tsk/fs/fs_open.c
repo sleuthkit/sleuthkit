@@ -85,7 +85,6 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
 {
     TSK_FS_INFO *fs_info, *fs_first = NULL;
     const char *name_first;
-    int i;
 
     const struct {
         char* name;
@@ -115,6 +114,7 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
      * We need to try all of them in case more than one matches
      */
     if (a_ftype == TSK_FS_TYPE_DETECT) {
+        unsigned long i;
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "fsopen: Auto detection mode at offset %" PRIuOFF "\n",

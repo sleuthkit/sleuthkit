@@ -58,7 +58,7 @@ tsk_fs_blkcat(TSK_FS_INFO * fs, TSK_FS_BLKCAT_FLAG_ENUM lclflags,
     TSK_DADDR_T addr, TSK_DADDR_T read_num_units)
 {
     char *buf;
-    int i;
+    TSK_DADDR_T i;
 
     if (lclflags & TSK_FS_BLKCAT_STAT) {
         stats(fs);

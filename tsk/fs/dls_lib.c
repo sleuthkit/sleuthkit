@@ -122,7 +122,7 @@ slack_file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
             size);
 
     /* This is not the last data unit */
-    if (data->flen >= size) {
+    if (data->flen >= (TSK_OFF_T)size) {
         data->flen -= size;
     }
     /* We have passed the end of the allocated space */
@@ -136,7 +136,7 @@ slack_file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
         }
     }
     /* This is the last data unit and there is unused space */
-    else if (data->flen < size) {
+    else if (data->flen < (TSK_OFF_T)size) {
         /* Clear the used space and print it */
         memset(buf, 0, (size_t) data->flen);
         if (fwrite(buf, size, 1, stdout) != 1) {

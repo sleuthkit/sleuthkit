@@ -1,4 +1,5 @@
 AM_CPPFLAGS = -I../.. $(CPPUNIT_CFLAGS)
+AM_CXXFLAGS += -Wno-unused-command-line-argument
 LDADD = ../../tsk/libtsk.la $(CPPUNIT_LIBS)
 LDFLAGS = -static 
 

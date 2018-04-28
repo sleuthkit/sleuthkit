@@ -129,7 +129,7 @@ tsk_fs_block_get_flag(TSK_FS_INFO * a_fs, TSK_FS_BLOCK * a_fs_block,
         cnt =
             tsk_img_read(a_fs->img_info, a_fs->offset + offs,
             a_fs_block->buf, len);
-        if (cnt != len) {
+        if (cnt != (ssize_t)len) {
             return NULL;
         }
     }
