@@ -84,7 +84,6 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
     TSK_FS_TYPE_ENUM a_ftype)
 {
     TSK_FS_INFO *fs_info, *fs_first = NULL;
-    const char *name_first;
 
     const struct {
         char* name;
@@ -123,6 +122,7 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
         for (i = 0; i < sizeof(FS_OPENERS)/sizeof(FS_OPENERS[0]); ++i) {
             if ((fs_info = FS_OPENERS[i].open(
                     a_img_info, a_offset, FS_OPENERS[i].type, 1)) != NULL) {
+                const char *name_first;
                 // fs opens as type i
                 if (fs_first == NULL) {
                     // first success opening fs

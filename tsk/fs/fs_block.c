@@ -83,7 +83,6 @@ tsk_fs_block_get_flag(TSK_FS_INFO * a_fs, TSK_FS_BLOCK * a_fs_block,
     TSK_DADDR_T a_addr, TSK_FS_BLOCK_FLAG_ENUM a_flags)
 {
     TSK_OFF_T offs;
-    ssize_t cnt;
     size_t len;
 
     if (a_fs == NULL) {
@@ -126,6 +125,7 @@ tsk_fs_block_get_flag(TSK_FS_INFO * a_fs, TSK_FS_BLOCK * a_fs_block,
     offs = (TSK_OFF_T) a_addr *a_fs->block_size;
 
     if ((a_fs_block->flags & TSK_FS_BLOCK_FLAG_AONLY) == 0) {
+        ssize_t cnt;
         cnt =
             tsk_img_read(a_fs->img_info, a_fs->offset + offs,
             a_fs_block->buf, len);

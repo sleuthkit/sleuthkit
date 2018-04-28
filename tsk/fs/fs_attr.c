@@ -1148,7 +1148,7 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
         TSK_FS_ATTR_RUN *data_run_cur;
         TSK_DADDR_T blkoffset_toread;   // block offset of where we want to start reading from
         size_t byteoffset_toread;       // byte offset in blkoffset_toread of where we want to start reading from
-        size_t len_remain;      // length remaining to copy
+        ssize_t len_remain;      // length remaining to copy
         size_t len_toread;      // length total to copy
 
         if (((a_flags & TSK_FS_FILE_READ_FLAG_SLACK)
@@ -1205,7 +1205,7 @@ tsk_fs_attr_read(const TSK_FS_ATTR * a_fs_attr, TSK_OFF_T a_offset,
             // see if we need to read the rest of this run and into the next or if it is all here
             len_inrun = len_remain;
             if ((data_run_cur->len - blkoffset_inrun) * fs->block_size -
-                byteoffset_toread < len_remain)
+                byteoffset_toread < (size_t)len_remain)
                 len_inrun =
                     (size_t) ((data_run_cur->len -
                         blkoffset_inrun) * fs->block_size -
