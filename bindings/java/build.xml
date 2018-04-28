@@ -10,10 +10,11 @@
 	</condition>
 	<import file="build-${os.family}.xml"/>
 
+	<property name="VERSION" value="4.6.1"/>
+
 	<!-- set global properties for this build -->
 	<property name="default-jar-location" location="/usr/share/java"/>
 	<property name="src" location="src/org/sleuthkit/datamodel"/>
-	<property name="VERSION" value="4.6.0"/>
 	<property name="sample" location="src/org/sleuthkit/datamodel/Examples"/>
 	<property name="build" location="build/"/>
 	<property name="build-datamodel" location="build/org/sleuthkit/datamodel"/>
