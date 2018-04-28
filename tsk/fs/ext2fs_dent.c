@@ -324,9 +324,9 @@ ext2fs_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         int len =
             (a_fs->block_size < size) ? a_fs->block_size : (int) size;
 
-        int cnt = tsk_fs_file_read(fs_dir->fs_file, offset, dirbuf, len, (TSK_FS_FILE_READ_FLAG_ENUM)0);
+        ssize_t cnt = tsk_fs_file_read(fs_dir->fs_file, offset, dirbuf, len, (TSK_FS_FILE_READ_FLAG_ENUM)0);
         if (cnt != len) {
-            printf("  Failed - read 0x%x bytes\n", cnt);
+            printf("  Failed - read 0x%zx bytes\n", cnt);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_FWALK);
             tsk_error_set_errstr

@@ -37,7 +37,7 @@
 
 
 /* Macro to pass in both the epoch time value and the nano time value */
-#define WITHNANO(x) x, x##_nano
+#define WITHNANO(x) x, (unsigned int)x##_nano
 
 
 /* mini-design note:

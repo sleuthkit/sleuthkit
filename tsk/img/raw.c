@@ -149,7 +149,7 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
         //For physical drive when the buffer is larger than remaining data,
         // WinAPI ReadFile call returns -1
         //in this case buffer of exact length must be passed to ReadFile
-        if ((raw_info->is_winobj) && (rel_offset + len > raw_info->img_info.size ))
+        if ((raw_info->is_winobj) && (rel_offset + (TSK_OFF_T)len > raw_info->img_info.size ))
             len = (size_t)(raw_info->img_info.size - rel_offset);
 
         if (FALSE == ReadFile(cimg->fd, buf, (DWORD) len, &nread, NULL)) {
@@ -167,7 +167,7 @@ raw_read_segment(IMG_RAW_INFO * raw_info, int idx, char *buf,
         // We need to check if we've reached the end of a file and set nread to
         // the number of bytes read.
         if ((raw_info->is_winobj) && (nread == 0) && (rel_offset + len == raw_info->img_info.size)) {
-          nread = len;
+            nread = (DWORD)len;
         }
         cnt = (ssize_t) nread;
 

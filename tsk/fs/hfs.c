@@ -2631,7 +2631,7 @@ typedef struct {
  */
 static int
 hfs_read_zlib_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTableOut, uint32_t* tableSizeOut, uint32_t* tableOffsetOut) {
-    int attrReadResult;
+    ssize_t attrReadResult;
     hfs_resource_fork_header rfHeader;
     uint32_t dataOffset;
     uint32_t offsetTableOffset;
@@ -2730,7 +2730,7 @@ on_error:
  */
 static int
 hfs_read_lzvn_block_table(const TSK_FS_ATTR *rAttr, CMP_OFFSET_ENTRY** offsetTableOut, uint32_t* tableSizeOut, uint32_t* tableOffsetOut) {
-    int attrReadResult;
+    ssize_t attrReadResult;
     char fourBytes[4];
     uint32_t tableDataSize;
     uint32_t tableSize;         // Size of the offset table
@@ -2932,7 +2932,7 @@ static ssize_t read_and_decompress_block(
                           uint64_t* uncLen)
 )
 {
-    int attrReadResult;
+    ssize_t attrReadResult;
     uint32_t offset = offsetTableOffset + offsetTable[indx].offset;
     uint32_t len = offsetTable[indx].length;
     uint64_t uncLen;
@@ -4529,9 +4529,9 @@ hfs_parse_resource_fork(TSK_FS_FILE * fs_file)
     uint32_t mapOffset;
     uint32_t mapLength;
     char *map;
-    int attrReadResult;
-    int attrReadResult1;
-    int attrReadResult2;
+    ssize_t attrReadResult;
+    ssize_t attrReadResult1;
+    ssize_t attrReadResult2;
     hfs_resource_fork_map_header *mapHdr;
     uint16_t typeListOffset;
     uint16_t nameListOffset;
@@ -6272,7 +6272,7 @@ hfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile, TS
     // IF this is a compressed file
     if (compressionAttr != NULL) {
         const TSK_FS_ATTR *fs_attr = compressionAttr;
-        int attrReadResult;
+        ssize_t attrReadResult;
         DECMPFS_DISK_HEADER *cmph;
         uint32_t cmpType;
         uint64_t uncSize;
@@ -6896,12 +6896,12 @@ error_detected(uint32_t errnum, char *errstr, ...)
         else {
             //This should not happen!  We don't want to wipe out the existing error
             //code, so we write the new code into the error string, in hex.
-            int sl = strlen(errstr);
+            size_t sl = strlen(errstr);
             snprintf(loc_errstr + sl, TSK_ERROR_STRING_MAX_LENGTH - sl,
                 " Next errnum: 0x%x ", errnum);
         }
         if (errstr != NULL) {
-            int sl = strlen(loc_errstr);
+            size_t sl = strlen(loc_errstr);
             vsnprintf(loc_errstr + sl, TSK_ERROR_STRING_MAX_LENGTH - sl,
                 errstr, args);
         }
@@ -6933,7 +6933,7 @@ error_returned(char *errstr, ...)
         if (errInfo->t_errno == 0)
             errInfo->t_errno = TSK_ERR_AUX_GENERIC;
         if (errstr != NULL) {
-            int sl = strlen(loc_errstr2);
+            size_t sl = strlen(loc_errstr2);
             vsnprintf(loc_errstr2 + sl, TSK_ERROR_STRING_MAX_LENGTH - sl,
                 errstr, args);
         }
