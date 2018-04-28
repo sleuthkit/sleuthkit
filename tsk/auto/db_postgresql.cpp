@@ -73,28 +73,28 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::verifyConnectionInfoStringLengths(size_t userNa
     if (userNameStrLen >= MAX_CONN_INFO_FIELD_LENGTH - 1) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskDbPostgreSQL::connectToDatabase: User name is too long. Length = %z, Max length = %d", userNameStrLen, MAX_CONN_INFO_FIELD_LENGTH - 1);
+        tsk_error_set_errstr("TskDbPostgreSQL::connectToDatabase: User name is too long. Length = %zd, Max length = %d", userNameStrLen, MAX_CONN_INFO_FIELD_LENGTH - 1);
         return TSK_ERR;
     }
 
     if (pwdStrLen >= MAX_CONN_INFO_FIELD_LENGTH - 1) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskDbPostgreSQL::connectToDatabase: Password is too long. Length = %z, Max length = %d", pwdStrLen, MAX_CONN_INFO_FIELD_LENGTH - 1);
+        tsk_error_set_errstr("TskDbPostgreSQL::connectToDatabase: Password is too long. Length = %zd, Max length = %d", pwdStrLen, MAX_CONN_INFO_FIELD_LENGTH - 1);
         return TSK_ERR;
     }
 
     if (hostNameStrLen >= MAX_CONN_INFO_FIELD_LENGTH - 1) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskDbPostgreSQL::connectToDatabase: Host name is too long. Length = %z, Max length = %d", hostNameStrLen, MAX_CONN_INFO_FIELD_LENGTH - 1);
+        tsk_error_set_errstr("TskDbPostgreSQL::connectToDatabase: Host name is too long. Length = %zd, Max length = %d", hostNameStrLen, MAX_CONN_INFO_FIELD_LENGTH - 1);
         return TSK_ERR;
     }
 
     if (portStrLen > MAX_CONN_PORT_FIELD_LENGTH) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskDbPostgreSQL::connectToDatabase: Host port string is too long. Length = %z, Max length = %d", portStrLen, MAX_CONN_PORT_FIELD_LENGTH);
+        tsk_error_set_errstr("TskDbPostgreSQL::connectToDatabase: Host port string is too long. Length = %zd, Max length = %d", portStrLen, MAX_CONN_PORT_FIELD_LENGTH);
         return TSK_ERR;
     }
 
