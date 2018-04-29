@@ -129,7 +129,7 @@ slack_file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
     else {
         /* This is the last data unit and there is unused space 
          * reset the used space */
-        if (data->flen < (TSK_OFF_T)size) {
+        if (data->flen != 0) {
             memset(buf, 0, (size_t) data->flen);
             data->flen = 0;
         }
