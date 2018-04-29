@@ -126,7 +126,13 @@ slack_file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
         data->flen -= size;
     }
     /* We have passed the end of the allocated space */
-    else if (data->flen == 0) {
+    else {
+        /* This is the last data unit and there is unused space 
+         * reset the used space */
+        if (data->flen < (TSK_OFF_T)size) {
+            memset(buf, 0, (size_t) data->flen);
+            data->flen = 0;
+        }
         if (fwrite(buf, size, 1, stdout) != 1) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_WRITE);
@@ -134,19 +140,6 @@ slack_file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr,
                 strerror(errno));
             return TSK_WALK_ERROR;
         }
-    }
-    /* This is the last data unit and there is unused space */
-    else if (data->flen < (TSK_OFF_T)size) {
-        /* Clear the used space and print it */
-        memset(buf, 0, (size_t) data->flen);
-        if (fwrite(buf, size, 1, stdout) != 1) {
-            tsk_error_reset();
-            tsk_error_set_errno(TSK_ERR_FS_WRITE);
-            tsk_error_set_errstr("blkls_lib: error writing to stdout: %s",
-                strerror(errno));
-            return TSK_WALK_ERROR;
-        }
-        data->flen = 0;
     }
 
     return TSK_WALK_CONT;

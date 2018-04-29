@@ -265,14 +265,15 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
         && (fs_meta->attr_state == TSK_FS_META_ATTR_STUDIED)) {
         return 0;
     }
-    else if (fs_meta->attr_state == TSK_FS_META_ATTR_ERROR) {
+    if (fs_meta->attr_state == TSK_FS_META_ATTR_ERROR) {
         return 1;
     }
+
     // not sure why this would ever happen, but...
-    else if (fs_meta->attr != NULL) {
+    if (fs_meta->attr != NULL) {
         tsk_fs_attrlist_markunused(fs_meta->attr);
     }
-    else if (fs_meta->attr == NULL) {
+    else {
         fs_meta->attr = tsk_fs_attrlist_alloc();
     }
 
