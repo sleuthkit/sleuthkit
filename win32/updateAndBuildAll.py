@@ -51,20 +51,20 @@ def pullAndBuildAllDependencies(branch):
     if not MINIMAL:
         # build 32-bit of libewf, libvhdi, libvmdk and TSK
         if(passed):
-            buildDependentLibs(ewfHome, 32, "libewf")
+            buildDependentLibs(ewfHome, 32, "libewf","libewf_dll")
         if(passed):
-            buildDependentLibs(vhdiHome, 32, "libvhdi")
+            buildDependentLibs(vhdiHome, 32, "libvhdi","libvhdi")
         if(passed):
-            buildDependentLibs(vmdkHome, 32, "libvmdk")
+            buildDependentLibs(vmdkHome, 32, "libvmdk","libvmdk")
 
 
     # build 64-bit of libewf, libvhdi, libvmdk and TSK
     if(passed):
-        buildDependentLibs(ewfHome, 64, "libewf")
+        buildDependentLibs(ewfHome, 64, "libewf", "libewf_dll")
     if(passed):
-        buildDependentLibs(vhdiHome, 64, "libvhdi")
+        buildDependentLibs(vhdiHome, 64, "libvhdi", "libvhdi")
     if(passed):
-        buildDependentLibs(vmdkHome, 64, "libvmdk")
+        buildDependentLibs(vmdkHome, 64, "libvmdk", "libvmdk")
 
 
 def buildTSKAll():
@@ -141,7 +141,7 @@ def gitPull(libHome, repo, branch):
     else:
         print("Update " + repo + " failed.")
 
-def buildDependentLibs(libHome, wPlatform, targetDll):
+def buildDependentLibs(libHome, wPlatform, targetDll, project):
     '''
         build libewf.dll, libvhdi.dll and libvmdk.dll
     '''
@@ -170,13 +170,13 @@ def buildDependentLibs(libHome, wPlatform, targetDll):
     vs = []
     vs.append(MSBUILD_PATH)
     vs.append(os.path.join(targetDll + ".sln"))
+    vs.append("/t:" + project)
     vs.append("/p:configuration=" + target)
     if wPlatform == 64:
         vs.append("/p:platform=x64")
     elif wPlatform == 32:
         vs.append("/p:platform=Win32")
     vs.append("/v:quiet")
-    vs.append("/t:build")
 
     outputFile = os.path.join(LOG_PATH, targetDll + "Output.txt")
     VSout = open(outputFile, 'w')
