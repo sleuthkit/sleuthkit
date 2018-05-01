@@ -4625,13 +4625,15 @@ ntfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
         id2 = tsk_getu64(fs->endian, objid->objid2);
         tsk_fprintf(hFile,
             "Object Id: %.8" PRIx32 "-%.4" PRIx16
-            "-%.4" PRIx16 "-%.4" PRIx16 "-%.12"
-            PRIx64 "\n",
-            (uint32_t) (id2 >> 32) & 0xffffffff,
-            (uint16_t) (id2 >> 16) & 0xffff,
-            (uint16_t) (id2 & 0xffff),
-            (uint16_t) (id1 >> 48) & 0xffff, (uint64_t) (id1 & (uint64_t)
-                0x0000ffffffffffffULL));
+            "-%.4" PRIx16 "-%.4" PRIx16 "-%.4"
+            PRIx16 "%.8" PRIx32 "\n",
+            tsk_getu32(fs->endian, objid->objid1),
+            tsk_getu16(fs->endian, objid->objid2),
+            tsk_getu16(fs->endian, objid->objid3),
+            tsk_getu16(TSK_BIG_ENDIAN, objid->objid4),
+            tsk_getu16(TSK_BIG_ENDIAN, objid->objid5),
+            tsk_getu32(TSK_BIG_ENDIAN, objid->objid6));
+
         /* The rest of the  fields do not always exist.  Check the attr size */
         if (fs_attr->size > 16) {
             id1 = tsk_getu64(fs->endian, objid->orig_volid1);

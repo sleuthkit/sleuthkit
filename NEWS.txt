@@ -6,6 +6,7 @@ C/C++ Code:
 - Lots of bounds checking fixes from Google's fuzzing tests.  Thanks Google.
 - Cleanup and fixes from uckelman-sf and others
 - PostgreSQL, libvhdi, & libvmdk are supported for Linux / OS X
+- Fixed display of NTFS GUID in istat - report from Eric Z. 
 
 Java:
 - Reports can be URLs
