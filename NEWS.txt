@@ -7,6 +7,7 @@ C/C++ Code:
 - Cleanup and fixes from uckelman-sf and others
 - PostgreSQL, libvhdi, & libvmdk are supported for Linux / OS X
 - Fixed display of NTFS GUID in istat - report from Eric Z. 
+- NTFS istat shows details about all FILE_NAME attributes, not just the first.  report from Eric Z.
 
 Java:
 - Reports can be URLs
