@@ -5211,7 +5211,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     ntfs->orphan_map = NULL;
 
     // initialize the number of allocated files
-    ntfs->alloc_file_count = -1;
+    ntfs->alloc_file_count = 0;
 
     if (tsk_verbose) {
         tsk_fprintf(stderr,
