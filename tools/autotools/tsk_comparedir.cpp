@@ -293,7 +293,7 @@ uint8_t
     else {
         std::set < char *, ltstr >::iterator it;
         for (it = m_filesInImg.begin(); it != m_filesInImg.end(); ++it)
-            printf("file: %s not found in directory\n",
+            printf("file: %" PRIttocTSK " not found in directory\n",
                 (TSK_TCHAR *) * it);
     }
 

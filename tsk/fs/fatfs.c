@@ -36,8 +36,6 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
     FATFS_INFO *fatfs = NULL;
     TSK_FS_INFO *fs = NULL;
 	int find_boot_sector_attempt = 0;
-    ssize_t bytes_read = 0;
-    FATFS_MASTER_BOOT_RECORD *bootSector;
 
     tsk_error_reset();
 
@@ -70,6 +68,8 @@ fatfs_open(TSK_IMG_INFO *a_img_info, TSK_OFF_T a_offset, TSK_FS_TYPE_ENUM a_ftyp
 	// Look for a FAT boot sector. Try up to three times because FAT32 and exFAT file systems have backup boot sectors.
     for (find_boot_sector_attempt = 0; find_boot_sector_attempt < 3; ++find_boot_sector_attempt) {
         TSK_OFF_T boot_sector_offset;
+        FATFS_MASTER_BOOT_RECORD *bootSector;
+        ssize_t bytes_read = 0;
 
         switch (find_boot_sector_attempt) {
             case 0:
@@ -238,7 +238,6 @@ fatfs_getFAT(FATFS_INFO * fatfs, TSK_DADDR_T clust, TSK_DADDR_T * value)
     uint16_t tmp16;
     TSK_FS_INFO *fs = (TSK_FS_INFO *) & fatfs->fs_info;
     TSK_DADDR_T sect, offs;
-    ssize_t cnt;
     int cidx;
 
     /* Sanity Check */
@@ -293,6 +292,7 @@ fatfs_getFAT(FATFS_INFO * fatfs, TSK_DADDR_T clust, TSK_DADDR_T * value)
          * size must therefore be at least 2 sectors large 
          */
         if (offs == (FATFS_FAT_CACHE_B - 1)) {
+            ssize_t cnt;
 
             // read the data -- TTLs will already have been updated
             cnt =
@@ -648,7 +648,7 @@ fatfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
         if ((a_flags & TSK_FS_BLOCK_WALK_FLAG_AONLY) == 0) {
             cnt = tsk_fs_read_block
                 (fs, addr, data_buf, fs->block_size * read_size);
-            if (cnt != fs->block_size * read_size) {
+            if (cnt != (ssize_t)(fs->block_size * read_size)) {
                 if (cnt >= 0) {
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_FS_READ);

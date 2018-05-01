@@ -1,3 +1,4 @@
+AM_CXXFLAGS += -Wno-unused-command-line-argument
 bin_PROGRAMS = jpeg_extract 
 jpeg_extract_SOURCES = jpeg_extract.cpp
 

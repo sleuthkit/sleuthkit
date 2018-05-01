@@ -128,7 +128,7 @@ class TskAutoDb:public TskAuto {
     int64_t m_curVolId;     ///< Object ID of volume currently being processed
     int64_t m_curFsId;      ///< Object ID of file system currently being processed
     int64_t m_curFileId;    ///< Object ID of file currently being processed
-    int64_t m_curDirId;		///< Object ID of the directory currently being processed
+    TSK_INUM_T m_curDirAddr;		///< Meta address the directory currently being processed
     int64_t m_curUnallocDirId;	
     string m_curDirPath;		//< Path of the current directory being processed
     tsk_lock_t m_curDirPathLock; //< protects concurrent access to m_curDirPath

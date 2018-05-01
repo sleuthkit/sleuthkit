@@ -135,7 +135,7 @@ static uint8_t
             TSK_OFF_T offs;
             ssize_t cnt;
 
-            if (gd_size < sizeof(ext4fs_gd))
+            if (gd_size < (int)sizeof(ext4fs_gd))
                 gd_size = sizeof(ext4fs_gd);
 
             if (ext2fs->ext4_grp_buf == NULL) {
@@ -180,7 +180,7 @@ static uint8_t
     else {
         TSK_OFF_T offs;
         ssize_t cnt;
-        if (gd_size < sizeof(ext2fs_gd))
+        if (gd_size < (int)sizeof(ext2fs_gd))
             gd_size = sizeof(ext2fs_gd);
 
         if (ext2fs->grp_buf == NULL) {
@@ -923,7 +923,7 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     TSK_INUM_T end_inum_tmp;
     TSK_INUM_T ibase = 0;
     TSK_FS_FILE *fs_file;
-    int myflags;
+    unsigned int myflags;
     ext2fs_inode *dino_buf = NULL;
     unsigned int size = 0;
 

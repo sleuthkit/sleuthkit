@@ -1,4 +1,5 @@
-AM_CPPFLAGS = -I../../.. -I$(srcdir)/../../.. $(JNI_CPPFLAGS)
+AM_CPPFLAGS = -I../../.. -I$(srcdir)/../../.. $(JNI_CPPFLAGS) 
+AM_CXXFLAGS += -Wno-unused-command-line-argument -Wno-overloaded-virtual
 EXTRA_DIST = .indent.pro 
 
 lib_LTLIBRARIES = libtsk_jni.la
