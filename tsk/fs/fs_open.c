@@ -85,7 +85,7 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
 {
     TSK_FS_INFO *fs_info, *fs_first = NULL;
     const char *name_first;
-    int i;
+    unsigned int i;
 
     const struct {
         char* name;

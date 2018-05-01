@@ -648,7 +648,7 @@ fatfs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
         if ((a_flags & TSK_FS_BLOCK_WALK_FLAG_AONLY) == 0) {
             cnt = tsk_fs_read_block
                 (fs, addr, data_buf, fs->block_size * read_size);
-            if (cnt != fs->block_size * read_size) {
+            if (cnt != (ssize_t)(fs->block_size * read_size)) {
                 if (cnt >= 0) {
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_FS_READ);
