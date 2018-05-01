@@ -1228,8 +1228,8 @@ ffs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
                 int frags;
 
                 /* Ideally, we want to read in block sized chunks, verify we can do that */
-                frags = (a_end_blk > addr + ffs->ffsbsize_f - 1 ?
-                    ffs->ffsbsize_f : (int) (a_end_blk + 1 - addr));
+                frags = a_end_blk > addr + ffs->ffsbsize_f - 1 ?
+                    ffs->ffsbsize_f : a_end_blk + 1 - addr;
 
                 cnt =
                     tsk_fs_read_block(fs, addr, cache_blk_buf,
