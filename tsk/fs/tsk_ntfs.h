@@ -476,8 +476,13 @@ extern "C" {
 */
 
     typedef struct {
-        uint8_t objid1[8];      /* object id of file or directory */
-        uint8_t objid2[8];
+        // object ID / GUID of the file
+        uint8_t objid1[4];   // little endian 4-byte value 
+        uint8_t objid2[2];   // little endian 2-byte value
+        uint8_t objid3[2];  // little endian 2-byte value
+        uint8_t objid4[2];  // big endian 2-byte value
+        uint8_t objid5[2];  // big endian 2-byte value
+        uint8_t objid6[4];  // big endian 4-byte value
         uint8_t orig_volid1[8]; /* id of "birth" volume */
         uint8_t orig_volid2[8];
         uint8_t orig_objid1[8]; /* original object id */
