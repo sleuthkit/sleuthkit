@@ -884,7 +884,9 @@ public class SleuthkitJNI {
 	 * @param vsHandle pointer to volume system structure in sleuthkit
 	 */
 	public static void closeVs(long vsHandle) {
-		closeVsNat(vsHandle);
+        // NOTE: We are not caching Volume System handles, so we
+        // can free it.  One is allocated per VolumeSystem object. 
+        closeVsNat(vsHandle);
 	}
 
 	/**
