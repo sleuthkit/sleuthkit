@@ -14,7 +14,7 @@ if test ${TRAVIS_OS_NAME} = "linux"; then
 	sudo apt-get -y install libafflib-dev libewf-dev libpq-dev autopoint libsqlite3-dev ant libcppunit-dev
 elif test ${TRAVIS_OS_NAME} = "osx"; then
 	export PATH=${PATH}:/usr/local/opt/gettext/bin
-	brew install ant afflib libewf gettext
+	sudo brew install ant afflib libewf gettext
 fi
 installLib libvhdi
 installLib libvmdk
