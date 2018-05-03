@@ -27,7 +27,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -86,8 +85,6 @@ import org.sleuthkit.datamodel.timeline.filters.UnionFilter;
 public final class TimelineManager {
 
 	private static final Logger logger = Logger.getLogger(TimelineManager.class.getName());
-
-	private final Set<PreparedStatement> preparedStatements = new HashSet<>();
 
 	private final SleuthkitCase sleuthkitCase;
 	private final String csvFunction;
@@ -801,9 +798,10 @@ public final class TimelineManager {
 		}
 	}
 
-	private Set<Long> getEventIDs(long objectID) throws TskCoreException {
+	private Set<Long> getEventIDs(long objectID, boolean includeArtifacts) throws TskCoreException {
 		HashSet<Long> eventIDs = new HashSet<>();
-		String sql = "SELECT event_id FROM events WHERE file_id = ? AND artifact_id IS NULL";
+		String sql = "SELECT event_id FROM events WHERE file_id = ? "
+				+ (includeArtifacts ? "" : " AND artifact_id IS NULL");
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				PreparedStatement selectStmt = con.prepareStatement(sql, PreparedStatement.NO_GENERATED_KEYS);) {
 			selectStmt.setLong(1, objectID);
@@ -839,8 +837,7 @@ public final class TimelineManager {
 	}
 
 	/**
-	 * mark any events with the given object and artifact ids as tagged.
-	 *
+	 * Set any events with the given object and artifact ids as tagged.
 	 *
 	 * @param objectID   the obj_id that this tag applies to, the id of the
 	 *                   content that the artifact is derived from for artifact
@@ -857,9 +854,9 @@ public final class TimelineManager {
 	public Set<Long> setEventsTagged(long objectID, Long artifactID, boolean tagged) throws TskCoreException {
 
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
-		Set<Long> eventIDs = Collections.emptySet();
+		Set<Long> eventIDs;
 		if (Objects.isNull(artifactID)) {
-			eventIDs = getEventIDs(objectID);
+			eventIDs = getEventIDs(objectID, false);
 		} else {
 			eventIDs = getEventIDs(objectID, artifactID);
 		}
@@ -877,32 +874,43 @@ public final class TimelineManager {
 		return eventIDs;
 	}
 
+	/**
+	 * Set the known_state and hash_hit of the events associated with the given
+	 * file, including artifact based events.
+	 *
+	 * @param file The file.
+	 *
+	 * @throws TskCoreException if there is a error.
+	 */
+	public  Set<Long> setFileStatus(AbstractFile file) throws TskCoreException {
+		Set<Long> eventIDs = getEventIDs(file.getId(), true);
+		//update known state for all event with given ids
+		try (CaseDbConnection con = sleuthkitCase.getConnection();
+				Statement updateStatement = con.createStatement();) {
+			updateStatement.executeUpdate(
+					"UPDATE events SET known_state = '" + file.getKnown().getFileKnownValue() + "', " //NON-NLS
+					+ "                hash_hit = " + (file.getHashSetNames().isEmpty() ? 0 : 1) //NON-NLS
+					+ " WHERE event_id IN (" + joinAsStrings(eventIDs, ",") + ")"); //NON-NLS
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error setting known_state or hash_hit of events.", ex);
+		} finally {
+			sleuthkitCase.releaseSingleUserCaseWriteLock();
+		}
+		return eventIDs;
+	}
+
 	void rollBackTransaction(SleuthkitCase.CaseDbTransaction trans) throws TskCoreException {
 		trans.rollback();
 	}
 
-	@Override
-	protected void finalize() throws Throwable {
-		try {
-			closeStatements();
-		} finally {
-			super.finalize();
-		}
-	}
-
-	private void closeStatements() throws SQLException {
-		for (PreparedStatement pStmt : preparedStatements) {
-			pStmt.close();
-		}
-	}
-
 	private SingleEvent constructTimeLineEvent(ResultSet resultSet) throws SQLException, TskCoreException {
-		int typeID = resultSet.getInt("sub_type");
+		int typeID = resultSet.getInt("sub_type"); //NON-NLS
 		return new SingleEvent(resultSet.getLong("event_id"), //NON-NLS
 				resultSet.getLong("datasource_id"), //NON-NLS
 				resultSet.getLong("file_id"), //NON-NLS
 				resultSet.getLong("artifact_id"), //NON-NLS
-				resultSet.getLong("time"), getEventType(typeID).orElseThrow(() -> newEventTypeMappingException(typeID)), //NON-NLS
+				resultSet.getLong("time"), //NON-NLS
+				getEventType(typeID).orElseThrow(() -> newEventTypeMappingException(typeID)), //NON-NLS
 				resultSet.getString("full_description"), //NON-NLS
 				resultSet.getString("med_description"), //NON-NLS
 				resultSet.getString("short_description"), //NON-NLS
