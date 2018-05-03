@@ -60,7 +60,7 @@ public final class Blackboard implements Closeable {
 
 		try {
 			caseDb.getTimelineManager().addArtifactEvents(artifact);
-			caseDb.postTSKEvent(new ArtifactPublished(artifact));
+			caseDb.postTSKEvent(new ArtifactPublishedEvent(artifact));
 		} catch (TskCoreException ex) {
 			throw new BlackboardException("Error creating events for artifact.", ex);
 		}
@@ -166,7 +166,7 @@ public final class Blackboard implements Closeable {
 	 * Event posted by SleuthkitCase when an artifact is published. A published
 	 * artifact is complete and ready for further processing.
 	 */
-	final public static class ArtifactPublished {
+	final public static class ArtifactPublishedEvent {
 
 		private final BlackboardArtifact artifact;
 
@@ -174,7 +174,7 @@ public final class Blackboard implements Closeable {
 			return artifact;
 		}
 
-		ArtifactPublished(BlackboardArtifact artifact) {
+		ArtifactPublishedEvent(BlackboardArtifact artifact) {
 			this.artifact = artifact;
 		}
 	}

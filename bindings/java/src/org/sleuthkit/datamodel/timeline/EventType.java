@@ -25,8 +25,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.SortedSet;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import static org.apache.commons.lang3.StringUtils.substringBeforeLast;
 import org.sleuthkit.datamodel.AbstractFile;

@@ -40,16 +40,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.BooleanUtils;
 import static org.apache.commons.lang3.StringUtils.defaultString;
 import static org.apache.commons.lang3.StringUtils.substringAfter;
 import static org.apache.commons.lang3.StringUtils.substringBefore;
-import static org.apache.commons.lang3.StringUtils.substringBeforeLast;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Interval;
@@ -548,20 +544,7 @@ public final class TimelineManager {
 	}
 
 	private enum STATEMENTS {
-		INSERT_EVENT("INSERT INTO events ("
-				+ " datasource_id,"
-				+ " file_id ,"
-				+ " artifact_id, "
-				+ " time, "
-				+ " sub_type,"
-				+ " base_type,"
-				+ " full_description,"
-				+ " med_description, "
-				+ " short_description, "
-				+ " known_state,"
-				+ " hash_hit,"
-				+ " tagged) " // NON-NLS
-				+ " VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"), // NON-NLS
+
 		GET_DATASOURCE_IDS("SELECT DISTINCT datasource_id FROM events WHERE datasource_id != 0"),// NON-NLS
 		GET_MAX_TIME("SELECT Max(time) AS max FROM events"), // NON-NLS
 		GET_MIN_TIME("SELECT Min(time) AS min FROM events"), // NON-NLS
@@ -575,7 +558,6 @@ public final class TimelineManager {
 		COUNT_ALL_EVENTS("SELECT count(event_id) AS count FROM events WHERE event_id IS NOT null"), //NON-NLS
 		DROP_EVENTS_TABLE("DROP TABLE IF EXISTS events"), //NON-NLS
 		DROP_DB_INFO_TABLE("DROP TABLE IF EXISTS db_ino"), //NON-NLS
-		SELECT_NON_ARTIFACT_EVENT_IDS_BY_OBJECT_ID("SELECT event_id FROM events WHERE file_id = ? AND artifact_id IS NULL"), //NON-NLS
 		SELECT_EVENT_IDS_BY_OBJECT_ID_AND_ARTIFACT_ID("SELECT event_id FROM events WHERE file_id = ? AND artifact_id = ?"); //NON-NLS
 
 		private final String sql;
@@ -773,51 +755,45 @@ public final class TimelineManager {
 			Long artifactID, String fullDescription, String medDescription,
 			String shortDescription, TskData.FileKnown known, boolean hashHit, boolean tagged) throws TskCoreException {
 
-		int typeNum = type.getTypeID();
-		int superTypeNum = type.getBaseType().getTypeID();
-
+		String sql = "INSERT INTO events ("
+				+ " datasource_id, "
+				+ " file_id, "
+				+ " artifact_id, "
+				+ " time, "
+				+ " sub_type, "
+				+ " base_type, "
+				+ " full_description, "
+				+ " med_description, "
+				+ " short_description, "
+				+ " known_state, "
+				+ " hash_hit, "
+				+ " tagged) "
+				+ " VALUES ("
+				+ datasourceID + ","
+				+ objID + ","
+				+ ((artifactID == null) ? "NULL" : artifactID) + ","
+				+ time + ","
+				+ ((type.getTypeID() == -1) ? "NULL" : type.getTypeID()) + ","
+				+ type.getBaseType().getTypeID() + ",'"
+				+ SleuthkitCase.escapeSingleQuotes(fullDescription) + "','"
+				+ SleuthkitCase.escapeSingleQuotes(medDescription) + "','"
+				+ SleuthkitCase.escapeSingleQuotes(shortDescription) + "','"
+				+ known.getFileKnownValue() + "',"
+				+ (hashHit ? 0 : 1) + ","
+				+ (tagged ? 0 : 1) + "  )";// NON-NLS  
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
-				PreparedStatement insertRowStmt = con.prepareStatement(STATEMENTS.INSERT_EVENT.getSQL(), PreparedStatement.RETURN_GENERATED_KEYS);) {
-			//"INSERT INTO events (datasource_id,file_id ,artifact_id, time, sub_type, base_type, full_description, med_description, short_description, known_state, hashHit, tagged) " 
-			insertRowStmt.clearParameters();
-			insertRowStmt.setLong(1, datasourceID);
-			insertRowStmt.setLong(2, objID);
-			if (artifactID == null) {
-				insertRowStmt.setNull(3, Types.NULL);
-			} else {
-				insertRowStmt.setLong(3, artifactID);
-			}
-			insertRowStmt.setLong(4, time);
-
-			//subtype
-			if (typeNum == -1) {
-				insertRowStmt.setNull(5, Types.NULL);
-			} else {
-				insertRowStmt.setInt(5, typeNum);
-			}
-
-			//base type
-			insertRowStmt.setInt(6, superTypeNum);
-			insertRowStmt.setString(7, fullDescription);
-			insertRowStmt.setString(8, medDescription);
-			insertRowStmt.setString(9, shortDescription);
-
-			insertRowStmt.setByte(10, known.getFileKnownValue());
-
-			insertRowStmt.setInt(11, hashHit ? 0 : 1);
-			insertRowStmt.setInt(12, tagged ? 0 : 1);
-
-			insertRowStmt.executeUpdate();
+				Statement insertRowStmt = con.createStatement();) {
+			con.executeUpdate(insertRowStmt, sql, PreparedStatement.RETURN_GENERATED_KEYS);
 			try (ResultSet generatedKeys = insertRowStmt.getGeneratedKeys();) {
+				generatedKeys.next();
 				long eventID = generatedKeys.getLong(1);
-				SingleEvent singleEvent = new SingleEvent(eventID, datasourceID, objID, artifactID,
-						time, type, fullDescription, medDescription, shortDescription,
-						known, hashHit, tagged);
-				sleuthkitCase.postTSKEvent(new TimelineEventCreated(singleEvent));
+				SingleEvent singleEvent = new SingleEvent(eventID, datasourceID,
+						objID, artifactID, time, type, fullDescription, medDescription,
+						shortDescription, known, hashHit, tagged);
+				sleuthkitCase.postTSKEvent(new EventAddedEvent(singleEvent));
 				return singleEvent;
 			}
-
 		} catch (SQLException ex) {
 			throw new TskCoreException("Failed to insert event.", ex); // NON-NLS
 		} finally {
@@ -826,11 +802,10 @@ public final class TimelineManager {
 	}
 
 	private Set<Long> getEventIDs(long objectID) throws TskCoreException {
-		//TODO: inline this
 		HashSet<Long> eventIDs = new HashSet<>();
+		String sql = "SELECT event_id FROM events WHERE file_id = ? AND artifact_id IS NULL";
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
-				PreparedStatement selectStmt = con.prepareStatement(STATEMENTS.SELECT_NON_ARTIFACT_EVENT_IDS_BY_OBJECT_ID.getSQL(), 0);) {
-			//"SELECT event_id FROM events WHERE file_id = ? AND artifact_id IS NULL"
+				PreparedStatement selectStmt = con.prepareStatement(sql, PreparedStatement.NO_GENERATED_KEYS);) {
 			selectStmt.setLong(1, objectID);
 			try (ResultSet executeQuery = selectStmt.executeQuery();) {
 				while (executeQuery.next()) {
@@ -1564,16 +1539,24 @@ public final class TimelineManager {
 		return csvFunction + "(Cast (" + args + " AS VARCHAR) , '" + seperator + "')";
 	}
 
+	/**
+	 * FunctionalInterface similar to Function<I,O> except it throws
+	 * TskCoreException.
+	 *
+	 * @param <I> The input type.
+	 * @param <O> The output type.
+	 */
+	@FunctionalInterface
 	interface CheckedFunction<I, O> {
 
-		O apply(I i) throws TskCoreException;
+		O apply(I input) throws TskCoreException;
 	}
 
 	/**
-	 * Event fired by SleuthkitCase to indicate that a Timeline event has been
-	 * created.
+	 * Event fired by SleuthkitCase to indicate that a event has been added to
+	 * the events table.
 	 */
-	final public class TimelineEventCreated {
+	final public class EventAddedEvent {
 
 		private final SingleEvent singleEvent;
 
@@ -1581,7 +1564,7 @@ public final class TimelineManager {
 			return singleEvent;
 		}
 
-		TimelineEventCreated(SingleEvent singleEvent) {
+		EventAddedEvent(SingleEvent singleEvent) {
 			this.singleEvent = singleEvent;
 		}
 	}
