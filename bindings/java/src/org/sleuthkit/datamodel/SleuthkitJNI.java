@@ -886,6 +886,9 @@ public class SleuthkitJNI {
 	public static void closeVs(long vsHandle) {
         // NOTE: We are not caching Volume System handles, so we
         // can free it.  One is allocated per VolumeSystem object. 
+        // There is a chance that a vsPart handle exists in a Volume object,
+        // and that memory will be freed.  But, the "TAG" checks in the native
+        // code should detect that it has been freed. 
         closeVsNat(vsHandle);
 	}
 
