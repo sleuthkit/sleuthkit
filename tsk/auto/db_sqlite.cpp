@@ -1003,7 +1003,7 @@ int TskDbSqlite::addMACTimeEvent(char*& zSQL, const int64_t data_source_obj_id, 
         "%" PRId64 "," // file_id
         "NULL," // fixed artifact_id
         "%" PRIu64 "," // time
-        "%d," // sub_type
+        "%" PRIu64 "," // sub_type
         "1," // fixed base_type
         "%Q," // full_description
         "%Q," // med_description
