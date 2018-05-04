@@ -25,68 +25,79 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 
 /**
- * A Filter with a collection of {@link Filter} sub-filters. If this filter is
- * not active than none of its sub-filters are applied either. Concrete
- * implementations can decide how to combine the sub-filters.
+ * A Filter with a collection of sub-filters. If this filter is not active than
+ * none of its sub-filters are applied either. Concrete implementations can
+ * decide how to combine the sub-filters.
  *
- * a {@link CompoundFilter} uses listeners to enforce the following
- * relationships between it and its sub-filters: if all of a compound filter's
- * sub-filters become un-selected, un-select the compound filter.
+ * A CompoundFilter uses listeners to enforce the following relationships
+ * between it and its sub-filters: if all of a compound filter's sub-filters
+ * become un-selected, un-select the compound filter.
+ *
+ * @param <SubFilterType> The type of the subfilters.
  */
 public abstract class CompoundFilter<SubFilterType extends Filter> extends AbstractFilter {
 
-    /**
-     * the list of sub-filters that make up this filter
-     */
-    private final ObservableList<SubFilterType> subFilters = FXCollections.observableArrayList();
+	/**
+	 * the list of sub-filters that make up this filter
+	 */
+	private final ObservableList<SubFilterType> subFilters = FXCollections.observableArrayList();
 
-    public final ObservableList<SubFilterType> getSubFilters() {
-        return subFilters;
-    }
+	public final ObservableList<SubFilterType> getSubFilters() {
+		return subFilters;
+	}
 
-    /**
-     * construct a compound filter from a list of other filters to combine.
-     *
-     * @param subFilters
-     */
-    public CompoundFilter(List<SubFilterType> subFilters) {
-        super();
+	/**
+	 * construct a compound filter from a list of other filters to combine.
+	 *
+	 * @param subFilters
+	 */
+	public CompoundFilter(List<SubFilterType> subFilters) {
+		super();
 
-        //listen to changes in list of subfilters 
-        this.subFilters.addListener((ListChangeListener.Change<? extends SubFilterType> change) -> {
-            while (change.next()) {
-                //add a listener to the selected property of each added subfilter
-                change.getAddedSubList().forEach(addedSubFilter -> {
-                    //if a subfilter's selected property changes...
-                    addedSubFilter.selectedProperty().addListener(selectedProperty -> {
-                        //set this compound filter selected af any of the subfilters are selected.
-                        setSelected(getSubFilters().parallelStream().anyMatch(Filter::isSelected));
-                    });
-                });
-            }
-        });
+		//listen to changes in list of subfilters 
+		this.subFilters.addListener((ListChangeListener.Change<? extends SubFilterType> change) -> {
+			while (change.next()) {
+				//add a listener to the selected property of each added subfilter
+				change.getAddedSubList().forEach(addedSubFilter -> {
+					//if a subfilter's selected property changes...
+					addedSubFilter.selectedProperty().addListener(selectedProperty -> {
+						//set this compound filter selected af any of the subfilters are selected.
+						setSelected(getSubFilters().parallelStream().anyMatch(Filter::isSelected));
+					});
+				});
+			}
+		});
 
-        this.subFilters.setAll(subFilters);
-    }
+		this.subFilters.setAll(subFilters);
+	}
 
-    static <SubFilterType extends Filter> boolean areSubFiltersEqual(final CompoundFilter<SubFilterType> oneFilter, final CompoundFilter<SubFilterType> otherFilter) {
-        if (oneFilter.getSubFilters().size() != otherFilter.getSubFilters().size()) {
-            return false;
-        }
-        for (int i = 0; i < oneFilter.getSubFilters().size(); i++) {
-            final SubFilterType subFilter = oneFilter.getSubFilters().get(i);
-            final SubFilterType otherSubFilter = otherFilter.getSubFilters().get(i);
-            if (subFilter.equals(otherSubFilter) == false) {
-                return false;
-            }
-        }
-        return true;
-    }
+	static <SubFilterType extends Filter> boolean areSubFiltersEqual(final CompoundFilter<SubFilterType> oneFilter, final CompoundFilter<SubFilterType> otherFilter) {
+		if (oneFilter.getSubFilters().size() != otherFilter.getSubFilters().size()) {
+			return false;
+		}
+		for (int i = 0; i < oneFilter.getSubFilters().size(); i++) {
+			final SubFilterType subFilter = oneFilter.getSubFilters().get(i);
+			final SubFilterType otherSubFilter = otherFilter.getSubFilters().get(i);
+			if (subFilter.equals(otherSubFilter) == false) {
+				return false;
+			}
+		}
+		return true;
+	}
 
-    @Override
-    public int hashCode() {
-        int hash = 3;
-        hash = 61 * hash + Objects.hashCode(this.subFilters);
-        return hash;
-    }
+	public boolean areAllSubFiltersActiveRecursive() {
+		return getSubFilters().stream()
+				.allMatch(subFilter -> {
+					return subFilter.isActive()
+							&& (CompoundFilter.class.isInstance(subFilter) == false
+							|| ((CompoundFilter) subFilter).areAllSubFiltersActiveRecursive());
+				});
+	}
+
+	@Override
+	public int hashCode() {
+		int hash = 3;
+		hash = 61 * hash + Objects.hashCode(this.subFilters);
+		return hash;
+	}
 }

@@ -8,7 +8,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *	 http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,23 +18,19 @@
  */
 package org.sleuthkit.datamodel.timeline;
 
+import java.util.ResourceBundle;
+
 /**
- * Enum of event type zoom levels
+ * Provides easy access to the ResourceBundle in this package.
  */
-public enum EventTypeZoomLevel implements DisplayNameProvider {
+final class BundleProvider {
 
-	ROOT_TYPE(BundleProvider.getBundle().getString("EventTypeZoomLevel.rootType")),
-	BASE_TYPE(BundleProvider.getBundle().getString("EventTypeZoomLevel.baseType")),
-	SUB_TYPE(BundleProvider.getBundle().getString("EventTypeZoomLevel.subType"));
+	private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("org.sleuthkit.datamodel.timeline.Bundle");
 
-	private final String displayName;
-
-	@Override
-	public String getDisplayName() {
-		return displayName;
+	static ResourceBundle getBundle() {
+		return BUNDLE;
 	}
 
-	private EventTypeZoomLevel(String displayName) {
-		this.displayName = displayName;
+	private BundleProvider() {
 	}
 }

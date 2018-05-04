@@ -346,7 +346,7 @@ public final class TimelineManager {
 				//make a map from event type to event ID
 				List<Long> eventIDs = unGroupConcat(resultSet.getString("eventIDs"), Long::valueOf);
 				List<EventType> eventTypes = unGroupConcat(resultSet.getString("eventTypes"),
-						s -> getEventType(Integer.valueOf(s)).orElseThrow(() -> new TskCoreException("Error mapping event type id " + s + ".S")));
+						typesString -> getEventType(Integer.valueOf(typesString)).orElseThrow(() -> new TskCoreException("Error mapping event type id " + typesString + ".S")));
 				Map<EventType, Long> eventMap = new HashMap<>();
 				for (int i = 0; i < eventIDs.size(); i++) {
 					eventMap.put(eventTypes.get(i), eventIDs.get(i));
@@ -373,7 +373,7 @@ public final class TimelineManager {
 	 */
 	public boolean hasNewColumns() throws TskCoreException {
 		return hasHashHitColumn() && hasDataSourceIDColumn() && hasTaggedColumn()
-				&& (getDataSourceIDs().isEmpty() == false);
+				&& getDataSourceIDs().isEmpty() == false;
 	}
 
 	public Set<Long> getDataSourceIDs() throws TskCoreException {
@@ -540,6 +540,9 @@ public final class TimelineManager {
 		}
 	}
 
+	/**
+	 * Enum constants for sql statements. TODO: Inline these away.
+	 */
 	private enum STATEMENTS {
 
 		GET_DATASOURCE_IDS("SELECT DISTINCT datasource_id FROM events WHERE datasource_id != 0"),// NON-NLS
@@ -672,13 +675,13 @@ public final class TimelineManager {
 		return hasDBColumn("hash_hit"); //NON-NLS
 	}
 
-	public void addFileSystemEvents(AbstractFile f) throws TskCoreException {
+	public void addFileSystemEvents(AbstractFile file) throws TskCoreException {
 		//gather time stamps into map
 		HashMap<EventType, Long> timeMap = new HashMap<>();
-		timeMap.put(EventType.FILE_CREATED, f.getCrtime());
-		timeMap.put(EventType.FILE_ACCESSED, f.getAtime());
-		timeMap.put(EventType.FILE_CHANGED, f.getCtime());
-		timeMap.put(EventType.FILE_MODIFIED, f.getMtime());
+		timeMap.put(EventType.FILE_CREATED, file.getCrtime());
+		timeMap.put(EventType.FILE_ACCESSED, file.getAtime());
+		timeMap.put(EventType.FILE_CHANGED, file.getCtime());
+		timeMap.put(EventType.FILE_MODIFIED, file.getMtime());
 
 		/*
 		 * if there are no legitimate ( greater than zero ) time stamps ( eg,
@@ -687,27 +690,27 @@ public final class TimelineManager {
 		 * legitimate time stamps.
 		 */
 		if (Collections.max(timeMap.values()) > 0) {
-			final String parentPath = f.getParentPath();
+			final String parentPath = file.getParentPath();
 
 			String rootFolder = substringBefore(substringAfter(parentPath, "/"), "/");
 			String shortDesc = defaultString(rootFolder);
 			shortDesc = shortDesc.endsWith("/") ? shortDesc : shortDesc + "/";
 			String medDesc = parentPath;
-			String fullDescription = medDesc + f.getName();
+			String fullDescription = medDesc + file.getName();
 
 			for (Map.Entry<EventType, Long> timeEntry : timeMap.entrySet()) {
 				if (timeEntry.getValue() > 0) {
 					// if the time is legitimate ( greater than zero ) insert it
 					addEvent(timeEntry.getValue(),
 							timeEntry.getKey(),
-							f.getDataSource().getId(),
-							f.getId(),
+							file.getDataSource().getId(),
+							file.getId(),
 							null,
 							fullDescription,
 							medDesc,
 							shortDesc,
-							f.getKnown(),
-							f.getHashSetNames().isEmpty() == false,
+							file.getKnown(),
+							file.getHashSetNames().isEmpty() == false,
 							false);
 				}
 			}
@@ -732,17 +735,17 @@ public final class TimelineManager {
 		// if the time is legitimate ( greater than zero ) insert it into the db
 		if (eventDescription != null && eventDescription.getTime() > 0) {
 			long objectID = bbart.getObjectID();
-			AbstractFile f = sleuthkitCase.getAbstractFileById(objectID);
+			AbstractFile file = sleuthkitCase.getAbstractFileById(objectID);
 			return Optional.of(addEvent(eventDescription.getTime(),
 					eventType,
-					f.getDataSource().getId(),
+					file.getDataSource().getId(),
 					objectID,
 					bbart.getArtifactID(),
 					eventDescription.getFullDescription(),
 					eventDescription.getMedDescription(),
 					eventDescription.getShortDescription(),
-					f.getKnown(),
-					f.getHashSetNames().isEmpty() == false,
+					file.getKnown(),
+					file.getHashSetNames().isEmpty() == false,
 					sleuthkitCase.getBlackboardArtifactTagsByArtifact(bbart).isEmpty() == false));
 		}
 		return Optional.empty();
@@ -882,7 +885,7 @@ public final class TimelineManager {
 	 *
 	 * @throws TskCoreException if there is a error.
 	 */
-	public  Set<Long> setFileStatus(AbstractFile file) throws TskCoreException {
+	public Set<Long> setFileStatus(AbstractFile file) throws TskCoreException {
 		Set<Long> eventIDs = getEventIDs(file.getId(), true);
 		//update known state for all event with given ids
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
@@ -943,27 +946,22 @@ public final class TimelineManager {
 	 * @return a map organizing the counts in a hierarchy from date > eventtype>
 	 *         count
 	 */
-	private Map<EventType, Long> countEventsByType(Long startTime, Long endTime, RootFilter filter, EventTypeZoomLevel zoomLevel) throws TskCoreException {
-		if (Objects.equals(startTime, endTime)) {
-			endTime++;
-		}
-
-		Map<EventType, Long> typeMap = new HashMap<>();
-
-		//do we want the root or subtype column of the databse
-		final boolean useSubTypes = EventTypeZoomLevel.SUB_TYPE.equals(zoomLevel);
-		final boolean needsTags = filter.getTagsFilter().isActive();
-		final boolean needsHashSets = filter.getHashHitsFilter().isActive();
+	private Map<EventType, Long> countEventsByType(Long startTime, final Long endTime, RootFilter filter, EventTypeZoomLevel zoomLevel) throws TskCoreException {
+		long adjustedEndTime = Objects.equals(startTime, endTime) ? endTime + 1 : endTime;
+		boolean useSubTypes = EventTypeZoomLevel.SUB_TYPE.equals(zoomLevel);	//do we want the root or subtype column of the databse
+		boolean needsTags = filter.getTagsFilter().isActive();
+		boolean needsHashSets = filter.getHashHitsFilter().isActive();
 		//get some info about the range of dates requested
-		final String queryString = "SELECT count(DISTINCT events.event_id) AS count, " + typeColumnHelper(useSubTypes) //NON-NLS
+		String queryString = "SELECT count(DISTINCT events.event_id) AS count, " + typeColumnHelper(useSubTypes) //NON-NLS
 				+ " FROM " + getAugmentedEventsTablesSQL(needsTags, needsHashSets)
-				+ " WHERE time >= " + startTime + " AND time < " + endTime + " AND " + getSQLWhere(filter) // NON-NLS
+				+ " WHERE time >= " + startTime + " AND time < " + adjustedEndTime + " AND " + getSQLWhere(filter) // NON-NLS
 				+ " GROUP BY " + typeColumnHelper(useSubTypes); // NON-NLS
 
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement stmt = con.createStatement();
 				ResultSet results = stmt.executeQuery(queryString);) {
+			Map<EventType, Long> typeMap = new HashMap<>();
 			while (results.next()) {
 				int eventTypeID = useSubTypes
 						? results.getInt("sub_type") //NON-NLS
@@ -973,13 +971,12 @@ public final class TimelineManager {
 
 				typeMap.put(eventType, results.getLong("count")); // NON-NLS
 			}
-
+			return typeMap;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting count of events from db: " + queryString, ex); // NON-NLS
 		} finally {
 			sleuthkitCase.releaseSingleUserCaseReadLock();
 		}
-		return typeMap;
 	}
 
 	/**
@@ -1430,12 +1427,9 @@ public final class TimelineManager {
 	 */
 	private String getSQLWhere(TypeFilter typeFilter) {
 		if (typeFilter.isSelected()) {
-			if (typeFilter.getEventType().equals(ROOT_EVEN_TYPE)) {
-				if (typeFilter.getSubFilters().stream()
-						.allMatch(subFilter -> subFilter.isActive() && subFilter.getSubFilters().stream()
-						.allMatch(Filter::isActive))) {
-					return getTrueLiteral(); //then collapse clause to true
-				}
+			if (typeFilter.getEventType().equals(ROOT_EVEN_TYPE)
+					& typeFilter.areAllSubFiltersActiveRecursive()) {
+				return getTrueLiteral(); //then collapse clause to true
 			}
 			return "(sub_type IN (" + joinAsStrings(getActiveSubTypeIDs(typeFilter), ",") + "))"; //NON-NLS
 		} else {

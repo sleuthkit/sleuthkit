@@ -24,7 +24,7 @@ import java.util.SortedSet;
 import org.apache.commons.lang3.ObjectUtils;
 
 /**
- *
+ * Implementation of EventType for the standard predefined event types.
  */
 class StandardEventType implements EventType {
 
@@ -40,15 +40,15 @@ class StandardEventType implements EventType {
 				.findFirst();
 	}
 
-	private final int id;
+	private final int typeID;
 	private final String displayName;
 
 	private final EventType superType;
 	private final EventTypeZoomLevel eventTypeZoomLevel;
 
-	StandardEventType(int id, String displayName, EventTypeZoomLevel eventTypeZoomLevel, EventType superType) {
+	StandardEventType(int typeID, String displayName, EventTypeZoomLevel eventTypeZoomLevel, EventType superType) {
 		this.superType = superType;
-		this.id = id;
+		this.typeID = typeID;
 		this.displayName = displayName;
 		this.eventTypeZoomLevel = eventTypeZoomLevel;
 	}
@@ -71,7 +71,7 @@ class StandardEventType implements EventType {
 
 	@Override
 	public int getTypeID() {
-		return id;
+		return typeID;
 	}
 
 	@Override

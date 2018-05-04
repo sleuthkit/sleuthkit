@@ -30,7 +30,8 @@ import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DOM
 import org.sleuthkit.datamodel.TskCoreException;
 
 /**
- *
+ * Implementation of ArtifactEventType for the standard predefined artifact
+ * based event types
  */
 class StandardArtifactEventType extends StandardEventType implements ArtifactEventType {
 
@@ -43,17 +44,17 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 	private final CheckedFunction<BlackboardArtifact, String> shortExtractor;
 	private final CheckedFunction<BlackboardArtifact, AttributeEventDescription> parseAttributesHelper;
 
-	StandardArtifactEventType(int id, String displayName,
+	StandardArtifactEventType(int typeID, String displayName,
 			EventType superType,
 			BlackboardArtifact.Type artifactType,
 			BlackboardAttribute.Type dateTimeAttributeType,
 			CheckedFunction<BlackboardArtifact, String> shortExtractor,
 			CheckedFunction<BlackboardArtifact, String> medExtractor,
 			CheckedFunction<BlackboardArtifact, String> longExtractor) {
-		this(id, displayName, superType, artifactType, dateTimeAttributeType, shortExtractor, medExtractor, longExtractor, null);
+		this(typeID, displayName, superType, artifactType, dateTimeAttributeType, shortExtractor, medExtractor, longExtractor, null);
 	}
 
-	StandardArtifactEventType(int id, String displayName,
+	StandardArtifactEventType(int typeID, String displayName,
 			EventType superType,
 			BlackboardArtifact.Type artifactType,
 			BlackboardAttribute.Type dateTimeAttributeType,
@@ -62,7 +63,7 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 			CheckedFunction<BlackboardArtifact, String> longExtractor,
 			CheckedFunction<BlackboardArtifact, AttributeEventDescription> parseAttributesHelper) {
 
-		super(id, displayName, EventTypeZoomLevel.SUB_TYPE, superType);
+		super(typeID, displayName, EventTypeZoomLevel.SUB_TYPE, superType);
 		this.artifactType = artifactType;
 		this.dateTimeAttributeType = dateTimeAttributeType;
 		this.shortExtractor = shortExtractor;
@@ -171,6 +172,10 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 		}
 	}
 
+	/**
+	 * Function that extracts a string representation of the given attribute
+	 * from the artifact it is applied to.
+	 */
 	static class AttributeExtractor implements CheckedFunction<BlackboardArtifact, String> {
 
 		private final BlackboardAttribute.Type attributeType;
@@ -187,6 +192,12 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 		}
 	}
 
+	/**
+	 * Function that always returns the empty string no matter what it is
+	 * applied to.
+	 *
+	 * @param <X> Generic type paramater, can be anything.
+	 */
 	final static class EmptyExtractor<X> implements CheckedFunction<X, String> {
 
 		@Override
@@ -195,12 +206,21 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 		}
 	}
 
+	/**
+	 * Specialization of AttributeExtractor that extract the domain attribute
+	 * and then further processes it to obtain the top private domain using
+	 * InternetDomainName.
+	 */
 	final static class TopPrivateDomainExtractor extends AttributeExtractor {
 
 		final private static TopPrivateDomainExtractor instance = new TopPrivateDomainExtractor();
 
 		static TopPrivateDomainExtractor getInstance() {
 			return instance;
+		}
+
+		TopPrivateDomainExtractor() {
+			super(new BlackboardAttribute.Type(TSK_DOMAIN));
 		}
 
 		@Override
@@ -214,10 +234,6 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 			} else {
 				return domainString;
 			}
-		}
-
-		TopPrivateDomainExtractor() {
-			super(new BlackboardAttribute.Type(TSK_DOMAIN));
 		}
 	}
 }
