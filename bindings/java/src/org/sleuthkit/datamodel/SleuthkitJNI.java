@@ -884,7 +884,7 @@ public class SleuthkitJNI {
 	 * @param vsHandle pointer to volume system structure in sleuthkit
 	 */
 	public static void closeVs(long vsHandle) {
-		closeVsNat(vsHandle);
+//		closeVsNat(vsHandle);  TODO JIRA-3829 
 	}
 
 	/**
