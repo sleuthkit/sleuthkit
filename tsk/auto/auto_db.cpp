@@ -40,7 +40,7 @@ TskAutoDb::TskAutoDb(TskDb * a_db, TSK_HDB_INFO * a_NSRLDb, TSK_HDB_INFO * a_kno
     m_curFsId = 0;
     m_curFileId = 0;
     m_curUnallocDirId = 0;
-    m_curDirId = 0;
+    m_curDirAddr = 0;
     m_curDirPath = "";
     m_blkMapFlag = false;
     m_vsFound = false;
@@ -729,13 +729,13 @@ TskAutoDb::processFile(TSK_FS_FILE * fs_file, const char *path)
      * is to grab the parent folder from files once we return back 
      * into a folder when we are doing our depth-first recursion. */
     if (isDir(fs_file)) {
-        m_curDirId = fs_file->name->meta_addr;
+        m_curDirAddr = fs_file->name->meta_addr;
         tsk_take_lock(&m_curDirPathLock);
         m_curDirPath = string(path) + fs_file->name->name;
         tsk_release_lock(&m_curDirPathLock);
     }
-    else if (m_curDirId != fs_file->name->par_addr) {
-        m_curDirId = fs_file->name->par_addr;
+    else if (m_curDirAddr != fs_file->name->par_addr) {
+        m_curDirAddr = fs_file->name->par_addr;
         tsk_take_lock(&m_curDirPathLock);
         m_curDirPath = path;
         tsk_release_lock(&m_curDirPathLock);
@@ -853,9 +853,9 @@ TskAutoDb::processAttribute(TSK_FS_FILE * fs_file,
  * Helper for md5HashAttr
  */
 TSK_WALK_RET_ENUM
-TskAutoDb::md5HashCallback(TSK_FS_FILE * file, TSK_OFF_T offset,
-    TSK_DADDR_T addr, char *buf, size_t size,
-    TSK_FS_BLOCK_FLAG_ENUM a_flags, void *ptr)
+TskAutoDb::md5HashCallback(TSK_FS_FILE * /*file*/, TSK_OFF_T /*offset*/,
+    TSK_DADDR_T /*addr*/, char *buf, size_t size,
+    TSK_FS_BLOCK_FLAG_ENUM /*a_flags*/, void *ptr)
 {
     TSK_MD5_CTX *md = (TSK_MD5_CTX *) ptr;
     if (md == NULL)

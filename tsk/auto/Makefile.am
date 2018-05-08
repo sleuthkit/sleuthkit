@@ -1,4 +1,6 @@
-AM_CPPFLAGS = -I../.. -I$(srcdir)/../.. -Wall  -Wmultichar -Wstrict-null-sentinel -Woverloaded-virtual -Wsign-promo
+AM_CPPFLAGS = -I../.. -I$(srcdir)/../..
+AM_CFLAGS += -Wmultichar -Wsign-promo -Wno-overloaded-virtual
+AM_CXXFLAGS += -Wmultichar -Wsign-promo -Wno-overloaded-virtual
 EXTRA_DIST = .indent.pro
 
 noinst_LTLIBRARIES = libtskauto.la

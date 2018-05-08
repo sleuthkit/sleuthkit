@@ -532,7 +532,7 @@ typedef struct {
     uint8_t compression_magic[4];
     uint8_t compression_type[4];
     uint8_t uncompressed_size[8];
-    unsigned char attr_bytes[0];        /* the bytes of the attribute after the header, if any. */
+    unsigned char attr_bytes[];        /* the bytes of the attribute after the header, if any. */
 } DECMPFS_DISK_HEADER;
 
 typedef enum {

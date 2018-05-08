@@ -39,7 +39,8 @@ public class Report implements Content {
 
 	static long ID_NOT_SET = -1;
 	private long objectId = ID_NOT_SET;
-	private final Path path;
+	private final String pathAsString;
+	private final Path pathAsPath; // NULL if path is for a URL
 	private final long createdTime;
 	private final String sourceModuleName;
 	private final String reportName;
@@ -47,7 +48,7 @@ public class Report implements Content {
 	private Content parent; // The object from which the report was generated. 
 
 	private final SleuthkitCase db; // A reference to the database instance.
-	private FileChannel fileChannel; // Used to read report content.
+	private FileChannel fileChannel = null; // Used to read report content.
 
 	private static final Logger LOGGER = Logger.getLogger(Report.class.getName());
 
@@ -63,7 +64,14 @@ public class Report implements Content {
 	Report(SleuthkitCase db, long id, String path, long createdTime, String sourceModuleName, String reportName, Content parent) {
 		this.db = db;
 		this.objectId = id;
-		this.path = Paths.get(path);
+		this.pathAsString = path;
+		if (path.startsWith("http")) {
+			this.pathAsPath = null;
+		}
+		else {
+			this.pathAsPath = Paths.get(path);
+		}
+		
 		this.createdTime = createdTime;
 		this.sourceModuleName = sourceModuleName;
 		this.reportName = reportName;
@@ -81,7 +89,7 @@ public class Report implements Content {
 	 * @return
 	 */
 	public String getPath() {
-		return path.toString();
+		return (pathAsPath != null ? pathAsPath.toString() : pathAsString);		
 	}
 
 	/**
@@ -114,14 +122,14 @@ public class Report implements Content {
 
 	@Override
 	public int read(byte[] buf, long offset, long len) throws TskCoreException {
-		if (Files.isDirectory(path)) {
+		if (pathAsPath == null || Files.isDirectory(pathAsPath)) {
 			return 0;
 		}
 
 		int totalBytesRead = 0;
 		ByteBuffer data = ByteBuffer.wrap(buf);
 		try {
-			fileChannel = FileChannel.open(path, READ);
+			fileChannel = FileChannel.open(pathAsPath, READ);
 			fileChannel.position(offset);
 			int bytesRead = 0;
 			do {
@@ -140,7 +148,8 @@ public class Report implements Content {
 	@Override
 	public void close() {
 		try {
-			fileChannel.close();
+			if (fileChannel != null) 
+				fileChannel.close();
 		} catch (IOException ex) {
 			LOGGER.log(Level.WARNING, "Failed to close report file.", ex);
 		}
@@ -149,7 +158,7 @@ public class Report implements Content {
 	@Override
 	public long getSize() {
 		try {
-			return Files.size(path);
+			return (pathAsPath != null ?  Files.size(pathAsPath) : 0);
 		} catch (IOException ex) {
 			LOGGER.log(Level.SEVERE, "Failed to get size of report.", ex);
 			// If we cannot determine the size of the report, return zero
@@ -170,7 +179,8 @@ public class Report implements Content {
 
 	@Override
 	public String getUniquePath() throws TskCoreException {
-		return path.toString();
+		// @@@ This is wrong...  we need to use the same logic is in AbstractContent.getUniquePath(). 
+		return getPath();
 	}
 
 	@Override

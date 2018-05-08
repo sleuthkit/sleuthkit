@@ -29,7 +29,7 @@ VS_TYPES vs_open_table[] = {
     {"sun", TSK_VS_TYPE_SUN,
         "Sun Volume Table of Contents (Solaris)"},
     {"gpt", TSK_VS_TYPE_GPT, "GUID Partition Table (EFI)"},
-    {0},
+    {0, 0, ""},
 };
 
 /**

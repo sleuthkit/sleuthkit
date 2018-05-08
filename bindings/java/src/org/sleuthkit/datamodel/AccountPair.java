@@ -20,17 +20,30 @@ package org.sleuthkit.datamodel;
 
 /**
  * Class representing an unordered pair of account device instances. <a,b> is
- * same as <b,a>
+ * same as <b,a>. First and second are used to distinguish the two accounts, but
+ * do not imply an order.
  */
 public final class AccountPair {
 
 	private final AccountDeviceInstance account1;
 	private final AccountDeviceInstance account2;
 
+	/**
+	 * Get the first AccountDeviceInstance. First doesn't imply order and is
+	 * simply used to distinguish the two accounts.
+	 *
+	 * @return The first AccountDeviceInstance.
+	 */
 	public AccountDeviceInstance getFirst() {
 		return account1;
 	}
 
+	/**
+	 * Get the second AccountDeviceInstance. Second doesn't imply order and is
+	 * simply used to distinguish the two accounts.
+	 *
+	 * @return The second AccountDeviceInstance.
+	 */
 	public AccountDeviceInstance getSecond() {
 		return account2;
 	}
@@ -57,5 +70,4 @@ public final class AccountPair {
 		return (account1.equals(otherPair.account1) && account2.equals(otherPair.account2))
 				|| (account1.equals(otherPair.account2) && account2.equals(otherPair.account1));
 	}
-
 }

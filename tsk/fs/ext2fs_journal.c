@@ -138,7 +138,7 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
     char *journ;
     TSK_FS_LOAD_FILE buf1;
     TSK_DADDR_T i;
-    int b_desc_seen = 0;
+//    int b_desc_seen = 0;
     ext2fs_journ_sb *journ_sb = NULL;
     ext4fs_journ_commit_head *commit_head;
 
@@ -154,7 +154,7 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
         return 1;
     }
 
-    if (jinfo->fs_file->meta->size !=
+    if ((TSK_DADDR_T)jinfo->fs_file->meta->size !=
         (jinfo->last_block + 1) * jinfo->bsize) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
@@ -408,7 +408,7 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
             ext2fs_journ_dentry *dentry;
             int unalloc = 0;
 
-            b_desc_seen = 1;
+//            b_desc_seen = 1;
 
 
             /* Is this an unallocated journ block or sequence */
@@ -489,7 +489,7 @@ ext2fs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
 {
     EXT2FS_INFO *ext2fs = (EXT2FS_INFO *) fs;
     EXT2FS_JINFO *jinfo = ext2fs->jinfo;
-    char *journ;
+    uint8_t *journ;
     TSK_FS_LOAD_FILE buf1;
     ext2fs_journ_head *head;
 
@@ -519,7 +519,7 @@ ext2fs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
         return 1;
     }
 
-    if (jinfo->fs_file->meta->size !=
+    if ((TSK_DADDR_T)jinfo->fs_file->meta->size !=
         (jinfo->last_block + 1) * jinfo->bsize) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);
@@ -533,7 +533,8 @@ ext2fs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
      * Only get the minimum needed
      */
     buf1.left = buf1.total = (size_t) ((end + 1) * jinfo->bsize);
-    journ = buf1.cur = buf1.base = tsk_malloc(buf1.left);
+    buf1.cur = buf1.base = tsk_malloc(buf1.left);
+    journ = (uint8_t*) buf1.cur;
     if (journ == NULL) {
         return 1;
     }

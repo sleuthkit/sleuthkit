@@ -1,6 +1,9 @@
-# Copyright (c) 2017 Basis Technology. 
+# Copyright (c) 2017 Basis Technology.
 #
 # This software is distributed under the Common Public License 1.0
+#
+# Updates the TSK dependency repos (libewf, etc.), compiles them, and
+# compiles various TSK platforms using the current branch
 
 import codecs
 import datetime
@@ -10,6 +13,7 @@ import re
 import shutil
 import subprocess
 import sys
+import getopt
 from sys import platform as _platform
 
 import time
@@ -19,12 +23,14 @@ MSBUILD_PATH = os.path.normpath("c:/Program Files (x86)/MSBuild/14.0/Bin/MSBuild
 CURRENT_PATH = os.getcwd()
 # save the build log in the output directory
 LOG_PATH = os.path.join(CURRENT_PATH, 'output', time.strftime("%Y.%m.%d-%H.%M.%S"))
+MINIMAL = False
 
-def pullAndBuildAllDependencies(branch):
+
+def pullAndBuildAllDependencies(depBranch):
     '''
         Compile libewf, libvhdi, libvmdk.
         Args:
-            branch: String, which branch to compile (currently only support master)
+            depBranch: String, which branch to compile (currently only support master)
     '''
     # Passed is a global variable that gets set to false
     # When an error occurs
@@ -34,50 +40,53 @@ def pullAndBuildAllDependencies(branch):
     # get the LIBEWF_HOME, LIBVHDI_HOME, LIBVMDH_HOME
     ewfHome = os.getenv("LIBEWF_HOME", "C:\\libewf_64bit")
     vhdiHome = os.getenv("LIBVHDI_HOME", "C:\\libvhdi_64bit")
-    vmdkHome = os.getenv("LIBVMDK_HOME", "C:\\libvmdk_64bit")
-
+    vmdkHome = os.getenv("LIBVMDK_HOME", "C:\\libvmdk_64bit\\libvmdk")
     # check if ewfHome, vhdiHome or vmdhHome exits
     checkPathExist(ewfHome)
     checkPathExist(vhdiHome)
     checkPathExist(vmdkHome)
     # git update libewf, libvhdi and libvmdk
     if(passed):
-        gitPull(ewfHome, "libewf_64bit", branch)
+        gitPull(ewfHome, "libewf_64bit", depBranch)
     if(passed):
-        gitPull(vhdiHome, "libvhdi_64bit", branch)
+        gitPull(vhdiHome, "libvhdi_64bit", depBranch)
     if(passed):
-        gitPull(vmdkHome, "libvmdk_64bit", branch)
+        gitPull(vmdkHome, "libvmdk_64bit", depBranch)
 
-    # build 32-bit of libewf, libvhdi, libvmdk and TSK 
-    if(passed): 
-        buildDependentLibs(ewfHome, 32, "libewf")
-    if(passed): 
-        buildDependentLibs(vhdiHome, 32, "libvhdi")
-    if(passed): 
-        buildDependentLibs(vmdkHome, 32, "libvmdk")
+    if not MINIMAL:
+        # build 32-bit of libewf, libvhdi, libvmdk and TSK
+        if(passed):
+            buildDependentLibs(ewfHome, 32, "libewf","libewf_dll")
+        if(passed):
+            buildDependentLibs(vhdiHome, 32, "libvhdi","libvhdi")
+        if(passed):
+            buildDependentLibs(vmdkHome, 32, "libvmdk","libvmdk")
 
 
-    # build 64-bit of libewf, libvhdi, libvmdk and TSK 
-    if(passed): 
-        buildDependentLibs(ewfHome, 64, "libewf")
-    if(passed): 
-        buildDependentLibs(vhdiHome, 64, "libvhdi")
-    if(passed): 
-        buildDependentLibs(vmdkHome, 64, "libvmdk")
+    # build 64-bit of libewf, libvhdi, libvmdk and TSK
+    if(passed):
+        buildDependentLibs(ewfHome, 64, "libewf", "libewf_dll")
+    if(passed):
+        buildDependentLibs(vhdiHome, 64, "libvhdi", "libvhdi")
+    if(passed):
+        buildDependentLibs(vmdkHome, 64, "libvmdk", "libvmdk")
 
 
 def buildTSKAll():
-    if(passed):
-        buildTSK(32, "Release")
-    if(passed):
-        buildTSK(32, "Release_NoLibs")
-    if(passed):
-        buildTSK(32, "Release_PostgreSQL")
 
-    if(passed):
-        buildTSK(64, "Release")
-    if(passed):
-        buildTSK(64, "Release_NoLibs")
+    if not MINIMAL:
+        if(passed):
+            buildTSK(32, "Release")
+        if(passed):
+            buildTSK(32, "Release_NoLibs")
+        if(passed):
+            buildTSK(32, "Release_PostgreSQL")
+
+        if(passed):
+            buildTSK(64, "Release")
+        if(passed):
+            buildTSK(64, "Release_NoLibs")
+
     if(passed):
         buildTSK(64, "Release_PostgreSQL")
 
@@ -137,13 +146,13 @@ def gitPull(libHome, repo, branch):
     else:
         print("Update " + repo + " failed.")
 
-def buildDependentLibs(libHome, wPlatform, targetDll):
+def buildDependentLibs(libHome, wPlatform, targetDll, project):
     '''
         build libewf.dll, libvhdi.dll and libvmdk.dll
     '''
     global passed
     passed = True
- 
+
     print("Building " + str(wPlatform) + "-bit " + targetDll)
     sys.stdout.flush()
 
@@ -151,8 +160,8 @@ def buildDependentLibs(libHome, wPlatform, targetDll):
 
     if wPlatform == 64:
         dllFile = os.path.join(libHome, "msvscpp", "x64", target, targetDll +".dll")
-    elif wPlatform == 32: 
-        dllFile = os.path.join(libHome, "msvscpp", target, targetDll +".dll")
+    elif wPlatform == 32:
+        dllFile = os.path.join(libHome,"msvscpp",target,targetDll + ".dll")
     else:
         print("Invalid platform")
         sys.stdout.flush()
@@ -161,23 +170,22 @@ def buildDependentLibs(libHome, wPlatform, targetDll):
 
     if (os.path.isfile(dllFile)):
         os.remove(dllFile)
-
-    os.chdir(os.path.join(libHome, "msvscpp"))
+    os.chdir(os.path.join(libHome,"msvscpp"))
 
     vs = []
     vs.append(MSBUILD_PATH)
     vs.append(os.path.join(targetDll + ".sln"))
+    vs.append("/t:" + project)
     vs.append("/p:configuration=" + target)
     if wPlatform == 64:
         vs.append("/p:platform=x64")
     elif wPlatform == 32:
         vs.append("/p:platform=Win32")
-    vs.append("/t:clean")
-    vs.append("/t:build")
+    vs.append("/v:quiet")
 
     outputFile = os.path.join(LOG_PATH, targetDll + "Output.txt")
     VSout = open(outputFile, 'w')
-    ret = subprocess.call(vs, stdout=VSout)
+    ret = subprocess.call(vs, stdout=sys.stdout)
     errorCode = ret
     VSout.close()
     if ret > 0:
@@ -187,16 +195,16 @@ def buildDependentLibs(libHome, wPlatform, targetDll):
             errorCode = 0
     if errorCode != 0 or not os.path.exists(dllFile) or os.path.getctime(dllFile) < (time.time() - 2 * 60): # the new dll should not be 2 mins old
         print(targetDll + " " + str(wPlatform) + "-bit C++ failed to build.\n")
-        print("return code: " + str(ret) + "\tdll file: " + dllFile + "\tcreated time: " + str(os.path.getctime(dllFile))) 
+        print("return code: " + str(ret) + "\tdll file: " + dllFile + "\tcreated time: " + str(os.path.getctime(dllFile)))
         sys.stdout.flush()
         passed = False
         os.chdir(CURRENT_PATH)
         return
     else:
         print("Build " + str(wPlatform) + "-bit " + targetDll + " successfully")
- 
+
     os.chdir(CURRENT_PATH)
- 
+
 def buildTSK(wPlatform, target):
     '''
         Build C++ sleuthkit library
@@ -205,6 +213,13 @@ def buildTSK(wPlatform, target):
 
     print ("Building TSK " + str(wPlatform) + "-bit " + target + " build.")
     sys.stdout.flush()
+    TSK_HOME = os.getenv("TSK_HOME",False)
+
+    if not TSK_HOME:
+        print("Please set the TSK_HOME environment variable")
+        sys.exit(1)
+    else:
+        os.chdir(os.path.join(os.getenv("TSK_HOME"),"win32"))
 
     vs = []
     vs.append(MSBUILD_PATH)
@@ -219,12 +234,13 @@ def buildTSK(wPlatform, target):
         sys.stdout.flush()
         passed = False
         return
+    vs.append("/v:quiet")
     vs.append("/t:clean")
     vs.append("/t:build")
 
     outputFile = os.path.join(LOG_PATH, "TSKOutput.txt")
     VSout = open(outputFile, 'w')
-    ret = subprocess.call(vs, stdout=VSout)
+    ret = subprocess.call(vs, stdout=sys.stdout)
     VSout.close()
     if ret != 0:
         print("ret = " + str(ret))
@@ -239,26 +255,38 @@ def usage():
     '''
     Print out how to use this script.
     '''
-    print('Usage: python3 updataBuildlibs.py [branch]')
-    print('branch is which branch to build and is optional. Currently only works for master')
+    print('Usage: python3 updateAndBuildLibs.py [[-h | --help, -b <branch> | --branch=<branch>, -m | --minimal]')
+    print('branch: Branch for dependencies (master is default)')
+    print('-m,--minimal: Build 64-bit PostgreSQL only')
     sys.stdout.flush()
     sys.exit(1)
 
 def main():
-    #by default we use master branch to update the source
-    branch = 'master'
-
-    if len(sys.argv) == 2:    #keep this parameter here for the future we may let user use different branch to update source
-        branch = sys.argv[1]
-    elif len(sys.argv) > 2:
-        print('Wrong arguments.')
+    depBranch = 'master'  
+    global MINIMAL
+    try:
+        opts, args = getopt.getopt(sys.argv[1:],"mhb:",['help','minimal','branch='])
+    except getopt.GetoptError as err:
+        print(err)
         usage()
+        sys.exit(2)
 
-    print('Updating source by %s branch.' % branch)
+    for o,a in opts:
+        if o in ("-m","--minimal"):
+            MINIMAL = True
+        elif o in ("-b","--branch"):
+            depBranch = a
+        elif o in ("-h","--help"):
+            usage()
+            system.exit(2)
+
     if not os.path.exists(LOG_PATH):
         os.makedirs(LOG_PATH)
+    if not os.path.exists(MSBUILD_PATH):
+        print("MS_BUILD Does not exist")
+        sys.stdout.flush()
 
-    pullAndBuildAllDependencies(branch)
+    pullAndBuildAllDependencies(depBranch)
     buildTSKAll()
 
 class OS:

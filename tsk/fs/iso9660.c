@@ -1229,7 +1229,7 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
     ISO_INFO *iso = (ISO_INFO *) fs;
     TSK_INUM_T inum, end_inum_tmp;
     TSK_FS_FILE *fs_file;
-    int myflags;
+    unsigned int myflags;
     iso9660_inode *dinode;
 
     // clean up any error messages that are lying around
@@ -1418,7 +1418,7 @@ iso9660_is_block_alloc(TSK_FS_INFO * fs, TSK_DADDR_T blk_num)
 }
 
 
-TSK_FS_BLOCK_FLAG_ENUM static
+static TSK_FS_BLOCK_FLAG_ENUM
 iso9660_block_getflags(TSK_FS_INFO * a_fs, TSK_DADDR_T a_addr)
 {
     return (iso9660_is_block_alloc(a_fs, a_addr)) ?

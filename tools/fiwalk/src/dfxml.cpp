@@ -146,7 +146,7 @@ xml::xml():outf(),out(&cout),tags(),tag_stack(),tempfilename(),tempfile_template
 }
 
 /* This should be rewritten so that the temp file is done on close, not on open */
-xml::xml(const std::string &outfilename_,bool makeDTD):
+xml::xml(const std::string &outfilename_, bool /*makeDTD*/):
     outf(outfilename_.c_str(),ios_base::out),
     out(),tags(),tag_stack(),tempfilename(),tempfile_template(outfilename_+"_tmp_XXXXXXXX"),
     t0(),make_dtd(false),outfilename(outfilename_)

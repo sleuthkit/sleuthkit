@@ -37,7 +37,7 @@
 
 
 /* Macro to pass in both the epoch time value and the nano time value */
-#define WITHNANO(x) x, x##_nano
+#define WITHNANO(x) x, (unsigned int)x##_nano
 
 
 /* mini-design note:
@@ -219,7 +219,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
             data_run != NULL; data_run = data_run->next) {
 
             /* Test for possible overflows / error conditions */
-            if ((offset < 0) || (data_run->len >= LLONG_MAX / a_ntfs->csize_b)){
+            if ((offset < 0) || (data_run->len >= (TSK_DADDR_T)(LLONG_MAX / a_ntfs->csize_b))){
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
                 tsk_error_set_errstr
@@ -293,7 +293,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
         ssize_t cnt;
         /* read the first part into mft */
         cnt = tsk_fs_read(&a_ntfs->fs_info, mftaddr_b, a_buf, mftaddr_len);
-        if (cnt != mftaddr_len) {
+        if (cnt != (ssize_t)mftaddr_len) {
             if (cnt >= 0) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -309,7 +309,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
             (&a_ntfs->fs_info, mftaddr2_b,
             (char *) ((uintptr_t) a_buf + (uintptr_t) mftaddr_len),
             a_ntfs->mft_rsize_b - mftaddr_len);
-        if (cnt != a_ntfs->mft_rsize_b - mftaddr_len) {
+        if (cnt != (ssize_t)(a_ntfs->mft_rsize_b - mftaddr_len)) {
             if (cnt >= 0) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -1530,7 +1530,7 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
                     "ntfs_file_read_special: Returning 0s for read past end of initsize (%"
                     PRIuINUM ")\n", a_fs_attr->fs_file->meta->addr);
 
-            if (a_offset + a_len > a_fs_attr->nrd.allocsize)
+            if (a_offset + (TSK_OFF_T)a_len > a_fs_attr->nrd.allocsize)
                 len = (ssize_t) (a_fs_attr->nrd.allocsize - a_offset);
             else
                 len = (ssize_t) a_len;
@@ -1777,7 +1777,7 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
         }
 
         /* Copy the name and convert it to UTF8 */
-        if ((attr->nlen) && (tsk_getu16(fs->endian, attr->name_off) + attr->nlen * 2 < tsk_getu32(fs->endian, attr->len))) {
+        if ((attr->nlen) && (tsk_getu16(fs->endian, attr->name_off) + attr->nlen * (unsigned int)2 < tsk_getu32(fs->endian, attr->len))) {
             int i;
             UTF8 *name8;
             UTF16 *name16;
@@ -3657,7 +3657,7 @@ ntfs_load_secure(NTFS_INFO * ntfs)
     cnt =
         tsk_fs_attr_read(fs_attr_sii, 0, sii_buffer.buffer,
         sii_buffer.size, TSK_FS_FILE_READ_FLAG_NONE);
-    if (cnt != sii_buffer.size) {
+    if (cnt != (ssize_t)sii_buffer.size) {
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "ntfs_load_secure: error reading $Secure:$SII attribute: %s\n",
@@ -3720,7 +3720,7 @@ ntfs_load_secure(NTFS_INFO * ntfs)
         tsk_fs_attr_read(fs_attr_sds, 0,
         ntfs->sds_data.buffer, ntfs->sds_data.size,
         TSK_FS_FILE_READ_FLAG_NONE);
-    if (cnt != ntfs->sds_data.size) {
+    if (cnt != (ssize_t)ntfs->sds_data.size) {
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "ntfs_load_secure: error reading $Secure:$SDS attribute: %s\n",
@@ -3898,7 +3898,7 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     TSK_FS_META_WALK_CB a_action, void *ptr)
 {
     NTFS_INFO *ntfs = (NTFS_INFO *) fs;
-    int myflags;
+    unsigned int myflags;
     TSK_INUM_T mftnum;
     TSK_FS_FILE *fs_file;
     TSK_INUM_T end_inum_tmp;
@@ -4348,6 +4348,7 @@ ntfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
     NTFS_INFO *ntfs = (NTFS_INFO *) fs;
     ntfs_mft *mft;
     char timeBuf[128];
+    int idx;
 
     // clean up any error messages that are lying around
     tsk_error_reset();
@@ -4500,12 +4501,21 @@ ntfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
     }
 
     /* $FILE_NAME Information */
-    fs_attr = tsk_fs_attrlist_get(fs_file->meta->attr, NTFS_ATYPE_FNAME);
-    if (fs_attr) {
-
-        ntfs_attr_fname *fname = (ntfs_attr_fname *) fs_attr->rd.buf;
+    for (idx = 0; idx < tsk_fs_attrlist_get_len(fs_file->meta->attr); idx++) {
+        ntfs_attr_fname *fname;
         uint64_t flags;
         int a = 0;
+        UTF16 *name16;
+        UTF8 *name8;
+        char name8buf[NTFS_MAXNAMLEN_UTF8 + 1];
+        int retVal;
+
+        fs_attr = tsk_fs_attrlist_get_idx(fs_file->meta->attr, idx);
+        if (fs_attr->type != NTFS_ATYPE_FNAME) {
+            continue;
+        }
+        fname = (ntfs_attr_fname *) fs_attr->rd.buf;
+
         tsk_fprintf(hFile, "\n$FILE_NAME Attribute Values:\n");
         flags = tsk_getu64(fs->endian, fname->flags);
         tsk_fprintf(hFile, "Flags: ");
@@ -4541,20 +4551,34 @@ ntfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
         if (flags & NTFS_FNAME_FLAGS_IDXVIEW)
             tsk_fprintf(hFile, "%sIndex View", a++ == 0 ? "" : ", ");
         tsk_fprintf(hFile, "\n");
-        /* We could look this up in the attribute, but we already did
-         * the work */
-        if (fs_file->meta->name2) {
-            TSK_FS_META_NAME_LIST *fs_name = fs_file->meta->name2;
-            tsk_fprintf(hFile, "Name: ");
-            while (fs_name) {
-                tsk_fprintf(hFile, "%s", fs_name->name);
-                fs_name = fs_name->next;
-                if (fs_name)
-                    tsk_fprintf(hFile, ", ");
-                else
-                    tsk_fprintf(hFile, "\n");
-            }
+
+
+        name16 = (UTF16 *) & fname->name;
+        name8 = (UTF8 *) name8buf;
+
+        retVal =
+            tsk_UTF16toUTF8(fs->endian, (const UTF16 **) &name16,
+            (UTF16 *) ((uintptr_t) name16 +
+                fname->nlen * 2),
+            &name8,
+            (UTF8 *) ((uintptr_t) name8 + NTFS_MAXNAMLEN_UTF8),
+            TSKlenientConversion);
+        if (retVal != TSKconversionOK) {
+            if (tsk_verbose)
+                tsk_fprintf(stderr,
+                    "ntfs_istat: Error converting NTFS name in $FNAME to UTF8: %d",
+                    retVal);
+            *name8 = '\0';
         }
+        /* Make sure it is NULL Terminated */
+        else if ((uintptr_t) name8 >=
+            (uintptr_t) name8buf + NTFS_MAXNAMLEN_UTF8) 
+            name8buf[NTFS_MAXNAMLEN_UTF8] = '\0';
+        else
+            *name8 = '\0';
+
+
+        tsk_fprintf(hFile, "Name: %s\n", name8buf);
 
         tsk_fprintf(hFile,
             "Parent MFT Entry: %" PRIu64
@@ -4574,44 +4598,27 @@ ntfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
 
         if (sec_skew != 0) {
             tsk_fprintf(hFile, "\nAdjusted times:\n");
-            if (fs_file->meta->time2.ntfs.fn_mtime)
-                fs_file->meta->time2.ntfs.fn_mtime -= sec_skew;
-            if (fs_file->meta->time2.ntfs.fn_atime)
-                fs_file->meta->time2.ntfs.fn_atime -= sec_skew;
-            if (fs_file->meta->time2.ntfs.fn_ctime)
-                fs_file->meta->time2.ntfs.fn_ctime -= sec_skew;
-            if (fs_file->meta->time2.ntfs.fn_crtime)
-                fs_file->meta->time2.ntfs.fn_crtime -= sec_skew;
 
             tsk_fprintf(hFile, "Created:\t%s\n",
-                        tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->time2.ntfs.fn_crtime), timeBuf));
+                        tsk_fs_time_to_str_subsecs(nt2unixtime(tsk_getu64(fs->endian, fname->crtime)) - sec_skew, nt2nano(tsk_getu64(fs->endian, fname->crtime)), timeBuf));
             tsk_fprintf(hFile, "File Modified:\t%s\n",
-                        tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->time2.ntfs.fn_mtime), timeBuf));
+                        tsk_fs_time_to_str_subsecs(nt2unixtime(tsk_getu64(fs->endian, fname->mtime)) - sec_skew, nt2nano(tsk_getu64(fs->endian, fname->mtime)), timeBuf));
             tsk_fprintf(hFile, "MFT Modified:\t%s\n",
-                        tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->time2.ntfs.fn_ctime), timeBuf));
+                        tsk_fs_time_to_str_subsecs(nt2unixtime(tsk_getu64(fs->endian, fname->ctime)) - sec_skew, nt2nano(tsk_getu64(fs->endian, fname->ctime)), timeBuf));
             tsk_fprintf(hFile, "Accessed:\t%s\n",
-                        tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->time2.ntfs.fn_atime), timeBuf));
-
-            if (fs_file->meta->time2.ntfs.fn_mtime)
-                fs_file->meta->time2.ntfs.fn_mtime += sec_skew;
-            if (fs_file->meta->time2.ntfs.fn_atime)
-                fs_file->meta->time2.ntfs.fn_atime += sec_skew;
-            if (fs_file->meta->time2.ntfs.fn_ctime)
-                fs_file->meta->time2.ntfs.fn_ctime += sec_skew;
-            if (fs_file->meta->time2.ntfs.fn_crtime)
-                fs_file->meta->time2.ntfs.fn_crtime += sec_skew;
+                        tsk_fs_time_to_str_subsecs(nt2unixtime(tsk_getu64(fs->endian, fname->atime)) - sec_skew, nt2nano(tsk_getu64(fs->endian, fname->atime)), timeBuf));
 
             tsk_fprintf(hFile, "\nOriginal times:\n");
         }
 
         tsk_fprintf(hFile, "Created:\t%s\n",
-                    tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->time2.ntfs.fn_crtime), timeBuf));
+                    tsk_fs_time_to_str_subsecs(nt2unixtime(tsk_getu64(fs->endian, fname->crtime)), nt2nano(tsk_getu64(fs->endian, fname->crtime)), timeBuf));
         tsk_fprintf(hFile, "File Modified:\t%s\n",
-                    tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->time2.ntfs.fn_mtime), timeBuf));
+                    tsk_fs_time_to_str_subsecs(nt2unixtime(tsk_getu64(fs->endian, fname->mtime)), nt2nano(tsk_getu64(fs->endian, fname->mtime)), timeBuf));
         tsk_fprintf(hFile, "MFT Modified:\t%s\n",
-                    tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->time2.ntfs.fn_ctime), timeBuf));
+                    tsk_fs_time_to_str_subsecs(nt2unixtime(tsk_getu64(fs->endian, fname->ctime)), nt2nano(tsk_getu64(fs->endian, fname->ctime)), timeBuf));
         tsk_fprintf(hFile, "Accessed:\t%s\n",
-                    tsk_fs_time_to_str_subsecs(WITHNANO(fs_file->meta->time2.ntfs.fn_atime), timeBuf));
+                    tsk_fs_time_to_str_subsecs(nt2unixtime(tsk_getu64(fs->endian, fname->atime)), nt2nano(tsk_getu64(fs->endian, fname->atime)), timeBuf));
     }
 
 
@@ -4625,13 +4632,15 @@ ntfs_istat(TSK_FS_INFO * fs, TSK_FS_ISTAT_FLAG_ENUM istat_flags, FILE * hFile,
         id2 = tsk_getu64(fs->endian, objid->objid2);
         tsk_fprintf(hFile,
             "Object Id: %.8" PRIx32 "-%.4" PRIx16
-            "-%.4" PRIx16 "-%.4" PRIx16 "-%.12"
-            PRIx64 "\n",
-            (uint32_t) (id2 >> 32) & 0xffffffff,
-            (uint16_t) (id2 >> 16) & 0xffff,
-            (uint16_t) (id2 & 0xffff),
-            (uint16_t) (id1 >> 48) & 0xffff, (uint64_t) (id1 & (uint64_t)
-                0x0000ffffffffffffULL));
+            "-%.4" PRIx16 "-%.4" PRIx16 "-%.4"
+            PRIx16 "%.8" PRIx32 "\n",
+            tsk_getu32(fs->endian, objid->objid1),
+            tsk_getu16(fs->endian, objid->objid2),
+            tsk_getu16(fs->endian, objid->objid3),
+            tsk_getu16(TSK_BIG_ENDIAN, objid->objid4),
+            tsk_getu16(TSK_BIG_ENDIAN, objid->objid5),
+            tsk_getu32(TSK_BIG_ENDIAN, objid->objid6));
+
         /* The rest of the  fields do not always exist.  Check the attr size */
         if (fs_attr->size > 16) {
             id1 = tsk_getu64(fs->endian, objid->orig_volid1);

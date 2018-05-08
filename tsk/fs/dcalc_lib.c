@@ -105,28 +105,18 @@ count_slack_file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off,
             "count_slack_file_act: Remaining File:  %" PRIuOFF
             "  Buffer: %" PRIuSIZE "\n", data->flen, size);
 
-    /* This is not the last data unit */
-    if (data->flen >= size) {
+    /* This is not the last data unit, or the file has no slack */
+    if (data->flen >= (TSK_OFF_T)size) {
         data->flen -= size;
     }
-    /* We have passed the end of the allocated space */
-    else if (data->flen == 0) {
+    else {
+        /* We have passed the end of the allocated space */
         if (data->count-- == 0) {
             tsk_printf("%" PRIuDADDR "\n", addr);
             data->found = 1;
             return TSK_WALK_STOP;
-
         }
-    }
-    /* This is the last data unit and there is unused space */
-    else if (data->flen < size) {
-        if (data->count-- == 0) {
-            tsk_printf("%" PRIuDADDR "\n", addr);
-            data->found = 1;
-            return TSK_WALK_STOP;
-
-        }
-        data->flen = 0;
+        data->flen = 0; // for scenarios where last buffer had some unalloc
     }
 
     return TSK_WALK_CONT;

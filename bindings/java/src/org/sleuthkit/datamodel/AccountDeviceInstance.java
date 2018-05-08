@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2017 Basis Technology Corp.
+ * Copyright 2017-18 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +24,7 @@ package org.sleuthkit.datamodel;
  * There is a 1:M:N relationship between 
  * Account, AccountDeviceInstance &  AccountFileInstance
  */
-public class AccountDeviceInstance {
+public final class AccountDeviceInstance {
 	private final Account account;				
 	private final String deviceID;	
 	
@@ -79,6 +79,4 @@ public class AccountDeviceInstance {
 		}
 		return true;
 	}
-	
-	
 }

@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I../.. -Wall 
+AM_CPPFLAGS = -I../..
 
 noinst_LTLIBRARIES = libtskbase.la
 libtskbase_la_SOURCES = md5c.c mymalloc.c sha1c.c \

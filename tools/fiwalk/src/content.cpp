@@ -403,7 +403,7 @@ content::file_act(TSK_FS_FILE * fs_file, TSK_OFF_T a_off, TSK_DADDR_T addr, char
 {
     if(opt_debug>1){
 	printf("file_act(fs_file=%p,addr=%" PRIuDADDR " buf=%p size=%d)\n",
-	       fs_file,addr,buf,(int)size);
+	       (void*)fs_file,addr,buf,(int)size);
 	if(opt_debug>1 && segs.size()==0){
 	    if(fwrite(buf,size,1,stdout)!=1) err(1,"fwrite");
 	    printf("\n");

@@ -73,28 +73,28 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::verifyConnectionInfoStringLengths(size_t userNa
     if (userNameStrLen >= MAX_CONN_INFO_FIELD_LENGTH - 1) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskDbPostgreSQL::connectToDatabase: User name is too long. Length = %d, Max length = %d", userNameStrLen, MAX_CONN_INFO_FIELD_LENGTH - 1);
+        tsk_error_set_errstr("TskDbPostgreSQL::connectToDatabase: User name is too long. Length = %zd, Max length = %d", userNameStrLen, MAX_CONN_INFO_FIELD_LENGTH - 1);
         return TSK_ERR;
     }
 
     if (pwdStrLen >= MAX_CONN_INFO_FIELD_LENGTH - 1) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskDbPostgreSQL::connectToDatabase: Password is too long. Length = %d, Max length = %d", pwdStrLen, MAX_CONN_INFO_FIELD_LENGTH - 1);
+        tsk_error_set_errstr("TskDbPostgreSQL::connectToDatabase: Password is too long. Length = %zd, Max length = %d", pwdStrLen, MAX_CONN_INFO_FIELD_LENGTH - 1);
         return TSK_ERR;
     }
 
     if (hostNameStrLen >= MAX_CONN_INFO_FIELD_LENGTH - 1) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskDbPostgreSQL::connectToDatabase: Host name is too long. Length = %d, Max length = %d", hostNameStrLen, MAX_CONN_INFO_FIELD_LENGTH - 1);
+        tsk_error_set_errstr("TskDbPostgreSQL::connectToDatabase: Host name is too long. Length = %zd, Max length = %d", hostNameStrLen, MAX_CONN_INFO_FIELD_LENGTH - 1);
         return TSK_ERR;
     }
 
     if (portStrLen > MAX_CONN_PORT_FIELD_LENGTH) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_AUTO_DB);
-        tsk_error_set_errstr("TskDbPostgreSQL::connectToDatabase: Host port string is too long. Length = %d, Max length = %d", portStrLen, MAX_CONN_PORT_FIELD_LENGTH);
+        tsk_error_set_errstr("TskDbPostgreSQL::connectToDatabase: Host port string is too long. Length = %zd, Max length = %d", portStrLen, MAX_CONN_PORT_FIELD_LENGTH);
         return TSK_ERR;
     }
 
@@ -712,7 +712,7 @@ int TskDbPostgreSQL::addVsInfo(const TSK_VS_INFO * vs_info, int64_t parObjId, in
     if (addObject(TSK_DB_OBJECT_TYPE_VS, parObjId, objId))
         return 1;
 
-    snprintf(stmt, 1024, "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%lld, %d,%"
+    snprintf(stmt, 1024, "INSERT INTO tsk_vs_info (obj_id, vs_type, img_offset, block_size) VALUES (%" PRId64 ", %d, %"
         PRIuOFF ",%u)", objId, vs_info->vstype, vs_info->offset, vs_info->block_size);
 
     return attempt_exec(stmt, "Error adding data to tsk_vs_info table: %s\n");
@@ -802,7 +802,7 @@ int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, co
         PQfreemem(md5_sql);
         return 1;
     }
-    snprintf(stmt, 2048, "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %lld, %s, %" PRIuOFF ", %s);",
+    snprintf(stmt, 2048, "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%" PRId64 ", %d, %" PRIuOFF ", %s, %" PRIuOFF ", %s);",
         objId, type, ssize, timezone_sql, size, md5_sql);
     int ret = attempt_exec(stmt, "Error adding data to tsk_image_info table: %s\n");
     PQfreemem(timezone_sql);
@@ -837,7 +837,7 @@ int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, co
         PQfreemem(timeZone_sql);
         return 1;
     }
-    snprintf(stmt, 2048, "INSERT INTO data_source_info (obj_id, device_id, time_zone) VALUES (%lld, %s, %s);",
+    snprintf(stmt, 2048, "INSERT INTO data_source_info (obj_id, device_id, time_zone) VALUES (%" PRId64 ", %s, %s);",
         objId, deviceId_sql, timeZone_sql);
     ret = attempt_exec(stmt, "Error adding device id to data_source_info table: %s\n");
     PQfreemem(deviceId_sql);
@@ -862,7 +862,7 @@ int TskDbPostgreSQL::addImageName(int64_t objId, char const *imgName, int sequen
         return 1;
     }
 
-    snprintf(stmt, 2048, "INSERT INTO tsk_image_names (obj_id, name, sequence) VALUES (%lld, %s, %d)", objId, imgName_sql, sequence);
+    snprintf(stmt, 2048, "INSERT INTO tsk_image_names (obj_id, name, sequence) VALUES (%" PRId64 ", %s, %d)", objId, imgName_sql, sequence);
     int ret = attempt_exec(stmt, "Error adding data to tsk_image_names table: %s\n");
 
     // cleanup
@@ -886,7 +886,7 @@ int TskDbPostgreSQL::addFsInfo(const TSK_FS_INFO * fs_info, int64_t parObjId, in
         "INSERT INTO tsk_fs_info (obj_id, img_offset, fs_type, block_size, block_count, "
         "root_inum, first_inum, last_inum) "
         "VALUES ("
-        "%lld,%" PRIuOFF ",%d,%u,%" PRIuDADDR ","
+        "%" PRId64 ",%" PRIuOFF ",%d,%u,%" PRIuDADDR ","
         "%" PRIuINUM ",%" PRIuINUM ",%" PRIuINUM ")",
         objId, fs_info->offset, (int) fs_info->ftype, fs_info->block_size,
         fs_info->block_count, fs_info->root_inum, fs_info->first_inum,
@@ -1263,8 +1263,8 @@ int64_t TskDbPostgreSQL::findParObjId(const TSK_FS_FILE * fs_file, const char *p
 
     // Need to break up 'path' in to the parent folder to match in 'parent_path' and the folder
     // name to match with the 'name' column in tsk_files table
-    char *parent_name = "";
-    char *parent_path = "";
+    const char *parent_name = "";
+    const char *parent_path = "";
     if (TskDb::getParentPathAndName(parentPath, &parent_path, &parent_name)){
         return -1;
     }
@@ -1539,8 +1539,8 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addVirtualDir(const int64_t fsObjId, const int6
         "VALUES ("
         "NULL, NULL,"
         "NULL,"
-        "%lld,"
-        "%lld,"
+        "%" PRId64 ","
+        "%" PRId64 ","
         "%" PRId64 ","
         "%d,"
         "%s,"
@@ -1781,7 +1781,7 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::addLayoutFileInfo(const int64_t parObjId, const
     }
     snprintf(zSQL, 2048, "INSERT INTO tsk_files (has_layout, fs_obj_id, obj_id, data_source_obj_id, type, attr_type, attr_id, name, meta_addr, meta_seq, dir_type, meta_type, dir_flags, meta_flags, size, crtime, ctime, atime, mtime, mode, gid, uid) "
         "VALUES ("
-        "1, %s, %lld,"
+        "1, %s, %" PRId64 ","
         "%" PRId64 ","
         "%d,"
         "NULL,NULL,%s,"
@@ -1831,7 +1831,7 @@ int TskDbPostgreSQL::addVolumeInfo(const TSK_VS_PART_INFO * vs_part,
     }
 
     snprintf(zSQL, 1024, "INSERT INTO tsk_vs_parts (obj_id, addr, start, length, descr, flags)"
-        "VALUES (%lld, %" PRIuPNUM ",%" PRIuOFF ",%" PRIuOFF ",%s,%d)",
+        "VALUES (%" PRId64 ", %" PRIuPNUM ",%" PRIuOFF ",%" PRIuOFF ",%s,%d)",
         objId, (int) vs_part->addr, vs_part->start, vs_part->len,
         descr_sql, vs_part->flags);
 
@@ -1855,7 +1855,7 @@ int TskDbPostgreSQL::addFileLayoutRange(int64_t a_fileObjId, uint64_t a_byteStar
 {
     char foo[1024];
 
-    snprintf(foo, 1024, "INSERT INTO tsk_file_layout(obj_id, byte_start, byte_len, sequence) VALUES (%lld, %llu, %llu, %d)",
+    snprintf(foo, 1024, "INSERT INTO tsk_file_layout(obj_id, byte_start, byte_len, sequence) VALUES (%" PRId64 ", %" PRIu64 ", %" PRIu64 ", %d)",
         a_fileObjId, a_byteStart, a_byteLen, a_sequence);
 
     return attempt_exec(foo, "Error adding data to tsk_file_layout table: %s\n");
