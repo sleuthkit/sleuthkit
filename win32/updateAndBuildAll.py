@@ -1,6 +1,9 @@
 # Copyright (c) 2017 Basis Technology.
 #
 # This software is distributed under the Common Public License 1.0
+#
+# Updates the TSK dependency repos (libewf, etc.), compiles them, and
+# compiles various TSK platforms using the current branch
 
 import codecs
 import datetime
@@ -21,11 +24,13 @@ CURRENT_PATH = os.getcwd()
 # save the build log in the output directory
 LOG_PATH = os.path.join(CURRENT_PATH, 'output', time.strftime("%Y.%m.%d-%H.%M.%S"))
 MINIMAL = False
-def pullAndBuildAllDependencies(branch):
+
+
+def pullAndBuildAllDependencies(depBranch):
     '''
         Compile libewf, libvhdi, libvmdk.
         Args:
-            branch: String, which branch to compile (currently only support master)
+            depBranch: String, which branch to compile (currently only support master)
     '''
     # Passed is a global variable that gets set to false
     # When an error occurs
@@ -42,11 +47,11 @@ def pullAndBuildAllDependencies(branch):
     checkPathExist(vmdkHome)
     # git update libewf, libvhdi and libvmdk
     if(passed):
-        gitPull(ewfHome, "libewf_64bit", branch)
+        gitPull(ewfHome, "libewf_64bit", depBranch)
     if(passed):
-        gitPull(vhdiHome, "libvhdi_64bit", branch)
+        gitPull(vhdiHome, "libvhdi_64bit", depBranch)
     if(passed):
-        gitPull(vmdkHome, "libvmdk_64bit", branch)
+        gitPull(vmdkHome, "libvmdk_64bit", depBranch)
 
     if not MINIMAL:
         # build 32-bit of libewf, libvhdi, libvmdk and TSK
@@ -250,15 +255,14 @@ def usage():
     '''
     Print out how to use this script.
     '''
-    print('Usage: python3 updataBuildlibs.py [[-h | --help, -b <branch> | --branch=<branch>, -m | --minimal]')
-    print('branch is which branch to build and is optional. Currently only works for master')
-    print('-m,--minimal use this option for postgres build')
+    print('Usage: python3 updateAndBuildLibs.py [[-h | --help, -b <branch> | --branch=<branch>, -m | --minimal]')
+    print('branch: Branch for dependencies (master is default)')
+    print('-m,--minimal: Build 64-bit PostgreSQL only')
     sys.stdout.flush()
     sys.exit(1)
 
 def main():
-    #by default we use master branch to update the source
-    branch = 'master'
+    depBranch = 'master'  
     global MINIMAL
     try:
         opts, args = getopt.getopt(sys.argv[1:],"mhb:",['help','minimal','branch='])
@@ -271,18 +275,18 @@ def main():
         if o in ("-m","--minimal"):
             MINIMAL = True
         elif o in ("-b","--branch"):
-            branch = a
+            depBranch = a
         elif o in ("-h","--help"):
             usage()
             system.exit(2)
 
-    print('Updating source by %s branch.' % branch)
     if not os.path.exists(LOG_PATH):
         os.makedirs(LOG_PATH)
     if not os.path.exists(MSBUILD_PATH):
         print("MS_BUILD Does not exist")
         sys.stdout.flush()
-    pullAndBuildAllDependencies(branch)
+
+    pullAndBuildAllDependencies(depBranch)
     buildTSKAll()
 
 class OS:
