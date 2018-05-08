@@ -381,6 +381,40 @@ sub update_libver {
     rename ($OFILE, $IFILE) or die "Error renaming $OFILE";
 }
 
+# update the version in the Java ant build.xml file
+sub update_buildxml {
+
+    print "Updating the version in Java build.xml file\n";
+    
+    my $IFILE = "bindings/java/build.xml";
+    my $OFILE = "bindings/java/build.xml2";
+
+    open (CONF_IN, "<${IFILE}") or 
+        die "Cannot open $IFILE";
+    open (CONF_OUT, ">${OFILE}") or 
+        die "Cannot open $OFILE";
+
+    my $found = 0;
+    while (<CONF_IN>) {
+        if (/name=\"VERSION\"/) {
+            print CONF_OUT "<property name=\"VERSION\" value=\"${VER}\"/>\n";
+            $found++;
+        }
+        else {
+            print CONF_OUT $_;
+        }
+    }
+    close (CONF_IN);
+    close (CONF_OUT);
+
+    if ($found != 1) {
+        die "Error: Found $found (instead of 1) occurrences of Version: in Java Build file";
+    }
+
+    unlink ($IFILE) or die "Error deleting $IFILE";
+    rename ($OFILE, $IFILE) or die "Error renaming $OFILE";
+}
+
 
 # Update the autotools / autobuild files in current source directory
 sub bootstrap() {
@@ -576,6 +610,7 @@ update_configver();
 update_hver();
 update_libver();
 update_pkgver();
+update_buildxml();
 
 bootstrap();
 checkin_vers();
