@@ -39,11 +39,11 @@
  * 3.1.2b1 would be 0x03010201.  Snapshot from Jan 2, 2003 would be
  * 0xFF030102.
  * See TSK_VERSION_STR for string form. */
-#define TSK_VERSION_NUM 0x040600ff
+#define TSK_VERSION_NUM 0x040601ff
 
 /** Version of code in string form. See TSK_VERSION_NUM for
  * integer form. */
-#define TSK_VERSION_STR "4.6.0"
+#define TSK_VERSION_STR "4.6.1"
 
 
 /* include the TSK-specific header file that we created in autoconf
@@ -288,7 +288,7 @@ extern "C" {
     typedef enum {
         TSK_WALK_CONT = 0x0,    ///< Walk function should continue to next object
         TSK_WALK_STOP = 0x1,    ///< Walk function should stop processing units and return OK
-        TSK_WALK_ERROR = 0x2,   ///< Walk function should stop processing units and return error
+        TSK_WALK_ERROR = 0x2   ///< Walk function should stop processing units and return error
     } TSK_WALK_RET_ENUM;
 
 

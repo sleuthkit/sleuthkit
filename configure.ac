@@ -4,7 +4,7 @@ dnl Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
 
-AC_INIT(sleuthkit, 4.6.0)
+AC_INIT(sleuthkit, 4.6.1)
 m4_include([m4/ax_pthread.m4])
 dnl include the version from 1.12.1. This will work for
 m4_include([m4/cppunit.m4])
@@ -384,6 +384,12 @@ esac
 dnl Dependencies for fiwalk
 AC_CHECK_FUNCS([getline])
 AC_SEARCH_LIBS(regexec, [regex], , AC_MSG_ERROR([missing regex]))
+
+dnl Enable compliation warnings
+WARNINGS='-Wall -Wextra -Wno-unused-parameter'
+
+AC_SUBST(AM_CFLAGS, $WARNINGS)
+AC_SUBST(AM_CXXFLAGS, $WARNINGS)
 
 AC_CONFIG_FILES([
     Makefile

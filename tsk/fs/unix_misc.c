@@ -122,7 +122,6 @@ unix_make_data_run_indirect(TSK_FS_INFO * fs, TSK_FS_ATTR * fs_attr,
     TSK_FS_ATTR * fs_attr_indir, char *buf[], int level, TSK_DADDR_T addr,
     TSK_OFF_T length)
 {
-    char *myname = "unix_make_data_run_indirect";
     size_t addr_cnt = 0;
     TSK_DADDR_T *myaddrs = (TSK_DADDR_T *) buf[level];
     TSK_OFF_T length_remain = length;
@@ -132,7 +131,7 @@ unix_make_data_run_indirect(TSK_FS_INFO * fs, TSK_FS_ATTR * fs_attr,
     TSK_FS_ATTR_RUN *data_run;
 
     if (tsk_verbose)
-        tsk_fprintf(stderr, "%s: level %d block %" PRIuDADDR "\n", myname,
+        tsk_fprintf(stderr, "%s: level %d block %" PRIuDADDR "\n", "unix_make_data_run_indirect",
             level, addr);
 
     // block_size is a fragment size in UFS, so we need to maintain length in fragments
@@ -174,7 +173,7 @@ unix_make_data_run_indirect(TSK_FS_INFO * fs, TSK_FS_ATTR * fs_attr,
         ssize_t cnt;
         // read the data into the scratch buffer
         cnt = tsk_fs_read_block(fs, addr, buf[0], fs_bufsize);
-        if (cnt != fs_bufsize) {
+        if (cnt != (ssize_t)fs_bufsize) {
             if (cnt >= 0) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -250,7 +249,6 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
     TSK_OFF_T length = 0;
     TSK_OFF_T read_b = 0;
     TSK_FS_ATTR *fs_attr;
-    TSK_FS_ATTR *fs_attr_indir;
     TSK_FS_META *fs_meta = fs_file->meta;
     TSK_FS_INFO *fs = fs_file->fs_info;
 
@@ -267,14 +265,15 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
         && (fs_meta->attr_state == TSK_FS_META_ATTR_STUDIED)) {
         return 0;
     }
-    else if (fs_meta->attr_state == TSK_FS_META_ATTR_ERROR) {
+    if (fs_meta->attr_state == TSK_FS_META_ATTR_ERROR) {
         return 1;
     }
+
     // not sure why this would ever happen, but...
-    else if (fs_meta->attr != NULL) {
+    if (fs_meta->attr != NULL) {
         tsk_fs_attrlist_markunused(fs_meta->attr);
     }
-    else if (fs_meta->attr == NULL) {
+    else {
         fs_meta->attr = tsk_fs_attrlist_alloc();
     }
 
@@ -325,6 +324,7 @@ tsk_fs_unix_make_data_run(TSK_FS_FILE * fs_file)
         int numSingIndirect = 0;
         int numDblIndirect = 0;
         int numTripIndirect = 0;
+        TSK_FS_ATTR *fs_attr_indir;
 
 
         /* With FFS/UFS a full block contains the addresses, but block_size is

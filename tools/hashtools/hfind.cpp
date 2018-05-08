@@ -50,7 +50,8 @@ usage()
  * Lookup callback to print the names of the files for each hash that is found.
  */
 static TSK_WALK_RET_ENUM
-lookup_act(TSK_HDB_INFO * hdb_info, const char *hash, const char *name, void *ptr)
+lookup_act(TSK_HDB_INFO * /*hdb_info*/, const char *hash, const char *name,
+           void * /*ptr*/)
 {
     tsk_fprintf(stdout, "%s\t%s\n", hash, (NULL != name) ? name : "File name not available");
     return TSK_WALK_CONT;

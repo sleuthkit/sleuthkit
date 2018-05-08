@@ -191,21 +191,22 @@ TSK_OFF_T TskAuto::getImageSize() const
 }
 
 TSK_FILTER_ENUM 
-TskAuto::filterVs(const TSK_VS_INFO * vs_info) 
+TskAuto::filterVs(const TSK_VS_INFO * /*vs_info*/)
 {
     return TSK_FILTER_CONT;
 }
 
 TSK_FILTER_ENUM 
-TskAuto::filterVol(const TSK_VS_PART_INFO * vs_part) 
+TskAuto::filterVol(const TSK_VS_PART_INFO * /*vs_part*/)
 {
     return TSK_FILTER_CONT;
 }
 
 TSK_FILTER_ENUM 
-TskAuto::filterFs(TSK_FS_INFO * fs_info) {
+TskAuto::filterFs(TSK_FS_INFO * /*fs_info*/)
+{
     return TSK_FILTER_CONT;
-};
+}
 
 
 
@@ -237,7 +238,7 @@ TskAuto::findFilesInImg()
  * and returning an error would indicate to TSK that errno and such are set. 
  */
 TSK_WALK_RET_ENUM
-    TskAuto::vsWalkCb(TSK_VS_INFO * a_vs_info,
+    TskAuto::vsWalkCb(TSK_VS_INFO * /*a_vs_info*/,
     const TSK_VS_PART_INFO * a_vs_part, void *a_ptr)
 {
     TskAuto *tsk = (TskAuto *) a_ptr;
@@ -591,11 +592,12 @@ TSK_RETVAL_ENUM
 
 
 TSK_RETVAL_ENUM 
-TskAuto::processAttribute(TSK_FS_FILE * fs_file,
-                                         const TSK_FS_ATTR * fs_attr, const char *path) 
+TskAuto::processAttribute(TSK_FS_FILE * /*fs_file*/,
+                          const TSK_FS_ATTR * /*fs_attr*/,
+                          const char * /*path*/)
 {
     return TSK_OK;
-};
+}
 
 
 void TskAuto::setStopProcessing() {
@@ -695,7 +697,7 @@ std::string TskAuto::errorRecordToString(error_record &rec) {
 uint8_t 
 TskAuto::handleError() {
     return 0;
-};
+}
 
 
 /**
@@ -704,7 +706,7 @@ TskAuto::handleError() {
  * @returns 1 if the file is an NTFS System file, 0 if not.
  */
 uint8_t
-    TskAuto::isNtfsSystemFiles(TSK_FS_FILE * a_fs_file, const char *a_path)
+    TskAuto::isNtfsSystemFiles(TSK_FS_FILE * a_fs_file, const char * /*a_path*/)
 {
     if ((a_fs_file) && (a_fs_file->fs_info)
         && (TSK_FS_TYPE_ISNTFS(a_fs_file->fs_info->ftype))

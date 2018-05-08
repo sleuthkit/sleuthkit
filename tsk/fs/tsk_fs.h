@@ -617,7 +617,7 @@ extern "C" {
         a_fs_file, const char *a_path, void *a_ptr);
 
 
-#define TSK_FS_DIR_TAG  0x97531246
+#define TSK_FS_DIR_TAG  0x57531246
     /**
     * A handle to a directory so that its files can be individually accessed.
     */

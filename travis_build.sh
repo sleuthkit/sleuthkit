@@ -6,5 +6,5 @@ if test ${TRAVIS_OS_NAME} = "linux"; then
 elif test ${TRAVIS_OS_NAME} = "osx"; then
 	brew install ant	
 fi
-./bootstrap && ./configure --prefix=/usr && make
+./bootstrap && ./configure --prefix=/usr && make > /dev/null
 cd bindings/java/ && ant dist-PostgreSQL

@@ -54,7 +54,7 @@ usage()
  * Prints the layout information
  * */
 static TSK_WALK_RET_ENUM
-part_act(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void *ptr)
+part_act(TSK_VS_INFO * vs, const TSK_VS_PART_INFO * part, void * /*ptr*/)
 {
     if (part->flags & TSK_VS_PART_FLAG_META)
         tsk_printf("%.3" PRIuPNUM ":  Meta      ", part->addr);

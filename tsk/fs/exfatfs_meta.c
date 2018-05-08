@@ -723,7 +723,7 @@ exfatfs_make_contiguous_data_run(TSK_FS_FILE *a_fs_file)
     TSK_DADDR_T first_cluster = 0;
     TSK_FS_ATTR_RUN *data_run;
     TSK_FS_ATTR *fs_attr = NULL;
-    TSK_OFF_T alloc_size = 0;
+//    TSK_OFF_T alloc_size = 0;
 
     assert(a_fs_file != NULL);
     assert(a_fs_file->meta != NULL);
@@ -763,7 +763,7 @@ exfatfs_make_contiguous_data_run(TSK_FS_FILE *a_fs_file)
     /* Figure out the allocated size of the file. The minimum allocation unit
      * for exFAT is a cluster, so the the roundup() function is used to round 
      * up the file size in bytes to a multiple of cluser size in bytes. */
-    alloc_size = roundup(fs_meta->size, (fatfs->csize * fs->block_size));
+//    alloc_size = roundup(fs_meta->size, (fatfs->csize * fs->block_size));
 
     /* Allocate an attribute list for the file. */
     fs_meta->attr = tsk_fs_attrlist_alloc();

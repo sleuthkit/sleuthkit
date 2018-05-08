@@ -158,7 +158,7 @@ iso9660_proc_dir(TSK_FS_INFO * a_fs, TSK_FS_DIR * a_fs_dir, char *buf,
              * that had a file with 0 bytes with the same starting block as another
              * file. */
             for (in = iso->in_list; in; in = in->next) {
-                if (in->dentry_offset == dir_offs + buf_idx)
+                if (in->dentry_offset == dir_offs + (TSK_OFF_T)buf_idx)
                     break;
             }
 
@@ -285,7 +285,7 @@ iso9660_dir_open_meta(TSK_FS_INFO * a_fs, TSK_FS_DIR ** a_fs_dir,
         return TSK_ERR;
 
     cnt = tsk_fs_file_read(fs_dir->fs_file, 0, buf, length, 0);
-    if (cnt != length) {
+    if (cnt != (ssize_t)length) {
         if (cnt >= 0) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_READ);

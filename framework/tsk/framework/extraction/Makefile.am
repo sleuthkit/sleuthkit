@@ -1,4 +1,4 @@
-AM_CXXFLAGS = -I.. -I../.. -I../../../.. -Wall
+AM_CPPFLAGS = -I.. -I../.. -I../../../..
 
 noinst_LTLIBRARIES = libfwextract.la
 libfwextract_la_SOURCES = TskAutoImpl.cpp TskAutoImpl.h \
