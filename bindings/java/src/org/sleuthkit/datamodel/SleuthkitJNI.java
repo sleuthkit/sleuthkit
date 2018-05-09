@@ -889,7 +889,7 @@ public class SleuthkitJNI {
         // There is a chance that a vsPart handle exists in a Volume object,
         // and that memory will be freed.  But, the "TAG" checks in the native
         // code should detect that it has been freed. 
-        closeVsNat(vsHandle);
+        //		closeVsNat(vsHandle);  TODO JIRA-3829 
 	}
 
 	/**
