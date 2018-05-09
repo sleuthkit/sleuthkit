@@ -236,4 +236,18 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 			}
 		}
 	}
+
+	/**
+	 * Functinal interface for a function from I to O that throws
+	 * TskCoreException.
+	 *
+	 * @param <I> Input type.
+	 * @param <O> Output type.
+	 */
+	@FunctionalInterface
+	interface CheckedFunction<I, O> {
+
+		O apply(I input) throws TskCoreException;
+	}
+
 }

@@ -73,7 +73,7 @@ public interface EventType extends Comparable<EventType> {
 		EventType superType = getSuperType();
 
 		return superType.equals(ROOT_EVEN_TYPE)
-				? this  
+				? this
 				: superType.getBaseType();
 
 	}
@@ -86,8 +86,8 @@ public interface EventType extends Comparable<EventType> {
 	}
 
 	@Override
-	public default int compareTo(EventType o) {
-		return Comparator.comparing(EventType::getTypeID).compare(this, o);
+	default int compareTo(EventType otherType) {
+		return Comparator.comparing(EventType::getTypeID).compare(this, otherType);
 	}
 
 	/**
@@ -325,7 +325,7 @@ public interface EventType extends Comparable<EventType> {
 				return "error loading file name";
 			});
 
-	final ArtifactEventType DEVICES_ATTACHED = new StandardArtifactEventType(21,
+	ArtifactEventType DEVICES_ATTACHED = new StandardArtifactEventType(21,
 			getBundle().getString("MiscTypes.devicesAttached.name"), // NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_DEVICE_ATTACHED),
@@ -370,10 +370,5 @@ public interface EventType extends Comparable<EventType> {
 
 			}
 		}
-	}
-
-	interface CheckedFunction<I, O> {
-
-		O apply(I input) throws TskCoreException;
 	}
 }
