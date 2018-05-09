@@ -10,6 +10,7 @@
 	</condition>
 	<import file="build-${os.family}.xml"/>
 
+    <!-- Careful changing this because release-windows.pl updates it by pattern -->
 	<property name="VERSION" value="4.6.1"/>
 
 	<!-- set global properties for this build -->
