@@ -5,7 +5,7 @@ installLib() {
 	cd $1
 	./synclibs.sh
 	./autogen.sh
-	./configure && make > /dev/null && sudo make install > /dev/null
+	./configure -prefix=/usr && make > /dev/null && sudo make install
 	cd ..
 }
 
