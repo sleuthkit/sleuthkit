@@ -24,4 +24,4 @@ fi
 installLib libvhdi
 installLib libvmdk
 ./bootstrap && ./configure --prefix=/usr && make > /dev/null
-cd bindings/java/ && ant dist-PostgreSQL
+cd bindings/java/ && ant -q dist-PostgreSQL
