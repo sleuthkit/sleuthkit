@@ -5,7 +5,12 @@ installLib() {
 	cd $1
 	./synclibs.sh
 	./autogen.sh
-	./configure && make > /dev/null && sudo make install > /dev/null
+	if test ${TRAVIS_OS_NAME} = "linux"; then
+		./configure -prefix=/usr > /dev/null
+	else
+		./configure > /dev/null
+	fi 
+	make > /dev/null && sudo make install > /dev/null
 	cd ..
 }
 
@@ -19,4 +24,4 @@ fi
 installLib libvhdi
 installLib libvmdk
 ./bootstrap && ./configure --prefix=/usr && make > /dev/null
-cd bindings/java/ && ant dist-PostgreSQL
+cd bindings/java/ && ant -q dist-PostgreSQL
