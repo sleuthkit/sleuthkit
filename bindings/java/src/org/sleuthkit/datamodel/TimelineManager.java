@@ -39,7 +39,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -64,8 +63,6 @@ import org.sleuthkit.datamodel.timeline.DescriptionLoD;
 import org.sleuthkit.datamodel.timeline.EventCluster;
 import org.sleuthkit.datamodel.timeline.EventStripe;
 import org.sleuthkit.datamodel.timeline.EventType;
-import static org.sleuthkit.datamodel.timeline.EventType.CUSTOM_TYPES;
-import static org.sleuthkit.datamodel.timeline.EventType.ROOT_EVEN_TYPE;
 import org.sleuthkit.datamodel.timeline.EventTypeZoomLevel;
 import org.sleuthkit.datamodel.timeline.RangeDivisionInfo;
 import org.sleuthkit.datamodel.timeline.SingleEvent;
@@ -486,7 +483,8 @@ public final class TimelineManager {
 	}
 
 	private void initializeEventTypes() throws TskCoreException {
-		eventTypeIDMap.put(EventType.ROOT_EVEN_TYPE.getTypeID(), ROOT_EVEN_TYPE);
+		//initialize root and base event types, these are added to the DB in c++ land
+		eventTypeIDMap.put(EventType.ROOT_EVEN_TYPE.getTypeID(), EventType.ROOT_EVEN_TYPE);
 		eventTypeIDMap.put(EventType.WEB_ACTIVITY.getTypeID(), EventType.WEB_ACTIVITY);
 		eventTypeIDMap.put(EventType.MISC_TYPES.getTypeID(), EventType.MISC_TYPES);
 		eventTypeIDMap.put(EventType.FILE_SYSTEM.getTypeID(), EventType.FILE_SYSTEM);
@@ -495,45 +493,27 @@ public final class TimelineManager {
 		eventTypeIDMap.put(EventType.FILE_CREATED.getTypeID(), EventType.FILE_CREATED);
 		eventTypeIDMap.put(EventType.FILE_MODIFIED.getTypeID(), EventType.FILE_MODIFIED);
 
+		//initialize the other event types that aren't added in c++
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement statement = con.createStatement();) {
 
-			for (EventType type : EventType.getWebActivityTypes()) {
+			List<EventType> typesToInitialize = new ArrayList<>();
+			typesToInitialize.add(EventType.CUSTOM_TYPES);//Initialize the custom base type
+			typesToInitialize.addAll(EventType.getWebActivityTypes());//Initialize the web events
+			typesToInitialize.addAll(EventType.getMiscTypes());	//initialize the misc events
+			typesToInitialize.add(EventType.OTHER);	//initialize the Other custom type.
+
+			for (EventType type : typesToInitialize) {
 				statement.executeUpdate(
 						insertOrIgnore(" INTO event_types(event_type_id, display_name, super_type_id) "
-								+ "VALUES( " + type.getTypeID() + ", '" + type.getDisplayName() + "'," + type.getBaseType().getTypeID() + ")  "));
-
+								+ "VALUES( "
+								+ type.getTypeID() + ", '"
+								+ type.getDisplayName() + "',"
+								+ type.getBaseType().getTypeID()
+								+ ")"));
 				eventTypeIDMap.put(type.getTypeID(), type);
 			}
-			for (EventType type : EventType.getMiscTypes()) {
-				statement.executeUpdate(
-						insertOrIgnore(" INTO event_types(event_type_id, display_name, super_type_id) "
-								+ "VALUES( " + type.getTypeID() + ", '" + type.getDisplayName() + "'," + type.getBaseType().getTypeID() + ")  "));
-
-				eventTypeIDMap.put(type.getTypeID(), type);
-			}
-
-			statement.executeUpdate(
-					insertOrIgnore(" INTO event_types(event_type_id, display_name, super_type_id) "
-							+ "VALUES( " + EventType.CUSTOM_TYPES.getTypeID() + ", '" + EventType.CUSTOM_TYPES.getDisplayName() + "'," + EventType.ROOT_EVEN_TYPE.getTypeID() + ")  "
-					));
-			eventTypeIDMap.put(EventType.CUSTOM_TYPES.getTypeID(), EventType.CUSTOM_TYPES);
-
-			statement.executeUpdate(
-					insertOrIgnore(" INTO event_types(event_type_id, display_name, super_type_id) "
-							+ "VALUES( " + EventType.OTHER.getTypeID() + ", '" + EventType.OTHER.getDisplayName() + "'," + EventType.CUSTOM_TYPES.getTypeID() + ")  "));
-
-			eventTypeIDMap.put(EventType.OTHER.getTypeID(), EventType.OTHER);
-
-//			try (ResultSet resultset = statement.executeQuery("SELECT * from event_types");) {
-//				while (resultset.next()) {
-//					long eventTypeID = resultset.getLong("event_type_id");
-//					String displayName = resultset.getString("display_name");
-//
-//					eventTypeIDMap.computeIfAbsent(eventTypeID, typeID -> new CustomEventType(typeID, displayName));
-//				}
-//			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Failed to initialize event types.", ex); // NON-NLS
 		} finally {
@@ -1449,7 +1429,7 @@ public final class TimelineManager {
 	 */
 	private String getSQLWhere(TypeFilter typeFilter) {
 		if (typeFilter.isSelected()) {
-			if (typeFilter.getEventType().equals(ROOT_EVEN_TYPE)
+			if (typeFilter.getEventType().equals(EventType.ROOT_EVEN_TYPE)
 					& typeFilter.areAllSubFiltersActiveRecursive()) {
 				return getTrueLiteral(); //then collapse clause to true
 			}
