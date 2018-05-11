@@ -1171,16 +1171,19 @@ TskDbSqlite::addFile(TSK_FS_FILE* fs_file,
 
 
     std::string escaped_path_str = std::string(escaped_path);
-    const char* full_description = (escaped_path_str + name).c_str();
-    const size_t firstslash = escaped_path_str.find('/', 1);
-    const char* short_desc = (firstslash == string::npos)
-                                 ? escaped_path
-                                 : escaped_path_str.substr(0, firstslash + 1).c_str();
 
-    if (addMACTimeEvent(zSQL, dataSourceObjId, objId, mtime, 4, full_description, escaped_path, short_desc)
-        || addMACTimeEvent(zSQL, dataSourceObjId, objId, atime, 5, full_description, escaped_path, short_desc)
-        || addMACTimeEvent(zSQL, dataSourceObjId, objId, crtime, 6, full_description, escaped_path, short_desc)
-        || addMACTimeEvent(zSQL, dataSourceObjId, objId, ctime, 7, full_description, escaped_path, short_desc))
+    std::string full_description = escaped_path_str;
+    full_description.append(name);
+    const size_t firstslash = escaped_path_str.find('/', 1);
+    std:string short_desc = (firstslash == string::npos)
+                            ? escaped_path_str
+                            : escaped_path_str.substr(0, firstslash + 1);
+
+  
+    if (addMACTimeEvent(zSQL, dataSourceObjId, objId, mtime, 4, full_description.c_str(), escaped_path, short_desc.c_str())
+        || addMACTimeEvent(zSQL, dataSourceObjId, objId, atime, 5, full_description.c_str(), escaped_path, short_desc.c_str())
+        || addMACTimeEvent(zSQL, dataSourceObjId, objId, crtime, 6, full_description.c_str(), escaped_path, short_desc.c_str())
+        || addMACTimeEvent(zSQL, dataSourceObjId, objId, ctime, 7, full_description.c_str(), escaped_path, short_desc.c_str()))
     {
         free(name);
         free(escaped_path);

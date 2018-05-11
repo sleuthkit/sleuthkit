@@ -1232,15 +1232,20 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
 	}
 
 
-	std::string escaped_path_str = std::string(escaped_path);
-	const char* full_description = (escaped_path_str + name).c_str();
-	const size_t firstslash = escaped_path_str.find('/', 1);
-	const char* root_folder = (firstslash == string::npos)
-		                          ? escaped_path
-		                          : escaped_path_str.substr(0, firstslash+1).c_str();
-	char* full_desc_sql = PQescapeLiteral(conn, full_description, strlen(full_description));
+    std::string escaped_path_str = std::string(escaped_path);
+    std::string full_description = escaped_path_str;
+    full_description.append(name);
+    const size_t firstslash = escaped_path_str.find('/', 1);
+    std:string short_desc = (firstslash == string::npos)
+        ? escaped_path_str
+        : escaped_path_str.substr(0, firstslash + 1);
+
+
+
+
+	char* full_desc_sql = PQescapeLiteral(conn, full_description.c_str(), strlen(full_description.c_str()));
 	char* med_desc_sql = PQescapeLiteral(conn, escaped_path, strlen(escaped_path));
-	char* short_desc_sql = PQescapeLiteral(conn, root_folder, strlen(root_folder));
+	char* short_desc_sql = PQescapeLiteral(conn, short_desc.c_str(), strlen(short_desc.c_str()));
 	if (addMACTimeEvent(zSQL, dataSourceObjId, objId, mtime, 4, full_desc_sql, med_desc_sql, short_desc_sql)
 		|| addMACTimeEvent(zSQL, dataSourceObjId, objId, atime, 5, full_desc_sql, med_desc_sql, short_desc_sql)
 		|| addMACTimeEvent(zSQL, dataSourceObjId, objId, crtime, 6, full_desc_sql, med_desc_sql, short_desc_sql)
