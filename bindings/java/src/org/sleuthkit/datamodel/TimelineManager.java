@@ -534,7 +534,6 @@ public final class TimelineManager {
 //					eventTypeIDMap.computeIfAbsent(eventTypeID, typeID -> new CustomEventType(typeID, displayName));
 //				}
 //			}
-
 		} catch (SQLException ex) {
 			throw new TskCoreException("Failed to initialize event types.", ex); // NON-NLS
 		} finally {
@@ -827,8 +826,8 @@ public final class TimelineManager {
 				+ SleuthkitCase.escapeSingleQuotes(medDescription) + "','"
 				+ SleuthkitCase.escapeSingleQuotes(shortDescription) + "','"
 				+ known.getFileKnownValue() + "',"
-				+ (hashHit ? 0 : 1) + ","
-				+ (tagged ? 0 : 1) + "  )";// NON-NLS  
+				+ (hashHit ? 1 : 0) + ","
+				+ (tagged ? 1 : 0) + "  )";// NON-NLS  
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement insertRowStmt = con.createStatement();) {
