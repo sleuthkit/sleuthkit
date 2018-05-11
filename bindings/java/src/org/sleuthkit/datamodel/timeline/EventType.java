@@ -21,6 +21,7 @@ package org.sleuthkit.datamodel.timeline;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSortedSet;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -131,7 +132,6 @@ public interface EventType extends Comparable<EventType> {
 					RECENT_DOCUMENTS);
 		}
 	};
-	
 
 	EventType FILE_MODIFIED = new StandardEventType(4,
 			getBundle().getString("FileSystemTypes.fileModified.name"), // NON-NLS
@@ -334,6 +334,17 @@ public interface EventType extends Comparable<EventType> {
 			new AttributeExtractor(new Type(TSK_DEVICE_MAKE)),
 			new AttributeExtractor(new Type(TSK_DEVICE_MODEL)),
 			new AttributeExtractor(new Type(TSK_DEVICE_ID)));
+
+	EventType CUSTOM_TYPES = new StandardEventType(22,
+			getBundle().getString("BaseTypes.customTypes.name"), // NON-NLS
+			BASE_TYPE, ROOT_EVEN_TYPE) {
+		@Override
+		public SortedSet< EventType> getSubTypes() {
+			return ImmutableSortedSet.of(OTHER);
+		}
+	};
+
+	EventType OTHER = new StandardEventType(23, getBundle().getString("CustomTypes.other.name"), SUB_TYPE, CUSTOM_TYPES);
 
 	static SortedSet<? extends EventType> getBaseTypes() {
 		return ROOT_EVEN_TYPE.getSubTypes();

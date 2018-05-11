@@ -64,6 +64,7 @@ import org.sleuthkit.datamodel.timeline.DescriptionLoD;
 import org.sleuthkit.datamodel.timeline.EventCluster;
 import org.sleuthkit.datamodel.timeline.EventStripe;
 import org.sleuthkit.datamodel.timeline.EventType;
+import static org.sleuthkit.datamodel.timeline.EventType.CUSTOM_TYPES;
 import static org.sleuthkit.datamodel.timeline.EventType.ROOT_EVEN_TYPE;
 import org.sleuthkit.datamodel.timeline.EventTypeZoomLevel;
 import org.sleuthkit.datamodel.timeline.RangeDivisionInfo;
@@ -513,14 +514,26 @@ public final class TimelineManager {
 				eventTypeIDMap.put(type.getTypeID(), type);
 			}
 
-			try (ResultSet resultset = statement.executeQuery("SELECT * from event_types");) {
-				while (resultset.next()) {
-					long eventTypeID = resultset.getLong("event_type_id");
-					String displayName = resultset.getString("display_name");
+			statement.executeUpdate(
+					insertOrIgnore(" INTO event_types(event_type_id, display_name, super_type_id) "
+							+ "VALUES( " + EventType.CUSTOM_TYPES.getTypeID() + ", '" + EventType.CUSTOM_TYPES.getDisplayName() + "'," + EventType.ROOT_EVEN_TYPE.getTypeID() + ")  "
+					));
+			eventTypeIDMap.put(EventType.CUSTOM_TYPES.getTypeID(), EventType.CUSTOM_TYPES);
 
-					eventTypeIDMap.computeIfAbsent(eventTypeID, typeID -> new CustomEventType(typeID, displayName));
-				}
-			}
+			statement.executeUpdate(
+					insertOrIgnore(" INTO event_types(event_type_id, display_name, super_type_id) "
+							+ "VALUES( " + EventType.OTHER.getTypeID() + ", '" + EventType.OTHER.getDisplayName() + "'," + EventType.CUSTOM_TYPES.getTypeID() + ")  "));
+
+			eventTypeIDMap.put(EventType.OTHER.getTypeID(), EventType.OTHER);
+
+//			try (ResultSet resultset = statement.executeQuery("SELECT * from event_types");) {
+//				while (resultset.next()) {
+//					long eventTypeID = resultset.getLong("event_type_id");
+//					String displayName = resultset.getString("display_name");
+//
+//					eventTypeIDMap.computeIfAbsent(eventTypeID, typeID -> new CustomEventType(typeID, displayName));
+//				}
+//			}
 
 		} catch (SQLException ex) {
 			throw new TskCoreException("Failed to initialize event types.", ex); // NON-NLS
@@ -529,38 +542,10 @@ public final class TimelineManager {
 		}
 	}
 
-	public EventType addEventType(String displayName) throws TskCoreException {
-		sleuthkitCase.acquireSingleUserCaseWriteLock();
-		try (CaseDbConnection con = sleuthkitCase.getConnection();
-				Statement statement = con.createStatement();) {
-
-			statement.executeUpdate(
-					insertOrIgnore(" INTO event_types( display_name, super_type_id) "
-							+ "VALUES( '" + displayName + "', " + ROOT_EVEN_TYPE.getTypeID() + ")  "), PreparedStatement.RETURN_GENERATED_KEYS);
-			try (ResultSet generatedKeys = statement.getGeneratedKeys();) {
-				if (generatedKeys.next()) {
-					CustomEventType customEventType = new CustomEventType(generatedKeys.getLong(1), displayName);
-					eventTypeIDMap.put(customEventType.getTypeID(), customEventType);
-					return customEventType;
-				} else {
-					try (ResultSet result = statement.executeQuery("SELECT event_type_id FROM event_types WHERE display_name = '" + displayName + "'");) {
-						CustomEventType customEventType = new CustomEventType(result.getLong("event_type_id"), displayName);
-						eventTypeIDMap.put(customEventType.getTypeID(), customEventType);
-						return customEventType;
-					}
-				}
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Failed to add event type.", ex); // NON-NLS
-		} finally {
-			sleuthkitCase.releaseSingleUserCaseWriteLock();
-		}
-	}
-
 	/**
 	 * Get an EventType object given it's id
 	 */
-	Optional<EventType> getEventType(int eventTypeID) {
+	Optional<EventType> getEventType(long eventTypeID) {
 		return Optional.ofNullable(eventTypeIDMap.get(eventTypeID));
 	}
 

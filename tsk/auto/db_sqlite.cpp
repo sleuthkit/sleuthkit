@@ -393,14 +393,14 @@ TskDbSqlite::initialize()
             , "Error creating event_types table: %s\n")
         ||
         attempt_exec(
-            "insert into event_types(event_type_id, display_name, super_type_id, artifact_based) values( 0, 'Event Types', null);"
-            "insert into event_types(event_type_id, display_name, super_type_id, artifact_based) values(1, 'File System', 0);"
-            "insert into event_types(event_type_id, display_name, super_type_id, artifact_based) values(2, 'Web Activity', 0);"
-            "insert into event_types(event_type_id, display_name, super_type_id, artifact_based) values(3, 'Misc Types', 0);"
-            "insert into event_types(event_type_id, display_name, super_type_id, artifact_based) values(4, 'Modified', 1);"
-            "insert into event_types(event_type_id, display_name, super_type_id, artifact_based) values(5, 'Accessed', 1);"
-            "insert into event_types(event_type_id, display_name, super_type_id, artifact_based) values(6, 'Created', 1);"
-            "insert into event_types(event_type_id, display_name, super_type_id, artifact_based) values(7, 'Changed', 1);"
+            "insert into event_types(event_type_id, display_name, super_type_id) values( 0, 'Event Types', null);"
+            "insert into event_types(event_type_id, display_name, super_type_id) values(1, 'File System', 0);"
+            "insert into event_types(event_type_id, display_name, super_type_id) values(2, 'Web Activity', 0);"
+            "insert into event_types(event_type_id, display_name, super_type_id) values(3, 'Misc Types', 0);"
+            "insert into event_types(event_type_id, display_name, super_type_id) values(4, 'Modified', 1);"
+            "insert into event_types(event_type_id, display_name, super_type_id) values(5, 'Accessed', 1);"
+            "insert into event_types(event_type_id, display_name, super_type_id) values(6, 'Created', 1);"
+            "insert into event_types(event_type_id, display_name, super_type_id) values(7, 'Changed', 1);"
             , "Error initializing event_types table rows: %s\n")
         ||
         attempt_exec(
