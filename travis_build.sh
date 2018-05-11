@@ -2,7 +2,7 @@
 set -ex
 installLib() {
 	git clone https://github.com/sleuthkit/$1
-	if [ $1 == "libvmdk_64bit" ];then
+	if [ "$1" == "libvmdk_64bit" ];then
 		cd $1/libvmdk
 	else
 		cd $1
