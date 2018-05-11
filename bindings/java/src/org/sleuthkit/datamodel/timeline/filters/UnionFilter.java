@@ -25,28 +25,30 @@ import javafx.collections.ObservableList;
 
 /**
  * Union(or) filter
+ *
+ * @param <SubFilterType> The type of the subfilters.
  */
 abstract public class UnionFilter<SubFilterType extends Filter> extends CompoundFilter<SubFilterType> {
 
-    public UnionFilter(ObservableList<SubFilterType> subFilters) {
-        super(subFilters);
-    }
+	public UnionFilter(ObservableList<SubFilterType> subFilters) {
+		super(subFilters);
+	}
 
-    public UnionFilter() {
-        super(FXCollections.<SubFilterType>observableArrayList());
-    }
+	public UnionFilter() {
+		super(FXCollections.<SubFilterType>observableArrayList());
+	}
 
-    abstract Predicate<SubFilterType> getDuplicatePredicate(SubFilterType subfilter);
+	abstract Predicate<SubFilterType> getDuplicatePredicate(SubFilterType subfilter);
 
-    public void addSubFilter(SubFilterType subfilter) {
-        addSubFilter(subfilter, Comparator.comparing(SubFilterType::getDisplayName));
-    }
+	public void addSubFilter(SubFilterType subfilter) {
+		addSubFilter(subfilter, Comparator.comparing(SubFilterType::getDisplayName));
+	}
 
-    protected void addSubFilter(SubFilterType subfilter, Comparator<SubFilterType> comparator) {
-        Predicate<SubFilterType> duplicatePredicate = getDuplicatePredicate(subfilter);
-        if (getSubFilters().stream().anyMatch(duplicatePredicate) == false) {
-            getSubFilters().add(subfilter);
-        }
-        getSubFilters().sort(comparator);
-    }
+	protected void addSubFilter(SubFilterType subfilter, Comparator<SubFilterType> comparator) {
+		Predicate<SubFilterType> duplicatePredicate = getDuplicatePredicate(subfilter);
+		if (getSubFilters().stream().anyMatch(duplicatePredicate) == false) {
+			getSubFilters().add(subfilter);
+		}
+		getSubFilters().sort(comparator);
+	}
 }

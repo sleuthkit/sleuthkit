@@ -23,9 +23,9 @@ package org.sleuthkit.datamodel.timeline;
  */
 public enum DescriptionLoD implements DisplayNameProvider {
 
-    SHORT(BundleUtils.getBundle(). getString("DescriptionLOD.short")),
-    MEDIUM(BundleUtils.getBundle(). getString("DescriptionLOD.medium")),
-    FULL(BundleUtils.getBundle(). getString( "DescriptionLOD.full"));
+    SHORT(BundleProvider.getBundle(). getString("DescriptionLOD.short")),
+    MEDIUM(BundleProvider.getBundle(). getString("DescriptionLOD.medium")),
+    FULL(BundleProvider.getBundle(). getString( "DescriptionLOD.full"));
 
     private final String displayName;
 

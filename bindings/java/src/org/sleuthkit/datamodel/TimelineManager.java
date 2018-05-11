@@ -18,15 +18,16 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.SetMultimap;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Types;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -36,11 +37,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import static org.apache.commons.lang3.StringUtils.defaultString;
+import static org.apache.commons.lang3.StringUtils.substringAfter;
+import static org.apache.commons.lang3.StringUtils.substringBefore;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Interval;
@@ -49,15 +53,15 @@ import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHS
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import static org.sleuthkit.datamodel.StringUtils.joinAsStrings;
-import org.sleuthkit.datamodel.timeline.BaseTypes;
+import org.sleuthkit.datamodel.timeline.ArtifactEventType;
 import org.sleuthkit.datamodel.timeline.CombinedEvent;
 import org.sleuthkit.datamodel.timeline.DescriptionLoD;
 import org.sleuthkit.datamodel.timeline.EventCluster;
 import org.sleuthkit.datamodel.timeline.EventStripe;
 import org.sleuthkit.datamodel.timeline.EventType;
+import static org.sleuthkit.datamodel.timeline.EventType.ROOT_EVEN_TYPE;
 import org.sleuthkit.datamodel.timeline.EventTypeZoomLevel;
 import org.sleuthkit.datamodel.timeline.RangeDivisionInfo;
-import org.sleuthkit.datamodel.timeline.RootEventType;
 import org.sleuthkit.datamodel.timeline.SingleEvent;
 import org.sleuthkit.datamodel.timeline.TimeUnits;
 import org.sleuthkit.datamodel.timeline.ZoomParams;
@@ -80,20 +84,17 @@ import org.sleuthkit.datamodel.timeline.filters.UnionFilter;
  */
 public final class TimelineManager {
 
-	private static final Logger LOGGER = Logger.getLogger(TimelineManager.class.getName());
-
-	private final Set<PreparedStatement> preparedStatements = new HashSet<>();
+	private static final Logger logger = Logger.getLogger(TimelineManager.class.getName());
 
 	private final SleuthkitCase sleuthkitCase;
-	private final String primaryKeyType;
 	private final String csvFunction;
+
+	final private BiMap<Integer, EventType> eventTypeIDMap = HashBiMap.create();
 
 	TimelineManager(SleuthkitCase tskCase) throws TskCoreException {
 		sleuthkitCase = tskCase;
-		primaryKeyType = sleuthkitCase.getDatabaseType() == TskData.DbType.POSTGRESQL ? "BIGSERIAL" : "INTEGER";
 		csvFunction = sleuthkitCase.getDatabaseType() == TskData.DbType.POSTGRESQL ? "string_agg" : "group_concat";
-
-		initializeDB();
+		initializeEventTypes();
 	}
 
 	public Interval getSpanningInterval(Collection<Long> eventIDs) throws TskCoreException {
@@ -154,6 +155,8 @@ public final class TimelineManager {
 	 *               organize the returned map
 	 *
 	 * @return a map from event type( of the requested level) to event counts
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public Map<EventType, Long> countEventsByType(ZoomParams params) throws TskCoreException {
 		if (params.getTimeRange() == null) {
@@ -195,27 +198,6 @@ public final class TimelineManager {
 			throw new TskCoreException("Failed to get tag counts by tag name with query: " + query, ex); //NON-NLS
 		} finally {
 			sleuthkitCase.releaseSingleUserCaseReadLock();
-		}
-	}
-
-	/**
-	 * drop the tables from this database and recreate them in order to start
-	 * over.
-	 *
-	 * @throws org.sleuthkit.datamodel.TskCoreException
-	 */
-	public void reInitializeDB() throws TskCoreException {
-		sleuthkitCase.acquireSingleUserCaseWriteLock();
-		try (CaseDbConnection con = sleuthkitCase.getConnection();
-				Statement statement = con.createStatement();) {
-			statement.execute(STATEMENTS.DROP_DB_INFO_TABLE.getSQL());
-			statement.execute(STATEMENTS.DROP_EVENTS_TABLE.getSQL());
-
-			initializeDB();
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error dropping old tables", ex); // NON-NLS
-		} finally {
-			sleuthkitCase.releaseSingleUserCaseWriteLock();
 		}
 	}
 
@@ -333,6 +315,8 @@ public final class TimelineManager {
 	 * @param filter    The Filter that all returned events must pass.
 	 *
 	 * @return A List of combined events, sorted by timestamp.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public List<CombinedEvent> getCombinedEvents(Interval timeRange, RootFilter filter) throws TskCoreException {
 		Long startTime = timeRange.getStartMillis() / 1000;
@@ -361,7 +345,8 @@ public final class TimelineManager {
 
 				//make a map from event type to event ID
 				List<Long> eventIDs = unGroupConcat(resultSet.getString("eventIDs"), Long::valueOf);
-				List<EventType> eventTypes = unGroupConcat(resultSet.getString("eventTypes"), (String s) -> RootEventType.allTypes.get(Integer.valueOf(s)));
+				List<EventType> eventTypes = unGroupConcat(resultSet.getString("eventTypes"),
+						typesString -> getEventType(Integer.valueOf(typesString)).orElseThrow(() -> new TskCoreException("Error mapping event type id " + typesString + ".S")));
 				Map<EventType, Long> eventMap = new HashMap<>();
 				for (int i = 0; i < eventIDs.size(); i++) {
 					eventMap.put(eventTypes.get(i), eventIDs.get(i));
@@ -388,7 +373,7 @@ public final class TimelineManager {
 	 */
 	public boolean hasNewColumns() throws TskCoreException {
 		return hasHashHitColumn() && hasDataSourceIDColumn() && hasTaggedColumn()
-				&& (getDataSourceIDs().isEmpty() == false);
+				&& getDataSourceIDs().isEmpty() == false;
 	}
 
 	public Set<Long> getDataSourceIDs() throws TskCoreException {
@@ -480,6 +465,8 @@ public final class TimelineManager {
 
 	/**
 	 * @return maximum time in seconds from unix epoch
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public Long getMinTime() throws TskCoreException {
 		sleuthkitCase.acquireSingleUserCaseReadLock();
@@ -498,97 +485,66 @@ public final class TimelineManager {
 		return -1l;
 	}
 
-	/**
-	 * create the table and indices if they don't already exist
-	 *
-	 * @return the number of rows in the table , count > 0 indicating an
-	 *         existing table
-	 */
-	synchronized void initializeDB() throws TskCoreException {
-		///TODO: Move to SleuthkitCase? - Move to c++ layer of tsk!! -jm
+	private void initializeEventTypes() throws TskCoreException {
+		eventTypeIDMap.put(EventType.ROOT_EVEN_TYPE.getTypeID(), ROOT_EVEN_TYPE);
+		eventTypeIDMap.put(EventType.WEB_ACTIVITY.getTypeID(), EventType.WEB_ACTIVITY);
+		eventTypeIDMap.put(EventType.MISC_TYPES.getTypeID(), EventType.MISC_TYPES);
+		eventTypeIDMap.put(EventType.FILE_SYSTEM.getTypeID(), EventType.FILE_SYSTEM);
+		eventTypeIDMap.put(EventType.FILE_ACCESSED.getTypeID(), EventType.FILE_ACCESSED);
+		eventTypeIDMap.put(EventType.FILE_CHANGED.getTypeID(), EventType.FILE_CHANGED);
+		eventTypeIDMap.put(EventType.FILE_CREATED.getTypeID(), EventType.FILE_CREATED);
+		eventTypeIDMap.put(EventType.FILE_MODIFIED.getTypeID(), EventType.FILE_MODIFIED);
+
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
-				Statement stmt = con.createStatement();) {
-			try {
-				stmt.execute("CREATE TABLE if not exists db_info ( key TEXT,  value INTEGER, PRIMARY KEY (key))");// NON-NLS
-			} catch (SQLException ex) {
-				throw new TskCoreException("problem creating db_info table", ex); // NON-NLS
+				Statement statement = con.createStatement();) {
+
+			for (EventType type : EventType.getWebActivityTypes()) {
+				statement.executeUpdate(
+						insertOrIgnore(" INTO event_types(event_type_id, display_name, super_type_id, artifact_based) "
+								+ "VALUES( " + type.getTypeID() + ", '" + type.getDisplayName() + "'," + type.getBaseType().getTypeID() + " , 1);  "));
+
+				eventTypeIDMap.put(type.getTypeID(), type);
+			}
+			for (EventType type : EventType.getMiscTypes()) {
+				statement.executeUpdate(
+						insertOrIgnore(" INTO event_types(event_type_id, display_name, super_type_id, artifact_based) "
+								+ "VALUES( " + type.getTypeID() + ", '" + type.getDisplayName() + "'," + type.getBaseType().getTypeID() + " , 1);  "));
+
+				eventTypeIDMap.put(type.getTypeID(), type);
 			}
 
-			try {
-				stmt.execute("CREATE TABLE if not exists events ("// NON-NLS
-						+ " event_id " + primaryKeyType + " PRIMARY KEY, " // NON-NLS
-						+ " datasource_id BIGINT, " // NON-NLS
-						+ " file_id BIGINT REFERENCES tsk_files, " // NON-NLS
-						+ " artifact_id BIGINT REFERENCES blackboard_artifacts, " // NON-NLS
-						+ " time INTEGER, " // NON-NLS
-						+ " sub_type INTEGER, " // NON-NLS
-						+ " base_type INTEGER, " // NON-NLS
-						+ " full_description TEXT, " // NON-NLS
-						+ " med_description TEXT, " // NON-NLS
-						+ " short_description TEXT, " // NON-NLS
-						+ " known_state INTEGER, " //boolean // NON-NLS
-						+ " hash_hit INTEGER, " //boolean // NON-NLS
-						+ " tagged INTEGER )");//boolean // NON-NLS
-			} catch (SQLException ex) {
-				throw new TskCoreException("problem creating  database table", ex); // NON-NLS
-			}
-
-			if (hasDataSourceIDColumn() == false) {
-				try {
-					stmt.execute("ALTER TABLE events ADD COLUMN datasource_id INTEGER");	// NON-NLS
-				} catch (SQLException ex) {
-					throw new TskCoreException("problem upgrading events table", ex); // NON-NLS
-				}
-			}
-			if (hasTaggedColumn() == false) {
-				try {
-					// NON-NLS
-					stmt.execute("ALTER TABLE events ADD COLUMN tagged INTEGER");
-				} catch (SQLException ex) {
-					throw new TskCoreException("problem upgrading events table", ex); // NON-NLS
+			try (ResultSet resultset = statement.executeQuery("SELECT * from event_types");) {
+				while (resultset.next()) {
+					int eventTypeID = resultset.getInt("event_type_id");
+					boolean artifactBased = resultset.getBoolean("artifact_based");
+					//TODO: do something with custom types
 				}
 			}
 
-			if (hasHashHitColumn() == false) {
-				try {
-					stmt.execute("ALTER TABLE events ADD COLUMN hash_hit INTEGER");	// NON-NLS
-				} catch (SQLException ex) {
-					throw new TskCoreException("problem upgrading events table", ex); // NON-NLS
-				}
-			}
-
-			createIndex("events", Arrays.asList("datasource_id")); //NON-NLS
-			createIndex("events", Arrays.asList("event_id", "hash_hit")); //NON-NLS
-			createIndex("events", Arrays.asList("event_id", "tagged")); //NON-NLS
-			createIndex("events", Arrays.asList("file_id")); //NON-NLS
-			createIndex("events", Arrays.asList("artifact_id")); //NON-NLS
-			createIndex("events", Arrays.asList("sub_type", "short_description", "time")); //NON-NLS
-			createIndex("events", Arrays.asList("base_type", "short_description", "time")); //NON-NLS
-			createIndex("events", Arrays.asList("time")); //NON-NLS
-			createIndex("events", Arrays.asList("known_state")); //NON-NLS
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error initializing event tables", ex);
+			throw new TskCoreException("Failed to initialize event types.", ex); // NON-NLS
 		} finally {
 			sleuthkitCase.releaseSingleUserCaseWriteLock();
 		}
 	}
 
+	private String insertOrIgnore(String query) {
+		switch (sleuthkitCase.getDatabaseType()) {
+			case POSTGRESQL:
+				return " INSERT " + query + " ON CONFLICT DO NOTHING "; //NON-NLS
+			case SQLITE:
+				return " INSERT OR IGNORE " + query;
+			default:
+				throw newUnsupportedDBTypeException();
+		}
+	}
+
+	/**
+	 * Enum constants for sql statements. TODO: Inline these away.
+	 */
 	private enum STATEMENTS {
-		INSERT_ROW("INSERT INTO events ("
-				+ " datasource_id,"
-				+ " file_id ,"
-				+ " artifact_id, "
-				+ " time, "
-				+ " sub_type,"
-				+ " base_type,"
-				+ " full_description,"
-				+ " med_description, "
-				+ " short_description, "
-				+ " known_state,"
-				+ " hash_hit,"
-				+ " tagged) " // NON-NLS
-				+ " VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"), // NON-NLS
+
 		GET_DATASOURCE_IDS("SELECT DISTINCT datasource_id FROM events WHERE datasource_id != 0"),// NON-NLS
 		GET_MAX_TIME("SELECT Max(time) AS max FROM events"), // NON-NLS
 		GET_MIN_TIME("SELECT Min(time) AS min FROM events"), // NON-NLS
@@ -602,7 +558,6 @@ public final class TimelineManager {
 		COUNT_ALL_EVENTS("SELECT count(event_id) AS count FROM events WHERE event_id IS NOT null"), //NON-NLS
 		DROP_EVENTS_TABLE("DROP TABLE IF EXISTS events"), //NON-NLS
 		DROP_DB_INFO_TABLE("DROP TABLE IF EXISTS db_ino"), //NON-NLS
-		SELECT_NON_ARTIFACT_EVENT_IDS_BY_OBJECT_ID("SELECT event_id FROM events WHERE file_id = ? AND artifact_id IS NULL"), //NON-NLS
 		SELECT_EVENT_IDS_BY_OBJECT_ID_AND_ARTIFACT_ID("SELECT event_id FROM events WHERE file_id = ? AND artifact_id = ?"); //NON-NLS
 
 		private final String sql;
@@ -626,7 +581,7 @@ public final class TimelineManager {
 	 *         given artifact.
 	 */
 	public List<Long> getEventIDsForArtifact(BlackboardArtifact artifact) throws TskCoreException {
-		ArrayList<Long> eventIDs = new ArrayList<Long>();
+		ArrayList<Long> eventIDs = new ArrayList<>();
 
 		String query = "SELECT event_id FROM events WHERE artifact_id = " + artifact.getArtifactID();
 		sleuthkitCase.acquireSingleUserCaseReadLock();
@@ -680,25 +635,6 @@ public final class TimelineManager {
 	}
 
 	/**
-	 * NOTE: does not lock the db, must be called form inside a
-	 * DBLock.lock/unlock pair
-	 *
-	 * @param tableName  the value of tableName
-	 * @param columnList the value of columnList
-	 */
-	private void createIndex(final String tableName, final List<String> columnList) throws TskCoreException {
-		String indexColumns = columnList.stream().collect(Collectors.joining(",", "(", ")"));
-		String indexName = tableName + "_" + joinAsStrings(columnList, "_") + "_idx"; //NON-NLS
-		try (CaseDbConnection con = sleuthkitCase.getConnection();
-				Statement stmt = con.createStatement();) {
-			String sql = "CREATE INDEX IF NOT EXISTS " + indexName + " ON " + tableName + indexColumns; // NON-NLS
-			stmt.execute(sql);
-		} catch (SQLException ex) {
-			throw new TskCoreException("problem creating index " + indexName, ex); // NON-NLS
-		}
-	}
-
-	/**
 	 * @param dbColumn the value of dbColumn
 	 *
 	 * @return the boolean
@@ -739,44 +675,125 @@ public final class TimelineManager {
 		return hasDBColumn("hash_hit"); //NON-NLS
 	}
 
-	public void insertEvent(long time, EventType type, long datasourceID, long objID,
+	public void addFileSystemEvents(AbstractFile file) throws TskCoreException {
+		//gather time stamps into map
+		HashMap<EventType, Long> timeMap = new HashMap<>();
+		timeMap.put(EventType.FILE_CREATED, file.getCrtime());
+		timeMap.put(EventType.FILE_ACCESSED, file.getAtime());
+		timeMap.put(EventType.FILE_CHANGED, file.getCtime());
+		timeMap.put(EventType.FILE_MODIFIED, file.getMtime());
+
+		/*
+		 * if there are no legitimate ( greater than zero ) time stamps ( eg,
+		 * logical/local files) skip the rest of the event generation: this
+		 * should result in dropping logical files, since they do not have
+		 * legitimate time stamps.
+		 */
+		if (Collections.max(timeMap.values()) > 0) {
+			final String parentPath = file.getParentPath();
+
+			String rootFolder = substringBefore(substringAfter(parentPath, "/"), "/");
+			String shortDesc = defaultString(rootFolder);
+			shortDesc = shortDesc.endsWith("/") ? shortDesc : shortDesc + "/";
+			String medDesc = parentPath;
+			String fullDescription = medDesc + file.getName();
+
+			for (Map.Entry<EventType, Long> timeEntry : timeMap.entrySet()) {
+				if (timeEntry.getValue() > 0) {
+					// if the time is legitimate ( greater than zero ) insert it
+					addEvent(timeEntry.getValue(),
+							timeEntry.getKey(),
+							file.getDataSource().getId(),
+							file.getId(),
+							null,
+							fullDescription,
+							medDesc,
+							shortDesc,
+							file.getKnown(),
+							file.getHashSetNames().isEmpty() == false,
+							false);
+				}
+			}
+		}
+	}
+
+	public Set<SingleEvent> addArtifactEvents(BlackboardArtifact bbart) throws TskCoreException {
+		Set<SingleEvent> newEvents = new HashSet<>();
+
+		Set<ArtifactEventType> eventTypesForArtifact = getEventTypesForArtifactType(bbart.getArtifactTypeID());
+		for (ArtifactEventType eventType : eventTypesForArtifact) {
+			Optional<SingleEvent> newEvent = addArtifactEvent(eventType, bbart);
+			newEvent.ifPresent(newEvents::add);
+		}
+
+		return newEvents;
+	}
+
+	public Optional<SingleEvent> addArtifactEvent(ArtifactEventType eventType, BlackboardArtifact bbart) throws TskCoreException {
+		ArtifactEventType.AttributeEventDescription eventDescription = eventType.buildEventDescription(bbart);
+
+		// if the time is legitimate ( greater than zero ) insert it into the db
+		if (eventDescription != null && eventDescription.getTime() > 0) {
+			long objectID = bbart.getObjectID();
+			AbstractFile file = sleuthkitCase.getAbstractFileById(objectID);
+			return Optional.of(addEvent(eventDescription.getTime(),
+					eventType,
+					file.getDataSource().getId(),
+					objectID,
+					bbart.getArtifactID(),
+					eventDescription.getFullDescription(),
+					eventDescription.getMedDescription(),
+					eventDescription.getShortDescription(),
+					file.getKnown(),
+					file.getHashSetNames().isEmpty() == false,
+					sleuthkitCase.getBlackboardArtifactTagsByArtifact(bbart).isEmpty() == false));
+		}
+		return Optional.empty();
+	}
+
+	public SingleEvent addEvent(long time, EventType type, long datasourceID, long objID,
 			Long artifactID, String fullDescription, String medDescription,
-			String shortDescription, TskData.FileKnown known, Set<String> hashSetNames, List<? extends Tag> tags) throws TskCoreException {
+			String shortDescription, TskData.FileKnown known, boolean hashHit, boolean tagged) throws TskCoreException {
 
-		int typeNum = RootEventType.allTypes.indexOf(type);
-		int superTypeNum = type.getSuperType().ordinal();
-
+		String sql = "INSERT INTO events ("
+				+ " datasource_id, "
+				+ " file_id, "
+				+ " artifact_id, "
+				+ " time, "
+				+ " sub_type, "
+				+ " base_type, "
+				+ " full_description, "
+				+ " med_description, "
+				+ " short_description, "
+				+ " known_state, "
+				+ " hash_hit, "
+				+ " tagged) "
+				+ " VALUES ("
+				+ datasourceID + ","
+				+ objID + ","
+				+ ((artifactID == null) ? "NULL" : artifactID) + ","
+				+ time + ","
+				+ ((type.getTypeID() == -1) ? "NULL" : type.getTypeID()) + ","
+				+ type.getBaseType().getTypeID() + ",'"
+				+ SleuthkitCase.escapeSingleQuotes(fullDescription) + "','"
+				+ SleuthkitCase.escapeSingleQuotes(medDescription) + "','"
+				+ SleuthkitCase.escapeSingleQuotes(shortDescription) + "','"
+				+ known.getFileKnownValue() + "',"
+				+ (hashHit ? 0 : 1) + ","
+				+ (tagged ? 0 : 1) + "  )";// NON-NLS  
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
-				PreparedStatement insertRowStmt = con.prepareStatement(STATEMENTS.INSERT_ROW.getSQL(), PreparedStatement.NO_GENERATED_KEYS);) {
-			//"INSERT INTO events (datasource_id,file_id ,artifact_id, time, sub_type, base_type, full_description, med_description, short_description, known_state, hashHit, tagged) " 
-			insertRowStmt.clearParameters();
-			insertRowStmt.setLong(1, datasourceID);
-			insertRowStmt.setLong(2, objID);
-			if (artifactID == null) {
-				insertRowStmt.setNull(3, Types.NULL);
-			} else {
-				insertRowStmt.setLong(3, artifactID);
+				Statement insertRowStmt = con.createStatement();) {
+			con.executeUpdate(insertRowStmt, sql, PreparedStatement.RETURN_GENERATED_KEYS);
+			try (ResultSet generatedKeys = insertRowStmt.getGeneratedKeys();) {
+				generatedKeys.next();
+				long eventID = generatedKeys.getLong(1);
+				SingleEvent singleEvent = new SingleEvent(eventID, datasourceID,
+						objID, artifactID, time, type, fullDescription, medDescription,
+						shortDescription, known, hashHit, tagged);
+				sleuthkitCase.postTSKEvent(new EventAddedEvent(singleEvent));
+				return singleEvent;
 			}
-			insertRowStmt.setLong(4, time);
-
-			if (typeNum == -1) {
-				insertRowStmt.setNull(5, Types.INTEGER);
-			} else {
-				insertRowStmt.setInt(5, typeNum);
-			}
-
-			insertRowStmt.setInt(6, superTypeNum);
-			insertRowStmt.setString(7, fullDescription);
-			insertRowStmt.setString(8, medDescription);
-			insertRowStmt.setString(9, shortDescription);
-
-			insertRowStmt.setByte(10, known == null ? TskData.FileKnown.UNKNOWN.getFileKnownValue() : known.getFileKnownValue());
-
-			insertRowStmt.setInt(11, hashSetNames.isEmpty() ? 0 : 1);
-			insertRowStmt.setInt(12, tags.isEmpty() ? 0 : 1);
-
-			insertRowStmt.executeUpdate();
 		} catch (SQLException ex) {
 			throw new TskCoreException("Failed to insert event.", ex); // NON-NLS
 		} finally {
@@ -784,16 +801,12 @@ public final class TimelineManager {
 		}
 	}
 
-	private UnsupportedOperationException getUnsupportedDBTypeException() {
-		return new UnsupportedOperationException("Unsupported DB type: " + sleuthkitCase.getDatabaseType().name());
-	}
-
-	private Set<Long> getEventIDs(long objectID) throws TskCoreException {
-		//TODO: inline this
+	private Set<Long> getEventIDs(long objectID, boolean includeArtifacts) throws TskCoreException {
 		HashSet<Long> eventIDs = new HashSet<>();
+		String sql = "SELECT event_id FROM events WHERE file_id = ? "
+				+ (includeArtifacts ? "" : " AND artifact_id IS NULL");
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
-				PreparedStatement selectStmt = con.prepareStatement(STATEMENTS.SELECT_NON_ARTIFACT_EVENT_IDS_BY_OBJECT_ID.getSQL(), 0);) {
-			//"SELECT event_id FROM events WHERE file_id = ? AND artifact_id IS NULL"
+				PreparedStatement selectStmt = con.prepareStatement(sql, PreparedStatement.NO_GENERATED_KEYS);) {
 			selectStmt.setLong(1, objectID);
 			try (ResultSet executeQuery = selectStmt.executeQuery();) {
 				while (executeQuery.next()) {
@@ -827,8 +840,7 @@ public final class TimelineManager {
 	}
 
 	/**
-	 * mark any events with the given object and artifact ids as tagged.
-	 *
+	 * Set any events with the given object and artifact ids as tagged.
 	 *
 	 * @param objectID   the obj_id that this tag applies to, the id of the
 	 *                   content that the artifact is derived from for artifact
@@ -845,9 +857,9 @@ public final class TimelineManager {
 	public Set<Long> setEventsTagged(long objectID, Long artifactID, boolean tagged) throws TskCoreException {
 
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
-		Set<Long> eventIDs = Collections.emptySet();
+		Set<Long> eventIDs;
 		if (Objects.isNull(artifactID)) {
-			eventIDs = getEventIDs(objectID);
+			eventIDs = getEventIDs(objectID, false);
 		} else {
 			eventIDs = getEventIDs(objectID, artifactID);
 		}
@@ -865,31 +877,43 @@ public final class TimelineManager {
 		return eventIDs;
 	}
 
+	/**
+	 * Set the known_state and hash_hit of the events associated with the given
+	 * file, including artifact based events.
+	 *
+	 * @param file The file.
+	 *
+	 * @throws TskCoreException if there is a error.
+	 */
+	public Set<Long> setFileStatus(AbstractFile file) throws TskCoreException {
+		Set<Long> eventIDs = getEventIDs(file.getId(), true);
+		//update known state for all event with given ids
+		try (CaseDbConnection con = sleuthkitCase.getConnection();
+				Statement updateStatement = con.createStatement();) {
+			updateStatement.executeUpdate(
+					"UPDATE events SET known_state = '" + file.getKnown().getFileKnownValue() + "', " //NON-NLS
+					+ "                hash_hit = " + (file.getHashSetNames().isEmpty() ? 0 : 1) //NON-NLS
+					+ " WHERE event_id IN (" + joinAsStrings(eventIDs, ",") + ")"); //NON-NLS
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error setting known_state or hash_hit of events.", ex);
+		} finally {
+			sleuthkitCase.releaseSingleUserCaseWriteLock();
+		}
+		return eventIDs;
+	}
+
 	void rollBackTransaction(SleuthkitCase.CaseDbTransaction trans) throws TskCoreException {
 		trans.rollback();
 	}
 
-	@Override
-	protected void finalize() throws Throwable {
-		try {
-			closeStatements();
-		} finally {
-			super.finalize();
-		}
-	}
-
-	private void closeStatements() throws SQLException {
-		for (PreparedStatement pStmt : preparedStatements) {
-			pStmt.close();
-		}
-	}
-
-	private SingleEvent constructTimeLineEvent(ResultSet resultSet) throws SQLException {
+	private SingleEvent constructTimeLineEvent(ResultSet resultSet) throws SQLException, TskCoreException {
+		int typeID = resultSet.getInt("sub_type"); //NON-NLS
 		return new SingleEvent(resultSet.getLong("event_id"), //NON-NLS
 				resultSet.getLong("datasource_id"), //NON-NLS
 				resultSet.getLong("file_id"), //NON-NLS
 				resultSet.getLong("artifact_id"), //NON-NLS
-				resultSet.getLong("time"), RootEventType.allTypes.get(resultSet.getInt("sub_type")), //NON-NLS
+				resultSet.getLong("time"), //NON-NLS
+				getEventType(typeID).orElseThrow(() -> newEventTypeMappingException(typeID)), //NON-NLS
 				resultSet.getString("full_description"), //NON-NLS
 				resultSet.getString("med_description"), //NON-NLS
 				resultSet.getString("short_description"), //NON-NLS
@@ -898,8 +922,16 @@ public final class TimelineManager {
 				resultSet.getInt("tagged") != 0); //NON-NLS
 	}
 
+	private static TskCoreException newEventTypeMappingException(int typeID) {
+		return new TskCoreException("Error mapping event type id " + typeID);
+	}
+
+	private UnsupportedOperationException newUnsupportedDBTypeException() {
+		return new UnsupportedOperationException("Unsupported DB type: " + sleuthkitCase.getDatabaseType().name());
+	}
+
 	/**
-	 * count all the events with the given options and return a map organizing
+	 * Count all the events with the given options and return a map organizing
 	 * the counts in a hierarchy from date > eventtype> count
 	 *
 	 * @param startTime events before this time will be excluded (seconds from
@@ -914,41 +946,62 @@ public final class TimelineManager {
 	 * @return a map organizing the counts in a hierarchy from date > eventtype>
 	 *         count
 	 */
-	private Map<EventType, Long> countEventsByType(Long startTime, Long endTime, RootFilter filter, EventTypeZoomLevel zoomLevel) throws TskCoreException {
-		if (Objects.equals(startTime, endTime)) {
-			endTime++;
-		}
-
-		Map<EventType, Long> typeMap = new HashMap<>();
-
-		//do we want the root or subtype column of the databse
-		final boolean useSubTypes = EventTypeZoomLevel.SUB_TYPE.equals(zoomLevel);
-		final boolean needsTags = filter.getTagsFilter().isActive();
-		final boolean needsHashSets = filter.getHashHitsFilter().isActive();
+	private Map<EventType, Long> countEventsByType(Long startTime, final Long endTime, RootFilter filter, EventTypeZoomLevel zoomLevel) throws TskCoreException {
+		long adjustedEndTime = Objects.equals(startTime, endTime) ? endTime + 1 : endTime;
+		boolean useSubTypes = EventTypeZoomLevel.SUB_TYPE.equals(zoomLevel);	//do we want the root or subtype column of the databse
+		boolean needsTags = filter.getTagsFilter().isActive();
+		boolean needsHashSets = filter.getHashHitsFilter().isActive();
 		//get some info about the range of dates requested
-		final String queryString = "SELECT count(DISTINCT events.event_id) AS count, " + typeColumnHelper(useSubTypes) //NON-NLS
+		String queryString = "SELECT count(DISTINCT events.event_id) AS count, " + typeColumnHelper(useSubTypes) //NON-NLS
 				+ " FROM " + getAugmentedEventsTablesSQL(needsTags, needsHashSets)
-				+ " WHERE time >= " + startTime + " AND time < " + endTime + " AND " + getSQLWhere(filter) // NON-NLS
+				+ " WHERE time >= " + startTime + " AND time < " + adjustedEndTime + " AND " + getSQLWhere(filter) // NON-NLS
 				+ " GROUP BY " + typeColumnHelper(useSubTypes); // NON-NLS
 
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement stmt = con.createStatement();
 				ResultSet results = stmt.executeQuery(queryString);) {
+			Map<EventType, Long> typeMap = new HashMap<>();
 			while (results.next()) {
-				EventType type = useSubTypes
-						? RootEventType.allTypes.get(results.getInt("sub_type")) //NON-NLS
-						: BaseTypes.values()[results.getInt("base_type")]; //NON-NLS
+				int eventTypeID = useSubTypes
+						? results.getInt("sub_type") //NON-NLS
+						: results.getInt("base_type"); //NON-NLS
+				EventType eventType = getEventType(eventTypeID).orElseThrow(()
+						-> new TskCoreException("Error mapping event type id " + eventTypeID + " to EventType."));//NON-NLS
 
-				typeMap.put(type, results.getLong("count")); // NON-NLS
+				typeMap.put(eventType, results.getLong("count")); // NON-NLS
 			}
-
+			return typeMap;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting count of events from db: " + queryString, ex); // NON-NLS
 		} finally {
 			sleuthkitCase.releaseSingleUserCaseReadLock();
 		}
-		return typeMap;
+	}
+
+	/**
+	 * Get an EventType object given it's id
+	 */
+	Optional<EventType> getEventType(int eventTypeID) {
+		return Optional.ofNullable(eventTypeIDMap.get(eventTypeID));
+	}
+
+	public ImmutableList<EventType> getEventTypes() {
+		return ImmutableList.copyOf(eventTypeIDMap.values());
+	}
+
+	public ImmutableList<ArtifactEventType> getArtifactEventTypes() {
+		return ImmutableList.copyOf(eventTypeIDMap.values().stream()
+				.filter(ArtifactEventType.class::isInstance)
+				.map(ArtifactEventType.class::cast)
+				.collect(Collectors.toSet())
+		);
+	}
+
+	private Set<ArtifactEventType> getEventTypesForArtifactType(int artfTypeID) {
+		return getArtifactEventTypes().stream()
+				.filter(eventType -> eventType.getArtifactTypeID() == artfTypeID)
+				.collect(Collectors.toSet());
 	}
 
 	/**
@@ -1057,7 +1110,7 @@ public final class TimelineManager {
 				events.add(eventClusterHelper(resultSet, useSubTypes, descriptionLOD, timeZone));
 			}
 		} catch (SQLException ex) {
-			LOGGER.log(Level.SEVERE, "Failed to get events with query: " + query, ex); // NON-NLS
+			logger.log(Level.SEVERE, "Failed to get events with query: " + query, ex); // NON-NLS
 		} finally {
 			sleuthkitCase.releaseSingleUserCaseReadLock();
 		}
@@ -1075,7 +1128,7 @@ public final class TimelineManager {
 				String formatString = getPostgresTimeFormat(periodSize);
 				return "to_char(to_timestamp(time) AT TIME ZONE '" + timeZone.getID() + "', '" + formatString + "')";
 			default:
-				throw getUnsupportedDBTypeException();
+				throw newUnsupportedDBTypeException();
 		}
 	}
 
@@ -1093,17 +1146,21 @@ public final class TimelineManager {
 	 *
 	 * @throws SQLException
 	 */
-	private EventCluster eventClusterHelper(ResultSet resultSet, boolean useSubTypes, DescriptionLoD descriptionLOD, DateTimeZone timeZone) throws SQLException {
+	private EventCluster eventClusterHelper(ResultSet resultSet, boolean useSubTypes, DescriptionLoD descriptionLOD, DateTimeZone timeZone) throws SQLException, TskCoreException {
 		Interval interval = new Interval(resultSet.getLong("minTime") * 1000, resultSet.getLong("maxTime") * 1000, timeZone);// NON-NLS
 		String eventIDsString = resultSet.getString("event_ids");// NON-NLS
 		List<Long> eventIDs = unGroupConcat(eventIDsString, Long::valueOf);
 		String description = resultSet.getString(getDescriptionColumn(descriptionLOD));
-		EventType type = useSubTypes ? RootEventType.allTypes.get(resultSet.getInt("sub_type")) : BaseTypes.values()[resultSet.getInt("base_type")];// NON-NLS
+		int eventTypeID = useSubTypes
+				? resultSet.getInt("sub_type") //NON-NLS
+				: resultSet.getInt("base_type"); //NON-NLS
+		EventType eventType = getEventType(eventTypeID).orElseThrow(()
+				-> new TskCoreException("Error mapping event type id " + eventTypeID + "to EventType."));//NON-NLS
 
 		List<Long> hashHits = unGroupConcat(resultSet.getString("hash_hits"), Long::valueOf); //NON-NLS
 		List<Long> tagged = unGroupConcat(resultSet.getString("taggeds"), Long::valueOf); //NON-NLS
 
-		return new EventCluster(interval, type, eventIDs, hashHits, tagged, description, descriptionLOD);
+		return new EventCluster(interval, eventType, eventIDs, hashHits, tagged, description, descriptionLOD);
 	}
 
 	/**
@@ -1191,7 +1248,7 @@ public final class TimelineManager {
 	 * @return a Set of X, each element mapped from one element of the original
 	 *         comma delimited string
 	 */
-	<X> List<X> unGroupConcat(String groupConcat, Function<String, X> mapper) {
+	<X> List<X> unGroupConcat(String groupConcat, CheckedFunction<String, X> mapper) throws TskCoreException {
 		if (org.apache.commons.lang3.StringUtils.isBlank(groupConcat)) {
 			return Collections.emptyList();
 		}
@@ -1370,24 +1427,24 @@ public final class TimelineManager {
 	 */
 	private String getSQLWhere(TypeFilter typeFilter) {
 		if (typeFilter.isSelected()) {
-			if (typeFilter.getEventType() instanceof RootEventType) {
-				if (typeFilter.getSubFilters().stream()
-						.allMatch(subFilter -> subFilter.isActive() && subFilter.getSubFilters().stream().allMatch(Filter::isActive))) {
-					return getTrueLiteral(); //then collapse clause to true
-				}
+			if (typeFilter.getEventType().equals(ROOT_EVEN_TYPE)
+					& typeFilter.areAllSubFiltersActiveRecursive()) {
+				return getTrueLiteral(); //then collapse clause to true
 			}
-			return "(sub_type IN (" + org.apache.commons.lang3.StringUtils.join(getActiveSubTypes(typeFilter), ",") + "))"; //NON-NLS
+			return "(sub_type IN (" + joinAsStrings(getActiveSubTypeIDs(typeFilter), ",") + "))"; //NON-NLS
 		} else {
 			return getFalseLiteral();
 		}
 	}
 
-	private List<Integer> getActiveSubTypes(TypeFilter filter) {
+	private List<Integer> getActiveSubTypeIDs(TypeFilter filter) {
 		if (filter.isActive()) {
 			if (filter.getSubFilters().isEmpty()) {
-				return Collections.singletonList(RootEventType.allTypes.indexOf(filter.getEventType()));
+				return Collections.singletonList(filter.getEventType().getTypeID());
 			} else {
-				return filter.getSubFilters().stream().flatMap((Filter t) -> getActiveSubTypes((TypeFilter) t).stream()).collect(Collectors.toList());
+				return filter.getSubFilters().stream()
+						.flatMap(subfilter -> getActiveSubTypeIDs(subfilter).stream())
+						.collect(Collectors.toList());
 			}
 		} else {
 			return Collections.emptyList();
@@ -1461,7 +1518,7 @@ public final class TimelineManager {
 			case SQLITE:
 				return "0";
 			default:
-				throw getUnsupportedDBTypeException();
+				throw newUnsupportedDBTypeException();
 		}
 	}
 
@@ -1472,7 +1529,7 @@ public final class TimelineManager {
 			case SQLITE:
 				return "1";
 			default:
-				throw getUnsupportedDBTypeException();
+				throw newUnsupportedDBTypeException();
 		}
 	}
 
@@ -1482,5 +1539,35 @@ public final class TimelineManager {
 
 	String csvAggFunction(String args, String seperator) {
 		return csvFunction + "(Cast (" + args + " AS VARCHAR) , '" + seperator + "')";
+	}
+
+	/**
+	 * FunctionalInterface similar to Function<I,O> except it throws
+	 * TskCoreException.
+	 *
+	 * @param <I> The input type.
+	 * @param <O> The output type.
+	 */
+	@FunctionalInterface
+	interface CheckedFunction<I, O> {
+
+		O apply(I input) throws TskCoreException;
+	}
+
+	/**
+	 * Event fired by SleuthkitCase to indicate that a event has been added to
+	 * the events table.
+	 */
+	final public class EventAddedEvent {
+
+		private final SingleEvent singleEvent;
+
+		public SingleEvent getEvent() {
+			return singleEvent;
+		}
+
+		EventAddedEvent(SingleEvent singleEvent) {
+			this.singleEvent = singleEvent;
+		}
 	}
 }

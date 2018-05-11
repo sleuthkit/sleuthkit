@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.common.eventbus.EventBus;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import com.mchange.v2.c3p0.DataSources;
 import com.mchange.v2.c3p0.PooledDataSource;
@@ -108,9 +109,9 @@ public class SleuthkitCase {
 	private static final String SQL_ERROR_INTERNAL_GROUP = "xx";
 	private static final int MIN_USER_DEFINED_TYPE_ID = 10000;
 	private final ConnectionPool connections;
-	private final Map<Long, VirtualDirectory> rootIdsToCarvedFileDirs = new HashMap<Long, VirtualDirectory>();
-	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system files.
-	private final ArrayList<ErrorObserver> sleuthkitCaseErrorObservers = new ArrayList<ErrorObserver>();
+	private final Map<Long, VirtualDirectory> rootIdsToCarvedFileDirs = new HashMap<>();
+	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<>(); // Cache for file system files.
+	private final List<ErrorObserver> sleuthkitCaseErrorObservers = new ArrayList<>();
 	private final String databaseName;
 	private final String dbPath;
 	private final DbType dbType;
@@ -131,8 +132,23 @@ public class SleuthkitCase {
 
 	private CommunicationsManager communicationsMgrInstance;
 	private TimelineManager timelineMgrInstance;
+	private Blackboard blackboardInstance;
 
-	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<String, Set<Long>>();
+	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<>();
+
+	private final EventBus eventBus = new EventBus("SleuthkitCase-EventBus");
+
+	public void registerForEvents(Object listener) {
+		eventBus.register(listener);
+	}
+
+	public void unregisterForEvents(Object listener) {
+		eventBus.unregister(listener);
+	}
+
+	void postTSKEvent(Object event) {
+		eventBus.post(event);
+	}
 
 	/**
 	 * Attempts to connect to the database with the passed in settings, throws
@@ -177,10 +193,7 @@ public class SleuthkitCase {
 					} else {
 						result = bundle.getString("DatabaseConnectionCheck.HostnameOrPort"); //NON-NLS
 					}
-				} catch (IOException any) {
-					// it may be anything
-					result = bundle.getString("DatabaseConnectionCheck.Everything"); //NON-NLS
-				} catch (MissingResourceException any) {
+				} catch (IOException | MissingResourceException any) {
 					// it may be anything
 					result = bundle.getString("DatabaseConnectionCheck.Everything"); //NON-NLS
 				}
@@ -255,10 +268,10 @@ public class SleuthkitCase {
 	}
 
 	private void init() throws Exception {
-		typeIdToArtifactTypeMap = new ConcurrentHashMap<Integer, BlackboardArtifact.Type>();
-		typeIdToAttributeTypeMap = new ConcurrentHashMap<Integer, BlackboardAttribute.Type>();
-		typeNameToArtifactTypeMap = new ConcurrentHashMap<String, BlackboardArtifact.Type>();
-		typeNameToAttributeTypeMap = new ConcurrentHashMap<String, BlackboardAttribute.Type>();
+		typeIdToArtifactTypeMap = new ConcurrentHashMap<>();
+		typeIdToAttributeTypeMap = new ConcurrentHashMap<>();
+		typeNameToArtifactTypeMap = new ConcurrentHashMap<>();
+		typeNameToAttributeTypeMap = new ConcurrentHashMap<>();
 
 		/*
 		 * The following methods need to be called before updateDatabaseSchema
@@ -270,19 +283,21 @@ public class SleuthkitCase {
 
 		updateDatabaseSchema(null);
 
-		CaseDbConnection connection = connections.getConnection();
-		initIngestModuleTypes(connection);
-		initIngestStatusTypes(connection);
-		initReviewStatuses(connection);
-		initEncodingTypes(connection);
-		connection.close();
-
+		try (CaseDbConnection connection = connections.getConnection()) {
+			initIngestModuleTypes(connection);
+			initIngestStatusTypes(connection);
+			initReviewStatuses(connection);
+			initEncodingTypes(connection);
+			timelineMgrInstance = getTimelineManager();
+		}
 	}
 
 	/**
 	 * Returns an instance of TimelineManager for this case;
 	 *
 	 * @return a TimelineManager
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public synchronized TimelineManager getTimelineManager() throws TskCoreException {
 		if (null == timelineMgrInstance) {
@@ -301,6 +316,19 @@ public class SleuthkitCase {
 			communicationsMgrInstance = new CommunicationsManager(this);
 		}
 		return communicationsMgrInstance;
+	}
+
+	/**
+	 * Returns an instance of Blackboard
+	 *
+	 * @return Blackboard
+	 *
+	 */
+	public synchronized Blackboard getBlackboard() {
+		if (null == blackboardInstance) {
+			blackboardInstance = new Blackboard(this);
+		}
+		return blackboardInstance;
 	}
 
 	/**
@@ -1820,7 +1848,7 @@ public class SleuthkitCase {
 					+ "FROM data_source_info AS ds "
 					+ "LEFT JOIN tsk_image_info AS img "
 					+ "ON ds.obj_id = img.obj_id"); //NON-NLS
-			
+
 			List<DataSource> dataSourceList = new ArrayList<DataSource>();
 			Map<Long, List<String>> imagePathsMap = getImagePaths();
 
@@ -1836,11 +1864,11 @@ public class SleuthkitCase {
 					 * No data found in 'tsk_image_info', so we build a
 					 * LocalFilesDataSource.
 					 */
-					
+
 					resultSet2 = connection.executeQuery(statement2, "SELECT name FROM tsk_files WHERE tsk_files.obj_id = " + objectId); //NON-NLS
 					String dsName = (resultSet2.next()) ? resultSet2.getString("name") : "";
 					resultSet2.close();
-					
+
 					TSK_FS_NAME_TYPE_ENUM dirType = TSK_FS_NAME_TYPE_ENUM.DIR;
 					TSK_FS_META_TYPE_ENUM metaType = TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
 					TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.ALLOC;
@@ -4372,12 +4400,12 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * @param dataSource the dataSource (Image, parent-less VirtualDirectory) to
-	 *                   search for the given file name
-	 * @param fileName   Pattern of the name of the file or directory to match
-	 *                   (case insensitive, used in LIKE SQL statement).
-	 * @param dirSubString Substring that must exist in parent path.  
-	 *                     Will be surrounded by % in LIKE query
+	 * @param dataSource   the dataSource (Image, parent-less VirtualDirectory)
+	 *                     to search for the given file name
+	 * @param fileName     Pattern of the name of the file or directory to match
+	 *                     (case insensitive, used in LIKE SQL statement).
+	 * @param dirSubString Substring that must exist in parent path. Will be
+	 *                     surrounded by % in LIKE query
 	 *
 	 * @return a list of AbstractFile for files/directories whose name matches
 	 *         fileName and whose parent directory contains dirName.
@@ -5300,11 +5328,12 @@ public class SleuthkitCase {
 			//add localPath
 			addFilePath(connection, newObjId, localPath, encodingType);
 
-			connection.commitTransaction();
-
-			//TODO add derived method to tsk_files_derived and tsk_files_derived_method
-			return new DerivedFile(this, newObjId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
+			DerivedFile derivedFile = new DerivedFile(this, newObjId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
 					size, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId, null, encodingType, extension);
+			getTimelineManager().addFileSystemEvents(derivedFile);
+			connection.commitTransaction();
+			//TODO add derived method to tsk_files_derived and tsk_files_derived_method
+			return derivedFile;
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
 			throw new TskCoreException("Failed to add derived file to case database", ex);
@@ -5319,13 +5348,13 @@ public class SleuthkitCase {
 	 * Updates an existing derived file in the database and returns a new
 	 * derived file object with the updated contents
 	 *
-	 * @param derivedFile	  The derived file you wish to update
+	 * @param derivedFile	    The derived file you wish to update
 	 * @param localPath       local path of the derived file, including the file
 	 *                        name. The path is relative to the database path.
 	 * @param size            size of the derived file in bytes
 	 * @param ctime
 	 * @param crtime
-	 * @param mimeType		  The MIME type the updated file should have, null
+	 * @param mimeType		      The MIME type the updated file should have, null
 	 *                        to unset it
 	 * @param atime
 	 * @param mtime
@@ -5540,7 +5569,7 @@ public class SleuthkitCase {
 
 			connection.executeUpdate(statement);
 			addFilePath(connection, objectId, localPath, encodingType);
-			return new LocalFile(this,
+			LocalFile localFile = new LocalFile(this,
 					objectId,
 					fileName,
 					TSK_DB_FILES_TYPE_ENUM.LOCAL,
@@ -5555,6 +5584,8 @@ public class SleuthkitCase {
 					dataSourceObjId,
 					localPath,
 					encodingType, extension);
+			getTimelineManager().addFileSystemEvents(localFile);
+			return localFile;
 
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Failed to INSERT local file %s (%s) with parent id %d in tsk_files table", fileName, localPath, parent.getId()), ex);
@@ -7112,6 +7143,7 @@ public class SleuthkitCase {
 		}
 
 		fileSystemIdMap.clear();
+		blackboardInstance.close();
 
 		try {
 			if (this.caseHandle != null) {
@@ -8228,14 +8260,14 @@ public class SleuthkitCase {
 			resultSet = connection.executeQuery(statement);
 			ArrayList<Report> reports = new ArrayList<Report>();
 			while (resultSet.next()) {
-                String localpath = resultSet.getString("path");
-                if (localpath.toLowerCase().startsWith("http") == false) {
-                    // make path absolute
-                    localpath = Paths.get(getDbDirPath(), localpath).normalize().toString(); //NON-NLS
-                }
-                reports.add(new Report(this, resultSet.getLong("obj_id"), //NON-NLS
+				String localpath = resultSet.getString("path");
+				if (localpath.toLowerCase().startsWith("http") == false) {
+					// make path absolute
+					localpath = Paths.get(getDbDirPath(), localpath).normalize().toString(); //NON-NLS
+				}
+				reports.add(new Report(this, resultSet.getLong("obj_id"), //NON-NLS
 						localpath, //NON-NLS
-                        resultSet.getLong("crtime"), //NON-NLS
+						resultSet.getLong("crtime"), //NON-NLS
 						resultSet.getString("src_module_name"), //NON-NLS
 						resultSet.getString("report_name"), null));  //NON-NLS
 			}

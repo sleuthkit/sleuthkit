@@ -1105,7 +1105,7 @@ public abstract class AbstractFile extends AbstractContent {
 		try {
 			statement = connection.createStatement();
 			connection.executeUpdate(statement, queryStr);
-
+			getSleuthkitCase().getTimelineManager().setFileStatus(this);
 			md5HashDirty = false;
 			mimeTypeDirty = false;
 			knownStateDirty = false;
