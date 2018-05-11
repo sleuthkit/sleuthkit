@@ -297,7 +297,7 @@ public class BlackboardArtifact implements Content {
 		getSleuthkitCase().setReviewStatus(this, newStatus);
 		reviewStatus = newStatus;
 	}
-	
+
 	/**
 	 * Adds an attribute to this artifact.
 	 *
@@ -1140,7 +1140,12 @@ public class BlackboardArtifact implements Content {
 		 * An encrypted file.
 		 */
 		TSK_ENCRYPTION_SUSPECTED(40, "TSK_ENCRYPTION_SUSPECTED", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskEncryptionSuspected.text"));
+				bundle.getString("BlackboardArtifact.tskEncryptionSuspected.text")),
+		/**
+		 * An artifact used to represent a timeline event.
+		 */
+		TSK_EVENT(41, "TSK_EVENT",
+				bundle.getString("BlackboardArtifact.tskEvent.text"));
 
 		private final String label;
 		private final int typeId;

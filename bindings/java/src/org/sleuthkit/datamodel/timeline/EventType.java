@@ -52,7 +52,7 @@ public interface EventType extends Comparable<EventType> {
 
 	String getDisplayName();
 
-	int getTypeID();
+	long getTypeID();
 
 	EventTypeZoomLevel getZoomLevel();
 
@@ -131,6 +131,7 @@ public interface EventType extends Comparable<EventType> {
 					RECENT_DOCUMENTS);
 		}
 	};
+	
 
 	EventType FILE_MODIFIED = new StandardEventType(4,
 			getBundle().getString("FileSystemTypes.fileModified.name"), // NON-NLS
