@@ -49,7 +49,7 @@ public final class Blackboard implements Closeable {
 	 * @throws BlackboardException If there is a problem publishing the
 	 *                             artifact.
 	 */
-	public synchronized void publishArtifact(BlackboardArtifact artifact) throws BlackboardException {
+	public synchronized void postArtifact(BlackboardArtifact artifact) throws BlackboardException {
 		if (null == caseDb) {
 			throw new BlackboardException("Blackboard has been closed");
 		}
