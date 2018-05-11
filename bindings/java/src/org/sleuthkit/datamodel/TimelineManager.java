@@ -728,9 +728,26 @@ public final class TimelineManager {
 		}
 	}
 
-	public Set<SingleEvent> addArtifactEvents(BlackboardArtifact artifact) throws TskCoreException {
+	/**
+	 * Add any events that can be created from the given Artifact. If the
+	 * artifact is a TSK_EVENT then the TSK_DATETIME, TSK_EVENT_TYPE and
+	 * TSK_DESCRIPTION are used to make the event, otherwise each event type is
+	 * checked to see if it can automatically create an event from the given
+	 * artifact.
+	 *
+	 * @param artifact The artifact to add events for
+	 *
+	 * @return A set of added events.
+	 *
+	 * @throws TskCoreException
+	 */
+	Set<SingleEvent> addArtifactEvents(BlackboardArtifact artifact) throws TskCoreException {
 		Set<SingleEvent> newEvents = new HashSet<>();
 
+		/*
+		 * If the artifact is a TSK_EVENT, use its TSK_DATETIME, TSK_EVENT_TYPE
+		 * and TSK_DESCRIPTION to make add an event.
+		 */
 		if (artifact.getArtifactTypeID() == TSK_EVENT.getTypeID()) {
 			long time = artifact.getAttribute(new BlackboardAttribute.Type(TSK_DATETIME)).getValueLong();
 			long eventTypeID = artifact.getAttribute(new BlackboardAttribute.Type(TSK_EVENT_TYPE)).getValueLong();
@@ -746,6 +763,10 @@ public final class TimelineManager {
 					sleuthkitCase.getBlackboardArtifactTagsByArtifact(artifact).isEmpty() == false
 			);
 		} else {
+			/*
+			 * If there are any event types configured to make descriptions
+			 * automatically, use those.
+			 */
 			Set<ArtifactEventType> eventTypesForArtifact = getEventTypesForArtifactType(artifact.getArtifactTypeID());
 			for (ArtifactEventType eventType : eventTypesForArtifact) {
 				Optional<SingleEvent> newEvent = addArtifactEvent(eventType, artifact);
@@ -756,29 +777,41 @@ public final class TimelineManager {
 		return newEvents;
 	}
 
-	public Optional<SingleEvent> addArtifactEvent(ArtifactEventType eventType, BlackboardArtifact bbart) throws TskCoreException {
-		ArtifactEventType.AttributeEventDescription eventDescription = eventType.buildEventDescription(bbart);
+	/**
+	 * Add an event of the given type from the given artifact. If the event type
+	 * and artifact are not compatible, no event is created.
+	 *
+	 * @param eventType The event type to create
+	 * @param artifact  The artifact to create the event from.
+	 *
+	 * @return The created event, wrapped in an Optional, or an empty Optional
+	 *         if no event was created.
+	 *
+	 * @throws TskCoreException
+	 */
+	private Optional<SingleEvent> addArtifactEvent(ArtifactEventType eventType, BlackboardArtifact artifact) throws TskCoreException {
+		ArtifactEventType.AttributeEventDescription eventDescription = eventType.buildEventDescription(artifact);
 
 		// if the time is legitimate ( greater than zero ) insert it into the db
 		if (eventDescription != null && eventDescription.getTime() > 0) {
-			long objectID = bbart.getObjectID();
+			long objectID = artifact.getObjectID();
 			AbstractFile file = sleuthkitCase.getAbstractFileById(objectID);
 			return Optional.of(addEvent(eventDescription.getTime(),
 					eventType,
 					file.getDataSource().getId(),
 					objectID,
-					bbart.getArtifactID(),
+					artifact.getArtifactID(),
 					eventDescription.getFullDescription(),
 					eventDescription.getMedDescription(),
 					eventDescription.getShortDescription(),
 					file.getKnown(),
 					file.getHashSetNames().isEmpty() == false,
-					sleuthkitCase.getBlackboardArtifactTagsByArtifact(bbart).isEmpty() == false));
+					sleuthkitCase.getBlackboardArtifactTagsByArtifact(artifact).isEmpty() == false));
 		}
 		return Optional.empty();
 	}
 
-	public SingleEvent addEvent(long time, EventType type, long datasourceID, long objID,
+	private SingleEvent addEvent(long time, EventType type, long datasourceID, long objID,
 			Long artifactID, String fullDescription, String medDescription,
 			String shortDescription, TskData.FileKnown known, boolean hashHit, boolean tagged) throws TskCoreException {
 
