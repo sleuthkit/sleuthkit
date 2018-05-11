@@ -39,10 +39,6 @@ public final class Blackboard implements Closeable {
 		this.caseDb = casedb;
 	}
 
-	public SleuthkitCase getSlethkitCase() {
-		return caseDb;
-	}
-
 	/**
 	 * Publish the artifact. This includes making any events that may be derived
 	 * from it, and broadcasting a notification that the artifact is ready for
