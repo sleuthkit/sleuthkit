@@ -21,7 +21,6 @@ package org.sleuthkit.datamodel.timeline;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSortedSet;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -100,7 +99,7 @@ public interface EventType extends Comparable<EventType> {
 			ROOT_TYPE, null) {
 		@Override
 		public SortedSet< EventType> getSubTypes() {
-			return ImmutableSortedSet.of(FILE_SYSTEM, WEB_ACTIVITY, MISC_TYPES);
+			return ImmutableSortedSet.of(FILE_SYSTEM, WEB_ACTIVITY, MISC_TYPES, CUSTOM_TYPES);
 		}
 	};
 
