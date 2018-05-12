@@ -21,7 +21,7 @@ package org.sleuthkit.datamodel.timeline;
 /**
  * Enum of event type zoom levels
  */
-public enum EventTypeZoomLevel implements DisplayNameProvider {
+public enum EventTypeZoomLevel {
 
 	ROOT_TYPE(BundleProvider.getBundle().getString("EventTypeZoomLevel.rootType")),
 	BASE_TYPE(BundleProvider.getBundle().getString("EventTypeZoomLevel.baseType")),
@@ -29,7 +29,6 @@ public enum EventTypeZoomLevel implements DisplayNameProvider {
 
 	private final String displayName;
 
-	@Override
 	public String getDisplayName() {
 		return displayName;
 	}

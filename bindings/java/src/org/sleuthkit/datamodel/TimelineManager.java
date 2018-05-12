@@ -51,7 +51,6 @@ import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import static org.sleuthkit.datamodel.StringUtils.joinAsStrings;
 import org.sleuthkit.datamodel.timeline.ArtifactEventType;
-import org.sleuthkit.datamodel.timeline.DescriptionLoD;
 import org.sleuthkit.datamodel.timeline.EventType;
 import org.sleuthkit.datamodel.timeline.EventTypeZoomLevel;
 import org.sleuthkit.datamodel.timeline.TimeUnits;

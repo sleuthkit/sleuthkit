@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel.timeline;
 
+import org.sleuthkit.datamodel.DescriptionLoD;
 import com.google.common.collect.ImmutableMap;
 import java.util.Optional;
 import org.sleuthkit.datamodel.TskData;

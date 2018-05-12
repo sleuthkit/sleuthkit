@@ -42,22 +42,43 @@ public interface ArtifactEventType extends EventType {
 	BlackboardAttribute.Type getDateTimeAttributeType();
 
 	/**
-	 * @return a function from an artifact to a String to use as part of the
-	 *         full event description
+	 * Extract the full description for an event of this type from the given
+	 * artifact.
+	 *
+	 * @param artifact The artifact to extract the description from.
+	 *
+	 * @return a function from an artifact to a String to use as the full event
+	 *         description
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	String extractFullDescription(BlackboardArtifact artf) throws TskCoreException;
+	String extractFullDescription(BlackboardArtifact artifact) throws TskCoreException;
 
 	/**
-	 * @return a function from an artifact to a String to use as part of the
-	 *         medium event description
+	 * Extract the medium description for an event of this type from the given
+	 * artifact.
+	 *
+	 * @param artifact The artifact to extract the description from.
+	 *
+	 * @return a function from an artifact to a String to use as the medium
+	 *         event description
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	String extractMedDescription(BlackboardArtifact artf) throws TskCoreException;
+	String extractMedDescription(BlackboardArtifact artifact) throws TskCoreException;
 
 	/**
-	 * @return a function from an artifact to a String to use as part of the
-	 *         short event description
+	 * Extract the short description for an event of this type from the given
+	 * artifact.
+	 *
+	 * @param artifact The artifact to extract the description from.
+	 *
+	 * @return a function from an artifact to a String to use as the short event
+	 *         description
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	String extractShortDescription(BlackboardArtifact artf) throws TskCoreException;
+	String extractShortDescription(BlackboardArtifact artifact) throws TskCoreException;
 
 	/**
 	 * Get the ID of the the artifact type that this EventType is derived from.

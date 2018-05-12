@@ -19,7 +19,7 @@
 package org.sleuthkit.datamodel.timeline.filters;
 
 import java.util.Objects;
-import org.sleuthkit.datamodel.timeline.DescriptionLoD;
+import org.sleuthkit.datamodel.DescriptionLoD;
 
 public class DescriptionFilter extends AbstractFilter {
 
