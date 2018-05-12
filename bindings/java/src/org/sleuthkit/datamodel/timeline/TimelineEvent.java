@@ -25,7 +25,7 @@ import org.sleuthkit.datamodel.TskData;
 /**
  * A single event.
  */
-public final class SingleEvent {
+public final class TimelineEvent {
 
 	private final long eventID;
 	/**
@@ -75,7 +75,7 @@ public final class SingleEvent {
 	 */
 	private final boolean tagged;
 
-	public SingleEvent(long eventID, long dataSourceID, long objID, Long artifactID, long time, EventType type, String fullDescription, String medDescription, String shortDescription, TskData.FileKnown known, boolean hashHit, boolean tagged) {
+	public TimelineEvent(long eventID, long dataSourceID, long objID, Long artifactID, long time, EventType type, String fullDescription, String medDescription, String shortDescription, TskData.FileKnown known, boolean hashHit, boolean tagged) {
 		this.eventID = eventID;
 		this.dataSourceID = dataSourceID;
 		this.objID = objID;
@@ -231,7 +231,7 @@ public final class SingleEvent {
 		if (getClass() != obj.getClass()) {
 			return false;
 		}
-		final SingleEvent other = (SingleEvent) obj;
+		final TimelineEvent other = (TimelineEvent) obj;
 		return this.eventID == other.eventID;
 	}
 

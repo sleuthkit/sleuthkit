@@ -54,9 +54,8 @@ import org.sleuthkit.datamodel.timeline.ArtifactEventType;
 import org.sleuthkit.datamodel.timeline.DescriptionLoD;
 import org.sleuthkit.datamodel.timeline.EventType;
 import org.sleuthkit.datamodel.timeline.EventTypeZoomLevel;
-import org.sleuthkit.datamodel.timeline.SingleEvent;
 import org.sleuthkit.datamodel.timeline.TimeUnits;
-import org.sleuthkit.datamodel.timeline.ZoomParams;
+import org.sleuthkit.datamodel.timeline.TimelineEvent;
 import org.sleuthkit.datamodel.timeline.filters.AbstractFilter;
 import org.sleuthkit.datamodel.timeline.filters.DataSourceFilter;
 import org.sleuthkit.datamodel.timeline.filters.DataSourcesFilter;
@@ -129,27 +128,6 @@ public final class TimelineManager {
 			sleuthkitCase.releaseSingleUserCaseReadLock();
 		}
 		return -1;
-	}
-
-	/**
-	 * get the count of all events that fit the given zoom params organized by
-	 * the EvenType of the level specified in the ZoomParams
-	 *
-	 * @param params the params that control what events to count and how to
-	 *               organize the returned map
-	 *
-	 * @return a map from event type( of the requested level) to event counts
-	 *
-	 * @throws org.sleuthkit.datamodel.TskCoreException
-	 */
-	public Map<EventType, Long> countEventsByType(ZoomParams params) throws TskCoreException {
-		if (params.getTimeRange() == null) {
-			return Collections.emptyMap();
-		} else {
-			return countEventsByType(params.getTimeRange().getStartMillis() / 1000,
-					params.getTimeRange().getEndMillis() / 1000,
-					params.getFilter(), params.getTypeZoomLevel());
-		}
 	}
 
 	/**
@@ -230,7 +208,7 @@ public final class TimelineManager {
 		return null;
 	}
 
-	public SingleEvent getEventById(Long eventID) throws TskCoreException {
+	public TimelineEvent getEventById(long eventID) throws TskCoreException {
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				PreparedStatement stmt = con.prepareStatement(STATEMENTS.GET_EVENT_BY_ID.getSQL(), 0);) {
@@ -672,8 +650,8 @@ public final class TimelineManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	Set<SingleEvent> addArtifactEvents(BlackboardArtifact artifact) throws TskCoreException {
-		Set<SingleEvent> newEvents = new HashSet<>();
+	Set<TimelineEvent> addArtifactEvents(BlackboardArtifact artifact) throws TskCoreException {
+		Set<TimelineEvent> newEvents = new HashSet<>();
 
 		/*
 		 * If the artifact is a TSK_EVENT, use its TSK_DATETIME, TSK_EVENT_TYPE
@@ -700,7 +678,7 @@ public final class TimelineManager {
 			 */
 			Set<ArtifactEventType> eventTypesForArtifact = getEventTypesForArtifactType(artifact.getArtifactTypeID());
 			for (ArtifactEventType eventType : eventTypesForArtifact) {
-				Optional<SingleEvent> newEvent = addArtifactEvent(eventType, artifact);
+				Optional<TimelineEvent> newEvent = addArtifactEvent(eventType, artifact);
 				newEvent.ifPresent(newEvents::add);
 			}
 		}
@@ -720,7 +698,7 @@ public final class TimelineManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	private Optional<SingleEvent> addArtifactEvent(ArtifactEventType eventType, BlackboardArtifact artifact) throws TskCoreException {
+	private Optional<TimelineEvent> addArtifactEvent(ArtifactEventType eventType, BlackboardArtifact artifact) throws TskCoreException {
 		ArtifactEventType.AttributeEventDescription eventDescription = eventType.buildEventDescription(artifact);
 
 		// if the time is legitimate ( greater than zero ) insert it into the db
@@ -742,7 +720,7 @@ public final class TimelineManager {
 		return Optional.empty();
 	}
 
-	private SingleEvent addEvent(long time, EventType type, long datasourceID, long objID,
+	private TimelineEvent addEvent(long time, EventType type, long datasourceID, long objID,
 			Long artifactID, String fullDescription, String medDescription,
 			String shortDescription, TskData.FileKnown known, boolean hashHit, boolean tagged) throws TskCoreException {
 
@@ -779,7 +757,7 @@ public final class TimelineManager {
 			try (ResultSet generatedKeys = insertRowStmt.getGeneratedKeys();) {
 				generatedKeys.next();
 				long eventID = generatedKeys.getLong(1);
-				SingleEvent singleEvent = new SingleEvent(eventID, datasourceID,
+				TimelineEvent singleEvent = new TimelineEvent(eventID, datasourceID,
 						objID, artifactID, time, type, fullDescription, medDescription,
 						shortDescription, known, hashHit, tagged);
 				sleuthkitCase.postTSKEvent(new EventAddedEvent(singleEvent));
@@ -897,9 +875,9 @@ public final class TimelineManager {
 		trans.rollback();
 	}
 
-	private SingleEvent constructTimeLineEvent(ResultSet resultSet) throws SQLException, TskCoreException {
+	private TimelineEvent constructTimeLineEvent(ResultSet resultSet) throws SQLException, TskCoreException {
 		int typeID = resultSet.getInt("sub_type"); //NON-NLS
-		return new SingleEvent(resultSet.getLong("event_id"), //NON-NLS
+		return new TimelineEvent(resultSet.getLong("event_id"), //NON-NLS
 				resultSet.getLong("datasource_id"), //NON-NLS
 				resultSet.getLong("file_id"), //NON-NLS
 				resultSet.getLong("artifact_id"), //NON-NLS
@@ -936,8 +914,10 @@ public final class TimelineManager {
 	 *
 	 * @return a map organizing the counts in a hierarchy from date > eventtype>
 	 *         count
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	private Map<EventType, Long> countEventsByType(Long startTime, final Long endTime, RootFilter filter, EventTypeZoomLevel zoomLevel) throws TskCoreException {
+	public Map<EventType, Long> countEventsByType(Long startTime, final Long endTime, RootFilter filter, EventTypeZoomLevel zoomLevel) throws TskCoreException {
 		long adjustedEndTime = Objects.equals(startTime, endTime) ? endTime + 1 : endTime;
 		boolean useSubTypes = EventTypeZoomLevel.SUB_TYPE.equals(zoomLevel);	//do we want the root or subtype column of the databse
 		boolean needsTags = filter.getTagsFilter().isActive();
@@ -1325,13 +1305,13 @@ public final class TimelineManager {
 	 */
 	final public class EventAddedEvent {
 
-		private final SingleEvent singleEvent;
+		private final TimelineEvent singleEvent;
 
-		public SingleEvent getEvent() {
+		public TimelineEvent getEvent() {
 			return singleEvent;
 		}
 
-		EventAddedEvent(SingleEvent singleEvent) {
+		EventAddedEvent(TimelineEvent singleEvent) {
 			this.singleEvent = singleEvent;
 		}
 	}
