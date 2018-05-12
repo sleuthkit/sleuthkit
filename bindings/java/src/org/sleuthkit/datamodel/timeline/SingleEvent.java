@@ -19,19 +19,13 @@
 package org.sleuthkit.datamodel.timeline;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSortedSet;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.Optional;
-import java.util.Set;
-import java.util.SortedSet;
-import org.joda.time.Interval;
 import org.sleuthkit.datamodel.TskData;
 
 /**
  * A single event.
  */
-public class SingleEvent implements TimeLineEvent {
+public final class SingleEvent {
 
 	private final long eventID;
 	/**
@@ -81,12 +75,6 @@ public class SingleEvent implements TimeLineEvent {
 	 */
 	private final boolean tagged;
 
-	/**
-	 * Single events may or may not have their parent set, since the parent is a
-	 * transient property of the current (details) view settings.
-	 */
-	private MultiEvent<?> parent = null;
-
 	public SingleEvent(long eventID, long dataSourceID, long objID, Long artifactID, long time, EventType type, String fullDescription, String medDescription, String shortDescription, TskData.FileKnown known, boolean hashHit, boolean tagged) {
 		this.eventID = eventID;
 		this.dataSourceID = dataSourceID;
@@ -100,21 +88,6 @@ public class SingleEvent implements TimeLineEvent {
 		this.known = known;
 		this.hashHit = hashHit;
 		this.tagged = tagged;
-	}
-
-	/**
-	 * Get a new SingleEvent that is the same as this event, but with the given
-	 * parent.
-	 *
-	 * @param newParent the parent of the new event object.
-	 *
-	 * @return a new SingleEvent that is the same as this event, but with the
-	 *         given parent.
-	 */
-	public SingleEvent withParent(MultiEvent<?> newParent) {
-		SingleEvent singleEvent = new SingleEvent(eventID, dataSourceID, objID, artifactID, time, type, descriptions.get(DescriptionLoD.FULL), descriptions.get(DescriptionLoD.MEDIUM), descriptions.get(DescriptionLoD.SHORT), known, hashHit, tagged);
-		singleEvent.parent = newParent;
-		return singleEvent;
 	}
 
 	/**
@@ -175,7 +148,6 @@ public class SingleEvent implements TimeLineEvent {
 		return time;
 	}
 
-	@Override
 	public EventType getEventType() {
 		return type;
 	}
@@ -236,27 +208,10 @@ public class SingleEvent implements TimeLineEvent {
 		return dataSourceID;
 	}
 
-	@Override
-	public Set<Long> getEventIDs() {
-		return Collections.singleton(eventID);
-	}
-
-	@Override
-	public Set<Long> getEventIDsWithHashHits() {
-		return isHashHit() ? Collections.singleton(eventID) : Collections.emptySet();
-	}
-
-	@Override
-	public Set<Long> getEventIDsWithTags() {
-		return isTagged() ? Collections.singleton(eventID) : Collections.emptySet();
-	}
-
-	@Override
 	public long getEndMillis() {
 		return time * 1000;
 	}
 
-	@Override
 	public long getStartMillis() {
 		return time * 1000;
 	}
@@ -280,38 +235,4 @@ public class SingleEvent implements TimeLineEvent {
 		return this.eventID == other.eventID;
 	}
 
-	@Override
-	public SortedSet<EventCluster> getClusters() {
-		EventCluster eventCluster = new EventCluster(new Interval(time * 1000, time * 1000), type, getEventIDs(), getEventIDsWithHashHits(), getEventIDsWithTags(), getFullDescription(), DescriptionLoD.FULL);
-		return ImmutableSortedSet.orderedBy(Comparator.comparing(EventCluster::getStartMillis)).add(eventCluster).build();
-	}
-
-	@Override
-	public String getDescription() {
-		return getFullDescription();
-	}
-
-	@Override
-	public DescriptionLoD getDescriptionLoD() {
-		return DescriptionLoD.FULL;
-	}
-
-	/**
-	 * get the EventStripe (if any) that contains this event, skipping over any
-	 * intervening event cluster
-	 *
-	 * @return an Optional containing the parent stripe of this cluster: empty
-	 *         if the cluster has no parent set or the parent has no parent
-	 *         stripe.
-	 */
-	@Override
-	public Optional<EventStripe> getParentStripe() {
-		if (parent == null) {
-			return Optional.empty();
-		} else if (parent instanceof EventStripe) {
-			return Optional.of((EventStripe) parent);
-		} else {
-			return parent.getParentStripe();
-		}
-	}
 }
