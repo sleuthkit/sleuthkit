@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel.timeline;
 
 import java.time.temporal.ChronoUnit;
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.Days;
 import org.joda.time.Hours;
 import org.joda.time.Minutes;
@@ -89,6 +90,6 @@ public enum TimeUnits {
 	}
 
 	public String getDisplayName() {
-		return toString();
+		return StringUtils.capitalize(toString().toLowerCase());
 	}
 }
