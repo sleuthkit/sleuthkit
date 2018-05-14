@@ -21,7 +21,7 @@ package org.sleuthkit.datamodel;
 import java.util.ResourceBundle;
 
 /**
- * Enumeration of all description levels of detail (LoD).
+ * Enumeration of description levels of detail (LoD).
  */
 public enum DescriptionLoD {
 	SHORT(ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString("DescriptionLOD.short")),
@@ -54,34 +54,4 @@ public enum DescriptionLoD {
 		}
 	}
 
-	public DescriptionLoD withRelativeDetail(RelativeDetail relativeDetail) {
-		switch (relativeDetail) {
-			case EQUAL:
-				return this;
-			case MORE:
-				return moreDetailed();
-			case LESS:
-				return lessDetailed();
-			default:
-				throw new IllegalArgumentException("Unknown RelativeDetail value " + relativeDetail);
-		}
-	}
-
-	public RelativeDetail getDetailLevelRelativeTo(DescriptionLoD other) {
-		int compareTo = this.compareTo(other);
-		if (compareTo < 0) {
-			return RelativeDetail.LESS;
-		} else if (compareTo == 0) {
-			return RelativeDetail.EQUAL;
-		} else {
-			return RelativeDetail.MORE;
-		}
-	}
-
-	public enum RelativeDetail {
-
-		EQUAL,
-		MORE,
-		LESS;
-	}
 }
