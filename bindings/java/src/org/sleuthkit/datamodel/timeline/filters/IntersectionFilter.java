@@ -21,9 +21,13 @@ package org.sleuthkit.datamodel.timeline.filters;
 import java.util.List;
 import java.util.stream.Collectors;
 import javafx.collections.FXCollections;
+import org.apache.commons.lang3.StringUtils;
+import org.sleuthkit.datamodel.TimelineManager;
 
 /**
  * Intersection (And) filter
+ *
+ * @param <S> The type of sub Filters in this IntersectionFilter.
  */
 public class IntersectionFilter<S extends Filter> extends CompoundFilter<S> {
 
@@ -76,5 +80,14 @@ public class IntersectionFilter<S extends Filter> extends CompoundFilter<S> {
 			}
 		}
 		return true;
+	}
+
+	@Override
+	public String getSQLWhere(TimelineManager manager) {
+		String query = this.getSubFilters().stream()
+				.filter(Filter::isActive)
+				.map(filter -> filter.getSQLWhere(manager))
+				.collect(Collectors.joining(" AND "));
+		return "(" + StringUtils.defaultIfBlank(query, manager.getTrueLiteral()) + ")";
 	}
 }

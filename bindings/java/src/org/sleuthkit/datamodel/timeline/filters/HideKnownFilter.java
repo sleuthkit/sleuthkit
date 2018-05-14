@@ -18,44 +18,54 @@
  */
 package org.sleuthkit.datamodel.timeline.filters;
 
+import org.sleuthkit.datamodel.TimelineManager;
+import org.sleuthkit.datamodel.TskData;
+
 /**
  * Filter to hide known files
  */
-public class HideKnownFilter extends AbstractFilter {
+final public class HideKnownFilter extends AbstractFilter {
 
-    @Override
-    public String getDisplayName() {
-        return BundleUtils.getBundle().getString("hideKnownFilter.displayName.text");
-    }
+	@Override
+	public String getDisplayName() {
+		return BundleUtils.getBundle().getString("hideKnownFilter.displayName.text");
+	}
 
-    public HideKnownFilter() {
-        super();
-        selectedProperty().set(false);
-    }
+	public HideKnownFilter() {
+		super();
+		setSelected(false);
+	}
 
-    @Override
-    public HideKnownFilter copyOf() {
-        HideKnownFilter hideKnownFilter = new HideKnownFilter();
-        hideKnownFilter.setSelected(isSelected());
-        hideKnownFilter.setDisabled(isDisabled());
-        return hideKnownFilter;
-    }
+	@Override
+	public HideKnownFilter copyOf() {
+		HideKnownFilter hideKnownFilter = new HideKnownFilter();
+		hideKnownFilter.setSelected(isSelected());
+		hideKnownFilter.setDisabled(isDisabled());
+		return hideKnownFilter;
+	}
 
-    @Override
-    public int hashCode() {
-        return 7;
-    }
+	@Override
+	public int hashCode() {
+		return 7;
+	}
 
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final HideKnownFilter other = (HideKnownFilter) obj;
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		final HideKnownFilter other = (HideKnownFilter) obj;
 
-        return isSelected() == other.isSelected();
-    }
+		return isSelected() == other.isSelected();
+	}
+
+	@Override
+	public String getSQLWhere(TimelineManager manager) {
+		return this.isActive()
+				? "(known_state != " + TskData.FileKnown.KNOWN.getFileKnownValue() + ")" // NON-NLS
+				: manager.getTrueLiteral();
+	}
 }

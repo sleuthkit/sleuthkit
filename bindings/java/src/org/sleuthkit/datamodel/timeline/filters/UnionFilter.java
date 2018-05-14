@@ -20,8 +20,10 @@ package org.sleuthkit.datamodel.timeline.filters;
 
 import java.util.Comparator;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import org.sleuthkit.datamodel.TimelineManager;
 
 /**
  * Union(or) filter
@@ -50,5 +52,17 @@ abstract public class UnionFilter<SubFilterType extends Filter> extends Compound
 			getSubFilters().add(subfilter);
 		}
 		getSubFilters().sort(comparator);
+	}
+
+	@Override
+	public String getSQLWhere(TimelineManager manager) {
+		String join = this.getSubFilters().stream()
+				.filter(Filter::isActive)
+				.map(filter -> filter.getSQLWhere(manager))
+				.collect(Collectors.joining(" OR "));
+
+		return join.isEmpty()
+				? manager.getTrueLiteral()
+				: "(" + join + ")";
 	}
 }

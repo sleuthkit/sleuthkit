@@ -19,64 +19,71 @@
 package org.sleuthkit.datamodel.timeline.filters;
 
 import java.util.Objects;
+import org.sleuthkit.datamodel.TimelineManager;
 
 /**
  * Filter for an individual datasource
  */
 public class DataSourceFilter extends AbstractFilter {
 
-    private final String dataSourceName;
-    private final long dataSourceID;
+	private final String dataSourceName;
+	private final long dataSourceID;
 
-    public long getDataSourceID() {
-        return dataSourceID;
-    }
+	public long getDataSourceID() {
+		return dataSourceID;
+	}
 
-    public String getDataSourceName() {
-        return dataSourceName;
-    }
+	public String getDataSourceName() {
+		return dataSourceName;
+	}
 
-    public DataSourceFilter(String dataSourceName, long dataSourceID) {
-        this.dataSourceName = dataSourceName;
-        this.dataSourceID = dataSourceID;
-    }
+	public DataSourceFilter(String dataSourceName, long dataSourceID) {
+		this.dataSourceName = dataSourceName;
+		this.dataSourceID = dataSourceID;
+	}
 
-    @Override
-    synchronized public DataSourceFilter copyOf() {
-        DataSourceFilter filterCopy = new DataSourceFilter(getDataSourceName(), getDataSourceID());
-        filterCopy.setSelected(isSelected());
-        filterCopy.setDisabled(isDisabled());
-        return filterCopy;
-    }
+	@Override
+	synchronized public DataSourceFilter copyOf() {
+		DataSourceFilter filterCopy = new DataSourceFilter(getDataSourceName(), getDataSourceID());
+		filterCopy.setSelected(isSelected());
+		filterCopy.setDisabled(isDisabled());
+		return filterCopy;
+	}
 
-    @Override
-    public String getDisplayName() {
-        return getDataSourceName();
-    }
+	@Override
+	public String getDisplayName() {
+		return getDataSourceName();
+	}
 
-    @Override
-    public int hashCode() {
-        int hash = 5;
-        hash = 97 * hash + Objects.hashCode(this.dataSourceName);
-        hash = 97 * hash + (int) (this.dataSourceID ^ (this.dataSourceID >>> 32));
-        return hash;
-    }
+	@Override
+	public int hashCode() {
+		int hash = 5;
+		hash = 97 * hash + Objects.hashCode(this.dataSourceName);
+		hash = 97 * hash + (int) (this.dataSourceID ^ (this.dataSourceID >>> 32));
+		return hash;
+	}
 
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final DataSourceFilter other = (DataSourceFilter) obj;
-        if (!Objects.equals(this.dataSourceName, other.dataSourceName)) {
-            return false;
-        }
-        if (this.dataSourceID != other.dataSourceID) {
-            return false;
-        }
-        return isSelected() == other.isSelected();
-    }
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		final DataSourceFilter other = (DataSourceFilter) obj;
+		if (!Objects.equals(this.dataSourceName, other.dataSourceName)) {
+			return false;
+		}
+		if (this.dataSourceID != other.dataSourceID) {
+			return false;
+		}
+		return isSelected() == other.isSelected();
+	}
+
+	@Override
+	public String getSQLWhere(TimelineManager manager) {
+		return this.isActive() ? "(datasource_id = '" + this.getDataSourceID() + "')"//NON-NLS
+				: manager.getTrueLiteral();
+	}
 }

@@ -18,10 +18,15 @@
  */
 package org.sleuthkit.datamodel.timeline.filters;
 
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javafx.collections.FXCollections;
+import org.sleuthkit.datamodel.TimelineManager;
 import org.sleuthkit.datamodel.timeline.EventType;
 
 /**
@@ -119,5 +124,31 @@ public class TypeFilter extends UnionFilter<TypeFilter> {
 	@Override
 	Predicate<TypeFilter> getDuplicatePredicate(TypeFilter subfilter) {
 		return typeFilter -> subfilter.getEventType().equals(typeFilter.eventType);
+	}
+
+	@Override
+	public String getSQLWhere(TimelineManager manager) {
+		if (this.isSelected()) {
+			if (this.getEventType().equals(EventType.ROOT_EVEN_TYPE)
+					& this.areAllSubFiltersActiveRecursive()) {
+				return manager.getTrueLiteral(); //then collapse clause to true
+			}
+			return "(sub_type IN (" + getActiveSubTypeIDs().collect(Collectors.joining(",")) + "))"; //NON-NLS
+		} else {
+			return manager.getFalseLiteral();
+		}
+	}
+
+	private Stream<String> getActiveSubTypeIDs() {
+		if (this.isActive()) {
+			if (this.getSubFilters().isEmpty()) {
+				return Stream.of(String.valueOf(getEventType().getTypeID()));
+			} else {
+				return this.getSubFilters().stream()
+						.flatMap(TypeFilter::getActiveSubTypeIDs);
+			}
+		} else {
+			return Stream.empty();
+		}
 	}
 }

@@ -27,64 +27,63 @@ import org.sleuthkit.datamodel.TagName;
 /**
  * Filter to show only events tag with the tagNames of the selected subfilters.
  */
-public class TagsFilter extends UnionFilter<TagNameFilter> {
+public final class TagsFilter extends UnionFilter<TagNameFilter> {
 
-    @Override
-    public String getDisplayName() {
+	@Override
+	public String getDisplayName() {
 		return BundleUtils.getBundle().getString("tagsFilter.displayName.text");
-    }
+	}
 
-    public TagsFilter() {
-        setSelected(false);
-    }
+	public TagsFilter() {
+		setSelected(false);
+	}
 
-    @Override
-    public TagsFilter copyOf() {
-        TagsFilter filterCopy = new TagsFilter();
-        //add a copy of each subfilter
-        getSubFilters().forEach(tagNameFilter -> filterCopy.addSubFilter(tagNameFilter.copyOf()));
-        //these need to happen after the listeners fired by adding the subfilters 
-        filterCopy.setSelected(isSelected());
-        filterCopy.setDisabled(isDisabled());
+	@Override
+	public TagsFilter copyOf() {
+		TagsFilter filterCopy = new TagsFilter();
+		//add a copy of each subfilter
+		getSubFilters().forEach(tagNameFilter -> filterCopy.addSubFilter(tagNameFilter.copyOf()));
+		//these need to happen after the listeners fired by adding the subfilters 
+		filterCopy.setSelected(isSelected());
+		filterCopy.setDisabled(isDisabled());
 
-        return filterCopy;
-    }
+		return filterCopy;
+	}
 
-    @Override
-    public int hashCode() {
-        return 7;
-    }
+	@Override
+	public int hashCode() {
+		return 7;
+	}
 
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final TagsFilter other = (TagsFilter) obj;
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
+		final TagsFilter other = (TagsFilter) obj;
 
-        if (isActive() != other.isActive()) {
-            return false;
-        }
+		if (isActive() != other.isActive()) {
+			return false;
+		}
 
-        return areSubFiltersEqual(this, other);
-    }
+		return areSubFiltersEqual(this, other);
+	}
 
-    public void removeFilterForTag(TagName tagName) {
-        getSubFilters().removeIf(subfilter -> subfilter.getTagName().equals(tagName));
-        getSubFilters().sort(Comparator.comparing(TagNameFilter::getDisplayName));
-    }
+	public void removeFilterForTag(TagName tagName) {
+		getSubFilters().removeIf(subfilter -> subfilter.getTagName().equals(tagName));
+		getSubFilters().sort(Comparator.comparing(TagNameFilter::getDisplayName));
+	}
 
-    @Override
-    public ObservableBooleanValue disabledProperty() {
-        return Bindings.or(super.disabledProperty(), Bindings.isEmpty(getSubFilters()));
-    }
+	@Override
+	public ObservableBooleanValue disabledProperty() {
+		return Bindings.or(super.disabledProperty(), Bindings.isEmpty(getSubFilters()));
+	}
 
-    @Override
-    Predicate<TagNameFilter> getDuplicatePredicate(TagNameFilter subfilter) {
-        return tagNameFilter -> subfilter.getTagName().equals(tagNameFilter.getTagName());
-    }
-
+	@Override
+	Predicate<TagNameFilter> getDuplicatePredicate(TagNameFilter subfilter) {
+		return tagNameFilter -> subfilter.getTagName().equals(tagNameFilter.getTagName());
+	}
 }

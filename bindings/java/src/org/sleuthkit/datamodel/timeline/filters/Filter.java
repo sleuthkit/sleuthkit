@@ -23,6 +23,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ObservableBooleanValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import org.sleuthkit.datamodel.TimelineManager;
 
 /**
  * Interface for Filters. Filters are given to the EventDB who interpretes them
@@ -32,98 +33,111 @@ import javafx.collections.ObservableList;
  */
 public interface Filter {
 
-    /**
-     * get a filter that is the intersection of the given filters
-     *
-     * @param filters a set of filters to intersect
-     *
-     * @return a filter that is the intersection of the given filters
-     */
-    public static IntersectionFilter<Filter> intersect(ObservableList<Filter> filters) {
-        return new IntersectionFilter<>(filters);
-    }
+	/**
+	 * get a filter that is the intersection of the given filters
+	 *
+	 * @param filters a set of filters to intersect
+	 *
+	 * @return a filter that is the intersection of the given filters
+	 */
+	public static IntersectionFilter<Filter> intersect(ObservableList<Filter> filters) {
+		return new IntersectionFilter<>(filters);
+	}
 
-    /**
-     * get a filter that is the intersection of the given filters
-     *
-     * @param filters a set of filters to intersect
-     *
-     * @return a filter that is the intersection of the given filters
-     */
-    public static IntersectionFilter<Filter> intersect(Filter[] filters) {
-        return intersect(FXCollections.observableArrayList(filters));
-    }
+	/**
+	 * get a filter that is the intersection of the given filters
+	 *
+	 * @param filters a set of filters to intersect
+	 *
+	 * @return a filter that is the intersection of the given filters
+	 */
+	public static IntersectionFilter<Filter> intersect(Filter[] filters) {
+		return intersect(FXCollections.observableArrayList(filters));
+	}
 
-    /**
-     * since filters have mutable state (selected/disabled/active) and are
-     * observed in various places, we need a mechanism to copy the current state
-     * to keep in the history.
-     *
-     * Concrete sub classes should implement this in a way that preserves the
-     * state and any sub-filters.
-     *
-     * @return a copy of this filter.
-     */
-    Filter copyOf();
+	/**
+	 * since filters have mutable state (selected/disabled/active) and are
+	 * observed in various places, we need a mechanism to copy the current state
+	 * to keep in the history.
+	 *
+	 * Concrete sub classes should implement this in a way that preserves the
+	 * state and any sub-filters.
+	 *
+	 * @return a copy of this filter.
+	 */
+	Filter copyOf();
 
-    /**
-     * get the display name of this filter
-     *
-     * @return a name for this filter to show in the UI
-     */
-    String getDisplayName();
+	/**
+	 * get the display name of this filter
+	 *
+	 * @return a name for this filter to show in the UI
+	 */
+	String getDisplayName();
 
-    /**
-     * is this filter selected
-     *
-     * @return true if this filter is selected
-     */
-    boolean isSelected();
+	/**
+	 * is this filter selected
+	 *
+	 * @return true if this filter is selected
+	 */
+	boolean isSelected();
 
-    /**
-     * set this filter selected
-     *
-     * @param selected true to selecte, false to un-select
-     */
-    void setSelected(Boolean selected);
+	/**
+	 * set this filter selected
+	 *
+	 * @param selected true to selecte, false to un-select
+	 */
+	void setSelected(Boolean selected);
 
-    /**
-     * observable selected property
-     *
-     * @return the observable selected property for this filter
-     */
-    SimpleBooleanProperty selectedProperty();
+	/**
+	 * observable selected property
+	 *
+	 * @return the observable selected property for this filter
+	 */
+	SimpleBooleanProperty selectedProperty();
 
-    /**
-     * set the filter disabled
-     */
-    void setDisabled(Boolean act);
+	/**
+	 * Set the filter disabled
+	 *
+	 * @param act
+	 */
+	void setDisabled(Boolean act);
 
-    /**
-     * observable disabled property
-     *
-     * @return the observable disabled property for this filter
-     */
-    ObservableBooleanValue disabledProperty();
+	/**
+	 * observable disabled property
+	 *
+	 * @return the observable disabled property for this filter
+	 */
+	ObservableBooleanValue disabledProperty();
 
-    /**
-     * is this filter disabled
-     *
-     * @return true if this filter is disabled
-     */
-    boolean isDisabled();
+	/**
+	 * is this filter disabled
+	 *
+	 * @return true if this filter is disabled
+	 */
+	boolean isDisabled();
 
-    /**
-     * is this filter active (selected and not disabled)
-     *
-     * @return true if this filter is active
-     */
-    boolean isActive();
+	/**
+	 * is this filter active (selected and not disabled)
+	 *
+	 * @return true if this filter is active
+	 */
+	boolean isActive();
 
-    /**
-     * observable active property
-     *
-     * @return the observable active property for this filter
-     */
-    BooleanBinding activeProperty();
+	/**
+	 * observable active property
+	 *
+	 * @return the observable active property for this filter
+	 */
+	BooleanBinding activeProperty();
+
+	/**
+	 * Get the SQL where clause corresponding to this filter.
+	 *
+	 * @param manager The TimelineManager to use for DB spevific parts of the
+	 *                query.
+	 *
+	 * @return an SQL where clause (without the "where") corresponding to this
+	 *         filter
+	 */
+	String getSQLWhere(TimelineManager manager);
 }

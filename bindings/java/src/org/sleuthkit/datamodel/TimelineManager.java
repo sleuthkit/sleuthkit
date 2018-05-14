@@ -55,19 +55,9 @@ import org.sleuthkit.datamodel.timeline.EventType;
 import org.sleuthkit.datamodel.timeline.EventTypeZoomLevel;
 import org.sleuthkit.datamodel.timeline.TimeUnits;
 import org.sleuthkit.datamodel.timeline.TimelineEvent;
-import org.sleuthkit.datamodel.timeline.filters.AbstractFilter;
-import org.sleuthkit.datamodel.timeline.filters.DataSourceFilter;
-import org.sleuthkit.datamodel.timeline.filters.DataSourcesFilter;
 import org.sleuthkit.datamodel.timeline.filters.DescriptionFilter;
 import org.sleuthkit.datamodel.timeline.filters.Filter;
-import org.sleuthkit.datamodel.timeline.filters.HashHitsFilter;
-import org.sleuthkit.datamodel.timeline.filters.HideKnownFilter;
-import org.sleuthkit.datamodel.timeline.filters.IntersectionFilter;
 import org.sleuthkit.datamodel.timeline.filters.RootFilter;
-import org.sleuthkit.datamodel.timeline.filters.TagsFilter;
-import org.sleuthkit.datamodel.timeline.filters.TextFilter;
-import org.sleuthkit.datamodel.timeline.filters.TypeFilter;
-import org.sleuthkit.datamodel.timeline.filters.UnionFilter;
 
 /**
  * Provides access to the Timeline features of SleuthkitCase
@@ -996,6 +986,19 @@ public final class TimelineManager {
 		}
 	}
 
+	/**
+	 * get a format string that will allow us to group by the requested period
+	 * size. That is, with all info more granular than that requested dropped
+	 * (replaced with zeros).
+	 *
+	 * @param periodSize tHE TimeUnits instance describing what granularity to
+	 *                   build a strftime string for
+	 * @param timeZone
+	 *
+	 * @return a String formatted according to the sqlite strftime spec
+	 *
+	 * @see https://www.sqlite.org/lang_datefunc.html
+	 */
 	public String formatTimeFunction(TimeUnits periodSize, DateTimeZone timeZone) {
 		switch (sleuthkitCase.getDatabaseType()) {
 			case SQLITE:
@@ -1011,216 +1014,42 @@ public final class TimelineManager {
 	}
 
 	/**
-	 * Static helper methods for converting between java "data model" objects
-	 * and sqlite queries.
+	 * Get the column name to use depending on if we want base types or subtypes
+	 *
+	 * @param useSubTypes True to use sub types, false to use base types.
+	 *
+	 * @return column name to use depending on if we want base types or subtypes
 	 */
 	public static String typeColumnHelper(final boolean useSubTypes) {
 		return useSubTypes ? "sub_type" : "base_type"; //NON-NLS
 	}
 
 	/**
-	 * get the SQL where clause corresponding to an intersection filter ie
-	 * (sub-clause1 and sub-clause2 and ... and sub-clauseN)
-	 *
-	 * @param filter the filter get the where clause for
-	 *
-	 * @return an SQL where clause (without the "where") corresponding to the
-	 *         filter
-	 */
-	private String getSQLWhere(IntersectionFilter<?> filter) {
-		String join = String.join(" and ", filter.getSubFilters().stream()
-				.filter(Filter::isActive)
-				.map(this::getSQLWhere)
-				.collect(Collectors.toList()));
-		return "(" + org.apache.commons.lang3.StringUtils.defaultIfBlank(join, getTrueLiteral()) + ")";
-	}
-
-	/**
-	 * get the SQL where clause corresponding to a union filter ie (sub-clause1
-	 * or sub-clause2 or ... or sub-clauseN)
-	 *
-	 * @param filter the filter get the where clause for
-	 *
-	 * @return an SQL where clause (without the "where") corresponding to the
-	 *         filter
-	 */
-	private String getSQLWhere(UnionFilter<?> filter) {
-		String join = String.join(" or ", filter.getSubFilters().stream()
-				.filter(Filter::isActive)
-				.map(this::getSQLWhere)
-				.collect(Collectors.toList()));
-		return "(" + org.apache.commons.lang3.StringUtils.defaultIfBlank(join, getTrueLiteral()) + ")";
-	}
-
-	public String getSQLWhere(RootFilter filter) {
-		return getSQLWhere((Filter) filter);
-	}
-
-	/**
 	 * Get the SQL where clause corresponding to the given filter
-	 *
-	 * Uses instanceof to dispatch to the correct method for each filter type.
-	 * NOTE: I don't like this if-else instance of chain, but I can't decide
-	 * what to do instead -jm We could move the methods into the filter classes
-	 * and use dynamic dispatch.
 	 *
 	 * @param filter A filter to generate the SQL where clause for,
 	 *
 	 * @return An SQL where clause (without the "where") corresponding to the
 	 *         filter.
 	 */
-	private String getSQLWhere(Filter filter) {
-		String result = "";
+	public String getSQLWhere(RootFilter filter) {
+
+		String result;
 		if (filter == null) {
 			return getTrueLiteral();
-		} else if (filter instanceof DescriptionFilter) {
-			result = getSQLWhere((DescriptionFilter) filter);
-		} else if (filter instanceof TagsFilter) {
-			result = getSQLWhere((TagsFilter) filter);
-		} else if (filter instanceof HashHitsFilter) {
-			result = getSQLWhere((HashHitsFilter) filter);
-		} else if (filter instanceof DataSourceFilter) {
-			result = getSQLWhere((DataSourceFilter) filter);
-		} else if (filter instanceof DataSourcesFilter) {
-			result = getSQLWhere((DataSourcesFilter) filter);
-		} else if (filter instanceof HideKnownFilter) {
-			result = getSQLWhere((HideKnownFilter) filter);
-		} else if (filter instanceof TextFilter) {
-			result = getSQLWhere((TextFilter) filter);
-		} else if (filter instanceof TypeFilter) {
-			result = getSQLWhere((TypeFilter) filter);
-		} else if (filter instanceof IntersectionFilter) {
-			result = getSQLWhere((IntersectionFilter) filter);
-		} else if (filter instanceof UnionFilter) {
-			result = getSQLWhere((UnionFilter) filter);
 		} else {
-			throw new IllegalArgumentException("getSQLWhere not defined for " + filter.getClass().getCanonicalName());
+			result = filter.getSQLWhere(this);
 		}
-		result = org.apache.commons.lang3.StringUtils.deleteWhitespace(result).equals("(1and1and1)") ? getTrueLiteral() : result; //NON-NLS
-		result = org.apache.commons.lang3.StringUtils.deleteWhitespace(result).equals("()") ? getTrueLiteral() : result;
+
+		switch (StringUtils.deleteWhitespace(result)) {
+			case "(1and1and1)"://NON-NLS
+			case "()"://NON-NLS
+				return getTrueLiteral();
+		}
 		return result;
 	}
 
-	private String getSQLWhere(HideKnownFilter filter) {
-		if (filter.isActive()) {
-			return "(known_state != " + TskData.FileKnown.KNOWN.getFileKnownValue() + ")"; // NON-NLS
-		} else {
-			return getTrueLiteral();
-		}
-	}
-
-	private String getSQLWhere(DescriptionFilter filter) {
-		if (filter.isActive()) {
-			String likeOrNotLike = (filter.getFilterMode() == DescriptionFilter.FilterMode.INCLUDE ? "" : " NOT") + " LIKE '"; //NON-NLS
-			return "(" + getDescriptionColumn(filter.getDescriptionLoD()) + likeOrNotLike + filter.getDescription() + "'  )"; // NON-NLS
-		} else {
-			return getTrueLiteral();
-		}
-	}
-
-	private String getSQLWhere(TagsFilter filter) {
-		if (false == filter.isActive()
-				|| filter.getSubFilters().isEmpty()) {
-			return getTrueLiteral();
-		} else {
-			String tagNameIDs = filter.getSubFilters().stream()
-					.filter(tagFilter -> tagFilter.isSelected() && !tagFilter.isDisabled())
-					.map(tagNameFilter -> String.valueOf(tagNameFilter.getTagName().getId()))
-					.collect(Collectors.joining(", ", "(", ")"));
-			return "(events.tag_name_id IN " + tagNameIDs + ") "; //NON-NLS
-		}
-	}
-
-	private String getSQLWhere(HashHitsFilter filter) {
-		if (false == filter.isActive()
-				|| filter.getSubFilters().isEmpty()) {
-			return getTrueLiteral();
-		} else {
-			String hashSetNAmes = filter.getSubFilters().stream()
-					.filter(hashFilter -> hashFilter.isSelected() && !hashFilter.isDisabled())
-					.map(hashFilter -> hashFilter.getHashSetName())
-					.collect(Collectors.joining("', '", "('", "')"));
-			return "(hash_set_name IN " + hashSetNAmes + " )"; //NON-NLS
-		}
-	}
-
-	private String getSQLWhere(DataSourceFilter filter) {
-		if (filter.isActive()) {
-			return "(datasource_id = '" + filter.getDataSourceID() + "')"; //NON-NLS
-		} else {
-			return getTrueLiteral();
-		}
-	}
-
-	private String getSQLWhere(DataSourcesFilter filter) {
-		return filter.isActive() ? "(datasource_id in (" //NON-NLS
-				+ filter.getSubFilters().stream()
-						.filter(AbstractFilter::isActive)
-						.map((dataSourceFilter) -> String.valueOf(dataSourceFilter.getDataSourceID()))
-						.collect(Collectors.joining(", ")) + "))" : getTrueLiteral();
-	}
-
-	private String getSQLWhere(TextFilter filter) {
-		if (filter.isActive()) {
-			if (org.apache.commons.lang3.StringUtils.isBlank(filter.getText())) {
-				return getTrueLiteral();
-			}
-			String strippedFilterText = org.apache.commons.lang3.StringUtils.strip(filter.getText());
-			return "((med_description like '%" + strippedFilterText + "%')" //NON-NLS
-					+ " or (full_description like '%" + strippedFilterText + "%')" //NON-NLS
-					+ " or (short_description like '%" + strippedFilterText + "%'))"; //NON-NLS
-		} else {
-			return getTrueLiteral();
-		}
-	}
-
-	/**
-	 * generate a sql where clause for the given type filter, while trying to be
-	 * as simple as possible to improve performance.
-	 *
-	 * @param typeFilter
-	 *
-	 * @return
-	 */
-	private String getSQLWhere(TypeFilter typeFilter) {
-		if (typeFilter.isSelected()) {
-			if (typeFilter.getEventType().equals(EventType.ROOT_EVEN_TYPE)
-					& typeFilter.areAllSubFiltersActiveRecursive()) {
-				return getTrueLiteral(); //then collapse clause to true
-			}
-			return "(sub_type IN (" + joinAsStrings(getActiveSubTypeIDs(typeFilter), ",") + "))"; //NON-NLS
-		} else {
-			return getFalseLiteral();
-		}
-	}
-
-	private List<Long> getActiveSubTypeIDs(TypeFilter filter) {
-		if (filter.isActive()) {
-			if (filter.getSubFilters().isEmpty()) {
-				return Collections.singletonList(filter.getEventType().getTypeID());
-			} else {
-				return filter.getSubFilters().stream()
-						.flatMap(subfilter -> getActiveSubTypeIDs(subfilter).stream())
-						.collect(Collectors.toList());
-			}
-		} else {
-			return Collections.emptyList();
-		}
-	}
-
-	/**
-	 * get a sqlite strftime format string that will allow us to group by the
-	 * requested period size. That is, with all info more granular than that
-	 * requested dropped (replaced with zeros).
-	 *
-	 * @param timeUnit the {@link TimeUnits} instance describing what
-	 *                 granularity to build a strftime string for
-	 *
-	 * @return a String formatted according to the sqlite strftime spec
-	 *
-	 * @see https://www.sqlite.org/lang_datefunc.html
-	 */
-	String getStrfTimeFormat(TimeUnits timeUnit) {
+	private static String getStrfTimeFormat(TimeUnits timeUnit) {
 		switch (timeUnit) {
 			case YEARS:
 				return "%Y-01-01T00:00:00"; // NON-NLS
@@ -1238,7 +1067,7 @@ public final class TimelineManager {
 			}
 	}
 
-	String getPostgresTimeFormat(TimeUnits timeUnit) {
+	private static String getPostgresTimeFormat(TimeUnits timeUnit) {
 		switch (timeUnit) {
 			case YEARS:
 				return "YYYY-01-01T00:00:00"; // NON-NLS
@@ -1256,7 +1085,7 @@ public final class TimelineManager {
 			}
 	}
 
-	static public String getDescriptionColumn(DescriptionLoD lod) {
+	public String getDescriptionColumn(DescriptionLoD lod) {
 		switch (lod) {
 			case FULL:
 				return "full_description"; //NON-NLS
@@ -1268,7 +1097,7 @@ public final class TimelineManager {
 			}
 	}
 
-	private String getFalseLiteral() {
+	public String getFalseLiteral() {
 		switch (sleuthkitCase.getDatabaseType()) {
 			case POSTGRESQL:
 				return "FALSE";
@@ -1296,6 +1125,7 @@ public final class TimelineManager {
 
 	public String csvAggFunction(String args, String seperator) {
 		return csvFunction + "(Cast (" + args + " AS VARCHAR) , '" + seperator + "')";
+
 	}
 
 	/**

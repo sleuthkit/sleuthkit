@@ -21,6 +21,8 @@ package org.sleuthkit.datamodel.timeline.filters;
 import java.util.Objects;
 import javafx.beans.property.Property;
 import javafx.beans.property.SimpleStringProperty;
+import org.apache.commons.lang3.StringUtils;
+import org.sleuthkit.datamodel.TimelineManager;
 
 /**
  * Filter for text matching
@@ -30,14 +32,15 @@ public class TextFilter extends AbstractFilter {
 	private final SimpleStringProperty text = new SimpleStringProperty();
 
 	public TextFilter() {
+		this("");
 	}
 
 	public TextFilter(String text) {
-		this.text.set(text);
+		this.text.set(text.trim());
 	}
 
 	synchronized public void setText(String text) {
-		this.text.set(text);
+		this.text.set(text.trim());
 	}
 
 	@Override
@@ -82,5 +85,14 @@ public class TextFilter extends AbstractFilter {
 		int hash = 5;
 		hash = 29 * hash + Objects.hashCode(this.text.get());
 		return hash;
+	}
+
+	@Override
+	public String getSQLWhere(TimelineManager manager) {
+		return this.isActive() && StringUtils.isNotBlank(this.getText())
+				? "((med_description like '%" + this.getText() + "%')" //NON-NLS
+				+ " or (full_description like '%" + this.getText() + "%')" //NON-NLS
+				+ " or (short_description like '%" + this.getText() + "%'))" //NON-NLS
+				: manager.getTrueLiteral();
 	}
 }

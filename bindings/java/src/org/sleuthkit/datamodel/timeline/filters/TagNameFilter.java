@@ -19,18 +19,20 @@
 package org.sleuthkit.datamodel.timeline.filters;
 
 import java.util.Objects;
+import static java.util.stream.Collectors.joining;
 import org.sleuthkit.datamodel.TagName;
+import org.sleuthkit.datamodel.TimelineManager;
 
 /**
  * Filter for an individual TagName
  */
-public class TagNameFilter extends AbstractFilter {
+public final class TagNameFilter extends AbstractFilter {
 
 	private final TagName tagName;
 
 	public TagNameFilter(TagName tagName) {
 		this.tagName = tagName;
-		setSelected(Boolean.TRUE);
+		setSelected(true);
 	}
 
 	public TagName getTagName() {
@@ -71,5 +73,12 @@ public class TagNameFilter extends AbstractFilter {
 		}
 
 		return isSelected() == other.isSelected();
+	}
+
+	@Override
+	public String getSQLWhere(TimelineManager manager) {
+		return this.isActive()
+				? " (events.tag_name_id = " + getTagName().getId() + " ) "//NON-NLS
+				: manager.getTrueLiteral();
 	}
 }

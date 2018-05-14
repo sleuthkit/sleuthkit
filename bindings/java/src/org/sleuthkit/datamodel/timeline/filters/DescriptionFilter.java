@@ -20,7 +20,11 @@ package org.sleuthkit.datamodel.timeline.filters;
 
 import java.util.Objects;
 import org.sleuthkit.datamodel.DescriptionLoD;
+import org.sleuthkit.datamodel.TimelineManager;
 
+/**
+ * Filter for events that do(not) have the given description.
+ */
 public class DescriptionFilter extends AbstractFilter {
 
 	private final DescriptionLoD descriptionLoD;
@@ -64,20 +68,30 @@ public class DescriptionFilter extends AbstractFilter {
 		return description;
 	}
 
+	/**
+	 * Enum for the two modes of the DesciptionFilter, include and exclude
+	 */
 	public enum FilterMode {
 
-		EXCLUDE(BundleUtils.getBundle().getString("DescriptionFilter.mode.exclude")),
-		INCLUDE(BundleUtils.getBundle().getString("DescriptionFilter.mode.include"));
+		EXCLUDE(BundleUtils.getBundle().getString("DescriptionFilter.mode.exclude"), " NOT LIKE "),
+		INCLUDE(BundleUtils.getBundle().getString("DescriptionFilter.mode.include"), " LIKE ");
 
+		private final String like;
 		private final String displayName;
 
-		private FilterMode(String displayName) {
+		private FilterMode(String displayName, String like) {
 			this.displayName = displayName;
+			this.like = like;
 		}
 
 		private String getDisplayName() {
 			return displayName;
 		}
+
+		private String getLike() {
+			return like;
+		}
+
 	}
 
 	@Override
@@ -105,5 +119,12 @@ public class DescriptionFilter extends AbstractFilter {
 			return false;
 		}
 		return this.filterMode == other.filterMode;
+	}
+
+	@Override
+	public String getSQLWhere(TimelineManager manager) {
+		return this.isActive()
+				? "(" + manager.getDescriptionColumn(this.getDescriptionLoD()) + getFilterMode().getLike() + " '" + this.getDescription() + "'  )" // NON-NLS
+				: manager.getTrueLiteral();
 	}
 }

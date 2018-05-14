@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel.timeline.filters;
 
 import java.util.Objects;
+import org.sleuthkit.datamodel.TimelineManager;
 
 /**
  * Filter for an individual hash set
@@ -69,5 +70,12 @@ final public class HashSetFilter extends AbstractFilter {
 		}
 
 		return isSelected() == other.isSelected();
+	}
+
+	@Override
+	public String getSQLWhere(TimelineManager manager) {
+		return isActive()
+				? "(hash_set_name = '" + getHashSetName() + "' )" //NON-NLS
+				: manager.getTrueLiteral();
 	}
 }
