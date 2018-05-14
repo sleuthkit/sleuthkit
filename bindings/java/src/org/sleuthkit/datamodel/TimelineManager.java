@@ -49,7 +49,11 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Interval;
 import org.joda.time.Period;
+import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_EVENT;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT;
+import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME;
+import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DESCRIPTION;
+import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EVENT_TYPE;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import static org.sleuthkit.datamodel.StringUtils.joinAsStrings;
@@ -59,7 +63,6 @@ import org.sleuthkit.datamodel.timeline.DescriptionLoD;
 import org.sleuthkit.datamodel.timeline.EventCluster;
 import org.sleuthkit.datamodel.timeline.EventStripe;
 import org.sleuthkit.datamodel.timeline.EventType;
-import static org.sleuthkit.datamodel.timeline.EventType.ROOT_EVEN_TYPE;
 import org.sleuthkit.datamodel.timeline.EventTypeZoomLevel;
 import org.sleuthkit.datamodel.timeline.RangeDivisionInfo;
 import org.sleuthkit.datamodel.timeline.SingleEvent;
@@ -89,7 +92,7 @@ public final class TimelineManager {
 	private final SleuthkitCase sleuthkitCase;
 	private final String csvFunction;
 
-	final private BiMap<Integer, EventType> eventTypeIDMap = HashBiMap.create();
+	final private BiMap<Long, EventType> eventTypeIDMap = HashBiMap.create();
 
 	TimelineManager(SleuthkitCase tskCase) throws TskCoreException {
 		sleuthkitCase = tskCase;
@@ -115,14 +118,6 @@ public final class TimelineManager {
 			sleuthkitCase.releaseSingleUserCaseReadLock();
 		}
 		return null;
-	}
-
-	public SleuthkitCase.CaseDbTransaction beginTransaction() throws TskCoreException {
-		return sleuthkitCase.beginTransaction();
-	}
-
-	public void commitTransaction(SleuthkitCase.CaseDbTransaction transaction) throws TskCoreException {
-		transaction.commit();
 	}
 
 	/**
@@ -273,6 +268,8 @@ public final class TimelineManager {
 	 *
 	 * @return A List of event ids, sorted by timestamp of the corresponding
 	 *         event..
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public List<Long> getEventIDs(Interval timeRange, RootFilter filter) throws TskCoreException {
 		Long startTime = timeRange.getStartMillis() / 1000;
@@ -486,7 +483,8 @@ public final class TimelineManager {
 	}
 
 	private void initializeEventTypes() throws TskCoreException {
-		eventTypeIDMap.put(EventType.ROOT_EVEN_TYPE.getTypeID(), ROOT_EVEN_TYPE);
+		//initialize root and base event types, these are added to the DB in c++ land
+		eventTypeIDMap.put(EventType.ROOT_EVEN_TYPE.getTypeID(), EventType.ROOT_EVEN_TYPE);
 		eventTypeIDMap.put(EventType.WEB_ACTIVITY.getTypeID(), EventType.WEB_ACTIVITY);
 		eventTypeIDMap.put(EventType.MISC_TYPES.getTypeID(), EventType.MISC_TYPES);
 		eventTypeIDMap.put(EventType.FILE_SYSTEM.getTypeID(), EventType.FILE_SYSTEM);
@@ -495,38 +493,51 @@ public final class TimelineManager {
 		eventTypeIDMap.put(EventType.FILE_CREATED.getTypeID(), EventType.FILE_CREATED);
 		eventTypeIDMap.put(EventType.FILE_MODIFIED.getTypeID(), EventType.FILE_MODIFIED);
 
+		//initialize the other event types that aren't added in c++
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement statement = con.createStatement();) {
 
-			for (EventType type : EventType.getWebActivityTypes()) {
-				statement.executeUpdate(
-						insertOrIgnore(" INTO event_types(event_type_id, display_name, super_type_id, artifact_based) "
-								+ "VALUES( " + type.getTypeID() + ", '" + type.getDisplayName() + "'," + type.getBaseType().getTypeID() + " , 1);  "));
+			List<EventType> typesToInitialize = new ArrayList<>();
+			typesToInitialize.add(EventType.CUSTOM_TYPES);//Initialize the custom base type
+			typesToInitialize.addAll(EventType.getWebActivityTypes());//Initialize the web events
+			typesToInitialize.addAll(EventType.getMiscTypes());	//initialize the misc events
+			typesToInitialize.add(EventType.OTHER);	//initialize the Other custom type.
 
+			for (EventType type : typesToInitialize) {
+				statement.executeUpdate(
+						insertOrIgnore(" INTO event_types(event_type_id, display_name, super_type_id) "
+								+ "VALUES( "
+								+ type.getTypeID() + ", '"
+								+ type.getDisplayName() + "',"
+								+ type.getBaseType().getTypeID()
+								+ ")"));
 				eventTypeIDMap.put(type.getTypeID(), type);
 			}
-			for (EventType type : EventType.getMiscTypes()) {
-				statement.executeUpdate(
-						insertOrIgnore(" INTO event_types(event_type_id, display_name, super_type_id, artifact_based) "
-								+ "VALUES( " + type.getTypeID() + ", '" + type.getDisplayName() + "'," + type.getBaseType().getTypeID() + " , 1);  "));
-
-				eventTypeIDMap.put(type.getTypeID(), type);
-			}
-
-			try (ResultSet resultset = statement.executeQuery("SELECT * from event_types");) {
-				while (resultset.next()) {
-					int eventTypeID = resultset.getInt("event_type_id");
-					boolean artifactBased = resultset.getBoolean("artifact_based");
-					//TODO: do something with custom types
-				}
-			}
-
 		} catch (SQLException ex) {
 			throw new TskCoreException("Failed to initialize event types.", ex); // NON-NLS
 		} finally {
 			sleuthkitCase.releaseSingleUserCaseWriteLock();
 		}
+	}
+
+	/**
+	 * Get an EventType object given it's id
+	 */
+	Optional<EventType> getEventType(long eventTypeID) {
+		return Optional.ofNullable(eventTypeIDMap.get(eventTypeID));
+	}
+
+	public ImmutableList<EventType> getEventTypes() {
+		return ImmutableList.copyOf(eventTypeIDMap.values());
+	}
+
+	private Set<ArtifactEventType> getEventTypesForArtifactType(int artfTypeID) {
+		return eventTypeIDMap.values().stream()
+				.filter(ArtifactEventType.class::isInstance)
+				.map(ArtifactEventType.class::cast)
+				.filter(eventType -> eventType.getArtifactTypeID() == artfTypeID)
+				.collect(Collectors.toSet());
 	}
 
 	private String insertOrIgnore(String query) {
@@ -675,7 +686,7 @@ public final class TimelineManager {
 		return hasDBColumn("hash_hit"); //NON-NLS
 	}
 
-	public void addFileSystemEvents(AbstractFile file) throws TskCoreException {
+	void addFileSystemEvents(AbstractFile file) throws TskCoreException {
 		//gather time stamps into map
 		HashMap<EventType, Long> timeMap = new HashMap<>();
 		timeMap.put(EventType.FILE_CREATED, file.getCrtime());
@@ -717,41 +728,90 @@ public final class TimelineManager {
 		}
 	}
 
-	public Set<SingleEvent> addArtifactEvents(BlackboardArtifact bbart) throws TskCoreException {
+	/**
+	 * Add any events that can be created from the given Artifact. If the
+	 * artifact is a TSK_EVENT then the TSK_DATETIME, TSK_EVENT_TYPE and
+	 * TSK_DESCRIPTION are used to make the event, otherwise each event type is
+	 * checked to see if it can automatically create an event from the given
+	 * artifact.
+	 *
+	 * @param artifact The artifact to add events for
+	 *
+	 * @return A set of added events.
+	 *
+	 * @throws TskCoreException
+	 */
+	Set<SingleEvent> addArtifactEvents(BlackboardArtifact artifact) throws TskCoreException {
 		Set<SingleEvent> newEvents = new HashSet<>();
 
-		Set<ArtifactEventType> eventTypesForArtifact = getEventTypesForArtifactType(bbart.getArtifactTypeID());
-		for (ArtifactEventType eventType : eventTypesForArtifact) {
-			Optional<SingleEvent> newEvent = addArtifactEvent(eventType, bbart);
-			newEvent.ifPresent(newEvents::add);
+		/*
+		 * If the artifact is a TSK_EVENT, use its TSK_DATETIME, TSK_EVENT_TYPE
+		 * and TSK_DESCRIPTION to make add an event.
+		 */
+		if (artifact.getArtifactTypeID() == TSK_EVENT.getTypeID()) {
+			long time = artifact.getAttribute(new BlackboardAttribute.Type(TSK_DATETIME)).getValueLong();
+			long eventTypeID = artifact.getAttribute(new BlackboardAttribute.Type(TSK_EVENT_TYPE)).getValueLong();
+			EventType eventType = eventTypeIDMap.get(eventTypeID);
+
+			String description = artifact.getAttribute(new BlackboardAttribute.Type(TSK_DESCRIPTION)).getValueString();
+			long objectID = artifact.getObjectID();
+			AbstractFile file = sleuthkitCase.getAbstractFileById(objectID);
+			addEvent(time, eventType, artifact.getDataSourceObjectID(), objectID, artifact.getArtifactID(),
+					description, description, description,
+					file.getKnown(),
+					file.getHashSetNames().isEmpty() == false,
+					sleuthkitCase.getBlackboardArtifactTagsByArtifact(artifact).isEmpty() == false
+			);
+		} else {
+			/*
+			 * If there are any event types configured to make descriptions
+			 * automatically, use those.
+			 */
+			Set<ArtifactEventType> eventTypesForArtifact = getEventTypesForArtifactType(artifact.getArtifactTypeID());
+			for (ArtifactEventType eventType : eventTypesForArtifact) {
+				Optional<SingleEvent> newEvent = addArtifactEvent(eventType, artifact);
+				newEvent.ifPresent(newEvents::add);
+			}
 		}
 
 		return newEvents;
 	}
 
-	public Optional<SingleEvent> addArtifactEvent(ArtifactEventType eventType, BlackboardArtifact bbart) throws TskCoreException {
-		ArtifactEventType.AttributeEventDescription eventDescription = eventType.buildEventDescription(bbart);
+	/**
+	 * Add an event of the given type from the given artifact. If the event type
+	 * and artifact are not compatible, no event is created.
+	 *
+	 * @param eventType The event type to create
+	 * @param artifact  The artifact to create the event from.
+	 *
+	 * @return The created event, wrapped in an Optional, or an empty Optional
+	 *         if no event was created.
+	 *
+	 * @throws TskCoreException
+	 */
+	private Optional<SingleEvent> addArtifactEvent(ArtifactEventType eventType, BlackboardArtifact artifact) throws TskCoreException {
+		ArtifactEventType.AttributeEventDescription eventDescription = eventType.buildEventDescription(artifact);
 
 		// if the time is legitimate ( greater than zero ) insert it into the db
 		if (eventDescription != null && eventDescription.getTime() > 0) {
-			long objectID = bbart.getObjectID();
+			long objectID = artifact.getObjectID();
 			AbstractFile file = sleuthkitCase.getAbstractFileById(objectID);
 			return Optional.of(addEvent(eventDescription.getTime(),
 					eventType,
 					file.getDataSource().getId(),
 					objectID,
-					bbart.getArtifactID(),
+					artifact.getArtifactID(),
 					eventDescription.getFullDescription(),
 					eventDescription.getMedDescription(),
 					eventDescription.getShortDescription(),
 					file.getKnown(),
 					file.getHashSetNames().isEmpty() == false,
-					sleuthkitCase.getBlackboardArtifactTagsByArtifact(bbart).isEmpty() == false));
+					sleuthkitCase.getBlackboardArtifactTagsByArtifact(artifact).isEmpty() == false));
 		}
 		return Optional.empty();
 	}
 
-	public SingleEvent addEvent(long time, EventType type, long datasourceID, long objID,
+	private SingleEvent addEvent(long time, EventType type, long datasourceID, long objID,
 			Long artifactID, String fullDescription, String medDescription,
 			String shortDescription, TskData.FileKnown known, boolean hashHit, boolean tagged) throws TskCoreException {
 
@@ -779,8 +839,8 @@ public final class TimelineManager {
 				+ SleuthkitCase.escapeSingleQuotes(medDescription) + "','"
 				+ SleuthkitCase.escapeSingleQuotes(shortDescription) + "','"
 				+ known.getFileKnownValue() + "',"
-				+ (hashHit ? 0 : 1) + ","
-				+ (tagged ? 0 : 1) + "  )";// NON-NLS  
+				+ (hashHit ? 1 : 0) + ","
+				+ (tagged ? 1 : 0) + "  )";// NON-NLS  
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement insertRowStmt = con.createStatement();) {
@@ -977,31 +1037,6 @@ public final class TimelineManager {
 		} finally {
 			sleuthkitCase.releaseSingleUserCaseReadLock();
 		}
-	}
-
-	/**
-	 * Get an EventType object given it's id
-	 */
-	Optional<EventType> getEventType(int eventTypeID) {
-		return Optional.ofNullable(eventTypeIDMap.get(eventTypeID));
-	}
-
-	public ImmutableList<EventType> getEventTypes() {
-		return ImmutableList.copyOf(eventTypeIDMap.values());
-	}
-
-	public ImmutableList<ArtifactEventType> getArtifactEventTypes() {
-		return ImmutableList.copyOf(eventTypeIDMap.values().stream()
-				.filter(ArtifactEventType.class::isInstance)
-				.map(ArtifactEventType.class::cast)
-				.collect(Collectors.toSet())
-		);
-	}
-
-	private Set<ArtifactEventType> getEventTypesForArtifactType(int artfTypeID) {
-		return getArtifactEventTypes().stream()
-				.filter(eventType -> eventType.getArtifactTypeID() == artfTypeID)
-				.collect(Collectors.toSet());
 	}
 
 	/**
@@ -1427,7 +1462,7 @@ public final class TimelineManager {
 	 */
 	private String getSQLWhere(TypeFilter typeFilter) {
 		if (typeFilter.isSelected()) {
-			if (typeFilter.getEventType().equals(ROOT_EVEN_TYPE)
+			if (typeFilter.getEventType().equals(EventType.ROOT_EVEN_TYPE)
 					& typeFilter.areAllSubFiltersActiveRecursive()) {
 				return getTrueLiteral(); //then collapse clause to true
 			}
@@ -1437,7 +1472,7 @@ public final class TimelineManager {
 		}
 	}
 
-	private List<Integer> getActiveSubTypeIDs(TypeFilter filter) {
+	private List<Long> getActiveSubTypeIDs(TypeFilter filter) {
 		if (filter.isActive()) {
 			if (filter.getSubFilters().isEmpty()) {
 				return Collections.singletonList(filter.getEventType().getTypeID());

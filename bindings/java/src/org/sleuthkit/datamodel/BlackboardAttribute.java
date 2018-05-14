@@ -46,7 +46,7 @@ public class BlackboardAttribute {
 
 	private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 	private static final Logger LOGGER = Logger.getLogger(BlackboardAttribute.class.getName());
-	
+
 	private static final ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 	private BlackboardAttribute.Type attributeType;
 	private final int valueInt;
@@ -523,16 +523,16 @@ public class BlackboardAttribute {
 				return Double.toString(getValueDouble());
 			case BYTE:
 				return bytesToHexString(getValueBytes());
-				
+
 			case DATETIME: {
 				try {
 					final Content dataSource = getParentArtifact().getDataSource();
-					if ((dataSource != null) && (dataSource instanceof Image )) {
+					if ((dataSource != null) && (dataSource instanceof Image)) {
 						// return the date/time string in the timezone associated with the datasource,
-						Image  image = (Image) dataSource;
+						Image image = (Image) dataSource;
 						TimeZone tzone = TimeZone.getTimeZone(image.getTimeZone());
 						return TimeUtilities.epochToTime(getValueLong(), tzone);
-					} 
+					}
 				} catch (TskException ex) {
 					LOGGER.log(Level.WARNING, "Could not get timezone for image", ex); //NON-NLS
 					// return time string in default timezone
@@ -1294,7 +1294,14 @@ public class BlackboardAttribute {
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_ID(124, "TSK_ID", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskId.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		/**
+		 * The event type of a TSK_EVENT artifact. The value should be the id of
+		 * the EventType in the event_types table.
+		 */
+		TSK_EVENT_TYPE(125, "TSK_EVENT_TYPE", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskEventType.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG);
 
 		private final int typeID;
 		private final String typeName;

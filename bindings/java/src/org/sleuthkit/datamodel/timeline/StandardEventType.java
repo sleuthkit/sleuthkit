@@ -40,13 +40,13 @@ class StandardEventType implements EventType {
 				.findFirst();
 	}
 
-	private final int typeID;
+	private final long typeID;
 	private final String displayName;
 
 	private final EventType superType;
 	private final EventTypeZoomLevel eventTypeZoomLevel;
 
-	StandardEventType(int typeID, String displayName, EventTypeZoomLevel eventTypeZoomLevel, EventType superType) {
+	StandardEventType(long typeID, String displayName, EventTypeZoomLevel eventTypeZoomLevel, EventType superType) {
 		this.superType = superType;
 		this.typeID = typeID;
 		this.displayName = displayName;
@@ -70,14 +70,14 @@ class StandardEventType implements EventType {
 	}
 
 	@Override
-	public int getTypeID() {
+	public long getTypeID() {
 		return typeID;
 	}
 
 	@Override
 	public int hashCode() {
 		int hash = 5;
-		hash = 79 * hash + this.getTypeID();
+		hash = 17 * hash + (int) (this.typeID ^ (this.typeID >>> 32));
 		return hash;
 	}
 

@@ -52,7 +52,7 @@ public interface EventType extends Comparable<EventType> {
 
 	String getDisplayName();
 
-	int getTypeID();
+	long getTypeID();
 
 	EventTypeZoomLevel getZoomLevel();
 
@@ -99,7 +99,7 @@ public interface EventType extends Comparable<EventType> {
 			ROOT_TYPE, null) {
 		@Override
 		public SortedSet< EventType> getSubTypes() {
-			return ImmutableSortedSet.of(FILE_SYSTEM, WEB_ACTIVITY, MISC_TYPES);
+			return ImmutableSortedSet.of(FILE_SYSTEM, WEB_ACTIVITY, MISC_TYPES, CUSTOM_TYPES);
 		}
 	};
 
@@ -333,6 +333,17 @@ public interface EventType extends Comparable<EventType> {
 			new AttributeExtractor(new Type(TSK_DEVICE_MAKE)),
 			new AttributeExtractor(new Type(TSK_DEVICE_MODEL)),
 			new AttributeExtractor(new Type(TSK_DEVICE_ID)));
+
+	EventType CUSTOM_TYPES = new StandardEventType(22,
+			getBundle().getString("BaseTypes.customTypes.name"), // NON-NLS
+			BASE_TYPE, ROOT_EVEN_TYPE) {
+		@Override
+		public SortedSet< EventType> getSubTypes() {
+			return ImmutableSortedSet.of(OTHER);
+		}
+	};
+
+	EventType OTHER = new StandardEventType(23, getBundle().getString("CustomTypes.other.name"), SUB_TYPE, CUSTOM_TYPES);
 
 	static SortedSet<? extends EventType> getBaseTypes() {
 		return ROOT_EVEN_TYPE.getSubTypes();
