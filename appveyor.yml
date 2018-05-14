@@ -36,7 +36,7 @@ build_script:
       - python win32\updateAndBuildAll.py -m 
       - ps: ant -version
       - ps: pushd bindings/java
-      - cmd: ant dist-PostgreSQL
+      - cmd: ant -q dist-PostgreSQL
       - ps: popd
 
 test: off

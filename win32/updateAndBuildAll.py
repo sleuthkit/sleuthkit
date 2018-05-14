@@ -56,11 +56,11 @@ def pullAndBuildAllDependencies(depBranch):
     if not MINIMAL:
         # build 32-bit of libewf, libvhdi, libvmdk and TSK
         if(passed):
-            buildDependentLibs(ewfHome, 32, "libewf","libewf_dll")
+            buildDependentLibs(ewfHome, 32, "libewf", "libewf_dll")
         if(passed):
-            buildDependentLibs(vhdiHome, 32, "libvhdi","libvhdi")
+            buildDependentLibs(vhdiHome, 32, "libvhdi", "libvhdi")
         if(passed):
-            buildDependentLibs(vmdkHome, 32, "libvmdk","libvmdk")
+            buildDependentLibs(vmdkHome, 32, "libvmdk", "libvmdk")
 
 
     # build 64-bit of libewf, libvhdi, libvmdk and TSK
@@ -181,7 +181,7 @@ def buildDependentLibs(libHome, wPlatform, targetDll, project):
         vs.append("/p:platform=x64")
     elif wPlatform == 32:
         vs.append("/p:platform=Win32")
-    vs.append("/v:quiet")
+    vs.append("/clp:ErrorsOnly")
 
     outputFile = os.path.join(LOG_PATH, targetDll + "Output.txt")
     VSout = open(outputFile, 'w')
@@ -234,7 +234,7 @@ def buildTSK(wPlatform, target):
         sys.stdout.flush()
         passed = False
         return
-    vs.append("/v:quiet")
+    vs.append("/clp:ErrorsOnly")
     vs.append("/t:clean")
     vs.append("/t:build")
 
@@ -262,7 +262,7 @@ def usage():
     sys.exit(1)
 
 def main():
-    depBranch = 'master'  
+    depBranch = 'master'
     global MINIMAL
     try:
         opts, args = getopt.getopt(sys.argv[1:],"mhb:",['help','minimal','branch='])

@@ -79,14 +79,9 @@ public class Volume extends AbstractContent {
 
 	@Override
 	public void close() {
-		if (volumeHandle != 0) {
-			synchronized (this) {
-				if (volumeHandle != 0) {
-					SleuthkitJNI.closeVs(volumeHandle);
-					volumeHandle = 0;
-				}
-			}
-		}
+        // there is nothing to free. The VolumeSystem structure
+        // in C++ contains this structure and will free it. 
+        volumeHandle = 0;
 	}
 
 	@Override
