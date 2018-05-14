@@ -35,7 +35,8 @@ import javafx.collections.ObservableList;
  *
  * @param <SubFilterType> The type of the subfilters.
  */
-public abstract class CompoundFilter<SubFilterType extends Filter> extends AbstractFilter {
+public abstract class CompoundFilter<SubFilterType extends TimelineFilter> extends AbstractFilter {
+//TODO: split into public interfacce and package level abstract class
 
 	/**
 	 * the list of sub-filters that make up this filter
@@ -62,7 +63,7 @@ public abstract class CompoundFilter<SubFilterType extends Filter> extends Abstr
 					//if a subfilter's selected property changes...
 					addedSubFilter.selectedProperty().addListener(selectedProperty -> {
 						//set this compound filter selected af any of the subfilters are selected.
-						setSelected(getSubFilters().parallelStream().anyMatch(Filter::isSelected));
+						setSelected(getSubFilters().parallelStream().anyMatch(TimelineFilter::isSelected));
 					});
 				});
 			}
@@ -71,7 +72,7 @@ public abstract class CompoundFilter<SubFilterType extends Filter> extends Abstr
 		this.subFilters.setAll(subFilters);
 	}
 
-	static <SubFilterType extends Filter> boolean areSubFiltersEqual(final CompoundFilter<SubFilterType> oneFilter, final CompoundFilter<SubFilterType> otherFilter) {
+	static <SubFilterType extends TimelineFilter> boolean areSubFiltersEqual(final CompoundFilter<SubFilterType> oneFilter, final CompoundFilter<SubFilterType> otherFilter) {
 		if (oneFilter.getSubFilters().size() != otherFilter.getSubFilters().size()) {
 			return false;
 		}

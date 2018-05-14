@@ -18,10 +18,9 @@
  */
 package org.sleuthkit.datamodel.timeline.filters;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import javafx.collections.FXCollections;
-import org.apache.commons.lang3.StringUtils;
 import org.sleuthkit.datamodel.TimelineManager;
 
 /**
@@ -29,32 +28,31 @@ import org.sleuthkit.datamodel.TimelineManager;
  *
  * @param <S> The type of sub Filters in this IntersectionFilter.
  */
-public class IntersectionFilter<S extends Filter> extends CompoundFilter<S> {
+class IntersectionFilter<S extends TimelineFilter> extends CompoundFilter<S> {
 
-	public IntersectionFilter(List<S> subFilters) {
+	IntersectionFilter(List<S> subFilters) {
 		super(subFilters);
 	}
 
-	public IntersectionFilter() {
-		super(FXCollections.<S>observableArrayList());
+	IntersectionFilter() {
+		super(Collections.emptyList());
 	}
 
-	@Override
-	public IntersectionFilter<S> copyOf() {
-		@SuppressWarnings("unchecked")
-		IntersectionFilter<S> filter = new IntersectionFilter<>(
-				(List<S>) this.getSubFilters().stream()
-						.map(Filter::copyOf)
-						.collect(Collectors.toList()));
-		filter.setSelected(isSelected());
-		filter.setDisabled(isDisabled());
-		return filter;
-	}
-
+//	@Override
+//	public IntersectionFilter<S> copyOf() {
+//		@SuppressWarnings("unchecked")
+//		IntersectionFilter<S> filter = new IntersectionFilter<>(
+//				(List<S>) this.getSubFilters().stream()
+//						.map(TimelineFilter::copyOf)
+//						.collect(Collectors.toList()));
+//		filter.setSelected(isSelected());
+//		filter.setDisabled(isDisabled());
+//		return filter;
+//	}
 	@Override
 	public String getDisplayName() {
 		String collect = getSubFilters().stream()
-				.map(Filter::getDisplayName)
+				.map(TimelineFilter::getDisplayName)
 				.collect(Collectors.joining(",", "[", "]"));
 		return BundleUtils.getBundle().getString("IntersectionFilter.displayName.text") + collect;
 	}
@@ -84,10 +82,12 @@ public class IntersectionFilter<S extends Filter> extends CompoundFilter<S> {
 
 	@Override
 	public String getSQLWhere(TimelineManager manager) {
-		String query = this.getSubFilters().stream()
-				.filter(Filter::isActive)
+		String join = this.getSubFilters().stream()
 				.map(filter -> filter.getSQLWhere(manager))
 				.collect(Collectors.joining(" AND "));
-		return "(" + StringUtils.defaultIfBlank(query, manager.getTrueLiteral()) + ")";
+
+		return join.isEmpty()
+				? manager.getTrueLiteral()
+				: "(" + join + ")";
 	}
 }

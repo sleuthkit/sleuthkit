@@ -18,9 +18,7 @@
  */
 package org.sleuthkit.datamodel.timeline.filters;
 
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -88,9 +86,7 @@ public class TypeFilter extends UnionFilter<TypeFilter> {
 		final TypeFilter filterCopy = new TypeFilter(eventType, false);
 		//add a copy of each subfilter
 		getSubFilters().forEach(typeFilter -> filterCopy.addSubFilter(typeFilter.copyOf(), comparator));
-		//these need to happen after the listeners fired by adding the subfilters 
-		filterCopy.setSelected(isSelected());
-		filterCopy.setDisabled(isDisabled());
+
 		return filterCopy;
 	}
 

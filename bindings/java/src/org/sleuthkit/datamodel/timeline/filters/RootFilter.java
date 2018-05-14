@@ -27,7 +27,7 @@ import javafx.collections.FXCollections;
  * An implementation of IntersectionFilter designed to be used as the root of a
  * filter tree. provides named access to specific subfilters.
  */
-public final class RootFilter extends IntersectionFilter<Filter> {
+public final class RootFilter extends IntersectionFilter<TimelineFilter> {
 
 	private final HideKnownFilter knownFilter;
 	private final TagsFilter tagsFilter;
@@ -60,7 +60,7 @@ public final class RootFilter extends IntersectionFilter<Filter> {
 		return textFilter;
 	}
 
-	public RootFilter(HideKnownFilter knownFilter, TagsFilter tagsFilter, HashHitsFilter hashFilter, TextFilter textFilter, TypeFilter typeFilter, DataSourcesFilter dataSourceFilter, Set<Filter> annonymousSubFilters) {
+	public RootFilter(HideKnownFilter knownFilter, TagsFilter tagsFilter, HashHitsFilter hashFilter, TextFilter textFilter, TypeFilter typeFilter, DataSourcesFilter dataSourceFilter, Set<TimelineFilter> annonymousSubFilters) {
 		super(FXCollections.observableArrayList(
 				textFilter,
 				knownFilter,
@@ -81,7 +81,7 @@ public final class RootFilter extends IntersectionFilter<Filter> {
 
 	@Override
 	public RootFilter copyOf() {
-		Set<Filter> annonymousSubFilters = getSubFilters().stream()
+		Set<TimelineFilter> annonymousSubFilters = getSubFilters().stream()
 				.filter(subFilter
 						-> !(subFilter.equals(knownFilter)
 				|| subFilter.equals(tagsFilter)
@@ -89,7 +89,7 @@ public final class RootFilter extends IntersectionFilter<Filter> {
 				|| subFilter.equals(typeFilter)
 				|| subFilter.equals(textFilter)
 				|| subFilter.equals(dataSourcesFilter)))
-				.map(Filter::copyOf)
+				.map(TimelineFilter::copyOf)
 				.collect(Collectors.toSet());
 
 		RootFilter filter = new RootFilter(
@@ -114,7 +114,7 @@ public final class RootFilter extends IntersectionFilter<Filter> {
 		if (getClass() != obj.getClass()) {
 			return false;
 		}
-		return areSubFiltersEqual(this, (CompoundFilter<Filter>) obj);
+		return areSubFiltersEqual(this, (CompoundFilter<TimelineFilter>) obj);
 	}
 
 	@Override

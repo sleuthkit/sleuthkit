@@ -24,54 +24,52 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ObservableBooleanValue;
 
 /**
- * Base implementation of a {@link Filter}. Implements active property.
+ * Base implementation of a Filter. Implements active property.
  *
  */
-public abstract class AbstractFilter implements Filter {
+abstract class AbstractFilter implements TimelineFilter {
 
-    private final SimpleBooleanProperty selected = new SimpleBooleanProperty(true);
-    private final SimpleBooleanProperty disabled = new SimpleBooleanProperty(false);
-    private final BooleanBinding activeProperty = Bindings.and(selected, disabled.not());
+	private final SimpleBooleanProperty selected = new SimpleBooleanProperty(true);
+	private final SimpleBooleanProperty disabled = new SimpleBooleanProperty(false);
+	private final BooleanBinding activeProperty = Bindings.and(selected, disabled.not());
 
-    @Override
-    public SimpleBooleanProperty selectedProperty() {
-        return selected;
-    }
+	@Override
+	public SimpleBooleanProperty selectedProperty() {
+		return selected;
+	}
 
-    @Override
-    public ObservableBooleanValue disabledProperty() {
-        return disabled;
-    }
+	@Override
+	public ObservableBooleanValue disabledProperty() {
+		return disabled;
+	}
 
-    @Override
-    public void setSelected(Boolean act) {
-        selected.set(act);
-    }
+	@Override
+	public void setSelected(Boolean act) {
+		selected.set(act);
+	}
 
-    @Override
-    public boolean isSelected() {
-        return selected.get();
-    }
+	@Override
+	public boolean isSelected() {
+		return selected.get();
+	}
 
-    @Override
-    public void setDisabled(Boolean act) {
-        disabled.set(act);
-    }
+	@Override
+	public void setDisabled(Boolean act) {
+		disabled.set(act);
+	}
 
-    @Override
-    public boolean isDisabled() {
-        return disabledProperty().get();
-    }
+	@Override
+	public boolean isDisabled() {
+		return disabledProperty().get();
+	}
 
-    
+	@Override
+	public boolean isActive() {
+		return activeProperty().get();
+	}
 
-    @Override
-    public boolean isActive() {
-        return activeProperty().get();
-    }
-
-    @Override
-    public BooleanBinding activeProperty() {
-        return activeProperty;
-    }
+	@Override
+	public BooleanBinding activeProperty() {
+		return activeProperty;
+	}
 }

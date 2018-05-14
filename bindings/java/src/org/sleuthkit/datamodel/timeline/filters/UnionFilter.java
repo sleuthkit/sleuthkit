@@ -30,7 +30,7 @@ import org.sleuthkit.datamodel.TimelineManager;
  *
  * @param <SubFilterType> The type of the subfilters.
  */
-abstract public class UnionFilter<SubFilterType extends Filter> extends CompoundFilter<SubFilterType> {
+abstract public class UnionFilter<SubFilterType extends TimelineFilter> extends CompoundFilter<SubFilterType> {
 
 	public UnionFilter(ObservableList<SubFilterType> subFilters) {
 		super(subFilters);
@@ -57,7 +57,6 @@ abstract public class UnionFilter<SubFilterType extends Filter> extends Compound
 	@Override
 	public String getSQLWhere(TimelineManager manager) {
 		String join = this.getSubFilters().stream()
-				.filter(Filter::isActive)
 				.map(filter -> filter.getSQLWhere(manager))
 				.collect(Collectors.joining(" OR "));
 
