@@ -882,14 +882,14 @@ void TskDbSqlite::storeObjId(const int64_t& fsObjId, const TSK_FS_FILE* fs_file,
         seq = path_hash;
     }
 
-    map<TSK_INUM_T, map<uint32_t, map<uint32_t, int64_t>>>& fsMap = m_parentDirIdCache[fsObjId];
+    map<TSK_INUM_T, map<uint32_t, map<uint32_t, int64_t> > >& fsMap = m_parentDirIdCache[fsObjId];
     if (fsMap.count(fs_file->name->meta_addr) == 0)
     {
         fsMap[fs_file->name->meta_addr][seq][path_hash] = objId;
     }
     else
     {
-        map<uint32_t, map<uint32_t, int64_t>>& fileMap = fsMap[fs_file->name->meta_addr];
+        map<uint32_t, map<uint32_t, int64_t> >& fileMap = fsMap[fs_file->name->meta_addr];
         if (fileMap.count(seq) == 0)
         {
             fileMap[seq][path_hash] = objId;
@@ -922,10 +922,10 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE* fs_file, const char* parent
     }
 
     //get from cache by parent meta addr, if available
-    map<TSK_INUM_T, map<uint32_t, map<uint32_t, int64_t>>>& fsMap = m_parentDirIdCache[fsObjId];
+    map<TSK_INUM_T, map<uint32_t, map<uint32_t, int64_t> > >& fsMap = m_parentDirIdCache[fsObjId];
     if (fsMap.count(fs_file->name->par_addr) > 0)
     {
-        map<uint32_t, map<uint32_t, int64_t>>& fileMap = fsMap[fs_file->name->par_addr];
+        map<uint32_t, map<uint32_t, int64_t> >& fileMap = fsMap[fs_file->name->par_addr];
         if (fileMap.count(seq) > 0)
         {
             map<uint32_t, int64_t>& pathMap = fileMap[seq];
@@ -1174,7 +1174,7 @@ TskDbSqlite::addFile(TSK_FS_FILE* fs_file,
     std::string full_description = escaped_path_str;
     full_description.append(name);
     const size_t firstslash = escaped_path_str.find('/', 1);
-    std:string short_desc = (firstslash == string::npos)
+    std:string short_desc = (firstslash == std::string::npos)
                             ? escaped_path_str
                             : escaped_path_str.substr(0, firstslash + 1);
 
