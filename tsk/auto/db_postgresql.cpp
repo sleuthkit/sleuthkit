@@ -1235,7 +1235,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
     std::string full_description = escaped_path_str;
     full_description.append(name);
     const size_t firstslash = escaped_path_str.find('/', 1);
-    std:string short_desc = (firstslash == string::npos)
+    std::string short_desc = (firstslash == std::string::npos)
         ? escaped_path_str
         : escaped_path_str.substr(0, firstslash + 1);
 
