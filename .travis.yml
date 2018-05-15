@@ -16,11 +16,11 @@ matrix:
   - compiler: gcc
     os: osx
 
+python:
+  - "2.7"
 install:
-  - ./install-sleuthkit.sh
+  - ./travis_build.sh
 
 script:
   - make check
   - if test ${TRAVIS_OS_NAME} = "linux"; then cd release; ./release-unix.pl ci; fi
-
-# NOTE: OS X doesn't have ant, so CI fails
