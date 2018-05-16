@@ -100,10 +100,6 @@ public class TypeFilter extends UnionFilter<TypeFilter> {
 		}
 		final TypeFilter other = (TypeFilter) obj;
 
-		if (isActive() != other.isActive()) {
-			return false;
-		}
-
 		if (this.eventType != other.eventType) {
 			return false;
 		}
@@ -124,27 +120,15 @@ public class TypeFilter extends UnionFilter<TypeFilter> {
 
 	@Override
 	public String getSQLWhere(TimelineManager manager) {
-		if (this.isSelected()) {
-			if (this.getEventType().equals(EventType.ROOT_EVEN_TYPE)
-					& this.areAllSubFiltersActiveRecursive()) {
-				return manager.getTrueLiteral(); //then collapse clause to true
-			}
-			return "(sub_type IN (" + getActiveSubTypeIDs().collect(Collectors.joining(",")) + "))"; //NON-NLS
-		} else {
-			return manager.getFalseLiteral();
-		}
+		return "(sub_type IN (" + getActiveSubTypeIDs().collect(Collectors.joining(",")) + "))"; //NON-NLS
 	}
 
 	private Stream<String> getActiveSubTypeIDs() {
-		if (this.isActive()) {
-			if (this.getSubFilters().isEmpty()) {
-				return Stream.of(String.valueOf(getEventType().getTypeID()));
-			} else {
-				return this.getSubFilters().stream()
-						.flatMap(TypeFilter::getActiveSubTypeIDs);
-			}
+		if (this.getSubFilters().isEmpty()) {
+			return Stream.of(String.valueOf(getEventType().getTypeID()));
 		} else {
-			return Stream.empty();
+			return this.getSubFilters().stream()
+					.flatMap(TypeFilter::getActiveSubTypeIDs);
 		}
 	}
 }

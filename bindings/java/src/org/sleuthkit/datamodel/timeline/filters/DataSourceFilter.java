@@ -24,7 +24,7 @@ import org.sleuthkit.datamodel.TimelineManager;
 /**
  * Filter for an individual datasource
  */
-public class DataSourceFilter extends AbstractFilter {
+public class DataSourceFilter implements TimelineFilter {
 
 	private final String dataSourceName;
 	private final long dataSourceID;
@@ -44,10 +44,7 @@ public class DataSourceFilter extends AbstractFilter {
 
 	@Override
 	synchronized public DataSourceFilter copyOf() {
-		DataSourceFilter filterCopy = new DataSourceFilter(getDataSourceName(), getDataSourceID());
-		filterCopy.setSelected(isSelected());
-		filterCopy.setDisabled(isDisabled());
-		return filterCopy;
+		return new DataSourceFilter(getDataSourceName(), getDataSourceID());
 	}
 
 	@Override
@@ -75,15 +72,11 @@ public class DataSourceFilter extends AbstractFilter {
 		if (!Objects.equals(this.dataSourceName, other.dataSourceName)) {
 			return false;
 		}
-		if (this.dataSourceID != other.dataSourceID) {
-			return false;
-		}
-		return isSelected() == other.isSelected();
+		return this.dataSourceID == other.dataSourceID;
 	}
 
 	@Override
 	public String getSQLWhere(TimelineManager manager) {
-		return this.isActive() ? "(datasource_id = '" + this.getDataSourceID() + "')"//NON-NLS
-				: manager.getTrueLiteral();
+		return "(datasource_id = '" + this.getDataSourceID() + "')";//NON-NLS
 	}
 }

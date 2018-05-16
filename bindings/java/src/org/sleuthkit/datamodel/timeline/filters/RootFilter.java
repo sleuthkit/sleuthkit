@@ -20,7 +20,6 @@ package org.sleuthkit.datamodel.timeline.filters;
 
 import java.util.Set;
 import java.util.stream.Collectors;
-import javafx.beans.binding.BooleanBinding;
 import javafx.collections.FXCollections;
 
 /**
@@ -75,8 +74,6 @@ public final class RootFilter extends IntersectionFilter<TimelineFilter> {
 		this.typeFilter = typeFilter;
 		this.dataSourcesFilter = dataSourceFilter;
 		getSubFilters().addAll(annonymousSubFilters);
-		setSelected(Boolean.TRUE);
-		setDisabled(false);
 	}
 
 	@Override
@@ -100,8 +97,7 @@ public final class RootFilter extends IntersectionFilter<TimelineFilter> {
 				typeFilter.copyOf(),
 				dataSourcesFilter.copyOf(),
 				annonymousSubFilters);
-		filter.setSelected(isSelected());
-		filter.setDisabled(isDisabled());
+
 		return filter;
 	}
 
@@ -115,21 +111,5 @@ public final class RootFilter extends IntersectionFilter<TimelineFilter> {
 			return false;
 		}
 		return areSubFiltersEqual(this, (CompoundFilter<TimelineFilter>) obj);
-	}
-
-	@Override
-	public boolean isActive() {
-		return true;
-	}
-
-	@Override
-	public BooleanBinding activeProperty() {
-
-		return new BooleanBinding() {
-			@Override
-			protected boolean computeValue() {
-				return true;
-			}
-		};
 	}
 }

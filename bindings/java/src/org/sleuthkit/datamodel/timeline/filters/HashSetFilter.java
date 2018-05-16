@@ -24,7 +24,7 @@ import org.sleuthkit.datamodel.TimelineManager;
 /**
  * Filter for an individual hash set
  */
-final public class HashSetFilter extends AbstractFilter {
+final public class HashSetFilter implements TimelineFilter {
 
 	private final String hashSetName;
 
@@ -38,10 +38,7 @@ final public class HashSetFilter extends AbstractFilter {
 
 	@Override
 	synchronized public HashSetFilter copyOf() {
-		HashSetFilter filterCopy = new HashSetFilter(getHashSetName());
-		filterCopy.setSelected(isSelected());
-		filterCopy.setDisabled(isDisabled());
-		return filterCopy;
+		return new HashSetFilter(getHashSetName());
 	}
 
 	@Override
@@ -65,17 +62,11 @@ final public class HashSetFilter extends AbstractFilter {
 			return false;
 		}
 		final HashSetFilter other = (HashSetFilter) obj;
-		if (!Objects.equals(this.hashSetName, other.hashSetName)) {
-			return false;
-		}
-
-		return isSelected() == other.isSelected();
+		return Objects.equals(this.hashSetName, other.hashSetName);
 	}
 
 	@Override
 	public String getSQLWhere(TimelineManager manager) {
-		return isActive()
-				? "(hash_set_name = '" + getHashSetName() + "' )" //NON-NLS
-				: manager.getTrueLiteral();
+		return "(hash_set_name = '" + getHashSetName() + "' )";//NON-NLS
 	}
 }

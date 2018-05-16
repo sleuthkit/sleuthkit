@@ -21,7 +21,6 @@ package org.sleuthkit.datamodel.timeline.filters;
 import java.util.List;
 import java.util.Objects;
 import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 
 /**
@@ -35,7 +34,7 @@ import javafx.collections.ObservableList;
  *
  * @param <SubFilterType> The type of the subfilters.
  */
-public abstract class CompoundFilter<SubFilterType extends TimelineFilter> extends AbstractFilter {
+public abstract class CompoundFilter<SubFilterType extends TimelineFilter> implements TimelineFilter {
 //TODO: split into public interfacce and package level abstract class
 
 	/**
@@ -47,6 +46,10 @@ public abstract class CompoundFilter<SubFilterType extends TimelineFilter> exten
 		return subFilters;
 	}
 
+	public boolean hasSubFilters() {
+		return getSubFilters().isEmpty() == false;
+	}
+
 	/**
 	 * construct a compound filter from a list of other filters to combine.
 	 *
@@ -54,21 +57,6 @@ public abstract class CompoundFilter<SubFilterType extends TimelineFilter> exten
 	 */
 	public CompoundFilter(List<SubFilterType> subFilters) {
 		super();
-
-		//listen to changes in list of subfilters 
-		this.subFilters.addListener((ListChangeListener.Change<? extends SubFilterType> change) -> {
-			while (change.next()) {
-				//add a listener to the selected property of each added subfilter
-				change.getAddedSubList().forEach(addedSubFilter -> {
-					//if a subfilter's selected property changes...
-					addedSubFilter.selectedProperty().addListener(selectedProperty -> {
-						//set this compound filter selected af any of the subfilters are selected.
-						setSelected(getSubFilters().parallelStream().anyMatch(TimelineFilter::isSelected));
-					});
-				});
-			}
-		});
-
 		this.subFilters.setAll(subFilters);
 	}
 
@@ -84,15 +72,6 @@ public abstract class CompoundFilter<SubFilterType extends TimelineFilter> exten
 			}
 		}
 		return true;
-	}
-
-	public boolean areAllSubFiltersActiveRecursive() {
-		return getSubFilters().stream()
-				.allMatch(subFilter -> {
-					return subFilter.isActive()
-							&& (CompoundFilter.class.isInstance(subFilter) == false
-							|| ((CompoundFilter) subFilter).areAllSubFiltersActiveRecursive());
-				});
 	}
 
 	@Override

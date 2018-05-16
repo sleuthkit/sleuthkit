@@ -24,7 +24,7 @@ import org.sleuthkit.datamodel.TskData;
 /**
  * Filter to hide known files
  */
-final public class HideKnownFilter extends AbstractFilter {
+final public class HideKnownFilter implements TimelineFilter {
 
 	@Override
 	public String getDisplayName() {
@@ -33,15 +33,11 @@ final public class HideKnownFilter extends AbstractFilter {
 
 	public HideKnownFilter() {
 		super();
-		setSelected(false);
 	}
 
 	@Override
 	public HideKnownFilter copyOf() {
-		HideKnownFilter hideKnownFilter = new HideKnownFilter();
-		hideKnownFilter.setSelected(isSelected());
-		hideKnownFilter.setDisabled(isDisabled());
-		return hideKnownFilter;
+		return new HideKnownFilter();
 	}
 
 	@Override
@@ -54,18 +50,11 @@ final public class HideKnownFilter extends AbstractFilter {
 		if (obj == null) {
 			return false;
 		}
-		if (getClass() != obj.getClass()) {
-			return false;
-		}
-		final HideKnownFilter other = (HideKnownFilter) obj;
-
-		return isSelected() == other.isSelected();
+		return getClass() == obj.getClass();
 	}
 
 	@Override
 	public String getSQLWhere(TimelineManager manager) {
-		return this.isActive()
-				? "(known_state != " + TskData.FileKnown.KNOWN.getFileKnownValue() + ")" // NON-NLS
-				: manager.getTrueLiteral();
+		return "(known_state != " + TskData.FileKnown.KNOWN.getFileKnownValue() + ")"; // NON-NLS
 	}
 }

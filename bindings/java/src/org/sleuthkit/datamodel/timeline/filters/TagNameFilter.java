@@ -19,20 +19,19 @@
 package org.sleuthkit.datamodel.timeline.filters;
 
 import java.util.Objects;
-import static java.util.stream.Collectors.joining;
 import org.sleuthkit.datamodel.TagName;
 import org.sleuthkit.datamodel.TimelineManager;
 
 /**
  * Filter for an individual TagName
  */
-public final class TagNameFilter extends AbstractFilter {
+public final class TagNameFilter implements TimelineFilter {
 
 	private final TagName tagName;
 
 	public TagNameFilter(TagName tagName) {
 		this.tagName = tagName;
-		setSelected(true);
+
 	}
 
 	public TagName getTagName() {
@@ -42,8 +41,7 @@ public final class TagNameFilter extends AbstractFilter {
 	@Override
 	synchronized public TagNameFilter copyOf() {
 		TagNameFilter filterCopy = new TagNameFilter(getTagName());
-		filterCopy.setSelected(isSelected());
-		filterCopy.setDisabled(isDisabled());
+
 		return filterCopy;
 	}
 
@@ -68,17 +66,12 @@ public final class TagNameFilter extends AbstractFilter {
 			return false;
 		}
 		final TagNameFilter other = (TagNameFilter) obj;
-		if (!Objects.equals(this.tagName, other.tagName)) {
-			return false;
-		}
-
-		return isSelected() == other.isSelected();
+		return Objects.equals(this.tagName, other.tagName);
 	}
 
 	@Override
 	public String getSQLWhere(TimelineManager manager) {
-		return this.isActive()
-				? " (events.tag_name_id = " + getTagName().getId() + " ) "//NON-NLS
-				: manager.getTrueLiteral();
+		return " (events.tag_name_id = " + getTagName().getId() + " ) ";//NON-NLS
+
 	}
 }

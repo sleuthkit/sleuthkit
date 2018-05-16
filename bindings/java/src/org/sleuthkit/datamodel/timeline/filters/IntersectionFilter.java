@@ -38,17 +38,16 @@ class IntersectionFilter<S extends TimelineFilter> extends CompoundFilter<S> {
 		super(Collections.emptyList());
 	}
 
-//	@Override
-//	public IntersectionFilter<S> copyOf() {
-//		@SuppressWarnings("unchecked")
-//		IntersectionFilter<S> filter = new IntersectionFilter<>(
-//				(List<S>) this.getSubFilters().stream()
-//						.map(TimelineFilter::copyOf)
-//						.collect(Collectors.toList()));
-//		filter.setSelected(isSelected());
-//		filter.setDisabled(isDisabled());
-//		return filter;
-//	}
+	@Override
+	public IntersectionFilter<S> copyOf() {
+		@SuppressWarnings("unchecked")
+		IntersectionFilter<S> filter = new IntersectionFilter<>(
+				(List<S>) this.getSubFilters().stream()
+						.map(TimelineFilter::copyOf)
+						.collect(Collectors.toList()));
+		return filter;
+	}
+
 	@Override
 	public String getDisplayName() {
 		String collect = getSubFilters().stream()
@@ -67,10 +66,6 @@ class IntersectionFilter<S extends TimelineFilter> extends CompoundFilter<S> {
 		}
 		@SuppressWarnings("unchecked")
 		final IntersectionFilter<S> other = (IntersectionFilter<S>) obj;
-
-		if (isSelected() != other.isSelected()) {
-			return false;
-		}
 
 		for (int i = 0; i < getSubFilters().size(); i++) {
 			if (getSubFilters().get(i).equals(other.getSubFilters().get(i)) == false) {

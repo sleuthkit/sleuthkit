@@ -20,8 +20,6 @@ package org.sleuthkit.datamodel.timeline.filters;
 
 import java.util.Comparator;
 import java.util.function.Predicate;
-import javafx.beans.binding.Bindings;
-import javafx.beans.value.ObservableBooleanValue;
 import org.sleuthkit.datamodel.TagName;
 
 /**
@@ -34,18 +32,11 @@ public final class TagsFilter extends UnionFilter<TagNameFilter> {
 		return BundleUtils.getBundle().getString("tagsFilter.displayName.text");
 	}
 
-	public TagsFilter() {
-		setSelected(false);
-	}
-
 	@Override
 	public TagsFilter copyOf() {
 		TagsFilter filterCopy = new TagsFilter();
 		//add a copy of each subfilter
 		getSubFilters().forEach(tagNameFilter -> filterCopy.addSubFilter(tagNameFilter.copyOf()));
-		//these need to happen after the listeners fired by adding the subfilters 
-		filterCopy.setSelected(isSelected());
-		filterCopy.setDisabled(isDisabled());
 
 		return filterCopy;
 	}
@@ -65,21 +56,12 @@ public final class TagsFilter extends UnionFilter<TagNameFilter> {
 		}
 		final TagsFilter other = (TagsFilter) obj;
 
-		if (isActive() != other.isActive()) {
-			return false;
-		}
-
 		return areSubFiltersEqual(this, other);
 	}
 
 	public void removeFilterForTag(TagName tagName) {
 		getSubFilters().removeIf(subfilter -> subfilter.getTagName().equals(tagName));
 		getSubFilters().sort(Comparator.comparing(TagNameFilter::getDisplayName));
-	}
-
-	@Override
-	public ObservableBooleanValue disabledProperty() {
-		return Bindings.or(super.disabledProperty(), Bindings.isEmpty(getSubFilters()));
 	}
 
 	@Override

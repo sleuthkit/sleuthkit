@@ -21,7 +21,6 @@ package org.sleuthkit.datamodel.timeline.filters;
 import java.util.Objects;
 import java.util.function.Predicate;
 import javafx.beans.binding.Bindings;
-import javafx.beans.value.ObservableBooleanValue;
 
 /**
  *
@@ -33,18 +32,11 @@ final public class HashHitsFilter extends UnionFilter<HashSetFilter> {
 		return BundleUtils.getBundle().getString("hashHitsFilter.displayName.text");
 	}
 
-	public HashHitsFilter() {
-		setSelected(false);
-	}
-
 	@Override
 	public HashHitsFilter copyOf() {
 		HashHitsFilter filterCopy = new HashHitsFilter();
 		//add a copy of each subfilter
 		this.getSubFilters().forEach(hashSetFilter -> filterCopy.addSubFilter(hashSetFilter.copyOf()));
-		//these need to happen after the listeners fired by adding the subfilters 
-		filterCopy.setSelected(isSelected());
-		filterCopy.setDisabled(isDisabled());
 
 		return filterCopy;
 	}
@@ -64,16 +56,7 @@ final public class HashHitsFilter extends UnionFilter<HashSetFilter> {
 		}
 		final HashHitsFilter other = (HashHitsFilter) obj;
 
-		if (isActive() != other.isActive()) {
-			return false;
-		}
-
 		return areSubFiltersEqual(this, other);
-	}
-
-	@Override
-	public ObservableBooleanValue disabledProperty() {
-		return Bindings.or(super.disabledProperty(), Bindings.isEmpty(getSubFilters()));
 	}
 
 	@Override

@@ -28,13 +28,9 @@ import javafx.beans.value.ObservableBooleanValue;
  */
 public class DataSourcesFilter extends UnionFilter<DataSourceFilter> {
 
-	//keep references to the overridden properties so they don't get GC'd
-	private final BooleanBinding activePropertyOverride;
-	private final BooleanBinding disabledPropertyOverride;
-
 	public DataSourcesFilter() {
-		disabledPropertyOverride = Bindings.or(super.disabledProperty(), Bindings.size(getSubFilters()).lessThanOrEqualTo(1));
-		activePropertyOverride = super.activeProperty().and(Bindings.not(disabledPropertyOverride));
+//		disabledPropertyOverride = Bindings.or(super.disabledProperty(), Bindings.size(getSubFilters()).lessThanOrEqualTo(1));
+//		activePropertyOverride = super.activeProperty().and(Bindings.not(disabledPropertyOverride));
 	}
 
 	@Override
@@ -42,10 +38,6 @@ public class DataSourcesFilter extends UnionFilter<DataSourceFilter> {
 		final DataSourcesFilter filterCopy = new DataSourcesFilter();
 		//add a copy of each subfilter
 		getSubFilters().forEach(dataSourceFilter -> filterCopy.addSubFilter(dataSourceFilter.copyOf()));
-		//these need to happen after the listeners fired by adding the subfilters 
-		filterCopy.setSelected(isSelected());
-		filterCopy.setDisabled(isDisabled());
-
 		return filterCopy;
 	}
 
@@ -64,10 +56,6 @@ public class DataSourcesFilter extends UnionFilter<DataSourceFilter> {
 		}
 		final DataSourcesFilter other = (DataSourcesFilter) obj;
 
-		if (isActive() != other.isActive()) {
-			return false;
-		}
-
 		return areSubFiltersEqual(this, other);
 
 	}
@@ -75,16 +63,6 @@ public class DataSourcesFilter extends UnionFilter<DataSourceFilter> {
 	@Override
 	public int hashCode() {
 		return 9;
-	}
-
-	@Override
-	public ObservableBooleanValue disabledProperty() {
-		return disabledPropertyOverride;
-	}
-
-	@Override
-	public BooleanBinding activeProperty() {
-		return activePropertyOverride;
 	}
 
 	@Override

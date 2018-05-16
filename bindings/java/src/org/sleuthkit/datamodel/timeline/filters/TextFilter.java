@@ -27,7 +27,7 @@ import org.sleuthkit.datamodel.TimelineManager;
 /**
  * Filter for text matching
  */
-public class TextFilter extends AbstractFilter {
+public class TextFilter implements TimelineFilter {
 
 	private final SimpleStringProperty text = new SimpleStringProperty();
 
@@ -58,10 +58,7 @@ public class TextFilter extends AbstractFilter {
 
 	@Override
 	synchronized public TextFilter copyOf() {
-		TextFilter textFilter = new TextFilter(getText());
-		textFilter.setSelected(isSelected());
-		textFilter.setDisabled(isDisabled());
-		return textFilter;
+		return new TextFilter(getText());
 	}
 
 	@Override
@@ -74,9 +71,6 @@ public class TextFilter extends AbstractFilter {
 		}
 		final TextFilter other = (TextFilter) obj;
 
-		if (isSelected() != other.isSelected()) {
-			return false;
-		}
 		return Objects.equals(text.get(), other.text.get());
 	}
 
@@ -89,7 +83,7 @@ public class TextFilter extends AbstractFilter {
 
 	@Override
 	public String getSQLWhere(TimelineManager manager) {
-		return this.isActive() && StringUtils.isNotBlank(this.getText())
+		return StringUtils.isNotBlank(this.getText())
 				? "((med_description like '%" + this.getText() + "%')" //NON-NLS
 				+ " or (full_description like '%" + this.getText() + "%')" //NON-NLS
 				+ " or (short_description like '%" + this.getText() + "%'))" //NON-NLS

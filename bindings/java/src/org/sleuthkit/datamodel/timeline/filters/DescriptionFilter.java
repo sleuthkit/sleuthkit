@@ -25,7 +25,7 @@ import org.sleuthkit.datamodel.TimelineManager;
 /**
  * Filter for events that do(not) have the given description.
  */
-public class DescriptionFilter extends AbstractFilter {
+public class DescriptionFilter implements TimelineFilter {
 
 	private final DescriptionLoD descriptionLoD;
 	private final String description;
@@ -44,8 +44,6 @@ public class DescriptionFilter extends AbstractFilter {
 	@Override
 	public DescriptionFilter copyOf() {
 		DescriptionFilter filterCopy = new DescriptionFilter(getDescriptionLoD(), getDescription(), getFilterMode());
-		filterCopy.setSelected(isSelected());
-		filterCopy.setDisabled(isDisabled());
 		return filterCopy;
 	}
 
@@ -123,8 +121,6 @@ public class DescriptionFilter extends AbstractFilter {
 
 	@Override
 	public String getSQLWhere(TimelineManager manager) {
-		return this.isActive()
-				? "(" + manager.getDescriptionColumn(this.getDescriptionLoD()) + getFilterMode().getLike() + " '" + this.getDescription() + "'  )" // NON-NLS
-				: manager.getTrueLiteral();
+		return "(" + manager.getDescriptionColumn(this.getDescriptionLoD()) + getFilterMode().getLike() + " '" + this.getDescription() + "'  )"; // NON-NLS
 	}
 }

@@ -169,8 +169,8 @@ public final class TimelineManager {
 		long end = timeRange.getEndMillis() / 1000;
 		String sqlWhere = getSQLWhere(filter);
 		sleuthkitCase.acquireSingleUserCaseReadLock();
-		boolean needsTags = filter.getTagsFilter().isActive();
-		boolean needsHashSets = filter.getHashHitsFilter().isActive();
+		boolean needsTags = filter.getTagsFilter().hasSubFilters();
+		boolean needsHashSets = filter.getHashHitsFilter().hasSubFilters();
 		String augmentedEventsTablesSQL = getAugmentedEventsTablesSQL(needsTags, needsHashSets);
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement stmt = con.createStatement(); //can't use prepared statement because of complex where clause
@@ -238,8 +238,8 @@ public final class TimelineManager {
 		ArrayList<Long> resultIDs = new ArrayList<>();
 
 		sleuthkitCase.acquireSingleUserCaseReadLock();
-		boolean needsTags = filter.getTagsFilter().isActive();
-		boolean needsHashSets = filter.getHashHitsFilter().isActive();
+		boolean needsTags = filter.getTagsFilter().hasSubFilters();
+		boolean needsHashSets = filter.getHashHitsFilter().hasSubFilters();
 		String query = "SELECT events.event_id AS event_id FROM" + getAugmentedEventsTablesSQL(needsTags, needsHashSets)
 				+ " WHERE time >=  " + startTime + " AND time <" + endTime + " AND " + getSQLWhere(filter) + " ORDER BY time ASC"; // NON-NLS
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
@@ -909,8 +909,8 @@ public final class TimelineManager {
 	public Map<EventType, Long> countEventsByType(Long startTime, final Long endTime, RootFilter filter, EventTypeZoomLevel zoomLevel) throws TskCoreException {
 		long adjustedEndTime = Objects.equals(startTime, endTime) ? endTime + 1 : endTime;
 		boolean useSubTypes = EventTypeZoomLevel.SUB_TYPE.equals(zoomLevel);	//do we want the root or subtype column of the databse
-		boolean needsTags = filter.getTagsFilter().isActive();
-		boolean needsHashSets = filter.getHashHitsFilter().isActive();
+		boolean needsTags = filter.getTagsFilter().hasSubFilters();
+		boolean needsHashSets = filter.getHashHitsFilter().hasSubFilters();
 		//get some info about the range of dates requested
 		String queryString = "SELECT count(DISTINCT events.event_id) AS count, " + typeColumnHelper(useSubTypes) //NON-NLS
 				+ " FROM " + getAugmentedEventsTablesSQL(needsTags, needsHashSets)
