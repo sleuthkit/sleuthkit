@@ -9547,16 +9547,13 @@ public class SleuthkitCase {
 	 * the object and gets the object id of the data source. The trivial case
 	 * where the input object id is for a source is handled.
 	 *
-	 * @param connection A case database connection.
 	 * @param objectId   An object id.
 	 *
 	 * @return A data source object id.
 	 *
-	 * @deprecated This only exists to support deprecated TSK object
-	 * constructors.
 	 */
-	@Deprecated
-	long getDataSourceObjectId(long objectId) {
+	//@Deprecated
+	public long getDataSourceObjectId(long objectId) {
 		try {
 			CaseDbConnection connection = connections.getConnection();
 			try {
