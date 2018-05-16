@@ -178,3 +178,4 @@ unit_tests/base/test_base
 *.img
 *.vhd
 *.E01
+*.vmdk
