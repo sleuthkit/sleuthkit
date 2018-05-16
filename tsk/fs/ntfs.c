@@ -1250,6 +1250,7 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
         int retval;
         uint8_t stop_loop = 0;
         uint8_t init_size_reached = 0;
+        uint8_t has_init_size = 0;
 
         if (fs_attr->nrd.compsize <= 0) {
             tsk_error_set_errno(TSK_ERR_FS_FWALK);
@@ -1272,6 +1273,9 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
             return 1;
         }
         retval = TSK_WALK_CONT;
+        
+        if (fs_attr->nrd.initsize != fs_attr->fs_file->meta->size)
+            has_init_size = 1;
 
         /* cycle through the number of runs we have */
         for (fs_attr_run = fs_attr->nrd.run; fs_attr_run;
@@ -1381,13 +1385,15 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
                             return 1;
                         }
 
-                        // handle the initialized size
-                        int64_t remanining_init_size = fs_attr->nrd.initsize - off;
-                        if (remanining_init_size < comp.buf_size_b) {
-                            memset(comp.uncomp_buf + remanining_init_size, 0, comp.buf_size_b - remanining_init_size);
-                            init_size_reached = 1;
-                            reset_uncompress_for_init_size = 1;
-                        }               
+                        // if we've passed the initialized size while reading this block, zero out the buffer beyond the initialized size
+                        if (has_init_size) {
+                            int64_t remanining_init_size = fs_attr->nrd.initsize - off;
+                            if (remanining_init_size < comp.buf_size_b) {
+                                memset(comp.uncomp_buf + remanining_init_size, 0, comp.buf_size_b - remanining_init_size);
+                                init_size_reached = 1;
+                                reset_uncompress_for_init_size = 1;
+                            }
+                        }
                     }
 
                     // now call the callback with the uncompressed data
@@ -1528,6 +1534,7 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
         NTFS_COMP_INFO comp;
         size_t buf_idx = 0;
         uint8_t init_size_reached = 0;
+        uint8_t has_init_size = 0;
 
         if (a_fs_attr->nrd.compsize <= 0) {
             tsk_error_set_errno(TSK_ERR_FS_FWALK);
@@ -1561,6 +1568,9 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
             memset(a_buf, 0, a_len);
             return len;
         }
+
+        if (a_fs_attr->nrd.initsize	!= a_fs_attr->fs_file->meta->size)
+            has_init_size = 1;
 
         /* Allocate the buffers and state structure */
         if (ntfs_uncompress_setup(fs, &comp, a_fs_attr->nrd.compsize)) {
@@ -1637,12 +1647,15 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
                             ntfs_uncompress_done(&comp);
                             return -1;
                         }
-                        // handle the initialized size
-                        int64_t remanining_init_size = a_fs_attr->nrd.initsize - buf_idx - a_offset;
-                        if (remanining_init_size < comp.buf_size_b) {
-                            memset(comp.uncomp_buf + remanining_init_size, 0, comp.buf_size_b - remanining_init_size);
-                            init_size_reached = 1;
-                            reset_uncompress_for_init_size = 1;
+
+                        // if we've passed the initialized size while reading this block, zero out the buffer beyond the initialized size
+                        if (has_init_size) {
+                            int64_t remanining_init_size = a_fs_attr->nrd.initsize - buf_idx - a_offset;
+                            if (remanining_init_size < comp.buf_size_b) {
+                                memset(comp.uncomp_buf + remanining_init_size, 0, comp.buf_size_b - remanining_init_size);
+                                init_size_reached = 1;
+                                reset_uncompress_for_init_size = 1;
+                            }
                         }
                     }
 
