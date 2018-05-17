@@ -1,10 +1,11 @@
 #!/bin/bash
 
+# Test script to run command line tools against disk images
+#
+# Currently, tests mmls on image files.  Will need to be refactored as we add more tests. 
+
 EXIT_FAILURE=1
 
-#https://drive.google.com/open?id=15vEesL8xTMFSo-uLA5dsx3puVaKcGEyw vhd
-#https://drive.google.com/open?id=1uLC0FjUWdl3uLCi1QaZ8O72q281jtzIu vmdk
-#https://drive.google.com/open?id=1YBCh3yP4Ny7eads4TC-dL3ycaNNrlzWo ewf
 #create data directory
 if [ ! -d "./data" ];then
 	mkdir data
@@ -13,6 +14,8 @@ if [ ! -d "./data" ];then
 		exit $EXIT_FAILURE
 	fi
 fi
+
+
 #Download from images from google drive
 ggID=("imageformat_mmls_1.vhd","15vEesL8xTMFSo-uLA5dsx3puVaKcGEyw" "imageformat_mmls_1.vmdk","1uLC0FjUWdl3uLCi1QaZ8O72q281jtzIu" "imageformat_mmls_1.E01","1YBCh3yP4Ny7eads4TC-dL3ycaNNrlzWo")    
 for i in ${ggID[@]};do
@@ -25,7 +28,7 @@ for i in ${ggID[@]};do
 	rm -f $COOKIES
 done
 
-#fails the test if the command failed
+#exits with FAILURE status if the command failed
 checkExitStatus (){
 	if [ $1 -eq 0 ];then
                 echo "$2 test passed"
@@ -36,34 +39,33 @@ checkExitStatus (){
 }
 
 #command to check on the images
-cmd=../tools/vstools/mmls
+mmls_cmd=../tools/vstools/mmls
 
 
 #saving the list of supported images to dev variable
-dev=$cmd -i list 2>&1 > /dev/null | sed '1d' |awk '{print $1}'
+imgFormatList=$mmls_cmd -i list 2>&1 > /dev/null | sed '1d' |awk '{print $1}'
 
-#testing the sleuthkit using mmls command 
-
-if [[ " ${dev[@]} " =~ " ${vmdk} " ]]; then
-	$cmd ./data/imageformat_mmls_1.vmdk > /dev/null
+# Verify mmls does not return an error with various formats. 
+if [[ " ${imgFormatList[@]} " =~ " ${vmdk} " ]]; then
+	$mmls_cmd ./data/imageformat_mmls_1.vmdk > /dev/null
 	checkExitStatus $? "vmdk"
 else
-	echo "libvmdk not found"
+	echo "Tools not compiled with libvmdk"
 	exit $EXIT_FAILURE 
 fi
 
-if [[ " ${dev[@]} " =~ " ${vhd} " ]]; then
-	$cmd ./data/imageformat_mmls_1.vhd > /dev/null
+if [[ " ${imgFormatList[@]} " =~ " ${vhd} " ]]; then
+	$mmls_cmd ./data/imageformat_mmls_1.vhd > /dev/null
 	checkExitStatus $? "vhd"
 else
-	echo "libvhdi not found"
+	echo "Tools not compiled with libvhdi"
 	exit $EXIT_FAILURE
 fi
 
-if [[ " ${dev[@]}" =~ "${ewf} " ]]; then
-	$cmd ./data/imageformat_mmls_1.E01 > /dev/null
+if [[ " ${imgFormatList[@]}" =~ "${ewf} " ]]; then
+	$mmls_cmd ./data/imageformat_mmls_1.E01 > /dev/null
 	checkExitStatus $? "ewf"
 else
-	echo "libewf not found"
+	echo "Tools not compiled with libewf"
 	exit $EXIT_FAILURE
 fi
