@@ -39,10 +39,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.ObjectUtils;
 import static org.apache.commons.lang3.StringUtils.defaultString;
 import static org.apache.commons.lang3.StringUtils.substringAfter;
 import static org.apache.commons.lang3.StringUtils.substringBefore;
@@ -51,6 +51,7 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.Interval;
 import org.joda.time.Period;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT;
+import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EVENT;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EVENT_TYPE;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
@@ -79,7 +80,6 @@ import org.sleuthkit.datamodel.timeline.filters.TagsFilter;
 import org.sleuthkit.datamodel.timeline.filters.TextFilter;
 import org.sleuthkit.datamodel.timeline.filters.TypeFilter;
 import org.sleuthkit.datamodel.timeline.filters.UnionFilter;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EVENT;
 
 /**
  * Provides access to the Timeline features of SleuthkitCase
@@ -748,8 +748,15 @@ public final class TimelineManager {
 		 * to determine its event type, but give it a generic description.
 		 */
 		if (artifact.getArtifactTypeID() == TSK_TL_EVENT.getTypeID()) {
-			long eventTypeID = artifact.getAttribute(new BlackboardAttribute.Type(TSK_EVENT_TYPE)).getValueLong();
-			EventType eventType = eventTypeIDMap.get(eventTypeID); //the type of the event to add.
+			EventType eventType;//the type of the event to add.
+			BlackboardAttribute attribute = artifact.getAttribute(new BlackboardAttribute.Type(TSK_EVENT_TYPE));
+			if (attribute == null) {
+				eventType = EventType.OTHER;
+			} else {
+				long eventTypeID = attribute.getValueLong();
+				eventType = eventTypeIDMap.get(eventTypeID);
+				eventType = ObjectUtils.defaultIfNull(eventType, EventType.OTHER);
+			}
 
 			Optional<SingleEvent> newEvent = addArtifactEvent(EventType.OTHER::buildEventPayload, eventType, artifact);
 			newEvent.ifPresent(newEvents::add);
