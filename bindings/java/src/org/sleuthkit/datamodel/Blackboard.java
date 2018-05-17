@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel;
 
 import java.io.Closeable;
+import java.util.Collection;
 
 /**
  * A representation of the blackboard, a place where artifacts and their
@@ -40,25 +41,42 @@ public final class Blackboard implements Closeable {
 	}
 
 	/**
-	 * Publish the artifact. This includes making any events that may be derived
+	 * Posts the artifact. This includes making any events that may be derived
 	 * from it, and broadcasting a notification that the artifact is ready for
 	 * further analysis.
 	 *
-	 * @param artifact The artifact to be published.
+	 * @param artifact The artifact to be posted.
 	 *
-	 * @throws BlackboardException If there is a problem publishing the
-	 *                             artifact.
+	 * @throws BlackboardException If the blackboard is closed.
+	 * @throws TskCoreException    If there is a problem posting the artifact.
 	 */
-	public synchronized void postArtifact(BlackboardArtifact artifact) throws BlackboardException {
+	public synchronized void postArtifact(BlackboardArtifact artifact) throws BlackboardException, TskCoreException {
 		if (null == caseDb) {
 			throw new BlackboardException("Blackboard has been closed");
 		}
 
-		try {
-			caseDb.getTimelineManager().addArtifactEvents(artifact);
-			caseDb.postTSKEvent(new ArtifactPublishedEvent(artifact));
-		} catch (TskCoreException ex) {
-			throw new BlackboardException("Error creating events for artifact.", ex);
+		caseDb.getTimelineManager().addArtifactEvents(artifact);
+		caseDb.postTSKEvent(new ArtifactPostedEvent(artifact));
+
+	}
+
+	/**
+	 * Posts a Collection of artifacts. This includes making any events that may
+	 * be derived from them, and broadcasting a notifications that the artifacts
+	 * are ready for further analysis.
+	 *
+	 * @param artifacts The artifacts to be posted.
+	 *
+	 * @throws BlackboardException If the blackboard is closed.
+	 * @throws TskCoreException    If there is a problem posting the artifacts.
+	 */
+	public synchronized void postArtifacts(Collection<BlackboardArtifact> artifacts) throws BlackboardException, TskCoreException {
+		/*
+		 * For now this just posts them one by one, but in the future it could
+		 * be smatter and use transactions, post a single bulk event, etc.
+		 */
+		for (BlackboardArtifact artifact : artifacts) {
+			postArtifact(artifact);
 		}
 	}
 
@@ -159,10 +177,10 @@ public final class Blackboard implements Closeable {
 	}
 
 	/**
-	 * Event posted by SleuthkitCase when an artifact is published. A published
+	 * Event published by SleuthkitCase when an artifact is posted. A posted
 	 * artifact is complete and ready for further processing.
 	 */
-	final public static class ArtifactPublishedEvent {
+	final public static class ArtifactPostedEvent {
 
 		private final BlackboardArtifact artifact;
 
@@ -170,7 +188,7 @@ public final class Blackboard implements Closeable {
 			return artifact;
 		}
 
-		ArtifactPublishedEvent(BlackboardArtifact artifact) {
+		ArtifactPostedEvent(BlackboardArtifact artifact) {
 			this.artifact = artifact;
 		}
 	}
