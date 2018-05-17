@@ -34,8 +34,9 @@ import org.sleuthkit.datamodel.BlackboardAttribute;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.*;
 import org.sleuthkit.datamodel.BlackboardAttribute.Type;
 import org.sleuthkit.datamodel.TskCoreException;
-import org.sleuthkit.datamodel.timeline.ArtifactEventType.AttributeEventDescription;
+import org.sleuthkit.datamodel.timeline.ArtifactEventType.EventPayload;
 import static org.sleuthkit.datamodel.timeline.BundleProvider.getBundle;
+import static org.sleuthkit.datamodel.timeline.EventType.RECENT_DOCUMENTS;
 import static org.sleuthkit.datamodel.timeline.EventTypeZoomLevel.BASE_TYPE;
 import static org.sleuthkit.datamodel.timeline.EventTypeZoomLevel.ROOT_TYPE;
 import static org.sleuthkit.datamodel.timeline.EventTypeZoomLevel.SUB_TYPE;
@@ -125,10 +126,10 @@ public interface EventType extends Comparable<EventType> {
 			getBundle().getString("BaseTypes.miscTypes.name"), // NON-NLS
 			BASE_TYPE, ROOT_EVEN_TYPE) {
 		@Override
-		public SortedSet< ArtifactEventType> getSubTypes() {
+		public SortedSet<EventType> getSubTypes() {
 			return ImmutableSortedSet.of(CALL_LOG, DEVICES_ATTACHED, EMAIL,
 					EXIF, GPS_ROUTE, GPS_TRACKPOINT, INSTALLED_PROGRAM, MESSAGE,
-					RECENT_DOCUMENTS);
+					RECENT_DOCUMENTS, REGISTRY, LOG_ENTRY);
 		}
 	};
 
@@ -153,19 +154,23 @@ public interface EventType extends Comparable<EventType> {
 			StandardArtifactEventType.TopPrivateDomainExtractor.getInstance(),
 			new AttributeExtractor(new Type(TSK_PATH)),
 			new AttributeExtractor(new Type(TSK_URL)),
-			artf -> {
-				long time = artf.getAttribute(EventType.WEB_DOWNLOADS.getDateTimeAttributeType()).getValueLong();
-				String domain = EventType.WEB_DOWNLOADS.extractShortDescription(artf);
-				String path = EventType.WEB_DOWNLOADS.extractMedDescription(artf);
-				String fileName = StringUtils.substringAfterLast(path, "/");
-				String url = EventType.WEB_DOWNLOADS.extractFullDescription(artf);
+			//overide description composition
+			new StandardArtifactEventType.CheckedFunction<BlackboardArtifact, EventPayload>() {
+		@Override
+		public EventPayload apply(BlackboardArtifact artf) throws TskCoreException {
+			long time = artf.getAttribute(EventType.WEB_DOWNLOADS.getDateTimeAttributeType()).getValueLong();
+			String domain = EventType.WEB_DOWNLOADS.extractShortDescription(artf);
+			String path = EventType.WEB_DOWNLOADS.extractMedDescription(artf);
+			String fileName = StringUtils.substringAfterLast(path, "/");
+			String url = EventType.WEB_DOWNLOADS.extractFullDescription(artf);
 
-				//TODO: review non default description construction
-				String shortDescription = fileName + " from " + domain; // NON-NLS
-				String medDescription = fileName + " from " + url; // NON-NLS
-				String fullDescription = path + " from " + url; // NON-NLS
-				return new AttributeEventDescription(time, shortDescription, medDescription, fullDescription);
-			});
+			//TODO: review non default description construction
+			String shortDescription = fileName + " from " + domain; // NON-NLS
+			String medDescription = fileName + " from " + url; // NON-NLS
+			String fullDescription = path + " from " + url; // NON-NLS
+			return new EventPayload(time, shortDescription, medDescription, fullDescription);
+		}
+	});
 	ArtifactEventType WEB_COOKIE = new StandardArtifactEventType(9,
 			getBundle().getString("WebTypes.webCookies.name"),// NON-NLS
 			WEB_ACTIVITY,
@@ -291,15 +296,19 @@ public interface EventType extends Comparable<EventType> {
 		}
 	},
 			new AttributeExtractor(new Type(TSK_PATH)),
-			artf -> {
-				long time = artf.getAttribute(EventType.RECENT_DOCUMENTS.getDateTimeAttributeType()).getValueLong();
-				//Non-default description construction
-				String shortDescription = EventType.RECENT_DOCUMENTS.extractShortDescription(artf);
-				String medDescription = EventType.RECENT_DOCUMENTS.extractMedDescription(artf);
-				String fullDescription = EventType.RECENT_DOCUMENTS.extractFullDescription(artf);
+			//override description composition
+			new StandardArtifactEventType.CheckedFunction<BlackboardArtifact, EventPayload>() {
+		@Override
+		public EventPayload apply(BlackboardArtifact artf) throws TskCoreException {
+			long time = artf.getAttribute(EventType.RECENT_DOCUMENTS.getDateTimeAttributeType()).getValueLong();
+			//Non-default description construction
+			String shortDescription = RECENT_DOCUMENTS.extractShortDescription(artf);
+			String medDescription = RECENT_DOCUMENTS.extractMedDescription(artf);
+			String fullDescription = RECENT_DOCUMENTS.extractFullDescription(artf);
 
-				return new AttributeEventDescription(time, shortDescription, medDescription, fullDescription);
-			});
+			return new EventPayload(time, shortDescription, medDescription, fullDescription);
+		}
+	});
 
 	ArtifactEventType INSTALLED_PROGRAM = new StandardArtifactEventType(19,
 			getBundle().getString("MiscTypes.installedPrograms.name"), // NON-NLS
@@ -334,6 +343,7 @@ public interface EventType extends Comparable<EventType> {
 			new AttributeExtractor(new Type(TSK_DEVICE_MODEL)),
 			new AttributeExtractor(new Type(TSK_DEVICE_ID)));
 
+	//custom evet type base type
 	EventType CUSTOM_TYPES = new StandardEventType(22,
 			getBundle().getString("BaseTypes.customTypes.name"), // NON-NLS
 			BASE_TYPE, ROOT_EVEN_TYPE) {
@@ -343,7 +353,21 @@ public interface EventType extends Comparable<EventType> {
 		}
 	};
 
-	EventType OTHER = new StandardEventType(23, getBundle().getString("CustomTypes.other.name"), SUB_TYPE, CUSTOM_TYPES);
+	//generic catch all other event
+	ArtifactEventType OTHER = new SingleDescriptionArtifactEventType(23,
+			getBundle().getString("CustomTypes.other.name"),
+			CUSTOM_TYPES,
+			new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EVENT));
+
+	//new misc types
+	ArtifactEventType LOG_ENTRY = new SingleDescriptionArtifactEventType(24,
+			getBundle().getString("MiscTypes.LogEntry.name"), //NON-NLS
+			MISC_TYPES,
+			new BlackboardArtifact.Type(TSK_LOG_EVENT));
+
+	ArtifactEventType REGISTRY = new SingleDescriptionArtifactEventType(25,
+			getBundle().getString("MiscTypes.RegistryEvent.name"), //NON-NLS
+			MISC_TYPES, new BlackboardArtifact.Type(TSK_REGISTRY_EVENT));
 
 	static SortedSet<? extends EventType> getBaseTypes() {
 		return ROOT_EVEN_TYPE.getSubTypes();

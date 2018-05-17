@@ -42,7 +42,7 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 	private final CheckedFunction<BlackboardArtifact, String> longExtractor;
 	private final CheckedFunction<BlackboardArtifact, String> medExtractor;
 	private final CheckedFunction<BlackboardArtifact, String> shortExtractor;
-	private final CheckedFunction<BlackboardArtifact, AttributeEventDescription> parseAttributesHelper;
+	private final CheckedFunction<BlackboardArtifact, EventPayload> eventPayloadFunction;
 
 	StandardArtifactEventType(int typeID, String displayName,
 			EventType superType,
@@ -61,7 +61,7 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 			CheckedFunction<BlackboardArtifact, String> shortExtractor,
 			CheckedFunction<BlackboardArtifact, String> medExtractor,
 			CheckedFunction<BlackboardArtifact, String> longExtractor,
-			CheckedFunction<BlackboardArtifact, AttributeEventDescription> parseAttributesHelper) {
+			CheckedFunction<BlackboardArtifact, EventPayload> eventPayloadFunction) {
 
 		super(typeID, displayName, EventTypeZoomLevel.SUB_TYPE, superType);
 		this.artifactType = artifactType;
@@ -69,7 +69,7 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 		this.shortExtractor = shortExtractor;
 		this.medExtractor = medExtractor;
 		this.longExtractor = longExtractor;
-		this.parseAttributesHelper = parseAttributesHelper;
+		this.eventPayloadFunction = eventPayloadFunction;
 	}
 
 	@Override
@@ -124,43 +124,29 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 		return artifactType;
 	}
 
-	/**
-	 * Build a AttributeEventDescription derived from a BlackboardArtifact. This
-	 * is a template method that relies on each ArtifactEventType's
-	 * implementation of ArtifactEventType#parseAttributesHelper() to know how
-	 * to go from BlackboardAttributes to the event description.
-	 *
-	 * @param type
-	 * @param artf the BlackboardArtifact to derive the event description from
-	 *
-	 * @return an AttributeEventDescription derived from the given artifact, if
-	 *         the given artifact has no timestamp
-	 *
-	 * @throws TskCoreException is there is a problem accessing the blackboard
-	 *                          data
-	 */
 	@Override
-	public AttributeEventDescription buildEventDescription(BlackboardArtifact artf) throws TskCoreException {
-		//if we got passed an artifact that doesn't correspond to the type of the event, 
+	public EventPayload buildEventPayload(BlackboardArtifact artifact) throws TskCoreException {
+		//if we got passed an artifact that doesn't correspond to this event type, 
 		//something went very wrong. throw an exception.
-		if (this.getArtifactTypeID() != artf.getArtifactTypeID()) {
+		if (this.getArtifactTypeID() != artifact.getArtifactTypeID()) {
 			throw new IllegalArgumentException();
 		}
-		if (artf.getAttribute(this.getDateTimeAttributeType()) == null) {
-			logger.log(Level.WARNING, "Artifact {0} has no date/time attribute, skipping it.", artf.getArtifactID()); // NON-NLS
+		if (artifact.getAttribute(this.getDateTimeAttributeType()) == null) {
+			logger.log(Level.WARNING, "Artifact {0} has no date/time attribute, skipping it.", artifact.getArtifactID()); // NON-NLS
 			return null;
 		}
-		//use the hook provided by this subtype implementation
-		if (this.parseAttributesHelper != null) {
-			return this.parseAttributesHelper.apply(artf);
-		}
-		final BlackboardAttribute dateTimeAttr = artf.getAttribute(getDateTimeAttributeType());
 
-		long time = dateTimeAttr.getValueLong();
-		String shortDescription = extractShortDescription(artf);
-		String medDescription = shortDescription + " : " + extractMedDescription(artf);
-		String fullDescription = medDescription + " : " + extractFullDescription(artf);
-		return new AttributeEventDescription(time, shortDescription, medDescription, fullDescription);
+		if (this.eventPayloadFunction != null) {
+			//use the hook provided by this subtype implementation to build the descriptions.
+			return this.eventPayloadFunction.apply(artifact);
+		}
+
+		long time = artifact.getAttribute(getDateTimeAttributeType()).getValueLong();
+		//combine descriptions in standard way
+		String shortDescription = extractShortDescription(artifact);
+		String medDescription = shortDescription + " : " + extractMedDescription(artifact);
+		String fullDescription = medDescription + " : " + extractFullDescription(artifact);
+		return new EventPayload(time, shortDescription, medDescription, fullDescription);
 	}
 
 	static BlackboardAttribute getAttributeSafe(BlackboardArtifact artf, BlackboardAttribute.Type attrType) {
@@ -249,5 +235,4 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 
 		O apply(I input) throws TskCoreException;
 	}
-
 }
