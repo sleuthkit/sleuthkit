@@ -218,7 +218,6 @@ ntfs_parent_act(TSK_FS_FILE * fs_file, void * /*ptr*/)
 
     if ((fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC) &&
         fs_file->meta->type == TSK_FS_META_TYPE_REG) {
-        // @@@ This doesn't seem to be used anywhere....
         ++ntfs->alloc_file_count;
     }
 
