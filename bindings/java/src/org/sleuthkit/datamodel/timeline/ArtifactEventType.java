@@ -97,7 +97,7 @@ public interface ArtifactEventType extends EventType {
 	 * ArtifactEventType#buildEventDescription(ArtifactEventType,
 	 * BlackboardArtifact).
 	 */
-	static final class EventPayload {
+	 final class EventPayload {
 
 		final private long time;
 		final private String shortDescription;
