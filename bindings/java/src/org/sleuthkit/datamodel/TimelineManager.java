@@ -52,8 +52,8 @@ import org.joda.time.Interval;
 import org.joda.time.Period;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EVENT;
-import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EVENT_TYPE;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME;
+import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TL_EVENT_TYPE;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import static org.sleuthkit.datamodel.StringUtils.joinAsStrings;
 import org.sleuthkit.datamodel.timeline.ArtifactEventType;
@@ -744,12 +744,13 @@ public final class TimelineManager {
 		Set<SingleEvent> newEvents = new HashSet<>();
 
 		/*
-		 * If the artifact is a TSK_TL_EVENT, use the TSK_EVENT_TYPE attribute
-		 * to determine its event type, but give it a generic description.
+		 * If the artifact is a TSK_TL_EVENT, use the TSK_TL_EVENT_TYPE
+		 * attribute to determine its event type, but give it a generic
+		 * description.
 		 */
 		if (artifact.getArtifactTypeID() == TSK_TL_EVENT.getTypeID()) {
 			EventType eventType;//the type of the event to add.
-			BlackboardAttribute attribute = artifact.getAttribute(new BlackboardAttribute.Type(TSK_EVENT_TYPE));
+			BlackboardAttribute attribute = artifact.getAttribute(new BlackboardAttribute.Type(TSK_TL_EVENT_TYPE));
 			if (attribute == null) {
 				eventType = EventType.OTHER;
 			} else {
