@@ -1387,7 +1387,7 @@ ntfs_attr_walk_special(const TSK_FS_ATTR * fs_attr,
 
                         // if we've passed the initialized size while reading this block, zero out the buffer beyond the initialized size
                         if (has_init_size) {
-                            int64_t remanining_init_size = fs_attr->nrd.initsize - off;
+                            const int64_t remanining_init_size = fs_attr->nrd.initsize - off;
                             if (remanining_init_size < comp.buf_size_b) {
                                 memset(comp.uncomp_buf + remanining_init_size, 0, comp.buf_size_b - remanining_init_size);
                                 init_size_reached = 1;
@@ -1650,7 +1650,7 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
 
                         // if we've passed the initialized size while reading this block, zero out the buffer beyond the initialized size
                         if (has_init_size) {
-                            int64_t remanining_init_size = a_fs_attr->nrd.initsize - buf_idx - a_offset;
+                            const int64_t remanining_init_size = a_fs_attr->nrd.initsize - buf_idx - a_offset;
                             if (remanining_init_size < comp.buf_size_b) {
                                 memset(comp.uncomp_buf + remanining_init_size, 0, comp.buf_size_b - remanining_init_size);
                                 init_size_reached = 1;
