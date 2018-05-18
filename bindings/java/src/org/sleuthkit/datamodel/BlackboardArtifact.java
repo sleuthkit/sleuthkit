@@ -1145,17 +1145,7 @@ public class BlackboardArtifact implements Content {
 		 * A generic (timeline) event.
 		 */
 		TSK_TL_EVENT(41, "TSK_TL_EVENT",
-				bundle.getString("BlackboardArtifact.tskTLEvent.text")),
-		/**
-		 * An event from the registry.
-		 */
-		TSK_REGISTRY_EVENT(42, "TSK_REGISTRY_EVENT",
-				bundle.getString("BlackboardArtifact.tskRegistryEvent.text")),
-		/**
-		 * * An event from a log.
-		 */
-		TSK_LOG_EVENT(43, "TSK_LOG_EVENT",
-				bundle.getString("BlackboardArtifact.tskLogEvent.text"));
+				bundle.getString("BlackboardArtifact.tskTLEvent.text"));
 
 		private final String label;
 		private final int typeId;

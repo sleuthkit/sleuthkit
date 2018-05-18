@@ -357,17 +357,17 @@ public interface EventType extends Comparable<EventType> {
 	ArtifactEventType OTHER = new SingleDescriptionArtifactEventType(23,
 			getBundle().getString("CustomTypes.other.name"),
 			CUSTOM_TYPES,
-			new BlackboardArtifact.Type(BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EVENT));
+			new BlackboardArtifact.Type(TSK_TL_EVENT));
 
 	//new misc types
 	ArtifactEventType LOG_ENTRY = new SingleDescriptionArtifactEventType(24,
 			getBundle().getString("MiscTypes.LogEntry.name"), //NON-NLS
 			MISC_TYPES,
-			new BlackboardArtifact.Type(TSK_LOG_EVENT));
+			new BlackboardArtifact.Type(TSK_TL_EVENT));
 
 	ArtifactEventType REGISTRY = new SingleDescriptionArtifactEventType(25,
 			getBundle().getString("MiscTypes.RegistryEvent.name"), //NON-NLS
-			MISC_TYPES, new BlackboardArtifact.Type(TSK_REGISTRY_EVENT));
+			MISC_TYPES, new BlackboardArtifact.Type(TSK_TL_EVENT));
 
 	static SortedSet<? extends EventType> getBaseTypes() {
 		return ROOT_EVEN_TYPE.getSubTypes();
