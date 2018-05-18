@@ -28,7 +28,7 @@ import org.sleuthkit.datamodel.TimelineManager;
  *
  * @param <S> The type of sub Filters in this IntersectionFilter.
  */
-class IntersectionFilter<S extends TimelineFilter> extends CompoundFilter<S> {
+public class IntersectionFilter<S extends TimelineFilter> extends CompoundFilter<S> {
 
 	IntersectionFilter(List<S> subFilters) {
 		super(subFilters);
