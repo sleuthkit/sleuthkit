@@ -741,7 +741,7 @@ public final class TimelineManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	Set<SingleEvent> addArtifactEvents(BlackboardArtifact artifact) throws TskCoreException {
+	Set<SingleEvent> addEventsFromArtifact(BlackboardArtifact artifact) throws TskCoreException {
 		Set<SingleEvent> newEvents = new HashSet<>();
 
 		/*

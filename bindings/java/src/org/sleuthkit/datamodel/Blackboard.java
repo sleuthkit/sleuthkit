@@ -41,39 +41,44 @@ public final class Blackboard implements Closeable {
 	}
 
 	/**
-	 * Posts the artifact. This includes making any events that may be derived
-	 * from it, and broadcasting a notification that the artifact is ready for
-	 * further analysis.
+	 * Posts the artifact. The artifact should be complete (all attributes have
+	 * been added) before being posted. Posting the artifact includes making any
+	 * events that may be derived from it, and broadcasting a notification that
+	 * the artifact is ready for further analysis.
 	 *
 	 * @param artifact The artifact to be posted.
 	 *
-	 * @throws BlackboardException If the blackboard is closed.
-	 * @throws TskCoreException    If there is a problem posting the artifact.
+	 * @throws BlackboardException If there is a problem posting the artifact.
 	 */
-	public synchronized void postArtifact(BlackboardArtifact artifact) throws BlackboardException, TskCoreException {
+	public synchronized void postArtifact(BlackboardArtifact artifact) throws BlackboardException {
 		if (null == caseDb) {
 			throw new BlackboardException("Blackboard has been closed");
 		}
 
-		caseDb.getTimelineManager().addArtifactEvents(artifact);
+		try {
+			caseDb.getTimelineManager().addEventsFromArtifact(artifact);
+		} catch (TskCoreException ex) {
+			throw new BlackboardException("Failed to add events for artifact: " + artifact, ex);
+		}
 		caseDb.postTSKEvent(new ArtifactPostedEvent(artifact));
 
 	}
 
 	/**
-	 * Posts a Collection of artifacts. This includes making any events that may
-	 * be derived from them, and broadcasting a notifications that the artifacts
-	 * are ready for further analysis.
+	 * Posts a Collection of artifacts. The artifacts should be complete (all
+	 * attributes have been added) before being posted. Posting the artifacts
+	 * includes making any events that may be derived from them, and
+	 * broadcasting notifications that the artifacts are ready for further
+	 * analysis.
 	 *
 	 * @param artifacts The artifacts to be posted.
 	 *
-	 * @throws BlackboardException If the blackboard is closed.
-	 * @throws TskCoreException    If there is a problem posting the artifacts.
+	 * @throws BlackboardException If there is a problem posting the artifacts.
 	 */
-	public synchronized void postArtifacts(Collection<BlackboardArtifact> artifacts) throws BlackboardException, TskCoreException {
+	public synchronized void postArtifacts(Collection<BlackboardArtifact> artifacts) throws BlackboardException {
 		/*
 		 * For now this just posts them one by one, but in the future it could
-		 * be smatter and use transactions, post a single bulk event, etc.
+		 * be smarter and use transactions, post a single bulk event, etc.
 		 */
 		for (BlackboardArtifact artifact : artifacts) {
 			postArtifact(artifact);
@@ -149,7 +154,7 @@ public final class Blackboard implements Closeable {
 	}
 
 	/**
-	 * A blackboard exception.
+	 * A Blackboard exception.
 	 */
 	public static final class BlackboardException extends Exception {
 
@@ -178,7 +183,8 @@ public final class Blackboard implements Closeable {
 
 	/**
 	 * Event published by SleuthkitCase when an artifact is posted. A posted
-	 * artifact is complete and ready for further processing.
+	 * artifact is complete (all attributes have been added) and ready for
+	 * further processing.
 	 */
 	final public static class ArtifactPostedEvent {
 
