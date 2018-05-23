@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2011-2018 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -80,9 +80,17 @@ public class TagName implements Comparable<TagName>, Serializable {
 	private final String description;
 	private final HTML_COLOR color;
 	private final TskData.FileKnown knownStatus;
-
-	// Clients of the org.sleuthkit.datamodel package should not directly create these objects.		
-	TagName(long id, String displayName, String description, HTML_COLOR color, TskData.FileKnown knownStatus) {
+		
+	/**
+	 * Constructor 
+	 * 
+	 * @param id tag id
+	 * @param displayName display name 
+	 * @param description description
+	 * @param color color to display tagged items in 
+	 * @param knownStatus if the file is known 
+	 */
+	public TagName(long id, String displayName, String description, HTML_COLOR color, TskData.FileKnown knownStatus) {
 		this.id = id;
 		this.displayName = displayName;
 		this.description = description;

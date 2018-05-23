@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  * 
- * Copyright 2013 Basis Technology Corp.
+ * Copyright 2013-2018 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,18 +26,36 @@ public class BlackboardArtifactTag extends Tag {
 
 	private final BlackboardArtifact artifact;
 	private final Content content;
-
-	// Clients of the org.sleuthkit.datamodel package should not directly create these objects.	
-	BlackboardArtifactTag(long id, BlackboardArtifact artifact, Content content, TagName name, String comment) {
+	
+	/**
+	 * Constructor
+	 * 
+	 * @param id tag id
+	 * @param artifact artifact tagged
+	 * @param content content from where the artifact was extracted
+	 * @param name tag name
+	 * @param comment comment
+	 */
+	public BlackboardArtifactTag(long id, BlackboardArtifact artifact, Content content, TagName name, String comment) {
 		super(id, name, comment);
 		this.artifact = artifact;
 		this.content = content;
 	}
 
+	/**
+	 * Returns the tagged artifact 
+	 * 
+	 * @return tagged artifact
+	 */
 	public BlackboardArtifact getArtifact() {
 		return artifact;
 	}
 
+	/**
+	 * Returns source content of the tagged  artifact
+	 * 
+	 * @return source content of the tagged  artifact
+	 */
 	public Content getContent() {
 		return content;
 	}
