@@ -178,3 +178,9 @@ unit_tests/base/test_base
 *.img
 *.vhd
 *.E01
+*.vmdk
+
+
+#Test data folder
+
+tests/data
