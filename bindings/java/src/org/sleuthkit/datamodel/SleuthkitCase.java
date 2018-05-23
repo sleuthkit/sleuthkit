@@ -2446,46 +2446,7 @@ public class SleuthkitCase {
 		}
 	}
 
-	/**
-	 * Gets the list of all unique artifact IDs in use for the given data source
-	 * Gets both static and dynamic IDs.
-	 *
-	 * @param ds_obj_id  data source obj id 
-	 * 
-	 * @return The list of unique IDs
-	 *
-	 * @throws TskCoreException exception thrown if a critical error occurred
-	 *                          within tsk core
-	 */
-	public List<BlackboardArtifact.Type> getArtifactTypesInUseByDataSource(long ds_obj_id) throws TskCoreException {
-		CaseDbConnection connection = connections.getConnection();
-		acquireSingleUserCaseReadLock();
-		Statement s = null;
-		ResultSet rs = null;
-		try {
-			s = connection.createStatement();
-			rs = connection.executeQuery(s,
-					"SELECT DISTINCT arts.artifact_type_id AS artifact_type_id, "
-					+ "types.type_name AS type_name, types.display_name AS display_name "
-					+ "FROM blackboard_artifact_types AS types "
-					+ "INNER JOIN blackboard_artifacts AS arts "
-					+ "ON arts.artifact_type_id = types.artifact_type_id "
-					+ "WHERE arts.data_source_obj_id = " + ds_obj_id ); //NON-NLS
-			List<BlackboardArtifact.Type> uniqueArtifactTypes = new ArrayList<BlackboardArtifact.Type>();
-			while (rs.next()) {
-				uniqueArtifactTypes.add(new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
-						rs.getString("type_name"), rs.getString("display_name")));
-			}
-			return uniqueArtifactTypes;
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting attribute types", ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			connection.close();
-			releaseSingleUserCaseReadLock();
-		}
-	}
+	
 	
 	/**
 	 * Gets a list of all the attribute types for this case
@@ -2564,7 +2525,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException If there is a problem querying the case
 	 *                          database.
 	 */
-	private ArrayList<BlackboardArtifact> getArtifactsHelper(String whereClause) throws TskCoreException {
+	 ArrayList<BlackboardArtifact> getArtifactsHelper(String whereClause) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
 		ResultSet rs = null;
@@ -2636,43 +2597,7 @@ public class SleuthkitCase {
 		}
 	}
 
-	/**
-	 * Gets count of blackboard artifacts of given type that match a given WHERE clause.
-	 * Uses a SELECT COUNT(*) FROM  blackboard_artifacts statement
-	 *
-	 * @param artifactTypeID 
-	 * @param whereClause The WHERE clause to append to the SELECT statement.
-	 *
-	 * @return A count of matching BlackboardArtifact .
-	 *
-	 * @throws TskCoreException If there is a problem querying the case
-	 *                          database.
-	 */
-	private long getArtifactsCountHelper(int artifactTypeID, String whereClause) throws TskCoreException {
-		CaseDbConnection connection = connections.getConnection();
-		acquireSingleUserCaseReadLock();
-		ResultSet rs = null;
-			
-		try {
-			Statement statement = connection.createStatement();
-			String query = "SELECT COUNT(*) AS count FROM blackboard_artifacts "
-					+ "WHERE blackboard_artifacts.artifact_type_id = " + artifactTypeID
-					+ " AND blackboard_artifacts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID()
-					+ " AND " + whereClause;
-			rs = connection.executeQuery(statement, query);
-			long count = 0;
-			if (rs.next()) {
-				count = rs.getLong("count");
-			}
-			return count;
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting or creating a blackboard artifact", ex);
-		} finally {
-			closeResultSet(rs);
-			connection.close();
-			releaseSingleUserCaseReadLock();
-		}
-	}
+	
 	
 	/**
 	 * Get all blackboard artifacts of a given type for the given object id.
@@ -2758,22 +2683,7 @@ public class SleuthkitCase {
 		return getArtifactsCountHelper(artifactTypeID, obj_id);
 	}
 
-	/**
-	 * Get count of all blackboard artifacts of a given type for the given
-	 * Data source. Does not include rejected artifacts.
-	 *
-	 * @param artifactTypeID artifact type id (must exist in database)
-	 * @param ds_obj_id         data source object id
-	 *
-	 * @return count of blackboard artifacts
-	 *
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 *                          within TSK core
-	 */
-	public long getBlackboardArtifactsCountByDataSource(int artifactTypeID, long ds_obj_id) throws TskCoreException {
-		return getArtifactsCountHelper(artifactTypeID, 
-				"blackboard_artifacts.data_source_obj_id = '" + ds_obj_id + "';");
-	}
+
 	
 	/**
 	 * Get count of all blackboard artifacts of a given type for the given
@@ -2821,21 +2731,7 @@ public class SleuthkitCase {
 		return getArtifactsHelper("blackboard_artifact_types.artifact_type_id = " + artifactType.getTypeID() + ";");
 	}
 
-	/**
-	 * Get all blackboard artifacts of a given type. Does not included rejected
-	 * artifacts.
-	 *
-	 * @param artifactType artifact type enum
-	 *
-	 * @return list of blackboard artifacts
-	 *
-	 * @throws TskCoreException exception thrown if a critical error occurs
-	 *                          within TSK core
-	 */
-	public ArrayList<BlackboardArtifact> getBlackboardArtifactsByDataSource(int artifactTypeID, long ds_obj_id) throws TskCoreException {
-		return getArtifactsHelper("blackboard_artifacts.data_source_obj_id = " + ds_obj_id + 
-								  " AND blackboard_artifact_types.artifact_type_id = " + artifactTypeID + ";");
-	}
+	
 	
 	/**
 	 * Get all blackboard artifacts of a given type with an attribute of a given
