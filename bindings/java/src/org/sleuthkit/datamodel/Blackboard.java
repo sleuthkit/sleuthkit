@@ -153,22 +153,22 @@ public final class Blackboard implements Closeable {
 				
 		SleuthkitCase.CaseDbConnection connection = caseDb.getConnection();
 		caseDb.acquireSingleUserCaseReadLock();
-		Statement s = null;
-		ResultSet rs = null;
+		Statement statement = null;
+		ResultSet resultSet = null;
 		
 		try {
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, queryString); //NON-NLS	
+			statement = connection.createStatement();
+			resultSet = connection.executeQuery(statement, queryString); //NON-NLS	
 			long count = 0;
-			if (rs.next()) {
-				count = rs.getLong("count");
+			if (resultSet.next()) {
+				count = resultSet.getLong("count");
 			}
 			return count;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting artifact types is use for data source." + ex.getMessage(), ex);
 		} finally {
-			SleuthkitCase.closeResultSet(rs);
-			SleuthkitCase.closeStatement(s);
+			SleuthkitCase.closeResultSet(resultSet);
+			SleuthkitCase.closeStatement(statement);
 			connection.close();
 			caseDb.releaseSingleUserCaseReadLock();
 		}
