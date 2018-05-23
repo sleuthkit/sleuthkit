@@ -24,7 +24,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 
 /**
  * A representation of the blackboard, a place where artifacts and their
@@ -32,7 +31,6 @@ import java.util.logging.Logger;
  *
  */
 public final class Blackboard implements Closeable {
-	private static final Logger LOGGER = Logger.getLogger(Blackboard.class.getName());
 	private SleuthkitCase caseDb;
 
 	/**
@@ -77,23 +75,23 @@ public final class Blackboard implements Closeable {
 				
 		SleuthkitCase.CaseDbConnection connection = caseDb.getConnection();
 		caseDb.acquireSingleUserCaseReadLock();
-		Statement s = null;
-		ResultSet rs = null;
+		Statement statement = null;
+		ResultSet resultSet = null;
 		try {
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, queryString); //NON-NLS
+			statement = connection.createStatement();
+			resultSet = connection.executeQuery(statement, queryString); //NON-NLS
 
 			List<BlackboardArtifact.Type> uniqueArtifactTypes = new ArrayList<BlackboardArtifact.Type>();
-			while (rs.next()) {
-				uniqueArtifactTypes.add(new BlackboardArtifact.Type(rs.getInt("artifact_type_id"),
-						rs.getString("type_name"), rs.getString("display_name")));
+			while (resultSet.next()) {
+				uniqueArtifactTypes.add(new BlackboardArtifact.Type(resultSet.getInt("artifact_type_id"),
+						resultSet.getString("type_name"), resultSet.getString("display_name")));
 			}
 			return uniqueArtifactTypes;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting artifact types is use for data source." + ex.getMessage(), ex);
 		} finally {
-			SleuthkitCase.closeResultSet(rs);
-			SleuthkitCase.closeStatement(s);
+			SleuthkitCase.closeResultSet(resultSet);
+			SleuthkitCase.closeStatement(statement);
 			connection.close();
 			caseDb.releaseSingleUserCaseReadLock();
 		}
@@ -129,7 +127,7 @@ public final class Blackboard implements Closeable {
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
 	 */
-	public ArrayList<BlackboardArtifact> getBlackboardArtifactsByDataSource(int artifactTypeID, long ds_obj_id) throws TskCoreException {
+	public List<BlackboardArtifact> getBlackboardArtifactsByDataSource(int artifactTypeID, long ds_obj_id) throws TskCoreException {
 		return caseDb.getArtifactsHelper("blackboard_artifacts.data_source_obj_id = " + ds_obj_id + 
 								  " AND blackboard_artifact_types.artifact_type_id = " + artifactTypeID + ";");
 	}
