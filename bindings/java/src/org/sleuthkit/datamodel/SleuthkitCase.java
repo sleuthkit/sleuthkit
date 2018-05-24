@@ -122,8 +122,7 @@ public class SleuthkitCase {
 	private Map<Integer, BlackboardAttribute.Type> typeIdToAttributeTypeMap;
 	private Map<String, BlackboardArtifact.Type> typeNameToArtifactTypeMap;
 	private Map<String, BlackboardAttribute.Type> typeNameToAttributeTypeMap;
-	//private Set<Long> hasChildren;
-	private SparseBitSet hasChildrenBitSet;
+	private Map<Long, SparseBitSet> hasChildrenBitSetMap;
 
 	private long nextArtifactId; // Used to ensure artifact ids come from the desired range.
 	// This read/write lock is used to implement a layer of locking on top of
@@ -277,47 +276,39 @@ public class SleuthkitCase {
 		initIngestStatusTypes(connection);
 		initReviewStatuses(connection);
 		initEncodingTypes(connection);
-
-		
-		long timestamp = System.currentTimeMillis();
-		//hasChildren = new HashSet<Long>();
-		hasChildrenBitSet = new SparseBitSet(); // Could query for current highest obj id
-		Statement statement = null;
-		ResultSet resultSet = null;
-		acquireSingleUserCaseWriteLock();
-		try {
-			statement = connection.createStatement();
-			try {
-				//resultSet = statement.executeQuery("select distinct obj_id as par_obj_id from blackboard_artifacts where artifact_type_id = 13 or artifact_type_id = 24 union select distinct par_obj_id from tsk_objects where type=4"); //NON-NLS
-				resultSet = statement.executeQuery("select distinct par_obj_id from tsk_objects"); //NON-NLS
-				while(resultSet.next()) {
-					//hasChildren.add(resultSet.getLong("par_obj_id"));
-					hasChildrenBitSet.set((int)(resultSet.getLong("par_obj_id")));
-				}
-			} catch (SQLException ex) {//NON-NLS
-				
-				resultSet.close();
-				resultSet = null;
-			}
-		} finally {
-			closeResultSet(resultSet);
-			closeStatement(statement);
-			releaseSingleUserCaseWriteLock();
-		}
-		//System.out.println("\n###### Number nodes with children: " + hasChildren.size());
-		System.out.println("\n###### Bit set stats: " + hasChildrenBitSet.statistics());
-		long delay = System.currentTimeMillis() - timestamp;
-		System.out.println("   Elapsed milliseconds: " + delay);
-		
-
+		initHasChildrenMap(connection);
 		connection.close();
 	}
 	
 	public boolean getHasChildren(Long objId) {
 		//return hasChildren.contains(objId);
-		return hasChildrenBitSet.get(objId.intValue());
+		//return hasChildrenBitSet.get(objId.intValue());
+		long mapIndex = objId / Integer.MAX_VALUE;
+		int mapValue = (int) (objId % Integer.MAX_VALUE);
+		
+		synchronized(this) {
+			if (hasChildrenBitSetMap.containsKey(mapIndex)) {
+				return hasChildrenBitSetMap.get(mapIndex).get(mapValue);
+			}
+			return false;
+		}
 	}
-
+	
+	private void setHasChildren(Long objId) {
+		long mapIndex = objId / Integer.MAX_VALUE;
+		int mapValue = (int) (objId % Integer.MAX_VALUE);
+		
+		synchronized(this) {
+			if (hasChildrenBitSetMap.containsKey(mapIndex)) {
+				hasChildrenBitSetMap.get(mapIndex).set(mapValue);
+			} else {
+				SparseBitSet bitSet = new SparseBitSet();
+				bitSet.set(mapValue);
+				hasChildrenBitSetMap.put(mapIndex, bitSet);
+			}
+		}
+	}
+	
 	/**
 	 * Returns an instance of CommunicationsManager
 	 *
@@ -566,6 +557,28 @@ public class SleuthkitCase {
 					resultSet = null;
 				}
 			}
+		} finally {
+			closeResultSet(resultSet);
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+	
+	private void initHasChildrenMap(CaseDbConnection connection) throws SQLException, TskCoreException {
+		long timestamp = System.currentTimeMillis();
+		hasChildrenBitSetMap = new HashMap<Long, SparseBitSet>();
+		
+		Statement statement = null;
+		ResultSet resultSet = null;
+		acquireSingleUserCaseWriteLock();
+		try {
+			statement = connection.createStatement();
+			resultSet = statement.executeQuery("select distinct par_obj_id from tsk_objects"); //NON-NLS
+			while(resultSet.next()) {
+				setHasChildren(resultSet.getLong("par_obj_id"));
+			}
+			long delay = System.currentTimeMillis() - timestamp;
+			logger.log(Level.INFO, "Time to initialize parent node cache: {0} ms", delay); //NON-NLS
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
@@ -4464,6 +4477,15 @@ public class SleuthkitCase {
 		}
 	}
 	
+	/**
+	 * Add an object to the tsk_objects table. 
+	 * Returns the object ID for the new object.
+	 * @param parentId   Parent of the new object
+	 * @param objectType Type of the new object
+	 * @param connection Case connection
+	 * @return the object ID for the new object
+	 * @throws SQLException 
+	 */
 	private long addObject(long parentId, int objectType, CaseDbConnection connection) throws SQLException {
 		ResultSet resultSet = null;
 		acquireSingleUserCaseWriteLock();
@@ -4483,7 +4505,8 @@ public class SleuthkitCase {
 			if(resultSet.next()) {
 				if(parentId != 0) {
 					//this.hasChildren.add(parentId);
-					this.hasChildrenBitSet.set((int)parentId);
+					//this.hasChildrenBitSet.set((int)parentId);
+					setHasChildren(parentId);
 				}
 				return resultSet.getLong(1); //last_insert_rowid()
 			} else {
