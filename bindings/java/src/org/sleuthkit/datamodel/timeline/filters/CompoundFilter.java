@@ -80,4 +80,8 @@ public abstract class CompoundFilter<SubFilterType extends TimelineFilter> imple
 		hash = 61 * hash + Objects.hashCode(this.subFilters);
 		return hash;
 	}
+
+	@Override
+	public abstract CompoundFilter<SubFilterType> copyOf();
+
 }

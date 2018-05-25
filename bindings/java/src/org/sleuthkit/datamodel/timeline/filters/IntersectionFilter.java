@@ -20,6 +20,7 @@ package org.sleuthkit.datamodel.timeline.filters;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.sleuthkit.datamodel.TimelineManager;
 
@@ -28,16 +29,16 @@ import org.sleuthkit.datamodel.TimelineManager;
  *
  * @param <S> The type of sub Filters in this IntersectionFilter.
  */
-public class IntersectionFilter<S extends TimelineFilter> extends CompoundFilter<S> {
-
+class IntersectionFilter<S extends TimelineFilter> extends CompoundFilter<S> {
+	
 	IntersectionFilter(List<S> subFilters) {
 		super(subFilters);
 	}
-
+	
 	IntersectionFilter() {
 		super(Collections.emptyList());
 	}
-
+	
 	@Override
 	public IntersectionFilter<S> copyOf() {
 		@SuppressWarnings("unchecked")
@@ -47,7 +48,7 @@ public class IntersectionFilter<S extends TimelineFilter> extends CompoundFilter
 						.collect(Collectors.toList()));
 		return filter;
 	}
-
+	
 	@Override
 	public String getDisplayName() {
 		String collect = getSubFilters().stream()
@@ -55,7 +56,7 @@ public class IntersectionFilter<S extends TimelineFilter> extends CompoundFilter
 				.collect(Collectors.joining(",", "[", "]"));
 		return BundleUtils.getBundle().getString("IntersectionFilter.displayName.text") + collect;
 	}
-
+	
 	@Override
 	public boolean equals(Object obj) {
 		if (obj == null) {
@@ -66,7 +67,7 @@ public class IntersectionFilter<S extends TimelineFilter> extends CompoundFilter
 		}
 		@SuppressWarnings("unchecked")
 		final IntersectionFilter<S> other = (IntersectionFilter<S>) obj;
-
+		
 		for (int i = 0; i < getSubFilters().size(); i++) {
 			if (getSubFilters().get(i).equals(other.getSubFilters().get(i)) == false) {
 				return false;
@@ -74,13 +75,14 @@ public class IntersectionFilter<S extends TimelineFilter> extends CompoundFilter
 		}
 		return true;
 	}
-
+	
 	@Override
 	public String getSQLWhere(TimelineManager manager) {
 		String join = this.getSubFilters().stream()
+				.filter(Objects::nonNull)
 				.map(filter -> filter.getSQLWhere(manager))
 				.collect(Collectors.joining(" AND "));
-
+		
 		return join.isEmpty()
 				? manager.getTrueLiteral()
 				: "(" + join + ")";

@@ -19,9 +19,6 @@
 package org.sleuthkit.datamodel.timeline.filters;
 
 import java.util.function.Predicate;
-import javafx.beans.binding.Bindings;
-import javafx.beans.binding.BooleanBinding;
-import javafx.beans.value.ObservableBooleanValue;
 
 /**
  * union of {@link DataSourceFilter}s
