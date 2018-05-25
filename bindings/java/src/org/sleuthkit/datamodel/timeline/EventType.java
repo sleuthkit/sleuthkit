@@ -366,7 +366,7 @@ public interface EventType extends Comparable<EventType> {
 			new BlackboardArtifact.Type(TSK_TL_EVENT));
 
 	ArtifactEventType REGISTRY = new SingleDescriptionArtifactEventType(25,
-			getBundle().getString("MiscTypes.RegistryEvent.name"), //NON-NLS
+			getBundle().getString("MiscTypes.Registry.name"), //NON-NLS
 			MISC_TYPES, new BlackboardArtifact.Type(TSK_TL_EVENT));
 
 	static SortedSet<? extends EventType> getBaseTypes() {
