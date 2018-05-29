@@ -19,6 +19,7 @@
 package org.sleuthkit.datamodel;
 
 import java.io.Closeable;
+import java.util.Collection;
 
 /**
  * A representation of the blackboard, a place where artifacts and their
@@ -40,14 +41,14 @@ public final class Blackboard implements Closeable {
 	}
 
 	/**
-	 * Publish the artifact. This includes making any events that may be derived
-	 * from it, and broadcasting a notification that the artifact is ready for
-	 * further analysis.
+	 * Posts the artifact. The artifact should be complete (all attributes have
+	 * been added) before being posted. Posting the artifact includes making any
+	 * events that may be derived from it, and broadcasting a notification that
+	 * the artifact is ready for further analysis.
 	 *
-	 * @param artifact The artifact to be published.
+	 * @param artifact The artifact to be posted.
 	 *
-	 * @throws BlackboardException If there is a problem publishing the
-	 *                             artifact.
+	 * @throws BlackboardException If there is a problem posting the artifact.
 	 */
 	public synchronized void postArtifact(BlackboardArtifact artifact) throws BlackboardException {
 		if (null == caseDb) {
@@ -55,10 +56,32 @@ public final class Blackboard implements Closeable {
 		}
 
 		try {
-			caseDb.getTimelineManager().addArtifactEvents(artifact);
-			caseDb.postTSKEvent(new ArtifactPublishedEvent(artifact));
+			caseDb.getTimelineManager().addEventsFromArtifact(artifact);
 		} catch (TskCoreException ex) {
-			throw new BlackboardException("Error creating events for artifact.", ex);
+			throw new BlackboardException("Failed to add events for artifact: " + artifact, ex);
+		}
+		caseDb.postTSKEvent(new ArtifactPostedEvent(artifact));
+
+	}
+
+	/**
+	 * Posts a Collection of artifacts. The artifacts should be complete (all
+	 * attributes have been added) before being posted. Posting the artifacts
+	 * includes making any events that may be derived from them, and
+	 * broadcasting notifications that the artifacts are ready for further
+	 * analysis.
+	 *
+	 * @param artifacts The artifacts to be posted.
+	 *
+	 * @throws BlackboardException If there is a problem posting the artifacts.
+	 */
+	public synchronized void postArtifacts(Collection<BlackboardArtifact> artifacts) throws BlackboardException {
+		/*
+		 * For now this just posts them one by one, but in the future it could
+		 * be smarter and use transactions, post a single bulk event, etc.
+		 */
+		for (BlackboardArtifact artifact : artifacts) {
+			postArtifact(artifact);
 		}
 	}
 
@@ -131,7 +154,7 @@ public final class Blackboard implements Closeable {
 	}
 
 	/**
-	 * A blackboard exception.
+	 * A Blackboard exception.
 	 */
 	public static final class BlackboardException extends Exception {
 
@@ -159,10 +182,11 @@ public final class Blackboard implements Closeable {
 	}
 
 	/**
-	 * Event posted by SleuthkitCase when an artifact is published. A published
-	 * artifact is complete and ready for further processing.
+	 * Event published by SleuthkitCase when an artifact is posted. A posted
+	 * artifact is complete (all attributes have been added) and ready for
+	 * further processing.
 	 */
-	final public static class ArtifactPublishedEvent {
+	final public static class ArtifactPostedEvent {
 
 		private final BlackboardArtifact artifact;
 
@@ -170,7 +194,7 @@ public final class Blackboard implements Closeable {
 			return artifact;
 		}
 
-		ArtifactPublishedEvent(BlackboardArtifact artifact) {
+		ArtifactPostedEvent(BlackboardArtifact artifact) {
 			this.artifact = artifact;
 		}
 	}

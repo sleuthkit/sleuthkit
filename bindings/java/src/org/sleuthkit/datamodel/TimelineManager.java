@@ -37,17 +37,16 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.ObjectUtils;
 import static org.apache.commons.lang3.StringUtils.defaultString;
 import static org.apache.commons.lang3.StringUtils.substringAfter;
 import static org.apache.commons.lang3.StringUtils.substringBefore;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Interval;
-import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_EVENT;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT;
-import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME;
-import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DESCRIPTION;
-import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_EVENT_TYPE;
+import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EVENT;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME;
+import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TL_EVENT_TYPE;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import static org.sleuthkit.datamodel.StringUtils.joinAsStrings;
 import org.sleuthkit.datamodel.timeline.ArtifactEventType;
@@ -637,27 +636,28 @@ public final class TimelineManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	Set<TimelineEvent> addArtifactEvents(BlackboardArtifact artifact) throws TskCoreException {
+	Set<TimelineEvent> addEventsFromArtifact(BlackboardArtifact artifact) throws TskCoreException {
 		Set<TimelineEvent> newEvents = new HashSet<>();
 
 		/*
-		 * If the artifact is a TSK_EVENT, use its TSK_DATETIME, TSK_EVENT_TYPE
-		 * and TSK_DESCRIPTION to make add an event.
+		 * If the artifact is a TSK_TL_EVENT, use the TSK_TL_EVENT_TYPE
+		 * attribute to determine its event type, but give it a generic
+		 * description.
 		 */
-		if (artifact.getArtifactTypeID() == TSK_EVENT.getTypeID()) {
-			long time = artifact.getAttribute(new BlackboardAttribute.Type(TSK_DATETIME)).getValueLong();
-			long eventTypeID = artifact.getAttribute(new BlackboardAttribute.Type(TSK_EVENT_TYPE)).getValueLong();
-			EventType eventType = eventTypeIDMap.get(eventTypeID);
+		if (artifact.getArtifactTypeID() == TSK_TL_EVENT.getTypeID()) {
+			EventType eventType;//the type of the event to add.
+			BlackboardAttribute attribute = artifact.getAttribute(new BlackboardAttribute.Type(TSK_TL_EVENT_TYPE));
+			if (attribute == null) {
+				eventType = EventType.OTHER;
+			} else {
+				long eventTypeID = attribute.getValueLong();
+				eventType = eventTypeIDMap.get(eventTypeID);
+				eventType = ObjectUtils.defaultIfNull(eventType, EventType.OTHER);
+			}
 
-			String description = artifact.getAttribute(new BlackboardAttribute.Type(TSK_DESCRIPTION)).getValueString();
-			long objectID = artifact.getObjectID();
-			AbstractFile file = sleuthkitCase.getAbstractFileById(objectID);
-			addEvent(time, eventType, artifact.getDataSourceObjectID(), objectID, artifact.getArtifactID(),
-					description, description, description,
-					file.getKnown(),
-					file.getHashSetNames().isEmpty() == false,
-					sleuthkitCase.getBlackboardArtifactTagsByArtifact(artifact).isEmpty() == false
-			);
+			Optional<TimelineEvent> newEvent = addArtifactEvent(EventType.OTHER::buildEventPayload, eventType, artifact);
+			newEvent.ifPresent(newEvents::add);
+
 		} else {
 			/*
 			 * If there are any event types configured to make descriptions
@@ -677,16 +677,38 @@ public final class TimelineManager {
 	 * Add an event of the given type from the given artifact. If the event type
 	 * and artifact are not compatible, no event is created.
 	 *
-	 * @param eventType The event type to create
+	 * @param eventType The event type to create.
 	 * @param artifact  The artifact to create the event from.
+	 *
+	 * @return The created event, wrapped in an Optional, or an empty Optional
+	 *         if no event was created, because e.g. the timestamp is 0.
+	 *
+	 * @throws TskCoreException
+	 */
+	private Optional<TimelineEvent> addArtifactEvent(ArtifactEventType eventType, BlackboardArtifact artifact) throws TskCoreException {
+		return addArtifactEvent(eventType::buildEventPayload, eventType, artifact);
+	}
+
+	/**
+	 * Add an event of the given type from the given artifact. This version of
+	 * addArtifactEvent allows a non standard description for the given event
+	 * type.
+	 *
+	 * @param payloadExtractor A Function that will create the decsription based
+	 *                         on the artifact. This allows the description to
+	 *                         be built based on an event type (usually OTHER)
+	 *                         different to the event type of the event.
+	 * @param eventType        The event type to create.
+	 * @param artifact         The artifact to create the event from.
 	 *
 	 * @return The created event, wrapped in an Optional, or an empty Optional
 	 *         if no event was created.
 	 *
 	 * @throws TskCoreException
 	 */
-	private Optional<TimelineEvent> addArtifactEvent(ArtifactEventType eventType, BlackboardArtifact artifact) throws TskCoreException {
-		ArtifactEventType.AttributeEventDescription eventDescription = eventType.buildEventDescription(artifact);
+	private Optional<TimelineEvent> addArtifactEvent(CheckedFunction<BlackboardArtifact, ArtifactEventType.EventPayload> payloadExtractor,
+			EventType eventType, BlackboardArtifact artifact) throws TskCoreException {
+		ArtifactEventType.EventPayload eventDescription = payloadExtractor.apply(artifact);
 
 		// if the time is legitimate ( greater than zero ) insert it into the db
 		if (eventDescription != null && eventDescription.getTime() > 0) {
@@ -1141,5 +1163,18 @@ public final class TimelineManager {
 		EventAddedEvent(TimelineEvent singleEvent) {
 			this.singleEvent = singleEvent;
 		}
+	}
+
+	/**
+	 * Functinal interface for a function from I to O that throws
+	 * TskCoreException.
+	 *
+	 * @param <I> Input type.
+	 * @param <O> Output type.
+	 */
+	@FunctionalInterface
+	interface CheckedFunction<I, O> {
+
+		O apply(I input) throws TskCoreException;
 	}
 }

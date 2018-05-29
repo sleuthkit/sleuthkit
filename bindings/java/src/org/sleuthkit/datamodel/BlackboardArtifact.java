@@ -1142,10 +1142,10 @@ public class BlackboardArtifact implements Content {
 		TSK_ENCRYPTION_SUSPECTED(40, "TSK_ENCRYPTION_SUSPECTED", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskEncryptionSuspected.text")),
 		/**
-		 * An artifact used to represent a timeline event.
+		 * A generic (timeline) event.
 		 */
-		TSK_EVENT(41, "TSK_EVENT",
-				bundle.getString("BlackboardArtifact.tskEvent.text"));
+		TSK_TL_EVENT(41, "TSK_TL_EVENT",
+				bundle.getString("BlackboardArtifact.tskTLEvent.text"));
 
 		private final String label;
 		private final int typeId;

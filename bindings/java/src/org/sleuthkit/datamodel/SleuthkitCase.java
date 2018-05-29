@@ -7143,7 +7143,9 @@ public class SleuthkitCase {
 		}
 
 		fileSystemIdMap.clear();
-		blackboardInstance.close();
+		if (blackboardInstance != null) {
+			blackboardInstance.close();
+		}
 
 		try {
 			if (this.caseHandle != null) {

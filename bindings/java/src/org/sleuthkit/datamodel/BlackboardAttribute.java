@@ -1296,11 +1296,11 @@ public class BlackboardAttribute {
 				bundle.getString("BlackboardAttribute.tskId.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		/**
-		 * The event type of a TSK_EVENT artifact. The value should be the id of
-		 * the EventType in the event_types table.
+		 * The event type of a TSK_TL_EVENT artifact. The value should be the id
+		 * of the EventType in the event_types table.
 		 */
-		TSK_EVENT_TYPE(125, "TSK_EVENT_TYPE", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskEventType.text"),
+		TSK_TL_EVENT_TYPE(125, "TSK_TL_EVENT_TYPE", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskTLEventType.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG);
 
 		private final int typeID;

@@ -91,28 +91,25 @@ public interface ArtifactEventType extends EventType {
 	}
 
 	/**
-	 * Build a AttributeEventDescription derived from a BlackboardArtifact. This
-	 * is a template method that relies on each ArtifactEventType's
-	 * implementation of ArtifactEventType#parseAttributesHelper() to know how
-	 * to go from BlackboardAttributes to the event description.
+	 * Build an EventPayload derived from a BlackboardArtifact.
 	 *
-	 * @param artf the BlackboardArtifact to derive the event description from
+	 * @param artifact The BlackboardArtifact to derive the event description
+	 *                 from.
 	 *
-	 * @return an AttributeEventDescription derived from the given artifact, if
-	 *         the given artifact has no timestamp
+	 * @return An EventPayload derived from the given artifact.
 	 *
 	 * @throws TskCoreException is there is a problem accessing the blackboard
 	 *                          data
 	 */
-	AttributeEventDescription buildEventDescription(BlackboardArtifact artf) throws TskCoreException;
+	EventPayload buildEventPayload(BlackboardArtifact artifact) throws TskCoreException;
 
 	/**
-	 * bundles the per event information derived from a BlackBoard Artifact into
+	 * Bundles the per event information derived from a BlackBoard Artifact into
 	 * one object. Primarily used to have a single return value for
 	 * ArtifactEventType#buildEventDescription(ArtifactEventType,
 	 * BlackboardArtifact).
 	 */
-	class AttributeEventDescription {
+	 final class EventPayload {
 
 		final private long time;
 		final private String shortDescription;
@@ -135,7 +132,7 @@ public interface ArtifactEventType extends EventType {
 			return fullDescription;
 		}
 
-		AttributeEventDescription(long time, String shortDescription,
+		EventPayload(long time, String shortDescription,
 				String medDescription,
 				String fullDescription) {
 			this.time = time;
