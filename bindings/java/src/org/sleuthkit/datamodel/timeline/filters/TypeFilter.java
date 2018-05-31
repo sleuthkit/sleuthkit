@@ -100,7 +100,7 @@ public class TypeFilter extends UnionFilter<TypeFilter> {
 		}
 		final TypeFilter other = (TypeFilter) obj;
 
-		if (this.eventType != other.eventType) {
+		if (this.eventType.equals(other.eventType)) {
 			return false;
 		}
 		return areSubFiltersEqual(this, other);

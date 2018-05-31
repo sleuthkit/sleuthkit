@@ -937,8 +937,6 @@ public final class TimelineManager {
 				+ " WHERE time >= " + startTime + " AND time < " + adjustedEndTime + " AND " + getSQLWhere(filter) // NON-NLS
 				+ " GROUP BY " + typeColumnHelper(useSubTypes); // NON-NLS
 		
-		System.out.println(queryString)
-				;
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement stmt = con.createStatement();
