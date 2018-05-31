@@ -936,7 +936,9 @@ public final class TimelineManager {
 				+ " FROM " + getAugmentedEventsTablesSQL(needsTags, needsHashSets)
 				+ " WHERE time >= " + startTime + " AND time < " + adjustedEndTime + " AND " + getSQLWhere(filter) // NON-NLS
 				+ " GROUP BY " + typeColumnHelper(useSubTypes); // NON-NLS
-
+		
+		System.out.println(queryString)
+				;
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement stmt = con.createStatement();
@@ -1061,11 +1063,6 @@ public final class TimelineManager {
 			result = filter.getSQLWhere(this);
 		}
 
-		switch (StringUtils.deleteWhitespace(result)) {
-			case "(1and1and1)"://NON-NLS
-			case "()"://NON-NLS
-				return getTrueLiteral();
-		}
 		return result;
 	}
 

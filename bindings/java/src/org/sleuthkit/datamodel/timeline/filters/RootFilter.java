@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel.timeline.filters;
 
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javafx.collections.FXCollections;
@@ -67,6 +68,7 @@ public final class RootFilter extends IntersectionFilter<TimelineFilter> {
 				hashFilter,
 				typeFilter
 		));
+		getSubFilters().removeIf(Objects::isNull);
 		this.knownFilter = knownFilter;
 		this.tagsFilter = tagsFilter;
 		this.hashFilter = hashFilter;
