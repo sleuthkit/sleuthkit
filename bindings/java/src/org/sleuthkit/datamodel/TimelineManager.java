@@ -54,7 +54,9 @@ import org.sleuthkit.datamodel.timeline.EventType;
 import org.sleuthkit.datamodel.timeline.EventTypeZoomLevel;
 import org.sleuthkit.datamodel.timeline.TimeUnits;
 import org.sleuthkit.datamodel.timeline.TimelineEvent;
+import org.sleuthkit.datamodel.timeline.filters.HashHitsFilter;
 import org.sleuthkit.datamodel.timeline.filters.RootFilter;
+import org.sleuthkit.datamodel.timeline.filters.TagsFilter;
 
 /**
  * Provides access to the Timeline features of SleuthkitCase
@@ -929,14 +931,16 @@ public final class TimelineManager {
 	public Map<EventType, Long> countEventsByType(Long startTime, final Long endTime, RootFilter filter, EventTypeZoomLevel zoomLevel) throws TskCoreException {
 		long adjustedEndTime = Objects.equals(startTime, endTime) ? endTime + 1 : endTime;
 		boolean useSubTypes = EventTypeZoomLevel.SUB_TYPE.equals(zoomLevel);	//do we want the root or subtype column of the databse
-		boolean needsTags = filter.getTagsFilter().hasSubFilters();
-		boolean needsHashSets = filter.getHashHitsFilter().hasSubFilters();
+		TagsFilter tagsFilter = filter.getTagsFilter();
+		boolean needsTags = tagsFilter != null && tagsFilter.hasSubFilters();
+		HashHitsFilter hashHitsFilter = filter.getHashHitsFilter();
+		boolean needsHashSets = hashHitsFilter != null && hashHitsFilter.hasSubFilters();
 		//get some info about the range of dates requested
 		String queryString = "SELECT count(DISTINCT events.event_id) AS count, " + typeColumnHelper(useSubTypes) //NON-NLS
 				+ " FROM " + getAugmentedEventsTablesSQL(needsTags, needsHashSets)
 				+ " WHERE time >= " + startTime + " AND time < " + adjustedEndTime + " AND " + getSQLWhere(filter) // NON-NLS
 				+ " GROUP BY " + typeColumnHelper(useSubTypes); // NON-NLS
-		
+
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement stmt = con.createStatement();
