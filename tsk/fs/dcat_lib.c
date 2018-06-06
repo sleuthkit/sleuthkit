@@ -116,7 +116,6 @@ tsk_fs_blkcat(TSK_FS_INFO * fs, TSK_FS_BLKCAT_FLAG_ENUM lclflags,
             return 1;
         }
 
-
         /* do a hexdump like printout */
         if (lclflags & TSK_FS_BLKCAT_HEX) {
             TSK_OFF_T idx1, idx2;
@@ -174,7 +173,6 @@ tsk_fs_blkcat(TSK_FS_INFO * fs, TSK_FS_BLKCAT_FLAG_ENUM lclflags,
                 tsk_printf("\n");
             }
         }
-
 
         /* print in all ASCII */
         else if (lclflags & TSK_FS_BLKCAT_ASCII) {

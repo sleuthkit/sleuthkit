@@ -5,9 +5,9 @@ LDADD = ../tsk/libtsk.la
 LDFLAGS += -static $(PTHREAD_LIBS)
 EXTRA_DIST = .indent.pro runtests.sh
 
-check_SCRIPTS = runtests.sh
+check_SCRIPTS = runtests.sh test_libraries.sh
 
-TESTS = runtests.sh
+TESTS = runtests.sh test_libraries.sh
 
 check_PROGRAMS = read_apis fs_fname_apis fs_attrlist_apis fs_thread_test
 
