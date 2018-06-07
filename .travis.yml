@@ -22,5 +22,5 @@ install:
   - ./travis_build.sh
 
 script:
-  - make check
+  - make check && if [ -f "tests/test-suite.log" ];then cat tests/test-suite.log; fi ; if [ -f "unit_tests/base/test-suite.log" ];then cat unit_tests/base/test-suite.log; fi 
   - if test ${TRAVIS_OS_NAME} = "linux"; then cd release; ./release-unix.pl ci; fi
