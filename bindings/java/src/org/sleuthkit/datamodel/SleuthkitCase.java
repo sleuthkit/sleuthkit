@@ -121,7 +121,8 @@ public class SleuthkitCase {
 	private Map<Integer, BlackboardAttribute.Type> typeIdToAttributeTypeMap;
 	private Map<String, BlackboardArtifact.Type> typeNameToArtifactTypeMap;
 	private Map<String, BlackboardAttribute.Type> typeNameToAttributeTypeMap;
-	private Map<Long, SparseBitSet> hasChildrenBitSetMap;
+	private Map<Long, SparseBitSet> hasChildrenBitSetMap; // First parameter is used to specify the SparseBitSet to use, 
+	                                                      // as object IDs can be larger than the max size of a SparseBitSet
 
 	private long nextArtifactId; // Used to ensure artifact ids come from the desired range.
 	// This read/write lock is used to implement a layer of locking on top of
