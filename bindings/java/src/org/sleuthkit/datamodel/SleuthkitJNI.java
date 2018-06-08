@@ -303,7 +303,7 @@ public class SleuthkitJNI {
 			 */
 			public void run(String deviceId, String[] imageFilePaths, int sectorSize) throws TskCoreException, TskDataException {
 				long imageHandle = 0;
-				System.out.println("\n\n#### Adding " + imageFilePaths[0] + " to database");
+				
 				synchronized (this) {
 					if (0 != tskAutoDbPointer) {
 						throw new TskCoreException("Add image process already started");

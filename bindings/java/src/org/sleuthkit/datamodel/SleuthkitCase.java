@@ -89,7 +89,6 @@ import org.sqlite.SQLiteJDBCLoader;
 public class SleuthkitCase {
 
 	private static final int MAX_DB_NAME_LEN_BEFORE_TIMESTAMP = 47;
-	private static int getContentChildrenCountCount = 0;
 
 	/**
 	 * This must be the same as TSK_SCHEMA_VER and TSK_SCHEMA_MINOR_VER in
@@ -3666,8 +3665,6 @@ public class SleuthkitCase {
 			return 0;
 		}
 		
-		getContentChildrenCountCount++;
-		//System.out.println("getContentChildrenCountCount: " + getContentChildrenCountCount + " Current file: " + content.getName());
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
 		ResultSet rs = null;
@@ -4543,8 +4540,6 @@ public class SleuthkitCase {
 		
 			if(resultSet.next()) {
 				if(parentId != 0) {
-					//this.hasChildren.add(parentId);
-					//this.hasChildrenBitSet.set((int)parentId);
 					setHasChildren(parentId);
 				}
 				return resultSet.getLong(1); //last_insert_rowid()
