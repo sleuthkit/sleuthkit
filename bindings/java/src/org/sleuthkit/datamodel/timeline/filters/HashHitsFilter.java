@@ -18,10 +18,6 @@
  */
 package org.sleuthkit.datamodel.timeline.filters;
 
-import java.util.Objects;
-import java.util.function.Predicate;
-import javafx.beans.binding.Bindings;
-
 /**
  *
  */
@@ -41,26 +37,6 @@ final public class HashHitsFilter extends UnionFilter<HashSetFilter> {
 		return filterCopy;
 	}
 
-	@Override
-	public int hashCode() {
-		return 7;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (obj == null) {
-			return false;
-		}
-		if (getClass() != obj.getClass()) {
-			return false;
-		}
-		final HashHitsFilter other = (HashHitsFilter) obj;
-
-		return areSubFiltersEqual(this, other);
-	}
-
-	@Override
-	Predicate<HashSetFilter> getDuplicatePredicate(HashSetFilter subfilter) {
-		return hashSetFilter -> Objects.equals(subfilter.getHashSetName(), hashSetFilter.getHashSetName());
-	}
+	 
+	 
 }

@@ -19,7 +19,6 @@
 package org.sleuthkit.datamodel.timeline.filters;
 
 import java.util.Comparator;
-import java.util.function.Predicate;
 import org.sleuthkit.datamodel.TagName;
 
 /**
@@ -41,31 +40,8 @@ public final class TagsFilter extends UnionFilter<TagNameFilter> {
 		return filterCopy;
 	}
 
-	@Override
-	public int hashCode() {
-		return 7;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (obj == null) {
-			return false;
-		}
-		if (getClass() != obj.getClass()) {
-			return false;
-		}
-		final TagsFilter other = (TagsFilter) obj;
-
-		return areSubFiltersEqual(this, other);
-	}
-
 	public void removeFilterForTag(TagName tagName) {
 		getSubFilters().removeIf(subfilter -> subfilter.getTagName().equals(tagName));
 		getSubFilters().sort(Comparator.comparing(TagNameFilter::getDisplayName));
-	}
-
-	@Override
-	Predicate<TagNameFilter> getDuplicatePredicate(TagNameFilter subfilter) {
-		return tagNameFilter -> subfilter.getTagName().equals(tagNameFilter.getTagName());
 	}
 }

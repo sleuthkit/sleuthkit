@@ -21,7 +21,6 @@ package org.sleuthkit.datamodel.timeline.filters;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.sleuthkit.datamodel.TimelineManager;
 
@@ -69,12 +68,7 @@ class IntersectionFilter<S extends TimelineFilter> extends CompoundFilter<S> {
 		@SuppressWarnings("unchecked")
 		final IntersectionFilter<S> other = (IntersectionFilter<S>) obj;
 		
-		for (int i = 0; i < getSubFilters().size(); i++) {
-			if (getSubFilters().get(i).equals(other.getSubFilters().get(i)) == false) {
-				return false;
-			}
-		}
-		return true;
+		return areSubFiltersEqual(this, other);
 	}
 	
 	@Override
@@ -82,7 +76,7 @@ class IntersectionFilter<S extends TimelineFilter> extends CompoundFilter<S> {
 		String join = this.getSubFilters().stream()
 				.filter(Objects::nonNull)
 				.map(filter -> filter.getSQLWhere(manager))
-				.filter( sql -> sql.equals("1") ==false)
+				.filter( sql -> sql.equals(manager.getTrueLiteral()) ==false)
 				.collect(Collectors.joining(" AND "));
 		
 		return join.isEmpty()

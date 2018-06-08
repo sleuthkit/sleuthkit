@@ -24,21 +24,15 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
 /**
- * A Filter with a collection of sub-filters. If this filter is not active than
- * none of its sub-filters are applied either. Concrete implementations can
+ * A Filter with a collection of sub-filters. Concrete implementations can
  * decide how to combine the sub-filters.
- *
- * A CompoundFilter uses listeners to enforce the following relationships
- * between it and its sub-filters: if all of a compound filter's sub-filters
- * become un-selected, un-select the compound filter.
  *
  * @param <SubFilterType> The type of the subfilters.
  */
 public abstract class CompoundFilter<SubFilterType extends TimelineFilter> implements TimelineFilter {
-//TODO: split into public interfacce and package level abstract class
 
 	/**
-	 * the list of sub-filters that make up this filter
+	 * The list of sub-filters that make up this filter
 	 */
 	private final ObservableList<SubFilterType> subFilters = FXCollections.observableArrayList();
 
@@ -60,13 +54,13 @@ public abstract class CompoundFilter<SubFilterType extends TimelineFilter> imple
 		this.subFilters.setAll(subFilters);
 	}
 
-	static <SubFilterType extends TimelineFilter> boolean areSubFiltersEqual(final CompoundFilter<SubFilterType> oneFilter, final CompoundFilter<SubFilterType> otherFilter) {
+	static boolean areSubFiltersEqual(final CompoundFilter<?> oneFilter, final CompoundFilter<?> otherFilter) {
 		if (oneFilter.getSubFilters().size() != otherFilter.getSubFilters().size()) {
 			return false;
 		}
 		for (int i = 0; i < oneFilter.getSubFilters().size(); i++) {
-			final SubFilterType subFilter = oneFilter.getSubFilters().get(i);
-			final SubFilterType otherSubFilter = otherFilter.getSubFilters().get(i);
+			TimelineFilter subFilter = oneFilter.getSubFilters().get(i);
+			TimelineFilter otherSubFilter = otherFilter.getSubFilters().get(i);
 			if (subFilter.equals(otherSubFilter) == false) {
 				return false;
 			}
@@ -75,13 +69,28 @@ public abstract class CompoundFilter<SubFilterType extends TimelineFilter> imple
 	}
 
 	@Override
+	public abstract CompoundFilter<SubFilterType> copyOf();
+
+	@Override
 	public int hashCode() {
 		int hash = 3;
-		hash = 61 * hash + Objects.hashCode(this.subFilters);
+		hash = 23 * hash + Objects.hashCode(this.subFilters);
 		return hash;
 	}
 
 	@Override
-	public abstract CompoundFilter<SubFilterType> copyOf();
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null) {
+			return false;
+		}
+		if (getClass() != obj.getClass()) {
+			return false;
+		}
 
+		final CompoundFilter<?> other = (CompoundFilter<?>) obj;
+		return areSubFiltersEqual(this, other);
+	}
 }

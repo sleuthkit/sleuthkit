@@ -18,8 +18,6 @@
  */
 package org.sleuthkit.datamodel.timeline.filters;
 
-import java.util.function.Predicate;
-
 /**
  * union of {@link DataSourceFilter}s
  */
@@ -43,27 +41,5 @@ public class DataSourcesFilter extends UnionFilter<DataSourceFilter> {
 		return BundleUtils.getBundle().getString("DataSourcesFilter.displayName.text");
 	}
 
-	@Override
-	public boolean equals(Object obj) {
-		if (obj == null) {
-			return false;
-		}
-		if (getClass() != obj.getClass()) {
-			return false;
-		}
-		final DataSourcesFilter other = (DataSourcesFilter) obj;
-
-		return areSubFiltersEqual(this, other);
-
-	}
-
-	@Override
-	public int hashCode() {
-		return 9;
-	}
-
-	@Override
-	Predicate<DataSourceFilter> getDuplicatePredicate(DataSourceFilter subfilter) {
-		return dataSourcefilter -> dataSourcefilter.getDataSourceID() == subfilter.getDataSourceID();
-	}
+	 
 }

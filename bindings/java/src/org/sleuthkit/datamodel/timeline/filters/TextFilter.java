@@ -71,7 +71,7 @@ public class TextFilter implements TimelineFilter {
 		}
 		final TextFilter other = (TextFilter) obj;
 
-		return Objects.equals(text.get(), other.text.get());
+		return Objects.equals(getText(), other.getText());
 	}
 
 	@Override

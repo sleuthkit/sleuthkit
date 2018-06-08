@@ -20,7 +20,6 @@ package org.sleuthkit.datamodel.timeline.filters;
 
 import java.util.Comparator;
 import java.util.Objects;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javafx.collections.FXCollections;
@@ -91,7 +90,17 @@ public class TypeFilter extends UnionFilter<TypeFilter> {
 	}
 
 	@Override
+	public int hashCode() {
+		int hash = 7;
+		hash = 17 * hash + Objects.hashCode(this.eventType);
+		return hash;
+	}
+
+	@Override
 	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
 		if (obj == null) {
 			return false;
 		}
@@ -99,23 +108,10 @@ public class TypeFilter extends UnionFilter<TypeFilter> {
 			return false;
 		}
 		final TypeFilter other = (TypeFilter) obj;
-
-		if (this.eventType.equals(other.eventType)) {
+		if (!Objects.equals(this.eventType, other.eventType)) {
 			return false;
 		}
 		return areSubFiltersEqual(this, other);
-	}
-
-	@Override
-	public int hashCode() {
-		int hash = 7;
-		hash = 67 * hash + Objects.hashCode(this.eventType);
-		return hash;
-	}
-
-	@Override
-	Predicate<TypeFilter> getDuplicatePredicate(TypeFilter subfilter) {
-		return typeFilter -> subfilter.getEventType().equals(typeFilter.eventType);
 	}
 
 	@Override

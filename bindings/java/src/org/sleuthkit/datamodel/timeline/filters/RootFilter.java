@@ -104,14 +104,42 @@ public final class RootFilter extends IntersectionFilter<TimelineFilter> {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
+	public int hashCode() {
+		int hash = 7;
+		return hash;
+	}
+
+	@Override
 	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
 		if (obj == null) {
 			return false;
 		}
 		if (getClass() != obj.getClass()) {
 			return false;
 		}
-		return areSubFiltersEqual(this, (CompoundFilter<TimelineFilter>) obj);
+		final RootFilter other = (RootFilter) obj;
+		if (!Objects.equals(this.knownFilter, other.knownFilter)) {
+			return false;
+		}
+		if (!Objects.equals(this.tagsFilter, other.tagsFilter)) {
+			return false;
+		}
+		if (!Objects.equals(this.hashFilter, other.hashFilter)) {
+			return false;
+		}
+		if (!Objects.equals(this.textFilter, other.textFilter)) {
+			return false;
+		}
+		if (!Objects.equals(this.typeFilter, other.typeFilter)) {
+			return false;
+		}
+		if (!Objects.equals(this.dataSourcesFilter, other.dataSourcesFilter)) {
+			return false;
+		}
+		return areSubFiltersEqual(this, other);
 	}
+
 }

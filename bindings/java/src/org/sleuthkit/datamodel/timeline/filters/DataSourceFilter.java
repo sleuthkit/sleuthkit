@@ -54,14 +54,17 @@ public class DataSourceFilter implements TimelineFilter {
 
 	@Override
 	public int hashCode() {
-		int hash = 5;
-		hash = 97 * hash + Objects.hashCode(this.dataSourceName);
-		hash = 97 * hash + (int) (this.dataSourceID ^ (this.dataSourceID >>> 32));
+		int hash = 3;
+		hash = 47 * hash + Objects.hashCode(this.dataSourceName);
+		hash = 47 * hash + (int) (this.dataSourceID ^ (this.dataSourceID >>> 32));
 		return hash;
 	}
 
 	@Override
 	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
 		if (obj == null) {
 			return false;
 		}
@@ -69,10 +72,10 @@ public class DataSourceFilter implements TimelineFilter {
 			return false;
 		}
 		final DataSourceFilter other = (DataSourceFilter) obj;
-		if (!Objects.equals(this.dataSourceName, other.dataSourceName)) {
+		if (this.dataSourceID != other.dataSourceID) {
 			return false;
 		}
-		return this.dataSourceID == other.dataSourceID;
+		return Objects.equals(this.dataSourceName, other.dataSourceName);
 	}
 
 	@Override
