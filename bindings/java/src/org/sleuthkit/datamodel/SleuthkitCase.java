@@ -299,6 +299,11 @@ public class SleuthkitCase {
 		}
 	}
 	
+	/**
+	 * Add this objId to the list of objects that 
+	 * have children (of any type)
+	 * @param objId 
+	 */
 	private void setHasChildren(Long objId) {
 		long mapIndex = objId / Integer.MAX_VALUE;
 		int mapValue = (int) (objId % Integer.MAX_VALUE);
