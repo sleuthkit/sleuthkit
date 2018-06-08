@@ -258,7 +258,7 @@ public class SleuthkitJNI {
 			private final String imageWriterPath;
 			private volatile long tskAutoDbPointer;
 			private boolean isCanceled;
-			private SleuthkitCase skCase;
+			private final SleuthkitCase skCase;
 			
 			/**
 			 * Constructs an object that encapsulates a multi-step process to
