@@ -21,6 +21,7 @@ package org.sleuthkit.datamodel;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import com.mchange.v2.c3p0.DataSources;
 import com.mchange.v2.c3p0.PooledDataSource;
+import com.zaxxer.sparsebits.SparseBitSet;
 import java.beans.PropertyVetoException;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -276,13 +277,18 @@ public class SleuthkitCase {
 		initIngestStatusTypes(connection);
 		initReviewStatuses(connection);
 		initEncodingTypes(connection);
-		initHasChildrenMap(connection);
+		populateHasChildrenMap(connection);
 		connection.close();
 	}
 	
-	public boolean getHasChildren(Long objId) {
-		//return hasChildren.contains(objId);
-		//return hasChildrenBitSet.get(objId.intValue());
+	/**
+	 * Use the internal map to determine whether the content
+	 * object has children (of any type).
+	 * @param c
+	 * @return true if the content has children, false otherwise
+	 */
+	public boolean getHasChildren(Content c) {
+		long objId = c.getId();
 		long mapIndex = objId / Integer.MAX_VALUE;
 		int mapValue = (int) (objId % Integer.MAX_VALUE);
 		
@@ -564,9 +570,15 @@ public class SleuthkitCase {
 		}
 	}
 	
-	private void initHasChildrenMap(CaseDbConnection connection) throws SQLException, TskCoreException {
+	/**
+	 * Set up or update the hasChildren map using the tsk_objects table.
+	 * 
+	 * @param connection
+	 * @throws TskCoreException 
+	 */
+	private void populateHasChildrenMap(CaseDbConnection connection) throws TskCoreException {
 		long timestamp = System.currentTimeMillis();
-		hasChildrenBitSetMap = new HashMap<Long, SparseBitSet>();
+		
 		
 		Statement statement = null;
 		ResultSet resultSet = null;
@@ -574,15 +586,42 @@ public class SleuthkitCase {
 		try {
 			statement = connection.createStatement();
 			resultSet = statement.executeQuery("select distinct par_obj_id from tsk_objects"); //NON-NLS
-			while(resultSet.next()) {
-				setHasChildren(resultSet.getLong("par_obj_id"));
+			
+			synchronized (this) {
+				if (hasChildrenBitSetMap == null) {
+					hasChildrenBitSetMap = new HashMap<Long, SparseBitSet>();
+				}
+				while(resultSet.next()) {
+					setHasChildren(resultSet.getLong("par_obj_id"));
+				}
 			}
 			long delay = System.currentTimeMillis() - timestamp;
 			logger.log(Level.INFO, "Time to initialize parent node cache: {0} ms", delay); //NON-NLS
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error populating parent node cache", ex);
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
 			releaseSingleUserCaseWriteLock();
+		}
+	}
+	
+	/**
+	 * Add the object IDs for a new data source to the has children map.
+	 * At present, we simply reload the entire table. 
+	 * TODO: Test whether it's worth doing a compound query to only add
+	 * entries from the new data source
+	 * @throws TskCoreException 
+	 */
+	void addDataSourceToHasChildrenMap() throws TskCoreException {
+		
+		CaseDbConnection connection = connections.getConnection();
+		try {
+			populateHasChildrenMap(connection);
+		} finally {
+			if (connection != null) {
+				connection.close();
+			}
 		}
 	}
 
@@ -1720,7 +1759,7 @@ public class SleuthkitCase {
 	 *         SleuthKit native code layer.
 	 */
 	public AddImageProcess makeAddImageProcess(String timeZone, boolean addUnallocSpace, boolean noFatFsOrphans, String imageCopyPath) {
-		return this.caseHandle.initAddImageProcess(timeZone, addUnallocSpace, noFatFsOrphans, imageCopyPath);
+		return this.caseHandle.initAddImageProcess(timeZone, addUnallocSpace, noFatFsOrphans, imageCopyPath, this);
 	}
 
 	/**
@@ -3623,7 +3662,7 @@ public class SleuthkitCase {
 	 */
 	int getContentChildrenCount(Content content) throws TskCoreException {
 		
-		if( ! this.getHasChildren(content.getId())) {
+		if( ! this.getHasChildren(content)) {
 			return 0;
 		}
 		
@@ -6457,7 +6496,7 @@ public class SleuthkitCase {
 	 *                          database.
 	 */
 	public Image addImageInfo(long deviceObjId, List<String> imageFilePaths, String timeZone) throws TskCoreException {
-		long imageId = this.caseHandle.addImageInfo(deviceObjId, imageFilePaths, timeZone);
+		long imageId = this.caseHandle.addImageInfo(deviceObjId, imageFilePaths, timeZone, this);
 		return getImageById(imageId);
 	}
 
@@ -9990,7 +10029,7 @@ public class SleuthkitCase {
 	 */
 	@Deprecated
 	public AddImageProcess makeAddImageProcess(String timezone, boolean addUnallocSpace, boolean noFatFsOrphans) {
-		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, "");
+		return this.caseHandle.initAddImageProcess(timezone, addUnallocSpace, noFatFsOrphans, "", this);
 	}
 
 	/**
