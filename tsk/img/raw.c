@@ -284,9 +284,10 @@ raw_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf, size_t len)
 
                 len -= read_len;
 
-                while (len > 0) {
+                /* go to the next image segment */
+                while ((len > 0) && (i+1 < raw_info->img_info.num_img)) {
                     ssize_t cnt2;
-                    /* go to the next image segment */
+                    
                     i++;
 
                     if ((raw_info->max_off[i] - raw_info->max_off[i - 1]) >= (TSK_OFF_T)len)
