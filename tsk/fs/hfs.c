@@ -2932,6 +2932,7 @@ static ssize_t read_and_decompress_block(
                           uint64_t* uncLen)
 )
 {
+    // @@@ BC: Looks like we should have bounds checks that indx < offsetTableSize, but we should confirm
     ssize_t attrReadResult;
     uint32_t offset = offsetTableOffset + offsetTable[indx].offset;
     uint32_t len = offsetTable[indx].length;
