@@ -1140,8 +1140,13 @@ public class BlackboardArtifact implements Content {
 		 * An encrypted file.
 		 */
 		TSK_ENCRYPTION_SUSPECTED(40, "TSK_ENCRYPTION_SUSPECTED", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskEncryptionSuspected.text"));
-
+				bundle.getString("BlackboardArtifact.tskEncryptionSuspected.text")),
+		/**
+		 * A classifier detected an object in a media file.
+		 */
+		TSK_OBJECT_DETECTED(41, "TSK_OBJECT_DETECTED",  //NON-NLS
+				bundle.getString("BlackboardArtifact.tskObjectDetected.text"));
+		
 		private final String label;
 		private final int typeId;
 		private final String displayName;
