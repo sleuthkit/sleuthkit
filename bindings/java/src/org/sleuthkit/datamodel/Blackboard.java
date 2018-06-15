@@ -18,7 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import java.io.Closeable;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -30,8 +29,8 @@ import java.util.List;
  * attributes are posted.
  *
  */
-public final class Blackboard implements Closeable {
-	private SleuthkitCase caseDb;
+public final class Blackboard {
+	private final SleuthkitCase caseDb;
 
 	/**
 	 * Constructs a representation of the blackboard, a place where artifacts
@@ -39,39 +38,31 @@ public final class Blackboard implements Closeable {
 	 *
 	 * @param casedb The case database.
 	 */
-	public Blackboard(SleuthkitCase casedb) {
+	Blackboard(SleuthkitCase casedb) {
 		this.caseDb = casedb;
 	}
 
-	/**
-	 * Closes the blackboard.
-	 *
-	 */
-	@Override
-	public synchronized void close() {
-		caseDb = null;
-	}
 
 	
 	/**
-	 * Gets the list of all unique artifact IDs in use for the given data source
-	 * Gets both static and dynamic IDs.
+	 * Gets the list of all artifact types in use for the given data source.
+	 * Gets both standard and custom types.
 	 *
-	 * @param ds_obj_id  data source obj id 
+	 * @param dataSourceObjId  data source object id 
 	 * 
-	 * @return The list of unique IDs
+	 * @return The list of artifact types
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurred
 	 *                          within tsk core
 	 */
-	public List<BlackboardArtifact.Type> getArtifactTypesInUseByDataSource(long ds_obj_id) throws TskCoreException {
+	public List<BlackboardArtifact.Type> getArtifactTypesInUse(long dataSourceObjId) throws TskCoreException {
 		
 		final String queryString = "SELECT DISTINCT arts.artifact_type_id AS artifact_type_id, "
 					+ "types.type_name AS type_name, types.display_name AS display_name "
 					+ "FROM blackboard_artifact_types AS types "
 					+ "INNER JOIN blackboard_artifacts AS arts "
 					+ "ON arts.artifact_type_id = types.artifact_type_id "
-					+ "WHERE arts.data_source_obj_id = " + ds_obj_id;
+					+ "WHERE arts.data_source_obj_id = " + dataSourceObjId;
 				
 		SleuthkitCase.CaseDbConnection connection = caseDb.getConnection();
 		caseDb.acquireSingleUserCaseReadLock();
@@ -100,19 +91,19 @@ public final class Blackboard implements Closeable {
 	
 	/**
 	 * Get count of all blackboard artifacts of a given type for the given
-	 * Data source. Does not include rejected artifacts.
+	 * data source. Does not include rejected artifacts.
 	 *
 	 * @param artifactTypeID artifact type id (must exist in database)
-	 * @param ds_obj_id         data source object id
+	 * @param dataSourceObjId         data source object id
 	 *
 	 * @return count of blackboard artifacts
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
 	 */
-	public long getBlackboardArtifactsCountByDataSource(int artifactTypeID, long ds_obj_id) throws TskCoreException {
+	public long getArtifactsCount(int artifactTypeID, long dataSourceObjId) throws TskCoreException {
 		return getArtifactsCountHelper(artifactTypeID, 
-				"blackboard_artifacts.data_source_obj_id = '" + ds_obj_id + "';");
+				"blackboard_artifacts.data_source_obj_id = '" + dataSourceObjId + "';");
 	}
 	
 	/**
@@ -120,15 +111,15 @@ public final class Blackboard implements Closeable {
 	 * artifacts.
 	 *
 	 * @param artifactTypeID artifact type to get 
-	 * @param ds_obj_id data source to look under
+	 * @param dataSourceObjId data source to look under
 	 * 
 	 * @return list of blackboard artifacts
 	 *
 	 * @throws TskCoreException exception thrown if a critical error occurs
 	 *                          within TSK core
 	 */
-	public List<BlackboardArtifact> getBlackboardArtifactsByDataSource(int artifactTypeID, long ds_obj_id) throws TskCoreException {
-		return caseDb.getArtifactsHelper("blackboard_artifacts.data_source_obj_id = " + ds_obj_id + 
+	public List<BlackboardArtifact> getArtifacts(int artifactTypeID, long dataSourceObjId) throws TskCoreException {
+		return caseDb.getArtifactsHelper("blackboard_artifacts.data_source_obj_id = " + dataSourceObjId + 
 								  " AND blackboard_artifact_types.artifact_type_id = " + artifactTypeID + ";");
 	}
 	

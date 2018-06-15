@@ -27,16 +27,8 @@ public class BlackboardArtifactTag extends Tag {
 	private final BlackboardArtifact artifact;
 	private final Content content;
 	
-	/**
-	 * Constructor
-	 * 
-	 * @param id tag id
-	 * @param artifact artifact tagged
-	 * @param content content from where the artifact was extracted
-	 * @param name tag name
-	 * @param comment comment
-	 */
-	public BlackboardArtifactTag(long id, BlackboardArtifact artifact, Content content, TagName name, String comment) {
+	// Clients of the org.sleuthkit.datamodel package should not directly create these objects.
+	BlackboardArtifactTag(long id, BlackboardArtifact artifact, Content content, TagName name, String comment) {
 		super(id, name, comment);
 		this.artifact = artifact;
 		this.content = content;

@@ -24,7 +24,7 @@ package org.sleuthkit.datamodel;
  */
 public abstract class Tag {
 
-	public static long ID_NOT_SET = -1;
+	static long ID_NOT_SET = -1;
 	private long id = ID_NOT_SET;
 	private final TagName name;
 	private final String comment;
