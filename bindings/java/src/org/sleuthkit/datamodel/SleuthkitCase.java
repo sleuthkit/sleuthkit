@@ -287,7 +287,7 @@ public class SleuthkitCase {
 	 * @param c
 	 * @return true if the content has children, false otherwise
 	 */
-	public boolean getHasChildren(Content c) {
+	boolean getHasChildren(Content c) {
 		long objId = c.getId();
 		long mapIndex = objId / Integer.MAX_VALUE;
 		int mapValue = (int) (objId % Integer.MAX_VALUE);
@@ -614,8 +614,7 @@ public class SleuthkitCase {
 	/**
 	 * Add the object IDs for a new data source to the has children map.
 	 * At present, we simply reload the entire table. 
-	 * TODO: Test whether it's worth doing a compound query to only add
-	 * entries from the new data source
+	 *
 	 * @throws TskCoreException 
 	 */
 	void addDataSourceToHasChildrenMap() throws TskCoreException {
