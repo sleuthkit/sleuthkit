@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  * 
- * Copyright 2013 Basis Technology Corp.
+ * Copyright 2013-2018 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +28,7 @@ public class ContentTag extends Tag {
 	private final long beginByteOffset;
 	private final long endByteOffset;
 
-	// Clients of the org.sleuthkit.datamodel package should not directly create these objects.		
+	// Clients of the org.sleuthkit.datamodel package should not directly create these objects.
 	ContentTag(long id, Content content, TagName name, String comment, long beginByteOffset, long endByteOffset) {
 		super(id, name, comment);
 		this.content = content;
@@ -36,18 +36,38 @@ public class ContentTag extends Tag {
 		this.endByteOffset = endByteOffset;
 	}
 
+	/**
+	 * Return the tagged content
+	 * 
+	 * @return tagged content
+	 */
 	public Content getContent() {
 		return content;
 	}
-
+	
+	/**
+	 * Returns whether the tag has a byte range
+	 * 
+	 * @return true if the tag has a byte range, false otherwise
+	 */
 	public boolean hasByteExtent() {
 		return (beginByteOffset > 0) && (endByteOffset > 0) && (endByteOffset > beginByteOffset);
 	}
 
+	/**
+	 * Returns starting offset of the byte range
+	 * 
+	 * @return start offset 
+	 */
 	public long getBeginByteOffset() {
 		return beginByteOffset;
 	}
 
+	/**
+	 * Returns end offset of the byte range
+	 * 
+	 * @return end offset 
+	 */
 	public long getEndByteOffset() {
 		return endByteOffset;
 	}
