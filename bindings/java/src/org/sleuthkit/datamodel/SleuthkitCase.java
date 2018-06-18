@@ -9472,8 +9472,8 @@ public class SleuthkitCase {
 					command.execute();
 					break;
 				} catch (SQLException ex) {
-					String sqlState = ((PSQLException) ex).getSQLState();
-					if (sqlState.equals(COMMUNICATION_ERROR) || sqlState.equals(SYSTEM_ERROR) || sqlState.equals(UNKNOWN_STATE)) {
+					String sqlState = ex.getSQLState();
+					if (sqlState == null || sqlState.equals(COMMUNICATION_ERROR) || sqlState.equals(SYSTEM_ERROR) || sqlState.equals(UNKNOWN_STATE)) {
 						try {
 							Thread.sleep(SLEEP_LENGTH_IN_MILLISECONDS);
 						} catch (InterruptedException exp) {
