@@ -70,6 +70,11 @@ aff4_image_close(TSK_IMG_INFO * img_info)
 
     AFF4_close(aff4_info->handle);
 
+    for (int i = 0; i < img_info->num_img; ++i) {
+        free(img_info->images[i]);
+    }
+    free(img_info->images);
+
     tsk_deinit_lock(&(aff4_info->read_lock));
     tsk_img_free(aff4_info);
 }
@@ -84,47 +89,64 @@ TSK_IMG_INFO *
 aff4_open(int a_num_img,
     const TSK_TCHAR * const a_images[], unsigned int a_ssize)
 {
-    int is_error;
-	char* filename;
     IMG_AFF4_INFO *aff4_info = NULL;
-    TSK_IMG_INFO *img_info = NULL;
-
     if ((aff4_info =
             (IMG_AFF4_INFO *) tsk_img_malloc(sizeof(IMG_AFF4_INFO))) ==
         NULL) {
         return NULL;
     }
-    img_info = (TSK_IMG_INFO *) aff4_info;
+    aff4_info->handle = -1;
+
+    TSK_IMG_INFO* img_info = (TSK_IMG_INFO *) aff4_info;
+    img_info->images = NULL;
+    img_info->num_img = 0;
+
+    char* filename = NULL;
+
+    // copy the image filename into the img_info
+    img_info->images = (TSK_TCHAR**) tsk_malloc(sizeof(TSK_TCHAR*));
+    if (img_info->images == NULL) {
+        goto on_error;
+    }
+
+    const size_t len = TSTRLEN(a_images[0]) + 1;
+    img_info->images[0] = (TSK_TCHAR*) tsk_malloc(sizeof(TSK_TCHAR) * len);
+    if (img_info->images[0] == NULL) {
+        goto on_error;
+    }
+
+    TSTRNCPY(img_info->images[0], a_images[0], len);
+    img_info->num_img = 1; // libaff4 handles image assembly
 
     // libaff4 only deals with UTF-8... if Win32 convert wchar_t to utf-8.
-#if defined ( TSK_WIN32)
-    size_t newsize = (wcslen(a_images[0]) + 1) * 2;
-    filename = tsk_malloc(newsize);
-    if(filename == NULL){
-    	tsk_error_set_errno(TSK_ERR_IMG_CONVERT);
-    	tsk_error_set_errstr("aff4_open: Unable to convert filename to UTF-8");
-    	return NULL;
+#if defined (TSK_WIN32)
+    filename = tsk_malloc(len);
+    if (filename == NULL) {
+        goto on_error;
     }
-    // TODO: Possible refactor to tsk_UTF16toUTF8?
-    wcstombs(a_images[0], filename, newsize);
+
+    UTF8* utf8 = (UTF8*) filename;
+    const UTF16* utf16 = (UTF16*) a_images[0];
+
+    const int ret = tsk_UTF16toUTF8_lclorder(&utf16, utf16 + len, &utf8, utf8 + len, TSKstrictConversion);
+    if (ret != TSKconversionOK) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_CONVERT);
+        tsk_error_set_errstr("aff4_open: Unable to convert filename to UTF-8");
+        goto on_error;
+    }
 #else
     filename = a_images[0];
 #endif
 
     // Check the file extension. (bad I know).
-    is_error = aff4_check_file_signature(filename);
-    if (is_error)
-    {
+    if (aff4_check_file_signature(filename)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
         tsk_error_set_errstr("aff4_open: Not an AFF4 file");
-        tsk_img_free(aff4_info);
         if (tsk_verbose)
             tsk_fprintf(stderr, "Not an AFF4 file\n");
-#if defined ( TSK_WIN32)
-        free(filename);
-#endif
-        return NULL;
+        goto on_error;
     }
 
     // Attempt to open the file.
@@ -134,15 +156,10 @@ aff4_open(int a_num_img,
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
         tsk_error_set_errstr("aff4_open file: %" PRIttocTSK
             ": Error opening", a_images[0]);
-        tsk_img_free(aff4_info);
-
-        if (tsk_verbose != 0) {
+        if (tsk_verbose) {
             tsk_fprintf(stderr, "Error opening AFF4 file\n");
         }
-#if defined ( TSK_WIN32)
-        free(filename);
-#endif
-        return (NULL);
+        goto on_error;
     }
 
     // get image size
@@ -152,30 +169,38 @@ aff4_open(int a_num_img,
         tsk_error_set_errno(TSK_ERR_IMG_OPEN);
         tsk_error_set_errstr("aff4_open file: %" PRIttocTSK
             ": Error getting size of image", a_images[0]);
-        tsk_img_free(aff4_info);
         if (tsk_verbose) {
             tsk_fprintf(stderr, "Error getting size of AFF4 file\n");
         }
-#if defined ( TSK_WIN32)
-        free(filename);
-#endif
-        return (NULL);
+        AFF4_close(aff4_info->handle);
+        goto on_error;
     }
 
-    aff4_info->images = a_images;
     img_info->sector_size = 512;
     img_info->itype = TSK_IMG_TYPE_AFF4_AFF4;
     img_info->read = &aff4_image_read;
     img_info->close = &aff4_image_close;
     img_info->imgstat = &aff4_image_imgstat;
 
-#if defined ( TSK_WIN32)
-        free(filename);
+#if defined (TSK_WIN32)
+    free(filename);
 #endif
 
     // initialize the read lock
     tsk_init_lock(&(aff4_info->read_lock));
-    return (img_info);
+    return img_info;
+
+on_error:
+#if defined (TSK_WIN32)
+    free(filename);
+#endif
+    for (int i = 0; i < img_info->num_img; ++i) {
+        free(img_info->images[i]);
+    }
+    free(img_info->images);
+
+    tsk_img_free(aff4_info);
+    return NULL;
 }
 
-#endif                          /* HAVE_LIBAFF4 */
+#endif /* HAVE_LIBAFF4 */
