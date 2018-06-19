@@ -27,7 +27,6 @@ extern "C" {
     typedef struct {
         TSK_IMG_INFO img_info;
         int handle;
-        TSK_TCHAR **images;
         tsk_lock_t read_lock;   ///< Lock for reads since libaff4 is not thread safe -- only works if you have a single instance of AFF4_INFO for all threads.
     } IMG_AFF4_INFO;
 
