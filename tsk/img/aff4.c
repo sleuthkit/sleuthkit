@@ -16,6 +16,9 @@
 #if HAVE_LIBAFF4
 #include "aff4.h"
 
+#include <stdio.h>
+#include <string.h>
+
 static ssize_t
 aff4_image_read(TSK_IMG_INFO * img_info, TSK_OFF_T offset, char *buf,
     size_t len)
@@ -79,10 +82,21 @@ aff4_image_close(TSK_IMG_INFO * img_info)
     tsk_img_free(aff4_info);
 }
 
-static int aff4_check_file_signature(char* filename)
+static int aff4_check_file_signature(const char* path)
 {
-	// Implement.
-	return 0;
+    // AFF4 images are ZIP archives, check for the ZIP signature
+    FILE* f;
+    if (!(f = fopen(path, "rb"))) {
+        return -1;
+    }
+
+    char sig[4];
+    const size_t len = fread(sig, 1, 4, f);
+    if (fclose(f)) {
+        return -1;
+    }
+
+    return len == 4 && memcmp(sig, "PK\x03\x04", 4) == 0;
 }
 
 TSK_IMG_INFO *
@@ -136,14 +150,26 @@ aff4_open(int a_num_img,
         goto on_error;
     }
 #else
-    filename = a_images[0];
+    filename = img_info->images[0];
 #endif
 
-    // Check the file extension. (bad I know).
-    if (aff4_check_file_signature(filename)) {
+    // Check the file signature
+    switch (aff4_check_file_signature(filename)) {
+    case -1:
+        // some sort of I/O failure
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
-        tsk_error_set_errstr("aff4_open: Not an AFF4 file");
+        tsk_error_set_errstr("aff4_open: file: %" PRIttocTSK
+            ": Error opening", a_images[0]);
+        if (tsk_verbose)
+            tsk_fprintf(stderr, "Error opening AFF4 file\n");
+        goto on_error;
+    case 0:
+        // successful read, signature mismatch
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_IMG_MAGIC);
+        tsk_error_set_errstr("aff4_open: file: %" PRIttocTSK
+            ": Not an AFF4 file", a_images[0]);
         if (tsk_verbose)
             tsk_fprintf(stderr, "Not an AFF4 file\n");
         goto on_error;
