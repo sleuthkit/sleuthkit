@@ -214,11 +214,13 @@ public class SleuthkitJNI {
 		 * @throws TskCoreException if there is an error adding the image to
 		 *                          case database.
 		 */
-		long addImageInfo(long deviceObjId, List<String> imageFilePaths, String timeZone) throws TskCoreException {
+		long addImageInfo(long deviceObjId, List<String> imageFilePaths, String timeZone, SleuthkitCase skCase) throws TskCoreException {
 			try {
 				long tskAutoDbPointer = initializeAddImgNat(caseDbPointer, timezoneLongToShort(timeZone), false, false, false);
 				runOpenAndAddImgNat(tskAutoDbPointer, UUID.randomUUID().toString(), imageFilePaths.toArray(new String[0]), imageFilePaths.size(), timeZone);
-				return commitAddImgNat(tskAutoDbPointer);
+				long id = commitAddImgNat(tskAutoDbPointer);
+				skCase.addDataSourceToHasChildrenMap();
+				return id;
 			} catch (TskDataException ex) {
 				throw new TskCoreException("Error adding image to case database", ex);
 			}
@@ -240,8 +242,8 @@ public class SleuthkitJNI {
 		 * @return An object that can be used to exercise fine-grained control
 		 *         of the process of adding the image to the case database.
 		 */
-		AddImageProcess initAddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans, String imageCopyPath) {
-			return new AddImageProcess(timeZone, addUnallocSpace, skipFatFsOrphans, imageCopyPath);
+		AddImageProcess initAddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans, String imageCopyPath, SleuthkitCase skCase) {
+			return new AddImageProcess(timeZone, addUnallocSpace, skipFatFsOrphans, imageCopyPath, skCase);
 		}
 
 		/**
@@ -256,7 +258,8 @@ public class SleuthkitJNI {
 			private final String imageWriterPath;
 			private volatile long tskAutoDbPointer;
 			private boolean isCanceled;
-
+			private final SleuthkitCase skCase;
+			
 			/**
 			 * Constructs an object that encapsulates a multi-step process to
 			 * add an image to the case database.
@@ -270,13 +273,14 @@ public class SleuthkitJNI {
 			 *                         written to. Use empty string to disable
 			 *                         image writing
 			 */
-			private AddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans, String imageWriterPath) {
+			private AddImageProcess(String timeZone, boolean addUnallocSpace, boolean skipFatFsOrphans, String imageWriterPath, SleuthkitCase skCase) {
 				this.timeZone = timeZone;
 				this.addUnallocSpace = addUnallocSpace;
 				this.skipFatFsOrphans = skipFatFsOrphans;
 				this.imageWriterPath = imageWriterPath;
 				tskAutoDbPointer = 0;
 				this.isCanceled = false;
+				this.skCase = skCase;
 			}
 
 			/**
@@ -299,6 +303,7 @@ public class SleuthkitJNI {
 			 */
 			public void run(String deviceId, String[] imageFilePaths, int sectorSize) throws TskCoreException, TskDataException {
 				long imageHandle = 0;
+				
 				synchronized (this) {
 					if (0 != tskAutoDbPointer) {
 						throw new TskCoreException("Add image process already started");
@@ -364,6 +369,9 @@ public class SleuthkitJNI {
 				}
 
 				long id = commitAddImgNat(tskAutoDbPointer);
+				
+				skCase.addDataSourceToHasChildrenMap();
+				
 				// the native code deleted the object
 				tskAutoDbPointer = 0;
 				return id;
