@@ -2033,7 +2033,6 @@ public class SleuthkitCase {
 					
 					resultSet2 = connection.executeQuery(statement2, "SELECT name FROM tsk_files WHERE tsk_files.obj_id = " + objectId); //NON-NLS
 					String dsName = (resultSet2.next()) ? resultSet2.getString("name") : "";
-					resultSet2.close();
 					
 					TSK_FS_NAME_TYPE_ENUM dirType = TSK_FS_NAME_TYPE_ENUM.DIR;
 					TSK_FS_META_TYPE_ENUM metaType = TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
