@@ -2024,8 +2024,11 @@ public class SleuthkitCase {
 		acquireSingleUserCaseReadLock();
 		Statement statement = null;
 		ResultSet resultSet = null;
+		Statement statement2 = null;
+		ResultSet resultSet2 = null;
 		try {
 			statement = connection.createStatement();
+			statement2 = connection.createStatement();
 			resultSet = connection.executeQuery(statement,
 					"SELECT ds.device_id, ds.time_zone, img.type, img.ssize, img.size, img.md5, img.display_name "
 					+ "FROM data_source_info AS ds "
@@ -2042,13 +2045,17 @@ public class SleuthkitCase {
 					 * No data found in 'tsk_image_info', so we build an
 					 * LocalFilesDataSource.
 					 */
+					
+					resultSet2 = connection.executeQuery(statement2, "SELECT name FROM tsk_files WHERE tsk_files.obj_id = " + objectId); //NON-NLS
+					String dsName = (resultSet2.next()) ? resultSet2.getString("name") : "";
+					
 					TSK_FS_NAME_TYPE_ENUM dirType = TSK_FS_NAME_TYPE_ENUM.DIR;
 					TSK_FS_META_TYPE_ENUM metaType = TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_DIR;
 					TSK_FS_NAME_FLAG_ENUM dirFlag = TSK_FS_NAME_FLAG_ENUM.ALLOC;
 					final short metaFlags = (short) (TSK_FS_META_FLAG_ENUM.ALLOC.getValue()
 							| TSK_FS_META_FLAG_ENUM.USED.getValue());
 					String parentPath = "/"; //NON-NLS
-					dataSource = new LocalFilesDataSource(this, objectId, objectId, deviceId, deviceId, dirType, metaType, dirFlag, metaFlags, timezone, null, FileKnown.UNKNOWN, parentPath);
+					dataSource = new LocalFilesDataSource(this, objectId, objectId, deviceId, dsName, dirType, metaType, dirFlag, metaFlags, timezone, null, FileKnown.UNKNOWN, parentPath);
 				} else {
 					/*
 					 * Data found in 'tsk_image_info', so we build an Image.
@@ -2078,6 +2085,8 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
+			closeResultSet(resultSet2);
+			closeStatement(statement2);
 			connection.close();
 			releaseSingleUserCaseReadLock();
 		}
