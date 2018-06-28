@@ -134,6 +134,7 @@ public class SleuthkitCase {
 
 	private CommunicationsManager communicationsMgrInstance = null;
 	private Blackboard blackboardInstance = null;
+	private DBAccessManager dbAccessManagerInstance = null;
 	
 	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<String, Set<Long>>();
 
@@ -344,6 +345,20 @@ public class SleuthkitCase {
 			blackboardInstance = new Blackboard(this);
 		}
 		return blackboardInstance;
+	}
+	
+	/**
+	 * Returns an instance of DBAccessManager
+	 *
+	 * @return DBAccessManager
+	 * 
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	public synchronized DBAccessManager getDBAccessManager() throws TskCoreException {
+		if (null == dbAccessManagerInstance) {
+			dbAccessManagerInstance = new DBAccessManager(this);
+		}
+		return dbAccessManagerInstance;
 	}
 	
 	/**
