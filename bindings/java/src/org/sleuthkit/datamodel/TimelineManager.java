@@ -237,8 +237,10 @@ public final class TimelineManager {
 		ArrayList<Long> resultIDs = new ArrayList<>();
 
 		sleuthkitCase.acquireSingleUserCaseReadLock();
-		boolean needsTags = filter.getTagsFilter().hasSubFilters();
-		boolean needsHashSets = filter.getHashHitsFilter().hasSubFilters();
+		TagsFilter tagsFilter = filter.getTagsFilter();
+		boolean needsTags = tagsFilter != null && tagsFilter.hasSubFilters();
+		HashHitsFilter hashHitsFilter = filter.getHashHitsFilter();
+		boolean needsHashSets = hashHitsFilter != null && hashHitsFilter.hasSubFilters();
 		String query = "SELECT events.event_id AS event_id FROM" + getAugmentedEventsTablesSQL(needsTags, needsHashSets)
 				+ " WHERE time >=  " + startTime + " AND time <" + endTime + " AND " + getSQLWhere(filter) + " ORDER BY time ASC"; // NON-NLS
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
@@ -1063,6 +1065,7 @@ public final class TimelineManager {
 			return getTrueLiteral();
 		} else {
 			result = filter.getSQLWhere(this);
+			System.out.println(result);
 		}
 
 		return result;
