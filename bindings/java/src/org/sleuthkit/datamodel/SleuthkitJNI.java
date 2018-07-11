@@ -33,6 +33,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.UUID;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.sleuthkit.datamodel.TskData.TSK_FS_ATTR_TYPE_ENUM;
 
 /**
@@ -70,7 +72,7 @@ public class SleuthkitJNI {
 		/*
 		 * A monitor used to guard access to cached Sleuthkit JNI handles.
 		 */
-		private static final Object cacheLock = new Object();
+		private static final ReadWriteLock cacheLock = new ReentrantReadWriteLock();
 
 		/*
 		 * A SleuthKit image handle cache implemented as a mappng of
@@ -101,7 +103,8 @@ public class SleuthkitJNI {
 		 * @param fsHandle   The file system handle in which the file lives.
 		 */
 		private static void addFileHandle(long fileHandle, long fsHandle) {
-			synchronized (cacheLock) {
+			cacheLock.writeLock().lock();
+			try {
 				// Add to collection of open file handles.
 				fileHandleCache.add(fileHandle);
 
@@ -111,24 +114,33 @@ public class SleuthkitJNI {
 				} else {
 					fileSystemToFileHandles.put(fsHandle, new ArrayList<Long>(Arrays.asList(fileHandle)));
 				}
+			} finally {
+				cacheLock.writeLock().unlock();
 			}
 		}
 
 		private static void removeFileHandle(long fileHandle) {
-			synchronized (cacheLock) {
+			cacheLock.writeLock().lock();
+			try {
 				// Remove from collection of open file handles.
 				fileHandleCache.remove(fileHandle);
+			} finally {
+				cacheLock.writeLock().unlock();
 			}
 		}
 
 		private static boolean isValidFileHandle(long fileHandle) {
-			synchronized (cacheLock) {
+			cacheLock.readLock().lock();
+			try {
 				return fileHandleCache.contains(fileHandle);
+			} finally {
+				cacheLock.readLock().unlock();
 			}
 		}
 
 		private static void closeHandlesAndClearCache() throws TskCoreException {
-			synchronized (cacheLock) {
+			cacheLock.writeLock().lock();
+			try {
 				/*
 				 * Close any cached file system handles.
 				 */
@@ -154,6 +166,8 @@ public class SleuthkitJNI {
 				imageHandleCache.clear();
 				fileHandleCache.clear();
 				fileSystemToFileHandles.clear();
+			} finally {
+				cacheLock.writeLock().unlock();
 			}
 
 		}
@@ -567,7 +581,8 @@ public class SleuthkitJNI {
 		}
 		final String imageKey = keyBuilder.toString();
 
-		synchronized (HandleCache.cacheLock) {
+		getWriteLock();
+		try {
 			// If we're getting a fresh copy, remove any existing cache references
 			if (!useCache && HandleCache.imageHandleCache.containsKey(imageKey)) {
 				long tempImageHandle = HandleCache.imageHandleCache.get(imageKey);
@@ -584,6 +599,8 @@ public class SleuthkitJNI {
 				HandleCache.fsHandleCache.put(imageHandle, new HashMap<Long, Long>());
 				HandleCache.imageHandleCache.put(imageKey, imageHandle);
 			}
+		} finally {
+			releaseWriteLock();
 		}
 		return imageHandle;
 	}
@@ -601,7 +618,12 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	public static long openVs(long imgHandle, long vsOffset) throws TskCoreException {
-		return openVsNat(imgHandle, vsOffset);
+		getReadLock();
+		try {
+			return openVsNat(imgHandle, vsOffset);
+		} finally {
+			releaseReadLock();
+		}
 	}
 
 	//get pointers
@@ -617,8 +639,13 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	public static long openVsPart(long vsHandle, long volId) throws TskCoreException {
-		//returned long is ptr to vs Handle object in tsk
-		return openVolNat(vsHandle, volId);
+		getReadLock();
+		try {
+			//returned long is ptr to vs Handle object in tsk
+			return openVolNat(vsHandle, volId);
+		} finally {
+			releaseReadLock();
+		}
 	}
 
 	/**
@@ -635,7 +662,8 @@ public class SleuthkitJNI {
 	 */
 	public static long openFs(long imgHandle, long fsOffset) throws TskCoreException {
 		long fsHandle;
-		synchronized (HandleCache.cacheLock) {
+		getWriteLock();
+		try {
 			final Map<Long, Long> imgOffSetToFsHandle = HandleCache.fsHandleCache.get(imgHandle);
 			if (imgOffSetToFsHandle.containsKey(fsOffset)) {
 				//return cached
@@ -645,6 +673,8 @@ public class SleuthkitJNI {
 				//cache it
 				imgOffSetToFsHandle.put(fsOffset, fsHandle);
 			}
+		} finally {
+			releaseWriteLock();
 		}
 		return fsHandle;
 	}
@@ -674,7 +704,13 @@ public class SleuthkitJNI {
 		 * need to convert negative attribute id to uint16 which is what TSK is
 		 * using to store attribute id.
 		 */
-		long fileHandle = openFileNat(fsHandle, fileId, attrType.getValue(), convertSignedToUnsigned(attrId));
+		long fileHandle = 0;
+		getReadLock();
+		try {
+			fileHandle = openFileNat(fsHandle, fileId, attrType.getValue(), convertSignedToUnsigned(attrId));			
+		} finally {
+			releaseReadLock();
+		}
 		HandleCache.addFileHandle(fileHandle, fsHandle);
 		return fileHandle;
 	}
@@ -710,8 +746,13 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	public static int readImg(long imgHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
-		//returned byte[] is the data buffer
-		return readImgNat(imgHandle, readBuffer, offset, len);
+		getReadLock();
+		try {
+			//returned byte[] is the data buffer
+			return readImgNat(imgHandle, readBuffer, offset, len);
+		} finally {
+			releaseReadLock();
+		}
 	}
 
 	/**
@@ -729,7 +770,12 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	public static int readVs(long vsHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
-		return readVsNat(vsHandle, readBuffer, offset, len);
+		getReadLock();
+		try {
+			return readVsNat(vsHandle, readBuffer, offset, len);
+		} finally {
+			releaseReadLock();
+		}
 	}
 
 	/**
@@ -747,8 +793,13 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	public static int readVsPart(long volHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
-		//returned byte[] is the data buffer
-		return readVolNat(volHandle, readBuffer, offset, len);
+		getReadLock();
+		try {
+			//returned byte[] is the data buffer
+			return readVolNat(volHandle, readBuffer, offset, len);
+		} finally {
+			releaseReadLock();
+		}
 	}
 
 	/**
@@ -766,8 +817,13 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	public static int readFs(long fsHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
-		//returned byte[] is the data buffer
-		return readFsNat(fsHandle, readBuffer, offset, len);
+		getReadLock();
+		try {
+			//returned byte[] is the data buffer
+			return readFsNat(fsHandle, readBuffer, offset, len);
+		} finally {
+			releaseReadLock();
+		}
 	}
 
 	/**
@@ -804,11 +860,16 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	public static int readFile(long fileHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
-		if (!HandleCache.isValidFileHandle(fileHandle)) {
-			throw new TskCoreException(HandleCache.INVALID_FILE_HANDLE);
-		}
+		getReadLock();
+		try {
+			if (!HandleCache.isValidFileHandle(fileHandle)) {
+				throw new TskCoreException(HandleCache.INVALID_FILE_HANDLE);
+			}
 
-		return readFileNat(fileHandle, readBuffer, offset, TSK_FS_FILE_READ_OFFSET_TYPE_ENUM.START_OF_FILE.getValue(), len);
+			return readFileNat(fileHandle, readBuffer, offset, TSK_FS_FILE_READ_OFFSET_TYPE_ENUM.START_OF_FILE.getValue(), len);
+		} finally {
+			releaseReadLock();
+		}
 	}
 
 	/**
@@ -826,11 +887,16 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	public static int readFileSlack(long fileHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
-		if (!HandleCache.isValidFileHandle(fileHandle)) {
-			throw new TskCoreException(HandleCache.INVALID_FILE_HANDLE);
-		}
+		getReadLock();
+		try {
+			if (!HandleCache.isValidFileHandle(fileHandle)) {
+				throw new TskCoreException(HandleCache.INVALID_FILE_HANDLE);
+			}
 
-		return readFileNat(fileHandle, readBuffer, offset, TSK_FS_FILE_READ_OFFSET_TYPE_ENUM.START_OF_SLACK.getValue(), len);
+			return readFileNat(fileHandle, readBuffer, offset, TSK_FS_FILE_READ_OFFSET_TYPE_ENUM.START_OF_SLACK.getValue(), len);
+		} finally {
+			releaseReadLock();
+		}
 	}
 
 	/**
@@ -844,32 +910,37 @@ public class SleuthkitJNI {
 	 * @throws TskCoreException if errors occurred
 	 */
 	public static List<String> getFileMetaDataText(long fileHandle) throws TskCoreException {
-		if (!HandleCache.isValidFileHandle(fileHandle)) {
-			throw new TskCoreException(HandleCache.INVALID_FILE_HANDLE);
-		}
-
+		getReadLock();
 		try {
-			java.io.File tmp = java.io.File.createTempFile("tsk", ".txt");
-
-			saveFileMetaDataTextNat(fileHandle, tmp.getAbsolutePath());
-
-			FileReader fr = new FileReader(tmp.getAbsolutePath());
-			BufferedReader textReader = new BufferedReader(fr);
-
-			List<String> lines = new ArrayList<String>();
-			while (true) {
-				String line = textReader.readLine();
-				if (line == null) {
-					break;
-				}
-				lines.add(line);
+			if (!HandleCache.isValidFileHandle(fileHandle)) {
+				throw new TskCoreException(HandleCache.INVALID_FILE_HANDLE);
 			}
-			textReader.close();
-			fr.close();
-			tmp.delete();
-			return lines;
-		} catch (IOException ex) {
-			throw new TskCoreException("Error reading istat output: " + ex.getLocalizedMessage());
+
+			try {
+				java.io.File tmp = java.io.File.createTempFile("tsk", ".txt");
+
+				saveFileMetaDataTextNat(fileHandle, tmp.getAbsolutePath());
+
+				FileReader fr = new FileReader(tmp.getAbsolutePath());
+				BufferedReader textReader = new BufferedReader(fr);
+
+				List<String> lines = new ArrayList<String>();
+				while (true) {
+					String line = textReader.readLine();
+					if (line == null) {
+						break;
+					}
+					lines.add(line);
+				}
+				textReader.close();
+				fr.close();
+				tmp.delete();
+				return lines;
+			} catch (IOException ex) {
+				throw new TskCoreException("Error reading istat output: " + ex.getLocalizedMessage());
+			}
+		} finally {
+			releaseReadLock();
 		}
 	}
 
@@ -918,12 +989,18 @@ public class SleuthkitJNI {
 	 * @param fileHandle pointer to file structure in sleuthkit
 	 */
 	public static void closeFile(long fileHandle) {
-		if (!HandleCache.isValidFileHandle(fileHandle)) {
-			// File handle is not open so this is a no-op.
-			return;
+		getWriteLock();
+		try {
+			if (!HandleCache.isValidFileHandle(fileHandle)) {
+				// File handle is not open so this is a no-op.
+				return;
+			}
+			closeFileNat(fileHandle);
+		} finally {
+			releaseWriteLock();
 		}
-		closeFileNat(fileHandle);
 		HandleCache.removeFileHandle(fileHandle);
+		
 	}
 
 	/**
@@ -1160,7 +1237,12 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	public static int finishImageWriter(long imgHandle) throws TskCoreException {
-		return finishImageWriterNat(imgHandle);
+		getReadLock();
+		try {
+			return finishImageWriterNat(imgHandle);
+		} finally {
+			releaseReadLock();
+		}
 	}
 
 	/**
@@ -1171,7 +1253,12 @@ public class SleuthkitJNI {
 	 * @return Percentage of blocks completed (0-100)
 	 */
 	public static int getFinishImageProgress(long imgHandle) {
-		return getFinishImageProgressNat(imgHandle);
+		getReadLock();
+		try {
+			return getFinishImageProgressNat(imgHandle);
+		} finally {
+			releaseReadLock();
+		}
 	}
 
 	/**
@@ -1180,7 +1267,12 @@ public class SleuthkitJNI {
 	 * @param imgHandle
 	 */
 	public static void cancelFinishImage(long imgHandle) {
-		cancelFinishImageNat(imgHandle);
+		getReadLock();
+		try {
+			cancelFinishImageNat(imgHandle);
+		} finally {
+			releaseReadLock();
+		}
 	}
 
 	/**
@@ -1195,13 +1287,51 @@ public class SleuthkitJNI {
 	 *                          queried
 	 */
 	public static long findDeviceSize(String devPath) throws TskCoreException {
-		return findDeviceSizeNat(devPath);
+		getReadLock();
+		try {
+			return findDeviceSizeNat(devPath);
+		} finally {
+			releaseReadLock();
+		}
 	}
 
 	public static boolean isImageSupported(String imagePath) {
-		return isImageSupportedNat(imagePath);
+		getReadLock();
+		try {
+			return isImageSupportedNat(imagePath);
+		} finally {
+			releaseReadLock();
+		}
+	}
+	
+	/**
+	 * Get a read lock for the cache/C++ layer
+	 */
+	private static void getReadLock() {
+		HandleCache.cacheLock.readLock().lock();
+	}
+	
+	/**
+	 * Get a write lock for the cache/C++ layer
+	 */
+	private static void getWriteLock() {
+		HandleCache.cacheLock.writeLock().lock();
 	}
 
+	/**
+	 * Release the read lock
+	 */
+	private static void releaseReadLock() {
+		HandleCache.cacheLock.readLock().unlock();
+	}
+	
+	/**
+	 * Release the write lock
+	 */
+	private static void releaseWriteLock() {
+		HandleCache.cacheLock.writeLock().unlock();
+	}
+	
 	private static native String getVersionNat();
 
 	private static native void startVerboseLoggingNat(String logPath);
