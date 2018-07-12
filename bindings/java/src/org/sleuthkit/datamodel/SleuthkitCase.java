@@ -62,7 +62,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.postgresql.util.PSQLException;
 import org.postgresql.util.PSQLState;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
@@ -122,8 +121,10 @@ public class SleuthkitCase {
 	private Map<Integer, BlackboardAttribute.Type> typeIdToAttributeTypeMap;
 	private Map<String, BlackboardArtifact.Type> typeNameToArtifactTypeMap;
 	private Map<String, BlackboardAttribute.Type> typeNameToAttributeTypeMap;
-	private Map<Long, SparseBitSet> hasChildrenBitSetMap; // First parameter is used to specify the SparseBitSet to use, 
-	                                                      // as object IDs can be larger than the max size of a SparseBitSet
+	
+	// First parameter is used to specify the SparseBitSet to use, 
+	// as object IDs can be larger than the max size of a SparseBitSet
+	private final Map<Long, SparseBitSet> hasChildrenBitSetMap = new HashMap<Long, SparseBitSet>(); 
 
 	private long nextArtifactId; // Used to ensure artifact ids come from the desired range.
 	// This read/write lock is used to implement a layer of locking on top of
@@ -132,7 +133,9 @@ public class SleuthkitCase {
 	// understood. Note that the lock is contructed to use a fairness policy.
 	private final ReentrantReadWriteLock rwLock = new ReentrantReadWriteLock(true);
 
+	private final Object communicationsMgrInstanceLock = new Object();
 	private CommunicationsManager communicationsMgrInstance = null;
+	private final Object blackboardInstanceLock = new Object();
 	private Blackboard blackboardInstance = null;
 	
 	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<String, Set<Long>>();
@@ -293,7 +296,7 @@ public class SleuthkitCase {
 		long mapIndex = objId / Integer.MAX_VALUE;
 		int mapValue = (int) (objId % Integer.MAX_VALUE);
 		
-		synchronized(this) {
+		synchronized(hasChildrenBitSetMap) {
 			if (hasChildrenBitSetMap.containsKey(mapIndex)) {
 				return hasChildrenBitSetMap.get(mapIndex).get(mapValue);
 			}
@@ -310,7 +313,7 @@ public class SleuthkitCase {
 		long mapIndex = objId / Integer.MAX_VALUE;
 		int mapValue = (int) (objId % Integer.MAX_VALUE);
 		
-		synchronized(this) {
+		synchronized(hasChildrenBitSetMap) {
 			if (hasChildrenBitSetMap.containsKey(mapIndex)) {
 				hasChildrenBitSetMap.get(mapIndex).set(mapValue);
 			} else {
@@ -326,11 +329,13 @@ public class SleuthkitCase {
 	 *
 	 * @return CommunicationsManager
 	 */
-	public synchronized CommunicationsManager getCommunicationsManager() throws TskCoreException {
-		if (null == communicationsMgrInstance) {
-			communicationsMgrInstance = new CommunicationsManager(this);
+	public CommunicationsManager getCommunicationsManager() throws TskCoreException {
+		synchronized (communicationsMgrInstanceLock) {
+			if (null == communicationsMgrInstance) {
+				communicationsMgrInstance = new CommunicationsManager(this);
+			}
+			return communicationsMgrInstance;
 		}
-		return communicationsMgrInstance;
 	}
 
 	/**
@@ -339,11 +344,13 @@ public class SleuthkitCase {
 	 * @return Blackboard
 	 *
 	 */
-	public synchronized Blackboard getBlackboard() {
-		if (null == blackboardInstance) {
-			blackboardInstance = new Blackboard(this);
+	public Blackboard getBlackboard() {
+		synchronized (blackboardInstanceLock) {
+			if (null == blackboardInstance) {
+				blackboardInstance = new Blackboard(this);
+			}
+			return blackboardInstance;
 		}
-		return blackboardInstance;
 	}
 	
 	/**
@@ -606,10 +613,7 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			resultSet = statement.executeQuery("select distinct par_obj_id from tsk_objects"); //NON-NLS
 			
-			synchronized (this) {
-				if (hasChildrenBitSetMap == null) {
-					hasChildrenBitSetMap = new HashMap<Long, SparseBitSet>();
-				}
+			synchronized (hasChildrenBitSetMap) {
 				while(resultSet.next()) {
 					setHasChildren(resultSet.getLong("par_obj_id"));
 				}
