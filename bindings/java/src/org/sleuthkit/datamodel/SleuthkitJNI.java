@@ -55,14 +55,6 @@ public class SleuthkitJNI {
 	 */
 	private static final ReadWriteLock tskLock = new ReentrantReadWriteLock();
 	
-	/**
-	 * Lock to prevent a file from being closed while another thread is using.
-	 * This must be used carefully and taken after the tskLock and 
-	 * before HandleCache.cacheLock. The write lock should only be used when
-	 * closing a file.
-	 */
-	private static final ReadWriteLock fileLock = new ReentrantReadWriteLock();
-	
 	/*
 	 * Loads the SleuthKit libraries.
 	 */
@@ -737,14 +729,12 @@ public class SleuthkitJNI {
 		 * need to convert negative attribute id to uint16 which is what TSK is
 		 * using to store attribute id.
 		 */
-		getTSKReadLock();  // Do not change the order of these locks
-		fileLock.readLock().lock();
+		getTSKReadLock();
 		try {
 			long fileHandle = openFileNat(fsHandle, fileId, attrType.getValue(), convertSignedToUnsigned(attrId));
 			HandleCache.addFileHandle(fileHandle, fsHandle);
 			return fileHandle;
 		} finally {
-			fileLock.readLock().unlock();
 			releaseTSKReadLock();
 		}
 	}
@@ -894,8 +884,7 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	public static int readFile(long fileHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
-		getTSKReadLock(); // Do not change the order of these locks
-		fileLock.readLock().lock();
+		getTSKReadLock();
 		try {
 			if (!HandleCache.isValidFileHandle(fileHandle)) {
 				throw new TskCoreException(HandleCache.INVALID_FILE_HANDLE);
@@ -903,7 +892,6 @@ public class SleuthkitJNI {
 
 			return readFileNat(fileHandle, readBuffer, offset, TSK_FS_FILE_READ_OFFSET_TYPE_ENUM.START_OF_FILE.getValue(), len);
 		} finally {
-			fileLock.readLock().unlock();
 			releaseTSKReadLock();
 		}
 	}
@@ -923,8 +911,7 @@ public class SleuthkitJNI {
 	 *                          TSK
 	 */
 	public static int readFileSlack(long fileHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
-		getTSKReadLock(); // Do not change the order of these locks
-		fileLock.readLock().lock();
+		getTSKReadLock();
 		try {
 			if (!HandleCache.isValidFileHandle(fileHandle)) {
 				throw new TskCoreException(HandleCache.INVALID_FILE_HANDLE);
@@ -932,7 +919,6 @@ public class SleuthkitJNI {
 
 			return readFileNat(fileHandle, readBuffer, offset, TSK_FS_FILE_READ_OFFSET_TYPE_ENUM.START_OF_SLACK.getValue(), len);
 		} finally {
-			fileLock.readLock().unlock();
 			releaseTSKReadLock();
 		}
 	}
@@ -988,8 +974,7 @@ public class SleuthkitJNI {
 	 * @param fileHandle pointer to file structure in sleuthkit
 	 */
 	public static void closeFile(long fileHandle) {
-		getTSKReadLock(); // Do not change the order of these locks
-		fileLock.writeLock().lock();
+		getTSKReadLock();
 		try {
 			if (!HandleCache.isValidFileHandle(fileHandle)) {
 				// File handle is not open so this is a no-op.
@@ -998,7 +983,6 @@ public class SleuthkitJNI {
 			closeFileNat(fileHandle);
 			HandleCache.removeFileHandle(fileHandle);
 		} finally {
-			fileLock.writeLock().unlock();
 			releaseTSKReadLock();
 		}
 	}
