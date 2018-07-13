@@ -303,11 +303,8 @@ public abstract class FsContent extends AbstractFile {
 	@SuppressWarnings("deprecation")
 	public synchronized void close() {
 		if (fileHandle != 0) {
-			//need to recheck the handle after unlock
-			if (fileHandle != 0) {
-				SleuthkitJNI.closeFile(fileHandle);
-				fileHandle = 0;
-			}
+			SleuthkitJNI.closeFile(fileHandle);
+			fileHandle = 0;
 		}
 	}
 
