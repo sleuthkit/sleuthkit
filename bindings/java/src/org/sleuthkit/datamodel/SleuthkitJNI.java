@@ -638,7 +638,7 @@ public class SleuthkitJNI {
 		synchronized (HandleCache.cacheLock) {
 			final Map<Long, Long> imgOffSetToFsHandle = HandleCache.fsHandleCache.get(imgHandle);
 			if (imgOffSetToFsHandle == null) {
-				throw new TskCoreException("Error loading handle for image " + imgHandle);
+				throw new TskCoreException("Missing image offset to file system handle cache for image handle " + imgHandle);
 			}
 			if (imgOffSetToFsHandle.containsKey(fsOffset)) {
 				//return cached
