@@ -1065,7 +1065,6 @@ public final class TimelineManager {
 			return getTrueLiteral();
 		} else {
 			result = filter.getSQLWhere(this);
-			System.out.println(result);
 		}
 
 		return result;

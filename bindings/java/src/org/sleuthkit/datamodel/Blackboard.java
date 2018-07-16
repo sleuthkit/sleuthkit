@@ -19,11 +19,11 @@
 package org.sleuthkit.datamodel;
 
 import java.io.Closeable;
-import java.util.Collection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -31,7 +31,7 @@ import java.util.List;
  * attributes are posted.
  *
  */
-public final class Blackboard implements Closeable {
+public final class Blackboard  {
 
 	private SleuthkitCase caseDb;
 
@@ -149,14 +149,7 @@ public final class Blackboard implements Closeable {
 		}
 	}
 
-	/**
-	 * Closes the blackboard.
-	 *
-	 */
-	@Override
-	public synchronized void close() {
-		caseDb = null;
-	}
+ 
 
 	/**
 	 * A Blackboard exception.
@@ -214,7 +207,7 @@ public final class Blackboard implements Closeable {
 	 * @throws TskCoreException exception thrown if a critical error occurred
 	 *                          within tsk core
 	 */
-	public List<BlackboardArtifact.Type> getArtifactTypesInUse(long dataSourceObjId) throws TskCoreException {
+ 	public List<BlackboardArtifact.Type> getArtifactTypesInUse(long dataSourceObjId) throws TskCoreException {
 		
 		final String queryString = "SELECT DISTINCT arts.artifact_type_id AS artifact_type_id, "
 					+ "types.type_name AS type_name, types.display_name AS display_name "
