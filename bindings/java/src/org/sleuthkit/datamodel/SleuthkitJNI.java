@@ -50,11 +50,11 @@ public class SleuthkitJNI {
 	/**
 	 * Lock to protect against the TSK data structures being closed while
 	 * another thread is in the C++ code. Do not use this lock after obtaining
-	 * HandleCache.cacheLock. Additionally, the only code that should acquire the
-	 * write lock is CaseDbHandle.free().
+	 * HandleCache.cacheLock. Additionally, the only code that should acquire
+	 * the write lock is CaseDbHandle.free().
 	 */
 	private static final ReadWriteLock tskLock = new ReentrantReadWriteLock();
-	
+
 	/*
 	 * Loads the SleuthKit libraries.
 	 */
@@ -274,7 +274,7 @@ public class SleuthkitJNI {
 			private volatile long tskAutoDbPointer;
 			private boolean isCanceled;
 			private final SleuthkitCase skCase;
-			
+
 			/**
 			 * Constructs an object that encapsulates a multi-step process to
 			 * add an image to the case database.
@@ -441,7 +441,7 @@ public class SleuthkitJNI {
 			public void run(String[] imageFilePaths) throws TskCoreException, TskDataException {
 				run(null, imageFilePaths, 0);
 			}
-			
+
 			/**
 			 * Starts the process of adding an image to the case database.
 			 * Either AddImageProcess.commit or AddImageProcess.revert MUST be
@@ -539,7 +539,7 @@ public class SleuthkitJNI {
 
 	/**
 	 * Enable verbose logging and redirect stderr to the given log file.
-	 * 
+	 *
 	 * @param logPath the log file path
 	 */
 	public static void startVerboseLogging(String logPath) {
@@ -559,16 +559,16 @@ public class SleuthkitJNI {
 	public static long openImage(String[] imageFiles) throws TskCoreException {
 		return openImage(imageFiles, 0, true);
 	}
-	
+
 	/**
 	 * Open the image with a specified sector size and return the image info
 	 * pointer.
-	 * 
+	 *
 	 * @param imageFiles the paths to the images
 	 * @param sSize      the sector size (use '0' for autodetect)
-	 * 
+	 *
 	 * @return the image info pointer
-	 * 
+	 *
 	 * @throws TskCoreException exception thrown if critical error occurs within
 	 *                          TSK
 	 */
@@ -689,10 +689,10 @@ public class SleuthkitJNI {
 			long fsHandle;
 			synchronized (HandleCache.cacheLock) {
 				final Map<Long, Long> imgOffSetToFsHandle = HandleCache.fsHandleCache.get(imgHandle);
-			  if (imgOffSetToFsHandle == null) {
-				  throw new TskCoreException("Missing image offset to file system handle cache for image handle " + imgHandle);
-			  }				
-        if (imgOffSetToFsHandle.containsKey(fsOffset)) {
+				if (imgOffSetToFsHandle == null) {
+					throw new TskCoreException("Missing image offset to file system handle cache for image handle " + imgHandle);
+				}
+				if (imgOffSetToFsHandle.containsKey(fsOffset)) {
 					//return cached
 					fsHandle = imgOffSetToFsHandle.get(fsOffset);
 				} else {
@@ -1086,7 +1086,7 @@ public class SleuthkitJNI {
 	 * affected.
 	 *
 	 * @param dbHandle Handle of database to close.
-	 * 
+	 *
 	 * @throws TskCoreException exception thrown if critical error occurs within
 	 *                          TSK
 	 */
@@ -1098,7 +1098,7 @@ public class SleuthkitJNI {
 	 * Get the name of the database
 	 *
 	 * @param dbHandle Previously opened hash db handle.
-	 * 
+	 *
 	 * @return The display name.
 	 *
 	 * @throws TskCoreException if a critical error occurs within TSK core
@@ -1217,7 +1217,7 @@ public class SleuthkitJNI {
 	 * Fills in any gaps in the image created by image writer.
 	 *
 	 * @param imgHandle The image handle.
-	 * 
+	 *
 	 * @return 0 if no errors occurred; 1 otherwise.
 	 *
 	 * @throws TskCoreException exception thrown if critical error occurs within
@@ -1280,7 +1280,7 @@ public class SleuthkitJNI {
 	public static boolean isImageSupported(String imagePath) {
 		return isImageSupportedNat(imagePath);
 	}
-	
+
 	/**
 	 * Get a read lock for the C++ layer. Do not get this lock after obtaining
 	 * HandleCache.cacheLock.
@@ -1288,19 +1288,18 @@ public class SleuthkitJNI {
 	private static void getTSKReadLock() {
 		tskLock.readLock().lock();
 	}
-	
+
 	/**
 	 * Release the read lock
 	 */
 	private static void releaseTSKReadLock() {
 		tskLock.readLock().unlock();
 	}
-	
-	
+
 	//free pointers
 	/**
-	 * frees the imgHandle pointer currently does not close the image - imgHandle
-	 * should only be freed as part of CaseDbHandle.free().
+	 * frees the imgHandle pointer currently does not close the image -
+	 * imgHandle should only be freed as part of CaseDbHandle.free().
 	 *
 	 * @param imgHandle to close the image
 	 */
@@ -1316,7 +1315,7 @@ public class SleuthkitJNI {
 	 */
 	@Deprecated
 	public static void closeVs(long vsHandle) {
-        //		closeVsNat(vsHandle);  TODO JIRA-3829 
+		//		closeVsNat(vsHandle);  TODO JIRA-3829 
 	}
 
 	/**
