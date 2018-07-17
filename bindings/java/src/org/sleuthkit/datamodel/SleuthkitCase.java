@@ -4627,7 +4627,7 @@ public class SleuthkitCase {
 			if (parentPath == null) {
 				parentPath = "/"; //NON-NLS
 			}
-			if (!parentName.isEmpty()) {
+			if (parentName != null && !parentName.isEmpty()) {
 				parentPath = parentPath + parentName + "/"; //NON-NLS
 			}
 
@@ -4775,7 +4775,7 @@ public class SleuthkitCase {
 			if (parentPath == null) {
 				parentPath = "/"; //NON-NLS
 			}
-			if (!parentName.isEmpty() && parentTypeValue != TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType()) {
+			if (parentName != null && !parentName.isEmpty() && parentTypeValue != TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType()) {
 				parentPath = parentPath + parentName + "/"; //NON-NLS
 			}
 
