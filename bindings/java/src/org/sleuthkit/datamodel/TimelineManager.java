@@ -1025,7 +1025,7 @@ public final class TimelineManager {
 	 *
 	 * @see https://www.sqlite.org/lang_datefunc.html
 	 */
-	public String formatTimeFunction(TimeUnits periodSize, DateTimeZone timeZone) {
+	 String formatTimeFunction(TimeUnits periodSize, DateTimeZone timeZone) {
 		switch (sleuthkitCase.getDatabaseType()) {
 			case SQLITE:
 				String strfTimeFormat = getStrfTimeFormat(periodSize);

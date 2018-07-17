@@ -29,7 +29,7 @@ import org.joda.time.Seconds;
 import org.joda.time.Years;
 
 /**
- * predefined units of time for use in choosing axis labels and sub intervals.
+ * Predefined units of time for use in choosing axis labels and sub intervals.
  */
 public enum TimeUnits {
 

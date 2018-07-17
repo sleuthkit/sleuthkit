@@ -18,14 +18,26 @@
  */
 package org.sleuthkit.datamodel.timeline;
 
+import static org.sleuthkit.datamodel.timeline.BundleProvider.getBundle;
+
 /**
- * Enum of event type zoom levels
+ * Enum of event type zoom levels.
  */
 public enum EventTypeZoomLevel {
-
-	ROOT_TYPE(BundleProvider.getBundle().getString("EventTypeZoomLevel.rootType")),
-	BASE_TYPE(BundleProvider.getBundle().getString("EventTypeZoomLevel.baseType")),
-	SUB_TYPE(BundleProvider.getBundle().getString("EventTypeZoomLevel.subType"));
+	/**
+	 * The root event type zoom level. All event are the same type at this
+	 * level.
+	 */
+	ROOT_TYPE(getBundle().getString("EventTypeZoomLevel.rootType")),
+	/**
+	 * The zoom level of base event types like files system, and web activity
+	 */
+	BASE_TYPE(getBundle().getString("EventTypeZoomLevel.baseType")),
+	/**
+	 * The zoom level of specific type such as file modified time, or web
+	 * download.
+	 */
+	SUB_TYPE(getBundle().getString("EventTypeZoomLevel.subType"));
 
 	private final String displayName;
 

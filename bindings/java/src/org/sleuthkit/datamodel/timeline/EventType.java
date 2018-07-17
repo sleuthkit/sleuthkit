@@ -153,24 +153,20 @@ public interface EventType extends Comparable<EventType> {
 			new Type(TSK_DATETIME_ACCESSED),
 			StandardArtifactEventType.TopPrivateDomainExtractor.getInstance(),
 			new AttributeExtractor(new Type(TSK_PATH)),
-			new AttributeExtractor(new Type(TSK_URL)),
-			//overide description composition
-			new StandardArtifactEventType.CheckedFunction<BlackboardArtifact, EventPayload>() {
-		@Override
-		public EventPayload apply(BlackboardArtifact artf) throws TskCoreException {
-			long time = artf.getAttribute(EventType.WEB_DOWNLOADS.getDateTimeAttributeType()).getValueLong();
-			String domain = EventType.WEB_DOWNLOADS.extractShortDescription(artf);
-			String path = EventType.WEB_DOWNLOADS.extractMedDescription(artf);
-			String fileName = StringUtils.substringAfterLast(path, "/");
-			String url = EventType.WEB_DOWNLOADS.extractFullDescription(artf);
+			new AttributeExtractor(new Type(TSK_URL)), //overide description composition
+			artifact -> {
+				long time = artifact.getAttribute(EventType.WEB_DOWNLOADS.getDateTimeAttributeType()).getValueLong();
+				String domain = EventType.WEB_DOWNLOADS.extractShortDescription(artifact);
+				String path = EventType.WEB_DOWNLOADS.extractMedDescription(artifact);
+				String fileName = StringUtils.substringAfterLast(path, "/");
+				String url = EventType.WEB_DOWNLOADS.extractFullDescription(artifact);
 
-			//TODO: review non default description construction
-			String shortDescription = fileName + " from " + domain; // NON-NLS
-			String medDescription = fileName + " from " + url; // NON-NLS
-			String fullDescription = path + " from " + url; // NON-NLS
-			return new EventPayload(time, shortDescription, medDescription, fullDescription);
-		}
-	});
+				//TODO: review non default description construction
+				String shortDescription = fileName + " from " + domain; // NON-NLS
+				String medDescription = fileName + " from " + url; // NON-NLS
+				String fullDescription = path + " from " + url; // NON-NLS
+				return new EventPayload(time, shortDescription, medDescription, fullDescription);
+			});
 	ArtifactEventType WEB_COOKIE = new StandardArtifactEventType(9,
 			getBundle().getString("WebTypes.webCookies.name"),// NON-NLS
 			WEB_ACTIVITY,
@@ -216,7 +212,8 @@ public interface EventType extends Comparable<EventType> {
 				final BlackboardAttribute name = getAttributeSafe(artf, new Type(TSK_NAME));
 				final BlackboardAttribute phoneNumber = getAttributeSafe(artf, new Type(TSK_PHONE_NUMBER));
 				final BlackboardAttribute subject = getAttributeSafe(artf, new Type(TSK_SUBJECT));
-				List<String> asList = Arrays.asList(stringValueOf(dir),
+				List<String> asList = Arrays.asList(
+						stringValueOf(dir),
 						stringValueOf(readStatus),
 						name == null && phoneNumber == null ? "" : toFrom(dir),
 						stringValueOf(MoreObjects.firstNonNull(name, phoneNumber)),
@@ -297,7 +294,7 @@ public interface EventType extends Comparable<EventType> {
 	},
 			new AttributeExtractor(new Type(TSK_PATH)),
 			//override description composition
-			new StandardArtifactEventType.CheckedFunction<BlackboardArtifact, EventPayload>() {
+			new StandardArtifactEventType.TSKCoreCheckedFunction<BlackboardArtifact, EventPayload>() {
 		@Override
 		public EventPayload apply(BlackboardArtifact artf) throws TskCoreException {
 			long time = artf.getAttribute(EventType.RECENT_DOCUMENTS.getDateTimeAttributeType()).getValueLong();
