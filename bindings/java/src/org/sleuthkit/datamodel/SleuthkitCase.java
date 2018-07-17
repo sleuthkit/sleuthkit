@@ -4210,32 +4210,34 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Gets the name of a file.
+	 * Gets the file's name, type, and parent path.
 	 *
 	 * @param objectId   The object id of the file.
 	 * @param connection An open database connection.
 	 *
-	 * @return The path of the file or null.
+	 * @return A HashMap containing the data.
 	 */
-	String getFileName(long objectId, CaseDbConnection connection) {
-		String fileName = null;
+	Map<String, Object> getFileNamePathAndType(long objectId, CaseDbConnection connection) {
+		Map<String, Object> collection = new HashMap<String, Object>();
 		acquireSingleUserCaseReadLock();
 		ResultSet rs = null;
 		try {
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILE_NAME);
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILE_NAME_PATH_AND_TYPE); 
 			statement.clearParameters();
 			statement.setLong(1, objectId);
 			rs = connection.executeQuery(statement);
 			if (rs.next()) {
-				fileName = rs.getString("name");
+				collection.put("name", rs.getString("name"));
+				collection.put("parent_path", rs.getString("parent_path"));
+				collection.put("type", rs.getInt("type"));
 			}
 		} catch (SQLException ex) {
-			logger.log(Level.SEVERE, "Error getting file parent_path for file " + objectId, ex); //NON-NLS
+			logger.log(Level.SEVERE, "Error getting data for file " + objectId, ex); //NON-NLS
 		} finally {
 			closeResultSet(rs);
 			releaseSingleUserCaseReadLock();
 		}
-		return fileName;
+		return collection;
 	}
 
 	/**
@@ -4619,11 +4621,12 @@ public class SleuthkitCase {
 		try {
 			// Get the parent path.
 			CaseDbConnection connection = transaction.getConnection();
-			String parentPath = getFileParentPath(parentId, connection);
+			Map<String, Object> collection = getFileNamePathAndType(parentId, connection);
+			String parentName = (String) collection.get("name");
+			String parentPath = (String) collection.get("parent_path");
 			if (parentPath == null) {
 				parentPath = "/"; //NON-NLS
 			}
-			String parentName = getFileName(parentId, connection);
 			if (parentName != null && !parentName.isEmpty()) {
 				parentPath = parentPath + parentName + "/"; //NON-NLS
 			}
@@ -4765,12 +4768,14 @@ public class SleuthkitCase {
 		try {
 			// Get the parent path.
 			CaseDbConnection connection = transaction.getConnection();
-			String parentPath = getFileParentPath(parentId, connection);
+			Map<String, Object> collection = getFileNamePathAndType(parentId, connection);
+			String parentName = (String) collection.get("name");
+			String parentPath = (String) collection.get("parent_path");
+			Integer parentTypeValue = (Integer) collection.get("type");
 			if (parentPath == null) {
 				parentPath = "/"; //NON-NLS
 			}
-			String parentName = getFileName(parentId, connection);
-			if (parentName != null && !parentName.isEmpty()) {
+			if (parentName != null && !parentName.isEmpty() && parentTypeValue != TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType()) {
 				parentPath = parentPath + parentName + "/"; //NON-NLS
 			}
 
@@ -8940,7 +8945,7 @@ public class SleuthkitCase {
 		SELECT_ENCODING_FOR_FILE("SELECT encoding_type FROM tsk_files_path WHERE obj_id = ?"), // NON-NLS
 		SELECT_LOCAL_PATH_AND_ENCODING_FOR_FILE("SELECT path, encoding_type FROM tsk_files_path WHERE obj_id = ?"), // NON_NLS
 		SELECT_PATH_FOR_FILE("SELECT parent_path FROM tsk_files WHERE obj_id = ?"), //NON-NLS
-		SELECT_FILE_NAME("SELECT name FROM tsk_files WHERE obj_id = ?"), //NON-NLS
+		SELECT_FILE_NAME_PATH_AND_TYPE("SELECT name, parent_path, type FROM tsk_files WHERE obj_id = ?"), //NON-NLS
 		SELECT_DERIVED_FILE("SELECT derived_id, rederive FROM tsk_files_derived WHERE obj_id = ?"), //NON-NLS
 		SELECT_FILE_DERIVATION_METHOD("SELECT tool_name, tool_version, other FROM tsk_files_derived_method WHERE derived_id = ?"), //NON-NLS
 		SELECT_MAX_OBJECT_ID("SELECT MAX(obj_id) AS max_obj_id FROM tsk_objects"), //NON-NLS
