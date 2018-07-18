@@ -25,6 +25,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -52,7 +53,6 @@ import static org.sleuthkit.datamodel.StringUtils.joinAsStrings;
 import org.sleuthkit.datamodel.timeline.ArtifactEventType;
 import org.sleuthkit.datamodel.timeline.EventType;
 import org.sleuthkit.datamodel.timeline.EventTypeZoomLevel;
-import org.sleuthkit.datamodel.timeline.TimeUnits;
 import org.sleuthkit.datamodel.timeline.TimelineEvent;
 import org.sleuthkit.datamodel.timeline.filters.HashHitsFilter;
 import org.sleuthkit.datamodel.timeline.filters.RootFilter;
@@ -1013,33 +1013,6 @@ public final class TimelineManager {
 	}
 
 	/**
-	 * get a format string that will allow us to group by the requested period
-	 * size. That is, with all info more granular than that requested dropped
-	 * (replaced with zeros).
-	 *
-	 * @param periodSize tHE TimeUnits instance describing what granularity to
-	 *                   build a strftime string for
-	 * @param timeZone
-	 *
-	 * @return a String formatted according to the sqlite strftime spec
-	 *
-	 * @see https://www.sqlite.org/lang_datefunc.html
-	 */
-	 String formatTimeFunction(TimeUnits periodSize, DateTimeZone timeZone) {
-		switch (sleuthkitCase.getDatabaseType()) {
-			case SQLITE:
-				String strfTimeFormat = getStrfTimeFormat(periodSize);
-				String useLocalTime = timeZone.equals(DateTimeZone.getDefault()) ? ", 'localtime'" : ""; // NON-NLS
-				return "strftime('" + strfTimeFormat + "', time , 'unixepoch'" + useLocalTime + ")";
-			case POSTGRESQL:
-				String formatString = getPostgresTimeFormat(periodSize);
-				return "to_char(to_timestamp(time) AT TIME ZONE '" + timeZone.getID() + "', '" + formatString + "')";
-			default:
-				throw newUnsupportedDBTypeException();
-		}
-	}
-
-	/**
 	 * Get the column name to use depending on if we want base types or subtypes
 	 *
 	 * @param useSubTypes True to use sub types, false to use base types.
@@ -1068,42 +1041,6 @@ public final class TimelineManager {
 		}
 
 		return result;
-	}
-
-	private static String getStrfTimeFormat(TimeUnits timeUnit) {
-		switch (timeUnit) {
-			case YEARS:
-				return "%Y-01-01T00:00:00"; // NON-NLS
-			case MONTHS:
-				return "%Y-%m-01T00:00:00"; // NON-NLS
-			case DAYS:
-				return "%Y-%m-%dT00:00:00"; // NON-NLS
-			case HOURS:
-				return "%Y-%m-%dT%H:00:00"; // NON-NLS
-			case MINUTES:
-				return "%Y-%m-%dT%H:%M:00"; // NON-NLS
-			case SECONDS:
-			default:    //seconds - should never happen
-				return "%Y-%m-%dT%H:%M:%S"; // NON-NLS  
-			}
-	}
-
-	private static String getPostgresTimeFormat(TimeUnits timeUnit) {
-		switch (timeUnit) {
-			case YEARS:
-				return "YYYY-01-01T00:00:00"; // NON-NLS
-			case MONTHS:
-				return "YYYY-MM-01T00:00:00"; // NON-NLS
-			case DAYS:
-				return "YYYY-MM-DDT00:00:00"; // NON-NLS
-			case HOURS:
-				return "YYYY-MM-DDTHH24:00:00"; // NON-NLS
-			case MINUTES:
-				return "YYYY-MM-DDTHH24:MI:00"; // NON-NLS
-			case SECONDS:
-			default:    //seconds - should never happen
-				return "YYYY-MM-DDTHH24:MI:SS"; // NON-NLS  
-			}
 	}
 
 	public String getDescriptionColumn(DescriptionLoD lod) {
