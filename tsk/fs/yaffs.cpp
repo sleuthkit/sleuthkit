@@ -83,10 +83,18 @@ static uint8_t
 static TSK_RETVAL_ENUM
     yaffscache_obj_id_and_version_to_inode(uint32_t obj_id, uint32_t version_num, TSK_INUM_T *inode) {
         if ((obj_id & ~YAFFS_OBJECT_ID_MASK) != 0) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS);
+            tsk_error_set_errstr(
+                "yaffsfs_parse_image_load_cache: Max object ID %" PRIuOFF " is invalid", obj_id);
             return TSK_ERR;
         }
 
         if ((version_num & ~YAFFS_VERSION_NUM_MASK) != 0) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS);
+            tsk_error_set_errstr(
+                "yaffsfs_parse_image_load_cache: Max version number %" PRIuOFF " is invalid", version_num);
             return TSK_ERR;
         }
 
@@ -1579,8 +1587,19 @@ static uint8_t
 
     // Use the max object id and version number to construct an upper bound on the inode
     TSK_INUM_T max_inum = 0;
-    yaffscache_obj_id_and_version_to_inode(yfs->max_obj_id, yfs->max_version, &max_inum);
+    if (TSK_OK != yaffscache_obj_id_and_version_to_inode(yfs->max_obj_id, yfs->max_version, &max_inum)) {
+        return TSK_ERR;
+    }
     yfs->fs_info.last_inum = max_inum + 1; // One more for the orphan dir
+
+    // Make sure the orphan dir is greater than the root dir
+    if (yfs->fs_info.last_inum <= yfs->fs_info.root_inum) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS);
+        tsk_error_set_errstr(
+            "yaffsfs_parse_image_load_cache: Maximum inum %" PRIuOFF " is not greater than the root inum", yfs->fs_info.last_inum);
+        return TSK_ERR;
+    }
 
     return TSK_OK;
 }
@@ -3197,7 +3216,9 @@ TSK_FS_INFO *
     */
     //tsk_init_lock(&yaffsfs->lock);
     yaffsfs->chunkMap = new std::map<uint32_t, YaffsCacheChunkGroup>;
-    yaffsfs_parse_image_load_cache(yaffsfs);
+    if (TSK_OK != yaffsfs_parse_image_load_cache(yaffsfs)) {
+        goto on_error;
+    }
 
     if (tsk_verbose) {
         fprintf(stderr, "yaffsfs_open: done building cache!\n");
