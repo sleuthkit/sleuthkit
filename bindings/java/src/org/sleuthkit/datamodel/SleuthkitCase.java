@@ -1815,7 +1815,7 @@ public class SleuthkitCase {
 							break;
 						case ABSTRACTFILE:
 							// Check if virtual dir for local files.
-							AbstractFile af = getAbstractFileById(i.id, connection);
+							AbstractFile af = getAbstractFileById(i.id);
 							if (af instanceof VirtualDirectory) {
 								rootObjs.add(af);
 							} else {
@@ -4086,7 +4086,7 @@ public class SleuthkitCase {
 					content = getFileSystemById(id, parentId);
 					break;
 				case ABSTRACTFILE:
-					content = getAbstractFileById(id, connection);
+					content = getAbstractFileById(id);
 					break;
 				case ARTIFACT:
 					content = getArtifactById(id);
