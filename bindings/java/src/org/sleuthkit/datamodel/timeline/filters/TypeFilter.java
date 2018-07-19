@@ -30,7 +30,7 @@ import org.sleuthkit.datamodel.timeline.EventType;
  * Event Type Filter. An instance of TypeFilter is usually a tree that parallels
  * the event type hierarchy with one filter/node for each event type.
  */
-public class TypeFilter extends UnionFilter<TypeFilter> {
+public class TypeFilter extends AbstractUnionFilter<TypeFilter> {
 
 	static private final Comparator<TypeFilter> comparator = Comparator.comparing(TypeFilter::getEventType);
 

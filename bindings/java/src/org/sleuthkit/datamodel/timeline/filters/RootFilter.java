@@ -91,7 +91,7 @@ public final class RootFilter extends IntersectionFilter<TimelineFilter> {
 				.map(TimelineFilter::copyOf)
 				.collect(Collectors.toSet());
 
-		RootFilter filter = new RootFilter(
+		return new RootFilter(
 				knownFilter.copyOf(),
 				tagsFilter.copyOf(),
 				hashFilter.copyOf(),
@@ -99,14 +99,11 @@ public final class RootFilter extends IntersectionFilter<TimelineFilter> {
 				typeFilter.copyOf(),
 				dataSourcesFilter.copyOf(),
 				annonymousSubFilters);
-
-		return filter;
 	}
 
 	@Override
 	public int hashCode() {
-		int hash = 7;
-		return hash;
+		return 7;
 	}
 
 	@Override
@@ -120,26 +117,7 @@ public final class RootFilter extends IntersectionFilter<TimelineFilter> {
 		if (getClass() != obj.getClass()) {
 			return false;
 		}
-		final RootFilter other = (RootFilter) obj;
-		if (!Objects.equals(this.knownFilter, other.knownFilter)) {
-			return false;
-		}
-		if (!Objects.equals(this.tagsFilter, other.tagsFilter)) {
-			return false;
-		}
-		if (!Objects.equals(this.hashFilter, other.hashFilter)) {
-			return false;
-		}
-		if (!Objects.equals(this.textFilter, other.textFilter)) {
-			return false;
-		}
-		if (!Objects.equals(this.typeFilter, other.typeFilter)) {
-			return false;
-		}
-		if (!Objects.equals(this.dataSourcesFilter, other.dataSourcesFilter)) {
-			return false;
-		}
-		return areSubFiltersEqual(this, other);
-	}
 
+		return areSubFiltersEqual(this, (CompoundFilter<?>) obj);
+	}
 }

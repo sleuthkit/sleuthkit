@@ -48,6 +48,7 @@ import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EV
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TL_EVENT_TYPE;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
+import static org.sleuthkit.datamodel.SleuthkitCase.escapeSingleQuotes;
 import static org.sleuthkit.datamodel.StringUtils.joinAsStrings;
 import org.sleuthkit.datamodel.timeline.ArtifactEventType;
 import org.sleuthkit.datamodel.timeline.EventType;
@@ -736,30 +737,21 @@ public final class TimelineManager {
 			Long artifactID, String fullDescription, String medDescription,
 			String shortDescription, TskData.FileKnown known, boolean hashHit, boolean tagged) throws TskCoreException {
 
-		String sql = "INSERT INTO events ("
-				+ " datasource_id, "
-				+ " file_id, "
-				+ " artifact_id, "
-				+ " time, "
-				+ " sub_type, "
-				+ " base_type, "
-				+ " full_description, "
-				+ " med_description, "
-				+ " short_description, "
-				+ " known_state, "
-				+ " hash_hit, "
-				+ " tagged) "
+		String sql = "INSERT INTO events ( "
+				+ "datasource_id, file_id, artifact_id, time, sub_type, base_type,"
+				+ " full_description, med_description, short_description, "
+				+ " known_state, hash_hit, tagged) "
 				+ " VALUES ("
 				+ datasourceID + ","
 				+ objID + ","
-				+ ((artifactID == null) ? "NULL" : artifactID) + ","
+				+ Objects.toString(artifactID, "NULL") + ","
 				+ time + ","
 				+ ((type.getTypeID() == -1) ? "NULL" : type.getTypeID()) + ","
-				+ type.getBaseType().getTypeID() + ",'"
-				+ SleuthkitCase.escapeSingleQuotes(fullDescription) + "','"
-				+ SleuthkitCase.escapeSingleQuotes(medDescription) + "','"
-				+ SleuthkitCase.escapeSingleQuotes(shortDescription) + "','"
-				+ known.getFileKnownValue() + "',"
+				+ type.getBaseType().getTypeID() + ","
+				+ "'" + escapeSingleQuotes(fullDescription) + "',"
+				+ "'" + escapeSingleQuotes(medDescription) + "',"
+				+ "'" + escapeSingleQuotes(shortDescription) + "',"
+				+ "'" + known.getFileKnownValue() + "',"
 				+ (hashHit ? 1 : 0) + ","
 				+ (tagged ? 1 : 0) + "  )";// NON-NLS  
 		sleuthkitCase.acquireSingleUserCaseWriteLock();

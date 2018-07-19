@@ -29,13 +29,13 @@ import org.sleuthkit.datamodel.TimelineManager;
  *
  * @param <SubFilterType> The type of the subfilters.
  */
-abstract public class UnionFilter<SubFilterType extends TimelineFilter> extends CompoundFilter<SubFilterType> {
+abstract class AbstractUnionFilter<SubFilterType extends TimelineFilter> extends CompoundFilter<SubFilterType> {
 
-	public UnionFilter(ObservableList<SubFilterType> subFilters) {
+	public AbstractUnionFilter(ObservableList<SubFilterType> subFilters) {
 		super(subFilters);
 	}
 
-	public UnionFilter() {
+	public AbstractUnionFilter() {
 		super(FXCollections.<SubFilterType>observableArrayList());
 	}
 

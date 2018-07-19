@@ -21,7 +21,7 @@ package org.sleuthkit.datamodel.timeline.filters;
 /**
  * union of {@link DataSourceFilter}s
  */
-public class DataSourcesFilter extends UnionFilter<DataSourceFilter> {
+public class DataSourcesFilter extends AbstractUnionFilter<DataSourceFilter> {
 
 	public DataSourcesFilter() {
 //		disabledPropertyOverride = Bindings.or(super.disabledProperty(), Bindings.size(getSubFilters()).lessThanOrEqualTo(1));

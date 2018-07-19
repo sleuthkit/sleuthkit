@@ -1,9 +1,6 @@
 package org.sleuthkit.datamodel.timeline.filters;
 
-
-import org.sleuthkit.datamodel.timeline.*;
 import java.util.ResourceBundle;
-
 
 class BundleUtils {
 
@@ -11,5 +8,8 @@ class BundleUtils {
 
 	static ResourceBundle getBundle() {
 		return BUNDLE;
+	}
+
+	private BundleUtils() {
 	}
 }

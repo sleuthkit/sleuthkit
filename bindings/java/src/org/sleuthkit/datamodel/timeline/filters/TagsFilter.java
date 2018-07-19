@@ -24,7 +24,7 @@ import org.sleuthkit.datamodel.TagName;
 /**
  * Filter to show only events tag with the tagNames of the selected subfilters.
  */
-public final class TagsFilter extends UnionFilter<TagNameFilter> {
+public final class TagsFilter extends AbstractUnionFilter<TagNameFilter> {
 
 	@Override
 	public String getDisplayName() {

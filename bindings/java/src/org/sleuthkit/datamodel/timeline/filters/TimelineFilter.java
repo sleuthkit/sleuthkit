@@ -37,7 +37,7 @@ public interface TimelineFilter {
 	 *
 	 * @return a filter that is the intersection of the given filters
 	 */
-	public static TimelineFilter intersect(List<TimelineFilter> filters) {
+	static TimelineFilter intersect(List<TimelineFilter> filters) {
 		return new IntersectionFilter<>(filters);
 	}
 
@@ -48,7 +48,7 @@ public interface TimelineFilter {
 	 *
 	 * @return a filter that is the intersection of the given filters
 	 */
-	public static TimelineFilter intersect(TimelineFilter[] filters) {
+	static TimelineFilter intersect(TimelineFilter[] filters) {
 		return intersect(Arrays.asList(filters));
 	}
 

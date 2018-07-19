@@ -29,7 +29,7 @@ import javafx.collections.ObservableList;
  *
  * @param <SubFilterType> The type of the subfilters.
  */
-public abstract class CompoundFilter<SubFilterType extends TimelineFilter> implements TimelineFilter {
+ public abstract class CompoundFilter<SubFilterType extends TimelineFilter> implements TimelineFilter {
 
 	/**
 	 * The list of sub-filters that make up this filter

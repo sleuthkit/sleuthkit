@@ -21,7 +21,7 @@ package org.sleuthkit.datamodel.timeline.filters;
 /**
  *
  */
-final public class HashHitsFilter extends UnionFilter<HashSetFilter> {
+final public class HashHitsFilter extends AbstractUnionFilter<HashSetFilter> {
 
 	@Override
 	public String getDisplayName() {

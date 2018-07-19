@@ -30,15 +30,15 @@ import org.sleuthkit.datamodel.TimelineManager;
  * @param <S> The type of sub Filters in this IntersectionFilter.
  */
 class IntersectionFilter<S extends TimelineFilter> extends CompoundFilter<S> {
-	
+
 	IntersectionFilter(List<S> subFilters) {
 		super(subFilters);
 	}
-	
+
 	IntersectionFilter() {
 		super(Collections.emptyList());
 	}
-	
+
 	@Override
 	public IntersectionFilter<S> copyOf() {
 		@SuppressWarnings("unchecked")
@@ -48,7 +48,7 @@ class IntersectionFilter<S extends TimelineFilter> extends CompoundFilter<S> {
 						.collect(Collectors.toList()));
 		return filter;
 	}
-	
+
 	@Override
 	public String getDisplayName() {
 		String collect = getSubFilters().stream()
@@ -56,7 +56,7 @@ class IntersectionFilter<S extends TimelineFilter> extends CompoundFilter<S> {
 				.collect(Collectors.joining(",", "[", "]"));
 		return BundleUtils.getBundle().getString("IntersectionFilter.displayName.text") + collect;
 	}
-	
+
 	@Override
 	public boolean equals(Object obj) {
 		if (obj == null) {
@@ -67,18 +67,18 @@ class IntersectionFilter<S extends TimelineFilter> extends CompoundFilter<S> {
 		}
 		@SuppressWarnings("unchecked")
 		final IntersectionFilter<S> other = (IntersectionFilter<S>) obj;
-		
+
 		return areSubFiltersEqual(this, other);
 	}
-	
+
 	@Override
 	public String getSQLWhere(TimelineManager manager) {
 		String join = this.getSubFilters().stream()
 				.filter(Objects::nonNull)
 				.map(filter -> filter.getSQLWhere(manager))
-				.filter( sql -> sql.equals(manager.getTrueLiteral()) ==false)
+				.filter(sql -> sql.equals(manager.getTrueLiteral()) == false)
 				.collect(Collectors.joining(" AND "));
-		
+
 		return join.isEmpty()
 				? manager.getTrueLiteral()
 				: "(" + join + ")";
