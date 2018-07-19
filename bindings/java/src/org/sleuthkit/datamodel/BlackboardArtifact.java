@@ -588,7 +588,7 @@ public class BlackboardArtifact implements Content {
 	@Override
 	public ArrayList<BlackboardAttribute> getGenInfoAttributes(BlackboardAttribute.ATTRIBUTE_TYPE attr_type) throws TskCoreException {
 		// Currently we don't have any artifacts derived from an artifact.
-		return new ArrayList<BlackboardAttribute>();
+		return new ArrayList<>();
 	}
 
 	/**
@@ -644,8 +644,8 @@ public class BlackboardArtifact implements Content {
 	 * @return The output of the algorithm.
 	 */
 	@Override
-	public <T> T accept(ContentVisitor<T> v) {
-		return v.visit(this);
+	public <T> T accept(ContentVisitor<T> visitor) {
+		return visitor.visit(this);
 	}
 
 	/**
@@ -1151,8 +1151,7 @@ public class BlackboardArtifact implements Content {
 		 */
 		TSK_TL_EVENT(42, "TSK_TL_EVENT", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskTLEvent.text"));
-		;
-		
+
 		private final String label;
 		private final int typeId;
 		private final String displayName;
@@ -1439,7 +1438,7 @@ public class BlackboardArtifact implements Content {
 	 */
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
-		List<Content> children = new ArrayList<Content>();
+		List<Content> children = new ArrayList<>();
 		children.addAll(getSleuthkitCase().getAbstractFileChildren(this));
 		children.addAll(getSleuthkitCase().getBlackboardArtifactChildren(this));
 

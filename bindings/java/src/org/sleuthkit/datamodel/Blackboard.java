@@ -32,7 +32,7 @@ import java.util.List;
  */
 public final class Blackboard {
 
-	private SleuthkitCase caseDb;
+	private final SleuthkitCase caseDb;
 
 	/**
 	 * Constructs a representation of the blackboard, a place where artifacts
@@ -167,7 +167,6 @@ public final class Blackboard {
 				+ "INNER JOIN blackboard_artifacts AS arts "
 				+ "ON arts.artifact_type_id = types.artifact_type_id "
 				+ "WHERE arts.data_source_obj_id = " + dataSourceObjId;
-
 		caseDb.acquireSingleUserCaseReadLock();
 		try (SleuthkitCase.CaseDbConnection connection = caseDb.getConnection();
 				Statement statement = connection.createStatement();

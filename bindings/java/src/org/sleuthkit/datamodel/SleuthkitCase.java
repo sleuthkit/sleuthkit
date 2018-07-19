@@ -63,7 +63,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.postgresql.util.PSQLException;
 import org.postgresql.util.PSQLState;
 import org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE;
 import org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE;
@@ -123,8 +122,12 @@ public class SleuthkitCase {
 	private Map<Integer, BlackboardAttribute.Type> typeIdToAttributeTypeMap;
 	private Map<String, BlackboardArtifact.Type> typeNameToArtifactTypeMap;
 	private Map<String, BlackboardAttribute.Type> typeNameToAttributeTypeMap;
-	private Map<Long, SparseBitSet> hasChildrenBitSetMap; // First parameter is used to specify the SparseBitSet to use, 
-	// as object IDs can be larger than the max size of a SparseBitSet
+
+	/*
+	 * First parameter is used to specify the SparseBitSet to use, as object IDs
+	 * can be larger than the max size of a SparseBitSet
+	 */
+	private final Map<Long, SparseBitSet> hasChildrenBitSetMap = new HashMap<>();
 
 	private long nextArtifactId; // Used to ensure artifact ids come from the desired range.
 	// This read/write lock is used to implement a layer of locking on top of
@@ -136,6 +139,10 @@ public class SleuthkitCase {
 	private CommunicationsManager communicationsMgrInstance;
 	private TimelineManager timelineMgrInstance;
 	private Blackboard blackboardInstance;
+
+	private final Object communicationsMgrInstanceLock = new Object();
+	private final Object blackboardInstanceLock = new Object();
+	private final Object timelineMgrInstanceLock = new Object();
 
 	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<>();
 
@@ -291,39 +298,23 @@ public class SleuthkitCase {
 			initIngestStatusTypes(connection);
 			initReviewStatuses(connection);
 			initEncodingTypes(connection);
-			timelineMgrInstance = getTimelineManager();
 			populateHasChildrenMap(connection);
 		}
-	}
-
-	/**
-	 * Returns an instance of TimelineManager for this case;
-	 *
-	 * @return a TimelineManager
-	 *
-	 * @throws org.sleuthkit.datamodel.TskCoreException
-	 */
-	public synchronized TimelineManager getTimelineManager() throws TskCoreException {
-		if (null == timelineMgrInstance) {
-			timelineMgrInstance = new TimelineManager(this);
-		}
-		return timelineMgrInstance;
 	}
 
 	/**
 	 * Use the internal map to determine whether the content object has children
 	 * (of any type).
 	 *
-	 * @param c
+	 * @param content
 	 *
 	 * @return true if the content has children, false otherwise
 	 */
-	boolean getHasChildren(Content c) {
-		long objId = c.getId();
+	boolean getHasChildren(Content content) {
+		long objId = content.getId();
 		long mapIndex = objId / Integer.MAX_VALUE;
 		int mapValue = (int) (objId % Integer.MAX_VALUE);
-
-		synchronized (this) {
+		synchronized (hasChildrenBitSetMap) {
 			if (hasChildrenBitSetMap.containsKey(mapIndex)) {
 				return hasChildrenBitSetMap.get(mapIndex).get(mapValue);
 			}
@@ -339,8 +330,7 @@ public class SleuthkitCase {
 	private void setHasChildren(Long objId) {
 		long mapIndex = objId / Integer.MAX_VALUE;
 		int mapValue = (int) (objId % Integer.MAX_VALUE);
-
-		synchronized (this) {
+		synchronized (hasChildrenBitSetMap) {
 			if (hasChildrenBitSetMap.containsKey(mapIndex)) {
 				hasChildrenBitSetMap.get(mapIndex).set(mapValue);
 			} else {
@@ -352,28 +342,50 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Returns an instance of CommunicationsManager
+	 * Returns an instance of CommunicationsManager for this case.
 	 *
 	 * @return CommunicationsManager
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public synchronized CommunicationsManager getCommunicationsManager() throws TskCoreException {
-		if (null == communicationsMgrInstance) {
-			communicationsMgrInstance = new CommunicationsManager(this);
+	public CommunicationsManager getCommunicationsManager() throws TskCoreException {
+		synchronized (communicationsMgrInstanceLock) {
+			if (null == communicationsMgrInstance) {
+				communicationsMgrInstance = new CommunicationsManager(this);
+			}
+			return communicationsMgrInstance;
 		}
-		return communicationsMgrInstance;
 	}
 
 	/**
-	 * Returns an instance of Blackboard
+	 * Returns an instance of Blackboard for this case.
 	 *
 	 * @return Blackboard
 	 *
 	 */
-	public synchronized Blackboard getBlackboard() {
-		if (null == blackboardInstance) {
-			blackboardInstance = new Blackboard(this);
+	public Blackboard getBlackboard() {
+		synchronized (blackboardInstanceLock) {
+			if (null == blackboardInstance) {
+				blackboardInstance = new Blackboard(this);
+			}
+			return blackboardInstance;
 		}
-		return blackboardInstance;
+	}
+
+	/**
+	 * Returns an instance of TimelineManager for this case.
+	 *
+	 * @return a TimelineManager
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	public TimelineManager getTimelineManager() throws TskCoreException {
+		synchronized (timelineMgrInstanceLock) {
+			if (null == timelineMgrInstance) {
+				timelineMgrInstance = new TimelineManager(this);
+			}
+			return timelineMgrInstance;
+		}
 	}
 
 	/**
@@ -636,10 +648,7 @@ public class SleuthkitCase {
 			statement = connection.createStatement();
 			resultSet = statement.executeQuery("select distinct par_obj_id from tsk_objects"); //NON-NLS
 
-			synchronized (this) {
-				if (hasChildrenBitSetMap == null) {
-					hasChildrenBitSetMap = new HashMap<Long, SparseBitSet>();
-				}
+			synchronized (hasChildrenBitSetMap) {
 				while (resultSet.next()) {
 					setHasChildren(resultSet.getLong("par_obj_id"));
 				}
@@ -7217,8 +7226,10 @@ public class SleuthkitCase {
 		}
 
 		fileSystemIdMap.clear();
-		if (blackboardInstance != null) {
-			blackboardInstance = null;
+		synchronized (blackboardInstanceLock) {
+			if (blackboardInstance != null) {
+				blackboardInstance = null;
+			}
 		}
 
 		try {
