@@ -15,6 +15,7 @@
 			<artifact name="postgresql" type="jar" />
 		</dependency>
 		<dependency org="com.mchange" name="c3p0" rev="0.9.5" />
+		<dependency org="com.zaxxer" name="SparseBitSet" rev="1.1" />
 	</dependencies>
 </ivy-module>
 

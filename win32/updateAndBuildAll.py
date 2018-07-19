@@ -182,6 +182,7 @@ def buildDependentLibs(libHome, wPlatform, targetDll, project):
     elif wPlatform == 32:
         vs.append("/p:platform=Win32")
     vs.append("/clp:ErrorsOnly")
+    vs.append("/m")
 
     outputFile = os.path.join(LOG_PATH, targetDll + "Output.txt")
     VSout = open(outputFile, 'w')
@@ -237,6 +238,7 @@ def buildTSK(wPlatform, target):
     vs.append("/clp:ErrorsOnly")
     vs.append("/t:clean")
     vs.append("/t:build")
+    vs.append("/m")
 
     outputFile = os.path.join(LOG_PATH, "TSKOutput.txt")
     VSout = open(outputFile, 'w')

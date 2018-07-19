@@ -206,7 +206,7 @@ public abstract class FsContent extends AbstractFile {
 	 */
 	@Override
 	@SuppressWarnings("deprecation")
-	protected int readInt(byte[] buf, long offset, long len) throws TskCoreException {
+	protected synchronized int readInt(byte[] buf, long offset, long len) throws TskCoreException {
 		if (offset == 0 && size == 0) {
 			//special case for 0-size file
 			return 0;
@@ -301,15 +301,10 @@ public abstract class FsContent extends AbstractFile {
 	 */
 	@Override
 	@SuppressWarnings("deprecation")
-	public void close() {
+	public synchronized void close() {
 		if (fileHandle != 0) {
-			synchronized (this) {
-				//need to recheck the handle after unlock
-				if (fileHandle != 0) {
-					SleuthkitJNI.closeFile(fileHandle);
-					fileHandle = 0;
-				}
-			}
+			SleuthkitJNI.closeFile(fileHandle);
+			fileHandle = 0;
 		}
 	}
 
