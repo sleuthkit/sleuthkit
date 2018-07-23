@@ -94,7 +94,7 @@ public class SleuthkitCase {
 	 * tsk/auto/tsk_db.h.
 	 */
 	private static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
-			= new CaseDbSchemaVersionNumber(8, 0);
+			= new CaseDbSchemaVersionNumber(8, 1);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -273,7 +273,6 @@ public class SleuthkitCase {
 		initBlackboardArtifactTypes();
 		initBlackboardAttributeTypes();
 		initNextArtifactId();
-
 		updateDatabaseSchema(null);
 
 		CaseDbConnection connection = connections.getConnection();
@@ -697,7 +696,6 @@ public class SleuthkitCase {
 			resultSet = null;
 			statement.close();
 			statement = null;
-
 			//check schema compatibility
 			if (false == CURRENT_DB_SCHEMA_VERSION.isCompatible(dbSchemaVersion)) {
 				//we cannot open a db with a major schema version higher than the current one.
@@ -1457,14 +1455,12 @@ public class SleuthkitCase {
 		if (schemaVersion.getMinor() != 0) {
 			return schemaVersion;
 		}
-
 		Statement statement = connection.createStatement();
-		String defaultUserNameForTags = "";
 		acquireSingleUserCaseWriteLock();
 		try {
-			statement.execute("ALTER TABLE content_tags ADD COLUMN user_name TEXT DEFAULT " + defaultUserNameForTags);
-			statement.execute("ALTER TABLE blackboard_artifact_tags ADD COLUMN user_name TEXT DEFAULT " + defaultUserNameForTags);
-			return new CaseDbSchemaVersionNumber(8, 0);
+			statement.execute("ALTER TABLE content_tags ADD COLUMN user_name TEXT DEFAULT NULL");
+			statement.execute("ALTER TABLE blackboard_artifact_tags ADD COLUMN user_name TEXT DEFAULT NULL");
+			return new CaseDbSchemaVersionNumber(8, 1);
 		} finally {
 			closeStatement(statement);
 			releaseSingleUserCaseWriteLock();
