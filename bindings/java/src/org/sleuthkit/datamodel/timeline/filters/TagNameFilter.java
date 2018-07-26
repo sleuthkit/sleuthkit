@@ -20,7 +20,7 @@ package org.sleuthkit.datamodel.timeline.filters;
 
 import java.util.Objects;
 import org.sleuthkit.datamodel.TagName;
-import org.sleuthkit.datamodel.TimelineManager;
+import org.sleuthkit.datamodel.timeline.TimelineManager;
 
 /**
  * Filter for an individual TagName

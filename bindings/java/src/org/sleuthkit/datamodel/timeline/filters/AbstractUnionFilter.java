@@ -22,7 +22,7 @@ import java.util.Comparator;
 import java.util.stream.Collectors;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import org.sleuthkit.datamodel.TimelineManager;
+import org.sleuthkit.datamodel.timeline.TimelineManager;
 
 /**
  * Union(or) filter
@@ -31,11 +31,11 @@ import org.sleuthkit.datamodel.TimelineManager;
  */
 abstract class AbstractUnionFilter<SubFilterType extends TimelineFilter> extends CompoundFilter<SubFilterType> {
 
-	public AbstractUnionFilter(ObservableList<SubFilterType> subFilters) {
+	AbstractUnionFilter(ObservableList<SubFilterType> subFilters) {
 		super(subFilters);
 	}
 
-	public AbstractUnionFilter() {
+	AbstractUnionFilter() {
 		super(FXCollections.<SubFilterType>observableArrayList());
 	}
 
@@ -57,7 +57,7 @@ abstract class AbstractUnionFilter<SubFilterType extends TimelineFilter> extends
 				.collect(Collectors.joining(" OR "));
 
 		return join.isEmpty()
-				? manager.getTrueLiteral()
+				? SQLUtils.getTrueLiteral(manager.getSleuthkitCase())
 				: "(" + join + ")";
 	}
 }

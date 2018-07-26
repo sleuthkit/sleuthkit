@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import org.sleuthkit.datamodel.TimelineManager;
+import org.sleuthkit.datamodel.timeline.TimelineManager;
 
 /**
  * Intersection (And) filter
@@ -73,14 +73,16 @@ class IntersectionFilter<S extends TimelineFilter> extends CompoundFilter<S> {
 
 	@Override
 	public String getSQLWhere(TimelineManager manager) {
+		String trueLiteral = SQLUtils.getTrueLiteral(manager.getSleuthkitCase());
+
 		String join = this.getSubFilters().stream()
 				.filter(Objects::nonNull)
 				.map(filter -> filter.getSQLWhere(manager))
-				.filter(sql -> sql.equals(manager.getTrueLiteral()) == false)
+				.filter(sql -> sql.equals(trueLiteral) == false)
 				.collect(Collectors.joining(" AND "));
 
 		return join.isEmpty()
-				? manager.getTrueLiteral()
+				? trueLiteral
 				: "(" + join + ")";
 	}
 }

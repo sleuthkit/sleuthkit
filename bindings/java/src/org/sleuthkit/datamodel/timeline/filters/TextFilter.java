@@ -22,7 +22,7 @@ import java.util.Objects;
 import javafx.beans.property.Property;
 import javafx.beans.property.SimpleStringProperty;
 import org.apache.commons.lang3.StringUtils;
-import org.sleuthkit.datamodel.TimelineManager;
+import org.sleuthkit.datamodel.timeline.TimelineManager;
 
 /**
  * Filter for text matching
@@ -87,6 +87,6 @@ public class TextFilter implements TimelineFilter {
 				? "((med_description like '%" + this.getText() + "%')" //NON-NLS
 				+ " or (full_description like '%" + this.getText() + "%')" //NON-NLS
 				+ " or (short_description like '%" + this.getText() + "%'))" //NON-NLS
-				: manager.getTrueLiteral();
+				: SQLUtils.getTrueLiteral(manager.getSleuthkitCase());
 	}
 }

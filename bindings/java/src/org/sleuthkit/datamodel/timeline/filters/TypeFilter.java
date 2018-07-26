@@ -23,7 +23,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javafx.collections.FXCollections;
-import org.sleuthkit.datamodel.TimelineManager;
+import org.sleuthkit.datamodel.timeline.TimelineManager;
 import org.sleuthkit.datamodel.timeline.EventType;
 
 /**

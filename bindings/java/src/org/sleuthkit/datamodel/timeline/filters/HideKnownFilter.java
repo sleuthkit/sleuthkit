@@ -18,7 +18,7 @@
  */
 package org.sleuthkit.datamodel.timeline.filters;
 
-import org.sleuthkit.datamodel.TimelineManager;
+import org.sleuthkit.datamodel.timeline.TimelineManager;
 import org.sleuthkit.datamodel.TskData;
 
 /**

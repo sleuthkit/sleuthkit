@@ -20,7 +20,7 @@ package org.sleuthkit.datamodel.timeline.filters;
 
 import java.util.Arrays;
 import java.util.List;
-import org.sleuthkit.datamodel.TimelineManager;
+import org.sleuthkit.datamodel.timeline.TimelineManager;
 
 /**
  * Interface for timeline event filters. Filters are given to the

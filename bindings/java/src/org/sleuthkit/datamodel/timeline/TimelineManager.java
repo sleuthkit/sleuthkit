@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel;
+package org.sleuthkit.datamodel.timeline;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -43,11 +43,19 @@ import static org.apache.commons.lang3.StringUtils.substringAfter;
 import static org.apache.commons.lang3.StringUtils.substringBefore;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Interval;
+import org.sleuthkit.datamodel.AbstractFile;
+import org.sleuthkit.datamodel.BlackboardArtifact;
+import org.sleuthkit.datamodel.BlackboardAttribute;
+import org.sleuthkit.datamodel.DescriptionLoD;
+import org.sleuthkit.datamodel.SleuthkitCase;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EVENT;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TL_EVENT_TYPE;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
+import org.sleuthkit.datamodel.StringUtils;
+import org.sleuthkit.datamodel.TskCoreException;
+import org.sleuthkit.datamodel.TskData;
 import static org.sleuthkit.datamodel.SleuthkitCase.escapeSingleQuotes;
 import static org.sleuthkit.datamodel.StringUtils.joinAsStrings;
 import org.sleuthkit.datamodel.timeline.ArtifactEventType;
@@ -66,14 +74,16 @@ public final class TimelineManager {
 	private static final Logger logger = Logger.getLogger(TimelineManager.class.getName());
 
 	private final SleuthkitCase sleuthkitCase;
-	private final String csvFunction;
 
 	final private BiMap<Long, EventType> eventTypeIDMap = HashBiMap.create();
 
 	TimelineManager(SleuthkitCase tskCase) throws TskCoreException {
 		sleuthkitCase = tskCase;
-		csvFunction = sleuthkitCase.getDatabaseType() == TskData.DbType.POSTGRESQL ? "string_agg" : "group_concat";
 		initializeEventTypes();
+	}
+
+	public SleuthkitCase getSleuthkitCase() {
+		return sleuthkitCase;
 	}
 
 	public Interval getSpanningInterval(Collection<Long> eventIDs) throws TskCoreException {
@@ -321,21 +331,7 @@ public final class TimelineManager {
 		return Collections.unmodifiableSet(hashSets);
 	}
 
-	public void analyze() throws TskCoreException {
-		sleuthkitCase.acquireSingleUserCaseWriteLock();
-		try (CaseDbConnection con = sleuthkitCase.getConnection();
-				Statement stmt = con.createStatement();) {
-
-			stmt.execute("ANALYZE;"); //NON-NLS
-			if (sleuthkitCase.getDatabaseType() == TskData.DbType.SQLITE) {
-				stmt.execute("analyze sqlite_master;"); //NON-NLS
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Failed to analyze events db.", ex); // NON-NLS
-		} finally {
-			sleuthkitCase.releaseSingleUserCaseWriteLock();
-		}
-	}
+	
 
 	/**
 	 * @return maximum time in seconds from unix epoch
@@ -958,7 +954,7 @@ public final class TimelineManager {
 
 	/**
 	 * Get an SQL expression that produces an events table augmented with the
-	 * columsn required by the filters. The union of the events table joined to
+	 * columsn required by the filters: The union of the events table joined to
 	 * the content and blackboard artifacts tags tables, if necessary, then
 	 * joined to a query that selects hash set hits, if necessary. Other wise
 	 * just return "events".
@@ -1026,7 +1022,7 @@ public final class TimelineManager {
 
 		String result;
 		if (filter == null) {
-			return getTrueLiteral();
+			return sql getTrueLiteral();
 		} else {
 			result = filter.getSQLWhere(this);
 		}
@@ -1044,37 +1040,6 @@ public final class TimelineManager {
 			default:
 				return "short_description"; //NON-NLS
 			}
-	}
-
-	public String getFalseLiteral() {
-		switch (sleuthkitCase.getDatabaseType()) {
-			case POSTGRESQL:
-				return "FALSE";
-			case SQLITE:
-				return "0";
-			default:
-				throw newUnsupportedDBTypeException();
-		}
-	}
-
-	public String getTrueLiteral() {
-		switch (sleuthkitCase.getDatabaseType()) {
-			case POSTGRESQL:
-				return "TRUE";
-			case SQLITE:
-				return "1";
-			default:
-				throw newUnsupportedDBTypeException();
-		}
-	}
-
-	public String csvAggFunction(String args) {
-		return csvAggFunction(args, ",");
-	}
-
-	public String csvAggFunction(String args, String seperator) {
-		return csvFunction + "(Cast (" + args + " AS VARCHAR) , '" + seperator + "')";
-
 	}
 
 	/**
