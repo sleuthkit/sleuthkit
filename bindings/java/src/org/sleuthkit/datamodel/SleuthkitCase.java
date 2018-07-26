@@ -121,10 +121,10 @@ public class SleuthkitCase {
 	private Map<Integer, BlackboardAttribute.Type> typeIdToAttributeTypeMap;
 	private Map<String, BlackboardArtifact.Type> typeNameToArtifactTypeMap;
 	private Map<String, BlackboardAttribute.Type> typeNameToAttributeTypeMap;
-	
+
 	// First parameter is used to specify the SparseBitSet to use, 
 	// as object IDs can be larger than the max size of a SparseBitSet
-	private final Map<Long, SparseBitSet> hasChildrenBitSetMap = new HashMap<Long, SparseBitSet>(); 
+	private final Map<Long, SparseBitSet> hasChildrenBitSetMap = new HashMap<Long, SparseBitSet>();
 
 	private long nextArtifactId; // Used to ensure artifact ids come from the desired range.
 	// This read/write lock is used to implement a layer of locking on top of
@@ -296,8 +296,8 @@ public class SleuthkitCase {
 		long objId = c.getId();
 		long mapIndex = objId / Integer.MAX_VALUE;
 		int mapValue = (int) (objId % Integer.MAX_VALUE);
-		
-		synchronized(hasChildrenBitSetMap) {
+
+		synchronized (hasChildrenBitSetMap) {
 			if (hasChildrenBitSetMap.containsKey(mapIndex)) {
 				return hasChildrenBitSetMap.get(mapIndex).get(mapValue);
 			}
@@ -313,8 +313,8 @@ public class SleuthkitCase {
 	private void setHasChildren(Long objId) {
 		long mapIndex = objId / Integer.MAX_VALUE;
 		int mapValue = (int) (objId % Integer.MAX_VALUE);
-		
-		synchronized(hasChildrenBitSetMap) {
+
+		synchronized (hasChildrenBitSetMap) {
 			if (hasChildrenBitSetMap.containsKey(mapIndex)) {
 				hasChildrenBitSetMap.get(mapIndex).set(mapValue);
 			} else {
@@ -613,9 +613,9 @@ public class SleuthkitCase {
 		try {
 			statement = connection.createStatement();
 			resultSet = statement.executeQuery("select distinct par_obj_id from tsk_objects"); //NON-NLS
-		
+
 			synchronized (hasChildrenBitSetMap) {
-				while(resultSet.next()) {
+				while (resultSet.next()) {
 					setHasChildren(resultSet.getLong("par_obj_id"));
 				}
 			}
@@ -825,8 +825,8 @@ public class SleuthkitCase {
 
 			// Add new tables for tags.
 			statement.execute("CREATE TABLE tag_names (tag_name_id INTEGER PRIMARY KEY, display_name TEXT UNIQUE, description TEXT NOT NULL, color TEXT NOT NULL)"); //NON-NLS
-			statement.execute("CREATE TABLE content_tags (tag_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL, begin_byte_offset INTEGER NOT NULL, end_byte_offset INTEGER NOT NULL, user_name TEXT)"); //NON-NLS
-			statement.execute("CREATE TABLE blackboard_artifact_tags (tag_id INTEGER PRIMARY KEY, artifact_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL, user_name TEXT)"); //NON-NLS
+			statement.execute("CREATE TABLE content_tags (tag_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL, begin_byte_offset INTEGER NOT NULL, end_byte_offset INTEGER NOT NULL)"); //NON-NLS
+			statement.execute("CREATE TABLE blackboard_artifact_tags (tag_id INTEGER PRIMARY KEY, artifact_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL)"); //NON-NLS
 
 			// Add a new table for reports.
 			statement.execute("CREATE TABLE reports (report_id INTEGER PRIMARY KEY, path TEXT NOT NULL, crtime INTEGER NOT NULL, src_module_name TEXT NOT NULL, report_name TEXT NOT NULL)"); //NON-NLS
