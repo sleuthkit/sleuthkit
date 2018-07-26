@@ -32,9 +32,27 @@ import org.sleuthkit.datamodel.TskData.DbType;
  * to create custom tables/indexes and to query them.
  *
  */
-public final class DBAccessManager {
+public final class CaseDbAccessManager {
+	
+	/**
+	 *  Callback interface to process the result of DB query run through DBAccessManager
+	 */
+	public interface CaseDbAccessQueryCallback {
 
-	private static final Logger logger = Logger.getLogger(DBAccessManager.class.getName());
+	   /**
+		* Processes the ResultSet from CaseDbAccessManager query.
+		*
+		* This is called synchronously by CaseDbAccessManager, 
+		* and should avoid any long running operations.
+		* 
+		* @param resultSet ResultSet from query.
+		*/
+	   void process(ResultSet resultSet);
+
+   }
+
+
+	private static final Logger logger = Logger.getLogger(CaseDbAccessManager.class.getName());
 
 	private final SleuthkitCase tskDB;
 
@@ -44,12 +62,17 @@ public final class DBAccessManager {
 	 * @param skCase The SleuthkitCase
 	 *
 	 */
-	DBAccessManager(SleuthkitCase skCase) {
+	CaseDbAccessManager(SleuthkitCase skCase) {
 		this.tskDB = skCase;
 	}
 
 	/**
 	 * Creates a table with the specified name and schema.
+	 * 
+	 * If the table already exists, it does nothing, and no error is generated 
+	 * 
+	 * It is recommended that clients of the API use module specific prefixes
+	 * to prevent name collisions.
 	 * 
 	 * @param tableName name of the table to create
 	 * @param tableSchema table schema
@@ -82,6 +105,11 @@ public final class DBAccessManager {
 	/**
 	 * Creates an index on the specified table, on specified column(s).
 	 * 
+	 * If the index already exists, it does nothing, and no error is generated.
+	 * 
+	 * It is recommended that clients of the API use module specific prefixes
+	 * to prevent name collisions.
+	 * 
 	 * @param indexName name of index to create
 	 * @param tableName name of table to create the index on
 	 * @param colsSQL - columns on which to index
@@ -90,7 +118,8 @@ public final class DBAccessManager {
 	 */
 	public void createIndex(final String indexName, final String tableName, final String colsSQL) throws TskCoreException {
 
-		validateTableName(indexName);
+		validateTableName(tableName);
+		validateIndexName(indexName);
 		validateSQL(colsSQL);
 
 		CaseDbConnection connection = tskDB.getConnection();
@@ -197,7 +226,7 @@ public final class DBAccessManager {
 	 * 
 	 * @throws TskCoreException 
 	 */
-	public void select(final String sql, final DBAccessQueryCallback queryCallback) throws TskCoreException {
+	public void select(final String sql, final CaseDbAccessQueryCallback queryCallback) throws TskCoreException {
 
 		if (queryCallback == null) {
             throw new TskCoreException("Callback is null");
@@ -255,7 +284,7 @@ public final class DBAccessManager {
 
 	/**
 	 * Validates table name. 
-	 * Specifically, it ensurer the table doesn't begin with 'tsk_' 
+	 * Specifically, it ensures the table doesn't begin with 'tsk_' 
 	 * to avoid modifications to core TSK tables
 	 * 
 	 * @param tableName
@@ -263,11 +292,29 @@ public final class DBAccessManager {
 	 */
 	private void validateTableName(String tableName) throws TskCoreException {
 		
+		// TODO: EUR-1002, we sould be doing a more strigent validation of table name
 		if (tableName.toLowerCase().startsWith("tsk_")) {
 			throw new TskCoreException("Attempt to modify a core TSK table " + tableName);
 		}
 	}
 
+	/**
+	 * Validates index name. 
+	 * Specifically, it ensures the index name doesn't collide with any of our core indexes
+	 * in CaseDB
+	 * 
+	 * @param indexName
+	 * @throws TskCoreException 
+	 */
+	private void validateIndexName(String indexName) throws TskCoreException {
+		
+		// TODO: EUR-1002 - we should be validating index name against our core index names
+		if (indexName.isEmpty()) {
+			throw new TskCoreException("Invalid index name " + indexName);	
+		}
+		
+	}
+	
 	/**
 	 * Validates given SQL string.
 	 * 
