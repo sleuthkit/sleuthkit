@@ -225,50 +225,53 @@ public final class Blackboard {
 			boolean match = false;
 			for (BlackboardAttribute fileAttribute : fileAttributesList) {
 				BlackboardAttribute.Type attributeType = fileAttribute.getAttributeType();
-				if (attributeType.getTypeID() == expectedAttribute.getAttributeType().getTypeID()) {
-					Object fileAttributeValue;
-					Object expectedAttributeValue;
-					switch (attributeType.getValueType()) {
-						case BYTE:
-							fileAttributeValue = fileAttribute.getValueBytes();
-							expectedAttributeValue = expectedAttribute.getValueBytes();
-							break;
-						case DOUBLE:
-							fileAttributeValue = fileAttribute.getValueDouble();
-							expectedAttributeValue = expectedAttribute.getValueDouble();
-							break;
-						case INTEGER:
-							fileAttributeValue = fileAttribute.getValueInt();
-							expectedAttributeValue = expectedAttribute.getValueInt();
-							break;
-						case LONG: // Fall-thru
-						case DATETIME:
-							fileAttributeValue = fileAttribute.getValueLong();
-							expectedAttributeValue = expectedAttribute.getValueLong();
-							break;
-						case STRING:
-							fileAttributeValue = fileAttribute.getValueString();
-							expectedAttributeValue = expectedAttribute.getValueString();
-							break;
-						default:
-							fileAttributeValue = fileAttribute.getDisplayString();
-							expectedAttributeValue = expectedAttribute.getDisplayString();
-					}
-					
-					/*
-					 * If the exact attribute was found, mark it as a match to
-					 * continue looping through the expected attributes list.
-					 */
-					if (fileAttributeValue instanceof byte[]) {
-						if (Arrays.equals((byte[]) fileAttributeValue, (byte[]) expectedAttributeValue)) {
-							match = true;
-							break;
-						}
-					}
-					else if (fileAttributeValue.equals(expectedAttributeValue)) {
+				
+				if (attributeType.getTypeID() != expectedAttribute.getAttributeType().getTypeID()) {
+					continue;
+				}
+				
+				Object fileAttributeValue;
+				Object expectedAttributeValue;
+				switch (attributeType.getValueType()) {
+					case BYTE:
+						fileAttributeValue = fileAttribute.getValueBytes();
+						expectedAttributeValue = expectedAttribute.getValueBytes();
+						break;
+					case DOUBLE:
+						fileAttributeValue = fileAttribute.getValueDouble();
+						expectedAttributeValue = expectedAttribute.getValueDouble();
+						break;
+					case INTEGER:
+						fileAttributeValue = fileAttribute.getValueInt();
+						expectedAttributeValue = expectedAttribute.getValueInt();
+						break;
+					case LONG: // Fall-thru
+					case DATETIME:
+						fileAttributeValue = fileAttribute.getValueLong();
+						expectedAttributeValue = expectedAttribute.getValueLong();
+						break;
+					case STRING:
+						fileAttributeValue = fileAttribute.getValueString();
+						expectedAttributeValue = expectedAttribute.getValueString();
+						break;
+					default:
+						fileAttributeValue = fileAttribute.getDisplayString();
+						expectedAttributeValue = expectedAttribute.getDisplayString();
+				}
+
+				/*
+				 * If the exact attribute was found, mark it as a match to
+				 * continue looping through the expected attributes list.
+				 */
+				if (fileAttributeValue instanceof byte[]) {
+					if (Arrays.equals((byte[]) fileAttributeValue, (byte[]) expectedAttributeValue)) {
 						match = true;
 						break;
 					}
+				}
+				else if (fileAttributeValue.equals(expectedAttributeValue)) {
+					match = true;
+					break;
 				}
 			}
 			if (!match) {
