@@ -23,6 +23,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -178,7 +179,7 @@ public final class Blackboard {
 	 *                          attributes.
 	 */
 	public boolean artifactExists(AbstractFile file, BlackboardArtifact.ARTIFACT_TYPE artifactType,
-			List<BlackboardAttribute> attributesList) throws TskCoreException {
+			Collection<BlackboardAttribute> attributesList) throws TskCoreException {
 
 		ArrayList<BlackboardArtifact> artifactsList;
 
@@ -220,7 +221,7 @@ public final class Blackboard {
 	 *
 	 * @return True if all attributes are found; otherwise false.
 	 */
-	private boolean attributesMatch(List<BlackboardAttribute> fileAttributesList, List<BlackboardAttribute> expectedAttributesList) {
+	private boolean attributesMatch(Collection<BlackboardAttribute> fileAttributesList, Collection<BlackboardAttribute> expectedAttributesList) {
 		for (BlackboardAttribute expectedAttribute : expectedAttributesList) {
 			boolean match = false;
 			for (BlackboardAttribute fileAttribute : fileAttributesList) {
