@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel.timeline;
+package org.sleuthkit.datamodel;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -43,28 +43,18 @@ import static org.apache.commons.lang3.StringUtils.substringAfter;
 import static org.apache.commons.lang3.StringUtils.substringBefore;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Interval;
-import org.sleuthkit.datamodel.AbstractFile;
-import org.sleuthkit.datamodel.BlackboardArtifact;
-import org.sleuthkit.datamodel.BlackboardAttribute;
-import org.sleuthkit.datamodel.DescriptionLoD;
-import org.sleuthkit.datamodel.SleuthkitCase;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EVENT;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TL_EVENT_TYPE;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
-import org.sleuthkit.datamodel.StringUtils;
-import org.sleuthkit.datamodel.TskCoreException;
-import org.sleuthkit.datamodel.TskData;
 import static org.sleuthkit.datamodel.SleuthkitCase.escapeSingleQuotes;
 import static org.sleuthkit.datamodel.StringUtils.joinAsStrings;
 import org.sleuthkit.datamodel.timeline.ArtifactEventType;
 import org.sleuthkit.datamodel.timeline.EventType;
 import org.sleuthkit.datamodel.timeline.EventTypeZoomLevel;
 import org.sleuthkit.datamodel.timeline.TimelineEvent;
-import org.sleuthkit.datamodel.timeline.filters.HashHitsFilter;
-import org.sleuthkit.datamodel.timeline.filters.RootFilter;
-import org.sleuthkit.datamodel.timeline.filters.TagsFilter;
+import org.sleuthkit.datamodel.timeline.TimelineFilter;
 
 /**
  * Provides access to the Timeline features of SleuthkitCase
@@ -173,7 +163,7 @@ public final class TimelineManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	public Interval getSpanningInterval(Interval timeRange, RootFilter filter, DateTimeZone timeZone) throws TskCoreException {
+	public Interval getSpanningInterval(Interval timeRange, TimelineFilter.RootFilter filter, DateTimeZone timeZone) throws TskCoreException {
 		long start = timeRange.getStartMillis() / 1000;
 		long end = timeRange.getEndMillis() / 1000;
 		String sqlWhere = getSQLWhere(filter);
@@ -236,7 +226,7 @@ public final class TimelineManager {
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public List<Long> getEventIDs(Interval timeRange, RootFilter filter) throws TskCoreException {
+	public List<Long> getEventIDs(Interval timeRange, TimelineFilter.RootFilter filter) throws TskCoreException {
 		Long startTime = timeRange.getStartMillis() / 1000;
 		Long endTime = timeRange.getEndMillis() / 1000;
 
@@ -247,9 +237,9 @@ public final class TimelineManager {
 		ArrayList<Long> resultIDs = new ArrayList<>();
 
 		sleuthkitCase.acquireSingleUserCaseReadLock();
-		TagsFilter tagsFilter = filter.getTagsFilter();
+		TimelineFilter.TagsFilter tagsFilter = filter.getTagsFilter();
 		boolean needsTags = tagsFilter != null && tagsFilter.hasSubFilters();
-		HashHitsFilter hashHitsFilter = filter.getHashHitsFilter();
+		TimelineFilter.HashHitsFilter hashHitsFilter = filter.getHashHitsFilter();
 		boolean needsHashSets = hashHitsFilter != null && hashHitsFilter.hasSubFilters();
 		String query = "SELECT events.event_id AS event_id FROM" + getAugmentedEventsTablesSQL(needsTags, needsHashSets)
 				+ " WHERE time >=  " + startTime + " AND time <" + endTime + " AND " + getSQLWhere(filter) + " ORDER BY time ASC"; // NON-NLS
@@ -330,8 +320,6 @@ public final class TimelineManager {
 		}
 		return Collections.unmodifiableSet(hashSets);
 	}
-
-	
 
 	/**
 	 * @return maximum time in seconds from unix epoch
@@ -917,12 +905,12 @@ public final class TimelineManager {
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public Map<EventType, Long> countEventsByType(Long startTime, final Long endTime, RootFilter filter, EventTypeZoomLevel zoomLevel) throws TskCoreException {
+	public Map<EventType, Long> countEventsByType(Long startTime, final Long endTime, TimelineFilter.RootFilter filter, EventTypeZoomLevel zoomLevel) throws TskCoreException {
 		long adjustedEndTime = Objects.equals(startTime, endTime) ? endTime + 1 : endTime;
 		boolean useSubTypes = EventTypeZoomLevel.SUB_TYPE.equals(zoomLevel);	//do we want the root or subtype column of the databse
-		TagsFilter tagsFilter = filter.getTagsFilter();
+		TimelineFilter.TagsFilter tagsFilter = filter.getTagsFilter();
 		boolean needsTags = tagsFilter != null && tagsFilter.hasSubFilters();
-		HashHitsFilter hashHitsFilter = filter.getHashHitsFilter();
+		TimelineFilter.HashHitsFilter hashHitsFilter = filter.getHashHitsFilter();
 		boolean needsHashSets = hashHitsFilter != null && hashHitsFilter.hasSubFilters();
 		//get some info about the range of dates requested
 		String queryString = "SELECT count(DISTINCT events.event_id) AS count, " + typeColumnHelper(useSubTypes) //NON-NLS
@@ -1018,11 +1006,11 @@ public final class TimelineManager {
 	 * @return An SQL where clause (without the "where") corresponding to the
 	 *         filter.
 	 */
-	public String getSQLWhere(RootFilter filter) {
+	public String getSQLWhere(TimelineFilter.RootFilter filter) {
 
 		String result;
 		if (filter == null) {
-			return sql getTrueLiteral();
+			return getTrueLiteral();
 		} else {
 			result = filter.getSQLWhere(this);
 		}
@@ -1042,6 +1030,18 @@ public final class TimelineManager {
 			}
 	}
 
+
+
+	String getTrueLiteral() {
+		switch (sleuthkitCase.getDatabaseType()) {
+			case POSTGRESQL:
+				return "TRUE";
+			case SQLITE:
+				return "1";
+			default:
+				throw new UnsupportedOperationException("Unsupported DB type: " + sleuthkitCase.getDatabaseType().name());
+		}
+	}
 	/**
 	 * Event fired by SleuthkitCase to indicate that a event has been added to
 	 * the events table.
@@ -1071,4 +1071,5 @@ public final class TimelineManager {
 
 		O apply(I input) throws TskCoreException;
 	}
+
 }
