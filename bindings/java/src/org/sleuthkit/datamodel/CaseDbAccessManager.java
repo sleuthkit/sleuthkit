@@ -22,8 +22,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
+import org.sleuthkit.datamodel.SleuthkitCase.CaseDbTransaction;
 import static org.sleuthkit.datamodel.SleuthkitCase.closeStatement;
 import org.sleuthkit.datamodel.TskData.DbType;
 
@@ -154,12 +156,46 @@ public final class CaseDbAccessManager {
 	 * @throws TskCoreException
 	 */
 	public long insertOrUpdate(final String tableName, final String sql) throws TskCoreException {
+		
+		CaseDbTransaction localTrans = tskDB.beginTransaction();
+		try {
+			long rowId = insertOrUpdate(tableName, sql, localTrans);
+			localTrans.commit();
+			return rowId;
+		} catch (TskCoreException ex) {
+			try {
+				localTrans.rollback();
+			} catch (TskCoreException ex2) {
+				logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
+			}
+			throw ex;
+		} 
+		
+	}
+	
+	/**
+	 * Inserts a row in the specified table, as part of the specified transaction.
+	 * If the primary key is duplicate, the existing row is updated.
+	 * Caller is responsible for committing the transaction.
+	 * 
+	 * Note: For PostGreSQL, the caller must include the ON CONFLICT clause to handle 
+	 * duplicates
+	 * 
+	 * @param tableName - table to insert into.
+	 * @param sql - SQL string specifying column values.
+	 * @param transaction transaction in which the insert/update is done
+	 *
+	 * @return - rowID of the row inserted/updated
+	 *
+	 * @throws TskCoreException
+	 */
+	public long insertOrUpdate(final String tableName, final String sql, final CaseDbTransaction transaction) throws TskCoreException {
 		long rowId = 0;
 
 		validateTableName(tableName);
 		validateSQL(sql);
 
-		CaseDbConnection connection = tskDB.getConnection();
+		CaseDbConnection connection = transaction.getConnection();
 		tskDB.acquireSingleUserCaseReadLock();
 
 		PreparedStatement statement = null;
@@ -181,13 +217,12 @@ public final class CaseDbAccessManager {
 			throw new TskCoreException("Error inserting row in table " + tableName + " with sql = "+ insertSQL, ex);
 		} finally {
 			closeStatement(statement);
-			connection.close();
 			tskDB.releaseSingleUserCaseReadLock();
 		}
 
 		return rowId;
 	}
-
+	
 	/**
 	 * Updates row(s) in the specified table.
 	 * 
@@ -197,11 +232,37 @@ public final class CaseDbAccessManager {
 	 * @throws TskCoreException
 	 */
 	public void update(final String tableName, final String sql) throws TskCoreException {
+		CaseDbTransaction localTrans = tskDB.beginTransaction();
+		try {
+			update(tableName, sql, localTrans);
+			localTrans.commit();
+		} catch (TskCoreException ex) {
+			try {
+				localTrans.rollback();
+			} catch (TskCoreException ex2) {
+				logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
+			}
+			throw ex;
+		} 
+	}
+	
+
+	/**
+	 * Updates row(s) in the specified table, as part of the specified transaction.
+	 * Caller is responsible for committing the transaction.
+	 * 
+	 * @param tableName - table to insert into.
+	 * @param sql - SQL string specifying column values and conditions.
+	 * @param transaction - transaction under which the update is performed.
+	 * 
+	 * @throws TskCoreException
+	 */
+	public void update(final String tableName, final String sql, CaseDbTransaction transaction ) throws TskCoreException {
 		
 		validateTableName(tableName);
 		validateSQL(sql);
 
-		CaseDbConnection connection = tskDB.getConnection();
+		CaseDbConnection connection = transaction.getConnection();
 		tskDB.acquireSingleUserCaseReadLock();
 
 		Statement statement = null;
@@ -214,10 +275,10 @@ public final class CaseDbAccessManager {
 			throw new TskCoreException("Error Updating table " + tableName, ex);
 		} finally {
 			closeStatement(statement);
-			connection.close();
 			tskDB.releaseSingleUserCaseReadLock();
 		}
 	}
+	
 	/**
 	 * Runs the specified SELECT query and then calls the specified callback with the result.
 	 * 

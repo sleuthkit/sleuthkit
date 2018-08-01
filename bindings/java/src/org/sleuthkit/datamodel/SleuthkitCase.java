@@ -9589,7 +9589,7 @@ public class SleuthkitCase {
 		 * @return The CaseDbConnection instance for this instance of
 		 *         CaseDbTransaction.
 		 */
-		private CaseDbConnection getConnection() {
+		CaseDbConnection getConnection() {
 			return this.connection;
 		}
 
