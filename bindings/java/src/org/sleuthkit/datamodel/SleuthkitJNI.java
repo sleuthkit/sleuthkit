@@ -1054,6 +1054,12 @@ public class SleuthkitJNI {
 		return hashDbIndexPathNat(dbHandle);
 	}
 
+	/**
+	 * Open a hash database for lookups
+	 * @param path Path to Hash DB or index file
+	 * @return Handle open db
+	 * @throws TskCoreException if there is an error opening the DB
+	 */
 	public static int openHashDatabase(String path) throws TskCoreException {
 		return hashDbOpenNat(path);
 	}
