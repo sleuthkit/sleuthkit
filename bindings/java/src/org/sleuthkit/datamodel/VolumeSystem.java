@@ -116,7 +116,7 @@ public class VolumeSystem extends AbstractContent {
 		if (volumeSystemHandle != 0) {
 			synchronized (this) {
 				if (volumeSystemHandle != 0) {
-					SleuthkitJNI.closeVs(volumeSystemHandle);
+					// SleuthkitJNI.closeVs(volumeSystemHandle); // closeVs is currently a no-op
 					volumeSystemHandle = 0;
 				}
 			}
