@@ -217,6 +217,7 @@ public final class CaseDbAccessManager {
 			throw new TskCoreException("Error inserting row in table " + tableName + " with sql = "+ insertSQL, ex);
 		} finally {
 			closeStatement(statement);
+			// NOTE: write lock will be released by transaction
 		}
 
 		return rowId;
@@ -274,6 +275,7 @@ public final class CaseDbAccessManager {
 			throw new TskCoreException("Error Updating table " + tableName, ex);
 		} finally {
 			closeStatement(statement);
+			// NOTE: write lock will be released by transaction
 		}
 	}
 	

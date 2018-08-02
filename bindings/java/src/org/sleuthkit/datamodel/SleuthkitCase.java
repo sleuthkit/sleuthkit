@@ -4747,6 +4747,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error creating virtual directory '" + directoryName + "'", e);
 		} finally {
 			closeResultSet(resultSet);
+			// NOTE: write lock will be released by transaction
 		}
 	}
 
@@ -4879,6 +4880,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error creating local directory '" + directoryName + "'", e);
 		} finally {
 			closeResultSet(resultSet);
+			// NOTE: write lock will be released by transaction
 		}
 	}
 
@@ -5124,6 +5126,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
+			// NOTE: write lock will be released by transaction
 		}
 	}
 
@@ -5321,6 +5324,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
+			// NOTE: write lock will be released by transaction
 		}
 	}
 
@@ -5680,6 +5684,7 @@ public class SleuthkitCase {
 			throw new TskCoreException(String.format("Failed to INSERT local file %s (%s) with parent id %d in tsk_files table", fileName, localPath, parent.getId()), ex);
 		} finally {
 			closeStatement(queryStatement);
+			// NOTE: write lock will be released by transaction
 		}
 	}
 
