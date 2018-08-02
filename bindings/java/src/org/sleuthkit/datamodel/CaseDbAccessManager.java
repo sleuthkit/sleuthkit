@@ -87,7 +87,7 @@ public final class CaseDbAccessManager {
 		validateSQL(tableSchema);
 
 		CaseDbConnection connection = tskDB.getConnection();
-		tskDB.acquireSingleUserCaseReadLock();
+		tskDB.acquireSingleUserCaseWriteLock();
 
 		Statement statement = null;
 		String createSQL = "CREATE TABLE IF NOT EXISTS " + tableName + " " + tableSchema;
@@ -99,7 +99,7 @@ public final class CaseDbAccessManager {
 		} finally {
 			closeStatement(statement);
 			connection.close();
-			tskDB.releaseSingleUserCaseReadLock();
+			tskDB.releaseSingleUserCaseWriteLock();
 		}
 
 	}
@@ -125,7 +125,7 @@ public final class CaseDbAccessManager {
 		validateSQL(colsSQL);
 
 		CaseDbConnection connection = tskDB.getConnection();
-		tskDB.acquireSingleUserCaseReadLock();
+		tskDB.acquireSingleUserCaseWriteLock();
 
 		Statement statement = null;
 		String indexSQL = "CREATE INDEX IF NOT EXISTS " + indexName + " ON " + tableName + " " + colsSQL; // NON-NLS
@@ -137,7 +137,7 @@ public final class CaseDbAccessManager {
 		} finally {
 			closeStatement(statement);
 			connection.close();
-			tskDB.releaseSingleUserCaseReadLock();
+			tskDB.releaseSingleUserCaseWriteLock();
 		}
 	}
 
@@ -196,7 +196,7 @@ public final class CaseDbAccessManager {
 		validateSQL(sql);
 
 		CaseDbConnection connection = transaction.getConnection();
-		tskDB.acquireSingleUserCaseReadLock();
+		transaction.acquireSingleUserCaseWriteLock();
 
 		PreparedStatement statement = null;
 		ResultSet resultSet;
@@ -217,7 +217,6 @@ public final class CaseDbAccessManager {
 			throw new TskCoreException("Error inserting row in table " + tableName + " with sql = "+ insertSQL, ex);
 		} finally {
 			closeStatement(statement);
-			tskDB.releaseSingleUserCaseReadLock();
 		}
 
 		return rowId;
@@ -263,7 +262,7 @@ public final class CaseDbAccessManager {
 		validateSQL(sql);
 
 		CaseDbConnection connection = transaction.getConnection();
-		tskDB.acquireSingleUserCaseReadLock();
+		transaction.acquireSingleUserCaseWriteLock();
 
 		Statement statement = null;
 		String updateSQL = "UPDATE " + tableName + " " + sql; // NON-NLS
@@ -275,7 +274,6 @@ public final class CaseDbAccessManager {
 			throw new TskCoreException("Error Updating table " + tableName, ex);
 		} finally {
 			closeStatement(statement);
-			tskDB.releaseSingleUserCaseReadLock();
 		}
 	}
 	
@@ -327,7 +325,7 @@ public final class CaseDbAccessManager {
 		validateSQL(sql);
 
 		CaseDbConnection connection = tskDB.getConnection();
-		tskDB.acquireSingleUserCaseReadLock();
+		tskDB.acquireSingleUserCaseWriteLock();
 
 		Statement statement = null;
 		String deleteSQL = "DELETE FROM " + tableName + " " + sql; // NON-NLS
@@ -339,7 +337,7 @@ public final class CaseDbAccessManager {
 		} finally {
 			closeStatement(statement);
 			connection.close();
-			tskDB.releaseSingleUserCaseReadLock();
+			tskDB.releaseSingleUserCaseWriteLock();
 		}
 	}
 
