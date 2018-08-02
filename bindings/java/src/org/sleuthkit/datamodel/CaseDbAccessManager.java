@@ -182,6 +182,7 @@ public final class CaseDbAccessManager {
 			throw new TskCoreException("Error inserting row in table " + tableName + " with sql = "+ insertSQL, ex);
 		} finally {
 			closeStatement(statement);
+			connection.close();
 			tskDB.releaseSingleUserCaseWriteLock();
 		}
 
@@ -214,6 +215,7 @@ public final class CaseDbAccessManager {
 			throw new TskCoreException("Error Updating table " + tableName, ex);
 		} finally {
 			closeStatement(statement);
+			connection.close();
 			tskDB.releaseSingleUserCaseWriteLock();
 		}
 	}
