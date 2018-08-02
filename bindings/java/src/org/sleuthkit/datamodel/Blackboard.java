@@ -258,6 +258,7 @@ public final class Blackboard {
 					default:
 						fileAttributeValue = fileAttribute.getDisplayString();
 						expectedAttributeValue = expectedAttribute.getDisplayString();
+						break;
 				}
 
 				/*
