@@ -107,6 +107,58 @@ public class SleuthkitCase {
 	private static final String SQL_ERROR_LIMIT_GROUP = "54";
 	private static final String SQL_ERROR_INTERNAL_GROUP = "xx";
 	private static final int MIN_USER_DEFINED_TYPE_ID = 10000;
+	private static final String[] CORE_TABLE_NAMES = new String[] {	
+													"tsk_db_info",
+													"tsk_objects",
+													"tsk_image_info",
+													"tsk_image_names",
+													"tsk_vs_info",
+													"tsk_vs_parts",
+													"tsk_fs_info",
+													"tsk_file_layout",
+													"tsk_files",
+													"tsk_files_path",
+													"tsk_files_derived",
+													"tsk_files_derived_method",
+													"tag_names",
+													"content_tags",
+													"blackboard_artifact_tags",
+													"blackboard_artifacts",
+													"blackboard_attributes",
+													"blackboard_artifact_types",
+													"blackboard_attribute_types",
+													"data_source_info",
+													"file_encoding_types",
+													"ingest_module_types",
+													"ingest_job_status_types",
+													"ingest_modules",
+													"ingest_jobs",
+													"ingest_job_modules",
+													"account_types",
+													"accounts",
+													"account_relationships",
+													"review_statuses",
+													"reports" };
+	private static final Set<String> CORE_TABLE_NAMES_SET = new HashSet<String>(Arrays.asList(CORE_TABLE_NAMES));
+	private static final String[] CORE_INDEX_NAMES = new String[] { 
+													"parObjId",
+													"layout_objID",
+													"artifact_objID",
+													"artifact_artifact_objID",
+													"artifact_typeID",
+													"attrsArtifactID",
+													"mime_type",
+													"file_extension",
+													"relationships_account1",
+													"relationships_account2",
+													"relationships_relationship_source_obj_id",
+													"relationships_date_time",
+													"relationships_relationship_type",
+													"relationships_data_source_obj_id",
+												};
+	private static final Set<String> CORE_INDEX_NAMES_SET = new HashSet<String>(Arrays.asList(CORE_INDEX_NAMES));
+	
+	
 	private final ConnectionPool connections;
 	private final Map<Long, VirtualDirectory> rootIdsToCarvedFileDirs = new HashMap<Long, VirtualDirectory>();
 	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system files.
@@ -285,6 +337,25 @@ public class SleuthkitCase {
 		connection.close();
 	}
 
+	/**
+	 * Returns a set of core table names in the SleuthKit Case database.
+	 *
+	 * @return set of core table names
+	 */
+	static Set<String> getCoreTableNames() {
+		return CORE_TABLE_NAMES_SET;
+	}
+	
+	/**
+	 * Returns a set of core index names in the SleuthKit case database.
+	 * 
+	 * @return set of core index names
+	 */
+	static Set<String> getCoreIndexNames() {
+		return CORE_INDEX_NAMES_SET;
+		
+	}
+	
 	/**
 	 * Use the internal map to determine whether the content object has children
 	 * (of any type).

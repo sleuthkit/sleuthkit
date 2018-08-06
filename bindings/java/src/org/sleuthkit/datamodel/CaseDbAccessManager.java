@@ -174,6 +174,83 @@ public final class CaseDbAccessManager {
 	}
 	
 	/**
+	 * Inserts a row in the specified table.
+	 * If the row already exists, it simply returns the rowID of existing row.
+	 * 
+	 * Note: For PostGreSQL, the caller must include the ON CONFLICT DO NOTHING clause to handle 
+	 * duplicates
+	 * 
+	 * @param tableName - table to insert into.
+	 * @param sql - SQL string specifying column values.
+	 *
+	 * @return - rowID of the row
+	 *
+	 * @throws TskCoreException
+	 */
+	public long insert(final String tableName, final String sql) throws TskCoreException {
+		
+		CaseDbTransaction localTrans = tskDB.beginTransaction();
+		try {
+			long rowId = insert(tableName, sql, localTrans);
+			localTrans.commit();
+			return rowId;
+		} catch (TskCoreException ex) {
+			try {
+				localTrans.rollback();
+			} catch (TskCoreException ex2) {
+				logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
+			}
+			throw ex;
+		} 
+		
+	}
+	
+	/**
+	 * Inserts a row in the specified table, as part of the specified transaction.
+	 * If the primary key is duplicate, it does nothing.
+	 * Caller is responsible for committing the transaction.
+	 * 
+	 * Note: For PostGreSQL, the caller must include the ON CONFLICT DO NOTHING clause to handle 
+	 * duplicates
+	 * 
+	 * @param tableName - table to insert into.
+	 * @param sql - SQL string specifying column values.
+	 * @param transaction transaction in which the insert/update is done
+	 *
+	 * @return - rowID of the row inserted
+	 *
+	 * @throws TskCoreException
+	 */
+	public long insert(final String tableName, final String sql, final CaseDbTransaction transaction) throws TskCoreException {
+		long rowId = 0;
+
+		validateTableName(tableName);
+		validateSQL(sql);
+
+		CaseDbConnection connection = transaction.getConnection();
+		transaction.acquireSingleUserCaseWriteLock();
+
+		PreparedStatement statement = null;
+		ResultSet resultSet;
+		String insertSQL = "INSERT INTO " + tableName + " " + sql; // NON-NLS
+		try {
+			statement = connection.prepareStatement(insertSQL, Statement.RETURN_GENERATED_KEYS);
+			connection.executeQuery(statement);
+
+			resultSet = statement.getGeneratedKeys();
+			resultSet.next();
+			rowId = resultSet.getLong(1); //last_insert_rowid()
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error inserting row in table " + tableName + " with sql = "+ insertSQL, ex);
+		} finally {
+			closeStatement(statement);
+			// NOTE: write lock will be released by transaction
+		}
+
+		return rowId;
+	}
+	
+	/**
 	 * Inserts a row in the specified table, as part of the specified transaction.
 	 * If the primary key is duplicate, the existing row is updated.
 	 * Caller is responsible for committing the transaction.
@@ -349,13 +426,15 @@ public final class CaseDbAccessManager {
 	 * to avoid modifications to core TSK tables
 	 * 
 	 * @param tableName
-	 * @throws TskCoreException 
+	 * @throws TskCoreException, if the table name is invalid.
 	 */
 	private void validateTableName(String tableName) throws TskCoreException {
 		
-		// TODO: EUR-1002, we sould be doing a more strigent validation of table name
-		if (tableName.toLowerCase().startsWith("tsk_")) {
+		if (SleuthkitCase.getCoreTableNames().contains(tableName.toLowerCase())) {
 			throw new TskCoreException("Attempt to modify a core TSK table " + tableName);
+		}
+		if (tableName.toLowerCase().startsWith("tsk_")) {
+			throw new TskCoreException("Modifying tables with tsk_ prefix is not allowed. ");
 		}
 	}
 
@@ -365,15 +444,17 @@ public final class CaseDbAccessManager {
 	 * in CaseDB
 	 * 
 	 * @param indexName
-	 * @throws TskCoreException 
+	 * @throws TskCoreException, if the index name is invalid.
 	 */
 	private void validateIndexName(String indexName) throws TskCoreException {
 		
-		// TODO: EUR-1002 - we should be validating index name against our core index names
 		if (indexName.isEmpty()) {
 			throw new TskCoreException("Invalid index name " + indexName);	
 		}
 		
+		if (SleuthkitCase.getCoreIndexNames().contains(indexName.toLowerCase())) {
+			throw new TskCoreException("Attempt to modify a core TSK index " + indexName);	
+		}
 	}
 	
 	/**
