@@ -4236,6 +4236,35 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Gets the name of a file.
+	 *
+	 * @param objectId   The object id of the file.
+	 * @param connection An open database connection.
+	 *
+	 * @return The path of the file or null.
+	 */
+	String getFileName(long objectId, CaseDbConnection connection) {
+		String fileName = null;
+		acquireSingleUserCaseReadLock();
+		ResultSet rs = null;
+		try {
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILE_NAME);
+			statement.clearParameters();
+			statement.setLong(1, objectId);
+			rs = connection.executeQuery(statement);
+			if (rs.next()) {
+				fileName = rs.getString("name");
+			}
+		} catch (SQLException ex) {
+			logger.log(Level.SEVERE, "Error getting file parent_path for file " + objectId, ex); //NON-NLS
+		} finally {
+			closeResultSet(rs);
+			releaseSingleUserCaseReadLock();
+		}
+		return fileName;
+	}
+
+	/**
 	 * Get a derived method for a file, or null if none
 	 *
 	 * @param id id of the derived file
@@ -4280,7 +4309,7 @@ public class SleuthkitCase {
 		}
 		return method;
 	}
-	
+
 	/**
 	 * Get abstract file object from tsk_files table by its id
 	 *
@@ -4293,32 +4322,12 @@ public class SleuthkitCase {
 	 */
 	public AbstractFile getAbstractFileById(long id) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
-		try {
-			return getAbstractFileById(id, connection);
-		} finally {
-			connection.close();
-		}
-	}
-
-	/**
-	 * Get abstract file object from tsk_files table by its id on an existing
-	 * connection.
-	 *
-	 * @param objectId   The id of the file object in tsk_files table.
-	 * @param connection An open database connection.
-	 *
-	 * @return AbstractFile object populated, or null if not found.
-	 *
-	 * @throws TskCoreException thrown if critical error occurred within tsk
-	 *                          core and file could not be queried
-	 */
-	AbstractFile getAbstractFileById(long objectId, CaseDbConnection connection) throws TskCoreException {
 		acquireSingleUserCaseReadLock();
 		ResultSet rs = null;
 		try {
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILE_BY_ID);
 			statement.clearParameters();
-			statement.setLong(1, objectId);
+			statement.setLong(1, id);
 			rs = connection.executeQuery(statement);
 			List<AbstractFile> files = resultSetToAbstractFiles(rs, connection);
 			if (files.size() > 0) {
@@ -4327,9 +4336,10 @@ public class SleuthkitCase {
 				return null;
 			}
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting file by id, id = " + objectId, ex);
+			throw new TskCoreException("Error getting file by id, id = " + id, ex);
 		} finally {
 			closeResultSet(rs);
+			connection.close();
 			releaseSingleUserCaseReadLock();
 		}
 	}
@@ -4638,12 +4648,13 @@ public class SleuthkitCase {
 		try {
 			// Get the parent path.
 			CaseDbConnection connection = transaction.getConnection();
-			AbstractFile parent = getAbstractFileById(parentId, connection);
-			String parentPath;
-			if (parent.getParent() == null && parent.getType().equals(TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR)) {
-				parentPath = "/";
-			} else {
-				parentPath = parent.getParentPath() + parent.getName() + "/"; //NON-NLS
+			String parentPath = getFileParentPath(parentId, connection);
+			if (parentPath == null) {
+				parentPath = "/"; //NON-NLS
+			}
+			String parentName = getFileName(parentId, connection);
+			if (parentName != null && !parentName.isEmpty()) {
+				parentPath = parentPath + parentName + "/"; //NON-NLS
 			}
 
 			// Insert a row for the virtual directory into the tsk_objects table.
@@ -4783,12 +4794,13 @@ public class SleuthkitCase {
 		try {
 			// Get the parent path.
 			CaseDbConnection connection = transaction.getConnection();
-			AbstractFile parent = getAbstractFileById(parentId, connection);
-			String parentPath;
-			if (parent.getParent() == null && parent.getType().equals(TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR)) {
-				parentPath = "/";
-			} else {
-				parentPath = parent.getParentPath() + parent.getName() + "/"; //NON-NLS
+			String parentPath = getFileParentPath(parentId, connection);
+			if (parentPath == null) {
+				parentPath = "/"; //NON-NLS
+			}
+			String parentName = getFileName(parentId, connection);
+			if (parentName != null && !parentName.isEmpty()) {
+				parentPath = parentPath + parentName + "/"; //NON-NLS
 			}
 
 			// Insert a row for the local directory into the tsk_objects table.
@@ -5630,12 +5642,7 @@ public class SleuthkitCase {
 			statement.setLong(12, crtime);
 			statement.setLong(13, atime);
 			statement.setLong(14, mtime);
-			String parentPath;
-			if (parent.getParent() == null && parent.getType().equals(TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR)) {
-				parentPath = "/";
-			} else {
-				parentPath = parent.getParentPath() + parent.getName() + "/"; //NON-NLS
-			}
+			String parentPath = parent.getParentPath() + parent.getName() + "/"; //NON-NLS
 			statement.setString(15, parentPath);
 			long dataSourceObjId = getDataSourceObjectId(connection, parent.getId());
 			statement.setLong(16, dataSourceObjId);
@@ -8964,6 +8971,7 @@ public class SleuthkitCase {
 		SELECT_ENCODING_FOR_FILE("SELECT encoding_type FROM tsk_files_path WHERE obj_id = ?"), // NON-NLS
 		SELECT_LOCAL_PATH_AND_ENCODING_FOR_FILE("SELECT path, encoding_type FROM tsk_files_path WHERE obj_id = ?"), // NON_NLS
 		SELECT_PATH_FOR_FILE("SELECT parent_path FROM tsk_files WHERE obj_id = ?"), //NON-NLS
+		SELECT_FILE_NAME("SELECT name FROM tsk_files WHERE obj_id = ?"), //NON-NLS
 		SELECT_DERIVED_FILE("SELECT derived_id, rederive FROM tsk_files_derived WHERE obj_id = ?"), //NON-NLS
 		SELECT_FILE_DERIVATION_METHOD("SELECT tool_name, tool_version, other FROM tsk_files_derived_method WHERE derived_id = ?"), //NON-NLS
 		SELECT_MAX_OBJECT_ID("SELECT MAX(obj_id) AS max_obj_id FROM tsk_objects"), //NON-NLS
