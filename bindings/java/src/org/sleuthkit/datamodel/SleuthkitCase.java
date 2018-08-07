@@ -4640,13 +4640,13 @@ public class SleuthkitCase {
 			CaseDbConnection connection = transaction.getConnection();
 			
 			AbstractFile parent = getAbstractFileById(parentId, connection);
-			String parentPath;
-			TskData.TSK_DB_FILES_TYPE_ENUM parentType = parent.getType();
-			if ((parent.getParent() == null && parentType.equals(TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR))
-					|| parentType.equals(TskData.TSK_DB_FILES_TYPE_ENUM.FS)) {
+			String parentPath = parent.getParentPath();
+			if (parentPath == null) {
 				parentPath = "/";
-			} else {
-				parentPath = parent.getParentPath() + parent.getName() + "/"; //NON-NLS
+			}
+			String parentName = parent.getName();
+			if (parentName != null && !parentName.isEmpty()) {
+				parentPath = parentPath + parentName + "/"; //NON-NLS
 			}
 
 			// Insert a row for the virtual directory into the tsk_objects table.
