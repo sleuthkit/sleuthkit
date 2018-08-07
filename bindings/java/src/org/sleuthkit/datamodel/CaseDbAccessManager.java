@@ -143,42 +143,6 @@ public final class CaseDbAccessManager {
 
 	/**
 	 * Inserts a row in the specified table.
-	 * If the primary key is duplicate, the existing row is updated.
-	 * 
-	 * Note: For PostGreSQL, the caller must include the ON CONFLICT clause to handle 
-	 * duplicates
-	 * 
-	 * @param tableName - table to insert into.
-	 * @param sql - SQL string specifying column values.
-	 *
-	 * @return - rowID of the row inserted/updated
-	 *
-	 * @throws TskCoreException
-	 */
-	public long insertOrUpdate(final String tableName, final String sql) throws TskCoreException {
-		
-		CaseDbTransaction localTrans = tskDB.beginTransaction();
-		try {
-			long rowId = insertOrUpdate(tableName, sql, localTrans);
-			localTrans.commit();
-			return rowId;
-		} catch (TskCoreException ex) {
-			try {
-				localTrans.rollback();
-			} catch (TskCoreException ex2) {
-				logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
-			}
-			throw ex;
-		} 
-		
-	}
-	
-	/**
-	 * Inserts a row in the specified table.
-	 * If the row already exists, it simply returns the rowID of existing row.
-	 * 
-	 * Note: For PostGreSQL, the caller must include the ON CONFLICT DO NOTHING clause to handle 
-	 * duplicates
 	 * 
 	 * @param tableName - table to insert into.
 	 * @param sql - SQL string specifying column values.
@@ -207,11 +171,8 @@ public final class CaseDbAccessManager {
 	
 	/**
 	 * Inserts a row in the specified table, as part of the specified transaction.
-	 * If the primary key is duplicate, it does nothing.
-	 * Caller is responsible for committing the transaction.
 	 * 
-	 * Note: For PostGreSQL, the caller must include the ON CONFLICT DO NOTHING clause to handle 
-	 * duplicates
+	 * Caller is responsible for committing the transaction.
 	 * 
 	 * @param tableName - table to insert into.
 	 * @param sql - SQL string specifying column values.
@@ -251,11 +212,43 @@ public final class CaseDbAccessManager {
 	}
 	
 	/**
+	 * Inserts a row in the specified table.
+	 * If the primary key is duplicate, the existing row is updated.
+	 * 
+	 * Note: For PostGreSQL, the caller must include the ON CONFLICT UPDATE clause to handle 
+	 * duplicates
+	 * 
+	 * @param tableName - table to insert into.
+	 * @param sql - SQL string specifying column values.
+	 *
+	 * @return - rowID of the row inserted/updated
+	 *
+	 * @throws TskCoreException
+	 */
+	public long insertOrUpdate(final String tableName, final String sql) throws TskCoreException {
+		
+		CaseDbTransaction localTrans = tskDB.beginTransaction();
+		try {
+			long rowId = insertOrUpdate(tableName, sql, localTrans);
+			localTrans.commit();
+			return rowId;
+		} catch (TskCoreException ex) {
+			try {
+				localTrans.rollback();
+			} catch (TskCoreException ex2) {
+				logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
+			}
+			throw ex;
+		} 
+		
+	}
+	
+	/**
 	 * Inserts a row in the specified table, as part of the specified transaction.
 	 * If the primary key is duplicate, the existing row is updated.
 	 * Caller is responsible for committing the transaction.
 	 * 
-	 * Note: For PostGreSQL, the caller must include the ON CONFLICT clause to handle 
+	 * Note: For PostGreSQL, the caller must include the ON CONFLICT UPDATE clause to handle 
 	 * duplicates
 	 * 
 	 * @param tableName - table to insert into.
