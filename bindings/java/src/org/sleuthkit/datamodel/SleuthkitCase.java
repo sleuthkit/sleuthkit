@@ -4234,34 +4234,34 @@ public class SleuthkitCase {
 		}
 		return parentPath;
 	}
-	
-	/**	
-	 * Gets the name of a file.	
-	 *	
-	 * @param objectId   The object id of the file.	
-	 * @param connection An open database connection.	
-	 *	
-	 * @return The path of the file or null.	
-	 */	
-	String getFileName(long objectId, CaseDbConnection connection) {	
-		String fileName = null;	
-		acquireSingleUserCaseReadLock();	
-		ResultSet rs = null;	
-		try {	
-			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILE_NAME);	
-			statement.clearParameters();	
-			statement.setLong(1, objectId);	
-			rs = connection.executeQuery(statement);	
-			if (rs.next()) {	
-				fileName = rs.getString("name");	
-			}	
-		} catch (SQLException ex) {	
-			logger.log(Level.SEVERE, "Error getting file parent_path for file " + objectId, ex); //NON-NLS	
-		} finally {	
-			closeResultSet(rs);	
-			releaseSingleUserCaseReadLock();	
-		}	
-		return fileName;	
+
+	/**
+	 * Gets the name of a file.
+	 *
+	 * @param objectId   The object id of the file.
+	 * @param connection An open database connection.
+	 *
+	 * @return The path of the file or null.
+	 */
+	String getFileName(long objectId, CaseDbConnection connection) {
+		String fileName = null;
+		acquireSingleUserCaseReadLock();
+		ResultSet rs = null;
+		try {
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILE_NAME);
+			statement.clearParameters();
+			statement.setLong(1, objectId);
+			rs = connection.executeQuery(statement);
+			if (rs.next()) {
+				fileName = rs.getString("name");
+			}
+		} catch (SQLException ex) {
+			logger.log(Level.SEVERE, "Error getting file parent_path for file " + objectId, ex); //NON-NLS
+		} finally {
+			closeResultSet(rs);
+			releaseSingleUserCaseReadLock();
+		}
+		return fileName;
 	}
 
 	/**
@@ -4667,10 +4667,10 @@ public class SleuthkitCase {
 		try {
 			// Get the parent path.
 			CaseDbConnection connection = transaction.getConnection();
-			
+
 			String parentPath = getFileParentPath(parentId, connection);
 			if (parentPath == null) {
-				parentPath = "/";
+				parentPath = "/"; //NON-NLS
 			}
 			String parentName = getFileName(parentId, connection);
 			if (parentName != null && !parentName.isEmpty()) {
