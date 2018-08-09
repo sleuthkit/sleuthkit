@@ -184,7 +184,7 @@ public class FileSystem extends AbstractContent {
 	public void finalize() throws Throwable {
 		try {
 			if (filesystemHandle != 0) {
-				SleuthkitJNI.closeFs(filesystemHandle);
+				// SleuthkitJNI.closeFs(filesystemHandle); // closeFs is currently a no-op
 				filesystemHandle = 0;
 			}
 		} finally {
