@@ -88,7 +88,6 @@ public final class Blackboard {
 			postArtifact(artifact);
 		}
 	}
-
 	/**
 	 * Gets an artifact type, creating it if it does not already exist. Use this
 	 * method to define custom artifact types.

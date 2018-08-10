@@ -160,7 +160,6 @@ public class SleuthkitCase {
 		eventBus.post(event);
 	}
 
-
 	/**
 	 * Attempts to connect to the database with the passed in settings, throws
 	 * if the settings are not sufficient to connect to the database type
@@ -374,7 +373,6 @@ public class SleuthkitCase {
 		}
 	}
 
- 
 	/**
 	 * Returns an instance of TimelineManager for this case.
 	 *
