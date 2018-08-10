@@ -259,19 +259,6 @@ public final class TimelineManager {
 		return resultIDs;
 	}
 
-	/**
-	 * this relies on the fact that no tskObj has ID 0 but 0 is the default
-	 * value for the datasource_id column in the events table.
-	 *
-	 * @return
-	 *
-	 * @throws org.sleuthkit.datamodel.TskCoreException
-	 */
-	public boolean hasNewColumns() throws TskCoreException {
-		return hasHashHitColumn() && hasDataSourceIDColumn() && hasTaggedColumn()
-				&& getDataSourceIDs().isEmpty() == false;
-	}
-
 	public Set<Long> getDataSourceIDs() throws TskCoreException {
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
@@ -405,22 +392,24 @@ public final class TimelineManager {
 	}
 
 	/**
-	 * Get an EventType object given it's id
+	 * Get an EventType object given it's ID.
+	 *
+	 * @param eventTypeID The ID of the event type to get.
+	 *
+	 * @return An Optional containing the EventType, or an empty Optional if no
+	 *         EventType with the given ID was found.
 	 */
 	public Optional<EventType> getEventType(long eventTypeID) {
 		return Optional.ofNullable(eventTypeIDMap.get(eventTypeID));
 	}
 
+	/**
+	 * Get a list of all the EventTypes.
+	 *
+	 * @return A list of all the eventTypes.
+	 */
 	public ImmutableList<EventType> getEventTypes() {
 		return ImmutableList.copyOf(eventTypeIDMap.values());
-	}
-
-	private Set<ArtifactEventType> getEventTypesForArtifactType(int artfTypeID) {
-		return eventTypeIDMap.values().stream()
-				.filter(ArtifactEventType.class::isInstance)
-				.map(ArtifactEventType.class::cast)
-				.filter(eventType -> eventType.getArtifactTypeID() == artfTypeID)
-				.collect(Collectors.toSet());
 	}
 
 	private String insertOrIgnore(String query) {
@@ -557,18 +546,6 @@ public final class TimelineManager {
 		return false;
 	}
 
-	private boolean hasDataSourceIDColumn() throws TskCoreException {
-		return hasDBColumn("datasource_id"); //NON-NLS
-	}
-
-	private boolean hasTaggedColumn() throws TskCoreException {
-		return hasDBColumn("tagged"); //NON-NLS
-	}
-
-	private boolean hasHashHitColumn() throws TskCoreException {
-		return hasDBColumn("hash_hit"); //NON-NLS
-	}
-
 	void addFileSystemEvents(AbstractFile file) throws TskCoreException {
 		//gather time stamps into map
 		HashMap<EventType, Long> timeMap = new HashMap<>();
@@ -651,7 +628,10 @@ public final class TimelineManager {
 			 * If there are any event types configured to make descriptions
 			 * automatically, use those.
 			 */
-			Set<ArtifactEventType> eventTypesForArtifact = getEventTypesForArtifactType(artifact.getArtifactTypeID());
+			Set<ArtifactEventType> eventTypesForArtifact = eventTypeIDMap.values().stream()
+					.filter(ArtifactEventType.class::isInstance)
+					.map(ArtifactEventType.class::cast).filter((eventType) -> eventType.getArtifactTypeID() == artifact.getArtifactTypeID()).collect(Collectors.toSet());
+
 			for (ArtifactEventType eventType : eventTypesForArtifact) {
 				Optional<TimelineEvent> newEvent = addArtifactEvent(eventType, artifact);
 				newEvent.ifPresent(newEvents::add);
@@ -1030,8 +1010,6 @@ public final class TimelineManager {
 			}
 	}
 
-
-
 	String getTrueLiteral() {
 		switch (sleuthkitCase.getDatabaseType()) {
 			case POSTGRESQL:
@@ -1042,6 +1020,7 @@ public final class TimelineManager {
 				throw new UnsupportedOperationException("Unsupported DB type: " + sleuthkitCase.getDatabaseType().name());
 		}
 	}
+
 	/**
 	 * Event fired by SleuthkitCase to indicate that a event has been added to
 	 * the events table.
