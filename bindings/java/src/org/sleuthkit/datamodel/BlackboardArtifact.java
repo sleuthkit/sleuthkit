@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2011-2018 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -588,7 +588,7 @@ public class BlackboardArtifact implements Content {
 	@Override
 	public ArrayList<BlackboardAttribute> getGenInfoAttributes(BlackboardAttribute.ATTRIBUTE_TYPE attr_type) throws TskCoreException {
 		// Currently we don't have any artifacts derived from an artifact.
-		return new ArrayList<BlackboardAttribute>();
+		return new ArrayList<>();
 	}
 
 	/**
@@ -644,8 +644,8 @@ public class BlackboardArtifact implements Content {
 	 * @return The output of the algorithm.
 	 */
 	@Override
-	public <T> T accept(ContentVisitor<T> v) {
-		return v.visit(this);
+	public <T> T accept(ContentVisitor<T> visitor) {
+		return visitor.visit(this);
 	}
 
 	/**
@@ -1141,7 +1141,7 @@ public class BlackboardArtifact implements Content {
 		 */
 		TSK_ENCRYPTION_SUSPECTED(40, "TSK_ENCRYPTION_SUSPECTED", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskEncryptionSuspected.text")),
-		/**
+		/*
 		 * A classifier detected an object in a media file.
 		 */
 		TSK_OBJECT_DETECTED(41, "TSK_OBJECT_DETECTED", //NON-NLS
@@ -1149,7 +1149,7 @@ public class BlackboardArtifact implements Content {
 		/**
 		 * A generic (timeline) event.
 		 */
-		TSK_TL_EVENT(42, "TSK_TL_EVENT",
+		TSK_TL_EVENT(42, "TSK_TL_EVENT", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskTLEvent.text"));
 
 		private final String label;
@@ -1438,7 +1438,7 @@ public class BlackboardArtifact implements Content {
 	 */
 	@Override
 	public List<Content> getChildren() throws TskCoreException {
-		List<Content> children = new ArrayList<Content>();
+		List<Content> children = new ArrayList<>();
 		children.addAll(getSleuthkitCase().getAbstractFileChildren(this));
 		children.addAll(getSleuthkitCase().getBlackboardArtifactChildren(this));
 

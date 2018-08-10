@@ -1,6 +1,17 @@
 Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
+---------------- VERSION 4.6.2 --------------
+C/C++ Code:
+- Various compiler warning fixes
+- Added small delay into image writer to not starve other threads
+
+Java: 
+- Added more locking to ensure that handles were not closed while other threads were using them. 
+- Added APIs to support more queries by data source
+- Added memory-based caching when detecting if an object has children or not.
+
+
 ---------------- VERSION 4.6.1 --------------
 C/C++ Code:
 - Lots of bounds checking fixes from Google's fuzzing tests.  Thanks Google.

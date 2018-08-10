@@ -16,28 +16,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sleuthkit.datamodel.timeline;
+package org.sleuthkit.datamodel;
 
-import static org.sleuthkit.datamodel.timeline.BundleProvider.getBundle;
+import java.util.ResourceBundle;
 
 /**
- * Enum of event type zoom levels.
+ * Enumeration of description levels of detail (LoD).
  */
-public enum EventTypeZoomLevel {
-	/**
-	 * The root event type zoom level. All event are the same type at this
-	 * level.
-	 */
-	ROOT_TYPE(getBundle().getString("EventTypeZoomLevel.rootType")),
-	/**
-	 * The zoom level of base event types like files system, and web activity
-	 */
-	BASE_TYPE(getBundle().getString("EventTypeZoomLevel.baseType")),
-	/**
-	 * The zoom level of specific type such as file modified time, or web
-	 * download.
-	 */
-	SUB_TYPE(getBundle().getString("EventTypeZoomLevel.subType"));
+public enum DescriptionLoD {
+	SHORT(ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString("DescriptionLOD.short")),
+	MEDIUM(ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString("DescriptionLOD.medium")),
+	FULL(ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle").getString("DescriptionLOD.full"));
 
 	private final String displayName;
 
@@ -45,7 +34,24 @@ public enum EventTypeZoomLevel {
 		return displayName;
 	}
 
-	private EventTypeZoomLevel(String displayName) {
+	private DescriptionLoD(String displayName) {
 		this.displayName = displayName;
 	}
+
+	public DescriptionLoD moreDetailed() {
+		try {
+			return values()[ordinal() + 1];
+		} catch (ArrayIndexOutOfBoundsException e) {
+			return null;
+		}
+	}
+
+	public DescriptionLoD lessDetailed() {
+		try {
+			return values()[ordinal() - 1];
+		} catch (ArrayIndexOutOfBoundsException e) {
+			return null;
+		}
+	}
+
 }

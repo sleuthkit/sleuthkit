@@ -28,6 +28,18 @@ import org.apache.commons.lang3.ObjectUtils;
  */
 class StandardEventType implements EventType {
 
+	private final long typeID;
+	private final String displayName;
+	private final EventType superType;
+	private final EventTypeZoomLevel eventTypeZoomLevel;
+
+	StandardEventType(long typeID, String displayName, EventTypeZoomLevel eventTypeZoomLevel, EventType superType) {
+		this.superType = superType;
+		this.typeID = typeID;
+		this.displayName = displayName;
+		this.eventTypeZoomLevel = eventTypeZoomLevel;
+	}
+
 	@Override
 	public SortedSet<? extends EventType> getSubTypes() {
 		return ImmutableSortedSet.of();
@@ -38,19 +50,6 @@ class StandardEventType implements EventType {
 		return getSubTypes().stream()
 				.filter(type -> type.getDisplayName().equalsIgnoreCase(displayName))
 				.findFirst();
-	}
-
-	private final long typeID;
-	private final String displayName;
-
-	private final EventType superType;
-	private final EventTypeZoomLevel eventTypeZoomLevel;
-
-	StandardEventType(long typeID, String displayName, EventTypeZoomLevel eventTypeZoomLevel, EventType superType) {
-		this.superType = superType;
-		this.typeID = typeID;
-		this.displayName = displayName;
-		this.eventTypeZoomLevel = eventTypeZoomLevel;
 	}
 
 	@Override

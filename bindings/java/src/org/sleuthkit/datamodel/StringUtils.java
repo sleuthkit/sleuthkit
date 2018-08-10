@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2017 Basis Technology Corp.
+ * Copyright 2017-18 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,7 +23,10 @@ import java.util.Collection;
 /**
  * Collection of string utility methods.
  */
-class StringUtils {
+final class StringUtils {
+
+	private StringUtils() {
+	}
 
 	/**
 	 * Utility method to convert a list to an CSV string.
@@ -60,4 +63,9 @@ class StringUtils {
 
 		return result.substring(0, result.lastIndexOf(separator));
 	}
+
+	static String deleteWhitespace(String result) {
+		return org.apache.commons.lang3.StringUtils.deleteWhitespace(result);
+	}
+
 }

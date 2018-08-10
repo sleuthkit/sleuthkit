@@ -42,27 +42,39 @@ public interface ArtifactEventType extends EventType {
 	BlackboardAttribute.Type getDateTimeAttributeType();
 
 	/**
-	 * @param artifact The artifact to extract the full description from.
+	 * Extract the full description for an event of this type from the given
+	 * artifact.
 	 *
-	 * @return The full event description
+	 * @param artifact The artifact to extract the description from.
+	 *
+	 * @return a function from an artifact to a String to use as the full event
+	 *         description
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	String extractFullDescription(BlackboardArtifact artifact) throws TskCoreException;
 
 	/**
-	 * @param artifact The artifact to extract the medium description from.
+	 * Extract the medium description for an event of this type from the given
+	 * artifact.
 	 *
-	 * @return The medium event description
+	 * @param artifact The artifact to extract the description from.
+	 *
+	 * @return a function from an artifact to a String to use as the medium
+	 *         event description
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	String extractMedDescription(BlackboardArtifact artifact) throws TskCoreException;
 
 	/**
-	 * @param artifact The artifact to extract the short description from.
+	 * Extract the short description for an event of this type from the given
+	 * artifact.
 	 *
-	 * @return The short event description
+	 * @param artifact The artifact to extract the description from.
+	 *
+	 * @return a function from an artifact to a String to use as the short event
+	 *         description
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */

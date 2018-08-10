@@ -643,6 +643,9 @@ public class SleuthkitJNI {
 	public static long openVs(long imgHandle, long vsOffset) throws TskCoreException {
 		getTSKReadLock();
 		try {
+			if(! imgHandleIsValid(imgHandle)) {
+				throw new TskCoreException("Image handle " + imgHandle + " is closed");
+			}
 			return openVsNat(imgHandle, vsOffset);
 		} finally {
 			releaseTSKReadLock();
@@ -756,6 +759,17 @@ public class SleuthkitJNI {
 
 		return val & 0xffff;	// convert negative value to positive value
 	}
+	
+	/**
+	 * Test that the given image handle is valid.
+	 * @param imgHandle
+	 * @return true if it is valid, false otherwise
+	 */
+	private static boolean imgHandleIsValid(long imgHandle) {
+		synchronized(HandleCache.cacheLock) {
+			return HandleCache.fsHandleCache.containsKey(imgHandle);
+		}
+	}
 
 	//do reads
 	/**
@@ -775,6 +789,9 @@ public class SleuthkitJNI {
 	public static int readImg(long imgHandle, byte[] readBuffer, long offset, long len) throws TskCoreException {
 		getTSKReadLock();
 		try {
+			if(! imgHandleIsValid(imgHandle)) {
+				throw new TskCoreException("Image handle " + imgHandle + " is closed");
+			}
 			//returned byte[] is the data buffer
 			return readImgNat(imgHandle, readBuffer, offset, len);
 		} finally {
@@ -1226,6 +1243,9 @@ public class SleuthkitJNI {
 	public static int finishImageWriter(long imgHandle) throws TskCoreException {
 		getTSKReadLock();
 		try {
+			if(! imgHandleIsValid(imgHandle)) {
+				throw new TskCoreException("Image handle " + imgHandle + " is closed");
+			}
 			return finishImageWriterNat(imgHandle);
 		} finally {
 			releaseTSKReadLock();
@@ -1242,7 +1262,11 @@ public class SleuthkitJNI {
 	public static int getFinishImageProgress(long imgHandle) {
 		getTSKReadLock();
 		try {
-			return getFinishImageProgressNat(imgHandle);
+			if (imgHandleIsValid(imgHandle)) {
+				return getFinishImageProgressNat(imgHandle);
+			} else {
+				return 0;
+			}
 		} finally {
 			releaseTSKReadLock();
 		}
@@ -1256,7 +1280,9 @@ public class SleuthkitJNI {
 	public static void cancelFinishImage(long imgHandle) {
 		getTSKReadLock();
 		try {
-			cancelFinishImageNat(imgHandle);
+			if (imgHandleIsValid(imgHandle)) {
+				cancelFinishImageNat(imgHandle);
+			}
 		} finally {
 			releaseTSKReadLock();
 		}

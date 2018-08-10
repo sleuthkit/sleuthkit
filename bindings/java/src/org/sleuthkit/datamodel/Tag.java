@@ -28,11 +28,13 @@ public abstract class Tag {
 	private long id = ID_NOT_SET;
 	private final TagName name;
 	private final String comment;
+	private final String userName;
 
-	Tag(long id, TagName name, String comment) {
+	Tag(long id, TagName name, String comment, String userName) {
 		this.id = id;
 		this.name = name;
 		this.comment = comment;
+		this.userName = userName;
 	}
 
 	public long getId() {
@@ -45,5 +47,9 @@ public abstract class Tag {
 
 	public String getComment() {
 		return comment;
+	}
+	
+	public String getUserName() {
+		return userName == null ? "" : userName;
 	}
 }

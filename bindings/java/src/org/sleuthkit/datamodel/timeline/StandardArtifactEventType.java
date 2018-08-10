@@ -31,7 +31,7 @@ import org.sleuthkit.datamodel.TskCoreException;
 
 /**
  * Implementation of ArtifactEventType for the standard predefined artifact
- * based event types
+ * based event types.
  */
 class StandardArtifactEventType extends StandardEventType implements ArtifactEventType {
 
@@ -39,18 +39,18 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 
 	private final BlackboardArtifact.Type artifactType;
 	private final BlackboardAttribute.Type dateTimeAttributeType;
-	private final CheckedFunction<BlackboardArtifact, String> longExtractor;
-	private final CheckedFunction<BlackboardArtifact, String> medExtractor;
-	private final CheckedFunction<BlackboardArtifact, String> shortExtractor;
-	private final CheckedFunction<BlackboardArtifact, EventPayload> eventPayloadFunction;
+	private final TSKCoreCheckedFunction<BlackboardArtifact, String> longExtractor;
+	private final TSKCoreCheckedFunction<BlackboardArtifact, String> medExtractor;
+	private final TSKCoreCheckedFunction<BlackboardArtifact, String> shortExtractor;
+	private final TSKCoreCheckedFunction<BlackboardArtifact, EventPayload> eventPayloadFunction;
 
 	StandardArtifactEventType(int typeID, String displayName,
 			EventType superType,
 			BlackboardArtifact.Type artifactType,
 			BlackboardAttribute.Type dateTimeAttributeType,
-			CheckedFunction<BlackboardArtifact, String> shortExtractor,
-			CheckedFunction<BlackboardArtifact, String> medExtractor,
-			CheckedFunction<BlackboardArtifact, String> longExtractor) {
+			TSKCoreCheckedFunction<BlackboardArtifact, String> shortExtractor,
+			TSKCoreCheckedFunction<BlackboardArtifact, String> medExtractor,
+			TSKCoreCheckedFunction<BlackboardArtifact, String> longExtractor) {
 		this(typeID, displayName, superType, artifactType, dateTimeAttributeType, shortExtractor, medExtractor, longExtractor, null);
 	}
 
@@ -58,10 +58,10 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 			EventType superType,
 			BlackboardArtifact.Type artifactType,
 			BlackboardAttribute.Type dateTimeAttributeType,
-			CheckedFunction<BlackboardArtifact, String> shortExtractor,
-			CheckedFunction<BlackboardArtifact, String> medExtractor,
-			CheckedFunction<BlackboardArtifact, String> longExtractor,
-			CheckedFunction<BlackboardArtifact, EventPayload> eventPayloadFunction) {
+			TSKCoreCheckedFunction<BlackboardArtifact, String> shortExtractor,
+			TSKCoreCheckedFunction<BlackboardArtifact, String> medExtractor,
+			TSKCoreCheckedFunction<BlackboardArtifact, String> longExtractor,
+			TSKCoreCheckedFunction<BlackboardArtifact, EventPayload> eventPayloadFunction) {
 
 		super(typeID, displayName, EventTypeZoomLevel.SUB_TYPE, superType);
 		this.artifactType = artifactType;
@@ -87,28 +87,16 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 		return dateTimeAttributeType;
 	}
 
-	/**
-	 * @return a function from an artifact to a String to use as part of the
-	 *         full event description
-	 */
 	@Override
 	public String extractFullDescription(BlackboardArtifact artf) throws TskCoreException {
 		return longExtractor.apply(artf);
 	}
 
-	/**
-	 * @return a function from an artifact to a String to use as part of the
-	 *         medium event description
-	 */
 	@Override
 	public String extractMedDescription(BlackboardArtifact artf) throws TskCoreException {
 		return medExtractor.apply(artf);
 	}
 
-	/**
-	 * @return a function from an artifact to a String to use as part of the
-	 *         short event description
-	 */
 	@Override
 	public String extractShortDescription(BlackboardArtifact artf) throws TskCoreException {
 		return shortExtractor.apply(artf);
@@ -131,7 +119,8 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 		if (this.getArtifactTypeID() != artifact.getArtifactTypeID()) {
 			throw new IllegalArgumentException();
 		}
-		if (artifact.getAttribute(this.getDateTimeAttributeType()) == null) {
+		BlackboardAttribute timeAttribute = artifact.getAttribute(getDateTimeAttributeType());
+		if (timeAttribute == null) {
 			logger.log(Level.WARNING, "Artifact {0} has no date/time attribute, skipping it.", artifact.getArtifactID()); // NON-NLS
 			return null;
 		}
@@ -141,12 +130,11 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 			return this.eventPayloadFunction.apply(artifact);
 		}
 
-		long time = artifact.getAttribute(getDateTimeAttributeType()).getValueLong();
 		//combine descriptions in standard way
 		String shortDescription = extractShortDescription(artifact);
 		String medDescription = shortDescription + " : " + extractMedDescription(artifact);
 		String fullDescription = medDescription + " : " + extractFullDescription(artifact);
-		return new EventPayload(time, shortDescription, medDescription, fullDescription);
+		return new EventPayload(timeAttribute.getValueLong(), shortDescription, medDescription, fullDescription);
 	}
 
 	static BlackboardAttribute getAttributeSafe(BlackboardArtifact artf, BlackboardAttribute.Type attrType) {
@@ -162,7 +150,7 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 	 * Function that extracts a string representation of the given attribute
 	 * from the artifact it is applied to.
 	 */
-	static class AttributeExtractor implements CheckedFunction<BlackboardArtifact, String> {
+	static class AttributeExtractor implements TSKCoreCheckedFunction<BlackboardArtifact, String> {
 
 		private final BlackboardAttribute.Type attributeType;
 
@@ -184,7 +172,7 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 	 *
 	 * @param <X> Generic type paramater, can be anything.
 	 */
-	final static class EmptyExtractor<X> implements CheckedFunction<X, String> {
+	final static class EmptyExtractor<X> implements TSKCoreCheckedFunction<X, String> {
 
 		@Override
 		public String apply(X ignored) throws TskCoreException {
@@ -231,7 +219,7 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 	 * @param <O> Output type.
 	 */
 	@FunctionalInterface
-	interface CheckedFunction<I, O> {
+	interface TSKCoreCheckedFunction<I, O> {
 
 		O apply(I input) throws TskCoreException;
 	}

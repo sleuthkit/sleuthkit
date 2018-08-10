@@ -20,9 +20,7 @@ package org.sleuthkit.datamodel;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.SetMultimap;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -30,56 +28,33 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.ObjectUtils;
 import static org.apache.commons.lang3.StringUtils.defaultString;
 import static org.apache.commons.lang3.StringUtils.substringAfter;
 import static org.apache.commons.lang3.StringUtils.substringBefore;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Interval;
-import org.joda.time.Period;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EVENT;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TL_EVENT_TYPE;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
+import static org.sleuthkit.datamodel.SleuthkitCase.escapeSingleQuotes;
 import static org.sleuthkit.datamodel.StringUtils.joinAsStrings;
 import org.sleuthkit.datamodel.timeline.ArtifactEventType;
-import org.sleuthkit.datamodel.timeline.CombinedEvent;
-import org.sleuthkit.datamodel.timeline.DescriptionLoD;
-import org.sleuthkit.datamodel.timeline.EventCluster;
-import org.sleuthkit.datamodel.timeline.EventStripe;
 import org.sleuthkit.datamodel.timeline.EventType;
 import org.sleuthkit.datamodel.timeline.EventTypeZoomLevel;
-import org.sleuthkit.datamodel.timeline.RangeDivisionInfo;
-import org.sleuthkit.datamodel.timeline.SingleEvent;
-import org.sleuthkit.datamodel.timeline.TimeUnits;
-import org.sleuthkit.datamodel.timeline.ZoomParams;
-import org.sleuthkit.datamodel.timeline.filters.AbstractFilter;
-import org.sleuthkit.datamodel.timeline.filters.DataSourceFilter;
-import org.sleuthkit.datamodel.timeline.filters.DataSourcesFilter;
-import org.sleuthkit.datamodel.timeline.filters.DescriptionFilter;
-import org.sleuthkit.datamodel.timeline.filters.Filter;
-import org.sleuthkit.datamodel.timeline.filters.HashHitsFilter;
-import org.sleuthkit.datamodel.timeline.filters.HideKnownFilter;
-import org.sleuthkit.datamodel.timeline.filters.IntersectionFilter;
-import org.sleuthkit.datamodel.timeline.filters.RootFilter;
-import org.sleuthkit.datamodel.timeline.filters.TagsFilter;
-import org.sleuthkit.datamodel.timeline.filters.TextFilter;
-import org.sleuthkit.datamodel.timeline.filters.TypeFilter;
-import org.sleuthkit.datamodel.timeline.filters.UnionFilter;
+import org.sleuthkit.datamodel.timeline.TimelineEvent;
+import org.sleuthkit.datamodel.timeline.TimelineFilter;
 
 /**
  * Provides access to the Timeline features of SleuthkitCase
@@ -89,14 +64,16 @@ public final class TimelineManager {
 	private static final Logger logger = Logger.getLogger(TimelineManager.class.getName());
 
 	private final SleuthkitCase sleuthkitCase;
-	private final String csvFunction;
 
 	final private BiMap<Long, EventType> eventTypeIDMap = HashBiMap.create();
 
 	TimelineManager(SleuthkitCase tskCase) throws TskCoreException {
 		sleuthkitCase = tskCase;
-		csvFunction = sleuthkitCase.getDatabaseType() == TskData.DbType.POSTGRESQL ? "string_agg" : "group_concat";
 		initializeEventTypes();
+	}
+
+	public SleuthkitCase getSleuthkitCase() {
+		return sleuthkitCase;
 	}
 
 	public Interval getSpanningInterval(Collection<Long> eventIDs) throws TskCoreException {
@@ -139,27 +116,6 @@ public final class TimelineManager {
 			sleuthkitCase.releaseSingleUserCaseReadLock();
 		}
 		return -1;
-	}
-
-	/**
-	 * get the count of all events that fit the given zoom params organized by
-	 * the EvenType of the level specified in the ZoomParams
-	 *
-	 * @param params the params that control what events to count and how to
-	 *               organize the returned map
-	 *
-	 * @return a map from event type( of the requested level) to event counts
-	 *
-	 * @throws org.sleuthkit.datamodel.TskCoreException
-	 */
-	public Map<EventType, Long> countEventsByType(ZoomParams params) throws TskCoreException {
-		if (params.getTimeRange() == null) {
-			return Collections.emptyMap();
-		} else {
-			return countEventsByType(params.getTimeRange().getStartMillis() / 1000,
-					params.getTimeRange().getEndMillis() / 1000,
-					params.getFilter(), params.getTypeZoomLevel());
-		}
 	}
 
 	/**
@@ -207,13 +163,13 @@ public final class TimelineManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	public Interval getSpanningInterval(Interval timeRange, RootFilter filter, DateTimeZone timeZone) throws TskCoreException {
+	public Interval getSpanningInterval(Interval timeRange, TimelineFilter.RootFilter filter, DateTimeZone timeZone) throws TskCoreException {
 		long start = timeRange.getStartMillis() / 1000;
 		long end = timeRange.getEndMillis() / 1000;
 		String sqlWhere = getSQLWhere(filter);
 		sleuthkitCase.acquireSingleUserCaseReadLock();
-		boolean needsTags = filter.getTagsFilter().isActive();
-		boolean needsHashSets = filter.getHashHitsFilter().isActive();
+		boolean needsTags = filter.getTagsFilter().hasSubFilters();
+		boolean needsHashSets = filter.getHashHitsFilter().hasSubFilters();
 		String augmentedEventsTablesSQL = getAugmentedEventsTablesSQL(needsTags, needsHashSets);
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement stmt = con.createStatement(); //can't use prepared statement because of complex where clause
@@ -240,7 +196,7 @@ public final class TimelineManager {
 		return null;
 	}
 
-	public SingleEvent getEventById(Long eventID) throws TskCoreException {
+	public TimelineEvent getEventById(long eventID) throws TskCoreException {
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				PreparedStatement stmt = con.prepareStatement(STATEMENTS.GET_EVENT_BY_ID.getSQL(), 0);) {
@@ -270,7 +226,7 @@ public final class TimelineManager {
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	public List<Long> getEventIDs(Interval timeRange, RootFilter filter) throws TskCoreException {
+	public List<Long> getEventIDs(Interval timeRange, TimelineFilter.RootFilter filter) throws TskCoreException {
 		Long startTime = timeRange.getStartMillis() / 1000;
 		Long endTime = timeRange.getEndMillis() / 1000;
 
@@ -281,8 +237,10 @@ public final class TimelineManager {
 		ArrayList<Long> resultIDs = new ArrayList<>();
 
 		sleuthkitCase.acquireSingleUserCaseReadLock();
-		boolean needsTags = filter.getTagsFilter().isActive();
-		boolean needsHashSets = filter.getHashHitsFilter().isActive();
+		TimelineFilter.TagsFilter tagsFilter = filter.getTagsFilter();
+		boolean needsTags = tagsFilter != null && tagsFilter.hasSubFilters();
+		TimelineFilter.HashHitsFilter hashHitsFilter = filter.getHashHitsFilter();
+		boolean needsHashSets = hashHitsFilter != null && hashHitsFilter.hasSubFilters();
 		String query = "SELECT events.event_id AS event_id FROM" + getAugmentedEventsTablesSQL(needsTags, needsHashSets)
 				+ " WHERE time >=  " + startTime + " AND time <" + endTime + " AND " + getSQLWhere(filter) + " ORDER BY time ASC"; // NON-NLS
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
@@ -299,77 +257,6 @@ public final class TimelineManager {
 		}
 
 		return resultIDs;
-	}
-
-	/**
-	 * Get a representation of all the events, within the given time range, that
-	 * pass the given filter, grouped by time and description such that file
-	 * system events for the same file, with the same timestamp, are combined
-	 * together.
-	 *
-	 * @param timeRange The Interval that all returned events must be within.
-	 * @param filter    The Filter that all returned events must pass.
-	 *
-	 * @return A List of combined events, sorted by timestamp.
-	 *
-	 * @throws org.sleuthkit.datamodel.TskCoreException
-	 */
-	public List<CombinedEvent> getCombinedEvents(Interval timeRange, RootFilter filter) throws TskCoreException {
-		Long startTime = timeRange.getStartMillis() / 1000;
-		Long endTime = timeRange.getEndMillis() / 1000;
-
-		if (Objects.equals(startTime, endTime)) {
-			endTime++; //make sure end is at least 1 millisecond after start
-		}
-
-		ArrayList<CombinedEvent> combinedEvents = new ArrayList<>();
-		final boolean needsTags = filter.getTagsFilter().isActive();
-		final boolean needsHashSets = filter.getHashHitsFilter().isActive();
-		final String query = "SELECT full_description, time, file_id, "
-				+ csvAggFunction("CAST(events.event_id AS VARCHAR)") + " AS eventIDs, "
-				+ csvAggFunction("CAST(sub_type AS VARCHAR)") + " AS eventTypes"
-				+ " FROM " + getAugmentedEventsTablesSQL(needsTags, needsHashSets)
-				+ " WHERE time >= " + startTime + " AND time <" + endTime + " AND " + getSQLWhere(filter)
-				+ " GROUP BY time, full_description, file_id ORDER BY time ASC, full_description";
-
-		sleuthkitCase.acquireSingleUserCaseReadLock();
-		try (CaseDbConnection con = sleuthkitCase.getConnection();
-				Statement stmt = con.createStatement();
-				ResultSet resultSet = stmt.executeQuery(query);) {
-
-			while (resultSet.next()) {
-
-				//make a map from event type to event ID
-				List<Long> eventIDs = unGroupConcat(resultSet.getString("eventIDs"), Long::valueOf);
-				List<EventType> eventTypes = unGroupConcat(resultSet.getString("eventTypes"),
-						typesString -> getEventType(Integer.valueOf(typesString)).orElseThrow(() -> new TskCoreException("Error mapping event type id " + typesString + ".S")));
-				Map<EventType, Long> eventMap = new HashMap<>();
-				for (int i = 0; i < eventIDs.size(); i++) {
-					eventMap.put(eventTypes.get(i), eventIDs.get(i));
-				}
-				combinedEvents.add(new CombinedEvent(resultSet.getLong("time") * 1000, resultSet.getString("full_description"), resultSet.getLong("file_id"), eventMap));
-			}
-
-		} catch (SQLException sqlEx) {
-			throw new TskCoreException("Failed to execute query for combined events: \n" + query, sqlEx); // NON-NLS
-		} finally {
-			sleuthkitCase.releaseSingleUserCaseReadLock();
-		}
-
-		return combinedEvents;
-	}
-
-	/**
-	 * this relies on the fact that no tskObj has ID 0 but 0 is the default
-	 * value for the datasource_id column in the events table.
-	 *
-	 * @return
-	 *
-	 * @throws org.sleuthkit.datamodel.TskCoreException
-	 */
-	public boolean hasNewColumns() throws TskCoreException {
-		return hasHashHitColumn() && hasDataSourceIDColumn() && hasTaggedColumn()
-				&& getDataSourceIDs().isEmpty() == false;
 	}
 
 	public Set<Long> getDataSourceIDs() throws TskCoreException {
@@ -419,22 +306,6 @@ public final class TimelineManager {
 			sleuthkitCase.releaseSingleUserCaseReadLock();
 		}
 		return Collections.unmodifiableSet(hashSets);
-	}
-
-	public void analyze() throws TskCoreException {
-		sleuthkitCase.acquireSingleUserCaseWriteLock();
-		try (CaseDbConnection con = sleuthkitCase.getConnection();
-				Statement stmt = con.createStatement();) {
-
-			stmt.execute("ANALYZE;"); //NON-NLS
-			if (sleuthkitCase.getDatabaseType() == TskData.DbType.SQLITE) {
-				stmt.execute("analyze sqlite_master;"); //NON-NLS
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Failed to analyze events db.", ex); // NON-NLS
-		} finally {
-			sleuthkitCase.releaseSingleUserCaseWriteLock();
-		}
 	}
 
 	/**
@@ -521,22 +392,24 @@ public final class TimelineManager {
 	}
 
 	/**
-	 * Get an EventType object given it's id
+	 * Get an EventType object given it's ID.
+	 *
+	 * @param eventTypeID The ID of the event type to get.
+	 *
+	 * @return An Optional containing the EventType, or an empty Optional if no
+	 *         EventType with the given ID was found.
 	 */
-	Optional<EventType> getEventType(long eventTypeID) {
+	public Optional<EventType> getEventType(long eventTypeID) {
 		return Optional.ofNullable(eventTypeIDMap.get(eventTypeID));
 	}
 
+	/**
+	 * Get a list of all the EventTypes.
+	 *
+	 * @return A list of all the eventTypes.
+	 */
 	public ImmutableList<EventType> getEventTypes() {
 		return ImmutableList.copyOf(eventTypeIDMap.values());
-	}
-
-	private Set<ArtifactEventType> getEventTypesForArtifactType(int artfTypeID) {
-		return eventTypeIDMap.values().stream()
-				.filter(ArtifactEventType.class::isInstance)
-				.map(ArtifactEventType.class::cast)
-				.filter(eventType -> eventType.getArtifactTypeID() == artfTypeID)
-				.collect(Collectors.toSet());
 	}
 
 	private String insertOrIgnore(String query) {
@@ -673,18 +546,6 @@ public final class TimelineManager {
 		return false;
 	}
 
-	private boolean hasDataSourceIDColumn() throws TskCoreException {
-		return hasDBColumn("datasource_id"); //NON-NLS
-	}
-
-	private boolean hasTaggedColumn() throws TskCoreException {
-		return hasDBColumn("tagged"); //NON-NLS
-	}
-
-	private boolean hasHashHitColumn() throws TskCoreException {
-		return hasDBColumn("hash_hit"); //NON-NLS
-	}
-
 	void addFileSystemEvents(AbstractFile file) throws TskCoreException {
 		//gather time stamps into map
 		HashMap<EventType, Long> timeMap = new HashMap<>();
@@ -740,8 +601,8 @@ public final class TimelineManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	Set<SingleEvent> addEventsFromArtifact(BlackboardArtifact artifact) throws TskCoreException {
-		Set<SingleEvent> newEvents = new HashSet<>();
+	Set<TimelineEvent> addEventsFromArtifact(BlackboardArtifact artifact) throws TskCoreException {
+		Set<TimelineEvent> newEvents = new HashSet<>();
 
 		/*
 		 * If the artifact is a TSK_TL_EVENT, use the TSK_TL_EVENT_TYPE
@@ -759,7 +620,7 @@ public final class TimelineManager {
 				eventType = ObjectUtils.defaultIfNull(eventType, EventType.OTHER);
 			}
 
-			Optional<SingleEvent> newEvent = addArtifactEvent(EventType.OTHER::buildEventPayload, eventType, artifact);
+			Optional<TimelineEvent> newEvent = addArtifactEvent(EventType.OTHER::buildEventPayload, eventType, artifact);
 			newEvent.ifPresent(newEvents::add);
 
 		} else {
@@ -767,9 +628,12 @@ public final class TimelineManager {
 			 * If there are any event types configured to make descriptions
 			 * automatically, use those.
 			 */
-			Set<ArtifactEventType> eventTypesForArtifact = getEventTypesForArtifactType(artifact.getArtifactTypeID());
+			Set<ArtifactEventType> eventTypesForArtifact = eventTypeIDMap.values().stream()
+					.filter(ArtifactEventType.class::isInstance)
+					.map(ArtifactEventType.class::cast).filter((eventType) -> eventType.getArtifactTypeID() == artifact.getArtifactTypeID()).collect(Collectors.toSet());
+
 			for (ArtifactEventType eventType : eventTypesForArtifact) {
-				Optional<SingleEvent> newEvent = addArtifactEvent(eventType, artifact);
+				Optional<TimelineEvent> newEvent = addArtifactEvent(eventType, artifact);
 				newEvent.ifPresent(newEvents::add);
 			}
 		}
@@ -789,7 +653,7 @@ public final class TimelineManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	private Optional<SingleEvent> addArtifactEvent(ArtifactEventType eventType, BlackboardArtifact artifact) throws TskCoreException {
+	private Optional<TimelineEvent> addArtifactEvent(ArtifactEventType eventType, BlackboardArtifact artifact) throws TskCoreException {
 		return addArtifactEvent(eventType::buildEventPayload, eventType, artifact);
 	}
 
@@ -810,7 +674,7 @@ public final class TimelineManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	private Optional<SingleEvent> addArtifactEvent(CheckedFunction<BlackboardArtifact, ArtifactEventType.EventPayload> payloadExtractor,
+	private Optional<TimelineEvent> addArtifactEvent(CheckedFunction<BlackboardArtifact, ArtifactEventType.EventPayload> payloadExtractor,
 			EventType eventType, BlackboardArtifact artifact) throws TskCoreException {
 		ArtifactEventType.EventPayload eventDescription = payloadExtractor.apply(artifact);
 
@@ -833,34 +697,25 @@ public final class TimelineManager {
 		return Optional.empty();
 	}
 
-	private SingleEvent addEvent(long time, EventType type, long datasourceID, long objID,
+	private TimelineEvent addEvent(long time, EventType type, long datasourceID, long objID,
 			Long artifactID, String fullDescription, String medDescription,
 			String shortDescription, TskData.FileKnown known, boolean hashHit, boolean tagged) throws TskCoreException {
 
-		String sql = "INSERT INTO events ("
-				+ " datasource_id, "
-				+ " file_id, "
-				+ " artifact_id, "
-				+ " time, "
-				+ " sub_type, "
-				+ " base_type, "
-				+ " full_description, "
-				+ " med_description, "
-				+ " short_description, "
-				+ " known_state, "
-				+ " hash_hit, "
-				+ " tagged) "
+		String sql = "INSERT INTO events ( "
+				+ "datasource_id, file_id, artifact_id, time, sub_type, base_type,"
+				+ " full_description, med_description, short_description, "
+				+ " known_state, hash_hit, tagged) "
 				+ " VALUES ("
 				+ datasourceID + ","
 				+ objID + ","
-				+ ((artifactID == null) ? "NULL" : artifactID) + ","
+				+ Objects.toString(artifactID, "NULL") + ","
 				+ time + ","
 				+ ((type.getTypeID() == -1) ? "NULL" : type.getTypeID()) + ","
-				+ type.getBaseType().getTypeID() + ",'"
-				+ SleuthkitCase.escapeSingleQuotes(fullDescription) + "','"
-				+ SleuthkitCase.escapeSingleQuotes(medDescription) + "','"
-				+ SleuthkitCase.escapeSingleQuotes(shortDescription) + "','"
-				+ known.getFileKnownValue() + "',"
+				+ type.getBaseType().getTypeID() + ","
+				+ "'" + escapeSingleQuotes(fullDescription) + "',"
+				+ "'" + escapeSingleQuotes(medDescription) + "',"
+				+ "'" + escapeSingleQuotes(shortDescription) + "',"
+				+ "'" + known.getFileKnownValue() + "',"
 				+ (hashHit ? 1 : 0) + ","
 				+ (tagged ? 1 : 0) + "  )";// NON-NLS  
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
@@ -870,7 +725,7 @@ public final class TimelineManager {
 			try (ResultSet generatedKeys = insertRowStmt.getGeneratedKeys();) {
 				generatedKeys.next();
 				long eventID = generatedKeys.getLong(1);
-				SingleEvent singleEvent = new SingleEvent(eventID, datasourceID,
+				TimelineEvent singleEvent = new TimelineEvent(eventID, datasourceID,
 						objID, artifactID, time, type, fullDescription, medDescription,
 						shortDescription, known, hashHit, tagged);
 				sleuthkitCase.postTSKEvent(new EventAddedEvent(singleEvent));
@@ -988,9 +843,9 @@ public final class TimelineManager {
 		trans.rollback();
 	}
 
-	private SingleEvent constructTimeLineEvent(ResultSet resultSet) throws SQLException, TskCoreException {
+	private TimelineEvent constructTimeLineEvent(ResultSet resultSet) throws SQLException, TskCoreException {
 		int typeID = resultSet.getInt("sub_type"); //NON-NLS
-		return new SingleEvent(resultSet.getLong("event_id"), //NON-NLS
+		return new TimelineEvent(resultSet.getLong("event_id"), //NON-NLS
 				resultSet.getLong("datasource_id"), //NON-NLS
 				resultSet.getLong("file_id"), //NON-NLS
 				resultSet.getLong("artifact_id"), //NON-NLS
@@ -1027,12 +882,16 @@ public final class TimelineManager {
 	 *
 	 * @return a map organizing the counts in a hierarchy from date > eventtype>
 	 *         count
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
-	private Map<EventType, Long> countEventsByType(Long startTime, final Long endTime, RootFilter filter, EventTypeZoomLevel zoomLevel) throws TskCoreException {
+	public Map<EventType, Long> countEventsByType(Long startTime, final Long endTime, TimelineFilter.RootFilter filter, EventTypeZoomLevel zoomLevel) throws TskCoreException {
 		long adjustedEndTime = Objects.equals(startTime, endTime) ? endTime + 1 : endTime;
 		boolean useSubTypes = EventTypeZoomLevel.SUB_TYPE.equals(zoomLevel);	//do we want the root or subtype column of the databse
-		boolean needsTags = filter.getTagsFilter().isActive();
-		boolean needsHashSets = filter.getHashHitsFilter().isActive();
+		TimelineFilter.TagsFilter tagsFilter = filter.getTagsFilter();
+		boolean needsTags = tagsFilter != null && tagsFilter.hasSubFilters();
+		TimelineFilter.HashHitsFilter hashHitsFilter = filter.getHashHitsFilter();
+		boolean needsHashSets = hashHitsFilter != null && hashHitsFilter.hasSubFilters();
 		//get some info about the range of dates requested
 		String queryString = "SELECT count(DISTINCT events.event_id) AS count, " + typeColumnHelper(useSubTypes) //NON-NLS
 				+ " FROM " + getAugmentedEventsTablesSQL(needsTags, needsHashSets)
@@ -1063,7 +922,7 @@ public final class TimelineManager {
 
 	/**
 	 * Get an SQL expression that produces an events table augmented with the
-	 * columsn required by the filters. The union of the events table joined to
+	 * columsn required by the filters: The union of the events table joined to
 	 * the content and blackboard artifacts tags tables, if necessary, then
 	 * joined to a query that selects hash set hits, if necessary. Other wise
 	 * just return "events".
@@ -1081,7 +940,7 @@ public final class TimelineManager {
 	 * @return An SQL expresion that produces an events table augmented with the
 	 *         columns required by the filters.
 	 */
-	static private String getAugmentedEventsTablesSQL(boolean needTags, boolean needHashSets) {
+	static public String getAugmentedEventsTablesSQL(boolean needTags, boolean needHashSets) {
 		String coreColumns = "event_id, datasource_id, events.file_id, events.artifact_id,"
 				+ "			time, sub_type, base_type, full_description, med_description, "
 				+ "			short_description, known_state, hash_hit, tagged ";
@@ -1109,454 +968,37 @@ public final class TimelineManager {
 	}
 
 	/**
-	 * Get a list of EventStripes, clustered according to the given zoom
-	 * paramaters.
+	 * Get the column name to use depending on if we want base types or subtypes
 	 *
-	 * @param params   The ZoomParams that determine the zooming, filtering and
-	 *                 clustering.
-	 * @param timeZone The time zone to use.
+	 * @param useSubTypes True to use sub types, false to use base types.
 	 *
-	 * @return a list of aggregate events within the given timerange, that pass
-	 *         the supplied filter, aggregated according to the given event type
-	 *         and description zoom levels
-	 *
-	 * @throws org.sleuthkit.datamodel.TskCoreException If there is an error
-	 *                                                  querying the db.
+	 * @return column name to use depending on if we want base types or subtypes
 	 */
-	public List<EventStripe> getEventStripes(ZoomParams params, DateTimeZone timeZone) throws TskCoreException {
-		//unpack params
-		Interval timeRange = params.getTimeRange();
-		RootFilter filter = params.getFilter();
-		DescriptionLoD descriptionLOD = params.getDescriptionLOD();
-		EventTypeZoomLevel typeZoomLevel = params.getTypeZoomLevel();
-
-		long start = timeRange.getStartMillis() / 1000;
-		long end = timeRange.getEndMillis() / 1000;
-
-		//ensure length of querried interval is not 0
-		end = Math.max(end, start + 1);
-
-		//get some info about the time range requested
-		RangeDivisionInfo rangeInfo = RangeDivisionInfo.getRangeDivisionInfo(timeRange, timeZone);
-
-		//build dynamic parts of query
-		String descriptionColumn = getDescriptionColumn(descriptionLOD);
-		final boolean useSubTypes = typeZoomLevel.equals(EventTypeZoomLevel.SUB_TYPE);
-		String typeColumn = typeColumnHelper(useSubTypes);
-		final boolean needsTags = filter.getTagsFilter().isActive();
-		final boolean needsHashSets = filter.getHashHitsFilter().isActive();
-		//compose query string, the new-lines are only for nicer formatting if printing the entire query
-		String query = "SELECT " + formatTimeFunction(rangeInfo.getPeriodSize(), timeZone) + " AS interval, " // NON-NLS
-				+ csvAggFunction("events.event_id") + " as event_ids, " //NON-NLS
-				+ csvAggFunction("CASE WHEN hash_hit = 1 THEN events.event_id ELSE NULL END") + " as hash_hits, " //NON-NLS
-				+ csvAggFunction("CASE WHEN tagged = 1 THEN events.event_id ELSE NULL END") + " as taggeds, " //NON-NLS
-				+ " min(time) AS minTime, max(time) AS maxTime,  " + typeColumn + ", " + descriptionColumn // NON-NLS
-				+ " FROM " + getAugmentedEventsTablesSQL(needsTags, needsHashSets) // NON-NLS
-				+ " WHERE time >= " + start + " AND time < " + end + " AND " + getSQLWhere(filter) // NON-NLS
-				+ " GROUP BY interval, " + typeColumn + " , " + descriptionColumn // NON-NLS
-				+ " ORDER BY min(time)"; // NON-NLS
-
-		// perform query and map results to AggregateEvent objects
-		List<EventCluster> events = new ArrayList<>();
-
-		sleuthkitCase.acquireSingleUserCaseReadLock();
-		try (CaseDbConnection con = sleuthkitCase.getConnection();
-				Statement createStatement = con.createStatement();
-				ResultSet resultSet = createStatement.executeQuery(query)) {
-			while (resultSet.next()) {
-				events.add(eventClusterHelper(resultSet, useSubTypes, descriptionLOD, timeZone));
-			}
-		} catch (SQLException ex) {
-			logger.log(Level.SEVERE, "Failed to get events with query: " + query, ex); // NON-NLS
-		} finally {
-			sleuthkitCase.releaseSingleUserCaseReadLock();
-		}
-
-		return mergeClustersToStripes(rangeInfo.getPeriodSize().getPeriod(), events);
-	}
-
-	String formatTimeFunction(TimeUnits periodSize, DateTimeZone timeZone) {
-		switch (sleuthkitCase.getDatabaseType()) {
-			case SQLITE:
-				String strfTimeFormat = getStrfTimeFormat(periodSize);
-				String useLocalTime = timeZone.equals(DateTimeZone.getDefault()) ? ", 'localtime'" : ""; // NON-NLS
-				return "strftime('" + strfTimeFormat + "', time , 'unixepoch'" + useLocalTime + ")";
-			case POSTGRESQL:
-				String formatString = getPostgresTimeFormat(periodSize);
-				return "to_char(to_timestamp(time) AT TIME ZONE '" + timeZone.getID() + "', '" + formatString + "')";
-			default:
-				throw newUnsupportedDBTypeException();
-		}
-	}
-
-	/**
-	 * map a single row in a ResultSet to an EventCluster
-	 *
-	 * @param resultSet      the result set whose current row should be mapped
-	 * @param useSubTypes    use the sub_type column if true, else use the
-	 *                       base_type column
-	 * @param descriptionLOD the description level of detail for this event
-	 * @param filter
-	 *
-	 * @return an AggregateEvent corresponding to the current row in the given
-	 *         result set
-	 *
-	 * @throws SQLException
-	 */
-	private EventCluster eventClusterHelper(ResultSet resultSet, boolean useSubTypes, DescriptionLoD descriptionLOD, DateTimeZone timeZone) throws SQLException, TskCoreException {
-		Interval interval = new Interval(resultSet.getLong("minTime") * 1000, resultSet.getLong("maxTime") * 1000, timeZone);// NON-NLS
-		String eventIDsString = resultSet.getString("event_ids");// NON-NLS
-		List<Long> eventIDs = unGroupConcat(eventIDsString, Long::valueOf);
-		String description = resultSet.getString(getDescriptionColumn(descriptionLOD));
-		int eventTypeID = useSubTypes
-				? resultSet.getInt("sub_type") //NON-NLS
-				: resultSet.getInt("base_type"); //NON-NLS
-		EventType eventType = getEventType(eventTypeID).orElseThrow(()
-				-> new TskCoreException("Error mapping event type id " + eventTypeID + "to EventType."));//NON-NLS
-
-		List<Long> hashHits = unGroupConcat(resultSet.getString("hash_hits"), Long::valueOf); //NON-NLS
-		List<Long> tagged = unGroupConcat(resultSet.getString("taggeds"), Long::valueOf); //NON-NLS
-
-		return new EventCluster(interval, eventType, eventIDs, hashHits, tagged, description, descriptionLOD);
-	}
-
-	/**
-	 * merge the events in the given list if they are within the same period
-	 * General algorithm is as follows:
-	 *
-	 * 1) sort them into a map from (type, description)-> List<aggevent>
-	 * 2) for each key in map, merge the events and accumulate them in a list to
-	 * return
-	 *
-	 * @param timeUnitLength
-	 * @param preMergedEvents
-	 *
-	 * @return
-	 */
-	static private List<EventStripe> mergeClustersToStripes(Period timeUnitLength, List<EventCluster> preMergedEvents) {
-
-		//effectively map from type to (map from description to events)
-		Map<EventType, SetMultimap< String, EventCluster>> typeMap = new HashMap<>();
-
-		for (EventCluster aggregateEvent : preMergedEvents) {
-			typeMap.computeIfAbsent(aggregateEvent.getEventType(), eventType -> HashMultimap.create())
-					.put(aggregateEvent.getDescription(), aggregateEvent);
-		}
-		//result list to return
-		ArrayList<EventCluster> aggEvents = new ArrayList<>();
-
-		//For each (type, description) key, merge agg events
-		for (SetMultimap<String, EventCluster> descrMap : typeMap.values()) {
-			//for each description ...
-			for (String descr : descrMap.keySet()) {
-				//run through the sorted events, merging together adjacent events
-				Iterator<EventCluster> iterator = descrMap.get(descr).stream()
-						.sorted(Comparator.comparing(event -> event.getSpan().getStartMillis()))
-						.iterator();
-				EventCluster current = iterator.next();
-				while (iterator.hasNext()) {
-					EventCluster next = iterator.next();
-					Interval gap = current.getSpan().gap(next.getSpan());
-
-					//if they overlap or gap is less one quarter timeUnitLength
-					//TODO: 1/4 factor is arbitrary. review! -jm
-					if (gap == null || gap.toDuration().getMillis() <= timeUnitLength.toDurationFrom(gap.getStart()).getMillis() / 4) {
-						//merge them
-						current = EventCluster.merge(current, next);
-					} else {
-						//done merging into current, set next as new current
-						aggEvents.add(current);
-						current = next;
-					}
-				}
-				aggEvents.add(current);
-			}
-		}
-
-		//merge clusters to stripes
-		Map<ImmutablePair<EventType, String>, EventStripe> stripeDescMap = new HashMap<>();
-
-		for (EventCluster eventCluster : aggEvents) {
-			stripeDescMap.merge(ImmutablePair.of(eventCluster.getEventType(), eventCluster.getDescription()),
-					new EventStripe(eventCluster), EventStripe::merge);
-		}
-
-		return stripeDescMap.values().stream().sorted(Comparator.comparing(EventStripe::getStartMillis)).collect(Collectors.toList());
-	}
-
-	/**
-	 * Static helper methods for converting between java "data model" objects
-	 * and sqlite queries.
-	 */
-	private static String typeColumnHelper(final boolean useSubTypes) {
+	public static String typeColumnHelper(final boolean useSubTypes) {
 		return useSubTypes ? "sub_type" : "base_type"; //NON-NLS
 	}
 
 	/**
-	 * take the result of a group_concat SQLite operation and split it into a
-	 * set of X using the mapper to to convert from string to X If groupConcat
-	 * is empty, null, or all whitespace, returns an empty list.
-	 *
-	 * @param <X>         the type of elements to return
-	 * @param groupConcat a string containing the group_concat result ( a comma
-	 *                    separated list)
-	 * @param mapper      a function from String to X
-	 *
-	 * @return a Set of X, each element mapped from one element of the original
-	 *         comma delimited string
-	 */
-	<X> List<X> unGroupConcat(String groupConcat, CheckedFunction<String, X> mapper) throws TskCoreException {
-		if (org.apache.commons.lang3.StringUtils.isBlank(groupConcat)) {
-			return Collections.emptyList();
-		}
-
-		List<X> result = new ArrayList<>();
-		String[] split = groupConcat.split(",");
-		for (String s : split) {
-			result.add(mapper.apply(s));
-		}
-		return result;
-	}
-
-	/**
-	 * get the SQL where clause corresponding to an intersection filter ie
-	 * (sub-clause1 and sub-clause2 and ... and sub-clauseN)
-	 *
-	 * @param filter the filter get the where clause for
-	 *
-	 * @return an SQL where clause (without the "where") corresponding to the
-	 *         filter
-	 */
-	private String getSQLWhere(IntersectionFilter<?> filter) {
-		String join = String.join(" and ", filter.getSubFilters().stream()
-				.filter(Filter::isActive)
-				.map(this::getSQLWhere)
-				.collect(Collectors.toList()));
-		return "(" + org.apache.commons.lang3.StringUtils.defaultIfBlank(join, getTrueLiteral()) + ")";
-	}
-
-	/**
-	 * get the SQL where clause corresponding to a union filter ie (sub-clause1
-	 * or sub-clause2 or ... or sub-clauseN)
-	 *
-	 * @param filter the filter get the where clause for
-	 *
-	 * @return an SQL where clause (without the "where") corresponding to the
-	 *         filter
-	 */
-	private String getSQLWhere(UnionFilter<?> filter) {
-		String join = String.join(" or ", filter.getSubFilters().stream()
-				.filter(Filter::isActive)
-				.map(this::getSQLWhere)
-				.collect(Collectors.toList()));
-		return "(" + org.apache.commons.lang3.StringUtils.defaultIfBlank(join, getTrueLiteral()) + ")";
-	}
-
-	public String getSQLWhere(RootFilter filter) {
-		return getSQLWhere((Filter) filter);
-	}
-
-	/**
 	 * Get the SQL where clause corresponding to the given filter
-	 *
-	 * Uses instanceof to dispatch to the correct method for each filter type.
-	 * NOTE: I don't like this if-else instance of chain, but I can't decide
-	 * what to do instead -jm We could move the methods into the filter classes
-	 * and use dynamic dispatch.
 	 *
 	 * @param filter A filter to generate the SQL where clause for,
 	 *
 	 * @return An SQL where clause (without the "where") corresponding to the
 	 *         filter.
 	 */
-	private String getSQLWhere(Filter filter) {
-		String result = "";
+	public String getSQLWhere(TimelineFilter.RootFilter filter) {
+
+		String result;
 		if (filter == null) {
 			return getTrueLiteral();
-		} else if (filter instanceof DescriptionFilter) {
-			result = getSQLWhere((DescriptionFilter) filter);
-		} else if (filter instanceof TagsFilter) {
-			result = getSQLWhere((TagsFilter) filter);
-		} else if (filter instanceof HashHitsFilter) {
-			result = getSQLWhere((HashHitsFilter) filter);
-		} else if (filter instanceof DataSourceFilter) {
-			result = getSQLWhere((DataSourceFilter) filter);
-		} else if (filter instanceof DataSourcesFilter) {
-			result = getSQLWhere((DataSourcesFilter) filter);
-		} else if (filter instanceof HideKnownFilter) {
-			result = getSQLWhere((HideKnownFilter) filter);
-		} else if (filter instanceof TextFilter) {
-			result = getSQLWhere((TextFilter) filter);
-		} else if (filter instanceof TypeFilter) {
-			result = getSQLWhere((TypeFilter) filter);
-		} else if (filter instanceof IntersectionFilter) {
-			result = getSQLWhere((IntersectionFilter) filter);
-		} else if (filter instanceof UnionFilter) {
-			result = getSQLWhere((UnionFilter) filter);
 		} else {
-			throw new IllegalArgumentException("getSQLWhere not defined for " + filter.getClass().getCanonicalName());
+			result = filter.getSQLWhere(this);
 		}
-		result = org.apache.commons.lang3.StringUtils.deleteWhitespace(result).equals("(1and1and1)") ? getTrueLiteral() : result; //NON-NLS
-		result = org.apache.commons.lang3.StringUtils.deleteWhitespace(result).equals("()") ? getTrueLiteral() : result;
+
 		return result;
 	}
 
-	private String getSQLWhere(HideKnownFilter filter) {
-		if (filter.isActive()) {
-			return "(known_state != " + TskData.FileKnown.KNOWN.getFileKnownValue() + ")"; // NON-NLS
-		} else {
-			return getTrueLiteral();
-		}
-	}
-
-	private String getSQLWhere(DescriptionFilter filter) {
-		if (filter.isActive()) {
-			String likeOrNotLike = (filter.getFilterMode() == DescriptionFilter.FilterMode.INCLUDE ? "" : " NOT") + " LIKE '"; //NON-NLS
-			return "(" + getDescriptionColumn(filter.getDescriptionLoD()) + likeOrNotLike + filter.getDescription() + "'  )"; // NON-NLS
-		} else {
-			return getTrueLiteral();
-		}
-	}
-
-	private String getSQLWhere(TagsFilter filter) {
-		if (false == filter.isActive()
-				|| filter.getSubFilters().isEmpty()) {
-			return getTrueLiteral();
-		} else {
-			String tagNameIDs = filter.getSubFilters().stream()
-					.filter(tagFilter -> tagFilter.isSelected() && !tagFilter.isDisabled())
-					.map(tagNameFilter -> String.valueOf(tagNameFilter.getTagName().getId()))
-					.collect(Collectors.joining(", ", "(", ")"));
-			return "(events.tag_name_id IN " + tagNameIDs + ") "; //NON-NLS
-		}
-	}
-
-	private String getSQLWhere(HashHitsFilter filter) {
-		if (false == filter.isActive()
-				|| filter.getSubFilters().isEmpty()) {
-			return getTrueLiteral();
-		} else {
-			String hashSetNAmes = filter.getSubFilters().stream()
-					.filter(hashFilter -> hashFilter.isSelected() && !hashFilter.isDisabled())
-					.map(hashFilter -> hashFilter.getHashSetName())
-					.collect(Collectors.joining("', '", "('", "')"));
-			return "(hash_set_name IN " + hashSetNAmes + " )"; //NON-NLS
-		}
-	}
-
-	private String getSQLWhere(DataSourceFilter filter) {
-		if (filter.isActive()) {
-			return "(datasource_id = '" + filter.getDataSourceID() + "')"; //NON-NLS
-		} else {
-			return getTrueLiteral();
-		}
-	}
-
-	private String getSQLWhere(DataSourcesFilter filter) {
-		return filter.isActive() ? "(datasource_id in (" //NON-NLS
-				+ filter.getSubFilters().stream()
-						.filter(AbstractFilter::isActive)
-						.map((dataSourceFilter) -> String.valueOf(dataSourceFilter.getDataSourceID()))
-						.collect(Collectors.joining(", ")) + "))" : getTrueLiteral();
-	}
-
-	private String getSQLWhere(TextFilter filter) {
-		if (filter.isActive()) {
-			if (org.apache.commons.lang3.StringUtils.isBlank(filter.getText())) {
-				return getTrueLiteral();
-			}
-			String strippedFilterText = org.apache.commons.lang3.StringUtils.strip(filter.getText());
-			return "((med_description like '%" + strippedFilterText + "%')" //NON-NLS
-					+ " or (full_description like '%" + strippedFilterText + "%')" //NON-NLS
-					+ " or (short_description like '%" + strippedFilterText + "%'))"; //NON-NLS
-		} else {
-			return getTrueLiteral();
-		}
-	}
-
-	/**
-	 * generate a sql where clause for the given type filter, while trying to be
-	 * as simple as possible to improve performance.
-	 *
-	 * @param typeFilter
-	 *
-	 * @return
-	 */
-	private String getSQLWhere(TypeFilter typeFilter) {
-		if (typeFilter.isSelected()) {
-			if (typeFilter.getEventType().equals(EventType.ROOT_EVEN_TYPE)
-					& typeFilter.areAllSubFiltersActiveRecursive()) {
-				return getTrueLiteral(); //then collapse clause to true
-			}
-			return "(sub_type IN (" + joinAsStrings(getActiveSubTypeIDs(typeFilter), ",") + "))"; //NON-NLS
-		} else {
-			return getFalseLiteral();
-		}
-	}
-
-	private List<Long> getActiveSubTypeIDs(TypeFilter filter) {
-		if (filter.isActive()) {
-			if (filter.getSubFilters().isEmpty()) {
-				return Collections.singletonList(filter.getEventType().getTypeID());
-			} else {
-				return filter.getSubFilters().stream()
-						.flatMap(subfilter -> getActiveSubTypeIDs(subfilter).stream())
-						.collect(Collectors.toList());
-			}
-		} else {
-			return Collections.emptyList();
-		}
-	}
-
-	/**
-	 * get a sqlite strftime format string that will allow us to group by the
-	 * requested period size. That is, with all info more granular than that
-	 * requested dropped (replaced with zeros).
-	 *
-	 * @param timeUnit the {@link TimeUnits} instance describing what
-	 *                 granularity to build a strftime string for
-	 *
-	 * @return a String formatted according to the sqlite strftime spec
-	 *
-	 * @see https://www.sqlite.org/lang_datefunc.html
-	 */
-	String getStrfTimeFormat(TimeUnits timeUnit) {
-		switch (timeUnit) {
-			case YEARS:
-				return "%Y-01-01T00:00:00"; // NON-NLS
-			case MONTHS:
-				return "%Y-%m-01T00:00:00"; // NON-NLS
-			case DAYS:
-				return "%Y-%m-%dT00:00:00"; // NON-NLS
-			case HOURS:
-				return "%Y-%m-%dT%H:00:00"; // NON-NLS
-			case MINUTES:
-				return "%Y-%m-%dT%H:%M:00"; // NON-NLS
-			case SECONDS:
-			default:    //seconds - should never happen
-				return "%Y-%m-%dT%H:%M:%S"; // NON-NLS  
-			}
-	}
-
-	String getPostgresTimeFormat(TimeUnits timeUnit) {
-		switch (timeUnit) {
-			case YEARS:
-				return "YYYY-01-01T00:00:00"; // NON-NLS
-			case MONTHS:
-				return "YYYY-MM-01T00:00:00"; // NON-NLS
-			case DAYS:
-				return "YYYY-MM-DDT00:00:00"; // NON-NLS
-			case HOURS:
-				return "YYYY-MM-DDTHH24:00:00"; // NON-NLS
-			case MINUTES:
-				return "YYYY-MM-DDTHH24:MI:00"; // NON-NLS
-			case SECONDS:
-			default:    //seconds - should never happen
-				return "YYYY-MM-DDTHH24:MI:SS"; // NON-NLS  
-			}
-	}
-
-	String getDescriptionColumn(DescriptionLoD lod) {
+	public String getDescriptionColumn(DescriptionLoD lod) {
 		switch (lod) {
 			case FULL:
 				return "full_description"; //NON-NLS
@@ -1568,47 +1010,15 @@ public final class TimelineManager {
 			}
 	}
 
-	private String getFalseLiteral() {
-		switch (sleuthkitCase.getDatabaseType()) {
-			case POSTGRESQL:
-				return "FALSE";
-			case SQLITE:
-				return "0";
-			default:
-				throw newUnsupportedDBTypeException();
-		}
-	}
-
-	public String getTrueLiteral() {
+	String getTrueLiteral() {
 		switch (sleuthkitCase.getDatabaseType()) {
 			case POSTGRESQL:
 				return "TRUE";
 			case SQLITE:
 				return "1";
 			default:
-				throw newUnsupportedDBTypeException();
+				throw new UnsupportedOperationException("Unsupported DB type: " + sleuthkitCase.getDatabaseType().name());
 		}
-	}
-
-	String csvAggFunction(String args) {
-		return csvAggFunction(args, ",");
-	}
-
-	String csvAggFunction(String args, String seperator) {
-		return csvFunction + "(Cast (" + args + " AS VARCHAR) , '" + seperator + "')";
-	}
-
-	/**
-	 * FunctionalInterface similar to Function<I,O> except it throws
-	 * TskCoreException.
-	 *
-	 * @param <I> The input type.
-	 * @param <O> The output type.
-	 */
-	@FunctionalInterface
-	interface CheckedFunction<I, O> {
-
-		O apply(I input) throws TskCoreException;
 	}
 
 	/**
@@ -1617,14 +1027,28 @@ public final class TimelineManager {
 	 */
 	final public class EventAddedEvent {
 
-		private final SingleEvent singleEvent;
+		private final TimelineEvent singleEvent;
 
-		public SingleEvent getEvent() {
+		public TimelineEvent getEvent() {
 			return singleEvent;
 		}
 
-		EventAddedEvent(SingleEvent singleEvent) {
+		EventAddedEvent(TimelineEvent singleEvent) {
 			this.singleEvent = singleEvent;
 		}
 	}
+
+	/**
+	 * Functinal interface for a function from I to O that throws
+	 * TskCoreException.
+	 *
+	 * @param <I> Input type.
+	 * @param <O> Output type.
+	 */
+	@FunctionalInterface
+	interface CheckedFunction<I, O> {
+
+		O apply(I input) throws TskCoreException;
+	}
+
 }

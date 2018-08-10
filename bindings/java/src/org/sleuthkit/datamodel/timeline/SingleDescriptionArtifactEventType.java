@@ -25,10 +25,16 @@ import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DES
 import org.sleuthkit.datamodel.TskCoreException;
 
 /**
- *
+ * Package level extension of StandardArtifactEventType for event types that
+ * don't support zoomable descriptions. These events have the same description
+ * at all zoom levels.
  */
 final class SingleDescriptionArtifactEventType extends StandardArtifactEventType {
 
+	/**
+	 * Use the value of the TSK_DESCRIPTION attribute of a artifact as the
+	 * description of this event.
+	 */
 	static private final AttributeExtractor descriptionExtractor = new AttributeExtractor(new BlackboardAttribute.Type(TSK_DESCRIPTION));
 
 	@Override
