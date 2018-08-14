@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -65,7 +66,7 @@ public final class Blackboard {
 	}
 
 	/**
-	 * Posts a Collection of artifacts.  The artifacts should be complete (all
+	 * Posts a Collection of artifacts. The artifacts should be complete (all
 	 * attributes have been added) before being posted. Posting the artifacts
 	 * includes making any events that may be derived from them, and
 	 * broadcasting notifications that the artifacts are ready for further
@@ -457,6 +458,13 @@ public final class Blackboard {
 
 		public Collection<BlackboardArtifact> getArtifacts() {
 			return artifacts;
+		}
+
+		public Collection<BlackboardArtifact> getArtifacts(BlackboardArtifact.Type artifactType) {
+			Set<BlackboardArtifact> tempSet = artifacts.stream()
+					.filter(artifact -> artifact.getArtifactTypeID() == artifactType.getTypeID())
+					.collect(Collectors.toSet());
+			return ImmutableSet.copyOf(tempSet);
 		}
 
 		public String getModuleName() {
