@@ -87,8 +87,8 @@ public final class Blackboard {
 		}
 
 		/*
-		 * For now this just posts them one by one, but in the future it could
-		 * be smarter and use transactions, etc.
+		 * For now this just processes them one by one, but in the future it
+		 * could be smarter and use transactions, etc.
 		 */
 		for (BlackboardArtifact artifact : artifacts) {
 			try {
