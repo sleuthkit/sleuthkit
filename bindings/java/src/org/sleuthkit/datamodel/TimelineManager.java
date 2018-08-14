@@ -728,7 +728,7 @@ public final class TimelineManager {
 				TimelineEvent singleEvent = new TimelineEvent(eventID, datasourceID,
 						objID, artifactID, time, type, fullDescription, medDescription,
 						shortDescription, known, hashHit, tagged);
-				sleuthkitCase.postTSKEvent(new EventAddedEvent(singleEvent));
+				sleuthkitCase.fireTSKEvent(new EventAddedEvent(singleEvent));
 				return singleEvent;
 			}
 		} catch (SQLException ex) {

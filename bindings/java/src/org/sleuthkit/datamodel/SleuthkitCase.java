@@ -156,7 +156,7 @@ public class SleuthkitCase {
 		eventBus.unregister(listener);
 	}
 
-	void postTSKEvent(Object event) {
+	void fireTSKEvent(Object event) {
 		eventBus.post(event);
 	}
 
