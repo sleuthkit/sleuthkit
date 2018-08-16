@@ -759,7 +759,8 @@ uint8_t
     int found_non_zero_digit = 0;
 
     /* Check if the hash is all-zero, and skip it if it is. This is extremely unlikely to be a real hash, and
-     * causes problems with sorting the index file */
+     * causes problems with sorting the index file because we use an all zero entry as a special header
+     * value */
     for (i = 0; hvalue[i] != '\0'; i++) {
         if (hvalue[i] != '0') {
             found_non_zero_digit = 1;
