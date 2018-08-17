@@ -169,9 +169,11 @@ public final class Blackboard {
 	 * Determine if an artifact of a given type exists for given content with a
 	 * specific list of attributes.
 	 *
-	 * @param content        The content whose artifacts need to be looked at.
-	 * @param artifactType   The type of artifact to look for.
-	 * @param attributesList The list of attributes to look for.
+	 * @param content                  The content whose artifacts need to be
+	 *                                 looked at.
+	 * @param artifactType             The type of artifact to look for.
+	 * @param expectedAttributesList   The list of attributes expected to be
+	 *                                 found in a match.
 	 *
 	 * @return True if the specific artifact exists; otherwise false.
 	 *
@@ -179,7 +181,29 @@ public final class Blackboard {
 	 *                          attributes.
 	 */
 	public boolean artifactExists(Content content, BlackboardArtifact.ARTIFACT_TYPE artifactType,
-			Collection<BlackboardAttribute> attributesList) throws TskCoreException {
+			Collection<BlackboardAttribute> expectedAttributesList) throws TskCoreException {
+		return artifactExists(content, artifactType, expectedAttributesList, new ArrayList<BlackboardAttribute>());
+	}
+
+	/**
+	 * Determine if an artifact of a given type exists for given content with a
+	 * specific list of attributes.
+	 *
+	 * @param content                  The content whose artifacts need to be
+	 *                                 looked at.
+	 * @param artifactType             The type of artifact to look for.
+	 * @param expectedAttributesList   The list of attributes expected to be
+	 *                                 found in a match.
+	 * @param unexpectedAttributesList The list of attributes not expecting to
+	 *                                 be found in a match.
+	 *
+	 * @return True if the specific artifact exists; otherwise false.
+	 *
+	 * @throws TskCoreException If there is a problem getting artifacts or
+	 *                          attributes.
+	 */
+	public boolean artifactExists(Content content, BlackboardArtifact.ARTIFACT_TYPE artifactType,
+			Collection<BlackboardAttribute> expectedAttributesList, Collection<BlackboardAttribute> unexpectedAttributesList) throws TskCoreException {
 
 		ArrayList<BlackboardArtifact> artifactsList;
 
@@ -195,7 +219,7 @@ public final class Blackboard {
 		 * Get each artifact's attributes and analyze them for matches.
 		 */
 		for (BlackboardArtifact artifact : artifactsList) {
-			if (attributesMatch(artifact.getAttributes(), attributesList)) {
+			if (attributesMatch(artifact.getAttributes(), expectedAttributesList, unexpectedAttributesList)) {
 				/*
 				 * The exact artifact exists, so we don't need to look any
 				 * further.
@@ -216,21 +240,29 @@ public final class Blackboard {
 	 * Determine if the expected attributes can all be found in the supplied
 	 * file attributes list.
 	 *
-	 * @param fileAttributesList     The list of attributes to analyze.
-	 * @param expectedAttributesList The list of attribute to check for.
+	 * @param fileAttributesList       The list of attributes to analyze.
+	 * @param expectedAttributesList   The list of attributes expected to be
+	 *                                 found in a match.
+	 * @param unexpectedAttributesList The list of attributes not expecting to
+	 *                                 be found in a match.
 	 *
 	 * @return True if all attributes are found; otherwise false.
 	 */
-	private boolean attributesMatch(Collection<BlackboardAttribute> fileAttributesList, Collection<BlackboardAttribute> expectedAttributesList) {
+	private boolean attributesMatch(Collection<BlackboardAttribute> fileAttributesList,
+			Collection<BlackboardAttribute> expectedAttributesList, Collection<BlackboardAttribute> unexpectedAttributesList) {
+
+		/*
+		 * Check for attributes we expect to find in the file.
+		 */
 		for (BlackboardAttribute expectedAttribute : expectedAttributesList) {
 			boolean match = false;
 			for (BlackboardAttribute fileAttribute : fileAttributesList) {
 				BlackboardAttribute.Type attributeType = fileAttribute.getAttributeType();
-				
+
 				if (attributeType.getTypeID() != expectedAttribute.getAttributeType().getTypeID()) {
 					continue;
 				}
-				
+
 				Object fileAttributeValue;
 				Object expectedAttributeValue;
 				switch (attributeType.getValueType()) {
@@ -270,8 +302,7 @@ public final class Blackboard {
 						match = true;
 						break;
 					}
-				}
-				else if (fileAttributeValue.equals(expectedAttributeValue)) {
+				} else if (fileAttributeValue.equals(expectedAttributeValue)) {
 					match = true;
 					break;
 				}
@@ -281,6 +312,23 @@ public final class Blackboard {
 				 * The exact attribute type/value combination was not found.
 				 */
 				return false;
+			}
+		}
+
+		/*
+		 * Check for attributes we expect to not find in the file.
+		 */
+		for (BlackboardAttribute unexpectedAttribute : unexpectedAttributesList) {
+			for (BlackboardAttribute fileAttribute : fileAttributesList) {
+				BlackboardAttribute.Type attributeType = fileAttribute.getAttributeType();
+
+				if (attributeType.getTypeID() == unexpectedAttribute.getAttributeType().getTypeID()) {
+					/*
+					 * An artifact type was found in the file that was expected
+					 * to not be found. Therefore, this is not a match.
+					 */
+					return false;
+				}
 			}
 		}
 
