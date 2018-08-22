@@ -330,7 +330,7 @@ public class SleuthkitCase {
 	private void setHasChildren(Long objId) {
 		long mapIndex = objId / Integer.MAX_VALUE;
 		int mapValue = (int) (objId % Integer.MAX_VALUE);
- 
+
 		synchronized (hasChildrenBitSetMap) {
 			if (hasChildrenBitSetMap.containsKey(mapIndex)) {
 				hasChildrenBitSetMap.get(mapIndex).set(mapValue);
@@ -387,8 +387,8 @@ public class SleuthkitCase {
 			}
 			return timelineMgrInstance;
 		}
-	} 
-	
+	}
+
 	/**
 	 * Make sure the predefined artifact types are in the artifact types table.
 	 *
@@ -1526,10 +1526,24 @@ public class SleuthkitCase {
 		}
 		Statement statement = connection.createStatement();
 		acquireSingleUserCaseWriteLock();
+
+		String primaryKeyType;
+
+		switch (getDatabaseType()) {
+			case POSTGRESQL:
+				primaryKeyType = "BIGSERIAL";
+				break;
+			case SQLITE:
+				primaryKeyType = "INTEGER";
+				break;
+			default:
+				throw new TskCoreException("Unsupported data base type: " + getDatabaseType().toString());
+
+		}
 		try {
 			//create and initialize event_types tables
 			statement.execute("CREATE TABLE event_types ("
-					+ " event_type_id BIGSERIAL PRIMARY KEY, "
+					+ " event_type_id " + primaryKeyType + " PRIMARY KEY, "
 					+ " display_name TEXT UNIQUE NOT NULL, "
 					+ " super_type_id INTEGER REFERENCES event_types )");
 			statement.execute("insert into event_types(event_type_id, display_name, super_type_id) values( 0, 'Event Types', null)");
@@ -1542,7 +1556,7 @@ public class SleuthkitCase {
 			statement.execute("insert into event_types(event_type_id, display_name, super_type_id) values(7, 'Changed', 1)");
 			//create events tables
 			statement.execute("CREATE TABLE events ("
-					+ " event_id BIGSERIAL PRIMARY KEY, "
+					+ " event_id  " + primaryKeyType + " PRIMARY KEY, "
 					+ " datasource_id BIGINT REFERENCES data_source_info, "
 					+ " file_id BIGINT REFERENCES tsk_files, "
 					+ " artifact_id BIGINT REFERENCES blackboard_artifacts, "
