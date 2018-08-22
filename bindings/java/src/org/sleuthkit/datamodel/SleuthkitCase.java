@@ -1457,9 +1457,11 @@ public class SleuthkitCase {
 		}
 		Statement statement = connection.createStatement();
 		acquireSingleUserCaseWriteLock();
+		String update = "UPDATE blackboard_attribute_types SET display_name = '" + bundle.getString("BlackboardAttribute.tskComment.text") + "' WHERE attribute_type_id = " + ATTRIBUTE_TYPE.TSK_COMMENT.getTypeID();
 		try {
 			statement.execute("ALTER TABLE content_tags ADD COLUMN user_name TEXT DEFAULT NULL");
 			statement.execute("ALTER TABLE blackboard_artifact_tags ADD COLUMN user_name TEXT DEFAULT NULL");
+			statement.execute(update);
 			return new CaseDbSchemaVersionNumber(8, 1);
 		} finally {
 			closeStatement(statement);
