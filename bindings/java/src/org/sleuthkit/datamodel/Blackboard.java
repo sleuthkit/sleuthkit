@@ -97,7 +97,8 @@ public final class Blackboard {
 			}
 		}
 
-		caseDb.fireTSKEvent(new ArtifactsPostedEvent(artifacts, moduleName));
+		ArtifactsPostedEvent artifactsPostedEvent = new ArtifactsPostedEvent(artifacts, moduleName);
+		caseDb.fireTSKEvent(artifactsPostedEvent);
 	}
 
 	/**

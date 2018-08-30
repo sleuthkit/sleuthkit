@@ -718,6 +718,7 @@ public final class TimelineManager {
 				+ "'" + known.getFileKnownValue() + "',"
 				+ (hashHit ? 1 : 0) + ","
 				+ (tagged ? 1 : 0) + "  )";// NON-NLS  
+		TimelineEvent singleEvent = null;
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement insertRowStmt = con.createStatement();) {
@@ -725,17 +726,18 @@ public final class TimelineManager {
 			try (ResultSet generatedKeys = insertRowStmt.getGeneratedKeys();) {
 				generatedKeys.next();
 				long eventID = generatedKeys.getLong(1);
-				TimelineEvent singleEvent = new TimelineEvent(eventID, datasourceID,
+				singleEvent = new TimelineEvent(eventID, datasourceID,
 						objID, artifactID, time, type, fullDescription, medDescription,
 						shortDescription, known, hashHit, tagged);
-				sleuthkitCase.fireTSKEvent(new EventAddedEvent(singleEvent));
-				return singleEvent;
+
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Failed to insert event.", ex); // NON-NLS
 		} finally {
 			sleuthkitCase.releaseSingleUserCaseWriteLock();
+			sleuthkitCase.fireTSKEvent(new EventAddedEvent(singleEvent));
 		}
+		return singleEvent;
 	}
 
 	private Set<Long> getEventIDs(long objectID, boolean includeArtifacts) throws TskCoreException {
