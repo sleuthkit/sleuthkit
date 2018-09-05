@@ -50,7 +50,7 @@ static uint8_t
                 fprintf(stderr,
                 "Failed to read name from index; using file name instead");
             hdb_base_db_name_from_path((TSK_HDB_INFO*)hdb_binsrch_info);
-            return 0;
+            return 1;
     }
     bufptr = strchr(buf, '|');
     bufptr++;
