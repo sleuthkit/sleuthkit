@@ -290,6 +290,9 @@ static uint8_t
 * @param hash The hash type that was used to make the index.
 *
 * @return 1 on error and 0 on success
+* @@@ NOTE: When an error is returned, hdb_info_base could 
+*  be in an inconsistent state.  Some variables could be set and others
+*  are not, depending on what kind of error was detected.
 */
 static uint8_t 
     hdb_binsrch_open_idx_file(TSK_HDB_INFO *hdb_info_base, TSK_HDB_HTYPE_ENUM htype)
@@ -545,9 +548,6 @@ uint8_t
     if (hdb_binsrch_open_idx_file(hdb_info_base, htype))
     {
         tsk_release_lock(&hdb_binsrch_info->base.lock);
-        tsk_error_reset();
-        tsk_error_set_errno(TSK_ERR_HDB_ARG);
-        tsk_error_set_errstr("hdb_binsrch_open_idx: unable to open index file");
         return 1;
     }
 
