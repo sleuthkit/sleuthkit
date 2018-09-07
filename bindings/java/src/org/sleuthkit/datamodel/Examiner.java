@@ -22,7 +22,7 @@ package org.sleuthkit.datamodel;
  * Encapsulates an Autopsy examiner
  * 
  */
-public final class Examiner {
+final class Examiner {
 	private final long id;
 	private final String loginName;				
 	private final String displayName;	
