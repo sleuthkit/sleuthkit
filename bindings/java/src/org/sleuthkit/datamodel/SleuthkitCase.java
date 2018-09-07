@@ -334,6 +334,8 @@ public class SleuthkitCase {
 		initReviewStatuses(connection);
 		initEncodingTypes(connection);
 		populateHasChildrenMap(connection);
+		
+		updateExaminers(connection);
 		connection.close();
 	}
 
@@ -684,6 +686,46 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Records the current examiner name in the tsk_examiners table
+	 *
+	 * @param  CaseDbConnection
+	 * @throws SQLException
+	 * @throws TskCoreException
+	 */
+	private void updateExaminers(CaseDbConnection connection) throws SQLException, TskCoreException {
+		
+		String loginName = System.getProperty("user.name");
+		if (loginName.isEmpty()) {
+			logger.log(Level.SEVERE, "Cannot determine logged in user name");
+			return;
+		}
+		
+		acquireSingleUserCaseWriteLock();
+		Statement statement = connection.createStatement();
+		try {
+			String query = "INTO tsk_examiners (login_name) VALUES ('" + loginName + "')";
+			switch (getDatabaseType()) {
+				case POSTGRESQL:
+					query = "INSERT " + query + " ON CONFLICT DO NOTHING"; //NON-NLS
+					break;
+				case SQLITE:
+					query = "INSERT OR IGNORE " + query;
+					break;
+				default:
+					throw new TskCoreException("Unknown DB Type: " + getDatabaseType().name());
+			}
+
+			statement.execute(query); //NON-NLS
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error inserting row in tsk_examiners", ex);
+		}
+		finally {
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+	
+	/**
 	 * Set up or update the hasChildren map using the tsk_objects table.
 	 *
 	 * @param connection
@@ -811,6 +853,7 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema7dot1toSchema7dot2(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema7dot2toSchema8dot0(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot0toSchema8dot1(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema8dot1toSchema8dot2(dbSchemaVersion, connection);
 				statement = connection.createStatement();
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + dbSchemaVersion.getMajor() + ", schema_minor_ver = " + dbSchemaVersion.getMinor()); //NON-NLS
 				statement.close();
@@ -1533,6 +1576,45 @@ public class SleuthkitCase {
 	 * @throws TskCoreException If there is an error completing a database
 	 *                          operation via another SleuthkitCase method.
 	 */
+	private CaseDbSchemaVersionNumber updateFromSchema8dot1toSchema8dot2(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersion.getMajor() != 8) {
+			return schemaVersion;
+		}
+
+		if (schemaVersion.getMinor() != 1) {
+			return schemaVersion;
+		}
+		Statement statement = connection.createStatement();
+		acquireSingleUserCaseWriteLock();
+		try {
+			// create examiners table
+			if (this.dbType.equals(DbType.SQLITE)) {
+				statement.execute("CREATE TABLE tsk_examiners (examiner_id INTEGER PRIMARY KEY, login_name TEXT NOT NULL, display_name TEXT, UNIQUE(login_name) )");
+			} 
+			else {
+				statement.execute("CREATE TABLE tsk_examiners (examiner_id BIGSERIAL PRIMARY KEY, login_name TEXT NOT NULL, display_name TEXT, UNIQUE(login_name))");
+			}
+			
+			return new CaseDbSchemaVersionNumber(8, 2);
+		} finally {
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+
+	/**
+	 * Updates a schema version 8.0 database to a schema version 8.1 database.
+	 *
+	 * @param schemaVersion The current schema version of the database.
+	 * @param connection    A connection to the case database.
+	 *
+	 * @return The new database schema version.
+	 *
+	 * @throws SQLException     If there is an error completing a database
+	 *                          operation.
+	 * @throws TskCoreException If there is an error completing a database
+	 *                          operation via another SleuthkitCase method.
+	 */
 	private CaseDbSchemaVersionNumber updateFromSchema8dot0toSchema8dot1(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
 		if (schemaVersion.getMajor() != 8) {
 			return schemaVersion;
@@ -1552,6 +1634,7 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
+
 
 	/**
 	 * Extract the extension from a file name.
@@ -1883,6 +1966,79 @@ public class SleuthkitCase {
 		return dbName;
 	}
 
+	/**
+	 * Returns the Examiner object for currently logged in user 
+	 *
+	 * @return A Examiner object.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	public Examiner getCurrentExaminer() throws TskCoreException {
+		
+		String loginName = System.getProperty("user.name");
+		if (loginName == null || loginName.isEmpty()) {
+			throw new TskCoreException("Failed to determine logged in user name.");
+		}
+		
+		CaseDbConnection connection = connections.getConnection();
+		acquireSingleUserCaseReadLock();
+		ResultSet resultSet = null;
+		try {
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_EXAMINER_BY_LOGIN_NAME);
+			statement.clearParameters();
+			statement.setString(1, loginName);
+			resultSet = connection.executeQuery(statement);
+			if (resultSet.next()) {
+				return new Examiner(resultSet.getLong("examiner_id"), resultSet.getString("login_name"), resultSet.getString("full_name"));
+			}
+			else {
+				throw new TskCoreException("Error getting examaminer for name = " + loginName);
+			}
+					
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting examaminer for name = " + loginName, ex);
+		} finally {
+			closeResultSet(resultSet);
+			connection.close();
+			releaseSingleUserCaseReadLock();
+		}
+	}
+	
+	
+	/**
+	 * Returns the Examiner object for given id 
+	 * 
+	 * @param id
+	 * 
+	 * @return Examiner object 
+	 * 
+	 * @throws TskCoreException 
+	 */
+	Examiner getExaminerById(long id) throws TskCoreException {
+		
+		CaseDbConnection connection = connections.getConnection();
+		acquireSingleUserCaseReadLock();
+		ResultSet resultSet = null;
+		try {
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_EXAMINER_BY_ID);
+			statement.clearParameters();
+			statement.setLong(1, id);
+			resultSet = connection.executeQuery(statement);
+			if (resultSet.next()) {
+				return new Examiner(resultSet.getLong("examiner_id"), resultSet.getString("login_name"), resultSet.getString("full_name"));
+			}
+			else {
+				throw new TskCoreException("Error getting examaminer for id = " + id);
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting examaminer for id = " + id, ex);
+		} finally {
+			closeResultSet(resultSet);
+			connection.close();
+			releaseSingleUserCaseReadLock();
+		}
+	}
+	
 	/**
 	 * Starts the multi-step process of adding an image data source to the case
 	 * by creating an object that can be used to control the process and get
@@ -4408,12 +4564,32 @@ public class SleuthkitCase {
 	 */
 	public AbstractFile getAbstractFileById(long id) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
+		try {
+			return getAbstractFileById(id, connection);
+		} finally {
+			connection.close();
+		}
+	}
+	
+	/**
+	 * Get abstract file object from tsk_files table by its id on an existing
+	 * connection.
+	 * 
+	 * @param objectId   The id of the file object in tsk_files table.
+	 * @param connection An open database connection.
+	 * 
+	 * @return AbstractFile object populated, or null if not found.
+	 * 
+	 * @throws TskCoreException thrown if critical error occurred within tsk
+	 *                          core and file could not be queried
+	 */
+	AbstractFile getAbstractFileById(long objectId, CaseDbConnection connection) throws TskCoreException {
 		acquireSingleUserCaseReadLock();
 		ResultSet rs = null;
 		try {
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_FILE_BY_ID);
 			statement.clearParameters();
-			statement.setLong(1, id);
+			statement.setLong(1, objectId);
 			rs = connection.executeQuery(statement);
 			List<AbstractFile> files = resultSetToAbstractFiles(rs, connection);
 			if (files.size() > 0) {
@@ -4422,10 +4598,9 @@ public class SleuthkitCase {
 				return null;
 			}
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting file by id, id = " + id, ex);
+			throw new TskCoreException("Error getting file by id, id = " + objectId, ex);
 		} finally {
 			closeResultSet(rs);
-			connection.close();
 			releaseSingleUserCaseReadLock();
 		}
 	}
@@ -4734,6 +4909,7 @@ public class SleuthkitCase {
 		try {
 			// Get the parent path.
 			CaseDbConnection connection = transaction.getConnection();
+
 			String parentPath = getFileParentPath(parentId, connection);
 			if (parentPath == null) {
 				parentPath = "/"; //NON-NLS
@@ -4880,13 +5056,12 @@ public class SleuthkitCase {
 		try {
 			// Get the parent path.
 			CaseDbConnection connection = transaction.getConnection();
-			String parentPath = getFileParentPath(parentId, connection);
-			if (parentPath == null) {
-				parentPath = "/"; //NON-NLS
-			}
-			String parentName = getFileName(parentId, connection);
-			if (parentName != null && !parentName.isEmpty()) {
-				parentPath = parentPath + parentName + "/"; //NON-NLS
+			AbstractFile parent = getAbstractFileById(parentId, connection);
+			String parentPath;
+			if (parent.getParent() == null && parent.getType().equals(TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR)) {
+				parentPath = "/";
+			} else {
+				parentPath = parent.getParentPath() + parent.getName() + "/"; //NON-NLS
 			}
 
 			// Insert a row for the local directory into the tsk_objects table.
@@ -5726,7 +5901,13 @@ public class SleuthkitCase {
 			statement.setLong(12, crtime);
 			statement.setLong(13, atime);
 			statement.setLong(14, mtime);
-			String parentPath = parent.getParentPath() + parent.getName() + "/"; //NON-NLS
+			String parentPath;
+			
+			if (parent.getParent() == null && parent.getType().equals(TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR)) {
+				parentPath = "/";
+			} else {
+				parentPath = parent.getParentPath() + parent.getName() + "/"; //NON-NLS
+			}
 			statement.setString(15, parentPath);
 			long dataSourceObjId = getDataSourceObjectId(connection, parent.getId());
 			statement.setLong(16, dataSourceObjId);
@@ -9134,8 +9315,11 @@ public class SleuthkitCase {
 				+ "AS ( VALUES(?, ?, ?, ?)) INSERT OR REPLACE INTO tag_names "
 				+ "(tag_name_id, display_name, description, color, knownStatus) "
 				+ "SELECT old.tag_name_id, new.display_name, new.description, new.color, new.knownStatus "
-				+ "FROM new LEFT JOIN tag_names AS old ON new.display_name = old.display_name");
+				+ "FROM new LEFT JOIN tag_names AS old ON new.display_name = old.display_name"),
+		SELECT_EXAMINER_BY_ID("SELECT * FROM tsk_examiners WHERE examiner_id = ?"),
+		SELECT_EXAMINER_BY_LOGIN_NAME("SELECT * FROM tsk_examiners WHERE login_name = ?");
 		private final String sql;
+		
 
 		private PREPARED_STATEMENT(String sql) {
 			this.sql = sql;
