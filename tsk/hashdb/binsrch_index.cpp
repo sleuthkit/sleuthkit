@@ -744,6 +744,8 @@ uint8_t
 
 /**
 * Add a string entry to the intermediate index file.
+* Will not add an all-zero hash since this creates errors in the final
+* index file, but does not return an error in this case.
 *
 * @param hdb_binsrch_info Hash database state info
 * @param hvalue String of hash value to add
@@ -754,8 +756,22 @@ uint8_t
     hdb_binsrch_idx_add_entry_str(TSK_HDB_BINSRCH_INFO *hdb_binsrch_info, char *hvalue, TSK_OFF_T offset)
 {
     int i;
+    int found_non_zero_char = 0;
 
-    // make the hashes all upper case
+    /* Check if the hash is all-zero, and skip it if it is. This is extremely unlikely to be a real hash, and
+     * causes problems with sorting the index file because we use an all zero entry as a special header
+     * value */
+    for (i = 0; hvalue[i] != '\0'; i++) {
+        if (hvalue[i] != '0') {
+            found_non_zero_char = 1;
+            break;
+        }
+    }
+    if ( ! found_non_zero_char) {
+        return 0;
+    }
+
+    /* make the hashes all upper case. */
     for (i = 0; hvalue[i] != '\0'; i++) {
         if (islower((int) hvalue[i]))
             fprintf(hdb_binsrch_info->hIdxTmp, "%c", toupper((int) hvalue[i]));
