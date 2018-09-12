@@ -22,12 +22,12 @@ package org.sleuthkit.datamodel;
  * Encapsulates an Autopsy examiner
  * 
  */
-final class Examiner {
+final public class Examiner {
 	private final long id;
 	private final String loginName;				
 	private final String displayName;	
 	
-	public Examiner(long id, String loginName, String displayName) {
+	Examiner(long id, String loginName, String displayName) {
 		this.id = id;
 		this.loginName = loginName;
 		this.displayName = displayName;
