@@ -171,6 +171,9 @@ public final class CaseDbAccessManager {
 	
 	/**
 	 * Inserts a row in the specified table, as part of the specified transaction.
+	 * If the primary key is duplicate, it does nothing.
+	 * 
+	 * Note: For PostGreSQL, the caller must include the ON CONFLICT DO NOTHING clause
 	 * 
 	 * Caller is responsible for committing the transaction.
 	 * 
@@ -193,14 +196,20 @@ public final class CaseDbAccessManager {
 
 		PreparedStatement statement = null;
 		ResultSet resultSet;
-		String insertSQL = "INSERT INTO " + tableName + " " + sql; // NON-NLS
+		String insertSQL = "INSERT";
+		if (DbType.SQLITE == tskDB.getDatabaseType()) {
+			insertSQL += " OR IGNORE";
+		}
+		
+		insertSQL = insertSQL+ " INTO " + tableName + " " + sql; // NON-NLS
 		try {
 			statement = connection.prepareStatement(insertSQL, Statement.RETURN_GENERATED_KEYS);
-			connection.executeQuery(statement);
-
+			connection.executeUpdate(statement);
+			
 			resultSet = statement.getGeneratedKeys();
-			resultSet.next();
-			rowId = resultSet.getLong(1); //last_insert_rowid()
+			if (resultSet.next()) {
+				rowId = resultSet.getLong(1); //last_insert_rowid()
+			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error inserting row in table " + tableName + " with sql = "+ insertSQL, ex);
 		} finally {
