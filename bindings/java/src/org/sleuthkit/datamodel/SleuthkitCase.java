@@ -1989,7 +1989,7 @@ public class SleuthkitCase {
 			statement.setString(1, loginName);
 			resultSet = connection.executeQuery(statement);
 			if (resultSet.next()) {
-				return new Examiner(resultSet.getLong("examiner_id"), resultSet.getString("login_name"), resultSet.getString("full_name"));
+				return new Examiner(resultSet.getLong("examiner_id"), resultSet.getString("login_name"), resultSet.getString("display_name"));
 			}
 			else {
 				throw new TskCoreException("Error getting examaminer for name = " + loginName);
