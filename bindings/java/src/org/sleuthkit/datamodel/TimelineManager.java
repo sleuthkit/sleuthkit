@@ -168,8 +168,10 @@ public final class TimelineManager {
 		long end = timeRange.getEndMillis() / 1000;
 		String sqlWhere = getSQLWhere(filter);
 		sleuthkitCase.acquireSingleUserCaseReadLock();
-		boolean needsTags = filter.getTagsFilter().hasSubFilters();
-		boolean needsHashSets = filter.getHashHitsFilter().hasSubFilters();
+		TimelineFilter.TagsFilter tagsFilter = filter.getTagsFilter();
+		boolean needsTags = null != tagsFilter && tagsFilter.hasSubFilters();
+		TimelineFilter.HashHitsFilter hashHitsFilter = filter.getHashHitsFilter();
+		boolean needsHashSets = null != hashHitsFilter && hashHitsFilter.hasSubFilters();
 		String augmentedEventsTablesSQL = getAugmentedEventsTablesSQL(needsTags, needsHashSets);
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement stmt = con.createStatement(); //can't use prepared statement because of complex where clause

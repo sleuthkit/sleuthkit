@@ -95,7 +95,7 @@ public class SleuthkitCase {
 	 * tsk/auto/tsk_db.h.
 	 */
 	private static final CaseDbSchemaVersionNumber CURRENT_DB_SCHEMA_VERSION
-			= new CaseDbSchemaVersionNumber(8, 1);
+			= new CaseDbSchemaVersionNumber(8, 2);
 
 	private static final long BASE_ARTIFACT_ID = Long.MIN_VALUE; // Artifact ids will start at the lowest negative value
 	private static final Logger logger = Logger.getLogger(SleuthkitCase.class.getName());
@@ -330,7 +330,7 @@ public class SleuthkitCase {
 	private void setHasChildren(Long objId) {
 		long mapIndex = objId / Integer.MAX_VALUE;
 		int mapValue = (int) (objId % Integer.MAX_VALUE);
- 
+
 		synchronized (hasChildrenBitSetMap) {
 			if (hasChildrenBitSetMap.containsKey(mapIndex)) {
 				hasChildrenBitSetMap.get(mapIndex).set(mapValue);
@@ -387,8 +387,8 @@ public class SleuthkitCase {
 			}
 			return timelineMgrInstance;
 		}
-	} 
-	
+	}
+
 	/**
 	 * Make sure the predefined artifact types are in the artifact types table.
 	 *
@@ -760,6 +760,7 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema7dot1toSchema7dot2(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema7dot2toSchema8dot0(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot0toSchema8dot1(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema8dot1toSchema8dot2(dbSchemaVersion, connection);
 				statement = connection.createStatement();
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + dbSchemaVersion.getMajor() + ", schema_minor_ver = " + dbSchemaVersion.getMinor()); //NON-NLS
 				statement.close();
@@ -1496,6 +1497,91 @@ public class SleuthkitCase {
 			statement.execute("ALTER TABLE content_tags ADD COLUMN user_name TEXT DEFAULT NULL");
 			statement.execute("ALTER TABLE blackboard_artifact_tags ADD COLUMN user_name TEXT DEFAULT NULL");
 			return new CaseDbSchemaVersionNumber(8, 1);
+		} finally {
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+
+	/**
+	 * Updates a schema version 8.1 database to a schema version 8.2 database.
+	 *
+	 * @param schemaVersion The current schema version of the database.
+	 * @param connection    A connection to the case database.
+	 *
+	 * @return The new database schema version.
+	 *
+	 * @throws SQLException     If there is an error completing a database
+	 *                          operation.
+	 * @throws TskCoreException If there is an error completing a database
+	 *                          operation via another SleuthkitCase method.
+	 */
+	private CaseDbSchemaVersionNumber updateFromSchema8dot1toSchema8dot2(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersion.getMajor() != 8) {
+			return schemaVersion;
+		}
+
+		if (schemaVersion.getMinor() != 1) {
+			return schemaVersion;
+		}
+		Statement statement = connection.createStatement();
+		acquireSingleUserCaseWriteLock();
+
+		String primaryKeyType;
+
+		switch (getDatabaseType()) {
+			case POSTGRESQL:
+				primaryKeyType = "BIGSERIAL";
+				break;
+			case SQLITE:
+				primaryKeyType = "INTEGER";
+				break;
+			default:
+				throw new TskCoreException("Unsupported data base type: " + getDatabaseType().toString());
+
+		}
+		try {
+			//create and initialize event_types tables
+			statement.execute("CREATE TABLE event_types ("
+					+ " event_type_id " + primaryKeyType + " PRIMARY KEY, "
+					+ " display_name TEXT UNIQUE NOT NULL, "
+					+ " super_type_id INTEGER REFERENCES event_types )");
+			statement.execute("insert into event_types(event_type_id, display_name, super_type_id) values( 0, 'Event Types', null)");
+			statement.execute("insert into event_types(event_type_id, display_name, super_type_id) values(1, 'File System', 0)");
+			statement.execute("insert into event_types(event_type_id, display_name, super_type_id) values(2, 'Web Activity', 0)");
+			statement.execute("insert into event_types(event_type_id, display_name, super_type_id) values(3, 'Misc Types', 0)");
+			statement.execute("insert into event_types(event_type_id, display_name, super_type_id) values(4, 'Modified', 1)");
+			statement.execute("insert into event_types(event_type_id, display_name, super_type_id) values(5, 'Accessed', 1)");
+			statement.execute("insert into event_types(event_type_id, display_name, super_type_id) values(6, 'Created', 1)");
+			statement.execute("insert into event_types(event_type_id, display_name, super_type_id) values(7, 'Changed', 1)");
+			//create events tables
+			statement.execute("CREATE TABLE events ("
+					+ " event_id  " + primaryKeyType + " PRIMARY KEY, "
+					+ " datasource_id BIGINT REFERENCES data_source_info, "
+					+ " file_id BIGINT REFERENCES tsk_files, "
+					+ " artifact_id BIGINT REFERENCES blackboard_artifacts, "
+					+ " time INTEGER, "
+					+ " sub_type INTEGER REFERENCES event_types, "
+					+ " base_type INTEGER REFERENCES event_types, "
+					+ " full_description TEXT, "
+					+ " med_description TEXT, "
+					+ " short_description TEXT, "
+					+ " known_state INTEGER, "//boolean 
+					+ " hash_hit INTEGER, "//boolean 
+					+ " tagged INTEGER )");
+
+			//create events indices
+			statement.execute("CREATE INDEX events_datasource_id ON events(datasource_id)");
+			statement.execute("CREATE INDEX events_event_id_hash_hit ON events(event_id, hash_hit)");
+			statement.execute("CREATE INDEX events_event_id_tagged ON events(event_id, tagged)");
+			statement.execute("CREATE INDEX events_file_id ON events(file_id)");
+			statement.execute("CREATE INDEX events_artifact_id ON events(artifact_id)");
+			statement.execute("CREATE INDEX events_sub_type_short_description_time ON events(sub_type, short_description, time)");
+			statement.execute("CREATE INDEX events_base_type_short_description_time ON events(base_type, short_description, time)");
+			statement.execute("CREATE INDEX events_time ON events(time)");
+			statement.execute("CREATE INDEX events_known_state ON events(known_state)");
+
+			return new CaseDbSchemaVersionNumber(8, 2);
 		} finally {
 			closeStatement(statement);
 			releaseSingleUserCaseWriteLock();
