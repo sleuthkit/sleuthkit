@@ -1490,6 +1490,39 @@ public class SleuthkitCase {
 	 * @throws TskCoreException If there is an error completing a database
 	 *                          operation via another SleuthkitCase method.
 	 */
+	private CaseDbSchemaVersionNumber updateFromSchema8dot0toSchema8dot1(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersion.getMajor() != 8) {
+			return schemaVersion;
+		}
+
+		if (schemaVersion.getMinor() != 0) {
+			return schemaVersion;
+		}
+		Statement statement = connection.createStatement();
+		acquireSingleUserCaseWriteLock();
+		try {
+			statement.execute("ALTER TABLE content_tags ADD COLUMN user_name TEXT DEFAULT NULL");
+			statement.execute("ALTER TABLE blackboard_artifact_tags ADD COLUMN user_name TEXT DEFAULT NULL");
+			return new CaseDbSchemaVersionNumber(8, 1);
+		} finally {
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+
+	/**
+	 * Updates a schema version 8.1 database to a schema version 8.2 database.
+	 *
+	 * @param schemaVersion The current schema version of the database.
+	 * @param connection    A connection to the case database.
+	 *
+	 * @return The new database schema version.
+	 *
+	 * @throws SQLException     If there is an error completing a database
+	 *                          operation.
+	 * @throws TskCoreException If there is an error completing a database
+	 *                          operation via another SleuthkitCase method.
+	 */
 	private CaseDbSchemaVersionNumber updateFromSchema8dot1toSchema8dot2(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
 		if (schemaVersion.getMajor() != 8) {
 			return schemaVersion;
@@ -1515,41 +1548,7 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
-
-	/**
-	 * Updates a schema version 8.0 database to a schema version 8.1 database.
-	 *
-	 * @param schemaVersion The current schema version of the database.
-	 * @param connection    A connection to the case database.
-	 *
-	 * @return The new database schema version.
-	 *
-	 * @throws SQLException     If there is an error completing a database
-	 *                          operation.
-	 * @throws TskCoreException If there is an error completing a database
-	 *                          operation via another SleuthkitCase method.
-	 */
-	private CaseDbSchemaVersionNumber updateFromSchema8dot0toSchema8dot1(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
-		if (schemaVersion.getMajor() != 8) {
-			return schemaVersion;
-		}
-
-		if (schemaVersion.getMinor() != 0) {
-			return schemaVersion;
-		}
-		Statement statement = connection.createStatement();
-		acquireSingleUserCaseWriteLock();
-		try {
-			statement.execute("ALTER TABLE content_tags ADD COLUMN user_name TEXT DEFAULT NULL");
-			statement.execute("ALTER TABLE blackboard_artifact_tags ADD COLUMN user_name TEXT DEFAULT NULL");
-			return new CaseDbSchemaVersionNumber(8, 1);
-		} finally {
-			closeStatement(statement);
-			releaseSingleUserCaseWriteLock();
-		}
-	}
-
-
+	
 	/**
 	 * Extract the extension from a file name.
 	 *
