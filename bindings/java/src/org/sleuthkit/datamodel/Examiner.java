@@ -56,8 +56,9 @@ final public class Examiner {
 	 * @return display name, may be a blank string
 	 */
 	public String getDisplayName(){
-		if (displayName == null) 
+		if (displayName == null) { 
 			return "";
+		}
 		
 		return this.displayName;
 	}
