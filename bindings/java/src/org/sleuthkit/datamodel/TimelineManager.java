@@ -820,11 +820,14 @@ public final class TimelineManager {
 	 *
 	 * @param file The file.
 	 *
+	 * @return The IDs of the events that were updated.
+	 *
 	 * @throws TskCoreException if there is a error.
 	 */
 	public Set<Long> setFileStatus(AbstractFile file) throws TskCoreException {
 		Set<Long> eventIDs = getEventIDs(file.getId(), true);
-		//update known state for all event with given ids
+
+		sleuthkitCase.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement updateStatement = con.createStatement();) {
 			updateStatement.executeUpdate(
