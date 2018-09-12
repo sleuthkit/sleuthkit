@@ -19,8 +19,7 @@
 package org.sleuthkit.datamodel;
 
 /**
- * Encapsulates an Autopsy examiner
- * 
+ * Encapsulates the concept of an examiner associated with a case.
  */
 final public class Examiner {
 	private final long id;
