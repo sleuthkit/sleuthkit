@@ -167,12 +167,13 @@ public final class TimelineManager {
 		long start = timeRange.getStartMillis() / 1000;
 		long end = timeRange.getEndMillis() / 1000;
 		String sqlWhere = getSQLWhere(filter);
-		sleuthkitCase.acquireSingleUserCaseReadLock();
+
 		TimelineFilter.TagsFilter tagsFilter = filter.getTagsFilter();
 		boolean needsTags = null != tagsFilter && tagsFilter.hasSubFilters();
 		TimelineFilter.HashHitsFilter hashHitsFilter = filter.getHashHitsFilter();
 		boolean needsHashSets = null != hashHitsFilter && hashHitsFilter.hasSubFilters();
 		String augmentedEventsTablesSQL = getAugmentedEventsTablesSQL(needsTags, needsHashSets);
+		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement stmt = con.createStatement(); //can't use prepared statement because of complex where clause
 				ResultSet results = stmt.executeQuery(
@@ -238,13 +239,13 @@ public final class TimelineManager {
 
 		ArrayList<Long> resultIDs = new ArrayList<>();
 
-		sleuthkitCase.acquireSingleUserCaseReadLock();
 		TimelineFilter.TagsFilter tagsFilter = filter.getTagsFilter();
 		boolean needsTags = tagsFilter != null && tagsFilter.hasSubFilters();
 		TimelineFilter.HashHitsFilter hashHitsFilter = filter.getHashHitsFilter();
 		boolean needsHashSets = hashHitsFilter != null && hashHitsFilter.hasSubFilters();
 		String query = "SELECT events.event_id AS event_id FROM" + getAugmentedEventsTablesSQL(needsTags, needsHashSets)
 				+ " WHERE time >=  " + startTime + " AND time <" + endTime + " AND " + getSQLWhere(filter) + " ORDER BY time ASC"; // NON-NLS
+		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement stmt = con.createStatement();
 				ResultSet results = stmt.executeQuery(query);) {
@@ -366,15 +367,15 @@ public final class TimelineManager {
 		eventTypeIDMap.put(EventType.FILE_MODIFIED.getTypeID(), EventType.FILE_MODIFIED);
 
 		//initialize the other event types that aren't added in c++
+		List<EventType> typesToInitialize = new ArrayList<>();
+		typesToInitialize.add(EventType.CUSTOM_TYPES);//Initialize the custom base type
+		typesToInitialize.addAll(EventType.getWebActivityTypes());//Initialize the web events
+		typesToInitialize.addAll(EventType.getMiscTypes());	//initialize the misc events
+		typesToInitialize.add(EventType.OTHER);	//initialize the Other custom type.
+
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement statement = con.createStatement();) {
-
-			List<EventType> typesToInitialize = new ArrayList<>();
-			typesToInitialize.add(EventType.CUSTOM_TYPES);//Initialize the custom base type
-			typesToInitialize.addAll(EventType.getWebActivityTypes());//Initialize the web events
-			typesToInitialize.addAll(EventType.getMiscTypes());	//initialize the misc events
-			typesToInitialize.add(EventType.OTHER);	//initialize the Other custom type.
 
 			for (EventType type : typesToInitialize) {
 				statement.executeUpdate(
@@ -827,9 +828,8 @@ public final class TimelineManager {
 	 * @throws TskCoreException if there is a error.
 	 */
 	public Set<Long> setFileStatus(AbstractFile file) throws TskCoreException {
-		Set<Long> eventIDs = getEventIDs(file.getId(), true);
-
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
+		Set<Long> eventIDs = getEventIDs(file.getId(), true);
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement updateStatement = con.createStatement();) {
 			updateStatement.executeUpdate(
