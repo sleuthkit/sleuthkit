@@ -5469,11 +5469,13 @@ public class SleuthkitCase {
 			boolean isFile, Content parentObj,
 			String rederiveDetails, String toolName, String toolVersion,
 			String otherDetails, TskData.EncodingType encodingType) throws TskCoreException {
-		CaseDbConnection connection = connections.getConnection();
-		acquireSingleUserCaseWriteLock();
-		try {
-			connection.beginTransaction();
 
+		acquireSingleUserCaseWriteLock();
+		TimelineManager timelineManager = getTimelineManager();
+
+		CaseDbTransaction transaction = beginTransaction();
+		CaseDbConnection connection = transaction.getConnection();
+		try {
 			final long parentId = parentObj.getId();
 			String parentPath = "";
 			if (parentObj instanceof BlackboardArtifact) {
@@ -5547,8 +5549,9 @@ public class SleuthkitCase {
 
 			DerivedFile derivedFile = new DerivedFile(this, newObjId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
 					size, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId, null, encodingType, extension);
-			getTimelineManager().addFileSystemEvents(derivedFile);
-			connection.commitTransaction();
+
+			timelineManager.addFileSystemEvents(derivedFile, connection);
+			transaction.commit();
 			//TODO add derived method to tsk_files_derived and tsk_files_derived_method
 			return derivedFile;
 		} catch (SQLException ex) {
@@ -5788,7 +5791,7 @@ public class SleuthkitCase {
 					dataSourceObjId,
 					localPath,
 					encodingType, extension);
-			getTimelineManager().addFileSystemEvents(localFile);
+			getTimelineManager().addFileSystemEvents(localFile, connection);
 			return localFile;
 
 		} catch (SQLException ex) {
