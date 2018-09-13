@@ -1098,12 +1098,10 @@ public abstract class AbstractFile extends AbstractContent {
 
 		queryStr = "UPDATE tsk_files SET " + queryStr + " WHERE obj_id = " + this.getId();
 
-		SleuthkitCase.CaseDbConnection connection = getSleuthkitCase().getConnection();
-		Statement statement = null;
-
 		getSleuthkitCase().acquireSingleUserCaseWriteLock();
-		try {
-			statement = connection.createStatement();
+		try (SleuthkitCase.CaseDbConnection connection = getSleuthkitCase().getConnection();
+				Statement statement = connection.createStatement();) {
+
 			connection.executeUpdate(statement, queryStr);
 			getSleuthkitCase().getTimelineManager().setFileStatus(this);
 			md5HashDirty = false;
@@ -1112,8 +1110,6 @@ public abstract class AbstractFile extends AbstractContent {
 		} catch (SQLException ex) {
 			throw new TskCoreException(String.format("Error saving properties for file (obj_id = %s)", this.getId()), ex);
 		} finally {
-			closeStatement(statement);
-			connection.close();
 			getSleuthkitCase().releaseSingleUserCaseWriteLock();
 		}
 	}
