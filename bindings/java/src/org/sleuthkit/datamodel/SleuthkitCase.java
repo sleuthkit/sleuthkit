@@ -1564,7 +1564,7 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Updates a schema version 8.0 database to a schema version 8.1 database.
+	 * Updates a schema version 8.1 database to a schema version 8.2 database.
 	 *
 	 * @param schemaVersion The current schema version of the database.
 	 * @param connection    A connection to the case database.
