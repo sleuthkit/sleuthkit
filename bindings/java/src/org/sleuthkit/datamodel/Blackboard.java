@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -46,7 +47,7 @@ public final class Blackboard {
 	 * @param casedb The case database.
 	 */
 	Blackboard(SleuthkitCase casedb) {
-		this.caseDb = casedb;
+		this.caseDb = Objects.requireNonNull(casedb, "Cannot create Blackboard for null SleuthkitCase");
 	}
 
 	/**
@@ -60,7 +61,7 @@ public final class Blackboard {
 	 *
 	 * @throws BlackboardException If there is a problem posting the artifact.
 	 */
-	public synchronized void postArtifact(BlackboardArtifact artifact, String moduleName) throws BlackboardException {
+	public void postArtifact(BlackboardArtifact artifact, String moduleName) throws BlackboardException {
 		postArtifacts(Collections.singleton(artifact), moduleName);
 	}
 
@@ -75,16 +76,11 @@ public final class Blackboard {
 	 * @param artifacts  The artifacts to be posted .
 	 * @param moduleName The name of the module that is posting the artifacts.
 	 *
-	 * @
 	 *
-	 * throws BlackboardException If there is a problem posting the artifacts.
+	 * @throws BlackboardException If there is a problem posting the artifacts.
 	 *
 	 */
-	public synchronized void postArtifacts(Collection<BlackboardArtifact> artifacts, String moduleName) throws BlackboardException {
-		if (null == caseDb) {
-			throw new BlackboardException("Blackboard has been closed");
-		}
-
+	public void postArtifacts(Collection<BlackboardArtifact> artifacts, String moduleName) throws BlackboardException {
 		/*
 		 * For now this just processes them one by one, but in the future it
 		 * could be smarter and use transactions, etc.
@@ -112,10 +108,8 @@ public final class Blackboard {
 	 * @throws BlackboardException If there is a problem getting or adding the
 	 *                             artifact type.
 	 */
-	public synchronized BlackboardArtifact.Type getOrAddArtifactType(String typeName, String displayName) throws BlackboardException {
-		if (null == caseDb) {
-			throw new BlackboardException("Blackboard has been closed");
-		}
+	public BlackboardArtifact.Type getOrAddArtifactType(String typeName, String displayName) throws BlackboardException {
+
 		try {
 			return caseDb.addBlackboardArtifactType(typeName, displayName);
 		} catch (TskDataException typeExistsEx) {
@@ -142,10 +136,8 @@ public final class Blackboard {
 	 * @throws BlackboardException If there is a problem getting or adding the
 	 *                             attribute type.
 	 */
-	public synchronized BlackboardAttribute.Type getOrAddAttributeType(String typeName, BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, String displayName) throws BlackboardException {
-		if (null == caseDb) {
-			throw new BlackboardException("Blackboard has been closed");
-		}
+	public BlackboardAttribute.Type getOrAddAttributeType(String typeName, BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, String displayName) throws BlackboardException {
+
 		try {
 			return caseDb.addArtifactAttributeType(typeName, valueType, displayName);
 		} catch (TskDataException typeExistsEx) {
@@ -249,14 +241,11 @@ public final class Blackboard {
 				+ " AND blackboard_artifacts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID()
 				+ " AND " + whereClause;
 
-		SleuthkitCase.CaseDbConnection connection = caseDb.getConnection();
 		caseDb.acquireSingleUserCaseReadLock();
-		Statement statement = null;
-		ResultSet resultSet = null;
-
-		try {
-			statement = connection.createStatement();
-			resultSet = connection.executeQuery(statement, queryString); //NON-NLS	
+		try (SleuthkitCase.CaseDbConnection connection = caseDb.getConnection();
+				Statement statement = connection.createStatement();
+				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
+			//NON-NLS	
 			long count = 0;
 			if (resultSet.next()) {
 				count = resultSet.getLong("count");
@@ -265,9 +254,6 @@ public final class Blackboard {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting artifact types is use for data source." + ex.getMessage(), ex);
 		} finally {
-			SleuthkitCase.closeResultSet(resultSet);
-			SleuthkitCase.closeStatement(statement);
-			connection.close();
 			caseDb.releaseSingleUserCaseReadLock();
 		}
 	}
