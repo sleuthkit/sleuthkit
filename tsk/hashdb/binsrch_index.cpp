@@ -357,6 +357,9 @@ static uint8_t
 
         szLow = GetFileSize(hWin, &szHi);
         if (szLow == 0xffffffff) {
+            fclose(hdb_binsrch_info->hIdx);
+            hdb_binsrch_info->hIdx = NULL;
+
             tsk_release_lock(&hdb_binsrch_info->base.lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_OPEN);
@@ -396,6 +399,9 @@ static uint8_t
 
     /* Do some testing on the first line */
     if (NULL == fgets(head, TSK_HDB_MAXLEN, hdb_binsrch_info->hIdx)) {
+        fclose(hdb_binsrch_info->hIdx);
+        hdb_binsrch_info->hIdx = NULL;
+
         tsk_release_lock(&hdb_binsrch_info->base.lock);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_READIDX);
@@ -406,6 +412,9 @@ static uint8_t
 
     if (strncmp(head, TSK_HDB_IDX_HEAD_TYPE_STR, strlen(TSK_HDB_IDX_HEAD_TYPE_STR))
         != 0) {
+            fclose(hdb_binsrch_info->hIdx);
+            hdb_binsrch_info->hIdx = NULL;
+
             tsk_release_lock(&hdb_binsrch_info->base.lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
@@ -416,6 +425,9 @@ static uint8_t
 
     /* Do some testing on the second line */
     if (NULL == fgets(head2, TSK_HDB_MAXLEN, hdb_binsrch_info->hIdx)) {
+        fclose(hdb_binsrch_info->hIdx);
+        hdb_binsrch_info->hIdx = NULL;
+
         tsk_release_lock(&hdb_binsrch_info->base.lock);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_READIDX);
@@ -448,6 +460,9 @@ static uint8_t
     if (strcmp(ptr, TSK_HDB_DBTYPE_NSRL_STR) == 0) {
         if ((hdb_binsrch_info->base.db_type != TSK_HDB_DBTYPE_NSRL_ID) &&
             (hdb_binsrch_info->base.db_type != TSK_HDB_DBTYPE_IDXONLY_ID)) {
+                fclose(hdb_binsrch_info->hIdx);
+                hdb_binsrch_info->hIdx = NULL;
+
                 tsk_release_lock(&hdb_binsrch_info->base.lock);
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
@@ -460,6 +475,9 @@ static uint8_t
     else if (strcmp(ptr, TSK_HDB_DBTYPE_MD5SUM_STR) == 0) {
         if ((hdb_binsrch_info->base.db_type != TSK_HDB_DBTYPE_MD5SUM_ID) &&
             (hdb_binsrch_info->base.db_type != TSK_HDB_DBTYPE_IDXONLY_ID)) {
+                fclose(hdb_binsrch_info->hIdx);
+                hdb_binsrch_info->hIdx = NULL;
+
                 tsk_release_lock(&hdb_binsrch_info->base.lock);
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
@@ -472,6 +490,9 @@ static uint8_t
     else if (strcmp(ptr, TSK_HDB_DBTYPE_HK_STR) == 0) {
         if ((hdb_binsrch_info->base.db_type != TSK_HDB_DBTYPE_HK_ID) &&
             (hdb_binsrch_info->base.db_type != TSK_HDB_DBTYPE_IDXONLY_ID)) {
+                fclose(hdb_binsrch_info->hIdx);
+                hdb_binsrch_info->hIdx = NULL;
+
                 tsk_release_lock(&hdb_binsrch_info->base.lock);
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
@@ -484,6 +505,9 @@ static uint8_t
     else if (strcmp(ptr, TSK_HDB_DBTYPE_ENCASE_STR) == 0) {
         if ((hdb_binsrch_info->base.db_type != TSK_HDB_DBTYPE_ENCASE_ID) &&
             (hdb_binsrch_info->base.db_type != TSK_HDB_DBTYPE_IDXONLY_ID)) {
+                fclose(hdb_binsrch_info->hIdx);
+                hdb_binsrch_info->hIdx = NULL;
+
                 tsk_release_lock(&hdb_binsrch_info->base.lock);
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
@@ -494,6 +518,9 @@ static uint8_t
         }
     }
     else if (hdb_binsrch_info->base.db_type != TSK_HDB_DBTYPE_IDXONLY_ID) {
+        fclose(hdb_binsrch_info->hIdx);
+        hdb_binsrch_info->hIdx = NULL;
+
         tsk_release_lock(&hdb_binsrch_info->base.lock);
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_UNKTYPE);
@@ -506,6 +533,9 @@ static uint8_t
     /* Do some sanity checking */
     if (((hdb_binsrch_info->idx_size - hdb_binsrch_info->idx_off) % hdb_binsrch_info->idx_llen) !=
         0) {
+            fclose(hdb_binsrch_info->hIdx);
+            hdb_binsrch_info->hIdx = NULL;
+
             tsk_release_lock(&hdb_binsrch_info->base.lock);
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
@@ -516,6 +546,9 @@ static uint8_t
 
     /* allocate a buffer for a row */
     if ((hdb_binsrch_info->idx_lbuf = (char*)tsk_malloc(hdb_binsrch_info->idx_llen + 1)) == NULL) {
+        fclose(hdb_binsrch_info->hIdx);
+        hdb_binsrch_info->hIdx = NULL;
+
         tsk_release_lock(&hdb_binsrch_info->base.lock);
         return 1;
     }
@@ -744,6 +777,8 @@ uint8_t
 
 /**
 * Add a string entry to the intermediate index file.
+* Will not add an all-zero hash since this creates errors in the final
+* index file, but does not return an error in this case.
 *
 * @param hdb_binsrch_info Hash database state info
 * @param hvalue String of hash value to add
@@ -754,8 +789,22 @@ uint8_t
     hdb_binsrch_idx_add_entry_str(TSK_HDB_BINSRCH_INFO *hdb_binsrch_info, char *hvalue, TSK_OFF_T offset)
 {
     int i;
+    int found_non_zero_char = 0;
 
-    // make the hashes all upper case
+    /* Check if the hash is all-zero, and skip it if it is. This is extremely unlikely to be a real hash, and
+     * causes problems with sorting the index file because we use an all zero entry as a special header
+     * value */
+    for (i = 0; hvalue[i] != '\0'; i++) {
+        if (hvalue[i] != '0') {
+            found_non_zero_char = 1;
+            break;
+        }
+    }
+    if ( ! found_non_zero_char) {
+        return 0;
+    }
+
+    /* make the hashes all upper case. */
     for (i = 0; hvalue[i] != '\0'; i++) {
         if (islower((int) hvalue[i]))
             fprintf(hdb_binsrch_info->hIdxTmp, "%c", toupper((int) hvalue[i]));
@@ -1088,12 +1137,20 @@ int8_t
     if (hdb_binsrch_open_idx(hdb_info_base, htype))
         return -1;
 
-    /* Sanity check */
+    /* Sanity checks */
     if (hdb_binsrch_info->hash_len != strlen(hash)) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_HDB_ARG);
         tsk_error_set_errstr(
             "%s: Hash passed is different size than expected (%d vs %zd)",
+            func_name, hdb_binsrch_info->hash_len, strlen(hash));
+        return -1;
+    }
+    else if (hdb_binsrch_info->idx_llen == 0) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_HDB_CORRUPT);
+        tsk_error_set_errstr(
+            "%s: Error: Index line length is zero",
             func_name, hdb_binsrch_info->hash_len, strlen(hash));
         return -1;
     }

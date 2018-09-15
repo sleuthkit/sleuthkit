@@ -193,6 +193,9 @@ public class SleuthkitCase {
 	
 	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<String, Set<Long>>();
 
+	// Cache of frequently used content objects (e.g. data source, file system).
+	private final Map<Long, Content> frequentlyUsedContentMap = new HashMap<Long, Content>();
+
 	/**
 	 * Attempts to connect to the database with the passed in settings, throws
 	 * if the settings are not sufficient to connect to the database type
@@ -1576,6 +1579,39 @@ public class SleuthkitCase {
 	 * @throws TskCoreException If there is an error completing a database
 	 *                          operation via another SleuthkitCase method.
 	 */
+	private CaseDbSchemaVersionNumber updateFromSchema8dot0toSchema8dot1(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersion.getMajor() != 8) {
+			return schemaVersion;
+		}
+
+		if (schemaVersion.getMinor() != 0) {
+			return schemaVersion;
+		}
+		Statement statement = connection.createStatement();
+		acquireSingleUserCaseWriteLock();
+		try {
+			statement.execute("ALTER TABLE content_tags ADD COLUMN user_name TEXT DEFAULT NULL");
+			statement.execute("ALTER TABLE blackboard_artifact_tags ADD COLUMN user_name TEXT DEFAULT NULL");
+			return new CaseDbSchemaVersionNumber(8, 1);
+		} finally {
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+
+	/**
+	 * Updates a schema version 8.1 database to a schema version 8.2 database.
+	 *
+	 * @param schemaVersion The current schema version of the database.
+	 * @param connection    A connection to the case database.
+	 *
+	 * @return The new database schema version.
+	 *
+	 * @throws SQLException     If there is an error completing a database
+	 *                          operation.
+	 * @throws TskCoreException If there is an error completing a database
+	 *                          operation via another SleuthkitCase method.
+	 */
 	private CaseDbSchemaVersionNumber updateFromSchema8dot1toSchema8dot2(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
 		if (schemaVersion.getMajor() != 8) {
 			return schemaVersion;
@@ -1601,41 +1637,7 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
-
-	/**
-	 * Updates a schema version 8.0 database to a schema version 8.1 database.
-	 *
-	 * @param schemaVersion The current schema version of the database.
-	 * @param connection    A connection to the case database.
-	 *
-	 * @return The new database schema version.
-	 *
-	 * @throws SQLException     If there is an error completing a database
-	 *                          operation.
-	 * @throws TskCoreException If there is an error completing a database
-	 *                          operation via another SleuthkitCase method.
-	 */
-	private CaseDbSchemaVersionNumber updateFromSchema8dot0toSchema8dot1(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
-		if (schemaVersion.getMajor() != 8) {
-			return schemaVersion;
-		}
-
-		if (schemaVersion.getMinor() != 0) {
-			return schemaVersion;
-		}
-		Statement statement = connection.createStatement();
-		acquireSingleUserCaseWriteLock();
-		try {
-			statement.execute("ALTER TABLE content_tags ADD COLUMN user_name TEXT DEFAULT NULL");
-			statement.execute("ALTER TABLE blackboard_artifact_tags ADD COLUMN user_name TEXT DEFAULT NULL");
-			return new CaseDbSchemaVersionNumber(8, 1);
-		} finally {
-			closeStatement(statement);
-			releaseSingleUserCaseWriteLock();
-		}
-	}
-
-
+	
 	/**
 	 * Extract the extension from a file name.
 	 *
@@ -4326,6 +4328,12 @@ public class SleuthkitCase {
 	 *                          core
 	 */
 	public Content getContentById(long id) throws TskCoreException {
+		// First check to see if this exists in our frequently used content cache.
+		Content content = frequentlyUsedContentMap.get(id);
+		if (null != content) {
+			return content;
+		}
+
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
 		Statement s = null;
@@ -4337,24 +4345,31 @@ public class SleuthkitCase {
 				return null;
 			}
 
-			Content content = null;
 			long parentId = rs.getLong("par_obj_id"); //NON-NLS
 			final TskData.ObjectType type = TskData.ObjectType.valueOf(rs.getShort("type")); //NON-NLS
 			switch (type) {
 				case IMG:
 					content = getImageById(id);
+					frequentlyUsedContentMap.put(id, content);
 					break;
 				case VS:
 					content = getVolumeSystemById(id, parentId);
 					break;
 				case VOL:
 					content = getVolumeById(id, parentId);
+					frequentlyUsedContentMap.put(id, content);
 					break;
 				case FS:
 					content = getFileSystemById(id, parentId);
+					frequentlyUsedContentMap.put(id, content);
 					break;
 				case ABSTRACTFILE:
 					content = getAbstractFileById(id);
+
+					// Add virtual and root directories to frequently used map.
+					if (((AbstractFile) content).isVirtual() || ((AbstractFile) content).isRoot()) {
+						frequentlyUsedContentMap.put(id, content);
+					}
 					break;
 				case ARTIFACT:
 					content = getArtifactById(id);
@@ -4365,6 +4380,7 @@ public class SleuthkitCase {
 				default:
 					throw new TskCoreException("Could not obtain Content object with ID: " + id);
 			}
+
 			return content;
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting Content by ID.", ex);

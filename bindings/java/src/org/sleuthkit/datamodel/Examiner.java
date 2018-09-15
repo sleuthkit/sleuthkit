@@ -19,8 +19,7 @@
 package org.sleuthkit.datamodel;
 
 /**
- * Encapsulates an Autopsy examiner
- * 
+ * Encapsulates the concept of an examiner associated with a case.
  */
 final public class Examiner {
 	private final long id;
@@ -56,8 +55,9 @@ final public class Examiner {
 	 * @return display name, may be a blank string
 	 */
 	public String getDisplayName(){
-		if (displayName == null) 
+		if (displayName == null) { 
 			return "";
+		}
 		
 		return this.displayName;
 	}
