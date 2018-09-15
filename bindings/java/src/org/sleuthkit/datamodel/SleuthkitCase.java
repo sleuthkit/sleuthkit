@@ -107,58 +107,56 @@ public class SleuthkitCase {
 	private static final String SQL_ERROR_LIMIT_GROUP = "54";
 	private static final String SQL_ERROR_INTERNAL_GROUP = "xx";
 	private static final int MIN_USER_DEFINED_TYPE_ID = 10000;
-	private static final String[] CORE_TABLE_NAMES = new String[] {	
-													"tsk_db_info",
-													"tsk_objects",
-													"tsk_image_info",
-													"tsk_image_names",
-													"tsk_vs_info",
-													"tsk_vs_parts",
-													"tsk_fs_info",
-													"tsk_file_layout",
-													"tsk_files",
-													"tsk_files_path",
-													"tsk_files_derived",
-													"tsk_files_derived_method",
-													"tag_names",
-													"content_tags",
-													"blackboard_artifact_tags",
-													"blackboard_artifacts",
-													"blackboard_attributes",
-													"blackboard_artifact_types",
-													"blackboard_attribute_types",
-													"data_source_info",
-													"file_encoding_types",
-													"ingest_module_types",
-													"ingest_job_status_types",
-													"ingest_modules",
-													"ingest_jobs",
-													"ingest_job_modules",
-													"account_types",
-													"accounts",
-													"account_relationships",
-													"review_statuses",
-													"reports" };
+	private static final String[] CORE_TABLE_NAMES = new String[]{
+		"tsk_db_info",
+		"tsk_objects",
+		"tsk_image_info",
+		"tsk_image_names",
+		"tsk_vs_info",
+		"tsk_vs_parts",
+		"tsk_fs_info",
+		"tsk_file_layout",
+		"tsk_files",
+		"tsk_files_path",
+		"tsk_files_derived",
+		"tsk_files_derived_method",
+		"tag_names",
+		"content_tags",
+		"blackboard_artifact_tags",
+		"blackboard_artifacts",
+		"blackboard_attributes",
+		"blackboard_artifact_types",
+		"blackboard_attribute_types",
+		"data_source_info",
+		"file_encoding_types",
+		"ingest_module_types",
+		"ingest_job_status_types",
+		"ingest_modules",
+		"ingest_jobs",
+		"ingest_job_modules",
+		"account_types",
+		"accounts",
+		"account_relationships",
+		"review_statuses",
+		"reports"};
 	private static final Set<String> CORE_TABLE_NAMES_SET = new HashSet<String>(Arrays.asList(CORE_TABLE_NAMES));
-	private static final String[] CORE_INDEX_NAMES = new String[] { 
-													"parObjId",
-													"layout_objID",
-													"artifact_objID",
-													"artifact_artifact_objID",
-													"artifact_typeID",
-													"attrsArtifactID",
-													"mime_type",
-													"file_extension",
-													"relationships_account1",
-													"relationships_account2",
-													"relationships_relationship_source_obj_id",
-													"relationships_date_time",
-													"relationships_relationship_type",
-													"relationships_data_source_obj_id",
-												};
+	private static final String[] CORE_INDEX_NAMES = new String[]{
+		"parObjId",
+		"layout_objID",
+		"artifact_objID",
+		"artifact_artifact_objID",
+		"artifact_typeID",
+		"attrsArtifactID",
+		"mime_type",
+		"file_extension",
+		"relationships_account1",
+		"relationships_account2",
+		"relationships_relationship_source_obj_id",
+		"relationships_date_time",
+		"relationships_relationship_type",
+		"relationships_data_source_obj_id",};
 	private static final Set<String> CORE_INDEX_NAMES_SET = new HashSet<String>(Arrays.asList(CORE_INDEX_NAMES));
-	
-	
+
 	private final ConnectionPool connections;
 	private final Map<Long, VirtualDirectory> rootIdsToCarvedFileDirs = new HashMap<Long, VirtualDirectory>();
 	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system files.
@@ -190,7 +188,7 @@ public class SleuthkitCase {
 	private final Object blackboardInstanceLock = new Object();
 	private Blackboard blackboardInstance = null;
 	private CaseDbAccessManager dbAccessManagerInstance = null;
-	
+
 	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<String, Set<Long>>();
 
 	// Cache of frequently used content objects (e.g. data source, file system).
@@ -337,7 +335,7 @@ public class SleuthkitCase {
 		initReviewStatuses(connection);
 		initEncodingTypes(connection);
 		populateHasChildrenMap(connection);
-		
+
 		updateExaminers(connection);
 		connection.close();
 	}
@@ -350,17 +348,17 @@ public class SleuthkitCase {
 	static Set<String> getCoreTableNames() {
 		return CORE_TABLE_NAMES_SET;
 	}
-	
+
 	/**
 	 * Returns a set of core index names in the SleuthKit case database.
-	 * 
+	 *
 	 * @return set of core index names
 	 */
 	static Set<String> getCoreIndexNames() {
 		return CORE_INDEX_NAMES_SET;
-		
+
 	}
-	
+
 	/**
 	 * Use the internal map to determine whether the content object has children
 	 * (of any type).
@@ -435,7 +433,7 @@ public class SleuthkitCase {
 	 * Returns an instance of CaseDbAccessManager
 	 *
 	 * @return CaseDbAccessManager
-	 * 
+	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public synchronized CaseDbAccessManager getCaseDbAccessManager() throws TskCoreException {
@@ -444,7 +442,7 @@ public class SleuthkitCase {
 		}
 		return dbAccessManagerInstance;
 	}
-	
+
 	/**
 	 * Make sure the predefined artifact types are in the artifact types table.
 	 *
@@ -691,18 +689,19 @@ public class SleuthkitCase {
 	/**
 	 * Records the current examiner name in the tsk_examiners table
 	 *
-	 * @param  CaseDbConnection
+	 * @param CaseDbConnection
+	 *
 	 * @throws SQLException
 	 * @throws TskCoreException
 	 */
 	private void updateExaminers(CaseDbConnection connection) throws SQLException, TskCoreException {
-		
+
 		String loginName = System.getProperty("user.name");
 		if (loginName.isEmpty()) {
 			logger.log(Level.SEVERE, "Cannot determine logged in user name");
 			return;
 		}
-		
+
 		acquireSingleUserCaseWriteLock();
 		Statement statement = connection.createStatement();
 		try {
@@ -721,13 +720,12 @@ public class SleuthkitCase {
 			statement.execute(query); //NON-NLS
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error inserting row in tsk_examiners", ex);
-		}
-		finally {
+		} finally {
 			closeStatement(statement);
 			releaseSingleUserCaseWriteLock();
 		}
 	}
-	
+
 	/**
 	 * Set up or update the hasChildren map using the tsk_objects table.
 	 *
@@ -856,7 +854,6 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema7dot1toSchema7dot2(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema7dot2toSchema8dot0(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot0toSchema8dot1(dbSchemaVersion, connection);
-				dbSchemaVersion = updateFromSchema8dot1toSchema8dot2(dbSchemaVersion, connection);
 				statement = connection.createStatement();
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + dbSchemaVersion.getMajor() + ", schema_minor_ver = " + dbSchemaVersion.getMinor()); //NON-NLS
 				statement.close();
@@ -1567,7 +1564,7 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Updates a schema version 8.1 database to a schema version 8.2 database.
+	 * Updates a schema version 8.0 database to a schema version 8.1 database.
 	 *
 	 * @param schemaVersion The current schema version of the database.
 	 * @param connection    A connection to the case database.
@@ -1592,6 +1589,14 @@ public class SleuthkitCase {
 		try {
 			statement.execute("ALTER TABLE content_tags ADD COLUMN user_name TEXT DEFAULT NULL");
 			statement.execute("ALTER TABLE blackboard_artifact_tags ADD COLUMN user_name TEXT DEFAULT NULL");
+
+			// create examiners table
+			if (this.dbType.equals(DbType.SQLITE)) {
+				statement.execute("CREATE TABLE tsk_examiners (examiner_id INTEGER PRIMARY KEY, login_name TEXT NOT NULL, display_name TEXT, UNIQUE(login_name) )");
+			} else {
+				statement.execute("CREATE TABLE tsk_examiners (examiner_id BIGSERIAL PRIMARY KEY, login_name TEXT NOT NULL, display_name TEXT, UNIQUE(login_name))");
+			}
+
 			return new CaseDbSchemaVersionNumber(8, 1);
 		} finally {
 			closeStatement(statement);
@@ -1599,45 +1604,6 @@ public class SleuthkitCase {
 		}
 	}
 
-	/**
-	 * Updates a schema version 8.1 database to a schema version 8.2 database.
-	 *
-	 * @param schemaVersion The current schema version of the database.
-	 * @param connection    A connection to the case database.
-	 *
-	 * @return The new database schema version.
-	 *
-	 * @throws SQLException     If there is an error completing a database
-	 *                          operation.
-	 * @throws TskCoreException If there is an error completing a database
-	 *                          operation via another SleuthkitCase method.
-	 */
-	private CaseDbSchemaVersionNumber updateFromSchema8dot1toSchema8dot2(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
-		if (schemaVersion.getMajor() != 8) {
-			return schemaVersion;
-		}
-
-		if (schemaVersion.getMinor() != 1) {
-			return schemaVersion;
-		}
-		Statement statement = connection.createStatement();
-		acquireSingleUserCaseWriteLock();
-		try {
-			// create examiners table
-			if (this.dbType.equals(DbType.SQLITE)) {
-				statement.execute("CREATE TABLE tsk_examiners (examiner_id INTEGER PRIMARY KEY, login_name TEXT NOT NULL, display_name TEXT, UNIQUE(login_name) )");
-			} 
-			else {
-				statement.execute("CREATE TABLE tsk_examiners (examiner_id BIGSERIAL PRIMARY KEY, login_name TEXT NOT NULL, display_name TEXT, UNIQUE(login_name))");
-			}
-			
-			return new CaseDbSchemaVersionNumber(8, 2);
-		} finally {
-			closeStatement(statement);
-			releaseSingleUserCaseWriteLock();
-		}
-	}
-	
 	/**
 	 * Extract the extension from a file name.
 	 *
@@ -1969,19 +1935,19 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Returns the Examiner object for currently logged in user 
+	 * Returns the Examiner object for currently logged in user
 	 *
 	 * @return A Examiner object.
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public Examiner getCurrentExaminer() throws TskCoreException {
-		
+
 		String loginName = System.getProperty("user.name");
 		if (loginName == null || loginName.isEmpty()) {
 			throw new TskCoreException("Failed to determine logged in user name.");
 		}
-		
+
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
 		ResultSet resultSet = null;
@@ -1992,11 +1958,10 @@ public class SleuthkitCase {
 			resultSet = connection.executeQuery(statement);
 			if (resultSet.next()) {
 				return new Examiner(resultSet.getLong("examiner_id"), resultSet.getString("login_name"), resultSet.getString("display_name"));
-			}
-			else {
+			} else {
 				throw new TskCoreException("Error getting examaminer for name = " + loginName);
 			}
-					
+
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting examaminer for name = " + loginName, ex);
 		} finally {
@@ -2005,19 +1970,18 @@ public class SleuthkitCase {
 			releaseSingleUserCaseReadLock();
 		}
 	}
-	
-	
+
 	/**
-	 * Returns the Examiner object for given id 
-	 * 
+	 * Returns the Examiner object for given id
+	 *
 	 * @param id
-	 * 
-	 * @return Examiner object 
-	 * 
-	 * @throws TskCoreException 
+	 *
+	 * @return Examiner object
+	 *
+	 * @throws TskCoreException
 	 */
 	Examiner getExaminerById(long id) throws TskCoreException {
-		
+
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
 		ResultSet resultSet = null;
@@ -2028,8 +1992,7 @@ public class SleuthkitCase {
 			resultSet = connection.executeQuery(statement);
 			if (resultSet.next()) {
 				return new Examiner(resultSet.getLong("examiner_id"), resultSet.getString("login_name"), resultSet.getString("full_name"));
-			}
-			else {
+			} else {
 				throw new TskCoreException("Error getting examaminer for id = " + id);
 			}
 		} catch (SQLException ex) {
@@ -2040,7 +2003,7 @@ public class SleuthkitCase {
 			releaseSingleUserCaseReadLock();
 		}
 	}
-	
+
 	/**
 	 * Starts the multi-step process of adding an image data source to the case
 	 * by creating an object that can be used to control the process and get
@@ -4586,16 +4549,16 @@ public class SleuthkitCase {
 			connection.close();
 		}
 	}
-	
+
 	/**
 	 * Get abstract file object from tsk_files table by its id on an existing
 	 * connection.
-	 * 
+	 *
 	 * @param objectId   The id of the file object in tsk_files table.
 	 * @param connection An open database connection.
-	 * 
+	 *
 	 * @return AbstractFile object populated, or null if not found.
-	 * 
+	 *
 	 * @throws TskCoreException thrown if critical error occurred within tsk
 	 *                          core and file could not be queried
 	 */
@@ -5839,7 +5802,7 @@ public class SleuthkitCase {
 			long size, long ctime, long crtime, long atime, long mtime,
 			boolean isFile, TskData.EncodingType encodingType,
 			AbstractFile parent) throws TskCoreException {
-		
+
 		CaseDbTransaction localTrans = beginTransaction();
 		try {
 			LocalFile created = addLocalFile(fileName, localPath, size, ctime, crtime, atime, mtime, isFile, encodingType, parent, localTrans);
@@ -5918,7 +5881,7 @@ public class SleuthkitCase {
 			statement.setLong(13, atime);
 			statement.setLong(14, mtime);
 			String parentPath;
-			
+
 			if (parent.getParent() == null && parent.getType().equals(TskData.TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR)) {
 				parentPath = "/";
 			} else {
@@ -9335,7 +9298,6 @@ public class SleuthkitCase {
 		SELECT_EXAMINER_BY_ID("SELECT * FROM tsk_examiners WHERE examiner_id = ?"),
 		SELECT_EXAMINER_BY_LOGIN_NAME("SELECT * FROM tsk_examiners WHERE login_name = ?");
 		private final String sql;
-		
 
 		private PREPARED_STATEMENT(String sql) {
 			this.sql = sql;
@@ -9898,16 +9860,16 @@ public class SleuthkitCase {
 		CaseDbConnection getConnection() {
 			return this.connection;
 		}
-		
+
 		/**
-		 * Obtain a write lock for this transaction. Only one
-		 * will be obtained (no matter how many times it is called)
-		 * and will be released when commit or rollback is called. 
-		 * 
-		 * If this is not used, you risk deadlock because this transaction
-		 * can lock up SQLite and make it "busy" and another thread may get 
-		 * a write lock to the DB, but not be able to do anything because the 
-		 * DB is busy.
+		 * Obtain a write lock for this transaction. Only one will be obtained
+		 * (no matter how many times it is called) and will be released when
+		 * commit or rollback is called.
+		 *
+		 * If this is not used, you risk deadlock because this transaction can
+		 * lock up SQLite and make it "busy" and another thread may get a write
+		 * lock to the DB, but not be able to do anything because the DB is
+		 * busy.
 		 */
 		void acquireSingleUserCaseWriteLock() {
 			if (!hasWriteLock) {
