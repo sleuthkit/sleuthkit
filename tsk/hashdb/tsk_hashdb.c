@@ -223,7 +223,7 @@ TSK_HDB_INFO *
         else {
             fclose(hIdx);
         }
-        hdb_info = idxonly_open(db_path);
+        hdb_info = idxonly_open(db_path, file_path);
         break;
     case TSK_HDB_DBTYPE_SQLITE_ID: 
         if (NULL != hDb) {
