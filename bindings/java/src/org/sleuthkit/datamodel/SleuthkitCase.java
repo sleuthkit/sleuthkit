@@ -108,6 +108,7 @@ public class SleuthkitCase {
 	private static final String SQL_ERROR_LIMIT_GROUP = "54";
 	private static final String SQL_ERROR_INTERNAL_GROUP = "xx";
 	private static final int MIN_USER_DEFINED_TYPE_ID = 10000;
+ 
 	private static final Set<String> CORE_TABLE_NAMES = new HashSet<String>(Arrays.asList(
 			"tsk_examiners",
 			"tsk_db_info",
@@ -156,7 +157,7 @@ public class SleuthkitCase {
 			"relationships_relationship_source_obj_id",
 			"relationships_date_time",
 			"relationships_relationship_type",
-			"relationships_data_source_obj_id"));
+			"relationships_data_source_obj_id")); 
 
 	private final ConnectionPool connections;
 	private final Map<Long, VirtualDirectory> rootIdsToCarvedFileDirs = new HashMap<>();
@@ -210,7 +211,7 @@ public class SleuthkitCase {
 	void fireTSKEvent(Object event) {
 		eventBus.post(event);
 	}
-
+ 
 	// Cache of frequently used content objects (e.g. data source, file system).
 	private final Map<Long, Content> frequentlyUsedContentMap = new HashMap<>();
 
@@ -346,6 +347,7 @@ public class SleuthkitCase {
 		initNextArtifactId();
 		updateDatabaseSchema(null);
 
+ 
 		try (CaseDbConnection connection = connections.getConnection()) {
 			initIngestModuleTypes(connection);
 			initIngestStatusTypes(connection);
@@ -354,7 +356,7 @@ public class SleuthkitCase {
 			populateHasChildrenMap(connection);
 			updateExaminers(connection);
 		}
-	}
+ 	}
 
 	/**
 	 * Returns a set of core table names in the SleuthKit Case database.
@@ -372,7 +374,6 @@ public class SleuthkitCase {
 	 */
 	static Set<String> getCoreIndexNames() {
 		return CORE_INDEX_NAMES;
-
 	}
 
 	/**
@@ -1599,7 +1600,7 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Updates a schema version 8.1 database to a schema version 8.2 database.
+	 * Updates a schema version 8.0 database to a schema version 8.1 database.
 	 *
 	 * @param schemaVersion The current schema version of the database.
 	 * @param connection    A connection to the case database.
@@ -1625,6 +1626,7 @@ public class SleuthkitCase {
 			statement.execute("ALTER TABLE content_tags ADD COLUMN user_name TEXT DEFAULT NULL");
 			statement.execute("ALTER TABLE blackboard_artifact_tags ADD COLUMN user_name TEXT DEFAULT NULL");
 
+ 
 			String primaryKeyType;
 			switch (getDatabaseType()) {
 				case POSTGRESQL:
@@ -1692,15 +1694,16 @@ public class SleuthkitCase {
 			statement.execute("CREATE INDEX events_base_type_short_description_time ON events(base_type, short_description, time)");
 			statement.execute("CREATE INDEX events_time ON events(time)");
 			statement.execute("CREATE INDEX events_known_state ON events(known_state)");
-
+ 
 			return new CaseDbSchemaVersionNumber(8, 1);
 		} finally {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
 
-	/*
-	 * Extract the extension from a file name.
+ 
+	/**
+ 	 * Extract the extension from a file name.
 	 *
 	 * @param fileName the file name to extract the extension from.
 	 *
