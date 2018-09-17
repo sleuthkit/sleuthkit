@@ -107,6 +107,58 @@ public class SleuthkitCase {
 	private static final String SQL_ERROR_LIMIT_GROUP = "54";
 	private static final String SQL_ERROR_INTERNAL_GROUP = "xx";
 	private static final int MIN_USER_DEFINED_TYPE_ID = 10000;
+	private static final String[] CORE_TABLE_NAMES = new String[] {	
+													"tsk_db_info",
+													"tsk_objects",
+													"tsk_image_info",
+													"tsk_image_names",
+													"tsk_vs_info",
+													"tsk_vs_parts",
+													"tsk_fs_info",
+													"tsk_file_layout",
+													"tsk_files",
+													"tsk_files_path",
+													"tsk_files_derived",
+													"tsk_files_derived_method",
+													"tag_names",
+													"content_tags",
+													"blackboard_artifact_tags",
+													"blackboard_artifacts",
+													"blackboard_attributes",
+													"blackboard_artifact_types",
+													"blackboard_attribute_types",
+													"data_source_info",
+													"file_encoding_types",
+													"ingest_module_types",
+													"ingest_job_status_types",
+													"ingest_modules",
+													"ingest_jobs",
+													"ingest_job_modules",
+													"account_types",
+													"accounts",
+													"account_relationships",
+													"review_statuses",
+													"reports" };
+	private static final Set<String> CORE_TABLE_NAMES_SET = new HashSet<String>(Arrays.asList(CORE_TABLE_NAMES));
+	private static final String[] CORE_INDEX_NAMES = new String[] { 
+													"parObjId",
+													"layout_objID",
+													"artifact_objID",
+													"artifact_artifact_objID",
+													"artifact_typeID",
+													"attrsArtifactID",
+													"mime_type",
+													"file_extension",
+													"relationships_account1",
+													"relationships_account2",
+													"relationships_relationship_source_obj_id",
+													"relationships_date_time",
+													"relationships_relationship_type",
+													"relationships_data_source_obj_id",
+												};
+	private static final Set<String> CORE_INDEX_NAMES_SET = new HashSet<String>(Arrays.asList(CORE_INDEX_NAMES));
+	
+	
 	private final ConnectionPool connections;
 	private final Map<Long, VirtualDirectory> rootIdsToCarvedFileDirs = new HashMap<Long, VirtualDirectory>();
 	private final Map<Long, FileSystem> fileSystemIdMap = new HashMap<Long, FileSystem>(); // Cache for file system files.
@@ -137,7 +189,8 @@ public class SleuthkitCase {
 	private CommunicationsManager communicationsMgrInstance = null;
 	private final Object blackboardInstanceLock = new Object();
 	private Blackboard blackboardInstance = null;
-
+	private CaseDbAccessManager dbAccessManagerInstance = null;
+	
 	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<String, Set<Long>>();
 
 	// Cache of frequently used content objects (e.g. data source, file system).
@@ -290,6 +343,25 @@ public class SleuthkitCase {
 	}
 
 	/**
+	 * Returns a set of core table names in the SleuthKit Case database.
+	 *
+	 * @return set of core table names
+	 */
+	static Set<String> getCoreTableNames() {
+		return CORE_TABLE_NAMES_SET;
+	}
+	
+	/**
+	 * Returns a set of core index names in the SleuthKit case database.
+	 * 
+	 * @return set of core index names
+	 */
+	static Set<String> getCoreIndexNames() {
+		return CORE_INDEX_NAMES_SET;
+		
+	}
+	
+	/**
 	 * Use the internal map to determine whether the content object has children
 	 * (of any type).
 	 *
@@ -359,6 +431,20 @@ public class SleuthkitCase {
 		}
 	}
 
+	/**
+	 * Returns an instance of CaseDbAccessManager
+	 *
+	 * @return CaseDbAccessManager
+	 * 
+	 * @throws org.sleuthkit.datamodel.TskCoreException
+	 */
+	public synchronized CaseDbAccessManager getCaseDbAccessManager() throws TskCoreException {
+		if (null == dbAccessManagerInstance) {
+			dbAccessManagerInstance = new CaseDbAccessManager(this);
+		}
+		return dbAccessManagerInstance;
+	}
+	
 	/**
 	 * Make sure the predefined artifact types are in the artifact types table.
 	 *
@@ -1481,7 +1567,7 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Updates a schema version 8.0 database to a schema version 8.1 database.
+	 * Updates a schema version 8.1 database to a schema version 8.2 database.
 	 *
 	 * @param schemaVersion The current schema version of the database.
 	 * @param connection    A connection to the case database.
@@ -1632,7 +1718,7 @@ public class SleuthkitCase {
 	 * @throws TskCoreException
 	 */
 	public CaseDbTransaction beginTransaction() throws TskCoreException {
-		return new CaseDbTransaction(connections.getConnection());
+		return new CaseDbTransaction(this, connections.getConnection());
 	}
 
 	/**
@@ -4834,7 +4920,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Passed null CaseDbTransaction");
 		}
 
-		acquireSingleUserCaseWriteLock();
+		transaction.acquireSingleUserCaseWriteLock();
 		ResultSet resultSet = null;
 		try {
 			// Get the parent path.
@@ -4924,7 +5010,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error creating virtual directory '" + directoryName + "'", e);
 		} finally {
 			closeResultSet(resultSet);
-			releaseSingleUserCaseWriteLock();
+			// NOTE: write lock will be released by transaction
 		}
 	}
 
@@ -4981,7 +5067,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Passed null CaseDbTransaction");
 		}
 
-		acquireSingleUserCaseWriteLock();
+		transaction.acquireSingleUserCaseWriteLock();
 		ResultSet resultSet = null;
 		try {
 			// Get the parent path.
@@ -5056,7 +5142,7 @@ public class SleuthkitCase {
 			throw new TskCoreException("Error creating local directory '" + directoryName + "'", e);
 		} finally {
 			closeResultSet(resultSet);
-			releaseSingleUserCaseWriteLock();
+			// NOTE: write lock will be released by transaction
 		}
 	}
 
@@ -5198,10 +5284,10 @@ public class SleuthkitCase {
 		CaseDbTransaction transaction = null;
 		Statement statement = null;
 		ResultSet resultSet = null;
-		acquireSingleUserCaseWriteLock();
 
 		try {
 			transaction = beginTransaction();
+			transaction.acquireSingleUserCaseWriteLock();
 			CaseDbConnection connection = transaction.getConnection();
 
 			List<LayoutFile> fileRangeLayoutFiles = new ArrayList<LayoutFile>();
@@ -5302,7 +5388,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
-			releaseSingleUserCaseWriteLock();
+			// NOTE: write lock will be released by transaction
 		}
 	}
 
@@ -5333,10 +5419,10 @@ public class SleuthkitCase {
 		CaseDbTransaction transaction = null;
 		Statement statement = null;
 		ResultSet resultSet = null;
-		acquireSingleUserCaseWriteLock();
 		long newCacheKey = 0; // Used to roll back cache if transaction is rolled back.
 		try {
 			transaction = beginTransaction();
+			transaction.acquireSingleUserCaseWriteLock();
 			CaseDbConnection connection = transaction.getConnection();
 
 			/*
@@ -5500,7 +5586,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
-			releaseSingleUserCaseWriteLock();
+			// NOTE: write lock will be released by transaction
 		}
 	}
 
@@ -5753,7 +5839,7 @@ public class SleuthkitCase {
 			long size, long ctime, long crtime, long atime, long mtime,
 			boolean isFile, TskData.EncodingType encodingType,
 			AbstractFile parent) throws TskCoreException {
-		acquireSingleUserCaseWriteLock();
+		
 		CaseDbTransaction localTrans = beginTransaction();
 		try {
 			LocalFile created = addLocalFile(fileName, localPath, size, ctime, crtime, atime, mtime, isFile, encodingType, parent, localTrans);
@@ -5766,8 +5852,6 @@ public class SleuthkitCase {
 				logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
 			}
 			throw ex;
-		} finally {
-			releaseSingleUserCaseWriteLock();
 		}
 	}
 
@@ -5801,7 +5885,7 @@ public class SleuthkitCase {
 			AbstractFile parent, CaseDbTransaction transaction) throws TskCoreException {
 
 		CaseDbConnection connection = transaction.getConnection();
-		acquireSingleUserCaseWriteLock();
+		transaction.acquireSingleUserCaseWriteLock();
 		Statement queryStatement = null;
 		try {
 
@@ -5868,7 +5952,7 @@ public class SleuthkitCase {
 			throw new TskCoreException(String.format("Failed to INSERT local file %s (%s) with parent id %d in tsk_files table", fileName, localPath, parent.getId()), ex);
 		} finally {
 			closeStatement(queryStatement);
-			releaseSingleUserCaseWriteLock();
+			// NOTE: write lock will be released by transaction
 		}
 	}
 
@@ -9791,9 +9875,12 @@ public class SleuthkitCase {
 	public static final class CaseDbTransaction {
 
 		private final CaseDbConnection connection;
+		private boolean hasWriteLock = false;
+		private SleuthkitCase sleuthkitCase;
 
-		private CaseDbTransaction(CaseDbConnection connection) throws TskCoreException {
+		private CaseDbTransaction(SleuthkitCase sleuthkitCase, CaseDbConnection connection) throws TskCoreException {
 			this.connection = connection;
+			this.sleuthkitCase = sleuthkitCase;
 			try {
 				this.connection.beginTransaction();
 			} catch (SQLException ex) {
@@ -9808,8 +9895,25 @@ public class SleuthkitCase {
 		 * @return The CaseDbConnection instance for this instance of
 		 *         CaseDbTransaction.
 		 */
-		private CaseDbConnection getConnection() {
+		CaseDbConnection getConnection() {
 			return this.connection;
+		}
+		
+		/**
+		 * Obtain a write lock for this transaction. Only one
+		 * will be obtained (no matter how many times it is called)
+		 * and will be released when commit or rollback is called. 
+		 * 
+		 * If this is not used, you risk deadlock because this transaction
+		 * can lock up SQLite and make it "busy" and another thread may get 
+		 * a write lock to the DB, but not be able to do anything because the 
+		 * DB is busy.
+		 */
+		void acquireSingleUserCaseWriteLock() {
+			if (!hasWriteLock) {
+				hasWriteLock = true;
+				sleuthkitCase.acquireSingleUserCaseWriteLock();
+			}
 		}
 
 		/**
@@ -9850,6 +9954,10 @@ public class SleuthkitCase {
 		 */
 		void close() {
 			this.connection.close();
+			if (hasWriteLock) {
+				sleuthkitCase.releaseSingleUserCaseWriteLock();
+				hasWriteLock = false;
+			}
 		}
 	}
 
