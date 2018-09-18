@@ -1,6 +1,11 @@
 <ivy-module version="2.0">
 	<info organisation="org.sleuthkit" module="datamodel"/>
 	<dependencies>
+		<dependency org="joda-time" name="joda-time" rev="2.4" />
+		<dependency org="com.google.guava" name="guava" rev="19.0"/>
+		<dependency org="org.apache.commons" name="commons-lang3" rev="3.0"/>
+		
+		
 		<dependency org="junit" name="junit" rev="4.8.2"/>
 		<dependency org="com.googlecode.java-diff-utils" name="diffutils" rev="1.2.1"/>
 		<dependency org="org.xerial" name="sqlite-jdbc" rev="3.8.11">

@@ -18,18 +18,23 @@
  */
 package org.sleuthkit.datamodel;
 
+import com.google.common.collect.ImmutableSet;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * A representation of the blackboard, a place where artifacts and their
  * attributes are posted.
- *
  */
 public final class Blackboard {
 
@@ -42,7 +47,108 @@ public final class Blackboard {
 	 * @param casedb The case database.
 	 */
 	Blackboard(SleuthkitCase casedb) {
-		this.caseDb = casedb;
+		this.caseDb = Objects.requireNonNull(casedb, "Cannot create Blackboard for null SleuthkitCase");
+	}
+
+	/**
+	 * Posts the artifact. The artifact should be complete (all attributes have
+	 * been added) before being posted. Posting the artifact includes making any
+	 * timeline events that may be derived from it, and broadcasting a
+	 * notification that the artifact is ready for further analysis.
+	 *
+	 * @param artifact   The artifact to be posted.
+	 * @param moduleName The name of the module that is posting the artifacts.
+	 *
+	 * @throws BlackboardException If there is a problem posting the artifact.
+	 */
+	public void postArtifact(BlackboardArtifact artifact, String moduleName) throws BlackboardException {
+		postArtifacts(Collections.singleton(artifact), moduleName);
+	}
+
+	/**
+	 * Posts a Collection of artifacts. The artifacts should be complete (all
+	 * attributes have been added) before being posted. Posting the artifacts
+	 * includes making any events that may be derived from them, and
+	 * broadcasting notifications that the artifacts are ready for further
+	 * analysis.
+	 *
+	 *
+	 * @param artifacts  The artifacts to be posted .
+	 * @param moduleName The name of the module that is posting the artifacts.
+	 *
+	 *
+	 * @throws BlackboardException If there is a problem posting the artifacts.
+	 *
+	 */
+	public void postArtifacts(Collection<BlackboardArtifact> artifacts, String moduleName) throws BlackboardException {
+		/*
+		 * For now this just processes them one by one, but in the future it
+		 * could be smarter and use transactions, etc.
+		 */
+		for (BlackboardArtifact artifact : artifacts) {
+			try {
+				caseDb.getTimelineManager().addEventsFromArtifact(artifact);
+			} catch (TskCoreException ex) {
+				throw new BlackboardException("Failed to add events for artifact: " + artifact, ex);
+			}
+		}
+
+		caseDb.fireTSKEvent(new ArtifactsPostedEvent(artifacts, moduleName));
+	}
+
+	/**
+	 * Gets an artifact type, creating it if it does not already exist. Use this
+	 * method to define custom artifact types.
+	 *
+	 * @param typeName    The type name of the artifact type.
+	 * @param displayName The display name of the artifact type.
+	 *
+	 * @return A type object representing the artifact type.
+	 *
+	 * @throws BlackboardException If there is a problem getting or adding the
+	 *                             artifact type.
+	 */
+	public BlackboardArtifact.Type getOrAddArtifactType(String typeName, String displayName) throws BlackboardException {
+
+		try {
+			return caseDb.addBlackboardArtifactType(typeName, displayName);
+		} catch (TskDataException typeExistsEx) {
+			try {
+				return caseDb.getArtifactType(typeName);
+			} catch (TskCoreException ex) {
+				throw new BlackboardException("Failed to get or add artifact type", ex);
+			}
+		} catch (TskCoreException ex) {
+			throw new BlackboardException("Failed to get or add artifact type", ex);
+		}
+	}
+
+	/**
+	 * Gets an attribute type, creating it if it does not already exist. Use
+	 * this method to define custom attribute types.
+	 *
+	 * @param typeName    The type name of the attribute type.
+	 * @param valueType   The value type of the attribute type.
+	 * @param displayName The display name of the attribute type.
+	 *
+	 * @return A type object representing the attribute type.
+	 *
+	 * @throws BlackboardException If there is a problem getting or adding the
+	 *                             attribute type.
+	 */
+	public BlackboardAttribute.Type getOrAddAttributeType(String typeName, BlackboardAttribute.TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE valueType, String displayName) throws BlackboardException {
+
+		try {
+			return caseDb.addArtifactAttributeType(typeName, valueType, displayName);
+		} catch (TskDataException typeExistsEx) {
+			try {
+				return caseDb.getAttributeType(typeName);
+			} catch (TskCoreException ex) {
+				throw new BlackboardException("Failed to get or add attribute type", ex);
+			}
+		} catch (TskCoreException ex) {
+			throw new BlackboardException("Failed to get or add attribute type", ex);
+		}
 	}
 
 	/**
@@ -65,15 +171,12 @@ public final class Blackboard {
 				+ "ON arts.artifact_type_id = types.artifact_type_id "
 				+ "WHERE arts.data_source_obj_id = " + dataSourceObjId;
 
-		SleuthkitCase.CaseDbConnection connection = caseDb.getConnection();
 		caseDb.acquireSingleUserCaseReadLock();
-		Statement statement = null;
-		ResultSet resultSet = null;
-		try {
-			statement = connection.createStatement();
-			resultSet = connection.executeQuery(statement, queryString); //NON-NLS
+		try (SleuthkitCase.CaseDbConnection connection = caseDb.getConnection();
+				Statement statement = connection.createStatement();
+				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
 
-			List<BlackboardArtifact.Type> uniqueArtifactTypes = new ArrayList<BlackboardArtifact.Type>();
+			List<BlackboardArtifact.Type> uniqueArtifactTypes = new ArrayList<>();
 			while (resultSet.next()) {
 				uniqueArtifactTypes.add(new BlackboardArtifact.Type(resultSet.getInt("artifact_type_id"),
 						resultSet.getString("type_name"), resultSet.getString("display_name")));
@@ -82,12 +185,8 @@ public final class Blackboard {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting artifact types is use for data source." + ex.getMessage(), ex);
 		} finally {
-			SleuthkitCase.closeResultSet(resultSet);
-			SleuthkitCase.closeStatement(statement);
-			connection.close();
 			caseDb.releaseSingleUserCaseReadLock();
 		}
-
 	}
 
 	/**
@@ -142,14 +241,11 @@ public final class Blackboard {
 				+ " AND blackboard_artifacts.review_status_id !=" + BlackboardArtifact.ReviewStatus.REJECTED.getID()
 				+ " AND " + whereClause;
 
-		SleuthkitCase.CaseDbConnection connection = caseDb.getConnection();
 		caseDb.acquireSingleUserCaseReadLock();
-		Statement statement = null;
-		ResultSet resultSet = null;
-
-		try {
-			statement = connection.createStatement();
-			resultSet = connection.executeQuery(statement, queryString); //NON-NLS	
+		try (SleuthkitCase.CaseDbConnection connection = caseDb.getConnection();
+				Statement statement = connection.createStatement();
+				ResultSet resultSet = connection.executeQuery(statement, queryString);) {
+			//NON-NLS	
 			long count = 0;
 			if (resultSet.next()) {
 				count = resultSet.getLong("count");
@@ -158,25 +254,22 @@ public final class Blackboard {
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting artifact types is use for data source." + ex.getMessage(), ex);
 		} finally {
-			SleuthkitCase.closeResultSet(resultSet);
-			SleuthkitCase.closeStatement(statement);
-			connection.close();
 			caseDb.releaseSingleUserCaseReadLock();
 		}
 	}
 
-	/**
+	/*
 	 * Determine if an artifact of a given type exists for given content with a
 	 * specific list of attributes.
 	 *
-	 * @param content        The content whose artifacts need to be looked at.
-	 * @param artifactType   The type of artifact to look for.
-	 * @param attributesList The list of attributes to look for.
+	 * @param content The content whose artifacts need to be looked at. @param
+	 * artifactType The type of artifact to look for. @param attributesList The
+	 * list of attributes to look for.
 	 *
 	 * @return True if the specific artifact exists; otherwise false.
 	 *
 	 * @throws TskCoreException If there is a problem getting artifacts or
-	 *                          attributes.
+	 * attributes.
 	 */
 	public boolean artifactExists(Content content, BlackboardArtifact.ARTIFACT_TYPE artifactType,
 			Collection<BlackboardAttribute> attributesList) throws TskCoreException {
@@ -226,11 +319,11 @@ public final class Blackboard {
 			boolean match = false;
 			for (BlackboardAttribute fileAttribute : fileAttributesList) {
 				BlackboardAttribute.Type attributeType = fileAttribute.getAttributeType();
-				
+
 				if (attributeType.getTypeID() != expectedAttribute.getAttributeType().getTypeID()) {
 					continue;
 				}
-				
+
 				Object fileAttributeValue;
 				Object expectedAttributeValue;
 				switch (attributeType.getValueType()) {
@@ -270,8 +363,7 @@ public final class Blackboard {
 						match = true;
 						break;
 					}
-				}
-				else if (fileAttributeValue.equals(expectedAttributeValue)) {
+				} else if (fileAttributeValue.equals(expectedAttributeValue)) {
 					match = true;
 					break;
 				}
@@ -289,5 +381,83 @@ public final class Blackboard {
 		 * attributes list.
 		 */
 		return true;
+
+	}
+
+	/**
+	 * A Blackboard exception.
+	 */
+	public static final class BlackboardException extends Exception {
+
+		private static final long serialVersionUID = 1L;
+
+		/**
+		 * Constructs a blackboard exception with the specified message.
+		 *
+		 * @param message The message.
+		 */
+		BlackboardException(String message) {
+			super(message);
+		}
+
+		/**
+		 * Constructs a blackboard exception with the specified message and
+		 * cause.
+		 *
+		 * @param message The message.
+		 * @param cause   The cause.
+		 */
+		BlackboardException(String message, Throwable cause) {
+			super(message, cause);
+		}
+	}
+
+	/**
+	 * Event published by SleuthkitCase when one or more artifacts are posted. A
+	 * posted artifact is complete (all attributes have been added) and ready
+	 * for further processing.
+	 */
+	final public class ArtifactsPostedEvent {
+
+		private final String moduleName;
+		private final ImmutableSet<BlackboardArtifact.Type> artifactTypes;
+		private final ImmutableSet<BlackboardArtifact> artifacts;
+
+		private ArtifactsPostedEvent(Collection<BlackboardArtifact> artifacts, String moduleName) throws BlackboardException {
+			Set<Integer> typeIDS = artifacts.stream()
+					.map(BlackboardArtifact::getArtifactTypeID)
+					.collect(Collectors.toSet());
+			Set<BlackboardArtifact.Type> types = new HashSet<>();
+			for (Integer typeID : typeIDS) {
+				try {
+					types.add(caseDb.getArtifactType(typeID));
+				} catch (TskCoreException tskCoreException) {
+					throw new BlackboardException("Error getting artifact type by id.", tskCoreException);
+				}
+			}
+			artifactTypes = ImmutableSet.copyOf(types);
+			this.artifacts = ImmutableSet.copyOf(artifacts);
+			this.moduleName = moduleName;
+
+		}
+
+		public Collection<BlackboardArtifact> getArtifacts() {
+			return artifacts;
+		}
+
+		public Collection<BlackboardArtifact> getArtifacts(BlackboardArtifact.Type artifactType) {
+			Set<BlackboardArtifact> tempSet = artifacts.stream()
+					.filter(artifact -> artifact.getArtifactTypeID() == artifactType.getTypeID())
+					.collect(Collectors.toSet());
+			return ImmutableSet.copyOf(tempSet);
+		}
+
+		public String getModuleName() {
+			return moduleName;
+		}
+
+		public Collection<BlackboardArtifact.Type> getArtifactTypes() {
+			return artifactTypes;
+		}
 	}
 }
