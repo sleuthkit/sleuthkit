@@ -76,6 +76,21 @@ public final class TimelineEvent {
 	 */
 	private final boolean tagged;
 
+	/**
+	 * 
+	 * @param eventID  ID from tsk_events table in database
+	 * @param dataSourceID Object Id for  data source event is from
+	 * @param objID object id for non-artifact content that event is associated with 
+	 * @param artifactID ID of artifact (not object id) if event came from an artifact
+	 * @param time
+	 * @param type
+	 * @param fullDescription
+	 * @param medDescription
+	 * @param shortDescription
+	 * @param known
+	 * @param hashHit
+	 * @param tagged 
+	 */
 	public TimelineEvent(long eventID, long dataSourceID, long objID, Long artifactID, long time, EventType type, String fullDescription, String medDescription, String shortDescription, TskData.FileKnown known, boolean hashHit, boolean tagged) {
 		this.eventID = eventID;
 		this.dataSourceID = dataSourceID;
@@ -113,7 +128,7 @@ public final class TimelineEvent {
 	}
 
 	/**
-	 * Get the artifact id of the artifact this event is derived from.
+	 * Get the artifact id (not the object ID) of the artifact this event is derived from.
 	 *
 	 * @return An Optional containing the artifact ID. Will be empty if this
 	 *         event is not derived from an artifact

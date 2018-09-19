@@ -241,7 +241,7 @@ public abstract class TimelineFilter {
 
 		@Override
 		public String getDisplayName() {
-			return (EventType.ROOT_EVEN_TYPE.equals(eventType)) ? BundleProvider.getBundle().getString("TypeFilter.displayName.text") : eventType.getDisplayName();
+			return (EventType.ROOT_EVENT_TYPE.equals(eventType)) ? BundleProvider.getBundle().getString("TypeFilter.displayName.text") : eventType.getDisplayName();
 		}
 
 		@Override
@@ -756,7 +756,7 @@ public abstract class TimelineFilter {
 
 		@Override
 		public String getSQLWhere(TimelineManager manager) {
-			return "(datasource_id = '" + this.getDataSourceID() + "')"; //NON-NLS
+			return "(data_source_obj_id = '" + this.getDataSourceID() + "')"; //NON-NLS
 		}
 	}
 
@@ -810,7 +810,7 @@ public abstract class TimelineFilter {
 
 		@Override
 		public String getSQLWhere(TimelineManager manager) {
-			return " (events.tag_name_id = " + getTagName().getId() + " ) "; //NON-NLS
+			return " (tsk_events.tag_name_id = " + getTagName().getId() + " ) "; //NON-NLS
 		}
 	}
 
