@@ -108,8 +108,10 @@ public class SleuthkitCase {
 	private static final String SQL_ERROR_LIMIT_GROUP = "54";
 	private static final String SQL_ERROR_INTERNAL_GROUP = "xx";
 	private static final int MIN_USER_DEFINED_TYPE_ID = 10000;
- 
+
 	private static final Set<String> CORE_TABLE_NAMES = new HashSet<String>(Arrays.asList(
+			"tsk_events",
+			"tsk_event_types",
 			"tsk_examiners",
 			"tsk_db_info",
 			"tsk_objects",
@@ -157,7 +159,17 @@ public class SleuthkitCase {
 			"relationships_relationship_source_obj_id",
 			"relationships_date_time",
 			"relationships_relationship_type",
-			"relationships_data_source_obj_id")); 
+			"relationships_data_source_obj_id",
+			"events_data_source_obj_id",
+			"events_event_id_hash_hit",
+			"events_event_id_tagged",
+			"events_file_obj_id",
+			"events_artifact_id",
+			"events_sub_type_short_description_time",
+			"events_base_type_short_description_time",
+			"events_time",
+			"events_known_state"
+	));
 
 	private final ConnectionPool connections;
 	private final Map<Long, VirtualDirectory> rootIdsToCarvedFileDirs = new HashMap<>();
@@ -211,7 +223,7 @@ public class SleuthkitCase {
 	void fireTSKEvent(Object event) {
 		eventBus.post(event);
 	}
- 
+
 	// Cache of frequently used content objects (e.g. data source, file system).
 	private final Map<Long, Content> frequentlyUsedContentMap = new HashMap<>();
 
@@ -356,7 +368,7 @@ public class SleuthkitCase {
 			populateHasChildrenMap(connection);
 			updateExaminers(connection);
 		}
- 	}
+	}
 
 	/**
 	 * Returns a set of core table names in the SleuthKit Case database.
@@ -1667,7 +1679,7 @@ public class SleuthkitCase {
 					+ " values(6, 'Created', 1)");
 			statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
 					+ " values(7, 'Changed', 1)");
-			
+
 			//create tsk_events tables
 			statement.execute("CREATE TABLE tsk_events ("
 					+ " event_id  " + primaryKeyType + " PRIMARY KEY, "
@@ -1694,7 +1706,7 @@ public class SleuthkitCase {
 			statement.execute("CREATE INDEX events_base_type_short_description_time ON tsk_events(base_type, short_description, time)");
 			statement.execute("CREATE INDEX events_time ON tsk_events(time)");
 			statement.execute("CREATE INDEX events_known_state ON tsk_events(known_state)");
- 
+
 			return new CaseDbSchemaVersionNumber(8, 1);
 		} finally {
 			releaseSingleUserCaseWriteLock();
@@ -1703,7 +1715,7 @@ public class SleuthkitCase {
 
  
 	/**
- 	 * Extract the extension from a file name.
+	 * Extract the extension from a file name.
 	 *
 	 * @param fileName the file name to extract the extension from.
 	 *
