@@ -32,7 +32,7 @@ public final class TimelineEvent {
 	/**
 	 * The TSK object ID of the file this event is derived from.
 	 */
-	private final long objID;
+	private final long fileObjID;
 
 	/**
 	 * The TSK artifact ID of the file this event is derived from. Null, if this
@@ -43,7 +43,7 @@ public final class TimelineEvent {
 	/**
 	 * The TSK datasource ID of the datasource this event belongs to.
 	 */
-	private final long dataSourceID;
+	private final long dataSourceObjID;
 
 	/**
 	 * The time of this event in second from the Unix epoch.
@@ -79,8 +79,8 @@ public final class TimelineEvent {
 	/**
 	 * 
 	 * @param eventID  ID from tsk_events table in database
-	 * @param dataSourceID Object Id for  data source event is from
-	 * @param objID object id for non-artifact content that event is associated with 
+	 * @param dataSourceObjID Object Id for  data source event is from
+	 * @param fileObjID object id for non-artifact content that event is associated with 
 	 * @param artifactID ID of artifact (not object id) if event came from an artifact
 	 * @param time
 	 * @param type
@@ -91,10 +91,10 @@ public final class TimelineEvent {
 	 * @param hashHit
 	 * @param tagged 
 	 */
-	public TimelineEvent(long eventID, long dataSourceID, long objID, Long artifactID, long time, EventType type, String fullDescription, String medDescription, String shortDescription, TskData.FileKnown known, boolean hashHit, boolean tagged) {
+	public TimelineEvent(long eventID, long dataSourceObjID, long fileObjID, Long artifactID, long time, EventType type, String fullDescription, String medDescription, String shortDescription, TskData.FileKnown known, boolean hashHit, boolean tagged) {
 		this.eventID = eventID;
-		this.dataSourceID = dataSourceID;
-		this.objID = objID;
+		this.dataSourceObjID = dataSourceObjID;
+		this.fileObjID = fileObjID;
 		this.artifactID = Long.valueOf(0).equals(artifactID) ? null : artifactID;
 		this.time = time;
 		this.type = type;
@@ -147,12 +147,12 @@ public final class TimelineEvent {
 	}
 
 	/**
-	 * Get the obj id of the file this event is derived from.
+	 * Get the Content obj id of the file (which could be a data source) this event is derived from.
 	 *
 	 * @return the object id.
 	 */
-	public long getFileID() {
-		return objID;
+	public long getFileObjID() {
+		return fileObjID;
 	}
 
 	/**
@@ -220,8 +220,8 @@ public final class TimelineEvent {
 	 *
 	 * @return the datasource id.
 	 */
-	public long getDataSourceID() {
-		return dataSourceID;
+	public long getDataSourceObjID() {
+		return dataSourceObjID;
 	}
 
 	public long getEndMillis() {
