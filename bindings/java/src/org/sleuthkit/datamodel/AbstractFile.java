@@ -807,6 +807,11 @@ public abstract class AbstractFile extends AbstractContent {
 		if (isDir()) {
 			return 0;
 		}
+		
+		// If the file is empty, just return that zero bytes were read.
+		if (getSize() == 0) {
+			return 0;
+		}
 
 		loadLocalFile();
 		if (!localFile.exists()) {
