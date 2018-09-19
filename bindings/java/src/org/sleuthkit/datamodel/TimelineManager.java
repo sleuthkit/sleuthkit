@@ -50,6 +50,7 @@ import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TL_
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import static org.sleuthkit.datamodel.SleuthkitCase.escapeSingleQuotes;
 import static org.sleuthkit.datamodel.StringUtils.joinAsStrings;
+import static org.sleuthkit.datamodel.TskData.FileKnown.UNKNOWN;
 import org.sleuthkit.datamodel.timeline.ArtifactEventType;
 import org.sleuthkit.datamodel.timeline.EventType;
 import org.sleuthkit.datamodel.timeline.EventTypeZoomLevel;
@@ -80,7 +81,7 @@ public final class TimelineManager {
 		if (eventIDs.isEmpty()) {
 			return null;
 		}
-		final String query = "SELECT Min(time) as minTime, Max(time) as maxTime FROM events WHERE event_id IN (" + joinAsStrings(eventIDs, ", ") + ")";
+		final String query = "SELECT Min(time) as minTime, Max(time) as maxTime FROM tsk_events WHERE event_id IN (" + joinAsStrings(eventIDs, ", ") + ")";
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement stmt = con.createStatement();
@@ -133,7 +134,7 @@ public final class TimelineManager {
 		String query
 				= "SELECT tag_names.display_name AS display_name, COUNT(distinct tag_id) AS count FROM "
 				+ getAugmentedEventsTablesSQL(true, false)
-				+ " JOIN tag_names ON (events.tag_name_id = tag_names.tag_name_id ) "
+				+ " JOIN tag_names ON (tsk_events.tag_name_id = tag_names.tag_name_id ) "
 				+ " WHERE event_id IN (" + StringUtils.buildCSVString(eventIDsWithTags) + ") "
 				+ " GROUP BY tag_names.tag_name_id";
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
@@ -243,7 +244,7 @@ public final class TimelineManager {
 		boolean needsTags = tagsFilter != null && tagsFilter.hasSubFilters();
 		TimelineFilter.HashHitsFilter hashHitsFilter = filter.getHashHitsFilter();
 		boolean needsHashSets = hashHitsFilter != null && hashHitsFilter.hasSubFilters();
-		String query = "SELECT events.event_id AS event_id FROM" + getAugmentedEventsTablesSQL(needsTags, needsHashSets)
+		String query = "SELECT tsk_events.event_id AS event_id FROM" + getAugmentedEventsTablesSQL(needsTags, needsHashSets)
 				+ " WHERE time >=  " + startTime + " AND time <" + endTime + " AND " + getSQLWhere(filter) + " ORDER BY time ASC"; // NON-NLS
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
@@ -269,7 +270,7 @@ public final class TimelineManager {
 				ResultSet results = stmt.executeQuery(STATEMENTS.GET_DATASOURCE_IDS.getSQL());) {
 			HashSet<Long> dataSourceIDs = new HashSet<>();
 			while (results.next()) {
-				long datasourceID = results.getLong("datasource_id"); //NON-NLS
+				long datasourceID = results.getLong("data_source_obj_id"); //NON-NLS
 				dataSourceIDs.add(datasourceID);
 			}
 			return dataSourceIDs;
@@ -357,7 +358,7 @@ public final class TimelineManager {
 
 	private void initializeEventTypes() throws TskCoreException {
 		//initialize root and base event types, these are added to the DB in c++ land
-		eventTypeIDMap.put(EventType.ROOT_EVEN_TYPE.getTypeID(), EventType.ROOT_EVEN_TYPE);
+		eventTypeIDMap.put(EventType.ROOT_EVENT_TYPE.getTypeID(), EventType.ROOT_EVENT_TYPE);
 		eventTypeIDMap.put(EventType.WEB_ACTIVITY.getTypeID(), EventType.WEB_ACTIVITY);
 		eventTypeIDMap.put(EventType.MISC_TYPES.getTypeID(), EventType.MISC_TYPES);
 		eventTypeIDMap.put(EventType.FILE_SYSTEM.getTypeID(), EventType.FILE_SYSTEM);
@@ -379,11 +380,11 @@ public final class TimelineManager {
 
 			for (EventType type : typesToInitialize) {
 				con.executeUpdate(statement,
-						insertOrIgnore(" INTO event_types(event_type_id, display_name, super_type_id) "
+						insertOrIgnore(" INTO tsk_event_types(event_type_id, display_name, super_type_id) "
 								+ "VALUES( "
 								+ type.getTypeID() + ", '"
 								+ type.getDisplayName() + "',"
-								+ type.getBaseType().getTypeID()
+								+ type.getSuperType().getTypeID()
 								+ ")"));
 				eventTypeIDMap.put(type.getTypeID(), type);
 			}
@@ -431,20 +432,20 @@ public final class TimelineManager {
 	 */
 	private enum STATEMENTS {
 
-		GET_DATASOURCE_IDS("SELECT DISTINCT datasource_id FROM events WHERE datasource_id != 0"),// NON-NLS
-		GET_MAX_TIME("SELECT Max(time) AS max FROM events"), // NON-NLS
-		GET_MIN_TIME("SELECT Min(time) AS min FROM events"), // NON-NLS
-		GET_EVENT_BY_ID("SELECT * FROM events WHERE event_id =  ?"), // NON-NLS
+		GET_DATASOURCE_IDS("SELECT DISTINCT data_source_obj_id FROM tsk_events WHERE data_source_obj_id != 0"),// NON-NLS
+		GET_MAX_TIME("SELECT Max(time) AS max FROM tsk_events"), // NON-NLS
+		GET_MIN_TIME("SELECT Min(time) AS min FROM tsk_events"), // NON-NLS
+		GET_EVENT_BY_ID("SELECT * FROM tsk_events WHERE event_id =  ?"), // NON-NLS
 
 		/*
 		 * This SQL query is really just a select count(*), but that has
 		 * performance problems on very large tables unless you include a where
 		 * clause see http://stackoverflow.com/a/9338276/4004683 for more.
 		 */
-		COUNT_ALL_EVENTS("SELECT count(event_id) AS count FROM events WHERE event_id IS NOT null"), //NON-NLS
-		DROP_EVENTS_TABLE("DROP TABLE IF EXISTS events"), //NON-NLS
+		COUNT_ALL_EVENTS("SELECT count(event_id) AS count FROM tsk_events WHERE event_id IS NOT null"), //NON-NLS
+		DROP_EVENTS_TABLE("DROP TABLE IF EXISTS tsk_events"), //NON-NLS
 		DROP_DB_INFO_TABLE("DROP TABLE IF EXISTS db_ino"), //NON-NLS
-		SELECT_EVENT_IDS_BY_OBJECT_ID_AND_ARTIFACT_ID("SELECT event_id FROM events WHERE file_id = ? AND artifact_id = ?"); //NON-NLS
+		SELECT_EVENT_IDS_BY_OBJECT_ID_AND_ARTIFACT_ID("SELECT event_id FROM tsk_events WHERE file_obj_id = ? AND artifact_id = ?"); //NON-NLS
 
 		private final String sql;
 
@@ -469,7 +470,7 @@ public final class TimelineManager {
 	public List<Long> getEventIDsForArtifact(BlackboardArtifact artifact) throws TskCoreException {
 		ArrayList<Long> eventIDs = new ArrayList<>();
 
-		String query = "SELECT event_id FROM events WHERE artifact_id = " + artifact.getArtifactID();
+		String query = "SELECT event_id FROM tsk_events WHERE artifact_id = " + artifact.getArtifactID();
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement stmt = con.createStatement();
@@ -503,7 +504,7 @@ public final class TimelineManager {
 	public List<Long> getEventIDsForFile(AbstractFile file, boolean includeDerivedArtifacts) throws TskCoreException {
 		ArrayList<Long> eventIDs = new ArrayList<>();
 
-		String query = "SELECT event_id FROM events WHERE file_id = " + file.getId()
+		String query = "SELECT event_id FROM tsk_events WHERE file_obj_id = " + file.getId()
 				+ (includeDerivedArtifacts ? "" : " AND artifact_id IS NULL");
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
@@ -528,8 +529,8 @@ public final class TimelineManager {
 	private boolean hasDBColumn(final String dbColumn) throws TskCoreException {
 
 		String query = sleuthkitCase.getDatabaseType() == TskData.DbType.POSTGRESQL
-				? "SELECT column_name as name FROM information_schema.columns WHERE table_name = 'events';" //NON-NLS  //Postgres
-				: "PRAGMA table_info(events)";	//NON-NLS //SQLite
+				? "SELECT column_name as name FROM information_schema.columns WHERE table_name = 'tsk_events';" //NON-NLS  //Postgres
+				: "PRAGMA table_info(tsk_events)";	//NON-NLS //SQLite
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement statement = con.createStatement();) {
@@ -542,7 +543,7 @@ public final class TimelineManager {
 				}
 			}
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error querying for events table column names", ex); // NON-NLS
+			throw new TskCoreException("Error querying for tsk_events table column names", ex); // NON-NLS
 		} finally {
 			sleuthkitCase.releaseSingleUserCaseReadLock();
 		}
@@ -685,18 +686,26 @@ public final class TimelineManager {
 
 		// if the time is legitimate ( greater than zero ) insert it into the db
 		if (eventDescription != null && eventDescription.getTime() > 0) {
-			long objectID = artifact.getObjectID();
-			AbstractFile file = sleuthkitCase.getAbstractFileById(objectID);
+			long sourceFileObjId = artifact.getObjectID();
+			AbstractFile file = sleuthkitCase.getAbstractFileById(sourceFileObjId);
+			TskData.FileKnown knownStatus = UNKNOWN;
+			boolean hasHashHits = false;
+			// file will be null if source was data source or some non-file
+			if (file != null) {
+				knownStatus = file.getKnown();
+				hasHashHits = file.getHashSetNames().isEmpty() == false;
+			}
+			
 			return Optional.of(addEvent(eventDescription.getTime(),
 					eventType,
-					file.getDataSource().getId(),
-					objectID,
+					artifact.getDataSourceObjectID(),
+					sourceFileObjId,
 					artifact.getArtifactID(),
 					eventDescription.getFullDescription(),
 					eventDescription.getMedDescription(),
 					eventDescription.getShortDescription(),
-					file.getKnown(),
-					file.getHashSetNames().isEmpty() == false,
+					knownStatus,
+					hasHashHits,
 					sleuthkitCase.getBlackboardArtifactTagsByArtifact(artifact).isEmpty() == false));
 		}
 		return Optional.empty();
@@ -710,12 +719,29 @@ public final class TimelineManager {
 		}
 	}
 
+	/**
+	 * 
+	 * @param time
+	 * @param type
+	 * @param datasourceID
+	 * @param objID
+	 * @param artifactID  Artifact associated with the event or null if event is from a file. 
+	 * @param fullDescription
+	 * @param medDescription
+	 * @param shortDescription
+	 * @param known
+	 * @param hashHit
+	 * @param tagged
+	 * @param connection
+	 * @return
+	 * @throws TskCoreException 
+	 */
 	private TimelineEvent addEvent(long time, EventType type, long datasourceID, long objID,
 			Long artifactID, String fullDescription, String medDescription,
 			String shortDescription, TskData.FileKnown known, boolean hashHit, boolean tagged, CaseDbConnection connection) throws TskCoreException {
 
-		String sql = "INSERT INTO events ( "
-				+ "datasource_id, file_id, artifact_id, time, sub_type, base_type,"
+		String sql = "INSERT INTO tsk_events ( "
+				+ "data_source_obj_id, file_obj_id, artifact_id, time, sub_type, base_type,"
 				+ " full_description, med_description, short_description, "
 				+ " known_state, hash_hit, tagged) "
 				+ " VALUES ("
@@ -732,27 +758,29 @@ public final class TimelineManager {
 				+ (hashHit ? 1 : 0) + ","
 				+ (tagged ? 1 : 0) + "  )";// NON-NLS  
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
+		TimelineEvent singleEvent;
 		try (Statement insertRowStmt = connection.createStatement();) {
 			connection.executeUpdate(insertRowStmt, sql, PreparedStatement.RETURN_GENERATED_KEYS);
 			try (ResultSet generatedKeys = insertRowStmt.getGeneratedKeys();) {
 				generatedKeys.next();
 				long eventID = generatedKeys.getLong(1);
-				TimelineEvent singleEvent = new TimelineEvent(eventID, datasourceID,
+				singleEvent = new TimelineEvent(eventID, datasourceID,
 						objID, artifactID, time, type, fullDescription, medDescription,
 						shortDescription, known, hashHit, tagged);
-				sleuthkitCase.fireTSKEvent(new EventAddedEvent(singleEvent));
-				return singleEvent;
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Failed to insert event.", ex); // NON-NLS
 		} finally {
 			sleuthkitCase.releaseSingleUserCaseWriteLock();
 		}
+		
+		sleuthkitCase.fireTSKEvent(new EventAddedEvent(singleEvent));
+		return singleEvent;
 	}
 
 	private Set<Long> getEventIDs(long objectID, boolean includeArtifacts) throws TskCoreException {
 		HashSet<Long> eventIDs = new HashSet<>();
-		String sql = "SELECT event_id FROM events WHERE file_id = ? "
+		String sql = "SELECT event_id FROM tsk_events WHERE file_obj_id = ? "
 				+ (includeArtifacts ? "" : " AND artifact_id IS NULL");
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				PreparedStatement selectStmt = con.prepareStatement(sql, PreparedStatement.NO_GENERATED_KEYS);) {
@@ -773,7 +801,7 @@ public final class TimelineManager {
 		HashSet<Long> eventIDs = new HashSet<>();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				PreparedStatement selectStmt = con.prepareStatement(STATEMENTS.SELECT_EVENT_IDS_BY_OBJECT_ID_AND_ARTIFACT_ID.getSQL(), 0);) {
-			//"SELECT event_id FROM events WHERE file_id = ? AND artifact_id = ?"
+			//"SELECT event_id FROM tsk_events WHERE file_obj_id = ? AND artifact_id = ?"
 			selectStmt.setLong(1, objectID);
 			selectStmt.setLong(2, artifactID);
 			try (ResultSet executeQuery = selectStmt.executeQuery();) {
@@ -816,7 +844,7 @@ public final class TimelineManager {
 		//update tagged state for all event with selected ids
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement updateStatement = con.createStatement();) {
-			updateStatement.executeUpdate("UPDATE events SET tagged = " + (tagged ? 1 : 0) //NON-NLS
+			updateStatement.executeUpdate("UPDATE tsk_events SET tagged = " + (tagged ? 1 : 0) //NON-NLS
 					+ " WHERE event_id IN (" + joinAsStrings(eventIDs, ",") + ")"); //NON-NLS
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error marking events tagged", ex);
@@ -842,7 +870,7 @@ public final class TimelineManager {
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement updateStatement = con.createStatement();) {
 			updateStatement.executeUpdate(
-					"UPDATE events SET known_state = '" + file.getKnown().getFileKnownValue() + "', " //NON-NLS
+					"UPDATE tsk_events SET known_state = '" + file.getKnown().getFileKnownValue() + "', " //NON-NLS
 					+ "                hash_hit = " + (file.getHashSetNames().isEmpty() ? 0 : 1) //NON-NLS
 					+ " WHERE event_id IN (" + joinAsStrings(eventIDs, ",") + ")"); //NON-NLS
 		} catch (SQLException ex) {
@@ -860,8 +888,8 @@ public final class TimelineManager {
 	private TimelineEvent constructTimeLineEvent(ResultSet resultSet) throws SQLException, TskCoreException {
 		int typeID = resultSet.getInt("sub_type"); //NON-NLS
 		return new TimelineEvent(resultSet.getLong("event_id"), //NON-NLS
-				resultSet.getLong("datasource_id"), //NON-NLS
-				resultSet.getLong("file_id"), //NON-NLS
+				resultSet.getLong("data_source_obj_id"), //NON-NLS
+				resultSet.getLong("file_obj_id"), //NON-NLS
 				resultSet.getLong("artifact_id"), //NON-NLS
 				resultSet.getLong("time"), //NON-NLS
 				getEventType(typeID).orElseThrow(() -> newEventTypeMappingException(typeID)), //NON-NLS
@@ -907,7 +935,7 @@ public final class TimelineManager {
 		TimelineFilter.HashHitsFilter hashHitsFilter = filter.getHashHitsFilter();
 		boolean needsHashSets = hashHitsFilter != null && hashHitsFilter.hasSubFilters();
 		//get some info about the range of dates requested
-		String queryString = "SELECT count(DISTINCT events.event_id) AS count, " + typeColumnHelper(useSubTypes) //NON-NLS
+		String queryString = "SELECT count(DISTINCT tsk_events.event_id) AS count, " + typeColumnHelper(useSubTypes) //NON-NLS
 				+ " FROM " + getAugmentedEventsTablesSQL(needsTags, needsHashSets)
 				+ " WHERE time >= " + startTime + " AND time < " + adjustedEndTime + " AND " + getSQLWhere(filter) // NON-NLS
 				+ " GROUP BY " + typeColumnHelper(useSubTypes); // NON-NLS
@@ -942,7 +970,7 @@ public final class TimelineManager {
 	 * just return "events".
 	 *
 	 * Omitting details it is: SELECT <all relevant columns> FROM events LEFT
-	 * JOIN (events JOIN content_tags UNION ALL events JOIN
+	 * JOIN (tsk_events JOIN content_tags UNION ALL tsk_events JOIN
 	 * blackboard_artifact_tags) left join SELECT <HASH_SET_HITS> from
 	 * <Blackboard artifacts and attributes>
 	 *
@@ -955,17 +983,17 @@ public final class TimelineManager {
 	 *         columns required by the filters.
 	 */
 	static public String getAugmentedEventsTablesSQL(boolean needTags, boolean needHashSets) {
-		String coreColumns = "event_id, datasource_id, events.file_id, events.artifact_id,"
+		String coreColumns = "event_id, data_source_obj_id, tsk_events.file_obj_id, tsk_events.artifact_id,"
 				+ "			time, sub_type, base_type, full_description, med_description, "
 				+ "			short_description, known_state, hash_hit, tagged ";
 		String tagColumns = " , tag_name_id, tag_id ";
 		String joinedWithTags = needTags ? "("
 				+ " SELECT " + coreColumns + tagColumns
-				+ "		from events LEFT OUTER JOIN content_tags ON (content_tags.obj_id = events.file_id) "
+				+ "		from tsk_events LEFT OUTER JOIN content_tags ON (content_tags.obj_id = tsk_events.file_obj_id) "
 				+ "	UNION ALL "
 				+ "	SELECT " + coreColumns + tagColumns
-				+ "		FROM events LEFT OUTER JOIN blackboard_artifact_tags ON (blackboard_artifact_tags.artifact_id = events.artifact_id)"
-				+ " ) AS events" : " events ";
+				+ "		FROM tsk_events LEFT OUTER JOIN blackboard_artifact_tags ON (blackboard_artifact_tags.artifact_id = tsk_events.artifact_id)"
+				+ " ) AS tsk_events" : " tsk_events ";
 		if (needHashSets) {
 			return " ( SELECT " + coreColumns + (needTags ? tagColumns : "") + " , hash_set_name "
 					+ " FROM " + joinedWithTags + " LEFT OUTER JOIN ( "
@@ -975,7 +1003,7 @@ public final class TimelineManager {
 					+ "		JOIN blackboard_artifact_types ON( blackboard_artifacts.artifact_type_id = blackboard_artifact_types.artifact_type_id)"
 					+ "		WHERE  blackboard_artifact_types.artifact_type_id = " + TSK_HASHSET_HIT.getTypeID()
 					+ "		AND blackboard_attributes.attribute_type_id = " + TSK_SET_NAME.getTypeID() + ") AS hash_set_hits"
-					+ "	ON ( events.file_id = hash_set_hits.obj_id)) AS events";
+					+ "	ON ( tsk_events.file_obj_id = hash_set_hits.obj_id)) AS tsk_events";
 		} else {
 			return joinedWithTags;
 		}
@@ -1037,7 +1065,7 @@ public final class TimelineManager {
 
 	/**
 	 * Event fired by SleuthkitCase to indicate that a event has been added to
-	 * the events table.
+	 * the tsk_events table.
 	 */
 	final public class EventAddedEvent {
 

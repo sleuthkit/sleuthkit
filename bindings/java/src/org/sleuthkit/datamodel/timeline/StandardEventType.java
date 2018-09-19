@@ -59,7 +59,7 @@ class StandardEventType implements EventType {
 
 	@Override
 	public EventType getSuperType() {
-		return ObjectUtils.defaultIfNull(superType, ROOT_EVEN_TYPE);
+		return ObjectUtils.defaultIfNull(superType, ROOT_EVENT_TYPE);
 
 	}
 

@@ -386,46 +386,50 @@ TskDbSqlite::initialize()
             "Error creating relationships table: %s\n")
         ||
         attempt_exec(
-            "CREATE TABLE event_types ("
+            "CREATE TABLE tsk_event_types ("
             " event_type_id INTEGER PRIMARY KEY,"
             " display_name TEXT UNIQUE NOT NULL,  "
-            " super_type_id INTEGER REFERENCES event_types )"
+            " super_type_id INTEGER REFERENCES tsk_event_types )"
             , "Error creating event_types table: %s\n")
         ||
         attempt_exec(
-            "insert into event_types(event_type_id, display_name, super_type_id) values( 0, 'Event Types', null);"
-            "insert into event_types(event_type_id, display_name, super_type_id) values(1, 'File System', 0);"
-            "insert into event_types(event_type_id, display_name, super_type_id) values(2, 'Web Activity', 0);"
-            "insert into event_types(event_type_id, display_name, super_type_id) values(3, 'Misc Types', 0);"
-            "insert into event_types(event_type_id, display_name, super_type_id) values(4, 'Modified', 1);"
-            "insert into event_types(event_type_id, display_name, super_type_id) values(5, 'Accessed', 1);"
-            "insert into event_types(event_type_id, display_name, super_type_id) values(6, 'Created', 1);"
-            "insert into event_types(event_type_id, display_name, super_type_id) values(7, 'Changed', 1);"
+            "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(0, 'Event Types', null);"
+            "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(1, 'File System', 0);"
+            "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(2, 'Web Activity', 0);"
+            "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(3, 'Misc Types', 0);"
+            "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(4, 'Modified', 1);"
+            "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(5, 'Accessed', 1);"
+            "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(6, 'Created', 1);"
+            "insert into tsk_event_types(event_type_id, display_name, super_type_id) values(7, 'Changed', 1);"
             , "Error initializing event_types table rows: %s\n")
         ||
         attempt_exec(
-            "CREATE TABLE events ("
+            "CREATE TABLE tsk_events ("
             " event_id INTEGER PRIMARY KEY, "
-            " datasource_id BIGINT REFERENCES data_source_info, "
-            " file_id BIGINT REFERENCES tsk_files, "
-            " artifact_id BIGINT REFERENCES blackboard_artifacts, "
-            " time INTEGER, "
-            " sub_type INTEGER REFERENCES event_types, "
-            " base_type INTEGER REFERENCES event_types, "
-            " full_description TEXT, "
-            " med_description TEXT, "
-            " short_description TEXT, "
-            " known_state INTEGER, " //boolean 
-            " hash_hit INTEGER, " //boolean 
-            " tagged INTEGER ) " //integer 
-            , "Error creating events table: %s\n") ||
+            " data_source_obj_id INTEGER NOT NULL, "
+            " file_obj_id INTEGER NOT NULL, " 
+            " artifact_id INTEGER, "
+            " time INTEGER NOT NULL, "
+            " sub_type INTEGER, "
+            " base_type INTEGER NOT NULL, "
+            " full_description TEXT NOT NULL, "
+            " med_description TEXT NOT NULL, "
+            " short_description TEXT NOT NULL, "
+            " known_state INTEGER NOT NULL, " //boolean 
+            " hash_hit INTEGER NOT NULL, " //boolean 
+            " tagged INTEGER NOT NULL, " //integer 
+            "FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id), "
+            "FOREIGN KEY(file_obj_id) REFERENCES tsk_objects(obj_id), "
+            "FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id), "
+            "FOREIGN KEY(sub_type) REFERENCES tsk_event_types(event_type_id), "
+            "FOREIGN KEY(base_type) REFERENCES tsk_event_types(event_type_id))"
+            , "Error creating tsk_events table: %s\n") ||
         attempt_exec("CREATE TABLE db_info ( key TEXT,  value INTEGER, PRIMARY KEY (key))", //TODO: drop this table
             "Error creating db_info table: %s\n")
         ||
         attempt_exec
         ("CREATE TABLE tsk_examiners (examiner_id INTEGER PRIMARY KEY, login_name TEXT NOT NULL, display_name TEXT, UNIQUE(login_name))",
             "Error creating tsk_examiners table: %s\n")) {
-
         return 1;
     }
 
@@ -486,26 +490,26 @@ int TskDbSqlite::createIndexes()
         attempt_exec("CREATE INDEX relationships_data_source_obj_id  ON account_relationships(data_source_obj_id);",
                      "Error creating relationships_data_source_obj_id index on account_relationships: %s\n") ||
         //events indices
-        attempt_exec("CREATE INDEX events_datasource_id  ON events(datasource_id);",
-                     "Error creating relationships_data_source_obj_id index on events: %s\n") ||
-        attempt_exec("CREATE INDEX events_event_id_hash_hit  ON events(event_id, hash_hit);",
-                     "Error creating events_event_id_hash_hit index on events: %s\n") ||
-        attempt_exec("CREATE INDEX events_event_id_tagged  ON events(event_id, tagged);",
-                     "Error creating events_event_id_tagged index on events: %s\n") ||
-        attempt_exec("CREATE INDEX events_file_id  ON events(file_id);",
-                     "Error creating events_file_id index on events: %s\n") ||
-        attempt_exec("CREATE INDEX events_artifact_id  ON events(artifact_id);",
-                     "Error creating events_artifact_id index on events: %s\n") ||
+        attempt_exec("CREATE INDEX events_data_source_obj_id  ON tsk_events(data_source_obj_id);",
+                     "Error creating relationships_data_source_obj_id index on tsk_events: %s\n") ||
+        attempt_exec("CREATE INDEX events_event_id_hash_hit  ON tsk_events(event_id, hash_hit);",
+                     "Error creating events_event_id_hash_hit index on tsk_events: %s\n") ||
+        attempt_exec("CREATE INDEX events_event_id_tagged  ON tsk_events(event_id, tagged);",
+                     "Error creating events_event_id_tagged index on tsk_events: %s\n") ||
+        attempt_exec("CREATE INDEX events_file_obj_id  ON tsk_events(file_obj_id);",
+                     "Error creating events_file_obj_id index on tsk_events: %s\n") ||
+        attempt_exec("CREATE INDEX events_artifact_id  ON tsk_events(artifact_id);",
+                     "Error creating events_artifact_id index on tsk_events: %s\n") ||
         attempt_exec(
-            "CREATE INDEX events_sub_type_short_description_time  ON events(sub_type, short_description, time);",
-            "Error creating events_sub_type_short_description_time index on events: %s\n") ||
+            "CREATE INDEX events_sub_type_short_description_time  ON tsk_events(sub_type, short_description, time);",
+            "Error creating events_sub_type_short_description_time index on tsk_events: %s\n") ||
         attempt_exec(
-            "CREATE INDEX events_base_type_short_description_time  ON events(base_type, short_description, time);",
-            "Error creating events_base_type_short_description_time index on events: %s\n") ||
-        attempt_exec("CREATE INDEX events_time  ON events(time);",
-                     "Error creating events_time index on events: %s\n") ||
-        attempt_exec("CREATE INDEX events_known_state  ON events(known_state);",
-                     "Error creating events_known_state index on events: %s\n");
+            "CREATE INDEX events_base_type_short_description_time  ON tsk_events(base_type, short_description, time);",
+            "Error creating events_base_type_short_description_time index on tsk_events: %s\n") ||
+        attempt_exec("CREATE INDEX events_time  ON tsk_events(time);",
+                     "Error creating events_time index on tsk_events: %s\n") ||
+        attempt_exec("CREATE INDEX events_known_state  ON tsk_events(known_state);",
+                     "Error creating events_known_state index on tsk_events: %s\n");
 }
 
 
@@ -996,11 +1000,11 @@ int TskDbSqlite::addMACTimeEvent(char*& zSQL, const int64_t data_source_obj_id, 
 
     //insert MAC time events
     zSQL = sqlite3_mprintf(
-        "INSERT INTO events ( datasource_id, file_id , artifact_id, time, sub_type, base_type, full_description, med_description, short_description, known_state, hash_hit, tagged) "
+        "INSERT INTO tsk_events ( data_source_obj_id, file_obj_id , artifact_id, time, sub_type, base_type, full_description, med_description, short_description, known_state, hash_hit, tagged) "
         // NON-NLS
         " VALUES ("
-        "%" PRId64 "," // datasource_id
-        "%" PRId64 "," // file_id
+        "%" PRId64 "," // data_source_obj_id
+        "%" PRId64 "," // file_obj_id
         "NULL," // fixed artifact_id
         "%" PRIu64 "," // time
         "%" PRIu64 "," // sub_type

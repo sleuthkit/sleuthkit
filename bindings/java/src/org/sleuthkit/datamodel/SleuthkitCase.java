@@ -1646,54 +1646,54 @@ public class SleuthkitCase {
 					+ " display_name TEXT, "
 					+ " UNIQUE(login_name) )");
 
-			//create and initialize event_types tables
-			statement.execute("CREATE TABLE event_types ("
+			//create and initialize tsk_event_types tables
+			statement.execute("CREATE TABLE tsk_event_types ("
 					+ " event_type_id " + primaryKeyType + " PRIMARY KEY, "
 					+ " display_name TEXT UNIQUE NOT NULL, "
-					+ " super_type_id INTEGER REFERENCES event_types )");
-			statement.execute("insert into event_types(event_type_id, display_name, super_type_id)"
+					+ " super_type_id INTEGER REFERENCES tsk_event_types )");
+			statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
 					+ " values( 0, 'Event Types', null)");
-			statement.execute("insert into event_types(event_type_id, display_name, super_type_id)"
+			statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
 					+ " values(1, 'File System', 0)");
-			statement.execute("insert into event_types(event_type_id, display_name, super_type_id)"
+			statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
 					+ " values(2, 'Web Activity', 0)");
-			statement.execute("insert into event_types(event_type_id, display_name, super_type_id)"
+			statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
 					+ " values(3, 'Misc Types', 0)");
-			statement.execute("insert into event_types(event_type_id, display_name, super_type_id)"
+			statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
 					+ " values(4, 'Modified', 1)");
-			statement.execute("insert into event_types(event_type_id, display_name, super_type_id)"
+			statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
 					+ " values(5, 'Accessed', 1)");
-			statement.execute("insert into event_types(event_type_id, display_name, super_type_id)"
+			statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
 					+ " values(6, 'Created', 1)");
-			statement.execute("insert into event_types(event_type_id, display_name, super_type_id)"
+			statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
 					+ " values(7, 'Changed', 1)");
 			
-			//create events tables
-			statement.execute("CREATE TABLE events ("
+			//create tsk_events tables
+			statement.execute("CREATE TABLE tsk_events ("
 					+ " event_id  " + primaryKeyType + " PRIMARY KEY, "
-					+ " datasource_id BIGINT REFERENCES data_source_info, "
-					+ " file_id BIGINT REFERENCES tsk_files, "
+					+ " data_source_obj_id BIGINT NOT NULL REFERENCES data_source_info, "
+					+ " file_obj_id BIGINT NOT NULL REFERENCES tsk_files, "
 					+ " artifact_id BIGINT REFERENCES blackboard_artifacts, "
-					+ " time INTEGER, "
-					+ " sub_type INTEGER REFERENCES event_types, "
-					+ " base_type INTEGER REFERENCES event_types, "
-					+ " full_description TEXT, "
-					+ " med_description TEXT, "
-					+ " short_description TEXT, "
-					+ " known_state INTEGER, "//boolean 
-					+ " hash_hit INTEGER, "//boolean 
-					+ " tagged INTEGER )");
+					+ " time INTEGER NOT NULL, "
+					+ " sub_type INTEGER REFERENCES tsk_event_types, "
+					+ " base_type INTEGER NOT NULL REFERENCES tsk_event_types, "
+					+ " full_description TEXT NOT NULL, "
+					+ " med_description TEXT NOT NULL, "
+					+ " short_description TEXT NOT NULL, "
+					+ " known_state INTEGER NOT NULL, "//boolean 
+					+ " hash_hit INTEGER NOT NULL, "//boolean 
+					+ " tagged INTEGER NOT NULL )");
 
-			//create events indices
-			statement.execute("CREATE INDEX events_datasource_id ON events(datasource_id)");
-			statement.execute("CREATE INDEX events_event_id_hash_hit ON events(event_id, hash_hit)");
-			statement.execute("CREATE INDEX events_event_id_tagged ON events(event_id, tagged)");
-			statement.execute("CREATE INDEX events_file_id ON events(file_id)");
-			statement.execute("CREATE INDEX events_artifact_id ON events(artifact_id)");
-			statement.execute("CREATE INDEX events_sub_type_short_description_time ON events(sub_type, short_description, time)");
-			statement.execute("CREATE INDEX events_base_type_short_description_time ON events(base_type, short_description, time)");
-			statement.execute("CREATE INDEX events_time ON events(time)");
-			statement.execute("CREATE INDEX events_known_state ON events(known_state)");
+			//create tsk_events indices
+			statement.execute("CREATE INDEX events_data_source_obj_id ON tsk_events(data_source_obj_id)");
+			statement.execute("CREATE INDEX events_event_id_hash_hit ON tsk_events(event_id, hash_hit)");
+			statement.execute("CREATE INDEX events_event_id_tagged ON tsk_events(event_id, tagged)");
+			statement.execute("CREATE INDEX events_file_obj_id ON tsk_events(file_obj_id)");
+			statement.execute("CREATE INDEX events_artifact_id ON tsk_events(artifact_id)");
+			statement.execute("CREATE INDEX events_sub_type_short_description_time ON tsk_events(sub_type, short_description, time)");
+			statement.execute("CREATE INDEX events_base_type_short_description_time ON tsk_events(base_type, short_description, time)");
+			statement.execute("CREATE INDEX events_time ON tsk_events(time)");
+			statement.execute("CREATE INDEX events_known_state ON tsk_events(known_state)");
  
 			return new CaseDbSchemaVersionNumber(8, 1);
 		} finally {

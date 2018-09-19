@@ -73,15 +73,15 @@ public interface EventType extends Comparable<EventType> {
 	default EventType getBaseType() {
 		EventType superType = getSuperType();
 
-		return superType.equals(ROOT_EVEN_TYPE)
+		return superType.equals(ROOT_EVENT_TYPE)
 				? this
 				: superType.getBaseType();
 
 	}
 
 	default SortedSet<? extends EventType> getSiblingTypes() {
-		return this.equals(ROOT_EVEN_TYPE)
-				? ImmutableSortedSet.of(ROOT_EVEN_TYPE)
+		return this.equals(ROOT_EVENT_TYPE)
+				? ImmutableSortedSet.of(ROOT_EVENT_TYPE)
 				: this.getSuperType().getSubTypes();
 
 	}
@@ -95,7 +95,7 @@ public interface EventType extends Comparable<EventType> {
 	 * The root type of all event types. No event should actually have this
 	 * type.
 	 */
-	EventType ROOT_EVEN_TYPE = new StandardEventType(0,
+	EventType ROOT_EVENT_TYPE = new StandardEventType(0,
 			getBundle().getString("RootEventType.eventTypes.name"), // NON-NLS
 			ROOT_TYPE, null) {
 		@Override
@@ -106,7 +106,7 @@ public interface EventType extends Comparable<EventType> {
 
 	EventType FILE_SYSTEM = new StandardEventType(1,
 			getBundle().getString("BaseTypes.fileSystem.name"),// NON-NLS
-			BASE_TYPE, ROOT_EVEN_TYPE) {
+			BASE_TYPE, ROOT_EVENT_TYPE) {
 		@Override
 		public SortedSet< EventType> getSubTypes() {
 			return ImmutableSortedSet.of(FILE_MODIFIED, FILE_ACCESSED,
@@ -115,7 +115,7 @@ public interface EventType extends Comparable<EventType> {
 	};
 	EventType WEB_ACTIVITY = new StandardEventType(2,
 			getBundle().getString("BaseTypes.webActivity.name"), // NON-NLS
-			BASE_TYPE, ROOT_EVEN_TYPE) {
+			BASE_TYPE, ROOT_EVENT_TYPE) {
 		@Override
 		public SortedSet< ArtifactEventType> getSubTypes() {
 			return ImmutableSortedSet.of(WEB_DOWNLOADS, WEB_COOKIE, WEB_BOOKMARK,
@@ -124,7 +124,7 @@ public interface EventType extends Comparable<EventType> {
 	};
 	EventType MISC_TYPES = new StandardEventType(3,
 			getBundle().getString("BaseTypes.miscTypes.name"), // NON-NLS
-			BASE_TYPE, ROOT_EVEN_TYPE) {
+			BASE_TYPE, ROOT_EVENT_TYPE) {
 		@Override
 		public SortedSet<EventType> getSubTypes() {
 			return ImmutableSortedSet.of(CALL_LOG, DEVICES_ATTACHED, EMAIL,
@@ -343,7 +343,7 @@ public interface EventType extends Comparable<EventType> {
 	//custom evet type base type
 	EventType CUSTOM_TYPES = new StandardEventType(22,
 			getBundle().getString("BaseTypes.customTypes.name"), // NON-NLS
-			BASE_TYPE, ROOT_EVEN_TYPE) {
+			BASE_TYPE, ROOT_EVENT_TYPE) {
 		@Override
 		public SortedSet< EventType> getSubTypes() {
 			return ImmutableSortedSet.of(OTHER);
@@ -367,7 +367,7 @@ public interface EventType extends Comparable<EventType> {
 			MISC_TYPES, new BlackboardArtifact.Type(TSK_TL_EVENT));
 
 	static SortedSet<? extends EventType> getBaseTypes() {
-		return ROOT_EVEN_TYPE.getSubTypes();
+		return ROOT_EVENT_TYPE.getSubTypes();
 	}
 
 	static SortedSet<? extends EventType> getFileSystemTypes() {
