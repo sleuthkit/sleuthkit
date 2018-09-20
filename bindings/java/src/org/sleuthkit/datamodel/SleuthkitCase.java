@@ -1683,18 +1683,23 @@ public class SleuthkitCase {
 			//create tsk_events tables
 			statement.execute("CREATE TABLE tsk_events ("
 					+ " event_id  " + primaryKeyType + " PRIMARY KEY, "
-					+ " data_source_obj_id BIGINT NOT NULL REFERENCES data_source_info, "
-					+ " file_obj_id BIGINT NOT NULL REFERENCES tsk_files, "
-					+ " artifact_id BIGINT REFERENCES blackboard_artifacts, "
+					+ " data_source_obj_id BIGINT NOT NULL, "
+					+ " file_obj_id BIGINT NOT NULL, "
+					+ " artifact_id BIGINT, "
 					+ " time INTEGER NOT NULL, "
-					+ " sub_type INTEGER REFERENCES tsk_event_types, "
-					+ " base_type INTEGER NOT NULL REFERENCES tsk_event_types, "
+					+ " sub_type INTEGER, "
+					+ " base_type INTEGER NOT NULL, "
 					+ " full_description TEXT NOT NULL, "
 					+ " med_description TEXT NOT NULL, "
 					+ " short_description TEXT NOT NULL, "
 					+ " known_state INTEGER NOT NULL, "//boolean 
 					+ " hash_hit INTEGER NOT NULL, "//boolean 
-					+ " tagged INTEGER NOT NULL )");
+					+ " tagged INTEGER NOT NULL, "
+					+ "FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id), "
+					+ "FOREIGN KEY(file_obj_id) REFERENCES tsk_objects(obj_id), "
+					+ "FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id), "
+					+ "FOREIGN KEY(sub_type) REFERENCES tsk_event_types(event_type_id), "
+					+ "FOREIGN KEY(base_type) REFERENCES tsk_event_types(event_type_id))");
 
 			//create tsk_events indices
 			statement.execute("CREATE INDEX events_data_source_obj_id ON tsk_events(data_source_obj_id)");
@@ -5779,7 +5784,7 @@ public class SleuthkitCase {
 			DerivedFile derivedFile = new DerivedFile(this, newObjId, dataSourceObjId, fileName, dirType, metaType, dirFlag, metaFlags,
 					size, ctime, crtime, atime, mtime, null, null, parentPath, localPath, parentId, null, encodingType, extension);
 
-			timelineManager.addFileSystemEvents(derivedFile, connection);
+			timelineManager.addAbstractFileEvents(derivedFile, connection);
 			transaction.commit();
 			//TODO add derived method to tsk_files_derived and tsk_files_derived_method
 			return derivedFile;
@@ -6024,7 +6029,7 @@ public class SleuthkitCase {
 					dataSourceObjId,
 					localPath,
 					encodingType, extension);
-			getTimelineManager().addFileSystemEvents(localFile, connection);
+			getTimelineManager().addAbstractFileEvents(localFile, connection);
 			return localFile;
 
 		} catch (SQLException ex) {
@@ -7626,6 +7631,7 @@ public class SleuthkitCase {
 			connection.executeUpdate(statement, "UPDATE tsk_files " //NON-NLS
 					+ "SET known='" + fileKnown.getFileKnownValue() + "' " //NON-NLS
 					+ "WHERE obj_id=" + id); //NON-NLS
+			
 			file.setKnown(fileKnown);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error setting Known status.", ex);

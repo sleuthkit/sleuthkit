@@ -648,7 +648,6 @@ int TskDbPostgreSQL::initialize() {
             " full_description TEXT NOT NULL, "
             " med_description TEXT NOT NULL, "
             " short_description TEXT NOT NULL, "
-            " known_state INTEGER NOT NULL, " //boolean 
             " hash_hit INTEGER NOT NULL, " //boolean 
             " tagged INTEGER NOT NULL ,"
             "FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id), "
@@ -686,58 +685,56 @@ int TskDbPostgreSQL::initialize() {
 * @returns 1 on error, 0 on success
 */
 int TskDbPostgreSQL::createIndexes() {
-	return
-		// tsk_objects index
-		attempt_exec("CREATE INDEX parObjId ON tsk_objects(par_obj_id);",
-			"Error creating tsk_objects index on par_obj_id: %s\n") ||
-		// file layout index
-		attempt_exec("CREATE INDEX layout_objID ON tsk_file_layout(obj_id);",
-			"Error creating layout_objID index on tsk_file_layout: %s\n") ||
-		// blackboard indexes
-		attempt_exec("CREATE INDEX artifact_objID ON blackboard_artifacts(obj_id);",
-			"Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
-		attempt_exec("CREATE INDEX artifact_artifact_objID ON blackboard_artifacts(artifact_obj_id);",
-			"Error creating artifact_artifact_objID index on blackboard_artifacts: %s\n") ||
-		attempt_exec("CREATE INDEX artifact_typeID ON blackboard_artifacts(artifact_type_id);",
-			"Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
-		attempt_exec("CREATE INDEX attrsArtifactID ON blackboard_attributes(artifact_id);",
-			"Error creating artifact_id index on blackboard_attributes: %s\n") ||
-		//file type indexes
-		attempt_exec("CREATE INDEX mime_type ON tsk_files(dir_type,mime_type,type);", //mime type
-			"Error creating mime_type index on tsk_files: %s\n") ||
-		attempt_exec("CREATE INDEX file_extension ON tsk_files(extension);",  //file extenssion
-			"Error creating file_extension index on tsk_files: %s\n") ||
-		attempt_exec("CREATE INDEX relationships_account1  ON account_relationships(account1_id);",
-			"Error creating relationships_account1 index on account_relationships: %s\n") ||
-		attempt_exec("CREATE INDEX relationships_account2  ON account_relationships(account2_id);",
-			"Error creating relationships_account2 index on account_relationships: %s\n") ||
-		attempt_exec("CREATE INDEX relationships_relationship_source_obj_id  ON account_relationships(relationship_source_obj_id);",
-			"Error creating relationships_relationship_source_obj_id index on account_relationships: %s\n") ||
-		attempt_exec("CREATE INDEX relationships_date_time  ON account_relationships(date_time);",
-			"Error creating relationships_date_time index on account_relationships: %s\n") ||
-		attempt_exec("CREATE INDEX relationships_relationship_type ON account_relationships(relationship_type);",
-			"Error creating relationships_relationship_type index on account_relationships: %s\n") ||
-		attempt_exec("CREATE INDEX relationships_data_source_obj_id  ON account_relationships(data_source_obj_id);",
-			"Error creating relationships_data_source_obj_id index on account_relationships: %s\n")||
-		//tsk_events indices
-		attempt_exec("CREATE INDEX events_data_source_obj_id  ON tsk_events(data_source_obj_id);",
-			"Error creating relationships_data_source_obj_id index on tsk_events: %s\n") ||
-		attempt_exec("CREATE INDEX events_event_id_hash_hit  ON tsk_events(event_id, hash_hit);",
-			"Error creating events_event_id_hash_hit index on tsk_events: %s\n") ||
-		attempt_exec("CREATE INDEX events_event_id_tagged  ON tsk_events(event_id, tagged);",
-			"Error creating events_event_id_tagged index on tsk_events: %s\n") ||
-		attempt_exec("CREATE INDEX events_file_obj_id  ON tsk_events(file_obj_id);",
-			"Error creating events_file_obj_id index on tsk_events: %s\n") ||
-		attempt_exec("CREATE INDEX events_artifact_id  ON tsk_events(artifact_id);",
-			"Error creating events_artifact_id index on tsk_events: %s\n") ||
-		attempt_exec("CREATE INDEX events_sub_type_short_description_time  ON tsk_events(sub_type, short_description, time);",
-			"Error creating events_sub_type_short_description_time index on tsk_events: %s\n") ||
-		attempt_exec("CREATE INDEX events_base_type_short_description_time  ON tsk_events(base_type, short_description, time);",
-			"Error creating events_base_type_short_description_time index on tsk_events: %s\n") ||
-		attempt_exec("CREATE INDEX events_time  ON tsk_events(time);",
-			"Error creating events_time index on tsk_events: %s\n") ||
-		attempt_exec("CREATE INDEX events_known_state  ON tsk_events(known_state);",
-			"Error creating events_known_state index on tsk_events: %s\n");
+    return
+        // tsk_objects index
+        attempt_exec("CREATE INDEX parObjId ON tsk_objects(par_obj_id);",
+            "Error creating tsk_objects index on par_obj_id: %s\n") ||
+        // file layout index
+        attempt_exec("CREATE INDEX layout_objID ON tsk_file_layout(obj_id);",
+            "Error creating layout_objID index on tsk_file_layout: %s\n") ||
+        // blackboard indexes
+        attempt_exec("CREATE INDEX artifact_objID ON blackboard_artifacts(obj_id);",
+            "Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
+        attempt_exec("CREATE INDEX artifact_artifact_objID ON blackboard_artifacts(artifact_obj_id);",
+            "Error creating artifact_artifact_objID index on blackboard_artifacts: %s\n") ||
+        attempt_exec("CREATE INDEX artifact_typeID ON blackboard_artifacts(artifact_type_id);",
+            "Error creating artifact_objID index on blackboard_artifacts: %s\n") ||
+        attempt_exec("CREATE INDEX attrsArtifactID ON blackboard_attributes(artifact_id);",
+            "Error creating artifact_id index on blackboard_attributes: %s\n") ||
+        //file type indexes
+        attempt_exec("CREATE INDEX mime_type ON tsk_files(dir_type,mime_type,type);", //mime type
+            "Error creating mime_type index on tsk_files: %s\n") ||
+        attempt_exec("CREATE INDEX file_extension ON tsk_files(extension);",  //file extenssion
+            "Error creating file_extension index on tsk_files: %s\n") ||
+        attempt_exec("CREATE INDEX relationships_account1  ON account_relationships(account1_id);",
+            "Error creating relationships_account1 index on account_relationships: %s\n") ||
+        attempt_exec("CREATE INDEX relationships_account2  ON account_relationships(account2_id);",
+            "Error creating relationships_account2 index on account_relationships: %s\n") ||
+        attempt_exec("CREATE INDEX relationships_relationship_source_obj_id  ON account_relationships(relationship_source_obj_id);",
+            "Error creating relationships_relationship_source_obj_id index on account_relationships: %s\n") ||
+        attempt_exec("CREATE INDEX relationships_date_time  ON account_relationships(date_time);",
+            "Error creating relationships_date_time index on account_relationships: %s\n") ||
+        attempt_exec("CREATE INDEX relationships_relationship_type ON account_relationships(relationship_type);",
+            "Error creating relationships_relationship_type index on account_relationships: %s\n") ||
+        attempt_exec("CREATE INDEX relationships_data_source_obj_id  ON account_relationships(data_source_obj_id);",
+            "Error creating relationships_data_source_obj_id index on account_relationships: %s\n") ||
+        //tsk_events indices
+        attempt_exec("CREATE INDEX events_data_source_obj_id  ON tsk_events(data_source_obj_id);",
+            "Error creating relationships_data_source_obj_id index on tsk_events: %s\n") ||
+        attempt_exec("CREATE INDEX events_event_id_hash_hit  ON tsk_events(event_id, hash_hit);",
+            "Error creating events_event_id_hash_hit index on tsk_events: %s\n") ||
+        attempt_exec("CREATE INDEX events_event_id_tagged  ON tsk_events(event_id, tagged);",
+            "Error creating events_event_id_tagged index on tsk_events: %s\n") ||
+        attempt_exec("CREATE INDEX events_file_obj_id  ON tsk_events(file_obj_id);",
+            "Error creating events_file_obj_id index on tsk_events: %s\n") ||
+        attempt_exec("CREATE INDEX events_artifact_id  ON tsk_events(artifact_id);",
+            "Error creating events_artifact_id index on tsk_events: %s\n") ||
+        attempt_exec("CREATE INDEX events_sub_type_short_description_time  ON tsk_events(sub_type, short_description, time);",
+            "Error creating events_sub_type_short_description_time index on tsk_events: %s\n") ||
+        attempt_exec("CREATE INDEX events_base_type_short_description_time  ON tsk_events(base_type, short_description, time);",
+            "Error creating events_base_type_short_description_time index on tsk_events: %s\n") ||
+        attempt_exec("CREATE INDEX events_time  ON tsk_events(time);",
+            "Error creating events_time index on tsk_events: %s\n");
 }
 
 
@@ -1017,7 +1014,7 @@ int TskDbPostgreSQL::addMACTimeEvent(char*& zSQL, const int64_t data_source_obj_
 
 	//insert MAC time events
 	if (0 > snprintf(zSQL, 2048 - 1,
-	                 "INSERT INTO tsk_events ( data_source_obj_id, file_obj_id , artifact_id, time, sub_type, base_type, full_description, med_description, short_description, known_state, hash_hit, tagged) "
+	                 "INSERT INTO tsk_events ( data_source_obj_id, file_obj_id , artifact_id, time, sub_type, base_type, full_description, med_description, short_description, hash_hit, tagged) "
 	                 // NON-NLS
 	                 " VALUES ("
 	                 "%" PRId64 "," // data_source_obj_id
@@ -1029,7 +1026,6 @@ int TskDbPostgreSQL::addMACTimeEvent(char*& zSQL, const int64_t data_source_obj_
 	                 "%s," // full_description
 	                 "%s," // med_description
 	                 "%s," // short_description
-	                 "0," // fixed known_state
 	                 "0," // fixed hash_hit
 	                 "0" // fixed tagged
 	                 ")",
