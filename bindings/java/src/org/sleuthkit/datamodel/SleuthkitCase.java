@@ -7631,6 +7631,9 @@ public class SleuthkitCase {
 			connection.executeUpdate(statement, "UPDATE tsk_files " //NON-NLS
 					+ "SET known='" + fileKnown.getFileKnownValue() + "' " //NON-NLS
 					+ "WHERE obj_id=" + id); //NON-NLS
+			
+			// update the events table
+			timelineMgrInstance.setKnown(file, fileKnown, connection);
 			file.setKnown(fileKnown);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error setting Known status.", ex);

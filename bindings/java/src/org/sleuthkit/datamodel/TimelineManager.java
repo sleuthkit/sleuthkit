@@ -48,6 +48,7 @@ import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EV
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TL_EVENT_TYPE;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
+import static org.sleuthkit.datamodel.SleuthkitCase.closeStatement;
 import static org.sleuthkit.datamodel.SleuthkitCase.escapeSingleQuotes;
 import static org.sleuthkit.datamodel.StringUtils.joinAsStrings;
 import static org.sleuthkit.datamodel.TskData.FileKnown.UNKNOWN;
@@ -840,31 +841,46 @@ public final class TimelineManager {
 		return eventIDs;
 	}
 
-	/**
-	 * Set the known_state and hash_hit of all events associated with the given
-	 * file, including artifact based events.
-	 *
-	 * @param file The file.
-	 *
-	 * @return The IDs of the events that were updated.
-	 *
-	 * @throws TskCoreException if there is a error.
-	 */
-	public Set<Long> setFileStatus(AbstractFile file) throws TskCoreException {
+
+	
+	public Set<Long> setEventsHashed(long fileObjdId, boolean hashHits) throws TskCoreException {
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
-		Set<Long> eventIDs = getEventIDs(file.getId(), true);
+		Set<Long> eventIDs = getEventIDs(fileObjdId, true);
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
-				Statement updateStatement = con.createStatement();) {
+			Statement updateStatement = con.createStatement();) {
 			updateStatement.executeUpdate(
-					"UPDATE tsk_events SET known_state = '" + file.getKnown().getFileKnownValue() + "', " //NON-NLS
-					+ "                hash_hit = " + (file.getHashSetNames().isEmpty() ? 0 : 1) //NON-NLS
+					"UPDATE tsk_events SET " //NON-NLS
+					+ "                hash_hit = " + (hashHits ? 1 : 0) //NON-NLS
 					+ " WHERE event_id IN (" + joinAsStrings(eventIDs, ",") + ")"); //NON-NLS
 		} catch (SQLException ex) {
-			throw new TskCoreException("Error setting known_state or hash_hit of events.", ex);
+			throw new TskCoreException("Error setting hash_hit of events.", ex);
 		} finally {
 			sleuthkitCase.releaseSingleUserCaseWriteLock();
 		}
 		return eventIDs;
+	}
+	
+	/**
+	 * 
+	 * @param file
+	 * @param fileKnown
+	 * @return 
+	 */
+	boolean setKnown(AbstractFile file, TskData.FileKnown fileKnown, CaseDbConnection connection) throws TskCoreException {
+		Statement statement = null;
+		sleuthkitCase.acquireSingleUserCaseWriteLock();
+		try {
+			statement = connection.createStatement();
+			connection.executeUpdate(statement, "UPDATE tsk_events " //NON-NLS
+					+ "SET known_state='" + fileKnown.getFileKnownValue() + "' " //NON-NLS
+					+ "WHERE file_obj_id=" + file.getId()); //NON-NLS
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error setting Known status in tsk_events.", ex);
+		} finally {
+			closeStatement(statement);
+			sleuthkitCase.releaseSingleUserCaseWriteLock();
+		}
+		return true;
 	}
 
 	void rollBackTransaction(SleuthkitCase.CaseDbTransaction trans) throws TskCoreException {
