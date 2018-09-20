@@ -55,8 +55,6 @@ debug_print_buf(unsigned char *buf, int len)
 
 /** \internal
     test_root - tests to see if a is power of b
-    Adapted from E2fsprogs sparse.c
-    Super blocks are only in block groups that are powers of 3,5, and 7
     @param a the number being investigated
     @param b the root
     @return 1 if a is a power of b, otherwise 0
@@ -64,15 +62,25 @@ debug_print_buf(unsigned char *buf, int len)
 static uint8_t
 test_root(uint32_t a, uint32_t b)
 {
-    if (a == 0)
-        return 1;
-    while (1) {
-        if (a == 1)
-            return 1;
-        if (a % b)
-            return 0;
-        a = a / b;
+    if (a == 0) {
+        return (b == 0);
     }
+    else if (b == 0) {
+        return 0;
+    }
+    else if (a == 1) {
+        return (b == 1);
+    }
+    else if (b == 1) {
+        return 0;
+    }
+ 
+    // keep on multiplying b by itself 
+    uint32_t b2;
+    for (b2 = b; b2 < a; b2 *= b) {}
+ 
+    // was it an exact match?
+    return (b2 == a);
 }
 
 /** \internal
@@ -86,6 +94,10 @@ ext2fs_bg_has_super(uint32_t feature_ro_compat, uint32_t group_block)
     if (!(feature_ro_compat & EXT2FS_FEATURE_RO_COMPAT_SPARSE_SUPER))
         return 1;
 
+    if (group_block == 0) 
+        return 1;
+
+    // Super blocks are only in block groups that are powers of 3,5, and 7
     if (test_root(group_block, 3) || (test_root(group_block, 5)) ||
         test_root(group_block, 7))
         return 1;
