@@ -61,11 +61,6 @@ public final class TimelineEvent {
 	private final ImmutableMap<DescriptionLoD, String> descriptions;
 
 	/**
-	 * The known value for the file this event is derived from.
-	 */
-	private final TskData.FileKnown known;
-
-	/**
 	 * True if the file this event is derived from hits any of the configured
 	 * hash sets.
 	 */
@@ -87,11 +82,10 @@ public final class TimelineEvent {
 	 * @param fullDescription
 	 * @param medDescription
 	 * @param shortDescription
-	 * @param known
 	 * @param hashHit
 	 * @param tagged 
 	 */
-	public TimelineEvent(long eventID, long dataSourceObjID, long fileObjID, Long artifactID, long time, EventType type, String fullDescription, String medDescription, String shortDescription, TskData.FileKnown known, boolean hashHit, boolean tagged) {
+	public TimelineEvent(long eventID, long dataSourceObjID, long fileObjID, Long artifactID, long time, EventType type, String fullDescription, String medDescription, String shortDescription, boolean hashHit, boolean tagged) {
 		this.eventID = eventID;
 		this.dataSourceObjID = dataSourceObjID;
 		this.fileObjID = fileObjID;
@@ -101,7 +95,7 @@ public final class TimelineEvent {
 		descriptions = ImmutableMap.<DescriptionLoD, String>of(DescriptionLoD.FULL, fullDescription,
 				DescriptionLoD.MEDIUM, medDescription,
 				DescriptionLoD.SHORT, shortDescription);
-		this.known = known;
+		
 		this.hashHit = hashHit;
 		this.tagged = tagged;
 	}
@@ -195,14 +189,7 @@ public final class TimelineEvent {
 		return getDescription(DescriptionLoD.SHORT);
 	}
 
-	/**
-	 * Get the known value of the file this event is derived from.
-	 *
-	 * @return the known value
-	 */
-	public TskData.FileKnown getKnown() {
-		return known;
-	}
+
 
 	/**
 	 * Get the description of this event at the give level of detail(LoD).
