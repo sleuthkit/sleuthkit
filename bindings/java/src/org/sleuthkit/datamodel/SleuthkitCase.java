@@ -7369,14 +7369,20 @@ public class SleuthkitCase {
 	 *
 	 * @throws SQLException Thrown if there is a problem iterating through the
 	 *                      result set.
+	 * @throws TskCoreException  Thrown if there is an error looking up the artifact type id
 	 */
-	private List<BlackboardArtifact> resultSetToArtifacts(ResultSet rs) throws SQLException {
+	private List<BlackboardArtifact> resultSetToArtifacts(ResultSet rs) throws SQLException, TskCoreException {
 		ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
 		try {
 			while (rs.next()) {
-				artifacts.add(new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"), rs.getLong("data_source_obj_id"),
-						rs.getInt("artifact_type_id"), BlackboardArtifact.ARTIFACT_TYPE.fromID(rs.getInt("artifact_type_id")).getLabel(), BlackboardArtifact.ARTIFACT_TYPE.fromID(rs.getInt("artifact_type_id")).getDisplayName(),
-						BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
+				BlackboardArtifact.Type artifactType = getArtifactType(rs.getInt("artifact_type_id"));
+				if (artifactType != null) {
+					artifacts.add(new BlackboardArtifact(this, rs.getLong("artifact_id"), rs.getLong("obj_id"), rs.getLong("artifact_obj_id"), rs.getLong("data_source_obj_id"),
+							rs.getInt("artifact_type_id"), artifactType.getTypeName(), artifactType.getDisplayName(),
+							BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
+				} else {
+					throw new TskCoreException("Error looking up artifact type ID " + rs.getInt("artifact_type_id") + " from artifact " + rs.getLong("artifact_id"));
+				}
 			} //end for each resultSet
 		} catch (SQLException e) {
 			logger.log(Level.SEVERE, "Error getting artifacts from result set", e); //NON-NLS

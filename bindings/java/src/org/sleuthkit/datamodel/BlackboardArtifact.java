@@ -1202,6 +1202,8 @@ public class BlackboardArtifact implements Content {
 		/**
 		 * Gets the artifact type enum value that corresponds to a given type
 		 * id.
+		 * This method should only be used when the id is known to be one of the
+		 * built-in types - otherwise use getArtifactType() in SleuthkitCase.
 		 *
 		 * @param id The type id.
 		 *
