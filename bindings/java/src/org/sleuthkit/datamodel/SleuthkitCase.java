@@ -7416,7 +7416,7 @@ public class SleuthkitCase {
 							rs.getInt("artifact_type_id"), artifactType.getTypeName(), artifactType.getDisplayName(),
 							BlackboardArtifact.ReviewStatus.withID(rs.getInt("review_status_id"))));
 				} else {
-					throw new TskCoreException("Error finding artifact with ID " + rs.getInt("artifact_type_id"));
+					throw new TskCoreException("Error looking up artifact type ID " + rs.getInt("artifact_type_id") + " from artifact " + rs.getLong("artifact_id"));
 				}
 			} //end for each resultSet
 		} catch (SQLException e) {
