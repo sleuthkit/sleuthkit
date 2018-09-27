@@ -543,7 +543,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 *
 	 * @return The object id of the data source.
 	 */
-	long getDataSourceObjectId() {
+	public long getDataSourceObjectId() {
 		return dataSourceObjectId;
 	}
 
