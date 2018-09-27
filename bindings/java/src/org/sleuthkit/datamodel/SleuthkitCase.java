@@ -1595,8 +1595,8 @@ public class SleuthkitCase {
 				statement.execute("ALTER TABLE blackboard_artifact_tags ADD COLUMN examiner_id INTEGER REFERENCES tsk_examiners(examiner_id) DEFAULT NULL");
 			} else {
 				statement.execute("CREATE TABLE tsk_examiners (examiner_id BIGSERIAL PRIMARY KEY, login_name TEXT NOT NULL, display_name TEXT, UNIQUE(login_name))");
-				statement.execute("ALTER TABLE content_tags ADD COLUMN examiner_id BIGSERIAL REFERENCES tsk_examiners(examiner_id) DEFAULT NULL");
-				statement.execute("ALTER TABLE blackboard_artifact_tags ADD COLUMN examiner_id BIGSERIAL REFERENCES tsk_examiners(examiner_id) DEFAULT NULL");
+				statement.execute("ALTER TABLE content_tags ADD COLUMN examiner_id BIGINT REFERENCES tsk_examiners(examiner_id) DEFAULT NULL");
+				statement.execute("ALTER TABLE blackboard_artifact_tags ADD COLUMN examiner_id BIGINT REFERENCES tsk_examiners(examiner_id) DEFAULT NULL");
 			}
 
 			return new CaseDbSchemaVersionNumber(8, 1);
