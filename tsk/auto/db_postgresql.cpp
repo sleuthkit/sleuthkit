@@ -615,12 +615,12 @@ int TskDbPostgreSQL::initialize() {
 			"Error creating tsk_examiners table: %s\n") 
 		||
 		attempt_exec
-		("CREATE TABLE content_tags (tag_id BIGSERIAL PRIMARY KEY, obj_id BIGINT NOT NULL, tag_name_id BIGINT NOT NULL, comment TEXT NOT NULL, begin_byte_offset BIGINT NOT NULL, end_byte_offset BIGINT NOT NULL, examiner_id BIGSERIAL, "
+		("CREATE TABLE content_tags (tag_id BIGSERIAL PRIMARY KEY, obj_id BIGINT NOT NULL, tag_name_id BIGINT NOT NULL, comment TEXT NOT NULL, begin_byte_offset BIGINT NOT NULL, end_byte_offset BIGINT NOT NULL, examiner_id BIGINT, "
 			"FOREIGN KEY(examiner_id) REFERENCES tsk_examiners(examiner_id), FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id))",
 			"Error creating content_tags table: %s\n")
 		||
 		attempt_exec
-		("CREATE TABLE blackboard_artifact_tags (tag_id BIGSERIAL PRIMARY KEY, artifact_id BIGINT NOT NULL, tag_name_id BIGINT NOT NULL, comment TEXT NOT NULL,  examiner_id BIGSERIAL, "
+		("CREATE TABLE blackboard_artifact_tags (tag_id BIGSERIAL PRIMARY KEY, artifact_id BIGINT NOT NULL, tag_name_id BIGINT NOT NULL, comment TEXT NOT NULL,  examiner_id BIGINT, "
 			"FOREIGN KEY(examiner_id) REFERENCES tsk_examiners(examiner_id), FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id), FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id))",
 			"Error creating blackboard_artifact_tags table: %s\n")){
 			return 1;
