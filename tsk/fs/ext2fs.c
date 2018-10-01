@@ -69,7 +69,8 @@ test_root(uint32_t a, uint32_t b)
         return 0;
     }
     else if (a == 1) {
-        return (b == 1);
+        // anything to power of 0 is 1
+        return 1;
     }
     else if (b == 1) {
         return 0;
