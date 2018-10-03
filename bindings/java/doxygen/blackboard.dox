@@ -27,7 +27,7 @@ There are special methods on the Content object, such as org.sleuthkit.datamodel
 
 Java modules can access the blackboard from either org.sleuthkit.datamodel.SleuthkitCase or a org.sleuthkit.datamodel.Content object.  The methods associated with org.sleuthkit.datamodel.Content all limit the Blackboard to a specific file.  
 
-Refer to http://wiki.sleuthkit.org/index.php?title=Artifact_Examples for artifact and attribute combinations that are commonly used. 
+Refer to the <a href="http://wiki.sleuthkit.org/index.php?title=Artifact_Examples">artifact examples wiki page</a> for artifact and attribute combinations that are commonly used. 
 
 
 \subsection jni_bb_access_post Posting to the Blackboard
@@ -63,21 +63,16 @@ You can find artifacts using a variety of ways:
 
 \section jni_bb_custom_types Custom Artifacts and Attributes
 
-This section outlines how to create artifact and attribute types because the standard ones do not meet your needs.
-
-\subsection jni_bb_custom_limitations Limitations
-
-There is a big limitation right now in Autopsy (and the datamodel) with respect to custom artifact and attribute types.  You can create them and query for them in modules, but the Autopsy UI and reporting infrastructure will not show them. This is because we rely on enums for the types and the custom types do not map into the enum.  We will need to address this in the future.
-
-Before you make a custom type, you should consider the 
+This section outlines how to create artifact and attribute types because the standard ones do not meet your needs. These custom artifacts will be displayed
+in the Autopsy UI alongside the built in artifacts and will also appear in the reports. However, before you make a custom type, you should consider the 
 TSK_INTERESTING_FILE_HIT artifact.  It is very generic and we have used it 
 in the past when we did not want to make a new artifact type. You create the artifact, use the TSK_SET_NAME attribute to define the equivalent name of the custom artifact that you wanted to create, and then add whatever attributes  you want. 
 
 
 \subsection jni_bb_custom_make Making Custom Artifacts and Attributes
-org.sleuthkit.datamodel.SleuthkitCase.addArtifactType() is used to create a custom artifact.  Give it the display and unique name and it will return the unique ID.  You will need to call this once for each case to create the artifact ID.   You can then use this ID to make an artifact of the given type.  To check if the artifact type has already been added to the blackboard or to get the ID after it was created, use org.sleuthkit.datamodel.SleuthkitCase.getArtifactTypeID().
+org.sleuthkit.datamodel.SleuthkitCase.addBlackboardArtifactType() is used to create a custom artifact.  Give it the display and unique name and it will return a org.sleuthkit.datamodel.BlackboardArtifact.Type object with a unique ID.  You will need to call this once for each case to create the artifact ID.   You can then use this ID to make an artifact of the given type.  To check if the artifact type has already been added to the blackboard or to get the ID after it was created, use org.sleuthkit.datamodel.SleuthkitCase.getArtifactType().
 
-To create custom attributes, use org.sleuthkit.datamodel.SleuthkitCase.addAttrType() to create the type and get its ID. Like artifacts, you must create the type for each new case. To get a type after it has been created in the case, use org.sleuthkit.datamodel.SleuthkitCase.getAttrTypeID(). 
+To create custom attributes, use org.sleuthkit.datamodel.SleuthkitCase.addArtifactAttributeType() to create the type and get its ID. Like artifacts, you must create the type for each new case. To get a type after it has been created in the case, use org.sleuthkit.datamodel.SleuthkitCase.getAttributeType(). 
 
 
 */
