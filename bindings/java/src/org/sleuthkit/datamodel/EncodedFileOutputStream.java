@@ -77,5 +77,6 @@ public class EncodedFileOutputStream extends BufferedOutputStream{
         }
         
         super.write(encodedData, off, len);
+		encodedData = null;
     }	
 }
