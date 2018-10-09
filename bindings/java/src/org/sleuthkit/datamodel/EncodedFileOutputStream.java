@@ -62,6 +62,29 @@ public class EncodedFileOutputStream extends BufferedOutputStream {
 		writeHeader();
 	}
 
+	/**
+	 * Sets the OutputStream so that the internal buffer (in
+	 * BufferedOutputStream) can be reused for different files.
+	 *
+	 * @param out
+	 * @param type
+	 *
+	 * @throws IOException
+	 */
+	public void setOutputStream(OutputStream out, TskData.EncodingType type) throws IOException {
+		//This is a tailored fix for the SevenZipExtractor, since the underlying 
+		//7zip binding it depends on has a memory leak. Rather than initializing 
+		//thousands of new EncodedFileOutputStreams (consuming buffer size * number 
+		//of objects worth of memory), we keep only 1 buffer in memory per archive.
+		if (this.out != null) {
+			this.out.close();
+		}
+
+		this.out = out;
+		this.type = type;
+		writeHeader();
+	}
+
 	private void writeHeader() throws IOException {
 		// We get the encoded header here so it will be in plaintext after encoding
 		write(EncodedFileUtil.getEncodedHeader(type), 0, EncodedFileUtil.getHeaderLength());
@@ -83,7 +106,5 @@ public class EncodedFileOutputStream extends BufferedOutputStream {
 		}
 
 		super.write(encodedData, off, len);
-		//encodedData not gc'd until nulled out.
-		encodedData = null;
 	}
 }
