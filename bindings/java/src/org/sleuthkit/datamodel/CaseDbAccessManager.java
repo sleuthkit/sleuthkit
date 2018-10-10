@@ -157,14 +157,16 @@ public final class CaseDbAccessManager {
 		try {
 			long rowId = insert(tableName, sql, localTrans);
 			localTrans.commit();
+			localTrans = null;
 			return rowId;
-		} catch (TskCoreException ex) {
-			try {
-				localTrans.rollback();
-			} catch (TskCoreException ex2) {
-				logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
+		} finally {
+			if (null != localTrans) {
+				try {
+					localTrans.rollback();
+				} catch (TskCoreException ex) {
+					logger.log(Level.SEVERE, "Failed to rollback transaction after exception", ex);
+				}
 			}
-			throw ex;
 		} 
 		
 	}
@@ -240,14 +242,16 @@ public final class CaseDbAccessManager {
 		try {
 			long rowId = insertOrUpdate(tableName, sql, localTrans);
 			localTrans.commit();
+			localTrans = null;
 			return rowId;
-		} catch (TskCoreException ex) {
-			try {
-				localTrans.rollback();
-			} catch (TskCoreException ex2) {
-				logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
+		} finally {
+			if (null != localTrans) {
+				try {
+					localTrans.rollback();
+				} catch (TskCoreException ex) {
+					logger.log(Level.SEVERE, "Failed to rollback transaction after exception", ex);
+				}
 			}
-			throw ex;
 		} 
 		
 	}
@@ -315,13 +319,15 @@ public final class CaseDbAccessManager {
 		try {
 			update(tableName, sql, localTrans);
 			localTrans.commit();
-		} catch (TskCoreException ex) {
-			try {
-				localTrans.rollback();
-			} catch (TskCoreException ex2) {
-				logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
+			localTrans = null;
+		} finally {
+			if (null != localTrans) {
+				try {
+					localTrans.rollback();
+				} catch (TskCoreException ex) {
+					logger.log(Level.SEVERE, "Failed to rollback transaction after exception", ex);
+				}
 			}
-			throw ex;
 		} 
 	}
 	
