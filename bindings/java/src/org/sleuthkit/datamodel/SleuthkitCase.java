@@ -9882,11 +9882,14 @@ public class SleuthkitCase {
 
 		@Override
 		void executeCommand(DbCommand command) throws SQLException {
+			SQLException lastException = null;
 			for (int retries = 0; retries < MAX_RETRIES; retries++) {
 				try {
 					command.execute();
+					lastException = null; // reset since we had a successful execution
 					break;
 				} catch (SQLException ex) {
+					lastException = ex;
 					String sqlState = ex.getSQLState();
 					if (sqlState == null || sqlState.equals(COMMUNICATION_ERROR) || sqlState.equals(SYSTEM_ERROR) || sqlState.equals(UNKNOWN_STATE)) {
 						try {
@@ -9898,6 +9901,11 @@ public class SleuthkitCase {
 						throw ex;
 					}
 				}
+			}
+			
+			// rethrow the exception if we bailed because of too many retries
+			if (lastException != null) {
+				throw lastException;
 			}
 		}
 	}
