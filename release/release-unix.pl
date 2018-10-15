@@ -381,6 +381,106 @@ sub update_libver {
     rename ($OFILE, $IFILE) or die "Error renaming $OFILE";
 }
 
+# update the version in the Java ant build.xml file
+sub update_buildxml {
+
+    print "Updating the version in Java build.xml file\n";
+    
+    my $IFILE = "bindings/java/build.xml";
+    my $OFILE = "bindings/java/build.xml2";
+
+    open (CONF_IN, "<${IFILE}") or 
+        die "Cannot open $IFILE";
+    open (CONF_OUT, ">${OFILE}") or 
+        die "Cannot open $OFILE";
+
+    my $found = 0;
+    while (<CONF_IN>) {
+        if (/name=\"VERSION\"/) {
+            print CONF_OUT "<property name=\"VERSION\" value=\"${VER}\"/>\n";
+            $found++;
+        }
+        else {
+            print CONF_OUT $_;
+        }
+    }
+    close (CONF_IN);
+    close (CONF_OUT);
+
+    if ($found != 1) {
+        die "Error: Found $found (instead of 1) occurrences of Version: in Java Build file";
+    }
+
+    unlink ($IFILE) or die "Error deleting $IFILE";
+    rename ($OFILE, $IFILE) or die "Error renaming $OFILE";
+}
+
+sub update_debian_changelog {
+
+    print "Updating the version in Debian changelog file\n";
+    
+    my $IFILE = "debian/changelog";
+    my $OFILE = "debian/changelog2";
+
+    open (CONF_IN, "<${IFILE}") or 
+        die "Cannot open $IFILE";
+    open (CONF_OUT, ">${OFILE}") or 
+        die "Cannot open $OFILE";
+
+    my $found = 0;
+    while (<CONF_IN>) {
+        if (/^sleuthkit-java /) {
+            print CONF_OUT "sleuthkit-java (${VER}-1) unstable; urgency=medium\n";
+            $found++;
+        }
+        else {
+            print CONF_OUT $_;
+        }
+    }
+    close (CONF_IN);
+    close (CONF_OUT);
+
+    if ($found != 1) {
+        die "Error: Found $found (instead of 1) occurrences of header in debian/changelog";
+    }
+
+    unlink ($IFILE) or die "Error deleting $IFILE";
+    rename ($OFILE, $IFILE) or die "Error renaming $OFILE";
+}
+
+sub update_debian_install {
+
+    print "Updating the version in Debian install file\n";
+    
+    my $IFILE = "debian/sleuthkit-java.install";
+    my $OFILE = "debian/sleuthkit-java.install2";
+
+    open (CONF_IN, "<${IFILE}") or 
+        die "Cannot open $IFILE";
+    open (CONF_OUT, ">${OFILE}") or 
+        die "Cannot open $OFILE";
+
+    my $found = 0;
+    while (<CONF_IN>) {
+        if (/^bindings\/java\/dist\/sleuthkit\-\d+\.\d+\.\d+\.jar \/usr\/share\/java/) {
+            print CONF_OUT "bindings/java/dist/sleuthkit-${VER}.jar /usr/share/java\n";
+            $found++;
+        }
+        else {
+            print CONF_OUT $_;
+        }
+    }
+    close (CONF_IN);
+    close (CONF_OUT);
+
+    if ($found != 1) {
+        die "Error: Found $found (instead of 1) occurrences of jar in debian/sleuthkit-java.install";
+    }
+
+    unlink ($IFILE) or die "Error deleting $IFILE";
+    rename ($OFILE, $IFILE) or die "Error renaming $OFILE";
+}
+
 
 # Update the autotools / autobuild files in current source directory
 sub bootstrap() {
@@ -576,6 +676,9 @@ update_configver();
 update_hver();
 update_libver();
 update_pkgver();
+update_buildxml();
+update_debian_changelog();
+update_debian_install();
 
 bootstrap();
 checkin_vers();

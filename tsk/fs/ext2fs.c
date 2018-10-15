@@ -55,8 +55,6 @@ debug_print_buf(unsigned char *buf, int len)
 
 /** \internal
     test_root - tests to see if a is power of b
-    Adapted from E2fsprogs sparse.c
-    Super blocks are only in block groups that are powers of 3,5, and 7
     @param a the number being investigated
     @param b the root
     @return 1 if a is a power of b, otherwise 0
@@ -64,31 +62,50 @@ debug_print_buf(unsigned char *buf, int len)
 static uint8_t
 test_root(uint32_t a, uint32_t b)
 {
-    if (a == 0)
-        return 1;
-    while (1) {
-        if (a == 1)
-            return 1;
-        if (a % b)
-            return 0;
-        a = a / b;
+    if (a == 0) {
+        return (b == 0);
     }
+    else if (b == 0) {
+        return 0;
+    }
+    else if (a == 1) {
+        // anything to power of 0 is 1
+        return 1;
+    }
+    else if (b == 1) {
+        return 0;
+    }
+ 
+    // keep on multiplying b by itself 
+    uint32_t b2;
+    for (b2 = b; b2 < a; b2 *= b) {}
+ 
+    // was it an exact match?
+    return (b2 == a);
 }
 
 /** \internal
-  ext2fs_bg_has_super - wrapper around test_root
-    Adapted from E2fsprogs sparse.c
-    @return 1 if block group has superblock, otherwise 0
+ * Test if block group has a super block in it.
+ *
+ * @return 1 if block group has superblock, otherwise 0
 */
 static uint32_t
-ext2fs_bg_has_super(uint32_t feature_ro_compat, uint32_t group_block)
+ext2fs_is_super_bg(uint32_t feature_ro_compat, uint32_t group_block)
 {
+    // if no sparse feature, then it has super block
     if (!(feature_ro_compat & EXT2FS_FEATURE_RO_COMPAT_SPARSE_SUPER))
         return 1;
 
-    if (test_root(group_block, 3) || (test_root(group_block, 5)) ||
-        test_root(group_block, 7))
+    // group 0 always has super block
+    if (group_block == 0) 
         return 1;
+
+    // Sparse FS put super blocks in groups that are powers of 3, 5, 7
+    if (test_root(group_block, 3) || 
+            (test_root(group_block, 5)) ||
+            (test_root(group_block, 7))) {
+        return 1;
+    }
 
     return 0;
 }
@@ -110,7 +127,7 @@ static uint8_t
     ext2fs_group_load(EXT2FS_INFO * ext2fs, EXT2_GRPNUM_T grp_num)
 {
     TSK_FS_INFO *fs = (TSK_FS_INFO *) ext2fs;
-    int gd_size = tsk_getu16(fs->endian, ext2fs->fs->s_desc_size);
+    size_t gd_size = tsk_getu16(fs->endian, ext2fs->fs->s_desc_size);
 
     /*
     * Sanity check
@@ -135,7 +152,7 @@ static uint8_t
             TSK_OFF_T offs;
             ssize_t cnt;
 
-            if (gd_size < sizeof(ext4fs_gd))
+            if (gd_size < (int)sizeof(ext4fs_gd))
                 gd_size = sizeof(ext4fs_gd);
 
             if (ext2fs->ext4_grp_buf == NULL) {
@@ -149,7 +166,7 @@ static uint8_t
 #ifdef Ext4_DBG
             debug_print_buf((char *) ext2fs->ext4_grp_buf, gd_size);
 #endif
-            if (cnt != gd_size) {
+            if (cnt != (ssize_t) gd_size) {
                 if (cnt >= 0) {
                     tsk_error_reset();
                     tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -180,7 +197,7 @@ static uint8_t
     else {
         TSK_OFF_T offs;
         ssize_t cnt;
-        if (gd_size < sizeof(ext2fs_gd))
+        if (gd_size < (int)sizeof(ext2fs_gd))
             gd_size = sizeof(ext2fs_gd);
 
         if (ext2fs->grp_buf == NULL) {
@@ -191,7 +208,7 @@ static uint8_t
 
         cnt = tsk_fs_read(&ext2fs->fs_info, offs, (char *) ext2fs->grp_buf, gd_size);
 
-        if (cnt != gd_size) {
+        if (cnt != (ssize_t) gd_size) {
             if (cnt >= 0) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -923,7 +940,7 @@ ext2fs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     TSK_INUM_T end_inum_tmp;
     TSK_INUM_T ibase = 0;
     TSK_FS_FILE *fs_file;
-    int myflags;
+    unsigned int myflags;
     ext2fs_inode *dino_buf = NULL;
     unsigned int size = 0;
 
@@ -1756,8 +1773,6 @@ ext4_fsstat_datablock_helper(TSK_FS_INFO * fs, FILE * hFile,
         ", gpfbg: %d, ibpg: %d \n", cg_base, gpfbg, ibpg);
 #endif
     /*If this is the 1st bg in a flex bg then it contains the bitmaps and inode tables */
-    //if(ext2fs_bg_has_super(tsk_getu32(fs->endian,sb->s_feature_ro_compat),i))
-    //{
     if (i % gpfbg == 0) {
         if (curr_flex_bg == (num_flex_bg - 1)) {
             unsigned int num_groups = 0;
@@ -1799,7 +1814,7 @@ ext4_fsstat_datablock_helper(TSK_FS_INFO * fs, FILE * hFile,
         }
         tsk_fprintf(hFile, "    Data Blocks: ");
         db_offset = 0;
-        if (ext2fs_bg_has_super(tsk_getu32(fs->endian,
+        if (ext2fs_is_super_bg(tsk_getu32(fs->endian,
                     sb->s_feature_ro_compat), i)) {
             db_offset = cg_base + (gpfbg * 2)   //To account for the bitmaps
                 + (ibpg * gpfbg)        //Combined inode tables
@@ -1816,7 +1831,7 @@ ext4_fsstat_datablock_helper(TSK_FS_INFO * fs, FILE * hFile,
     else {
         tsk_fprintf(hFile, "    Data Blocks: ");
         db_offset = 0;
-        if (ext2fs_bg_has_super(tsk_getu32(fs->endian,
+        if (ext2fs_is_super_bg(tsk_getu32(fs->endian,
                     sb->s_feature_ro_compat), i)) {
             db_offset = cg_base + tsk_getu16(fs->endian, ext2fs->fs->pad_or_gdt.s_reserved_gdt_blocks) + gd_blocks      //group descriptors
                 + 1;            //superblock
@@ -2239,7 +2254,7 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         */
 #ifdef Ext4_DBG
         printf("DEBUG: ext2fs_super: %d\n",
-            ext2fs_bg_has_super(tsk_getu32(fs->endian,
+            ext2fs_is_super_bg(tsk_getu32(fs->endian,
             sb->s_feature_ro_compat), i));
 #endif
         /*        if (((tsk_getu32(fs->endian, ext2fs->fs->s_feature_ro_compat) &
@@ -2250,7 +2265,7 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
         ext2fs->fs->s_feature_ro_compat) &
         EXT2FS_FEATURE_RO_COMPAT_SPARSE_SUPER) == 0)) {
         */
-        if (ext2fs_bg_has_super(tsk_getu32(fs->endian,
+        if (ext2fs_is_super_bg(tsk_getu32(fs->endian,
             sb->s_feature_ro_compat), i)) {
                 TSK_OFF_T boff;
 
@@ -2351,7 +2366,7 @@ ext2fs_fsstat(TSK_FS_INFO * fs, FILE * hFile)
             tsk_fprintf(hFile, "    Data Blocks: ");
             // BC: Commented out from Ext4 commit because it produced
             // bad data on Ext2 test image.
-            //if (ext2fs_bg_has_super(tsk_getu32(fs->endian,
+            //if (ext2fs_is_super_bg(tsk_getu32(fs->endian,
             //            sb->s_feature_ro_compat), i)) {
             if ((tsk_getu32(fs->endian, ext2fs->fs->s_feature_ro_compat) &
                 EXT2FS_FEATURE_RO_COMPAT_SPARSE_SUPER) &&

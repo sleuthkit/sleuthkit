@@ -1229,7 +1229,7 @@ iso9660_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start, TSK_INUM_T last,
     ISO_INFO *iso = (ISO_INFO *) fs;
     TSK_INUM_T inum, end_inum_tmp;
     TSK_FS_FILE *fs_file;
-    int myflags;
+    unsigned int myflags;
     iso9660_inode *dinode;
 
     // clean up any error messages that are lying around

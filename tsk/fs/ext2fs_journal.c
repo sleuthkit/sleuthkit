@@ -154,7 +154,7 @@ ext2fs_jentry_walk(TSK_FS_INFO * fs, int flags,
         return 1;
     }
 
-    if (jinfo->fs_file->meta->size !=
+    if ((TSK_DADDR_T)jinfo->fs_file->meta->size !=
         (jinfo->last_block + 1) * jinfo->bsize) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_ARG);
@@ -519,7 +519,7 @@ ext2fs_jblk_walk(TSK_FS_INFO * fs, TSK_DADDR_T start, TSK_DADDR_T end,
         return 1;
     }
 
-    if (jinfo->fs_file->meta->size !=
+    if ((TSK_DADDR_T)jinfo->fs_file->meta->size !=
         (jinfo->last_block + 1) * jinfo->bsize) {
         tsk_error_reset();
         tsk_error_set_errno(TSK_ERR_FS_UNSUPFUNC);

@@ -89,14 +89,14 @@ uint8_t TskRecover::handleError()
  * Callback used to walk file content and write the results to the recovery file.
  */
 static TSK_WALK_RET_ENUM
-file_walk_cb(TSK_FS_FILE * /*a_fs_file*/, TSK_OFF_T /*a_off*/,
-    TSK_DADDR_T /*a_addr*/, char *a_buf, size_t a_len,
-    TSK_FS_BLOCK_FLAG_ENUM /*a_flags*/, void *a_ptr)
+file_walk_cb(TSK_FS_FILE * a_fs_file, TSK_OFF_T a_off,
+    TSK_DADDR_T a_addr, char *a_buf, size_t a_len,
+    TSK_FS_BLOCK_FLAG_ENUM a_flags, void *a_ptr)
 {
     //write to the file
 #ifdef TSK_WIN32
     DWORD written = 0;
-    if (!WriteFile((HANDLE) a_ptr, a_buf, a_len, &written, NULL)) {
+    if (!WriteFile((HANDLE) a_ptr, a_buf, (DWORD)a_len, &written, NULL)) {
         fprintf(stderr, "Error writing file content\n");
         return TSK_WALK_ERROR;
     }

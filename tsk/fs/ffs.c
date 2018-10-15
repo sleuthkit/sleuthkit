@@ -85,8 +85,8 @@ ffs_group_load(FFS_INFO * ffs, FFS_GRPNUM_T grp_num)
 
         /* Perform a sanity check on the data to make sure offsets are in range */
         cg = (ffs_cgd *) ffs->grp_buf;
-        if ((tsk_gets32(fs->endian, cg->cg_iusedoff) > ffs->ffsbsize_b)
-            || (tsk_gets32(fs->endian, cg->cg_freeoff) > ffs->ffsbsize_b)) {
+        if ((tsk_gets32(fs->endian, cg->cg_iusedoff) > (int)ffs->ffsbsize_b)
+            || (tsk_gets32(fs->endian, cg->cg_freeoff) > (int)ffs->ffsbsize_b)) {
             tsk_error_reset();
             tsk_error_set_errno(TSK_ERR_FS_CORRUPT);
             tsk_error_set_errstr2("ffs_group_load: Group %" PRI_FFSGRP
@@ -850,7 +850,7 @@ ffs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     TSK_INUM_T inum;
     unsigned char *inosused = NULL;
     TSK_FS_FILE *fs_file;
-    int myflags;
+    unsigned int myflags;
     TSK_INUM_T ibase = 0;
     TSK_INUM_T end_inum_tmp;
     ffs_inode *dino_buf;
@@ -1228,8 +1228,8 @@ ffs_block_walk(TSK_FS_INFO * fs, TSK_DADDR_T a_start_blk,
                 int frags;
 
                 /* Ideally, we want to read in block sized chunks, verify we can do that */
-                frags = (a_end_blk > addr + ffs->ffsbsize_f - 1 ?
-                    ffs->ffsbsize_f : (int) (a_end_blk + 1 - addr));
+                frags = a_end_blk > addr + ffs->ffsbsize_f - 1 ?
+                    ffs->ffsbsize_f : a_end_blk + 1 - addr;
 
                 cnt =
                     tsk_fs_read_block(fs, addr, cache_blk_buf,

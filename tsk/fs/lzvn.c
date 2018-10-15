@@ -95,9 +95,11 @@ LZFSE_INLINE uint64_t load8(const void *ptr) {
 }
 
 /*! @abstract Store bytes to memory location DST. */
+/*
 LZFSE_INLINE void store2(void *ptr, uint16_t data) {
   memcpy(ptr, &data, sizeof data);
 }
+*/
 
 LZFSE_INLINE void store4(void *ptr, uint32_t data) {
   memcpy(ptr, &data, sizeof data);

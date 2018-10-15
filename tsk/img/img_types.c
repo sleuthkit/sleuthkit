@@ -46,7 +46,7 @@ static IMG_TYPES img_open_table[] = {
 #if HAVE_LIBVHDI
     {"vhd", TSK_IMG_TYPE_VHD_VHD, "Virtual Hard Drive (Microsoft)"},
 #endif
-    {0},
+    {0,0,""},
 };
 
 

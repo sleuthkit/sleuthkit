@@ -218,10 +218,7 @@ ntfs_parent_act(TSK_FS_FILE * fs_file, void * /*ptr*/)
 
     if ((fs_file->meta->flags & TSK_FS_META_FLAG_ALLOC) &&
         fs_file->meta->type == TSK_FS_META_TYPE_REG) {
-            if (ntfs->alloc_file_count == -1)
-                ntfs->alloc_file_count = 1;
-            else
-                ntfs->alloc_file_count++;
+        ++ntfs->alloc_file_count;
     }
 
     /* go through each file name structure */

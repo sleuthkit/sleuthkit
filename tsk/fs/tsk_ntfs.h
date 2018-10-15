@@ -735,8 +735,10 @@ extern "C" {
         NTFS_SXX_BUFFER sds_data;       // (r/w shared - lock)
 #endif
 
-        uint32_t alloc_file_count;      // number of allocated regular files, will be -1
-                                        // until a directory is opened.
+        /* Number of allocated regular files. 0 until a directory is
+         * opened.  Currently used by tools that are built on TSK. */
+        int alloc_file_count;      
+                                    
         NTFS_USNJINFO *usnjinfo;        // update sequence number journal
     } NTFS_INFO;
 

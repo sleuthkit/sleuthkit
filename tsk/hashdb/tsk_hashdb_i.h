@@ -130,7 +130,7 @@ extern "C" {
 
     // Hash database functions for external index files standing in for the 
     // original hash databases. 
-    extern TSK_HDB_INFO *idxonly_open(const TSK_TCHAR *);
+    extern TSK_HDB_INFO *idxonly_open(const TSK_TCHAR *, const TSK_TCHAR *);
     extern const TSK_TCHAR *idxonly_get_db_path(TSK_HDB_INFO *);
     extern uint8_t idxonly_makeindex(TSK_HDB_INFO *, TSK_TCHAR *);
     extern uint8_t idxonly_getentry(TSK_HDB_INFO *, const char *,

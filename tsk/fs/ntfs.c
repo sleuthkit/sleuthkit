@@ -37,7 +37,7 @@
 
 
 /* Macro to pass in both the epoch time value and the nano time value */
-#define WITHNANO(x) x, x##_nano
+#define WITHNANO(x) x, (unsigned int)x##_nano
 
 
 /* mini-design note:
@@ -219,7 +219,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
             data_run != NULL; data_run = data_run->next) {
 
             /* Test for possible overflows / error conditions */
-            if ((offset < 0) || (data_run->len >= LLONG_MAX / a_ntfs->csize_b)){
+            if ((offset < 0) || (data_run->len >= (TSK_DADDR_T)(LLONG_MAX / a_ntfs->csize_b))){
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_INODE_COR);
                 tsk_error_set_errstr
@@ -293,7 +293,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
         ssize_t cnt;
         /* read the first part into mft */
         cnt = tsk_fs_read(&a_ntfs->fs_info, mftaddr_b, a_buf, mftaddr_len);
-        if (cnt != mftaddr_len) {
+        if (cnt != (ssize_t)mftaddr_len) {
             if (cnt >= 0) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -309,7 +309,7 @@ ntfs_dinode_lookup(NTFS_INFO * a_ntfs, char *a_buf, TSK_INUM_T a_mftnum)
             (&a_ntfs->fs_info, mftaddr2_b,
             (char *) ((uintptr_t) a_buf + (uintptr_t) mftaddr_len),
             a_ntfs->mft_rsize_b - mftaddr_len);
-        if (cnt != a_ntfs->mft_rsize_b - mftaddr_len) {
+        if (cnt != (ssize_t)(a_ntfs->mft_rsize_b - mftaddr_len)) {
             if (cnt >= 0) {
                 tsk_error_reset();
                 tsk_error_set_errno(TSK_ERR_FS_READ);
@@ -1530,7 +1530,7 @@ ntfs_file_read_special(const TSK_FS_ATTR * a_fs_attr,
                     "ntfs_file_read_special: Returning 0s for read past end of initsize (%"
                     PRIuINUM ")\n", a_fs_attr->fs_file->meta->addr);
 
-            if (a_offset + a_len > a_fs_attr->nrd.allocsize)
+            if (a_offset + (TSK_OFF_T)a_len > a_fs_attr->nrd.allocsize)
                 len = (ssize_t) (a_fs_attr->nrd.allocsize - a_offset);
             else
                 len = (ssize_t) a_len;
@@ -1777,15 +1777,14 @@ ntfs_proc_attrseq(NTFS_INFO * ntfs,
         }
 
         /* Copy the name and convert it to UTF8 */
-        if ((attr->nlen) && (tsk_getu16(fs->endian, attr->name_off) + attr->nlen * 2 < tsk_getu32(fs->endian, attr->len))) {
+        const uint16_t nameoff = tsk_getu16(fs->endian, attr->name_off);
+        if (attr->nlen && nameoff + (uint32_t) attr->nlen * 2 < tsk_getu32(fs->endian, attr->len)) {
             int i;
             UTF8 *name8;
             UTF16 *name16;
 
             name8 = (UTF8 *) name;
-            name16 =
-                (UTF16 *) ((uintptr_t) attr + tsk_getu16(fs->endian,
-                    attr->name_off));
+            name16 = (UTF16 *) ((uintptr_t) attr + nameoff);
 
             retVal =
                 tsk_UTF16toUTF8(fs->endian, (const UTF16 **) &name16,
@@ -3657,7 +3656,7 @@ ntfs_load_secure(NTFS_INFO * ntfs)
     cnt =
         tsk_fs_attr_read(fs_attr_sii, 0, sii_buffer.buffer,
         sii_buffer.size, TSK_FS_FILE_READ_FLAG_NONE);
-    if (cnt != sii_buffer.size) {
+    if (cnt != (ssize_t)sii_buffer.size) {
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "ntfs_load_secure: error reading $Secure:$SII attribute: %s\n",
@@ -3720,7 +3719,7 @@ ntfs_load_secure(NTFS_INFO * ntfs)
         tsk_fs_attr_read(fs_attr_sds, 0,
         ntfs->sds_data.buffer, ntfs->sds_data.size,
         TSK_FS_FILE_READ_FLAG_NONE);
-    if (cnt != ntfs->sds_data.size) {
+    if (cnt != (ssize_t)ntfs->sds_data.size) {
         if (tsk_verbose)
             tsk_fprintf(stderr,
                 "ntfs_load_secure: error reading $Secure:$SDS attribute: %s\n",
@@ -3898,7 +3897,7 @@ ntfs_inode_walk(TSK_FS_INFO * fs, TSK_INUM_T start_inum,
     TSK_FS_META_WALK_CB a_action, void *ptr)
 {
     NTFS_INFO *ntfs = (NTFS_INFO *) fs;
-    int myflags;
+    unsigned int myflags;
     TSK_INUM_T mftnum;
     TSK_FS_FILE *fs_file;
     TSK_INUM_T end_inum_tmp;
@@ -5221,7 +5220,7 @@ ntfs_open(TSK_IMG_INFO * img_info, TSK_OFF_T offset,
     ntfs->orphan_map = NULL;
 
     // initialize the number of allocated files
-    ntfs->alloc_file_count = -1;
+    ntfs->alloc_file_count = 0;
 
     if (tsk_verbose) {
         tsk_fprintf(stderr,

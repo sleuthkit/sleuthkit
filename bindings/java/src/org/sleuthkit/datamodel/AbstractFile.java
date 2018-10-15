@@ -543,7 +543,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 *
 	 * @return The object id of the data source.
 	 */
-	long getDataSourceObjectId() {
+	public long getDataSourceObjectId() {
 		return dataSourceObjectId;
 	}
 
@@ -805,6 +805,11 @@ public abstract class AbstractFile extends AbstractContent {
 		}
 
 		if (isDir()) {
+			return 0;
+		}
+		
+		// If the file is empty, just return that zero bytes were read.
+		if (getSize() == 0) {
 			return 0;
 		}
 

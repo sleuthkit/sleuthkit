@@ -134,7 +134,7 @@ public class Image extends AbstractContent implements DataSource {
 	public void finalize() throws Throwable {
 		try {
 			if (imageHandle != 0) {
-				SleuthkitJNI.closeImg(imageHandle);
+				// SleuthkitJNI.closeImg(imageHandle); // closeImg is currently a no-op
 				imageHandle = 0;
 			}
 		} finally {

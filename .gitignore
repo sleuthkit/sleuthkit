@@ -46,6 +46,7 @@ win32/BuildErrors.txt
 win32/BuildErrors-64bit.txt
 win32/.vs
 win32/tsk-win.VC.VC.opendb
+win32/tsk-win.VC.opendb
 win32/tsk-win.VC.db
 framework/msvcpp/framework/Debug/
 framework/msvcpp/framework/Release/
@@ -177,3 +178,9 @@ unit_tests/base/test_base
 *.img
 *.vhd
 *.E01
+*.vmdk
+
+
+#Test data folder
+
+tests/data
