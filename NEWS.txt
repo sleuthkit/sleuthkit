@@ -1,6 +1,22 @@
 Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
+---------------- VERSION 4.6.3 --------------
+C/C++ Code:
+- Hashdb bug fixes for corrupt indexes and 0 hashes
+- New code for testing power of number in ExtX code
+
+Java Code: 
+- New class that allows generic database access
+- New methods that check for duplicate artifacts
+- Added caches for frequently used content 
+
+Database Schema: 
+- Added Examiner table 
+- Tags are now associated with Examiners
+- Changed parent_path for logical files to be consistent with FS files.
+
+
 ---------------- VERSION 4.6.2 --------------
 C/C++ Code:
 - Various compiler warning fixes

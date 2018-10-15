@@ -60,6 +60,6 @@ The final step is to create store the relationships between the accounts.  You c
 \section jni_com_schema Database Schema
 
 For details of how this is stored in the database, refer to the 
-<a href="http://wiki.sleuthkit.org/index.php?title=Database_v7.2_Schema#Communications_.2F_Accounts]">wiki</a>.
+<a href="http://wiki.sleuthkit.org/index.php?title=Database_v7.2_Schema#Communications_.2F_Accounts">wiki</a>.
 
 */
