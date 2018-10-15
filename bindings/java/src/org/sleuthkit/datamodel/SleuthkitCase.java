@@ -108,7 +108,7 @@ public class SleuthkitCase {
 	private static final String SQL_ERROR_LIMIT_GROUP = "54";
 	private static final String SQL_ERROR_INTERNAL_GROUP = "xx";
 	private static final int MIN_USER_DEFINED_TYPE_ID = 10000;
-	private static final String[] CORE_TABLE_NAMES = new String[]{
+	private static final Set<String> CORE_TABLE_NAMES_SET = new HashSet<String>(Arrays.asList( 
 		"tsk_events",
 		"tsk_event_types",
 		"tsk_db_info",
@@ -141,9 +141,8 @@ public class SleuthkitCase {
 		"accounts",
 		"account_relationships",
 		"review_statuses",
-		"reports,"};
-	private static final Set<String> CORE_TABLE_NAMES_SET = new HashSet<String>(Arrays.asList(CORE_TABLE_NAMES));
-	private static final String[] CORE_INDEX_NAMES = new String[]{
+		"reports,"));
+	private static final Set<String> CORE_INDEX_NAMES_SET = new HashSet<String>(Arrays.asList( 
 		"parObjId",
 		"layout_objID",
 		"artifact_objID",
@@ -157,7 +156,7 @@ public class SleuthkitCase {
 		"relationships_relationship_source_obj_id",
 		"relationships_date_time",
 		"relationships_relationship_type",
-		"relationships_data_source_obj_id", "events_data_source_obj_id",
+		"relationships_data_source_obj_id",	"events_data_source_obj_id",
 		"events_event_id_hash_hit",
 		"events_event_id_tagged",
 		"events_file_obj_id",
@@ -165,8 +164,8 @@ public class SleuthkitCase {
 		"events_sub_type_short_description_time",
 		"events_base_type_short_description_time",
 		"events_time",
-		"events_known_state"};
-	private static final Set<String> CORE_INDEX_NAMES_SET = new HashSet<String>(Arrays.asList(CORE_INDEX_NAMES));
+		"events_known_state"));
+
 
 	private final ConnectionPool connections;
 	private final Map<Long, VirtualDirectory> rootIdsToCarvedFileDirs = new HashMap<>();
@@ -203,7 +202,7 @@ public class SleuthkitCase {
 
 	private final Object communicationsMgrInstanceLock = new Object();
 	private final Object blackboardInstanceLock = new Object();
-	private final Object timelineMgrInstanceLock = new Object();
+ 	private final Object timelineMgrInstanceLock = new Object();
 
 	private final Map<String, Set<Long>> deviceIdToDatasourceObjIdMap = new HashMap<>();
 
@@ -219,7 +218,7 @@ public class SleuthkitCase {
 
 	void fireTSKEvent(Object event) {
 		eventBus.post(event);
-	}
+	} 
 
 	// Cache of frequently used content objects (e.g. data source, file system).
 	private final Map<Long, Content> frequentlyUsedContentMap = new HashMap<>();
@@ -356,7 +355,7 @@ public class SleuthkitCase {
 		initNextArtifactId();
 		updateDatabaseSchema(null);
 
-		try (CaseDbConnection connection = connections.getConnection()) {
+ 		try (CaseDbConnection connection = connections.getConnection()) {
 			initIngestModuleTypes(connection);
 			initIngestStatusTypes(connection);
 			initReviewStatuses(connection);
@@ -364,7 +363,7 @@ public class SleuthkitCase {
 			populateHasChildrenMap(connection);
 			updateExaminers(connection);
 		}
-	}
+ 	}
 
 	/**
 	 * Returns a set of core table names in the SleuthKit Case database.
@@ -372,7 +371,7 @@ public class SleuthkitCase {
 	 * @return set of core table names
 	 */
 	static Set<String> getCoreTableNames() {
-		return CORE_TABLE_NAMES;
+		return CORE_INDEX_NAMES_SET;
 	}
 
 	/**
@@ -382,7 +381,7 @@ public class SleuthkitCase {
 	 */
 	static Set<String> getCoreIndexNames() {
 		return CORE_INDEX_NAMES_SET;
-	}
+ 	}
 
 	/**
 	 * Use the internal map to determine whether the content object has children
@@ -898,6 +897,7 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema7dot1toSchema7dot2(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema7dot2toSchema8dot0(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot0toSchema8dot1(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema8dot1toSchema8dot2(dbSchemaVersion, connection);
 				statement = connection.createStatement();
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + dbSchemaVersion.getMajor() + ", schema_minor_ver = " + dbSchemaVersion.getMinor()); //NON-NLS
 				statement.close();
@@ -1629,33 +1629,63 @@ public class SleuthkitCase {
 			return schemaVersion;
 		}
 
-	
-
-		String primaryKeyType;
-		String foreignKeyType;
-		switch (getDatabaseType()) {
-			case POSTGRESQL:
-				primaryKeyType = "BIGSERIAL";
-				foreignKeyType = "BIGINT";
-				break;
-			case SQLITE:
-				primaryKeyType = "INTEGER";
-				foreignKeyType = "INTEGER";
-				break;
-			default:
-				throw new TskCoreException("Unsupported data base type: " + getDatabaseType().toString());
-		}
-		
-			acquireSingleUserCaseWriteLock();
+		acquireSingleUserCaseWriteLock();
+ 
 		try (Statement statement = connection.createStatement();) {
-			statement.execute("CREATE TABLE tsk_examiners ("
-					+ " examiner_id " + primaryKeyType + " PRIMARY KEY, "
-					+ " login_name TEXT NOT NULL, "
-					+ " display_name TEXT, "
-					+ " UNIQUE(login_name) )");
-			statement.execute("ALTER TABLE content_tags ADD COLUMN examiner_id " + foreignKeyType + " REFERENCES tsk_examiners(examiner_id) DEFAULT NULL");
-			statement.execute("ALTER TABLE blackboard_artifact_tags ADD COLUMN examiner_id " + foreignKeyType + " REFERENCES tsk_examiners(examiner_id) DEFAULT NULL");
+			// create examiners table
+			if (this.dbType.equals(DbType.SQLITE)) {
+				statement.execute("CREATE TABLE tsk_examiners (examiner_id INTEGER PRIMARY KEY, login_name TEXT NOT NULL, display_name TEXT, UNIQUE(login_name) )");
+				statement.execute("ALTER TABLE content_tags ADD COLUMN examiner_id INTEGER REFERENCES tsk_examiners(examiner_id) DEFAULT NULL");
+				statement.execute("ALTER TABLE blackboard_artifact_tags ADD COLUMN examiner_id INTEGER REFERENCES tsk_examiners(examiner_id) DEFAULT NULL");
+			} else {
+				statement.execute("CREATE TABLE tsk_examiners (examiner_id BIGSERIAL PRIMARY KEY, login_name TEXT NOT NULL, display_name TEXT, UNIQUE(login_name))");
+				statement.execute("ALTER TABLE content_tags ADD COLUMN examiner_id BIGINT REFERENCES tsk_examiners(examiner_id) DEFAULT NULL");
+				statement.execute("ALTER TABLE blackboard_artifact_tags ADD COLUMN examiner_id BIGINT REFERENCES tsk_examiners(examiner_id) DEFAULT NULL");
+			}
 
+			return new CaseDbSchemaVersionNumber(8, 1);
+		} finally {
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+
+	/**
+	 * Updates a schema version 8.1 database to a schema version 8.2 database.
+	 *
+	 * @param schemaVersion The current schema version of the database.
+	 * @param connection    A connection to the case database.
+	 *
+	 * @return The new database schema version.
+	 *
+	 * @throws SQLException     If there is an error completing a database
+	 *                          operation.
+	 * @throws TskCoreException If there is an error completing a database
+	 *                          operation via another SleuthkitCase method.
+	 */
+	private CaseDbSchemaVersionNumber updateFromSchema8dot1toSchema8dot2(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersion.getMajor() != 8) {
+			return schemaVersion;
+		}
+
+		if (schemaVersion.getMinor() != 1) {
+			return schemaVersion;
+		}
+
+		acquireSingleUserCaseWriteLock();
+ 
+		try (Statement statement = connection.createStatement();) {
+			String primaryKeyType;
+			switch (getDatabaseType()) {
+				case POSTGRESQL:
+					primaryKeyType = "BIGSERIAL";
+					break;
+				case SQLITE:
+					primaryKeyType = "INTEGER";
+					break;
+				default:
+					throw new TskCoreException("Unsupported data base type: " + getDatabaseType().toString());
+			}
+		 
 			//create and initialize tsk_event_types tables
 			statement.execute("CREATE TABLE tsk_event_types ("
 					+ " event_type_id " + primaryKeyType + " PRIMARY KEY, "
@@ -1708,14 +1738,14 @@ public class SleuthkitCase {
 			statement.execute("CREATE INDEX events_sub_type_short_description_time ON tsk_events(sub_type, short_description, time)");
 			statement.execute("CREATE INDEX events_base_type_short_description_time ON tsk_events(base_type, short_description, time)");
 			statement.execute("CREATE INDEX events_time ON tsk_events(time)");
-			statement.execute("CREATE INDEX events_known_state ON tsk_events(known_state)");
+			statement.execute("CREATE INDEX events_known_state ON tsk_events(known_state)"); 
 
-			return new CaseDbSchemaVersionNumber(8, 1);
+			return new CaseDbSchemaVersionNumber(8, 2);
 		} finally {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
-
+ 
 	/**
 	 * Extract the extension from a file name.
 	 *
@@ -7483,10 +7513,9 @@ public class SleuthkitCase {
 	 *
 	 * @return A list of BlackboardArtifact objects.
 	 *
-	 * @throws SQLException     Thrown if there is a problem iterating through
-	 *                          the result set.
-	 * @throws TskCoreException Thrown if there is an error looking up the
-	 *                          artifact type id
+	 * @throws SQLException Thrown if there is a problem iterating through the
+	 *                      result set.
+	 * @throws TskCoreException  Thrown if there is an error looking up the artifact type id
 	 */
 	private List<BlackboardArtifact> resultSetToArtifacts(ResultSet rs) throws SQLException, TskCoreException {
 		ArrayList<BlackboardArtifact> artifacts = new ArrayList<BlackboardArtifact>();
@@ -7635,7 +7664,7 @@ public class SleuthkitCase {
 			connection.executeUpdate(statement, "UPDATE tsk_files " //NON-NLS
 					+ "SET known='" + fileKnown.getFileKnownValue() + "' " //NON-NLS
 					+ "WHERE obj_id=" + id); //NON-NLS
-
+			
 			file.setKnown(fileKnown);
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error setting Known status.", ex);
@@ -8468,7 +8497,7 @@ public class SleuthkitCase {
 		acquireSingleUserCaseWriteLock();
 		ResultSet resultSet = null;
 		try {
-			Examiner currentExaminer = getCurrentExaminer();
+			Examiner currentExaminer= getCurrentExaminer();
 			// "INSERT INTO blackboard_artifact_tags (artifact_id, tag_name_id, comment, examiner_id) VALUES (?, ?, ?, ?)"), //NON-NLS
 			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_ARTIFACT_TAG, Statement.RETURN_GENERATED_KEYS);
 			statement.clearParameters();
@@ -10026,7 +10055,7 @@ public class SleuthkitCase {
 					}
 				}
 			}
-
+			
 			// rethrow the exception if we bailed because of too many retries
 			if (lastException != null) {
 				throw lastException;
