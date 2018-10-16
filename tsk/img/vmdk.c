@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: CPL-1.0 */
 /*
  * Brian Carrier [carrier <at> sleuthkit [dot] org]
  * Copyright (c) 2006-2016 Brian Carrier, Basis Technology.  All rights reserved

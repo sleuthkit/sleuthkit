@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: CPL-1.0 */
 /*
 ** The Sleuth Kit
 **

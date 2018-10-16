@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: IPL-1.0 */
 /*
 ** icat_lib 
 ** The Sleuth Kit 

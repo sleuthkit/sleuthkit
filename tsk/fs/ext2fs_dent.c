@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: CPL-1.0 */
 /*
 ** ext2fs_dent
 ** The Sleuth Kit

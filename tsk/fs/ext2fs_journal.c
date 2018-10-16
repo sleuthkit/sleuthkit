@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: CPL-1.0 */
 /*
    @@@ UNALLOC only if seq is less - alloc can be less than block if it wrapped around ...
 ** ext2fs_journal

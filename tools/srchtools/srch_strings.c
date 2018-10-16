@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later */
 /* From binutils-2.15
  * removed getopt_long stuff
  *

@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: BSD-3-Clause */
 /*
  * 
  * This is a sample file that shows how to use some of the basic C++
