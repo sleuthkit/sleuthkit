@@ -622,7 +622,7 @@ int TskDbPostgreSQL::initialize() {
             "CREATE TABLE tsk_event_types ("
             " event_type_id BIGSERIAL PRIMARY KEY,"
             " display_name TEXT UNIQUE NOT NULL , "
-            " super_type_id INTEGER REFERENCES tsk_event_types )"
+			" super_type_id INTEGER REFERENCES tsk_event_types(event_type_id) )"
             , "Error creating tsk_event_types table: %s\n")
         ||
         attempt_exec(
@@ -643,7 +643,7 @@ int TskDbPostgreSQL::initialize() {
             " file_obj_id BIGINT NOT NULL, "
             " artifact_id BIGINT, "
             " time INTEGER NOT NULL, "
-            " sub_type INTEGER REFERENCES tsk_event_types, "
+            " sub_type INTEGER, "
             " base_type INTEGER NOT NULL, "
             " full_description TEXT NOT NULL, "
             " med_description TEXT NOT NULL, "

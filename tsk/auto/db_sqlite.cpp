@@ -389,7 +389,7 @@ TskDbSqlite::initialize()
             "CREATE TABLE tsk_event_types ("
             " event_type_id INTEGER PRIMARY KEY,"
             " display_name TEXT UNIQUE NOT NULL,  "
-            " super_type_id INTEGER REFERENCES tsk_event_types )"
+			" super_type_id INTEGER REFERENCES tsk_event_types(event_type_id) )"
             , "Error creating event_types table: %s\n")
         ||
         attempt_exec(
