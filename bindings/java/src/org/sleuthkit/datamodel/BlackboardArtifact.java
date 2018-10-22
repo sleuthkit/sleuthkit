@@ -1147,7 +1147,7 @@ public class BlackboardArtifact implements Content {
 		TSK_OBJECT_DETECTED(41, "TSK_OBJECT_DETECTED",  //NON-NLS
 				bundle.getString("BlackboardArtifact.tskObjectDetected.text")),
 		/**
-		 * A SSID
+		 * A wireless network.
 		 */
 		TSK_WIFI_NETWORK(42, "TSK_WIFI_NETWORK",  //NON-NLS
 				bundle.getString("BlackboardArtifact.tskWIFINetwork.text"));
