@@ -1145,7 +1145,12 @@ public class BlackboardArtifact implements Content {
 		 * A classifier detected an object in a media file.
 		 */
 		TSK_OBJECT_DETECTED(41, "TSK_OBJECT_DETECTED",  //NON-NLS
-				bundle.getString("BlackboardArtifact.tskObjectDetected.text"));
+				bundle.getString("BlackboardArtifact.tskObjectDetected.text")),
+		/**
+		 * A SSID
+		 */
+		TSK_SSID(42, "TSK_SSID",  //NON-NLS
+				bundle.getString("BlackboardArtifact.tskSSID.text"));
 		
 		private final String label;
 		private final int typeId;
