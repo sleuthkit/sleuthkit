@@ -1182,16 +1182,18 @@ TskDbSqlite::addFile(TSK_FS_FILE* fs_file,
                             : escaped_path_str.substr(0, firstslash + 1);
 
   
-    if (addMACTimeEvent(zSQL, dataSourceObjId, objId, mtime, 4, full_description.c_str(), escaped_path, short_desc.c_str())
-        || addMACTimeEvent(zSQL, dataSourceObjId, objId, atime, 5, full_description.c_str(), escaped_path, short_desc.c_str())
-        || addMACTimeEvent(zSQL, dataSourceObjId, objId, crtime, 6, full_description.c_str(), escaped_path, short_desc.c_str())
-        || addMACTimeEvent(zSQL, dataSourceObjId, objId, ctime, 7, full_description.c_str(), escaped_path, short_desc.c_str()))
-    {
-        free(name);
-        free(escaped_path);
-        sqlite3_free(zSQL);
-        return 1;
-    }
+	if (!TSK_FS_ISDOT(name)) {
+		if (addMACTimeEvent(zSQL, dataSourceObjId, objId, mtime, 4, full_description.c_str(), escaped_path, short_desc.c_str())
+			|| addMACTimeEvent(zSQL, dataSourceObjId, objId, atime, 5, full_description.c_str(), escaped_path, short_desc.c_str())
+			|| addMACTimeEvent(zSQL, dataSourceObjId, objId, crtime, 6, full_description.c_str(), escaped_path, short_desc.c_str())
+			|| addMACTimeEvent(zSQL, dataSourceObjId, objId, ctime, 7, full_description.c_str(), escaped_path, short_desc.c_str()))
+		{
+			free(name);
+			free(escaped_path);
+			sqlite3_free(zSQL);
+			return 1;
+		}
+	}
 
     //if dir, update parent id cache (do this before objId may be changed creating the slack file)
     if (TSK_FS_IS_DIR_META(meta_type))
