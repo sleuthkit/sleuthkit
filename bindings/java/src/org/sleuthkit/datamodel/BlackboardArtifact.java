@@ -1149,8 +1149,8 @@ public class BlackboardArtifact implements Content {
 		/**
 		 * A SSID
 		 */
-		TSK_SSID(42, "TSK_SSID",  //NON-NLS
-				bundle.getString("BlackboardArtifact.tskSSID.text"));
+		TSK_WIFI_NETWORK(42, "TSK_WIFI_NETWORK",  //NON-NLS
+				bundle.getString("BlackboardArtifact.tskWIFINetwork.text"));
 		
 		private final String label;
 		private final int typeId;
