@@ -1247,29 +1247,30 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
 
 
 
+	if (!TSK_FS_ISDOT(name)) {
+		char* full_desc_sql = PQescapeLiteral(conn, full_description.c_str(), strlen(full_description.c_str()));
+		char* med_desc_sql = PQescapeLiteral(conn, escaped_path, strlen(escaped_path));
+		char* short_desc_sql = PQescapeLiteral(conn, short_desc.c_str(), strlen(short_desc.c_str()));
+		if (addMACTimeEvent(zSQL, dataSourceObjId, objId, mtime, 4, full_desc_sql, med_desc_sql, short_desc_sql)
+			|| addMACTimeEvent(zSQL, dataSourceObjId, objId, atime, 5, full_desc_sql, med_desc_sql, short_desc_sql)
+			|| addMACTimeEvent(zSQL, dataSourceObjId, objId, crtime, 6, full_desc_sql, med_desc_sql, short_desc_sql)
+			|| addMACTimeEvent(zSQL, dataSourceObjId, objId, ctime, 7, full_desc_sql, med_desc_sql, short_desc_sql))
+		{
+			free(escaped_path);
+			PQfreemem(name_sql);
+			PQfreemem(escaped_path_sql);
+			PQfreemem(extension_sql);
+			free(zSQL_dynamic);
+			PQfreemem(full_desc_sql);
+			PQfreemem(med_desc_sql);
+			PQfreemem(short_desc_sql);
+			return 1;
+		}
 
-	char* full_desc_sql = PQescapeLiteral(conn, full_description.c_str(), strlen(full_description.c_str()));
-	char* med_desc_sql = PQescapeLiteral(conn, escaped_path, strlen(escaped_path));
-	char* short_desc_sql = PQescapeLiteral(conn, short_desc.c_str(), strlen(short_desc.c_str()));
-	if (addMACTimeEvent(zSQL, dataSourceObjId, objId, mtime, 4, full_desc_sql, med_desc_sql, short_desc_sql)
-		|| addMACTimeEvent(zSQL, dataSourceObjId, objId, atime, 5, full_desc_sql, med_desc_sql, short_desc_sql)
-		|| addMACTimeEvent(zSQL, dataSourceObjId, objId, crtime, 6, full_desc_sql, med_desc_sql, short_desc_sql)
-		|| addMACTimeEvent(zSQL, dataSourceObjId, objId, ctime, 7, full_desc_sql, med_desc_sql, short_desc_sql))
-	{
-		free(escaped_path);
-		PQfreemem(name_sql);
-		PQfreemem(escaped_path_sql);
-		PQfreemem(extension_sql);
-		free(zSQL_dynamic);
 		PQfreemem(full_desc_sql);
 		PQfreemem(med_desc_sql);
 		PQfreemem(short_desc_sql);
-		return 1;
 	}
-
-	PQfreemem(full_desc_sql);
-	PQfreemem(med_desc_sql);
-	PQfreemem(short_desc_sql);
 
 
     //if dir, update parent id cache (do this before objId may be changed creating the slack file)
