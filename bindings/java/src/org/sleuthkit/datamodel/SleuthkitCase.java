@@ -9496,6 +9496,7 @@ public class SleuthkitCase {
 	abstract class CaseDbConnection {
 
 		static final int SLEEP_LENGTH_IN_MILLISECONDS = 5000;
+		static final int MAX_RETRIES = 20; //MAX_RETRIES * SLEEP_LENGTH_IN_MILLESECONDS = max time to hang attempting connection
 
 		private class CreateStatement implements DbCommand {
 
@@ -9831,16 +9832,19 @@ public class SleuthkitCase {
 
 		@Override
 		void executeCommand(DbCommand command) throws SQLException {
+			int retryCounter = 0;
 			while (true) {
 				try {
 					command.execute(); // Perform the operation
 					break;
 				} catch (SQLException ex) {
-					if (ex.getErrorCode() == SQLITE_BUSY_ERROR || ex.getErrorCode() == DATABASE_LOCKED_ERROR) {
+					if ((ex.getErrorCode() == SQLITE_BUSY_ERROR || ex.getErrorCode() == DATABASE_LOCKED_ERROR) && retryCounter < MAX_RETRIES) {
 						try {
+							
 							// We do not notify of error here, as this is not an
 							// error condition. It is likely a temporary busy or
 							// locked issue and we will retry.
+							retryCounter++;
 							Thread.sleep(SLEEP_LENGTH_IN_MILLISECONDS);
 						} catch (InterruptedException exp) {
 							Logger.getLogger(SleuthkitCase.class.getName()).log(Level.WARNING, "Unexpectedly unable to wait for database.", exp);
