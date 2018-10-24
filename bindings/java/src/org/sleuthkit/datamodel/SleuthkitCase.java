@@ -1662,7 +1662,7 @@ public class SleuthkitCase {
 			statement.execute("CREATE TABLE tsk_event_types ("
 					+ " event_type_id " + primaryKeyType + " PRIMARY KEY, "
 					+ " display_name TEXT UNIQUE NOT NULL, "
-					+ " super_type_id INTEGER REFERENCES tsk_event_types )");
+					+ " super_type_id INTEGER REFERENCES tsk_event_types(event_type_id) )");
 			statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
 					+ " values( 0, 'Event Types', null)");
 			statement.execute("insert into tsk_event_types(event_type_id, display_name, super_type_id)"
