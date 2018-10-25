@@ -369,6 +369,19 @@ public class Image extends AbstractContent implements DataSource {
 	}
 
 	/**
+	 * Set the name for this data source.
+	 * 
+	 * @param sleuthkitCase The current case
+	 * @param newName       The new name for the data source
+	 * 
+	 * @throws TskCoreException Thrown if an error occurs while updating the database
+	 */
+	@Override
+	public void setDisplayName(SleuthkitCase sleuthkitCase, String newName) throws TskCoreException {
+		sleuthkitCase.setImageName(newName, getId());
+	}
+	
+	/**
 	 * Gets the size of the contents of the data source in bytes. This size can
 	 * change as archive files within the data source are expanded, files are
 	 * carved, etc., and is different from the size of the data source as
