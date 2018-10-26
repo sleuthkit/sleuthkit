@@ -43,12 +43,11 @@ public interface DataSource extends Content {
 	/**
 	 * Set the name for this data source.
 	 * 
-	 * @param sleuthkitCase The current case
 	 * @param newName       The new name for the data source
 	 * 
 	 * @throws TskCoreException Thrown if an error occurs while updating the database
 	 */
-	void setDisplayName(SleuthkitCase sleuthkitCase, String newName) throws TskCoreException;
+	void setDisplayName(String newName) throws TskCoreException;
 
 	/**
 	 * Gets the size of the contents of the data source in bytes. This size can

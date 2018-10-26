@@ -371,14 +371,13 @@ public class Image extends AbstractContent implements DataSource {
 	/**
 	 * Set the name for this data source.
 	 * 
-	 * @param sleuthkitCase The current case
 	 * @param newName       The new name for the data source
 	 * 
 	 * @throws TskCoreException Thrown if an error occurs while updating the database
 	 */
 	@Override
-	public void setDisplayName(SleuthkitCase sleuthkitCase, String newName) throws TskCoreException {
-		sleuthkitCase.setImageName(newName, getId());
+	public void setDisplayName(String newName) throws TskCoreException {
+		this.getSleuthkitCase().setImageName(newName, getId());
 	}
 	
 	/**

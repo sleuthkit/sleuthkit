@@ -111,14 +111,13 @@ public class LocalFilesDataSource extends VirtualDirectory implements DataSource
 	/**
 	 * Set the name for this data source.
 	 * 
-	 * @param sleuthkitCase The current case
 	 * @param newName       The new name for the data source
 	 * 
 	 * @throws TskCoreException Thrown if an error occurs while updating the database
 	 */
 	@Override
-	public void setDisplayName(SleuthkitCase sleuthkitCase, String newName) throws TskCoreException {
-		sleuthkitCase.setFileName(newName, objectId);
+	public void setDisplayName(String newName) throws TskCoreException {
+		this.getSleuthkitCase().setFileName(newName, objectId);
 	}
 
 	/**
