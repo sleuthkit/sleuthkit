@@ -2336,9 +2336,9 @@ hfs_dinode_copy(HFS_INFO * a_hfs, const HFS_ENTRY * a_hfs_entry,
     // that case, we want to make sure that a_fs_file points consistently to the target of the
     // link.
 
-    //if (a_fs_file->name != NULL) {
-    //    a_fs_file->name->meta_addr = a_fs_meta->addr;
-    //}
+    if (a_fs_file->name != NULL) {
+        a_fs_file->name->meta_addr = a_fs_meta->addr;
+    }
 
     /* TODO @@@ could fill in name2 with this entry's name and parent inode
        from Catalog entry */
