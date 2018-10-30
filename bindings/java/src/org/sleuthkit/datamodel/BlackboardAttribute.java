@@ -1295,13 +1295,20 @@ public class BlackboardAttribute {
 		TSK_ID(124, "TSK_ID", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskId.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_SSID(125, "TSK_SSID", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskSsid.text"),
+						TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_BSSID(126, "TSK_BSSID", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskBssid.text"),
+						TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+ 
 		/**
 		 * The event type of a TSK_TL_EVENT artifact. The value should be the id
 		 * of the EventType in the tsk_event_types table.
 		 */
-		TSK_TL_EVENT_TYPE(125, "TSK_TL_EVENT_TYPE", //NON-NLS
+		TSK_TL_EVENT_TYPE(127, "TSK_TL_EVENT_TYPE", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskTLEventType.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG);
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG); 
 
 		private final int typeID;
 		private final String typeName;
