@@ -82,7 +82,7 @@ public abstract class TimelineFilter {
 	 * @return an SQL where clause (without the "where") corresponding to this
 	 *         filter
 	 */
-	 abstract String getSQLWhere(TimelineManager manager);
+	abstract String getSQLWhere(TimelineManager manager);
 
 	public abstract TimelineFilter copyOf();
 
@@ -725,7 +725,7 @@ public abstract class TimelineFilter {
 
 		@Override
 		public String getDisplayName() {
-			return getDataSourceName();
+			return getDataSourceName() + "(ID: " + getDataSourceID() + ")";
 		}
 
 		@Override

@@ -1147,9 +1147,14 @@ public class BlackboardArtifact implements Content {
 		TSK_OBJECT_DETECTED(41, "TSK_OBJECT_DETECTED", //NON-NLS
 				bundle.getString("BlackboardArtifact.tskObjectDetected.text")),
 		/**
+	         * A wireless network.
+		 */
+		TSK_TL_EVENT(42, "TSK_WIFI_NETWORK", //NON-NLS
+				bundle.getString("BlackboardArtifact.tskWIFINetwork.text")),
+		/**
 		 * A generic (timeline) event.
 		 */
-		TSK_TL_EVENT(42, "TSK_TL_EVENT", //NON-NLS
+		TSK_WIFI_NETWORK(43, "TSK_TL_EVENT",  //NON-NLS
 				bundle.getString("BlackboardArtifact.tskTLEvent.text"));
 
 		private final String label;
@@ -1207,6 +1212,8 @@ public class BlackboardArtifact implements Content {
 		/**
 		 * Gets the artifact type enum value that corresponds to a given type
 		 * id.
+		 * This method should only be used when the id is known to be one of the
+		 * built-in types - otherwise use getArtifactType() in SleuthkitCase.
 		 *
 		 * @param id The type id.
 		 *

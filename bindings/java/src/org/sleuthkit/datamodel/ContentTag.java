@@ -29,8 +29,8 @@ public class ContentTag extends Tag {
 	private final long endByteOffset;
 
 	// Clients of the org.sleuthkit.datamodel package should not directly create these objects.
-	ContentTag(long id, Content content, TagName name, String comment, long beginByteOffset, long endByteOffset, String userName) {
-		super(id, name, comment, userName);
+	ContentTag(long tagID, Content content, TagName name, String comment, long beginByteOffset, long endByteOffset, String userName) {
+		super(tagID, name, comment, userName);
 		this.content = content;
 		this.beginByteOffset = beginByteOffset;
 		this.endByteOffset = endByteOffset;

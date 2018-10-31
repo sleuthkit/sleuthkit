@@ -51,7 +51,7 @@ public final class Account {
 		public static final Account.Type FACEBOOK = new Type("FACEBOOK", "Facebook");
 		public static final Account.Type TWITTER = new Type("TWITTER", "Twitter");
 		public static final Account.Type INSTAGRAM = new Type("INSTAGRAM", "Instagram");
-		public static final Account.Type WHATSAPP = new Type("WHATSAPP", "Facebook");
+		public static final Account.Type WHATSAPP = new Type("WHATSAPP", "WhatsApp");
 		public static final Account.Type MESSAGING_APP = new Type("MESSAGING_APP", "MessagingApp");
 		public static final Account.Type WEBSITE = new Type("WEBSITE", "Website");
 
