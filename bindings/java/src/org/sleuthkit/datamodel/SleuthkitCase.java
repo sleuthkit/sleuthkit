@@ -4808,16 +4808,17 @@ public class SleuthkitCase {
 		try {
 			VirtualDirectory newVD = addVirtualDirectory(parentId, directoryName, localTrans);
 			localTrans.commit();
+			localTrans = null;
 			return newVD;
-		} catch (TskCoreException ex) {
-			try {
-				localTrans.rollback();
-			} catch (TskCoreException ex2) {
-				logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
-			}
-			throw ex;
 		} finally {
-			releaseSingleUserCaseWriteLock();
+			// NOTE: write lock will be released by transaction
+			if (null != localTrans) {
+				try {
+					localTrans.rollback();
+				} catch (TskCoreException ex2) {
+					logger.log(Level.SEVERE, "Failed to rollback transaction after exception", ex2);
+				}
+			}
 		}
 	}
 
@@ -5328,32 +5329,23 @@ public class SleuthkitCase {
 			}
 
 			transaction.commit();
+			transaction = null;
 			return fileRangeLayoutFiles;
 
 		} catch (SQLException ex) {
-			if (null != transaction) {
-				try {
-					transaction.rollback();
-				} catch (TskCoreException ex2) {
-					logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
-				}
-			}
 			throw new TskCoreException("Failed to add layout files to case database", ex);
-
-		} catch (TskCoreException ex) {
-			if (null != transaction) {
-				try {
-					transaction.rollback();
-				} catch (TskCoreException ex2) {
-					logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
-				}
-			}
-			throw ex;
-
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
+			
 			// NOTE: write lock will be released by transaction
+			if (null != transaction) {
+				try {
+					transaction.rollback();
+				} catch (TskCoreException ex2) {
+					logger.log(Level.SEVERE, "Failed to rollback transaction after exception", ex2);
+				}
+			}
 		}
 	}
 
@@ -5520,38 +5512,26 @@ public class SleuthkitCase {
 			}
 
 			transaction.commit();
+			transaction = null;
 			return carvedFiles;
 
 		} catch (SQLException ex) {
-			if (null != transaction) {
-				try {
-					transaction.rollback();
-				} catch (TskCoreException ex2) {
-					logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
-				}
-				if (0 != newCacheKey) {
-					rootIdsToCarvedFileDirs.remove(newCacheKey);
-				}
-			}
 			throw new TskCoreException("Failed to add carved files to case database", ex);
-
-		} catch (TskCoreException ex) {
-			if (null != transaction) {
-				try {
-					transaction.rollback();
-				} catch (TskCoreException ex2) {
-					logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
-				}
-				if (0 != newCacheKey) {
-					rootIdsToCarvedFileDirs.remove(newCacheKey);
-				}
-			}
-			throw ex;
-
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
+			
 			// NOTE: write lock will be released by transaction
+			if (null != transaction) {
+				try {
+					transaction.rollback();
+				} catch (TskCoreException ex2) {
+					logger.log(Level.SEVERE, "Failed to rollback transaction after exception", ex2);
+				}
+				if (0 != newCacheKey) {
+					rootIdsToCarvedFileDirs.remove(newCacheKey);
+				}
+			}
 		}
 	}
 
@@ -5809,14 +5789,16 @@ public class SleuthkitCase {
 		try {
 			LocalFile created = addLocalFile(fileName, localPath, size, ctime, crtime, atime, mtime, isFile, encodingType, parent, localTrans);
 			localTrans.commit();
+			localTrans = null;
 			return created;
-		} catch (TskCoreException ex) {
-			try {
-				localTrans.rollback();
-			} catch (TskCoreException ex2) {
-				logger.log(Level.SEVERE, String.format("Failed to rollback transaction after exception: %s", ex.getMessage()), ex2);
+		} finally {
+			if (null != localTrans) {
+				try {
+					localTrans.rollback();
+				} catch (TskCoreException ex2) {
+					logger.log(Level.SEVERE, "Failed to rollback transaction after exception", ex2);
+				}
 			}
-			throw ex;
 		}
 	}
 
