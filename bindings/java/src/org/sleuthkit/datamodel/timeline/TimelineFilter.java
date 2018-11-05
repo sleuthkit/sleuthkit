@@ -18,7 +18,7 @@
  */
 package org.sleuthkit.datamodel.timeline;
 
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -43,28 +43,6 @@ import org.sleuthkit.datamodel.TskData;
  * selected, disabled and active (selected and not disabled) properties.
  */
 public abstract class TimelineFilter {
-
-	/**
-	 * Get a filter that is the intersection of the given filters
-	 *
-	 * @param filters a set of filters to intersect
-	 *
-	 * @return a filter that is the intersection of the given filters
-	 */
-	static TimelineFilter intersect(List<TimelineFilter> filters) {
-		return new IntersectionFilter<>(filters);
-	}
-
-	/**
-	 * Get a filter that is the intersection of the given filters
-	 *
-	 * @param filters a set of filters to intersect
-	 *
-	 * @return a filter that is the intersection of the given filters
-	 */
-	static TimelineFilter intersect(TimelineFilter[] filters) {
-		return intersect(Arrays.asList(filters));
-	}
 
 	/**
 	 * get the display name of this filter
@@ -398,21 +376,37 @@ public abstract class TimelineFilter {
 			return textFilter;
 		}
 
-		public RootFilter(HideKnownFilter knownFilter, TagsFilter tagsFilter, HashHitsFilter hashFilter, TextFilter textFilter, TypeFilter typeFilter, DataSourcesFilter dataSourceFilter, Set<TimelineFilter> annonymousSubFilters) {
-			super(FXCollections.observableArrayList(textFilter, knownFilter, dataSourceFilter, tagsFilter, hashFilter, typeFilter));
+		public RootFilter(HideKnownFilter knownFilter, TagsFilter tagsFilter, HashHitsFilter hashFilter, TextFilter textFilter, TypeFilter typeFilter, DataSourcesFilter dataSourcesFilter, Collection<TimelineFilter> annonymousSubFilters) {
+			super(FXCollections.observableArrayList(textFilter, knownFilter, dataSourcesFilter, tagsFilter, hashFilter, typeFilter));
 			getSubFilters().removeIf(Objects::isNull);
 			this.knownFilter = knownFilter;
 			this.tagsFilter = tagsFilter;
 			this.hashFilter = hashFilter;
 			this.textFilter = textFilter;
 			this.typeFilter = typeFilter;
-			this.dataSourcesFilter = dataSourceFilter;
-			getSubFilters().addAll(annonymousSubFilters);
+			this.dataSourcesFilter = dataSourcesFilter;
+			annonymousSubFilters.stream().filter(subFilter
+					-> !(subFilter == null
+					|| subFilter.equals(knownFilter)
+					|| subFilter.equals(tagsFilter)
+					|| subFilter.equals(hashFilter)
+					|| subFilter.equals(typeFilter)
+					|| subFilter.equals(textFilter)
+					|| subFilter.equals(dataSourcesFilter)))
+					.map(TimelineFilter::copyOf).forEach(getSubFilters()::add);
 		}
 
 		@Override
 		public RootFilter copyOf() {
-			Set<TimelineFilter> annonymousSubFilters = getSubFilters().stream().filter((TimelineFilter subFilter) -> !(subFilter.equals(knownFilter) || subFilter.equals(tagsFilter) || subFilter.equals(hashFilter) || subFilter.equals(typeFilter) || subFilter.equals(textFilter) || subFilter.equals(dataSourcesFilter))).map(TimelineFilter::copyOf).collect(Collectors.toSet());
+			Set<TimelineFilter> annonymousSubFilters
+					= getSubFilters().stream().filter(subFilter
+							-> !(subFilter.equals(knownFilter)
+					|| subFilter.equals(tagsFilter)
+					|| subFilter.equals(hashFilter)
+					|| subFilter.equals(typeFilter)
+					|| subFilter.equals(textFilter)
+					|| subFilter.equals(dataSourcesFilter)))
+							.map(TimelineFilter::copyOf).collect(Collectors.toSet());
 			return new RootFilter(knownFilter.copyOf(), tagsFilter.copyOf(), hashFilter.copyOf(), textFilter.copyOf(), typeFilter.copyOf(), dataSourcesFilter.copyOf(), annonymousSubFilters);
 		}
 
