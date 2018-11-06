@@ -7505,6 +7505,58 @@ public class SleuthkitCase {
 		}
 		return true;
 	}
+	
+	/**
+	 * Set the name of an object in the tsk_files table.
+	 * 
+	 * @param name  The new name for the object
+	 * @param objId The object ID
+	 * 
+	 * @throws TskCoreException If there is an error updating the case database.
+	 */
+	void setFileName (String name, long objId) throws TskCoreException {
+
+		CaseDbConnection connection = connections.getConnection();
+		acquireSingleUserCaseWriteLock();
+		try {
+			PreparedStatement preparedStatement = connection.getPreparedStatement(SleuthkitCase.PREPARED_STATEMENT.UPDATE_FILE_NAME);
+			preparedStatement.clearParameters();
+			preparedStatement.setString(1, name);
+			preparedStatement.setLong(2, objId);
+			connection.executeUpdate(preparedStatement);
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error updating while the name for object ID %d to %s", objId, name), ex);
+		} finally {
+			connection.close();
+			releaseSingleUserCaseWriteLock();
+		}	
+	}
+	
+	/**
+	 * Set the display name of an image in the tsk_image_info table.
+	 * 
+	 * @param name  The new name for the image
+	 * @param objId The object ID
+	 * 
+	 * @throws TskCoreException If there is an error updating the case database.
+	 */
+	void setImageName (String name, long objId) throws TskCoreException {
+
+		CaseDbConnection connection = connections.getConnection();
+		acquireSingleUserCaseWriteLock();
+		try {
+			PreparedStatement preparedStatement = connection.getPreparedStatement(SleuthkitCase.PREPARED_STATEMENT.UPDATE_IMAGE_NAME);
+			preparedStatement.clearParameters();
+			preparedStatement.setString(1, name);
+			preparedStatement.setLong(2, objId);
+			connection.executeUpdate(preparedStatement);
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error updating while the name for object ID %d to %s", objId, name), ex);
+		} finally {
+			connection.close();
+			releaseSingleUserCaseWriteLock();
+		}	
+	}
 
 	/**
 	 * Stores the MIME type of a file in the case database and updates the MIME
@@ -9354,7 +9406,9 @@ public class SleuthkitCase {
 				+ "SELECT old.tag_name_id, new.display_name, new.description, new.color, new.knownStatus "
 				+ "FROM new LEFT JOIN tag_names AS old ON new.display_name = old.display_name"),
 		SELECT_EXAMINER_BY_ID("SELECT * FROM tsk_examiners WHERE examiner_id = ?"),
-		SELECT_EXAMINER_BY_LOGIN_NAME("SELECT * FROM tsk_examiners WHERE login_name = ?");
+		SELECT_EXAMINER_BY_LOGIN_NAME("SELECT * FROM tsk_examiners WHERE login_name = ?"),
+		UPDATE_FILE_NAME("UPDATE tsk_files SET name = ? WHERE obj_id = ?"),
+		UPDATE_IMAGE_NAME("UPDATE tsk_image_info SET display_name = ? WHERE obj_id = ?");
 		private final String sql;
 
 		private PREPARED_STATEMENT(String sql) {
