@@ -18,23 +18,21 @@
  */
 package org.sleuthkit.datamodel.timeline;
 
-import java.util.Collection;
-import java.util.Arrays;
 import static java.util.Arrays.asList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javafx.beans.property.Property;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import static org.apache.commons.lang3.ObjectUtils.notEqual;
 import org.apache.commons.lang3.StringUtils;
 import org.sleuthkit.datamodel.DescriptionLoD;
 import org.sleuthkit.datamodel.TagName;
@@ -261,7 +259,7 @@ public abstract class TimelineFilter {
 				return false;
 			}
 			final EventTypeFilter other = (EventTypeFilter) obj;
-			if (!Objects.equals(this.eventType, other.eventType)) {
+			if (notEqual(this.eventType, other.eventType)) {
 				return false;
 			}
 			return areSubFiltersEqual(this, other);
@@ -411,7 +409,9 @@ public abstract class TimelineFilter {
 					textFilter, typeFilter, dataSourcesFilter, fileTypesFilter));
 			namedSubFilters.removeIf(Objects::isNull);
 			annonymousSubFilters.stream().
+					filter(Objects::nonNull).
 					filter(this::isNamedSubFilter).
+					map(TimelineFilter::copyOf).
 					forEach(anonymousFilter -> getSubFilters().add(anonymousFilter));
 		}
 
@@ -649,7 +649,7 @@ public abstract class TimelineFilter {
 			if (this.descriptionLoD != other.descriptionLoD) {
 				return false;
 			}
-			if (!Objects.equals(this.description, other.description)) {
+			if (notEqual(this.description, other.description)) {
 				return false;
 			}
 			return this.filterMode == other.filterMode;
@@ -909,6 +909,32 @@ public abstract class TimelineFilter {
 			getSubFilters().forEach(fileTypeFilter -> filterCopy.addSubFilter(fileTypeFilter.copyOf()));
 			return filterCopy;
 		}
+
+		@Override
+		public int hashCode() {
+			int hash = 7;
+			hash = 29 * hash + Objects.hashCode(this.type);
+			return hash;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) {
+				return true;
+			}
+			if (obj == null) {
+				return false;
+			}
+			if (getClass() != obj.getClass()) {
+				return false;
+			}
+			final FileTypeFilter other = (FileTypeFilter) obj;
+			if (notEqual(this.type, other.type)) {
+				return false;
+			}
+			return areSubFiltersEqual(this, other);
+		}
+
 	}
 
 	public static class FileSubTypeFilter extends TimelineFilter {
@@ -929,12 +955,42 @@ public abstract class TimelineFilter {
 
 		@Override
 		String getSQLWhere(TimelineManager manager) {
-			return " (tsk_events.mime_type = " + type + "/" + subType + " ) "; //NON-NLS	 
+			return " (tsk_events.mime_type = '" + type + "/" + subType + "' ) "; //NON-NLS	 
 		}
 
 		@Override
 		public FileSubTypeFilter copyOf() {
 			return new FileSubTypeFilter(type, subType);
+		}
+
+		@Override
+		public int hashCode() {
+			int hash = 5;
+			hash = 13 * hash + Objects.hashCode(this.type);
+			hash = 13 * hash + Objects.hashCode(this.subType);
+			return hash;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) {
+				return true;
+			}
+			if (obj == null) {
+				return false;
+			}
+			if (getClass() != obj.getClass()) {
+				return false;
+			}
+			final FileSubTypeFilter other = (FileSubTypeFilter) obj;
+			if (notEqual(this.type, other.type)) {
+				return false;
+			}
+
+			if (notEqual(this.subType, other.subType)) {
+				return false;
+			}
+			return true;
 		}
 	}
 }

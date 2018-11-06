@@ -239,7 +239,7 @@ public final class TimelineManager {
 		boolean needsTags = tagsFilter != null && tagsFilter.hasSubFilters();
 		TimelineFilter.HashHitsFilter hashHitsFilter = filter.getHashHitsFilter();
 		boolean needsHashSets = hashHitsFilter != null && hashHitsFilter.hasSubFilters();
-		String query = "SELECT tsk_events.event_id AS event_id FROM" + getAugmentedEventsTablesSQL(filter)
+		String query = "SELECT tsk_events.event_id AS event_id FROM " + getAugmentedEventsTablesSQL(filter)
 				+ " WHERE time >=  " + startTime + " AND time <" + endTime + " AND " + getSQLWhere(filter) + " ORDER BY time ASC"; // NON-NLS
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
@@ -967,36 +967,57 @@ public final class TimelineManager {
 	 *         columns required by the filters.
 	 */
 	static public String getAugmentedEventsTablesSQL(boolean needTags, boolean needHashSets, boolean needsMimeTypes) {
-		String result = "";
-		
-		
+		String table = "tsk_events";
+
 		String coreColumns = "event_id, data_source_obj_id, tsk_events.file_obj_id, tsk_events.artifact_id,"
 				+ "			time, sub_type, base_type, full_description, med_description, "
 				+ "			short_description, hash_hit, tagged ";
 		String tagColumns = " , tag_name_id, tag_id ";
-		String joinedWithTags = needTags
-				? "(" + " SELECT " + coreColumns + tagColumns
-				+ "		from tsk_events LEFT OUTER JOIN content_tags ON (content_tags.obj_id = tsk_events.file_obj_id) "
-				+ "	UNION ALL "
-				+ "	SELECT " + coreColumns + tagColumns
-				+ "		FROM tsk_events LEFT OUTER JOIN blackboard_artifact_tags ON (blackboard_artifact_tags.artifact_id = tsk_events.artifact_id)"
-				+ " ) AS tsk_events"
-				: " tsk_events ";
+		String mimeColumn = " , mime_type ";
+		String hashSetColumn = " , hash_set_name ";
+
+		String columns = coreColumns;
+		if (needTags) {
+			columns += tagColumns;
+		}
 		if (needHashSets) {
-			result = " ( SELECT " + coreColumns + (needTags ? tagColumns : "") + " , hash_set_name "
-					+ " FROM " + joinedWithTags + " LEFT OUTER JOIN ( "
+			columns += hashSetColumn;
+		}
+		if (needsMimeTypes) {
+			columns += mimeColumn;
+		}
+
+		if (needTags) {
+			table = "( SELECT * "
+					+ "		FROM tsk_events LEFT OUTER JOIN content_tags ON (content_tags.obj_id = tsk_events.file_obj_id) "
+					+ "	UNION ALL "
+					+ "	SELECT * "
+					+ "		FROM tsk_events LEFT OUTER JOIN blackboard_artifact_tags ON (blackboard_artifact_tags.artifact_id = tsk_events.artifact_id)"
+					+ " ) AS tsk_events";
+		}
+
+		if (needHashSets) {
+			table = " ( SELECT * "
+					+ " FROM " + table + " LEFT OUTER JOIN ( "
 					+ "		SELECT DISTINCT value_text AS hash_set_name, obj_id  "
 					+ "		FROM blackboard_artifacts"
 					+ "		JOIN blackboard_attributes ON (blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id)"
 					+ "		JOIN blackboard_artifact_types ON( blackboard_artifacts.artifact_type_id = blackboard_artifact_types.artifact_type_id)"
 					+ "		WHERE  blackboard_artifact_types.artifact_type_id = " + TSK_HASHSET_HIT.getTypeID()
 					+ "		AND blackboard_attributes.attribute_type_id = " + TSK_SET_NAME.getTypeID() + ") AS hash_set_hits"
-					+ "	ON ( tsk_events.file_obj_id = hash_set_hits.obj_id)) AS tsk_events";
-		} else {
-			result = joinedWithTags;
+					+ "	ON ( tsk_events.file_obj_id = hash_set_hits.obj_id)"
+					+ ") AS tsk_events";
 		}
-		System.out.println(result);
-		return result;
+
+		if (needsMimeTypes) {
+			table = " ( SELECT * "
+					+ "		FROM " + table + " LEFT OUTER JOIN tsk_files "
+					+ "	ON (tsk_events.file_obj_id == tsk_files.obj_id)"
+					+ ")  AS tsk_events";
+		}
+		System.out.println(table);
+
+		return table;
 	}
 
 	/**
