@@ -48,7 +48,6 @@ import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EV
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TL_EVENT_TYPE;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
-import static org.sleuthkit.datamodel.SleuthkitCase.closeStatement;
 import static org.sleuthkit.datamodel.SleuthkitCase.escapeSingleQuotes;
 import static org.sleuthkit.datamodel.StringUtils.joinAsStrings;
 import org.sleuthkit.datamodel.timeline.ArtifactEventType;
@@ -235,10 +234,6 @@ public final class TimelineManager {
 
 		ArrayList<Long> resultIDs = new ArrayList<>();
 
-		TimelineFilter.TagsFilter tagsFilter = filter.getTagsFilter();
-		boolean needsTags = tagsFilter != null && tagsFilter.hasSubFilters();
-		TimelineFilter.HashHitsFilter hashHitsFilter = filter.getHashHitsFilter();
-		boolean needsHashSets = hashHitsFilter != null && hashHitsFilter.hasSubFilters();
 		String query = "SELECT tsk_events.event_id AS event_id FROM " + getAugmentedEventsTablesSQL(filter)
 				+ " WHERE time >=  " + startTime + " AND time <" + endTime + " AND " + getSQLWhere(filter) + " ORDER BY time ASC"; // NON-NLS
 		sleuthkitCase.acquireSingleUserCaseReadLock();
@@ -461,6 +456,8 @@ public final class TimelineManager {
 	 *
 	 * @return A List of event IDs for the events that are derived from the
 	 *         given artifact.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public List<Long> getEventIDsForArtifact(BlackboardArtifact artifact) throws TskCoreException {
 		ArrayList<Long> eventIDs = new ArrayList<>();
@@ -495,6 +492,8 @@ public final class TimelineManager {
 	 *
 	 * @return A List of event IDs for the events that are derived from the
 	 *         given file.
+	 *
+	 * @throws org.sleuthkit.datamodel.TskCoreException
 	 */
 	public List<Long> getEventIDsForFile(Content file, boolean includeDerivedArtifacts) throws TskCoreException {
 		ArrayList<Long> eventIDs = new ArrayList<>();
@@ -948,50 +947,34 @@ public final class TimelineManager {
 
 	/**
 	 * Get an SQL expression that produces an events table augmented with the
-	 * columsn required by the filters: The union of the events table joined to
+	 * columns required by the filters: The union of the events table joined to
 	 * the content and blackboard artifacts tags tables, if necessary, then
-	 * joined to a query that selects hash set hits, if necessary. Other wise
-	 * just return "events".
+	 * joined to a query that selects hash set hits, if necessary. Then joined
+	 * to the tsk_files table for mime_types if necessary. If all flags are
+	 * false, just return "events".
 	 *
-	 * Omitting details it is: SELECT <all relevant columns> FROM events LEFT
-	 * JOIN (tsk_events JOIN content_tags UNION ALL tsk_events JOIN
-	 * blackboard_artifact_tags) left join SELECT <HASH_SET_HITS> from
-	 * <Blackboard artifacts and attributes>
-	 *
-	 * @param needTags     True if the filters require joining to the tags
-	 *                     tables.
-	 * @param needHashSets True if the filters require joining to the hash set
-	 *                     sub query.
+	 * @param needTags       True if the Sfilters require joining to the tags
+	 *                       tables.
+	 * @param needHashSets   True if the filters require joining to the hash set
+	 *                       sub query.
+	 * @param needsMimeTypes True if the filters require joining to the
+	 *                       tsk_files table for the mime_type.
 	 *
 	 * @return An SQL expresion that produces an events table augmented with the
 	 *         columns required by the filters.
 	 */
-	static public String getAugmentedEventsTablesSQL(boolean needTags, boolean needHashSets, boolean needsMimeTypes) {
+	static private String getAugmentedEventsTablesSQL(boolean needTags, boolean needHashSets, boolean needsMimeTypes) {
 		String table = "tsk_events";
 
-		String coreColumns = "event_id, data_source_obj_id, tsk_events.file_obj_id, tsk_events.artifact_id,"
+		String columns = "event_id, data_source_obj_id, tsk_events.file_obj_id, tsk_events.artifact_id,"
 				+ "			time, sub_type, base_type, full_description, med_description, "
-				+ "			short_description, hash_hit, tagged ";
-		String tagColumns = " , tag_name_id, tag_id ";
-		String mimeColumn = " , mime_type ";
-		String hashSetColumn = " , hash_set_name ";
-
-		String columns = coreColumns;
-		if (needTags) {
-			columns += tagColumns;
-		}
-		if (needHashSets) {
-			columns += hashSetColumn;
-		}
-		if (needsMimeTypes) {
-			columns += mimeColumn;
-		}
+				+ "			short_description, hash_hit, tagged , tag_name_id, tag_id ";
 
 		if (needTags) {
-			table = "( SELECT * "
+			table = "( SELECT " + columns
 					+ "		FROM tsk_events LEFT OUTER JOIN content_tags ON (content_tags.obj_id = tsk_events.file_obj_id) "
 					+ "	UNION ALL "
-					+ "	SELECT * "
+					+ "	SELECT " + columns
 					+ "		FROM tsk_events LEFT OUTER JOIN blackboard_artifact_tags ON (blackboard_artifact_tags.artifact_id = tsk_events.artifact_id)"
 					+ " ) AS tsk_events";
 		}
@@ -1015,7 +998,6 @@ public final class TimelineManager {
 					+ "	ON (tsk_events.file_obj_id == tsk_files.obj_id)"
 					+ ")  AS tsk_events";
 		}
-		System.out.println(table);
 
 		return table;
 	}

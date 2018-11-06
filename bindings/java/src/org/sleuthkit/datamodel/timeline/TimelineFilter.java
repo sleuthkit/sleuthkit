@@ -987,10 +987,7 @@ public abstract class TimelineFilter {
 				return false;
 			}
 
-			if (notEqual(this.subType, other.subType)) {
-				return false;
-			}
-			return true;
+			return Objects.equals(this.subType, other.subType);
 		}
 	}
 }
