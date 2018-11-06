@@ -133,7 +133,7 @@ public final class TimelineManager {
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		String query
 				= "SELECT tag_names.display_name AS display_name, COUNT(distinct tag_id) AS count FROM "
-				+ getAugmentedEventsTablesSQL(true, false)
+				+ getAugmentedEventsTablesSQL(true, false, false)
 				+ " JOIN tag_names ON (tsk_events.tag_name_id = tag_names.tag_name_id ) "
 				+ " WHERE event_id IN (" + StringUtils.buildCSVString(eventIDsWithTags) + ") "
 				+ " GROUP BY tag_names.tag_name_id";
@@ -168,12 +168,7 @@ public final class TimelineManager {
 		long start = timeRange.getStartMillis() / 1000;
 		long end = timeRange.getEndMillis() / 1000;
 		String sqlWhere = getSQLWhere(filter);
-
-		TimelineFilter.TagsFilter tagsFilter = filter.getTagsFilter();
-		boolean needsTags = null != tagsFilter && tagsFilter.hasSubFilters();
-		TimelineFilter.HashHitsFilter hashHitsFilter = filter.getHashHitsFilter();
-		boolean needsHashSets = null != hashHitsFilter && hashHitsFilter.hasSubFilters();
-		String augmentedEventsTablesSQL = getAugmentedEventsTablesSQL(needsTags, needsHashSets);
+		String augmentedEventsTablesSQL = getAugmentedEventsTablesSQL(filter);
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement stmt = con.createStatement(); //can't use prepared statement because of complex where clause
@@ -244,7 +239,7 @@ public final class TimelineManager {
 		boolean needsTags = tagsFilter != null && tagsFilter.hasSubFilters();
 		TimelineFilter.HashHitsFilter hashHitsFilter = filter.getHashHitsFilter();
 		boolean needsHashSets = hashHitsFilter != null && hashHitsFilter.hasSubFilters();
-		String query = "SELECT tsk_events.event_id AS event_id FROM" + getAugmentedEventsTablesSQL(needsTags, needsHashSets)
+		String query = "SELECT tsk_events.event_id AS event_id FROM" + getAugmentedEventsTablesSQL(filter)
 				+ " WHERE time >=  " + startTime + " AND time <" + endTime + " AND " + getSQLWhere(filter) + " ORDER BY time ASC"; // NON-NLS
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
@@ -490,8 +485,8 @@ public final class TimelineManager {
 	 * Get a List of event IDs for the events that are derived from the given
 	 * file.
 	 *
-	 * @param file                    The File / data source to get derived event IDs
-	 *                                for.
+	 * @param file                    The File / data source to get derived
+	 *                                event IDs for.
 	 * @param includeDerivedArtifacts If true, also get event IDs for events
 	 *                                derived from artifacts derived form this
 	 *                                file. If false, only gets events derived
@@ -663,7 +658,7 @@ public final class TimelineManager {
 			if (file != null) {
 				hasHashHits = file.getHashSetNames().isEmpty() == false;
 			}
-			
+
 			return Optional.of(addEvent(eventDescription.getTime(),
 					eventType,
 					artifact.getDataSourceObjectID(),
@@ -687,20 +682,24 @@ public final class TimelineManager {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param time
 	 * @param type
 	 * @param datasourceObjID
-	 * @param fileObjID Object ID of file associated with event (could be a data source)
-	 * @param artifactID  Artifact associated with the event or null if event is from a file. 
+	 * @param fileObjID        Object ID of file associated with event (could be
+	 *                         a data source)
+	 * @param artifactID       Artifact associated with the event or null if
+	 *                         event is from a file.
 	 * @param fullDescription
 	 * @param medDescription
 	 * @param shortDescription
 	 * @param hashHit
 	 * @param tagged
 	 * @param connection
+	 *
 	 * @return
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
 	private TimelineEvent addEvent(long time, EventType type, long datasourceObjID, long fileObjID,
 			Long artifactID, String fullDescription, String medDescription,
@@ -738,18 +737,21 @@ public final class TimelineManager {
 		} finally {
 			sleuthkitCase.releaseSingleUserCaseWriteLock();
 		}
-		
+
 		sleuthkitCase.fireTSKEvent(new EventAddedEvent(singleEvent));
 		return singleEvent;
 	}
 
 	/**
 	 * Get events that are associated with the file
-	 * 
+	 *
 	 * @param fileObjID
-	 * @param includeArtifacts true if results shoudl also include events from artifacts associated with the file
+	 * @param includeArtifacts true if results shoudl also include events from
+	 *                         artifacts associated with the file
+	 *
 	 * @return
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
 	private Set<Long> getEventIDs(long fileObjID, boolean includeArtifacts) throws TskCoreException {
 		HashSet<Long> eventIDs = new HashSet<>();
@@ -771,10 +773,13 @@ public final class TimelineManager {
 
 	/**
 	 * Get events that match both the file and artifact IDs
+	 *
 	 * @param fileObjID
 	 * @param artifactID
+	 *
 	 * @return
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
 	private Set<Long> getEventIDs(long fileObjID, Long artifactID) throws TskCoreException {
 		//TODO: inline this
@@ -799,7 +804,7 @@ public final class TimelineManager {
 	/**
 	 * Set any events with the given object and artifact ids as tagged.
 	 *
-	 * @param fileObjId   the obj_id that this tag applies to, the id of the
+	 * @param fileObjId  the obj_id that this tag applies to, the id of the
 	 *                   content that the artifact is derived from for artifact
 	 *                   tags
 	 * @param artifactID the artifact_id that this tag applies to, or null if
@@ -834,13 +839,11 @@ public final class TimelineManager {
 		return eventIDs;
 	}
 
-
-	
 	public Set<Long> setEventsHashed(long fileObjdId, boolean hashHits) throws TskCoreException {
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
 		Set<Long> eventIDs = getEventIDs(fileObjdId, true);
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
-			Statement updateStatement = con.createStatement();) {
+				Statement updateStatement = con.createStatement();) {
 			updateStatement.executeUpdate(
 					"UPDATE tsk_events SET " //NON-NLS
 					+ "                hash_hit = " + (hashHits ? 1 : 0) //NON-NLS
@@ -901,13 +904,10 @@ public final class TimelineManager {
 	public Map<EventType, Long> countEventsByType(Long startTime, final Long endTime, TimelineFilter.RootFilter filter, EventTypeZoomLevel zoomLevel) throws TskCoreException {
 		long adjustedEndTime = Objects.equals(startTime, endTime) ? endTime + 1 : endTime;
 		boolean useSubTypes = EventTypeZoomLevel.SUB_TYPE.equals(zoomLevel);	//do we want the root or subtype column of the databse
-		TimelineFilter.TagsFilter tagsFilter = filter.getTagsFilter();
-		boolean needsTags = tagsFilter != null && tagsFilter.hasSubFilters();
-		TimelineFilter.HashHitsFilter hashHitsFilter = filter.getHashHitsFilter();
-		boolean needsHashSets = hashHitsFilter != null && hashHitsFilter.hasSubFilters();
+
 		//get some info about the range of dates requested
 		String queryString = "SELECT count(DISTINCT tsk_events.event_id) AS count, " + typeColumnHelper(useSubTypes) //NON-NLS
-				+ " FROM " + getAugmentedEventsTablesSQL(needsTags, needsHashSets)
+				+ " FROM " + getAugmentedEventsTablesSQL(filter)
 				+ " WHERE time >= " + startTime + " AND time < " + adjustedEndTime + " AND " + getSQLWhere(filter) // NON-NLS
 				+ " GROUP BY " + typeColumnHelper(useSubTypes); // NON-NLS
 
@@ -933,6 +933,19 @@ public final class TimelineManager {
 		}
 	}
 
+	static public String getAugmentedEventsTablesSQL(TimelineFilter.RootFilter filter) {
+		TimelineFilter.TagsFilter tagsFilter = filter.getTagsFilter();
+		boolean needsTags = tagsFilter != null && tagsFilter.hasSubFilters();
+
+		TimelineFilter.HashHitsFilter hashHitsFilter = filter.getHashHitsFilter();
+		boolean needsHashSets = hashHitsFilter != null && hashHitsFilter.hasSubFilters();
+
+		TimelineFilter.FileTypesFilter fileTypesFitler = filter.getFileTypesFilter();
+		boolean needsMimeTypes = fileTypesFitler != null && fileTypesFitler.hasSubFilters();
+
+		return getAugmentedEventsTablesSQL(needsTags, needsHashSets, needsMimeTypes);
+	}
+
 	/**
 	 * Get an SQL expression that produces an events table augmented with the
 	 * columsn required by the filters: The union of the events table joined to
@@ -953,20 +966,24 @@ public final class TimelineManager {
 	 * @return An SQL expresion that produces an events table augmented with the
 	 *         columns required by the filters.
 	 */
-	static public String getAugmentedEventsTablesSQL(boolean needTags, boolean needHashSets) {
+	static public String getAugmentedEventsTablesSQL(boolean needTags, boolean needHashSets, boolean needsMimeTypes) {
+		String result = "";
+		
+		
 		String coreColumns = "event_id, data_source_obj_id, tsk_events.file_obj_id, tsk_events.artifact_id,"
 				+ "			time, sub_type, base_type, full_description, med_description, "
 				+ "			short_description, hash_hit, tagged ";
 		String tagColumns = " , tag_name_id, tag_id ";
-		String joinedWithTags = needTags ? "("
-				+ " SELECT " + coreColumns + tagColumns
+		String joinedWithTags = needTags
+				? "(" + " SELECT " + coreColumns + tagColumns
 				+ "		from tsk_events LEFT OUTER JOIN content_tags ON (content_tags.obj_id = tsk_events.file_obj_id) "
 				+ "	UNION ALL "
 				+ "	SELECT " + coreColumns + tagColumns
 				+ "		FROM tsk_events LEFT OUTER JOIN blackboard_artifact_tags ON (blackboard_artifact_tags.artifact_id = tsk_events.artifact_id)"
-				+ " ) AS tsk_events" : " tsk_events ";
+				+ " ) AS tsk_events"
+				: " tsk_events ";
 		if (needHashSets) {
-			return " ( SELECT " + coreColumns + (needTags ? tagColumns : "") + " , hash_set_name "
+			result = " ( SELECT " + coreColumns + (needTags ? tagColumns : "") + " , hash_set_name "
 					+ " FROM " + joinedWithTags + " LEFT OUTER JOIN ( "
 					+ "		SELECT DISTINCT value_text AS hash_set_name, obj_id  "
 					+ "		FROM blackboard_artifacts"
@@ -976,8 +993,10 @@ public final class TimelineManager {
 					+ "		AND blackboard_attributes.attribute_type_id = " + TSK_SET_NAME.getTypeID() + ") AS hash_set_hits"
 					+ "	ON ( tsk_events.file_obj_id = hash_set_hits.obj_id)) AS tsk_events";
 		} else {
-			return joinedWithTags;
+			result = joinedWithTags;
 		}
+		System.out.println(result);
+		return result;
 	}
 
 	/**

@@ -19,11 +19,16 @@
 package org.sleuthkit.datamodel.timeline;
 
 import java.util.Collection;
+import java.util.Arrays;
+import static java.util.Arrays.asList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javafx.beans.property.Property;
@@ -82,7 +87,7 @@ public abstract class TimelineFilter {
 		@Override
 		public IntersectionFilter<S> copyOf() {
 			@SuppressWarnings(value = "unchecked")
-			IntersectionFilter<S> filter = new IntersectionFilter<S>((List<S>) this.getSubFilters().stream().map(TimelineFilter::copyOf).collect(Collectors.toList()));
+			IntersectionFilter<S> filter = new IntersectionFilter<>((List<S>) this.getSubFilters().stream().map(TimelineFilter::copyOf).collect(Collectors.toList()));
 			return filter;
 		}
 
@@ -108,7 +113,11 @@ public abstract class TimelineFilter {
 		@Override
 		public String getSQLWhere(TimelineManager manager) {
 			String trueLiteral = manager.getSQLWhere(null);
-			String join = this.getSubFilters().stream().filter(Objects::nonNull).map((S filter) -> filter.getSQLWhere(manager)).filter((String sql) -> sql.equals(trueLiteral) == false).collect(Collectors.joining(" AND "));
+			String join = this.getSubFilters().stream()
+					.filter(Objects::nonNull)
+					.map(filter -> filter.getSQLWhere(manager))
+					.filter(sqlString -> sqlString.equals(trueLiteral) == false)
+					.collect(Collectors.joining(" AND "));
 			return join.isEmpty() ? trueLiteral : "(" + join + ")";
 		}
 	}
@@ -166,19 +175,21 @@ public abstract class TimelineFilter {
 
 		@Override
 		public String getSQLWhere(TimelineManager manager) {
-			String join = this.getSubFilters().stream().map((SubFilterType filter) -> filter.getSQLWhere(manager)).collect(Collectors.joining(" OR "));
+			String join = getSubFilters().stream()
+					.map(subFilter -> subFilter.getSQLWhere(manager))
+					.collect(Collectors.joining(" OR "));
 			return join.isEmpty() ? manager.getSQLWhere(null) : "(" + join + ")";
 		}
 	}
 
 	/**
-	 * Event Type Filter. An instance of TypeFilter is usually a tree that
+	 * Event Type Filter. An instance of EventTypeFilter is usually a tree that
 	 * parallels the event type hierarchy with one filter/node for each event
 	 * type.
 	 */
-	public final static class TypeFilter extends UnionFilter<TypeFilter> {
+	public final static class EventTypeFilter extends UnionFilter<EventTypeFilter> {
 
-		private static final Comparator<TypeFilter> comparator = Comparator.comparing(TypeFilter::getEventType);
+		private static final Comparator<EventTypeFilter> comparator = Comparator.comparing(EventTypeFilter::getEventType);
 		/**
 		 * the event type this filter passes
 		 */
@@ -186,19 +197,19 @@ public abstract class TimelineFilter {
 
 		/**
 		 * private constructor that enables non recursive/tree construction of
-		 * the filter hierarchy for use in TypeFilter.copyOf().
+		 * the filter hierarchy for use in EventTypeFilter.copyOf().
 		 *
 		 * @param eventType the event type this filter passes
 		 * @param recursive true if subfilters should be added for each subtype.
 		 *                  False if no subfilters should be added.
 		 */
-		private TypeFilter(EventType eventType, boolean recursive) {
+		private EventTypeFilter(EventType eventType, boolean recursive) {
 			super(FXCollections.observableArrayList());
 			this.eventType = eventType;
 			if (recursive) {
 				// add subfilters for each subtype
 				for (EventType subType : eventType.getSubTypes()) {
-					addSubFilter(new TypeFilter(subType), comparator);
+					addSubFilter(new EventTypeFilter(subType), comparator);
 				}
 			}
 		}
@@ -209,7 +220,7 @@ public abstract class TimelineFilter {
 		 *
 		 * @param eventType the event type this filter will pass
 		 */
-		public TypeFilter(EventType eventType) {
+		public EventTypeFilter(EventType eventType) {
 			this(eventType, true);
 		}
 
@@ -223,11 +234,11 @@ public abstract class TimelineFilter {
 		}
 
 		@Override
-		public TypeFilter copyOf() {
+		public EventTypeFilter copyOf() {
 			//make a nonrecursive copy of this filter
-			final TypeFilter filterCopy = new TypeFilter(eventType, false);
+			final EventTypeFilter filterCopy = new EventTypeFilter(eventType, false);
 			//add a copy of each subfilter
-			getSubFilters().forEach(subFilter -> filterCopy.getSubFilters().add(subFilter.copyOf()));
+			getSubFilters().forEach(subFilter -> filterCopy.addSubFilter(subFilter.copyOf()));
 			return filterCopy;
 		}
 
@@ -249,7 +260,7 @@ public abstract class TimelineFilter {
 			if (getClass() != obj.getClass()) {
 				return false;
 			}
-			final TypeFilter other = (TypeFilter) obj;
+			final EventTypeFilter other = (EventTypeFilter) obj;
 			if (!Objects.equals(this.eventType, other.eventType)) {
 				return false;
 			}
@@ -265,7 +276,7 @@ public abstract class TimelineFilter {
 			if (this.getSubFilters().isEmpty()) {
 				return Stream.of(String.valueOf(getEventType().getTypeID()));
 			} else {
-				return this.getSubFilters().stream().flatMap(TypeFilter::getSubTypeIDs);
+				return this.getSubFilters().stream().flatMap(EventTypeFilter::getSubTypeIDs);
 			}
 		}
 	}
@@ -349,8 +360,10 @@ public abstract class TimelineFilter {
 		private final TagsFilter tagsFilter;
 		private final HashHitsFilter hashFilter;
 		private final TextFilter textFilter;
-		private final TypeFilter typeFilter;
+		private final EventTypeFilter typeFilter;
 		private final DataSourcesFilter dataSourcesFilter;
+		private final FileTypesFilter fileTypesFilter;
+		private final HashSet<TimelineFilter> namedSubFilters = new HashSet<>();
 
 		public DataSourcesFilter getDataSourcesFilter() {
 			return dataSourcesFilter;
@@ -364,7 +377,7 @@ public abstract class TimelineFilter {
 			return hashFilter;
 		}
 
-		public TypeFilter getTypeFilter() {
+		public EventTypeFilter getEventTypeFilter() {
 			return typeFilter;
 		}
 
@@ -376,8 +389,15 @@ public abstract class TimelineFilter {
 			return textFilter;
 		}
 
-		public RootFilter(HideKnownFilter knownFilter, TagsFilter tagsFilter, HashHitsFilter hashFilter, TextFilter textFilter, TypeFilter typeFilter, DataSourcesFilter dataSourcesFilter, Collection<TimelineFilter> annonymousSubFilters) {
-			super(FXCollections.observableArrayList(textFilter, knownFilter, dataSourcesFilter, tagsFilter, hashFilter, typeFilter));
+		public FileTypesFilter getFileTypesFilter() {
+			return fileTypesFilter;
+		}
+
+		public RootFilter(HideKnownFilter knownFilter, TagsFilter tagsFilter, HashHitsFilter hashFilter,
+				TextFilter textFilter, EventTypeFilter typeFilter, DataSourcesFilter dataSourcesFilter,
+				FileTypesFilter fileTypesFilter, Collection<TimelineFilter> annonymousSubFilters) {
+			super(FXCollections.observableArrayList(textFilter, knownFilter, dataSourcesFilter, tagsFilter, hashFilter, typeFilter, fileTypesFilter));
+
 			getSubFilters().removeIf(Objects::isNull);
 			this.knownFilter = knownFilter;
 			this.tagsFilter = tagsFilter;
@@ -385,29 +405,30 @@ public abstract class TimelineFilter {
 			this.textFilter = textFilter;
 			this.typeFilter = typeFilter;
 			this.dataSourcesFilter = dataSourcesFilter;
-			annonymousSubFilters.stream().filter(subFilter
-					-> !(subFilter == null
-					|| subFilter.equals(knownFilter)
-					|| subFilter.equals(tagsFilter)
-					|| subFilter.equals(hashFilter)
-					|| subFilter.equals(typeFilter)
-					|| subFilter.equals(textFilter)
-					|| subFilter.equals(dataSourcesFilter)))
-					.map(TimelineFilter::copyOf).forEach(getSubFilters()::add);
+			this.fileTypesFilter = fileTypesFilter;
+
+			namedSubFilters.addAll(asList(knownFilter, tagsFilter, hashFilter,
+					textFilter, typeFilter, dataSourcesFilter, fileTypesFilter));
+			namedSubFilters.removeIf(Objects::isNull);
+			annonymousSubFilters.stream().
+					filter(this::isNamedSubFilter).
+					forEach(anonymousFilter -> getSubFilters().add(anonymousFilter));
 		}
 
 		@Override
 		public RootFilter copyOf() {
-			Set<TimelineFilter> annonymousSubFilters
-					= getSubFilters().stream().filter(subFilter
-							-> !(subFilter.equals(knownFilter)
-					|| subFilter.equals(tagsFilter)
-					|| subFilter.equals(hashFilter)
-					|| subFilter.equals(typeFilter)
-					|| subFilter.equals(textFilter)
-					|| subFilter.equals(dataSourcesFilter)))
-							.map(TimelineFilter::copyOf).collect(Collectors.toSet());
-			return new RootFilter(knownFilter.copyOf(), tagsFilter.copyOf(), hashFilter.copyOf(), textFilter.copyOf(), typeFilter.copyOf(), dataSourcesFilter.copyOf(), annonymousSubFilters);
+			Set<TimelineFilter> annonymousSubFilters = getSubFilters().stream()
+					.filter(this::isNamedSubFilter)
+					.map(TimelineFilter::copyOf)
+					.collect(Collectors.toSet());
+			return new RootFilter(knownFilter.copyOf(), tagsFilter.copyOf(),
+					hashFilter.copyOf(), textFilter.copyOf(), typeFilter.copyOf(),
+					dataSourcesFilter.copyOf(), fileTypesFilter.copyOf(), annonymousSubFilters);
+
+		}
+
+		private boolean isNamedSubFilter(TimelineFilter subFilter) {
+			return false == namedSubFilters.contains(subFilter);
 		}
 
 		@Override
@@ -426,8 +447,9 @@ public abstract class TimelineFilter {
 			if (getClass() != obj.getClass()) {
 				return false;
 			}
-			return areSubFiltersEqual(this, (DescriptionFilter.CompoundFilter<?>) obj);
+			return areSubFiltersEqual(this, (RootFilter) obj);
 		}
+
 	}
 
 	/**
@@ -499,7 +521,7 @@ public abstract class TimelineFilter {
 			this.subFilters.setAll(subFilters);
 		}
 
-		static boolean areSubFiltersEqual(final CompoundFilter<?> oneFilter, final CompoundFilter<?> otherFilter) {
+		static < C extends CompoundFilter<?>> boolean areSubFiltersEqual(C oneFilter, C otherFilter) {
 			if (oneFilter.getSubFilters().size() != otherFilter.getSubFilters().size()) {
 				return false;
 			}
@@ -840,13 +862,79 @@ public abstract class TimelineFilter {
 		public DataSourcesFilter copyOf() {
 			final DataSourcesFilter filterCopy = new DataSourcesFilter();
 			//add a copy of each subfilter
-			getSubFilters().forEach((DataSourceFilter dataSourceFilter) -> filterCopy.addSubFilter(dataSourceFilter.copyOf()));
+			getSubFilters().forEach(dataSourceFilter -> filterCopy.addSubFilter(dataSourceFilter.copyOf()));
 			return filterCopy;
 		}
 
 		@Override
 		public String getDisplayName() {
 			return BundleProvider.getBundle().getString("DataSourcesFilter.displayName.text");
+		}
+	}
+
+	static public final class FileTypesFilter extends UnionFilter<FileTypeFilter> {
+
+		@Override
+		public FileTypesFilter copyOf() {
+			final FileTypesFilter filterCopy = new FileTypesFilter();
+			//add a copy of each subfilter
+			getSubFilters().forEach(fileTypeFilter -> filterCopy.addSubFilter(fileTypeFilter.copyOf()));
+			return filterCopy;
+		}
+
+		@Override
+		public String getDisplayName() {
+			return BundleProvider.getBundle().getString("FileTypesFilter.displayName.text");
+		}
+
+	}
+
+	public static class FileTypeFilter extends UnionFilter<FileSubTypeFilter> {
+
+		private final String type;
+
+		public FileTypeFilter(String type) {
+			this.type = type;
+		}
+
+		@Override
+		public String getDisplayName() {
+			return type;
+		}
+
+		@Override
+		public FileTypeFilter copyOf() {
+			final FileTypeFilter filterCopy = new FileTypeFilter(type);
+			//add a copy of each subfilter
+			getSubFilters().forEach(fileTypeFilter -> filterCopy.addSubFilter(fileTypeFilter.copyOf()));
+			return filterCopy;
+		}
+	}
+
+	public static class FileSubTypeFilter extends TimelineFilter {
+
+		private final String type;
+
+		private final String subType;
+
+		public FileSubTypeFilter(String type, String subString) {
+			this.type = type;
+			this.subType = subString;
+		}
+
+		@Override
+		public String getDisplayName() {
+			return type + "/" + subType;
+		}
+
+		@Override
+		String getSQLWhere(TimelineManager manager) {
+			return " (tsk_events.mime_type = " + type + "/" + subType + " ) "; //NON-NLS	 
+		}
+
+		@Override
+		public FileSubTypeFilter copyOf() {
+			return new FileSubTypeFilter(type, subType);
 		}
 	}
 }
