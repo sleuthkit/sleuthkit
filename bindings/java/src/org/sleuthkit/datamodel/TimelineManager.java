@@ -48,7 +48,6 @@ import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_TL_EV
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET_NAME;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TL_EVENT_TYPE;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
-import static org.sleuthkit.datamodel.SleuthkitCase.closeStatement;
 import static org.sleuthkit.datamodel.SleuthkitCase.escapeSingleQuotes;
 import static org.sleuthkit.datamodel.StringUtils.joinAsStrings;
 import org.sleuthkit.datamodel.timeline.ArtifactEventType;
@@ -490,8 +489,8 @@ public final class TimelineManager {
 	 * Get a List of event IDs for the events that are derived from the given
 	 * file.
 	 *
-	 * @param file                    The File / data source to get derived event IDs
-	 *                                for.
+	 * @param file                    The File / data source to get derived
+	 *                                event IDs for.
 	 * @param includeDerivedArtifacts If true, also get event IDs for events
 	 *                                derived from artifacts derived form this
 	 *                                file. If false, only gets events derived
@@ -663,7 +662,7 @@ public final class TimelineManager {
 			if (file != null) {
 				hasHashHits = file.getHashSetNames().isEmpty() == false;
 			}
-			
+
 			return Optional.of(addEvent(eventDescription.getTime(),
 					eventType,
 					artifact.getDataSourceObjectID(),
@@ -687,20 +686,24 @@ public final class TimelineManager {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param time
 	 * @param type
 	 * @param datasourceObjID
-	 * @param fileObjID Object ID of file associated with event (could be a data source)
-	 * @param artifactID  Artifact associated with the event or null if event is from a file. 
+	 * @param fileObjID        Object ID of file associated with event (could be
+	 *                         a data source)
+	 * @param artifactID       Artifact associated with the event or null if
+	 *                         event is from a file.
 	 * @param fullDescription
 	 * @param medDescription
 	 * @param shortDescription
 	 * @param hashHit
 	 * @param tagged
 	 * @param connection
+	 *
 	 * @return
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
 	private TimelineEvent addEvent(long time, EventType type, long datasourceObjID, long fileObjID,
 			Long artifactID, String fullDescription, String medDescription,
@@ -738,18 +741,21 @@ public final class TimelineManager {
 		} finally {
 			sleuthkitCase.releaseSingleUserCaseWriteLock();
 		}
-		
+
 		sleuthkitCase.fireTSKEvent(new EventAddedEvent(singleEvent));
 		return singleEvent;
 	}
 
 	/**
 	 * Get events that are associated with the file
-	 * 
+	 *
 	 * @param fileObjID
-	 * @param includeArtifacts true if results shoudl also include events from artifacts associated with the file
+	 * @param includeArtifacts true if results shoudl also include events from
+	 *                         artifacts associated with the file
+	 *
 	 * @return
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
 	private Set<Long> getEventIDs(long fileObjID, boolean includeArtifacts) throws TskCoreException {
 		HashSet<Long> eventIDs = new HashSet<>();
@@ -771,10 +777,13 @@ public final class TimelineManager {
 
 	/**
 	 * Get events that match both the file and artifact IDs
+	 *
 	 * @param fileObjID
 	 * @param artifactID
+	 *
 	 * @return
-	 * @throws TskCoreException 
+	 *
+	 * @throws TskCoreException
 	 */
 	private Set<Long> getEventIDs(long fileObjID, Long artifactID) throws TskCoreException {
 		//TODO: inline this
@@ -799,7 +808,7 @@ public final class TimelineManager {
 	/**
 	 * Set any events with the given object and artifact ids as tagged.
 	 *
-	 * @param fileObjId   the obj_id that this tag applies to, the id of the
+	 * @param fileObjId  the obj_id that this tag applies to, the id of the
 	 *                   content that the artifact is derived from for artifact
 	 *                   tags
 	 * @param artifactID the artifact_id that this tag applies to, or null if
@@ -834,13 +843,11 @@ public final class TimelineManager {
 		return eventIDs;
 	}
 
-
-	
 	public Set<Long> setEventsHashed(long fileObjdId, boolean hashHits) throws TskCoreException {
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
 		Set<Long> eventIDs = getEventIDs(fileObjdId, true);
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
-			Statement updateStatement = con.createStatement();) {
+				Statement updateStatement = con.createStatement();) {
 			updateStatement.executeUpdate(
 					"UPDATE tsk_events SET " //NON-NLS
 					+ "                hash_hit = " + (hashHits ? 1 : 0) //NON-NLS
@@ -1042,7 +1049,7 @@ public final class TimelineManager {
 
 		private final TimelineEvent singleEvent;
 
-		public TimelineEvent getEvent() {
+		public TimelineEvent getAddedEvent() {
 			return singleEvent;
 		}
 
@@ -1063,5 +1070,4 @@ public final class TimelineManager {
 
 		O apply(I input) throws TskCoreException;
 	}
-
 }
