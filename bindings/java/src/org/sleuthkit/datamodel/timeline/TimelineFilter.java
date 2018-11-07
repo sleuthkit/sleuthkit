@@ -719,7 +719,7 @@ public abstract class TimelineFilter {
 
 		@Override
 		public String getDisplayName() {
-			return getDataSourceName() + "(ID: " + getDataSourceID() + ")";
+			return getDataSourceName() + " (ID: " + getDataSourceID() + ")";
 		}
 
 		@Override
