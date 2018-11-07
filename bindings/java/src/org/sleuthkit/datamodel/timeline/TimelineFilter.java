@@ -18,6 +18,8 @@
  */
 package org.sleuthkit.datamodel.timeline;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.net.MediaType;
 import static java.util.Arrays.asList;
 import java.util.Collection;
 import java.util.Collections;
@@ -26,6 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javafx.beans.property.Property;
@@ -874,7 +877,7 @@ public abstract class TimelineFilter {
 	}
 
 	/**
-	 * 	 * union of FileTypeFilters
+	 * union of FileTypeFilters
 	 */
 	static public final class FileTypesFilter extends UnionFilter<FileTypeFilter> {
 
@@ -890,37 +893,49 @@ public abstract class TimelineFilter {
 		public String getDisplayName() {
 			return BundleProvider.getBundle().getString("FileTypesFilter.displayName.text");
 		}
-
 	}
 
 	/**
-	 * union of FileSubTypeFilters
+	 * Filter for events derived from files with the given media/mime-types.
 	 */
-	public static class FileTypeFilter extends UnionFilter<FileSubTypeFilter> {
+	public static class FileTypeFilter extends TimelineFilter {
 
-		private final String type;
+		private final String displayName;
+		private final String sqlWhere;
 
-		public FileTypeFilter(String type) {
-			this.type = type;
+		public FileTypeFilter(String displayName, Collection<MediaType> mediaTypes) {
+			this(displayName,
+					mediaTypes.stream()
+							.map(FileTypeFilter::mediaTypeToSQL)
+							.collect(Collectors.joining(" OR ", "(", ")")));
+		}
+
+		private static String mediaTypeToSQL(MediaType mediaType) {
+			return mediaType.hasWildcard()
+					? " (tsk_events.mime_type LIKE '" + mediaType.type() + "/_%' ) "
+					: " (tsk_events.mime_type = '" + mediaType.toString() + "' ) ";
+		}
+
+		private FileTypeFilter(String displayName, String sql) {
+			this.displayName = displayName;
+			this.sqlWhere = sql;
 		}
 
 		@Override
 		public String getDisplayName() {
-			return type;
+			return displayName;
 		}
 
 		@Override
 		public FileTypeFilter copyOf() {
-			final FileTypeFilter filterCopy = new FileTypeFilter(type);
-			//add a copy of each subfilter
-			getSubFilters().forEach(fileTypeFilter -> filterCopy.addSubFilter(fileTypeFilter.copyOf()));
-			return filterCopy;
+			return new FileTypeFilter(displayName, sqlWhere);
 		}
 
 		@Override
 		public int hashCode() {
 			int hash = 7;
-			hash = 29 * hash + Objects.hashCode(this.type);
+			hash = 17 * hash + Objects.hashCode(this.displayName);
+			hash = 17 * hash + Objects.hashCode(this.sqlWhere);
 			return hash;
 		}
 
@@ -936,68 +951,15 @@ public abstract class TimelineFilter {
 				return false;
 			}
 			final FileTypeFilter other = (FileTypeFilter) obj;
-			if (notEqual(this.type, other.type)) {
+			if (notEqual(this.displayName, other.displayName)) {
 				return false;
 			}
-			return areSubFiltersEqual(this, other);
-		}
-
-	}
-
-	/**
-	 * Filter for the mime (sub)type of the file that an event is derived from.
-	 */
-	public static class FileSubTypeFilter extends TimelineFilter {
-
-		private final String type;
-
-		private final String subType;
-
-		public FileSubTypeFilter(String type, String subString) {
-			this.type = type;
-			this.subType = subString;
-		}
-
-		@Override
-		public String getDisplayName() {
-			return type + "/" + subType;
+			return Objects.equals(this.sqlWhere, other.sqlWhere);
 		}
 
 		@Override
 		String getSQLWhere(TimelineManager manager) {
-			return " (tsk_events.mime_type = '" + type + "/" + subType + "' ) "; //NON-NLS	 
-		}
-
-		@Override
-		public FileSubTypeFilter copyOf() {
-			return new FileSubTypeFilter(type, subType);
-		}
-
-		@Override
-		public int hashCode() {
-			int hash = 5;
-			hash = 13 * hash + Objects.hashCode(this.type);
-			hash = 13 * hash + Objects.hashCode(this.subType);
-			return hash;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj) {
-				return true;
-			}
-			if (obj == null) {
-				return false;
-			}
-			if (getClass() != obj.getClass()) {
-				return false;
-			}
-			final FileSubTypeFilter other = (FileSubTypeFilter) obj;
-			if (notEqual(this.type, other.type)) {
-				return false;
-			}
-
-			return Objects.equals(this.subType, other.subType);
+			return sqlWhere;
 		}
 	}
 }
