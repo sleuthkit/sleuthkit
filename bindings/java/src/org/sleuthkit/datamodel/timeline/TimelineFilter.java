@@ -32,6 +32,7 @@ import javafx.beans.property.Property;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import org.apache.commons.lang3.ObjectUtils;
 import static org.apache.commons.lang3.ObjectUtils.notEqual;
 import org.apache.commons.lang3.StringUtils;
 import org.sleuthkit.datamodel.DescriptionLoD;
@@ -114,7 +115,7 @@ public abstract class TimelineFilter {
 			String join = this.getSubFilters().stream()
 					.filter(Objects::nonNull)
 					.map(filter -> filter.getSQLWhere(manager))
-					.filter(sqlString -> sqlString.equals(trueLiteral) == false)
+					.filter(sqlString -> notEqual(sqlString, trueLiteral))
 					.collect(Collectors.joining(" AND "));
 			return join.isEmpty() ? trueLiteral : "(" + join + ")";
 		}
@@ -361,7 +362,7 @@ public abstract class TimelineFilter {
 		private final EventTypeFilter typeFilter;
 		private final DataSourcesFilter dataSourcesFilter;
 		private final FileTypesFilter fileTypesFilter;
-		private final HashSet<TimelineFilter> namedSubFilters = new HashSet<>();
+		private final Set<TimelineFilter> namedSubFilters = new HashSet<>();
 
 		public DataSourcesFilter getDataSourcesFilter() {
 			return dataSourcesFilter;
@@ -428,7 +429,7 @@ public abstract class TimelineFilter {
 		}
 
 		private boolean isNamedSubFilter(TimelineFilter subFilter) {
-			return false == namedSubFilters.contains(subFilter);
+			return false == namedSubFilters.contains(subFilter); //NO-PMD  
 		}
 
 		@Override
@@ -872,6 +873,9 @@ public abstract class TimelineFilter {
 		}
 	}
 
+	/**
+	 * 	 * union of FileTypeFilters
+	 */
 	static public final class FileTypesFilter extends UnionFilter<FileTypeFilter> {
 
 		@Override
@@ -889,6 +893,9 @@ public abstract class TimelineFilter {
 
 	}
 
+	/**
+	 * union of FileSubTypeFilters
+	 */
 	public static class FileTypeFilter extends UnionFilter<FileSubTypeFilter> {
 
 		private final String type;
@@ -937,6 +944,9 @@ public abstract class TimelineFilter {
 
 	}
 
+	/**
+	 * Filter for the mime (sub)type of the file that an event is derived from.
+	 */
 	public static class FileSubTypeFilter extends TimelineFilter {
 
 		private final String type;
