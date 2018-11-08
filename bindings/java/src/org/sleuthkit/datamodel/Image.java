@@ -43,7 +43,7 @@ public class Image extends AbstractContent implements DataSource {
 	private long size;
 	private final String[] paths;
 	private volatile long imageHandle = 0;
-	private final String deviceId, timezone, md5;
+	private final String deviceId, timezone, md5, sha1, sha256;
 	private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	private static final Logger LOGGER = Logger.getLogger(Image.class.getName());
@@ -76,6 +76,8 @@ public class Image extends AbstractContent implements DataSource {
 		this.timezone = timezone;
 		this.size = 0;
 		this.md5 = md5;
+		this.sha1 = "";
+		this.sha256 = "";
 	}
 
 	/**
@@ -94,7 +96,8 @@ public class Image extends AbstractContent implements DataSource {
 	 * @param md5      MD5 hash.
 	 * @param size     Size.
 	 */
-	Image(SleuthkitCase db, long obj_id, long type, String deviceId, long ssize, String name, String[] paths, String timezone, String md5, long size) throws TskCoreException {
+	Image(SleuthkitCase db, long obj_id, long type, String deviceId, long ssize, String name, String[] paths, String timezone, 
+			String md5, String sha1, String sha256, long size) throws TskCoreException {
 		super(db, obj_id, name);
 		this.deviceId = deviceId;
 		this.type = type;
@@ -103,6 +106,8 @@ public class Image extends AbstractContent implements DataSource {
 		this.timezone = timezone;
 		this.size = size;
 		this.md5 = md5;
+		this.sha1 = sha1;
+		this.sha256 = sha256;
 	}
 
 	/**
@@ -354,6 +359,24 @@ public class Image extends AbstractContent implements DataSource {
 	 */
 	public String getMd5() {
 		return md5;
+	}
+	
+	/**
+	 * gets the SHA1 hash value
+	 *
+	 * @return SHA1 hash if attained(from database). returns null if not set.
+	 */
+	public String getSha1() {
+		return sha1;
+	}
+	
+	/**
+	 * gets the SHA256 hash value
+	 *
+	 * @return SHA256 hash if attained(from database). returns null if not set.
+	 */
+	public String getSha256() {
+		return sha256;
 	}
 
 	/**
