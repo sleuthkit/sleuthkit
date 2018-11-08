@@ -18,7 +18,6 @@
  */
 package org.sleuthkit.datamodel.timeline;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.net.MediaType;
 import static java.util.Arrays.asList;
 import java.util.Collection;
@@ -28,14 +27,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javafx.beans.property.Property;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import org.apache.commons.lang3.ObjectUtils;
 import static org.apache.commons.lang3.ObjectUtils.notEqual;
 import org.apache.commons.lang3.StringUtils;
 import org.sleuthkit.datamodel.DescriptionLoD;
@@ -67,7 +64,7 @@ public abstract class TimelineFilter {
 	 * @return an SQL where clause (without the "where") corresponding to this
 	 *         filter
 	 */
-	abstract String getSQLWhere(TimelineManager manager);
+	 abstract String getSQLWhere(TimelineManager manager);
 
 	public abstract TimelineFilter copyOf();
 
@@ -958,7 +955,7 @@ public abstract class TimelineFilter {
 		}
 
 		@Override
-		String getSQLWhere(TimelineManager manager) {
+		protected String getSQLWhere(TimelineManager manager) {
 			return sqlWhere;
 		}
 	}
