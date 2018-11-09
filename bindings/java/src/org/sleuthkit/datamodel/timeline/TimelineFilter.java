@@ -900,9 +900,15 @@ public abstract class TimelineFilter {
 		private final String displayName;
 		private final String sqlWhere;
 
-		public FileTypeFilter(String displayName, Collection<MediaType> mediaTypes) {
+		private FileTypeFilter(String displayName, String sql) {
+			this.displayName = displayName;
+			this.sqlWhere = sql;
+		}
+
+		public FileTypeFilter(String displayName, Collection<String> mediaTypes) {
 			this(displayName,
 					mediaTypes.stream()
+							.map(MediaType::parse)
 							.map(FileTypeFilter::mediaTypeToSQL)
 							.collect(Collectors.joining(" OR ", "(", ")")));
 		}
@@ -911,11 +917,6 @@ public abstract class TimelineFilter {
 			return mediaType.hasWildcard()
 					? " (tsk_events.mime_type LIKE '" + mediaType.type() + "/_%' ) "
 					: " (tsk_events.mime_type = '" + mediaType.toString() + "' ) ";
-		}
-
-		private FileTypeFilter(String displayName, String sql) {
-			this.displayName = displayName;
-			this.sqlWhere = sql;
 		}
 
 		@Override
