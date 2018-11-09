@@ -7667,6 +7667,96 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
+	
+	/**
+	 * Store the MD5 hash for the image in the database
+	 *
+	 * @param	img     The image object
+	 * @param	md5Hash The image's MD5 hash
+	 *
+	 * @throws TskCoreException thrown if a critical error occurred within tsk
+	 *                          core
+	 */
+	void setMd5ImageHash(Image img, String md5Hash) throws TskCoreException {
+		if (md5Hash == null) {
+			return;
+		}
+		long id = img.getId();
+		CaseDbConnection connection = connections.getConnection();
+		acquireSingleUserCaseWriteLock();
+		try {
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.UPDATE_IMAGE_MD5);
+			statement.clearParameters();
+			statement.setString(1, md5Hash.toLowerCase());
+			statement.setLong(2, id);
+			connection.executeUpdate(statement);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error setting MD5 hash", ex);
+		} finally {
+			connection.close();
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+
+	/**
+	 * Store the SHA1 hash for the image in the database
+	 *
+	 * @param	img      The image object
+	 * @param	sha1Hash The image's sha1 hash
+	 *
+	 * @throws TskCoreException thrown if a critical error occurred within tsk
+	 *                          core
+	 */
+	void setSha1ImageHash(Image img, String sha1Hash) throws TskCoreException {
+		if (sha1Hash == null) {
+			return;
+		}
+		long id = img.getId();
+		CaseDbConnection connection = connections.getConnection();
+		acquireSingleUserCaseWriteLock();
+		try {
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.UPDATE_IMAGE_SHA1);
+			statement.clearParameters();
+			statement.setString(1, sha1Hash.toLowerCase());
+			statement.setLong(2, id);
+			connection.executeUpdate(statement);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error setting SHA1 hash", ex);
+		} finally {
+			connection.close();
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+
+	/**
+	 * Store the SHA256 hash for the file in the database
+	 *
+	 * @param	img        The image object
+	 * @param	sha256Hash The object's md5Hash
+	 *
+	 * @throws TskCoreException thrown if a critical error occurred within tsk
+	 *                          core
+	 */
+	void setSha256ImageHash(Image img, String sha256Hash) throws TskCoreException {
+		if (sha256Hash == null) {
+			return;
+		}
+		long id = img.getId();
+		CaseDbConnection connection = connections.getConnection();
+		acquireSingleUserCaseWriteLock();
+		try {
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.UPDATE_IMAGE_SHA256);
+			statement.clearParameters();
+			statement.setString(1, sha256Hash.toLowerCase());
+			statement.setLong(2, id);
+			connection.executeUpdate(statement);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error setting SHA256 hash", ex);
+		} finally {
+			connection.close();
+			releaseSingleUserCaseWriteLock();
+		}
+	}	
 
 	/**
 	 * Set the review status of the given artifact to newStatus
@@ -9338,6 +9428,9 @@ public class SleuthkitCase {
 		SELECT_FILES_BY_DATA_SOURCE_AND_NAME("SELECT * FROM tsk_files WHERE LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE LOWER('%journal%') AND data_source_obj_id = ?"), //NON-NLS
 		SELECT_FILES_BY_DATA_SOURCE_AND_PARENT_PATH_AND_NAME("SELECT * FROM tsk_files WHERE LOWER(name) LIKE LOWER(?) AND LOWER(name) NOT LIKE LOWER('%journal%') AND LOWER(parent_path) LIKE LOWER(?) AND data_source_obj_id = ?"), //NON-NLS
 		UPDATE_FILE_MD5("UPDATE tsk_files SET md5 = ? WHERE obj_id = ?"), //NON-NLS
+		UPDATE_IMAGE_MD5("UPDATE tsk_image_info SET md5 = ? WHERE obj_id = ?"), //NON-NLS
+		UPDATE_IMAGE_SHA1("UPDATE tsk_image_info SET sha1 = ? WHERE obj_id = ?"), //NON-NLS
+		UPDATE_IMAGE_SHA256("UPDATE tsk_image_info SET sha256 = ? WHERE obj_id = ?"), //NON-NLS
 		SELECT_LOCAL_PATH_FOR_FILE("SELECT path FROM tsk_files_path WHERE obj_id = ?"), //NON-NLS
 		SELECT_ENCODING_FOR_FILE("SELECT encoding_type FROM tsk_files_path WHERE obj_id = ?"), // NON-NLS
 		SELECT_LOCAL_PATH_AND_ENCODING_FOR_FILE("SELECT path, encoding_type FROM tsk_files_path WHERE obj_id = ?"), // NON_NLS

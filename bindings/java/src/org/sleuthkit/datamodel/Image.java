@@ -43,7 +43,8 @@ public class Image extends AbstractContent implements DataSource {
 	private long size;
 	private final String[] paths;
 	private volatile long imageHandle = 0;
-	private final String deviceId, timezone, md5, sha1, sha256;
+	private final String deviceId, timezone;
+	private String md5, sha1, sha256;
 	private static ResourceBundle bundle = ResourceBundle.getBundle("org.sleuthkit.datamodel.Bundle");
 
 	private static final Logger LOGGER = Logger.getLogger(Image.class.getName());
@@ -377,6 +378,21 @@ public class Image extends AbstractContent implements DataSource {
 	 */
 	public String getSha256() {
 		return sha256;
+	}
+	
+	public void setMD5(String md5) throws TskCoreException {
+		getSleuthkitCase().setMd5ImageHash(this, md5);
+		this.md5 = md5;
+	}
+	
+	public void setSha1(String sha1) throws TskCoreException {
+		getSleuthkitCase().setSha1ImageHash(this, sha1);
+		this.sha1 = sha1;
+	}
+	
+	public void setSha256(String sha256) throws TskCoreException {
+		getSleuthkitCase().setSha256ImageHash(this, sha256);
+		this.sha256 = sha256;
 	}
 
 	/**
