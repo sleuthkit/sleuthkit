@@ -1,6 +1,11 @@
 Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
+---------------- VERSION 4.6.4 --------------
+Java Code:
+- Increase max statements in database to prevent errors under load
+- Have a max timeout for SQLite retries
+
 ---------------- VERSION 4.6.3 --------------
 C/C++ Code:
 - Hashdb bug fixes for corrupt indexes and 0 hashes
