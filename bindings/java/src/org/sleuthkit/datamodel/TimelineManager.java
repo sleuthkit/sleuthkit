@@ -932,6 +932,21 @@ public final class TimelineManager {
 		}
 	}
 
+	/**
+	 * Get an SQL expression that produces an events table augmented with the
+	 * columns required by the given filter: The union of the events table
+	 * joined to the content and blackboard artifacts tags tables, if necessary,
+	 * then joined to a query that selects hash set hits, if necessary. Then
+	 * joined to the tsk_files table for mime_types if necessary.
+	 *
+	 *
+	 *
+	 * @param filter The filter that is inspected to determine what
+	 *               joins/columns are needed..
+	 *
+	 * @return An SQL expresion that produces an events table augmented with the
+	 *         columns required by the filters.
+	 */
 	static public String getAugmentedEventsTablesSQL(TimelineFilter.RootFilter filter) {
 		TimelineFilter.TagsFilter tagsFilter = filter.getTagsFilter();
 		boolean needsTags = tagsFilter != null && tagsFilter.hasSubFilters();

@@ -18,10 +18,10 @@
  */
 package org.sleuthkit.datamodel.timeline;
 
+import com.google.common.collect.Lists;
 import com.google.common.net.MediaType;
 import static java.util.Arrays.asList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -42,9 +42,7 @@ import org.sleuthkit.datamodel.TskData;
 
 /**
  * Interface for timeline event filters. Filters are given to the
- * TimelineManager who interpretes them appropriately for all db queries. Since
- * the filters are primarily configured in the UI, this interface provides
- * selected, disabled and active (selected and not disabled) properties.
+ * TimelineManager who interpretes them appropriately for all db queries.
  */
 public abstract class TimelineFilter {
 
@@ -64,7 +62,7 @@ public abstract class TimelineFilter {
 	 * @return an SQL where clause (without the "where") corresponding to this
 	 *         filter
 	 */
-	 abstract String getSQLWhere(TimelineManager manager);
+	abstract String getSQLWhere(TimelineManager manager);
 
 	public abstract TimelineFilter copyOf();
 
@@ -79,21 +77,17 @@ public abstract class TimelineFilter {
 			super(subFilters);
 		}
 
-		IntersectionFilter() {
-			super(Collections.emptyList());
-		}
-
 		@Override
 		public IntersectionFilter<S> copyOf() {
-			@SuppressWarnings(value = "unchecked")
-			IntersectionFilter<S> filter = new IntersectionFilter<>((List<S>) this.getSubFilters().stream().map(TimelineFilter::copyOf).collect(Collectors.toList()));
-			return filter;
+			@SuppressWarnings("unchecked")
+			List<S> subfilters = Lists.transform(getSubFilters(), f -> (S) f.copyOf()); //make copies of all the subfilters.
+			return new IntersectionFilter<>(subfilters);
 		}
 
 		@Override
 		public String getDisplayName() {
-			String collect = getSubFilters().stream().map(TimelineFilter::getDisplayName).collect(Collectors.joining(",", "[", "]"));
-			return BundleProvider.getBundle().getString("IntersectionFilter.displayName.text") + collect;
+			String subfilterDisplayNames = String.join(",", Lists.transform(getSubFilters(), TimelineFilter::getDisplayName));
+			return BundleProvider.getBundle().getString("IntersectionFilter.displayName.text") + "[" + subfilterDisplayNames + "]";
 		}
 
 		@Override
@@ -104,7 +98,8 @@ public abstract class TimelineFilter {
 			if (getClass() != obj.getClass()) {
 				return false;
 			}
-			@SuppressWarnings(value = "unchecked")
+
+			@SuppressWarnings("unchecked")
 			final IntersectionFilter<S> other = (IntersectionFilter<S>) obj;
 			return areSubFiltersEqual(this, other);
 		}
@@ -161,15 +156,9 @@ public abstract class TimelineFilter {
 			super(FXCollections.<SubFilterType>observableArrayList());
 		}
 
+		@Override
 		public void addSubFilter(SubFilterType subfilter) {
-			addSubFilter(subfilter, Comparator.comparing(TimelineFilter::getDisplayName));
-		}
-
-		protected void addSubFilter(SubFilterType subfilter, Comparator<SubFilterType> comparator) {
-			if (getSubFilters().contains(subfilter) == false) {
-				getSubFilters().add(subfilter);
-			}
-			getSubFilters().sort(comparator);
+			super.addSubFilter(subfilter);
 		}
 
 		@Override
@@ -429,7 +418,7 @@ public abstract class TimelineFilter {
 		}
 
 		private boolean isNamedSubFilter(TimelineFilter subFilter) {
-			return false == namedSubFilters.contains(subFilter); //NO-PMD  
+			return !(namedSubFilters.contains(subFilter));
 		}
 
 		@Override
@@ -498,6 +487,17 @@ public abstract class TimelineFilter {
 	 * @param <SubFilterType> The type of the subfilters.
 	 */
 	public static abstract class CompoundFilter<SubFilterType extends TimelineFilter> extends TimelineFilter {
+
+		protected void addSubFilter(SubFilterType subfilter) {
+			addSubFilter(subfilter, Comparator.comparing(TimelineFilter::getDisplayName));
+		}
+
+		protected void addSubFilter(SubFilterType subfilter, Comparator<SubFilterType> comparator) {
+			if (getSubFilters().contains(subfilter) == false) {
+				getSubFilters().add(subfilter);
+			}
+			getSubFilters().sort(comparator);
+		}
 
 		/**
 		 * The list of sub-filters that make up this filter
