@@ -18,15 +18,16 @@
  */
 package org.sleuthkit.datamodel.timeline;
 
-import org.sleuthkit.datamodel.DescriptionLoD;
 import com.google.common.collect.ImmutableMap;
 import java.util.Optional;
-import org.sleuthkit.datamodel.TskData;
+import org.sleuthkit.datamodel.DescriptionLoD;
 
 /**
  * A single event.
  */
 public final class TimelineEvent {
+
+ 
 
 	private final long eventID;
 	/**
@@ -72,18 +73,20 @@ public final class TimelineEvent {
 	private final boolean tagged;
 
 	/**
-	 * 
-	 * @param eventID  ID from tsk_events table in database
-	 * @param dataSourceObjID Object Id for  data source event is from
-	 * @param fileObjID object id for non-artifact content that event is associated with 
-	 * @param artifactID ID of artifact (not object id) if event came from an artifact
+	 *
+	 * @param eventID          ID from tsk_events table in database
+	 * @param dataSourceObjID  Object Id for data source event is from
+	 * @param fileObjID        object id for non-artifact content that event is
+	 *                         associated with
+	 * @param artifactID       ID of artifact (not object id) if event came from
+	 *                         an artifact
 	 * @param time
 	 * @param type
 	 * @param fullDescription
 	 * @param medDescription
 	 * @param shortDescription
 	 * @param hashHit
-	 * @param tagged 
+	 * @param tagged
 	 */
 	public TimelineEvent(long eventID, long dataSourceObjID, long fileObjID, Long artifactID, long time, EventType type, String fullDescription, String medDescription, String shortDescription, boolean hashHit, boolean tagged) {
 		this.eventID = eventID;
@@ -95,7 +98,7 @@ public final class TimelineEvent {
 		descriptions = ImmutableMap.<DescriptionLoD, String>of(DescriptionLoD.FULL, fullDescription,
 				DescriptionLoD.MEDIUM, medDescription,
 				DescriptionLoD.SHORT, shortDescription);
-		
+
 		this.hashHit = hashHit;
 		this.tagged = tagged;
 	}
@@ -122,7 +125,8 @@ public final class TimelineEvent {
 	}
 
 	/**
-	 * Get the artifact id (not the object ID) of the artifact this event is derived from.
+	 * Get the artifact id (not the object ID) of the artifact this event is
+	 * derived from.
 	 *
 	 * @return An Optional containing the artifact ID. Will be empty if this
 	 *         event is not derived from an artifact
@@ -141,7 +145,8 @@ public final class TimelineEvent {
 	}
 
 	/**
-	 * Get the Content obj id of the file (which could be a data source) this event is derived from.
+	 * Get the Content obj id of the file (which could be a data source) this
+	 * event is derived from.
 	 *
 	 * @return the object id.
 	 */
@@ -189,8 +194,6 @@ public final class TimelineEvent {
 		return getDescription(DescriptionLoD.SHORT);
 	}
 
-
-
 	/**
 	 * Get the description of this event at the give level of detail(LoD).
 	 *
@@ -237,5 +240,4 @@ public final class TimelineEvent {
 		final TimelineEvent other = (TimelineEvent) obj;
 		return this.eventID == other.eventID;
 	}
-
 }

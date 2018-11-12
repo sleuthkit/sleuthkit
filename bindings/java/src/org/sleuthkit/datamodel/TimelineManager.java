@@ -1079,7 +1079,7 @@ public final class TimelineManager {
 
 		private final TimelineEvent singleEvent;
 
-		public TimelineEvent getEvent() {
+		public TimelineEvent getAddedEvent() {
 			return singleEvent;
 		}
 
@@ -1100,5 +1100,4 @@ public final class TimelineManager {
 
 		O apply(I input) throws TskCoreException;
 	}
-
 }
