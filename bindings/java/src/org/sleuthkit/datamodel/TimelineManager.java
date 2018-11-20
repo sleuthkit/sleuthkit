@@ -737,7 +737,7 @@ public final class TimelineManager {
 			sleuthkitCase.releaseSingleUserCaseWriteLock();
 		}
 
-		sleuthkitCase.fireTSKEvent(new EventAddedEvent(singleEvent));
+		sleuthkitCase.fireTSKEvent(new TimelineEventAddedEvent(singleEvent));
 		return singleEvent;
 	}
 
@@ -1075,16 +1075,16 @@ public final class TimelineManager {
 	 * Event fired by SleuthkitCase to indicate that a event has been added to
 	 * the tsk_events table.
 	 */
-	final public class EventAddedEvent {
+	final static public class TimelineEventAddedEvent {
 
-		private final TimelineEvent singleEvent;
+		private final TimelineEvent addedEvent;
 
 		public TimelineEvent getAddedEvent() {
-			return singleEvent;
+			return addedEvent;
 		}
 
-		EventAddedEvent(TimelineEvent singleEvent) {
-			this.singleEvent = singleEvent;
+		TimelineEventAddedEvent(TimelineEvent event) {
+			this.addedEvent = event;
 		}
 	}
 
