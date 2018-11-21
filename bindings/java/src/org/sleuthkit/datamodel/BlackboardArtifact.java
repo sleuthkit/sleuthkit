@@ -1150,7 +1150,27 @@ public class BlackboardArtifact implements Content {
 		 * A wireless network.
 		 */
 		TSK_WIFI_NETWORK(42, "TSK_WIFI_NETWORK",  //NON-NLS
-				bundle.getString("BlackboardArtifact.tskWIFINetwork.text"));
+				bundle.getString("BlackboardArtifact.tskWIFINetwork.text")),
+		/**
+		 * A wireless network.
+		 */
+		TSK_DEVICE_INFO(43, "TSK_DEVICE_INFO",  //NON-NLS
+				bundle.getString("BlackboardArtifact.tskDeviceInfo.text")),
+		/**
+		 * A wireless network.
+		 */
+		TSK_SIM_ATTACHED(44, "TSK_SIM_ATTACHED",  //NON-NLS
+				bundle.getString("BlackboardArtifact.tskSimAttached.text")),
+		/**
+		 * A wireless network.
+		 */
+		TSK_BLUETOOTH_ADAPTER(45, "TSK_BLUETOOTH_ADAPTER",  //NON-NLS
+				bundle.getString("BlackboardArtifact.tskBluetoothAdapter.text")),
+		/**
+		 * A wireless network.
+		 */
+		TSK_WIFI_NETWORK_ADAPTER(46, "TSK_WIFI_NETWORK_ADAPTER",  //NON-NLS
+				bundle.getString("BlackboardArtifact.tskWIFINetworkAdapter.text"));
 		
 		private final String label;
 		private final int typeId;
