@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2011-2018 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -254,7 +254,7 @@ public class BlackboardAttribute {
 		if (valueString == null) {
 			this.valueString = "";
 		} else {
-			this.valueString = replaceNulls(valueString);
+			this.valueString = replaceNulls(valueString).trim();
 		}
 		this.valueBytes = new byte[0];
 		this.context = "";
@@ -285,7 +285,7 @@ public class BlackboardAttribute {
 		if (valueString == null) {
 			this.valueString = "";
 		} else {
-			this.valueString = replaceNulls(valueString);
+			this.valueString = replaceNulls(valueString).trim();
 		}
 		this.valueBytes = new byte[0];
 		this.context = "";
@@ -575,7 +575,7 @@ public class BlackboardAttribute {
 		if (valueString == null) {
 			this.valueString = "";
 		} else {
-			this.valueString = replaceNulls(valueString);
+			this.valueString = replaceNulls(valueString).trim();
 		}
 		if (valueBytes == null) {
 			this.valueBytes = new byte[0];
@@ -1297,18 +1297,29 @@ public class BlackboardAttribute {
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_SSID(125, "TSK_SSID", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskSsid.text"),
-						TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_BSSID(126, "TSK_BSSID", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskBssid.text"),
-						TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
- 
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_MAC_ADDRESS(127, "TSK_MAC_ADDRESS", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskMacAddress.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_IMEI(128, "TSK_IMEI", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskImei.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_IMSI(129, "TSK_IMSI", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskImsi.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_ICCID(130, "TSK_ICCID", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskIccid.text"),
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		/**
 		 * The event type of a TSK_TL_EVENT artifact. The value should be the id
 		 * of the EventType in the tsk_event_types table.
 		 */
-		TSK_TL_EVENT_TYPE(127, "TSK_TL_EVENT_TYPE", //NON-NLS
+		TSK_TL_EVENT_TYPE(131, "TSK_TL_EVENT_TYPE", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskTLEventType.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG); 
+				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.LONG);
 
 		private final int typeID;
 		private final String typeName;
