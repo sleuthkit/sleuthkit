@@ -61,13 +61,64 @@ public final class TimelineManager {
 
 	private static final Logger logger = Logger.getLogger(TimelineManager.class.getName());
 
+	/**
+	 * These event types are added to the DB in c++ land, but still need to be
+	 * put in the eventTypeIDMap
+	 */
+	private static final ImmutableList<EventType> ROOT_BASE_AND_FILESYSTEM_TYPES
+			= ImmutableList.of(
+					EventType.ROOT_EVENT_TYPE,
+					EventType.WEB_ACTIVITY,
+					EventType.MISC_TYPES,
+					EventType.FILE_SYSTEM,
+					EventType.FILE_ACCESSED,
+					EventType.FILE_CHANGED,
+					EventType.FILE_CREATED,
+					EventType.FILE_MODIFIED);
+
+	/**
+	 * These event types are predefined but not added to the DB by the C++ code.
+	 * They are added by the TimelineManager constructor.
+	 */
+	private static final ImmutableList<EventType> PREDEFINED_EVENT_TYPES
+			= new ImmutableList.Builder<EventType>()
+					.add(EventType.CUSTOM_TYPES)
+					.addAll(EventType.getWebActivityTypes())
+					.addAll(EventType.getMiscTypes())
+					.add(EventType.OTHER).build();
+
 	private final SleuthkitCase sleuthkitCase;
 
-	final private Map<Long, EventType> eventTypeIDMap = new HashMap<>();
+	/**
+	 * map from event type id to EventType object.
+	 */
+	private final Map<Long, EventType> eventTypeIDMap = new HashMap<>();
 
 	TimelineManager(SleuthkitCase tskCase) throws TskCoreException {
 		sleuthkitCase = tskCase;
-		initializeEventTypes();
+
+		//initialize root and base event types, these are added to the DB in c++ land
+		ROOT_BASE_AND_FILESYSTEM_TYPES.forEach(eventType -> eventTypeIDMap.put(eventType.getTypeID(), eventType));
+
+		//initialize the other event types that aren't added in c++
+		sleuthkitCase.acquireSingleUserCaseWriteLock();
+		try (final CaseDbConnection con = sleuthkitCase.getConnection();
+				final Statement statement = con.createStatement()) {
+			for (EventType type : PREDEFINED_EVENT_TYPES) {
+				con.executeUpdate(statement,
+						insertOrIgnore(" INTO tsk_event_types(event_type_id, display_name, super_type_id) "
+								+ "VALUES( "
+								+  type.getTypeID() + ", '"
+								+ type.getDisplayName() + "',"
+								+ type.getSuperType().getTypeID()
+								+ ")"));
+				eventTypeIDMap.put(type.getTypeID(), type);
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Failed to initialize event types.", ex); // NON-NLS
+		} finally {
+			sleuthkitCase.releaseSingleUserCaseWriteLock();
+		}
 	}
 
 	public SleuthkitCase getSleuthkitCase() {
@@ -342,45 +393,6 @@ public final class TimelineManager {
 			sleuthkitCase.releaseSingleUserCaseReadLock();
 		}
 		return -1l;
-	}
-
-	private void initializeEventTypes() throws TskCoreException {
-		//initialize root and base event types, these are added to the DB in c++ land
-		eventTypeIDMap.put(EventType.ROOT_EVENT_TYPE.getTypeID(), EventType.ROOT_EVENT_TYPE);
-		eventTypeIDMap.put(EventType.WEB_ACTIVITY.getTypeID(), EventType.WEB_ACTIVITY);
-		eventTypeIDMap.put(EventType.MISC_TYPES.getTypeID(), EventType.MISC_TYPES);
-		eventTypeIDMap.put(EventType.FILE_SYSTEM.getTypeID(), EventType.FILE_SYSTEM);
-		eventTypeIDMap.put(EventType.FILE_ACCESSED.getTypeID(), EventType.FILE_ACCESSED);
-		eventTypeIDMap.put(EventType.FILE_CHANGED.getTypeID(), EventType.FILE_CHANGED);
-		eventTypeIDMap.put(EventType.FILE_CREATED.getTypeID(), EventType.FILE_CREATED);
-		eventTypeIDMap.put(EventType.FILE_MODIFIED.getTypeID(), EventType.FILE_MODIFIED);
-
-		//initialize the other event types that aren't added in c++
-		List<EventType> typesToInitialize = new ArrayList<>();
-		typesToInitialize.add(EventType.CUSTOM_TYPES);//Initialize the custom base type
-		typesToInitialize.addAll(EventType.getWebActivityTypes());//Initialize the web events
-		typesToInitialize.addAll(EventType.getMiscTypes());	//initialize the misc events
-		typesToInitialize.add(EventType.OTHER);	//initialize the Other custom type.
-
-		sleuthkitCase.acquireSingleUserCaseWriteLock();
-		try (CaseDbConnection con = sleuthkitCase.getConnection();
-				Statement statement = con.createStatement();) {
-
-			for (EventType type : typesToInitialize) {
-				con.executeUpdate(statement,
-						insertOrIgnore(" INTO tsk_event_types(event_type_id, display_name, super_type_id) "
-								+ "VALUES( "
-								+ type.getTypeID() + ", '"
-								+ type.getDisplayName() + "',"
-								+ type.getSuperType().getTypeID()
-								+ ")"));
-				eventTypeIDMap.put(type.getTypeID(), type);
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Failed to initialize event types.", ex); // NON-NLS
-		} finally {
-			sleuthkitCase.releaseSingleUserCaseWriteLock();
-		}
 	}
 
 	/**
