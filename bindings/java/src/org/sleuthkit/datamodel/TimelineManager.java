@@ -18,8 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableList;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -65,7 +63,7 @@ public final class TimelineManager {
 
 	private final SleuthkitCase sleuthkitCase;
 
-	final private BiMap<Long, EventType> eventTypeIDMap = HashBiMap.create();
+	final private Map<Long, EventType> eventTypeIDMap = new HashMap<>();
 
 	TimelineManager(SleuthkitCase tskCase) throws TskCoreException {
 		sleuthkitCase = tskCase;
