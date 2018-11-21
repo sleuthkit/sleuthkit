@@ -54,14 +54,7 @@ final class StringUtils {
 		if (values == null || values.isEmpty()) {
 			return "";
 		}
-
-		StringBuilder result = new StringBuilder();
-		for (T val : values) {
-			result.append(val);
-			result.append(separator);
-		}
-
-		return result.substring(0, result.lastIndexOf(separator));
+		return org.apache.commons.lang3.StringUtils.join(values, separator);
 	}
 
 	static String deleteWhitespace(String result) {
