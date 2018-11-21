@@ -193,6 +193,8 @@ public class SleuthkitCase {
 
 	// Cache of frequently used content objects (e.g. data source, file system).
 	private final Map<Long, Content> frequentlyUsedContentMap = new HashMap<Long, Content>();
+	
+	private Examiner cachedCurrentExaminer = null;
 
 	/**
 	 * Attempts to connect to the database with the passed in settings, throws
@@ -1945,6 +1947,10 @@ public class SleuthkitCase {
 	 */
 	public Examiner getCurrentExaminer() throws TskCoreException {
 
+		// return cached value if there's one
+		if (cachedCurrentExaminer != null) {
+			return cachedCurrentExaminer;
+		}
 		String loginName = System.getProperty("user.name");
 		if (loginName == null || loginName.isEmpty()) {
 			throw new TskCoreException("Failed to determine logged in user name.");
@@ -1959,7 +1965,8 @@ public class SleuthkitCase {
 			statement.setString(1, loginName);
 			resultSet = connection.executeQuery(statement);
 			if (resultSet.next()) {
-				return new Examiner(resultSet.getLong("examiner_id"), resultSet.getString("login_name"), resultSet.getString("display_name"));
+				cachedCurrentExaminer = new Examiner(resultSet.getLong("examiner_id"), resultSet.getString("login_name"), resultSet.getString("display_name"));
+				return cachedCurrentExaminer;
 			} else {
 				throw new TskCoreException("Error getting examaminer for name = " + loginName);
 			}
@@ -1971,6 +1978,7 @@ public class SleuthkitCase {
 			connection.close();
 			releaseSingleUserCaseReadLock();
 		}
+		
 	}
 
 	/**
