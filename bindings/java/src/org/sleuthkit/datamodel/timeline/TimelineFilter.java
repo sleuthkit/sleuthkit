@@ -264,7 +264,7 @@ public abstract class TimelineFilter {
 
 		@Override
 		public String getSQLWhere(TimelineManager manager) {
-			return "(sub_type IN (" + join(getSubTypeIDs(), ",") + "))"; //NON-NLS
+			return "(sub_type IN (" + getSubTypeIDs().collect(joining(",")) + "))"; //NON-NLS
 		}
 
 		private Stream<String> getSubTypeIDs() {
