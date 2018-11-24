@@ -961,7 +961,7 @@ hfs_cat_traverse(HFS_INFO * hfs,
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
                         ("hfs_cat_traverse: length of key %d in index node %d too large (%d vs %"
-                        PRIu16 ")", rec, cur_node, keylen, nodesize);
+                        PRIu16 ")", rec, cur_node, keylen, nodesize - rec_off);
                     free(node);
                     return 1;
                 }
