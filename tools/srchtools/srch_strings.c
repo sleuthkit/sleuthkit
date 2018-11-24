@@ -554,7 +554,6 @@ print_strings (const char *filename, FILE *stream, uint64_t address,
 	{
 	  c = get_char (stream, &address, &magiccount, &magic);
 	  if (c == EOF) {
-            free(buf);
 	    return;
           }
 	  if (! STRING_ISGRAPHIC (c))
@@ -586,7 +585,6 @@ print_strings (const char *filename, FILE *stream, uint64_t address,
 
       buf[i] = '\0';
       fputs (buf, stdout);
-      free(buf);
 
       while (1)
 	{
