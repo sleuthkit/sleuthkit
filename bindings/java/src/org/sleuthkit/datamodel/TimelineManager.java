@@ -18,8 +18,6 @@
  */
 package org.sleuthkit.datamodel;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableList;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -49,7 +47,7 @@ import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_SET
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_TL_EVENT_TYPE;
 import org.sleuthkit.datamodel.SleuthkitCase.CaseDbConnection;
 import static org.sleuthkit.datamodel.SleuthkitCase.escapeSingleQuotes;
-import static org.sleuthkit.datamodel.StringUtils.joinAsStrings;
+import static org.sleuthkit.datamodel.StringUtils.buildCSVString;
 import org.sleuthkit.datamodel.timeline.ArtifactEventType;
 import org.sleuthkit.datamodel.timeline.EventType;
 import org.sleuthkit.datamodel.timeline.EventTypeZoomLevel;
@@ -63,13 +61,63 @@ public final class TimelineManager {
 
 	private static final Logger logger = Logger.getLogger(TimelineManager.class.getName());
 
+	/**
+	 * These event types are added to the DB in c++ land, but still need to be
+	 * put in the eventTypeIDMap
+	 */
+	private static final ImmutableList<EventType> ROOT_BASE_AND_FILESYSTEM_TYPES
+			= ImmutableList.of(
+					EventType.ROOT_EVENT_TYPE,
+					EventType.WEB_ACTIVITY,
+					EventType.MISC_TYPES,
+					EventType.FILE_SYSTEM,
+					EventType.FILE_ACCESSED,
+					EventType.FILE_CHANGED,
+					EventType.FILE_CREATED,
+					EventType.FILE_MODIFIED);
+
+	/**
+	 * These event types are predefined but not added to the DB by the C++ code.
+	 * They are added by the TimelineManager constructor.
+	 */
+	private static final ImmutableList<EventType> PREDEFINED_EVENT_TYPES
+			= new ImmutableList.Builder<EventType>()
+					.add(EventType.CUSTOM_TYPES)
+					.addAll(EventType.getWebActivityTypes())
+					.addAll(EventType.getMiscTypes())
+					.add(EventType.OTHER).build();
+
 	private final SleuthkitCase sleuthkitCase;
 
-	final private BiMap<Long, EventType> eventTypeIDMap = HashBiMap.create();
+	/**
+	 * map from event type id to EventType object.
+	 */
+	private final Map<Long, EventType> eventTypeIDMap = new HashMap<>();
 
 	TimelineManager(SleuthkitCase tskCase) throws TskCoreException {
 		sleuthkitCase = tskCase;
-		initializeEventTypes();
+
+		//initialize root and base event types, these are added to the DB in c++ land
+		ROOT_BASE_AND_FILESYSTEM_TYPES.forEach(eventType -> eventTypeIDMap.put(eventType.getTypeID(), eventType));
+
+		//initialize the other event types that aren't added in c++
+		sleuthkitCase.acquireSingleUserCaseWriteLock();
+		try (final CaseDbConnection con = sleuthkitCase.getConnection();
+				final Statement statement = con.createStatement()) {
+			for (EventType type : PREDEFINED_EVENT_TYPES) {
+				con.executeUpdate(statement,
+						insertOrIgnore(" INTO tsk_event_types(event_type_id, display_name, super_type_id) "
+								+ "VALUES( " + type.getTypeID() + ", '"
+								+ escapeSingleQuotes(type.getDisplayName()) + "',"
+								+ type.getSuperType().getTypeID()
+								+ ")"));
+				eventTypeIDMap.put(type.getTypeID(), type);
+			}
+		} catch (SQLException ex) {
+			throw new TskCoreException("Failed to initialize event types.", ex); // NON-NLS
+		} finally {
+			sleuthkitCase.releaseSingleUserCaseWriteLock();
+		}
 	}
 
 	public SleuthkitCase getSleuthkitCase() {
@@ -80,7 +128,7 @@ public final class TimelineManager {
 		if (eventIDs.isEmpty()) {
 			return null;
 		}
-		final String query = "SELECT Min(time) as minTime, Max(time) as maxTime FROM tsk_events WHERE event_id IN (" + joinAsStrings(eventIDs, ", ") + ")";
+		final String query = "SELECT Min(time) as minTime, Max(time) as maxTime FROM tsk_events WHERE event_id IN (" + buildCSVString(eventIDs) + ")";
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement stmt = con.createStatement();
@@ -97,7 +145,7 @@ public final class TimelineManager {
 	}
 
 	/**
-	 * @return the total number of events in the database or, -1 if there is an
+	 * @return The total number of events in the database or, -1 if there is an
 	 *         error.
 	 *
 	 * @throws org.sleuthkit.datamodel.TskCoreException
@@ -119,7 +167,7 @@ public final class TimelineManager {
 	}
 
 	/**
-	 * get a count of tagnames applied to the given event ids as a map from
+	 * Get a count of tagnames applied to the given event ids as a map from
 	 * tagname displayname to count of tag applications
 	 *
 	 * @param eventIDsWithTags the event ids to get the tag counts map for
@@ -134,7 +182,7 @@ public final class TimelineManager {
 				= "SELECT tag_names.display_name AS display_name, COUNT(distinct tag_id) AS count FROM "
 				+ getAugmentedEventsTablesSQL(true, false, false)
 				+ " JOIN tag_names ON (tsk_events.tag_name_id = tag_names.tag_name_id ) "
-				+ " WHERE event_id IN (" + StringUtils.buildCSVString(eventIDsWithTags) + ") "
+				+ " WHERE event_id IN (" + buildCSVString(eventIDsWithTags) + ") "
 				+ " GROUP BY tag_names.tag_name_id";
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement statement = con.createStatement();
@@ -346,45 +394,6 @@ public final class TimelineManager {
 		return -1l;
 	}
 
-	private void initializeEventTypes() throws TskCoreException {
-		//initialize root and base event types, these are added to the DB in c++ land
-		eventTypeIDMap.put(EventType.ROOT_EVENT_TYPE.getTypeID(), EventType.ROOT_EVENT_TYPE);
-		eventTypeIDMap.put(EventType.WEB_ACTIVITY.getTypeID(), EventType.WEB_ACTIVITY);
-		eventTypeIDMap.put(EventType.MISC_TYPES.getTypeID(), EventType.MISC_TYPES);
-		eventTypeIDMap.put(EventType.FILE_SYSTEM.getTypeID(), EventType.FILE_SYSTEM);
-		eventTypeIDMap.put(EventType.FILE_ACCESSED.getTypeID(), EventType.FILE_ACCESSED);
-		eventTypeIDMap.put(EventType.FILE_CHANGED.getTypeID(), EventType.FILE_CHANGED);
-		eventTypeIDMap.put(EventType.FILE_CREATED.getTypeID(), EventType.FILE_CREATED);
-		eventTypeIDMap.put(EventType.FILE_MODIFIED.getTypeID(), EventType.FILE_MODIFIED);
-
-		//initialize the other event types that aren't added in c++
-		List<EventType> typesToInitialize = new ArrayList<>();
-		typesToInitialize.add(EventType.CUSTOM_TYPES);//Initialize the custom base type
-		typesToInitialize.addAll(EventType.getWebActivityTypes());//Initialize the web events
-		typesToInitialize.addAll(EventType.getMiscTypes());	//initialize the misc events
-		typesToInitialize.add(EventType.OTHER);	//initialize the Other custom type.
-
-		sleuthkitCase.acquireSingleUserCaseWriteLock();
-		try (CaseDbConnection con = sleuthkitCase.getConnection();
-				Statement statement = con.createStatement();) {
-
-			for (EventType type : typesToInitialize) {
-				con.executeUpdate(statement,
-						insertOrIgnore(" INTO tsk_event_types(event_type_id, display_name, super_type_id) "
-								+ "VALUES( "
-								+ type.getTypeID() + ", '"
-								+ type.getDisplayName() + "',"
-								+ type.getSuperType().getTypeID()
-								+ ")"));
-				eventTypeIDMap.put(type.getTypeID(), type);
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Failed to initialize event types.", ex); // NON-NLS
-		} finally {
-			sleuthkitCase.releaseSingleUserCaseWriteLock();
-		}
-	}
-
 	/**
 	 * Get an EventType object given it's ID.
 	 *
@@ -413,12 +422,12 @@ public final class TimelineManager {
 			case SQLITE:
 				return " INSERT OR IGNORE " + query;
 			default:
-				throw newUnsupportedDBTypeException();
+				throw new UnsupportedOperationException("Unsupported DB type: " + sleuthkitCase.getDatabaseType().name());
 		}
 	}
 
 	/**
-	 * Enum constants for sql statements. TODO: Inline these away.
+	 * Enum constants for sql statements. TODO: Inline these away?
 	 */
 	private enum STATEMENTS {
 
@@ -713,13 +722,13 @@ public final class TimelineManager {
 				+ fileObjID + ","
 				+ Objects.toString(artifactID, "NULL") + ","
 				+ time + ","
-				+ ((type.getTypeID() == -1) ? "NULL" : type.getTypeID()) + ","
+				+ ((type.getTypeID() == -1) ? "NULL" : type.getTypeID()) + "," // Why do we need this check?  what type as ID  = -1
 				+ type.getBaseType().getTypeID() + ","
 				+ "'" + escapeSingleQuotes(fullDescription) + "',"
 				+ "'" + escapeSingleQuotes(medDescription) + "',"
 				+ "'" + escapeSingleQuotes(shortDescription) + "',"
-				+ (hashHit ? 1 : 0) + ","
-				+ (tagged ? 1 : 0) + "  )";// NON-NLS  
+				+ booleanToInt(hashHit) + ","
+				+ booleanToInt(tagged) + "  )";// NON-NLS  
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
 		TimelineEvent singleEvent;
 		try (Statement insertRowStmt = connection.createStatement();) {
@@ -828,8 +837,8 @@ public final class TimelineManager {
 		//update tagged state for all event with selected ids
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement updateStatement = con.createStatement();) {
-			updateStatement.executeUpdate("UPDATE tsk_events SET tagged = " + (tagged ? 1 : 0) //NON-NLS
-					+ " WHERE event_id IN (" + joinAsStrings(eventIDs, ",") + ")"); //NON-NLS
+			updateStatement.executeUpdate("UPDATE tsk_events SET tagged = " + booleanToInt(tagged)
+					+ " WHERE event_id IN (" + buildCSVString(eventIDs) + ")"); //NON-NLS
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error marking events tagged", ex);
 		} finally {
@@ -843,10 +852,8 @@ public final class TimelineManager {
 		Set<Long> eventIDs = getEventIDs(fileObjdId, true);
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement updateStatement = con.createStatement();) {
-			updateStatement.executeUpdate(
-					"UPDATE tsk_events SET " //NON-NLS
-					+ "                hash_hit = " + (hashHits ? 1 : 0) //NON-NLS
-					+ " WHERE event_id IN (" + joinAsStrings(eventIDs, ",") + ")"); //NON-NLS
+			updateStatement.executeUpdate("UPDATE tsk_events SET  hash_hit = " + booleanToInt(hashHits) //NON-NLS
+					+ " WHERE event_id IN (" + buildCSVString(eventIDs) + ")"); //NON-NLS
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error setting hash_hit of events.", ex);
 		} finally {
@@ -874,14 +881,6 @@ public final class TimelineManager {
 				resultSet.getInt("tagged") != 0); //NON-NLS
 	}
 
-	private static TskCoreException newEventTypeMappingException(int typeID) {
-		return new TskCoreException("Error mapping event type id " + typeID);
-	}
-
-	private UnsupportedOperationException newUnsupportedDBTypeException() {
-		return new UnsupportedOperationException("Unsupported DB type: " + sleuthkitCase.getDatabaseType().name());
-	}
-
 	/**
 	 * Count all the events with the given options and return a map organizing
 	 * the counts in a hierarchy from date > eventtype> count
@@ -902,13 +901,14 @@ public final class TimelineManager {
 	 */
 	public Map<EventType, Long> countEventsByType(Long startTime, final Long endTime, TimelineFilter.RootFilter filter, EventTypeZoomLevel zoomLevel) throws TskCoreException {
 		long adjustedEndTime = Objects.equals(startTime, endTime) ? endTime + 1 : endTime;
-		boolean useSubTypes = EventTypeZoomLevel.SUB_TYPE.equals(zoomLevel);	//do we want the root or subtype column of the databse
+		//do we want the base or subtype column of the databse
+		String typeColumn = typeColumnHelper(EventTypeZoomLevel.SUB_TYPE.equals(zoomLevel));
 
 		//get some info about the range of dates requested
-		String queryString = "SELECT count(DISTINCT tsk_events.event_id) AS count, " + typeColumnHelper(useSubTypes) //NON-NLS
+		String queryString = "SELECT count(DISTINCT tsk_events.event_id) AS count, " + typeColumn
 				+ " FROM " + getAugmentedEventsTablesSQL(filter)
 				+ " WHERE time >= " + startTime + " AND time < " + adjustedEndTime + " AND " + getSQLWhere(filter) // NON-NLS
-				+ " GROUP BY " + typeColumnHelper(useSubTypes); // NON-NLS
+				+ " GROUP BY " + typeColumn; // NON-NLS
 
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
@@ -916,11 +916,9 @@ public final class TimelineManager {
 				ResultSet results = stmt.executeQuery(queryString);) {
 			Map<EventType, Long> typeMap = new HashMap<>();
 			while (results.next()) {
-				int eventTypeID = useSubTypes
-						? results.getInt("sub_type") //NON-NLS
-						: results.getInt("base_type"); //NON-NLS
-				EventType eventType = getEventType(eventTypeID).orElseThrow(()
-						-> new TskCoreException("Error mapping event type id " + eventTypeID + " to EventType."));//NON-NLS
+				int eventTypeID = results.getInt(typeColumn);
+				EventType eventType = getEventType(eventTypeID)
+						.orElseThrow(() -> newEventTypeMappingException(eventTypeID));//NON-NLS
 
 				typeMap.put(eventType, results.getLong("count")); // NON-NLS
 			}
@@ -932,14 +930,16 @@ public final class TimelineManager {
 		}
 	}
 
+	private static TskCoreException newEventTypeMappingException(int eventTypeID) {
+		return new TskCoreException("Error mapping event type id " + eventTypeID + " to EventType.");
+	}
+
 	/**
 	 * Get an SQL expression that produces an events table augmented with the
 	 * columns required by the given filter: The union of the events table
 	 * joined to the content and blackboard artifacts tags tables, if necessary,
 	 * then joined to a query that selects hash set hits, if necessary. Then
 	 * joined to the tsk_files table for mime_types if necessary.
-	 *
-	 *
 	 *
 	 * @param filter The filter that is inspected to determine what
 	 *               joins/columns are needed..
@@ -1015,6 +1015,17 @@ public final class TimelineManager {
 		}
 
 		return table;
+	}
+
+	/**
+	 * Convert a boolean to int with the mappings true => 1, false =>0
+	 *
+	 * @param value the bollean value to convert to an int.
+	 *
+	 * @return 1 if value is true, 0 if value is false.
+	 */
+	private static int booleanToInt(boolean value) {
+		return value ? 1 : 0;
 	}
 
 	/**
