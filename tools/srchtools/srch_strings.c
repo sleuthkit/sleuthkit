@@ -554,6 +554,7 @@ print_strings (const char *filename, FILE *stream, uint64_t address,
 	{
 	  c = get_char (stream, &address, &magiccount, &magic);
 	  if (c == EOF) {
+	    free(buf);
 	    return;
           }
 	  if (! STRING_ISGRAPHIC (c))
@@ -598,6 +599,7 @@ print_strings (const char *filename, FILE *stream, uint64_t address,
 
       putchar ('\n');
     }
+  free(buf);
 }
 
 /* Parse string S as an integer, using decimal radix by default,
