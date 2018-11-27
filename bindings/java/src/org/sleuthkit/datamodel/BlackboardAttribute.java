@@ -1300,6 +1300,18 @@ public class BlackboardAttribute {
 						TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_BSSID(126, "TSK_BSSID", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskBssid.text"),
+						TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_MAC_ADDRESS(127, "TSK_MAC_ADDRESS", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskMacAddress.text"),
+						TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_IMEI(128, "TSK_IMEI", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskImei.text"),
+						TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_IMSI(129, "TSK_IMSI", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskImsi.text"),
+						TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
+		TSK_ICCID(130, "TSK_ICCID", //NON-NLS
+				bundle.getString("BlackboardAttribute.tskIccid.text"),
 						TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
 
 		private final int typeID;
