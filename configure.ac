@@ -221,10 +221,18 @@ AC_ARG_ENABLE([offline],
     [case "${enableval}" in
 	yes) offline=true ;;
 	no) offline=false ;;
-	*) AC_MSG_ERROR([bad value ${enableval} for --enable-online]) ;;
+	*)
+	    offline=true
+	    default_jar_location="${enableval}"
+	    ;;
      esac],[offline=false])
 
 AM_CONDITIONAL([OFFLINE], [test "x$offline" = xtrue])
+AM_CONDITIONAL([CUSTOM_DEFAULT_JAR_LOCATION], [test "x$default_jar_location" != "x"])
+AM_COND_IF([CUSTOM_DEFAULT_JAR_LOCATION],
+    [AC_SUBST([DEFAULT_JAR_LOCATION], [$default_jar_location])]
+)
+
 
 
 dnl Check if we should link libewf.
