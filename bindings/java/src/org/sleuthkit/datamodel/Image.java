@@ -354,29 +354,44 @@ public class Image extends AbstractContent implements DataSource {
 	}
 
 	/**
-	 * gets the md5 hash value
+	 * Gets the md5 hash value
 	 *
-	 * @return md5 hash if attained(from database). returns null if not set.
+	 * @return md5 hash if attained(from database), empty string otherwise
+	 * 
+	 * @throws TskCoreException
 	 */
-	public String getMd5() {
+	public String getMd5() throws TskCoreException {
+		if (md5 == null || md5.isEmpty()) {
+			md5 = getSleuthkitCase().getMd5ImageHash(this);
+		}
 		return md5;
 	}
 	
 	/**
 	 * gets the SHA1 hash value
 	 *
-	 * @return SHA1 hash if attained(from database). returns null if not set.
+	 * @return SHA1 hash if attained(from database), empty string otherwise
+	 * 
+	 * @throws TskCoreException
 	 */
-	public String getSha1() {
+	public String getSha1() throws TskCoreException {
+		if (sha1 == null || sha1.isEmpty()) {
+			sha1 = getSleuthkitCase().getSha1ImageHash(this);
+		}
 		return sha1;
 	}
 	
 	/**
 	 * gets the SHA256 hash value
 	 *
-	 * @return SHA256 hash if attained(from database). returns null if not set.
+	 * @return SHA256 hash if attained(from database), empty string otherwise
+	 * 
+	 * @throws TskCoreException
 	 */
-	public String getSha256() {
+	public String getSha256() throws TskCoreException {
+		if (sha256 == null || sha256.isEmpty()) {
+			sha256 = getSleuthkitCase().getSha256ImageHash(this);
+		}
 		return sha256;
 	}
 	

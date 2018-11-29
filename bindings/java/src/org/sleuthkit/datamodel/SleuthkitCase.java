@@ -1633,16 +1633,9 @@ public class SleuthkitCase {
 		Statement statement = connection.createStatement();
 		acquireSingleUserCaseWriteLock();
 		try {
-
-			// create examiners table
-			//if (this.dbType.equals(DbType.SQLITE)) {
-				statement.execute("ALTER TABLE tsk_image_info ADD COLUMN sha1 TEXT DEFAULT NULL");
-				statement.execute("ALTER TABLE tsk_image_info ADD COLUMN sha256 TEXT DEFAULT NULL");
-			//} else {
-			//	statement.execute("CREATE TABLE tsk_examiners (examiner_id BIGSERIAL PRIMARY KEY, login_name TEXT NOT NULL, display_name TEXT, UNIQUE(login_name))");
-			//	statement.execute("ALTER TABLE content_tags ADD COLUMN examiner_id BIGINT REFERENCES tsk_examiners(examiner_id) DEFAULT NULL");
-			//	statement.execute("ALTER TABLE blackboard_artifact_tags ADD COLUMN examiner_id BIGINT REFERENCES tsk_examiners(examiner_id) DEFAULT NULL");
-			//}
+			// Add new hash columns
+			statement.execute("ALTER TABLE tsk_image_info ADD COLUMN sha1 TEXT DEFAULT NULL");
+			statement.execute("ALTER TABLE tsk_image_info ADD COLUMN sha256 TEXT DEFAULT NULL");
 
 			return new CaseDbSchemaVersionNumber(8, 2);
 		} finally {
@@ -7705,6 +7698,39 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
+	
+	/**
+	 * Get the MD5 hash of an image from the case database
+	 * 
+	 * @param  The image object
+	 * @return The image's MD5 hash
+	 * 
+	 * @throws TskCoreException thrown if a critical error occurred within tsk
+	 *                          core
+	 */
+	String getMd5ImageHash(Image img) throws TskCoreException{
+		long id = img.getId();
+		CaseDbConnection connection = connections.getConnection();
+		acquireSingleUserCaseReadLock();
+		ResultSet rs = null;
+		String hash = "";
+		try {
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_IMAGE_MD5);
+			statement.clearParameters();
+			statement.setLong(1, id);
+			rs = connection.executeQuery(statement);
+			if (rs.next()) {
+				hash = rs.getString("md5");
+			}
+			return hash;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting MD5 hash", ex);
+		} finally {
+			closeResultSet(rs);
+			connection.close();
+			releaseSingleUserCaseReadLock();
+		}
+	}
 
 	/**
 	 * Store the SHA1 hash for the image in the database
@@ -7735,6 +7761,39 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
+	
+	/**
+	 * Get the SHA1 hash of an image from the case database
+	 * 
+	 * @param  The image object
+	 * @return The image's SHA1 hash
+	 * 
+	 * @throws TskCoreException thrown if a critical error occurred within tsk
+	 *                          core
+	 */
+	String getSha1ImageHash(Image img) throws TskCoreException{
+		long id = img.getId();
+		CaseDbConnection connection = connections.getConnection();
+		acquireSingleUserCaseReadLock();
+		ResultSet rs = null;
+		String hash = "";
+		try {
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_IMAGE_SHA1);
+			statement.clearParameters();
+			statement.setLong(1, id);
+			rs = connection.executeQuery(statement);
+			if (rs.next()) {
+				hash = rs.getString("sha1");
+			}
+			return hash;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error getting SHA1 hash", ex);
+		} finally {
+			closeResultSet(rs);
+			connection.close();
+			releaseSingleUserCaseReadLock();
+		}
+	}	
 
 	/**
 	 * Store the SHA256 hash for the file in the database
@@ -7763,6 +7822,39 @@ public class SleuthkitCase {
 		} finally {
 			connection.close();
 			releaseSingleUserCaseWriteLock();
+		}
+	}	
+	
+	/**
+	 * Get the SHA256 hash of an image from the case database
+	 * 
+	 * @param  The image object
+	 * @return The image's SHA256 hash
+	 * 
+	 * @throws TskCoreException thrown if a critical error occurred within tsk
+	 *                          core
+	 */
+	String getSha256ImageHash(Image img) throws TskCoreException{
+		long id = img.getId();
+		CaseDbConnection connection = connections.getConnection();
+		acquireSingleUserCaseReadLock();
+		ResultSet rs = null;
+		String hash = "";
+		try {
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_IMAGE_SHA256);
+			statement.clearParameters();
+			statement.setLong(1, id);
+			rs = connection.executeQuery(statement);
+			if (rs.next()) {
+				hash = rs.getString("sha256");
+			}
+			return hash;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error setting SHA256 hash", ex);
+		} finally {
+			closeResultSet(rs);
+			connection.close();
+			releaseSingleUserCaseReadLock();
 		}
 	}	
 
@@ -9439,6 +9531,9 @@ public class SleuthkitCase {
 		UPDATE_IMAGE_MD5("UPDATE tsk_image_info SET md5 = ? WHERE obj_id = ?"), //NON-NLS
 		UPDATE_IMAGE_SHA1("UPDATE tsk_image_info SET sha1 = ? WHERE obj_id = ?"), //NON-NLS
 		UPDATE_IMAGE_SHA256("UPDATE tsk_image_info SET sha256 = ? WHERE obj_id = ?"), //NON-NLS
+		SELECT_IMAGE_MD5("SELECT md5 FROM tsk_image_info WHERE obj_id = ?"), //NON-NLS
+		SELECT_IMAGE_SHA1("SELECT sha1 FROM tsk_image_info WHERE obj_id = ?"), //NON-NLS
+		SELECT_IMAGE_SHA256("SELECT sha256 FROM tsk_image_info WHERE obj_id = ?"), //NON-NLS
 		SELECT_LOCAL_PATH_FOR_FILE("SELECT path FROM tsk_files_path WHERE obj_id = ?"), //NON-NLS
 		SELECT_ENCODING_FOR_FILE("SELECT encoding_type FROM tsk_files_path WHERE obj_id = ?"), // NON-NLS
 		SELECT_LOCAL_PATH_AND_ENCODING_FOR_FILE("SELECT path, encoding_type FROM tsk_files_path WHERE obj_id = ?"), // NON_NLS
