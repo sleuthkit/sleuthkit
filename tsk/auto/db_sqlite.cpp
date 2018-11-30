@@ -397,29 +397,36 @@ TskDbSqlite::initialize()
             "CREATE TABLE tsk_events ("
             " event_id INTEGER PRIMARY KEY, "
             " data_source_obj_id INTEGER NOT NULL, "
-            " file_obj_id INTEGER NOT NULL, " 
+            " file_obj_id INTEGER NOT NULL, "
             " artifact_id INTEGER, "
             " time INTEGER NOT NULL, "
-            " sub_type INTEGER, "
-            " base_type INTEGER NOT NULL, "
+            // " sub_type INTEGER, "
+            // " base_type INTEGER NOT NULL, "
             " full_description TEXT NOT NULL, "
             " med_description TEXT NOT NULL, "
-            " short_description TEXT NOT NULL, " 
+            " short_description TEXT NOT NULL, "
             " hash_hit INTEGER NOT NULL, " //boolean 
             " tagged INTEGER NOT NULL, " //integer 
             "FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id), "
             "FOREIGN KEY(file_obj_id) REFERENCES tsk_objects(obj_id), "
-            "FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id), "
-            "FOREIGN KEY(sub_type) REFERENCES tsk_event_types(event_type_id), "
-            "FOREIGN KEY(base_type) REFERENCES tsk_event_types(event_type_id))"
-            , "Error creating tsk_events table: %s\n") ||
+            "FOREIGN KEY(artifact_id) REFERENCES blackboard_artifacts(artifact_id)) "
+            // "FOREIGN KEY(sub_type) REFERENCES tsk_event_types(event_type_id), "
+            // "FOREIGN KEY(base_type) REFERENCES tsk_event_types(event_type_id))"
+            , "Error creating tsk_events table: %s\n")
+        ||
+        attempt_exec(
+            "CREATE TABLE tsk_event_event_types ( "
+            " event_id BIGINT NOT NULL REFERENCES tsk_events(event_id), "
+            " event_type_id BIGINT NOT NULL REFERENCES tsk_event_types(event_type_id),"
+            " PRIMARY KEY (event_id, event_type_id))", "Error creating tsk_event_event_types table: %4\n")
+        ||
         attempt_exec("CREATE TABLE db_info ( key TEXT,  value INTEGER, PRIMARY KEY (key))", //TODO: drop this table
-            "Error creating db_info table: %s\n")
+                     "Error creating db_info table: %s\n")
         ||
         attempt_exec
         ("CREATE TABLE tsk_examiners (examiner_id INTEGER PRIMARY KEY, login_name TEXT NOT NULL, display_name TEXT, UNIQUE(login_name))",
-					"Error creating tsk_examiners table: %s\n") 
-		||
+         "Error creating tsk_examiners table: %s\n")
+        ||
 		attempt_exec
 		("CREATE TABLE content_tags (tag_id INTEGER PRIMARY KEY, obj_id INTEGER NOT NULL, tag_name_id INTEGER NOT NULL, comment TEXT NOT NULL, begin_byte_offset INTEGER NOT NULL, end_byte_offset INTEGER NOT NULL, examiner_id INTEGER, "
 			"FOREIGN KEY(examiner_id) REFERENCES tsk_examiners(examiner_id), FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id), FOREIGN KEY(tag_name_id) REFERENCES tag_names(tag_name_id))",
@@ -500,10 +507,10 @@ int TskDbSqlite::createIndexes()
         attempt_exec("CREATE INDEX events_artifact_id  ON tsk_events(artifact_id);",
             "Error creating events_artifact_id index on tsk_events: %s\n") ||
         attempt_exec(
-            "CREATE INDEX events_sub_type_short_description_time  ON tsk_events(sub_type, short_description, time);",
+            "CREATE INDEX events_sub_type_short_description_time  ON tsk_events( short_description, time);",
             "Error creating events_sub_type_short_description_time index on tsk_events: %s\n") ||
         attempt_exec(
-            "CREATE INDEX events_base_type_short_description_time  ON tsk_events(base_type, short_description, time);",
+            "CREATE INDEX events_base_type_short_description_time  ON tsk_events( short_description, time);",
             "Error creating events_base_type_short_description_time index on tsk_events: %s\n") ||
         attempt_exec("CREATE INDEX events_time  ON tsk_events(time);",
             "Error creating events_time index on tsk_events: %s\n");

@@ -21,6 +21,7 @@ package org.sleuthkit.datamodel.timeline;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSortedSet;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -403,4 +404,21 @@ public interface EventType extends Comparable<EventType> {
 			}
 		}
 	}
+
+	/**
+	 *
+	 * @param types
+	 *
+	 * @return
+	 */
+	static public EventType getCommonSuperType(Collection<EventType> types) {
+		if (types.size() == 1 || types.stream().distinct().count() == 1) {
+			return types.stream().findAny().get();
+		} else if (types.stream().map(EventType::getSuperType).distinct().count() == 1) {
+			return types.stream().map(EventType::getSuperType).findAny().get();
+		} else {
+			return EventType.ROOT_EVENT_TYPE;
+		}
+	}
+
 }

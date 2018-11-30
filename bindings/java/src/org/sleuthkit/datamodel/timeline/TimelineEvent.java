@@ -18,16 +18,18 @@
  */
 package org.sleuthkit.datamodel.timeline;
 
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import java.util.Collection;
 import java.util.Optional;
 import org.sleuthkit.datamodel.DescriptionLoD;
+import static org.sleuthkit.datamodel.timeline.EventType.getCommonSuperType;
 
 /**
  * A single event.
  */
 public final class TimelineEvent {
-
- 
 
 	private final long eventID;
 	/**
@@ -53,7 +55,7 @@ public final class TimelineEvent {
 	/**
 	 * The type of this event.
 	 */
-	private final EventType type;
+	private final ImmutableCollection<EventType> types;
 
 	/**
 	 * The three descriptions (full, med, short) stored in a map, keyed by
@@ -81,20 +83,20 @@ public final class TimelineEvent {
 	 * @param artifactID       ID of artifact (not object id) if event came from
 	 *                         an artifact
 	 * @param time
-	 * @param type
+	 * @param types
 	 * @param fullDescription
 	 * @param medDescription
 	 * @param shortDescription
 	 * @param hashHit
 	 * @param tagged
 	 */
-	public TimelineEvent(long eventID, long dataSourceObjID, long fileObjID, Long artifactID, long time, EventType type, String fullDescription, String medDescription, String shortDescription, boolean hashHit, boolean tagged) {
+	public TimelineEvent(long eventID, long dataSourceObjID, long fileObjID, Long artifactID, long time, Collection<EventType> types, String fullDescription, String medDescription, String shortDescription, boolean hashHit, boolean tagged) {
 		this.eventID = eventID;
 		this.dataSourceObjID = dataSourceObjID;
 		this.fileObjID = fileObjID;
 		this.artifactID = Long.valueOf(0).equals(artifactID) ? null : artifactID;
 		this.time = time;
-		this.type = type;
+		this.types = ImmutableSet.copyOf(types);
 		descriptions = ImmutableMap.<DescriptionLoD, String>of(DescriptionLoD.FULL, fullDescription,
 				DescriptionLoD.MEDIUM, medDescription,
 				DescriptionLoD.SHORT, shortDescription);
@@ -163,8 +165,8 @@ public final class TimelineEvent {
 		return time;
 	}
 
-	public EventType getEventType() {
-		return type;
+	public ImmutableCollection<EventType> getEventTypes() {
+		return types;
 	}
 
 	/**

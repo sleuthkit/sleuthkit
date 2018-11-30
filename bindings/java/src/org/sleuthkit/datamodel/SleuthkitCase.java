@@ -110,64 +110,64 @@ public class SleuthkitCase {
 	private static final String SQL_ERROR_INTERNAL_GROUP = "xx";
 	private static final int MIN_USER_DEFINED_TYPE_ID = 10000;
 	private static final Set<String> CORE_TABLE_NAMES_SET = ImmutableSet.of(
-		"tsk_events",
-		"tsk_event_types",
-		"tsk_db_info",
-		"tsk_objects",
-		"tsk_image_info",
-		"tsk_image_names",
-		"tsk_vs_info",
-		"tsk_vs_parts",
-		"tsk_fs_info",
-		"tsk_file_layout",
-		"tsk_files",
-		"tsk_files_path",
-		"tsk_files_derived",
-		"tsk_files_derived_method",
-		"tag_names",
-		"content_tags",
-		"blackboard_artifact_tags",
-		"blackboard_artifacts",
-		"blackboard_attributes",
-		"blackboard_artifact_types",
-		"blackboard_attribute_types",
-		"data_source_info",
-		"file_encoding_types",
-		"ingest_module_types",
-		"ingest_job_status_types",
-		"ingest_modules",
-		"ingest_jobs",
-		"ingest_job_modules",
-		"account_types",
-		"accounts",
-		"account_relationships",
-		"review_statuses",
-		"reports,");
+			"tsk_events",
+			"tsk_event_types",
+			"tsk_db_info",
+			"tsk_objects",
+			"tsk_image_info",
+			"tsk_image_names",
+			"tsk_vs_info",
+			"tsk_vs_parts",
+			"tsk_fs_info",
+			"tsk_file_layout",
+			"tsk_files",
+			"tsk_files_path",
+			"tsk_files_derived",
+			"tsk_files_derived_method",
+			"tag_names",
+			"content_tags",
+			"blackboard_artifact_tags",
+			"blackboard_artifacts",
+			"blackboard_attributes",
+			"blackboard_artifact_types",
+			"blackboard_attribute_types",
+			"data_source_info",
+			"file_encoding_types",
+			"ingest_module_types",
+			"ingest_job_status_types",
+			"ingest_modules",
+			"ingest_jobs",
+			"ingest_job_modules",
+			"account_types",
+			"accounts",
+			"account_relationships",
+			"review_statuses",
+			"reports,");
 
 	private static final Set<String> CORE_INDEX_NAMES_SET = ImmutableSet.of(
-		"parObjId",
-		"layout_objID",
-		"artifact_objID",
-		"artifact_artifact_objID",
-		"artifact_typeID",
-		"attrsArtifactID",
-		"mime_type",
-		"file_extension",
-		"relationships_account1",
-		"relationships_account2",
-		"relationships_relationship_source_obj_id",
-		"relationships_date_time",
-		"relationships_relationship_type",
-		"relationships_data_source_obj_id",
-		"events_data_source_obj_id",
-		"events_event_id_hash_hit",
-		"events_event_id_tagged",
-		"events_file_obj_id",
-		"events_artifact_id",
-		"events_sub_type_short_description_time",
-		"events_base_type_short_description_time",
-		"events_time",
-		"events_known_state");
+			"parObjId",
+			"layout_objID",
+			"artifact_objID",
+			"artifact_artifact_objID",
+			"artifact_typeID",
+			"attrsArtifactID",
+			"mime_type",
+			"file_extension",
+			"relationships_account1",
+			"relationships_account2",
+			"relationships_relationship_source_obj_id",
+			"relationships_date_time",
+			"relationships_relationship_type",
+			"relationships_data_source_obj_id",
+			"events_data_source_obj_id",
+			"events_event_id_hash_hit",
+			"events_event_id_tagged",
+			"events_file_obj_id",
+			"events_artifact_id",
+			"events_sub_type_short_description_time",
+			"events_base_type_short_description_time",
+			"events_time",
+			"events_known_state");
 
 	private final ConnectionPool connections;
 	private final Map<Long, VirtualDirectory> rootIdsToCarvedFileDirs = new HashMap<>();
@@ -224,7 +224,7 @@ public class SleuthkitCase {
 
 	// Cache of frequently used content objects (e.g. data source, file system).
 	private final Map<Long, Content> frequentlyUsedContentMap = new HashMap<>();
-	
+
 	private Examiner cachedCurrentExaminer = null;
 
 	/**
@@ -1719,8 +1719,8 @@ public class SleuthkitCase {
 					+ " file_obj_id BIGINT NOT NULL, "
 					+ " artifact_id BIGINT, "
 					+ " time INTEGER NOT NULL, "
-					+ " sub_type INTEGER, "
-					+ " base_type INTEGER NOT NULL, "
+					//					+ " sub_type INTEGER, "
+					//					+ " base_type INTEGER NOT NULL, "
 					+ " full_description TEXT NOT NULL, "
 					+ " med_description TEXT NOT NULL, "
 					+ " short_description TEXT NOT NULL, "
@@ -1733,14 +1733,19 @@ public class SleuthkitCase {
 					+ "FOREIGN KEY(sub_type) REFERENCES tsk_event_types(event_type_id), "
 					+ "FOREIGN KEY(base_type) REFERENCES tsk_event_types(event_type_id))");
 
+			statement.execute("CREATE TABLE tsk_event_event_types ( "
+					+ " event_id BIGINT NOT NULL REFERENCES tsk_events(event_id), "
+					+ " event_type_id BIGINT NOT NULL REFERENCES tsk_event_types(event_type_id),"
+					+ " PRIMARY KEY (event_id, event_type_id))");
+
 			//create tsk_events indices
 			statement.execute("CREATE INDEX events_data_source_obj_id ON tsk_events(data_source_obj_id)");
 			statement.execute("CREATE INDEX events_event_id_hash_hit ON tsk_events(event_id, hash_hit)");
 			statement.execute("CREATE INDEX events_event_id_tagged ON tsk_events(event_id, tagged)");
 			statement.execute("CREATE INDEX events_file_obj_id ON tsk_events(file_obj_id)");
 			statement.execute("CREATE INDEX events_artifact_id ON tsk_events(artifact_id)");
-			statement.execute("CREATE INDEX events_sub_type_short_description_time ON tsk_events(sub_type, short_description, time)");
-			statement.execute("CREATE INDEX events_base_type_short_description_time ON tsk_events(base_type, short_description, time)");
+			statement.execute("CREATE INDEX events_sub_type_short_description_time ON tsk_events(  short_description, time)");
+			statement.execute("CREATE INDEX events_base_type_short_description_time ON tsk_events( short_description, time)");
 			statement.execute("CREATE INDEX events_time ON tsk_events(time)");
 			statement.execute("CREATE INDEX events_known_state ON tsk_events(known_state)");
 
@@ -2120,7 +2125,7 @@ public class SleuthkitCase {
 			connection.close();
 			releaseSingleUserCaseReadLock();
 		}
-		
+
 	}
 
 	/**
@@ -5487,7 +5492,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
-			
+
 			// NOTE: write lock will be released by transaction
 			if (null != transaction) {
 				try {
@@ -5670,7 +5675,7 @@ public class SleuthkitCase {
 		} finally {
 			closeResultSet(resultSet);
 			closeStatement(statement);
-			
+
 			// NOTE: write lock will be released by transaction
 			if (null != transaction) {
 				try {
@@ -7668,16 +7673,16 @@ public class SleuthkitCase {
 		}
 		return true;
 	}
-	
+
 	/**
 	 * Set the name of an object in the tsk_files table.
-	 * 
+	 *
 	 * @param name  The new name for the object
 	 * @param objId The object ID
-	 * 
+	 *
 	 * @throws TskCoreException If there is an error updating the case database.
 	 */
-	void setFileName (String name, long objId) throws TskCoreException {
+	void setFileName(String name, long objId) throws TskCoreException {
 
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseWriteLock();
@@ -7692,18 +7697,18 @@ public class SleuthkitCase {
 		} finally {
 			connection.close();
 			releaseSingleUserCaseWriteLock();
-		}	
+		}
 	}
-	
+
 	/**
 	 * Set the display name of an image in the tsk_image_info table.
-	 * 
+	 *
 	 * @param name  The new name for the image
 	 * @param objId The object ID
-	 * 
+	 *
 	 * @throws TskCoreException If there is an error updating the case database.
 	 */
-	void setImageName (String name, long objId) throws TskCoreException {
+	void setImageName(String name, long objId) throws TskCoreException {
 
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseWriteLock();
@@ -7718,7 +7723,7 @@ public class SleuthkitCase {
 		} finally {
 			connection.close();
 			releaseSingleUserCaseWriteLock();
-		}	
+		}
 	}
 
 	/**
@@ -9642,8 +9647,10 @@ public class SleuthkitCase {
 			configurationOverrides.put("acquireIncrement", "2");
 			configurationOverrides.put("initialPoolSize", "5");
 			configurationOverrides.put("minPoolSize", "5");
-			/* NOTE: max pool size and max statements are related. 
-			 * If you increase max pool size, then also increase statements. */
+			/*
+			 * NOTE: max pool size and max statements are related. If you
+			 * increase max pool size, then also increase statements.
+			 */
 			configurationOverrides.put("maxPoolSize", "20");
 			configurationOverrides.put("maxStatements", "200");
 			configurationOverrides.put("maxStatementsPerConnection", "20");
@@ -9679,8 +9686,10 @@ public class SleuthkitCase {
 			comboPooledDataSource.setAcquireIncrement(2);
 			comboPooledDataSource.setInitialPoolSize(5);
 			comboPooledDataSource.setMinPoolSize(5);
-			/* NOTE: max pool size and max statements are related. 
-			 * If you increase max pool size, then also increase statements. */
+			/*
+			 * NOTE: max pool size and max statements are related. If you
+			 * increase max pool size, then also increase statements.
+			 */
 			comboPooledDataSource.setMaxPoolSize(20);
 			comboPooledDataSource.setMaxStatements(200);
 			comboPooledDataSource.setMaxStatementsPerConnection(20);
