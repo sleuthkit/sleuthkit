@@ -759,7 +759,7 @@ public final class TimelineManager {
 			long eventID;
 			try (ResultSet generatedKeys = insertRowStmt.getGeneratedKeys();) {
 				generatedKeys.next();
-				eventID = generatedKeys.getLong("event_id");
+				eventID = generatedKeys.getLong(1);
 			}
 			for (EventType type : types) {
 				insertRowStmt.execute("INSERT INTO tsk_event_event_types "

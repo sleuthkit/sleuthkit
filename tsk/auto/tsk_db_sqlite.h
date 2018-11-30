@@ -20,6 +20,7 @@
 #include <map>
 
 #include "tsk_db.h"
+#include <unordered_set>
 
 #ifdef HAVE_LIBSQLITE3
   #include <sqlite3.h>
@@ -115,8 +116,11 @@ class TskDbSqlite : public TskDb {
     
     void storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_file, const char *path, const int64_t & objId);
     int64_t findParObjId(const TSK_FS_FILE * fs_file, const char *path, const int64_t & fsObjId);
-	int addMACTimeEvent(char*& zSQL, const int64_t data_source_obj_id, const int64_t obj_id, time_t crtime,
-	                    const int64_t sub_type, const char* fullDesc, const char* medDesc, const char* shortDesc);
+    int addMACTimeEvents(const int64_t data_source_obj_id, const int64_t obj_id, time_t time,
+                         std::unordered_set<int64_t> sub_types, const char* full_desc, const char* med_desc,
+                         const char* short_desc);
+    // int addMACTimeEvent(char*& zSQL, const int64_t data_source_obj_id, const int64_t obj_id, time_t crtime,
+	   //                  const int64_t sub_type, const char* fullDesc, const char* medDesc, const char* shortDesc);
 
 	uint32_t hash(const unsigned char *str);
     sqlite3 *m_db;

@@ -18,6 +18,7 @@
 #include <string.h>
 #include <sstream>
 #include <algorithm>
+#include <unordered_set>
 
 using std::stringstream;
 using std::sort;
@@ -992,9 +993,9 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE* fs_file, const char* parent
     return parObjId;
 }
 
-int TskDbSqlite::addMACTimeEvent(char*& zSQL, const int64_t data_source_obj_id, const int64_t obj_id, time_t time,
-                                 const int64_t sub_type, const char* full_desc, const char* med_desc,
-                                 const char* short_desc)
+int TskDbSqlite::addMACTimeEvents(const int64_t data_source_obj_id, const int64_t obj_id, time_t time,
+    std::unordered_set<int64_t> type_ids, const char* full_desc, const char* med_desc,
+                                  const char* short_desc)
 {
     if (time == 0)
     {
@@ -1002,17 +1003,15 @@ int TskDbSqlite::addMACTimeEvent(char*& zSQL, const int64_t data_source_obj_id, 
         return 0;
     }
 
-    //insert MAC time events
-    zSQL = sqlite3_mprintf(
-        "INSERT INTO tsk_events ( data_source_obj_id, file_obj_id , artifact_id, time, sub_type, base_type, full_description, med_description, short_description, hash_hit, tagged) "
+    //insert MAC time event
+    char* zSQL = sqlite3_mprintf(
+        "INSERT INTO tsk_events ( data_source_obj_id, file_obj_id , artifact_id, time,  full_description, med_description, short_description, hash_hit, tagged) "
         // NON-NLS
         " VALUES ("
         "%" PRId64 "," // data_source_obj_id
         "%" PRId64 "," // file_obj_id
         "NULL," // fixed artifact_id
         "%" PRIu64 "," // time
-        "%" PRIu64 "," // sub_type
-        "1," // fixed base_type
         "%Q," // full_description
         "%Q," // med_description
         "%Q," // short_description
@@ -1021,13 +1020,39 @@ int TskDbSqlite::addMACTimeEvent(char*& zSQL, const int64_t data_source_obj_id, 
         ")",
         data_source_obj_id,
         obj_id,
-        (unsigned long long)time, // this one changes
-        sub_type,
+        (unsigned long long)time,
+
         full_desc,
         med_desc,
         short_desc);
 
-    return attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding event to events table: %s\n");
+    if (attempt_exec(zSQL, "TskDbSqlite::addMACTimeEvents: Error adding filesystem event to tsk_events table: %s\n"))
+    {
+        sqlite3_free(zSQL);
+        return 1;
+    }
+    sqlite3_free(zSQL);
+    const int64_t event_id = sqlite3_last_insert_rowid(m_db);
+
+    //insert type entries for this MAC event.
+    for (std::unordered_set<int64_t>::iterator type_iterator = type_ids.begin(); type_iterator != type_ids.end(); ++
+         type_iterator)
+    {
+        zSQL = sqlite3_mprintf(
+            "INSERT INTO tsk_event_event_types ( event_id, event_type_id) "
+            "values (%" PRId64 ", %" PRId64 " )",
+            event_id, *type_iterator);
+
+        if (attempt_exec(zSQL, "TskDbSqlite::addMACTimeEvents: Error adding event to tsk_event_event_types table: %s\n"))
+        {
+            sqlite3_free(zSQL);
+            return 1;
+        }
+        sqlite3_free(zSQL);
+    }
+
+
+    return 0;
 }
 
 /**
@@ -1038,10 +1063,10 @@ int TskDbSqlite::addMACTimeEvent(char*& zSQL, const int64_t data_source_obj_id, 
 */
 int
 TskDbSqlite::addFile(TSK_FS_FILE* fs_file,
-                     const TSK_FS_ATTR* fs_attr, const char* path,
-                     const unsigned char*const md5, const TSK_DB_FILES_KNOWN_ENUM known,
-                     int64_t fsObjId, int64_t parObjId,
-                     int64_t& objId, int64_t dataSourceObjId)
+    const TSK_FS_ATTR* fs_attr, const char* path,
+    const unsigned char*const md5, const TSK_DB_FILES_KNOWN_ENUM known,
+    int64_t fsObjId, int64_t parObjId,
+    int64_t& objId, int64_t dataSourceObjId)
 {
     time_t mtime = 0;
     time_t crtime = 0;
@@ -1133,7 +1158,7 @@ TskDbSqlite::addFile(TSK_FS_FILE* fs_file,
         for (int i = 0; i < 16; i++)
         {
             sprintf(&(md5Text[i * 2]), "%x%x", (md5[i] >> 4) & 0xf,
-                    md5[i] & 0xf);
+                md5[i] & 0xf);
         }
         md5TextPtr = md5Text;
     }
@@ -1185,22 +1210,42 @@ TskDbSqlite::addFile(TSK_FS_FILE* fs_file,
     full_description.append(name);
     const size_t firstslash = escaped_path_str.find('/', 1);
     std::string short_desc = (firstslash == std::string::npos)
-                            ? escaped_path_str
-                            : escaped_path_str.substr(0, firstslash + 1);
+        ? escaped_path_str
+        : escaped_path_str.substr(0, firstslash + 1);
 
-  
-	if (!TSK_FS_ISDOT(name)) {
-		if (addMACTimeEvent(zSQL, dataSourceObjId, objId, mtime, 4, full_description.c_str(), escaped_path, short_desc.c_str())
-			|| addMACTimeEvent(zSQL, dataSourceObjId, objId, atime, 5, full_description.c_str(), escaped_path, short_desc.c_str())
-			|| addMACTimeEvent(zSQL, dataSourceObjId, objId, crtime, 6, full_description.c_str(), escaped_path, short_desc.c_str())
-			|| addMACTimeEvent(zSQL, dataSourceObjId, objId, ctime, 7, full_description.c_str(), escaped_path, short_desc.c_str()))
-		{
-			free(name);
-			free(escaped_path);
-			sqlite3_free(zSQL);
-			return 1;
-		}
-	}
+
+    if (!TSK_FS_ISDOT(name)) {
+
+        // map from time to event type ids
+        std::multimap<time_t, int64_t> timeMap = {
+            {mtime, 4},
+            {atime, 5},
+            {crtime, 6},
+            {ctime, 7}
+        };
+
+
+        //for each key (time)
+        for (auto keyIterator = timeMap.begin(), end = timeMap.end(); keyIterator != end; keyIterator = timeMap.upper_bound(keyIterator->first))
+        {
+            //iterate over values (event types) for that key(time) and add them to event_type_ids
+            std::unordered_set<int64_t> event_type_ids;
+            const auto valueIterator = timeMap.equal_range(keyIterator->first);
+            for (auto it = valueIterator.first; it != valueIterator.second; it++)
+            {
+                event_type_ids.insert(it->second);
+            }
+            //insert one event for that time
+            if (addMACTimeEvents(dataSourceObjId, objId, keyIterator->first, event_type_ids, full_description.c_str(), escaped_path,
+                                 short_desc.c_str()))
+            {
+                free(name);
+                free(escaped_path);
+                sqlite3_free(zSQL);
+                return 1;
+            };
+        }
+    }
 
     //if dir, update parent id cache (do this before objId may be changed creating the slack file)
     if (TSK_FS_IS_DIR_META(meta_type))
