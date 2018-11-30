@@ -532,6 +532,9 @@ public abstract class AbstractFile extends AbstractContent {
 	 *
 	 * @throws TskCoreException if there was an error querying the case
 	 *                          database.
+	 * 
+	 * To obtain the data source as a DataSource object, use:
+	 * getSleuthkitCase().getDataSource(getDataSourceObjectId());
 	 */
 	@Override
 	public Content getDataSource() throws TskCoreException {
