@@ -5219,7 +5219,7 @@ public class SleuthkitCase {
 					+ " ORDER BY dir_type, LOWER(name)"); //NON-NLS
 			List<VirtualDirectory> virtDirRootIds = new ArrayList<VirtualDirectory>();
 			while (rs.next()) {
-				virtDirRootIds.add(virtualDirectory(rs));
+				virtDirRootIds.add(virtualDirectory(rs, connection));
 			}
 			return virtDirRootIds;
 		} catch (SQLException ex) {
@@ -6985,7 +6985,7 @@ public class SleuthkitCase {
 					results.add(result);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.VIRTUAL_DIR.getFileType()
 						|| (rs.getShort("meta_type") == TSK_FS_META_TYPE_ENUM.TSK_FS_META_TYPE_VIRT_DIR.getValue())) { //NON-NLS
-					final VirtualDirectory virtDir = virtualDirectory(rs);
+					final VirtualDirectory virtDir = virtualDirectory(rs, connection);
 					results.add(virtDir);
 				} else if (type == TSK_DB_FILES_TYPE_ENUM.LOCAL_DIR.getFileType()) {
 					final LocalDirectory localDir = localDirectory(rs);
@@ -7085,27 +7085,69 @@ public class SleuthkitCase {
 	}
 
 	/**
-	 * Create a virtual directory object from a result set
+	 * Create a virtual directory object from a result set.
 	 *
-	 * @param rs the result set
+	 * @param rs the result set.
+	 * @param connection The case database connection.
 	 *
-	 * @return newly created VirtualDirectory object
+	 * @return newly created VirtualDirectory object.
 	 *
 	 * @throws SQLException
 	 */
-	VirtualDirectory virtualDirectory(ResultSet rs) throws SQLException {
+	VirtualDirectory virtualDirectory(ResultSet rs, CaseDbConnection connection) throws SQLException {
 		String parentPath = rs.getString("parent_path"); //NON-NLS
 		if (parentPath == null) {
 			parentPath = "";
 		}
-		final VirtualDirectory vd = new VirtualDirectory(this, rs.getLong("obj_id"), //NON-NLS
-				rs.getLong("data_source_obj_id"), rs.getString("name"), //NON-NLS
-				TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
-				TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
-				TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), //NON-NLS
-				rs.getShort("meta_flags"), rs.getString("md5"), //NON-NLS
-				FileKnown.valueOf(rs.getByte("known")), parentPath); //NON-NLS
-		return vd;
+		
+		long objId = rs.getLong("obj_id");
+		long dsObjId = rs.getLong("data_source_obj_id");
+		if (objId == dsObjId) {	// virtual directory is a data source
+			
+			String deviceId = "";
+			String timeZone = "";
+			Statement s = null;
+			ResultSet rsDataSourceInfo = null;
+			
+			acquireSingleUserCaseReadLock();
+			try {
+				s = connection.createStatement();
+				rsDataSourceInfo = connection.executeQuery(s, "SELECT device_id, time_zone FROM data_source_info WHERE obj_id = " + objId);
+				if (rsDataSourceInfo.next()) {
+					deviceId = rsDataSourceInfo.getString("device_id");
+					timeZone = rsDataSourceInfo.getString("time_zone");
+				}
+			} catch (SQLException ex) {
+				logger.log(Level.SEVERE, "Error data source info for datasource id " + objId, ex); //NON-NLS
+			} finally {
+				closeResultSet(rsDataSourceInfo);
+				closeStatement(s);
+				releaseSingleUserCaseReadLock();
+			}
+			
+			return new LocalFilesDataSource(this, 
+							objId, dsObjId, 
+							deviceId, 
+							rs.getString("name"), 
+							TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
+							TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
+							TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), 
+							rs.getShort("meta_flags"), 
+							timeZone, 
+							rs.getString("md5"), 
+							FileKnown.valueOf(rs.getByte("known")),
+							parentPath);
+		} else {
+			final VirtualDirectory vd = new VirtualDirectory(this, 
+					objId, dsObjId, 
+					rs.getString("name"), //NON-NLS
+					TSK_FS_NAME_TYPE_ENUM.valueOf(rs.getShort("dir_type")), //NON-NLS
+					TSK_FS_META_TYPE_ENUM.valueOf(rs.getShort("meta_type")), //NON-NLS
+					TSK_FS_NAME_FLAG_ENUM.valueOf(rs.getShort("dir_flags")), //NON-NLS
+					rs.getShort("meta_flags"), rs.getString("md5"), //NON-NLS
+					FileKnown.valueOf(rs.getByte("known")), parentPath); //NON-NLS
+			return vd;
+		}
 	}
 
 	/**
@@ -7296,12 +7338,12 @@ public class SleuthkitCase {
 							}
 							children.add(result);
 						} else {
-							VirtualDirectory virtDir = virtualDirectory(rs);
+							VirtualDirectory virtDir = virtualDirectory(rs, connection);
 							children.add(virtDir);
 						}
 						break;
 					case VIRTUAL_DIR:
-						VirtualDirectory virtDir = virtualDirectory(rs);
+						VirtualDirectory virtDir = virtualDirectory(rs, connection);
 						children.add(virtDir);
 						break;
 					case LOCAL_DIR:
