@@ -4283,7 +4283,7 @@ public class SleuthkitCase {
 	 *
 	 * @param fsc FsContent to get parent dir for
 	 *
-	 * @return the parent Directory
+	 * @return the parent Directory or null if the Content has no parent
 	 *
 	 * @throws TskCoreException thrown if critical error occurred within tsk
 	 *                          core
@@ -4292,9 +4292,13 @@ public class SleuthkitCase {
 		// TODO: This should not throw an exception if Content has no parent,
 		// return null instead.
 		if (fsc.isRoot()) {
-			throw new TskCoreException("Given FsContent (id: " + fsc.getId() + ") is a root object (can't have parent directory).");
+			// Given FsContent is a root object and can't have parent directory
+			return null;
 		} else {
 			ObjectInfo parentInfo = getParentInfo(fsc);
+			if (parentInfo == null) {
+				return null;
+			}
 			Directory parent = null;
 			if (parentInfo.type == ObjectType.ABSTRACTFILE) {
 				parent = getDirectoryById(parentInfo.id, fsc.getFileSystem());
