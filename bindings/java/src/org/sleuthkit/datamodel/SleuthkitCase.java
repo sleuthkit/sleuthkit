@@ -4239,31 +4239,7 @@ public class SleuthkitCase {
 	 *                          within tsk core
 	 */
 	ObjectInfo getParentInfo(Content c) throws TskCoreException {
-		// TODO: This should not throw an exception if Content has no parent,
-		// return null instead.
-		CaseDbConnection connection = connections.getConnection();
-		acquireSingleUserCaseReadLock();
-		Statement s = null;
-		ResultSet rs = null;
-		try {
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT parent.obj_id AS obj_id, parent.type AS type " //NON-NLS
-					+ "FROM tsk_objects AS parent INNER JOIN tsk_objects AS child " //NON-NLS
-					+ "ON child.par_obj_id = parent.obj_id " //NON-NLS
-					+ "WHERE child.obj_id = " + c.getId()); //NON-NLS
-			if (rs.next()) {
-				return new ObjectInfo(rs.getLong("obj_id"), ObjectType.valueOf(rs.getShort("type")));
-			} else {
-				return null;
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting Parent Info for Content", ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			connection.close();
-			releaseSingleUserCaseReadLock();
-		}
+		return getParentInfo(c.getId());
 	}
 
 	/**
@@ -4277,8 +4253,6 @@ public class SleuthkitCase {
 	 *                          within tsk core
 	 */
 	ObjectInfo getParentInfo(long contentId) throws TskCoreException {
-		// TODO: This should not throw an exception if Content has no parent,
-		// return null instead.
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
 		Statement s = null;
