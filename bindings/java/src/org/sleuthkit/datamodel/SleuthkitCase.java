@@ -4254,7 +4254,7 @@ public class SleuthkitCase {
 			if (rs.next()) {
 				return new ObjectInfo(rs.getLong("obj_id"), ObjectType.valueOf(rs.getShort("type")));
 			} else {
-				throw new TskCoreException("Given content (id: " + c.getId() + ") has no parent");
+				return null;
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting Parent Info for Content", ex);
@@ -4292,7 +4292,7 @@ public class SleuthkitCase {
 			if (rs.next()) {
 				return new ObjectInfo(rs.getLong("obj_id"), ObjectType.valueOf(rs.getShort("type")));
 			} else {
-				throw new TskCoreException("Given content (id: " + contentId + ") has no parent.");
+				return null;
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting Parent Info for Content: " + contentId, ex);
