@@ -1172,10 +1172,10 @@ public class BlackboardArtifact implements Content {
 		TSK_WIFI_NETWORK_ADAPTER(46, "TSK_WIFI_NETWORK_ADAPTER",  //NON-NLS
 				bundle.getString("BlackboardArtifact.tskWIFINetworkAdapter.text")),
 		/**
-		 * Indicates a validation failure
+		 * Indicates a verification failure
 		 */
-		TSK_VALIDATION_FAILED(47, "TSK_VALIDATION_FAILED",  //NON-NLS
-				bundle.getString("BlackboardArtifact.tskValidationFailed.text"));
+		TSK_VERIFICATION_FAILED(47, "TSK_VERIFICATION_FAILED",  //NON-NLS
+				bundle.getString("BlackboardArtifact.tskVerificationFailed.text"));
 		
 		private final String label;
 		private final int typeId;
