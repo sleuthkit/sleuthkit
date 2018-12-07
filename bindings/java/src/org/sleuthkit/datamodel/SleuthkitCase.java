@@ -4289,8 +4289,6 @@ public class SleuthkitCase {
 	 *                          core
 	 */
 	Directory getParentDirectory(FsContent fsc) throws TskCoreException {
-		// TODO: This should not throw an exception if Content has no parent,
-		// return null instead.
 		if (fsc.isRoot()) {
 			// Given FsContent is a root object and can't have parent directory
 			return null;
