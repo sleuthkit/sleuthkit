@@ -4239,31 +4239,7 @@ public class SleuthkitCase {
 	 *                          within tsk core
 	 */
 	ObjectInfo getParentInfo(Content c) throws TskCoreException {
-		// TODO: This should not throw an exception if Content has no parent,
-		// return null instead.
-		CaseDbConnection connection = connections.getConnection();
-		acquireSingleUserCaseReadLock();
-		Statement s = null;
-		ResultSet rs = null;
-		try {
-			s = connection.createStatement();
-			rs = connection.executeQuery(s, "SELECT parent.obj_id AS obj_id, parent.type AS type " //NON-NLS
-					+ "FROM tsk_objects AS parent INNER JOIN tsk_objects AS child " //NON-NLS
-					+ "ON child.par_obj_id = parent.obj_id " //NON-NLS
-					+ "WHERE child.obj_id = " + c.getId()); //NON-NLS
-			if (rs.next()) {
-				return new ObjectInfo(rs.getLong("obj_id"), ObjectType.valueOf(rs.getShort("type")));
-			} else {
-				throw new TskCoreException("Given content (id: " + c.getId() + ") has no parent");
-			}
-		} catch (SQLException ex) {
-			throw new TskCoreException("Error getting Parent Info for Content", ex);
-		} finally {
-			closeResultSet(rs);
-			closeStatement(s);
-			connection.close();
-			releaseSingleUserCaseReadLock();
-		}
+		return getParentInfo(c.getId());
 	}
 
 	/**
@@ -4277,8 +4253,6 @@ public class SleuthkitCase {
 	 *                          within tsk core
 	 */
 	ObjectInfo getParentInfo(long contentId) throws TskCoreException {
-		// TODO: This should not throw an exception if Content has no parent,
-		// return null instead.
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseReadLock();
 		Statement s = null;
@@ -4292,7 +4266,7 @@ public class SleuthkitCase {
 			if (rs.next()) {
 				return new ObjectInfo(rs.getLong("obj_id"), ObjectType.valueOf(rs.getShort("type")));
 			} else {
-				throw new TskCoreException("Given content (id: " + contentId + ") has no parent.");
+				return null;
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error getting Parent Info for Content: " + contentId, ex);
@@ -4309,18 +4283,20 @@ public class SleuthkitCase {
 	 *
 	 * @param fsc FsContent to get parent dir for
 	 *
-	 * @return the parent Directory
+	 * @return the parent Directory or null if the Content has no parent
 	 *
 	 * @throws TskCoreException thrown if critical error occurred within tsk
 	 *                          core
 	 */
 	Directory getParentDirectory(FsContent fsc) throws TskCoreException {
-		// TODO: This should not throw an exception if Content has no parent,
-		// return null instead.
 		if (fsc.isRoot()) {
-			throw new TskCoreException("Given FsContent (id: " + fsc.getId() + ") is a root object (can't have parent directory).");
+			// Given FsContent is a root object and can't have parent directory
+			return null;
 		} else {
 			ObjectInfo parentInfo = getParentInfo(fsc);
+			if (parentInfo == null) {
+				return null;
+			}
 			Directory parent = null;
 			if (parentInfo.type == ObjectType.ABSTRACTFILE) {
 				parent = getDirectoryById(parentInfo.id, fsc.getFileSystem());

@@ -406,13 +406,12 @@ public class BlackboardArtifact implements Content {
 	public synchronized Content getParent() throws TskCoreException {
 		if (parent == null) {
 			ObjectInfo parentInfo;
-			try {
-				parentInfo = getSleuthkitCase().getParentInfo(this);
-			} catch (TskCoreException ex) {
-				// there is not parent; not an error if we've got a data source
-				return null;
+			parentInfo = getSleuthkitCase().getParentInfo(this);
+			if (parentInfo == null) {
+				parent = null;
+			} else {
+				parent = getSleuthkitCase().getContentById(parentInfo.getId());
 			}
-			parent = getSleuthkitCase().getContentById(parentInfo.getId());
 		}
 		return parent;
 	}

@@ -211,12 +211,12 @@ public class Report implements Content {
 	public Content getParent() throws TskCoreException {
 		if (parent == null) {
 			SleuthkitCase.ObjectInfo parentInfo;
-			try {
-				parentInfo = db.getParentInfo(this);
-			} catch (TskCoreException ex) {
-				return null;
+			parentInfo = db.getParentInfo(this);
+			if (parentInfo == null) {
+				parent = null;
+			} else {
+				parent = db.getContentById(parentInfo.getId());
 			}
-			parent = db.getContentById(parentInfo.getId());
 		}
 		return parent;
 	}
