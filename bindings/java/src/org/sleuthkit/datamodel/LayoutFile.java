@@ -140,6 +140,12 @@ public class LayoutFile extends AbstractFile {
 	protected int readInt(byte[] buf, long offset, long len) throws TskCoreException {
 		long offsetInThisLayoutContent = 0; // current offset in this LayoutContent
 		int bytesRead = 0; // Bytes read so far
+		
+		// if the caller has requested more data than we have in the file
+		// then make sure we don't go beyond the end of the file
+		long readLen = len;
+		if (offset + readLen > size) 
+			readLen = size - offset;
 
 		if (imageHandle == -1) {
 			Content dataSource = getDataSource();
@@ -152,17 +158,17 @@ public class LayoutFile extends AbstractFile {
 		}
 
 		for (TskFileRange range : getRanges()) {
-			if (bytesRead < len) { // we haven't read enough yet
+			if (bytesRead < readLen) { // we haven't read enough yet
 				if (offset < offsetInThisLayoutContent + range.getByteLen()) { // if we are in a range object we want to read from
 					long offsetInRange = 0; // how far into the current range object to start reading
 					if (bytesRead == 0) { // we haven't read anything yet so we want to read from the correct offset in this range object
 						offsetInRange = offset - offsetInThisLayoutContent; // start reading from the correct offset
 					}
 					long offsetInImage = range.getByteStart() + offsetInRange; // how far into the image to start reading
-					long lenToRead = Math.min(range.getByteLen() - offsetInRange, len - bytesRead); // how much we can read this time
-					int lenRead = readImgToOffset(imageHandle, buf, bytesRead, offsetInImage, (int) lenToRead);
+					long lenToReadInRange = Math.min(range.getByteLen() - offsetInRange, readLen - bytesRead); // how much we can read this time
+					int lenRead = readImgToOffset(imageHandle, buf, bytesRead, offsetInImage, (int) lenToReadInRange);
 					bytesRead += lenRead;
-					if (lenToRead != lenRead) { // If image read failed or was cut short
+					if (lenToReadInRange != lenRead) { // If image read failed or was cut short
 						break;
 					}
 				}

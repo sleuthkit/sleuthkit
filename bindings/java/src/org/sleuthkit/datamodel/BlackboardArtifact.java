@@ -406,13 +406,12 @@ public class BlackboardArtifact implements Content {
 	public synchronized Content getParent() throws TskCoreException {
 		if (parent == null) {
 			ObjectInfo parentInfo;
-			try {
-				parentInfo = getSleuthkitCase().getParentInfo(this);
-			} catch (TskCoreException ex) {
-				// there is not parent; not an error if we've got a data source
-				return null;
+			parentInfo = getSleuthkitCase().getParentInfo(this);
+			if (parentInfo == null) {
+				parent = null;
+			} else {
+				parent = getSleuthkitCase().getContentById(parentInfo.getId());
 			}
-			parent = getSleuthkitCase().getContentById(parentInfo.getId());
 		}
 		return parent;
 	}
@@ -1152,25 +1151,30 @@ public class BlackboardArtifact implements Content {
 		TSK_WIFI_NETWORK(42, "TSK_WIFI_NETWORK",  //NON-NLS
 				bundle.getString("BlackboardArtifact.tskWIFINetwork.text")),
 		/**
-		 * A wireless network.
+		 * Information related to a device.
 		 */
 		TSK_DEVICE_INFO(43, "TSK_DEVICE_INFO",  //NON-NLS
 				bundle.getString("BlackboardArtifact.tskDeviceInfo.text")),
 		/**
-		 * A wireless network.
+		 * A SIM card.
 		 */
 		TSK_SIM_ATTACHED(44, "TSK_SIM_ATTACHED",  //NON-NLS
 				bundle.getString("BlackboardArtifact.tskSimAttached.text")),
 		/**
-		 * A wireless network.
+		 * A bluetooth adapter.
 		 */
 		TSK_BLUETOOTH_ADAPTER(45, "TSK_BLUETOOTH_ADAPTER",  //NON-NLS
 				bundle.getString("BlackboardArtifact.tskBluetoothAdapter.text")),
 		/**
-		 * A wireless network.
+		 * A wireless network adapter.
 		 */
 		TSK_WIFI_NETWORK_ADAPTER(46, "TSK_WIFI_NETWORK_ADAPTER",  //NON-NLS
-				bundle.getString("BlackboardArtifact.tskWIFINetworkAdapter.text"));
+				bundle.getString("BlackboardArtifact.tskWIFINetworkAdapter.text")),
+		/**
+		 * Indicates a verification failure
+		 */
+		TSK_VERIFICATION_FAILED(47, "TSK_VERIFICATION_FAILED",  //NON-NLS
+				bundle.getString("BlackboardArtifact.tskVerificationFailed.text"));
 		
 		private final String label;
 		private final int typeId;
