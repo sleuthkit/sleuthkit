@@ -495,6 +495,30 @@ int TskDbPostgreSQL::initialize() {
         return 1;
     }
 
+	if (attempt_exec("CREATE TABLE tsk_db_extended_info (id INTEGER PRIMARY KEY, name TEXT NOT NULL, value TEXT NOT NULL);", "Error creating tsk_db_extended_info: %s\n")) {
+		return 1;
+	}
+
+	snprintf(foo, 1024, "INSERT INTO tsk_db_extended_info (name, value) VALUES ('schema_major_version', '%d');", TSK_SCHEMA_VER);
+	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
+		return 1;
+	}
+
+	snprintf(foo, 1024, "INSERT INTO tsk_db_extended_info (name, value) VALUES ('schema_minor_version', '%d');", TSK_SCHEMA_MINOR_VER);
+	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
+		return 1;
+	}
+
+	snprintf(foo, 1024, "INSERT INTO tsk_db_extended_info (name, value) VALUES ('created_schema_major_version', '%d');", TSK_SCHEMA_VER);
+	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
+		return 1;
+	}
+
+	snprintf(foo, 1024, "INSERT INTO tsk_db_extended_info (name, value) VALUES ('created_schema_minor_version', '%d');", TSK_SCHEMA_MINOR_VER);
+	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
+		return 1;
+	}
+
     // ELTODO: change INTEGER (4 bytes) fields to SMALLINT (2 bytes) to use less memory for enum fields
 
     if (attempt_exec("CREATE TABLE tsk_objects (obj_id BIGSERIAL PRIMARY KEY, par_obj_id BIGINT, type INTEGER NOT NULL);","Error creating tsk_objects table: %s\n")
