@@ -1638,9 +1638,9 @@ public class SleuthkitCase {
 			statement.execute("ALTER TABLE tsk_image_info ADD COLUMN sha256 TEXT DEFAULT NULL");
 
 			/*
-			 * Add new tsk_db_extended_info table with created schema and shema
+			 * Add new tsk_db_extended_info table with created schema and schema
 			 * version numbers as the initial data. The created schema version
-			 * is set to 0, 0 ti indicate that it is not known.
+			 * is set to 0, 0 to indicate that it is not known.
 			 */
 			statement.execute("CREATE TABLE tsk_db_extended_info (id INTEGER PRIMARY KEY, name TEXT NOT NULL, value TEXT NOT NULL)");
 			statement.execute("INSERT INTO tsk_db_extended_info (name, value) VALUES ('schema_major_version', '8')");
