@@ -497,6 +497,45 @@ int TskDbPostgreSQL::initialize() {
 
     // ELTODO: change INTEGER (4 bytes) fields to SMALLINT (2 bytes) to use less memory for enum fields
 
+	// Create 'tsk_db_version_info' table.
+	if (attempt_exec
+	("CREATE TABLE tsk_db_version_info (id SERIAL PRIMARY KEY NOT NULL, name TEXT NOT NULL, value TEXT NOT NULL);",
+		"Error creating tsk_db_version_info table: %s\n")) {
+		return 1;
+	}
+
+	// Record original major version
+	snprintf(foo, 1024,
+		"INSERT INTO tsk_db_version_info (name, value) VALUES ('%s', %d);",
+		ORIGIN_VERSION_KEY, TSK_SCHEMA_VER);
+	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
+		return 1;
+	}
+
+	// Record original minor version
+	snprintf(foo, 1024,
+		"INSERT INTO tsk_db_version_info (name, value) VALUES ('%s', %d);",
+		ORIGIN_MINOR_VERSION_KEY, TSK_SCHEMA_MINOR_VER);
+	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
+		return 1;
+	}
+
+	// Record current major version
+	snprintf(foo, 1024,
+		"INSERT INTO tsk_db_version_info (name, value) VALUES ('%s', %d);",
+		SCHEMA_VERSION_KEY, TSK_SCHEMA_VER);
+	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
+		return 1;
+	}
+
+	// Record current minor version
+	snprintf(foo, 1024,
+		"INSERT INTO tsk_db_version_info (name, value) VALUES ('%s', %d);",
+		SCHEMA_MINOR_VERSION_KEY, TSK_SCHEMA_MINOR_VER);
+	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
+		return 1;
+	}
+
     if (attempt_exec("CREATE TABLE tsk_objects (obj_id BIGSERIAL PRIMARY KEY, par_obj_id BIGINT, type INTEGER NOT NULL);","Error creating tsk_objects table: %s\n")
         ||
         attempt_exec

@@ -234,6 +234,7 @@ int
         return 1;
     }
 
+	// Create 'tsk_db_info' table.
     if (attempt_exec
         ("CREATE TABLE tsk_db_info (schema_ver INTEGER, tsk_ver INTEGER, schema_minor_ver INTEGER);",
         "Error creating tsk_db_info table: %s\n")) {
@@ -246,6 +247,45 @@ int
     if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
         return 1;
     }
+
+	// Create 'tsk_db_version_info' table.
+	if (attempt_exec
+	("CREATE TABLE tsk_db_version_info (id INTEGER PRIMARY KEY NOT NULL, name TEXT NOT NULL, value TEXT NOT NULL);",
+		"Error creating tsk_db_version_info table: %s\n")) {
+		return 1;
+	}
+
+	// Record original major version
+	snprintf(foo, 1024,
+		"INSERT INTO tsk_db_version_info (name, value) VALUES ('%s', %d);",
+		ORIGIN_VERSION_KEY, TSK_SCHEMA_VER);
+	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
+		return 1;
+	}
+
+	// Record original minor version
+	snprintf(foo, 1024,
+		"INSERT INTO tsk_db_version_info (name, value) VALUES ('%s', %d);",
+		ORIGIN_MINOR_VERSION_KEY, TSK_SCHEMA_MINOR_VER);
+	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
+		return 1;
+	}
+
+	// Record current major version
+	snprintf(foo, 1024,
+		"INSERT INTO tsk_db_version_info (name, value) VALUES ('%s', %d);",
+		SCHEMA_VERSION_KEY, TSK_SCHEMA_VER);
+	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
+		return 1;
+	}
+
+	// Record current minor version
+	snprintf(foo, 1024,
+		"INSERT INTO tsk_db_version_info (name, value) VALUES ('%s', %d);",
+		SCHEMA_MINOR_VERSION_KEY, TSK_SCHEMA_MINOR_VER);
+	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
+		return 1;
+	}
 
     if (attempt_exec
         ("CREATE TABLE tsk_objects (obj_id INTEGER PRIMARY KEY, par_obj_id INTEGER, type INTEGER NOT NULL);",

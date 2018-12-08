@@ -29,7 +29,11 @@ using std::vector;
 using std::string;
 
 #define TSK_SCHEMA_VER 8
-#define TSK_SCHEMA_MINOR_VER 2
+#define TSK_SCHEMA_MINOR_VER 3
+#define SCHEMA_VERSION_KEY "SCHEMA_VERSION"
+#define SCHEMA_MINOR_VERSION_KEY "SCHEMA_MINOR_VERSION"
+#define ORIGIN_VERSION_KEY "ORIGIN_VERSION"
+#define ORIGIN_MINOR_VERSION_KEY "ORIGIN_MINOR_VERSION"
 
 /**
  * Values for the type column in the tsk_objects table. 

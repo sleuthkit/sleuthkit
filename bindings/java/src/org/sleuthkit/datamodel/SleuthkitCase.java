@@ -107,6 +107,8 @@ public class SleuthkitCase {
 	private static final String SQL_ERROR_LIMIT_GROUP = "54";
 	private static final String SQL_ERROR_INTERNAL_GROUP = "xx";
 	private static final int MIN_USER_DEFINED_TYPE_ID = 10000;
+	private static final String ORIGIN_VERSION_KEY = "ORIGIN_VERSION";
+	private static final String ORIGIN_MINOR_VERSION_KEY = "ORIGIN_MINOR_VERSION";
 	private static final String[] CORE_TABLE_NAMES = new String[]{
 		"tsk_db_info",
 		"tsk_objects",
@@ -857,8 +859,14 @@ public class SleuthkitCase {
 				dbSchemaVersion = updateFromSchema7dot2toSchema8dot0(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot0toSchema8dot1(dbSchemaVersion, connection);
 				dbSchemaVersion = updateFromSchema8dot1toSchema8dot2(dbSchemaVersion, connection);
+				dbSchemaVersion = updateFromSchema8dot2toSchema8dot3(dbSchemaVersion, connection);
+				
+				// Record the current schema version in the database.
 				statement = connection.createStatement();
 				connection.executeUpdate(statement, "UPDATE tsk_db_info SET schema_ver = " + dbSchemaVersion.getMajor() + ", schema_minor_ver = " + dbSchemaVersion.getMinor()); //NON-NLS
+				connection.executeUpdate(statement, "UPDATE tsk_db_version_info SET value = " + dbSchemaVersion.getMajor() + " WHERE name = 'SCHEMA_VERSION'"); //NON-NLS
+				connection.executeUpdate(statement, "UPDATE tsk_db_version_info SET value = " + dbSchemaVersion.getMinor() + " WHERE name = 'SCHEMA_MINOR_VERSION'"); //NON-NLS
+				
 				statement.close();
 				statement = null;
 			}
@@ -1643,6 +1651,53 @@ public class SleuthkitCase {
 			releaseSingleUserCaseWriteLock();
 		}
 	}
+
+	/**
+	 * Updates a schema version 8.2 database to a schema version 8.3 database.
+	 *
+	 * @param schemaVersion The current schema version of the database.
+	 * @param connection    A connection to the case database.
+	 *
+	 * @return The new database schema version.
+	 *
+	 * @throws SQLException     If there is an error completing a database
+	 *                          operation.
+	 * @throws TskCoreException If there is an error completing a database
+	 *                          operation via another SleuthkitCase method.
+	 */
+	private CaseDbSchemaVersionNumber updateFromSchema8dot2toSchema8dot3(CaseDbSchemaVersionNumber schemaVersion, CaseDbConnection connection) throws SQLException, TskCoreException {
+		if (schemaVersion.getMajor() != 8) {
+			return schemaVersion;
+		}
+
+		if (schemaVersion.getMinor() != 2) {
+			return schemaVersion;
+		}
+		Statement statement = connection.createStatement();
+		acquireSingleUserCaseWriteLock();
+		try {
+			/*
+			 * Add the new 'tsk_db_version_info' table for storing the original
+			 * and current version info.
+			 */
+			if (this.dbType.equals(DbType.SQLITE)) {
+				statement.execute("CREATE TABLE tsk_db_version_info (id INTEGER PRIMARY KEY NOT NULL, name TEXT NOT NULL, value TEXT NOT NULL)");
+			} else {
+				statement.execute("CREATE TABLE tsk_db_version_info (id SERIAL PRIMARY KEY NOT NULL, name TEXT NOT NULL, value TEXT NOT NULL)");
+			}
+			// Add original version as 0.0 since we don't the original version.
+			statement.execute("INSERT INTO tsk_db_version_info (name, value) VALUES ('ORIGIN_VERSION', 0)");
+			statement.execute("INSERT INTO tsk_db_version_info (name, value) VALUES ('ORIGIN_MINOR_VERSION', 0)");
+			// Add current version info. Update the values later.
+			statement.execute("INSERT INTO tsk_db_version_info (name, value) VALUES ('SCHEMA_VERSION', 0)");
+			statement.execute("INSERT INTO tsk_db_version_info (name, value) VALUES ('SCHEMA_MINOR_VERSION', 0)");
+
+			return new CaseDbSchemaVersionNumber(8, 3);
+		} finally {
+			closeStatement(statement);
+			releaseSingleUserCaseWriteLock();
+		}
+	}
 	
 	/**
 	 * Extract the extension from a file name.
@@ -1973,6 +2028,62 @@ public class SleuthkitCase {
 
 		return dbName;
 	}
+	
+	/**
+	 * Get the original major version value for the database.
+	 * 
+	 * @return The original major version.
+	 * 
+	 * @throws TskCoreException 
+	 */
+	String getOriginalMajorVersion() throws TskCoreException {
+		return getDatabaseVersionInfo(ORIGIN_VERSION_KEY);
+	}
+	
+	/**
+	 * Get the original minor version value for the database.
+	 * 
+	 * @return The original minor version.
+	 * 
+	 * @throws TskCoreException 
+	 */
+	String getOriginalMinorVersion() throws TskCoreException {
+		return getDatabaseVersionInfo(ORIGIN_MINOR_VERSION_KEY);
+	}
+	
+    /**
+     * Get the value for the given name from the name/value tsk_db_version_info
+	 * table.
+     *
+     * @param name Data name to search for
+     *
+     * @return value associated with name.
+     *
+     * @throws TskCoreException
+     */
+    private String getDatabaseVersionInfo(String name) throws TskCoreException {
+		CaseDbConnection connection = connections.getConnection();
+		acquireSingleUserCaseReadLock();
+
+        ResultSet resultSet = null;
+        String value = null;
+        try {
+            PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_DATABASE_VERSION_INFO);
+            statement.setString(1, name);
+            resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                value = resultSet.getString("value");
+            }
+        } catch (SQLException ex) {
+			throw new TskCoreException("Error getting value for name = " + name, ex);
+        } finally {
+			closeResultSet(resultSet);
+			connection.close();
+			releaseSingleUserCaseReadLock();
+        }
+
+        return value;
+    }
 
 	/**
 	 * Returns the Examiner object for currently logged in user
@@ -9526,6 +9637,7 @@ public class SleuthkitCase {
 
 	private enum PREPARED_STATEMENT {
 
+		SELECT_DATABASE_VERSION_INFO("SELECT value FROM tsk_db_version_info WHERE name=?"), //NON-NLS
 		SELECT_ARTIFACTS_BY_TYPE("SELECT artifact_id, obj_id FROM blackboard_artifacts " //NON-NLS
 				+ "WHERE artifact_type_id = ?"), //NON-NLS
 		COUNT_ARTIFACTS_OF_TYPE("SELECT COUNT(*) AS count FROM blackboard_artifacts WHERE artifact_type_id = ? AND review_status_id != " + BlackboardArtifact.ReviewStatus.REJECTED.getID()), //NON-NLS
