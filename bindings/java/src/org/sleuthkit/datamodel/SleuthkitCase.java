@@ -156,6 +156,11 @@ public class SleuthkitCase {
 		"relationships_relationship_type",
 		"relationships_data_source_obj_id",};
 	private static final Set<String> CORE_INDEX_NAMES_SET = new HashSet<String>(Arrays.asList(CORE_INDEX_NAMES));
+	private static final String TSK_VERSION_KEY = "TSK_VER";
+	private static final String SCHEMA_MAJOR_VERSION_KEY = "SCHEMA_MAJOR_VERSION";
+	private static final String SCHEMA_MINOR_VERSION_KEY = "SCHEMA_MINOR_VERSION";
+	private static final String CREATION_SCHEMA_MAJOR_VERSION_KEY = "CREATION_SCHEMA_MAJOR_VERSION";
+	private static final String CREATION_SCHEMA_MINOR_VERSION_KEY = "CREATION_SCHEMA_MINOR_VERSION";
 
 	private final ConnectionPool connections;
 	private final Map<Long, VirtualDirectory> rootIdsToCarvedFileDirs = new HashMap<Long, VirtualDirectory>();
@@ -1638,15 +1643,23 @@ public class SleuthkitCase {
 			statement.execute("ALTER TABLE tsk_image_info ADD COLUMN sha256 TEXT DEFAULT NULL");
 
 			/*
-			 * Add new tsk_db_extended_info table with created schema and schema
-			 * version numbers as the initial data. The created schema version
-			 * is set to 0, 0 to indicate that it is not known.
+			 * Add new tsk_db_extended_info table with TSK version, creation
+			 * time schema and schema version numbers as the initial data. The
+			 * creation time schema version is set to 0, 0 to indicate that it
+			 * is not known.
 			 */
-			statement.execute("CREATE TABLE tsk_db_extended_info (id INTEGER PRIMARY KEY, name TEXT NOT NULL, value TEXT NOT NULL)");
-			statement.execute("INSERT INTO tsk_db_extended_info (name, value) VALUES ('schema_major_version', '8')");
-			statement.execute("INSERT INTO tsk_db_extended_info (name, value) VALUES ('schema_minor_version', '2')");
-			statement.execute("INSERT INTO tsk_db_extended_info (name, value) VALUES ('created_schema_major_version', '0')");
-			statement.execute("INSERT INTO tsk_db_extended_info (name, value) VALUES ('created_schema_minor_version', '0')");
+			if (this.dbType.equals(DbType.SQLITE)) {
+				statement.execute("CREATE TABLE tsk_db_info_extended (id INTEGER PRIMARY KEY, name TEXT UNIQUE NOT NULL, value TEXT NOT NULL)");
+			} else {
+				statement.execute("CREATE TABLE tsk_db_info_extended (id BIGSERIAL PRIMARY KEY, name TEXT UNIQUE NOT NULL, value TEXT NOT NULL)");
+			}
+			ResultSet result = statement.executeQuery("SELECT tsk_ver FROM tsk_db_info");
+			result.next();
+			statement.execute("INSERT INTO tsk_db_info_extended (name, value) VALUES ('" + TSK_VERSION_KEY + "', '" + result.getLong("tsk_ver") + "')");
+			statement.execute("INSERT INTO tsk_db_info_extended (name, value) VALUES ('" + SCHEMA_MAJOR_VERSION_KEY + "', '8')");
+			statement.execute("INSERT INTO tsk_db_info_extended (name, value) VALUES ('" + SCHEMA_MINOR_VERSION_KEY + "', '2')");
+			statement.execute("INSERT INTO tsk_db_info_extended (name, value) VALUES ('" + CREATION_SCHEMA_MAJOR_VERSION_KEY + "', '0')");
+			statement.execute("INSERT INTO tsk_db_info_extended (name, value) VALUES ('" + CREATION_SCHEMA_MINOR_VERSION_KEY + "', '0')");
 
 			return new CaseDbSchemaVersionNumber(8, 2);
 
