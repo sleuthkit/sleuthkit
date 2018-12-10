@@ -20,7 +20,7 @@ elif test ${TRAVIS_OS_NAME} = "osx"; then
 	export PATH=${PATH}:/usr/local/opt/gettext/bin
 	brew install ant libewf gettext cppunit wget afflib
 fi
-installLib libvhdi 20160424
-installLib libvmdk 20160119
+installLib libvhdi 20181125
+installLib libvmdk 20181124
 ./bootstrap && ./configure --prefix=/usr && make > /dev/null
 cd bindings/java/ && ant -q dist-PostgreSQL
