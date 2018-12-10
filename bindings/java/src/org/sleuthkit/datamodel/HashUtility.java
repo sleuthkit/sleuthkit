@@ -94,7 +94,7 @@ public class HashUtility {
 	/**
 	 * Determines whether a string representation of a SHA-256 hash is valid.
 	 *
-	 * @param sha256 The hash.
+	 * @param sha256Hash The hash.
 	 *
 	 * @return True or false.
 	 */
