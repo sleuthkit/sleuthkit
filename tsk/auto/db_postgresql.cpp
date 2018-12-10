@@ -495,12 +495,36 @@ int TskDbPostgreSQL::initialize() {
         return 1;
     }
 
+	if (attempt_exec("CREATE TABLE tsk_db_extended_info (id INTEGER PRIMARY KEY, name TEXT NOT NULL, value TEXT NOT NULL);", "Error creating tsk_db_extended_info: %s\n")) {
+		return 1;
+	}
+
+	snprintf(foo, 1024, "INSERT INTO tsk_db_extended_info (name, value) VALUES ('schema_major_version', '%d');", TSK_SCHEMA_VER);
+	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
+		return 1;
+	}
+
+	snprintf(foo, 1024, "INSERT INTO tsk_db_extended_info (name, value) VALUES ('schema_minor_version', '%d');", TSK_SCHEMA_MINOR_VER);
+	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
+		return 1;
+	}
+
+	snprintf(foo, 1024, "INSERT INTO tsk_db_extended_info (name, value) VALUES ('created_schema_major_version', '%d');", TSK_SCHEMA_VER);
+	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
+		return 1;
+	}
+
+	snprintf(foo, 1024, "INSERT INTO tsk_db_extended_info (name, value) VALUES ('created_schema_minor_version', '%d');", TSK_SCHEMA_MINOR_VER);
+	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
+		return 1;
+	}
+
     // ELTODO: change INTEGER (4 bytes) fields to SMALLINT (2 bytes) to use less memory for enum fields
 
 	if (attempt_exec("CREATE TABLE tsk_objects (obj_id BIGSERIAL PRIMARY KEY, par_obj_id BIGINT, type INTEGER NOT NULL);", "Error creating tsk_objects table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_image_info (obj_id BIGSERIAL PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT, size BIGINT, md5 TEXT, display_name TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        ("CREATE TABLE tsk_image_info (obj_id BIGSERIAL PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT, size BIGINT, md5 TEXT, sha1 TEXT, sha256 TEXT, display_name TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
             "Error creating tsk_image_info table: %s\n")
         ||
         attempt_exec("CREATE TABLE tsk_image_names (obj_id BIGINT NOT NULL, name TEXT NOT NULL, sequence INTEGER NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
@@ -818,15 +842,15 @@ TSK_RETVAL_ENUM TskDbPostgreSQL::getVsInfo(int64_t objId, TSK_DB_VS_INFO & vsInf
 */
 int TskDbPostgreSQL::addImageInfo(int type, int size, int64_t & objId, const string & timezone)
 {
-    return addImageInfo(type, size, objId, timezone, 0, "");
+    return addImageInfo(type, size, objId, timezone, 0, "", "", "");
 }
 
 /**
 * @returns 1 on error, 0 on success
 */
-int TskDbPostgreSQL::addImageInfo(int type, int ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5)
+int TskDbPostgreSQL::addImageInfo(int type, int ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5, const string &sha1, const string &sha256)
 {
-    return addImageInfo(type, size, objId, timezone, 0, "", "");
+    return addImageInfo(type, size, objId, timezone, 0, md5, sha1, sha256, "");
 }
 
 /**
@@ -838,10 +862,13 @@ int TskDbPostgreSQL::addImageInfo(int type, int ssize, int64_t & objId, const st
  * @param timeZone The timezone the image is from
  * @param size The size of the image in bytes.
  * @param md5 MD5 hash of the image
+ * @param sha1 SHA1 hash of the image
+ * @param sha256 SHA256 hash of the image
  * @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID).
  * @returns 1 on error, 0 on success
  */
-int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5, const string& deviceId)
+int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5, 
+    const string& sha1, const string& sha256, const string& deviceId)
 {
     // Add the data source to the tsk_objects table.
     // We don't use addObject because we're passing in NULL as the parent
@@ -859,19 +886,32 @@ int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, co
     removeNonUtf8(timeZone_local, MAX_DB_STRING_LENGTH - 1, timezone.c_str());
     char md5_local[MAX_DB_STRING_LENGTH];
     removeNonUtf8(md5_local, MAX_DB_STRING_LENGTH - 1, md5.c_str());
+    char sha1_local[MAX_DB_STRING_LENGTH];
+    removeNonUtf8(sha1_local, MAX_DB_STRING_LENGTH - 1, sha1.c_str());
+    char sha256_local[MAX_DB_STRING_LENGTH];
+    removeNonUtf8(sha256_local, MAX_DB_STRING_LENGTH - 1, sha256.c_str());
     char *timezone_sql = PQescapeLiteral(conn, timeZone_local, strlen(timeZone_local));
     char *md5_sql = PQescapeLiteral(conn, md5_local, strlen(md5_local));
+    char *sha1_sql = PQescapeLiteral(conn, md5_local, strlen(sha1_local));
+    char *sha256_sql = PQescapeLiteral(conn, md5_local, strlen(sha256_local));
+
     if (!isEscapedStringValid(timezone_sql, timeZone_local, "TskDbPostgreSQL::addImageInfo: Unable to escape time zone string: %s (Error: %s)\n")
-        || !isEscapedStringValid(md5_sql, md5_local, "TskDbPostgreSQL::addImageInfo: Unable to escape md5 string: %s (Error: %s)\n")) {
+        || !isEscapedStringValid(md5_sql, md5_local, "TskDbPostgreSQL::addImageInfo: Unable to escape md5 string: %s (Error: %s)\n")
+        || !isEscapedStringValid(sha1_sql, sha1_local, "TskDbPostgreSQL::addImageInfo: Unable to escape sha1 string: %s (Error: %s)\n")
+        || !isEscapedStringValid(sha256_sql, sha256_local, "TskDbPostgreSQL::addImageInfo: Unable to escape sha256 string: %s (Error: %s)\n")) {
         PQfreemem(timezone_sql);
         PQfreemem(md5_sql);
+        PQfreemem(sha1_sql);
+        PQfreemem(sha256_sql);
         return 1;
     }
-    snprintf(stmt, 2048, "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%" PRId64 ", %d, %" PRIuOFF ", %s, %" PRIuOFF ", %s);",
-        objId, type, ssize, timezone_sql, size, md5_sql);
+    snprintf(stmt, 2048, "INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256) VALUES (%" PRId64 ", %d, %" PRIuOFF ", %s, %" PRIuOFF ", %s, %s, %s);",
+        objId, type, ssize, timezone_sql, size, md5_sql, sha1_sql, sha256_sql);
     int ret = attempt_exec(stmt, "Error adding data to tsk_image_info table: %s\n");
     PQfreemem(timezone_sql);
     PQfreemem(md5_sql);
+    PQfreemem(sha1_sql);
+    PQfreemem(sha256_sql);
     if (1 == ret) {
         return ret;
     }
