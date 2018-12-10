@@ -474,6 +474,8 @@ public abstract class AbstractFile extends AbstractContent {
 
 	/**
 	 * Sets the known state for this file.
+	 * Passed in value will be ignored if it is "less" than the current
+	 * state.  A NOTABLE file cannot be downgraded to KNOWN.
 	 *
 	 * IMPORTANT: The known state is set for this AbstractFile object, but it is
 	 * not saved to the case database until AbstractFile.save is called.
@@ -481,6 +483,12 @@ public abstract class AbstractFile extends AbstractContent {
 	 * @param knownState The known state of the file.
 	 */
 	public void setKnown(TskData.FileKnown knownState) {
+		// don't allow them to downgrade the known state
+		if (this.knownState.compareTo(knownState) > 0) {
+			// ideally we'd return some kind of error, but 
+			// the API doesn't allow it
+			return;
+		}
 		this.knownState = knownState;
 		this.knownStateDirty = true;
 	}

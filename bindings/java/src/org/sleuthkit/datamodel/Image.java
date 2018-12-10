@@ -372,7 +372,7 @@ public class Image extends AbstractContent implements DataSource {
 	 *
 	 * @return SHA1 hash if attained(from database), empty string otherwise
 	 * 
-	 * @throws TskCoreException
+	 * @throws TskCoreException on DB error. 
 	 */
 	public String getSha1() throws TskCoreException {
 		if (sha1 == null || sha1.isEmpty()) {
@@ -395,17 +395,44 @@ public class Image extends AbstractContent implements DataSource {
 		return sha256;
 	}
 	
-	public void setMD5(String md5) throws TskCoreException {
+	/**
+	 * 
+	 * @param md5
+	 * @throws TskCoreException On DB errors
+	 * @throws TskDataException If hash has already been set
+	 */
+	public void setMD5(String md5) throws TskCoreException, TskDataException {
+		if (getMd5().isEmpty() == false) {
+			throw new TskDataException("MD5 value has already been set");
+		}
 		getSleuthkitCase().setMd5ImageHash(this, md5);
 		this.md5 = md5;
 	}
 	
-	public void setSha1(String sha1) throws TskCoreException {
+	/**
+	 * 
+	 * @param sha1
+	 * @throws TskCoreException On DB errors
+	 * @throws TskDataException If hash has already been set
+	 */
+	public void setSha1(String sha1) throws TskCoreException, TskDataException {
+		if (getSha1().isEmpty() == false) {
+			throw new TskDataException("SHA1 value has already been set");
+		}
 		getSleuthkitCase().setSha1ImageHash(this, sha1);
 		this.sha1 = sha1;
 	}
 	
-	public void setSha256(String sha256) throws TskCoreException {
+	/**
+	 * 
+	 * @param sha256
+	 * @throws TskCoreException On DB errors
+	 * @throws TskDataException If hash has already been set
+	 */
+	public void setSha256(String sha256) throws TskCoreException, TskDataException {
+		if (getSha256().isEmpty() == false) {
+			throw new TskDataException("SHA256 value has already been set");
+		}
 		getSleuthkitCase().setSha256ImageHash(this, sha256);
 		this.sha256 = sha256;
 	}
