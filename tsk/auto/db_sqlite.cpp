@@ -247,7 +247,7 @@ int
         return 1;
     }
 
-	if (attempt_exec("CREATE TABLE tsk_db_info_extended (id INTEGER PRIMARY KEY, name TEXT UNIQUE NOT NULL, value TEXT NOT NULL);", "Error creating tsk_db_info_extended: %s\n")) {
+	if (attempt_exec("CREATE TABLE tsk_db_info_extended (name TEXT PRIMARY KEY, value TEXT NOT NULL);", "Error creating tsk_db_info_extended: %s\n")) {
 		return 1;
 	}
 

@@ -1648,11 +1648,7 @@ public class SleuthkitCase {
 			 * creation time schema version is set to 0, 0 to indicate that it
 			 * is not known.
 			 */
-			if (this.dbType.equals(DbType.SQLITE)) {
-				statement.execute("CREATE TABLE tsk_db_info_extended (id INTEGER PRIMARY KEY, name TEXT UNIQUE NOT NULL, value TEXT NOT NULL)");
-			} else {
-				statement.execute("CREATE TABLE tsk_db_info_extended (id BIGSERIAL PRIMARY KEY, name TEXT UNIQUE NOT NULL, value TEXT NOT NULL)");
-			}
+			statement.execute("CREATE TABLE tsk_db_info_extended (name TEXT PRIMARY KEY, value TEXT NOT NULL)");
 			ResultSet result = statement.executeQuery("SELECT tsk_ver FROM tsk_db_info");
 			result.next();
 			statement.execute("INSERT INTO tsk_db_info_extended (name, value) VALUES ('" + TSK_VERSION_KEY + "', '" + result.getLong("tsk_ver") + "')");
