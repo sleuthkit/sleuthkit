@@ -109,7 +109,8 @@ public class SleuthkitCase {
 	private static final String SQL_ERROR_LIMIT_GROUP = "54";
 	private static final String SQL_ERROR_INTERNAL_GROUP = "xx";
 	private static final int MIN_USER_DEFINED_TYPE_ID = 10000;
-	private static final Set<String> CORE_TABLE_NAMES_SET = ImmutableSet.of(
+ 
+	private static final Set<String> CORE_TABLE_NAMES = ImmutableSet.of(
 			"tsk_events",
 			"tsk_event_types",
 			"tsk_db_info",
@@ -144,7 +145,7 @@ public class SleuthkitCase {
 			"review_statuses",
 			"reports,");
 
-	private static final Set<String> CORE_INDEX_NAMES_SET = ImmutableSet.of(
+	private static final Set<String> CORE_INDEX_NAMES= ImmutableSet.of(
 			"parObjId",
 			"layout_objID",
 			"artifact_objID",
@@ -167,7 +168,13 @@ public class SleuthkitCase {
 			"events_sub_type_short_description_time",
 			"events_base_type_short_description_time",
 			"events_time",
-			"events_known_state");
+			"events_known_state"); 
+ 	private static final String TSK_VERSION_KEY = "TSK_VER";
+	private static final String SCHEMA_MAJOR_VERSION_KEY = "SCHEMA_MAJOR_VERSION";
+	private static final String SCHEMA_MINOR_VERSION_KEY = "SCHEMA_MINOR_VERSION";
+	private static final String CREATION_SCHEMA_MAJOR_VERSION_KEY = "CREATION_SCHEMA_MAJOR_VERSION";
+	private static final String CREATION_SCHEMA_MINOR_VERSION_KEY = "CREATION_SCHEMA_MINOR_VERSION";
+ 
 
 	private final ConnectionPool connections;
 	private final Map<Long, VirtualDirectory> rootIdsToCarvedFileDirs = new HashMap<>();
@@ -375,7 +382,7 @@ public class SleuthkitCase {
 	 * @return set of core table names
 	 */
 	static Set<String> getCoreTableNames() {
-		return CORE_TABLE_NAMES_SET;
+		return CORE_TABLE_NAMES;
 	}
 
 	/**
@@ -384,7 +391,7 @@ public class SleuthkitCase {
 	 * @return set of core index names
 	 */
 	static Set<String> getCoreIndexNames() {
-		return CORE_INDEX_NAMES_SET;
+		return CORE_INDEX_NAMES;
 	}
 
 	/**
@@ -1682,15 +1689,19 @@ public class SleuthkitCase {
 			statement.execute("ALTER TABLE tsk_image_info ADD COLUMN sha256 TEXT DEFAULT NULL");
 
 			/*
-			 * Add new tsk_db_extended_info table with created schema and schema
-			 * version numbers as the initial data. The created schema version
-			 * is set to 0, 0 to indicate that it is not known.
+			 * Add new tsk_db_extended_info table with TSK version, creation
+			 * time schema and schema version numbers as the initial data. The
+			 * creation time schema version is set to 0, 0 to indicate that it
+			 * is not known.
 			 */
-			statement.execute("CREATE TABLE tsk_db_extended_info (id INTEGER PRIMARY KEY, name TEXT NOT NULL, value TEXT NOT NULL)");
-			statement.execute("INSERT INTO tsk_db_extended_info (name, value) VALUES ('schema_major_version', '8')");
-			statement.execute("INSERT INTO tsk_db_extended_info (name, value) VALUES ('schema_minor_version', '2')");
-			statement.execute("INSERT INTO tsk_db_extended_info (name, value) VALUES ('created_schema_major_version', '0')");
-			statement.execute("INSERT INTO tsk_db_extended_info (name, value) VALUES ('created_schema_minor_version', '0')");
+			statement.execute("CREATE TABLE tsk_db_info_extended (name TEXT PRIMARY KEY, value TEXT NOT NULL)");
+			ResultSet result = statement.executeQuery("SELECT tsk_ver FROM tsk_db_info");
+			result.next();
+			statement.execute("INSERT INTO tsk_db_info_extended (name, value) VALUES ('" + TSK_VERSION_KEY + "', '" + result.getLong("tsk_ver") + "')");
+			statement.execute("INSERT INTO tsk_db_info_extended (name, value) VALUES ('" + SCHEMA_MAJOR_VERSION_KEY + "', '8')");
+			statement.execute("INSERT INTO tsk_db_info_extended (name, value) VALUES ('" + SCHEMA_MINOR_VERSION_KEY + "', '2')");
+			statement.execute("INSERT INTO tsk_db_info_extended (name, value) VALUES ('" + CREATION_SCHEMA_MAJOR_VERSION_KEY + "', '0')");
+			statement.execute("INSERT INTO tsk_db_info_extended (name, value) VALUES ('" + CREATION_SCHEMA_MINOR_VERSION_KEY + "', '0')");
 
 			String primaryKeyType;
 			switch (getDatabaseType()) {

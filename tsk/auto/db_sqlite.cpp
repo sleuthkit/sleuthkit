@@ -253,26 +253,31 @@ TskDbSqlite::initialize()
         return 1;
     }
 
-	if (attempt_exec("CREATE TABLE tsk_db_extended_info (id INTEGER PRIMARY KEY, name TEXT NOT NULL, value TEXT NOT NULL);", "Error creating tsk_db_extended_info: %s\n")) {
+	if (attempt_exec("CREATE TABLE tsk_db_info_extended (name TEXT PRIMARY KEY, value TEXT NOT NULL);", "Error creating tsk_db_info_extended: %s\n")) {
 		return 1;
 	}
 
-	snprintf(foo, 1024, "INSERT INTO tsk_db_extended_info (name, value) VALUES ('schema_major_version', '%d');", TSK_SCHEMA_VER);
+	snprintf(foo, 1024, "INSERT INTO tsk_db_info_extended (name, value) VALUES ('TSK_VERSION', '%d');", TSK_VERSION_NUM);
 	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
 		return 1;
 	}
 
-	snprintf(foo, 1024, "INSERT INTO tsk_db_extended_info (name, value) VALUES ('schema_minor_version', '%d');", TSK_SCHEMA_MINOR_VER);
+	snprintf(foo, 1024, "INSERT INTO tsk_db_info_extended (name, value) VALUES ('SCHEMA_MAJOR_VERSION', '%d');", TSK_SCHEMA_VER);
 	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
 		return 1;
 	}
 
-	snprintf(foo, 1024, "INSERT INTO tsk_db_extended_info (name, value) VALUES ('created_schema_major_version', '%d');", TSK_SCHEMA_VER);
+	snprintf(foo, 1024, "INSERT INTO tsk_db_info_extended (name, value) VALUES ('SCHEMA_MINOR_VERSION', '%d');", TSK_SCHEMA_MINOR_VER);
 	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
 		return 1;
 	}
 
-	snprintf(foo, 1024, "INSERT INTO tsk_db_extended_info (name, value) VALUES ('created_schema_minor_version', '%d');", TSK_SCHEMA_MINOR_VER);
+	snprintf(foo, 1024, "INSERT INTO tsk_db_info_extended (name, value) VALUES ('CREATED_SCHEMA_MAJOR_VERSION', '%d');", TSK_SCHEMA_VER);
+	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
+		return 1;
+	}
+
+	snprintf(foo, 1024, "INSERT INTO tsk_db_info_extended (name, value) VALUES ('CREATED_SCHEMA_MINOR_VERSION', '%d');", TSK_SCHEMA_MINOR_VER);
 	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
 		return 1;
 	}
