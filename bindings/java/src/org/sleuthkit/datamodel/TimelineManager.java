@@ -31,14 +31,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import static java.util.Objects.isNull;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.ObjectUtils;
-import static org.apache.commons.lang3.StringUtils.defaultString;
-import static org.apache.commons.lang3.StringUtils.substringAfter;
-import static org.apache.commons.lang3.StringUtils.substringBefore;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Interval;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT;
@@ -539,13 +537,9 @@ public final class TimelineManager {
 		 * legitimate time stamps.
 		 */
 		if (Collections.max(timeMap.values()) > 0) {
-			final String parentPath = file.getParentPath();
 
-			String rootFolder = substringBefore(substringAfter(parentPath, "/"), "/");
-			String shortDesc = defaultString(rootFolder);
-			shortDesc = shortDesc.endsWith("/") ? shortDesc : shortDesc + "/";
-			String medDesc = parentPath;
-			String fullDescription = medDesc + file.getName();
+			String fullDescription = file.getParentPath() + file.getName();
+			boolean hashSets = file.getHashSetNames().isEmpty() == false;
 
 			for (Map.Entry<EventType, Long> timeEntry : timeMap.entrySet()) {
 				if (timeEntry.getValue() > 0) {
@@ -556,10 +550,11 @@ public final class TimelineManager {
 							file.getId(),
 							null,
 							fullDescription,
-							medDesc,
-							shortDesc,
-							file.getHashSetNames().isEmpty() == false,
-							false, connection);
+							null,
+							null,
+							hashSets,
+							false,
+							connection);
 				}
 			}
 		}
@@ -724,9 +719,9 @@ public final class TimelineManager {
 				+ time + ","
 				+ ((type.getTypeID() == -1) ? "NULL" : type.getTypeID()) + "," // Why do we need this check?  what type as ID  = -1
 				+ type.getBaseType().getTypeID() + ","
-				+ "'" + escapeSingleQuotes(fullDescription) + "',"
-				+ "'" + escapeSingleQuotes(medDescription) + "',"
-				+ "'" + escapeSingleQuotes(shortDescription) + "',"
+				+ quotePreservingNull(fullDescription) + ","
+				+ quotePreservingNull(medDescription) + ","
+				+ quotePreservingNull(shortDescription) + ", "
 				+ booleanToInt(hashHit) + ","
 				+ booleanToInt(tagged) + "  )";// NON-NLS  
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
@@ -748,6 +743,10 @@ public final class TimelineManager {
 
 		sleuthkitCase.fireTSKEvent(new TimelineEventAddedEvent(singleEvent));
 		return singleEvent;
+	}
+
+	static private String quotePreservingNull(String value) {
+		return isNull(value) ? " NULL" : "'" + escapeSingleQuotes(value) + "'";
 	}
 
 	/**

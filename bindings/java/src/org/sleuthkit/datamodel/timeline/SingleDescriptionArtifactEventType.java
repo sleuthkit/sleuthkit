@@ -20,8 +20,6 @@ package org.sleuthkit.datamodel.timeline;
 
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
-import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME;
-import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DESCRIPTION;
 import org.sleuthkit.datamodel.TskCoreException;
 
 /**
@@ -31,24 +29,16 @@ import org.sleuthkit.datamodel.TskCoreException;
  */
 final class SingleDescriptionArtifactEventType extends StandardArtifactEventType {
 
-	/**
-	 * Use the value of the TSK_DESCRIPTION attribute of a artifact as the
-	 * description of this event.
-	 */
-	static private final AttributeExtractor descriptionExtractor = new AttributeExtractor(new BlackboardAttribute.Type(TSK_DESCRIPTION));
-
 	@Override
 	public EventPayload buildEventPayload(BlackboardArtifact artifact) throws TskCoreException {
-		String description = extractFullDescription(artifact);
+		String description = extractShortDescription(artifact);
 		long time = artifact.getAttribute(getDateTimeAttributeType()).getValueLong();
-		return new EventPayload(time, description, description, description);
+		return new EventPayload(time, description, null, null);
 	}
 
 	SingleDescriptionArtifactEventType(int typeID, String displayName,
-			EventType superType, BlackboardArtifact.Type artifactType) {
-		super(typeID, displayName, superType, artifactType, new BlackboardAttribute.Type(TSK_DATETIME),
-				descriptionExtractor,
-				descriptionExtractor,
-				descriptionExtractor);
+			EventType superType, BlackboardArtifact.Type artifactType, BlackboardAttribute.Type timeAttribute, BlackboardAttribute.Type descriptionAttribute) {
+		super(typeID, displayName, superType, artifactType, timeAttribute,
+				new AttributeExtractor(descriptionAttribute), new NullExtractor(), new NullExtractor());
 	}
 }

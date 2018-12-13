@@ -1747,8 +1747,8 @@ public class SleuthkitCase {
 					+ " sub_type INTEGER, "
 					+ " base_type INTEGER NOT NULL, "
 					+ " full_description TEXT NOT NULL, "
-					+ " med_description TEXT NOT NULL, "
-					+ " short_description TEXT NOT NULL, "
+					+ " med_description TEXT, "
+					+ " short_description TEXT, "
 					+ " known_state INTEGER NOT NULL, "//boolean 
 					+ " hash_hit INTEGER NOT NULL, "//boolean 
 					+ " tagged INTEGER NOT NULL, "

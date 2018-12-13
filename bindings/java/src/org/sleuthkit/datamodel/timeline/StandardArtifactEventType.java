@@ -170,13 +170,25 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 	 * Function that always returns the empty string no matter what it is
 	 * applied to.
 	 *
-	 * @param <X> Generic type paramater, can be anything.
 	 */
-	final static class EmptyExtractor<X> implements TSKCoreCheckedFunction<X, String> {
+	final static class EmptyExtractor implements TSKCoreCheckedFunction<BlackboardArtifact, String> {
 
 		@Override
-		public String apply(X ignored) throws TskCoreException {
+		public String apply(BlackboardArtifact ignored) throws TskCoreException {
 			return "";
+		}
+	}
+
+	/**
+	 * Function that always returns the empty string no matter what it is
+	 * applied to.
+	 *
+	 */
+	final static class NullExtractor implements TSKCoreCheckedFunction<BlackboardArtifact, String> {
+
+		@Override
+		public String apply(BlackboardArtifact ignored) throws TskCoreException {
+			return null;
 		}
 	}
 

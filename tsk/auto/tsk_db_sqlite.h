@@ -116,7 +116,7 @@ class TskDbSqlite : public TskDb {
     void storeObjId(const int64_t & fsObjId, const TSK_FS_FILE *fs_file, const char *path, const int64_t & objId);
     int64_t findParObjId(const TSK_FS_FILE * fs_file, const char *path, const int64_t & fsObjId);
 	int addMACTimeEvent(char*& zSQL, const int64_t data_source_obj_id, const int64_t obj_id, time_t crtime,
-	                    const int64_t sub_type, const char* fullDesc, const char* medDesc, const char* shortDesc);
+	                    const int64_t sub_type, const char* fullDesc );
 
 	uint32_t hash(const unsigned char *str);
     sqlite3 *m_db;
