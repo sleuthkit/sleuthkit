@@ -20,17 +20,24 @@ package org.sleuthkit.datamodel.timeline;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.net.InternetDomainName;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URLDecoder;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.SortedSet;
-import org.sleuthkit.datamodel.AbstractFile;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.*;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.*;
 import org.sleuthkit.datamodel.BlackboardAttribute.Type;
+import org.sleuthkit.datamodel.DescriptionLoD;
+import org.sleuthkit.datamodel.TskCoreException;
 import static org.sleuthkit.datamodel.timeline.BundleProvider.getBundle;
 import static org.sleuthkit.datamodel.timeline.EventType.RECENT_DOCUMENTS;
 import static org.sleuthkit.datamodel.timeline.EventTypeZoomLevel.BASE_TYPE;
@@ -38,6 +45,7 @@ import static org.sleuthkit.datamodel.timeline.EventTypeZoomLevel.ROOT_TYPE;
 import static org.sleuthkit.datamodel.timeline.EventTypeZoomLevel.SUB_TYPE;
 import org.sleuthkit.datamodel.timeline.StandardArtifactEventType.AttributeExtractor;
 import static org.sleuthkit.datamodel.timeline.StandardArtifactEventType.getAttributeSafe;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * An Event Type represents a distinct kind of event ie file system or web
@@ -59,6 +67,8 @@ public interface EventType extends Comparable<EventType> {
 	SortedSet<? extends EventType> getSubTypes();
 
 	Optional<? extends EventType> getSubType(String string);
+
+	String getDescription(DescriptionLoD lod, String fullDescription, String medDescription, String shortDescription);
 
 	/**
 	 * @return the super type of this event
@@ -128,44 +138,44 @@ public interface EventType extends Comparable<EventType> {
 		}
 	};
 
-	EventType FILE_MODIFIED = new StandardEventType(4,
+	EventType FILE_MODIFIED = new FilePathEventType(4,
 			getBundle().getString("FileSystemTypes.fileModified.name"), // NON-NLS
 			SUB_TYPE, FILE_SYSTEM);
-	EventType FILE_ACCESSED = new StandardEventType(5,
+	EventType FILE_ACCESSED = new FilePathEventType(5,
 			getBundle().getString("FileSystemTypes.fileAccessed.name"), // NON-NLS
 			SUB_TYPE, FILE_SYSTEM);
-	EventType FILE_CREATED = new StandardEventType(6,
+	EventType FILE_CREATED = new FilePathEventType(6,
 			getBundle().getString("FileSystemTypes.fileCreated.name"), // NON-NLS
 			SUB_TYPE, FILE_SYSTEM);
-	EventType FILE_CHANGED = new StandardEventType(7,
+	EventType FILE_CHANGED = new FilePathEventType(7,
 			getBundle().getString("FileSystemTypes.fileChanged.name"), // NON-NLS
 			SUB_TYPE, FILE_SYSTEM);
 
-	ArtifactEventType WEB_DOWNLOADS = new SingleDescriptionArtifactEventType(8,
+	ArtifactEventType WEB_DOWNLOADS = new URLArtifactEventType(8,
 			getBundle().getString("WebTypes.webDownloads.name"), // NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_DOWNLOAD),
 			new Type(TSK_DATETIME_ACCESSED),
-			new Type(TSK_URL)	);
-	ArtifactEventType WEB_COOKIE = new SingleDescriptionArtifactEventType(9,
+			new Type(TSK_URL));
+	ArtifactEventType WEB_COOKIE = new URLArtifactEventType(9,
 			getBundle().getString("WebTypes.webCookies.name"),// NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_COOKIE),
 			new Type(TSK_DATETIME),
 			new Type(TSK_URL));
-	ArtifactEventType WEB_BOOKMARK = new SingleDescriptionArtifactEventType(10,
+	ArtifactEventType WEB_BOOKMARK = new URLArtifactEventType(10,
 			getBundle().getString("WebTypes.webBookmarks.name"), // NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_BOOKMARK),
 			new Type(TSK_DATETIME_CREATED),
 			new Type(TSK_URL));
-	ArtifactEventType WEB_HISTORY = new SingleDescriptionArtifactEventType(11,
+	ArtifactEventType WEB_HISTORY = new URLArtifactEventType(11,
 			getBundle().getString("WebTypes.webHistory.name"), // NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_HISTORY),
 			new Type(TSK_DATETIME_ACCESSED),
 			new Type(TSK_URL));
-	ArtifactEventType WEB_SEARCH = new SingleDescriptionArtifactEventType(12,
+	ArtifactEventType WEB_SEARCH = new URLArtifactEventType(12,
 			getBundle().getString("WebTypes.webSearch.name"), // NON-NLS
 			WEB_ACTIVITY,
 			new BlackboardArtifact.Type(TSK_WEB_SEARCH_QUERY),
@@ -245,7 +255,7 @@ public interface EventType extends Comparable<EventType> {
 			new AttributeExtractor(new Type(TSK_SUBJECT)),
 			new AttributeExtractor(new Type(TSK_EMAIL_CONTENT_PLAIN)));
 
-	ArtifactEventType RECENT_DOCUMENTS = new SingleDescriptionArtifactEventType(18,
+	ArtifactEventType RECENT_DOCUMENTS = new FilePathArtifactEventType(18,
 			getBundle().getString("MiscTypes.recentDocuments.name"), // NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_RECENT_OBJECT),
@@ -268,13 +278,8 @@ public interface EventType extends Comparable<EventType> {
 			new Type(TSK_DATETIME_CREATED),
 			new AttributeExtractor(new Type(TSK_DEVICE_MAKE)),
 			new AttributeExtractor(new Type(TSK_DEVICE_MODEL)),
-			artf -> {
-				AbstractFile file = artf.getSleuthkitCase().getAbstractFileById(artf.getObjectID());
-				if (file != null) {
-					return file.getName();
-				}
-				return "error loading file name";
-			});
+			artf -> artf.getSleuthkitCase().getAbstractFileById(artf.getObjectID()).getName()
+	);
 
 	ArtifactEventType DEVICES_ATTACHED = new StandardArtifactEventType(21,
 			getBundle().getString("MiscTypes.devicesAttached.name"), // NON-NLS
@@ -285,7 +290,7 @@ public interface EventType extends Comparable<EventType> {
 			new AttributeExtractor(new Type(TSK_DEVICE_MODEL)),
 			new AttributeExtractor(new Type(TSK_DEVICE_ID)));
 
-	//custom evet type base type
+	//custom event type base type
 	EventType CUSTOM_TYPES = new StandardEventType(22,
 			getBundle().getString("BaseTypes.customTypes.name"), // NON-NLS
 			BASE_TYPE, ROOT_EVENT_TYPE) {
@@ -300,7 +305,7 @@ public interface EventType extends Comparable<EventType> {
 			getBundle().getString("CustomTypes.other.name"),
 			CUSTOM_TYPES,
 			new BlackboardArtifact.Type(TSK_TL_EVENT),
-			new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME),
+			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_DESCRIPTION));
 
 	//new misc types
@@ -308,14 +313,14 @@ public interface EventType extends Comparable<EventType> {
 			getBundle().getString("MiscTypes.LogEntry.name"), //NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_TL_EVENT),
-			new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME),
+			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_DESCRIPTION));
 
 	ArtifactEventType REGISTRY = new SingleDescriptionArtifactEventType(25,
 			getBundle().getString("MiscTypes.Registry.name"), //NON-NLS
 			MISC_TYPES,
 			new BlackboardArtifact.Type(TSK_TL_EVENT),
-			new BlackboardAttribute.Type(BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME),
+			new BlackboardAttribute.Type(TSK_DATETIME),
 			new BlackboardAttribute.Type(TSK_DESCRIPTION));
 
 	static SortedSet<? extends EventType> getBaseTypes() {
@@ -353,6 +358,102 @@ public interface EventType extends Comparable<EventType> {
 					return " "; // NON-NLS
 
 			}
+		}
+	}
+
+	/**
+	 * Function that always returns the empty string no matter what it is
+	 * applied to.
+	 *
+	 */
+	final static class EmptyExtractor implements StandardArtifactEventType.TSKCoreCheckedFunction<BlackboardArtifact, String> {
+
+		@Override
+		public String apply(BlackboardArtifact ignored) throws TskCoreException {
+			return "";
+		}
+	}
+
+	class URLArtifactEventType extends SingleDescriptionArtifactEventType {
+
+		public URLArtifactEventType(int typeID, String displayName, EventType superType, BlackboardArtifact.Type artifactType, Type timeAttribute, Type descriptionAttribute) {
+			super(typeID, displayName, superType, artifactType, timeAttribute, descriptionAttribute);
+		}
+
+		@Override
+		public String getDescription(DescriptionLoD lod, String fullDescription, String medDescription, String shortDescription) {
+			try {
+				URI uri;
+				switch (lod) {
+					case SHORT:
+						uri = new URI(fullDescription);
+						String host = uri.getHost();
+						if (host == null) {
+							host = StringUtils.strip(fullDescription, "./");
+
+						}
+						if (InternetDomainName.isValid(host)) {
+							InternetDomainName domain = InternetDomainName.from(host);
+							return (domain.isUnderPublicSuffix())
+									? domain.topPrivateDomain().toString()
+									: domain.toString();
+						} else {
+							return host;
+						}
+					case MEDIUM:
+						uri = new URI(fullDescription);
+						return  new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(), null, null).toString();
+
+					case FULL:
+					default:
+						return fullDescription;
+
+				}
+			} catch (URISyntaxException ex) {
+				//JMTODO: do we need to bother logging this?
+				Logger.getLogger(EventType.class.getName()).log(Level.WARNING, "Error parsing {0} as a URL:  Ignoring description levels.", fullDescription);
+			}
+			return fullDescription;
+		}
+	}
+
+	class FilePathEventType extends StandardEventType {
+
+		FilePathEventType(long typeID, String displayName, EventTypeZoomLevel eventTypeZoomLevel, EventType superType) {
+			super(typeID, displayName, eventTypeZoomLevel, superType);
+		}
+
+		@Override
+		public String getDescription(DescriptionLoD lod, String fullDescription, String medDescription, String shortDescription) {
+			return getFilePathDescription(lod, fullDescription);
+		}
+
+	}
+
+	class FilePathArtifactEventType extends SingleDescriptionArtifactEventType {
+
+		public FilePathArtifactEventType(int typeID, String displayName, EventType superType, BlackboardArtifact.Type artifactType, Type timeAttribute, Type descriptionAttribute) {
+			super(typeID, displayName, superType, artifactType, timeAttribute, descriptionAttribute);
+		}
+
+		@Override
+		public String getDescription(DescriptionLoD lod, String fullDescription, String medDescription, String shortDescription) {
+			return getFilePathDescription(lod, fullDescription);
+		}
+	}
+
+	static String getFilePathDescription(DescriptionLoD lod, String fullDescription) {
+		switch (lod) {
+			case FULL:
+				return fullDescription;
+			case MEDIUM:
+				return StringUtils.substringBeforeLast(fullDescription, "/");
+			case SHORT:
+			default:
+//				String rootFolder = fullDescription.split("/")[0];
+				String rootFolder = StringUtils.substringBefore(StringUtils.substringAfter(fullDescription, "/"), "/");
+				String shortDesc = StringUtils.defaultString(rootFolder);
+				return shortDesc.endsWith("/") ? shortDesc : shortDesc + "/";
 		}
 	}
 }

@@ -39,7 +39,7 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 
 	private final BlackboardArtifact.Type artifactType;
 	private final BlackboardAttribute.Type dateTimeAttributeType;
-	private final TSKCoreCheckedFunction<BlackboardArtifact, String> longExtractor;
+	private final TSKCoreCheckedFunction<BlackboardArtifact, String> fullExtractor;
 	private final TSKCoreCheckedFunction<BlackboardArtifact, String> medExtractor;
 	private final TSKCoreCheckedFunction<BlackboardArtifact, String> shortExtractor;
 	private final TSKCoreCheckedFunction<BlackboardArtifact, EventPayload> eventPayloadFunction;
@@ -50,8 +50,8 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 			BlackboardAttribute.Type dateTimeAttributeType,
 			TSKCoreCheckedFunction<BlackboardArtifact, String> shortExtractor,
 			TSKCoreCheckedFunction<BlackboardArtifact, String> medExtractor,
-			TSKCoreCheckedFunction<BlackboardArtifact, String> longExtractor) {
-		this(typeID, displayName, superType, artifactType, dateTimeAttributeType, shortExtractor, medExtractor, longExtractor, null);
+			TSKCoreCheckedFunction<BlackboardArtifact, String> fullExtractor) {
+		this(typeID, displayName, superType, artifactType, dateTimeAttributeType, shortExtractor, medExtractor, fullExtractor, null);
 	}
 
 	StandardArtifactEventType(int typeID, String displayName,
@@ -60,7 +60,7 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 			BlackboardAttribute.Type dateTimeAttributeType,
 			TSKCoreCheckedFunction<BlackboardArtifact, String> shortExtractor,
 			TSKCoreCheckedFunction<BlackboardArtifact, String> medExtractor,
-			TSKCoreCheckedFunction<BlackboardArtifact, String> longExtractor,
+			TSKCoreCheckedFunction<BlackboardArtifact, String> fullExtractor,
 			TSKCoreCheckedFunction<BlackboardArtifact, EventPayload> eventPayloadFunction) {
 
 		super(typeID, displayName, EventTypeZoomLevel.SUB_TYPE, superType);
@@ -68,7 +68,7 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 		this.dateTimeAttributeType = dateTimeAttributeType;
 		this.shortExtractor = shortExtractor;
 		this.medExtractor = medExtractor;
-		this.longExtractor = longExtractor;
+		this.fullExtractor = fullExtractor;
 		this.eventPayloadFunction = eventPayloadFunction;
 	}
 
@@ -89,7 +89,7 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 
 	@Override
 	public String extractFullDescription(BlackboardArtifact artf) throws TskCoreException {
-		return longExtractor.apply(artf);
+		return fullExtractor.apply(artf);
 	}
 
 	@Override
@@ -163,32 +163,6 @@ class StandardArtifactEventType extends StandardEventType implements ArtifactEve
 			return Optional.ofNullable(getAttributeSafe(artf, attributeType))
 					.map(BlackboardAttribute::getDisplayString)
 					.orElse("");
-		}
-	}
-
-	/**
-	 * Function that always returns the empty string no matter what it is
-	 * applied to.
-	 *
-	 */
-	final static class EmptyExtractor implements TSKCoreCheckedFunction<BlackboardArtifact, String> {
-
-		@Override
-		public String apply(BlackboardArtifact ignored) throws TskCoreException {
-			return "";
-		}
-	}
-
-	/**
-	 * Function that always returns the empty string no matter what it is
-	 * applied to.
-	 *
-	 */
-	final static class NullExtractor implements TSKCoreCheckedFunction<BlackboardArtifact, String> {
-
-		@Override
-		public String apply(BlackboardArtifact ignored) throws TskCoreException {
-			return null;
 		}
 	}
 

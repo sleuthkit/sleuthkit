@@ -20,14 +20,13 @@ package org.sleuthkit.datamodel.timeline;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.Optional;
+import org.apache.commons.lang3.StringUtils;
 import org.sleuthkit.datamodel.DescriptionLoD;
 
 /**
  * A single event.
  */
 public final class TimelineEvent {
-
- 
 
 	private final long eventID;
 	/**
@@ -95,9 +94,9 @@ public final class TimelineEvent {
 		this.artifactID = Long.valueOf(0).equals(artifactID) ? null : artifactID;
 		this.time = time;
 		this.type = type;
-		descriptions = ImmutableMap.<DescriptionLoD, String>of(DescriptionLoD.FULL, fullDescription,
-				DescriptionLoD.MEDIUM, medDescription,
-				DescriptionLoD.SHORT, shortDescription);
+		descriptions = ImmutableMap.<DescriptionLoD, String>of(DescriptionLoD.FULL, StringUtils.defaultString(fullDescription),
+				DescriptionLoD.MEDIUM, StringUtils.defaultString(medDescription),
+				DescriptionLoD.SHORT, StringUtils.defaultString(shortDescription));
 
 		this.hashHit = hashHit;
 		this.tagged = tagged;

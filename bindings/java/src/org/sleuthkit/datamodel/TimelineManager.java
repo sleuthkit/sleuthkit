@@ -588,12 +588,11 @@ public final class TimelineManager {
 				eventType = EventType.OTHER;
 			} else {
 				long eventTypeID = attribute.getValueLong();
-				eventType = eventTypeIDMap.get(eventTypeID);
-				eventType = ObjectUtils.defaultIfNull(eventType, EventType.OTHER);
+				eventType = eventTypeIDMap.getOrDefault(eventTypeID, EventType.OTHER);
 			}
 
-			Optional<TimelineEvent> newEvent = addArtifactEvent(EventType.OTHER::buildEventPayload, eventType, artifact);
-			newEvent.ifPresent(newEvents::add);
+			addArtifactEvent(EventType.OTHER::buildEventPayload, eventType, artifact)
+					.ifPresent(newEvents::add);
 
 		} else {
 			/*
@@ -648,12 +647,12 @@ public final class TimelineManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	private Optional<TimelineEvent> addArtifactEvent(CheckedFunction<BlackboardArtifact, ArtifactEventType.EventPayload> payloadExtractor,
+	private Optional<TimelineEvent> addArtifactEvent(TSKCoreCheckedFunction<BlackboardArtifact, ArtifactEventType.EventPayload> payloadExtractor,
 			EventType eventType, BlackboardArtifact artifact) throws TskCoreException {
-		ArtifactEventType.EventPayload eventDescription = payloadExtractor.apply(artifact);
+		ArtifactEventType.EventPayload eventPayload = payloadExtractor.apply(artifact);
 
 		// if the time is legitimate ( greater than zero ) insert it into the db
-		if (eventDescription != null && eventDescription.getTime() > 0) {
+		if (eventPayload.getTime() > 0) {
 			long sourceFileObjId = artifact.getObjectID();
 			AbstractFile file = sleuthkitCase.getAbstractFileById(sourceFileObjId);
 			boolean hasHashHits = false;
@@ -662,14 +661,14 @@ public final class TimelineManager {
 				hasHashHits = file.getHashSetNames().isEmpty() == false;
 			}
 
-			return Optional.of(addEvent(eventDescription.getTime(),
+			return Optional.of(addEvent(eventPayload.getTime(),
 					eventType,
 					artifact.getDataSourceObjectID(),
 					sourceFileObjId,
 					artifact.getArtifactID(),
-					eventDescription.getFullDescription(),
-					eventDescription.getMedDescription(),
-					eventDescription.getShortDescription(),
+					eventPayload.getFullDescription(),
+					eventPayload.getMedDescription(),
+					eventPayload.getShortDescription(),
 					hasHashHits,
 					sleuthkitCase.getBlackboardArtifactTagsByArtifact(artifact).isEmpty() == false));
 		}
@@ -746,7 +745,7 @@ public final class TimelineManager {
 	}
 
 	static private String quotePreservingNull(String value) {
-		return isNull(value) ? " NULL" : "'" + escapeSingleQuotes(value) + "'";
+		return isNull(value) ? " NULL " : "'" + escapeSingleQuotes(value) + "'";
 	}
 
 	/**
@@ -1106,7 +1105,7 @@ public final class TimelineManager {
 	 * @param <O> Output type.
 	 */
 	@FunctionalInterface
-	interface CheckedFunction<I, O> {
+	interface TSKCoreCheckedFunction<I, O> {
 
 		O apply(I input) throws TskCoreException;
 	}

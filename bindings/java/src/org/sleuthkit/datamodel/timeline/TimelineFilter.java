@@ -574,13 +574,13 @@ public abstract class TimelineFilter {
 	 */
 	public static final class DescriptionFilter extends TimelineFilter {
 
-		private final DescriptionLoD descriptionLoD;
+		
 		private final String description;
 		private final FilterMode filterMode;
 
-		public DescriptionFilter(DescriptionLoD descriptionLoD, String description, FilterMode filterMode) {
+		public DescriptionFilter( String description, FilterMode filterMode) {
 			super();
-			this.descriptionLoD = descriptionLoD;
+		
 			this.description = description;
 			this.filterMode = filterMode;
 		}
@@ -591,20 +591,15 @@ public abstract class TimelineFilter {
 
 		@Override
 		public DescriptionFilter copyOf() {
-			return new DescriptionFilter(getDescriptionLoD(), getDescription(), getFilterMode());
+			return new DescriptionFilter(getDescription(), getFilterMode());
 		}
 
 		@Override
 		public String getDisplayName() {
-			return getDescriptionLoD().getDisplayName() + ": " + getDescription();
+			return  getDescription();
 		}
 
-		/**
-		 * @return the descriptionLoD
-		 */
-		public DescriptionLoD getDescriptionLoD() {
-			return descriptionLoD;
-		}
+
 
 		/**
 		 * @return the description
@@ -639,7 +634,6 @@ public abstract class TimelineFilter {
 		@Override
 		public int hashCode() {
 			int hash = 7;
-			hash = 79 * hash + Objects.hashCode(this.descriptionLoD);
 			hash = 79 * hash + Objects.hashCode(this.description);
 			hash = 79 * hash + Objects.hashCode(this.filterMode);
 			return hash;
@@ -654,9 +648,7 @@ public abstract class TimelineFilter {
 				return false;
 			}
 			final DescriptionFilter other = (DescriptionFilter) obj;
-			if (this.descriptionLoD != other.descriptionLoD) {
-				return false;
-			}
+		
 			if (notEqual(this.description, other.description)) {
 				return false;
 			}
@@ -665,7 +657,7 @@ public abstract class TimelineFilter {
 
 		@Override
 		public String getSQLWhere(TimelineManager manager) {
-			return "(" + manager.getDescriptionColumn(this.getDescriptionLoD()) + getFilterMode().getLike()
+			return "( full_description " + getFilterMode().getLike()
 					+ " '" + escapeSingleQuotes(this.getDescription()) + "')"; // NON-NLS
 		}
 	}
