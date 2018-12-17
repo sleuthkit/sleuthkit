@@ -540,7 +540,7 @@ int TskDbPostgreSQL::initialize() {
         "Error creating tsk_vs_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, device_id TEXT NOT NULL, time_zone TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        ("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, device_id TEXT NOT NULL, time_zone TEXT NOT NULL, acquisition_details TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating data_source_info table: %s\n")
         ||
         attempt_exec

@@ -1641,6 +1641,8 @@ public class SleuthkitCase {
 			// Add new hash columns
 			statement.execute("ALTER TABLE tsk_image_info ADD COLUMN sha1 TEXT DEFAULT NULL");
 			statement.execute("ALTER TABLE tsk_image_info ADD COLUMN sha256 TEXT DEFAULT NULL");
+			
+			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_details TEXT");
 
 			/*
 			 * Add new tsk_db_extended_info table with TSK version, creation
