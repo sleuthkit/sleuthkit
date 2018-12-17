@@ -1661,6 +1661,7 @@ public class SleuthkitCase {
 			statement.execute("INSERT INTO tsk_db_info_extended (name, value) VALUES ('" + CREATION_SCHEMA_MAJOR_VERSION_KEY + "', '0')");
 			statement.execute("INSERT INTO tsk_db_info_extended (name, value) VALUES ('" + CREATION_SCHEMA_MINOR_VERSION_KEY + "', '0')");
 
+			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_details TEXT");
 			return new CaseDbSchemaVersionNumber(8, 2);
 
 		} finally {
