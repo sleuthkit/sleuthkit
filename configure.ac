@@ -23,6 +23,26 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_PATH_PROG(PERL, perl)
 
+dnl pkg-config setup
+dnl
+dnl Check if pkg-config is installed
+AC_CHECK_PROG([PKGCONFIG], [pkg-config], [yes], [no])
+AS_IF([test "x$ac_cv_prog_PKGCONFIG" = "xyes"], [
+  m4_ifdef([PKG_PROG_PKG_CONFIG], [PKG_PROG_PKG_CONFIG], [])
+  dnl Ask for static libs during static linking
+  AS_IF([test "x$enable_shared" != "xyes"], [PKG_CONFIG="$PKG_CONFIG --static"])
+])
+
+dnl Call AX_PKG_CHECK_MODULES only if PKG_CHECK_MODULES is defined, i.e.,
+dnl only if we have the pkg-config macros; otherwise make it a no-op
+AC_DEFUN([TSK_PKG_CHECK_MODULES], [
+  m4_ifdef([PKG_CHECK_MODULES],
+           [AX_PKG_CHECK_MODULES([$1], [$2], [$3], [$4], [$5], [$6], [$7])])
+])
+
+PACKAGE_LIBS_PRIVATE=
+AC_SUBST([PACKAGE_LIBS_PRIVATE])
+
 dnl Checks for header files.
 AC_HEADER_STDC
 dnl AC_HEADER_MAJOR
@@ -80,25 +100,11 @@ AC_ARG_ENABLE([multithreading],
 dnl Enable multithreading by default in the presence of pthread
 AS_IF([test "x$ax_pthread_ok" = "xyes" && test "x$enable_multithreading" != "xno"], [ax_multithread=yes], [ax_multithread=no])
 
-case "$host" in
-*-*-mingw*)
-  dnl Adding the native /usr/local is wrong for cross-compiling
-  ;;
-*)
-  dnl Not all compilers include /usr/local in the include and link path
-  if test -d /usr/local/include; then
-    CPPFLAGS="$CPPFLAGS -I/usr/local/include"
-    LDFLAGS="$LDFLAGS -L/usr/local/lib"
-  fi
-  ;;
-esac
-
 dnl Add enable/disable option
 AC_ARG_ENABLE([java],
     [AS_HELP_STRING([--disable-java], [Do not build the java bindings or jar file])])
 
 dnl Checks for libraries.
-
 
 dnl Some platforms will complain about missing included functions if libstdc++ is not included.
 AC_CHECK_LIB(stdc++, main, , AC_MSG_ERROR([missing libstdc++]))
@@ -112,100 +118,182 @@ AC_CHECK_HEADERS(string, , , AC_MSG_ERROR([missing STL string class header]))
 AC_CHECK_HEADERS(vector, , , AC_MSG_ERROR([missing STL vector class header]))
 
 dnl Check for sqlite and its dependencies
-AC_CHECK_HEADERS([sqlite3.h],
-                 [AC_CHECK_LIB(dl, dlopen)
-                  AC_CHECK_LIB(sqlite3, sqlite3_open)])
-dnl Compile the bundled sqlite if there is no system one installed
-AC_MSG_CHECKING(which sqlite3 to use)
-AS_IF([test "x$ac_cv_lib_sqlite3_sqlite3_open" = "xyes"],
-      [AC_MSG_RESULT([system])],
-      [AC_MSG_RESULT([bundled])])
-AM_CONDITIONAL([HAVE_LIBSQLITE3],
-               [test "x$ac_cv_lib_sqlite3_sqlite3_open" = "xyes"])
-dnl check for postgresql	
-AC_CHECK_HEADERS([postgresql/libpq-fe.h],AC_CHECK_LIB([pq],[PQlibVersion]))      
-AC_CHECK_HEADERS([libpq-fe.h],AC_CHECK_LIB([pq],[PQlibVersion]))
-AM_CONDITIONAL([HAVE_POSTGRESQL],[test "x$ac_cv_lib_pq_PQlibVersion" = "xyes"])
-AM_COND_IF([HAVE_POSTGRESQL],[ax_libpq=yes],[ax_libpq=no])
-AM_COND_IF([HAVE_POSTGRESQL], [AC_DEFINE([HAVE_LIBPQ_], [1], [Define if using libpq.])])
-
-# Check if we should link afflib.
-AC_ARG_WITH([afflib],
-    [AS_HELP_STRING([--without-afflib],[Do not use AFFLIB even if it is installed])]
-    [AS_HELP_STRING([--with-afflib=dir],[Specify that AFFLIB is installed in directory 'dir'])],
-    dnl If --with-afflib or --without-afflib is given
-    [],
-    dnl If --with-afflib or --without-afflib is given
-    [with_afflib=yes])
-
-dnl check for the lib if they did not specify no
-AS_IF([test "x$with_afflib" != "xno"],
-    dnl Test the dir if they specified something beyond yes/no
-    [AS_IF([test "x$with_afflib" != "xyes"],
-        [AS_IF([test -d ${with_afflib}/include],
-            [CPPFLAGS="$CPPFLAGS -I${with_afflib}/include"
-                LDFLAGS="$LDFLAGS -L${with_afflib}/lib"],
-            dnl Dir given was not correct
-            [AC_MSG_FAILURE([AFFLIB directory not found at ${with_afflib}])])
-        ]
-    )]
-    dnl Check for the header file first to make sure they have the dev install
-    [AC_CHECK_HEADERS([afflib/afflib.h],
-      [AC_CHECK_LIB([afflib], [af_open])]
-    )]
+AS_IF([test "x$ac_cv_prog_PKGCONFIG" = "xyes"],
+  [TSK_PKG_CHECK_MODULES([SQLITE3], [], [sqlite3],
+    [
+      CFLAGS="$CFLAGS $SQLITE3_CFLAGS"
+      CXXFLAGS="$CXXFLAGS $SQLITE3_CFLAGS"
+      LIBS="$LIBS $SQLITE3_LIBS"
+    ],
+    [ax_sqlite3=no]
+  )]
 )
-AS_IF([test "x$ac_cv_lib_afflib_af_open" = "xyes"], [ax_afflib=yes], [ax_afflib=no])
-
-
-dnl Check if we should link zlib
-AC_ARG_WITH([zlib],
-    [AS_HELP_STRING([--without-zlib],[Do not use ZLIB even if it is installed])]
-    [AS_HELP_STRING([--with-zlib=dir],[Specify that ZLIB is installed in directory 'dir'])],
-    dnl If --with-zlib or --without-zlib is given
-    [],
-    dnl if nothing was specified, default to a test
-    [with_zlib=yes])
-
-dnl check for the lib if they did not specify no
-AS_IF(
-   [test "x$with_zlib" != "xno"],
-   [AC_MSG_NOTICE([checking for zlib])]
-   dnl Test the dir if they specified something beyond yes/no
-   [AS_IF([test "x$with_zlib" != "xyes"],
-       [AC_MSG_NOTICE([LOOKING for zlib in ${with_zlib}])]
-       [AS_IF([test -d ${with_zlib}],
-           [CPPFLAGS="$CPPFLAGS -I${with_zlib}/include"
-                LDFLAGS="$LDFLAGS -L${with_zlib}/lib"],
-           dnl Dir given was not correct
-           [AC_MSG_FAILURE([ZLIB directory not found at ${with_zlib}])]
-       )]
-    )]
-    dnl Check for the header file first to make sure they have the dev install
-    [AC_CHECK_HEADERS([zlib.h],
-      [AC_CHECK_LIB([z], [inflate],
-         [],
-         [AC_MSG_WARN([Found zlib headers, but could not link to zlib library.  Will build without zlib.])]
-         [with_zlib=no]
-      )],
-      [AC_MSG_WARN([Could not find usable zlib headers.  Will build without zlib.])]
-      [with_zlib=no]
-    )],
-    [AC_MSG_NOTICE([NOT checking for zlib because with_zlib is no])]
-)
-AS_IF([test "x$ac_cv_lib_z_inflate" = "xyes"], [ax_zlib=yes], [ax_zlib=no])
-
-AM_CONDITIONAL([X_ZLIB],[test "x$with_zlib" != "xno" && test "x$with_zlib" != "xyes"])
-AS_IF([test "x$with_zlib" != "xno"],
-   [Z_PATH="${with_zlib}/lib"],
-   [AC_MSG_NOTICE([failed to make Z_PATH])]
-)
-AC_SUBST(Z_PATH, $Z_PATH)
 
 dnl needed for sqllite
 AC_CHECK_LIB(dl, dlopen)
 
-dnl check for user online input
+AC_CHECK_HEADERS([sqlite3.h], [AC_CHECK_LIB([sqlite3], [sqlite3_open])])
+AS_IF([test "x$ac_cv_lib_sqlite3_open" = "xyes"], [ax_sqlite3=yes])
 
+dnl Compile the bundled sqlite if there is no system one installed
+AC_MSG_CHECKING(which sqlite3 to use)
+AS_IF([test "x$ax_sqlite3" = "xyes"],
+      [AC_MSG_RESULT([system])
+       PACKAGE_LIBS_PRIVATE="$PACKAGE_LIBS_PRIVATE -lsqlite3"],
+      [AC_MSG_RESULT([bundled])])
+AM_CONDITIONAL([HAVE_LIBSQLITE3], [test "x$ax_sqlite3" = "xyes"])
+
+dnl check for postgresql	
+AC_CHECK_HEADERS([postgresql/libpq-fe.h],AC_CHECK_LIB([pq],[PQlibVersion]))
+AC_CHECK_HEADERS([libpq-fe.h],AC_CHECK_LIB([pq],[PQlibVersion]))
+AM_CONDITIONAL([HAVE_POSTGRESQL],[test "x$ac_cv_lib_pq_PQlibVersion" = "xyes"])
+AM_COND_IF([HAVE_POSTGRESQL],
+  [AC_DEFINE([HAVE_LIBPQ_], [1], [Define if using libpq.])
+   PACKAGE_LIBS_PRIVATE="$PACKAGE_LIBS_PRIVATE -lpq"
+   ax_libpq=yes],
+  [ax_libpq=no]
+)
+
+#
+# TSK_OPT_DEP_CHECK(DISPLAY_NAME, PKG_VAR, PKG_MODULE, HEADER_LIST, CHECK_LIB_NAME, CHECK_LIB_FUNC)
+#
+AC_DEFUN([TSK_OPT_DEP_CHECK], [
+  dnl Check if we should link lib
+  AC_ARG_WITH(
+    [$1],
+    [AS_HELP_STRING([--without-$1],[Do not use $1 even if it is installed])]
+    [AS_HELP_STRING([--with-$1=dir],[Specify that $1 is installed in directory 'dir'])],
+    dnl If --with-lib or --without-lib is given
+    [],
+    dnl if nothing was specified, default to a test
+    [with_$1=yes]
+  )
+
+  dnl check for lib if they did not specify no
+  ax_$1=no
+  AS_IF(
+    [test "x[$]with_$1" != "xno"],
+    [
+      dnl Save flags so we can reset them if the library isn't found
+      SAVED_CPPFLAGS="$CPPFLAGS"
+      SAVED_CFLAGS="$CFLAGS"
+      SAVED_CXXFLAGS="$CXXFLAGS"
+      SAVED_LDFLAGS="$LDFLAGS"
+      SAVED_LIBS="$LIBS"
+
+      AS_IF([test "x[$]with_$1" = "xyes"],
+        [
+          dnl Check for lib using pkg-config, if we have it
+          m4_ifval([$2], [AS_IF([test "x$ac_cv_prog_PKGCONFIG" = "xyes"],
+            [TSK_PKG_CHECK_MODULES([$2], [], [$3],
+              [
+                CPPFLAGS="$CPPFLAGS [$]$2[]_CFLAGS"
+                CFLAGS="$CFLAGS [$]$2[]_CFLAGS"
+                CXXFLAGS="$CXXFLAGS [$]$2[]_CFLAGS"
+                LIBS="$LIBS [$]$2[]_LIBS"
+                ax_$1=yes
+              ],
+              [ax_$1=no]
+            )]
+          )])
+        ],
+        [
+          dnl A directory was given; check that it exists
+          AS_IF([test -d "[$]with_$1/include"],
+            [
+              CPPFLAGS="$CPPFLAGS -I[$]with_$1/include"
+              LDFLAGS="$LDFLAGS -L[$]with_$1/lib"
+            ],
+            [AC_MSG_FAILURE([$1 directory not found at [$]with_$1])]
+          )
+        ]
+      )
+
+      dnl Check if the library is usable
+      AC_CHECK_HEADERS([$4], [AC_CHECK_LIB([$5], [$6])])
+      AS_IF([test "x[$]ac_cv_lib_$5[]_$6" = "xyes"],
+        [
+          dnl Library found and usable
+          AS_IF([test "x[$]as_$1" = "xyes"],
+            [
+              dnl Library found with pkg-config; reset CPPFLAGS so as not
+              dnl to duplicate flags pkg-config puts into CFLAGS
+              CPPFLAGS="$SAVED_CPPFLAGS"
+            ],
+            [
+              ax_$1=yes
+              dnl Library found without pkg-config; ensure that it is added
+              dnl to Libs.private in tsk.pc
+              PACKAGE_LIBS_PRIVATE="$PACKAGE_LIBS_PRIVATE -l$5"
+            ]
+          )
+        ],
+        [
+          dnl Library not found or unusable; reset flags
+          CPPFLAGS="$SAVED_CPPFLAGS"
+          CFLAGS="$SAVED_CFLAGS"
+          CXXFLAGS="$SAVED_CXXFLAGS"
+          LDFLAGS="$SAVED_LDFLAGS"
+          LIBS="$SAVED_LIBS"
+        ]
+      )
+    ]
+  )
+])
+
+dnl Check if we should link with afflib
+TSK_OPT_DEP_CHECK([afflib], [], [], [afflib/afflib.h], [afflib], [af_open])
+dnl Check if we should link with zlib
+TSK_OPT_DEP_CHECK([zlib], [ZLIB], [zlib], [zlib.h], [z], [inflate])
+dnl Check if we should link with libewf
+TSK_OPT_DEP_CHECK([libewf], [EWF], [libewf], [libewf.h], [ewf], [libewf_get_version])
+dnl Check if we should link with libvhdi
+TSK_OPT_DEP_CHECK([libvhdi], [VHDI], [libvhdi], [libvhdi.h], [vhdi], [libvhdi_get_version])
+dnl Check if we should link with libvmdk
+TSK_OPT_DEP_CHECK([libvmdk], [VMDK], [libvmdk], [libvmdk.h], [vmdk], [libvmdk_get_version])
+
+dnl check for cppunit
+AC_ARG_ENABLE([cppunit],
+    [AS_HELP_STRING([--disable-cppunit], [Build without cppunit tests])])
+
+ac_cv_cppunit=no
+AS_IF([test "x$enable_cppunit" != "xno"], [
+  AS_IF([test "x$ac_cv_prog_PKGCONFIG" = "xyes"],
+    [
+      dnl IGNOREs keep cppunit out of .pc file, as it's for testing only
+      TSK_PKG_CHECK_MODULES([CPPUNIT], [], [cppunit >= 1.12.1], [ac_cv_cppunit=yes], [ac_cv_cppunit=no], [IGNORE], [IGNORE])
+    ]
+  )
+
+  AS_IF([test "x$ac_cv_cppunit" != "xyes"],
+    [AM_PATH_CPPUNIT(1.12.1)
+     AS_IF([test "x$no_cppunit" = x], [ac_cv_cppunit=yes])]
+  )
+
+  AC_MSG_CHECKING([for TestRunner in -lcppunit])
+
+  SAVED_CFLAGS="$CFLAGS"
+  SAVED_LDFLAGS="$LDFLAGS"
+  CFLAGS="$CPPUNIT_CLFAGS"
+  LDFLAGS="$CPPUNIT_LIBS"
+
+  AC_LANG_PUSH([C++])
+  AC_LINK_IFELSE([AC_LANG_PROGRAM(
+    [[#include <cppunit/ui/text/TestRunner.h>]],
+    [[CppUnit::TextUi::TestRunner();]])],
+    [ax_cv_cppunit=yes],
+    [ax_cv_cppunit=no])
+  AC_LANG_POP([C++])
+
+  CFLAGS="$SAVED_CFLAGS"
+  LDFLAGS="$SAVED_LDFLAGS"
+
+  AC_MSG_RESULT([$ax_cv_cppunit])
+])
+
+AM_CONDITIONAL([HAVE_CPPUNIT],[test "x$ac_cv_cppunit" = xyes])
+
+dnl check for user online input
 AC_ARG_ENABLE([offline],
     [ AS_HELP_STRING([--enable-offline],[Turn on offline mode])],
     [case "${enableval}" in
@@ -215,113 +303,6 @@ AC_ARG_ENABLE([offline],
      esac],[offline=false])
 
 AM_CONDITIONAL([OFFLINE], [test "x$offline" = xtrue])
-
-
-dnl Check if we should link libewf.
-AC_ARG_WITH([libewf],
-    [AS_HELP_STRING([--without-libewf],[Do not use libewf even if it is installed])]
-    [AS_HELP_STRING([--with-libewf=dir],[Specify that libewf is installed in directory 'dir'])],
-    dnl If --with-libewf or --without-libewf is given
-    [],
-    dnl if nothing was specified, default to a test
-    [with_libewf=yes])
-
-dnl check for the lib if they did not specify no
-AS_IF([test "x$with_libewf" != "xno"],
-    dnl Test the dir if they specified something beyond yes/no
-    [AS_IF([test "x$with_libewf" != "xyes"],
-        [AS_IF([test -d ${with_libewf}/include],
-            [CPPFLAGS="$CPPFLAGS -I${with_libewf}/include"
-                LDFLAGS="$LDFLAGS -L${with_libewf}/lib"],
-            dnl Dir given was not correct
-            [AC_MSG_FAILURE([libewf directory not found at ${with_libewf}])])
-        ]
-    )]
-    dnl Check for the header file first to make sure they have the dev install
-    [AC_CHECK_HEADERS([libewf.h],
-      [AC_CHECK_LIB([ewf], [libewf_get_version], [], [NO_LIBEWF=true])]
-    )]
-)
-AS_IF([test "x$ac_cv_lib_ewf_libewf_get_version" = "xyes"], [ax_libewf=yes], [ax_libewf=no])
-
-dnl Check if we should link libvhdi.
-AC_ARG_WITH([libvhdi],
-    [AS_HELP_STRING([--without-libvhdi],[Do not use libvhdi even if it is installed])]
-    [AS_HELP_STRING([--with-libvhdi=dir],[Specify that libvhdi is installed in directory 'dir'])],
-    dnl If --with-libvhdi or --without-libvhdi is given
-    [],
-    dnl if nothing was specified, default to a test
-    [with_libvhdi=yes])
-
-dnl check for the lib if they did not specify no
-AS_IF([test "x$with_libvhdi" != "xno"],
-    dnl Test the dir if they specified something beyond yes/no
-    [AS_IF([test "x$with_libvhdi" != "xyes"],
-        [AS_IF([test -d ${with_libvhdi}/include],
-            [CPPFLAGS="$CPPFLAGS -I${with_libvhdi}/include"
-                LDFLAGS="$LDFLAGS -L${with_libvhdi}/lib"],
-            dnl Dir given was not correct
-            [AC_MSG_FAILURE([libvhdi directory not found at ${with_libvhdi}])])
-        ]
-    )]
-    dnl Check for the header file first to make sure they have the dev install
-    [AC_CHECK_HEADERS([libvhdi.h],
-      [AC_CHECK_LIB([vhdi], [libvhdi_get_version], [], [NO_libvhdi=true])]
-    )]
-)
-AS_IF([test "x$ac_cv_lib_vhdi_libvhdi_get_version" = "xyes"], [ax_libvhdi=yes], [ax_libvhdi=no])
-
-dnl Check if we should link libvmdk.
-AC_ARG_WITH([libvmdk],
-    [AS_HELP_STRING([--without-libvmdk],[Do not use libvmdk even if it is installed])]
-    [AS_HELP_STRING([--with-libvmdk=dir],[Specify that libvmdk is installed in directory 'dir'])],
-    dnl If --with-libvmdk or --without-libvmdk is given
-    [],
-    dnl if nothing was specified, default to a test
-    [with_libvmdk=yes])
-
-dnl check for the lib if they did not specify no
-AS_IF([test "x$with_libvmdk" != "xno"],
-    dnl Test the dir if they specified something beyond yes/no
-    [AS_IF([test "x$with_libvmdk" != "xyes"],
-        [AS_IF([test -d ${with_libvmdk}/include],
-            [CPPFLAGS="$CPPFLAGS -I${with_libvmdk}/include"
-                LDFLAGS="$LDFLAGS -L${with_libvmdk}/lib"],
-            dnl Dir given was not correct
-            [AC_MSG_FAILURE([libvmdk directory not found at ${with_libvmdk}])])
-        ]
-    )]
-    dnl Check for the header file first to make sure they have the dev install
-    [AC_CHECK_HEADERS([libvmdk.h],
-      [AC_CHECK_LIB([vmdk], [libvmdk_get_version], [], [NO_libvmdk=true])]
-    )]
-)
-AS_IF([test "x$ac_cv_lib_vmdk_libvmdk_get_version" = "xyes"], [ax_libvmdk=yes], [ax_libvmdk=no])
-
-dnl pkg-config doesn't look in /usr/local/lib on some systems
-case "$host" in
-*-*-mingw*)
-  # pkg-config should not look in /usr/local/lib while cross-compiling
-  ;;
-*)
-  if test -z "$PKG_CONFIG_PATH"; then
-    PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
-  else
-    PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig"
-  fi
-  export PKG_CONFIG_PATH
-  ;;
-esac
-
-AC_CHECK_PROG([PKGCONFIG], [pkg-config], [yes], [no])
-if test "x$PKGCONFIG" = xyes; then
-  AX_PKG_CHECK_MODULES([CPPUNIT], [], [cppunit >= 1.12.1], [ac_cv_cppunit=yes], [ac_cv_cppunit=no])
-else
-  AM_PATH_CPPUNIT(1.12.1)
-  AS_IF([test "x$no_cppunit" = x], [ac_cv_cppunit=yes], [ac_cv_cppunit=no])
-fi
-
-AM_CONDITIONAL([HAVE_CPPUNIT],[test "x$ac_cv_cppunit" = xyes])
 
 dnl Test for the various java things that we need for bindings
 AS_IF([test "x$enable_java" != "xno"], [
@@ -449,8 +430,7 @@ AC_CONFIG_FILES([
     bindings/java/Makefile
     bindings/java/jni/Makefile
     unit_tests/Makefile
-    unit_tests/base/Makefile
-    unit_tests/img/Makefile])
+    unit_tests/base/Makefile])
 
 AC_OUTPUT
 
@@ -459,14 +439,14 @@ AC_MSG_NOTICE([
 Building:
    afflib support:                        $ax_afflib
    libewf support:                        $ax_libewf
-   zlib support:                          $ax_zlib
-   openssl support:                       $ax_openssl
-
    libvhdi support:                       $ax_libvhdi
    libvmdk support:                       $ax_libvmdk
+   openssl support:                       $ax_openssl
    postgresql support:                    $ax_libpq
+   zlib support:                          $ax_zlib
+
 Features:
    cppunit support:                       $ac_cv_cppunit
    Java/JNI support:                      $ax_java_support
    Multithreading:                        $ax_multithread
-]);
+])
