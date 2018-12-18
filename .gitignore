@@ -107,6 +107,7 @@ Makefile
 stamp-h1
 tsk/tsk_config.h
 tsk/tsk_incs.h
+tsk/tsk.pc
 aclocal.m4
 autom4te.cache
 config.log
