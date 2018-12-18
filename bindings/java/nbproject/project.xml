@@ -111,12 +111,12 @@
             </view>
             <subprojects/>
         </general-data>
-        <java-data xmlns="http://www.netbeans.org/ns/freeform-project-java/3">
+        <java-data xmlns="http://www.netbeans.org/ns/freeform-project-java/4">
             <compilation-unit>
                 <package-root>src</package-root>
                 <classpath mode="compile">lib;lib/diffutils-1.2.1.jar;lib/junit-4.8.2.jar;lib/postgresql-9.4-1201.jdbc41.jar;lib/c3p0-0.9.5.jar;lib/mchange-commons-java-0.2.9.jar;lib/c3p0-0.9.5-sources.jar;lib/c3p0-0.9.5-javadoc.jar;lib/SparseBitSet-1.1.jar</classpath>
                 <built-to>build</built-to>
-                <source-level>1.6</source-level>
+                <source-level>1.8</source-level>
             </compilation-unit>
             <compilation-unit>
                 <package-root>test</package-root>
@@ -124,7 +124,7 @@
                 <classpath mode="compile">build;lib/diffutils-1.2.1.jar;lib/diffutils-1.2.1-javadoc.jar;lib/diffutils-1.2.1-sources.jar;lib/junit-4.8.2.jar</classpath>
                 <built-to>build</built-to>
                 <built-to>test</built-to>
-                <source-level>1.6</source-level>
+                <source-level>1.8</source-level>
             </compilation-unit>
         </java-data>
         <preferences xmlns="http://www.netbeans.org/ns/auxiliary-configuration-preferences/1">
