@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import static java.util.stream.Collectors.joining;
 import java.util.stream.Stream;
@@ -102,20 +103,6 @@ public abstract class TimelineFilter {
 		}
 
 		@Override
-		public boolean equals(Object obj) {
-			if (obj == null) {
-				return false;
-			}
-			if (getClass() != obj.getClass()) {
-				return false;
-			}
-
-			@SuppressWarnings("unchecked")
-			final IntersectionFilter<S> other = (IntersectionFilter<S>) obj;
-			return areSubFiltersEqual(this, other);
-		}
-
-		@Override
 		public String getSQLWhere(TimelineManager manager) {
 			String trueLiteral = manager.getSQLWhere(null);
 			String join = this.getSubFilters().stream()
@@ -176,6 +163,7 @@ public abstract class TimelineFilter {
 					.collect(Collectors.joining(" OR "));
 			return join.isEmpty() ? manager.getSQLWhere(null) : "(" + join + ")";
 		}
+
 	}
 
 	/**
@@ -259,7 +247,7 @@ public abstract class TimelineFilter {
 			if (notEqual(this.eventType, other.eventType)) {
 				return false;
 			}
-			return areSubFiltersEqual(this, other);
+			return Objects.equals(this.getSubFilters(), other.getSubFilters());
 		}
 
 		@Override
@@ -281,7 +269,7 @@ public abstract class TimelineFilter {
 	 */
 	public static final class TextFilter extends TimelineFilter {
 
-		private final SimpleStringProperty text = new SimpleStringProperty();
+		private final SimpleStringProperty textProperty = new SimpleStringProperty();
 
 		public TextFilter() {
 			this("");
@@ -289,11 +277,11 @@ public abstract class TimelineFilter {
 
 		public TextFilter(String text) {
 			super();
-			this.text.set(text.trim());
+			this.textProperty.set(text.trim());
 		}
 
 		public synchronized void setText(String text) {
-			this.text.set(text.trim());
+			this.textProperty.set(text.trim());
 		}
 
 		@Override
@@ -302,11 +290,11 @@ public abstract class TimelineFilter {
 		}
 
 		public synchronized String getText() {
-			return text.getValue();
+			return textProperty.getValue();
 		}
 
 		public Property<String> textProperty() {
-			return text;
+			return textProperty;
 		}
 
 		@Override
@@ -329,7 +317,7 @@ public abstract class TimelineFilter {
 		@Override
 		public int hashCode() {
 			int hash = 5;
-			hash = 29 * hash + Objects.hashCode(this.text.get());
+			hash = 29 * hash + Objects.hashCode(this.textProperty.get());
 			return hash;
 		}
 
@@ -343,6 +331,7 @@ public abstract class TimelineFilter {
 				return manager.getSQLWhere(null);
 			}
 		}
+
 	}
 
 	/**
@@ -428,25 +417,6 @@ public abstract class TimelineFilter {
 			return !(namedSubFilters.contains(subFilter));
 		}
 
-		@Override
-		public int hashCode() {
-			return 7;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj) {
-				return true;
-			}
-			if (obj == null) {
-				return false;
-			}
-			if (getClass() != obj.getClass()) {
-				return false;
-			}
-			return areSubFiltersEqual(this, (RootFilter) obj);
-		}
-
 	}
 
 	/**
@@ -485,6 +455,7 @@ public abstract class TimelineFilter {
 		public String getSQLWhere(TimelineManager manager) {
 			return "(known_state != " + TskData.FileKnown.KNOWN.getFileKnownValue() + ")"; // NON-NLS
 		}
+
 	}
 
 	/**
@@ -565,7 +536,7 @@ public abstract class TimelineFilter {
 				return false;
 			}
 			final CompoundFilter<?> other = (CompoundFilter<?>) obj;
-			return areSubFiltersEqual(this, other);
+			return Objects.equals(this.getSubFilters(), other.getSubFilters());
 		}
 	}
 
@@ -574,19 +545,13 @@ public abstract class TimelineFilter {
 	 */
 	public static final class DescriptionFilter extends TimelineFilter {
 
-		
 		private final String description;
 		private final FilterMode filterMode;
 
-		public DescriptionFilter( String description, FilterMode filterMode) {
+		public DescriptionFilter(String description, FilterMode filterMode) {
 			super();
-		
 			this.description = description;
 			this.filterMode = filterMode;
-		}
-
-		public FilterMode getFilterMode() {
-			return filterMode;
 		}
 
 		@Override
@@ -596,16 +561,18 @@ public abstract class TimelineFilter {
 
 		@Override
 		public String getDisplayName() {
-			return  getDescription();
+			return getDescription();
 		}
-
-
 
 		/**
 		 * @return the description
 		 */
 		public String getDescription() {
 			return description;
+		}
+
+		public FilterMode getFilterMode() {
+			return filterMode;
 		}
 
 		/**
@@ -633,14 +600,17 @@ public abstract class TimelineFilter {
 
 		@Override
 		public int hashCode() {
-			int hash = 7;
-			hash = 79 * hash + Objects.hashCode(this.description);
-			hash = 79 * hash + Objects.hashCode(this.filterMode);
+			int hash = 3;
+			hash = 29 * hash + Objects.hashCode(this.description);
+			hash = 29 * hash + Objects.hashCode(this.filterMode);
 			return hash;
 		}
 
 		@Override
 		public boolean equals(Object obj) {
+			if (this == obj) {
+				return true;
+			}
 			if (obj == null) {
 				return false;
 			}
@@ -648,17 +618,18 @@ public abstract class TimelineFilter {
 				return false;
 			}
 			final DescriptionFilter other = (DescriptionFilter) obj;
-		
-			if (notEqual(this.description, other.description)) {
+			if (!Objects.equals(this.description, other.description)) {
 				return false;
 			}
-			return this.filterMode == other.filterMode;
+			if (this.filterMode != other.filterMode) {
+				return false;
+			}
+			return true;
 		}
 
 		@Override
 		public String getSQLWhere(TimelineManager manager) {
-			return "( full_description " + getFilterMode().getLike()
-					+ " '" + escapeSingleQuotes(this.getDescription()) + "')"; // NON-NLS
+			return "(full_description like '" + escapeSingleQuotes(this.getDescription()) + "%')"; //NON-NLS
 		}
 	}
 
@@ -711,6 +682,7 @@ public abstract class TimelineFilter {
 		public String getSQLWhere(TimelineManager manager) {
 			return "(hash_set_name = '" + escapeSingleQuotes(getHashSetName()) + "' )"; //NON-NLS
 		}
+
 	}
 
 	/**
@@ -775,6 +747,7 @@ public abstract class TimelineFilter {
 		public String getSQLWhere(TimelineManager manager) {
 			return "(data_source_obj_id = '" + this.getDataSourceID() + "')"; //NON-NLS
 		}
+
 	}
 
 	/**
@@ -829,6 +802,7 @@ public abstract class TimelineFilter {
 		public String getSQLWhere(TimelineManager manager) {
 			return " (tsk_events.tag_name_id = " + getTagName().getId() + " ) "; //NON-NLS
 		}
+
 	}
 
 	/**

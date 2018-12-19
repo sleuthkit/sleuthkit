@@ -23,7 +23,7 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.net.InternetDomainName;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLDecoder;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -31,6 +31,10 @@ import java.util.Optional;
 import java.util.SortedSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.apache.commons.lang3.StringUtils;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.*;
 import org.sleuthkit.datamodel.BlackboardAttribute;
@@ -45,7 +49,6 @@ import static org.sleuthkit.datamodel.timeline.EventTypeZoomLevel.ROOT_TYPE;
 import static org.sleuthkit.datamodel.timeline.EventTypeZoomLevel.SUB_TYPE;
 import org.sleuthkit.datamodel.timeline.StandardArtifactEventType.AttributeExtractor;
 import static org.sleuthkit.datamodel.timeline.StandardArtifactEventType.getAttributeSafe;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * An Event Type represents a distinct kind of event ie file system or web
@@ -402,7 +405,7 @@ public interface EventType extends Comparable<EventType> {
 						}
 					case MEDIUM:
 						uri = new URI(fullDescription);
-						return  new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(), null, null).toString();
+						return new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(), null, null).toString();
 
 					case FULL:
 					default:
@@ -443,17 +446,21 @@ public interface EventType extends Comparable<EventType> {
 	}
 
 	static String getFilePathDescription(DescriptionLoD lod, String fullDescription) {
+
 		switch (lod) {
 			case FULL:
 				return fullDescription;
 			case MEDIUM:
-				return StringUtils.substringBeforeLast(fullDescription, "/");
+				String[] split = fullDescription.split("/");
+				return Stream.of(split).limit(Math.max(1, split.length - 1)).collect(Collectors.joining("/", "/", ""));
+
 			case SHORT:
 			default:
-//				String rootFolder = fullDescription.split("/")[0];
-				String rootFolder = StringUtils.substringBefore(StringUtils.substringAfter(fullDescription, "/"), "/");
-				String shortDesc = StringUtils.defaultString(rootFolder);
-				return shortDesc.endsWith("/") ? shortDesc : shortDesc + "/";
+				return Pattern.compile("/").splitAsStream(fullDescription)
+						.filter(StringUtils::isNotBlank)
+						.limit(1)
+						.collect(Collectors.joining("/", "/", ""));
+
 		}
 	}
 }
