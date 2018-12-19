@@ -50,6 +50,7 @@ tsk_fs_meta_alloc(size_t a_buf_len)
             return NULL;
         }
         fs_meta->content_len = a_buf_len;
+        fs_meta->reset_content = NULL;
     }
 
     // assign the id so we know the structure is still alloc
@@ -71,6 +72,10 @@ tsk_fs_meta_alloc(size_t a_buf_len)
 TSK_FS_META *
 tsk_fs_meta_realloc(TSK_FS_META * a_fs_meta, size_t a_buf_len)
 {
+    if (a_fs_meta->reset_content != NULL) {
+        a_fs_meta->reset_content(a_fs_meta->content_ptr);
+    }
+
     if (a_fs_meta->content_len != a_buf_len) {
         a_fs_meta->content_len = a_buf_len;
         a_fs_meta->content_ptr =
@@ -100,7 +105,14 @@ tsk_fs_meta_close(TSK_FS_META * fs_meta)
     // clear the tag so we know the structure isn't alloc
     fs_meta->tag = 0;
 
-    free(fs_meta->content_ptr);
+    if (fs_meta->content_ptr) {
+        if (fs_meta->reset_content) {
+            fs_meta->reset_content(fs_meta->content_ptr);
+        }
+
+        free((char *) fs_meta->content_ptr);
+    }
+
     fs_meta->content_ptr = NULL;
     fs_meta->content_len = 0;
 
@@ -134,6 +146,11 @@ tsk_fs_meta_reset(TSK_FS_META * a_fs_meta)
     TSK_FS_ATTRLIST *attr_tmp;
     TSK_FS_META_NAME_LIST *name2_tmp;
     char *link_tmp;
+
+    // Clear content
+    if (a_fs_meta->reset_content) {
+        a_fs_meta->reset_content(a_fs_meta->content_ptr);
+    }
 
     // backup pointers
     content_ptr_tmp = a_fs_meta->content_ptr;

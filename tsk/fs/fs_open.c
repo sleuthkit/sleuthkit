@@ -47,6 +47,25 @@ TSK_FS_INFO *
 tsk_fs_open_vol(const TSK_VS_PART_INFO * a_part_info,
     TSK_FS_TYPE_ENUM a_ftype)
 {
+    return tsk_fs_open_vol_decrypt(a_part_info, a_ftype, "");
+}
+
+/**
+ * \ingroup fslib
+ * Tries to process data in a volume as a file system.
+ * Allows for providing an optional password for decryption.
+ * Returns a structure that can be used for analysis and reporting.
+ *
+ * @param a_part_info Open volume to read from and analyze
+ * @param a_ftype Type of file system (or autodetect)
+ * @param a_pass Password to decrypt filesystem
+ *
+ * @return NULL on error
+ */
+TSK_FS_INFO *
+tsk_fs_open_vol_decrypt(const TSK_VS_PART_INFO * a_part_info,
+    TSK_FS_TYPE_ENUM a_ftype, const char * a_pass)
+{
     TSK_OFF_T offset;
     if (a_part_info == NULL) {
         tsk_error_reset();
@@ -65,7 +84,8 @@ tsk_fs_open_vol(const TSK_VS_PART_INFO * a_part_info,
     offset =
         a_part_info->start * a_part_info->vs->block_size +
         a_part_info->vs->offset;
-    return tsk_fs_open_img(a_part_info->vs->img_info, offset, a_ftype);
+    return tsk_fs_open_img_decrypt(a_part_info->vs->img_info, offset, 
+        a_ftype, a_pass);
 }
 
 /**
@@ -82,6 +102,26 @@ tsk_fs_open_vol(const TSK_VS_PART_INFO * a_part_info,
 TSK_FS_INFO *
 tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
     TSK_FS_TYPE_ENUM a_ftype)
+{
+    return tsk_fs_open_img_decrypt(a_img_info, a_offset, a_ftype, "");
+}
+
+/**
+ * \ingroup fslib
+ * Tries to process data in a disk image at a given offset as a file system.
+ * Allows for providing an optional password for decryption.
+ * Returns a structure that can be used for analysis and reporting.
+ *
+ * @param a_img_info Disk image to analyze
+ * @param a_offset Byte offset to start analyzing from
+ * @param a_ftype Type of file system (or autodetect)
+ * @param a_pass Password to decrypt filesystem
+ *
+ * @return NULL on error
+ */
+TSK_FS_INFO *
+tsk_fs_open_img_decrypt(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
+    TSK_FS_TYPE_ENUM a_ftype, const char * a_pass)
 {
     TSK_FS_INFO *fs_info;
 
@@ -183,6 +223,112 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
     else if (TSK_FS_TYPE_ISYAFFS2(a_ftype)) {
         return yaffs2_open(a_img_info, a_offset, a_ftype, 0);
     }
+    tsk_error_reset();
+    tsk_error_set_errno(TSK_ERR_FS_UNSUPTYPE);
+    tsk_error_set_errstr("%X", (int) a_ftype);
+    return NULL;
+}
+
+/**
+ * \ingroup fslib
+ * Tries to process data in a disk image at a given offset as a file system.
+ * Returns a structure that can be used for analysis and reporting.
+ *
+ * @param a_img_info Disk image to analyze
+ * @param a_offset Byte offset to start analyzing from
+ * @param a_ftype Type of file system (or autodetect)
+ *
+ * @return NULL on error
+ */
+TSK_FS_INFO *
+tsk_fs_open_pool(const TSK_POOL_INFO * a_pool_info, TSK_DADDR_T a_vol_block, TSK_FS_TYPE_ENUM a_ftype)
+{
+    return tsk_fs_open_pool_decrypt(a_pool_info, a_vol_block, a_ftype, "");
+}
+
+/**
+ * \ingroup fslib
+ * Tries to process data in a disk image at a given offset as a file system.
+ * Allows for providing an optional password for decryption.
+ * Returns a structure that can be used for analysis and reporting.
+ *
+ * @param a_img_info Disk image to analyze
+ * @param a_offset Byte offset to start analyzing from
+ * @param a_ftype Type of file system (or autodetect)
+ * @param a_pass Password to decrypt filesystem
+ *
+ * @return NULL on error
+ */
+TSK_FS_INFO *
+tsk_fs_open_pool_decrypt(const TSK_POOL_INFO * a_pool_info, TSK_DADDR_T a_vol_block, 
+    TSK_FS_TYPE_ENUM a_ftype, const char * a_pass)
+{
+    TSK_FS_INFO *fs_info, *fs_first = NULL;
+    const char *name_first;
+    int i;
+
+    const struct {
+        char* name;
+        TSK_FS_INFO* (*open)(const TSK_POOL_INFO*, TSK_DADDR_T, TSK_FS_TYPE_ENUM, const char*);
+        TSK_FS_TYPE_ENUM type;
+    } FS_OPENERS[] = {
+        { "APFS",     apfs_open,    TSK_FS_TYPE_APFS_DETECT    },
+    };
+
+    if (a_pool_info == NULL) {
+        tsk_error_reset();
+        tsk_error_set_errno(TSK_ERR_FS_ARG);
+        tsk_error_set_errstr("tsk_fs_open_pool: Null pool info");
+        return NULL;
+    }
+
+    /* We will try different file systems ...
+     * We need to try all of them in case more than one matches
+     */
+    if (a_ftype == TSK_FS_TYPE_DETECT) {
+        if (tsk_verbose)
+            tsk_fprintf(stderr,
+                "fsopen: Auto detection mode at block %" PRIuOFF "\n",
+                a_vol_block);
+
+        for (i = 0; i < sizeof(FS_OPENERS)/sizeof(FS_OPENERS[0]); ++i) {
+            if ((fs_info = FS_OPENERS[i].open(
+                    a_pool_info, a_vol_block, FS_OPENERS[i].type, a_pass)) != NULL) {
+                // fs opens as type i
+                if (fs_first == NULL) {
+                    // first success opening fs
+                    name_first = FS_OPENERS[i].name;
+                    fs_first = fs_info;
+                }
+                else {
+                    // second success opening fs, which means we
+                    // cannot autodetect the fs type and must give up
+                    fs_first->close(fs_first);
+                    fs_info->close(fs_info);
+                    tsk_error_reset();
+                    tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
+                    tsk_error_set_errstr(
+                        "%s or %s", FS_OPENERS[i].name, name_first);
+                    return NULL;
+                }
+            }
+            else {
+                // fs does not open as type i
+                tsk_error_reset();
+            }
+        }
+
+        if (fs_first == NULL) {
+            tsk_error_reset();
+            tsk_error_set_errno(TSK_ERR_FS_UNKTYPE);
+        }
+
+        return fs_first;
+    }
+    else if (TSK_FS_TYPE_ISAPFS(a_ftype)) {
+        return apfs_open(a_pool_info, a_vol_block, a_ftype, a_pass);
+    }
+    
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPTYPE);
     tsk_error_set_errstr("%X", (int) a_ftype);

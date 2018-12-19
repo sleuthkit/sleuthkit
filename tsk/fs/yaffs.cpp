@@ -3055,11 +3055,13 @@ TSK_FS_INFO *
 
     // Read config file (if it exists)
     config_file_status = yaffs_load_config_file(img_info, configParams);
-    if(config_file_status == YAFFS_CONFIG_ERROR){
+    // BL-6929(JTS): When using external readers, this call will fail.
+    // Not having a config should not be a fatal error.
+  /*if(config_file_status == YAFFS_CONFIG_ERROR){
         // tsk_error was set by yaffs_load_config
         goto on_error;
     }
-    else if(config_file_status == YAFFS_CONFIG_OK){
+    else*/ if(config_file_status == YAFFS_CONFIG_OK){
         // Validate the input
         // If it fails validation, return (tsk_error will be set up already)
         if(1 == yaffs_validate_config_file(configParams)){

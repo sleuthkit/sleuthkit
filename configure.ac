@@ -26,6 +26,7 @@ AC_CONFIG_MACRO_DIR([m4])
 
 dnl Checks for programs.
 AC_PROG_CXX
+AX_CXX_COMPILE_STDCXX([14], [noext], [mandatory])
 AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_INSTALL
@@ -92,6 +93,7 @@ AS_IF([test "x$ax_pthread_ok" = "xyes" && test "x$enable_multithreading" != "xno
 
 case "$host" in
 *-*-mingw*)
+  CPPFLAGS="$CPPFLAGS -mno-ms-bitfields"
   dnl Adding the native /usr/local is wrong for cross-compiling
   ;;
 *)
@@ -385,6 +387,16 @@ dnl Dependencies for fiwalk
 AC_CHECK_FUNCS([getline])
 AC_SEARCH_LIBS(regexec, [regex], , AC_MSG_ERROR([missing regex]))
 
+
+dnl OpenSSL support for encryption
+AX_CHECK_OPENSSL(
+  [ax_openssl=yes]
+  LIBTSK_LDFLAGS="$LIBTSK_LDFLAGS -L${with_openssl}/lib $OPENSSL_LIBS",
+  AC_SUBST([LIBTSK_LDFLAGS])
+  [ax_openssl=no]
+  [AC_MSG_ERROR([OpenSSL headers cannot be located. Consider using the --with-openssl option to specify an appropriate path.])]
+)
+
 dnl Enable compliation warnings
 WARNINGS='-Wall -Wextra -Wno-unused-parameter'
 
@@ -400,6 +412,8 @@ AC_CONFIG_FILES([
     tsk/fs/Makefile
     tsk/hashdb/Makefile
     tsk/auto/Makefile
+    tsk/pool/Makefile
+    tsk/util/Makefile
     tools/Makefile
     tools/imgtools/Makefile
     tools/vstools/Makefile
@@ -407,6 +421,7 @@ AC_CONFIG_FILES([
     tools/hashtools/Makefile
     tools/srchtools/Makefile
     tools/autotools/Makefile
+    tools/pooltools/Makefile
     tools/sorter/Makefile
     tools/timeline/Makefile
     tools/fiwalk/Makefile
@@ -428,6 +443,8 @@ Building:
    afflib support:                        $ax_afflib
    libewf support:                        $ax_libewf
    zlib support:                          $ax_zlib
+   openssl support:                       $ax_openssl
+
    libvhdi support:                       $ax_libvhdi
    libvmdk support:                       $ax_libvmdk
    postgresql support:                    $ax_libpq
