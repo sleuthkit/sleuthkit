@@ -32,13 +32,14 @@ import java.io.InputStream;
 public class HashUtility {
 
 	private final static int BUFFER_SIZE = 16 * 1024;
-	
+
 	/**
 	 * Calculate the MD5 hash for the given FsContent
 	 *
 	 * @param content content object whose md5 hash we want to calculate
 	 *
 	 * @return md5 of the given FsContent object
+	 *
 	 * @throws java.io.IOException
 	 */
 	static public String calculateMd5Hash(Content content) throws IOException {
@@ -69,6 +70,39 @@ public class HashUtility {
 	}
 
 	/**
+	 * Determines whether a string representation of an MD5 hash is valid.
+	 *
+	 * @param md5Hash The hash.
+	 *
+	 * @return True or false.
+	 */
+	public static boolean isValidMd5Hash(String md5Hash) {
+		return md5Hash.matches("^[A-Fa-f0-9]{32}$");
+	}
+
+	/**
+	 * Determines whether a string representation of a SHA-1 hash is valid.
+	 *
+	 * @param sha1Hash The hash.
+	 *
+	 * @return True or false.
+	 */
+	public static boolean isValidSha1Hash(String sha1Hash) {
+		return sha1Hash.matches("^[A-Fa-f0-9]{40}$");
+	}
+
+	/**
+	 * Determines whether a string representation of a SHA-256 hash is valid.
+	 *
+	 * @param sha256Hash The hash.
+	 *
+	 * @return True or false.
+	 */
+	public static boolean isValidSha256Hash(String sha256Hash) {
+		return sha256Hash.matches("^[A-Fa-f0-9]{64}$");
+	}
+
+	/**
 	 * Determine if the passed in Hash value is that for no data (i.e. an empty
 	 * file). Looking these values up or correlating on them causes lots of
 	 * false positives.
@@ -80,7 +114,7 @@ public class HashUtility {
 	public static boolean isNoDataMd5(String md5) {
 		return md5.toLowerCase().equals("d41d8cd98f00b204e9800998ecf8427e"); //NON-NLS
 	}
-	
+
 	/**
 	 * Calculate the MD5 hash for the given FsContent and store it in the
 	 * database
@@ -88,15 +122,16 @@ public class HashUtility {
 	 * @param file file object whose md5 hash we want to calculate
 	 *
 	 * @return md5 of the given FsContent object
+	 *
 	 * @throws java.io.IOException
-	 * 
+	 *
 	 * @deprecated
 	 */
 	@Deprecated
 	static public String calculateMd5(AbstractFile file) throws IOException {
 		Logger logger = Logger.getLogger(HashUtility.class.getName());
 		String md5Hash = calculateMd5Hash(file);
-		try{
+		try {
 			file.getSleuthkitCase().setMd5Hash(file, md5Hash);
 		} catch (TskCoreException ex) {
 			logger.log(Level.WARNING, "Error updating content's md5 in database", ex); //NON-NLS

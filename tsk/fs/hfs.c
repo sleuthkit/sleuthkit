@@ -826,11 +826,12 @@ hfs_cat_traverse(HFS_INFO * hfs,
                 key = (hfs_btree_key_cat *) & node[rec_off];
 
                 keylen = 2 + tsk_getu16(hfs->fs_info.endian, key->key_len);
-                if ((keylen) > nodesize) {
+               
+                if (keylen >= nodesize - rec_off) {
                     tsk_error_set_errno(TSK_ERR_FS_GENFS);
                     tsk_error_set_errstr
                         ("hfs_cat_traverse: length of key %d in index node %d too large (%d vs %"
-                        PRIu16 ")", rec, cur_node, keylen, nodesize);
+                        PRIu16 ")", rec, cur_node, keylen, (nodesize - rec_off));
                     free(node);
                     return 1;
                 }
