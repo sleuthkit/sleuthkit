@@ -529,10 +529,10 @@ int TskDbSqlite::createIndexes()
         attempt_exec("CREATE INDEX events_artifact_id  ON tsk_events(artifact_id);",
             "Error creating events_artifact_id index on tsk_events: %s\n") ||
         attempt_exec(
-            "CREATE INDEX events_sub_type_short_description_time ON tsk_events(sub_type, short_description, time);",
+            "CREATE INDEX events_sub_type_time ON tsk_events(sub_type,  time);",
             "Error creating events_sub_type_short_description_time index on tsk_events: %s\n") ||
         attempt_exec(
-            "CREATE INDEX events_base_type_short_description_time ON tsk_events(base_type, short_description, time);",
+            "CREATE INDEX events_base_type_time ON tsk_events(base_type,  time);",
             "Error creating events_base_type_short_description_time index on tsk_events: %s\n") ||
         attempt_exec("CREATE INDEX events_time  ON tsk_events(time);",
             "Error creating events_time index on tsk_events: %s\n");
@@ -1033,7 +1033,7 @@ int TskDbSqlite::addMACTimeEvent(char*& zSQL, const int64_t data_source_obj_id, 
         "%" PRIu64 "," // sub_type
         "1," // fixed base_type
         "%Q," // full_description
-               "0," // fixed hash_hit
+        "0," // fixed hash_hit
         "0" // fixed tagged
         ")",
         data_source_obj_id,
@@ -1194,8 +1194,7 @@ TskDbSqlite::addFile(TSK_FS_FILE* fs_file,
     }
 
 
-    std::string full_description = std::string(escaped_path);
-    full_description.append(name);
+    std::string full_description = std::string(escaped_path).append(name);
 
 
     if (!TSK_FS_ISDOT(name))

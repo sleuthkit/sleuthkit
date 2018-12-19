@@ -759,9 +759,9 @@ int TskDbPostgreSQL::createIndexes() {
             "Error creating events_file_obj_id index on tsk_events: %s\n") ||
         attempt_exec("CREATE INDEX events_artifact_id  ON tsk_events(artifact_id);",
             "Error creating events_artifact_id index on tsk_events: %s\n") ||
-        attempt_exec("CREATE INDEX events_sub_type_short_description_time  ON tsk_events(sub_type, short_description, time);",
-            "Error creating events_sub_type_short_description_time index on tsk_events: %s\n") ||
-        attempt_exec("CREATE INDEX events_base_type_short_description_time  ON tsk_events(base_type, short_description, time);",
+        attempt_exec("CREATE INDEX events_sub_type_time  ON tsk_events(sub_type,  time);",
+            "Error creating events_sub_type_time index on tsk_events: %s\n") ||
+        attempt_exec("CREATE INDEX events_base_type_short_description_time  ON tsk_events(base_type,  time);",
             "Error creating events_base_type_short_description_time index on tsk_events: %s\n") ||
         attempt_exec("CREATE INDEX events_time  ON tsk_events(time);",
             "Error creating events_time index on tsk_events: %s\n");
@@ -1049,7 +1049,7 @@ int TskDbPostgreSQL::addFsFile(TSK_FS_FILE * fs_file,
 
 
 int TskDbPostgreSQL::addMACTimeEvent(char*& zSQL, const int64_t data_source_obj_id, const int64_t obj_id, time_t time,
-                                     const int64_t sub_type, const char* full_desc)
+                                     const int64_t sub_type, const char* full_description)
 {
 	if (time == 0)
 	{
@@ -1076,7 +1076,7 @@ int TskDbPostgreSQL::addMACTimeEvent(char*& zSQL, const int64_t data_source_obj_
 	                 obj_id,
 	                 (unsigned long long)time, // this one changes
 	                 sub_type,
-	                 full_desc))
+	                 full_description))
 	{
 		return 1;
 	}
@@ -1277,8 +1277,7 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
     }
 
 
-    std::string full_description = std::string(escaped_path);
-    full_description.append(name);
+    std::string full_description = std::string(escaped_path).append(name);
 
 
     if (!TSK_FS_ISDOT(name))
