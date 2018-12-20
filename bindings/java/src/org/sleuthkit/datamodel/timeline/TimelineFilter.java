@@ -36,7 +36,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import static org.apache.commons.lang3.ObjectUtils.notEqual;
 import org.apache.commons.lang3.StringUtils;
-import org.sleuthkit.datamodel.DescriptionLoD;
 import static org.sleuthkit.datamodel.SleuthkitCase.escapeSingleQuotes;
 import org.sleuthkit.datamodel.TagName;
 import org.sleuthkit.datamodel.TimelineManager;
@@ -535,78 +534,6 @@ public abstract class TimelineFilter {
 			}
 			final CompoundFilter<?> other = (CompoundFilter<?>) obj;
 			return Objects.equals(this.getSubFilters(), other.getSubFilters());
-		}
-	}
-
-	/**
-	 * Filter for events that do(not) have the given description.
-	 */
-	public static final class DescriptionFilter extends TimelineFilter {
-
-		private final DescriptionLoD descriptionLoD;
-
-		private final String description;
-
-		public DescriptionFilter(DescriptionLoD descriptionLoD, String description) {
-			super();
-			this.descriptionLoD = descriptionLoD;
-			this.description = description;
-		}
-
-		@Override
-		public DescriptionFilter copyOf() {
-			return new DescriptionFilter(getDescriptionLoD(), getDescription());
-		}
-
-		public DescriptionLoD getDescriptionLoD() {
-			return descriptionLoD;
-		}
-
-		@Override
-		public String getDisplayName() {
-			return getDescription();
-		}
-
-		/**
-		 * @return the description
-		 */
-		public String getDescription() {
-			return description;
-		}
-
-		@Override
-		public int hashCode() {
-			int hash = 5;
-			hash = 47 * hash + Objects.hashCode(this.descriptionLoD);
-			hash = 47 * hash + Objects.hashCode(this.description);
-			return hash;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj) {
-				return true;
-			}
-			if (obj == null) {
-				return false;
-			}
-			if (getClass() != obj.getClass()) {
-				return false;
-			}
-			final DescriptionFilter other = (DescriptionFilter) obj;
-			if (!Objects.equals(this.description, other.description)) {
-				return false;
-			}
-			if (this.descriptionLoD != other.descriptionLoD) {
-				return false;
-			}
-
-			return true;
-		}
-
-		@Override
-		public String getSQLWhere(TimelineManager manager) {
-			return "(full_description like '" + escapeSingleQuotes(this.getDescription()) + "%')"; //NON-NLS
 		}
 	}
 
