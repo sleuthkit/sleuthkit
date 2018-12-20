@@ -402,12 +402,12 @@ uint8_t tsk_apfs_fsstat(TSK_FS_INFO* fs_info, apfs_fsstat_info* info) try {
 
   memset(info, 0, sizeof(*info));
 
-  strncpy(info->name, vol.name().c_str(), sizeof(info->name));
+  strncpy(info->name, vol.name().c_str(), sizeof(info->name) - 1);
   memcpy(info->uuid, vol.uuid().bytes().data(), 16);
   strncpy(info->password_hint, vol.password_hint().c_str(),
-          sizeof(info->password_hint));
+          sizeof(info->password_hint) - 1);
   strncpy(info->formatted_by, vol.formatted_by().c_str(),
-          sizeof(info->formatted_by));
+          sizeof(info->formatted_by) - 1);
 
   info->apsb_block_num = vol.block_num();
   info->apsb_oid = vol.oid();
@@ -840,7 +840,7 @@ uint8_t APFSFSCompat::load_attrs(TSK_FS_FILE* file) const noexcept try {
   if (decmpfs_attr != nullptr) {
     // Read the decmpfs data
 
-    if (decmpfs_attr->size < sizeof(DECMPFS_DISK_HEADER)) {
+    if ((size_t)decmpfs_attr->size < sizeof(DECMPFS_DISK_HEADER)) {
       error_returned("APFS load_attrs: decmpfs attr is too small");
       return 1;
     }
@@ -1330,7 +1330,7 @@ uint8_t tsk_apfs_list_snapshots(TSK_FS_INFO* fs_info,
 
   (*list)->num_snapshots = snapshots.size();
 
-  for (auto i = 0; i < snapshots.size(); i++) {
+  for (size_t i = 0; i < snapshots.size(); i++) {
     const auto& snapshot = snapshots[i];
     auto& dest = (*list)->snapshots[i];
     dest.snap_xid = snapshot.snap_xid;
