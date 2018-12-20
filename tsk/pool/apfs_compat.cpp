@@ -25,10 +25,10 @@ void APFSPoolCompat::init_volumes() {
     _info.vol_list = new TSK_POOL_VOLUME_INFO[_info.num_vols]();
 
     int i = 0;
-    TSK_POOL_VOLUME_INFO* last = nullptr;
+    TSK_POOL_VOLUME_INFO *last = nullptr;
 
-    for (const auto& volume : volumes()) {
-      auto& vinfo = _info.vol_list[i];
+    for (const auto &volume : volumes()) {
+      auto &vinfo = _info.vol_list[i];
 
       vinfo.tag = TSK_POOL_VOL_INFO_TAG;
       vinfo.index = i;
@@ -62,7 +62,7 @@ void APFSPoolCompat::init_volumes() {
   }
 }
 
-uint8_t APFSPoolCompat::poolstat(FILE* hFile) const noexcept try {
+uint8_t APFSPoolCompat::poolstat(FILE *hFile) const noexcept try {
   tsk_fprintf(hFile, "POOL CONTAINER INFORMATION\n");
   tsk_fprintf(hFile, "--------------------------------------------\n\n");
   tsk_fprintf(hFile, "Container %s\n", uuid().str().c_str());
@@ -113,7 +113,7 @@ uint8_t APFSPoolCompat::poolstat(FILE* hFile) const noexcept try {
     }
   }
 
-  for (const auto& vol : volumes()) {
+  for (const auto &vol : volumes()) {
     tsk_fprintf(hFile, "|\n");
     tsk_fprintf(hFile, "+-> Volume %s\n", vol.uuid().str().c_str());
     tsk_fprintf(hFile, "|   ===========================================\n");
@@ -181,7 +181,7 @@ uint8_t APFSPoolCompat::poolstat(FILE* hFile) const noexcept try {
       tsk_fprintf(hFile, "|   ------------\n");
       tsk_fprintf(hFile,
                   "|   Timestamp                            Log String\n");
-      for (const auto& log : unmount_log) {
+      for (const auto &log : unmount_log) {
         tsk_fprintf(
             hFile, "|   %s  %s\n",
             tsk_fs_time_to_str_subsecs(log.timestamp / 1000000000,
@@ -199,7 +199,7 @@ uint8_t APFSPoolCompat::poolstat(FILE* hFile) const noexcept try {
       tsk_fprintf(hFile, "|   Password Hint: %s\n",
                   crypto.password_hint.c_str());
 
-      for (const auto& kek : crypto.wrapped_keks) {
+      for (const auto &kek : crypto.wrapped_keks) {
         tsk_fprintf(hFile, "|   KEK (%s):", kek.uuid.str().c_str());
         for (auto i = 0U; i < sizeof(kek.data); i++) {
           if (i % 8 == 0) {
@@ -234,7 +234,7 @@ uint8_t APFSPoolCompat::poolstat(FILE* hFile) const noexcept try {
       const auto root = vol.root_jobj_tree();
       const auto children = root.obj(APFS_ROOT_INODE_NUM).children();
 
-      for (const auto& file : children) {
+      for (const auto &file : children) {
         tsk_fprintf(hFile, "|  [%8.0llu] %s\n", file.rec.file_id,
                     file.name.c_str());
       }
@@ -245,14 +245,14 @@ uint8_t APFSPoolCompat::poolstat(FILE* hFile) const noexcept try {
     tsk_fprintf(hFile, "|\n");
     tsk_fprintf(hFile, "+-> Unallocated Container Blocks\n");
     tsk_fprintf(hFile, "|   ============================\n");
-    for (const auto& range : nx()->unallocated_ranges()) {
+    for (const auto &range : nx()->unallocated_ranges()) {
       tsk_fprintf(hFile, "|   0x%0.8llx-0x%0.8llx\n", range.start_block,
                   range.start_block + range.num_blocks - 1);
     }
   }
 
   return 0;
-} catch (const std::exception& e) {
+} catch (const std::exception &e) {
   tsk_error_reset();
   tsk_error_set_errno(TSK_ERR_POOL_GENPOOL);
   tsk_error_set_errstr("%s", e.what());
