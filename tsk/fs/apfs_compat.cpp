@@ -546,7 +546,7 @@ uint8_t APFSFSCompat::file_add_meta(TSK_FS_FILE* fs_file, TSK_INUM_T addr) const
 
   auto inode_ptr = static_cast<APFSJObject*>(fs_file->meta->content_ptr);
 
-  *inode_ptr = obj(addr);
+  new (inode_ptr) APFSJObject(obj(addr));
   if (!inode_ptr->valid()) {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_INODE_NUM);
