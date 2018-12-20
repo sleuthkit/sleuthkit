@@ -21,7 +21,7 @@ APFSPoolCompat::~APFSPoolCompat() {
 }
 
 void APFSPoolCompat::init_volumes() {
-  if (_info.num_blocks != 0) {
+  if (_info.num_vols != 0) {
     _info.vol_list = new TSK_POOL_VOLUME_INFO[_info.num_vols]();
 
     int i = 0;
