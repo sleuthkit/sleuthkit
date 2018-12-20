@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableSortedSet;
 import java.util.Optional;
 import java.util.SortedSet;
 import org.apache.commons.lang3.ObjectUtils;
-import org.sleuthkit.datamodel.DescriptionLoD;
 
 /**
  * Implementation of EventType for the standard predefined event types.
@@ -42,21 +41,8 @@ class StandardEventType implements EventType {
 	}
 
 	@Override
-	public String getDescription(DescriptionLoD lod, String fullDescription, String medDescription, String shortDescription) {
-		switch (lod) {
-			case FULL:
-				return fullDescription;
-			case MEDIUM:
-				return medDescription == null
-						? getDescription(DescriptionLoD.FULL, fullDescription, medDescription, shortDescription)
-						: medDescription;
-			case SHORT:
-				return shortDescription == null
-						? getDescription(DescriptionLoD.MEDIUM, fullDescription, medDescription, shortDescription)
-						: shortDescription;
-			default:
-				return fullDescription;
-		}
+	public TimelineEvent.EventDescription getDescription(String fullDescriptionRaw, String medDescriptionRaw, String shortDescriptionRaw) {
+		return TimelineEvent.EventDescription.create(fullDescriptionRaw, medDescriptionRaw, shortDescriptionRaw);
 	}
 
 	@Override

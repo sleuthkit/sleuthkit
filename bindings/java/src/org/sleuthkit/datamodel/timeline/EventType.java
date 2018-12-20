@@ -20,35 +20,29 @@ package org.sleuthkit.datamodel.timeline;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSortedSet;
-import com.google.common.net.InternetDomainName;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.SortedSet;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import org.apache.commons.lang3.StringUtils;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.*;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.*;
 import org.sleuthkit.datamodel.BlackboardAttribute.Type;
 import org.sleuthkit.datamodel.DescriptionLoD;
-import org.sleuthkit.datamodel.TskCoreException;
 import static org.sleuthkit.datamodel.timeline.BundleProvider.getBundle;
 import static org.sleuthkit.datamodel.timeline.EventType.RECENT_DOCUMENTS;
 import static org.sleuthkit.datamodel.timeline.EventTypeZoomLevel.BASE_TYPE;
 import static org.sleuthkit.datamodel.timeline.EventTypeZoomLevel.ROOT_TYPE;
 import static org.sleuthkit.datamodel.timeline.EventTypeZoomLevel.SUB_TYPE;
+import org.sleuthkit.datamodel.timeline.EventTypes.EmptyExtractor;
+import org.sleuthkit.datamodel.timeline.EventTypes.FilePathArtifactEventType;
+import org.sleuthkit.datamodel.timeline.EventTypes.FilePathEventType;
+import org.sleuthkit.datamodel.timeline.EventTypes.URLArtifactEventType;
 import org.sleuthkit.datamodel.timeline.StandardArtifactEventType.AttributeExtractor;
 import static org.sleuthkit.datamodel.timeline.StandardArtifactEventType.getAttributeSafe;
+import org.sleuthkit.datamodel.timeline.TimelineEvent.EventDescription;
 
 /**
  * An Event Type represents a distinct kind of event ie file system or web
@@ -71,7 +65,7 @@ public interface EventType extends Comparable<EventType> {
 
 	Optional<? extends EventType> getSubType(String string);
 
-	String getDescription(DescriptionLoD lod, String fullDescription, String medDescription, String shortDescription);
+	EventDescription getDescription(String fullDescriptionRaw, String medDescriptionRaw, String shortDescriptionRaw);
 
 	/**
 	 * @return the super type of this event
@@ -234,7 +228,7 @@ public interface EventType extends Comparable<EventType> {
 				final BlackboardAttribute latitude = getAttributeSafe(artf, new Type(TSK_GEO_LATITUDE));
 				return stringValueOf(latitude) + " " + stringValueOf(longitude); // NON-NLS
 			},
-			new StandardArtifactEventType.EmptyExtractor());
+			new EmptyExtractor());
 
 	ArtifactEventType CALL_LOG = new StandardArtifactEventType(16,
 			getBundle().getString("MiscTypes.Calls.name"), // NON-NLS
@@ -271,8 +265,8 @@ public interface EventType extends Comparable<EventType> {
 			new BlackboardArtifact.Type(TSK_INSTALLED_PROG),
 			new Type(TSK_DATETIME),
 			new AttributeExtractor(new Type(TSK_PROG_NAME)),
-			new StandardArtifactEventType.EmptyExtractor(),
-			new StandardArtifactEventType.EmptyExtractor());
+			new EmptyExtractor(),
+			new EmptyExtractor());
 
 	ArtifactEventType EXIF = new StandardArtifactEventType(20,
 			getBundle().getString("MiscTypes.exif.name"), // NON-NLS
@@ -364,103 +358,4 @@ public interface EventType extends Comparable<EventType> {
 		}
 	}
 
-	/**
-	 * Function that always returns the empty string no matter what it is
-	 * applied to.
-	 *
-	 */
-	final static class EmptyExtractor implements StandardArtifactEventType.TSKCoreCheckedFunction<BlackboardArtifact, String> {
-
-		@Override
-		public String apply(BlackboardArtifact ignored) throws TskCoreException {
-			return "";
-		}
-	}
-
-	class URLArtifactEventType extends SingleDescriptionArtifactEventType {
-
-		public URLArtifactEventType(int typeID, String displayName, EventType superType, BlackboardArtifact.Type artifactType, Type timeAttribute, Type descriptionAttribute) {
-			super(typeID, displayName, superType, artifactType, timeAttribute, descriptionAttribute);
-		}
-
-		@Override
-		public String getDescription(DescriptionLoD lod, String fullDescription, String medDescription, String shortDescription) {
-			try {
-				URI uri;
-				switch (lod) {
-					case SHORT:
-						uri = new URI(fullDescription);
-						String host = uri.getHost();
-						if (host == null) {
-							host = StringUtils.strip(fullDescription, "./");
-
-						}
-						if (InternetDomainName.isValid(host)) {
-							InternetDomainName domain = InternetDomainName.from(host);
-							return (domain.isUnderPublicSuffix())
-									? domain.topPrivateDomain().toString()
-									: domain.toString();
-						} else {
-							return host;
-						}
-					case MEDIUM:
-						uri = new URI(fullDescription);
-						return new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(), null, null).toString();
-
-					case FULL:
-					default:
-						return fullDescription;
-
-				}
-			} catch (URISyntaxException ex) {
-				//JMTODO: do we need to bother logging this?
-				Logger.getLogger(EventType.class.getName()).log(Level.WARNING, "Error parsing {0} as a URL:  Ignoring description levels.", fullDescription);
-			}
-			return fullDescription;
-		}
-	}
-
-	class FilePathEventType extends StandardEventType {
-
-		FilePathEventType(long typeID, String displayName, EventTypeZoomLevel eventTypeZoomLevel, EventType superType) {
-			super(typeID, displayName, eventTypeZoomLevel, superType);
-		}
-
-		@Override
-		public String getDescription(DescriptionLoD lod, String fullDescription, String medDescription, String shortDescription) {
-			return getFilePathDescription(lod, fullDescription);
-		}
-
-	}
-
-	class FilePathArtifactEventType extends SingleDescriptionArtifactEventType {
-
-		public FilePathArtifactEventType(int typeID, String displayName, EventType superType, BlackboardArtifact.Type artifactType, Type timeAttribute, Type descriptionAttribute) {
-			super(typeID, displayName, superType, artifactType, timeAttribute, descriptionAttribute);
-		}
-
-		@Override
-		public String getDescription(DescriptionLoD lod, String fullDescription, String medDescription, String shortDescription) {
-			return getFilePathDescription(lod, fullDescription);
-		}
-	}
-
-	static String getFilePathDescription(DescriptionLoD lod, String fullDescription) {
-
-		switch (lod) {
-			case FULL:
-				return fullDescription;
-			case MEDIUM:
-				String[] split = fullDescription.split("/");
-				return Stream.of(split).limit(Math.max(1, split.length - 1)).collect(Collectors.joining("/", "/", ""));
-
-			case SHORT:
-			default:
-				return Pattern.compile("/").splitAsStream(fullDescription)
-						.filter(StringUtils::isNotBlank)
-						.limit(1)
-						.collect(Collectors.joining("/", "/", ""));
-
-		}
-	}
 }

@@ -44,8 +44,8 @@ class SingleDescriptionArtifactEventType extends StandardArtifactEventType {
 	}
 
 	@Override
-	public String getDescription(DescriptionLoD lod, String fullDescription, String medDescription, String shortDescription) {
-		return fullDescription;
+	public TimelineEvent.EventDescription getDescription(String fullDescription, String medDescription, String shortDescription) {
+		return new SingeLevelEventDiscription(fullDescription);
 	}
 
 	/**

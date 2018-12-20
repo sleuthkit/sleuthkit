@@ -731,8 +731,9 @@ public final class TimelineManager {
 				generatedKeys.next();
 				long eventID = generatedKeys.getLong(1);
 				singleEvent = new TimelineEvent(eventID, datasourceObjID,
-						fileObjID, artifactID, time, type, fullDescription, medDescription,
-						shortDescription, hashHit, tagged);
+						fileObjID, artifactID, time, type,
+						 TimelineEvent.EventDescription.create(fullDescription, medDescription, shortDescription),
+						hashHit, tagged);
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Failed to insert event.", ex); // NON-NLS
@@ -866,15 +867,18 @@ public final class TimelineManager {
 
 	private TimelineEvent constructTimeLineEvent(ResultSet resultSet) throws SQLException, TskCoreException {
 		int typeID = resultSet.getInt("sub_type"); //NON-NLS
+		EventType eventType = getEventType(typeID).orElseThrow(() -> newEventTypeMappingException(typeID));
+
 		return new TimelineEvent(resultSet.getLong("event_id"), //NON-NLS
 				resultSet.getLong("data_source_obj_id"), //NON-NLS
 				resultSet.getLong("file_obj_id"), //NON-NLS
 				resultSet.getLong("artifact_id"), //NON-NLS
-				resultSet.getLong("time"), //NON-NLS
-				getEventType(typeID).orElseThrow(() -> newEventTypeMappingException(typeID)), //NON-NLS
-				resultSet.getString("full_description"), //NON-NLS
-				resultSet.getString("med_description"), //NON-NLS
-				resultSet.getString("short_description"), //NON-NLS
+				resultSet.getLong("time"),
+				eventType,
+				eventType.getDescription(
+						resultSet.getString("full_description"),
+						resultSet.getString("med_description"),
+						resultSet.getString("short_description")),
 				resultSet.getInt("hash_hit") != 0, //NON-NLS
 				resultSet.getInt("tagged") != 0); //NON-NLS
 	}

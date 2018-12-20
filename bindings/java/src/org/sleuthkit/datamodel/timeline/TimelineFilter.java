@@ -27,7 +27,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import static java.util.stream.Collectors.joining;
 import java.util.stream.Stream;
@@ -37,7 +36,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import static org.apache.commons.lang3.ObjectUtils.notEqual;
 import org.apache.commons.lang3.StringUtils;
-import static org.apache.commons.lang3.StringUtils.join;
 import org.sleuthkit.datamodel.DescriptionLoD;
 import static org.sleuthkit.datamodel.SleuthkitCase.escapeSingleQuotes;
 import org.sleuthkit.datamodel.TagName;
@@ -81,7 +79,7 @@ public abstract class TimelineFilter {
 	 *
 	 * @param <S> The type of sub Filters in this IntersectionFilter.
 	 */
-	static class IntersectionFilter<S extends TimelineFilter> extends CompoundFilter<S> {
+	public static class IntersectionFilter<S extends TimelineFilter> extends CompoundFilter<S> {
 
 		IntersectionFilter(List<S> subFilters) {
 			super(subFilters);
@@ -141,7 +139,7 @@ public abstract class TimelineFilter {
 	 *
 	 * @param <SubFilterType> The type of the subfilters.
 	 */
-	static abstract class UnionFilter<SubFilterType extends TimelineFilter> extends TimelineFilter.CompoundFilter<SubFilterType> {
+	public static abstract class UnionFilter<SubFilterType extends TimelineFilter> extends TimelineFilter.CompoundFilter<SubFilterType> {
 
 		UnionFilter(ObservableList<SubFilterType> subFilters) {
 			super(subFilters);
@@ -545,18 +543,23 @@ public abstract class TimelineFilter {
 	 */
 	public static final class DescriptionFilter extends TimelineFilter {
 
-		private final String description;
-		private final FilterMode filterMode;
+		private final DescriptionLoD descriptionLoD;
 
-		public DescriptionFilter(String description, FilterMode filterMode) {
+		private final String description;
+
+		public DescriptionFilter(DescriptionLoD descriptionLoD, String description) {
 			super();
+			this.descriptionLoD = descriptionLoD;
 			this.description = description;
-			this.filterMode = filterMode;
 		}
 
 		@Override
 		public DescriptionFilter copyOf() {
-			return new DescriptionFilter(getDescription(), getFilterMode());
+			return new DescriptionFilter(getDescriptionLoD(), getDescription());
+		}
+
+		public DescriptionLoD getDescriptionLoD() {
+			return descriptionLoD;
 		}
 
 		@Override
@@ -571,38 +574,11 @@ public abstract class TimelineFilter {
 			return description;
 		}
 
-		public FilterMode getFilterMode() {
-			return filterMode;
-		}
-
-		/**
-		 * Enum for the two modes of the DesciptionFilter, include and exclude
-		 */
-		public enum FilterMode {
-			EXCLUDE(BundleProvider.getBundle().getString("DescriptionFilter.mode.exclude"), " NOT LIKE "),
-			INCLUDE(BundleProvider.getBundle().getString("DescriptionFilter.mode.include"), " LIKE ");
-			private final String like;
-			private final String displayName;
-
-			private FilterMode(String displayName, String like) {
-				this.displayName = displayName;
-				this.like = like;
-			}
-
-			private String getDisplayName() {
-				return displayName;
-			}
-
-			private String getLike() {
-				return like;
-			}
-		}
-
 		@Override
 		public int hashCode() {
-			int hash = 3;
-			hash = 29 * hash + Objects.hashCode(this.description);
-			hash = 29 * hash + Objects.hashCode(this.filterMode);
+			int hash = 5;
+			hash = 47 * hash + Objects.hashCode(this.descriptionLoD);
+			hash = 47 * hash + Objects.hashCode(this.description);
 			return hash;
 		}
 
@@ -621,9 +597,10 @@ public abstract class TimelineFilter {
 			if (!Objects.equals(this.description, other.description)) {
 				return false;
 			}
-			if (this.filterMode != other.filterMode) {
+			if (this.descriptionLoD != other.descriptionLoD) {
 				return false;
 			}
+
 			return true;
 		}
 

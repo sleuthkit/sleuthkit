@@ -1013,7 +1013,7 @@ int64_t TskDbSqlite::findParObjId(const TSK_FS_FILE* fs_file, const char* parent
 }
 
 int TskDbSqlite::addMACTimeEvent(char*& zSQL, const int64_t data_source_obj_id, const int64_t obj_id, time_t time,
-                                 const int64_t sub_type, const char* full_desc )
+                                 const int64_t sub_type, const char* full_description )
 {
     if (time == 0)
     {
@@ -1040,7 +1040,7 @@ int TskDbSqlite::addMACTimeEvent(char*& zSQL, const int64_t data_source_obj_id, 
         obj_id,
         (unsigned long long)time, // this one changes
         sub_type,
-        full_desc );
+        full_description );
 
     return attempt_exec(zSQL, "TskDbSqlite::addFile: Error adding event to events table: %s\n");
 }
