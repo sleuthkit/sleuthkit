@@ -232,7 +232,7 @@ APFSFSCompat::APFSFSCompat(const TSK_POOL_INFO* pool_info,
 }
 
 uint8_t APFSFSCompat::fsstat(FILE* hFile) const noexcept try {
-  const auto & pool = to_pool(_fsinfo.pool_info);
+  const auto& pool = to_pool(_fsinfo.pool_info);
   APFSFileSystem vol{pool, _fsinfo.vol_block, _crypto.password};
 
   tsk_fprintf(hFile, "FILE SYSTEM INFORMATION\n");
@@ -282,7 +282,9 @@ uint8_t APFSFSCompat::fsstat(FILE* hFile) const noexcept try {
   tsk_fprintf(hFile, "Case Sensitive: %s\n",
               vol.case_sensitive() ? "Yes" : "No");
   tsk_fprintf(hFile, "Encrypted: %s%s\n", vol.encrypted() ? "Yes" : "No",
-              (vol.encrypted() && pool.hardware_crypto()) ? " (hardware assisted)" : "");
+              (vol.encrypted() && pool.hardware_crypto())
+                  ? " (hardware assisted)"
+                  : "");
   tsk_fprintf(hFile, "Formatted by: %s\n", vol.formatted_by().c_str());
   tsk_fprintf(hFile, "\n");
 
