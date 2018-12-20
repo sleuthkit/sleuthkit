@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.sleuthkit.datamodel.DescriptionLoD;
+import static org.sleuthkit.datamodel.timeline.EventTypeZoomLevel.SUB_TYPE;
 
 /**
  * A single event.
@@ -163,6 +164,10 @@ public final class TimelineEvent {
 
 	public EventType getEventType() {
 		return type;
+	}
+
+	public EventType getEventType(EventTypeZoomLevel zoomLevel) {
+		return zoomLevel.equals(SUB_TYPE) ? type : type.getBaseType();
 	}
 
 	/**
