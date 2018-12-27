@@ -327,8 +327,8 @@ public final class CommunicationsManager {
 	}
 
 	/**
-	 * Add a relationship between the sender and each of the recipient account
-	 * instances, and between all recipient account instances. All account 
+	 * Adds relationships between the sender and each of the recipient account
+	 * instances and between all recipient account instances. All account 
 	 * instances must be from the same data source.
 	 *
 	 * @param sender           sender account
