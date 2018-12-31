@@ -1687,6 +1687,8 @@ public class SleuthkitCase {
 		try (Statement statement = connection.createStatement();) {
 			statement.execute("ALTER TABLE tsk_image_info ADD COLUMN sha1 TEXT DEFAULT NULL");
 			statement.execute("ALTER TABLE tsk_image_info ADD COLUMN sha256 TEXT DEFAULT NULL");
+			
+			statement.execute("ALTER TABLE data_source_info ADD COLUMN acquisition_details TEXT");
 
 			/*
 			 * Add new tsk_db_extended_info table with TSK version, creation
@@ -7083,20 +7085,26 @@ public class SleuthkitCase {
 	public void setImagePaths(long obj_id, List<String> paths) throws TskCoreException {
 		CaseDbConnection connection = connections.getConnection();
 		acquireSingleUserCaseWriteLock();
-		Statement statement = null;
+		PreparedStatement statement = null;
 		try {
 			connection.beginTransaction();
-			statement = connection.createStatement();
-			connection.executeUpdate(statement, "DELETE FROM tsk_image_names WHERE obj_id = " + obj_id); //NON-NLS
+			statement = connection.getPreparedStatement(PREPARED_STATEMENT.DELETE_IMAGE_NAME);
+			statement.clearParameters();
+			statement.setLong(1, obj_id);
+			connection.executeUpdate(statement);
 			for (int i = 0; i < paths.size(); i++) {
-				connection.executeUpdate(statement, "INSERT INTO tsk_image_names VALUES (" + obj_id + ", '" + paths.get(i) + "', " + i + ")"); //NON-NLS
+				statement = connection.getPreparedStatement(PREPARED_STATEMENT.INSERT_IMAGE_NAME);
+				statement.clearParameters();
+				statement.setLong(1, obj_id);
+				statement.setString(2, paths.get(i));
+				statement.setLong(3, i);
+				connection.executeUpdate(statement);
 			}
 			connection.commitTransaction();
 		} catch (SQLException ex) {
 			connection.rollbackTransaction();
 			throw new TskCoreException("Error updating image paths.", ex);
 		} finally {
-			closeStatement(statement);
 			connection.close();
 			releaseSingleUserCaseWriteLock();
 		}
@@ -9821,7 +9829,10 @@ public class SleuthkitCase {
 		SELECT_EXAMINER_BY_ID("SELECT * FROM tsk_examiners WHERE examiner_id = ?"),
 		SELECT_EXAMINER_BY_LOGIN_NAME("SELECT * FROM tsk_examiners WHERE login_name = ?"),
 		UPDATE_FILE_NAME("UPDATE tsk_files SET name = ? WHERE obj_id = ?"),
-		UPDATE_IMAGE_NAME("UPDATE tsk_image_info SET display_name = ? WHERE obj_id = ?");
+		UPDATE_IMAGE_NAME("UPDATE tsk_image_info SET display_name = ? WHERE obj_id = ?"),
+		DELETE_IMAGE_NAME("DELETE FROM tsk_image_names WHERE obj_id = ?"),
+		INSERT_IMAGE_NAME("INSERT INTO tsk_image_names (obj_id, name, sequence) VALUES (?, ?, ?)");
+		
 		private final String sql;
 
 		private PREPARED_STATEMENT(String sql) {
