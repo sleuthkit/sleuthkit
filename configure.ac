@@ -93,7 +93,6 @@ AS_IF([test "x$ax_pthread_ok" = "xyes" && test "x$enable_multithreading" != "xno
 
 case "$host" in
 *-*-mingw*)
-  CPPFLAGS="$CPPFLAGS -mno-ms-bitfields"
   dnl Adding the native /usr/local is wrong for cross-compiling
   ;;
 *)
