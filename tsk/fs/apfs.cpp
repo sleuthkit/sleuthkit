@@ -190,9 +190,16 @@ APFSSuperblock::APFSSuperblock(const APFSPool& pool,
     throw std::runtime_error("APFSSuperblock: invalid magic");
   }
 
-  if (sb()->supports_fusion) {
+  if (bit_is_set(sb()->incompatible_features, APFS_NXSB_INCOMPAT_VERSION1)) {
     throw std::runtime_error(
-        "multi-tier superblocks are not currently supported");
+        "APFSSuperblock: Pre-release versions of APFS are not supported");
+  }
+
+  if (bit_is_set(sb()->incompatible_features, APFS_NXSB_INCOMPAT_FUSION)) {
+    if (tsk_verbose) {
+      tsk_fprintf(stderr,
+                  "WARNING: APFS fusion drives may not be fully supported\n");
+    }
   }
 
   if (block_size() != APFS_BLOCK_SIZE) {
@@ -459,7 +466,7 @@ bool APFSFileSystem::unlock(const std::string& password) noexcept {
 
   // TODO(JTS): If bits 32:16 are set to 1, some other sort of KEK decryption is
   // used (see _fv_decrypt_vek in AppleKeyStore).
-  if (_crypto.unk16) {
+  if (_crypto.unk16()) {
     if (tsk_verbose) {
       tsk_fprintf(stderr,
                   "apfs: UNK16 is set in VEK.  Decryption will likely fail.\n");
@@ -470,11 +477,11 @@ bool APFSFileSystem::unlock(const std::string& password) noexcept {
   for (const auto& wk : _crypto.wrapped_keks) {
     // If the 57th bit of the KEK flags is set, then the kek is a CoreStorage
     // KEK
-    const auto kek_len = (wk.cs) ? 0x10 : 0x20;
+    const auto kek_len = (wk.cs()) ? 0x10 : 0x20;
 
     // TODO(JTS): If the 56th bit of the KEK flags is set, some sort of hardware
     // decryption is needed
-    if (wk.hw_crypt) {
+    if (wk.hw_crypt()) {
       if (tsk_verbose) {
         tsk_fprintf(
             stderr,
@@ -505,7 +512,7 @@ bool APFSFileSystem::unlock(const std::string& password) noexcept {
 
     // If the 57th bit of the VEK flags is set, then the VEK is a
     // CoreStorage VEK
-    const auto vek_len = (_crypto.cs) ? 0x10 : 0x20;
+    const auto vek_len = (_crypto.cs()) ? 0x10 : 0x20;
 
     // If a 128 bit VEK is wrapped with a 256 bit KEK then only the first 128
     // bits of the KEK are used.
@@ -521,7 +528,7 @@ bool APFSFileSystem::unlock(const std::string& password) noexcept {
     _crypto.password = password;
     std::memcpy(_crypto.vek, vek.get(), vek_len);
 
-    if (_crypto.cs) {
+    if (_crypto.cs()) {
       // For volumes that were converted from CoreStorage, the tweak is the
       // first 128-bits of SHA256(vek + vekuuid)
       std::memcpy(_crypto.vek + 0x10, _crypto.vek_uuid,
@@ -566,8 +573,15 @@ const std::vector<APFSFileSystem::snapshot_t> APFSFileSystem::snapshots()
                                         nullptr};
 
   using key_type = struct {
-    uint64_t snap_xid : 60;
-    uint64_t type : 4;
+    uint64_t xid_and_type;
+
+    constexpr uint64_t snap_xid() const noexcept {
+      return bitfield_value(xid_and_type, 60, 0);
+    }
+
+    constexpr uint64_t type() const noexcept {
+      return bitfield_value(xid_and_type, 4, 60);
+    }
   };
 
   using value_type = apfs_snap_metadata;
@@ -576,14 +590,14 @@ const std::vector<APFSFileSystem::snapshot_t> APFSFileSystem::snapshots()
     const auto key = entry.key.template as<key_type>();
     const auto value = entry.value.template as<value_type>();
 
-    if (key->type != APFS_JOBJTYPE_SNAP_METADATA) {
+    if (key->type() != APFS_JOBJTYPE_SNAP_METADATA) {
       return;
     }
 
     v.emplace_back(snapshot_t{
         .name = {value->name, value->name_length - 1U},
         .timestamp = value->create_time,
-        .snap_xid = key->snap_xid,
+        .snap_xid = key->snap_xid(),
         .dataless = (value->extentref_tree_oid == 0),
     });
   });

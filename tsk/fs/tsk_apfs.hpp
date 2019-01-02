@@ -20,6 +20,20 @@
 
 #include "../auto/guid.h"
 
+// Helper function to see if a bitfield flag is set
+template <typename T,
+          typename = std::enable_if_t<std::numeric_limits<T>::is_integer>>
+constexpr bool bit_is_set(T bitfield, int bit) noexcept {
+  return ((bitfield & bit) != 0);
+}
+
+// Helper function to extract bitfield value
+template <typename T,
+          typename = std::enable_if_t<std::numeric_limits<T>::is_integer>>
+constexpr T bitfield_value(T bitfield, int bits, int shift) noexcept {
+  return (bitfield >> shift) & ((1 << bits) - 1);
+}
+
 class APFSPool;
 
 class APFSObject : public APFSBlock {
@@ -427,11 +441,17 @@ class APFSBtreeNode : public APFSObject, public APFSOmap::node_tag {
     };
   }
 
-  inline bool is_root() const noexcept { return bn()->root; }
+  inline bool is_root() const noexcept {
+    return bit_is_set(bn()->flags, APFS_BTNODE_ROOT);
+  }
 
-  inline bool is_leaf() const noexcept { return bn()->leaf; }
+  inline bool is_leaf() const noexcept {
+    return bit_is_set(bn()->flags, APFS_BTNODE_LEAF);
+  }
 
-  inline bool has_fixed_kv_size() const noexcept { return bn()->fixed_kv_size; }
+  inline bool has_fixed_kv_size() const noexcept {
+    return bit_is_set(bn()->flags, APFS_BTNODE_FIXED_KV_SIZE);
+  }
 
   inline uint16_t level() const noexcept { return bn()->level; }
 
@@ -901,18 +921,19 @@ class APFSFileSystem : public APFSObject {
     Guid uuid;
     uint8_t data[0x28];
     uint64_t iterations;
-    union {
-      struct {
-        uint64_t : 56;
-        uint64_t hw_crypt : 1;  // If this bit is set, some sort of hardware
-                                // encryption is used.
-        uint64_t cs : 1;        // If this bit is set the KEK is 0x10 bytes
-                                // instead of 0x20
-      };
-      uint64_t flags;
-    };
+    uint64_t flags;
     uint8_t salt[0x10];
     wrapped_kek(Guid &&uuid, const std::unique_ptr<uint8_t[]> &);
+
+    constexpr bool hw_crypt() const noexcept {
+      // If this bit is set, some sort of hardware encryption is used.
+      return bit_is_set(flags, 57);
+    }
+
+    constexpr bool cs() const noexcept {
+      // If this bit is set the KEK is 0x10 bytes instead of 0x20
+      return bit_is_set(flags, 58);
+    }
   };
 
   using crypto_info_t = struct {
@@ -920,23 +941,26 @@ class APFSFileSystem : public APFSObject {
     std::string password_hint{};
     std::string password{};
     std::vector<wrapped_kek> wrapped_keks{};
-    union {
-      struct {
-        uint64_t : 16;
-        uint64_t unk16 : 8;  // If this byte is not zero (1) then some other
-                             // sort of decryption is used
-        uint64_t : 32;
-        uint64_t hw_crypt : 1;  // If this bit is set, some sort of hardware
-                                // encryption is used.
-        uint64_t cs : 1;        // If this bit is set the VEK is 0x10 bytes
-                                // instead of 0x20
-      };
-      uint64_t vek_flags{};
-    };
+    uint64_t vek_flags{};
     uint8_t wrapped_vek[0x28]{};
     uint8_t vek_uuid[0x10]{};
     uint8_t vek[0x20]{};
     bool unlocked{};
+
+    constexpr uint64_t unk16() const noexcept {
+      // If this byte is not zero (1) then some other sort of decryption is used
+      return bitfield_value(vek_flags, 8, 16);
+    }
+
+    constexpr bool hw_crypt() const noexcept {
+      // If this bit is set, some sort of hardware encryption is used.
+      return bit_is_set(vek_flags, 56);
+    }
+
+    constexpr bool cs() const noexcept {
+      // If this bit is set the VEK is 0x10 bytes instead of 0x20
+      return bit_is_set(vek_flags, 57);
+    }
   };
 
  protected:
@@ -1011,10 +1035,13 @@ class APFSFileSystem : public APFSObject {
 
   inline uint64_t last_inum() const noexcept { return fs()->next_inum - 1; }
 
-  inline bool encrypted() const noexcept { return (fs()->unencrypted == 0); }
+  inline bool encrypted() const noexcept {
+    return !bit_is_set(fs()->flags, APFS_SB_UNENCRYPTED);
+  }
 
   inline bool case_sensitive() const noexcept {
-    return (fs()->case_insensitive == 0);
+    return !bit_is_set(fs()->incompatible_features,
+                       APFS_SB_INCOMPAT_CASE_INSENSITIVE);
   }
 
   inline uint64_t created() const noexcept { return fs()->created_timestamp; }

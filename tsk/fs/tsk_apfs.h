@@ -24,6 +24,14 @@ extern "C" {
 #define APFS_MAX_HIST 8
 #define APFS_VOLNAME_LEN 256
 
+// Flags for apfs_obj_header.flags
+#define APFS_OBJ_HEADER_VIRTUAL 0x0000
+#define APFS_OBJ_HEADER_EPHEMERAL 0x8000
+#define APFS_OBJ_HEADER_PHYSICAL 0x4000
+#define APFS_OBJ_HEADER_NOHEADER 0x2000
+#define APFS_OBJ_HEADER_ENCRYPTED 0x1000
+#define APFS_OBJ_HEADER_NONPERSISTENT 0x0800
+
 typedef struct {
   uint64_t cksum;  // 0x00
   uint64_t oid;    // 0x08
@@ -31,18 +39,7 @@ typedef struct {
   union {          // 0x18
     struct {
       uint16_t type;
-
-      // Undefined (reserved) flags
-      uint16_t : 11;
-
-      // Other flags
-      uint16_t nonpersistent : 1;
-
-      // Storage type flags
-      uint16_t encrypted : 1;
-      uint16_t no_header : 1;
-      uint16_t physical : 1;
-      uint16_t ephemeral : 1;
+      uint16_t flags;
     };
     uint32_t type_and_flags;
   };
@@ -99,61 +96,51 @@ typedef struct {
 } apfs_prange;
 static_assert(sizeof(apfs_prange) == 0x10, "improperly aligned struct");
 
+// Flags for apfs_nx_superblock.features
+#define APFS_NXSB_FEATURES_DEFRAG 0x0000000000000001ULL
+#define APFS_NXSB_FEATURES_LCFD 0x0000000000000002ULL
+
+// Flags for apfs_nx_superblock.imcompatible_features
+#define APFS_NXSB_INCOMPAT_VERSION1 0x0000000000000001ULL
+#define APFS_NXSB_INCOMPAT_VERSION2 0x0000000000000002ULL
+#define APFS_NXSB_INCOMPAT_FUSION 0x0000000000000100ULL
+
+// Flags for apfs_nx_superblock.flags
+#define APFS_NXSB_FLAGS_RESERVED_1 0x00000001LL
+#define APFS_NXSB_FLAGS_RESERVED_2 0x00000002LL
+#define APFS_NXSB_FLAGS_CRYPTO_SW 0x00000004LL
+
 typedef struct {
-  apfs_obj_header obj_hdr;  // 0x00
-  uint32_t magic;           // 0x20 (NXSB)
-  uint32_t block_size;      // 0x24
-  uint64_t block_count;     // 0x28
-  union {                   // 0x30
-    uint64_t features;
-    struct {
-      uint64_t supports_defrag : 1;
-      uint64_t supports_lcfd : 1;
-      uint64_t : 62;
-    };
-  };
-  uint64_t readonly_compatible_features;  // 0x38
-  union {                                 // 0x40
-    uint64_t incompatible_features;
-    struct {
-      uint64_t apfs_version1 : 1;
-      uint64_t apfs_version2 : 1;
-      uint64_t : 14;
-      uint64_t supports_fusion : 1;
-      uint64_t : 47;
-    };
-  };
-  uint8_t uuid[16];                            // 0x48
-  uint64_t next_oid;                           // 0x58
-  uint64_t next_xid;                           // 0x60
-  uint32_t chkpt_desc_block_count;             // 0x68
-  uint32_t chkpt_data_block_count;             // 0x6C
-  uint64_t chkpt_desc_base_addr;               // 0x70
-  uint64_t chkpt_data_base_addr;               // 0x78
-  uint32_t chkpt_desc_next_block;              // 0x80
-  uint32_t chkpt_data_next_block;              // 0x84
-  uint32_t chkpt_desc_index;                   // 0x88
-  uint32_t chkpt_desc_len;                     // 0x8C
-  uint32_t chkpt_data_index;                   // 0x90
-  uint32_t chkpt_data_len;                     // 0x94
-  uint64_t spaceman_oid;                       // 0x98
-  uint64_t omap_oid;                           // 0xA0
-  uint64_t reaper_oid;                         // 0xA8
-  uint32_t test_type;                          // 0xB0
-  uint32_t max_fs_count;                       // 0xB4
-  uint64_t fs_oids[APFS_NX_MAX_FILE_SYSTEMS];  // 0xB8
-  uint64_t counters[APFS_NX_NUM_COUNTERS];     // 0x3D8
-  apfs_prange blocked_out_prange;              // 0x4D8
-  uint64_t evict_mapping_tree_oid;             // 0x4E8
-  union {                                      // 0x4F0
-    uint64_t flags;
-    struct {
-      uint64_t reserved1 : 1;
-      uint64_t reserved2 : 1;
-      uint64_t crypto_sw : 1;
-      uint64_t : 61;
-    };
-  };
+  apfs_obj_header obj_hdr;                          // 0x00
+  uint32_t magic;                                   // 0x20 (NXSB)
+  uint32_t block_size;                              // 0x24
+  uint64_t block_count;                             // 0x28
+  uint64_t features;                                // 0x30
+  uint64_t readonly_compatible_features;            // 0x38
+  uint64_t incompatible_features;                   // 0x40
+  uint8_t uuid[16];                                 // 0x48
+  uint64_t next_oid;                                // 0x58
+  uint64_t next_xid;                                // 0x60
+  uint32_t chkpt_desc_block_count;                  // 0x68
+  uint32_t chkpt_data_block_count;                  // 0x6C
+  uint64_t chkpt_desc_base_addr;                    // 0x70
+  uint64_t chkpt_data_base_addr;                    // 0x78
+  uint32_t chkpt_desc_next_block;                   // 0x80
+  uint32_t chkpt_data_next_block;                   // 0x84
+  uint32_t chkpt_desc_index;                        // 0x88
+  uint32_t chkpt_desc_len;                          // 0x8C
+  uint32_t chkpt_data_index;                        // 0x90
+  uint32_t chkpt_data_len;                          // 0x94
+  uint64_t spaceman_oid;                            // 0x98
+  uint64_t omap_oid;                                // 0xA0
+  uint64_t reaper_oid;                              // 0xA8
+  uint32_t test_type;                               // 0xB0
+  uint32_t max_fs_count;                            // 0xB4
+  uint64_t fs_oids[APFS_NX_MAX_FILE_SYSTEMS];       // 0xB8
+  uint64_t counters[APFS_NX_NUM_COUNTERS];          // 0x3D8
+  apfs_prange blocked_out_prange;                   // 0x4D8
+  uint64_t evict_mapping_tree_oid;                  // 0x4E8
+  uint64_t flags;                                   // 0x4F0
   uint64_t efi_jumpstart;                           // 0x4F8
   uint8_t fusion_uuid[16];                          // 0x500
   apfs_prange keylocker;                            // 0x510
@@ -165,24 +152,23 @@ typedef struct {
 } apfs_nx_superblock;
 static_assert(sizeof(apfs_nx_superblock) == 0x560, "improperly aligned struct");
 
+// Flags for apfs_omap.flags
+#define APFS_OMAP_MANUALLY_MANAGED 0x00000001
+#define APFS_OMAP_ENCRYPTING 0x00000002
+#define APFS_OMAP_DECRYPTING 0x00000004
+#define APFS_OMAP_KEYROLLING 0x00000008
+#define APFS_OMAP_CRYPTO_GENERATION 0x00000010
+
+// Flags for apfs_omap.type_flags
+#define APFS_OMAP_EPHEMERAL 0x8000
+#define APFS_OMAP_PHYSICAL 0x4000
+
 typedef struct {
-  apfs_obj_header obj_hdr;  // 0x00
-  union {                   // 0x20
-    uint32_t flags;
-    struct {
-      uint32_t manually_managed : 1;
-      uint32_t encrypting : 1;
-      uint32_t decrypting : 1;
-      uint32_t keyrolling : 1;
-      uint32_t crypto_generation : 1;
-      uint32_t : 27;
-    };
-  };
-  uint32_t snapshot_count;  // 0x24
-  uint16_t tree_type;       // 0x28
-  uint16_t : 14;            // 0x2A
-  uint16_t physical : 1;
-  uint16_t ephemeral : 1;
+  apfs_obj_header obj_hdr;      // 0x00
+  uint32_t flags;               // 0x20
+  uint32_t snapshot_count;      // 0x24
+  uint16_t tree_type;           // 0x28
+  uint16_t type_flags;          // 0x2A
   uint32_t snapshot_tree_type;  // 0x2C
   uint64_t tree_oid;            // 0x30
   uint64_t snapshot_tree_oid;   // 0x38
@@ -198,17 +184,15 @@ typedef enum {
   APFS_OMAP_TREE_TYPE_MTREE = 0x0004,
 } APFS_OMAP_TREE_TYPE_ENUM;
 
+// Flags for apfs_btree_node.flags
+#define APFS_BTNODE_ROOT 0x0001
+#define APFS_BTNODE_LEAF 0x0002
+#define APFS_BTNODE_FIXED_KV_SIZE 0x0004
+#define APFS_BTNODE_CHECK_KOFF_INVAL 0x8000
+
 typedef struct {
-  apfs_obj_header obj_hdr;  // 0x00
-  union {                   // 0x20
-    uint16_t flags;
-    struct {
-      uint16_t root : 1;
-      uint16_t leaf : 1;
-      uint16_t fixed_kv_size : 1;
-      uint16_t : 13;
-    };
-  };
+  apfs_obj_header obj_hdr;      // 0x00
+  uint16_t flags;               // 0x20
   uint16_t level;               // 0x22
   uint32_t key_count;           // 0x24
   uint16_t table_space_offset;  // 0x28
@@ -237,34 +221,36 @@ typedef struct {
 static_assert(sizeof(apfs_btentry_variable) == 0x08,
               "improperly aligned struct");
 
+// Flags for apfs_superblock.features
+#define APFS_SB_FEATURES_DEFRAG_PRERELEASE 0x00000001LL
+#define APFS_SB_FEATURES_HARDLINK_MAP_RECORDS 0x00000002LL
+#define APFS_SB_FEATURES_DEFRAG 0x00000004LL
+
+// Flags for apfs_superblock.incompatible_features
+#define APFS_SB_INCOMPAT_CASE_INSENSITIVE 0x00000001LL
+#define APFS_SB_INCOMPAT_DATALESS_SNAPS 0x00000002LL
+#define APFS_SB_INCOMPAT_ENC_ROLLED 0x00000004LL
+#define APFS_SB_INCOMPAT_NORMALIZATION_INSENSITIVE 0x00000008LL
+
+// Flags for apfs_superblock.flags
+#define APFS_SB_UNENCRYPTED 0x00000001LL
+#define APFS_SB_EFFACEABLE 0x00000002LL
+#define APFS_SB_RESERVED_4 0x00000004LL
+#define APFS_SB_ONEKEY 0x00000008LL
+#define APFS_SB_SPILLEDOVER 0x00000010LL
+#define APFS_SB_RUN_SPILLOVER_CLEANER 0x00000020LL
+
 typedef struct {
-  apfs_obj_header obj_hdr;  // 0x00
-  uint32_t magic;           // 0x20
-  uint32_t fs_index;        // 0x24
-  union {                   // 0x28
-    uint64_t features;
-    struct {
-      uint64_t supports_defrag_prerelease : 1;
-      uint64_t supports_hardlink_map_records : 1;
-      uint64_t supports_defrag : 1;
-      uint64_t : 61;
-    };
-  };
+  apfs_obj_header obj_hdr;                // 0x00
+  uint32_t magic;                         // 0x20
+  uint32_t fs_index;                      // 0x24
+  uint64_t features;                      // 0x28
   uint64_t readonly_compatible_features;  // 0x30
-  union {                                 // 0x38
-    uint64_t incompatible_features;
-    struct {
-      uint64_t case_insensitive : 1;
-      uint64_t dataless_snaps : 1;
-      uint64_t enc_rolled : 1;
-      uint64_t normalization_insensitive : 1;
-      uint64_t : 60;
-    };
-  };
-  uint64_t unmount_time;    // 0x40
-  uint64_t reserve_blocks;  // 0x48
-  uint64_t quota_blocks;    // 0x50
-  uint64_t alloc_blocks;    // 0x58
+  uint64_t incompatible_features;         // 0x38
+  uint64_t unmount_time;                  // 0x40
+  uint64_t reserve_blocks;                // 0x48
+  uint64_t quota_blocks;                  // 0x50
+  uint64_t alloc_blocks;                  // 0x58
   struct {
     uint16_t major_version;     // 0x60
     uint16_t minor_version;     // 0x62
@@ -274,37 +260,26 @@ typedef struct {
     uint16_t key_revision;      // 0x70
     uint16_t unused;            // 0x72
   } meta_crypto;
-  uint32_t root_tree_type;        // 0x74
-  uint32_t extentref_tree_type;   // 0x78
-  uint32_t snap_meta_tree_type;   // 0x7C
-  uint64_t omap_oid;              // 0x80
-  uint64_t root_tree_oid;         // 0x88
-  uint64_t extentref_tree_oid;    // 0x90
-  uint64_t snap_meta_tree_oid;    // 0x98
-  uint64_t revert_to_xid;         // 0xA0
-  uint64_t revert_to_sblock_oid;  // 0xA8
-  uint64_t next_inum;             // 0xB0
-  uint64_t num_files;             // 0xB8
-  uint64_t num_directories;       // 0xC0
-  uint64_t num_symlinks;          // 0xC8
-  uint64_t num_other_fsobjects;   // 0xD0
-  uint64_t num_snapshots;         // 0xD8
-  uint64_t total_blocks_alloced;  // 0xE0
-  uint64_t total_blocks_freed;    // 0xE8
-  uint8_t uuid[16];               // 0xF0
-  uint64_t last_mod_time;         // 0x100
-  union {                         // 0x108
-    uint64_t flags;
-    struct {
-      uint64_t unencrypted : 1;
-      uint64_t effacable : 1;
-      uint64_t : 1;
-      uint64_t onekey : 1;
-      uint64_t spilled_over : 1;
-      uint64_t run_spollover_cleaner : 1;
-      uint64_t : 58;
-    };
-  };
+  uint32_t root_tree_type;                   // 0x74
+  uint32_t extentref_tree_type;              // 0x78
+  uint32_t snap_meta_tree_type;              // 0x7C
+  uint64_t omap_oid;                         // 0x80
+  uint64_t root_tree_oid;                    // 0x88
+  uint64_t extentref_tree_oid;               // 0x90
+  uint64_t snap_meta_tree_oid;               // 0x98
+  uint64_t revert_to_xid;                    // 0xA0
+  uint64_t revert_to_sblock_oid;             // 0xA8
+  uint64_t next_inum;                        // 0xB0
+  uint64_t num_files;                        // 0xB8
+  uint64_t num_directories;                  // 0xC0
+  uint64_t num_symlinks;                     // 0xC8
+  uint64_t num_other_fsobjects;              // 0xD0
+  uint64_t num_snapshots;                    // 0xD8
+  uint64_t total_blocks_alloced;             // 0xE0
+  uint64_t total_blocks_freed;               // 0xE8
+  uint8_t uuid[16];                          // 0xF0
+  uint64_t last_mod_time;                    // 0x100
+  uint64_t flags;                            // 0x108
   char formatted_by[APFS_MODIFIED_NAMELEN];  // 0x110
   uint64_t created_timestamp;                // 0x130
   uint64_t last_xid;                         // 0x138
@@ -344,16 +319,13 @@ typedef enum {
   APFS_SFQ_COUNT = 3
 } APFS_SFQ;
 
+// Flags for apfs_checkpoint_map.flags
+#define APFS_CHECKPOINT_MAP_LAST 0x00000001
+
 typedef struct {
   apfs_obj_header obj_hdr;  // 0x00
-  union {                   // 0x20
-    uint32_t flags;
-    struct {
-      uint32_t last : 1;
-      uint32_t : 31;
-    };
-  };
-  uint32_t count;  // 0x24
+  uint32_t flags;           // 0x20
+  uint32_t count;           // 0x24
   struct {
     uint16_t type;     // 0x00
     uint16_t flags;    // 0x02
@@ -392,20 +364,17 @@ typedef struct {
 static_assert(sizeof(apfs_spaceman_free_queue) == 0x28,
               "improperly aligned struct");
 
+// Flags for apfs_spaceman.flags
+#define APFS_SM_FLAG_VERSIONED 0x00000001
+
 typedef struct {
-  apfs_obj_header obj_hdr;                   // 0x00
-  uint32_t block_size;                       // 0x20
-  uint32_t blocks_per_chunk;                 // 0x24
-  uint32_t chunks_per_cib;                   // 0x28
-  uint32_t cib_per_cab;                      // 0x2C
-  apfs_spaceman_device devs[APFS_SD_COUNT];  // 0x30
-  union {                                    // 0x90
-    uint32_t flags;
-    struct {
-      uint32_t versioned : 1;
-      uint32_t : 31;
-    };
-  };
+  apfs_obj_header obj_hdr;                      // 0x00
+  uint32_t block_size;                          // 0x20
+  uint32_t blocks_per_chunk;                    // 0x24
+  uint32_t chunks_per_cib;                      // 0x28
+  uint32_t cib_per_cab;                         // 0x2C
+  apfs_spaceman_device devs[APFS_SD_COUNT];     // 0x30
+  uint32_t flags;                               // 0x90
   uint32_t ip_tx_multiplier;                    // 0x94
   uint32_t ip_block_count;                      // 0x98
   uint32_t ip_bm_block_count;                   // 0x9C
@@ -448,20 +417,17 @@ typedef struct {
 } apfs_spaceman_cib;
 static_assert(sizeof(apfs_spaceman_cib) == 0x28, "improperly aligned struct");
 
+// Flags for apfs_nx_reaper.flags
+#define APFS_NR_BHM_FLAG 0x00000001
+#define APFS_NR_CONTINUE 0x00000002
+
 typedef struct {
   apfs_obj_header obj_header;  // 0x00
   uint64_t next_reap_id;       // 0x20
   uint64_t compleated_id;      // 0x28
   uint64_t head;               // 0x30
   uint64_t tail;               // 0x38
-  union {                      // 0x40
-    uint32_t flags;            // 0x40
-    struct {
-      uint32_t bhm_flag : 1;  // always set
-      uint32_t being_reaped : 1;
-      uint32_t : 30;
-    };
-  };
+  uint32_t flags;              // 0x40
   uint32_t rlcount;            // 0x44
   uint32_t type;               // 0x48
   uint32_t size;               // 0x4C
@@ -537,18 +503,15 @@ typedef struct {
 } apfs_omap_key;
 static_assert(sizeof(apfs_omap_key) == 0x10, "improperly aligned struct");
 
+// Flags for apfs_omap_value.flags
+#define APFS_OMAP_VAL_DELETED 0x00000001
+#define APFS_OMAP_VAL_SAVED 0x00000002
+#define APFS_OMAP_VAL_ENCRYPTED 0x00000004
+#define APFS_OMAP_VAL_NOHEADER 0x00000008
+#define APFS_OMAP_VAL_CRYPTO_GENERATION 0x00000010
+
 typedef struct {
-  union {  // 0x00
-    uint32_t flags;
-    struct {
-      uint32_t deleted : 1;
-      uint32_t saved : 1;
-      uint32_t encrypted : 1;
-      uint32_t noheader : 1;
-      uint32_t crypto_gen : 1;
-      uint32_t : 27;
-    };
-  };
+  uint32_t flags;  // 0x00
   uint32_t size;   // 0x04
   uint64_t paddr;  // 0x08
 } apfs_omap_value;

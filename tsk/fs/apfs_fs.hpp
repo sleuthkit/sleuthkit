@@ -45,8 +45,15 @@ class APFSJObject {
 
  public:
   using key_type = struct {
-    uint64_t oid : 60;
-    uint64_t type : 4;
+    uint64_t oid_and_type;
+
+    constexpr uint64_t oid() const noexcept {
+      return bitfield_value(oid_and_type, 60, 0);
+    }
+
+    constexpr uint64_t type() const noexcept {
+      return bitfield_value(oid_and_type, 4, 60);
+    }
   };
 
   APFSJObject() = default;
@@ -112,7 +119,7 @@ class APFSJObjTree {
         oid, [](const auto &key, const auto &b) noexcept->int64_t {
           const auto akey = key.template as<APFSJObject::key_type>();
 
-          return akey->oid - b;
+          return akey->oid() - b;
         });
   }
 

@@ -74,6 +74,9 @@ typedef enum {
 #define APFS_XATTR_NAME_SECURITY "com.apple.system.Security"
 #define APFS_XATTR_NAME_SYMLINK "com.apple.fs.symlink"
 
+// Flags for apfs_snap_metadata.flags
+#define APFS_SNAP_METADATA_PENDING_DATALESS 0x00000001
+
 typedef struct {
   uint64_t extentref_tree_oid;   // 0x00
   uint64_t sblock_oid;           // 0x08
@@ -81,25 +84,49 @@ typedef struct {
   uint64_t changed_time;         // 0x18
   uint64_t private_id;           // 0x20
   uint32_t extentref_tree_type;  // 0x28
-  union {                        // 0x2C
-    uint32_t flags;
-    struct {
-      uint32_t pending_dataless : 1;
-      uint32_t : 31;
-    };
-  };
-  uint16_t name_length;  // 0x30
-  char name[0];          // 0x32 (name_length bytes)
+  uint32_t flags;                // 0x2C
+  uint16_t name_length;          // 0x30
+  char name[0];                  // 0x32 (name_length bytes)
 } apfs_snap_metadata;
 static_assert(sizeof(apfs_snap_metadata) == 0x32, "improperly aligned struct");
 
+// Bitfields for apfs_phys_extent.len_and_kind
+#define APFS_PHYS_EXTENT_LEN_BITS 60
+#define APFS_PHYS_EXTENT_LEN_SHIFT 0
+#define APFS_PHYS_EXTENT_KIND_BITS 4
+#define APFS_PHYS_EXTENT_KIND_SHIFT 60
+
 typedef struct {
-  uint64_t len : 60;       // 0x00 (bottom 60 bits)
-  uint64_t kind : 4;       // (top 4 bits)
+  uint64_t len_and_kind;   // 0x00
   uint64_t owning_obj_id;  // 0x08
   uint32_t refcnt;         // 0x10
 } apfs_phys_extent;
 static_assert(sizeof(apfs_phys_extent) == 0x14, "improperly aligned struct");
+
+// Flags for apfs_inode.flags
+#define APFS_INODE_IS_APFS_PRIVATE = 0x00000001
+#define APFS_INODE_MAINTAIN_DIR_STATS = 0x00000002
+#define APFS_INODE_DIR_STATS_ORIGIN = 0x00000004
+#define APFS_INODE_PROT_CLASS_EXPLICIT = 0x00000008
+#define APFS_INODE_WAS_CLONED = 0x00000010
+#define APFS_INODE_FLAG_UNUSED = 0x00000020
+#define APFS_INODE_HAS_SECURITY_EA = 0x00000040
+#define APFS_INODE_BEING_TRUNCATED = 0x00000080
+#define APFS_INODE_HAS_FINDER_INFO = 0x00000100
+#define APFS_INODE_IS_SPARSE = 0x00000200
+#define APFS_INODE_WAS_EVER_CLONED = 0x00000400
+#define APFS_INODE_ACTIVE_FILE_TRIMMED = 0x00000800
+#define APFS_INODE_PINNED_TO_MAIN = 0x00001000
+#define APFS_INODE_PINNED_TO_TIER2 = 0x00002000
+#define APFS_INODE_HAS_RSRC_FORK = 0x00004000
+#define APFS_INODE_NO_RSRC_FORK = 0x00008000
+#define APFS_INODE_ALLOCATION_SPILLEDOVER = 0x00010000
+
+// Bitfields for apfs_inode.mode_and_type
+#define APFS_INODE_MODE_BITS 12
+#define APFS_INODE_MODE_SHIFT 0
+#define APFS_INODE_TYPE_BITS 4
+#define APFS_INODE_TYPE_SHIFT 12
 
 typedef struct {
   uint64_t parent_id;      // 0x00
@@ -108,30 +135,8 @@ typedef struct {
   uint64_t modified_time;  // 0x18
   uint64_t changed_time;   // 0x20
   uint64_t accessed_time;  // 0x28
-  union {                  // 0x30
-    uint64_t flags;
-    struct {
-      uint64_t is_apfs_private : 1;
-      uint64_t maintain_dir_stats : 1;
-      uint64_t dir_stats_origin : 1;
-      uint64_t prot_class_explicit : 1;
-      uint64_t was_cloned : 1;
-      uint64_t : 1;
-      uint64_t has_security_ea : 1;
-      uint64_t being_truncated : 1;
-      uint64_t has_finder_info : 1;
-      uint64_t is_sparse : 1;
-      uint64_t was_ever_cloned : 1;
-      uint64_t active_file_trimmed : 1;
-      uint64_t pinned_to_main : 1;
-      uint64_t pinned_to_tier2 : 1;
-      uint64_t has_rsrc_fork : 1;
-      uint64_t no_rsrc_fork : 1;
-      uint64_t allocation_spilled_over : 1;
-      uint64_t : 47;
-    };
-  };
-  union {  // 0x38
+  uint64_t flags;          // 0x30
+  union {                  // 0x38
     int32_t nlink;
     int32_t nchildren;
   };
@@ -140,23 +145,21 @@ typedef struct {
   uint32_t bsdflags;                  // 0x44
   uint32_t owner;                     // 0x48
   uint32_t group;                     // 0x4C
-  uint32_t mode : 12;                 // 0x50
-  uint32_t type : 4;
-  uint32_t : 16;  // Padding
-  uint64_t : 64;  // 0x54
-  uint8_t xfields[0];
+  uint16_t mode_and_type;             // 0x50
+  uint16_t padding52;                 // 0x52
+  uint64_t padding54;                 // 0x54
+  uint8_t xfields[0];                 // 0x5C
 } apfs_inode;
 static_assert(sizeof(apfs_inode) == 0x5C, "improperly aligned struct");
 
+// Flags for apfs_xattr.flags
+#define APFS_XATTR_DATA_STREAM = 0x0001
+#define APFS_XATTR_DATA_EMBEDDED = 0x0002
+#define APFS_XATTR_FILE_SYSTEM_OWNED = 0x0004
+#define APFS_XATTR_RESERVED_8 = 0x0008
+
 typedef struct {
-  union {  // 0x00
-    uint16_t flags;
-    struct {
-      uint16_t data_stream : 1;
-      uint16_t embedded : 1;
-      uint16_t fs_owned : 1;
-    };
-  };
+  uint16_t flags;      // 0x00
   uint16_t xdata_len;  // 0x02
   uint8_t xdata[0];    // 0x04
 } apfs_xattr;
@@ -189,19 +192,29 @@ typedef struct {
 } apfs_crypto_state;
 static_assert(sizeof(apfs_crypto_state) == 0x18, "improperly aligned struct");
 
+// Bitfield values from apfs_file_extent.len_and_flags;
+#define APFS_FILE_EXTENT_LEN_BITS 56
+#define APFS_FILE_EXTENT_LEN_SHIFT 0
+#define APFS_FILE_EXTENT_FLAGS_BITS 8
+#define APFS_FILE_EXTENT_FLAGS_SHIFT 56
+
 typedef struct {
-  uint64_t len : 56;   // 0x00 (bottom 56 bits)
-  uint64_t flags : 8;  // (top 8 bits)
-  uint64_t phys;       // 0x08
-  uint64_t crypto;     // 0x10
+  uint64_t len_and_flags;  // 0x00
+  uint64_t phys;           // 0x08
+  uint64_t crypto;         // 0x10
 } apfs_file_extent;
 static_assert(sizeof(apfs_file_extent) == 0x18, "improperly aligned struct");
 
+// Bitfield values for apfs_dir_record.type_and_flags
+#define APFS_DIR_RECORD_TYPE_BITS 4
+#define APFS_DIR_RECORD_TYPE_SHIFT 0
+#define APFS_DIR_RECORD_FLAGS_BITS 12
+#define APFS_DIR_RECORD_FLAGS_SHIFT 4
+
 typedef struct {
-  uint64_t file_id;     // 0x00
-  uint64_t date_added;  // 0x08
-  uint16_t type : 4;    // 0x10
-  uint16_t flags : 12;
+  uint64_t file_id;         // 0x00
+  uint64_t date_added;      // 0x08
+  uint16_t type_and_flags;  // 0x10
 } apfs_dir_record;
 static_assert(sizeof(apfs_dir_record) == 0x12, "improperly aligned struct");
 
@@ -238,21 +251,20 @@ typedef enum {
   APFS_XFIELD_TYPE_DEVICE = 0x0E,
 } APFS_XFIELD_TYPE;
 
+// Flags for apfs_xfield_entry.flags
+#define APFS_XFIELD_ENTRY_DATA_DEPENDENT 0x01
+#define APFS_XFIELD_ENTRY_DO_NOT_COPY 0x02
+#define APFS_XFIELD_ENTRY_RESERVED_4 0x04
+#define APFS_XFIELD_ENTRY_CHILDREN_INHERIT 0x08
+#define APFS_XFIELD_ENTRY_USER_FIELD 0x10
+#define APFS_XFIELD_ENTRY_SYSTEM_FIELD 0x20
+#define APFS_XFIELD_ENTRY_RESERVED_40 0x40
+#define APFS_XFIELD_ENTRY_RESERVED_80 0x80
+
 typedef struct {
-  uint8_t type;  // 0x00
-  union {        // 0x01
-    uint8_t flags;
-    struct {
-      uint8_t data_dependant : 1;
-      uint8_t do_not_copy : 1;
-      uint8_t : 1;
-      uint8_t children_inherit : 1;
-      uint8_t user_field : 1;
-      uint8_t system_field : 1;
-      uint8_t : 2;
-    };
-  };
-  uint16_t len;  // 0x02
+  uint8_t type;   // 0x00
+  uint8_t flags;  // 0x01
+  uint16_t len;   // 0x02
 } apfs_xfield_entry;
 static_assert(sizeof(apfs_xfield_entry) == 0x04, "improperly aligned struct");
 

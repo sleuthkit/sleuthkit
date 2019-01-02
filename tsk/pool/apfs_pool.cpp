@@ -53,7 +53,7 @@ APFSPool::APFSPool(std::vector<img_t>&& imgs, apfs_block_num nx_block_num)
 
   _vol_blocks = nxsb->volume_blocks();
   _num_vols = _vol_blocks.size();
-  _hw_crypto = (nxsb->sb()->crypto_sw == 0);
+  _hw_crypto = !bit_is_set(nxsb->sb()->flags, APFS_NXSB_FLAGS_CRYPTO_SW);
 }
 
 std::unique_ptr<APFSSuperblock> APFSPool::nx(bool validate) const {

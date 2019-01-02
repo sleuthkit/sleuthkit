@@ -48,14 +48,14 @@ APFSJObject::APFSJObject(const jit& start, const jit& end) {
 void APFSJObject::add_entry(const jit::value_type& e) {
   const auto key = e.key.template as<key_type>();
 
-  switch (key->type) {
+  switch (key->type()) {
     // Inode records
     case APFS_JOBJTYPE_INODE: {
       const auto value = e.value.template as<apfs_inode>();
       _inode = *value;
 
       // If the private_id is not the same as the oid then we're a clone
-      _is_clone = (_inode.private_id != key->oid);
+      _is_clone = (_inode.private_id != key->oid());
 
       // If there's more data than the size of the inode then we have xdata
       if ((size_t)e.value.count() > sizeof(apfs_inode)) {
@@ -114,9 +114,11 @@ void APFSJObject::add_entry(const jit::value_type& e) {
 
       const auto k = e.key.template as<file_extent_key>();
       const auto value = e.value.template as<apfs_file_extent>();
+      const auto len =
+          bitfield_value(value->len_and_flags, APFS_FILE_EXTENT_LEN_BITS,
+                         APFS_FILE_EXTENT_LEN_SHIFT);
 
-      _extents.emplace_back(
-          extent{k->offset, value->phys, value->len, value->crypto});
+      _extents.emplace_back(extent{k->offset, value->phys, len, value->crypto});
 
       break;
     }
@@ -193,9 +195,9 @@ APFSJObjTree::iterator& APFSJObjTree::iterator::operator++() {
 
   auto end = std::find_if(
       _next,
-      _tree->_jobj_root.end(), [oid = key->oid](const auto& it) noexcept {
+      _tree->_jobj_root.end(), [oid = key->oid()](const auto& it) noexcept {
         const auto key = it.key.template as<APFSJObject::key_type>();
-        return key->oid > oid;
+        return key->oid() > oid;
       });
 
   _jobj = {_next, end};

@@ -497,9 +497,13 @@ TSK_RETVAL_ENUM APFSFSCompat::dir_open_meta(TSK_FS_DIR** a_fs_dir,
       return TSK_ERR;
     }
 
+    const auto type =
+        bitfield_value(child.rec.type_and_flags, APFS_DIR_RECORD_TYPE_BITS,
+                       APFS_DIR_RECORD_TYPE_SHIFT);
+
     strncpy(fs_name->name, child.name.c_str(), fs_name->name_size);
     fs_name->meta_addr = child.rec.file_id;
-    fs_name->type = to_name_type(APFS_ITEM_TYPE(child.rec.type));
+    fs_name->type = to_name_type(APFS_ITEM_TYPE(type));
     fs_name->flags = TSK_FS_NAME_FLAG_ALLOC;
     fs_name->date_added = child.rec.date_added;
 
@@ -557,10 +561,15 @@ uint8_t APFSFSCompat::file_add_meta(TSK_FS_FILE* fs_file, TSK_INUM_T addr) const
 
   const auto inode_meta = inode_ptr->inode();
 
+  const auto mode = bitfield_value(inode_meta.mode_and_type,
+                                   APFS_INODE_MODE_BITS, APFS_INODE_MODE_SHIFT);
+  const auto type = bitfield_value(inode_meta.mode_and_type,
+                                   APFS_INODE_TYPE_BITS, APFS_INODE_TYPE_SHIFT);
+
   fs_file->meta->flags = TSK_FS_META_FLAG_ALLOC;
   fs_file->meta->addr = addr;
-  fs_file->meta->type = to_meta_type(APFS_ITEM_TYPE(inode_meta.type));
-  fs_file->meta->mode = TSK_FS_META_MODE_ENUM(inode_meta.mode);
+  fs_file->meta->type = to_meta_type(APFS_ITEM_TYPE(type));
+  fs_file->meta->mode = TSK_FS_META_MODE_ENUM(mode);
   fs_file->meta->nlink = inode_meta.nlink;
   fs_file->meta->size = inode_ptr->size();
   fs_file->meta->uid = inode_meta.owner;
