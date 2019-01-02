@@ -10,6 +10,10 @@ extern "C" {
 #define static_assert(x, y)  // static assertions are not valid in C
 #endif
 
+// All structures are defined as they exist on disk, so we need to disable
+// padding
+#pragma pack(push, 1)
+
 typedef struct TSK_FS_INFO TSK_FS_INFO;
 typedef struct TSK_FS_FILE TSK_FS_FILE;
 
@@ -70,7 +74,7 @@ typedef enum {
 #define APFS_XATTR_NAME_SECURITY "com.apple.system.Security"
 #define APFS_XATTR_NAME_SYMLINK "com.apple.fs.symlink"
 
-typedef struct __attribute__((packed)) {
+typedef struct {
   uint64_t extentref_tree_oid;   // 0x00
   uint64_t sblock_oid;           // 0x08
   uint64_t create_time;          // 0x10
@@ -89,7 +93,7 @@ typedef struct __attribute__((packed)) {
 } apfs_snap_metadata;
 static_assert(sizeof(apfs_snap_metadata) == 0x32, "improperly aligned struct");
 
-typedef struct __attribute__((packed)) {
+typedef struct {
   uint64_t len : 60;       // 0x00 (bottom 60 bits)
   uint64_t kind : 4;       // (top 4 bits)
   uint64_t owning_obj_id;  // 0x08
@@ -97,7 +101,7 @@ typedef struct __attribute__((packed)) {
 } apfs_phys_extent;
 static_assert(sizeof(apfs_phys_extent) == 0x14, "improperly aligned struct");
 
-typedef struct __attribute__((packed)) {
+typedef struct {
   uint64_t parent_id;      // 0x00
   uint64_t private_id;     // 0x08
   uint64_t create_time;    // 0x10
@@ -144,7 +148,7 @@ typedef struct __attribute__((packed)) {
 } apfs_inode;
 static_assert(sizeof(apfs_inode) == 0x5C, "improperly aligned struct");
 
-typedef struct __attribute__((packed)) {
+typedef struct {
   union {  // 0x00
     uint16_t flags;
     struct {
@@ -158,19 +162,19 @@ typedef struct __attribute__((packed)) {
 } apfs_xattr;
 static_assert(sizeof(apfs_xattr) == 0x04, "improperly aligned struct");
 
-typedef struct __attribute__((packed)) {
+typedef struct {
   uint64_t parent;       // 0x00
   uint16_t name_length;  // 0x08
   char name[0];          // 0x0C (name_length bytes)
 } apfs_sibling_link;
 static_assert(sizeof(apfs_sibling_link) == 0x0A, "improperly aligned struct");
 
-typedef struct __attribute__((packed)) {
+typedef struct {
   uint32_t refcnt;  // 0x00
 } apfs_dstream_id;
 static_assert(sizeof(apfs_dstream_id) == 0x04, "improperly aligned struct");
 
-typedef struct __attribute__((packed)) {
+typedef struct {
   uint32_t refcount;  // 0x00
   struct {
     uint16_t major_version;     // 0x04
@@ -185,7 +189,7 @@ typedef struct __attribute__((packed)) {
 } apfs_crypto_state;
 static_assert(sizeof(apfs_crypto_state) == 0x18, "improperly aligned struct");
 
-typedef struct __attribute__((packed)) {
+typedef struct {
   uint64_t len : 56;   // 0x00 (bottom 56 bits)
   uint64_t flags : 8;  // (top 8 bits)
   uint64_t phys;       // 0x08
@@ -193,7 +197,7 @@ typedef struct __attribute__((packed)) {
 } apfs_file_extent;
 static_assert(sizeof(apfs_file_extent) == 0x18, "improperly aligned struct");
 
-typedef struct __attribute__((packed)) {
+typedef struct {
   uint64_t file_id;     // 0x00
   uint64_t date_added;  // 0x08
   uint16_t type : 4;    // 0x10
@@ -201,7 +205,7 @@ typedef struct __attribute__((packed)) {
 } apfs_dir_record;
 static_assert(sizeof(apfs_dir_record) == 0x12, "improperly aligned struct");
 
-typedef struct __attribute__((packed)) {
+typedef struct {
   uint64_t num_children;  // 0x00
   uint64_t total_size;    // 0x08
   uint64_t chained_key;   // 0x10
@@ -209,12 +213,12 @@ typedef struct __attribute__((packed)) {
 } apfs_dir_stats;
 static_assert(sizeof(apfs_dir_stats) == 0x20, "improperly aligned struct");
 
-typedef struct __attribute__((packed)) {
+typedef struct {
   uint64_t snap_xid;  // 0x00
 } apfs_snap_name;
 static_assert(sizeof(apfs_snap_name) == 0x08, "improperly aligned struct");
 
-typedef struct __attribute__((packed)) {
+typedef struct {
   uint64_t orig_file_id;  // 0x00
 } apfs_sibling_map;
 static_assert(sizeof(apfs_sibling_map) == 0x08, "improperly aligned struct");
@@ -234,7 +238,7 @@ typedef enum {
   APFS_XFIELD_TYPE_DEVICE = 0x0E,
 } APFS_XFIELD_TYPE;
 
-typedef struct __attribute__((packed)) {
+typedef struct {
   uint8_t type;  // 0x00
   union {        // 0x01
     uint8_t flags;
@@ -252,14 +256,14 @@ typedef struct __attribute__((packed)) {
 } apfs_xfield_entry;
 static_assert(sizeof(apfs_xfield_entry) == 0x04, "improperly aligned struct");
 
-typedef struct __attribute__((packed)) {
+typedef struct {
   uint16_t num_exts;
   uint16_t used_data;
   apfs_xfield_entry entries[0];
 } apfs_xfield;
 static_assert(sizeof(apfs_xfield) == 0x04, "improperly aligned struct");
 
-typedef struct __attribute__((packed)) {
+typedef struct {
   uint64_t size;
   uint64_t alloced_size;
   uint64_t default_crypto_id;
@@ -267,6 +271,9 @@ typedef struct __attribute__((packed)) {
   uint64_t total_bytes_read;
 } apfs_dstream;
 static_assert(sizeof(apfs_dstream) == 0x28, "improperly aligned struct");
+
+// End on-disk structures
+#pragma pack(pop)
 
 // TSK API
 

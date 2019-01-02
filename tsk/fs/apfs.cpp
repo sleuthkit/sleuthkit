@@ -570,23 +570,7 @@ const std::vector<APFSFileSystem::snapshot_t> APFSFileSystem::snapshots()
     uint64_t type : 4;
   };
 
-  using value_type = struct __attribute__((packed)) {
-    uint64_t extentref_tree_oid;   // 0x00
-    uint64_t sblock_oid;           // 0x08
-    uint64_t create_time;          // 0x10
-    uint64_t changed_time;         // 0x18
-    uint64_t private_id;           // 0x20
-    uint32_t extentref_tree_type;  // 0x28
-    union {                        // 0x2C
-      uint32_t flags;
-      struct {
-        uint32_t pending_dataless : 1;
-        uint32_t : 31;
-      };
-    };
-    uint16_t name_length;  // 0x30
-    char name[0];          // 0x32 (name_length bytes)
-  };
+  using value_type = apfs_snap_metadata;
 
   std::for_each(snap_tree.begin(), snap_tree.end(), [&](const auto& entry) {
     const auto key = entry.key.template as<key_type>();

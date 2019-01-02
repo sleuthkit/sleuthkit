@@ -132,9 +132,11 @@ void APFSJObject::add_entry(const jit::value_type& e) {
       const auto value = e.value.template as<apfs_xattr>();
 
       if (value->flags & APFS_XATTR_FLAG_INLINE) {
-        struct __attribute__((packed)) ixattr : apfs_xattr {
+#pragma pack(push, 1)
+        struct ixattr : apfs_xattr {
           char data[0];
         };
+#pragma pack(pop)
 
         const auto ix = e.value.template as<ixattr>();
         _inline_xattrs.emplace_back(inline_xattr{{k->name, k->name_len - 1U},
@@ -142,12 +144,13 @@ void APFSJObject::add_entry(const jit::value_type& e) {
         break;
       }
 
-      // Non-Resident XATTRs
-
-      struct __attribute__((packed)) nrattr : apfs_xattr {
+// Non-Resident XATTRs
+#pragma pack(push, 1)
+      struct nrattr : apfs_xattr {
         uint64_t xattr_obj_id;
         apfs_dstream dstream;
       };
+#pragma pack(pop)
       static_assert(sizeof(nrattr) == 0x34, "misaligned structure");
 
       const auto nrx = e.value.template as<nrattr>();
