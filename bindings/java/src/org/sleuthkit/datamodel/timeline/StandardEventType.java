@@ -41,7 +41,7 @@ class StandardEventType implements EventType {
 	}
 
 	@Override
-	public TimelineEvent.EventDescription getDescription(String fullDescriptionRaw, String medDescriptionRaw, String shortDescriptionRaw) {
+	public TimelineEvent.EventDescription parseDescription(String fullDescriptionRaw, String medDescriptionRaw, String shortDescriptionRaw) {
 		return TimelineEvent.EventDescription.create(fullDescriptionRaw, medDescriptionRaw, shortDescriptionRaw);
 	}
 

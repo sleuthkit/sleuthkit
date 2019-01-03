@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2018 Basis Technology Corp.
+ * Copyright 2011-2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -174,7 +174,7 @@ public class SleuthkitCase {
 	private static final String SCHEMA_MINOR_VERSION_KEY = "SCHEMA_MINOR_VERSION";
 	private static final String CREATION_SCHEMA_MAJOR_VERSION_KEY = "CREATION_SCHEMA_MAJOR_VERSION";
 	private static final String CREATION_SCHEMA_MINOR_VERSION_KEY = "CREATION_SCHEMA_MINOR_VERSION";
- 
+
 
 	private final ConnectionPool connections;
 	private final Map<Long, VirtualDirectory> rootIdsToCarvedFileDirs = new HashMap<>();
@@ -1746,8 +1746,8 @@ public class SleuthkitCase {
 					+ " file_obj_id BIGINT NOT NULL, "
 					+ " artifact_id BIGINT, "
 					+ " time INTEGER NOT NULL, "
-					+ " sub_type INTEGER, "
-					+ " base_type INTEGER NOT NULL, "
+					//					+ " sub_type INTEGER, "
+					//					+ " base_type INTEGER NOT NULL, "
 					+ " full_description TEXT NOT NULL, "
 					+ " med_description TEXT, "
 					+ " short_description TEXT, "
@@ -1760,14 +1760,19 @@ public class SleuthkitCase {
 					+ "FOREIGN KEY(sub_type) REFERENCES tsk_event_types(event_type_id), "
 					+ "FOREIGN KEY(base_type) REFERENCES tsk_event_types(event_type_id))");
 
+			statement.execute("CREATE TABLE tsk_event_event_types ( "
+					+ " event_id BIGINT NOT NULL REFERENCES tsk_events(event_id), "
+					+ " event_type_id BIGINT NOT NULL REFERENCES tsk_event_types(event_type_id),"
+					+ " PRIMARY KEY (event_id, event_type_id))");
+
 			//create tsk_events indices
 			statement.execute("CREATE INDEX events_data_source_obj_id ON tsk_events(data_source_obj_id)");
 			statement.execute("CREATE INDEX events_event_id_hash_hit ON tsk_events(event_id, hash_hit)");
 			statement.execute("CREATE INDEX events_event_id_tagged ON tsk_events(event_id, tagged)");
 			statement.execute("CREATE INDEX events_file_obj_id ON tsk_events(file_obj_id)");
 			statement.execute("CREATE INDEX events_artifact_id ON tsk_events(artifact_id)");
-			statement.execute("CREATE INDEX events_sub_type_short_description_time ON tsk_events(sub_type, short_description, time)");
-			statement.execute("CREATE INDEX events_base_type_short_description_time ON tsk_events(base_type, short_description, time)");
+			statement.execute("CREATE INDEX events_sub_type_short_description_time ON tsk_events(  short_description, time)");
+			statement.execute("CREATE INDEX events_base_type_short_description_time ON tsk_events( short_description, time)");
 			statement.execute("CREATE INDEX events_time ON tsk_events(time)");
 			statement.execute("CREATE INDEX events_known_state ON tsk_events(known_state)");
 

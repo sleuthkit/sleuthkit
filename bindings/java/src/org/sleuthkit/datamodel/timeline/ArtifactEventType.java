@@ -20,6 +20,7 @@ package org.sleuthkit.datamodel.timeline;
 
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
+import org.sleuthkit.datamodel.DescriptionLoD;
 import org.sleuthkit.datamodel.TskCoreException;
 
 /**
@@ -101,7 +102,7 @@ public interface ArtifactEventType extends EventType {
 	 * @throws TskCoreException is there is a problem accessing the blackboard
 	 *                          data
 	 */
-	EventPayload buildEventPayload(BlackboardArtifact artifact) throws TskCoreException;
+	EventDescriptionWithTime buildEventPayload(BlackboardArtifact artifact) throws TskCoreException;
 
 	/**
 	 * Bundles the per event information derived from a BlackBoard Artifact into
@@ -109,36 +110,21 @@ public interface ArtifactEventType extends EventType {
 	 * ArtifactEventType#buildEventDescription(ArtifactEventType,
 	 * BlackboardArtifact).
 	 */
-	 final class EventPayload {
+	final class EventDescriptionWithTime extends ThreeLevellEventDescription {
 
 		final private long time;
-		final private String shortDescription;
-		final private String medDescription;
-		final private String fullDescription;
 
 		public long getTime() {
 			return time;
 		}
 
-		public String getShortDescription() {
-			return shortDescription;
-		}
-
-		public String getMedDescription() {
-			return medDescription;
-		}
-
-		public String getFullDescription() {
-			return fullDescription;
-		}
-
-		EventPayload(long time, String shortDescription,
+		EventDescriptionWithTime(long time, String shortDescription,
 				String medDescription,
 				String fullDescription) {
+			super(fullDescription, medDescription, shortDescription);
 			this.time = time;
-			this.shortDescription = shortDescription;
-			this.medDescription = medDescription;
-			this.fullDescription = fullDescription;
+
 		}
+
 	}
 }
