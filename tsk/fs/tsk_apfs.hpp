@@ -31,7 +31,7 @@ constexpr bool bit_is_set(T bitfield, int bit) noexcept {
 template <typename T,
           typename = std::enable_if_t<std::numeric_limits<T>::is_integer>>
 constexpr T bitfield_value(T bitfield, int bits, int shift) noexcept {
-  return (bitfield >> shift) & ((1 << bits) - 1);
+  return (bitfield >> shift) & ((T{1} << bits) - 1);
 }
 
 class APFSPool;
