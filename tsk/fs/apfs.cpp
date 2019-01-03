@@ -575,11 +575,11 @@ const std::vector<APFSFileSystem::snapshot_t> APFSFileSystem::snapshots()
   using key_type = struct {
     uint64_t xid_and_type;
 
-    constexpr uint64_t snap_xid() const noexcept {
+    inline uint64_t snap_xid() const noexcept {
       return bitfield_value(xid_and_type, 60, 0);
     }
 
-    constexpr uint64_t type() const noexcept {
+    inline uint64_t type() const noexcept {
       return bitfield_value(xid_and_type, 4, 60);
     }
   };

@@ -1,6 +1,6 @@
 #include "../fs/tsk_apfs.hpp"
 
-#include "apfs_compat.hpp"
+#include "apfs_pool_compat.hpp"
 #include "pool_compat.hpp"
 
 #include "../img/tsk_img.h"
@@ -44,8 +44,8 @@ const TSK_POOL_INFO *tsk_pool_open(int num_vols,
     return nullptr;
   }
 
-  TSK_IMG_INFO *imgs[num_vols];
-  TSK_OFF_T offsets[num_vols];
+  auto imgs = std::make_unique<TSK_IMG_INFO *[]>(num_vols);
+  auto offsets = std::make_unique<TSK_OFF_T[]>(num_vols);
 
   for (auto i = 0; i < num_vols; i++) {
     const auto &part = parts[i];
@@ -62,7 +62,7 @@ const TSK_POOL_INFO *tsk_pool_open(int num_vols,
     offsets[i] = offset;
   }
 
-  return tsk_pool_open_img(num_vols, imgs, offsets, type);
+  return tsk_pool_open_img(num_vols, imgs.get(), offsets.get(), type);
 }
 
 const TSK_POOL_INFO *tsk_pool_open_img_sing(TSK_IMG_INFO *img, TSK_OFF_T offset,

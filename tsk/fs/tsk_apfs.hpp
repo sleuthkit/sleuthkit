@@ -175,7 +175,7 @@ class APFSBtreeNodeIterator {
 
  public:
   // Forward iterators must be DefaultConstructible
-  constexpr APFSBtreeNodeIterator() noexcept = default;
+  APFSBtreeNodeIterator() noexcept = default;
 
   APFSBtreeNodeIterator(const Node *node, uint32_t index);
 
@@ -186,7 +186,7 @@ class APFSBtreeNodeIterator {
 
   virtual ~APFSBtreeNodeIterator() = default;
 
-  constexpr APFSBtreeNodeIterator(const APFSBtreeNodeIterator &rhs) noexcept
+  APFSBtreeNodeIterator(const APFSBtreeNodeIterator &rhs) noexcept
       : _node{rhs._node}, _index{rhs._index} {
     if (_node->is_leaf()) {
       _val = rhs._val;
@@ -195,8 +195,7 @@ class APFSBtreeNodeIterator {
     }
   }
 
-  constexpr APFSBtreeNodeIterator &operator=(
-      const APFSBtreeNodeIterator &rhs) noexcept {
+  APFSBtreeNodeIterator &operator=(const APFSBtreeNodeIterator &rhs) noexcept {
     if (this != &rhs) {
       this->~APFSBtreeNodeIterator();
       new (this) APFSBtreeNodeIterator(rhs);
@@ -205,7 +204,7 @@ class APFSBtreeNodeIterator {
     return (*this);
   };
 
-  constexpr APFSBtreeNodeIterator(APFSBtreeNodeIterator &&rhs) noexcept
+  APFSBtreeNodeIterator(APFSBtreeNodeIterator &&rhs) noexcept
       : _node{std::move(rhs._node)}, _index{std::move(rhs._index)} {
     if (_node->is_leaf()) {
       _val = std::move(rhs._val);
@@ -214,8 +213,7 @@ class APFSBtreeNodeIterator {
     }
   };
 
-  constexpr APFSBtreeNodeIterator &operator=(
-      APFSBtreeNodeIterator &&rhs) noexcept {
+  APFSBtreeNodeIterator &operator=(APFSBtreeNodeIterator &&rhs) noexcept {
     if (this != &rhs) {
       this->~APFSBtreeNodeIterator();
       new (this)
@@ -225,7 +223,7 @@ class APFSBtreeNodeIterator {
     return (*this);
   }
 
-  constexpr bool is_valid() const noexcept {
+  bool is_valid() const noexcept {
     if (_node == nullptr) {
       return false;
     }
@@ -233,7 +231,7 @@ class APFSBtreeNodeIterator {
     return (_index < _node->key_count());
   }
 
-  constexpr reference operator*() const noexcept {
+  reference operator*() const noexcept {
     if (_index >= _node->key_count()) {
       return _val;
     }
@@ -247,7 +245,7 @@ class APFSBtreeNodeIterator {
     return _child_it->operator*();
   }
 
-  constexpr pointer operator->() const noexcept {
+  pointer operator->() const noexcept {
     if (_index >= _node->key_count()) {
       return nullptr;
     }
@@ -293,7 +291,7 @@ class APFSBtreeNodeIterator {
     return (*this);
   }
 
-  constexpr APFSBtreeNodeIterator operator++(int) {
+  APFSBtreeNodeIterator operator++(int) {
     APFSBtreeNodeIterator it{(*this)};
 
     this->operator++();
@@ -301,7 +299,7 @@ class APFSBtreeNodeIterator {
     return it;
   }
 
-  constexpr bool operator==(const APFSBtreeNodeIterator &rhs) const noexcept {
+  bool operator==(const APFSBtreeNodeIterator &rhs) const noexcept {
     // Self check
     if (this == &rhs) {
       return true;
@@ -327,7 +325,7 @@ class APFSBtreeNodeIterator {
     return (*_child_it == *rhs._child_it);
   }
 
-  constexpr bool operator!=(const APFSBtreeNodeIterator &rhs) const noexcept {
+  bool operator!=(const APFSBtreeNodeIterator &rhs) const noexcept {
     return !this->operator==(rhs);
   }
 
@@ -434,11 +432,9 @@ class APFSBtreeNode : public APFSObject, public APFSOmap::node_tag {
       throw std::runtime_error("APFSBtreeNode: invalid object type");
     }
 
-    _table_data = {
-        .toc = {_storage.data() + toffset()},
-        .voff = _storage.data() + voffset(),
-        .koff = _storage.data() + koffset(),
-    };
+    _table_data.toc = {_storage.data() + toffset()};
+    _table_data.voff = _storage.data() + voffset();
+    _table_data.koff = _storage.data() + koffset();
   }
 
   inline bool is_root() const noexcept {
@@ -474,11 +470,11 @@ class APFSBtreeNode : public APFSObject, public APFSOmap::node_tag {
  public:
   using iterator = APFSBtreeNodeIterator<APFSBtreeNode>;
 
-  constexpr iterator begin() const { return {this, 0}; }
-  constexpr iterator end() const { return {this, key_count()}; }
+  iterator begin() const { return {this, 0}; }
+  iterator end() const { return {this, key_count()}; }
 
   template <typename T, typename Compare>
-  constexpr iterator find(const T &value, Compare comp) const {
+  iterator find(const T &value, Compare comp) const {
     // TODO(JTS): It turns out, when a disk has snapshots, there can be more
     // than one entry in the objects tree that corresponds to the same oid.
     // Since we do not currently support snapshots, we're always returning the
@@ -747,10 +743,10 @@ class APFSBitmapBlock : public APFSBlock {
 
   // A special return value for next that is returned when there are no more
   // bits to scan.
-  constexpr static auto no_bits_left = std::numeric_limits<uint32_t>::max();
+  static constexpr auto no_bits_left = std::numeric_limits<uint32_t>::max();
 
   // Number of bits in cache
-  constexpr static auto cached_bits = sizeof(uintptr_t) * 8;
+  static constexpr auto cached_bits = sizeof(uintptr_t) * 8;
 
   const APFSSpacemanCIB::bm_entry _entry;
   uint32_t _hint{};
@@ -925,12 +921,12 @@ class APFSFileSystem : public APFSObject {
     uint8_t salt[0x10];
     wrapped_kek(Guid &&uuid, const std::unique_ptr<uint8_t[]> &);
 
-    constexpr bool hw_crypt() const noexcept {
+    inline bool hw_crypt() const noexcept {
       // If this bit is set, some sort of hardware encryption is used.
       return bit_is_set(flags, 57);
     }
 
-    constexpr bool cs() const noexcept {
+    inline bool cs() const noexcept {
       // If this bit is set the KEK is 0x10 bytes instead of 0x20
       return bit_is_set(flags, 58);
     }
@@ -947,17 +943,17 @@ class APFSFileSystem : public APFSObject {
     uint8_t vek[0x20]{};
     bool unlocked{};
 
-    constexpr uint64_t unk16() const noexcept {
+    inline uint64_t unk16() const noexcept {
       // If this byte is not zero (1) then some other sort of decryption is used
       return bitfield_value(vek_flags, 8, 16);
     }
 
-    constexpr bool hw_crypt() const noexcept {
+    inline bool hw_crypt() const noexcept {
       // If this bit is set, some sort of hardware encryption is used.
       return bit_is_set(vek_flags, 56);
     }
 
-    constexpr bool cs() const noexcept {
+    inline bool cs() const noexcept {
       // If this bit is set the VEK is 0x10 bytes instead of 0x20
       return bit_is_set(vek_flags, 57);
     }

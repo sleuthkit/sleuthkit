@@ -474,7 +474,6 @@ typedef struct {
   uint16_t type;       // 0x10
   uint16_t length;     // 0x12
   uint32_t padding14;  // 0x14
-  uint8_t data[0];
 } apfs_keybag_key;
 static_assert(sizeof(apfs_keybag_key) == 0x18, "improperly aligned struct");
 

@@ -9,24 +9,7 @@ template <typename T,
           typename = std::enable_if_t<std::is_base_of<TSKPool, T>::value>>
 class TSKPoolCompat : public T {
  protected:
-  TSK_POOL_INFO _info{
-      ///< \internal the C info structure
-      .tag = TSK_POOL_INFO_TAG,
-      .ctype = TSK_POOL_TYPE_UNSUPP,
-      .block_size = this->block_size(),
-      .num_blocks = this->num_blocks(),
-      .num_vols = this->num_vols(),
-      .vol_list = nullptr,
-      .close =
-          [](const TSK_POOL_INFO *pool) {
-            delete static_cast<TSKPoolCompat *>(pool->impl);
-          },
-      .poolstat =
-          [](const TSK_POOL_INFO *pool, FILE *hFile) {
-            return static_cast<TSKPoolCompat *>(pool->impl)->poolstat(hFile);
-          },
-      .impl = this,
-  };
+  TSK_POOL_INFO _info{};
 
   // disable copying so we don't mess with the C API
   TSKPoolCompat(const TSKPoolCompat &) = delete;
@@ -41,10 +24,23 @@ class TSKPoolCompat : public T {
   TSKPoolCompat(TSK_POOL_TYPE_ENUM type, Args &&... args) noexcept(
       std::is_nothrow_constructible<T, Args...>::value)
       : T(std::forward<Args>(args)...) {
+    ///< \internal the C info structure
+    _info.tag = TSK_POOL_INFO_TAG;
     _info.ctype = type;
+    _info.block_size = this->block_size();
+    _info.num_blocks = this->num_blocks();
+    _info.num_vols = this->num_vols();
+    _info.vol_list = nullptr;
+    _info.close = [](const TSK_POOL_INFO *pool) {
+      delete static_cast<TSKPoolCompat *>(pool->impl);
+    };
+    _info.poolstat = [](const TSK_POOL_INFO *pool, FILE *hFile) {
+      return static_cast<TSKPoolCompat *>(pool->impl)->poolstat(hFile);
+    };
+    _info.impl = this;
   }
 
-  constexpr const TSK_POOL_INFO &pool_info() const noexcept { return _info; }
+  inline const TSK_POOL_INFO &pool_info() const noexcept { return _info; }
 
   virtual ~TSKPoolCompat() {
     if (_info.vol_list != nullptr) {

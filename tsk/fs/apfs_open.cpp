@@ -1,9 +1,10 @@
-#include <libtsk.h>
+#include "../libtsk.h"
 
 #include "apfs_compat.hpp"
 #include "tsk_fs_i.h"
 
-TSK_FS_INFO* apfs_open(const TSK_POOL_INFO* pool_info, apfs_block_num vol_block, TSK_FS_TYPE_ENUM fstype, const char* pass) {
+TSK_FS_INFO* apfs_open(const TSK_POOL_INFO* pool_info, apfs_block_num vol_block,
+                       TSK_FS_TYPE_ENUM fstype, const char* pass) {
   tsk_error_reset();
 
   if (pool_info == nullptr) {
@@ -13,7 +14,7 @@ TSK_FS_INFO* apfs_open(const TSK_POOL_INFO* pool_info, apfs_block_num vol_block,
     return nullptr;
   }
 
-if (fstype != TSK_FS_TYPE_APFS) {
+  if (fstype != TSK_FS_TYPE_APFS) {
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_ARG);
     tsk_error_set_errstr("tsk_apfs_open: invalid fstype");

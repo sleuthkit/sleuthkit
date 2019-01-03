@@ -1,4 +1,4 @@
-#include <libtsk.h>
+#include "../libtsk.h"
 
 #include "pool_compat.hpp"
 #include "tsk_pool.hpp"

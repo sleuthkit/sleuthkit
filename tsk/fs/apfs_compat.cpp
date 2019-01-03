@@ -1,9 +1,9 @@
-#include <libtsk.h>
+#include "../libtsk.h"
 
 #include "decmpfs.h"
 #include "tsk_fs_i.h"
 
-#include "../pool/apfs_compat.hpp"
+#include "../pool/apfs_pool_compat.hpp"
 #include "apfs_compat.hpp"
 
 #include <cstring>
@@ -12,13 +12,13 @@
 extern "C" void error_detected(uint32_t errnum, const char* errstr, ...);
 extern "C" void error_returned(const char* errstr, ...);
 
-static constexpr const APFSPoolCompat& to_pool(
+static inline const APFSPoolCompat& to_pool(
     const TSK_POOL_INFO* pool_info) noexcept {
   const auto pool = static_cast<APFSPoolCompat*>(pool_info->impl);
   return *pool;
 }
 
-static constexpr APFSFSCompat& to_fs(const TSK_FS_INFO* fs_info) noexcept {
+static inline APFSFSCompat& to_fs(const TSK_FS_INFO* fs_info) noexcept {
   const auto fs = static_cast<APFSFSCompat*>(fs_info->impl);
   return *fs;
 }
@@ -43,8 +43,7 @@ static TSK_FS_ATTR_TYPE_ENUM xattribute_type(const std::string& name) noexcept {
   return TSK_FS_ATTR_TYPE_APFS_EXT_ATTR;
 }
 
-static constexpr TSK_FS_NAME_TYPE_ENUM to_name_type(
-    APFS_ITEM_TYPE type) noexcept {
+static TSK_FS_NAME_TYPE_ENUM to_name_type(APFS_ITEM_TYPE type) noexcept {
   switch (type) {
     case APFS_ITEM_TYPE_FIFO:
       return TSK_FS_NAME_TYPE_FIFO;
@@ -67,8 +66,7 @@ static constexpr TSK_FS_NAME_TYPE_ENUM to_name_type(
   }
 }
 
-static constexpr TSK_FS_META_TYPE_ENUM to_meta_type(
-    APFS_ITEM_TYPE type) noexcept {
+static TSK_FS_META_TYPE_ENUM to_meta_type(APFS_ITEM_TYPE type) noexcept {
   switch (type) {
     case APFS_ITEM_TYPE_FIFO:
       return TSK_FS_META_TYPE_FIFO;
@@ -91,7 +89,7 @@ static constexpr TSK_FS_META_TYPE_ENUM to_meta_type(
   }
 }
 
-static constexpr const char* to_string(TSK_FS_META_TYPE_ENUM type) noexcept {
+static const char* to_string(TSK_FS_META_TYPE_ENUM type) noexcept {
   switch (type) {
     case TSK_FS_META_TYPE_FIFO:
       return "Named Pipe (FIFO)";
@@ -121,7 +119,7 @@ static constexpr const char* to_string(TSK_FS_META_TYPE_ENUM type) noexcept {
   }
 }
 
-static constexpr const char* attr_type_name(uint32_t typeNum) noexcept {
+static const char* attr_type_name(uint32_t typeNum) noexcept {
   switch (typeNum) {
     case TSK_FS_ATTR_TYPE_DEFAULT:
       return "DFLT";
@@ -856,9 +854,9 @@ uint8_t APFSFSCompat::load_attrs(TSK_FS_FILE* file) const noexcept try {
       return 1;
     }
 
-    char buffer[decmpfs_attr->size];
+    auto buffer = std::make_unique<char[]>(decmpfs_attr->size);
 
-    const auto ret = tsk_fs_attr_read(decmpfs_attr, (TSK_OFF_T)0, buffer,
+    const auto ret = tsk_fs_attr_read(decmpfs_attr, (TSK_OFF_T)0, buffer.get(),
                                       (size_t)decmpfs_attr->size,
                                       TSK_FS_FILE_READ_FLAG_NONE);
 
@@ -874,7 +872,8 @@ uint8_t APFSFSCompat::load_attrs(TSK_FS_FILE* file) const noexcept try {
       return 1;
     }
 
-    const auto decmpfs_header = reinterpret_cast<DECMPFS_DISK_HEADER*>(buffer);
+    const auto decmpfs_header =
+        reinterpret_cast<DECMPFS_DISK_HEADER*>(buffer.get());
     const auto ct =
         tsk_getu32(TSK_LIT_ENDIAN, decmpfs_header->compression_type);
     const auto uncompressed_size =
@@ -884,14 +883,14 @@ uint8_t APFSFSCompat::load_attrs(TSK_FS_FILE* file) const noexcept try {
         // Data is inline. We will load the uncompressed
         // data as a resident attribute.
       case DECMPFS_TYPE_ZLIB_ATTR:
-        if (!decmpfs_file_read_zlib_attr(file, buffer, decmpfs_attr->size,
+        if (!decmpfs_file_read_zlib_attr(file, buffer.get(), decmpfs_attr->size,
                                          uncompressed_size)) {
           return 1;
         }
         break;
 
       case DECMPFS_TYPE_LZVN_ATTR:
-        if (!decmpfs_file_read_lzvn_attr(file, buffer, decmpfs_attr->size,
+        if (!decmpfs_file_read_lzvn_attr(file, buffer.get(), decmpfs_attr->size,
                                          uncompressed_size)) {
           return 1;
         }
@@ -1337,7 +1336,7 @@ uint8_t tsk_apfs_list_snapshots(TSK_FS_INFO* fs_info,
           .snapshots();
 
   *list = (apfs_snapshot_list*)tsk_malloc(
-      sizeof(apfs_snapshot_list) + sizeof(apfs_snapshot[snapshots.size()]));
+      sizeof(apfs_snapshot_list) + sizeof(apfs_snapshot) * snapshots.size());
 
   (*list)->num_snapshots = snapshots.size();
 

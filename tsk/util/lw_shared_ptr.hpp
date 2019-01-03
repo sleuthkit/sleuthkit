@@ -17,16 +17,16 @@ template <typename T>
 class lw_shared_ptr {
  public:
   /// Constructs a shared_ptr with no managed object, i.e. empty shared_ptr
-  constexpr lw_shared_ptr() noexcept = default;
+  lw_shared_ptr() noexcept = default;
 
   /// Constructs a shared_ptr with no managed object, i.e. empty shared_ptr
-  constexpr lw_shared_ptr(std::nullptr_t) noexcept : lw_shared_ptr() {}
+  lw_shared_ptr(std::nullptr_t) noexcept : lw_shared_ptr() {}
 
   /// Constructs a shared_ptr which shares ownership of the object managed by
   /// rhs.
   ///
   /// If rhs manages no object, `*this` manages no object too.
-  constexpr lw_shared_ptr(const lw_shared_ptr& rhs) noexcept
+  lw_shared_ptr(const lw_shared_ptr& rhs) noexcept
       : _val{rhs._val}, _count{rhs._count} {
     if (_count != nullptr) {
       (*_count)++;
@@ -38,7 +38,7 @@ class lw_shared_ptr {
   ///
   /// If rhs manages no object, `*this` manages no object too.
   template <typename U>
-  constexpr lw_shared_ptr(const lw_shared_ptr<U>& rhs, T* val) noexcept
+  lw_shared_ptr(const lw_shared_ptr<U>& rhs, T* val) noexcept
       : _val{val}, _count{rhs._count} {
     if (_count != nullptr) {
       (*_count)++;
@@ -49,7 +49,7 @@ class lw_shared_ptr {
   ///
   /// After the construction, `*this` contains a copy of the previous state of
   /// rhs, rhs is empty, and its stored pointer is null.
-  constexpr lw_shared_ptr(lw_shared_ptr&& rhs) noexcept
+  lw_shared_ptr(lw_shared_ptr&& rhs) noexcept
       : _val{rhs._val}, _count{rhs._count} {
     if (this == &rhs) {
       return;
@@ -65,7 +65,7 @@ class lw_shared_ptr {
   /// rhs, rhs is empty, and its stored pointer is null.
   template <typename U,
             typename = std::enable_if_t<std::is_convertible<U*, T*>::value>>
-  constexpr lw_shared_ptr(lw_shared_ptr<U>&& rhs) noexcept
+  lw_shared_ptr(lw_shared_ptr<U>&& rhs) noexcept
       : _val{rhs._val}, _count{rhs._count} {
     if ((lw_shared_ptr<U>*)this == &rhs) {
       return;
@@ -77,7 +77,7 @@ class lw_shared_ptr {
   /// Inplace constructs an object of type T and wraps it in a lw_shared_ptr
   /// using args as the parameter list for the constructor of T.
   template <typename... Args>
-  constexpr lw_shared_ptr(in_place_t, Args&&... args) {
+  lw_shared_ptr(in_place_t, Args&&... args) {
     // For performance reasons we, store the object and reference count in
     // the same allocation.  To make sure accessing the reference count is
     // fast, we also make sure that the address of the count is properly
@@ -95,7 +95,7 @@ class lw_shared_ptr {
   }
 
   /// Constructs a shared_ptr where T is move initialized by the value of rhs
-  constexpr lw_shared_ptr(T&& rhs) {
+  lw_shared_ptr(T&& rhs) {
     // For performance reasons we, store the object and reference count in
     // the same allocation.  To make sure accessing the reference count is
     // fast, we also make sure that the address of the count is properly
@@ -140,7 +140,7 @@ class lw_shared_ptr {
   /// If `*this` already owns an object and it is the last shared_ptr owning
   /// it, and rhs is not the same as `*this`, the object is destroyed through
   /// the owned deleter.
-  constexpr lw_shared_ptr& operator=(const lw_shared_ptr& rhs) noexcept {
+  lw_shared_ptr& operator=(const lw_shared_ptr& rhs) noexcept {
     if ((*this) != rhs) {
       this->~lw_shared_ptr();
       new (this) lw_shared_ptr(rhs);
@@ -157,7 +157,7 @@ class lw_shared_ptr {
   /// the owned deleter.
   template <typename U,
             typename = std::enable_if_t<std::is_convertible<U*, T*>::value>>
-  constexpr lw_shared_ptr& operator=(const lw_shared_ptr<U>& rhs) noexcept {
+  lw_shared_ptr& operator=(const lw_shared_ptr<U>& rhs) noexcept {
     if ((*this) != rhs) {
       this->~lw_shared_ptr();
       new (this) lw_shared_ptr(rhs);
@@ -175,7 +175,7 @@ class lw_shared_ptr {
   /// If `*this` already owns an object and it is the last shared_ptr owning
   /// it, and rhs is not the same as `*this`, the object is destroyed through
   /// the owned deleter.
-  constexpr lw_shared_ptr& operator=(lw_shared_ptr&& rhs) noexcept {
+  lw_shared_ptr& operator=(lw_shared_ptr&& rhs) noexcept {
     if ((*this) != rhs) {
       this->~lw_shared_ptr();
       new (this) lw_shared_ptr(std::forward<lw_shared_ptr>(rhs));
@@ -195,7 +195,7 @@ class lw_shared_ptr {
   /// the owned deleter.
   template <typename U,
             typename = std::enable_if_t<std::is_convertible<U*, T*>::value>>
-  constexpr lw_shared_ptr& operator=(lw_shared_ptr<U>&& rhs) noexcept {
+  lw_shared_ptr& operator=(lw_shared_ptr<U>&& rhs) noexcept {
     if ((*this) != rhs) {
       this->~lw_shared_ptr();
       new (this) lw_shared_ptr(std::forward<lw_shared_ptr<U>>(rhs));
@@ -205,24 +205,20 @@ class lw_shared_ptr {
   };
 
   /// Checks if `*this` stores a non-null pointer.
-  constexpr explicit operator bool() const noexcept { return _val != nullptr; }
+  explicit operator bool() const noexcept { return _val != nullptr; }
 
   /// Compares against nullptr.
-  constexpr bool operator==(std::nullptr_t) const noexcept {
-    return _val == nullptr;
-  }
+  bool operator==(std::nullptr_t) const noexcept { return _val == nullptr; }
 
   /// Compares against nullptr.
-  constexpr bool operator!=(std::nullptr_t) const noexcept {
-    return _val != nullptr;
-  }
+  bool operator!=(std::nullptr_t) const noexcept { return _val != nullptr; }
 
   /// Compares two lw_shared_ptr<T> objects.
   ///
   /// Note that the comparison operators simply compare pointer values; the
   /// actual objects pointed to are not compared.
   template <typename U>
-  constexpr bool operator==(const lw_shared_ptr<U>& rhs) const noexcept {
+  bool operator==(const lw_shared_ptr<U>& rhs) const noexcept {
     return _val == rhs._val;
   }
 
@@ -231,7 +227,7 @@ class lw_shared_ptr {
   /// Note that the comparison operators simply compare pointer values; the
   /// actual objects pointed to are not compared.
   template <typename U>
-  constexpr bool operator!=(const lw_shared_ptr<U>& rhs) const noexcept {
+  bool operator!=(const lw_shared_ptr<U>& rhs) const noexcept {
     return _val != rhs._val;
   }
 
@@ -240,7 +236,7 @@ class lw_shared_ptr {
   /// Note that the comparison operators simply compare pointer values; the
   /// actual objects pointed to are not compared.
   template <typename U>
-  constexpr bool operator<(const lw_shared_ptr<U>& rhs) const noexcept {
+  bool operator<(const lw_shared_ptr<U>& rhs) const noexcept {
     return _val < rhs._val;
   }
 
@@ -249,7 +245,7 @@ class lw_shared_ptr {
   /// Note that the comparison operators simply compare pointer values; the
   /// actual objects pointed to are not compared.
   template <typename U>
-  constexpr bool operator<=(const lw_shared_ptr<U>& rhs) const noexcept {
+  bool operator<=(const lw_shared_ptr<U>& rhs) const noexcept {
     return _val <= rhs._val;
   }
 
@@ -258,7 +254,7 @@ class lw_shared_ptr {
   /// Note that the comparison operators simply compare pointer values; the
   /// actual objects pointed to are not compared.
   template <typename U>
-  constexpr bool operator>(const lw_shared_ptr<U>& rhs) const noexcept {
+  bool operator>(const lw_shared_ptr<U>& rhs) const noexcept {
     return _val > rhs._val;
   }
 
@@ -267,49 +263,43 @@ class lw_shared_ptr {
   /// Note that the comparison operators simply compare pointer values; the
   /// actual objects pointed to are not compared.
   template <typename U>
-  constexpr bool operator>=(const lw_shared_ptr<U>& rhs) const noexcept {
+  bool operator>=(const lw_shared_ptr<U>& rhs) const noexcept {
     return _val >= rhs._val;
   }
 
   /// Releases the ownership of the managed object, if any.
   ///
   /// After the call, *this manages no object.
-  constexpr void reset() noexcept { (*this) = {}; }
+  void reset() noexcept { (*this) = {}; }
 
   /// Replaces the managed object with one constructed with the arguments
   /// provided
   template <typename... Args>
-  constexpr void reset(Args&&... args) noexcept(
+  void reset(Args&&... args) noexcept(
       std::is_nothrow_constructible<T, Args...>::value) {
     (*this) = T(std::forward<Args>(args)...);
   }
 
   /// Swaps the managed objects
-  constexpr void swap(lw_shared_ptr& rhs) noexcept {
+  void swap(lw_shared_ptr& rhs) noexcept {
     using std::swap;
     swap(_val, rhs._val);
     swap(_count, rhs._count);
   }
 
   /// Dereferences the stored pointer
-  constexpr T& operator*() const noexcept { return *_val; }
+  T& operator*() const noexcept { return *_val; }
 
   /// Dereferences the stored pointer
-  constexpr T* operator->() const { return _val; }
+  T* operator->() const { return _val; }
 
   /// Returns the stored pointer or nullptr if the shared_ptr is empty.
-  constexpr T* get() const {
-    if (_val == nullptr) {
-      return nullptr;
-    }
-
-    return _val;
-  }
+  T* get() const { return _val; }
 
   /// Returns the number of different shared_ptr instances (this included)
   /// managing the current object. If there is no managed object, ​0​ is
   /// returned.
-  constexpr unsigned use_count() const noexcept {
+  unsigned use_count() const noexcept {
     if (_val != nullptr) {
       return *_count + 1;
     }
@@ -329,35 +319,34 @@ class lw_shared_ptr {
 
 /// Swaps the managed objects between two lw_shared_ptrs
 template <typename T>
-constexpr void swap(lw_shared_ptr<T>& lhs, lw_shared_ptr<T>& rhs) noexcept {
+void swap(lw_shared_ptr<T>& lhs, lw_shared_ptr<T>& rhs) noexcept {
   lhs.swap(rhs);
 }
 
 /// Constructs an object of type T and wraps it in a lw_shared_ptr using args as
 /// the parameter list for the constructor of T.
 template <typename T, typename... Args>
-constexpr lw_shared_ptr<T> make_lw_shared(Args&&... args) noexcept(
+lw_shared_ptr<T> make_lw_shared(Args&&... args) noexcept(
     std::is_nothrow_constructible<T, Args...>::value) {
   return {in_place, std::forward<Args>(args)...};
 }
 
 template <typename T, typename U>
-constexpr lw_shared_ptr<T> lw_static_pointer_cast(const lw_shared_ptr<U>& r) {
+lw_shared_ptr<T> lw_static_pointer_cast(const lw_shared_ptr<U>& r) {
   return lw_shared_ptr<T>{r, static_cast<T*>(r.get())};
 }
 
 template <typename T, typename U>
-constexpr lw_shared_ptr<T> lw_dynamic_pointer_cast(const lw_shared_ptr<U>& r) {
+lw_shared_ptr<T> lw_dynamic_pointer_cast(const lw_shared_ptr<U>& r) {
   return lw_shared_ptr<T>{r, dynamic_cast<T*>(r.get())};
 }
 
 template <typename T, typename U>
-constexpr lw_shared_ptr<T> lw_const_pointer_cast(const lw_shared_ptr<U>& r) {
+lw_shared_ptr<T> lw_const_pointer_cast(const lw_shared_ptr<U>& r) {
   return lw_shared_ptr<T>{r, const_cast<T*>(r.get())};
 }
 
 template <typename T, typename U>
-constexpr lw_shared_ptr<T> lw_reinterpret_pointer_cast(
-    const lw_shared_ptr<U>& r) {
+lw_shared_ptr<T> lw_reinterpret_pointer_cast(const lw_shared_ptr<U>& r) {
   return lw_shared_ptr<T>{r, reinterpret_cast<T*>(r.get())};
 }

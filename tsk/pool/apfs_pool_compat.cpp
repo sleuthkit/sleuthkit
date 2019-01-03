@@ -1,4 +1,4 @@
-#include "apfs_compat.hpp"
+#include "apfs_pool_compat.hpp"
 
 #include "../fs/apfs_fs.hpp"
 #include "../fs/tsk_apfs.hpp"

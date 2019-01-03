@@ -4,7 +4,7 @@ EXTRA_DIST = .indent.pro
 
 noinst_LTLIBRARIES = libtskpool.la
 libtskpool_la_SOURCES = pool_open.cpp pool_read.cpp pool_types.cpp \
-	apfs_compat.cpp apfs_pool.cpp
+	apfs_pool_compat.cpp apfs_pool.cpp
 
 indent:
 	indent *.c *.cpp *.h *.hpp

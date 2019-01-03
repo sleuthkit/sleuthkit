@@ -5,6 +5,7 @@
 #include "tsk_pool.hpp"
 
 #include <array>
+#include <memory>
 #include <unordered_map>
 
 #include "../fs/tsk_apfs.h"
@@ -42,7 +43,7 @@ class APFSBlock {
 
   void dump() const noexcept;
 
-  constexpr bool operator==(const APFSBlock &rhs) const noexcept {
+  inline bool operator==(const APFSBlock &rhs) const noexcept {
     if (this == &rhs) {
       return true;
     }
@@ -50,12 +51,12 @@ class APFSBlock {
     return (&_pool == &rhs._pool && _block_num == rhs._block_num);
   }
 
-  constexpr bool operator!=(const APFSBlock &rhs) const noexcept {
+  inline bool operator!=(const APFSBlock &rhs) const noexcept {
     return !this->operator==(rhs);
   }
 
-  constexpr apfs_block_num block_num() const noexcept { return _block_num; }
-  constexpr const APFSPool &pool() const noexcept { return _pool; }
+  inline apfs_block_num block_num() const noexcept { return _block_num; }
+  inline const APFSPool &pool() const noexcept { return _pool; }
 };
 
 class APFSPool : public TSKPool {
@@ -85,8 +86,8 @@ class APFSPool : public TSKPool {
            apfs_block_num nx_block_num = APFS_POOL_NX_BLOCK_LAST_KNOWN_GOOD);
 
   // Moveable
-  APFSPool(APFSPool &&) noexcept = default;
-  APFSPool &operator=(APFSPool &&) noexcept = default;
+  APFSPool(APFSPool &&) = default;
+  APFSPool &operator=(APFSPool &&) = default;
 
   // Not copyable because of TSK_IMG_INFO pointer
   APFSPool(const APFSPool &) = delete;

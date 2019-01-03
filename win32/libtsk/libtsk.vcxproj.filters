@@ -19,6 +19,12 @@
     <Filter Include="img">
       <UniqueIdentifier>{36ca1943-034a-4915-a0ac-ede5f6e26bfd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="pool">
+      <UniqueIdentifier>{7cbe036c-983e-47eb-b83e-499ecc668ffd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="util">
+      <UniqueIdentifier>{5ae960da-f555-42cd-bc00-eba8c536e79b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\tsk\vs\bsd.c">
@@ -327,6 +333,39 @@
     <ClCompile Include="..\..\tsk\fs\lzvn.c">
       <Filter>fs</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\tsk\pool\apfs_pool.cpp">
+      <Filter>pool</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\pool\pool_open.cpp">
+      <Filter>pool</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\pool\pool_read.cpp">
+      <Filter>pool</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\pool\pool_types.cpp">
+      <Filter>pool</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\util\crypto.cpp">
+      <Filter>util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\apfs_open.cpp">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\apfs.cpp">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\apfs_compat.cpp">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\apfs_fs.cpp">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\fs\decmpfs.c">
+      <Filter>fs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tsk\pool\apfs_pool_compat.cpp">
+      <Filter>pool</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\tsk\vs\tsk_bsd.h">
@@ -454,6 +493,52 @@
     </ClInclude>
     <ClInclude Include="..\..\tsk\img\img_writer.h">
       <Filter>img</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\fs\tsk_apfs.h">
+      <Filter>fs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\fs\tsk_apfs.hpp">
+      <Filter>fs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\pool\pool_compat.hpp">
+      <Filter>pool</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\pool\tsk_apfs.h">
+      <Filter>pool</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\pool\tsk_apfs.hpp">
+      <Filter>pool</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\pool\tsk_pool.h">
+      <Filter>pool</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\pool\tsk_pool.hpp">
+      <Filter>pool</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\crypto.hpp">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\lw_shared_ptr.hpp">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\util\span.hpp">
+      <Filter>util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\libtsk.h" />
+    <ClInclude Include="..\..\tsk\fs\apfs_compat.hpp">
+      <Filter>fs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\fs\apfs_fs.h">
+      <Filter>fs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\fs\apfs_fs.hpp">
+      <Filter>fs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\fs\decmpfs.h">
+      <Filter>fs</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\tsk\pool\apfs_pool_compat.hpp">
+      <Filter>pool</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

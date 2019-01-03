@@ -1,6 +1,6 @@
 #include "tsk_apfs.hpp"
 
-#include <libtsk.h>
+#include "../libtsk.h"
 
 #include "../fs/tsk_apfs.hpp"
 #include "../fs/tsk_fs_i.h"
@@ -52,7 +52,7 @@ APFSPool::APFSPool(std::vector<img_t>&& imgs, apfs_block_num nx_block_num)
   }
 
   _vol_blocks = nxsb->volume_blocks();
-  _num_vols = _vol_blocks.size();
+  _num_vols = static_cast<int>(_vol_blocks.size());
   _hw_crypto = !bit_is_set(nxsb->sb()->flags, APFS_NXSB_FLAGS_CRYPTO_SW);
 }
 

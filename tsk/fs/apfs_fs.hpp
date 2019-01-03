@@ -47,11 +47,11 @@ class APFSJObject {
   using key_type = struct {
     uint64_t oid_and_type;
 
-    constexpr uint64_t oid() const noexcept {
+    inline uint64_t oid() const noexcept {
       return bitfield_value(oid_and_type, 60, 0);
     }
 
-    constexpr uint64_t type() const noexcept {
+    inline uint64_t type() const noexcept {
       return bitfield_value(oid_and_type, 4, 60);
     }
   };
