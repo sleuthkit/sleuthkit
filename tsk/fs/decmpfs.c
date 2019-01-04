@@ -1,4 +1,4 @@
-#include <libtsk.h>
+#include "../libtsk.h"
 #include "tsk_fs_i.h"
 #include "decmpfs.h"
 
