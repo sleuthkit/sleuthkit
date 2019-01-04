@@ -148,7 +148,6 @@ typedef struct {
   uint16_t mode_and_type;             // 0x50
   uint16_t padding52;                 // 0x52
   uint64_t padding54;                 // 0x54
-  uint8_t xfields[0];                 // 0x5C
 } apfs_inode;
 static_assert(sizeof(apfs_inode) == 0x5C, "improperly aligned struct");
 
@@ -161,7 +160,6 @@ static_assert(sizeof(apfs_inode) == 0x5C, "improperly aligned struct");
 typedef struct {
   uint16_t flags;      // 0x00
   uint16_t xdata_len;  // 0x02
-  uint8_t xdata[0];    // 0x04
 } apfs_xattr;
 static_assert(sizeof(apfs_xattr) == 0x04, "improperly aligned struct");
 

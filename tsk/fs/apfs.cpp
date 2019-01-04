@@ -1006,7 +1006,7 @@ std::vector<APFSKeybag::key> APFSKeybag::get_keys() const {
 }
 
 APFSSuperblock::Keybag::Keybag(const APFSSuperblock& sb)
-    : APFSKeybag(sb._pool, sb.sb()->keylocker.start_paddr, sb.sb()->uuid,
+    : APFSKeybag(sb.pool(), sb.sb()->keylocker.start_paddr, sb.sb()->uuid,
                  sb.sb()->uuid) {
   if (obj_type_and_flags() != APFS_OBJ_TYPE_CONTAINER_KEYBAG) {
     throw std::runtime_error("APFSSuperblock::Keybag: invalid object type");
@@ -1019,7 +1019,7 @@ APFSSuperblock::Keybag::Keybag(const APFSSuperblock& sb)
 
 APFSFileSystem::Keybag::Keybag(const APFSFileSystem& vol,
                                apfs_block_num block_num)
-    : APFSKeybag(vol._pool, block_num, vol.fs()->uuid, vol.fs()->uuid) {
+    : APFSKeybag(vol.pool(), block_num, vol.fs()->uuid, vol.fs()->uuid) {
   if (obj_type_and_flags() != APFS_OBJ_TYPE_VOLUME_RECOVERY_KEYBAG) {
     throw std::runtime_error("APFSFileSystem::Keybag: invalid object type");
   }
