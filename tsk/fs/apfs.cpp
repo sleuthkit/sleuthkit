@@ -595,10 +595,10 @@ const std::vector<APFSFileSystem::snapshot_t> APFSFileSystem::snapshots()
     }
 
     v.emplace_back(snapshot_t{
-        .name = {value->name, value->name_length - 1U},
-        .timestamp = value->create_time,
-        .snap_xid = key->snap_xid(),
-        .dataless = (value->extentref_tree_oid == 0),
+        {value->name, value->name_length - 1U},  // name
+        value->create_time,                      // timestamp
+        key->snap_xid(),                         // snap_xid
+        (value->extentref_tree_oid == 0),        // dataless
     });
   });
 
