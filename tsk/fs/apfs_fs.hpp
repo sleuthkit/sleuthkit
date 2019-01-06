@@ -133,7 +133,7 @@ class APFSJObjTree {
   APFSJObjTree(const APFSJObjTree &) = default;
   APFSJObjTree &operator=(const APFSJObjTree &) = default;
 
-  APFSJObjTree(APFSJObjTree &&) noexcept = default;
+  APFSJObjTree(APFSJObjTree &&) = default;
   APFSJObjTree &operator=(APFSJObjTree &&) = default;
 
   inline APFSJObject obj(uint64_t oid) const { return {jobjs(oid)}; }
@@ -164,13 +164,13 @@ class APFSJObjTree::iterator {
   iterator(const APFSJObjTree *tree, uint64_t oid);
 
  public:
-  iterator() noexcept = default;
+  iterator() = default;
 
   iterator(const iterator &) = default;
   iterator &operator=(const iterator &) = default;
 
-  iterator(iterator &&) noexcept = default;
-  iterator &operator=(iterator &&) noexcept = default;
+  iterator(iterator &&) = default;
+  iterator &operator=(iterator &&) = default;
 
   inline reference operator*() const noexcept { return _jobj; }
 

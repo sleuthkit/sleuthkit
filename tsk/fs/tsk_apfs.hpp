@@ -175,7 +175,7 @@ class APFSBtreeNodeIterator {
 
  public:
   // Forward iterators must be DefaultConstructible
-  APFSBtreeNodeIterator() noexcept = default;
+  APFSBtreeNodeIterator() = default;
 
   APFSBtreeNodeIterator(const Node *node, uint32_t index);
 

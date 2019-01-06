@@ -24,8 +24,8 @@ class TSKPool {
   TSKPool &operator=(const TSKPool &) = delete;
 
   // Moveable
-  TSKPool(TSKPool &&) noexcept = default;
-  TSKPool &operator=(TSKPool &&) noexcept = default;
+  TSKPool(TSKPool &&) = default;
+  TSKPool &operator=(TSKPool &&) = default;
 
   virtual ~TSKPool() = default;
 

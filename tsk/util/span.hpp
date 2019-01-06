@@ -22,7 +22,7 @@ class span {
   index_type _count{};
 
  public:
-  span() noexcept = default;
+  span() = default;
   span(std::nullptr_t) noexcept : span() {}
 
   span(pointer p, index_type n) noexcept : _storage{p}, _count{n} {}

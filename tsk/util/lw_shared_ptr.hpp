@@ -17,7 +17,7 @@ template <typename T>
 class lw_shared_ptr {
  public:
   /// Constructs a shared_ptr with no managed object, i.e. empty shared_ptr
-  lw_shared_ptr() noexcept = default;
+  lw_shared_ptr() = default;
 
   /// Constructs a shared_ptr with no managed object, i.e. empty shared_ptr
   lw_shared_ptr(std::nullptr_t) noexcept : lw_shared_ptr() {}
