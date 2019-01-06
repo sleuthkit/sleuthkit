@@ -26,6 +26,7 @@ environment:
       LIBVMDK_HOME: "C:\\libvmdk_64bit\\libvmdk"
       LIBEWF_HOME: "C:\\libewf_64bit"
       POSTGRESQL_HOME_64: "C:\\Program Files\\PostgreSQL\\9.5"
+      OPENSSL_HOME: "C:\\OpenSSL-v111-Win64"
       PYTHON: "C:\\Python36-x64"
       JDK_HOME: C:\Program Files\Java\jdk1.8.0
 services:
