@@ -3,12 +3,12 @@ matrix:
   include:
   - compiler: clang
     os: linux
-    dist: trusty
+    dist: xenial
     sudo: required
     group: edge
   - compiler: gcc
     os: linux
-    dist: trusty
+    dist: xenial
     sudo: required
     group: edge
   - compiler: clang
