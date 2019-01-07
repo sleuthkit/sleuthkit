@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2011-2017 Basis Technology Corp.
+ * Copyright 2011-2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -1174,7 +1174,12 @@ public class BlackboardArtifact implements Content {
 		 * Indicates a verification failure
 		 */
 		TSK_VERIFICATION_FAILED(47, "TSK_VERIFICATION_FAILED",  //NON-NLS
-				bundle.getString("BlackboardArtifact.tskVerificationFailed.text"));
+				bundle.getString("BlackboardArtifact.tskVerificationFailed.text")),
+		/**
+		 * Categorization information for a data source.
+		 */
+		TSK_DATA_SOURCE_PROFILE(48, "TSK_DATA_SOURCE_PROFILE", //NON-NLS
+				bundle.getString("BlackboardArtifact.tskDataSourceProfile.text"));
 		
 		private final String label;
 		private final int typeId;
