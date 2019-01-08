@@ -21,10 +21,11 @@
 #include "../auto/guid.h"
 
 // Helper function to see if a bitfield flag is set
-template <typename T,
-          typename = std::enable_if_t<std::numeric_limits<T>::is_integer>>
-constexpr bool bit_is_set(T bitfield, int bit) noexcept {
-  return ((bitfield & bit) != 0);
+template <typename T, typename U,
+          typename = std::enable_if_t<std::numeric_limits<T>::is_integer &&
+                                      std::numeric_limits<U>::is_integer>>
+constexpr bool bit_is_set(T bitfield, U bitmask) noexcept {
+  return ((bitfield & static_cast<T>(bitmask)) != 0);
 }
 
 // Helper function to extract bitfield value
@@ -923,12 +924,12 @@ class APFSFileSystem : public APFSObject {
 
     inline bool hw_crypt() const noexcept {
       // If this bit is set, some sort of hardware encryption is used.
-      return bit_is_set(flags, 57);
+      return bit_is_set(flags, 1ULL << 56);
     }
 
     inline bool cs() const noexcept {
       // If this bit is set the KEK is 0x10 bytes instead of 0x20
-      return bit_is_set(flags, 58);
+      return bit_is_set(flags, 1ULL << 57);
     }
   };
 
@@ -950,12 +951,12 @@ class APFSFileSystem : public APFSObject {
 
     inline bool hw_crypt() const noexcept {
       // If this bit is set, some sort of hardware encryption is used.
-      return bit_is_set(vek_flags, 56);
+      return bit_is_set(vek_flags, 1ULL << 56);
     }
 
     inline bool cs() const noexcept {
       // If this bit is set the VEK is 0x10 bytes instead of 0x20
-      return bit_is_set(vek_flags, 57);
+      return bit_is_set(vek_flags, 1ULL << 57);
     }
   };
 
