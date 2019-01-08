@@ -1178,8 +1178,8 @@ public class BlackboardArtifact implements Content {
 		/**
 		 * Categorization information for a data source.
 		 */
-		TSK_DATA_SOURCE_PROFILE(48, "TSK_DATA_SOURCE_PROFILE", //NON-NLS
-				bundle.getString("BlackboardArtifact.tskDataSourceProfile.text"));
+		TSK_DATA_SOURCE_USAGE(48, "TSK_DATA_SOURCE_USAGE", //NON-NLS
+				bundle.getString("BlackboardArtifact.tskDataSourceUsage.text"));
 		
 		private final String label;
 		private final int typeId;
