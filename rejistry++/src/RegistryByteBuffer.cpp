@@ -127,12 +127,13 @@ namespace Rejistry {
         if (nullPos == 0) {
             return L"";
         }
-		// NULL Pointer not found
+
+		// UFT16 NULL char not found so add it
+		// Non-ascii registry key names seem to not be NULL terminated 
+		// which leads to conversion errors in from_bytes() (CT-2917)
 		else if (nullPos == data.size()) {
-			// @@@ BC: I'm not sure if this is correct.  But, we got exceptions if
-			// we kept it past the buffer.  
-			// Are these always supposed to be NULL terminated, in which case this is an error?
-			nullPos = data.size() - 1;
+			data.push_back('\0');
+			data.push_back('\0');
 		}
 
         std::wstring result;
