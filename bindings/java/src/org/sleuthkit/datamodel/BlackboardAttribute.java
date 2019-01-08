@@ -1312,9 +1312,6 @@ public class BlackboardAttribute {
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
 		TSK_ICCID(130, "TSK_ICCID", //NON-NLS
 				bundle.getString("BlackboardAttribute.tskIccid.text"),
-				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING),
-		TSK_DATA_SOURCE_USE_DETAILS(131, "TSK_DATA_SOURCE_USE_DETAILS", //NON-NLS
-				bundle.getString("BlackboardAttribute.tskDataSourceUseDetails.text"),
 				TSK_BLACKBOARD_ATTRIBUTE_VALUE_TYPE.STRING);
 
 		private final int typeID;
