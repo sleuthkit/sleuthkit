@@ -77,12 +77,44 @@ public final class CaseDbAccessManager {
 	 * @return true if the column already exists, false otherwise
 	 * @throws TskCoreException 
 	 */
-	public boolean doesColumnExist(String tableName, String columnName) throws TskCoreException {
+	public boolean columnExists(String tableName, String columnName) throws TskCoreException {
+		
+		boolean doesColumnExists = false;
+		CaseDbTransaction localTrans = tskDB.beginTransaction();
+        try {
+			doesColumnExists = columnExists(tableName, columnName, localTrans);
+			localTrans.commit();
+			localTrans = null;
+        } 
+		finally {
+			if (null != localTrans) {
+				try {
+					localTrans.rollback();
+				} catch (TskCoreException ex) {
+					logger.log(Level.SEVERE, "Failed to rollback transaction after exception", ex);
+				}
+			}
+		}
+		
+        return doesColumnExists;
+    }
+	
+	/**
+	 * Checks if a column exists in a table.
+	 *
+	 * @param tableName name of the table
+	 * @param columnName column name to check
+	 * @param transaction transaction 
+	 * 
+	 * @return true if the column already exists, false otherwise
+	 * @throws TskCoreException 
+	 */
+	public boolean columnExists(String tableName, String columnName, CaseDbTransaction transaction) throws TskCoreException {
 		
 		boolean columnExists = false;
         Statement statement = null;
-		CaseDbConnection connection = tskDB.getConnection();
         try {
+			CaseDbConnection connection = transaction.getConnection();
 			statement = connection.createStatement();
 			if (DbType.SQLITE == tskDB.getDatabaseType()) {
 				String tableInfoQuery = "PRAGMA table_info(%s)";  //NON-NLS
@@ -108,7 +140,6 @@ public final class CaseDbAccessManager {
 			throw new TskCoreException("Error checking if column  " + columnName + "exists ", ex);
 		} finally {
             closeStatement(statement);
-			connection.close();
         }
         return columnExists;
     }
@@ -158,12 +189,39 @@ public final class CaseDbAccessManager {
 	 * @throws TskCoreException 
 	 */
 	public void alterTable(final String tableName, final String alterSQL) throws TskCoreException {
+		
+		CaseDbTransaction localTrans = tskDB.beginTransaction();
+		try {
+			alterTable(tableName, alterSQL, localTrans);
+			localTrans.commit();
+			localTrans = null;
+		} finally {
+			if (null != localTrans) {
+				try {
+					localTrans.rollback();
+				} catch (TskCoreException ex) {
+					logger.log(Level.SEVERE, "Failed to rollback transaction after exception", ex);
+				}
+			}
+		} 
+	}
+		
+	/**
+	 * Alters a table with the specified name.
+	 * 
+	 * @param tableName name of the table to alter
+	 * @param alterSQL SQL to alter the table
+	 * @param transaction transaction
+	 * 
+	 * @throws TskCoreException 
+	 */
+	public void alterTable(final String tableName, final String alterSQL, final CaseDbTransaction transaction) throws TskCoreException {
 
 		validateTableName(tableName);
 		validateSQL(alterSQL);
 
-		CaseDbConnection connection = tskDB.getConnection();
-		tskDB.acquireSingleUserCaseWriteLock();
+		CaseDbConnection connection = transaction.getConnection();
+		transaction.acquireSingleUserCaseWriteLock();
 
 		Statement statement = null;
 		String sql = "ALTER TABLE " + tableName + " " + alterSQL;
@@ -175,8 +233,7 @@ public final class CaseDbAccessManager {
 			throw new TskCoreException(String.format("Error altering table  %s with SQL = %s", tableName, sql), ex);
 		} finally {
 			closeStatement(statement);
-			connection.close();
-			tskDB.releaseSingleUserCaseWriteLock();
+			// NOTE: write lock will be released by transaction
 		}
 	}
 	
