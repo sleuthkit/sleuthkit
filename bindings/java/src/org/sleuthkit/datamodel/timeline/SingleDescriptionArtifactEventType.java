@@ -20,13 +20,12 @@ package org.sleuthkit.datamodel.timeline;
 
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
-import org.sleuthkit.datamodel.DescriptionLoD;
 import org.sleuthkit.datamodel.TskCoreException;
 
 /**
  * Package level extension of StandardArtifactEventType for event types only
- * store one description in the db. They may support parsing the decription in
- * memory, or one one zoom level.S
+ * store one description in the db. They may support parsing the description in
+ * memory, or one one zoom level
  */
 class SingleDescriptionArtifactEventType extends StandardArtifactEventType {
 
