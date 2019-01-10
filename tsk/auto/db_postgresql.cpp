@@ -839,8 +839,8 @@ int TskDbPostgreSQL::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, co
     removeNonUtf8(sha256_local, MAX_DB_STRING_LENGTH - 1, sha256.c_str());
     char *timezone_sql = PQescapeLiteral(conn, timeZone_local, strlen(timeZone_local));
     char *md5_sql = PQescapeLiteral(conn, md5_local, strlen(md5_local));
-    char *sha1_sql = PQescapeLiteral(conn, md5_local, strlen(sha1_local));
-    char *sha256_sql = PQescapeLiteral(conn, md5_local, strlen(sha256_local));
+    char *sha1_sql = PQescapeLiteral(conn, sha1_local, strlen(sha1_local));
+    char *sha256_sql = PQescapeLiteral(conn, sha256_local, strlen(sha256_local));
 
     if (!isEscapedStringValid(timezone_sql, timeZone_local, "TskDbPostgreSQL::addImageInfo: Unable to escape time zone string: %s (Error: %s)\n")
         || !isEscapedStringValid(md5_sql, md5_local, "TskDbPostgreSQL::addImageInfo: Unable to escape md5 string: %s (Error: %s)\n")
