@@ -41,6 +41,11 @@ class StandardEventType implements EventType {
 	}
 
 	@Override
+	public TimelineEvent.EventDescription getDescription(String fullDescriptionRaw, String medDescriptionRaw, String shortDescriptionRaw) {
+		return TimelineEvent.EventDescription.create(fullDescriptionRaw, medDescriptionRaw, shortDescriptionRaw);
+	}
+
+	@Override
 	public SortedSet<? extends EventType> getSubTypes() {
 		return ImmutableSortedSet.of();
 	}

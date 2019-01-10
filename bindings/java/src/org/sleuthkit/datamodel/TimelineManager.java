@@ -31,14 +31,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import static java.util.Objects.isNull;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.ObjectUtils;
-import static org.apache.commons.lang3.StringUtils.defaultString;
-import static org.apache.commons.lang3.StringUtils.substringAfter;
-import static org.apache.commons.lang3.StringUtils.substringBefore;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Interval;
 import static org.sleuthkit.datamodel.BlackboardArtifact.ARTIFACT_TYPE.TSK_HASHSET_HIT;
@@ -539,13 +537,9 @@ public final class TimelineManager {
 		 * legitimate time stamps.
 		 */
 		if (Collections.max(timeMap.values()) > 0) {
-			final String parentPath = file.getParentPath();
 
-			String rootFolder = substringBefore(substringAfter(parentPath, "/"), "/");
-			String shortDesc = defaultString(rootFolder);
-			shortDesc = shortDesc.endsWith("/") ? shortDesc : shortDesc + "/";
-			String medDesc = parentPath;
-			String fullDescription = medDesc + file.getName();
+			String fullDescription = file.getParentPath() + file.getName();
+			boolean hashSets = file.getHashSetNames().isEmpty() == false;
 
 			for (Map.Entry<EventType, Long> timeEntry : timeMap.entrySet()) {
 				if (timeEntry.getValue() > 0) {
@@ -556,10 +550,11 @@ public final class TimelineManager {
 							file.getId(),
 							null,
 							fullDescription,
-							medDesc,
-							shortDesc,
-							file.getHashSetNames().isEmpty() == false,
-							false, connection);
+							null,
+							null,
+							hashSets,
+							false,
+							connection);
 				}
 			}
 		}
@@ -593,12 +588,11 @@ public final class TimelineManager {
 				eventType = EventType.OTHER;
 			} else {
 				long eventTypeID = attribute.getValueLong();
-				eventType = eventTypeIDMap.get(eventTypeID);
-				eventType = ObjectUtils.defaultIfNull(eventType, EventType.OTHER);
+				eventType = eventTypeIDMap.getOrDefault(eventTypeID, EventType.OTHER);
 			}
 
-			Optional<TimelineEvent> newEvent = addArtifactEvent(EventType.OTHER::buildEventPayload, eventType, artifact);
-			newEvent.ifPresent(newEvents::add);
+			addArtifactEvent(EventType.OTHER::buildEventPayload, eventType, artifact)
+					.ifPresent(newEvents::add);
 
 		} else {
 			/*
@@ -653,12 +647,12 @@ public final class TimelineManager {
 	 *
 	 * @throws TskCoreException
 	 */
-	private Optional<TimelineEvent> addArtifactEvent(CheckedFunction<BlackboardArtifact, ArtifactEventType.EventPayload> payloadExtractor,
+	private Optional<TimelineEvent> addArtifactEvent(TSKCoreCheckedFunction<BlackboardArtifact, ArtifactEventType.EventPayload> payloadExtractor,
 			EventType eventType, BlackboardArtifact artifact) throws TskCoreException {
-		ArtifactEventType.EventPayload eventDescription = payloadExtractor.apply(artifact);
+		ArtifactEventType.EventPayload eventPayload = payloadExtractor.apply(artifact);
 
 		// if the time is legitimate ( greater than zero ) insert it into the db
-		if (eventDescription != null && eventDescription.getTime() > 0) {
+		if (eventPayload.getTime() > 0) {
 			long sourceFileObjId = artifact.getObjectID();
 			AbstractFile file = sleuthkitCase.getAbstractFileById(sourceFileObjId);
 			boolean hasHashHits = false;
@@ -667,14 +661,14 @@ public final class TimelineManager {
 				hasHashHits = file.getHashSetNames().isEmpty() == false;
 			}
 
-			return Optional.of(addEvent(eventDescription.getTime(),
+			return Optional.of(addEvent(eventPayload.getTime(),
 					eventType,
 					artifact.getDataSourceObjectID(),
 					sourceFileObjId,
 					artifact.getArtifactID(),
-					eventDescription.getFullDescription(),
-					eventDescription.getMedDescription(),
-					eventDescription.getShortDescription(),
+					eventPayload.getFullDescription(),
+					eventPayload.getMedDescription(),
+					eventPayload.getShortDescription(),
 					hasHashHits,
 					sleuthkitCase.getBlackboardArtifactTagsByArtifact(artifact).isEmpty() == false));
 		}
@@ -724,9 +718,9 @@ public final class TimelineManager {
 				+ time + ","
 				+ ((type.getTypeID() == -1) ? "NULL" : type.getTypeID()) + "," // Why do we need this check?  what type as ID  = -1
 				+ type.getBaseType().getTypeID() + ","
-				+ "'" + escapeSingleQuotes(fullDescription) + "',"
-				+ "'" + escapeSingleQuotes(medDescription) + "',"
-				+ "'" + escapeSingleQuotes(shortDescription) + "',"
+				+ quotePreservingNull(fullDescription) + ","
+				+ quotePreservingNull(medDescription) + ","
+				+ quotePreservingNull(shortDescription) + ", "
 				+ booleanToInt(hashHit) + ","
 				+ booleanToInt(tagged) + "  )";// NON-NLS  
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
@@ -737,8 +731,9 @@ public final class TimelineManager {
 				generatedKeys.next();
 				long eventID = generatedKeys.getLong(1);
 				singleEvent = new TimelineEvent(eventID, datasourceObjID,
-						fileObjID, artifactID, time, type, fullDescription, medDescription,
-						shortDescription, hashHit, tagged);
+						fileObjID, artifactID, time, type,
+						 TimelineEvent.EventDescription.create(fullDescription, medDescription, shortDescription),
+						hashHit, tagged);
 			}
 		} catch (SQLException ex) {
 			throw new TskCoreException("Failed to insert event.", ex); // NON-NLS
@@ -748,6 +743,10 @@ public final class TimelineManager {
 
 		sleuthkitCase.fireTSKEvent(new TimelineEventAddedEvent(singleEvent));
 		return singleEvent;
+	}
+
+	static private String quotePreservingNull(String value) {
+		return isNull(value) ? " NULL " : "'" + escapeSingleQuotes(value) + "'";
 	}
 
 	/**
@@ -868,15 +867,18 @@ public final class TimelineManager {
 
 	private TimelineEvent constructTimeLineEvent(ResultSet resultSet) throws SQLException, TskCoreException {
 		int typeID = resultSet.getInt("sub_type"); //NON-NLS
+		EventType eventType = getEventType(typeID).orElseThrow(() -> newEventTypeMappingException(typeID));
+
 		return new TimelineEvent(resultSet.getLong("event_id"), //NON-NLS
 				resultSet.getLong("data_source_obj_id"), //NON-NLS
 				resultSet.getLong("file_obj_id"), //NON-NLS
 				resultSet.getLong("artifact_id"), //NON-NLS
-				resultSet.getLong("time"), //NON-NLS
-				getEventType(typeID).orElseThrow(() -> newEventTypeMappingException(typeID)), //NON-NLS
-				resultSet.getString("full_description"), //NON-NLS
-				resultSet.getString("med_description"), //NON-NLS
-				resultSet.getString("short_description"), //NON-NLS
+				resultSet.getLong("time"),
+				eventType,
+				eventType.getDescription(
+						resultSet.getString("full_description"),
+						resultSet.getString("med_description"),
+						resultSet.getString("short_description")),
 				resultSet.getInt("hash_hit") != 0, //NON-NLS
 				resultSet.getInt("tagged") != 0); //NON-NLS
 	}
@@ -1107,7 +1109,7 @@ public final class TimelineManager {
 	 * @param <O> Output type.
 	 */
 	@FunctionalInterface
-	interface CheckedFunction<I, O> {
+	interface TSKCoreCheckedFunction<I, O> {
 
 		O apply(I input) throws TskCoreException;
 	}

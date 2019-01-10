@@ -20,35 +20,43 @@ package org.sleuthkit.datamodel.timeline;
 
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
-import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DATETIME;
-import static org.sleuthkit.datamodel.BlackboardAttribute.ATTRIBUTE_TYPE.TSK_DESCRIPTION;
 import org.sleuthkit.datamodel.TskCoreException;
 
 /**
- * Package level extension of StandardArtifactEventType for event types that
- * don't support zoomable descriptions. These events have the same description
- * at all zoom levels.
+ * Package level extension of StandardArtifactEventType for event types only
+ * store one description in the db. They may support parsing the description in
+ * memory, or one one zoom level
  */
-final class SingleDescriptionArtifactEventType extends StandardArtifactEventType {
-
-	/**
-	 * Use the value of the TSK_DESCRIPTION attribute of a artifact as the
-	 * description of this event.
-	 */
-	static private final AttributeExtractor descriptionExtractor = new AttributeExtractor(new BlackboardAttribute.Type(TSK_DESCRIPTION));
+class SingleDescriptionArtifactEventType extends StandardArtifactEventType {
 
 	@Override
 	public EventPayload buildEventPayload(BlackboardArtifact artifact) throws TskCoreException {
 		String description = extractFullDescription(artifact);
 		long time = artifact.getAttribute(getDateTimeAttributeType()).getValueLong();
-		return new EventPayload(time, description, description, description);
+		return new EventPayload(time, null, null, description);
 	}
 
 	SingleDescriptionArtifactEventType(int typeID, String displayName,
-			EventType superType, BlackboardArtifact.Type artifactType) {
-		super(typeID, displayName, superType, artifactType, new BlackboardAttribute.Type(TSK_DATETIME),
-				descriptionExtractor,
-				descriptionExtractor,
-				descriptionExtractor);
+			EventType superType, BlackboardArtifact.Type artifactType, BlackboardAttribute.Type timeAttribute, BlackboardAttribute.Type descriptionAttribute) {
+		super(typeID, displayName, superType, artifactType, timeAttribute,
+				new NullExtractor(), new NullExtractor(), new AttributeExtractor(descriptionAttribute));
+	}
+
+	@Override
+	public TimelineEvent.EventDescription getDescription(String fullDescription, String medDescription, String shortDescription) {
+		return new SingeLevelEventDiscription(fullDescription);
+	}
+
+	/**
+	 * Function that always returns the empty string no matter what it is
+	 * applied to.
+	 *
+	 */
+	final static class NullExtractor implements TSKCoreCheckedFunction<BlackboardArtifact, String> {
+
+		@Override
+		public String apply(BlackboardArtifact ignored) throws TskCoreException {
+			return null;
+		}
 	}
 }

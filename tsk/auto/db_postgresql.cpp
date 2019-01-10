@@ -667,8 +667,8 @@ int TskDbPostgreSQL::initialize() {
             " sub_type INTEGER, "
             " base_type INTEGER NOT NULL, "
             " full_description TEXT NOT NULL, "
-            " med_description TEXT NOT NULL, "
-            " short_description TEXT NOT NULL, "
+            " med_description TEXT, "
+            " short_description TEXT, "
             " hash_hit INTEGER NOT NULL, " //boolean 
             " tagged INTEGER NOT NULL ,"
             "FOREIGN KEY(data_source_obj_id) REFERENCES data_source_info(obj_id), "
@@ -759,9 +759,9 @@ int TskDbPostgreSQL::createIndexes() {
             "Error creating events_file_obj_id index on tsk_events: %s\n") ||
         attempt_exec("CREATE INDEX events_artifact_id  ON tsk_events(artifact_id);",
             "Error creating events_artifact_id index on tsk_events: %s\n") ||
-        attempt_exec("CREATE INDEX events_sub_type_short_description_time  ON tsk_events(sub_type, short_description, time);",
-            "Error creating events_sub_type_short_description_time index on tsk_events: %s\n") ||
-        attempt_exec("CREATE INDEX events_base_type_short_description_time  ON tsk_events(base_type, short_description, time);",
+        attempt_exec("CREATE INDEX events_sub_type_time  ON tsk_events(sub_type,  time);",
+            "Error creating events_sub_type_time index on tsk_events: %s\n") ||
+        attempt_exec("CREATE INDEX events_base_type_short_description_time  ON tsk_events(base_type,  time);",
             "Error creating events_base_type_short_description_time index on tsk_events: %s\n") ||
         attempt_exec("CREATE INDEX events_time  ON tsk_events(time);",
             "Error creating events_time index on tsk_events: %s\n");
@@ -1049,8 +1049,7 @@ int TskDbPostgreSQL::addFsFile(TSK_FS_FILE * fs_file,
 
 
 int TskDbPostgreSQL::addMACTimeEvent(char*& zSQL, const int64_t data_source_obj_id, const int64_t obj_id, time_t time,
-                                     const int64_t sub_type, const char* full_desc, const char* med_desc,
-                                     const char* short_desc)
+                                     const int64_t sub_type, const char* full_description)
 {
 	if (time == 0)
 	{
@@ -1060,7 +1059,7 @@ int TskDbPostgreSQL::addMACTimeEvent(char*& zSQL, const int64_t data_source_obj_
 
 	//insert MAC time events
 	if (0 > snprintf(zSQL, 2048 - 1,
-	                 "INSERT INTO tsk_events ( data_source_obj_id, file_obj_id , artifact_id, time, sub_type, base_type, full_description, med_description, short_description, hash_hit, tagged) "
+	                 "INSERT INTO tsk_events ( data_source_obj_id, file_obj_id , artifact_id, time, sub_type, base_type, full_description, hash_hit, tagged) "
 	                 // NON-NLS
 	                 " VALUES ("
 	                 "%" PRId64 "," // data_source_obj_id
@@ -1070,8 +1069,6 @@ int TskDbPostgreSQL::addMACTimeEvent(char*& zSQL, const int64_t data_source_obj_
 					 "%" PRId64 "," // sub_type
 	                 "1," // fixed base_type
 	                 "%s," // full_description
-	                 "%s," // med_description
-	                 "%s," // short_description
 	                 "0," // fixed hash_hit
 	                 "0" // fixed tagged
 	                 ")",
@@ -1079,9 +1076,7 @@ int TskDbPostgreSQL::addMACTimeEvent(char*& zSQL, const int64_t data_source_obj_
 	                 obj_id,
 	                 (unsigned long long)time, // this one changes
 	                 sub_type,
-	                 full_desc,
-	                 med_desc,
-	                 short_desc))
+	                 full_description))
 	{
 		return 1;
 	}
@@ -1277,49 +1272,40 @@ int TskDbPostgreSQL::addFile(TSK_FS_FILE * fs_file, const TSK_FS_ATTR * fs_attr,
         PQfreemem(name_sql);
         PQfreemem(escaped_path_sql);
 		PQfreemem(extension_sql);
-		free(zSQL_dynamic);
-		return 1;
-	}
+        free(zSQL_dynamic);
+        return 1;
+    }
 
 
-    std::string escaped_path_str = std::string(escaped_path);
-    std::string full_description = escaped_path_str;
-    full_description.append(name);
-    const size_t firstslash = escaped_path_str.find('/', 1);
-    std::string short_desc = (firstslash == std::string::npos)
-        ? escaped_path_str
-        : escaped_path_str.substr(0, firstslash + 1);
+    std::string full_description = std::string(escaped_path).append(name);
 
 
+    if (!TSK_FS_ISDOT(name))
+    {
+        char* full_desc_sql = PQescapeLiteral(conn, full_description.c_str(), strlen(full_description.c_str()));
 
-	if (!TSK_FS_ISDOT(name)) {
-		char* full_desc_sql = PQescapeLiteral(conn, full_description.c_str(), strlen(full_description.c_str()));
-		char* med_desc_sql = PQescapeLiteral(conn, escaped_path, strlen(escaped_path));
-		char* short_desc_sql = PQescapeLiteral(conn, short_desc.c_str(), strlen(short_desc.c_str()));
-		if (addMACTimeEvent(zSQL, dataSourceObjId, objId, mtime, 4, full_desc_sql, med_desc_sql, short_desc_sql)
-			|| addMACTimeEvent(zSQL, dataSourceObjId, objId, atime, 5, full_desc_sql, med_desc_sql, short_desc_sql)
-			|| addMACTimeEvent(zSQL, dataSourceObjId, objId, crtime, 6, full_desc_sql, med_desc_sql, short_desc_sql)
-			|| addMACTimeEvent(zSQL, dataSourceObjId, objId, ctime, 7, full_desc_sql, med_desc_sql, short_desc_sql))
-		{
-			free(escaped_path);
-			PQfreemem(name_sql);
-			PQfreemem(escaped_path_sql);
-			PQfreemem(extension_sql);
-			free(zSQL_dynamic);
-			PQfreemem(full_desc_sql);
-			PQfreemem(med_desc_sql);
-			PQfreemem(short_desc_sql);
-			return 1;
-		}
+        if (addMACTimeEvent(zSQL, dataSourceObjId, objId, mtime, 4, full_desc_sql)
+            || addMACTimeEvent(zSQL, dataSourceObjId, objId, atime, 5, full_desc_sql)
+            || addMACTimeEvent(zSQL, dataSourceObjId, objId, crtime, 6, full_desc_sql)
+            || addMACTimeEvent(zSQL, dataSourceObjId, objId, ctime, 7, full_desc_sql))
+        {
+            free(escaped_path);
+            PQfreemem(name_sql);
+            PQfreemem(escaped_path_sql);
+            PQfreemem(extension_sql);
+            free(zSQL_dynamic);
+            PQfreemem(full_desc_sql);
 
-		PQfreemem(full_desc_sql);
-		PQfreemem(med_desc_sql);
-		PQfreemem(short_desc_sql);
-	}
+            return 1;
+        }
+
+        PQfreemem(full_desc_sql);
+    }
 
 
     //if dir, update parent id cache (do this before objId may be changed creating the slack file)
-    if (TSK_FS_IS_DIR_META(meta_type)){
+    if (TSK_FS_IS_DIR_META(meta_type))
+    {
         std::string fullPath = std::string(path) + fs_file->name->name;
         storeObjId(fsObjId, fs_file, fullPath.c_str(), objId);
     }

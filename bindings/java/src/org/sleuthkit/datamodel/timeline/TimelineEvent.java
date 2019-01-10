@@ -20,14 +20,14 @@ package org.sleuthkit.datamodel.timeline;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.Optional;
+import org.apache.commons.lang3.StringUtils;
 import org.sleuthkit.datamodel.DescriptionLoD;
+import static org.sleuthkit.datamodel.timeline.EventTypeZoomLevel.SUB_TYPE;
 
 /**
  * A single event.
  */
 public final class TimelineEvent {
-
- 
 
 	private final long eventID;
 	/**
@@ -59,7 +59,7 @@ public final class TimelineEvent {
 	 * The three descriptions (full, med, short) stored in a map, keyed by
 	 * DescriptionLOD (Level of Detail)
 	 */
-	private final ImmutableMap<DescriptionLoD, String> descriptions;
+	private final EventDescription descriptions;
 
 	/**
 	 * True if the file this event is derived from hits any of the configured
@@ -74,30 +74,29 @@ public final class TimelineEvent {
 
 	/**
 	 *
-	 * @param eventID          ID from tsk_events table in database
-	 * @param dataSourceObjID  Object Id for data source event is from
-	 * @param fileObjID        object id for non-artifact content that event is
-	 *                         associated with
-	 * @param artifactID       ID of artifact (not object id) if event came from
-	 *                         an artifact
+	 * @param eventID         ID from tsk_events table in database
+	 * @param dataSourceObjID Object Id for data source event is from
+	 * @param fileObjID       object id for non-artifact content that event is
+	 *                        associated with
+	 * @param artifactID      ID of artifact (not object id) if event came from
+	 *                        an artifact
 	 * @param time
 	 * @param type
-	 * @param fullDescription
-	 * @param medDescription
-	 * @param shortDescription
+	 * @param descriptions
 	 * @param hashHit
 	 * @param tagged
 	 */
-	public TimelineEvent(long eventID, long dataSourceObjID, long fileObjID, Long artifactID, long time, EventType type, String fullDescription, String medDescription, String shortDescription, boolean hashHit, boolean tagged) {
+	public TimelineEvent(long eventID, long dataSourceObjID, long fileObjID, Long artifactID,
+			long time, EventType type,
+			EventDescription descriptions,
+			boolean hashHit, boolean tagged) {
 		this.eventID = eventID;
 		this.dataSourceObjID = dataSourceObjID;
 		this.fileObjID = fileObjID;
 		this.artifactID = Long.valueOf(0).equals(artifactID) ? null : artifactID;
 		this.time = time;
 		this.type = type;
-		descriptions = ImmutableMap.<DescriptionLoD, String>of(DescriptionLoD.FULL, fullDescription,
-				DescriptionLoD.MEDIUM, medDescription,
-				DescriptionLoD.SHORT, shortDescription);
+		this.descriptions = descriptions;
 
 		this.hashHit = hashHit;
 		this.tagged = tagged;
@@ -167,6 +166,10 @@ public final class TimelineEvent {
 		return type;
 	}
 
+	public EventType getEventType(EventTypeZoomLevel zoomLevel) {
+		return zoomLevel.equals(SUB_TYPE) ? type : type.getBaseType();
+	}
+
 	/**
 	 * Get the full description of this event.
 	 *
@@ -202,7 +205,7 @@ public final class TimelineEvent {
 	 * @return The description of this event at the given level of detail.
 	 */
 	public String getDescription(DescriptionLoD lod) {
-		return descriptions.get(lod);
+		return descriptions.getDescription(lod);
 	}
 
 	/**
@@ -239,5 +242,53 @@ public final class TimelineEvent {
 		}
 		final TimelineEvent other = (TimelineEvent) obj;
 		return this.eventID == other.eventID;
+	}
+
+	public static interface EventDescription {
+
+		public static EventDescription create(String fullDescription, String medDescription, String shortDescription) {
+			return new ThreeLevellEventDescription(fullDescription, medDescription, shortDescription);
+		}
+
+		public static EventDescription create(String fullDescription) {
+			return new SingeLevelEventDiscription(fullDescription);
+		}
+
+		/**
+		 * Get the full description of this event.
+		 *
+		 * @return the full description
+		 */
+		default public String getFullDescription() {
+			return getDescription(DescriptionLoD.FULL);
+		}
+
+		/**
+		 * Get the medium description of this event.
+		 *
+		 * @return the medium description
+		 */
+		default public String getMediumDescription() {
+			return getDescription(DescriptionLoD.MEDIUM);
+		}
+
+		/**
+		 * Get the short description of this event.
+		 *
+		 * @return the short description
+		 */
+		default public String getShortDescription() {
+			return getDescription(DescriptionLoD.SHORT);
+		}
+
+		/**
+		 * Get the description of this event at the give level of detail(LoD).
+		 *
+		 * @param lod The level of detail to get.
+		 *
+		 * @return The description of this event at the given level of detail.
+		 */
+		public String getDescription(DescriptionLoD lod);
+
 	}
 }
