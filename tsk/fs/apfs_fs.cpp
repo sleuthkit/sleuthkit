@@ -92,17 +92,27 @@ void APFSJObject::add_entry(const jit::value_type& e) {
 
     // Directory records
     case APFS_JOBJTYPE_DIR_RECORD: {
+#pragma pack(push, 1)
       struct dir_record_key : key_type {
-        uint8_t name_len;
-        uint8_t hash[3];
+        uint32_t namelen_and_hash;
         char name[0];
+
+        inline uint32_t name_len() const noexcept {
+          return bitfield_value(namelen_and_hash, 10, 0);
+        }
+
+        inline uint32_t hash() const noexcept {
+          return bitfield_value(namelen_and_hash, 22, 10);
+        }
       };
+#pragma pack(pop)
+      static_assert(sizeof(dir_record_key) == 0x0C, "invalid struct padding");
 
       const auto k = e.key.template as<dir_record_key>();
       const auto value = e.value.template as<apfs_dir_record>();
 
       _children.emplace_back(
-          child_entry{std::string(k->name, k->name_len - 1U), *value});
+          child_entry{std::string(k->name, k->name_len() - 1U), *value});
       break;
     }
 
