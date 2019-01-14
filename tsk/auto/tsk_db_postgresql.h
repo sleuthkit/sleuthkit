@@ -131,8 +131,8 @@ private:
         const uint64_t size, vector<TSK_DB_FILE_LAYOUT_RANGE> & ranges, int64_t & objId, int64_t dataSourceObjId);
     TSK_RETVAL_ENUM addLayoutFileInfo(const int64_t parObjId, const int64_t fsObjId, const TSK_DB_FILES_TYPE_ENUM dbFileType, const char *fileName, const uint64_t size, int64_t & objId, int64_t dataSourceObjId);
 
-	int addMACTimeEvent(char *& zSQL, const int64_t data_source_obj_id, const int64_t obj_id, time_t time, const int64_t sub_type, const char * full_desc);
-
+    int addMACTimeEvents(char*& zSQL, const int64_t data_source_obj_id,
+                         const int64_t obj_id, std::map<int64_t, time_t> timeMap, const char* full_description);
 };
 
 #endif //HAVE_LIBPQ_
