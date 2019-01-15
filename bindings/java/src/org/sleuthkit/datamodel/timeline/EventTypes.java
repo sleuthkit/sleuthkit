@@ -37,6 +37,9 @@ import org.sleuthkit.datamodel.timeline.TimelineEvent.EventDescription;
  */
 class EventTypes {
 
+	private EventTypes() {
+	}
+
 	/**
 	 * Function that always returns the empty string no matter what it is
 	 * applied to.
@@ -130,6 +133,4 @@ class EventTypes {
 
 	}
 
-	private EventTypes() {
-	}
 }
