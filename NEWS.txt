@@ -1,6 +1,18 @@
 Numbers refer to SourceForge.net tracker IDs:
     http://sourceforge.net/tracker/?group_id=55685
 
+---------------- VERSION 4.6.5 --------------
+C/C++ Code:
+- HFS boundary check fix
+- New fields for hash values and acquisition details in case database
+- Store "created schema version" in case database
+
+Java Code:
+- New artifacts and attributes defined
+- Fixed bug in SleuthkitCase.getContentById() for data sources
+- Fixed bug in LayoutFile.read() that could allow reading past end offile
+
+
 ---------------- VERSION 4.6.4 --------------
 Java Code:
 - Increase max statements in database to prevent errors under load

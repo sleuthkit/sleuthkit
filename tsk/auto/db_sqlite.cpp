@@ -247,12 +247,41 @@ int
         return 1;
     }
 
-    if (attempt_exec
+	if (attempt_exec("CREATE TABLE tsk_db_info_extended (name TEXT PRIMARY KEY, value TEXT NOT NULL);", "Error creating tsk_db_info_extended: %s\n")) {
+		return 1;
+	}
+
+	snprintf(foo, 1024, "INSERT INTO tsk_db_info_extended (name, value) VALUES ('TSK_VERSION', '%d');", TSK_VERSION_NUM);
+	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
+		return 1;
+	}
+
+	snprintf(foo, 1024, "INSERT INTO tsk_db_info_extended (name, value) VALUES ('SCHEMA_MAJOR_VERSION', '%d');", TSK_SCHEMA_VER);
+	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
+		return 1;
+	}
+
+	snprintf(foo, 1024, "INSERT INTO tsk_db_info_extended (name, value) VALUES ('SCHEMA_MINOR_VERSION', '%d');", TSK_SCHEMA_MINOR_VER);
+	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
+		return 1;
+	}
+
+	snprintf(foo, 1024, "INSERT INTO tsk_db_info_extended (name, value) VALUES ('CREATED_SCHEMA_MAJOR_VERSION', '%d');", TSK_SCHEMA_VER);
+	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
+		return 1;
+	}
+
+	snprintf(foo, 1024, "INSERT INTO tsk_db_info_extended (name, value) VALUES ('CREATED_SCHEMA_MINOR_VERSION', '%d');", TSK_SCHEMA_MINOR_VER);
+	if (attempt_exec(foo, "Error adding data to tsk_db_info table: %s\n")) {
+		return 1;
+	}
+
+	if (attempt_exec
         ("CREATE TABLE tsk_objects (obj_id INTEGER PRIMARY KEY, par_obj_id INTEGER, type INTEGER NOT NULL);",
         "Error creating tsk_objects table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE tsk_image_info (obj_id INTEGER PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT, size INTEGER, md5 TEXT, display_name TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        ("CREATE TABLE tsk_image_info (obj_id INTEGER PRIMARY KEY, type INTEGER, ssize INTEGER, tzone TEXT, size INTEGER, md5 TEXT, sha1 TEXT, sha256 TEXT, display_name TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating tsk_image_info table: %s\n")
         ||
         attempt_exec
@@ -272,7 +301,7 @@ int
         "Error creating tsk_fs_info table: %s\n")
         ||
         attempt_exec
-        ("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, device_id TEXT NOT NULL,  time_zone TEXT NOT NULL, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
+        ("CREATE TABLE data_source_info (obj_id INTEGER PRIMARY KEY, device_id TEXT NOT NULL,  time_zone TEXT NOT NULL, acquisition_details TEXT, FOREIGN KEY(obj_id) REFERENCES tsk_objects(obj_id));",
         "Error creating data_source_info table: %s\n")
         ||
 		attempt_exec
@@ -522,16 +551,16 @@ void
 int
     TskDbSqlite::addImageInfo(int type, int size, int64_t & objId, const string & timezone)
 {
-    return addImageInfo(type, size, objId, timezone, 0, "");
+    return addImageInfo(type, size, objId, timezone, 0, "", "", "");
 }
 
 /**
 * @returns 1 on error, 0 on success
 */
 int
-    TskDbSqlite::addImageInfo(int type, int ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5)
+    TskDbSqlite::addImageInfo(int type, int ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5, const string &sha1, const string &sha256)
 {
-    return addImageInfo(type, ssize, objId, timezone, size, md5, "");
+    return addImageInfo(type, ssize, objId, timezone, size, md5, sha1, sha256, "");
 }
 
 /**
@@ -546,7 +575,8 @@ int
  * @param deviceId An ASCII-printable identifier for the device associated with the data source that is intended to be unique across multiple cases (e.g., a UUID).
  * @returns 1 on error, 0 on success
  */
-int TskDbSqlite::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5, const string& deviceId)
+int TskDbSqlite::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const string & timezone, TSK_OFF_T size, const string &md5, 
+    const string& sha1, const string& sha256, const string& deviceId)
 {
 
     // Add the data source to the tsk_objects table.
@@ -562,8 +592,8 @@ int TskDbSqlite::addImageInfo(int type, TSK_OFF_T ssize, int64_t & objId, const 
 
     // Add the data source to the tsk_image_info table.
     char *sql;
-    sql = sqlite3_mprintf("INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5) VALUES (%lld, %d, %lld, '%q', %" PRIuOFF ", '%q');",
-        objId, type, ssize, timezone.c_str(), size, md5.c_str());
+    sql = sqlite3_mprintf("INSERT INTO tsk_image_info (obj_id, type, ssize, tzone, size, md5, sha1, sha256) VALUES (%lld, %d, %lld, '%q', %" PRIuOFF ", '%q', '%q', '%q');",
+        objId, type, ssize, timezone.c_str(), size, md5.c_str(), sha1.c_str(), sha256.c_str());
     int ret = attempt_exec(sql, "Error adding data to tsk_image_info table: %s\n");
     sqlite3_free(sql);
     if (1 == ret) {

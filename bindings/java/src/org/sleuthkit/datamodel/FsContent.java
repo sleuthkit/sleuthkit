@@ -229,7 +229,7 @@ public abstract class FsContent extends AbstractFile {
 	/**
 	 * Gets the parent directory of this file or directory.
 	 *
-	 * @return The parent directory
+	 * @return The parent directory or null if there isn't one
 	 *
 	 * @throws TskCoreException if there was an error querying the case
 	 *                          database.

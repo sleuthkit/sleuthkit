@@ -225,7 +225,7 @@ TskAutoDb::addImageDetails(const char* deviceId)
         devId = "";
     }
     if (m_db->addImageInfo(m_img_info->itype, m_img_info->sector_size,
-          m_curImgId, m_curImgTZone, m_img_info->size, md5, devId)) {
+          m_curImgId, m_curImgTZone, m_img_info->size, md5, "", "", devId)) {
         registerError();
         return 1;
     }

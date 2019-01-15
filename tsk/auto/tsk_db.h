@@ -29,7 +29,7 @@ using std::vector;
 using std::string;
 
 #define TSK_SCHEMA_VER 8
-#define TSK_SCHEMA_MINOR_VER 1
+#define TSK_SCHEMA_MINOR_VER 2
 
 /**
  * Values for the type column in the tsk_objects table. 
@@ -169,8 +169,8 @@ class TskDb {
     virtual int close() = 0;
     virtual TSK_RETVAL_ENUM setConnectionInfo(CaseDbConnectionInfo * info);
     virtual int addImageInfo(int type, int size, int64_t & objId, const string & timezone) = 0;
-    virtual int addImageInfo(int type, int size, int64_t & objId, const string & timezone, TSK_OFF_T, const string &md5) = 0;
-    virtual int addImageInfo(int type, TSK_OFF_T size, int64_t & objId, const string & timezone, TSK_OFF_T, const string &md5, const string& deviceId) = 0;
+    virtual int addImageInfo(int type, int size, int64_t & objId, const string & timezone, TSK_OFF_T, const string &md5, const string &sha1, const string &sha256) = 0;
+    virtual int addImageInfo(int type, TSK_OFF_T size, int64_t & objId, const string & timezone, TSK_OFF_T, const string &md5, const string &sha1, const string &sha256, const string& deviceId) = 0;
     virtual int addImageName(int64_t objId, char const *imgName, int sequence) = 0;
     virtual int addVsInfo(const TSK_VS_INFO * vs_info, int64_t parObjId, int64_t & objId) = 0;
     virtual int addVolumeInfo(const TSK_VS_PART_INFO * vs_part, int64_t parObjId, int64_t & objId) = 0;
