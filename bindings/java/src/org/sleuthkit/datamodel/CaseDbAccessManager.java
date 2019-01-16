@@ -1,7 +1,7 @@
 /*
  * Sleuth Kit Data Model
  *
- * Copyright 2018 Basis Technology Corp.
+ * Copyright 2018-2019 Basis Technology Corp.
  * Contact: carrier <at> sleuthkit <dot> org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -69,6 +69,82 @@ public final class CaseDbAccessManager {
 	}
 
 	/**
+	 * Checks if a column exists in a table.
+	 *
+	 * @param tableName name of the table
+	 * @param columnName column name to check
+	 * 
+	 * @return true if the column already exists, false otherwise
+	 * @throws TskCoreException 
+	 */
+	public boolean columnExists(String tableName, String columnName) throws TskCoreException {
+		
+		boolean doesColumnExists = false;
+		CaseDbTransaction localTrans = tskDB.beginTransaction();
+        try {
+			doesColumnExists = columnExists(tableName, columnName, localTrans);
+			localTrans.commit();
+			localTrans = null;
+        } 
+		finally {
+			if (null != localTrans) {
+				try {
+					localTrans.rollback();
+				} catch (TskCoreException ex) {
+					logger.log(Level.SEVERE, "Failed to rollback transaction after exception", ex);
+				}
+			}
+		}
+		
+        return doesColumnExists;
+    }
+	
+	/**
+	 * Checks if a column exists in a table.
+	 *
+	 * @param tableName name of the table
+	 * @param columnName column name to check
+	 * @param transaction transaction 
+	 * 
+	 * @return true if the column already exists, false otherwise
+	 * @throws TskCoreException 
+	 */
+	public boolean columnExists(String tableName, String columnName, CaseDbTransaction transaction) throws TskCoreException {
+		
+		boolean columnExists = false;
+        Statement statement = null;
+        try {
+			CaseDbConnection connection = transaction.getConnection();
+			statement = connection.createStatement();
+			if (DbType.SQLITE == tskDB.getDatabaseType()) {
+				String tableInfoQuery = "PRAGMA table_info(%s)";  //NON-NLS
+				ResultSet resultSet = statement.executeQuery(String.format(tableInfoQuery, tableName));
+				while (resultSet.next()) {
+					// the second value is the column name
+					if (resultSet.getString(2).equals(columnName)) {
+						columnExists = true;
+						break;
+					}
+				}
+				resultSet.close();
+			}
+			else {
+				String tableInfoQueryTemplate = "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='%s' AND column_name='%s')";  //NON-NLS	
+				ResultSet resultSet = statement.executeQuery(String.format(tableInfoQueryTemplate, tableName.toLowerCase(), columnName.toLowerCase()));
+				if (resultSet.next()) {
+					columnExists = resultSet.getBoolean(1);
+				}
+			}
+        } 
+		catch (SQLException ex) {
+			throw new TskCoreException("Error checking if column  " + columnName + "exists ", ex);
+		} finally {
+            closeStatement(statement);
+        }
+        return columnExists;
+    }
+	
+	/**
 	 * Creates a table with the specified name and schema.
 	 * 
 	 * If the table already exists, it does nothing, and no error is generated 
@@ -104,6 +180,63 @@ public final class CaseDbAccessManager {
 
 	}
 
+	/**
+	 * Alters a table with the specified name.
+	 * 
+	 * @param tableName name of the table to alter
+	 * @param alterSQL SQL to alter the table
+	 * 
+	 * @throws TskCoreException 
+	 */
+	public void alterTable(final String tableName, final String alterSQL) throws TskCoreException {
+		
+		CaseDbTransaction localTrans = tskDB.beginTransaction();
+		try {
+			alterTable(tableName, alterSQL, localTrans);
+			localTrans.commit();
+			localTrans = null;
+		} finally {
+			if (null != localTrans) {
+				try {
+					localTrans.rollback();
+				} catch (TskCoreException ex) {
+					logger.log(Level.SEVERE, "Failed to rollback transaction after exception", ex);
+				}
+			}
+		} 
+	}
+		
+	/**
+	 * Alters a table with the specified name.
+	 * 
+	 * @param tableName name of the table to alter
+	 * @param alterSQL SQL to alter the table
+	 * @param transaction transaction
+	 * 
+	 * @throws TskCoreException 
+	 */
+	public void alterTable(final String tableName, final String alterSQL, final CaseDbTransaction transaction) throws TskCoreException {
+
+		validateTableName(tableName);
+		validateSQL(alterSQL);
+
+		CaseDbConnection connection = transaction.getConnection();
+		transaction.acquireSingleUserCaseWriteLock();
+
+		Statement statement = null;
+		String sql = "ALTER TABLE " + tableName + " " + alterSQL;
+		
+		try {
+			statement = connection.createStatement();
+			statement.execute(sql);
+		} catch (SQLException ex) {
+			throw new TskCoreException(String.format("Error altering table  %s with SQL = %s", tableName, sql), ex);
+		} finally {
+			closeStatement(statement);
+			// NOTE: write lock will be released by transaction
+		}
+	}
+	
 	/**
 	 * Creates an index on the specified table, on specified column(s).
 	 * 
