@@ -882,10 +882,38 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
         uint8_t iscomp;         // set to 1 if block is compressed
         size_t blk_st_uncomp;   // index into uncompressed buffer where block started
 
+        /* The MSB identifies if the block is compressed */
+        iscomp = ((comp->comp_buf[cl_index + 1] & 0x80) != 0);
+
         /* The first two bytes of each block contain the size
          * information.*/
         blk_size = ((((unsigned char) comp->comp_buf[cl_index + 1] << 8) |
                 ((unsigned char) comp->comp_buf[cl_index])) & 0x0FFF) + 3;
+
+        // this block contains uncompressed data
+        // the 4096 size seems to occur at the same times as no compression
+        if (!iscomp || (blk_size - 2 == 4096)) {
+            blk_end = cl_index + 0x1000; // If we're uncompressed then we use the subblock size
+
+            while (cl_index < blk_end && cl_index < comp->comp_len) {
+                /* This seems to happen only with corrupt data -- such as
+                 * when an unallocated file is being processed... */
+                if (comp->uncomp_idx >= comp->buf_size_b) {
+                    tsk_error_reset();
+                    tsk_error_set_errno(TSK_ERR_FS_FWALK);
+                    tsk_error_set_errstr
+                        ("ntfs_uncompress_compunit: Trying to write past end of uncompression buffer (1) -- corrupt data?)");
+                    return 1;
+                }
+
+                // Place data in uncompression_buffer
+                comp->uncomp_buf[comp->uncomp_idx++] =
+                    comp->comp_buf[cl_index++];
+            }
+            continue;
+        }
+
+        // this block contains compressed data
 
         // this seems to indicate end of block
         if (blk_size == 3)
@@ -905,181 +933,152 @@ ntfs_uncompress_compunit(NTFS_COMP_INFO * comp)
                 "ntfs_uncompress_compunit: Block size is %" PRIuSIZE "\n",
                 blk_size);
 
-        /* The MSB identifies if the block is compressed */
-        if ((comp->comp_buf[cl_index + 1] & 0x8000) == 0)
-            iscomp = 0;
-        else
-            iscomp = 1;
-
         // keep track of where this block started in the buffer
         blk_st_uncomp = comp->uncomp_idx;
         cl_index += 2;
 
-        // the 4096 size seems to occur at the same times as no compression
-        if ((iscomp) || (blk_size - 2 != 4096)) {
+        // cycle through the block
+        while (cl_index < blk_end) {
+            int a;
 
-            // cycle through the block
-            while (cl_index < blk_end) {
-                int a;
+            // get the header header
+            unsigned char header = comp->comp_buf[cl_index];
+            cl_index++;
 
-                // get the header header
-                unsigned char header = comp->comp_buf[cl_index];
-                cl_index++;
+            if (tsk_verbose)
+                tsk_fprintf(stderr,
+                    "ntfs_uncompress_compunit: New Tag: %x\n", header);
 
-                if (tsk_verbose)
-                    tsk_fprintf(stderr,
-                        "ntfs_uncompress_compunit: New Tag: %x\n", header);
+            for (a = 0; a < 8 && cl_index < blk_end; a++) {
 
-                for (a = 0; a < 8 && cl_index < blk_end; a++) {
+                /* Determine token type and parse appropriately. *
+                    * Symbol tokens are the symbol themselves, so copy it
+                    * into the uncompressed buffer
+                    */
+                if ((header & NTFS_TOKEN_MASK) == NTFS_SYMBOL_TOKEN) {
+                    if (tsk_verbose)
+                        tsk_fprintf(stderr,
+                            "ntfs_uncompress_compunit: Symbol Token: %"
+                            PRIuSIZE "\n", cl_index);
 
-                    /* Determine token type and parse appropriately. *
-                     * Symbol tokens are the symbol themselves, so copy it
-                     * into the uncompressed buffer
-                     */
-                    if ((header & NTFS_TOKEN_MASK) == NTFS_SYMBOL_TOKEN) {
-                        if (tsk_verbose)
-                            tsk_fprintf(stderr,
-                                "ntfs_uncompress_compunit: Symbol Token: %"
-                                PRIuSIZE "\n", cl_index);
-
-                        if (comp->uncomp_idx >= comp->buf_size_b) {
-                            tsk_error_set_errno(TSK_ERR_FS_FWALK);
-                            tsk_error_set_errstr
-                                ("ntfs_uncompress_compunit: Trying to write past end of uncompression buffer: %"
-                                PRIuSIZE "", comp->uncomp_idx);
-                            return 1;
-                        }
-                        comp->uncomp_buf[comp->uncomp_idx++] =
-                            comp->comp_buf[cl_index];
-
-                        cl_index++;
+                    if (comp->uncomp_idx >= comp->buf_size_b) {
+                        tsk_error_set_errno(TSK_ERR_FS_FWALK);
+                        tsk_error_set_errstr
+                            ("ntfs_uncompress_compunit: Trying to write past end of uncompression buffer: %"
+                            PRIuSIZE "", comp->uncomp_idx);
+                        return 1;
                     }
+                    comp->uncomp_buf[comp->uncomp_idx++] =
+                        comp->comp_buf[cl_index];
 
-                    /* Otherwise, it is a phrase token, which points back
-                     * to a previous sequence of bytes.
-                     */
-                    else {
-                        size_t i;
-                        int shift;
-                        size_t start_position_index = 0;
-                        size_t end_position_index = 0;
-                        unsigned int offset = 0;
-                        unsigned int length = 0;
-                        uint16_t pheader;
-
-                        if (cl_index + 1 >= blk_end) {
-                            tsk_error_set_errno(TSK_ERR_FS_FWALK);
-                            tsk_error_set_errstr
-                                ("ntfs_uncompress_compunit: Phrase token index is past end of block: %d",
-                                a);
-                            return 1;
-                        }
-
-                        pheader =
-                            ((((comp->comp_buf[cl_index +
-                                            1]) << 8) & 0xFF00) |
-                            (comp->comp_buf[cl_index] & 0xFF));
-                        cl_index += 2;
-
-
-                        /* The number of bits for the start and length
-                         * in the 2-byte header change depending on the
-                         * location in the compression unit.  This identifies
-                         * how many bits each has */
-                        shift = 0;
-                        for (i =
-                            comp->uncomp_idx -
-                            blk_st_uncomp - 1; i >= 0x10; i >>= 1) {
-                            shift++;
-                        }
-                        if (shift > 12) {
-                            tsk_error_reset();
-                            tsk_error_set_errno(TSK_ERR_FS_FWALK);
-                            tsk_error_set_errstr
-                            ("ntfs_uncompress_compunit: Shift is too large: %d", shift);
-                            return 1;
-                        }
-
-                        //tsk_fprintf(stderr, "Start: %X  Shift: %d  UnComp_IDX %d  BlkStart: %lu  BlkIdx: %d  BlkSize: %d\n", (int)(comp->uncomp_idx - comp->blk_st - 1), shift, comp->uncomp_idx, comp->blk_st, comp->blk_idx, comp->blk_size);
-
-                        offset = (pheader >> (12 - shift)) + 1;
-                        length = (pheader & (0xFFF >> shift)) + 2;
-
-                        start_position_index = comp->uncomp_idx - offset;
-                        end_position_index = start_position_index + length;
-
-                        if (tsk_verbose)
-                            tsk_fprintf(stderr,
-                                "ntfs_uncompress_compunit: Phrase Token: %"
-                                PRIuSIZE "\t%d\t%d\t%x\n", cl_index,
-                                length, offset, pheader);
-
-                        /* Sanity checks on values */
-                        if (offset > comp->uncomp_idx) {
-                            tsk_error_reset();
-                            tsk_error_set_errno(TSK_ERR_FS_FWALK);
-                            tsk_error_set_errstr
-                                ("ntfs_uncompress_compunit: Phrase token offset is too large:  %d (max: %"
-                                PRIuSIZE ")", offset, comp->uncomp_idx);
-                            return 1;
-                        }
-                        else if (length + start_position_index >
-                            comp->buf_size_b) {
-                            tsk_error_reset();
-                            tsk_error_set_errno(TSK_ERR_FS_FWALK);
-                            tsk_error_set_errstr
-                                ("ntfs_uncompress_compunit: Phrase token length is too large:  %d (max: %" PRIuSIZE")",
-                                length,
-                                comp->buf_size_b - start_position_index);
-                            return 1;
-                        }
-                        else if (end_position_index -
-                            start_position_index + 1 >
-                            comp->buf_size_b - comp->uncomp_idx) {
-                            tsk_error_reset();
-                            tsk_error_set_errno(TSK_ERR_FS_FWALK);
-                            tsk_error_set_errstr
-                                ("ntfs_uncompress_compunit: Phrase token length is too large for rest of uncomp buf:  %" PRIuSIZE" (max: %"
-                                PRIuSIZE ")",
-                                end_position_index - start_position_index +
-                                1, comp->buf_size_b - comp->uncomp_idx);
-                            return 1;
-                        }
-
-                        for (;
-                            start_position_index <= end_position_index
-                            && comp->uncomp_idx < comp->buf_size_b;
-                            start_position_index++) {
-
-                            // Copy the previous data to the current position
-                            comp->uncomp_buf[comp->uncomp_idx++]
-                                = comp->uncomp_buf[start_position_index];
-                        }
-                    }
-                    header >>= 1;
-                }               // end of loop inside of token group
-
-            }                   // end of loop inside of block
-        }
-
-        // this block contains uncompressed data
-        else {
-            while (cl_index < blk_end && cl_index < comp->comp_len) {
-                /* This seems to happen only with corrupt data -- such as
-                 * when an unallocated file is being processed... */
-                if (comp->uncomp_idx >= comp->buf_size_b) {
-                    tsk_error_reset();
-                    tsk_error_set_errno(TSK_ERR_FS_FWALK);
-                    tsk_error_set_errstr
-                        ("ntfs_uncompress_compunit: Trying to write past end of uncompression buffer (1) -- corrupt data?)");
-                    return 1;
+                    cl_index++;
                 }
 
-                // Place data in uncompression_buffer
-                comp->uncomp_buf[comp->uncomp_idx++] =
-                    comp->comp_buf[cl_index++];
-            }
-        }
+                /* Otherwise, it is a phrase token, which points back
+                    * to a previous sequence of bytes.
+                    */
+                else {
+                    size_t i;
+                    int shift;
+                    size_t start_position_index = 0;
+                    size_t end_position_index = 0;
+                    unsigned int offset = 0;
+                    unsigned int length = 0;
+                    uint16_t pheader;
+
+                    if (cl_index + 1 >= blk_end) {
+                        tsk_error_set_errno(TSK_ERR_FS_FWALK);
+                        tsk_error_set_errstr
+                            ("ntfs_uncompress_compunit: Phrase token index is past end of block: %d",
+                            a);
+                        return 1;
+                    }
+
+                    pheader =
+                        ((((comp->comp_buf[cl_index +
+                                        1]) << 8) & 0xFF00) |
+                        (comp->comp_buf[cl_index] & 0xFF));
+                    cl_index += 2;
+
+
+                    /* The number of bits for the start and length
+                        * in the 2-byte header change depending on the
+                        * location in the compression unit.  This identifies
+                        * how many bits each has */
+                    shift = 0;
+                    for (i =
+                        comp->uncomp_idx -
+                        blk_st_uncomp - 1; i >= 0x10; i >>= 1) {
+                        shift++;
+                    }
+                    if (shift > 12) {
+                        tsk_error_reset();
+                        tsk_error_set_errno(TSK_ERR_FS_FWALK);
+                        tsk_error_set_errstr
+                        ("ntfs_uncompress_compunit: Shift is too large: %d", shift);
+                        return 1;
+                    }
+
+                    //tsk_fprintf(stderr, "Start: %X  Shift: %d  UnComp_IDX %d  BlkStart: %lu  BlkIdx: %d  BlkSize: %d\n", (int)(comp->uncomp_idx - comp->blk_st - 1), shift, comp->uncomp_idx, comp->blk_st, comp->blk_idx, comp->blk_size);
+
+                    offset = (pheader >> (12 - shift)) + 1;
+                    length = (pheader & (0xFFF >> shift)) + 2;
+
+                    start_position_index = comp->uncomp_idx - offset;
+                    end_position_index = start_position_index + length;
+
+                    if (tsk_verbose)
+                        tsk_fprintf(stderr,
+                            "ntfs_uncompress_compunit: Phrase Token: %"
+                            PRIuSIZE "\t%d\t%d\t%x\n", cl_index,
+                            length, offset, pheader);
+
+                    /* Sanity checks on values */
+                    if (offset > comp->uncomp_idx) {
+                        tsk_error_reset();
+                        tsk_error_set_errno(TSK_ERR_FS_FWALK);
+                        tsk_error_set_errstr
+                            ("ntfs_uncompress_compunit: Phrase token offset is too large:  %d (max: %"
+                            PRIuSIZE ")", offset, comp->uncomp_idx);
+                        return 1;
+                    }
+                    else if (length + start_position_index >
+                        comp->buf_size_b) {
+                        tsk_error_reset();
+                        tsk_error_set_errno(TSK_ERR_FS_FWALK);
+                        tsk_error_set_errstr
+                            ("ntfs_uncompress_compunit: Phrase token length is too large:  %d (max: %" PRIuSIZE")",
+                            length,
+                            comp->buf_size_b - start_position_index);
+                        return 1;
+                    }
+                    else if (end_position_index -
+                        start_position_index + 1 >
+                        comp->buf_size_b - comp->uncomp_idx) {
+                        tsk_error_reset();
+                        tsk_error_set_errno(TSK_ERR_FS_FWALK);
+                        tsk_error_set_errstr
+                            ("ntfs_uncompress_compunit: Phrase token length is too large for rest of uncomp buf:  %" PRIuSIZE" (max: %"
+                            PRIuSIZE ")",
+                            end_position_index - start_position_index +
+                            1, comp->buf_size_b - comp->uncomp_idx);
+                        return 1;
+                    }
+
+                    for (;
+                        start_position_index <= end_position_index
+                        && comp->uncomp_idx < comp->buf_size_b;
+                        start_position_index++) {
+
+                        // Copy the previous data to the current position
+                        comp->uncomp_buf[comp->uncomp_idx++]
+                            = comp->uncomp_buf[start_position_index];
+                    }
+                }
+                header >>= 1;
+            }               // end of loop inside of token group
+
+        }                   // end of loop inside of block
     }                           // end of loop inside of compression unit
 
     return 0;
