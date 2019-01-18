@@ -7908,6 +7908,66 @@ public class SleuthkitCase {
 			releaseSingleUserCaseReadLock();
 		}
 	}
+	
+	/**
+	 * Set the acquisition details in the data_source_info table
+	 * 
+	 * @param datasource The data source
+	 * @param details    The acquisition details
+	 * 
+	 * @throws TskCoreException Thrown if the database write fails
+	 */
+	void setAcquisitionDetails(DataSource datasource, String details) throws TskCoreException {
+
+		long id = datasource.getId();
+		CaseDbConnection connection = connections.getConnection();
+		acquireSingleUserCaseWriteLock();
+		try {
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.UPDATE_ACQUISITION_DETAILS);
+			statement.clearParameters();
+			statement.setString(1, details);
+			statement.setLong(2, id);
+			connection.executeUpdate(statement);
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error setting acquisition details", ex);
+		} finally {
+			connection.close();
+			releaseSingleUserCaseWriteLock();
+		}
+	}
+	
+	/**
+	 * Get the acquisition details from the data_source_info table
+	 * 
+	 * @param datasource The data source
+	 * 
+	 * @return The acquisition details
+	 * 
+	 * @throws TskCoreException Thrown if the database read fails
+	 */
+	String getAcquisitionDetails(DataSource datasource) throws TskCoreException {
+		long id = datasource.getId();
+		CaseDbConnection connection = connections.getConnection();
+		acquireSingleUserCaseReadLock();
+		ResultSet rs = null;
+		String hash = "";
+		try {
+			PreparedStatement statement = connection.getPreparedStatement(PREPARED_STATEMENT.SELECT_ACQUISITION_DETAILS);
+			statement.clearParameters();
+			statement.setLong(1, id);
+			rs = connection.executeQuery(statement);
+			if (rs.next()) {
+				hash = rs.getString("acquisition_details");
+			}
+			return hash;
+		} catch (SQLException ex) {
+			throw new TskCoreException("Error setting acquisition details", ex);
+		} finally {
+			closeResultSet(rs);
+			connection.close();
+			releaseSingleUserCaseReadLock();
+		}
+	}
 
 	/**
 	 * Set the review status of the given artifact to newStatus
@@ -9585,6 +9645,8 @@ public class SleuthkitCase {
 		SELECT_IMAGE_MD5("SELECT md5 FROM tsk_image_info WHERE obj_id = ?"), //NON-NLS
 		SELECT_IMAGE_SHA1("SELECT sha1 FROM tsk_image_info WHERE obj_id = ?"), //NON-NLS
 		SELECT_IMAGE_SHA256("SELECT sha256 FROM tsk_image_info WHERE obj_id = ?"), //NON-NLS
+		UPDATE_ACQUISITION_DETAILS("UPDATE data_source_info SET acquisition_details = ? WHERE obj_id = ?"), //NON-NLS
+		SELECT_ACQUISITION_DETAILS("SELECT acquisition_details FROM data_source_info WHERE obj_id = ?"), //NON-NLS
 		SELECT_LOCAL_PATH_FOR_FILE("SELECT path FROM tsk_files_path WHERE obj_id = ?"), //NON-NLS
 		SELECT_ENCODING_FOR_FILE("SELECT encoding_type FROM tsk_files_path WHERE obj_id = ?"), // NON-NLS
 		SELECT_LOCAL_PATH_AND_ENCODING_FOR_FILE("SELECT path, encoding_type FROM tsk_files_path WHERE obj_id = ?"), // NON_NLS
