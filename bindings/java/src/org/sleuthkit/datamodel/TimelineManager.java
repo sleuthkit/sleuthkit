@@ -562,7 +562,7 @@ public final class TimelineManager {
 				EventType.FILE_CREATED, file.getCrtime(),
 				EventType.FILE_ACCESSED, file.getAtime(),
 				EventType.FILE_CHANGED, file.getCtime(),
-				EventType.FILE_CHANGED, file.getMtime());
+				EventType.FILE_MODIFIED, file.getMtime());
 
 		/*
 		 * If there are no legitimate ( greater than zero ) time stamps ( eg,
@@ -679,15 +679,17 @@ public final class TimelineManager {
 	private Optional<TimelineEvent> addArtifactEvent(TSKCoreCheckedFunction<BlackboardArtifact, ArtifactEventType.EventDescriptionWithTime> payloadExtractor,
 			EventType eventType, BlackboardArtifact artifact) throws TskCoreException {
 		ArtifactEventType.EventDescriptionWithTime eventPayload = payloadExtractor.apply(artifact);
-		String fullDescription = eventPayload.getFullDescription();
-		String medDescription = eventPayload.getMediumDescription();
-		String shortDescription = eventPayload.getShortDescription();
+		if (eventPayload == null) {
+			return Optional.empty();
+		}
 		long time = eventPayload.getTime();
-
 		// if the time is legitimate ( greater than zero ) insert it into the db
 		if (time <= 0) {
 			return Optional.empty();
 		}
+		String fullDescription = eventPayload.getFullDescription();
+		String medDescription = eventPayload.getMediumDescription();
+		String shortDescription = eventPayload.getShortDescription();
 		long artifactID = artifact.getArtifactID();
 		long fileObjId = artifact.getObjectID();
 		long dataSourceObjectID = artifact.getDataSourceObjectID();
