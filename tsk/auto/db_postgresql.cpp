@@ -1079,11 +1079,6 @@ int TskDbPostgreSQL::addMACTimeEvents(char*& zSQL, const int64_t data_source_obj
                 return 1;
             }
 
-            if (attempt_exec(zSQL, "TskDbPostgreSQL::addMACTimeEvents: Error adding description to tsk_event_descriptions table: %s\n"))
-            {
-                 
-                return 1;
-            }
             PGresult* res = get_query_result_set(
                 zSQL, "TskDbPostgreSQL::addMACTimeEvents: Error adding object to row: %s (result code %d)\n");
             // check if a valid result set was returned

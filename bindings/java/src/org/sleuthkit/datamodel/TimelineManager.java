@@ -242,7 +242,7 @@ public final class TimelineManager {
 	}
 
 	public TimelineEvent getEventById(long eventID) throws TskCoreException {
-		String sql = "SELECT * FROM ( " + getAugmentedEventsTablesSQL(false, false, false) + ") WHERE event_id = " + eventID;
+		String sql = "SELECT * FROM  " + getAugmentedEventsTablesSQL(false, false, false) + " WHERE event_id = " + eventID;
 
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
@@ -482,7 +482,7 @@ public final class TimelineManager {
 
 		String query
 				= "SELECT event_id FROM tsk_events "
-				+ " LEFT JOIN tsk_event_descriptions on ( tsk_events.event_description_id == tsk_event_descriptions.event_description_id ) "
+				+ " LEFT JOIN tsk_event_descriptions on ( tsk_events.event_description_id = tsk_event_descriptions.event_description_id ) "
 				+ " WHERE artifact_id = " + artifact.getArtifactID();
 		sleuthkitCase.acquireSingleUserCaseReadLock();
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
@@ -554,6 +554,8 @@ public final class TimelineManager {
 	}
 
 	Collection<TimelineEvent> addAbstractFileEvents(AbstractFile file, CaseDbConnection connection) throws TskCoreException {
+		boolean hashHashHits = CollectionUtils.isNotEmpty(file.getHashSetNames());
+		boolean hasTags = CollectionUtils.isNotEmpty(sleuthkitCase.getContentTagsByContent(file));
 
 		//gather time stamps into map
 		Map<EventType, Long> timeMap = ImmutableMap.of(
@@ -587,7 +589,7 @@ public final class TimelineManager {
 					long eventID = addEventWithExistingDescription(time, type, descriptionID, connection);
 
 					events.add(new TimelineEvent(eventID, descriptionID, fileObjId, null, time, type,
-							description, null, null, false, false));
+							description, null, null, hashHashHits, hasTags));
 				}
 			}
 
@@ -773,8 +775,9 @@ public final class TimelineManager {
 
 	private HashMap<Long, Long> getEventDescriptionIDsHelper(long fileObjID, String artifactClause) throws TskCoreException {
 		HashMap<Long, Long> eventIDToDescriptionIDs = new HashMap<>();
-		String sql = "SELECT event_id, event_description_id from tsk_events "
-				+ " LEFT JOIN tsk_event_descriptions ON ( tsk_events.event_description_id == tsk_event_descriptions.event_description_id )"
+		String sql = "SELECT event_id, tsk_events.event_description_id"
+				+ " FROM tsk_events "
+				+ " LEFT JOIN tsk_event_descriptions ON ( tsk_events.event_description_id = tsk_event_descriptions.event_description_id )"
 				+ " WHERE file_obj_id = " + fileObjID
 				+ artifactClause;
 
@@ -833,10 +836,10 @@ public final class TimelineManager {
 	public Set<Long> setEventsHashed(long fileObjdId, boolean hashHits) throws TskCoreException {
 		sleuthkitCase.acquireSingleUserCaseWriteLock();
 		Map<Long, Long> eventIDs = getEventAndDescriptionIDs(fileObjdId, true);
-		
+
 		try (CaseDbConnection con = sleuthkitCase.getConnection();
 				Statement updateStatement = con.createStatement();) {
-			updateStatement.executeUpdate("UPDATE tsk_event_descriptionss SET hash_hit = " + booleanToInt(hashHits) //NON-NLS
+			updateStatement.executeUpdate("UPDATE tsk_event_descriptions SET hash_hit = " + booleanToInt(hashHits) //NON-NLS
 					+ " WHERE event_description_id IN (" + buildCSVString(eventIDs.values()) + ")"); //NON-NLS
 		} catch (SQLException ex) {
 			throw new TskCoreException("Error setting hash_hit of events.", ex);
@@ -850,23 +853,6 @@ public final class TimelineManager {
 		trans.rollback();
 	}
 
-//	private TimelineEvent constructTimeLineEvent(ResultSet resultSet) throws SQLException, TskCoreException {
-//		int typeID = resultSet.getInt("sub_type"); //NON-NLS
-//		EventType eventType = getEventType(typeID).orElseThrow(() -> newEventTypeMappingException(typeID));
-//
-//		return new TimelineEvent(resultSet.getLong("event_id"), //NON-NLS
-//				resultSet.getLong("data_source_obj_id"), //NON-NLS
-//				resultSet.getLong("file_obj_id"), //NON-NLS
-//				resultSet.getLong("artifact_id"), //NON-NLS
-//				resultSet.getLong("time"),
-//				eventType,
-//				eventType.getDescription(
-//						resultSet.getString("full_description"),
-//						resultSet.getString("med_description"),
-//						resultSet.getString("short_description")),
-//				resultSet.getInt("hash_hit") != 0, //NON-NLS
-//				resultSet.getInt("tagged") != 0); //NON-NLS
-//	}
 	/**
 	 * Count all the events with the given options and return a map organizing
 	 * the counts in a hierarchy from date > eventtype> count
@@ -948,63 +934,53 @@ public final class TimelineManager {
 	/**
 	 * Get an SQL expression that produces an events table augmented with the
 	 * columns required by the filters: The union of the events table joined to
-	 * the content and blackboard artifacts tags tables, if necessary, then
-	 * joined to a query that selects hash set hits, if necessary. Then joined
+	 * the content and blackboard artifacts tags tables, if necessary; then
+	 * joined to a query that selects hash set hits, if necessary; then joined
 	 * to the tsk_files table for mime_types if necessary. If all flags are
 	 * false, just return "events".
 	 *
-	 * @param needTags       True if the Sfilters require joining to the tags
-	 *                       tables.
-	 * @param needHashSets   True if the filters require joining to the hash set
-	 *                       sub query.
-	 * @param needsMimeTypes True if the filters require joining to the
-	 *                       tsk_files table for the mime_type.
+	 * @param needTags      True if the Sfilters require joining to the tags
+	 *                      tables.
+	 * @param needHashSets  True if the filters require joining to the hash set
+	 *                      sub query.
+	 * @param needMimeTypes True if the filters require joining to the tsk_files
+	 *                      table for the mime_type.
 	 *
 	 * @return An SQL expresion that produces an events table augmented with the
 	 *         columns required by the filters.
 	 */
-	static private String getAugmentedEventsTablesSQL(boolean needTags, boolean needHashSets, boolean needsMimeTypes) {
-		String table = "tsk_event_descriptions";
-
-		if (needTags) {
-			String columns
-					= " event_description_id, data_source_obj_id, tsk_event_descriptions.file_obj_id, tsk_event_descriptions.artifact_id,"
-					+ " full_description, med_description, short_description,"
-					+ " hash_hit, tagged , tag_name_id, tag_id ";
-
-			table = "( SELECT " + columns
-					+ "		FROM tsk_event_descriptions LEFT OUTER JOIN content_tags ON (content_tags.obj_id = tsk_events.file_obj_id) "
-					+ "	UNION ALL "
-					+ "	SELECT " + columns
-					+ "		FROM tsk_event_descriptions LEFT OUTER JOIN blackboard_artifact_tags ON (blackboard_artifact_tags.artifact_id = tsk_events.artifact_id)"
-					+ " ) AS tsk_event_descriptions";
-		}
-
-		if (needHashSets) {
-			table = " ( SELECT * "
-					+ " FROM " + table + " LEFT OUTER JOIN ( "
-					+ "		SELECT DISTINCT value_text AS hash_set_name, obj_id  "
-					+ "		FROM blackboard_artifacts"
-					+ "		JOIN blackboard_attributes ON (blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id)"
-					+ "		JOIN blackboard_artifact_types ON( blackboard_artifacts.artifact_type_id = blackboard_artifact_types.artifact_type_id)"
-					+ "		WHERE  blackboard_artifact_types.artifact_type_id = " + TSK_HASHSET_HIT.getTypeID()
-					+ "		AND blackboard_attributes.attribute_type_id = " + TSK_SET_NAME.getTypeID() + ") AS hash_set_hits"
-					+ "	ON ( tsk_event_descriptions.file_obj_id = hash_set_hits.obj_id)"
-					+ ") AS tsk_event_descriptions";
-		}
-
-		if (needsMimeTypes) {
-			table = " ( SELECT * "
-					+ "		FROM " + table + " LEFT OUTER JOIN tsk_files "
-					+ "	ON (tsk_event_descriptions.file_obj_id == tsk_files.obj_id)"
-					+ ")  AS tsk_event_descriptions";
-		}
-
-		table = " ( SELECT * "
-				+ " FROM " + table + " join tsk_events  ON ( tsk_event_descriptions.event_description_id == tsk_events.event_description_id)"
-				+ " join tsk_event_types on (tsk_events.event_type_id == tsk_event_types.event_type_id ) "
+	static private String getAugmentedEventsTablesSQL(boolean needTags, boolean needHashSets, boolean needMimeTypes) {
+		return "( select event_id, time, tsk_event_descriptions.data_source_obj_id, file_obj_id, artifact_id, "
+				+ " full_description, med_description, short_description, tsk_events.event_type_id, super_type_id,"
+				+ " hash_hit, tagged "
+				+ (needTags ? ", tag_name_id, tag_id" : "")
+				+ (needHashSets ? ", hash_set_name" : "")
+				+ (needMimeTypes ? ", mime_type" : "")
+				+ " FROM tsk_events "
+				+ " JOIN tsk_event_descriptions ON ( tsk_event_descriptions.event_description_id = tsk_events.event_description_id)"
+				+ " JOIN tsk_event_types ON (tsk_events.event_type_id = tsk_event_types.event_type_id )  "
+				+ (needTags
+						? ("LEFT OUTER JOIN ("
+						+ "		SELECT  event_description_id, tag_name_id, tag_id "
+						+ "			FROM tsk_event_descriptions LEFT OUTER JOIN content_tags ON (content_tags.obj_id = tsk_event_descriptions.file_obj_id) "
+						+ "	UNION ALL "
+						+ "		SELECT  event_description_id,  tag_name_id, tag_id "
+						+ "			FROM tsk_event_descriptions LEFT OUTER JOIN blackboard_artifact_tags ON (blackboard_artifact_tags.artifact_id = tsk_event_descriptions.artifact_id)"
+						+ " ) AS tsk_event_tags ON (tsk_event_tags.event_description_id = tsk_events.event_description_id)")
+						: "")
+				+ (needHashSets ? " LEFT OUTER JOIN ( "
+						+ "		SELECT DISTINCT value_text AS hash_set_name, obj_id  "
+						+ "		FROM blackboard_artifacts"
+						+ "		JOIN blackboard_attributes ON (blackboard_artifacts.artifact_id = blackboard_attributes.artifact_id)"
+						+ "		JOIN blackboard_artifact_types ON( blackboard_artifacts.artifact_type_id = blackboard_artifact_types.artifact_type_id)"
+						+ "		WHERE  blackboard_artifact_types.artifact_type_id = " + TSK_HASHSET_HIT.getTypeID()
+						+ "		AND blackboard_attributes.attribute_type_id = " + TSK_SET_NAME.getTypeID() + ") AS hash_set_hits"
+						+ "	ON ( tsk_event_descriptions.file_obj_id = hash_set_hits.obj_id)"
+						: "")
+				+ (needMimeTypes ? " LEFT OUTER JOIN tsk_files "
+						+ "	ON (tsk_event_descriptions.file_obj_id = tsk_files.obj_id)"
+						: "")
 				+ ")  AS tsk_events";
-		return table;
 	}
 
 	/**
