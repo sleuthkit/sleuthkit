@@ -32,6 +32,7 @@ class TSKPool {
   inline const Guid &uuid() const { return _uuid; }
 
   inline uint32_t block_size() const noexcept { return _block_size; }
+  inline uint32_t dev_block_size() const noexcept { return _dev_block_size; }
   inline uint64_t num_blocks() const noexcept { return _num_blocks; }
   inline int num_vols() const noexcept { return _num_vols; }
 
@@ -49,6 +50,7 @@ class TSKPool {
   uint64_t _num_blocks;
   int _num_vols;
   uint32_t _block_size{};
+  uint32_t _dev_block_size{};
 };
 
 // Helper function to make it easier to set flag bits on enumerations
