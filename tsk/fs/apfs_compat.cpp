@@ -157,6 +157,7 @@ APFSFSCompat::APFSFSCompat(const TSK_POOL_INFO* pool_info,
   _fsinfo.vol_block = vol_block;
   _fsinfo.block_count = vol.alloc_blocks();
   _fsinfo.block_size = pool.block_size();
+  _fsinfo.dev_bsize = pool.dev_block_size();
   _fsinfo.first_block = 0;
   _fsinfo.last_block = pool.num_blocks() - 1;
   _fsinfo.last_block_act = pool.num_blocks() - 1;

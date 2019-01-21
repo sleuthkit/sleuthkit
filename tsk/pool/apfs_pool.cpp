@@ -28,6 +28,7 @@ APFSPool::APFSPool(std::vector<img_t>&& imgs, apfs_block_num nx_block_num)
   // Update the base members
   _uuid = nxsb->uuid();
   _block_size = nxsb->block_size();
+  _dev_block_size = _img->sector_size;
   _num_blocks = nxsb->num_blocks();
 
   // Check to see if we need to scan for a newer pool
