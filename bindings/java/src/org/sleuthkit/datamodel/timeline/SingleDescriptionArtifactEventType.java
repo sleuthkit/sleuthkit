@@ -18,6 +18,8 @@
  */
 package org.sleuthkit.datamodel.timeline;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.sleuthkit.datamodel.BlackboardArtifact;
 import org.sleuthkit.datamodel.BlackboardAttribute;
 import org.sleuthkit.datamodel.TskCoreException;
@@ -29,10 +31,19 @@ import org.sleuthkit.datamodel.TskCoreException;
  */
 class SingleDescriptionArtifactEventType extends StandardArtifactEventType {
 
+	private static final Logger logger = Logger.getLogger(SingleDescriptionArtifactEventType.class.getName());
+
 	@Override
 	public EventDescriptionWithTime buildEventPayload(BlackboardArtifact artifact) throws TskCoreException {
 		String description = extractFullDescription(artifact);
-		long time = artifact.getAttribute(getDateTimeAttributeType()).getValueLong();
+		BlackboardAttribute timeAttribute = artifact.getAttribute(getDateTimeAttributeType());
+
+		if (timeAttribute == null) {
+			logger.log(Level.WARNING, "Artifact {0} has no date/time attribute, skipping it.", artifact.toString()); // NON-NLS
+			return null;
+		}
+
+		long time = timeAttribute.getValueLong();
 		return new EventDescriptionWithTime(time, null, null, description);
 	}
 
