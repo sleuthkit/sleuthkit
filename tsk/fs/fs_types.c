@@ -6,7 +6,7 @@
 **
 ** Brian Carrier [carrier <at> sleuthkit [dot] org]
 ** Copyright (c) 2006-2011 Brian Carrier, Basis Technology.  All Rights reserved
-** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved 
+** Copyright (c) 2003-2005 Brian Carrier.  All rights reserved
 **
 ** TASK
 ** Copyright (c) 2002 Brian Carrier, @stake Inc.  All rights reserved
@@ -56,6 +56,7 @@ static FS_TYPES fs_type_table[] = {
     {"ufs1", TSK_FS_TYPE_FFS1, "UFS1"},
     {"ufs2", TSK_FS_TYPE_FFS2, "UFS2"},
     {"yaffs2", TSK_FS_TYPE_YAFFS2, "YAFFS2"},
+    {"xfs", TSK_FS_TYPE_XFS, "XFS"},
     {0,0,""}
 };
 
@@ -158,7 +159,7 @@ tsk_fs_type_toname(TSK_FS_TYPE_ENUM ftype)
 
 /**
  * \ingroup fslib
- * Return the supported file system types. 
+ * Return the supported file system types.
  * @returns The bit in the return value is 1 if the type is supported.
  */
 TSK_FS_TYPE_ENUM

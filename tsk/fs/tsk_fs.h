@@ -426,7 +426,10 @@ extern "C" {
 
     typedef enum TSK_FS_META_CONTENT_TYPE_ENUM {
         TSK_FS_META_CONTENT_TYPE_DEFAULT = 0x0,
-        TSK_FS_META_CONTENT_TYPE_EXT4_EXTENTS = 0x1     ///< Ext4 with extents instead of individual pointers
+        TSK_FS_META_CONTENT_TYPE_EXT4_EXTENTS = 0x1,     ///< Ext4 with extents instead of individual pointers
+        TSK_FS_META_CONTENT_TYPE_XFS_EXTENTS = 0x2,     ///< XFS with extents instead of individual pointers
+        TSK_FS_META_CONTENT_TYPE_XFS_LOCAL = 0x3,     ///< XFS with all info stored locally instead of individual pointers
+        TSK_FS_META_CONTENT_TYPE_XFS_FMT_BTREE = 0x4 ///< XFS with all info stored in B+tree
     } TSK_FS_META_CONTENT_TYPE_ENUM;
 
 
@@ -797,6 +800,8 @@ extern "C" {
         TSK_FS_TYPE_EXT4 = 0x00002000,  ///< Ext4 file system
         TSK_FS_TYPE_YAFFS2 = 0x00004000,        ///< YAFFS2 file system
         TSK_FS_TYPE_YAFFS2_DETECT = 0x00004000, ///< YAFFS2 auto detection
+        TSK_FS_TYPE_XFS = 0x00008000,        ///< XFS file system
+        TSK_FS_TYPE_XFS_DETECT = 0x00008000, ///< XFS auto detection
         TSK_FS_TYPE_UNSUPP = 0xffffffff,        ///< Unsupported file system
     };
     /* NOTE: Update bindings/java/src/org/sleuthkit/datamodel/TskData.java
@@ -858,6 +863,13 @@ extern "C" {
     * is for a YAFFS2 file system. */
 #define TSK_FS_TYPE_ISYAFFS2(ftype) \
     (((ftype) & TSK_FS_TYPE_YAFFS2_DETECT)?1:0)
+
+    /**
+    * \ingroup fslib
+    * Macro that takes a file system type and returns 1 if the type
+    * is for a XFS file system. */
+#define TSK_FS_TYPE_ISXFS(ftype) \
+    (((ftype) & TSK_FS_TYPE_XFS_DETECT)?1:0)
 
     /**
     * \ingroup fslib

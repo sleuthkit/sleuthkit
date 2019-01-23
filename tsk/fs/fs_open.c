@@ -99,6 +99,7 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
 #if TSK_USE_HFS
         { "HFS",      hfs_open,     TSK_FS_TYPE_HFS_DETECT     },
 #endif
+        { "XFS",  xfs_open, TSK_FS_TYPE_XFS_DETECT             },
         { "ISO9660",  iso9660_open, TSK_FS_TYPE_ISO9660_DETECT }
     };
 
@@ -183,6 +184,9 @@ tsk_fs_open_img(TSK_IMG_INFO * a_img_info, TSK_OFF_T a_offset,
     else if (TSK_FS_TYPE_ISYAFFS2(a_ftype)) {
         return yaffs2_open(a_img_info, a_offset, a_ftype, 0);
     }
+    else if (TSK_FS_TYPE_ISXFS(a_ftype)) {
+      return xfs_open(a_img_info, a_offset, a_ftype, 0);
+    }
     tsk_error_reset();
     tsk_error_set_errno(TSK_ERR_FS_UNSUPTYPE);
     tsk_error_set_errstr("%X", (int) a_ftype);
@@ -200,12 +204,12 @@ tsk_fs_close(TSK_FS_INFO * a_fs)
     if ((a_fs == NULL) || (a_fs->tag != TSK_FS_INFO_TAG))
         return;
 
-    // each file system is supposed to call tsk_fs_free() 
+    // each file system is supposed to call tsk_fs_free()
 
     a_fs->close(a_fs);
 }
 
-/* tsk_fs_malloc - init lock after tsk_malloc 
+/* tsk_fs_malloc - init lock after tsk_malloc
  * This is for fs module and all it's inheritances
  */
 TSK_FS_INFO *
@@ -222,7 +226,7 @@ tsk_fs_malloc(size_t a_len)
     return fs_info;
 }
 
-/* tsk_fs_free - deinit lock before free memory 
+/* tsk_fs_free - deinit lock before free memory
  * This is for fs module and all it's inheritances
  */
 void
@@ -235,7 +239,7 @@ tsk_fs_free(TSK_FS_INFO * a_fs_info)
 
     /* we should probably get the lock, but we're 
      * about to kill the entire object so there are
-     * bigger problems if another thread is still 
+     * bigger problems if another thread is still
      * using the fs */
     if (a_fs_info->orphan_dir) {
         tsk_fs_dir_close(a_fs_info->orphan_dir);
