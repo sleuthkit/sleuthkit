@@ -199,6 +199,8 @@ extern "C" {
         TSK_FS_TYPE_ENUM, uint8_t);
     extern TSK_FS_INFO *yaffs2_open(TSK_IMG_INFO *, TSK_OFF_T,
         TSK_FS_TYPE_ENUM, uint8_t);
+    extern TSK_FS_INFO *xfs_open(TSK_IMG_INFO *, TSK_OFF_T,
+        TSK_FS_TYPE_ENUM, uint8_t);
 
     /* Generic functions for swap and raw -- many say "not supported" */
     extern uint8_t tsk_fs_nofs_fsstat(TSK_FS_INFO * fs, FILE * hFile);
