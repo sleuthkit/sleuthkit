@@ -501,6 +501,30 @@ public class Image extends AbstractContent implements DataSource {
 
 		return contentSize;
 	}
+	
+	/**
+	 * Sets the acquisition details field in the case database.
+	 * 
+	 * @param details The acquisition details
+	 * 
+	 * @throws TskCoreException Thrown if the data can not be written
+	 */
+	@Override
+	public void setAcquisitionDetails(String details) throws TskCoreException {
+		getSleuthkitCase().setAcquisitionDetails(this, details);
+	}
+	
+	/**
+	 * Gets the acquisition details field from the case database.
+	 * 
+	 * @return The acquisition details
+	 * 
+	 * @throws TskCoreException Thrown if the data can not be read
+	 */
+	@Override
+	public String getAcquisitionDetails() throws TskCoreException {
+		return getSleuthkitCase().getAcquisitionDetails(this);
+	}	
 
 	/**
 	 * Close a ResultSet.
