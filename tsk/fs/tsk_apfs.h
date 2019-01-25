@@ -593,6 +593,15 @@ typedef struct {
 } apfs_snap_metadata;
 static_assert(sizeof(apfs_snap_metadata) == 0x32, "improperly aligned struct");
 
+typedef enum {
+  APFS_PE_KIND_ANY = 0,
+  APFS_PE_KIND_NEW = 1,
+  APFS_PE_KIND_UPDATE = 2,
+  APFS_PE_KIND_DEAD = 3,
+  APFS_PE_KIND_UPDATE_REFCNT = 4,
+  APFS_PE_KIND_INVALID = 255
+} apfs_phys_extent_kind;
+
 // Bitfields for apfs_phys_extent.len_and_kind
 #define APFS_PHYS_EXTENT_LEN_BITS 60
 #define APFS_PHYS_EXTENT_LEN_SHIFT 0

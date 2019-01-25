@@ -421,7 +421,7 @@ class APFSBtreeNode : public APFSObject, public APFSOmap::node_tag {
 
  public:
   APFSBtreeNode(const APFSPool &pool, const apfs_block_num block_num,
-                const uint8_t *key)
+                const uint8_t *key = nullptr)
       : APFSObject(pool, block_num), _decryption_key{key} {
     // Decrypt node if needed
     if (key != nullptr) {
@@ -898,6 +898,33 @@ class APFSCheckpointMap : public APFSObject {
   apfs_block_num get_object_block(uint64_t oid, APFS_OBJ_TYPE_ENUM type) const;
 };
 
+// Object representation of an APFS Physical Extent Reference
+#pragma pack(push, 1)
+struct APFSPhysicalExtentRef : apfs_phys_extent {
+  inline apfs_phys_extent_kind kind() const noexcept {
+    return static_cast<apfs_phys_extent_kind>(bitfield_value(
+        len_and_kind, APFS_PHYS_EXTENT_KIND_BITS, APFS_PHYS_EXTENT_KIND_SHIFT));
+  }
+
+  inline uint64_t length() const noexcept {
+    return bitfield_value(len_and_kind, APFS_PHYS_EXTENT_LEN_BITS,
+                          APFS_PHYS_EXTENT_LEN_SHIFT);
+  }
+
+  inline uint64_t owner_oid() const noexcept { return owning_obj_id; }
+
+  inline uint32_t ref_count() const noexcept { return refcnt; }
+};
+#pragma pack(pop)
+static_assert(sizeof(APFSPhysicalExtentRef) == sizeof(apfs_phys_extent),
+              "No member fields can be added to APFSPhysicalExtentRef");
+
+class APFSExtentRefBtreeNode
+    : public APFSBtreeNode<uint64_t, APFSPhysicalExtentRef> {
+ public:
+  using APFSBtreeNode::APFSBtreeNode;
+};
+
 class APFSJObjTree;
 class APFSFileSystem : public APFSObject {
  public:
@@ -1050,6 +1077,10 @@ class APFSFileSystem : public APFSObject {
   apfs_block_num omap_root() const;
 
   APFSJObjTree root_jobj_tree() const;
+
+  APFSExtentRefBtreeNode extent_ref_tree() const {
+    return {pool(), fs()->extentref_tree_oid};
+  }
 
   friend APFSJObjTree;
 };
