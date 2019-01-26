@@ -117,7 +117,7 @@ class APFSBtreeNodeIterator {
   // to the child node.
   //
   // TODO(JTS): If we ever switch to c++17 then we can use a std::variant
-  std::unique_ptr<APFSBtreeNodeIterator> _child_it{};
+  std::unique_ptr<typename Node::iterator> _child_it{};
   value_type _val{};
 
   inline lw_shared_ptr<Node> own_node(const Node *node) {
@@ -149,7 +149,7 @@ class APFSBtreeNodeIterator {
     } else {
       const auto block_num = *((apfs_block_num *)val_data);
 
-      _child_it = std::make_unique<APFSBtreeNodeIterator>(
+      _child_it = std::make_unique<typename Node::iterator>(
           own_node(_node.get(), block_num), 0);
     }
   }
@@ -169,7 +169,7 @@ class APFSBtreeNodeIterator {
     } else {
       const auto block_num = *((apfs_block_num *)val_data);
 
-      _child_it = std::make_unique<APFSBtreeNodeIterator>(
+      _child_it = std::make_unique<typename Node::iterator>(
           own_node(_node.get(), block_num), 0);
     }
   }
@@ -183,7 +183,7 @@ class APFSBtreeNodeIterator {
   APFSBtreeNodeIterator(lw_shared_ptr<Node> &&node, uint32_t index);
 
   APFSBtreeNodeIterator(const Node *node, uint32_t index,
-                        APFSBtreeNodeIterator &&child);
+                        typename Node::iterator &&child);
 
   virtual ~APFSBtreeNodeIterator() = default;
 
@@ -192,7 +192,7 @@ class APFSBtreeNodeIterator {
     if (_node->is_leaf()) {
       _val = rhs._val;
     } else if (rhs._child_it != nullptr) {
-      _child_it = std::make_unique<APFSBtreeNodeIterator>(*rhs._child_it);
+      _child_it = std::make_unique<typename Node::iterator>(*rhs._child_it);
     }
   }
 
@@ -1130,13 +1130,14 @@ inline void APFSBtreeNodeIterator<APFSJObjBtreeNode>::init_value<void>() {
       throw std::runtime_error("can not find jobj");
     }
 
-    _child_it = std::make_unique<APFSBtreeNodeIterator>(
+    _child_it = std::make_unique<typename APFSJObjBtreeNode::iterator>(
         own_node(_node.get(), it->value->paddr), 0);
   }
 }
 
-template <typename T>
-APFSBtreeNodeIterator<T>::APFSBtreeNodeIterator(const T *node, uint32_t index)
+template <typename Node>
+APFSBtreeNodeIterator<Node>::APFSBtreeNodeIterator(const Node *node,
+                                                   uint32_t index)
     : _node{own_node(node)}, _index{index} {
   // If we're the end, then there's nothing to do
   if (index >= _node->key_count()) {
@@ -1146,10 +1147,10 @@ APFSBtreeNodeIterator<T>::APFSBtreeNodeIterator(const T *node, uint32_t index)
   init_value();
 }
 
-template <typename T>
-APFSBtreeNodeIterator<T>::APFSBtreeNodeIterator(lw_shared_ptr<T> &&node,
-                                                uint32_t index)
-    : _node{std::forward<lw_shared_ptr<T>>(node)}, _index{index} {
+template <typename Node>
+APFSBtreeNodeIterator<Node>::APFSBtreeNodeIterator(lw_shared_ptr<Node> &&node,
+                                                   uint32_t index)
+    : _node{std::forward<lw_shared_ptr<Node>>(node)}, _index{index} {
   // If we're the end, then there's nothing to do
   if (index >= _node->key_count()) {
     return;
@@ -1158,10 +1159,10 @@ APFSBtreeNodeIterator<T>::APFSBtreeNodeIterator(lw_shared_ptr<T> &&node,
   init_value();
 }
 
-template <typename T>
-APFSBtreeNodeIterator<T>::APFSBtreeNodeIterator(const T *node, uint32_t index,
-                                                APFSBtreeNodeIterator &&child)
+template <typename Node>
+APFSBtreeNodeIterator<Node>::APFSBtreeNodeIterator(
+    const Node *node, uint32_t index, typename Node::iterator &&child)
     : _node{own_node(node)}, _index{index} {
-  _child_it = std::make_unique<APFSBtreeNodeIterator>(
-      std::forward<APFSBtreeNodeIterator>(child));
+  _child_it = std::make_unique<typename Node::iterator>(
+      std::forward<typename Node::iterator>(child));
 }
