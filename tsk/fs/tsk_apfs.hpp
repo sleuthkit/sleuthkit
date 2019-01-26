@@ -906,7 +906,7 @@ struct APFSPhysicalExtentRef : apfs_phys_extent {
         len_and_kind, APFS_PHYS_EXTENT_KIND_BITS, APFS_PHYS_EXTENT_KIND_SHIFT));
   }
 
-  inline uint64_t length() const noexcept {
+  inline uint64_t block_count() const noexcept {
     return bitfield_value(len_and_kind, APFS_PHYS_EXTENT_LEN_BITS,
                           APFS_PHYS_EXTENT_LEN_SHIFT);
   }
@@ -915,14 +915,25 @@ struct APFSPhysicalExtentRef : apfs_phys_extent {
 
   inline uint32_t ref_count() const noexcept { return refcnt; }
 };
-#pragma pack(pop)
 static_assert(sizeof(APFSPhysicalExtentRef) == sizeof(apfs_phys_extent),
               "No member fields can be added to APFSPhysicalExtentRef");
 
-class APFSExtentRefBtreeNode
-    : public APFSBtreeNode<uint64_t, APFSPhysicalExtentRef> {
+struct APFSPhysicalExtentKey : apfs_phys_extent_key {
+  inline apfs_block_num start_block() const noexcept {
+    return bitfield_value(start_block_and_type,
+                          APFS_PHYS_EXTENT_START_BLOCK_BITS,
+                          APFS_PHYS_EXTENT_START_BLOCK_SHIFT);
+  }
+};
+static_assert(sizeof(APFSPhysicalExtentKey) == sizeof(apfs_phys_extent_key),
+              "No member fields can be added to APFSPhysicalExtentKey");
+#pragma pack(pop)
+
+class APFSExtentRefBtreeNode : public APFSBtreeNode<> {
  public:
   using APFSBtreeNode::APFSBtreeNode;
+
+  iterator find(apfs_block_num) const;
 };
 
 class APFSJObjTree;

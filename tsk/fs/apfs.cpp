@@ -1017,6 +1017,14 @@ APFSSuperblock::Keybag::Keybag(const APFSSuperblock& sb)
   }
 }
 
+APFSExtentRefBtreeNode::iterator APFSExtentRefBtreeNode::find(
+    apfs_block_num block) const {
+  return APFSBtreeNode::find(
+      block, [](const auto& key, const auto block) noexcept->int64_t {
+        return key.template as<APFSPhysicalExtentKey>()->start_block() - block;
+      });
+}
+
 APFSFileSystem::Keybag::Keybag(const APFSFileSystem& vol,
                                apfs_block_num block_num)
     : APFSKeybag(vol.pool(), block_num, vol.fs()->uuid, vol.fs()->uuid) {

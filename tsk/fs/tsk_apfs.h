@@ -615,6 +615,17 @@ typedef struct {
 } apfs_phys_extent;
 static_assert(sizeof(apfs_phys_extent) == 0x14, "improperly aligned struct");
 
+// Bitfields for apfs_phys_extent_key.start_block_and_type
+#define APFS_PHYS_EXTENT_START_BLOCK_BITS 60
+#define APFS_PHYS_EXTENT_START_BLOCK_SHIFT 0
+#define APFS_PHYS_EXTENT_TYPE_BITS 4
+#define APFS_PHYS_EXTENT_TYPE_SHIFT 60
+typedef struct {
+  uint64_t start_block_and_type;
+} apfs_phys_extent_key;
+static_assert(sizeof(apfs_phys_extent_key) == 0x08,
+              "improperly aligned struct");
+
 // Flags for apfs_inode.flags
 #define APFS_INODE_IS_APFS_PRIVATE = 0x00000001
 #define APFS_INODE_MAINTAIN_DIR_STATS = 0x00000002
