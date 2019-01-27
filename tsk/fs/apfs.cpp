@@ -569,7 +569,7 @@ const std::vector<APFSFileSystem::snapshot_t> APFSFileSystem::snapshots()
     const {
   std::vector<snapshot_t> v{};
 
-  const APFSSnapshotBtreeNode snap_tree{_pool, fs()->snap_meta_tree_oid};
+  const APFSSnapshotMetaBtreeNode snap_tree{_pool, fs()->snap_meta_tree_oid};
 
   using key_type = struct {
     uint64_t xid_and_type;
@@ -650,11 +650,11 @@ APFSObjectBtreeNode::APFSObjectBtreeNode(const APFSPool& pool,
   }
 }
 
-APFSSnapshotBtreeNode::APFSSnapshotBtreeNode(const APFSPool& pool,
-                                             apfs_block_num block_num)
+APFSSnapshotMetaBtreeNode::APFSSnapshotMetaBtreeNode(const APFSPool& pool,
+                                                     apfs_block_num block_num)
     : APFSBtreeNode(pool, block_num) {
   if (subtype() != APFS_OBJ_TYPE_SNAPMETATREE) {
-    throw std::runtime_error("APFSSnapshotBtreeNode: invalid subtype");
+    throw std::runtime_error("APFSSnapshotMetaBtreeNode: invalid subtype");
   }
 }
 

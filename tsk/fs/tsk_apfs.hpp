@@ -548,9 +548,9 @@ class APFSObjectBtreeNode
   inline void snapshot(uint64_t snap_xid) { _xid = snap_xid; }
 };
 
-class APFSSnapshotBtreeNode : public APFSBtreeNode<> {
+class APFSSnapshotMetaBtreeNode : public APFSBtreeNode<> {
  public:
-  APFSSnapshotBtreeNode(const APFSPool &pool, apfs_block_num block_num);
+  APFSSnapshotMetaBtreeNode(const APFSPool &pool, apfs_block_num block_num);
 };
 
 class APFSJObjBtreeNode : public APFSBtreeNode<> {
@@ -1089,6 +1089,10 @@ class APFSFileSystem : public APFSObject {
 
   APFSExtentRefBtreeNode extent_ref_tree() const {
     return {pool(), fs()->extentref_tree_oid};
+  }
+
+  APFSSnapshotMetaBtreeNode snap_meta_tree() const {
+    return {pool(), fs()->snap_meta_tree_oid};
   }
 
   friend APFSJObjTree;
