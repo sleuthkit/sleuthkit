@@ -91,7 +91,7 @@ class APFSOmap : public APFSObject {
   template <typename T,
             typename = std::enable_if_t<std::is_base_of<node_tag, T>::value>>
   T root() const {
-    return {_pool, root_block(), nullptr};
+    return {_pool, root_block()};
   }
 };
 
@@ -539,8 +539,6 @@ class APFSObjectBtreeNode
   uint64_t _xid;
 
  public:
-  using APFSBtreeNode::APFSBtreeNode;
-
   APFSObjectBtreeNode(const APFSPool &pool, apfs_block_num block_num);
   APFSObjectBtreeNode(const APFSPool &pool, apfs_block_num block_num,
                       uint64_t snap_xid);
@@ -552,7 +550,7 @@ class APFSObjectBtreeNode
 
 class APFSSnapshotBtreeNode : public APFSBtreeNode<> {
  public:
-  using APFSBtreeNode::APFSBtreeNode;
+  APFSSnapshotBtreeNode(const APFSPool &pool, apfs_block_num block_num);
 };
 
 class APFSJObjBtreeNode : public APFSBtreeNode<> {
@@ -931,7 +929,7 @@ static_assert(sizeof(APFSPhysicalExtentKey) == sizeof(apfs_phys_extent_key),
 
 class APFSExtentRefBtreeNode : public APFSBtreeNode<> {
  public:
-  using APFSBtreeNode::APFSBtreeNode;
+  APFSExtentRefBtreeNode(const APFSPool &pool, apfs_block_num block_num);
 
   iterator find(apfs_block_num) const;
 };

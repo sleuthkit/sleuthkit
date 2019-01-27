@@ -569,8 +569,7 @@ const std::vector<APFSFileSystem::snapshot_t> APFSFileSystem::snapshots()
     const {
   std::vector<snapshot_t> v{};
 
-  const APFSSnapshotBtreeNode snap_tree{_pool, fs()->snap_meta_tree_oid,
-                                        nullptr};
+  const APFSSnapshotBtreeNode snap_tree{_pool, fs()->snap_meta_tree_oid};
 
   using key_type = struct {
     uint64_t xid_and_type;
@@ -616,7 +615,11 @@ apfs_block_num APFSFileSystem::omap_root() const {
 APFSJObjBtreeNode::APFSJObjBtreeNode(const APFSObjectBtreeNode* obj_root,
                                      apfs_block_num block_num,
                                      const uint8_t* key)
-    : APFSBtreeNode(obj_root->pool(), block_num, key), _obj_root{obj_root} {}
+    : APFSBtreeNode(obj_root->pool(), block_num, key), _obj_root{obj_root} {
+  if (subtype() != APFS_OBJ_TYPE_FSTREE) {
+    throw std::runtime_error("APFSJObjBtreeNode: invalid subtype");
+  }
+}
 
 APFSObjectBtreeNode::iterator APFSObjectBtreeNode::find(uint64_t oid) const {
   return APFSBtreeNode::find(
@@ -632,12 +635,36 @@ APFSObjectBtreeNode::iterator APFSObjectBtreeNode::find(uint64_t oid) const {
 
 APFSObjectBtreeNode::APFSObjectBtreeNode(const APFSPool& pool,
                                          apfs_block_num block_num)
-    : APFSBtreeNode(pool, block_num, nullptr), _xid{xid()} {}
+    : APFSBtreeNode(pool, block_num), _xid{xid()} {
+  if (subtype() != APFS_OBJ_TYPE_OMAP) {
+    throw std::runtime_error("APFSObjectBtreeNode: invalid subtype");
+  }
+}
 
 APFSObjectBtreeNode::APFSObjectBtreeNode(const APFSPool& pool,
                                          apfs_block_num block_num,
                                          uint64_t snap_xid)
-    : APFSBtreeNode(pool, block_num, nullptr), _xid{snap_xid} {}
+    : APFSBtreeNode(pool, block_num), _xid{snap_xid} {
+  if (subtype() != APFS_OBJ_TYPE_OMAP) {
+    throw std::runtime_error("APFSObjectBtreeNode: invalid subtype");
+  }
+}
+
+APFSSnapshotBtreeNode::APFSSnapshotBtreeNode(const APFSPool& pool,
+                                             apfs_block_num block_num)
+    : APFSBtreeNode(pool, block_num) {
+  if (subtype() != APFS_OBJ_TYPE_SNAPMETATREE) {
+    throw std::runtime_error("APFSSnapshotBtreeNode: invalid subtype");
+  }
+}
+
+APFSExtentRefBtreeNode::APFSExtentRefBtreeNode(const APFSPool& pool,
+                                               apfs_block_num block_num)
+    : APFSBtreeNode(pool, block_num) {
+  if (subtype() != APFS_OBJ_TYPE_BLOCKREFTREE) {
+    throw std::runtime_error("APFSExtentRefBtreeNode: invalid subtype");
+  }
+}
 
 APFSCheckpointMap::APFSCheckpointMap(const APFSPool& pool,
                                      const apfs_block_num block_num)
