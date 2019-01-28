@@ -111,3 +111,14 @@ const std::vector<APFSPool::nx_version> APFSPool::known_versions() const {
 const std::vector<APFSPool::range> APFSPool::unallocated_ranges() const {
   return nx()->unallocated_ranges();
 }
+
+void APFSPool::clear_cache() noexcept {
+  _block_cache.clear();
+
+  tsk_take_lock(&(_img->cache_lock));
+
+  // Setting the lengths to zero should invalidate the cache.
+  memset(_img->cache_len, 0, sizeof(_img->cache_len));
+
+  tsk_release_lock(&(_img->cache_lock));
+}

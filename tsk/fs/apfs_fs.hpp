@@ -44,17 +44,7 @@ class APFSJObject {
   void add_entry(const jit::value_type &);
 
  public:
-  using key_type = struct {
-    uint64_t oid_and_type;
-
-    inline uint64_t oid() const noexcept {
-      return bitfield_value(oid_and_type, 60, 0);
-    }
-
-    inline uint64_t type() const noexcept {
-      return bitfield_value(oid_and_type, 4, 60);
-    }
-  };
+  using key_type = APFSJObjKey;
 
   APFSJObject() = default;
 

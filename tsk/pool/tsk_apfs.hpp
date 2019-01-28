@@ -57,6 +57,7 @@ class APFSBlock {
 
   inline apfs_block_num block_num() const noexcept { return _block_num; }
   inline const APFSPool &pool() const noexcept { return _pool; }
+  inline const char *data() const noexcept { return _storage.data(); }
 };
 
 class APFSPool : public TSKPool {
@@ -121,6 +122,8 @@ class APFSPool : public TSKPool {
   std::unique_ptr<APFSSuperblock> nx(bool validate = false) const;
 
   inline bool hardware_crypto() const noexcept { return _hw_crypto; }
+
+  void clear_cache() noexcept;
 
   friend class APFSBlock;
 };

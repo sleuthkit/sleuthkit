@@ -1098,6 +1098,19 @@ class APFSFileSystem : public APFSObject {
   friend APFSJObjTree;
 };
 
+struct APFSJObjKey {
+  uint64_t oid_and_type;
+
+  inline uint64_t oid() const noexcept {
+    return bitfield_value(oid_and_type, 60, 0);
+  }
+
+  inline uint64_t type() const noexcept {
+    return bitfield_value(oid_and_type, 4, 60);
+  }
+};
+static_assert(sizeof(APFSJObjKey) == 0x08, "invalid struct padding");
+
 // Template Specializations
 
 // Initializes the value for variable-sized key/values
