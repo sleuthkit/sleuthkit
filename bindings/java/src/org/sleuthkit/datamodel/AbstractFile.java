@@ -892,10 +892,8 @@ public abstract class AbstractFile extends AbstractContent {
 	 * read() will read the file in the local path.
 	 *
 	 * @param localPath  local path to be set
-	 * @param isAbsolute true if the path is absolute, false if relative to the
-	 *                   case db
 	 */
-	void setLocalFilePath(String localPath, boolean isAbsolute) {
+	void setLocalFilePath(String localPath) {
 
 		if (localPath == null || localPath.equals("")) {
 			this.localPath = "";
@@ -903,7 +901,8 @@ public abstract class AbstractFile extends AbstractContent {
 			localPathSet = false;
 		} else {
 			this.localPath = localPath;
-			if (isAbsolute) {
+			if (localPath.startsWith("/") || localPath.startsWith("\\")
+					|| localPath.matches("[A-Za-z]:[/\\\\].*")) {
 				this.localAbsPath = localPath;
 			} else {
 				this.localAbsPath = getSleuthkitCase().getDbDirPath() + java.io.File.separator + this.localPath;
@@ -1256,7 +1255,7 @@ public abstract class AbstractFile extends AbstractContent {
 	 */
 	@Deprecated
 	protected void setLocalPath(String localPath, boolean isAbsolute) {
-		setLocalFilePath(localPath, isAbsolute);
+		setLocalFilePath(localPath);
 	}
 
 	/*
