@@ -1183,12 +1183,12 @@ public class BlackboardArtifact implements Content {
 		/**
 		 * Indicates auto fill data from a Web form
 		 */
-		TSK_WEB_FORM_AUTOFILL(48, "TSK_WEB_FORM_AUTOFILL",  //NON-NLS
+		TSK_WEB_FORM_AUTOFILL(49, "TSK_WEB_FORM_AUTOFILL",  //NON-NLS
 				bundle.getString("BlackboardArtifact.tskWebFormAutofill.text")),
 		/**
 		 * Indicates an person's address filled in a web form
 		 */
-		TSK_WEB_FORM_ADDRESS (49, "TSK_WEB_FORM_ADDRESSES ",  //NON-NLS
+		TSK_WEB_FORM_ADDRESS (50, "TSK_WEB_FORM_ADDRESSES ",  //NON-NLS
 				bundle.getString("BlackboardArtifact.tskWebFormAddresses.text"));
 		
 		private final String label;
