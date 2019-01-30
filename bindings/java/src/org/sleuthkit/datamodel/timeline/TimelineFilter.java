@@ -18,6 +18,7 @@
  */
 package org.sleuthkit.datamodel.timeline;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.net.MediaType;
 import static java.util.Arrays.asList;
@@ -80,7 +81,8 @@ public abstract class TimelineFilter {
 	 */
 	public static class IntersectionFilter<S extends TimelineFilter> extends CompoundFilter<S> {
 
-		IntersectionFilter(List<S> subFilters) {
+		@VisibleForTesting
+		public IntersectionFilter(List<S> subFilters) {
 			super(subFilters);
 		}
 
@@ -828,5 +830,11 @@ public abstract class TimelineFilter {
 		protected String getSQLWhere(TimelineManager manager) {
 			return sqlWhere;
 		}
+
+		@Override
+		public String toString() {
+			return "FileTypeFilter{" + "displayName=" + displayName + ", sqlWhere=" + sqlWhere + '}';
+		}
+		
 	}
 }
