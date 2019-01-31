@@ -903,6 +903,7 @@ public abstract class AbstractFile extends AbstractContent {
 			// It should always be the case that absolute paths start with slashes or a windows drive letter
 			// and relative paths do not, but some older versions of modules created derived file paths
 			// starting with slashes. So we first check if this file is a DerivedFile before looking at the path.
+			this.localPath = localPath;
 			if (this instanceof DerivedFile) {
 				// DerivedFiles always have relative paths
 				this.localAbsPath = getSleuthkitCase().getDbDirPath() + java.io.File.separator + localPath;
